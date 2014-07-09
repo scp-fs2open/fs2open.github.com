@@ -685,16 +685,42 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 // update the given 3d sound with a new position
 void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius, float range_factor)
 {
-	float vol, pan;
-	
-	// get new volume and pan vals
-	snd_get_3d_vol_and_pan(gs, new_pos, &vol, &pan, radius, range_factor);
+	if (Cmdline_no_3d_sound) {
+		float vol, pan;
+		
+		// get new volume and pan vals
+		snd_get_3d_vol_and_pan(gs, new_pos, &vol, &pan, radius, range_factor);
 
-	// set volume
-	snd_set_volume(soundnum, vol);
+		// set volume
+		snd_set_volume(soundnum, vol);
 
-	// set pan
-	snd_set_pan(soundnum, pan);
+		// set pan
+		snd_set_pan(soundnum, pan);
+	} else {
+		// MageKing17 - It's a 3D sound effect, we should use the function for setting the position of a 3D sound effect.
+		sound *snd;
+
+		if (!ds_initialized)
+			return;
+
+		Assertion( gs != NULL, "*gs was NULL in snd_update_3d_pos(); get a coder!\n" );
+
+		if ( gs->id == -1 ) {
+			gs->id = snd_load(gs);
+		}
+
+		if (gs->id == -1)
+			return;
+
+		snd = &Sounds[gs->id];
+		if ( !(snd->flags & SND_F_USED) )
+			return;
+
+		float min_range = (float) (fl2i( (gs->min) * range_factor));
+		float max_range = (float) (fl2i( (gs->max) * range_factor + 0.5f));
+
+		ds3d_update_buffer(soundnum, min_range, max_range, new_pos, NULL);
+	}
 }
 
 // ---------------------------------------------------------------------------------------
@@ -728,10 +754,7 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	if (!ds_initialized)
 		return -1;
 
-	if (gs == NULL) {
-		Int3();
-		return -1;
-	}
+	Assertion( gs != NULL, "*gs was NULL in snd_get_3d_vol_and_pan(); get a coder!\n" );
 
 	if ( gs->id == -1 ) {
 		gs->id = snd_load(gs);

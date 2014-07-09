@@ -1060,6 +1060,8 @@
 #define IDC_2D_MISSION2                 1549
 #define IDC_ALWAYS_SHOW_GOALS           1549
 #define IDC_LABEL2                      1550
+#define IDC_ALWAYS_SHOW_GOALS2          1550
+#define IDC_END_TO_MAINHALL             1550
 #define IDC_NEW_TEXTURE                 1551
 #define IDC_TEXTURES                    1552
 #define IDC_OLD_TEXTURE_LIST            1553

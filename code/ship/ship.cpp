@@ -3875,12 +3875,12 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 							current_trigger->end = 0;
 
 						if(optional_string("$Sound:")){
-							required_string("+Start:");
-							stuff_int(&current_trigger->start_sound );
-							required_string("+Loop:");
-							stuff_int(&current_trigger->loop_sound );
-							required_string("+End:");
-							stuff_int(&current_trigger->end_sound );
+							parse_sound("+Start:", &current_trigger->start_sound, sip->name);
+
+							parse_sound("+Loop:", &current_trigger->loop_sound, sip->name);
+
+							parse_sound("+End:", &current_trigger->end_sound, sip->name);
+
 							required_string("+Radius:");
 							stuff_float(&current_trigger->snd_rad );
 						}else{
@@ -4187,12 +4187,8 @@ void parse_shiptype_tbl(const char *filename)
 {
 	int rval;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -4229,9 +4225,6 @@ void parse_shiptype_tbl(const char *filename)
 
 	// add tbl/tbm to multiplayer validation list
 	fs2netd_add_table_validation(filename);
-
-	// close localization
-	lcl_ext_close();
 }
 
 // The E - Simple lookup function for FRED.
@@ -4288,14 +4281,10 @@ void ship_set_default_player_ship()
 void parse_shiptbl(const char *filename)
 {
 	int rval;
-
-	// open localization
-	lcl_ext_open();
 	
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -4352,9 +4341,6 @@ void parse_shiptbl(const char *filename)
 
 	// add tbl/tbm to multiplayer validation list
 	fs2netd_add_table_validation(filename);
-
-	// close localization
-	lcl_ext_close();
 }
 
 int ship_show_velocity_dot = 0;
@@ -11047,7 +11033,7 @@ void ship_process_targeting_lasers()
  * @param src	Source of weapon
  * @return true if detonated, else return false.
  * 
- *	Calls ::weapon_hit() to detonate weapon.
+ *	Calls ::weapon_hit(), indirectly via ::weapon_detonate(), to detonate weapon.
  *	If it's a weapon that spawns particles, those will be released.
  */
 int maybe_detonate_weapon(ship_weapon *swp, object *src)
@@ -11056,6 +11042,10 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
 	object		*objp;
 	weapon_info	*wip;
 
+	if ((objnum < 0) || (objnum >= MAX_OBJECTS)) {
+		return 0;
+	}
+    
 	objp = &Objects[objnum];
 
 	if (objp->type != OBJ_WEAPON){
@@ -11076,17 +11066,15 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
 
 	if (wip->wi_flags & WIF_REMOTE) {
 
-		if ((objnum >= 0) && (objnum < MAX_OBJECTS)) {
-			int	weapon_sig;
+		int	weapon_sig;
 
-			weapon_sig = objp->signature;
+		weapon_sig = objp->signature;
 
-			if (swp->last_fired_weapon_signature == weapon_sig) {				
-				weapon_detonate(objp);
-				swp->last_fired_weapon_index = -1;
+		if (swp->last_fired_weapon_signature == weapon_sig) {
+			weapon_detonate(objp);
+			swp->last_fired_weapon_index = -1;
 
-				return 1;
-			}
+			return 1;
 		}
 	}
 
@@ -12394,9 +12382,7 @@ void ship_model_start(object *objp)
 			case SUBSYSTEM_SOLAR:
 			case SUBSYSTEM_GAS_COLLECT:
 			case SUBSYSTEM_ACTIVATION:
-				break;
 			case SUBSYSTEM_TURRET:
-				Assertion( !(psub->flags & MSS_FLAG_ROTATES), "Turret %s on ship %s has the $rotate or $triggered subobject property defined. Please fix the model.\n", psub->name, Ship_info[shipp->ship_info_index].name ); // Turrets can't rotate!!! See John!
 				break;
 			default:
 				Error(LOCATION, "Illegal subsystem type.\n");
@@ -17794,12 +17780,8 @@ void armor_parse_table(const char *filename)
 {
 	int rval;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -17818,9 +17800,6 @@ void armor_parse_table(const char *filename)
 
 	// add tbl/tbm to multiplayer validation list
 	fs2netd_add_table_validation(filename);
-
-	// close localization
-	lcl_ext_close();
 }
 
 void armor_init()

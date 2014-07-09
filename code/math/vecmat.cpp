@@ -2514,7 +2514,7 @@ void vm_find_bounding_sphere(vec3d *pnts, int num_pnts, vec3d *center, float *ra
 		dia2 = ymax;
 	}
 	if ( zspan > maxspan ) {
-		maxspan = yspan;
+		maxspan = zspan;
 		dia1 = zmin;
 		dia2 = zmax;
 	}

@@ -203,6 +203,27 @@ void player_select_cancel_create();
 
 extern int delete_pilot_file(char *pilot_name);
 
+/*
+ * validate that a pilot/player was created with the same language FSO is currently using
+ *
+ * @param pilots callsign
+ * @note not longer needed if intel entry "primary keys" change to a non-translated value
+ */
+bool valid_pilot_lang(char *callsign)
+{
+	char pilot_lang[LCL_LANG_NAME_LEN+1], current_lang[LCL_LANG_NAME_LEN+1];
+	SCP_string filename = callsign;
+
+	filename += ".plr";
+	lcl_get_language_name(current_lang);
+
+	if (Pilot.verify(filename.c_str(), NULL, pilot_lang)) {
+		if (!strcmp(current_lang, pilot_lang)) {
+			return true;
+		}
+	}
+	return false;
+}
 
 // basically, gray out all controls (gray == 1), or ungray the controls (gray == 0)
 void player_select_set_controls(int gray)
@@ -539,7 +560,14 @@ void player_select_button_pressed(int n)
 		if (Player_select_pilot < 0) {
 			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must select a valid pilot first", 378));
 		} else {
-			player_select_commit();
+			if (valid_pilot_lang(Pilots[Player_select_pilot])) {
+				player_select_commit();
+			} else {
+				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(
+					"Selected pilot was created with a different language\n"
+					"to the currently active language.\n\n"
+					"Please select a different pilot or change the language", 1637));
+			}
 		}
 		break;
 
@@ -1257,8 +1285,8 @@ DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 	}
 
 	if (dc_maybe_stuff_int(&idx)) {
-		Assert(Main_hall_defines.at(gr_screen.res).size() < INT_MAX);
-		if ((idx < 0) || (idx >= (int) Main_hall_defines.at(gr_screen.res).size())) {
+		Assert(Main_hall_defines.size() < INT_MAX);
+		if ((idx < 0) || (idx >= (int) Main_hall_defines.size())) {
 			dc_printf("Main hall index out of range\n");
 
 		} else {
@@ -1286,12 +1314,8 @@ void player_tips_init()
 
 	Num_player_tips = 0;
 
-	// begin external localization stuff
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "tips.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -1306,9 +1330,6 @@ void player_tips_init()
 		}
 		Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
 	}
-
-	// stop externalizing, homey
-	lcl_ext_close();
 }
 
 // close out player tips - *only call from game_shutdown()*

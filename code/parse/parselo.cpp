@@ -1131,12 +1131,17 @@ int get_string_or_variable (SCP_string &str)
 
 /**
  * Stuff a string (" chars ") into *str, return length.
+ * Accepts an optional max length parameter. If it is omitted or negative, then no max length is enforced.
  */
-int get_string(char *str)
+int get_string(char *str, int max)
 {
 	int	len;
 
 	len = strcspn(Mp + 1, "\"");
+
+	if (max >= 0 && len >= max)
+		error_display(0, "String too long.  Length = %i.  Max is %i.\n", len, max);
+
 	strncpy(str, Mp + 1, len);
 	str[len] = 0;
 
@@ -1246,7 +1251,7 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
-			break;		
+			break;
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
@@ -1356,7 +1361,7 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
-			break;		
+			break;	
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);

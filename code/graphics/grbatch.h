@@ -29,7 +29,7 @@ private:
 	void clone(const geometry_batcher &geo);
 
 public:
-	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), use_radius(true), radius_list(NULL), buffer_offset(-1) {};
+	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), use_radius(true), radius_list(NULL), buffer_offset(-1) {}
 	~geometry_batcher();
 
     geometry_batcher(const geometry_batcher &geo) { clone(geo); }
@@ -69,9 +69,9 @@ public:
 	void render_buffer(int flags);
 
 	// determine if we even need to try and render this (helpful for particle system)
-	int need_to_render() { return n_to_render; };
+	int need_to_render() { return n_to_render; }
 
-	void operator =(int){};
+	void operator =(int){}
 };
 
 

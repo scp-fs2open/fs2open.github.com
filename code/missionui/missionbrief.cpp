@@ -351,7 +351,11 @@ void brief_skip_training_pressed()
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	
 
-	gameseq_post_event( GS_EVENT_START_GAME );
+	if ( The_mission.flags & MISSION_FLAG_END_TO_MAINHALL ) {
+		gameseq_post_event( GS_EVENT_MAIN_MENU );
+	} else {
+		gameseq_post_event( GS_EVENT_START_GAME );
+	}
 }
 
 // --------------------------------------------------------------------------------------
@@ -873,7 +877,7 @@ void brief_init()
 	common_music_init(SCORE_BRIEFING);
 
 	Briefing_overlay_id = help_overlay_get_index(BR_OVERLAY);
-	help_overlay_set_state(Briefing_overlay_id,0);
+	help_overlay_set_state(Briefing_overlay_id,gr_screen.res,0);
 
 	if ( Brief_inited == TRUE ) {
 		common_buttons_maybe_reload(&Brief_ui_window);	// AL 11-21-97: this is necessary since we may returning from the hotkey
@@ -1751,7 +1755,7 @@ void brief_do_frame(float frametime)
 	brief_maybe_flash_button();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Briefing_overlay_id);
+	help_overlay_maybe_blit(Briefing_overlay_id, gr_screen.res);
 
 	gr_flip();	
 

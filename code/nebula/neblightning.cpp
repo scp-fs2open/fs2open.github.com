@@ -931,6 +931,7 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 	size_t idx;	
 	vec3d temp, pt;
 	vec3d glow_a, glow_b;
+	vertex tempv;
 
 	// direction matrix
 	vm_vec_sub(&dir, &a->pos, &b->pos);
@@ -945,6 +946,8 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 
 	// rotate the basic section into world	
 	for(idx=0; idx<3; idx++){
+		memset(&tempv, 0, sizeof(tempv));
+        
 		// rotate to world		
 		if(pinch_a){			
 			vm_vec_rotate(&pt, &Nebl_ring_pinched[idx], &m);
@@ -954,39 +957,30 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 		}
 		vm_vec_add2(&pt, &a->pos);
 			
-		// transform
-		if (Cmdline_nohtl) {
-			g3_rotate_vertex(&c->vex[idx], &pt);
-		} else {
-			g3_transfer_vertex(&c->vex[idx], &pt);
-		}
-		g3_project_vertex(&c->vex[idx]);		
+		g3_transfer_vertex(&c->vex[idx], &pt);
+		g3_rotate_vertex(&tempv, &pt);
+		g3_project_vertex(&tempv);
 
 		// if first frame, keep track of the average screen pos
-		if((c->vex[idx].screen.xyw.x >= 0)
-			&& (c->vex[idx].screen.xyw.x < gr_screen.max_w)
-			&& (c->vex[idx].screen.xyw.y >= 0)
-			&& (c->vex[idx].screen.xyw.y < gr_screen.max_h))
-		{
-			Nebl_flash_x += c->vex[idx].screen.xyw.x;
-			Nebl_flash_y += c->vex[idx].screen.xyw.y;
+		if (tempv.codes == 0) {
+			Nebl_flash_x += tempv.screen.xyw.x;
+			Nebl_flash_y += tempv.screen.xyw.y;
 			Nebl_flash_count++;
+		}
+
+		if (Cmdline_nohtl) {
+			memcpy(&c->vex[idx], &tempv, sizeof(vertex));
 		}
 	}
 	// calculate the glow points		
 	nebl_calc_facing_pts_smart(&glow_a, &glow_b, &dir_normal, &a->pos, pinch_a ? 0.5f : width * 6.0f, Nebl_type->b_add);
 	if (Cmdline_nohtl) {
 		g3_rotate_vertex(&c->glow_vex[0], &glow_a);
-	} else {
-		g3_transfer_vertex(&c->glow_vex[0], &glow_a);
-	}
-	g3_project_vertex(&c->glow_vex[0]);
-	if (Cmdline_nohtl) {
 		g3_rotate_vertex(&c->glow_vex[1], &glow_b);
 	} else {
+		g3_transfer_vertex(&c->glow_vex[0], &glow_a);
 		g3_transfer_vertex(&c->glow_vex[1], &glow_b);
 	}
-	g3_project_vertex(&c->glow_vex[1]);	
 
 	// maybe do a cap
 	if(cap != NULL){		
@@ -1001,23 +995,19 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 			}
 			vm_vec_add2(&pt, &b->pos);
 			
-			// transform
-			if (Cmdline_nohtl) {
-				g3_rotate_vertex(&cap->vex[idx], &pt);
-			} else {
-				g3_transfer_vertex(&cap->vex[idx], &pt);
-			}
-			g3_project_vertex(&cap->vex[idx]);			
+			g3_transfer_vertex(&cap->vex[idx], &pt);
+			g3_rotate_vertex(&tempv, &pt);
+			g3_project_vertex(&tempv);
 
-			// if first frame, keep track of the average screen pos			
-			if( (c->vex[idx].screen.xyw.x >= 0)
-				&& (c->vex[idx].screen.xyw.x < gr_screen.max_w)
-				&& (c->vex[idx].screen.xyw.y >= 0)
-				&& (c->vex[idx].screen.xyw.y < gr_screen.max_h))
-			{
-				Nebl_flash_x += c->vex[idx].screen.xyw.x;
-				Nebl_flash_y += c->vex[idx].screen.xyw.y;
+			// if first frame, keep track of the average screen pos
+			if (tempv.codes == 0) {
+				Nebl_flash_x += tempv.screen.xyw.x;
+				Nebl_flash_y += tempv.screen.xyw.y;
 				Nebl_flash_count++;
+			}
+
+			if (Cmdline_nohtl) {
+				memcpy(&cap->vex[idx], &tempv, sizeof(vertex));
 			}
 		}
 		
@@ -1025,16 +1015,11 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 		nebl_calc_facing_pts_smart(&glow_a, &glow_b, &dir_normal, &b->pos, pinch_b ? 0.5f : width * 6.0f, bi->b_add);
 		if (Cmdline_nohtl) {
 			g3_rotate_vertex(&cap->glow_vex[0], &glow_a);
-		} else {
-			g3_transfer_vertex(&cap->glow_vex[0], &glow_a);
-		}
-		g3_project_vertex(&cap->glow_vex[0]);
-		if (Cmdline_nohtl) {
 			g3_rotate_vertex(&cap->glow_vex[1], &glow_b);
 		} else {
+			g3_transfer_vertex(&cap->glow_vex[0], &glow_a);
 			g3_transfer_vertex(&cap->glow_vex[1], &glow_b);
 		}
-		g3_project_vertex(&cap->glow_vex[1]);
 	}
 }
 

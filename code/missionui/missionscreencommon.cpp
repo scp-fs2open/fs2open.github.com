@@ -601,9 +601,9 @@ int common_select_do(float frametime)
 
 	if ( (k > 0) || (new_k > 0) || B1_JUST_RELEASED ) {
 		if ( help_overlay_active(Briefing_overlay_id) || help_overlay_active(Ship_select_overlay_id) || help_overlay_active(Weapon_select_overlay_id) ) {
-			help_overlay_set_state(Briefing_overlay_id, 0);
-			help_overlay_set_state(Ship_select_overlay_id, 0);
-			help_overlay_set_state(Weapon_select_overlay_id, 0);
+			help_overlay_set_state(Briefing_overlay_id, gr_screen.res, 0);
+			help_overlay_set_state(Ship_select_overlay_id, gr_screen.res, 0);
+			help_overlay_set_state(Weapon_select_overlay_id, gr_screen.res, 0);
 			Active_ui_window->set_ignore_gadgets(0);
 			k = 0;
 			new_k = 0;
@@ -1751,7 +1751,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 			// render the ships
 			model_clear_instance(model_id);
 			model_set_detail_level(0);
-			gr_set_color(80,49,160);
+			model_set_outline_color(80,49,160);
 			opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS2);
 			opengl_shader_set_animated_timer(-clip);
 

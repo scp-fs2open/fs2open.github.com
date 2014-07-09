@@ -2037,7 +2037,7 @@ void CShipEditorDlg::OnSpecialExp()
 // alternate ship name stuff
 void CShipEditorDlg::ship_alt_name_init(int base_ship)
 {
-	int idx;
+	int idx, sel_idx;
 	CComboBox *ptr = (CComboBox*)GetDlgItem(IDC_SHIP_ALT);
 	if(ptr == NULL){
 		Int3();
@@ -2054,21 +2054,17 @@ void CShipEditorDlg::ship_alt_name_init(int base_ship)
 	// reset the combobox and add all relevant strings
 	ptr->ResetContent();
 	ptr->AddString("<none>");
+	sel_idx = (base_ship < 0 || !strlen(Fred_alt_names[base_ship])) ? -1 : -2;
 	for(idx=0; idx<Mission_alt_type_count; idx++){
 		ptr->AddString(Mission_alt_types[idx]);
+		if (sel_idx == -2 && !strcmp(Mission_alt_types[idx], Fred_alt_names[base_ship])) {
+			sel_idx = idx;
+		}
 	}
+	Assertion(sel_idx >= -1, "Alt name exists but can't be found in Mission_alt_types; get a coder!\n");
 
-	// "none"
-	if(base_ship < 0){
-		ptr->SetCurSel(0);
-	}
-
-	// otherwise look his stuff up
-	if(strlen(Fred_alt_names[base_ship])){
-		ptr->SelectString(0, Fred_alt_names[base_ship]);
-	} else {
-		ptr->SetCurSel(0);
-	}
+	sel_idx += 1;
+	ptr->SetCurSel(sel_idx);
 }
 
 void CShipEditorDlg::ship_alt_name_close(int base_ship)
@@ -2137,7 +2133,7 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 // callsign stuff
 void CShipEditorDlg::ship_callsign_init(int base_ship)
 {
-	int idx;
+	int idx, sel_idx;
 	CComboBox *ptr = (CComboBox*)GetDlgItem(IDC_SHIP_CALLSIGN);
 	if(ptr == NULL){
 		Int3();
@@ -2154,21 +2150,17 @@ void CShipEditorDlg::ship_callsign_init(int base_ship)
 	// reset the combobox and add all relevant strings
 	ptr->ResetContent();
 	ptr->AddString("<none>");
+	sel_idx = (base_ship < 0 || !strlen(Fred_callsigns[base_ship])) ? -1 : -2;
 	for(idx=0; idx<Mission_callsign_count; idx++){
 		ptr->AddString(Mission_callsigns[idx]);
+		if (sel_idx == -2 && !strcmp(Mission_callsigns[idx], Fred_callsigns[base_ship])) {
+			sel_idx = idx;
+		}
 	}
+	Assertion(sel_idx >= -1, "Callsign exists but can't be found in Mission_callsigns; get a coder!\n");
 
-	// "none"
-	if(base_ship < 0){
-		ptr->SetCurSel(0);
-	}
-
-	// otherwise look his stuff up
-	if(strlen(Fred_callsigns[base_ship])){
-		ptr->SelectString(0, Fred_callsigns[base_ship]);
-	} else {
-		ptr->SetCurSel(0);
-	}
+	sel_idx += 1;
+	ptr->SetCurSel(sel_idx);
 }
 
 void CShipEditorDlg::ship_callsign_close(int base_ship)

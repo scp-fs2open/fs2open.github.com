@@ -68,7 +68,7 @@ void (*Rtv_callback)();
 // recording/encoding buffers
 static unsigned char *Rtv_capture_raw_buffer;
 static unsigned char *Rtv_capture_compressed_buffer;
-static int Rtv_capture_compressed_buffer_size;
+//static int Rtv_capture_compressed_buffer_size;
 static int Rtv_capture_raw_buffer_size;
 
 // playback/decoding buffers

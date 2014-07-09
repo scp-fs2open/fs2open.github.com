@@ -28,6 +28,9 @@ bool Full_color_head_anis = false;
 bool Weapons_inherit_parent_collision_group = false;
 bool Flight_controls_follow_eyepoint_orientation = false;
 int FS2NetD_port = 0;
+float Briefing_window_FOV = 0.29375f;
+bool Disable_hc_message_ani = false;
+bool Red_alert_applies_to_delayed_ships = false;
 
 
 void parse_mod_table(const char *filename)
@@ -35,13 +38,9 @@ void parse_mod_table(const char *filename)
 	int rval;
 	// SCP_vector<SCP_string> lines;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default game_settings.tbl>", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -87,6 +86,15 @@ void parse_mod_table(const char *filename)
 			}
 
 			Ignored_campaigns.push_back(campaign_name);
+		}
+	}
+
+	if (optional_string("$Red-alert applies to delayed ships:")) {
+		stuff_boolean(&Red_alert_applies_to_delayed_ships);
+		if (Red_alert_applies_to_delayed_ships) {
+			mprintf(("Game Settings Table: Red-alert stats will be loaded for ships that arrive later in missions\n"));
+		} else {
+			mprintf(("Game Settings Table: Red-alert stats will NOT be loaded for ships that arrive later in missions (this is retail behavior)\n"));
 		}
 	}
 
@@ -162,6 +170,16 @@ void parse_mod_table(const char *filename)
 			Default_detail_level = detail_level;
 		}
 	}
+
+	if (optional_string("$Briefing Window FOV:")) {
+		float fov;
+
+		stuff_float(&fov);
+
+		mprintf(("Game Settings Table: Setting briefing window FOV from %f to %f", Briefing_window_FOV, fov));
+
+		Briefing_window_FOV = fov;
+	}
 	
 	optional_string("#NETWORK SETTINGS"); 
 
@@ -183,6 +201,18 @@ void parse_mod_table(const char *filename)
 
 	if (optional_string("$Default Voice Volume:")) {
 		stuff_float(&Master_voice_volume);
+	}
+
+	optional_string("#FRED SETTINGS");
+	
+	if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
+		stuff_boolean(&Disable_hc_message_ani);
+		if (Disable_hc_message_ani) {
+			mprintf(("Game Settings Table: FRED - Disabling Hard Coded Message Ani Files\n"));
+		} else {
+			mprintf(("Game Settings Table: FRED - Using Hard Coded Message Ani Files\n"));
+			
+		}
 	}
 
 	optional_string("#OTHER SETTINGS"); 
@@ -230,9 +260,6 @@ void parse_mod_table(const char *filename)
 	}
 
 	required_string("#END");
-
-	// close localization
-	lcl_ext_close();
 }
 
 void mod_table_init()

@@ -18,13 +18,16 @@ static const unsigned int CSG_FILE_ID = 0x5f475343;	// "CSG_" in file
 //       that sort!
 //   0 - initial version
 //   1 - Adding support for the player is multi flag
-static const ubyte PLR_VERSION = 1;
+//   2 - Add language in use when pilot was created
+//	     (due to intel entries using translated text as the primary key)
+static const ubyte PLR_VERSION = 2;
 //   0 - initial version
 //   1 - re-add recent missions
 //   2 - separate single/multi squad name & pic
 //   3 - remove separate detail settings for campaigns
 //   4 - add CPV rollback for Red Alert missions
-static const ubyte CSG_VERSION = 4;
+//   5 - save rank to flags for quick access
+static const ubyte CSG_VERSION = 5;
 
 
 class pilotfile {
@@ -44,7 +47,7 @@ class pilotfile {
 		void reset_stats();
 
 		// for checking to see if a PLR file is basically valid
-		bool verify(const char *fname, int *rank = NULL);
+		bool verify(const char *fname, int *rank = NULL, char *valid_language = NULL);
 
 		// whether current campaign savefile has valid data to work with
 		bool is_invalid()
@@ -213,6 +216,10 @@ class pilotfile {
 		void csg_write_controls();
 		void csg_write_cutscenes();
 		void csg_write_lastmissions();
+
+		// similar to PLR verify, except we only want the rank
+		bool get_csg_rank(int *rank);
+
 };
 
 extern pilotfile Pilot;

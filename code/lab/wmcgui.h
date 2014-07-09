@@ -306,8 +306,6 @@ private:
 
 	GUISystem* OwnerSystem;
 
-	bool Active;	//Is this screen active?
-
 	ScreenClassInfoEntry* ScreenClassInfo;
 	GUIObject Guiobjects;
 	SCP_vector<GUIObject*> DeletionCache;
@@ -513,7 +511,6 @@ class Tree : public GUIObject
 	TreeItem Items;
 	void *AssociatedItem;
 
-	int StartLine;
 	TreeItem *SelectedItem;
 	TreeItem *HighlightedItem;
 

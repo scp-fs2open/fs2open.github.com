@@ -788,6 +788,9 @@ int event_music_enemy_arrival()
 	else {
 		next_pattern = SONG_EARV_1;
 	}
+    
+	if ( Current_pattern < 0 )
+		return 0;
 
 	if ( Current_pattern == next_pattern )
 		return 0;	// already playing
@@ -1377,12 +1380,8 @@ void event_music_parse_musictbl(const char *filename)
 
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 
 	} else {
-		// open localization
-		lcl_ext_open();
-
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
@@ -1401,9 +1400,6 @@ void event_music_parse_musictbl(const char *filename)
 				}
 			}
 		}
-
-		// close localization
-		lcl_ext_close();
 	}
 }
 

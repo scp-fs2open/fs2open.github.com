@@ -78,7 +78,6 @@ SCP_string dc_title;
 
 // Commands and History
 uint DCMDS = 40;			// Max number of commands to remember
-const uint DCMDS_MIN = 3;
 
 SCP_deque<SCP_string> dc_history;
 SCP_deque<SCP_string>::iterator last_oldcommand;		// Iterator to the last old command. Is reset to the start every new command push.
@@ -105,7 +104,7 @@ void dc_draw(bool show_prompt);
 /**
  * Draws the cursor
  * @param [in] cmd_string	The formatted command string displayed by dc_draw_window
- * @param [in] x, y			The x and y screen position of the command string
+ * @param [in] x y			The x and y screen position of the command string
  */
 void dc_draw_cursor( SCP_string &cmd_string, int x, int y );
 
@@ -167,8 +166,8 @@ void dc_do_command(SCP_string *cmd_str)
 	
 	} catch (errParseString err) {
 		dc_printf("Require string(s) not found: \n");
-		for (uint i = 0; i < err.expected_tokens.size(); ++i) {
-			dc_printf("%i: %s\n", err.expected_tokens[i].c_str());
+		for (uint j = 0; j < err.expected_tokens.size(); ++j) {
+			dc_printf("%i: %s\n", j, err.expected_tokens[j].c_str());
 		}
 
 		dc_printf("Found '%s' instead\n", err.found_token.c_str());

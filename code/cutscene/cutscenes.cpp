@@ -55,12 +55,8 @@ void cutscene_init()
 	int rval;
     cutscene_info cutinfo;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "cutscenes.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -107,9 +103,6 @@ void cutscene_init()
 	}
 
 	required_string("#End");
-
-	// close localization
-	lcl_ext_close();
 }
 
 // function to return 0 based index of which CD a particular movie is on

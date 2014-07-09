@@ -387,6 +387,6 @@ namespace cfile
 			}
 	};
 
-};
+}
 
 #endif	/* __CFILE_H__ */

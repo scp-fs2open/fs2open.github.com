@@ -35,7 +35,6 @@ struct opengl_light
 	float ConstantAtten, LinearAtten, QuadraticAtten;
 
 	bool occupied;
-	int priority;
 	int type;
 };
 

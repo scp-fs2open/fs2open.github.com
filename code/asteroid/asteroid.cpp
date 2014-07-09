@@ -869,12 +869,11 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 					asteroid_wrap_pos(objp, asfieldp);
 					Asteroids[objp->instance].target_objnum = -1;
 
-					vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
+					dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
-					dist = vm_vec_dist_quick(&objp->pos, &Eye_position);
 					
 					if (( dot > 0.7f) && (dist < 3000.0f)) {
-						// player would see asteroid pop out other side, so reverse velocity instead of wrapping
+						// player would see asteroid pop out other side, so reverse velocity instead of wrapping						
 						objp->pos = old_asteroid_pos;		
 						vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
 						objp->phys_info.desired_vel = objp->phys_info.vel;
@@ -1896,12 +1895,8 @@ void asteroid_parse_tbl()
 		"are no species for them to belong to."
 		);
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "asteroid.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -2030,9 +2025,6 @@ void asteroid_parse_tbl()
 	} else {
 		Asteroid_icon_closeup_zoom = 0.5f;	// magic number from retail
 	}
-
-	// close localization
-	lcl_ext_close();
 }
 
 /**

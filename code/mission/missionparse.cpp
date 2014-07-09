@@ -2669,7 +2669,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
 	if (p_objp->ship_class < 0)
 	{
-		mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name));
+		if (Fred_running) {
+			Warning(LOCATION, "Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name);
+		} 
+		else {
+			mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name));
+		}
 
 		p_objp->ship_class = 0;
 		Num_unknown_ship_classes++;
@@ -2688,7 +2693,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 		if (is_variable) {
 			new_alt_class.variable_index = get_index_sexp_variable_name(alt_ship_class);
-			new_alt_class.ship_class = ship_info_lookup(Sexp_variables[new_alt_class.variable_index].text);
+			if(new_alt_class.variable_index >= 0) {
+				new_alt_class.ship_class = ship_info_lookup(Sexp_variables[new_alt_class.variable_index].text);
+			}
+			else {
+				new_alt_class.ship_class = -1;
+			}
 		}
 		else {
 			new_alt_class.variable_index = -1;
@@ -5820,9 +5830,6 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 	if ( mission_p == NULL )
 		mission_p = &The_mission;
 
-	// open localization
-	lcl_ext_open();
-
 	do {
 		CFILE *ftemp = cfopen(real_fname, "rt");
 		if (!ftemp) {
@@ -5848,9 +5855,6 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 		parse_init(basic);
 		parse_mission_info(mission_p, basic);
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	return rval;
 }
@@ -5892,9 +5896,6 @@ int parse_main(const char *mission_name, int flags)
 
 	for (i = 0; i < Num_ship_classes; i++)
 		Ship_class_names[i] = Ship_info[i].name;
-
-	// open localization
-	lcl_ext_open();
 	
 	do {
 		// don't do this for imports
@@ -5934,9 +5935,6 @@ int parse_main(const char *mission_name, int flags)
 		rval = parse_mission(&The_mission, flags);
 		display_parse_diagnostics();
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	if (!Fred_running)
 		strcpy_s(Mission_filename, mission_name);
@@ -6294,9 +6292,6 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 	if ( filelength == 0 )
 		return 0;
 
-	// open localization
-	lcl_ext_open();
-
 	game_type = 0;
 	do {
 		if ((rval = setjmp(parse_abort)) != 0) {
@@ -6319,9 +6314,6 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 		}
 		stuff_int(&game_type);
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	return (game_type & MISSION_TYPE_MULTI) ? game_type : 0;
 }

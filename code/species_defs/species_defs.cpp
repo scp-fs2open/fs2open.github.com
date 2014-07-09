@@ -156,13 +156,9 @@ void parse_species_tbl(const char *filename)
 	int i, rval;
 	char species_name[NAME_LENGTH];
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : NOX("<default species_defs.tbl>"), rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -354,9 +350,6 @@ void parse_species_tbl(const char *filename)
 	// add tbl/tbm to multiplayer validation list
 	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation(filename);
-
-	// close localization
-	lcl_ext_close();
 }
 
 int Species_initted = 0;

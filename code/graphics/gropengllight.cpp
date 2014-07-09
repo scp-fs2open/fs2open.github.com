@@ -407,6 +407,7 @@ void gr_opengl_set_center_alpha(int type)
 		glight.Ambient[1] = 0.0f;
 		glight.Ambient[2] = 0.0f;
 	}
+	glight.type = type;
 
 	glight.Specular[0] = 0.0f;
 	glight.Specular[1] = 0.0f;
@@ -425,9 +426,12 @@ void gr_opengl_set_center_alpha(int type)
 	glight.SpotDir[0] = 0.0f;
 	glight.SpotDir[1] = 0.0f;
 	glight.SpotDir[2] = -1.0f;
+	glight.SpotExp = Cmdline_ogl_spec * 0.5f;
+	glight.SpotCutOff = 180.0f;
 	glight.ConstantAtten = 1.0f;
 	glight.LinearAtten = 0.0f;
 	glight.QuadraticAtten = 0.0f;
+	glight.occupied = false;
 
 	// first light
 	memcpy( &opengl_lights[Num_active_gl_lights], &glight, sizeof(opengl_light) );
