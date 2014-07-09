@@ -101,8 +101,7 @@ public:
 	 *  @brief Invalid/Unexpected token constructor.
 	 *  
 	 *  @param [in] found_str The string that was found
-	 *  @param [in] n The number of strings that were expected
-	 *  @param [in] ... The strings that were expected
+	 *  @param [in] strings The strings that were expected
 	 */
 	errParseString(const char *found_str, SCP_vector<SCP_string> &strings)
 	    : errParse(found_str, DCT_STRING), expected_tokens(strings)
@@ -284,7 +283,7 @@ void dc_stuff_boolean(int *i);
 /**
  * @brief Stuffs a string to out_str from the command line, stopping at the end of the command line
  *
- * @param[out] out_str  Destination string
+ * @param[out] str  Destination string
  * @param[in]  maxlen   Maximum length to copy. (maxlen <= sizeof(str)) && (maxlen <= MAX_TOKEN_LENGTH)
  *
  * @throws errParse when nothing left was found on the command line
@@ -295,7 +294,7 @@ void dc_stuff_string(char *str, size_t maxlen);
 /**
  * @brief Stuffs a string to out_str from the command line, stopping at the end of the command line
  *
- * @param[out] out_str  Destination string
+ * @param[out] str  Destination string
  *
  * @throws errParse when nothing left was found on the command line
  */
@@ -304,8 +303,8 @@ void dc_stuff_string(SCP_string &str);
 /**
  * @brief Stuffs a whitespace delimited string to out_str from the command line, stopping at the end of the command line
  *
- * @param[out] out_str  Destination string
- * @param[in]  maxlen   Maximum length to copy. (maxlen <= sizeof(str)) && (maxlen <= MAX_TOKEN_LENGTH)
+ * @param[out] str  Destination string
+ * @param[in]  len   Maximum length to copy. (len <= sizeof(str)) && (len <= MAX_TOKEN_LENGTH)
  *
  * @throws errParse when nothing left was found on the command line
  * @throws errParseOverflow when parser cannot stuff the entirety of the found string into out_str
@@ -315,8 +314,7 @@ void dc_stuff_string_white(char *str, size_t len);
 /**
  * @brief Stuffs a whitespace delimited string to out_str from the command line, stopping at the end of the command line
  *
- * @param[out] out_str  Destination string
- * @param[in]  maxlen   Maximum length to copy. (maxlen <= sizeof(str)) && (maxlen <= MAX_TOKEN_LENGTH)
+ * @param[out] str  Destination string
  *
  * @throws errParse when nothing left was found on the command line
  */
@@ -415,8 +413,8 @@ bool dc_maybe_stuff_boolean(int *i);
 /**
  * @brief Tries to stuff a string to out_str from the command line, stopping at the end of the command line
  *
- * @param[out] out_str  Destination string. If nothing was found, out_str = ""
- * @param[in]  len   Maximum length to copy. (maxlen <= sizeof(str)) && (maxlen <= MAX_TOKEN_LENGTH)
+ * @param[out] str  Destination string. If nothing was found, str = ""
+ * @param[in]  len   Maximum length to copy. (len <= sizeof(str)) && (len <= MAX_TOKEN_LENGTH)
  *
  * @retval true if the operation was successful,
  * @retval false otherwise
@@ -428,7 +426,7 @@ bool dc_maybe_stuff_string(char *str, size_t len);
 /**
  * @brief Tries to stuff a string to out_str from the command line, stopping at the end of the command line
  *
- * @param[out] out_str  Destination string. If nothing was found, out_str = ""
+ * @param[out] str  Destination string. If nothing was found, str = ""
  *
  * @retval true if the operation was successful,
  * @retval false otherwise
@@ -438,7 +436,7 @@ bool dc_maybe_stuff_string(SCP_string &str);
 /**
  * @brief Tries to stuff a whitespace delimited string to out_str from the command line, stopping at the end of the command line
  *
- * @param[out] out_str  Destination string. If nothing was found, out_str = ""
+ * @param[out] str  Destination string. If nothing was found, str = ""
  * @param[in]  len   Maximum length to copy. (maxlen <= sizeof(str)) && (maxlen <= MAX_TOKEN_LENGTH)
  *
  * @retval true if the operation was successful,
@@ -451,7 +449,7 @@ bool dc_maybe_stuff_string_white(char *str, size_t len);
 /**
  * @brief Tries to stuff a whitespace delimited string to out_str from the command line, stopping at the end of the command line
  *
- * @param[out] out_str  Destination string. If nothing was found, out_str = ""
+ * @param[out] str  Destination string. If nothing was found, str = ""
  *
  * @retval true if the operation was successful,
  * @retval false otherwise
