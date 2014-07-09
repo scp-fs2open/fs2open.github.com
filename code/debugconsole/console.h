@@ -243,7 +243,7 @@ class is_dcmd {
 public:
 	const char *name;
 
-	is_dcmd(const char *_name) : name(_name) {};
+	is_dcmd(const char *_name) : name(_name) {}
 
 	bool operator() (debug_command* dcmd)
 	{

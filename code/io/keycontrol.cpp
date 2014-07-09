@@ -74,7 +74,7 @@ class factor_table
 	{
 	public:
 		factor_table();
-		~factor_table(){ delete[] table; };
+		~factor_table(){ delete[] table; }
 		int getNextSlots( int slots_on_ship, int cur_slots );
 
 	private:

@@ -245,7 +245,7 @@ class UI_BUTTON : public UI_GADGET
 		void reset_timestamps();
 		void skip_first_highlight_callback();
 		void repeatable(int yes);
-		void set_custom_cursor_bmap(int bmap_id) { custom_cursor_bmap = bmap_id; };
+		void set_custom_cursor_bmap(int bmap_id) { custom_cursor_bmap = bmap_id; }
 };
 
 class UI_KEYTRAP : public UI_GADGET
