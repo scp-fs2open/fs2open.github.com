@@ -374,6 +374,7 @@ ship_flag_name Ship_flag_names[] = {
 	{SF2_STEALTH,					"stealth",						2,	},
 	{SF2_FRIENDLY_STEALTH_INVIS,	"friendly-stealth-invisible",	2,	},
 	{SF2_HIDE_SHIP_NAME,			"hide-ship-name",				2,	},
+	{SF2_PRIMITIVE_SENSORS,			"primitive-sensors",			2,	},
 	{SF2_AFTERBURNER_LOCKED,		"afterburners-locked",			2,	},
 	{SF2_PRIMARIES_LOCKED,			"primaries-locked",				2,	},
 	{SF2_SECONDARIES_LOCKED,		"secondaries-locked",			2,	},
