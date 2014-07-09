@@ -74,15 +74,6 @@ extern ai_flag_name Ai_flag_names[];
 
 #define	KAMIKAZE_HULL_ON_DEATH	-1000.0f	//	Hull strength ship gets set to if it crash-dies.
 
-// flags for possible ai overrides
-#define AIORF_FULL					(1<<0)	//	Full sexp control
-#define AIORF_ROLL					(1<<1)	//	Sexp forced roll maneuver
-#define AIORF_PITCH					(1<<2)	//	Sexp forced pitch change
-#define AIORF_HEADING				(1<<3)	//	Sexp forced heading change
-#define AIORF_FULL_LAT				(1<<4)	//  full control over up/side/forward movement
-#define AIORF_UP					(1<<5)	//	vertical movement
-#define AIORF_SIDEWAYS				(1<<6)	//	horizontal movement
-#define AIORF_FORWARD				(1<<7)	//	forward movement
 
 // structure for AI goals
 typedef struct ai_goal {
@@ -181,10 +172,9 @@ typedef struct ai_class {
 	int		ai_chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
 	float	ai_max_aim_update_delay[NUM_SKILL_LEVELS];
 	float	ai_turret_max_aim_update_delay[NUM_SKILL_LEVELS];
-	int		ai_profile_flags;		//Holds the state of flags that are set
-	int		ai_profile_flags_set;	//Holds which flags are set and which are just left alone
-	int		ai_profile_flags2;		
-	int		ai_profile_flags2_set;	
+	flagset<AI::Profile_flags> ai_profile_flags;		//Holds the state of flags that are set
+	flagset<AI::Profile_flags> ai_profile_flags_set;	//Holds which flags are set and which are just left alone
+	
 
 	//SUSHI: These are optional overrides to an AI class to prevent the automatic scaling based on AI class index
 	int		ai_aburn_use_factor[NUM_SKILL_LEVELS];		
@@ -414,9 +404,7 @@ typedef struct ai_info {
 	int		ai_chance_to_use_missiles_on_plr;
 	float	ai_max_aim_update_delay;
 	float	ai_turret_max_aim_update_delay;
-	int		ai_profile_flags;	//Holds AI_Profiles flags (possibly overriden by AI class) that actually apply to AI
-	int		ai_profile_flags2;	
-
+	flagset<AI::Profile_flags>	ai_profile_flags;	//Holds AI_Profiles flags (possibly overriden by AI class) that actually apply to AI
 
 	union {
 	float		lead_scale;							//	Amount to lead current opponent by.

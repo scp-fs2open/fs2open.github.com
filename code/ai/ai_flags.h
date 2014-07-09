@@ -61,6 +61,56 @@ namespace AI {
 
 		NUM_VALUES
 	};
+
+	FLAG_LIST(Profile_flags) {
+		Smart_shield_management,
+		Big_ships_can_attack_beam_turrets_on_untargeted_ships,
+		Smart_primary_weapon_selection,
+		Smart_secondary_weapon_selection,
+		Allow_rapid_secondary_dumbfire,
+		Huge_turret_weapons_ignore_bombs,
+		Dont_insert_random_turret_fire_delay,
+		Hack_improve_non_homing_swarm_turret_fire_accuracy,
+		Shockwaves_damage_small_ship_subsystems,
+		Navigation_subsys_governs_warp,
+		No_min_dock_speed_cap,
+		Disable_linked_fire_penalty,
+		Disable_weapon_damage_scaling,
+		Use_additive_weapon_velocity,
+		Use_newtonian_dampening,
+		Include_beams_in_stat_calcs,
+		Kill_scoring_scales_with_damage,
+		Assist_scoring_scales_with_damage,
+		Allow_multi_event_scoring,
+		Smart_afterburner_management,
+		Fix_linked_primary_bug,
+		Prevent_targeting_bombs_beyond_range,
+		Smart_subsystem_targeting_for_turrets,
+		Fix_heat_seeker_stealth_bug,
+		Multi_allow_empty_primaries,
+		Multi_allow_empty_secondaries,
+		Allow_turrets_target_weapons_freely,
+		Use_only_single_fov_for_turrets,
+		Allow_vertical_dodge,
+		Force_beam_turret_fov,
+		Fix_ai_class_bug,
+		Turrets_ignore_target_radius,
+		No_special_player_avoid,
+		Perform_fewer_scream_checks,
+		All_ships_manage_shields,
+		Advanced_turret_fov_edge_checks,
+		Require_turret_to_have_target_in_fov,
+		Ai_aims_from_ship_center,
+		Allow_primary_link_at_start,
+		Beams_damage_weapons,
+		Player_weapon_scale_fix,
+		No_warp_camera,
+		Aspect_lock_countermeasure,
+		Ai_guards_specific_ship_in_wing,
+		Fix_ai_path_order_bug,
+
+		NUM_VALUES
+	};
 }
 
 #endif

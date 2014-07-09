@@ -3813,7 +3813,7 @@ void find_homing_object(object *weapon_objp, int num)
 
 					// Goober5000: if missiles can't home on sensor-ghosted ships,
 					// they definitely shouldn't home on stealth ships
-					if ( sp->flags[Ship::Ship_Flags::Stealth] && (The_mission.ai_profile->flags & AIPF_FIX_HEAT_SEEKER_STEALTH_BUG) ) {
+					if ( sp->flags[Ship::Ship_Flags::Stealth] && (The_mission.ai_profile->flags[AI::Profile_flags::Fix_heat_seeker_stealth_bug]) ) {
 						continue;
 					}
 
@@ -4023,7 +4023,7 @@ bool aspect_should_lose_target(weapon* wp)
 			if (target_info->wi_flags[Weapon::Info_Flags::Cmeasure])
 			{
 				// Check if we can home on this countermeasure
-				bool home_on_cmeasure = The_mission.ai_profile->flags2 & AIPF2_ASPECT_LOCK_COUNTERMEASURE
+				bool home_on_cmeasure = The_mission.ai_profile->flags[AI::Profile_flags::Aspect_lock_countermeasure]
 					|| target_info->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
 
 				if (!home_on_cmeasure)
@@ -4185,7 +4185,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		break;
 	case OBJ_WEAPON:
 	{
-		bool home_on_cmeasure = The_mission.ai_profile->flags2 & AIPF2_ASPECT_LOCK_COUNTERMEASURE
+		bool home_on_cmeasure = The_mission.ai_profile->flags[AI::Profile_flags::Aspect_lock_countermeasure]
 			|| Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
 
 		// don't home on countermeasures or non-bombs, that's handled elsewhere
@@ -5258,7 +5258,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
-	if ((parent_objp != NULL) && (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)) {
+	if ((parent_objp != NULL) && (The_mission.ai_profile->flags[AI::Profile_flags::Use_additive_weapon_velocity])) {
 		float pspeed = vm_vec_mag( &parent_objp->phys_info.vel );
 		vm_vec_scale_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel, wip->vel_inherit_amount );
 		wp->weapon_max_vel += pspeed * wip->vel_inherit_amount;
@@ -6841,7 +6841,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	
 	// if the hit object was a ship and we're doing damage scaling
 	if ( (target->type == OBJ_SHIP) &&
-		!(The_mission.ai_profile->flags & AIPF_DISABLE_WEAPON_DAMAGE_SCALING) &&
+		!(The_mission.ai_profile->flags[AI::Profile_flags::Disable_weapon_damage_scaling]) &&
 		!(Ship_info[Ships[target->instance].ship_info_index].flags[Ship::Info_Flags::Disable_weapon_damage_scaling])
 	) {
 		ship_info *sip;
@@ -6878,7 +6878,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		if( is_big_damage_ship && !(hurts_big_ships(wip)) ){
 
 			// if the player is firing it
-			if ( from_player && !(The_mission.ai_profile->flags2 & AIPF2_PLAYER_WEAPON_SCALE_FIX)) {
+			if ( from_player && !(The_mission.ai_profile->flags[AI::Profile_flags::Player_weapon_scale_fix])) {
 				// if it's a laser weapon
 				if(wip->subtype == WP_LASER){
 					total_scale *= 0.01f;

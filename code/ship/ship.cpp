@@ -4774,7 +4774,7 @@ void physics_ship_init(object *objp)
 	pi->glide_accel_mult = sinfo->glide_accel_mult;
 
 	//SUSHI: This defaults to the AI_Profile value, and is only optionally overridden
-	pi->use_newtonian_damp = ((The_mission.ai_profile->flags & AIPF_USE_NEWTONIAN_DAMPENING) != 0);
+	pi->use_newtonian_damp = The_mission.ai_profile->flags[AI::Profile_flags::Use_newtonian_dampening];
 	if (sinfo->newtonian_damp_override)
 		pi->use_newtonian_damp = sinfo->use_newtonian_damp;
 
@@ -5637,9 +5637,9 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		// Wanderer
 		if (model_system->flags[Model::Subsystem_Flags::No_ss_targeting ])
 			ship_system->flags.set(Subsystem_Flags::No_SS_targeting);
-		if ((The_mission.ai_profile->flags2 & AIPF2_ADVANCED_TURRET_FOV_EDGE_CHECKS) || (model_system->flags[Model::Subsystem_Flags::Fov_edge_check]))
+		if ((The_mission.ai_profile->flags[AI::Profile_flags::Advanced_turret_fov_edge_checks]) || (model_system->flags[Model::Subsystem_Flags::Fov_edge_check]))
 			ship_system->flags.set(Subsystem_Flags::FOV_edge_check);
-		if ((The_mission.ai_profile->flags2 & AIPF2_REQUIRE_TURRET_TO_HAVE_TARGET_IN_FOV) || (model_system->flags[Model::Subsystem_Flags::Fov_required]))
+		if ((The_mission.ai_profile->flags[AI::Profile_flags::Require_turret_to_have_target_in_fov]) || (model_system->flags[Model::Subsystem_Flags::Fov_required]))
 			ship_system->flags.set(Subsystem_Flags::FOV_Required);
 
 		if (model_system->flags[Model::Subsystem_Flags::No_replace])
@@ -10187,7 +10187,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		if (needs_target_pos) {
 			target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
-			if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+			if (The_mission.ai_profile->flags[AI::Profile_flags::Use_additive_weapon_velocity])
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
 		}
 
@@ -10249,7 +10249,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		polymodel *pm = model_get( sip->model_num );
 		
 		// Goober5000 (thanks to _argv[-1] for the original idea)
-		if ( !((winfo_p->wi_flags[Weapon::Info_Flags::No_linked_penalty]) || (The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY)) )
+		if ( !((winfo_p->wi_flags[Weapon::Info_Flags::No_linked_penalty]) || (The_mission.ai_profile->flags[AI::Profile_flags::Disable_linked_fire_penalty])) )
 		{
 			int effective_primary_banks = 0;
 			for (int it = 0; it < num_primary_banks; it++)
@@ -14162,7 +14162,7 @@ int ship_engine_ok_to_warp(ship *sp)
 int ship_navigation_ok_to_warp(ship *sp)
 {
 	// if not using the special flag, warp is always allowed
-	if (!(The_mission.ai_profile->flags & AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP))
+	if (!(The_mission.ai_profile->flags[AI::Profile_flags::Navigation_subsys_governs_warp]))
 		return 1;
 
 	float navigation_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_NAVIGATION);
@@ -15157,7 +15157,7 @@ void ship_maybe_scream(ship *sp)
 			return;
 
 		// for WCSaga, only do a subset of the checks
-		if (!(The_mission.ai_profile->flags2 & AIPF2_PERFORM_FEWER_SCREAM_CHECKS))
+		if (!(The_mission.ai_profile->flags[AI::Profile_flags::Perform_fewer_scream_checks]))
 		{
 			// bail if this ship isn't from the player wing
 			if (!(sp->flags[Ship_Flags::From_player_wing]))

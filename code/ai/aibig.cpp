@@ -1203,7 +1203,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 		float		weapon_speed;
 
 		//	Compute position of gun in absolute space and use that as fire position.
-		if (po->n_guns > 0 && !(The_mission.ai_profile->flags2 & AIPF2_AI_AIMS_FROM_SHIP_CENTER)) {
+		if (po->n_guns > 0 && !(The_mission.ai_profile->flags[AI::Profile_flags::Ai_aims_from_ship_center])) {
 			pnt = po->gun_banks[0].pnt[0];
 			vm_vec_unrotate(&gun_pos, &pnt, &Pl_objp->orient);
 			vm_vec_add2(&gun_pos, &Pl_objp->pos);
@@ -1804,7 +1804,7 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// the ai will not always go after different ships firing beams at them.
 	// Approx 1/4 chance we'll go after the other ship's beam.
 
-	bool attack_turret_on_different_ship = (aip->ai_profile_flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
+	bool attack_turret_on_different_ship = (aip->ai_profile_flags[AI::Profile_flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships])
 		&& (Weapon_info[Weapons[weapon_objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Beam]) && (frand()*100 < 25.0f);
 
 	// unless we're making an exception, we should only attack a turret if it sits on the current target

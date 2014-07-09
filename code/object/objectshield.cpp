@@ -50,7 +50,7 @@ void shield_add_strength(object *objp, float delta)
 		return;
 
 	
-	if (!(Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
+	if (!(Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_flags::Smart_shield_management])
 		|| delta <= 0.0f) //SUSHI: We don't want smart shield management for negative delta
 	{
 		for (int i = 0; i < objp->n_quadrants; i++)

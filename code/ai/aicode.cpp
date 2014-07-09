@@ -553,10 +553,8 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_max_aim_update_delay[i] = FLT_MIN;
 		aicp->ai_turret_max_aim_update_delay[i] = FLT_MIN;
 	}
-	aicp->ai_profile_flags = 0;
-	aicp->ai_profile_flags_set = 0;
-	aicp->ai_profile_flags2 = 0;
-	aicp->ai_profile_flags2_set = 0;
+	aicp->ai_profile_flags.reset();
+	aicp->ai_profile_flags_set.reset();
 
 	//AI Class autoscale overrides
 	//INT_MIN and FLT_MIN represent the "not set" state
@@ -570,10 +568,10 @@ void init_ai_class(ai_class *aicp)
 	aicp->ai_class_autoscale = true;	//Retail behavior is to do the stupid autoscaling
 }
 
-void set_aic_flag(ai_class *aicp, char *name, int flag, int type)
+void set_aic_flag(ai_class *aicp, char *name, AI::Profile_flags flag)
 {
-	int* flags = (type == AIP_FLAG) ? &(aicp->ai_profile_flags) : &(aicp->ai_profile_flags2);
-	int* set = (type == AIP_FLAG) ? &(aicp->ai_profile_flags_set) : &(aicp->ai_profile_flags2_set);
+	flagset<AI::Profile_flags>* flags = &(aicp->ai_profile_flags);
+	flagset<AI::Profile_flags>* set = &(aicp->ai_profile_flags_set);
 
 	if (optional_string(name))
 	{
@@ -581,14 +579,14 @@ void set_aic_flag(ai_class *aicp, char *name, int flag, int type)
 		stuff_boolean(&val);
 
 		if (val)
-			*flags |= flag;
+			flags->set(flag);
 		else
-			*flags &= ~flag;
+			flags->unset(flag);
 
-		*set |= flag;
+		set->set(flag);
 	}
 	else
-		*set &= ~flag;
+		set->unset(flag);
 }
 
 void parse_ai_class()
@@ -738,33 +736,33 @@ void parse_ai_class()
 	if (optional_string("$Turret Max Aim Update Delay:"))
 		parse_float_list(aicp->ai_turret_max_aim_update_delay, NUM_SKILL_LEVELS);
 
-	set_aic_flag(aicp, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS, AIP_FLAG);
+	set_aic_flag(aicp, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
 
-	set_aic_flag(aicp, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION, AIP_FLAG);
+	set_aic_flag(aicp, "$smart primary weapon selection:", AI::Profile_flags::Smart_primary_weapon_selection);
 
-	set_aic_flag(aicp, "$smart secondary weapon selection:", AIPF_SMART_SECONDARY_WEAPON_SELECTION, AIP_FLAG);
+	set_aic_flag(aicp, "$smart secondary weapon selection:",AI::Profile_flags::Smart_secondary_weapon_selection);
 
-	set_aic_flag(aicp, "$smart shield management:", AIPF_SMART_SHIELD_MANAGEMENT, AIP_FLAG);
+	set_aic_flag(aicp, "$smart shield management:", AI::Profile_flags::Smart_shield_management);
 
-	set_aic_flag(aicp, "$smart afterburner management:", AIPF_SMART_AFTERBURNER_MANAGEMENT, AIP_FLAG);
+	set_aic_flag(aicp, "$smart afterburner management:", AI::Profile_flags::Smart_afterburner_management);
 
-	set_aic_flag(aicp, "$allow rapid secondary dumbfire:", AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE, AIP_FLAG);
+	set_aic_flag(aicp, "$allow rapid secondary dumbfire:", AI::Profile_flags::Allow_rapid_secondary_dumbfire);
 	
-	set_aic_flag(aicp, "$huge turret weapons ignore bombs:", AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS, AIP_FLAG);
+	set_aic_flag(aicp, "$huge turret weapons ignore bombs:", AI::Profile_flags::Huge_turret_weapons_ignore_bombs);
 
-	set_aic_flag(aicp, "$don't insert random turret fire delay:", AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY, AIP_FLAG);
+	set_aic_flag(aicp, "$don't insert random turret fire delay:", AI::Profile_flags::Dont_insert_random_turret_fire_delay);
 
-	set_aic_flag(aicp, "$prevent turrets targeting too distant bombs:", AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE, AIP_FLAG);
+	set_aic_flag(aicp, "$prevent turrets targeting too distant bombs:", AI::Profile_flags::Prevent_targeting_bombs_beyond_range);
 
-	set_aic_flag(aicp, "$smart subsystem targeting for turrets:", AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS, AIP_FLAG);
+	set_aic_flag(aicp, "$smart subsystem targeting for turrets:", AI::Profile_flags::Smart_subsystem_targeting_for_turrets);
 
-	set_aic_flag(aicp, "$allow turrets target weapons freely:", AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY, AIP_FLAG);
+	set_aic_flag(aicp, "$allow turrets target weapons freely:", AI::Profile_flags::Allow_turrets_target_weapons_freely);
 
-	set_aic_flag(aicp, "$allow vertical dodge:", AIPF_ALLOW_VERTICAL_DODGE, AIP_FLAG);
+	set_aic_flag(aicp, "$allow vertical dodge:", AI::Profile_flags::Allow_vertical_dodge);
 
-	set_aic_flag(aicp, "$no extra collision avoidance vs player:", AIPF2_NO_SPECIAL_PLAYER_AVOID, AIP_FLAG2);
+	set_aic_flag(aicp, "$no extra collision avoidance vs player:", AI::Profile_flags::No_special_player_avoid);
 
-	set_aic_flag(aicp, "$all ships manage shields:", AIPF2_ALL_SHIPS_MANAGE_SHIELDS, AIP_FLAG2);
+	set_aic_flag(aicp, "$all ships manage shields:", AI::Profile_flags::All_ships_manage_shields);
 }
 
 void reset_ai_class_names()
@@ -1358,7 +1356,7 @@ void adjust_accel_for_docking(ai_info *aip)
 		float ratio = objp->phys_info.mass / dock_calc_total_docked_mass(objp);
 
 		// put cap on how much ship can slow down
-		if ( (ratio < 0.8f) && !(The_mission.ai_profile->flags & AIPF_NO_MIN_DOCK_SPEED_CAP) ) {
+		if ( (ratio < 0.8f) && !(The_mission.ai_profile->flags[AI::Profile_flags::No_min_dock_speed_cap]) ) {
 			ratio = 0.8f;
 		}
 
@@ -4973,7 +4971,7 @@ void evade_weapon()
 			rdot = vm_vec_dot(&Pl_objp->orient.vec.rvec, &vec_from_enemy);
 			udot = vm_vec_dot(&Pl_objp->orient.vec.uvec, &vec_from_enemy);
 
-			if (aip->ai_profile_flags & AIPF_ALLOW_VERTICAL_DODGE && fl_abs(udot) > fl_abs(rdot))
+			if (aip->ai_profile_flags[AI::Profile_flags::Allow_vertical_dodge] && fl_abs(udot) > fl_abs(rdot))
 			{
 				if ((udot < -0.5f) || (udot > 0.5f))
 					vm_vec_scale_add(&goal_point, &Pl_objp->pos, &Pl_objp->orient.vec.uvec, -200.0f);
@@ -5097,7 +5095,7 @@ void evade_ship()
 		if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
 			afterburners_start(Pl_objp);
 		
-			if (aip->ai_profile_flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
+			if (aip->ai_profile_flags[AI::Profile_flags::Smart_afterburner_management]) {
 				aip->afterburner_stop_time = (fix) (Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4);
 			} else {				
 				aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
@@ -5293,7 +5291,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, flagset<Weapon::I
 	}
 
 	//not using the new AI, use the old version of this function instead.
-	if (!(Ai_info[shipp->ai_index].ai_profile_flags & AIPF_SMART_PRIMARY_WEAPON_SELECTION))
+	if (!(Ai_info[shipp->ai_index].ai_profile_flags[AI::Profile_flags::Smart_primary_weapon_selection]))
 	{
 		return ai_select_primary_weapon_OLD(objp, other_objp, flags);
 	}
@@ -5533,7 +5531,7 @@ void set_primary_weapon_linkage(object *objp)
 	}
 
 	//	Don't want all ships always linking weapons at start, so asynchronize.
-	if (!(The_mission.ai_profile->flags2 & AIPF2_ALLOW_PRIMARY_LINK_AT_START))
+	if (!(The_mission.ai_profile->flags[AI::Profile_flags::Allow_primary_link_at_start]))
 	{
 		if (Missiontime < i2f(30))
 			return;
@@ -5547,7 +5545,7 @@ void set_primary_weapon_linkage(object *objp)
 
 	// get energy level
 	float energy;
-	if (The_mission.ai_profile->flags & AIPF_FIX_LINKED_PRIMARY_BUG) {
+	if (The_mission.ai_profile->flags[AI::Profile_flags::Fix_linked_primary_bug]) {
 		energy = shipp->weapon_energy / sip->max_weapon_reserve * 100.0f;
 	} else {
 		energy = shipp->weapon_energy;
@@ -5827,7 +5825,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	num_weapon_types = get_available_secondary_weapons(objp, weapon_id_list, weapon_bank_list);
 
 	// Ignore homing weapons if we didn't specify a flag - for priority 1
-	if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority1->none_set())) {
+	if ((aip->ai_profile_flags[AI::Profile_flags::Smart_secondary_weapon_selection]) && (priority1->none_set())) {
 		ignore_mask.set(Weapon::Info_Flags::Homing_aspect);
 		ignore_mask.set(Weapon::Info_Flags::Homing_heat);
 		ignore_mask.set(Weapon::Info_Flags::Homing_javelin);
@@ -5840,7 +5838,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 
 	for (i=0; i<num_weapon_types; i++) {
 		flagset<Weapon::Info_Flags> wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-		flagset<Weapon::Info_Flags> ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? ignore_mask_without_huge : ignore_mask;
+		flagset<Weapon::Info_Flags> ignore_mask_to_use = ((aip->ai_profile_flags[AI::Profile_flags::Smart_secondary_weapon_selection]) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? ignore_mask_without_huge : ignore_mask;
 
 		if (!((wi_flags & ignore_mask_to_use).any_set())) {					//	Maybe bombs are illegal.
 			if ((wi_flags & *priority1).any_set()) {
@@ -5852,7 +5850,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	}
 
 	// Ignore homing weapons if we didn't specify a flag - for priority 2
-	if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority2->none_set())) {
+	if ((aip->ai_profile_flags[AI::Profile_flags::Smart_secondary_weapon_selection]) && (priority2->none_set())) {
 		ignore_mask.set(Weapon::Info_Flags::Homing_aspect);
 		ignore_mask.set(Weapon::Info_Flags::Homing_heat);
 		ignore_mask.set(Weapon::Info_Flags::Homing_javelin);
@@ -5867,7 +5865,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 		if (priority2_index == -1) {
 			for (i=0; i<num_weapon_types; i++) {
 				flagset<Weapon::Info_Flags> wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-				flagset<Weapon::Info_Flags> ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? ignore_mask_without_huge : ignore_mask;
+				flagset<Weapon::Info_Flags> ignore_mask_to_use = ((aip->ai_profile_flags[AI::Profile_flags::Smart_secondary_weapon_selection]) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? ignore_mask_without_huge : ignore_mask;
 
 				if (!(wi_flags & ignore_mask_to_use).any_set()) {					//	Maybe bombs are illegal.
 					if (swp->secondary_bank_ammo[weapon_bank_list[i]] > 0) {
@@ -5891,7 +5889,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 		weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 	
 		// phreak -- rapid dumbfire? let it rip!
-		if ((aip->ai_profile_flags & AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE) && !(is_homing(wip)) && (wip->fire_wait < .5f))
+		if ((aip->ai_profile_flags[AI::Profile_flags::Allow_rapid_secondary_dumbfire]) && !(is_homing(wip)) && (wip->fire_wait < .5f))
 		{	
 			aip->ai_flags.set(AI::AI_Flags::Unload_secondaries);
 		}
@@ -6397,7 +6395,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 	wip = ai_get_weapon(&shipp->weapons);
 	target_moving_direction = *enemy_vel;
 
-	if (wip != NULL && The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+	if (wip != NULL && The_mission.ai_profile->flags[AI::Profile_flags::Use_additive_weapon_velocity])
 		vm_vec_scale_sub2(&target_moving_direction, &pobjp->phys_info.vel, wip->vel_inherit_amount);
 
 	if (wip != NULL)
@@ -6429,7 +6427,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 
 		//	Compute position of gun in absolute space and use that as fire position 
 		//  ...unless we want to just use the ship center
-		if(pm->gun_banks != NULL && !(The_mission.ai_profile->flags2 & AIPF2_AI_AIMS_FROM_SHIP_CENTER)){
+		if(pm->gun_banks != NULL && !(The_mission.ai_profile->flags[AI::Profile_flags::Ai_aims_from_ship_center])){
 			pnt = pm->gun_banks[0].pnt[0];
 		} else {
 			//Use the convergence offset, if there is one
@@ -6689,7 +6687,7 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 						percent_left = 100.0f * shipp->afterburner_fuel / sip_local->afterburner_fuel_capacity;
 						if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
 							afterburners_start(Pl_objp);							
-							if (aip->ai_profile_flags & AIPF_SMART_AFTERBURNER_MANAGEMENT) {
+							if (aip->ai_profile_flags[AI::Profile_flags::Smart_afterburner_management]) {
 								float max_ab_vel;
 								float time_to_exhaust_25pct_fuel;
 								float time_to_fly_75pct_of_distance;
@@ -7223,7 +7221,7 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 	float		dot_to_enemy, dot_from_enemy;
 	float		bank_override = 0.0f;
 
-	if (!(aip->ai_profile_flags2 & AIPF2_NO_SPECIAL_PLAYER_AVOID) && avoid_player(Pl_objp, predicted_enemy_pos))
+	if (!(aip->ai_profile_flags[AI::Profile_flags::No_special_player_avoid]) && avoid_player(Pl_objp, predicted_enemy_pos))
 		return;
 
 	compute_dots(Pl_objp, En_objp, &dot_to_enemy, &dot_from_enemy);
@@ -7540,7 +7538,7 @@ void ai_set_guard_object(object *objp, object *other_objp)
 
 	//	If ship to guard is in a wing, guard that whole wing, unless the appropriate flag has been set
 	ai_info	*other_aip = &Ai_info[Ships[other_objp->instance].ai_index];
-	if ((other_aip->wing != -1) && (other_aip->wing != aip->wing) && !(The_mission.ai_profile->flags2 & AIPF2_AI_GUARDS_SPECIFIC_SHIP_IN_WING)) {
+	if ((other_aip->wing != -1) && (other_aip->wing != aip->wing) && !(The_mission.ai_profile->flags[AI::Profile_flags::Ai_guards_specific_ship_in_wing])) {
 		ai_set_guard_wing(objp, Ai_info[Ships[other_objp->instance].ai_index].wing);
 	} else {
 
@@ -7736,7 +7734,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		{
 			wif_priority1.set(Weapon::Info_Flags::Huge);
 			wif_priority1.set(Weapon::Info_Flags::Capital_plus);
-			if (aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) {
+			if (aip->ai_profile_flags[AI::Profile_flags::Smart_secondary_weapon_selection]) {
 				wif_priority2.set(Weapon::Info_Flags::Bomber_plus);
 			}
 			else {
@@ -7759,7 +7757,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 			wif_priority2.set(Weapon::Info_Flags::Homing_heat);
 			wif_priority2.set(Weapon::Info_Flags::Homing_javelin);
 		}
-		else if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
+		else if ((aip->ai_profile_flags[AI::Profile_flags::Smart_secondary_weapon_selection]) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
 		{	
 			wif_priority1.reset();
 			wif_priority2.reset();
@@ -11731,7 +11729,7 @@ int ai_formation()
 	
 	if (aip->mode == AIM_WAYPOINTS) {
 
-		if (The_mission.ai_profile->flags2 & AIPF2_FIX_AI_PATH_ORDER_BUG){
+		if (The_mission.ai_profile->flags[AI::Profile_flags::Fix_ai_path_order_bug]){
 			// skip if wing leader has no waypoint order or a different waypoint list
 			if ((laip->mode != AIM_WAYPOINTS) || !(aip->wp_list == laip->wp_list)){
 				return 1;
@@ -12292,7 +12290,7 @@ void ai_balance_shield(object *objp)
 	for (i=0; i<objp->n_quadrants; i++) {
 		if (objp->shield_quadrant[i] < shield_strength_avg) {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
+			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_flags::Smart_shield_management])
 				shield_add_strength(objp, delta);
 			else
 				objp->shield_quadrant[i] += delta/objp->n_quadrants;
@@ -12302,7 +12300,7 @@ void ai_balance_shield(object *objp)
 
 		} else {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
+			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_flags::Smart_shield_management])
 				shield_add_strength(objp, -delta);
 			else
 				objp->shield_quadrant[i] -= delta/objp->n_quadrants;
@@ -12342,7 +12340,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		// set timestamp
 		aip->shield_manage_timestamp = timestamp((int) (delay * 1000.0f));
 
-		if (is_small_ship(sip) || (aip->ai_profile_flags2 & AIPF2_ALL_SHIPS_MANAGE_SHIELDS)) {
+		if (is_small_ship(sip) || (aip->ai_profile_flags[AI::Profile_flags::All_ships_manage_shields])) {
 			if (Missiontime - aip->last_hit_time < F1_0*10)
 				ai_transfer_shield(objp, aip->last_hit_quadrant);
 			else
@@ -14454,23 +14452,24 @@ void init_ai_system()
 	Ppfp = Path_points;
 }
 
-int combine_flags(int base_flags, int override_flags, int override_set)
+flagset<AI::Profile_flags> combine_flags(flagset<AI::Profile_flags> base_flags, flagset<AI::Profile_flags> override_flags, flagset<AI::Profile_flags> override_set)
 {
-	int result = 0;
-	//Scan through every bit in the flag int
-	for (int i = 0; i < 31; i++)
+	flagset<AI::Profile_flags> result;
+	result.reset();
+	//Scan through every bit in the flagset
+	for (size_t i = 0; i < (size_t)AI::Profile_flags::NUM_VALUES; i++)
 	{
-		int flag = (1 << i);
+		AI::Profile_flags flag = (AI::Profile_flags)i;
 		//If this flag is marked in the override as set, copy it from the override
-		if (override_set & flag)
+		if (override_set[flag])
 		{
-			if (override_flags & flag)
-				result |= flag;
+			if (override_flags[flag])
+				result.set(flag);
 		}
 		else	//Otherwise, copy it from the base flag
 		{
-			if (base_flags & flag)
-				result |= flag;
+			if (base_flags[flag])
+				result.set(flag);
 		}
 	}
 	return result;
@@ -14552,7 +14551,6 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 
 	//Combine AI profile and AI class flags
 	aip->ai_profile_flags = combine_flags(profile->flags, aicp->ai_profile_flags, aicp->ai_profile_flags_set);
-	aip->ai_profile_flags2 = combine_flags(profile->flags2, aicp->ai_profile_flags2, aicp->ai_profile_flags2_set);
 }
 
 void ai_do_default_behavior(object *obj)
