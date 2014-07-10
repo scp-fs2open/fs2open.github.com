@@ -2123,6 +2123,20 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0 ) {
 		mp_raw += num_chars_read;
 
+		// stupid hacks to make retail data work with fixed parser, per Mantis #3072
+		if (!strcmp(outbuf, "1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n")) {
+			outbuf[121] = ' ';
+			outbuf[122] = ' ';
+		} else if (!strcmp(outbuf, "1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n")) {
+			char *ch = &outbuf[11];
+			do {
+				*ch = *(ch+1);
+				++ch;
+			} while (*ch);
+		} else if (!strcmp(outbuf, "1337, \"(fr)Loading\"\n")) {
+			outbuf[3] = '6';
+		}
+
 		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
 
 		maybe_convert_foreign_characters(outbuf);
