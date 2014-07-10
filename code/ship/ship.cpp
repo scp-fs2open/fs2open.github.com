@@ -15200,7 +15200,7 @@ void ship_maybe_tell_about_low_ammo(ship *sp)
 			{
 				if (swp->primary_bank_start_ammo[i] > 0)
 				{
-					if (swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i] < 0.3f)
+					if ((float)swp->primary_bank_ammo[i] / (float)swp->primary_bank_start_ammo[i] < 0.3f)
 					{
 						// multiplayer tvt
 						if(MULTI_TEAM) {
@@ -15262,7 +15262,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		{
 			if (swp->secondary_bank_start_ammo[i] > 0)
 			{
-				if (swp->secondary_bank_ammo[i] / swp->secondary_bank_start_ammo[i] < 0.5f)
+				if ((float)swp->secondary_bank_ammo[i] / (float)swp->secondary_bank_start_ammo[i] < 0.5f)
 				{
 					message_type = MESSAGE_REARM_REQUEST;
 					break;
@@ -15281,7 +15281,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 				{
 					if (swp->primary_bank_start_ammo[i] > 0)
 					{
-						if (swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i] < 0.3f)
+						if ((float)swp->primary_bank_ammo[i] / (float)swp->primary_bank_start_ammo[i] < 0.3f)
 						{
 							message_type = MESSAGE_REARM_PRIMARIES;
 							break;
