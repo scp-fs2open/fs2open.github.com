@@ -93,9 +93,20 @@ enum
 	EASY_DEFAULT_MEM = EASY_DEFAULT | EASY_MEM_OFF
 };
 
-#define BUILD_CAP_OPENAL	(1<<0)
-#define BUILD_CAP_NO_D3D	(1<<1)
-#define BUILD_CAP_NEW_SND	(1<<2)
+enum class BuildCaps
+{
+	OPENAL = (1<<0),
+	NO_D3D = (1<<1),
+	NEW_SND = (1<<2),
+	SDL_BUILD = (1<<3)
+};
+
+// Convenience function to enable |= operator for BuildCaps enum
+ubyte& operator|=(ubyte& in, BuildCaps cap)
+{
+	in |= static_cast<ubyte>(cap);
+	return in;
+}
 
 #define PARSE_COMMAND_LINE_STRING	"-parse_cmdline_only"
 
@@ -1117,9 +1128,10 @@ bool SetCmdlineParams()
 			ubyte build_caps = 0;
 			
 			/* portej05 defined this always */
-			build_caps |= BUILD_CAP_OPENAL;
-			build_caps |= BUILD_CAP_NO_D3D;
-			build_caps |= BUILD_CAP_NEW_SND;
+			build_caps |= BuildCaps::OPENAL;
+			build_caps |= BuildCaps::NO_D3D;
+			build_caps |= BuildCaps::NEW_SND;
+			build_caps |= BuildCaps::SDL_BUILD;
 			
 			
 			fwrite(&build_caps, 1, 1, fp);
