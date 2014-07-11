@@ -1283,7 +1283,7 @@ int set_target_objnum(ai_info *aip, int objnum)
 	return aip->target_objnum;
 }
 
-int ai_select_primary_weapon(object *objp, object *other_objp, flagset<Weapon::Info_Flags> flags);
+int ai_select_primary_weapon(object *objp, object *other_objp, flagset<Weapon::Info_Flags> &flags);
 
 /**
  * Make new_subsys the targeted subsystem of ship *aip.
@@ -5202,7 +5202,7 @@ vec3d	G_predicted_pos, G_fire_pos;
 //	Else
 //		Select Any ol' weapon.
 //	Returns primary_bank index.
-int ai_select_primary_weapon_OLD(object *objp, object *other_objp, flagset<Weapon::Info_Flags> flags)
+int ai_select_primary_weapon_OLD(object *objp, object *other_objp, flagset<Weapon::Info_Flags> &flags)
 {
 	ship	*shipp = &Ships[objp->instance];
 	ship_weapon *swp = &shipp->weapons;
@@ -5275,7 +5275,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, flagset<Weapo
  * The AI will now intelligently choose the best weapon to use based on the overall shield
  * status of the target.
  */
-int ai_select_primary_weapon(object *objp, object *other_objp, flagset<Weapon::Info_Flags> flags)
+int ai_select_primary_weapon(object *objp, object *other_objp, flagset<Weapon::Info_Flags> &flags)
 {
 	// Pointer Set Up
 	ship	*shipp = &Ships[objp->instance];
@@ -14452,7 +14452,7 @@ void init_ai_system()
 	Ppfp = Path_points;
 }
 
-flagset<AI::Profile_flags> combine_flags(flagset<AI::Profile_flags> base_flags, flagset<AI::Profile_flags> override_flags, flagset<AI::Profile_flags> override_set)
+flagset<AI::Profile_flags> combine_flags(flagset<AI::Profile_flags> &base_flags, flagset<AI::Profile_flags> &override_flags, flagset<AI::Profile_flags> &override_set)
 {
 	flagset<AI::Profile_flags> result;
 	result.reset();

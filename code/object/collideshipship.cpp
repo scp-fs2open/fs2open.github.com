@@ -167,7 +167,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	//	Apparently we're doing same team collisions.
 	//	But, if both are offscreen, ignore the collision
 	if (heavy_shipp->team == light_shipp->team) {
-		if ( (!(heavy_obj->flags[Object::Object_Flags::Was_rendered]) && !(light_obj->flags[Object::Object_Flags::Was_rendered])) ) {
+		if ( (!heavy_obj->flags[Object::Object_Flags::Was_rendered] && !light_obj->flags[Object::Object_Flags::Was_rendered]) ) {
 			return 0;
 		}
 	}
@@ -1011,7 +1011,8 @@ void do_kamikaze_crash(object *obj1, object *obj2)
 				obj1->hull_strength = KAMIKAZE_HULL_ON_DEATH;
 				shield_set_strength(obj1, 0.0f);
 			}
-		} if (aip2->ai_flags[AI::AI_Flags::Kamikaze]) {
+		} 
+		if (aip2->ai_flags[AI::AI_Flags::Kamikaze]) {
 			if (is_big_huge(&Ship_info[ship1->ship_info_index])) {
 				obj2->hull_strength = KAMIKAZE_HULL_ON_DEATH;
 				shield_set_strength(obj2, 0.0f);

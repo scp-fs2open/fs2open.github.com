@@ -464,7 +464,7 @@ void obj_free(int objnum)
  * @return the object number 
  */
 int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
-               vec3d * pos, float radius, flagset<Object::Object_Flags> flags )
+               vec3d * pos, float radius, flagset<Object::Object_Flags> &flags )
 {
 	int objnum;
 	object *obj;

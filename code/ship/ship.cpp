@@ -3645,7 +3645,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 			if ((sp->flags[Model::Subsystem_Flags::Turret_fixed_fp]) && !(sp->flags[Model::Subsystem_Flags::Use_multiple_guns])) {
 				Warning(LOCATION, "\"fixed firingpoints\" flag used without \"use multiple guns\" flag on a subsystem on ship %s.\n\"use multiple guns\" flags added by default\n", sip->name);
-				sp->flags[Model::Subsystem_Flags::Use_multiple_guns];
+				sp->flags.set(Model::Subsystem_Flags::Use_multiple_guns);
 			}
 
 			if (old_flags) {

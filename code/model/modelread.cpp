@@ -4590,7 +4590,7 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	flags.reset();
 	model_set_instance(model_num, sub_model_num, sii, flags);
 }
-void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, flagset<Ship::Subsystem_Flags> flags)
+void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, flagset<Ship::Subsystem_Flags> &flags)
 {
 	int i;
 	polymodel * pm;

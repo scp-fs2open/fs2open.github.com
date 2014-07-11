@@ -4717,7 +4717,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 			else if (op == OP_CAP_SUBSYS_CARGO_KNOWN_DELAY) {
 				if ( ((is_huge_ship(&Ship_info[Ships[ptr->instance].ship_info_index]) &&	// big ship
 					!(Ships[ptr->instance].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) )||				// which is not flagged OR
-					((!(is_huge_ship(&Ship_info[Ships[ptr->instance].ship_info_index])) &&  // small ship
+					((!is_huge_ship(&Ship_info[Ships[ptr->instance].ship_info_index]) &&  // small ship
 					(Ships[ptr->instance].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) ) ))) {				// which is flagged
 
 						head.add_data(Ships[ptr->instance].ship_name);

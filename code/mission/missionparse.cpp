@@ -2422,7 +2422,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 }
 
 // Goober5000
-void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> parse_flags)
+void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags)
 {
 	Assert(objp != NULL);
 	ship *shipp = &Ships[objp->instance];
