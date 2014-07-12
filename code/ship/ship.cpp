@@ -5313,7 +5313,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	// Team colors
 	shipp->team_name.assign( sip->default_team_name);
-	shipp->secondary_team_name = "<none>";
+	shipp->secondary_team_name = "none";
 
 	shipp->autoaim_fov = sip->autoaim_fov;
 }

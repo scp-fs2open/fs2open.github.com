@@ -1538,7 +1538,7 @@ void ship_select_do(float frametime)
 			}
 
 			if (sip->uses_team_colors) {
-				gr_set_team_color(sip->default_team_name, "<none>", 0, 0);
+				gr_set_team_color(sip->default_team_name, "none", 0, 0);
 			}
 
 			draw_model_rotating(ShipSelectModelNum,

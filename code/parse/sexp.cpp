@@ -2768,6 +2768,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
+				if (!stricmp(CTEXT(node), "none"))
+					break;
+
 				if (Team_Colors.find(CTEXT(node)) == Team_Colors.end())
 					return SEXP_CHECK_INVALID_TEAM_COLOR;
 				
@@ -27888,6 +27891,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SHIP_FLAG:
 			return "Invalid ship flag";
+
+		case SEXP_CHECK_INVALID_TEAM_COLOR:
+			return "Not a valid Team Color setting";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
