@@ -18,6 +18,7 @@
 #include "io/key.h"
 #include "freespace2/freespace.h"
 #include "globalincs/alphacolors.h"
+#include "sound/audiostr.h"
 
 
 
@@ -160,7 +161,9 @@ static int Fiction_viewer_fontnum = -1;
 
 static char Fiction_viewer_filename[MAX_FILENAME_LEN];
 static char Fiction_viewer_font_filename[MAX_FILENAME_LEN];
+static char Fiction_viewer_voice_filename[MAX_FILENAME_LEN];
 static char *Fiction_viewer_text = NULL;
+static int Fiction_viewer_voice = -1;
 
 static int Fiction_viewer_ui = -1;
 
@@ -333,6 +336,11 @@ void fiction_viewer_init()
 			&fiction_viewer_scroll_down,
 			&fiction_viewer_scroll_capture);
 	}
+
+	if (Fiction_viewer_voice >= 0)
+	{
+		audiostream_play(Fiction_viewer_voice, Master_voice_volume, 0);
+	}
 	
 	Fiction_viewer_inited = 1;
 }
@@ -342,7 +350,7 @@ void fiction_viewer_close()
 {
 	if (!Fiction_viewer_inited)
 		return;
-
+	
 	// free the fiction
 	fiction_viewer_reset();
 
@@ -422,13 +430,29 @@ void fiction_viewer_do_frame(float frametime)
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
 		gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
-		gr_set_color_fast(&Color_red);
+		gr_set_color_fast(&Color_more_indicator);
 		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469), GR_RESIZE_MENU);  // base location on the input x and y?
 
 		use_fv_font();
 	}
 
 	gr_flip();
+}
+
+void fiction_viewer_pause()
+{
+	if (Fiction_viewer_voice >= 0)
+	{
+		audiostream_pause(Fiction_viewer_voice);
+	}
+}
+
+void fiction_viewer_unpause()
+{
+	if (Fiction_viewer_voice >= 0)
+	{
+		audiostream_unpause(Fiction_viewer_voice);
+	}
 }
 
 int mission_has_fiction()
@@ -439,14 +463,19 @@ int mission_has_fiction()
 		return (Fiction_viewer_text != NULL);
 }
 
-char *fiction_file()
+const char *fiction_file()
 {
 	return Fiction_viewer_filename;
 }
 
-char *fiction_font()
+const char *fiction_font()
 {
 	return Fiction_viewer_font_filename;
+}
+
+const char *fiction_voice()
+{
+	return Fiction_viewer_voice_filename;
 }
 
 void fiction_viewer_reset()
@@ -457,14 +486,23 @@ void fiction_viewer_reset()
 
 	*Fiction_viewer_filename = 0;
 	*Fiction_viewer_font_filename = 0;
+	*Fiction_viewer_voice_filename = 0;
 
 	Top_fiction_viewer_text_line = 0;
+
+	if (Fiction_viewer_voice >= 0)
+	{
+		audiostream_close_file(Fiction_viewer_voice);
+		Fiction_viewer_voice = -1;
+	}
 }
 
-void fiction_viewer_load(char *filename, char *font_filename)
+void fiction_viewer_load(const char *filename, const char *font_filename, const char *voice_filename)
 {
 	int file_length;
-	Assert(filename && font_filename);
+	Assertion(filename, "Invalid fictionviewer filename pointer given!");
+	Assertion(font_filename, "Invalid fictionviewer font filename pointer given!");
+	Assertion(voice_filename, "Invalid fictionviewer voice filename pointer given!");
 
 	// just to be sure
 	if (Fiction_viewer_text != NULL)
@@ -476,11 +514,16 @@ void fiction_viewer_load(char *filename, char *font_filename)
 	// save our filenames
 	strcpy_s(Fiction_viewer_filename, filename);
 	strcpy_s(Fiction_viewer_font_filename, font_filename);
+	strcpy_s(Fiction_viewer_voice_filename, voice_filename);
 
 	// see if we have a matching font
 	Fiction_viewer_fontnum = gr_get_fontnum(Fiction_viewer_font_filename);
 	if (Fiction_viewer_fontnum < 0 && !Fred_running)
 		strcpy_s(Fiction_viewer_font_filename, "");
+
+	Fiction_viewer_voice = audiostream_open(Fiction_viewer_voice_filename, ASF_VOICE);
+	if (Fiction_viewer_voice < 0 && !Fred_running)
+		strcpy_s(Fiction_viewer_voice_filename, "");
 
 	if (!strlen(filename))
 		return;

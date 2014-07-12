@@ -55,12 +55,8 @@ void cutscene_init()
 	int rval;
     cutscene_info cutinfo;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "cutscenes.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -107,9 +103,6 @@ void cutscene_init()
 	}
 
 	required_string("#End");
-
-	// close localization
-	lcl_ext_close();
 }
 
 // function to return 0 based index of which CD a particular movie is on
@@ -261,7 +254,7 @@ int cutscenes_validate_cd(char *mve_name, int prompt_for_cd)
 	int cd_present = 0;
 	int cd_drive_num;
 	int cd_mve_is_on;
-	char volume_name[128];
+	char volume_name[MAX_PATH_LEN];
 
 	int num_attempts = 0;
 
@@ -334,7 +327,7 @@ void cutscenes_screen_play()
 		else
 			sprintf(str, XSTR("Unable to play movie %s.", 204), Cutscenes[which_cutscene].name);
 
-		popup(0, 1, POPUP_OK, str );
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, str );
 	}
 	
 }

@@ -214,6 +214,8 @@ static int Ships_loaded = 0;
 static int Weapons_loaded = 0;
 static int Intel_loaded = 0;
 
+int Techroom_overlay_id;
+
 // out entry data struct & vars
 typedef struct {
 	int	index;		// index into the master table that its in (ie Ship_info[])
@@ -394,7 +396,7 @@ void techroom_render_desc(int xo, int yo, int ho)
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
 		gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
-		gr_set_color_fast(&Color_red);
+		gr_set_color_fast(&Color_more_indicator);
 		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469), GR_RESIZE_MENU);  // base location on the input x and y?
 	}
 
@@ -1030,12 +1032,8 @@ void techroom_intel_init()
 	if (inited)
 		return;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "species.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 	
@@ -1073,9 +1071,6 @@ void techroom_intel_init()
 	}
 
 	inited = 1;
-
-	// close localization
-	lcl_ext_close();
 }
 
 void techroom_init()
@@ -1155,7 +1150,8 @@ void techroom_init()
 	Buttons[gr_screen.res][SCROLL_LIST_DOWN].button.set_hotkey(KEY_PAGEDOWN);
 
 	// init help overlay states
-	help_overlay_set_state(TECH_ROOM_OVERLAY, 0);
+	Techroom_overlay_id = help_overlay_get_index(TECH_ROOM_OVERLAY);
+	help_overlay_set_state(Techroom_overlay_id, gr_screen.res, 0);
 
 	// setup slider
 	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], Num_ship_classes, Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
@@ -1250,7 +1246,7 @@ void techroom_do_frame(float frametime)
 	int i, k;	
 
 	// turn off controls when overlay is on
-	if ( help_overlay_active(TECH_ROOM_OVERLAY) ) {
+	if ( help_overlay_active(Techroom_overlay_id) ) {
 		Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -1265,14 +1261,14 @@ void techroom_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(TECH_ROOM_OVERLAY) ) {
-			help_overlay_set_state(TECH_ROOM_OVERLAY, 0);
+		if ( help_overlay_active(Techroom_overlay_id) ) {
+			help_overlay_set_state(Techroom_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(TECH_ROOM_OVERLAY) ) {
+	if ( !help_overlay_active(Techroom_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -1391,7 +1387,7 @@ void techroom_do_frame(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(TECH_ROOM_OVERLAY);
+	help_overlay_maybe_blit(Techroom_overlay_id, gr_screen.res);
 
 	gr_flip();
 }

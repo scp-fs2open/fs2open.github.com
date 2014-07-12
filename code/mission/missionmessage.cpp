@@ -34,6 +34,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "mod_table/mod_table.h"
+#include "parse/scripting.h"
 
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
@@ -321,7 +322,7 @@ int add_avi( char *avi_name )
 	return ((int)Message_avis.size() - 1);
 }
 
-int add_wave( char *wave_name )
+int add_wave( const char *wave_name )
 {
 	int i;
 	message_extra extra; 
@@ -532,9 +533,6 @@ void parse_msgtbl()
 {
 	int i, j;
 
-	// open localization
-	lcl_ext_open();
-
 	//speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
 	Messages.reserve(500);
 	Message_waves.reserve(300);
@@ -645,10 +643,6 @@ void parse_msgtbl()
 
 		required_string("#End");
 	}
-
-	
-	// close localization
-	lcl_ext_close();
 }
 
 // this is called at the start of each level
@@ -987,10 +981,7 @@ void message_remove_from_queue(message_q *q)
 //
 void message_load_wave(int index, const char *filename)
 {
-	if (index == -1) {
-		Int3();
-		return;
-	}
+	Assertion(index >= 0, "Invalid index passed!");
 
 	if ( Message_waves[index].num >= 0) {
 		return;
@@ -1280,6 +1271,7 @@ void message_queue_process()
 	message_q *q;
 	int i;
 	MissionMessage *m;
+	bool builtinMessage = false; // gcc doesn't like var decls crossed by goto's
 
 	// Don't play messages until first frame has been rendered
 	if ( Framecount < 2 ) {
@@ -1582,6 +1574,29 @@ void message_queue_process()
 	if ( Message_shipnum >= 0 ) {
 		hud_target_last_transmit_add(Message_shipnum);
 	}
+
+	Script_system.SetHookVar("Name", 's', m->name);
+	Script_system.SetHookVar("Message", 's', buf);
+	Script_system.SetHookVar("SenderString", 's', who_from);
+
+	builtinMessage = q->builtin_type != -1;
+	Script_system.SetHookVar("Builtin", 'b', &builtinMessage);
+	if (Message_shipnum >= 0)
+	{
+		object* sender = &Objects[Ships[Message_shipnum].objnum];
+
+		Script_system.SetHookObject("Sender", sender);
+
+		Script_system.RunCondition(CHA_MSGRECEIVED, 0, NULL, sender);
+
+		Script_system.RemHookVar("Sender");
+	}
+	else
+	{
+		Script_system.RunCondition(CHA_MSGRECEIVED);
+	}
+
+	Script_system.RemHookVars(4, "Name", "Message", "SenderString", "Builtin");
 
 all_done:
 	Num_messages_playing++;

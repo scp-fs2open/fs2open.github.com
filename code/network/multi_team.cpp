@@ -578,10 +578,10 @@ void multi_team_report()
 	SEND_AND_DISPLAY("----****");	
 
 	// display scores
-	for (i = 0; i < Num_teams; i++)
+	for (i = 0; i < Num_teams && i < MAX_TVT_TEAMS; i++)
 	{
 		// Retail FS2 teams (i.e red or green)
-		if (i <= 1)
+		if (i < 2)
 		{
 			sprintf(report, XSTR("<Team %d had %d points>", (1275+i)), Multi_team_score[i]);
 		}
@@ -652,7 +652,7 @@ void multi_team_process_packet(unsigned char *data, header *hinfo)
 
 		// if i'm the host of the game, process here		
 		req_index = find_player_id(player_id);
-		if(req_index == -1){
+		if( (req_index == -1) || (player_index == -1) ){
 			nprintf(("Network","Could not find player to process team change request !\n"));
 		} else {
 			multi_team_process_team_change_request(&Net_players[req_index],&Net_players[player_index],req_team);

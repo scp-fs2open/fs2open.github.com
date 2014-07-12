@@ -64,6 +64,7 @@
 #include "iff_defs/iff_defs.h"
 #include "menuui/techmenu.h"
 #include "missionui/fictionviewer.h"
+#include "mod_table/mod_table.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -308,6 +309,9 @@ bool fred_init()
 		exit(1);
 	}
 
+	// Load game_settings.tbl
+	mod_table_init();
+
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	// NOTE : Fred should ALWAYS run in English. Otherwise it might swap in another language
 	// when saving - which would cause inconsistencies when externalizing to tstrings.tbl via Exstr
@@ -496,8 +500,8 @@ void fix_ship_name(int ship)
 int create_ship(matrix *orient, vec3d *pos, int ship_type)
 {
 	// Save the Current Working dir to restore in a minute - fred is being stupid
-	char pwd[128];
-	getcwd(pwd, 128); // get the present working dir - probably <fs2path>[/modpapth]/data/missions/
+	char pwd[MAX_PATH_LEN];
+	getcwd(pwd, MAX_PATH_LEN); // get the present working dir - probably <fs2path>[/modpapth]/data/missions/
 	
 
 	int obj, z1, z2;
@@ -927,8 +931,8 @@ void clear_mission()
 	event_music_reset_choices();
 	clear_texture_replacements();
 
-	// alternate ship type names
-	mission_parse_reset_alt();
+	mission_parse_reset_alt();		// alternate ship type names
+	mission_parse_reset_callsign();
 
 	strcpy(Cargo_names[0], "Nothing");
 	Num_cargo = 1;

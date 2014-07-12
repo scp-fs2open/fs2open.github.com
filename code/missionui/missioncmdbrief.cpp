@@ -183,6 +183,8 @@ static int Cmd_brief_paused = 0;
 
 static int Uses_scroll_buttons = 0;
 
+int Cmd_brief_overlay_id;
+
 void cmd_brief_init_voice()
 {
 	int i;
@@ -603,8 +605,8 @@ void cmd_brief_init(int team)
 	}
 
 	// load in help overlay bitmap	
-	help_overlay_load(CMD_BRIEF_OVERLAY);
-	help_overlay_set_state(CMD_BRIEF_OVERLAY,0);
+	Cmd_brief_overlay_id = help_overlay_get_index(CMD_BRIEF_OVERLAY);
+	help_overlay_set_state(Cmd_brief_overlay_id,gr_screen.res,0);
 
 	for (i=0; i<Cur_cmd_brief->num_stages; i++)
 		cmd_brief_ani_wave_init(i);
@@ -634,9 +636,6 @@ void cmd_brief_close()
 		if (Cmd_brief_background_bitmap >= 0)
 			bm_release(Cmd_brief_background_bitmap);
 
-		// unload the overlay bitmap
-		help_overlay_unload(CMD_BRIEF_OVERLAY);
-
 		Ui_window.destroy();
 
 		game_flush();
@@ -658,7 +657,7 @@ void cmd_brief_do_frame(float frametime)
 		return;
 	}
 
-	if ( help_overlay_active(CMD_BRIEF_OVERLAY) ) {
+	if ( help_overlay_active(Cmd_brief_overlay_id) ) {
 		Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_HELP].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -666,14 +665,14 @@ void cmd_brief_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(CMD_BRIEF_OVERLAY) ) {
-			help_overlay_set_state(CMD_BRIEF_OVERLAY, 0);
+		if ( help_overlay_active(Cmd_brief_overlay_id) ) {
+			help_overlay_set_state(Cmd_brief_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(CMD_BRIEF_OVERLAY) ) {
+	if ( !help_overlay_active(Cmd_brief_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -729,14 +728,10 @@ void cmd_brief_do_frame(float frametime)
 		Voice_good_to_go = 1;
 	}
 
-	if (gr_screen.res == 1) {
-		Max_cmdbrief_Lines = 166/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
-	} else {
-		Max_cmdbrief_Lines = 116/gr_get_font_height();
-	}
+	Max_cmdbrief_Lines = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD]/(gr_get_font_height() + 1); //Make the max number of lines dependent on the font height, keeping in mind that we have an extra pixel between lines.
 
 	// maybe output the "more" indicator
-	if ( Max_cmdbrief_Lines < Num_brief_text_lines[0] ) {
+	if ( (Max_cmdbrief_Lines + Top_cmd_brief_text_line) < Num_brief_text_lines[0] ) {
 		// can be scrolled down
 		int more_txt_x = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + (Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]/2) - 10;
 		int more_txt_y = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD] - 2;				// located below brief text, centered
@@ -744,12 +739,12 @@ void cmd_brief_do_frame(float frametime)
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
 		gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
-		gr_set_color_fast(&Color_red);
+		gr_set_color_fast(&Color_more_indicator);
 		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469), GR_RESIZE_MENU);  // base location on the input x and y?
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(CMD_BRIEF_OVERLAY);
+	help_overlay_maybe_blit(Cmd_brief_overlay_id, gr_screen.res);
 
 	gr_flip();
 }

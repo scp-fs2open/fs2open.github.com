@@ -93,6 +93,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	}
 	else
 	{
+		memset(&listensockaddr, 0, sizeof(SOCKADDR_IN));
 		listensockaddr.sin_family = AF_INET;		
 		listensockaddr.sin_port = 0;
 		listensockaddr.sin_addr.s_addr = INADDR_ANY;
@@ -186,6 +187,8 @@ CFtpGet::~CFtpGet()
 {
 	if (thread_id)
 		SDL_WaitThread(thread_id, NULL);
+    
+	fclose(LOCALFILE);
 
 	if(m_ListenSock != INVALID_SOCKET)
 	{
@@ -392,8 +395,11 @@ int CFtpGet::ConnectControlSocket()
 	//m_ControlSock
 	if(m_Aborting)
 		return 0;
-	se = getservbyname("ftp", NULL);
 
+	memset(&hostaddr, 0, sizeof(SOCKADDR_IN));
+    
+	se = getservbyname("ftp", NULL);
+    
 	if(se == NULL)
 	{
 		hostaddr.sin_port = htons(21);

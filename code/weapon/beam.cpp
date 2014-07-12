@@ -36,6 +36,7 @@
 #include "globalincs/globals.h"
 #include "cmdline/cmdline.h"
 #include "parse/scripting.h"
+#include "debugconsole/console.h"
 
 extern int Cmdline_nohtl;
 // ------------------------------------------------------------------------------------------------
@@ -119,20 +120,22 @@ float b_whack_small = 2000.0f;	// used to be 500.0f with the retail whack bug
 float b_whack_big = 10000.0f;	// used to be 1500.0f with the retail whack bug
 float b_whack_damage = 150.0f;
 
-DCF(b_whack_small, "")
+DCF(b_whack_small, "Sets the whack factor for small whacks (Default is 2000f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	b_whack_small = Dc_arg_float;
+	dc_stuff_float(&b_whack_small);
 }
-DCF(b_whack_big, "")
+DCF(b_whack_big, "Sets the whack factor for big whacks (Default is 10000f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	b_whack_big = Dc_arg_float;
+	dc_stuff_float(&b_whack_big);
 }
-DCF(b_whack_damage, "")
+DCF(b_whack_damage, "Sets the whack damage threshold (Default is 150f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	b_whack_damage = Dc_arg_float;
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Sets the threshold to determine whether a big whack or a small whack should be applied. Values equal or greater than this threshold will trigger a big whack, while smaller values will trigger a small whack\n");
+		return;
+	}
+
+	dc_stuff_float(&b_whack_damage);
 }
 
 
@@ -351,7 +354,6 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->objp = fire_info->shooter;
 	new_item->sig = fire_info->shooter->signature;
 	new_item->subsys = fire_info->turret;	
-	new_item->local_pnt = fire_info->turret->system_info->pnt;
 	new_item->life_left = wip->b_info.beam_life;	
 	new_item->life_total = wip->b_info.beam_life;
 	new_item->r_collision_count = 0;
@@ -1254,10 +1256,9 @@ void beam_render(beam *b, float u_offset)
 
 // generate particles for the muzzle glow
 int hack_time = 100;
-DCF(h_time, "")
+DCF(h_time, "Sets the hack time for beam muzzle glow (Default is 100)")
 {
-	dc_get_arg(ARG_INT);
-	hack_time = Dc_arg_int;
+	dc_stuff_int(&hack_time);
 }
 
 void beam_generate_muzzle_particles(beam *b)
@@ -1265,7 +1266,7 @@ void beam_generate_muzzle_particles(beam *b)
 	int particle_count;
 	int idx;
 	weapon_info *wip;
-	vec3d turret_norm, turret_pos, particle_pos, particle_dir, p_temp;
+	vec3d turret_norm, turret_pos, particle_pos, particle_dir;
 	matrix m;
 	particle_info pinfo;
 
@@ -1294,7 +1295,7 @@ void beam_generate_muzzle_particles(beam *b)
 	particle_count = (int)frand_range(0.0f, (float)wip->b_info.beam_particle_count);
 
 	// get turret info - position and normal
-	turret_pos = b->local_pnt;
+	turret_pos = b->last_start;
 	turret_norm = b->subsys->system_info->turret_norm;	
 
 	// randomly perturb a vector within a cone around the normal
@@ -1302,14 +1303,7 @@ void beam_generate_muzzle_particles(beam *b)
 	for(idx=0; idx<particle_count; idx++){
 		// get a random point in the cone
 		vm_vec_random_cone(&particle_dir, &turret_norm, wip->b_info.beam_particle_angle, &m);
-		p_temp = turret_pos;
-		vm_vec_scale_add(&p_temp, &turret_pos, &particle_dir, wip->b_info.beam_muzzle_radius * frand_range(0.75f, 0.9f));
-
-		// transform into world coords		
-		vm_vec_unrotate(&particle_pos, &p_temp, &b->objp->orient);
-		vm_vec_add2(&particle_pos, &b->objp->pos);
-		p_temp = particle_dir;
-		vm_vec_unrotate(&particle_dir, &p_temp, &b->objp->orient);
+		vm_vec_scale_add(&particle_pos, &turret_pos, &particle_dir, wip->b_info.beam_muzzle_radius * frand_range(0.75f, 0.9f));
 
 		// now generate some interesting values for the particle
 		float p_time_ref = wip->b_info.beam_life + ((float)wip->b_info.beam_warmup / 1000.0f);		
@@ -1479,10 +1473,9 @@ void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, floa
 
 // light scale factor
 float blight = 25.5f;
-DCF(blight, "")
+DCF(blight, "Sets the beam light scale factor (Default is 25.5f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	blight = Dc_arg_float;
+	dc_stuff_float(&blight);
 }
 
 // call to add a light source to a small object
@@ -3227,7 +3220,7 @@ int beam_ok_to_fire(beam *b)
 		if (shipp->weapon_energy <= 0.0f) {
 
 			if ( OBJ_INDEX(Player_obj) == shipp->objnum && !(b->life_left>0.0f)) {
-				extern int ship_maybe_play_primary_fail_sound();
+				extern void ship_maybe_play_primary_fail_sound();
 				ship_maybe_play_primary_fail_sound();
 			}
 
@@ -3446,12 +3439,11 @@ int beam_will_tool_target(beam *b, object *objp)
 }
 
 float beam_accuracy = 1.0f;
-DCF(b_aim, "")
+DCF(b_aim, "Adjusts the beam accuracy factor (Default is 1.0f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	beam_accuracy = Dc_arg_float;
+	dc_stuff_float(&beam_accuracy);
 }
-DCF(beam_list, "")
+DCF(beam_list, "Lists all beams")
 {
 	int idx;
 	int b_count = 0;

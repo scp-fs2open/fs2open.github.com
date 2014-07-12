@@ -593,6 +593,10 @@
 		60FAF4E8113432B800CE910F /* voicerec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 60FAF4E6113432B800CE910F /* voicerec.cpp */; };
 		60FAF4E9113432B800CE910F /* voicerec.h in Headers */ = {isa = PBXBuildFile; fileRef = 60FAF4E7113432B800CE910F /* voicerec.h */; };
 		91361C9A17EDF2B7001940DC /* profiling.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91361C9917EDF2B7001940DC /* profiling.cpp */; };
+		91480BC41918556800078390 /* console.h in Headers */ = {isa = PBXBuildFile; fileRef = 91480BC01918556800078390 /* console.h */; };
+		91480BC51918556800078390 /* consolecmds.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91480BC11918556800078390 /* consolecmds.cpp */; };
+		91480BC61918556800078390 /* consoleparse.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91480BC21918556800078390 /* consoleparse.cpp */; };
+		91480BC71918556800078390 /* consoleparse.h in Headers */ = {isa = PBXBuildFile; fileRef = 91480BC31918556800078390 /* consoleparse.h */; };
 		914F0FC61639998700A5B57A /* generic_log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 914F0FC41639998700A5B57A /* generic_log.cpp */; };
 		914F0FC71639998700A5B57A /* generic_log.h in Headers */ = {isa = PBXBuildFile; fileRef = 914F0FC51639998700A5B57A /* generic_log.h */; };
 		91CAF8BF17FF561E0053F385 /* dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 91CAF8AE17FF561E0053F385 /* dump.c */; };
@@ -1449,7 +1453,6 @@
 		3459554F08C3D6A0003B1351 /* config.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
 		3459555008C3D6A0003B1351 /* stubs.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = stubs.cpp; sourceTree = "<group>"; };
 		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FS2_Open (debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		345A81150B4941D700282E7A /* grstub.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grstub.cpp; sourceTree = "<group>"; };
 		345A81170B4941F100282E7A /* deadobjectdock.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = deadobjectdock.cpp; sourceTree = "<group>"; };
 		345A81180B4941F100282E7A /* deadobjectdock.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = deadobjectdock.h; sourceTree = "<group>"; };
@@ -1532,6 +1535,10 @@
 		91361C9917EDF2B7001940DC /* profiling.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = profiling.cpp; sourceTree = "<group>"; };
 		914580470FD036ED00788595 /* multi_sexp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = multi_sexp.cpp; sourceTree = "<group>"; };
 		914580480FD036ED00788595 /* multi_sexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = multi_sexp.h; sourceTree = "<group>"; };
+		91480BC01918556800078390 /* console.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = console.h; sourceTree = "<group>"; };
+		91480BC11918556800078390 /* consolecmds.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = consolecmds.cpp; sourceTree = "<group>"; };
+		91480BC21918556800078390 /* consoleparse.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = consoleparse.cpp; sourceTree = "<group>"; };
+		91480BC31918556800078390 /* consoleparse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = consoleparse.h; sourceTree = "<group>"; };
 		914F0FC41639998700A5B57A /* generic_log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = generic_log.cpp; sourceTree = "<group>"; };
 		914F0FC51639998700A5B57A /* generic_log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = generic_log.h; sourceTree = "<group>"; };
 		91CAF8A917FF55DE0053F385 /* libjansson.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libjansson.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1780,7 +1787,6 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */,
 				34C71A8208C4147700459F5B /* libcode.a */,
 				34C71A9108C4184200459F5B /* libjpeg.a */,
 				34DCF83408CFA6B900A528A0 /* cfilearchiver */,
@@ -2134,6 +2140,10 @@
 		3459530F08C3D69F003B1351 /* debugconsole */ = {
 			isa = PBXGroup;
 			children = (
+				91480BC01918556800078390 /* console.h */,
+				91480BC11918556800078390 /* consolecmds.cpp */,
+				91480BC21918556800078390 /* consoleparse.cpp */,
+				91480BC31918556800078390 /* consoleparse.h */,
 				3459531008C3D69F003B1351 /* console.cpp */,
 				3459531308C3D69F003B1351 /* timerbar.cpp */,
 				3459531408C3D69F003B1351 /* timerbar.h */,
@@ -3249,6 +3259,8 @@
 				91D778A114FE96BE00E0090A /* mod_table.h in Headers */,
 				60B18456127F544400CD9F1E /* pilotfile.h in Headers */,
 				60B18458127F544400CD9F1E /* pilotfile_convert.h in Headers */,
+				91480BC41918556800078390 /* console.h in Headers */,
+				91480BC71918556800078390 /* consoleparse.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3621,7 +3633,6 @@
 			name = FS2_Open;
 			productInstallPath = "$(HOME)/Applications";
 			productName = FS2_Open;
-			productReference = 34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */;
 			productType = "com.apple.product-type.application";
 		};
 		34C71A8108C4147700459F5B /* code */ = {
@@ -3862,6 +3873,8 @@
 				60B18457127F544400CD9F1E /* pilotfile_convert.cpp in Sources */,
 				60B18459127F544400CD9F1E /* plr.cpp in Sources */,
 				60B1845A127F544400CD9F1E /* plr_convert.cpp in Sources */,
+				91480BC51918556800078390 /* consolecmds.cpp in Sources */,
+				91480BC61918556800078390 /* consoleparse.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4508,7 +4521,6 @@
 					"-lSystemStubs",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = FS2_Open;
 				SEPARATE_STRIP = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
 			};
@@ -4522,7 +4534,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.7.1-trunk";
+				CURRENT_PROJECT_VERSION = 3.7.1;
 				DEAD_CODE_STRIPPING = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -4539,7 +4551,7 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				PRODUCT_NAME = "FS2_Open (debug)";
+				PRODUCT_NAME = "FS2_Open $(CURRENT_PROJECT_VERSION) (debug)";
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 				STRIP_INSTALLED_PRODUCT = NO;
 				UNSTRIPPED_PRODUCT = YES;
@@ -4555,7 +4567,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.7.1-trunk";
+				CURRENT_PROJECT_VERSION = 3.7.1;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -4575,7 +4587,7 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				PRODUCT_NAME = FS2_Open;
+				PRODUCT_NAME = "FS2_Open $(CURRENT_PROJECT_VERSION)";
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 				SEPARATE_STRIP = YES;
 				WARNING_CFLAGS = "-Wno-char-subscripts";

@@ -31,6 +31,7 @@
 #include "network/multi_pmsg.h"
 #include "ai/ai_profiles.h"
 #include "pilotfile/pilotfile.h"
+#include "debugconsole/console.h"
 
 /*
 // uncomment to get extra debug messages when a player scores
@@ -60,12 +61,8 @@ void parse_rank_tbl()
 	char buf[MULTITEXT_LENGTH];
 	int rval, idx, persona;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "rank.tbl", rval));
-		lcl_ext_close();
 		return;
 	} 
 
@@ -117,9 +114,6 @@ void parse_rank_tbl()
 			Int3();
 	}
 #endif
-
-	// close localization
-	lcl_ext_close();
 }
 
 // initialize a nice blank scoring element
@@ -221,28 +215,6 @@ void scoring_struct::assign(const scoring_struct &s)
 
 	memcpy(m_dogfight_kills, s.m_dogfight_kills, MAX_PLAYERS * sizeof(int));
 }
-
-#ifndef NDEBUG
-//XSTR:OFF
-void scoring_eval_harbison( ship *shipp )
-{
-	FILE *fp;
-
-	if ( !stricmp(shipp->ship_name, "alpha 2") && (!stricmp(Game_current_mission_filename, "demo01") || !stricmp(Game_current_mission_filename, "sm1-01")) ) {
-		int death_count;
-
-		fp = fopen("i:\\volition\\cww\\harbison.txt", "r+t");
-		if ( !fp )
-			return;
-		fscanf(fp, "%d", &death_count );
-		death_count++;
-		fseek(fp, 0, SEEK_SET);
-		fprintf(fp, "%d\n", death_count);
-		fclose(fp);
-	}
-}
-//XSTR:ON
-#endif
 
 // initialize the Player's mission-based stats before he goes into a mission
 void scoring_level_init( scoring_struct *scp )
@@ -658,11 +630,6 @@ int scoring_eval_kill(object *ship_objp)
 		}
 	}
 
-
-#ifndef NDEBUG
-	scoring_eval_harbison( dead_ship );
-#endif
-
 	net_player_num = -1;
 
 	// clear out invalid damager ships
@@ -898,6 +865,11 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 
 	weapon *dead_wp;						// the weapon that was killed
 	weapon_info *dead_wip;				// info on the weapon that was killed
+
+	if((weapon_obj->instance < 0) || (weapon_obj->instance >= MAX_WEAPONS)){
+		return -1;
+	}
+    
 	dead_wp = &Weapons[weapon_obj->instance]; //assign the dead weapon
 	dead_wip = &Weapon_info[dead_wp->weapon_info_index];
 
@@ -913,10 +885,6 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 
 	// we don't evaluate kills on anything except bombs, currently. -Halleck
 	if(!(dead_wip->wi_flags & WIF_BOMB))  {
-		return -1;
-	}
-
-	if((weapon_obj->instance < 0) || (weapon_obj->instance >= MAX_WEAPONS)){
 		return -1;
 	}
 
@@ -1509,20 +1477,42 @@ void scoring_bash_rank(player *pl,int rank)
 	pl->stats.rank = rank;
 }
 
-DCF(rank, "changes scoring vars")
+DCF(rank, "changes player rank")
 {
-	if(Dc_command){		
-		dc_get_arg(ARG_INT);		
-		
-		// parse the argument and change things around accordingly		
-		if((Dc_arg_type & ARG_INT) && (Player != NULL)){							
-			scoring_bash_rank(Player,Dc_arg_int);
-		}		
+	int rank;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: rank <index>\n");
+		dc_printf(" <index> The rank index you wish to have. For retail ranks, these correspond to:\n");
+		dc_printf("\t0 : Ensign\n");
+		dc_printf("\t1 : Lieutenant Junior Grade\n");
+		dc_printf("\t2 : Lietenant\n");
+		dc_printf("\t3 : Lieutenant Commander\n");
+		dc_printf("\t4 : Commander\n");
+		dc_printf("\t5 : Captain\n");
+		dc_printf("\t6 : Commodore\n");
+		dc_printf("\t7 : Rear Admiral\n");
+		dc_printf("\t8 : Vice Admiral\n");
+		dc_printf("\t9 : Admiral\n\n");
+		return;
 	}
-	dc_printf("Usage\n0 : Ensign\n1 : Lieutenant Junior Grade\n");
-	dc_printf("2 : Lietenant\n3 : Lieutenant Commander\n");
-	dc_printf("4 : Commander\n5 : Captain\n6 : Commodore\n");
-	dc_printf("7 : Rear Admiral\n8 : Vice Admiral\n9 : Admiral");
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		if (Player != NULL) {
+			dc_printf("Current rank is %i\n", Player->stats.rank);
+		} else {
+			dc_printf("Error! Current Player not active or loaded\n");
+		}
+	}
+
+	dc_stuff_int(&rank);
+	
+	// parse the argument and change things around accordingly
+	if (Player != NULL) {
+			scoring_bash_rank(Player, rank);
+	} else {
+		dc_printf("Error! Current Player not active or loaded\n");
+	}
 }
 
 void scoreing_close()

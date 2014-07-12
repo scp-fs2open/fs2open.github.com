@@ -527,7 +527,9 @@
     <ClCompile Include="..\..\code\cutscene\mveplayer.cpp" />
     <ClCompile Include="..\..\code\cutscene\oggplayer.cpp" />
     <ClCompile Include="..\..\code\Debris\debris.cpp" />
-    <ClCompile Include="..\..\code\DebugConsole\console.cpp" />
+    <ClCompile Include="..\..\code\debugconsole\console.cpp" />
+	<ClCompile Include="..\..\code\debugconsole\consolecmds.cpp" />
+	<ClCompile Include="..\..\code\debugconsole\consoleparse.cpp" />
     <ClCompile Include="..\..\code\fireball\fireballs.cpp" />
     <ClCompile Include="..\..\code\fireball\warpineffect.cpp" />
     <ClCompile Include="..\..\code\gamehelp\contexthelp.cpp" />
@@ -806,7 +808,9 @@
     <ClInclude Include="..\..\code\cutscene\movie.h" />
     <ClInclude Include="..\..\code\cutscene\mvelib.h" />
     <ClInclude Include="..\..\code\cutscene\oggplayer.h" />
-    <ClInclude Include="..\..\code\Debris\debris.h" />
+    <ClInclude Include="..\..\code\debugconsole\console.h" />
+	<ClInclude Include="..\..\code\debugconsole\consoleparse.h" />
+	<ClInclude Include="..\..\code\Debris\debris.h" />
     <ClInclude Include="..\..\code\DirectX\vasync.h" />
     <ClInclude Include="..\..\code\DirectX\vdinput.h" />
     <ClInclude Include="..\..\code\DirectX\vdplay.h" />

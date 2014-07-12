@@ -32,6 +32,7 @@
 #include "cfile/cfile.h"
 #include "io/mouse.h"
 #include "ai/aigoals.h"
+#include "mod_table/mod_table.h"
 
 #include <stdexcept>
 
@@ -460,7 +461,7 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	}
 
 	// edited to accommodate ballistics - Goober5000
-	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+	for (i = 0; i < swp->num_primary_banks; i++) {
 		weapons.index = swp->primary_bank_weapons[i];
 
 		if (weapons.index < 0) {
@@ -481,7 +482,7 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 		ras->primary_weapons.push_back( weapons );
 	}
 
-	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
+	for (i = 0; i < swp->num_secondary_banks; i++) {
 		weapons.index = swp->secondary_bank_weapons[i];
 
 		if (weapons.index < 0) {
@@ -901,6 +902,10 @@ void red_alert_bash_wingman_status()
 			so = GET_NEXT(so);
 		}
 	}
+
+	// NOTE: in retail, red alert data was not loaded for ships that arrived later in the mission
+	if (!Red_alert_applies_to_delayed_ships)
+		return;
 
 	// go through all ships yet to arrive, and see if there is red alert status data for any
 

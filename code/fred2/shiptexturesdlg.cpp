@@ -132,7 +132,9 @@ void CShipTexturesDlg::OnOK()
 				texture_set(&(*ii), &(*end));
 			}
 		}
-		Fred_texture_replacements.erase(end);
+
+		if (end != Fred_texture_replacements.end())
+			Fred_texture_replacements.erase(end);
 
 		// now put the new entries on the end of the list
 		for (i=0; i<texture_count; i++)

@@ -424,7 +424,7 @@ typedef struct ship_flag_name {
 	int flag_list;						// is this flag in the 1st or 2nd ship flags list?
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					16
+#define MAX_SHIP_FLAG_NAMES					17
 extern ship_flag_name Ship_flag_names[];
 
 // states for the flags variable within the ship structure

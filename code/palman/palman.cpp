@@ -11,6 +11,7 @@
 
 #include "palman/palman.h"
 #include "bmpman/bmpman.h"
+#include "debugconsole/console.h"
 #include "pcxutils/pcxutils.h"
 #include "parse/parselo.h"
 #include "graphics/grinternal.h"
@@ -165,17 +166,14 @@ void palette_load_table( const char * filename )
 
 DCF(palette,"Loads a new palette")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING|ARG_NONE);
-		if ( Dc_arg_type == ARG_NONE )	{
-		} else {
-			palette_load_table( Dc_arg );
-		}
-	}
-	if ( Dc_help )	{
-		dc_printf( "Usage: palette filename\nLoads the palette file.\n" );
+	char palette_file[MAX_FILENAME_LEN];
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: palette <filename>\nLoads the palette file.\n" );
 	}
 
+	dc_stuff_string_white(palette_file, MAX_FILENAME_LEN);
+	palette_load_table(palette_file);
 }
 
 int Palman_allow_any_color = 0;
@@ -278,7 +276,7 @@ uint palette_find( int r, int g, int b )
 void palette_write_cached1( char *name )
 {
 	CFILE *fp;
-	char new_name[128];
+	char new_name[MAX_PATH_LEN];
 
 	strcpy_s( new_name, name );
 	strcat_s( new_name, ".clr" );
@@ -320,7 +318,7 @@ void palette_write_cached1( char *name )
 int palette_read_cached( char *name )
 {
 	CFILE *fp;
-	char new_name[128];
+	char new_name[MAX_PATH_LEN];
 	int version;
 	uint id, new_checksum;
 	ubyte new_palette[768];
@@ -497,7 +495,7 @@ void palette_flush()
 void palette_update(const char *name_with_extension, int restrict_font_to_128)
 {
 	uint tmp_checksum;
-	char name[128];
+	char name[MAX_PATH_LEN];
 
 	Palman_restrict_colors = restrict_font_to_128;
 	
@@ -657,7 +655,7 @@ uint palette_compute_checksum( ubyte *pal )
 void palette_use_bm_palette(int n)
 {
 	ubyte tmp[768];
-	char name[128];
+	char name[MAX_PATH_LEN];
 
 	bm_get_palette(n, tmp, name);				// get the palette for this bitmap
 

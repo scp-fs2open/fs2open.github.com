@@ -739,12 +739,12 @@ void subtitle::do_frame(float frametime)
 			vec3d scale;
 
 			bm_get_info(image_id, &orig_w, &orig_h);
-			scale.xyz.x = image_pos.w / (float) orig_w;
-			scale.xyz.y = image_pos.h / (float) orig_h;
+			scale.xyz.x = (image_pos.w > 0) ? (image_pos.w / (float) orig_w) : 1.0f;
+			scale.xyz.y = (image_pos.h > 0) ? (image_pos.h / (float) orig_h) : 1.0f;
 			scale.xyz.z = 1.0f;
 
 			gr_push_scale_matrix(&scale);
-			gr_bitmap(image_pos.x, image_pos.y, GR_RESIZE_NONE);
+			gr_bitmap(fl2i(image_pos.x / scale.xyz.x), fl2i(image_pos.y / scale.xyz.y), GR_RESIZE_NONE);
 			gr_pop_scale_matrix();
 		}
 		// no scaling

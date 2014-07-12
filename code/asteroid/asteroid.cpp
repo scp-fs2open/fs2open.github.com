@@ -39,6 +39,8 @@
 #include "network/multimsgs.h"
 #include "network/multi.h"
 #include "parse/scripting.h"
+#include "debugconsole/console.h"
+
 #include <algorithm>
 #include "globalincs/compatibility.h"
 
@@ -867,12 +869,11 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 					asteroid_wrap_pos(objp, asfieldp);
 					Asteroids[objp->instance].target_objnum = -1;
 
-					vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
+					dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
-					dist = vm_vec_dist_quick(&objp->pos, &Eye_position);
 					
 					if (( dot > 0.7f) && (dist < 3000.0f)) {
-						// player would see asteroid pop out other side, so reverse velocity instead of wrapping
+						// player would see asteroid pop out other side, so reverse velocity instead of wrapping						
 						objp->pos = old_asteroid_pos;		
 						vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
 						objp->phys_info.desired_vel = objp->phys_info.vel;
@@ -1404,23 +1405,8 @@ void asteroid_level_close()
 	Asteroid_field.num_initial_asteroids=0;
 }
 
-DCF(asteroids,"Turns asteroids on/off")
-{	
-	if ( Dc_command )	{	
-		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
-		if ( Dc_arg_type & ARG_TRUE )	
-			Asteroids_enabled = 1;	
-		else if ( Dc_arg_type & ARG_FALSE ) 
-			Asteroids_enabled = 0;	
-		else if ( Dc_arg_type & ARG_NONE ) 
-			Asteroids_enabled ^= 1;	
-	}	
-	if ( Dc_help )	
-		dc_printf( "Usage: asteroids [bool]\nTurns asteroid system on/off.  If nothing passed, then toggles it.\n" );	
-	
-	if ( Dc_status )	
-		dc_printf( "asteroids are %s\n", (Asteroids_enabled?"ON":"OFF") );	
-}
+DCF_BOOL2(asteroids, Asteroids_enabled, "enables or disables asteroids", "Usage: asteroids [bool]\nTurns asteroid system on/off.  If nothing passed, then toggles it.\n");
+
 
 void hud_target_asteroid()
 {
@@ -1909,12 +1895,8 @@ void asteroid_parse_tbl()
 		"are no species for them to belong to."
 		);
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "asteroid.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -2043,9 +2025,6 @@ void asteroid_parse_tbl()
 	} else {
 		Asteroid_icon_closeup_zoom = 0.5f;	// magic number from retail
 	}
-
-	// close localization
-	lcl_ext_close();
 }
 
 /**

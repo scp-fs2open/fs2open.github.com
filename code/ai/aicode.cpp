@@ -18,6 +18,7 @@
 
 
 #include "ai/ai.h"
+#include "debugconsole/console.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
 #include "physics/physics.h"
@@ -780,9 +781,6 @@ void reset_ai_class_names()
 #define AI_CLASS_INCREMENT		10
 void parse_aitbl()
 {
-	// open localization
-	lcl_ext_open();
-
 	read_file_text("ai.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
@@ -814,9 +812,6 @@ void parse_aitbl()
 			reset_ai_class_names();
 		}
 	}
-
-	// close localization
-	lcl_ext_close();
 	
 	atexit(free_ai_stuff);
 }
@@ -836,7 +831,6 @@ void ai_init()
 
 		if ((rval = setjmp(parse_abort)) != 0) {
 			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "ai.tbl", rval));
-			lcl_ext_close();
 		} else {			
 			parse_aitbl();			
 		}
@@ -2303,7 +2297,8 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp)
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
 
 	// Goober5000
-	if ((temp = find_ignore_new_object_index(aip, aip->target_objnum)) >= 0)
+	temp = find_ignore_new_object_index(aip, aip->target_objnum);
+	if (temp >= 0)
 	{
 		aip->ignore_new_objnums[temp] = UNUSED_OBJNUM;
 	}
@@ -6135,7 +6130,9 @@ void render_all_ship_bay_paths(object *objp)
 	if ( pm->ship_bay == NULL )
 		return;
 
-	for ( i = 0; i < pm->ship_bay->num_paths; i++ ) {
+	memset(&v, 0, sizeof(v));
+    
+    for ( i = 0; i < pm->ship_bay->num_paths; i++ ) {
 		mp = &pm->paths[pm->ship_bay->path_indexes[i]];
 
 		for ( j = 0; j < mp->nverts; j++ ) {
@@ -6177,6 +6174,8 @@ void render_all_subsys_paths(object *objp)
 
 	if ( pm->ship_bay == NULL )
 		return;
+    
+    memset(&v, 0, sizeof(v));
 
 	for ( i = 0; i < pm->n_paths; i++ ) {
 		mp = &pm->paths[i];
@@ -6238,6 +6237,8 @@ void render_path_points(object *objp)
 
 		for (i=0; i<num_points; i++) {
 			vertex	v0;
+            
+            memset(&v0, 0, sizeof(v0));
 
 			g3_rotate_vertex( &v0, &pp->pos );
 
@@ -7368,7 +7369,8 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 		aip->ignore_objnum = UNUSED_OBJNUM;
 
 	// Goober5000
-	if ((temp = find_ignore_new_object_index(aip, aip->target_objnum)) >= 0)
+	temp = find_ignore_new_object_index(aip, aip->target_objnum);
+	if (temp >= 0)
 	{
 		aip->ignore_new_objnums[temp] = UNUSED_OBJNUM;
 	}
@@ -11367,16 +11369,14 @@ float get_wing_largest_radius(object *objp, int formation_object_flag)
 
 float Wing_y_scale = 2.0f;
 float Wing_scale = 1.0f;
-DCF(wing_y_scale, "")
+DCF(wing_y_scale, "Adjusts the wing formation scale along the Y axis (Default is 2.0)")
 {
-	dc_get_arg(ARG_FLOAT);
-	Wing_y_scale = Dc_arg_float;
+	dc_stuff_float(&Wing_y_scale);
 }
 
-DCF(wing_scale, "")
+DCF(wing_scale, "Adjusts the wing formation scale. (Default is 1.0f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	Wing_scale = Dc_arg_float;
+	dc_stuff_float(&Wing_scale);
 }
 
 /**
@@ -12644,6 +12644,8 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	{
 		int i, num_allowed_paths = 0, allowed_bay_paths[MAX_SHIP_BAY_PATHS];
 
+		memset(allowed_bay_paths, 0, sizeof(allowed_bay_paths));
+        
 		for (i = 0; i < bay->num_paths; i++)
 		{
 			if (allowed_path_mask & (1 << i))
@@ -12892,6 +12894,10 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	// take the closest path we can find
 	ship_bay_path = ai_find_closest_depart_path(aip, pm, allowed_path_mask);
+    
+	if ( ship_bay_path < 0 )
+		return -1;
+    
 	path_index = bay->path_indexes[ship_bay_path];
 	aip->submode_parm0 = ship_bay_path;
 	bay->depart_flags |= (1<<ship_bay_path);
@@ -14014,8 +14020,12 @@ void ai_frame(int objnum)
 				if (target_objnum != -1) {
 					if (aip->target_objnum != target_objnum)
 						aip->aspect_locked_time = 0.0f;
-					set_target_objnum(aip, target_objnum);
-					En_objp = &Objects[target_objnum];
+					target_objnum = set_target_objnum(aip, target_objnum);
+
+					if (target_objnum >= 0)
+					{
+						En_objp = &Objects[target_objnum];
+					}
 				}
 			}
 		}
@@ -14778,14 +14788,17 @@ int firing_aspect_seeking_bomb(object *objp)
 
 	bank_index = swp->current_secondary_bank;
 
-	if (bank_index != -1)
-		if (swp->secondary_bank_ammo[bank_index] > 0) {
-			if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags & WIF_BOMB) {
-				if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags & WIF_HOMING_ASPECT) {
-					return 1;
+	if (bank_index != -1) {
+		if (swp->secondary_bank_weapons[bank_index] > 0) {
+			if (swp->secondary_bank_ammo[bank_index] > 0) {
+				if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags & WIF_BOMB) {
+					if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags & WIF_HOMING_ASPECT) {
+						return 1;
+					}
 				}
 			}
 		}
+	}
 
 	return 0;
 }

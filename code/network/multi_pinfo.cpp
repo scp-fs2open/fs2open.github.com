@@ -536,7 +536,7 @@ void multi_pinfo_blit_squadron_logo()
 
 		// center the text
 		gr_get_string_size(&w, NULL, place_text);
-		gr_string(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - w)/2), Multi_pinfo_squad_coords[gr_screen.res][1], place_text), GR_RESIZE_MENU;
+		gr_string(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - w)/2), Multi_pinfo_squad_coords[gr_screen.res][1], place_text, GR_RESIZE_MENU);
 	} 
 	// otherwise blit the bitmap
 	else {

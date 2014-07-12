@@ -1274,13 +1274,9 @@ void parse_autopilot_table(char *filename)
 	int rval;
 	SCP_vector<SCP_string> lines;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default autopilot.tbl>", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -1337,9 +1333,6 @@ void parse_autopilot_table(char *filename)
 
 
 	required_string("#END");
-
-	// close localization
-	lcl_ext_close();
 }
 
 

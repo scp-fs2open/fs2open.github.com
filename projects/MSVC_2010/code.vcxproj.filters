@@ -288,7 +288,13 @@
     <ClCompile Include="..\..\code\Debris\debris.cpp">
       <Filter>Debris</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\DebugConsole\console.cpp">
+    <ClCompile Include="..\..\code\debugconsole\console.cpp">
+      <Filter>DebugConsole</Filter>
+    </ClCompile>
+	<ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
+      <Filter>DebugConsole</Filter>
+    </ClCompile>
+	<ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\debugconsole\timerbar.cpp">
@@ -1126,6 +1132,12 @@
     </ClInclude>
     <ClInclude Include="..\..\code\Debris\debris.h">
       <Filter>Debris</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\debugconsole\console.h">
+      <Filter>DebugConsole</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
+      <Filter>DebugConsole</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\debugconsole\timerbar.h">
       <Filter>DebugConsole</Filter>

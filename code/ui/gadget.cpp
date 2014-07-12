@@ -39,6 +39,11 @@ void UI_GADGET::reset()
 	m_flags = 0;
 }
 
+int UI_GADGET::is_hidden()
+{
+	return hidden;
+}
+
 // --------------------------------------------------------------------
 // Links a hotspot (palette index in mask) to the given gadget.
 //
@@ -202,6 +207,11 @@ void UI_GADGET::get_dimensions(int *x_, int *y_, int *w_, int *h_)
 void UI_GADGET::hide(int n)
 {
 	hidden = n ? 1 : 0;
+}
+
+void UI_GADGET::hide()
+{
+	hidden = 1;
 }
 
 void UI_GADGET::unhide()

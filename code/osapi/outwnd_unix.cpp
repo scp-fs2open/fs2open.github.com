@@ -210,9 +210,6 @@ void outwnd_print(const char *id, const char *tmp)
 		outwnd_print( "general", "==========================================================================\n" );
 	}
 
-	if ( !id )
-		id = "General";
-
 	for (i = 0; i < OutwndFilter.size(); i++) {
 		if ( !stricmp(id, OutwndFilter[i].name) )
 			break;

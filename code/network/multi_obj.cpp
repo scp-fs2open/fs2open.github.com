@@ -26,6 +26,7 @@
 #include "physics/physics.h"
 #include "ship/afterburner.h"
 #include "cfile/cfile.h"
+#include "debugconsole/console.h"
 
 
 // ---------------------------------------------------------------------------------------------------
@@ -543,8 +544,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	}			
 
 	// make sure we have a valid chunk of data
-	Assert(packet_size < 255);
-	if(packet_size >= 255){
+	// Clients: must be able to accomodate the data_size and shipp->np_updates[NET_PLAYER_NUM(pl)].seq before the data itself
+	// Server: TODO
+	Assert(packet_size < 255-1);
+	if(packet_size >= 255-1){
 		return 0;
 	}
 	data_size = (ubyte)packet_size;
@@ -1569,10 +1572,21 @@ int OO_server_rate_stamp = -1;
 
 // bandwidth granularity
 int OO_gran = 1;
-DCF(oog, "")
+DCF(oog, "Sets bandwidth granularity (Multiplayer)")
 {
-	dc_get_arg(ARG_INT);
-	OO_gran = Dc_arg_int;
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: oog <OO_gran>\n");
+		dc_printf("Sets bandwidth granularity\n");
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Current Granularity is '%i' (default is 1)", OO_gran);
+		return;
+	}
+
+	dc_stuff_int(&OO_gran);
+	dc_printf("Ganularity set to %i", OO_gran);
 }
 
 // process datarate limiting stuff for the server
@@ -1939,10 +1953,21 @@ void multi_oo_interp(object *objp)
 }
 
 float oo_error = 0.8f;
-DCF(oo_error, "")
+DCF(oo_error, "Sets error factor for flight path prediction physics (Multiplayer)")
 {
-	dc_get_arg(ARG_FLOAT);
-	oo_error = Dc_arg_float;
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: oo_error <value>\n");
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("oo_error is currently %f", oo_error);
+		return;
+	}
+
+	dc_stuff_float(&oo_error);
+	
+	dc_printf("oo_error set to %f", oo_error);
 }
 
 void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info)
@@ -1994,14 +2019,16 @@ void oo_update_time()
 }
 
 int display_oo_bez = 0;
-DCF(bez, "")
+DCF(bez, "Toggles rendering of player ship trajectory interpolation splines (Multiplayer) *disabled*")
 {
-	display_oo_bez = !display_oo_bez;
-	if(display_oo_bez){
-		dc_printf("Showing interp splines");
-	} else {
-		dc_printf("Not showing interp splines");
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Rendering of interpolation splines is '%s'", display_oo_bez ? "ON" : "OFF");
+		return;
 	}
+
+	display_oo_bez = !display_oo_bez;
+
+	dc_printf("%showing interp splines", display_oo_bez ? "S" : "Not s");
 }
 
 void oo_display()

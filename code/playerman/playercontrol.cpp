@@ -34,8 +34,8 @@
 #include "network/multiutil.h"
 #include "network/multi_obj.h"
 #include "parse/parselo.h"
-#include "debugconsole/console.h"
 #include "controlconfig/controlsconfig.h"
+#include "debugconsole/console.h"
 
 #ifndef NDEBUG
 #include "io/key.h"
@@ -346,7 +346,7 @@ DCF(camera_speed, "Sets the camera zoom scale")
 		return;
 	}
 
-	dc_stuff_float(camera_zoom_scale);
+	dc_stuff_float(&camera_zoom_scale);
 
 	dc_printf("Camera zoom scale set to %f\n", camera_zoom_scale);
 }

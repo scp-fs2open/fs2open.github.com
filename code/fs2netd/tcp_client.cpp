@@ -249,7 +249,7 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 		}
 
 		// make sure that we get the entire packet
-		while ( (rc_total < (uint)buffer_size) && (rc_total <= sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
+		while ( (rc_total < (uint)buffer_size) && (rc_total < sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
 			if ( FS2NetD_DataReady() ) {
 				rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total);
 
@@ -361,7 +361,7 @@ int FS2NetD_GetBanList(SCP_vector<SCP_string> &mask_list, bool do_send)
 		}
 
 		// make sure that we get the entire packet
-		while ( (rc_total < (uint)buffer_size) && (rc_total <= sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
+		while ( (rc_total < (uint)buffer_size) && (rc_total < sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
 			if ( FS2NetD_DataReady() ) {
 				rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total);
 
@@ -435,7 +435,7 @@ int FS2NetD_GetMissionsList(SCP_vector<file_record> &m_list, bool do_send)
 		}
 
 		// make sure that we get the entire packet
-		while ( (rc_total < (uint)buffer_size) && (rc_total <= sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
+		while ( (rc_total < (uint)buffer_size) && (rc_total < sizeof(buffer)) && (timer_get_fixed_seconds() <= end_time) ) {
 			if ( FS2NetD_DataReady() ) {
 				rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer) - rc_total);
 

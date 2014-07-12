@@ -74,7 +74,7 @@ class factor_table
 	{
 	public:
 		factor_table();
-		~factor_table(){ delete[] table; };
+		~factor_table(){ delete[] table; }
 		int getNextSlots( int slots_on_ship, int cur_slots );
 
 	private:
@@ -636,6 +636,7 @@ void process_debug_keys(int k)
 
 	switch (k) {
 		case KEY_DEBUGGED + KEY_Q:
+		case KEY_DEBUGGED1 + KEY_Q:
 			Snapshot_all_events = true;
 			break;
 
@@ -2500,7 +2501,7 @@ int button_function(int n)
 	control_used(n);
 
 	if ( hud_sensors_ok(Player_ship) ) {
-		int keyHasBeenUsed = TRUE;
+		keyHasBeenUsed = TRUE;
 		switch(n) {
 			// target next
 			case TARGET_NEXT:

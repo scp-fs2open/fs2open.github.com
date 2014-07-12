@@ -394,9 +394,6 @@ void mission_parse_mark_non_arrivals();
 
 // Goober5000 - FRED import
 void convertFSMtoFS2();
-void restore_default_weapons(char *ships_tbl);
-void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
-void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
 
 
 MONITOR(NumShipArrivals)
@@ -885,18 +882,19 @@ void parse_player_info2(mission *pm)
 			ptr->default_ship = ship_info_lookup(str);
 			if (-1 == ptr->default_ship) {
 				WarningEx(LOCATION, "Mission: %s\nUnknown default ship %s!  Defaulting to %s.", pm->name, str, Ship_info[ptr->ship_list[0]].name );
+				ptr->default_ship = ptr->ship_list[0]; // default to 1st in list
 			}
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
 			// do we do?  choose the first allowable one?
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
 					for (i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-						if ( Campaign.ships_allowed[ptr->default_ship] ) {
+						if ( Campaign.ships_allowed[i] ) {
 							ptr->default_ship = i;
 							break;
 						}
 					}
-					Assert( i < MAX_SHIP_CLASSES );
+					Assertion( i < MAX_SHIP_CLASSES, "Mission: %s: Could not find a valid default ship.\n", pm->name );
 				}
 			}
 		}
@@ -1267,6 +1265,7 @@ void parse_fiction(mission *pm)
 {
 	char filename[MAX_FILENAME_LEN];
 	char font_filename[MAX_FILENAME_LEN];
+	char voice_filename[MAX_FILENAME_LEN];
 
 	fiction_viewer_reset();
 
@@ -1282,7 +1281,13 @@ void parse_fiction(mission *pm)
 		strcpy_s(font_filename, "");
 	}
 
-	fiction_viewer_load(filename, font_filename);
+	if (optional_string("$Voice:")) {
+		stuff_string(voice_filename, F_FILESPEC, MAX_FILENAME_LEN);
+	} else {
+		strcpy_s(voice_filename, "");
+	}
+
+	fiction_viewer_load(filename, font_filename, voice_filename);
 }
 
 /**
@@ -2664,7 +2669,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
 	if (p_objp->ship_class < 0)
 	{
-		mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name));
+		if (Fred_running) {
+			Warning(LOCATION, "Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name);
+		} 
+		else {
+			mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name));
+		}
 
 		p_objp->ship_class = 0;
 		Num_unknown_ship_classes++;
@@ -2683,7 +2693,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 		if (is_variable) {
 			new_alt_class.variable_index = get_index_sexp_variable_name(alt_ship_class);
-			new_alt_class.ship_class = ship_info_lookup(Sexp_variables[new_alt_class.variable_index].text);
+			if(new_alt_class.variable_index >= 0) {
+				new_alt_class.ship_class = ship_info_lookup(Sexp_variables[new_alt_class.variable_index].text);
+			}
+			else {
+				new_alt_class.ship_class = -1;
+			}
 		}
 		else {
 			new_alt_class.variable_index = -1;
@@ -5554,7 +5569,7 @@ int parse_mission(mission *pm, int flags)
 	if ((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0) {
 		char text[512];
 		sprintf(text, "Warning!\n\nThe current mission has generated %d warnings and/or errors during load.  These are usually caused by corrupted ship models or syntax errors in the mission file.  While FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.  Source Code Project staff cannot provide assistance or support for these problems, as they are caused by the mission's data files, not FreeSpace Open's source code.", (saved_warning_count - Global_warning_count) + (saved_error_count - Global_error_count));
-		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_NO_NETWORKING, 1, POPUP_OK, text);
+		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, text);
 	}
 
 	log_printf(LOGFILE_EVENT_LOG, "Mission %s loaded.\n", pm->name); 
@@ -5814,9 +5829,6 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 	if ( mission_p == NULL )
 		mission_p = &The_mission;
 
-	// open localization
-	lcl_ext_open();
-
 	do {
 		CFILE *ftemp = cfopen(real_fname, "rt");
 		if (!ftemp) {
@@ -5842,9 +5854,6 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 		parse_init(basic);
 		parse_mission_info(mission_p, basic);
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	return rval;
 }
@@ -5886,9 +5895,6 @@ int parse_main(const char *mission_name, int flags)
 
 	for (i = 0; i < Num_ship_classes; i++)
 		Ship_class_names[i] = Ship_info[i].name;
-
-	// open localization
-	lcl_ext_open();
 	
 	do {
 		// don't do this for imports
@@ -5928,9 +5934,6 @@ int parse_main(const char *mission_name, int flags)
 		rval = parse_mission(&The_mission, flags);
 		display_parse_diagnostics();
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	if (!Fred_running)
 		strcpy_s(Mission_filename, mission_name);
@@ -6288,9 +6291,6 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 	if ( filelength == 0 )
 		return 0;
 
-	// open localization
-	lcl_ext_open();
-
 	game_type = 0;
 	do {
 		if ((rval = setjmp(parse_abort)) != 0) {
@@ -6313,9 +6313,6 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 		}
 		stuff_int(&game_type);
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	return (game_type & MISSION_TYPE_MULTI) ? game_type : 0;
 }
@@ -7921,130 +7918,6 @@ void convertFSMtoFS2()
 {
 	// fix punctuation
 	conv_fix_punctuation();
-}
-
-// Goober5000
-void restore_default_weapons(char *ships_tbl)
-{
-	int i, j, si_subsys;
-	char *ch, *subsys;
-	char ship_class[NAME_LENGTH];
-	ship_subsys *ss;
-	ship_info *sip;
-
-	// guesstimate that this actually is a ships.tbl
-	if (!strstr(ships_tbl, "#Ship Classes"))
-	{
-		SCP_Messagebox(MESSAGEBOX_ERROR, "This is not a ships.tbl file.  Aborting conversion...");
-		return;
-	}
-
-	// for every ship
-	for (i = 0; i < MAX_SHIPS; i++)
-	{
-		// ensure the ship slot is used in this mission
-		if (Ships[i].objnum >= 0)
-		{
-			// get ship_info
-			sip = &Ship_info[Ships[i].ship_info_index];
-
-			// find the ship class
-			ch = strstr(ships_tbl, ship_class);
-			if (!ch) continue;
-
-			// check pbanks (capital ships have these specified but empty)
-			Mp = strstr(ch, "$Default PBanks");
-			Mp = strchr(Mp, '(');
-			restore_one_primary_bank(Ships[i].weapons.primary_bank_weapons, sip->primary_bank_weapons);
-
-			// check sbanks (capital ships have these specified but empty)
-			Mp = strstr(ch, "$Default SBanks");
-			Mp = strchr(Mp, '(');
-			restore_one_secondary_bank(Ships[i].weapons.secondary_bank_weapons, sip->secondary_bank_weapons);
-
-			// see if we have any turrets
-			ch = strstr(ch, "$Subsystem");
-			for (ss = GET_FIRST(&Ships[i].subsys_list); ss != END_OF_LIST(&Ships[i].subsys_list); ss = GET_NEXT(ss))
-			{
-				// we do
-				if (ss->system_info->type == SUBSYSTEM_TURRET)
-				{
-					// find it in the ship_info subsys list
-					si_subsys = -1;
-					for (j = 0; j < sip->n_subsystems; j++)
-					{
-						if (!subsystem_stricmp(ss->system_info->subobj_name, sip->subsystems[j].subobj_name))
-						{
-							si_subsys = j;
-							break;
-						}
-					}
-					if (si_subsys < 0) continue;
-
-					// find it in the file - make sure it belongs to *this* ship
-					subsys = stristr(ch, ss->system_info->subobj_name);
-					if (!subsys) continue;
-					if (subsys > strstr(ch, "$Name")) continue;
-
-					// check pbanks - make sure they are *this* subsystem's banks
-					Mp = strstr(subsys, "$Default PBanks");
-					if (Mp < strstr(subsys + 1, "$Subsystem"))
-					{
-						Mp = strchr(Mp, '(');
-						restore_one_primary_bank(ss->weapons.primary_bank_weapons, sip->subsystems[si_subsys].primary_banks);
-					}
-
-					// check sbanks - make sure they are *this* subsystem's banks
-					Mp = strstr(subsys, "$Default SBanks");
-					if (Mp < strstr(subsys + 1, "$Subsystem"))
-					{
-						Mp = strchr(Mp, '(');
-						restore_one_secondary_bank(ss->weapons.secondary_bank_weapons, sip->subsystems[si_subsys].secondary_banks);
-					}
-				}
-			}
-		}
-	}
-}
-
-// Goober5000
-void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons)
-{
-	int i, count, original_weapon;
-	char weapon_list[MAX_SHIP_PRIMARY_BANKS][NAME_LENGTH];
-
-	// stuff weapon list
-	count = stuff_string_list(weapon_list, MAX_SHIP_PRIMARY_BANKS);
-
-	// check for default weapons - if same as default, overwrite with the one from the table
-	for (i = 0; i < count; i++)
-	{
-		if (ship_primary_weapons[i] == default_primary_weapons[i])
-		{
-			if ((original_weapon = weapon_info_lookup(weapon_list[i])) >= 0)
-			ship_primary_weapons[i] = original_weapon;
-		}
-	}
-}
-
-// Goober5000
-void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons)
-{
-	int i, count, original_weapon;
-	char weapon_list[MAX_SHIP_SECONDARY_BANKS][NAME_LENGTH];
-
-	// stuff weapon list
-	count = stuff_string_list(weapon_list, MAX_SHIP_SECONDARY_BANKS);
-
-	// check for default weapons - if same as default, overwrite with the one from the table
-	for (i = 0; i < count; i++)
-	{
-		if (ship_secondary_weapons[i] == default_secondary_weapons[i])
-		{
-			if ((original_weapon = weapon_info_lookup(weapon_list[i])) >= 0)
-			ship_secondary_weapons[i] = original_weapon;
-		}
-	}
 }
 
 void clear_texture_replacements() 

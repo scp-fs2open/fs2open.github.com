@@ -159,7 +159,7 @@ extern void find_and_stuff_optional(char *id, int *addr, int f_type, char *strli
 extern int match_and_stuff(int f_type, char *strlist[], int max, char *description);
 extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
 	int max, char *description);
-extern int get_string(char *str);
+extern int get_string(char *str, int max = -1);
 extern void get_string(SCP_string &str);
 extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);

@@ -73,6 +73,8 @@ hud_anim		Fade_anim;
 int	Briefing_music_handle = -1;
 int	Briefing_music_begin_timestamp = 0;
 
+int Briefing_overlay_id = -1;
+
 // --------------------------------------------------------------------------------------
 // Module scope globals
 // --------------------------------------------------------------------------------------
@@ -349,7 +351,11 @@ void brief_skip_training_pressed()
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	
 
-	gameseq_post_event( GS_EVENT_START_GAME );
+	if ( The_mission.flags & MISSION_FLAG_END_TO_MAINHALL ) {
+		gameseq_post_event( GS_EVENT_MAIN_MENU );
+	} else {
+		gameseq_post_event( GS_EVENT_START_GAME );
+	}
 }
 
 // --------------------------------------------------------------------------------------
@@ -870,7 +876,8 @@ void brief_init()
 	common_flash_button_init();
 	common_music_init(SCORE_BRIEFING);
 
-	help_overlay_set_state(BR_OVERLAY,0);
+	Briefing_overlay_id = help_overlay_get_index(BR_OVERLAY);
+	help_overlay_set_state(Briefing_overlay_id,gr_screen.res,0);
 
 	if ( Brief_inited == TRUE ) {
 		common_buttons_maybe_reload(&Brief_ui_window);	// AL 11-21-97: this is necessary since we may returning from the hotkey
@@ -896,8 +903,6 @@ void brief_init()
 
 	nprintf(("Alan","Entering brief_init()\n"));
 	common_select_init();
-
-	help_overlay_load(BR_OVERLAY);
 
 	// Set up the mask regions
    // initialize the different regions of the menu that will react when the mouse moves over it
@@ -1132,14 +1137,10 @@ void brief_render(float frametime)
 			brief_voice_play(Current_brief_stage);
 		}
 
-		if (gr_screen.res == 1) {
-			Max_brief_Lines = 110/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
-		} else {
-			Max_brief_Lines = 60/gr_get_font_height();
-		}
+		Max_brief_Lines = Brief_text_coords[gr_screen.res][3]/gr_get_font_height(); //Make the max number of lines dependent on the font height.
 
 		// maybe output the "more" indicator
-		if ( Max_brief_Lines < Num_brief_text_lines[0] ) {
+		if ( (Max_brief_Lines + Top_brief_text_line) < Num_brief_text_lines[0] ) {
 			// can be scrolled down
 			int more_txt_x = Brief_text_coords[gr_screen.res][0] + (Brief_max_line_width[gr_screen.res]/2) - 10;
 			int more_txt_y = Brief_text_coords[gr_screen.res][1] + Brief_text_coords[gr_screen.res][3] - 2;				// located below brief text, centered
@@ -1147,7 +1148,7 @@ void brief_render(float frametime)
 			gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 			gr_set_color_fast(&Color_black);
 			gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
-			gr_set_color_fast(&Color_red);
+			gr_set_color_fast(&Color_more_indicator);
 			gr_string(more_txt_x, more_txt_y, XSTR("more", 1469), GR_RESIZE_MENU);  // base location on the input x and y?
 		}
 	}
@@ -1480,7 +1481,7 @@ void brief_do_frame(float frametime)
 		Brief_mouse_up_flag = 0;
 	}
 
-	if ( help_overlay_active(BR_OVERLAY) ) {
+	if ( help_overlay_active(Briefing_overlay_id) ) {
 		common_flash_button_init();
 		brief_turn_off_closeup_icon();
 	}
@@ -1499,7 +1500,7 @@ void brief_do_frame(float frametime)
 
 #ifndef NDEBUG			
 			case KEY_CTRLED | KEY_PAGEUP: {
-				if (Closeup_icon->ship_class) {
+				if ( Closeup_icon && Closeup_icon->ship_class ) {
 					Closeup_icon->ship_class--;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
@@ -1515,7 +1516,7 @@ void brief_do_frame(float frametime)
 			}
 
 			case KEY_CTRLED | KEY_PAGEDOWN: {
-				if (Closeup_icon->ship_class < Num_ship_classes - 1) {
+				if ( Closeup_icon && (Closeup_icon->ship_class < Num_ship_classes - 1) ) {
 					Closeup_icon->ship_class++;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
@@ -1628,7 +1629,7 @@ void brief_do_frame(float frametime)
 	common_render(frametime);
 
 	if ( Current_brief_stage < (Num_brief_stages-1) ) {
-		if ( !help_overlay_active(BR_OVERLAY) && brief_time_to_advance(Current_brief_stage) ) {
+		if ( !help_overlay_active(Briefing_overlay_id) && brief_time_to_advance(Current_brief_stage) ) {
 			brief_do_next_pressed(0);
 			common_flash_button_init();
 			Brief_last_auto_advance = timer_get_milliseconds();
@@ -1754,7 +1755,7 @@ void brief_do_frame(float frametime)
 	brief_maybe_flash_button();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(BR_OVERLAY);	
+	help_overlay_maybe_blit(Briefing_overlay_id, gr_screen.res);
 
 	gr_flip();	
 
@@ -1797,8 +1798,6 @@ void brief_unload_bitmaps()
 		bm_release(Brief_background_bitmap);
 		Brief_background_bitmap = -1;
 	}
-
-	help_overlay_unload(BR_OVERLAY);
 }
 
 // ------------------------------------------------------------------------------------

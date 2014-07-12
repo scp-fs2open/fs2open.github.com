@@ -174,12 +174,8 @@ void parse_hud_gauges_tbl(const char *filename)
 	color *ship_clr_p = NULL;
 	bool scale_gauge = true;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -455,9 +451,6 @@ void parse_hud_gauges_tbl(const char *filename)
 		required_string("$End Gauges");
 		required_string("#End");
 	}
-
-	// close localization
-	lcl_ext_close();
 }
 
 void hud_positions_init()
