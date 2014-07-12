@@ -1275,14 +1275,13 @@ int opengl_init_display_device()
 	Gr_ta_alpha.scale = 17;
 
 	// allocate storage for original gamma settings
-	if (!Cmdline_no_set_gamma && (GL_original_gamma_ramp == NULL)) {
-		GL_original_gamma_ramp = (ushort*) vm_malloc_q(3 * 256 * sizeof(ushort));
+	if ( !Cmdline_no_set_gamma && (GL_original_gamma_ramp == NULL) ) {
+		GL_original_gamma_ramp = (ushort*) vm_malloc_q( 3 * 256 * sizeof(ushort) );
 
 		if (GL_original_gamma_ramp == NULL) {
 			mprintf(("  Unable to allocate memory for gamma ramp!  Disabling...\n"));
 			Cmdline_no_set_gamma = 1;
-		}
-		else {
+		} else {
 			// assume identity ramp by default, to be overwritten by true ramp later
 			for (ushort x = 0; x < 256; x++) {
 				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (x << 8) | x;

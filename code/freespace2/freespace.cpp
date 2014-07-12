@@ -7011,11 +7011,11 @@ DCF(pofspew, "Spews POF info without shutting down the game")
 }
 
 // returns:
-//		0 on an error
-//		1 on a clean exit
-int game_main(int argc, char *argv[])
+// 0 on an error
+// 1 on a clean exit
+int game_main(char *cmdline)
 {
-	int state;		
+	int state;
 
 	// check if networking should be disabled, this could probably be done later but the sooner the better
 	// TODO: remove this when multi is fixed to handle more than MAX_SHIP_CLASSES_MULTI
@@ -7023,29 +7023,71 @@ int game_main(int argc, char *argv[])
 		Networking_disabled = 1;
 	}
 
-#ifndef NDEBUG				
+#ifndef NDEBUG
 	extern void windebug_memwatch_init();
 	windebug_memwatch_init();
 #endif
 
-	vm_init(0); 
+#ifdef _WIN32
+	// Find out how much RAM is on this machine
+	MEMORYSTATUS ms;
+	ms.dwLength = sizeof(MEMORYSTATUS);
+	GlobalMemoryStatus(&ms);
+	FreeSpace_total_ram = ms.dwTotalPhys;
 
-	if ( !parse_cmdline(argc, argv) ) {
+	Mem_starttime_phys      = ms.dwAvailPhys;
+	Mem_starttime_pagefile  = ms.dwAvailPageFile;
+	Mem_starttime_virtual   = ms.dwAvailVirtual;
+
+	if ( game_do_ram_check(FreeSpace_total_ram) == -1 ) {
 		return 1;
 	}
 
-
-	if (Is_standalone){
-		nprintf(("Network", "Standalone running\n"));
+	if ( ms.dwTotalVirtual < 1024 )	{
+		MessageBox( NULL, XSTR( "FreeSpace requires virtual memory to run.\r\n", 196), XSTR( "No Virtual Memory", 197), MB_OK );
+		return 1;
 	}
 
+	if (!vm_init(24*1024*1024)) {
+		MessageBox( NULL, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK );
+		return 1;
+	}
+		
+	char *tmp_mem = (char *) vm_malloc(16 * 1024 * 1024);
+	if (!tmp_mem) {
+		MessageBox(NULL, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK);
+		return 1;
+	}
+
+	vm_free(tmp_mem);
+	tmp_mem = NULL;
+
+#else
+	vm_init(0);
+
+#endif // _WIN32
+
+
+	if ( !parse_cmdline(cmdline) ) {
+		return 1;
+	}
+
+	if (Is_standalone) {
+		nprintf(("Network", "Standalone running\n"));
+	}
+/* This broke in AP Migrating from Trunk
+#ifdef _WIN32
+	if ( !Is_standalone ) {
+		disableWindowsKey( );
+	}
+#endif
+*/
 	init_cdrom();
 
 	game_init();
 	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
 	int trackIrInitResult = gTirDll_TrackIR.Init( (HWND)os_get_window( ) );
-	if ( trackIrInitResult != SCP_INITRESULT_SUCCESS )
-	{
+	if ( trackIrInitResult != SCP_INITRESULT_SUCCESS ) {
 		mprintf( ("TrackIR Init Failed - %d\n", trackIrInitResult) );
 	}
 	game_stop_time();
@@ -7061,7 +7103,6 @@ int game_main(int argc, char *argv[])
 		return 0;
 	}
 
-
 	if (Cmdline_spew_table_crcs) {
 		fs2netd_spew_table_checksums("table_crcs.csv");
 		game_shutdown();
@@ -7069,12 +7110,11 @@ int game_main(int argc, char *argv[])
 	}
 
 	// maybe spew pof stuff
-	if(Cmdline_spew_pof_info){
+	if (Cmdline_spew_pof_info) {
 		game_spew_pof_info();
 		game_shutdown();
 		return 0;
 	}
-
 
 	// maybe spew VP CRCs, and exit
 	if (Cmdline_verify_vps) {
@@ -7088,7 +7128,7 @@ int game_main(int argc, char *argv[])
 		movie_play( NOX("intro.mve") );
 	}
 
-	if (Is_standalone){
+	if (Is_standalone) {
 		gameseq_post_event(GS_EVENT_STANDALONE_MAIN);
 	} else {
 		gameseq_post_event(GS_EVENT_GAME_INIT);		// start the game rolling -- check for default pilot, or go to the pilot select screen
@@ -7099,15 +7139,161 @@ int game_main(int argc, char *argv[])
 		os_poll();
 
 		state = gameseq_process_events();
-		if ( state == GS_STATE_QUIT_GAME ){
+		if ( state == GS_STATE_QUIT_GAME ) {
 			break;
 		}
 	} 
 
 	game_shutdown();
-
+/* This broke in AP migrating from Trunk
+#ifdef _WIN32
+	if ( !Is_standalone ) {
+		enableWindowsKey( );
+	}
+#endif
+*/
 	return 0;
 }
+
+
+// ------------------------------------------------------------------------------
+// Platform specific main() functions, nothing directly related to game function
+// should go here.  Direct game related info should go in the game_main() function
+// TODO: this should end up in a separate file in the not too distant future.
+//
+
+#ifdef _WIN32
+// Windows Specific
+int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdShow)
+{
+	int result = -1;
+
+	// Don't let more than one instance of FreeSpace run.
+	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
+	if ( hwnd ) {
+		SetForegroundWindow(hwnd);
+		return 0;
+	}
+
+	::CoInitialize(NULL);
+
+#ifdef _DEBUG
+	void memblockinfo_output_memleak();
+	atexit(memblockinfo_output_memleak);
+#endif
+
+	//=====================================================
+	// Make sure we're running in the right directory.
+	char exe_dir[1024];
+
+	if ( GetModuleFileName( hInst, exe_dir, 1023 ) > 0 ) {
+		char *p = exe_dir + strlen(exe_dir);
+		
+		// chop off the filename
+		while( (p>exe_dir) && (*p!='\\') && (*p!='/') && (*p!=':') ) {
+			p--;
+		}
+		*p = 0;
+		
+		// Set directory
+		if ( strlen(exe_dir) > 0 ) { //-V805
+			SetCurrentDirectory(exe_dir);
+		}
+	}
+
+	SCP_mspdbcs_Initialise( );
+
+#ifdef GAME_ERRORLOG_TXT
+#ifdef _MSC_VER
+	__try {
+#endif
+#endif
+		result = !game_main(szCmdLine);
+#ifdef GAME_ERRORLOG_TXT
+#ifdef _MSC_VER
+	} __except( RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread") ) {
+		// Do nothing here - RecordExceptionInfo() has already done
+		// everything that is needed. Actually this code won't even
+		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
+		// the __except clause.
+	}
+#endif // _MSC_VER
+#endif
+
+	SCP_mspdbcs_Cleanup( );
+
+	::CoUninitialize();
+
+#ifndef _MINGW
+	_CrtDumpMemoryLeaks();
+#endif
+
+	return result;
+}
+
+#else
+
+// *NIX specific
+int main(int argc, char *argv[])
+{
+	int result = EXIT_FAILURE;
+	char *argptr = NULL;
+	int i, len = 0;
+	char userdir[MAX_PATH];
+
+#ifdef APPLE_APP
+	// Finder sets the working directory to the root of the drive so we have to get a little creative
+	// to find out where on the disk we should be running from for CFILE's sake.
+	strncpy(full_path, *argv, 1024);
+#endif
+
+	// create user's directory	
+	snprintf(userdir, MAX_PATH - 1, "%s/%s/", detect_home(), Osreg_user_dir);
+	_mkdir(userdir);
+
+	// clean up the cmdline to just send arguments through
+	for (i = 1; i < argc; i++) {
+		len += strlen(argv[i]) + 1;
+	}
+
+	argptr = (char*) calloc(len + 1, sizeof(char));
+
+	if (argptr == NULL) {
+		fprintf(stderr, "ERROR: Out of memory in main()!\n");
+		exit(EXIT_FAILURE);
+	}
+
+	memset( argptr, 0, len+1 );
+
+	for (i = 1; i < argc; i++) {
+		strcat(argptr, argv[i]);
+		strcat(argptr, " ");
+	}
+
+	// switch to game_main()
+	try {
+		result = game_main(argptr);
+
+		if (argptr != NULL) {
+			free(argptr);
+			argptr = NULL;
+		}
+	} catch (std::exception &ex) {
+		fprintf(stderr, "Caught std::exception in main(): '%s'!\n", ex.what());
+		result = EXIT_FAILURE;
+	} catch ( ... ) {
+		fprintf(stderr, "Caught exception in main()!\n");
+		result = EXIT_FAILURE;
+	}
+
+	return result;
+}
+
+#endif // _WIN32
+
+//
+// End of platform specific main() section
+// ------------------------------------------------------------------------------
 
 #if 0  // don't have an updater for fs2_open
 // launch the fslauncher program on exit
@@ -7128,7 +7314,7 @@ void game_launch_launcher_on_exit()
 	strcpy_s(cmd_line, original_path);
 	strcat_s(cmd_line, DIR_SEPARATOR_STR);
 	strcat_s(cmd_line, LAUNCHER_FNAME);
-	strcat_s(cmd_line, " -straight_to_update");		
+	strcat_s(cmd_line, " -straight_to_update");
 
 	BOOL ret = CreateProcess(	NULL,									// pointer to name of executable module 
 										cmd_line,							// pointer to command line string
@@ -8360,65 +8546,8 @@ int game_hacked_data()
 	return (int)Hacked_data;
 }
 
-
-//#define MAX_SPLASHSCREENS 64
-//char Splash_screens[MAX_SPLASHSCREENS][MAX_FILENAME_LEN];
-
-
 void game_title_screen_display()
 {
-/*	_finddata_t find;
-	long		find_handle;
-	char current_dir[256];
-
-	//Get the find string
-	_getcwd(current_dir, 256);
-	strcat_s(current_dir, DIR_SEPARATOR_STR);
-	strcat_s(current_dir, "*.pcx");
-
-	//Let the search begin!
-	find_handle = _findfirst(current_dir, &find);
-	int i = 0;
-	if(find_handle != -1)
-	{
-		char *p;
-
-		do {
-			if(!(find.attrib & _A_SUBDIR) && (strlen(find.name) < MAX_FILENAME_LEN)) {
-				p = strchr( find.name, '.' );
-				if(p) {
-					*p = '\0';
-				}
-
-				if(stricmp(find.name, Game_logo_screen_fname[gr_screen.res])
-					&& stricmp(find.name, Game_title_screen_fname[gr_screen.res]))
-				{
-					strcpy_s(Splash_screens[i], find.name);
-					i++;
-				}
-
-				if(i == MAX_SPLASHSCREENS) {
-					break;
-				}
-			}
-		} while(!_findnext(find_handle, &find));
-	}
-
-	if(i) {
-		srand(time(NULL));
-		title_bitmap = bm_load(Splash_screens[rand() % i]);
-
-	} else {
-		title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
-	}
-	
-	if (title_bitmap == -1 && title_logo == -1) {
-//		return;
-	}
-	*/
-
-	//Script_system.SetHookVar("SplashScreenImage", 's', Game_title_screen_fname[gr_screen.res]);
-	//Script_system.SetHookVar("SplashScreenLogo", 's', Game_logo_screen_fname[gr_screen.res]);
 	bool globalhook_override = Script_system.IsOverride(Script_splashhook);
 	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
 	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
@@ -8625,105 +8754,4 @@ void game_unpause()
 				audiostream_unpause_all();
 		}
 	}
-}
-
-int actual_main(int argc, char *argv[])
-{
-	int result = -1;
-
-#ifdef WIN32
-	// Don't let more than one instance of FreeSpace run.
-	HWND hwnd = FindWindow(NOX("FreeSpaceClass"), NULL);
-	if (hwnd)	{
-		SetForegroundWindow(hwnd);
-		return 0;
-	}
-
-	::CoInitialize(NULL);
-
-#ifdef _DEBUG
-	void memblockinfo_output_memleak();
-	atexit(memblockinfo_output_memleak);
-#endif
-
-	//=====================================================
-	// Make sure we're running in the right directory.
-	Assert(argc > 0);
-	char *exe_dir = argv[0];
-
-	char *p = exe_dir + strlen(exe_dir);
-
-	// chop off the filename
-	while ((p>exe_dir) && (*p != '\\') && (*p != '/') && (*p != ':'))	{
-		p--;
-	}
-	*p = 0;
-
-	// Set directory
-	if (strlen(exe_dir) > 0)	{ //-V805
-		SetCurrentDirectory(exe_dir);
-	}
-
-	SCP_mspdbcs_Initialise();
-#else
-	char userdir[MAX_PATH];
-
-#ifdef APPLE_APP
-	// Finder sets the working directory to the root of the drive so we have to get a little creative
-	// to find out where on the disk we should be running from for CFILE's sake.
-	strncpy(full_path, *argv, 1024);
-#endif
-
-	// create user's directory	
-	snprintf(userdir, MAX_PATH - 1, "%s/%s/", detect_home(), Osreg_user_dir);
-	_mkdir(userdir);
-#endif
-
-#if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
-	__try {
-#else
-	try {
-#endif
-		result = !game_main(argc, argv);
-#if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
-	}
-	__except (RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread")) {
-		// Do nothing here - RecordExceptionInfo() has already done
-		// everything that is needed. Actually this code won't even
-		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
-		// the __except clause.
-	}
-#else
-	}
-	catch (std::exception &ex) {
-		fprintf(stderr, "Caught std::exception in main(): '%s'!\n", ex.what());
-		result = EXIT_FAILURE;
-	}
-	catch (...) {
-		fprintf(stderr, "Caught exception in main()!\n");
-		result = EXIT_FAILURE;
-	}
-#endif
-
-#ifdef WIN32
-	SCP_mspdbcs_Cleanup();
-
-	::CoUninitialize();
-
-#ifndef _MINGW
-	_CrtDumpMemoryLeaks();
-#endif
-#endif
-
-	return result;
-}
-
-#ifdef __cplusplus
-extern "C"
-#endif
-int main(int argc, char *argv[])
-{
-	// The extern "C" causes problems with linking so we'll just call
-	// the actual main function here
-	return actual_main(argc, argv);
 }
