@@ -792,7 +792,7 @@ void control_config_common_load_overrides()
 			for (size_t i = 0; i < cCntrlAryLength; ++i) {
 				config_item& r_ccConfig = cfg_preset[i];
 
-				if (!strcmp(szTempBuffer, r_ccConfig.text)) {
+				if (!strcmp(szTempBuffer, r_ccConfig.default_text)) {
 					/**
 					* short key_default;
 					* short joy_default;
