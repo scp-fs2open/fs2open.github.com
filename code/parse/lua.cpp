@@ -12270,6 +12270,11 @@ ADE_FUNC(setTips, l_Base, "True or false", "Sets whether to display tips of the 
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(getGameDifficulty, l_Base, NULL, "Returns the difficulty level from 1-5, 1 being the lowest, (Very Easy) and 5 being the highest (Insane)", "integer", "Difficulty level as integer")
+{
+	return ade_set_args(L, "i", Game_skill_level+1);
+}
+
 ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Note that you can crash FreeSpace 2 by posting an event at an improper time, so test extensively if you use it.", "boolean", "True if event was posted, false if passed event was invalid")
 {
 	gameevent_h *gh = NULL;
