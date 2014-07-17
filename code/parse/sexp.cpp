@@ -31796,7 +31796,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_GET_PRIMARY_AMMO, "get-primary-ammo\r\n"
 		"\tReturns the amount of ammo remaining in the specified bank\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative total for all banks)" },
 
 	
 	{ OP_SECONDARY_AMMO_PCT, "secondary-ammo-pct\r\n"
@@ -31808,7 +31808,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_GET_SECONDARY_AMMO, "get-secondary-ammo\r\n"
 		"\tReturns the amount of ammo remaining in the specified bank\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative total for all banks)" },
 
 	// Karajorma
 	{ OP_GET_NUM_COUNTERMEASURES, "get-num-countermeasures\r\n"
@@ -31816,14 +31816,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship name\r\n" },
 
 	{ OP_IS_SECONDARY_SELECTED, "is-secondary-selected\r\n"
-		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
+		"\tReturns true if the specified bank is selected\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0 .. num_banks - 1)\r\n"},
+		"\t2: Bank to check (This is a zero-based index. The first bank is numbered 0.)\r\n"},
 
 	{ OP_IS_PRIMARY_SELECTED, "is-primary-selected\r\n"
-		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
+		"\tReturns true if the specified bank is selected\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0 .. num_banks - 1)\r\n"},
+		"\t2: Bank to check (This is a zero-based index. The first bank is numbered 0.)\r\n"},
 
 	{ OP_SPECIAL_WARP_DISTANCE, "special-warp-dist\r\n"
 		"\tReturns distance to the plane of the knossos device in percent length of ship\r\n"
@@ -32326,7 +32326,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_PRIMARY_FIRED_SINCE, "primary-fired-since\r\n"
 		"\tReturns true if the primary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
 	},
 
@@ -32334,7 +32334,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_SECONDARY_FIRED_SINCE, "secondary-fired-since\r\n"
 		"\tReturns true if the secondary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
 	},
 
@@ -32342,7 +32342,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_HAS_PRIMARY_WEAPON, "has-primary-weapon\r\n"
 		"\tReturns true if the primary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
 	},
 
@@ -32350,7 +32350,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_HAS_SECONDARY_WEAPON, "has-secondary-weapon\r\n"
 		"\tReturns true if the secondary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
 	},
 
