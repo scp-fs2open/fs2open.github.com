@@ -545,8 +545,6 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					SCP_vector<int> sindex;
-					sindex.push_back(k);
 					load_gauge(retail_gauges[i], -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				}
 			}

@@ -3751,11 +3751,10 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 			}
 			case 'c':
 			{
-				dest += (char) va_arg(ap, char);
+				dest += (char) va_arg(ap, int);
 				break;
 			}
-			case 'f':
-			{
+			case 'f':			{
 				dval = va_arg(ap, double);
 				sprintf(buf_dest, buf_src, dval);
 				dest += buf_dest;
