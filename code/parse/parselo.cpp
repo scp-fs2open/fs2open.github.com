@@ -1517,20 +1517,17 @@ void compact_multitext_string(SCP_string &str)
 		str.resize(len-num_cr);
 }
 
+// Converts a character from Windows-1252 to CP437.
 int maybe_convert_foreign_character(int ch)
 {
 	// time to do some special foreign character conversion			
 	switch (ch) {
+		case -57:
+			ch = 128;
+			break;
+
 		case -4:
 			ch = 129;
-			break;
-
-		case -28:
-			ch = 132;
-			break;
-
-		case -10:
-			ch = 148;
 			break;
 
 		case -23:
@@ -1541,8 +1538,24 @@ int maybe_convert_foreign_character(int ch)
 			ch = 131;
 			break;
 
+		case -28:
+			ch = 132;
+			break;
+
+		case -32:
+			ch = 133;
+			break;
+
+		case -27:
+			ch = 134;
+			break;
+
 		case -25:
 			ch = 135;
+			break;
+
+		case -22:
+			ch = 136;
 			break;
 
 		case -21:
@@ -1561,16 +1574,36 @@ int maybe_convert_foreign_character(int ch)
 			ch = 140;
 			break;
 
+		case -20:
+			ch = 141;
+			break;
+
 		case -60:
 			ch = 142;
+			break;
+
+		case -59:
+			ch = 143;
 			break;
 
 		case -55:
 			ch = 144;
 			break;
 
+		case -26:
+			ch = 145;
+			break;
+
+		case -58:
+			ch = 146;
+			break;
+
 		case -12:
 			ch = 147;
+			break;
+
+		case -10:
+			ch = 148;
 			break;
 
 		case -14:
@@ -1585,12 +1618,32 @@ int maybe_convert_foreign_character(int ch)
 			ch = 151;
 			break;
 
+		case -1:
+			ch = 152;
+			break;
+
 		case -42:
 			ch = 153;
 			break;
 
 		case -36:
 			ch = 154;
+			break;
+
+		case -94:
+			ch = 155;
+			break;
+
+		case -93:
+			ch = 156;
+			break;
+
+		case -91:
+			ch = 157;
+			break;
+
+		case -125:
+			ch = 159;
 			break;
 
 		case -31:
@@ -1609,16 +1662,80 @@ int maybe_convert_foreign_character(int ch)
 			ch = 163;
 			break;
 
-		case -32:
-			ch = 133;
+		case -15:
+			ch = 164;
 			break;
 
-		case -22:
-			ch = 136;
+		case -47:
+			ch = 165;
 			break;
 
-		case -20:
-			ch = 141;
+		case -86:
+			ch = 166;
+			break;
+
+		case -70:
+			ch = 167;
+			break;
+
+		case -65:
+			ch = 168;
+			break;
+
+		case -84:
+			ch = 170;
+			break;
+
+		case -67:
+			ch = 171;
+			break;
+
+		case -68:
+			ch = 172;
+			break;
+
+		case -95:
+			ch = 173;
+			break;
+
+		case -85:
+			ch = 174;
+			break;
+
+		case -69:
+			ch = 175;
+			break;
+
+		case -33:
+			ch = 225;
+			break;
+
+		case -75:
+			ch = 230;
+			break;
+
+		case -79:
+			ch = 241;
+			break;
+
+		case -9:
+			ch = 246;
+			break;
+
+		case -80:
+			ch = 248;
+			break;
+
+		case -73:
+			ch = 250;
+			break;
+
+		case -78:
+			ch = 253;
+			break;
+
+		case -96:
+			ch = 255;
 			break;
 	}
 	
@@ -2143,7 +2260,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 
 		str = outbuf;
 		while (*str) {
-			if (*str == -33) {
+			if (*str == (Lcl_pl ? -33 : -31)) {
 				*mp++ = 's';
 				*mp++ = 's';
 				str++;
