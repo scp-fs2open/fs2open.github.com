@@ -113,6 +113,7 @@ extern int optional_string_either(char *str1, char *str2);
 extern int required_string_either(char *str1, char *str2);
 extern int required_string_3(char *str1, char *str2, char *str3);
 extern int required_string_4(char *str1, char *str2, char *str3, char *str4);
+extern int required_string_one_of(int arg_count, ...);
 
 // stuff
 extern void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max);

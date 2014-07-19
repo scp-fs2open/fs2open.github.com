@@ -740,6 +740,56 @@ int required_string_4(char *str1, char *str2, char *str3, char *str4)
 	return -1;
 }
 
+// Generic version of old required_string_3 and required_string_4; written by ngld, with some tweaks by MageKing17
+int required_string_one_of(int arg_count, ...)
+{
+	Assertion(arg_count > 0, "required_string_one_of() called with arg_count of %d; get a coder!\n", arg_count);
+	int count = 0;
+	int idx;
+	char *expected;
+	SCP_string message = "";
+	va_list vl;
+
+	ignore_white_space();
+
+	while (count < RS_MAX_TRIES) {
+		va_start(vl, arg_count);
+		for (idx = 0; idx < arg_count; idx++) {
+			expected = va_arg(vl, char*);
+			if (strnicmp(expected, Mp, strlen(expected)) == 0) {
+				diag_printf("Found required string [%s]", token_found = expected);
+				return idx;
+			}
+		}
+		va_end(vl);
+
+		if (!message.compare("")) {
+			va_start(vl, arg_count);
+			message = "Required token = ";
+			for (idx = 0; idx < arg_count; idx++) {
+				message += "[";
+				message += va_arg(vl, char*);
+				message += "]";
+				if (arg_count == 2 && idx == 0) {
+					message += " or ";
+				} else if (idx == arg_count - 2) {
+					message += ", or ";
+				} else if (idx < arg_count - 2) {
+					message += ", ";
+				}
+			}
+			va_end(vl);
+		}
+
+		error_display(1, "%s, found [%.32s]\n", message.c_str(), next_tokens());
+		advance_to_eoln(NULL);
+		ignore_white_space();
+		count++;
+	}
+
+	return -1;
+}
+
 int required_string_either_fred(char *str1, char *str2)
 {
 	ignore_white_space();

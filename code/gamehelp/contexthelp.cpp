@@ -407,20 +407,22 @@ void parse_helptbl(const char *filename)
 			help_overlaylist[overlay_id].lbracketlist.push_back(lbracket_temp);
 		}
 		
+		int type;
 		// read in all elements for this overlay
-		while (!(optional_string("$end")))  {
+		while ((type = required_string_one_of(5, "+pline", "+text", "+right_bracket", "+left_bracket", "$end")) != 4) {	// Doing it this way means an error lists "$end" at the end, which seems appropriate. -MageKing17
 
-			if (optional_string("+pline")) {
-
+			switch (type) {
+			case 0:	// +pline
+				required_string("+pline");
 				currcount = help_overlaylist[overlay_id].plinecount;
 				int a, b;		// temp vars to read in int before cast to float;
 
 				// read number of pline vertices
 				stuff_int(&vtxcount);
 				// get vertex coordinates for each resolution
-				for (i=0; i<help_overlaylist[overlay_id].num_resolutions; i++) {
+				for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
 					help_overlaylist[overlay_id].plinelist.at(i).push_back(pline_temp2);
-					for (j=0; j<vtxcount; j++) {
+					for (j = 0; j < vtxcount; j++) {
 						help_overlaylist[overlay_id].plinelist.at(i).at(currcount).vtx.push_back(vec3d_temp);
 						help_overlaylist[overlay_id].plinelist.at(i).at(currcount).vtxcount = vtxcount;
 						stuff_int(&a);
@@ -432,13 +434,13 @@ void parse_helptbl(const char *filename)
 				}
 
 				help_overlaylist[overlay_id].plinecount++;
-
-			} else if (optional_string("+text")) {
-
+				break;
+			case 1:	// +text
+				required_string("+text");
 				currcount = help_overlaylist[overlay_id].textcount;
 
 				// get coordinates for each resolution
-				for (i=0; i<help_overlaylist[overlay_id].num_resolutions; i++) {
+				for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
 					help_overlaylist[overlay_id].textlist.at(i).push_back(text_temp2);
 					stuff_int(&(help_overlaylist[overlay_id].textlist.at(i).at(currcount).x_coord));
 					stuff_int(&(help_overlaylist[overlay_id].textlist.at(i).at(currcount).y_coord));
@@ -449,40 +451,43 @@ void parse_helptbl(const char *filename)
 				help_overlaylist[overlay_id].textlist.at(0).at(currcount).string = vm_strdup(buf);
 
 				help_overlaylist[overlay_id].textcount++;
-
-			} else if (optional_string("+right_bracket")) {
-
+				break;
+			case 2: // +right_bracket
+				required_string("+right_bracket");
 				currcount = help_overlaylist[overlay_id].rbracketcount;
 
 				// get coordinates for each resolution
-				for (i=0; i<help_overlaylist[overlay_id].num_resolutions; i++) {
+				for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
 					help_overlaylist[overlay_id].rbracketlist.at(i).push_back(rbracket_temp2);
 					stuff_int(&(help_overlaylist[overlay_id].rbracketlist.at(i).at(currcount).x_coord));
 					stuff_int(&(help_overlaylist[overlay_id].rbracketlist.at(i).at(currcount).y_coord));
 				}
 
 				help_overlaylist[overlay_id].rbracketcount++;
-
-			} else if (optional_string("+left_bracket")) {
-
+				break;
+			case 3: // +left_bracket
+				required_string("+left_bracket");
 				currcount = help_overlaylist[overlay_id].lbracketcount;
 
 				// get coordinates for each resolution
-				for (i=0; i<help_overlaylist[overlay_id].num_resolutions; i++) {
+				for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
 					help_overlaylist[overlay_id].lbracketlist.at(i).push_back(lbracket_temp2);
 					stuff_int(&(help_overlaylist[overlay_id].lbracketlist.at(i).at(currcount).x_coord));
 					stuff_int(&(help_overlaylist[overlay_id].lbracketlist.at(i).at(currcount).y_coord));
 				}
 
 				help_overlaylist[overlay_id].lbracketcount++;
-
-			} else {
-				// help.tbl is corrupt
-				Assert(0);
-
-			}		// end if
-
+				break;
+			case -1:
+				// -noparseerrors is set
+				break;
+			case 4: // $end
+			default:
+				Assertion(false, "This should never happen.\n");
+				break;
+			}
 		}		// end while
+		required_string("$end");
 	}		// end while
 }
 
