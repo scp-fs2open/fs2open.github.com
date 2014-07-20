@@ -639,7 +639,7 @@ sexp_oper Operators[] = {
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
-	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	7,			SEXP_ACTION_OPERATOR,	},	// taylor
+	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 
@@ -16611,8 +16611,15 @@ void sexp_set_skybox_model(int n)
 	strcpy_s(new_skybox_model, CTEXT(n));
 	int new_skybox_model_flags = DEFAULT_NMODEL_FLAGS;
 
-	// gather any flags
+	// check if we need to reset the animated texture timestamp
 	n = CDR(n);
+	if (n == -1 || !is_sexp_true(n)) {
+		Skybox_timestamp = game_get_overall_frametime();
+	}
+
+	if (n != -1) n = CDR(n);
+
+	// gather any flags
 	while (n != -1) {
 		// this should check all entries in Skybox_flags
 		if ( !stricmp("add-lighting", CTEXT(n) )) {
@@ -27038,7 +27045,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_SKYBOX_MODEL:
 			if (argnum == 0)
 				return OPF_SKYBOX_MODEL_NAME;
-			else if (argnum <= 7)
+			else if (argnum == 1)
+				return OPF_BOOL;
+			else
 				return OPF_SKYBOX_FLAGS;
 
 		case OP_SET_SKYBOX_ORIENT:
@@ -32626,7 +32635,8 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_SET_SKYBOX_MODEL, "set-skybox-model\r\n"
 		"\tSets the current skybox model.  Takes 1-7 arguments\r\n"
 		"\t1:\tModel filename (with .pof extension) to switch to\r\n"
-		"\t2-7:\tSet or unset the following skyboxes flags\r\n"
+		"\t2:\tKeep skybox animated texture timestamp (optional, defaults to false)\r\n"
+		"\t3-8:\tSet or unset the following skyboxes flags\r\n"
 		"\t\t\tadd-lighting, no-transparency, add-zbuffer\r\n"
 		"\t\t\tadd-culling, no-glowmaps, force-clamp\r\n\r\n"
 		"Note: If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
