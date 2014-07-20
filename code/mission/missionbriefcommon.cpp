@@ -1415,7 +1415,7 @@ bool brief_verify_color_tag(char color_tag)
 
 void brief_set_text_color(char color_tag)
 {
-	gr_set_color_fast(&Tagged_Colors[color_tag]);
+	gr_set_color_fast(Tagged_Colors[color_tag]);
 }
 
 /**

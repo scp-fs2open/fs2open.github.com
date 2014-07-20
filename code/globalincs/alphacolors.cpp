@@ -15,7 +15,8 @@
 SCP_map<SCP_string, team_color> Team_Colors;
 SCP_vector<SCP_string> Team_Names;
 
-SCP_map<char, color> Tagged_Colors;
+SCP_map<char, color*> Tagged_Colors;
+SCP_map<char, color> Custom_Colors;
 SCP_vector<char> Color_Tags;
 
 // -----------------------------------------------------------------------------------
@@ -254,7 +255,7 @@ void alpha_colors_init()
 	}
 
 	for (i = 0; i < DEFAULT_TAGS; i++) {
-		Tagged_Colors[DEFAULT_TAG_LIST[i]] = *DEFAULT_TAG_COLORS[i];
+		Tagged_Colors[DEFAULT_TAG_LIST[i]] = DEFAULT_TAG_COLORS[i];
 		Color_Tags.push_back(DEFAULT_TAG_LIST[i]);
 	}
 
@@ -514,11 +515,13 @@ void parse_everything_else(const char *filename)
 						}
 					}
 					gr_init_alphacolor(&temp_color, rgba[0], rgba[1], rgba[2], rgba[3]);
-					Tagged_Colors[tag] = temp_color;
+					Custom_Colors[tag] = temp_color;
+					Tagged_Colors[tag] = &Custom_Colors[tag];
 				//} else if ( check_for_string ("#") ) {
 				//	stuff_hex_list(rgba, 4);
 				//	gr_init_alphacolor(&temp_color, rgba[0], rgba[1], rgba[2], rgba[3]);
-				//	Tagged_Colors[tag] = temp_color;
+				//	Custom_Colors[tag] = temp_color;
+				//	Tagged_Colors[tag] = &Custom_Colors[tag];
 				} else {
 					// We have a string; it should be the name of a color to use.
 					stuff_string(temp, F_NAME);
@@ -530,20 +533,20 @@ void parse_everything_else(const char *filename)
 					if ( j == TOTAL_COLORS ) {
 						Error(LOCATION, "Unknown color '%s' in %s, for definition of tag '$%c'.\n", temp.c_str(), filename, tag);
 					}
-					Tagged_Colors[tag] = *COLOR_LIST[j];
+					Tagged_Colors[tag] = COLOR_LIST[j];
 				}
 				break;
 			case 1:	// +Friendly
 				required_string("+Friendly");
-				Tagged_Colors[tag] = Brief_color_green;
+				Tagged_Colors[tag] = &Brief_color_green;
 				break;
 			case 2:	// +Hostile
 				required_string("+Hostile");
-				Tagged_Colors[tag] = Brief_color_red;
+				Tagged_Colors[tag] = &Brief_color_red;
 				break;
 			case 3:	// +Neutral
 				required_string("+Neutral");
-				Tagged_Colors[tag] = Brief_color_legacy_neutral;
+				Tagged_Colors[tag] = &Brief_color_legacy_neutral;
 				break;
 			case -1:
 				// -noparseerrors is set

@@ -46,7 +46,7 @@ extern color *Color_netplayer[NETPLAYER_COLORS];
 extern SCP_map<SCP_string, team_color> Team_Colors;
 extern SCP_vector<SCP_string> Team_Names;
 
-extern SCP_map<char, color> Tagged_Colors;
+extern SCP_map<char, color*> Tagged_Colors;
 extern SCP_vector<char> Color_Tags;
 
 #define MAX_DEFAULT_TEXT_COLORS	7
