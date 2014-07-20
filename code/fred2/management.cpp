@@ -397,9 +397,7 @@ bool fred_init()
 
 	hud_init_comm_orders();		// Goober5000
 
-	if (!new_alpha_colors_init()) {
-		old_alpha_colors_init();
-	}
+	alpha_colors_init();
 	
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	

@@ -2001,9 +2001,7 @@ void game_init()
 
 	// initialize alpha colors
 	// CommanderDJ: try with colors.tbl first, then use the old way if that doesn't work
-	if (!new_alpha_colors_init()) {
-		old_alpha_colors_init();
-	}
+	alpha_colors_init();
 
 	obj_init();	
 	mflash_game_init();	

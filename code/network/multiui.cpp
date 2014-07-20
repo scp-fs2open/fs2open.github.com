@@ -222,7 +222,7 @@ void multi_common_render_text()
 	}
 
 	if ( (Multi_common_num_text_lines - Multi_common_top_text_line) > Multi_common_text_max_display[gr_screen.res] ) {
-		gr_set_color_fast(&Color_bright_red);
+		gr_set_color_fast(&Color_more_bright);
 		gr_string(Multi_common_text_coords[gr_screen.res][0], (Multi_common_text_coords[gr_screen.res][1] + Multi_common_text_coords[gr_screen.res][3])-5, XSTR("more",755), GR_RESIZE_MENU);
 	}
 }
