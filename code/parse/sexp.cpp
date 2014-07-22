@@ -16613,7 +16613,7 @@ void sexp_set_skybox_model(int n)
 
 	// check if we need to reset the animated texture timestamp
 	n = CDR(n);
-	if (n == -1 || !is_sexp_true(n)) {
+	if (n == -1 || is_sexp_true(n)) {
 		Skybox_timestamp = game_get_overall_frametime();
 	}
 
@@ -32631,12 +32631,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tAny:\tJump node to hide\r\n"
 	},
 
-	// taylor
+	// taylor, with modifications by niffiwan and MageKing17
 	{ OP_SET_SKYBOX_MODEL, "set-skybox-model\r\n"
 		"\tSets the current skybox model.  Takes 1-7 arguments\r\n"
 		"\t1:\tModel filename (with .pof extension) to switch to\r\n"
-		"\t2:\tKeep skybox animated texture timestamp (optional, defaults to false)\r\n"
-		"\t3-8:\tSet or unset the following skyboxes flags\r\n"
+		"\t2:\tRestart animated textures, if they exist (optional, defaults to true)\r\n"
+		"\t3-8:\tSet or unset the following skyboxes flags (optional)\r\n"
 		"\t\t\tadd-lighting, no-transparency, add-zbuffer\r\n"
 		"\t\t\tadd-culling, no-glowmaps, force-clamp\r\n\r\n"
 		"Note: If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
