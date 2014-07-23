@@ -1799,6 +1799,9 @@ void maybe_convert_foreign_characters(char *line)
 	if (Fred_running)
 		return;
 
+	if (Lcl_pl)
+		return;
+
 	for (ch = line; *ch != '\0'; ch++)
 			*ch = (char) maybe_convert_foreign_character(*ch);
 }
@@ -1807,6 +1810,9 @@ void maybe_convert_foreign_characters(char *line)
 void maybe_convert_foreign_characters(SCP_string &line)
 {
 	if (Fred_running)
+		return;
+
+	if (Lcl_pl)
 		return;
 
 	for (SCP_string::iterator ii = line.begin(); ii != line.end(); ++ii)
