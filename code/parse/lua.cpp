@@ -6041,7 +6041,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	ship_info *sip = &Ship_info[idx];
 
 	if (sip->uses_team_colors) {
-		gr_set_team_color(sip->default_team_name, "<none>", 0, 0);
+		gr_set_team_color(sip->default_team_name, "none", 0, 0);
 	}
 
 	//Make sure model is loaded
@@ -6119,7 +6119,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	ship_info *sip = &Ship_info[idx];
 
 	if (sip->uses_team_colors) {
-		gr_set_team_color(sip->default_team_name, "<none>", 0, 0);
+		gr_set_team_color(sip->default_team_name, "none", 0, 0);
 	}
 
 	//Make sure model is loaded
@@ -12268,6 +12268,11 @@ ADE_FUNC(setTips, l_Base, "True or false", "Sets whether to display tips of the 
 		Player->tips = 0;
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getGameDifficulty, l_Base, NULL, "Returns the difficulty level from 1-5, 1 being the lowest, (Very Easy) and 5 being the highest (Insane)", "integer", "Difficulty level as integer")
+{
+	return ade_set_args(L, "i", Game_skill_level+1);
 }
 
 ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Note that you can crash FreeSpace 2 by posting an event at an improper time, so test extensively if you use it.", "boolean", "True if event was posted, false if passed event was invalid")

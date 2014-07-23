@@ -337,7 +337,7 @@ void red_alert_init()
 	}
 
 	if ( Briefing->num_stages > 0 ) {
-		brief_color_text_init(Briefing->stages[0].text.c_str(), Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], 0);
+		brief_color_text_init(Briefing->stages[0].text.c_str(), Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], default_redalert_briefing_color, 0);
 	}
 
 	red_alert_voice_load();

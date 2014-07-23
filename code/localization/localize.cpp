@@ -271,9 +271,6 @@ void parse_stringstbl_common(const char *filename, const bool external)
 		} else if (!external && (index < 0 || index >= XSTR_SIZE)) {
 			Error(LOCATION, "Invalid strings table index specified (%i)", index);
 		}
-
-		if (Lcl_pl)
-			lcl_fix_polish(buf);
 		
 		if (!external) {
 			i = strlen(buf);
@@ -914,9 +911,6 @@ int lcl_ext_get_text(const char *xstr, char *out)
 	// now that we know the boundaries of the actual string in the XSTR() tag, copy it
 	memcpy(out, xstr + str_start, str_end - str_start);	
 
-	if (Lcl_pl)
-		lcl_fix_polish(out);
-
 	// success
 	return 1;
 }
@@ -943,9 +937,6 @@ int lcl_ext_get_text(const SCP_string &xstr, SCP_string &out)
 
 	// now that we know the boundaries of the actual string in the XSTR() tag, copy it
 	out.assign(xstr, open_quote_pos + 1, close_quote_pos - open_quote_pos - 1);
-
-	if (Lcl_pl)
-		lcl_fix_polish(out);
 
 	// success
 	return 1;
@@ -1115,28 +1106,6 @@ void lcl_get_language_name(char *lang_name)
 	Assert(Lcl_current_lang < (int)Lcl_languages.size());
 
 	strcpy(lang_name, Lcl_languages[Lcl_current_lang].lang_name);
-}
-
-// convert some of the polish characters
-void lcl_fix_polish(char *str)
-{
-	for (; *str; str++) {
-		if(*str == '\xA2')
-			*str = '\xF3';
-		else if(*str == '\x88')
-			*str = '\xEA';
-	}
-}
-
-// convert some of the polish characters
-void lcl_fix_polish(SCP_string &str)
-{
-	for (SCP_string::iterator ii = str.begin(); ii != str.end(); ++ii) {
-		if(*ii == '\xA2')
-			*ii = '\xF3';
-		else if(*ii == '\x88')
-			*ii = '\xEA';
-	}
 }
 
 // ------------------------------------------------------------------

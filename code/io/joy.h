@@ -12,7 +12,7 @@
 #ifndef __JOY_H__
 #define __JOY_H__
 
-#define JOY_NUM_BUTTONS		32
+#define JOY_NUM_BUTTONS		98
 #define JOY_NUM_HAT_POS		4
 #define JOY_TOTAL_BUTTONS	(JOY_NUM_BUTTONS + JOY_NUM_HAT_POS)
 #define JOY_NUM_AXES			6

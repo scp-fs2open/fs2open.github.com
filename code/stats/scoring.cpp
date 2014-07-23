@@ -216,28 +216,6 @@ void scoring_struct::assign(const scoring_struct &s)
 	memcpy(m_dogfight_kills, s.m_dogfight_kills, MAX_PLAYERS * sizeof(int));
 }
 
-#ifndef NDEBUG
-//XSTR:OFF
-void scoring_eval_harbison( ship *shipp )
-{
-	FILE *fp;
-
-	if ( !stricmp(shipp->ship_name, "alpha 2") && (!stricmp(Game_current_mission_filename, "demo01") || !stricmp(Game_current_mission_filename, "sm1-01")) ) {
-		int death_count;
-
-		fp = fopen("i:\\volition\\cww\\harbison.txt", "r+t");
-		if ( !fp )
-			return;
-		fscanf(fp, "%d", &death_count );
-		death_count++;
-		fseek(fp, 0, SEEK_SET);
-		fprintf(fp, "%d\n", death_count);
-		fclose(fp);
-	}
-}
-//XSTR:ON
-#endif
-
 // initialize the Player's mission-based stats before he goes into a mission
 void scoring_level_init( scoring_struct *scp )
 {
@@ -651,11 +629,6 @@ int scoring_eval_kill(object *ship_objp)
 			Player->stats.m_player_deaths++;
 		}
 	}
-
-
-#ifndef NDEBUG
-	scoring_eval_harbison( dead_ship );
-#endif
 
 	net_player_num = -1;
 

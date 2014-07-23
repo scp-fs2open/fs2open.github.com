@@ -375,6 +375,7 @@ ship_flag_name Ship_flag_names[] = {
 	{SF2_STEALTH,					"stealth",						2,	},
 	{SF2_FRIENDLY_STEALTH_INVIS,	"friendly-stealth-invisible",	2,	},
 	{SF2_HIDE_SHIP_NAME,			"hide-ship-name",				2,	},
+	{SF2_PRIMITIVE_SENSORS,			"primitive-sensors",			2,	},
 	{SF2_AFTERBURNER_LOCKED,		"afterburners-locked",			2,	},
 	{SF2_PRIMARIES_LOCKED,			"primaries-locked",				2,	},
 	{SF2_SECONDARIES_LOCKED,		"secondaries-locked",			2,	},
@@ -5378,7 +5379,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	// Team colors
 	shipp->team_name.assign( sip->default_team_name);
-	shipp->secondary_team_name = "<none>";
+	shipp->secondary_team_name = "none";
 
 	shipp->autoaim_fov = sip->autoaim_fov;
 }
@@ -15331,7 +15332,7 @@ void ship_maybe_tell_about_low_ammo(ship *sp)
 			{
 				if (swp->primary_bank_start_ammo[i] > 0)
 				{
-					if (swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i] < 0.3f)
+					if ((float)swp->primary_bank_ammo[i] / (float)swp->primary_bank_start_ammo[i] < 0.3f)
 					{
 						// multiplayer tvt
 						if(MULTI_TEAM) {
@@ -15393,7 +15394,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		{
 			if (swp->secondary_bank_start_ammo[i] > 0)
 			{
-				if (swp->secondary_bank_ammo[i] / swp->secondary_bank_start_ammo[i] < 0.5f)
+				if ((float)swp->secondary_bank_ammo[i] / (float)swp->secondary_bank_start_ammo[i] < 0.5f)
 				{
 					message_type = MESSAGE_REARM_REQUEST;
 					break;
@@ -15412,7 +15413,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 				{
 					if (swp->primary_bank_start_ammo[i] > 0)
 					{
-						if (swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i] < 0.3f)
+						if ((float)swp->primary_bank_ammo[i] / (float)swp->primary_bank_start_ammo[i] < 0.3f)
 						{
 							message_type = MESSAGE_REARM_PRIMARIES;
 							break;

@@ -114,10 +114,6 @@ void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = NULL);
 const char *XSTR(const char *str, int index);
 int lcl_get_xstr_offset(int index, int res);
 
-// covert some polish characters
-void lcl_fix_polish(char *str);
-void lcl_fix_polish(SCP_string &str);
-
 void lcl_translate_wep_name_gr(char *name);
 void lcl_translate_ship_name_gr(char *name);
 void lcl_translate_brief_icon_name_gr(char *name);
