@@ -34,7 +34,7 @@ void UI_SLIDER2::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _num
 
 	captureCallback = _captureCallback;	
 
-	Assert(_bitmapSliderControl > 0);
+	Assert(_bitmapSliderControl != NULL);
 
 	last_scrolled = 0;
 
