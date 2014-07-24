@@ -2394,11 +2394,8 @@ int HudGaugeTextWarnings::maybeTextFlash()
 
 void HudGaugeTextWarnings::render(float frametime)
 {
-	if ( timestamp_elapsed(Hud_text_flash_timer) || !Hud_text_flash) {
-		return;
-	}
-
-	if(strlen(Hud_text_flash) <= 0) {
+	// note: Hud_text_flash globally allocated, address can't be NULL
+	if ( timestamp_elapsed(Hud_text_flash_timer) || Hud_text_flash[0] == '\0' ) {
 		return;
 	}
 

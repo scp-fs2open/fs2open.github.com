@@ -74,35 +74,8 @@ extern briefing_icon_info *brief_get_icon_info(brief_icon *bi);
 
 
 
-// Moving briefing color definitions out of missionbriefcommon.cpp so they can be referenced elsewhere -MageKing17
-
-enum
-{
-	BRIEF_TEXT_WHITE = 0,
-	BRIEF_TEXT_BRIGHT_WHITE,
-	BRIEF_TEXT_RED,
-	BRIEF_TEXT_GREEN,
-	BRIEF_TEXT_YELLOW,
-	BRIEF_TEXT_BLUE,
-	BRIEF_TEXT_FRIENDLY,
-	BRIEF_TEXT_HOSTILE,
-	BRIEF_TEXT_NEUTRAL,
-	BRIEF_TEXT_BRIGHT_BLUE,
-	BRIEF_TEXT_BRIGHT_GREEN,
-	BRIEF_TEXT_BRIGHT_RED,
-	BRIEF_TEXT_BRIGHT_YELLOW,
-	BRIEF_TEXT_BLACK,
-	BRIEF_TEXT_GREY,
-	BRIEF_TEXT_SILVER,
-	BRIEF_TEXT_VIOLET_GRAY,
-	BRIEF_TEXT_VIOLET,
-	BRIEF_TEXT_PINK,
-	BRIEF_TEXT_LIGHT_PINK,
-	MAX_BRIEF_TEXT_COLORS
-};
-
-// And the same here
-const float		BRIEF_TEXT_WIPE_TIME	= 1.5f;		// time in seconds for wipe to occur
+// Moving out of missionbriefcommon.cpp so it can be referenced elsewhere -MageKing17
+extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
 
 // ------------------------------------------------------------------------
 // Structures to hold briefing data
@@ -335,7 +308,7 @@ void brief_voice_pause(int stage_num);
 void brief_voice_unpause(int stage_num);
 
 // fancy briefing style text functions for use in other modules.
-int brief_color_text_init(const char *src, int w, int instance = 0, int max_lines = MAX_BRIEF_LINES, const ubyte default_color = BRIEF_TEXT_WHITE, const bool append = false);
+int brief_color_text_init(const char *src, int w, const char default_color = '\0', int instance = 0, int max_lines = MAX_BRIEF_LINES, const bool append = false);
 int brief_render_text(int line_offset, int x, int y, int h, float frametime, int instance = 0, int line_spacing = 0);
 
 void cmd_brief_reset();

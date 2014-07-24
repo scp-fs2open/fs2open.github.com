@@ -351,7 +351,7 @@ void cmd_brief_new_stage(int stage)
 	}
 
 	Cur_stage = stage;
-	brief_color_text_init(Cur_cmd_brief->stage[stage].text.c_str(), Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]);
+	brief_color_text_init(Cur_cmd_brief->stage[stage].text.c_str(), Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD], default_command_briefing_color);
 
 	// load a new animation if it's different to what's already playing
 	if (strcmp(Cur_anim_filename, Cur_cmd_brief->stage[stage].ani_filename) != 0) {

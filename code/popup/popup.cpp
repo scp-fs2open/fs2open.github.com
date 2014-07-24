@@ -731,7 +731,7 @@ void popup_draw_msg_text(popup_info *pi, int flags)
 	// maybe draw "more"
 	h = 10;
 	if(i < pi->nlines){
-		gr_set_color_fast(&Color_bright_red);
+		gr_set_color_fast(&Color_more_bright);
 		gr_string(Title_coords[gr_screen.res][4], sy + (Popup_max_display[gr_screen.res]) * h, XSTR("More", 459), GR_RESIZE_MENU);
 	}
 

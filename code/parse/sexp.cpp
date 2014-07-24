@@ -640,7 +640,7 @@ sexp_oper Operators[] = {
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
-	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	7,			SEXP_ACTION_OPERATOR,	},	// taylor
+	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 
@@ -16612,8 +16612,15 @@ void sexp_set_skybox_model(int n)
 	strcpy_s(new_skybox_model, CTEXT(n));
 	int new_skybox_model_flags = DEFAULT_NMODEL_FLAGS;
 
-	// gather any flags
+	// check if we need to reset the animated texture timestamp
 	n = CDR(n);
+	if (n == -1 || is_sexp_true(n)) {
+		Skybox_timestamp = game_get_overall_frametime();
+	}
+
+	if (n != -1) n = CDR(n);
+
+	// gather any flags
 	while (n != -1) {
 		// this should check all entries in Skybox_flags
 		if ( !stricmp("add-lighting", CTEXT(n) )) {
@@ -27039,7 +27046,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_SKYBOX_MODEL:
 			if (argnum == 0)
 				return OPF_SKYBOX_MODEL_NAME;
-			else if (argnum <= 7)
+			else if (argnum == 1)
+				return OPF_BOOL;
+			else
 				return OPF_SKYBOX_FLAGS;
 
 		case OP_SET_SKYBOX_ORIENT:
@@ -31797,7 +31806,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_GET_PRIMARY_AMMO, "get-primary-ammo\r\n"
 		"\tReturns the amount of ammo remaining in the specified bank\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative total for all banks)" },
 
 	
 	{ OP_SECONDARY_AMMO_PCT, "secondary-ammo-pct\r\n"
@@ -31809,7 +31818,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_GET_SECONDARY_AMMO, "get-secondary-ammo\r\n"
 		"\tReturns the amount of ammo remaining in the specified bank\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative total for all banks)" },
 
 	// Karajorma
 	{ OP_GET_NUM_COUNTERMEASURES, "get-num-countermeasures\r\n"
@@ -31817,14 +31826,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship name\r\n" },
 
 	{ OP_IS_SECONDARY_SELECTED, "is-secondary-selected\r\n"
-		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
+		"\tReturns true if the specified bank is selected\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0 .. num_banks - 1)\r\n"},
+		"\t2: Bank to check (This is a zero-based index. The first bank is numbered 0.)\r\n"},
 
 	{ OP_IS_PRIMARY_SELECTED, "is-primary-selected\r\n"
-		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
+		"\tReturns true if the specified bank is selected\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0 .. num_banks - 1)\r\n"},
+		"\t2: Bank to check (This is a zero-based index. The first bank is numbered 0.)\r\n"},
 
 	{ OP_SPECIAL_WARP_DISTANCE, "special-warp-dist\r\n"
 		"\tReturns distance to the plane of the knossos device in percent length of ship\r\n"
@@ -32327,7 +32336,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_PRIMARY_FIRED_SINCE, "primary-fired-since\r\n"
 		"\tReturns true if the primary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
 	},
 
@@ -32335,7 +32344,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_SECONDARY_FIRED_SINCE, "secondary-fired-since\r\n"
 		"\tReturns true if the secondary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
 	},
 
@@ -32343,7 +32352,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_HAS_PRIMARY_WEAPON, "has-primary-weapon\r\n"
 		"\tReturns true if the primary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
 	},
 
@@ -32351,7 +32360,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_HAS_SECONDARY_WEAPON, "has-secondary-weapon\r\n"
 		"\tReturns true if the secondary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
 	},
 
@@ -32623,11 +32632,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tAny:\tJump node to hide\r\n"
 	},
 
-	// taylor
+	// taylor, with modifications by niffiwan and MageKing17
 	{ OP_SET_SKYBOX_MODEL, "set-skybox-model\r\n"
 		"\tSets the current skybox model.  Takes 1-7 arguments\r\n"
 		"\t1:\tModel filename (with .pof extension) to switch to\r\n"
-		"\t2-7:\tSet or unset the following skyboxes flags\r\n"
+		"\t2:\tRestart animated textures, if they exist (optional, defaults to true)\r\n"
+		"\t3-8:\tSet or unset the following skyboxes flags (optional)\r\n"
 		"\t\t\tadd-lighting, no-transparency, add-zbuffer\r\n"
 		"\t\t\tadd-culling, no-glowmaps, force-clamp\r\n\r\n"
 		"Note: If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."

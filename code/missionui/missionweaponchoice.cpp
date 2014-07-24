@@ -2659,7 +2659,7 @@ void weapon_select_do(float frametime)
 		weapon_ani_coords = Wl_weapon_ani_coords[gr_screen.res];
 	}
 
-	if(Wl_icons[Selected_wl_class].model_index != -1) {
+	if(Selected_wl_class != -1 && Wl_icons[Selected_wl_class].model_index != -1) {
 		static float WeapSelectScreenWeapRot = 0.0f;
 		wl_icon_info *sel_icon	= &Wl_icons[Selected_wl_class];
 		weapon_info *wip = &Weapon_info[Selected_wl_class];

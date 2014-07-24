@@ -761,15 +761,6 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	texture_info *tglow = &tmap->textures[TM_GLOW_TYPE];
 	int rt_begin_index = tmap_num*TM_NUM_TYPES;
 
-	// Goober5000
-	Interp_base_frametime = 0;
-	if (Interp_objnum >= 0)
-	{
-		object *objp = &Objects[Interp_objnum];
-		if (objp->type == OBJ_SHIP)
-			Interp_base_frametime = Ships[objp->instance].base_texture_anim_frametime;
-	}
-
 	int is_invisible = 0;
 
 	if (Interp_warp_bitmap < 0) {
@@ -1958,7 +1949,7 @@ DCF(model_darkening,"Makes models darker with distance")
 	dc_printf("model_darkening set to %.1f\n", Interp_depth_scale);
 }
 
-void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures)
+void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures, const bool is_skybox)
 {
 	int cull = 0;
 	// replacement textures - Goober5000
@@ -1996,6 +1987,20 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 	if(flags & MR_NO_CULL){
 		cull = gr_set_cull(0);
 	}
+
+	// Goober5000
+	Interp_base_frametime = 0;
+
+	if (objnum >= 0) {
+		object *objp = &Objects[objnum];
+
+		if (objp->type == OBJ_SHIP) {
+			Interp_base_frametime = Ships[objp->instance].base_texture_anim_frametime;
+		}
+	} else if (is_skybox) {
+		Interp_base_frametime = Skybox_timestamp;
+	}
+
 
 	Interp_objnum = objnum;
 
@@ -2978,13 +2983,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		cull = gr_set_cull(0);
 	} else {
 		cull = gr_set_cull(1);
-	}
-
-	// Goober5000
-	Interp_base_frametime = 0;
-
-	if ( (objp != NULL) && (objp->type == OBJ_SHIP) ) {
-		Interp_base_frametime = Ships[objp->instance].base_texture_anim_frametime;
 	}
 
 	if ( !(Interp_flags & MR_NO_LIGHTING) ) {

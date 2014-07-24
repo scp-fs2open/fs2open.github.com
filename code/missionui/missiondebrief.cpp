@@ -1831,7 +1831,7 @@ void debrief_text_init()
 		}
 	}
 
-	Num_text_lines = Text_offset = brief_color_text_init("", Debrief_text_wnd_coords[gr_screen.res][2], 0, 0);	// Initialize color stuff -MageKing17
+	Num_text_lines = Text_offset = brief_color_text_init("", Debrief_text_wnd_coords[gr_screen.res][2], default_debriefing_color, 0, 0);	// Initialize color stuff -MageKing17
 
 	fsspeech_start_buffer();
 
@@ -1839,12 +1839,12 @@ void debrief_text_init()
 		for (i=0; i<Num_debrief_stages; i++) {
 			if (i)
 				// add a blank line between stages
-				Num_text_lines += brief_color_text_init("\n", Debrief_text_wnd_coords[gr_screen.res][2], 0, MAX_DEBRIEF_LINES, BRIEF_TEXT_WHITE, true);
+				Num_text_lines += brief_color_text_init("\n", Debrief_text_wnd_coords[gr_screen.res][2], default_debriefing_color, 0, MAX_DEBRIEF_LINES, true);
 
 			src = Debrief_stages[i]->text.c_str();
 
 			if (*src) {
-				Num_text_lines += brief_color_text_init(src, Debrief_text_wnd_coords[gr_screen.res][2], 0, MAX_DEBRIEF_LINES, BRIEF_TEXT_WHITE, true);
+				Num_text_lines += brief_color_text_init(src, Debrief_text_wnd_coords[gr_screen.res][2], default_debriefing_color, 0, MAX_DEBRIEF_LINES, true);
 
 				if (use_sim_speech && !Recommend_active) {
 					fsspeech_stuff_buffer(src);
@@ -1859,9 +1859,9 @@ void debrief_text_init()
 					src = XSTR( "We have no recommendations for you.", 1054);
 
 				if (*src) {
-					Num_text_lines += brief_color_text_init("\n", Debrief_text_wnd_coords[gr_screen.res][2], 0, MAX_DEBRIEF_LINES, BRIEF_TEXT_RED, true);
+					Num_text_lines += brief_color_text_init("\n", Debrief_text_wnd_coords[gr_screen.res][2], default_recommendation_color, 0, MAX_DEBRIEF_LINES, true);
 
-					Num_text_lines += brief_color_text_init(src, Debrief_text_wnd_coords[gr_screen.res][2], 0, MAX_DEBRIEF_LINES, BRIEF_TEXT_RED, true);
+					Num_text_lines += brief_color_text_init(src, Debrief_text_wnd_coords[gr_screen.res][2], default_recommendation_color, 0, MAX_DEBRIEF_LINES, true);
 					r_count++;
 
 					if (use_sim_speech) {

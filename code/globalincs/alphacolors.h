@@ -21,28 +21,11 @@
 // Colors for UI
 // See FreeSpace.cpp for usage
 
-// The following colors are for text drawing:
-// normal text
-#define Color_text_normal		Color_white
-// text highlighted while down still down on a line
-#define Color_text_subselected	Color_blue
-// text highlighted as the selected line
-#define Color_text_selected		Color_bright_blue
-// text that indicates an error
-#define Color_text_error		Color_red
-// text that indicates an error, and line is selected or subselected
-#define Color_text_error_hi		Color_bright_red
-// text that indicates line is active item
-#define Color_text_active		Color_bright_white
-// text that indicates line is active item, and line is selected or subselected
-#define Color_text_active_hi	Color_bright_white
-// text drawn as a heading for a section or title, etc
-#define Color_text_heading		Color_violet_gray
-// color of the "more" indicator in briefings/command briefings/debrefings
-#define Color_more_indicator	Color_red
+#define INTERFACE_COLORS 12
+extern color Color_text_normal, Color_text_subselected, Color_text_selected;
+extern color Color_text_error, Color_text_error_hi, Color_text_active, Color_text_active_hi;
+extern color Color_text_heading, Color_more_indicator, Color_more_bright, Color_bright, Color_normal;
 
-#define Color_bright Color_bright_blue
-#define Color_normal Color_white
 #define TOTAL_COLORS 22
 extern color Color_blue, Color_bright_blue, Color_green, Color_bright_green;
 extern color Color_black, Color_grey, Color_silver, Color_white, Color_bright_white;
@@ -52,6 +35,9 @@ extern color Color_dim_red, Color_red, Color_bright_red, Color_yellow, Color_bri
 extern color Color_ui_light_green, Color_ui_green;
 extern color Color_ui_light_pink, Color_ui_pink;
 
+// briefing hostile/friendly/neutral colors
+extern color Brief_color_red, Brief_color_green, Brief_color_legacy_neutral;
+
 // netplayer colors
 #define NETPLAYER_COLORS 20
 extern color *Color_netplayer[NETPLAYER_COLORS];
@@ -60,14 +46,23 @@ extern color *Color_netplayer[NETPLAYER_COLORS];
 extern SCP_map<SCP_string, team_color> Team_Colors;
 extern SCP_vector<SCP_string> Team_Names;
 
+extern SCP_map<char, color*> Tagged_Colors;
+extern SCP_vector<char> Color_Tags;
+
+#define MAX_DEFAULT_TEXT_COLORS	7
+extern char default_fiction_viewer_color;
+extern char default_command_briefing_color;
+extern char default_briefing_color;
+extern char default_redalert_briefing_color;
+extern char default_debriefing_color;
+extern char default_recommendation_color;
+extern char default_loop_briefing_color;
+
 // -----------------------------------------------------------------------------------
 // ALPHA FUNCTIONS
 //
 
 //initialize alpha colors based on colors.tbl
-int new_alpha_colors_init();
-
-//initialize alpha colors based on hardcoded values
-void old_alpha_colors_init();
+void alpha_colors_init();
 
 #endif
