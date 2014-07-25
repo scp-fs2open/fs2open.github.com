@@ -1557,7 +1557,9 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 	clip_height = tan( (double)fov * 0.5 ) * z_near;
 	clip_width = clip_height * (GLdouble)aspect;
 
-	if (GL_rendering_to_texture) {
+	// I'm not sure why the RTT output gets mirrored in post-processing without
+	// this check, but it does. -zookeeper
+	if (GL_rendering_to_texture && ( Cmdline_postprocess && !PostProcessing_override ) ) {
 		glFrustum( -clip_width, clip_width, clip_height, -clip_height, z_near, z_far );
 	} else {
 		glFrustum( -clip_width, clip_width, -clip_height, clip_height, z_near, z_far );

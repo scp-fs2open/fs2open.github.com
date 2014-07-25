@@ -2628,10 +2628,10 @@ void gr_opengl_scene_texture_end()
 			};
 
 			GLfloat uvcoords[8] = {
-				Scene_texture_u_scale, 0.0f,
 				0.0f, 0.0f,
+				Scene_texture_u_scale, 0.0f,
+				Scene_texture_u_scale, Scene_texture_v_scale,
 				0.0f, Scene_texture_v_scale,
-				Scene_texture_u_scale, Scene_texture_v_scale
 			};
 
 			GL_state.Array.EnableClientVertex();
@@ -2641,7 +2641,7 @@ void gr_opengl_scene_texture_end()
 			GL_state.Array.EnableClientTexture();
 			GL_state.Array.TexPointer(2, GL_FLOAT, 0, uvcoords);
 		
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			glDrawArrays(GL_QUADS, 0, 4);
 			
 			GL_state.Array.DisableClientVertex();
 			GL_state.Array.DisableClientTexture();
