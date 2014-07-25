@@ -161,7 +161,6 @@ ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs
 
 ship_info		Ship_info[MAX_SHIP_CLASSES];
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
-SCP_vector<ship_info> Ship_templates;
 
 static char **tspecies_names = NULL;
 
@@ -1099,98 +1098,12 @@ int parse_ship(const char *filename, bool replace)
 
 	// Use a template for this ship.
 	if( optional_string( "+Use Template:" ) ) {
-		// Should never resolve to true, but just in case...
-		if( !create_if_not_found ) {
-			Warning(LOCATION, "Both '+nocreate' and '+Use Template:' were specified for ship class '%s', ignoring '+Use Template:'", buf);
-		}
-		else {
-			char template_name[SHIP_MULTITEXT_LENGTH];
-			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
-			int template_id = ship_template_lookup( template_name);
-			if ( template_id != -1 ) {
-				first_time = false;
-
-				// TODO: whoever implemented ship templates should implement this method
-				// sip->assign(&Ship_templates[template_id]);
-				Warning(LOCATION, "Ship templates have been broken since they were added, and are not currently supported.");
-
-				strcpy_s(sip->name, buf);
-			}
-			else {
-				Warning(LOCATION, "Unable to find ship template '%s' requested by ship class '%s', ignoring template request...", template_name, buf);
-			}
-		}
+		Warning(LOCATION, "Ignoring '+Use Template' field for '%s'.  Ship templates have been broken since they were added, and are not currently supported.", sip->name);
 	}
 
-	rtn = parse_ship_values(sip, false, first_time, replace);
+	rtn = parse_ship_values(sip, first_time, replace);
 
 	return rtn;	//0 for success
-}
-
-/**
- * Parse the information for a specific ship type template.
- */
-int parse_ship_template()
-{
-	char buf[SHIP_MULTITEXT_LENGTH];
-	ship_info new_template;
-	ship_info *sip = &new_template;
-	int rtn = 0;
-	
-	required_string("$Template:");
-	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-	
-	if( optional_string("+nocreate") ) {
-		Warning(LOCATION, "+nocreate flag used on ship template. Ship templates can not be modified. Ignoring +nocreate.");
-	}
-	
-	diag_printf ("Ship template name -- %s\n", buf);
-	//Check if the template exists already
-	int template_id;
-	template_id = ship_template_lookup( buf );
-	
-	if( template_id != -1 ) {
-		sip = &Ship_templates[template_id];
-		Warning(LOCATION, "Error:  Ship template %s already exists. All ship template names must be unique.", sip->name);
-		if ( !skip_to_start_of_string_either("$Template:", "#End")) {
-			Int3();
-		}
-		return -1;
-	}
-	else {
-		
-		init_ship_entry(sip);
-		strcpy_s(sip->name, buf);
-		//Use another template for this template. This allows for template hierarchies. - Turey
-		if( optional_string("+Use Template:") ) {
-			char template_name[SHIP_MULTITEXT_LENGTH];
-			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
-			template_id = ship_template_lookup( template_name);
-			
-			if ( template_id != -1 ) {
-				// TODO: whoever implemented ship templates should implement this method
-				// sip->assign(&Ship_templates[template_id]);
-				Warning(LOCATION, "Ship templates have been broken since they were added, and are not currently supported.");
-				
-				strcpy_s(sip->name, buf);
-			}
-			else {
-				Warning(LOCATION, "Unable to find ship template '%s' requested by ship template '%s', ignoring template request...", template_name, buf);
-			}
-		}
-	}
-	
-	rtn = parse_ship_values( sip, true, true, false );
-	
-	// Now that we're done everything, check to see if the template exists already, and if it doesn't, add it to the vector.
-	if ( ship_template_lookup( sip->name ) != -1 ) {
-		Warning(LOCATION, "Ship Template '%s' already exists, discarding duplicate...", sip->name);
-	}
-	else {
-		Ship_templates.push_back(*sip);
-	}
-	
-	return rtn;
 }
 
 void parse_ship_sound(char *name, GameSoundsIndex id, ship_info *sip)
@@ -1433,22 +1346,14 @@ int parse_and_add_briefing_icon_info()
 /**
  * Puts values into a ship_info.
  */
-int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace)
+int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
-	char* info_type_name;
 	int i, j, num_allowed;
 	int allowed_weapons[MAX_WEAPON_TYPES];
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
 	
-	if ( !isTemplate ) {
-		info_type_name = "Ship Class";
-	}
-	else {
-		info_type_name = "Ship Template";
-	}	
-
 	if(optional_string("$Alt name:"))
 		stuff_string(sip->alt_name, F_NAME, NAME_LENGTH);
 
@@ -1865,32 +1770,32 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		if(optional_string("+Min Lifetime:"))	{
 			stuff_float(&sip->debris_min_lifetime);
 			if(sip->debris_min_lifetime < 0.0f)
-				Warning(LOCATION, "Debris min lifetime on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+				Warning(LOCATION, "Debris min lifetime on ship class '%s' is below 0 and will be ignored", sip->name);
 		}
 		if(optional_string("+Max Lifetime:"))	{
 			stuff_float(&sip->debris_max_lifetime);
 			if(sip->debris_max_lifetime < 0.0f)
-				Warning(LOCATION, "Debris max lifetime on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+				Warning(LOCATION, "Debris max lifetime on ship class '%s' is below 0 and will be ignored", sip->name);
 		}
 		if(optional_string("+Min Speed:"))	{
 			stuff_float(&sip->debris_min_speed);
 			if(sip->debris_min_speed < 0.0f)
-				Warning(LOCATION, "Debris min speed on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+				Warning(LOCATION, "Debris min speed on ship class '%s' is below 0 and will be ignored", sip->name);
 		}
 		if(optional_string("+Max Speed:"))	{
 			stuff_float(&sip->debris_max_speed);
 			if(sip->debris_max_speed < 0.0f)
-				Warning(LOCATION, "Debris max speed on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+				Warning(LOCATION, "Debris max speed on ship class '%s' is below 0 and will be ignored", sip->name);
 		}
 		if(optional_string("+Min Rotation speed:"))	{
 			stuff_float(&sip->debris_min_rotspeed);
 			if(sip->debris_min_rotspeed < 0.0f)
-				Warning(LOCATION, "Debris min speed on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+				Warning(LOCATION, "Debris min speed on ship class '%s' is below 0 and will be ignored", sip->name);
 		}
 		if(optional_string("+Max Rotation speed:"))	{
 			stuff_float(&sip->debris_max_rotspeed);
 			if(sip->debris_max_rotspeed < 0.0f)
-				Warning(LOCATION, "Debris max speed on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+				Warning(LOCATION, "Debris max speed on ship class '%s' is below 0 and will be ignored", sip->name);
 		}
 		if(optional_string("+Damage Type:")) {
 			stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -1899,22 +1804,22 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		if(optional_string("+Min Hitpoints:")) {
 			stuff_float(&sip->debris_min_hitpoints);
 			if(sip->debris_min_hitpoints < 0.0f)
-				Warning(LOCATION, "Debris min hitpoints on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+				Warning(LOCATION, "Debris min hitpoints on ship class '%s' is below 0 and will be ignored", sip->name);
 		}
 		if(optional_string("+Max Hitpoints:")) {
 			stuff_float(&sip->debris_max_hitpoints);
 			if(sip->debris_max_hitpoints < 0.0f)
-				Warning(LOCATION, "Debris max hitpoints on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+				Warning(LOCATION, "Debris max hitpoints on ship class '%s' is below 0 and will be ignored", sip->name);
 		}
 		if(optional_string("+Damage Multiplier:")) {
 			stuff_float(&sip->debris_damage_mult);
 			if(sip->debris_damage_mult < 0.0f)
-				Warning(LOCATION, "Debris damage multiplier on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+				Warning(LOCATION, "Debris damage multiplier on ship class '%s' is below 0 and will be ignored", sip->name);
 		}
 		if(optional_string("+Lightning Arc Percent:")) {
 			stuff_float(&sip->debris_arc_percent);
 			if(sip->debris_arc_percent < 0.0f || sip->debris_arc_percent > 100.0f) {
-				Warning(LOCATION, "Lightning Arc Percent on %s '%s' should be between 0 and 100.0 (read %f). Entry will be ignored.", info_type_name, sip->name, sip->debris_arc_percent);
+				Warning(LOCATION, "Lightning Arc Percent on ship class '%s' should be between 0 and 100.0 (read %f). Entry will be ignored.", sip->name, sip->debris_arc_percent);
 				sip->debris_arc_percent = 50.0;
 			}
 			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
@@ -1924,19 +1829,19 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 	//WMC - sanity checking
 	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
-		Warning(LOCATION, "Debris min speed (%f) on %s '%s' is greater than debris max speed (%f), and will be set to debris max speed.", sip->debris_min_speed, info_type_name, sip->name, sip->debris_max_speed);
+		Warning(LOCATION, "Debris min speed (%f) on ship class '%s' is greater than debris max speed (%f), and will be set to debris max speed.", sip->debris_min_speed, sip->name, sip->debris_max_speed);
 		sip->debris_min_speed = sip->debris_max_speed;
 	}
 	if(sip->debris_min_rotspeed > sip->debris_max_rotspeed && sip->debris_max_rotspeed >= 0.0f) {
-		Warning(LOCATION, "Debris min rotation speed (%f) on %s '%s' is greater than debris max rotation speed (%f), and will be set to debris max rotation speed.", sip->debris_min_rotspeed, info_type_name, sip->name, sip->debris_max_rotspeed);
+		Warning(LOCATION, "Debris min rotation speed (%f) on ship class '%s' is greater than debris max rotation speed (%f), and will be set to debris max rotation speed.", sip->debris_min_rotspeed, sip->name, sip->debris_max_rotspeed);
 		sip->debris_min_rotspeed = sip->debris_max_rotspeed;
 	}
 	if(sip->debris_min_lifetime > sip->debris_max_lifetime && sip->debris_max_lifetime >= 0.0f) {
-		Warning(LOCATION, "Debris min lifetime (%f) on %s '%s' is greater than debris max lifetime (%f), and will be set to debris max lifetime.", sip->debris_min_lifetime, info_type_name, sip->name, sip->debris_max_lifetime);
+		Warning(LOCATION, "Debris min lifetime (%f) on ship class '%s' is greater than debris max lifetime (%f), and will be set to debris max lifetime.", sip->debris_min_lifetime, sip->name, sip->debris_max_lifetime);
 		sip->debris_min_lifetime = sip->debris_max_lifetime;
 	}
 	if(sip->debris_min_hitpoints > sip->debris_max_hitpoints && sip->debris_max_hitpoints >= 0.0f) {
-		Warning(LOCATION, "Debris min hitpoints (%f) on %s '%s' is greater than debris max hitpoints (%f), and will be set to debris max hitpoints.", sip->debris_min_hitpoints, info_type_name, sip->name, sip->debris_max_hitpoints);
+		Warning(LOCATION, "Debris min hitpoints (%f) on ship class '%s' is greater than debris max hitpoints (%f), and will be set to debris max hitpoints.", sip->debris_min_hitpoints, sip->name, sip->debris_max_hitpoints);
 		sip->debris_min_hitpoints = sip->debris_max_hitpoints;
 	}
 
@@ -1954,7 +1859,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 	if(optional_string("$Banking Constant:"))
 		stuff_float( &(sip->delta_bank_const) );
-	diag_printf ("%s '%s' delta_bank_const -- %7.3f\n", info_type_name, sip->name, sip->delta_bank_const);
+	diag_printf ("Ship class '%s' delta_bank_const -- %7.3f\n", sip->name, sip->delta_bank_const);
 
 	if(optional_string("$Max Velocity:"))
 	{
@@ -3344,7 +3249,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	}
 
 	while (cont_flag) {
-		int r = required_string_4("#End", "$Subsystem:", "$Name", "$Template" );
+		int r = required_string_3("#End", "$Subsystem:", "$Name" );
 		switch (r) {
 		case 0:
 			cont_flag = 0;
@@ -3842,11 +3747,6 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		case 2:
 			cont_flag = 0;
 			break;
-		case 3:
-			if (isTemplate) {
-				cont_flag = 0;
-				break;
-			}
 		default:
 			Int3();	// Impossible return value from required_string_3.
 		}
@@ -4248,17 +4148,6 @@ void parse_shiptbl(const char *filename)
 		required_string("#End");
 	}
 
-	if( optional_string("#Ship Templates") ) {
-		while ( required_string_either("#End","$Template:") ) {
-			
-			if ( parse_ship_template() ) {
-				continue;
-			}
-		}
-		
-		required_string("#End");
-	}
-
 	//Add ship classes
 	if(optional_string("#Ship Classes"))
 	{
@@ -4447,9 +4336,6 @@ void ship_init()
 			ships_inited = 1;
 
 			// cleanup
-			
-			//Unload ship templates, we don't need them anymore.
-			Ship_templates.clear();
 			
 			vm_free(tspecies_names);
 			tspecies_names = NULL;
@@ -11978,21 +11864,6 @@ int ship_info_lookup_sub(const char *token)
 		if (!stricmp(token, Ship_info[i].name))
 			return i;
 
-	return -1;
-}
-
-/**
- * Return the index of Ship_templates[].name that is *token.
- */
-int ship_template_lookup(const char *token)
-{
-	int	i;
-
-	for ( i = 0; i < (int)Ship_templates.size(); i++ ) {
-		if ( !stricmp(token, Ship_templates[i].name) ) {
-			return i;
-		}
-	}
 	return -1;
 }
 
