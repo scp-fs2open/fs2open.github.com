@@ -1069,7 +1069,7 @@ int script_state::OutputMeta(char *filename)
 	return 1;
 }
 
-bool script_state::EvalString(char* string, char *format, void *rtn, char *debug_str)
+bool script_state::EvalString(const char *string, const char *format, void *rtn, const char *debug_str)
 {
 	char lastchar = string[strlen(string)-1];
 
