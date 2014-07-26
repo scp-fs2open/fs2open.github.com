@@ -11942,34 +11942,38 @@ void sexp_add_background_bitmap(int n)
 	if (sle.div_y > 5) sle.div_y = 5;
 	if (sle.div_y < 1) sle.div_y = 1;
 
-	Assert((n >= 0) && (n < Num_sexp_nodes));
+	if (n == -1) {
+		stars_add_bitmap_entry(&sle);
+	} else {
+		Assert((n >= 0) && (n < Num_sexp_nodes));
 
-	// ripped from sexp_modify_variable()
-	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_var = atoi(Sexp_nodes[n].text);
-	
-	// verify variable set
-	Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+		// ripped from sexp_modify_variable()
+		// get sexp_variable index
+		Assert(Sexp_nodes[n].first == -1);
+		sexp_var = atoi(Sexp_nodes[n].text);
+		
+		// verify variable set
+		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
 
-	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
-	{
-        new_number = stars_add_bitmap_entry(&sle);
-        if (new_number < 0)
-        {
-		    Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
-            new_number = 0;
-        }
+		if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
+		{
+			new_number = stars_add_bitmap_entry(&sle);
+			if (new_number < 0)
+			{
+				Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
+				new_number = 0;
+			}
 
-		sprintf(number_as_str, "%d", new_number);
+			sprintf(number_as_str, "%d", new_number);
 
-		// assign to variable
-		sexp_modify_variable(number_as_str, sexp_var);
-	}
-	else
-	{
-		Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
-		return;
+			// assign to variable
+			sexp_modify_variable(number_as_str, sexp_var);
+		}
+		else
+		{
+			Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			return;
+		}
 	}
 }
 
@@ -12029,36 +12033,40 @@ void sexp_add_sun_bitmap(int n)
 	if (sle.scale_y > 50) sle.scale_y = 50;
 	if (sle.scale_y < 0.1f) sle.scale_y = 0.1f;
 	
-	Assert((n >= 0) && (n < Num_sexp_nodes));
+	if (n == -1) {
+		stars_add_sun_entry(&sle);
+	} else {
+		Assert((n >= 0) && (n < Num_sexp_nodes));
 
-	// ripped from sexp_modify_variable()
-	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_var = atoi(Sexp_nodes[n].text);
-	
-	// verify variable set
-	Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+		// ripped from sexp_modify_variable()
+		// get sexp_variable index
+		Assert(Sexp_nodes[n].first == -1);
+		sexp_var = atoi(Sexp_nodes[n].text);
+		
+		// verify variable set
+		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
 
-	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
-	{
-		// get new numerical value
-        new_number = stars_add_sun_entry(&sle);
+		if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
+		{
+			// get new numerical value
+			new_number = stars_add_sun_entry(&sle);
 
-        if (new_number < 0)
-        {
-		    Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
-            new_number = 0;
-        }
+			if (new_number < 0)
+			{
+				Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
+				new_number = 0;
+			}
 
-		sprintf(number_as_str, "%d", new_number);
+			sprintf(number_as_str, "%d", new_number);
 
-		// assign to variable
-		sexp_modify_variable(number_as_str, sexp_var);
-	}
-	else
-	{
-		Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
-		return;
+			// assign to variable
+			sexp_modify_variable(number_as_str, sexp_var);
+		}
+		else
+		{
+			Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			return;
+		}
 	}
 }
 
@@ -32661,7 +32669,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t6:\tY scale (expressed as a percentage of the original size of the bitmap)\r\n"
 		"\t7:\tX divisions.\r\n"
 		"\t8:\tY divisions.\r\n"
-		"\t9:\tVariable in which to store result\r\n"
+		"\t9:\tVariable in which to store result (optional)\r\n"
 	},
 
 	{ OP_REMOVE_BACKGROUND_BITMAP, "remove-background-bitmap\r\n"
@@ -32679,7 +32687,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t3:\tBank\r\n"
 		"\t4:\tHeading\r\n"
 		"\t5:\tScale (expressed as a percentage of the original size of the bitmap)\r\n"
-		"\t6:\tVariable in which to store result\r\n"
+		"\t6:\tVariable in which to store result (optional)\r\n"
 	},
 
 	{ OP_REMOVE_SUN_BITMAP, "remove-sun-bitmap\r\n"
