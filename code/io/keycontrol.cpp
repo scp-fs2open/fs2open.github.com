@@ -1301,7 +1301,7 @@ void ppsk_hotkeys(int k)
 		case KEY_F10 + KEY_SHIFTED + KEY_ALTED:
 		case KEY_F11 + KEY_SHIFTED + KEY_ALTED:
 		case KEY_F12 + KEY_SHIFTED + KEY_ALTED:
-			hotkey_set = mission_hotkey_get_set_num(k & ~KEY_SHIFTED+KEY_ALTED);
+			hotkey_set = mission_hotkey_get_set_num(k & (~(KEY_SHIFTED+KEY_ALTED)));
 			hud_target_hotkey_clear( hotkey_set );
 			break;
 
