@@ -373,6 +373,10 @@ void parse_everything_else(const char *filename)
 			stuff_string(temp2, F_NAME, NAME_LENGTH);
 			temp = temp2;
 
+			if (!stricmp(temp2, "none")) {
+				Warning(LOCATION, "Team color in '%s' defined with a name of '%s'; this won't be usable due to 'None' being used for a lack of a team color by the engine.\n", filename, temp2);
+			}
+
 			if (required_string("$Team Stripe Color:")) {
 				int rgb[3];
 				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
@@ -397,8 +401,10 @@ void parse_everything_else(const char *filename)
 				temp_color.base.b = rgb[2] / 255.0f;
 			}
 
+			if (Team_Colors.find(temp) == Team_Colors.end()) {	// Only push to the vector if the team isn't already defined.
+				Team_Names.push_back(temp);
+			}
 			Team_Colors[temp] = temp_color;
-			Team_Names.push_back(temp);
 		}
 		required_string("#End");
 	}
