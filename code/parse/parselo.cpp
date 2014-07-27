@@ -758,6 +758,7 @@ int required_string_one_of(int arg_count, ...)
 			expected = va_arg(vl, char*);
 			if (strnicmp(expected, Mp, strlen(expected)) == 0) {
 				diag_printf("Found required string [%s]", token_found = expected);
+				va_end(vl);
 				return idx;
 			}
 		}
