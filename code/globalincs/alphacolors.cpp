@@ -376,7 +376,7 @@ void parse_everything_else(const char *filename)
 			if (required_string("$Team Stripe Color:")) {
 				int rgb[3];
 				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-				for (int i = 0; i < 3; i++) {
+				for (i = 0; i < 3; i++) {
 					CLAMP(rgb[i], 0, 255);
 				}
 				
@@ -388,7 +388,7 @@ void parse_everything_else(const char *filename)
 			if (required_string("$Team Base Color:")) {
 				int rgb[3];
 				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-				for (int i = 0; i < 3; i++) {
+				for (i = 0; i < 3; i++) {
 					CLAMP(rgb[i], 0, 255);
 				}
 
