@@ -425,10 +425,10 @@ void HudGauge::initSlew(bool slew)
 	reticle_follow = slew;
 }
 
-void HudGauge::initFont(int font)
+void HudGauge::initFont(int input_font_num)
 {
-	if ( font >= 0 && font < Num_fonts) {
-		font_num = font;
+	if ( input_font_num >= 0 && input_font_num < Num_fonts) {
+		font_num = input_font_num;
 	}
 }
 
@@ -586,9 +586,9 @@ void HudGauge::updateActive(bool show)
 	active = show;
 }
 
-void HudGauge::initRenderStatus(bool render)
+void HudGauge::initRenderStatus(bool do_render)
 {
-	off_by_default = !render;
+	off_by_default = !do_render;
 }
 
 bool HudGauge::isOffbyDefault()
@@ -3590,14 +3590,13 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
 	if ( (viewer_obj == Player_obj) && wiggedy_wack ){		
 		vec3d tmp;
 		vertex pt;
-		ubyte flags;		
 
 		HUD_offset_x = 0.0f;
 		HUD_offset_y = 0.0f;
 
 		vm_vec_scale_add( &tmp, &Eye_position, &eye_orient->vec.fvec, 100.0f );
 		
-		flags = g3_rotate_vertex(&pt,&tmp);
+		(void) g3_rotate_vertex(&pt,&tmp);
 
 		g3_project_vertex(&pt);
 
