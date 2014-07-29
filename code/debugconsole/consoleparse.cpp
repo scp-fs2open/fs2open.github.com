@@ -1070,7 +1070,7 @@ void dc_stuff_float(float *f)
 	
 	// Stuff value if within bounds
 	if ((abs(value_d) < FLT_MAX) && (abs(value_d) > FLT_MIN)) {
-		*f = value_d;
+		*f = static_cast<float>(value_d);
 	} else {
 		throw errParse(token.c_str(), DCT_FLOAT);
 	}
@@ -1124,7 +1124,7 @@ void dc_stuff_ubyte(ubyte *i)
 
 	// Since some system's chars may be greater than 1 byte, we can't use UCHAR_MAX for a UBYTE
 	if (value_ul <= 255) {
-		*i = value_ul;
+		*i = static_cast<ubyte>(value_ul);
 
 	} else {
 		throw errParse(token.c_str(), DCT_UBYTE);

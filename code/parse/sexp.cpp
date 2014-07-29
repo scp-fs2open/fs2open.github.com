@@ -632,9 +632,9 @@ sexp_oper Operators[] = {
 	//Background and Nebula Sub-Category
 	{ "mission-set-nebula",				OP_MISSION_SET_NEBULA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Sesquipedalian
 	{ "mission-set-subspace",			OP_MISSION_SET_SUBSPACE,				1,	1,			SEXP_ACTION_OPERATOR,	},
-	{ "add-background-bitmap",			OP_ADD_BACKGROUND_BITMAP,				9,	9,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "add-background-bitmap",			OP_ADD_BACKGROUND_BITMAP,				8,	9,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "remove-background-bitmap",		OP_REMOVE_BACKGROUND_BITMAP,			1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
-	{ "add-sun-bitmap",					OP_ADD_SUN_BITMAP,						6,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "add-sun-bitmap",					OP_ADD_SUN_BITMAP,						5,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
@@ -11942,34 +11942,38 @@ void sexp_add_background_bitmap(int n)
 	if (sle.div_y > 5) sle.div_y = 5;
 	if (sle.div_y < 1) sle.div_y = 1;
 
-	Assert((n >= 0) && (n < Num_sexp_nodes));
+	if (n == -1) {
+		stars_add_bitmap_entry(&sle);
+	} else {
+		Assert((n >= 0) && (n < Num_sexp_nodes));
 
-	// ripped from sexp_modify_variable()
-	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_var = atoi(Sexp_nodes[n].text);
-	
-	// verify variable set
-	Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+		// ripped from sexp_modify_variable()
+		// get sexp_variable index
+		Assert(Sexp_nodes[n].first == -1);
+		sexp_var = atoi(Sexp_nodes[n].text);
+		
+		// verify variable set
+		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
 
-	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
-	{
-        new_number = stars_add_bitmap_entry(&sle);
-        if (new_number < 0)
-        {
-		    Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
-            new_number = 0;
-        }
+		if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
+		{
+			new_number = stars_add_bitmap_entry(&sle);
+			if (new_number < 0)
+			{
+				Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
+				new_number = 0;
+			}
 
-		sprintf(number_as_str, "%d", new_number);
+			sprintf(number_as_str, "%d", new_number);
 
-		// assign to variable
-		sexp_modify_variable(number_as_str, sexp_var);
-	}
-	else
-	{
-		Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
-		return;
+			// assign to variable
+			sexp_modify_variable(number_as_str, sexp_var);
+		}
+		else
+		{
+			Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			return;
+		}
 	}
 }
 
@@ -12029,36 +12033,40 @@ void sexp_add_sun_bitmap(int n)
 	if (sle.scale_y > 50) sle.scale_y = 50;
 	if (sle.scale_y < 0.1f) sle.scale_y = 0.1f;
 	
-	Assert((n >= 0) && (n < Num_sexp_nodes));
+	if (n == -1) {
+		stars_add_sun_entry(&sle);
+	} else {
+		Assert((n >= 0) && (n < Num_sexp_nodes));
 
-	// ripped from sexp_modify_variable()
-	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_var = atoi(Sexp_nodes[n].text);
-	
-	// verify variable set
-	Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+		// ripped from sexp_modify_variable()
+		// get sexp_variable index
+		Assert(Sexp_nodes[n].first == -1);
+		sexp_var = atoi(Sexp_nodes[n].text);
+		
+		// verify variable set
+		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
 
-	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
-	{
-		// get new numerical value
-        new_number = stars_add_sun_entry(&sle);
+		if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
+		{
+			// get new numerical value
+			new_number = stars_add_sun_entry(&sle);
 
-        if (new_number < 0)
-        {
-		    Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
-            new_number = 0;
-        }
+			if (new_number < 0)
+			{
+				Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
+				new_number = 0;
+			}
 
-		sprintf(number_as_str, "%d", new_number);
+			sprintf(number_as_str, "%d", new_number);
 
-		// assign to variable
-		sexp_modify_variable(number_as_str, sexp_var);
-	}
-	else
-	{
-		Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
-		return;
+			// assign to variable
+			sexp_modify_variable(number_as_str, sexp_var);
+		}
+		else
+		{
+			Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			return;
+		}
 	}
 }
 
@@ -32654,7 +32662,7 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap\r\n"
 		"\tAdds a background bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-background-bitmap\r\n\r\n"
-		"Takes 9 arguments...\r\n"
+		"Takes 8 to 9 arguments...\r\n"
 		"\t1:\tBackground bitmap name\r\n"
 		"\t2:\tPitch\r\n"
 		"\t3:\tBank\r\n"
@@ -32663,7 +32671,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t6:\tY scale (expressed as a percentage of the original size of the bitmap)\r\n"
 		"\t7:\tX divisions.\r\n"
 		"\t8:\tY divisions.\r\n"
-		"\t9:\tVariable in which to store result\r\n"
+		"\t9:\tVariable in which to store result (optional)\r\n"
 	},
 
 	{ OP_REMOVE_BACKGROUND_BITMAP, "remove-background-bitmap\r\n"
@@ -32675,13 +32683,13 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_ADD_SUN_BITMAP, "add-sun-bitmap\r\n"
 		"\tAdds a sun bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-sun-bitmap\r\n\r\n"
-		"Takes 6 arguments...\r\n"
+		"Takes 5 to 6 arguments...\r\n"
 		"\t1:\tSun bitmap name\r\n"
 		"\t2:\tPitch\r\n"
 		"\t3:\tBank\r\n"
 		"\t4:\tHeading\r\n"
 		"\t5:\tScale (expressed as a percentage of the original size of the bitmap)\r\n"
-		"\t6:\tVariable in which to store result\r\n"
+		"\t6:\tVariable in which to store result (optional)\r\n"
 	},
 
 	{ OP_REMOVE_SUN_BITMAP, "remove-sun-bitmap\r\n"

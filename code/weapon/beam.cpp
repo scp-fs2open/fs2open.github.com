@@ -2877,6 +2877,8 @@ void beam_handle_collisions(beam *b)
 		r_coll[r_coll_count].c_sig = Objects[target].signature;
 		r_coll[r_coll_count].c_stamp = -1;
 		r_coll[r_coll_count].cinfo = b->f_collisions[idx].cinfo;
+		r_coll[r_coll_count].quadrant = -1;
+		r_coll[r_coll_count].is_exit_collision = 0;
 		
 		// if he was already on the recent collision list, copy his timestamp
 		// also, be sure not to play the impact sound again.

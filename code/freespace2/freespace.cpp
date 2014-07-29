@@ -3702,7 +3702,9 @@ void game_render_frame( camid cid )
 	}
 
 	// this needs to happen after g3_start_frame() and before the primary projection and view matrix is setup
-	if ( Cmdline_env && !Env_cubemap_drawn ) {
+	// Note: environment mapping gets disabled when rendering to texture; if you change
+	// this, make sure that the current render target gets restored right afterwards!
+	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
 		setup_environment_mapping(cid);
 
 		if ( !Dynamic_environment ) {
