@@ -27,6 +27,10 @@ typedef struct main_hall_defines {
 	// mainhall name identifier
 	SCP_string name;
 
+	SCP_vector<SCP_string> cheat;
+	SCP_vector<SCP_string> cheat_anim_from;
+	SCP_vector<SCP_string> cheat_anim_to;
+
 	// minimum resolution and aspect ratio needed to display this main hall
 	int min_width;
 	int min_height;
@@ -97,6 +101,9 @@ typedef struct main_hall_defines {
 
 	//flags for each of the misc anim sounds
 	SCP_vector<SCP_vector<int> > misc_anim_sound_flag;
+
+	// controls the render order
+	SCP_vector<bool> misc_anim_over_doors;
 
 
 	// door animations --------------------
