@@ -2337,6 +2337,40 @@ void parse_main_hall_table(const char* filename)
 
 			region_info_init(*m);
 			
+			// door animations
+			required_string("+Num Door Animations:");
+			stuff_int(&m->num_door_animations);
+
+			// initialise the door anim vectors
+			door_anim_init(*m);
+
+			for (idx = 0; idx < m->num_door_animations; idx++) {
+				// door name
+				required_string("+Door anim:");
+				stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+				m->door_anim_name.at(idx) = (SCP_string)temp_string;
+			}
+
+			for (idx = 0; idx < m->num_door_animations; idx++) {
+				// door coords
+				required_string("+Door coords:");
+				stuff_int(&m->door_anim_coords.at(idx).at(0));
+				stuff_int(&m->door_anim_coords.at(idx).at(1));
+				stuff_int(&m->door_anim_coords.at(idx).at(2));
+				stuff_int(&m->door_anim_coords.at(idx).at(3));
+			}
+
+			for (idx = 0; idx < m->num_door_animations; idx++) {
+				// door open and close sounds
+				parse_sound_list("+Door sounds:", m->door_sounds.at(idx), "+Door sounds:", (parse_sound_flags)(PARSE_SOUND_INTERFACE_SOUND | PARSE_SOUND_SCP_SOUND_LIST));
+			}
+
+			for (idx = 0; idx < m->num_door_animations; idx++) {
+				// door pan value
+				required_string("+Door pan:");
+				stuff_float(&m->door_sound_pan[idx]);
+			}
+
 			int mask;
 			for (idx = 0; optional_string("+Door mask value:"); idx++) {
 				// door mask
@@ -2403,40 +2437,6 @@ void parse_main_hall_table(const char* filename)
 						m->default_readyroom = false;
 					}
 				}
-			}
-
-			// door animations
-			required_string("+Num Door Animations:");
-			stuff_int(&m->num_door_animations);
-
-			// initialise the door anim vectors
-			door_anim_init(*m);
-
-			for (idx = 0; idx < m->num_door_animations; idx++) {
-				// door name
-				required_string("+Door anim:");
-				stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
-				m->door_anim_name.at(idx) = (SCP_string)temp_string;
-			}
-
-			for (idx = 0; idx < m->num_door_animations; idx++) {
-				// door coords
-				required_string("+Door coords:");
-				stuff_int(&m->door_anim_coords.at(idx).at(0));
-				stuff_int(&m->door_anim_coords.at(idx).at(1));
-				stuff_int(&m->door_anim_coords.at(idx).at(2));
-				stuff_int(&m->door_anim_coords.at(idx).at(3));
-			}
-
-			for (idx = 0; idx < m->num_door_animations; idx++) {
-				// door open and close sounds
-				parse_sound_list("+Door sounds:", m->door_sounds.at(idx), "+Door sounds:", (parse_sound_flags)(PARSE_SOUND_INTERFACE_SOUND | PARSE_SOUND_SCP_SOUND_LIST));
-			}
-
-			for (idx = 0; idx < m->num_door_animations; idx++) {
-				// door pan value
-				required_string("+Door pan:");
-				stuff_float(&m->door_sound_pan[idx]);
 			}
 
 			// font for tooltips and other text
