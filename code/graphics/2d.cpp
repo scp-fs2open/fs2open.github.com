@@ -151,21 +151,23 @@ void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int ma
 
 	gr_screen.custom_size = (w != max_w || h != max_h);
 
-	gr_screen.max_w_unscaled = w;
-	gr_screen.max_h_unscaled = h;
+	if (gr_screen.rendering_to_texture == -1) {
+		gr_screen.max_w_unscaled = w;
+		gr_screen.max_h_unscaled = h;
 
-	if (do_zoom) {
-		gr_screen.max_w_unscaled_zoomed = gr_screen.max_w_unscaled + fl2i(Gr_menu_offset_X * 2.0f / Gr_resize_X);
-		gr_screen.max_h_unscaled_zoomed = gr_screen.max_h_unscaled + fl2i(Gr_menu_offset_Y * 2.0f / Gr_resize_Y);
-		if (gr_screen.max_w_unscaled_zoomed > gr_screen.max_w_unscaled) {
+		if (do_zoom) {
+			gr_screen.max_w_unscaled_zoomed = gr_screen.max_w_unscaled + fl2i(Gr_menu_offset_X * 2.0f / Gr_resize_X);
+			gr_screen.max_h_unscaled_zoomed = gr_screen.max_h_unscaled + fl2i(Gr_menu_offset_Y * 2.0f / Gr_resize_Y);
+			if (gr_screen.max_w_unscaled_zoomed > gr_screen.max_w_unscaled) {
+				gr_screen.max_w_unscaled_zoomed = gr_screen.max_w_unscaled;
+			}
+			if (gr_screen.max_h_unscaled_zoomed > gr_screen.max_h_unscaled) {
+				gr_screen.max_h_unscaled_zoomed = gr_screen.max_h_unscaled;
+			}
+		} else {
 			gr_screen.max_w_unscaled_zoomed = gr_screen.max_w_unscaled;
-		}
-		if (gr_screen.max_h_unscaled_zoomed > gr_screen.max_h_unscaled) {
 			gr_screen.max_h_unscaled_zoomed = gr_screen.max_h_unscaled;
 		}
-	} else {
-		gr_screen.max_w_unscaled_zoomed = gr_screen.max_w_unscaled;
-		gr_screen.max_h_unscaled_zoomed = gr_screen.max_h_unscaled;
 	}
 }
 
@@ -185,8 +187,10 @@ void gr_reset_screen_scale()
 
 	gr_screen.custom_size = Save_custom_screen_size;
 
-	gr_screen.max_w_unscaled = gr_screen.max_w_unscaled_zoomed = (gr_screen.res == GR_1024) ? 1024 : 640;
-	gr_screen.max_h_unscaled = gr_screen.max_h_unscaled_zoomed = (gr_screen.res == GR_1024) ?  768 : 480;
+	if (gr_screen.rendering_to_texture == -1) {
+		gr_screen.max_w_unscaled = gr_screen.max_w_unscaled_zoomed = (gr_screen.res == GR_1024) ? 1024 : 640;
+		gr_screen.max_h_unscaled = gr_screen.max_h_unscaled_zoomed = (gr_screen.res == GR_1024) ?  768 : 480;
+	}
 }
 
 /**

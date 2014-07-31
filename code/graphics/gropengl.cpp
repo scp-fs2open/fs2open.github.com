@@ -384,6 +384,10 @@ void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
 	int max_w = ((to_resize) ? gr_screen.max_w_unscaled : gr_screen.max_w);
 	int max_h = ((to_resize) ? gr_screen.max_h_unscaled : gr_screen.max_h);
 
+	if ((gr_screen.rendering_to_texture != -1) && to_resize) {
+		gr_unsize_screen_pos(&max_w, &max_h);
+	}
+
 	if (x >= max_w) {
 		x = max_w - 1;
 	}
