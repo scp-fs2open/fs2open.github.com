@@ -1742,6 +1742,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"weapons-locked\"");
 			if (shipp->flags2 & SF2_SCRAMBLE_MESSAGES)
 				fout(" \"scramble-messages\"");
+			if (!(objp->flags & OF_COLLIDES))
+				fout(" \"no-collide\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

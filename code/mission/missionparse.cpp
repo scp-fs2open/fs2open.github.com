@@ -311,6 +311,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"ship-locked",
 	"weapons-locked",
 	"scramble-messages",
+	"no-collide",
 };
 
 char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
@@ -2582,6 +2583,12 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_SF2_SCRAMBLE_MESSAGES)
 		shipp->flags2 |= SF2_SCRAMBLE_MESSAGES;
+
+	// Make sure that the correct flag is set in any case
+	if (parse_flags2 & P2_OF_NO_COLLIDE)
+		obj_set_flags(objp, objp->flags & ~OF_COLLIDES);
+	else
+		obj_set_flags(objp, objp->flags | OF_COLLIDES);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 

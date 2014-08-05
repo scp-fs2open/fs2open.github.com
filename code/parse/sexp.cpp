@@ -12807,9 +12807,9 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			{
 				// set or clear?
 				if (set_flag)
-					oswpt.objp->flags |= object_flag;
+					obj_set_flags(oswpt.objp, oswpt.objp->flags | object_flag);
 				else
-					oswpt.objp->flags &= ~object_flag;
+					obj_set_flags(oswpt.objp, oswpt.objp->flags & ~object_flag);
 			}
 
 			// handle ETS when modifying shields

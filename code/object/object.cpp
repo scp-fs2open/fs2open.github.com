@@ -104,6 +104,7 @@ obj_flag_name Object_flag_names[] = {
 	{OF_LASER_PROTECTED,		"laser-protect-ship",		1,	},
 	{OF_MISSILE_PROTECTED,		"missile-protect-ship",		1,	},
 	{OF_IMMOBILE,				"immobile",					1,	},
+	{OF_COLLIDES,				"collides",					1,  },
 };
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well

@@ -340,7 +340,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">
     <CustomBuildStep>
       <Message>Copying build...</Message>
-      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"
+      <Command>copy /y "$(TargetPath)" "G:\Programme\FreeSpace\Diaspora\$(TargetFileName)"
 </Command>
       <Outputs>$(FS2PATH)\$(TargetFileName);%(Outputs)</Outputs>
     </CustomBuildStep>
