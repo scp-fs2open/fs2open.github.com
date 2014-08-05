@@ -12143,6 +12143,11 @@ ADE_FUNC(createVector, l_Base, "[x, y, z]", "Creates a vector object", "vector",
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
+ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds since the engine has started", "number", "Overall time (seconds)")
+{
+	return ade_set_args(L, "x", game_get_overall_frametime());
+}
+
 ADE_FUNC(getFrametime, l_Base, "[Do not adjust for time compression (Boolean)]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
 {
 	bool b=false;
