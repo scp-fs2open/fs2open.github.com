@@ -681,6 +681,7 @@ sexp_oper Operators[] = {
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,				1,	MAX_COMPLETE_ESCORT_LIST,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-support-ship",				OP_SET_SUPPORT_SHIP,					6,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "multi-eval",						OP_SCRIPT_EVAL_MULTI,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,   },
 	{ "script-eval",					OP_SCRIPT_EVAL,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "debug",							OP_DEBUG,								2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "do-nothing",						OP_NOP,									0,	0,			SEXP_ACTION_OPERATOR,	},
@@ -21510,7 +21511,7 @@ void multi_sexp_show_hide_jumpnode(bool show)
 }
 
 //WMC - This is a bit of a hack, however, it's easier than
-//coding in a whole new SCript_system function.
+//coding in a whole new Script_system function.
 int sexp_script_eval(int node, int return_type)
 {
 	int n = node;
@@ -21582,6 +21583,90 @@ int sexp_script_eval(int node, int return_type)
 
 	return -1;
 }
+
+void sexp_script_eval_multi(int node)
+ {
+	char s[TOKEN_LENGTH];
+	bool success = true;
+	int sindex;
+	player *p;
+	
+	strcpy_s(s, CTEXT(node));
+	
+	node = CDR(node);
+	
+	multi_start_callback();
+	multi_send_string(s);
+
+	// evalutate on all clients
+	if (node == -1) {
+		multi_send_bool(true);
+		success = Script_system.EvalString(s, NULL, NULL, s);
+	}
+	// we have to send to all clients but we need to send a list of ships so that they know if they evaluate or not
+	else {
+		multi_send_bool(false);
+		
+		do {
+			p = get_player_from_ship_node(node, true);
+			
+			// not a player ship so skip it
+			if (p == NULL){
+				node = CDR(node);
+				continue;
+			}
+			else {
+				// if this is me, execute the script
+				if (p == Player) {
+					success = Script_system.EvalString(s, NULL, NULL, s);
+				}
+				// otherwise notify the clients
+				else {
+					sindex = ship_name_lookup(CTEXT(node));
+					multi_send_ship(sindex);	
+				}
+			}
+			
+			node = CDR(node);
+		} while (node != -1);
+	}
+	
+	multi_end_callback();
+	
+	if (!success) {
+		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+	}
+}
+
+void multi_sexp_script_eval_multi()
+ {
+	int sindex;
+	char s[TOKEN_LENGTH];
+	bool sent_to_all = false;
+	bool success = true;
+	
+	multi_get_string(s);
+	multi_get_bool(sent_to_all);
+	
+	if (sent_to_all) {
+		success = Script_system.EvalString(s, NULL, NULL, s);
+	}
+	// go through all the ships that were sent and see if any of them match this client.
+	else {
+		while (multi_get_ship(sindex)) {
+			Assertion(sindex >= 0, "Illegal value for the ship index sent in multi_sexp_script_eval_multi()! Ship %d does not exist!", sindex);
+			if (Player->objnum == Ships[sindex].objnum) {
+				success = Script_system.EvalString(s, NULL, NULL, s);	
+			}
+		}
+	}
+	
+	if (!success) {
+		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+	}
+}
+
+
 
 void sexp_force_glide(int node)
 {
@@ -24271,6 +24356,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_script_eval(node, OPR_NULL);
 				break;
 
+			case OP_SCRIPT_EVAL_MULTI:
+				sexp_script_eval_multi(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_CHANGE_IFF_COLOR:
 				sexp_change_iff_color(node);
 				sexp_val = SEXP_TRUE;
@@ -24700,6 +24790,10 @@ void multi_sexp_eval()
 
 			case OP_SET_ETS_VALUES:
 				multi_sexp_set_ets_values();
+				break;
+
+			case OP_SCRIPT_EVAL_MULTI:
+				multi_sexp_script_eval_multi();
 				break;
 
 			// bad sexp in the packet
@@ -25304,6 +25398,7 @@ int query_operator_return_type(int op)
 		case OP_SET_NUM_COUNTERMEASURES:
 		case OP_SCRIPT_EVAL:
 		case OP_SCRIPT_EVAL_STRING:
+		case OP_SCRIPT_EVAL_MULTI:
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
 		case OP_LOCK_PRIMARY_WEAPON:
@@ -27350,6 +27445,12 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 1)return OPF_VARIABLE_NAME;
 			else return OPF_STRING;
 
+		case OP_SCRIPT_EVAL_MULTI:
+			if (argnum == 0)
+				return OPF_STRING;
+			else
+				return OPF_SHIP;
+
 		case OP_CHANGE_IFF_COLOR:
 			if ((argnum == 0) || (argnum == 1))
 				return OPF_IFF;
@@ -29127,6 +29228,7 @@ int get_subcategory(int sexp_id)
 		case OP_SET_SUPPORT_SHIP:
 		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL:
+		case OP_SCRIPT_EVAL_MULTI:
 			return CHANGE_SUBCATEGORY_OTHER;
 
 		case OP_NUM_SHIPS_IN_BATTLE:
@@ -32746,6 +32848,15 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 argument...\r\n"
 		"\t1:\tScript to evaluate\r\n"
 	},
+
+	{OP_SCRIPT_EVAL_MULTI, "multi-eval\r\n"
+	 "\tEvaluates script on the host and on the clients\r\n"
+	 "\tWARNING: This SEXP is only a preliminary implementation and may be removed in a future version! Use with caution.\r\n\r\n"
+	 "Takes at least 1 argument...\r\n"
+	 "\t1:\tScript to evaluate\r\n"
+	 "\t(rest):\tList of players who should evaluate this script. If no player is given, all clients will execute the script\r\n"
+	},
+	
 
 	{OP_FORCE_GLIDE, "force-glide\r\n"
 		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode on his own,, and that a ship in glide mode cannot warp out or enter autopilot."
