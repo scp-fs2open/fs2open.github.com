@@ -11942,6 +11942,14 @@ int ship_info_lookup(const char *token)
 
 		return -1;
 	}
+	else if (!stricmp(token, "GTSC Faustus#2 (big blast)"))
+	{
+		idx = ship_info_lookup_sub("GTSC Faustus#bigblast");
+		if (idx >= 0)
+			return idx;
+
+		return -1;
+	}
 	else if (!stricmp(token, "GTF Loki (stealth)"))
 	{
 		idx = ship_info_lookup_sub("GTF Loki#stealth");
