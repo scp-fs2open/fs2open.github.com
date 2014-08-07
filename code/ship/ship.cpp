@@ -9429,9 +9429,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		sp->flags2 &= ~SF2_DONT_COLLIDE_INVIS;
 
 	if (sip->flags & SIF_NO_COLLIDE)								// changing TO a no-collision ship class
-		objp->flags &= ~OF_COLLIDES;
-	else if (sip_orig->flags & SIF_NO_COLLIDE)					// changing FROM a no-collision ship class
-		objp->flags |= OF_COLLIDES;
+		obj_set_flags(objp, objp->flags & ~OF_COLLIDES);
+	else if (sip_orig->flags & SIF_NO_COLLIDE)						// changing FROM a no-collision ship class
+		obj_set_flags(objp, objp->flags | OF_COLLIDES);
 
 	if (sip->flags2 & SIF2_NO_ETS)
 		sp->flags2 |= SF2_NO_ETS;
