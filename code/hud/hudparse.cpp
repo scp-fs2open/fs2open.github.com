@@ -861,6 +861,8 @@ int parse_gauge_type()
 	if ( optional_string("+Secondary Weapons:") )
 		return HUD_OBJECT_SECONDARY_WEAPONS;
 
+	error_display(1, "Invalid gauge type [%.32s]", next_tokens());
+	
 	return -1;
 }
 
@@ -1041,7 +1043,8 @@ void load_gauge(int gauge, int base_w, int base_h, int hud_font, bool scale_gaug
 		load_gauge_secondary_weapons(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	default:
-		Warning(LOCATION, "Invalid gauge found in hud_gauges.tbl");
+		// It's either -1, indicating we're ignoring a parse error, or it's a coding error.
+		Assertion(gauge == -1, "Invalid value '%d' passed to load_gauge(); get a coder!\n", gauge);
 		break;
 	}
 }
