@@ -1657,7 +1657,7 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 	int ship_name_max_w = 100;
 	int ship_integrity_offsets[2];
 	int ship_status_offsets[2];
-	char header_text[MAX_FILENAME_LEN] = "monitoring";
+	char header_text[MAX_FILENAME_LEN] = "";
 	char fname_top[MAX_FILENAME_LEN] = "escort1";
 	char fname_middle[MAX_FILENAME_LEN] = "escort2";
 	char fname_bottom[MAX_FILENAME_LEN] = "escort3";
@@ -1737,6 +1737,10 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 
 	if ( optional_string("Ship Name Max Width:") ) {
 		stuff_int(&ship_name_max_w);
+	}
+
+	if (header_text[0] == '\0') {
+		strcpy_s(header_text, XSTR("monitoring", 285));
 	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
