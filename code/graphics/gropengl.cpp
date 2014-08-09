@@ -354,6 +354,8 @@ void gr_opengl_flip()
 #ifdef _WIN32
 	SwapBuffers(GL_device_context);
 #else
+	if (Cmdline_gl_finish)
+		glFinish ();
 	SDL_GL_SwapBuffers();
 #endif
 
