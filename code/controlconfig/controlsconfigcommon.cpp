@@ -197,12 +197,12 @@ config_item Control_config[CCFG_MAX + 1] = {
 
 char *Scan_code_text_german[] = {
 	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"Akzent '",				"\xE1",				"R\x81""cktaste",		"Tab",
+	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
 	"O",				"P",				"\x9A",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
 
 	"D",				"F",				"G",				"H",				"J",				"K",				"L",				"\x99",
-	"\xAE",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
+	"\x8E",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
 	"B",				"N",				"M",				",",				".",				"-",				"Shift",			"Num *",
 	"Alt",				"Leertaste",			"Hochstell",			"F1",				"F2",				"F3",				"F4",				"F5",
 
