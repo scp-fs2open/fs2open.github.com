@@ -925,7 +925,9 @@ void main_hall_do(float frametime)
 				// custom action
 				case SCRIPT_REGION:
 					const char *lua = it->lua_action.c_str();
-					Script_system.EvalString(lua, NULL, NULL, lua);
+					bool success = Script_system.EvalString(lua, NULL, NULL, lua);
+					if(!success)
+						Warning(LOCATION, "mainhall '+Door Action / $Script' failed to evaluate \"%s\"; check your syntax", lua);
 					break;
 			} // END switch (code)
 
