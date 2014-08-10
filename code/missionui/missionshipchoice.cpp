@@ -1454,10 +1454,42 @@ void ship_select_do(float frametime)
 		ship_select_redraw_pressed_buttons();
 		common_render_selected_screen_button();
 	}
-	if(!Cmdline_ship_choice_3d)
+	if(!Cmdline_ship_choice_3d && ((Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0)))
 	{
-		if ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0) ) {
-			generic_anim_render(&Ss_icons[Selected_ss_class].ss_anim, (help_overlay_active(Ship_select_overlay_id)) ? 0 : frametime, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], true);
+		generic_anim_render(&Ss_icons[Selected_ss_class].ss_anim, (help_overlay_active(Ship_select_overlay_id)) ? 0 : frametime, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], true);
+	} else {
+		// The new rendering code for 3D ships courtesy your friendly UnknownPlayer :)
+
+		// check we have a valid ship class selected
+		if ( (Selected_ss_class >= 0) && (ShipSelectModelNum >= 0) )
+		{
+			ship_info *sip = &Ship_info[Selected_ss_class];
+			float rev_rate = REVOLUTION_RATE;
+			if (sip->flags & SIF_BIG_SHIP) {
+				rev_rate *= 1.7f;
+			}
+			if (sip->flags & SIF_HUGE_SHIP) {
+				rev_rate *= 3.0f;
+			}
+
+			if (sip->uses_team_colors) {
+				gr_set_team_color(sip->default_team_name, "none", 0, 0);
+			}
+
+			draw_model_rotating(ShipSelectModelNum,
+				Ship_anim_coords[gr_screen.res][0],
+				Ship_anim_coords[gr_screen.res][1],
+				Tech_ship_display_coords[gr_screen.res][2],
+				Tech_ship_display_coords[gr_screen.res][3],
+				&ShipSelectScreenShipRot,
+				&sip->closeup_pos,
+				sip->closeup_zoom * 1.3f,
+				rev_rate,
+				MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING,
+				GR_RESIZE_MENU,
+				sip->selection_effect);
+
+			gr_disable_team_color();
 		}
 	}
 
@@ -1509,54 +1541,6 @@ void ship_select_do(float frametime)
 
 	// blit help overlay if active
 	help_overlay_maybe_blit(Ship_select_overlay_id, gr_screen.res);
-
-	// If the commit button was pressed, do the commit button actions.  Done at the end of the
-	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
-	// the ship model is not in memory
-	if ( Commit_pressed ) {		
-		commit_pressed();		
-		Commit_pressed = 0;
-	}
-
-	// The new rendering code for 3D ships courtesy your friendly UnknownPlayer :)
-
-	//////////////////////////////////
-	// Render and draw the 3D model //
-	//////////////////////////////////
-	if( Cmdline_ship_choice_3d || ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames == 0)) )
-	{
-		// check we have a valid ship class selected
-		if ( (Selected_ss_class >= 0) && (ShipSelectModelNum >= 0) )
-		{
-			ship_info *sip = &Ship_info[Selected_ss_class];
-			float rev_rate = REVOLUTION_RATE;
-			if (sip->flags & SIF_BIG_SHIP) {
-				rev_rate *= 1.7f;
-			}
-			if (sip->flags & SIF_HUGE_SHIP) {
-				rev_rate *= 3.0f;
-			}
-
-			if (sip->uses_team_colors) {
-				gr_set_team_color(sip->default_team_name, "none", 0, 0);
-			}
-
-			draw_model_rotating(ShipSelectModelNum,
-				Ship_anim_coords[gr_screen.res][0],
-				Ship_anim_coords[gr_screen.res][1],
-				Tech_ship_display_coords[gr_screen.res][2],
-				Tech_ship_display_coords[gr_screen.res][3],
-				&ShipSelectScreenShipRot,
-				&sip->closeup_pos,
-				sip->closeup_zoom * 1.3f,
-				rev_rate,
-				MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING,
-				GR_RESIZE_MENU,
-				sip->selection_effect);
-
-			gr_disable_team_color();
-		}
-	}
 
 	gr_reset_clip();
 	gr_flip();
