@@ -15287,6 +15287,17 @@ ADE_FUNC(applyShudder, l_Mission, "number time, number intesity", "Applies a shu
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission being played in a campaign (as opposed to the tech room's simulator)", "boolean", "true if in campaign, false if not")
+{
+	bool b = false;
+
+	if (Game_mode & GM_CAMPAIGN_MODE) {
+		b = true;
+	}
+
+	return ade_set_args(L, "b", b);
+}
+
 //**********LIBRARY: Bitwise Ops
 ade_lib l_BitOps("BitOps", NULL, "bit", "Bitwise Operations library");
 
