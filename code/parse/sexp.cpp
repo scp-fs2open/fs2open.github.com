@@ -21623,6 +21623,7 @@ void sexp_script_eval_multi(int node)
 				// otherwise notify the clients
 				else {
 					sindex = ship_name_lookup(CTEXT(node));
+					// no need to check sindex is valid - get_player_from_ship_node() has already done that
 					multi_send_ship(sindex);	
 				}
 			}
