@@ -1425,7 +1425,7 @@ void brief_set_text_color(char color_tag)
  */
 bool is_a_word_separator(char character)
 {
-	return character <= 32;					//  all control characters including space, newline, and tab
+	return ((character >= 0) && (character <= 32)); // all control characters including space, newline, and tab
 }
 
 /**
