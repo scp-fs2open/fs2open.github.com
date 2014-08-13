@@ -2584,11 +2584,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	if (parse_flags2 & P2_SF2_SCRAMBLE_MESSAGES)
 		shipp->flags2 |= SF2_SCRAMBLE_MESSAGES;
 
-	// Make sure that the correct flag is set in any case
+	// don't remove no-collide if not set in the mission
 	if (parse_flags2 & P2_OF_NO_COLLIDE)
 		obj_set_flags(objp, objp->flags & ~OF_COLLIDES);
-	else
-		obj_set_flags(objp, objp->flags | OF_COLLIDES);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
