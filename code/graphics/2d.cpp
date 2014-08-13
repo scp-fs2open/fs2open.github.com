@@ -230,7 +230,7 @@ bool gr_resize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 			xy_tmp = (*x) * Gr_resize_X;
 			break;
 		}
-		(*x) = fl2i(xy_tmp);
+		(*x) = fl2ir(xy_tmp);
 	}
 
 	if ( y ) {
@@ -251,17 +251,17 @@ bool gr_resize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 			xy_tmp = (*y) * Gr_resize_Y;
 			break;
 		}
-		(*y) = fl2i(xy_tmp);
+		(*y) = fl2ir(xy_tmp);
 	}
 
 	if ( w ) {
 		xy_tmp = (*w) * ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_X : Gr_resize_X);
-		(*w) = fl2i(xy_tmp);
+		(*w) = fl2ir(xy_tmp);
 	}
 
 	if ( h ) {
 		xy_tmp = (*h) * ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_Y : Gr_resize_Y);
-		(*h) = fl2i(xy_tmp);
+		(*h) = fl2ir(xy_tmp);
 	}
 
 	return true;
@@ -302,7 +302,7 @@ bool gr_unsize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 			xy_tmp = (*x) / Gr_resize_X;
 			break;
 		}
-		(*x) = fl2i(xy_tmp);
+		(*x) = fl2ir(xy_tmp);
 	}
 
 	if ( y ) {
@@ -323,17 +323,17 @@ bool gr_unsize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 			xy_tmp = (*y) / Gr_resize_Y;
 			break;
 		}
-		(*y) = fl2i(xy_tmp);
+		(*y) = fl2ir(xy_tmp);
 	}
 
 	if ( w ) {
 		xy_tmp = (*w) / ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_X : Gr_resize_X);
-		(*w) = fl2i(xy_tmp);
+		(*w) = fl2ir(xy_tmp);
 	}
 
 	if ( h ) {
 		xy_tmp = (*h) / ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_Y : Gr_resize_Y);
-		(*h) = fl2i(xy_tmp);
+		(*h) = fl2ir(xy_tmp);
 	}
 
 	return true;
