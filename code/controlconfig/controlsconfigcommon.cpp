@@ -386,13 +386,7 @@ int translate_key_to_index(const char *key, bool find_override)
 {
 	int i, index = -1, alt = 0, shift = 0, max_scan_codes;
 
-	if (Lcl_gr) {
-		max_scan_codes = sizeof(Scan_code_text_german) / sizeof(char *);
-	} else if (Lcl_fr) {
-		max_scan_codes = sizeof(Scan_code_text_french) / sizeof(char *);
-	} else {
-		max_scan_codes = sizeof(Scan_code_text_english) / sizeof(char *);
-	}
+	max_scan_codes = sizeof(Scan_code_text_english) / sizeof(char *);
 
 	// look for modifiers
 	Assert(key);
@@ -403,17 +397,7 @@ int translate_key_to_index(const char *key, bool find_override)
 			key++;
 	}
 
-	char *translated_shift;
-	
-	if(Lcl_gr){
-		translated_shift = "Shift";
-	} else if(Lcl_fr){	
-		translated_shift = "Maj.";
-	} else {	
-		translated_shift = "Shift";
-	}
-
-	if (!strnicmp(key, translated_shift, 5)) {
+	if (!strnicmp(key, "Shift", 5)) {
 		shift = 1;
 		key += 5;
 		if (*key)
@@ -562,12 +546,6 @@ void control_config_common_init()
 	if(Lcl_gr){
 		Scan_code_text = Scan_code_text_german;
 		Joy_button_text = Joy_button_text_german;
-		
-		// swap init bindings for y and z keys
-		Control_config[TARGET_SHIP_IN_RETICLE].key_default = KEY_Z;
-		Control_config[TARGET_LAST_TRANMISSION_SENDER].key_default = KEY_ALTED | KEY_Z;
-		Control_config[REVERSE_THRUST].key_default = KEY_Y;
-		Control_config[DISARM_MESSAGE].key_default = KEY_SHIFTED | KEY_Y;		
 	} else if(Lcl_fr){
 		Scan_code_text = Scan_code_text_french;
 		Joy_button_text = Joy_button_text_french;
