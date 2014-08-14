@@ -61,6 +61,7 @@ typedef union bm_extra_info {
 			// stuff for static animations
 			ubyte	type;									// type for individual images
 			char	filename[MAX_FILENAME_LEN];				// filename for individual images
+			bool	in_subdir;								// Whether frames are in their own subdirectory
 		} eff;
 	} ani;
 

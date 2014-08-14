@@ -175,6 +175,9 @@ void bm_get_frame_usage(int *ntotal, int *nnew);
 // Reload a different image into an existing bmpman slot
 int bm_reload(int bitmap_handle, const char* filename);
 
+// Stuff Pathtypes with an additional path leading to a subdir of the same name as the given file (minus file extension)
+bool set_temp_subdir_pathtype(const char *filename);
+
 /* 
  * Example on using bm_create
  * 
@@ -284,5 +287,5 @@ int bm_make_render_target( int width, int height, int flags );
 int bm_is_render_target(int bitmap_id);
 int bm_set_render_target(int handle, int face = -1);
 
-int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type);
+int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type, bool *in_subdir);
 #endif
