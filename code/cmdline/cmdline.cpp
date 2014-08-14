@@ -194,6 +194,7 @@ Flag exe_params[] =
  #endif
 	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-use_gldrawelements", },
 	{ "-old_collision",		"Use old collision detection system",		true,	EASY_DEFAULT,		EASY_ALL_ON,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-old_collision", },
+	{ "-gl_finish",			"Fix input lag on some ATI+Linux systems",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gl_finish", },
 
 	{ "-ingame_join",		"Allow in-game joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Enable voice recognition",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
@@ -412,6 +413,7 @@ cmdline_parm no_di_mouse_arg("-disable_di_mouse", "Disable DirectInput mouse cod
 cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL, AT_NONE); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
 cmdline_parm keyboard_layout("-keyboard_layout", "Specify keyboard layout (qwertz or azerty)", AT_STRING);
 cmdline_parm old_collision_system("-old_collision", NULL, AT_NONE); // Cmdline_old_collision_sys
+cmdline_parm gl_finish ("-gl_finish", NULL, AT_NONE);
 
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nohtl = 0;
@@ -428,6 +430,7 @@ int Cmdline_no_glsl_model_rendering = 0;
 int Cmdline_no_di_mouse = 0;
 int Cmdline_drawelements = 0;
 char* Cmdline_keyboard_layout = NULL;
+bool Cmdline_gl_finish = false;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", "Skip mainhall and run this mission", AT_STRING);	// Cmdline_start_mission
@@ -1485,6 +1488,11 @@ bool SetCmdlineParams()
 	if( keyboard_layout.found())
 	{
 		Cmdline_keyboard_layout = keyboard_layout.str();
+	}
+
+	if (gl_finish.found())
+	{
+		Cmdline_gl_finish = true;
 	}
 
 	if ( snd_preload_arg.found() )

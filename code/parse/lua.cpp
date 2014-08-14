@@ -3349,7 +3349,7 @@ ADE_FUNC(__gc, l_Texture, NULL, "Auto-deletes texture", NULL, NULL)
 	// use, and in order to prevent that we want to double-check the load count
 	// here before unloading the bitmap. -zookeeper
 	if(idx > -1 && bm_is_valid(idx) && bm_bitmaps[bm_get_cache_slot(idx, 0)].load_count < 1)
-		bm_unload(idx);
+		bm_release(idx);
 
 	return ADE_RETURN_NIL;
 }
@@ -3419,7 +3419,7 @@ ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 	if(!bm_is_valid(*idx))
 		return ADE_RETURN_NIL;
 
-	bm_unload(*idx);
+	bm_release(*idx);
 
 	//WMC - invalidate this handle
 	*idx = -1;
@@ -12143,6 +12143,11 @@ ADE_FUNC(createVector, l_Base, "[x, y, z]", "Creates a vector object", "vector",
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
+ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds since the engine has started", "number", "Overall time (seconds)")
+{
+	return ade_set_args(L, "x", game_get_overall_frametime());
+}
+
 ADE_FUNC(getFrametime, l_Base, "[Do not adjust for time compression (Boolean)]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
 {
 	bool b=false;
@@ -15280,6 +15285,17 @@ ADE_FUNC(applyShudder, l_Mission, "number time, number intesity", "Applies a shu
 	game_shudder_apply(int_time, intensity * 0.01f);
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission being played in a campaign (as opposed to the tech room's simulator)", "boolean", "true if in campaign, false if not")
+{
+	bool b = false;
+
+	if (Game_mode & GM_CAMPAIGN_MODE) {
+		b = true;
+	}
+
+	return ade_set_args(L, "b", b);
 }
 
 //**********LIBRARY: Bitwise Ops

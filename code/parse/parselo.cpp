@@ -2309,6 +2309,9 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 			} while (*ch);
 		} else if (!strcmp(outbuf, "1337, \"(fr)Loading\"\n")) {
 			outbuf[3] = '6';
+		} else if (!strcmp(outbuf, "3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n")) {
+			outbuf[171] = '\'';
+			outbuf[181] = '\'';
 		}
 
 		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);

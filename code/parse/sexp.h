@@ -723,6 +723,7 @@ class waypoint_list;
 #define OP_SET_MOTION_DEBRIS				(0x0025 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)    // The E
 #define OP_HUD_SET_CUSTOM_GAUGE_ACTIVE		(0x0026 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// The E, just revamped a bit by Axem
 #define OP_HUD_SET_RETAIL_GAUGE_ACTIVE		(0x0027 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) 	// The E, just revamped a bit by Axem
+#define OP_SCRIPT_EVAL_MULTI				(0x0028 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
