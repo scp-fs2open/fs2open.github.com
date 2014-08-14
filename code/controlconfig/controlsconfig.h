@@ -65,12 +65,12 @@ typedef struct config_item {
 	bool hasXSTR;			//!< whether we should translate this with an XSTR
 	char *default_text;		//!< default description of the action
 	char type;				//!< manner control should be checked in
-	char *text;				//!< overridable description of the action
 	short key_id;			//!< actual key bound to action
 	short joy_id;			//!< joystick button bound to action
 	int used;				//!< has control been used yet in mission?  If so, this is the timestamp
 	bool disabled;			//!< whether this action should be available at all
 	bool continuous_ongoing;//!< whether this action is a continuous one and is currently ongoing
+	char *text;				//!< overridable description of the action
 } config_item;
 
 /*!
