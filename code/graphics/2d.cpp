@@ -82,7 +82,7 @@ int gr_stencil_mode = 0;
 int gr_alpha_test = 0;
 
 // Default clipping distances
-const float Default_min_draw_distance = 0.1f;
+const float Default_min_draw_distance = 1.0f;
 const float Default_max_draw_distance = 10000000.0f;
 float Min_draw_distance = Default_min_draw_distance;
 float Max_draw_distance = Default_max_draw_distance;
