@@ -174,12 +174,8 @@ void parse_hud_gauges_tbl(const char *filename)
 	color *ship_clr_p = NULL;
 	bool scale_gauge = true;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -455,9 +451,6 @@ void parse_hud_gauges_tbl(const char *filename)
 		required_string("$End Gauges");
 		required_string("#End");
 	}
-
-	// close localization
-	lcl_ext_close();
 }
 
 void hud_positions_init()
@@ -552,8 +545,6 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					SCP_vector<int> sindex;
-					sindex.push_back(k);
 					load_gauge(retail_gauges[i], -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				}
 			}
@@ -870,6 +861,8 @@ int parse_gauge_type()
 	if ( optional_string("+Secondary Weapons:") )
 		return HUD_OBJECT_SECONDARY_WEAPONS;
 
+	error_display(1, "Invalid gauge type [%.32s]", next_tokens());
+	
 	return -1;
 }
 
@@ -1050,7 +1043,8 @@ void load_gauge(int gauge, int base_w, int base_h, int hud_font, bool scale_gaug
 		load_gauge_secondary_weapons(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	default:
-		Warning(LOCATION, "Invalid gauge found in hud_gauges.tbl");
+		// It's either -1, indicating we're ignoring a parse error, or it's a coding error.
+		Assertion(gauge == -1, "Invalid value '%d' passed to load_gauge(); get a coder!\n", gauge);
 		break;
 	}
 }
@@ -1666,7 +1660,7 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 	int ship_name_max_w = 100;
 	int ship_integrity_offsets[2];
 	int ship_status_offsets[2];
-	char header_text[MAX_FILENAME_LEN] = "monitoring";
+	char header_text[MAX_FILENAME_LEN] = "";
 	char fname_top[MAX_FILENAME_LEN] = "escort1";
 	char fname_middle[MAX_FILENAME_LEN] = "escort2";
 	char fname_bottom[MAX_FILENAME_LEN] = "escort3";
@@ -1746,6 +1740,10 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 
 	if ( optional_string("Ship Name Max Width:") ) {
 		stuff_int(&ship_name_max_w);
+	}
+
+	if (header_text[0] == '\0') {
+		strcpy_s(header_text, XSTR("monitoring", 285));
 	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);

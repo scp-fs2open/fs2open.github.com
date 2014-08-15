@@ -172,15 +172,6 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		}
 	}
 
-	//	If either of these objects doesn't get collision checks, abort.
-	if (heavy_sip->flags & SIF_NO_COLLIDE) {
-		return 0;
-	}
-
-	if (light_sip->flags & SIF_NO_COLLIDE) {
-		return 0;
-	}
-
 	// Set up model_collide info
 	mc_info mc;
 	mc_info_init(&mc);

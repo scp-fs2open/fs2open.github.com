@@ -3249,9 +3249,10 @@ DCF(multi,"changes multiplayer settings (Multiplayer)")
 		Multi_has_cd = 1;
 
 	} else if (dc_optional_string("oo")) {
-		int new_flags = -1;
+		int new_flags;
 
-		dc_maybe_stuff_int(&new_flags);
+		if(!dc_maybe_stuff_int(&new_flags))
+			new_flags = -1;
 
 		dc_printf("Interesting flags\n");
 		dc_printf("Pos : %d\n", 1 << 0);

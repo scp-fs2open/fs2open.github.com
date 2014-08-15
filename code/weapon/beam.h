@@ -164,7 +164,6 @@ typedef struct beam {
 	int bank;
 
 	int Beam_muzzle_stamp;
-	vec3d local_pnt;
 	int firingpoint;
 
 	float		beam_width;

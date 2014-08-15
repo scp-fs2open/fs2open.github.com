@@ -16,6 +16,7 @@
 #include "network/multi.h"
 #include "freespace2/freespace.h"
 #include "playerman/managepilot.h"
+#include "localization/localize.h"
 
 
 void pilotfile::plr_read_flags()
@@ -33,6 +34,8 @@ void pilotfile::plr_read_flags()
 	p->auto_advance = cfread_int(cfp);
 
 	// special rank setting (to avoid having to read all stats on verify)
+	// will be the multi rank
+	// if there's a valid CSG, this will be overwritten
 	p->stats.rank = cfread_int(cfp);
 
 	if (version > 0) 
@@ -41,6 +44,14 @@ void pilotfile::plr_read_flags()
 	} else 
 	{
 		p->player_was_multi = 0; // Default to single player
+	}
+
+	// which language was this pilot created with
+	if (version > 1) {
+		cfread_string_len(p->language, sizeof(p->language), cfp);
+	} else {
+		// if we don't know, default to the current language setting
+		lcl_get_language_name(p->language);
 	}
 }
 
@@ -61,10 +72,14 @@ void pilotfile::plr_write_flags()
 	cfwrite_int(p->auto_advance, cfp);
 
 	// special rank setting (to avoid having to read all stats on verify)
-	cfwrite_int(p->stats.rank, cfp);
+	// should be multi only from now on
+	cfwrite_int(multi_stats.rank, cfp);
 
 	// What game mode we were in last on this pilot
 	cfwrite_int(p->player_was_multi, cfp);
+
+	// which language was this pilot created with
+	cfwrite_string_len(p->language, cfp);
 
 	endSection();
 }
@@ -807,7 +822,7 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 		return false;
 	}
 
-	// version, should be able to just ignore it
+	// version, now used
 	version = cfread_ubyte(cfp);
 
 	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), version));
@@ -991,7 +1006,7 @@ bool pilotfile::save_player(player *_p)
 	return true;
 }
 
-bool pilotfile::verify(const char *fname, int *rank)
+bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 {
 	player t_plr;
 
@@ -1020,13 +1035,13 @@ bool pilotfile::verify(const char *fname, int *rank)
 		return false;
 	}
 
-	// version, should be able to just ignore it
-	ubyte plr_ver = cfread_ubyte(cfp);
+	// version, now used
+	version = cfread_ubyte(cfp);
 
-	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), (int)plr_ver));
+	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), (int)version));
 
 	// the point of all this: read in the PLR contents
-	while ( !m_have_flags && !cfeof(cfp) ) {
+	while ( !(m_have_flags && m_have_info) && !cfeof(cfp) ) {
 		ushort section_id = cfread_ushort(cfp);
 		uint section_size = cfread_uint(cfp);
 
@@ -1041,6 +1056,14 @@ bool pilotfile::verify(const char *fname, int *rank)
 					mprintf(("PLR => Parsing:  Flags...\n"));
 					m_have_flags = true;
 					plr_read_flags();
+					break;
+
+				// now reading the Info section to get the campaign
+				// and be able to lookup the campaign rank
+				case Section::Info:
+					mprintf(("PLR => Parsing:  Info...\n"));
+					m_have_info = true;
+					plr_read_info();
 					break;
 
 				default:
@@ -1068,14 +1091,34 @@ bool pilotfile::verify(const char *fname, int *rank)
 		}
 	}
 
+	if (valid_language) {
+		strncpy(valid_language, p->language, sizeof(p->language));
+	}
+
+	// need to cleanup early to ensure everything is OK for use in the CSG next
+	// also means we can't use *p from now on, use t_plr instead for a few vars
+	plr_close();
+
 	if (rank) {
-		*rank = p->stats.rank;
+		// maybe get the rank from the CSG
+		if ( !(Game_mode & GM_MULTIPLAYER) ) {
+			// build the csg filename
+			// since filename/fname was validated above, perform less safety checks here
+			filename = fname;
+			filename = filename.replace(filename.find_last_of('.')+1,filename.npos, t_plr.current_campaign);
+			filename.append(".csg");
+
+			if (!this->get_csg_rank(rank)) {
+				// if we failed to get the csg rank, default to multi rank
+				*rank = t_plr.stats.rank;
+			}
+		} else {
+			// if the CSG isn't valid, or for multi, use this rank
+			*rank = t_plr.stats.rank;
+		}
 	}
 
 	mprintf(("PLR => Verifying complete!\n"));
-
-	// cleanup and return
-	plr_close();
 
 	return true;
 }

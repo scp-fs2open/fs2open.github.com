@@ -132,7 +132,7 @@ typedef struct obj_flag_name {
 	int flag_list;
 } obj_flag_name;
 
-#define MAX_OBJECT_FLAG_NAMES			9
+#define MAX_OBJECT_FLAG_NAMES			10
 extern obj_flag_name Object_flag_names[];
 
 struct dock_instance;
@@ -225,7 +225,8 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 // Use this instead of "objp - Objects" to get an object number
 // given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
-#define OBJ_INDEX(objp) (objp-Objects)
+// https://stackoverflow.com/questions/7954439/c-which-character-should-be-used-for-ptrdiff-t-in-printf
+#define OBJ_INDEX(objp) (ptrdiff_t)(objp-Objects)
 
 /*
  *		FUNCTIONS

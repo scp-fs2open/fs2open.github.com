@@ -641,6 +641,15 @@ int barracks_pilot_accepted()
 		return -1;
 	}
 
+	// check that pilot language is OK
+	if (!valid_pilot_lang(Cur_pilot->callsign)) {
+		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(
+			"Selected pilot was created with a different language\n"
+			"to the currently active language.\n\n"
+			"Please select a different pilot or change the language", 1637));
+		return -1;
+	}
+
 	// set pilot image
 	if (Game_mode & GM_MULTIPLAYER) {
 		player_set_squad_bitmap(Cur_pilot, Cur_pilot->m_squad_filename, true);
@@ -911,12 +920,6 @@ void barracks_init_player_stuff(int mode)
 	// determine if we should be looking for single or multiplayers at the outset
 	Player_sel_mode = mode;
 	
-	// get the list of pilots based upon whether we're in single or multiplayer mode
-	Num_pilots = 0;
-	Get_file_list_filter = barracks_pilot_filter;
-
-	Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
-
 	// single player specific stuff
 	if (mode == PLAYER_SELECT_MODE_SINGLE) {
 		Game_mode &= ~GM_MULTIPLAYER;
@@ -941,6 +944,13 @@ void barracks_init_player_stuff(int mode)
 		Buttons[gr_screen.res][B_SQUAD_NEXT_BUTTON].button.enable();
 		Buttons[gr_screen.res][B_SQUAD_NEXT_BUTTON].button.unhide();			
 	}
+
+	// get the list of pilots based upon whether we're in single or multiplayer mode
+	// moved down here so pilotfile::verify knows which Game_mode to get ranks for
+	Num_pilots = 0;
+	Get_file_list_filter = barracks_pilot_filter;
+
+	Num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
 
 	int ranks[MAX_PILOTS];
 
@@ -1384,7 +1394,7 @@ void barracks_init()
 
 	// load in help overlay bitmap	
 	Barracks_overlay_id = help_overlay_get_index(BARRACKS_OVERLAY);
-	help_overlay_set_state(Barracks_overlay_id,0);
+	help_overlay_set_state(Barracks_overlay_id,gr_screen.res,0);
 
 	// other init stuff
 	Barracks_callsign_enter_mode = 0;	
@@ -1436,7 +1446,7 @@ void barracks_do_frame(float frametime)
 
 	if ( k > 0 ) {
 		if ( help_overlay_active(Barracks_overlay_id) ) {
-			help_overlay_set_state(Barracks_overlay_id,0);
+			help_overlay_set_state(Barracks_overlay_id,gr_screen.res,0);
 			k = 0;
 		}
 	}
@@ -1486,7 +1496,7 @@ void barracks_do_frame(float frametime)
 					}
 				} else {
 					// kill the overlay
-					help_overlay_set_state(Barracks_overlay_id,0);
+					help_overlay_set_state(Barracks_overlay_id,gr_screen.res,0);
 				}
 				break;
 
@@ -1543,7 +1553,7 @@ void barracks_do_frame(float frametime)
 
 	// check mouse over help
 	if (mouse_down(MOUSE_LEFT_BUTTON)) {
-		help_overlay_set_state(Barracks_overlay_id, 0);
+		help_overlay_set_state(Barracks_overlay_id, gr_screen.res, 0);
 	}
 
 	// do pilot pic stuff
@@ -1613,7 +1623,7 @@ void barracks_do_frame(float frametime)
 	barracks_display_pilot_stats();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Barracks_overlay_id);
+	help_overlay_maybe_blit(Barracks_overlay_id, gr_screen.res);
 	
 	// flip the page
 	gr_flip();

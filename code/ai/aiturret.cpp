@@ -479,7 +479,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		}
 
 		// don't shoot at ships without collision check
-		if (sip->flags & SIF_NO_COLLIDE) {
+		if (!(objp->flags & OF_COLLIDES)) {
 			return 0;
 		}
 

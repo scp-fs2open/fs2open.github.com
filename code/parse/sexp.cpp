@@ -535,10 +535,10 @@ sexp_oper Operators[] = {
 	{ "invalidate-goal",				OP_INVALIDATE_GOAL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "validate-goal",					OP_VALIDATE_GOAL,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "red-alert",						OP_RED_ALERT,							0,	0,			SEXP_ACTION_OPERATOR,	},
-	{ "end-mission",					OP_END_MISSION,							0,	2,			SEXP_ACTION_OPERATOR,	},	//-Sesquipedalian
+	{ "end-mission",					OP_END_MISSION,							0,	3,			SEXP_ACTION_OPERATOR,	},	//-Sesquipedalian
 	{ "force-jump",						OP_FORCE_JUMP,							0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "next-mission",					OP_NEXT_MISSION,						1,	1,			SEXP_ACTION_OPERATOR,	},
-	{ "end-campaign",					OP_END_CAMPAIGN,						0,	0,			SEXP_ACTION_OPERATOR,	},
+	{ "end-campaign",					OP_END_CAMPAIGN,						0,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "allow-treason",					OP_ALLOW_TREASON,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -632,14 +632,14 @@ sexp_oper Operators[] = {
 	//Background and Nebula Sub-Category
 	{ "mission-set-nebula",				OP_MISSION_SET_NEBULA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Sesquipedalian
 	{ "mission-set-subspace",			OP_MISSION_SET_SUBSPACE,				1,	1,			SEXP_ACTION_OPERATOR,	},
-	{ "add-background-bitmap",			OP_ADD_BACKGROUND_BITMAP,				9,	9,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "add-background-bitmap",			OP_ADD_BACKGROUND_BITMAP,				8,	9,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "remove-background-bitmap",		OP_REMOVE_BACKGROUND_BITMAP,			1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
-	{ "add-sun-bitmap",					OP_ADD_SUN_BITMAP,						6,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "add-sun-bitmap",					OP_ADD_SUN_BITMAP,						5,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
-	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	7,			SEXP_ACTION_OPERATOR,	},	// taylor
+	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 
@@ -681,6 +681,7 @@ sexp_oper Operators[] = {
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,				1,	MAX_COMPLETE_ESCORT_LIST,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-support-ship",				OP_SET_SUPPORT_SHIP,					6,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "multi-eval",						OP_SCRIPT_EVAL_MULTI,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,   },
 	{ "script-eval",					OP_SCRIPT_EVAL,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "debug",							OP_DEBUG,								2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "do-nothing",						OP_NOP,									0,	0,			SEXP_ACTION_OPERATOR,	},
@@ -2767,6 +2768,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
+
+				if (!stricmp(CTEXT(node), "none"))
+					break;
 
 				if (Team_Colors.find(CTEXT(node)) == Team_Colors.end())
 					return SEXP_CHECK_INVALID_TEAM_COLOR;
@@ -10990,7 +10994,18 @@ void sexp_end_of_campaign(int n)
 // campaign, and otherwise to do the conventional code
 void sexp_end_campaign(int n)
 {
+	int ignore_player_mortality = 1;
+
 	if (!(Game_mode & GM_CAMPAIGN_MODE)) {
+		return;
+	}
+
+	if (n != -1) {
+		ignore_player_mortality = is_sexp_true(n);
+	}
+
+	// if the player is dead we may want to let the death screen handle things
+	if (!ignore_player_mortality && (Player_ship->flags & SF_DYING)) {
 		return;
 	}
 
@@ -11928,34 +11943,38 @@ void sexp_add_background_bitmap(int n)
 	if (sle.div_y > 5) sle.div_y = 5;
 	if (sle.div_y < 1) sle.div_y = 1;
 
-	Assert((n >= 0) && (n < Num_sexp_nodes));
+	if (n == -1) {
+		stars_add_bitmap_entry(&sle);
+	} else {
+		Assert((n >= 0) && (n < Num_sexp_nodes));
 
-	// ripped from sexp_modify_variable()
-	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_var = atoi(Sexp_nodes[n].text);
-	
-	// verify variable set
-	Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+		// ripped from sexp_modify_variable()
+		// get sexp_variable index
+		Assert(Sexp_nodes[n].first == -1);
+		sexp_var = atoi(Sexp_nodes[n].text);
+		
+		// verify variable set
+		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
 
-	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
-	{
-        new_number = stars_add_bitmap_entry(&sle);
-        if (new_number < 0)
-        {
-		    Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
-            new_number = 0;
-        }
+		if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
+		{
+			new_number = stars_add_bitmap_entry(&sle);
+			if (new_number < 0)
+			{
+				Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
+				new_number = 0;
+			}
 
-		sprintf(number_as_str, "%d", new_number);
+			sprintf(number_as_str, "%d", new_number);
 
-		// assign to variable
-		sexp_modify_variable(number_as_str, sexp_var);
-	}
-	else
-	{
-		Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
-		return;
+			// assign to variable
+			sexp_modify_variable(number_as_str, sexp_var);
+		}
+		else
+		{
+			Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			return;
+		}
 	}
 }
 
@@ -12015,36 +12034,40 @@ void sexp_add_sun_bitmap(int n)
 	if (sle.scale_y > 50) sle.scale_y = 50;
 	if (sle.scale_y < 0.1f) sle.scale_y = 0.1f;
 	
-	Assert((n >= 0) && (n < Num_sexp_nodes));
+	if (n == -1) {
+		stars_add_sun_entry(&sle);
+	} else {
+		Assert((n >= 0) && (n < Num_sexp_nodes));
 
-	// ripped from sexp_modify_variable()
-	// get sexp_variable index
-	Assert(Sexp_nodes[n].first == -1);
-	sexp_var = atoi(Sexp_nodes[n].text);
-	
-	// verify variable set
-	Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+		// ripped from sexp_modify_variable()
+		// get sexp_variable index
+		Assert(Sexp_nodes[n].first == -1);
+		sexp_var = atoi(Sexp_nodes[n].text);
+		
+		// verify variable set
+		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
 
-	if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
-	{
-		// get new numerical value
-        new_number = stars_add_sun_entry(&sle);
+		if (Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER)
+		{
+			// get new numerical value
+			new_number = stars_add_sun_entry(&sle);
 
-        if (new_number < 0)
-        {
-		    Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
-            new_number = 0;
-        }
+			if (new_number < 0)
+			{
+				Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
+				new_number = 0;
+			}
 
-		sprintf(number_as_str, "%d", new_number);
+			sprintf(number_as_str, "%d", new_number);
 
-		// assign to variable
-		sexp_modify_variable(number_as_str, sexp_var);
-	}
-	else
-	{
-		Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
-		return;
+			// assign to variable
+			sexp_modify_variable(number_as_str, sexp_var);
+		}
+		else
+		{
+			Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			return;
+		}
 	}
 }
 
@@ -12110,6 +12133,7 @@ void sexp_end_mission(int n)
 {
 	int ignore_player_mortality = 1;
 	int boot_to_main_hall = 0;
+	int from_debrief_to_main_hall = 0;
 
 	if (n != -1) {
 		ignore_player_mortality = is_sexp_true(n);
@@ -12119,10 +12143,21 @@ void sexp_end_mission(int n)
 		boot_to_main_hall = is_sexp_true(n);
 		n = CDR(n);
 	}
+	if (n != -1) {
+		from_debrief_to_main_hall = is_sexp_true(n);
+		n = CDR(n);
+	}
 
 	// if the player is dead we may want to let the death screen handle things
 	if (!ignore_player_mortality && (Player_ship->flags & SF_DYING)) {
 		return;
+	}
+
+	// ending via debrief and then going to mainhall could maybe work with multiplayer?
+	if (from_debrief_to_main_hall) {
+		The_mission.flags |= MISSION_FLAG_END_TO_MAINHALL;
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_END_TO_MAINHALL;
 	}
 
 	// if we go straight to the main hall we have to clean up the mission without entering the debriefing
@@ -12773,9 +12808,9 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			{
 				// set or clear?
 				if (set_flag)
-					oswpt.objp->flags |= object_flag;
+					obj_set_flags(oswpt.objp, oswpt.objp->flags | object_flag);
 				else
-					oswpt.objp->flags &= ~object_flag;
+					obj_set_flags(oswpt.objp, oswpt.objp->flags & ~object_flag);
 			}
 
 			// handle ETS when modifying shields
@@ -16585,8 +16620,15 @@ void sexp_set_skybox_model(int n)
 	strcpy_s(new_skybox_model, CTEXT(n));
 	int new_skybox_model_flags = DEFAULT_NMODEL_FLAGS;
 
-	// gather any flags
+	// check if we need to reset the animated texture timestamp
 	n = CDR(n);
+	if (n == -1 || is_sexp_true(n)) {
+		Skybox_timestamp = game_get_overall_frametime();
+	}
+
+	if (n != -1) n = CDR(n);
+
+	// gather any flags
 	while (n != -1) {
 		// this should check all entries in Skybox_flags
 		if ( !stricmp("add-lighting", CTEXT(n) )) {
@@ -21469,7 +21511,7 @@ void multi_sexp_show_hide_jumpnode(bool show)
 }
 
 //WMC - This is a bit of a hack, however, it's easier than
-//coding in a whole new SCript_system function.
+//coding in a whole new Script_system function.
 int sexp_script_eval(int node, int return_type)
 {
 	int n = node;
@@ -21541,6 +21583,91 @@ int sexp_script_eval(int node, int return_type)
 
 	return -1;
 }
+
+void sexp_script_eval_multi(int node)
+ {
+	char s[TOKEN_LENGTH];
+	bool success = true;
+	int sindex;
+	player *p;
+	
+	strcpy_s(s, CTEXT(node));
+	
+	node = CDR(node);
+	
+	multi_start_callback();
+	multi_send_string(s);
+
+	// evalutate on all clients
+	if (node == -1) {
+		multi_send_bool(true);
+		success = Script_system.EvalString(s, NULL, NULL, s);
+	}
+	// we have to send to all clients but we need to send a list of ships so that they know if they evaluate or not
+	else {
+		multi_send_bool(false);
+		
+		do {
+			p = get_player_from_ship_node(node, true);
+			
+			// not a player ship so skip it
+			if (p == NULL){
+				node = CDR(node);
+				continue;
+			}
+			else {
+				// if this is me, execute the script
+				if (p == Player) {
+					success = Script_system.EvalString(s, NULL, NULL, s);
+				}
+				// otherwise notify the clients
+				else {
+					sindex = ship_name_lookup(CTEXT(node));
+					// no need to check sindex is valid - get_player_from_ship_node() has already done that
+					multi_send_ship(sindex);	
+				}
+			}
+			
+			node = CDR(node);
+		} while (node != -1);
+	}
+	
+	multi_end_callback();
+	
+	if (!success) {
+		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+	}
+}
+
+void multi_sexp_script_eval_multi()
+ {
+	int sindex;
+	char s[TOKEN_LENGTH];
+	bool sent_to_all = false;
+	bool success = true;
+	
+	multi_get_string(s);
+	multi_get_bool(sent_to_all);
+	
+	if (sent_to_all) {
+		success = Script_system.EvalString(s, NULL, NULL, s);
+	}
+	// go through all the ships that were sent and see if any of them match this client.
+	else {
+		while (multi_get_ship(sindex)) {
+			Assertion(sindex >= 0, "Illegal value for the ship index sent in multi_sexp_script_eval_multi()! Ship %d does not exist!", sindex);
+			if (Player->objnum == Ships[sindex].objnum) {
+				success = Script_system.EvalString(s, NULL, NULL, s);	
+			}
+		}
+	}
+	
+	if (!success) {
+		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+	}
+}
+
+
 
 void sexp_force_glide(int node)
 {
@@ -24230,6 +24357,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_script_eval(node, OPR_NULL);
 				break;
 
+			case OP_SCRIPT_EVAL_MULTI:
+				sexp_script_eval_multi(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_CHANGE_IFF_COLOR:
 				sexp_change_iff_color(node);
 				sexp_val = SEXP_TRUE;
@@ -24659,6 +24791,10 @@ void multi_sexp_eval()
 
 			case OP_SET_ETS_VALUES:
 				multi_sexp_set_ets_values();
+				break;
+
+			case OP_SCRIPT_EVAL_MULTI:
+				multi_sexp_script_eval_multi();
 				break;
 
 			// bad sexp in the packet
@@ -25263,6 +25399,7 @@ int query_operator_return_type(int op)
 		case OP_SET_NUM_COUNTERMEASURES:
 		case OP_SCRIPT_EVAL:
 		case OP_SCRIPT_EVAL_STRING:
+		case OP_SCRIPT_EVAL_MULTI:
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
 		case OP_LOCK_PRIMARY_WEAPON:
@@ -26274,6 +26411,8 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_MISSION_NAME;
 
 		case OP_END_CAMPAIGN:
+			return OPF_BOOL;
+
 		case OP_END_OF_CAMPAIGN:
 			return OPF_NONE;
 
@@ -27010,7 +27149,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_SKYBOX_MODEL:
 			if (argnum == 0)
 				return OPF_SKYBOX_MODEL_NAME;
-			else if (argnum <= 7)
+			else if (argnum == 1)
+				return OPF_BOOL;
+			else
 				return OPF_SKYBOX_FLAGS;
 
 		case OP_SET_SKYBOX_ORIENT:
@@ -27304,6 +27445,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SCRIPT_EVAL_STRING:
 			if (argnum == 1)return OPF_VARIABLE_NAME;
 			else return OPF_STRING;
+
+		case OP_SCRIPT_EVAL_MULTI:
+			if (argnum == 0)
+				return OPF_STRING;
+			else
+				return OPF_SHIP;
 
 		case OP_CHANGE_IFF_COLOR:
 			if ((argnum == 0) || (argnum == 1))
@@ -27863,6 +28010,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SHIP_FLAG:
 			return "Invalid ship flag";
+
+		case SEXP_CHECK_INVALID_TEAM_COLOR:
+			return "Not a valid Team Color setting";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
@@ -29079,6 +29229,7 @@ int get_subcategory(int sexp_id)
 		case OP_SET_SUPPORT_SHIP:
 		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL:
+		case OP_SCRIPT_EVAL_MULTI:
 			return CHANGE_SUBCATEGORY_OTHER;
 
 		case OP_NUM_SHIPS_IN_BATTLE:
@@ -31308,7 +31459,8 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_END_MISSION, "end-mission\r\n" 
 		"\tEnds the mission as if the player had engaged his subspace drive, but without him doing so.  Dumps the player back into a normal debriefing.  Does not invoke red-alert status.\r\n"
 		"\t1:\tEnd Mission even if the player is dead (optional; defaults to true)\r\n"
-		"\t2:\tBoot the player out into the main hall instead of going to the debriefing (optional; defaults to false; not supported in multi)"
+		"\t2:\tBoot the player out into the main hall instead of going to the debriefing (optional; defaults to false; not supported in multi)\r\n"
+		"\t3:\tGo to the mainhall instead of starting the next mission (optional; defaults to false; not yet tested in multi)"
 	},
 
 	// Goober5000
@@ -31370,7 +31522,8 @@ sexp_help_struct Sexp_help[] = {
 	},
 
 	{ OP_END_CAMPAIGN, "end-campaign\r\n"
-		"\tEnds the builtin campaign.  Should only be used by the main FreeSpace campaign\r\n" },
+		"\tEnds the builtin campaign.  Should only be used by the main FreeSpace campaign\r\n"
+		"\t1:\tEnd Campaign even if the player is dead (optional; defaults to true)\r\n" },
 
 	{ OP_SHIP_VAPORIZE, "ship-vaporize\r\n"
 		"\tSets the ship to vaporize when it is destroyed.  Does not actually destroy the ship - use self-destruct for that.\r\n"
@@ -31763,7 +31916,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_GET_PRIMARY_AMMO, "get-primary-ammo\r\n"
 		"\tReturns the amount of ammo remaining in the specified bank\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of primary banks in the ship; N or higher will return the cumulative total for all banks)" },
 
 	
 	{ OP_SECONDARY_AMMO_PCT, "secondary-ammo-pct\r\n"
@@ -31775,7 +31928,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_GET_SECONDARY_AMMO, "get-secondary-ammo\r\n"
 		"\tReturns the amount of ammo remaining in the specified bank\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative average for all banks)" },
+		"\t2: Bank to check (from 0 to N-1, where N is the number of secondary banks in the ship; N or higher will return the cumulative total for all banks)" },
 
 	// Karajorma
 	{ OP_GET_NUM_COUNTERMEASURES, "get-num-countermeasures\r\n"
@@ -31783,14 +31936,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship name\r\n" },
 
 	{ OP_IS_SECONDARY_SELECTED, "is-secondary-selected\r\n"
-		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
+		"\tReturns true if the specified bank is selected\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0 .. num_banks - 1)\r\n"},
+		"\t2: Bank to check (This is a zero-based index. The first bank is numbered 0.)\r\n"},
 
 	{ OP_IS_PRIMARY_SELECTED, "is-primary-selected\r\n"
-		"\tReturns true if the specified bank is selected (0 .. num_banks - 1)\r\n"
+		"\tReturns true if the specified bank is selected\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Bank to check (0 .. num_banks - 1)\r\n"},
+		"\t2: Bank to check (This is a zero-based index. The first bank is numbered 0.)\r\n"},
 
 	{ OP_SPECIAL_WARP_DISTANCE, "special-warp-dist\r\n"
 		"\tReturns distance to the plane of the knossos device in percent length of ship\r\n"
@@ -32293,7 +32446,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_PRIMARY_FIRED_SINCE, "primary-fired-since\r\n"
 		"\tReturns true if the primary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
 	},
 
@@ -32301,7 +32454,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_SECONDARY_FIRED_SINCE, "secondary-fired-since\r\n"
 		"\tReturns true if the secondary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\t3:\tTime period to check if the weapon was fired (in millieconds)\r\n"
 	},
 
@@ -32309,7 +32462,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_HAS_PRIMARY_WEAPON, "has-primary-weapon\r\n"
 		"\tReturns true if the primary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
 	},
 
@@ -32317,7 +32470,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_HAS_SECONDARY_WEAPON, "has-secondary-weapon\r\n"
 		"\tReturns true if the secondary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
-		"\t2:\tWeapon bank number\r\n"
+		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
 	},
 
@@ -32589,11 +32742,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tAny:\tJump node to hide\r\n"
 	},
 
-	// taylor
+	// taylor, with modifications by niffiwan and MageKing17
 	{ OP_SET_SKYBOX_MODEL, "set-skybox-model\r\n"
 		"\tSets the current skybox model.  Takes 1-7 arguments\r\n"
 		"\t1:\tModel filename (with .pof extension) to switch to\r\n"
-		"\t2-7:\tSet or unset the following skyboxes flags\r\n"
+		"\t2:\tRestart animated textures, if they exist (optional, defaults to true)\r\n"
+		"\t3-8:\tSet or unset the following skyboxes flags (optional)\r\n"
 		"\t\t\tadd-lighting, no-transparency, add-zbuffer\r\n"
 		"\t\t\tadd-culling, no-glowmaps, force-clamp\r\n\r\n"
 		"Note: If the model filename is set to \"default\" with no extension then it will switch to the mission supplied default skybox."
@@ -32609,7 +32763,7 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_ADD_BACKGROUND_BITMAP, "add-background-bitmap\r\n"
 		"\tAdds a background bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-background-bitmap\r\n\r\n"
-		"Takes 9 arguments...\r\n"
+		"Takes 8 to 9 arguments...\r\n"
 		"\t1:\tBackground bitmap name\r\n"
 		"\t2:\tPitch\r\n"
 		"\t3:\tBank\r\n"
@@ -32618,7 +32772,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t6:\tY scale (expressed as a percentage of the original size of the bitmap)\r\n"
 		"\t7:\tX divisions.\r\n"
 		"\t8:\tY divisions.\r\n"
-		"\t9:\tVariable in which to store result\r\n"
+		"\t9:\tVariable in which to store result (optional)\r\n"
 	},
 
 	{ OP_REMOVE_BACKGROUND_BITMAP, "remove-background-bitmap\r\n"
@@ -32630,13 +32784,13 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_ADD_SUN_BITMAP, "add-sun-bitmap\r\n"
 		"\tAdds a sun bitmap to the sky.  Returns an integer that is stored in a variable so it can be deleted using remove-sun-bitmap\r\n\r\n"
-		"Takes 6 arguments...\r\n"
+		"Takes 5 to 6 arguments...\r\n"
 		"\t1:\tSun bitmap name\r\n"
 		"\t2:\tPitch\r\n"
 		"\t3:\tBank\r\n"
 		"\t4:\tHeading\r\n"
 		"\t5:\tScale (expressed as a percentage of the original size of the bitmap)\r\n"
-		"\t6:\tVariable in which to store result\r\n"
+		"\t6:\tVariable in which to store result (optional)\r\n"
 	},
 
 	{ OP_REMOVE_SUN_BITMAP, "remove-sun-bitmap\r\n"
@@ -32695,6 +32849,15 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 argument...\r\n"
 		"\t1:\tScript to evaluate\r\n"
 	},
+
+	{OP_SCRIPT_EVAL_MULTI, "multi-eval\r\n"
+	 "\tEvaluates script on the host and on the clients\r\n"
+	 "\tWARNING: This SEXP is only a preliminary implementation and may be removed in a future version! Use with caution.\r\n\r\n"
+	 "Takes at least 1 argument...\r\n"
+	 "\t1:\tScript to evaluate\r\n"
+	 "\t(rest):\tList of players who should evaluate this script. If no player is given, all clients will execute the script\r\n"
+	},
+	
 
 	{OP_FORCE_GLIDE, "force-glide\r\n"
 		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode on his own,, and that a ship in glide mode cannot warp out or enter autopilot."

@@ -740,6 +740,57 @@ int required_string_4(char *str1, char *str2, char *str3, char *str4)
 	return -1;
 }
 
+// Generic version of old required_string_3 and required_string_4; written by ngld, with some tweaks by MageKing17
+int required_string_one_of(int arg_count, ...)
+{
+	Assertion(arg_count > 0, "required_string_one_of() called with arg_count of %d; get a coder!\n", arg_count);
+	int count = 0;
+	int idx;
+	char *expected;
+	SCP_string message = "";
+	va_list vl;
+
+	ignore_white_space();
+
+	while (count < RS_MAX_TRIES) {
+		va_start(vl, arg_count);
+		for (idx = 0; idx < arg_count; idx++) {
+			expected = va_arg(vl, char*);
+			if (strnicmp(expected, Mp, strlen(expected)) == 0) {
+				diag_printf("Found required string [%s]", token_found = expected);
+				va_end(vl);
+				return idx;
+			}
+		}
+		va_end(vl);
+
+		if (!message.compare("")) {
+			va_start(vl, arg_count);
+			message = "Required token = ";
+			for (idx = 0; idx < arg_count; idx++) {
+				message += "[";
+				message += va_arg(vl, char*);
+				message += "]";
+				if (arg_count == 2 && idx == 0) {
+					message += " or ";
+				} else if (idx == arg_count - 2) {
+					message += ", or ";
+				} else if (idx < arg_count - 2) {
+					message += ", ";
+				}
+			}
+			va_end(vl);
+		}
+
+		error_display(1, "%s, found [%.32s]\n", message.c_str(), next_tokens());
+		advance_to_eoln(NULL);
+		ignore_white_space();
+		count++;
+	}
+
+	return -1;
+}
+
 int required_string_either_fred(char *str1, char *str2)
 {
 	ignore_white_space();
@@ -1131,12 +1182,17 @@ int get_string_or_variable (SCP_string &str)
 
 /**
  * Stuff a string (" chars ") into *str, return length.
+ * Accepts an optional max length parameter. If it is omitted or negative, then no max length is enforced.
  */
-int get_string(char *str)
+int get_string(char *str, int max)
 {
 	int	len;
 
 	len = strcspn(Mp + 1, "\"");
+
+	if (max >= 0 && len >= max)
+		error_display(0, "String too long.  Length = %i.  Max is %i.\n", len, max);
+
 	strncpy(str, Mp + 1, len);
 	str[len] = 0;
 
@@ -1246,7 +1302,7 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
-			break;		
+			break;
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
@@ -1356,7 +1412,7 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
-			break;		
+			break;	
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
@@ -1512,20 +1568,17 @@ void compact_multitext_string(SCP_string &str)
 		str.resize(len-num_cr);
 }
 
+// Converts a character from Windows-1252 to CP437.
 int maybe_convert_foreign_character(int ch)
 {
 	// time to do some special foreign character conversion			
 	switch (ch) {
+		case -57:
+			ch = 128;
+			break;
+
 		case -4:
 			ch = 129;
-			break;
-
-		case -28:
-			ch = 132;
-			break;
-
-		case -10:
-			ch = 148;
 			break;
 
 		case -23:
@@ -1536,8 +1589,24 @@ int maybe_convert_foreign_character(int ch)
 			ch = 131;
 			break;
 
+		case -28:
+			ch = 132;
+			break;
+
+		case -32:
+			ch = 133;
+			break;
+
+		case -27:
+			ch = 134;
+			break;
+
 		case -25:
 			ch = 135;
+			break;
+
+		case -22:
+			ch = 136;
 			break;
 
 		case -21:
@@ -1556,16 +1625,36 @@ int maybe_convert_foreign_character(int ch)
 			ch = 140;
 			break;
 
+		case -20:
+			ch = 141;
+			break;
+
 		case -60:
 			ch = 142;
+			break;
+
+		case -59:
+			ch = 143;
 			break;
 
 		case -55:
 			ch = 144;
 			break;
 
+		case -26:
+			ch = 145;
+			break;
+
+		case -58:
+			ch = 146;
+			break;
+
 		case -12:
 			ch = 147;
+			break;
+
+		case -10:
+			ch = 148;
 			break;
 
 		case -14:
@@ -1580,12 +1669,32 @@ int maybe_convert_foreign_character(int ch)
 			ch = 151;
 			break;
 
+		case -1:
+			ch = 152;
+			break;
+
 		case -42:
 			ch = 153;
 			break;
 
 		case -36:
 			ch = 154;
+			break;
+
+		case -94:
+			ch = 155;
+			break;
+
+		case -93:
+			ch = 156;
+			break;
+
+		case -91:
+			ch = 157;
+			break;
+
+		case -125:
+			ch = 159;
 			break;
 
 		case -31:
@@ -1604,16 +1713,80 @@ int maybe_convert_foreign_character(int ch)
 			ch = 163;
 			break;
 
-		case -32:
-			ch = 133;
+		case -15:
+			ch = 164;
 			break;
 
-		case -22:
-			ch = 136;
+		case -47:
+			ch = 165;
 			break;
 
-		case -20:
-			ch = 141;
+		case -86:
+			ch = 166;
+			break;
+
+		case -70:
+			ch = 167;
+			break;
+
+		case -65:
+			ch = 168;
+			break;
+
+		case -84:
+			ch = 170;
+			break;
+
+		case -67:
+			ch = 171;
+			break;
+
+		case -68:
+			ch = 172;
+			break;
+
+		case -95:
+			ch = 173;
+			break;
+
+		case -85:
+			ch = 174;
+			break;
+
+		case -69:
+			ch = 175;
+			break;
+
+		case -33:
+			ch = 225;
+			break;
+
+		case -75:
+			ch = 230;
+			break;
+
+		case -79:
+			ch = 241;
+			break;
+
+		case -9:
+			ch = 246;
+			break;
+
+		case -80:
+			ch = 248;
+			break;
+
+		case -73:
+			ch = 250;
+			break;
+
+		case -78:
+			ch = 253;
+			break;
+
+		case -96:
+			ch = 255;
 			break;
 	}
 	
@@ -1627,6 +1800,9 @@ void maybe_convert_foreign_characters(char *line)
 	if (Fred_running)
 		return;
 
+	if (Lcl_pl)
+		return;
+
 	for (ch = line; *ch != '\0'; ch++)
 			*ch = (char) maybe_convert_foreign_character(*ch);
 }
@@ -1635,6 +1811,9 @@ void maybe_convert_foreign_characters(char *line)
 void maybe_convert_foreign_characters(SCP_string &line)
 {
 	if (Fred_running)
+		return;
+
+	if (Lcl_pl)
 		return;
 
 	for (SCP_string::iterator ii = line.begin(); ii != line.end(); ++ii)
@@ -2118,13 +2297,30 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0 ) {
 		mp_raw += num_chars_read;
 
+		// stupid hacks to make retail data work with fixed parser, per Mantis #3072
+		if (!strcmp(outbuf, "1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n")) {
+			outbuf[121] = ' ';
+			outbuf[122] = ' ';
+		} else if (!strcmp(outbuf, "1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n")) {
+			char *ch = &outbuf[11];
+			do {
+				*ch = *(ch+1);
+				++ch;
+			} while (*ch);
+		} else if (!strcmp(outbuf, "1337, \"(fr)Loading\"\n")) {
+			outbuf[3] = '6';
+		} else if (!strcmp(outbuf, "3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n")) {
+			outbuf[171] = '\'';
+			outbuf[181] = '\'';
+		}
+
 		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
 
 		maybe_convert_foreign_characters(outbuf);
 
 		str = outbuf;
 		while (*str) {
-			if (*str == -33) {
+			if (*str == (Lcl_pl ? -33 : -31)) {
 				*mp++ = 's';
 				*mp++ = 's';
 				str++;
@@ -3732,10 +3928,10 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 			}
 			case 'c':
 			{
-				dest += (char) va_arg(ap, char);
+				dest += (char) va_arg(ap, int);
 				break;
 			}
-			case 'f':
+			case 'f':			
 			{
 				dval = va_arg(ap, double);
 				sprintf(buf_dest, buf_src, dval);

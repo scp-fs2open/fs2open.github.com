@@ -3349,7 +3349,7 @@ ADE_FUNC(__gc, l_Texture, NULL, "Auto-deletes texture", NULL, NULL)
 	// use, and in order to prevent that we want to double-check the load count
 	// here before unloading the bitmap. -zookeeper
 	if(idx > -1 && bm_is_valid(idx) && bm_bitmaps[bm_get_cache_slot(idx, 0)].load_count < 1)
-		bm_unload(idx);
+		bm_release(idx);
 
 	return ADE_RETURN_NIL;
 }
@@ -3419,7 +3419,7 @@ ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 	if(!bm_is_valid(*idx))
 		return ADE_RETURN_NIL;
 
-	bm_unload(*idx);
+	bm_release(*idx);
 
 	//WMC - invalidate this handle
 	*idx = -1;
@@ -4688,7 +4688,7 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp->instance].weapon_info_index].name);
 			break;
 		default:
-			sprintf(buf, "Object %ld [%d]", OBJ_INDEX(objh->objp), objh->sig);
+			sprintf(buf, "Object %td [%d]", OBJ_INDEX(objh->objp), objh->sig);
 	}
 
 	return ade_set_args(L, "s", buf);
@@ -6041,7 +6041,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	ship_info *sip = &Ship_info[idx];
 
 	if (sip->uses_team_colors) {
-		gr_set_team_color(sip->default_team_name, "<none>", 0, 0);
+		gr_set_team_color(sip->default_team_name, "none", 0, 0);
 	}
 
 	//Make sure model is loaded
@@ -6119,7 +6119,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation
 	ship_info *sip = &Ship_info[idx];
 
 	if (sip->uses_team_colors) {
-		gr_set_team_color(sip->default_team_name, "<none>", 0, 0);
+		gr_set_team_color(sip->default_team_name, "none", 0, 0);
 	}
 
 	//Make sure model is loaded
@@ -12143,6 +12143,11 @@ ADE_FUNC(createVector, l_Base, "[x, y, z]", "Creates a vector object", "vector",
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
+ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds since the engine has started", "number", "Overall time (seconds)")
+{
+	return ade_set_args(L, "x", game_get_overall_frametime());
+}
+
 ADE_FUNC(getFrametime, l_Base, "[Do not adjust for time compression (Boolean)]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
 {
 	bool b=false;
@@ -12268,6 +12273,11 @@ ADE_FUNC(setTips, l_Base, "True or false", "Sets whether to display tips of the 
 		Player->tips = 0;
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getGameDifficulty, l_Base, NULL, "Returns the difficulty level from 1-5, 1 being the lowest, (Very Easy) and 5 being the highest (Insane)", "integer", "Difficulty level as integer")
+{
+	return ade_set_args(L, "i", Game_skill_level+1);
 }
 
 ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Note that you can crash FreeSpace 2 by posting an event at an improper time, so test extensively if you use it.", "boolean", "True if event was posted, false if passed event was invalid")
@@ -13782,21 +13792,25 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 		int linelengths[MAX_TEXT_LINES];
 		const char *linestarts[MAX_TEXT_LINES];
 
+		if (y2 >= 0 && y2 < y)
+		{
+			// Invalid y2 value
+			Warning(LOCATION, "Illegal y2 value passed to drawString. Got %d y2 value but %d for y.", y2, y);
+		
+			int temp = y;
+			y = y2;
+			y2 = temp;
+		}
+
 		num_lines = split_str(s, x2-x, linelengths, linestarts, MAX_TEXT_LINES);
 
 		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
-		y2 = line_ht * (y2-y);
-		if(y2 < num_lines)
-			num_lines = y2;
+		num_lines = MIN(num_lines, (y2 - y) / line_ht);
 
-		y2 = y;
-
+		int curr_y = y;
 		for(int i = 0; i < num_lines; i++)
 		{
-			//Increment line height
-			y2 += line_ht;
-
 			//Contrary to WMC's previous comment, let's make a new string each line
 			int len = linelengths[i];
 			char *buf = new char[len+1];
@@ -13804,13 +13818,23 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 			buf[len] = '\0';
 
 			//Draw the string
-			gr_string(x,y2,buf,GR_RESIZE_NONE);
+			gr_string(x,curr_y,buf,GR_RESIZE_NONE);
 
 			//Free the string we made
 			delete[] buf;
-		}
 
-		NextDrawStringPos[1] = y2+gr_get_font_height();
+			//Increment line height
+			curr_y += line_ht;
+		}
+		
+		if (num_lines <= 0)
+		{
+			// If no line was drawn then we need to add one so the next line is 
+			// aligned right
+			curr_y += line_ht;
+		}
+		
+		NextDrawStringPos[1] = curr_y;
 	}
 	return ade_set_error(L, "i", num_lines);
 }
@@ -15263,6 +15287,17 @@ ADE_FUNC(applyShudder, l_Mission, "number time, number intesity", "Applies a shu
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission being played in a campaign (as opposed to the tech room's simulator)", "boolean", "true if in campaign, false if not")
+{
+	bool b = false;
+
+	if (Game_mode & GM_CAMPAIGN_MODE) {
+		b = true;
+	}
+
+	return ade_set_args(L, "b", b);
+}
+
 //**********LIBRARY: Bitwise Ops
 ade_lib l_BitOps("BitOps", NULL, "bit", "Bitwise Operations library");
 
@@ -15897,7 +15932,7 @@ bool Ade_get_args_lfunction = false;
 //from the stack in series, so it can easily be used
 //to get the return values from a chunk of Lua code
 //after it has been executed. See RunByteCode()
-int ade_get_args(lua_State *L, char *fmt, ...)
+int ade_get_args(lua_State *L, const char *fmt, ...)
 {
 	//Check that we have all the arguments that we need
 	//If we don't, return 0
@@ -16097,7 +16132,7 @@ int ade_get_args(lua_State *L, char *fmt, ...)
 //
 //NOTE: You can also use this to push arguments
 //on to the stack in series. See script_state::SetHookVar
-int ade_set_args(lua_State *L, char *fmt, ...)
+int ade_set_args(lua_State *L, const char *fmt, ...)
 {
 	//Start throught
 	va_list vl;

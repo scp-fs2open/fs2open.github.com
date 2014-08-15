@@ -522,7 +522,7 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 
 void gr_opengl_line(int x1,int y1,int x2,int y2, int resize_mode)
 {
-	int do_resize, clipped = 0, swapped = 0;
+	int do_resize;
 	float sx1, sy1;
 	float sx2, sy2;
 
@@ -540,7 +540,7 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, int resize_mode)
 	int offset_y = ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
 
 
-	INT_CLIPLINE(x1, y1, x2, y2, clip_left, clip_top, clip_right, clip_bottom, return, clipped = 1, swapped = 1);
+	INT_CLIPLINE(x1, y1, x2, y2, clip_left, clip_top, clip_right, clip_bottom, return, ;, ;);
 
 	sx1 = i2fl(x1 + offset_x);
 	sy1 = i2fl(y1 + offset_y);
@@ -657,7 +657,6 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 //	glHint( GL_LINE_SMOOTH_HINT, GL_FASTEST );
 //	glLineWidth( 1.0 );
 
-	int clipped = 0, swapped = 0;
 	float x1 = v1->screen.xyw.x;
 	float y1 = v1->screen.xyw.y;
 	float x2 = v2->screen.xyw.x;
@@ -666,7 +665,7 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 	float sx2, sy2;
 
 
-	FL_CLIPLINE(x1, y1, x2, y2, (float)gr_screen.clip_left, (float)gr_screen.clip_top, (float)gr_screen.clip_right, (float)gr_screen.clip_bottom, return, clipped = 1, swapped = 1);
+	FL_CLIPLINE(x1, y1, x2, y2, (float)gr_screen.clip_left, (float)gr_screen.clip_top, (float)gr_screen.clip_right, (float)gr_screen.clip_bottom, return, ;, ;);
 
 	sx1 = x1 + (float)gr_screen.offset_x;
 	sy1 = y1 + (float)gr_screen.offset_y;
@@ -736,7 +735,7 @@ void gr_opengl_aaline(vertex *v1, vertex *v2)
 
 void gr_opengl_gradient(int x1, int y1, int x2, int y2, int resize_mode)
 {
-	int clipped = 0, swapped = 0;
+	int swapped = 0;
 
 	if ( !gr_screen.current_color.is_alphacolor ) {
 		gr_opengl_line(x1, y1, x2, y2, resize_mode);
@@ -748,7 +747,7 @@ void gr_opengl_gradient(int x1, int y1, int x2, int y2, int resize_mode)
 		gr_resize_screen_pos(&x2, &y2, NULL, NULL, resize_mode);
 	}
 
-	INT_CLIPLINE(x1, y1, x2, y2, gr_screen.clip_left, gr_screen.clip_top, gr_screen.clip_right, gr_screen.clip_bottom, return, clipped = 1, swapped = 1);
+	INT_CLIPLINE(x1, y1, x2, y2, gr_screen.clip_left, gr_screen.clip_top, gr_screen.clip_right, gr_screen.clip_bottom, return, ;, swapped = 1);
 
 	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
@@ -2536,11 +2535,9 @@ void opengl_scene_texture_shutdown()
 		Scene_framebuffer = 0;
 	}
 
-	if ( Distortion_texture ) {
-		glDeleteTextures(2, Distortion_texture);
-		Distortion_texture[0] = 0;
-		Distortion_texture[1] = 0;
-	}
+	glDeleteTextures(2, Distortion_texture);
+	Distortion_texture[0] = 0;
+	Distortion_texture[1] = 0;
 
 	if ( Distortion_framebuffer ) {
 		vglDeleteFramebuffersEXT(1, &Distortion_framebuffer);
@@ -2631,10 +2628,10 @@ void gr_opengl_scene_texture_end()
 			};
 
 			GLfloat uvcoords[8] = {
-				Scene_texture_u_scale, 0.0f,
 				0.0f, 0.0f,
+				Scene_texture_u_scale, 0.0f,
+				Scene_texture_u_scale, Scene_texture_v_scale,
 				0.0f, Scene_texture_v_scale,
-				Scene_texture_u_scale, Scene_texture_v_scale
 			};
 
 			GL_state.Array.EnableClientVertex();
@@ -2644,7 +2641,7 @@ void gr_opengl_scene_texture_end()
 			GL_state.Array.EnableClientTexture();
 			GL_state.Array.TexPointer(2, GL_FLOAT, 0, uvcoords);
 		
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			glDrawArrays(GL_QUADS, 0, 4);
 			
 			GL_state.Array.DisableClientVertex();
 			GL_state.Array.DisableClientTexture();
@@ -2749,9 +2746,9 @@ void gr_opengl_update_distortion()
 	GL_state.Texture.Disable();
 
 	SCP_vector<ubyte> colours;
-	SCP_vector<GLfloat> vertex;
+	SCP_vector<GLfloat> distortion_vertex;
 	colours.reserve(33 * 4);
-	vertex.reserve(33 * 2);
+	distortion_vertex.reserve(33 * 2);
 	for(int i = 0; i < 33; i++)
 	{
 		colours.push_back((ubyte) rand()%256);
@@ -2759,12 +2756,12 @@ void gr_opengl_update_distortion()
 		colours.push_back(255);
 		colours.push_back(255);
 
-		vertex.push_back(0.04f);
-		vertex.push_back((float)gr_screen.max_h*0.03125f*i);
+		distortion_vertex.push_back(0.04f);
+		distortion_vertex.push_back((float)gr_screen.max_h*0.03125f*i);
 	}
 
 	GL_state.Array.EnableClientVertex();
-	GL_state.Array.VertexPointer(2, GL_FLOAT, 0, &vertex.front());
+	GL_state.Array.VertexPointer(2, GL_FLOAT, 0, &distortion_vertex.front());
 
 	GL_state.Array.EnableClientColor();
 	GL_state.Array.ColorPointer(4, GL_UNSIGNED_BYTE, 0, &colours.front());

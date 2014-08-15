@@ -296,9 +296,11 @@ struct light;
 typedef struct screen {
 	uint	signature;			// changes when mode or palette or width or height changes
 	int	max_w, max_h;		// Width and height
-	int max_w_unscaled, max_h_unscaled;		// Width and height, should be 1024x768 or 640x480 in non-standard resolutions
+	int max_w_unscaled, max_h_unscaled;
+	int max_w_unscaled_zoomed, max_h_unscaled_zoomed;
 	int	save_max_w, save_max_h;		// Width and height
 	int save_max_w_unscaled, save_max_h_unscaled;
+	int save_max_w_unscaled_zoomed, save_max_h_unscaled_zoomed;
 	int	res;					// GR_640 or GR_1024
 	int	mode;					// What mode gr_init was called with.
 	float	aspect, clip_aspect;				// Aspect ratio, aspect of clip_width/clip_height
@@ -306,9 +308,9 @@ typedef struct screen {
 	int	bits_per_pixel;	// How many bits per pixel it is. (7,8,15,16,24,32)
 	int	bytes_per_pixel;	// How many bytes per pixel (1,2,3,4)
 	int	offset_x, offset_y;		// The offsets into the screen
-	int offset_x_unscaled, offset_y_unscaled;	// Offsets into the screen, in 1024x768 or 640x480 dimensions
+	int offset_x_unscaled, offset_y_unscaled;	// Offsets into the screen, in unscaled dimensions
 	int	clip_width, clip_height;
-	int clip_width_unscaled, clip_height_unscaled;	// Height and width of clip aread, in 1024x768 or 640x480 dimensions
+	int clip_width_unscaled, clip_height_unscaled;	// Height and width of clip aread, in unscaled dimensions
 	// center of clip area
 	float	clip_center_x, clip_center_y;
 
@@ -318,7 +320,7 @@ typedef struct screen {
 	// actually always 0, but it's nice to have the code work with
 	// arbitrary clipping regions.
 	int		clip_left, clip_right, clip_top, clip_bottom;
-	// same as above except in 1024x768 or 640x480 dimensions
+	// same as above except in unscaled dimensions
 	int		clip_left_unscaled, clip_right_unscaled, clip_top_unscaled, clip_bottom_unscaled;
 
 	int		current_alphablend_mode;		// See GR_ALPHABLEND defines above
@@ -599,6 +601,9 @@ typedef struct screen {
 #define GR_640							0		// 640 x 480
 #define GR_1024						1		// 1024 x 768
 
+#define GR_1024_THRESHOLD_WIDTH		1024
+#define GR_1024_THRESHOLD_HEIGHT	600
+
 extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 
 extern bool gr_init(int d_mode = GR_DEFAULT, int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
@@ -624,10 +629,10 @@ extern screen gr_screen;
 #define GR_RESIZE_NONE				0
 #define GR_RESIZE_FULL				1
 #define GR_RESIZE_MENU				2
-#define GR_RESIZE_MENU_NO_OFFSET	3
+#define GR_RESIZE_MENU_ZOOMED		3
+#define GR_RESIZE_MENU_NO_OFFSET	4
 
-void gr_set_screen_scale(int x, int y);
-void gr_set_screen_scale(int x, int y, int max_x, int max_y);
+void gr_set_screen_scale(int x, int y, int zoom_x = -1, int zoom_y = -1, int max_x = gr_screen.max_w, int max_y = gr_screen.max_h, bool force_stretch = false);
 void gr_reset_screen_scale();
 bool gr_unsize_screen_pos(int *x, int *y, int *w = NULL, int *h = NULL, int resize_mode = GR_RESIZE_FULL);
 bool gr_resize_screen_pos(int *x, int *y, int *w = NULL, int *h = NULL, int resize_mode = GR_RESIZE_FULL);
@@ -640,6 +645,8 @@ bool gr_resize_screen_posf(float *x, float *y, float *w = NULL, float *h = NULL,
 extern void _cdecl gr_printf( int x, int y, const char * format, ... );
 // same as gr_printf but positions text correctly in menus
 extern void _cdecl gr_printf_menu( int x, int y, const char * format, ... );
+// same as gr_printf_menu but accounts for menu zooming
+extern void _cdecl gr_printf_menu_zoomed( int x, int y, const char * format, ... );
 // same as gr_printf but doesn't resize for non-standard resolutions
 extern void _cdecl gr_printf_no_resize( int x, int y, const char * format, ... );
 
@@ -922,7 +929,7 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data, int width
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
 // Moreover, it is _really_ intended for use with 45 degree angles. 
-void gr_pline_special(vec3d **pts, int num_pts, int thickness,int resize_mode=GR_RESIZE_FULL);
+void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode=GR_RESIZE_FULL);
 
 #define VB_FLAG_POSITION	(1<<0)	
 #define VB_FLAG_RHW			(1<<1)	//incompatable with the next normal

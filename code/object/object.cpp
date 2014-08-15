@@ -104,12 +104,13 @@ obj_flag_name Object_flag_names[] = {
 	{OF_LASER_PROTECTED,		"laser-protect-ship",		1,	},
 	{OF_MISSILE_PROTECTED,		"missile-protect-ship",		1,	},
 	{OF_IMMOBILE,				"immobile",					1,	},
+	{OF_COLLIDES,				"collides",					1,  },
 };
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
 object::object()
-	: next(NULL), prev(NULL), type(OBJ_NONE), parent(-1), instance(-1), dock_list(NULL), dead_dock_list(NULL),
-	  n_quadrants(0), hull_strength(0.0), sim_hull_strength(0.0), net_signature(0), num_pairs(0), collision_group_id(0)
+	: next(NULL), prev(NULL), type(OBJ_NONE), parent(-1), instance(-1), n_quadrants(0), hull_strength(0.0),
+	  sim_hull_strength(0.0), net_signature(0), num_pairs(0), dock_list(NULL), dead_dock_list(NULL), collision_group_id(0)
 {
 	memset(&(this->phys_info), 0, sizeof(physics_info));
 }
@@ -1244,12 +1245,12 @@ void obj_move_all_post(object *objp, float frametime)
 
 			//Check for changing team colors
 			ship* shipp = &Ships[objp->instance];
-			if (Ship_info[shipp->ship_info_index].uses_team_colors && shipp->secondary_team_name != "<none>") {
+			if (Ship_info[shipp->ship_info_index].uses_team_colors && stricmp(shipp->secondary_team_name.c_str(), "none")) {
 				if (f2fl(Missiontime) * 1000 > f2fl(shipp->team_change_timestamp) * 1000 + shipp->team_change_time) {
 					shipp->team_name = shipp->secondary_team_name;
 					shipp->team_change_timestamp = 0;
 					shipp->team_change_time = 0;
-					shipp->secondary_team_name = "<none>";
+					shipp->secondary_team_name = "none";
 				}
 			}
 

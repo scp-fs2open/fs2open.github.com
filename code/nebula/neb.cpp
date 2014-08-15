@@ -334,6 +334,13 @@ void neb2_post_level_init()
 		return;
 	}
 
+	// Skip actual rendering if we're in FRED.
+	if(Fred_running)
+	{
+		Neb2_render_mode = NEB2_RENDER_NONE;
+		return;
+	}
+
 	// if the mission is not a fullneb mission, skip
 	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) ) {
 		Neb2_render_mode = NEB2_RENDER_NONE;
@@ -341,7 +348,7 @@ void neb2_post_level_init()
 		return;
 	}
 
-	if ( (Cmdline_nohtl || Fred_running) && (The_mission.flags & MISSION_FLAG_FULLNEB) ) {
+	if ( (Cmdline_nohtl) && (The_mission.flags & MISSION_FLAG_FULLNEB) ) {
 		// by default we'll use pof rendering
 		Neb2_render_mode = NEB2_RENDER_POF;
 		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
@@ -503,7 +510,7 @@ void neb2_page_in()
 }
 
 // should we not render this object because its obscured by the nebula?
-int neb_skip_opt = 1;
+int neb_skip_opt = 0;
 DCF(neb_skip, "Toggles culling of objects obscured by nebula")
 {
 	neb_skip_opt = !neb_skip_opt;

@@ -957,7 +957,7 @@ void mission_hotkey_init()
 
 	// ensure help overlay is off
 	Hotkey_overlay_id = help_overlay_get_index(HOTKEY_OVERLAY);
-	help_overlay_set_state(Hotkey_overlay_id,0);
+	help_overlay_set_state(Hotkey_overlay_id,gr_screen.res,0);
 
 	// load in relevant bitmaps
 	Background_bitmap = bm_load(Hotkey_background_fname[gr_screen.res]);
@@ -1022,7 +1022,7 @@ void mission_hotkey_do_frame(float frametime)
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
 		if ( help_overlay_active(Hotkey_overlay_id) ) {
-			help_overlay_set_state(Hotkey_overlay_id, 0);
+			help_overlay_set_state(Hotkey_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
@@ -1268,7 +1268,7 @@ void mission_hotkey_do_frame(float frametime)
 		List_buttons[i++].disable();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Hotkey_overlay_id);
+	help_overlay_maybe_blit(Hotkey_overlay_id, gr_screen.res);
 
 	gr_flip();
 }

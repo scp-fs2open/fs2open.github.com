@@ -781,9 +781,6 @@ void reset_ai_class_names()
 #define AI_CLASS_INCREMENT		10
 void parse_aitbl()
 {
-	// open localization
-	lcl_ext_open();
-
 	read_file_text("ai.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
@@ -815,9 +812,6 @@ void parse_aitbl()
 			reset_ai_class_names();
 		}
 	}
-
-	// close localization
-	lcl_ext_close();
 	
 	atexit(free_ai_stuff);
 }
@@ -837,7 +831,6 @@ void ai_init()
 
 		if ((rval = setjmp(parse_abort)) != 0) {
 			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "ai.tbl", rval));
-			lcl_ext_close();
 		} else {			
 			parse_aitbl();			
 		}
@@ -2304,7 +2297,8 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp)
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
 
 	// Goober5000
-	if ((temp = find_ignore_new_object_index(aip, aip->target_objnum)) >= 0)
+	temp = find_ignore_new_object_index(aip, aip->target_objnum);
+	if (temp >= 0)
 	{
 		aip->ignore_new_objnums[temp] = UNUSED_OBJNUM;
 	}
@@ -7375,7 +7369,8 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 		aip->ignore_objnum = UNUSED_OBJNUM;
 
 	// Goober5000
-	if ((temp = find_ignore_new_object_index(aip, aip->target_objnum)) >= 0)
+	temp = find_ignore_new_object_index(aip, aip->target_objnum);
+	if (temp >= 0)
 	{
 		aip->ignore_new_objnums[temp] = UNUSED_OBJNUM;
 	}
@@ -10850,12 +10845,17 @@ void ai_dock()
 		{
 			// call the ai_abort rearm request code
 			ai_abort_rearm_request( Pl_objp );
+			// Goober5000 - add missionlog for support ships, per Mantis #2999
+			mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, goal_shipp->ship_name);
 		}
 		//	Make sure repair has not broken off.
 		else if (dist > 5.0f)	//	Oops, too far away!
 		{
-			if ( goal_aip->ai_flags & AIF_BEING_REPAIRED )
+			if ( goal_aip->ai_flags & AIF_BEING_REPAIRED ) {
 				ai_do_objects_repairing_stuff( goal_objp, Pl_objp, REPAIR_INFO_BROKEN);
+				// Goober5000 - add missionlog for support ships, per Mantis #2999
+				mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, goal_shipp->ship_name);
+			}
 
 			if (dist > Pl_objp->radius*2 + goal_objp->radius*2) {
 				//	Got real far away from goal, so move back a couple modes and try again.
@@ -10869,8 +10869,11 @@ void ai_dock()
 		}
 		else
 		{
-			if ( goal_aip->ai_flags & AIF_AWAITING_REPAIR )
+			if ( goal_aip->ai_flags & AIF_AWAITING_REPAIR ) {
 				ai_do_objects_repairing_stuff( goal_objp, Pl_objp, REPAIR_INFO_BEGIN );
+				// Goober5000 - add missionlog for support ships, per Mantis #2999
+				mission_log_add_entry(LOG_SHIP_DOCKED, shipp->ship_name, goal_shipp->ship_name);
+			}
 		}
 
 		break;
@@ -10987,9 +10990,8 @@ void ai_dock()
 			model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, -1);
 
 			// don't add undock log entries for support ships.
-			if ( !(sip->flags & SIF_SUPPORT) ) {
-				mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, goal_shipp->ship_name);
-			}
+			// Goober5000 - deliberately contravening Volition's above comment - add missionlog for support ships, per Mantis #2999
+			mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, goal_shipp->ship_name);
 		}
 		break;
 	}
@@ -12899,6 +12901,10 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	// take the closest path we can find
 	ship_bay_path = ai_find_closest_depart_path(aip, pm, allowed_path_mask);
+    
+	if ( ship_bay_path < 0 )
+		return -1;
+    
 	path_index = bay->path_indexes[ship_bay_path];
 	aip->submode_parm0 = ship_bay_path;
 	bay->depart_flags |= (1<<ship_bay_path);

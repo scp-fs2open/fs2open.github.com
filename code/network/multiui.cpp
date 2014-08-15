@@ -222,7 +222,7 @@ void multi_common_render_text()
 	}
 
 	if ( (Multi_common_num_text_lines - Multi_common_top_text_line) > Multi_common_text_max_display[gr_screen.res] ) {
-		gr_set_color_fast(&Color_bright_red);
+		gr_set_color_fast(&Color_more_bright);
 		gr_string(Multi_common_text_coords[gr_screen.res][0], (Multi_common_text_coords[gr_screen.res][1] + Multi_common_text_coords[gr_screen.res][3])-5, XSTR("more",755), GR_RESIZE_MENU);
 	}
 }
@@ -884,7 +884,7 @@ void multi_join_game_init()
 
 	// load the help overlay
 	Multi_join_overlay_id = help_overlay_get_index(MULTI_JOIN_OVERLAY);
-	help_overlay_set_state(Multi_join_overlay_id,0);
+	help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,0);
 	
 	// try to login to the tracker
 	if (MULTI_IS_TRACKER_GAME) {
@@ -1048,7 +1048,7 @@ void multi_join_game_do_frame()
 	switch(k){
 	case KEY_ESC :
 		if(help_overlay_active(Multi_join_overlay_id)){
-			help_overlay_set_state(Multi_join_overlay_id,0);
+			help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,0);
 		} else {		
 			if (MULTI_IS_TRACKER_GAME) {
 				gameseq_post_event(GS_EVENT_PXO);
@@ -1100,7 +1100,7 @@ void multi_join_game_do_frame()
 	}	
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(Multi_join_overlay_id, 0);
+		help_overlay_set_state(Multi_join_overlay_id, gr_screen.res, 0);
 	}
 
 	// do any network related stuff
@@ -1134,7 +1134,7 @@ void multi_join_game_do_frame()
 	multi_join_blit_top_stuff();
 
 	// draw the help overlay
-	help_overlay_maybe_blit(Multi_join_overlay_id);
+	help_overlay_maybe_blit(Multi_join_overlay_id, gr_screen.res);
 	
 	// flip the buffer
 	gr_flip();
@@ -1222,9 +1222,9 @@ void multi_join_button_pressed(int n)
 	// help overlay
 	case MJ_HELP:
 		if(!help_overlay_active(Multi_join_overlay_id)){
-			help_overlay_set_state(Multi_join_overlay_id,1);
+			help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,1);
 		} else {
-			help_overlay_set_state(Multi_join_overlay_id,0);
+			help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,0);
 		}
 		break;
 
@@ -2344,7 +2344,7 @@ void multi_start_game_init()
 
 	// load the help overlay
 	Multi_sg_overlay_id = help_overlay_get_index(MULTI_START_OVERLAY);
-	help_overlay_set_state(Multi_sg_overlay_id,0);
+	help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,0);
 
 	// intiialize the rank selection items	
 	multi_sg_select_rank_default();	
@@ -2431,7 +2431,7 @@ void multi_start_game_do()
 	switch(k){
 	case KEY_ESC :		
 		if(help_overlay_active(Multi_sg_overlay_id)){
-			help_overlay_set_state(Multi_sg_overlay_id,0);
+			help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,0);
 		} else {
 			gamesnd_play_iface(SND_USER_SELECT);
 			multi_quit_game(PROMPT_NONE);
@@ -2447,7 +2447,7 @@ void multi_start_game_do()
 	}	
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(Multi_sg_overlay_id, 0);
+		help_overlay_set_state(Multi_sg_overlay_id, gr_screen.res, 0);
 	}
 
 	// check to see if the user has selected a different rank
@@ -2479,7 +2479,7 @@ void multi_start_game_do()
 	multi_sg_draw_radio_buttons();
 
 	// draw the help overlay
-	help_overlay_maybe_blit(Multi_sg_overlay_id);
+	help_overlay_maybe_blit(Multi_sg_overlay_id, gr_screen.res);
 	
 	// flip the buffer
 	gr_flip();
@@ -2525,9 +2525,9 @@ void multi_sg_button_pressed(int n)
 	// help overlay	
 	case MSG_HELP:
 		if(!help_overlay_active(Multi_sg_overlay_id)){
-			help_overlay_set_state(Multi_sg_overlay_id,1);
+			help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,1);
 		} else {
-			help_overlay_set_state(Multi_sg_overlay_id,0);
+			help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,0);
 		}
 		break;
 
@@ -3575,7 +3575,7 @@ void multi_create_game_init()
 
 	// load the help overlay 
 	Multi_create_overlay_id = help_overlay_get_index(MULTI_CREATE_OVERLAY);
-	help_overlay_set_state(Multi_create_overlay_id, 0);
+	help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
 
 	// initialize the common notification messaging
 	multi_common_notify_init();		
@@ -3786,7 +3786,7 @@ void multi_create_game_do()
 		// same as the cancel button
 		case KEY_ESC: {
 			if ( help_overlay_active(Multi_create_overlay_id) ) {
-				help_overlay_set_state(Multi_create_overlay_id, 0);
+				help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
 			} else {		
 				gamesnd_play_iface(SND_USER_SELECT);		
 				multi_quit_game(PROMPT_HOST);		
@@ -3802,7 +3802,7 @@ void multi_create_game_do()
 	}	
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(Multi_create_overlay_id, 0);
+		help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
 	}
 
 	// process any button clicks
@@ -3889,7 +3889,7 @@ void multi_create_game_do()
 	multi_common_voice_display_status();
 
 	// blit the help overlay if necessary
-	help_overlay_maybe_blit(Multi_create_overlay_id);
+	help_overlay_maybe_blit(Multi_create_overlay_id, gr_screen.res);
 
 	// test code
 	if(MULTI_IS_TRACKER_GAME){
@@ -3973,9 +3973,9 @@ void multi_create_button_pressed(int n)
 	// help button
 	case MC_HELP :
 		if(!help_overlay_active(Multi_create_overlay_id)){
-			help_overlay_set_state(Multi_create_overlay_id,1);
+			help_overlay_set_state(Multi_create_overlay_id,gr_screen.res,1);
 		} else {
-			help_overlay_set_state(Multi_create_overlay_id,0);
+			help_overlay_set_state(Multi_create_overlay_id,gr_screen.res,0);
 		}
 		break;
 

@@ -140,11 +140,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 	// Make ships that are warping in not get collision detection done
 	if ( shipp->flags & SF_ARRIVING ) return 0;
-
-	//	If either of these objects doesn't get collision checks, abort.
-	if (Ship_info[shipp->ship_info_index].flags & SIF_NO_COLLIDE)
-		return 0;
-
+	
 	//	Return information for AI to detect incoming fire.
 	//	Could perhaps be done elsewhere at lower cost --MK, 11/7/97
 	float	dist = vm_vec_dist_quick(&ship_objp->pos, &weapon_objp->pos);
@@ -255,7 +251,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 				mc_shield.radius = sip->auto_shield_spread;
 
 				if (sip->auto_shield_spread_from_lod > -1) {
-					polymodel *pm = model_get(sip->model_num);
+					pm = model_get(sip->model_num);
 					mc_shield.submodel_num = pm->detail[sip->auto_shield_spread_from_lod];
 
 					mc_shield.flags = MC_CHECK_MODEL | MC_SUBMODEL_INSTANCE | MC_CHECK_SPHERELINE;

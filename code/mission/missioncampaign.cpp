@@ -113,9 +113,6 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 	}
 	Assert(fname_len < MAX_FILENAME_LEN);
 
-	// open localization
-	lcl_ext_open();
-
 	*type = -1;
 	do {
 		if ((rval = setjmp(parse_abort)) != 0) {
@@ -166,9 +163,6 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 			success = 1;
 		}
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	Assert(success);
 	return success;
@@ -425,9 +419,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
 
-	// open localization
-	lcl_ext_open();	
-
 	if ( pl == NULL )
 		pl = Player;
 
@@ -439,9 +430,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	// read the mission file and get the list of mission filenames
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("Error parsing '%s'\r\nError code = %i.\r\n", filename, rval));
-
-		// close localization
-		lcl_ext_close();
 
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
@@ -565,9 +553,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 				} else {
 					if ( cm->formula == -1 ){
-						// close localization
-						lcl_ext_close();
-
 						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
@@ -605,9 +590,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 				} else {
 					if ( cm->mission_loop_formula == -1 ){
-						// close localization
-						lcl_ext_close();
-
 						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
@@ -647,9 +629,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			Campaign.num_missions++;
 		}
 	}
-
-	// close localization
-	lcl_ext_close();
 
 	// set up the other variables for the campaign stuff.  After initializing, we must try and load
 	// the campaign save file for this player.  Since all campaign loads go through this routine, I
@@ -928,9 +907,24 @@ int mission_campaign_previous_mission()
 		return 0;
 
 	Campaign.current_mission = Campaign.prev_mission;
+	Campaign.prev_mission = -1;
 	Campaign.next_mission = Campaign.current_mission;
 	Campaign.num_missions_completed--;
 	Campaign.missions[Campaign.next_mission].completed = 0;
+
+	if (Campaign.num_variables > 0) {
+		vm_free( Campaign.variables );
+	}
+
+	Campaign.num_variables = Campaign.redalert_num_variables;
+
+	// copy backed up variables over
+	if (Campaign.redalert_num_variables > 0) {
+		Assert( Campaign.redalert_variables );
+
+		Campaign.variables = (sexp_variable *) vm_malloc(Campaign.num_variables * sizeof(sexp_variable));
+		memcpy(Campaign.variables, Campaign.redalert_variables, Campaign.redalert_num_variables * sizeof(sexp_variable));
+	}
 
 	Pilot.save_savefile();
 
@@ -983,10 +977,10 @@ void mission_campaign_eval_next_mission()
 /**
  * Store mission's goals and events in Campaign struct
  */
-void mission_campaign_store_goals_and_events_and_variables()
+void mission_campaign_store_goals_and_events()
 {
 	char *name;
-	int cur, i, j;
+	int cur, i;
 	cmission *mission;
 
 	cur = Campaign.current_mission;
@@ -1058,6 +1052,15 @@ void mission_campaign_store_goals_and_events_and_variables()
 		} else
 			Int3();
 	}
+}
+
+void mission_campaign_store_variables()
+{
+	int cur, i, j;
+	cmission *mission;
+
+	cur = Campaign.current_mission;
+	mission = &Campaign.missions[cur];
 
 	// Goober5000 - handle campaign-persistent variables -------------------------------------
 	if (mission->variables != NULL) {
@@ -1113,9 +1116,18 @@ void mission_campaign_store_goals_and_events_and_variables()
 		sexp_variable *n_variables = (sexp_variable *) vm_malloc(total_variables * sizeof(sexp_variable));
 		Assert( n_variables );
 
+		if (Campaign.redalert_num_variables > 0) {
+			vm_free( Campaign.redalert_variables );
+		}
+
+		Campaign.redalert_num_variables = Campaign.num_variables;
+
 		// copy existing variables over
 		if (Campaign.num_variables > 0) {
 			Assert( Campaign.variables );
+
+			Campaign.redalert_variables = (sexp_variable *) vm_malloc(Campaign.num_variables * sizeof(sexp_variable));
+			memcpy(Campaign.redalert_variables, Campaign.variables, Campaign.num_variables * sizeof(sexp_variable));
 			memcpy(n_variables, Campaign.variables, Campaign.num_variables * sizeof(sexp_variable));
 
 			variable_count = Campaign.num_variables;
@@ -1159,6 +1171,12 @@ void mission_campaign_store_goals_and_events_and_variables()
 		Campaign.num_variables = total_variables;
 	}
 	// --------------------------------------------------------------------------
+}
+
+void mission_campaign_store_goals_and_events_and_variables()
+{
+	mission_campaign_store_goals_and_events();
+	mission_campaign_store_variables();
 }
 
 /**
@@ -1350,6 +1368,11 @@ void mission_campaign_clear()
 		vm_free(Campaign.variables);
 		Campaign.variables = NULL;
 	}
+	Campaign.redalert_num_variables = 0;
+	if (Campaign.redalert_variables != NULL) {
+		vm_free(Campaign.redalert_variables);
+		Campaign.redalert_variables = NULL;
+	}
 }
 
 /**
@@ -1403,13 +1426,9 @@ void read_mission_goal_list(int num)
 	int i, z, rval, event_count, count = 0;
 
 	filename = Campaign.missions[num].name;
-
-	// open localization
-	lcl_ext_open();	
 	
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -1508,9 +1527,6 @@ void read_mission_goal_list(int num)
 	}
 
 	// Goober5000 - variables do not need to be read here
-
-	// close localization
-	lcl_ext_close();
 }
 
 /**
@@ -1788,8 +1804,8 @@ void mission_campaign_skip_to_next(int start_game)
 			// closes out mission stuff, sets up next one
 			mission_campaign_mission_over();
 
-			if ( Campaign.next_mission == -1 ) {
-				// go to main hall, tha campaign is over!
+			if ( Campaign.next_mission == -1 || (The_mission.flags & MISSION_FLAG_END_TO_MAINHALL) ) {
+				// go to main hall, either the campaign is over or the FREDer requested it.
 				gameseq_post_event(GS_EVENT_MAIN_MENU);
 			} else {
 				// go to next mission

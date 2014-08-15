@@ -3303,7 +3303,6 @@ flag_def_list Warp_variables[] = {
 	{"Speed",			WV_SPEED,			CombinedVariable::TYPE_FLOAT},
 	{"Time",			WV_TIME,			CombinedVariable::TYPE_FLOAT},
 };
-static const size_t Warp_variables_num = sizeof(Warp_variables)/sizeof(flag_def_list);
 
 //********************-----CLASS: WarpEffect-----********************//
 WarpEffect::WarpEffect()

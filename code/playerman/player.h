@@ -19,6 +19,7 @@
 #include "network/multi_options.h"
 #include "parse/sexp.h"
 #include "globalincs/globals.h"
+#include "localization/localize.h"
 
 struct campaign_info;
 
@@ -211,6 +212,8 @@ public:
 	button_info		lua_bi_full;		// gets all the button controls, not just the ones usually allowed
 
 	int		player_was_multi;		// 1 if the player file was last used in Multiplayer
+
+	char			language[LCL_LANG_NAME_LEN+1];    // language the pilot was created with
 };
 
 extern player Players[MAX_PLAYERS];

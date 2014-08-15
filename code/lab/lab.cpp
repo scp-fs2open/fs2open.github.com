@@ -728,7 +728,7 @@ void labviewer_render_model(float frametime)
 		}
 
 		if (sip->uses_team_colors && !Teamcolor_override) {
-			gr_set_team_color(Lab_team_color, "<none>", 0, 0);
+			gr_set_team_color(Lab_team_color, "none", 0, 0);
 		}
 	}
 
@@ -909,7 +909,7 @@ void labviewer_render_model(float frametime)
 
 		//render weapon models if selected
 		if (Lab_mode == LAB_MODE_SHIP && (Lab_viewer_flags & LAB_FLAG_SHOW_WEAPONS)) {
-			int j,k,l;
+			int k,l;
 			g3_start_instance_matrix(&vmd_zero_vector, &Lab_viewer_orient, true);
 			l = 0;
 
@@ -2116,6 +2116,14 @@ void labviewer_show_tech_model(Tree *caller)
 	labviewer_change_model(Weapon_info[weap_index].tech_model, caller->GetSelectedItem()->GetData(), weap_index);
 }
 
+void labviewer_show_external_model(Tree *caller)
+{
+	int weap_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
+	Assert( weap_index >= 0 );
+
+	labviewer_change_model(Weapon_info[weap_index].external_model_name, caller->GetSelectedItem()->GetData(), weap_index);
+}
+
 extern void weapon_load_bitmaps(int weapon_index);
 void labviewer_change_weapon(Tree *caller)
 {
@@ -2214,6 +2222,9 @@ void labviewer_make_weap_window(Button* caller)
 
 		if (Weapon_info[i].tech_model[0] != '\0') {
 			cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);
+		}
+		if (Weapon_info[i].external_model_name[0] != '\0') {
+			cmp->AddItem(cwip, "External Model", 0, false, labviewer_show_external_model);
 		}
 	}
 

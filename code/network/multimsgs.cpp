@@ -3014,6 +3014,11 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	}
 
 	net_player_num = multi_find_player_by_object( objp );
+    
+	if ( net_player_num < 0 ) {
+		// Pass to higher level code to handle
+		return;
+	}
 
 	// getting here means a player fired.  Send the current packet to all players except the player
 	// who fired.  If nothing got fired, then don't send to the other players -- we will just send

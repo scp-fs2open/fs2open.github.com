@@ -197,6 +197,8 @@ ChttpGet::~ChttpGet()
 		SDL_WaitThread(thread_id, NULL);
 #endif
 
+	fclose(LOCALFILE);
+    
 	if (m_DataSock != INVALID_SOCKET) {
 		shutdown(m_DataSock, 2);
 		closesocket(m_DataSock);

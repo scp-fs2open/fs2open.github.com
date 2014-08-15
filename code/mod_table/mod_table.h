@@ -23,5 +23,8 @@ extern bool Full_color_head_anis;
 extern bool Weapons_inherit_parent_collision_group;
 extern bool Flight_controls_follow_eyepoint_orientation;
 extern int FS2NetD_port;
+extern float Briefing_window_FOV;
+extern bool Disable_hc_message_ani;
+extern bool Red_alert_applies_to_delayed_ships;
 
 void mod_table_init();

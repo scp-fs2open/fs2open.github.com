@@ -424,7 +424,7 @@ typedef struct ship_flag_name {
 	int flag_list;						// is this flag in the 1st or 2nd ship flags list?
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					16
+#define MAX_SHIP_FLAG_NAMES					17
 extern ship_flag_name Ship_flag_names[];
 
 // states for the flags variable within the ship structure
@@ -1617,9 +1617,7 @@ extern void physics_ship_init(object *objp);
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
-//Template stuff, here's as good a place as any.
-int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace);
-extern int ship_template_lookup(const char *name = NULL);
+int parse_ship_values(ship_info* sip, bool first_time, bool replace);
 void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string);
 
 extern int ship_info_lookup(const char *name = NULL);

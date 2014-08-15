@@ -30,6 +30,11 @@ void pilotfile::csg_read_flags()
 {
 	// tips?
 	p->tips = (int)cfread_ubyte(cfp);
+
+	// avoid having to read everything to get the rank
+	if (csg_ver >= 5) {
+		p->stats.rank = cfread_int(cfp);
+	}
 }
 
 void pilotfile::csg_write_flags()
@@ -38,6 +43,9 @@ void pilotfile::csg_write_flags()
 
 	// tips
 	cfwrite_ubyte((ubyte)p->tips, cfp);
+
+	// avoid having to read everything to get the rank
+	cfwrite_int(p->stats.rank, cfp);
 
 	endSection();
 }
@@ -1029,6 +1037,29 @@ void pilotfile::csg_read_variables()
 			cfread_string_len(Campaign.variables[idx].variable_name, TOKEN_LENGTH, cfp);
 		}
 	}
+
+	if (csg_ver < 4) { // CSG files before version 4 don't have a Red Alert set of CPVs to load, so just copy the regular set.
+		Campaign.redalert_num_variables = Campaign.num_variables;
+		Campaign.redalert_variables = (sexp_variable *) vm_malloc( Campaign.redalert_num_variables * sizeof(sexp_variable) );
+		Verify( Campaign.redalert_variables != NULL);
+
+		memcpy( Campaign.redalert_variables, Campaign.variables, Campaign.num_variables * sizeof(sexp_variable));
+	} else {
+		Campaign.redalert_num_variables = cfread_int(cfp);
+
+		if (Campaign.redalert_num_variables > 0) {
+			Campaign.redalert_variables = (sexp_variable *) vm_malloc( Campaign.redalert_num_variables * sizeof(sexp_variable) );
+			Verify( Campaign.redalert_variables != NULL );
+
+			memset( Campaign.redalert_variables, 0, Campaign.redalert_num_variables * sizeof(sexp_variable) );
+
+			for (idx = 0; idx < Campaign.redalert_num_variables; idx++) {
+				Campaign.redalert_variables[idx].type = cfread_int(cfp);
+				cfread_string_len(Campaign.redalert_variables[idx].text, TOKEN_LENGTH, cfp);
+				cfread_string_len(Campaign.redalert_variables[idx].variable_name, TOKEN_LENGTH, cfp);
+			}
+		}
+	}
 }
 
 void pilotfile::csg_write_variables()
@@ -1043,6 +1074,14 @@ void pilotfile::csg_write_variables()
 		cfwrite_int(Campaign.variables[idx].type, cfp);
 		cfwrite_string_len(Campaign.variables[idx].text, cfp);
 		cfwrite_string_len(Campaign.variables[idx].variable_name, cfp);
+	}
+
+	cfwrite_int(Campaign.redalert_num_variables, cfp);
+
+	for (idx = 0; idx < Campaign.redalert_num_variables; idx++) {
+		cfwrite_int(Campaign.redalert_variables[idx].type, cfp);
+		cfwrite_string_len(Campaign.redalert_variables[idx].text, cfp);
+		cfwrite_string_len(Campaign.redalert_variables[idx].variable_name, cfp);
 	}
 
 	endSection();
@@ -1254,6 +1293,12 @@ void pilotfile::csg_reset_data()
 		Campaign.num_variables = 0;
 		vm_free(Campaign.variables);
 		Campaign.variables = NULL;
+	}
+
+	if (Campaign.redalert_variables) {
+		Campaign.redalert_num_variables = 0;
+		vm_free(Campaign.redalert_variables);
+		Campaign.redalert_variables = NULL;
 	}
 
 	// clear out mission stuff
@@ -1566,3 +1611,89 @@ bool pilotfile::save_savefile()
 	return true;
 }
 
+/*
+ * get_csg_rank: this function is called from plr.cpp & is
+ * tightly linked with pilotfile::verify()
+ */
+bool pilotfile::get_csg_rank(int *rank)
+{
+	player t_csg;
+
+	// set player ptr first thing
+	p = &t_csg;
+
+	// filename has already been set
+	cfp = cfopen((char*)filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+
+	if ( !cfp ) {
+		mprintf(("CSG => Unable to open '%s'!\n", filename.c_str()));
+		return false;
+	}
+
+	unsigned int csg_id = cfread_uint(cfp);
+
+	if (csg_id != CSG_FILE_ID) {
+		mprintf(("CSG => Invalid header id for '%s'!\n", filename.c_str()));
+		csg_close();
+		return false;
+	}
+
+	// version, now used
+	csg_ver = cfread_ubyte(cfp);
+
+	mprintf(("CSG => Get Rank from '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
+
+	// the point of all this: read in the CSG contents
+	while ( !m_have_flags && !cfeof(cfp) ) {
+		ushort section_id = cfread_ushort(cfp);
+		uint section_size = cfread_uint(cfp);
+
+		size_t start_pos = cftell(cfp);
+		size_t offset_pos;
+
+		// safety, to help protect against long reads
+		cf_set_max_read_len(cfp, section_size);
+
+		try {
+			switch (section_id) {
+				case Section::Flags:
+					mprintf(("CSG => Parsing:  Flags...\n"));
+					m_have_flags = true;
+					csg_read_flags();
+					break;
+
+				default:
+					break;
+			}
+		} catch (cfile::max_read_length &msg) {
+			// read to max section size, move to next section, discarding
+			// extra/unknown data
+			mprintf(("CSG => (0x%04x) %s\n", section_id, msg.what()));
+		} catch (const char *err) {
+			mprintf(("CSG => ERROR: %s\n", err));
+			csg_close();
+			return false;
+		}
+
+		// reset safety catch
+		cf_set_max_read_len(cfp, 0);
+
+		// skip to next section (if not already there)
+		offset_pos = (start_pos + section_size) - cftell(cfp);
+
+		if (offset_pos) {
+			mprintf(("CSG => Warning: (0x%04x) Short read, information may have been lost!\n", section_id));
+			cfseek(cfp, offset_pos, CF_SEEK_CUR);
+		}
+	}
+
+	// this is what we came for...
+	*rank = p->stats.rank;
+
+	mprintf(("CSG => Get Rank complete!\n"));
+
+	// cleanup & return
+	csg_close();
+
+	return true;
+}

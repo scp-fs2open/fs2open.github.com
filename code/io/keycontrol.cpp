@@ -74,7 +74,7 @@ class factor_table
 	{
 	public:
 		factor_table();
-		~factor_table(){ delete[] table; };
+		~factor_table(){ delete[] table; }
 		int getNextSlots( int slots_on_ship, int cur_slots );
 
 	private:
@@ -1301,7 +1301,7 @@ void ppsk_hotkeys(int k)
 		case KEY_F10 + KEY_SHIFTED + KEY_ALTED:
 		case KEY_F11 + KEY_SHIFTED + KEY_ALTED:
 		case KEY_F12 + KEY_SHIFTED + KEY_ALTED:
-			hotkey_set = mission_hotkey_get_set_num(k & ~KEY_SHIFTED+KEY_ALTED);
+			hotkey_set = mission_hotkey_get_set_num(k & (~(KEY_SHIFTED+KEY_ALTED)));
 			hud_target_hotkey_clear( hotkey_set );
 			break;
 
@@ -2501,7 +2501,7 @@ int button_function(int n)
 	control_used(n);
 
 	if ( hud_sensors_ok(Player_ship) ) {
-		int keyHasBeenUsed = TRUE;
+		keyHasBeenUsed = TRUE;
 		switch(n) {
 			// target next
 			case TARGET_NEXT:

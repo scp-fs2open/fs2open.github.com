@@ -1025,6 +1025,7 @@ void game_level_init(int seed)
 	control_config_clear_used_status();
 	collide_ship_ship_sounds_init();
 	Missiontime = 0;
+	Skybox_timestamp = game_get_overall_frametime();
 	Pre_player_entry = 1;			//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
 	observer_init();
@@ -1178,7 +1179,7 @@ void game_loading_callback(int count)
 
 	if (Processing_filename[0] != '\0') {
 		gr_set_shader(&busy_shader);
-		gr_shade(0, 0, gr_screen.clip_width_unscaled, 17, GR_RESIZE_MENU); // make sure it goes across the entire width
+		gr_shade(0, 0, gr_screen.max_w_unscaled, 17, GR_RESIZE_MENU); // make sure it goes across the entire width
 
 		gr_set_color_fast(&Color_white);
 		gr_string(5, 5, Processing_filename, GR_RESIZE_MENU);
@@ -2001,9 +2002,7 @@ void game_init()
 
 	// initialize alpha colors
 	// CommanderDJ: try with colors.tbl first, then use the old way if that doesn't work
-	if (!new_alpha_colors_init()) {
-		old_alpha_colors_init();
-	}
+	alpha_colors_init();
 
 	obj_init();	
 	mflash_game_init();	
@@ -3703,7 +3702,9 @@ void game_render_frame( camid cid )
 	}
 
 	// this needs to happen after g3_start_frame() and before the primary projection and view matrix is setup
-	if ( Cmdline_env && !Env_cubemap_drawn ) {
+	// Note: environment mapping gets disabled when rendering to texture; if you change
+	// this, make sure that the current render target gets restored right afterwards!
+	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
 		setup_environment_mapping(cid);
 
 		if ( !Dynamic_environment ) {
@@ -8767,16 +8768,21 @@ void game_title_screen_display()
 			int width, height;
 			bm_get_info(Game_title_bitmap, &width, &height);
 
+			// set the screen scale to the bitmap's dimensions
+			gr_set_screen_scale(width, height);
+
 			// draw it in the center of the screen
 			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
-		}
 
-		if (Game_title_logo != -1)
-		{
-			gr_set_bitmap(Game_title_logo);
+			if (Game_title_logo != -1)
+			{
+				gr_set_bitmap(Game_title_logo);
 
-			gr_bitmap(0, 0, GR_RESIZE_MENU);
+				gr_bitmap(0, 0, GR_RESIZE_MENU);
 
+			}
+
+			gr_reset_screen_scale();
 		}
 	}
 

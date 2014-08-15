@@ -354,7 +354,6 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->objp = fire_info->shooter;
 	new_item->sig = fire_info->shooter->signature;
 	new_item->subsys = fire_info->turret;	
-	new_item->local_pnt = fire_info->turret->system_info->pnt;
 	new_item->life_left = wip->b_info.beam_life;	
 	new_item->life_total = wip->b_info.beam_life;
 	new_item->r_collision_count = 0;
@@ -1267,7 +1266,7 @@ void beam_generate_muzzle_particles(beam *b)
 	int particle_count;
 	int idx;
 	weapon_info *wip;
-	vec3d turret_norm, turret_pos, particle_pos, particle_dir, p_temp;
+	vec3d turret_norm, turret_pos, particle_pos, particle_dir;
 	matrix m;
 	particle_info pinfo;
 
@@ -1296,7 +1295,7 @@ void beam_generate_muzzle_particles(beam *b)
 	particle_count = (int)frand_range(0.0f, (float)wip->b_info.beam_particle_count);
 
 	// get turret info - position and normal
-	turret_pos = b->local_pnt;
+	turret_pos = b->last_start;
 	turret_norm = b->subsys->system_info->turret_norm;	
 
 	// randomly perturb a vector within a cone around the normal
@@ -1304,14 +1303,7 @@ void beam_generate_muzzle_particles(beam *b)
 	for(idx=0; idx<particle_count; idx++){
 		// get a random point in the cone
 		vm_vec_random_cone(&particle_dir, &turret_norm, wip->b_info.beam_particle_angle, &m);
-		p_temp = turret_pos;
-		vm_vec_scale_add(&p_temp, &turret_pos, &particle_dir, wip->b_info.beam_muzzle_radius * frand_range(0.75f, 0.9f));
-
-		// transform into world coords		
-		vm_vec_unrotate(&particle_pos, &p_temp, &b->objp->orient);
-		vm_vec_add2(&particle_pos, &b->objp->pos);
-		p_temp = particle_dir;
-		vm_vec_unrotate(&particle_dir, &p_temp, &b->objp->orient);
+		vm_vec_scale_add(&particle_pos, &turret_pos, &particle_dir, wip->b_info.beam_muzzle_radius * frand_range(0.75f, 0.9f));
 
 		// now generate some interesting values for the particle
 		float p_time_ref = wip->b_info.beam_life + ((float)wip->b_info.beam_warmup / 1000.0f);		
@@ -2885,6 +2877,8 @@ void beam_handle_collisions(beam *b)
 		r_coll[r_coll_count].c_sig = Objects[target].signature;
 		r_coll[r_coll_count].c_stamp = -1;
 		r_coll[r_coll_count].cinfo = b->f_collisions[idx].cinfo;
+		r_coll[r_coll_count].quadrant = -1;
+		r_coll[r_coll_count].is_exit_collision = 0;
 		
 		// if he was already on the recent collision list, copy his timestamp
 		// also, be sure not to play the impact sound again.

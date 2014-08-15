@@ -1297,7 +1297,7 @@ void control_config_init()
 
 	// load in help overlay bitmap	
 	Control_config_overlay_id = help_overlay_get_index(CONTROL_CONFIG_OVERLAY);
-	help_overlay_set_state(Control_config_overlay_id,0);
+	help_overlay_set_state(Control_config_overlay_id,gr_screen.res,0);
 
 	// reset conflict flashing
 	Conflict_stamp = -1;
@@ -1509,7 +1509,7 @@ void control_config_do_frame(float frametime)
 
 			if ( (k > 0) || B1_JUST_RELEASED ) {
 				if (help_overlay_active(Control_config_overlay_id)) {
-					help_overlay_set_state(Control_config_overlay_id, 0);
+					help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 					Ui_window.set_ignore_gadgets(0);
 					k = 0;
 				}
@@ -1620,7 +1620,7 @@ void control_config_do_frame(float frametime)
 
 		if ( (k > 0) || B1_JUST_RELEASED ) {
 			if ( help_overlay_active(Control_config_overlay_id) ) {
-				help_overlay_set_state(Control_config_overlay_id, 0);
+				help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 				Ui_window.set_ignore_gadgets(0);
 				k = 0;
 			}
@@ -1729,7 +1729,7 @@ void control_config_do_frame(float frametime)
 
 		if ( (k > 0) || B1_JUST_RELEASED ) {
 			if ( help_overlay_active(Control_config_overlay_id) ) {
-				help_overlay_set_state(Control_config_overlay_id, 0);
+				help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 				Ui_window.set_ignore_gadgets(0);
 				k = 0;
 			}
@@ -2108,7 +2108,7 @@ void control_config_do_frame(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(Control_config_overlay_id);
+	help_overlay_maybe_blit(Control_config_overlay_id, gr_screen.res);
 
 	gr_flip();
 }

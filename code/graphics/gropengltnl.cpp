@@ -484,7 +484,7 @@ void mix_two_team_colors(team_color* dest, team_color* a, team_color* b, float m
 }
 
 void gr_opengl_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime) {
-	if (secondaryteam == "<none>") {
+	if (!stricmp(secondaryteam.c_str(), "none")) {
 		if (Team_Colors.find(team) != Team_Colors.end()) {
 			Current_team_color = &Team_Colors[team];
 			Using_Team_Color = true;
@@ -1557,11 +1557,7 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 	clip_height = tan( (double)fov * 0.5 ) * z_near;
 	clip_width = clip_height * (GLdouble)aspect;
 
-	if (GL_rendering_to_texture) {
-		glFrustum( -clip_width, clip_width, clip_height, -clip_height, z_near, z_far );
-	} else {
-		glFrustum( -clip_width, clip_width, -clip_height, clip_height, z_near, z_far );
-	}
+	glFrustum( -clip_width, clip_width, -clip_height, clip_height, z_near, z_far );
 
 	glMatrixMode(GL_MODELVIEW);
 

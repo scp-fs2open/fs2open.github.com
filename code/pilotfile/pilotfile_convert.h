@@ -27,6 +27,7 @@
 #include "controlconfig/controlsconfig.h"
 #include "missionui/redalert.h"
 #include "pilotfile/pilotfile.h"
+#include "localization/localize.h"
 
 
 static const unsigned short MAX_JOY_AXES_CONV = 5;
@@ -132,6 +133,7 @@ struct plr_data {
 
 	// basic flags and settings
 	int is_multi;
+	char language[LCL_LANG_NAME_LEN+1];
 	int tips;
 	int rank;
 	int skill_level;
