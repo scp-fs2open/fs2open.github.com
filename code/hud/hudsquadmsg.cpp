@@ -2462,6 +2462,11 @@ int hud_query_order_issued(char *to, char *order_name, char *target_name, int ti
 							}
 							
 							int target_ship = ship_name_lookup(target_name);
+                            
+							if(target_ship<0) {
+								continue;
+							}
+                            
 							int subsys_index = ship_get_subsys_index(&Ships[target_ship], special_argument, 1); 
 							// if the order is for s different subsystem
 							if (Squadmsg_history[i].special_index != subsys_index) {
