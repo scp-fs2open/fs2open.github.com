@@ -2986,6 +2986,11 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		if (variable_found) {
 			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
 			sexp_variable_index = get_index_sexp_variable_name(str);
+			
+			if(sexp_variable_index<0) {
+				Error(LOCATION, "Invalid SEXP variable name \"%s\" found in stuff_loadout_list.", str);
+			}
+        
 			strcpy_s (str, Sexp_variables[sexp_variable_index].text);
 		}
 
