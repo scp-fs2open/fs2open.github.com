@@ -1138,7 +1138,7 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 		multi_ping_reset(&Net_players[new_player_num].s_info.ping);		
 
 		// add a chat message
-		if(Net_players[new_player_num].m_player->callsign != NULL){
+		if(*Net_players[new_player_num].m_player->callsign){
 			sprintf(notify_string,XSTR("<%s has joined>",717),Net_players[new_player_num].m_player->callsign);
 			multi_display_chat_msg(notify_string,0,0);
 		}
