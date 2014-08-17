@@ -1489,7 +1489,11 @@ void render_frame()
 	gr_set_font(FONT1);
 	light_reset();
 
-	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
+	if (Briefing_dialog) {
+		g3_set_view_matrix(&eye_pos, &eye_orient, Briefing_window_FOV);
+	} else {
+		g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
+	}
 	Viewer_pos = eye_pos;  // for starfield code
 	
 	fred_enable_htl();
@@ -1594,7 +1598,11 @@ void render_frame()
 		gr_set_clip(0, 0, True_rw, True_rh);
 
 	g3_start_frame(0);	 // ** Accounted for
-	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
+	if (Briefing_dialog) {
+		g3_set_view_matrix(&eye_pos, &eye_orient, Briefing_window_FOV);
+	} else {
+		g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
+	}
 }
 
 void game_do_frame()
