@@ -1531,7 +1531,7 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 	}
 
 	// add a chat message
-	if(Net_players[new_player_num].m_player->callsign != NULL){
+	if(*Net_players[new_player_num].m_player->callsign){
 		sprintf(notify_string,XSTR("<%s has joined>",717), Net_players[new_player_num].m_player->callsign);
 		multi_display_chat_msg(notify_string, 0, 0);
 	}	
