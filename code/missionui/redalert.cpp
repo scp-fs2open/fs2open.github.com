@@ -1096,3 +1096,14 @@ void red_alert_maybe_move_to_next_mission()
 		gameseq_post_event(GS_EVENT_END_GAME);
 	}
 }
+
+/*
+ * red_alert_clear()
+ *
+ * clear all red alert "wingman" data
+ * Allows data to be cleared from outside REDALERT_INTERNAL code
+ */
+void red_alert_clear()
+{
+	Red_alert_wingman_status.clear();
+}

@@ -653,6 +653,8 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				Campaign_load_failure = CAMPAIGN_ERROR_SAVEFILE;
 				return CAMPAIGN_ERROR_SAVEFILE;
 			} else {
+				// make sure we initialize red alert data for the new CSG
+				red_alert_clear();
 				Pilot.save_savefile();
 			}
 		}
