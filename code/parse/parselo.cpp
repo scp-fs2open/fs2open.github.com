@@ -3987,7 +3987,7 @@ bool end_string_at_first_hash_symbol(char *src)
 	p = get_pointer_to_first_hash_symbol(src);
 	if (p)
 	{
-		while (*(p-1) == ' ')
+		while ((p != src) && (*(p-1) == ' '))
 			p--;
 
 		*p = '\0';
