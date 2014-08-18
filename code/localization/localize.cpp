@@ -267,7 +267,8 @@ void parse_stringstbl_common(const char *filename, const bool external)
 		}
 
 		if (external && (index < 0 || index >= LCL_MAX_STRINGS)) {
-			Error(LOCATION, "Invalid tstrings table index specified (%i). Please increment LCL_MAX_STRINGS in localize.cpp.", index);
+			error_display(0, "Invalid tstrings table index specified (%i). Please increment LCL_MAX_STRINGS in localize.cpp.", index);
+			return;
 		} else if (!external && (index < 0 || index >= XSTR_SIZE)) {
 			Error(LOCATION, "Invalid strings table index specified (%i)", index);
 		}
@@ -711,7 +712,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	}
 
 	// get the string if it exists
-	if (Lcl_ext_str[str_id] != NULL) {
+	if ((str_id < LCL_MAX_STRINGS) && (Lcl_ext_str[str_id] != NULL)) {
 		// copy to the outgoing string
 		if ( strlen(Lcl_ext_str[str_id]) > max_len )
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", Lcl_ext_str[str_id], strlen(Lcl_ext_str[str_id]), max_len);
@@ -722,6 +723,9 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	else {
 		if ( strlen(text_str) > max_len )
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", text_str, strlen(text_str), max_len);
+
+		if (str_id >= LCL_MAX_STRINGS)
+			error_display(0, "Invalid XSTR ID: [%d]. (Must be less than %d.)\n", str_id, LCL_MAX_STRINGS);
 
 		strncpy(out, text_str, max_len);
 	}
@@ -792,13 +796,16 @@ void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
 		return;
 	}
 
-	// attempt to find the string
-	if (Lcl_ext_str[str_id] != NULL) {
+	// get the string if it exists
+	if ((str_id < LCL_MAX_STRINGS) && (Lcl_ext_str[str_id] != NULL)) {
 		// copy to the outgoing string
 		out = Lcl_ext_str[str_id];
 	}
 	// otherwise use what we have - probably should Int3() or assert here
 	else {
+		if (str_id >= LCL_MAX_STRINGS)
+			error_display(0, "Invalid XSTR ID: [%d]. (Must be less than %d.)\n", str_id, LCL_MAX_STRINGS);
+
 		out = text_str;
 	}
 
