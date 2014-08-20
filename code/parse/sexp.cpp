@@ -6694,7 +6694,6 @@ int sexp_get_object_speed(int n, int axis)
 
 		default:
 			return SEXP_NAN;
-			break;
 	}
 	return speed;
 }
@@ -19563,7 +19562,6 @@ int process_special_sexps(int index)
 			}
 		}
 		return SEXP_FALSE;
-		break;
 
 	case 1:	//	Fired Interceptors
 		object	*objp;
@@ -19593,7 +19591,6 @@ int process_special_sexps(int index)
 			}
 		}
 		return SEXP_FALSE;
-		break;
 
 	case 3:	//	Player ship suffering shield damage on front.
 		if (!(Ship_info[Player_ship->ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS)) {
