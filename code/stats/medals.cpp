@@ -193,7 +193,7 @@ medal_stuff::medal_stuff()
 medal_stuff::~medal_stuff()
 {
 	SCP_map<int, char*>::iterator it;
-	for (it = promotion_text.begin(); it != promotion_text.end(); it++) {
+	for (it = promotion_text.begin(); it != promotion_text.end(); ++it) {
 		if (it->second) {
 			vm_free(it->second);
 		}
@@ -218,7 +218,7 @@ void medal_stuff::clone(const medal_stuff &m)
 
 	promotion_text.clear();
 	SCP_map<int, char*>::const_iterator it;
-	for (it = m.promotion_text.begin(); it != m.promotion_text.end(); it++) {
+	for (it = m.promotion_text.begin(); it != m.promotion_text.end(); ++it) {
 		if (it->second) {
 			promotion_text[it->first] = vm_strdup(it->second);
 		}
@@ -230,7 +230,7 @@ const medal_stuff &medal_stuff::operator=(const medal_stuff &m)
 {
 	if (this != &m) {
 		SCP_map<int, char*>::iterator it;
-		for (it = promotion_text.begin(); it != promotion_text.end(); it++) {
+		for (it = promotion_text.begin(); it != promotion_text.end(); ++it) {
 			if (it->second) {
 				vm_free(it->second);
 			}

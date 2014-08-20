@@ -1878,7 +1878,7 @@ bool get_number_before_separator(int &number, int &number_chars, const SCP_strin
 		// copying in progress
 		buf[len] = *ch;
 		len++;
-		ch++;
+		++ch;
 	}
 
 	// got an integer
