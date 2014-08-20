@@ -407,7 +407,7 @@ void mission_campaign_get_sw_info()
  * this file.  If you change the format of the campaign file, you should be sure these related
  * functions work properly and update them if it breaks them.
  */
-int mission_campaign_load( char *filename, player *pl, int load_savefile )
+int mission_campaign_load( char *filename, player *pl, int load_savefile, bool reset_stats )
 {
 	int len, rval, i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
@@ -655,6 +655,10 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			} else {
 				// make sure we initialize red alert data for the new CSG
 				red_alert_clear();
+				// and reset stats when requested
+				if (reset_stats) {
+					pl->stats.init();
+				}
 				Pilot.save_savefile();
 			}
 		}

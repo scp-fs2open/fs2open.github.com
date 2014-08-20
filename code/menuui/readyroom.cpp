@@ -1533,7 +1533,7 @@ int campaign_room_reset_campaign(int n)
 		strcat(filename, FS_CAMPAIGN_FILE_EXT);
 
 		mission_campaign_savefile_delete(filename);
-		mission_campaign_load(filename);
+		mission_campaign_load(filename, NULL, 1 , false); // retail doesn't reset stats when resetting the campaign
 		mission_campaign_next_mission();
 
 		vm_free(filename);
