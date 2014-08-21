@@ -1140,11 +1140,7 @@ void player_select_display_copyright()
 
 //	sprintf(Copyright_msg1, NOX("FreeSpace 2"));
 	get_version_string(Copyright_msg1, sizeof(Copyright_msg1));
-	if (Lcl_gr) {
-		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\xA8');
-	} else {
-		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\x83');
-	}
+	sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), Lcl_special_chars + 4);
 
 	gr_get_string_size(&w, NULL, Copyright_msg1);
 	sx = fl2i((gr_screen.max_w_unscaled / 2) - w/2.0f + 0.5f);
