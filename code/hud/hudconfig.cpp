@@ -999,26 +999,26 @@ void hud_config_set_gauge_flags(int gauge_index, int on_flag, int popup_flag)
 	}
 }
 
-void hud_config_record_color(int color)
+void hud_config_record_color(int in_color)
 {
-	HUD_config.main_color = color;
-	HUD_color_red = HC_colors[color].r;
-	HUD_color_green = HC_colors[color].g;
-	HUD_color_blue = HC_colors[color].b;
+	HUD_config.main_color = in_color;
+	HUD_color_red = HC_colors[in_color].r;
+	HUD_color_green = HC_colors[in_color].g;
+	HUD_color_blue = HC_colors[in_color].b;
 }
 
 // Set the HUD color
-void hud_config_set_color(int color)
+void hud_config_set_color(int in_color)
 {
 	int idx;	
 
-	hud_config_record_color(color);
+	hud_config_record_color(in_color);
 
 	HUD_init_hud_color_array();
 
 	// apply the color to all gauges
 	for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-		gr_init_alphacolor(&HUD_config.clr[idx], HC_colors[color].r, HC_colors[color].g, HC_colors[color].b, (HUD_color_alpha+1)*16);
+		gr_init_alphacolor(&HUD_config.clr[idx], HC_colors[in_color].r, HC_colors[in_color].g, HC_colors[in_color].b, (HUD_color_alpha+1)*16);
 	}
 }
 
