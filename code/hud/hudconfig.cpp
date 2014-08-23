@@ -1655,17 +1655,26 @@ void hud_config_color_load(char *name)
 	read_file_text(fname);
 	reset_parse();
 
-	// write out all gauges
-	for(idx=0; idx<NUM_HUD_GAUGES; idx++){		
-		required_string("+Gauge:");
+	// First, set all gauges to the current main color
+	for (idx=0; idx<NUM_HUD_GAUGES; idx++){
+		gr_init_alphacolor(&HUD_config.clr[idx], HUD_color_red, HUD_color_green, HUD_color_blue, (HUD_color_alpha+1)*16);
+	}
+
+	// Now read in the color values for the gauges
+	while (optional_string("+Gauge:")) {
 		stuff_string(str, F_NAME, sizeof(str));
 
-		required_string("+RGBA:");
-		stuff_ubyte(&HUD_config.clr[idx].red);
-		stuff_ubyte(&HUD_config.clr[idx].green);
-		stuff_ubyte(&HUD_config.clr[idx].blue);
-		stuff_ubyte(&HUD_config.clr[idx].alpha);
-	}	
+		for (idx=0; idx<NUM_HUD_GAUGES; idx++) {
+			if (!stricmp(str, Hud_Gauge_Names[idx])) {
+				required_string("+RGBA:");
+				stuff_ubyte(&HUD_config.clr[idx].red);
+				stuff_ubyte(&HUD_config.clr[idx].green);
+				stuff_ubyte(&HUD_config.clr[idx].blue);
+				stuff_ubyte(&HUD_config.clr[idx].alpha);
+				break;
+			}
+		}
+	}
 }
 
 void hud_config_alpha_slider_up()
