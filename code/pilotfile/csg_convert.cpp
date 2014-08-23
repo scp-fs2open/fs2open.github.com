@@ -443,6 +443,8 @@ void pilotfile_convert::csg_import_red_alert()
 				throw std::runtime_error("Data check failure (RedAlert-weapon)!");
 			} else if (i >= 0) {
 				weapons.index = csg->weapon_list[i].index;
+			} else {
+				weapons.index = -1;
 			}
 
 			weapons.count = cfread_int(cfp);
@@ -461,6 +463,8 @@ void pilotfile_convert::csg_import_red_alert()
 				throw std::runtime_error("Data check failure (RedAlert-weapon)!");
 			} else if (i >= 0) {
 				weapons.index = csg->weapon_list[i].index;
+			} else {
+				weapons.index = -1;
 			}
 
 			weapons.count = cfread_int(cfp);
