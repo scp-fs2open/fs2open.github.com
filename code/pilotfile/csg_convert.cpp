@@ -12,6 +12,7 @@
 #include "stats/medals.h"
 #include "cfile/cfilesystem.h"
 #include "menuui/techmenu.h"
+#include "cutscene/cutscenes.h"
 
 #include <iostream>
 #include <sstream>
@@ -1102,6 +1103,34 @@ void pilotfile_convert::csg_export_variables()
 	endSection();
 }
 
+void pilotfile_convert::csg_export_cutscenes() {
+	SCP_vector<cutscene_info>::iterator cut;
+
+	startSection(Section::Cutscenes);
+
+	// convert the old int bitfield to the new vector
+	// the 32 is the size-in-bits of the old int on all platforms
+	// supported by FSO prior to 3.7.0
+	size_t size = Cutscenes.size();
+	size_t viewableScenes = 0;
+	for (size_t j=0; j<size && j<32; ++j) {
+		if ( csg->cutscenes & (1<<j) ) {
+			Cutscenes.at(j).viewable = true;
+			viewableScenes++;
+		}
+	}
+
+	// output cutscene data in new format
+	cfwrite_uint(viewableScenes, cfp);
+
+	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
+		if(cut->viewable)
+			cfwrite_string_len(cut->filename, cfp);
+	}
+
+	endSection();
+}
+
 void pilotfile_convert::csg_export()
 {
 	Assert( cfp != NULL );
@@ -1122,7 +1151,7 @@ void pilotfile_convert::csg_export()
 	csg_export_redalert();
 	csg_export_hud();
 	csg_export_variables();
-
+	csg_export_cutscenes();
 
 	// and... we're done! :)
 }
