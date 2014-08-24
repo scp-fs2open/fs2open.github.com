@@ -18,6 +18,7 @@
 
 typedef struct main_hall_region {
 	int mask;
+	char key;
 	SCP_string description;
 	int action;
 	SCP_string lua_action;
