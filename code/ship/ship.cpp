@@ -16021,15 +16021,21 @@ int is_support_allowed(object *objp, bool do_simple_check)
 		return 0;
 	}
 
-// this is a mod problem, so let's only do it in debug mode
-#ifndef NDEBUG
-	// Goober5000 - extra check to make sure this guy has a rearming dockpoint
-	if (model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, DOCK_TYPE_REARM) < 0)
+	// this is also somewhat expensive
+	if (!do_simple_check)
 	{
-		Warning(LOCATION, "Support not allowed for %s because its model lacks a rearming dockpoint!", shipp->ship_name);
-		return 0;
+		// Goober5000 - extra check to make sure this guy has a rearming dockpoint
+		if (model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, DOCK_TYPE_REARM) < 0)
+		{
+			static bool warned_about_rearm_dockpoint = false;
+			if (!warned_about_rearm_dockpoint)
+			{
+				Warning(LOCATION, "Support not allowed for %s because its model lacks a rearming dockpoint!", shipp->ship_name);
+				warned_about_rearm_dockpoint = true;
+			}
+			return 0;
+		}
 	}
-#endif
 
 	// Goober5000 - if we got this far, we can request support
 	return 1;
