@@ -20943,7 +20943,7 @@ void multi_sexp_clear_subtitles()
 
 void sexp_show_subtitle_text(int node)
 {
-	int i, n = node;
+	int i, n = node, message_index = -1;
 	char text[256];
 
 	// we'll suppose it's the string for now
@@ -20955,6 +20955,7 @@ void sexp_show_subtitle_text(int node)
 		if (!stricmp(Messages[i].name, buffer))
 		{
 			buffer = Messages[i].message;
+			message_index = i;
 			break;
 		}
 	}
@@ -21078,7 +21079,11 @@ void sexp_show_subtitle_text(int node)
 	multi_start_callback();
 	multi_send_int(x_pos);
 	multi_send_int(y_pos);
-	multi_send_string(text);
+	multi_send_int (message_index);
+	// only send the text if it is not a message. If it is a message, we've already sent the index anyway. 
+	if (message_index == -1) {
+		multi_send_string(text);
+	}
 	multi_send_float(display_time);
 	multi_send_float(fade_time);
 	multi_send_int(red);
@@ -21094,8 +21099,8 @@ void sexp_show_subtitle_text(int node)
 
 void multi_sexp_show_subtitle_text()
 {
-	int x_pos, y_pos, width=0, fontnum;
-	char text[TOKEN_LENGTH];
+	int x_pos, y_pos, width=0, fontnum, message_index = -1;
+	char text[256];
 	float display_time, fade_time=0.0f;
 	int red=255, green=255, blue=255;
 	bool center_x=false, center_y=false;
@@ -21104,7 +21109,14 @@ void multi_sexp_show_subtitle_text()
 
 	multi_get_int(x_pos);
 	multi_get_int(y_pos);
-	multi_get_string(text);
+	multi_get_int(message_index); 
+	if (message_index == -1) {
+		multi_get_string(text);
+	}
+	else {
+		char *buffer = Messages[message_index].message;
+		message_translate_tokens(text, buffer);
+	}
 	multi_get_float(display_time);
 	multi_get_float(fade_time);
 	multi_get_int(red);
