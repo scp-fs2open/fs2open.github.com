@@ -681,7 +681,6 @@ sexp_oper Operators[] = {
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,				1,	MAX_COMPLETE_ESCORT_LIST,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-support-ship",				OP_SET_SUPPORT_SHIP,					6,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "multi-eval",						OP_SCRIPT_EVAL_MULTI,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,   },
 	{ "script-eval",					OP_SCRIPT_EVAL,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "multi-eval",						OP_SCRIPT_EVAL_MULTI,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "debug",							OP_DEBUG,								2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
