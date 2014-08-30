@@ -3567,6 +3567,8 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 			last_was_white = 0;
 		}
 
+		Assertion(buf_index < SPLIT_STR_BUFFER_SIZE - 1, "buffer overflow in split_str: screen width causes this text to be longer than %d characters!", SPLIT_STR_BUFFER_SIZE - 1);
+
 		// throw it in our buffer
 		buffer[buf_index] = *src;
 		buf_index++;
@@ -3679,6 +3681,8 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 			// indicate next time around that this wasn't a whitespace character
 			last_was_white = 0;
 		}
+
+		Assertion(buf_index < SPLIT_STR_BUFFER_SIZE - 1, "buffer overflow in split_str: screen width causes this text to be longer than %d characters!", SPLIT_STR_BUFFER_SIZE - 1);
 
 		// throw it in our buffer
 		buffer[buf_index] = *src;
