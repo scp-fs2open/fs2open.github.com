@@ -24377,11 +24377,6 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-			case OP_SCRIPT_EVAL_MULTI:
-				sexp_script_eval_multi(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
 			case OP_CHANGE_IFF_COLOR:
 				sexp_change_iff_color(node);
 				sexp_val = SEXP_TRUE;
