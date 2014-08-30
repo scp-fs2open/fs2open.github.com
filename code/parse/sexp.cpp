@@ -20947,14 +20947,14 @@ void sexp_show_subtitle_text(int node)
 	char text[MESSAGE_LENGTH];
 
 	// we'll suppose it's the string for now
-	char *buffer = CTEXT(n);
+	char *ctext = CTEXT(n);
 
 	// but use an actual message if one exists
 	for (i=0; i<Num_messages; i++)
 	{
-		if (!stricmp(Messages[i].name, buffer))
+		if (!stricmp(Messages[i].name, ctext))
 		{
-			buffer = Messages[i].message;
+			ctext = Messages[i].message;
 			message_index = i;
 			break;
 		}
@@ -20962,7 +20962,7 @@ void sexp_show_subtitle_text(int node)
 
 	// translate things like keypresses, e.g. $T$ for targeting key
 	// (we don't need to do variable replacements because the subtitle code already does that)
-	message_translate_tokens(text, buffer);
+	message_translate_tokens(text, ctext);
 
 	n = CDR(n);
 
@@ -21108,8 +21108,8 @@ void multi_sexp_show_subtitle_text()
 		multi_get_string(text);
 	}
 	else {
-		char *buffer = Messages[message_index].message;
-		message_translate_tokens(text, buffer);
+		char *ctext = Messages[message_index].message;
+		message_translate_tokens(text, ctext);
 	}
 	multi_get_float(display_time);
 	multi_get_float(fade_time);
