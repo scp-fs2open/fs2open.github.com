@@ -20944,7 +20944,7 @@ void multi_sexp_clear_subtitles()
 void sexp_show_subtitle_text(int node)
 {
 	int i, n = node, message_index = -1;
-	char text[256];
+	char text[MESSAGE_LENGTH];
 
 	// we'll suppose it's the string for now
 	char *buffer = CTEXT(n);
@@ -20958,12 +20958,6 @@ void sexp_show_subtitle_text(int node)
 			message_index = i;
 			break;
 		}
-	}
-
-	if (strlen(buffer) > 255)
-	{
-		Warning(LOCATION, "The subtitle system only handles text up to 255 characters long! :(");
-		return;
 	}
 
 	// translate things like keypresses, e.g. $T$ for targeting key
@@ -21100,7 +21094,7 @@ void sexp_show_subtitle_text(int node)
 void multi_sexp_show_subtitle_text()
 {
 	int x_pos, y_pos, width=0, fontnum, message_index = -1;
-	char text[256];
+	char text[MESSAGE_LENGTH];
 	float display_time, fade_time=0.0f;
 	int red=255, green=255, blue=255;
 	bool center_x=false, center_y=false;
