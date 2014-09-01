@@ -3814,8 +3814,13 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, bool scale_gau
 
 	auto_text_offset[0] = 13;
 	auto_text_offset[1] = 2;
-	target_text_offset[0] = 7;
-	target_text_offset[1] = 10;
+	if (Lcl_pl) {
+		target_text_offset[0] = 2;
+		target_text_offset[1] = 10;
+	} else {
+		target_text_offset[0] = 7;
+		target_text_offset[1] = 10;
+	}
 	
 	HudGaugeAutoTarget* hud_gauge = gauge_load_common<HudGaugeAutoTarget>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
@@ -3875,8 +3880,13 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, bool scale_gaug
 
 	auto_text_offset[0] = 13;
 	auto_text_offset[1] = 2;
-	speed_text_offset[0] = 10;
-	speed_text_offset[1] = 10;
+	if (Lcl_pl) {
+		speed_text_offset[0] = 9;
+		speed_text_offset[1] = 10;
+	} else {
+		speed_text_offset[0] = 10;
+		speed_text_offset[1] = 10;
+	}
 	
 	HudGaugeAutoSpeed* hud_gauge = gauge_load_common<HudGaugeAutoSpeed>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 

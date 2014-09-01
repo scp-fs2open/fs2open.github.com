@@ -121,7 +121,7 @@ static sim_room_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		sim_room_buttons("2_LMB_07",	10,	732,	64,	739,	7),
 		sim_room_buttons("2_LMB_08",	854,	681,	800, 704,	8),
 		sim_room_buttons("2_LMB_09",	914,	681,	915, 660,	9),
-		sim_room_buttons("2_LMB_10",	854,	728,	800, 728,	10),
+		sim_room_buttons("2_LMB_10",	854,	728,	780, 736,	10),
 
 		sim_room_buttons("2_TDB_00",	12,	5,		59,	12,	0),
 		sim_room_buttons("2_TDB_01",	12,	31,	59,	37,	1),

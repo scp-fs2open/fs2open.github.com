@@ -597,6 +597,17 @@ void blit_label(char *label, int num)
 		} else {
 			sprintf( text, "%s", translated_label );
 		}
+	} else if (Lcl_pl) {
+		char translated_label[256];
+		strcpy_s(translated_label, label);
+		lcl_translate_medal_name_pl(translated_label);
+
+		// set correct string
+		if ( num > 1 ) {
+			sprintf( text, NOX("%s (%d)"), translated_label, num );
+		} else {
+			sprintf( text, "%s", translated_label );
+		}
 	} else {
 		// set correct string
 		if ( num > 1 ) {

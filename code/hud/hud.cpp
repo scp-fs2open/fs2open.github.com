@@ -1751,7 +1751,11 @@ void hud_maybe_display_supernova()
 	}
 
 	gr_set_color_fast(&Color_bright_red);
-	gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning: %.2f s", time_left);
+	if (Lcl_pl) {
+		gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Wybuch supernowej: %.2f s", time_left);
+	} else {
+		gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning: %.2f s", time_left);
+	}
 }
 
 /**
@@ -3914,7 +3918,11 @@ void HudGaugeSupernova::render(float frametime)
 	}
 
 	gr_set_color_fast(&Color_bright_red);
-	renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
+	if (Lcl_pl) {
+		renderPrintf(position[0], position[1], "Wybuch supernowej: %.2f s", time_left);
+	} else {
+		renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
+	}
 }
 
 HudGaugeFlightPath::HudGaugeFlightPath():

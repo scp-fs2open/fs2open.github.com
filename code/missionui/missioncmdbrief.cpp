@@ -161,9 +161,9 @@ UI_XSTR Cmd_brief_text[GR_NUM_RESOLUTIONS][CMD_BRIEF_NUM_TEXT] =
 		{ "Continue",	1069,	564,	413,	UI_XSTR_COLOR_PINK,	-1,	&Cmd_brief_buttons[0][CMD_BRIEF_BUTTON_ACCEPT].button },
 	},
 	{ // GR_1024
-		{ "Help",		928,	800,	704,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_HELP].button },
+		{ "Help",		928,	820,	704,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_HELP].button },
 		{ "Options",	1036,	797,	743,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_OPTIONS].button },
-		{ "Continue",	1069,	917,	661,	UI_XSTR_COLOR_PINK,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_ACCEPT].button },
+		{ "Continue",	1069,	936,	661,	UI_XSTR_COLOR_PINK,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_ACCEPT].button },
 	}
 };
 

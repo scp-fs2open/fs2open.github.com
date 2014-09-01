@@ -1209,7 +1209,7 @@ void lcl_translate_brief_icon_name_gr(char *name)
 
 	} else if ((pos = strstr(name, "Transport")) != NULL) {
 		pos += 9;		// strlen of "transport"
-		strcpy_s(buf, "Transporter");
+		strcpy_s(buf, "Transportowiec");
 		strcat_s(buf, pos);
 		strcpy(name, buf);
 
@@ -1546,5 +1546,66 @@ void lcl_translate_medal_name_gr(char *name)
 		
 	} else if (!strcmp(name, "SOC Unit Crest")) {
 		strcpy(name, "SEK-Abzeichen ");
+	}
+}
+
+// this is just a hack to display translated names without actually changing the names, 
+// which would break stuff
+// (this used to be in medals.cpp)
+void lcl_translate_medal_name_pl(char *name)
+{
+	if (!strcmp(name, "Epsilon Pegasi Liberation")) {
+		strcpy(name, "Order Wyzwolenia Epsilon Pegasi");
+
+	} else if (!strcmp(name, "Imperial Order of Vasuda")) {
+		strcpy(name, "Imperialny Order Vasudy");
+
+	} else if (!strcmp(name, "Distinguished Flying Cross")) {
+		strcpy(name, "Krzy\xBF Wybitnego Pilota");
+
+	} else if (!strcmp(name, "SOC Service Medallion")) {
+		strcpy(name, "Krzy\xBF S\xB3u\xBF\x62 Specjalnych");
+
+	} else if (!strcmp(name, "Intelligence Cross")) {
+		strcpy(name, "Krzy\xBF Wywiadu");
+
+	} else if (!strcmp(name, "Order of Galatea")) {
+		strcpy(name, "Order Galatei");
+
+	} else if (!strcmp(name, "Meritorious Unit Commendation")) {
+		strcpy(name, "Medal Pochwalny");
+
+	} else if (!strcmp(name, "Medal of Valor")) {
+		strcpy(name, "Medal za Odwag\xEA");
+
+	} else if (!strcmp(name, "GTVA Legion of Honor")) {
+		strcpy(name, "Legia Honorowa GTVA");
+
+	} else if (!strcmp(name, "Allied Defense Citation")) {
+		strcpy(name, "Order za Obron\xEA Sojuszu");
+
+	} else if (!strcmp(name, "Nebula Campaign Victory Star")) {
+		strcpy(name, "Gwiazda Wiktorii Kampanii w Mg\xB3\x61wicy");
+
+	} else if (!strcmp(name, "NTF Campaign Victory Star")) {
+		strcpy(name, "Gwiazda Wiktorii Kampanii NTF");
+
+	} else if (!strcmp(name, "Rank")) {
+		strcpy(name, "Ranga");
+
+	} else if (!strcmp(name, "Wings")) {
+		strcpy(name, "Skrzyd\xB3\x61");
+
+	} else if (!strcmp(name, "Ace")) {
+		strcpy(name, "As");	
+
+	} else if (!strcmp(name, "Double Ace")) {
+		strcpy(name, "Podw\xF3jny As");
+
+	} else if (!strcmp(name, "Triple Ace")) {
+		strcpy(name, "Potr\xF3jny As");
+		
+	} else if (!strcmp(name, "SOC Unit Crest")) {
+		strcpy(name, "Tarcza S\xB3u\xBF\x62 Specjalnych");	
 	}
 }
