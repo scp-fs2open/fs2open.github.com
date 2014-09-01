@@ -440,14 +440,16 @@ void lcl_xstr_init()
 // free Xstr table
 void lcl_xstr_close()
 {
-	for (int i=0; i<XSTR_SIZE; i++){
+	int i;
+
+	for (i=0; i<XSTR_SIZE; i++){
 		if (Xstr_table[i].str != NULL) {
 			vm_free((void *) Xstr_table[i].str);
 			Xstr_table[i].str = NULL;
 		}
 	}
 
-	for (int i=0; i<LCL_MAX_STRINGS; i++){
+	for (i=0; i<LCL_MAX_STRINGS; i++){
 		if (Lcl_ext_str[i] != NULL) {
 			vm_free((void *) Lcl_ext_str[i]);
 			Lcl_ext_str[i] = NULL;

@@ -2034,13 +2034,13 @@ void region_info_init(main_hall_defines &m)
 	}
 	
 	main_hall_region defaults[] = {
-		{0,  0,  XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""},
-		{1, 'B', XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""},
-		{2, 'R', XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""},
-		{3, 'T', XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""},
-		{4,  0,  XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""},
-		{5, 'C', XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""},
-		{6, 'G', "Quick start", QUICK_START_REGION, ""}
+		main_hall_region(0,  0,  XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""),
+		main_hall_region(1, 'B', XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""),
+		main_hall_region(2, 'R', XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""),
+		main_hall_region(3, 'T', XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""),
+		main_hall_region(4,  0,  XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""),
+		main_hall_region(5, 'C', XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""),
+		main_hall_region(6, 'G', "Quick start", QUICK_START_REGION, "")
 	};
 	
 	for (int idx = 0; idx < 7; idx++) {
