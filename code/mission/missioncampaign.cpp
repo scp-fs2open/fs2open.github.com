@@ -45,6 +45,7 @@
 #include "missionui/redalert.h"
 #include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
+#include "menuui/mainhallmenu.h"
 
 
 // campaign wasn't ended
@@ -537,6 +538,19 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 			if (optional_string("+Main Hall:")) {
 				stuff_string(temp, F_RAW, 32);
 				cm->main_hall = temp;
+			}
+
+			// Goober5000 - substitute main hall (like substitute music)
+			if (optional_string("+Substitute Main Hall:")) {
+				stuff_string(temp, F_RAW, 32);
+
+				// see if this main hall exists
+				main_hall_defines *mhd = main_hall_get_pointer(temp);
+				if (mhd != NULL) {
+					cm->main_hall = temp;
+				} else {
+					mprintf(("Substitute main hall '%s' not found\n", temp));
+				}
 			}
 
 			// Goober5000 - new debriefing persona stuff!
