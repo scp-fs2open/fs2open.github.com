@@ -5278,6 +5278,8 @@ void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
 		// handle translation
 		if (Lcl_gr) {
 			lcl_translate_targetbox_name_gr(ship_name_text);
+		} else if (Lcl_pl) {
+			lcl_translate_targetbox_name_pl(ship_name_text);
 		}
 	}
 }
@@ -5318,6 +5320,8 @@ void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 	// handle translation
 	if (Lcl_gr) {
 		lcl_translate_targetbox_name_gr(ship_callsign_text);
+	} else if (Lcl_pl) {
+		lcl_translate_targetbox_name_pl(ship_callsign_text);
 	}
 }
 
@@ -5345,6 +5349,8 @@ void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
 	// handle translation
 	if (Lcl_gr) {
 		lcl_translate_targetbox_name_gr(ship_class_text);
+	} else if (Lcl_pl) {
+		lcl_translate_targetbox_name_pl(ship_class_text);
 	}
 }
 

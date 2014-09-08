@@ -45,6 +45,7 @@
 #include "missionui/redalert.h"
 #include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
+#include "menuui/mainhallmenu.h"
 
 
 // campaign wasn't ended
@@ -407,7 +408,7 @@ void mission_campaign_get_sw_info()
  * this file.  If you change the format of the campaign file, you should be sure these related
  * functions work properly and update them if it breaks them.
  */
-int mission_campaign_load( char *filename, player *pl, int load_savefile )
+int mission_campaign_load( char *filename, player *pl, int load_savefile, bool reset_stats )
 {
 	int len, rval, i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
@@ -539,6 +540,19 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				cm->main_hall = temp;
 			}
 
+			// Goober5000 - substitute main hall (like substitute music)
+			if (optional_string("+Substitute Main Hall:")) {
+				stuff_string(temp, F_RAW, 32);
+
+				// see if this main hall exists
+				main_hall_defines *mhd = main_hall_get_pointer(temp);
+				if (mhd != NULL) {
+					cm->main_hall = temp;
+				} else {
+					mprintf(("Substitute main hall '%s' not found\n", temp));
+				}
+			}
+
 			// Goober5000 - new debriefing persona stuff!
 			cm->debrief_persona_index = 0;
 			if (optional_string("+Debriefing Persona Index:"))
@@ -653,6 +667,12 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				Campaign_load_failure = CAMPAIGN_ERROR_SAVEFILE;
 				return CAMPAIGN_ERROR_SAVEFILE;
 			} else {
+				// make sure we initialize red alert data for the new CSG
+				red_alert_clear();
+				// and reset stats when requested
+				if (reset_stats) {
+					pl->stats.init();
+				}
 				Pilot.save_savefile();
 			}
 		}

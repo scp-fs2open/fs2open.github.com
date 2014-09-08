@@ -1519,7 +1519,7 @@ void scoreing_close()
 {
 	SCP_map<int, char*>::iterator it;
 	for(int i = 0; i<NUM_RANKS; i++) {
-		for (it = Ranks[i].promotion_text.begin(); it != Ranks[i].promotion_text.end(); it++) {
+		for (it = Ranks[i].promotion_text.begin(); it != Ranks[i].promotion_text.end(); ++it) {
 			if (it->second) {
 				vm_free(it->second);
 			}

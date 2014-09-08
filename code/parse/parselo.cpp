@@ -1878,7 +1878,7 @@ bool get_number_before_separator(int &number, int &number_chars, const SCP_strin
 		// copying in progress
 		buf[len] = *ch;
 		len++;
-		ch++;
+		++ch;
 	}
 
 	// got an integer
@@ -2986,6 +2986,11 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		if (variable_found) {
 			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
 			sexp_variable_index = get_index_sexp_variable_name(str);
+			
+			if(sexp_variable_index<0) {
+				Error(LOCATION, "Invalid SEXP variable name \"%s\" found in stuff_loadout_list.", str);
+			}
+        
 			strcpy_s (str, Sexp_variables[sexp_variable_index].text);
 		}
 
@@ -3562,6 +3567,8 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 			last_was_white = 0;
 		}
 
+		Assertion(buf_index < SPLIT_STR_BUFFER_SIZE - 1, "buffer overflow in split_str: screen width causes this text to be longer than %d characters!", SPLIT_STR_BUFFER_SIZE - 1);
+
 		// throw it in our buffer
 		buffer[buf_index] = *src;
 		buf_index++;
@@ -3674,6 +3681,8 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 			// indicate next time around that this wasn't a whitespace character
 			last_was_white = 0;
 		}
+
+		Assertion(buf_index < SPLIT_STR_BUFFER_SIZE - 1, "buffer overflow in split_str: screen width causes this text to be longer than %d characters!", SPLIT_STR_BUFFER_SIZE - 1);
 
 		// throw it in our buffer
 		buffer[buf_index] = *src;
@@ -3982,7 +3991,7 @@ bool end_string_at_first_hash_symbol(char *src)
 	p = get_pointer_to_first_hash_symbol(src);
 	if (p)
 	{
-		while (*(p-1) == ' ')
+		while ((p != src) && (*(p-1) == ' '))
 			p--;
 
 		*p = '\0';

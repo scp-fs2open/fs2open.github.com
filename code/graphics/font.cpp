@@ -549,11 +549,13 @@ void gr_set_font(int fontnum)
 {
 	if ( fontnum < 0 ) {
 		Current_font = NULL;
+		Lcl_special_chars = 0;
 		return;
 	}
 
 	if ( fontnum >= 0 && fontnum < Num_fonts) {
 		Current_font = &Fonts[fontnum];
+		Lcl_special_chars = lcl_get_font_index(fontnum);
 	}
 }
 

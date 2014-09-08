@@ -974,8 +974,8 @@ void ship_select_blit_ship_info()
 	y_start += 10;
 	gr_set_color_fast(text);
 	if((sip->ship_length != NULL) && strlen(sip->ship_length)){
-		if (Lcl_gr) {
-			// in german, drop the s from Meters and make sure M is caps
+		if (Lcl_gr || Lcl_pl) {
+			// in german and polish, drop the s from Meters and make sure M is caps
 			char *sp = strstr(sip->ship_length, "Meters");
 			if (sp) {
 				sp[5] = ' ';		// make the old s a space now

@@ -451,16 +451,18 @@ void main_hall_init(const SCP_string &main_hall_name)
 	Main_hall = main_hall_get_pointer(main_hall_to_load);
 
 	// check if we have to change the ready room's description
-	if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
-		if(Main_hall->default_readyroom) {
+	if(Main_hall->default_readyroom) {
+		if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
 			Main_hall->regions[2].description = XSTR( "Multiplayer - Start or join a multiplayer game", 359);
+		} else {
+			Main_hall->regions[2].description = XSTR( "Ready room - Start or continue a campaign", 355);
 		}
 	}
 	
 	// Read the menu regions from mainhall.tbl
 	SCP_vector<main_hall_region>::iterator it;
 	for (it = Main_hall->regions.begin(); Main_hall->regions.end() != it; ++it) {
-		snazzy_menu_add_region(&Main_hall_region[it - Main_hall->regions.begin()], it->description.c_str(), it->mask, 0, -1);
+		snazzy_menu_add_region(&Main_hall_region[it - Main_hall->regions.begin()], it->description.c_str(), it->mask, it->key, -1);
 	}
 
 	// init tooltip shader						// nearly black
@@ -2032,15 +2034,16 @@ void region_info_init(main_hall_defines &m)
 	}
 	
 	main_hall_region defaults[] = {
-		{0, XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""},
-		{1, XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""},
-		{2, XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""},
-		{3, XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""},
-		{4, XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""},
-		{5, XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""}
+		main_hall_region(0,  0,  XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""),
+		main_hall_region(1, 'B', XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""),
+		main_hall_region(2, 'R', XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""),
+		main_hall_region(3, 'T', XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""),
+		main_hall_region(4,  0,  XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""),
+		main_hall_region(5, 'C', XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""),
+		main_hall_region(6, 'G', "Quick start", QUICK_START_REGION, "")
 	};
 	
-	for (int idx = 0; idx < 6; idx++) {
+	for (int idx = 0; idx < 7; idx++) {
 		m.regions.push_back(defaults[idx]);
 	}
 	
@@ -2330,8 +2333,9 @@ void parse_main_hall_table(const char* filename)
 				// render over doors - default to false
 
 				if (optional_string("+Misc anim over doors:")) {
-					stuff_boolean(&rval);
-					m->misc_anim_over_doors.push_back(rval);
+					bool temp_b;
+					stuff_boolean(&temp_b);
+					m->misc_anim_over_doors.push_back(temp_b);
 				} else {
 					m->misc_anim_over_doors.push_back(0);
 				}
@@ -2422,6 +2426,16 @@ void parse_main_hall_table(const char* filename)
 					
 					m->regions[idx].action = action;
 				}
+			}
+
+			for (idx = 0; optional_string("+Door key:"); idx++) {
+				// door key
+				stuff_string(temp_string, F_RAW, MAX_FILENAME_LEN);
+
+				if ((int) m->regions.size() <= idx) {
+					m->regions.resize(idx + 1);
+				}
+				m->regions[idx].key = temp_string[0];
 			}
 
 			for (idx = 0; optional_string("+Door description:"); idx++) {

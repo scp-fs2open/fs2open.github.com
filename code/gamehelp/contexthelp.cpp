@@ -286,7 +286,7 @@ void launch_context_help()
 void close_help(){
 	for (int overlay_id=0; overlay_id<MAX_HELP_OVERLAYS; overlay_id++){
 		if (help_overlaylist[overlay_id].textlist.size() > 0) {
-			for(SCP_vector<help_text>::iterator ii = help_overlaylist[overlay_id].textlist.at(0).begin(); ii != help_overlaylist[overlay_id].textlist.at(0).end(); ii++) {
+			for(SCP_vector<help_text>::iterator ii = help_overlaylist[overlay_id].textlist.at(0).begin(); ii != help_overlaylist[overlay_id].textlist.at(0).end(); ++ii) {
 				safe_kill(ii->string);
 			}
 		}

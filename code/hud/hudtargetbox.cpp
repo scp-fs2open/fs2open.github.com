@@ -166,6 +166,34 @@ void hud_targetbox_truncate_subsys_name(char *outstr)
 		} else if ( strstr(outstr, "laser") || strstr(outstr, "turret") || strstr(outstr, "missile") ) {
 			strcpy(outstr, "tourelle");
 		} 
+	} else if(Lcl_pl){	
+		if ( strstr(outstr, "communication") )	{
+			strcpy(outstr, "komunikacja");
+		} else if ( !stricmp(outstr, "weapons") ) {
+			strcpy(outstr, "uzbrojenie");
+		} else if ( strstr(outstr, "engine") || strstr(outstr, "Engine")) {
+			strcpy(outstr, "silnik");
+		} else if ( !stricmp(outstr, "sensors") ) {
+			strcpy(outstr, "sensory");
+		} else if ( strstr(outstr, "navigat") ) {
+			strcpy(outstr, "nawigacja");
+		} else if ( strstr(outstr, "fighterbay") || strstr(outstr, "Fighterbay") ) {
+			strcpy(outstr, "dok my\x9Cliw.");
+		} else if ( strstr(outstr, "missile") ) {
+			strcpy(outstr, "wie\xBF. rakiet.");
+		} else if ( strstr(outstr, "laser") || strstr(outstr, "turret") ) {
+			strcpy(outstr, "wie\xBFyczka");
+		} else if ( strstr(outstr, "Command Tower") || strstr(outstr, "Bridge") ) {
+			strcpy(outstr, "mostek");
+		} else if ( strstr(outstr, "Barracks") ) {
+			strcpy(outstr, "koszary");
+		} else if ( strstr(outstr, "Reactor") ) {
+			strcpy(outstr, "reaktor");
+		} else if ( strstr(outstr, "RadarDish") || strstr(outstr, "Radar Dish") ) {
+			strcpy(outstr, "antena radaru");
+		} else if (!stricmp(outstr, "Gas Collector")) {
+			strcpy(outstr, "zbieracz gazu");
+		} 
 	} else {
 		if (strstr(outstr, XSTR("communication", 333)))	{
 			strcpy(outstr, XSTR("comm", 334));

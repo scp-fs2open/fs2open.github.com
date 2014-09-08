@@ -990,7 +990,7 @@ void delete_player(int player_num,int kicked_reason)
 	multi_rate_reset(player_num);
 
 	// display a message that this guy has left
-	if(Net_players[player_num].m_player->callsign != NULL){
+	if(*Net_players[player_num].m_player->callsign){
 		sprintf(notify_string,XSTR("<%s has left>",901),Net_players[player_num].m_player->callsign);
 		multi_display_chat_msg(notify_string,0,0);
 	}
@@ -2191,7 +2191,7 @@ void multi_warpout_all_players()
 	
 	// if we're an observer, or we're respawning, or we can't warp out. so just jump into the debrief state
 	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Net_player->flags & NETINFO_FLAG_RESPAWNING) ||
-		(Net_player->flags & NETINFO_FLAG_OBSERVER) || ((Player_obj->type == OBJ_SHIP) && (Player_ship->flags & SF_CANNOT_WARP)) ){		
+		((Player_obj->type == OBJ_SHIP) && (Player_ship->flags & SF_CANNOT_WARP)) ){		
 
 		multi_handle_sudden_mission_end(); 
 
