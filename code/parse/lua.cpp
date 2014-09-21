@@ -15131,9 +15131,6 @@ ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class=WeaponClass[1], orientatio
 
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
 {
-	if(!(Game_mode & GM_IN_MISSION))
-		return ade_set_error(L, "s", "");
-
 	return ade_set_args(L, "s", Game_current_mission_filename);
 }
 
