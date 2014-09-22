@@ -73,6 +73,8 @@
 
 #define UNKNOWN_USER		"Unknown"
 
+extern void ssm_init();	// Need this to populate Ssm_info so OPF_SSM_CLASS does something. -MageKing17
+
 int cur_wing = -1;
 int cur_wing_index;
 int cur_object_index = -1;
@@ -420,6 +422,7 @@ bool fred_init()
 	create_new_mission();
 	neb2_init();						// fullneb stuff
 	stars_init();
+	ssm_init();		// The game calls this after stars_init(), and we need Ssm_info initialized for OPF_SSM_CLASS. -MageKing17
 	brief_init_colors();
 	fred_preload_all_briefing_icons(); //phreak.  This needs to be done or else the briefing icons won't show up
 	event_music_init();

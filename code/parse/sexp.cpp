@@ -21986,7 +21986,7 @@ void multi_sexp_change_team_color() {
 }
 
 void sexp_call_ssm_strike(int node) {
-	int ssm_index = eval_num(node);
+	int ssm_index = ssm_info_lookup(CTEXT(node));
 	node = CDR(node);
 	int calling_team = iff_lookup(CTEXT(node));
 	if (ssm_index < 0 || calling_team < 0)
@@ -25803,8 +25803,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_TAG:
 			if (argnum == 0)
 				return OPF_SHIP;
+			else if (argnum == 3)
+				return OPF_SSM_CLASS;
             else if (argnum == 7)
                 return OPF_IFF;
+			else if (argnum > 3)	// SSM origin coordinates shouldn't be limited to positive numbers
+				return OPF_NUMBER;
 			else
 				return OPF_POSITIVE;
 
@@ -26407,7 +26411,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CALL_SSM_STRIKE:
 			if (argnum == 0)
-				return OPF_NUMBER;
+				return OPF_SSM_CLASS;
 			else if (argnum == 1)
 				return OPF_IFF;
 			else
@@ -32980,7 +32984,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tCalls a subspace missile strike on the specified ship.\r\n"
 		"\tRequires a ssm table (ssm.tbl).\r\n"
 		"Takes 3 arguments...\r\n"
-		"\t1:\tStrike index.\r\n"
+		"\t1:\tStrike name.\r\n"
 		"\t2:\tCalling team.\r\n"
 		"\tRest:\tList of ships the strike will be called on."
 	},
