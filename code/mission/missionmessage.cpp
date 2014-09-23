@@ -344,7 +344,7 @@ int add_wave( const char *wave_name )
 }
 
 // parses an individual message
-void message_parse(bool importing_from_fsm)
+void message_parse(bool importing_from_fsm, bool builtin)
 {
 	MissionMessage msg;
 	char persona_name[NAME_LENGTH];
@@ -467,6 +467,18 @@ void message_parse(bool importing_from_fsm)
 		}
 	}
 
+	// Default append_suffix based on whether we are parsing messages.tbl or adding a custom message,
+	// then check for the flag. -Chief1983
+	if(builtin) {
+		msg.append_suffix = true;
+	}
+	else {
+		msg.append_suffix = false;
+	}
+	if(optional_string("$Append Suffix")){
+		stuff_boolean(&msg.append_suffix);
+	}
+
 	Num_messages++;
 	Messages.push_back(msg); 
 }
@@ -579,7 +591,7 @@ void parse_msgtbl()
 
 	required_string("#Messages");
 	while (required_string_either("#End", "$Name:")){
-		message_parse();
+		message_parse(false, true);
 	}
 
 	required_string("#End");
@@ -1169,8 +1181,9 @@ void message_play_anim( message_q *q )
 
 	// support ships use a wingman head.
 	// terran command uses its own set of heads.
+	// Added option to always use the actual file for mods that don't have a,b & c, versions by enabling $Append Suffix
 	int subhead_selected = FALSE;
-	if ( (q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1)) ) {
+	if (m->append_suffix && ( (q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1)) )) {
 		persona_index = m->persona_index;
 		
 		// if this ani should be converted to a terran command, set the persona to the command persona
@@ -2287,6 +2300,7 @@ bool add_message(char *name, char *message, int persona_index, int multi_team)
 	msg.multi_team = multi_team;
 	msg.avi_info.index = -1;
 	msg.wave_info.index = -1;
+	msg.append_suffix = false;
 	Messages.push_back(msg);
 	Num_messages++;
 
