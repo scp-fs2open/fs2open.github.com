@@ -1196,7 +1196,7 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, SCP
 	}
 
 	if(optional_string("Font:")) {
-		stuff_int(&Hud_font);
+		stuff_int(&font_num);
 	} else {
 		if ( hud_font >=0 ) {
 			font_num = hud_font;
@@ -2929,7 +2929,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 	}
 
 	if(optional_string("$Font:")) {
-		stuff_int(&Hud_font);
+		stuff_int(&font_num);
 	} else {
 		if ( hud_font >=0 ) {
 			font_num = hud_font;
