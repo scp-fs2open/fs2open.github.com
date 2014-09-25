@@ -176,7 +176,7 @@ void parse_mod_table(const char *filename)
 
 		stuff_float(&fov);
 
-		mprintf(("Game Settings Table: Setting briefing window FOV from %f to %f", Briefing_window_FOV, fov));
+		mprintf(("Game Settings Table: Setting briefing window FOV from %f to %f\n", Briefing_window_FOV, fov));
 
 		Briefing_window_FOV = fov;
 	}

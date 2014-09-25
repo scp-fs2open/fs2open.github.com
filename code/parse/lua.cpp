@@ -3,6 +3,7 @@
 #include "asteroid/asteroid.h"
 #include "camera/camera.h"
 #include "cfile/cfilesystem.h"
+#include "cutscene/movie.h"
 #include "debris/debris.h"
 #include "cmdline/cmdline.h"
 #include "freespace2/freespace.h"
@@ -12007,7 +12008,7 @@ ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]",
 
 ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played", "boolean", "True if sound was played, false if not (Replaced with a sound instance object in the future)")
 {
-	int idx;
+	int idx, gamesnd_idx;
 	float pan=0.0f;
 	float vol=100.0f;
 	int pri=0;
@@ -12024,20 +12025,32 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
     CLAMP(pan, -1.0f, 1.0f);
     CLAMP(vol, 0.0f, 100.0f);
 
-	idx = snd_play(&Snds[gamesnd_get_by_tbl_index(idx)], pan, vol*0.01f, pri, voice_msg);
+	gamesnd_idx = gamesnd_get_by_tbl_index(idx);
 
-	return ade_set_args(L, "b", idx > -1);
+	if (gamesnd_idx >= 0) {
+		int sound_handle = snd_play(&Snds[gamesnd_idx], pan, vol*0.01f, pri, voice_msg);
+		return ade_set_args(L, "b", sound_handle >= 0);
+	} else {
+		LuaError(L, "Invalid sound index %i (Snds[%i]) in playGameSound()", idx, gamesnd_idx);
+		return ADE_RETURN_FALSE;
+	}
 }
 
 ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
-	int idx;
+	int idx, gamesnd_idx;
 	if(!ade_get_args(L, "i", &idx))
 		return ade_set_error(L, "b", false);
 
-	gamesnd_play_iface(gamesnd_get_by_iface_tbl_index(idx));
+	gamesnd_idx = gamesnd_get_by_iface_tbl_index(idx);
 
-	return ade_set_args(L, "b", idx > -1);
+	if (gamesnd_idx >= 0) {
+		gamesnd_play_iface(gamesnd_idx);
+		return ade_set_args(L, "b", true);
+	} else {
+		LuaError(L, "Invalid sound index %i (Snds[%i]) in playInterfaceSound()", idx, gamesnd_idx);
+		return ADE_RETURN_FALSE;
+	}
 }
 
 extern float Master_event_music_volume;
@@ -15130,9 +15143,6 @@ ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class=WeaponClass[1], orientatio
 
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
 {
-	if(!(Game_mode & GM_IN_MISSION))
-		return ade_set_error(L, "s", "");
-
 	return ade_set_args(L, "s", Game_current_mission_filename);
 }
 
@@ -15606,6 +15616,18 @@ ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enable
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(playCutscene, l_Testing, NULL, "Forces a cutscene by the specified filename string to play. Should really only be used in a non-gameplay state (i.e. start of GS_STATE_BRIEFING) otherwise odd side effects may occur. Highly Experimental.", "string", NULL)
+{
+	//This whole thing is a quick hack and can probably be done way better, but is currently functioning fine for my purposes.
+	char *filename;
+
+	if (!ade_get_args(L, "s", &filename))
+		return ADE_RETURN_FALSE;
+
+	movie_play(filename);
+
+	return ADE_RETURN_TRUE;
+}
 
 // *************************Helper functions*********************
 //WMC - This should be used anywhere that an 'object' is set, so

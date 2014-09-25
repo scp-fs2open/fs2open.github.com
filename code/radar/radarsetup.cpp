@@ -315,14 +315,14 @@ void radar_plot_object( object *objp )
 		if (awacs_level < 1.0f)
 			b->flags |= BLIP_DRAW_DISTORTED;
 
-		ship_info Iff_ship_info = Ship_info[Ships[objp->instance].ship_info_index];
+		ship_info *Iff_ship_info = &Ship_info[Ships[objp->instance].ship_info_index];
 
-		if (Iff_ship_info.radar_image_2d_idx >= 0 || Iff_ship_info.radar_color_image_2d_idx >= 0)
+		if (Iff_ship_info->radar_image_2d_idx >= 0 || Iff_ship_info->radar_color_image_2d_idx >= 0)
 		{
-			b->radar_image_2d = Iff_ship_info.radar_image_2d_idx;
-			b->radar_color_image_2d = Iff_ship_info.radar_color_image_2d_idx;
-			b->radar_image_size = Iff_ship_info.radar_image_size;
-			b->radar_projection_size = Iff_ship_info.radar_projection_size_mult;
+			b->radar_image_2d = Iff_ship_info->radar_image_2d_idx;
+			b->radar_color_image_2d = Iff_ship_info->radar_color_image_2d_idx;
+			b->radar_image_size = Iff_ship_info->radar_image_size;
+			b->radar_projection_size = Iff_ship_info->radar_projection_size_mult;
 		}
 	}
 

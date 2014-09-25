@@ -2258,6 +2258,8 @@ void wl_render_weapon_desc(float frametime)
 	int *weapon_desc_coords;
 	int *weapon_title_coords;
 
+	int line_height = gr_get_font_height() + 1;
+
 	// retrieve the correct set of text coordinates
 	if (Game_mode & GM_MULTIPLAYER) {
 		weapon_desc_coords = Wl_new_weapon_desc_coords_multi[gr_screen.res];
@@ -2286,12 +2288,12 @@ void wl_render_weapon_desc(float frametime)
 
 				// draw the strings
 				gr_set_color_fast(&Color_white);			
-				gr_string(weapon_title_coords[0], weapon_title_coords[1]+(10*i), Weapon_desc_lines[i], GR_RESIZE_MENU);
+				gr_string(weapon_title_coords[0], weapon_title_coords[1]+(line_height*i), Weapon_desc_lines[i], GR_RESIZE_MENU);
 
 				// draw the bright letters
 				gr_set_color_fast(&Color_bright_white);
 				gr_get_string_size(&w, &h, Weapon_desc_lines[i], curr_len);
-				gr_printf_menu(weapon_title_coords[0]+w, weapon_title_coords[1]+(10*i), "%c", bright_char[i]);
+				gr_printf_menu(weapon_title_coords[0]+w, weapon_title_coords[1]+(line_height*i), "%c", bright_char[i]);
 
 				// restore the bright char to the string
 				Weapon_desc_lines[i][bright_char_index] = bright_char[i];
@@ -2299,7 +2301,7 @@ void wl_render_weapon_desc(float frametime)
 			} else {
 				// draw the string
 				gr_set_color_fast(&Color_white);
-				gr_string(weapon_title_coords[0], weapon_title_coords[1]+(10*i), Weapon_desc_lines[i], GR_RESIZE_MENU);
+				gr_string(weapon_title_coords[0], weapon_title_coords[1]+(line_height*i), Weapon_desc_lines[i], GR_RESIZE_MENU);
 			}
 		}
 
@@ -2314,12 +2316,12 @@ void wl_render_weapon_desc(float frametime)
 
 				// draw the string
 				gr_set_color_fast(&Color_white);
-				gr_string(weapon_desc_coords[0], weapon_desc_coords[1]+(10*(i-2)), Weapon_desc_lines[i], GR_RESIZE_MENU);
+				gr_string(weapon_desc_coords[0], weapon_desc_coords[1]+(line_height*(i-2)), Weapon_desc_lines[i], GR_RESIZE_MENU);
 
 				// draw the bright letters
 				gr_set_color_fast(&Color_bright_white);
 				gr_get_string_size(&w, &h, Weapon_desc_lines[i], curr_len);
-				gr_printf_menu(weapon_desc_coords[0]+w, weapon_desc_coords[1]+(10*(i-2)), "%c", bright_char[i]);
+				gr_printf_menu(weapon_desc_coords[0]+w, weapon_desc_coords[1]+(line_height*(i-2)), "%c", bright_char[i]);
 
 				// restore the bright char to the string
 				Weapon_desc_lines[i][bright_char_index] = bright_char[i];
@@ -2327,7 +2329,7 @@ void wl_render_weapon_desc(float frametime)
 			} else {
 				// draw the string
 				gr_set_color_fast(&Color_white);
-				gr_string(weapon_desc_coords[0], weapon_desc_coords[1]+(10*(i-2)), Weapon_desc_lines[i], GR_RESIZE_MENU);
+				gr_string(weapon_desc_coords[0], weapon_desc_coords[1]+(line_height*(i-2)), Weapon_desc_lines[i], GR_RESIZE_MENU);
 			}
 		}
 
@@ -2344,11 +2346,11 @@ void wl_render_weapon_desc(float frametime)
 		// FIXME - change to use a for loop 
 		gr_set_color_fast(&Color_white);
 		gr_string(weapon_title_coords[0], weapon_title_coords[1], Weapon_desc_lines[0], GR_RESIZE_MENU);
-		gr_string(weapon_title_coords[0], weapon_title_coords[1] + 10, Weapon_desc_lines[1], GR_RESIZE_MENU);
+		gr_string(weapon_title_coords[0], weapon_title_coords[1] + line_height, Weapon_desc_lines[1], GR_RESIZE_MENU);
 		gr_string(weapon_desc_coords[0], weapon_desc_coords[1], Weapon_desc_lines[2], GR_RESIZE_MENU);
-		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + 10, Weapon_desc_lines[3], GR_RESIZE_MENU);
-		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + 20, Weapon_desc_lines[4], GR_RESIZE_MENU);
-		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + 30, Weapon_desc_lines[5], GR_RESIZE_MENU);
+		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height, Weapon_desc_lines[3], GR_RESIZE_MENU);
+		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height * 2, Weapon_desc_lines[4], GR_RESIZE_MENU);
+		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height * 3, Weapon_desc_lines[5], GR_RESIZE_MENU);
 	}
 }
 

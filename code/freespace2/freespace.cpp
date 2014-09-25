@@ -1200,6 +1200,8 @@ void game_loading_callback(int count)
 		char filename[35];
 		int size;
 		int i;
+		int line_height = gr_get_font_height() + 1;
+
 	  	memblockinfo_sort();
 		for(i = 0; i < 30; i++)
 		{
@@ -1217,10 +1219,10 @@ void game_loading_callback(int count)
 				short_name++;
 
 			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
-			gr_string( 20, 220 + (i*10), mem_buffer, GR_RESIZE_MENU);
+			gr_string( 20, 220 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
 		}
 		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
-		gr_string( 20, 230 + (i*10), mem_buffer, GR_RESIZE_MENU);
+		gr_string( 20, 230 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
 #endif	// _WIN32
 	}
 #endif	// !NDEBUG
@@ -2126,6 +2128,7 @@ void game_get_framerate()
 void game_show_framerate()
 {	
 	float	cur_time;
+	int line_height = gr_get_font_height() + 1;
 
 	cur_time = f2fl(timer_get_approx_seconds());
 	if (cur_time - Start_time > 30.0f) {
@@ -2146,11 +2149,11 @@ void game_show_framerate()
 		for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 			if (pss->system_info->type == SUBSYSTEM_TURRET) {
 				if(pss->turret_enemy_objnum == -1)
-					gr_printf_no_resize(10, t*10, "Turret %d: <None>", t);
+					gr_printf_no_resize(10, t*line_height, "Turret %d: <None>", t);
 				else if (Objects[pss->turret_enemy_objnum].type == OBJ_SHIP)
-					gr_printf_no_resize(10, t*10, "Turret %d: %s", t, Ships[Objects[pss->turret_enemy_objnum].instance].ship_name);
+					gr_printf_no_resize(10, t*line_height, "Turret %d: %s", t, Ships[Objects[pss->turret_enemy_objnum].instance].ship_name);
 				else
-					gr_printf_no_resize(10, t*10, "Turret %d: <Object %d>", t, pss->turret_enemy_objnum);
+					gr_printf_no_resize(10, t*line_height, "Turret %d: <Object %d>", t, pss->turret_enemy_objnum);
 
 				t++;
 			}
@@ -2163,7 +2166,7 @@ void game_show_framerate()
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (Cmdline_frame_profile) {
-			gr_string(20, 110, profile_output, GR_RESIZE_NONE);
+			gr_string(20, 100 + line_height, profile_output, GR_RESIZE_NONE);
 		}
 
 		if (Show_framerate) {
@@ -2195,106 +2198,104 @@ void game_show_framerate()
 		else
 			sprintf(mem_buffer,"Using Physical: %d Meg",(Mem_starttime_phys - mem_stats.dwAvailPhys)/1024/1024);
 
-		gr_string( 20, 120, mem_buffer, GR_RESIZE_NONE);
+		gr_string( 20, 100 + (line_height * 2), mem_buffer, GR_RESIZE_NONE);
 		sprintf(mem_buffer,"Using Pagefile: %d Meg",(Mem_starttime_pagefile - mem_stats.dwAvailPageFile)/1024/1024);
-		gr_string( 20, 130, mem_buffer, GR_RESIZE_NONE);
+		gr_string( 20, 100 + (line_height * 3), mem_buffer, GR_RESIZE_NONE);
 		sprintf(mem_buffer,"Using Virtual:  %d Meg",(Mem_starttime_virtual - mem_stats.dwAvailVirtual)/1024/1024);
-		gr_string( 20, 140, mem_buffer, GR_RESIZE_NONE);
+		gr_string( 20, 100 + (line_height * 4), mem_buffer, GR_RESIZE_NONE);
 
 		if ( ((int)mem_stats.dwAvailPhys == -1) || ((int)mem_stats.dwTotalPhys == -1) )
 			sprintf(mem_buffer, "Physical Free: *** / *** (>4G)");
 		else
 			sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.dwAvailPhys/1024/1024, mem_stats.dwTotalPhys/1024/1024);
 
-		gr_string( 20, 160, mem_buffer, GR_RESIZE_NONE);
+		gr_string( 20, 100 + (line_height * 6), mem_buffer, GR_RESIZE_NONE);
 		sprintf(mem_buffer,"Pagefile Free: %d / %d Meg",mem_stats.dwAvailPageFile/1024/1024, mem_stats.dwTotalPageFile/1024/1024);
-		gr_string( 20, 170, mem_buffer, GR_RESIZE_NONE);
+		gr_string( 20, 100 + (line_height * 7), mem_buffer, GR_RESIZE_NONE);
 		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
-		gr_string( 20, 180, mem_buffer, GR_RESIZE_NONE);
+		gr_string( 20, 100 + (line_height * 8), mem_buffer, GR_RESIZE_NONE);
 	}
 #endif
 
 #ifndef NDEBUG
 	if ( Show_cpu == 1 ) {
 		
-		int sx,sy,dy;
+		int sx,sy;
 		sx = gr_screen.max_w - 154;
 		sy = 15;
-		dy = gr_get_font_height() + 1;
 
 		gr_set_color_fast(&HUD_color_debug);
 
 		gr_printf_no_resize( sx, sy, NOX("DMA: %s"), transfer_text );
-		sy += dy;
+		sy += line_height;
 		gr_printf_no_resize( sx, sy, NOX("POLYP: %d"), modelstats_num_polys );
-		sy += dy;
+		sy += line_height;
 		gr_printf_no_resize( sx, sy, NOX("POLYD: %d"), modelstats_num_polys_drawn );
-		sy += dy;
+		sy += line_height;
 		gr_printf_no_resize( sx, sy, NOX("VERTS: %d"), modelstats_num_verts );
-		sy += dy;
+		sy += line_height;
 
 		{
 
 			extern int Num_pairs;		// Number of object pairs that were checked.
 			gr_printf_no_resize( sx, sy, NOX("PAIRS: %d"), Num_pairs );
-			sy += dy;
+			sy += line_height;
 
 			extern int Num_pairs_checked;	// What percent of object pairs were checked.
 			gr_printf_no_resize( sx, sy, NOX("FVI: %d"), Num_pairs_checked );
-			sy += dy;
+			sy += line_height;
 			Num_pairs_checked = 0;
 
 		}
 
 		gr_printf_no_resize( sx, sy, NOX("Snds: %d"), snd_num_playing() );
-		sy += dy;
+		sy += line_height;
 
 		if ( Timing_total > 0.01f )	{
 			gr_printf_no_resize(  sx, sy, NOX("CLEAR: %.0f%%"), Timing_clear*100.0f/Timing_total );
-			sy += dy;
+			sy += line_height;
 			gr_printf_no_resize( sx, sy, NOX("REND2D: %.0f%%"), Timing_render2*100.0f/Timing_total );
-			sy += dy;
+			sy += line_height;
 			gr_printf_no_resize( sx, sy, NOX("REND3D: %.0f%%"), Timing_render3*100.0f/Timing_total );
-			sy += dy;
+			sy += line_height;
 			gr_printf_no_resize( sx, sy, NOX("FLIP: %.0f%%"), Timing_flip*100.0f/Timing_total );
-			sy += dy;
+			sy += line_height;
 			gr_printf_no_resize( sx, sy, NOX("GAME: %.0f%%"), (Timing_total-(Timing_render2+Timing_render3+Timing_flip+Timing_clear))*100.0f/Timing_total );
-			sy += dy;
+			sy += line_height;
 		}
 	}
 	 	
 	if ( Show_mem  ) {
 
-		int sx,sy,dy;
+		int sx,sy;
 		sx = gr_screen.max_w - 154;
 		sy = 15;
-		dy = gr_get_font_height() + 1;
 
 		gr_set_color_fast(&HUD_color_debug);
 
 		{
 			extern int TotalRam;
 			gr_printf_no_resize( sx, sy, NOX("DYN: %d KB\n"), TotalRam/1024 );
-			sy += dy;
+			sy += line_height;
 		}	
 
 		{
 			extern int Model_ram;
 			gr_printf_no_resize( sx, sy, NOX("POF: %d KB\n"), Model_ram/1024 );
-			sy += dy;
+			sy += line_height;
 		}	
 
 		gr_printf_no_resize( sx, sy, NOX("%s: %d KB\n"), (Cmdline_cache_bitmaps) ? NOX("C-BMP") : NOX("BMP"), bm_texture_ram/1024 );
-		sy += dy;
+		sy += line_height;
 
 		gr_printf_no_resize( sx, sy, NOX("S-SRAM: %d KB\n"), Snd_sram/1024 );		// mem used to store game sound
-		sy += dy;
+		sy += line_height;
 
 		{
 			extern int GL_textures_in;
 			extern int GL_vertex_data_in;
 			gr_printf_no_resize( sx, sy, NOX("VRAM: %d KB\n"), (GL_textures_in + GL_vertex_data_in)/1024 );
-			sy += dy;
+			sy += line_height;
 		}
 	}
 
@@ -2334,11 +2335,11 @@ void game_show_framerate()
 				short_name++;
 
 			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
-			gr_string( 20, 220 + (mi*10), mem_buffer, GR_RESIZE_NONE);
+			gr_string( 20, 100 + (line_height * 12) + (mi*line_height), mem_buffer, GR_RESIZE_NONE);
 		}
 
 		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
-		gr_string( 20, 230 + (mi*10), mem_buffer, GR_RESIZE_NONE);
+		gr_string( 20, 100 + (line_height * 13) + (mi*line_height), mem_buffer, GR_RESIZE_NONE);
 	}
 #endif
 
