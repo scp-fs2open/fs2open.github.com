@@ -187,6 +187,7 @@ void multi_rate_display(int np_index, int x, int y)
 {	
 	int idx;
 	mr_info *m;
+	int line_height = gr_get_font_height() + 1;
 
 	// sanity checks
 	if((np_index < 0) || (np_index >= MAX_RATE_PLAYERS)){
@@ -205,7 +206,7 @@ void multi_rate_display(int np_index, int x, int y)
 		// display
 		gr_set_color_fast(&Color_red);
 		gr_printf_no_resize(x, y, "%s %d (%d/s) (%f/f)", m->type, m->total_bytes, (int)m->avg_second, m->avg_frame);
-		y += 10;
+		y += line_height;
 	}
 }
 

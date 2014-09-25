@@ -1701,7 +1701,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		if (n_linebreaks) {
 			p_line = strtok(outstr,linebreak);
 			while (p_line != NULL) {
-				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-(10*n_linebreaks), p_line);
+				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-((h+1)*n_linebreaks), p_line);
 				p_line = strtok(NULL,linebreak);
 				n_linebreaks--;
 			}

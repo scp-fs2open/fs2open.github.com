@@ -5550,12 +5550,13 @@ void HudGaugeWeaponEnergy::render(float frametime)
 
 	if(use_new_gauge)
 	{
-		int currentx, currenty;
+		int currentx, currenty, line_height;
 		int y;
 		int max_w = 100;
 		float remaining;
 		currentx = position[0] + 10;
 		currenty = position[1];
+		line_height = gr_get_font_height() + 1;
 		if(gr_screen.max_w_unscaled == 640) {
 			max_w = 60;
 		}
@@ -5566,7 +5567,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 		
 		//Draw name
 		renderString(currentx, currenty, "Energy");
-		currenty += 10;
+		currenty += line_height;
 
 		//Draw background
 		setGaugeColor(HUD_C_DIM);
@@ -5606,7 +5607,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 			}
 
 			//Next 'line'
-			currenty += 10;
+			currenty += line_height;
 
 			//Draw the background for the gauge
 			setGaugeColor(HUD_C_DIM);

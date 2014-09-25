@@ -2424,7 +2424,7 @@ void multi_pxo_process_channels()
 		Multi_pxo_channel_button.get_mouse_pos(NULL,&my);
 
 		// index from the top
-		item_index = my / 10;
+		item_index = my / (gr_get_font_height() + 1);
 
 		// select the item if possible
 		if((item_index + Multi_pxo_channel_start_index) < Multi_pxo_channel_count){
@@ -2512,6 +2512,7 @@ void multi_pxo_blit_channels()
 	char chan_servers[15];
 	int user_w,server_w;
 	int disp_count,y_start;
+	int line_height = gr_get_font_height() + 1;
 
 	// blit as many channels as we can
 	disp_count = 0;
@@ -2558,7 +2559,7 @@ void multi_pxo_blit_channels()
 
 		// increment the displayed count
 		disp_count++;
-		y_start += 10;		
+		y_start += line_height;		
 
 		// next item
 		moveup = moveup->next;
@@ -2906,7 +2907,7 @@ void multi_pxo_process_players()
 		Multi_pxo_player_button.get_mouse_pos(NULL,&my);
 
 		// index from the top
-		item_index = my / 10;
+		item_index = my / (gr_get_font_height() + 1);
 
 		// select the item if possible
 		lookup = Multi_pxo_player_start;
@@ -2940,6 +2941,7 @@ void multi_pxo_blit_players()
 	player_list *moveup;
 	char player_name[MAX_PXO_TEXT_LEN];
 	int disp_count,y_start;
+	int line_height = gr_get_font_height() + 1;
 
 	// blit as many channels as we can
 	disp_count = 0;
@@ -2967,7 +2969,7 @@ void multi_pxo_blit_players()
 
 		// increment the displayed count
 		disp_count++;
-		y_start += 10;
+		y_start += line_height;
 
 		// next item
 		moveup = moveup->next;
@@ -3246,7 +3248,7 @@ void multi_pxo_chat_process_incoming(const char *txt,int mode)
  */
 void multi_pxo_chat_blit()
 {
-	int y_start;
+	int y_start, line_height;
 	int disp_count,token_width;
 	char piece[100];
 	char title[MAX_PXO_TEXT_LEN];
@@ -3273,6 +3275,7 @@ void multi_pxo_chat_blit()
 	moveup = Multi_pxo_chat_start;	
 	disp_count = 0;
 	y_start = Multi_pxo_chat_coords[gr_screen.res][1];
+	line_height = gr_get_font_height() + 1;
 	while((moveup != NULL) && (moveup != Multi_pxo_chat_add) && (disp_count < (Multi_pxo_max_chat_display[gr_screen.res]))){
 		switch(moveup->mode){
 		// if this is text from the server, display it all "bright"
@@ -3325,7 +3328,7 @@ void multi_pxo_chat_blit()
 		// next chat line
 		moveup = moveup->next;
 		disp_count++;
-		y_start += 10;
+		y_start += line_height;
 	}
 
 	if ((moveup != Multi_pxo_chat_add) && (moveup != NULL)) {
@@ -4964,11 +4967,12 @@ void multi_pxo_help_blit_page()
 {
 	int idx;
 	int start_pos;
-	int y_start;
+	int y_start, line_height;
 	help_page *cp = &Multi_pxo_help_pages[Multi_pxo_help_cur];
 	
 	// blit each line
 	y_start = Multi_pxo_help_coords[gr_screen.res][1];
+	line_height = gr_get_font_height() + 1;
 	for(idx=0;idx<cp->num_lines;idx++){
 		// if the first symbol is "@", highlight the line
 		if(cp->text[idx][0] == '@'){
@@ -4983,7 +4987,7 @@ void multi_pxo_help_blit_page()
 		gr_string(Multi_pxo_help_coords[gr_screen.res][0], y_start, cp->text[idx] + start_pos, GR_RESIZE_MENU);
 
 		// increment the y location
-		y_start += 10;
+		y_start += line_height;
 	}
 }
 
