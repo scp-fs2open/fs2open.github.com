@@ -12008,7 +12008,7 @@ ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]",
 
 ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played", "boolean", "True if sound was played, false if not (Replaced with a sound instance object in the future)")
 {
-	int idx;
+	int idx, gamesnd_idx;
 	float pan=0.0f;
 	float vol=100.0f;
 	int pri=0;
@@ -12025,20 +12025,32 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
     CLAMP(pan, -1.0f, 1.0f);
     CLAMP(vol, 0.0f, 100.0f);
 
-	idx = snd_play(&Snds[gamesnd_get_by_tbl_index(idx)], pan, vol*0.01f, pri, voice_msg);
+	gamesnd_idx = gamesnd_get_by_tbl_index(idx);
 
-	return ade_set_args(L, "b", idx > -1);
+	if (gamesnd_idx >= 0) {
+		int sound_handle = snd_play(&Snds[gamesnd_idx], pan, vol*0.01f, pri, voice_msg);
+		return ade_set_args(L, "b", sound_handle >= 0);
+	} else {
+		LuaError(L, "Invalid sound index %i (Snds[%i]) in playGameSound()", idx, gamesnd_idx);
+		return ADE_RETURN_FALSE;
+	}
 }
 
 ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
-	int idx;
+	int idx, gamesnd_idx;
 	if(!ade_get_args(L, "i", &idx))
 		return ade_set_error(L, "b", false);
 
-	gamesnd_play_iface(gamesnd_get_by_iface_tbl_index(idx));
+	gamesnd_idx = gamesnd_get_by_iface_tbl_index(idx);
 
-	return ade_set_args(L, "b", idx > -1);
+	if (gamesnd_idx >= 0) {
+		gamesnd_play_iface(gamesnd_idx);
+		return ade_set_args(L, "b", true);
+	} else {
+		LuaError(L, "Invalid sound index %i (Snds[%i]) in playInterfaceSound()", idx, gamesnd_idx);
+		return ADE_RETURN_FALSE;
+	}
 }
 
 extern float Master_event_music_volume;
