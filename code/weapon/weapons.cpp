@@ -5290,7 +5290,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	//	For missiles, the velocity trends towards some goal.
 	//	Note: If you change how speed works here, such as adding in speed of parent ship, you'll need to change the AI code
 	//	that predicts collision points.  See Mike Kulas or Dave Andsager.  (Or see ai_get_weapon_speed().)
-	if (!(wip->wi_flags & WIF_HOMING)) {
+	if (wip->acceleration_time > 0.0f) {
+		objp->phys_info.desired_vel = vmd_zero_vector;
+		objp->phys_info.vel = vmd_zero_vector;
+		objp->phys_info.speed = 0.0f;
+		wp->launch_speed = 0.0f;
+	} else if (!(wip->wi_flags & WIF_HOMING)) {
 		vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.desired_vel);
@@ -5318,9 +5323,6 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	wp->weapon_max_vel = objp->phys_info.max_vel.xyz.z;
-
-	if (wip->acceleration_time > 0.0f)
-		wp->launch_speed = 0.0f;
 
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
