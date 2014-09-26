@@ -1271,16 +1271,25 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, S
 
 			adjust_base_res(base_res, scale_gauge);
 
+			// If no positioning information is specified, use the default position
+			bool use_default_pos = true;
+
 			if(optional_string("Origin:")) {
 				stuff_float_list(origin, 2);
-			}
+				use_default_pos = false;
 
-			if(optional_string("Offset:")) {
+				required_string("Offset:");
 				stuff_int_list(offset, 2);
 			}
 
-			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
-			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+			if(optional_string("Offset:")) {
+				Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
+			}
+
+			if (!use_default_pos) {
+				coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+				coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+			}
 		}
 
 		if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
@@ -2904,22 +2913,31 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
 		} else {
-			if (optional_string("$Scale Gauge:")) {
+			if (optional_string("Scale Gauge:")) {
 				stuff_boolean(&scale_gauge);
 			}
 
 			adjust_base_res(base_res, scale_gauge);
 
+			// If no positioning information is specified, use the default position
+			bool use_default_pos = true;
+
 			if(optional_string("Origin:")) {
 				stuff_float_list(origin, 2);
-			}
+				use_default_pos = false;
 
-			if(optional_string("Offset:")) {
+				required_string("Offset:");
 				stuff_int_list(offset, 2);
 			}
 
-			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
-			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+			if(optional_string("Offset:")) {
+				Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
+			}
+
+			if (!use_default_pos) {
+				coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+				coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+			}
 		}
 	} else {
 		adjust_base_res(base_res, scale_gauge);
@@ -2928,7 +2946,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 		coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
 	}
 
-	if(optional_string("$Font:")) {
+	if(optional_string("Font:")) {
 		stuff_int(&font_num);
 	} else {
 		if ( hud_font >=0 ) {
