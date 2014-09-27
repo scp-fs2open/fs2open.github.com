@@ -327,6 +327,11 @@ int shiphit_get_damage_weapon(object *damaging_objp)
 		case OBJ_SHOCKWAVE:
 			weapon_info_index = shockwave_get_weapon_index(damaging_objp->instance);
 			break;
+		case OBJ_BEAM:
+			if (Beams_use_damage_factors) {
+				weapon_info_index = beam_get_weapon_info_index(damaging_objp);
+			}
+			break;
 		default:
 			weapon_info_index = -1;
 			break;
@@ -486,7 +491,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
-	if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON)) {
+	if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) ||
+				(Beams_use_damage_factors && (other_obj->type == OBJ_BEAM)))) {
 		if ( Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING ) {
 			return damage_left;
 		}
