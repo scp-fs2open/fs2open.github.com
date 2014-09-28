@@ -124,7 +124,6 @@ typedef struct MissionMessage {
 	int	multi_team;								// multiplayer team filter (important for TvT only)
 	int				mood;
 	SCP_vector<int> excluded_moods;
-	bool append_suffix;
 
 	// unions for avi/wave information.  Because of issues with Fred, we are using
 	// the union to specify either the index into the avi or wave arrays above,
@@ -190,7 +189,7 @@ extern int Praise_self_percentage;
 
 // function to parse a message from either messages.tbl or the mission file.  Both files have the
 // exact same format, so this function just gets reused in both instances.
-void	message_parse(bool importing_from_fsm = false, bool builtin = false);
+void	message_parse(bool importing_from_fsm = false);
 void	persona_parse();
 
 void	messages_init();
