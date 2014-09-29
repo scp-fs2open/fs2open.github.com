@@ -84,8 +84,10 @@ void cutscene_init()
 		compact_multitext_string(buf);
 		cutinfo.description = vm_strdup(buf);
 
-		required_string("$cd:");
-		stuff_int( &cutinfo.cd );
+		if (optional_string("$cd:"))
+			stuff_int( &cutinfo.cd );
+		else
+			cutinfo.cd = 0;
 
 		cutinfo.viewable = false;
 
