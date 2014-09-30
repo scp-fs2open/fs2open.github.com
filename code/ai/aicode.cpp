@@ -13846,8 +13846,17 @@ int ai_need_new_target(object *pl_objp, int target_objnum)
 	if ( objp->type == OBJ_SHIP ) {
 		if ( Ships[objp->instance].flags & SF_DYING ) {
 			return 1;
-		} else if (Ships[objp->instance].team == Ships[pl_objp->instance].team)
+		} else if (Ships[objp->instance].team == Ships[pl_objp->instance].team) {
+			// Goober5000 - targeting the same team is allowed if pl_objp is going bonkers
+			ai_info *pl_aip = &Ai_info[Ships[pl_objp->instance].ai_index];
+			if (pl_aip->active_goal != AI_GOAL_NONE && pl_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
+				if (pl_aip->goals[pl_aip->active_goal].flags & AIGF_TARGET_OWN_TEAM) {
+					return 0;
+				}
+			}
+
 			return 1;
+		}
 	}
 
 	return 0;

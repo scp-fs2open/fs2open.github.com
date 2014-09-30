@@ -687,8 +687,8 @@ sexp_oper Operators[] = {
 	{ "do-nothing",						OP_NOP,									0,	0,			SEXP_ACTION_OPERATOR,	},
 	
 	//AI Goals Category
-	{ "ai-chase",						OP_AI_CHASE,							2,	2,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-chase-wing",					OP_AI_CHASE_WING,						2,	2,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-chase",						OP_AI_CHASE,							2,	3,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-chase-wing",					OP_AI_CHASE_WING,						2,	3,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-chase-any",					OP_AI_CHASE_ANY,						1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-guard",						OP_AI_GUARD,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-guard-wing",					OP_AI_GUARD_WING,						2,	2,			SEXP_GOAL_OPERATOR,	},
@@ -26175,6 +26175,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_AI_CHASE:
+			if (argnum == 0)
+				return OPF_SHIP_WING;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
 		case OP_AI_GUARD:
 			if (!argnum)
 				return OPF_SHIP_WING;
@@ -26201,6 +26208,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 
 		case OP_AI_CHASE_WING:
+			if (argnum == 0)
+				return OPF_WING;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
 		case OP_AI_GUARD_WING:
 			if (!argnum)
 				return OPF_WING;
@@ -30701,9 +30715,11 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_AI_CHASE, "Ai-chase (Ship goal)\r\n"
 		"\tCauses the specified ship to chase and attack the specified target.\r\n\r\n"
-		"Takes 2 arguments...\r\n"
+		"Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of ship to chase.\r\n"
-		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
+	},
 
 	{ OP_AI_DOCK, "Ai-dock (Ship goal)\r\n"
 		"\tCauses one ship to dock with another ship.\r\n\r\n"
@@ -30748,9 +30764,11 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_AI_CHASE_WING, "Ai-chase wing (Ship goal)\r\n"
 		"\tCauses the specified ship to chase and attack the specified target.\r\n\r\n"
-		"Takes 2 arguments...\r\n"
+		"Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of wing to chase.\r\n"
-		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
+	},
 
 	{ OP_AI_DISABLE_SHIP, "Ai-disable-ship (Ship/wing goal)\r\n"
 		"\tThis AI goal causes a ship/wing to destroy all of the engine subsystems on "

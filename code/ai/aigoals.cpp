@@ -936,7 +936,13 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	case OP_AI_IGNORE:
 	case OP_AI_IGNORE_NEW:
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = atoi( CTEXT(CDDR(node)) );
+
+		if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING ) {
+			// Goober5000 - we now have an extra optional chase argument to allow chasing our own team
+			if ((CDDDR(node) != -1) && is_sexp_true(CDDDR(node)))
+				aigp->flags |= AIGF_TARGET_OWN_TEAM;
+		}
 
 		if ( op == OP_AI_CHASE ) {
 			aigp->ai_mode = AI_GOAL_CHASE;
