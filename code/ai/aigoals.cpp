@@ -936,7 +936,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	case OP_AI_IGNORE:
 	case OP_AI_IGNORE_NEW:
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
-		aigp->priority = atoi( CTEXT(CDR(CDR(node)) );
+		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
 
 		if ( op == OP_AI_CHASE ) {
 			aigp->ai_mode = AI_GOAL_CHASE;
