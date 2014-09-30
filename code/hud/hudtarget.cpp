@@ -3290,7 +3290,11 @@ void hud_show_message_sender()
 
 	// Karajorma - If we've gone to all the trouble to make our friendly ships stealthed they shouldn't then give away 
 	// their position cause they're feeling chatty
-	if ( Ships[Message_shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS ) {
+	// MageKing17 - Make the check see if they're actually stealthed at the time, and may as well include a check for
+	// being hidden from sensors, too; logic copied from a similar check in hudescort.cpp
+	if ( (Ships[Message_shipnum].flags & SF_HIDDEN_FROM_SENSORS)
+		|| ((Ships[Message_shipnum].flags2 & SF2_STEALTH) && ((Ships[Message_shipnum].team != Player_ship->team) || (Ships[Message_shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS)))
+	) {
 		return;
 	}
 
