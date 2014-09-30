@@ -12697,12 +12697,17 @@ void multi_sexp_deal_with_ship_flag()
 				}
 			}
 
-			if (ship_flag2 == SF2_STEALTH && !set_it) {
+			if ((ship_flag2 == SF2_STEALTH) && !set_it) {
 				if (shipp->flags & SF_ESCORT) {
 					hud_add_ship_to_escort(shipp->objnum, 1);
 				}			
 			}
-			if ((ship_flag2 == SF2_FRIENDLY_STEALTH_INVIS) || (ship_flag == SF_HIDDEN_FROM_SENSORS)) {
+			if ((ship_flag2 == SF2_FRIENDLY_STEALTH_INVIS) && !set_it && (shipp->flags2 & SF2_STEALTH) && (shipp->team == Player_ship->team)) {
+				if (shipp->flags & SF_ESCORT) {
+					hud_add_ship_to_escort(shipp->objnum, 1);
+				}			
+			}
+			if (ship_flag == SF_HIDDEN_FROM_SENSORS) {
 				if (set_it) {
 					if (Player_ai->target_objnum == shipp->objnum) {
 						hud_cease_targeting(); 
@@ -12710,7 +12715,7 @@ void multi_sexp_deal_with_ship_flag()
 				}
 				else {
 					if (shipp->flags & SF_ESCORT) {
-					hud_add_ship_to_escort(shipp->objnum, 1);
+						hud_add_ship_to_escort(shipp->objnum, 1);
 					}		
 				}
 			}
@@ -14016,9 +14021,8 @@ void sexp_ships_visible(int n, bool visible)
 		if (!visible && Player_ai->target_objnum == Ships[shipnum].objnum) {
 			hud_cease_targeting(); 
 		}
-
 		else if (visible && (Ships[shipnum].flags & SF_ESCORT)) {
-				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
+			hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
 		}		
 	}
 }
@@ -14057,8 +14061,11 @@ void sexp_friendly_stealth_invisible(int n, bool invisible)
 			if (shipnum < 0)
 				continue;
 
-			if (Ships[shipnum].flags & SF_ESCORT)
-				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
+			if (Ships[shipnum].flags2 & SF2_STEALTH && Player_ship->team == Ships[shipnum].team)
+			{
+				if (Ships[shipnum].flags & SF_ESCORT)
+					hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
+			}
 		}
 	}
 }
