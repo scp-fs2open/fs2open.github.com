@@ -936,13 +936,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	case OP_AI_IGNORE:
 	case OP_AI_IGNORE_NEW:
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
-		aigp->priority = atoi( CTEXT(CDDR(node)) );
-
-		if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING ) {
-			// Goober5000 - we now have an extra optional chase argument to allow chasing our own team
-			if ((CDDDR(node) != -1) && is_sexp_true(CDDDR(node)))
-				aigp->flags |= AIGF_TARGET_OWN_TEAM;
-		}
+		aigp->priority = atoi( CTEXT(CDR(CDR(node)) );
 
 		if ( op == OP_AI_CHASE ) {
 			aigp->ai_mode = AI_GOAL_CHASE;
@@ -983,6 +977,16 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	if ( aigp->priority > MAX_GOAL_PRIORITY ) {
 		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", text, aigp->priority, MAX_GOAL_PRIORITY));
 		aigp->priority = MAX_GOAL_PRIORITY;
+	}
+
+	// Goober5000 - we now have an extra optional chase argument to allow chasing our own team
+	if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_DISABLE_SHIP || op == OP_AI_DISARM_SHIP ) {
+		if ((CDDDR(node) != -1) && is_sexp_true(CDDDR(node)))
+			aigp->flags |= AIGF_TARGET_OWN_TEAM;
+	}
+	if ( op == OP_AI_DESTROY_SUBSYS ) {
+		if ((CDDDDR(node) != -1) && is_sexp_true(CDDDDR(node)))
+			aigp->flags |= AIGF_TARGET_OWN_TEAM;
 	}
 
 	// Goober5000 - since none of the goals act on the actor,
