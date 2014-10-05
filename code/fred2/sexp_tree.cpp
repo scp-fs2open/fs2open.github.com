@@ -2662,6 +2662,8 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_ANIMATION_TYPE:
 		case OPF_SHIP_FLAG:
 		case OPF_NEBULA_PATTERN:
+		case OPF_NAV_POINT:
+		case OPF_TEAM_COLOR:
 			return 1;
 
 		case OPF_SHIP:
@@ -2700,10 +2702,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 0;
 
 		case OPF_PERSONA:
-			if (Num_personas)
-				return 1;
-			return 0;
-			
+			return (Num_personas > 0) ? 1 : 0;
 
 		case OPF_POINT:
 		case OPF_WAYPOINT_PATH:
@@ -2765,29 +2764,13 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 0;
 
 		case OPF_VARIABLE_NAME:
-			if (sexp_variable_count() > 0) {
-				return 1;
-			} else {
-				return 0;
-			}
-
-		case OPF_NAV_POINT:
-			return 1;
+			return (sexp_variable_count() > 0) ? 1 : 0;
 
 		case OPF_SSM_CLASS:
-			if (Ssm_info_count > 0)
-				return 1;
-			else
-				return 0;
+			return (Ssm_info_count > 0) ? 1 : 0;
 
 		case OPF_MISSION_MOOD:
-			if (Builtin_moods.empty()) 
-				return 0;
-			else
-				return 1;
-
-		case OPF_TEAM_COLOR:
-			return 1;
+			return Builtin_moods.empty() ? 0 : 1;
 
 		default:
 			Int3();
