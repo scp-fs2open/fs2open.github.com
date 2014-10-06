@@ -2628,10 +2628,10 @@ void gr_opengl_scene_texture_end()
 			};
 
 			GLfloat uvcoords[8] = {
-				0.0f, 0.0f,
 				Scene_texture_u_scale, 0.0f,
-				Scene_texture_u_scale, Scene_texture_v_scale,
+				0.0f, 0.0f,
 				0.0f, Scene_texture_v_scale,
+				Scene_texture_u_scale, Scene_texture_v_scale
 			};
 
 			GL_state.Array.EnableClientVertex();
