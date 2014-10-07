@@ -3115,7 +3115,23 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_INVALID_SHIP_EFFECT;
 				}
 				break;
-				
+
+			case OPF_GAME_SND:
+				if (type2 == SEXP_ATOM_NUMBER)
+				{
+					if (gamesnd_get_by_tbl_index(atoi(CTEXT(node))) < 0)
+					{
+						return SEXP_CHECK_NUM_RANGE_INVALID;
+					}
+				}
+				else if (type2 == SEXP_ATOM_STRING)
+				{
+					if (stricmp(CTEXT(node), SEXP_NONE_STRING) && gamesnd_get_by_name(CTEXT(node)) < 0)
+					{
+						return SEXP_CHECK_INVALID_GAME_SND;
+					}
+				}
+				break;
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -10085,6 +10101,34 @@ void sexp_start_music(int loop)
 	}
 }
 
+int sexp_get_sound_index(int node)
+{
+	Assert(node >= 0);
+	int sound_index = -1;
+
+	// this node is another SEXP operator or a plain number
+	if (CAR(node) != -1 || Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
+	{
+		sound_index = gamesnd_get_by_tbl_index(eval_num(node));
+	}
+	// it's gotta be a name
+	else
+	{
+		const char *sound_name = CTEXT(node);
+
+		// if it's not <none>, try looking it up
+		if (stricmp(sound_name, SEXP_NONE_STRING))
+		{
+			sound_index = gamesnd_get_by_name(sound_name);
+
+			if (sound_index < 0)
+				Warning(LOCATION, "unrecognized sound name \"%s\"!", sound_name);
+		}
+	}
+
+	return sound_index;
+}
+
 // Goober5000
 void sexp_play_sound_from_table(int n)
 {
@@ -10100,12 +10144,12 @@ void sexp_play_sound_from_table(int n)
 	n = CDR(n);
 	origin.xyz.z = (float)eval_num(n);
 	n = CDR(n);
-	sound_index = eval_num(n);
+	sound_index = sexp_get_sound_index(n);
 
 
 	// play sound effect ---------------------------
 	if (sound_index >= 0) {
-		game_snd *snd = &Snds[gamesnd_get_by_tbl_index(sound_index)];
+		game_snd *snd = &Snds[sound_index];
 		if (snd->min == 0 && snd->max == 0) {
 			// if sound doesn't specify 3d range, don't play in 3d
 			snd_play( snd, 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
@@ -10137,7 +10181,7 @@ void multi_sexp_play_sound_from_table()
 
 	// play sound effect ---------------------------
 	if (sound_index >= 0) {
-		game_snd *snd = &Snds[gamesnd_get_by_tbl_index(sound_index)];
+		game_snd *snd = &Snds[sound_index];
 		if (snd->min == 0 && snd->max == 0) {
 			// if sound doesn't specify 3d range, don't play in 3d
 			snd_play( snd, 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
@@ -10543,7 +10587,8 @@ void sexp_explosion_effect(int n)
 	}
 	n = CDR(n);
 
-	sound_index = eval_num(n);
+	sound_index = sexp_get_sound_index(n);
+
 	n = CDR(n);
 
 	// optional EMP
@@ -10700,9 +10745,9 @@ void sexp_warp_effect(int n)
 	if (duration < 4) duration = 4;
 	n = CDR(n);
 
-	warp_open_sound_index = eval_num(n);
+	warp_open_sound_index = sexp_get_sound_index(n);
 	n = CDR(n);
-	warp_close_sound_index = eval_num(n);
+	warp_close_sound_index = sexp_get_sound_index(n);
 	n = CDR(n);
 
 	// fireball type
@@ -26282,7 +26327,10 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_SOUNDTRACK_NAME;
 
 		case OP_PLAY_SOUND_FROM_TABLE:
-			return OPF_POSITIVE;
+			if (argnum == 3)
+				return OPF_GAME_SND;
+			else
+				return OPF_POSITIVE;
 
 		case OP_PLAY_SOUND_FROM_FILE:
 			if (argnum==0)
@@ -26377,12 +26425,16 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
 				return OPF_NUMBER;
+			else if (argnum == 10)
+				return OPF_GAME_SND;
 			else
 				return OPF_POSITIVE;
 
 		case OP_WARP_EFFECT:
 			if (argnum <= 5)
 				return OPF_NUMBER;
+			else if (argnum == 8 || argnum == 9)
+				return OPF_GAME_SND;
 			else
 				return OPF_POSITIVE;
 
@@ -28058,6 +28110,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_TEAM_COLOR:
 			return "Not a valid Team Color setting";
+
+		case SEXP_CHECK_INVALID_GAME_SND:
+			return "Invalid game sound";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
@@ -30569,7 +30624,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Origin X\r\n"
 		"\t2: Origin Y\r\n"
 		"\t3: Origin Z\r\n"
-		"\t4: Sound (index into sounds.tbl)" },
+		"\t4: Sound (index into sounds.tbl or name of the sound entry)" },
 
 	// Goober5000
 	{ OP_PLAY_SOUND_FROM_FILE, "play-sound-from-file\r\n"
@@ -30633,7 +30688,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
 		"\t10: Type - For backward compatibility 0 = medium, 1 = large1 (4th in table), 2 = large2 (5th in table)\r\n"
 		"           3 or greater link to respctive entry in fireball.tbl\r\n"
-		"\t11: Sound (index into sounds.tbl)\r\n"
+		"\t11: Sound (index into sounds.tbl or name of the sound entry)\r\n"
 		"\t12: EMP intensity (optional)\r\n"
 		"\t13: EMP duration in seconds (optional)" },
 
@@ -30649,8 +30704,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t6:  Location Z\r\n"
 		"\t7:  Radius\r\n"
 		"\t8:  Duration in seconds (values smaller than 4 are ignored)\r\n"
-		"\t9:  Warp opening sound (index into sounds.tbl)\r\n"
-		"\t10: Warp closing sound (index into sounds.tbl)\r\n"
+		"\t9:  Warp opening sound (index into sounds.tbl or name of the sound entry)\r\n"
+		"\t10: Warp closing sound (index into sounds.tbl or name of the sound entry)\r\n"
 		"\t11: Type (0 for standard blue [default], 1 for Knossos green)\r\n"
 		"\t12: Shape (0 for 2-D [default], 1 for 3-D)" },
 
