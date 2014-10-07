@@ -21123,8 +21123,8 @@ void sexp_show_subtitle_text(int node)
 	Subtitles.push_back(new_subtitle);
 
 	multi_start_callback();
-	multi_send_int(x_pos);
-	multi_send_int(y_pos);
+	multi_send_int(x_pct);
+	multi_send_int(y_pct);
 	multi_send_int (message_index);
 	// only send the text if it is not a message. If it is a message, we've already sent the index anyway. 
 	if (message_index == -1) {
@@ -21138,14 +21138,14 @@ void sexp_show_subtitle_text(int node)
 	multi_send_int(fontnum);
 	multi_send_bool(center_x);
 	multi_send_bool(center_y);
-	multi_send_int(width);
+	multi_send_int(width_pct);
 	multi_send_bool(post_shaded);
 	multi_end_callback();
 }
 
 void multi_sexp_show_subtitle_text()
 {
-	int x_pos, y_pos, width=0, fontnum, message_index = -1;
+	int x_pct, y_pct, width_pct, fontnum, message_index = -1;
 	char text[MESSAGE_LENGTH];
 	float display_time, fade_time=0.0f;
 	int red=255, green=255, blue=255;
@@ -21153,8 +21153,8 @@ void multi_sexp_show_subtitle_text()
 	bool post_shaded = false;
 	color new_color;
 
-	multi_get_int(x_pos);
-	multi_get_int(y_pos);
+	multi_get_int(x_pct);
+	multi_get_int(y_pct);
 	multi_get_int(message_index); 
 	if (message_index == -1) {
 		multi_get_string(text);
@@ -21171,10 +21171,15 @@ void multi_sexp_show_subtitle_text()
 	multi_get_int(fontnum);
 	multi_get_bool(center_x);
 	multi_get_bool(center_y);
-	multi_get_int(width);
+	multi_get_int(width_pct);
 	multi_get_bool(post_shaded);
 
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
+
+	// calculate pixel positions
+	int x_pos = (int)(gr_screen.max_w * (x_pct / 100.0f));
+	int y_pos = (int)(gr_screen.max_h * (y_pct / 100.0f));
+	int width = (int)(gr_screen.max_w * (width_pct / 100.0f));
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
