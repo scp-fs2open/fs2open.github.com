@@ -721,7 +721,7 @@ void sexp_tree::right_clicked(int mode)
 						}
 
 						// Goober5000 - certain types accept both integers and a list of strings
-						if (op_type == OPF_GAME_SND)
+						if (op_type == OPF_GAME_SND || op_type == OPF_WEAPON_BANK_NUMBER)
 						{
 							type = SEXPT_NUMBER | SEXPT_STRING;
 						}
@@ -1115,7 +1115,7 @@ void sexp_tree::right_clicked(int mode)
 				replace_type = OPR_FLEXIBLE_ARGUMENT;
 			}
 			// Goober5000
-			else if (type == OPF_GAME_SND) {
+			else if (type == OPF_GAME_SND || type == OPF_WEAPON_BANK_NUMBER) {
 				// enable number even though we are also going to default to string
 				menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
 			}
