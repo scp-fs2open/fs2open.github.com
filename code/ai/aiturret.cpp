@@ -355,6 +355,54 @@ bool turret_weapon_has_flags2(ship_weapon *swp, int flags)
 }
 
 /**
+ * Just gloms all the flags from all the weapons into one variable.  More efficient if all you need to do is test for the existence of a flag.
+ */
+int turret_weapon_aggregate_flags(ship_weapon *swp)
+{
+	Assert(swp != NULL);
+
+	int i = 0, flags = 0;
+	for (i = 0; i < swp->num_primary_banks; i++)
+	{
+		if (swp->primary_bank_weapons[i] >= 0) {
+			flags |= Weapon_info[swp->primary_bank_weapons[i]].wi_flags;
+		}
+	}
+	for (i = 0; i < swp->num_secondary_banks; i++)
+	{
+		if (swp->secondary_bank_weapons[i] >= 0) {
+			flags |= Weapon_info[swp->secondary_bank_weapons[i]].wi_flags;
+		}
+	}
+
+	return flags;
+}
+
+/**
+ * Just gloms all the flags from all the weapons into one variable.  More efficient if all you need to do is test for the existence of a flag.
+ */
+int turret_weapon_aggregate_flags2(ship_weapon *swp)
+{
+	Assert(swp != NULL);
+
+	int i = 0, flags2 = 0;
+	for (i = 0; i < swp->num_primary_banks; i++)
+	{
+		if (swp->primary_bank_weapons[i] >= 0) {
+			flags2 |= Weapon_info[swp->primary_bank_weapons[i]].wi_flags2;
+		}
+	}
+	for (i = 0; i < swp->num_secondary_banks; i++)
+	{
+		if (swp->secondary_bank_weapons[i] >= 0) {
+			flags2 |= Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2;
+		}
+	}
+
+	return flags2;
+}
+
+/**
  * Returns true if any of the weapons in swp have the subtype specified
  *
  * @note It might be a little faster to optimize based on WP_LASER should only appear in primaries
