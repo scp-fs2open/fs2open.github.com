@@ -14371,7 +14371,7 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean"
 		s++;
 	if (*s != '(')
 	{
-		static boolean Warned_about_runSEXP_parentheses = false;
+		static bool Warned_about_runSEXP_parentheses = false;
 		if (!Warned_about_runSEXP_parentheses)
 		{
 			Warned_about_runSEXP_parentheses = true;
