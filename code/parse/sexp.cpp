@@ -24977,18 +24977,6 @@ DCF(sexp,"Runs the given sexp")
 	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp.c_str(), sexp_val);
 }
 
-
-void test_sexps()
-{
-	Mp = Mission_text;
-	while (*Mp != '#') {
-		get_sexp_main();
-		diag_printf("\n----------------\n");
-		ignore_white_space();
-	}
-	exit(0);
-}
-
 // returns the data type returned by an operator
 int query_operator_return_type(int op)
 {
