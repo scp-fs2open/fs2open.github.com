@@ -24922,7 +24922,7 @@ int get_sexp_main()
 	{
 		char buf[512];
 		strncpy(buf, Mp, 512);
-		if (buf[506] != '\0')
+		if (buf[511] != '\0')
 			strcpy(&buf[506], "[...]");
 
 		Error(LOCATION, "Expected to find an open parenthesis in the following sexp:\n%s", buf);
