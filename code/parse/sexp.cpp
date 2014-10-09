@@ -3243,6 +3243,8 @@ void preload_turret_change_weapon(char *text)
 
 /**
  * Returns the first sexp index of data this function allocates. (start of this sexp)
+ *
+ * NOTE: On entry into this function, Mp points to the first character past the opening parenthesis.
  */
 int get_sexp()
 {
@@ -3250,7 +3252,9 @@ int get_sexp()
 	char token[TOKEN_LENGTH];
 	char variable_text[TOKEN_LENGTH];
 
-	// start - the node allocated in first instance of fuction
+	Assert(*(Mp-1) == '(');
+
+	// start - the node allocated in first instance of function
 	// node - the node allocated in current instance of function
 	// count - number of nodes allocated this instance of function [do we set last.rest or .first]
 	// variable - whether string or number is a variable referencing Sexp_variables
@@ -3261,7 +3265,11 @@ int get_sexp()
 
 	ignore_white_space();
 	while (*Mp != ')') {
-		Assert(*Mp != EOF_CHAR);
+		// end of string or end of file
+		if (*Mp == '\0' || *Mp == EOF_CHAR) {
+			Error(LOCATION, "Unexpected end of sexp!");
+			return -1;
+		}
 
 		// Sexp list
 		if (*Mp == '(') {
@@ -3272,7 +3280,11 @@ int get_sexp()
 		// Sexp string
 		else if (*Mp == '\"') {
 			int len = strcspn(Mp + 1, "\"");
-			Assert(Mp[len + 1] == '\"');    // hit EOF first (unterminated string)
+			// was closing quote not found?
+			if (*(Mp + 1 + len) != '\"') {
+				Error(LOCATION, "Unexpected end of quoted string embedded in sexp!");
+				return -1;
+			}
 
 			// check if string variable
 			if ( *(Mp + 1) == SEXP_VARIABLE_CHAR ) {
@@ -3285,7 +3297,7 @@ int get_sexp()
 					return -1;
 				}
 
-				// start copying after skipping 1st char
+				// start copying after skipping 1st char (i.e. variable char)
 				strncpy(variable_token, Mp + 2, length);
 				variable_token[length] = 0;
 
@@ -3304,7 +3316,7 @@ int get_sexp()
 			}
 
 			// bump past closing \" by 1 char
-			Mp += len + 2;
+			Mp += (len + 2);
 
 		}
 
@@ -3313,13 +3325,27 @@ int get_sexp()
 			int len = 0;
 			bool variable = false;
 			while (*Mp != ')' && !is_white_space(*Mp)) {
+				// numeric variable?
 				if ( (len == 0) && (*Mp == SEXP_VARIABLE_CHAR) ) {
 					variable = true;
 					Mp++;
 					continue;
 				}
-				Assert(*Mp != EOF_CHAR);
-				Assert(len < TOKEN_LENGTH - 1);
+
+				// end of string or end of file?
+				if (*Mp == '\0' || *Mp == EOF_CHAR) {
+					Error(LOCATION, "Unexpected end of sexp!");
+					return -1;
+				}
+
+				// token is too long?
+				if (len >= TOKEN_LENGTH - 1) {
+					token[TOKEN_LENGTH - 1] = '\0';
+					Error(LOCATION, "Token %s is too long. Needs to be %d characters or shorter.", token, TOKEN_LENGTH - 1);
+					return -1;
+				}
+
+				// build the token
 				token[len++] = *Mp++;
 			}
 			token[len] = 0;
@@ -3347,7 +3373,7 @@ int get_sexp()
 				strcpy_s(token, "set-variable-by-index");
 
 			op = get_operator_index(token);
-			if (op != -1) {
+			if (op >= 0) {
 				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
 			} else {
 				if ( variable ) {
@@ -24881,7 +24907,6 @@ void multi_sexp_eval()
 	}
 }
 
-//	Still a debug-level system.
 //	get_sexp_main reads and builds the internal representation for a
 //	symbolic expression.
 //	On entry:
@@ -24890,29 +24915,33 @@ void multi_sexp_eval()
 int get_sexp_main()
 {
 	int	start_node, op;
-	char  *savep, ch;
 
 	ignore_white_space();
 
-	savep = Mp;
-	if (!strncmp(Mp, "( )", 3))
-		savep++;
+	if (*Mp != '(')
+	{
+		char buf[512];
+		memset(buf, 0, 512*sizeof(char));
+		strncpy(buf, Mp, 506);
+		strcat(buf, "[...]");
 
-	Assert(*Mp == '(');
+		Error(LOCATION, "Expected to find an open parenthesis in the following sexp:\n%s", buf);
+		return -1;
+	}
+
 	Mp++;
 	start_node = get_sexp();
+
 	// only need to check syntax if we have a operator
-	if (Fred_running || (start_node == -1))
-		return start_node;
-
-	ch = *Mp;
-	*Mp = '\0';
-
-	op = get_operator_index(CTEXT(start_node));
-	if (op == -1)
-		Error (LOCATION, "Can't find operator %s in operator list\n.", CTEXT(start_node) );
-
-	*Mp = ch;
+	if (!Fred_running && (start_node >= 0))
+	{
+		op = get_operator_index(CTEXT(start_node));
+		if (op < 0)
+		{
+			Error(LOCATION, "Can't find operator %s in operator list!\n", CTEXT(start_node));
+			return -1;
+		}
+	}
 
 	return start_node;
 }
