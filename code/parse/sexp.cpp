@@ -24921,9 +24921,9 @@ int get_sexp_main()
 	if (*Mp != '(')
 	{
 		char buf[512];
-		memset(buf, 0, 512*sizeof(char));
-		strncpy(buf, Mp, 506);
-		strcat(buf, "[...]");
+		strncpy(buf, Mp, 512);
+		if (buf[506] != '\0')
+			strcpy(&buf[506], "[...]");
 
 		Error(LOCATION, "Expected to find an open parenthesis in the following sexp:\n%s", buf);
 		return -1;
