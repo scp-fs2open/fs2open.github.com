@@ -861,7 +861,7 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 			dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 			dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
 			
-			if ((dot < 0.7f) || (dist > 3000.0f)) {
+			if ( (dot < 0.7f) || (dist > asfieldp->bound_rad) ) {
 				if (Num_asteroids > MAX_ASTEROIDS-10) {
 					objp->flags |= OF_SHOULD_BE_DEAD;
 				} else {
@@ -872,7 +872,7 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 					dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
 					
-					if (( dot > 0.7f) && (dist < 3000.0f)) {
+					if ( (dot > 0.7f) && (dist < (asfieldp->bound_rad * 1.3f)) ) {
 						// player would see asteroid pop out other side, so reverse velocity instead of wrapping						
 						objp->pos = old_asteroid_pos;		
 						vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
