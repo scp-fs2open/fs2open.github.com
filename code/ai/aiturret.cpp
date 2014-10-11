@@ -1874,8 +1874,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 		// now do anything else
 		else {
-			for (int i=0; i < wip->shots; i++)
-			{
+			for (int i = 0; i < wip->shots; i++) {
 				// zookeeper - Firepoints should cycle normally between shots, 
 				// so we need to get the position info separately for each shot
 				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, turret_pos, turret_fvec, 1, NULL);
@@ -1885,9 +1884,9 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
 				if (weapon_objnum != -1) {
-					objp=&Objects[weapon_objnum];
-					wp=&Weapons[objp->instance];
-					wip=&Weapon_info[wp->weapon_info_index];
+					objp = &Objects[weapon_objnum];
+					wp = &Weapons[objp->instance];
+					wip = &Weapon_info[wp->weapon_info_index];
 
 					parent_ship->last_fired_turret = turret;
 					turret->last_fired_weapon_info_index = wp->weapon_info_index;
@@ -1900,7 +1899,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[parent_objnum]);
 
 					// if the gun is a flak gun
-					if(wip->wi_flags & WIF_FLAK){			
+					if (wip->wi_flags & WIF_FLAK) {			
 						// show a muzzle flash
 						flak_muzzle_flash(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
 
@@ -1916,8 +1915,10 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						{
 							flak_set_range(objp, flak_range_override);
 						}
-					} else if(wip->muzzle_flash > -1) {	
-						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);		
+					}
+					// otherwise just do mflash if the weapon has it
+					else if (wip->muzzle_flash >= 0) {
+						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
 					}
 
 					// in multiplayer (and the master), then send a turret fired packet.
@@ -2102,7 +2103,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			// (NOTE: this will probably get changed by other parts of the code (swarming, beams, etc) to be
 			// a more accurate time, but we need to give it a long enough time for the other parts of the code
 			// to change the timestamp before it gets acted upon - taylor)
-			ss->turret_animation_done_time = timestamp(1000);
+			ss->turret_animation_done_time = timestamp(200);
 		} else {
 			return;
 		}
