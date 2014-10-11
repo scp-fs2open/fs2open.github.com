@@ -2008,6 +2008,11 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		Weapons[Objects[weapon_objnum].instance].turret_subsys = tsi->turret;
 		Weapons[Objects[weapon_objnum].instance].target_num = tsi->turret->turret_enemy_objnum;
 
+		// muzzle flash?
+		if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
+			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
+		}
+
 		// maybe sound
 		if ( Weapon_info[tsi->weapon_class].launch_snd != -1 ) {
 			// Don't play turret firing sound if turret sits on player ship... it gets annoying.
@@ -2015,8 +2020,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 				snd_play_3d( &Snds[Weapon_info[tsi->weapon_class].launch_snd], &turret_pos, &View_position );
 			}
 		}
-		if(Weapon_info[tsi->weapon_class].muzzle_flash > -1)
-			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
+
 		// in multiplayer (and the master), then send a turret fired packet.
 		if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
 			int subsys_index;
