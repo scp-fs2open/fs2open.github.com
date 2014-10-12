@@ -195,8 +195,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 		float	max_speed;
 
 		max_speed = vm_vec_mag_quick(&pi->max_vel);
-		tangles.p += (float) (rand()-RAND_MAX_2)/RAND_MAX * pi->speed/max_speed/64.0f;
-		tangles.h += (float) (rand()-RAND_MAX_2)/RAND_MAX * pi->speed/max_speed/64.0f;
+		tangles.p += (float) (rand()-RAND_MAX_2) * RAND_MAX_1f * pi->speed/max_speed/64.0f;
+		tangles.h += (float) (rand()-RAND_MAX_2) * RAND_MAX_1f * pi->speed/max_speed/64.0f;
 		if ( pi->flags & PF_AFTERBURNER_ON ) {
 			pi->afterburner_decay = timestamp(ABURN_DECAY_TIME);
 		}
