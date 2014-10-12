@@ -327,7 +327,7 @@ int multi_lag_get_random_lag()
 int multi_lag_should_be_lost()
 {	
 	// first determine the percentage we'll be checking against
-	float mod;	
+	float mod;
 
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
@@ -340,16 +340,16 @@ int multi_lag_should_be_lost()
 	if (rand_val < 0.5) {
 		// down
 		if (Multi_loss_min >= 0.0f) {
-			mod = -fl2i((Multi_loss_base - Multi_loss_min) * rand_val);
+			mod = -((Multi_loss_base - Multi_loss_min) * rand_val);
 		}
 	} else {
 		// up
 		if (Multi_loss_max >= 0.0f) {
-			mod = fl2i((Multi_loss_max - Multi_loss_base) * rand_val);
+			mod = ((Multi_loss_max - Multi_loss_base) * rand_val);
 		}
 	}	
 	
-	if ( rand_val <= i2fl(Multi_loss_base + mod) ) {
+	if ( rand_val <= (Multi_loss_base + mod) ) {
 		return 1;
 	}	
 
