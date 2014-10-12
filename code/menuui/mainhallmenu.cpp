@@ -1548,7 +1548,7 @@ void main_hall_handle_random_intercom_sounds()
 
 	// if we have no timestamp for the next random sound, then set on
 	if ( (Main_hall_next_intercom_sound_stamp == -1) && (Main_hall_intercom_sound_handle == -1) ) {
-		Main_hall_next_intercom_sound_stamp = timestamp((int)(((float)rand()/(float)RAND_MAX) * 
+		Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
 			(float)(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1) 
 				- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );
 	}
@@ -1587,7 +1587,7 @@ void main_hall_handle_random_intercom_sounds()
 			}
 
 			// set the timestamp
-			Main_hall_next_intercom_sound_stamp = timestamp((int)(((float)rand()/(float)RAND_MAX) * 
+			Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
 				(float)(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1) 
 					- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );
 

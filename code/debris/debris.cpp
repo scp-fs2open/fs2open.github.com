@@ -526,11 +526,11 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		// Create Debris piece n!
 		if ( hull_flag ) {
 			if (rand() < RAND_MAX/6)	// Make some pieces blow up shortly after explosion.
-				db->lifeleft = 2.0f * ((float) myrand()/(float) RAND_MAX) + 0.5f;
+				db->lifeleft = 2.0f * (myrand() * RAND_MAX_1f) + 0.5f;
 			else
 				db->lifeleft = -1.0f;		// large hull pieces stay around forever
 		} else {
-			db->lifeleft = (i2fl(myrand())/i2fl(RAND_MAX))*2.0f+0.1f;
+			db->lifeleft = (myrand() * RAND_MAX_1f) * 2.0f + 0.1f;
 		}
 	}
 
