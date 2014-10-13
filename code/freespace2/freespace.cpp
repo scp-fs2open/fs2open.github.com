@@ -8078,6 +8078,13 @@ void get_version_string(char *str, int max_size)
 
 	if (Cmdline_nohtl)
 		strcat_s( str, max_size, " non-HT&L" );
+
+	// if a custom identifier exists, put it at the very end
+	#ifdef FS_VERSION_IDENT
+		strcat_s( str, max_size, " (" );
+		strcat_s( str, max_size, FS_VERSION_IDENT );
+		strcat_s( str, max_size, ")" );
+	#endif
 }
 
 void get_version_string_short(char *str)
