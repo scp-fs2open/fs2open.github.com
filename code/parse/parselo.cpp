@@ -926,6 +926,7 @@ char* alloc_text_until(char* instr, char* endstr)
 {
 	Assert(instr && endstr);
 	char *foundstr = stristr(instr, endstr);
+
 	if(foundstr == NULL)
 	{
 		Error(LOCATION, "Missing [%s] in file");
@@ -933,8 +934,13 @@ char* alloc_text_until(char* instr, char* endstr)
 	}
 	else
 	{
+		if ( (foundstr - instr) <= 0 ) {
+			Int3();  // since this really shouldn't ever happen
+			return NULL;
+		}
+
 		char* rstr = NULL;
-		rstr = (char*) vm_malloc((foundstr - instr)*sizeof(char));
+		rstr = (char*) vm_malloc((foundstr - instr + 1)*sizeof(char));
 
 		if(rstr != NULL) {
 			strncpy(rstr, instr, foundstr-instr);
@@ -1089,6 +1095,11 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 	{
 		//Set final length for faster calcs
 		flen = pos-Mp;
+
+		// if we don't have anything to read then bail
+		if (flen <= 0) {
+			return NULL;
+		}
 
 		//Allocate the memory
 		//WMC - Don't forget the null character that's added later on.
@@ -2325,8 +2336,9 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 				*mp++ = 's';
 				str++;
 
-			} else
+			} else {
 				*mp++ = *str++;
+			}
 		}
 
 //		strcpy_s(mp, outbuf);
