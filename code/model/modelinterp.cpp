@@ -1957,27 +1957,28 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 
 	polymodel *pm = model_get(model_num);
 
-
 	model_do_dumb_rotation(model_num);
 
 	if (flags & MR_FORCE_CLAMP)
 		gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
 
 	int time = timestamp();
+
 	for (int i = 0; i < pm->n_glow_point_banks; i++ ) { //glow point blink code -Bobboau
 		glow_point_bank *bank = &pm->glow_point_banks[i];
+
 		if (bank->glow_timestamp == 0)
-			bank->glow_timestamp=time;
-		if(bank->off_time){
-			if(bank->is_on){
-				if( (bank->on_time) > ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ){
-					bank->glow_timestamp=time;
-					bank->is_on=0;
+			bank->glow_timestamp = time;
+		if (bank->off_time) {
+			if (bank->is_on) {
+				if ( (bank->on_time) > ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ) {
+					bank->glow_timestamp = time;
+					bank->is_on = false;
 				}
-			}else{
-				if( (bank->off_time) < ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ){
-					bank->glow_timestamp=time;
-					bank->is_on=1;
+			} else {
+				if ( (bank->off_time) < ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ) {
+					bank->glow_timestamp = time;
+					bank->is_on = true;
 				}
 			}
 		}
