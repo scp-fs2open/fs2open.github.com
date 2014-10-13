@@ -290,7 +290,7 @@ void _cdecl gr_printf( int x, int y, const char * format, ... )
 	if ( !Current_font ) return;
 	
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text)-1, format, args);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
 	va_end(args);
 
 	gr_string(x,y,grx_printf_text);
@@ -303,7 +303,7 @@ void _cdecl gr_printf_menu( int x, int y, const char * format, ... )
 	if ( !Current_font ) return;
 	
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text)-1, format, args);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
 	va_end(args);
 
 	gr_string(x,y,grx_printf_text,GR_RESIZE_MENU);
@@ -316,7 +316,7 @@ void _cdecl gr_printf_menu_zoomed( int x, int y, const char * format, ... )
 	if ( !Current_font ) return;
 
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text)-1, format, args);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
 	va_end(args);
 
 	gr_string(x,y,grx_printf_text,GR_RESIZE_MENU_ZOOMED);
@@ -329,7 +329,7 @@ void _cdecl gr_printf_no_resize( int x, int y, const char * format, ... )
 	if ( !Current_font ) return;
 	
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text)-1, format, args);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
 	va_end(args);
 
 	gr_string(x,y,grx_printf_text,GR_RESIZE_NONE);

@@ -482,7 +482,7 @@ void HUD_fixed_printf(float duration, color col, const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsnprintf(tmp, sizeof(tmp), format, args);
 	va_end(args);
 
 	msg_length = strlen(tmp);
@@ -529,7 +529,6 @@ void HUD_printf(const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
-	int len;
 
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
@@ -538,11 +537,10 @@ void HUD_printf(const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsnprintf(tmp, sizeof(tmp), format, args);
 	va_end(args);
 
-	len = strlen(tmp);
-	Assert(len < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
+	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(HUD_SOURCE_COMPUTER, tmp);
 }
 
@@ -550,18 +548,16 @@ void HUD_ship_sent_printf(int sh, const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
-	int len;
 
 	sprintf(tmp, NOX("%s: "), Ships[sh].ship_name);
 	len = strlen(tmp);
 	Assert(len < HUD_MSG_LENGTH_MAX);
 
 	va_start(args, format);
-	vsnprintf(tmp + len, sizeof(tmp)-1-len, format, args);
+	vsnprintf(tmp + len, sizeof(tmp) - len, format, args);
 	va_end(args);
 
-	len = strlen(tmp);
-	Assert(len < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
+	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(HUD_team_get_source(Ships[sh].team), tmp);
 }
 
@@ -584,8 +580,9 @@ void HUD_sourced_printf(int source, const char *format, ...)
 	}
 	
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsnprintf(tmp, sizeof(tmp), format, args);
 	va_end(args);
+
 	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(source, tmp);
 }

@@ -115,9 +115,9 @@ void ml_printf(const char *format, ...)
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp), format, args);
 	va_end(args);
-	
+
 	// log the string including the time
 	log_string(LOGFILE_MULTI_LOG, tmp, 1);
 }
