@@ -4840,8 +4840,7 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 
 		// get animation frame
 		frame = fl2i((cur_time * num_frames) / total_time);
-		if (frame < 0) frame = 0;
-		if (frame >= num_frames) frame = num_frames - 1;
+		CLAMP(frame, 0, num_frames - 1);
 
 		// advance to the correct frame
 		texture += frame;
