@@ -548,8 +548,9 @@ void HUD_ship_sent_printf(int sh, const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
+	int len;
 
-	sprintf(tmp, NOX("%s: "), Ships[sh].ship_name);
+	snprintf(tmp, sizeof(tmp), NOX("%s: "), Ships[sh].ship_name);
 	len = strlen(tmp);
 	Assert(len < HUD_MSG_LENGTH_MAX);
 
