@@ -231,14 +231,14 @@ void skip_token()
 void diag_printf(char *format, ...)
 {
 #ifndef NDEBUG
-	char	buffer[8192];
+	SCP_string buffer;
 	va_list args;
 
 	va_start(args, format);
 	vsprintf(buffer, format, args);
 	va_end(args);
 
-	nprintf(("Parse", "%s", buffer));
+	nprintf(("Parse", "%s", buffer.c_str()));
 #endif
 }
 
