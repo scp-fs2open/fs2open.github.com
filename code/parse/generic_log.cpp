@@ -14,6 +14,7 @@
 #include "globalincs/globals.h"
 #include "parse/generic_log.h"
 #include "cfile/cfile.h"
+#include "parse/parselo.h"
 
 
 
@@ -81,21 +82,25 @@ void logfile_close(int logfile_type)
 // printf function itself called by the ml_printf macro
 void log_printf(int logfile_type, char *format, ...)
 {
-	char tmp[MAX_LOGFILE_LINE_LEN*4];
+	SCP_string temp;
 	va_list args;
 
+	if (format == NULL) {
+		return;
+	}
+
 	// if we don't have a valid logfile do nothing
-	if(logfiles[logfile_type].log_file == NULL){
+	if (logfiles[logfile_type].log_file == NULL) {
 		return;
 	}
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsprintf(temp, format, args);
 	va_end(args);
 	
 	// log the string
-	log_string(logfile_type, tmp);
+	log_string(logfile_type, temp.c_str());
 }
 
 // string print function
