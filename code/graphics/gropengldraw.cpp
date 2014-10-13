@@ -306,8 +306,6 @@ void gr_opengl_aabitmap(int x, int y, int resize_mode, bool mirror)
 	opengl_aabitmap_ex_internal(dx1, dy1, (dx2 - dx1 + 1), (dy2 - dy1 + 1), sx, sy, resize_mode, mirror);
 }
 
-struct v4 { GLfloat x,y,u,v; };
-
 void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 {
 	int width, spacing, letter;
@@ -315,8 +313,12 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 	bool do_resize;
 	float bw, bh;
 	float u0, u1, v0, v1;
+	int u, v;
 	int x1, x2, y1, y2;
 	float u_scale, v_scale;
+	int xd, yd, xc, yc;
+	int wc, hc;
+	int ibw, ibh;
 
 	if ( !Current_font || (*s == 0) ) {
 		return;
@@ -334,12 +336,6 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 		return;
 	}
 
-	// conversion from quads to triangles requires six vertices per quad
-	struct v4 *glVert = (struct v4*) vm_malloc(sizeof(struct v4) * strlen(s) * 6);
-	int curChar = 0;
-
-	int ibw, ibh;
-
 	bm_get_info(gr_screen.current_bitmap, &ibw, &ibh);
 
 	bw = i2fl(ibw);
@@ -353,7 +349,7 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 	}
 
 //	if ( (gr_screen.custom_size && resize) || (gr_screen.rendering_to_texture != -1) ) {
-	if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+	if ( (resize_mode != GR_RESIZE_NONE) && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
 		do_resize = true;
 	} else {
 		do_resize = false;
@@ -378,6 +374,9 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
 
+	// start rendering...
+	glBegin(GL_QUADS);
+
 	// pick out letter coords, draw it, goto next letter and do the same
 	while (*s)	{
 		x += spacing;
@@ -401,13 +400,10 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 		letter = get_char_width(s[0], s[1], &width, &spacing);
 		s++;
 
-		//not in font, draw as space
+		// not in font, draw as space
 		if (letter < 0) {
 			continue;
 		}
-
-		int xd, yd, xc, yc;
-		int wc, hc;
 
 		// Check if this character is totally clipped
 		if ( (x + width) < clip_left ) {
@@ -454,8 +450,8 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 			continue;
 		}
 
-		int u = Current_font->bm_u[letter];
-		int v = Current_font->bm_v[letter];
+		u = Current_font->bm_u[letter];
+		v = Current_font->bm_v[letter];
 
 		x1 = xc + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
 		y1 = yc + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
@@ -467,55 +463,212 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 			gr_resize_screen_pos( &x2, &y2, NULL, NULL, resize_mode );
 		}
 
-		u0 = u_scale * (i2fl(u+xd) / bw);
-		v0 = v_scale * (i2fl(v+yd) / bh);
+		u0 = u_scale * (i2fl(u + xd) / bw);
+		v0 = v_scale * (i2fl(v + yd) / bh);
 
-		u1 = u_scale * (i2fl((u+xd)+wc) / bw);
-		v1 = v_scale * (i2fl((v+yd)+hc) / bh);
+		u1 = u_scale * (i2fl((u + xd) + wc) / bw);
+		v1 = v_scale * (i2fl((v + yd) + hc) / bh);
 
-		glVert[curChar*6 + 0].x = (GLfloat)x1;
-		glVert[curChar*6 + 0].y = (GLfloat)y2;
-		glVert[curChar*6 + 0].u = u0;
-		glVert[curChar*6 + 0].v = v1;
+		glTexCoord2f(u0, v1);
+		glVertex2i(x1, y2);
 
-		glVert[curChar*6 + 1].x = (GLfloat)x2;
-		glVert[curChar*6 + 1].y = (GLfloat)y2;
-		glVert[curChar*6 + 1].u = u1;
-		glVert[curChar*6 + 1].v = v1;
+		glTexCoord2f(u1, v1);
+		glVertex2i(x2, y2);
 
-		glVert[curChar*6 + 2].x = (GLfloat)x1;
-		glVert[curChar*6 + 2].y = (GLfloat)y1;
-		glVert[curChar*6 + 2].u = u0;
-		glVert[curChar*6 + 2].v = v0;
+		glTexCoord2f(u1, v0);
+		glVertex2i(x2, y1);
 
-		glVert[curChar*6 + 3] = glVert[curChar*6 + 1];
-		glVert[curChar*6 + 4] = glVert[curChar*6 + 2];
-
-		glVert[curChar*6 + 5].x = (GLfloat)x2;
-		glVert[curChar*6 + 5].y = (GLfloat)y1;
-		glVert[curChar*6 + 5].u = u1;
-		glVert[curChar*6 + 5].v = v0;
-
-		curChar++;
+		glTexCoord2f(u0, v0);
+		glVertex2i(x1, y1);
 	}
 
-	GL_state.Array.BindArrayBuffer(0);
-
-	GL_state.Array.EnableClientVertex();
-	GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(struct v4), &glVert[0].x);
-
-	GL_state.Array.SetActiveClientUnit(0);
-	GL_state.Array.EnableClientTexture();
-	GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(struct v4), &glVert[0].u);
-
-	glDrawArrays(GL_TRIANGLES, 0, curChar * 6);
-
-	GL_state.Array.DisableClientVertex();
-	GL_state.Array.DisableClientTexture();
+	// done!
+	glEnd();
 
 	GL_state.CullFace(cull_face);
 
-	vm_free(glVert);
+	GL_CHECK_FOR_ERRORS("end of string()");
+}
+
+void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
+{
+	int width, spacing, letter;
+	float x, y;
+	bool do_resize;
+	float bw, bh;
+	float u0, u1, v0, v1, u, v;
+	float x1, x2, y1, y2;
+	float u_scale, v_scale;
+	float xd, yd, xc, yc;
+	float wc, hc;
+	int ibw, ibh;
+
+	if ( !Current_font || (*s == 0) ) {
+		return;
+	}
+
+	GL_CHECK_FOR_ERRORS("start of string()");
+
+	gr_set_bitmap(Current_font->bitmap_id);
+
+	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+
+	if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale) ) {
+		return;
+	}
+
+	bm_get_info(gr_screen.current_bitmap, &ibw, &ibh);
+
+	bw = i2fl(ibw);
+	bh = i2fl(ibh);
+
+	// set color!
+	if (gr_screen.current_color.is_alphacolor) {
+		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	} else {
+		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+	}
+
+//	if ( resize && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+	if ( (resize_mode != GR_RESIZE_NONE) && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+		do_resize = true;
+	} else {
+		do_resize = false;
+	}
+
+	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
+
+	x = sx;
+	y = sy;
+
+	if (sx == (float)0x8000) {
+		// centered
+		x = (float)get_centered_x(s, !do_resize);
+	} else {
+		x = sx;
+	}
+
+	spacing = 0;
+
+	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
+
+	// start rendering...
+	glBegin(GL_QUADS);
+
+	// pick out letter coords, draw it, goto next letter and do the same
+	while (*s)	{
+		x += spacing;
+
+		while (*s == '\n')	{
+			s++;
+			y += Current_font->h;
+
+			if (sx == (float)0x8000) {
+				// centered
+				x = (float)get_centered_x(s, !do_resize);
+			} else {
+				x = sx;
+			}
+		}
+
+		if (*s == 0) {
+			break;
+		}
+
+		letter = get_char_width(s[0], s[1], &width, &spacing);
+		s++;
+
+		// not in font, draw as space
+		if (letter < 0) {
+			continue;
+		}
+
+		// Check if this character is totally clipped
+		if ( (x + width) < clip_left ) {
+			continue;
+		}
+
+		if ( (y + Current_font->h) < clip_top ) {
+			continue;
+		}
+
+		if (x > clip_right) {
+			continue;
+		}
+
+		if (y > clip_bottom) {
+			continue;
+		}
+
+		xd = yd = 0;
+
+		if (x < clip_left) {
+			xd = clip_left - x;
+		}
+
+		if (y < clip_top) {
+			yd = clip_top - y;
+		}
+
+		xc = x + xd;
+		yc = y + yd;
+
+		wc = width - xd;
+		hc = Current_font->h - yd;
+
+		if ( (xc + wc) > clip_right ) {
+			wc = clip_right - xc;
+		}
+
+		if ( (yc + hc) > clip_bottom ) {
+			hc = clip_bottom - yc;
+		}
+
+		if ( (wc < 1) || (hc < 1) ) {
+			continue;
+		}
+
+		u = (float)Current_font->bm_u[letter];
+		v = (float)Current_font->bm_v[letter];
+
+		x1 = xc + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
+		y1 = yc + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
+		x2 = x1 + wc;
+		y2 = y1 + hc;
+
+		if (do_resize) {
+			gr_resize_screen_posf( &x1, &y1, NULL, NULL, resize_mode );
+			gr_resize_screen_posf( &x2, &y2, NULL, NULL, resize_mode );
+		}
+
+		u0 = u_scale * ((u + xd) / bw);
+		v0 = v_scale * ((v + yd) / bh);
+
+		u1 = u_scale * (((u + xd) + wc) / bw);
+		v1 = v_scale * (((v + yd) + hc) / bh);
+
+		glTexCoord2f(u0, v1);
+		glVertex2f(x1, y2);
+
+		glTexCoord2f(u1, v1);
+		glVertex2f(x2, y2);
+
+		glTexCoord2f(u1, v0);
+		glVertex2f(x2, y1);
+
+		glTexCoord2f(u0, v0);
+		glVertex2f(x1, y1);
+	}
+
+	// done!
+	glEnd();
+
+	GL_state.CullFace(cull_face);
 
 	GL_CHECK_FOR_ERRORS("end of string()");
 }
