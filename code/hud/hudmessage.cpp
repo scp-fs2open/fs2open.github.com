@@ -482,8 +482,9 @@ void HUD_fixed_printf(float duration, color col, const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp), format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	msg_length = strlen(tmp);
 	Assert(msg_length < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
@@ -493,16 +494,17 @@ void HUD_fixed_printf(float duration, color col, const char *format, ...)
 		return;
 
 	} else if (msg_length > MAX_HUD_LINE_LEN - 1){
-		nprintf(("Warning", "HUD_fixed_printf ==> Following string truncated to %d chars: %s\n",MAX_HUD_LINE_LEN,tmp));
+		nprintf(("Warning", "HUD_fixed_printf ==> Following string truncated to %d chars: %s\n", MAX_HUD_LINE_LEN - 1, tmp));
+		tmp[MAX_HUD_LINE_LEN-1] = '\0';
 	}
+
+	strcpy_s(HUD_fixed_text[0].text, tmp);
 
 	if (duration == 0.0f){
 		HUD_fixed_text[0].end_time = timestamp(-1);
 	} else {
 		HUD_fixed_text[0].end_time = timestamp((int) (1000.0f * duration));
 	}
-
-	strncpy(HUD_fixed_text[0].text, tmp, MAX_HUD_LINE_LEN - 1);
 	HUD_fixed_text[0].color = col.red << 16 | col.green << 8 | col.blue; 
 }
 
@@ -537,8 +539,9 @@ void HUD_printf(const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp), format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(HUD_SOURCE_COMPUTER, tmp);
@@ -550,15 +553,18 @@ void HUD_ship_sent_printf(int sh, const char *format, ...)
 	char tmp[HUD_MSG_LENGTH_MAX];
 	int len;
 
-	snprintf(tmp, sizeof(tmp), NOX("%s: "), Ships[sh].ship_name);
+	snprintf(tmp, sizeof(tmp)-1, NOX("%s: "), Ships[sh].ship_name);
+	tmp[sizeof(tmp)-1] = '\0';
+
 	len = strlen(tmp);
 	Assert(len < HUD_MSG_LENGTH_MAX);
 
 	va_start(args, format);
-	vsnprintf(tmp + len, sizeof(tmp) - len, format, args);
+	vsnprintf(tmp + len, sizeof(tmp)-1-len, format, args);
 	va_end(args);
 
-	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
+	len = strlen(tmp);
+	Assert(len < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(HUD_team_get_source(Ships[sh].team), tmp);
 }
 
@@ -581,8 +587,9 @@ void HUD_sourced_printf(int source, const char *format, ...)
 	}
 	
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp), format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(source, tmp);

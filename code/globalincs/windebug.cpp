@@ -1286,8 +1286,11 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 
 	// output to the debug log before anything else (so that we have a complete record)
 
+	memset( AssertText1, 0, sizeof(AssertText1) );
+	memset( AssertText2, 0, sizeof(AssertText2) );
+
 	va_start(args, format);
-	vsnprintf(AssertText1, sizeof(AssertText1), format, args);
+	vsnprintf(AssertText1, sizeof(AssertText1) - 1, format, args);
 	va_end(args);
 
 	slen = strlen(AssertText1);

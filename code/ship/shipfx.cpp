@@ -3238,6 +3238,8 @@ void parse_combined_variable_list(CombinedVariable *dest, flag_def_list *src, si
 		return;
 
 	char buf[NAME_LENGTH*2];
+	buf[sizeof(buf)-1] = '\0';
+
 	flag_def_list *sp = NULL;
 	CombinedVariable *dp = NULL;
 	for(size_t i = 0; i < num; i++)
