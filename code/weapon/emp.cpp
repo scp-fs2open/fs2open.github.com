@@ -491,13 +491,14 @@ void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode
 // emp hud printf
 void emp_hud_printf(int x, int y, int gauge_id, const char *format, ...)
 {
-	char tmp[256] = "";
+	char tmp[256];
 	va_list args;	
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 	
 	// if the emp effect is not active, don't even bother messing with the text
 	if(emp_active_local()){

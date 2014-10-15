@@ -770,12 +770,13 @@ void HudGauge::renderStringAlignCenter(int x, int y, int area_width, const char 
 void HudGauge::renderPrintf(int x, int y, const char* format, ...)
 {
 	char tmp[256] = "";
-	va_list args;	
+	va_list args;
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	renderString(x, y, tmp);
 }
@@ -783,12 +784,13 @@ void HudGauge::renderPrintf(int x, int y, const char* format, ...)
 void HudGauge::renderPrintf(int x, int y, int gauge_id, const char* format, ...)
 {
 	char tmp[256] = "";
-	va_list args;	
+	va_list args;
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	renderString(x, y, gauge_id, tmp);
 }
