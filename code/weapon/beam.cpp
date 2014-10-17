@@ -1329,6 +1329,32 @@ void beam_generate_muzzle_particles(beam *b)
 	}
 }
 
+static float get_current_alpha(vec3d *pos)
+{
+	float dist;
+	float alpha;
+
+	const float inner_radius = 15.0f;
+	const float magic_num = 2.75f;
+
+	// determine what alpha to draw this bitmap with
+	// higher alpha the closer the bitmap gets to the eye
+	dist = vm_vec_dist_quick(&Eye_position, pos);	
+
+	// if the point is inside the inner radius, alpha is based on distance to the player's eye,
+	// becoming more transparent as it gets close
+	if (dist <= inner_radius) {
+		// alpha per meter between the magic # and the inner radius
+		alpha = 0.8f / (inner_radius - magic_num);
+
+		// above value times the # of meters away we are
+		alpha *= (dist - magic_num);
+		return (alpha < 0.005f) ? 0.0f : alpha;
+	}
+
+	return 0.8f;
+}
+
 // render the muzzle glow for a beam weapon
 void beam_render_muzzle_glow(beam *b)
 {
@@ -1367,6 +1393,11 @@ void beam_render_muzzle_glow(beam *b)
 	if (rad <= 0.0f)
 		return;
 
+	float alpha = get_current_alpha(&b->last_start);
+
+	if (alpha <= 0.0f)
+		return;
+
 	// draw the bitmap
 	if (Cmdline_nohtl)
 		g3_rotate_vertex(&pt, &b->last_start);
@@ -1393,7 +1424,7 @@ void beam_render_muzzle_glow(beam *b)
 		CLAMP(framenum, 0, bwi->beam_glow.num_frames-1);
 	}
 
-	gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);
+	gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
 
 	// draw 1 bitmap
 	g3_draw_bitmap(&pt, 0, rad, tmap_flags);
