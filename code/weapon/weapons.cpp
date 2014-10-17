@@ -797,25 +797,26 @@ void init_weapon_entry(int weap_info_index)
 	Assert(weap_info_index > -1 && weap_info_index < MAX_WEAPON_TYPES);
 	weapon_info *wip = &Weapon_info[weap_info_index];
 	int i, j;
-	
+
 	wip->wi_flags = WIF_DEFAULT_VALUE;
 	wip->wi_flags2 = WIF2_DEFAULT_VALUE;
-	
+
 	wip->subtype = WP_UNUSED;
 	wip->render_type = WRT_NONE;
-	
-	wip->title[0] = 0;
+
+	memset(wip->name, 0, sizeof(wip->name));
+	memset(wip->title, 0, sizeof(wip->title));
 	wip->desc = NULL;
-	wip->tech_title[0] = 0;
-	wip->tech_anim_filename[0] = 0;
+
+	memset(wip->tech_title, 0, sizeof(wip->tech_title));
+	memset(wip->tech_anim_filename, 0, sizeof(wip->tech_anim_filename));
 	wip->tech_desc = NULL;
+	memset(wip->tech_model, 0, sizeof(wip->tech_model));
 	
-	wip->tech_model[0] = '\0';
-	
-	wip->hud_filename[0] = '\0';
+	memset(wip->hud_filename, 0, sizeof(wip->hud_filename));
 	wip->hud_image_index = -1;
-	
-	wip->pofbitmap_name[0] = '\0';
+
+	memset(wip->pofbitmap_name, 0, sizeof(wip->pofbitmap_name));
 
 	wip->model_num = -1;
 	wip->hud_target_lod = -1;
@@ -838,7 +839,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->laser_head_radius = 1.0f;
 	wip->laser_tail_radius = 1.0f;
 	
-	wip->external_model_name[0] = '\0';
+	memset(wip->external_model_name, 0, sizeof(wip->external_model_name));
 	wip->external_model_num = -1;
 	
 	wip->weapon_submodel_rotate_accell = 10.0f;
@@ -924,9 +925,9 @@ void init_weapon_entry(int weap_info_index)
 	generic_bitmap_init(&wip->tr_info.texture, NULL);
 	wip->tr_info.n_fade_out_sections = 0;
 
-	wip->icon_filename[0] = 0;
+	memset(wip->icon_filename, 0, sizeof(wip->icon_filename));
 
-	wip->anim_filename[0] = 0;
+	memset(wip->anim_filename, 0, sizeof(wip->anim_filename));
 
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
