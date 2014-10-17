@@ -1937,9 +1937,6 @@ int parse_weapon(int subtype, bool replace)
 		wip->muzzle_flash = mflash_lookup(fname);
 	}
 
-	if (wip->muzzle_flash > -1)
-		wip->wi_flags |= WIF_MFLASH;
-
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
 	if( optional_string("$EMP Intensity:") ){
 		stuff_float(&wip->emp_intensity);

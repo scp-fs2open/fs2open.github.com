@@ -53,7 +53,7 @@ extern int Num_weapon_subtypes;
 //#define	WIF_SHOCKWAVE		(1 << 8)				//	Explosion has a shockwave
 //WMC - These are no longer needed so these spots are free
 #define	WIF_HOMING_JAVELIN	(1 << 8)				// WC Saga Javelin HS style heatseeker, locks only on target's engines
-#define  WIF_TURNS			(1 << 9)				// Set this if the weapon ever changes heading.  If you
+#define	WIF_TURNS			(1 << 9)				// Set this if the weapon ever changes heading.  If you
 															// don't set this and the weapon turns, collision detection
 															// won't work, I promise!
 #define	WIF_SWARM			(1 << 10)			// Missile "swarms".. ie changes heading and twists on way to target
@@ -63,7 +63,7 @@ extern int Num_weapon_subtypes;
 #define	WIF_BOMB				(1 << 14)			// Bomb-type missile, can be targeted
 #define	WIF_HUGE				(1 << 15)			//	Huge damage (generally 500+), probably only fired at huge ships.
 #define	WIF_NO_DUMBFIRE	(1	<<	16)			// Missile cannot be fired dumbfire (ie requires aspect lock)
-#define  WIF_THRUSTER		(1 << 17)			// Has thruster cone and/or glow
+#define	WIF_THRUSTER		(1 << 17)			// Has thruster cone and/or glow
 #define	WIF_IN_TECH_DATABASE		(1 << 18)
 #define	WIF_PLAYER_ALLOWED		(1 << 19)   // allowed to be on starting wing ships/in weaponry pool
 #define	WIF_BOMBER_PLUS	(1 << 20)			//	Fire this missile only at a bomber or big ship.  But not a fighter.
@@ -71,14 +71,15 @@ extern int Num_weapon_subtypes;
 #define	WIF_CORKSCREW		(1 << 21)			// corkscrew style missile
 #define	WIF_PARTICLE_SPEW	(1 << 22)			// spews particles as it travels
 #define	WIF_EMP				(1 << 23)			// weapon explodes with a serious EMP effect
-#define  WIF_ENERGY_SUCK	(1 << 24)			// energy suck primary (impact effect)
+#define	WIF_ENERGY_SUCK	(1 << 24)			// energy suck primary (impact effect)
 #define	WIF_FLAK				(1 << 25)			// use for big-ship turrets - flak gun
 #define	WIF_BEAM				(1 << 26)			// if this is a beam weapon : NOTE - VERY SPECIAL CASE
 #define	WIF_TAG				(1 << 27)			// this weapon has a tag effect when it hits
 #define	WIF_SHUDDER			(1 << 28)			// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
-#define	WIF_MFLASH			(1 << 29)			// has muzzle flash
-#define	WIF_LOCKARM			(1 << 30)			// if the missile was fired without a lock, it does significanlty less damage on impact
-#define  WIF_STREAM			(1 << 31)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
+#define	WIF_LOCKARM			(1 << 29)			// if the missile was fired without a lock, it does significanlty less damage on impact
+#define	WIF_STREAM			(1 << 30)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
+// NOTE: the remaining WIF is reserved for a flag that truly needs to be in the WIF_ flag field,
+// as opposed to any typical new flag that can be added to WIF3
 
 #define WIF2_BALLISTIC					(1 << 0)	// ballistic primaries - Goober5000
 #define WIF2_PIERCE_SHIELDS				(1 << 1)	// shield pierceing -Bobboau
