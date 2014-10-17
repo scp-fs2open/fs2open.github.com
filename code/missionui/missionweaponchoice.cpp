@@ -779,12 +779,12 @@ void wl_render_overhead_view(float frametime)
 				if (gr_screen.res == GR_640)
 				{
 					// lo-res
-					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename);
+					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename, NULL, NULL, 0, CF_TYPE_INTERFACE);
 				} else {
 					// high-res
 					char filename[NAME_LENGTH+2] = "2_";
 					strcat_s(filename, sip->overhead_filename);
-					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename);
+					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename, NULL, NULL, 0, CF_TYPE_INTERFACE);
 				}
 
 				// load the bitmap
@@ -1246,7 +1246,7 @@ void wl_load_icons(int weapon_class)
 
 	if(!Cmdline_weapon_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
 	{
-		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames);
+		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames, NULL, 0, CF_TYPE_INTERFACE);
 
 		for ( i = 0; (i < num_frames) && (i < NUM_ICON_FRAMES); i++ ) {
 			icon->icon_bmaps[i] = first_frame+i;
