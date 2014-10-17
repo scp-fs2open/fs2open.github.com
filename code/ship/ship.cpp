@@ -2788,8 +2788,14 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		model_unload(model_idx);
 	}
 
-	if(optional_string("$Closeup_zoom:"))
+	if (optional_string("$Closeup_zoom:")) {
 		stuff_float(&sip->closeup_zoom);
+
+		if (sip->closeup_zoom <= 0.0f) {
+			mprintf(("Warning!  Ship '%s' has a $Closeup_zoom value that is less than or equal to 0 (%f). Setting to default value.\n", sip->name, sip->closeup_zoom));
+			sip->closeup_zoom = 0.5f;
+		}
+	}
 		
 	if(optional_string("$Topdown offset:")) {
 		sip->topdown_offset_def = true;
@@ -4580,7 +4586,7 @@ void physics_ship_init(object *objp)
 		float vmass=size.xyz.x*size.xyz.y*size.xyz.z;
 		float amass=4.65f*(float)pow(vmass,(2.0f/3.0f));
 
-		nprintf(("Physics", "pi->mass==0.0f. setting to %f",amass));
+		nprintf(("Physics", "pi->mass==0.0f. setting to %f\n",amass));
 		Warning(LOCATION, "%s (%s) has no mass! setting to %f", sinfo->name, sinfo->pof_file, amass);
 		pm->mass=amass;
 		pi->mass=amass*sinfo->density;
@@ -4592,7 +4598,7 @@ void physics_ship_init(object *objp)
 		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
 		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
 	{
-		nprintf(("Physics", "pm->moment_of_inertia is invalid for %s!", pm->filename));
+		nprintf(("Physics", "pm->moment_of_inertia is invalid for %s!\n", pm->filename));
 		Warning(LOCATION, "%s (%s) has a null moment of inertia!", sinfo->name, sinfo->pof_file);
 
 		// TODO: generate MOI properly
@@ -5542,7 +5548,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		// previous things... ugh.
 		ship_system->max_hits = model_system->max_subsys_strength;	// * shipp->ship_max_hull_strength / sinfo->max_hull_strength;
 
-		if ( !Fred_running ){
+		if ( !Fred_running ) {
 			ship_system->current_hits = ship_system->max_hits;		// set the current hits
 		} else {
 			ship_system->current_hits = 0.0f;				// Jason wants this to be 0 in Fred.
@@ -7089,6 +7095,8 @@ int ship_explode_area_calc_damage( vec3d *pos1, vec3d *pos2, float inner_rad, fl
 	return 1;
 }
 
+static const float MAX_SHOCK_ANGLE_RANGE = 1.99f * PI;
+
 /**
  * Applies damage to ship close to others when a ship dies and blows up
  *
@@ -7154,9 +7162,9 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 		sci.blast = max_blast;
 		sci.damage = max_damage;
 		sci.speed = shockwave_speed;
-		sci.rot_angles.p = frand_range(0.0f, 1.99f*PI);
-		sci.rot_angles.b = frand_range(0.0f, 1.99f*PI);
-		sci.rot_angles.h = frand_range(0.0f, 1.99f*PI);
+		sci.rot_angles.p = frand_range(0.0f, MAX_SHOCK_ANGLE_RANGE);
+		sci.rot_angles.b = frand_range(0.0f, MAX_SHOCK_ANGLE_RANGE);
+		sci.rot_angles.h = frand_range(0.0f, MAX_SHOCK_ANGLE_RANGE);
 		shipfx_do_shockwave_stuff(shipp, &sci);
 	} else {
 		object *objp;
