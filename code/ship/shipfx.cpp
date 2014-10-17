@@ -2291,9 +2291,9 @@ void shipfx_large_blowup_render(ship* shipp)
 // ================== DO THE ELECTRIC ARCING STUFF =====================
 // Creates any new ones, moves old ones.
 
-#define MAX_ARC_LENGTH_PERCENTAGE 0.25f
+const float MAX_ARC_LENGTH_PERCENTAGE = 0.25f;
 
-#define MAX_EMP_ARC_TIMESTAMP		 (150.0f)
+const float MAX_EMP_ARC_TIMESTAMP = 150.0f;
 
 void shipfx_do_damaged_arcs_frame( ship *shipp )
 {
@@ -2845,7 +2845,7 @@ void engine_wash_ship_process(ship *shipp)
 			// check if thruster bank has engine wash
 			if (bank->wash_info_pointer == NULL) {
 				// if huge, give default engine wash
-				if ((wash_sip->flags & SIF_HUGE_SHIP) && Engine_wash_info.size()) {
+				if ((wash_sip->flags & SIF_HUGE_SHIP) && !Engine_wash_info.empty()) {
 					bank->wash_info_pointer = &Engine_wash_info[0];
 					nprintf(("wash", "Adding default engine wash to ship %s", wash_sip->name));
 				} else {
@@ -2937,7 +2937,9 @@ void engine_wash_ship_process(ship *shipp)
 				}
 			}
 		}
+
 		shipp->wash_intensity += ship_intensity * speed_scale;
+
 		if (ship_intensity > max_ship_intensity) {
 			max_ship_intensity = ship_intensity;
 			max_ship_intensity_objp = wash_objp;
