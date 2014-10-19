@@ -15,9 +15,6 @@
 #include "hud/hudconfig.h"
 #include "hud/hud.h"
 
-#define SMALL_BLIP_CHAR (Lcl_special_chars + 5)
-#define LARGE_BLIP_CHAR (Lcl_special_chars + 6)
-
 //which radar type are we using
 //to add another radar type, begin by adding a RADAR_MODE_* define and increment MAX_RADAR_MODES
 #define RADAR_MODE_STANDARD 0
@@ -128,6 +125,7 @@ protected:
 
 	char Small_blip_string[2];
 	char Large_blip_string[2];
+	ubyte Radar_infinity_icon;
 public:
 	HudGaugeRadar();
 	HudGaugeRadar(int _gauge_object, int r, int g, int b);
@@ -136,6 +134,7 @@ public:
 	void initDistanceShortOffsets(int x, int y);
 	void initDistanceLongOffsets(int x, int y);
 	void initDistanceInfinityOffsets(int x, int y);
+	void initInfinityIcon();
 
 	void drawRange();
 	virtual void render(float frametime);

@@ -5779,6 +5779,18 @@ HudGauge(HUD_OBJECT_WEAPONS, HUD_WEAPONS_GAUGE, false, false, VM_EXTERNAL | VM_D
 {
 }
 
+void HudGaugeWeapons::initLinkIcon()
+{
+	ubyte sc = lcl_get_font_index(font_num);
+	// default to a '>' if the font has no special chars
+	// seems about the closest normal char to the triangle
+	if (sc == 0) {
+		Weapon_link_icon = ubyte ('>');
+	} else {
+		Weapon_link_icon = sc + 2;
+	}
+}
+
 void HudGaugeWeapons::initTopOffsetX(int x, int x_b)
 {
 	top_offset_x[0] = x;
@@ -6029,7 +6041,7 @@ void HudGaugeWeapons::render(float frametime)
 
 		// indicate if this is linked or currently armed
 		if ( ((sw->current_primary_bank == i) && !(Player_ship->flags & SF_PRIMARY_LINKED)) || ((Player_ship->flags & SF_PRIMARY_LINKED) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK))) {
-			renderPrintf(position[0] + Weapon_plink_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);
+			renderPrintf(position[0] + Weapon_plink_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 		}
 		
 		// either render this primary's image or its name
@@ -6093,11 +6105,11 @@ void HudGaugeWeapons::render(float frametime)
 		
 		if ( sw->current_secondary_bank == i ) {
 			// show that this is the current secondary armed
-			renderPrintf(position[0] + Weapon_sunlinked_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);			
+			renderPrintf(position[0] + Weapon_sunlinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
 			if ( Player_ship->flags & SF_SECONDARY_DUAL_FIRE ) {
-				renderPrintf(position[0] + Weapon_slinked_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);				
+				renderPrintf(position[0] + Weapon_slinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 			}
 
 			// show secondary weapon's image or print its name
@@ -6708,6 +6720,17 @@ HudGauge(_gauge_object, HUD_WEAPONS_GAUGE, false, false, VM_EXTERNAL | VM_DEAD_V
 
 }
 
+void HudGaugeWeaponList::initLinkIcon() {
+	ubyte sc = lcl_get_font_index(font_num);
+	// default to a '>' if the font has no special chars
+	// seems about the closest normal char to the triangle
+	if (sc == 0) {
+		Weapon_link_icon = ubyte ('>');
+	} else {
+		Weapon_link_icon = sc + 2;
+	}
+}
+
 void HudGaugeWeaponList::initBitmaps(char *fname_first, char *fname_entry, char *fname_last)
 {
 	_background_first.first_frame = bm_load_animation(fname_first, &_background_first.num_frames);
@@ -6886,7 +6909,7 @@ void HudGaugePrimaryWeapons::render(float frametime)
 
 		// indicate if this is linked or currently armed
 		if ( (sw->current_primary_bank == i) || (Player_ship->flags & SF_PRIMARY_LINKED) ) {
-			renderPrintf(position[0] + _plink_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Lcl_special_chars + 2);
+			renderPrintf(position[0] + _plink_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 		}
 
 		// either render this primary's image or its name
@@ -6996,11 +7019,11 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 
 		if ( sw->current_secondary_bank == i ) {
 			// show that this is the current secondary armed
-			renderPrintf(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Lcl_special_chars + 2);
+			renderPrintf(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
 			if ( Player_ship->flags & SF_SECONDARY_DUAL_FIRE ) {
-				renderPrintf(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Lcl_special_chars + 2);				
+				renderPrintf(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 			}
 
 			// show secondary weapon's image or print its name
