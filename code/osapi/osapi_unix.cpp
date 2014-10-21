@@ -70,7 +70,7 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 {
 	// create default ini entries for the user
 	if (os_config_read_string(NULL, NOX("VideocardFs2open"), NULL) == NULL)
-		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(640x480)x16 bit"));
+		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(1024x768)x32 bit"));
 
 	os_init_registry_stuff(Osreg_company_name, title, version_string);
 	
