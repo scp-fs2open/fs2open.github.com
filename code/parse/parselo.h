@@ -49,10 +49,6 @@ extern jmp_buf parse_abort;
 
 #define PARSE_BUF_SIZE			4096
 
-//For modular TBL files -C
-#define MAX_TBL_PARTS 32
-
-
 #define	SHIP_TYPE			0	// used to identify which kind of array to do a search for a name in
 #define	SHIP_INFO_TYPE		1
 #define	WEAPON_LIST_TYPE	2	//	to parse an int_list of weapons

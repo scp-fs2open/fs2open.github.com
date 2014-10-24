@@ -4369,23 +4369,22 @@ void parse_int_list(int *ilist, int size)
 // parse a modular table of type "name_check" and parse it using the specified function callback
 int parse_modular_table(const char *name_check, void (*parse_callback)(const char *filename), int path_type, int sort_type)
 {
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
+	SCP_vector<SCP_string> tbl_file_names;
 	int i, num_files = 0;
 
 	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
-		Int3();
+		Assertion(false, "parse_modular_table() called with invalid arguments; get a coder!\n");
 		return 0;
 	}
 
-	num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, path_type, name_check, sort_type);
+	num_files = cf_get_file_list(tbl_file_names, path_type, name_check, sort_type);
 
 	Parsing_modular_table = true;
 
 	for (i = 0; i < num_files; i++){
-		strcat(tbl_file_names[i], ".tbm");
-		mprintf(("TBM  =>  Starting parse of '%s' ...\n", tbl_file_names[i]));
-		(*parse_callback)(tbl_file_names[i]);
+		tbl_file_names[i] += ".tbm";
+		mprintf(("TBM  =>  Starting parse of '%s' ...\n", tbl_file_names[i].c_str()));
+		(*parse_callback)(tbl_file_names[i].c_str());
 	}
 
 	Parsing_modular_table = false;
