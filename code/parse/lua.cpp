@@ -10054,7 +10054,8 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 		aip->ai_override_flags |= AIORF_FULL_LAT;
 		cip->vertical = arr[3];
 		cip->sideways = arr[4];
-		cip->forward = arr[5];	} else {
+		cip->forward = arr[5];	
+	} else {
 		if (arr[3] != 0) {
 			cip->vertical = arr[3];
 			aip->ai_override_flags |= AIORF_UP;
