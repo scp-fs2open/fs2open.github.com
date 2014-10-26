@@ -170,6 +170,11 @@ public:
 	object();
 	~object();
 	void clear();
+
+private:
+	// An object contains allocated pointers which means copying an object is not a good idea(TM)
+	object(const object&); // no implementation
+	object& operator=(const object&); // no implementation 
 };
 
 struct object_h {
