@@ -341,8 +341,9 @@ int fvi_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d 
 		}
 	}
 
-	// ray origin inside bounding box			
-	if (middle) {
+	// ray origin inside bounding box?
+	// (are all three bits still set?)
+	if (middle == ((1<<0) | (1<<1) | (1<<2))) {
 		*hitpt = *p0;
 		return 1;
 	}
