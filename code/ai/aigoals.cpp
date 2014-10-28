@@ -979,6 +979,16 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 		aigp->priority = MAX_GOAL_PRIORITY;
 	}
 
+	// Goober5000 - we now have an extra optional chase argument to allow chasing our own team
+	if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_DISABLE_SHIP || op == OP_AI_DISARM_SHIP ) {
+		if ((CDDDR(node) != -1) && is_sexp_true(CDDDR(node)))
+			aigp->flags |= AIGF_TARGET_OWN_TEAM;
+	}
+	if ( op == OP_AI_DESTROY_SUBSYS ) {
+		if ((CDDDDR(node) != -1) && is_sexp_true(CDDDDR(node)))
+			aigp->flags |= AIGF_TARGET_OWN_TEAM;
+	}
+
 	// Goober5000 - since none of the goals act on the actor,
 	// don't assign the goal if the actor's goal target is itself
 	if (aigp->target_name != NULL && !strcmp(aigp->target_name, actor_name))

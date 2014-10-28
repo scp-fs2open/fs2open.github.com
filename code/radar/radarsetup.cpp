@@ -379,6 +379,18 @@ HudGauge(_gauge_object, HUD_RADAR, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | V
 {
 }
 
+void HudGaugeRadar::initInfinityIcon()
+{
+	ubyte sc = lcl_get_font_index(font_num);
+	// default to a '*' if the font has no special chars
+	// nothing is really close to the infinity symbol...
+	if (sc == 0) {
+		Radar_infinity_icon = ubyte ('*');
+	} else {
+		Radar_infinity_icon = sc;
+	}
+}
+
 void HudGaugeRadar::initRadius(int w, int h)
 {
 	Radar_radius[0] = w;
@@ -434,14 +446,18 @@ void HudGaugeRadar::initialize()
 
 	int w,h;
 	gr_set_font(FONT1);
+	ubyte sc = lcl_get_font_index(FONT1);
+	if (sc == 0) {
+		Warning(LOCATION, "1st font doesn't have a special characters index, radar may not work");
+	}
 
-	Small_blip_string[0] = ubyte(SMALL_BLIP_CHAR);
+	Small_blip_string[0] = sc + 5;
 	Small_blip_string[1] = 0;
 	gr_get_string_size( &w, &h, Small_blip_string );
 	Small_blip_offset_x = -w/2;
 	Small_blip_offset_y = -h/2;
 
-	Large_blip_string[0] = ubyte(LARGE_BLIP_CHAR);
+	Large_blip_string[0] = sc + 6;
 	Large_blip_string[1] = 0;
 	gr_get_string_size( &w, &h, Large_blip_string );
 	Large_blip_offset_x = -w/2;
@@ -452,8 +468,6 @@ void HudGaugeRadar::initialize()
 
 void HudGaugeRadar::drawRange()
 {
-	char buf[32];
-
 	// hud_set_bright_color();
 	setGaugeColor(HUD_C_BRIGHT);
 
@@ -468,8 +482,7 @@ void HudGaugeRadar::drawRange()
 		break;
 
 	case RR_INFINITY:
-		sprintf(buf, NOX("%c"), Lcl_special_chars);
-		renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], buf);
+		renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "%c", Radar_infinity_icon);
 		break;
 
 	default:

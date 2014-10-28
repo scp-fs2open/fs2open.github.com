@@ -1526,8 +1526,8 @@ void HudGaugeExtraTargetData::endFlashDock()
 }
 
 //from aicode.cpp. Less include...problems...this way.
-extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
-extern bool turret_weapon_has_flags2(ship_weapon *swp, int flags);
+extern int turret_weapon_aggregate_flags(ship_weapon *swp);
+extern int turret_weapon_aggregate_flags2(ship_weapon *swp);
 extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
 void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 {
@@ -1535,21 +1535,25 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 
 	//WMC - find the first weapon, if there is one
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
+		int flags = turret_weapon_aggregate_flags(swp);
+		int flags2 = turret_weapon_aggregate_flags2(swp);
+
 		// check if beam or flak using weapon flags
-		if (turret_weapon_has_flags(swp, WIF_BEAM)) {
+		if (flags & WIF_BEAM) {
 			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
-		}else if (turret_weapon_has_flags(swp, WIF_FLAK)) {
+		} else if (flags & WIF_FLAK) {
 			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
 		} else {
-
-			if (!turret_weapon_has_subtype(swp, WP_MISSILE) && turret_weapon_has_subtype(swp, WP_LASER)) {
+			if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
+				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
+			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
 				// ballistic too! - Goober5000
-				if (turret_weapon_has_flags2(swp, WIF2_BALLISTIC))
+				if (flags2 & WIF2_BALLISTIC)
 				{
 					sprintf(outstr, "%s", XSTR("Turret", 1487));
 				}
 				// the TVWP has some primaries flagged as bombs
-				else if (turret_weapon_has_flags(swp, WIF_BOMB))
+				else if (flags & WIF_BOMB)
 				{
 					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 				}
@@ -1557,12 +1561,19 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 				{
 					sprintf(outstr, "%s", XSTR("Laser turret", 1568));
 				}
-			} else if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
-				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 			} else {
-				// Illegal subtype
-				Int3();
-				sprintf(outstr, "%s", XSTR("Turret", 1487));
+				// Mantis #2226: find out if there are any weapons here at all
+				if (flags == 0 && flags2 == 0) {
+					sprintf(outstr, "%s", NOX("Unused"));
+				} else {
+					// Illegal subtype
+					static bool Turret_illegal_subtype_warned = false;
+					if (!Turret_illegal_subtype_warned) {
+						Turret_illegal_subtype_warned = true;
+						Warning(LOCATION, "This turret has an illegal subtype!  Trace out and fix!");
+					}
+					sprintf(outstr, "%s", XSTR("Turret", 1487));
+				}
 			}
 		}
 	} else if(swp->num_tertiary_banks) {

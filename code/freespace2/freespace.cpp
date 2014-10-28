@@ -1423,6 +1423,8 @@ int game_start_mission()
 {
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
+	int s1 = timer_get_milliseconds();
+
 	// clear post processing settings
 	gr_post_process_set_defaults();
 
@@ -1477,6 +1479,11 @@ int game_start_mission()
 #endif
 
 	bm_print_bitmaps();
+
+	int e1 = timer_get_milliseconds();
+
+	printf("Level load took %f seconds.\n", (e1 - s1) / 1000.0f );
+
 	return 1;
 }
 
@@ -1778,6 +1785,8 @@ void game_init()
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
 #endif
+
+	memset(whee, 0, sizeof(whee));
 
 	GetCurrentDirectory(MAX_PATH_LEN-1, whee);
 
@@ -3075,7 +3084,7 @@ float get_shake(float intensity, int decay_time, int max_decay_time)
 {
 	int r = myrand();
 
-	float shake = intensity * (float) (r-RAND_MAX_2)/RAND_MAX;
+	float shake = intensity * (float)(r-RAND_MAX_2) * RAND_MAX_1f;
 	
 	if (decay_time >= 0) {
 		Assert(max_decay_time > 0);
@@ -7250,6 +7259,7 @@ int main(int argc, char *argv[])
 #endif
 
 	// create user's directory	
+	memset(userdir, 0, sizeof(userdir));
 	snprintf(userdir, MAX_PATH - 1, "%s/%s/", detect_home(), Osreg_user_dir);
 	_mkdir(userdir);
 
@@ -8068,6 +8078,13 @@ void get_version_string(char *str, int max_size)
 
 	if (Cmdline_nohtl)
 		strcat_s( str, max_size, " non-HT&L" );
+
+	// if a custom identifier exists, put it at the very end
+	#ifdef FS_VERSION_IDENT
+		strcat_s( str, max_size, " (" );
+		strcat_s( str, max_size, FS_VERSION_IDENT );
+		strcat_s( str, max_size, ")" );
+	#endif
 }
 
 void get_version_string_short(char *str)

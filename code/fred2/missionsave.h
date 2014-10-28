@@ -80,7 +80,7 @@ public:
 	void fso_comment_pop(bool pop_all = false);
 
 	// Goober5000
-	void bypass_comment(char *comment);
+	void bypass_comment(const char *comment, const char *end = NULL);
 };
 
 #endif

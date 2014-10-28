@@ -1557,7 +1557,11 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 	clip_height = tan( (double)fov * 0.5 ) * z_near;
 	clip_width = clip_height * (GLdouble)aspect;
 
-	glFrustum( -clip_width, clip_width, -clip_height, clip_height, z_near, z_far );
+	if (GL_rendering_to_texture) {
+		glFrustum( -clip_width, clip_width, clip_height, -clip_height, z_near, z_far );
+	} else {
+		glFrustum( -clip_width, clip_width, -clip_height, clip_height, z_near, z_far );
+	}
 
 	glMatrixMode(GL_MODELVIEW);
 

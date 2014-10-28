@@ -14,6 +14,7 @@
 #include "network/multi_log.h"
 #include "parse/generic_log.h"
 #include "cfile/cfile.h"
+#include "parse/parselo.h"
 
 
 
@@ -110,16 +111,20 @@ void multi_log_process()
 // printf function itself called by the ml_printf macro
 void ml_printf(const char *format, ...)
 {
-	char tmp[MAX_LOGFILE_LINE_LEN*4];
+	SCP_string temp;
 	va_list args;
+
+	if (format == NULL) {
+		return;
+	}
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsprintf(temp, format, args);
 	va_end(args);
-	
+
 	// log the string including the time
-	log_string(LOGFILE_MULTI_LOG, tmp, 1);
+	log_string(LOGFILE_MULTI_LOG, temp.c_str(), 1);
 }
 
 // string print function

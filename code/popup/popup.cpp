@@ -1018,10 +1018,9 @@ int popup(int flags, int nchoices, ... )
 
 	// get msg text
 	format = va_arg( args, char * );
-	Popup_info.raw_text[0] = 0;
-	vsprintf(Popup_info.raw_text, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
 	va_end(args);
-	Assert(strlen(Popup_info.raw_text) < POPUP_MAX_CHARS );
+	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
 	
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
@@ -1072,11 +1071,10 @@ int popup_till_condition(int (*condition)(), ...)
 
 	// get msg text
 	format = va_arg( args, char * );
-	Popup_info.raw_text[0] = 0;
-	vsprintf(Popup_info.raw_text, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
 	va_end(args);
-	Popup_info.raw_text[POPUP_MAX_CHARS-1] = '\0';
-		
+	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
+
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
 	Mouse_hidden = 0;

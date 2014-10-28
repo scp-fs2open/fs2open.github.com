@@ -786,13 +786,7 @@ void credits_do_frame(float frametime)
 	gr_set_font(FONT1);
 	gr_set_color_fast(&Color_normal);
 	
-	int sy; // The current position of the first text part
-	if ( Credit_position > 0 ) {
-		sy = fl2i(Credit_position+0.5f);
-	} else {
-		sy = fl2i(Credit_position-0.5f);
-	}
-
+	int y_offset = 0;
 	for (SCP_vector<SCP_string>::iterator iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
 	{
 		int height;
@@ -800,12 +794,13 @@ void credits_do_frame(float frametime)
 		gr_get_string_size(NULL, &height, iter->c_str(), iter->length());
 
 		// Check if the text part is actually visible
-		if (sy + height > 0)
+		if (Credit_position + y_offset + height > 0.0f)
 		{
-			gr_string(0x8000, sy, iter->c_str(), GR_RESIZE_MENU);
+			extern void gr_opengl_string(float sx, float sy, const char *s, int resize_mode);
+			gr_opengl_string((float)0x8000, Credit_position + y_offset, iter->c_str(), GR_RESIZE_MENU);
 		}
 
-		sy = sy + height;
+		y_offset += height;
 	}
 
 	int temp_time;

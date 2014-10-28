@@ -314,6 +314,7 @@ protected:
 	int Weapon_sreload_offset_x;
 	int Weapon_slinked_offset_x;
 	int Weapon_sunlinked_offset_x;
+	ubyte Weapon_link_icon;
 
 	int top_primary_h;
 	int pname_start_offset_y;
@@ -340,6 +341,7 @@ public:
 	void initStartNameOffsetsY(int p_y, int s_y);
 	void initPrimaryHeights(int top_h, int text_h);
 	void initSecondaryHeights(int top_h, int text_h);
+	void initLinkIcon();
 
 	void render(float frametime);
 	void pageIn();
@@ -352,6 +354,7 @@ protected:
 	hud_frames _background_first;
 	hud_frames _background_entry;
 	hud_frames _background_last;
+	ubyte Weapon_link_icon;
 
 	int _bg_first_offset_x;
 	int _bg_entry_offset_x;
@@ -379,6 +382,7 @@ public:
 	void initHeaderOffsets(int x, int y);
 	void initEntryStartY(int y);
 	void initEntryHeight(int h);
+	void initLinkIcon();
 
 	virtual void render(float frametime);
 	void pageIn();
