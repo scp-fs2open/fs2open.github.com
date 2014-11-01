@@ -16427,11 +16427,7 @@ static int ade_index_handler(lua_State *L)
 				//Execute function
 				lua_pcall(L, numargs, LUA_MULTRET, err_ldx);
 
-				//WMC - Return as appropriate
-				int rval = lua_gettop(L) - vvt_ldx;
-
-				if(rval)
-					return rval;
+				return (lua_gettop(L) - vvt_ldx);
 			}
 			else
 			{
@@ -16461,10 +16457,7 @@ static int ade_index_handler(lua_State *L)
 			//Execute function
 			lua_pcall(L, last_arg_ldx, LUA_MULTRET, err_ldx);
 
-			int rval = lua_gettop(L) - err_ldx;
-
-			if(rval)
-				return rval;
+			return (lua_gettop(L) - err_ldx);
 		}
 		lua_pop(L, 2);	//WMC - Don't need __indexer or error handler
 	}
