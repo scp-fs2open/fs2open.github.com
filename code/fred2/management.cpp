@@ -1473,28 +1473,6 @@ int delete_ship_from_wing(int ship)
 	return 0;
 }
 
-// What does this do?
-void add_ship_to_wing()
-{
-	int		org_object = cur_object_index;
-	vec3d	tvec;
-
-	set_cur_object_index();
-	if (Objects[org_object].type == OBJ_NONE) {
-		vm_vec_make(&tvec, 10.0f, 10.0f, 10.0f);
-		create_object(&tvec);
-	
-	} else {
-		Objects[cur_object_index] = Objects[org_object];
-		Objects[cur_object_index].pos.xyz.x += 3.0f;
-		Objects[cur_object_index].pos.xyz.y += 3.0f;
-		physics_init(&Objects[cur_object_index].phys_info);
-		Objects[cur_object_index].orient = Objects[org_object].orient;
-	}
-
-	set_modified();
-}
-
 //	Return true if current object is valid and is in a wing.
 //	Else return false.
 int query_object_in_wing(int obj)
