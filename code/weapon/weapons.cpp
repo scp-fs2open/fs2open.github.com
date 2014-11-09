@@ -657,6 +657,12 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 				weaponp->wi_flags3 |= WIF3_CMEASURE_ASPECT_HOME_ON;
 			}
 		}
+		else if (!stricmp(NOX("interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_TURRET_INTERCEPTABLE | WIF3_FIGHTER_INTERCEPTABLE;
+		else if (!stricmp(NOX("turret interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_TURRET_INTERCEPTABLE;
+		else if (!stricmp(NOX("fighter interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_FIGHTER_INTERCEPTABLE;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -2577,6 +2583,8 @@ int parse_weapon(int subtype, bool replace)
 
 	if (optional_string("$Weapon Hitpoints:")) {
 		stuff_int(&wip->weapon_hitpoints);
+	} else if (first_time && (wip->wi_flags3 & (WIF3_TURRET_INTERCEPTABLE | WIF3_FIGHTER_INTERCEPTABLE))) {
+		wip->weapon_hitpoints = 25;
 	}
 
 	// making sure bombs get their hitpoints assigned

@@ -549,7 +549,11 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		weapon *wp = &Weapons[objp->instance];
 		weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
-		if ( (!(wip->wi_flags & WIF_BOMB) && !(Ai_info[Ships[turret_parent->instance].ai_index].ai_profile_flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
+		if (wip->subtype == WP_LASER && !(wip->wi_flags3 & WIF3_TURRET_INTERCEPTABLE)) {	// If the thing can't be shot down, don't try. -MageKing17
+			return 0;
+		}
+
+		if ( (!((wip->wi_flags & WIF_BOMB) || (wip->wi_flags3 & WIF3_TURRET_INTERCEPTABLE)) && !(Ai_info[Ships[turret_parent->instance].ai_index].ai_profile_flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
 			return 0;
 		}
 
@@ -1097,7 +1101,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 							objp = &Objects[mo->objnum];
 							
 							Assert(objp->type == OBJ_WEAPON);
-							if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
+							if ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags3 & WIF3_TURRET_INTERCEPTABLE))
 							{
 								evaluate_obj_as_target(objp, &eeo);
 							}

@@ -119,6 +119,8 @@ extern int Num_weapon_subtypes;
 #define WIF3_NO_LINKED_PENALTY			(1 << 2)	// This weapon does not count into linked firing penalty
 #define WIF3_NO_HOMING_SPEED_RAMP 		(1 << 3)	// Disables the 1s long speed ramping when firing locked-on secondaries
 #define WIF3_CMEASURE_ASPECT_HOME_ON	(1 << 4)	// This countermeasure flag makes aspect seekers home on the countermeasure instead of going into dumbfire mode
+#define WIF3_TURRET_INTERCEPTABLE		(1 << 5)	// These two flags mark a weapon as being interceptable by the AI
+#define WIF3_FIGHTER_INTERCEPTABLE		(1 << 6)	// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
 
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)

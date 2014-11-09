@@ -9609,7 +9609,7 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 		wp = &Weapons[bomb_objp->instance];
 		wip = &Weapon_info[wp->weapon_info_index];
 
-		if ( !(wip->wi_flags & WIF_BOMB) ) {
+		if ( !((wip->wi_flags & WIF_BOMB) || (wip->wi_flags3 & WIF3_FIGHTER_INTERCEPTABLE)) ) {
 			continue;
 		}
 
