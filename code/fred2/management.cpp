@@ -73,6 +73,8 @@
 
 #define UNKNOWN_USER		"Unknown"
 
+extern void ssm_init();	// Need this to populate Ssm_info so OPF_SSM_CLASS does something. -MageKing17
+
 int cur_wing = -1;
 int cur_wing_index;
 int cur_object_index = -1;
@@ -420,6 +422,7 @@ bool fred_init()
 	create_new_mission();
 	neb2_init();						// fullneb stuff
 	stars_init();
+	ssm_init();		// The game calls this after stars_init(), and we need Ssm_info initialized for OPF_SSM_CLASS. -MageKing17
 	brief_init_colors();
 	fred_preload_all_briefing_icons(); //phreak.  This needs to be done or else the briefing icons won't show up
 	event_music_init();
@@ -1468,28 +1471,6 @@ int delete_ship_from_wing(int ship)
 
 	set_modified();
 	return 0;
-}
-
-// What does this do?
-void add_ship_to_wing()
-{
-	int		org_object = cur_object_index;
-	vec3d	tvec;
-
-	set_cur_object_index();
-	if (Objects[org_object].type == OBJ_NONE) {
-		vm_vec_make(&tvec, 10.0f, 10.0f, 10.0f);
-		create_object(&tvec);
-	
-	} else {
-		Objects[cur_object_index] = Objects[org_object];
-		Objects[cur_object_index].pos.xyz.x += 3.0f;
-		Objects[cur_object_index].pos.xyz.y += 3.0f;
-		physics_init(&Objects[cur_object_index].phys_info);
-		Objects[cur_object_index].orient = Objects[org_object].orient;
-	}
-
-	set_modified();
 }
 
 //	Return true if current object is valid and is in a wing.

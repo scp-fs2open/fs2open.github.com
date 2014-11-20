@@ -121,5 +121,6 @@ void lcl_translate_brief_icon_name_pl(char *name);
 void lcl_translate_targetbox_name_gr(char *name);
 void lcl_translate_targetbox_name_pl(char *name);
 void lcl_translate_medal_name_gr(char *name);
+void lcl_translate_medal_name_pl(char *name);
 
 #endif	// defined __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE

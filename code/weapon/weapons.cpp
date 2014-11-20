@@ -657,6 +657,12 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 				weaponp->wi_flags3 |= WIF3_CMEASURE_ASPECT_HOME_ON;
 			}
 		}
+		else if (!stricmp(NOX("interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_TURRET_INTERCEPTABLE | WIF3_FIGHTER_INTERCEPTABLE;
+		else if (!stricmp(NOX("turret interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_TURRET_INTERCEPTABLE;
+		else if (!stricmp(NOX("fighter interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_FIGHTER_INTERCEPTABLE;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -797,25 +803,26 @@ void init_weapon_entry(int weap_info_index)
 	Assert(weap_info_index > -1 && weap_info_index < MAX_WEAPON_TYPES);
 	weapon_info *wip = &Weapon_info[weap_info_index];
 	int i, j;
-	
+
 	wip->wi_flags = WIF_DEFAULT_VALUE;
 	wip->wi_flags2 = WIF2_DEFAULT_VALUE;
-	
+
 	wip->subtype = WP_UNUSED;
 	wip->render_type = WRT_NONE;
-	
-	wip->title[0] = 0;
+
+	memset(wip->name, 0, sizeof(wip->name));
+	memset(wip->title, 0, sizeof(wip->title));
 	wip->desc = NULL;
-	wip->tech_title[0] = 0;
-	wip->tech_anim_filename[0] = 0;
+
+	memset(wip->tech_title, 0, sizeof(wip->tech_title));
+	memset(wip->tech_anim_filename, 0, sizeof(wip->tech_anim_filename));
 	wip->tech_desc = NULL;
+	memset(wip->tech_model, 0, sizeof(wip->tech_model));
 	
-	wip->tech_model[0] = '\0';
-	
-	wip->hud_filename[0] = '\0';
+	memset(wip->hud_filename, 0, sizeof(wip->hud_filename));
 	wip->hud_image_index = -1;
-	
-	wip->pofbitmap_name[0] = '\0';
+
+	memset(wip->pofbitmap_name, 0, sizeof(wip->pofbitmap_name));
 
 	wip->model_num = -1;
 	wip->hud_target_lod = -1;
@@ -838,7 +845,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->laser_head_radius = 1.0f;
 	wip->laser_tail_radius = 1.0f;
 	
-	wip->external_model_name[0] = '\0';
+	memset(wip->external_model_name, 0, sizeof(wip->external_model_name));
 	wip->external_model_num = -1;
 	
 	wip->weapon_submodel_rotate_accell = 10.0f;
@@ -924,9 +931,9 @@ void init_weapon_entry(int weap_info_index)
 	generic_bitmap_init(&wip->tr_info.texture, NULL);
 	wip->tr_info.n_fade_out_sections = 0;
 
-	wip->icon_filename[0] = 0;
+	memset(wip->icon_filename, 0, sizeof(wip->icon_filename));
 
-	wip->anim_filename[0] = 0;
+	memset(wip->anim_filename, 0, sizeof(wip->anim_filename));
 
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
@@ -1937,9 +1944,6 @@ int parse_weapon(int subtype, bool replace)
 		wip->muzzle_flash = mflash_lookup(fname);
 	}
 
-	if (wip->muzzle_flash > -1)
-		wip->wi_flags |= WIF_MFLASH;
-
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
 	if( optional_string("$EMP Intensity:") ){
 		stuff_float(&wip->emp_intensity);
@@ -1991,6 +1995,10 @@ int parse_weapon(int subtype, bool replace)
 		}
 		else if(optional_string("+Old Style:")) {
 			wip->elec_use_new_style=0;
+		}
+
+		if(optional_string("+Area Of Effect")) {
+			wip->wi_flags3 |= WIF3_AOE_ELECTRONICS;
 		}
 		
 		//New only -WMC
@@ -2579,6 +2587,8 @@ int parse_weapon(int subtype, bool replace)
 
 	if (optional_string("$Weapon Hitpoints:")) {
 		stuff_int(&wip->weapon_hitpoints);
+	} else if (first_time && (wip->wi_flags3 & (WIF3_TURRET_INTERCEPTABLE | WIF3_FIGHTER_INTERCEPTABLE))) {
+		wip->weapon_hitpoints = 25;
 	}
 
 	// making sure bombs get their hitpoints assigned
@@ -4910,6 +4920,14 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		// determining if we're targeting the same team
 		if (parent_objp != NULL && Ships[parent_objp->instance].team == target_team){
 			targeting_same = 1;
+
+			// Goober5000 - if we're going bonkers, pretend we're not targeting our own team
+			ai_info *parent_aip = &Ai_info[Ships[parent_objp->instance].ai_index];
+			if (parent_aip->active_goal != AI_GOAL_NONE && parent_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
+				if (parent_aip->goals[parent_aip->active_goal].flags & AIGF_TARGET_OWN_TEAM) {
+					targeting_same = 0;
+				}
+			}
 		} else {
 			targeting_same = 0;
 		}
@@ -5873,6 +5891,11 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 		switch ( objp->type ) {
 		case OBJ_SHIP:
+			// If we're doing an AoE Electronics blast, do the electronics stuff (unless it also has the regular "electronics"
+			// flag and this is the ship the missile directly impacted; then leave it for the regular code below) -MageKing17
+			if ( (wip->wi_flags3 & WIF3_AOE_ELECTRONICS) && !((objp->flags & OF_INVULNERABLE) || ((objp == other_obj) && (wip->wi_flags & WIF_ELECTRONICS))) ) {
+				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
+			}
 			ship_apply_global_damage(objp, wobjp, pos, damage);
 			weapon_area_apply_blast(NULL, objp, pos, blast, 0);
 			break;

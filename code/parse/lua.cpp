@@ -3,6 +3,7 @@
 #include "asteroid/asteroid.h"
 #include "camera/camera.h"
 #include "cfile/cfilesystem.h"
+#include "cutscene/movie.h"
 #include "debris/debris.h"
 #include "cmdline/cmdline.h"
 #include "freespace2/freespace.h"
@@ -1522,7 +1523,7 @@ ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Cust
 	if (!ade_get_args(L, "o", l_HudGauge.GetPtr(&gauge)))
 		return ADE_RETURN_NIL;
 
-	if (gauge->getConfigType() != HUD_OBJECT_CUSTOM)
+	if (gauge->getObjectType() != HUD_OBJECT_CUSTOM)
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "s", gauge->getCustomGaugeName());
@@ -1536,7 +1537,7 @@ ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Cust
 	if (!ade_get_args(L, "o|s", l_HudGauge.GetPtr(&gauge), text))
 		return ADE_RETURN_NIL;
 
-	if (gauge->getConfigType() != HUD_OBJECT_CUSTOM)
+	if (gauge->getObjectType() != HUD_OBJECT_CUSTOM)
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR && text != NULL)
@@ -10031,7 +10032,7 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	}
 
 	if(f_rot) {
-		aip->ai_override_flags = AIORF_FULL;
+		aip->ai_override_flags |= AIORF_FULL;
 		cip->heading = arr[0];
 		cip->pitch = arr[1];
 		cip->bank = arr[2];
@@ -10050,10 +10051,10 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 		} 
 	}
 	if(f_move) {
-		aip->ai_override_flags = AIORF_FULL_LAT;
+		aip->ai_override_flags |= AIORF_FULL_LAT;
 		cip->vertical = arr[3];
 		cip->sideways = arr[4];
-		cip->forward = arr[5];
+		cip->forward = arr[5];	
 	} else {
 		if (arr[3] != 0) {
 			cip->vertical = arr[3];
@@ -12007,7 +12008,7 @@ ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]",
 
 ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played", "boolean", "True if sound was played, false if not (Replaced with a sound instance object in the future)")
 {
-	int idx;
+	int idx, gamesnd_idx;
 	float pan=0.0f;
 	float vol=100.0f;
 	int pri=0;
@@ -12024,20 +12025,32 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
     CLAMP(pan, -1.0f, 1.0f);
     CLAMP(vol, 0.0f, 100.0f);
 
-	idx = snd_play(&Snds[gamesnd_get_by_tbl_index(idx)], pan, vol*0.01f, pri, voice_msg);
+	gamesnd_idx = gamesnd_get_by_tbl_index(idx);
 
-	return ade_set_args(L, "b", idx > -1);
+	if (gamesnd_idx >= 0) {
+		int sound_handle = snd_play(&Snds[gamesnd_idx], pan, vol*0.01f, pri, voice_msg);
+		return ade_set_args(L, "b", sound_handle >= 0);
+	} else {
+		LuaError(L, "Invalid sound index %i (Snds[%i]) in playGameSound()", idx, gamesnd_idx);
+		return ADE_RETURN_FALSE;
+	}
 }
 
 ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
-	int idx;
+	int idx, gamesnd_idx;
 	if(!ade_get_args(L, "i", &idx))
 		return ade_set_error(L, "b", false);
 
-	gamesnd_play_iface(gamesnd_get_by_iface_tbl_index(idx));
+	gamesnd_idx = gamesnd_get_by_iface_tbl_index(idx);
 
-	return ade_set_args(L, "b", idx > -1);
+	if (gamesnd_idx >= 0) {
+		gamesnd_play_iface(gamesnd_idx);
+		return ade_set_args(L, "b", true);
+	} else {
+		LuaError(L, "Invalid sound index %i (Snds[%i]) in playInterfaceSound()", idx, gamesnd_idx);
+		return ADE_RETURN_FALSE;
+	}
 }
 
 extern float Master_event_music_volume;
@@ -14354,7 +14367,24 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean"
 	if(!ade_get_args(L, "s", &s))
 		return ADE_RETURN_FALSE;
 
-	snprintf(buf, 8191, "( when ( true ) ( %s ) )", s);
+	while (is_white_space(*s))
+		s++;
+	if (*s != '(')
+	{
+		static bool Warned_about_runSEXP_parentheses = false;
+		if (!Warned_about_runSEXP_parentheses)
+		{
+			Warned_about_runSEXP_parentheses = true;
+			Warning(LOCATION, "Invalid SEXP syntax: SEXPs must be surrounded by parentheses.  For backwards compatibility, the string has been enclosed in parentheses.  This may not be correct in all use cases.");
+		}
+		// this is the old sexp handling method, which is incorrect
+		snprintf(buf, 8191, "( when ( true ) ( %s ) )", s);
+	}
+	else
+	{
+		// this is correct usage
+		snprintf(buf, 8191, "( when ( true ) %s )", s);
+	}
 
 	r_val = run_sexp(buf);
 
@@ -14483,7 +14513,7 @@ ADE_FUNC(__len, l_Mission_Events, NULL, "Number of events in mission", "number",
 //****SUBLIBRARY: Mission/SEXPVariables
 ade_lib l_Mission_SEXPVariables("SEXPVariables", &l_Mission, NULL, "SEXP Variables");
 
-ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[1] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
+ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[\"newvariable\"] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
 {
 	char *name = NULL;
 	char *newval = NULL;
@@ -15130,9 +15160,6 @@ ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class=WeaponClass[1], orientatio
 
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
 {
-	if(!(Game_mode & GM_IN_MISSION))
-		return ade_set_error(L, "s", "");
-
 	return ade_set_args(L, "s", Game_current_mission_filename);
 }
 
@@ -15583,6 +15610,18 @@ ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enable
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(playCutscene, l_Testing, NULL, "Forces a cutscene by the specified filename string to play. Should really only be used in a non-gameplay state (i.e. start of GS_STATE_BRIEFING) otherwise odd side effects may occur. Highly Experimental.", "string", NULL)
+{
+	//This whole thing is a quick hack and can probably be done way better, but is currently functioning fine for my purposes.
+	char *filename;
+
+	if (!ade_get_args(L, "s", &filename))
+		return ADE_RETURN_FALSE;
+
+	movie_play(filename);
+
+	return ADE_RETURN_TRUE;
+}
 
 // *************************Helper functions*********************
 //WMC - This should be used anywhere that an 'object' is set, so
@@ -16388,11 +16427,7 @@ static int ade_index_handler(lua_State *L)
 				//Execute function
 				lua_pcall(L, numargs, LUA_MULTRET, err_ldx);
 
-				//WMC - Return as appropriate
-				int rval = lua_gettop(L) - vvt_ldx;
-
-				if(rval)
-					return rval;
+				return (lua_gettop(L) - vvt_ldx);
 			}
 			else
 			{
@@ -16422,10 +16457,7 @@ static int ade_index_handler(lua_State *L)
 			//Execute function
 			lua_pcall(L, last_arg_ldx, LUA_MULTRET, err_ldx);
 
-			int rval = lua_gettop(L) - err_ldx;
-
-			if(rval)
-				return rval;
+			return (lua_gettop(L) - err_ldx);
 		}
 		lua_pop(L, 2);	//WMC - Don't need __indexer or error handler
 	}

@@ -337,6 +337,10 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		switch(objp->type) {
 		case OBJ_SHIP:
 			sw->obj_sig_hitlist[sw->num_objs_hit++] = objp->signature;
+			// If we're doing an AoE Electronics shockwave, do the electronics stuff. -MageKing17
+			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags3 & WIF3_AOE_ELECTRONICS) && !(objp->flags & OF_INVULNERABLE) ) {
+				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
+			}
 			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage );
 			weapon_area_apply_blast(NULL, objp, &sw->pos, blast, 1);
 			break;

@@ -61,6 +61,8 @@
 #define DEBRIEF_ALLTIME_STATS		2
 #define DEBRIEF_ALLTIME_KILLS		3
 
+#define DEBRIEFING_FONT	FONT1
+
 extern float Brief_text_wipe_time_elapsed;
 
 // 3rd coord is max width in pixels
@@ -1924,6 +1926,9 @@ void debrief_init()
 //	Campaign.loop_enabled = 0;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
 
+	// MageKing17 - Set the font so that wordwrapping in brief_color_text_init() calculates based on the same font as the debriefing itself.
+	gr_set_font(DEBRIEFING_FONT);
+
 	// set up the right briefing for this guy
 	if(MULTI_TEAM){
 		Debriefing = &Debriefings[Net_player->p_info.team];
@@ -2253,6 +2258,8 @@ void debrief_add_award_text(char *str)
 	// maybe translate for displaying
 	if (Lcl_gr) {
 		lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
+	} else if (Lcl_pl) {
+		lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
 	}
 
 	Debrief_award_text_num_lines++;
@@ -2462,6 +2469,9 @@ void debrief_do_frame(float frametime)
 	gr_set_color_fast(&Color_normal);
 	gr_printf_menu(Debrief_title_coords[gr_screen.res][0], Debrief_title_coords[gr_screen.res][1] - 10, NOX("[name: %s, mod: %s]"), Mission_filename, The_mission.modified);
 #endif
+
+	// Set the font for the debriefing instead of relying on the implicit font-setting of Debrief_ui_window.draw() -MageKing17
+	gr_set_font(DEBRIEFING_FONT);
 
 	// draw the screen-specific text
 	switch (Current_mode) {

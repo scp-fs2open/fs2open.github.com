@@ -89,7 +89,7 @@ bool is_subsys_destroyed(ship *shipp, int submodel)
 
 	for ( subsys=GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list); subsys = GET_NEXT(subsys) ) {
 		if (subsys->system_info->subobj_num == submodel) {
-			if (subsys->current_hits > 0) {
+			if (subsys->current_hits > 0.0f) {
 				return false;
 			} else {
 				return true;
@@ -327,6 +327,11 @@ int shiphit_get_damage_weapon(object *damaging_objp)
 		case OBJ_SHOCKWAVE:
 			weapon_info_index = shockwave_get_weapon_index(damaging_objp->instance);
 			break;
+		case OBJ_BEAM:
+			if (Beams_use_damage_factors) {
+				weapon_info_index = beam_get_weapon_info_index(damaging_objp);
+			}
+			break;
 		default:
 			weapon_info_index = -1;
 			break;
@@ -486,7 +491,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
-	if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON)) {
+	if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) ||
+				(Beams_use_damage_factors && (other_obj->type == OBJ_BEAM)))) {
 		if ( Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING ) {
 			return damage_left;
 		}
@@ -519,7 +525,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		if (damage < 0.0f) {
 			// single player or multiplayer
 			Assert(Player_ai->targeted_subsys != NULL);
-			if ( (subsys == Player_ai->targeted_subsys) && (subsys->current_hits > 0) ) {
+			if ( (subsys == Player_ai->targeted_subsys) && (subsys->current_hits > 0.0f) ) {
 				Assert(mss->type == (int) -damage);
 				if (!(subsys->flags & SSF_NO_AGGREGATE)) {
 					ship_p->subsys_info[mss->type].aggregate_current_hits -= subsys->current_hits;
@@ -1365,7 +1371,7 @@ void player_died_start(object *killer_objp)
 void saturate_fabs(float *f, float max)
 {
 	if ( fl_abs(*f) > max) {
-		if (*f > 0)
+		if (*f > 0.0f)
 			*f = max;
 		else
 			*f = -max;
@@ -1448,7 +1454,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	//SUSHI: What are the chances of an instant vaporization? Check the ship type first (objecttypes.tbl), then the ship (ships.tbl)
 	ship_type_info *stp = &Ship_types[sip->class_type];
 	float vapChance = stp->vaporize_chance;
-	if (sip->vaporize_chance > 0)
+	if (sip->vaporize_chance > 0.0f)
 		vapChance = sip->vaporize_chance;
 
 	if (sp->flags & SF_VAPORIZE || frand() < vapChance) {
@@ -2049,12 +2055,12 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			shield_factor = Weapon_info[weapon_info_index].shield_factor;
 		}
 
-		if ( shield_factor >= 0 ) {
+		if ( shield_factor >= 0.0f ) {
 			damage *= shield_factor;
 			subsystem_damage *= shield_factor;
 		}
 
-		if ( damage > 0 ) {
+		if ( damage > 0.0f ) {
 
 			float piercing_pct = 0.0f;
 			int dmg_type_idx = -1;
@@ -2099,7 +2105,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 
 			damage = apply_damage_to_shield(ship_objp, quadrant, damage);
 
-			if(damage > 0.0f){
+			if (damage > 0.0f) {
 				subsystem_damage *= (damage / pre_shield);
 			} else {
 				subsystem_damage = 0.0f;
@@ -2112,7 +2118,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		}
 
 		// if shield damage was increased, don't carry over leftover damage at scaled level
-		if ( shield_factor > 1 ) {
+		if ( shield_factor > 1.0f ) {
 			damage /= shield_factor;
 
 			subsystem_damage /= shield_factor;
@@ -2128,7 +2134,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 
 		subsystem_damage = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, subsystem_damage, &apply_hull_armor);
 
-		if(subsystem_damage > 0.0f){
+		if (subsystem_damage > 0.0f) {
 			damage *= (subsystem_damage / pre_subsys);
 		} else {
 			damage = 0.0f;
@@ -2164,7 +2170,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		}
 
 		// continue with damage?
-		if(damage > 0.0){
+		if (damage > 0.0f) {
 			weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 			if ( weapon_info_index >= 0 ) {
 				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) {
@@ -2304,17 +2310,17 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	{
 		weapon_info *wip;
 		Assert(other_obj->instance >= 0);
-		if(other_obj->instance < 0){
+		if (other_obj->instance < 0) {
 			return;
 		}
 		Assert(Weapons[other_obj->instance].weapon_info_index >= 0);
-		if(Weapons[other_obj->instance].weapon_info_index < 0){
+		if (Weapons[other_obj->instance].weapon_info_index < 0) {
 			return;
 		}
 		wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 
 		// if its a leech weapon - NOTE - unknownplayer: Perhaps we should do something interesting like direct the leeched energy into the attacker ?
-		if(wip->wi_flags & WIF_ENERGY_SUCK){
+		if (wip->wi_flags & WIF_ENERGY_SUCK) {
 			// reduce afterburner fuel
 			shipp->afterburner_fuel -= wip->afterburner_reduce;
 			shipp->afterburner_fuel = (shipp->afterburner_fuel < 0.0f) ? 0.0f : shipp->afterburner_fuel;

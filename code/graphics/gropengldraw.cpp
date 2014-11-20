@@ -306,16 +306,18 @@ void gr_opengl_aabitmap(int x, int y, int resize_mode, bool mirror)
 	opengl_aabitmap_ex_internal(dx1, dy1, (dx2 - dx1 + 1), (dy2 - dy1 + 1), sx, sy, resize_mode, mirror);
 }
 
+#define MAX_VERTS_PER_DRAW 120
 struct v4 { GLfloat x,y,u,v; };
+static v4 GL_string_render_buff[MAX_VERTS_PER_DRAW];
 
-void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
+void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 {
 	int width, spacing, letter;
-	int x, y;
+	float x, y;
 	bool do_resize;
 	float bw, bh;
 	float u0, u1, v0, v1;
-	int x1, x2, y1, y2;
+	float x1, x2, y1, y2;
 	float u_scale, v_scale;
 
 	if ( !Current_font || (*s == 0) ) {
@@ -334,9 +336,7 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 		return;
 	}
 
-	// conversion from quads to triangles requires six vertices per quad
-	struct v4 *glVert = (struct v4*) vm_malloc(sizeof(struct v4) * strlen(s) * 6);
-	int curChar = 0;
+	int buffer_offset = 0;
 
 	int ibw, ibh;
 
@@ -367,9 +367,9 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 	x = sx;
 	y = sy;
 
-	if (sx == 0x8000) {
+	if (sx == (float)0x8000) {
 		// centered
-		x = get_centered_x(s, !do_resize);
+		x = (float)get_centered_x(s, !do_resize);
 	} else {
 		x = sx;
 	}
@@ -377,6 +377,15 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 	spacing = 0;
 
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
+
+	GL_state.Array.BindArrayBuffer(0);
+
+	GL_state.Array.EnableClientVertex();
+	GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(v4), &GL_string_render_buff[0].x);
+
+	GL_state.Array.SetActiveClientUnit(0);
+	GL_state.Array.EnableClientTexture();
+	GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(v4), &GL_string_render_buff[0].u);
 
 	// pick out letter coords, draw it, goto next letter and do the same
 	while (*s)	{
@@ -386,9 +395,9 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 			s++;
 			y += Current_font->h;
 
-			if (sx == 0x8000) {
+			if (sx == (float)0x8000) {
 				// centered
-				x = get_centered_x(s, !do_resize);
+				x = (float)get_centered_x(s, !do_resize);
 			} else {
 				x = sx;
 			}
@@ -401,13 +410,13 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 		letter = get_char_width(s[0], s[1], &width, &spacing);
 		s++;
 
-		//not in font, draw as space
+		// not in font, draw as space
 		if (letter < 0) {
 			continue;
 		}
 
-		int xd, yd, xc, yc;
-		int wc, hc;
+		float xd, yd, xc, yc;
+		float wc, hc;
 
 		// Check if this character is totally clipped
 		if ( (x + width) < clip_left ) {
@@ -463,8 +472,8 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 		y2 = y1 + hc;
 
 		if (do_resize) {
-			gr_resize_screen_pos( &x1, &y1, NULL, NULL, resize_mode );
-			gr_resize_screen_pos( &x2, &y2, NULL, NULL, resize_mode );
+			gr_resize_screen_posf( &x1, &y1, NULL, NULL, resize_mode );
+			gr_resize_screen_posf( &x2, &y2, NULL, NULL, resize_mode );
 		}
 
 		u0 = u_scale * (i2fl(u+xd) / bw);
@@ -472,52 +481,64 @@ void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
 
 		u1 = u_scale * (i2fl((u+xd)+wc) / bw);
 		v1 = v_scale * (i2fl((v+yd)+hc) / bh);
+		
+		if ( buffer_offset == MAX_VERTS_PER_DRAW ) {
+			glDrawArrays(GL_TRIANGLES, 0, buffer_offset);
+			buffer_offset = 0;
+		}
 
-		glVert[curChar*6 + 0].x = (GLfloat)x1;
-		glVert[curChar*6 + 0].y = (GLfloat)y2;
-		glVert[curChar*6 + 0].u = u0;
-		glVert[curChar*6 + 0].v = v1;
+		GL_string_render_buff[buffer_offset].x = (GLfloat)x1;
+		GL_string_render_buff[buffer_offset].y = (GLfloat)y1;
+		GL_string_render_buff[buffer_offset].u = u0;
+		GL_string_render_buff[buffer_offset].v = v0;
+		buffer_offset++;
 
-		glVert[curChar*6 + 1].x = (GLfloat)x2;
-		glVert[curChar*6 + 1].y = (GLfloat)y2;
-		glVert[curChar*6 + 1].u = u1;
-		glVert[curChar*6 + 1].v = v1;
+		GL_string_render_buff[buffer_offset].x = (GLfloat)x1;
+		GL_string_render_buff[buffer_offset].y = (GLfloat)y2;
+		GL_string_render_buff[buffer_offset].u = u0;
+		GL_string_render_buff[buffer_offset].v = v1;
+		buffer_offset++;
 
-		glVert[curChar*6 + 2].x = (GLfloat)x1;
-		glVert[curChar*6 + 2].y = (GLfloat)y1;
-		glVert[curChar*6 + 2].u = u0;
-		glVert[curChar*6 + 2].v = v0;
+		GL_string_render_buff[buffer_offset].x = (GLfloat)x2;
+		GL_string_render_buff[buffer_offset].y = (GLfloat)y1;
+		GL_string_render_buff[buffer_offset].u = u1;
+		GL_string_render_buff[buffer_offset].v = v0;
+		buffer_offset++;
 
-		glVert[curChar*6 + 3] = glVert[curChar*6 + 1];
-		glVert[curChar*6 + 4] = glVert[curChar*6 + 2];
+		GL_string_render_buff[buffer_offset].x = (GLfloat)x1;
+		GL_string_render_buff[buffer_offset].y = (GLfloat)y2;
+		GL_string_render_buff[buffer_offset].u = u0;
+		GL_string_render_buff[buffer_offset].v = v1;
+		buffer_offset++;
 
-		glVert[curChar*6 + 5].x = (GLfloat)x2;
-		glVert[curChar*6 + 5].y = (GLfloat)y1;
-		glVert[curChar*6 + 5].u = u1;
-		glVert[curChar*6 + 5].v = v0;
+		GL_string_render_buff[buffer_offset].x = (GLfloat)x2;
+		GL_string_render_buff[buffer_offset].y = (GLfloat)y1;
+		GL_string_render_buff[buffer_offset].u = u1;
+		GL_string_render_buff[buffer_offset].v = v0;
+		buffer_offset++;
 
-		curChar++;
+		GL_string_render_buff[buffer_offset].x = (GLfloat)x2;
+		GL_string_render_buff[buffer_offset].y = (GLfloat)y2;
+		GL_string_render_buff[buffer_offset].u = u1;
+		GL_string_render_buff[buffer_offset].v = v1;
+		buffer_offset++;
 	}
 
-	GL_state.Array.BindArrayBuffer(0);
-
-	GL_state.Array.EnableClientVertex();
-	GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(struct v4), &glVert[0].x);
-
-	GL_state.Array.SetActiveClientUnit(0);
-	GL_state.Array.EnableClientTexture();
-	GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(struct v4), &glVert[0].u);
-
-	glDrawArrays(GL_TRIANGLES, 0, curChar * 6);
+	if ( buffer_offset ) {
+		glDrawArrays(GL_TRIANGLES, 0, buffer_offset);
+	}
 
 	GL_state.Array.DisableClientVertex();
 	GL_state.Array.DisableClientTexture();
 
 	GL_state.CullFace(cull_face);
 
-	vm_free(glVert);
-
 	GL_CHECK_FOR_ERRORS("end of string()");
+}
+
+void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
+{
+	gr_opengl_string(i2fl(sx), i2fl(sy), s, resize_mode);
 }
 
 void gr_opengl_line(int x1,int y1,int x2,int y2, int resize_mode)
@@ -2628,10 +2649,10 @@ void gr_opengl_scene_texture_end()
 			};
 
 			GLfloat uvcoords[8] = {
-				0.0f, 0.0f,
 				Scene_texture_u_scale, 0.0f,
-				Scene_texture_u_scale, Scene_texture_v_scale,
+				0.0f, 0.0f,
 				0.0f, Scene_texture_v_scale,
+				Scene_texture_u_scale, Scene_texture_v_scale
 			};
 
 			GL_state.Array.EnableClientVertex();

@@ -321,26 +321,21 @@ float vm_vec_dot3(float x,float y,float z,vec3d *v)
 //returns magnitude of a vector
 float vm_vec_mag(vec3d *v)
 {
-	float x,y,z,mag1, mag2;
-	x = v->xyz.x*v->xyz.x;
-	y = v->xyz.y*v->xyz.y;
-	z = v->xyz.z*v->xyz.z;
+	float mag1;
 
-	mag1 = x+y+z;
+	mag1 = (v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z);
 
-	mag2 = fl_sqrt(mag1);
-	return mag2;
+	if (mag1 <= 0.0f) {
+		return 0.0f;
+	}
+
+	return fl_sqrt(mag1);
 }
 
 //returns squared magnitude of a vector, useful if you want to compare distances
 float vm_vec_mag_squared(vec3d *v)
 {
-	float x,y,z,mag1;
-	x = v->xyz.x*v->xyz.x;
-	y = v->xyz.y*v->xyz.y;
-	z = v->xyz.z*v->xyz.z;
-	mag1 = x+y+z;
-	return mag1;
+	return ((v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z));
 }
 
 float vm_vec_dist_squared(vec3d *v0, vec3d *v1)
@@ -390,14 +385,20 @@ float vm_vec_mag_quick(vec3d *v)
 		c = v->xyz.z;
 
 	if (a < b) {
-		float temp=a; a=b; b=temp;
+		t = a;
+		a = b;
+		b = t;
 	}
 
 	if (b < c) {
-		float temp=b; b=c; c=temp;
+		t = b;
+		b = c;
+		c = t;
 
 		if (a < b) {
-			float temp2=a; a=b; b=temp2;
+			t = a;
+			a = b;
+			b = t;
 		}
 	}
 

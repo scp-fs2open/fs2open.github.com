@@ -5381,6 +5381,13 @@ void parse_asteroid_fields(mission *pm)
 		required_string("$Maximum:");
 		stuff_vec3d(&Asteroid_field.max_bound);
 
+		vec3d a_rad;
+		vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
+		vm_vec_scale(&a_rad, 0.5f);
+		float b_rad = vm_vec_mag(&a_rad);
+
+		Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
+
 		if (optional_string("+Inner Bound:")) {
 			Asteroid_field.has_inner_bound = 1;
 

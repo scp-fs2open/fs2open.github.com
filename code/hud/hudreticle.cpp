@@ -403,6 +403,16 @@ void HudGaugeThrottle::initMatchSpeedOffsets(int x, int y, bool custom)
 	Match_speed_offsets[0] = x;
 	Match_speed_offsets[1] = y;
 	Use_custom_match_speed = custom;
+
+	ubyte sc = lcl_get_font_index(font_num);
+	// NOTE: default to normal m because either
+	// a) the german font has no special m (its an a)
+	// b) the font has no special characters
+	if (sc == 0 || Lcl_gr) {
+		Match_speed_icon = ubyte ('m');
+	} else {
+		Match_speed_icon = sc + 3;
+	}
 }
 
 void HudGaugeThrottle::initBitmaps(char *fname)
@@ -572,13 +582,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 		}
 	} else if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
 		if ( Use_custom_match_speed ) {
-			if (Lcl_gr) {
-				// print an m, cuz the voice says its an m.  
-				// its a normal m cuz the german font has no special m (its an a)
-				renderString(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1], "m");
-			} else {
-				renderPrintf(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1], "%c", Lcl_special_chars + 3);
-			}
+			renderPrintf(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1], "%c", Match_speed_icon);
 		} else {
 			int offset;
 			if ( current_speed <= 9.5 ) {
@@ -587,13 +591,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 				offset = 3;
 			}
 
-			if (Lcl_gr) {
-				// print an m, cuz the voice says its an m.  
-				// its a normal m cuz the german font has no special m (its an a)
-				renderString(sx+offset, sy + h, "m");
-			} else {
-				renderPrintf(sx+offset, sy + h, "%c", Lcl_special_chars + 3);
-			}
+			renderPrintf(sx+offset, sy + h, "%c", Match_speed_icon);
 		}
 	}
 }

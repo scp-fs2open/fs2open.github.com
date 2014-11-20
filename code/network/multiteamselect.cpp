@@ -1478,7 +1478,7 @@ int multi_ts_player_index(int region)
 // blit any active ship information text
 void multi_ts_blit_ship_info()
 {
-	int y_start;
+	int y_start, line_height;
 	ship_info *sip;
 	char str[100];
 
@@ -1492,6 +1492,8 @@ void multi_ts_blit_ship_info()
 
 	// starting line
 	y_start = Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_Y_COORD];
+
+	line_height = gr_get_font_height() + 1;
 
 	memset(str,0,100);
 
@@ -1508,7 +1510,7 @@ void multi_ts_blit_ship_info()
 
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, temp, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the ship type
 	gr_set_color_fast(&Color_normal);
@@ -1517,7 +1519,7 @@ void multi_ts_blit_ship_info()
 		gr_set_color_fast(&Color_bright);
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->type_str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the ship length
 	gr_set_color_fast(&Color_normal);
@@ -1526,7 +1528,7 @@ void multi_ts_blit_ship_info()
 		gr_set_color_fast(&Color_bright);
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->ship_length, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the max velocity
 	gr_set_color_fast(&Color_normal);
@@ -1534,7 +1536,7 @@ void multi_ts_blit_ship_info()
 	sprintf(str, XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
 	gr_set_color_fast(&Color_bright);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,str,GR_RESIZE_MENU);	
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the maneuverability
 	gr_set_color_fast(&Color_normal);
@@ -1543,7 +1545,7 @@ void multi_ts_blit_ship_info()
 		gr_set_color_fast(&Color_bright);
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->maneuverability_str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the armor
 	gr_set_color_fast(&Color_normal);
@@ -1552,7 +1554,7 @@ void multi_ts_blit_ship_info()
 		gr_set_color_fast(&Color_bright);
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->armor_str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the gun mounts 
 	gr_set_color_fast(&Color_normal);
@@ -1561,7 +1563,7 @@ void multi_ts_blit_ship_info()
 		gr_set_color_fast(&Color_bright);
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->gun_mounts, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the missile banke
 	gr_set_color_fast(&Color_normal);
@@ -1570,7 +1572,7 @@ void multi_ts_blit_ship_info()
 		gr_set_color_fast(&Color_bright);
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->missile_banks, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the manufacturer
 	gr_set_color_fast(&Color_normal);
@@ -1579,7 +1581,7 @@ void multi_ts_blit_ship_info()
 		gr_set_color_fast(&Color_bright);
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->manufacturer_str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the _short_ text description
 	
@@ -1587,7 +1589,7 @@ void multi_ts_blit_ship_info()
 	gr_set_color_fast(&Color_normal);
 	for(int idx=0;idx<Multi_ts_ship_info_line_count;idx++){
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, Multi_ts_ship_info_lines[idx], GR_RESIZE_MENU);
-		y_start += 10;
+		y_start += line_height;
 	}
 	
 }

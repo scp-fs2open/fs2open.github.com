@@ -355,6 +355,54 @@ bool turret_weapon_has_flags2(ship_weapon *swp, int flags)
 }
 
 /**
+ * Just gloms all the flags from all the weapons into one variable.  More efficient if all you need to do is test for the existence of a flag.
+ */
+int turret_weapon_aggregate_flags(ship_weapon *swp)
+{
+	Assert(swp != NULL);
+
+	int i = 0, flags = 0;
+	for (i = 0; i < swp->num_primary_banks; i++)
+	{
+		if (swp->primary_bank_weapons[i] >= 0) {
+			flags |= Weapon_info[swp->primary_bank_weapons[i]].wi_flags;
+		}
+	}
+	for (i = 0; i < swp->num_secondary_banks; i++)
+	{
+		if (swp->secondary_bank_weapons[i] >= 0) {
+			flags |= Weapon_info[swp->secondary_bank_weapons[i]].wi_flags;
+		}
+	}
+
+	return flags;
+}
+
+/**
+ * Just gloms all the flags from all the weapons into one variable.  More efficient if all you need to do is test for the existence of a flag.
+ */
+int turret_weapon_aggregate_flags2(ship_weapon *swp)
+{
+	Assert(swp != NULL);
+
+	int i = 0, flags2 = 0;
+	for (i = 0; i < swp->num_primary_banks; i++)
+	{
+		if (swp->primary_bank_weapons[i] >= 0) {
+			flags2 |= Weapon_info[swp->primary_bank_weapons[i]].wi_flags2;
+		}
+	}
+	for (i = 0; i < swp->num_secondary_banks; i++)
+	{
+		if (swp->secondary_bank_weapons[i] >= 0) {
+			flags2 |= Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2;
+		}
+	}
+
+	return flags2;
+}
+
+/**
  * Returns true if any of the weapons in swp have the subtype specified
  *
  * @note It might be a little faster to optimize based on WP_LASER should only appear in primaries
@@ -501,7 +549,11 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		weapon *wp = &Weapons[objp->instance];
 		weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
-		if ( (!(wip->wi_flags & WIF_BOMB) && !(Ai_info[Ships[turret_parent->instance].ai_index].ai_profile_flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
+		if (wip->subtype == WP_LASER && !(wip->wi_flags3 & WIF3_TURRET_INTERCEPTABLE)) {	// If the thing can't be shot down, don't try. -MageKing17
+			return 0;
+		}
+
+		if ( (!((wip->wi_flags & WIF_BOMB) || (wip->wi_flags3 & WIF3_TURRET_INTERCEPTABLE)) && !(Ai_info[Ships[turret_parent->instance].ai_index].ai_profile_flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
 			return 0;
 		}
 
@@ -1049,7 +1101,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 							objp = &Objects[mo->objnum];
 							
 							Assert(objp->type == OBJ_WEAPON);
-							if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
+							if ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags3 & WIF3_TURRET_INTERCEPTABLE))
 							{
 								evaluate_obj_as_target(objp, &eeo);
 							}
@@ -1826,8 +1878,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 		// now do anything else
 		else {
-			for (int i=0; i < wip->shots; i++)
-			{
+			for (int i = 0; i < wip->shots; i++) {
 				// zookeeper - Firepoints should cycle normally between shots, 
 				// so we need to get the position info separately for each shot
 				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, turret_pos, turret_fvec, 1, NULL);
@@ -1837,9 +1888,9 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
 				if (weapon_objnum != -1) {
-					objp=&Objects[weapon_objnum];
-					wp=&Weapons[objp->instance];
-					wip=&Weapon_info[wp->weapon_info_index];
+					objp = &Objects[weapon_objnum];
+					wp = &Weapons[objp->instance];
+					wip = &Weapon_info[wp->weapon_info_index];
 
 					parent_ship->last_fired_turret = turret;
 					turret->last_fired_weapon_info_index = wp->weapon_info_index;
@@ -1852,7 +1903,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[parent_objnum]);
 
 					// if the gun is a flak gun
-					if(wip->wi_flags & WIF_FLAK){			
+					if (wip->wi_flags & WIF_FLAK) {			
 						// show a muzzle flash
 						flak_muzzle_flash(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
 
@@ -1868,8 +1919,10 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						{
 							flak_set_range(objp, flak_range_override);
 						}
-					} else if(wip->muzzle_flash > -1) {	
-						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);		
+					}
+					// otherwise just do mflash if the weapon has it
+					else if (wip->muzzle_flash >= 0) {
+						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
 					}
 
 					// in multiplayer (and the master), then send a turret fired packet.
@@ -1959,6 +2012,11 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		Weapons[Objects[weapon_objnum].instance].turret_subsys = tsi->turret;
 		Weapons[Objects[weapon_objnum].instance].target_num = tsi->turret->turret_enemy_objnum;
 
+		// muzzle flash?
+		if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
+			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
+		}
+
 		// maybe sound
 		if ( Weapon_info[tsi->weapon_class].launch_snd != -1 ) {
 			// Don't play turret firing sound if turret sits on player ship... it gets annoying.
@@ -1966,8 +2024,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 				snd_play_3d( &Snds[Weapon_info[tsi->weapon_class].launch_snd], &turret_pos, &View_position );
 			}
 		}
-		if(Weapon_info[tsi->weapon_class].muzzle_flash > -1)
-			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
+
 		// in multiplayer (and the master), then send a turret fired packet.
 		if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
 			int subsys_index;
@@ -2054,7 +2111,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			// (NOTE: this will probably get changed by other parts of the code (swarming, beams, etc) to be
 			// a more accurate time, but we need to give it a long enough time for the other parts of the code
 			// to change the timestamp before it gets acted upon - taylor)
-			ss->turret_animation_done_time = timestamp(1000);
+			ss->turret_animation_done_time = timestamp(200);
 		} else {
 			return;
 		}

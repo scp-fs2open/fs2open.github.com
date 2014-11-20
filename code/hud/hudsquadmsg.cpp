@@ -832,6 +832,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 
 	// if it's a weapon, then it needs to be a WIF_BOMB weapon.  Only attack order valid, and only
 	// valid on bombs not on the player's team
+	// MageKing17: Now also works on WIF3_FIGHTER_INTERCEPTABLE weapons.
 	if ( objp->type == OBJ_WEAPON ) {
 		
 		if (Weapons[objp->instance].lssm_stage==3){
@@ -839,7 +840,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 		}
 		
 		if ( (Comm_orders[order].item == ATTACK_TARGET_ITEM )
-			&& (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
+			&& ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags3 & WIF3_FIGHTER_INTERCEPTABLE))
 			&& (Weapons[objp->instance].team != ordering_shipp->team) )
 
 			return 1;
@@ -2462,6 +2463,11 @@ int hud_query_order_issued(char *to, char *order_name, char *target_name, int ti
 							}
 							
 							int target_ship = ship_name_lookup(target_name);
+                            
+							if(target_ship<0) {
+								continue;
+							}
+                            
 							int subsys_index = ship_get_subsys_index(&Ships[target_ship], special_argument, 1); 
 							// if the order is for s different subsystem
 							if (Squadmsg_history[i].special_index != subsys_index) {

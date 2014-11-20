@@ -460,8 +460,7 @@ typedef struct glow_point_bank {  // glow bank structure -Bobboau
 	int			on_time; 
 	int			off_time; 
 	int			disp_time; 
-	int			is_on; 
-	int			is_active; 
+	bool		is_on;
 	int			submodel_parent; 
 	int			LOD; 
 	int			num_points; 

@@ -1791,7 +1791,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				{
 					glow_point_bank *bank = &pm->glow_point_banks[gpb];
 
-					bank->is_on = 1;
+					bank->is_on = true;
 					bank->glow_timestamp = 0;
 					bank->disp_time = cfread_int(fp);
 					bank->on_time = cfread_int(fp);
@@ -1805,8 +1805,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					if (bank->num_points > 0)
 						bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
 
-					if((bank->off_time > 0) && (bank->disp_time > 0))
-						bank->is_on = 0;
+					if ((bank->off_time > 0) && (bank->disp_time > 0))
+						bank->is_on = false;
 	
 					cfread_string_len(props, MAX_PROP_LEN, fp);
 					// look for $glow_texture=xxx

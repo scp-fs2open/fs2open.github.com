@@ -905,18 +905,17 @@ cmdline_parm::cmdline_parm(const char *name_, const char *help_, const int arg_t
 	name_found = 0;
 
 	if (Parm_list_inited == 0) {
-		list_init(&Parm_list);
+		Assertion(&Parm_list == this, "Coding error! 1st initialised cmdline_parm must be static Parm_list\n");
+		list_init(this);
 		Parm_list_inited = 1;
-	}
-
-	if (name != NULL) {
+	} else {
+		Assertion(name, "Coding error! cmdline_parm's must have a non-NULL name\n");
+		Assertion(name[0] == '-', "Coding error! cmdline_parm's must start with a '-'\n");
 		// not in the static Parm_list init, so lookup the NULL help args
 		if (help == NULL) {
 			help = get_param_desc(name);
 		}
 		list_append(&Parm_list, this);
-	} else {
-		list_init(&Parm_list);
 	}
 }
 

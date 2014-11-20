@@ -1957,27 +1957,28 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 
 	polymodel *pm = model_get(model_num);
 
-
 	model_do_dumb_rotation(model_num);
 
 	if (flags & MR_FORCE_CLAMP)
 		gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
 
 	int time = timestamp();
+
 	for (int i = 0; i < pm->n_glow_point_banks; i++ ) { //glow point blink code -Bobboau
 		glow_point_bank *bank = &pm->glow_point_banks[i];
+
 		if (bank->glow_timestamp == 0)
-			bank->glow_timestamp=time;
-		if(bank->off_time){
-			if(bank->is_on){
-				if( (bank->on_time) > ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ){
-					bank->glow_timestamp=time;
-					bank->is_on=0;
+			bank->glow_timestamp = time;
+		if (bank->off_time) {
+			if (bank->is_on) {
+				if ( (bank->on_time) > ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ) {
+					bank->glow_timestamp = time;
+					bank->is_on = false;
 				}
-			}else{
-				if( (bank->off_time) < ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ){
-					bank->glow_timestamp=time;
-					bank->is_on=1;
+			} else {
+				if ( (bank->off_time) < ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ) {
+					bank->glow_timestamp = time;
+					bank->is_on = true;
 				}
 			}
 		}
@@ -4839,8 +4840,7 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 
 		// get animation frame
 		frame = fl2i((cur_time * num_frames) / total_time);
-		if (frame < 0) frame = 0;
-		if (frame >= num_frames) frame = num_frames - 1;
+		CLAMP(frame, 0, num_frames - 1);
 
 		// advance to the correct frame
 		texture += frame;

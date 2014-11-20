@@ -770,12 +770,13 @@ void HudGauge::renderStringAlignCenter(int x, int y, int area_width, const char 
 void HudGauge::renderPrintf(int x, int y, const char* format, ...)
 {
 	char tmp[256] = "";
-	va_list args;	
+	va_list args;
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	renderString(x, y, tmp);
 }
@@ -783,12 +784,13 @@ void HudGauge::renderPrintf(int x, int y, const char* format, ...)
 void HudGauge::renderPrintf(int x, int y, int gauge_id, const char* format, ...)
 {
 	char tmp[256] = "";
-	va_list args;	
+	va_list args;
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	renderString(x, y, gauge_id, tmp);
 }
@@ -1751,7 +1753,11 @@ void hud_maybe_display_supernova()
 	}
 
 	gr_set_color_fast(&Color_bright_red);
-	gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning: %.2f s", time_left);
+	if (Lcl_pl) {
+		gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Wybuch supernowej: %.2f s", time_left);
+	} else {
+		gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning: %.2f s", time_left);
+	}
 }
 
 /**
@@ -3914,7 +3920,11 @@ void HudGaugeSupernova::render(float frametime)
 	}
 
 	gr_set_color_fast(&Color_bright_red);
-	renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
+	if (Lcl_pl) {
+		renderPrintf(position[0], position[1], "Wybuch supernowej: %.2f s", time_left);
+	} else {
+		renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
+	}
 }
 
 HudGaugeFlightPath::HudGaugeFlightPath():

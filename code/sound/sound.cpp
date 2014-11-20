@@ -253,11 +253,12 @@ void snd_spew_debug_info()
 	}
 
 	// spew info
+	int line_height = gr_get_font_height() + 1;
 	gr_set_color_fast(&Color_normal);
 	gr_printf_no_resize(30, 100, "Game sounds : %d\n", game_sounds);
-	gr_printf_no_resize(30, 110, "Interface sounds : %d\n", interface_sounds);
-	gr_printf_no_resize(30, 120, "Message sounds : %d\n", message_sounds);
-	gr_printf_no_resize(30, 130, "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
+	gr_printf_no_resize(30, 100 + line_height, "Interface sounds : %d\n", interface_sounds);
+	gr_printf_no_resize(30, 100 + (line_height * 2), "Message sounds : %d\n", message_sounds);
+	gr_printf_no_resize(30, 100 + (line_height * 3), "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
 }
 
 // ---------------------------------------------------------------------------------------
