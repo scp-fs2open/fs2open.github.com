@@ -1996,6 +1996,10 @@ int parse_weapon(int subtype, bool replace)
 		else if(optional_string("+Old Style:")) {
 			wip->elec_use_new_style=0;
 		}
+
+		if(optional_string("+Area Of Effect")) {
+			wip->wi_flags3 |= WIF3_AOE_ELECTRONICS;
+		}
 		
 		//New only -WMC
 		if(optional_string("+Intensity:")) {
@@ -5887,6 +5891,11 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 		switch ( objp->type ) {
 		case OBJ_SHIP:
+			// If we're doing an AoE Electronics blast, do the electronics stuff (unless it also has the regular "electronics"
+			// flag and this is the ship the missile directly impacted; then leave it for the regular code below) -MageKing17
+			if ( (wip->wi_flags3 & WIF3_AOE_ELECTRONICS) && !((objp->flags & OF_INVULNERABLE) || ((objp == other_obj) && (wip->wi_flags & WIF_ELECTRONICS))) ) {
+				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
+			}
 			ship_apply_global_damage(objp, wobjp, pos, damage);
 			weapon_area_apply_blast(NULL, objp, pos, blast, 0);
 			break;
