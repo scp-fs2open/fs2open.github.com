@@ -505,7 +505,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	float hitpos_dist = vm_vec_dist( hitpos, &ship_objp->pos );
 	if ( hitpos_dist > ship_objp->radius * 2.0f )	{
 		mprintf(( "BOGUS HITPOS PASSED TO DO_SUBOBJ_HIT_STUFF (%.1f > %.1f)!\nInvestigate Ship %s, a hit was registered on this ship outside this ship's radius.\n", hitpos_dist, ship_objp->radius * 2.0f, Ships[ship_objp->instance].ship_name ));
-		Error("BOGUS HITPOS PASSED TO DO_SUBOBJ_HIT_STUFF (%.1f > %.1f)!\nInvestigate Ship %s, a hit was registered on this ship outside this ship's radius.\n", hitpos_dist, ship_objp->radius * 2.0f, Ships[ship_objp->instance].ship_name);
+		Error(LOCATION,"BOGUS HITPOS PASSED TO DO_SUBOBJ_HIT_STUFF (%.1f > %.1f)!\nInvestigate Ship %s, a hit was registered on this ship outside this ship's radius.\n", hitpos_dist, ship_objp->radius * 2.0f, Ships[ship_objp->instance].ship_name);
 	}
 #endif
 
