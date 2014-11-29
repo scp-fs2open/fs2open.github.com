@@ -6769,7 +6769,7 @@ int sexp_calculate_angle(matrix *orient, int axis)
 	Assert(axis >= 0 && axis <= 2);
 
 	angles a;
-	vm_extract_angles_matrix(&a, orient);
+	vm_extract_angles_matrix_alternate(&a, orient);
 
 	// blugh
 	float rad;
@@ -6781,11 +6781,13 @@ int sexp_calculate_angle(matrix *orient, int axis)
 		default: rad = 0.0f; break;
 	}
 
-	int deg = static_cast<int>(fl_degrees(rad));
-	if (deg < 0)
-		deg += 360;
+	float deg = fl_degrees(rad);
 
-	return deg;
+	int deg2 = static_cast<int>(deg < 0.0f ? deg - 0.5f : deg + 0.5f);
+	if (deg2 < 0)
+		deg2 += 360;
+
+	return deg2;
 }
 
 // Goober5000
