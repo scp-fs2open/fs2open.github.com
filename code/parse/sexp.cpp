@@ -10096,9 +10096,9 @@ void multi_sexp_change_soundtrack()
 void sexp_pause_unpause_music(bool pause)
 {
 	if ( Sexp_music_handle != -1 ) {
-		if ( pause ) {
+		if ( pause && !audiostream_is_paused(Sexp_music_handle) ) {
 			audiostream_pause(Sexp_music_handle);
-		} else {
+		} else if ( !pause && audiostream_is_paused(Sexp_music_handle) ) {
 			audiostream_unpause(Sexp_music_handle);
 		}
 	}
