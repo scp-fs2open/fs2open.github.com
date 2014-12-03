@@ -560,6 +560,7 @@ sexp_oper Operators[] = {
 	{ "play-sound-from-table",			OP_PLAY_SOUND_FROM_TABLE,				4,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "play-sound-from-file",			OP_PLAY_SOUND_FROM_FILE,				1,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "close-sound-from-file",			OP_CLOSE_SOUND_FROM_FILE,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "pause-sound-from-file",			OP_PAUSE_SOUND_FROM_FILE,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-sound-environment",			OP_SET_SOUND_ENVIRONMENT,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Taylor
 	{ "update-sound-environment",		OP_UPDATE_SOUND_ENVIRONMENT,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Taylor
 	{ "adjust-audio-volume",			OP_ADJUST_AUDIO_VOLUME,					1,	3,			SEXP_ACTION_OPERATOR,	},
@@ -10092,6 +10093,18 @@ void multi_sexp_change_soundtrack()
 }
 
 // Goober5000
+void sexp_pause_unpause_music(bool pause)
+{
+	if ( Sexp_music_handle != -1 ) {
+		if ( pause ) {
+			audiostream_pause(Sexp_music_handle);
+		} else {
+			audiostream_unpause(Sexp_music_handle);
+		}
+	}
+}
+
+// Goober5000
 void sexp_stop_music(int fade)
 {
 	if ( Sexp_music_handle != -1 ) {
@@ -10307,6 +10320,27 @@ void multi_sexp_play_sound_from_file()
 
 	multi_get_bool(loop);
 	sexp_start_music(loop);	
+}
+
+// Goober5000
+void sexp_pause_sound_from_file(int node)
+{
+	bool pause = (is_sexp_true(node) != 0);
+
+	if (MULTIPLAYER_MASTER) {
+		multi_send_bool(pause); 
+		multi_end_callback();
+	}
+
+	sexp_pause_unpause_music(pause);
+}
+
+void multi_sexp_pause_sound_from_file()
+{
+	bool pause; 
+	if (multi_get_bool(pause)) {
+		sexp_pause_unpause_music(pause);
+	}
 }
 
 int sexp_sound_environment_option_lookup(char *text)
@@ -23203,6 +23237,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_PAUSE_SOUND_FROM_FILE:
+				sexp_pause_sound_from_file(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SET_SOUND_ENVIRONMENT:
 				sexp_set_sound_environment(node);
 				sexp_val = SEXP_TRUE;
@@ -24720,6 +24759,10 @@ void multi_sexp_eval()
 				multi_sexp_close_sound_from_file();
 				break;
 
+			case OP_PAUSE_SOUND_FROM_FILE:
+				multi_sexp_pause_sound_from_file();
+				break;
+
 			case OP_SHIP_BOMB_TARGETABLE:
 			case OP_SHIP_BOMB_UNTARGETABLE:
 			case OP_SHIP_INVISIBLE:
@@ -25397,6 +25440,7 @@ int query_operator_return_type(int op)
 		case OP_CHANGE_SOUNDTRACK:
 		case OP_PLAY_SOUND_FROM_FILE:
 		case OP_CLOSE_SOUND_FROM_FILE:
+		case OP_PAUSE_SOUND_FROM_FILE:
 		case OP_PLAY_SOUND_FROM_TABLE:
 		case OP_SET_SOUND_ENVIRONMENT:
 		case OP_UPDATE_SOUND_ENVIRONMENT:
@@ -26379,6 +26423,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_CLOSE_SOUND_FROM_FILE:
+		case OP_PAUSE_SOUND_FROM_FILE:
 		case OP_ALLOW_TREASON:
 		case OP_END_MISSION:
 		case OP_SET_DEBRIEFING_TOGGLED:
@@ -29036,7 +29081,6 @@ int get_subcategory(int sexp_id)
 {
 	switch(sexp_id)
 	{
-
 		case OP_SEND_MESSAGE_LIST:
 		case OP_SEND_MESSAGE:
 		case OP_SEND_RANDOM_MESSAGE:
@@ -29049,7 +29093,6 @@ int get_subcategory(int sexp_id)
 		case OP_SET_MISSION_MOOD:
 			return CHANGE_SUBCATEGORY_MESSAGING;
 
-
 		case OP_ADD_GOAL:
 		case OP_REMOVE_GOAL:
 		case OP_CLEAR_GOALS:
@@ -29061,8 +29104,6 @@ int get_subcategory(int sexp_id)
 		case OP_SET_PLAYER_ORDERS:
 		case OP_CAP_WAYPOINT_SPEED:
 			return CHANGE_SUBCATEGORY_AI_CONTROL;
-
-
 
 		case OP_ALTER_SHIP_FLAG:
 		case OP_PROTECT_SHIP:
@@ -29160,7 +29201,6 @@ int get_subcategory(int sexp_id)
 		case OP_SET_UNSCANNED:
 			return CHANGE_SUBCATEGORY_CARGO;
 
-
 		case OP_SET_ARMOR_TYPE:
 		case OP_WEAPON_SET_DAMAGE_TYPE:
 		case OP_SHIP_SET_DAMAGE_TYPE:
@@ -29193,8 +29233,6 @@ int get_subcategory(int sexp_id)
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
 			return CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS;
 
-
-
 		case OP_CHANGE_SHIP_CLASS:
 		case OP_DEACTIVATE_GLOW_MAPS:
 		case OP_ACTIVATE_GLOW_MAPS:
@@ -29210,7 +29248,6 @@ int get_subcategory(int sexp_id)
 		case OP_GET_COLGROUP_ID:
 		case OP_CHANGE_TEAM_COLOR:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
-
 
 		case OP_SET_OBJECT_POSITION:
 		case OP_SET_OBJECT_ORIENTATION:
@@ -29252,11 +29289,11 @@ int get_subcategory(int sexp_id)
 		case OP_PLAY_SOUND_FROM_TABLE:
 		case OP_PLAY_SOUND_FROM_FILE:
 		case OP_CLOSE_SOUND_FROM_FILE:
+		case OP_PAUSE_SOUND_FROM_FILE:
 		case OP_SET_SOUND_ENVIRONMENT:
 		case OP_UPDATE_SOUND_ENVIRONMENT:
 		case OP_ADJUST_AUDIO_VOLUME:
 			return CHANGE_SUBCATEGORY_MUSIC_AND_SOUND;
-
 
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
@@ -29295,7 +29332,6 @@ int get_subcategory(int sexp_id)
 		case OP_NAV_UNSELECT:
 			return CHANGE_SUBCATEGORY_NAV;
 
-
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
 		case OP_CUTSCENES_UNSET_CUTSCENE_BARS:
 		case OP_CUTSCENES_FADE_IN:
@@ -29322,7 +29358,6 @@ int get_subcategory(int sexp_id)
 		case OP_SUPERNOVA_STOP:
 		case OP_SET_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
-
 
 		case OP_SET_SKYBOX_MODEL:
 		case OP_SET_SKYBOX_ORIENT:
@@ -29478,7 +29513,6 @@ int get_subcategory(int sexp_id)
 
 		case OP_SCRIPT_EVAL_NUM:
 			return STATUS_SUBCATEGORY_OTHER;
-			
 
 		default:
 			return -1;		// sexp doesn't have a subcategory
@@ -30687,6 +30721,11 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_CLOSE_SOUND_FROM_FILE, "close-sound-from-file\r\n"
 		"\tCloses the currently playing sound started by play-sound-from-file, if there is any.  Takes 1 argument...\r\n"
 		"\t1: Fade (default is true)" },
+
+	// Goober5000
+	{ OP_PAUSE_SOUND_FROM_FILE, "pause-sound-from-file\r\n"
+		"\tPauses or unpauses the currently playing sound started by play-sound-from-file, if there is any.  Takes 1 argument...\r\n"
+		"\t1: Boolean - True to pause, False to unpause" },
 
 	// Taylor
 	{ OP_SET_SOUND_ENVIRONMENT, "set-sound-environment\r\n"
