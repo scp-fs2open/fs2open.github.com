@@ -3051,20 +3051,36 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_INVALID_VARIABLE;
 				}
 
-				// some SEXPs demand a number variable
-				if ((argnum == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
-					(argnum == 5 && Operators[op].value == OP_ADD_SUN_BITMAP))
+				switch (Operators[op].value)
 				{
-					if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
-						return SEXP_CHECK_INVALID_VARIABLE_TYPE; 
+					// some SEXPs demand a number variable
+					case OP_ADD_BACKGROUND_BITMAP:
+					case OP_ADD_SUN_BITMAP:
+						if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER)) 
+							return SEXP_CHECK_INVALID_VARIABLE_TYPE;
+						break;
+
+					// some demand a string variable
+					case OP_STRING_CONCATENATE:
+					case OP_INT_TO_STRING:
+					case OP_STRING_GET_SUBSTRING:
+					case OP_STRING_SET_SUBSTRING:
+					case OP_SCRIPT_EVAL_STRING:
+						if (!(Sexp_variables[var_index].type & SEXP_VARIABLE_STRING)) 
+							return SEXP_CHECK_INVALID_VARIABLE_TYPE;
+						break;
+
+					default:
+						break;
 				}
+
 				// otherwise anything goes
 				break;
 
 			case OPF_AMBIGUOUS:
 				// type checking for modify-variable
 				// string or number -- anything goes
-				break;						
+				break;
 
 			case OPF_BACKGROUND_BITMAP:
 			case OPF_SUN_BITMAP:
@@ -27532,8 +27548,10 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ADD_BACKGROUND_BITMAP:
 			if (argnum == 0)
 				return OPF_BACKGROUND_BITMAP;
-			else if (argnum == 8) return OPF_VARIABLE_NAME;
-			else return OPF_POSITIVE;
+			else if (argnum == 8)
+				return OPF_VARIABLE_NAME;
+			else
+				return OPF_POSITIVE;
 
 		case OP_REMOVE_BACKGROUND_BITMAP:
 			return OPF_POSITIVE;
@@ -27541,8 +27559,10 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ADD_SUN_BITMAP:
 			if (argnum == 0)
 				return OPF_SUN_BITMAP;
-			else if (argnum == 5) return OPF_VARIABLE_NAME;
-			else return OPF_POSITIVE;
+			else if (argnum == 5)
+				return OPF_VARIABLE_NAME;
+			else
+				return OPF_POSITIVE;
 
 		case OP_REMOVE_SUN_BITMAP:
 			return OPF_POSITIVE;
@@ -27554,16 +27574,20 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_NEBULA_PATTERN;
 
 		case OP_NEBULA_TOGGLE_POOF:
-			if (argnum == 1) return OPF_BOOL;
-			else return OPF_NEBULA_POOF;
+			if (!argnum)
+				return OPF_NEBULA_POOF;
+			else
+				return OPF_BOOL;
 
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL:
 			return OPF_STRING;
 
 		case OP_SCRIPT_EVAL_STRING:
-			if (argnum == 1)return OPF_VARIABLE_NAME;
-			else return OPF_STRING;
+			if (!argnum)
+				return OPF_STRING;
+			else
+				return OPF_VARIABLE_NAME;
 
 		case OP_SCRIPT_EVAL_MULTI:
 			if (argnum == 0) 
