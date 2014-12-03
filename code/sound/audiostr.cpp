@@ -1978,12 +1978,19 @@ void audiostream_unpause(int i)
 	}
 }
 
+extern int Sexp_music_handle;
+extern bool Sexp_music_paused;
+
 void audiostream_unpause_all()
 {
 	int i;
 
 	for ( i = 0; i < MAX_AUDIO_STREAMS; i++ ) {
 		if ( Audio_streams[i].status == ASF_FREE )
+			continue;
+
+		// don't unpause sexp music if we explicitly paused it
+		if ( Sexp_music_paused && (i == Sexp_music_handle) )
 			continue;
 
 		audiostream_unpause(i);

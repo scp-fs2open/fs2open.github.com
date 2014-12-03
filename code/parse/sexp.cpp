@@ -854,6 +854,7 @@ int Players_mlocked_timestamp;
 
 // for play-music - Goober5000
 int	Sexp_music_handle = -1;
+bool Sexp_music_paused = false;
 void sexp_stop_music(int fade = 1);
 
 // for sound environments - Goober5000/Taylor
@@ -10098,8 +10099,10 @@ void sexp_pause_unpause_music(bool pause)
 	if ( Sexp_music_handle != -1 ) {
 		if ( pause && !audiostream_is_paused(Sexp_music_handle) ) {
 			audiostream_pause(Sexp_music_handle);
+			Sexp_music_paused = true;
 		} else if ( !pause && audiostream_is_paused(Sexp_music_handle) ) {
 			audiostream_unpause(Sexp_music_handle);
+			Sexp_music_paused = false;
 		}
 	}
 }
