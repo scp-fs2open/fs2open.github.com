@@ -1169,8 +1169,9 @@ void message_play_anim( message_q *q )
 
 	// support ships use a wingman head.
 	// terran command uses its own set of heads.
-	int subhead_selected = FALSE;
-	if ( (q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1)) ) {
+	if ( (anim_info->anim_data.first_frame < 0) &&	// note, first_frame will be >= 0 when ani is an existing file, and will be < 0 when the file does not exist and needs a, b, or c appended
+		((q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1))) ) {
+		int subhead_selected = FALSE;
 		persona_index = m->persona_index;
 		
 		// if this ani should be converted to a terran command, set the persona to the command persona
