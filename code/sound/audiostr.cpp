@@ -252,6 +252,7 @@ public:
 	int	Is_looping() { return m_bLooping; }
 	int	status;
 	int	type;
+	bool paused_via_sexp_or_script;
 	ushort m_bits_per_sample_uncompressed;
 
 protected:
@@ -1642,6 +1643,7 @@ void audiostream_init()
 		Audio_streams[i].Init_Data();
 		Audio_streams[i].status = ASF_FREE;
 		Audio_streams[i].type = ASF_NONE;
+		Audio_streams[i].paused_via_sexp_or_script = false;
 	}
 
 #ifdef SCP_UNIX
@@ -1937,7 +1939,7 @@ int audiostream_is_inited()
 	return Audiostream_inited;
 }
 
-void audiostream_pause(int i)
+void audiostream_pause(int i, bool via_sexp_or_script)
 {
 	if ( i == -1 )
 		return;
@@ -1949,6 +1951,9 @@ void audiostream_pause(int i)
 
 	if ( audiostream_is_playing(i) == (int)true )
 		audiostream_stop(i, 0, 1);
+
+	if (via_sexp_or_script)
+		Audio_streams[i].paused_via_sexp_or_script = true;
 }
 
 void audiostream_pause_all()
@@ -1963,7 +1968,7 @@ void audiostream_pause_all()
 	}
 }
 
-void audiostream_unpause(int i)
+void audiostream_unpause(int i, bool via_sexp_or_script)
 {
 	if ( i == -1 )
 		return;
@@ -1976,10 +1981,10 @@ void audiostream_unpause(int i)
 	if ( audiostream_is_paused(i) == (int)true ) {
 		audiostream_play(i, Audio_streams[i].Get_Volume(), Audio_streams[i].Is_looping());
 	}
-}
 
-extern int Sexp_music_handle;
-extern bool Sexp_music_paused;
+	if (via_sexp_or_script)
+		Audio_streams[i].paused_via_sexp_or_script = false;
+}
 
 void audiostream_unpause_all()
 {
@@ -1990,7 +1995,7 @@ void audiostream_unpause_all()
 			continue;
 
 		// don't unpause sexp music if we explicitly paused it
-		if ( Sexp_music_paused && (i == Sexp_music_handle) )
+		if ( Audio_streams[i].paused_via_sexp_or_script )
 			continue;
 
 		audiostream_unpause(i);
