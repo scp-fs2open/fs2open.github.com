@@ -5800,15 +5800,6 @@ void post_process_mission()
 	Mission_departure_timestamp = timestamp( DEPARTURE_TIMESTAMP );
 	Mission_end_time = -1;
 
-	if(Game_mode & GM_MULTIPLAYER){ 
-		multi_respawn_build_points();
-	}	
-
-	// maybe reset hotkey defaults when loading new mission
-	if ( Last_file_checksum != Current_file_checksum ){
-		mission_hotkey_reset_saved();
-	}
-
 	Allow_arrival_music_timestamp=timestamp(0);
 	Allow_arrival_message_timestamp=timestamp(0);
 	Arrival_message_delay_timestamp = timestamp(-1);
@@ -5820,6 +5811,14 @@ void post_process_mission()
 		Arrival_message_delay_timestamp_m[idx] = timestamp(-1);
 	}	
 
+	if(Game_mode & GM_MULTIPLAYER){ 
+		multi_respawn_build_points();
+	}	
+
+	// maybe reset hotkey defaults when loading new mission
+	if ( Last_file_checksum != Current_file_checksum ){
+		mission_hotkey_reset_saved();
+	}
 	Last_file_checksum = Current_file_checksum;
 }
 
