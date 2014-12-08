@@ -2959,7 +2959,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						break;
 				}
 
-				if ( st == Armor_types.size() )
+				if ( st == Damage_types.size() )
 					return SEXP_CHECK_INVALID_DAMAGE_TYPE;
 				
 				break;
