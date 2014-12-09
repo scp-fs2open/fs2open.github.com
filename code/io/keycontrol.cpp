@@ -1737,12 +1737,14 @@ int button_function_critical(int n, net_player *p = NULL)
 				ship * shipp = &Ships[objp->instance];
 				ship_weapon *swp = &shipp->weapons;
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
-				polymodel *pm = model_get( sip->model_num );
-				count = ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
-				swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
-				shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
-				shipp->last_fired_point[ swp->current_primary_bank ] -= 1;
-				shipp->last_fired_point[ swp->current_primary_bank ] %= swp->primary_bank_slot_count[ swp->current_primary_bank ];
+				if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
+					polymodel *pm = model_get( sip->model_num );
+					count = ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
+					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
+					shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
+					shipp->last_fired_point[ swp->current_primary_bank ] -= 1;
+					shipp->last_fired_point[ swp->current_primary_bank ] %= swp->primary_bank_slot_count[ swp->current_primary_bank ];
+				}
 			}
 			break;
 
