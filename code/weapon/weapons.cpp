@@ -657,6 +657,12 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 				weaponp->wi_flags3 |= WIF3_CMEASURE_ASPECT_HOME_ON;
 			}
 		}
+		else if (!stricmp(NOX("interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_TURRET_INTERCEPTABLE | WIF3_FIGHTER_INTERCEPTABLE;
+		else if (!stricmp(NOX("turret interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_TURRET_INTERCEPTABLE;
+		else if (!stricmp(NOX("fighter interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_FIGHTER_INTERCEPTABLE;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -1999,6 +2005,10 @@ int parse_weapon(int subtype, bool replace)
 		else if(optional_string("+Old Style:")) {
 			wip->elec_use_new_style=0;
 		}
+
+		if(optional_string("+Area Of Effect")) {
+			wip->wi_flags3 |= WIF3_AOE_ELECTRONICS;
+		}
 		
 		//New only -WMC
 		if(optional_string("+Intensity:")) {
@@ -2586,6 +2596,8 @@ int parse_weapon(int subtype, bool replace)
 
 	if (optional_string("$Weapon Hitpoints:")) {
 		stuff_int(&wip->weapon_hitpoints);
+	} else if (first_time && (wip->wi_flags3 & (WIF3_TURRET_INTERCEPTABLE | WIF3_FIGHTER_INTERCEPTABLE))) {
+		wip->weapon_hitpoints = 25;
 	}
 
 	// making sure bombs get their hitpoints assigned
@@ -5924,6 +5936,11 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 		switch ( objp->type ) {
 		case OBJ_SHIP:
+			// If we're doing an AoE Electronics blast, do the electronics stuff (unless it also has the regular "electronics"
+			// flag and this is the ship the missile directly impacted; then leave it for the regular code below) -MageKing17
+			if ( (wip->wi_flags3 & WIF3_AOE_ELECTRONICS) && !((objp->flags & OF_INVULNERABLE) || ((objp == other_obj) && (wip->wi_flags & WIF_ELECTRONICS))) ) {
+				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
+			}
 			ship_apply_global_damage(objp, wobjp, pos, damage);
 			weapon_area_apply_blast(NULL, objp, pos, blast, 0);
 			break;

@@ -2863,6 +2863,10 @@ void CFred_mission_save::parse_comments(int newlines)
 						fout_version("%s", token_found);
 					}
 
+					// If you have a bunch of lines that all start with the same token (like, say, "+Subsystem:"),
+					// this makes it so it won't just repeatedly match the first one. -MageKing17
+					raw_ptr++;
+
 					if (version_added)
 						fso_comment_pop();
 
@@ -2889,7 +2893,6 @@ void CFred_mission_save::parse_comments(int newlines)
 						s_num = 3;
 					}
 
-					/* This is fixed logic for detecting if the version is <= the current version, but really, since the parsing of the original mission file doesn't skip "too high" version-commented lines, we should treat them all as valid.
 					if ( (s_num == 3) && ((major < FS_VERSION_MAJOR) || ((major == FS_VERSION_MAJOR) && ((minor < FS_VERSION_MINOR) || ((minor == FS_VERSION_MINOR) && (build <= FS_VERSION_BUILD))))) ) {
 						state = 3;
 					} else if ( (s_num == 4) && ((major < FS_VERSION_MAJOR) || ((major == FS_VERSION_MAJOR) && ((minor < FS_VERSION_MINOR) || ((minor == FS_VERSION_MINOR) && ((build < FS_VERSION_BUILD) || ((build == FS_VERSION_BUILD) && (revis <= FS_VERSION_REVIS))))))) ) {
@@ -2897,8 +2900,6 @@ void CFred_mission_save::parse_comments(int newlines)
 					} else {
 						state = 4;
 					}
-					*/
-					state = 3;
 				}
 			}
 

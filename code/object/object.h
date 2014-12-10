@@ -170,6 +170,11 @@ public:
 	object();
 	~object();
 	void clear();
+
+private:
+	// An object should never be copied; there are allocated pointers, and linked list shenanigans.
+	object(const object& other); // no implementation
+	object& operator= (const object & other); // no implementation
 };
 
 struct object_h {

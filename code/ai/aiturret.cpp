@@ -549,7 +549,11 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		weapon *wp = &Weapons[objp->instance];
 		weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
-		if ( (!(wip->wi_flags & WIF_BOMB) && !(Ai_info[Ships[turret_parent->instance].ai_index].ai_profile_flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
+		if (wip->subtype == WP_LASER && !(wip->wi_flags3 & WIF3_TURRET_INTERCEPTABLE)) {	// If the thing can't be shot down, don't try. -MageKing17
+			return 0;
+		}
+
+		if ( (!((wip->wi_flags & WIF_BOMB) || (wip->wi_flags3 & WIF3_TURRET_INTERCEPTABLE)) && !(Ai_info[Ships[turret_parent->instance].ai_index].ai_profile_flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
 			return 0;
 		}
 
@@ -646,9 +650,15 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			}
 		}
 
-		// check if	turret flagged to only target tagged ships
+		// check if turret flagged to only target tagged ships
+		// Note: retail behaviour was turrets with tagged-only could fire at bombs
+		// and could fire their spawn weapons
+		// this check is almost redundant; see the almost identical check in ai_fire_from_turret
+		// however if this is removed turrets still track targets but don't fire at them (which looks silly)
 		if (eeo->eeo_flags & EEOF_TAGGED_ONLY) {
-			if (!ship_is_tagged(objp)) {
+			if (!ship_is_tagged(objp) &&
+					( (The_mission.ai_profile->flags2 & AIPF2_STRICT_TURRET_TAGGED_ONLY_TARGETING) ||
+					( !(objp->type == OBJ_WEAPON) && !(turret_weapon_has_flags(&eeo->turret_subsys->weapons, WIF_SPAWN))) )) {
 				return;
 			}
 		}
@@ -1097,7 +1107,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 							objp = &Objects[mo->objnum];
 							
 							Assert(objp->type == OBJ_WEAPON);
-							if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
+							if ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags3 & WIF3_TURRET_INTERCEPTABLE))
 							{
 								evaluate_obj_as_target(objp, &eeo);
 							}
@@ -2277,6 +2287,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					}
 				}
 
+				bool tagged_only = ((wip->wi_flags2 & WIF2_TAGGED_ONLY) || (ss->weapons.flags & SW_FLAG_TAGGED_ONLY));
+
 				if (lep->type == OBJ_SHIP) {
 					// Check if we're targeting a protected ship
 					if (lep->flags & OF_PROTECTED) {
@@ -2309,14 +2321,16 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 						ss->turret_time_enemy_in_range = 0.0f;
 						continue;
 					}
+					// Check if weapon or turret is set to tagged-only
+					// must check here in case turret has multiple weapons and not all are tagged-only
+					else if (!ship_is_tagged(lep) && tagged_only) {
+						continue;
+					}
 				}
 				else
 				{
-					//can't tag anything else, other than asteroids
-					//but we don't want to waste this type of
-					//weaponary on asteroids now do we?
-					if ((wip->wi_flags2 & WIF2_TAGGED_ONLY) || (ss->weapons.flags & SW_FLAG_TAGGED_ONLY))
-					{
+					// check tagged-only for non-ship targets
+					if (tagged_only && (!(lep->type == OBJ_WEAPON) || (The_mission.ai_profile->flags2 & AIPF2_STRICT_TURRET_TAGGED_ONLY_TARGETING))) {
 						continue;
 					}
 				}

@@ -6375,6 +6375,7 @@ void ship_render(object * obj)
 				int save_flags = render_flags;
 		
 				render_flags &= ~MR_SHOW_THRUSTERS;
+				render_flags |= MR_ATTACHED_MODEL;
 
 				//primary weapons
 				for (i = 0; i < swp->num_primary_banks; i++) {
@@ -6385,7 +6386,7 @@ void ship_render(object * obj)
 					for(k = 0; k < bank->num_slots; k++) {	
 						polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
 						pm->gun_submodel_rotation = shipp->primary_rotate_ang[i];
-						model_render(Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags);
+						model_render(Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags, shipp->objnum);
 						pm->gun_submodel_rotation = 0.0f;
 					}
 				}
@@ -6403,7 +6404,7 @@ void ship_render(object * obj)
 					
 					if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
 						for(k = 0; k < bank->num_slots; k++) {
-							model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags);
+							model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags, shipp->objnum);
 						}
 					} else {
 						num_secondaries_rendered = 0;
@@ -6422,7 +6423,7 @@ void ship_render(object * obj)
 			
 							vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
 
-							model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
+							model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos, render_flags, shipp->objnum);
 						}
 					}
 				}

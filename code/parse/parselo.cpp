@@ -1096,11 +1096,6 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 		//Set final length for faster calcs
 		flen = pos-Mp;
 
-		// if we don't have anything to read then bail
-		if (flen <= 0) {
-			return NULL;
-		}
-
 		//Allocate the memory
 		//WMC - Don't forget the null character that's added later on.
 		rval = (char*) vm_malloc((flen + extra_chars + 1)*sizeof(char));
