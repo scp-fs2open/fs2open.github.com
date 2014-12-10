@@ -9187,6 +9187,7 @@ int sexp_is_iff(int n)
 			}
 
 			case OSWPT_TYPE_WING:
+			case OSWPT_TYPE_WING_NOT_PRESENT:
 			{
 				for (i = 0; i < oswpt.wingp->current_count; i++)
 				{
@@ -9197,7 +9198,27 @@ int sexp_is_iff(int n)
 
 				break;
 			}
-	
+
+			case OSWPT_TYPE_EXITED:
+			{
+				// see if we can find information about the exited ship (if it is a ship)
+				int exited_index = ship_find_exited_ship_by_name(CTEXT(n));
+				if (exited_index >= 0)
+				{
+					// if the team doesn't match the team specified, return false immediately
+					if (Ships_exited[exited_index].team != team)
+						return SEXP_KNOWN_FALSE;
+				}
+				else
+				{
+					// it's probably an exited wing, which we don't store information about
+					return SEXP_NAN_FOREVER;
+				}
+			}
+
+			// we don't handle the other cases
+			default:
+				return SEXP_NAN;
 		}
 
 	}
