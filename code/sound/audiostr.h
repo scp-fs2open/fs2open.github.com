@@ -94,9 +94,9 @@ int audiostream_done_reading(int i);
 int audiostream_is_inited();
 
 void audiostream_pause(int i, bool via_sexp_or_script = false);	// pause a particular stream
-void audiostream_pause_all();	// pause all audio streams											
-
 void audiostream_unpause(int i, bool via_sexp_or_script = false);	// unpause a particular stream
-void audiostream_unpause_all();	// unpause all audio streams
+
+void audiostream_pause_all(bool via_sexp_or_script = false);	// pause all audio streams											
+void audiostream_unpause_all(bool via_sexp_or_script = false);	// unpause all audio streams
 
 #endif // _AUDIOSTR_H
