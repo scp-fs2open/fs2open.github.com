@@ -127,8 +127,8 @@ extern void game_flush();
 extern void weapon_pause_sounds();
 extern void weapon_unpause_sounds();
 
-extern void audiostream_pause_all();
-extern void audiostream_unpause_all();
+extern void audiostream_pause_all(bool via_sexp_or_script = false);
+extern void audiostream_unpause_all(bool via_sexp_or_script = false);
 
 // ----------------------------------------------------------------------------------
 // PAUSE FUNCTIONS

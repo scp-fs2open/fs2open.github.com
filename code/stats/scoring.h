@@ -104,7 +104,7 @@ public:
 
 	// Mission total
 	int m_medal_earned;					// which medal (if any) earned this mission
-	int m_badge_earned;					// which badge was earned.  Calculated after mission is over
+	SCP_vector<int> m_badge_earned;		// which badge(s) was(/were) earned.  Calculated after mission is over
 	int m_promotion_earned;				// was a promotion earned.  Calculated after mission is over
 
 	int m_score;

@@ -493,7 +493,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Badge"))) {
 		if (Badge_bitmap >= 0){
-			return Medals[Player->stats.m_badge_earned].name;
+			return Medals[Player->stats.m_badge_earned.back()].name;
 		}
 	}
 
@@ -1021,25 +1021,25 @@ void debrief_award_init()
 
 	// handle badge earned
 	// only grant badge if earned and allowed.  (no_promotion really means no promotion and no badges)
-	if ( Player->stats.m_badge_earned != -1 ) {
-		debrief_choose_medal_variant(buf, Player->stats.m_badge_earned, Player->stats.medal_counts[Player->stats.m_badge_earned] - 1);
+	if ( Player->stats.m_badge_earned.size() ) {
+		debrief_choose_medal_variant(buf, Player->stats.m_badge_earned.back(), Player->stats.medal_counts[Player->stats.m_badge_earned.back()] - 1);
 		Badge_bitmap = bm_load(buf);
 
 		// see if we have a persona
 		int persona_index = debrief_find_persona_index();
 
 		// use persona-specific badge text if it exists; otherwise, use default
-		if (Medals[Player->stats.m_badge_earned].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned].promotion_text.end()) {
-			Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text[persona_index];
+		if (Medals[Player->stats.m_badge_earned.back()].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned.back()].promotion_text.end()) {
+			Badge_stage.text = Medals[Player->stats.m_badge_earned.back()].promotion_text[persona_index];
 		} else {
-			Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text[-1];
+			Badge_stage.text = Medals[Player->stats.m_badge_earned.back()].promotion_text[-1];
 		}
 		Badge_stage.recommendation_text = "";
 
 		// choose appropriate badge voice for this mission
-		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned].voice_base, persona_index);
+		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
 
-		debrief_add_award_text(Medals[Player->stats.m_badge_earned].name);
+		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].name);
 	}
 
 	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0)) {

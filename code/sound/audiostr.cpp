@@ -1956,18 +1956,6 @@ void audiostream_pause(int i, bool via_sexp_or_script)
 		Audio_streams[i].paused_via_sexp_or_script = true;
 }
 
-void audiostream_pause_all()
-{
-	int i;
-
-	for ( i = 0; i < MAX_AUDIO_STREAMS; i++ ) {
-		if ( Audio_streams[i].status == ASF_FREE )
-			continue;
-
-		audiostream_pause(i);
-	}
-}
-
 void audiostream_unpause(int i, bool via_sexp_or_script)
 {
 	if ( i == -1 )
@@ -1986,7 +1974,7 @@ void audiostream_unpause(int i, bool via_sexp_or_script)
 		Audio_streams[i].paused_via_sexp_or_script = false;
 }
 
-void audiostream_unpause_all()
+void audiostream_pause_all(bool via_sexp_or_script)
 {
 	int i;
 
@@ -1994,10 +1982,22 @@ void audiostream_unpause_all()
 		if ( Audio_streams[i].status == ASF_FREE )
 			continue;
 
-		// don't unpause sexp music if we explicitly paused it
-		if ( Audio_streams[i].paused_via_sexp_or_script )
+		audiostream_pause(i, via_sexp_or_script);
+	}
+}
+
+void audiostream_unpause_all(bool via_sexp_or_script)
+{
+	int i;
+
+	for ( i = 0; i < MAX_AUDIO_STREAMS; i++ ) {
+		if ( Audio_streams[i].status == ASF_FREE )
 			continue;
 
-		audiostream_unpause(i);
+		// if we explicitly paused this and we are not explicitly unpausing, skip this stream
+		if ( Audio_streams[i].paused_via_sexp_or_script && !via_sexp_or_script )
+			continue;
+
+		audiostream_unpause(i, via_sexp_or_script);
 	}
 }

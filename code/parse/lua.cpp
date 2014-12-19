@@ -12102,6 +12102,32 @@ ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false], [string 'bri
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(pauseMusic, l_Audio, "int audiohandle, bool pause", "Pauses or unpauses a playing music file, provided audiohandle is valid. The boolean argument should be true to pause and false to unpause. If the audiohandle is -1, *all* audio streams are paused or unpaused.", NULL, NULL)
+{
+	int ah;
+	bool pause;
+
+	if(!ade_get_args(L, "ib", &ah, &pause))
+		return ADE_RETURN_NIL;
+
+	if (ah >= 0 && ah < MAX_AUDIO_STREAMS)
+	{
+		if (pause)
+			audiostream_pause(ah, true);
+		else
+			audiostream_unpause(ah, true);
+	}
+	else if (ah == -1)
+	{
+		if (pause)
+			audiostream_pause_all(true);
+		else
+			audiostream_unpause_all(true);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
 
 //**********LIBRARY: Base
 ade_lib l_Base("Base", NULL, "ba", "Base FreeSpace 2 functions");
