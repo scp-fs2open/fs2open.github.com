@@ -33,6 +33,7 @@
 #include "io/keycontrol.h" // m!m
 #include "debugconsole/console.h"
 #include "debugconsole/console.h"
+#include "popup/popup.h"
 
 
 #if defined(SCP_UNIX) && !defined(__APPLE__)
@@ -1771,7 +1772,7 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 void gr_flip()
 {
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
-	if (!quit_mission_popup_shown)
+	if (!quit_mission_popup_shown && !popup_active())
 	{
 		//WMC - Evaluate global hook if not override.
 		Script_system.RunBytecode(Script_globalhook);
