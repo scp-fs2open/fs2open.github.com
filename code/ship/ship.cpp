@@ -82,6 +82,7 @@
 #include "mod_table/mod_table.h"
 #include "debugconsole/console.h"
 #include "debugconsole/console.h"
+#include "math/vecmat.h"
 
 
 #define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
@@ -1883,6 +1884,11 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		sip->max_rotvel.xyz.x = (2 * PI) / sip->rotation_time.xyz.x;
 		sip->max_rotvel.xyz.y = (2 * PI) / sip->rotation_time.xyz.y;
 		sip->max_rotvel.xyz.z = (2 * PI) / sip->rotation_time.xyz.z;
+		// this check runs in collideshipship.cpp:ship_ship_check_collision()
+		// warn early rather than ambush the modder @ runtime
+		if ( (vm_vec_mag_squared( &sip->max_rotvel ) * .04) >= (PI*PI/4) ) {
+			Warning(LOCATION, "$Rotation time: too low; this will disable rotational collisions. All three variables should be >= 1.39.\nFix this in ship '%s'\n", sip->name);
+		}
 	}
 
 	// get the backwards velocity;
