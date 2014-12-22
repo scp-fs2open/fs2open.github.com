@@ -951,6 +951,8 @@ void init_ship_entry(ship_info *sip)
 	sip->splodeing_texture = -1;
 	strcpy_s(sip->splodeing_texture_name, "boom");
 
+	sip->replacement_textures.clear();
+
 	sip->armor_type_idx = -1;
 	sip->shield_armor_type_idx = -1;
 
@@ -1538,45 +1540,41 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 			WarningEx(LOCATION, "Ship %s\nPOF file \"%s\" invalid!", sip->name, temp);
 	}
 
-	// ship class texture replacement - Goober5000 and taylor
-	int PLACEHOLDER_num_texture_replacements = 0;
-	char PLACEHOLDER_old_texture[MAX_FILENAME_LEN];
-	char PLACEHOLDER_new_texture[MAX_FILENAME_LEN];
-	int PLACEHOLDER_new_texture_id;
+	// ship class texture replacement - Goober5000
+	// don't clear the vector because we could be parsing a TBM
 	if (optional_string("$Texture Replace:"))
 	{
+		texture_replace tr;
 		char *p;
 
-		while ((PLACEHOLDER_num_texture_replacements < MAX_REPLACEMENT_TEXTURES) && (optional_string("+old:")))
+		while (optional_string("+old:"))
 		{
-			stuff_string(PLACEHOLDER_old_texture, F_NAME, MAX_FILENAME_LEN);
+			strcpy_s(tr.ship_name, sip->name);
+			tr.new_texture_id = -1;
+
+			stuff_string(tr.old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
-			stuff_string(PLACEHOLDER_new_texture, F_NAME, MAX_FILENAME_LEN);
+			stuff_string(tr.new_texture, F_NAME, MAX_FILENAME_LEN);
 
 			// get rid of extensions
-			p = strchr(PLACEHOLDER_old_texture, '.');
+			p = strchr(tr.old_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", PLACEHOLDER_old_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.old_texture));
 				*p = 0;
 			}
-			p = strchr(PLACEHOLDER_new_texture, '.');
+			p = strchr(tr.new_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", PLACEHOLDER_new_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.new_texture));
 				*p = 0;
 			}
 
-			// load the texture
-			PLACEHOLDER_new_texture_id = bm_load(PLACEHOLDER_new_texture);
-
-			if (PLACEHOLDER_new_texture_id < 0)
-			{
-				mprintf(("Could not load replacement texture %s for ship %s\n", PLACEHOLDER_new_texture, sip->name));
-			}
-
-			// increment
-			PLACEHOLDER_num_texture_replacements++;
+			// add it if we aren't over the limit
+			if (sip->replacement_textures.size() < MAX_MODEL_TEXTURES)
+				sip->replacement_textures.push_back(tr);
+			else
+				mprintf(("Too many replacement textures specified for ship '%s'!\n", sip->name));
 		}
 	}
 
@@ -9527,7 +9525,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->ship_replacement_textures[i] = -1;
 
 		// now fill them in according to texture name
-		for (i = 0; i < p_objp->num_texture_replacements; i++)
+		for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
 		{
 			int j;
 			polymodel *pm = model_get(sip->model_num);
@@ -9537,9 +9535,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			{
 				texture_map *tmap = &pm->maps[j];
 
-				int tnum = tmap->FindTexture(p_objp->replacement_textures[i].old_texture);
+				int tnum = tmap->FindTexture(tr->old_texture);
 				if(tnum > -1)
-					sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = p_objp->replacement_textures[i].new_texture_id;
+					sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
 			}
 		}
 	}

@@ -1938,7 +1938,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->base_texture_anim_frametime = game_get_overall_frametime();
 
 	// handle the replacement textures
-	if (p_objp->num_texture_replacements > 0)
+	if (!p_objp->replacement_textures.empty())
 	{
 		shipp->ship_replacement_textures = (int *) vm_malloc( MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
@@ -1947,7 +1947,7 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// now fill them in
-	for (i = 0; i < p_objp->num_texture_replacements; i++)
+	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
 	{
 		pm = model_get(sip->model_num);
 
@@ -1956,9 +1956,9 @@ int parse_create_object_sub(p_object *p_objp)
 		{
 			texture_map *tmap = &pm->maps[j];
 
-			int tnum = tmap->FindTexture(p_objp->replacement_textures[i].old_texture);
+			int tnum = tmap->FindTexture(tr->old_texture);
 			if(tnum > -1)
-				shipp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = p_objp->replacement_textures[i].new_texture_id;
+				shipp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
 		}
 	}
 
@@ -3235,64 +3235,69 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_int(&p_objp->persona_index);
 
 	// texture replacement - Goober5000
-	p_objp->num_texture_replacements = 0;
+	p_objp->replacement_textures = Ship_info[p_objp->ship_class].replacement_textures;	// initialize our set with the ship class set, which may be empty
 	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
 	{
+		texture_replace tr;
 		char *p;
 
-		while ((p_objp->num_texture_replacements < MAX_REPLACEMENT_TEXTURES) && (optional_string("+old:")))
+		while (optional_string("+old:"))
 		{
-			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, F_NAME, MAX_FILENAME_LEN);
+			strcpy_s(tr.ship_name, p_objp->name);
+			tr.new_texture_id = -1;
+
+			stuff_string(tr.old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
-			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, F_NAME, MAX_FILENAME_LEN);
+			stuff_string(tr.new_texture, F_NAME, MAX_FILENAME_LEN);
 
 			// get rid of extensions
-			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, '.');
+			p = strchr(tr.old_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.old_texture));
 				*p = 0;
 			}
-			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, '.');
+			p = strchr(tr.new_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.new_texture));
 				*p = 0;
 			}
 
-			// load the texture
-			if (!stricmp(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, "invisible"))
-			{
-				// invisible is a special case
-				p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = REPLACE_WITH_INVISIBLE;
-			}
+			// add it if we aren't over the limit
+			if (p_objp->replacement_textures.size() < MAX_MODEL_TEXTURES)
+				p_objp->replacement_textures.push_back(tr);
 			else
-			{
-				// try to load texture or anim as normal
-				p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load_either(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-			}
+				mprintf(("Too many replacement textures specified for ship '%s'!\n", p_objp->name));
+		}
+	}
 
-			// not found?
-			if (p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id < 0)
-			{
-				mprintf(("Could not load replacement texture %s for ship %s\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, p_objp->name));
-			}
+	// now load the textures (do this outside the parse loop because we may have ship class replacements too)
+	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
+	{
+		// load the texture
+		if (!stricmp(tr->new_texture, "invisible"))
+		{
+			// invisible is a special case
+			tr->new_texture_id = REPLACE_WITH_INVISIBLE;
+		}
+		else
+		{
+			// try to load texture or anim as normal
+			tr->new_texture_id = bm_load_either(tr->new_texture);
+		}
 
-			// *** account for FRED
-			if (Fred_running)
-			{
-				texture_replace tr;
+		// not found?
+		if (tr->new_texture_id < 0)
+		{
+			mprintf(("Could not load replacement texture %s for ship %s\n", tr->new_texture, p_objp->name));
+		}
 
-				strcpy_s(tr.ship_name, p_objp->name);
-				strcpy_s(tr.old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
-				strcpy_s(tr.new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-				tr.new_texture_id = -1;
-
-				Fred_texture_replacements.push_back(tr);
-			}
-
-			// increment
-			p_objp->num_texture_replacements++;
+		// account for FRED
+		if (Fred_running)
+		{
+			Fred_texture_replacements.push_back(*tr);
+			Fred_texture_replacements.back().new_texture_id = -1;
 		}
 	}
 
@@ -7633,7 +7638,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->respawn_count = 0;
 	pobj->alt_type_index = -1;
 	pobj->callsign_index = -1;
-	pobj->num_texture_replacements = 0;
+	pobj->replacement_textures.clear();
 }
 
 /**
