@@ -834,8 +834,12 @@ void control_config_common_load_overrides()
 					int iTemp;
 
 					if (optional_string("$Key Default:")) {
-						stuff_string(szTempBuffer, F_NAME, iBufferLength);
-						r_ccConfig.key_default = (short)mKeyNameToVal[szTempBuffer];
+						if (optional_string("NONE")) {
+							r_ccConfig.key_default = (short)-1;
+						} else {
+							stuff_string(szTempBuffer, F_NAME, iBufferLength);
+							r_ccConfig.key_default = (short)mKeyNameToVal[szTempBuffer];
+						}
 					}
 
 					if (optional_string("$Joy Default:")) {
