@@ -433,8 +433,7 @@ public:
 	float max_shield_recharge;
 
 	// Goober5000
-	int num_texture_replacements;
-	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000
+	SCP_vector<texture_replace> replacement_textures;
 
 	SCP_vector<alt_class> alt_classes;	
 
