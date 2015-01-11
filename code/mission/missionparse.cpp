@@ -965,50 +965,44 @@ void parse_player_info2(mission *pm)
 		Error(LOCATION, "Not enough ship/weapon pools for mission.  There are %d teams and only %d pools.", Num_teams, nt);
 }
 
-// a little helper for the next function
-void parse_single_cutscene (mission *pm, int type) 
-{
-	mission_cutscene scene; 
-
-	scene.type = type; 
-	stuff_string (scene.cutscene_name, F_NAME, NAME_LENGTH);
-	
-	if ( required_string("+formula:") ) {
-		scene.formula = get_sexp_main();
-	}
-
-	pm->cutscenes.push_back(scene); 
-}
-
 void parse_cutscenes(mission *pm) 
 {
 	pm->cutscenes.clear(); 
 
-	if (optional_string("#Cutscenes")) {		
-		while(!optional_string("#end")){
-			if (optional_string("$Fiction Viewer Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_FICTION);
-			}
-			
-			if (optional_string("$Command Brief Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_CMD_BRIEF);
-			}
-			
-			if (optional_string("$Briefing Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_BRIEF);
-			}
-			
-			if (optional_string("$Pre-game Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_GAME);
-			}
-			
-			if (optional_string("$Debriefing Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_DEBRIEF);
-			}
-			if (optional_string("$Campaign End Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_END_CAMPAIGN);
-			}
+	if (optional_string("#Cutscenes"))
+	{
+		mission_cutscene scene;
+
+		while (true)
+		{
+			// this list should correspond to the MOVIE_* #defines
+			scene.type = optional_string_one_of(6,
+				"$Fiction Viewer Cutscene:",
+				"$Command Brief Cutscene:",
+				"$Briefing Cutscene:",
+				"$Pre-game Cutscene:",
+				"$Debriefing Cutscene:",
+				"$Campaign End Cutscene:");
+
+			// no more cutscenes specified?
+			if (scene.type < 0)
+				break;
+
+			// get the cutscene file
+			stuff_string(scene.filename, F_NAME, NAME_LENGTH);
+
+			// get the sexp if we have one
+			if (optional_string("+formula:"))
+				scene.formula = get_sexp_main();
+			else
+				scene.formula = Locked_sexp_true;
+
+			// add it
+			pm->cutscenes.push_back(scene);
 		}
+
+		// for reverse compatibility, check that we have a closing tag
+		optional_string("#end");
 	}
 }
 

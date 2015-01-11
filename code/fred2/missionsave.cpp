@@ -714,7 +714,7 @@ int CFred_mission_save::save_cutscenes()
 			}
 
 			for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
-				if ( strlen(The_mission.cutscenes[i].cutscene_name) ) {
+				if ( strlen(The_mission.cutscenes[i].filename) ) {
 					// determine the name of this cutscene type
 					switch (The_mission.cutscenes[i].type) {
 						case MOVIE_PRE_FICTION:
@@ -742,10 +742,10 @@ int CFred_mission_save::save_cutscenes()
 					
 					if (optional_string_fred(type)) {
 						parse_comments();
-						fout(" %s", The_mission.cutscenes[i].cutscene_name); 
+						fout(" %s", The_mission.cutscenes[i].filename); 
 					}
 					else {
-						fout_version("%s %s\n", type, The_mission.cutscenes[i].cutscene_name); 
+						fout_version("%s %s\n", type, The_mission.cutscenes[i].filename); 
 					}
 
 					required_string_fred("+formula:");
