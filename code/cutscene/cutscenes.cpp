@@ -150,6 +150,8 @@ void cutscene_mark_viewable(char *filename)
 		}
 		i++;
 	}
+
+	Warning(LOCATION, "Could not find cutscene '%s' in listing; cannot mark it viewable...", filename);
 }
 
 #define NUM_BUTTONS				8
