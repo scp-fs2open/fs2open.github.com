@@ -474,14 +474,14 @@ int translate_key_to_index(const char *key, bool find_override)
 		// convert scancode to Control_config index
 		if (find_override) {
 			for (i=0; i<CCFG_MAX; i++) {
-				if (Control_config[i].key_id == index) {
+				if (!Control_config[i].disabled && Control_config[i].key_id == index) {
 					index = i;
 					break;
 				}
 			}
 		} else {
 			for (i=0; i<CCFG_MAX; i++) {
-				if (Control_config[i].key_default == index) {
+				if (!Control_config[i].disabled && Control_config[i].key_default == index) {
 					index = i;
 					break;
 				}
