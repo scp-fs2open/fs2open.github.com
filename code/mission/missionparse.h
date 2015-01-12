@@ -122,14 +122,8 @@ typedef struct support_ship_info {
 // defines a mission cutscene.
 typedef struct mission_cutscene {
 	int type; 
-	char cutscene_name[NAME_LENGTH];	
-	int formula; 
-
-	mission_cutscene( ) 
-		: type( 0 ), formula( -1 )
-	{ 
-		cutscene_name[ 0 ] = 0;
-	}
+	char filename[MAX_FILENAME_LEN];
+	int formula;
 } mission_cutscene;
 
 typedef struct mission {

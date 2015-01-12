@@ -541,14 +541,11 @@ int check_for_string_raw(const char *pstr)
 int optional_string(const char *pstr)
 {
 	ignore_white_space();
-//	mprintf(("lookint for optional string %s",pstr));
 
 	if (!strnicmp(pstr, Mp, strlen(pstr))) {
 		Mp += strlen(pstr);
-//		mprintf((", found it\n"));
 		return 1;
 	}
-//	mprintf((", didin't find it it\n"));
 
 	return 0;
 }
@@ -566,6 +563,33 @@ int optional_string_either(char *str1, char *str2)
 	}
 
 	return -1;
+}
+
+// generic parallel to required_string_one_of
+int optional_string_one_of(int arg_count, ...)
+{
+	Assertion(arg_count > 0, "optional_string_one_of() called with arg_count of %d; get a coder!\n", arg_count);
+	int idx, found = -1;
+	char *pstr;
+	va_list vl;
+
+	ignore_white_space();
+
+	va_start(vl, arg_count);
+	for (idx = 0; idx < arg_count; idx++)
+	{
+		pstr = va_arg(vl, char*);
+
+		if ( !strnicmp(pstr, Mp, strlen(pstr)) )
+		{
+			Mp += strlen(pstr);
+			found = idx;
+			break;
+		}
+	}
+	va_end(vl);
+
+	return found;
 }
 
 int required_string_fred(char *pstr, char *end)
