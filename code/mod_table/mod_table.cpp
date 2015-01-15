@@ -193,15 +193,15 @@ void parse_mod_table(const char *filename)
 	optional_string("#SOUND SETTINGS"); 
 
 	if (optional_string("$Default Sound Volume:")) {
-		stuff_float(&Master_sound_volume);
+		stuff_float(&Default_sound_volume);
 	}
 
 	if (optional_string("$Default Music Volume:")) {
-		stuff_float(&Master_event_music_volume);
+		stuff_float(&Default_music_volume);
 	}
 
 	if (optional_string("$Default Voice Volume:")) {
-		stuff_float(&Master_voice_volume);
+		stuff_float(&Default_voice_volume);
 	}
 
 	optional_string("#FRED SETTINGS");
