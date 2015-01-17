@@ -359,7 +359,7 @@ void HudGaugeReticle::getFirepointStatus() {
 }
 
 void HudGaugeReticle::setAutoaimFrame(int framenum) {
-	if (framenum < 0 || framenum > crosshair.num_frames)
+	if (framenum < 0 || framenum > crosshair.num_frames - 1)
 		autoaim_frame_offset = 0;
 	else
 		autoaim_frame_offset = framenum;
