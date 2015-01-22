@@ -46,6 +46,7 @@
 #include "network/multiteamselect.h"
 #include "network/multiui.h"
 #include "missionui/chatbox.h"
+#include "lighting/lighting.h"
 
 
 static int Brief_goals_coords[GR_NUM_RESOLUTIONS][4] = {
@@ -301,6 +302,7 @@ int Brief_max_line_width[GR_NUM_RESOLUTIONS] = {
 
 //stuff for ht&l. vars and such
 extern int Cmdline_nohtl;
+extern bool Cmdline_brief_lighting;
 
 
 // --------------------------------------------------------------------------------------
@@ -1055,6 +1057,18 @@ void brief_render_closeup(int ship_class, float frametime)
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 	
+	if (Cmdline_brief_lighting) {
+		// the following is copied from menuui/techmenu.cpp ... it works heehee :D  - delt.
+		// lighting for techroom
+		light_reset();
+		vec3d light_dir = vmd_zero_vector;
+		light_dir.xyz.y = 1.0f;
+		light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
+		light_rotate_all();
+		// lighting for techroom
+		Glowpoint_use_depth_buffer = false;
+	}
+
 	model_clear_instance( Closeup_icon->modelnum );
 	model_set_detail_level(0);
 
@@ -1069,6 +1083,8 @@ void brief_render_closeup(int ship_class, float frametime)
 	if ( Closeup_icon->type == ICON_JUMP_NODE) {
 		model_set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);		
 		model_render_flags_local = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE;
+	} else if (Cmdline_brief_lighting) {
+		model_render_flags_local = MR_LOCK_DETAIL | MR_AUTOCENTER;
 	} else {
 		model_render_flags_local = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER;
 	}
