@@ -150,7 +150,7 @@ case "$target" in
 		LDFLAGS="$LDFLAGS -L/opt/csw/lib"
 		CPPFLAGS="$CPPFLAGS -I/opt/csw/include"
 		;;
-	*freebsd*)
+	*freebsd* | *openbsd*)
 		# FreeBSD 9.1
 		echo "Using Unix defines (for $host_os $host_cpu)"
 		echo "************************************************************"
@@ -175,7 +175,8 @@ case "$target" in
 		echo "check the configure.ac file"
 		echo "host_cpu:    " $host_cpu
 		echo "host_vendor: " $host_vendor
-		echo "host_os      " $host_os
+		echo "host_os:     " $host_os
+		echo "target:      " $target
 		echo "************************************************************"
 		echo "* Please let us know about successful builds on this OS at *"
 		echo "* http://www.hard-light.net/forums/index.php?board=113.0 ***"

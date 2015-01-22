@@ -1069,6 +1069,46 @@ angles *vm_extract_angles_matrix(angles *a,matrix *m)
 	return a;
 }
 
+// alternate method for extracting angles which seems to be
+// less susceptible to rounding errors -- see section 8.7.2
+// (pages 278-281) of 3D Math Primer for Graphics and Game
+// Development, 2nd Edition
+// http://books.google.com/books?id=X3hmuhBoFF0C&printsec=frontcover#v=onepage&q&f=false
+angles *vm_extract_angles_matrix_alternate(angles *a, matrix *m)
+{
+	Assert(a != NULL);
+	Assert(m != NULL);
+
+	// Extract pitch from m32, being careful for domain errors with
+	// asin().  We could have values slightly out of range due to
+	// floating point arithmetic.
+	float sp = -m->vec.fvec.xyz.y;
+	if (sp <= -1.0f) {
+		a->p = -PI_2;	// -pi/2
+	} else if (sp >= 1.0f) {
+		a->p = PI_2;	// pi/2
+	} else {
+		a->p = asin(sp);
+	}
+
+	// Check for the Gimbal lock case, giving a slight tolerance
+	// for numerical imprecision
+	if (fabs(sp) > 0.9999f) {
+		// We are looking straight up or down.
+		// Slam bank to zero and just set heading
+		a->b = 0.0f;
+		a->h = atan2(-m->vec.rvec.xyz.z, m->vec.rvec.xyz.x);
+	} else {
+		// Compute heading
+		a->h = atan2(m->vec.fvec.xyz.x, m->vec.fvec.xyz.z);
+
+		// Compute bank
+		a->b = atan2(m->vec.rvec.xyz.y, m->vec.uvec.xyz.y);
+	}
+
+	return a;
+}
+
 
 //extract heading and pitch from a vector, assuming bank==0
 angles *vm_extract_angles_vector_normalized(angles *a,vec3d *v)

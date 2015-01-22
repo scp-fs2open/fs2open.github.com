@@ -102,10 +102,13 @@ extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = 
 extern void advance_to_eoln(char *terminators);
 extern void skip_token();
 
-// required
-extern int required_string(char *pstr);
+// optional
 extern int optional_string(const char *pstr);
 extern int optional_string_either(char *str1, char *str2);
+extern int optional_string_one_of(int arg_count, ...);
+
+// required
+extern int required_string(char *pstr);
 extern int required_string_either(char *str1, char *str2);
 extern int required_string_3(char *str1, char *str2, char *str3);
 extern int required_string_4(char *str1, char *str2, char *str3, char *str4);

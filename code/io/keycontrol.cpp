@@ -68,8 +68,6 @@ int count;
 int table[ MAX_NUM_SLOTS ];
 };
 
-#define MAX_SLOT_COUNT 25
-
 class factor_table
 	{
 	public:
@@ -96,9 +94,9 @@ memset( table, 0x00, sizeof( ftable ) * MAX_NUM_SLOTS );
 for( int i = 0 ; i < MAX_NUM_SLOTS; ++i )
 	{
 	table[ i ].count = 0;
-	for( int j = 1; j <= i; ++j )
+	for( int j = 1; j <= i + 1; ++j )
 		{
-		if( isAPrimeFactor( j, i ) )
+		if( isAPrimeFactor( j, i + 1 ) )
 			{
 			table[ i ].table[ table[ i ].count ] = j;
 			table[ i ].count ++;
@@ -109,14 +107,16 @@ for( int i = 0 ; i < MAX_NUM_SLOTS; ++i )
 
 int factor_table::getNextSlots(int slots_on_ship, int cur_slots)
 {
-Assert( slots_on_ship <= MAX_NUM_SLOTS );
-Assert( slots_on_ship >= 0 );
+Assertion( slots_on_ship <= MAX_NUM_SLOTS, "factor_table::getNextSlots() called with %d slots, when MAX_NUM_SLOTS is %d; get a coder!\n", slots_on_ship, MAX_NUM_SLOTS );
+Assertion( slots_on_ship >= 1, "factor_table::getNextSlots() called with %d slots, when only positive integers make sense; get a coder!\n" );
 
-for( int i = 0; i < table[ slots_on_ship ].count; ++i )
+int slots_index = slots_on_ship - 1;
+
+for( int i = 0; i < table[ slots_index ].count; ++i )
 	{
-	if( table[ slots_on_ship ].table[ i ] == cur_slots )
+	if( table[ slots_index ].table[ i ] == cur_slots )
 		{
-		if( table[ slots_on_ship ].count == i + 1 )
+		if( table[ slots_index ].count == i + 1 )
 			{
 			//Overflow back to 1
 			return 1;
@@ -124,13 +124,13 @@ for( int i = 0; i < table[ slots_on_ship ].count; ++i )
 		else
 			{
 			//Next block in the table
-			return table[ slots_on_ship ].table[ i + 1 ];
+			return table[ slots_index ].table[ i + 1 ];
 			}
 		}
 	}
 //Did not find cur_slots, try and get back on track
 
-Assert( 0 );
+Assertion( false, "For some reason, factor_table::getNextSlots() was unable to locate cur_slots. This should never happen; get a coder!\n" );
 return 1;
 }
 
@@ -1737,12 +1737,14 @@ int button_function_critical(int n, net_player *p = NULL)
 				ship * shipp = &Ships[objp->instance];
 				ship_weapon *swp = &shipp->weapons;
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
-				polymodel *pm = model_get( sip->model_num );
-				count = ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
-				swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
-				shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
-				shipp->last_fired_point[ swp->current_primary_bank ] -= 1;
-				shipp->last_fired_point[ swp->current_primary_bank ] %= swp->primary_bank_slot_count[ swp->current_primary_bank ];
+				if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
+					polymodel *pm = model_get( sip->model_num );
+					count = ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
+					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
+					shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
+					shipp->last_fired_point[ swp->current_primary_bank ] -= 1;
+					shipp->last_fired_point[ swp->current_primary_bank ] %= swp->primary_bank_slot_count[ swp->current_primary_bank ];
+				}
 			}
 			break;
 

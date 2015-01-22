@@ -182,7 +182,7 @@ int Rank_medal_index = -1;
 int Init_flags;
 
 medal_stuff::medal_stuff()
-	: num_versions(1), version_starts_at_1(false), kills_needed(0), promotion_text()
+	: num_versions(1), version_starts_at_1(false), available_from_start(false), kills_needed(0), promotion_text()
 {
 	name[0] = '\0';
 	bitmap[0] = '\0';
@@ -213,6 +213,7 @@ void medal_stuff::clone(const medal_stuff &m)
 	memcpy(debrief_bitmap, m.debrief_bitmap, MAX_FILENAME_LEN);
 	num_versions = m.num_versions;
 	version_starts_at_1 = m.version_starts_at_1;
+	available_from_start = m.available_from_start;
 	kills_needed = m.kills_needed;
 	memcpy(voice_base, m.voice_base, MAX_FILENAME_LEN);
 
@@ -362,6 +363,10 @@ void parse_medal_tbl()
 		temp_medal.version_starts_at_1 = (Num_medals == Rank_medal_index);
 		if (optional_string("+Version starts at 1:")) {
 			stuff_boolean( &temp_medal.version_starts_at_1 );
+		}
+
+		if (optional_string("+Available From Start:")) {
+			stuff_boolean( &temp_medal.available_from_start );
 		}
 
 		// some medals are based on kill counts.  When string +Num Kills: is present, we know that
@@ -518,6 +523,12 @@ void medal_main_init(player *pl, int mode)
 		}
 	}
 #endif
+
+	for (idx=0; idx < Num_medals; idx++) {
+		if ((Medals[idx].available_from_start) && (Medals_player->stats.medal_counts[idx] < 1)) {
+			Medals_player->stats.medal_counts[idx] = 1;
+		}
+	}
 
 	Medals_mode = mode;
 	snazzy_menu_init();

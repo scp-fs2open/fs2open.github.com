@@ -198,6 +198,7 @@ Flag exe_params[] =
 
 	{ "-ingame_join",		"Allow in-game joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Enable voice recognition",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
+	{ "-brief_lighting",	"Enable lighting on briefing models",		true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-brief_lighting", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
@@ -302,6 +303,7 @@ cmdline_parm fxaa_arg("-fxaa", NULL, AT_NONE);
 cmdline_parm fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-9), requires -post_process and -fxaa", AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
+cmdline_parm brieflighting_arg("-brief_lighting", NULL, AT_NONE);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -326,6 +328,7 @@ int Cmdline_fxaa_preset = 6;
 extern int Fxaa_preset_last_frame;
 bool Cmdline_fb_explosions = 0;
 extern bool ls_force_off;
+bool Cmdline_brief_lighting = 0;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL, AT_NONE);	// Cmdline_cache_bitmaps
@@ -1574,6 +1577,11 @@ bool SetCmdlineParams()
 	if ( fb_explosions_arg.found() )
 	{
 		Cmdline_fb_explosions = 1;
+	}
+
+	if ( brieflighting_arg.found() )
+	{
+		Cmdline_brief_lighting = 1;
 	}
 
 	if ( postprocess_arg.found() )

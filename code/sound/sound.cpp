@@ -700,6 +700,7 @@ void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius,
 	} else {
 		// MageKing17 - It's a 3D sound effect, we should use the function for setting the position of a 3D sound effect.
 		sound *snd;
+		int channel;
 
 		if (!ds_initialized)
 			return;
@@ -717,10 +718,16 @@ void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius,
 		if ( !(snd->flags & SND_F_USED) )
 			return;
 
+		channel = ds_get_channel(soundnum);
+		if (channel == -1) {
+			nprintf(( "Sound", "WARNING: Trying to set position for a non-playing sound.\n" ));
+			return;
+		}
+
 		float min_range = (float) (fl2i( (gs->min) * range_factor));
 		float max_range = (float) (fl2i( (gs->max) * range_factor + 0.5f));
 
-		ds3d_update_buffer(soundnum, min_range, max_range, new_pos, NULL);
+		ds3d_update_buffer(channel, min_range, max_range, new_pos, NULL);
 	}
 }
 

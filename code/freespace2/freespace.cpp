@@ -8967,6 +8967,10 @@ void game_unpause()
 			case GS_STATE_GAME_PLAY:
 				break;
 
+			// ditto for if we explicitly paused the game and then minimized it
+			case GS_STATE_GAME_PAUSED:
+				break;
+
 			case GS_STATE_FICTION_VIEWER:
 				fiction_viewer_unpause();
 				break;

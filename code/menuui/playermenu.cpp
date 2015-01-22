@@ -975,21 +975,7 @@ void player_select_process_noninput(int k)
 
 	// delete the currently highlighted pilot
 	case KEY_DELETE:
-		if (Player_select_pilot >= 0) {
-			int ret;
-
-			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-				popup(PF_TITLE_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Pilots can only be deleted from the single player menu!", 1611));
-			} else {
-				// display a popup requesting confirmation
-				ret = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON,2,POPUP_NO,POPUP_YES,XSTR( "Are you sure you want to delete this pilot?", 383));										
-
-				// delete the pilot
-				if (ret == 1) {
-					player_select_delete_pilot();
-				}
-			}
-		}
+		player_select_button_pressed(DELETE_BUTTON);
 		break;
 	}
 

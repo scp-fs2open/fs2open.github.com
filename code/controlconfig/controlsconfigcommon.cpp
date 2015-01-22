@@ -474,14 +474,14 @@ int translate_key_to_index(const char *key, bool find_override)
 		// convert scancode to Control_config index
 		if (find_override) {
 			for (i=0; i<CCFG_MAX; i++) {
-				if (Control_config[i].key_id == index) {
+				if (!Control_config[i].disabled && Control_config[i].key_id == index) {
 					index = i;
 					break;
 				}
 			}
 		} else {
 			for (i=0; i<CCFG_MAX; i++) {
-				if (Control_config[i].key_default == index) {
+				if (!Control_config[i].disabled && Control_config[i].key_default == index) {
 					index = i;
 					break;
 				}
@@ -834,8 +834,12 @@ void control_config_common_load_overrides()
 					int iTemp;
 
 					if (optional_string("$Key Default:")) {
-						stuff_string(szTempBuffer, F_NAME, iBufferLength);
-						r_ccConfig.key_default = (short)mKeyNameToVal[szTempBuffer];
+						if (optional_string("NONE")) {
+							r_ccConfig.key_default = (short)-1;
+						} else {
+							stuff_string(szTempBuffer, F_NAME, iBufferLength);
+							r_ccConfig.key_default = (short)mKeyNameToVal[szTempBuffer];
+						}
 					}
 
 					if (optional_string("$Joy Default:")) {
@@ -860,7 +864,7 @@ void control_config_common_load_overrides()
 
 					if (optional_string("$Category:")) {
 						stuff_string(szTempBuffer, F_NAME, iBufferLength);
-						r_ccConfig.tab = (char)mKeyNameToVal[szTempBuffer];
+						r_ccConfig.tab = (char)mCCTabNameToVal[szTempBuffer];
 					}
 
 					if (optional_string("$Has XStr:")) {
@@ -870,7 +874,7 @@ void control_config_common_load_overrides()
 
 					if (optional_string("$Type:")) {
 						stuff_string(szTempBuffer, F_NAME, iBufferLength);
-						r_ccConfig.type = (char)mKeyNameToVal[szTempBuffer];
+						r_ccConfig.type = (char)mCCTypeNameToVal[szTempBuffer];
 					}
 
 					if (optional_string("+Disable")) {
