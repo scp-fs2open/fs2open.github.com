@@ -492,23 +492,17 @@ int cf_access(const char *filename, int dir_type, int mode)
 
 // Returns 1 if the file exists, 0 if not.
 // Checks only the file system.
+// cf_find_file_location checks the filesystem before VPs
+// If offset is 0, it was found in the filesystem, so offset is boolean false
+// If offset equates to boolean true, it was found in a VP and the logic will negate the function return
 int cf_exists(const char *filename, int dir_type)
 {
-	char longname[MAX_PATH_LEN];
+	int offset = 1;
 
-	Assert(CF_TYPE_SPECIFIED(dir_type));
+	if ( (filename == NULL) || !strlen(filename) )
+		return 0;
 
-	cf_create_default_path_string(longname, sizeof(longname) - 1, dir_type, filename);
-
-	FILE *fp = fopen(longname, "rb");
-	if (fp)
-	{
-		// Goober5000 - these were switched, causing the fclose to be unreachable
-		fclose(fp);
-		return 1;
-	}
-
-	return 0;
+	return (cf_find_file_location(filename, dir_type, 0, NULL, &offset, NULL) && !offset);
 }
 
 // Goober5000
