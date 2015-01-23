@@ -146,6 +146,9 @@ engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
 
 void ship_reset_disabled_physics(object *objp, int ship_class);
 
+// forward declaring for parse_ship()
+int ship_info_lookup_sub(const char *token);
+
 // information for ships which have exited the game
 SCP_vector<exited_ship> Ships_exited;
 
@@ -1051,7 +1054,7 @@ int parse_ship(const char *filename, bool replace)
 	//Check if ship exists already
 	int ship_id;
 	bool first_time = false;
-	ship_id = ship_info_lookup( buf );
+	ship_id = ship_info_lookup_sub( buf );
 	
 	if(ship_id != -1)
 	{
@@ -11983,6 +11986,11 @@ int ship_info_lookup(const char *token)
 	// found a hash
 	if (*p == '#')
 	{
+		if (strlen(token) > NAME_LENGTH-3) {
+			// If the below sprintf would exceed NAME_LENGTH (taking \0 terminator into account), give a warning and return.
+			Warning(LOCATION, "Token [%s] is too long to be parenthesized by ship_info_lookup()!\n", token);
+			return -1;
+		}
 		// assemble using parentheses
 		sprintf(name, "%s (%s)", temp1, temp2);
 	}
