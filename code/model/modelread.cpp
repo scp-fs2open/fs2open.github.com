@@ -1963,17 +1963,18 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 			case ID_TGUN:
 			case ID_TMIS: {
-				int n_banks, n_slots, parent;
-				model_subsystem *subsystemp;
-				int snum=-1;
-	
-				n_banks = cfread_int(fp);				// number of turret points
+				int n_banks = cfread_int(fp);			// Number of turrets
+
 				for ( i = 0; i < n_banks; i++ ) {
-					int physical_parent;			// who are we attached to?
-					parent = cfread_int( fp );			// get the turret parent of the object
+					int parent;							// The parent subobj of the turret (the gun base)
+					int physical_parent;				// The subobj that the firepoints are physically attached to (the gun barrel)
+					int n_slots;						// How many firepoints the turret has
+					model_subsystem *subsystemp;		// The actual turret subsystem
 
-					physical_parent = cfread_int(fp);	// The parent subobj that this is physically attached to
+					parent = cfread_int( fp );
+					physical_parent = cfread_int(fp);
 
+					int snum=-1;
 					if ( subsystems ) {
 						for ( snum = 0; snum < n_subsystems; snum++ ) {
 							subsystemp = &subsystems[snum];
@@ -1987,7 +1988,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 								n_slots = cfread_int( fp );
 								subsystemp->turret_gun_sobj = physical_parent;
 								if(n_slots > MAX_TFP) {
-									Warning(LOCATION, "Model %s has too many turret firing points on subsystem %s", subsystemp->name);
+									Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, n_slots, subsystemp->name, MAX_TFP);
 								}
 
 								for (j = 0; j < n_slots; j++ )	{
@@ -1999,7 +2000,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 										cfread_vector(&bogus, fp);
 									}
 								}
-								Assertion( n_slots > 0, "Turret %s has no firing points.\n", subsystemp->name );
+								Assertion( n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
 
 								subsystemp->turret_num_firing_points = n_slots;
 
@@ -2008,12 +2009,10 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						}
 					}
 
-//turret_gun_sobj
-
 					if ( (n_subsystems == 0) || (snum == n_subsystems) ) {
 						vec3d bogus;
 
-						nprintf(("Warning", "Turret object not found for turret firing point in model %s\n", model_filename));
+						nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", parent, i, pm->filename));
 						cfread_vector( &bogus, fp );
 						n_slots = cfread_int( fp );
 						for (j = 0; j < n_slots; j++ )
