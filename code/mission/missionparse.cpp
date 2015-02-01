@@ -4603,8 +4603,9 @@ void resolve_path_masks(int anchor, int *path_mask)
 		Assert(!(anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG));
 		parent_pobjp = mission_parse_get_parse_object(Parse_names[anchor]);
 
-		// load model for checking paths
-		modelnum = model_load(Ship_info[parent_pobjp->ship_class].pof_file, 0, NULL);
+		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
+		ship_info *sip = &Ship_info[parent_pobjp->ship_class];
+		modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 
 		// resolve names to indexes
 		*path_mask = 0;
@@ -4616,9 +4617,6 @@ void resolve_path_masks(int anchor, int *path_mask)
 
 			*path_mask |= (1 << bay_path);
 		}
-
-		// unload model
-		model_unload(modelnum);
 
 		// cache the result
 		prp->cached_mask = *path_mask;
