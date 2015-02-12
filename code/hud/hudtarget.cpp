@@ -7161,6 +7161,8 @@ void HudGaugeHardpoints::render(float frametime)
 	model_set_alpha( gr_screen.current_color.alpha / 255.0f );
 	model_set_forced_texture(0);
 
+	model_set_outline_color_fast(&gauge_color);
+
 	model_render( 
 		sip->model_num, 
 		&object_orient, 
