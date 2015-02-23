@@ -26,6 +26,7 @@ SCP_vector<char> Color_Tags;
 color Color_text_normal, Color_text_subselected, Color_text_selected;
 color Color_text_error, Color_text_error_hi, Color_text_active, Color_text_active_hi;
 color Color_text_heading, Color_more_indicator, Color_more_bright, Color_bright, Color_normal;
+color Color_briefing_grid;
 
 color Color_blue, Color_bright_blue, Color_green, Color_bright_green;
 color Color_black, Color_grey, Color_silver, Color_white, Color_bright_white;
@@ -132,6 +133,7 @@ color *interface_colors[INTERFACE_COLORS] = {
 	&Color_more_bright,
 	&Color_bright,
 	&Color_normal,
+	&Color_briefing_grid,
 };
 
 const int interface_defaults[INTERFACE_COLORS] = {
@@ -147,6 +149,7 @@ const int interface_defaults[INTERFACE_COLORS] = {
 	13,	//"Bright Red"
 	1,	//"Bright Blue"
 	7,	//"White"
+	5,	//"Grey"
 };
 
 #define DEFAULT_TAGS	20
@@ -424,6 +427,7 @@ void parse_everything_else(const char *filename)
 			"$Bright More Indicator:",
 			"$Bright:",
 			"$Normal:",
+			"$Briefing Grid:",
 		};
 
 		// now for each color, check if its corresponding string is there
