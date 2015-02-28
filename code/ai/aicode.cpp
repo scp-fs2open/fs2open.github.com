@@ -12458,6 +12458,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		if (aip->submode == SM_ATTACK_FOREVER) {
 			return;
 		}
+		break;
 	case AIM_GUARD:
 		//	If in guard mode and far away from guard object, don't pursue guy that hit me.
 		if ((aip->guard_objnum != -1) && (aip->guard_signature == Objects[aip->guard_objnum].signature)) {
@@ -15095,14 +15096,14 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 			if ( ai_big_maybe_enter_strafe_mode(objp_ship, OBJ_INDEX(hit_objp), 1) )
 				return;
 		}
-
+		break;
 	case AIM_GUARD:
 		//	If in guard mode and far away from guard object, don't pursue guy that hit me.
-			if ((aip->guard_objnum != -1) && (aip->guard_signature == Objects[aip->guard_objnum].signature)) {
-				if (vm_vec_dist_quick(&objp_ship->pos, &Objects[aip->guard_objnum].pos) > 500.0f) {
-					return;
-				}
+		if ((aip->guard_objnum != -1) && (aip->guard_signature == Objects[aip->guard_objnum].signature)) {
+			if (vm_vec_dist_quick(&objp_ship->pos, &Objects[aip->guard_objnum].pos) > 500.0f) {
+				return;
 			}
+		}
 	case AIM_STILL:
 	case AIM_STAY_NEAR:
 		// Note: Dealt with above, at very top.  case AIM_PLAY_DEAD:
