@@ -8763,9 +8763,9 @@ void ai_chase()
 					if (!(En_objp->flags & OF_PROTECTED)) {
 						ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 						int current_bank = tswp->current_secondary_bank;
-						weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[tswp->current_secondary_bank]];
 
 						if (current_bank > -1) {
+							weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 							if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
 								if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {
 									swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (swip->fire_wait*1000.0f));
@@ -8773,7 +8773,7 @@ void ai_chase()
 							}
 
 							if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
-								if (tswp->current_secondary_bank >= 0) {
+								if (current_bank >= 0) {
 									float firing_range;
 									
 									if (swip->wi_flags2 & WIF2_LOCAL_SSM)
