@@ -168,6 +168,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	mc.pos = &ship_objp->pos;
 	mc.p0 = &weapon_objp->last_pos;
 	mc.p1 = &weapon_end_pos;
+	mc.lod = sip->collision_lod;
 	memcpy(&mc_shield, &mc, sizeof(mc_info));
 	memcpy(&mc_hull, &mc, sizeof(mc_info));
 
