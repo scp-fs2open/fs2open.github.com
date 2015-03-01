@@ -749,11 +749,12 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 				if (!(En_objp->flags & OF_PROTECTED) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP))) {
 					ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 					int current_bank = tswp->current_secondary_bank;
+					if (current_bank > -1) {
 					weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 
 					if(!(En_objp->flags & OF_PROTECTED) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags & WIF_PUNCTURE )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
 						//	If ship is protected and very low on hits, don't fire missiles.
-						if ((current_bank > -1) &&  (!(En_objp->flags & OF_PROTECTED) || (En_objp->hull_strength > 10*swip->damage))) {
+						if (!(En_objp->flags & OF_PROTECTED) || (En_objp->hull_strength > 10*swip->damage)) {
 							if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
 								if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {
 									swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (swip->fire_wait*1000.0f));
@@ -792,7 +793,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
 														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 													} else {
- 														swp->burst_counter[current_bank_adjusted] = 0;
+														swp->burst_counter[current_bank_adjusted] = 0;
 													}
 												}
 											} else {
@@ -815,6 +816,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 								swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 							}
 						}
+					}
 					}
 				}
 			}
