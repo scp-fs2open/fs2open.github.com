@@ -3122,16 +3122,16 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment streng
 				qdx = -1;
 				break;
 			case LE_SHIELD_FRONT:
-				qdx = 0;
+				qdx = FRONT_QUAD;
 				break;
 			case LE_SHIELD_LEFT:
-				qdx = 1;
+				qdx = LEFT_QUAD;
 				break;
 			case LE_SHIELD_RIGHT:
-				qdx = 2;
+				qdx = RIGHT_QUAD;
 				break;
 			case LE_SHIELD_BACK:
-				qdx = 3;
+				qdx = REAR_QUAD;
 				break;
 			default:
 				return ade_set_error(L, "f", 0.0f);
