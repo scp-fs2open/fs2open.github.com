@@ -2860,7 +2860,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 	// basic radar gauge info
 	float origin[2] = {0.5, 1.0};
 	int offset[2];
-	int coords[2];
+	int coords[2] = {0, 0};
 	int base_res[2];
 	int Radar_radius[2];
 
