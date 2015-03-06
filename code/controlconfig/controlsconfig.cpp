@@ -2107,6 +2107,45 @@ void control_config_do_frame(float frametime)
 		List_buttons[i++].disable();
 	}
 
+	// If multiple controls presets are provided, display which one is in use
+	if (Control_config_presets.size() > 1) {
+		SCP_string preset_str;
+		int matching_preset = -1;
+
+		for (i=0; i<(int)Control_config_presets.size(); i++) {
+			bool this_preset_matches = true;
+			config_item *this_preset = Control_config_presets[i];
+
+			for (int j=0; j<CCFG_MAX; j++) {
+				if (!Control_config[j].disabled && Control_config[j].key_id != this_preset[j].key_default) {
+					this_preset_matches = false;
+					break;
+				}
+			}
+
+			if (this_preset_matches) {
+				matching_preset = i;
+				break;
+			}
+		}
+
+		if (matching_preset >= 0) {
+			sprintf(preset_str, "Controls: %s", Control_config_preset_names[matching_preset].c_str());
+		} else {
+			sprintf(preset_str, "Controls: custom");
+			
+		}
+
+		gr_get_string_size(&w, NULL, preset_str.c_str());
+		gr_set_color_fast(&Color_text_normal);
+
+		if (gr_screen.res == GR_640) {
+			gr_string(16, (24 - font_height) / 2, preset_str.c_str(), GR_RESIZE_MENU);
+		} else {
+			gr_string(24, (40 - font_height) / 2, preset_str.c_str(), GR_RESIZE_MENU);
+		}
+	}
+
 	// blit help overlay if active
 	help_overlay_maybe_blit(Control_config_overlay_id, gr_screen.res);
 
