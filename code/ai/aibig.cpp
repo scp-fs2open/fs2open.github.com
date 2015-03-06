@@ -609,8 +609,9 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			return;
 		}
 
-		vec3d	*rel_pos, vec_to_enemy;
-		float		weapon_travel_dist;
+		vec3d	*rel_pos;
+		vec3d	vec_to_enemy;
+		float	weapon_travel_dist;
 
 		start_bank = Ships[aip->shipnum].weapons.current_primary_bank;
 
@@ -749,70 +750,72 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 				if (!(En_objp->flags & OF_PROTECTED) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP))) {
 					ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 					int current_bank = tswp->current_secondary_bank;
-					weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
+					if (current_bank > -1) {
+						weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 
-					if(!(En_objp->flags & OF_PROTECTED) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags & WIF_PUNCTURE )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
-						//	If ship is protected and very low on hits, don't fire missiles.
-						if ((current_bank > -1) &&  (!(En_objp->flags & OF_PROTECTED) || (En_objp->hull_strength > 10*swip->damage))) {
-							if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
-								if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {
-									swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (swip->fire_wait*1000.0f));
-								}
-							}
-
-							if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
-								float firing_range;
-								if (swip->wi_flags2 & WIF2_LOCAL_SSM)
-									firing_range=swip->lssm_lock_range;
-								else
-									firing_range = MIN((swip->max_speed * swip->lifetime), swip->weapon_range);
-								// reduce firing range of secondaries in nebula
-								extern int Nebula_sec_range;
-								if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
-									firing_range *= 0.8f;
+						if(!(En_objp->flags & OF_PROTECTED) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags & WIF_PUNCTURE )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
+							//	If ship is protected and very low on hits, don't fire missiles.
+							if (!(En_objp->flags & OF_PROTECTED) || (En_objp->hull_strength > 10*swip->damage)) {
+								if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
+									if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {
+										swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (swip->fire_wait*1000.0f));
+									}
 								}
 
-								float t = 0.25f;	//	default delay in seconds until next fire.
+								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
+									float firing_range;
+									if (swip->wi_flags2 & WIF2_LOCAL_SSM)
+										firing_range=swip->lssm_lock_range;
+									else
+										firing_range = MIN((swip->max_speed * swip->lifetime), swip->weapon_range);
+									// reduce firing range of secondaries in nebula
+									extern int Nebula_sec_range;
+									if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
+										firing_range *= 0.8f;
+									}
 
-								if (dist_to_enemy < firing_range*1.0f) {
+									float t = 0.25f;	//	default delay in seconds until next fire.
+
+									if (dist_to_enemy < firing_range*1.0f) {
 
 
-									//vm_vec_scale_add(&future_enemy_pos, enemy_pos, enemy_vel, dist_to_enemy/swip->max_speed);
-									//if (vm_vec_dist_quick(&future_enemy_pos, firing_pos) < firing_range * 0.8f) {
-										if (ai_fire_secondary_weapon(Pl_objp)) {
+										//vm_vec_scale_add(&future_enemy_pos, enemy_pos, enemy_vel, dist_to_enemy/swip->max_speed);
+										//if (vm_vec_dist_quick(&future_enemy_pos, firing_pos) < firing_range * 0.8f) {
+											if (ai_fire_secondary_weapon(Pl_objp)) {
 
-											int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
+												int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
 
-											if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
-												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
-													t = swip->burst_delay;
-													swp->burst_counter[current_bank_adjusted]++;
-												} else {
-													t = swip->fire_wait;
-													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
-														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+												if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
+													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
+														t = swip->burst_delay;
+														swp->burst_counter[current_bank_adjusted]++;
 													} else {
- 														swp->burst_counter[current_bank_adjusted] = 0;
+														t = swip->fire_wait;
+														if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+														} else {
+															swp->burst_counter[current_bank_adjusted] = 0;
+														}
+													}
+												} else {
+													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
+														t = set_secondary_fire_delay(aip, temp_shipp, swip, true);
+														swp->burst_counter[current_bank_adjusted]++;
+													} else {
+														t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
+														if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+														} else {
+															swp->burst_counter[current_bank_adjusted] = 0;
+														}
 													}
 												}
-											} else {
-												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
-													t = set_secondary_fire_delay(aip, temp_shipp, swip, true);
-													swp->burst_counter[current_bank_adjusted]++;
-												} else {
-													t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
-													if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
-														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
-													} else {
-														swp->burst_counter[current_bank_adjusted] = 0;
-													}
-												}
+												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 											}
-											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
-										}
-									//}
+										//}
+									}
+									swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 								}
-								swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 							}
 						}
 					}

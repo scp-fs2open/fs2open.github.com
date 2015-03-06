@@ -8809,9 +8809,9 @@ void ai_chase()
 					if (!(En_objp->flags & OF_PROTECTED)) {
 						ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 						int current_bank = tswp->current_secondary_bank;
-						weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[tswp->current_secondary_bank]];
 
 						if (current_bank > -1) {
+							weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 							if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
 								if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {
 									swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (swip->fire_wait*1000.0f));
@@ -8819,7 +8819,7 @@ void ai_chase()
 							}
 
 							if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
-								if (tswp->current_secondary_bank >= 0) {
+								if (current_bank >= 0) {
 									float firing_range;
 									
 									if (swip->wi_flags2 & WIF2_LOCAL_SSM)
@@ -12145,10 +12145,8 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 
 	if ((aip->nearest_locked_object != -1) && (Objects[aip->nearest_locked_object].type == OBJ_WEAPON)) {
 		object	*weapon_objp;
-		weapon	*weaponp;
 
 		weapon_objp = &Objects[aip->nearest_locked_object];
-		weaponp = &Weapons[weapon_objp->instance];
 
 		if ((dist = vm_vec_dist_quick(&objp->pos, &weapon_objp->pos)) < weapon_objp->phys_info.speed*2.0f) {
 	
@@ -12504,6 +12502,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		if (aip->submode == SM_ATTACK_FOREVER) {
 			return;
 		}
+		break;
 	case AIM_GUARD:
 		//	If in guard mode and far away from guard object, don't pursue guy that hit me.
 		if ((aip->guard_objnum != -1) && (aip->guard_signature == Objects[aip->guard_objnum].signature)) {
@@ -15141,14 +15140,14 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 			if ( ai_big_maybe_enter_strafe_mode(objp_ship, OBJ_INDEX(hit_objp), 1) )
 				return;
 		}
-
+		break;
 	case AIM_GUARD:
 		//	If in guard mode and far away from guard object, don't pursue guy that hit me.
-			if ((aip->guard_objnum != -1) && (aip->guard_signature == Objects[aip->guard_objnum].signature)) {
-				if (vm_vec_dist_quick(&objp_ship->pos, &Objects[aip->guard_objnum].pos) > 500.0f) {
-					return;
-				}
+		if ((aip->guard_objnum != -1) && (aip->guard_signature == Objects[aip->guard_objnum].signature)) {
+			if (vm_vec_dist_quick(&objp_ship->pos, &Objects[aip->guard_objnum].pos) > 500.0f) {
+				return;
 			}
+		}
 	case AIM_STILL:
 	case AIM_STAY_NEAR:
 		// Note: Dealt with above, at very top.  case AIM_PLAY_DEAD:
