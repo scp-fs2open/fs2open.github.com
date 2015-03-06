@@ -609,8 +609,9 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			return;
 		}
 
-		vec3d	*rel_pos, vec_to_enemy;
-		float		weapon_travel_dist;
+		vec3d	*rel_pos;
+		vec3d	vec_to_enemy;
+		float	weapon_travel_dist;
 
 		start_bank = Ships[aip->shipnum].weapons.current_primary_bank;
 
