@@ -5372,6 +5372,14 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 		break;
 	}
 
+	// It is possible in some cases for sip->model_num to change when several ships share a model,
+	// and for subsystems->model_num to still point to the old model index; this fixes that. -zookeeper
+	for (i = 0; i < sip->n_subsystems; i++) {
+		if (sip->model_num != sip->subsystems[i].model_num) {
+			mprintf(("Ship %s has model_num %i but its subsystem %s has model_num %i, fixing...\n", sip->name, sip->model_num, sip->subsystems[i].name, sip->subsystems[i].model_num));
+			sip->subsystems[i].model_num = sip->model_num;
+		}
+	}
 }
 
 // as with object, don't set next and prev to NULL because they keep the object on the free and used lists
