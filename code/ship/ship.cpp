@@ -5372,14 +5372,6 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 		break;
 	}
 
-	// It is possible in some cases for sip->model_num to change when several ships share a model,
-	// and for subsystems->model_num to still point to the old model index; this fixes that. -zookeeper
-	for (i = 0; i < sip->n_subsystems; i++) {
-		if (sip->model_num != sip->subsystems[i].model_num) {
-			mprintf(("Ship %s has model_num %i but its subsystem %s has model_num %i, fixing...\n", sip->name, sip->model_num, sip->subsystems[i].name, sip->subsystems[i].model_num));
-			sip->subsystems[i].model_num = sip->model_num;
-		}
-	}
 }
 
 // as with object, don't set next and prev to NULL because they keep the object on the free and used lists
@@ -15678,6 +15670,15 @@ void ship_page_in()
 
 				if ((sip->n_subsystems > 0) && (sip->subsystems[0].model_num > -1)) {
 					ship_previously_loaded = j;
+
+					// It is possible in some cases for sip->model_num to change, and for subsystems->model_num
+					// to still point to the old model index; this makes sure it doesn't happen. -zookeeper
+					for (k = 0; k < sip->n_subsystems; k++) {
+						if (sip->model_num != sip->subsystems[k].model_num) {
+							mprintf(("Ship %s has model_num %i but its subsystem %s has model_num %i, fixing...\n", sip->name, sip->model_num, sip->subsystems[k].name, sip->subsystems[k].model_num));
+							sip->subsystems[k].model_num = sip->model_num;
+						}
+					}
 				}
 
 				// the model should already be loaded so this wouldn't take long, but
