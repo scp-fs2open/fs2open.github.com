@@ -5644,7 +5644,7 @@ int ai_fire_primary_weapon(object *objp)
 	float	dot;
 	vec3d	v2t;
 
-	if (!( vm_vec_mag_quick(&G_predicted_pos) < AICODE_SMALL_MAGNITUDE )) {
+	if ( !(vm_vec_mag_quick(&G_predicted_pos) < AICODE_SMALL_MAGNITUDE ) && !(aip->submode == SM_AVOID) ) {
 		if ( vm_vec_cmp(&G_predicted_pos, &G_fire_pos) ) {
 			vm_vec_normalized_dir(&v2t, &G_predicted_pos, &G_fire_pos);
 			dot = vm_vec_dot(&v2t, &objp->orient.vec.fvec);
@@ -8238,8 +8238,12 @@ void ai_chase()
 
 	//	If seeking lock, try to point directly at ship, else predict position so lasers can hit it.
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
-	if ((real_dot_to_enemy < 0.25f) || (aip->target_time < 1.0f) || (aip->ai_flags & AIF_SEEK_LOCK)) {
+	if ((real_dot_to_enemy < 0.25f) || (aip->target_time < 1.0f)) {
 		predicted_enemy_pos = enemy_pos;
+	} else if (aip->ai_flags & AIF_SEEK_LOCK) {
+		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);	// Set G_fire_pos
+		predicted_enemy_pos = enemy_pos;
+		G_predicted_pos = predicted_enemy_pos;
 	} else {
 		//	Set predicted_enemy_pos.
 		//	See if attacking a subsystem.
