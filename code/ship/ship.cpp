@@ -2440,7 +2440,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 			else if (!stricmp(str, "right"))
 				sip->shield_point_augment_ctrls[RIGHT_QUAD] = i;
 			else if (!stricmp(str, "none"))
-				sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
+				;
 			else
 				Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Point Shield Controls, ignoring...", str);
 		}
