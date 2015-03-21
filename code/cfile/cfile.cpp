@@ -35,7 +35,6 @@
 #include "osapi/osapi.h"
 
 
-
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 #ifdef SCP_UNIX
 char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
@@ -730,6 +729,7 @@ CFILE *cfopen(const char *file_path, const char *mode, int type, int dir_type, b
 	if ( cf_find_file_location( copy_file_path, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize ) )	{
 
 		// Fount it, now create a cfile out of it
+		nprintf(("CFileDebug", "Requested file %s found at: %s\n", file_path, longname));
 		
 		if ( type & CFILE_MEMORY_MAPPED ) {
 		
