@@ -2272,8 +2272,8 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	file_is_unicode = is_unicode(raw_text);
 	if ( file_is_unicode )
 	{
-		nprintf(("Error", "Wokka!  File (%s) is in Unicode format!\n", filename));
-		longjmp(parse_abort, 5);
+		//This is probably fatal, so let's abort right here and now.
+		Error(LOCATION, "%s is in Unicode/UTF format and cannot be read by FreeSpace Open. Please convert it to ASCII/ANSI\n", filename);
 	}
 
 	if ( file_is_encrypted )
