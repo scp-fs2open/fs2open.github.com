@@ -46,6 +46,7 @@ int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
 
 bool Hud_retail = true;
 bool Scale_retail_gauges = true;
+bool Show_disabled_ets_gauges = false;
 
 int Hud_font = -1;
 
@@ -259,6 +260,10 @@ void parse_hud_gauges_tbl(const char *filename)
 			Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
 		else
 			Hud_reticle_style = temp;
+	}
+
+	if (optional_string("$Show disabled ETS gauges:")) {
+		stuff_boolean(&Show_disabled_ets_gauges);
 	}
 
 	int base_res[2];
