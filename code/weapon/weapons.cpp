@@ -4672,13 +4672,22 @@ void weapon_process_post(object * obj, float frame_time)
 	// trail missiles
 	if ((wip->wi_flags & WIF_TRAIL) && !(wip->wi_flags & WIF_CORKSCREW)) {
 		if ( (wp->trail_ptr != NULL ) && (wp->lssm_stage!=3))	{
+			vec3d pos;
+			
+			if (wip->render_type == WRT_LASER) {
+				// place tail origin in center of the bolt
+				vm_vec_scale_add(&pos, &obj->pos, &obj->orient.vec.fvec, (wip->laser_length / 2));
+			} else {
+				pos = obj->pos;
+			}
+
 			if (trail_stamp_elapsed(wp->trail_ptr)) {
 
-				trail_add_segment( wp->trail_ptr, &obj->pos );
+				trail_add_segment( wp->trail_ptr, &pos );
 				
 				trail_set_stamp(wp->trail_ptr);
 			} else {
-				trail_set_segment( wp->trail_ptr, &obj->pos );
+				trail_set_segment( wp->trail_ptr, &pos );
 			}
 
 		}
