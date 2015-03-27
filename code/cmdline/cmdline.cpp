@@ -29,6 +29,7 @@
 
 #ifdef SCP_UNIX
 #include "osapi/osapi.h"
+#include <dirent.h>
 #endif
 
 #include <string.h>
@@ -1277,12 +1278,6 @@ bool SetCmdlineParams()
 	if(mod_arg.found() ) {
 		Cmdline_mod = mod_arg.str();
 
-		// be sure that this string fits in our limits
-		/* This has to be disabled because the max size is going to be mods*MAX_FILENAME_LEN
-		if ( strlen(Cmdline_mod) > MAX_FILENAME_LEN ) {
-			Cmdline_mod[MAX_FILENAME_LEN-1] = '\0';
-		}*/
-
 		// strip off blank space it it's there
 		if ( Cmdline_mod[strlen(Cmdline_mod)-1] == ' ' ) {
 			Cmdline_mod[strlen(Cmdline_mod)-1] = '\0';
@@ -1294,7 +1289,49 @@ bool SetCmdlineParams()
 		memset( modlist, 0, len + 2 );
 		strcpy_s(modlist, len+2, Cmdline_mod);
 
-		//modlist[len]= '\0'; // double null termination at the end
+#ifdef SCP_UNIX
+		// for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
+		DIR *dp;
+		dirent *dirp;
+		char *cur_pos, *temp;
+		char cur_dir[CF_MAX_PATHNAME_LENGTH], delim[] = ",";
+		SCP_vector<SCP_string> temp_modlist;
+		size_t total_len = 0;
+
+		if ( !_getcwd(cur_dir, CF_MAX_PATHNAME_LENGTH ) ) {
+			Error(LOCATION, "Can't get current working directory -- %d", errno );
+		}
+
+		for (cur_pos = strtok(modlist, delim); cur_pos != NULL; cur_pos = strtok(NULL, delim))
+		{
+			if ((dp = opendir(cur_dir)) == NULL) {
+				Error(LOCATION, "Can't open directory '%s' -- %d", cur_dir, errno );
+			}
+
+			while ((dirp = readdir(dp)) != NULL) {
+				if (!stricmp(dirp->d_name, cur_pos)) {
+					temp_modlist.push_back(dirp->d_name);
+					total_len += (strlen(dirp->d_name) + 1);
+				}
+			}
+			(void)closedir(dp);
+		}
+
+		// create new char[] to replace modlist
+		char *new_modlist = new char[total_len+1];
+		memset( new_modlist, 0, total_len + 1 );
+		SCP_vector<SCP_string>::iterator ii, end = temp_modlist.end();
+		for (ii = temp_modlist.begin(); ii != end; ++ii) {
+			strcat_s(new_modlist, total_len+1, ii->c_str());
+			strcat_s(new_modlist, total_len+1, ","); // replace later with NUL
+		}
+
+		// make the rest of the function unaware that anything happened here
+		temp = modlist;
+		modlist = new_modlist;
+		delete [] temp;
+		len = total_len;
+#endif
 
 		// null terminate each individual
 		for (int i = 0; i < len; i++)
