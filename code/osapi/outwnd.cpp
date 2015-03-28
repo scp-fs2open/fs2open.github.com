@@ -1035,7 +1035,6 @@ void outwnd_update_marking(LPARAM l_parm, HWND hwnd)
 
 BOOL outwnd_create(int display_under_freespace_window)
 {
-	int x;
 	WNDCLASSEX wclass;
 	HINSTANCE hInst = GetModuleHandle(NULL);
 	RECT rect;
@@ -1066,14 +1065,14 @@ BOOL outwnd_create(int display_under_freespace_window)
 		client_rect.bottom = 480;
 		AdjustWindowRect(&client_rect,WS_CAPTION | WS_SYSMENU,FALSE);
 
-		int x = (GetSystemMetrics( SM_CXSCREEN )-(client_rect.right - client_rect.left))/2;
-		int y = 0;
-		if ( x < 0 ) x = 0;
+		int _x = (GetSystemMetrics( SM_CXSCREEN )-(client_rect.right - client_rect.left))/2;
+		int _y = 0;
+		if ( _x < 0 ) _x = 0;
 
-		rect.left = x;
-		rect.top = y;
-		rect.right = x + client_rect.right - client_rect.left - 1;
-		rect.bottom = y + client_rect.bottom - client_rect.top - 1;
+		rect.left = _x;
+		rect.top = _y;
+		rect.right = _x + client_rect.right - client_rect.left - 1;
+		rect.bottom = _y + client_rect.bottom - client_rect.top - 1;
 
 		if(!Is_standalone){
 			rect.top = rect.bottom;
@@ -1099,8 +1098,8 @@ BOOL outwnd_create(int display_under_freespace_window)
 
 	outwnd_disabled = false;
 	SetTimer(hOutputWnd, TIMER1, 50, NULL);
-	for (x=0; x<MAX_LINE_WIDTH; x++)
-		spaces[x] = ' ';
+	for (int i=0; i<MAX_LINE_WIDTH; i++)
+		spaces[i] = ' ';
 
 	spaces[MAX_LINE_WIDTH] = 0;
 	return TRUE;

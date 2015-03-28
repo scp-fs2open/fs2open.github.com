@@ -120,7 +120,7 @@ class UI_GADGET
 		UI_GADGET();	// constructor
 		virtual ~UI_GADGET();	// destructor
 
-		void base_create( UI_WINDOW *wnd, int kind, int x, int y, int w, int h );
+		void base_create( UI_WINDOW *wnd, int _kind, int _x, int _y, int _w, int _h );
 		virtual void draw();
 		void set_focus();
 		void clear_focus();
@@ -136,10 +136,10 @@ class UI_GADGET
 		virtual void hide(int n);
 		virtual void hide();
 		virtual void unhide();
-		void update_dimensions(int x, int y, int w, int h);
-		void get_dimensions(int *x, int *y, int *w, int *h);
+		void update_dimensions(int _x, int _y, int _w, int _h);
+		void get_dimensions(int *_x, int *_y, int *_w, int *_h);
 		int is_mouse_on();
-		void get_mouse_pos(int *x, int *y);
+		void get_mouse_pos(int *xx, int *yy);
 
 		void link_hotspot(int num);
 		int get_hotspot();
@@ -256,7 +256,7 @@ class UI_KEYTRAP : public UI_GADGET
 
 	public:
 		int pressed();
-		void create(UI_WINDOW *wnd, int hotkey, void (*_user_function)(void) );
+		void create(UI_WINDOW *wnd, int key, void (*_user_function)(void) );
 };
 
 /** TODO
@@ -307,7 +307,7 @@ class UI_INPUTBOX : public UI_GADGET
 		virtual void destroy();
 
 	public:
-		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _textlen, char *text, int _flags = 0, int pixel_lim = -1, color *clr = NULL);
+		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _textlen, char *_text, int _flags = 0, int pixel_lim = -1, color *clr = NULL);
 		void set_valid_chars(char *vchars);
 		void set_invalid_chars(char *ichars);
 		int changed();
@@ -492,7 +492,7 @@ class UI_DOT_SLIDER : public UI_GADGET
 	public:
 		int pos;  // 0 thru 10
 
-		void create(UI_WINDOW *wnd, int _x, int _y, char *bm, int id, int end_buttons = 1, int num_pos = 10);		
+		void create(UI_WINDOW *wnd, int _x, int _y, char *bm, int id, int end_buttons = 1, int _num_pos = 10);		
 		virtual void draw();
 		virtual void process(int focus = 0);
 		virtual void destroy();
@@ -511,10 +511,10 @@ class UI_DOT_SLIDER_NEW : public UI_GADGET
 	public:
 		int pos;  // 0 thru 10
 
-		void create(UI_WINDOW *wnd, int _x, int _y, int num_pos, char *bm_slider, int slider_mask,
+		void create(UI_WINDOW *wnd, int _x, int _y, int _num_pos, char *bm_slider, int slider_mask,
 																					char *bm_left = NULL, int left_mask = -1, int left_x = -1, int left_y = -1,
 																					char *bm_right = NULL, int right_mask = -1, int right_x = -1, int right_y = -1,
-																					int dot_width = 19);
+																					int _dot_width = 19);
 		virtual void draw();
 		virtual void process(int focus = 0);		
 };
@@ -633,7 +633,7 @@ public:
 	void set_mask_bmap(char *fname);
 	void set_mask_bmap(int bmap, char *name);
 	void set_foreground_bmap(char *fname);
-	void create( int x, int y, int w, int h, int flags, int f_id = -1 );
+	void create( int _x, int _y, int _w, int _h, int _flags, int _f_id = -1 );
 	int process( int key_in = -1,int process_mouse = 1);
 	void draw();
 	void draw_tooltip();
@@ -643,7 +643,7 @@ public:
 	ubyte *get_mask_data(int *w_md, int *h_md) { *w_md = mask_w; *h_md = mask_h; return mask_data; }
 	void render_tooltip(char *str);
 	void set_ignore_gadgets(int state);
-	void add_XSTR(char *string, int xstr_id, int x, int y, UI_GADGET *assoc, int color_type, int font_id = -1);
+	void add_XSTR(char *string, int _xstr_id, int _x, int _y, UI_GADGET *_assoc, int _color_type, int _font_id = -1);
 	void add_XSTR(UI_XSTR *xstr);
 
 	const char *(*tooltip_handler)(const char *text);

@@ -252,7 +252,7 @@ public:
 	void initPosition(int x, int y);
 	void initBaseResolution(int w, int h);
 	void initSlew(bool slew);
-	void initFont(int font_num);
+	void initFont(int input_font_num);
 	void initCockpitTarget(const char* display_name, int _target_x, int _target_y, int _target_w, int _target_h, int _canvas_w, int _canvas_h);
 	void initRenderStatus(bool render);
 
