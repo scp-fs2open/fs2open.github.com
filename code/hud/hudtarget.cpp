@@ -5291,12 +5291,6 @@ void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
 extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
 void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 {
-	// only fighters and bombers have callsigns
-	if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ) {
-		*ship_callsign_text = 0;
-		return;
-	}
-
 	// handle multiplayer callsign
 	if (Game_mode & GM_MULTIPLAYER) {
 		// get a player num from the object, then get a callsign from the player structure.
