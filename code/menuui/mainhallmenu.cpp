@@ -814,6 +814,11 @@ void main_hall_do(float frametime)
 			if (code == ESC_PRESSED) {
 				region_action = ESC_PRESSED;
 			} else {
+				if (code == -1) {
+					// User didn't click on a valid button, just ignore the event
+					break;
+				}
+
 				for (it = Main_hall->regions.begin(); Main_hall->regions.end() != it; ++it) {
 					if (it->mask == code) {
 						region_action = it->action;
