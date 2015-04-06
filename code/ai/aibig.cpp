@@ -349,8 +349,8 @@ void ai_big_avoid_ship()
 // reset path following information
 void ai_big_subsys_path_cleanup(ai_info *aip)
 {
-	if ( aip->ai_flags & AIF_ON_SUBSYS_PATH ) {
-		aip->ai_flags &= ~AIF_ON_SUBSYS_PATH;
+	if ( aip->ai_flags[AI::AI_Flags::On_subsys_path] ) {
+		aip->ai_flags.unset(AI::AI_Flags::On_subsys_path);
 		aip->path_goal_dist = -1;
 		aip->path_start = -1;
 		aip->path_cur = -1;
@@ -437,7 +437,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 					Assert(aip->target_objnum >= 0);
 					ai_find_path(Pl_objp, aip->target_objnum, subsys_path_num, 0, 1);
 					if ( aip->path_start >= 0 ) {
-						aip->ai_flags |= AIF_ON_SUBSYS_PATH;
+						aip->ai_flags.set(AI::AI_Flags::On_subsys_path);
 					}
 				}
 			}
@@ -509,7 +509,7 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 {
 	// if moving slowly (or stopped), and SIF_SMALL_SHIP, then enter STRAFE mode if enemy fighter/bombers
 	// are near
-	if ( sip->flags & SIF_SMALL_SHIP ) {
+	if ( is_small_ship(sip) ) {
 		if ( timestamp_elapsed(aip->scan_for_enemy_timestamp) ) {
 			ship_obj	*so;
 			object	*test_objp;
@@ -524,7 +524,7 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 				test_sp = &Ships[test_objp->instance];
 
 				if ( iff_x_attacks_y(Ships[Pl_objp->instance].team, test_sp->team) ) {
-					if ( Ship_info[test_sp->ship_info_index].flags & SIF_SMALL_SHIP ) {
+					if ( is_small_ship(&Ship_info[test_sp->ship_info_index]) ) {
 						dist_squared = vm_vec_dist_squared(&Pl_objp->pos, &test_objp->pos);
 						if ( dist_squared < ENTER_STRAFE_THREAT_DIST_SQUARED ) {
 							return 1;
@@ -592,7 +592,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		} // end if ( Pl_objp->phys_info.speed < 3.0f ) 
 
 		//Maybe enter glide strafe (check every 8 seconds, on a different schedule for each ship)
-		if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_glide_strafe_percent) {
+		if ((sip->can_glide == true) && !(aip->ai_flags[AI::AI_Flags::Kamikaze]) && static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_glide_strafe_percent) {
 			aip->previous_mode = aip->mode;
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
@@ -603,7 +603,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 
 		// see if Pl_objp needs to reposition to get a good shot at subsystem which is being attacked
 		if ( ai_big_maybe_follow_subsys_path() ) {
-			if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags & AIF_KAMIKAZE)) {
+			if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
 				afterburners_stop(Pl_objp);
 			}
 			return;
@@ -640,19 +640,19 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 				accelerate_ship(aip, 1.0f);
 				
 				ship	*shipp = &Ships[Pl_objp->instance];
-				if ((aip->ai_flags & AIF_FREE_AFTERBURNER_USE) && !(shipp->flags2 & SF2_AFTERBURNER_LOCKED) && (dot_to_enemy > 0.75f)) {
+				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (dot_to_enemy > 0.75f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
 						aip->afterburner_stop_time = Missiontime + 3*F1_0;
 					}
-				} else if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags & AIF_KAMIKAZE)) {
+				} else if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
 					afterburners_stop(Pl_objp);
 				}
 			} else {
 				// AL 12-31-97: Move at least as quickly as your target is moving...
 				accelerate_ship(aip, MAX(1.0f - dot_to_enemy, Objects[aip->target_objnum].phys_info.fspeed/sip->max_speed));
 
-				if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags & AIF_KAMIKAZE)) {
+				if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
 					afterburners_stop(Pl_objp);
 				}
 			}
@@ -675,19 +675,19 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			if (dist_to_enemy < ATTACK_STOP_DISTANCE) {
 //				accelerate_ship(aip, accel * 0.5f);
 				accelerate_ship(aip, -1.0f);
-				if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags & AIF_KAMIKAZE)) {
+				if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
 					afterburners_stop(Pl_objp);
 				}
 			} else {
 				accelerate_ship(aip, accel);
 
 				ship	*shipp = &Ships[Pl_objp->instance];
-				if ((aip->ai_flags & AIF_FREE_AFTERBURNER_USE) && !(shipp->flags2 & SF2_AFTERBURNER_LOCKED) && (accel > 0.95f)) {
+				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel > 0.95f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
 						aip->afterburner_stop_time = Missiontime + 3*F1_0;
 					}
-				} else if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags & AIF_KAMIKAZE)) {
+				} else if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
 					afterburners_stop(Pl_objp);
 				}
 			}
@@ -722,99 +722,100 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 	swp = &Ships[Pl_objp->instance].weapons;
 
-	if (dot_to_enemy > 0.95f - 0.5f * En_objp->radius/MAX(1.0f, En_objp->radius + dist_to_enemy)) {
+	if (dot_to_enemy > 0.95f - 0.5f * En_objp->radius / MAX(1.0f, En_objp->radius + dist_to_enemy)) {
 		aip->time_enemy_in_range += flFrametime;
-		
+
 		//	Chance of hitting ship is based on dot product of firing ship's forward vector with vector to ship
 		//	and also the size of the target relative to distance to target.
-		if (dot_to_enemy > MAX(0.5f, 0.90f + aip->ai_accuracy/10.0f - En_objp->radius/MAX(1.0f,dist_to_enemy))) {
+		if (dot_to_enemy > MAX(0.5f, 0.90f + aip->ai_accuracy / 10.0f - En_objp->radius / MAX(1.0f, dist_to_enemy))) {
 
 			ship *temp_shipp;
 			temp_shipp = &Ships[Pl_objp->instance];
 			ship_weapon *tswp = &temp_shipp->weapons;
 
-			if ( tswp->num_primary_banks > 0 ) {
+			if (tswp->num_primary_banks > 0) {
 				Assertion(tswp->current_primary_bank < tswp->num_primary_banks, "AI tried to select primary bank %d. Might be a model error\n", tswp->current_primary_bank);
 				weapon_info	*wip = &Weapon_info[tswp->primary_bank_weapons[tswp->current_primary_bank]];
 
-				if (dist_to_enemy < MIN((wip->max_speed * wip->lifetime), wip->weapon_range)){
+				if (dist_to_enemy < MIN((wip->max_speed * wip->lifetime), wip->weapon_range)) {
 					has_fired = 1;
-					if(! ai_fire_primary_weapon(Pl_objp)){
+					if (!ai_fire_primary_weapon(Pl_objp)) {
 						has_fired = -1;
-					//	ship_stop_fire_primary(Pl_objp);
+						//	ship_stop_fire_primary(Pl_objp);
 					}
 				}
 			}
 
 			if (tswp->num_secondary_banks > 0) {
-				if (!(En_objp->flags & OF_PROTECTED) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP))) {
+
+				if (!(En_objp->flags[Object::Object_Flags::Protected]) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP))) {
 					ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 					int current_bank = tswp->current_secondary_bank;
 					if (current_bank > -1) {
 						weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 
-						if(!(En_objp->flags & OF_PROTECTED) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags & WIF_PUNCTURE )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
+						if (!(En_objp->flags[Object::Object_Flags::Protected]) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags[Weapon::Info_Flags::Puncture])) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
 							//	If ship is protected and very low on hits, don't fire missiles.
-							if (!(En_objp->flags & OF_PROTECTED) || (En_objp->hull_strength > 10*swip->damage)) {
-								if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
+							if ((!(En_objp->flags[Object::Object_Flags::Protected]) || (En_objp->hull_strength > 10 * swip->damage))) {
+								if (aip->ai_flags[AI::AI_Flags::Unload_secondaries]) {
 									if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {
 										swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (swip->fire_wait*1000.0f));
 									}
-								}
 
-								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
-									float firing_range;
-									if (swip->wi_flags2 & WIF2_LOCAL_SSM)
-										firing_range=swip->lssm_lock_range;
-									else
-										firing_range = MIN((swip->max_speed * swip->lifetime), swip->weapon_range);
-									// reduce firing range of secondaries in nebula
-									extern int Nebula_sec_range;
-									if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
-										firing_range *= 0.8f;
-									}
+									if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
+										float firing_range;
+										if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
+											firing_range = swip->lssm_lock_range;
+										else
+											firing_range = MIN((swip->max_speed * swip->lifetime), swip->weapon_range);
+										// reduce firing range of secondaries in nebula
+										extern int Nebula_sec_range;
+										if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
+											firing_range *= 0.8f;
+										}
 
-									float t = 0.25f;	//	default delay in seconds until next fire.
+										float t = 0.25f;	//	default delay in seconds until next fire.
 
-									if (dist_to_enemy < firing_range*1.0f) {
-
-
-										//vm_vec_scale_add(&future_enemy_pos, enemy_pos, enemy_vel, dist_to_enemy/swip->max_speed);
-										//if (vm_vec_dist_quick(&future_enemy_pos, firing_pos) < firing_range * 0.8f) {
+										if (dist_to_enemy < firing_range*1.0f) {
 											if (ai_fire_secondary_weapon(Pl_objp)) {
 
 												int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
 
-												if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
+												if ((aip->ai_flags[AI::AI_Flags::Unload_secondaries]) || (swip->burst_flags[Weapon::Burst_Flags::Fast_firing])) {
 													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
 														t = swip->burst_delay;
 														swp->burst_counter[current_bank_adjusted]++;
-													} else {
+													}
+													else {
 														t = swip->fire_wait;
-														if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
-														} else {
+														}
+														else {
 															swp->burst_counter[current_bank_adjusted] = 0;
 														}
 													}
-												} else {
+												}
+												else {
 													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
 														t = set_secondary_fire_delay(aip, temp_shipp, swip, true);
 														swp->burst_counter[current_bank_adjusted]++;
-													} else {
+													}
+													else {
 														t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
-														if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
-														} else {
+														}
+														else {
 															swp->burst_counter[current_bank_adjusted] = 0;
 														}
 													}
 												}
 												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 											}
-										//}
+										}
+										swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 									}
-									swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 								}
 							}
 						}
@@ -822,17 +823,17 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 				}
 			}
 		}
-	} else {
-		if (flFrametime < 1.0f)
-			aip->time_enemy_in_range *= (1.0f - flFrametime);
-		else
-			aip->time_enemy_in_range = 0;
-	}
+		else {
+			if (flFrametime < 1.0f)
+				aip->time_enemy_in_range *= (1.0f - flFrametime);
+			else
+				aip->time_enemy_in_range = 0;
+		}
 
-	if(has_fired == -1){	//stuff that hapens when the ship stops fireing
-		ship_stop_fire_primary(Pl_objp);
+		if (has_fired == -1) {	//stuff that hapens when the ship stops fireing
+			ship_stop_fire_primary(Pl_objp);
+		}
 	}
-
 }
 
 // switch ai ship into chase mode
@@ -880,7 +881,7 @@ void ai_big_chase()
 	dist_to_enemy = vm_vec_normalized_dir(&vec_to_enemy, &enemy_pos, &player_pos); // - En_objp->radius;
 	dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 
-	if (aip->ai_flags & AIF_TARGET_COLLISION) {
+	if (aip->ai_flags[AI::AI_Flags::Target_collision]) {
 		if ( ai_big_strafe_maybe_retreat(dist_to_enemy, &enemy_pos) ) {
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
@@ -893,7 +894,7 @@ void ai_big_chase()
 		}
 	}
 
-	if (aip->ai_flags & AIF_KAMIKAZE) {
+	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
 		//nprintf(("AI", "Kamikaze: %7.3f %7.3f\n", dot_to_enemy, dist_to_enemy));
 		accelerate_ship(aip, 1.0f);
 		if ((dist_to_enemy < 400.0f) && ai_maybe_fire_afterburner(Pl_objp, aip)) {
@@ -903,7 +904,7 @@ void ai_big_chase()
 	}
 
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
-	if ((dot_to_enemy < 0.25f) || (aip->target_time < 1.0f) || (aip->ai_flags & AIF_SEEK_LOCK)) {
+	if ((dot_to_enemy < 0.25f) || (aip->target_time < 1.0f) || (aip->ai_flags[AI::AI_Flags::Seek_lock])) {
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy - En_objp->radius, En_objp->radius);
 	} else if (aip->targeted_subsys != NULL) {		
 		Assert(aip->targeted_subsys != NULL);
@@ -913,7 +914,7 @@ void ai_big_chase()
 		dist_to_enemy = vm_vec_normalized_dir(&vec_to_enemy, &enemy_pos, &player_pos); // - En_objp->radius;
 		dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy, En_objp->radius);
-	} else if (En_objp->flags & OF_PROTECTED) {	//	If protected and we're not attacking a subsystem, stop attacking!
+	} else if (En_objp->flags[Object::Object_Flags::Protected]) {	//	If protected and we're not attacking a subsystem, stop attacking!
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy - En_objp->radius, En_objp->radius);
 		aip->target_objnum = -1;
 		if (find_enemy(Pl_objp-Objects, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]) == -1) {
@@ -930,7 +931,7 @@ void ai_big_chase()
 	case SM_SUPER_ATTACK:
 		if (vm_vec_dist_quick(&Pl_objp->pos, &predicted_enemy_pos) > 100.0f + En_objp->radius * 2.0f) {
 			if (maybe_avoid_big_ship(Pl_objp, En_objp, aip, &predicted_enemy_pos, 10.0f)) {
-				if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags & AIF_KAMIKAZE)) {
+				if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
 					afterburners_stop(Pl_objp);
 				}
 				return;
@@ -952,7 +953,7 @@ void ai_big_chase()
 	//
 
 	if (((aip->submode != SM_ATTACK) && (aip->submode != SM_SUPER_ATTACK) && (aip->submode != SM_ATTACK_FOREVER) && (aip->submode != SM_EVADE_WEAPON)) || (aip->mode == AIM_STRAFE)){
-		if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags & AIF_KAMIKAZE)) {
+		if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
 			afterburners_stop(Pl_objp);
 		}
 	}
@@ -1173,7 +1174,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 	Assert(aip->mode == AIM_STRAFE);
 
 	// ensure that Pl_objp is still targeting a big ship
-	if ( !(esip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+	if ( !(is_big_huge(esip)) ) {
 		ai_big_switch_to_chase_mode(aip);
 		return;
 	}
@@ -1197,7 +1198,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
 	vm_vec_normalized_dir(&vec_to_enemy, enemy_pos, &player_pos);
 	*dot_to_enemy=vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
-	if ((*dot_to_enemy < 0.25f) || (aip->target_time < 1.0f) || (aip->ai_flags & AIF_SEEK_LOCK)) {
+	if ((*dot_to_enemy < 0.25f) || (aip->target_time < 1.0f) || (aip->ai_flags[AI::AI_Flags::Seek_lock])) {
 		predicted_enemy_pos=*enemy_pos;
 	} else {
 		vec3d	gun_pos, pnt;
@@ -1205,7 +1206,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 		float		weapon_speed;
 
 		//	Compute position of gun in absolute space and use that as fire position.
-		if (po->n_guns > 0 && !(The_mission.ai_profile->flags2 & AIPF2_AI_AIMS_FROM_SHIP_CENTER)) {
+		if (po->n_guns > 0 && !(The_mission.ai_profile->flags[AI::Profile_flags::Ai_aims_from_ship_center])) {
 			pnt = po->gun_banks[0].pnt[0];
 			vm_vec_unrotate(&gun_pos, &pnt, &Pl_objp->orient);
 			vm_vec_add2(&gun_pos, &Pl_objp->pos);
@@ -1253,10 +1254,10 @@ int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos)
 
 	// Inside 2 sec retreat, setting goal point to box point + 300m
 	// If collision, use std collision resolution.
-	if ( !(aip->ai_flags & AIF_KAMIKAZE) && ((aip->ai_flags & AIF_TARGET_COLLISION) || (time_to_target < STRAFE_RETREAT_COLLIDE_TIME) || (dist_normal_to_target < STRAFE_RETREAT_COLLIDE_DIST + speed_to_dist_penalty)) ) {
-		if (aip->ai_flags & AIF_TARGET_COLLISION) {
+	if ( !(aip->ai_flags[AI::AI_Flags::Kamikaze]) && ((aip->ai_flags[AI::AI_Flags::Target_collision]) || (time_to_target < STRAFE_RETREAT_COLLIDE_TIME) || (dist_normal_to_target < STRAFE_RETREAT_COLLIDE_DIST + speed_to_dist_penalty)) ) {
+		if (aip->ai_flags[AI::AI_Flags::Target_collision]) {
 			// use standard collision resolution
-			aip->ai_flags &= ~AIF_TARGET_COLLISION;
+			aip->ai_flags.unset(AI::AI_Flags::Target_collision);
 			big_ship_collide_recover_start(Pl_objp, En_objp, &Pl_objp->pos, NULL);
 		} else {
 			// too close for comfort so fly to box point + 300
@@ -1301,7 +1302,7 @@ void ai_big_strafe_attack()
 	if ( ai_big_strafe_maybe_retreat(target_dist, &target_pos) )
 		return;
 
-	if (aip->ai_flags & AIF_KAMIKAZE) {
+	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
 		if (target_dist < 1200.0f) {
 			ai_turn_towards_vector(&target_pos, Pl_objp, flFrametime, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, NULL, NULL, 0.0f, 0);
 			accelerate_ship(aip, 1.0f);
@@ -1313,7 +1314,7 @@ void ai_big_strafe_attack()
 		}
 	}
 
-	if (!(aip->ai_flags & AIF_SEEK_LOCK) || (aip->aspect_locked_time < 2.0f)) {
+	if (!(aip->ai_flags[AI::AI_Flags::Seek_lock]) || (aip->aspect_locked_time < 2.0f)) {
 		t  = ai_endangered_by_weapon(aip);
 		if ( t > 0.0f && t < 1.5f ) {
 			// set up goal_point for avoid path to turn towards
@@ -1619,7 +1620,7 @@ void ai_big_strafe_position()
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
 	//Maybe use AIS_STRAFE_GLIDE_ATTACK
-	if ((sip->can_glide == true) && !(aip->ai_flags & AIF_KAMIKAZE) && (frand() < aip->ai_glide_strafe_percent)) {
+	if ((sip->can_glide == true) && !(aip->ai_flags[AI::AI_Flags::Kamikaze]) && (frand() < aip->ai_glide_strafe_percent)) {
 		aip->submode = AIS_STRAFE_GLIDE_ATTACK;
 		aip->submode_parm1 = 0;
 	} else {
@@ -1651,7 +1652,7 @@ void ai_big_strafe()
 	}
 */
 	// check if target is still a big ship... if not enter chase mode
-	if ( !(Ship_info[Ships[En_objp->instance].ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) ) {
+	if ( !(is_big_huge(&Ship_info[Ships[En_objp->instance].ship_info_index])) ) {
 		ai_big_switch_to_chase_mode(aip);
 		return;
 	}
@@ -1724,12 +1725,12 @@ int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consi
 
 	// if Pl_objp's target is not a big/capital ship, then cannot enter strafe mode
 	// AL 12-31-97: Even though transports are considered big ships, don't enter strafe mode on them
-	if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) || (sip->flags & SIF_TRANSPORT) ) {
+	if ( !(is_big_huge(sip)) || (sip->flags[Ship::Info_Flags::Transport]) ) {
 		return 0;
 	}
 
 	//	If Pl_objp not a fighter or bomber, don't enter strafe mode. -- MK, 11/11/97.
-	if ( !(Ship_info[Ships[pl_objp->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
+	if ( !(is_fighter_bomber(&Ship_info[Ships[pl_objp->instance].ship_info_index])) ) {
 		return 0;
 	}
 
@@ -1751,7 +1752,7 @@ int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consi
 //JAS IMPOSSIBLE		} else {
 			// switch targets
 			sip = &Ship_info[Ships[parent_objp->instance].ship_info_index];
-			if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) || (sip->flags & SIF_TRANSPORT) ) {
+			if ( !(is_big_huge(sip) || (sip->flags[Ship::Info_Flags::Transport]) )) {
 				return 0;
 			}
 			set_target_objnum(aip, OBJ_INDEX(parent_objp));
@@ -1806,8 +1807,8 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// the ai will not always go after different ships firing beams at them.
 	// Approx 1/4 chance we'll go after the other ship's beam.
 
-	bool attack_turret_on_different_ship = (aip->ai_profile_flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
-		&& (Weapon_info[Weapons[weapon_objp->instance].weapon_info_index].wi_flags & WIF_BEAM) && (frand()*100 < 25.0f);
+	bool attack_turret_on_different_ship = (aip->ai_profile_flags[AI::Profile_flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships])
+		&& (Weapon_info[Weapons[weapon_objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Beam]) && (frand()*100 < 25.0f);
 
 	// unless we're making an exception, we should only attack a turret if it sits on the current target
 	if ( !attack_turret_on_different_ship )

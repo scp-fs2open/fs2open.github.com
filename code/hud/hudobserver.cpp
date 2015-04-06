@@ -33,7 +33,6 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	Hud_obs_ship.team = shipp->team;
 	Hud_obs_ship.ai_index = shipp->ai_index;
 	Hud_obs_ship.flags = shipp->flags;
-	Hud_obs_ship.flags2 = shipp->flags2;
 	Hud_obs_ship.ship_info_index = shipp->ship_info_index;
 	Hud_obs_ship.objnum = shipp->objnum;
 	Hud_obs_ship.wingnum = shipp->wingnum;

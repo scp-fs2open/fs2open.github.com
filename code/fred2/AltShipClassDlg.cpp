@@ -85,7 +85,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
-			if (objp->flags & OF_MARKED) {
+			if (objp->flags[Object::Object_Flags::Marked]) {
 				m_selected_ships[num_selected_ships++] = objp->instance;
 			}
 		}
@@ -93,7 +93,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 	}
 
 	Assert (num_selected_ships > 0);
-	Assert (Objects[cur_object_index].flags & OF_MARKED);
+	Assert (Objects[cur_object_index].flags[Object::Object_Flags::Marked]);
 
 	if (num_selected_ships > 1) 
 	{
@@ -126,7 +126,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 	count = 0; 
 	for (i=0; i<Num_ship_classes; i++)
 	{
-		if (player_ships_only && !(Ship_info[i].flags & SIF_PLAYER_SHIP)) {
+		if (player_ships_only && !(Ship_info[i].flags[Ship::Info_Flags::Player_ship])) {
 			continue;
 		}
 

@@ -173,6 +173,14 @@ typedef struct flag_def_list {
 	ubyte var;
 } def_list;
 
+template<class T>
+struct flag_def_list_new {
+	char* name;			// The parseable representation of this flag
+	T def;				// The flag definition for this flag
+	bool in_use;		// Whether or not this flag is currently in use or obsolete
+	bool is_special;	// Whether this flag requires special processing. See parse_string_flag_list<T, T> for details
+};
+
 // weapon count list (mainly for pilot files)
 typedef struct wep_t {
 	int index;
@@ -391,6 +399,7 @@ inline float SWAPFLOAT(float *x)
 #ifdef SCP_UNIX
 #define INTEL_INT(x)	SDL_Swap32(x)
 #define INTEL_SHORT(x)	SDL_Swap16(x)
+#define INTEL_LONG(x)	SDL_Swap64(x)
 #else
 #define INTEL_INT(x)	SWAPINT(x)
 #define INTEL_SHORT(x)	SWAPSHORT(x)
@@ -401,6 +410,7 @@ inline float SWAPFLOAT(float *x)
 #define INTEL_INT(x)	x
 #define INTEL_SHORT(x)	x
 #define INTEL_FLOAT(x)	(*x)
+#define INTEL_LONG(x)   x
 #endif // BYTE_ORDER
 
 #define TRUE	1
@@ -680,5 +690,59 @@ public:
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
 
+/*Flagset*/
 
+template <class T, size_t size = static_cast<typename std::underlying_type<T>::type>(T::NUM_VALUES)>
+class flagset {
+protected:
+	SCP_bitset<size> values;
+public:
+	bool operator[](T idx) { return values[(static_cast<typename std::underlying_type<T>::type>(idx))]; };
+	flagset<T> operator&(flagset<T>& other) { 
+		flagset<T> result; 
+		result.values = this->values & other.values;
+		return result;
+	}
+
+	flagset<T> operator |(flagset<T>& other) {
+		flagset<T> result;
+		result.values = this->values | other.values;
+		return result;
+	}
+
+	void operator |=(const flagset<T>& other) {
+		this->values |= other.values;
+	}
+
+	bool operator==(flagset<T> other) { return this->values == other.values; }
+	bool operator!=(flagset<T> other) { return this->values != other.values; }
+
+	void reset() { values.reset(); }
+	void set(T idx, bool value = true) { 
+		values.set(static_cast < typename std::underlying_type<T>::type>(idx), value); 
+	}
+	void set(T idx[], size_t arg_length) {
+		for (size_t i = 0; i < arg_length; ++i) {
+			values.set(static_cast <typename std::underlying_type<T>::type>(idx[i]));
+		}
+	}
+	void unset(T idx) { 
+		values.set(static_cast < typename std::underlying_type<T>::type>(idx), false);
+	}
+	void unset(T idx [], size_t arg_length) {
+		for (size_t i = 0; i < arg_length; ++i) {
+			values.set(static_cast <typename std::underlying_type<T>::type>(idx[i]), false);
+		}
+	}
+	void toggle(T idx) {
+		values[static_cast <typename std::underlying_type<T>::type>(idx)] = !values[static_cast <typename std::underlying_type<T>::type>(idx)];
+	}
+	bool any_set() { return values.any(); }
+	bool none_set() { return values.none(); }
+
+	void from_long(ulong num) { values = num; }
+	ulong to_long() { return values.to_ulong(); }
+};
+
+#define FLAG_LIST(Type) enum class Type : size_t
 #endif		// PS_TYPES_H

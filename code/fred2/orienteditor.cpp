@@ -184,7 +184,7 @@ void orient_editor::OnOK()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
 			vm_vec_add2(&ptr->pos, &delta);
 			update_object(ptr);
 		}
@@ -194,7 +194,7 @@ void orient_editor::OnOK()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED)
+		if (ptr->flags[Object::Object_Flags::Marked])
 			object_moved(ptr);
 
 		ptr = GET_NEXT(ptr);

@@ -404,7 +404,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 {
 	Assert( psub != NULL );
 	Assert( ss != NULL );
-	Assert( psub->flags & MSS_FLAG_TRIGGERED );
+	Assert( psub->flags[Model::Subsystem_Flags::Triggered] );
 	Assert( ss->triggered_rotation_index >= 0 );
 
 	triggered_rotation *trigger = &Triggered_rotations[ss->triggered_rotation_index];
@@ -573,7 +573,7 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 	model_subsystem *psub = pss->system_info;
 	bool retval = false;
 
-	if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
+	if ( !(psub->flags[Model::Subsystem_Flags::Triggered]) )
 		return false;
 	Assert(pss->triggered_rotation_index >= 0);
 	triggered_rotation *trigger = &Triggered_rotations[pss->triggered_rotation_index];
@@ -663,7 +663,7 @@ int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype
 			continue;
 
 		// not a triggered animation, skip it
-		if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
+		if ( !(psub->flags[Model::Subsystem_Flags::Triggered]) )
 			continue;
 
 		for (i = 0; i < psub->n_triggers; i++) {
@@ -747,7 +747,7 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 	model_subsystem *psub = pss->system_info;
 	int i, ret = 0;
 
-	if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
+	if ( !(psub->flags[Model::Subsystem_Flags::Triggered]) )
 		return timestamp();
 	Assert(pss->triggered_rotation_index >= 0);
 	triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
@@ -883,7 +883,7 @@ void model_anim_handle_multiplayer(ship *shipp)
 			continue;
 
 		// not a triggered animation, skip it
-		if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
+		if ( !(psub->flags[Model::Subsystem_Flags::Triggered]) )
 			continue;
 		Assert(pss->triggered_rotation_index >= 0);
 

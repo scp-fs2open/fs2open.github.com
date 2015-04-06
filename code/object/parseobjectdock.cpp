@@ -170,17 +170,17 @@ void dock_dock_docked_objects(p_object *objp)
 		return;
 
 	// has this object (by extension, this group of docked objects) been handled already?
-	if (objp->flags2 & P2_ALREADY_HANDLED)
+	if (objp->flags[Mission::Parse_Object_Flags::Already_handled])
 		return;
 
-	Assert(objp->flags & P_SF_DOCK_LEADER);
+	Assert(objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]);
 
 	p_dock_function_info dfi;
 	
 	// start a tree with that object as the parent... do NOT use the überfunction for this,
 	// because we must use a tree for the parent ancestry to work correctly
 
-	// we don't need a bit array because P2_ALREADY_HANDLED takes care of it
+	// we don't need a bit array because Mission::Parse_Object_Flags::Already_handled takes care of it
 
 	// start evaluating the tree, starting with the dock leader
 	dock_dock_docked_children_tree(objp, NULL);
@@ -189,11 +189,11 @@ void dock_dock_docked_objects(p_object *objp)
 void dock_dock_docked_children_tree(p_object *objp, p_object *parent_objp)
 {
 	// has this object been handled already?
-	if (objp->flags2 & P2_ALREADY_HANDLED)
+	if (objp->flags[Mission::Parse_Object_Flags::Already_handled])
 		return;
 
 	// mark as handled
-	objp->flags2 |= P2_ALREADY_HANDLED;
+	objp->flags.set(Mission::Parse_Object_Flags::Already_handled);
 
 	// if parent_objp exists
 	if (parent_objp != NULL)

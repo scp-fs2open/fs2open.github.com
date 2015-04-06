@@ -180,8 +180,8 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	objp = Objects;
 
 	for (i=0;i<=Highest_object_index;i++,objp++) {
-		if ( (objp->type != OBJ_NONE) && (objp->flags&OF_RENDERS) )	{
-			objp->flags &= ~OF_WAS_RENDERED;
+		if ( (objp->type != OBJ_NONE) && (objp->flags[Object::Object_Flags::Renders]) )	{
+			objp->flags.unset(Object::Object_Flags::Was_rendered);
 
 			if ( obj_in_view_cone(objp) )	{
 				sorted_obj osp;
@@ -242,7 +242,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 	Interp_no_flush = 1;
 
-	bool full_neb = ((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running);
+	bool full_neb = ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running);
 	bool c_viewer = (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK));
 
 	// now draw them
@@ -251,20 +251,20 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	for (os = Sorted_objects.begin(); os != Sorted_objects.end(); ++os) {
 		object *obj = os->obj;
 
-		obj->flags |= OF_WAS_RENDERED;
+		obj->flags.set(Object::Object_Flags::Was_rendered);
 
 		//This is for ship cockpits. Bobb, feel free to optimize this any way you see fit
 		if ( (obj == Viewer_obj)
 			&& (obj->type == OBJ_SHIP)
 			&& c_viewer
-			&& (Ship_info[Ships[obj->instance].ship_info_index].flags2 & SIF2_SHOW_SHIP_MODEL) )
+			&& (Ship_info[Ships[obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model]) )
 		{
 			(*draw_viewer_last) = true;
 			continue;
 		}
 
 		// if we're fullneb, fire up the fog - this also generates a fog table
-		if (full_neb) {
+		if((The_mission.flags[Mission::Mission_Flags::Fullneb]) ){
 			// get the fog values
 			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
 
@@ -298,13 +298,13 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	for (os = Sorted_objects.begin(); os != Sorted_objects.end(); ++os) {
 		object *obj = os->obj;
 
-		obj->flags |= OF_WAS_RENDERED;
+		obj->flags.set(Object::Object_Flags::Was_rendered);
 
 		if ( obj_render_is_model(obj) )
 			continue;
 
 		// if we're fullneb, fire up the fog - this also generates a fog table
-		if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
+		if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
 			// get the fog values
 			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
 
@@ -330,7 +330,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	batch_render_man_thrusters();
 
 	// if we're fullneb, switch off the fog effet
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 

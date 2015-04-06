@@ -249,7 +249,7 @@ BOOL ShipGoalsDlg::OnInitDialog()
 	} else {  // editing orders for all marked ships
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)){
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])){
 				for (i=0; i<Ai_goal_list_size; i++){
 					if (!ai_query_goal_valid(ptr->instance, Ai_goal_list[i].def)){
 						valid[i] = 0;
@@ -347,7 +347,7 @@ void ShipGoalsDlg::initialize_multi()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 			initialize(Ai_info[Ships[ptr->instance].ai_index].goals, ptr->instance);
 			if (!flag) {
 				flag = 1;
@@ -652,7 +652,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 
 					Assert(inst >= 0 && inst < MAX_SHIPS);
 					// remove all marked ships from list
-					if (!goalp && (ptr->flags & OF_MARKED))
+					if (!goalp && (ptr->flags[Object::Object_Flags::Marked]))
 						inst = -1;
 
 					// when docking, remove invalid dock targets
@@ -825,7 +825,7 @@ void ShipGoalsDlg::update()
 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)) {
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 				goalp = Ai_info[Ships[ptr->instance].ai_index].goals;
 				for (i=0; i<ED_MAX_GOALS; i++)
 					update_item(i, 1);
@@ -836,7 +836,7 @@ void ShipGoalsDlg::update()
 
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)) {
+			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 				self_ship = ptr->instance;
 				goalp = Ai_info[Ships[self_ship].ai_index].goals;
 				verify_orders(self_ship);

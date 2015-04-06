@@ -78,7 +78,7 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p)
 		}
 	}
 
-  	debris_obj->flags |= OF_SHOULD_BE_DEAD;
+  	debris_obj->flags.set(Object::Object_Flags::Should_be_dead);
 }
 
 /**
@@ -259,7 +259,7 @@ void maybe_delete_debris(debris *db)
 				db->next_distance_check = timestamp(DEBRIS_DISTANCE_CHECK_TIME);
 		} else {
 			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-				if (objp->flags & OF_PLAYER_SHIP) {
+				if (objp->flags[Object::Object_Flags::Player_ship]) {
 					if (vm_vec_dist_quick(&objp->pos, &Objects[db->objnum].pos) < MAX_DEBRIS_DIST) {
 						db->next_distance_check = timestamp(DEBRIS_DISTANCE_CHECK_TIME);
 						return;
@@ -436,7 +436,7 @@ int debris_find_oldest()
 	oldest_time = 0x7fffffff;
 
 	for ( db = GET_FIRST(&Hull_debris_list); db != END_OF_LIST(&Hull_debris_list); db = GET_NEXT(db) ) {
-		if ( (db->time_started < oldest_time) && !(Objects[db->objnum].flags & OF_SHOULD_BE_DEAD) ) {
+		if ( (db->time_started < oldest_time) && !(Objects[db->objnum].flags[Object::Object_Flags::Should_be_dead]) ) {
 			oldest_index = DEBRIS_INDEX(db);
 			oldest_time = db->time_started;
 		}
@@ -476,7 +476,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	Assert( source_obj->instance >= 0 && source_obj->instance < MAX_SHIPS );	
 	shipp = &Ships[source_obj->instance];
 	sip = &Ship_info[shipp->ship_info_index];
-	vaporize = (shipp->flags &SF_VAPORIZE);
+	vaporize = shipp->flags[Ship::Ship_Flags::Vaporize];
 
 	if ( !hull_flag )	{
 		// Make vaporize debris seen from farther away
@@ -604,11 +604,12 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 	if ( pos == NULL )
 		pos = &source_obj->pos;
-
-	uint flags = OF_RENDERS | OF_PHYSICS;
-	if ( hull_flag )	
-		flags |= OF_COLLIDES;
-	objnum = obj_create( OBJ_DEBRIS, parent_objnum, n, &source_obj->orient, pos, radius, flags );
+	flagset<Object::Object_Flags> objflags;
+	objflags.set(Object::Object_Flags::Renders);
+	objflags.set(Object::Object_Flags::Physics);
+	if (hull_flag)
+		objflags.set(Object::Object_Flags::Collides);
+	objnum = obj_create( OBJ_DEBRIS, parent_objnum, n, &source_obj->orient, pos, radius, objflags );
 	if ( objnum == -1 ) {
 		mprintf(("Couldn't create debris object -- out of object slots\n"));
 		return NULL;

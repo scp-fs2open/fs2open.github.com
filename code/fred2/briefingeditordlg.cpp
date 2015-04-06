@@ -611,7 +611,7 @@ void briefing_editor_dlg::update_data(int update)
 	valid = invalid = 0;
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_MARKED) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
 			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START) || (objp->type == OBJ_WAYPOINT) || (objp->type == OBJ_JUMP_NODE))
 				valid = 1;
 			else
@@ -636,7 +636,7 @@ void briefing_editor_dlg::update_data(int update)
 	valid = invalid = 0;
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_MARKED) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
 			if (objp->type == OBJ_POINT) {
 				valid++;
 				icon_marked[objp->instance] = 1;
@@ -708,7 +708,9 @@ void briefing_editor_dlg::update_data(int update)
 		if (m_cur_stage >= 0) {
 			for (i=0; i<ptr->num_icons; i++) {
 				// create an object for each icon for display/manipulation purposes
-				icon_obj[i] = obj_create(OBJ_POINT, -1, i, NULL, &ptr->icons[i].pos, 0.0f, OF_RENDERS);
+				flagset<Object::Object_Flags> objflags;
+				objflags.set(Object::Object_Flags::Renders);
+				icon_obj[i] = obj_create(OBJ_POINT, -1, i, NULL, &ptr->icons[i].pos, 0.0f, objflags);
 			}
 
 			obj_merge_created_list();
@@ -831,7 +833,7 @@ void briefing_editor_dlg::draw_icon(object *objp)
 	if (m_cur_stage < 0)
 		return;
 
-	brief_render_icon(m_cur_stage, objp->instance, 1.0f/30.0f, objp->flags & OF_MARKED,
+	brief_render_icon(m_cur_stage, objp->instance, 1.0f/30.0f, objp->flags[Object::Object_Flags::Marked],
 		(float) True_rw / BRIEF_GRID_W, (float) True_rh / BRIEF_GRID_H);
 }
 
@@ -955,7 +957,7 @@ void briefing_editor_dlg::OnMakeIcon()
 	vm_vec_make(&max, -9e19f, -9e19f, -9e19f);
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
 			if (ptr->pos.xyz.x < min.xyz.x)
 				min.xyz.x = ptr->pos.xyz.x;
 			if (ptr->pos.xyz.x > max.xyz.x)
@@ -994,17 +996,17 @@ void briefing_editor_dlg::OnMakeIcon()
 				team = Ships[ship].team;
 
 				z = ship_query_general_type(ship);
-				if (Ship_info[Ships[ship].ship_info_index].flags & SIF_CARGO)
+				if (Ship_info[Ships[ship].ship_info_index].flags[Ship::Info_Flags::Cargo])
 					cargo_count++;
 
-				if (Ship_info[Ships[ship].ship_info_index].flags & SIF_FREIGHTER)
+				if (Ship_info[Ships[ship].ship_info_index].flags[Ship::Info_Flags::Freighter])
 				{
 					// direct docked with any marked cargo?
 					for (dock_instance *dock_ptr = ptr->dock_list; dock_ptr != NULL; dock_ptr = dock_ptr->next)
 					{
-						if (dock_ptr->docked_objp->flags & OF_MARKED)
+						if (dock_ptr->docked_objp->flags[Object::Object_Flags::Marked])
 						{
-							if (Ship_info[Ships[dock_ptr->docked_objp->instance].ship_info_index].flags & SIF_CARGO)
+							if (Ship_info[Ships[dock_ptr->docked_objp->instance].ship_info_index].flags[Ship::Info_Flags::Cargo])
 								freighter_count++;
 						}
 					}
@@ -1048,80 +1050,46 @@ void briefing_editor_dlg::OnMakeIcon()
 	iconp->id = Cur_brief_id++;
 	if (ship >= 0) {
 		iconp->ship_class = Ships[ship].ship_info_index;
-		switch (Ship_info[Ships[ship].ship_info_index].flags & SIF_ALL_SHIP_TYPES) {
-			case SIF_KNOSSOS_DEVICE:
-				iconp->type = ICON_KNOSSOS_DEVICE;
-				break;
+		ship_info* sip = &Ship_info[Ships[ship].ship_info_index];
 
-			case SIF_CORVETTE:
-				iconp->type = ICON_CORVETTE;
-				break;
-
-			case SIF_GAS_MINER:
-				iconp->type = ICON_GAS_MINER;
-				break;
-
-			case SIF_SUPERCAP:
-				iconp->type = ICON_SUPERCAP;
-				break;
-
-			case SIF_SENTRYGUN:
-				iconp->type = ICON_SENTRYGUN;
-				break;
-
-			case SIF_AWACS:
-				iconp->type = ICON_AWACS;
-				break;
-
-			case SIF_CARGO:
-				if (cargo)
-					iconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
-				else
-					iconp->type = count ? ICON_CARGO_WING : ICON_CARGO;
-
-				break;
-
-			case SIF_SUPPORT:
-				iconp->type = ICON_SUPPORT_SHIP;
-				break;
-
-			case SIF_FIGHTER:
-				iconp->type = count ? ICON_FIGHTER_WING : ICON_FIGHTER;
-				break;
-
-			case SIF_BOMBER:
-				iconp->type = count ? ICON_BOMBER_WING : ICON_BOMBER;
-				break;
-
-			case SIF_FREIGHTER:
-				if (cargo)
-					iconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
-				else
-					iconp->type = count ? ICON_FREIGHTER_WING_NO_CARGO : ICON_FREIGHTER_NO_CARGO;
-
-				break;
-
-			case SIF_CRUISER:
-				iconp->type = count ? ICON_CRUISER_WING : ICON_CRUISER;
-				break;
-
-			case SIF_TRANSPORT:
-				iconp->type = count ? ICON_TRANSPORT_WING : ICON_TRANSPORT;
-				break;
-
-			case SIF_CAPITAL:			
-			case SIF_DRYDOCK:
-				iconp->type = ICON_CAPITAL;
-				break;			
-
-			case SIF_NAVBUOY:
-				iconp->type = ICON_WAYPOINT;
-				break;
-
-			default:
-				iconp->type = ICON_ASTEROID_FIELD;
-				break;
-		}
+		if (sip->flags[Ship::Info_Flags::Knossos_device])
+			iconp->type = ICON_KNOSSOS_DEVICE;
+		else if (sip->flags[Ship::Info_Flags::Corvette])
+			iconp->type = ICON_CORVETTE;
+		else if (sip->flags[Ship::Info_Flags::Gas_miner])
+			iconp->type = ICON_GAS_MINER;
+		else if (sip->flags[Ship::Info_Flags::Supercap])
+			iconp->type = ICON_SUPERCAP;
+		else if (sip->flags[Ship::Info_Flags::Sentrygun])
+			iconp->type = ICON_SENTRYGUN;
+		else if (sip->flags[Ship::Info_Flags::Awacs])
+			iconp->type = ICON_AWACS;
+		else if (sip->flags[Ship::Info_Flags::Cargo])
+			if (cargo)
+				iconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
+			else
+				iconp->type = count ? ICON_CARGO_WING : ICON_CARGO;
+		else if (sip->flags[Ship::Info_Flags::Support])
+			iconp->type = ICON_SUPPORT_SHIP;
+		else if (sip->flags[Ship::Info_Flags::Fighter])
+			iconp->type = count ? ICON_FIGHTER_WING : ICON_FIGHTER;
+		else if (sip->flags[Ship::Info_Flags::Bomber])
+			iconp->type = count ? ICON_BOMBER_WING : ICON_BOMBER;
+		else if (sip->flags[Ship::Info_Flags::Freighter])
+			if (cargo)
+				iconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
+			else
+				iconp->type = count ? ICON_FREIGHTER_WING_NO_CARGO : ICON_FREIGHTER_NO_CARGO;
+		else if (sip->flags[Ship::Info_Flags::Cruiser])
+			iconp->type = count ? ICON_CRUISER_WING : ICON_CRUISER;
+		else if (sip->flags[Ship::Info_Flags::Transport])
+			iconp->type = count ? ICON_TRANSPORT_WING : ICON_TRANSPORT;
+		else if (sip->flags[Ship::Info_Flags::Capital] || sip->flags[Ship::Info_Flags::Drydock])
+			iconp->type = ICON_CAPITAL;
+		else if (sip->flags[Ship::Info_Flags::Navbuoy])
+			iconp->type = ICON_WAYPOINT;
+		else
+			iconp->type = ICON_ASTEROID_FIELD;
 	}
 	// jumpnodes
 	else if(jnp != Jump_nodes.end()){
@@ -1129,7 +1097,7 @@ void briefing_editor_dlg::OnMakeIcon()
 		iconp->ship_class = -1;
 		for (int i = 0; i < Num_ship_classes; i++)
 		{
-			if (Ship_info[i].flags & SIF_NAVBUOY)
+			if (Ship_info[i].flags[Ship::Info_Flags::Navbuoy])
 			{
 				iconp->ship_class = i;
 				break;
@@ -1143,7 +1111,7 @@ void briefing_editor_dlg::OnMakeIcon()
 		iconp->ship_class = -1;
 		for (int i = 0; i < Num_ship_classes; i++)
 		{
-			if (Ship_info[i].flags & SIF_NAVBUOY)
+			if (Ship_info[i].flags[Ship::Info_Flags::Navbuoy])
 			{
 				iconp->ship_class = i;
 				break;
@@ -1156,7 +1124,9 @@ void briefing_editor_dlg::OnMakeIcon()
 		propagate_icon(m_cur_icon);
 	}
 
-	icon_obj[m_cur_icon] = obj_create(OBJ_POINT, -1, m_cur_icon, NULL, &pos, 0.0f, OF_RENDERS);
+	flagset<Object::Object_Flags> objflags;
+	objflags.set(Object::Object_Flags::Renders);
+	icon_obj[m_cur_icon] = obj_create(OBJ_POINT, -1, m_cur_icon, NULL, &pos, 0.0f, objflags);
 	Assert(icon_obj[m_cur_icon] >= 0);
 	obj_merge_created_list();
 	unmark_all();
@@ -1263,7 +1233,7 @@ void briefing_editor_dlg::OnPropagateIcons()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if ((ptr->type == OBJ_POINT) && (ptr->flags & OF_MARKED)) {
+		if ((ptr->type == OBJ_POINT) && (ptr->flags[Object::Object_Flags::Marked])) {
 			propagate_icon(ptr->instance);
 		}
 

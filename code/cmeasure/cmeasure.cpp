@@ -61,7 +61,7 @@ void cmeasure_select_next(ship *shipp)
 	{
 		new_index = (shipp->current_cmeasure + i) % Num_weapon_types;
 
-		if(Weapon_info[new_index].wi_flags & WIF_CMEASURE)
+		if(Weapon_info[new_index].wi_flags[Weapon::Info_Flags::Cmeasure])
 		{
 			shipp->current_cmeasure = new_index;
 			return;
@@ -87,12 +87,12 @@ void cmeasure_maybe_alert_success(object *objp)
 		return;
 	}
 
-	Assert(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_CMEASURE);
+	Assert(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure]);
 
 	if ( objp->parent == OBJ_INDEX(Player_obj) ) {
 		hud_start_text_flash(XSTR("Evaded", 1430), 800);
 		snd_play(&Snds[ship_get_sound(Player_obj, SND_MISSILE_EVADED_POPUP)]);
-	} else if ( Objects[objp->parent].flags & OF_PLAYER_SHIP ) {
+	} else if ( Objects[objp->parent].flags[Object::Object_Flags::Player_ship] ) {
 		send_countermeasure_success_packet( objp->parent );
 	}
 }

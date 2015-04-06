@@ -95,7 +95,7 @@ void hud_set_wingman_status_none( int wing_index, int wing_pos)
 	HUD_wingman_status[wing_index].used = used;
 }
 
-// flags a given player wing ship as "alive" (for multiplayer respawns )
+// flagsa given player wing ship as "alive" (for multiplayer respawns )
 void hud_set_wingman_status_alive( int wing_index, int wing_pos)
 {
 	Assert(wing_index >= 0 && wing_index < MAX_SQUADRON_WINGS);
@@ -189,10 +189,10 @@ void hud_wingman_status_update()
 			wing_index = shipp->wing_status_wing_index;
 			wing_pos = shipp->wing_status_wing_pos;
 
-			if ( (wing_index >= 0) && (wing_pos >= 0) && !(ship_objp->flags & OF_SHOULD_BE_DEAD) ) {
+			if ( (wing_index >= 0) && (wing_pos >= 0) && !(ship_objp->flags[Object::Object_Flags::Should_be_dead]) ) {
 
 				HUD_wingman_status[wing_index].used = 1;
-				if (!(shipp->flags & SF_DEPARTING) ) {
+				if (!(is_ship_departing(shipp))) {
 					HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_ALIVE;	
 				}
 				HUD_wingman_status[wing_index].hull[wing_pos] = get_hull_pct(ship_objp);

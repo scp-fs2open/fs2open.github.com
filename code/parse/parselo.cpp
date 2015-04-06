@@ -2432,6 +2432,25 @@ int atoi2()
 
 }
 
+long atol2()
+{
+	char	ch;
+
+	my_errno = 0;
+
+	ignore_white_space();
+
+	ch = *Mp;
+
+	if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
+		error_display(1, "Expecting long, found [%.32s].\n", next_tokens());
+		my_errno = 1;
+		return 0;
+	}
+	else
+		return atol(Mp);
+}
+
 //	Stuff a floating point value pointed at by Mp.
 //	Advances past float characters.
 void stuff_float(float *f)
@@ -3053,12 +3072,12 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		}
 
 		// similarly, complain if this is a valid ship or weapon class that the player can't use
-		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[index].flags & SIF_PLAYER_SHIP)) ) {
+		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[index].flags[Ship::Info_Flags::Player_ship])) ) {
 			clean_loadout_list_entry(); 
 			Warning(LOCATION, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
 			continue;
 		}
-		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[index].wi_flags & WIF_PLAYER_ALLOWED)) ) {
+		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[index].wi_flags[Weapon::Info_Flags::Player_allowed])) ) {
 			clean_loadout_list_entry(); 
 			nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str));
 			if ( !Is_standalone )

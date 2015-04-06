@@ -83,11 +83,11 @@ void afterburners_start(object *objp)
 	sip = &Ship_info[shipp->ship_info_index];
 	
 	// bail if afterburners are locked
-	if (shipp->flags2 & SF2_AFTERBURNER_LOCKED)	{
+	if (shipp->flags[Ship::Ship_Flags::Afterburner_locked])	{
 		return;
 	}
 
-	if ( (objp->flags & OF_PLAYER_SHIP) && (objp == Player_obj) ) {
+	if ( (objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj) ) {
 		unsigned int now;
 		now = timer_get_milliseconds();
 
@@ -109,7 +109,7 @@ void afterburners_start(object *objp)
 	if (objp->phys_info.flags & PF_BOOSTER_ON)
 		return;	
 	    
-	if ( !(sip->flags & SIF_AFTERBURNER) )	{
+	if ( !(sip->flags[Ship::Info_Flags::Afterburner]) )	{
 		return;
 	}
 
@@ -175,11 +175,11 @@ void afterburners_update(object *objp, float fl_frametime)
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
 	sip = &Ship_info[shipp->ship_info_index];
 
-	if ( (objp->flags & OF_PLAYER_SHIP ) && (Game_mode & GM_DEAD) ) {
+	if ( (objp->flags[Object::Object_Flags::Player_ship] ) && (Game_mode & GM_DEAD) ) {
 		return;
 	}
 
-	if ( !(sip->flags & SIF_AFTERBURNER) )	{
+	if ( !(sip->flags[Ship::Info_Flags::Afterburner]) )	{
 		return;		// nothing to update, afterburners are not even on the ship
 	}
 
@@ -284,11 +284,11 @@ void afterburners_stop(object *objp, int key_released)
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
 	sip = &Ship_info[shipp->ship_info_index];
 
-	if ( (objp->flags & OF_PLAYER_SHIP) && key_released ) {
+	if ( (objp->flags[Object::Object_Flags::Player_ship]) && key_released ) {
 		objp->phys_info.flags &= ~PF_AFTERBURNER_WAIT;
 	}
 
-	if ( !(sip->flags & SIF_AFTERBURNER) )	{
+	if ( !(sip->flags[Ship::Info_Flags::Afterburner]) )	{
 		nprintf(("Warning","Ship type %s does not have afterburner capability\n", sip->name));
 		return;
 	}

@@ -564,7 +564,7 @@ void game_framerate_check_init()
 	Gf_critical_time = 0.0f;
 		
 	// nebula missions
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		Gf_critical = 15.0f;			
 	} else {
 		Gf_critical = 25.0f;
@@ -2820,7 +2820,7 @@ void game_tst_mark(object *objp, ship *shipp)
 	}
 
 	tst_pos = objp->pos;
-	if(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)){
+	if(is_big_huge(sip)){
 		tst_big = 1;
 	}
 	tst = 3;
@@ -2840,14 +2840,14 @@ void player_repair_frame(float frametime)
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != NULL) && (Net_player->player_id != Net_players[idx].player_id) && (Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS)){
 
 				// don't rearm/repair if the player is dead or dying/departing
-				if ( !NETPLAYER_IS_DEAD(np) && !(Ships[Objects[np->m_player->objnum].instance].flags & (SF_DYING|SF_DEPARTING)) ) {
+				if ( !NETPLAYER_IS_DEAD(np) && !(is_dying_departing(&Ships[Objects[np->m_player->objnum].instance])) ) {
 					ai_do_repair_frame(&Objects[Net_players[idx].m_player->objnum],&Ai_info[Ships[Objects[Net_players[idx].m_player->objnum].instance].ai_index],frametime);
 				}
 			}
 		}
 	}	
 
-	if ( (Player_obj != NULL) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER) && (Player_ship != NULL) && !(Player_ship->flags & SF_DYING) ) {
+	if ( (Player_obj != NULL) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER) && (Player_ship != NULL) && !(Player_ship->flags[Ship::Ship_Flags::Dying]) ) {
 		ai_do_repair_frame(Player_obj, &Ai_info[Ships[Player_obj->instance].ai_index], frametime);
 	}
 }
@@ -3000,7 +3000,7 @@ void say_view_target()
 			char view_target_name[128] = "";
 			switch(Objects[Player_ai->target_objnum].type) {
 			case OBJ_SHIP:
-				if (Ships[Objects[Player_ai->target_objnum].instance].flags2 & SF2_HIDE_SHIP_NAME) {
+				if (Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Hide_ship_name]) {
 					strcpy_s(view_target_name, "targeted ship");
 				} else {
 					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
@@ -3314,7 +3314,7 @@ void game_environment_map_gen()
 		gr_screen.envmap_render_target = -1;
 	}
 
-	if ( Dynamic_environment || (The_mission.flags & MISSION_FLAG_SUBSPACE) ) {
+	if ( Dynamic_environment || (The_mission.flags[Mission::Mission_Flags::Subspace]) ) {
 		Dynamic_environment = true;
 		gen_flags &= ~BMP_FLAG_RENDER_TARGET_STATIC;
 		gen_flags |= BMP_FLAG_RENDER_TARGET_DYNAMIC;
@@ -3371,7 +3371,7 @@ camid game_render_frame_setup()
 
 	//First, make sure we take into account 2D Missions.
 	//These replace the normal player in-cockpit view with a topdown view.
-	if(The_mission.flags & MISSION_FLAG_2D_MISSION)
+	if(The_mission.flags[Mission::Mission_Flags::Mission_2d])
 	{
 		if(!Viewer_mode)
 		{
@@ -4012,7 +4012,7 @@ void game_simulation_frame()
 			sip = &Ship_info[shipp->ship_info_index];
 
 			// only blow up small ships			
-			if((sip->flags & SIF_SMALL_SHIP) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) ){							
+			if((is_small_ship(sip)) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) ){							
 				// function to simply explode a ship where it is currently at
 				ship_self_destruct( &Objects[moveup->objnum] );					
 			}
@@ -4186,7 +4186,7 @@ void game_maybe_do_dead_popup(float frametime)
 
 			// this should only happen during a red alert mission
 			case 3:				
-				if (The_mission.flags & MISSION_FLAG_RED_ALERT)
+				if (The_mission.flags[Mission::Mission_Flags::Red_alert])
 				{
 					// choose the previous mission
 					mission_campaign_previous_mission();
@@ -4880,7 +4880,7 @@ void game_do_frame()
 	game_set_frametime(GS_STATE_GAME_PLAY);
 	game_update_missiontime();
 
-//	if (Player_ship->flags & SF_DYING)
+//	if (Player_ship->flags[Ship::Ship_Flags::Dying])
 //		flFrametime /= 15.0;
 
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -5463,7 +5463,7 @@ void game_process_event( int current_state, int event )
 				shipfx_warpout_start( Player_obj );
 				Player->control_mode = PCM_WARPOUT_STAGE2;
 
-				if (!(The_mission.ai_profile->flags2 & AIPF2_NO_WARP_CAMERA)) {
+				if (!(The_mission.ai_profile->flags[AI::Profile_flags::No_warp_camera])) {
 					Player->saved_viewer_mode = Viewer_mode;
 					Viewer_mode |= VM_WARP_CHASE;
 					Warp_camera = warp_camera(Player_obj);
@@ -6273,7 +6273,7 @@ void mouse_force_pos(int x, int y);
 			}
 
 			Game_subspace_effect = 0;
-			if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
+			if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
 				Game_subspace_effect = 1;
 				if( !(Game_mode & GM_STANDALONE_SERVER) ){	
 					game_start_subspace_ambient_sound();

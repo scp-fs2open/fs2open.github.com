@@ -77,7 +77,7 @@ BOOL ShipSpecialHitpoints::OnInitDialog()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
-			if (objp->flags & OF_MARKED) {
+			if (objp->flags[Object::Object_Flags::Marked]) {
 				m_selected_ships[num_selected_ships] = objp->instance;
 				num_selected_ships++;
 			}
@@ -86,7 +86,7 @@ BOOL ShipSpecialHitpoints::OnInitDialog()
 	}
 
 	Assert(num_selected_ships);
-	Assert (Objects[cur_object_index].flags & OF_MARKED);
+	Assert (Objects[cur_object_index].flags[Object::Object_Flags::Marked]);
 	m_ship_num = Objects[cur_object_index].instance; 
 
 	// get the details from the first ship

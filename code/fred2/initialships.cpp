@@ -64,7 +64,7 @@ BOOL InitialShips::OnInitDialog()
 	// or weapons
 	if ( m_initial_items == INITIAL_SHIPS ) {
 		for ( i = 0; i < Num_ship_classes; i++ ) {
-			if ( Ship_info[i].flags & SIF_PLAYER_SHIP ) {
+			if ( Ship_info[i].flags[Ship::Info_Flags::Player_ship] ) {
 				m_initial_list.AddString( Ship_info[i].name );
 				if ( Campaign.ships_allowed[i] ) {
 					m_initial_list.SetCheck(m_list_count, 1);
@@ -87,7 +87,7 @@ BOOL InitialShips::OnInitDialog()
 
 		memset( allowed_weapons, 0, sizeof(allowed_weapons) );
 		for (i = 0; i < Num_ship_classes; i++ ) {
-			if ( Ship_info[i].flags & SIF_PLAYER_SHIP ) {
+			if ( Ship_info[i].flags[Ship::Info_Flags::Player_ship] ) {
 				for ( j = 0; j < MAX_WEAPON_TYPES; j++ ) {
 					if ( Ship_info[i].allowed_weapons[j] )
 						allowed_weapons[j] = 1;

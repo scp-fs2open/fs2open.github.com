@@ -603,11 +603,11 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		shipnum = Objects[so->objnum].instance;
 
 		// filter out cargo containers, navbouys, etc, and non-ships
-		if ( Ship_info[Ships[shipnum].ship_info_index].class_type < 0 || !(Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].hud_bools & STI_HUD_HOTKEY_ON_LIST ))
+		if ( Ship_info[Ships[shipnum].ship_info_index].class_type < 0 || !(Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].hud_bools[Ship::Type_Info_Hud::Hotkey_on_list] ))
 			continue;
 
 		// don't process ships invisible to sensors, dying or departing
-		if ( Ships[shipnum].flags & (SF_HIDDEN_FROM_SENSORS|SF_DYING|SF_DEPARTING) )
+		if (is_ship_departing(&Ships[shipnum]) || Ships[shipnum].flags[Ship::Ship_Flags::Hidden_from_sensors] || Ships[shipnum].flags[Ship::Ship_Flags::Dying])
 			continue;
 
 		// if a ship's hotkey is the last hotkey on the list, then maybe make the hotkey -1 if
@@ -641,7 +641,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 
 			// don't add any wing data whose ships are hidden from sensors
 			for ( j = 0; j < Wings[i].current_count; j++ ) {
-				if ( Ships[Wings[i].ship_index[j]].flags & SF_HIDDEN_FROM_SENSORS )
+				if ( Ships[Wings[i].ship_index[j]].flags[Ship::Ship_Flags::Hidden_from_sensors] )
 					break;
 			}
 			// if we didn't reach the end of the list, don't display the wing
@@ -649,7 +649,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 				continue;
 
 			z = hotkey_line_add_sorted(Wings[i].name, HOTKEY_LINE_WING, i, start);
-			if (Wings[i].flags & WF_EXPANDED) {
+			if (Wings[i].flags[Ship::Wing_Flags::Expanded]) {
 				for (j=0; j<Wings[i].current_count; j++) {
 					s = Wings[i].ship_index[j];
 					z = hotkey_line_insert(z + 1, Ships[s].ship_name, HOTKEY_LINE_SUBSHIP, s);
@@ -765,7 +765,7 @@ void expand_wing()
 
 	if (Hotkey_lines[Selected_line].type == HOTKEY_LINE_WING) {
 		i = Hotkey_lines[Selected_line].index;
-		Wings[i].flags ^= WF_EXPANDED;
+		Wings[i].flags.set(Ship::Wing_Flags::Expanded, false);
 		hotkey_build_listing();
 		for (z=0; z<Num_lines; z++)
 			if ((Hotkey_lines[z].type == HOTKEY_LINE_WING) && (Hotkey_lines[z].index == i)) {

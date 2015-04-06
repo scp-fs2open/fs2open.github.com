@@ -390,7 +390,7 @@ void red_alert_do_frame(float frametime)
 
 	// commit if skipping briefing, but not in multi - Goober5000
 	if (!(Game_mode & GM_MULTIPLAYER)) {
-		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
+		if (The_mission.flags[Mission::Mission_Flags::No_briefing])
 		{
 			red_alert_button_pressed(RA_CONTINUE);
 			return;
@@ -470,7 +470,7 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 
 		wip = &Weapon_info[weapons.index];
 
-		if (wip->wi_flags2 & WIF2_BALLISTIC) {
+		if (wip->wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// to avoid triggering the below condition: this way, minimum ammo will be 2...
 			// since the red-alert representation of a conventional primary is 0 -> not used,
 			// 1 -> used, I added the representation 2 and above -> ballistic primary
@@ -514,7 +514,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 		swp->primary_bank_weapons[i] = ras->primary_weapons[i].index;
 		swp->primary_bank_ammo[i] = ras->primary_weapons[i].count;
 
-		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC) {
+		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// adjust to correct ammo count, per red_alert_store_weapons()
 			swp->primary_bank_ammo[i] -= 2;
 		}
@@ -568,7 +568,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, p_object *pobjp)
 		Assert( ras->primary_weapons[i].index >= 0 );
 		sssp->primary_banks[i] = ras->primary_weapons[i].index;
 
-		if (Weapon_info[sssp->primary_banks[i]].wi_flags2 & WIF2_BALLISTIC)
+		if (Weapon_info[sssp->primary_banks[i]].wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			float max_count = sip->primary_bank_ammo_capacity[i] / Weapon_info[sssp->primary_banks[i]].cargo_size;
 			sssp->primary_ammo[i] = fl2i(100.0f * (ras->primary_weapons[i].count - 2) / max_count + 0.5f);
@@ -725,11 +725,11 @@ void red_alert_store_wingman_status()
 		Assert(ship_objp->type == OBJ_SHIP);
 		shipp = &Ships[ship_objp->instance];
 
-		if ( shipp->flags & SF_DYING ) {
+		if ( shipp->flags[Ship::Ship_Flags::Dying] ) {
 			continue;
 		}
 
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags[Ship::Ship_Flags::Red_alert_store_status]) ) {
 			continue;
 		}
 
@@ -746,15 +746,15 @@ void red_alert_store_wingman_status()
 
 	// store exited ships that did not die
 	for (int idx=0; idx<(int)Ships_exited.size(); idx++) {
-		if (Ships_exited[idx].flags & SEF_RED_ALERT_CARRY) {
+		if (Ships_exited[idx].flags[Ship::Exit_Flags::Red_alert_carry]) {
 			ras.name = Ships_exited[idx].ship_name;
 			ras.hull = float(Ships_exited[idx].hull_strength);
 
 			// if a ship has been destroyed or removed manually by the player, then mark it as such ...
-			if ( Ships_exited[idx].flags & SEF_DESTROYED ) {
+			if ( Ships_exited[idx].flags[Ship::Exit_Flags::Destroyed] ) {
 				ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
 			}
-			else if (Ships_exited[idx].flags & SEF_PLAYER_DELETED) {
+			else if (Ships_exited[idx].flags[Ship::Exit_Flags::Player_deleted]) {
 				ras.ship_class = RED_ALERT_PLAYER_DEL_SHIP_CLASS;
 			}
 			// ... otherwise we want to make sure and carry over the ship class
@@ -788,7 +788,7 @@ void red_alert_delete_ship(ship *shipp, int ship_state)
 		}
 	}
 
-	ship_add_exited_ship( shipp, SEF_PLAYER_DELETED );
+	ship_add_exited_ship(shipp, Ship::Exit_Flags::Player_deleted);
 	obj_delete(shipp->objnum);
 	if ( shipp->wingnum >= 0 ) {
 		ship_wing_cleanup( shipp-Ships, &Wings[shipp->wingnum] );
@@ -800,10 +800,10 @@ void red_alert_delete_ship(p_object *pobjp, int ship_state)
 {
 	if (ship_state == RED_ALERT_DESTROYED_SHIP_CLASS || ship_state == RED_ALERT_PLAYER_DEL_SHIP_CLASS)
 	{
-		pobjp->flags2 |= P2_RED_ALERT_DELETED;
-
+		pobjp->flags.set(Mission::Parse_Object_Flags::Red_alert_deleted);
+		
 		if (pobjp->wingnum < 0)
-			pobjp->flags |= P_SF_CANNOT_ARRIVE;
+			pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
 	}
 	else
 		Error(LOCATION, "Red Alert: asked to delete ship (%s) with invalid ship state (%d)", pobjp->name, ship_state);
@@ -842,7 +842,7 @@ void red_alert_bash_wingman_status()
 		Assert(ship_objp->type == OBJ_SHIP);
 		ship *shipp = &Ships[ship_objp->instance];
 
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags[Ship::Ship_Flags::Red_alert_store_status]) ) {
 			so = GET_NEXT(so);
 			continue;
 		}
@@ -932,7 +932,7 @@ void red_alert_bash_wingman_status()
 		}
 
 		// same condition as in ship_obj loop
-		if ( !from_player_wing && !(pobjp->flags & P_SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !from_player_wing && !(pobjp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) ) {
 			continue;
 		}
 
@@ -1008,8 +1008,8 @@ void red_alert_bash_wingman_status()
 
 			if (wingp->num_waves == 0)
 			{
-				wingp->flags |= WF_WING_GONE;
-				wingp->flags |= WF_NEVER_EXISTED;
+				wingp->flags.set(Ship::Wing_Flags::Gone);
+				wingp->flags.set(Ship::Wing_Flags::Never_existed);
 			}
 
 			// look through all ships yet to arrive...
@@ -1020,10 +1020,10 @@ void red_alert_bash_wingman_status()
 				{
 					// no waves left to arrive, so mark ships accordingly
 					if (wingp->num_waves == 0)
-						pobjp->flags |= P_SF_CANNOT_ARRIVE;
+						pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
 					// we skipped one complete wave, so clear the flag so the next wave creates all ships
 					else
-						pobjp->flags2 &= ~P2_RED_ALERT_DELETED;
+						pobjp->flags.unset(Mission::Parse_Object_Flags::Red_alert_deleted);
 				}
 			}
 		}
@@ -1033,7 +1033,7 @@ void red_alert_bash_wingman_status()
 // return !0 if this is a red alert mission, otherwise return 0
 int red_alert_mission()
 {
-	return (The_mission.flags & MISSION_FLAG_RED_ALERT);
+	return (The_mission.flags[Mission::Mission_Flags::Red_alert]);
 }
 
 // called from sexpression code to start a red alert mission
