@@ -93,7 +93,7 @@ namespace Mission {
 		SF_Scramble_messages,
 		Red_alert_deleted,	// Goober5000 - used analogously to SEF_PLAYER_DELETED
 		Already_handled,	// Goober5000 - used for docking currently, but could be used generically
-
+		OF_No_collide,
 
 		NUM_VALUES
 	};

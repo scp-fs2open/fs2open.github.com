@@ -100,13 +100,9 @@ void parse_ai_profiles_tbl(const char *filename)
 	char *saved_Mp = NULL;
 	char buf[NAME_LENGTH];
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default ai_profiles.tbl>", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -431,6 +427,14 @@ void parse_ai_profiles_tbl(const char *filename)
 					profile->flags.set(AI::Profile_flags::Fix_ai_path_order_bug);
 			}
 
+			if (optional_string("$strict turret-tagged-only targeting:"))
+			{
+				bool val;
+				stuff_boolean(&val);
+
+				if (val)
+					profile->flags.set(AI::Profile_flags::Strict_turred_tagged_only_targeting);
+			}
 
 			// ----------
 
@@ -479,9 +483,6 @@ void parse_ai_profiles_tbl(const char *filename)
 	// add tbl/tbm to multiplayer validation list
 	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation(filename);
-
-	// close localization
-	lcl_ext_close();
 }
 
 void ai_profiles_init()

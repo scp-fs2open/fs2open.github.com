@@ -246,7 +246,6 @@ void campaign_editor::initialize( int init_files )
 void campaign_editor::mission_selected(int num)
 {
 	CEdit *bc_dialog, *bc_hall, *bc_persona;
-	char mainhalltext[10];
 	char personatext[10];
 
 	bc_dialog = (CEdit *) GetDlgItem(IDC_BRIEFING_CUTSCENE);
@@ -259,8 +258,7 @@ void campaign_editor::mission_selected(int num)
 		bc_dialog->SetWindowText(Campaign.missions[num].briefing_cutscene);
 
 	// new main hall stuff
-	sprintf(mainhalltext, "%s", const_cast<char*>(Campaign.missions[num].main_hall.c_str()));
-	bc_hall->SetWindowText(CString(mainhalltext));
+	bc_hall->SetWindowText(Campaign.missions[num].main_hall.c_str());
 
 	// new debriefing persona stuff
 	sprintf(personatext, "%d", Campaign.missions[num].debrief_persona_index);

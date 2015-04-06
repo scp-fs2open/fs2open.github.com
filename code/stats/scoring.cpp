@@ -61,12 +61,8 @@ void parse_rank_tbl()
 	char buf[MULTITEXT_LENGTH];
 	int rval, idx, persona;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "rank.tbl", rval));
-		lcl_ext_close();
 		return;
 	} 
 
@@ -118,9 +114,6 @@ void parse_rank_tbl()
 			Int3();
 	}
 #endif
-
-	// close localization
-	lcl_ext_close();
 }
 
 // initialize a nice blank scoring element
@@ -153,7 +146,7 @@ void scoring_struct::init()
 
 	m_medal_earned = -1;		// hasn't earned a medal yet
 	m_promotion_earned = -1;
-	m_badge_earned = -1;
+	m_badge_earned.clear();
 
 	m_score = 0;
 	memset(m_kills, 0, MAX_SHIP_CLASSES * sizeof(int));
@@ -223,34 +216,12 @@ void scoring_struct::assign(const scoring_struct &s)
 	memcpy(m_dogfight_kills, s.m_dogfight_kills, MAX_PLAYERS * sizeof(int));
 }
 
-#ifndef NDEBUG
-//XSTR:OFF
-void scoring_eval_harbison( ship *shipp )
-{
-	FILE *fp;
-
-	if ( !stricmp(shipp->ship_name, "alpha 2") && (!stricmp(Game_current_mission_filename, "demo01") || !stricmp(Game_current_mission_filename, "sm1-01")) ) {
-		int death_count;
-
-		fp = fopen("i:\\volition\\cww\\harbison.txt", "r+t");
-		if ( !fp )
-			return;
-		fscanf(fp, "%d", &death_count );
-		death_count++;
-		fseek(fp, 0, SEEK_SET);
-		fprintf(fp, "%d\n", death_count);
-		fclose(fp);
-	}
-}
-//XSTR:ON
-#endif
-
 // initialize the Player's mission-based stats before he goes into a mission
 void scoring_level_init( scoring_struct *scp )
 {
 	scp->m_medal_earned = -1;		// hasn't earned a medal yet
 	scp->m_promotion_earned = -1;
-	scp->m_badge_earned = -1;
+	scp->m_badge_earned.clear();
 	scp->m_score = 0;
 	scp->m_assists = 0;
 	scp->mp_shots_fired = 0;
@@ -334,8 +305,7 @@ void scoring_eval_badges(scoring_struct *sc)
 	}
 
 	// total_kills should now reflect the number of kills on hostile fighters/bombers.  Check this number
-	// against badge kill numbers, and return the badge index if we would get a new one.
-	int badge = -1;
+	// against badge kill numbers, and award the appropriate badges as neccessary.
 	int last_badge_kills = 0;
 	for (i = 0; i < Num_medals; i++ ) {
 		if ( total_kills >= Medals[i].kills_needed
@@ -343,15 +313,11 @@ void scoring_eval_badges(scoring_struct *sc)
 			&& Medals[i].kills_needed > 0 )
 		{
 			last_badge_kills = Medals[i].kills_needed;
-			badge = i;
+			if (sc->medal_counts[i] < 1) {
+				sc->medal_counts[i] = 1;
+				sc->m_badge_earned.push_back(i);
+			}
 		}
-	}
-
-	// if player could have a badge based on kills, and doesn't currently have this badge, then
-	// return the badge id.
-	if ( (badge != -1 ) && (sc->medal_counts[badge] < 1) ) {
-		sc->medal_counts[badge] = 1;
-		sc->m_badge_earned = badge;
 	}
 }
 
@@ -410,8 +376,10 @@ void scoring_backout_accept( scoring_struct *score )
 	int idx;
 
 	// if a badge was earned, take it back
-	if ( score->m_badge_earned != -1){
-		score->medal_counts[score->m_badge_earned] = 0;
+	if ( score->m_badge_earned.size() ){
+		for (size_t medal = 0; medal < score->m_badge_earned.size(); medal++) {
+			score->medal_counts[score->m_badge_earned[medal]] = 0;
+		}
 	}
 
 	// return when in training mission.  We can grant a medal in training, but don't
@@ -502,9 +470,11 @@ void scoring_level_close(int accepted)
 			}
 
 			// if a badge was earned, take it back
-			if ( Player->stats.m_badge_earned != -1){
-				Player->stats.medal_counts[Player->stats.m_badge_earned] = 0;
-				Player->stats.m_badge_earned = -1;
+			if ( Player->stats.m_badge_earned.size() ){
+				for (size_t medal = 0; medal < Player->stats.m_badge_earned.size(); medal++) {
+					Player->stats.medal_counts[Player->stats.m_badge_earned[medal]] = 0;
+				}
+				Player->stats.m_badge_earned.clear();
 			}
 		}
 
@@ -658,11 +628,6 @@ int scoring_eval_kill(object *ship_objp)
 			Player->stats.m_player_deaths++;
 		}
 	}
-
-
-#ifndef NDEBUG
-	scoring_eval_harbison( dead_ship );
-#endif
 
 	net_player_num = -1;
 
@@ -1550,7 +1515,7 @@ void scoreing_close()
 {
 	SCP_map<int, char*>::iterator it;
 	for(int i = 0; i<NUM_RANKS; i++) {
-		for (it = Ranks[i].promotion_text.begin(); it != Ranks[i].promotion_text.end(); it++) {
+		for (it = Ranks[i].promotion_text.begin(); it != Ranks[i].promotion_text.end(); ++it) {
 			if (it->second) {
 				vm_free(it->second);
 			}

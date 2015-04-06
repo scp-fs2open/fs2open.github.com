@@ -75,6 +75,9 @@ namespace Weapon {
 		No_linked_penalty,					// This weapon does not count into linked firing penalty
 		No_homing_speed_ramp,				// Disables the 1s long speed ramping when firing locked-on secondaries
 		Cmeasure_aspect_home_on,			// This countermeasure flag makes aspect seekers home on the countermeasure instead of going into dumbfire mode
+		Turret_Interceptable,				// These two flags mark a weapon as being interceptable by the AI
+		Fighter_Interceptable,				// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
+		Aoe_Electronics,					// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
 
 		NUM_VALUES
 	};

@@ -319,6 +319,7 @@ const float PI2			= (PI*2.0f);
 // half values
 const float PI_2		= (PI/2.0f);
 const int RAND_MAX_2	= (RAND_MAX/2);
+const float RAND_MAX_1f	= (1.0f / RAND_MAX);
 
 #define ANG_TO_RAD(x)	((x)*PI/180)
 
@@ -701,6 +702,16 @@ public:
 		flagset<T> result; 
 		result.values = this->values & other.values;
 		return result;
+	}
+
+	flagset<T> operator |(flagset<T>& other) {
+		flagset<T> result;
+		result.values = this->values | other.values;
+		return result;
+	}
+
+	void operator |=(const flagset<T>& other) {
+		this->values |= other.values;
 	}
 
 	bool operator==(flagset<T> other) { return this->values == other.values; }

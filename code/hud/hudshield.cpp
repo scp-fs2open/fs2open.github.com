@@ -473,25 +473,20 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 // associated ship
 void shield_info_reset(object *objp, shield_hit_info *shi)
 {
+	int n_quadrants = (objp != NULL) ? objp->n_quadrants : 0;
+
+	shi->members = n_quadrants + 1;
+	shi->hull_hit_index = n_quadrants;
+	shi->shield_hit_timers.resize(shi->members);
+	shi->shield_hit_next_flash.resize(shi->members);
+
+	for ( int i = 0; i < shi->members; i++ ) {
+		shi->shield_hit_timers[i] = timestamp(0);
+		shi->shield_hit_next_flash[i] = timestamp(0);
+	}
+
 	shi->shield_hit_status = 0;
 	shi->shield_show_bright = 0;
-
-	if (objp == NULL) {
-		shi->members = 0;
-		shi->hull_hit_index = 0;
-		shi->shield_hit_timers.clear();
-		shi->shield_hit_next_flash.clear();
-	} else {
-		shi->members = objp->n_quadrants + 1;
-		shi->hull_hit_index = shi->members - 1;
-		shi->shield_hit_timers.resize(shi->members);
-		shi->shield_hit_next_flash.resize(shi->members);
-
-		for ( int i = 0; i < shi->members; i++ ) {
-			shi->shield_hit_timers[i] = 1;
-			shi->shield_hit_next_flash[i] = 1;
-		}
-	}
 }
 
 // reset the timers and hit flags for the shield gauges

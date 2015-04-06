@@ -431,6 +431,7 @@ void gr_opengl_set_center_alpha(int type)
 	glight.ConstantAtten = 1.0f;
 	glight.LinearAtten = 0.0f;
 	glight.QuadraticAtten = 0.0f;
+	glight.occupied = false;
 
 	// first light
 	memcpy( &opengl_lights[Num_active_gl_lights], &glight, sizeof(opengl_light) );

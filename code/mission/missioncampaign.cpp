@@ -45,6 +45,7 @@
 #include "missionui/redalert.h"
 #include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
+#include "menuui/mainhallmenu.h"
 
 
 // campaign wasn't ended
@@ -113,9 +114,6 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 	}
 	Assert(fname_len < MAX_FILENAME_LEN);
 
-	// open localization
-	lcl_ext_open();
-
 	*type = -1;
 	do {
 		if ((rval = setjmp(parse_abort)) != 0) {
@@ -166,9 +164,6 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 			success = 1;
 		}
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	Assert(success);
 	return success;
@@ -413,7 +408,7 @@ void mission_campaign_get_sw_info()
  * this file.  If you change the format of the campaign file, you should be sure these related
  * functions work properly and update them if it breaks them.
  */
-int mission_campaign_load( char *filename, player *pl, int load_savefile )
+int mission_campaign_load( char *filename, player *pl, int load_savefile, bool reset_stats )
 {
 	int len, rval, i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
@@ -424,9 +419,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	}
 
 	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
-
-	// open localization
-	lcl_ext_open();	
 
 	if ( pl == NULL )
 		pl = Player;
@@ -439,9 +431,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	// read the mission file and get the list of mission filenames
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("Error parsing '%s'\r\nError code = %i.\r\n", filename, rval));
-
-		// close localization
-		lcl_ext_close();
 
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
@@ -551,6 +540,19 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				cm->main_hall = temp;
 			}
 
+			// Goober5000 - substitute main hall (like substitute music)
+			if (optional_string("+Substitute Main Hall:")) {
+				stuff_string(temp, F_RAW, 32);
+
+				// see if this main hall exists
+				main_hall_defines *mhd = main_hall_get_pointer(temp);
+				if (mhd != NULL) {
+					cm->main_hall = temp;
+				} else {
+					mprintf(("Substitute main hall '%s' not found\n", temp));
+				}
+			}
+
 			// Goober5000 - new debriefing persona stuff!
 			cm->debrief_persona_index = 0;
 			if (optional_string("+Debriefing Persona Index:"))
@@ -565,9 +567,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 				} else {
 					if ( cm->formula == -1 ){
-						// close localization
-						lcl_ext_close();
-
 						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
@@ -605,9 +604,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 
 				} else {
 					if ( cm->mission_loop_formula == -1 ){
-						// close localization
-						lcl_ext_close();
-
 						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
@@ -648,9 +644,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 		}
 	}
 
-	// close localization
-	lcl_ext_close();
-
 	// set up the other variables for the campaign stuff.  After initializing, we must try and load
 	// the campaign save file for this player.  Since all campaign loads go through this routine, I
 	// think this place should be the only necessary place to load the campaign save stuff.  The campaign
@@ -674,6 +667,12 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				Campaign_load_failure = CAMPAIGN_ERROR_SAVEFILE;
 				return CAMPAIGN_ERROR_SAVEFILE;
 			} else {
+				// make sure we initialize red alert data for the new CSG
+				red_alert_clear();
+				// and reset stats when requested
+				if (reset_stats) {
+					pl->stats.init();
+				}
 				Pilot.save_savefile();
 			}
 		}
@@ -1447,13 +1446,9 @@ void read_mission_goal_list(int num)
 	int i, z, rval, event_count, count = 0;
 
 	filename = Campaign.missions[num].name;
-
-	// open localization
-	lcl_ext_open();	
 	
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -1552,9 +1547,6 @@ void read_mission_goal_list(int num)
 	}
 
 	// Goober5000 - variables do not need to be read here
-
-	// close localization
-	lcl_ext_close();
 }
 
 /**

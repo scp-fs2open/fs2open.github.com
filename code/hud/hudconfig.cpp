@@ -999,26 +999,26 @@ void hud_config_set_gauge_flags(int gauge_index, int on_flag, int popup_flag)
 	}
 }
 
-void hud_config_record_color(int color)
+void hud_config_record_color(int in_color)
 {
-	HUD_config.main_color = color;
-	HUD_color_red = HC_colors[color].r;
-	HUD_color_green = HC_colors[color].g;
-	HUD_color_blue = HC_colors[color].b;
+	HUD_config.main_color = in_color;
+	HUD_color_red = HC_colors[in_color].r;
+	HUD_color_green = HC_colors[in_color].g;
+	HUD_color_blue = HC_colors[in_color].b;
 }
 
 // Set the HUD color
-void hud_config_set_color(int color)
+void hud_config_set_color(int in_color)
 {
 	int idx;	
 
-	hud_config_record_color(color);
+	hud_config_record_color(in_color);
 
 	HUD_init_hud_color_array();
 
 	// apply the color to all gauges
 	for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-		gr_init_alphacolor(&HUD_config.clr[idx], HC_colors[color].r, HC_colors[color].g, HC_colors[color].b, (HUD_color_alpha+1)*16);
+		gr_init_alphacolor(&HUD_config.clr[idx], HC_colors[in_color].r, HC_colors[in_color].g, HC_colors[in_color].b, (HUD_color_alpha+1)*16);
 	}
 }
 
@@ -1655,17 +1655,26 @@ void hud_config_color_load(char *name)
 	read_file_text(fname);
 	reset_parse();
 
-	// write out all gauges
-	for(idx=0; idx<NUM_HUD_GAUGES; idx++){		
-		required_string("+Gauge:");
+	// First, set all gauges to the current main color
+	for (idx=0; idx<NUM_HUD_GAUGES; idx++){
+		gr_init_alphacolor(&HUD_config.clr[idx], HUD_color_red, HUD_color_green, HUD_color_blue, (HUD_color_alpha+1)*16);
+	}
+
+	// Now read in the color values for the gauges
+	while (optional_string("+Gauge:")) {
 		stuff_string(str, F_NAME, sizeof(str));
 
-		required_string("+RGBA:");
-		stuff_ubyte(&HUD_config.clr[idx].red);
-		stuff_ubyte(&HUD_config.clr[idx].green);
-		stuff_ubyte(&HUD_config.clr[idx].blue);
-		stuff_ubyte(&HUD_config.clr[idx].alpha);
-	}	
+		for (idx=0; idx<NUM_HUD_GAUGES; idx++) {
+			if (!stricmp(str, Hud_Gauge_Names[idx])) {
+				required_string("+RGBA:");
+				stuff_ubyte(&HUD_config.clr[idx].red);
+				stuff_ubyte(&HUD_config.clr[idx].green);
+				stuff_ubyte(&HUD_config.clr[idx].blue);
+				stuff_ubyte(&HUD_config.clr[idx].alpha);
+				break;
+			}
+		}
+	}
 }
 
 void hud_config_alpha_slider_up()

@@ -45,6 +45,7 @@ namespace AI {
 		Purge,				// purge this goal next time we process
 		Goals_purged,		// this goal has already caused other goals to get purged
 		Depart_sound_played,// Goober5000 - replacement for AL's hack ;)
+		Target_own_team,
 
 		NUM_VALUES
 	};
@@ -108,6 +109,7 @@ namespace AI {
 		Aspect_lock_countermeasure,
 		Ai_guards_specific_ship_in_wing,
 		Fix_ai_path_order_bug,
+		Strict_turred_tagged_only_targeting,
 
 		NUM_VALUES
 	};

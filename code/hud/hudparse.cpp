@@ -174,12 +174,8 @@ void parse_hud_gauges_tbl(const char *filename)
 	color *ship_clr_p = NULL;
 	bool scale_gauge = true;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -455,9 +451,6 @@ void parse_hud_gauges_tbl(const char *filename)
 		required_string("$End Gauges");
 		required_string("#End");
 	}
-
-	// close localization
-	lcl_ext_close();
 }
 
 void hud_positions_init()
@@ -552,8 +545,6 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					SCP_vector<int> sindex;
-					sindex.push_back(k);
 					load_gauge(retail_gauges[i], -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				}
 			}
@@ -870,6 +861,8 @@ int parse_gauge_type()
 	if ( optional_string("+Secondary Weapons:") )
 		return HUD_OBJECT_SECONDARY_WEAPONS;
 
+	error_display(1, "Invalid gauge type [%.32s]", next_tokens());
+	
 	return -1;
 }
 
@@ -1050,7 +1043,8 @@ void load_gauge(int gauge, int base_w, int base_h, int hud_font, bool scale_gaug
 		load_gauge_secondary_weapons(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	default:
-		Warning(LOCATION, "Invalid gauge found in hud_gauges.tbl");
+		// It's either -1, indicating we're ignoring a parse error, or it's a coding error.
+		Assertion(gauge == -1, "Invalid value '%d' passed to load_gauge(); get a coder!\n", gauge);
 		break;
 	}
 }
@@ -1202,7 +1196,7 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, SCP
 	}
 
 	if(optional_string("Font:")) {
-		stuff_int(&Hud_font);
+		stuff_int(&font_num);
 	} else {
 		if ( hud_font >=0 ) {
 			font_num = hud_font;
@@ -1277,16 +1271,25 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, S
 
 			adjust_base_res(base_res, scale_gauge);
 
+			// If no positioning information is specified, use the default position
+			bool use_default_pos = true;
+
 			if(optional_string("Origin:")) {
 				stuff_float_list(origin, 2);
-			}
+				use_default_pos = false;
 
-			if(optional_string("Offset:")) {
+				required_string("Offset:");
 				stuff_int_list(offset, 2);
 			}
 
-			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
-			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+			if(optional_string("Offset:")) {
+				Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
+			}
+
+			if (!use_default_pos) {
+				coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+				coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+			}
 		}
 
 		if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
@@ -1666,7 +1669,7 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 	int ship_name_max_w = 100;
 	int ship_integrity_offsets[2];
 	int ship_status_offsets[2];
-	char header_text[MAX_FILENAME_LEN] = "monitoring";
+	char header_text[MAX_FILENAME_LEN] = "";
 	char fname_top[MAX_FILENAME_LEN] = "escort1";
 	char fname_middle[MAX_FILENAME_LEN] = "escort2";
 	char fname_bottom[MAX_FILENAME_LEN] = "escort3";
@@ -1746,6 +1749,10 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 
 	if ( optional_string("Ship Name Max Width:") ) {
 		stuff_int(&ship_name_max_w);
+	}
+
+	if (header_text[0] == '\0') {
+		strcpy_s(header_text, XSTR("monitoring", 285));
 	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
@@ -2721,6 +2728,7 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, bool scale_gauge
 		hud_gauge->initDistanceLongOffsets(Radar_dist_offsets[1][0], Radar_dist_offsets[1][1]);
 		hud_gauge->initDistanceShortOffsets(Radar_dist_offsets[0][0], Radar_dist_offsets[0][1]);
 		hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
+		hud_gauge->initInfinityIcon();
 
 		if(ship_idx->at(0) >= 0) {
 			for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2823,6 +2831,7 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, bool scale_gauge
 		hud_gauge->initDistanceLongOffsets(Radar_dist_offsets[1][0], Radar_dist_offsets[1][1]);
 		hud_gauge->initDistanceShortOffsets(Radar_dist_offsets[0][0], Radar_dist_offsets[0][1]);
 		hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
+		hud_gauge->initInfinityIcon();
 
 		if(ship_idx->at(0) >= 0) {
 			for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2851,7 +2860,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 	// basic radar gauge info
 	float origin[2] = {0.5, 1.0};
 	int offset[2];
-	int coords[2];
+	int coords[2] = {0, 0};
 	int base_res[2];
 	int Radar_radius[2];
 
@@ -2906,7 +2915,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
 		} else {
-			if (optional_string("$Scale Gauge:")) {
+			if (optional_string("Scale Gauge:")) {
 				stuff_boolean(&scale_gauge);
 			}
 
@@ -2914,10 +2923,13 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 
 			if(optional_string("Origin:")) {
 				stuff_float_list(origin, 2);
+
+				required_string("Offset:");
+				stuff_int_list(offset, 2);
 			}
 
 			if(optional_string("Offset:")) {
-				stuff_int_list(offset, 2);
+				Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
 			}
 
 			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
@@ -2930,8 +2942,8 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 		coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
 	}
 
-	if(optional_string("$Font:")) {
-		stuff_int(&Hud_font);
+	if(optional_string("Font:")) {
+		stuff_int(&font_num);
 	} else {
 		if ( hud_font >=0 ) {
 			font_num = hud_font;
@@ -3599,6 +3611,7 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, 
 	hud_gauge->initSecondaryWeaponOffsets(Weapon_sammo_offset_x, Weapon_sname_offset_x, Weapon_sreload_offset_x, Weapon_slinked_offset_x, Weapon_sunlinked_offset_x);
 	hud_gauge->initPrimaryHeights(top_primary_h, primary_text_h);
 	hud_gauge->initSecondaryHeights(top_secondary_h, secondary_text_h);
+	hud_gauge->initLinkIcon();
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3816,8 +3829,13 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, bool scale_gau
 
 	auto_text_offset[0] = 13;
 	auto_text_offset[1] = 2;
-	target_text_offset[0] = 7;
-	target_text_offset[1] = 10;
+	if (Lcl_pl) {
+		target_text_offset[0] = 2;
+		target_text_offset[1] = 10;
+	} else {
+		target_text_offset[0] = 7;
+		target_text_offset[1] = 10;
+	}
 	
 	HudGaugeAutoTarget* hud_gauge = gauge_load_common<HudGaugeAutoTarget>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
@@ -3877,8 +3895,13 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, bool scale_gaug
 
 	auto_text_offset[0] = 13;
 	auto_text_offset[1] = 2;
-	speed_text_offset[0] = 10;
-	speed_text_offset[1] = 10;
+	if (Lcl_pl) {
+		speed_text_offset[0] = 9;
+		speed_text_offset[1] = 10;
+	} else {
+		speed_text_offset[0] = 10;
+		speed_text_offset[1] = 10;
+	}
 	
 	HudGaugeAutoSpeed* hud_gauge = gauge_load_common<HudGaugeAutoSpeed>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
@@ -5398,6 +5421,7 @@ void load_gauge_primary_weapons(int base_w, int base_h, int hud_font, bool scale
 	hud_gauge->initPrimaryAmmoOffsetX(ammo_x);
 	hud_gauge->initPrimaryLinkOffsetX(link_x);
 	hud_gauge->initPrimaryNameOffsetX(name_x);
+	hud_gauge->initLinkIcon();
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5525,6 +5549,7 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int hud_font, bool sca
 	hud_gauge->initSecondaryNameOffsetX(name_x);
 	hud_gauge->initSecondaryReloadOffsetX(reload_x);
 	hud_gauge->initSecondaryUnlinkedOffsetX(unlink_x);
+	hud_gauge->initLinkIcon();
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {

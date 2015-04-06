@@ -163,12 +163,8 @@ void parse_fireball_tbl(const char *filename)
 	lod_checker lod_check;
 	color fb_color;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -241,9 +237,6 @@ void parse_fireball_tbl(const char *filename)
 	}
 
 	required_string("#End");
-
-	// close localization
-	lcl_ext_close();
 }
 
 void fireball_parse_tbl()

@@ -540,7 +540,7 @@ void initial_status::OnOK()
 	if (m_team_color_setting.IsWindowEnabled() && m_team_color_setting.GetCurSel() > 0)
 		Ships[m_ship].team_name = Team_Names[m_team_color_setting.GetCurSel() - 1];
 	else
-		Ships[m_ship].team_name = "None";
+		Ships[m_ship].team_name = "none";
 
 	update_docking_info();
 

@@ -761,15 +761,6 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	texture_info *tglow = &tmap->textures[TM_GLOW_TYPE];
 	int rt_begin_index = tmap_num*TM_NUM_TYPES;
 
-	// Goober5000
-	Interp_base_frametime = 0;
-	if (Interp_objnum >= 0)
-	{
-		object *objp = &Objects[Interp_objnum];
-		if (objp->type == OBJ_SHIP)
-			Interp_base_frametime = Ships[objp->instance].base_texture_anim_frametime;
-	}
-
 	int is_invisible = 0;
 
 	if (Interp_warp_bitmap < 0) {
@@ -1958,7 +1949,7 @@ DCF(model_darkening,"Makes models darker with distance")
 	dc_printf("model_darkening set to %.1f\n", Interp_depth_scale);
 }
 
-void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures)
+void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures, const bool is_skybox)
 {
 	int cull = 0;
 	// replacement textures - Goober5000
@@ -1966,27 +1957,28 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 
 	polymodel *pm = model_get(model_num);
 
-
 	model_do_dumb_rotation(model_num);
 
 	if (flags & MR_FORCE_CLAMP)
 		gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
 
 	int time = timestamp();
+
 	for (int i = 0; i < pm->n_glow_point_banks; i++ ) { //glow point blink code -Bobboau
 		glow_point_bank *bank = &pm->glow_point_banks[i];
+
 		if (bank->glow_timestamp == 0)
-			bank->glow_timestamp=time;
-		if(bank->off_time){
-			if(bank->is_on){
-				if( (bank->on_time) > ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ){
-					bank->glow_timestamp=time;
-					bank->is_on=0;
+			bank->glow_timestamp = time;
+		if (bank->off_time) {
+			if (bank->is_on) {
+				if ( (bank->on_time) > ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ) {
+					bank->glow_timestamp = time;
+					bank->is_on = false;
 				}
-			}else{
-				if( (bank->off_time) < ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ){
-					bank->glow_timestamp=time;
-					bank->is_on=1;
+			} else {
+				if ( (bank->off_time) < ((time - bank->disp_time) % (bank->on_time + bank->off_time)) ) {
+					bank->glow_timestamp = time;
+					bank->is_on = true;
 				}
 			}
 		}
@@ -1997,7 +1989,24 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 		cull = gr_set_cull(0);
 	}
 
-	Interp_objnum = objnum;
+	// Goober5000
+	Interp_base_frametime = 0;
+
+	if (objnum >= 0) {
+		object *objp = &Objects[objnum];
+
+		if (objp->type == OBJ_SHIP) {
+			Interp_base_frametime = Ships[objp->instance].base_texture_anim_frametime;
+		}
+	} else if (is_skybox) {
+		Interp_base_frametime = Skybox_timestamp;
+	}
+
+
+	if (flags & MR_ATTACHED_MODEL)
+		Interp_objnum = -1;
+	else
+		Interp_objnum = objnum;
 
 	if ( flags & MR_NO_LIGHTING )	{
 		Interp_light = 1.0f;
@@ -2724,9 +2733,11 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	bool draw_thrusters = false;
 
 	// just to be on the safe side
-	Assert( Interp_objnum == objnum );
+	// If we're dealing with an attached model (i.e. an external weapon model) we need the object number
+	// of the ship that the weapon is attached to, but nothing else
+	Assert( (Interp_objnum == objnum) || (flags & MR_ATTACHED_MODEL) );
 
-	if (objnum >= 0) {
+	if (objnum >= 0 && !(flags & MR_ATTACHED_MODEL)) {
 		objp = &Objects[objnum];
 
 		if (objp->type == OBJ_SHIP) {
@@ -2814,34 +2825,43 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	vec3d closest_pos;
 	float depth = model_find_closest_point( &closest_pos, model_num, -1, orient, pos, &Eye_position );
+
+	if ( !(Interp_flags & MR_LOCK_DETAIL) ) {
+		#if MAX_DETAIL_LEVEL != 4
+		#error Code in modelInterp.cpp assumes MAX_DETAIL_LEVEL == 4
+		#endif
+
+		switch( Detail.detail_distance )	{
+		case 0:		// lowest
+			depth /= The_mission.ai_profile->detail_distance_mult[0];
+			break;
+		case 1:		// lower than normal
+			depth /= The_mission.ai_profile->detail_distance_mult[1];
+			break;
+		case 2:		// default
+			depth /= The_mission.ai_profile->detail_distance_mult[2];
+			break;
+		case 3:		// above normal
+			depth /= The_mission.ai_profile->detail_distance_mult[3];
+			break;
+		case 4:		// even more normal
+			depth /= The_mission.ai_profile->detail_distance_mult[4];
+			break;
+		}
+
+		// If we're rendering attached weapon models, check against the ships' tabled Weapon Model Draw Distance (which defaults to 200)
+		if (Interp_flags & MR_ATTACHED_MODEL) {
+			if (depth > Ship_info[Ships[Objects[objnum].instance].ship_info_index].weapon_model_draw_distance) {
+				g3_done_instance(use_api);
+				return;
+			}
+		}
+	}
 	if ( pm->n_detail_levels > 1 )	{
 
 		if ( Interp_flags & MR_LOCK_DETAIL )	{
 			i = Interp_detail_level_locked+1;
 		} else {
-
-			#if MAX_DETAIL_LEVEL != 4
-			#error Code in modelInterp.cpp assumes MAX_DETAIL_LEVEL == 4
-			#endif
-
-			switch( Detail.detail_distance )	{
-			case 0:		// lowest
-				depth /= The_mission.ai_profile->detail_distance_mult[0];
-				break;
-			case 1:		// lower than normal
-				depth /= The_mission.ai_profile->detail_distance_mult[1];
-				break;
-			case 2:		// default
-				depth /= The_mission.ai_profile->detail_distance_mult[2];
-				break;
-			case 3:		// above normal
-				depth /= The_mission.ai_profile->detail_distance_mult[3];
-				break;
-			case 4:		// even more normal
-				depth /= The_mission.ai_profile->detail_distance_mult[4];
-				break;
-			}
-
 			// nebula ?
 			if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 				depth *= neb2_get_lod_scale(Interp_objnum);
@@ -2978,13 +2998,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		cull = gr_set_cull(0);
 	} else {
 		cull = gr_set_cull(1);
-	}
-
-	// Goober5000
-	Interp_base_frametime = 0;
-
-	if ( (objp != NULL) && (objp->type == OBJ_SHIP) ) {
-		Interp_base_frametime = Ships[objp->instance].base_texture_anim_frametime;
 	}
 
 	if ( !(Interp_flags & MR_NO_LIGHTING) ) {
@@ -4841,8 +4854,7 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 
 		// get animation frame
 		frame = fl2i((cur_time * num_frames) / total_time);
-		if (frame < 0) frame = 0;
-		if (frame >= num_frames) frame = num_frames - 1;
+		CLAMP(frame, 0, num_frames - 1);
 
 		// advance to the correct frame
 		texture += frame;

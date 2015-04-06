@@ -40,7 +40,7 @@ float frand()
 	do {
 		i_rval = myrand();
 	} while (i_rval == RAND_MAX);
-	float rval = ((float) i_rval) / RAND_MAX;
+	float rval = i2fl(i_rval) * RAND_MAX_1f;
 	return rval;
 }
 

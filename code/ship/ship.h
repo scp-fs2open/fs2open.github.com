@@ -393,7 +393,7 @@ typedef struct ship_flag_name {
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					16
+#define MAX_SHIP_FLAG_NAMES					17
 extern ship_flag_name Ship_flag_names[];
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
@@ -1131,6 +1131,9 @@ public:
 	int splodeing_texture;
 	char splodeing_texture_name[MAX_FILENAME_LEN];
 
+	// Goober5000
+	SCP_vector<texture_replace> replacement_textures;
+
 	
 	int armor_type_idx;
 	int shield_armor_type_idx;
@@ -1353,9 +1356,7 @@ extern void physics_ship_init(object *objp);
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
-//Template stuff, here's as good a place as any.
-int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace);
-extern int ship_template_lookup(const char *name = NULL);
+int parse_ship_values(ship_info* sip, bool first_time, bool replace);
 void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string);
 
 extern int ship_info_lookup(const char *name = NULL);

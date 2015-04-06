@@ -553,6 +553,8 @@ void weapon_get_laser_color(color *c, object *objp);
 
 void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed);
 
+void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index);
+
 // return a scale factor for damage which should be applied for 2 collisions
 float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target);
 
@@ -566,5 +568,6 @@ void weapon_unpause_sounds();
 inline bool is_homing(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Homing_heat] || wip->wi_flags[Weapon::Info_Flags::Homing_aspect] || wip->wi_flags[Weapon::Info_Flags::Homing_javelin]; }
 inline bool is_locked_homing(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Homing_aspect] || wip->wi_flags[Weapon::Info_Flags::Homing_javelin]; }
 inline bool hurts_big_ships(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Bomb] || wip->wi_flags[Weapon::Info_Flags::Beam] || wip->wi_flags[Weapon::Info_Flags::Huge] || wip->wi_flags[Weapon::Info_Flags::Big_only]; }
+inline bool is_interceptable(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Fighter_Interceptable] || wip->wi_flags[Weapon::Info_Flags::Turret_Interceptable]; }
 
 #endif

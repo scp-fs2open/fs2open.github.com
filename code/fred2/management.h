@@ -90,7 +90,6 @@ void	delete_marked();
 void	delete_reinforcement(int num);
 int	delete_ship_from_wing(int ship = cur_ship);
 int	find_free_wing();
-void	add_ship_to_wing();
 int	query_object_in_wing(int obj = cur_object_index);
 void	mark_object(int obj);
 void	unmark_object(int obj);

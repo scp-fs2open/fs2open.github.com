@@ -1179,6 +1179,7 @@
 #define IDC_MISSION_LOG_LAST_REPEAT     1640
 #define IDC_MISSION_LOG_1ST_TRIGGER     1641
 #define IDC_MISSION_LOG_LAST_TRIGGER    1642
+#define IDC_NO_COLLIDE                  1643
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1471,7 +1472,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        320
 #define _APS_NEXT_COMMAND_VALUE         33098
-#define _APS_NEXT_CONTROL_VALUE         1643
+#define _APS_NEXT_CONTROL_VALUE         1644
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

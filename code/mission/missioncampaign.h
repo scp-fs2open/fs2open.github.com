@@ -181,7 +181,7 @@ int mission_campaign_load_by_name_csfe( char *filename, char *callsign );
 
 
 // load up and initialize a new campaign
-int mission_campaign_load( char *filename, player *pl = NULL, int load_savefile = 1 );
+int mission_campaign_load( char *filename, player *pl = NULL, int load_savefile = 1, bool reset_stats = true );
 
 // function to save the state of the campaign between missions or to load a campaign save file
 extern int mission_campaign_save( void );

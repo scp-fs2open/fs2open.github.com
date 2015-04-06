@@ -166,6 +166,34 @@ void hud_targetbox_truncate_subsys_name(char *outstr)
 		} else if ( strstr(outstr, "laser") || strstr(outstr, "turret") || strstr(outstr, "missile") ) {
 			strcpy(outstr, "tourelle");
 		} 
+	} else if(Lcl_pl){	
+		if ( strstr(outstr, "communication") )	{
+			strcpy(outstr, "komunikacja");
+		} else if ( !stricmp(outstr, "weapons") ) {
+			strcpy(outstr, "uzbrojenie");
+		} else if ( strstr(outstr, "engine") || strstr(outstr, "Engine")) {
+			strcpy(outstr, "silnik");
+		} else if ( !stricmp(outstr, "sensors") ) {
+			strcpy(outstr, "sensory");
+		} else if ( strstr(outstr, "navigat") ) {
+			strcpy(outstr, "nawigacja");
+		} else if ( strstr(outstr, "fighterbay") || strstr(outstr, "Fighterbay") ) {
+			strcpy(outstr, "dok my\x9Cliw.");
+		} else if ( strstr(outstr, "missile") ) {
+			strcpy(outstr, "wie\xBF. rakiet.");
+		} else if ( strstr(outstr, "laser") || strstr(outstr, "turret") ) {
+			strcpy(outstr, "wie\xBFyczka");
+		} else if ( strstr(outstr, "Command Tower") || strstr(outstr, "Bridge") ) {
+			strcpy(outstr, "mostek");
+		} else if ( strstr(outstr, "Barracks") ) {
+			strcpy(outstr, "koszary");
+		} else if ( strstr(outstr, "Reactor") ) {
+			strcpy(outstr, "reaktor");
+		} else if ( strstr(outstr, "RadarDish") || strstr(outstr, "Radar Dish") ) {
+			strcpy(outstr, "antena radaru");
+		} else if (!stricmp(outstr, "Gas Collector")) {
+			strcpy(outstr, "zbieracz gazu");
+		} 
 	} else {
 		if (strstr(outstr, XSTR("communication", 333)))	{
 			strcpy(outstr, XSTR("comm", 334));
@@ -1499,6 +1527,7 @@ void HudGaugeExtraTargetData::endFlashDock()
 
 //from aicode.cpp. Less include...problems...this way.
 extern bool turret_weapon_has_flags(ship_weapon *swp, flagset<Weapon::Info_Flags>* flags);
+extern flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(ship_weapon *swp);
 extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
 void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 {
@@ -1515,14 +1544,17 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 
 	//WMC - find the first weapon, if there is one
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
+		flagset<Weapon::Info_Flags> flags = turret_weapon_aggregate_flags(swp);
+
 		// check if beam or flak using weapon flags
 		if (turret_weapon_has_flags(swp, &beams)) {
 			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
 		}else if (turret_weapon_has_flags(swp, &flak)) {
 			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
 		} else {
-
-			if (!turret_weapon_has_subtype(swp, WP_MISSILE) && turret_weapon_has_subtype(swp, WP_LASER)) {
+			if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
+				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
+			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
 				// ballistic too! - Goober5000
 				if (turret_weapon_has_flags(swp, &ballistic))
 				{
@@ -1537,13 +1569,20 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 				{
 					sprintf(outstr, "%s", XSTR("Laser turret", 1568));
 				}
-			} else if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
-				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
+			} else {
+				// Mantis #2226: find out if there are any weapons here at all
+				if (!flags.any_set()) {
+					sprintf(outstr, "%s", NOX("Unused"));
 			} else {
 				// Illegal subtype
-				Int3();
+					static bool Turret_illegal_subtype_warned = false;
+					if (!Turret_illegal_subtype_warned) {
+						Turret_illegal_subtype_warned = true;
+						Warning(LOCATION, "This turret has an illegal subtype!  Trace out and fix!");
+					}
 				sprintf(outstr, "%s", XSTR("Turret", 1487));
 			}
+		}
 		}
 	} else if(swp->num_tertiary_banks) {
 		//TODO: add tertiary turret code stuff here
@@ -1681,7 +1720,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		if (n_linebreaks) {
 			p_line = strtok(outstr,linebreak);
 			while (p_line != NULL) {
-				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-(10*n_linebreaks), p_line);
+				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-((h+1)*n_linebreaks), p_line);
 				p_line = strtok(NULL,linebreak);
 				n_linebreaks--;
 			}

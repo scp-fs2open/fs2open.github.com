@@ -137,7 +137,9 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "same emp time for capships",		Weapon::Info_Flags::Use_emp_time_for_capship_turrets,	true, false },
 	{ "no primary linked penalty",		Weapon::Info_Flags::No_linked_penalty,					true, false },
 	{ "no homing speed ramp",			Weapon::Info_Flags::No_homing_speed_ramp,				true, false },
-	{ "pulls aspect seekers",			Weapon::Info_Flags::Cmeasure_aspect_home_on,			true, false},
+	{ "pulls aspect seekers",			Weapon::Info_Flags::Cmeasure_aspect_home_on,			true, false },
+	{ "turret interceptable",			Weapon::Info_Flags::Turret_Interceptable,				true, false },
+	{ "fighter interceptable",			Weapon::Info_Flags::Fighter_Interceptable,				true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -386,12 +388,8 @@ void parse_weapon_expl_tbl(const char *filename)
 	uint i;
 	lod_checker lod_check;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -430,9 +428,6 @@ void parse_weapon_expl_tbl(const char *filename)
 		}
 	}
 	required_string("#End");
-
-	// close localization
-	lcl_ext_close();
 }
 
 /**
@@ -535,7 +530,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 	const size_t spawn_str_len = strlen(spawn_str);
 
 	//Make sure we HAVE flags :p
-	if(!optional_string("$Flags:"))
+	if (!optional_string("$Flags:"))
 		return;
 
 	if (optional_string("+override")) {
@@ -546,7 +541,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 	bool set_nopierce = false;
 	SCP_vector<SCP_string> unparsed_or_special;
 	parse_string_flag_list<Weapon::Info_Flags, flagset<Weapon::Info_Flags>>(&weaponp->wi_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed_or_special);
-	
+
 	if (unparsed_or_special.size() > 0) {
 		SCP_vector<SCP_string>::iterator flag = unparsed_or_special.begin();
 
@@ -590,74 +585,82 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 				else {
 					Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
 				}
-			} else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
+			}
+			else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
 				set_nopierce = true;
-			} else if (!stricmp(NOX("beam no whack"), flag_text.c_str())) {
+			}
+			else if (!stricmp(NOX("beam no whack"), flag_text.c_str())) {
 				Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
 				weaponp->mass = 0.0f;
-			} else {
+			}
+			else if (!stricmp(NOX("interceptable"), flag_text.c_str())) {
+				weaponp->wi_flags.set(Weapon::Info_Flags::Turret_Interceptable);
+				weaponp->wi_flags.set(Weapon::Info_Flags::Fighter_Interceptable);
+			}
+ 			else {
 				Warning(LOCATION, "Unrecognized flag in flag list for weapon %s: \"%s\"", weaponp->name, (*flag).c_str());
 			}
 		}
-	}
 
-	//Do cleanup and sanity checks
-	if (set_nopierce)
-		weaponp->wi_flags.unset(Weapon::Info_Flags::Pierce_shields);
+		//Do cleanup and sanity checks
+		if (set_nopierce)
+			weaponp->wi_flags.unset(Weapon::Info_Flags::Pierce_shields);
 
-	if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
-		weaponp->wi_flags.unset(Weapon::Info_Flags::Hard_target_bomb);
-		Warning(LOCATION, "Weapon %s is not a bomb but has \"no radius doubling\" set. Ignoring this flag", weaponp->name);
-	}
+		if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
+			weaponp->wi_flags.unset(Weapon::Info_Flags::Hard_target_bomb);
+			Warning(LOCATION, "Weapon %s is not a bomb but has \"no radius doubling\" set. Ignoring this flag", weaponp->name);
+		}
 
-	if (weaponp->wi_flags[Weapon::Info_Flags::In_tech_database])
-		weaponp->wi_flags.set(Weapon::Info_Flags::Default_in_tech_database);
+		if (weaponp->wi_flags[Weapon::Info_Flags::In_tech_database])
+			weaponp->wi_flags.set(Weapon::Info_Flags::Default_in_tech_database);
 
-	if (weaponp->wi_flags[Weapon::Info_Flags::Flak]) {
-		if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] || weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
-			weaponp->wi_flags.unset(Weapon::Info_Flags::Swarm);
+		if (weaponp->wi_flags[Weapon::Info_Flags::Flak]) {
+			if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] || weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
+				weaponp->wi_flags.unset(Weapon::Info_Flags::Swarm);
+				weaponp->wi_flags.unset(Weapon::Info_Flags::Corkscrew);
+				Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!  Removing Swarm and Corkscrew attributes from weapon %s.\n", weaponp->name);
+			}
+		}
+
+		if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
 			weaponp->wi_flags.unset(Weapon::Info_Flags::Corkscrew);
-			Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!  Removing Swarm and Corkscrew attributes from weapon %s.\n", weaponp->name);
+			Warning(LOCATION, "Swarm and Corkscrew are mutually exclusive!  Defaulting to Swarm on weapon %s.\n", weaponp->name);
 		}
-	}
 
-	if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
-		weaponp->wi_flags.unset(Weapon::Info_Flags::Corkscrew);
-		Warning(LOCATION, "Swarm and Corkscrew are mutually exclusive!  Defaulting to Swarm on weapon %s.\n", weaponp->name);
-	}
-
-	if (weaponp->wi_flags[Weapon::Info_Flags::Local_ssm]) {
-		if (!is_homing(weaponp) || weaponp->subtype != WP_MISSILE) {
-			Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
+		if (weaponp->wi_flags[Weapon::Info_Flags::Local_ssm]) {
+			if (!is_homing(weaponp) || weaponp->subtype != WP_MISSILE) {
+				Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
+			}
 		}
-	}
-	
-	if (weaponp->wi_flags[Weapon::Info_Flags::Small_only] && weaponp->wi_flags[Weapon::Info_Flags::Huge])
-	{
-		Warning(LOCATION,"\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon",weaponp->name);
-	}
 
-	if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn])
-	{
-		Warning(LOCATION,"\"smart spawn\" flag used without \"spawn\" flag in %s\n",weaponp->name);
-	}
+		if (weaponp->wi_flags[Weapon::Info_Flags::Small_only] && weaponp->wi_flags[Weapon::Info_Flags::Huge])
+		{
+			Warning(LOCATION, "\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon", weaponp->name);
+		}
 
-	if (weaponp->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && (!weaponp->wi_flags[Weapon::Info_Flags::Child]))
-	{
-		Warning(LOCATION,"Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
-	}
+		if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn])
+		{
+			Warning(LOCATION, "\"smart spawn\" flag used without \"spawn\" flag in %s\n", weaponp->name);
+		}
 
-	if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])
-	{
-		Warning(LOCATION,"Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
-	}
+		if (weaponp->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && (!weaponp->wi_flags[Weapon::Info_Flags::Child]))
+		{
+			Warning(LOCATION, "Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
+		}
 
-	if (!weaponp->wi_flags[Weapon::Info_Flags::Cmeasure] && weaponp->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on])
-	{
-		weaponp->wi_flags.unset(Weapon::Info_Flags::Cmeasure_aspect_home_on);
-		Warning(LOCATION, "Weapon %s has the \"pulls aspect seekers\" flag, but is not a countermeasure.\n", weaponp->name);
+		if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])
+		{
+			Warning(LOCATION, "Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
+		}
+
+		if (!weaponp->wi_flags[Weapon::Info_Flags::Cmeasure] && weaponp->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on])
+		{
+			weaponp->wi_flags.unset(Weapon::Info_Flags::Cmeasure_aspect_home_on);
+			Warning(LOCATION, "Weapon %s has the \"pulls aspect seekers\" flag, but is not a countermeasure.\n", weaponp->name);
+		}
 	}
 }
+
 
 void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 {
@@ -743,18 +746,19 @@ void init_weapon_entry(int weap_info_index)
 	wip->subtype = WP_UNUSED;
 	wip->render_type = WRT_NONE;
 	
-	wip->title[0] = 0;
+	memset(wip->name, 0, sizeof(wip->name));
+	memset(wip->title, 0, sizeof(wip->title));
 	wip->desc = NULL;
-	wip->tech_title[0] = 0;
-	wip->tech_anim_filename[0] = 0;
+
+	memset(wip->tech_title, 0, sizeof(wip->tech_title));
+	memset(wip->tech_anim_filename, 0, sizeof(wip->tech_anim_filename));
 	wip->tech_desc = NULL;
+	memset(wip->tech_model, 0, sizeof(wip->tech_model));
 	
-	wip->tech_model[0] = '\0';
-	
-	wip->hud_filename[0] = '\0';
+	memset(wip->hud_filename, 0, sizeof(wip->hud_filename));
 	wip->hud_image_index = -1;
 	
-	wip->pofbitmap_name[0] = '\0';
+	memset(wip->pofbitmap_name, 0, sizeof(wip->pofbitmap_name));
 
 	wip->model_num = -1;
 	wip->hud_target_lod = -1;
@@ -777,7 +781,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->laser_head_radius = 1.0f;
 	wip->laser_tail_radius = 1.0f;
 	
-	wip->external_model_name[0] = '\0';
+	memset(wip->external_model_name, 0, sizeof(wip->external_model_name));
 	wip->external_model_num = -1;
 	
 	wip->weapon_submodel_rotate_accell = 10.0f;
@@ -863,9 +867,9 @@ void init_weapon_entry(int weap_info_index)
 	generic_bitmap_init(&wip->tr_info.texture, NULL);
 	wip->tr_info.n_fade_out_sections = 0;
 
-	wip->icon_filename[0] = 0;
+	memset(wip->icon_filename, 0, sizeof(wip->icon_filename));
 
-	wip->anim_filename[0] = 0;
+	memset(wip->anim_filename, 0, sizeof(wip->anim_filename));
 
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
@@ -1880,9 +1884,6 @@ int parse_weapon(int subtype, bool replace)
 		wip->muzzle_flash = mflash_lookup(fname);
 	}
 
-	if (wip->muzzle_flash > -1)
-		wip->wi_flags.set(Weapon::Info_Flags::Mflash);
-
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
 	if( optional_string("$EMP Intensity:") ){
 		stuff_float(&wip->emp_intensity);
@@ -1934,6 +1935,10 @@ int parse_weapon(int subtype, bool replace)
 		}
 		else if(optional_string("+Old Style:")) {
 			wip->elec_use_new_style=0;
+		}
+		
+		if(optional_string("+Area Of Effect")) {
+			wip->wi_flags.set(Weapon::Info_Flags::Aoe_Electronics);
 		}
 		
 		//New only -WMC
@@ -2522,6 +2527,8 @@ int parse_weapon(int subtype, bool replace)
 
 	if (optional_string("$Weapon Hitpoints:")) {
 		stuff_int(&wip->weapon_hitpoints);
+	} else if (first_time && (is_interceptable(wip))) {
+		wip->weapon_hitpoints = 25;
 	}
 
 	// making sure bombs get their hitpoints assigned
@@ -2717,13 +2724,9 @@ void parse_weaponstbl(const char *filename)
 {
 	int rval;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -2796,9 +2799,6 @@ void parse_weaponstbl(const char *filename)
 
 	// add tbl/tbm to multiplayer validation list
 	fs2netd_add_table_validation(filename);
-
-	// close localization
-	lcl_ext_close();
 }
 
 //uses a simple bucket sort to sort weapons, order of importance is:
@@ -4079,8 +4079,16 @@ void weapon_home(object *obj, int num, float frame_time)
 			send_homing_weapon_info(num);
 		}
 
+		if (wip->acceleration_time > 0.0f) {
+			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+				float t;
+
+				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+				obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
+			}
+		}
 		// since free_flight_time can now be 0, guard against that
-		if (wip->free_flight_time > 0.0f) {
+		else if (wip->free_flight_time > 0.0f) {
 			if (obj->phys_info.speed > max_speed) {
 				obj->phys_info.speed -= frame_time * (2 / wip->free_flight_time);
 			} else if ((obj->phys_info.speed < max_speed / (2 / wip->free_flight_time)) && (wip->wi_flags[Weapon::Info_Flags::Homing_heat])) {
@@ -4092,20 +4100,21 @@ void weapon_home(object *obj, int num, float frame_time)
 			obj->phys_info.speed = max_speed;
 		}
 
-		if (wip->acceleration_time > 0.0f) {
-			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
-				float	t;
-
-				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
-			}
-		}
-
 		// set velocity using whatever speed we have
 		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 
 		return;
 	}
+
+		if (wip->acceleration_time > 0.0f) {
+			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+			float t;
+
+				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
+			}
+		}
 
 	// AL 4-8-98: If original target for aspect lock missile is lost, stop homing
 	// WCS - or javelin
@@ -4399,7 +4408,7 @@ void weapon_home(object *obj, int num, float frame_time)
 				float t;
 
 				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+				obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
 			}
 		} else if (!(wip->wi_flags[Weapon::Info_Flags::No_homing_speed_ramp]) && Missiontime - wp->creation_time < i2f(1)) {
 			// Default behavior:
@@ -4602,13 +4611,22 @@ void weapon_process_post(object * obj, float frame_time)
 	// trail missiles
 	if ((wip->wi_flags[Weapon::Info_Flags::Trail]) && !(wip->wi_flags[Weapon::Info_Flags::Corkscrew])) {
 		if ( (wp->trail_ptr != NULL ) && (wp->lssm_stage!=3))	{
+			vec3d pos;
+			
+			if (wip->render_type == WRT_LASER) {
+				// place tail origin in center of the bolt
+				vm_vec_scale_add(&pos, &obj->pos, &obj->orient.vec.fvec, (wip->laser_length / 2));
+			} else {
+				pos = obj->pos;
+			}
+
 			if (trail_stamp_elapsed(wp->trail_ptr)) {
 
-				trail_add_segment( wp->trail_ptr, &obj->pos );
+				trail_add_segment( wp->trail_ptr, &pos );
 				
 				trail_set_stamp(wp->trail_ptr);
 			} else {
-				trail_set_segment( wp->trail_ptr, &obj->pos );
+				trail_set_segment( wp->trail_ptr, &pos );
 			}
 
 		}
@@ -4690,6 +4708,17 @@ void weapon_process_post(object * obj, float frame_time)
 		if( wp->cscrew_index >= 0) {
 			cscrew_process_post(obj);			
 		}
+	} else if (wip->acceleration_time > 0.0f) {
+		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+			float t;
+
+			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+			obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
+		} else {
+			obj->phys_info.speed = wip->max_speed;;
+		}
+
+		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 	}
 
 	//local ssm stuff
@@ -4863,6 +4892,14 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		// determining if we're targeting the same team
 		if (parent_objp != NULL && Ships[parent_objp->instance].team == target_team){
 			targeting_same = 1;
+
+			// Goober5000 - if we're going bonkers, pretend we're not targeting our own team
+			ai_info *parent_aip = &Ai_info[Ships[parent_objp->instance].ai_index];
+			if (parent_aip->active_goal != AI_GOAL_NONE && parent_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
+				if (parent_aip->goals[parent_aip->active_goal].flags[AI::Goal_flags::Target_own_team]) {
+					targeting_same = 0;
+				}
+			}
 		} else {
 			targeting_same = 0;
 		}
@@ -5224,7 +5261,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	//	For missiles, the velocity trends towards some goal.
 	//	Note: If you change how speed works here, such as adding in speed of parent ship, you'll need to change the AI code
 	//	that predicts collision points.  See Mike Kulas or Dave Andsager.  (Or see ai_get_weapon_speed().)
-	if (!(is_homing(wip))) {
+	if (wip->acceleration_time > 0.0f) {
+		vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, 0.01f ); // Tiny initial velocity to avoid possible null vec issues
+		objp->phys_info.vel = objp->phys_info.desired_vel;
+		objp->phys_info.speed = 0.0f;
+		wp->launch_speed = 0.0f;
+	} else if (!(is_homing(wip))) {
 		vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.desired_vel);
@@ -5252,9 +5294,6 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	wp->weapon_max_vel = objp->phys_info.max_vel.xyz.z;
-
-	if (wip->acceleration_time > 0.0f)
-		wp->launch_speed = 0.0f;
 
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
@@ -5835,6 +5874,11 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 		switch ( objp->type ) {
 		case OBJ_SHIP:
+			// If we're doing an AoE Electronics blast, do the electronics stuff (unless it also has the regular "electronics"
+			// flag and this is the ship the missile directly impacted; then leave it for the regular code below) -MageKing17
+			if ((wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !((objp->flags[Object::Object_Flags::Invulnerable]) || ((objp == other_obj) && (wip->wi_flags[Weapon::Info_Flags::Electronics])))) {
+				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
+			}
 			ship_apply_global_damage(objp, wobjp, pos, damage);
 			weapon_area_apply_blast(NULL, objp, pos, blast, 0);
 			break;

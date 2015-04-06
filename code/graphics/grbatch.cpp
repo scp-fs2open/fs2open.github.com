@@ -581,7 +581,7 @@ void geometry_batcher::render_buffer(int flags)
  * Laser batcher
  */
 struct batch_item {
-	batch_item(): texture(-1), tmap_flags(0), alpha(1.0f), laser(false) {};
+	batch_item(): texture(-1), tmap_flags(0), alpha(1.0f), laser(false) {}
 
 	geometry_batcher batch;
 

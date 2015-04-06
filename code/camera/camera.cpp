@@ -540,8 +540,10 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 //*************************subtitle*************************
 
 #define MAX_SUBTITLE_LINES		64
-subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim, float in_display_time, float in_fade_time, color *in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width, int in_height, bool in_post_shaded)
+subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* in_imageanim, float in_display_time, float in_fade_time, const color *in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width, int in_height, bool in_post_shaded)
 {
+	SCP_string text_buf;
+
 	// basic init, this always has to be done
 	memset( imageanim, 0, sizeof(imageanim) );
 	memset( &text_pos, 0, 2*sizeof(int) );
@@ -551,12 +553,11 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 	if ( ((in_text != NULL) && (strlen(in_text) <= 0)) && ((in_imageanim != NULL) && (strlen(in_imageanim) <= 0)) )
 		return;
 
-	char text_buf[256];
 	if (in_text != NULL && in_text[0] != '\0')
 	{
-		strcpy_s(text_buf, in_text);
-		sexp_replace_variable_names_with_values(text_buf, 256);
-		in_text = text_buf;
+		text_buf = in_text;
+		sexp_replace_variable_names_with_values(text_buf);
+		in_text = text_buf.c_str();
 	}
 
 
@@ -569,11 +570,10 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, char* in_imageanim
 		int split_width = (in_width > 0) ? in_width : 200;
 
 		num_text_lines = split_str(in_text, split_width, text_line_lens, text_line_ptrs, MAX_SUBTITLE_LINES);
-		SCP_string temp_str;
 		for(int i = 0; i < num_text_lines; i++)
 		{
-			temp_str.assign(text_line_ptrs[i], text_line_lens[i]);
-			text_lines.push_back(temp_str);
+			text_buf.assign(text_line_ptrs[i], text_line_lens[i]);
+			text_lines.push_back(text_buf);
 		}
 	}
 

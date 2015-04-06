@@ -243,7 +243,7 @@ class is_dcmd {
 public:
 	const char *name;
 
-	is_dcmd(const char *_name) : name(_name) {};
+	is_dcmd(const char *_name) : name(_name) {}
 
 	bool operator() (debug_command* dcmd)
 	{
@@ -265,7 +265,7 @@ extern SCP_string dc_command_str;	// The rest of the command line, from the end 
 bool dc_pause_output(void);
 
 /**
- * @brieft Prints the given char string to the debug console
+ * @brief Prints the given char string to the debug console
  * @details See the doc for std::printf() for formating and more details
  */
 void dc_printf(const char *format, ...);

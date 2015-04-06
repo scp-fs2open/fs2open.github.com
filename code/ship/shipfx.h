@@ -199,7 +199,6 @@ private:
 	int total_time_start;
 	int total_time_end;
 	//Stage data
-	int stage;
 	int stage_time_start;
 	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 

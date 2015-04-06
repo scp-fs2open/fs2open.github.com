@@ -777,15 +777,9 @@ void parse_sound_table(const char* filename)
  */
 void gamesnd_parse_soundstbl()
 {
-	// open localization
-	lcl_ext_open();
-
 	parse_sound_table("sounds.tbl");
 
 	parse_modular_table("*-snd.tbm", parse_sound_table);
-
-	// close localization
-	lcl_ext_close();
 
 	// if we are missing any species then report 
 	if (missingFlybySounds.size() > 0)

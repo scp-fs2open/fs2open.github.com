@@ -609,8 +609,9 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			return;
 		}
 
-		vec3d	*rel_pos, vec_to_enemy;
-		float		weapon_travel_dist;
+		vec3d	*rel_pos;
+		vec3d	vec_to_enemy;
+		float	weapon_travel_dist;
 
 		start_bank = Ships[aip->shipnum].weapons.current_primary_bank;
 
@@ -721,26 +722,26 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 	swp = &Ships[Pl_objp->instance].weapons;
 
-	if (dot_to_enemy > 0.95f - 0.5f * En_objp->radius/MAX(1.0f, En_objp->radius + dist_to_enemy)) {
+	if (dot_to_enemy > 0.95f - 0.5f * En_objp->radius / MAX(1.0f, En_objp->radius + dist_to_enemy)) {
 		aip->time_enemy_in_range += flFrametime;
-		
+
 		//	Chance of hitting ship is based on dot product of firing ship's forward vector with vector to ship
 		//	and also the size of the target relative to distance to target.
-		if (dot_to_enemy > MAX(0.5f, 0.90f + aip->ai_accuracy/10.0f - En_objp->radius/MAX(1.0f,dist_to_enemy))) {
+		if (dot_to_enemy > MAX(0.5f, 0.90f + aip->ai_accuracy / 10.0f - En_objp->radius / MAX(1.0f, dist_to_enemy))) {
 
 			ship *temp_shipp;
 			temp_shipp = &Ships[Pl_objp->instance];
 			ship_weapon *tswp = &temp_shipp->weapons;
 
-			if ( tswp->num_primary_banks > 0 ) {
+			if (tswp->num_primary_banks > 0) {
 				Assertion(tswp->current_primary_bank < tswp->num_primary_banks, "AI tried to select primary bank %d. Might be a model error\n", tswp->current_primary_bank);
 				weapon_info	*wip = &Weapon_info[tswp->primary_bank_weapons[tswp->current_primary_bank]];
 
-				if (dist_to_enemy < MIN((wip->max_speed * wip->lifetime), wip->weapon_range)){
+				if (dist_to_enemy < MIN((wip->max_speed * wip->lifetime), wip->weapon_range)) {
 					has_fired = 1;
-					if(! ai_fire_primary_weapon(Pl_objp)){
+					if (!ai_fire_primary_weapon(Pl_objp)) {
 						has_fired = -1;
-					//	ship_stop_fire_primary(Pl_objp);
+						//	ship_stop_fire_primary(Pl_objp);
 					}
 				}
 			}
@@ -750,87 +751,89 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 				if (!(En_objp->flags[Object::Object_Flags::Protected]) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP))) {
 					ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 					int current_bank = tswp->current_secondary_bank;
-					weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
+					if (current_bank > -1) {
+						weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 
-					if(!(En_objp->flags[Object::Object_Flags::Protected]) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags[Weapon::Info_Flags::Puncture] )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
-						//	If ship is protected and very low on hits, don't fire missiles.
-						if ((current_bank > -1) &&  (!(En_objp->flags[Object::Object_Flags::Protected]) || (En_objp->hull_strength > 10*swip->damage))) {
-							if (aip->ai_flags[AI::AI_Flags::Unload_secondaries]) {
-								if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {
-									swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (swip->fire_wait*1000.0f));
-								}
-							}
+						if (!(En_objp->flags[Object::Object_Flags::Protected]) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags[Weapon::Info_Flags::Puncture])) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
+							//	If ship is protected and very low on hits, don't fire missiles.
+							if ((!(En_objp->flags[Object::Object_Flags::Protected]) || (En_objp->hull_strength > 10 * swip->damage))) {
+								if (aip->ai_flags[AI::AI_Flags::Unload_secondaries]) {
+									if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {
+										swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (swip->fire_wait*1000.0f));
+									}
 
-							if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
-								float firing_range;
-								if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
-									firing_range=swip->lssm_lock_range;
-								else
-									firing_range = MIN((swip->max_speed * swip->lifetime), swip->weapon_range);
-								// reduce firing range of secondaries in nebula
-								extern int Nebula_sec_range;
-								if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
-									firing_range *= 0.8f;
-								}
-
-								float t = 0.25f;	//	default delay in seconds until next fire.
-
-								if (dist_to_enemy < firing_range*1.0f) {
-
-
-									//vm_vec_scale_add(&future_enemy_pos, enemy_pos, enemy_vel, dist_to_enemy/swip->max_speed);
-									//if (vm_vec_dist_quick(&future_enemy_pos, firing_pos) < firing_range * 0.8f) {
-										if (ai_fire_secondary_weapon(Pl_objp)) {
-
-											int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
-
-											if ((aip->ai_flags[AI::AI_Flags::Unload_secondaries]) || (swip->burst_flags[Weapon::Burst_Flags::Fast_firing])) {
-												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
-													t = swip->burst_delay;
-													swp->burst_counter[current_bank_adjusted]++;
-												} else {
-													t = swip->fire_wait;
-													if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
-													} else {
- 														swp->burst_counter[current_bank_adjusted] = 0;
-													}
-												}
-											} else {
-												if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
-													t = set_secondary_fire_delay(aip, temp_shipp, swip, true);
-													swp->burst_counter[current_bank_adjusted]++;
-												} else {
-													t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
-													if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
-														swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
-													} else {
-														swp->burst_counter[current_bank_adjusted] = 0;
-													}
-												}
-											}
-											swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
+									if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
+										float firing_range;
+										if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
+											firing_range = swip->lssm_lock_range;
+										else
+											firing_range = MIN((swip->max_speed * swip->lifetime), swip->weapon_range);
+										// reduce firing range of secondaries in nebula
+										extern int Nebula_sec_range;
+										if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
+											firing_range *= 0.8f;
 										}
-									//}
+
+										float t = 0.25f;	//	default delay in seconds until next fire.
+
+										if (dist_to_enemy < firing_range*1.0f) {
+											if (ai_fire_secondary_weapon(Pl_objp)) {
+
+												int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
+
+												if ((aip->ai_flags[AI::AI_Flags::Unload_secondaries]) || (swip->burst_flags[Weapon::Burst_Flags::Fast_firing])) {
+													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
+														t = swip->burst_delay;
+														swp->burst_counter[current_bank_adjusted]++;
+													}
+													else {
+														t = swip->fire_wait;
+														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
+															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+														}
+														else {
+															swp->burst_counter[current_bank_adjusted] = 0;
+														}
+													}
+												}
+												else {
+													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
+														t = set_secondary_fire_delay(aip, temp_shipp, swip, true);
+														swp->burst_counter[current_bank_adjusted]++;
+													}
+													else {
+														t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
+														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
+															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
+														}
+														else {
+															swp->burst_counter[current_bank_adjusted] = 0;
+														}
+													}
+												}
+												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
+											}
+										}
+										swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
+									}
 								}
-								swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 							}
 						}
 					}
 				}
 			}
 		}
-	} else {
-		if (flFrametime < 1.0f)
-			aip->time_enemy_in_range *= (1.0f - flFrametime);
-		else
-			aip->time_enemy_in_range = 0;
-	}
+		else {
+			if (flFrametime < 1.0f)
+				aip->time_enemy_in_range *= (1.0f - flFrametime);
+			else
+				aip->time_enemy_in_range = 0;
+		}
 
-	if(has_fired == -1){	//stuff that hapens when the ship stops fireing
-		ship_stop_fire_primary(Pl_objp);
+		if (has_fired == -1) {	//stuff that hapens when the ship stops fireing
+			ship_stop_fire_primary(Pl_objp);
+		}
 	}
-
 }
 
 // switch ai ship into chase mode

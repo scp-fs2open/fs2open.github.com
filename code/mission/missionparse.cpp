@@ -308,6 +308,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags [] = {
 	{ "ship-locked",					Mission::Parse_Object_Flags::SF_Ship_locked,			true, false },
 	{ "weapons-locked",					Mission::Parse_Object_Flags::SF_Weapons_locked,			true, false },
 	{ "scramble-messages",				Mission::Parse_Object_Flags::SF_Scramble_messages,		true, false },
+	{ "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
 };
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -963,52 +964,46 @@ void parse_player_info2(mission *pm)
 		Error(LOCATION, "Not enough ship/weapon pools for mission.  There are %d teams and only %d pools.", Num_teams, nt);
 }
 
-// a little helper for the next function
-void parse_single_cutscene (mission *pm, int type) 
-{
-	mission_cutscene scene; 
-
-	scene.type = type; 
-	stuff_string (scene.cutscene_name, F_NAME, NAME_LENGTH);
-	
-	if ( required_string("+formula:") ) {
-		scene.formula = get_sexp_main();
-	}
-
-	pm->cutscenes.push_back(scene); 
-}
-
 void parse_cutscenes(mission *pm) 
 {
 	pm->cutscenes.clear(); 
 
-	if (optional_string("#Cutscenes")) {		
-		while(!optional_string("#end")){
-			if (optional_string("$Fiction Viewer Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_FICTION);
+	if (optional_string("#Cutscenes"))
+	{
+	mission_cutscene scene; 
+
+		while (true)
+{
+			// this list should correspond to the MOVIE_* #defines
+			scene.type = optional_string_one_of(6,
+				"$Fiction Viewer Cutscene:",
+				"$Command Brief Cutscene:",
+				"$Briefing Cutscene:",
+				"$Pre-game Cutscene:",
+				"$Debriefing Cutscene:",
+				"$Campaign End Cutscene:");
+
+			// no more cutscenes specified?
+			if (scene.type < 0)
+				break;
+			
+			// get the cutscene file
+			stuff_string(scene.filename, F_NAME, NAME_LENGTH);
+			
+			// get the sexp if we have one
+			if (optional_string("+formula:"))
+				scene.formula = get_sexp_main();
+			else
+				scene.formula = Locked_sexp_true;
+			
+			// add it
+			pm->cutscenes.push_back(scene);
 			}
 			
-			if (optional_string("$Command Brief Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_CMD_BRIEF);
+		// for reverse compatibility, check that we have a closing tag
+		optional_string("#end");
 			}
-			
-			if (optional_string("$Briefing Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_BRIEF);
 			}
-			
-			if (optional_string("$Pre-game Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_GAME);
-			}
-			
-			if (optional_string("$Debriefing Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_DEBRIEF);
-			}
-			if (optional_string("$Campaign End Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_END_CAMPAIGN);
-			}
-		}
-	}
-}
 
 void parse_plot_info(mission *pm)
 {
@@ -1936,7 +1931,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->base_texture_anim_frametime = game_get_overall_frametime();
 
 	// handle the replacement textures
-	if (p_objp->num_texture_replacements > 0)
+	if (!p_objp->replacement_textures.empty())
 	{
 		shipp->ship_replacement_textures = (int *) vm_malloc( MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
@@ -1945,7 +1940,7 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// now fill them in
-	for (i = 0; i < p_objp->num_texture_replacements; i++)
+	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
 	{
 		pm = model_get(sip->model_num);
 
@@ -1954,9 +1949,9 @@ int parse_create_object_sub(p_object *p_objp)
 		{
 			texture_map *tmap = &pm->maps[j];
 
-			int tnum = tmap->FindTexture(p_objp->replacement_textures[i].old_texture);
+			int tnum = tmap->FindTexture(tr->old_texture);
 			if(tnum > -1)
-				shipp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = p_objp->replacement_textures[i].new_texture_id;
+				shipp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
 		}
 	}
 
@@ -2448,7 +2443,7 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 			shipp->flags.set(Ship::Ship_Flags::Reinforcement);
 		}
 	}
-
+	
 	if ((parse_flags[Mission::Parse_Object_Flags::OF_No_shields]) && (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on]))
 	{
 		Warning(LOCATION, "The parser found a ship with both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent!");
@@ -2485,7 +2480,7 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 		shipp->flags.set(Ship::Ship_Flags::Scannable);
 
 	// P_AIF_KAMIKAZE, P_AIF_NO_DYNAMIC, and P_SF_RED_ALERT_CARRY are handled in parse_create_object_sub
-
+	
 	if (parse_flags[Mission::Parse_Object_Flags::OF_Beam_protected])
 		objp->flags.set(Object::Object_Flags::Beam_protected);
 
@@ -2542,16 +2537,16 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Set_class_dynamically])
 		shipp->flags.set(Ship::Ship_Flags::Set_class_dynamically);
-
+	
 	if (parse_flags[Mission::Parse_Object_Flags::SF_No_death_scream])
 		shipp->flags.set(Ship::Ship_Flags::No_death_scream);
-
+	
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Always_death_scream])
 		shipp->flags.set(Ship::Ship_Flags::Always_death_scream);
-
+	
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Nav_needslink])
 		shipp->flags.set(Ship::Ship_Flags::Navpoint_needslink);
-
+	
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Hide_ship_name])
 		shipp->flags.set(Ship::Ship_Flags::Hide_ship_name);
 
@@ -2581,6 +2576,9 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_Scramble_messages])
 		shipp->flags.set(Ship::Ship_Flags::Scramble_messages);
+
+	if (parse_flags[Mission::Parse_Object_Flags::OF_No_collide])
+		objp->flags.unset(Object::Object_Flags::Collides);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
@@ -3211,64 +3209,69 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_int(&p_objp->persona_index);
 
 	// texture replacement - Goober5000
-	p_objp->num_texture_replacements = 0;
+	p_objp->replacement_textures = Ship_info[p_objp->ship_class].replacement_textures;	// initialize our set with the ship class set, which may be empty
 	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
 	{
+		texture_replace tr;
 		char *p;
 
-		while ((p_objp->num_texture_replacements < MAX_REPLACEMENT_TEXTURES) && (optional_string("+old:")))
+		while (optional_string("+old:"))
 		{
-			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, F_NAME, MAX_FILENAME_LEN);
+			strcpy_s(tr.ship_name, p_objp->name);
+			tr.new_texture_id = -1;
+
+			stuff_string(tr.old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
-			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, F_NAME, MAX_FILENAME_LEN);
+			stuff_string(tr.new_texture, F_NAME, MAX_FILENAME_LEN);
 
 			// get rid of extensions
-			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, '.');
+			p = strchr(tr.old_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.old_texture));
 				*p = 0;
 			}
-			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, '.');
+			p = strchr(tr.new_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.new_texture));
 				*p = 0;
 			}
 
+			// add it if we aren't over the limit
+			if (p_objp->replacement_textures.size() < MAX_MODEL_TEXTURES)
+				p_objp->replacement_textures.push_back(tr);
+			else
+				mprintf(("Too many replacement textures specified for ship '%s'!\n", p_objp->name));
+		}
+	}
+
+	// now load the textures (do this outside the parse loop because we may have ship class replacements too)
+	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
+	{
 			// load the texture
-			if (!stricmp(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, "invisible"))
+		if (!stricmp(tr->new_texture, "invisible"))
 			{
 				// invisible is a special case
-				p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = REPLACE_WITH_INVISIBLE;
+			tr->new_texture_id = REPLACE_WITH_INVISIBLE;
 			}
 			else
 			{
 				// try to load texture or anim as normal
-				p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load_either(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
+			tr->new_texture_id = bm_load_either(tr->new_texture);
 			}
 
 			// not found?
-			if (p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id < 0)
+		if (tr->new_texture_id < 0)
 			{
-				mprintf(("Could not load replacement texture %s for ship %s\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, p_objp->name));
+			mprintf(("Could not load replacement texture %s for ship %s\n", tr->new_texture, p_objp->name));
 			}
 
-			// *** account for FRED
+		// account for FRED
 			if (Fred_running)
 			{
-				texture_replace tr;
-
-				strcpy_s(tr.ship_name, p_objp->name);
-				strcpy_s(tr.old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
-				strcpy_s(tr.new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-				tr.new_texture_id = -1;
-
-				Fred_texture_replacements.push_back(tr);
-			}
-
-			// increment
-			p_objp->num_texture_replacements++;
+			Fred_texture_replacements.push_back(*tr);
+			Fred_texture_replacements.back().new_texture_id = -1;
 		}
 	}
 
@@ -5357,6 +5360,13 @@ void parse_asteroid_fields(mission *pm)
 		required_string("$Maximum:");
 		stuff_vec3d(&Asteroid_field.max_bound);
 
+		vec3d a_rad;
+		vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
+		vm_vec_scale(&a_rad, 0.5f);
+		float b_rad = vm_vec_mag(&a_rad);
+
+		Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
+
 		if (optional_string("+Inner Bound:")) {
 			Asteroid_field.has_inner_bound = 1;
 
@@ -5769,15 +5779,6 @@ void post_process_mission()
 	Mission_departure_timestamp = timestamp( DEPARTURE_TIMESTAMP );
 	Mission_end_time = -1;
 
-	if(Game_mode & GM_MULTIPLAYER){ 
-		multi_respawn_build_points();
-	}	
-
-	// maybe reset hotkey defaults when loading new mission
-	if ( Last_file_checksum != Current_file_checksum ){
-		mission_hotkey_reset_saved();
-	}
-
 	Allow_arrival_music_timestamp=timestamp(0);
 	Allow_arrival_message_timestamp=timestamp(0);
 	Arrival_message_delay_timestamp = timestamp(-1);
@@ -5789,6 +5790,14 @@ void post_process_mission()
 		Arrival_message_delay_timestamp_m[idx] = timestamp(-1);
 	}	
 
+	if(Game_mode & GM_MULTIPLAYER){ 
+		multi_respawn_build_points();
+	}	
+
+	// maybe reset hotkey defaults when loading new mission
+	if ( Last_file_checksum != Current_file_checksum ){
+		mission_hotkey_reset_saved();
+	}
 	Last_file_checksum = Current_file_checksum;
 }
 
@@ -5808,9 +5817,6 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 	// if mission_p is NULL, make it point to The_mission
 	if ( mission_p == NULL )
 		mission_p = &The_mission;
-
-	// open localization
-	lcl_ext_open();
 
 	do {
 		CFILE *ftemp = cfopen(real_fname, "rt");
@@ -5837,9 +5843,6 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 		parse_init(basic);
 		parse_mission_info(mission_p, basic);
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	return rval;
 }
@@ -5882,9 +5885,6 @@ int parse_main(const char *mission_name, int flags)
 	for (i = 0; i < Num_ship_classes; i++)
 		Ship_class_names[i] = Ship_info[i].name;
 
-	// open localization
-	lcl_ext_open();
-	
 	do {
 		// don't do this for imports
 		if (!(flags & MPF_IMPORT_FSM)) {
@@ -5923,9 +5923,6 @@ int parse_main(const char *mission_name, int flags)
 		rval = parse_mission(&The_mission, flags);
 		display_parse_diagnostics();
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	if (!Fred_running)
 		strcpy_s(Mission_filename, mission_name);
@@ -6283,9 +6280,6 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 	if ( filelength == 0 )
 		return 0;
 
-	// open localization
-	lcl_ext_open();
-
 	game_type = 0;
 	do {
 		if ((rval = setjmp(parse_abort)) != 0) {
@@ -6308,9 +6302,6 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 		}
 		stuff_int(&game_type);
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	return (game_type & MISSION_TYPE_MULTI) ? game_type : 0;
 }
@@ -7621,7 +7612,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->respawn_count = 0;
 	pobj->alt_type_index = -1;
 	pobj->callsign_index = -1;
-	pobj->num_texture_replacements = 0;
+	pobj->replacement_textures.clear();
 }
 
 /**

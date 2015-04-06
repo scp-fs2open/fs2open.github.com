@@ -1793,6 +1793,7 @@ void multi_display_netinfo()
 {
 	int sx = gr_screen.max_w - 200;
 	int sy = 20;
+	int dy = gr_get_font_height() + 1;
 	int idx;
 
 	// not multiplayer
@@ -1814,30 +1815,30 @@ void multi_display_netinfo()
 
 	// server or client
 	if(MULTIPLAYER_MASTER){
-		gr_string(sx, sy, "SERVER", GR_RESIZE_NONE); sy += 10;
+		gr_string(sx, sy, "SERVER", GR_RESIZE_NONE); sy += dy;
 
 		for(idx=0; idx<MAX_PLAYERS; idx++){
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && (Net_players[idx].m_player != NULL)){
 				if(Net_players[idx].sv_last_pl < 0){
 					gr_printf_no_resize(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, 0);
-					sy += 10;
+					sy += dy;
 				} else {
 					gr_printf_no_resize(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, Net_players[idx].sv_last_pl);
-					sy += 10;
+					sy += dy;
 				}
 			}
 		}
 	} else {
-		gr_string(sx, sy, "CLIENT", GR_RESIZE_NONE); sy += 10;
+		gr_string(sx, sy, "CLIENT", GR_RESIZE_NONE); sy += dy;
 
 		// display PL
 		if(Net_player != NULL){
 			if(Net_player->cl_last_pl < 0){
 				gr_printf_no_resize(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, 0);
-				sy += 10;
+				sy += dy;
 			} else {
 				gr_printf_no_resize(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, Net_player->cl_last_pl);
-				sy += 10;
+				sy += dy;
 			}
 		}
 	}

@@ -731,7 +731,7 @@ void popup_draw_msg_text(popup_info *pi, int flags)
 	// maybe draw "more"
 	h = 10;
 	if(i < pi->nlines){
-		gr_set_color_fast(&Color_bright_red);
+		gr_set_color_fast(&Color_more_bright);
 		gr_string(Title_coords[gr_screen.res][4], sy + (Popup_max_display[gr_screen.res]) * h, XSTR("More", 459), GR_RESIZE_MENU);
 	}
 
@@ -1018,10 +1018,9 @@ int popup(int flags, int nchoices, ... )
 
 	// get msg text
 	format = va_arg( args, char * );
-	Popup_info.raw_text[0] = 0;
-	vsprintf(Popup_info.raw_text, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
 	va_end(args);
-	Assert(strlen(Popup_info.raw_text) < POPUP_MAX_CHARS );
+	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
 	
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
@@ -1072,11 +1071,10 @@ int popup_till_condition(int (*condition)(), ...)
 
 	// get msg text
 	format = va_arg( args, char * );
-	Popup_info.raw_text[0] = 0;
-	vsprintf(Popup_info.raw_text, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
 	va_end(args);
-	Popup_info.raw_text[POPUP_MAX_CHARS-1] = '\0';
-		
+	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
+
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
 	Mouse_hidden = 0;

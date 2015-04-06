@@ -320,7 +320,7 @@ void fiction_viewer_init()
 	Fiction_viewer_buttons[Fiction_viewer_ui][gr_screen.res][FVW_BUTTON_SCROLL_DOWN].button.set_hotkey(KEY_DOWN);
 
 	// init brief text
-	brief_color_text_init(Fiction_viewer_text, Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][2], 0, 0);
+	brief_color_text_init(Fiction_viewer_text, Fiction_viewer_text_coordinates[Fiction_viewer_ui][gr_screen.res][2], default_fiction_viewer_color, 0, 0);
 
 	// if the story is going to overflow the screen, add a slider
 	if (Num_brief_text_lines[0] > Fiction_viewer_text_max_lines)

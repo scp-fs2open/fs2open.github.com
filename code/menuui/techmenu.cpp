@@ -468,7 +468,7 @@ void techroom_ships_render(float frametime)
 	ship_info *sip = &Ship_info[Cur_entry_index];
 
 	if (sip->uses_team_colors) {
-		gr_set_team_color(sip->default_team_name, "<none>", 0, 0);
+		gr_set_team_color(sip->default_team_name, "none", 0, 0);
 	}
 
 	// get correct revolution rate
@@ -1033,12 +1033,8 @@ void techroom_intel_init()
 	if (inited)
 		return;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "species.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 	
@@ -1076,9 +1072,6 @@ void techroom_intel_init()
 	}
 
 	inited = 1;
-
-	// close localization
-	lcl_ext_close();
 }
 
 void techroom_init()

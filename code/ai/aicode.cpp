@@ -779,9 +779,6 @@ void reset_ai_class_names()
 #define AI_CLASS_INCREMENT		10
 void parse_aitbl()
 {
-	// open localization
-	lcl_ext_open();
-
 	read_file_text("ai.tbl", CF_TYPE_TABLES);
 	reset_parse();
 
@@ -813,9 +810,6 @@ void parse_aitbl()
 			reset_ai_class_names();
 		}
 	}
-
-	// close localization
-	lcl_ext_close();
 	
 	atexit(free_ai_stuff);
 }
@@ -835,7 +829,6 @@ void ai_init()
 
 		if ((rval = setjmp(parse_abort)) != 0) {
 			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "ai.tbl", rval));
-			lcl_ext_close();
 		} else {			
 			parse_aitbl();			
 		}
@@ -1998,7 +1991,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 					dist = dist * 0.5f;
 				}
 
-				num_attacking = num_enemies_attacking(eno->trial_objp-Objects);
+				num_attacking = num_enemies_attacking(OBJ_INDEX(eno->trial_objp));
 				if ((is_big_huge(sip)) || (num_attacking < eno->max_attackers)) {
 					if (!(is_big_huge(sip))){
 						dist *= (float) (num_attacking+2)/2.0f;				//	prevents lots of ships from attacking same target
@@ -2015,7 +2008,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 
 					if (dist < eno->nearest_dist) {
 						eno->nearest_dist = dist;
-						eno->nearest_objnum = eno->trial_objp-Objects;
+						eno->nearest_objnum = OBJ_INDEX(eno->trial_objp);
 					}
 				}
 			}
@@ -2130,7 +2123,7 @@ int find_nearby_threat(int objnum, int enemy_team_mask, float range, int *count)
 
 					if (dist < nearest_dist) {
 						nearest_dist = dist;
-						nearest_objnum = objp-Objects;
+						nearest_objnum = OBJ_INDEX(objp);
 					}
 				}
 			}
@@ -2291,20 +2284,21 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp)
 	if (attacked == NULL) {
 		aip->choose_enemy_timestamp = timestamp(0);
 		// nebula safe
-		set_target_objnum(aip, find_enemy(attacker-Objects, 99999.9f, 4));
+		set_target_objnum(aip, find_enemy(OBJ_INDEX(attacker), 99999.9f, 4));
 	} else {
 		// check if we can see atacked in nebula
-		if (aip->target_objnum != attacked - Objects) {
+		if (aip->target_objnum != OBJ_INDEX(attacked)) {
 			aip->aspect_locked_time = 0.0f;
 		}
-		set_target_objnum(aip, attacked - Objects);
+		set_target_objnum(aip, OBJ_INDEX(attacked));
 	}
 
 	ai_set_goal_maybe_abort_dock(attacker, aip);
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
 
 	// Goober5000
-	if ((temp = find_ignore_new_object_index(aip, aip->target_objnum)) >= 0)
+	temp = find_ignore_new_object_index(aip, aip->target_objnum);
+	if (temp >= 0)
 	{
 		aip->ignore_new_objnums[temp] = UNUSED_OBJNUM;
 	}
@@ -2383,7 +2377,7 @@ void ai_evade_object(object *evader, object *evaded)
 
 	aip = &Ai_info[Ships[evader->instance].ai_index];
 
-	set_target_objnum(aip, evaded - Objects);
+	set_target_objnum(aip, OBJ_INDEX(evaded));
 	aip->mode = AIM_EVADE;
 
 }
@@ -2782,7 +2776,7 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 
 	aip->path_cur = aip->path_start;
 	aip->path_dir = PD_FORWARD;
-	aip->path_objnum = mobjp-Objects;
+	aip->path_objnum = OBJ_INDEX(mobjp);
 	aip->mp_index = path_num;
 	aip->path_length = Ppfp - ppfp_start;
 	aip->path_next_check_time = timestamp(1);
@@ -2843,7 +2837,7 @@ void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int co
 
 	aip->path_cur = aip->path_start;
 	aip->path_dir = PD_FORWARD;
-	aip->path_objnum = mobjp-Objects;
+	aip->path_objnum = OBJ_INDEX(mobjp);
 	aip->mp_index = path_num;
 	aip->path_length = Ppfp - ppfp_start;
 	aip->path_next_check_time = timestamp(1);
@@ -3281,7 +3275,7 @@ void ai_do_stay_near(object *objp, object *other_objp, float dist)
 	aip->submode = -1;
 	aip->submode_start_time = Missiontime;
 	aip->stay_near_distance = dist;
-	aip->goal_objnum = other_objp-Objects;
+	aip->goal_objnum = OBJ_INDEX(other_objp);
 	aip->goal_signature = other_objp->signature;
 }
 
@@ -3334,7 +3328,7 @@ void ai_form_on_wing(object *objp, object *goal_objp)
 	aip->ai_flags.unset(AI::AI_Flags::Formation_wing);
 	aip->ai_flags.set(AI::AI_Flags::Formation_object);
 
-	aip->goal_objnum = goal_objp-Objects;
+	aip->goal_objnum = OBJ_INDEX(goal_objp);
 	ai_set_goal_maybe_abort_dock(objp, aip);
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME*4);		//	Super extra long time until can target another ship.
 
@@ -4841,9 +4835,9 @@ int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 		else {
 			//If ai_aburn_use_factor is not specified, calculate a number based on the AI class. Otherwise, use that value.
 			if (aip->ai_aburn_use_factor == INT_MIN)
-				return static_rand_timed(objp-Objects, Num_ai_classes - aip->ai_class);
+				return static_rand_timed(OBJ_INDEX(objp), Num_ai_classes - aip->ai_class);
 			else
-				return static_rand_timed(objp-Objects, aip->ai_aburn_use_factor);
+				return static_rand_timed(OBJ_INDEX(objp), aip->ai_aburn_use_factor);
 		}
 	}
 }
@@ -5084,7 +5078,7 @@ void evade_ship()
 		int	rand_int;
 		float	accel_val;
 
-		rand_int = static_rand(Pl_objp-Objects);
+		rand_int = static_rand(OBJ_INDEX(Pl_objp));
 		accel_val = (float) (((Missiontime^rand_int) >> 14) & 0x0f)/32.0f + 0.5f;
 		accelerate_ship(aip, accel_val);
 	} else
@@ -5092,13 +5086,13 @@ void evade_ship()
 
 	if ((Missiontime - aip->submode_start_time > F1_0/2) && (sip->afterburner_fuel_capacity > 0.0f)) {
 		float percent_left = 100.0f * shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
-		if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
+		if (percent_left > 30.0f + ((OBJ_INDEX(Pl_objp)) & 0x0f)) {
 			afterburners_start(Pl_objp);
 		
 			if (aip->ai_profile_flags[AI::Profile_flags::Smart_afterburner_management]) {
-				aip->afterburner_stop_time = (fix) (Missiontime + F1_0 + static_randf(Pl_objp-Objects) * F1_0 / 4);
+				aip->afterburner_stop_time = (fix) (Missiontime + F1_0 + static_randf(OBJ_INDEX(Pl_objp)) * F1_0 / 4);
 			} else {				
-				aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+				aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(OBJ_INDEX(Pl_objp))/4;
 			}
 		}
 	}
@@ -5650,7 +5644,7 @@ int ai_fire_primary_weapon(object *objp)
 	float	dot;
 	vec3d	v2t;
 
-	if (!( vm_vec_mag_quick(&G_predicted_pos) < AICODE_SMALL_MAGNITUDE )) {
+	if ( !(vm_vec_mag_quick(&G_predicted_pos) < AICODE_SMALL_MAGNITUDE ) && !(aip->submode == SM_AVOID) ) {
 		if ( vm_vec_cmp(&G_predicted_pos, &G_fire_pos) ) {
 			vm_vec_normalized_dir(&v2t, &G_predicted_pos, &G_fire_pos);
 			dot = vm_vec_dot(&v2t, &objp->orient.vec.fvec);
@@ -6366,7 +6360,7 @@ void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, vec3d *gun_pos, 
 			scale = (1.0f - aip->ai_accuracy) * 4.0f * (1.0f + 4.0f * (1.0f - time_enemy_in_range/(2*range_time)));
 		}		
 
-		static_randvec(((pobjp-Objects) ^ (Missiontime >> 16)) & 7, &rand_vec);
+		static_randvec(((OBJ_INDEX(pobjp)) ^ (Missiontime >> 16)) & 7, &rand_vec);
 
 		vm_vec_scale_add2(predicted_enemy_pos, &rand_vec, scale);
 		G_collision_time = collision_time;
@@ -6479,7 +6473,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 	}
 
 	// get a random vector that changes slowly over time (1x / sec)
-	static_randvec(((pobjp-Objects) ^ (Missiontime >> 16)) & 7, &rand_vec);
+	static_randvec(((OBJ_INDEX(pobjp)) ^ (Missiontime >> 16)) & 7, &rand_vec);
 
 	vm_vec_scale_add2(predicted_enemy_pos, &rand_vec, scale);
 
@@ -6685,7 +6679,7 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 
 					if (sip_local->afterburner_fuel_capacity > 0.0f) {
 						percent_left = 100.0f * shipp->afterburner_fuel / sip_local->afterburner_fuel_capacity;
-						if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
+						if (percent_left > 30.0f + ((OBJ_INDEX(Pl_objp)) & 0x0f)) {
 							afterburners_start(Pl_objp);							
 							if (aip->ai_profile_flags[AI::Profile_flags::Smart_afterburner_management]) {
 								float max_ab_vel;
@@ -6708,7 +6702,7 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 								
 								aip->afterburner_stop_time = (fix) (Missiontime + F1_0 * ab_time);
 							} else {				
-								aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(Pl_objp-Objects)/4;
+								aip->afterburner_stop_time = Missiontime + F1_0 + static_rand(OBJ_INDEX(Pl_objp))/4;
 							}
 						}
 					}
@@ -7242,7 +7236,7 @@ void ai_chase_attack(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, f
 	//	If ship moving slowly relative to its size, then don't attack its center point.
 	//	How far from center we attack is based on speed, size and distance to enemy
 	if (En_objp->radius > En_objp->phys_info.speed) {
-		static_randvec(Pl_objp-Objects, &randvec);
+		static_randvec(OBJ_INDEX(Pl_objp), &randvec);
 		scale = dist_to_enemy/(dist_to_enemy + En_objp->radius) * En_objp->radius;
 		scale *= 0.5f * En_objp->radius/(En_objp->phys_info.speed + En_objp->radius);	// scale downward by 1/2 to 1/4
 		vm_vec_scale_add(&new_pos, predicted_enemy_pos, &randvec, scale);
@@ -7333,7 +7327,7 @@ void ai_chase_ga(ai_info *aip, ship_info *sip)
 	if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 		if (!(Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
 			float percent_left = 100.0f * Ships[Pl_objp->instance].afterburner_fuel / sip->afterburner_fuel_capacity;
-			if (percent_left > 30.0f + ((Pl_objp-Objects) & 0x0f)) {
+			if (percent_left > 30.0f + ((OBJ_INDEX(Pl_objp)) & 0x0f)) {
 				afterburners_start(Pl_objp);
 				aip->afterburner_stop_time = Missiontime + 3*F1_0/2;
 			}
@@ -7381,7 +7375,8 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 		aip->ignore_objnum = UNUSED_OBJNUM;
 
 	// Goober5000
-	if ((temp = find_ignore_new_object_index(aip, aip->target_objnum)) >= 0)
+	temp = find_ignore_new_object_index(aip, aip->target_objnum);
+	if (temp >= 0)
 	{
 		aip->ignore_new_objnums[temp] = UNUSED_OBJNUM;
 	}
@@ -7542,7 +7537,7 @@ void ai_set_guard_object(object *objp, object *other_objp)
 		ai_set_guard_wing(objp, Ai_info[Ships[other_objp->instance].ai_index].wing);
 	} else {
 
-		other_objnum = other_objp-Objects;
+		other_objnum = OBJ_INDEX(other_objp);
 
 		aip->guard_objnum = other_objnum;
 		aip->guard_signature = other_objp->signature;
@@ -8259,8 +8254,12 @@ void ai_chase()
 
 	//	If seeking lock, try to point directly at ship, else predict position so lasers can hit it.
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
-	if ((real_dot_to_enemy < 0.25f) || (aip->target_time < 1.0f) || (aip->ai_flags[AI::AI_Flags::Seek_lock])) {
+	if ((real_dot_to_enemy < 0.25f) || (aip->target_time < 1.0f)) {
 		predicted_enemy_pos = enemy_pos;
+	} else if (aip->ai_flags[AI::AI_Flags::Seek_lock]) {
+		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);	// Set G_fire_pos
+		predicted_enemy_pos = enemy_pos;
+		G_predicted_pos = predicted_enemy_pos;
 	} else {
 		//	Set predicted_enemy_pos.
 		//	See if attacking a subsystem.
@@ -8784,9 +8783,9 @@ void ai_chase()
 					if (!(En_objp->flags[Object::Object_Flags::Protected])) {
 						ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 						int current_bank = tswp->current_secondary_bank;
-						weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[tswp->current_secondary_bank]];
 
 						if (current_bank > -1) {
+							weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 							if (aip->ai_flags[AI::AI_Flags::Unload_secondaries]) {
 								if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {
 									swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (swip->fire_wait*1000.0f));
@@ -8794,7 +8793,7 @@ void ai_chase()
 							}
 
 							if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
-								if (tswp->current_secondary_bank >= 0) {
+								if (current_bank >= 0) {
 									float firing_range;
 									
 									if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
@@ -9578,7 +9577,7 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 							return;
 						}
 					}
-					set_target_objnum(aip, hitter_objp-Objects);
+					set_target_objnum(aip, OBJ_INDEX(hitter_objp));
 					aip->mode = AIM_CHASE;
 					aip->submode = SM_ATTACK;
 					aip->submode_start_time = Missiontime;
@@ -9603,7 +9602,7 @@ void maybe_update_guard_object(object *hit_objp, object *hitter_objp)
 			aip = &Ai_info[Ships[objp->instance].ai_index];
 
 			if ((aip->mode == AIM_GUARD) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC)) {
-				if (aip->guard_objnum == hit_objp-Objects) {
+				if (aip->guard_objnum == OBJ_INDEX(hit_objp)) {
 					guard_object_was_hit(objp, hitter_objp);
 				} else if ((aip->guard_wingnum != -1) && (aip->guard_wingnum == Ai_info[Ships[hit_objp->instance].ai_index].wing)) {
 					guard_object_was_hit(objp, hitter_objp);
@@ -9630,7 +9629,7 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 		wp = &Weapons[bomb_objp->instance];
 		wip = &Weapon_info[wp->weapon_info_index];
 
-		if ( !(wip->wi_flags[Weapon::Info_Flags::Bomb]) ) {
+		if ( !(wip->wi_flags[Weapon::Info_Flags::Bomb]) || wip->wi_flags[Weapon::Info_Flags::Fighter_Interceptable] ) {
 			continue;
 		}
 
@@ -9823,7 +9822,7 @@ void ai_big_guard()
 		float radius, extended_z;
 
 		// get random [0 to 1] based on OBJNUM
-		float objval = static_randf(Pl_objp-Objects);
+		float objval = static_randf(OBJ_INDEX(Pl_objp));
 
 		// get position relative to cylinder of guard_objp		
 		extended_z = get_cylinder_points(Pl_objp, guard_objp, &axis_pt, &r_vec, &radius);
@@ -9849,7 +9848,7 @@ void ai_big_guard()
 		// how often to choose new desired_z
 		// 1*(64) sec < 2000, 2*(64) < 2-4000 3*(64) > 4-8000, etc (Missiontime >> 22 is 64 sec intervals)
 		int time_choose = int(floor(log(length * 0.001f) / log(2.0f)));
-		float desired_z = min_z + length * static_randf( (Pl_objp-Objects) ^ (Missiontime >> (22 + time_choose)) );
+		float desired_z = min_z + length * static_randf( (OBJ_INDEX(Pl_objp)) ^ (Missiontime >> (22 + time_choose)) );
 
 		// get r from guard_ship
 		float cur_guard_rad = vm_vec_dist(&Pl_objp->pos, &axis_pt);
@@ -9961,7 +9960,7 @@ void ai_big_guard()
 		}
 
 		//	Periodically, scan for a nearby ship to attack.
-		if (((AI_FrameCount ^ (Pl_objp-Objects)) & 0x07) == 0) {
+		if (((AI_FrameCount ^ (OBJ_INDEX(Pl_objp))) & 0x07) == 0) {
 			ai_guard_find_nearby_object();
 		}
 		}
@@ -10032,7 +10031,7 @@ void ai_guard()
 	vec3d		v2g, rvec;
 
 	// get random [0 to 1] based on OBJNUM
-	objval = static_randf(Pl_objp-Objects);
+	objval = static_randf(OBJ_INDEX(Pl_objp));
 
 	switch (aip->submode) {
 	case AIS_GUARD_STATIC:
@@ -10164,7 +10163,7 @@ void ai_guard()
 		}
 
 		//	Periodically, scan for a nearby ship to attack.
-		if (((AI_FrameCount ^ (Pl_objp-Objects)) & 0x07) == 0) {
+		if (((AI_FrameCount ^ (OBJ_INDEX(Pl_objp))) & 0x07) == 0) {
 			ai_guard_find_nearby_object();
 		}
 		break;
@@ -10558,7 +10557,7 @@ void ai_stay_near()
 		goal_objp = &Objects[goal_objnum];
 
 		//	Make not all ships pursue same point.
-		static_randvec(Pl_objp-Objects, &rand_vec);
+		static_randvec(OBJ_INDEX(Pl_objp), &rand_vec);
 
 		//	Make sure point is in front hemisphere (relative to Pl_objp's position.
 		vm_vec_sub(&vec_to_goal, &goal_objp->pos, &Pl_objp->pos);
@@ -10869,12 +10868,17 @@ void ai_dock()
 		{
 			// call the ai_abort rearm request code
 			ai_abort_rearm_request( Pl_objp );
+			// Goober5000 - add missionlog for support ships, per Mantis #2999
+			mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, goal_shipp->ship_name);
 		}
 		//	Make sure repair has not broken off.
 		else if (dist > 5.0f)	//	Oops, too far away!
 		{
-			if ( goal_aip->ai_flags[AI::AI_Flags::Being_repaired] )
+			if ( goal_aip->ai_flags[AI::AI_Flags::Being_repaired] ) {
 				ai_do_objects_repairing_stuff( goal_objp, Pl_objp, REPAIR_INFO_BROKEN);
+				// Goober5000 - add missionlog for support ships, per Mantis #2999
+				mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, goal_shipp->ship_name);
+			}
 
 			if (dist > Pl_objp->radius*2 + goal_objp->radius*2) {
 				//	Got real far away from goal, so move back a couple modes and try again.
@@ -10888,8 +10892,11 @@ void ai_dock()
 		}
 		else
 		{
-			if ( goal_aip->ai_flags[AI::AI_Flags::Awaiting_repair] )
+			if ( goal_aip->ai_flags[AI::AI_Flags::Awaiting_repair] ) {
 				ai_do_objects_repairing_stuff( goal_objp, Pl_objp, REPAIR_INFO_BEGIN );
+				// Goober5000 - add missionlog for support ships, per Mantis #2999
+				mission_log_add_entry(LOG_SHIP_DOCKED, shipp->ship_name, goal_shipp->ship_name);
+			}
 		}
 
 		break;
@@ -11006,9 +11013,8 @@ void ai_dock()
 			model_anim_start_type(goal_shipp, TRIGGER_TYPE_DOCKING_STAGE_2, dockee_index, -1);
 
 			// don't add undock log entries for support ships.
-			if ( !(sip->flags[Ship::Info_Flags::Support]) ) {
-				mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, goal_shipp->ship_name);
-			}
+			// Goober5000 - deliberately contravening Volition's above comment - add missionlog for support ships, per Mantis #2999
+			mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, goal_shipp->ship_name);
 		}
 		break;
 	}
@@ -12116,10 +12122,8 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 
 	if ((aip->nearest_locked_object != -1) && (Objects[aip->nearest_locked_object].type == OBJ_WEAPON)) {
 		object	*weapon_objp;
-		weapon	*weaponp;
 
 		weapon_objp = &Objects[aip->nearest_locked_object];
-		weaponp = &Weapons[weapon_objp->instance];
 
 		if ((dist = vm_vec_dist_quick(&objp->pos, &weapon_objp->pos)) < weapon_objp->phys_info.speed*2.0f) {
 	
@@ -12475,6 +12479,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		if (aip->submode == SM_ATTACK_FOREVER) {
 			return;
 		}
+		break;
 	case AIM_GUARD:
 		//	If in guard mode and far away from guard object, don't pursue guy that hit me.
 		if ((aip->guard_objnum != -1) && (aip->guard_signature == Objects[aip->guard_objnum].signature)) {
@@ -13864,8 +13869,17 @@ int ai_need_new_target(object *pl_objp, int target_objnum)
 	if ( objp->type == OBJ_SHIP ) {
 		if ( Ships[objp->instance].flags[Ship::Ship_Flags::Dying] ) {
 			return 1;
-		} else if (Ships[objp->instance].team == Ships[pl_objp->instance].team)
+		} else if (Ships[objp->instance].team == Ships[pl_objp->instance].team) {
+			// Goober5000 - targeting the same team is allowed if pl_objp is going bonkers
+			ai_info *pl_aip = &Ai_info[Ships[pl_objp->instance].ai_index];
+			if (pl_aip->active_goal != AI_GOAL_NONE && pl_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
+				if (pl_aip->goals[pl_aip->active_goal].flags[AI::Goal_flags::Target_own_team]) {
+					return 0;
+				}
+			}
+
 			return 1;
+		}
 	}
 
 	return 0;
@@ -14091,7 +14105,7 @@ void ai_frame(int objnum)
 	}
 
 	if ((En_objp != NULL) && (En_objp->pos.xyz.x == Pl_objp->pos.xyz.x) && (En_objp->pos.xyz.y == Pl_objp->pos.xyz.y) && (En_objp->pos.xyz.z == Pl_objp->pos.xyz.z)) {
-		mprintf(("Warning: Object and its enemy have same position.  Object #%i\n", Pl_objp-Objects));
+		mprintf(("Warning: Object and its enemy have same position.  Object #%i\n", OBJ_INDEX(Pl_objp)));
 		En_objp = NULL;
 	}
 
@@ -14237,7 +14251,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 	Assert( ai_index >= 0 );
 
 	AI_frametime = frametime;
-	if (obj-Objects <= Last_ai_obj) {
+	if (OBJ_INDEX(obj) <= Last_ai_obj) {
 		AI_FrameCount++;
 	}
 
@@ -14283,7 +14297,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 		}
 	}
 
-	Last_ai_obj = obj-Objects;
+	Last_ai_obj = OBJ_INDEX(obj);
 }
 
 /**
@@ -15018,7 +15032,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		if (shipp->team == Ships[hit_objp->instance].team)		//	Don't have AI react to collisions between teammates.
 			return;
 		objp_hitter = hit_objp;
-		hitter_objnum = hit_objp-Objects;
+		hitter_objnum = OBJ_INDEX(hit_objp);
 	} else {
 		Int3();	//	Hmm, what kind of object hit this if not weapon or ship?  Get MikeK.
 		return;
@@ -15084,7 +15098,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 
 	//	If the hitter object is the ignore object, don't attack it.
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
-	if ((is_ignore_object(aip, objp_hitter-Objects)) && (is_fighter_bomber(sip))) {
+	if ((is_ignore_object(aip, OBJ_INDEX(objp_hitter))) && (is_fighter_bomber(sip))) {
 		if (!object_is_docked(objp_ship)) {
 			if (aip->mode == AIM_NONE) {
 				aip->mode = AIM_CHASE;	//	This will cause the ship to move, if not attack.
@@ -15105,14 +15119,14 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 			if ( ai_big_maybe_enter_strafe_mode(objp_ship, OBJ_INDEX(hit_objp), 1) )
 				return;
 		}
-
+		break;
 	case AIM_GUARD:
 		//	If in guard mode and far away from guard object, don't pursue guy that hit me.
-			if ((aip->guard_objnum != -1) && (aip->guard_signature == Objects[aip->guard_objnum].signature)) {
-				if (vm_vec_dist_quick(&objp_ship->pos, &Objects[aip->guard_objnum].pos) > 500.0f) {
-					return;
-				}
+		if ((aip->guard_objnum != -1) && (aip->guard_signature == Objects[aip->guard_objnum].signature)) {
+			if (vm_vec_dist_quick(&objp_ship->pos, &Objects[aip->guard_objnum].pos) > 500.0f) {
+				return;
 			}
+		}
 	case AIM_STILL:
 	case AIM_STAY_NEAR:
 		// Note: Dealt with above, at very top.  case AIM_PLAY_DEAD:

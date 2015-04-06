@@ -55,12 +55,8 @@ void cutscene_init()
 	int rval;
     cutscene_info cutinfo;
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "cutscenes.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -88,8 +84,10 @@ void cutscene_init()
 		compact_multitext_string(buf);
 		cutinfo.description = vm_strdup(buf);
 
-		required_string("$cd:");
-		stuff_int( &cutinfo.cd );
+		if (optional_string("$cd:"))
+			stuff_int( &cutinfo.cd );
+		else
+			cutinfo.cd = 0;
 
 		cutinfo.viewable = false;
 
@@ -107,9 +105,6 @@ void cutscene_init()
 	}
 
 	required_string("#End");
-
-	// close localization
-	lcl_ext_close();
 }
 
 // function to return 0 based index of which CD a particular movie is on
@@ -155,6 +150,8 @@ void cutscene_mark_viewable(char *filename)
 		}
 		i++;
 	}
+
+	Warning(LOCATION, "Could not find cutscene '%s' in listing; cannot mark it viewable...", filename);
 }
 
 #define NUM_BUTTONS				8

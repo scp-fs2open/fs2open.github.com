@@ -124,6 +124,7 @@ typedef enum {
 typedef	struct asteroid_field {
 	vec3d	min_bound;					// Minimum range of field.
 	vec3d	max_bound;					// Maximum range of field.
+	float	bound_rad;
 	int		has_inner_bound;
 	vec3d	inner_min_bound;
 	vec3d	inner_max_bound;

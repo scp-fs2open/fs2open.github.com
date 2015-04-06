@@ -484,7 +484,7 @@ void mix_two_team_colors(team_color* dest, team_color* a, team_color* b, float m
 }
 
 void gr_opengl_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime) {
-	if (secondaryteam == "<none>") {
+	if (!stricmp(secondaryteam.c_str(), "none")) {
 		if (Team_Colors.find(team) != Team_Colors.end()) {
 			Current_team_color = &Team_Colors[team];
 			Using_Team_Color = true;

@@ -975,21 +975,7 @@ void player_select_process_noninput(int k)
 
 	// delete the currently highlighted pilot
 	case KEY_DELETE:
-		if (Player_select_pilot >= 0) {
-			int ret;
-
-			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-				popup(PF_TITLE_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Pilots can only be deleted from the single player menu!", 1611));
-			} else {
-				// display a popup requesting confirmation
-				ret = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON,2,POPUP_NO,POPUP_YES,XSTR( "Are you sure you want to delete this pilot?", 383));										
-
-				// delete the pilot
-				if (ret == 1) {
-					player_select_delete_pilot();
-				}
-			}
-		}
+		player_select_button_pressed(DELETE_BUTTON);
 		break;
 	}
 
@@ -1140,11 +1126,7 @@ void player_select_display_copyright()
 
 //	sprintf(Copyright_msg1, NOX("FreeSpace 2"));
 	get_version_string(Copyright_msg1, sizeof(Copyright_msg1));
-	if (Lcl_gr) {
-		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\xA8');
-	} else {
-		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\x83');
-	}
+	sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), Lcl_special_chars + 4);
 
 	gr_get_string_size(&w, NULL, Copyright_msg1);
 	sx = fl2i((gr_screen.max_w_unscaled / 2) - w/2.0f + 0.5f);
@@ -1314,12 +1296,8 @@ void player_tips_init()
 
 	Num_player_tips = 0;
 
-	// begin external localization stuff
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "tips.tbl", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -1334,9 +1312,6 @@ void player_tips_init()
 		}
 		Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
 	}
-
-	// stop externalizing, homey
-	lcl_ext_close();
 }
 
 // close out player tips - *only call from game_shutdown()*

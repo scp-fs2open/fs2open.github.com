@@ -104,6 +104,7 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Laser_protected,	"laser-protect-ship" },
 	{ Object::Object_Flags::Missile_protected,	"missile-protect-ship" },
 	{ Object::Object_Flags::Immobile,			"immobile" },
+	{ Object::Object_Flags::Collides,			"collides" }
 };
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
@@ -1245,12 +1246,12 @@ void obj_move_all_post(object *objp, float frametime)
 
 			//Check for changing team colors
 			ship* shipp = &Ships[objp->instance];
-			if (Ship_info[shipp->ship_info_index].uses_team_colors && shipp->secondary_team_name != "<none>") {
+			if (Ship_info[shipp->ship_info_index].uses_team_colors && stricmp(shipp->secondary_team_name.c_str(), "none")) {
 				if (f2fl(Missiontime) * 1000 > f2fl(shipp->team_change_timestamp) * 1000 + shipp->team_change_time) {
 					shipp->team_name = shipp->secondary_team_name;
 					shipp->team_change_timestamp = 0;
 					shipp->team_change_time = 0;
-					shipp->secondary_team_name = "<none>";
+					shipp->secondary_team_name = "none";
 				}
 			}
 

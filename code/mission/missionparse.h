@@ -97,14 +97,8 @@ typedef struct support_ship_info {
 // defines a mission cutscene.
 typedef struct mission_cutscene {
 	int type; 
-	char cutscene_name[NAME_LENGTH];	
+	char filename[MAX_FILENAME_LEN];
 	int formula; 
-
-	mission_cutscene( ) 
-		: type( 0 ), formula( -1 )
-	{ 
-		cutscene_name[ 0 ] = 0;
-	}
 } mission_cutscene;
 
 typedef struct mission {
@@ -405,8 +399,7 @@ public:
 	float ship_max_shield_strength;
 
 	// Goober5000
-	int num_texture_replacements;
-	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000
+	SCP_vector<texture_replace> replacement_textures;
 
 	SCP_vector<alt_class> alt_classes;	
 

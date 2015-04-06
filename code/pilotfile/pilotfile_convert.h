@@ -283,7 +283,8 @@ class pilotfile_convert {
 				Settings		= 0x0010,
 				RedAlert		= 0x0011,
 				Variables		= 0x0012,
-				Missions		= 0x0013
+				Missions		= 0x0013,
+				Cutscenes		= 0x0014,
 			};
 		};
 
@@ -343,5 +344,6 @@ class pilotfile_convert {
 		void csg_export_redalert();
 		void csg_export_hud();
 		void csg_export_variables();
+		void csg_export_cutscenes();
 };
 

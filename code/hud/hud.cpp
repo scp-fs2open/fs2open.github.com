@@ -398,6 +398,8 @@ disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), cus
 	}
 }
 
+HudGauge::~HudGauge() {};
+
 void HudGauge::initPosition(int x, int y)
 {
 	position[0] = x;
@@ -423,10 +425,10 @@ void HudGauge::initSlew(bool slew)
 	reticle_follow = slew;
 }
 
-void HudGauge::initFont(int font)
+void HudGauge::initFont(int input_font_num)
 {
-	if ( font >= 0 && font < Num_fonts) {
-		font_num = font;
+	if ( input_font_num >= 0 && input_font_num < Num_fonts) {
+		font_num = input_font_num;
 	}
 }
 
@@ -584,9 +586,9 @@ void HudGauge::updateActive(bool show)
 	active = show;
 }
 
-void HudGauge::initRenderStatus(bool render)
+void HudGauge::initRenderStatus(bool do_render)
 {
-	off_by_default = !render;
+	off_by_default = !do_render;
 }
 
 bool HudGauge::isOffbyDefault()
@@ -768,12 +770,13 @@ void HudGauge::renderStringAlignCenter(int x, int y, int area_width, const char 
 void HudGauge::renderPrintf(int x, int y, const char* format, ...)
 {
 	char tmp[256] = "";
-	va_list args;	
+	va_list args;
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	renderString(x, y, tmp);
 }
@@ -781,12 +784,13 @@ void HudGauge::renderPrintf(int x, int y, const char* format, ...)
 void HudGauge::renderPrintf(int x, int y, int gauge_id, const char* format, ...)
 {
 	char tmp[256] = "";
-	va_list args;	
+	va_list args;
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	renderString(x, y, gauge_id, tmp);
 }
@@ -1749,7 +1753,11 @@ void hud_maybe_display_supernova()
 	}
 
 	gr_set_color_fast(&Color_bright_red);
-	gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning: %.2f s", time_left);
+	if (Lcl_pl) {
+		gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Wybuch supernowej: %.2f s", time_left);
+	} else {
+		gr_printf(Supernova_coords[gr_screen.res][0], Supernova_coords[gr_screen.res][1], "Supernova Warning: %.2f s", time_left);
+	}
 }
 
 /**
@@ -2392,11 +2400,8 @@ int HudGaugeTextWarnings::maybeTextFlash()
 
 void HudGaugeTextWarnings::render(float frametime)
 {
-	if ( timestamp_elapsed(Hud_text_flash_timer) || !Hud_text_flash) {
-		return;
-	}
-
-	if(strlen(Hud_text_flash) <= 0) {
+	// note: Hud_text_flash globally allocated, address can't be NULL
+	if ( timestamp_elapsed(Hud_text_flash_timer) || Hud_text_flash[0] == '\0' ) {
 		return;
 	}
 
@@ -3591,14 +3596,13 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
 	if ( (viewer_obj == Player_obj) && wiggedy_wack ){		
 		vec3d tmp;
 		vertex pt;
-		ubyte flags;		
 
 		HUD_offset_x = 0.0f;
 		HUD_offset_y = 0.0f;
 
 		vm_vec_scale_add( &tmp, &Eye_position, &eye_orient->vec.fvec, 100.0f );
 		
-		flags = g3_rotate_vertex(&pt,&tmp);
+		(void) g3_rotate_vertex(&pt,&tmp);
 
 		g3_project_vertex(&pt);
 
@@ -3916,7 +3920,11 @@ void HudGaugeSupernova::render(float frametime)
 	}
 
 	gr_set_color_fast(&Color_bright_red);
-	renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
+	if (Lcl_pl) {
+		renderPrintf(position[0], position[1], "Wybuch supernowej: %.2f s", time_left);
+	} else {
+		renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
+	}
 }
 
 HudGaugeFlightPath::HudGaugeFlightPath():
