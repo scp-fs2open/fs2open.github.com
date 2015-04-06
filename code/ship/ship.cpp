@@ -2466,7 +2466,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 			else if (!stricmp(str, "right"))
 				sip->shield_point_augment_ctrls[RIGHT_QUAD] = i;
 			else if (!stricmp(str, "none"))
-				sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
+				;
 			else
 				Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Point Shield Controls, ignoring...", str);
 		}
@@ -15819,6 +15819,15 @@ void ship_page_in()
 
 				if ((sip->n_subsystems > 0) && (sip->subsystems[0].model_num > -1)) {
 					ship_previously_loaded = j;
+
+					// It is possible in some cases for sip->model_num to change, and for subsystems->model_num
+					// to still point to the old model index; this makes sure it doesn't happen. -zookeeper
+					for (k = 0; k < sip->n_subsystems; k++) {
+						if (sip->model_num != sip->subsystems[k].model_num) {
+							mprintf(("Ship %s has model_num %i but its subsystem %s has model_num %i, fixing...\n", sip->name, sip->model_num, sip->subsystems[k].name, sip->subsystems[k].model_num));
+							sip->subsystems[k].model_num = sip->model_num;
+						}
+					}
 				}
 
 				// the model should already be loaded so this wouldn't take long, but
