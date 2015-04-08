@@ -670,4 +670,7 @@ void weapon_pause_sounds();
 // Unpauses all running weapon sounds
 void weapon_unpause_sounds();
 
+// Dumps parsed weapon data to a json file
+extern void weapons_output_json(const char *outfile);
+
 #endif

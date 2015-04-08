@@ -7022,3 +7022,8 @@ void weapon_unpause_sounds()
 	// Pause all beam sounds
 	beam_unpause_sounds();
 }
+
+void weapons_output_json(const char *outfile)
+{
+	mprintf(("Exporting weapon data to json.\n"));
+}

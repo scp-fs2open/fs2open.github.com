@@ -2006,4 +2006,6 @@ int get_default_player_ship_index();
  */
 int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt);
 
+extern void ship_output_json(const char *outfile);
+
 #endif

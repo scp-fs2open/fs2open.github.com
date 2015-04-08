@@ -7127,6 +7127,13 @@ int game_main(char *cmdline)
 		return 0;
 	}
 
+	// maybe output parsed table objects, and exit
+	if (Cmdline_output_json_data) {
+		ship_output_json("ships.json");
+		weapons_output_json("weapons.json");
+		game_shutdown();
+		return 0;
+	}
 
 	// maybe spew VP CRCs, and exit
 	if (Cmdline_verify_vps) {
