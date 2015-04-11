@@ -32432,8 +32432,8 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets the amount of ammo for the specified ballistic bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1, and 2 are legal banks)\r\n" 
-		"\t3: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum).\r\n"
-		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+		"\t3: Number to set this bank to (If this is larger than the maximum, bank will be set to maximum).\r\n"
+		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximum, bank will be set to maximum)"
 	},
 
 	// Karajorma
@@ -32441,8 +32441,8 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets the amount of ammo for the specified bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1, 2 and 3 are legal banks)\r\n" 
-		"\t3: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum).\r\n"
-		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+		"\t3: Number to set this bank to (If this is larger than the maximum, bank will be set to maximum).\r\n"
+		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximum, bank will be set to maximum)"
 	},
 	
 	// Karajorma
@@ -32451,8 +32451,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1 and 2 are legal banks)\r\n" 
 		"\t3: Name of the primary weapon \r\n"
-		"\t4: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)\r\n"
-		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+		"\t4: Number to set ammo of this bank to (If this is larger than the maximum, bank will be set to maximum)\r\n"
+		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximum, bank will be set to maximum)"
 	},
 	
 	// Karajorma
@@ -32461,8 +32461,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1, 2 and 3 are legal banks)\r\n" 
 		"\t3: Name of the secondary weapon \r\n"
-		"\t4: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)\r\n"
-		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+		"\t4: Number to set ammo of this bank to (If this is larger than the maximum, bank will be set to maximum)\r\n"
+		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximum, bank will be set to maximum)"
 	},
 
 
