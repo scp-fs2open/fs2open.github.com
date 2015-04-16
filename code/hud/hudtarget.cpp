@@ -5291,12 +5291,6 @@ void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
 extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
 void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 {
-	// only fighters and bombers have callsigns
-	if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ) {
-		*ship_callsign_text = 0;
-		return;
-	}
-
 	// handle multiplayer callsign
 	if (Game_mode & GM_MULTIPLAYER) {
 		// get a player num from the object, then get a callsign from the player structure.
@@ -7160,6 +7154,8 @@ void HudGaugeHardpoints::render(float frametime)
 
 	model_set_alpha( gr_screen.current_color.alpha / 255.0f );
 	model_set_forced_texture(0);
+
+	model_set_outline_color_fast(&gauge_color);
 
 	model_render( 
 		sip->model_num, 

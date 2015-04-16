@@ -12,6 +12,7 @@
 #include "render/3d.h"
 #include "sound/sound.h"
 #include "sound/audiostr.h"
+#include "gamesnd/eventmusic.h"
 #include "cmdline/cmdline.h"
 #include "osapi/osapi.h"
 #include "globalincs/vmallocator.h"
@@ -1518,6 +1519,12 @@ void adjust_volume_on_frame(float* volume_now, aav* data)
 	//apply change
 	*volume_now = data->start_volume + (data->delta * done);
 	CLAMP(*volume_now, 0.0f, 1.0f);
+
+	// if setting music volume, trigger volume change in playing tracks
+	// done here in order to avoid setting music volume in every frame regardless if it changed or not
+	if (&aav_music_volume == volume_now) {
+		audiostream_set_volume_all(Master_event_music_volume * aav_music_volume, ASF_EVENTMUSIC);
+	}
 }
 
 void snd_aav_init()

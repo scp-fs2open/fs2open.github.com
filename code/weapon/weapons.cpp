@@ -4139,8 +4139,16 @@ void weapon_home(object *obj, int num, float frame_time)
 			send_homing_weapon_info(num);
 		}
 
+		if (wip->acceleration_time > 0.0f) {
+			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+				float t;
+
+				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+				obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
+			}
+		}
 		// since free_flight_time can now be 0, guard against that
-		if (wip->free_flight_time > 0.0f) {
+		else if (wip->free_flight_time > 0.0f) {
 			if (obj->phys_info.speed > max_speed) {
 				obj->phys_info.speed -= frame_time * (2 / wip->free_flight_time);
 			} else if ((obj->phys_info.speed < max_speed / (2 / wip->free_flight_time)) && (wip->wi_flags & WIF_HOMING_HEAT)) {
@@ -4152,19 +4160,20 @@ void weapon_home(object *obj, int num, float frame_time)
 			obj->phys_info.speed = max_speed;
 		}
 
-		if (wip->acceleration_time > 0.0f) {
-			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
-				float	t;
-
-				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
-			}
-		}
-
 		// set velocity using whatever speed we have
 		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 
 		return;
+	}
+
+	if (wip->acceleration_time > 0.0f) {
+		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+			float t;
+
+			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+			obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
+		}
 	}
 
 	// AL 4-8-98: If original target for aspect lock missile is lost, stop homing
@@ -4460,7 +4469,7 @@ void weapon_home(object *obj, int num, float frame_time)
 				float t;
 
 				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+				obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
 			}
 		} else if (!(wip->wi_flags3 & WIF3_NO_HOMING_SPEED_RAMP) && Missiontime - wp->creation_time < i2f(1)) {
 			// Default behavior:
@@ -4663,13 +4672,22 @@ void weapon_process_post(object * obj, float frame_time)
 	// trail missiles
 	if ((wip->wi_flags & WIF_TRAIL) && !(wip->wi_flags & WIF_CORKSCREW)) {
 		if ( (wp->trail_ptr != NULL ) && (wp->lssm_stage!=3))	{
+			vec3d pos;
+			
+			if (wip->render_type == WRT_LASER) {
+				// place tail origin in center of the bolt
+				vm_vec_scale_add(&pos, &obj->pos, &obj->orient.vec.fvec, (wip->laser_length / 2));
+			} else {
+				pos = obj->pos;
+			}
+
 			if (trail_stamp_elapsed(wp->trail_ptr)) {
 
-				trail_add_segment( wp->trail_ptr, &obj->pos );
+				trail_add_segment( wp->trail_ptr, &pos );
 				
 				trail_set_stamp(wp->trail_ptr);
 			} else {
-				trail_set_segment( wp->trail_ptr, &obj->pos );
+				trail_set_segment( wp->trail_ptr, &pos );
 			}
 
 		}
@@ -4751,6 +4769,17 @@ void weapon_process_post(object * obj, float frame_time)
 		if( wp->cscrew_index >= 0) {
 			cscrew_process_post(obj);			
 		}
+	} else if (wip->acceleration_time > 0.0f) {
+		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+			float t;
+
+			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+			obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
+		} else {
+			obj->phys_info.speed = wip->max_speed;;
+		}
+
+		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 	}
 
 	//local ssm stuff
@@ -5285,7 +5314,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	//	For missiles, the velocity trends towards some goal.
 	//	Note: If you change how speed works here, such as adding in speed of parent ship, you'll need to change the AI code
 	//	that predicts collision points.  See Mike Kulas or Dave Andsager.  (Or see ai_get_weapon_speed().)
-	if (!(wip->wi_flags & WIF_HOMING)) {
+	if (wip->acceleration_time > 0.0f) {
+		vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, 0.01f ); // Tiny initial velocity to avoid possible null vec issues
+		objp->phys_info.vel = objp->phys_info.desired_vel;
+		objp->phys_info.speed = 0.0f;
+		wp->launch_speed = 0.0f;
+	} else if (!(wip->wi_flags & WIF_HOMING)) {
 		vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.desired_vel);
@@ -5313,9 +5347,6 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	wp->weapon_max_vel = objp->phys_info.max_vel.xyz.z;
-
-	if (wip->acceleration_time > 0.0f)
-		wp->launch_speed = 0.0f;
 
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.

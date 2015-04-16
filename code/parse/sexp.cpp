@@ -20,7 +20,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <limits.h>
-#ifdef _MSC_VER
+#if defined _MSC_VER && _MSC_VER < 1600
 	#include "globalincs/msvc/stdint.h"
 #else
 	#include <stdint.h>
@@ -683,6 +683,7 @@ sexp_oper Operators[] = {
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,				1,	MAX_COMPLETE_ESCORT_LIST,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-support-ship",				OP_SET_SUPPORT_SHIP,					6,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "script-eval",					OP_SCRIPT_EVAL,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "script-eval-block",				OP_SCRIPT_EVAL_BLOCK,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "multi-eval",						OP_SCRIPT_EVAL_MULTI,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "debug",							OP_DEBUG,								2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "do-nothing",						OP_NOP,									0,	0,			SEXP_ACTION_OPERATOR,	},
@@ -10490,7 +10491,7 @@ void sexp_adjust_audio_volume(int node)
 
 	if (n > 0) {
 		int option = audio_volume_option_lookup(CTEXT(n));
-		if (option > 0) {
+		if (option >= 0) {
 			n = CDR(n);
 
 			float target_volume = 1.0f;
@@ -21659,7 +21660,7 @@ void multi_sexp_show_hide_jumpnode(bool show)
 
 //WMC - This is a bit of a hack, however, it's easier than
 //coding in a whole new Script_system function.
-int sexp_script_eval(int node, int return_type)
+int sexp_script_eval(int node, int return_type, bool concat_args = false)
 {
 	int n = node;
 
@@ -21711,15 +21712,32 @@ int sexp_script_eval(int node, int return_type)
 			break;
 		case OPR_NULL:
 			{
+				SCP_string script_cmd;
 				while (n != -1)
 				{
 					char* s = CTEXT(n);
-					bool success = Script_system.EvalString(s, NULL, NULL);
 
-					if (!success)
-						Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+					if (concat_args)
+					{
+						script_cmd.append(CTEXT(n));
+					}
+					else
+					{
+						bool success = Script_system.EvalString(s, NULL, NULL);
+
+						if (!success)
+							Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+					}
 
 					n = CDR(n);
+				}
+
+				if (concat_args)
+				{
+					bool success = Script_system.EvalString(script_cmd.c_str(), NULL, NULL);
+
+					if (!success)
+						Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", script_cmd.c_str());
 				}
 			}
 			break;
@@ -24515,6 +24533,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_script_eval(node, OPR_NULL);
 				break;
 				
+			case OP_SCRIPT_EVAL_BLOCK:
+				sexp_val = sexp_script_eval(node, OPR_NULL, true);
+				break;
+
 			case OP_SCRIPT_EVAL_MULTI:
 				sexp_script_eval_multi(node);
 				sexp_val = SEXP_TRUE;
@@ -25552,6 +25574,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SECONDARY_WEAPON:
 		case OP_SET_NUM_COUNTERMEASURES:
 		case OP_SCRIPT_EVAL:
+		case OP_SCRIPT_EVAL_BLOCK:
 		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL_MULTI:
 		case OP_ENABLE_BUILTIN_MESSAGES:
@@ -27634,6 +27657,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 
 		case OP_SCRIPT_EVAL_NUM:
+		case OP_SCRIPT_EVAL_BLOCK:
 		case OP_SCRIPT_EVAL:
 			return OPF_STRING;
 
@@ -29420,6 +29444,7 @@ int get_subcategory(int sexp_id)
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
 		case OP_SCRIPT_EVAL_STRING:
+		case OP_SCRIPT_EVAL_BLOCK:
 		case OP_SCRIPT_EVAL:
 		case OP_SCRIPT_EVAL_MULTI:
 			return CHANGE_SUBCATEGORY_OTHER;
@@ -29762,7 +29787,7 @@ sexp_help_struct Sexp_help[] = {
 		"If no input coordinates are specified, the coordinate returned is the coordinate of the object (or object's "
 		"subsystem) itself.  Takes 1 to 5 arguments...\r\n"
 		"\t1: The name of a ship, wing, or waypoint.\r\n"
-		"\t2: A ship subsystem (or \""SEXP_NONE_STRING"\" if the first argument is not a ship - optional).\r\n"
+		"\t2: A ship subsystem (or \"" SEXP_NONE_STRING "\" if the first argument is not a ship - optional).\r\n"
 		"\t3: The relative X coordinate (optional).\r\n"
 		"\t4: The relative Y coordinate (optional).\r\n"
 		"\t5: The relative Z coordinate (optional).\r\n" },
@@ -29774,7 +29799,7 @@ sexp_help_struct Sexp_help[] = {
 		"If no input coordinates are specified, the coordinate returned is the coordinate of the object (or object's "
 		"subsystem) itself.  Takes 1 to 5 arguments...\r\n"
 		"\t1: The name of a ship, wing, or waypoint.\r\n"
-		"\t2: A ship subsystem (or \""SEXP_NONE_STRING"\" if the first argument is not a ship - optional).\r\n"
+		"\t2: A ship subsystem (or \"" SEXP_NONE_STRING "\" if the first argument is not a ship - optional).\r\n"
 		"\t3: The relative X coordinate (optional).\r\n"
 		"\t4: The relative Y coordinate (optional).\r\n"
 		"\t5: The relative Z coordinate (optional).\r\n" },
@@ -29786,7 +29811,7 @@ sexp_help_struct Sexp_help[] = {
 		"If no input coordinates are specified, the coordinate returned is the coordinate of the object (or object's "
 		"subsystem) itself.  Takes 1 to 5 arguments...\r\n"
 		"\t1: The name of a ship, wing, or waypoint.\r\n"
-		"\t2: A ship subsystem (or \""SEXP_NONE_STRING"\" if the first argument is not a ship - optional).\r\n"
+		"\t2: A ship subsystem (or \"" SEXP_NONE_STRING "\" if the first argument is not a ship - optional).\r\n"
 		"\t3: The relative X coordinate (optional).\r\n"
 		"\t4: The relative Y coordinate (optional).\r\n"
 		"\t5: The relative Z coordinate (optional).\r\n" },
@@ -32086,7 +32111,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tReturns a percentage from 0 to 100\r\n"
 		"\t1: Ship name\r\n" },
 
-	{ OP_GET_ETS_VALUE, "get-ets-values\r\n"
+	{ OP_GET_ETS_VALUE, "get-ets-value\r\n"
 		"\tGets one ETS index for a ship\r\n"
 		"\t1: ETS index to get, Engine|Shield|Weapon\r\n"
 		"\t2: Ship name\r\n"},
@@ -32407,8 +32432,8 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets the amount of ammo for the specified ballistic bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1, and 2 are legal banks)\r\n" 
-		"\t3: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum).\r\n"
-		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+		"\t3: Number to set this bank to (If this is larger than the maximum, bank will be set to maximum).\r\n"
+		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximum, bank will be set to maximum)"
 	},
 
 	// Karajorma
@@ -32416,8 +32441,8 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets the amount of ammo for the specified bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1, 2 and 3 are legal banks)\r\n" 
-		"\t3: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum).\r\n"
-		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+		"\t3: Number to set this bank to (If this is larger than the maximum, bank will be set to maximum).\r\n"
+		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximum, bank will be set to maximum)"
 	},
 	
 	// Karajorma
@@ -32426,8 +32451,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1 and 2 are legal banks)\r\n" 
 		"\t3: Name of the primary weapon \r\n"
-		"\t4: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)\r\n"
-		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+		"\t4: Number to set ammo of this bank to (If this is larger than the maximum, bank will be set to maximum)\r\n"
+		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximum, bank will be set to maximum)"
 	},
 	
 	// Karajorma
@@ -32436,8 +32461,8 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1, 2 and 3 are legal banks)\r\n" 
 		"\t3: Name of the secondary weapon \r\n"
-		"\t4: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)\r\n"
-		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+		"\t4: Number to set ammo of this bank to (If this is larger than the maximum, bank will be set to maximum)\r\n"
+		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximum, bank will be set to maximum)"
 	},
 
 
@@ -33054,6 +33079,12 @@ sexp_help_struct Sexp_help[] = {
 		"\tEvaluates the given script\r\n"
 		"Takes at least 1 argument...\r\n"
 		"\t1:\tScript to evaluate\r\n"
+	},
+
+	{OP_SCRIPT_EVAL_BLOCK, "script-eval-block\r\n"
+		"\tEvaluates the concatenation of all arguments as a script\r\n"
+		"Takes at least 1 argument...\r\n"
+		"\tAll:\tScript to evaluate\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_MULTI, "multi-eval\r\n"

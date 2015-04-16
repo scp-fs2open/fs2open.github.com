@@ -146,6 +146,9 @@ engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
 
 void ship_reset_disabled_physics(object *objp, int ship_class);
 
+// forward declaring for parse_ship()
+int ship_info_lookup_sub(const char *token);
+
 // information for ships which have exited the game
 SCP_vector<exited_ship> Ships_exited;
 
@@ -1051,7 +1054,7 @@ int parse_ship(const char *filename, bool replace)
 	//Check if ship exists already
 	int ship_id;
 	bool first_time = false;
-	ship_id = ship_info_lookup( buf );
+	ship_id = ship_info_lookup_sub( buf );
 	
 	if(ship_id != -1)
 	{
@@ -1882,11 +1885,6 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		sip->max_rotvel.xyz.x = (2 * PI) / sip->rotation_time.xyz.x;
 		sip->max_rotvel.xyz.y = (2 * PI) / sip->rotation_time.xyz.y;
 		sip->max_rotvel.xyz.z = (2 * PI) / sip->rotation_time.xyz.z;
-		// this check runs in collideshipship.cpp:ship_ship_check_collision()
-		// warn early rather than ambush the modder @ runtime
-		if ( (vm_vec_mag_squared( &sip->max_rotvel ) * .04) >= (PI*PI/4) ) {
-			Warning(LOCATION, "$Rotation time: too low; this will disable rotational collisions. All three variables should be >= 1.39.\nFix this in ship '%s'\n", sip->name);
-		}
 	}
 
 	// get the backwards velocity;
@@ -2442,7 +2440,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 			else if (!stricmp(str, "right"))
 				sip->shield_point_augment_ctrls[RIGHT_QUAD] = i;
 			else if (!stricmp(str, "none"))
-				sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
+				;
 			else
 				Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Point Shield Controls, ignoring...", str);
 		}
@@ -4256,6 +4254,14 @@ void ship_parse_post_cleanup()
 				Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.");
 				sip->flags &= ~SIF_SHIP_COPY;
 			}
+		}
+
+		// very low rotational velocity values disable rotational collisions
+		// warn early rather than ambush the modder @ runtime (unless the ship is also no-collide!)
+		// the 2nd part of this check is duplicated from collideshipship.cpp:ship_ship_check_collision()
+		if (!(sip->flags & SIF_NO_COLLIDE) && (vm_vec_mag_squared( &sip->max_rotvel ) * .04) >= (PI*PI/4))
+		{
+			Warning(LOCATION, "$Rotation time: too low; this will disable rotational collisions. All three variables should be >= 1.39.\nFix this in ship '%s'\n", sip->name);
 		}
 	}
 
@@ -11983,6 +11989,11 @@ int ship_info_lookup(const char *token)
 	// found a hash
 	if (*p == '#')
 	{
+		if (strlen(token) > NAME_LENGTH-3) {
+			// If the below sprintf would exceed NAME_LENGTH (taking \0 terminator into account), give a warning and return.
+			Warning(LOCATION, "Token [%s] is too long to be parenthesized by ship_info_lookup()!\n", token);
+			return -1;
+		}
 		// assemble using parentheses
 		sprintf(name, "%s (%s)", temp1, temp2);
 	}
@@ -15659,6 +15670,15 @@ void ship_page_in()
 
 				if ((sip->n_subsystems > 0) && (sip->subsystems[0].model_num > -1)) {
 					ship_previously_loaded = j;
+
+					// It is possible in some cases for sip->model_num to change, and for subsystems->model_num
+					// to still point to the old model index; this makes sure it doesn't happen. -zookeeper
+					for (k = 0; k < sip->n_subsystems; k++) {
+						if (sip->model_num != sip->subsystems[k].model_num) {
+							mprintf(("Ship %s has model_num %i but its subsystem %s has model_num %i, fixing...\n", sip->name, sip->model_num, sip->subsystems[k].name, sip->subsystems[k].model_num));
+							sip->subsystems[k].model_num = sip->model_num;
+						}
+					}
 				}
 
 				// the model should already be loaded so this wouldn't take long, but

@@ -9,10 +9,8 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////
-// Testing Goals
-// Breakpoints are set at places that need testing:
-// * the value of endptr strtol and strtoul needs to investigated, according to cplusplus.com, *endptr = end of the string that was successfully converted
-// TODO: Make a fast version of the parse_long, parse_ulong, etc. That just checks the first 1-3 characters. The fast version will be used in retail builds while the slow/safe version will be in debug's
+// @todo Make a fast version of the parse_long, parse_ulong, etc. That just checks the first 1-3 characters. The fast version will be used in retail builds while the slow/safe version will be in debug's
+// @todo Maybe make parser functions case-insensitive
 ////////////////
 #include "debugconsole/consoleparse.h"
 
@@ -466,7 +464,7 @@ void dc_required_string(char *pstr)
 
 	dc_ignore_gray_space();
 
-	if (strnicmp(pstr, Cp, strlen(pstr))) {
+	if (strncmp(pstr, Cp, strlen(pstr)) == 0) {
 		str_found = pstr;
 	}
 
@@ -492,10 +490,10 @@ int dc_required_string_either(char *str1, char *str2)
 
 	dc_ignore_gray_space();
 
-	if (strncmp(str1, Cp, strlen(str1) == 0)) {
+	if (strncmp(str1, Cp, strlen(str1)) == 0) {
 		str_found = str1;
 		i = 0;
-	} else if (strncmp(str2, Cp, strlen(str2) == 0)) {
+	} else if (strncmp(str2, Cp, strlen(str2)) == 0) {
 		str_found = str2;
 		i = 1;
 	}
@@ -563,7 +561,7 @@ bool dc_optional_string(const char *pstr)
 {
 	dc_ignore_gray_space();
 
-	if (strncmp(pstr, Cp, strlen(pstr) != 0)) {
+	if (strncmp(pstr, Cp, strlen(pstr)) != 0) {
 		return false;
 	} // Else, optional string was found
 

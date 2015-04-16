@@ -2860,7 +2860,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 	// basic radar gauge info
 	float origin[2] = {0.5, 1.0};
 	int offset[2];
-	int coords[2];
+	int coords[2] = {0, 0};
 	int base_res[2];
 	int Radar_radius[2];
 
@@ -2921,12 +2921,8 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 
 			adjust_base_res(base_res, scale_gauge);
 
-			// If no positioning information is specified, use the default position
-			bool use_default_pos = true;
-
 			if(optional_string("Origin:")) {
 				stuff_float_list(origin, 2);
-				use_default_pos = false;
 
 				required_string("Offset:");
 				stuff_int_list(offset, 2);
@@ -2936,10 +2932,8 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 				Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
 			}
 
-			if (!use_default_pos) {
-				coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
-				coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
-			}
+			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
 		}
 	} else {
 		adjust_base_res(base_res, scale_gauge);
