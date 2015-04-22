@@ -3257,7 +3257,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	}
 
 	while (cont_flag) {
-		int r = required_string_3("#End", "$Subsystem:", "$Name" );
+		int r = required_string_one_of(3, "#End", "$Subsystem:", "$Name" );
 		switch (r) {
 		case 0:
 			cont_flag = 0;
@@ -3755,8 +3755,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		case 2:
 			cont_flag = 0;
 			break;
+		case -1:	// Possible return value if -noparseerrors is used
+			break;
 		default:
-			Int3();	// Impossible return value from required_string_3.
+			Assertion(false, "This should never happen.\n");	// Impossible return value from required_string_one_of.
 		}
 	}	
 
