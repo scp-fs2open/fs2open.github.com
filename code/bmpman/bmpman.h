@@ -89,6 +89,13 @@ extern int bm_texture_ram;  //!< how many bytes of textures are used.
 
 extern int Bm_paging;   //!< Bool type that indicates if BMPMAN is currently paging.
 
+extern const ubyte bm_type_list[];       //!< List of valid bitmap types
+extern const char *bm_ext_list[];        //!< List of extensions for those types
+extern const int BM_NUM_TYPES;           //!< Calculated number of bitmap types
+extern const ubyte bm_ani_type_list[];   //!< List of valid bitmap animation types
+extern const char *bm_ani_ext_list[];    //!< List of extensions for those types
+extern const int BM_ANI_NUM_TYPES;       //!< Calculated number of bitmap animation types
+
 extern int GLOWMAP;     //!< References a map that is a fully lit version of its index -Bobboau
 extern int SPECMAP;     //!< References a map that is for specular mapping -Bobboau
 extern int ENVMAP;      //!< References a map that is for environment mapping -Bobboau

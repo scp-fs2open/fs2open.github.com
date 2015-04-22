@@ -66,6 +66,15 @@ int MISCMAP = -1;
 int bm_texture_ram = 0;
 int Bm_paging = 0;
 
+// Extension type lists
+const ubyte bm_type_list[] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_PNG, BM_TYPE_JPG, BM_TYPE_PCX };
+const char *bm_ext_list[] = { ".dds", ".tga", ".png", ".jpg", ".pcx" };
+const int BM_NUM_TYPES = sizeof(bm_type_list) / sizeof(ubyte);
+
+const ubyte bm_ani_type_list[] = { BM_TYPE_EFF, BM_TYPE_ANI };
+const char *bm_ani_ext_list[] = { ".eff", ".ani" };
+const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(ubyte);
+
 void(*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 void(*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 
@@ -940,22 +949,18 @@ int bm_load(const char *real_filename) {
 
 	// Lets find out what type it is
 	{
-		const int NUM_TYPES = 5;
-		const ubyte type_list[NUM_TYPES] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_PNG, BM_TYPE_JPG, BM_TYPE_PCX };
-		const char *ext_list[NUM_TYPES] = { ".dds", ".tga", ".png", ".jpg", ".pcx" };
-
 		// see if it's already loaded (checks for any type with filename)
 		if (bm_load_sub_fast(filename, &handle))
 			return handle;
 
 		// if we are still here then we need to fall back to a file-based search
-		int rval = bm_load_sub_slow(filename, NUM_TYPES, ext_list, &img_cfp);
+		int rval = bm_load_sub_slow(filename, BM_NUM_TYPES, bm_ext_list, &img_cfp);
 
 		if (rval < 0)
 			return -1;
 
-		strcat_s(filename, ext_list[rval]);
-		type = type_list[rval];
+		strcat_s(filename, bm_ext_list[rval]);
+		type = bm_type_list[rval];
 	}
 
 	Assert(type != BM_TYPE_NONE);
@@ -1107,9 +1112,6 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	ubyte type = BM_TYPE_NONE, eff_type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
 	int bpp = 0, mm_lvl = 0, img_size = 0;
 	char clean_name[MAX_FILENAME_LEN];
-	const int NUM_TYPES = 2;
-	const ubyte type_list[NUM_TYPES] = { BM_TYPE_EFF, BM_TYPE_ANI };
-	const char *ext_list[NUM_TYPES] = { ".eff", ".ani" };
 
 	if (!bm_inited)
 		bm_init();
@@ -1171,13 +1173,13 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		}
 
 		// if we are still here then we need to fall back to a file-based search
-		int rval = bm_load_sub_slow(filename, NUM_TYPES, ext_list, &img_cfp, dir_type);
+		int rval = bm_load_sub_slow(filename, BM_ANI_NUM_TYPES, bm_ani_ext_list, &img_cfp, dir_type);
 
 		if (rval < 0)
 			return -1;
 
-		strcat_s(filename, ext_list[rval]);
-		type = type_list[rval];
+		strcat_s(filename, bm_ani_ext_list[rval]);
+		type = bm_ani_type_list[rval];
 	}
 
 	// If we found an animation then there is an extra 5 char size limit to adhere to. We don't do this check earlier since it's only needed if we found an anim

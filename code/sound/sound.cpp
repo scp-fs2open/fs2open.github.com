@@ -285,8 +285,6 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	int				rc, FileSize, FileOffset;
 	char			fullpath[MAX_PATH];
 	char			filename[MAX_FILENAME_LEN];
-	const int		NUM_EXT = 2;
-	const char		*audio_ext[NUM_EXT] = { ".ogg", ".wav" };
 	size_t			n;
 
 
@@ -331,7 +329,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	char *p = strrchr(filename, '.');
 	if ( p ) *p = 0;
 
-	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+	rc = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
 
 	if (rc < 0)
 		return -1;
@@ -340,7 +338,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	CFILE *fp = cfopen_special(fullpath, "rb", FileSize, FileOffset);
 
 	// ok, we got it, so set the proper filename for logging purposes
-	strcat_s(filename, audio_ext[rc]);
+	strcat_s(filename, audio_ext_list[rc]);
 
 	nprintf(("Sound", "SOUND => Loading '%s'\n", filename));
 
