@@ -1261,27 +1261,12 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 
 	switch (type) {
 		case F_RAW:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_LNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_NAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_DATE:
+		case F_FILESPEC:
+		case F_PATHNAME:
+		case F_MESSAGE:
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
@@ -1293,13 +1278,6 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			copy_text_until(read_str, Mp, "$End Notes:", read_len);
 			Mp += strlen(read_str);
 			required_string("$End Notes:");
-			break;
-
-		case F_FILESPEC:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
@@ -1318,20 +1296,6 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			Mp += strlen(read_str);
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
-			break;
-
-		case F_PATHNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
-		case F_MESSAGE:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		default:
@@ -1371,27 +1335,12 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 
 	switch (type) {
 		case F_RAW:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_LNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_NAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_DATE:
+		case F_FILESPEC:
+		case F_PATHNAME:
+		case F_MESSAGE:
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
@@ -1403,13 +1352,6 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			copy_text_until(read_str, Mp, "$End Notes:");
 			Mp += read_str.length();
 			required_string("$End Notes:");
-			break;
-
-		case F_FILESPEC:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
@@ -1429,20 +1371,6 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
 			break;
-
-		case F_PATHNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
-		case F_MESSAGE:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;	
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
