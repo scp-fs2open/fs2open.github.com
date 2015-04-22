@@ -503,7 +503,7 @@ void obj_snd_do_frame()
 		} 
 
 		distance -= add_distance;
-		if ( distance < 0 ) {
+		if ( distance < 0.0f ) {
 			distance = 0.0f;
 		}
 
@@ -522,13 +522,13 @@ void obj_snd_do_frame()
 		alive_vol_mult = 1.0f;
 		if ( objp->type == OBJ_SHIP ) {
 			if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
-				if ( objp->phys_info.max_vel.xyz.z <= 0 ) {
+				if ( objp->phys_info.max_vel.xyz.z <= 0.0f ) {
 					percent_max = 0.0f;
 				}
 				else
 					percent_max = objp->phys_info.fspeed / objp->phys_info.max_vel.xyz.z;
 
-				if ( percent_max >= 0.5 )
+				if ( percent_max >= 0.5f )
 					speed_vol_multiplier = 1.0f;
 				else {
 					speed_vol_multiplier = 0.5f + (percent_max);	// linear interp: 0.5->1.0 when 0.0->0.5
@@ -538,22 +538,24 @@ void obj_snd_do_frame()
 			{
 				if (osp->flags & OS_TURRET_BASE_ROTATION)
 				{
-					if (osp->ss->base_rotation_rate_pct > 0)
+					if (osp->ss->base_rotation_rate_pct > 0.0f)
 						rot_vol_mult = ((0.25f + (0.75f * osp->ss->base_rotation_rate_pct)) * osp->ss->system_info->turret_base_rotation_snd_mult);
 					else
-						rot_vol_mult = 0;
+						rot_vol_mult = 0.0f;
 				}
 				if (osp->flags & OS_TURRET_GUN_ROTATION)
 				{
-					if (osp->ss->gun_rotation_rate_pct > 0)
+					if (osp->ss->gun_rotation_rate_pct > 0.0f)
 						rot_vol_mult = ((0.25f + (0.75f * osp->ss->gun_rotation_rate_pct)) * osp->ss->system_info->turret_gun_rotation_snd_mult);
 					else
-						rot_vol_mult = 0;
+						rot_vol_mult = 0.0f;
 				}
 				if (osp->flags & OS_SUBSYS_ROTATION )
 				{
 					if (osp->ss->flags & SSF_ROTATES) {
-						rot_vol_mult = 1.0;
+						rot_vol_mult = 1.0f;
+					} else {
+						rot_vol_mult = 0.0f;
 					}
 				}
 				if (osp->flags & OS_SUBSYS_ALIVE)
@@ -568,6 +570,8 @@ void obj_snd_do_frame()
 				{
 					if (osp->ss->current_hits <= 0.0f) {
 						alive_vol_mult = 1.0f;
+					} else {
+						alive_vol_mult = 0.0f;
 					}
 				}
 				if (osp->flags & OS_SUBSYS_DAMAGED) 
@@ -591,7 +595,7 @@ void obj_snd_do_frame()
 					new_vol = max_vol - (distance - Snds[osp->id].min) * max_vol / (Snds[osp->id].max - Snds[osp->id].min);
 				}
 
-				if ( new_vol < 0.1 ) {
+				if ( new_vol < 0.1f ) {
 					continue;
 				}
 
