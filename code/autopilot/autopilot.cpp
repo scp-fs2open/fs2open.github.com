@@ -1271,68 +1271,69 @@ void NavSystem_Init()
 
 void parse_autopilot_table(char *filename)
 {
-	int rval;
 	SCP_vector<SCP_string> lines;
 
-	if ((rval = setjmp(parse_abort)) != 0)
+	try
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default autopilot.tbl>", rval));
+		if (filename == NULL)
+			read_file_text_from_array(defaults_get_file("autopilot.tbl"));
+		else
+			read_file_text(filename, CF_TYPE_TABLES);
+
+		reset_parse();
+
+
+		required_string("#Autopilot");
+
+		// autopilot link distance
+		required_string("$Link Distance:");
+		stuff_int(&NavLinkDistance);
+
+		if (optional_string("$Interrupt autopilot if enemy within distance:"))
+			stuff_int(&AutopilotMinEnemyDistance);
+		else
+			AutopilotMinEnemyDistance = 5000;
+
+		if (optional_string("$Interrupt autopilot if asteroid within distance:"))
+			stuff_int(&AutopilotMinAsteroidDistance);
+		else
+			AutopilotMinAsteroidDistance = 1000;
+
+		if (optional_string("$Lock Weapons During Autopilot:"))
+			stuff_boolean(&LockWeaponsDuringAutopilot);
+		else
+			LockWeaponsDuringAutopilot = false;
+
+		// optional no cutscene bars
+		if (optional_string("+No_Cutscene_Bars"))
+			UseCutsceneBars = false;
+		// optional no cutscene bars
+		if (optional_string("+No_Autopilot_Interrupt"))
+			Cmdline_autopilot_interruptable = 0;
+
+		// No Nav selected message
+		char *msg_tags[] = { "$No Nav Selected:", "$Gliding:",
+			"$Too Close:", "$Hostiles:", "$Linked:", "$Hazard:",
+			"$Support Present:", "$Support Working:" };
+		for (int i = 0; i < NP_NUM_MESSAGES; i++)
+		{
+			required_string(msg_tags[i]);
+
+			required_string("+Msg:");
+			stuff_string(NavMsgs[i].message, F_MESSAGE, 256);
+
+			required_string("+Snd File:");
+			stuff_string(NavMsgs[i].filename, F_NAME, 256);
+		}
+
+
+		required_string("#END");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", (filename) ? filename : "<default autopilot.tbl>", e.what()));
 		return;
 	}
-
-	if (filename == NULL)
-		read_file_text_from_array(defaults_get_file("autopilot.tbl"));
-	else
-		read_file_text(filename, CF_TYPE_TABLES);
-
-	reset_parse();		
-
-	
-	required_string("#Autopilot");
-
-	// autopilot link distance
-	required_string("$Link Distance:");
-	stuff_int(&NavLinkDistance);
-
-	if (optional_string("$Interrupt autopilot if enemy within distance:"))
-		stuff_int(&AutopilotMinEnemyDistance);
-	else
-		AutopilotMinEnemyDistance = 5000;
-
-	if (optional_string("$Interrupt autopilot if asteroid within distance:"))
-		stuff_int(&AutopilotMinAsteroidDistance);
-	else
-		AutopilotMinAsteroidDistance = 1000;
-
-	if (optional_string("$Lock Weapons During Autopilot:"))
-		stuff_boolean(&LockWeaponsDuringAutopilot);
-	else
-		LockWeaponsDuringAutopilot = false;
-
-	// optional no cutscene bars
-	if (optional_string("+No_Cutscene_Bars"))
-		UseCutsceneBars = false;
-	// optional no cutscene bars
-	if (optional_string("+No_Autopilot_Interrupt"))
-		Cmdline_autopilot_interruptable = 0;
-
-	// No Nav selected message
-	char *msg_tags[] = { "$No Nav Selected:", "$Gliding:",
-		"$Too Close:", "$Hostiles:", "$Linked:", "$Hazard:",
-		"$Support Present:", "$Support Working:" };
-	for (int i = 0; i < NP_NUM_MESSAGES; i++)
-	{
-		required_string(msg_tags[i]);
-		
-		required_string("+Msg:");
-		stuff_string(NavMsgs[i].message, F_MESSAGE, 256);
-
-		required_string("+Snd File:");
-		stuff_string(NavMsgs[i].filename, F_NAME, 256);
-	}
-
-
-	required_string("#END");
 }
 
 

@@ -245,190 +245,205 @@ const medal_stuff &medal_stuff::operator=(const medal_stuff &m)
 
 void parse_medal_tbl()
 {
-	int rval, i;
+	int i;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "medals.tbl", rval));
-		return;
-	}
-
-	read_file_text("medals.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	required_string("#Medals");
-
-	// special background information
-	if (optional_string("+Background Bitmap:")) {
-		stuff_string(Medals_background_filename, F_NAME, NAME_LENGTH);
-	} else {
-		strcpy_s(Medals_background_filename, Default_medals_background_filename);
-	}
-
-	// special mask information
-	if (optional_string("+Mask Bitmap:")) {
-		stuff_string(Medals_mask_filename, F_NAME, NAME_LENGTH);
-	} else {
-		strcpy_s(Medals_mask_filename, Default_medals_mask_filename);
-	}
-
-	// special positioning for player callsign
-	if (optional_string("+Callsign Position 640:")) {
-		stuff_int(&Medals_callsign_coords[GR_640].x);
-		stuff_int(&Medals_callsign_coords[GR_640].y);
-	} else {
-		Medals_callsign_coords[GR_640].x = Default_medals_callsign_coords[GR_640][0];
-		Medals_callsign_coords[GR_640].y = Default_medals_callsign_coords[GR_640][1];
-	}
-	if (optional_string("+Callsign Position 1024:")) {
-		stuff_int(&Medals_callsign_coords[GR_1024].x);
-		stuff_int(&Medals_callsign_coords[GR_1024].y);
-	} else {
-		Medals_callsign_coords[GR_1024].x = Default_medals_callsign_coords[GR_1024][0];
-		Medals_callsign_coords[GR_1024].y = Default_medals_callsign_coords[GR_1024][1];
-	}
-
-	// special positioning for medal label
-	if (optional_string("+Label Position 640:")) {
-		stuff_int(&Medals_label_coords[GR_640].x);
-		stuff_int(&Medals_label_coords[GR_640].y);
-		stuff_int(&Medals_label_coords[GR_640].w);
-	} else {
-		Medals_label_coords[GR_640].x = Default_medals_label_coords[GR_640][0];
-		Medals_label_coords[GR_640].y = Default_medals_label_coords[GR_640][1];
-		Medals_label_coords[GR_640].w = Default_medals_label_coords[GR_640][2];
-	}
-	if (optional_string("+Label Position 1024:")) {
-		stuff_int(&Medals_label_coords[GR_1024].x);
-		stuff_int(&Medals_label_coords[GR_1024].y);
-		stuff_int(&Medals_label_coords[GR_1024].w);
-	} else {
-		Medals_label_coords[GR_1024].x = Default_medals_label_coords[GR_1024][0];
-		Medals_label_coords[GR_1024].y = Default_medals_label_coords[GR_1024][1];
-		Medals_label_coords[GR_1024].w = Default_medals_label_coords[GR_1024][2];
-	}
-
-	// parse in all the medal names
-	Num_medals = 0;
-	while ( required_string_either("#End", "$Name:") )
+	try
 	{
-		medal_stuff temp_medal;
-		medal_display_info temp_display;
+		read_file_text("medals.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-		required_string("$Name:");
-		stuff_string( temp_medal.name, F_NAME, NAME_LENGTH );
+		required_string("#Medals");
 
-		// is this rank?  if so, save it
-		if (!stricmp(temp_medal.name, "Rank"))
-			Rank_medal_index = Num_medals;
-
-		required_string("$Bitmap:");
-		stuff_string( temp_medal.bitmap, F_NAME, MAX_FILENAME_LEN );
-
-		if (optional_string("+Position 640:")) {
-			stuff_int(&temp_display.coords[GR_640].x);
-			stuff_int(&temp_display.coords[GR_640].y);
-		} else if (Num_medals < NUM_MEDALS_FS2) {
-			temp_display.coords[GR_640].x = Default_medal_coords[GR_640][Num_medals][0];
-			temp_display.coords[GR_640].y = Default_medal_coords[GR_640][Num_medals][1];
-		} else {
-			Warning(LOCATION, "No default GR_640 position for medal '%s'!", temp_medal.name);
-			temp_display.coords[GR_640].x = 0;
-			temp_display.coords[GR_640].y = 0;
+		// special background information
+		if (optional_string("+Background Bitmap:")) {
+			stuff_string(Medals_background_filename, F_NAME, NAME_LENGTH);
 		}
-		if (optional_string("+Position 1024:")) {
-			stuff_int(&temp_display.coords[GR_1024].x);
-			stuff_int(&temp_display.coords[GR_1024].y);
-		} else if (Num_medals < NUM_MEDALS_FS2) {
-			temp_display.coords[GR_1024].x = Default_medal_coords[GR_1024][Num_medals][0];
-			temp_display.coords[GR_1024].y = Default_medal_coords[GR_1024][Num_medals][1];
-		} else {
-			Warning(LOCATION, "No default GR_1024 position for medal '%s'!", temp_medal.name);
-			temp_display.coords[GR_1024].x = 0;
-			temp_display.coords[GR_1024].y = 0;
+		else {
+			strcpy_s(Medals_background_filename, Default_medals_background_filename);
 		}
 
-		if (optional_string("+Debriefing Bitmap:")) {
-			stuff_string( temp_medal.debrief_bitmap, F_NAME, MAX_FILENAME_LEN );
-		} else if (Num_medals < NUM_MEDALS_FS2) {
-			strcpy_s(temp_medal.debrief_bitmap, Default_debriefing_bitmaps[Num_medals]);
-		} else {
-			Warning(LOCATION, "No default debriefing bitmap for medal '%s'!", temp_medal.name);
-			strcpy_s(temp_medal.debrief_bitmap, "");
+		// special mask information
+		if (optional_string("+Mask Bitmap:")) {
+			stuff_string(Medals_mask_filename, F_NAME, NAME_LENGTH);
+		}
+		else {
+			strcpy_s(Medals_mask_filename, Default_medals_mask_filename);
 		}
 
-		required_string("$Num mods:");
-		stuff_int( &temp_medal.num_versions );
-
-		// this is dumb
-		temp_medal.version_starts_at_1 = (Num_medals == Rank_medal_index);
-		if (optional_string("+Version starts at 1:")) {
-			stuff_boolean( &temp_medal.version_starts_at_1 );
+		// special positioning for player callsign
+		if (optional_string("+Callsign Position 640:")) {
+			stuff_int(&Medals_callsign_coords[GR_640].x);
+			stuff_int(&Medals_callsign_coords[GR_640].y);
+		}
+		else {
+			Medals_callsign_coords[GR_640].x = Default_medals_callsign_coords[GR_640][0];
+			Medals_callsign_coords[GR_640].y = Default_medals_callsign_coords[GR_640][1];
+		}
+		if (optional_string("+Callsign Position 1024:")) {
+			stuff_int(&Medals_callsign_coords[GR_1024].x);
+			stuff_int(&Medals_callsign_coords[GR_1024].y);
+		}
+		else {
+			Medals_callsign_coords[GR_1024].x = Default_medals_callsign_coords[GR_1024][0];
+			Medals_callsign_coords[GR_1024].y = Default_medals_callsign_coords[GR_1024][1];
 		}
 
-		if (optional_string("+Available From Start:")) {
-			stuff_boolean( &temp_medal.available_from_start );
+		// special positioning for medal label
+		if (optional_string("+Label Position 640:")) {
+			stuff_int(&Medals_label_coords[GR_640].x);
+			stuff_int(&Medals_label_coords[GR_640].y);
+			stuff_int(&Medals_label_coords[GR_640].w);
+		}
+		else {
+			Medals_label_coords[GR_640].x = Default_medals_label_coords[GR_640][0];
+			Medals_label_coords[GR_640].y = Default_medals_label_coords[GR_640][1];
+			Medals_label_coords[GR_640].w = Default_medals_label_coords[GR_640][2];
+		}
+		if (optional_string("+Label Position 1024:")) {
+			stuff_int(&Medals_label_coords[GR_1024].x);
+			stuff_int(&Medals_label_coords[GR_1024].y);
+			stuff_int(&Medals_label_coords[GR_1024].w);
+		}
+		else {
+			Medals_label_coords[GR_1024].x = Default_medals_label_coords[GR_1024][0];
+			Medals_label_coords[GR_1024].y = Default_medals_label_coords[GR_1024][1];
+			Medals_label_coords[GR_1024].w = Default_medals_label_coords[GR_1024][2];
 		}
 
-		// some medals are based on kill counts.  When string +Num Kills: is present, we know that
-		// this medal is a badge and should be treated specially
-		if ( optional_string("+Num Kills:") ) {
-			char buf[MULTITEXT_LENGTH];
-			int persona;
-			stuff_int( &temp_medal.kills_needed );
+		// parse in all the medal names
+		Num_medals = 0;
+		while (required_string_either("#End", "$Name:"))
+		{
+			medal_stuff temp_medal;
+			medal_display_info temp_display;
 
-			if (optional_string("$Wavefile 1:"))
-				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
+			required_string("$Name:");
+			stuff_string(temp_medal.name, F_NAME, NAME_LENGTH);
 
-			if (optional_string("$Wavefile 2:"))
-				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
+			// is this rank?  if so, save it
+			if (!stricmp(temp_medal.name, "Rank"))
+				Rank_medal_index = Num_medals;
 
-			if (optional_string("$Wavefile Base:"))
-				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
+			required_string("$Bitmap:");
+			stuff_string(temp_medal.bitmap, F_NAME, MAX_FILENAME_LEN);
 
-			while (check_for_string("$Promotion Text:")) {
-				required_string("$Promotion Text:");
-				stuff_string(buf, F_MULTITEXT, sizeof(buf));
-				persona = -1;
-				if (optional_string("+Persona:")) {
-					stuff_int(&persona);
-					if (persona < 0) {
-						Warning(LOCATION, "Debriefing text for %s is assigned to an invalid persona: %i (must be 0 or greater).\n", temp_medal.name, persona);
-						continue;
+			if (optional_string("+Position 640:")) {
+				stuff_int(&temp_display.coords[GR_640].x);
+				stuff_int(&temp_display.coords[GR_640].y);
+			}
+			else if (Num_medals < NUM_MEDALS_FS2) {
+				temp_display.coords[GR_640].x = Default_medal_coords[GR_640][Num_medals][0];
+				temp_display.coords[GR_640].y = Default_medal_coords[GR_640][Num_medals][1];
+			}
+			else {
+				Warning(LOCATION, "No default GR_640 position for medal '%s'!", temp_medal.name);
+				temp_display.coords[GR_640].x = 0;
+				temp_display.coords[GR_640].y = 0;
+			}
+			if (optional_string("+Position 1024:")) {
+				stuff_int(&temp_display.coords[GR_1024].x);
+				stuff_int(&temp_display.coords[GR_1024].y);
+			}
+			else if (Num_medals < NUM_MEDALS_FS2) {
+				temp_display.coords[GR_1024].x = Default_medal_coords[GR_1024][Num_medals][0];
+				temp_display.coords[GR_1024].y = Default_medal_coords[GR_1024][Num_medals][1];
+			}
+			else {
+				Warning(LOCATION, "No default GR_1024 position for medal '%s'!", temp_medal.name);
+				temp_display.coords[GR_1024].x = 0;
+				temp_display.coords[GR_1024].y = 0;
+			}
+
+			if (optional_string("+Debriefing Bitmap:")) {
+				stuff_string(temp_medal.debrief_bitmap, F_NAME, MAX_FILENAME_LEN);
+			}
+			else if (Num_medals < NUM_MEDALS_FS2) {
+				strcpy_s(temp_medal.debrief_bitmap, Default_debriefing_bitmaps[Num_medals]);
+			}
+			else {
+				Warning(LOCATION, "No default debriefing bitmap for medal '%s'!", temp_medal.name);
+				strcpy_s(temp_medal.debrief_bitmap, "");
+			}
+
+			required_string("$Num mods:");
+			stuff_int(&temp_medal.num_versions);
+
+			// this is dumb
+			temp_medal.version_starts_at_1 = (Num_medals == Rank_medal_index);
+			if (optional_string("+Version starts at 1:")) {
+				stuff_boolean(&temp_medal.version_starts_at_1);
+			}
+
+			if (optional_string("+Available From Start:")) {
+				stuff_boolean(&temp_medal.available_from_start);
+			}
+
+			// some medals are based on kill counts.  When string +Num Kills: is present, we know that
+			// this medal is a badge and should be treated specially
+			if (optional_string("+Num Kills:")) {
+				char buf[MULTITEXT_LENGTH];
+				int persona;
+				stuff_int(&temp_medal.kills_needed);
+
+				if (optional_string("$Wavefile 1:"))
+					stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
+
+				if (optional_string("$Wavefile 2:"))
+					stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
+
+				if (optional_string("$Wavefile Base:"))
+					stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
+
+				while (check_for_string("$Promotion Text:")) {
+					required_string("$Promotion Text:");
+					stuff_string(buf, F_MULTITEXT, sizeof(buf));
+					persona = -1;
+					if (optional_string("+Persona:")) {
+						stuff_int(&persona);
+						if (persona < 0) {
+							Warning(LOCATION, "Debriefing text for %s is assigned to an invalid persona: %i (must be 0 or greater).\n", temp_medal.name, persona);
+							continue;
+						}
 					}
+					temp_medal.promotion_text[persona] = vm_strdup(buf);
 				}
-				temp_medal.promotion_text[persona] = vm_strdup(buf);
+				if (temp_medal.promotion_text.find(-1) == temp_medal.promotion_text.end()) {
+					Warning(LOCATION, "%s medal is missing default debriefing text.\n", temp_medal.name);
+					temp_medal.promotion_text[-1] = "";
+				}
 			}
-			if (temp_medal.promotion_text.find(-1) == temp_medal.promotion_text.end()) {
-				Warning(LOCATION, "%s medal is missing default debriefing text.\n", temp_medal.name);
-				temp_medal.promotion_text[-1] = "";
-			}
+
+			Medals.push_back(temp_medal);
+			Medal_display_info.push_back(temp_display);
+			Num_medals++;
 		}
 
-		Medals.push_back(temp_medal);
-		Medal_display_info.push_back(temp_display);
-		Num_medals++;
+		required_string("#End");
+
+		// be sure that we know where the rank is
+		if (Rank_medal_index < 0)
+		{
+			Warning(LOCATION, "Could not find the 'Rank' medal!");
+			Rank_medal_index = 0;
+		}
+
+		// be sure that the badges kill numbers show up in order
+		//WMC - I don't think this is needed anymore due to my changes to post-mission functions
+		//but I'm keeping it here to be sure.
+		int prev_badge_kills = 0;
+		for (i = 0; i < Num_medals; i++)
+		{
+			if (Medals[i].kills_needed < prev_badge_kills && Medals[i].kills_needed != 0)
+				Error(LOCATION, "Badges must appear sorted by lowest kill # first in medals.tbl\nFind Allender for most information.");
+
+			if (Medals[i].kills_needed > 0)
+				prev_badge_kills = Medals[i].kills_needed;
+		}
 	}
-
-	required_string("#End");
-
-	// be sure that we know where the rank is
-	if (Rank_medal_index < 0)
+	catch (const parse::ParseException& e)
 	{
-		Warning(LOCATION, "Could not find the 'Rank' medal!");
-		Rank_medal_index = 0;
-	}
-
-	// be sure that the badges kill numbers show up in order
-	//WMC - I don't think this is needed anymore due to my changes to post-mission functions
-	//but I'm keeping it here to be sure.
-	int prev_badge_kills = 0;
-	for (i = 0; i < Num_medals; i++ )
-	{
-		if ( Medals[i].kills_needed < prev_badge_kills && Medals[i].kills_needed != 0)
-			Error(LOCATION, "Badges must appear sorted by lowest kill # first in medals.tbl\nFind Allender for most information.");
-
-		if (Medals[i].kills_needed > 0)
-			prev_badge_kills = Medals[i].kills_needed;
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "medals.tbl", e.what()));
+		return;
 	}
 }
 

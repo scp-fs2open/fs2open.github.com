@@ -1027,7 +1027,7 @@ int bm_load(const SCP_string& filename) {
 }
 
 int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type) {
-	int frames = 0, fps = 30, keyframe = 0, rval;
+	int frames = 0, fps = 30, keyframe = 0;
 	char ext[8];
 	ubyte c_type = BM_TYPE_NONE;
 	char file_text[1024];
@@ -1040,27 +1040,30 @@ int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int 
 	// pause anything that may happen to be parsing right now
 	pause_parse();
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("BMPMAN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+	try
+	{
+		// now start parsing the EFF
+		read_file_text(filename, dir_type, file_text, file_text_raw);
+		reset_parse(file_text);
+
+		required_string("$Type:");
+		stuff_string(ext, F_NAME, sizeof(ext));
+
+		required_string("$Frames:");
+		stuff_int(&frames);
+
+		if (optional_string("$FPS:"))
+			stuff_int(&fps);
+
+		if (optional_string("$Keyframe:"))
+			stuff_int(&keyframe);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("BMPMAN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		unpause_parse();
 		return -1;
 	}
-
-	// now start parsing the EFF
-	read_file_text(filename, dir_type, file_text, file_text_raw);
-	reset_parse(file_text);
-
-	required_string("$Type:");
-	stuff_string(ext, F_NAME, sizeof(ext));
-
-	required_string("$Frames:");
-	stuff_int(&frames);
-
-	if (optional_string("$FPS:"))
-		stuff_int(&fps);
-
-	if (optional_string("$Keyframe:"))
-		stuff_int(&keyframe);
 
 	// done with EFF so unpause parsing so whatever can continue
 	unpause_parse();

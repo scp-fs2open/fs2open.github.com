@@ -64,28 +64,30 @@ int palman_is_nondarkening(int r,int g, int b)
 
 void palman_load_pixels()
 {
-	int rval;
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "pixels.tbl", rval));
+	try
+	{
+		// open pixels.tbl
+		read_file_text("pixels.tbl", CF_TYPE_TABLES);
+		reset_parse();
+
+		// parse pixels	
+		while (!optional_string("#END")){
+			// nondarkening pixel
+			if (required_string("+ND")){
+				stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default][0]);
+				stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default][1]);
+				stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default++][2]);
+			}
+		}
+
+		// set this to be the active table
+		palman_set_nondarkening(Palman_non_darkening_default, Palman_num_nondarkening_default);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "pixels.tbl", e.what()));
 		return;
 	}
-
-	// open pixels.tbl
-	read_file_text("pixels.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	// parse pixels	
-	while(!optional_string("#END")){
-		// nondarkening pixel
-		if(required_string("+ND")){
-			stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default][0]);
-			stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default][1]);
-			stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default++][2]);
-		}
-	}
-
-	// set this to be the active table
-	palman_set_nondarkening(Palman_non_darkening_default, Palman_num_nondarkening_default);
 }
 
 void palman_set_nondarkening(ubyte colors[MAX_NONDARK_COLORS][3], int size)

@@ -109,46 +109,42 @@ bool script_hook_valid(script_hook *hook)
 void script_parse_table(const char *filename)
 {
 	script_state *st = &Script_system;
-	int rval;
-	if ((rval = setjmp(parse_abort)) != 0)
+	
+	try
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
-	}
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
 
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
+		if (optional_string("#Global Hooks"))
+		{
+			//int num = 42;
+			//Script_system.SetHookVar("Version", 'i', &num);
+			if (optional_string("$Global:")) {
+				st->ParseChunk(&Script_globalhook, "Global");
+			}
 
-	if(optional_string("#Global Hooks"))
-	{
-		//int num = 42;
-		//Script_system.SetHookVar("Version", 'i', &num);
-		if(optional_string("$Global:")) {
-			st->ParseChunk(&Script_globalhook, "Global");
+			if (optional_string("$Splash:")) {
+				st->ParseChunk(&Script_splashhook, "Splash");
+			}
+
+			if (optional_string("$GameInit:")) {
+				st->ParseChunk(&Script_gameinithook, "GameInit");
+			}
+
+			if (optional_string("$Simulation:")) {
+				st->ParseChunk(&Script_simulationhook, "Simulation");
+			}
+
+			if (optional_string("$HUD:")) {
+				st->ParseChunk(&Script_hudhook, "HUD");
+			}
+
+			required_string("#End");
 		}
-
-		if(optional_string("$Splash:")) {
-			st->ParseChunk(&Script_splashhook, "Splash");
-		}
-
-		if(optional_string("$GameInit:")) {
-			st->ParseChunk(&Script_gameinithook, "GameInit");
-		}
-
-		if(optional_string("$Simulation:")) {
-			st->ParseChunk(&Script_simulationhook, "Simulation");
-		}
-
-		if(optional_string("$HUD:")) {
-			st->ParseChunk(&Script_hudhook, "HUD");
-		}
-
-		required_string("#End");
-	}
-/*
-	if(optional_string("#State Hooks"))
-	{
-		while(optional_string("$State:")) {
+		/*
+			if(optional_string("#State Hooks"))
+			{
+			while(optional_string("$State:")) {
 			char buf[NAME_LENGTH];
 			int idx;
 			stuff_string(buf, F_NAME, sizeof(buf));
@@ -157,25 +153,31 @@ void script_parse_table(const char *filename)
 
 			if(optional_string("$Hook:"))
 			{
-				if(idx > -1) {
-					GS_state_hooks[idx] = st->ParseChunk(buf);
-				} else {
-					st->ParseChunk(buf);
-				}
+			if(idx > -1) {
+			GS_state_hooks[idx] = st->ParseChunk(buf);
+			} else {
+			st->ParseChunk(buf);
 			}
+			}
+			}
+			required_string("#End");
+			}
+			*/
+		if (optional_string("#Conditional Hooks"))
+		{
+			while (st->ParseCondition(filename));
+			required_string("#End");
 		}
-		required_string("#End");
-	}
-*/
-	if(optional_string("#Conditional Hooks"))
-	{
-		while(st->ParseCondition(filename));
-		required_string("#End");
-	}
 
-	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(const char *tblname);
-	fs2netd_add_table_validation(filename);
+		// add tbl/tbm to multiplayer validation list
+		extern void fs2netd_add_table_validation(const char *tblname);
+		fs2netd_add_table_validation(filename);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 //Initializes the (global) scripting system, as well as any subsystems.

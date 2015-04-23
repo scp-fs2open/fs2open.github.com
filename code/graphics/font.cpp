@@ -579,7 +579,7 @@ void gr_set_font(int fontnum)
 
 void parse_fonts_tbl(char *only_parse_first_font, size_t only_parse_first_font_size)
 {
-	int rval, i;
+	int i;
 	char *filename;
 	
 	// choose file name
@@ -591,98 +591,103 @@ void parse_fonts_tbl(char *only_parse_first_font, size_t only_parse_first_font_s
 		filename = NULL;
 	}
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : NOX("<default fonts.tbl>"), rval));
+	try
+	{
+		if (filename != NULL) {
+			read_file_text(filename, CF_TYPE_TABLES);
+		}
+		else {
+			read_file_text_from_array(defaults_get_file("fonts.tbl"));
+		}
+
+		reset_parse();
+
+		// start parsing
+		required_string("#Fonts");
+
+		// read fonts
+		while (required_string_either("#End", "$Font:")) {
+			char font_filename[MAX_FILENAME_LEN];
+
+			// grab font
+			required_string("$Font:");
+			stuff_string(font_filename, F_NAME, MAX_FILENAME_LEN);
+
+			// if we only need the first font, copy it and bail
+			if (only_parse_first_font != NULL) {
+				strcpy_s(only_parse_first_font, only_parse_first_font_size, font_filename);
+				return;
+			}
+
+			// create font
+			int font_id = gr_create_font(font_filename);
+			if (font_id < 0) {
+				Warning(LOCATION, "Could not create font from typeface '%s'!", font_filename);
+				skip_to_start_of_string_either("#End", "$Font:");
+			}
+			else {
+				// max allowed special char index; i.e. 7 special chars in retail fonts 1 & 3
+				static const int MAX_SPECIAL_CHAR_IDX = UCHAR_MAX - 6;
+
+				// 'default' special char index for all languages using this font
+				int default_special_char_index = 0;
+				if (optional_string("+Default Special Character Index:")) {
+					stuff_int(&default_special_char_index);
+
+					if (default_special_char_index < 0 || default_special_char_index >= MAX_SPECIAL_CHAR_IDX) {
+						Error(LOCATION, "Default special character index (%d) for font (%s), must be 0 - %u", default_special_char_index, font_filename, MAX_SPECIAL_CHAR_IDX);
+					}
+
+					for (i = 0; i < (int)Lcl_languages.size(); ++i) {
+						Lcl_languages[i].special_char_indexes[font_id] = (ubyte)default_special_char_index;
+					}
+				}
+
+				while (optional_string("+Language:")) {
+					char lang_name[LCL_LANG_NAME_LEN + 1];
+					int special_char_index, lang_idx = -1;
+
+					stuff_string(lang_name, F_NAME, LCL_LANG_NAME_LEN + 1);
+
+					// find language and set the index, or if not found move to the next one
+					for (i = 0; i < (int)Lcl_languages.size(); ++i) {
+						if (!strcmp(Lcl_languages[i].lang_name, lang_name)) {
+							lang_idx = i;
+							break;
+						}
+					}
+
+					if (lang_idx == -1) {
+						Warning(LOCATION, "Ignoring invalid language (%s) specified by font (%s); not built-in or in strings.tbl", lang_name, font_filename);
+						skip_to_start_of_string_either("+Language:", "$Font:", "#End");
+						continue;
+					}
+
+					if (optional_string("+Special Character Index:")) {
+						stuff_int(&special_char_index);
+
+						if (special_char_index < 0 || special_char_index >= MAX_SPECIAL_CHAR_IDX) {
+							Error(LOCATION, "Special character index (%d) for font (%s), language (%s) is invalid, must be 0 - %u", special_char_index, font_filename, lang_name, MAX_SPECIAL_CHAR_IDX);
+						}
+
+						Lcl_languages[lang_idx].special_char_indexes[font_id] = (ubyte)special_char_index;
+					}
+				}
+			}
+		}
+
+		// done parsing
+		required_string("#End");
+
+		// double check
+		if (Num_fonts < 3) {
+			Error(LOCATION, "There must be at least three fonts in %s!", (filename) ? filename : NOX("<default fonts.tbl>"));
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", (filename) ? filename : NOX("<default fonts.tbl>"), e.what()));
 		return;
-	}
-
-	if (filename != NULL) {
-		read_file_text(filename, CF_TYPE_TABLES);
-	} else {
-		read_file_text_from_array(defaults_get_file("fonts.tbl"));
-	}
-
-	reset_parse();		
-
-	// start parsing
-	required_string("#Fonts");
-
-	// read fonts
-	while (required_string_either("#End","$Font:")) {
-		char font_filename[MAX_FILENAME_LEN];
-
-		// grab font
-		required_string("$Font:");
-		stuff_string(font_filename, F_NAME, MAX_FILENAME_LEN);
-
-		// if we only need the first font, copy it and bail
-		if (only_parse_first_font != NULL) {
-			strcpy_s(only_parse_first_font, only_parse_first_font_size, font_filename);
-			return;
-		}
-
-		// create font
-		int font_id = gr_create_font(font_filename);
-		if (font_id < 0) {
-			Warning(LOCATION, "Could not create font from typeface '%s'!", font_filename);
-			skip_to_start_of_string_either("#End","$Font:");
-		} else {
-			// max allowed special char index; i.e. 7 special chars in retail fonts 1 & 3
-			static const int MAX_SPECIAL_CHAR_IDX = UCHAR_MAX-6;
-
-			// 'default' special char index for all languages using this font
-			int default_special_char_index = 0;
-			if (optional_string("+Default Special Character Index:")) {
-				stuff_int(&default_special_char_index);
-
-				if (default_special_char_index < 0 || default_special_char_index >= MAX_SPECIAL_CHAR_IDX) {
-					Error(LOCATION, "Default special character index (%d) for font (%s), must be 0 - %u", default_special_char_index, font_filename, MAX_SPECIAL_CHAR_IDX);
-				}
-
-				for (i = 0; i < (int)Lcl_languages.size(); ++i) {
-					Lcl_languages[i].special_char_indexes[font_id] = (ubyte)default_special_char_index;
-				}
-			}
-
-			while (optional_string("+Language:")) {
-				char lang_name[LCL_LANG_NAME_LEN + 1];
-				int special_char_index, lang_idx = -1;
-
-				stuff_string(lang_name, F_NAME, LCL_LANG_NAME_LEN + 1);
-
-				// find language and set the index, or if not found move to the next one
-				for (i = 0; i < (int)Lcl_languages.size(); ++i) {
-					if (!strcmp(Lcl_languages[i].lang_name, lang_name)) {
-						lang_idx = i;
-						break;
-					}
-				}
-
-				if (lang_idx == -1) {
-					Warning(LOCATION, "Ignoring invalid language (%s) specified by font (%s); not built-in or in strings.tbl", lang_name, font_filename );
-					skip_to_start_of_string_either("+Language:","$Font:","#End");
-					continue;
-				}
-
-				if (optional_string("+Special Character Index:")) {
-					stuff_int(&special_char_index);
-
-					if (special_char_index < 0 || special_char_index >= MAX_SPECIAL_CHAR_IDX) {
-						Error(LOCATION, "Special character index (%d) for font (%s), language (%s) is invalid, must be 0 - %u", special_char_index, font_filename, lang_name, MAX_SPECIAL_CHAR_IDX);
-					}
-
-					Lcl_languages[lang_idx].special_char_indexes[font_id] = (ubyte)special_char_index;
-				}
-			}
-		}
-	}
-
-	// done parsing
-	required_string("#End");
-
-	// double check
-	if (Num_fonts < 3) {
-		Error(LOCATION, "There must be at least three fonts in %s!", (filename) ? filename : NOX("<default fonts.tbl>"));
 	}
 }
 
