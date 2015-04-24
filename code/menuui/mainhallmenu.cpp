@@ -59,7 +59,9 @@ extern void game_process_cheats(int k);
 
 SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
 
-main_hall_defines *Main_hall = NULL;
+static main_hall_defines *Main_hall = NULL;
+
+static int Main_hall_music_index = -1;
 
 int Vasudan_funny = 0;
 int Vasudan_funny_plate = -1;
@@ -439,7 +441,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	}
 
 	// if we're switching to a different mainhall we may need to change music
-	if (main_hall_get_music_index(main_hall_get_index(main_hall_to_load)) != main_hall_get_music_index(main_hall_id())) {
+	if (main_hall_get_music_index(main_hall_get_index(main_hall_to_load)) != Main_hall_music_index) {
 		main_hall_stop_music(true);
 	}
 
@@ -447,8 +449,8 @@ void main_hall_init(const SCP_string &main_hall_name)
 	snazzy_menu_init();
 	
 	// assign the proper main hall data
-	Assert(main_hall_get_pointer(main_hall_to_load) != NULL);
 	Main_hall = main_hall_get_pointer(main_hall_to_load);
+	Assertion(Main_hall != NULL, "Failed to obtain pointer to main hall '%s'; get a coder!\n", main_hall_to_load.c_str());
 
 	// check if we have to change the ready room's description
 	if(Main_hall->default_readyroom) {
@@ -1138,7 +1140,6 @@ int main_hall_get_music_index(int main_hall_num)
  */
 void main_hall_start_music()
 {
-	int index;
 	char *filename;
 
 	// start a looping ambient sound
@@ -1155,13 +1156,13 @@ void main_hall_start_music()
 	}
 
 	// get music
-	index = main_hall_get_music_index(main_hall_id());
-	if (index < 0) {
+	Main_hall_music_index = main_hall_get_music_index(main_hall_id());
+	if (Main_hall_music_index < 0) {
 		nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
 		return;
 	}
 
-	filename = Spooled_music[index].filename;
+	filename = Spooled_music[Main_hall_music_index].filename;
 	Assert(filename != NULL);
 
 	// get handle

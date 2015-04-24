@@ -192,6 +192,10 @@ int gr_opengl_create_stream_buffer()
 {
 	opengl_vertex_buffer buffer;
 
+	if ( !Use_VBOs ) {
+		return -1;
+	}
+
 	vglGenBuffersARB(1, &buffer.vbo);
 
 	GL_vertex_buffers.push_back(buffer);

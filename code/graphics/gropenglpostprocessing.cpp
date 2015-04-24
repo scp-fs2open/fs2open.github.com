@@ -704,7 +704,7 @@ static bool opengl_post_init_table()
 
 
 	if (optional_string("#Effects")) {
-		while ( !required_string_3("$Name:", "#Ship Effects", "#End") ) {
+		while ( !required_string_one_of(3, "$Name:", "#Ship Effects", "#End") ) {
 			char tbuf[NAME_LENGTH+1] = { 0 };
 			post_effect_t eff;
 
@@ -752,7 +752,7 @@ static bool opengl_post_init_table()
 	Ship_effects.push_back(se1);
 
 	if (optional_string("#Ship Effects")) {
-		while ( !required_string_3("$Name:", "#Light Shafts", "#End") ) {
+		while ( !required_string_one_of(3, "$Name:", "#Light Shafts", "#End") ) {
 			ship_effect se;
 			char tbuf[NAME_LENGTH] = { 0 };
 

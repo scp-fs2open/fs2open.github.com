@@ -46,6 +46,9 @@ typedef struct {
 } STRHDL;
 #endif	// NEED_STRHDL
 
+extern const char *audio_ext_list[];
+extern const int NUM_AUDIO_EXT;
+
 // Initializes the audio streaming library.  Called
 // automatically when the sound stuff is inited.
 void audiostream_init();

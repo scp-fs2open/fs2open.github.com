@@ -2338,6 +2338,30 @@ int beam_collide_ship(obj_pair *pair)
 	int hull_enter_collision = model_collide(&mc_hull_enter);
 	int hull_exit_collision = (beam_will_tool_target(b, ship_objp)) ? model_collide(&mc_hull_exit) : 0;
 
+    // If we have a range less than the "far" range, check if the ray actually hit within the range
+    if (b->range < BEAM_FAR_LENGTH
+        && (shield_collision || hull_enter_collision || hull_exit_collision))
+    {
+        // We can't use hit_dist as "1" is the distance between p0 and p1
+        float rangeSq = b->range * b->range;
+
+        // actually make sure that the collision points are within range of our beam
+        if (shield_collision && vm_vec_dist_squared(&b->last_start, &mc_shield.hit_point_world) > rangeSq)
+        {
+            shield_collision = 0;
+        }
+
+        if (hull_enter_collision && vm_vec_dist_squared(&b->last_start, &mc_hull_enter.hit_point_world) > rangeSq)
+        {
+            hull_enter_collision = 0;
+        }
+
+        if (hull_exit_collision && vm_vec_dist_squared(&mc_hull_exit.hit_point_world, &b->last_start) > rangeSq)
+        {
+            hull_exit_collision = 0;
+        }
+    }
+
 	// check shields for impact
 	// (tooled ships are probably not going to be maintaining a shield over their exit hole,
 	// therefore we need only check the entrance, just as with conventional weapons)

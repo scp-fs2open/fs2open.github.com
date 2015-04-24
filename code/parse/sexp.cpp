@@ -10491,7 +10491,7 @@ void sexp_adjust_audio_volume(int node)
 
 	if (n > 0) {
 		int option = audio_volume_option_lookup(CTEXT(n));
-		if (option > 0) {
+		if (option >= 0) {
 			n = CDR(n);
 
 			float target_volume = 1.0f;

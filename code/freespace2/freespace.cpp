@@ -1482,7 +1482,7 @@ int game_start_mission()
 
 	int e1 = timer_get_milliseconds();
 
-	printf("Level load took %f seconds.\n", (e1 - s1) / 1000.0f );
+	mprintf(("Level load took %f seconds.\n", (e1 - s1) / 1000.0f ));
 
 	return 1;
 }

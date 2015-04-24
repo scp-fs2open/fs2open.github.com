@@ -614,6 +614,8 @@
 		918A074C1804B4A600983AE1 /* libjansson.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 918A07221804AFAA00983AE1 /* libjansson.a */; };
 		918A074D1804B4A600983AE1 /* libmongoose.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 918A07141804AF0F00983AE1 /* libmongoose.a */; };
 		9193B29817EDFEB7003CC0BA /* profiling.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9193B29717EDFEB7003CC0BA /* profiling.cpp */; };
+		91F4EE3A1AB32675006EF158 /* hashtable_seed.c in Sources */ = {isa = PBXBuildFile; fileRef = 91F4EE381AB32675006EF158 /* hashtable_seed.c */; };
+		91F4EE3B1AB32675006EF158 /* lookup3.h in Headers */ = {isa = PBXBuildFile; fileRef = 91F4EE391AB32675006EF158 /* lookup3.h */; };
 		F007DDF612F4F44600D2F6C1 /* jconfig.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB512F4F44600D2F6C1 /* jconfig.h */; };
 		F007DDF712F4F44600D2F6C1 /* jdct.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB612F4F44600D2F6C1 /* jdct.h */; };
 		F007DDF912F4F44600D2F6C1 /* jerror.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB812F4F44600D2F6C1 /* jerror.h */; };
@@ -1556,6 +1558,8 @@
 		918A07361804B01800983AE1 /* utf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utf.h; sourceTree = "<group>"; };
 		918A07371804B01800983AE1 /* value.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = value.c; sourceTree = "<group>"; };
 		9193B29717EDFEB7003CC0BA /* profiling.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = profiling.cpp; sourceTree = "<group>"; };
+		91F4EE381AB32675006EF158 /* hashtable_seed.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hashtable_seed.c; sourceTree = "<group>"; };
+		91F4EE391AB32675006EF158 /* lookup3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lookup3.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		B2F67F1E04C773E400A80002 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = /System/Library/Frameworks/GLUT.framework; sourceTree = "<absolute>"; };
 		F007DDB512F4F44600D2F6C1 /* jconfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jconfig.h; sourceTree = "<group>"; };
@@ -3116,6 +3120,8 @@
 		918A07261804B01800983AE1 /* jansson */ = {
 			isa = PBXGroup;
 			children = (
+				91F4EE381AB32675006EF158 /* hashtable_seed.c */,
+				91F4EE391AB32675006EF158 /* lookup3.h */,
 				918A07271804B01800983AE1 /* dump.c */,
 				918A07281804B01800983AE1 /* error.c */,
 				918A07291804B01800983AE1 /* hashtable.c */,
@@ -3544,6 +3550,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				918A07461804B01800983AE1 /* utf.h in Headers */,
+				91F4EE3B1AB32675006EF158 /* lookup3.h in Headers */,
 				918A073B1804B01800983AE1 /* hashtable.h in Headers */,
 				918A073E1804B01800983AE1 /* jansson_private.h in Headers */,
 				918A07431804B01800983AE1 /* strbuffer.h in Headers */,
@@ -4219,6 +4226,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				91F4EE3A1AB32675006EF158 /* hashtable_seed.c in Sources */,
 				918A07451804B01800983AE1 /* utf.c in Sources */,
 				918A07391804B01800983AE1 /* error.c in Sources */,
 				918A07441804B01800983AE1 /* strconv.c in Sources */,
@@ -4428,7 +4436,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.7.1";
+				CURRENT_PROJECT_VERSION = "3.7.3";
 				DEAD_CODE_STRIPPING = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -4474,7 +4482,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.7.1";
+				CURRENT_PROJECT_VERSION = "3.7.3";
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -4587,6 +4595,13 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				EXECUTABLE_PREFIX = lib;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					_DEBUG,
+					SCP_UNIX,
+					USE_OPENAL,
+					APPLE_APP,
+					HAVE_STDINT_H,
+				);
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -4599,6 +4614,13 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				EXECUTABLE_PREFIX = lib;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NDEBUG,
+					SCP_UNIX,
+					USE_OPENAL,
+					APPLE_APP,
+					HAVE_STDINT_H,
+				);
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

@@ -698,72 +698,6 @@ int required_string_either(char *str1, char *str2)
 	return -1;
 }
 
-//	Return 0 or 1 for str1 match, str2 match.  Return -1 if neither matches.
-//	Does not update Mp if token found.  If not found, advances, trying to
-//	find the string.  Doesn't advance past the found string.
-int required_string_3(char *str1, char *str2, char *str3)
-{
-	int	count = 0;
-
-	ignore_white_space();
-
-	while (count < RS_MAX_TRIES) {
-		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
-			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n", token_found = str1);
-			return 0;
-		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
-			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n", token_found = str2);
-			return 1;
-		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str3);
-			return 2;
-		}
-
-		error_display(1, "Required token = [%s], [%s] or [%s], found [%.32s].\n", str1, str2, str3, next_tokens());
-
-		advance_to_eoln(NULL);
-		ignore_white_space();
-		count++;
-	}
-
-	return -1;
-}
-
-int required_string_4(char *str1, char *str2, char *str3, char *str4)
-{
-	int	count = 0;
-	
-	ignore_white_space();
-	
-	while (count < RS_MAX_TRIES) {
-		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
-			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n", token_found = str1);
-			return 0;
-		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
-			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n", token_found = str2);
-			return 1;
-		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str3);
-			return 2;
-		} else if (strnicmp(str4, Mp, strlen(str4)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str4);
-			return 3;
-		}
-		
-		error_display(1, "Required token = [%s], [%s], [%s], or [%s], found [%.32s].\n", str1, str2, str3, str4, next_tokens());
-		
-		advance_to_eoln(NULL);
-		ignore_white_space();
-		count++;
-	}
-	
-	return -1;
-}
-
 // Generic version of old required_string_3 and required_string_4; written by ngld, with some tweaks by MageKing17
 int required_string_one_of(int arg_count, ...)
 {
@@ -1261,27 +1195,12 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 
 	switch (type) {
 		case F_RAW:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_LNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_NAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_DATE:
+		case F_FILESPEC:
+		case F_PATHNAME:
+		case F_MESSAGE:
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
@@ -1293,13 +1212,6 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			copy_text_until(read_str, Mp, "$End Notes:", read_len);
 			Mp += strlen(read_str);
 			required_string("$End Notes:");
-			break;
-
-		case F_FILESPEC:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
@@ -1318,20 +1230,6 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			Mp += strlen(read_str);
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
-			break;
-
-		case F_PATHNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
-		case F_MESSAGE:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		default:
@@ -1371,27 +1269,12 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 
 	switch (type) {
 		case F_RAW:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_LNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_NAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_DATE:
+		case F_FILESPEC:
+		case F_PATHNAME:
+		case F_MESSAGE:
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
@@ -1403,13 +1286,6 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			copy_text_until(read_str, Mp, "$End Notes:");
 			Mp += read_str.length();
 			required_string("$End Notes:");
-			break;
-
-		case F_FILESPEC:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
@@ -1429,20 +1305,6 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
 			break;
-
-		case F_PATHNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
-		case F_MESSAGE:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;	
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);

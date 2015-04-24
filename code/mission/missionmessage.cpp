@@ -561,7 +561,7 @@ void parse_msgtbl()
 
 	// now we can start parsing
 	if (optional_string("#Message Frequencies")) {
-		while (!required_string_3("$Name:", "#Personas", "#Moods" )) {
+		while (!required_string_one_of(3, "$Name:", "#Personas", "#Moods" )) {
 			message_frequency_parse();
 		}
 	}	

@@ -1308,10 +1308,22 @@ int parse_weapon(int subtype, bool replace)
 
 	if(optional_string("@Laser Color:"))
 	{
+		// This might be confusing at first glance. If we're a modular table (!first_time),
+		// AND we're providing a new color for the laser (being in this block at all),
+		// AND the RGB values for laser_color_1 and laser_color_2 match...
+		// THEN we conclude that laser_color_2 wasn't explicitly defined before, and the modder would probably prefer
+		// it if the laser didn't suddenly start changing colors from the new to the old over its lifespan. -MageKing17
+		bool reset = (!first_time && (
+			(wip->laser_color_1.red == wip->laser_color_2.red) &&
+			(wip->laser_color_1.green == wip->laser_color_2.green) &&
+			(wip->laser_color_1.blue == wip->laser_color_2.blue)));
 		stuff_ubyte(&r);
 		stuff_ubyte(&g);
 		stuff_ubyte(&b);
 		gr_init_color( &wip->laser_color_1, r, g, b );
+		if (reset) {
+			gr_init_color( &wip->laser_color_2, wip->laser_color_1.red, wip->laser_color_1.green, wip->laser_color_1.blue );
+		}
 	}
 
 	// optional string for cycling laser colors
@@ -1320,7 +1332,7 @@ int parse_weapon(int subtype, bool replace)
 		stuff_ubyte(&g);
 		stuff_ubyte(&b);
 		gr_init_color( &wip->laser_color_2, r, g, b );
-	} else {
+	} else if (first_time) {
 		gr_init_color( &wip->laser_color_2, wip->laser_color_1.red, wip->laser_color_1.green, wip->laser_color_1.blue );
 	}
 

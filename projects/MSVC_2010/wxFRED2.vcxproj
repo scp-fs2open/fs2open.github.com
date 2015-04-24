@@ -100,7 +100,7 @@
       <AdditionalDependencies>comctl32.lib;rpcrt4.lib;winmm.lib;advapi32.lib;wsock32.lib;wxmsw29ud_core.lib;wxbase29ud.lib</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\wxfred2_open_3_7_1-debug.exe"  </Command>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)\wxfred2_open_3_7_3-debug.exe"  </Command>
       <Message>Copying build...</Message>
       <Outputs>$(FS2PATH)\wxfred2_open$(FS_VERSION_FULL)-debug.exe;$(FS2PATH)\wxfred.xrc;%(Outputs)</Outputs>
     </CustomBuildStep>
@@ -159,9 +159,9 @@
       <AdditionalDependencies>comctl32.lib;rpcrt4.lib;winmm.lib;advapi32.lib;wsock32.lib;wxmsw29u_core.lib;wxbase29u.lib</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>copy /y "$(TargetPath)" "$(FS2PATH)/wxfred2_open_3_7_1.exe"</Command>
+      <Command>copy /y "$(TargetPath)" "$(FS2PATH)/wxfred2_open_3_7_3.exe"</Command>
       <Message>Copying build...</Message>
-      <Outputs>$(FS2PATH)\wxfred2_open_3_7_1.exe;%(Outputs)</Outputs>
+      <Outputs>$(FS2PATH)\wxfred2_open_3_7_3.exe;%(Outputs)</Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>

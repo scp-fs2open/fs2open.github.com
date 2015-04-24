@@ -18,6 +18,7 @@
 #include "sound/acm.h"
 #include "osapi/osapi.h"
 #include "sound/dscap.h"
+#include "sound/audiostr.h"
 
 
 typedef struct sound_buffer
@@ -460,8 +461,6 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 	int				rc, FileSize, FileOffset;
 	char			fullpath[MAX_PATH];
 	char			filename[MAX_FILENAME_LEN];
-	const int		NUM_EXT = 2;
-	const char		*audio_ext[NUM_EXT] = { ".ogg", ".wav" };
 	int				rval = -1;
 
 	if ( (real_filename == NULL) || (s_info == NULL) ) {
@@ -473,7 +472,7 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 	char *p = strrchr(filename, '.');
 	if ( p ) *p = 0;
 
-	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+	rc = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
 
 	if (rc < 0) {
 		return -1;

@@ -1359,10 +1359,8 @@ void parse_menumusic()
 
 	// Goober5000 - check for existence of file
 	// taylor - check for all file types
-	const int NUM_EXT = 2;
-	const char *exts[NUM_EXT] = { ".ogg", ".wav" };
-
-	if ( cf_exists_full_ext(Spooled_music[idx].filename, CF_TYPE_MUSIC, NUM_EXT, exts) )
+	// chief1983 - use type list defined in audiostr.h
+	if ( cf_exists_full_ext(Spooled_music[idx].filename, CF_TYPE_MUSIC, NUM_AUDIO_EXT, audio_ext_list) )
 		Spooled_music[idx].flags |= SMF_VALID;
 
 	if (!nocreate)
