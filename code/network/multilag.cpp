@@ -290,16 +290,17 @@ int multi_lag_get_random_lag()
 		
 	// pick a value
 	// see if we should be going up or down (loss max/loss min)
+	float rand_val = rand() * RAND_MAX_1f;
 	mod = 0;
-	if((float)rand()/(float)RAND_MAX < 0.5){
+	if (rand_val < 0.5f) {
 		// down
-		if(Multi_lag_min >= 0){
-			mod = - (int)((float)(Multi_lag_base - Multi_lag_min) * ((float)rand()/(float)RAND_MAX));
+		if (Multi_lag_min >= 0) {
+			mod = -fl2i((Multi_lag_base - Multi_lag_min) * rand_val);
 		}
 	} else {
 		// up
-		if(Multi_lag_max >= 0){
-			mod = (int)((float)(Multi_lag_max - Multi_lag_base) * ((float)rand()/(float)RAND_MAX));
+		if (Multi_lag_max >= 0) {
+			mod = fl2i((Multi_lag_max - Multi_lag_base) * rand_val);
 		}
 	}
 	
@@ -326,7 +327,7 @@ int multi_lag_get_random_lag()
 int multi_lag_should_be_lost()
 {	
 	// first determine the percentage we'll be checking against
-	float mod;	
+	float mod;
 
 	// if the lag system isn't inited, don't do anything
 	if(!Multi_lag_inited){
@@ -334,20 +335,21 @@ int multi_lag_should_be_lost()
 	}
 		
 	// see if we should be going up or down (loss max/loss min)
+	float rand_val = rand() * RAND_MAX_1f;
 	mod = 0.0f;
-	if((float)rand()/(float)RAND_MAX < 0.5){
+	if (rand_val < 0.5) {
 		// down
-		if(Multi_loss_min >= 0.0f){
-			mod = - ((Multi_loss_base - Multi_loss_min) * ((float)rand()/(float)RAND_MAX));
+		if (Multi_loss_min >= 0.0f) {
+			mod = -((Multi_loss_base - Multi_loss_min) * rand_val);
 		}
 	} else {
 		// up
-		if(Multi_loss_max >= 0.0f){
-			mod = ((Multi_loss_max - Multi_loss_base) * ((float)rand()/(float)RAND_MAX));
+		if (Multi_loss_max >= 0.0f) {
+			mod = ((Multi_loss_max - Multi_loss_base) * rand_val);
 		}
 	}	
 	
-	if((float)rand()/(float)RAND_MAX <= Multi_loss_base + mod){
+	if ( rand_val <= (Multi_loss_base + mod) ) {
 		return 1;
 	}	
 

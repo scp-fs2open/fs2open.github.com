@@ -790,10 +790,6 @@ void pilotfile::csg_read_redalert()
 		return;
 	}
 
-	// about to read new redalert data so flush any existing data
-	// otherwise wingman entries will multiply like rabbits
-	Red_alert_wingman_status.clear();
-
 	cfread_string_len(t_string, MAX_FILENAME_LEN, cfp);
 
 	Red_alert_precursor_mission = t_string;
@@ -814,7 +810,7 @@ void pilotfile::csg_read_redalert()
 		} else if ( (i < 0 ) && (i >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {  // ship destroyed/exited
 			ras.ship_class = i;
 		} else {
-			ras.ship_class = ship_list[i].index;
+		ras.ship_class = ship_list[i].index;
 		}
 
 		// subsystem hits
@@ -1300,6 +1296,9 @@ void pilotfile::csg_reset_data()
 		vm_free(Campaign.redalert_variables);
 		Campaign.redalert_variables = NULL;
 	}
+
+	// clear red alert data
+	Red_alert_wingman_status.clear();
 
 	// clear out mission stuff
 	for (idx = 0; idx < MAX_CAMPAIGN_MISSIONS; idx++) {

@@ -231,14 +231,14 @@ void skip_token()
 void diag_printf(char *format, ...)
 {
 #ifndef NDEBUG
-	char	buffer[8192];
+	SCP_string buffer;
 	va_list args;
 
 	va_start(args, format);
 	vsprintf(buffer, format, args);
 	va_end(args);
 
-	nprintf(("Parse", "%s", buffer));
+	nprintf(("Parse", "%s", buffer.c_str()));
 #endif
 }
 
@@ -541,14 +541,11 @@ int check_for_string_raw(const char *pstr)
 int optional_string(const char *pstr)
 {
 	ignore_white_space();
-//	mprintf(("lookint for optional string %s",pstr));
 
 	if (!strnicmp(pstr, Mp, strlen(pstr))) {
 		Mp += strlen(pstr);
-//		mprintf((", found it\n"));
 		return 1;
 	}
-//	mprintf((", didin't find it it\n"));
 
 	return 0;
 }
@@ -566,6 +563,33 @@ int optional_string_either(char *str1, char *str2)
 	}
 
 	return -1;
+}
+
+// generic parallel to required_string_one_of
+int optional_string_one_of(int arg_count, ...)
+{
+	Assertion(arg_count > 0, "optional_string_one_of() called with arg_count of %d; get a coder!\n", arg_count);
+	int idx, found = -1;
+	char *pstr;
+	va_list vl;
+
+	ignore_white_space();
+
+	va_start(vl, arg_count);
+	for (idx = 0; idx < arg_count; idx++)
+	{
+		pstr = va_arg(vl, char*);
+
+		if ( !strnicmp(pstr, Mp, strlen(pstr)) )
+		{
+			Mp += strlen(pstr);
+			found = idx;
+			break;
+		}
+	}
+	va_end(vl);
+
+	return found;
 }
 
 int required_string_fred(char *pstr, char *end)
@@ -674,72 +698,6 @@ int required_string_either(char *str1, char *str2)
 	return -1;
 }
 
-//	Return 0 or 1 for str1 match, str2 match.  Return -1 if neither matches.
-//	Does not update Mp if token found.  If not found, advances, trying to
-//	find the string.  Doesn't advance past the found string.
-int required_string_3(char *str1, char *str2, char *str3)
-{
-	int	count = 0;
-
-	ignore_white_space();
-
-	while (count < RS_MAX_TRIES) {
-		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
-			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n", token_found = str1);
-			return 0;
-		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
-			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n", token_found = str2);
-			return 1;
-		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str3);
-			return 2;
-		}
-
-		error_display(1, "Required token = [%s], [%s] or [%s], found [%.32s].\n", str1, str2, str3, next_tokens());
-
-		advance_to_eoln(NULL);
-		ignore_white_space();
-		count++;
-	}
-
-	return -1;
-}
-
-int required_string_4(char *str1, char *str2, char *str3, char *str4)
-{
-	int	count = 0;
-	
-	ignore_white_space();
-	
-	while (count < RS_MAX_TRIES) {
-		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
-			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n", token_found = str1);
-			return 0;
-		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
-			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n", token_found = str2);
-			return 1;
-		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str3);
-			return 2;
-		} else if (strnicmp(str4, Mp, strlen(str4)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str4);
-			return 3;
-		}
-		
-		error_display(1, "Required token = [%s], [%s], [%s], or [%s], found [%.32s].\n", str1, str2, str3, str4, next_tokens());
-		
-		advance_to_eoln(NULL);
-		ignore_white_space();
-		count++;
-	}
-	
-	return -1;
-}
-
 // Generic version of old required_string_3 and required_string_4; written by ngld, with some tweaks by MageKing17
 int required_string_one_of(int arg_count, ...)
 {
@@ -758,6 +716,7 @@ int required_string_one_of(int arg_count, ...)
 			expected = va_arg(vl, char*);
 			if (strnicmp(expected, Mp, strlen(expected)) == 0) {
 				diag_printf("Found required string [%s]", token_found = expected);
+				va_end(vl);
 				return idx;
 			}
 		}
@@ -925,6 +884,7 @@ char* alloc_text_until(char* instr, char* endstr)
 {
 	Assert(instr && endstr);
 	char *foundstr = stristr(instr, endstr);
+
 	if(foundstr == NULL)
 	{
 		Error(LOCATION, "Missing [%s] in file");
@@ -932,8 +892,13 @@ char* alloc_text_until(char* instr, char* endstr)
 	}
 	else
 	{
+		if ( (foundstr - instr) <= 0 ) {
+			Int3();  // since this really shouldn't ever happen
+			return NULL;
+		}
+
 		char* rstr = NULL;
-		rstr = (char*) vm_malloc((foundstr - instr)*sizeof(char));
+		rstr = (char*) vm_malloc((foundstr - instr + 1)*sizeof(char));
 
 		if(rstr != NULL) {
 			strncpy(rstr, instr, foundstr-instr);
@@ -1230,27 +1195,12 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 
 	switch (type) {
 		case F_RAW:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_LNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_NAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_DATE:
+		case F_FILESPEC:
+		case F_PATHNAME:
+		case F_MESSAGE:
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
@@ -1262,13 +1212,6 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			copy_text_until(read_str, Mp, "$End Notes:", read_len);
 			Mp += strlen(read_str);
 			required_string("$End Notes:");
-			break;
-
-		case F_FILESPEC:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
@@ -1287,20 +1230,6 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			Mp += strlen(read_str);
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
-			break;
-
-		case F_PATHNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
-		case F_MESSAGE:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		default:
@@ -1340,27 +1269,12 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 
 	switch (type) {
 		case F_RAW:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_LNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_NAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_DATE:
+		case F_FILESPEC:
+		case F_PATHNAME:
+		case F_MESSAGE:
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
@@ -1372,13 +1286,6 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			copy_text_until(read_str, Mp, "$End Notes:");
 			Mp += read_str.length();
 			required_string("$End Notes:");
-			break;
-
-		case F_FILESPEC:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
@@ -1398,20 +1305,6 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
 			break;
-
-		case F_PATHNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
-		case F_MESSAGE:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;	
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
@@ -1877,7 +1770,7 @@ bool get_number_before_separator(int &number, int &number_chars, const SCP_strin
 		// copying in progress
 		buf[len] = *ch;
 		len++;
-		ch++;
+		++ch;
 	}
 
 	// got an integer
@@ -2241,8 +2134,8 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	file_is_unicode = is_unicode(raw_text);
 	if ( file_is_unicode )
 	{
-		nprintf(("Error", "Wokka!  File (%s) is in Unicode format!\n", filename));
-		longjmp(parse_abort, 5);
+		//This is probably fatal, so let's abort right here and now.
+		Error(LOCATION, "%s is in Unicode/UTF format and cannot be read by FreeSpace Open. Please convert it to ASCII/ANSI\n", filename);
 	}
 
 	if ( file_is_encrypted )
@@ -2308,6 +2201,9 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 			} while (*ch);
 		} else if (!strcmp(outbuf, "1337, \"(fr)Loading\"\n")) {
 			outbuf[3] = '6';
+		} else if (!strcmp(outbuf, "3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n")) {
+			outbuf[171] = '\'';
+			outbuf[181] = '\'';
 		}
 
 		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
@@ -2321,8 +2217,9 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 				*mp++ = 's';
 				str++;
 
-			} else
+			} else {
 				*mp++ = *str++;
+			}
 		}
 
 //		strcpy_s(mp, outbuf);
@@ -2982,6 +2879,11 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		if (variable_found) {
 			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
 			sexp_variable_index = get_index_sexp_variable_name(str);
+			
+			if(sexp_variable_index<0) {
+				Error(LOCATION, "Invalid SEXP variable name \"%s\" found in stuff_loadout_list.", str);
+			}
+        
 			strcpy_s (str, Sexp_variables[sexp_variable_index].text);
 		}
 
@@ -3558,6 +3460,8 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 			last_was_white = 0;
 		}
 
+		Assertion(buf_index < SPLIT_STR_BUFFER_SIZE - 1, "buffer overflow in split_str: screen width causes this text to be longer than %d characters!", SPLIT_STR_BUFFER_SIZE - 1);
+
 		// throw it in our buffer
 		buffer[buf_index] = *src;
 		buf_index++;
@@ -3670,6 +3574,8 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 			// indicate next time around that this wasn't a whitespace character
 			last_was_white = 0;
 		}
+
+		Assertion(buf_index < SPLIT_STR_BUFFER_SIZE - 1, "buffer overflow in split_str: screen width causes this text to be longer than %d characters!", SPLIT_STR_BUFFER_SIZE - 1);
 
 		// throw it in our buffer
 		buffer[buf_index] = *src;
@@ -3978,7 +3884,7 @@ bool end_string_at_first_hash_symbol(char *src)
 	p = get_pointer_to_first_hash_symbol(src);
 	if (p)
 	{
-		while (*(p-1) == ' ')
+		while ((p != src) && (*(p-1) == ' '))
 			p--;
 
 		*p = '\0';
@@ -4344,23 +4250,22 @@ void parse_int_list(int *ilist, int size)
 // parse a modular table of type "name_check" and parse it using the specified function callback
 int parse_modular_table(const char *name_check, void (*parse_callback)(const char *filename), int path_type, int sort_type)
 {
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
+	SCP_vector<SCP_string> tbl_file_names;
 	int i, num_files = 0;
 
 	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
-		Int3();
+		Assertion(false, "parse_modular_table() called with invalid arguments; get a coder!\n");
 		return 0;
 	}
 
-	num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, path_type, name_check, sort_type);
+	num_files = cf_get_file_list(tbl_file_names, path_type, name_check, sort_type);
 
 	Parsing_modular_table = true;
 
 	for (i = 0; i < num_files; i++){
-		strcat(tbl_file_names[i], ".tbm");
-		mprintf(("TBM  =>  Starting parse of '%s' ...\n", tbl_file_names[i]));
-		(*parse_callback)(tbl_file_names[i]);
+		tbl_file_names[i] += ".tbm";
+		mprintf(("TBM  =>  Starting parse of '%s' ...\n", tbl_file_names[i].c_str()));
+		(*parse_callback)(tbl_file_names[i].c_str());
 	}
 
 	Parsing_modular_table = false;

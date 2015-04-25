@@ -76,6 +76,7 @@ void mouse_close()
 	if (!mouse_inited)
 		return;
 
+
 	mouse_inited = 0;
 
 	SDL_DestroyMutex( mouse_lock );

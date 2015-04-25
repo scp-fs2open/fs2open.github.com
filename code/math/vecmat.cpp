@@ -321,26 +321,21 @@ float vm_vec_dot3(float x,float y,float z,vec3d *v)
 //returns magnitude of a vector
 float vm_vec_mag(vec3d *v)
 {
-	float x,y,z,mag1, mag2;
-	x = v->xyz.x*v->xyz.x;
-	y = v->xyz.y*v->xyz.y;
-	z = v->xyz.z*v->xyz.z;
+	float mag1;
 
-	mag1 = x+y+z;
+	mag1 = (v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z);
 
-	mag2 = fl_sqrt(mag1);
-	return mag2;
+	if (mag1 <= 0.0f) {
+		return 0.0f;
+	}
+
+	return fl_sqrt(mag1);
 }
 
 //returns squared magnitude of a vector, useful if you want to compare distances
 float vm_vec_mag_squared(vec3d *v)
 {
-	float x,y,z,mag1;
-	x = v->xyz.x*v->xyz.x;
-	y = v->xyz.y*v->xyz.y;
-	z = v->xyz.z*v->xyz.z;
-	mag1 = x+y+z;
-	return mag1;
+	return ((v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z));
 }
 
 float vm_vec_dist_squared(vec3d *v0, vec3d *v1)
@@ -390,14 +385,20 @@ float vm_vec_mag_quick(vec3d *v)
 		c = v->xyz.z;
 
 	if (a < b) {
-		float temp=a; a=b; b=temp;
+		t = a;
+		a = b;
+		b = t;
 	}
 
 	if (b < c) {
-		float temp=b; b=c; c=temp;
+		t = b;
+		b = c;
+		c = t;
 
 		if (a < b) {
-			float temp2=a; a=b; b=temp2;
+			t = a;
+			a = b;
+			b = t;
 		}
 	}
 
@@ -1064,6 +1065,46 @@ angles *vm_extract_angles_matrix(angles *a,matrix *m)
 			a->b = atan2_safe(sinb,cosb);
 	}
 
+
+	return a;
+}
+
+// alternate method for extracting angles which seems to be
+// less susceptible to rounding errors -- see section 8.7.2
+// (pages 278-281) of 3D Math Primer for Graphics and Game
+// Development, 2nd Edition
+// http://books.google.com/books?id=X3hmuhBoFF0C&printsec=frontcover#v=onepage&q&f=false
+angles *vm_extract_angles_matrix_alternate(angles *a, matrix *m)
+{
+	Assert(a != NULL);
+	Assert(m != NULL);
+
+	// Extract pitch from m32, being careful for domain errors with
+	// asin().  We could have values slightly out of range due to
+	// floating point arithmetic.
+	float sp = -m->vec.fvec.xyz.y;
+	if (sp <= -1.0f) {
+		a->p = -PI_2;	// -pi/2
+	} else if (sp >= 1.0f) {
+		a->p = PI_2;	// pi/2
+	} else {
+		a->p = asin(sp);
+	}
+
+	// Check for the Gimbal lock case, giving a slight tolerance
+	// for numerical imprecision
+	if (fabs(sp) > 0.9999f) {
+		// We are looking straight up or down.
+		// Slam bank to zero and just set heading
+		a->b = 0.0f;
+		a->h = atan2(-m->vec.rvec.xyz.z, m->vec.rvec.xyz.x);
+	} else {
+		// Compute heading
+		a->h = atan2(m->vec.fvec.xyz.x, m->vec.fvec.xyz.z);
+
+		// Compute bank
+		a->b = atan2(m->vec.rvec.xyz.y, m->vec.uvec.xyz.y);
+	}
 
 	return a;
 }

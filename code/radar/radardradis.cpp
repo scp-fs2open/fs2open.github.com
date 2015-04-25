@@ -677,11 +677,11 @@ void HudGaugeRadarDradis::doBeeps()
 	}
 }
 
-void HudGaugeRadarDradis::initSound(int loop_snd, float loop_snd_volume, int arrival_snd, int departure_snd, int stealth_arrival_snd, int stealth_departue_snd, float arrival_delay, float departure_delay)
+void HudGaugeRadarDradis::initSound(int loop_snd, float _loop_snd_volume, int arrival_snd, int departure_snd, int stealth_arrival_snd, int stealth_departue_snd, float arrival_delay, float departure_delay)
 {
 	this->m_loop_snd = loop_snd;
 	this->loop_sound_handle = -1;
-	this->loop_sound_volume = loop_snd_volume;
+	this->loop_sound_volume = _loop_snd_volume;
 
 	this->arrival_beep_snd = arrival_snd;
 	this->departure_beep_snd = departure_snd;

@@ -22,12 +22,19 @@
 #endif // __GNUC__
 
 #if ! defined __GNUC__
-#include <hash_map>
-#if defined(_MSC_VER) && _MSC_VER < 1400
-#define SCP_hash_map std::hash_map
-#else
-#define SCP_hash_map stdext::hash_map
-#endif
+	#if defined(_MSC_VER)
+		#if _MSC_VER < 1900
+			#include <hash_map>
+			#if _MSC_VER < 1400
+			#define SCP_hash_map std::hash_map
+			#else
+			#define SCP_hash_map stdext::hash_map
+			#endif
+		#else
+			#include <unordered_map>
+			#define SCP_hash_map std::unordered_map
+		#endif
+	#endif
 #endif // ! defined __GNUC__
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400 || !defined(_MSC_VER)

@@ -152,15 +152,20 @@ size_t DumpBuffer :: Size() const
 
 void DumpBuffer :: Printf( const char* format, ... )
 {
+	va_list argPtr ;
+	int pos = current - buffer;
+	int max = BUFFER_SIZE - pos;
+
 	// protect against obvious buffer overflow
-	if( current - buffer < BUFFER_SIZE )
-	{
-		va_list argPtr ;
-		va_start( argPtr, format ) ;
-		int count = vsprintf( current, format, argPtr ) ;
-		va_end( argPtr ) ;
-		current += count ;
-	}
+	if (pos >= BUFFER_SIZE)
+		return;
+
+	va_start( argPtr, format ) ;
+	vsnprintf( current, max-1, format, argPtr ) ;
+	va_end( argPtr ) ;
+
+	current[max-1] = '\0';
+	current += strlen(current);
 }
 
 
@@ -974,11 +979,13 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 void _cdecl WinAssert(char * text, char * filename, int linenum, const char * format, ... )
 {
 	int val;
-	
 	va_list args;
 
+	memset( AssertText1, 0, sizeof(AssertText1) );
+	memset( AssertText2, 0, sizeof(AssertText2) );
+
 	va_start(args, format);
-	vsprintf(AssertText2, format, args);
+	vsnprintf(AssertText2, sizeof(AssertText2)-1, format, args);
 	va_end(args);
 
 	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
@@ -995,7 +1002,7 @@ void _cdecl WinAssert(char * text, char * filename, int linenum, const char * fo
 	gr_activate(0);
 
 	filename = strrchr(filename, '\\')+1;
-	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n%s\r\n", text, filename, linenum, AssertText2 );
+	snprintf( AssertText1, sizeof(AssertText1)-1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n%s\r\n", text, filename, linenum, AssertText2 );
 
 #if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
 	/* Dump the callstack */
@@ -1069,15 +1076,6 @@ void LuaError(struct lua_State *L, char *format, ...)
 
 	gr_activate(0);
 
-	/*
-	va_start(args, format);
-	vsprintf(AssertText1,format,args);
-	va_end(args);
-	*/
-	
-	//filename = strrchr(filename, '\\')+1;
-	//sprintf(AssertText2,"LuaError: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line );
-
 	dumpBuffer.Clear();
 	//WMC - if format is set to NULL, assume this is acting as an
 	//error handler for Lua.
@@ -1089,10 +1087,15 @@ void LuaError(struct lua_State *L, char *format, ...)
 	else
 	{
 		va_list args;
+
+		memset(AssertText1, 0, sizeof(AssertText1));
+		memset(AssertText2, 0, sizeof(AssertText2));
+
 		va_start(args, format);
-		vsprintf(AssertText1,format,args);
-		dumpBuffer.Printf(AssertText1);
+		vsnprintf(AssertText1, sizeof(AssertText1)-1, format,args);
 		va_end(args);
+
+		dumpBuffer.Printf(AssertText1);
 	}
 
 	dumpBuffer.Printf( "\r\n" );
@@ -1193,12 +1196,15 @@ void _cdecl Error( const char * filename, int line, const char * format, ... )
 	int val;
 	va_list args;
 
+	memset( AssertText1, 0, sizeof(AssertText1) );
+	memset( AssertText2, 0, sizeof(AssertText2) );
+
 	va_start(args, format);
-	vsprintf(AssertText1, format, args);
+	vsnprintf(AssertText1, sizeof(AssertText1)-1, format, args);
 	va_end(args);
 
 	filename = strrchr(filename, '\\')+1;
-	sprintf(AssertText2, "Error: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line);
+	snprintf(AssertText2, sizeof(AssertText2)-1, "Error: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line);
 	mprintf(("ERROR: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line));
 
 	Messagebox_active = true;
@@ -1266,9 +1272,13 @@ void _cdecl WarningEx( char *filename, int line, const char *format, ... )
 	if (Cmdline_extra_warn) {
 		char msg[sizeof(AssertText1)];
 		va_list args;
+
+		memset(msg, 0, sizeof(msg));
+
 		va_start(args, format);
-		vsprintf(msg, format, args);
+		vsnprintf(msg, sizeof(msg)-1, format, args);
 		va_end(args);
+
 		Warning(filename, line, msg);
 	}
 #endif
@@ -1290,7 +1300,7 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 	memset( AssertText2, 0, sizeof(AssertText2) );
 
 	va_start(args, format);
-	vsprintf(AssertText1, format, args);
+	vsnprintf(AssertText1, sizeof(AssertText1) - 1, format, args);
 	va_end(args);
 
 	slen = strlen(AssertText1);

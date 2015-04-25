@@ -225,13 +225,13 @@ void opengl_texture_state::Enable(GLuint tex_id)
 	units[active_texture_unit].active = GL_TRUE;
 }
 
-void opengl_texture_state::Disable(bool force)
+void opengl_texture_state::Disable()
 {
-	if ( !force && !units[active_texture_unit].active ) {
+	if ( !units[active_texture_unit].active ) {
 		return;
 	}
 
-	if (force || units[active_texture_unit].enabled) {
+	if ( units[active_texture_unit].enabled) {
 		glDisable( units[active_texture_unit].texture_target );
 		units[active_texture_unit].enabled = GL_FALSE;
 	}
@@ -252,7 +252,7 @@ void opengl_texture_state::DisableUnused()
 	for (unsigned int i = 0; i < num_texture_units; i++) {
 		if (!units[i].used) {
 			SetActiveUnit(i);
-			Disable(true);
+			Disable();
 		}
 	}
 }
@@ -262,7 +262,7 @@ void opengl_texture_state::DisableAll()
 	for (unsigned int i = 0; i < num_texture_units; i++) {
 		if (units[i].active) {
 			SetActiveUnit(i);
-			Disable(true);
+			Disable();
 		}
 	}
 

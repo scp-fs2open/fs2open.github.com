@@ -1008,6 +1008,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 					lcl_translate_brief_icon_name_gr(buf);
 					gr_get_string_size(&w, &h, buf);
 					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
+				} else if (Lcl_pl) {
+					char buf[128];
+					strcpy_s(buf, bi->label);
+					lcl_translate_brief_icon_name_pl(buf);
+					gr_get_string_size(&w, &h, buf);
+					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
 				} else {
 					gr_get_string_size(&w,&h,bi->label);
 					gr_string(bc - fl2i(w/2.0f), by - h, bi->label, GR_RESIZE_MENU);
@@ -1425,7 +1431,7 @@ void brief_set_text_color(char color_tag)
  */
 bool is_a_word_separator(char character)
 {
-	return character <= 32;					//  all control characters including space, newline, and tab
+	return ((character >= 0) && (character <= 32)); // all control characters including space, newline, and tab
 }
 
 /**
@@ -1535,7 +1541,7 @@ int brief_color_text_init(const char* src, int w, const char default_color, int 
 	int i, n_lines, len;
 	SCP_vector<int> n_chars;
 	SCP_vector<const char*> p_str;
-	char brief_line[MAX_BRIEF_LINE_LEN];
+	char tmp_brief_line[MAX_BRIEF_LINE_LEN];
 
 	// manage different default colors (don't use a SCP_ stack because eh)
 	char default_color_stack[HIGHEST_COLOR_STACK_INDEX + 1];
@@ -1567,10 +1573,10 @@ int brief_color_text_init(const char* src, int w, const char default_color, int 
 	}
 	for (i=0; i<n_lines; i++) {
 		Assert(n_chars[i] < MAX_BRIEF_LINE_LEN);
-		strncpy(brief_line, p_str[i], n_chars[i]);
-		brief_line[n_chars[i]] = 0;
-		drop_leading_white_space(brief_line);
-		len = brief_text_colorize(&brief_line[0], instance, default_color_stack, color_stack_index);
+		strncpy(tmp_brief_line, p_str[i], n_chars[i]);
+		tmp_brief_line[n_chars[i]] = 0;
+		drop_leading_white_space(tmp_brief_line);
+		len = brief_text_colorize(&tmp_brief_line[0], instance, default_color_stack, color_stack_index);
 		if (len > Max_briefing_line_len)
 			Max_briefing_line_len = len;
 	}
@@ -2093,7 +2099,7 @@ void brief_rpd_line(vec3d *v0, vec3d *v1)
 	g3_rotate_vertex(&tv0, v0);
 	g3_rotate_vertex(&tv1, v1);
 
-	gr_set_color_fast(&Color_grey);
+	gr_set_color_fast(&Color_briefing_grid);
 	g3_draw_line(&tv0, &tv1);
 }
 

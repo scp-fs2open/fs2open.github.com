@@ -2,7 +2,7 @@ dnl configure.ac for fs2_open
 dnl
 dnl $Id: configure.ac,v 1.31.2.4 2007-05-28 19:36:12 taylor Exp $
 
-AC_INIT(fs2_open, 3.7.1)
+AC_INIT(fs2_open, 3.7.3)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
 
 dnl we need at least version 2.54 of autoconf
@@ -13,7 +13,7 @@ AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
 dnl we need at least version 1.6.1 of automake, well it's as far down as has been tested anyway
-AM_INIT_AUTOMAKE([ 1.6.1 no-define dist-bzip2 ])
+AM_INIT_AUTOMAKE([ 1.6.1 no-define dist-bzip2 subdir-objects ])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_DEFINE([NO_CD_CHECK])
 
@@ -26,8 +26,8 @@ CFLAGS_save="$CFLAGS"
 LDFLAGS_save="$LDFLAGS"
 
 AC_PROG_CC
-AC_PROG_RANLIB
 AC_PROG_CXX
+LT_INIT
 
 dnl ok we want to replace any defaults with our own since it's probably less freaky that way
 CXXFLAGS="$CXXFLAGS_save"
@@ -150,7 +150,7 @@ case "$target" in
 		LDFLAGS="$LDFLAGS -L/opt/csw/lib"
 		CPPFLAGS="$CPPFLAGS -I/opt/csw/include"
 		;;
-	*freebsd*)
+	*freebsd* | *openbsd*)
 		# FreeBSD 9.1
 		echo "Using Unix defines (for $host_os $host_cpu)"
 		echo "************************************************************"
@@ -175,7 +175,14 @@ case "$target" in
 		echo "check the configure.ac file"
 		echo "host_cpu:    " $host_cpu
 		echo "host_vendor: " $host_vendor
-		echo "host_os      " $host_os
+		echo "host_os:     " $host_os
+		echo "target:      " $target
+		echo "************************************************************"
+		echo "* Please let us know about successful builds on this OS at *"
+		echo "* http://www.hard-light.net/forums/index.php?board=113.0 ***"
+		echo "* Create a new thread about your build experience and what *"
+		echo "* was required to make the build successful. ***************"
+		echo "************************************************************"
 		echo "************************************************************"
 		echo "* Please let us know about successful builds on this OS at *"
 		echo "* http://www.hard-light.net/forums/index.php?board=113.0 ***"
@@ -452,9 +459,9 @@ if test "$fs2_os_linux" = "yes" || test "$fs2_os_osx" = "yes" || test "$fs2_os_b
 fi
 
 if test "$fs2_os_bsd" != "yes" ; then
-dnl Dynamic Linking
-AC_SEARCH_LIBS([dlsym], [dl])
-FS2_LIBS=$FS2_LIBS" -ldl"
+	dnl Dynamic Linking
+	AC_SEARCH_LIBS([dlsym], [dl])
+	FS2_LIBS=$FS2_LIBS" -ldl"
 fi
 
 dnl Posix Threads
@@ -475,6 +482,7 @@ dnl extra OSX frameworks
 if test "$fs2_os_osx" = "yes" ; then
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework AppKit -framework Foundation"
 fi
+
 
 dnl substitute our default flags
 AC_SUBST(D_CFLAGS)

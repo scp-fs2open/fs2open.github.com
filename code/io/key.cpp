@@ -87,15 +87,6 @@ static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at 
 int Cheats_enabled = 0;
 int Key_normal_game = 0;
 
-/**
- * Keyboard layouts
- */
-enum KeyboardLayout {
-	KEYBOARD_LAYOUT_DEFAULT, //!< American
-	KEYBOARD_LAYOUT_QWERTZ,  //!< German
-	KEYBOARD_LAYOUT_AZERTY   //!< French
-};
-
 void FillSDLArray ()
 {
 	SDLtoFS2[SDL_SCANCODE_0] = KEY_0;
@@ -215,7 +206,7 @@ void FillSDLArray ()
 
 	SDLtoFS2[SDL_SCANCODE_PRINTSCREEN] = KEY_PRINT_SCRN;
 	SDLtoFS2[SDL_SCANCODE_PAUSE] = KEY_PAUSE;
-//	SDLtoFS2[SDL_SCANCODE_BREAK] = KEY_BREAK;
+	//	SDLtoFS2[SDL_SCANCODE_BREAK] = KEY_BREAK;
 }
 
 int key_numlock_is_on()
@@ -572,7 +563,7 @@ void key_mark( uint code, int state, uint latency )
 		code = KEY_SLASH;
 	}
 
-//	Assert( code < NUM_KEYS );
+	Assert( code < NUM_KEYS );
 
 	event_time = timer_get_milliseconds() - latency;
 	// event_time = timeGetTime() - latency;

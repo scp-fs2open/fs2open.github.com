@@ -80,9 +80,9 @@
 #include "graphics/gropenglshader.h"
 #include "model/model.h"
 #include "mod_table/mod_table.h"
-#include "osapi/osapi.h"
 #include "debugconsole/console.h"
 #include "debugconsole/console.h"
+#include "math/vecmat.h"
 
 
 #define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
@@ -145,6 +145,9 @@ SCP_vector<engine_wash_info> Engine_wash_info;
 engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
 
 void ship_reset_disabled_physics(object *objp, int ship_class);
+
+// forward declaring for parse_ship()
+int ship_info_lookup_sub(const char *token);
 
 // information for ships which have exited the game
 SCP_vector<exited_ship> Ships_exited;
@@ -951,6 +954,8 @@ void init_ship_entry(ship_info *sip)
 	sip->splodeing_texture = -1;
 	strcpy_s(sip->splodeing_texture_name, "boom");
 
+	sip->replacement_textures.clear();
+
 	sip->armor_type_idx = -1;
 	sip->shield_armor_type_idx = -1;
 
@@ -1049,7 +1054,7 @@ int parse_ship(const char *filename, bool replace)
 	//Check if ship exists already
 	int ship_id;
 	bool first_time = false;
-	ship_id = ship_info_lookup( buf );
+	ship_id = ship_info_lookup_sub( buf );
 	
 	if(ship_id != -1)
 	{
@@ -1251,6 +1256,60 @@ void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_st
 	}
 }
 
+void parse_allowed_weapons(ship_info *sip, bool is_primary, bool is_dogfight)
+{
+	int i, num_allowed;
+	int allowed_weapons[MAX_WEAPON_TYPES];
+	const int max_banks = (is_primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS);
+	const int weapon_type = (is_dogfight ? DOGFIGHT_WEAPON : REGULAR_WEAPON);
+	const int offset = (is_primary ? 0 : MAX_SHIP_PRIMARY_BANKS);
+	const char *allowed_banks_str = is_primary ? (is_dogfight ? "$Allowed Dogfight PBanks:" : "$Allowed PBanks:")
+		: (is_dogfight ? "$Allowed Dogfight SBanks:" : "$Allowed SBanks:");
+	const char *bank_type_str = is_primary ? "primary" : "secondary";
+
+	// Goober5000 - fixed Bobboau's implementation of restricted banks
+	int bank;
+
+	// Set the weapons filter used in weapons loadout (for primary weapons)
+	if (optional_string(allowed_banks_str))
+	{
+		bank = -1;
+
+		while (check_for_string("("))
+		{
+			bank++;
+
+			// make sure we don't specify more than we have banks for
+			if (bank >= max_banks)
+			{
+				Warning(LOCATION, "%s bank-specific loadout for %s exceeds permissible number of %s banks.  Ignoring the rest...", allowed_banks_str, sip->name, bank_type_str);
+				bank--;
+				break;
+			}
+
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+
+			// actually say which weapons are allowed
+			for ( i = 0; i < num_allowed; i++ )
+			{
+				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+				{
+					sip->allowed_bank_restricted_weapons[offset+bank][allowed_weapons[i]] |= weapon_type;
+				}
+			}
+		}
+
+		// set flags if need be
+		if (bank > 0)	// meaning there was a restricted bank table entry
+		{
+			for (i=0; i<=bank; i++)
+			{
+				sip->restricted_loadout_flag[offset+i] |= weapon_type;
+			}
+		}
+	}
+}
+
 /**
  * Common method for parsing ship/subsystem primary/secondary weapons so that the parser doesn't flip out in the event of a problem.
  *
@@ -1350,8 +1409,7 @@ int parse_and_add_briefing_icon_info()
 int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
-	int i, j, num_allowed;
-	int allowed_weapons[MAX_WEAPON_TYPES];
+	int i, j;
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
 	
@@ -1538,45 +1596,41 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 			WarningEx(LOCATION, "Ship %s\nPOF file \"%s\" invalid!", sip->name, temp);
 	}
 
-	// ship class texture replacement - Goober5000 and taylor
-	int PLACEHOLDER_num_texture_replacements = 0;
-	char PLACEHOLDER_old_texture[MAX_FILENAME_LEN];
-	char PLACEHOLDER_new_texture[MAX_FILENAME_LEN];
-	int PLACEHOLDER_new_texture_id;
+	// ship class texture replacement - Goober5000
+	// don't clear the vector because we could be parsing a TBM
 	if (optional_string("$Texture Replace:"))
 	{
+		texture_replace tr;
 		char *p;
 
-		while ((PLACEHOLDER_num_texture_replacements < MAX_REPLACEMENT_TEXTURES) && (optional_string("+old:")))
+		while (optional_string("+old:"))
 		{
-			stuff_string(PLACEHOLDER_old_texture, F_NAME, MAX_FILENAME_LEN);
+			strcpy_s(tr.ship_name, sip->name);
+			tr.new_texture_id = -1;
+
+			stuff_string(tr.old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
-			stuff_string(PLACEHOLDER_new_texture, F_NAME, MAX_FILENAME_LEN);
+			stuff_string(tr.new_texture, F_NAME, MAX_FILENAME_LEN);
 
 			// get rid of extensions
-			p = strchr(PLACEHOLDER_old_texture, '.');
+			p = strchr(tr.old_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", PLACEHOLDER_old_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.old_texture));
 				*p = 0;
 			}
-			p = strchr(PLACEHOLDER_new_texture, '.');
+			p = strchr(tr.new_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", PLACEHOLDER_new_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.new_texture));
 				*p = 0;
 			}
 
-			// load the texture
-			PLACEHOLDER_new_texture_id = bm_load(PLACEHOLDER_new_texture);
-
-			if (PLACEHOLDER_new_texture_id < 0)
-			{
-				mprintf(("Could not load replacement texture %s for ship %s\n", PLACEHOLDER_new_texture, sip->name));
-			}
-
-			// increment
-			PLACEHOLDER_num_texture_replacements++;
+			// add it if we aren't over the limit
+			if (sip->replacement_textures.size() < MAX_MODEL_TEXTURES)
+				sip->replacement_textures.push_back(tr);
+			else
+				mprintf(("Too many replacement textures specified for ship '%s'!\n", sip->name));
 		}
 	}
 
@@ -1591,7 +1645,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
-			if (sip->pof_file[0] != '\0')
+			if (sip->pof_file_hud[0] != '\0')
 				if (!cf_exists_full(temp, CF_TYPE_MODELS))
 					valid = false;
 
@@ -1627,13 +1681,13 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	if (optional_string("$Enable Team Colors:")) {
 		stuff_boolean(&sip->uses_team_colors);
 		sip->default_team_name = "None";
-	} 
+	}
 
 	if (optional_string("$Default Team:")) {
 		char temp[NAME_LENGTH];
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 		SCP_string name = temp;
-		if (name == "None") {
+		if (!stricmp(temp, "none")) {
 			sip->uses_team_colors = true;
 		} else {
 			if (Team_Colors.find(name) != Team_Colors.end()) {
@@ -2220,86 +2274,9 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_float( &sip->weapon_model_draw_distance );
 	}
 
-	// Goober5000 - fixed Bobboau's implementation of restricted banks
-	int bank;
-
 	// Set the weapons filter used in weapons loadout (for primary weapons)
-	if (optional_string("$Allowed PBanks:"))
-	{
-		bank = -1;
-
-		while (check_for_string("("))
-		{
-			bank++;
-
-			// make sure we don't specify more than we have banks for
-			if (bank >= MAX_SHIP_PRIMARY_BANKS)
-			{
-				Warning(LOCATION, "$Allowed PBanks bank-specific loadout for %s exceeds permissible number of primary banks.  Ignoring the rest...", sip->name);
-				bank--;
-				break;
-			}
-
-			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-
-			// actually say which weapons are allowed
-			for ( i = 0; i < num_allowed; i++ )
-			{
-				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
-				{
-					sip->allowed_bank_restricted_weapons[bank][allowed_weapons[i]] |= REGULAR_WEAPON;
-				}
-			}
-		}
-
-		// set flags if need be
-		if (bank > 0)	// meaning there was a restricted bank table entry
-		{
-			for (i=0; i<=bank; i++)
-			{
-				sip->restricted_loadout_flag[i] |= REGULAR_WEAPON;
-			}
-		}
-	}
-
-	// Set the weapons filter used in weapons loadout (for primary weapons)
-	if (optional_string("$Allowed Dogfight PBanks:"))
-	{
-		bank = -1;
-
-		while (check_for_string("("))
-		{
-			bank++;
-
-			// make sure we don't specify more than we have banks for
-			if (bank >= MAX_SHIP_PRIMARY_BANKS)
-			{
-				Warning(LOCATION, "$Allowed Dogfight PBanks bank-specific loadout for %s exceeds permissible number of primary banks.  Ignoring the rest...", sip->name);
-				bank--;
-				break;
-			}
-
-			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-
-			// actually say which weapons are allowed
-			for ( i = 0; i < num_allowed; i++ )
-			{
-				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
-				{
-					sip->allowed_bank_restricted_weapons[bank][allowed_weapons[i]] |= DOGFIGHT_WEAPON;
-				}
-			}
-		}
-
-		// set flags if need be
-		if (bank > 0)	// meaning there was a restricted bank table entry
-		{
-			for (i=0; i<=bank; i++)
-			{
-				sip->restricted_loadout_flag[i] |= DOGFIGHT_WEAPON;
-			}
-		}
-	}
+	parse_allowed_weapons(sip, true, false);
+	parse_allowed_weapons(sip, true, true);
 
 	// Get primary bank weapons
 	parse_weapon_bank(sip, true, &sip->num_primary_banks, sip->primary_bank_weapons, sip->primary_bank_ammo_capacity);
@@ -2311,82 +2288,8 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	}
 
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
-	if (optional_string("$Allowed SBanks:"))
-	{
-		bank = -1;
-
-		while (check_for_string("("))
-		{
-			bank++;
-
-			// make sure we don't specify more than we have banks for
-			if (bank >= MAX_SHIP_SECONDARY_BANKS)
-			{
-				Warning(LOCATION, "$Allowed SBanks bank-specific loadout for %s exceeds permissible number of secondary banks.  Ignoring the rest...", sip->name);
-				bank--;
-				break;
-			}
-
-			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-
-			// actually say which weapons are allowed
-			for ( i = 0; i < num_allowed; i++ )
-			{
-				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
-				{
-					sip->allowed_bank_restricted_weapons[MAX_SHIP_PRIMARY_BANKS+bank][allowed_weapons[i]] |= REGULAR_WEAPON;
-				}
-			}
-		}
-
-		// set flags if need be
-		if (bank > 0)	// meaning there was a restricted bank table entry
-		{
-			for (i=0; i<=bank; i++)
-			{
-				sip->restricted_loadout_flag[MAX_SHIP_PRIMARY_BANKS+i] |= REGULAR_WEAPON;
-			}
-		}
-	}
-
-	// Set the weapons filter used in weapons loadout (for secondary weapons)
-	if (optional_string("$Allowed Dogfight SBanks:"))
-	{
-		bank = -1;
-
-		while (check_for_string("("))
-		{
-			bank++;
-
-			// make sure we don't specify more than we have banks for
-			if (bank >= MAX_SHIP_SECONDARY_BANKS)
-			{
-				Warning(LOCATION, "$Allowed Dogfight SBanks bank-specific loadout for %s exceeds permissible number of secondary banks.  Ignoring the rest...", sip->name);
-				bank--;
-				break;
-			}
-
-			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-
-			// actually say which weapons are allowed
-			for ( i = 0; i < num_allowed; i++ )
-			{
-				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
-				{
-					sip->allowed_bank_restricted_weapons[MAX_SHIP_PRIMARY_BANKS+bank][allowed_weapons[i]] |= DOGFIGHT_WEAPON;
-				}
-			}
-		}
-
-		// set flags if need be
-		if (bank > 0)	// meaning there was a restricted bank table entry
-		{
-			for (i=0; i<=bank; i++)
-			{
-				sip->restricted_loadout_flag[MAX_SHIP_PRIMARY_BANKS+i] |= DOGFIGHT_WEAPON;
-			}
-		}
-	}
+	parse_allowed_weapons(sip, false, false);
+	parse_allowed_weapons(sip, false, true);
 
 	// Get secondary bank weapons
 	parse_weapon_bank(sip, false, &sip->num_secondary_banks, sip->secondary_bank_weapons, sip->secondary_bank_ammo_capacity);
@@ -2439,7 +2342,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 			else if (!stricmp(str, "right"))
 				sip->shield_point_augment_ctrls[RIGHT_QUAD] = i;
 			else if (!stricmp(str, "none"))
-				sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
+				;
 			else
 				Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Point Shield Controls, ignoring...", str);
 		}
@@ -2789,8 +2692,14 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		model_unload(model_idx);
 	}
 
-	if(optional_string("$Closeup_zoom:"))
+	if (optional_string("$Closeup_zoom:")) {
 		stuff_float(&sip->closeup_zoom);
+
+		if (sip->closeup_zoom <= 0.0f) {
+			mprintf(("Warning!  Ship '%s' has a $Closeup_zoom value that is less than or equal to 0 (%f). Setting to default value.\n", sip->name, sip->closeup_zoom));
+			sip->closeup_zoom = 0.5f;
+		}
+	}
 		
 	if(optional_string("$Topdown offset:")) {
 		sip->topdown_offset_def = true;
@@ -3250,7 +3159,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	}
 
 	while (cont_flag) {
-		int r = required_string_3("#End", "$Subsystem:", "$Name" );
+		int r = required_string_one_of(3, "#End", "$Subsystem:", "$Name" );
 		switch (r) {
 		case 0:
 			cont_flag = 0;
@@ -3748,8 +3657,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		case 2:
 			cont_flag = 0;
 			break;
+		case -1:	// Possible return value if -noparseerrors is used
+			break;
 		default:
-			Int3();	// Impossible return value from required_string_3.
+			Assertion(false, "This should never happen.\n");	// Impossible return value from required_string_one_of.
 		}
 	}	
 
@@ -4248,6 +4159,14 @@ void ship_parse_post_cleanup()
 				sip->flags &= ~SIF_SHIP_COPY;
 			}
 		}
+
+		// very low rotational velocity values disable rotational collisions
+		// warn early rather than ambush the modder @ runtime (unless the ship is also no-collide!)
+		// the 2nd part of this check is duplicated from collideshipship.cpp:ship_ship_check_collision()
+		if (!(sip->flags & SIF_NO_COLLIDE) && (vm_vec_mag_squared( &sip->max_rotvel ) * .04) >= (PI*PI/4))
+		{
+			Warning(LOCATION, "$Rotation time: too low; this will disable rotational collisions. All three variables should be >= 1.39.\nFix this in ship '%s'\n", sip->name);
+		}
 	}
 
 	// check also target groups here
@@ -4581,7 +4500,7 @@ void physics_ship_init(object *objp)
 		float vmass=size.xyz.x*size.xyz.y*size.xyz.z;
 		float amass=4.65f*(float)pow(vmass,(2.0f/3.0f));
 
-		nprintf(("Physics", "pi->mass==0.0f. setting to %f",amass));
+		nprintf(("Physics", "pi->mass==0.0f. setting to %f\n",amass));
 		Warning(LOCATION, "%s (%s) has no mass! setting to %f", sinfo->name, sinfo->pof_file, amass);
 		pm->mass=amass;
 		pi->mass=amass*sinfo->density;
@@ -4593,7 +4512,7 @@ void physics_ship_init(object *objp)
 		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
 		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
 	{
-		nprintf(("Physics", "pm->moment_of_inertia is invalid for %s!", pm->filename));
+		nprintf(("Physics", "pm->moment_of_inertia is invalid for %s!\n", pm->filename));
 		Warning(LOCATION, "%s (%s) has a null moment of inertia!", sinfo->name, sinfo->pof_file);
 
 		// TODO: generate MOI properly
@@ -5122,7 +5041,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		sprintf (err_msg, "Unable to allocate ship subsystems. Maximum is %d. No subsystems have been assigned to %s.", (NUM_SHIP_SUBSYSTEM_SETS* NUM_SHIP_SUBSYSTEMS_PER_SET), shipp->ship_name);
 
 		if (Fred_running) 
-			SCP_Messagebox(MESSAGEBOX_ERROR, err_msg);
+			MessageBox(NULL, err_msg, "Error", MB_OK);
 		else
 			Error(LOCATION, err_msg);
 	}
@@ -5138,6 +5057,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->flags2 |= SF2_STEALTH;
 	if (sip->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
 		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+
+	if (sip->flags & SIF_NO_COLLIDE)
+		obj_set_flags(objp, objp->flags & ~OF_COLLIDES);
+	else
+		obj_set_flags(objp, objp->flags | OF_COLLIDES);
 
 	if (sip->flags2 & SIF2_NO_ETS)
 		shipp->flags2 |= SF2_NO_ETS;
@@ -5538,7 +5462,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		// previous things... ugh.
 		ship_system->max_hits = model_system->max_subsys_strength;	// * shipp->ship_max_hull_strength / sinfo->max_hull_strength;
 
-		if ( !Fred_running ){
+		if ( !Fred_running ) {
 			ship_system->current_hits = ship_system->max_hits;		// set the current hits
 		} else {
 			ship_system->current_hits = 0.0f;				// Jason wants this to be 0 in Fred.
@@ -6299,6 +6223,7 @@ void ship_render(object * obj)
 				int save_flags = render_flags;
 		
 				render_flags &= ~MR_SHOW_THRUSTERS;
+				render_flags |= MR_ATTACHED_MODEL;
 
 				//primary weapons
 				for (i = 0; i < swp->num_primary_banks; i++) {
@@ -6309,7 +6234,7 @@ void ship_render(object * obj)
 					for(k = 0; k < bank->num_slots; k++) {	
 						polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
 						pm->gun_submodel_rotation = shipp->primary_rotate_ang[i];
-						model_render(Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags);
+						model_render(Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags, shipp->objnum);
 						pm->gun_submodel_rotation = 0.0f;
 					}
 				}
@@ -6327,7 +6252,7 @@ void ship_render(object * obj)
 					
 					if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
 						for(k = 0; k < bank->num_slots; k++) {
-							model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags);
+							model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags, shipp->objnum);
 						}
 					} else {
 						num_secondaries_rendered = 0;
@@ -6346,7 +6271,7 @@ void ship_render(object * obj)
 			
 							vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
 
-							model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
+							model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos, render_flags, shipp->objnum);
 						}
 					}
 				}
@@ -7085,6 +7010,8 @@ int ship_explode_area_calc_damage( vec3d *pos1, vec3d *pos2, float inner_rad, fl
 	return 1;
 }
 
+static const float MAX_SHOCK_ANGLE_RANGE = 1.99f * PI;
+
 /**
  * Applies damage to ship close to others when a ship dies and blows up
  *
@@ -7150,9 +7077,9 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 		sci.blast = max_blast;
 		sci.damage = max_damage;
 		sci.speed = shockwave_speed;
-		sci.rot_angles.p = frand_range(0.0f, 1.99f*PI);
-		sci.rot_angles.b = frand_range(0.0f, 1.99f*PI);
-		sci.rot_angles.h = frand_range(0.0f, 1.99f*PI);
+		sci.rot_angles.p = frand_range(0.0f, MAX_SHOCK_ANGLE_RANGE);
+		sci.rot_angles.b = frand_range(0.0f, MAX_SHOCK_ANGLE_RANGE);
+		sci.rot_angles.h = frand_range(0.0f, MAX_SHOCK_ANGLE_RANGE);
 		shipfx_do_shockwave_stuff(shipp, &sci);
 	} else {
 		object *objp;
@@ -9424,10 +9351,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	else if (sip_orig->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)	// changing FROM a don't-collide-invisible ship class
 		sp->flags2 &= ~SF2_DONT_COLLIDE_INVIS;
 
-	if (sip->flags & SIF_NO_COLLIDE)								// changing TO a no_collide ship
-		Objects[sp->objnum].flags &= ~OF_COLLIDES;
-	else if (sip_orig->flags & SIF_NO_COLLIDE)						// changing FROM a no_collide ship
-		Objects[sp->objnum].flags |= OF_COLLIDES;
+	if (sip->flags & SIF_NO_COLLIDE)								// changing TO a no-collision ship class
+		obj_set_flags(objp, objp->flags & ~OF_COLLIDES);
+	else if (sip_orig->flags & SIF_NO_COLLIDE)						// changing FROM a no-collision ship class
+		obj_set_flags(objp, objp->flags | OF_COLLIDES);
 
 	if (sip->flags2 & SIF2_NO_ETS)
 		sp->flags2 |= SF2_NO_ETS;
@@ -9508,7 +9435,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->ship_replacement_textures[i] = -1;
 
 		// now fill them in according to texture name
-		for (i = 0; i < p_objp->num_texture_replacements; i++)
+		for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
 		{
 			int j;
 			polymodel *pm = model_get(sip->model_num);
@@ -9518,9 +9445,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			{
 				texture_map *tmap = &pm->maps[j];
 
-				int tnum = tmap->FindTexture(p_objp->replacement_textures[i].old_texture);
+				int tnum = tmap->FindTexture(tr->old_texture);
 				if(tnum > -1)
-					sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = p_objp->replacement_textures[i].new_texture_id;
+					sp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
 			}
 		}
 	}
@@ -10105,14 +10032,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		polymodel *pm = model_get( sip->model_num );
 		
 		// Goober5000 (thanks to _argv[-1] for the original idea)
-		if ( !((winfo_p->wi_flags3 & WIF3_NO_LINKED_PENALTY) || (The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY)) )
+		if ( (num_primary_banks > 1) &&  !(winfo_p->wi_flags3 & WIF3_NO_LINKED_PENALTY) && !(The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY) )
 		{
 			int effective_primary_banks = 0;
 			for (int it = 0; it < num_primary_banks; it++)
-				if (Weapon_info[swp->primary_bank_weapons[it]].wi_flags3 & (WIF3_NOLINK | WIF3_NO_LINKED_PENALTY))
-					continue;
-				else
+			{
+				if ((it == bank_to_fire) || !(Weapon_info[swp->primary_bank_weapons[it]].wi_flags3 & (WIF3_NOLINK | WIF3_NO_LINKED_PENALTY)))
 					effective_primary_banks++;
+			}
+			Assert(effective_primary_banks >= 1);
 
 			next_fire_delay *= 1.0f + (effective_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
 		}
@@ -10256,7 +10184,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
 				shipp->beam_sys_info.model_num = sip->model_num;
 				shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
-				shipp->beam_sys_info.turret_num_firing_points = 1;
+				shipp->beam_sys_info.turret_num_firing_points = 1;  // dummy turret info is used per firepoint
 				shipp->beam_sys_info.turret_fov = (float)cos((winfo_p->field_of_fire != 0.0f)?winfo_p->field_of_fire:180);
 
 				shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
@@ -10275,7 +10203,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					fbfire_info.target = NULL;
 				}
 				fbfire_info.turret = &shipp->fighter_beam_turret_data;
-				fbfire_info.bfi_flags |= BFIF_IS_FIGHTER_BEAM;
+				fbfire_info.bfi_flags = BFIF_IS_FIGHTER_BEAM;
 				fbfire_info.bank = bank_to_fire;
 
 				for ( v = 0; v < points; v++ ){
@@ -11938,6 +11866,14 @@ int ship_info_lookup(const char *token)
 
 		return -1;
 	}
+	else if (!stricmp(token, "GTSC Faustus#2 (big blast)"))
+	{
+		idx = ship_info_lookup_sub("GTSC Faustus#bigblast");
+		if (idx >= 0)
+			return idx;
+
+		return -1;
+	}
 	else if (!stricmp(token, "GTF Loki (stealth)"))
 	{
 		idx = ship_info_lookup_sub("GTF Loki#stealth");
@@ -11957,6 +11893,11 @@ int ship_info_lookup(const char *token)
 	// found a hash
 	if (*p == '#')
 	{
+		if (strlen(token) > NAME_LENGTH-3) {
+			// If the below sprintf would exceed NAME_LENGTH (taking \0 terminator into account), give a warning and return.
+			Warning(LOCATION, "Token [%s] is too long to be parenthesized by ship_info_lookup()!\n", token);
+			return -1;
+		}
 		// assemble using parentheses
 		sprintf(name, "%s (%s)", temp1, temp2);
 	}
@@ -13372,6 +13313,12 @@ void ship_close()
 		}
 	}
 
+	for (i = 0; i < (int)Ship_types.size(); i++) {
+		Ship_types[i].ai_actively_pursues.clear();
+		Ship_types[i].ai_actively_pursues_temp.clear();
+	}
+	Ship_types.clear();
+	
 	if(CLOAKMAP != -1)
 		bm_release(CLOAKMAP);
 }	
@@ -15435,11 +15382,11 @@ float ship_get_secondary_weapon_range(ship *shipp)
 		weapon_info	*wip;
 		int bank=swp->current_secondary_bank;
 		if (swp->secondary_bank_weapons[bank] >= 0) {
-			wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
-			if ( swp->secondary_bank_ammo[bank] > 0 ) {
-				srange = wip->max_speed * wip->lifetime;
-			}
+		wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
+		if ( swp->secondary_bank_ammo[bank] > 0 ) {
+			srange = wip->max_speed * wip->lifetime;
 		}
+	}
 	}
 
 	return srange;
@@ -15469,14 +15416,14 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
-    
+
 	if (ship_class < 0 || bank < 0 || ammo_type < 0) {
 		return 0;
 	} else {
-		capacity = (float) Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
-		size = (float) Weapon_info[ammo_type].cargo_size;
-		return (int) (capacity / size);
-	}
+	capacity = (float) Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
+	size = (float) Weapon_info[ammo_type].cargo_size;
+	return (int) (capacity / size);
+}
 }
 
 /**
@@ -15627,6 +15574,15 @@ void ship_page_in()
 
 				if ((sip->n_subsystems > 0) && (sip->subsystems[0].model_num > -1)) {
 					ship_previously_loaded = j;
+
+					// It is possible in some cases for sip->model_num to change, and for subsystems->model_num
+					// to still point to the old model index; this makes sure it doesn't happen. -zookeeper
+					for (k = 0; k < sip->n_subsystems; k++) {
+						if (sip->model_num != sip->subsystems[k].model_num) {
+							mprintf(("Ship %s has model_num %i but its subsystem %s has model_num %i, fixing...\n", sip->name, sip->model_num, sip->subsystems[k].name, sip->subsystems[k].model_num));
+							sip->subsystems[k].model_num = sip->model_num;
+						}
+					}
 				}
 
 				// the model should already be loaded so this wouldn't take long, but
@@ -16009,15 +15965,21 @@ int is_support_allowed(object *objp, bool do_simple_check)
 		return 0;
 	}
 
-// this is a mod problem, so let's only do it in debug mode
-#ifndef NDEBUG
-	// Goober5000 - extra check to make sure this guy has a rearming dockpoint
-	if (model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, DOCK_TYPE_REARM) < 0)
+	// this is also somewhat expensive
+	if (!do_simple_check)
 	{
-		Warning(LOCATION, "Support not allowed for %s because its model lacks a rearming dockpoint!", shipp->ship_name);
-		return 0;
+		// Goober5000 - extra check to make sure this guy has a rearming dockpoint
+		if (model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, DOCK_TYPE_REARM) < 0)
+		{
+			static bool warned_about_rearm_dockpoint = false;
+			if (!warned_about_rearm_dockpoint)
+			{
+				Warning(LOCATION, "Support not allowed for %s because its model lacks a rearming dockpoint!", shipp->ship_name);
+				warned_about_rearm_dockpoint = true;
+			}
+			return 0;
+		}
 	}
-#endif
 
 	// Goober5000 - if we got this far, we can request support
 	return 1;

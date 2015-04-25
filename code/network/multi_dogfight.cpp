@@ -387,6 +387,7 @@ void multi_df_blit_kill_matrix()
 	int idx, s_idx, str_len;
 	int cx, cy;
 	char squashed_string[CALLSIGN_LEN+1] = "";
+	int dy = gr_get_font_height() + 1;
 
 	// max width of an individual item, and the text that can be in that item
 	float max_item_width = ((float)Multi_df_display_coords[gr_screen.res][2] - 40.0f) / (float)(Multi_df_score_count + 1);
@@ -398,7 +399,7 @@ void multi_df_blit_kill_matrix()
 
 	// start x for the side bar
 	int side_x_start = Multi_df_display_coords[gr_screen.res][0];
-	int side_y_start = Multi_df_display_coords[gr_screen.res][1] + 10;
+	int side_y_start = Multi_df_display_coords[gr_screen.res][1] + dy;
 
 	// draw the top bar
 	cx = top_x_start;
@@ -474,7 +475,7 @@ void multi_df_blit_kill_matrix()
 		gr_get_string_size(&str_len, NULL, squashed_string);
 		gr_string(Multi_df_display_coords[gr_screen.res][0] + Multi_df_display_coords[gr_screen.res][2] - (MULTI_DF_TOTAL_ADJUST + str_len), cy, squashed_string, GR_RESIZE_MENU);
 
-		cy += 10;
+		cy += dy;
 	}
 }
 

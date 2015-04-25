@@ -26,6 +26,7 @@ SCP_vector<char> Color_Tags;
 color Color_text_normal, Color_text_subselected, Color_text_selected;
 color Color_text_error, Color_text_error_hi, Color_text_active, Color_text_active_hi;
 color Color_text_heading, Color_more_indicator, Color_more_bright, Color_bright, Color_normal;
+color Color_briefing_grid;
 
 color Color_blue, Color_bright_blue, Color_green, Color_bright_green;
 color Color_black, Color_grey, Color_silver, Color_white, Color_bright_white;
@@ -132,6 +133,7 @@ color *interface_colors[INTERFACE_COLORS] = {
 	&Color_more_bright,
 	&Color_bright,
 	&Color_normal,
+	&Color_briefing_grid,
 };
 
 const int interface_defaults[INTERFACE_COLORS] = {
@@ -147,6 +149,7 @@ const int interface_defaults[INTERFACE_COLORS] = {
 	13,	//"Bright Red"
 	1,	//"Bright Blue"
 	7,	//"White"
+	5,	//"Grey"
 };
 
 #define DEFAULT_TAGS	20
@@ -373,10 +376,14 @@ void parse_everything_else(const char *filename)
 			stuff_string(temp2, F_NAME, NAME_LENGTH);
 			temp = temp2;
 
+			if (!stricmp(temp2, "none")) {
+				Warning(LOCATION, "Team color in '%s' defined with a name of '%s'; this won't be usable due to 'None' being used for a lack of a team color by the engine.\n", filename, temp2);
+			}
+
 			if (required_string("$Team Stripe Color:")) {
 				int rgb[3];
 				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-				for (int i = 0; i < 3; i++) {
+				for (i = 0; i < 3; i++) {
 					CLAMP(rgb[i], 0, 255);
 				}
 				
@@ -388,7 +395,7 @@ void parse_everything_else(const char *filename)
 			if (required_string("$Team Base Color:")) {
 				int rgb[3];
 				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-				for (int i = 0; i < 3; i++) {
+				for (i = 0; i < 3; i++) {
 					CLAMP(rgb[i], 0, 255);
 				}
 
@@ -397,8 +404,10 @@ void parse_everything_else(const char *filename)
 				temp_color.base.b = rgb[2] / 255.0f;
 			}
 
+			if (Team_Colors.find(temp) == Team_Colors.end()) {	// Only push to the vector if the team isn't already defined.
+				Team_Names.push_back(temp);
+			}
 			Team_Colors[temp] = temp_color;
-			Team_Names.push_back(temp);
 		}
 		required_string("#End");
 	}
@@ -418,6 +427,7 @@ void parse_everything_else(const char *filename)
 			"$Bright More Indicator:",
 			"$Bright:",
 			"$Normal:",
+			"$Briefing Grid:",
 		};
 
 		// now for each color, check if its corresponding string is there

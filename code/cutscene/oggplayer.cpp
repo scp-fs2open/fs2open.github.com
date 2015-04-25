@@ -694,6 +694,7 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 	}
 }
 
+extern int Mouse_hidden;
 static void OGG_video_draw(theora_state *tstate)
 {
 	yuv_buffer yuv;

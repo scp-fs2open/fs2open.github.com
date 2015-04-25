@@ -780,7 +780,7 @@ void red_alert_delete_ship(ship *shipp, int ship_state)
 {
 	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
 		if (ship_state == RED_ALERT_DESTROYED_SHIP_CLASS) {
-			hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+		hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
 		} else if (ship_state == RED_ALERT_PLAYER_DEL_SHIP_CLASS) {
 			hud_set_wingman_status_none(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
 		} else {
@@ -1095,4 +1095,15 @@ void red_alert_maybe_move_to_next_mission()
 	} else {
 		gameseq_post_event(GS_EVENT_END_GAME);
 	}
+}
+
+/*
+ * red_alert_clear()
+ *
+ * clear all red alert "wingman" data
+ * Allows data to be cleared from outside REDALERT_INTERNAL code
+ */
+void red_alert_clear()
+{
+	Red_alert_wingman_status.clear();
 }

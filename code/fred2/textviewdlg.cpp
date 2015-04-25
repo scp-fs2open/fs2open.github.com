@@ -52,8 +52,7 @@ void text_view_dlg::set(int ship_class)
 {
 	char line[256], line2[256], file_text[82];
 	int i, j, n, found = 0, comment = 0, num_files = 0;
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
+	SCP_vector<SCP_string> tbl_file_names;
 	CFILE *fp;
 
 	if (ship_class < 0)
@@ -112,12 +111,12 @@ void text_view_dlg::set(int ship_class)
 
 
 	// done with ships.tbl, so now check all modular ship tables...
-	num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, CF_TYPE_TABLES, NOX("*-shp.tbm"), CF_SORT_REVERSE);
+	num_files = cf_get_file_list(tbl_file_names, CF_TYPE_TABLES, NOX("*-shp.tbm"), CF_SORT_REVERSE);
 
 	for (n = 0; n < num_files; n++){
-		strcat(tbl_file_names[n], ".tbm");
+		tbl_file_names[n] += ".tbm";
 
-		fp = cfopen(tbl_file_names[n], "r");
+		fp = cfopen(tbl_file_names[n].c_str(), "r");
 		Assert(fp);
 
 		memset( line, 0, sizeof(line) );
@@ -160,7 +159,7 @@ void text_view_dlg::set(int ship_class)
 
 				if (!stricmp(line2 + i, Ship_info[ship_class].name)) {
 					memset( file_text, 0, sizeof(file_text) );
-					snprintf(file_text, sizeof(file_text)-1, "--  %s  -------------------------------\r\n", tbl_file_names[n]);
+					snprintf(file_text, sizeof(file_text)-1, "--  %s  -------------------------------\r\n", tbl_file_names[n].c_str());
 					m_edit += file_text;
 					found = 1;
 				}

@@ -81,6 +81,7 @@ protected:
 
 	int Match_speed_offsets[2];
 	bool Use_custom_match_speed;
+	ubyte Match_speed_icon;
 
 	bool Show_background;
 public:

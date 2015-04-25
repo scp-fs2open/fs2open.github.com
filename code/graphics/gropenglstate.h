@@ -70,7 +70,7 @@ class opengl_texture_state
 		void SetTarget(GLenum tex_target);
 		void SetActiveUnit(GLuint id = 0);
 		void Enable(GLuint tex_id = 0);
-		void Disable(bool force = false);
+		void Disable();
 		void DisableUnused();
 		void DisableAll();
 		void ResetUsed();

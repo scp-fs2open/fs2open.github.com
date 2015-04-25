@@ -3,6 +3,7 @@
 #include "asteroid/asteroid.h"
 #include "camera/camera.h"
 #include "cfile/cfilesystem.h"
+#include "cutscene/movie.h"
 #include "debris/debris.h"
 #include "cmdline/cmdline.h"
 #include "freespace2/freespace.h"
@@ -1523,7 +1524,7 @@ ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Cust
 	if (!ade_get_args(L, "o", l_HudGauge.GetPtr(&gauge)))
 		return ADE_RETURN_NIL;
 
-	if (gauge->getConfigType() != HUD_OBJECT_CUSTOM)
+	if (gauge->getObjectType() != HUD_OBJECT_CUSTOM)
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "s", gauge->getCustomGaugeName());
@@ -1537,7 +1538,7 @@ ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Cust
 	if (!ade_get_args(L, "o|s", l_HudGauge.GetPtr(&gauge), text))
 		return ADE_RETURN_NIL;
 
-	if (gauge->getConfigType() != HUD_OBJECT_CUSTOM)
+	if (gauge->getObjectType() != HUD_OBJECT_CUSTOM)
 		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR && text != NULL)
@@ -3122,16 +3123,16 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment streng
 				qdx = -1;
 				break;
 			case LE_SHIELD_FRONT:
-				qdx = 0;
+				qdx = FRONT_QUAD;
 				break;
 			case LE_SHIELD_LEFT:
-				qdx = 1;
+				qdx = LEFT_QUAD;
 				break;
 			case LE_SHIELD_RIGHT:
-				qdx = 2;
+				qdx = RIGHT_QUAD;
 				break;
 			case LE_SHIELD_BACK:
-				qdx = 3;
+				qdx = REAR_QUAD;
 				break;
 			default:
 				return ade_set_error(L, "f", 0.0f);
@@ -3350,7 +3351,7 @@ ADE_FUNC(__gc, l_Texture, NULL, "Auto-deletes texture", NULL, NULL)
 	// use, and in order to prevent that we want to double-check the load count
 	// here before unloading the bitmap. -zookeeper
 	if(idx > -1 && bm_is_valid(idx) && bm_bitmaps[bm_get_cache_slot(idx, 0)].load_count < 1)
-		bm_unload(idx);
+		bm_release(idx);
 
 	return ADE_RETURN_NIL;
 }
@@ -3420,7 +3421,7 @@ ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 	if(!bm_is_valid(*idx))
 		return ADE_RETURN_NIL;
 
-	bm_unload(*idx);
+	bm_release(*idx);
 
 	//WMC - invalidate this handle
 	*idx = -1;
@@ -6020,7 +6021,7 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 	return ade_set_args(L, "b", b);
 }
 
-ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Bank %, Zoom multiplier]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
+ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %=0, Pitch %=0, Bank %=40, number Zoom=1.3]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
 {
 	int x1,y1,x2,y2;
 	angles rot_angles = {0.0f, 0.0f, 40.0f};
@@ -6102,7 +6103,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 }
 
 // Nuke's alternate tech model rendering function
-ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, orientation Orientation=null, [Zoom multiplier]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
+ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, [orientation Orientation=nil, number Zoom=1.3]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
 {
 	int x1,y1,x2,y2;
 	int idx;
@@ -10032,7 +10033,7 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	}
 
 	if(f_rot) {
-		aip->ai_override_flags = AIORF_FULL;
+		aip->ai_override_flags |= AIORF_FULL;
 		cip->heading = arr[0];
 		cip->pitch = arr[1];
 		cip->bank = arr[2];
@@ -10051,10 +10052,10 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 		} 
 	}
 	if(f_move) {
-		aip->ai_override_flags = AIORF_FULL_LAT;
+		aip->ai_override_flags |= AIORF_FULL_LAT;
 		cip->vertical = arr[3];
 		cip->sideways = arr[4];
-		cip->forward = arr[5];
+		cip->forward = arr[5];	
 	} else {
 		if (arr[3] != 0) {
 			cip->vertical = arr[3];
@@ -12008,7 +12009,7 @@ ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]",
 
 ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played", "boolean", "True if sound was played, false if not (Replaced with a sound instance object in the future)")
 {
-	int idx;
+	int idx, gamesnd_idx;
 	float pan=0.0f;
 	float vol=100.0f;
 	int pri=0;
@@ -12025,20 +12026,32 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
     CLAMP(pan, -1.0f, 1.0f);
     CLAMP(vol, 0.0f, 100.0f);
 
-	idx = snd_play(&Snds[gamesnd_get_by_tbl_index(idx)], pan, vol*0.01f, pri, voice_msg);
+	gamesnd_idx = gamesnd_get_by_tbl_index(idx);
 
-	return ade_set_args(L, "b", idx > -1);
+	if (gamesnd_idx >= 0) {
+		int sound_handle = snd_play(&Snds[gamesnd_idx], pan, vol*0.01f, pri, voice_msg);
+		return ade_set_args(L, "b", sound_handle >= 0);
+	} else {
+		LuaError(L, "Invalid sound index %i (Snds[%i]) in playGameSound()", idx, gamesnd_idx);
+		return ADE_RETURN_FALSE;
+	}
 }
 
 ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
-	int idx;
+	int idx, gamesnd_idx;
 	if(!ade_get_args(L, "i", &idx))
 		return ade_set_error(L, "b", false);
 
-	gamesnd_play_iface(gamesnd_get_by_iface_tbl_index(idx));
+	gamesnd_idx = gamesnd_get_by_iface_tbl_index(idx);
 
-	return ade_set_args(L, "b", idx > -1);
+	if (gamesnd_idx >= 0) {
+		gamesnd_play_iface(gamesnd_idx);
+		return ade_set_args(L, "b", true);
+	} else {
+		LuaError(L, "Invalid sound index %i (Snds[%i]) in playInterfaceSound()", idx, gamesnd_idx);
+		return ADE_RETURN_FALSE;
+	}
 }
 
 extern float Master_event_music_volume;
@@ -12088,6 +12101,32 @@ ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false], [string 'bri
 	}
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(pauseMusic, l_Audio, "int audiohandle, bool pause", "Pauses or unpauses a playing music file, provided audiohandle is valid. The boolean argument should be true to pause and false to unpause. If the audiohandle is -1, *all* audio streams are paused or unpaused.", NULL, NULL)
+{
+	int ah;
+	bool pause;
+
+	if(!ade_get_args(L, "ib", &ah, &pause))
+		return ADE_RETURN_NIL;
+
+	if (ah >= 0 && ah < MAX_AUDIO_STREAMS)
+	{
+		if (pause)
+			audiostream_pause(ah, true);
+		else
+			audiostream_unpause(ah, true);
+	}
+	else if (ah == -1)
+	{
+		if (pause)
+			audiostream_pause_all(true);
+		else
+			audiostream_unpause_all(true);
+	}
+
+		return ADE_RETURN_NIL;
 }
 
 
@@ -12142,6 +12181,11 @@ ADE_FUNC(createVector, l_Base, "[x, y, z]", "Creates a vector object", "vector",
 	ade_get_args(L, "|fff", &v3.xyz.x, &v3.xyz.y, &v3.xyz.z);
 
 	return ade_set_args(L, "o", l_Vector.Set(v3));
+}
+
+ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds since the engine has started", "number", "Overall time (seconds)")
+{
+	return ade_set_args(L, "x", game_get_overall_frametime());
 }
 
 ADE_FUNC(getFrametime, l_Base, "[Do not adjust for time compression (Boolean)]", "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes.", "number", "Frame time (seconds)")
@@ -12741,7 +12785,7 @@ ADE_VIRTVAR(HUDDisabledExceptMessages, l_HUD, "boolean", "Specifies if only the 
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(setHUDGaugeColor, l_HUD, "number (index number of the gauge), [number red, number green, number blue, number alpha]", "Color used to draw the gauge", "boolean", "If the operation was successful")
+ADE_FUNC(setHUDGaugeColor, l_HUD, "number (index number of the gauge), [integer red, number green, number blue, number alpha]", "Color used to draw the gauge", "boolean", "If the operation was successful")
 {
 	int idx = -1; 
 	int r = 0;
@@ -12903,7 +12947,7 @@ ADE_FUNC(__len, l_Graphics_Posteffects, NULL, "Gets the number or available post
 	return ade_set_args(L, "i", ((int) names.size()) + 1);
 }
 
-ADE_FUNC(setPostEffect, l_Graphics, "string name[, number value=0]", "Sets the intensity of the specified post processing effect", "boolean", "true when successful, false otherwise")
+ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0]", "Sets the intensity of the specified post processing effect", "boolean", "true when successful, false otherwise")
 {
 	char* name = NULL;
 	int intensity = 0;
@@ -12980,7 +13024,7 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 	}
 }
 
-ADE_FUNC(clearScreen, l_Graphics, "[number Red, number green, number blue, number alpha]", "Clears the screen to black, or the color specified.", NULL, NULL)
+ADE_FUNC(clearScreen, l_Graphics, "[integer red, number green, number blue, number alpha]", "Clears the screen to black, or the color specified.", NULL, NULL)
 {
 	int r,g,b,a;
 	r=g=b=0;
@@ -13162,7 +13206,7 @@ ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [number Alpha]", "Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)", NULL, NULL)
+ADE_FUNC(setColor, l_Graphics, "integer Red, number Green, number Blue, [integer Alpha]", "Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)", NULL, NULL)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -13299,7 +13343,7 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, orientation Orientation=null, number Width=1.0, number Height=1.0]", "Draws a polygon. May not work properly in hooks other than On Object Render.", NULL, NULL)
+ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, orientation Orientation=nil, number Width=1.0, number Height=1.0]", "Draws a polygon. May not work properly in hooks other than On Object Render.", NULL, NULL)
 {
 	int tdx = -1;
 	vec3d pos = vmd_zero_vector;
@@ -13466,7 +13510,7 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 }
 
 // Wanderer
-ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, integer Flags", "Draws the given model with the specified position and orientation - Use with extreme care, designed to operate properly only in On Object Render hooks.", "int", "Zero if successful, otherwise an integer error code")
+ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orientation, [integer Flags]", "Draws the given model with the specified position and orientation - Use with extreme care, designed to operate properly only in On Object Render hooks.", "int", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
 	vec3d *v = &vmd_zero_vector;
@@ -13597,7 +13641,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	return ade_set_args(L, "iiii", x1, y1, x2, y2);
 }
 
-ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, [boolean setColor=false]]",
+ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
 	"Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
 	"number,number,number,number",
 	"Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
@@ -14348,7 +14392,24 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean"
 	if(!ade_get_args(L, "s", &s))
 		return ADE_RETURN_FALSE;
 
-	snprintf(buf, 8191, "( when ( true ) ( %s ) )", s);
+	while (is_white_space(*s))
+		s++;
+	if (*s != '(')
+	{
+		static bool Warned_about_runSEXP_parentheses = false;
+		if (!Warned_about_runSEXP_parentheses)
+		{
+			Warned_about_runSEXP_parentheses = true;
+			Warning(LOCATION, "Invalid SEXP syntax: SEXPs must be surrounded by parentheses.  For backwards compatibility, the string has been enclosed in parentheses.  This may not be correct in all use cases.");
+		}
+		// this is the old sexp handling method, which is incorrect
+		snprintf(buf, 8191, "( when ( true ) ( %s ) )", s);
+	}
+	else
+	{
+		// this is correct usage
+		snprintf(buf, 8191, "( when ( true ) %s )", s);
+	}
 
 	r_val = run_sexp(buf);
 
@@ -14477,7 +14538,7 @@ ADE_FUNC(__len, l_Mission_Events, NULL, "Number of events in mission", "number",
 //****SUBLIBRARY: Mission/SEXPVariables
 ade_lib l_Mission_SEXPVariables("SEXPVariables", &l_Mission, NULL, "SEXP Variables");
 
-ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[1] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
+ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[\"newvariable\"] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
 {
 	char *name = NULL;
 	char *newval = NULL;
@@ -15124,9 +15185,6 @@ ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class=WeaponClass[1], orientatio
 
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
 {
-	if(!(Game_mode & GM_IN_MISSION))
-		return ade_set_error(L, "s", "");
-
 	return ade_set_args(L, "s", Game_current_mission_filename);
 }
 
@@ -15279,6 +15337,17 @@ ADE_FUNC(applyShudder, l_Mission, "number time, number intesity", "Applies a shu
 	game_shudder_apply(int_time, intensity * 0.01f);
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission being played in a campaign (as opposed to the tech room's simulator)", "boolean", "true if in campaign, false if not")
+{
+	bool b = false;
+
+	if (Game_mode & GM_CAMPAIGN_MODE) {
+		b = true;
+	}
+
+	return ade_set_args(L, "b", b);
 }
 
 //**********LIBRARY: Bitwise Ops
@@ -15566,6 +15635,18 @@ ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enable
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(playCutscene, l_Testing, NULL, "Forces a cutscene by the specified filename string to play. Should really only be used in a non-gameplay state (i.e. start of GS_STATE_BRIEFING) otherwise odd side effects may occur. Highly Experimental.", "string", NULL)
+{
+	//This whole thing is a quick hack and can probably be done way better, but is currently functioning fine for my purposes.
+	char *filename;
+
+	if (!ade_get_args(L, "s", &filename))
+		return ADE_RETURN_FALSE;
+
+	movie_play(filename);
+
+	return ADE_RETURN_TRUE;
+}
 
 // *************************Helper functions*********************
 //WMC - This should be used anywhere that an 'object' is set, so
@@ -16371,11 +16452,7 @@ static int ade_index_handler(lua_State *L)
 				//Execute function
 				lua_pcall(L, numargs, LUA_MULTRET, err_ldx);
 
-				//WMC - Return as appropriate
-				int rval = lua_gettop(L) - vvt_ldx;
-
-				if(rval)
-					return rval;
+				return (lua_gettop(L) - vvt_ldx);
 			}
 			else
 			{
@@ -16405,10 +16482,7 @@ static int ade_index_handler(lua_State *L)
 			//Execute function
 			lua_pcall(L, last_arg_ldx, LUA_MULTRET, err_ldx);
 
-			int rval = lua_gettop(L) - err_ldx;
-
-			if(rval)
-				return rval;
+			return (lua_gettop(L) - err_ldx);
 		}
 		lua_pop(L, 2);	//WMC - Don't need __indexer or error handler
 	}

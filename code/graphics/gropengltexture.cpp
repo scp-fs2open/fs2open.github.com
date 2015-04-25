@@ -933,7 +933,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 	bmp = bm_lock(bitmap_handle, bpp, flags);
 
 	if ( bmp == NULL ) {
-		mprintf(("Couldn't lock bitmap %d.\n", bitmap_handle ));
+		mprintf(("Couldn't lock bitmap %d (%s).\n", bitmap_handle, bm_get_filename(bitmap_handle) ));
 		return 0;
 	}
 
@@ -1077,7 +1077,7 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 	}
 	// gah
 	else {
-		mprintf(("Texturing disabled for texture %s due to internal error.\n", bm_get_filename(bitmap_handle)));
+		mprintf(("Texturing disabled for bitmap %d (%s) due to internal error.\n", bitmap_handle, bm_get_filename(bitmap_handle)));
 		GL_state.Texture.Disable();
 
 		return 0;

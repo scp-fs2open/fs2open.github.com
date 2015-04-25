@@ -33,6 +33,7 @@ public:
 	char	debrief_bitmap[MAX_FILENAME_LEN];
 	int	num_versions;
 	bool version_starts_at_1;
+	bool available_from_start;
 	int	kills_needed;
 
 	//If this is a badge (kills_needed > 0)
@@ -58,7 +59,7 @@ extern void parse_medal_tbl();
 #define MM_POPUP				1		// called from within some other tight loop (don't use gameseq_ functions)
 
 // main medals screen
-void medal_main_init(player *pl, int mode = MM_NORMAL);
+void medal_main_init(player *pl,int mode = MM_NORMAL);
 
 // return 0 if the screen should close (used for MM_POPUP mode)
 int medal_main_do();
