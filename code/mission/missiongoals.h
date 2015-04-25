@@ -93,7 +93,7 @@ extern int	Num_goals;									// number of goals for this mission
 #define MLF_FIRST_REPEAT_ONLY		(1 << 4)
 #define MLF_LAST_REPEAT_ONLY		(1 << 5)
 #define MLF_FIRST_TRIGGER_ONLY		(1 << 6)
-#define MLF_LAST_TRIGGER_ONLY		(1 << 7)
+#define MLF_LAST_TRIGGER_ONLY		(1 << 7)	
 #define MLF_STATE_CHANGE			(1 << 8)	
 
 #define MLF_ALL_REPETITION_FLAGS (MLF_FIRST_REPEAT_ONLY | MLF_LAST_REPEAT_ONLY | MLF_FIRST_TRIGGER_ONLY | MLF_LAST_TRIGGER_ONLY) 

@@ -1242,7 +1242,7 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	// ALWAYS do this - since this is called once per firing
 	// if this is a cannon type weapon, create a muzzle flash
 	// HACK - let the flak guns do this on their own since they fire so quickly
-	if((Weapon_info[weapon_info_index].wi_flags & WIF_MFLASH) && !(Weapon_info[weapon_info_index].wi_flags & WIF_FLAK)){
+	if ((Weapon_info[weapon_info_index].muzzle_flash >= 0) && !(Weapon_info[weapon_info_index].wi_flags & WIF_FLAK)) {
 		vec3d real_dir;
 		vm_vec_rotate(&real_dir, gun_dir,&objp->orient);	
 		mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);		
@@ -2291,9 +2291,9 @@ void shipfx_large_blowup_render(ship* shipp)
 // ================== DO THE ELECTRIC ARCING STUFF =====================
 // Creates any new ones, moves old ones.
 
-#define MAX_ARC_LENGTH_PERCENTAGE 0.25f
+const float MAX_ARC_LENGTH_PERCENTAGE = 0.25f;
 
-#define MAX_EMP_ARC_TIMESTAMP		 (150.0f)
+const float MAX_EMP_ARC_TIMESTAMP = 150.0f;
 
 void shipfx_do_damaged_arcs_frame( ship *shipp )
 {
@@ -2845,7 +2845,7 @@ void engine_wash_ship_process(ship *shipp)
 			// check if thruster bank has engine wash
 			if (bank->wash_info_pointer == NULL) {
 				// if huge, give default engine wash
-				if ((wash_sip->flags & SIF_HUGE_SHIP) && Engine_wash_info.size()) {
+				if ((wash_sip->flags & SIF_HUGE_SHIP) && !Engine_wash_info.empty()) {
 					bank->wash_info_pointer = &Engine_wash_info[0];
 					nprintf(("wash", "Adding default engine wash to ship %s", wash_sip->name));
 				} else {
@@ -2937,7 +2937,9 @@ void engine_wash_ship_process(ship *shipp)
 				}
 			}
 		}
+
 		shipp->wash_intensity += ship_intensity * speed_scale;
+
 		if (ship_intensity > max_ship_intensity) {
 			max_ship_intensity = ship_intensity;
 			max_ship_intensity_objp = wash_objp;
@@ -3238,6 +3240,8 @@ void parse_combined_variable_list(CombinedVariable *dest, flag_def_list *src, si
 		return;
 
 	char buf[NAME_LENGTH*2];
+	buf[sizeof(buf)-1] = '\0';
+
 	flag_def_list *sp = NULL;
 	CombinedVariable *dp = NULL;
 	for(size_t i = 0; i < num; i++)

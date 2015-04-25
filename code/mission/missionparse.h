@@ -122,14 +122,8 @@ typedef struct support_ship_info {
 // defines a mission cutscene.
 typedef struct mission_cutscene {
 	int type; 
-	char cutscene_name[NAME_LENGTH];	
-	int formula; 
-
-	mission_cutscene( ) 
-		: type( 0 ), formula( -1 )
-	{ 
-		cutscene_name[ 0 ] = 0;
-	}
+	char filename[MAX_FILENAME_LEN];
+	int formula;
 } mission_cutscene;
 
 typedef struct mission {
@@ -431,8 +425,7 @@ public:
 	float ship_max_shield_strength;
 
 	// Goober5000
-	int num_texture_replacements;
-	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000
+	SCP_vector<texture_replace> replacement_textures;
 
 	SCP_vector<alt_class> alt_classes;	
 
@@ -487,7 +480,7 @@ public:
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	23
+#define MAX_PARSE_OBJECT_FLAGS_2	24
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -512,6 +505,7 @@ public:
 #define P2_SF2_SHIP_LOCKED					(1<<20)
 #define P2_SF2_WEAPONS_LOCKED				(1<<21)
 #define P2_SF2_SCRAMBLE_MESSAGES			(1<<22)
+#define P2_OF_NO_COLLIDE					(1<<23) // This actually changes the OF_COLLIDES object flag
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<28)

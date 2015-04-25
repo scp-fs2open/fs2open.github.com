@@ -21,10 +21,11 @@
 // Colors for UI
 // See FreeSpace.cpp for usage
 
-#define INTERFACE_COLORS 12
+#define INTERFACE_COLORS 13
 extern color Color_text_normal, Color_text_subselected, Color_text_selected;
 extern color Color_text_error, Color_text_error_hi, Color_text_active, Color_text_active_hi;
 extern color Color_text_heading, Color_more_indicator, Color_more_bright, Color_bright, Color_normal;
+extern color Color_briefing_grid;
 
 #define TOTAL_COLORS 22
 extern color Color_blue, Color_bright_blue, Color_green, Color_bright_green;

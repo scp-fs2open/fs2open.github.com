@@ -61,6 +61,8 @@
 #define DEBRIEF_ALLTIME_STATS		2
 #define DEBRIEF_ALLTIME_KILLS		3
 
+#define DEBRIEFING_FONT	FONT1
+
 extern float Brief_text_wipe_time_elapsed;
 
 // 3rd coord is max width in pixels
@@ -491,7 +493,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Badge"))) {
 		if (Badge_bitmap >= 0){
-			return Medals[Player->stats.m_badge_earned].name;
+			return Medals[Player->stats.m_badge_earned.back()].name;
 		}
 	}
 
@@ -1019,25 +1021,25 @@ void debrief_award_init()
 
 	// handle badge earned
 	// only grant badge if earned and allowed.  (no_promotion really means no promotion and no badges)
-	if ( Player->stats.m_badge_earned != -1 ) {
-		debrief_choose_medal_variant(buf, Player->stats.m_badge_earned, Player->stats.medal_counts[Player->stats.m_badge_earned] - 1);
+	if ( Player->stats.m_badge_earned.size() ) {
+		debrief_choose_medal_variant(buf, Player->stats.m_badge_earned.back(), Player->stats.medal_counts[Player->stats.m_badge_earned.back()] - 1);
 		Badge_bitmap = bm_load(buf);
 
 		// see if we have a persona
 		int persona_index = debrief_find_persona_index();
 
 		// use persona-specific badge text if it exists; otherwise, use default
-		if (Medals[Player->stats.m_badge_earned].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned].promotion_text.end()) {
-			Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text[persona_index];
+		if (Medals[Player->stats.m_badge_earned.back()].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned.back()].promotion_text.end()) {
+			Badge_stage.text = Medals[Player->stats.m_badge_earned.back()].promotion_text[persona_index];
 		} else {
-			Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text[-1];
+			Badge_stage.text = Medals[Player->stats.m_badge_earned.back()].promotion_text[-1];
 		}
 		Badge_stage.recommendation_text = "";
 
 		// choose appropriate badge voice for this mission
-		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned].voice_base, persona_index);
+		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
 
-		debrief_add_award_text(Medals[Player->stats.m_badge_earned].name);
+		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].name);
 	}
 
 	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0)) {
@@ -1924,6 +1926,9 @@ void debrief_init()
 //	Campaign.loop_enabled = 0;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
 
+	// MageKing17 - Set the font so that wordwrapping in brief_color_text_init() calculates based on the same font as the debriefing itself.
+	gr_set_font(DEBRIEFING_FONT);
+
 	// set up the right briefing for this guy
 	if(MULTI_TEAM){
 		Debriefing = &Debriefings[Net_player->p_info.team];
@@ -2253,6 +2258,8 @@ void debrief_add_award_text(char *str)
 	// maybe translate for displaying
 	if (Lcl_gr) {
 		lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
+	} else if (Lcl_pl) {
+		lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
 	}
 
 	Debrief_award_text_num_lines++;
@@ -2462,6 +2469,9 @@ void debrief_do_frame(float frametime)
 	gr_set_color_fast(&Color_normal);
 	gr_printf_menu(Debrief_title_coords[gr_screen.res][0], Debrief_title_coords[gr_screen.res][1] - 10, NOX("[name: %s, mod: %s]"), Mission_filename, The_mission.modified);
 #endif
+
+	// Set the font for the debriefing instead of relying on the implicit font-setting of Debrief_ui_window.draw() -MageKing17
+	gr_set_font(DEBRIEFING_FONT);
 
 	// draw the screen-specific text
 	switch (Current_mode) {

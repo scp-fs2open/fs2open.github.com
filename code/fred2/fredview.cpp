@@ -3307,8 +3307,9 @@ int CFREDView::error(const char *msg, ...)
 	va_list args;
 
 	va_start(args, msg);
-	vsprintf(buf, msg, args);
+	vsnprintf(buf, sizeof(buf)-1, msg, args);
 	va_end(args);
+	buf[sizeof(buf)-1] = '\0';
 
 	g_err = 1;
 	if (MessageBox(buf, "Error", MB_OKCANCEL | MB_ICONEXCLAMATION) == IDOK)
@@ -3323,8 +3324,9 @@ int CFREDView::internal_error(const char *msg, ...)
 	va_list args;
 
 	va_start(args, msg);
-	vsprintf(buf, msg, args);
+	vsnprintf(buf, sizeof(buf)-1, msg, args);
 	va_end(args);
+	buf[sizeof(buf)-1] = '\0';
 
 	g_err = 1;
 

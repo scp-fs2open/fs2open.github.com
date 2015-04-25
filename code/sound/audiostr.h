@@ -46,6 +46,9 @@ typedef struct {
 } STRHDL;
 #endif	// NEED_STRHDL
 
+extern const char *audio_ext_list[];
+extern const int NUM_AUDIO_EXT;
+
 // Initializes the audio streaming library.  Called
 // automatically when the sound stuff is inited.
 void audiostream_init();
@@ -93,10 +96,10 @@ int audiostream_done_reading(int i);
 // return if audiostream has initialized ok
 int audiostream_is_inited();
 
-void audiostream_pause(int i);	// pause a particular stream
-void audiostream_pause_all();	// pause all audio streams											
+void audiostream_pause(int i, bool via_sexp_or_script = false);	// pause a particular stream
+void audiostream_unpause(int i, bool via_sexp_or_script = false);	// unpause a particular stream
 
-void audiostream_unpause(int i);	// unpause a particular stream
-void audiostream_unpause_all();	// unpause all audio streams
+void audiostream_pause_all(bool via_sexp_or_script = false);	// pause all audio streams											
+void audiostream_unpause_all(bool via_sexp_or_script = false);	// unpause all audio streams
 
 #endif // _AUDIOSTR_H

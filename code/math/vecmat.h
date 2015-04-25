@@ -366,6 +366,7 @@ matrix *vm_matrix_x_matrix(matrix *dest,matrix *src0,matrix *src1);
 
 //extract angles from a matrix
 angles *vm_extract_angles_matrix(angles *a,matrix *m);
+angles *vm_extract_angles_matrix_alternate(angles *a,matrix *m);
 
 //extract heading and pitch from a vector, assuming bank==0
 angles *vm_extract_angles_vector(angles *a,vec3d *v);

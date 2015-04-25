@@ -195,8 +195,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 		float	max_speed;
 
 		max_speed = vm_vec_mag_quick(&pi->max_vel);
-		tangles.p += (float) (rand()-RAND_MAX_2)/RAND_MAX * pi->speed/max_speed/64.0f;
-		tangles.h += (float) (rand()-RAND_MAX_2)/RAND_MAX * pi->speed/max_speed/64.0f;
+		tangles.p += (float) (rand()-RAND_MAX_2) * RAND_MAX_1f * pi->speed/max_speed/64.0f;
+		tangles.h += (float) (rand()-RAND_MAX_2) * RAND_MAX_1f * pi->speed/max_speed/64.0f;
 		if ( pi->flags & PF_AFTERBURNER_ON ) {
 			pi->afterburner_decay = timestamp(ABURN_DECAY_TIME);
 		}
@@ -205,8 +205,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 
 	// Make ship shake due to shockwave, decreasing in amplitude at the end of the shockwave
 	if ( pi->flags & PF_IN_SHOCKWAVE ) {
-		tangles.p += (float) (myrand()-RAND_MAX_2)/RAND_MAX * shock_amplitude;
-		tangles.h += (float) (myrand()-RAND_MAX_2)/RAND_MAX * shock_amplitude;
+		tangles.p += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
+		tangles.h += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
 	}
 
 
@@ -489,7 +489,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	if (ci->forward > 1.0f ) ci->forward = 1.0f;
 	else if (ci->forward < -1.0f ) ci->forward = -1.0f;
 
-	if (!Flight_controls_follow_eyepoint_orientation || Player_obj->type != OBJ_SHIP) {
+	if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == NULL) || (Player_obj->type != OBJ_SHIP)) {
 		// Default behavior; eyepoint orientation has no effect on controls
 		pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
 		pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;

@@ -28,6 +28,11 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
+#ifdef SCP_UNIX
+#include "osapi/osapi.h"
+#include <dirent.h>
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -186,14 +191,13 @@ Flag exe_params[] =
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_3d_sound", },
 	{ "-disable_glsl_model","Don't use shaders for model rendering",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_glsl_model", },
 	{ "-mipmap",			"Enable mipmapping",						true,	0,					EASY_DEFAULT_MEM,	"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
- #ifndef SCP_UNIX
-	{ "-disable_di_mouse",	"Don't use DirectInput for mouse control",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_di_mouse", },
- #endif
 	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-use_gldrawelements", },
 	{ "-old_collision",		"Use old collision detection system",		true,	EASY_DEFAULT,		EASY_ALL_ON,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-old_collision", },
+	{ "-gl_finish",			"Fix input lag on some ATI+Linux systems",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gl_finish", },
 
 	{ "-ingame_join",		"Allow in-game joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Enable voice recognition",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
+	{ "-brief_lighting",	"Enable lighting on briefing models",		true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-brief_lighting", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
@@ -293,6 +297,7 @@ cmdline_parm fxaa_arg("-fxaa", NULL, AT_NONE);
 cmdline_parm fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-9), requires -post_process and -fxaa", AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
+cmdline_parm brieflighting_arg("-brief_lighting", NULL, AT_NONE);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -317,6 +322,7 @@ int Cmdline_fxaa_preset = 6;
 extern int Fxaa_preset_last_frame;
 bool Cmdline_fb_explosions = 0;
 extern bool ls_force_off;
+bool Cmdline_brief_lighting = 0;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL, AT_NONE);	// Cmdline_cache_bitmaps
@@ -400,10 +406,10 @@ cmdline_parm mipmap_arg("-mipmap", NULL, AT_NONE);			// Cmdline_mipmap
 cmdline_parm atiswap_arg("-ati_swap", NULL, AT_NONE);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
 cmdline_parm no3dsound_arg("-no_3d_sound", NULL, AT_NONE);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
 cmdline_parm no_glsl_models_arg("-disable_glsl_model", NULL, AT_NONE); // Cmdline_no_glsl_model_rendering -- switches model rendering to fixed pipeline
-cmdline_parm no_di_mouse_arg("-disable_di_mouse", "Disable DirectInput mouse code (Windows only)", AT_NONE); // Cmdline_no_di_mouse -- Disables directinput use for mouse control
 cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL, AT_NONE); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
 cmdline_parm keyboard_layout("-keyboard_layout", "Specify keyboard layout (qwertz or azerty)", AT_STRING);
 cmdline_parm old_collision_system("-old_collision", NULL, AT_NONE); // Cmdline_old_collision_sys
+cmdline_parm gl_finish ("-gl_finish", NULL, AT_NONE);
 
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nohtl = 0;
@@ -419,6 +425,7 @@ int Cmdline_no_3d_sound = 0;
 int Cmdline_no_glsl_model_rendering = 0;
 int Cmdline_drawelements = 0;
 char* Cmdline_keyboard_layout = NULL;
+bool Cmdline_gl_finish = false;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", "Skip mainhall and run this mission", AT_STRING);	// Cmdline_start_mission
@@ -899,18 +906,17 @@ cmdline_parm::cmdline_parm(const char *name_, const char *help_, const int arg_t
 	name_found = 0;
 
 	if (Parm_list_inited == 0) {
-		list_init(&Parm_list);
+		Assertion(&Parm_list == this, "Coding error! 1st initialised cmdline_parm must be static Parm_list\n");
+		list_init(this);
 		Parm_list_inited = 1;
-	}
-
-	if (name != NULL) {
+	} else {
+		Assertion(name, "Coding error! cmdline_parm's must have a non-NULL name\n");
+		Assertion(name[0] == '-', "Coding error! cmdline_parm's must start with a '-'\n");
 		// not in the static Parm_list init, so lookup the NULL help args
 		if (help == NULL) {
 			help = get_param_desc(name);
 		}
 		list_append(&Parm_list, this);
-	} else {
-		list_init(&Parm_list);
 	}
 }
 
@@ -1267,12 +1273,6 @@ bool SetCmdlineParams()
 	if(mod_arg.found() ) {
 		Cmdline_mod = mod_arg.str();
 
-		// be sure that this string fits in our limits
-		/* This has to be disabled because the max size is going to be mods*MAX_FILENAME_LEN
-		if ( strlen(Cmdline_mod) > MAX_FILENAME_LEN ) {
-			Cmdline_mod[MAX_FILENAME_LEN-1] = '\0';
-		}*/
-
 		// strip off blank space it it's there
 		if ( Cmdline_mod[strlen(Cmdline_mod)-1] == ' ' ) {
 			Cmdline_mod[strlen(Cmdline_mod)-1] = '\0';
@@ -1284,7 +1284,49 @@ bool SetCmdlineParams()
 		memset( modlist, 0, len + 2 );
 		strcpy_s(modlist, len+2, Cmdline_mod);
 
-		//modlist[len]= '\0'; // double null termination at the end
+#ifdef SCP_UNIX
+		// for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
+		DIR *dp;
+		dirent *dirp;
+		char *cur_pos, *temp;
+		char cur_dir[CF_MAX_PATHNAME_LENGTH], delim[] = ",";
+		SCP_vector<SCP_string> temp_modlist;
+		size_t total_len = 0;
+
+		if ( !_getcwd(cur_dir, CF_MAX_PATHNAME_LENGTH ) ) {
+			Error(LOCATION, "Can't get current working directory -- %d", errno );
+		}
+
+		for (cur_pos = strtok(modlist, delim); cur_pos != NULL; cur_pos = strtok(NULL, delim))
+		{
+			if ((dp = opendir(cur_dir)) == NULL) {
+				Error(LOCATION, "Can't open directory '%s' -- %d", cur_dir, errno );
+			}
+
+			while ((dirp = readdir(dp)) != NULL) {
+				if (!stricmp(dirp->d_name, cur_pos)) {
+					temp_modlist.push_back(dirp->d_name);
+					total_len += (strlen(dirp->d_name) + 1);
+				}
+			}
+			(void)closedir(dp);
+		}
+
+		// create new char[] to replace modlist
+		char *new_modlist = new char[total_len+1];
+		memset( new_modlist, 0, total_len + 1 );
+		SCP_vector<SCP_string>::iterator ii, end = temp_modlist.end();
+		for (ii = temp_modlist.begin(); ii != end; ++ii) {
+			strcat_s(new_modlist, total_len+1, ii->c_str());
+			strcat_s(new_modlist, total_len+1, ","); // replace later with NUL
+		}
+
+		// make the rest of the function unaware that anything happened here
+		temp = modlist;
+		modlist = new_modlist;
+		delete [] temp;
+		len = total_len;
+#endif
 
 		// null terminate each individual
 		for (int i = 0; i < len; i++)
@@ -1471,6 +1513,11 @@ bool SetCmdlineParams()
 		Cmdline_keyboard_layout = keyboard_layout.str();
 	}
 
+	if (gl_finish.found())
+	{
+		Cmdline_gl_finish = true;
+	}
+
 	if ( snd_preload_arg.found() )
 	{
 		Cmdline_snd_preload = 1;
@@ -1551,6 +1598,11 @@ bool SetCmdlineParams()
 	if ( fb_explosions_arg.found() )
 	{
 		Cmdline_fb_explosions = 1;
+	}
+
+	if ( brieflighting_arg.found() )
+	{
+		Cmdline_brief_lighting = 1;
 	}
 
 	if ( postprocess_arg.found() )

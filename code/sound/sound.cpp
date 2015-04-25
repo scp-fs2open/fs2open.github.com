@@ -12,6 +12,7 @@
 #include "render/3d.h"
 #include "sound/sound.h"
 #include "sound/audiostr.h"
+#include "gamesnd/eventmusic.h"
 #include "cmdline/cmdline.h"
 #include "osapi/osapi.h"
 #include "globalincs/vmallocator.h"
@@ -253,11 +254,12 @@ void snd_spew_debug_info()
 	}
 
 	// spew info
+	int line_height = gr_get_font_height() + 1;
 	gr_set_color_fast(&Color_normal);
 	gr_printf_no_resize(30, 100, "Game sounds : %d\n", game_sounds);
-	gr_printf_no_resize(30, 110, "Interface sounds : %d\n", interface_sounds);
-	gr_printf_no_resize(30, 120, "Message sounds : %d\n", message_sounds);
-	gr_printf_no_resize(30, 130, "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
+	gr_printf_no_resize(30, 100 + line_height, "Interface sounds : %d\n", interface_sounds);
+	gr_printf_no_resize(30, 100 + (line_height * 2), "Message sounds : %d\n", message_sounds);
+	gr_printf_no_resize(30, 100 + (line_height * 3), "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
 }
 
 // ---------------------------------------------------------------------------------------
@@ -283,8 +285,6 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	int				rc, FileSize, FileOffset;
 	char			fullpath[MAX_PATH];
 	char			filename[MAX_FILENAME_LEN];
-	const int		NUM_EXT = 2;
-	const char		*audio_ext[NUM_EXT] = { ".ogg", ".wav" };
 	size_t			n;
 
 
@@ -329,7 +329,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	char *p = strrchr(filename, '.');
 	if ( p ) *p = 0;
 
-	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+	rc = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
 
 	if (rc < 0)
 		return -1;
@@ -338,7 +338,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	CFILE *fp = cfopen_special(fullpath, "rb", FileSize, FileOffset);
 
 	// ok, we got it, so set the proper filename for logging purposes
-	strcat_s(filename, audio_ext[rc]);
+	strcat_s(filename, audio_ext_list[rc]);
 
 	nprintf(("Sound", "SOUND => Loading '%s'\n", filename));
 
@@ -699,6 +699,7 @@ void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius,
 	} else {
 		// MageKing17 - It's a 3D sound effect, we should use the function for setting the position of a 3D sound effect.
 		sound *snd;
+		int channel;
 
 		if (!ds_initialized)
 			return;
@@ -716,10 +717,16 @@ void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius,
 		if ( !(snd->flags & SND_F_USED) )
 			return;
 
+		channel = ds_get_channel(soundnum);
+		if (channel == -1) {
+			nprintf(( "Sound", "WARNING: Trying to set position for a non-playing sound.\n" ));
+			return;
+		}
+
 		float min_range = (float) (fl2i( (gs->min) * range_factor));
 		float max_range = (float) (fl2i( (gs->max) * range_factor + 0.5f));
 
-		ds3d_update_buffer(soundnum, min_range, max_range, new_pos, NULL);
+		ds3d_update_buffer(channel, min_range, max_range, new_pos, NULL);
 	}
 }
 
@@ -1510,6 +1517,12 @@ void adjust_volume_on_frame(float* volume_now, aav* data)
 	//apply change
 	*volume_now = data->start_volume + (data->delta * done);
 	CLAMP(*volume_now, 0.0f, 1.0f);
+
+	// if setting music volume, trigger volume change in playing tracks
+	// done here in order to avoid setting music volume in every frame regardless if it changed or not
+	if (&aav_music_volume == volume_now) {
+		audiostream_set_volume_all(Master_event_music_volume * aav_music_volume, ASF_EVENTMUSIC);
+	}
 }
 
 void snd_aav_init()

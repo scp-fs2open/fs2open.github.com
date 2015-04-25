@@ -2068,68 +2068,68 @@ float hud_find_target_distance( object *targetee, object *targeter )
 /// 
 /// \return true if either the ship or one of it's turrets are attacking the 
 ///                       player. Otherwise, returns false.
-bool evaluate_ship_as_closest_target(esct *esct)
+bool evaluate_ship_as_closest_target(esct *esct_p)
 {
 	int targeting_player, turret_is_attacking;
 	ship_subsys *ss;
 	float new_distance;
 
 	// initialize
-	esct->min_distance = FLT_MAX;
-	esct->check_nearest_turret = FALSE;
+	esct_p->min_distance = FLT_MAX;
+	esct_p->check_nearest_turret = FALSE;
 	turret_is_attacking = FALSE;
 
 
-	object *objp = &Objects[esct->shipp->objnum];
+	object *objp = &Objects[esct_p->shipp->objnum];
 	Assert(objp->type == OBJ_SHIP);
 	if (objp->type != OBJ_SHIP) {
 		return false;
 	}
 
 	// player being targeted, so we will want closest distance from player
-	targeting_player = (esct->attacked_objnum == OBJ_INDEX(Player_obj));
+	targeting_player = (esct_p->attacked_objnum == OBJ_INDEX(Player_obj));
 
 	// filter on team
-	if ( !iff_matches_mask(esct->shipp->team, esct->team_mask) ) {
+	if ( !iff_matches_mask(esct_p->shipp->team, esct_p->team_mask) ) {
 		return false;
 	}
 
 	// check if player or ignore ship
-	if ( (esct->shipp->objnum == OBJ_INDEX(Player_obj)) || (esct->shipp->flags & TARGET_SHIP_IGNORE_FLAGS) ) {
+	if ( (esct_p->shipp->objnum == OBJ_INDEX(Player_obj)) || (esct_p->shipp->flags & TARGET_SHIP_IGNORE_FLAGS) ) {
 		return false;
 	}
 
 	// bail if harmless
-	if ( Ship_info[esct->shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[esct->shipp->ship_info_index].class_type].hud_bools & STI_HUD_TARGET_AS_THREAT)) {
+	if ( Ship_info[esct_p->shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[esct_p->shipp->ship_info_index].class_type].hud_bools & STI_HUD_TARGET_AS_THREAT)) {
 		return false;
 	}
 
 	// only look at targets that are AWACS valid
-	if (hud_target_invalid_awacs(&Objects[esct->shipp->objnum])) {
+	if (hud_target_invalid_awacs(&Objects[esct_p->shipp->objnum])) {
 		return false;
 	}
 
 	// If filter is set, only target fighters and bombers
-	if ( esct->filter ) {
-		if ( !(Ship_info[esct->shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
+	if ( esct_p->filter ) {
+		if ( !(Ship_info[esct_p->shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
 			return false;
 		}
 	}
 
 	// find closest turret to player if BIG or HUGE ship
-	if (Ship_info[esct->shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) {
-		for (ss=GET_FIRST(&esct->shipp->subsys_list); ss!=END_OF_LIST(&esct->shipp->subsys_list); ss=GET_NEXT(ss)) {
+	if (Ship_info[esct_p->shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) {
+		for (ss=GET_FIRST(&esct_p->shipp->subsys_list); ss!=END_OF_LIST(&esct_p->shipp->subsys_list); ss=GET_NEXT(ss)) {
 
 			if (ss->flags & SSF_UNTARGETABLE)
 				continue;
 
 			if ( (ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits > 0) ) {
 
-				if (esct->check_all_turrets || (ss->turret_enemy_objnum == esct->attacked_objnum)) {
+				if (esct_p->check_all_turrets || (ss->turret_enemy_objnum == esct_p->attacked_objnum)) {
 					turret_is_attacking = 1;
-					esct->check_nearest_turret = TRUE;
+					esct_p->check_nearest_turret = TRUE;
 
-					if ( !esct->turret_attacking_target || (esct->turret_attacking_target && (ss->turret_enemy_objnum == esct->attacked_objnum)) ) {
+					if ( !esct_p->turret_attacking_target || (esct_p->turret_attacking_target && (ss->turret_enemy_objnum == esct_p->attacked_objnum)) ) {
 						vec3d gsubpos;
 						// get world pos of subsystem
 						vm_vec_unrotate(&gsubpos, &ss->system_info->pnt, &objp->orient);
@@ -2146,8 +2146,8 @@ bool evaluate_ship_as_closest_target(esct *esct)
 						} */
 
 						// get the closest distance
-						if (new_distance <= esct->min_distance) {
-							esct->min_distance = new_distance;
+						if (new_distance <= esct_p->min_distance) {
+							esct_p->min_distance = new_distance;
 						}
 					}
 				}
@@ -2158,9 +2158,9 @@ bool evaluate_ship_as_closest_target(esct *esct)
 	// If no turret is attacking, check if objp is actually targeting attacked_objnum
 	// don't bail if targeting is for player
 	if ( !targeting_player && !turret_is_attacking ) {
-		ai_info *aip = &Ai_info[esct->shipp->ai_index];
+		ai_info *aip = &Ai_info[esct_p->shipp->ai_index];
 
-		if (aip->target_objnum != esct->attacked_objnum) {
+		if (aip->target_objnum != esct_p->attacked_objnum) {
 			return false;
 		}
 
@@ -2174,9 +2174,9 @@ bool evaluate_ship_as_closest_target(esct *esct)
 		//new_distance = hud_find_target_distance(objp, Player_obj);
 		new_distance = vm_vec_dist_quick(&objp->pos, &Player_obj->pos);
 			
-		if (new_distance <= esct->min_distance) {
-			esct->min_distance = new_distance;
-			esct->check_nearest_turret = FALSE;
+		if (new_distance <= esct_p->min_distance) {
+			esct_p->min_distance = new_distance;
+			esct_p->check_nearest_turret = FALSE;
 		}
 	}
 
@@ -2220,7 +2220,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	int		check_nearest_turret = FALSE;
 
 	// evaluate ship closest target struct
-	esct		esct;
+	esct		eval_ship_as_closest_target_args;
 
 	float		min_distance = FLT_MAX;
 	int		target_found = FALSE;	
@@ -2251,31 +2251,31 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	}
 
 	// check all turrets if for player.
-	esct.check_all_turrets = (attacked_objnum == player_obj_index);
-	esct.filter = filter;
-	esct.team_mask = team_mask;
-	esct.attacked_objnum = attacked_objnum;
-	esct.turret_attacking_target = get_closest_turret_attacking_player;
+	eval_ship_as_closest_target_args.check_all_turrets = (attacked_objnum == player_obj_index);
+	eval_ship_as_closest_target_args.filter = filter;
+	eval_ship_as_closest_target_args.team_mask = team_mask;
+	eval_ship_as_closest_target_args.attacked_objnum = attacked_objnum;
+	eval_ship_as_closest_target_args.turret_attacking_target = get_closest_turret_attacking_player;
 
 	for ( so=GET_FIRST(&Ship_obj_list); so!=END_OF_LIST(&Ship_obj_list); so=GET_NEXT(so) ) {
 
 		A = &Objects[so->objnum];
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		// fill in rest of esct
-		esct.shipp = shipp;
+		// fill in rest of eval_ship_as_closest_target_args
+		eval_ship_as_closest_target_args.shipp = shipp;
 
 		// Filter out any target that is not targeting the player  --Mastadon
 		if ( (initial_attacked_objnum == player_obj_index) && (Ai_info[shipp->ai_index].target_objnum != player_obj_index) ) {
 			continue;
 		}
 		// check each shipp on list and update nearest obj and subsys
-		evaluate_ship_as_closest_target(&esct);
-		if (esct.min_distance < min_distance) {
+		evaluate_ship_as_closest_target(&eval_ship_as_closest_target_args);
+		if (eval_ship_as_closest_target_args.min_distance < min_distance) {
 			target_found = TRUE;
-			min_distance = esct.min_distance;
+			min_distance = eval_ship_as_closest_target_args.min_distance;
 			nearest_obj = A;
-			check_nearest_turret = esct.check_nearest_turret;
+			check_nearest_turret = eval_ship_as_closest_target_args.check_nearest_turret;
 		}
 	}
 
@@ -3290,7 +3290,11 @@ void hud_show_message_sender()
 
 	// Karajorma - If we've gone to all the trouble to make our friendly ships stealthed they shouldn't then give away 
 	// their position cause they're feeling chatty
-	if ( Ships[Message_shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS ) {
+	// MageKing17 - Make the check see if they're actually stealthed at the time, and may as well include a check for
+	// being hidden from sensors, too; logic copied from a similar check in hudescort.cpp
+	if ( (Ships[Message_shipnum].flags & SF_HIDDEN_FROM_SENSORS)
+		|| ((Ships[Message_shipnum].flags2 & SF2_STEALTH) && ((Ships[Message_shipnum].team != Player_ship->team) || (Ships[Message_shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS)))
+	) {
 		return;
 	}
 
@@ -4222,8 +4226,7 @@ void HudGaugeLeadSight::render(float frametime)
 	polymodel	*pm;
 	ship_weapon	*swp;
 	weapon_info	*wip;
-	weapon_info	*tmp=NULL;
-	float		dist_to_target, prange, srange;
+	float		dist_to_target, prange;
 	int			bank_to_fire;
 
 	if (Player_ai->target_objnum == -1)
@@ -4287,17 +4290,6 @@ void HudGaugeLeadSight::render(float frametime)
 	// to the closest point on the bounding box of the target
 	dist_to_target = hud_find_target_distance(targetp, Player_obj);
 
-	srange = ship_get_secondary_weapon_range(Player_ship);
-
-	if ( (swp->current_secondary_bank >= 0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0) ) {
-		int bank = swp->current_secondary_bank;
-		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( !(tmp->wi_flags & WIF_HOMING) && !(tmp->wi_flags & WIF_LOCKED_HOMING && Player->target_in_lock_cone) ) {
-			//The secondary lead indicator is handled farther below if it is a non-locking type
-			srange = -1.0f;
-		}
-	}
-	
 	bool in_frame;
 	if ( dist_to_target < prange ) {
 		// fire it up
@@ -5290,6 +5282,8 @@ void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
 		// handle translation
 		if (Lcl_gr) {
 			lcl_translate_targetbox_name_gr(ship_name_text);
+		} else if (Lcl_pl) {
+			lcl_translate_targetbox_name_pl(ship_name_text);
 		}
 	}
 }
@@ -5297,12 +5291,6 @@ void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
 extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
 void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 {
-	// only fighters and bombers have callsigns
-	if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ) {
-		*ship_callsign_text = 0;
-		return;
-	}
-
 	// handle multiplayer callsign
 	if (Game_mode & GM_MULTIPLAYER) {
 		// get a player num from the object, then get a callsign from the player structure.
@@ -5330,6 +5318,8 @@ void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 	// handle translation
 	if (Lcl_gr) {
 		lcl_translate_targetbox_name_gr(ship_callsign_text);
+	} else if (Lcl_pl) {
+		lcl_translate_targetbox_name_pl(ship_callsign_text);
 	}
 }
 
@@ -5357,6 +5347,8 @@ void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
 	// handle translation
 	if (Lcl_gr) {
 		lcl_translate_targetbox_name_gr(ship_class_text);
+	} else if (Lcl_pl) {
+		lcl_translate_targetbox_name_pl(ship_class_text);
 	}
 }
 
@@ -5556,12 +5548,13 @@ void HudGaugeWeaponEnergy::render(float frametime)
 
 	if(use_new_gauge)
 	{
-		int currentx, currenty;
+		int currentx, currenty, line_height;
 		int y;
 		int max_w = 100;
 		float remaining;
 		currentx = position[0] + 10;
 		currenty = position[1];
+		line_height = gr_get_font_height() + 1;
 		if(gr_screen.max_w_unscaled == 640) {
 			max_w = 60;
 		}
@@ -5572,7 +5565,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 		
 		//Draw name
 		renderString(currentx, currenty, "Energy");
-		currenty += 10;
+		currenty += line_height;
 
 		//Draw background
 		setGaugeColor(HUD_C_DIM);
@@ -5612,7 +5605,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 			}
 
 			//Next 'line'
-			currenty += 10;
+			currenty += line_height;
 
 			//Draw the background for the gauge
 			setGaugeColor(HUD_C_DIM);
@@ -5778,6 +5771,18 @@ void HudGaugeWeaponEnergy::render(float frametime)
 HudGaugeWeapons::HudGaugeWeapons():
 HudGauge(HUD_OBJECT_WEAPONS, HUD_WEAPONS_GAUGE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
+}
+
+void HudGaugeWeapons::initLinkIcon()
+{
+	ubyte sc = lcl_get_font_index(font_num);
+	// default to a '>' if the font has no special chars
+	// seems about the closest normal char to the triangle
+	if (sc == 0) {
+		Weapon_link_icon = ubyte ('>');
+	} else {
+		Weapon_link_icon = sc + 2;
+	}
 }
 
 void HudGaugeWeapons::initTopOffsetX(int x, int x_b)
@@ -6030,7 +6035,7 @@ void HudGaugeWeapons::render(float frametime)
 
 		// indicate if this is linked or currently armed
 		if ( ((sw->current_primary_bank == i) && !(Player_ship->flags & SF_PRIMARY_LINKED)) || ((Player_ship->flags & SF_PRIMARY_LINKED) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK))) {
-			renderPrintf(position[0] + Weapon_plink_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);
+			renderPrintf(position[0] + Weapon_plink_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 		}
 		
 		// either render this primary's image or its name
@@ -6094,11 +6099,11 @@ void HudGaugeWeapons::render(float frametime)
 		
 		if ( sw->current_secondary_bank == i ) {
 			// show that this is the current secondary armed
-			renderPrintf(position[0] + Weapon_sunlinked_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);			
+			renderPrintf(position[0] + Weapon_sunlinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
 			if ( Player_ship->flags & SF_SECONDARY_DUAL_FIRE ) {
-				renderPrintf(position[0] + Weapon_slinked_offset_x, name_y, EG_NULL, "%c", Lcl_special_chars + 2);				
+				renderPrintf(position[0] + Weapon_slinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 			}
 
 			// show secondary weapon's image or print its name
@@ -6703,10 +6708,21 @@ void HudGaugeWarheadCount::render(float frametime)
 	}
 }
 
-HudGaugeWeaponList::HudGaugeWeaponList(int gauge_object):
-HudGauge(gauge_object, HUD_WEAPONS_GAUGE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
+HudGaugeWeaponList::HudGaugeWeaponList(int _gauge_object):
+HudGauge(_gauge_object, HUD_WEAPONS_GAUGE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
 {
 
+}
+
+void HudGaugeWeaponList::initLinkIcon() {
+	ubyte sc = lcl_get_font_index(font_num);
+	// default to a '>' if the font has no special chars
+	// seems about the closest normal char to the triangle
+	if (sc == 0) {
+		Weapon_link_icon = ubyte ('>');
+	} else {
+		Weapon_link_icon = sc + 2;
+	}
 }
 
 void HudGaugeWeaponList::initBitmaps(char *fname_first, char *fname_entry, char *fname_last)
@@ -6842,7 +6858,6 @@ void HudGaugePrimaryWeapons::initPrimaryAmmoOffsetX(int x)
 void HudGaugePrimaryWeapons::render(float frametime)
 {
 	ship_weapon	*sw;
-	int ship_is_ballistic;
 
 	int		num_primaries;		// np == num primary
 	char	name[NAME_LENGTH];	
@@ -6854,7 +6869,6 @@ void HudGaugePrimaryWeapons::render(float frametime)
 	Assert(Player_obj->instance >= 0 && Player_obj->instance < MAX_SHIPS);
 
 	sw = &Ships[Player_obj->instance].weapons;
-	ship_is_ballistic = (Ship_info[Ships[Player_obj->instance].ship_info_index].flags & SIF_BALLISTIC_PRIMARIES);
 
 	num_primaries = sw->num_primary_banks;
 
@@ -6889,7 +6903,7 @@ void HudGaugePrimaryWeapons::render(float frametime)
 
 		// indicate if this is linked or currently armed
 		if ( (sw->current_primary_bank == i) || (Player_ship->flags & SF_PRIMARY_LINKED) ) {
-			renderPrintf(position[0] + _plink_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Lcl_special_chars + 2);
+			renderPrintf(position[0] + _plink_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 		}
 
 		// either render this primary's image or its name
@@ -6961,7 +6975,6 @@ void HudGaugeSecondaryWeapons::initSecondaryUnlinkedOffsetX(int x)
 void HudGaugeSecondaryWeapons::render(float frametime)
 {
 	ship_weapon	*sw;
-	int ship_is_ballistic;
 
 	int num_primaries, num_secondaries;
 
@@ -6969,7 +6982,6 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 	Assert(Player_obj->instance >= 0 && Player_obj->instance < MAX_SHIPS);
 
 	sw = &Ships[Player_obj->instance].weapons;
-	ship_is_ballistic = (Ship_info[Ships[Player_obj->instance].ship_info_index].flags & SIF_BALLISTIC_PRIMARIES);
 
 	num_primaries = sw->num_primary_banks;
 	num_secondaries = sw->num_secondary_banks;
@@ -7001,11 +7013,11 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 
 		if ( sw->current_secondary_bank == i ) {
 			// show that this is the current secondary armed
-			renderPrintf(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Lcl_special_chars + 2);
+			renderPrintf(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
 			if ( Player_ship->flags & SF_SECONDARY_DUAL_FIRE ) {
-				renderPrintf(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Lcl_special_chars + 2);				
+				renderPrintf(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
 			}
 
 			// show secondary weapon's image or print its name
@@ -7142,6 +7154,8 @@ void HudGaugeHardpoints::render(float frametime)
 
 	model_set_alpha( gr_screen.current_color.alpha / 255.0f );
 	model_set_forced_texture(0);
+
+	model_set_outline_color_fast(&gauge_color);
 
 	model_render( 
 		sip->model_num, 

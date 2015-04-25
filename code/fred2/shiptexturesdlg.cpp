@@ -126,7 +126,9 @@ void CShipTexturesDlg::OnOK()
 		{
 			if (!stricmp(ii->ship_name, Ships[self_ship].ship_name))
 			{
-				end--;
+				do {
+					end--;
+				} while (end != ii && !stricmp(end->ship_name, Ships[self_ship].ship_name));
 				if (end == ii)
 					break;
 				texture_set(&(*ii), &(*end));
@@ -134,7 +136,7 @@ void CShipTexturesDlg::OnOK()
 		}
 
 		if (end != Fred_texture_replacements.end())
-			Fred_texture_replacements.erase(end);
+			Fred_texture_replacements.erase(end, Fred_texture_replacements.end());
 
 		// now put the new entries on the end of the list
 		for (i=0; i<texture_count; i++)
@@ -217,18 +219,20 @@ BOOL CShipTexturesDlg::OnInitDialog()
 			// make old texture lowercase
 			strlwr(texture_file);
 
-			// now add it to the box
-			z = box->AddString(texture_file);
-
-			// and add it to the field as well
+			// add it to the field
 			strcpy_s(old_texture_name[texture_count], texture_file);
 
 			// increment
 			texture_count++;
-
-			// sort
-			sort_textures();
 		}
+	}
+
+	// now sort the filenames
+	sort_textures();
+
+	// and add them to the box
+	for (i=0; i<texture_count; i++) {
+		z = box->AddString(old_texture_name[i]);
 	}
 
 	// now look for new textures

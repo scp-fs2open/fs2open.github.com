@@ -35,7 +35,6 @@
 #include "osapi/osapi.h"
 
 
-
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 #ifdef SCP_UNIX
 char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
@@ -185,7 +184,7 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 
 		// are we in a root directory?		
 		if(cfile_in_root_dir(buf)){
-			SCP_Messagebox(MESSAGEBOX_ERROR, "FreeSpace2/Fred2 cannot be run from a drive root directory!");
+			MessageBox((HWND)NULL, "FreeSpace2/Fred2 cannot be run from a drive root directory!", "Error", MB_OK);
 			return 1;
 		}		
 
@@ -199,7 +198,7 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 			buf[i] = 0;						
 			cfile_chdir(buf);
 		} else {
-			SCP_Messagebox(MESSAGEBOX_ERROR, "Error trying to determine executable root directory!");
+			MessageBox((HWND)NULL, "Error trying to determine executable root directory!", "Error", MB_OK);
 			return 1;
 		}
 
@@ -492,23 +491,17 @@ int cf_access(const char *filename, int dir_type, int mode)
 
 // Returns 1 if the file exists, 0 if not.
 // Checks only the file system.
+// cf_find_file_location checks the filesystem before VPs
+// If offset is 0, it was found in the filesystem, so offset is boolean false
+// If offset equates to boolean true, it was found in a VP and the logic will negate the function return
 int cf_exists(const char *filename, int dir_type)
 {
-	char longname[MAX_PATH_LEN];
+	int offset = 1;
 
-	Assert(CF_TYPE_SPECIFIED(dir_type));
+	if ( (filename == NULL) || !strlen(filename) )
+		return 0;
 
-	cf_create_default_path_string(longname, sizeof(longname) - 1, dir_type, filename);
-
-	FILE *fp = fopen(longname, "rb");
-	if (fp)
-	{
-		// Goober5000 - these were switched, causing the fclose to be unreachable
-		fclose(fp);
-		return 1;
-	}
-
-	return 0;
+	return (cf_find_file_location(filename, dir_type, 0, NULL, &offset, NULL) && !offset);
 }
 
 // Goober5000
@@ -736,6 +729,7 @@ CFILE *cfopen(const char *file_path, const char *mode, int type, int dir_type, b
 	if ( cf_find_file_location( copy_file_path, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize ) )	{
 
 		// Fount it, now create a cfile out of it
+		nprintf(("CFileDebug", "Requested file %s found at: %s\n", file_path, longname));
 		
 		if ( type & CFILE_MEMORY_MAPPED ) {
 		

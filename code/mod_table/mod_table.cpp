@@ -31,6 +31,7 @@ int FS2NetD_port = 0;
 float Briefing_window_FOV = 0.29375f;
 bool Disable_hc_message_ani = false;
 bool Red_alert_applies_to_delayed_ships = false;
+bool Beams_use_damage_factors = false;
 
 
 void parse_mod_table(const char *filename)
@@ -78,14 +79,14 @@ void parse_mod_table(const char *filename)
 		SCP_string campaign_name; 
 
 		while (optional_string("$Campaign File Name:")) {
-			stuff_string(campaign_name, F_NAME);
+			stuff_string(campaign_name, F_NAME); 
 
 			// remove extension?
 			if (drop_extension(campaign_name)) {
 				mprintf(("Game Settings Table: Removed extension on ignored campaign file name %s\n", campaign_name.c_str()));
 			}
 
-			Ignored_campaigns.push_back(campaign_name);
+			Ignored_campaigns.push_back(campaign_name); 
 		}
 	}
 
@@ -176,7 +177,7 @@ void parse_mod_table(const char *filename)
 
 		stuff_float(&fov);
 
-		mprintf(("Game Settings Table: Setting briefing window FOV from %f to %f", Briefing_window_FOV, fov));
+		mprintf(("Game Settings Table: Setting briefing window FOV from %f to %f\n", Briefing_window_FOV, fov));
 
 		Briefing_window_FOV = fov;
 	}
@@ -257,6 +258,15 @@ void parse_mod_table(const char *filename)
 		stuff_boolean(&Flight_controls_follow_eyepoint_orientation);
 		if (Flight_controls_follow_eyepoint_orientation)
 			mprintf(("Game Settings Table: Flight controls follow eyepoint orientation\n"));
+	}
+
+	if (optional_string("$Beams Use Damage Factors:")) {
+		stuff_boolean(&Beams_use_damage_factors);
+		if (Beams_use_damage_factors) {
+			mprintf(("Game Settings Table: Beams will use Damage Factors\n"));
+		} else {
+			mprintf(("Game Settings Table: Beams will ignore Damage Factors (retail behavior)\n"));
+		}
 	}
 
 	required_string("#END");

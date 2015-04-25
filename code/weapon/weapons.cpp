@@ -657,6 +657,12 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 				weaponp->wi_flags3 |= WIF3_CMEASURE_ASPECT_HOME_ON;
 			}
 		}
+		else if (!stricmp(NOX("interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_TURRET_INTERCEPTABLE | WIF3_FIGHTER_INTERCEPTABLE;
+		else if (!stricmp(NOX("turret interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_TURRET_INTERCEPTABLE;
+		else if (!stricmp(NOX("fighter interceptable"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_FIGHTER_INTERCEPTABLE;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -797,25 +803,26 @@ void init_weapon_entry(int weap_info_index)
 	Assert(weap_info_index > -1 && weap_info_index < MAX_WEAPON_TYPES);
 	weapon_info *wip = &Weapon_info[weap_info_index];
 	int i, j;
-	
+
 	wip->wi_flags = WIF_DEFAULT_VALUE;
 	wip->wi_flags2 = WIF2_DEFAULT_VALUE;
-	
+
 	wip->subtype = WP_UNUSED;
 	wip->render_type = WRT_NONE;
-	
-	wip->title[0] = 0;
+
+	memset(wip->name, 0, sizeof(wip->name));
+	memset(wip->title, 0, sizeof(wip->title));
 	wip->desc = NULL;
-	wip->tech_title[0] = 0;
-	wip->tech_anim_filename[0] = 0;
+
+	memset(wip->tech_title, 0, sizeof(wip->tech_title));
+	memset(wip->tech_anim_filename, 0, sizeof(wip->tech_anim_filename));
 	wip->tech_desc = NULL;
+	memset(wip->tech_model, 0, sizeof(wip->tech_model));
 	
-	wip->tech_model[0] = '\0';
-	
-	wip->hud_filename[0] = '\0';
+	memset(wip->hud_filename, 0, sizeof(wip->hud_filename));
 	wip->hud_image_index = -1;
-	
-	wip->pofbitmap_name[0] = '\0';
+
+	memset(wip->pofbitmap_name, 0, sizeof(wip->pofbitmap_name));
 
 	wip->model_num = -1;
 	wip->hud_target_lod = -1;
@@ -838,7 +845,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->laser_head_radius = 1.0f;
 	wip->laser_tail_radius = 1.0f;
 	
-	wip->external_model_name[0] = '\0';
+	memset(wip->external_model_name, 0, sizeof(wip->external_model_name));
 	wip->external_model_num = -1;
 	
 	wip->weapon_submodel_rotate_accell = 10.0f;
@@ -924,9 +931,9 @@ void init_weapon_entry(int weap_info_index)
 	generic_bitmap_init(&wip->tr_info.texture, NULL);
 	wip->tr_info.n_fade_out_sections = 0;
 
-	wip->icon_filename[0] = 0;
+	memset(wip->icon_filename, 0, sizeof(wip->icon_filename));
 
-	wip->anim_filename[0] = 0;
+	memset(wip->anim_filename, 0, sizeof(wip->anim_filename));
 
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
@@ -1298,10 +1305,22 @@ int parse_weapon(int subtype, bool replace)
 
 	if(optional_string("@Laser Color:"))
 	{
+		// This might be confusing at first glance. If we're a modular table (!first_time),
+		// AND we're providing a new color for the laser (being in this block at all),
+		// AND the RGB values for laser_color_1 and laser_color_2 match...
+		// THEN we conclude that laser_color_2 wasn't explicitly defined before, and the modder would probably prefer
+		// it if the laser didn't suddenly start changing colors from the new to the old over its lifespan. -MageKing17
+		bool reset = (!first_time && (
+			(wip->laser_color_1.red == wip->laser_color_2.red) &&
+			(wip->laser_color_1.green == wip->laser_color_2.green) &&
+			(wip->laser_color_1.blue == wip->laser_color_2.blue)));
 		stuff_ubyte(&r);
 		stuff_ubyte(&g);
 		stuff_ubyte(&b);
 		gr_init_color( &wip->laser_color_1, r, g, b );
+		if (reset) {
+			gr_init_color( &wip->laser_color_2, wip->laser_color_1.red, wip->laser_color_1.green, wip->laser_color_1.blue );
+		}
 	}
 
 	// optional string for cycling laser colors
@@ -1310,7 +1329,7 @@ int parse_weapon(int subtype, bool replace)
 		stuff_ubyte(&g);
 		stuff_ubyte(&b);
 		gr_init_color( &wip->laser_color_2, r, g, b );
-	} else {
+	} else if (first_time) {
 		gr_init_color( &wip->laser_color_2, wip->laser_color_1.red, wip->laser_color_1.green, wip->laser_color_1.blue );
 	}
 
@@ -1937,9 +1956,6 @@ int parse_weapon(int subtype, bool replace)
 		wip->muzzle_flash = mflash_lookup(fname);
 	}
 
-	if (wip->muzzle_flash > -1)
-		wip->wi_flags |= WIF_MFLASH;
-
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
 	if( optional_string("$EMP Intensity:") ){
 		stuff_float(&wip->emp_intensity);
@@ -1991,6 +2007,10 @@ int parse_weapon(int subtype, bool replace)
 		}
 		else if(optional_string("+Old Style:")) {
 			wip->elec_use_new_style=0;
+		}
+
+		if(optional_string("+Area Of Effect")) {
+			wip->wi_flags3 |= WIF3_AOE_ELECTRONICS;
 		}
 		
 		//New only -WMC
@@ -2579,6 +2599,8 @@ int parse_weapon(int subtype, bool replace)
 
 	if (optional_string("$Weapon Hitpoints:")) {
 		stuff_int(&wip->weapon_hitpoints);
+	} else if (first_time && (wip->wi_flags3 & (WIF3_TURRET_INTERCEPTABLE | WIF3_FIGHTER_INTERCEPTABLE))) {
+		wip->weapon_hitpoints = 25;
 	}
 
 	// making sure bombs get their hitpoints assigned
@@ -4129,8 +4151,16 @@ void weapon_home(object *obj, int num, float frame_time)
 			send_homing_weapon_info(num);
 		}
 
+		if (wip->acceleration_time > 0.0f) {
+			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+				float t;
+
+				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+				obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
+			}
+		}
 		// since free_flight_time can now be 0, guard against that
-		if (wip->free_flight_time > 0.0f) {
+		else if (wip->free_flight_time > 0.0f) {
 			if (obj->phys_info.speed > max_speed) {
 				obj->phys_info.speed -= frame_time * (2 / wip->free_flight_time);
 			} else if ((obj->phys_info.speed < max_speed / (2 / wip->free_flight_time)) && (wip->wi_flags & WIF_HOMING_HEAT)) {
@@ -4142,19 +4172,20 @@ void weapon_home(object *obj, int num, float frame_time)
 			obj->phys_info.speed = max_speed;
 		}
 
-		if (wip->acceleration_time > 0.0f) {
-			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
-				float	t;
-
-				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
-			}
-		}
-
 		// set velocity using whatever speed we have
 		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 
 		return;
+	}
+
+	if (wip->acceleration_time > 0.0f) {
+		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+			float t;
+
+			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+			obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
+		}
 	}
 
 	// AL 4-8-98: If original target for aspect lock missile is lost, stop homing
@@ -4450,7 +4481,7 @@ void weapon_home(object *obj, int num, float frame_time)
 				float t;
 
 				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+				obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
 			}
 		} else if (!(wip->wi_flags3 & WIF3_NO_HOMING_SPEED_RAMP) && Missiontime - wp->creation_time < i2f(1)) {
 			// Default behavior:
@@ -4653,13 +4684,22 @@ void weapon_process_post(object * obj, float frame_time)
 	// trail missiles
 	if ((wip->wi_flags & WIF_TRAIL) && !(wip->wi_flags & WIF_CORKSCREW)) {
 		if ( (wp->trail_ptr != NULL ) && (wp->lssm_stage!=3))	{
+			vec3d pos;
+			
+			if (wip->render_type == WRT_LASER) {
+				// place tail origin in center of the bolt
+				vm_vec_scale_add(&pos, &obj->pos, &obj->orient.vec.fvec, (wip->laser_length / 2));
+			} else {
+				pos = obj->pos;
+			}
+
 			if (trail_stamp_elapsed(wp->trail_ptr)) {
 
-				trail_add_segment( wp->trail_ptr, &obj->pos );
+				trail_add_segment( wp->trail_ptr, &pos );
 				
 				trail_set_stamp(wp->trail_ptr);
 			} else {
-				trail_set_segment( wp->trail_ptr, &obj->pos );
+				trail_set_segment( wp->trail_ptr, &pos );
 			}
 
 		}
@@ -4741,6 +4781,17 @@ void weapon_process_post(object * obj, float frame_time)
 		if( wp->cscrew_index >= 0) {
 			cscrew_process_post(obj);			
 		}
+	} else if (wip->acceleration_time > 0.0f) {
+		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+			float t;
+
+			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+			obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
+		} else {
+			obj->phys_info.speed = wip->max_speed;;
+		}
+
+		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 	}
 
 	//local ssm stuff
@@ -4910,6 +4961,14 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		// determining if we're targeting the same team
 		if (parent_objp != NULL && Ships[parent_objp->instance].team == target_team){
 			targeting_same = 1;
+
+			// Goober5000 - if we're going bonkers, pretend we're not targeting our own team
+			ai_info *parent_aip = &Ai_info[Ships[parent_objp->instance].ai_index];
+			if (parent_aip->active_goal != AI_GOAL_NONE && parent_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
+				if (parent_aip->goals[parent_aip->active_goal].flags & AIGF_TARGET_OWN_TEAM) {
+					targeting_same = 0;
+				}
+			}
 		} else {
 			targeting_same = 0;
 		}
@@ -5267,7 +5326,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	//	For missiles, the velocity trends towards some goal.
 	//	Note: If you change how speed works here, such as adding in speed of parent ship, you'll need to change the AI code
 	//	that predicts collision points.  See Mike Kulas or Dave Andsager.  (Or see ai_get_weapon_speed().)
-	if (!(wip->wi_flags & WIF_HOMING)) {
+	if (wip->acceleration_time > 0.0f) {
+		vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, 0.01f ); // Tiny initial velocity to avoid possible null vec issues
+		objp->phys_info.vel = objp->phys_info.desired_vel;
+		objp->phys_info.speed = 0.0f;
+		wp->launch_speed = 0.0f;
+	} else if (!(wip->wi_flags & WIF_HOMING)) {
 		vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.desired_vel);
@@ -5295,9 +5359,6 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	wp->weapon_max_vel = objp->phys_info.max_vel.xyz.z;
-
-	if (wip->acceleration_time > 0.0f)
-		wp->launch_speed = 0.0f;
 
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
@@ -5873,6 +5934,11 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 		switch ( objp->type ) {
 		case OBJ_SHIP:
+			// If we're doing an AoE Electronics blast, do the electronics stuff (unless it also has the regular "electronics"
+			// flag and this is the ship the missile directly impacted; then leave it for the regular code below) -MageKing17
+			if ( (wip->wi_flags3 & WIF3_AOE_ELECTRONICS) && !((objp->flags & OF_INVULNERABLE) || ((objp == other_obj) && (wip->wi_flags & WIF_ELECTRONICS))) ) {
+				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
+			}
 			ship_apply_global_damage(objp, wobjp, pos, damage);
 			weapon_area_apply_blast(NULL, objp, pos, blast, 0);
 			break;
@@ -5976,9 +6042,9 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	int			weapon_type = Weapons[num].weapon_info_index;
 	int			expl_ani_handle;
 	weapon_info	*wip;
-	weapon      *wp;
+	weapon *wp;
 	bool		hit_target = false;
-    
+
 	object      *other_objp;
 	ship_obj	*so;
 	ship		*shipp;
@@ -6078,7 +6144,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 			}
 		}
 	}
-    
+
 	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		other_objp = &Objects[so->objnum];

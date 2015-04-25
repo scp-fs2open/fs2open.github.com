@@ -132,7 +132,7 @@ typedef struct obj_flag_name {
 	int flag_list;
 } obj_flag_name;
 
-#define MAX_OBJECT_FLAG_NAMES			9
+#define MAX_OBJECT_FLAG_NAMES			10
 extern obj_flag_name Object_flag_names[];
 
 struct dock_instance;
@@ -170,6 +170,11 @@ public:
 	object();
 	~object();
 	void clear();
+
+private:
+	// An object should never be copied; there are allocated pointers, and linked list shenanigans.
+	object(const object& other); // no implementation
+	object& operator= (const object & other); // no implementation
 };
 
 struct object_h {

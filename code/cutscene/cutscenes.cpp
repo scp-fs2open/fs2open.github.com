@@ -84,8 +84,22 @@ void cutscene_init()
 		compact_multitext_string(buf);
 		cutinfo.description = vm_strdup(buf);
 
-		required_string("$cd:");
-		stuff_int( &cutinfo.cd );
+		if (optional_string("$cd:"))
+			stuff_int( &cutinfo.cd );
+		else
+			cutinfo.cd = 0;
+
+		cutinfo.viewable = false;
+
+		if (isFirstCutscene) {
+			isFirstCutscene = false;
+			// The original code assumes the first movie is the intro, so always viewable
+			cutinfo.viewable = true;
+		}
+
+		if (optional_string("$Always Viewable:")) {
+			stuff_boolean(&cutinfo.viewable);
+		}
 
 		cutinfo.viewable = false;
 
@@ -148,6 +162,8 @@ void cutscene_mark_viewable(char *filename)
 		}
 		i++;
 	}
+
+	Warning(LOCATION, "Could not find cutscene '%s' in listing; cannot mark it viewable...", filename);
 }
 
 #define NUM_BUTTONS				8

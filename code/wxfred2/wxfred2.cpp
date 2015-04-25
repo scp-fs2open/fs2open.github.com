@@ -15,7 +15,7 @@
 #include <wx/image.h>
 #include <wx/string.h>
 //#include <wx/xrc/xmlres.h>
-#include <wx/wx.h>
+	#include <wx/wx.h>
 
 IMPLEMENT_APP(wxFRED2)
 

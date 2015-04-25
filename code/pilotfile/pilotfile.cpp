@@ -130,26 +130,28 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 	p_stats->missions_flown++;
 
 	// badges
-	if (stats->m_badge_earned >= 0) {
+	if (stats->m_badge_earned.size()) {
 		list_size = (int)p_stats->medals_earned.size();
+		for (size_t medal = 0; medal < stats->m_badge_earned.size(); medal++) {
+			j = -1;
 
-		j = -1;
-
-		for (idx = 0; idx < list_size; idx++) {
-			if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_badge_earned].name) == 0 ) {
-				j = idx;
-				break;
+			for (idx = 0; idx < list_size; idx++) {
+				if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_badge_earned[medal]].name) == 0 ) {
+					j = idx;
+					break;
+				}
 			}
-		}
 
-		if (j >= 0) {
-			p_stats->medals_earned[j].val = 1;
-		} else {
-			ilist.name = Medals[stats->m_badge_earned].name;
-			ilist.index = stats->m_badge_earned;
-			ilist.val = 1;
+			if (j >= 0) {
+				p_stats->medals_earned[j].val = 1;
+			} else {
+				ilist.name = Medals[stats->m_badge_earned[medal]].name;
+				ilist.index = stats->m_badge_earned[medal];
+				ilist.val = 1;
 
-			p_stats->medals_earned.push_back(ilist);
+				p_stats->medals_earned.push_back(ilist);
+				list_size++;
+			}
 		}
 	}
 
@@ -250,22 +252,23 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 	}
 
 	// badges
-	if (stats->m_badge_earned >= 0) {
+	if (stats->m_badge_earned.size()) {
 		list_size = p_stats->medals_earned.size();
+		for (size_t medal = 0; medal < stats->m_badge_earned.size(); medal++) {
+			j = -1;
 
-		j = -1;
-
-		for (idx = 0; idx < list_size; idx++) {
-			if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_badge_earned].name) == 0 ) {
-				j = idx;
-				break;
+			for (idx = 0; idx < list_size; idx++) {
+				if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_badge_earned[medal]].name) == 0 ) {
+					j = idx;
+					break;
+				}
 			}
-		}
 
-		if (j >= 0) {
-			p_stats->medals_earned[j].val = 0;
-		} else {
-			Assertion (false, "Badge '%s' not found, should have been added by pilotfile::update_stats.", Medals[stats->m_badge_earned].name);
+			if (j >= 0) {
+				p_stats->medals_earned[j].val = 0;
+			} else {
+				Assertion (false, "Badge '%s' not found, should have been added by pilotfile::update_stats.", Medals[stats->m_badge_earned[medal]].name);
+			}
 		}
 	}
 
