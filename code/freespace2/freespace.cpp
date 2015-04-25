@@ -2075,11 +2075,7 @@ void game_init()
 
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
-
-#ifdef _WIN32
-	timeBeginPeriod(1);	
-#endif
-
+	
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
 
