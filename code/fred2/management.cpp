@@ -293,7 +293,7 @@ bool fred_init()
 	cfile_chdir(Fred_base_dir);
 
 	// this should enable mods - Kazan
-	fred2_parse_cmdline(__argc, __argv);
+	parse_cmdline(__argc, __argv);
 
 #ifndef NDEBUG
 	#if FS_VERSION_REVIS == 0
