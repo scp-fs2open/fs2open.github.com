@@ -1416,14 +1416,13 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 	if(optional_string("$Short name:"))
 		stuff_string(sip->short_name, F_NAME, NAME_LENGTH);
-	else if(first_time)
+	else if (first_time)
 	{
-		char *srcpos, *srcend, *destpos, *destend;
+		char *srcpos, *srcend, *destpos;
 		srcpos = sip->name;
 		destpos = sip->short_name;
 		srcend = srcpos + strlen(sip->name);
-		destend = destpos + sizeof(sip->short_name) - 1;
-		while(srcpos < srcend)
+		while(srcpos <= srcend)
 		{
 			if(*srcpos != ' ')
 				*destpos++ = *srcpos++;
