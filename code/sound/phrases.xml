@@ -1,6 +1,6 @@
 <GRAMMAR>
 	<DEFINE>
-		<ID NAME="VID_Counter"			VAL="80"/> 
+		<ID NAME="VID_Counter"			VAL="80"/>
 		<ID NAME="VID_DestroyTarget"	VAL="10"/>
 		<ID NAME="VID_DisableTarget"	VAL="11"/>
 		<ID NAME="VID_DisarmTarget"		VAL="12"/>
@@ -35,30 +35,30 @@
 
 	<RULE ID="VID_WingName" TOPLEVEL="ACTIVE">
 		<L PROPID="VID_WingName">
-			<P VAL="0">Alpha</P>
-			<P VAL="1">Beta</P>	
-			<P VAL="2">Gamma</P>	
-			<P VAL="3">Delta</P>
-			<P VAL="4">Epsilon</P>
-			<P VAL="5">Zeta</P>
-			<P VAL="6">Eta</P>
-			<P VAL="7">Theta</P>
-			<P VAL="8">Iota</P>
-			<P VAL="9">Kappa</P>
-			<P VAL="10">Lambda</P>
-			<P VAL="11">Mu</P>
-			<P VAL="12">Nu</P>
-			<P VAL="13">Xi</P>
-			<P VAL="14">Omicron</P>
-			<P VAL="15">Pi</P>
-			<P VAL="16">Rho</P>
-			<P VAL="17">Sigma</P>
-			<P VAL="18">Tau</P>
-			<P VAL="19">Upsilon</P>
-			<P VAL="20">Phi</P>
-			<P VAL="21">Chi</P>
-			<P VAL="22">Psi</P>
-			<P VAL="23">Omega</P>		
+			<P VALSTR="Alpha">Alpha</P>
+			<P VALSTR="Beta">Beta</P>
+			<P VALSTR="Gamma">Gamma</P>
+			<P VALSTR="Delta">Delta</P>
+			<P VALSTR="Epsilon">Epsilon</P>
+			<P VALSTR="Zeta">Zeta</P>
+			<P VALSTR="Eta">Eta</P>
+			<P VALSTR="Theta">Theta</P>
+			<P VALSTR="Iota">Iota</P>
+			<P VALSTR="Kappa">Kappa</P>
+			<P VALSTR="Lambda">Lambda</P>
+			<P VALSTR="Mu">Mu</P>
+			<P VALSTR="Nu">Nu</P>
+			<P VALSTR="Xi">Xi</P>
+			<P VALSTR="Omicron">Omicron</P>
+			<P VALSTR="Pi">Pi</P>
+			<P VALSTR="Rho">Rho</P>
+			<P VALSTR="Sigma">Sigma</P>
+			<P VALSTR="Tau">Tau</P>
+			<P VALSTR="Upsilon">Upsilon</P>
+			<P VALSTR="Phi">Phi</P>
+			<P VALSTR="Chi">Chi</P>
+			<P VALSTR="Psi">Psi</P>
+			<P VALSTR="Omega">Omega</P>
 		</L>
 		<L PROPID="VID_ShipName">
 			<P VAl="0">Wing</P>
@@ -87,26 +87,26 @@
 			<P VAL="VID_IgnoreTarget">Ignore my target</P>
 			<P VAL="VID_FormWing">Form on my wing</P>
 			<P VAL="VID_CoverMe">Cover me</P>
-			<P VAL="VID_EngageEnemy">Engage Enemy</P>
+			<P VAL="VID_EngageEnemy">Engage the Enemy</P>
 			<P VAL="VID_EngageEnemy">Attack</P>
 			<P VAL="VID_Depart">Depart</P>
 		</L>
 	</RULE>
 
 	<RULE ID="VID_TopMenu" TOPLEVEL="ACTIVE">
-        	<L PROPID="VID_TopMenu">
+		<L PROPID="VID_TopMenu">
 			<P VAL="VID_Ships">Ships</P>
 			<P VAL="VID_Wings">Wings</P>
 			<P VAL="VID_AllFighters">All Fighters<O><RULEREF REFID="VID_Action"/></O></P>
 			<P VAL="VID_AllWings">All Wings<O><RULEREF REFID="VID_Action"/></O></P>
 			<P VAL="VID_Reinforcements">Reinforcements</P>
 			<P VAL="VID_SupportShip">Support ship</P>
-			<P VAL="VID_SupportShip">Rearm</P>
-			<P VAL="VID_SupportShip">Repair</P>
-			<P VAL="VID_AbortSupport">Abort</P>
+			<P VAL="VID_SupportShip">Rearm <O>and repair</O></P>
+			<P VAL="VID_SupportShip">Repair <O>and rearm</O></P>
+			<P VAL="VID_AbortSupport">Abort <L><P>support <O>ship</O></P><P>rearm <O>and repair</O></P><P>repair <O>and rearm</O></P></L></P>
 			<P VAL="VID_Cancel">Cancel</P>
 			<P VAL="VID_Command">Command</P>
-			<P VAL="VID_More">More</P>        
+			<P VAL="VID_More">More</P>
 		</L>
 	</RULE>
 
@@ -144,9 +144,9 @@
 			<P VAL="91">Target previous uninspected</P>
 			<P VAL="92">Target newest</P>
 			<P VAL="93">Target next turret</P>
-			<P VAL="94">Target previous turrent</P>
+			<P VAL="94">Target previous turret</P>
 			<P VAL="95">Target next bomb</P>
-			<P VAL="96">Target previous bomb</P>				
+			<P VAL="96">Target previous bomb</P>
 		</L>
 	</RULE>
 
