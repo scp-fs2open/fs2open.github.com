@@ -166,8 +166,6 @@ ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs
 ship_info		Ship_info[MAX_SHIP_CLASSES];
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
 
-static char **tspecies_names = NULL;
-
 SCP_vector<ship_type_info> Ship_types;
 
 SCP_vector<ArmorType> Armor_types;
@@ -4240,11 +4238,6 @@ void ship_init()
 			Num_ship_classes = 0;
 			strcpy_s(default_player_ship, "");
 
-			// static alias stuff - stupid, but it seems to be necessary
-			tspecies_names = (char **) vm_malloc( Species_info.size() * sizeof(char*) );
-			for (i = 0; i < Species_info.size(); i++)
-				tspecies_names[i] = Species_info[i].species_name;
-
 			//Parse main TBL first
 			parse_shiptbl("ships.tbl");
 
@@ -4254,11 +4247,6 @@ void ship_init()
 			ship_parse_post_cleanup();
 
 			ships_inited = 1;
-
-			// cleanup
-			
-			vm_free(tspecies_names);
-			tspecies_names = NULL;
 		}
 
 		// NULL out "dynamic" subsystem ptr's
