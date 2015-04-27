@@ -8969,11 +8969,16 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 	for (i = counter_start; ((counter_step > 0) ? i <= counter_stop : i >= counter_stop); i += counter_step)
 	{
 		sprintf(buf, "%d", i);
-		argument_vector.push_back(strdup(buf));
+		argument_vector.push_back(vm_strdup(buf));
 	}
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+
+	while (!argument_vector.empty()) {
+		vm_free(argument_vector.back());
+		argument_vector.pop_back();
+	}
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
