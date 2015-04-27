@@ -7,11 +7,12 @@ In 2002 Volition released the source code for Freespace2. In the years since ded
 People interested in contributing are encouraged to read [this thread](http://www.hard-light.net/forums/index.php?topic=82688.0)
 
 The "projects" directory contains ready projects for:
-Microsoft Visual C++ 6, 2005, 2008, 2010, 2011, 2013, 2015
-Apple Xcode
-Code::Blocks
-Eclipse
+* Microsoft Visual C++ 6, 2005, 2008, 2010, 2011, 2013, 2015
+* Apple Xcode
+* Code::Blocks
+* Eclipse
 
 
 Review the commit logs to see what's new.
+
 See the INSTALL file for instructions on how to build fs2_open, or open the relevant MSVC project
