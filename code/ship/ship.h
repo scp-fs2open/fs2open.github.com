@@ -1634,7 +1634,8 @@ extern void physics_ship_init(object *objp);
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
-int parse_ship_values(ship_info* sip, bool first_time, bool replace);
+int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace);
+int ship_template_lookup(const char *name = NULL);
 void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string);
 
 extern int ship_info_lookup(const char *name = NULL);
