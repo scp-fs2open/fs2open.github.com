@@ -22480,7 +22480,13 @@ int eval_sexp(int cur_node, int referenced_node)
 			add_to_event_log_buffer(get_operator_index(cur_node), SEXP_KNOWN_FALSE);
 		}
 		return SEXP_FALSE;
-	}		
+	}
+	else if (Sexp_nodes[cur_node].value == SEXP_NAN_FOREVER) {
+		if (Log_event) {
+			add_to_event_log_buffer(get_operator_index(cur_node), SEXP_NAN_FOREVER);
+		}
+		return SEXP_FALSE;
+	}
 
 	if (Sexp_nodes[cur_node].first != -1) {
 		node = CAR(cur_node);
