@@ -307,7 +307,7 @@ void barracks_squad_change_popup();
 
 void barracks_init_stats(scoring_struct *stats)
 {
-	int Max_stat_lines = Num_ship_classes + 23;
+	int Max_stat_lines = Ship_info.size() + 23;
 	int i;
 	float f;
 	int score_from_kills = 0;
@@ -457,9 +457,10 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	// Goober5000 - make sure we have room for all ships
-	Assert((Num_stat_lines + Num_ship_classes) < Max_stat_lines);
+	Assert((Num_stat_lines + static_cast<int>(Ship_info.size())) < Max_stat_lines);
 
-	for (i=0; i<Num_ship_classes; i++) {
+	i = 0;
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); i++, ++it) {
 		if (stats->kills[i]) {
 			Assert(Num_stat_lines < Max_stat_lines);
 
@@ -469,13 +470,13 @@ void barracks_init_stats(scoring_struct *stats)
 				break;
 			}
 
-			Assert(strlen(Ship_info[i].name) + 1 < STAT_COLUMN1_W);
-			sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), Ship_info[i].name);
+			Assert(strlen(it->name) + 1 < STAT_COLUMN1_W);
+			sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), it->name);
 			sprintf(Stats[Num_stat_lines], "%d", stats->kills[i]);
 			Num_stat_lines++;
 
 			// work out the total score from ship kills
-			score_from_kills += stats->kills[i] * Ship_info[i].score;
+			score_from_kills += stats->kills[i] * it->score;
 		}
 	}
 

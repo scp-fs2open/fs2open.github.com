@@ -787,7 +787,7 @@ void multi_ts_sync_interface()
 	
 	// item 1 - determine how many ship types are available in the ship pool
 	Multi_ts_avail_count = 0;
-	for(idx=0;idx<Num_ship_classes;idx++){
+	for(idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
 		if(Ss_pool[idx] > 0){
 			Multi_ts_avail_count++;
 		}
@@ -1295,7 +1295,7 @@ void multi_ts_blit_avail_ships()
 	// blit the availability of all ship counts
 	display_count = 0;
 	ship_count = 0;
-	for(idx=0;idx<Num_ship_classes;idx++){
+	for(idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
 		if(Ss_pool[idx] > 0){
 			// if our starting display index is after this, then skip it
 			if(ship_count < Multi_ts_avail_start){
@@ -2412,7 +2412,7 @@ int multi_ts_get_avail_ship_class(int index)
 
 	ship_count = index + Multi_ts_avail_start;
 	class_index = 0;
-	while((ship_count >= 0) && (class_index < MAX_SHIP_CLASSES)){
+	while((ship_count >= 0) && (class_index < static_cast<int>(Ship_info.size()))){
 		if(Ss_pool[class_index] > 0){
 			ship_count--;
 		}

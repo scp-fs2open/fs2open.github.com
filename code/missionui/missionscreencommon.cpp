@@ -1081,7 +1081,7 @@ void wss_maybe_restore_loadout()
 	// record the ship classes / weapons used last time
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
-		if ((slot->ship_class >= 0) && (slot->ship_class < MAX_SHIP_CLASSES)) {
+		if ((slot->ship_class >= 0) && (slot->ship_class < static_cast<int>(Ship_info.size()))) {
 			++last_loadout_ships[slot->ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
@@ -1094,7 +1094,7 @@ void wss_maybe_restore_loadout()
 
 	// record the ships classes / weapons used by the player and wingmen. We don't include the amount in the pools yet
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-		if ((Wss_slots[i].ship_class >= 0) && (Wss_slots[i].ship_class < MAX_SHIP_CLASSES)) {
+		if ((Wss_slots[i].ship_class >= 0) && (Wss_slots[i].ship_class < static_cast<int>(Ship_info.size()))) {
 			++this_loadout_ships[Wss_slots[i].ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
@@ -1107,7 +1107,7 @@ void wss_maybe_restore_loadout()
 
 	// now compare the two, adding in what was left in the pools. If there are less of a ship or weapon class in the mission now
 	// than there were last time, we can't restore and must abort.
-	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+	for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
 		if (Ss_pool[i] >= 1) {
 			this_loadout_ships[i] += Ss_pool[i];
 		}
@@ -1129,7 +1129,7 @@ void wss_maybe_restore_loadout()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
 
-		if ((slot->ship_class >= 0) && (slot->ship_class < MAX_SHIP_CLASSES)) {
+		if ((slot->ship_class >= 0) && (slot->ship_class < static_cast<int>(Ship_info.size()))) {
 			--this_loadout_ships[slot->ship_class];
 			Assertion((this_loadout_ships[slot->ship_class] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of ships available");
 
@@ -1149,7 +1149,7 @@ void wss_maybe_restore_loadout()
 	}	
 
 	// restore the ship pool
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
+	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
 		Ss_pool[i] = this_loadout_ships[i]; 
 	}
 
@@ -1315,7 +1315,7 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 
 
 	// write the ship pool 
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
+	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
 		if ( Ss_pool[i] > 0 ) {	
 			block[offset++] = (ubyte)i;
 			Assert( Ss_pool[i] < UCHAR_MAX );

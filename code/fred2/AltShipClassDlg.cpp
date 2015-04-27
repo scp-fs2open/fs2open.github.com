@@ -124,14 +124,14 @@ BOOL AltShipClassDlg::OnInitDialog()
 		m_set_from_ship_class.AddString("Set From Variable");
 	}
 	count = 0; 
-	for (i=0; i<Num_ship_classes; i++)
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 	{
-		if (player_ships_only && !(Ship_info[i].flags & SIF_PLAYER_SHIP)) {
+		if (player_ships_only && !(it->flags & SIF_PLAYER_SHIP)) {
 			continue;
 		}
 
-		ship_class_indices[count++] = i;
-		m_set_from_ship_class.AddString(Ship_info[i].name);
+		ship_class_indices[count++] = std::distance(Ship_info.cbegin(), it);
+		m_set_from_ship_class.AddString(it->name);
 	}
 	m_set_from_ship_class.SetCurSel(num_string_variables?1:0); // Set to the first ship class
 

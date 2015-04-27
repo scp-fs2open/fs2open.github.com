@@ -26,6 +26,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
+#include "ship/ship.h"	// Needed for Ship_info.size() -MageKing17
 
 
 
@@ -245,7 +246,6 @@ void multi_campaign_client_store_goals(int mission_num)
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER CAMPAIGN PACKET HANDLERS
 //
-extern int Num_ship_classes;
 extern int Num_weapon_types;
 // process a campaign update packet
 void multi_campaign_process_update(ubyte *data, header *hinfo)
@@ -273,7 +273,7 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 		// if we're not in campaign mode, bash all weapons and ships to be "allowed"
 		if(!val){
 			// all ships
-			for(idx=0;idx<Num_ship_classes;idx++){
+			for(idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
 				Campaign.ships_allowed[idx] = 1;
 			}
 
@@ -454,7 +454,7 @@ void multi_campaign_send_pool_status()
 
 		// determine how many ship types we're going to add
 		spool_size = 0;
-		for(idx=0;idx<Num_ship_classes;idx++){
+		for(idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
 			if(Campaign.ships_allowed[idx]){
 				spool_size++;
 			}
@@ -474,7 +474,7 @@ void multi_campaign_send_pool_status()
 		// add all ship types
 		val = (ubyte)spool_size;
 		ADD_DATA(val);
-		for(idx=0;idx<Num_ship_classes;idx++){
+		for(idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
 			if(Campaign.ships_allowed[idx]){
 				val = (ubyte)idx;
 				ADD_DATA(val);

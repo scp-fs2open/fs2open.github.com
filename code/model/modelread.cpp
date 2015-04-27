@@ -262,18 +262,18 @@ void model_unload(int modelnum, int force)
 		vm_free(pm->shield_collision_tree);
 	}
 
-	// run through Ship_info[] and if the model has been loaded we'll need to reset the modelnum to -1.
-	for (i = 0; i < Num_ship_classes; i++) {
-		if ( pm->id == Ship_info[i].model_num ) {
-			Ship_info[i].model_num = -1;
+	// run through Ship_info and if the model has been loaded we'll need to reset the modelnum to -1.
+	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
+		if ( pm->id == it->model_num ) {
+			it->model_num = -1;
 		}
 
-		if ( pm->id == Ship_info[i].cockpit_model_num ) {
-			Ship_info[i].cockpit_model_num = -1;
+		if ( pm->id == it->cockpit_model_num ) {
+			it->cockpit_model_num = -1;
 		}
 
-		if ( pm->id == Ship_info[i].model_num_hud ) {
-			Ship_info[i].model_num_hud = -1;
+		if ( pm->id == it->model_num_hud ) {
+			it->model_num_hud = -1;
 		}
 	}
 

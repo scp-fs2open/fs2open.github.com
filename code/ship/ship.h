@@ -1431,6 +1431,21 @@ public:
 	SCP_vector<cockpit_display_info> displays;
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
+
+	ship_info();
+	~ship_info();
+	ship_info(const ship_info& other);
+
+	ship_info(ship_info&& other);
+
+	ship_info &operator=(ship_info&& other);
+
+	const ship_info &operator=(const ship_info& other);
+	void free_strings();
+
+private:
+	void clone(const ship_info& other);
+	void move(ship_info& other);
 };
 
 extern int Num_wings;
@@ -1542,8 +1557,7 @@ extern int ai_paused;
 extern int CLOAKMAP;
 
 extern int Num_reinforcements;
-extern int Num_ship_classes;
-extern ship_info Ship_info[MAX_SHIP_CLASSES];
+extern SCP_vector<ship_info> Ship_info;
 extern reinforcements Reinforcements[MAX_REINFORCEMENTS];
 
 // structure definition for ship type counts.  Used to give a count of the number of ships
