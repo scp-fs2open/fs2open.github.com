@@ -128,6 +128,7 @@ extern int Cmdline_no_3d_sound;
 extern int Cmdline_no_glsl_model_rendering;
 extern int Cmdline_drawelements;
 extern char* Cmdline_keyboard_layout;
+extern bool Cmdline_gl_finish;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;

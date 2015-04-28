@@ -216,6 +216,9 @@ void gr_opengl_flip()
 
 	mouse_reset_deltas();
 
+	if (Cmdline_gl_finish)
+		glFinish();
+
 	SDL_GL_SwapWindow(os_get_window());
 
 	opengl_tcache_frame();
