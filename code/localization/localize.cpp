@@ -1218,7 +1218,7 @@ void lcl_translate_brief_icon_name_gr(char *name)
 
 	} else if ((pos = strstr(name, "Transport")) != NULL) {
 		pos += 9;		// strlen of "transport"
-		strcpy_s(buf, "Transportowiec");
+		strcpy_s(buf, "Transporter");
 		strcat_s(buf, pos);
 		strcpy(name, buf);
 
@@ -1365,7 +1365,7 @@ char buf[128];
 
 	} else if ((pos = strstr(name, "Transport")) != NULL) {
 		pos += 9;		// strlen of "transport"
-		strcpy_s(buf, "Transporter");
+		strcpy_s(buf, "Transportowiec");
 		strcat_s(buf, pos);
 		strcpy(name, buf);
 
