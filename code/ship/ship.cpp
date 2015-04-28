@@ -3934,46 +3934,47 @@ void parse_ship_type()
 
 void parse_shiptype_tbl(const char *filename)
 {
-	int rval;
+	try
+	{
+		if (filename != NULL)
+			read_file_text(filename, CF_TYPE_TABLES);
+		else
+			read_file_text_from_array(defaults_get_file("objecttypes.tbl"));
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		reset_parse();
+
+		if (optional_string("#Target Priorities"))
+		{
+			while (required_string_either("#End", "$Name:"))
+				parse_ai_target_priorities();
+
+			required_string("#End");
+		}
+
+		if (optional_string("#Weapon Targeting Priorities"))
+		{
+			while (required_string_either("#End", "$Name:"))
+				parse_weapon_targeting_priorities();
+
+			required_string("#End");
+		}
+
+		if (optional_string("#Ship Types"))
+		{
+			while (required_string_either("#End", "$Name:"))
+				parse_ship_type();
+
+			required_string("#End");
+		}
+
+		// add tbl/tbm to multiplayer validation list
+		fs2netd_add_table_validation(filename);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
-
-	if (filename != NULL)
-		read_file_text(filename, CF_TYPE_TABLES);
-	else
-		read_file_text_from_array(defaults_get_file("objecttypes.tbl"));
-
-	reset_parse();
-
-	if (optional_string("#Target Priorities"))
-	{
-		while (required_string_either("#End", "$Name:"))
-			parse_ai_target_priorities();
-
-		required_string("#End");
-	}
-
-	if (optional_string("#Weapon Targeting Priorities"))
-	{
-		while (required_string_either("#End", "$Name:"))
-			parse_weapon_targeting_priorities();
-
-		required_string("#End");
-	}
-
-	if (optional_string("#Ship Types"))
-	{
-		while (required_string_either("#End", "$Name:"))
-			parse_ship_type();
-
-		required_string("#End");
-	}
-
-	// add tbl/tbm to multiplayer validation list
-	fs2netd_add_table_validation(filename);
 }
 
 // The E - Simple lookup function for FRED.
@@ -4029,56 +4030,56 @@ void ship_set_default_player_ship()
 
 void parse_shiptbl(const char *filename)
 {
-	int rval;
-	
-	if ((rval = setjmp(parse_abort)) != 0)
+	try
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
+
+		// parse default ship
+		//Override default player ship
+		if (optional_string("#Default Player Ship"))
+		{
+			required_string("$Name:");
+			stuff_string(default_player_ship, F_NAME, sizeof(default_player_ship));
+			required_string("#End");
+		}
+		//Add engine washes
+		//This will override if they already exist
+		if (optional_string("#Engine Wash Info"))
+		{
+			while (required_string_either("#End", "$Name:"))
+			{
+				parse_engine_wash(Parsing_modular_table);
+			}
+
+			required_string("#End");
+		}
+
+		//Add ship classes
+		if (optional_string("#Ship Classes"))
+		{
+
+			while (required_string_either("#End", "$Name:"))
+			{
+				if (parse_ship(filename, Parsing_modular_table)) {
+					continue;
+				}
+			}
+
+			required_string("#End");
+		}
+
+		//Set default player ship
+		ship_set_default_player_ship();
+
+		// add tbl/tbm to multiplayer validation list
+		fs2netd_add_table_validation(filename);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
-
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	// parse default ship
-	//Override default player ship
-	if(optional_string("#Default Player Ship"))
-	{
-		required_string("$Name:");
-		stuff_string(default_player_ship, F_NAME, sizeof(default_player_ship));
-		required_string("#End");
-	}
-	//Add engine washes
-	//This will override if they already exist
-	if(optional_string("#Engine Wash Info"))
-	{
-		while (required_string_either("#End", "$Name:"))
-		{
-			parse_engine_wash(Parsing_modular_table);
-		}
-
-		required_string("#End");
-	}
-
-	//Add ship classes
-	if(optional_string("#Ship Classes"))
-	{
-
-		while (required_string_either("#End","$Name:"))
-		{
-			if ( parse_ship(filename, Parsing_modular_table) ) {
-				continue;
-			}
-		}
-
-		required_string("#End");
-	}
-
-	//Set default player ship
-	ship_set_default_player_ship();
-
-	// add tbl/tbm to multiplayer validation list
-	fs2netd_add_table_validation(filename);
 }
 
 int ship_show_velocity_dot = 0;
@@ -17481,28 +17482,29 @@ void parse_armor_type()
 
 void armor_parse_table(const char *filename)
 {
-	int rval;
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
-	}
+		//Enumerate through all the armor types and add them.
+		while (optional_string("#Armor Type")) {
+			while (required_string_either("#End", "$Name:")) {
+				parse_armor_type();
+				continue;
+			}
 
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	//Enumerate through all the armor types and add them.
-	while ( optional_string("#Armor Type") ) {
-		while ( required_string_either("#End", "$Name:") ) {
-			parse_armor_type();
-			continue;
+			required_string("#End");
 		}
 
-		required_string("#End");
+		// add tbl/tbm to multiplayer validation list
+		fs2netd_add_table_validation(filename);
 	}
-
-	// add tbl/tbm to multiplayer validation list
-	fs2netd_add_table_validation(filename);
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 void armor_init()

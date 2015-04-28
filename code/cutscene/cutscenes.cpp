@@ -52,59 +52,61 @@ void cutscene_init()
 {
 	atexit(cutscene_close);
 	char buf[MULTITEXT_LENGTH];
-	int rval;
-    cutscene_info cutinfo;
+	cutscene_info cutinfo;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "cutscenes.tbl", rval));
+	try
+	{
+		read_file_text("cutscenes.tbl", CF_TYPE_TABLES);
+		reset_parse();
+
+		// parse in all the cutscenes
+		Cutscenes.clear();
+		skip_to_string("#Cutscenes");
+		ignore_white_space();
+
+		bool isFirstCutscene = true;
+
+		while (required_string_either("#End", "$Filename:"))
+		{
+			required_string("$Filename:");
+			stuff_string(cutinfo.filename, F_PATHNAME, MAX_FILENAME_LEN);
+
+			required_string("$Name:");
+			stuff_string(cutinfo.name, F_NAME, NAME_LENGTH);
+
+			required_string("$Description:");
+			stuff_string(buf, F_MULTITEXT, sizeof(buf));
+			drop_white_space(buf);
+			compact_multitext_string(buf);
+			cutinfo.description = vm_strdup(buf);
+
+			if (optional_string("$cd:"))
+				stuff_int(&cutinfo.cd);
+			else
+				cutinfo.cd = 0;
+
+			cutinfo.viewable = false;
+
+			if (isFirstCutscene) {
+				isFirstCutscene = false;
+				// The original code assumes the first movie is the intro, so always viewable
+				cutinfo.viewable = true;
+			}
+
+			if (optional_string("$Always Viewable:")) {
+				stuff_boolean(&cutinfo.viewable);
+			}
+
+			Cutscenes.push_back(cutinfo);
+		}
+
+		required_string("#End");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "cutscenes.tbl", e.what()));
 		return;
 	}
-
-	read_file_text("cutscenes.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	// parse in all the cutscenes
-	Cutscenes.clear();
-	skip_to_string("#Cutscenes");
-	ignore_white_space();
-
-	bool isFirstCutscene = true;
-
-	while ( required_string_either("#End", "$Filename:") ) 
-    {
-		required_string("$Filename:");
-		stuff_string( cutinfo.filename, F_PATHNAME, MAX_FILENAME_LEN );
-
-		required_string("$Name:");
-		stuff_string( cutinfo.name, F_NAME, NAME_LENGTH );
-
-		required_string("$Description:");
-		stuff_string(buf, F_MULTITEXT, sizeof(buf));
-		drop_white_space(buf);
-		compact_multitext_string(buf);
-		cutinfo.description = vm_strdup(buf);
-
-		if (optional_string("$cd:"))
-			stuff_int( &cutinfo.cd );
-		else
-			cutinfo.cd = 0;
-
-		cutinfo.viewable = false;
-
-		if (isFirstCutscene) {
-			isFirstCutscene = false;
-			// The original code assumes the first movie is the intro, so always viewable
-			cutinfo.viewable = true;
-		}
-
-		if (optional_string("$Always Viewable:")) {
-			stuff_boolean(&cutinfo.viewable);
-		}
-
-        Cutscenes.push_back(cutinfo);
-	}
-
-	required_string("#End");
 }
 
 // function to return 0 based index of which CD a particular movie is on
