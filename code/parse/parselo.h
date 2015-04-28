@@ -14,9 +14,7 @@
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
 
-#include <csetjmp>
-#include <cstdio>
-#include <string>
+#include <exception>
 
 // NOTE: although the main game doesn't need this anymore, FRED2 still does
 #define	MISSION_TEXT_SIZE	1000000
@@ -27,7 +25,6 @@ extern char	*Mp;
 extern char	*token_found;
 extern int fred_parse_flag;
 extern int Token_found_flag;
-extern jmp_buf parse_abort;
 
 
 #define	COMMENT_CHAR	(char)';'
@@ -256,5 +253,15 @@ int get_string_or_variable (char *str);
 int get_string_or_variable (SCP_string &str);
 #define PARSING_FOUND_STRING		0
 #define PARSING_FOUND_VARIABLE		1
+
+namespace parse
+{
+	class ParseException : public std::runtime_error
+	{
+	public:
+		ParseException(const std::string& msg) : std::runtime_error(msg) {}
+		~ParseException() throw() {}
+	};
+}
 
 #endif

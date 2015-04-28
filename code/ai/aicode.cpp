@@ -826,13 +826,14 @@ LOCAL int ai_inited = 0;
 void ai_init()
 {
 	if ( !ai_inited )	{
-		// Do the first time initialization stuff here
-		int	rval;
-
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "ai.tbl", rval));
-		} else {			
-			parse_aitbl();			
+		// Do the first time initialization stuff here		
+		try
+		{
+			parse_aitbl();
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "ai.tbl", e.what()));
 		}
 
 		ai_inited = 1;

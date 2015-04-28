@@ -5853,15 +5853,18 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 			break;
 		}
 
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", real_fname, rval));
+		try
+		{
+			read_file_text(real_fname, CF_TYPE_MISSIONS);
+			mission_p->Reset();
+			parse_init(basic);
+			parse_mission_info(mission_p, basic);
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", real_fname, e.what()));
 			break;
 		}
-
-		read_file_text(real_fname, CF_TYPE_MISSIONS);
-		mission_p->Reset( );
-		parse_init(basic);
-		parse_mission_info(mission_p, basic);
 	} while (0);
 
 	return rval;
@@ -5926,22 +5929,27 @@ int parse_main(const char *mission_name, int flags)
 			cfclose(ftemp);
 		}
 
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", mission_name, rval));
+		try
+		{
+			// import?
+			if (flags & MPF_IMPORT_FSM) {
+				read_file_text(mission_name, CF_TYPE_ANY);
+				convertFSMtoFS2();
+			}
+			else {
+				read_file_text(mission_name, CF_TYPE_MISSIONS);
+			}
+
+			The_mission.Reset();
+			rval = parse_mission(&The_mission, flags);
+			display_parse_diagnostics();
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", mission_name, e.what()));
+			rval = 1;
 			break;
 		}
-
-		// import?
-		if (flags & MPF_IMPORT_FSM) {
-			read_file_text(mission_name, CF_TYPE_ANY);
-			convertFSMtoFS2();
-		} else {
-			read_file_text(mission_name, CF_TYPE_MISSIONS);
-		}
-
-		The_mission.Reset( );
-		rval = parse_mission(&The_mission, flags);
-		display_parse_diagnostics();
 	} while (0);
 
 	if (!Fred_running)
@@ -6283,7 +6291,7 @@ void mission_parse_set_up_initial_docks()
  */
 int mission_parse_is_multi(const char *filename, char *mission_name)
 {
-	int rval, game_type;
+	int game_type;
 	int filelength;
 	CFILE *ftemp;
 
@@ -6302,25 +6310,28 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 
 	game_type = 0;
 	do {
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		try
+		{
+			read_file_text(filename, CF_TYPE_MISSIONS);
+			reset_parse();
+
+			if (skip_to_string("$Name:") != 1) {
+				nprintf(("Network", "Unable to process %s because we couldn't find $Name:", filename));
+				break;
+			}
+			stuff_string(mission_name, F_NAME, NAME_LENGTH);
+
+			if (skip_to_string("+Game Type Flags:") != 1) {
+				nprintf(("Network", "Unable to process %s because we couldn't find +Game Type Flags:\n", filename));
+				break;
+			}
+			stuff_int(&game_type);
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 			break;
 		}
-
-		read_file_text(filename, CF_TYPE_MISSIONS);
-		reset_parse();
-
-		if ( skip_to_string("$Name:") != 1 ) {
-			nprintf(("Network", "Unable to process %s because we couldn't find $Name:", filename));
-			break;
-		}
-		stuff_string( mission_name, F_NAME, NAME_LENGTH );
-
-		if ( skip_to_string("+Game Type Flags:") != 1 ) {
-			nprintf(("Network", "Unable to process %s because we couldn't find +Game Type Flags:\n", filename));
-			break;
-		}
-		stuff_int(&game_type);
 	} while (0);
 
 	return (game_type & MISSION_TYPE_MULTI) ? game_type : 0;

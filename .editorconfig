@@ -1,0 +1,4 @@
+root = true
+
+[*.{h,cpp}]
+indent_style = tab

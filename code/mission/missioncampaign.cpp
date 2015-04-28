@@ -100,7 +100,7 @@ bool campaign_is_ignored(const char *filename);
  */
 int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc)
 {
-	int rval, i, success = 0;
+	int i, success = 0;
 	char campaign_type[NAME_LENGTH], fname[MAX_FILENAME_LEN];
 
 	Assert( name != NULL );
@@ -116,52 +116,56 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 
 	*type = -1;
 	do {
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", fname, rval));
-			break;
-		}
+		try
+		{
+			read_file_text(fname);
+			reset_parse();
 
-		read_file_text(fname);
-		reset_parse();
+			required_string("$Name:");
+			stuff_string(name, F_NAME, NAME_LENGTH);
+			if (name == NULL) {
+				nprintf(("Warning", "No name found for campaign file %s\n", filename));
+				break;
+			}
 
-		required_string("$Name:");
-		stuff_string( name, F_NAME, NAME_LENGTH );
-		if (name == NULL) {
-			nprintf(("Warning", "No name found for campaign file %s\n", filename));
-			break;
-		}
+			required_string("$Type:");
+			stuff_string(campaign_type, F_NAME, NAME_LENGTH);
 
-		required_string("$Type:");
-		stuff_string( campaign_type, F_NAME, NAME_LENGTH );
+			for (i = 0; i < MAX_CAMPAIGN_TYPES; i++) {
+				if (!stricmp(campaign_type, campaign_types[i])) {
+					*type = i;
+				}
+			}
 
-		for (i=0; i<MAX_CAMPAIGN_TYPES; i++) {
-			if ( !stricmp(campaign_type, campaign_types[i]) ) {
-				*type = i;
+			if (name == NULL) {
+				Warning(LOCATION, "Invalid campaign type \"%s\"\n", campaign_type);
+				break;
+			}
+
+			if (desc) {
+				if (optional_string("+Description:")) {
+					*desc = stuff_and_malloc_string(F_MULTITEXT, NULL);
+				}
+				else {
+					*desc = NULL;
+				}
+			}
+
+			// if this is a multiplayer campaign, get the max players
+			if ((*type) != CAMPAIGN_TYPE_SINGLE) {
+				skip_to_string("+Num Players:");
+				stuff_int(max_players);
+			}
+
+			// if we found a valid campaign type
+			if ((*type) >= 0) {
+				success = 1;
 			}
 		}
-
-		if (name == NULL) {
-			Warning(LOCATION, "Invalid campaign type \"%s\"\n", campaign_type);
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error message = %s.\n", fname, e.what()));
 			break;
-		}
-
-		if (desc) {
-			if (optional_string("+Description:")) {
-				*desc = stuff_and_malloc_string(F_MULTITEXT, NULL);
-			} else {
-				*desc = NULL;
-			}
-		}
-
-		// if this is a multiplayer campaign, get the max players
-		if ((*type) != CAMPAIGN_TYPE_SINGLE) {
-			skip_to_string("+Num Players:");
-			stuff_int(max_players);
-		}
-
-		// if we found a valid campaign type
-		if ((*type) >= 0) {
-			success = 1;
 		}
 	} while (0);
 
@@ -176,22 +180,14 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
  */
 int mission_campaign_get_mission_list(const char *filename, char **list, int max)
 {
-	int rval, i, num = 0;
+	int i, num = 0;
 	char name[MAX_FILENAME_LEN];
 
 	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
 
 	// read the campaign file and get the list of mission filenames
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-
-		// since we can't return count of allocated elements, free them instead
-		for (i=0; i<num; i++)
-			vm_free(list[i]);
-
-		num = -1;
-
-	} else {
+	try
+	{
 		read_file_text(filename);
 		reset_parse();
 
@@ -202,6 +198,16 @@ int mission_campaign_get_mission_list(const char *filename, char **list, int max
 			else
 				Warning(LOCATION, "Maximum number of missions exceeded (%d)!", max);
 		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+
+		// since we can't return count of allocated elements, free them instead
+		for (i = 0; i<num; i++)
+			vm_free(list[i]);
+
+		num = -1;
 	}
 
 	return num;
@@ -410,7 +416,7 @@ void mission_campaign_get_sw_info()
  */
 int mission_campaign_load( char *filename, player *pl, int load_savefile, bool reset_stats )
 {
-	int len, rval, i;
+	int len, i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
 
 	if (campaign_is_ignored(filename)) {
@@ -429,21 +435,8 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 	}
 
 	// read the mission file and get the list of mission filenames
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("Error parsing '%s'\r\nError code = %i.\r\n", filename, rval));
-
-		Campaign.filename[0] = 0;
-		Campaign.num_missions = 0;
-
-		if ( !Fred_running && !(Game_mode & GM_MULTIPLAYER) ) {
-			Campaign_file_missing = 1;
-			Campaign_load_failure = CAMPAIGN_ERROR_MISSING;
-			return CAMPAIGN_ERROR_MISSING;
-		}
-
-		return CAMPAIGN_ERROR_CORRUPT;
-
-	} else {
+	try
+	{
 		// be sure to remove all old malloced strings of Mission_names
 		// we must also free any goal stuff that was from a previous campaign
 		// this also frees sexpressions so the next call to init_sexp will be able to reclaim
@@ -642,6 +635,21 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 
 			Campaign.num_missions++;
 		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("Error parsing '%s'\r\nError message = %s.\r\n", filename, e.what()));
+
+		Campaign.filename[0] = 0;
+		Campaign.num_missions = 0;
+
+		if (!Fred_running && !(Game_mode & GM_MULTIPLAYER)) {
+			Campaign_file_missing = 1;
+			Campaign_load_failure = CAMPAIGN_ERROR_MISSING;
+			return CAMPAIGN_ERROR_MISSING;
+		}
+
+		return CAMPAIGN_ERROR_CORRUPT;
 	}
 
 	// set up the other variables for the campaign stuff.  After initializing, we must try and load
@@ -1406,14 +1414,9 @@ void mission_campaign_clear()
  */
 int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int *num)
 {
-	int	rval;
-
 	// read the mission file and get the list of mission filenames
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return rval;
-
-	} else {
+	try
+	{
 		Assert( strlen(filename) < MAX_FILENAME_LEN );  // make sure no overflow
 		read_file_text(filename);
 		reset_parse();
@@ -1431,6 +1434,11 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 			(*num)++;
 		}
 	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return 1;
+	}
 
 	return 0;
 }
@@ -1443,110 +1451,115 @@ void read_mission_goal_list(int num)
 {
 	char *filename, notes[NOTES_LENGTH], goals[MAX_GOALS][NAME_LENGTH];
 	char events[MAX_MISSION_EVENTS][NAME_LENGTH];
-	int i, z, rval, event_count, count = 0;
+	int i, z, event_count, count = 0;
 
 	filename = Campaign.missions[num].name;
 	
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+	try
+	{
+		read_file_text(filename);
+		reset_parse();
+		init_sexp();
+
+		// first, read the mission notes for this mission.  Used in campaign editor
+		if (skip_to_string("#Mission Info")) {
+			if (skip_to_string("$Notes:")) {
+				stuff_string(notes, F_NOTES, NOTES_LENGTH);
+				if (Campaign.missions[num].notes){
+					vm_free(Campaign.missions[num].notes);
+				}
+
+				Campaign.missions[num].notes = (char *)vm_malloc(strlen(notes) + 1);
+				strcpy(Campaign.missions[num].notes, notes);
+			}
+		}
+
+		event_count = 0;
+		// skip to events section in the mission file.  Events come before goals, so we process them first
+		if (skip_to_string("#Events")) {
+			while (1) {
+				if (skip_to_string("$Formula:", "#Goals") != 1){
+					break;
+				}
+
+				z = skip_to_string("+Name:", "$Formula:");
+				if (!z){
+					break;
+				}
+
+				if (z == 1){
+					stuff_string(events[event_count], F_NAME, NAME_LENGTH);
+				}
+				else {
+					sprintf(events[event_count], NOX("Event #%d"), event_count + 1);
+				}
+
+				event_count++;
+				if (event_count > MAX_MISSION_EVENTS) {
+					Warning(LOCATION, "Maximum number of events exceeded (%d)!", MAX_MISSION_EVENTS);
+					event_count = MAX_MISSION_EVENTS;
+					break;
+				}
+			}
+		}
+
+		count = 0;
+		if (skip_to_string("#Goals")) {
+			while (1) {
+				if (skip_to_string("$Type:", "#End") != 1){
+					break;
+				}
+
+				z = skip_to_string("+Name:", "$Type:");
+				if (!z){
+					break;
+				}
+
+				if (z == 1){
+					stuff_string(goals[count], F_NAME, NAME_LENGTH);
+				}
+				else {
+					sprintf(goals[count], NOX("Goal #%d"), count + 1);
+				}
+
+				count++;
+				if (count > MAX_GOALS) {
+					Warning(LOCATION, "Maximum number of goals exceeded (%d)!", MAX_GOALS);
+					count = MAX_GOALS;
+					break;
+				}
+			}
+		}
+
+		Campaign.missions[num].num_goals = count;
+		if (count) {
+			Campaign.missions[num].goals = (mgoal *)vm_malloc(count * sizeof(mgoal));
+			Assert(Campaign.missions[num].goals);  // make sure we got the memory
+			memset(Campaign.missions[num].goals, 0, count * sizeof(mgoal));
+
+			for (i = 0; i < count; i++){
+				strcpy_s(Campaign.missions[num].goals[i].name, goals[i]);
+			}
+		}
+		// copy the events
+		Campaign.missions[num].num_events = event_count;
+		if (event_count) {
+			Campaign.missions[num].events = (mevent *)vm_malloc(event_count * sizeof(mevent));
+			Assert(Campaign.missions[num].events);
+			memset(Campaign.missions[num].events, 0, event_count * sizeof(mevent));
+
+			for (i = 0; i < event_count; i++){
+				strcpy_s(Campaign.missions[num].events[i].name, events[i]);
+			}
+		}
+
+		// Goober5000 - variables do not need to be read here
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
-
-	read_file_text(filename);
-	reset_parse();
-	init_sexp();
-
-	// first, read the mission notes for this mission.  Used in campaign editor
-	if (skip_to_string("#Mission Info")) {
-		if (skip_to_string("$Notes:")) {
-			stuff_string(notes, F_NOTES, NOTES_LENGTH);
-			if (Campaign.missions[num].notes){
-				vm_free(Campaign.missions[num].notes);
-			}
-
-			Campaign.missions[num].notes = (char *) vm_malloc(strlen(notes) + 1);
-			strcpy(Campaign.missions[num].notes, notes);
-		}
-	}
-
-	event_count = 0;
-	// skip to events section in the mission file.  Events come before goals, so we process them first
-	if ( skip_to_string("#Events") ) {
-		while (1) {
-			if (skip_to_string("$Formula:", "#Goals") != 1){
-				break;
-			}
-
-			z = skip_to_string("+Name:", "$Formula:");
-			if (!z){
-				break;
-			}
-
-			if (z == 1){
-				stuff_string(events[event_count], F_NAME, NAME_LENGTH);
-			} else {
-				sprintf(events[event_count], NOX("Event #%d"), event_count + 1);
-			}
-
-			event_count++;
-			if (event_count > MAX_MISSION_EVENTS) {
-				Warning(LOCATION, "Maximum number of events exceeded (%d)!", MAX_MISSION_EVENTS);
-				event_count = MAX_MISSION_EVENTS;
-				break;
-			}
-		}
-	}
-
-	count = 0;
-	if (skip_to_string("#Goals")) {
-		while (1) {
-			if (skip_to_string("$Type:", "#End") != 1){
-				break;
-			}
-
-			z = skip_to_string("+Name:", "$Type:");
-			if (!z){
-				break;
-			}
-
-			if (z == 1){
-				stuff_string(goals[count], F_NAME, NAME_LENGTH);
-			} else {
-				sprintf(goals[count], NOX("Goal #%d"), count + 1);
-			}
-
-			count++;
-			if (count > MAX_GOALS) {
-				Warning(LOCATION, "Maximum number of goals exceeded (%d)!", MAX_GOALS);
-				count = MAX_GOALS;
-				break;
-			}
-		}
-	}
-
-	Campaign.missions[num].num_goals = count;
-	if (count) {
-		Campaign.missions[num].goals = (mgoal *) vm_malloc(count * sizeof(mgoal));
-		Assert(Campaign.missions[num].goals);  // make sure we got the memory
-		memset(Campaign.missions[num].goals, 0, count * sizeof(mgoal));
-
-		for (i=0; i<count; i++){
-			strcpy_s(Campaign.missions[num].goals[i].name, goals[i]);
-		}
-	}
-		// copy the events
-	Campaign.missions[num].num_events = event_count;
-	if (event_count) {
-		Campaign.missions[num].events = (mevent *)vm_malloc(event_count * sizeof(mevent));
-		Assert ( Campaign.missions[num].events );
-		memset(Campaign.missions[num].events, 0, event_count * sizeof(mevent));
-
-		for (i = 0; i < event_count; i++ ){
-			strcpy_s(Campaign.missions[num].events[i].name, events[i]);
-		}
-	}
-
-	// Goober5000 - variables do not need to be read here
 }
 
 /**
@@ -1622,33 +1635,36 @@ void mission_campaign_maybe_play_movie(int type)
  */
 int mission_campaign_parse_is_multi(char *filename, char *name)
 {	
-	int i, rval;
+	int i;
 	char temp[NAME_LENGTH];
 	
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+	try
+	{
+		read_file_text(filename);
+		reset_parse();
+
+		required_string("$Name:");
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		if (name)
+			strcpy(name, temp);
+
+		required_string("$Type:");
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+
+		for (i = 0; i < MAX_CAMPAIGN_TYPES; i++) {
+			if (!stricmp(temp, campaign_types[i])) {
+				return i;
+			}
+		}
+
+		Error(LOCATION, "Unknown campaign type %s", temp);
 		return -1;
 	}
-
-	read_file_text( filename );
-	reset_parse();
-	
-	required_string("$Name:");
-	stuff_string( temp, F_NAME, NAME_LENGTH );	
-	if ( name )
-		strcpy( name, temp );
-
-	required_string( "$Type:" );
-	stuff_string( temp, F_NAME, NAME_LENGTH );
-
-	for (i = 0; i < MAX_CAMPAIGN_TYPES; i++ ) {
-		if ( !stricmp(temp, campaign_types[i]) ) {
-			return i;
-		}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return -1;
 	}
-
-	Error(LOCATION, "Unknown campaign type %s", temp );
-	return -1;
 }
 
 /** 
