@@ -938,6 +938,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
 
+	wip->shield_impact_explosion_radius = 1.0f;
+
 	wip->dinky_impact_explosion_radius = 1.0f;
 	wip->dinky_impact_weapon_expl_index = -1;
 
@@ -1063,6 +1065,7 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->burst_delay = 1.0f; // 1 second, just incase its not defined
 	wip->burst_shots = 0;
+
 	wip->burst_flags = 0;
 
 	generic_anim_init( &wip->thruster_flame );
@@ -1908,6 +1911,12 @@ int parse_weapon(int subtype, bool replace)
 	
 	if ( optional_string("$Impact Explosion Radius:") )
 		stuff_float(&wip->impact_explosion_radius);
+
+	if ( optional_string("$Shield Impact Explosion Radius:") ) {
+		stuff_float(&wip->shield_impact_explosion_radius);
+	} else if (first_time) {
+		wip->shield_impact_explosion_radius = wip->impact_explosion_radius;
+	}
 
 	if ( optional_string("$Dinky Impact Explosion:") ) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -4770,7 +4779,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 
 	// a single player or multiplayer server function -- it affects actual weapon movement.
-	if (wip->wi_flags & WIF_HOMING) {
+	if (wip->wi_flags & WIF_HOMING && !(wp->weapon_flags & WF_NO_HOMING)) {
 		weapon_home(obj, num, frame_time);
 		
 		// If this is a swarm type missile,  
@@ -4942,11 +4951,25 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	wp = &Weapons[Objects[weapon_objnum].instance];
 	wip = &Weapon_info[wp->weapon_info_index];
 
+	if (wp->weapon_flags & WF_NO_HOMING) {
+		return;
+	}
+
 	if (parent_objnum >= 0) {
 		parent_objp = &Objects[parent_objnum];
 		Assert(parent_objp->type == OBJ_SHIP);
 	} else {
 		parent_objp = NULL;
+	}
+
+	if (parent_objp != NULL && (Ships[parent_objp->instance].flags2 & SF2_NO_SECONDARY_LOCKON)) {
+		wp->weapon_flags |= WF_NO_HOMING;
+		wp->homing_object = NULL;
+		wp->homing_subsys = NULL;
+		wp->target_num = -1;
+		wp->target_sig = -1;
+
+		return;
 	}
 
 	if ( parent_objp == NULL || Ships[parent_objp->instance].ai_index >= 0 ) {
@@ -7033,4 +7056,9 @@ void weapon_unpause_sounds()
 {
 	// Pause all beam sounds
 	beam_unpause_sounds();
+}
+
+void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx) {
+	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
+	particle_create( hitpos, &vmd_zero_vector, 0.0f, radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, -1.0f, objp );
 }

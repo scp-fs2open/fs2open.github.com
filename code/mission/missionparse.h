@@ -424,6 +424,8 @@ public:
 	float ship_max_hull_strength;			// Needed to deal with special hitpoints
 	float ship_max_shield_strength;
 
+	float max_shield_recharge;
+
 	// Goober5000
 	SCP_vector<texture_replace> replacement_textures;
 

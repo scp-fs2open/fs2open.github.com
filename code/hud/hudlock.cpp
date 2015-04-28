@@ -420,6 +420,10 @@ int hud_abort_lock()
 		return 1;
 	}
 
+	if ( Player_ship->flags2 & SF2_NO_SECONDARY_LOCKON ) {
+		return 1;
+	}
+
 	// if we're on the same team and the team doesn't attack itself, then don't lock!
 	if ((Player_ship->team == target_team) && (!iff_x_attacks_y(Player_ship->team, target_team)))
 	{

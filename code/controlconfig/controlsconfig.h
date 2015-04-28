@@ -63,13 +63,14 @@ typedef struct config_item {
 	short joy_default;		//!< default joystick button bound to action
 	char tab;				//!< what tab (category) it belongs in
 	bool hasXSTR;			//!< whether we should translate this with an XSTR
-	char *text;				//!< describes the action in the config screen
+	char *default_text;		//!< default description of the action
 	char type;				//!< manner control should be checked in
 	short key_id;			//!< actual key bound to action
 	short joy_id;			//!< joystick button bound to action
 	int used;				//!< has control been used yet in mission?  If so, this is the timestamp
 	bool disabled;			//!< whether this action should be available at all
 	bool continuous_ongoing;//!< whether this action is a continuous one and is currently ongoing
+	char *text;				//!< overridable description of the action
 } config_item;
 
 /*!
@@ -292,6 +293,7 @@ extern int Control_config_overlay_id;
 
 extern config_item Control_config[];		//!< Stores the keyboard configuration
 extern SCP_vector<config_item*> Control_config_presets; // tabled control presets; pointers to config_item arrays
+extern SCP_vector<SCP_string> Control_config_preset_names; // names for Control_config_presets (identical order of items)
 extern char **Scan_code_text;
 extern char **Joy_button_text;
 

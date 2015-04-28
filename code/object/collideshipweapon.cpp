@@ -168,6 +168,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	mc.pos = &ship_objp->pos;
 	mc.p0 = &weapon_objp->last_pos;
 	mc.p1 = &weapon_end_pos;
+	mc.lod = sip->collision_lod;
 	memcpy(&mc_shield, &mc, sizeof(mc_info));
 	memcpy(&mc_hull, &mc, sizeof(mc_info));
 
@@ -200,15 +201,16 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 			// The weapon is not allowed to impact the shield before it reaches this point
 			vec3d shield_ignored_until = weapon_objp->last_pos;
 
+			float min_weapon_span = sip->auto_shield_spread_min_span;
 			float weapon_flown_for = vm_vec_dist(&wp->start_pos, &weapon_objp->last_pos);
 
 			// If weapon hasn't yet flown a distance greater than the maximum ignore
 			// range, then some part of the currently checked range needs to be
 			// ignored
-			if (weapon_flown_for < sip->auto_shield_spread) {
+			if (weapon_flown_for < min_weapon_span) {
 				vm_vec_sub(&shield_ignored_until, &weapon_end_pos, &wp->start_pos);
 				vm_vec_normalize(&shield_ignored_until);
-				vm_vec_scale(&shield_ignored_until, sip->auto_shield_spread);
+				vm_vec_scale(&shield_ignored_until, min_weapon_span);
 				vm_vec_add2(&shield_ignored_until, &wp->start_pos);
 			}
 
@@ -243,7 +245,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 			// If no collision with the model found in the ignore range, only
 			// then do we check for sphereline collisions with the model during the
 			// non-ignored range
-			if (!shield_collision && weapon_flown_for + this_range > sip->auto_shield_spread) {
+			if (!shield_collision && weapon_flown_for + this_range > min_weapon_span) {
 				mc_shield.p0 = &shield_ignored_until;
 
 				mc_shield.p1 = &weapon_end_pos;
@@ -251,16 +253,14 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 				mc_shield.radius = sip->auto_shield_spread;
 
 				if (sip->auto_shield_spread_from_lod > -1) {
-					pm = model_get(sip->model_num);
-					mc_shield.submodel_num = pm->detail[sip->auto_shield_spread_from_lod];
-
-					mc_shield.flags = MC_CHECK_MODEL | MC_SUBMODEL_INSTANCE | MC_CHECK_SPHERELINE;
-				} else {
-					mc_shield.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+					mc_shield.lod = sip->auto_shield_spread_from_lod;
 				}
+
+				mc_shield.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 
 				shield_collision = model_collide(&mc_shield);
 
+				mc_shield.lod = sip->collision_lod;
 				mc_shield.submodel_num = -1;
 
 				// Because we manipulated p0 and p1 above, hit_dist will be
@@ -407,6 +407,12 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
 
 		if(!ship_override && !weapon_override) {
+			if (shield_collision && quadrant_num >= 0) {
+				if ((sip->shield_impact_explosion_anim > -1) && (wip->shield_impact_explosion_radius > 0)) {
+					// do in weapons.cpp for most parts just because that is how rest of the functions are handled
+					shield_impact_explosion(&mc.hit_point, ship_objp, wip->shield_impact_explosion_radius, sip->shield_impact_explosion_anim);
+				}
+			}
 			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 

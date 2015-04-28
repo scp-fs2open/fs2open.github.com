@@ -901,6 +901,7 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 			case CF_TYPE_MULTI_CACHE:
 			case CF_TYPE_MISSIONS:
 			case CF_TYPE_CACHE:
+			case CF_TYPE_TEMP_SUBDIR_LOOKUP:
 				cfs_slow_search = 1;
 				break;
  

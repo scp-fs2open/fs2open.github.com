@@ -2632,7 +2632,7 @@ ADE_VIRTVAR(RotationalVelocityDamping, l_Physics, "number", "Rotational damping,
 	return ade_set_args(L, "f", pih->pi->rotdamp);
 }
 
-ADE_VIRTVAR(RotationalVelocityDesired, l_Physics, "vector", "Desired rotational velocity", "vector", "Desired rotational velocity, or null vector if handle is invalid")
+ADE_VIRTVAR(RotationalVelocityDesired, l_Physics, "lvector", "Desired rotational velocity", "number", "Desired rotational velocity, or 0 if handle is invalid")
 {
 	physics_info_h *pih;
 	vec3d *v3=NULL;
@@ -15612,6 +15612,29 @@ ADE_FUNC(getStack, l_Testing, NULL, "Generates an ADE stackdump", "string", "Cur
 	char buf[10240] = {'\0'};
 	ade_stackdump(L, buf);
 	return ade_set_args(L, "s", buf);
+}
+
+ADE_FUNC(setCurrentPlayerMulti, l_Testing, "boolean", "Sets whether current player is a multiplayer pilot or not.", "boolean", "True if successful, false if not.")
+{
+    bool multi;
+
+    if(!ade_get_args(L, "b", &multi))
+		return ADE_RETURN_NIL;
+
+	if(Player == NULL)
+		return ade_set_error(L, "b", false);
+
+    if (multi) {
+        Game_mode &= ~GM_NORMAL;
+        Game_mode |= GM_MULTIPLAYER;
+        Player->flags |= PLAYER_FLAGS_IS_MULTI;
+    } else {
+        Game_mode &= ~GM_MULTIPLAYER;
+		Game_mode |= GM_NORMAL;
+        Player->flags &= ~PLAYER_FLAGS_IS_MULTI;
+    }
+
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(isCurrentPlayerMulti, l_Testing, NULL, "Returns whether current player is a multiplayer pilot or not.", "boolean", "Whether current player is a multiplayer pilot or not")

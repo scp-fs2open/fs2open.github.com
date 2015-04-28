@@ -50,10 +50,12 @@ typedef struct sound	{
 
 SCP_vector<sound> Sounds;
 
-int Sound_enabled = FALSE;				// global flag to turn sound on/off
-int Snd_sram;								// mem (in bytes) used up by storing sounds in system memory
-float Master_sound_volume = 1.0f;	// range is 0 -> 1, used for non-music sound fx
-float Master_voice_volume = 0.7f;	// range is 0 -> 1, used for all voice playback
+int Sound_enabled = FALSE;							// global flag to turn sound on/off
+int Snd_sram;										// mem (in bytes) used up by storing sounds in system memory
+float Default_sound_volume = 1.0f;					// range is 0 -> 1, used for non-music sound fx
+float Default_voice_volume = 0.7f;					// range is 0 -> 1, used for all voice playback
+float Master_sound_volume = Default_sound_volume;
+float Master_voice_volume = Default_voice_volume;
 
 unsigned int SND_ENV_DEFAULT = 0;
 

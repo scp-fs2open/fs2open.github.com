@@ -43,6 +43,8 @@ protected:
 	int firepoint_size;
 	int firepoint_scale_x;
 	int firepoint_scale_y;
+	int autoaim_frame_offset;
+	bool has_autoaim_lock;
 public:
 	HudGaugeReticle();
 	void render(float frametime);
@@ -50,6 +52,7 @@ public:
 	void pageIn();
 	void initFirepointDisplay(bool firepoint, int scaleX, int scaleY, int size);
 	void getFirepointStatus();
+	void setAutoaimFrame(int framenum);
 };
 
 class HudGaugeThrottle: public HudGauge

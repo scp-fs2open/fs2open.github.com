@@ -28,15 +28,14 @@
 
 #pragma optimize("", off)
 
-#define DEFAULT_MASTER_EVENT_MUSIC_VOLUME	0.5f
-
 #define HULL_VALUE_TO_PLAY_INTENSE_BATTLE_MUSIC 0.75f
 
 ////////////////////////////
 // Globals
 ////////////////////////////
 int Event_Music_battle_started = 0;
-float Master_event_music_volume = DEFAULT_MASTER_EVENT_MUSIC_VOLUME;			// range is 0->1
+float Default_music_volume = 0.5f;						// range is 0->1
+float Master_event_music_volume = Default_music_volume;
 
 typedef struct tagSNDPATTERN {
 	int default_next_pattern;	// Needed so the next_pattern member can be reset
