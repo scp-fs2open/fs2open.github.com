@@ -78,7 +78,7 @@ void shipfx_remove_submodel_ship_sparks(ship *shipp, int submodel_num)
  *
  * DKA: 5/26/99 make velocity of debris scale according to size of debris subobject (at least for large subobjects)
  */
-void shipfx_subsystem_maybe_create_live_debris(object *ship_obj, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, float exp_mag)
+void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, float exp_mag)
 {
 	// initializations
 	polymodel *pm = model_get(Ship_info[ship_p->ship_info_index].model_num);
@@ -94,7 +94,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_obj, ship *ship_p, s
 		return;
 	}
 
-	ship_model_start(ship_obj);
+	ship_model_start(ship_objp);
 
 	// copy angles
 	angles copy_angs = pm->submodel[submodel_num].angs;
@@ -111,10 +111,10 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_obj, ship *ship_p, s
 
 		// get the rotvel
 		void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int modelnum, int submodel_num, object *obj);
-		model_get_rotating_submodel_axis(&model_axis, &world_axis, pm->id, submodel_num, ship_obj);
+		model_get_rotating_submodel_axis(&model_axis, &world_axis, pm->id, submodel_num, ship_objp);
 		vm_vec_copy_scale(&rotvel, &world_axis, sii->cur_turn_rate);
 
-		model_find_world_point(&world_axis_pt, &sii->pt_on_axis, pm->id, submodel_num, &ship_obj->orient, &ship_obj->pos);
+		model_find_world_point(&world_axis_pt, &sii->pt_on_axis, pm->id, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		vm_quaternion_rotate(&m_rot, vm_vec_mag((vec3d*)&sii->angs), &model_axis);
 	} else {
@@ -131,27 +131,27 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_obj, ship *ship_p, s
 
 		// get start world pos
 		vm_vec_zero(&start_world_pos);
-		model_find_world_point(&start_world_pos, &pm->submodel[live_debris_submodel].offset, pm->id, live_debris_submodel, &ship_obj->orient, &ship_obj->pos );
+		model_find_world_point(&start_world_pos, &pm->submodel[live_debris_submodel].offset, pm->id, live_debris_submodel, &ship_objp->orient, &ship_objp->pos );
 
 		// convert to model coord of underlying submodel
 		// set angle to zero
 		pm->submodel[submodel_num].angs = zero_angs;
-		world_find_model_point(&start_model_pos, &start_world_pos, pm, submodel_num, &ship_obj->orient, &ship_obj->pos);
+		world_find_model_point(&start_model_pos, &start_world_pos, pm, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// rotate from submodel coord to world coords
 		// reset angle to current angle
 		pm->submodel[submodel_num].angs = copy_angs;
-		model_find_world_point(&end_world_pos, &start_model_pos, pm->id, submodel_num, &ship_obj->orient, &ship_obj->pos);
+		model_find_world_point(&end_world_pos, &start_model_pos, pm->id, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
 		if(fireball_type < 0) {
 			fireball_type = FIREBALL_EXPLOSION_MEDIUM;
 		}
 		// create fireball here.
-		fireball_create(&end_world_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_obj), pm->submodel[live_debris_submodel].rad);
+		fireball_create(&end_world_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), pm->submodel[live_debris_submodel].rad);
 
 		// create debris
-		live_debris_obj = debris_create(ship_obj, pm->id, live_debris_submodel, &end_world_pos, exp_center, 1, exp_mag);
+		live_debris_obj = debris_create(ship_objp, pm->id, live_debris_submodel, &end_world_pos, exp_center, 1, exp_mag);
 
 		// only do if debris is created
 		if (live_debris_obj) {
@@ -177,7 +177,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_obj, ship *ship_p, s
 
 				// Add radial velocity (at least as large as exp velocity)
 				vec3d temp_vel;	// explosion velocity with ship_obj velocity removed
-				vm_vec_sub(&temp_vel, &live_debris_obj->phys_info.vel, &ship_obj->phys_info.vel);
+				vm_vec_sub(&temp_vel, &live_debris_obj->phys_info.vel, &ship_objp->phys_info.vel);
 
 				// find magnitudes of radial and temp velocity
 				float vel_mag = vm_vec_mag(&temp_vel);
@@ -202,8 +202,8 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_obj, ship *ship_p, s
 				}
 
 				// scale up speed of debris if ship_obj > 125, but not for knossos
-				if (ship_obj->radius > 250 && !(Ship_info[ship_p->ship_info_index].flags & SIF_KNOSSOS_DEVICE)) {
-					vm_vec_scale(&live_debris_obj->phys_info.vel, ship_obj->radius/250.0f);
+				if (ship_objp->radius > 250 && !(Ship_info[ship_p->ship_info_index].flags & SIF_KNOSSOS_DEVICE)) {
+					vm_vec_scale(&live_debris_obj->phys_info.vel, ship_objp->radius/250.0f);
 				}
 			}
 
@@ -211,7 +211,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_obj, ship *ship_p, s
 		}
 	}
 
-	ship_model_stop(ship_obj);
+	ship_model_stop(ship_objp);
 }
 
 void set_ship_submodel_as_blown_off(ship *shipp, char *name)
@@ -239,12 +239,12 @@ void set_ship_submodel_as_blown_off(ship *shipp, char *name)
  * Create debris for ship submodel which has live debris (at ship death)
  * when ship submodel has not already been blown off (and hence liberated live debris)
  */
-void shipfx_maybe_create_live_debris_at_ship_death( object *ship_obj )
+void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 {
 	// if ship has live debris, detonate that subsystem now
 	// search for any live debris
 
-	ship *shipp = &Ships[ship_obj->instance];
+	ship *shipp = &Ships[ship_objp->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
 	// no subsystems -> no live debris.
@@ -263,7 +263,7 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_obj )
 			Assert(parent != -1);
 
 			// set model values only once (esp blown off)
-			ship_model_start(ship_obj);
+			ship_model_start(ship_objp);
 
 			// check if already blown off  (ship model set)
 			if ( !pm->submodel[parent].blown_off ) {
@@ -281,14 +281,14 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_obj )
 				if (pss != NULL) {
 					if (pss->system_info != NULL) {
 						vec3d exp_center, tmp = ZERO_VECTOR;
-						model_find_world_point(&exp_center, &tmp, pm->id, parent, &ship_obj->orient, &ship_obj->pos );
+						model_find_world_point(&exp_center, &tmp, pm->id, parent, &ship_objp->orient, &ship_objp->pos );
 
 						// if not blown off, blow it off
-						shipfx_subsystem_maybe_create_live_debris(ship_obj, shipp, pss, &exp_center, 3.0f);
+						shipfx_subsystem_maybe_create_live_debris(ship_objp, shipp, pss, &exp_center, 3.0f);
 
 						// now set subsystem as blown off, so we only get one copy
 						pm->submodel[parent].blown_off = 1;
-						set_ship_submodel_as_blown_off(&Ships[ship_obj->instance], pss->system_info->subobj_name);
+						set_ship_submodel_as_blown_off(&Ships[ship_objp->instance], pss->system_info->subobj_name);
 					}
 				}
 			}
@@ -296,36 +296,36 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_obj )
 	}
 
 	// clean up
-	ship_model_stop(ship_obj);
+	ship_model_stop(ship_objp);
 
 }
 
-void shipfx_blow_off_subsystem(object *ship_obj,ship *ship_p,ship_subsys *subsys, vec3d *exp_center, bool no_explosion)
+void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p,ship_subsys *subsys, vec3d *exp_center, bool no_explosion)
 {
 	vec3d subobj_pos;
 	int model_num = Ship_info[ship_p->ship_info_index].model_num;
 
 	model_subsystem	*psub = subsys->system_info;
 
-	get_subsystem_world_pos(ship_obj, subsys, &subobj_pos);
+	get_subsystem_world_pos(ship_objp, subsys, &subobj_pos);
 
 	// get rid of sparks on submodel that is destroyed
 	shipfx_remove_submodel_ship_sparks(ship_p, psub->subobj_num);
 
 	// create debris shards
 	if (!(subsys->flags & SSF_VANISHED) && !no_explosion) {
-		shipfx_blow_up_model(ship_obj, model_num, psub->subobj_num, 50, &subobj_pos );
+		shipfx_blow_up_model(ship_objp, model_num, psub->subobj_num, 50, &subobj_pos );
 
 		// create live debris objects, if any
 		// TODO:  some MULITPLAYER implcations here!!
-		shipfx_subsystem_maybe_create_live_debris(ship_obj, ship_p, subsys, exp_center, 1.0f);
+		shipfx_subsystem_maybe_create_live_debris(ship_objp, ship_p, subsys, exp_center, 1.0f);
 		
 		int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
 		if(fireball_type < 0) {
 			fireball_type = FIREBALL_EXPLOSION_MEDIUM;
 		}
 		// create first fireball
-		fireball_create( &subobj_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_obj), psub->radius );
+		fireball_create( &subobj_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), psub->radius );
 	}
 }
 
@@ -1687,29 +1687,29 @@ static int get_split_ship()
 }
 
 static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle);
-static void split_ship_init( ship* shipp, split_ship* split_ship )
+static void split_ship_init( ship* shipp, split_ship* split_shipp )
 {
 	object* parent_ship_obj = &Objects[shipp->objnum];
 	matrix* orient = &parent_ship_obj->orient;
 	for (int ii=0; ii<NUM_SUB_EXPL_HANDLES; ++ii) {
-		split_ship->sound_handle[ii] = shipp->sub_expl_sound_handle[ii];
+		split_shipp->sound_handle[ii] = shipp->sub_expl_sound_handle[ii];
 	}
 
 	// play 3d sound for shockwave explosion
 	snd_play_3d( &Snds[SND_SHOCKWAVE_EXPLODE], &parent_ship_obj->pos, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, NULL, 3.0f );
 
 	// initialize both ships
-	split_ship->front_ship.parent_obj = parent_ship_obj;
-	split_ship->back_ship.parent_obj  = parent_ship_obj;
-	split_ship->explosion_flash_timestamp = timestamp((int)(0.00075f*parent_ship_obj->radius));
-	split_ship->explosion_flash_started = 0;
-	split_ship->front_ship.orient = *orient;
-	split_ship->back_ship.orient  = *orient;
-	split_ship->front_ship.next_fireball = timestamp_rand(0, 100);
-	split_ship->back_ship.next_fireball  = timestamp_rand(0, 100);
+	split_shipp->front_ship.parent_obj = parent_ship_obj;
+	split_shipp->back_ship.parent_obj  = parent_ship_obj;
+	split_shipp->explosion_flash_timestamp = timestamp((int)(0.00075f*parent_ship_obj->radius));
+	split_shipp->explosion_flash_started = 0;
+	split_shipp->front_ship.orient = *orient;
+	split_shipp->back_ship.orient  = *orient;
+	split_shipp->front_ship.next_fireball = timestamp_rand(0, 100);
+	split_shipp->back_ship.next_fireball  = timestamp_rand(0, 100);
 
-	split_ship->front_ship.clip_plane_norm = vmd_z_vector;
-	vm_vec_copy_scale(&split_ship->back_ship.clip_plane_norm, &vmd_z_vector, -1.0f);
+	split_shipp->front_ship.clip_plane_norm = vmd_z_vector;
+	vm_vec_copy_scale(&split_shipp->back_ship.clip_plane_norm, &vmd_z_vector, -1.0f);
 
 	// find the point at which the ship splits (relative to its pivot)
 	polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
@@ -1721,18 +1721,18 @@ static void split_ship_init( ship* shipp, split_ship* split_ship )
 		init_clip_plane_dist = 0.5f * (0.5f - frand())*pm->core_radius;
 	}
 
-	split_ship->back_ship.cur_clip_plane_pt =  init_clip_plane_dist;
-	split_ship->front_ship.cur_clip_plane_pt = init_clip_plane_dist;
+	split_shipp->back_ship.cur_clip_plane_pt =  init_clip_plane_dist;
+	split_shipp->front_ship.cur_clip_plane_pt = init_clip_plane_dist;
 
 	float dist;
-	dist = (split_ship->front_ship.cur_clip_plane_pt+pm->maxs.xyz.z)/2.0f;
-	vm_vec_copy_scale(&split_ship->front_ship.local_pivot, &orient->vec.fvec, dist);
-	vm_vec_make(&split_ship->front_ship.model_center_disp_to_orig_center, 0.0f, 0.0f, -dist);
-	dist = (split_ship->back_ship.cur_clip_plane_pt +pm->mins.xyz.z)/2.0f;
-	vm_vec_copy_scale(&split_ship->back_ship.local_pivot, &orient->vec.fvec, dist);
-	vm_vec_make(&split_ship->back_ship.model_center_disp_to_orig_center, 0.0f, 0.0f, -dist);
-	vm_vec_add2(&split_ship->front_ship.local_pivot, &parent_ship_obj->pos );
-	vm_vec_add2(&split_ship->back_ship.local_pivot,  &parent_ship_obj->pos );
+	dist = (split_shipp->front_ship.cur_clip_plane_pt+pm->maxs.xyz.z)/2.0f;
+	vm_vec_copy_scale(&split_shipp->front_ship.local_pivot, &orient->vec.fvec, dist);
+	vm_vec_make(&split_shipp->front_ship.model_center_disp_to_orig_center, 0.0f, 0.0f, -dist);
+	dist = (split_shipp->back_ship.cur_clip_plane_pt +pm->mins.xyz.z)/2.0f;
+	vm_vec_copy_scale(&split_shipp->back_ship.local_pivot, &orient->vec.fvec, dist);
+	vm_vec_make(&split_shipp->back_ship.model_center_disp_to_orig_center, 0.0f, 0.0f, -dist);
+	vm_vec_add2(&split_shipp->front_ship.local_pivot, &parent_ship_obj->pos );
+	vm_vec_add2(&split_shipp->back_ship.local_pivot,  &parent_ship_obj->pos );
 	
 	// find which debris pieces are in the front and back split ships
 	for (int i=0; i<pm->num_debris_objects; i++ )	{
@@ -1742,30 +1742,30 @@ static void split_ship_init( ship* shipp, split_ship* split_ship )
 		// tmp is world position,  temp_pos is world_pivot,  tmp1 is offset from world_pivot (in ship local coord)
 		model_find_world_point(&tmp, &tmp1, pm->id, -1, &vmd_identity_matrix, &temp_pos );
 		if (tmp.xyz.z > init_clip_plane_dist) {
-			split_ship->front_ship.draw_debris[i] = DEBRIS_DRAW;
-			split_ship->back_ship.draw_debris[i]  = DEBRIS_NONE;
+			split_shipp->front_ship.draw_debris[i] = DEBRIS_DRAW;
+			split_shipp->back_ship.draw_debris[i]  = DEBRIS_NONE;
 		} else {
-			split_ship->front_ship.draw_debris[i] = DEBRIS_NONE;
-			split_ship->back_ship.draw_debris[i]  = DEBRIS_DRAW;
+			split_shipp->front_ship.draw_debris[i] = DEBRIS_NONE;
+			split_shipp->back_ship.draw_debris[i]  = DEBRIS_DRAW;
 		}
 	}
 
 	// set up physics 
-	physics_init( &split_ship->front_ship.phys_info );
-	physics_init( &split_ship->back_ship.phys_info );
-	split_ship->front_ship.phys_info.flags  |= (PF_ACCELERATES | PF_DEAD_DAMP);
-	split_ship->back_ship.phys_info.flags |= (PF_ACCELERATES | PF_DEAD_DAMP);
-	split_ship->front_ship.phys_info.side_slip_time_const = 10000.0f;
-	split_ship->back_ship.phys_info.side_slip_time_const =  10000.0f;
-	split_ship->front_ship.phys_info.rotdamp = 10000.0f;
-	split_ship->back_ship.phys_info.rotdamp =  10000.0f;
+	physics_init( &split_shipp->front_ship.phys_info );
+	physics_init( &split_shipp->back_ship.phys_info );
+	split_shipp->front_ship.phys_info.flags  |= (PF_ACCELERATES | PF_DEAD_DAMP);
+	split_shipp->back_ship.phys_info.flags |= (PF_ACCELERATES | PF_DEAD_DAMP);
+	split_shipp->front_ship.phys_info.side_slip_time_const = 10000.0f;
+	split_shipp->back_ship.phys_info.side_slip_time_const =  10000.0f;
+	split_shipp->front_ship.phys_info.rotdamp = 10000.0f;
+	split_shipp->back_ship.phys_info.rotdamp =  10000.0f;
 
 	// set up explosion vel and relative velocities (assuming mass depends on length)
-	float front_length = pm->maxs.xyz.z - split_ship->front_ship.cur_clip_plane_pt;
-	float back_length  = split_ship->back_ship.cur_clip_plane_pt - pm->mins.xyz.z;
+	float front_length = pm->maxs.xyz.z - split_shipp->front_ship.cur_clip_plane_pt;
+	float back_length  = split_shipp->back_ship.cur_clip_plane_pt - pm->mins.xyz.z;
 	float ship_length = front_length + back_length;
-	split_ship->front_ship.length_left = front_length;
-	split_ship->back_ship.length_left  = back_length;
+	split_shipp->front_ship.length_left = front_length;
+	split_shipp->back_ship.length_left  = back_length;
 
 	float expl_length_scale = (ship_length - 200.0f) / 2000.0f;
 	// s_r_f effects speed of "wipe" and rotvel
@@ -1773,8 +1773,8 @@ static void split_ship_init( ship* shipp, split_ship* split_ship )
 	float explosion_time = (3.0f + expl_length_scale + (frand()-0.5f)) * speed_reduction_factor;
 	float long_length = MAX(front_length, back_length);
 	float expl_vel = long_length / explosion_time;
-	split_ship->front_ship.explosion_vel = expl_vel;
-	split_ship->back_ship.explosion_vel  = -expl_vel;
+	split_shipp->front_ship.explosion_vel = expl_vel;
+	split_shipp->back_ship.explosion_vel  = -expl_vel;
 
 	float rel_vel = (0.6f + 0.2f*frand()) * expl_vel * speed_reduction_factor;
 	float front_vel = rel_vel * back_length / ship_length;
@@ -1786,26 +1786,26 @@ static void split_ship_init( ship* shipp, split_ship* split_ship )
 	rotvel.xyz.z = 0.0f;
 	vm_vec_normalize(&rotvel);
 	vm_vec_scale(&rotvel, 0.15f / speed_reduction_factor);
-	split_ship->front_ship.phys_info.rotvel = rotvel;
-	vm_vec_copy_scale(&split_ship->back_ship.phys_info.rotvel, &rotvel, -(front_length*front_length)/(back_length*back_length));
-	split_ship->front_ship.phys_info.rotvel.xyz.z = parent_ship_obj->phys_info.rotvel.xyz.z;
-	split_ship->back_ship.phys_info.rotvel.xyz.z  = parent_ship_obj->phys_info.rotvel.xyz.z;
+	split_shipp->front_ship.phys_info.rotvel = rotvel;
+	vm_vec_copy_scale(&split_shipp->back_ship.phys_info.rotvel, &rotvel, -(front_length*front_length)/(back_length*back_length));
+	split_shipp->front_ship.phys_info.rotvel.xyz.z = parent_ship_obj->phys_info.rotvel.xyz.z;
+	split_shipp->back_ship.phys_info.rotvel.xyz.z  = parent_ship_obj->phys_info.rotvel.xyz.z;
 
 
 	// modify vel of each split ship based on rotvel of parent ship obj
 	vec3d temp_rotvel = parent_ship_obj->phys_info.rotvel;
 	temp_rotvel.xyz.z = 0.0f;
 	vec3d vel_from_rotvel;
-	vm_vec_crossprod(&vel_from_rotvel, &temp_rotvel, &split_ship->front_ship.local_pivot);
-	vm_vec_crossprod(&vel_from_rotvel, &temp_rotvel, &split_ship->back_ship.local_pivot);
+	vm_vec_crossprod(&vel_from_rotvel, &temp_rotvel, &split_shipp->front_ship.local_pivot);
+	vm_vec_crossprod(&vel_from_rotvel, &temp_rotvel, &split_shipp->back_ship.local_pivot);
 
 	// set up velocity and make initial fireballs and particles
-	split_ship->front_ship.phys_info.vel = parent_ship_obj->phys_info.vel;
-	split_ship->back_ship.phys_info.vel  = parent_ship_obj->phys_info.vel;
-	maybe_fireball_wipe(&split_ship->front_ship, (int*)&split_ship->sound_handle);
-	maybe_fireball_wipe(&split_ship->back_ship,  (int*)&split_ship->sound_handle);
-	vm_vec_scale_add2(&split_ship->front_ship.phys_info.vel, &orient->vec.fvec, front_vel);
-	vm_vec_scale_add2(&split_ship->back_ship.phys_info.vel,  &orient->vec.fvec, back_vel);
+	split_shipp->front_ship.phys_info.vel = parent_ship_obj->phys_info.vel;
+	split_shipp->back_ship.phys_info.vel  = parent_ship_obj->phys_info.vel;
+	maybe_fireball_wipe(&split_shipp->front_ship, (int*)&split_shipp->sound_handle);
+	maybe_fireball_wipe(&split_shipp->back_ship,  (int*)&split_shipp->sound_handle);
+	vm_vec_scale_add2(&split_shipp->front_ship.phys_info.vel, &orient->vec.fvec, front_vel);
+	vm_vec_scale_add2(&split_shipp->back_ship.phys_info.vel,  &orient->vec.fvec, back_vel);
 
 	// HANDLE LIVE DEBRIS - blow off if not already gone
 	shipfx_maybe_create_live_debris_at_ship_death( parent_ship_obj );
@@ -1930,7 +1930,7 @@ void shipfx_debris_limit_speed(debris *db, ship *shipp)
 	if(db == NULL || shipp == NULL)
 		return;
 
-	object *ship_obj = &Objects[shipp->objnum];
+	object *ship_objp = &Objects[shipp->objnum];
 	physics_info *pi = &Objects[db->objnum].phys_info;
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
@@ -1945,7 +1945,7 @@ void shipfx_debris_limit_speed(debris *db, ship *shipp)
 		}
 		else
 		{
-			vm_vec_copy_scale(&pi->vel, &ship_obj->orient.vec.fvec, debris_speed);
+			vm_vec_copy_scale(&pi->vel, &ship_objp->orient.vec.fvec, debris_speed);
 		}
 	}
 	else if(sip->debris_min_speed >= 0.0f)
@@ -1959,7 +1959,7 @@ void shipfx_debris_limit_speed(debris *db, ship *shipp)
 			}
 			else
 			{
-				vm_vec_copy_scale(&pi->vel, &ship_obj->orient.vec.fvec, sip->debris_min_speed);
+				vm_vec_copy_scale(&pi->vel, &ship_objp->orient.vec.fvec, sip->debris_min_speed);
 			}
 		}
 	}
@@ -1974,7 +1974,7 @@ void shipfx_debris_limit_speed(debris *db, ship *shipp)
 			}
 			else
 			{
-				vm_vec_copy_scale(&pi->vel, &ship_obj->orient.vec.fvec, sip->debris_max_speed);
+				vm_vec_copy_scale(&pi->vel, &ship_objp->orient.vec.fvec, sip->debris_max_speed);
 			}
 		}
 	}
@@ -1991,7 +1991,7 @@ void shipfx_debris_limit_speed(debris *db, ship *shipp)
 		}
 		else
 		{
-			vm_vec_copy_scale(&pi->rotvel, &ship_obj->orient.vec.uvec, debris_rotspeed);
+			vm_vec_copy_scale(&pi->rotvel, &ship_objp->orient.vec.uvec, debris_rotspeed);
 		}
 	}
 	else if(sip->debris_min_rotspeed >= 0.0f)
@@ -2005,7 +2005,7 @@ void shipfx_debris_limit_speed(debris *db, ship *shipp)
 			}
 			else
 			{
-				vm_vec_copy_scale(&pi->rotvel, &ship_obj->orient.vec.uvec, sip->debris_min_rotspeed);
+				vm_vec_copy_scale(&pi->rotvel, &ship_objp->orient.vec.uvec, sip->debris_min_rotspeed);
 			}
 		}
 	}
@@ -2021,7 +2021,7 @@ void shipfx_debris_limit_speed(debris *db, ship *shipp)
 			}
 			else
 			{
-				vm_vec_copy_scale(&pi->rotvel, &ship_obj->orient.vec.uvec, sip->debris_max_rotspeed);
+				vm_vec_copy_scale(&pi->rotvel, &ship_objp->orient.vec.uvec, sip->debris_max_rotspeed);
 			}
 		}
 	}
