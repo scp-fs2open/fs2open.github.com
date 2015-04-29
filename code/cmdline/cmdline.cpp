@@ -447,9 +447,6 @@ cmdline_parm fullscreen_window_arg("-fullscreen_window", "Fullscreen/borderless 
 cmdline_parm res_arg("-res", "Resolution, formatted like 1600x900", AT_STRING);
 cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
-#ifdef SCP_UNIX
-cmdline_parm no_grab("-nograb", NULL, AT_NONE);				// Cmdline_no_grab
-#endif
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
@@ -473,7 +470,6 @@ int Cmdline_window = 0;
 int Cmdline_fullscreen_window = 0;
 char *Cmdline_res = 0;
 int Cmdline_verify_vps = 0;
-int Cmdline_no_grab = 0;
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_frame_profile = false;
 bool Cmdline_profile_write_file = false;
