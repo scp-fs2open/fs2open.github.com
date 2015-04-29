@@ -1144,8 +1144,6 @@ typedef struct ship_collision_physics {
 
 typedef struct path_metadata {
 	vec3d departure_rvec;
-	float arrive_speed_mult;
-	float depart_speed_mult;
 } path_metadata;
 
 // The real FreeSpace ship_info struct.
@@ -1322,7 +1320,6 @@ public:
 
 	ubyte	shield_icon_index;				// index to locate ship-specific animation frames for the shield on HUD
 	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in ship selection
-	angles	model_icon_angles;					// angle from which the model icon should be rendered (if not 0,0,0)
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in ship selection
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 	int 	selection_effect;
@@ -1375,7 +1372,6 @@ public:
 	float		thruster02_glow_len_factor;
 	float		thruster_dist_rad_factor;
 	float		thruster_dist_len_factor;
-	float		thruster_glow_noise_mult;
 
 	bool		draw_distortion;
 
@@ -1402,7 +1398,6 @@ public:
 	vec3d topdown_offset;
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
-	float min_engine_vol;					// minimum volume modifier for engine sound when ship is stationary
 	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
 	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
 

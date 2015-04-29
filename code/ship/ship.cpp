@@ -948,7 +948,6 @@ void init_ship_entry(ship_info *sip)
 	sip->thruster02_glow_len_factor = 1.0f;
 	sip->thruster_dist_rad_factor = 2.0f;
 	sip->thruster_dist_len_factor = 2.0f;
-	sip->thruster_glow_noise_mult = 1.0f;
 
 	sip->draw_distortion = true;
 
@@ -973,7 +972,6 @@ void init_ship_entry(ship_info *sip)
 	vm_vec_zero(&sip->topdown_offset);
 
 	sip->engine_snd = -1;
-	sip->min_engine_vol = -1.0f;
 	sip->glide_start_snd = -1;
 	sip->glide_end_snd = -1;
 
@@ -2661,9 +2659,6 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	//Parse the engine sound
 	parse_sound("$EngineSnd:", &sip->engine_snd, sip->name);
 
-	if(optional_string("$Minimum Engine Volume:"))
-		stuff_float(&sip->min_engine_vol);
-
 	//Parse optional sound to be used for beginning of a glide
 	parse_sound("$GlideStartSnd:", &sip->glide_start_snd, sip->name);
 
@@ -2718,32 +2713,6 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	// read in filename for icon that is used in ship selection
 	if ( optional_string("$Ship_icon:") ) {
 		stuff_string(sip->icon_filename, F_NAME, MAX_FILENAME_LEN);
-	}
-
-	if ( optional_string("$Model Icon Direction:") ) {
-		char str[NAME_LENGTH];
-		stuff_string(str, F_NAME, NAME_LENGTH);
-
-		angles model_icon_angles = {0.0f,0.0f,0.0f};
-
-		if (!stricmp(str, "top")) {
-			model_icon_angles.p = -PI_2;
-		} else if (!stricmp(str, "bottom")) {
-			model_icon_angles.p = -PI_2;
-			model_icon_angles.b = 2 * PI_2;
-		} else if (!stricmp(str, "front")) {
-			model_icon_angles.h = 2 * PI_2;
-		} else if (!stricmp(str, "back")) {
-			model_icon_angles.h = 4 * PI_2;
-		} else if (!stricmp(str, "left")) {
-			model_icon_angles.h = -PI_2;
-		} else if (!stricmp(str, "right")) {
-			model_icon_angles.h = PI_2;
-		} else {
-			Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Icon Direction, ignoring...", str);
-		}
-
-		sip->model_icon_angles = model_icon_angles;
 	}
 
 	// read in filename for animation that is used in ship selection
@@ -2893,10 +2862,6 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 	if ( optional_string("$Thruster Distortion:") ) {
 		stuff_boolean(&sip->draw_distortion);
-	}
-
-	if ( optional_string("$Thruster Glow Noise Mult:") ) {
-		stuff_float(&sip->thruster_glow_noise_mult);
 	}
 
 	while ( optional_string("$Thruster Particles:") ) {
@@ -3171,15 +3136,6 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		if (optional_string("+departure rvec:"))
 		{
 			stuff_vec3d(&metadata.departure_rvec);
-		}
-
-		if (optional_string("+arrive speed multiplier:"))
-		{
-			stuff_float(&metadata.arrive_speed_mult);
-		}
-		if (optional_string("+depart speed multiplier:"))
-		{
-			stuff_float(&metadata.depart_speed_mult);
 		}
 
 		//Add the new path_metadata to sip->pathMetadata keyed by path name
@@ -6149,7 +6105,7 @@ void ship_render(object * obj)
 				mst.distortion_bitmap = shipp->thruster_distortion_bitmap;
 
 				mst.use_ab = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
-				mst.glow_noise = shipp->thruster_glow_noise * sip->thruster_glow_noise_mult;
+				mst.glow_noise = shipp->thruster_glow_noise;
 				mst.rotvel = &Objects[shipp->objnum].phys_info.rotvel;
 
 				mst.glow_rad_factor = sip->thruster01_glow_rad_factor;
@@ -17765,8 +17721,6 @@ int ship_get_subobj_model_num(ship_info* sip, char* subobj_name)
 void init_path_metadata(path_metadata& metadata)
 {
 	vm_vec_zero(&metadata.departure_rvec);
-	metadata.arrive_speed_mult = FLT_MIN;
-	metadata.depart_speed_mult = FLT_MIN;
 }
 
 int ship_get_sound(object *objp, GameSoundsIndex id)

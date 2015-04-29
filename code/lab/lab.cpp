@@ -684,7 +684,7 @@ void labviewer_add_model_thrusters(ship_info *sip)
 	mst.distortion_bitmap = thruster_distortion_bitmap;
 
 	mst.use_ab = Lab_thrust_afterburn;
-	mst.glow_noise = thruster_glow_noise * sip->thruster_glow_noise_mult;
+	mst.glow_noise = thruster_glow_noise;
 	mst.rotvel = &vmd_zero_vector;
 
 	if (Lab_mode == LAB_MODE_SHIP) {
