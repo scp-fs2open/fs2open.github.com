@@ -251,14 +251,16 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 				mc_shield.radius = sip->auto_shield_spread;
 
 				if (sip->auto_shield_spread_from_lod > -1) {
-					mc_shield.lod = sip->auto_shield_spread_from_lod;
-				}
+					pm = model_get(sip->model_num);
+					mc_shield.submodel_num = pm->detail[sip->auto_shield_spread_from_lod];
 
-				mc_shield.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+					mc_shield.flags = MC_CHECK_MODEL | MC_SUBMODEL_INSTANCE | MC_CHECK_SPHERELINE;
+				} else {
+					mc_shield.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+				}
 
 				shield_collision = model_collide(&mc_shield);
 
-				mc_shield.lod = sip->collision_lod;
 				mc_shield.submodel_num = -1;
 
 				// Because we manipulated p0 and p1 above, hit_dist will be
