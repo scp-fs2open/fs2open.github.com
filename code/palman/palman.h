@@ -24,7 +24,6 @@ extern void palette_flush();
 // Functions to query a palette
 extern uint palette_compute_checksum( ubyte *pal );		// computes checksum of palette
 extern ubyte *palette_get_blend_table(float alpha);
-extern ubyte *palette_get_fade_table();
 
 extern uint palette_find( int r, int g, int b );
 
