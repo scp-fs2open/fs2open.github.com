@@ -13,9 +13,8 @@
 #define FS_CMDLINE_HEADER_FILE
 
 
-int parse_cmdline(char *cmdline);
+int parse_cmdline(int argc, char *argv[]);
 
-int fred2_parse_cmdline(int argc, char *argv[]);
 // COMMAND LINE SETTINGS
 // This section is for reference by all the *_init() functions. For example, the multiplayer init function
 // could check to see if (int Cmdline_multi_stream_chat_to_file) has been set by the command line parser.
@@ -147,7 +146,6 @@ extern int Cmdline_show_stats;
 extern int Cmdline_save_render_targets;
 extern int Cmdline_debug_window;
 extern int Cmdline_verify_vps;
-extern int Cmdline_no_grab;
 extern int Cmdline_reparse_mainhall;
 extern bool Cmdline_frame_profile;
 extern bool Cmdline_profile_write_file;

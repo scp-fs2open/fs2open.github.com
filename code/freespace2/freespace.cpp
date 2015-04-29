@@ -2075,11 +2075,7 @@ void game_init()
 
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
-
-#ifdef _WIN32
-	timeBeginPeriod(1);	
-#endif
-
+	
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
 
@@ -7025,7 +7021,7 @@ DCF(pofspew, "Spews POF info without shutting down the game")
 // returns:
 // 0 on an error
 // 1 on a clean exit
-int game_main(char *cmdline)
+int game_main(int argc, char *argv[])
 {
 	int state;
 
@@ -7080,7 +7076,7 @@ int game_main(char *cmdline)
 #endif // _WIN32
 
 
-	if ( !parse_cmdline(cmdline) ) {
+	if ( !parse_cmdline(argc, argv) ) {
 		return 1;
 	}
 
@@ -7162,147 +7158,6 @@ int game_main(char *cmdline)
 
 	return 0;
 }
-
-
-// ------------------------------------------------------------------------------
-// Platform specific main() functions, nothing directly related to game function
-// should go here.  Direct game related info should go in the game_main() function
-// TODO: this should end up in a separate file in the not too distant future.
-//
-
-#ifdef _WIN32
-// Windows Specific
-int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdShow)
-{
-	int result = -1;
-
-	// Don't let more than one instance of FreeSpace run.
-	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
-	if ( hwnd ) {
-		SetForegroundWindow(hwnd);
-		return 0;
-	}
-
-	::CoInitialize(NULL);
-
-#ifdef _DEBUG
-	void memblockinfo_output_memleak();
-	atexit(memblockinfo_output_memleak);
-#endif
-
-	//=====================================================
-	// Make sure we're running in the right directory.
-	char exe_dir[1024];
-
-	if ( GetModuleFileName( hInst, exe_dir, 1023 ) > 0 ) {
-		char *p = exe_dir + strlen(exe_dir);
-		
-		// chop off the filename
-		while( (p>exe_dir) && (*p!='\\') && (*p!='/') && (*p!=':') ) {
-			p--;
-		}
-		*p = 0;
-		
-		// Set directory
-		if ( strlen(exe_dir) > 0 )	{ //-V805
-			SetCurrentDirectory(exe_dir);
-		}
-	}
-
-	SCP_mspdbcs_Initialise( );
-
-#ifdef GAME_ERRORLOG_TXT
-#ifdef _MSC_VER
-	__try {
-#endif
-#endif
-		result = !game_main(szCmdLine);
-#ifdef GAME_ERRORLOG_TXT
-#ifdef _MSC_VER
-	} __except( RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread") ) {
-		// Do nothing here - RecordExceptionInfo() has already done
-		// everything that is needed. Actually this code won't even
-		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
-		// the __except clause.
-	}
-#endif // _MSC_VER
-#endif
-
-	SCP_mspdbcs_Cleanup( );
-
-	::CoUninitialize();
-
-#ifndef _MINGW
-	_CrtDumpMemoryLeaks();
-#endif
-
-	return result;
-}
-
-#else
-
-// *NIX specific
-int main(int argc, char *argv[])
-{
-	int result = EXIT_FAILURE;
-	char *argptr = NULL;
-	int i, len = 0;
-	char userdir[MAX_PATH];
-
-#ifdef APPLE_APP
-	// Finder sets the working directory to the root of the drive so we have to get a little creative
-	// to find out where on the disk we should be running from for CFILE's sake.
-	strncpy(full_path, *argv, 1024);
-#endif
-
-	// create user's directory	
-	memset(userdir, 0, sizeof(userdir));
-	snprintf(userdir, MAX_PATH - 1, "%s/%s/", detect_home(), Osreg_user_dir);
-	_mkdir(userdir);
-
-	// clean up the cmdline to just send arguments through
-	for (i = 1; i < argc; i++) {
-		len += strlen(argv[i]) + 1;
-	}
-
-	argptr = (char*) calloc(len + 1, sizeof(char));
-
-	if (argptr == NULL) {
-		fprintf(stderr, "ERROR: Out of memory in main()!\n");
-		exit(EXIT_FAILURE);
-	}
-
-	memset( argptr, 0, len+1 );
-
-	for (i = 1; i < argc; i++) {
-		strcat(argptr, argv[i]);
-		strcat(argptr, " ");
-	}
-
-	// switch to game_main()
-	try {
-		result = game_main(argptr);
-
-		if (argptr != NULL) {
-			free(argptr);
-			argptr = NULL;
-		}
-	} catch (std::exception &ex) {
-		fprintf(stderr, "Caught std::exception in main(): '%s'!\n", ex.what());
-		result = EXIT_FAILURE;
-	} catch ( ... ) {
-		fprintf(stderr, "Caught exception in main()!\n");
-		result = EXIT_FAILURE;
-	}
-
-	return result;
-}
-
-#endif // _WIN32
-
-//
-// End of platform specific main() section
-// ------------------------------------------------------------------------------
 
 #if 0  // don't have an updater for fs2_open
 // launch the fslauncher program on exit
@@ -8826,4 +8681,106 @@ void game_unpause()
 				audiostream_unpause_all();
 		}
 	}
+}
+
+
+int actual_main(int argc, char *argv[])
+{
+	int result = -1;
+
+#ifdef WIN32
+	// Don't let more than one instance of FreeSpace run.
+	HWND hwnd = FindWindow(NOX("FreeSpaceClass"), NULL);
+	if (hwnd)	{
+		SetForegroundWindow(hwnd);
+		return 0;
+	}
+
+	::CoInitialize(NULL);
+
+#ifdef _DEBUG
+	void memblockinfo_output_memleak();
+	atexit(memblockinfo_output_memleak);
+#endif
+
+	//=====================================================
+	// Make sure we're running in the right directory.
+	Assert(argc > 0);
+	char *exe_dir = argv[0];
+
+	char *p = exe_dir + strlen(exe_dir);
+
+	// chop off the filename
+	while ((p>exe_dir) && (*p != '\\') && (*p != '/') && (*p != ':'))	{
+		p--;
+	}
+	*p = 0;
+
+	// Set directory
+	if (strlen(exe_dir) > 0)	{ //-V805
+		SetCurrentDirectory(exe_dir);
+	}
+
+	SCP_mspdbcs_Initialise();
+#else
+	char userdir[MAX_PATH];
+
+#ifdef APPLE_APP
+	// Finder sets the working directory to the root of the drive so we have to get a little creative
+	// to find out where on the disk we should be running from for CFILE's sake.
+	strncpy(full_path, *argv, 1024);
+#endif
+
+	// create user's directory	
+	snprintf(userdir, MAX_PATH - 1, "%s/%s/", detect_home(), Osreg_user_dir);
+	_mkdir(userdir);
+#endif
+
+#if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
+	__try {
+#else
+	try {
+#endif
+		result = !game_main(argc, argv);
+#if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
+	}
+	__except (RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread")) {
+		// Do nothing here - RecordExceptionInfo() has already done
+		// everything that is needed. Actually this code won't even
+		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
+		// the __except clause.
+	}
+#else
+	}
+	catch (std::exception &ex) {
+		fprintf(stderr, "Caught std::exception in main(): '%s'!\n", ex.what());
+		result = EXIT_FAILURE;
+	}
+	catch (...) {
+		fprintf(stderr, "Caught exception in main()!\n");
+		result = EXIT_FAILURE;
+	}
+#endif
+
+#ifdef WIN32
+	SCP_mspdbcs_Cleanup();
+
+	::CoUninitialize();
+
+#ifndef _MINGW
+	_CrtDumpMemoryLeaks();
+#endif
+#endif
+
+	return result;
+}
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int main(int argc, char *argv[])
+{
+	// The extern "C" causes problems with linking so we'll just call
+	// the actual main function here
+	return actual_main(argc, argv);
 }
