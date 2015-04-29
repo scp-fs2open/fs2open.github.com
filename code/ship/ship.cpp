@@ -10323,9 +10323,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				// Mark all these weapons as in the same group
 				int new_group_id = weapon_create_group_id();
 
-					vec3d total_impulse;
-					vec3d *firepoint_list;
-					size_t current_firepoint = 0;
+				vec3d total_impulse;
+				vec3d *firepoint_list;
+				size_t current_firepoint = 0;
 
 				if (winfo_p->wi_flags3 & WIF3_APPLY_RECOIL){
 					firepoint_list = new vec3d[numtimes * points];
