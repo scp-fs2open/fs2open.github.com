@@ -277,7 +277,7 @@ void HudGaugeReticle::render(float frametime)
 
 void HudGaugeReticle::getFirepointStatus() {
 	//First, get the player ship
-	ship_info* sip;
+	ship_info* pship;
 	ship* shipp;
 	polymodel* pm;
 
@@ -285,45 +285,30 @@ void HudGaugeReticle::getFirepointStatus() {
 
 	if (Objects[Player->objnum].type == OBJ_SHIP) {
 		shipp = &Ships[Objects[Player->objnum].instance];
-		sip = &Ship_info[shipp->ship_info_index];
+		pship = &Ship_info[shipp->ship_info_index];
 	
 		//Get the player eyepoint
-		pm = model_get(sip->model_num);
+		pm = model_get(pship->model_num);
 
 		if (pm->n_view_positions == 0) {
 			mprintf(("Model %s does not have a defined eyepoint. Firepoint display could not be generated\n", pm->filename));
 		} else  {
-			if (pm->n_guns > 0) {
+			if (pm->n_guns > 0) { 
+			
 				eye eyepoint = pm->view_positions[shipp->current_viewpoint];
 				vec2d ep = { eyepoint.pnt.xyz.x, eyepoint.pnt.xyz.y };
 
 				for (int i = 0; i < pm->n_guns; i++) {
-					int bankactive = 0;
-					ship_weapon *swp = &shipp->weapons;
+					int isactive = 0;
 
 					if (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]))
-						bankactive = 1;
+						isactive = 1;
 					else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
-						bankactive = 1;
+						isactive = 1;
 					else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
-						bankactive = 2;
+						isactive = 2;
 
-					int num_slots = pm->gun_banks[i].num_slots;
-					for (int j = 0; j < num_slots; j++) {
-						int fpactive = bankactive;
-
-						if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
-							// If this firepoint is not among the next shot(s) to be fired, dim it one step
-							if ( !( (j >= (shipp->last_fired_point[i]+1) % num_slots) && (j <= (shipp->last_fired_point[i]+swp->primary_bank_slot_count[i]) % num_slots) ) ) {
-								fpactive--;
-							}
-						} else if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CYCLE) {
-							// If this firepoint is not the next one to be fired, dim it one step
-							if (j != (shipp->last_fired_point[i]+1) % num_slots) {
-								fpactive--;
-							}
-						}
-
+					for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
 						vec3d fpfromeye;
 
 						matrix eye_orient, player_transpose;
@@ -332,7 +317,7 @@ void HudGaugeReticle::getFirepointStatus() {
 						vm_matrix_x_matrix(&eye_orient, &player_transpose, &Eye_matrix);
 						vm_vec_rotate(&fpfromeye, &pm->gun_banks[i].pnt[j], &eye_orient);
 
-						firepoint tmp = { { fpfromeye.xyz.x - ep.x, ep.y - fpfromeye.xyz.y }, fpactive };
+						firepoint tmp = { { fpfromeye.xyz.x - ep.x, ep.y - fpfromeye.xyz.y }, isactive };
 						fp.push_back(tmp);
 					}
 				}
