@@ -10436,16 +10436,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							}
 							
 							if (winfo_p->wi_flags3 & WIF3_APPLY_RECOIL){	// Function to add recoil functionality - DahBlount
-								vec3d firing_vec;
-
-								vm_vec_unrotate(&firing_vec, &pm->gun_banks[bank_to_fire].norm[pt], &firing_orient);
+								vec3d recoil_pos, recoil = firing_orient.vec.fvec;
 
 								float recoil_force = (winfo_p->mass * winfo_p->max_speed);		// Remind people to increase density if they want this to work with MVPs models. - DahBlount
 
-								vm_vec_scale(&firing_vec, (-1 * recoil_force * numtimes));
+								vm_vec_avg_n(&recoil_pos, pt, &pm->gun_banks[bank_to_fire].pnt[i]);
+								vm_vec_copy_scale(&recoil, &recoil_pos,(-1 * recoil_force * (points * numtimes)));
 
 								// Actually apply recoil
-								ship_apply_whack(&firing_vec, &firing_pos, obj);	// Use ship_apply_whack because it takes care of some of the work for us
+								ship_apply_whack(&recoil, &recoil_pos, obj);	// Use ship_apply_whack because it takes care of some of the work for us
 							}
 
 							// create the weapon -- the network signature for multiplayer is created inside
