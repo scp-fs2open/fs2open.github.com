@@ -1420,11 +1420,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_string(sip->short_name, F_NAME, NAME_LENGTH);
 	else if(first_time)
 	{
-		char *srcpos, *srcend, *destpos, *destend;
+		char *srcpos, *srcend, *destpos;
 		srcpos = sip->name;
 		destpos = sip->short_name;
 		srcend = srcpos + strlen(sip->name);
-		destend = destpos + sizeof(sip->short_name) - 1;
 		while(srcpos < srcend)
 		{
 			if(*srcpos != ' ')
@@ -6510,7 +6509,7 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 		return;
 	}
 
-	int i, tm_num, diffuse_target = -1, glow_target = -1, glow_handle = -1, diffuse_handle = -1;
+	int i, tm_num, glow_target = -1, glow_handle = -1, diffuse_handle = -1;
 	int w, h;
 	cockpit_display new_display;
 
@@ -6521,7 +6520,6 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 	{
 		tm_num = pm->maps[i].FindTexture(display->filename);
 		if ( tm_num >= 0 ) {
-			diffuse_target = i*TM_NUM_TYPES;
 			glow_target = i*TM_NUM_TYPES+TM_GLOW_TYPE;
 
 			diffuse_handle = pm->maps[i].textures[TM_BASE_TYPE].GetTexture();
@@ -6680,7 +6678,7 @@ void ship_subsystems_delete(ship *shipp)
 void ship_delete( object * obj )
 {
 	ship	*shipp;
-	int	num, objnum;
+	int	num, objnum __attribute__((__unused__));
 
 	num = obj->instance;
 	Assert( num >= 0);
@@ -15550,7 +15548,7 @@ void ship_page_in()
 
 	// Page in all the ship classes that are used on this level
 	int num_ship_types_used = 0;
-	int test_id = -1;
+	int test_id __attribute__((__unused__)) = -1;
 
 	memset( fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
 

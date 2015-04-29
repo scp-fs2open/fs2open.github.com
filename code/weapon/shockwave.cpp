@@ -729,7 +729,7 @@ void shockwave_page_in()
 		} else if (Shockwave_info[i].model_id >= 0) {
 			// for a model we have to run model_load() on it again to make sure
 			// that it's ref_count is sane for this mission
-			int idx = model_load( Shockwave_info[i].filename, 0, NULL );
+			int idx __attribute__((__unused__)) = model_load( Shockwave_info[i].filename, 0, NULL );
 			Assert( idx == Shockwave_info[i].model_id );
 
 			model_page_in_textures( Shockwave_info[i].model_id );
