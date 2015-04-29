@@ -5832,42 +5832,38 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 	if (p) *p = 0; // remove any extension
 	strcat_s(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
 
-	int rval, filelength;
+	int filelength;
 
 	// if mission_p is NULL, make it point to The_mission
 	if ( mission_p == NULL )
 		mission_p = &The_mission;
 
-	do {
-		CFILE *ftemp = cfopen(real_fname, "rt");
-		if (!ftemp) {
-			rval = -1;
-			break;
-		}
+	CFILE *ftemp = cfopen(real_fname, "rt");
+	if (!ftemp) {
+		return -1;
+	}
 
-		// 7/9/98 -- MWA -- check for 0 length file.
-		filelength = cfilelength(ftemp);
-		cfclose(ftemp);
-		if (filelength == 0) {
-			rval = -1;
-			break;
-		}
+	// 7/9/98 -- MWA -- check for 0 length file.
+	filelength = cfilelength(ftemp);
+	cfclose(ftemp);
+	if (filelength == 0) {
+		return -1;
+	}
 
-		try
-		{
-			read_file_text(real_fname, CF_TYPE_MISSIONS);
-			mission_p->Reset();
-			parse_init(basic);
-			parse_mission_info(mission_p, basic);
-		}
-		catch (const parse::ParseException& e)
-		{
-			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", real_fname, e.what()));
-			break;
-		}
-	} while (0);
+	try
+	{
+		read_file_text(real_fname, CF_TYPE_MISSIONS);
+		mission_p->Reset();
+		parse_init(basic);
+		parse_mission_info(mission_p, basic);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", real_fname, e.what()));
+		return -1;
+	}
 
-	return rval;
+	return 0;
 }
 
 /**

@@ -1420,11 +1420,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_string(sip->short_name, F_NAME, NAME_LENGTH);
 	else if(first_time)
 	{
-		char *srcpos, *srcend, *destpos, *destend;
+		char *srcpos, *srcend, *destpos;
 		srcpos = sip->name;
 		destpos = sip->short_name;
 		srcend = srcpos + strlen(sip->name);
-		destend = destpos + sizeof(sip->short_name) - 1;
 		while(srcpos < srcend)
 		{
 			if(*srcpos != ' ')
@@ -6510,7 +6509,7 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 		return;
 	}
 
-	int i, tm_num, diffuse_target = -1, glow_target = -1, glow_handle = -1, diffuse_handle = -1;
+	int i, tm_num, glow_target = -1, glow_handle = -1, diffuse_handle = -1;
 	int w, h;
 	cockpit_display new_display;
 
@@ -6521,7 +6520,6 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 	{
 		tm_num = pm->maps[i].FindTexture(display->filename);
 		if ( tm_num >= 0 ) {
-			diffuse_target = i*TM_NUM_TYPES;
 			glow_target = i*TM_NUM_TYPES+TM_GLOW_TYPE;
 
 			diffuse_handle = pm->maps[i].textures[TM_BASE_TYPE].GetTexture();
@@ -6680,7 +6678,7 @@ void ship_subsystems_delete(ship *shipp)
 void ship_delete( object * obj )
 {
 	ship	*shipp;
-	int	num, objnum;
+	int	num, objnum __attribute__((__unused__));
 
 	num = obj->instance;
 	Assert( num >= 0);
@@ -6853,24 +6851,24 @@ void ship_actually_depart(int shipnum, int method)
 }
 
 // no destruction effects, not for player destruction and multiplayer, only self-destruction
-void ship_destroy_instantly(object *ship_obj, int shipnum)
+void ship_destroy_instantly(object *ship_objp, int shipnum)
 {
-	Assert(ship_obj->type == OBJ_SHIP);
-	Assert(!(ship_obj == Player_obj));
+	Assert(ship_objp->type == OBJ_SHIP);
+	Assert(!(ship_objp == Player_obj));
 	Assert(!(Game_mode & GM_MULTIPLAYER));
 
 	// undocking and death preparation
-	ship_stop_fire_primary(ship_obj);
-	ai_deathroll_start(ship_obj);
+	ship_stop_fire_primary(ship_objp);
+	ai_deathroll_start(ship_objp);
 
-	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_obj->instance].ship_name, NULL );
+	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
 	
 	// scripting stuff
-	Script_system.SetHookObject("Self", ship_obj);
-	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
+	Script_system.SetHookObject("Self", ship_objp);
+	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_objp);
 	Script_system.RemHookVars(2, "Self", "Killer");
 
-	ship_obj->flags |= OF_SHOULD_BE_DEAD;
+	ship_objp->flags |= OF_SHOULD_BE_DEAD;
 	ship_cleanup(shipnum,SHIP_DESTROYED);
 }
 
@@ -9842,7 +9840,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	ship_weapon	*swp;
 	ship_info	*sip;
 	ai_info		*aip;
-	int			weapon, i, j, w, v, weapon_objnum;
+	int			weapon_idx, i, j, w, v, weapon_objnum;
 	int			bank_to_fire, num_fired = 0;	
 	int			banks_fired;				// used for multiplayer to help determine whether or not to send packet
 	banks_fired = 0;			// used in multiplayer -- bitfield of banks that were fired
@@ -9953,9 +9951,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		bank_to_fire = (swp->current_primary_bank+i) % swp->num_primary_banks;
 
 		
-		weapon = swp->primary_bank_weapons[bank_to_fire];
-		Assert( weapon >= 0 && weapon < MAX_WEAPON_TYPES );		
-		if ( (weapon < 0) || (weapon >= MAX_WEAPON_TYPES) ) {
+		weapon_idx = swp->primary_bank_weapons[bank_to_fire];
+		Assert( weapon_idx >= 0 && weapon_idx < MAX_WEAPON_TYPES );
+		if ( (weapon_idx < 0) || (weapon_idx >= MAX_WEAPON_TYPES) ) {
 			Int3();		// why would a ship try to fire a weapon that doesn't exist?
 			continue;
 		}		
@@ -9967,7 +9965,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				continue;
 		}
 
-		weapon_info* winfo_p = &Weapon_info[weapon];
+		weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
 		if (needs_target_pos) {
 			target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
@@ -10437,7 +10435,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							
 							// create the weapon -- the network signature for multiplayer is created inside
 							// of weapon_create							
-							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id, 
+							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), new_group_id,
 								0, 0, swp->primary_bank_fof_cooldown[bank_to_fire] );
 							winfo_p = &Weapon_info[Weapons[Objects[weapon_objnum].instance].weapon_info_index];
 							has_fired = true;
@@ -10482,7 +10480,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							// create the muzzle flash effect
 							if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
 								// show the flash only if in not cockpit view, or if "show ship" flag is set
-								shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon );
+								shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon_idx );
 							}
 
 							// maybe shudder the ship - if its me
@@ -10842,7 +10840,7 @@ extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_i
 //                need to avoid firing when normally called
 int ship_fire_secondary( object *obj, int allow_swarm )
 {
-	int			n, weapon, j, bank, bank_adjusted, starting_bank_count = -1, num_fired;
+	int			n, weapon_idx, j, bank, bank_adjusted, starting_bank_count = -1, num_fired;
 	ushort		starting_sig = 0;
 	ship			*shipp;
 	ship_weapon *swp;
@@ -10923,12 +10921,12 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			return 0;
 	}
 
-	weapon = swp->secondary_bank_weapons[bank];
+	weapon_idx = swp->secondary_bank_weapons[bank];
 	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
 	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= MAX_WEAPON_TYPES)){
 		return 0;
 	}
-	wip = &Weapon_info[weapon];
+	wip = &Weapon_info[weapon_idx];
 
 	if ( MULTIPLAYER_MASTER ) {
 		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
@@ -11049,11 +11047,11 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	float t;
 
-	if (Weapon_info[weapon].burst_shots > swp->burst_counter[bank_adjusted]) {
-		t = Weapon_info[weapon].burst_delay;
+	if (Weapon_info[weapon_idx].burst_shots > swp->burst_counter[bank_adjusted]) {
+		t = Weapon_info[weapon_idx].burst_delay;
 		swp->burst_counter[bank_adjusted]++;
 	} else {
-		t = Weapon_info[weapon].fire_wait;	// They can fire 5 times a second
+		t = Weapon_info[weapon_idx].fire_wait;	// They can fire 5 times a second
 		swp->burst_counter[bank_adjusted] = 0;
 	}
 	swp->next_secondary_fire_stamp[bank] = timestamp((int) (t * 1000.0f));
@@ -11066,7 +11064,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			if ( obj == Player_obj ) 
 				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
 					char missile_name[NAME_LENGTH];
-					strcpy_s(missile_name, Weapon_info[weapon].name);
+					strcpy_s(missile_name, Weapon_info[weapon_idx].name);
 					end_string_at_first_hash_symbol(missile_name);
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), missile_name);
 				}
@@ -11162,7 +11160,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
 
 			if ( Game_mode & GM_MULTIPLAYER ) {
-				Assert( Weapon_info[weapon].subtype == WP_MISSILE );
+				Assert( Weapon_info[weapon_idx].subtype == WP_MISSILE );
 			}
 
 			matrix firing_orient;
@@ -11179,17 +11177,17 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
+			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
 
 			if (weapon_num >= 0) {
-				weapon = Weapons[Objects[weapon_num].instance].weapon_info_index;
+				weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;
 				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
 				has_fired = true;
 
 				// create the muzzle flash effect
 				if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
 					// show the flash only if in not cockpit view, or if "show ship" flag is set
-					shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
+					shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon_idx);
 				}
 
 				if((wip->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
@@ -11212,8 +11210,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	if ( obj == Player_obj ) {
-		if ( Weapon_info[weapon].launch_snd != -1 ) {
-			snd_play( &Snds[Weapon_info[weapon].launch_snd], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
+		if ( Weapon_info[weapon_idx].launch_snd != -1 ) {
+			snd_play( &Snds[Weapon_info[weapon_idx].launch_snd], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 			swp = &Player_ship->weapons;
 			if (bank >= 0) {
 				wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
@@ -11226,8 +11224,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		}
 
 	} else {
-		if ( Weapon_info[weapon].launch_snd != -1 ) {
-			snd_play_3d( &Snds[Weapon_info[weapon].launch_snd], &obj->pos, &View_position );
+		if ( Weapon_info[weapon_idx].launch_snd != -1 ) {
+			snd_play_3d( &Snds[Weapon_info[weapon_idx].launch_snd], &obj->pos, &View_position );
 		}
 	}
 
@@ -11262,7 +11260,7 @@ done_secondary:
 		}
 	
 		// maybe announce a shockwave weapon
-		ai_maybe_announce_shockwave_weapon(obj, weapon);
+		ai_maybe_announce_shockwave_weapon(obj, weapon_idx);
 	}
 
 	// if we are out of ammo in this bank then don't carry over firing swarm/corkscrew
@@ -15550,7 +15548,7 @@ void ship_page_in()
 
 	// Page in all the ship classes that are used on this level
 	int num_ship_types_used = 0;
-	int test_id = -1;
+	int test_id __attribute__((__unused__)) = -1;
 
 	memset( fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
 
@@ -17768,29 +17766,29 @@ bool ship_has_sound(object *objp, GameSoundsIndex id)
 /**
  * Given a ship with bounding box and a point, find the closest point on the bbox
  *
- * @param ship_obj Object that has the bounding box (should be a ship)
+ * @param ship_objp Object that has the bounding box (should be a ship)
  * @param start World position of the point being compared
  * @param box_pt OUTPUT PARAMETER: closest point on the bbox to start
  *
  * @return point is inside bbox, TRUE/1
  * @return point is outside bbox, FALSE/0
  */
-int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt)
+int get_nearest_bbox_point(object *ship_objp, vec3d *start, vec3d *box_pt)
 {
 	vec3d temp, rf_start;
 	polymodel *pm;
-	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+	pm = model_get(Ship_info[Ships[ship_objp->instance].ship_info_index].model_num);
 
 	// get start in ship rf
-	vm_vec_sub(&temp, start, &ship_obj->pos);
-	vm_vec_rotate(&rf_start, &temp, &ship_obj->orient);
+	vm_vec_sub(&temp, start, &ship_objp->pos);
+	vm_vec_rotate(&rf_start, &temp, &ship_objp->orient);
 
 	// find box_pt
 	int inside = project_point_onto_bbox(&pm->mins, &pm->maxs, &rf_start, &temp);
 
 	// get box_pt in world rf
-	vm_vec_unrotate(box_pt, &temp, &ship_obj->orient);
-	vm_vec_add2(box_pt, &ship_obj->pos);
+	vm_vec_unrotate(box_pt, &temp, &ship_objp->orient);
+	vm_vec_add2(box_pt, &ship_objp->pos);
 
 	return inside;
 }
