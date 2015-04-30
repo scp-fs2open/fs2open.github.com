@@ -862,7 +862,7 @@ void init_ship_entry(ship_info *sip)
 
 	sip->weapon_model_draw_distance = 200.0f;
 
-	sip->ship_recoil_modifier = 0.0f;
+	sip->ship_recoil_modifier = 1.0f;
 
 	sip->max_hull_strength = 100.0f;
 	sip->max_shield_strength = 0.0f;
@@ -10450,12 +10450,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							
 							if (winfo_p->wi_flags3 & WIF3_APPLY_RECOIL){	// Function to add recoil functionality - DahBlount
 								vec3d local_impulse = firing_orient.vec.fvec;
-
-								if (winfo_p->recoil_modifier = 0.0f)			// Remind people to increase density if they want this to work with MVPs models. - DahBlount
-									winfo_p->recoil_modifier = 1.0f;
-
-								if (sip->ship_recoil_modifier = 0.0f)
-									sip->ship_recoil_modifier = 1.0f;
 								
 								float recoil_force = (winfo_p->mass * winfo_p->max_speed * winfo_p->recoil_modifier * sip->ship_recoil_modifier);
 
