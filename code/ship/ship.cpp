@@ -862,6 +862,8 @@ void init_ship_entry(ship_info *sip)
 
 	sip->weapon_model_draw_distance = 200.0f;
 
+	sip->ship_recoil_modifier = 1.0f;
+
 	sip->max_hull_strength = 100.0f;
 	sip->max_shield_strength = 0.0f;
 
@@ -2297,6 +2299,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	{
 		sip->flags2 |= SIF2_DRAW_WEAPON_MODELS;
 		stuff_bool_list(sip->draw_secondary_models, sip->num_secondary_banks);
+	}
+
+	if (optional_string("$Ship Recoil Modifier:")){
+		stuff_float(&sip->ship_recoil_modifier);
 	}
 
 	if(optional_string("$Shields:")) {
@@ -10321,6 +10327,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				// Mark all these weapons as in the same group
 				int new_group_id = weapon_create_group_id();
 
+				vec3d total_impulse;
+				vec3d *firepoint_list;
+				size_t current_firepoint = 0;
+
+				if (winfo_p->wi_flags3 & WIF3_APPLY_RECOIL){
+					firepoint_list = new vec3d[numtimes * points];
+					vm_vec_zero(&total_impulse);
+				}
+
 				for ( w = 0; w < numtimes; w++ ) {
 					polymodel *weapon_model = NULL;
 					if(winfo_p->external_model_num >= 0) 
@@ -10433,6 +10448,17 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								firing_orient = obj->orient;
 							}
 							
+							if (winfo_p->wi_flags3 & WIF3_APPLY_RECOIL){	// Function to add recoil functionality - DahBlount
+								vec3d local_impulse = firing_orient.vec.fvec;
+								
+								float recoil_force = (winfo_p->mass * winfo_p->max_speed * winfo_p->recoil_modifier * sip->ship_recoil_modifier);
+
+								firepoint_list[current_firepoint++] = firing_pos;
+
+								vm_vec_scale(&local_impulse, (-1 * recoil_force));
+								vm_vec_add2(&total_impulse, &local_impulse);
+							}
+
 							// create the weapon -- the network signature for multiplayer is created inside
 							// of weapon_create							
 							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), new_group_id,
@@ -10495,6 +10521,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						}
 					}
 					swp->external_model_fp_counter[bank_to_fire]++;
+				}
+				if (winfo_p->wi_flags3 & WIF3_APPLY_RECOIL){
+					vec3d avg_firepoint;
+
+					vm_vec_avg_n(&avg_firepoint, current_firepoint, firepoint_list);
+
+					ship_apply_whack(&total_impulse, &avg_firepoint, obj);
+					delete[] firepoint_list;
 				}
 			}
 

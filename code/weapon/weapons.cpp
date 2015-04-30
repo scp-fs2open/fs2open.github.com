@@ -665,6 +665,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 			weaponp->wi_flags3 |= WIF3_TURRET_INTERCEPTABLE;
 		else if (!stricmp(NOX("fighter interceptable"), weapon_strings[i]))
 			weaponp->wi_flags3 |= WIF3_FIGHTER_INTERCEPTABLE;
+		else if (!stricmp(NOX("apply recoil"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_APPLY_RECOIL;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -958,6 +960,7 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->emp_intensity = EMP_DEFAULT_INTENSITY;
 	wip->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
+	wip->recoil_modifier = 1.0f;
 	wip->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	wip->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
 
@@ -1965,6 +1968,15 @@ int parse_weapon(int subtype, bool replace)
 	
 	if( optional_string("$EMP Time:") ){
 		stuff_float(&wip->emp_time);
+	}
+
+	// This is an optional modifier for a weapon that uses the "apply recoil" flag. recoil_force in ship.cpp line 10445 is multiplied by this if defined.
+	if (optional_string("$Recoil Modifier:")){
+		if (!(wip->wi_flags3 & WIF3_APPLY_RECOIL)){
+			Warning(LOCATION, "$Recoil Modifier specified for weapon %s but this weapon does not have the \"apply recoil\" weapon flag set. Automatically setting the flag", wip->name);
+			wip->wi_flags3 |= WIF3_APPLY_RECOIL;
+		}
+		stuff_float(&wip->recoil_modifier);
 	}
 
 	// Energy suck optional stuff (if WIF_ENERGY_SUCK is not set, none of this matters anyway)
