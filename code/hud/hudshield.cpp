@@ -545,6 +545,11 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 	shield_hit_info	*shi;
 	int					num;
 
+	if (Game_mode & GM_STANDALONE_SERVER)
+		return;
+
+	Assertion(objp != NULL, "hud_shield_quadrant_hit() called with a NULL objp; get a coder!\n");
+
 	if ( objp->type != OBJ_SHIP )
 		return;
 
@@ -559,12 +564,16 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 		return;
 	}
 
+	Assertion(shi->shield_hit_timers.size() > 0, "Shield hit info object for object '%s' has a size %d shield_hit_timers; get a coder!\n", Ships[objp->instance].ship_name, shi->shield_hit_timers.size());
+	Assertion(shi->hull_hit_index < shi->shield_hit_timers.size(), "Shield hit info object for object '%s' has a hull_hit_index of %d (should be between 0 and %d); get a coder!\n", Ships[objp->instance].ship_name, shi->hull_hit_index, shi->shield_hit_timers.size() - 1);
+
 	if ( quadrant >= 0 ) {
 		if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS) )
 			num = Quadrant_xlate[quadrant];
 		else
 			num = quadrant;
 
+		Assertion(num < shi->hull_hit_index, "Shield hit info object for object '%s' hit on quadrant #%d, despite having a hull_hit_index of %d; get a coder!\n", Ships[objp->instance].ship_name, num, shi->hull_hit_index);
 		shi->shield_hit_timers[num] = timestamp(SHIELD_HIT_DURATION_SHORT);
 	} else {
 		shi->shield_hit_timers[shi->hull_hit_index] = timestamp(SHIELD_HIT_DURATION_SHORT);
