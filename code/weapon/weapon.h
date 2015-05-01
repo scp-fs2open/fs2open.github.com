@@ -122,7 +122,7 @@ extern int Num_weapon_subtypes;
 #define WIF3_TURRET_INTERCEPTABLE		(1 << 5)	// These two flags mark a weapon as being interceptable by the AI
 #define WIF3_FIGHTER_INTERCEPTABLE		(1 << 6)	// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
 #define WIF3_AOE_ELECTRONICS			(1 << 7)	// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
-
+#define WIF3_APPLY_RECOIL				(1 << 8)	// Apply recoil using weapon and ship info
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -434,6 +434,9 @@ typedef struct weapon_info {
 	// EMP effect
 	float emp_intensity;					// intensity of the EMP effect
 	float emp_time;						// time of the EMP effect
+
+	// Recoil effect
+	float recoil_modifier;
 
 	// Energy suck effect
 	float weapon_reduce;					// how much energy removed from weapons systems

@@ -1267,7 +1267,7 @@ void bg_bitmap_dlg::OnImportBackground()
 {
 	CFileDialog cfd(TRUE, ".fs2", NULL, 0, "FreeSpace2 Missions (*.fs2)|*.fs2||\0");
 	char filename[256], error_str[1024];
-	int rval, temp, count;
+	int temp, count;
 	char *saved_mp;
 
 	//warn on pressing the button
@@ -1280,59 +1280,62 @@ void bg_bitmap_dlg::OnImportBackground()
 
 	strcpy_s(filename, cfd.GetPathName());
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("BGBITMAPDLG: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		sprintf(error_str, "Could not parse file: %s", filename);
-
-		MessageBox((LPCTSTR) error_str, (LPCTSTR) "Unable to import mission background!", MB_ICONERROR | MB_OK);
-		return;
-	}
-
-	// parse in the new file
-	read_file_text(filename);
-	reset_parse();
-
-	if (!skip_to_start_of_string("#Background bitmaps"))
-		return;
-
-	// skip beginning stuff
-	required_string("#Background bitmaps");
-	required_string("$Num stars:");
-	stuff_int(&temp);
-	required_string("$Ambient light level:");
-	stuff_int(&temp);
-
-	saved_mp = Mp;
-
-	// see if we have more than one background in this mission
-	count = 0;
-	while(skip_to_string("$Bitmap List:"))
-		count++;
-
-	Mp = saved_mp;
-
-	// pick one (if count is 0, it's retail with just one background)
-	if (count > 0)
+	try
 	{
-		int i, which = 0;
+		// parse in the new file
+		read_file_text(filename);
+		reset_parse();
 
-		if (count > 1)
+		if (!skip_to_start_of_string("#Background bitmaps"))
+			return;
+
+		// skip beginning stuff
+		required_string("#Background bitmaps");
+		required_string("$Num stars:");
+		stuff_int(&temp);
+		required_string("$Ambient light level:");
+		stuff_int(&temp);
+
+		saved_mp = Mp;
+
+		// see if we have more than one background in this mission
+		count = 0;
+		while (skip_to_string("$Bitmap List:"))
+			count++;
+
+		Mp = saved_mp;
+
+		// pick one (if count is 0, it's retail with just one background)
+		if (count > 0)
 		{
-			BackgroundChooser dlg(count);
-			if (dlg.DoModal() == IDCANCEL)
-				return;
+			int i, which = 0;
 
-			which = dlg.GetChosenBackground();
+			if (count > 1)
+			{
+				BackgroundChooser dlg(count);
+				if (dlg.DoModal() == IDCANCEL)
+					return;
+
+				which = dlg.GetChosenBackground();
+			}
+
+			for (i = 0; i < which + 1; i++)
+				skip_to_string("$Bitmap List:");
 		}
 
-		for (i = 0; i < which + 1; i++)
-			skip_to_string("$Bitmap List:");
+		// now parse the background we've selected
+		parse_one_background(&Backgrounds[get_active_background()]);
+
+		reinitialize_lists();
 	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("BGBITMAPDLG: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		sprintf(error_str, "Could not parse file: %s\n\nError message: %s", filename, e.what());
 
-	// now parse the background we've selected
-	parse_one_background(&Backgrounds[get_active_background()]);
-
-	reinitialize_lists();
+		MessageBox((LPCTSTR)error_str, (LPCTSTR) "Unable to import mission background!", MB_ICONERROR | MB_OK);
+		return;
+	}
 }
 
 void bg_bitmap_dlg::reinitialize_lists()

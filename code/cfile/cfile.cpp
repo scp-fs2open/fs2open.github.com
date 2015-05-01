@@ -501,7 +501,7 @@ int cf_exists(const char *filename, int dir_type)
 	if ( (filename == NULL) || !strlen(filename) )
 		return 0;
 
-	return (cf_find_file_location(filename, dir_type, 0, NULL, &offset, NULL) && !offset);
+	return (cf_find_file_location(filename, dir_type, 0, NULL, NULL, &offset) && !offset);
 }
 
 // Goober5000

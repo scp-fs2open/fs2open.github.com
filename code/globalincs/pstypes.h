@@ -22,6 +22,7 @@
 #define IAM_64BIT 1
 #endif
 
+
 #include "windows_stub/config.h"
 
 // value to represent an uninitialized state in any int or uint
@@ -680,5 +681,113 @@ public:
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
 
+// c++11 standard detection
+// for GCC with autotools, see AX_CXX_COMPILE_STDCXX_11 macro in configure.ac
+// this sets HAVE_CXX11 & -std=c++0x or -std=c++11 appropriately
+
+// Use the visual studio version to detect C++11 support
+#if _MSC_VER >= 1600
+#	define HAVE_CXX11
+#endif
+// clang doesn't seem to have a feature check for is_trivial
+// oh well, assume it'll be covered by one of the other two checks...
+// http://clang.llvm.org/docs/LanguageExtensions.html#feature_check
+#if defined(__clang__)
+	#if __has_feature(cxx_static_assert)
+		#if __has_feature(cxx_auto_type)
+			#define HAVE_CXX11
+		#endif // __has_feature(cxx_auto_type)
+	#endif // __has_feature(cxx_static_assert)
+#endif // defined(__clang__)
+// TODO: sort out cmake/gcc
+
+// DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
+// would prefer std::is_trivially_copyable but it's not supported by gcc yet
+// ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
+#ifndef NDEBUG
+	#if defined(HAVE_CXX11)
+	// feature support seems to be: gcc   clang   msvc
+	// auto                         4.4   2.9     2010
+	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
+	// static_assert                4.3   2.9     2010
+	#include <type_traits>
+	#include <cstring>
+
+	// MEMSET!
+	const auto ptr_memset = std::memset;
+	#define memset memset_if_trivial_else_error
+
+	template<typename T>
+	void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memset on non-trivial object");
+		return ptr_memset(memset_data, ch, count);
+	}
+
+	// assume memset on a void* is "safe"
+	// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
+	inline void *memset_if_trivial_else_error(void *memset_data, int ch, size_t count)
+	{
+		return ptr_memset(memset_data, ch, count);
+	}
+
+	// MEMCPY!
+	const auto ptr_memcpy = std::memcpy;
+	#define memcpy memcpy_if_trivial_else_error
+
+	template<typename T, typename U>
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, U *src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		return ptr_memcpy(memcpy_dest, src, count);
+	}
+
+	// assume memcpy with void* is "safe"
+	// used in:
+	//   globalincs/systemvars.cpp:insertion_sort()
+	//   network/chat_api.cpp:AddChatCommandToQueue()
+	//   network/multi_obj.cpp:multi_oo_sort_func()
+	//   parse/lua.cpp:ade_get_args() && ade_set_args()
+	//
+	// probably should setup a static_assert on insertion_sort as well
+	template<typename U>
+	void *memcpy_if_trivial_else_error(void *memcpy_dest, U *memcpy_src, size_t count)
+	{
+		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+
+	template<typename T>
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, void *memcpy_src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+	template<typename T>
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, const void *memcpy_src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+
+	inline void *memcpy_if_trivial_else_error(void *memcpy_dest, void *memcpy_src, size_t count)
+	{
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+
+	// MEMMOVE!
+	const auto ptr_memmove = std::memmove;
+	#define memmove memmove_if_trivial_else_error
+
+	template<typename T, typename U>
+	void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memmove on non-trivial object T");
+		static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
+		return ptr_memmove(memmove_dest, memmove_src, count);
+	}
+	#endif // HAVE_CXX11
+#endif // NDEBUG
 
 #endif		// PS_TYPES_H

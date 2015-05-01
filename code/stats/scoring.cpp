@@ -59,61 +59,64 @@ void parse_rank_tbl()
 {
 	atexit(scoreing_close);
 	char buf[MULTITEXT_LENGTH];
-	int rval, idx, persona;
+	int idx, persona;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "rank.tbl", rval));
-		return;
-	} 
+	try
+	{
+		read_file_text("rank.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-	read_file_text("rank.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	// parse in all the rank names
-	idx = 0;
-	skip_to_string("[RANK NAMES]");
-	ignore_white_space();
-	while ( required_string_either("#End", "$Name:") ) {
-		Assert ( idx < NUM_RANKS );
-		required_string("$Name:");
-		stuff_string( Ranks[idx].name, F_NAME, NAME_LENGTH );
-		required_string("$Points:");
-		stuff_int( &Ranks[idx].points );
-		required_string("$Bitmap:");
-		stuff_string( Ranks[idx].bitmap, F_NAME, MAX_FILENAME_LEN );
-		required_string("$Promotion Voice Base:");
-		stuff_string( Ranks[idx].promotion_voice_base, F_NAME, MAX_FILENAME_LEN );
-		while (check_for_string("$Promotion Text:")) {
-			required_string("$Promotion Text:");
-			stuff_string(buf, F_MULTITEXT, sizeof(buf));
-			drop_white_space(buf);
-			compact_multitext_string(buf);
-			persona = -1;
-			if (optional_string("+Persona:")) {
-				stuff_int(&persona);
-				if (persona < 0) {
-					Warning(LOCATION, "Debriefing text for %s rank is assigned to an invalid persona: %i (must be 0 or greater).\n", Ranks[idx].name, persona);
-					continue;
+		// parse in all the rank names
+		idx = 0;
+		skip_to_string("[RANK NAMES]");
+		ignore_white_space();
+		while (required_string_either("#End", "$Name:")) {
+			Assert(idx < NUM_RANKS);
+			required_string("$Name:");
+			stuff_string(Ranks[idx].name, F_NAME, NAME_LENGTH);
+			required_string("$Points:");
+			stuff_int(&Ranks[idx].points);
+			required_string("$Bitmap:");
+			stuff_string(Ranks[idx].bitmap, F_NAME, MAX_FILENAME_LEN);
+			required_string("$Promotion Voice Base:");
+			stuff_string(Ranks[idx].promotion_voice_base, F_NAME, MAX_FILENAME_LEN);
+			while (check_for_string("$Promotion Text:")) {
+				required_string("$Promotion Text:");
+				stuff_string(buf, F_MULTITEXT, sizeof(buf));
+				drop_white_space(buf);
+				compact_multitext_string(buf);
+				persona = -1;
+				if (optional_string("+Persona:")) {
+					stuff_int(&persona);
+					if (persona < 0) {
+						Warning(LOCATION, "Debriefing text for %s rank is assigned to an invalid persona: %i (must be 0 or greater).\n", Ranks[idx].name, persona);
+						continue;
+					}
 				}
+				Ranks[idx].promotion_text[persona] = vm_strdup(buf);
 			}
-			Ranks[idx].promotion_text[persona] = vm_strdup(buf);
+			if (Ranks[idx].promotion_text.find(-1) == Ranks[idx].promotion_text.end()) {
+				Warning(LOCATION, "%s rank is missing default debriefing text.\n", Ranks[idx].name);
+				Ranks[idx].promotion_text[-1] = "";
+			}
+			idx++;
 		}
-		if (Ranks[idx].promotion_text.find(-1) == Ranks[idx].promotion_text.end()) {
-			Warning(LOCATION, "%s rank is missing default debriefing text.\n", Ranks[idx].name);
-			Ranks[idx].promotion_text[-1] = "";
-		}
-		idx++;
-	}
 
-	required_string("#End");
+		required_string("#End");
 
-	// be sure that all rank points are in order
+		// be sure that all rank points are in order
 #ifndef NDEBUG
-	for ( idx = 0; idx < NUM_RANKS-1; idx++ ) {
-		if ( Ranks[idx].points >= Ranks[idx+1].points )
-			Int3();
-	}
+		for (idx = 0; idx < NUM_RANKS - 1; idx++) {
+			if (Ranks[idx].points >= Ranks[idx + 1].points)
+				Int3();
+		}
 #endif
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "rank.tbl", e.what()));
+		return;
+	}
 }
 
 // initialize a nice blank scoring element

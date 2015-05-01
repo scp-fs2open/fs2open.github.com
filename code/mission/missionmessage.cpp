@@ -648,19 +648,22 @@ void parse_msgtbl()
 // this is called at the start of each level
 void messages_init()
 {
-	int rval, i;
+	int i;
 	static int table_read = 0;
 
 	if ( !table_read ) {
 		Default_command_persona = -1;
-
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "messages.tbl", rval));
+		
+		try
+		{
+			parse_msgtbl();
+			table_read = 1;
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "messages.tbl", e.what()));
 			return;
 		}
-
-		parse_msgtbl();
-		table_read = 1;
 	}
 
 	Current_mission_mood = 0;

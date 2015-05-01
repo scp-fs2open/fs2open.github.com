@@ -1293,6 +1293,9 @@ public:
 	bool draw_secondary_models[MAX_SHIP_SECONDARY_BANKS];
 	float weapon_model_draw_distance;
 
+	// Recoil modifier for the ship
+	float ship_recoil_modifier;
+
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
 	float	auto_shield_spread;

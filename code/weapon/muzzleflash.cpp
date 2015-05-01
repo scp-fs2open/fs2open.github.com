@@ -87,68 +87,70 @@ SCP_vector<mflash_info> Mflash_info;
 
 void parse_mflash_tbl(const char *filename)
 {
-	int rval;
 	uint i;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
+
+		// header
+		required_string("#Muzzle flash types");
+
+		while (optional_string("$Mflash:")) {
+			mflash_info mflash;
+			bool override_mflash = false;
+
+			required_string("+name:");
+			stuff_string(mflash.name, F_NAME, MAX_FILENAME_LEN);
+
+			if (optional_string("+override"))
+				override_mflash = true;
+
+			// read in all blobs
+			while (optional_string("+blob_name:")) {
+				mflash_blob_info mblob;
+
+				stuff_string(mblob.name, F_NAME, MAX_FILENAME_LEN);
+
+				required_string("+blob_offset:");
+				stuff_float(&mblob.offset);
+
+				required_string("+blob_radius:");
+				stuff_float(&mblob.radius);
+
+				mflash.blobs.push_back(mblob);
+			}
+
+			for (i = 0; i < Mflash_info.size(); i++) {
+				if (!stricmp(mflash.name, Mflash_info[i].name)) {
+					if (override_mflash) {
+						Mflash_info[i] = mflash;
+					}
+					break;
+				}
+			}
+
+			// no matching name exists so add as new
+			if (i == Mflash_info.size()) {
+				Mflash_info.push_back(mflash);
+			}
+			// a mflash of the same name exists, don't add it again
+			else {
+				if (!override_mflash) {
+					Warning(LOCATION, "Muzzle flash \"%s\" already exists!  Using existing entry instead.", mflash.name);
+				}
+			}
+		}
+
+		// close
+		required_string("#end");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
-
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();		
-
-	// header
-	required_string("#Muzzle flash types");
-
-	while ( optional_string("$Mflash:") ) {
-		mflash_info mflash;
-		bool override_mflash = false;
-
-		required_string("+name:");
-		stuff_string(mflash.name, F_NAME, MAX_FILENAME_LEN);
-
-		if (optional_string("+override"))
-			override_mflash = true;
-
-		// read in all blobs
-		while ( optional_string("+blob_name:") ) {
-			mflash_blob_info mblob;
-
-			stuff_string(mblob.name, F_NAME, MAX_FILENAME_LEN);
-
-			required_string("+blob_offset:");
-			stuff_float(&mblob.offset);
-
-			required_string("+blob_radius:");
-			stuff_float(&mblob.radius);
-
-			mflash.blobs.push_back(mblob);
-		}
-
-		for (i = 0; i < Mflash_info.size(); i++) {
-			if ( !stricmp(mflash.name, Mflash_info[i].name) ) {
-				if (override_mflash) {
-					Mflash_info[i] = mflash;
-				}
-				break;
-			}
-		}
-
-		// no matching name exists so add as new
-		if (i == Mflash_info.size()) {
-			Mflash_info.push_back(mflash);
-		}
-		// a mflash of the same name exists, don't add it again
-		else {
-			if (!override_mflash) {
-				Warning(LOCATION, "Muzzle flash \"%s\" already exists!  Using existing entry instead.", mflash.name);
-			}
-		}
-	}
-
-	// close
-	required_string("#end");
 }
 
 // initialize muzzle flash stuff for the whole game
