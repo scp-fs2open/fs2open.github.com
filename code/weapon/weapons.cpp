@@ -4837,7 +4837,14 @@ void weapon_process_post(object * obj, float frame_time)
 			//create the warphole
 			vm_vec_add2(&warpout,&obj->pos);
 			wp->lssm_warp_idx=fireball_create(&warpout, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,1,&vmd_zero_vector,wp->lssm_warp_time,0,&obj->orient);
-			wp->lssm_stage=2;
+
+			if (wp->lssm_warp_idx < 0) {
+				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
+				// Abort warping
+				wp->lssm_stage = 0;
+			} else {
+				wp->lssm_stage = 2;
+			}
 		}
 
 		//its just entered subspace subspace. don't collide or render
