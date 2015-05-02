@@ -83,8 +83,8 @@ struct bitmap_entry {
 	int  handle;            //!< Handle = id*MAX_BITMAPS + bitmapnum
 	int  last_used;         //!< When this bitmap was last used
 
-	ubyte type;             //!< PCX, USER, ANI, etc
-	ubyte comp_type;        //!< What sort of compressed type, BM_TYPE_NONE if not compressed
+	BM_TYPE type;             //!< PCX, USER, ANI, etc
+	BM_TYPE comp_type;        //!< What sort of compressed type, BM_TYPE_NONE if not compressed
 	signed char ref_count;  //!< Number of locks on bitmap.  Can't unload unless ref_count is 0.
 
 	int dir_type;           //!< which directory this was loaded from (to skip other locations with same name)
