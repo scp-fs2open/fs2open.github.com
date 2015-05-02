@@ -350,9 +350,9 @@ void geometry_batcher::draw_quad(vertex* verts)
 	P[1] = verts[1];
 	P[2] = verts[2];
 
-	P[0] = verts[0];
-	P[2] = verts[2];
-	P[3] = verts[3];
+	P[3] = verts[0];
+	P[4] = verts[2];
+	P[5] = verts[3];
 
 	n_to_render += 2;
 	use_radius = false;
@@ -523,7 +523,7 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 void geometry_batcher::render(int flags, float radius)
 {
 	if (n_to_render) {
-		if ( (Use_Shaders_for_effect_rendering && Use_GLSL > 2 && ((flags & TMAP_FLAG_SOFT_QUAD) && Cmdline_softparticles)) || (flags & TMAP_FLAG_DISTORTION) || ((flags & TMAP_FLAG_DISTORTION_THRUSTER) && use_radius) ) {
+		if ( Use_Shaders_for_effect_rendering && (flags & TMAP_FLAG_SOFT_QUAD || flags & TMAP_FLAG_DISTORTION || flags & TMAP_FLAG_DISTORTION_THRUSTER) && use_radius ) {
 			gr_render_effect(n_to_render * 3, vert, radius_list, flags | TMAP_FLAG_TRILIST);
 		} else {
 			gr_render(n_to_render * 3, vert, flags | TMAP_FLAG_TRILIST);
@@ -560,7 +560,7 @@ void geometry_batcher::load_buffer(effect_vertex* buffer, int *n_verts)
 	*n_verts = *n_verts + verts_to_render;
 }
 
-void geometry_batcher::render_buffer(int flags)
+void geometry_batcher::render_buffer(int buffer_handle, int flags)
 {
 	if ( buffer_offset < 0 ) {
 		return;
@@ -569,12 +569,93 @@ void geometry_batcher::render_buffer(int flags)
 	if ( !n_to_render ) {
 		return;
 	}
+
+	if ( buffer_handle < 0 ) {
+		return;
+	}
 	
-	gr_render_stream_buffer(buffer_offset, n_to_render * 3, flags | TMAP_FLAG_TRILIST);
+	gr_render_stream_buffer(buffer_handle, buffer_offset, n_to_render * 3, flags | TMAP_FLAG_TRILIST);
 	
 	use_radius = true;
 	n_to_render = 0;
 	buffer_offset = -1;
+}
+
+void geometry_shader_batcher::render_buffer(int buffer_handle, int flags)
+{
+	if ( buffer_offset < 0 ) {
+		return;
+	}
+
+	if ( !vertices.size() ) {
+		return;
+	}
+
+	if ( buffer_handle < 0 ) {
+		return;
+	}
+
+	gr_render_stream_buffer(buffer_handle, buffer_offset, vertices.size(), flags | TMAP_FLAG_POINTLIST);
+
+	vertices.clear();
+	buffer_offset = -1;
+}
+
+void geometry_shader_batcher::load_buffer(particle_pnt* buffer, int *n_verts)
+{
+	int verts_to_render = vertices.size();
+	int i;
+
+	buffer_offset = *n_verts;
+
+	for ( i = 0; i < verts_to_render; ++i) {
+		buffer[buffer_offset+i] = vertices[i];
+	}
+
+	*n_verts = *n_verts + verts_to_render;
+}
+
+void geometry_shader_batcher::draw_bitmap(vertex *position, int orient, float rad, float depth)
+{
+	float radius = rad;
+	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
+
+	vec3d PNT(position->world);
+	vec3d fvec;
+
+	// get the direction from the point to the eye
+	vm_vec_sub(&fvec, &View_position, &PNT);
+	vm_vec_normalize_safe(&fvec);
+
+	// move the center of the sprite based on the depth parameter
+	if ( depth != 0.0f )
+		vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
+
+	particle_pnt new_particle;
+	vec3d up = {0.0f, 1.0f, 0.0f};
+
+	new_particle.position = position->world;
+	new_particle.size = rad;
+
+	int direction = orient % 4;
+
+	if ( direction == 1 ) {
+		up.xyz.x = 0.0f;
+		up.xyz.y = -1.0f;
+		up.xyz.z = 0.0f;
+	} else if ( direction == 2 ) {
+		up.xyz.x = -1.0f;
+		up.xyz.y = 0.0f;
+		up.xyz.z = 0.0f;
+	} else if ( direction == 3 ) {
+		up.xyz.x = 1.0f;
+		up.xyz.y = 0.0f;
+		up.xyz.z = 0.0f;
+	}
+
+	new_particle.up = up;
+
+	vertices.push_back(new_particle);
 }
 
 /**
@@ -592,67 +673,116 @@ struct batch_item {
 	bool laser;
 };
 
-static SCP_vector<batch_item> geometry_map;
-static SCP_vector<batch_item> distortion_map;
+struct g_sdr_batch_item {
+	g_sdr_batch_item(): texture(-1), tmap_flags(0), alpha(1.0f), laser(false) {};
+
+	geometry_shader_batcher batch;
+
+	int texture;
+	int tmap_flags;
+	float alpha;
+
+	bool laser;
+};
+
+static SCP_map<int, g_sdr_batch_item> geometry_shader_map;
+static SCP_map<int, batch_item> geometry_map;
+static SCP_map<int, batch_item> distortion_map;
 
 // Used for sending verts to the vertex buffer
-effect_vertex *Batch_buffer = NULL;
+void *Batch_buffer = NULL;
 size_t Batch_buffer_size = 0;
 
-static size_t find_good_batch_item(int texture)
-{
-	size_t max_size = geometry_map.size();
+void *Batch_geometry_buffer = NULL;
+size_t Batch_geometry_buffer_size = 0;
 
-	for (size_t i = 0; i < max_size; i++) {
-		if (geometry_map[i].texture == texture)
-			return i;
-	}
-
-	// don't have an existing match so add a new entry
-	batch_item new_item;
-
-	new_item.texture = texture;
-
-	geometry_map.push_back(new_item);
-
-	return (geometry_map.size() - 1);
-}
-
-static size_t find_good_distortion_item(int texture)
-{
-	size_t max_size = distortion_map.size();
-
-	for (size_t i = 0; i < max_size; i++) {
-		if (distortion_map[i].texture == texture)
-			return i;
-	}
-
-	// don't have an existing match so add a new entry
-	batch_item new_item;
-
-	new_item.texture = texture;
-
-	distortion_map.push_back(new_item);
-
-	return (distortion_map.size() - 1);
-}
+// static size_t find_good_batch_item(int texture)
+// {
+// 	size_t max_size = geometry_map.size();
+// 
+// 	for (size_t i = 0; i < max_size; i++) {
+// 		if (geometry_map[i].texture == texture)
+// 			return i;
+// 	}
+// 
+// 	// don't have an existing match so add a new entry
+// 	batch_item new_item;
+// 
+// 	new_item.texture = texture;
+// 
+// 	geometry_map.push_back(new_item);
+// 
+// 	return (geometry_map.size() - 1);
+// }
+// 
+// static size_t find_good_g_sdr_batch_item(int texture)
+// {
+// 	size_t max_size = geometry_shader_map.size();
+// 
+// 	for (size_t i = 0; i < max_size; i++) {
+// 		if (geometry_shader_map[i].texture == texture)
+// 			return i;
+// 	}
+// 
+// 	// don't have an existing match so add a new entry
+// 	g_sdr_batch_item new_item;
+// 
+// 	new_item.texture = texture;
+// 
+// 	geometry_shader_map.push_back(new_item);
+// 
+// 	return (geometry_shader_map.size() - 1);
+// }
+// 
+// static bool find_good_distortion_item(int texture)
+// {
+// 	SCP_map<int, batch_item>::iterator it = distortion_map.find(texture);
+// 
+// 	if ( it == distortion_map.end() ) {
+// 
+// 	}
+// 
+// 	size_t max_size = distortion_map.size();
+// 
+// 	for (size_t i = 0; i < max_size; i++) {
+// 		if (distortion_map[i].texture == texture)
+// 			return i;
+// 	}
+// 
+// 	// don't have an existing match so add a new entry
+// 	batch_item new_item;
+// 
+// 	new_item.texture = texture;
+// 
+// 	distortion_map.push_back(new_item);
+// 
+// 	return (distortion_map.size() - 1);
+// }
 
 float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
 {
 	if (texture < 0) {
 		Int3();
-		return 0.0f;
+		return 1;
 	}
 
-	geometry_batcher *item = NULL;
-	size_t index = find_good_batch_item(texture);
+	batch_item *item = NULL;
+	SCP_map<int, batch_item>::iterator it = geometry_map.find(texture);
 
-	geometry_map[index].laser = true;
-	item = &geometry_map[index].batch;
+	if ( !geometry_map.empty() && it != geometry_map.end() ) {
+		item = &it->second;
+	} else {
+		item = &geometry_map[texture];
+		item->texture = texture;
+	}
 
-	item->add_allocate(1);
+	item->laser = true;
 
-	return item->draw_laser(p0, width1, p1, width2, r, g, b);
+	item->batch.add_allocate(1);
+
+	float num = item->batch.draw_laser(p0, width1, p1, width2, r, g, b);
+
+	return num;
 }
 
 int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, float alpha, float depth)
@@ -662,22 +792,89 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 		return 1;
 	}
 
-	geometry_batcher *item = NULL;
-	size_t index = find_good_batch_item(texture);
+	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && ( !Cmdline_softparticles || Use_GLSL <= 2 ) ) {
+		// don't render this as a soft particle if we don't support soft particles
+		tmap_flags &= ~(TMAP_FLAG_SOFT_QUAD);
+	}
 
-	Assertion( (geometry_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+	if ( Use_GLSL > 2 && Cmdline_softparticles && !Cmdline_no_geo_sdr_effects && Is_Extension_Enabled(OGL_EXT_GEOMETRY_SHADER4) && (tmap_flags & TMAP_FLAG_VERTEX_GEN) ) {
+		geometry_batch_add_bitmap(texture, tmap_flags, pnt, orient, rad, alpha, depth);
+		return 0;
+	} else if ( tmap_flags & TMAP_FLAG_VERTEX_GEN ) {
+		tmap_flags &= ~(TMAP_FLAG_VERTEX_GEN);
+	}
 
-	geometry_map[index].tmap_flags = tmap_flags;
-	geometry_map[index].alpha = alpha;
+	batch_item *item = NULL;
 
-	item = &geometry_map[index].batch;
+	SCP_map<int, batch_item>::iterator it = geometry_map.find(texture);
 
-	item->add_allocate(1);
+	if ( !geometry_map.empty() && it != geometry_map.end() ) {
+		item = &it->second;
+	} else {
+		item = &geometry_map[texture];
+		item->texture = texture;
+	}
 
-	item->draw_bitmap(pnt, orient, rad, depth);
+	Assertion( (item->laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+
+	item->tmap_flags = tmap_flags;
+	item->alpha = alpha;
+
+	item->batch.add_allocate(1);
+
+	item->batch.draw_bitmap(pnt, orient, rad, depth);
 
 	return 0;
 }
+
+int geometry_batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, float alpha, float depth)
+{
+	if (texture < 0) {
+		Int3();
+		return 1;
+	}
+
+	g_sdr_batch_item *item = NULL;
+	SCP_map<int, g_sdr_batch_item>::iterator it = geometry_shader_map.find(texture);
+
+	if ( !geometry_shader_map.empty() && it != geometry_shader_map.end() ) {
+		item = &it->second;
+	} else {
+		item = &geometry_shader_map[texture];
+		item->texture = texture;
+	}
+	
+	Assertion( (item->laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+
+	item->tmap_flags = tmap_flags;
+	item->alpha = alpha;
+
+	item->batch.draw_bitmap(pnt, orient, rad, depth);
+
+	return 0;
+}
+
+// int geometry_batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha, float depth)
+// {
+// 	if (texture < 0) {
+// 		Int3();
+// 		return 1;
+// 	}
+// 
+// 	geometry_shader_batcher *item = NULL;
+// 	size_t index = find_good_batch_item(texture);
+// 
+// 	Assertion( (geometry_shader_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+// 
+// 	geometry_shader_map[index].tmap_flags = tmap_flags;
+// 	geometry_shader_map[index].alpha = alpha;
+// 
+// 	item = &geometry_shader_map[index].batch;
+// 
+// 	item->draw_bitmap(pnt, rad, angle, depth);
+// 
+// 	return 0;
+// }
 
 int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha, float depth)
 {
@@ -686,19 +883,170 @@ int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float ang
 		return 1;
 	}
 
-	geometry_batcher *item = NULL;
-	size_t index = find_good_batch_item(texture);
+	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && ( !Cmdline_softparticles || Use_GLSL <= 2 ) ) {
+		// don't render this as a soft particle if we don't support soft particles
+		tmap_flags &= ~(TMAP_FLAG_SOFT_QUAD);
+	}
 
-	Assertion( (geometry_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+	batch_item *item = NULL;
 
-	geometry_map[index].tmap_flags = tmap_flags;
-	geometry_map[index].alpha = alpha;
+	SCP_map<int, batch_item>::iterator it = geometry_map.find(texture);
 
-	item = &geometry_map[index].batch;
+	if ( !geometry_map.empty() && it != geometry_map.end() ) {
+		item = &it->second;
+	} else {
+		item = &geometry_map[texture];
+		item->texture = texture;
+	}
 
-	item->add_allocate(1);
+	Assertion( (item->laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
-	item->draw_bitmap(pnt, rad, angle, depth);
+	item->tmap_flags = tmap_flags;
+	item->alpha = alpha;
+
+	item->batch.add_allocate(1);
+
+	item->batch.draw_bitmap(pnt, rad, angle, depth);
+
+	return 0;
+}
+
+int batch_add_tri(int texture, int tmap_flags, vertex *verts, float alpha)
+{
+	if (texture < 0) {
+		Int3();
+		return 1;
+	}
+
+	batch_item *item = NULL;
+
+	SCP_map<int, batch_item>::iterator it = geometry_map.find(texture);
+
+	if ( !geometry_map.empty() && it != geometry_map.end() ) {
+		item = &it->second;
+	} else {
+		item = &geometry_map[texture];
+		item->texture = texture;
+	}
+
+	Assertion( (item->laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+
+	item->tmap_flags = tmap_flags;
+	item->alpha = alpha;
+
+	item->batch.add_allocate(0, 1);	// just allocating for one triangle
+
+	item->batch.draw_tri(verts);
+
+	return 0;
+}
+
+int batch_add_quad(int texture, int tmap_flags, vertex *verts, float alpha)
+{
+	if (texture < 0) {
+		Int3();
+		return 1;
+	}
+
+	batch_item *item = NULL;
+
+	SCP_map<int, batch_item>::iterator it = geometry_map.find(texture);
+
+	if ( !geometry_map.empty() && it != geometry_map.end() ) {
+		item = &it->second;
+	} else {
+		item = &geometry_map[texture];
+		item->texture = texture;
+	}
+
+	Assertion( (item->laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+
+	item->tmap_flags = tmap_flags;
+	item->alpha = alpha;
+
+	item->batch.add_allocate(1);
+
+	item->batch.draw_quad(verts);
+
+	return 0;
+}
+
+int batch_add_polygon(int texture, int tmap_flags, vec3d *pos, matrix *orient, float width, float height, float alpha)
+{
+	//idiot-proof
+	if(width == 0 || height == 0)
+		return 0;
+
+	Assert(pos != NULL);
+	Assert(orient != NULL);
+
+	//Let's begin.
+
+	const int NUM_VERTICES = 4;
+	vec3d p[NUM_VERTICES] = { ZERO_VECTOR };
+	vertex v[NUM_VERTICES];
+
+	p[0].xyz.x = width;
+	p[0].xyz.y = height;
+
+	p[1].xyz.x = -width;
+	p[1].xyz.y = height;
+
+	p[2].xyz.x = -width;
+	p[2].xyz.y = -height;
+
+	p[3].xyz.x = width;
+	p[3].xyz.y = -height;
+
+	for(int i = 0; i < NUM_VERTICES; i++)
+	{
+		vec3d tmp = vmd_zero_vector;
+
+		//Rotate correctly
+		vm_vec_unrotate(&tmp, &p[i], orient);
+		//Move to point in space
+		vm_vec_add2(&tmp, pos);
+
+		//Convert to vertex
+		g3_transfer_vertex(&v[i], &tmp);
+	}
+
+	v[0].texture_position.u = 1.0f;
+	v[0].texture_position.v = 0.0f;
+
+	v[1].texture_position.u = 0.0f;
+	v[1].texture_position.v = 0.0f;
+
+	v[2].texture_position.u = 0.0f;
+	v[2].texture_position.v = 1.0f;
+
+	v[3].texture_position.u = 1.0f;
+	v[3].texture_position.v = 1.0f;
+
+	if (texture < 0) {
+		Int3();
+		return 1;
+	}
+
+	batch_item *item = NULL;
+
+	SCP_map<int, batch_item>::iterator it = geometry_map.find(texture);
+
+	if ( !geometry_map.empty() && it != geometry_map.end() ) {
+		item = &it->second;
+	} else {
+		item = &geometry_map[texture];
+		item->texture = texture;
+	}
+
+	Assertion( (item->laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+
+	item->tmap_flags = tmap_flags;
+	item->alpha = alpha;
+
+	item->batch.add_allocate(1);
+
+	item->batch.draw_quad(v);
 
 	return 0;
 }
@@ -710,91 +1058,153 @@ int batch_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, float 
 		return 1;
 	}
 
-	geometry_batcher *item = NULL;
-	size_t index = find_good_batch_item(texture);
+	batch_item *item = NULL;
 
-	Assertion( (geometry_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+	SCP_map<int, batch_item>::iterator it = geometry_map.find(texture);
 
-	geometry_map[index].tmap_flags = tmap_flags;
-	geometry_map[index].alpha = intensity;
+	if ( !geometry_map.empty() && it != geometry_map.end() ) {
+		item = &it->second;
+	} else {
+		item = &geometry_map[texture];
+		item->texture = texture;
+	}
 
-	item = &geometry_map[index].batch;
+	Assertion( (item->laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
-	item->add_allocate(1);
+	item->tmap_flags = tmap_flags;
+	item->alpha = intensity;
 
-	item->draw_beam(start, end, width, intensity);
+	item->batch.add_allocate(1);
+
+	item->batch.draw_beam(start, end, width, intensity);
 
 	return 0;
 }
 
-void batch_render_lasers(bool stream_buffer)
+void batch_render_lasers(int buffer_handle)
 {
-	for (SCP_vector<batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
+	for (SCP_map<int, batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
 
-		if ( !bi->laser )
+		if ( !bi->second.laser )
 			continue;
 
-		if ( !bi->batch.need_to_render() )
+		if ( !bi->second.batch.need_to_render() )
 			continue;
 
-		Assert( bi->texture >= 0 );
-		gr_set_bitmap(bi->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
-		if ( stream_buffer ) {
-			bi->batch.render_buffer(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+		Assert( bi->second.texture >= 0 );
+		gr_set_bitmap(bi->second.texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
+		if ( buffer_handle >= 0 ) {
+			bi->second.batch.render_buffer(buffer_handle, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
 		} else {
-			bi->batch.render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+			bi->second.batch.render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
 		}
 	}
 }
 
 void batch_load_buffer_lasers(effect_vertex* buffer, int *n_verts)
 {
-	for (SCP_vector<batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
+	for (SCP_map<int, batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
 
-		if ( !bi->laser )
+		if ( !bi->second.laser )
 			continue;
 
-		if ( !bi->batch.need_to_render() )
+		if ( !bi->second.batch.need_to_render() )
 			continue;
 
-		Assert( bi->texture >= 0 );
-		bi->batch.load_buffer(buffer, n_verts);
+		Assert( bi->second.texture >= 0 );
+		bi->second.batch.load_buffer(buffer, n_verts);
 	}
 }
 
-void batch_render_geometry_map_bitmaps(bool stream_buffer)
+void batch_render_geometry_map_bitmaps(int buffer_handle)
 {
-	for (SCP_vector<batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
+	for (SCP_map<int, batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
 
-		if ( bi->laser )
+		if ( bi->second.laser )
 			continue;
 
-		if ( !bi->batch.need_to_render() )
+		if ( !bi->second.batch.need_to_render() )
 			continue;
 
-		Assert( bi->texture >= 0 );
-		gr_set_bitmap(bi->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, bi->alpha);
-		if ( stream_buffer ) {
-			bi->batch.render_buffer(bi->tmap_flags);
+		Assert( bi->second.texture >= 0 );
+		gr_set_bitmap(bi->second.texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, bi->second.alpha);
+		if ( buffer_handle >= 0 ) {
+			bi->second.batch.render_buffer(buffer_handle, bi->second.tmap_flags);
 		} else {
-			bi->batch.render( bi->tmap_flags);
+			bi->second.batch.render( bi->second.tmap_flags);
 		}
+	}
+}
+
+void batch_render_geometry_shader_map_bitmaps(int buffer_handle)
+{
+	for (SCP_map<int, g_sdr_batch_item>::iterator bi = geometry_shader_map.begin(); bi != geometry_shader_map.end(); ++bi) {
+
+		if ( bi->second.laser )
+			continue;
+
+		if ( !bi->second.batch.need_to_render() )
+			continue;
+
+		Assert( bi->second.texture >= 0 );
+		gr_set_bitmap(bi->second.texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, bi->second.alpha);
+		bi->second.batch.render_buffer(buffer_handle, bi->second.tmap_flags);
 	}
 }
 
 void batch_load_buffer_geometry_map_bitmaps(effect_vertex* buffer, int *n_verts)
 {
-	for (SCP_vector<batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
+	for (SCP_map<int, batch_item>::iterator bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
 
-		if ( bi->laser )
+		if ( bi->second.laser )
 			continue;
 
-		if ( !bi->batch.need_to_render() )
+		if ( !bi->second.batch.need_to_render() )
 			continue;
 
-		Assert( bi->texture >= 0 );
-		bi->batch.load_buffer(buffer, n_verts);
+		Assert( bi->second.texture >= 0 );
+		bi->second.batch.load_buffer(buffer, n_verts);
 	}
+}
+
+void batch_load_buffer_geometry_shader_map_bitmaps(particle_pnt* buffer, int *n_verts)
+{
+	for (SCP_map<int, g_sdr_batch_item>::iterator bi = geometry_shader_map.begin(); bi != geometry_shader_map.end(); ++bi) {
+
+		if ( bi->second.laser )
+			continue;
+
+		if ( !bi->second.batch.need_to_render() )
+			continue;
+
+		Assert( bi->second.texture >= 0 );
+		bi->second.batch.load_buffer(buffer, n_verts);
+	}
+}
+
+void geometry_batch_render(int stream_buffer)
+{
+	if ( stream_buffer < 0 ) {
+		return;
+	}
+
+	int n_to_render = geometry_batch_get_size();
+	int n_verts = 0;
+
+	if ( Batch_geometry_buffer_size < (n_to_render * sizeof(particle_pnt)) ) {
+		if ( Batch_geometry_buffer != NULL ) {
+			vm_free(Batch_geometry_buffer);
+		}
+
+		Batch_geometry_buffer_size = n_to_render * sizeof(particle_pnt);
+		Batch_geometry_buffer = vm_malloc(Batch_geometry_buffer_size);
+	}
+
+	batch_load_buffer_geometry_shader_map_bitmaps((particle_pnt*)Batch_geometry_buffer, &n_verts);
+
+	gr_update_buffer_object(stream_buffer, Batch_geometry_buffer_size, Batch_geometry_buffer);
+
+	batch_render_geometry_shader_map_bitmaps(stream_buffer);
 }
 
 void batch_render_all(int stream_buffer)
@@ -810,27 +1220,26 @@ void batch_render_all(int stream_buffer)
 			}
 
 			Batch_buffer_size = n_to_render * sizeof(effect_vertex);
-			Batch_buffer = (effect_vertex*)vm_malloc(Batch_buffer_size);
+			Batch_buffer = vm_malloc(Batch_buffer_size);
 		}
-
-		gr_render_stream_buffer_start(stream_buffer);
 		
-		batch_load_buffer_lasers(Batch_buffer, &n_verts);
-		batch_load_buffer_geometry_map_bitmaps(Batch_buffer, &n_verts);
-		batch_load_buffer_distortion_map_bitmaps(Batch_buffer, &n_verts);
-		gr_update_stream_buffer(stream_buffer, Batch_buffer, Batch_buffer_size);
+		batch_load_buffer_lasers((effect_vertex*)Batch_buffer, &n_verts);
+		batch_load_buffer_geometry_map_bitmaps((effect_vertex*)Batch_buffer, &n_verts);
+		batch_load_buffer_distortion_map_bitmaps((effect_vertex*)Batch_buffer, &n_verts);
+		gr_update_buffer_object(stream_buffer, Batch_buffer_size, Batch_buffer);
 
 		Assert(n_verts <= n_to_render);
 
-		batch_render_lasers(true);
-		batch_render_geometry_map_bitmaps(true);
-		batch_render_distortion_map_bitmaps(true);
-		gr_render_stream_buffer_end();
+		batch_render_lasers(stream_buffer);
+		batch_render_geometry_map_bitmaps(stream_buffer);
+		//batch_render_distortion_map_bitmaps(true);
 	} else {
 		batch_render_lasers();
 		batch_render_geometry_map_bitmaps();
-		batch_render_distortion_map_bitmaps();
+		//batch_render_distortion_map_bitmaps();
 	}
+
+	gr_clear_states();
 }
 
 void batch_reset()
@@ -856,19 +1265,30 @@ int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, floa
 		return 1;
 	}
 
-	geometry_batcher *item = NULL;
-	size_t index = find_good_distortion_item(texture);
+	if ( Use_GLSL < 2 || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
+		// don't render distortions if we can't support them.
+		return 0;
+	}
 
-	Assertion( (distortion_map[index].laser == false), "Distortion particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+	batch_item *item = NULL;
 
-	distortion_map[index].tmap_flags = tmap_flags;
-	distortion_map[index].alpha = alpha;
+	SCP_map<int, batch_item>::iterator it = distortion_map.find(texture);
 
-	item = &distortion_map[index].batch;
+	if ( !distortion_map.empty() && it != distortion_map.end() ) {
+		item = &it->second;
+	} else {
+		item = &distortion_map[texture];
+		item->texture = texture;
+	}
 
-	item->add_allocate(1);
+	Assertion( (item->laser == false), "Distortion particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
-	item->draw_bitmap(pnt, rad, angle, depth);
+	item->tmap_flags = tmap_flags;
+	item->alpha = alpha;
+	
+	item->batch.add_allocate(1);
+
+	item->batch.draw_bitmap(pnt, rad, angle, depth);
 
 	return 0;
 }
@@ -880,74 +1300,97 @@ int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, f
 		return 1;
 	}
 
-	geometry_batcher *item = NULL;
-	size_t index = find_good_distortion_item(texture);
+	if ( Use_GLSL < 2 || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
+		// don't render distortions if we can't support them.
+		return 0;
+	}
 
-	Assertion( (distortion_map[index].laser == false), "Distortion particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
+	batch_item *item = NULL;
 
-	distortion_map[index].tmap_flags = tmap_flags;
-	distortion_map[index].alpha = intensity;
+	SCP_map<int, batch_item>::iterator it = distortion_map.find(texture);
 
-	item = &distortion_map[index].batch;
+	if ( !distortion_map.empty() && it != distortion_map.end() ) {
+		item = &it->second;
+	} else {
+		item = &distortion_map[texture];
+		item->texture = texture;
+	}
 
-	item->add_allocate(1);
+	Assertion( (item->laser == false), "Distortion particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
 
-	item->draw_beam(start,end,width,intensity,offset);
+	item->tmap_flags = tmap_flags;
+	item->alpha = intensity;
+
+	item->batch.add_allocate(1);
+
+	item->batch.draw_beam(start,end,width,intensity,offset);
 
 	return 0;
 }
 
-void batch_render_distortion_map_bitmaps(bool stream_buffer)
+void batch_render_distortion_map_bitmaps(int buffer_handle)
 {
-	for (SCP_vector<batch_item>::iterator bi = distortion_map.begin(); bi != distortion_map.end(); ++bi) {
+	for (SCP_map<int,batch_item>::iterator bi = distortion_map.begin(); bi != distortion_map.end(); ++bi) {
 
-		if ( bi->laser )
+		if ( bi->second.laser )
 			continue;
 
-		if ( !bi->batch.need_to_render() )
+		if ( !bi->second.batch.need_to_render() )
 			continue;
 
-		Assert( bi->texture >= 0 );
-		gr_set_bitmap(bi->texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, bi->alpha);
+		Assert( bi->second.texture >= 0 );
+		gr_set_bitmap(bi->second.texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, bi->second.alpha);
 
-		if ( stream_buffer ) {
-			bi->batch.render_buffer(bi->tmap_flags);
+		if ( buffer_handle >= 0 ) {
+			bi->second.batch.render_buffer(buffer_handle, bi->second.tmap_flags);
 		} else {
-			bi->batch.render( bi->tmap_flags);
+			bi->second.batch.render( bi->second.tmap_flags);
 		}
 	}
 }
 
 void batch_load_buffer_distortion_map_bitmaps(effect_vertex* buffer, int *n_verts)
 {
-	for (SCP_vector<batch_item>::iterator bi = distortion_map.begin(); bi != distortion_map.end(); ++bi) {
+	for (SCP_map<int, batch_item>::iterator bi = distortion_map.begin(); bi != distortion_map.end(); ++bi) {
 
-		if ( bi->laser )
+		if ( bi->second.laser )
 			continue;
 
-		if ( !bi->batch.need_to_render() )
+		if ( !bi->second.batch.need_to_render() )
 			continue;
 
-		Assert( bi->texture >= 0 );
-		bi->batch.load_buffer(buffer, n_verts);
+		Assert( bi->second.texture >= 0 );
+		bi->second.batch.load_buffer(buffer, n_verts);
 	}
 }
 
 int batch_get_size()
 {
 	int n_to_render = 0;
-	SCP_vector<batch_item>::iterator bi;
+	SCP_map<int, batch_item>::iterator bi;
 
 	for (bi = geometry_map.begin(); bi != geometry_map.end(); ++bi) {
-		n_to_render += bi->batch.need_to_render();
+		n_to_render += bi->second.batch.need_to_render();
 	}
 
 	for (bi = distortion_map.begin(); bi != distortion_map.end(); ++bi) {
-		if ( bi->laser )
+		if ( bi->second.laser )
 			continue;
 
-		n_to_render += bi->batch.need_to_render();
+		n_to_render += bi->second.batch.need_to_render();
 	}
 
 	return n_to_render * 3;
+}
+
+int geometry_batch_get_size()
+{
+	int n_to_render = 0;
+	SCP_map<int, g_sdr_batch_item>::iterator bi;
+
+	for (bi = geometry_shader_map.begin(); bi != geometry_shader_map.end(); ++bi) {
+		n_to_render += bi->second.batch.need_to_render();
+	}
+
+	return n_to_render;
 }
