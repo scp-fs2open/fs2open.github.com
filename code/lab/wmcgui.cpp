@@ -159,6 +159,8 @@ void GUISystem::ParseClassInfo(char* filename)
 			flag = sciep->Parse();
 			if (flag) {
 				list_append(&ScreenClassInfo, sciep);
+			} else {
+				delete sciep;
 			}
 		} while (flag);
 
