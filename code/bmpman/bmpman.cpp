@@ -12,6 +12,10 @@
 
 #define BMPMAN_INTERNAL
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "bmpman/bmpman.h"
 #include "bmpman/bm_internal.h"
 
@@ -34,10 +38,6 @@
 #include "pngutils/pngutils.h"
 #include "ship/ship.h"
 #include "tgautils/tgautils.h"
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 #include <ctype.h>
 #include <limits.h>
