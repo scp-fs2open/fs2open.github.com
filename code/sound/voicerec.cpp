@@ -274,7 +274,7 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 			char szText[255];
 			int i;
 
-			pPhrase->GetText(SP_GETWHOLEPHRASE, SP_GETWHOLEPHRASE, TRUE, &pwszText, NULL);
+			pPhrase->GetText(SP_GETWHOLEPHRASE, static_cast<ULONG>(SP_GETWHOLEPHRASE), TRUE, &pwszText, NULL);
 
 			memset(szText, 0, 255);
 			for (i=0;i<254;i++) 
