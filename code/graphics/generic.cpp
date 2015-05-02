@@ -32,7 +32,7 @@ bool generic_anim_exists(const char *filename)
 }
 
 // Goober5000
-int generic_anim_init_and_stream(generic_anim *anim, const char *anim_filename, ubyte bg_type, bool attempt_hi_res)
+int generic_anim_init_and_stream(generic_anim *anim, const char *anim_filename, BM_TYPE bg_type, bool attempt_hi_res)
 {
 	int stream_result = -1;
 	char filename[NAME_LENGTH];
@@ -106,7 +106,7 @@ void generic_anim_init(generic_anim *ga, const char *filename)
 	//we only care about the stuff below if we're streaming
 	ga->ani.animation = NULL;
 	ga->ani.instance = NULL;
-	ga->ani.bg_type = 0;
+	ga->ani.bg_type = BM_TYPE_NONE;
 	ga->type = BM_TYPE_NONE;
 	ga->streaming = 0;
 	ga->buffer = NULL;

@@ -24,33 +24,6 @@
 #include "bmpman/bmpman.h"
 #include "globalincs/pstypes.h"
 
-// Bitmap types
-enum BM_TYPE
-{
-	BM_TYPE_NONE = 0,   //!< No type
-	BM_TYPE_USER,       //!< in-memory
-	BM_TYPE_PCX,        //!< PCX
-	BM_TYPE_TGA,        //!< 16 or 32 bit targa
-	BM_TYPE_DDS,        //!< generic identifier for DDS
-	BM_TYPE_PNG,        //!< PNG
-	BM_TYPE_JPG,        //!< 32 bit jpeg
-	BM_TYPE_ANI,        //!< in-house ANI format
-	BM_TYPE_EFF,        //!< specifies any type of animated image, the EFF itself is just text
-
-	// special types
-	BM_TYPE_RENDER_TARGET_STATIC,   //!< 24/32 bit setup internally as a static render target
-	BM_TYPE_RENDER_TARGET_DYNAMIC,  //!< 24/32 bit setup internally as a dynamic render target
-
-	// Compressed types (bitmap.c_type)
-	BM_TYPE_DXT1,           //!< 24 bit with switchable alpha
-	BM_TYPE_DXT3,           //!< 32 bit with 4 bit alpha
-	BM_TYPE_DXT5,           //!< 32 bit with 8 bit alpha
-	BM_TYPE_CUBEMAP_DDS,    //!< generic DDS cubemap (uncompressed cubemap surface)
-	BM_TYPE_CUBEMAP_DXT1,   //!< 24-bit cubemap        (compressed cubemap surface)
-	BM_TYPE_CUBEMAP_DXT3,   //!< 32-bit cubemap        (compressed cubemap surface)
-	BM_TYPE_CUBEMAP_DXT5    //!< 32-bit cubemap        (compressed cubemap surface)
-};
-
 union bm_extra_info {
 	struct {
 		// Stuff needed for animations
@@ -61,7 +34,7 @@ union bm_extra_info {
 
 		struct {
 			// stuff for static animations
-			ubyte type;                         //!< type for individual images
+			BM_TYPE type;                         //!< type for individual images
 			char  filename[MAX_FILENAME_LEN];   //!< filename for individual images
 		} eff;
 	} ani;

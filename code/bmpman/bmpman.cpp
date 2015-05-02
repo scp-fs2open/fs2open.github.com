@@ -67,13 +67,13 @@ int bm_texture_ram = 0;
 int Bm_paging = 0;
 
 // Extension type lists
-const ubyte bm_type_list[] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_PNG, BM_TYPE_JPG, BM_TYPE_PCX };
+const BM_TYPE bm_type_list[] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_PNG, BM_TYPE_JPG, BM_TYPE_PCX };
 const char *bm_ext_list[] = { ".dds", ".tga", ".png", ".jpg", ".pcx" };
-const int BM_NUM_TYPES = sizeof(bm_type_list) / sizeof(ubyte);
+const int BM_NUM_TYPES = sizeof(bm_type_list) / sizeof(bm_type_list[0]);
 
-const ubyte bm_ani_type_list[] = { BM_TYPE_EFF, BM_TYPE_ANI };
+const BM_TYPE bm_ani_type_list[] = { BM_TYPE_EFF, BM_TYPE_ANI };
 const char *bm_ani_ext_list[] = { ".eff", ".ani" };
-const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(ubyte);
+const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(bm_ani_type_list[0]);
 
 void(*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 void(*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
@@ -781,7 +781,7 @@ int bm_get_tcache_type(int num) {
 	return TCACHE_TYPE_NORMAL;
 }
 
-ubyte bm_get_type(int handle) {
+BM_TYPE bm_get_type(int handle) {
 	if (!bm_inited) bm_init();
 
 	int bitmapnum = handle % MAX_BITMAPS;
@@ -841,7 +841,7 @@ void bm_init() {
 
 int bm_is_compressed(int num) {
 	int n = num % MAX_BITMAPS;
-	ubyte type = BM_TYPE_NONE;
+	BM_TYPE type = BM_TYPE_NONE;
 
 	//duh
 	if (!Use_compressed_textures)
@@ -907,8 +907,8 @@ int bm_load(const char *real_filename) {
 	int rc = 0;
 	int bm_size = 0, mm_lvl = 0;
 	char filename[MAX_FILENAME_LEN];
-	ubyte type = BM_TYPE_NONE;
-	ubyte c_type = BM_TYPE_NONE;
+	BM_TYPE type = BM_TYPE_NONE;
+	BM_TYPE c_type = BM_TYPE_NONE;
 	CFILE *img_cfp = NULL;
 	int handle = -1;
 
@@ -1021,10 +1021,10 @@ int bm_load(const SCP_string& filename) {
 	return bm_load(filename.c_str());
 }
 
-int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type) {
+int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type) {
 	int frames = 0, fps = 30, keyframe = 0;
 	char ext[8];
-	ubyte c_type = BM_TYPE_NONE;
+	BM_TYPE c_type = BM_TYPE_NONE;
 	char file_text[1024];
 	char file_text_raw[1024];
 
@@ -1107,7 +1107,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	int reduced = 0;
 	int anim_fps = 0, anim_frames = 0, key = 0;
 	int anim_width = 0, anim_height = 0;
-	ubyte type = BM_TYPE_NONE, eff_type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
+	BM_TYPE type = BM_TYPE_NONE, eff_type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
 	int bpp = 0, mm_lvl = 0, img_size = 0;
 	char clean_name[MAX_FILENAME_LEN];
 
