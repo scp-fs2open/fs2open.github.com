@@ -201,17 +201,6 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 static void bm_convert_format(bitmap *bmp, ubyte flags);
 
 /**
- * Converts an 8-bit image to a 24-bit BGR image sending new bitmap data to "out_data"
- *
- * @returns 0 If successful, or
- * @returns 1 If not successful
- *
- * @todo upgrade retval to bool
- * @todo Doesn't seem to be called by anyone. Remove?
- */
-static int bm_convert_color_index_to_BGR(int num, ubyte **out_data);
-
-/**
  * Frees a bitmap's data if it can
  */
 static void bm_free_data(int n, bool release = false);
@@ -431,87 +420,6 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 	gr_bm_create(n);
 
 	return bm_bitmaps[n].handle;
-}
-
-int bm_convert_color_index_to_BGR(int num, ubyte **out_data) {
-	int n = num % MAX_BITMAPS;
-	bitmap_entry *be;
-	bitmap *bmp;
-	ubyte *datap, *bgr_data = NULL, *palette = NULL;
-	char filename[MAX_FILENAME_LEN];
-	int i, j, bpp = 0, size = 0;
-	int index = 0, mult = 3;
-
-	Assert(out_data != NULL);
-	Assert(n >= 0);
-	Assert(num == bm_bitmaps[n].handle);
-
-	if (num != bm_bitmaps[n].handle)
-		return 1;
-
-	be = &bm_bitmaps[n];
-	bmp = &be->bm;
-
-	if ((bmp->bpp != 8) || !(bmp->data) || ((be->type != BM_TYPE_DDS) && (be->type != BM_TYPE_PCX))) {
-		return 1;
-	}
-
-	// it's up to the calling function to free() this but not to malloc() it!!
-	bgr_data = (ubyte*)vm_malloc_q(bmp->w * bmp->h * 3);
-
-	ubyte *in_data = (ubyte*)bmp->data;
-
-	if (bgr_data == NULL)
-		return 1;
-
-	memset(bgr_data, 0, bmp->w * bmp->h * 3);
-
-	palette = new ubyte[1024]; // 256*4, largest size we should have to process
-	Assert(palette != NULL);
-
-	// make sure we are using the correct filename in the case of an EFF.
-	// this will populate filename[] whether it's EFF or not
-	EFF_FILENAME_CHECK;
-
-	if (be->type == BM_TYPE_PCX) {
-		pcx_read_header(filename, NULL, NULL, NULL, &bpp, palette);
-		mult = 3; // PCX has RGB for 256 entries
-	} else if (be->type == BM_TYPE_DDS) {
-		dds_read_header(filename, NULL, NULL, NULL, &bpp, NULL, NULL, &size, palette);
-		mult = 4; // DDS has RGBX for 256 entries, 'X' being an alpha setting that we don't need
-	} else {
-		// we really shouldn't be here at this point but give it another check anyway
-		delete[] palette;
-		vm_free(bgr_data);
-		return 1;
-	}
-
-	Assert(bpp == 8);
-
-	// we can only accept 8bits obviously, but this is actually a read error check
-	if (bpp != 8) {
-		delete[] palette;
-		vm_free(bgr_data);
-		return 1;
-	}
-
-	datap = bgr_data;
-
-	for (i = 0; i < bmp->h; i++) {
-		for (j = 0; j < bmp->w; j++) {
-			index = *in_data++;
-			*datap++ = palette[index * mult + 2];
-			*datap++ = palette[index * mult + 1];
-			*datap++ = palette[index * mult];
-		}
-	}
-
-	*out_data = bgr_data;
-
-	delete[] palette;
-
-	// no errors
-	return 0;
 }
 
 void bm_convert_format(bitmap *bmp, ubyte flags) {
