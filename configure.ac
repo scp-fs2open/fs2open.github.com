@@ -39,6 +39,8 @@ AC_SUBST(LDFLAGS)
 
 PKG_PROG_PKG_CONFIG()
 
+dnl lets see if we support c++11
+AX_CXX_COMPILE_STDCXX_11([noext], [optional])
 
 dnl The configuration options
 dnl -------------------------
@@ -151,7 +153,7 @@ case "$target" in
 		CPPFLAGS="$CPPFLAGS -I/opt/csw/include"
 		;;
 	*freebsd* | *openbsd*)
-		# FreeBSD 9.1
+		# FreeBSD 10.1
 		echo "Using Unix defines (for $host_os $host_cpu)"
 		echo "************************************************************"
 		echo "************************ NOTE ******************************"
@@ -163,7 +165,7 @@ case "$target" in
 		fs2_os_bsd="yes"
 		if test "$host_cpu" = "amd64"
 		then
-			D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi"
+			D_CFLAGS="$D_CFLAGS -m64 -march=athlon64"
 		fi
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		LDFLAGS="$LDFLAGS -L/usr/local/lib"

@@ -1374,12 +1374,8 @@ void parse_menumusic()
 //
 void event_music_parse_musictbl(const char *filename)
 {
-	int rval;
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-
-	} else {
+	try
+	{
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
@@ -1398,6 +1394,10 @@ void event_music_parse_musictbl(const char *filename)
 				}
 			}
 		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 	}
 }
 

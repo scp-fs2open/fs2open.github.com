@@ -43,7 +43,6 @@ int		Warning_count, Error_count;
 int		Warning_count_save = 0, Error_count_save = 0;
 int		fred_parse_flag = 0;
 int		Token_found_flag;
-jmp_buf	parse_abort;
 
 char 	*Mission_text = NULL;
 char	*Mission_text_raw = NULL;
@@ -483,7 +482,7 @@ int required_string(char *pstr)
 	if (count == RS_MAX_TRIES) {
 		nprintf(("Error", "Error: Unable to find required token [%s]\n", pstr));
 		Warning(LOCATION, "Error: Unable to find required token [%s]\n", pstr);
-		longjmp(parse_abort, 1);
+        throw parse::ParseException("Required string not found");
 	}
 
 	Mp += strlen(pstr);
@@ -691,8 +690,8 @@ int required_string_either(char *str1, char *str2)
 
 	if (count == RS_MAX_TRIES) {
 		nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
-		Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
-		longjmp(parse_abort, 2);
+        Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
+        throw parse::ParseException("Required string not found");
 	}
 
 	return -1;
@@ -887,8 +886,8 @@ char* alloc_text_until(char* instr, char* endstr)
 
 	if(foundstr == NULL)
 	{
-		Error(LOCATION, "Missing [%s] in file");
-		longjmp(parse_abort, 3);
+        Error(LOCATION, "Missing [%s] in file", endstr);
+        throw parse::ParseException("End string not found");
 	}
 	else
 	{
@@ -922,8 +921,8 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 	foundstr = stristr(instr, endstr);
 
 	if (foundstr == NULL) {
-		nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
-		longjmp(parse_abort, 3);
+        nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
+        throw parse::ParseException("End string not found");
 	}
 
 	if (foundstr - instr + strlen(endstr) < (uint) max_chars) {
@@ -934,7 +933,7 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 		nprintf(("Error", "Error.  Too much text (%i chars, %i allowed) before %s\n",
 			foundstr - instr - strlen(endstr), max_chars, endstr));
 
-		longjmp(parse_abort, 4);
+        throw parse::ParseException("Too much text found");
 	}
 
 	diag_printf("Here's the partial wad of text:\n%.30s\n", outstr);
@@ -949,8 +948,8 @@ void copy_text_until(SCP_string &outstr, char *instr, char *endstr)
 	foundstr = stristr(instr, endstr);
 
 	if (foundstr == NULL) {
-		nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
-		longjmp(parse_abort, 3);
+        nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
+        throw parse::ParseException("End string not found");
 	}
 
 	outstr.assign(instr, foundstr - instr);
@@ -1046,8 +1045,8 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 	//Check that we left the file
 	if(level > 0)
 	{
-		Error(LOCATION, "Unclosed pair of \"%s\" and \"%s\" on line %d in file", startstr, endstr, get_line_num());
-		longjmp(parse_abort, 3);
+        Error(LOCATION, "Unclosed pair of \"%s\" and \"%s\" on line %d in file", startstr, endstr, get_line_num());
+        throw parse::ParseException("End string not found");
 	}
 	else
 	{
@@ -1967,8 +1966,9 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 void read_file_text(const char *filename, int mode, char *processed_text, char *raw_text)
 {
 	// copy the filename
-	if (!filename)
-		longjmp(parse_abort, 10);
+    if (!filename)
+        throw parse::ParseException("Invalid filename");
+
 	strcpy_s(Current_filename_sub, filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
@@ -2106,16 +2106,16 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL)
 	{
-		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
-		longjmp(parse_abort, 5);
+        nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
+        throw parse::ParseException("Failed to open file");
 	}
 
 	// read the entire file in
 	int file_len = cfilelength(mf);
 
 	if(!file_len) {
-		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
-		longjmp(parse_abort, 5);
+        nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
+        throw parse::ParseException("Failed to open file");
 	}
 
 	// allocate, or reallocate, memory for Mission_text and Mission_text_raw based on size we need now
@@ -2567,8 +2567,8 @@ int stuff_bool_list(bool *blp, int max_bools)
 	ignore_white_space();
 	
 	if (*Mp != '(') {
-		error_display(1, "Reading boolean list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading boolean list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2665,8 +2665,8 @@ int stuff_string_list(SCP_vector<SCP_string>& slp)
 	ignore_white_space();
 
 	if ( *Mp != '(' ) {
-		error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 100);
+        error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2699,8 +2699,8 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 	ignore_white_space();
 
 	if ( *Mp != '(' ) {
-		error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 100);
+        error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2756,8 +2756,8 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading integer list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading integer list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2858,8 +2858,8 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading loadout list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading loadout list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2962,8 +2962,8 @@ int stuff_float_list(float* flp, int max_floats)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading float list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading float list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2995,8 +2995,8 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Marking integer list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Marking integer list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -3062,15 +3062,15 @@ void stuff_parenthesized_vec3d(vec3d *vp)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 11);
+        error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	} else {
 		Mp++;
 		stuff_vec3d(vp);
 		ignore_white_space();
 		if (*Mp != ')') {
-			error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting ')'.\n", *Mp);
-			longjmp(parse_abort, 12);
+            error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting ')'.\n", *Mp);
+            throw parse::ParseException("Syntax error");
 		}
 		Mp++;
 	}
@@ -3089,8 +3089,8 @@ int stuff_vec3d_list(vec3d *vlp, int max_vecs)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -3120,8 +3120,8 @@ int stuff_vec3d_list(SCP_vector<vec3d> &vec_list)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;

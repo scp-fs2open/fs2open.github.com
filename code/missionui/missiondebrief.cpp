@@ -1058,49 +1058,51 @@ void debrief_traitor_init()
 	if ( !inited ) {
 		debriefing		*debrief;
 		debrief_stage	*stagep;
-		int rval;
 		int stage_num;
+		
+		try
+		{
+			read_file_text("traitor.tbl", CF_TYPE_TABLES);
+			reset_parse();
 
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "traitor.tbl", rval));
+			// simplied form of the debriefing stuff.
+			debrief = &Traitor_debriefing;
+			required_string("#Debriefing_info");
+
+			required_string("$Num stages:");
+			stuff_int(&debrief->num_stages);
+			Assert(debrief->num_stages == 1);
+
+			stage_num = 0;
+			stagep = &debrief->stages[stage_num++];
+			required_string("$Formula:");
+			stagep->formula = get_sexp_main();
+			required_string("$multi text");
+			stuff_string(stagep->text, F_MULTITEXT, NULL);
+			required_string("$Voice:");
+			char traitor_voice_file[MAX_FILENAME_LEN];
+			stuff_string(traitor_voice_file, F_FILESPEC, MAX_FILENAME_LEN);
+
+			// DKA 9/13/99	Only 1 traitor msg for FS2
+			//		if ( Player->main_hall ) {
+			//			strcpy_s(stagep->voice, NOX("3_"));
+			//		} else {
+			//			strcpy_s(stagep->voice, NOX("1_"));
+			//		}
+
+			// Goober5000
+			debrief_choose_voice(stagep->voice, traitor_voice_file, debrief_find_persona_index(), 1);
+
+			required_string("$Recommendation text:");
+			stuff_string(stagep->recommendation_text, F_MULTITEXT, NULL);
+
+			inited = 1;
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "traitor.tbl", e.what()));
 			return;
 		}
-
-		read_file_text("traitor.tbl", CF_TYPE_TABLES);
-		reset_parse();		
-
-		// simplied form of the debriefing stuff.
-		debrief = &Traitor_debriefing;
-		required_string("#Debriefing_info");
-
-		required_string("$Num stages:");
-		stuff_int(&debrief->num_stages);
-		Assert(debrief->num_stages == 1);
-
-		stage_num = 0;
-		stagep = &debrief->stages[stage_num++];
-		required_string("$Formula:");
-		stagep->formula = get_sexp_main();
-		required_string("$multi text");
-		stuff_string( stagep->text, F_MULTITEXT, NULL);
-		required_string("$Voice:");
-		char traitor_voice_file[MAX_FILENAME_LEN];
-		stuff_string(traitor_voice_file, F_FILESPEC, MAX_FILENAME_LEN);
-
-// DKA 9/13/99	Only 1 traitor msg for FS2
-//		if ( Player->main_hall ) {
-//			strcpy_s(stagep->voice, NOX("3_"));
-//		} else {
-//			strcpy_s(stagep->voice, NOX("1_"));
-//		}
-
-		// Goober5000
-		debrief_choose_voice(stagep->voice, traitor_voice_file, debrief_find_persona_index(), 1);
-
-		required_string("$Recommendation text:");
-		stuff_string( stagep->recommendation_text, F_MULTITEXT, NULL);
-
-		inited = 1;
 	}
 
 	// disable the accept button if in single player and I am a traitor

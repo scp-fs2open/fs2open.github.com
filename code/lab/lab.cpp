@@ -2234,6 +2234,7 @@ void labviewer_make_weap_window(Button* caller)
 			delete type_nodes[i];
 		}
 	}
+	delete[] type_nodes;
 
 	Lab_mode = LAB_MODE_WEAPON;
 
