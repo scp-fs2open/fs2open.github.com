@@ -1838,6 +1838,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
 	shipp->ship_max_hull_strength =  p_objp->ship_max_hull_strength;
+	shipp->max_shield_recharge = p_objp->max_shield_recharge;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
@@ -2250,7 +2251,7 @@ int parse_create_object_sub(p_object *p_objp)
 		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
 		for (iLoop = 0; iLoop<Objects[objnum].n_quadrants; iLoop++)
 		{
-			Objects[objnum].shield_quadrant[iLoop] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
+			Objects[objnum].shield_quadrant[iLoop] = (float) (shipp->max_shield_recharge * p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 		}
 
 		// initial velocities now do not apply to ships which warp in after mission starts
@@ -3110,6 +3111,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	p_objp->max_shield_recharge = Ship_info[p_objp->ship_class].max_shield_recharge;
 
 
 	// if the kamikaze flag is set, we should have the next flag
@@ -4603,8 +4605,9 @@ void resolve_path_masks(int anchor, int *path_mask)
 		Assert(!(anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG));
 		parent_pobjp = mission_parse_get_parse_object(Parse_names[anchor]);
 
-		// load model for checking paths
-		modelnum = model_load(Ship_info[parent_pobjp->ship_class].pof_file, 0, NULL);
+		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
+		ship_info *sip = &Ship_info[parent_pobjp->ship_class];
+		modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 
 		// resolve names to indexes
 		*path_mask = 0;
@@ -4616,9 +4619,6 @@ void resolve_path_masks(int anchor, int *path_mask)
 
 			*path_mask |= (1 << bay_path);
 		}
-
-		// unload model
-		model_unload(modelnum);
 
 		// cache the result
 		prp->cached_mask = *path_mask;
@@ -7562,6 +7562,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	// set support ship hitpoints
 	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
 	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
+	pobj->max_shield_recharge = Ship_info[i].max_shield_recharge;
 
 	pobj->team = requester_shipp->team;
 

@@ -62,6 +62,8 @@ typedef struct sound_env
 } sound_env;
 
 extern int		Sound_enabled;
+extern float	Default_sound_volume;		// 0 -> 1.0
+extern float	Default_voice_volume;		// 0 -> 1.0
 extern float	Master_sound_volume;		// 0 -> 1.0
 extern float	Master_voice_volume;		// 0 -> 1.0
 extern int		Snd_sram;					// System memory consumed by sound data	

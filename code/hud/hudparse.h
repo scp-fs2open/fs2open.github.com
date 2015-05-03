@@ -20,6 +20,7 @@ extern float Hud_speed_multiplier;
 #define HUD_RETICLE_STYLE_FS2	1
 
 extern int Hud_reticle_style;
+extern bool Show_disabled_ets_gauges;
 
 //Functions
 int hud_get_gauge_index(char* name);

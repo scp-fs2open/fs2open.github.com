@@ -83,7 +83,6 @@ static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes
 static vec3d Interp_render_box_min = ZERO_VECTOR;
 static vec3d Interp_render_box_max = ZERO_VECTOR;
 static float Interp_render_sphere_radius = 0.0f;
-static vec3d Interp_render_sphere_offset = ZERO_VECTOR;
 
 // -------------------------------------------------------------------
 // lighting save stuff 
@@ -369,7 +368,6 @@ void interp_clear_instance()
 	Interp_render_box_min = vmd_zero_vector;
 	Interp_render_box_max = vmd_zero_vector;
 	Interp_render_sphere_radius = 0.0f;
-	Interp_render_sphere_offset = vmd_zero_vector;
 }
 
 /**
@@ -2728,6 +2726,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	uint save_gr_zbuffering_mode;
 	int zbuf_mode;
 	ship *shipp = NULL;
+	ship_info *sip = NULL;
 	object *objp = NULL;
 	bool set_autocen = false;
 	bool draw_thrusters = false;
@@ -2742,6 +2741,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
+			sip = &Ship_info[shipp->ship_info_index];
 
 			if (shipp->flags2 & SF2_GLOWMAPS_DISABLED)
 				flags |= MR_NO_GLOWMAPS;
@@ -2905,33 +2905,37 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	}
 #endif
 
-	// scale the render box settings based on the "Model Detail" slider
-	switch (Detail.detail_distance)
-	{
-		// 1st dot is 20%
-		case 0:
-			Interp_box_scale = 0.2f;
-			break;
+	if (shipp != NULL && (sip->flags2 & SIF2_LOCK_DETAIL_BOXES)) {
+		Interp_box_scale = 1.0f;
+	} else {
+		// scale the render box settings based on the "Model Detail" slider
+		switch (Detail.detail_distance)
+		{
+			// 1st dot is 20%
+			case 0:
+				Interp_box_scale = 0.2f;
+				break;
 
-		// 2nd dot is 50%
-		case 1:
-			Interp_box_scale = 0.5f;
-			break;
+			// 2nd dot is 50%
+			case 1:
+				Interp_box_scale = 0.5f;
+				break;
 
-		// 3rd dot is 80%
-		case 2:
-			Interp_box_scale = 0.8f;
-			break;
+			// 3rd dot is 80%
+			case 2:
+				Interp_box_scale = 0.8f;
+				break;
 
-		// 4th dot is 100% (this is the default setting for "High" and "Very High" settings)
-		case 3:
-			Interp_box_scale = 1.0f;
-			break;
+			// 4th dot is 100% (this is the default setting for "High" and "Very High" settings)
+			case 3:
+				Interp_box_scale = 1.0f;
+				break;
 
-		// 5th dot (max) is 120%
-		case 4:
-			Interp_box_scale = 1.2f;
-			break;
+			// 5th dot (max) is 120%
+			case 4:
+				Interp_box_scale = 1.2f;
+				break;
+		}
 	}
 
 	vec3d auto_back = ZERO_VECTOR;
@@ -4468,7 +4472,13 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 		vm_vec_copy_scale(&Interp_render_box_min, &model->render_box_min, Interp_box_scale);
 		vm_vec_copy_scale(&Interp_render_box_max, &model->render_box_max, Interp_box_scale);
 
-		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &model->offset)) )
+		vec3d offset;
+		if (model->use_render_box_offset)
+			offset = model->render_box_offset;
+		else
+			model_find_submodel_offset(&offset, pm->id, mn);
+
+		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &offset)) )
 			return;
 	}
 	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
@@ -4476,8 +4486,10 @@ void model_render_children_buffers(polymodel *pm, int mn, int detail_level)
 
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
-		model_find_submodel_offset(&offset, pm->id, mn);
-		vm_vec_add2(&offset, &model->render_sphere_offset);
+		if (model->use_render_sphere_offset)
+			offset = model->render_sphere_offset;
+		else
+			model_find_submodel_offset(&offset, pm->id, mn);
 
 		if ( (-model->use_render_sphere + in_sphere(&offset, Interp_render_sphere_radius)) )
 			return;
@@ -4591,7 +4603,13 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 		vm_vec_copy_scale(&Interp_render_box_min, &model->render_box_min, Interp_box_scale);
 		vm_vec_copy_scale(&Interp_render_box_max, &model->render_box_max, Interp_box_scale);
 
-		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &model->offset)) )
+		vec3d offset;
+		if (model->use_render_box_offset)
+			offset = model->render_box_offset;
+		else
+			model_find_submodel_offset(&offset, pm->id, mn);
+
+		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &offset)) )
 			return;
 	}
 	if ( !is_child && !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
@@ -4599,8 +4617,10 @@ void model_render_buffers(polymodel *pm, int mn, bool is_child)
 
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
-		model_find_submodel_offset(&offset, pm->id, mn);
-		vm_vec_add2(&offset, &model->render_sphere_offset);
+		if (model->use_render_sphere_offset)
+			offset = model->render_sphere_offset;
+		else
+			model_find_submodel_offset(&offset, pm->id, mn);
 
 		if ( (-model->use_render_sphere + in_sphere(&offset, Interp_render_sphere_radius)) )
 			return;

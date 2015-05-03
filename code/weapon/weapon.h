@@ -141,6 +141,7 @@ extern int Num_weapon_subtypes;
 #define WF_DESTROYED_BY_WEAPON		(1<<6)		// destroyed by damage from other weapon
 #define WF_SPAWNED					(1<<7)		//Spawned from a spawning type weapon
 #define WF_HOMING_UPDATE_NEEDED		(1<<8)		// this is a newly spawned homing weapon which needs to update client machines
+#define WF_NO_HOMING				(1<<9)		// this weapon should ignore any homing behavior it'd usually have
 
 // flags for setting burst fire 
 #define WBF_FAST_FIRING				(1<<0)		// burst is to use only the firewait to determine firing delays
@@ -416,6 +417,7 @@ typedef struct weapon_info {
 
 	int	impact_weapon_expl_index;		// Index into Weapon_expl_info of which ANI should play when this thing impacts something
 	float	impact_explosion_radius;		// How big the explosion should be
+	float	shield_impact_explosion_radius;	// How big the shield hit explosion should be
 
 	int dinky_impact_weapon_expl_index;
 	float dinky_impact_explosion_radius;
@@ -672,5 +674,7 @@ void weapon_pause_sounds();
 
 // Unpauses all running weapon sounds
 void weapon_unpause_sounds();
+
+void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx);
 
 #endif

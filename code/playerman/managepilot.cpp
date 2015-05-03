@@ -101,6 +101,10 @@ void init_new_pilot(player *p, int reset)
 		Mouse_sensitivity = 4;
 		Joy_sensitivity = 9;
 		Dead_zone_size = 10;
+
+		Master_sound_volume = Default_sound_volume;
+		Master_event_music_volume = Default_music_volume;
+		Master_voice_volume = Default_voice_volume;
 	}
 
 	// unassigned squadron

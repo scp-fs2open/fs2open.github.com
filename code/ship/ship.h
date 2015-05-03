@@ -424,7 +424,7 @@ typedef struct ship_flag_name {
 	int flag_list;						// is this flag in the 1st or 2nd ship flags list?
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					17
+#define MAX_SHIP_FLAG_NAMES					18
 extern ship_flag_name Ship_flag_names[];
 
 // states for the flags variable within the ship structure
@@ -505,6 +505,7 @@ extern ship_flag_name Ship_flag_names[];
 #define SF2_WEAPONS_LOCKED					(1<<25)		// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
 #define SF2_SHIP_SELECTIVE_LINKING			(1<<26)		// RSAXVC - Allow pilot to pick firing configuration
 #define SF2_SCRAMBLE_MESSAGES				(1<<27)		// Goober5000 - all messages sent from this ship appear scrambled
+#define SF2_NO_SECONDARY_LOCKON				(1<<28)		// zookeeper - secondary lock-on disabled
 
 // If any of these bits in the ship->flags are set, ignore this ship when targeting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -591,6 +592,8 @@ public:
 
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;
+
+	float max_shield_recharge;
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 
@@ -928,6 +931,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_AUTO_SPREAD_SHIELDS			(1 << 16)	// zookeeper - auto spread shields
 #define SIF2_DRAW_WEAPON_MODELS				(1 << 17)	// the ship draws weapon models of any sort (used to be a boolean)
 #define SIF2_MODEL_POINT_SHIELDS			(1 << 18)	// zookeeper - uses model-defined shield points instead of quadrants
+#define SIF2_LOCK_DETAIL_BOXES			(1 << 19)	// zookeeper - don't scale detail boxes or spheres based on detail settings
 
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
@@ -1144,6 +1148,8 @@ typedef struct ship_collision_physics {
 
 typedef struct path_metadata {
 	vec3d departure_rvec;
+	float arrive_speed_mult;
+	float depart_speed_mult;
 } path_metadata;
 
 // The real FreeSpace ship_info struct.
@@ -1175,6 +1181,7 @@ public:
 	char		pof_file_hud[MAX_FILENAME_LEN];		// POF file to load for the HUD target box
 	int		num_detail_levels;				// number of detail levels for this ship
 	int		detail_distance[MAX_SHIP_DETAIL_LEVELS];					// distance to change detail levels at
+	int		collision_lod;						// check for collisions using a LOD
 	int		cockpit_model_num;					// cockpit model
 	int		model_num;							// ship model
 	int		model_num_hud;						// model to use when rendering to the HUD (eg, mini supercap)
@@ -1298,11 +1305,14 @@ public:
 
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
-	float	auto_shield_spread;
-	bool	auto_shield_spread_bypass;
-	int		auto_shield_spread_from_lod;
+	float	auto_shield_spread;				// Thickness of the shield
+	bool	auto_shield_spread_bypass;		// Whether weapons fired up close can bypass shields
+	int		auto_shield_spread_from_lod;	// Which LOD to project the shield from
+	float	auto_shield_spread_min_span;	// Minimum distance weapons must travel until allowed to collide with the shield
 
 	int		shield_point_augment_ctrls[4];	// Re-mapping of shield augmentation controls for model point shields
+
+	float	max_shield_recharge;
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
@@ -1323,6 +1333,7 @@ public:
 
 	ubyte	shield_icon_index;				// index to locate ship-specific animation frames for the shield on HUD
 	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in ship selection
+	angles	model_icon_angles;					// angle from which the model icon should be rendered (if not 0,0,0)
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in ship selection
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 	int 	selection_effect;
@@ -1375,6 +1386,7 @@ public:
 	float		thruster02_glow_len_factor;
 	float		thruster_dist_rad_factor;
 	float		thruster_dist_len_factor;
+	float		thruster_glow_noise_mult;
 
 	bool		draw_distortion;
 
@@ -1401,6 +1413,7 @@ public:
 	vec3d topdown_offset;
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
+	float min_engine_vol;					// minimum volume modifier for engine sound when ship is stationary
 	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
 	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
 
@@ -1420,10 +1433,12 @@ public:
 	float minimum_convergence_distance;
 	float convergence_distance;
 	vec3d convergence_offset;
+	int autoaim_lock_snd, autoaim_lost_snd;
 
 	float emp_resistance_mod;
 
 	float piercing_damage_draw_limit;
+	int shield_impact_explosion_anim;
 
 	int damage_lightning_type;
 
@@ -1594,6 +1609,7 @@ extern void ship_cleanup(int shipnum, int cleanup_mode);
 extern void ship_destroy_instantly(object *ship_obj, int shipnum);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
+extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_fire_primary_debug(object *objp);	//	Fire the debug laser.
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0);

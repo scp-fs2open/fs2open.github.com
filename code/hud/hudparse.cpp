@@ -46,6 +46,7 @@ int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
 
 bool Hud_retail = true;
 bool Scale_retail_gauges = true;
+bool Show_disabled_ets_gauges = false;
 
 int Hud_font = -1;
 
@@ -257,6 +258,10 @@ void parse_hud_gauges_tbl(const char *filename)
 				Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
 			else
 				Hud_reticle_style = temp;
+		}
+
+		if (optional_string("$Show disabled ETS gauges:")) {
+			stuff_boolean(&Show_disabled_ets_gauges);
 		}
 
 		int base_res[2];
@@ -2017,6 +2022,7 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, bool scale_
 	int scaleX = 15;
 	int scaleY = 10;
 	int size = 5;
+	int autoaim_frame = -1;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
@@ -2066,8 +2072,12 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, bool scale_
 	if (optional_string("Firepoint Y coordinate multiplier:"))
 		stuff_int(&scaleY);
 
+	if(optional_string("Autoaim Frame:"))
+		stuff_int(&autoaim_frame);
+
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);
+	hud_gauge->setAutoaimFrame(autoaim_frame);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {

@@ -1354,6 +1354,18 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					while (*p == ' ') p++;
 					pm->submodel[n].use_render_box = atoi(p);
 
+					if ( (p = strstr(props, "$box_offset:")) != NULL ) {
+						p += 12;
+						while (*p == ' ') p++;
+						pm->submodel[n].render_box_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+
+						pm->submodel[n].use_render_box_offset = true;
+					}
+
 					if ( (p = strstr(props, "$box_min:")) != NULL ) {
 						p += 9;
 						while (*p == ' ') p++;
@@ -1400,6 +1412,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						pm->submodel[n].render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
 						while (*p != ',') p++;
 						pm->submodel[n].render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+
+						pm->submodel[n].use_render_sphere_offset = true;
 					} else {
 						pm->submodel[n].render_sphere_offset = vmd_zero_vector;
 					}
@@ -2639,6 +2653,12 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 				}
 				dl2 = tolower(sm2->name[first_diff]) - 'a';
 
+				// Handle LODs named "detail0/1/2/etc" too (as opposed to "detaila/b/c/etc")
+				if (sm1->parent == -1 && sm2->parent == -1 && !sm1->is_damaged && !sm2->is_damaged && !sm1->is_live_debris && !sm2->is_live_debris) {
+					dl2 = dl2 - dl1;
+					dl1 = 0;
+				}
+
 				if ( (dl1<0) || (dl2<0) || (dl1>=MAX_MODEL_DETAIL_LEVELS) || (dl2>=MAX_MODEL_DETAIL_LEVELS) ) continue;	// invalid detail levels
 
 				if ( dl1 == 0 )	{
@@ -2663,10 +2683,11 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 	if ( !Cmdline_old_collision_sys ) {
 		for ( i = 0; i < pm->n_models; ++i ) {
-			pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
-			bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-
-			model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
+			if ( !(pm->submodel[i].nocollide_this_only || pm->submodel[i].no_collisions) ) {
+				pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
+				bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+				model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
+			}
 		}
 	}
 

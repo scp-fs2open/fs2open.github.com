@@ -312,6 +312,7 @@ flag_def_list Ship_flags[] = {
 	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
 	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
 	{ "model point shields",		SIF2_MODEL_POINT_SHIELDS,	1 },
+	{ "lock detail boxes",			SIF2_LOCK_DETAIL_BOXES,		1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -385,6 +386,7 @@ ship_flag_name Ship_flag_names[] = {
 	{SF2_DONT_COLLIDE_INVIS,		"don't-collide-invisible",		2,	},
 	{SF2_NO_ETS,					"no-ets",						2,	},
 	{SF2_TOGGLE_SUBSYSTEM_SCANNING,	"toggle-subsystem-scanning",	2,	},
+	{SF2_NO_SECONDARY_LOCKON,		"no-secondary-lock-on",			2,	},
 };
 
 const int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
@@ -690,6 +692,7 @@ void init_ship_entry(ship_info *sip)
 	sip->pof_file_hud[0] = '\0';
 	sip->num_detail_levels = 1;
 	sip->detail_distance[0] = 0;
+	sip->collision_lod = -1;
 	sip->cockpit_model_num = -1;
 	sip->model_num = -1;
 	sip->model_num_hud = -1;
@@ -867,9 +870,12 @@ void init_ship_entry(ship_info *sip)
 	sip->max_hull_strength = 100.0f;
 	sip->max_shield_strength = 0.0f;
 
+	sip->max_shield_recharge = 1.0f;
+
 	sip->auto_shield_spread = 0.0f;
 	sip->auto_shield_spread_bypass = false;
 	sip->auto_shield_spread_from_lod = -1;
+	sip->auto_shield_spread_min_span = -1.0f;
 
 	for (i = 0; i < 4; i++)
 	{
@@ -950,6 +956,7 @@ void init_ship_entry(ship_info *sip)
 	sip->thruster02_glow_len_factor = 1.0f;
 	sip->thruster_dist_rad_factor = 2.0f;
 	sip->thruster_dist_len_factor = 2.0f;
+	sip->thruster_glow_noise_mult = 1.0f;
 
 	sip->draw_distortion = true;
 
@@ -969,11 +976,14 @@ void init_ship_entry(ship_info *sip)
 	sip->newtonian_damp_override = false;
 
 	sip->autoaim_fov = 0.0f;
+	sip->autoaim_lock_snd = -1;
+	sip->autoaim_lost_snd = -1;
 
 	sip->topdown_offset_def = false;
 	vm_vec_zero(&sip->topdown_offset);
 
 	sip->engine_snd = -1;
+	sip->min_engine_vol = -1.0f;
 	sip->glide_start_snd = -1;
 	sip->glide_end_snd = -1;
 
@@ -1011,6 +1021,7 @@ void init_ship_entry(ship_info *sip)
 
 	sip->damage_lightning_type = SLT_DEFAULT;
 
+	sip->shield_impact_explosion_anim = -1;
 	sip->hud_gauges.clear();
 	sip->hud_enabled = false;
 	sip->hud_retail = false;
@@ -1665,6 +1676,13 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		sip->num_detail_levels = stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
 	}
 
+	if(optional_string("$Collision LOD:")) {
+		stuff_int(&sip->collision_lod);
+
+		// Cap to sane values, just in case
+		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels));
+	}
+
 	// check for optional pixel colors
 	while(optional_string("$ND:")){		
 		ubyte nr, ng, nb;
@@ -2001,6 +2019,9 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 		if(optional_string("+Minimum Distance:"))
 			stuff_float(&sip->minimum_convergence_distance);
+
+		parse_sound("+Autoaim Lock Snd:", &sip->autoaim_lock_snd, sip->name);
+		parse_sound("+Autoaim Lost Snd:", &sip->autoaim_lost_snd, sip->name);
 	}
 
 	if(optional_string("$Convergence:"))
@@ -2311,6 +2332,11 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		if(optional_string("+Auto Spread:")) {
 			stuff_float(&sip->auto_shield_spread);
 		}
+		if(optional_string("+Minimum Weapon Span:")) {
+			stuff_float(&sip->auto_shield_spread_min_span);
+		} else {
+			sip->auto_shield_spread_min_span = sip->auto_shield_spread;
+		}
 		if(optional_string("+Allow Bypass:")) {
 			stuff_boolean(&sip->auto_shield_spread_bypass);
 		}
@@ -2358,6 +2384,19 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_ubyte(&sip->shield_color[0]);
 		stuff_ubyte(&sip->shield_color[1]);
 		stuff_ubyte(&sip->shield_color[2]);
+	}
+
+	if(optional_string("$Shield Impact Explosion:")) {
+		char fname[MAX_NAME_LEN];
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( VALID_FNAME(fname) )
+			sip->shield_impact_explosion_anim = Weapon_explosions.Load(fname);
+	}
+
+	if(optional_string("$Max Shield Recharge:")){
+		stuff_float(&sip->max_shield_recharge);
+		CLAMP(sip->max_shield_recharge, 0.0f, 1.0f);
 	}
 
 	// The next five fields are used for the ETS
@@ -2665,6 +2704,9 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	//Parse the engine sound
 	parse_sound("$EngineSnd:", &sip->engine_snd, sip->name);
 
+	if(optional_string("$Minimum Engine Volume:"))
+		stuff_float(&sip->min_engine_vol);
+
 	//Parse optional sound to be used for beginning of a glide
 	parse_sound("$GlideStartSnd:", &sip->glide_start_snd, sip->name);
 
@@ -2719,6 +2761,32 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	// read in filename for icon that is used in ship selection
 	if ( optional_string("$Ship_icon:") ) {
 		stuff_string(sip->icon_filename, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if ( optional_string("$Model Icon Direction:") ) {
+		char str[NAME_LENGTH];
+		stuff_string(str, F_NAME, NAME_LENGTH);
+
+		angles model_icon_angles = {0.0f,0.0f,0.0f};
+
+		if (!stricmp(str, "top")) {
+			model_icon_angles.p = -PI_2;
+		} else if (!stricmp(str, "bottom")) {
+			model_icon_angles.p = -PI_2;
+			model_icon_angles.b = 2 * PI_2;
+		} else if (!stricmp(str, "front")) {
+			model_icon_angles.h = 2 * PI_2;
+		} else if (!stricmp(str, "back")) {
+			model_icon_angles.h = 4 * PI_2;
+		} else if (!stricmp(str, "left")) {
+			model_icon_angles.h = -PI_2;
+		} else if (!stricmp(str, "right")) {
+			model_icon_angles.h = PI_2;
+		} else {
+			Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Icon Direction, ignoring...", str);
+		}
+
+		sip->model_icon_angles = model_icon_angles;
 	}
 
 	// read in filename for animation that is used in ship selection
@@ -2868,6 +2936,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 	if ( optional_string("$Thruster Distortion:") ) {
 		stuff_boolean(&sip->draw_distortion);
+	}
+
+	if ( optional_string("$Thruster Glow Noise Mult:") ) {
+		stuff_float(&sip->thruster_glow_noise_mult);
 	}
 
 	while ( optional_string("$Thruster Particles:") ) {
@@ -3142,6 +3214,15 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		if (optional_string("+departure rvec:"))
 		{
 			stuff_vec3d(&metadata.departure_rvec);
+		}
+
+		if (optional_string("+arrive speed multiplier:"))
+		{
+			stuff_float(&metadata.arrive_speed_mult);
+		}
+		if (optional_string("+depart speed multiplier:"))
+		{
+			stuff_float(&metadata.depart_speed_mult);
 		}
 
 		//Add the new path_metadata to sip->pathMetadata keyed by path name
@@ -5025,12 +5106,14 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	}
 	objp->hull_strength = shipp->ship_max_hull_strength;
 
+	shipp->max_shield_recharge = sip->max_shield_recharge;
+
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
-		shield_set_strength(objp, shipp->ship_max_shield_strength);
+		shield_set_strength(objp, shipp->ship_max_shield_strength * shipp->max_shield_recharge);
 	}
 
 	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
@@ -6111,7 +6194,7 @@ void ship_render(object * obj)
 				mst.distortion_bitmap = shipp->thruster_distortion_bitmap;
 
 				mst.use_ab = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
-				mst.glow_noise = shipp->thruster_glow_noise;
+				mst.glow_noise = shipp->thruster_glow_noise * sip->thruster_glow_noise_mult;
 				mst.rotvel = &Objects[shipp->objnum].phys_info.rotvel;
 
 				mst.glow_rad_factor = sip->thruster01_glow_rad_factor;
@@ -9189,6 +9272,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		objp->hull_strength = hull_pct * sp->ship_max_hull_strength;
 	}
 
+	sp->max_shield_recharge = sip->max_shield_recharge;
+
 	// set the correct shield strength
 	if (Fred_running) {
 		if (sp->ship_max_shield_strength)
@@ -9831,6 +9916,70 @@ int ship_stop_fire_primary(object * obj)
 int tracers[MAX_SHIPS][4][4];
 
 float ship_get_subsystem_strength( ship *shipp, int type );
+
+/**
+ * Checks whether a ship would use autoaim if it were to fire its primaries at
+ * the given object, taking lead into account.
+ *
+ * @param shipp the ship to check
+ * @param bank_to_fire the assumed primary bank
+ * @param obj the object to check; must be the ship's current target
+ */
+
+bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
+{
+	// Most of the code of this function has been duplicated from
+	// ship_fire_primary(), because it is not easy to encapsulate cleanly.
+
+	ship_info *sip;
+	ai_info *aip;
+	ship_weapon *swp;
+
+	bool has_autoaim, has_converging_autoaim;
+	float autoaim_fov = 0;
+	float dist_to_target = 0;
+
+	vec3d plr_to_target_vec;
+	vec3d player_forward_vec = Objects[shipp->objnum].orient.vec.fvec;
+
+	vec3d target_position;
+
+	sip = &Ship_info[shipp->ship_info_index];
+	aip = &Ai_info[shipp->ai_index];
+
+	swp = &shipp->weapons;
+	int weapon = swp->primary_bank_weapons[bank_to_fire];
+	weapon_info* winfo_p = &Weapon_info[weapon];
+
+	has_converging_autoaim = ((sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
+	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags & AIM_FLAG_AUTOAIM)) && aip->target_objnum != -1);
+
+	if (!has_autoaim)
+		return FALSE;
+
+	autoaim_fov = MAX(shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
+
+	if (aip->targeted_subsys != NULL)
+	{
+		get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
+	}
+	else
+	{
+		target_position = obj->pos;
+	}
+
+	dist_to_target = vm_vec_dist_quick(&Objects[shipp->objnum].pos, &target_position);
+
+	hud_calculate_lead_pos(&plr_to_target_vec, &target_position, obj, winfo_p, dist_to_target);
+	vm_vec_sub2(&plr_to_target_vec, &Objects[shipp->objnum].pos);
+
+	float angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, NULL);
+
+	if (angle_to_target <= autoaim_fov)
+		return true;
+	else
+		return false;
+}
 
 // fires a primary weapon for the given object.  It also handles multiplayer cases.
 // in multiplayer, the starting network signature, and number of banks fired are sent
@@ -12623,7 +12772,7 @@ float ship_calculate_rearm_duration( object *objp )
 
 	//find out time to repair shields
 	if(sip->sup_shield_repair_rate > 0.0f)
-		shield_rep_time = (sp->ship_max_shield_strength - shield_get_strength(objp)) / (sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
+		shield_rep_time = ((sp->ship_max_shield_strength * sp->max_shield_recharge) - shield_get_strength(objp)) / (sp->max_shield_recharge * sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
 	
 	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength) && (sip->sup_hull_repair_rate > 0.0f))
@@ -12759,7 +12908,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( !(objp->flags & OF_NO_SHIELDS) )
 	{
 		shield_str = shield_get_strength(objp);
-		if ( shield_str < shipp->ship_max_shield_strength ) {
+		if ( shield_str < (shipp->ship_max_shield_strength * shipp->max_shield_recharge) ) {
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
 			}
@@ -17755,6 +17904,8 @@ int ship_get_subobj_model_num(ship_info* sip, char* subobj_name)
 void init_path_metadata(path_metadata& metadata)
 {
 	vm_vec_zero(&metadata.departure_rvec);
+	metadata.arrive_speed_mult = FLT_MIN;
+	metadata.depart_speed_mult = FLT_MIN;
 }
 
 int ship_get_sound(object *objp, GameSoundsIndex id)
