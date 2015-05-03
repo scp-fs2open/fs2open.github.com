@@ -3431,6 +3431,7 @@ void hud_show_targeting_gauges(float frametime)
 	vec3d target_pos;
 
 	hud_show_hostile_triangle();
+	hud_do_lock_indicators(frametime);
 
 	if (Player_ai->target_objnum == -1)
 		return;
@@ -3480,8 +3481,6 @@ void hud_show_targeting_gauges(float frametime)
 
 	// display the lock indicator
 	if (!Player->target_is_dying) {
-		hud_do_lock_indicator(frametime);
-
 		// update and render artillery
 		hud_artillery_update();
 		hud_artillery_render();

@@ -38,6 +38,15 @@ extern int Num_weapon_subtypes;
 #define	WRT_LASER	1
 #define	WRT_POF		2
 
+// constants for weapon lock acquire methods
+#define WLOCK_PIXEL		0
+#define WLOCK_TIMER		1
+
+// constants for weapon lock restrictions
+#define LR_CURRENT_TARGET				0		// Only lock current target and subsystem
+#define LR_CURRENT_TARGET_SUBSYS		1		// 
+#define LR_ANY_TARGETS					2
+
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
 #define PSPEW_DEFAULT	0			//std fs2 pspew
@@ -315,11 +324,24 @@ struct weapon_info
 	short swarm_count;						// how many swarm missiles are fired for this weapon
 	int SwarmWait;                  // *Swarm firewait, default is 150  -Et1
 
+	int target_restrict;
+	bool multi_lock;
+	int max_seeking;						// how many seekers can be active at a time if multilock is enabled. A value of one will lock stuff up one by one.
+	int max_seekers_per_target;			// how many seekers can be attached to a target.
+
+	SCP_vector<int> ship_type_restrict;
+	SCP_vector<SCP_string> ship_type_restrict_temp;
+
+	bool trigger_lock;						// Trigger must be held down and released to lock and fire.
+	bool launch_reset_locks;				// Lock indicators reset after firing
+
 	//	Specific to ASPECT homing missiles.
+	int acquire_method;
 	float	min_lock_time;						// minimum time (in seconds) to achieve lock
 	int	lock_pixels_per_sec;				// pixels/sec moved while locking
 	int	catchup_pixels_per_sec;			// pixels/sec moved while catching-up for a lock				
-	int	catchup_pixel_penalty;			// number of extra pixels to move while locking as a penalty for catching up for a lock			
+	int	catchup_pixel_penalty;			// number of extra pixels to move while locking as a penalty for catching up for a lock		
+	float lock_fov;
 
 	//	Specific to HEAT homing missiles.
 	float	fov;
@@ -628,5 +650,12 @@ void weapon_unpause_sounds();
 void validate_SSM_entries();
 
 void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx);
+
+// Swifty - return number of max simultaneous locks 
+int weapon_get_max_missile_seekers(weapon_info *wip);
+
+// return if this weapon can lock on this ship type
+bool weapon_can_lock_on_ship_type(weapon_info *wip, int ship_type);
+
 
 #endif
