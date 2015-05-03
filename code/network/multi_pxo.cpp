@@ -4511,7 +4511,8 @@ void multi_pxo_pinfo_build_vals()
 	if (fs->stats.last_flown == 0) {		
 		strcpy_s(Multi_pxo_pinfo_vals[7], XSTR("No missions flown", 970) );
 	} else {
-		tm *tmr = gmtime( (time_t*)&fs->stats.last_flown );
+		time_t tmp_lf = fs->stats.last_flown; // don't cast a pointer to a type that can be either 32 or 64bit
+		tm *tmr = gmtime( &tmp_lf );
 
 		if (tmr != NULL)
 			strftime(Multi_pxo_pinfo_vals[7], 30, "%m/%d/%y %H:%M", tmr);	

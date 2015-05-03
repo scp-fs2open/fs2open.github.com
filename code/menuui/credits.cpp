@@ -279,133 +279,133 @@ int credits_screen_button_pressed(int n)
 }
 
 void credits_parse_table(const char* filename)
-{
-	int rval;
+{	
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
 
-	if ((rval = setjmp(parse_abort)) != 0)
-	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
-	}
-		
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	// any metadata?
-	if (optional_string("$Music:"))
-	{
-		stuff_string(Credits_music_name, F_NAME, NAME_LENGTH);
-	}
-	if (optional_string("$Number of Images:"))
-	{
-		int temp;
-		stuff_int(&temp);
-		if (temp > 0)
-			Credits_num_images = temp;
-	}
-	if (optional_string("$Start Image Index:"))
-	{
-		stuff_int(&Credits_artwork_index);
-
-		// bounds check
-		if (Credits_artwork_index < 0)
+		// any metadata?
+		if (optional_string("$Music:"))
 		{
-			Credits_artwork_index = 0;
+			stuff_string(Credits_music_name, F_NAME, NAME_LENGTH);
 		}
-		else if (Credits_artwork_index >= Credits_num_images)
+		if (optional_string("$Number of Images:"))
 		{
-			Credits_artwork_index = Credits_num_images - 1;
+			int temp;
+			stuff_int(&temp);
+			if (temp > 0)
+				Credits_num_images = temp;
 		}
-	}
-	if (optional_string("$Text scroll rate:"))
-	{
-		stuff_float(&Credits_scroll_rate);
-		if (Credits_scroll_rate < 0.01f)
-			Credits_scroll_rate = 0.01f;
-	}
-	if (optional_string("$Artworks display time:"))
-	{
-		stuff_float(&Credits_artwork_display_time);
-		if (Credits_artwork_display_time < 0.01f)
-			Credits_artwork_display_time = 0.01f;
-	}
-	if (optional_string("$Artworks fade time:"))
-	{
-		stuff_float(&Credits_artwork_fade_time);
-		if (Credits_artwork_fade_time < 0.01f)
-			Credits_artwork_fade_time = 0.01f;
-	}
-	if (optional_string("$SCP Credits position:"))
-	{
-		char mode[NAME_LENGTH];
-
-		stuff_string(mode, F_NAME, NAME_LENGTH);
-
-		if (!stricmp(mode, "Start"))
-			SCP_credits_position = START;
-		else if (!stricmp(mode, "End"))
-			SCP_credits_position = END;
-		else
-			Warning(LOCATION, "Unknown credits position mode \"%s\".", mode);
-	}
-
-	ignore_white_space();
-	
-	SCP_string credits_text;
-	SCP_string line;
-
-	SCP_vector<int> charNum;
-	SCP_vector<const char*> lines;
-	int numLines = -1;
-
-	bool first_run = true;
-	while(!check_for_string_raw("#end"))
-	{
-		// Read in a line of text			
-		stuff_string_line(line);
-
-		// This is a bit odd but it means if a total conversion uses different credits the 
-		// Volition credit won't happen
-		// Also don't append the default credits anymore when there was already a parsed table
-		if(first_run && !Credits_parsed && !line.compare(mod_check))
+		if (optional_string("$Start Image Index:"))
 		{
-			credits_text.append(unmodified_credits);
-		}
+			stuff_int(&Credits_artwork_index);
 
-		first_run = false;
-
-		if (line.empty())
-		{
-			// If the line is empty then just append a newline, don't bother with splitting it first
-			credits_text.append("\n");
-		}
-		else
-		{
-			// split_str doesn't take care of this.
-			charNum.clear();
-
-			// Split the string into multiple lines if it's too long
-			numLines = split_str(line.c_str(), Credits_text_coords[gr_screen.res][2], charNum, lines, -1);
-
-			// Make sure that we have valid data
-			Assertion(lines.size() == (size_t) numLines, "split_str reported %d lines but vector contains %d entries!", numLines, lines.size());
-
-			Assertion(lines.size() <= charNum.size(),
-				"Something has gone wrong while splitting strings. Got %d lines but only %d chacter lengths.",
-				lines.size(), charNum.size());
-
-			// Now add all splitted lines to the credit text and append a newline to the end
-			for (int i = 0; i < numLines; i++)
+			// bounds check
+			if (Credits_artwork_index < 0)
 			{
-				credits_text.append(SCP_string(lines[i], charNum[i]));
-				credits_text.append("\n");
+				Credits_artwork_index = 0;
+			}
+			else if (Credits_artwork_index >= Credits_num_images)
+			{
+				Credits_artwork_index = Credits_num_images - 1;
 			}
 		}
+		if (optional_string("$Text scroll rate:"))
+		{
+			stuff_float(&Credits_scroll_rate);
+			if (Credits_scroll_rate < 0.01f)
+				Credits_scroll_rate = 0.01f;
+		}
+		if (optional_string("$Artworks display time:"))
+		{
+			stuff_float(&Credits_artwork_display_time);
+			if (Credits_artwork_display_time < 0.01f)
+				Credits_artwork_display_time = 0.01f;
+		}
+		if (optional_string("$Artworks fade time:"))
+		{
+			stuff_float(&Credits_artwork_fade_time);
+			if (Credits_artwork_fade_time < 0.01f)
+				Credits_artwork_fade_time = 0.01f;
+		}
+		if (optional_string("$SCP Credits position:"))
+		{
+			char mode[NAME_LENGTH];
+
+			stuff_string(mode, F_NAME, NAME_LENGTH);
+
+			if (!stricmp(mode, "Start"))
+				SCP_credits_position = START;
+			else if (!stricmp(mode, "End"))
+				SCP_credits_position = END;
+			else
+				Warning(LOCATION, "Unknown credits position mode \"%s\".", mode);
+		}
+
+		ignore_white_space();
+
+		SCP_string credits_text;
+		SCP_string line;
+
+		SCP_vector<int> charNum;
+		SCP_vector<const char*> lines;
+		int numLines = -1;
+
+		bool first_run = true;
+		while (!check_for_string_raw("#end"))
+		{
+			// Read in a line of text			
+			stuff_string_line(line);
+
+			// This is a bit odd but it means if a total conversion uses different credits the 
+			// Volition credit won't happen
+			// Also don't append the default credits anymore when there was already a parsed table
+			if (first_run && !Credits_parsed && !line.compare(mod_check))
+			{
+				credits_text.append(unmodified_credits);
+			}
+
+			first_run = false;
+
+			if (line.empty())
+			{
+				// If the line is empty then just append a newline, don't bother with splitting it first
+				credits_text.append("\n");
+			}
+			else
+			{
+				// split_str doesn't take care of this.
+				charNum.clear();
+
+				// Split the string into multiple lines if it's too long
+				numLines = split_str(line.c_str(), Credits_text_coords[gr_screen.res][2], charNum, lines, -1);
+
+				// Make sure that we have valid data
+				Assertion(lines.size() == (size_t)numLines, "split_str reported %d lines but vector contains %d entries!", numLines, lines.size());
+
+				Assertion(lines.size() <= charNum.size(),
+					"Something has gone wrong while splitting strings. Got %d lines but only %d chacter lengths.",
+					lines.size(), charNum.size());
+
+				// Now add all splitted lines to the credit text and append a newline to the end
+				for (int i = 0; i < numLines; i++)
+				{
+					credits_text.append(SCP_string(lines[i], charNum[i]));
+					credits_text.append("\n");
+				}
+			}
+		}
+
+		Credit_text_parts.push_back(credits_text);
+
+		Credits_parsed = true;
 	}
-
-	Credit_text_parts.push_back(credits_text);
-
-	Credits_parsed = true;
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 void credits_parse()

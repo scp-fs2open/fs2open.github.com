@@ -164,7 +164,7 @@ int parse_ship_start()
 
 void parse_hud_gauges_tbl(const char *filename)
 {
-	int i, rval;
+	int i;
 	char *saved_Mp = NULL;
 
 	int colors[3] = {255, 255, 255};
@@ -174,110 +174,108 @@ void parse_hud_gauges_tbl(const char *filename)
 	color *ship_clr_p = NULL;
 	bool scale_gauge = true;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
-	}
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
 
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	if(optional_string("$Load Retail Configuration:")) {
-		stuff_boolean(&Hud_retail);
-	}
-
-	if ( optional_string("$Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-		gr_init_alphacolor(&hud_color, colors[0], colors[1], colors[2], 255);
-		hud_clr_p = &hud_color;
-	}
-
-	if(optional_string("$Font:")) {
-		stuff_int(&Hud_font);
-	}
-	
-	if(optional_string("$Max Directives:")) {
-		stuff_int(&Max_directives);
-	}
-
-	if(optional_string("$Max Escort Ships:")) {
-		stuff_int(&Max_escort_ships);
-	}
-
-	if(optional_string("$Length Unit Multiplier:"))	{
-		stuff_float(&Hud_unit_multiplier);
-
-		if (Hud_unit_multiplier <= 0.0f) {
-			Warning(LOCATION, "\"$Length Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
-			Hud_unit_multiplier = 1.0f;
+		if (optional_string("$Load Retail Configuration:")) {
+			stuff_boolean(&Hud_retail);
 		}
-	}
 
-	if(optional_string("$Speed Unit Multiplier:")) {
-		stuff_float(&Hud_speed_multiplier);
+		if (optional_string("$Color:")) {
+			stuff_int_list(colors, 3);
 
-		if (Hud_speed_multiplier <= 0.0f) {
-			Warning(LOCATION, "\"$Speed Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_speed_multiplier);
-			Hud_speed_multiplier = 1.0f;
+			check_color(colors);
+			gr_init_alphacolor(&hud_color, colors[0], colors[1], colors[2], 255);
+			hud_clr_p = &hud_color;
 		}
-	} else {
-		Hud_speed_multiplier = Hud_unit_multiplier;
-	} 
 
-	if (optional_string("$Wireframe Targetbox:")) {
-		stuff_int(&Targetbox_wire);
-		if ((Targetbox_wire < 0) || (Targetbox_wire > 3)) {
-			Targetbox_wire = 0;
+		if (optional_string("$Font:")) {
+			stuff_int(&Hud_font);
 		}
-	}
 
-	if (optional_string("$Targetbox Shader Effect:")) {
-		stuff_int(&Targetbox_shader_effect);
-		if (Targetbox_shader_effect < 0) {
-			Targetbox_shader_effect = 0;
+		if (optional_string("$Max Directives:")) {
+			stuff_int(&Max_directives);
 		}
-	}
 
-	if (optional_string("$Lock Wireframe Mode:")) {
-		stuff_boolean(&Lock_targetbox_mode);
-	}
+		if (optional_string("$Max Escort Ships:")) {
+			stuff_int(&Max_escort_ships);
+		}
 
-	if (optional_string("$Scale Gauges:")) {
-		stuff_boolean(&scale_gauge);
-		Scale_retail_gauges = scale_gauge;
-	}
+		if (optional_string("$Length Unit Multiplier:"))	{
+			stuff_float(&Hud_unit_multiplier);
 
-	if(optional_string("$Reticle Style:")) {
-		int temp = required_string_either("FS1", "FS2"); 
+			if (Hud_unit_multiplier <= 0.0f) {
+				Warning(LOCATION, "\"$Length Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
+				Hud_unit_multiplier = 1.0f;
+			}
+		}
 
-		// using require_string_either won't advance the Mp pointer to the next token so force it instead
-		skip_to_start_of_string("#Gauge Config");
+		if (optional_string("$Speed Unit Multiplier:")) {
+			stuff_float(&Hud_speed_multiplier);
 
-		if (temp < 0)
-			Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
-		else
-			Hud_reticle_style = temp;
-	}
+			if (Hud_speed_multiplier <= 0.0f) {
+				Warning(LOCATION, "\"$Speed Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_speed_multiplier);
+				Hud_speed_multiplier = 1.0f;
+			}
+		}
+		else {
+			Hud_speed_multiplier = Hud_unit_multiplier;
+		}
 
-	int base_res[2];
-	int ship_idx = -1;
-	int ship_font = -1;
-	int gauge_type = -1;
-	int use_font = -1;
-	color *use_clr_p = NULL;
-	SCP_vector<int> ship_classes;
-	bool retail_config = false;
-	int n_ships = 0;
+		if (optional_string("$Wireframe Targetbox:")) {
+			stuff_int(&Targetbox_wire);
+			if ((Targetbox_wire < 0) || (Targetbox_wire > 3)) {
+				Targetbox_wire = 0;
+			}
+		}
 
-	while(optional_string("#Gauge Config")) {
-		ship_classes.clear();
-		switch (optional_string_either("$Ship:", "$Ships:")) {
+		if (optional_string("$Targetbox Shader Effect:")) {
+			stuff_int(&Targetbox_shader_effect);
+			if (Targetbox_shader_effect < 0) {
+				Targetbox_shader_effect = 0;
+			}
+		}
+
+		if (optional_string("$Lock Wireframe Mode:")) {
+			stuff_boolean(&Lock_targetbox_mode);
+		}
+
+		if (optional_string("$Scale Gauges:")) {
+			stuff_boolean(&scale_gauge);
+			Scale_retail_gauges = scale_gauge;
+		}
+
+		if (optional_string("$Reticle Style:")) {
+			int temp = required_string_either("FS1", "FS2");
+
+			// using require_string_either won't advance the Mp pointer to the next token so force it instead
+			skip_to_start_of_string("#Gauge Config");
+
+			if (temp < 0)
+				Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
+			else
+				Hud_reticle_style = temp;
+		}
+
+		int base_res[2];
+		int ship_idx = -1;
+		int ship_font = -1;
+		int gauge_type = -1;
+		int use_font = -1;
+		color *use_clr_p = NULL;
+		SCP_vector<int> ship_classes;
+		bool retail_config = false;
+		int n_ships = 0;
+
+		while (optional_string("#Gauge Config")) {
+			ship_classes.clear();
+			switch (optional_string_either("$Ship:", "$Ships:")) {
 			case 0:
 				mprintf(("$Ship in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Ships: (\"Some ship class\") instead.\n"));
 
-				if(!ships_inited) {
+				if (!ships_inited) {
 					// just in case ship info has not been initialized.
 					skip_to_start_of_string("#Gauge Config");
 					continue;
@@ -287,15 +285,15 @@ void parse_hud_gauges_tbl(const char *filename)
 				ship_idx = parse_ship_start();
 				ship_classes.push_back(ship_idx);
 
-				if(ship_idx >= 0) {
+				if (ship_idx >= 0) {
 					Ship_info[ship_idx].hud_enabled = true;
 
 					// see if we need to load defaults for this configuration
-					if(optional_string("$Load Retail Configuration:")) {
+					if (optional_string("$Load Retail Configuration:")) {
 						stuff_boolean(&Ship_info[ship_idx].hud_retail);
 					}
 
-					if ( optional_string("$Color:") ) {
+					if (optional_string("$Color:")) {
 						stuff_int_list(colors, 3);
 
 						check_color(colors);
@@ -303,10 +301,11 @@ void parse_hud_gauges_tbl(const char *filename)
 						ship_clr_p = &ship_color;
 					}
 
-					if(optional_string("$Font:")) {
+					if (optional_string("$Font:")) {
 						stuff_int(&ship_font);
 					}
-				} else {
+				}
+				else {
 					// can't find ship class. move on.
 					ship_classes.push_back(-1);
 					skip_to_start_of_string("#Gauge Config");
@@ -319,7 +318,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				n_ships = stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
 
-				if(optional_string("$Load Retail Configuration:")) {
+				if (optional_string("$Load Retail Configuration:")) {
 					stuff_boolean(&retail_config);
 				}
 
@@ -329,7 +328,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					Ship_info[shiparray[i]].hud_retail = retail_config;
 				}
 
-				if ( optional_string("$Color:") ) {
+				if (optional_string("$Color:")) {
 					stuff_int_list(colors, 3);
 
 					check_color(colors);
@@ -337,119 +336,131 @@ void parse_hud_gauges_tbl(const char *filename)
 					ship_clr_p = &ship_color;
 				}
 
-				if(optional_string("$Font:")) {
+				if (optional_string("$Font:")) {
 					stuff_int(&ship_font);
 				}
 				break;
 			default:
-			// No particular ship. -1 for default HUD configuration.
-			ship_classes.push_back(-1);
-			ship_font = -1;
-			ship_clr_p = NULL;
-			break; 
-		}
+				// No particular ship. -1 for default HUD configuration.
+				ship_classes.push_back(-1);
+				ship_font = -1;
+				ship_clr_p = NULL;
+				break;
+			}
 
-		if ( ship_clr_p != NULL ) {
-			use_clr_p = ship_clr_p;
-		} else {
-			use_clr_p = hud_clr_p;
-		}
+			if (ship_clr_p != NULL) {
+				use_clr_p = ship_clr_p;
+			}
+			else {
+				use_clr_p = hud_clr_p;
+			}
 
-		if(ship_font >= 0) {
-			use_font = ship_font;
-		} else {
-			use_font = Hud_font;
-		}
+			if (ship_font >= 0) {
+				use_font = ship_font;
+			}
+			else {
+				use_font = Hud_font;
+			}
 
-		// Now start going through resolution info for this HUD layout
-		required_string("$Base:");
+			// Now start going through resolution info for this HUD layout
+			required_string("$Base:");
 
-		// get the base width and height describing this HUD
-		stuff_int_list(base_res, 2, RAW_INTEGER_TYPE);
+			// get the base width and height describing this HUD
+			stuff_int_list(base_res, 2, RAW_INTEGER_TYPE);
 
-		// gauge scaling for this base res?
-		if (optional_string("$Scale Gauges:")) {
-			stuff_boolean(&scale_gauge);
-		}
+			// gauge scaling for this base res?
+			if (optional_string("$Scale Gauges:")) {
+				stuff_boolean(&scale_gauge);
+			}
 
-		// Pruning time. Let's see if the current resolution defined by the user matches the conditions set by this entry
-		if(optional_string("$Required Aspect:")) {
-			// filter aspect ratio.
-			if(optional_string("Full Screen")) {
-				if( (float)gr_screen.max_w / (float)gr_screen.max_h > 1.5) {
-					skip_to_start_of_string("#Gauge Config");
-					//skip_to_start_of_string_either("#Gauge Config", "#End");
-					continue;
+			// Pruning time. Let's see if the current resolution defined by the user matches the conditions set by this entry
+			if (optional_string("$Required Aspect:")) {
+				// filter aspect ratio.
+				if (optional_string("Full Screen")) {
+					if ((float)gr_screen.max_w / (float)gr_screen.max_h > 1.5) {
+						skip_to_start_of_string("#Gauge Config");
+						//skip_to_start_of_string_either("#Gauge Config", "#End");
+						continue;
+					}
 				}
-			} else if(optional_string("Wide Screen")) {
-				if( (float)gr_screen.max_w / (float)gr_screen.max_h <= 1.5) {
-					skip_to_start_of_string("#Gauge Config");
-					//skip_to_start_of_string_either("#Gauge Config", "#End");
-					continue;
-				}
-			} 
-		}
-		
-		// check minimum resolution
-		if(optional_string("$Min:")) {
-			int min_res[2];
-			stuff_int_list(min_res, 2, RAW_INTEGER_TYPE);
-			
-			if(min_res[0] > gr_screen.max_w) {
-				skip_to_start_of_string("#Gauge Config");
-				continue;
-			} else if (min_res[0] == gr_screen.max_w) {
-				if(min_res[1] > gr_screen.max_h) {
-					skip_to_start_of_string("#Gauge Config");
-					continue;
+				else if (optional_string("Wide Screen")) {
+					if ((float)gr_screen.max_w / (float)gr_screen.max_h <= 1.5) {
+						skip_to_start_of_string("#Gauge Config");
+						//skip_to_start_of_string_either("#Gauge Config", "#End");
+						continue;
+					}
 				}
 			}
-		}
 
-		// check maximum resolution
-		if(optional_string("$Max:")) {
-			int max_res[2];
-			stuff_int_list(max_res, 2, RAW_INTEGER_TYPE);
+			// check minimum resolution
+			if (optional_string("$Min:")) {
+				int min_res[2];
+				stuff_int_list(min_res, 2, RAW_INTEGER_TYPE);
 
-			if(max_res[0] < gr_screen.max_w) {
-				skip_to_start_of_string("#Gauge Config");
-				continue;
-			} else if (max_res[0] == gr_screen.max_w) {
-				if(max_res[1] < gr_screen.max_h) {
+				if (min_res[0] > gr_screen.max_w) {
 					skip_to_start_of_string("#Gauge Config");
 					continue;
 				}
+				else if (min_res[0] == gr_screen.max_w) {
+					if (min_res[1] > gr_screen.max_h) {
+						skip_to_start_of_string("#Gauge Config");
+						continue;
+					}
+				}
 			}
+
+			// check maximum resolution
+			if (optional_string("$Max:")) {
+				int max_res[2];
+				stuff_int_list(max_res, 2, RAW_INTEGER_TYPE);
+
+				if (max_res[0] < gr_screen.max_w) {
+					skip_to_start_of_string("#Gauge Config");
+					continue;
+				}
+				else if (max_res[0] == gr_screen.max_w) {
+					if (max_res[1] < gr_screen.max_h) {
+						skip_to_start_of_string("#Gauge Config");
+						continue;
+					}
+				}
+			}
+
+			// let's start parsing for gauges.
+			required_string("$Gauges:");
+
+			while (!check_for_string("$Gauges:") && !check_for_string("$End Gauges")) {
+				// find out what type of gauge we're parsing.
+				gauge_type = parse_gauge_type();
+
+				// then call the specific gauge load handler function for this gauge type.
+				if (optional_string("default")) {
+					// sending -1 base width and height will indicate GR_640 or GR_1024 to the handlers
+					load_gauge(gauge_type, -1, -1, use_font, scale_gauge, &ship_classes, use_clr_p);
+				}
+				else {
+					load_gauge(gauge_type, base_res[0], base_res[1], use_font, scale_gauge, &ship_classes, use_clr_p);
+				}
+
+				if (saved_Mp && (saved_Mp == Mp)) {
+					Mp++;
+				}
+
+				skip_to_start_of_string_either("$", "+");
+				// stolened from AI_profiles
+				// if we've been through once already and are at the same place, force a move
+
+				saved_Mp = Mp;
+			}
+
+			required_string("$End Gauges");
+			required_string("#End");
 		}
-
-		// let's start parsing for gauges.
-		required_string("$Gauges:");
-
-		while (!check_for_string("$Gauges:") && !check_for_string("$End Gauges")) {
-			// find out what type of gauge we're parsing.
-			gauge_type = parse_gauge_type();
-
-			// then call the specific gauge load handler function for this gauge type.
-			if(optional_string("default")) {
-				// sending -1 base width and height will indicate GR_640 or GR_1024 to the handlers
-				load_gauge(gauge_type, -1, -1, use_font, scale_gauge, &ship_classes, use_clr_p);
-			} else {
-				load_gauge(gauge_type, base_res[0], base_res[1], use_font, scale_gauge, &ship_classes, use_clr_p);
-			}
-
-			if ( saved_Mp && (saved_Mp == Mp) ) {
-				Mp++;
-			}
-
-			skip_to_start_of_string_either("$", "+");
-			// stolened from AI_profiles
-			// if we've been through once already and are at the same place, force a move
-
-			saved_Mp = Mp;
-		}
-
-		required_string("$End Gauges");
-		required_string("#End");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
 	}
 }
 

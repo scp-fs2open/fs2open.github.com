@@ -648,19 +648,22 @@ void parse_msgtbl()
 // this is called at the start of each level
 void messages_init()
 {
-	int rval, i;
+	int i;
 	static int table_read = 0;
 
 	if ( !table_read ) {
 		Default_command_persona = -1;
-
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "messages.tbl", rval));
+		
+		try
+		{
+			parse_msgtbl();
+			table_read = 1;
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "messages.tbl", e.what()));
 			return;
 		}
-
-		parse_msgtbl();
-		table_read = 1;
 	}
 
 	Current_mission_mood = 0;
@@ -1914,7 +1917,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	char *who_from;
 	int best_match = -1;
 
-	matching_builtin *current_builtin = new matching_builtin(); 
+	matching_builtin current_builtin;
 	SCP_vector <matching_builtin> matching_builtins; 
 
 
@@ -1976,52 +1979,52 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		// check the type of message
 		if ( !stricmp(Messages[i].name, name) ) {
 			// condition 1: we have a type match
-			current_builtin->message_index = i;
-			current_builtin->type_of_match =  BUILTIN_MATCHES_TYPE; 
+			current_builtin.message_index = i;
+			current_builtin.type_of_match =  BUILTIN_MATCHES_TYPE; 
 
 			// check the species of this persona (if required)
 			if ( (persona_species >= 0) && (Personas[Messages[i].persona_index].species == persona_species) ) {
 				// condition 2: we have a type + species match
-				current_builtin->type_of_match =  BUILTIN_MATCHES_SPECIES; 
+				current_builtin.type_of_match =  BUILTIN_MATCHES_SPECIES; 
 			}
 
 			// check the exact persona (if required)
 			// NOTE: doesn't need to be nested under the species condition above
 			if ( (persona_index >= 0) && (Messages[i].persona_index == persona_index) ) {
 				// condition 3: type + species + persona index match	
-				current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA_CHECK_MOOD; 
+				current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_CHECK_MOOD; 
 			}
 
 			// check if the personas mood suits this particular message, first check if it is excluded
-			if (!Messages[i].excluded_moods.empty() && (current_builtin->type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD)) {
+			if (!Messages[i].excluded_moods.empty() && (current_builtin.type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD)) {
 				for (SCP_vector<int>::iterator iter = Messages[i].excluded_moods.begin(); iter != Messages[i].excluded_moods.end(); ++iter) {
 					if (*iter == Current_mission_mood) {
-						current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA_EXCLUDED; 
+						current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_EXCLUDED; 
 						break; 
 					}
 				}
 			}
 
-			if (current_builtin->type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD) {
+			if (current_builtin.type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD) {
 				if (Current_mission_mood == Messages[i].mood) {
-					current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA_MOOD; 
+					current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_MOOD; 
 				}
 				else {
-					current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA; 
+					current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA; 
 				}
 			}			
 
-			if (current_builtin->type_of_match == best_match) {
+			if (current_builtin.type_of_match == best_match) {
 				num_matching_builtins++;
 			}
 			// otherwise check to see if the this is the best kind of match we've found so far
-			else if (current_builtin->type_of_match > best_match) {
-				best_match = current_builtin->type_of_match; 
+			else if (current_builtin.type_of_match > best_match) {
+				best_match = current_builtin.type_of_match; 
 				num_matching_builtins = 1;
 			}
 
 			// add the match to our list
-			matching_builtins.push_back(*current_builtin); 
+			matching_builtins.push_back(current_builtin); 
 		}
 	}
 

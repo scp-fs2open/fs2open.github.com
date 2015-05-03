@@ -693,82 +693,82 @@ static SCP_vector<species_info> missingFlybySounds;
 
 void parse_sound_table(const char* filename)
 {
-	int	rval;
-
-	if ((rval = setjmp(parse_abort)) != 0)
+	try
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
+
+		// Parse the gameplay sounds section
+		if (optional_string("#Game Sounds Start"))
+		{
+			while (!check_for_string("#Game Sounds End"))
+			{
+				game_snd tempSound;
+				if (gamesnd_parse_line(&tempSound, "$Name:", &Snds))
+				{
+					Snds.push_back(game_snd(tempSound));
+				}
+			}
+
+			required_string("#Game Sounds End");
+		}
+
+		// Parse the interface sounds section
+		if (optional_string("#Interface Sounds Start"))
+		{
+			while (!check_for_string("#Interface Sounds End"))
+			{
+				game_snd tempSound;
+				if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface))
+				{
+					Snds_iface.push_back(game_snd(tempSound));
+					Snds_iface_handle.push_back(-1);
+				}
+			}
+
+			required_string("#Interface Sounds End");
+		}
+
+		// parse flyby sound section	
+		if (optional_string("#Flyby Sounds Start"))
+		{
+			char species_name_tag[NAME_LENGTH + 2];
+			int	sanity_check = 0;
+			size_t i;
+
+			while (!check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()))
+			{
+				for (i = 0; i < Species_info.size(); i++)
+				{
+					species_info *species = &Species_info[i];
+
+					sprintf(species_name_tag, "$%s:", species->species_name);
+
+					if (check_for_string(species_name_tag))
+					{
+						gamesnd_parse_line(&species->snd_flyby_fighter, species_name_tag);
+						gamesnd_parse_line(&species->snd_flyby_bomber, species_name_tag);
+						sanity_check--;
+					}
+					else
+					{
+						sanity_check++;
+					}
+				}
+			}
+
+			required_string("#Flyby Sounds End");
+		}
+
+		if (optional_string("#Sound Environments Start"))
+		{
+			parse_sound_environments();
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
-	}
-
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	// Parse the gameplay sounds section
-	if (optional_string("#Game Sounds Start"))
-	{
-		while (!check_for_string("#Game Sounds End"))
-		{
-			game_snd tempSound;
-			if (gamesnd_parse_line(&tempSound, "$Name:", &Snds))
-			{
-				Snds.push_back(game_snd(tempSound));
-			}
-		}
-
-		required_string("#Game Sounds End");
-	}
-
-	// Parse the interface sounds section
-	if (optional_string("#Interface Sounds Start"))
-	{
-		while (!check_for_string("#Interface Sounds End"))
-		{
-			game_snd tempSound;
-			if (gamesnd_parse_line( &tempSound, "$Name:", &Snds_iface))
-			{
-				Snds_iface.push_back(game_snd(tempSound));
-				Snds_iface_handle.push_back(-1);
-			}
-		}
-
-		required_string("#Interface Sounds End");
-	}
-
-	// parse flyby sound section	
-	if (optional_string("#Flyby Sounds Start"))
-	{
-		char species_name_tag[NAME_LENGTH + 2];
-		int	sanity_check = 0;
-		size_t i;
-
-		while (!check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()))
-		{
-			for (i = 0; i < Species_info.size(); i++)
-			{
-				species_info *species = &Species_info[i];
-
-				sprintf(species_name_tag, "$%s:", species->species_name);
-
-				if (check_for_string(species_name_tag))
-				{
-					gamesnd_parse_line(&species->snd_flyby_fighter, species_name_tag);
-					gamesnd_parse_line(&species->snd_flyby_bomber, species_name_tag);
-					sanity_check--;
-				}
-				else
-				{
-					sanity_check++;
-				}
-			}
-		}
-
-		required_string("#Flyby Sounds End");
-	}
-
-	if (optional_string("#Sound Environments Start"))
-	{
-		parse_sound_environments();
 	}
 }
 

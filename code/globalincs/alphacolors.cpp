@@ -273,71 +273,74 @@ void parse_colors(const char *filename)
 {
 	Assertion(filename != NULL, "parse_colors() called on NULL; get a coder!\n");
 	read_file_text(filename, CF_TYPE_TABLES);
-
-	int err_code;
-	if ((err_code = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %d.\n", filename, err_code));
-		return;
-	}
-
-	reset_parse();
-
-	// we search for the colors based on their order of definition above
-	// if the color isn't found, we just use default values
-	if (optional_string("#Start Colors"))
+	
+	try
 	{
-		// vars for holding rgba values
-		int rgba[4] = {0,0,0,0};
-		int i, j;
+		reset_parse();
 
-		char* color_names[TOTAL_COLORS] = {
-			"$Blue:",
-			"$Bright Blue:",
-			"$Green:",
-			"$Bright Green:",
-			"$Black:",
-			"$Grey:",
-			"$Silver:",
-			"$White:",
-			"$Bright White:",
-			"$Violet Gray:",
-			"$Violet:",
-			"$Dim Red:",
-			"$Red:",
-			"$Bright Red:",
-			"$Pink:",
-			"$Light Pink:",
-			"$Yellow:",
-			"$Bright Yellow:",
-			"$UI Light Green:",
-			"$UI Green:",
-			"$UI Light Pink:",
-			"$UI Pink:"
-		};
+		// we search for the colors based on their order of definition above
+		// if the color isn't found, we just use default values
+		if (optional_string("#Start Colors"))
+		{
+			// vars for holding rgba values
+			int rgba[4] = { 0, 0, 0, 0 };
+			int i, j;
 
-		// now for each color, check if it's corresponding string is there
-		for (i = 0; i < TOTAL_COLORS; i++) {
-			if (optional_string(color_names[i])) {
-				// if so, get its rgba values and initialise it using them
-				mprintf(("'%s' has been redefined.\n", color_names[i]));
-				//if (check_for_string("(")) {
+			char* color_names[TOTAL_COLORS] = {
+				"$Blue:",
+				"$Bright Blue:",
+				"$Green:",
+				"$Bright Green:",
+				"$Black:",
+				"$Grey:",
+				"$Silver:",
+				"$White:",
+				"$Bright White:",
+				"$Violet Gray:",
+				"$Violet:",
+				"$Dim Red:",
+				"$Red:",
+				"$Bright Red:",
+				"$Pink:",
+				"$Light Pink:",
+				"$Yellow:",
+				"$Bright Yellow:",
+				"$UI Light Green:",
+				"$UI Green:",
+				"$UI Light Pink:",
+				"$UI Pink:"
+			};
+
+			// now for each color, check if it's corresponding string is there
+			for (i = 0; i < TOTAL_COLORS; i++) {
+				if (optional_string(color_names[i])) {
+					// if so, get its rgba values and initialise it using them
+					mprintf(("'%s' has been redefined.\n", color_names[i]));
+					//if (check_for_string("(")) {
 					stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
 					for (j = 0; j < 4; j++) {
 						if (rgba[j] < 0) {
 							Warning(LOCATION, "RGBA value for '%s' in %s too low (%d), capping to 0.\n", color_names[i], filename, rgba[j]);
 							rgba[j] = 0;
-						} else if (rgba[j] > 255) {
+						}
+						else if (rgba[j] > 255) {
 							Warning(LOCATION, "RGBA value for '%s' in %s too high (%d), capping to 255.\n", color_names[i], filename, rgba[j]);
 							rgba[j] = 255;
 						}
 					}
-				//} else {
-				//	stuff_hex_list(rgba, 4);
-				//}
-				gr_init_alphacolor(COLOR_LIST[i], rgba[0], rgba[1], rgba[2], rgba[3]);
+					//} else {
+					//	stuff_hex_list(rgba, 4);
+					//}
+					gr_init_alphacolor(COLOR_LIST[i], rgba[0], rgba[1], rgba[2], rgba[3]);
+				}
 			}
+			required_string("#End");
 		}
-		required_string("#End");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
 	}
 }
 
@@ -346,281 +349,290 @@ void parse_everything_else(const char *filename)
 	Assertion(filename != NULL, "parse_everything_else() called on NULL; get a coder!\n");
 	read_file_text(filename, CF_TYPE_TABLES);
 
-	int err_code;
-	if ((err_code = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %d.\n", filename, err_code));
-		return;
-	}
+	try
+	{
+		reset_parse();
 
-	reset_parse();
+		int rgba[4] = { 0, 0, 0, 0 };
 
-	int rgba[4] = {0,0,0,0};
+		// reusable temp vars
+		int i, j;
+		SCP_string temp;
 
-	// reusable temp vars
-	int i, j;
-	SCP_string temp;
-
-	if (optional_string("#Start Colors")) {
-		// Skip this section; we already parsed it in every file.
-		skip_to_string("#End", NULL);
-	}
-
-	//Team coloring
-	if (optional_string("#Team Colors")) {
-
-		while (required_string_either("#End", "$Team Name:")) {
-			required_string("$Team Name:"); // required to move the parse pointer forward
-			team_color temp_color;
-
-			char temp2[NAME_LENGTH];
-			stuff_string(temp2, F_NAME, NAME_LENGTH);
-			temp = temp2;
-
-			if (!stricmp(temp2, "none")) {
-				Warning(LOCATION, "Team color in '%s' defined with a name of '%s'; this won't be usable due to 'None' being used for a lack of a team color by the engine.\n", filename, temp2);
-			}
-
-			if (required_string("$Team Stripe Color:")) {
-				int rgb[3];
-				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-				for (i = 0; i < 3; i++) {
-					CLAMP(rgb[i], 0, 255);
-				}
-				
-				temp_color.stripe.r = rgb[0] / 255.0f;
-				temp_color.stripe.g = rgb[1] / 255.0f;
-				temp_color.stripe.b = rgb[2] / 255.0f;
-			}
-
-			if (required_string("$Team Base Color:")) {
-				int rgb[3];
-				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-				for (i = 0; i < 3; i++) {
-					CLAMP(rgb[i], 0, 255);
-				}
-
-				temp_color.base.r = rgb[0] / 255.0f;
-				temp_color.base.g = rgb[1] / 255.0f;
-				temp_color.base.b = rgb[2] / 255.0f;
-			}
-
-			if (Team_Colors.find(temp) == Team_Colors.end()) {	// Only push to the vector if the team isn't already defined.
-				Team_Names.push_back(temp);
-			}
-			Team_Colors[temp] = temp_color;
-		}
-		required_string("#End");
-	}
-
-	// Previously-hardcoded interface colors
-	if (optional_string("#Interface Colors")) {
-		char *color_names[INTERFACE_COLORS] = {
-			"$Text Normal:",
-			"$Text Subselected:",
-			"$Text Selected:",
-			"$Text Error:",
-			"$Text Error Highlighted:",
-			"$Text Active:",
-			"$Text Active Highlighted:",
-			"$Text Heading:",
-			"$More Indicator:",
-			"$Bright More Indicator:",
-			"$Bright:",
-			"$Normal:",
-			"$Briefing Grid:",
-		};
-
-		// now for each color, check if its corresponding string is there
-		for (i = 0; i < INTERFACE_COLORS; i++) {
-			if (optional_string(color_names[i])) {
-				// if so, get its rgba values and initialise it using them
-				mprintf(("'%s' has been redefined.\n", color_names[i]));
-				if ( check_for_string("(") ) {
-					// If we have a list of integers, use them.
-					stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
-					for (j = 0; j < 4; j++) {
-						if (rgba[j] < 0)
-						{
-							Warning(LOCATION, "RGBA value for '%s' in %s too low (%d), capping to 0.\n", color_names[i], filename, rgba[j]);
-							rgba[j] = 0;
-						}
-						else if (rgba[j] > 255)
-						{
-							Warning(LOCATION, "RGBA value for '%s' in %s too high (%d), capping to 255.\n", color_names[i], filename, rgba[j]);
-							rgba[j] = 255;
-						}
-					}
-					gr_init_alphacolor(interface_colors[i], rgba[0], rgba[1], rgba[2], rgba[3]);
-				//} else if (check_for_string("#")) {
-				//	stuff_hex_list(rgba, 4);
-				//	gr_init_alphacolor(interface_colors[i], rgba[0], rgba[1], rgba[2], rgba[3]);
-				} else {
-					// We have a string; it should be the name of a color to use.
-					stuff_string(temp, F_NAME);
-					for (j = 0; j < TOTAL_COLORS; j++) {
-						if ( !temp.compare(COLOR_NAMES[j]) ) {
-							break;
-						}
-					}
-					if ( j == TOTAL_COLORS ) {
-						Warning(LOCATION, "Unknown color '%s' in %s, for definition of '%s'; using default ('%s').\n", temp.c_str(), filename, color_names[i], COLOR_NAMES[interface_defaults[i]]);
-					} else {
-						Assertion(j >= 0 && j < TOTAL_COLORS, "Attempting to copy nonexistant color (%d out of 0-%d)!\n", j, TOTAL_COLORS-1);
-						memcpy(interface_colors[i], COLOR_LIST[j], sizeof(color));
-					}
-				}
-			}
-		}
-		required_string("#End");
-	}
-
-	// Text color tags; for briefings, command briefings, debriefings, and the fiction viewer
-	if (optional_string("#Color Tags")) {
-		while (required_string_either("$Tag:", "#End") < 1) {
-			required_string("$Tag:");
-			color temp_color;
-			char tag;
-
-			stuff_string(temp, F_RAW);
-			if (temp[0] == '$') {
-				if (temp[1] == '\0') {
-					Error(LOCATION, "%s - found a '$Tag:' entry with a solitary '$'.\n", filename);
-				}
-				tag = temp[1];
-				if (temp[2] != '\0') {
-					Warning(LOCATION, "%s - tag '$%c' has extra text in its definition.\n", filename, tag);
-				}
-			} else if (temp[0] == '\0') {
-				Error(LOCATION, "%s - found a '$Tag:' entry with no tag.\n", filename);
-			} else {
-				tag = temp[0];
-				if (temp[1] != '\0') {
-					Warning(LOCATION, "%s - tag '$%c' has extra text in its definition.\n", filename, tag);
-				}
-			}
-
-			if (Tagged_Colors.find(tag) == Tagged_Colors.end()) {	// Only push the tag to our list of tags if it's actually new, not just a redefinition.
-				Color_Tags.push_back(tag);
-			}
-
-			switch(required_string_one_of(4, "+Color:", "+Friendly", "+Hostile", "+Neutral")) {
-			case 0:	// +Color
-				required_string("+Color:");
-
-				rgba[0] = rgba[1] = rgba[2] = 0;
-				rgba[3] = 255;	// Odds are pretty high you want it to have full alpha...
-
-				if ( check_for_string("(") ) {
-					stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
-					for (j = 0; j < 4; j++) {
-						if (rgba[j] < 0)
-						{
-							Warning(LOCATION, "RGBA value for '$%c' in %s too low (%d), capping to 0.\n", tag, filename, rgba[j]);
-							rgba[j] = 0;
-						}
-						else if (rgba[j] > 255)
-						{
-							Warning(LOCATION, "RGBA value for '$%c' in %s too high (%d), capping to 255.\n", tag, filename, rgba[j]);
-							rgba[j] = 255;
-						}
-					}
-					gr_init_alphacolor(&temp_color, rgba[0], rgba[1], rgba[2], rgba[3]);
-					Custom_Colors[tag] = temp_color;
-					Tagged_Colors[tag] = &Custom_Colors[tag];
-				//} else if ( check_for_string ("#") ) {
-				//	stuff_hex_list(rgba, 4);
-				//	gr_init_alphacolor(&temp_color, rgba[0], rgba[1], rgba[2], rgba[3]);
-				//	Custom_Colors[tag] = temp_color;
-				//	Tagged_Colors[tag] = &Custom_Colors[tag];
-				} else {
-					// We have a string; it should be the name of a color to use.
-					stuff_string(temp, F_NAME);
-					for (j = 0; j < TOTAL_COLORS; j++) {
-						if ( !temp.compare(COLOR_NAMES[j]) ) {
-							break;
-						}
-					}
-					if ( j == TOTAL_COLORS ) {
-						Error(LOCATION, "Unknown color '%s' in %s, for definition of tag '$%c'.\n", temp.c_str(), filename, tag);
-					}
-					Tagged_Colors[tag] = COLOR_LIST[j];
-				}
-				break;
-			case 1:	// +Friendly
-				required_string("+Friendly");
-				Tagged_Colors[tag] = &Brief_color_green;
-				break;
-			case 2:	// +Hostile
-				required_string("+Hostile");
-				Tagged_Colors[tag] = &Brief_color_red;
-				break;
-			case 3:	// +Neutral
-				required_string("+Neutral");
-				Tagged_Colors[tag] = &Brief_color_legacy_neutral;
-				break;
-			case -1:
-				// -noparseerrors is set
-				if (Tagged_Colors.find(tag) == Tagged_Colors.end()) {	// It was a new color, but since we haven't actually defined it...
-					Color_Tags.pop_back();
-				}
-				break;
-			default:
-				Assertion(false, "MageKing17 made a coding error somewhere, and you should laugh at him (and report this error).\n");
-				break;
-			}
+		if (optional_string("#Start Colors")) {
+			// Skip this section; we already parsed it in every file.
+			skip_to_string("#End", NULL);
 		}
 
-		required_string("#End");
-	}
-	Assertion(Color_Tags.size() == Tagged_Colors.size(), "Color_Tags and Tagged_Colors size mismatch; get a coder!\n");
+		//Team coloring
+		if (optional_string("#Team Colors")) {
 
-	if (optional_string("#Default Text Colors")) {
+			while (required_string_either("#End", "$Team Name:")) {
+				required_string("$Team Name:"); // required to move the parse pointer forward
+				team_color temp_color;
 
-		char* color_names[MAX_DEFAULT_TEXT_COLORS] = {
-			"$Fiction Viewer:",
-			"$Command Briefing:",
-			"$Briefing:",
-			"$Redalert Briefing:",
-			"$Debriefing:",
-			"$Recommendation:",
-			"$Loop Briefing:",
-		};
+				char temp2[NAME_LENGTH];
+				stuff_string(temp2, F_NAME, NAME_LENGTH);
+				temp = temp2;
 
-		char *color_value[MAX_DEFAULT_TEXT_COLORS] = {
-			&default_fiction_viewer_color,
-			&default_command_briefing_color,
-			&default_briefing_color,
-			&default_redalert_briefing_color,
-			&default_debriefing_color,
-			&default_recommendation_color,
-			&default_loop_briefing_color,
-		};
+				if (!stricmp(temp2, "none")) {
+					Warning(LOCATION, "Team color in '%s' defined with a name of '%s'; this won't be usable due to 'None' being used for a lack of a team color by the engine.\n", filename, temp2);
+				}
 
-		for (i = 0; i < MAX_DEFAULT_TEXT_COLORS; i++) {
-			if ( optional_string(color_names[i]) ) {
+				if (required_string("$Team Stripe Color:")) {
+					int rgb[3];
+					stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+					for (i = 0; i < 3; i++) {
+						CLAMP(rgb[i], 0, 255);
+					}
+
+					temp_color.stripe.r = rgb[0] / 255.0f;
+					temp_color.stripe.g = rgb[1] / 255.0f;
+					temp_color.stripe.b = rgb[2] / 255.0f;
+				}
+
+				if (required_string("$Team Base Color:")) {
+					int rgb[3];
+					stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+					for (i = 0; i < 3; i++) {
+						CLAMP(rgb[i], 0, 255);
+					}
+
+					temp_color.base.r = rgb[0] / 255.0f;
+					temp_color.base.g = rgb[1] / 255.0f;
+					temp_color.base.b = rgb[2] / 255.0f;
+				}
+
+				if (Team_Colors.find(temp) == Team_Colors.end()) {	// Only push to the vector if the team isn't already defined.
+					Team_Names.push_back(temp);
+				}
+				Team_Colors[temp] = temp_color;
+			}
+			required_string("#End");
+		}
+
+		// Previously-hardcoded interface colors
+		if (optional_string("#Interface Colors")) {
+			char *color_names[INTERFACE_COLORS] = {
+				"$Text Normal:",
+				"$Text Subselected:",
+				"$Text Selected:",
+				"$Text Error:",
+				"$Text Error Highlighted:",
+				"$Text Active:",
+				"$Text Active Highlighted:",
+				"$Text Heading:",
+				"$More Indicator:",
+				"$Bright More Indicator:",
+				"$Bright:",
+				"$Normal:",
+				"$Briefing Grid:",
+			};
+
+			// now for each color, check if its corresponding string is there
+			for (i = 0; i < INTERFACE_COLORS; i++) {
+				if (optional_string(color_names[i])) {
+					// if so, get its rgba values and initialise it using them
+					mprintf(("'%s' has been redefined.\n", color_names[i]));
+					if (check_for_string("(")) {
+						// If we have a list of integers, use them.
+						stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+						for (j = 0; j < 4; j++) {
+							if (rgba[j] < 0)
+							{
+								Warning(LOCATION, "RGBA value for '%s' in %s too low (%d), capping to 0.\n", color_names[i], filename, rgba[j]);
+								rgba[j] = 0;
+							}
+							else if (rgba[j] > 255)
+							{
+								Warning(LOCATION, "RGBA value for '%s' in %s too high (%d), capping to 255.\n", color_names[i], filename, rgba[j]);
+								rgba[j] = 255;
+							}
+						}
+						gr_init_alphacolor(interface_colors[i], rgba[0], rgba[1], rgba[2], rgba[3]);
+						//} else if (check_for_string("#")) {
+						//	stuff_hex_list(rgba, 4);
+						//	gr_init_alphacolor(interface_colors[i], rgba[0], rgba[1], rgba[2], rgba[3]);
+					}
+					else {
+						// We have a string; it should be the name of a color to use.
+						stuff_string(temp, F_NAME);
+						for (j = 0; j < TOTAL_COLORS; j++) {
+							if (!temp.compare(COLOR_NAMES[j])) {
+								break;
+							}
+						}
+						if (j == TOTAL_COLORS) {
+							Warning(LOCATION, "Unknown color '%s' in %s, for definition of '%s'; using default ('%s').\n", temp.c_str(), filename, color_names[i], COLOR_NAMES[interface_defaults[i]]);
+						}
+						else {
+							Assertion(j >= 0 && j < TOTAL_COLORS, "Attempting to copy nonexistant color (%d out of 0-%d)!\n", j, TOTAL_COLORS - 1);
+							memcpy(interface_colors[i], COLOR_LIST[j], sizeof(color));
+						}
+					}
+				}
+			}
+			required_string("#End");
+		}
+
+		// Text color tags; for briefings, command briefings, debriefings, and the fiction viewer
+		if (optional_string("#Color Tags")) {
+			while (required_string_either("$Tag:", "#End") < 1) {
+				required_string("$Tag:");
+				color temp_color;
+				char tag;
+
 				stuff_string(temp, F_RAW);
 				if (temp[0] == '$') {
 					if (temp[1] == '\0') {
-						Error(LOCATION, "%s - default text color '%s' entry with a solitary '$'.\n", filename, color_names[i]);
+						Error(LOCATION, "%s - found a '$Tag:' entry with a solitary '$'.\n", filename);
 					}
-					*color_value[i] = temp[1];
+					tag = temp[1];
 					if (temp[2] != '\0') {
-						Warning(LOCATION, "%s - default text color '%s' has extra text after the tag '$%c'.\n", filename, color_names[i], *color_value[i]);
-					}
-				} else if (temp[0] == '\0') {
-					Error(LOCATION, "%s - default text color '%s' entry with no tag.\n", filename, color_names[i]);
-				} else {
-					*color_value[i] = temp[0];
-					if (temp[1] != '\0') {
-						Warning(LOCATION, "%s - default text color '%s' has extra text after the tag '$%c'.\n", filename, color_names[i], *color_value[i]);
+						Warning(LOCATION, "%s - tag '$%c' has extra text in its definition.\n", filename, tag);
 					}
 				}
-				if (Tagged_Colors.find(*color_value[i]) == Tagged_Colors.end()) {
-					// Just mprintf() this information instead of complaining with a Warning(); the tag might be defined in a later-loading TBM, and if it isn't, nothing too terrible will happen.
-					mprintf(("%s - default text color '%s' set to non-existant tag '$%c'.\n", filename, color_names[i], *color_value[i]));
+				else if (temp[0] == '\0') {
+					Error(LOCATION, "%s - found a '$Tag:' entry with no tag.\n", filename);
+				}
+				else {
+					tag = temp[0];
+					if (temp[1] != '\0') {
+						Warning(LOCATION, "%s - tag '$%c' has extra text in its definition.\n", filename, tag);
+					}
+				}
+
+				if (Tagged_Colors.find(tag) == Tagged_Colors.end()) {	// Only push the tag to our list of tags if it's actually new, not just a redefinition.
+					Color_Tags.push_back(tag);
+				}
+
+				switch (required_string_one_of(4, "+Color:", "+Friendly", "+Hostile", "+Neutral")) {
+				case 0:	// +Color
+					required_string("+Color:");
+
+					rgba[0] = rgba[1] = rgba[2] = 0;
+					rgba[3] = 255;	// Odds are pretty high you want it to have full alpha...
+
+					if (check_for_string("(")) {
+						stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+						for (j = 0; j < 4; j++) {
+							if (rgba[j] < 0)
+							{
+								Warning(LOCATION, "RGBA value for '$%c' in %s too low (%d), capping to 0.\n", tag, filename, rgba[j]);
+								rgba[j] = 0;
+							}
+							else if (rgba[j] > 255)
+							{
+								Warning(LOCATION, "RGBA value for '$%c' in %s too high (%d), capping to 255.\n", tag, filename, rgba[j]);
+								rgba[j] = 255;
+							}
+						}
+						gr_init_alphacolor(&temp_color, rgba[0], rgba[1], rgba[2], rgba[3]);
+						Custom_Colors[tag] = temp_color;
+						Tagged_Colors[tag] = &Custom_Colors[tag];
+						//} else if ( check_for_string ("#") ) {
+						//	stuff_hex_list(rgba, 4);
+						//	gr_init_alphacolor(&temp_color, rgba[0], rgba[1], rgba[2], rgba[3]);
+						//	Custom_Colors[tag] = temp_color;
+						//	Tagged_Colors[tag] = &Custom_Colors[tag];
+					}
+					else {
+						// We have a string; it should be the name of a color to use.
+						stuff_string(temp, F_NAME);
+						for (j = 0; j < TOTAL_COLORS; j++) {
+							if (!temp.compare(COLOR_NAMES[j])) {
+								break;
+							}
+						}
+						if (j == TOTAL_COLORS) {
+							Error(LOCATION, "Unknown color '%s' in %s, for definition of tag '$%c'.\n", temp.c_str(), filename, tag);
+						}
+						Tagged_Colors[tag] = COLOR_LIST[j];
+					}
+					break;
+				case 1:	// +Friendly
+					required_string("+Friendly");
+					Tagged_Colors[tag] = &Brief_color_green;
+					break;
+				case 2:	// +Hostile
+					required_string("+Hostile");
+					Tagged_Colors[tag] = &Brief_color_red;
+					break;
+				case 3:	// +Neutral
+					required_string("+Neutral");
+					Tagged_Colors[tag] = &Brief_color_legacy_neutral;
+					break;
+				case -1:
+					// -noparseerrors is set
+					if (Tagged_Colors.find(tag) == Tagged_Colors.end()) {	// It was a new color, but since we haven't actually defined it...
+						Color_Tags.pop_back();
+					}
+					break;
+				default:
+					Assertion(false, "MageKing17 made a coding error somewhere, and you should laugh at him (and report this error).\n");
+					break;
 				}
 			}
+
+			required_string("#End");
 		}
-		required_string("#End");
+		Assertion(Color_Tags.size() == Tagged_Colors.size(), "Color_Tags and Tagged_Colors size mismatch; get a coder!\n");
+
+		if (optional_string("#Default Text Colors")) {
+
+			char* color_names[MAX_DEFAULT_TEXT_COLORS] = {
+				"$Fiction Viewer:",
+				"$Command Briefing:",
+				"$Briefing:",
+				"$Redalert Briefing:",
+				"$Debriefing:",
+				"$Recommendation:",
+				"$Loop Briefing:",
+			};
+
+			char *color_value[MAX_DEFAULT_TEXT_COLORS] = {
+				&default_fiction_viewer_color,
+				&default_command_briefing_color,
+				&default_briefing_color,
+				&default_redalert_briefing_color,
+				&default_debriefing_color,
+				&default_recommendation_color,
+				&default_loop_briefing_color,
+			};
+
+			for (i = 0; i < MAX_DEFAULT_TEXT_COLORS; i++) {
+				if (optional_string(color_names[i])) {
+					stuff_string(temp, F_RAW);
+					if (temp[0] == '$') {
+						if (temp[1] == '\0') {
+							Error(LOCATION, "%s - default text color '%s' entry with a solitary '$'.\n", filename, color_names[i]);
+						}
+						*color_value[i] = temp[1];
+						if (temp[2] != '\0') {
+							Warning(LOCATION, "%s - default text color '%s' has extra text after the tag '$%c'.\n", filename, color_names[i], *color_value[i]);
+						}
+					}
+					else if (temp[0] == '\0') {
+						Error(LOCATION, "%s - default text color '%s' entry with no tag.\n", filename, color_names[i]);
+					}
+					else {
+						*color_value[i] = temp[0];
+						if (temp[1] != '\0') {
+							Warning(LOCATION, "%s - default text color '%s' has extra text after the tag '$%c'.\n", filename, color_names[i], *color_value[i]);
+						}
+					}
+					if (Tagged_Colors.find(*color_value[i]) == Tagged_Colors.end()) {
+						// Just mprintf() this information instead of complaining with a Warning(); the tag might be defined in a later-loading TBM, and if it isn't, nothing too terrible will happen.
+						mprintf(("%s - default text color '%s' set to non-existant tag '$%c'.\n", filename, color_names[i], *color_value[i]));
+					}
+				}
+			}
+			required_string("#End");
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
 	}
 }
