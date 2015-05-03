@@ -171,7 +171,7 @@ void ai_post_process_mission()
 		// Goober5000 - MK originally iterated on only the first wing; now we iterate on only the player wing
 		// because the player wing may not be first
 		for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {	
-			if ( Starting_wings[i] == Player_ship->wingnum ) {
+			if (Starting_wings[i] >= 0 && Starting_wings[i] == Player_ship->wingnum) {
 				wing *wingp;
 
 				wingp = &Wings[Starting_wings[i]];
