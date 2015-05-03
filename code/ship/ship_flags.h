@@ -9,6 +9,7 @@ namespace Ship {
 		Beam_Free = 0,	// if this is a beam weapon, its free to fire
 		Turret_Lock,	// is this turret is free to fire or locked
 		Tagged_Only,	// only fire if target is tagged
+		Trigger_Lock,	// // indicates that the trigger is held down
 
 		NUM_VALUES
 	};
