@@ -18221,8 +18221,6 @@ void ship_render(object* obj, draw_list* scene)
 
 	MONITOR_INC( NumShipsRend, 1 );
 
-	memset( &dfi, 0, sizeof(dock_function_info) );
-
 	// look for a warping ship, whether for me or for anybody I'm docked with
 	dock_evaluate_all_docked_objects(obj, &dfi, ship_find_warping_ship_helper);
 
