@@ -1312,7 +1312,7 @@ ship_info::ship_info()
 
 	name[0] = '\0';
 	alt_name[0] = '\0';
-	sprintf(short_name, "ShipClass%d", Ship_info.size());
+	sprintf(short_name, "ShipClass%d", static_cast<int>(Ship_info.size()));
 	species = 0;
 	class_type = -1;
 
