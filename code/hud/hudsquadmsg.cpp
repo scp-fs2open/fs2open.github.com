@@ -1373,11 +1373,10 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 		target_shipname = NULL;
 		target_team = -1;
-		if ( ainfo->target_objnum != -1) {
-			if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
-				target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
-				target_team = Ships[Objects[ainfo->target_objnum].instance].team;
-			}
+
+		if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
+			target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
+			target_team = Ships[Objects[ainfo->target_objnum].instance].team;
 		}
 
 		Assert ( ainfo->shipnum != -1 );
