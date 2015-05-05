@@ -14,16 +14,23 @@
 #include "render/3d.h" 
 #include "io/timer.h"
 #include "ship/ship.h"
-
+#include "graphics/gropenglextension.h"
+#include "cmdline/cmdline.h"
 
 int Num_trails;
 trail Trails;
+
+int Trail_buffer_object = -1;
 
 // Reset everything between levels
 void trail_level_init()
 {
 	Num_trails = 0;
 	Trails.next = &Trails;
+
+	if (Trail_buffer_object < 0) {
+		Trail_buffer_object = gr_create_stream_buffer();
+	}
 }
 
 void trail_level_close()
@@ -146,6 +153,167 @@ static void allocate_trail_verts(int num_verts)
 	if ( !will_free_at_exit ) {
 		atexit(deallocate_trail_verts);
 		will_free_at_exit = true;
+	}
+}
+
+void trail_add_batch(trail * trailp)
+{
+	int sections[NUM_TRAIL_SECTIONS];
+	int num_sections = 0;
+	int i;
+	vec3d topv, botv, *fvec, last_pos, tmp_fvec;
+	vertex  top, bot, top_prev, bot_prev;
+	int nv = 0;
+	float w;
+	ubyte l;
+	vec3d centerv;
+
+	if (trailp->tail == trailp->head)
+		return;
+
+	// if this trail is on the player ship, and he's in any padlock view except rear view, don't draw	
+	if ((Player_ship != NULL) && trail_is_on_ship(trailp, Player_ship) &&
+		(Viewer_mode & (VM_PADLOCK_UP | VM_PADLOCK_LEFT | VM_PADLOCK_RIGHT)))
+	{
+		return;
+	}
+
+	trail_info *ti = &trailp->info;
+
+	int n = trailp->tail;
+
+	do	{
+		n--;
+
+		if (n < 0)
+			n = NUM_TRAIL_SECTIONS - 1;
+
+		if (trailp->val[n] > 1.0f)
+			break;
+
+		sections[num_sections++] = n;
+	} while (n != trailp->head);
+
+	if (num_sections <= 0)
+		return;
+
+	Assertion(ti->texture.bitmap_id != -1, "Weapon trail %s could not be loaded", ti->texture.filename); // We can leave this as an assert, but tell them how to fix it. --Chief
+
+	memset(&top, 0, sizeof(vertex));
+	memset(&bot, 0, sizeof(vertex));
+	memset(&top_prev, 0, sizeof(vertex));
+	memset(&bot_prev, 0, sizeof(vertex));
+
+	float w_size = (ti->w_end - ti->w_start);
+	float a_size = (ti->a_end - ti->a_start);
+	int num_faded_sections = ti->n_fade_out_sections;
+
+	for (i = 0; i < num_sections; i++) {
+		n = sections[i];
+		float init_fade_out = 1.0f;
+
+		if ((num_faded_sections > 0) && (i < num_faded_sections)) {
+			init_fade_out = ((float)i) / (float)num_faded_sections;
+		}
+
+		w = trailp->val[n] * w_size + ti->w_start;
+		if (init_fade_out != 1.0f) {
+			l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f * init_fade_out * init_fade_out);
+		}
+		else {
+			l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f);
+		}
+
+		if (i == 0)	{
+			if (num_sections > 1)	{
+				vm_vec_sub(&tmp_fvec, &trailp->pos[n], &trailp->pos[sections[i + 1]]);
+				vm_vec_normalize_safe(&tmp_fvec);
+				fvec = &tmp_fvec;
+			}
+			else {
+				fvec = &tmp_fvec;
+				fvec->xyz.x = 0.0f;
+				fvec->xyz.y = 0.0f;
+				fvec->xyz.z = 1.0f;
+			}
+		}
+		else {
+			vm_vec_sub(&tmp_fvec, &last_pos, &trailp->pos[n]);
+			vm_vec_normalize_safe(&tmp_fvec);
+			fvec = &tmp_fvec;
+		}
+
+		trail_calc_facing_pts(&topv, &botv, fvec, &trailp->pos[n], w);
+
+		if (!Cmdline_nohtl) {
+			g3_transfer_vertex(&top, &topv);
+			g3_transfer_vertex(&bot, &botv);
+		}
+		else {
+			g3_rotate_vertex(&top, &topv);
+			g3_rotate_vertex(&bot, &botv);
+		}
+
+		top.r = top.g = top.b = l;
+		bot.r = bot.g = bot.b = l;
+		top.a = bot.a = l;
+
+		float U = i2fl(i);
+		
+		top.texture_position.u = U;
+		top.texture_position.v = 1.0f;
+
+		bot.texture_position.u = U;
+		bot.texture_position.v = 0.0f;
+
+		if (i > 0) {
+			if (i == num_sections - 1) {
+				// Last one...
+				vm_vec_avg(&centerv, &topv, &botv);
+
+				vertex center_vert;
+
+				if (!Cmdline_nohtl)
+					g3_transfer_vertex(&center_vert, &centerv);
+				else
+					g3_rotate_vertex(&center_vert, &centerv);
+
+				center_vert.texture_position.u = U + 1.0f;
+				center_vert.texture_position.v = 0.5f;
+				center_vert.a = center_vert.r = center_vert.g = center_vert.b = l;
+
+				vertex tri[3];
+
+				tri[1] = top_prev;
+				tri[2] = bot_prev;
+				tri[0] = center_vert;
+
+				batch_add_tri(
+					ti->texture.bitmap_id,
+					TMAP_FLAG_TEXTURED | TMAP_FLAG_ALPHA | TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT,
+					tri,
+					1.0f
+				);
+			} else {
+				vertex quad[4];
+
+				quad[0] = top_prev;
+				quad[1] = bot_prev;
+				quad[2] = bot;
+				quad[3] = top;
+
+				batch_add_quad(
+					ti->texture.bitmap_id, 
+					TMAP_FLAG_TEXTURED | TMAP_FLAG_ALPHA | TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT,
+					quad,
+					1.0f
+				);
+			}
+		}
+
+		last_pos = trailp->pos[n];
+		top_prev = top;
+		bot_prev = bot;
 	}
 }
 
@@ -292,7 +460,6 @@ void trail_render( trail * trailp )
 		Trail_v_list[nv+1] = bot;
 	}
 
-
 	if ( !nv )
 		return;
 
@@ -303,9 +470,10 @@ void trail_render( trail * trailp )
 	if ( (nv % 2) != 1 )
 		Warning( LOCATION, "even number of verts in trail render\n" );
 
-
+	profile_begin("Trail Draw");
 	gr_set_bitmap( ti->texture.bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 	gr_render(nv, Trail_v_list, TMAP_FLAG_TEXTURED | TMAP_FLAG_ALPHA | TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP);
+	profile_end("Trail Draw");
 }
 
 
@@ -394,9 +562,13 @@ void trail_render_all()
 
 	for(trail *trailp = Trails.next; trailp!=&Trails; trailp = trailp->next )
 	{
+		//trail_add_batch(trailp);
 		trail_render(trailp);
 	}
 
+	//profile_begin("Batch Render Trails");
+	//batch_render_all(Trail_buffer_object);
+	//profile_end("Batch Render Trails");
 }
 int trail_stamp_elapsed(trail *trailp)
 {

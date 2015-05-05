@@ -25,8 +25,8 @@
 #include "parse/parselo.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
+#include "model/modelrender.h"
 #include "debugconsole/console.h"
-
 
 #define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
@@ -1431,12 +1431,14 @@ void subspace_render()
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u;
 	Interp_subspace_offset_v = 0.0f;
 
-	model_set_alpha(1.0f);
+	model_render_params render_info;
+	render_info.set_alpha(1.0f);
+	render_info.set_flags(render_flags);
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 
-	model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
+	model_render_immediate( &render_info, Subspace_model_outer, &tmp, &Eye_position);	//MR_NO_CORRECT|MR_SHOW_OUTLINE
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(0, 0, false);
@@ -1449,14 +1451,14 @@ void subspace_render()
 
 	vm_angles_2_matrix(&tmp,&angs);
 
-	model_set_outline_color(255,255,255);
-
-	model_set_alpha(1.0f);
+	render_info.set_outline_color(255, 255, 255);
+	render_info.set_alpha(1.0f);
+	render_info.set_flags(render_flags);
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 
-	model_render( Subspace_model_inner, &tmp, &Eye_position, render_flags  );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
+	model_render_immediate( &render_info, Subspace_model_inner, &tmp, &Eye_position );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(0, 0, false);
@@ -1811,7 +1813,7 @@ void stars_draw_debris()
 void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env)
 {
 	int gr_zbuffering_save = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE); 
+	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	Rendering_to_env = env;
 
@@ -2153,20 +2155,17 @@ void stars_draw_background()
 	if (Nmodel_num < 0)
 		return;
 
+	model_render_params render_info;
+
 	if (Nmodel_bitmap >= 0) {
-		model_set_forced_texture(Nmodel_bitmap);
-		Nmodel_flags |= MR_FORCE_TEXTURE;
+		render_info.set_forced_bitmap(Nmodel_bitmap);
 	}
 
 	// draw the model at the player's eye with no z-buffering
-	model_set_alpha(1.0f);
+	render_info.set_alpha(1.0f);
+	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
-	model_render(Nmodel_num, &Nmodel_orient, &Eye_position, Nmodel_flags, -1, -1, NULL, true);
-
-	if (Nmodel_bitmap >= 0) {
-		model_set_forced_texture(-1);
-		Nmodel_flags &= ~MR_FORCE_TEXTURE;
-	}
+	model_render_immediate(&render_info, Nmodel_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL);
 }
 
 // call this to set a specific model as the background model

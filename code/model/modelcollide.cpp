@@ -377,6 +377,8 @@ int model_collide_parse_bsp_defpoints(ubyte * p)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
+	model_collide_allocate_point_list(nverts);
+
 	Assert( Mc_point_list != NULL );
 
 	for (n=0; n<nverts; n++ ) {
@@ -1373,7 +1375,7 @@ void model_collide_preprocess_subobj(vec3d *pos, matrix *orient, polymodel *pm, 
 	}
 }
 
-void model_collide_preprocess(matrix *orient, int model_instance_num)
+void model_collide_preprocess(matrix *orient, int model_instance_num, int detail_num)
 {
 	polymodel_instance	*pmi;
 	polymodel *pm;
@@ -1381,10 +1383,12 @@ void model_collide_preprocess(matrix *orient, int model_instance_num)
 	pmi = model_get_instance(model_instance_num);
 	pm = model_get(pmi->model_num);
 
-	matrix current_orient = *orient;
+	matrix current_orient;
 	vec3d current_pos;
+
+	current_orient = *orient;
 
 	vm_vec_zero(&current_pos);
 
-	model_collide_preprocess_subobj(&current_pos, &current_orient, pm, pmi, pm->detail[0]);
+	model_collide_preprocess_subobj(&current_pos, &current_orient, pm, pmi, pm->detail[detail_num]);
 }
