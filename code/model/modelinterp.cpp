@@ -4272,90 +4272,10 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 		model_list->n_verts += polygon_list[i].n_verts;
 	}
 
-	// IBX stuff
-	extern IBX ibuffer_info;
+	// no read file so we'll have to generate
+	model_list->make_index_buffer(vertex_list);
 
-	if (ibuffer_info.read != NULL) {
-		int ibx_verts = 0;
-		int ibx_size = 0;
-
-		ibx_verts = cfread_int( ibuffer_info.read );
-		ibuffer_info.size -= sizeof(int);	// subtract
-
-		// vertex count (indexed vertex count)
-		ibx_size += ibx_verts * sizeof(int);
-		// index count (original vertex count)
-		ibx_size += model_list->n_verts * sizeof(int);
-
-		// safety check for this section
-		// ibuffer_info.size should be greater than or equal to ibx_size at this point
-		if (ibx_size > ibuffer_info.size) {
-			// AAAAAHH! not enough stored data - Abort, Retry, Fail?
-			Warning(LOCATION, "IBX: Safety Check Failure!  The file doesn't contain enough data, deleting '%s'\n", ibuffer_info.name);
-
-			cfclose( ibuffer_info.read );
-			ibuffer_info.read = NULL;
-			ibuffer_info.size = 0;
-			cf_delete( ibuffer_info.name, CF_TYPE_CACHE );
-
-			// force generate
-			model_list->make_index_buffer(vertex_list);
-
-			vertex_list.clear();	// don't actually need this now
-		} else {
-			poly_list *tlist = new(std::nothrow) poly_list;
-
-			if ( !tlist ) {
-				Error( LOCATION, "Unable to allocate memory for IBX poly_list!\n" );
-			}
-
-			tlist->allocate( ibx_verts );
-
-			// we have to generate tangent data manually for model_list
-			// (since it's otherwise done during make_index_buffer())
-			model_list->calculate_tangent();
-
-			for (i = 0; i < ibx_verts; i++) {
-				int ivert = cfread_int( ibuffer_info.read );
-
-				tlist->vert[i] = model_list->vert[ivert];
-				tlist->norm[i] = model_list->norm[ivert];
-
-				if (Cmdline_normal) {
-					tlist->tsb[i] = model_list->tsb[ivert];
-				}
-			}
-
-			tlist->n_verts = ibx_verts;
-
-			// change from old model_list to new one
-			delete model_list;
-
-			model->buffer.model_list = tlist;
-			model_list = tlist;
-
-			// subtract this block of data from the total size for next check
-			// remember that this includes the next set of reads too
-			ibuffer_info.size -= ibx_size;
-		}
-	} else {
-		// no read file so we'll have to generate
-		model_list->make_index_buffer(vertex_list);
-
-		if (ibuffer_info.write != NULL) {
-			cfwrite_int( model_list->n_verts, ibuffer_info.write );
-
-			int count = (int)vertex_list.size();
-			Assert( model_list->n_verts == count );
-
-			for (i = 0; i < count; i++) {
-				cfwrite_int( vertex_list[i], ibuffer_info.write );
-			}
-		}
-
-		vertex_list.clear();	// done
-	}
-	// end IBX stuff
+	vertex_list.clear();	// done
 
 	int vertex_flags = (VB_FLAG_POSITION | VB_FLAG_NORMAL | VB_FLAG_UV1);
 
@@ -4375,21 +4295,10 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 		Verify( new_buffer.get_index() != NULL );
 
 		for (j = 0; j < polygon_list[i].n_verts; j++) {
-			if (ibuffer_info.read != NULL) {
-				first_index = cfread_int(ibuffer_info.read);
-				Assert( first_index >= 0 );
+			first_index = model_list->find_index_fast(&polygon_list[i], j);
+			Assert(first_index != -1);
 
-				new_buffer.assign(j, first_index);
-			} else {
-				first_index = model_list->find_index_fast(&polygon_list[i], j);
-				Assert(first_index != -1);
-
-				new_buffer.assign(j, first_index);
-
-				if (ibuffer_info.write != NULL) {
-					cfwrite_int(first_index, ibuffer_info.write);
-				}
-			}
+			new_buffer.assign(j, first_index);
 		}
 
 		new_buffer.texture = i;
