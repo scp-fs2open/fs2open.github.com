@@ -905,7 +905,14 @@ void psnet_string_to_addr( net_addr * address, char * text )
  */
 int psnet_same( net_addr * a1, net_addr * a2 )
 {
-	return !memcmp(a1->addr, a2->addr, 6);		
+	int same_player_check = !memcmp(a1->addr, a2->addr, 6);
+
+	if ( same_player_check )
+	{
+		same_player_check = a1->port == a2->port;
+	}
+
+	return same_player_check;
 }
 
 /**
