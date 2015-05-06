@@ -32,8 +32,7 @@
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 #include "io/keycontrol.h" // m!m
 #include "debugconsole/console.h"
-#include "debugconsole/console.h"
-
+#include "io/timer.h"
 
 #if defined(SCP_UNIX) && !defined(__APPLE__)
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
@@ -1454,6 +1453,20 @@ int poly_list::find_first_vertex(int idx)
 	return idx;
 }
 
+int poly_list::find_first_vertex_fast(int idx)
+{
+	uint* first_idx = std::lower_bound(sorted_indices, sorted_indices + n_verts, idx, finder(this, NULL, NULL));
+
+	if ( first_idx == sorted_indices + n_verts ) {
+		// if this happens then idx was never in the index list to begin with which is not good
+		mprintf(("Sorted index list missing index %d!", idx));
+		Int3();
+		return idx;
+	}
+
+	return *first_idx;
+}
+
 /**
  * Given a list (plist) find the index within the indexed list that the vert at position idx within list is at
  */
@@ -1479,6 +1492,17 @@ int poly_list::find_index(poly_list *plist, int idx)
 	return -1;
 }
 
+int poly_list::find_index_fast(poly_list *plist, int idx)
+{
+	// searching for an out of bounds index using the finder means we're trying to find the vert and norm we're passing into the finder instance
+	uint* first_idx = std::lower_bound(sorted_indices, sorted_indices + n_verts, n_verts, finder(this, &plist->vert[idx], &plist->norm[idx]));
+
+	if (first_idx == sorted_indices + n_verts) {
+		return -1;
+	}
+
+	return *first_idx;
+}
 
 void poly_list::allocate(int _verts)
 {
@@ -1500,6 +1524,11 @@ void poly_list::allocate(int _verts)
 		tsb = NULL;
 	}
 
+	if ( sorted_indices != NULL ) {
+		vm_free(sorted_indices);
+		sorted_indices = NULL;
+	}
+
 	if (_verts) {
 		vert = (vertex*)vm_malloc(sizeof(vertex) * _verts);
 		norm = (vec3d*)vm_malloc(sizeof(vec3d) * _verts);
@@ -1507,6 +1536,8 @@ void poly_list::allocate(int _verts)
 		if (Cmdline_normal) {
 			tsb = (tsb_t*)vm_malloc(sizeof(tsb_t) * _verts);
 		}
+
+		sorted_indices = (uint*)vm_malloc(sizeof(uint) * _verts);
 	}
 
 	n_verts = 0;
@@ -1528,6 +1559,11 @@ poly_list::~poly_list()
 	if (tsb != NULL) {
 		vm_free(tsb);
 		tsb = NULL;
+	}
+
+	if (sorted_indices != NULL) {
+		vm_free(sorted_indices);
+		sorted_indices = NULL;
 	}
 }
 
@@ -1626,6 +1662,9 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 	int j, z = 0;
 	ubyte *nverts_good = NULL;
 
+	uint t0, t1;
+	t0 = timer_get_milliseconds();
+
 	// calculate tangent space data (must be done early)
 	calculate_tangent();
 
@@ -1640,13 +1679,19 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 
 	vertex_list.reserve(n_verts);
 
+	generate_sorted_index_list();
+
 	for (j = 0; j < n_verts; j++) {
-		if (find_first_vertex(j) == j) {
+		if (find_first_vertex_fast(j) == j) {
 			nverts++;
 			nverts_good[j] = 1;
 			vertex_list.push_back(j);
 		}
 	}
+
+	t1 = timer_get_milliseconds();
+
+	mprintf(("Index Buffer created in %d milliseconds\n", t1-t0));
 
 	// if there is nothig to change then bail
 	if (n_verts == nverts) {
@@ -1682,6 +1727,8 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 		vm_free(nverts_good);
 	}
 
+	buffer_list_internal.generate_sorted_index_list();
+
 	(*this) = buffer_list_internal;
 }
 
@@ -1696,9 +1743,92 @@ poly_list& poly_list::operator = (poly_list &other_list)
 		memcpy(tsb, other_list.tsb, sizeof(tsb_t) * other_list.n_verts);
 	}
 
+	memcpy(sorted_indices, other_list.sorted_indices, sizeof(uint) * other_list.n_verts);
+
 	n_verts = other_list.n_verts;
 
 	return *this;
+}
+
+void poly_list::generate_sorted_index_list()
+{
+	for ( uint j = 0; j < n_verts; ++j) {
+		sorted_indices[j] = j;
+	}
+
+	std::sort(sorted_indices, sorted_indices + n_verts, finder(this));
+}
+
+bool poly_list::finder::operator()(const uint a, const uint b)
+{
+	vertex *vert_a; 
+	vertex *vert_b;
+	vec3d *norm_a;
+	vec3d *norm_b;
+
+	Assert(search_list != NULL);
+
+	if ( a == search_list->n_verts ) {
+		Assert(vert_to_find != NULL);
+		Assert(norm_to_find != NULL);
+		Assert(a != b);
+
+		vert_a = vert_to_find;
+		norm_a = norm_to_find;
+	} else {
+		vert_a = &search_list->vert[a];
+		norm_a = &search_list->norm[a];
+	}
+	
+	if ( b == search_list->n_verts ) {
+		Assert(vert_to_find != NULL);
+		Assert(norm_to_find != NULL);
+		Assert(a != b);
+
+		vert_b = vert_to_find;
+		norm_b = norm_to_find;
+	} else {
+		vert_b = &search_list->vert[b];
+		norm_b = &search_list->norm[b];
+	}
+
+	if (norm_a->xyz.x != norm_b->xyz.x) {
+		return norm_a->xyz.x < norm_b->xyz.x;
+	}
+
+	if (norm_a->xyz.y != norm_b->xyz.y) {
+		return norm_a->xyz.y < norm_b->xyz.y;
+	}
+
+	if (norm_a->xyz.z != norm_b->xyz.z) {
+		return norm_a->xyz.z < norm_b->xyz.z;
+	}
+
+	if (vert_a->world.xyz.x != vert_b->world.xyz.x) {
+		return vert_a->world.xyz.x < vert_b->world.xyz.x;
+	}
+
+	if (vert_a->world.xyz.y != vert_b->world.xyz.y) {
+		return vert_a->world.xyz.y < vert_b->world.xyz.y;
+	}
+
+	if (vert_a->world.xyz.z != vert_b->world.xyz.z) {
+		return vert_a->world.xyz.z < vert_b->world.xyz.z;
+	}
+
+	if (vert_a->texture_position.u != vert_b->texture_position.u) {
+		return vert_a->texture_position.u < vert_b->texture_position.u;
+	}
+
+	if ( vert_a->texture_position.v != vert_b->texture_position.v ) {
+		return vert_a->texture_position.v < vert_b->texture_position.v;
+	}
+
+	if ( !compare_indices ) {
+		return vert_a->texture_position.v < vert_b->texture_position.v;
+	} else {
+		return a < b;
+	}
 }
 
 void gr_shield_icon(coord2d coords[6], int resize_mode)

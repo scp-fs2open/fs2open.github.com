@@ -4381,7 +4381,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 
 				new_buffer.assign(j, first_index);
 			} else {
-				first_index = model_list->find_index(&polygon_list[i], j);
+				first_index = model_list->find_index_fast(&polygon_list[i], j);
 				Assert(first_index != -1);
 
 				new_buffer.assign(j, first_index);
