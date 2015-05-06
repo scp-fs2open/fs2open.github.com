@@ -1752,7 +1752,7 @@ poly_list& poly_list::operator = (poly_list &other_list)
 
 void poly_list::generate_sorted_index_list()
 {
-	for ( uint j = 0; j < n_verts; ++j) {
+	for ( int j = 0; j < (uint)n_verts; ++j) {
 		sorted_indices[j] = j;
 	}
 
