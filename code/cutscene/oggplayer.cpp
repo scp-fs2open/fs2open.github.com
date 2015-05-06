@@ -477,13 +477,13 @@ static void OGG_video_init(theora_info *tinfo)
 			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
 			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_LUMINANCE8, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
 		}
-		float screen_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
+		float screen_ratio = (float)gr_screen.center_w / (float)gr_screen.center_h;
 		float movie_ratio = (float)g_screenWidth / (float)g_screenHeight;
 
 		if (screen_ratio > movie_ratio)
-			scale_by = (float)gr_screen.max_h / (float)g_screenHeight;
+			scale_by = (float)gr_screen.center_h / (float)g_screenHeight;
 		else
-			scale_by = (float)gr_screen.max_w / (float)g_screenWidth;
+			scale_by = (float)gr_screen.center_w / (float)g_screenWidth;
 
 		// don't bother setting anything if we aren't going to need it
 		if (!Cmdline_noscalevid && (scale_by != 1.0f)) {
@@ -512,12 +512,12 @@ static void OGG_video_init(theora_info *tinfo)
 	
 
 	if (scale_video) {
-		g_screenX = ((fl2i(gr_screen.max_w / scale_by + 0.5f) - g_screenWidth) / 2);
-		g_screenY = ((fl2i(gr_screen.max_h / scale_by + 0.5f) - g_screenHeight) / 2);
+		g_screenX = ((fl2i(gr_screen.center_w / scale_by + 0.5f) - g_screenWidth) / 2) + fl2i(gr_screen.center_offset_x / scale_by + 0.5f);
+		g_screenY = ((fl2i(gr_screen.center_h / scale_by + 0.5f) - g_screenHeight) / 2) + fl2i(gr_screen.center_offset_y / scale_by + 0.5f);
 	} else {
 		// centers on 1024x768, fills on 640x480
-		g_screenX = ((gr_screen.max_w - g_screenWidth) / 2);
-		g_screenY = ((gr_screen.max_h - g_screenHeight) / 2);
+		g_screenX = ((gr_screen.center_w - g_screenWidth) / 2) + gr_screen.center_offset_x;
+		g_screenY = ((gr_screen.center_h - g_screenHeight) / 2) + gr_screen.center_offset_y;
 	}
 
 	// set additional values for screen width/height and UV coords

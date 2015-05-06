@@ -2498,6 +2498,12 @@ int bm_set_render_target(int handle, int face) {
 
 			gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
 			gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
+
+			gr_screen.save_center_w = gr_screen.center_w;
+			gr_screen.save_center_h = gr_screen.center_h;
+
+			gr_screen.save_center_offset_x = gr_screen.center_offset_x;
+			gr_screen.save_center_offset_y = gr_screen.center_offset_y;
 		}
 
 		if (n < 0) {
@@ -2509,6 +2515,12 @@ int bm_set_render_target(int handle, int face) {
 
 			gr_screen.max_w_unscaled_zoomed = gr_screen.save_max_w_unscaled_zoomed;
 			gr_screen.max_h_unscaled_zoomed = gr_screen.save_max_h_unscaled_zoomed;
+
+			gr_screen.center_w = gr_screen.save_center_w;
+			gr_screen.center_h = gr_screen.save_center_h;
+
+			gr_screen.center_offset_x = gr_screen.save_center_offset_x;
+			gr_screen.center_offset_y = gr_screen.save_center_offset_y;
 		} else {
 			gr_screen.max_w = bm_bitmaps[n].bm.w;
 			gr_screen.max_h = bm_bitmaps[n].bm.h;
@@ -2518,6 +2530,12 @@ int bm_set_render_target(int handle, int face) {
 
 			gr_screen.max_w_unscaled_zoomed = bm_bitmaps[n].bm.w;
 			gr_screen.max_h_unscaled_zoomed = bm_bitmaps[n].bm.h;
+
+			gr_screen.center_w = bm_bitmaps[n].bm.w;
+			gr_screen.center_h = bm_bitmaps[n].bm.h;
+
+			gr_screen.center_offset_x = 0;
+			gr_screen.center_offset_y = 0;
 		}
 
 		gr_screen.rendering_to_face = face;

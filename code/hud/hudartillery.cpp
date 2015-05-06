@@ -356,6 +356,6 @@ void hud_artillery_render()
 	// render how long the player has been painting his target	
 	if((Player_ai != NULL) && (Player_ai->artillery_objnum >= 0)){
 		gr_set_color_fast(&Color_bright_blue);
-		gr_printf(10, 50, "%f", Player_ai->artillery_lock_time);
+		gr_printf_no_resize(gr_screen.center_offset_x + 10, gr_screen.center_offset_y + 50, "%f", Player_ai->artillery_lock_time);
 	}
 }

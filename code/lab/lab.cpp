@@ -1152,7 +1152,7 @@ void labviewer_do_render(float frametime)
 	if ( (Lab_model_num < 0) && (Lab_bitmap_id < 0) ) {
 		gr_get_string_size(&w, &h, "Viewer off");
 		gr_set_color_fast(&Color_white);
-		gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, "Viewer off", GR_RESIZE_NONE);
+		gr_string(gr_screen.center_offset_x + gr_screen.center_w - w, gr_screen.center_offset_y + gr_screen.center_h - h, "Viewer off", GR_RESIZE_NONE);
 
 		return;
 	}
@@ -1170,7 +1170,7 @@ void labviewer_do_render(float frametime)
 		if ( strlen(Lab_model_filename) ) {
 			gr_get_string_size(&w, &h, Lab_model_filename);
 			gr_set_color_fast(&Color_white);
-			gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, Lab_model_filename, GR_RESIZE_NONE);
+			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w, gr_screen.center_offset_y + gr_screen.center_h - h, Lab_model_filename, GR_RESIZE_NONE);
 		}
 	} else if (Lab_bitmap_id >= 0) {
 		gr_scene_texture_begin();
@@ -1183,7 +1183,7 @@ void labviewer_do_render(float frametime)
 		if ( strlen(Lab_bitmap_filename) ) {
 			gr_get_string_size(&w, &h, Lab_bitmap_filename);
 			gr_set_color_fast(&Color_white);
-			gr_string(gr_screen.clip_right - w, gr_screen.clip_bottom - h, Lab_bitmap_filename, GR_RESIZE_NONE);
+			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w, gr_screen.center_offset_y + gr_screen.center_h - h, Lab_bitmap_filename, GR_RESIZE_NONE);
 		}
 	}
 
@@ -1197,26 +1197,26 @@ void labviewer_do_render(float frametime)
 	gr_set_color_fast(&Color_white);
 
 	if (frametotal != 0.0f) {
-		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - gr_get_font_height(), "FPS: %i", fl2i(Framerate + 0.5f));
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: %i", fl2i(Framerate + 0.5f));
 	} else {
-		gr_string(gr_screen.clip_left + 10, gr_screen.clip_bottom - gr_get_font_height(), "FPS: ?", GR_RESIZE_NONE);
+		gr_string(gr_screen.center_offset_x + 10, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: ?", GR_RESIZE_NONE);
 	}
 
 	//Print FXAA preset
 	if (Cmdline_fxaa && !PostProcessing_override)
-		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - (gr_get_font_height() * 2) - 3, "FXAA Preset: %i", Cmdline_fxaa_preset);
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3, "FXAA Preset: %i", Cmdline_fxaa_preset);
 
 	//Print bloom intensity
 	if (Cmdline_bloom_intensity && !PostProcessing_override)
-		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - (gr_get_font_height() * 3) - 3, "Bloom intensity: %i", Cmdline_bloom_intensity);
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 3) - 3, "Bloom intensity: %i", Cmdline_bloom_intensity);
 
 	//Print current Team Color setting, if any
 	if (Lab_team_color != "<none>")
-		gr_printf_no_resize(gr_screen.clip_left + 2, gr_screen.clip_bottom - (gr_get_font_height() * 4) - 3, "Use T and Y to cycle through available Team Color settings. Current: %s", Lab_team_color.c_str());
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3, "Use T and Y to cycle through available Team Color settings. Current: %s", Lab_team_color.c_str());
 
 	//Display helpful text
 	if (!PostProcessing_override)
-		gr_printf_no_resize(gr_screen.clip_left + 70, gr_screen.clip_bottom - gr_get_font_height(), "Use number keys to switch between FXAA presets. B and N can be used to adjust bloom.");
+		gr_printf_no_resize(gr_screen.center_offset_x + 70, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "Use number keys to switch between FXAA presets. B and N can be used to adjust bloom.");
 }
 
 void labviewer_exit(Button *caller)
@@ -1243,12 +1243,12 @@ void labviewer_close_class_window(GUIObject *caller)
 void labviewer_set_class_window(int mode)
 {
 	if (Lab_class_window == NULL) {
-		Lab_class_window = (Window*)Lab_screen->Add(new Window("Class Window", 50, 50));
+		Lab_class_window = (Window*)Lab_screen->Add(new Window("Class Window", gr_screen.center_offset_x + 50, gr_screen.center_offset_y + 50));
 		Lab_class_window->SetCloseFunction(labviewer_close_class_window);
 	}
 
 	if (Lab_class_toolbar == NULL) {
-		Lab_class_toolbar = (Window*)Lab_screen->Add(new Window("Class Toolbar", 0, Lab_toolbar->GetHeight(), -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
+		Lab_class_toolbar = (Window*)Lab_screen->Add(new Window("Class Toolbar", gr_screen.center_offset_x + 0, gr_screen.center_offset_y + Lab_toolbar->GetHeight(), -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
 	}
 
 	// clear out all existing children
@@ -1439,7 +1439,7 @@ void labviewer_close_flags_window(GUIObject *caller)
 void labviewer_make_flags_window(Button *caller)
 {
 	if (Lab_flags_window == NULL) {
-		Lab_flags_window = (Window*) Lab_screen->Add(new Window("Flags Window", gr_screen.max_w - 205, 200));
+		Lab_flags_window = (Window*) Lab_screen->Add(new Window("Flags Window", gr_screen.center_offset_x + gr_screen.center_w - 205, gr_screen.center_offset_y + 200));
 		Lab_flags_window->SetCloseFunction(labviewer_close_flags_window);
 	}
 
@@ -1744,7 +1744,7 @@ void labviewer_make_variables_window(Button *caller)
 		return;
 	}
 
-	Lab_variables_window = (Window*)Lab_screen->Add(new Window("Class Variables", gr_screen.max_w - (VAR_POS_RIGHTX + VAR_POS_RIGHTWIDTH + 25), 200));
+	Lab_variables_window = (Window*)Lab_screen->Add(new Window("Class Variables", gr_screen.center_offset_x + gr_screen.center_w - (VAR_POS_RIGHTX + VAR_POS_RIGHTWIDTH + 25), gr_screen.center_offset_y + 200));
 
 	// set our new title
 	if (Lab_mode == LAB_MODE_SHIP) {
@@ -1801,7 +1801,7 @@ void labviewer_make_render_options_window(Button *caller)
 		return;
 	}
 
-	Lab_render_options_window = (Window*)Lab_screen->Add(new Window("Render Options", gr_screen.max_w - 300, 200));
+	Lab_render_options_window = (Window*)Lab_screen->Add(new Window("Render Options", gr_screen.center_offset_x + gr_screen.center_w - 300, gr_screen.center_offset_y + 200));
 	Assert( Lab_render_options_window != NULL );
 
 	// add all of the flags that we want/need...
@@ -1913,9 +1913,9 @@ void labviewer_make_desc_window(Button *caller)
 		return;
 	}
 
-	Lab_description_window = (Window*)Lab_screen->Add(new Window("Description", gr_screen.max_w - gr_screen.max_w/3 - 50,
-														gr_screen.max_h - gr_screen.max_h/6 - 50, gr_screen.max_w/3,
-														gr_screen.max_h/6));
+	Lab_description_window = (Window*)Lab_screen->Add(new Window("Description", gr_screen.center_offset_x + gr_screen.center_w - gr_screen.center_w/3 - 50,
+														gr_screen.center_offset_y + gr_screen.center_h - gr_screen.center_h/6 - 50, gr_screen.center_w/3,
+														gr_screen.center_h/6));
 	Lab_description_text = (Text*)Lab_description_window->AddChild(new Text("Description Text", "No ship selected.", 0, 0));
 
 	labviewer_update_desc_window();
@@ -2287,7 +2287,7 @@ void lab_init()
 	//We start by creating the screen/toolbar
 	Lab_screen = GUI_system.PushScreen(new GUIScreen("Lab"));
 
-	Lab_toolbar = (Window*)Lab_screen->Add(new Window("Toolbar", 0, 0, -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
+	Lab_toolbar = (Window*)Lab_screen->Add(new Window("Toolbar", gr_screen.center_offset_x, gr_screen.center_offset_y, -1, -1, WS_NOTITLEBAR | WS_NONMOVEABLE));
 
 	// start filling the main toolbar
 	x = 0;

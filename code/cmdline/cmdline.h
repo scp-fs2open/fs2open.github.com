@@ -48,6 +48,7 @@ extern int Cmdline_use_last_pilot;
 extern int Cmdline_window;
 extern int Cmdline_fullscreen_window;
 extern char *Cmdline_res;
+extern char *Cmdline_center_res;
 
 
 // FSO OPTIONS -------------------------------------------------
