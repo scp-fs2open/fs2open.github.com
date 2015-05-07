@@ -11,6 +11,9 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <SDL_timer.h>
+#include <sys/time.h>
 #endif
 
 #include <limits.h>
@@ -34,9 +37,14 @@ static longlong Timer_last_value = 0, Timer_base = 0, Timer_freq = 0;
 static const int precision = 1;
 #endif
 
+static longlong Timer_perf_counter_base = 0;	// perf counter start time
+static longlong Timer_perf_counter_freq = 0;	// perf counter frequency - number of ticks per second
+
 static int Timer_inited = 0;
 
 static CRITICAL_SECTION Timer_lock;
+
+#define MICROSECONDS_PER_SECOND 1000000
 
 void timer_close()
 {
@@ -57,6 +65,26 @@ void timer_init()
 #ifdef _WIN32
 		timeBeginPeriod(precision);
 		Timer_base = Timer_last_value = timeGetTime();
+
+		// get the performance counter start time
+		LARGE_INTEGER perf_start_time;
+		QueryPerformanceCounter(&perf_start_time);
+		Timer_perf_counter_base = perf_start_time.QuadPart;
+
+		// get the performance counter's ticks per second frequency
+		LARGE_INTEGER perf_frequency;
+		QueryPerformanceFrequency(&perf_frequency);
+		Timer_perf_counter_freq = perf_frequency.QuadPart;
+#else
+		timeval time_value;
+
+		// get the performance counter start time
+		gettimeofday(&time_value, NULL);
+
+		Timer_perf_counter_base = time_value.tv_sec * MICROSECONDS_PER_SECOND + time_value.tv_usec;
+
+		// get the performance counter's ticks per second frequency
+		Timer_perf_counter_freq = 1;
 #endif
 
 		Timer_inited = 1;
@@ -89,7 +117,6 @@ static uint timer_get()
 	return SDL_GetTicks();
 #endif
 }
-
 
 fix timer_get_fixed_seconds()
 {
@@ -143,6 +170,32 @@ int timer_get_microseconds()
 	}
 
 	return timer_get() * 1000;
+}
+
+uint timer_get_high_res_microseconds()
+{
+	if ( !Timer_inited ) {
+		Int3();
+		return 0;
+	}
+
+#ifdef _WIN32
+	ENTER_CRITICAL_SECTION( Timer_lock);
+
+	LARGE_INTEGER time;
+	QueryPerformanceCounter(&time);
+	longlong elapsed = time.QuadPart;// - Timer_perf_counter_base;
+
+	LEAVE_CRITICAL_SECTION( Timer_lock);
+
+	return (uint)(elapsed * MICROSECONDS_PER_SECOND / Timer_perf_counter_freq);
+#else
+	timeval time_value;
+
+	gettimeofday(&time_value, NULL);
+
+	return time_value.tv_sec * MICROSECONDS_PER_SECOND + time_value.tv_usec;// - Timer_perf_counter_base);
+#endif
 }
 
 // 0 means invalid,

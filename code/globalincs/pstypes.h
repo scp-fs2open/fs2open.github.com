@@ -447,42 +447,6 @@ extern int game_busy_callback( void (*callback)(int count), int delta_step = -1 
 extern void game_busy(const char *filename = NULL);
 
 //=========================================================
-// Functions to profile frame performance
-
-typedef struct profile_sample {
-	bool valid;
-	uint profile_instances;
-	int open_profiles;
-	char name[256];
-	float start_time;
-	float accumulator;
-	float children_sample_time;
-	uint num_parents;
-} profile_sample;
-
-typedef struct profile_sample_history {
-	bool valid;
-	char name[256];
-	float avg;
-	float min;
-	float max;
-} profile_sample_history;
-
-extern char profile_output[2048];
-
-void profile_init();
-void profile_deinit();
-void profile_begin(char* name);
-void profile_end(char* name);
-void profile_dump_output();
-void store_profile_in_history(char* name, float percent);
-void get_profile_from_history(char* name, float* avg, float* min, float* max);
-
-// Helper macro to encapsulate a single function call in a profile_begin()/profile_end() pair.
-#define PROFILE(name, function) { profile_begin(name); function; profile_end(name); }
-
-
-//=========================================================
 // Functions to monitor performance
 #ifndef NDEBUG
 
