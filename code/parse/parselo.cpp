@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
@@ -47,7 +47,7 @@ int		Token_found_flag;
 char 	*Mission_text = NULL;
 char	*Mission_text_raw = NULL;
 char	*Mp = NULL, *Mp_save = NULL;
-char	*token_found;
+const char	*token_found;
 
 static int Parsing_paused = 0;
 
@@ -466,7 +466,7 @@ int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end)
 // lines.
 //	If unable to find the required string after RS_MAX_TRIES tries, then
 //	abort using longjmp to parse_abort.
-int required_string(char *pstr)
+int required_string(const char *pstr)
 {
 	int	count = 0;
 
@@ -757,7 +757,7 @@ int required_string_either_fred(char *str1, char *str2)
 			// Mp += strlen(str1);
 			diag_printf("Found required string [%s]\n", token_found = str1);
 			return fred_parse_flag = 0;
-		
+
 		} else if (!strnicmp(str2, Mp, strlen(str2))) {
 			// Mp += strlen(str2);
 			diag_printf("Found required string [%s]\n", token_found = str2);
@@ -1072,26 +1072,26 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 	return rval;
 }
 
-// Karajorma - Stuffs the provided char array with either the contents of a quoted string or the name of a string 
-// variable. Returns PARSING_FOUND_STRING if a string was found or PARSING_FOUND_VARIABLE if a variable was present. 
+// Karajorma - Stuffs the provided char array with either the contents of a quoted string or the name of a string
+// variable. Returns PARSING_FOUND_STRING if a string was found or PARSING_FOUND_VARIABLE if a variable was present.
 int get_string_or_variable (char *str)
 {
-	int result = -1; 
+	int result = -1;
 
 	ignore_white_space();
-	
+
 	// Variable
-	if (*Mp == '@') 
+	if (*Mp == '@')
 	{
 		Mp++;
-		stuff_string_white(str); 
-		int sexp_variable_index = get_index_sexp_variable_name(str); 
-		
+		stuff_string_white(str);
+		int sexp_variable_index = get_index_sexp_variable_name(str);
+
 		// We only want String variables
 		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str);
 		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
 
-		result = PARSING_FOUND_VARIABLE; 
+		result = PARSING_FOUND_VARIABLE;
 	}
 	// Quoted string
 	else if (*Mp == '"')
@@ -1102,7 +1102,7 @@ int get_string_or_variable (char *str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str); 
+		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str);
 	}
 
 	return result;
@@ -1111,22 +1111,22 @@ int get_string_or_variable (char *str)
 // ditto for SCP_string
 int get_string_or_variable (SCP_string &str)
 {
-	int result = -1; 
+	int result = -1;
 
 	ignore_white_space();
-	
+
 	// Variable
-	if (*Mp == '@') 
+	if (*Mp == '@')
 	{
 		Mp++;
-		stuff_string_white(str); 
+		stuff_string_white(str);
 		int sexp_variable_index = get_index_sexp_variable_name(str);
 
 		// We only want String variables
 		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str.c_str());
 		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
 
-		result = PARSING_FOUND_VARIABLE; 
+		result = PARSING_FOUND_VARIABLE;
 	}
 	// Quoted string
 	else if (*Mp == '"')
@@ -1137,7 +1137,7 @@ int get_string_or_variable (SCP_string &str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str()); 
+		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str());
 	}
 
 	return result;
@@ -1216,14 +1216,14 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
 		// can be deleted once all missions are using new briefing format
 
-		case F_MULTITEXTOLD:		
+		case F_MULTITEXTOLD:
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$End Briefing Text:", read_len);
 			Mp += strlen(read_str);
 			required_string("$End Briefing Text:");
 			break;
 
-		case F_MULTITEXT:		
+		case F_MULTITEXT:
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$end_multi_text", read_len);
 			Mp += strlen(read_str);
@@ -1290,14 +1290,14 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
 		// can be deleted once all missions are using new briefing format
 
-		case F_MULTITEXTOLD:		
+		case F_MULTITEXTOLD:
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$End Briefing Text:");
 			Mp += read_str.length();
 			required_string("$End Briefing Text:");
 			break;
 
-		case F_MULTITEXT:		
+		case F_MULTITEXT:
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$end_multi_text");
 			Mp += read_str.length();
@@ -1377,7 +1377,7 @@ void stuff_string_line(SCP_string &outstr)
 	diag_printf("Stuffed string = [%.30s]\n", outstr.c_str());
 }
 
-// Exactly the same as stuff string only Malloc's the buffer. 
+// Exactly the same as stuff string only Malloc's the buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
 char *stuff_and_malloc_string(int type, char *terminators)
@@ -1396,15 +1396,15 @@ char *stuff_and_malloc_string(int type, char *terminators)
 void stuff_malloc_string(char **dest, int type, char *terminators)
 {
 	Assert(dest != NULL); //wtf?
-	
+
 	char *new_val = stuff_and_malloc_string(type, terminators);
-	
+
 	if(new_val != NULL)
 	{
 		if((*dest) != NULL) {
 			vm_free(*dest);
 		}
-		
+
 		(*dest) = new_val;
 	}
 }
@@ -1462,7 +1462,7 @@ void compact_multitext_string(SCP_string &str)
 // Converts a character from Windows-1252 to CP437.
 int maybe_convert_foreign_character(int ch)
 {
-	// time to do some special foreign character conversion			
+	// time to do some special foreign character conversion
 	switch (ch) {
 		case -57:
 			ch = 128;
@@ -1680,7 +1680,7 @@ int maybe_convert_foreign_character(int ch)
 			ch = 255;
 			break;
 	}
-	
+
 	return ch;
 }
 
@@ -1941,7 +1941,7 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 		do {
 			if ( (cur - start) >= max_size ) {
 				*lineout = 0;
-				if ( lineout > t ) {		
+				if ( lineout > t ) {
 					return num_chars_read;
 				} else {
 					return 0;
@@ -2242,7 +2242,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 		strcpy_s(mp, outbuf);
 		mp += strlen(outbuf);
 	}
-	
+
 	*mp = *mp_raw = EOF_CHAR;
 */
 
@@ -2315,7 +2315,7 @@ int stuff_float_optional(float *f, bool raw)
 {
 	int skip_len;
 	bool comma = false;
-	
+
 	if (!raw)
 		ignore_white_space();
 
@@ -2323,7 +2323,7 @@ int stuff_float_optional(float *f, bool raw)
 	if(*(Mp+skip_len) == ',') {
 		comma = true;
 	}
-	
+
 	if(skip_len == 0)
 	{
 		if(comma) {
@@ -2359,7 +2359,7 @@ int stuff_int_optional(int *i, bool raw)
 {
 	int skip_len;
 	bool comma = false;
-	
+
 	if (!raw)
 		ignore_white_space();
 
@@ -2367,7 +2367,7 @@ int stuff_int_optional(int *i, bool raw)
 	if(*(Mp+skip_len) == ',') {
 		comma = true;
 	}
-	
+
 	if(skip_len == 0)
 	{
 		if(comma) {
@@ -2390,29 +2390,29 @@ int stuff_int_or_variable (int &i, bool positive_value)
 {
 	int index = NOT_SET_BY_SEXP_VARIABLE;
 
-	if (*Mp == '@') 
+	if (*Mp == '@')
 	{
 		Mp++;
-		int value = -1; 
+		int value = -1;
 		char str[128];
 		stuff_string(str, F_NAME, sizeof(str));
 
-		index = get_index_sexp_variable_name(str); 
-			
-		if (index > -1 && index < MAX_SEXP_VARIABLES) 
+		index = get_index_sexp_variable_name(str);
+
+		if (index > -1 && index < MAX_SEXP_VARIABLES)
 		{
 			if (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER)
 			{
 				value = atoi(Sexp_variables[index].text);
 			}
-			else 
+			else
 			{
 				Error(LOCATION, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str);
 			}
 		}
 		else
 		{
-			
+
 			Error(LOCATION, "Invalid variable name \"%s\" found.", str);
 		}
 
@@ -2422,44 +2422,44 @@ int stuff_int_or_variable (int &i, bool positive_value)
 			value = 0;
 		}
 
-		
-		// Record the value of the index for FreeSpace 
+
+		// Record the value of the index for FreeSpace
 		i = value;
 	}
-	else 
+	else
 	{
 		stuff_int(&i);
 	}
 	return index;
 }
 
-// Stuff an integer value pointed at by Mp.If a variable is found instead stuff the value of that variable and record the 
+// Stuff an integer value pointed at by Mp.If a variable is found instead stuff the value of that variable and record the
 // index of the variable in the following slot.
 int stuff_int_or_variable (int *ilp, int count, bool positive_value)
 {
-	if (*Mp == '@') 
+	if (*Mp == '@')
 	{
 		Mp++;
-		int value = -1; 
+		int value = -1;
 		char str[128];
 		stuff_string(str, F_NAME, sizeof(str));
 
-		int index = get_index_sexp_variable_name(str); 
-			
-		if (index > -1 && index < MAX_SEXP_VARIABLES) 
+		int index = get_index_sexp_variable_name(str);
+
+		if (index > -1 && index < MAX_SEXP_VARIABLES)
 		{
 			if (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER)
 			{
 				value = atoi(Sexp_variables[index].text);
 			}
-			else 
-			{ 
+			else
+			{
 				Error(LOCATION, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str);
 			}
 		}
 		else
 		{
-			
+
 			Error(LOCATION, "Invalid variable name \"%s\" found.", str);
 		}
 
@@ -2469,16 +2469,16 @@ int stuff_int_or_variable (int *ilp, int count, bool positive_value)
 			value = 0;
 		}
 
-		
-		// Record the value of the index for FreeSpace 
+
+		// Record the value of the index for FreeSpace
 		ilp[count++] = value;
 		// Record the index itself because we may need it later.
 		ilp[count++] = index;
 	}
-	else 
+	else
 	{
 		stuff_int(&ilp[count++]);
-		// Since we have a numerical value we don't have a SEXP variable index to add for next slot. 
+		// Since we have a numerical value we don't have a SEXP variable index to add for next slot.
 		ilp[count++] = NOT_SET_BY_SEXP_VARIABLE;
 	}
 	return count;
@@ -2507,7 +2507,7 @@ void stuff_boolean_flag(int *i, int flag, bool a_to_eol)
 		*i &= ~(flag);
 }
 
-// Stuffs a boolean value pointed at by Mp.  
+// Stuffs a boolean value pointed at by Mp.
 // YES/NO (supporting 1/0 now as well)
 // Now supports localization :) -WMC
 
@@ -2565,7 +2565,7 @@ int stuff_bool_list(bool *blp, int max_bools)
 	bool trash_buf = false;
 
 	ignore_white_space();
-	
+
 	if (*Mp != '(') {
         error_display(1, "Reading boolean list.  Found [%c].  Expecting '('.\n", *Mp);
         throw parse::ParseException("Syntax error");
@@ -2581,7 +2581,7 @@ int stuff_bool_list(bool *blp, int max_bools)
 		{
 			stuff_boolean(&blp[count++], false);
 			ignore_white_space();
-			
+
 			//Since Bobb has set a precedent, allow commas for bool lists -WMC
 			if(*Mp == ',')
 			{
@@ -2728,7 +2728,7 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 	return count;
 }
 
-const char* get_lookup_type_name(int lookup_type) 
+const char* get_lookup_type_name(int lookup_type)
 {
 	switch (lookup_type) {
 		case SHIP_TYPE:
@@ -2827,7 +2827,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 			else
 				stuff_int(&dummy);
 		}
-		
+
 		ignore_white_space();
 	}
 
@@ -2839,7 +2839,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 // helper for the next function. Removes a broken entry from ship or weapon lists and advances to the next one
 void clean_loadout_list_entry()
 {
-	int dummy; 
+	int dummy;
 
 	// clean out the broken entry
 	ignore_white_space();
@@ -2847,11 +2847,11 @@ void clean_loadout_list_entry()
 	ignore_white_space();
 }
 
-// Karajorma - Stuffs an int list by parsing a list of ship or weapon choices. 
+// Karajorma - Stuffs an int list by parsing a list of ship or weapon choices.
 // Unlike stuff_int_list it can deal with variables and it also has better error reporting.
 int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 {
-	int count = 0; 
+	int count = 0;
 	int index, sexp_variable_index, variable_found;
 	char str[128];
 
@@ -2872,18 +2872,18 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 
 		index = -1;
 		sexp_variable_index = NOT_SET_BY_SEXP_VARIABLE;
-		variable_found = get_string_or_variable (str); 
+		variable_found = get_string_or_variable (str);
 
-		// if we've got a variable get the variable index and copy it's value into str so that regardless of whether we found 
+		// if we've got a variable get the variable index and copy it's value into str so that regardless of whether we found
 		// a variable or not it now holds the name of the ship or weapon we're interested in.
 		if (variable_found) {
 			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
 			sexp_variable_index = get_index_sexp_variable_name(str);
-			
+
 			if(sexp_variable_index<0) {
 				Error(LOCATION, "Invalid SEXP variable name \"%s\" found in stuff_loadout_list.", str);
 			}
-        
+
 			strcpy_s (str, Sexp_variables[sexp_variable_index].text);
 		}
 
@@ -2902,44 +2902,44 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 				Int3();
 		}
 
-		// Complain if this isn't a valid ship or weapon and we are loading a mission. Campaign files can be loading containing 
-		// no ships from the current tables (when swapping mods) so don't report that as an error. 
+		// Complain if this isn't a valid ship or weapon and we are loading a mission. Campaign files can be loading containing
+		// no ships from the current tables (when swapping mods) so don't report that as an error.
 		if (index < 0 && (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)) {
 			// print a warning in debug mode
 			Warning(LOCATION, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
-			// increment counter for release FRED builds. 
+			// increment counter for release FRED builds.
 			Num_unknown_loadout_classes++;
 
-			clean_loadout_list_entry(); 
+			clean_loadout_list_entry();
 			continue;
 		}
 
 		// similarly, complain if this is a valid ship or weapon class that the player can't use
 		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[index].flags & SIF_PLAYER_SHIP)) ) {
-			clean_loadout_list_entry(); 
+			clean_loadout_list_entry();
 			Warning(LOCATION, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
 			continue;
 		}
 		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[index].wi_flags & WIF_PLAYER_ALLOWED)) ) {
-			clean_loadout_list_entry(); 
+			clean_loadout_list_entry();
 			nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str));
 			if ( !Is_standalone )
 				Warning(LOCATION, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str);
 			continue;
 		}
-		
+
 		// we've found a real item. Add its index to the list.
 		if (count < max_ints) {
 			ilp[count++] = index;
 		}
-		
+
 		ignore_white_space();
 
 		// Campaign lists need go no further
 		if (lookup_type == CAMPAIGN_LOADOUT_SHIP_LIST || lookup_type == CAMPAIGN_LOADOUT_WEAPON_LIST) {
 			continue;
 		}
-		
+
 		// record the index of the variable that gave us this item if any
 		if (count < max_ints) {
 			ilp[count++] = sexp_variable_index;
@@ -3012,11 +3012,11 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 				case SHIP_TYPE:
 					num = ship_name_lookup(str);	// returns index of Ship[] entry with name
 					break;
-			
+
 				case SHIP_INFO_TYPE:
 					num = ship_info_lookup(str);	// returns index of Ship_info[] entry with name
 					break;
-	
+
 				case WEAPON_LIST_TYPE:
 					num = weapon_info_lookup(str);
 					break;
@@ -3030,7 +3030,7 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 				Error(LOCATION, "Unable to find string \"%s\" in mark_int_list.\n", str);
 
 //			ilp[num] = 1;
-		
+
 		} else {
 			int	tval;
 
@@ -3040,7 +3040,7 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 				ilp[tval] = 1;
 			}
 		}
-		
+
 		ignore_white_space();
 	}
 
@@ -3105,7 +3105,7 @@ int stuff_vec3d_list(vec3d *vlp, int max_vecs)
 			vec3d temp;
 			stuff_parenthesized_vec3d(&temp);
 		}
-		
+
 		ignore_white_space();
 	}
 
@@ -3132,7 +3132,7 @@ int stuff_vec3d_list(SCP_vector<vec3d> &vec_list)
 		vec3d temp;
 		stuff_parenthesized_vec3d(&temp);
 		vec_list.push_back(temp);
-		
+
 		ignore_white_space();
 	}
 
@@ -3189,7 +3189,7 @@ void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, c
 	if (*addr < 0 && checking_ship_classes)
 	{
 		int idx = ship_info_lookup(token);
-		
+
 		if (idx >= 0)
 			*addr = string_lookup(Ship_info[idx].name, strlist, max, description, 0);
 		else
@@ -3200,7 +3200,7 @@ void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, c
 void find_and_stuff_optional(char *id, int *addr, int f_type, char *strlist[], int max, char *description)
 {
 	char token[128];
-	
+
 	if(optional_string(id))
 	{
 		stuff_string(token, f_type, sizeof(token));
@@ -3253,7 +3253,7 @@ void pause_parse()
 
 	strcpy_s(Current_filename_save, Current_filename);
 
-	Parsing_paused = 1;	
+	Parsing_paused = 1;
 }
 
 // unpause parsing to continue with previously parsing file
@@ -3305,7 +3305,7 @@ char *split_str_once(char *src, int max_pixel_w)
 
 	Assert(src);
 	Assert(max_pixel_w > 0);
-	
+
 	gr_get_string_size(&w, NULL, src);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
 		return NULL;  // string doesn't require a cut
@@ -3351,7 +3351,7 @@ char *split_str_once(char *src, int max_pixel_w)
 
 	if (!*src)
 		return NULL;  // end of the string anyway
-		
+
 	if (*src == '\n')
 		src++;
 
@@ -3361,7 +3361,7 @@ char *split_str_once(char *src, int max_pixel_w)
 #define SPLIT_STR_BUFFER_SIZE	512
 
 // --------------------------------------------------------------------------------------
-// split_str() 
+// split_str()
 //
 // A general function that will split a string into several lines.  Lines are allowed up
 // to max_pixel_w pixels.  Breaks are found in white space.
@@ -3386,14 +3386,14 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	const char *breakpoint = NULL;
 	int sw, new_line = 1, line_num = 0, last_was_white = 0;
 	int ignore_until_whitespace, buf_index;
-	
+
 	// check our assumptions..
 	Assert(src != NULL);
 	Assert(n_chars != NULL);
 	Assert(p_str != NULL);
 	Assert(max_lines > 0);
 	Assert(max_pixel_w > 0);
-	
+
 	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
 	buf_index = 0;
 	ignore_until_whitespace = 0;
@@ -3466,7 +3466,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 		buffer[buf_index] = *src;
 		buf_index++;
 		buffer[buf_index] = 0;  // null terminate it
-	
+
 		gr_get_string_size(&sw, NULL, buffer);
 		if (sw >= max_pixel_w) {
 			const char *end;
@@ -3508,11 +3508,11 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 	const char *breakpoint = NULL;
 	int sw, new_line = 1, line_num = 0, last_was_white = 0;
 	int ignore_until_whitespace = 0, buf_index = 0;
-	
+
 	// check our assumptions..
 	Assert(src != NULL);
 	Assert(max_pixel_w > 0);
-	
+
 	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
 
 	// get rid of any leading whitespace
@@ -3581,7 +3581,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 		buffer[buf_index] = *src;
 		buf_index++;
 		buffer[buf_index] = 0;  // null terminate it
-	
+
 		gr_get_string_size(&sw, NULL, buffer);
 		if (sw >= max_pixel_w) {
 			const char *end;
@@ -3833,7 +3833,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 				dest += (char) va_arg(ap, int);
 				break;
 			}
-			case 'f':			
+			case 'f':
 			{
 				dval = va_arg(ap, double);
 				sprintf(buf_dest, buf_src, dval);
