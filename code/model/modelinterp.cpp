@@ -2824,7 +2824,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	Assert( pm->n_detail_levels < MAX_MODEL_DETAIL_LEVELS );
 
 	vec3d closest_pos;
-	float depth = model_find_closest_point( &closest_pos, model_num, -1, orient, pos, &Eye_position );
+	float depth = model_find_closest_point( &closest_pos, model_num, -1, orient, pos, &View_position );
 
 	if ( !(Interp_flags & MR_LOCK_DETAIL) ) {
 		#if MAX_DETAIL_LEVEL != 4
