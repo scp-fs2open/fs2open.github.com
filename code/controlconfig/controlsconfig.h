@@ -292,6 +292,7 @@ extern int Control_config_overlay_id;
 
 extern config_item Control_config[];		//!< Stores the keyboard configuration
 extern SCP_vector<config_item*> Control_config_presets; // tabled control presets; pointers to config_item arrays
+extern SCP_vector<SCP_string> Control_config_preset_names; // names for Control_config_presets (identical order of items)
 extern char **Scan_code_text;
 extern char **Joy_button_text;
 
