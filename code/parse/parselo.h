@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
@@ -22,7 +22,7 @@
 extern char	*Mission_text;
 extern char	*Mission_text_raw;
 extern char	*Mp;
-extern char	*token_found;
+extern const char	*token_found;
 extern int fred_parse_flag;
 extern int Token_found_flag;
 
@@ -105,7 +105,7 @@ extern int optional_string_either(char *str1, char *str2);
 extern int optional_string_one_of(int arg_count, ...);
 
 // required
-extern int required_string(char *pstr);
+extern int required_string(const char *pstr);
 extern int required_string_either(char *str1, char *str2);
 extern int required_string_one_of(int arg_count, ...);
 
@@ -128,7 +128,7 @@ extern void stuff_string_line(SCP_string &outstr);
 //alloc
 extern char* alloc_block(char* startstr, char* endstr, int extra_chars = 0);
 
-// Exactly the same as stuff string only Malloc's the buffer. 
+// Exactly the same as stuff string only Malloc's the buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
 extern char *stuff_and_malloc_string(int type, char *terminators = NULL);
@@ -247,7 +247,7 @@ extern int parse_modular_table(const char *name_check, void (*parse_callback)(co
 // to know that we are parsing a modular table
 extern bool Parsing_modular_table;
 
-//Karajorma - Parses mission and campaign ship loadouts. 
+//Karajorma - Parses mission and campaign ship loadouts.
 int stuff_loadout_list (int *ilp, int max_ints, int lookup_type);
 int get_string_or_variable (char *str);
 int get_string_or_variable (SCP_string &str);
