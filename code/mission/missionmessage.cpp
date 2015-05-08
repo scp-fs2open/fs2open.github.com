@@ -1534,6 +1534,9 @@ void message_queue_process()
 
 	//	Don't play death scream unless a small ship.
 	if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
+		if (Message_shipnum < 0) {
+			goto all_done;
+		}
 		if (!((Ship_info[Ships[Message_shipnum].ship_info_index].flags & SIF_SMALL_SHIP) || (Ships[Message_shipnum].flags2 & SF2_ALWAYS_DEATH_SCREAM)) ) {
 			goto all_done;
 		}

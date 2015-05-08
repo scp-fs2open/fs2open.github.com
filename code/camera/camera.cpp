@@ -540,8 +540,15 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 //*************************subtitle*************************
 
 #define MAX_SUBTITLE_LINES		64
-subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* in_imageanim, float in_display_time, float in_fade_time, const color *in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width, int in_height, bool in_post_shaded)
+subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* in_imageanim, float in_display_time,
+	float in_fade_time, const color *in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width,
+	int in_height, bool in_post_shaded)
+	:display_time(-1.0f), fade_time(-1.0f), text_fontnum(-1), time_displayed(-1.0f), time_displayed_end(-1.0f),
+	post_shaded(false)
 {
+	// Initialize color
+	gr_init_color(&text_color, 0, 0, 0);
+	
 	SCP_string text_buf;
 
 	// basic init, this always has to be done
