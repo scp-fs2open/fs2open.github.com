@@ -2175,7 +2175,7 @@ void game_show_framerate()
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (Cmdline_frame_profile) {
-			gr_string(20, 100 + line_height, profile_output, GR_RESIZE_NONE);
+			gr_string(20, 100 + line_height, profile_output.c_str(), GR_RESIZE_NONE);
 		}
 
 		if (Show_framerate) {
