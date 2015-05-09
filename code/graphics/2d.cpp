@@ -1711,7 +1711,7 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 
 	t1 = timer_get_milliseconds();
 
-	mprintf(("Index Buffer created in %d milliseconds\n", t1-t0));
+	//mprintf(("Index Buffer created in %d milliseconds\n", t1-t0));
 
 	// if there is nothig to change then bail
 	if (n_verts == nverts) {
@@ -1780,7 +1780,7 @@ poly_list& poly_list::operator = (poly_list &other_list)
 
 void poly_list::generate_sorted_index_list()
 {
-	for ( uint j = 0; j < n_verts; ++j) {
+	for ( int j = 0; j < (uint)n_verts; ++j) {
 		sorted_indices[j] = j;
 	}
 

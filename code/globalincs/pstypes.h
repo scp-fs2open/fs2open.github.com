@@ -691,21 +691,23 @@ public:
 // for GCC with autotools, see AX_CXX_COMPILE_STDCXX_11 macro in configure.ac
 // this sets HAVE_CXX11 & -std=c++0x or -std=c++11 appropriately
 
-// Use the visual studio version to detect C++11 support
-#if _MSC_VER >= 1600
-#	define HAVE_CXX11
-#endif
-// clang doesn't seem to have a feature check for is_trivial
-// oh well, assume it'll be covered by one of the other two checks...
-// http://clang.llvm.org/docs/LanguageExtensions.html#feature_check
-#if defined(__clang__)
-	#if __has_feature(cxx_static_assert)
-		#if __has_feature(cxx_auto_type)
-			#define HAVE_CXX11
-		#endif // __has_feature(cxx_auto_type)
-	#endif // __has_feature(cxx_static_assert)
-#endif // defined(__clang__)
-// TODO: sort out cmake/gcc
+#ifndef HAVE_CXX11
+	// Use the visual studio version to detect C++11 support
+	#if _MSC_VER >= 1600
+	#	define HAVE_CXX11
+	#endif
+	// clang doesn't seem to have a feature check for is_trivial
+	// oh well, assume it'll be covered by one of the other two checks...
+	// http://clang.llvm.org/docs/LanguageExtensions.html#feature_check
+	#if defined(__clang__)
+		#if __has_feature(cxx_static_assert)
+			#if __has_feature(cxx_auto_type)
+				#define HAVE_CXX11
+			#endif // __has_feature(cxx_auto_type)
+		#endif // __has_feature(cxx_static_assert)
+	#endif // defined(__clang__)
+	// TODO: sort out cmake/gcc
+#endif // HAVE_CXX11
 
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // would prefer std::is_trivially_copyable but it's not supported by gcc yet

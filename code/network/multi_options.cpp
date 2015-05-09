@@ -585,6 +585,11 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 	// find out who is sending this data	
 	player_index = find_player_id(hinfo->id);
 
+	if (player_index < 0) {
+		nprintf(("Network", "Received packet from unknown player!\n"));
+		return;
+	}
+
 	// get the packet code
 	GET_DATA(code);
 	switch(code){

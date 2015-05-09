@@ -182,7 +182,6 @@ Flag exe_params[] =
 	{ "-noparseerrors",		"Disable parsing errors",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noparseerrors", },
 	{ "-query_speech",		"Check if this build has speech",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-query_speech", },
 	{ "-novbo",				"Disable OpenGL VBO",						true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-novbo", },
-	{ "-noibx",				"Don't use cached index buffers (IBX)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noibx", },
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
 	{ "-disable_fbo",		"Disable OpenGL RenderTargets",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_fbo", },
 	{ "-disable_pbo",		"Disable OpenGL Pixel Buffer Objects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_pbo", },
@@ -412,7 +411,6 @@ int Cmdline_objupd = 3;		// client object updates on LAN by default
 // Troubleshooting
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
 cmdline_parm htl_arg("-nohtl", NULL, AT_NONE);				// Cmdline_nohtl  -- don't use HT&L
-cmdline_parm noibx_arg("-noibx", NULL, AT_NONE);				// Cmdline_noibx
 cmdline_parm nomovies_arg("-nomovies", NULL, AT_NONE);		// Cmdline_nomovies  -- Allows video streaming
 cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL, AT_NONE);	// Cmdline_no_set_gamma
 cmdline_parm no_vbo_arg("-novbo", NULL, AT_NONE);			// Cmdline_novbo
@@ -432,7 +430,6 @@ cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
 
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nohtl = 0;
-int Cmdline_noibx = 0;
 int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
@@ -1576,10 +1573,6 @@ bool SetCmdlineParams()
 
 	if(dis_weapons.found())
 		Cmdline_dis_weapons = 1;
-
-	if ( noibx_arg.found() ) {
-		Cmdline_noibx = 1;
-	}
 
 	if ( no_fbo_arg.found() ) {
 		Cmdline_no_fbo = 1;
