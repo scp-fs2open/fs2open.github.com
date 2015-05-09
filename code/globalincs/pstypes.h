@@ -186,14 +186,6 @@ typedef struct effect_vertex {
 	ubyte r, g, b, a;
 } effect_vertex;
 
-struct fx_vertex {
-	vec3d position;
-	vec3d normal;
-	uv_pair tex_coord;
-	float size;
-	ubyte r, g, b, a;
-};
-
 struct particle_pnt {
 	vec3d position;
 	float size;

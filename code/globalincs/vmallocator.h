@@ -159,7 +159,6 @@ bool operator!=(const SCP_vm_allocator<T1>&, const SCP_vm_allocator<T2>&) throw(
 #define SCP_deque std::deque
 #define SCP_vector std::vector
 #define SCP_list std::list
-#define SCP_unordered_map std::unordered_map
 
 #endif
 

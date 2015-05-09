@@ -695,69 +695,6 @@ size_t Batch_buffer_size = 0;
 void *Batch_geometry_buffer = NULL;
 size_t Batch_geometry_buffer_size = 0;
 
-// static size_t find_good_batch_item(int texture)
-// {
-// 	size_t max_size = geometry_map.size();
-// 
-// 	for (size_t i = 0; i < max_size; i++) {
-// 		if (geometry_map[i].texture == texture)
-// 			return i;
-// 	}
-// 
-// 	// don't have an existing match so add a new entry
-// 	batch_item new_item;
-// 
-// 	new_item.texture = texture;
-// 
-// 	geometry_map.push_back(new_item);
-// 
-// 	return (geometry_map.size() - 1);
-// }
-// 
-// static size_t find_good_g_sdr_batch_item(int texture)
-// {
-// 	size_t max_size = geometry_shader_map.size();
-// 
-// 	for (size_t i = 0; i < max_size; i++) {
-// 		if (geometry_shader_map[i].texture == texture)
-// 			return i;
-// 	}
-// 
-// 	// don't have an existing match so add a new entry
-// 	g_sdr_batch_item new_item;
-// 
-// 	new_item.texture = texture;
-// 
-// 	geometry_shader_map.push_back(new_item);
-// 
-// 	return (geometry_shader_map.size() - 1);
-// }
-// 
-// static bool find_good_distortion_item(int texture)
-// {
-// 	SCP_map<int, batch_item>::iterator it = distortion_map.find(texture);
-// 
-// 	if ( it == distortion_map.end() ) {
-// 
-// 	}
-// 
-// 	size_t max_size = distortion_map.size();
-// 
-// 	for (size_t i = 0; i < max_size; i++) {
-// 		if (distortion_map[i].texture == texture)
-// 			return i;
-// 	}
-// 
-// 	// don't have an existing match so add a new entry
-// 	batch_item new_item;
-// 
-// 	new_item.texture = texture;
-// 
-// 	distortion_map.push_back(new_item);
-// 
-// 	return (distortion_map.size() - 1);
-// }
-
 float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
 {
 	if (texture < 0) {
@@ -852,28 +789,6 @@ int geometry_batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orie
 
 	return 0;
 }
-
-// int geometry_batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha, float depth)
-// {
-// 	if (texture < 0) {
-// 		Int3();
-// 		return 1;
-// 	}
-// 
-// 	geometry_shader_batcher *item = NULL;
-// 	size_t index = find_good_batch_item(texture);
-// 
-// 	Assertion( (geometry_shader_map[index].laser == false), "Particle effect %s used as laser glow or laser bitmap\n", bm_get_filename(texture) );
-// 
-// 	geometry_shader_map[index].tmap_flags = tmap_flags;
-// 	geometry_shader_map[index].alpha = alpha;
-// 
-// 	item = &geometry_shader_map[index].batch;
-// 
-// 	item->draw_bitmap(pnt, rad, angle, depth);
-// 
-// 	return 0;
-// }
 
 int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float angle, float rad, float alpha, float depth)
 {

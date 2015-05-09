@@ -2529,9 +2529,9 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint f
 
 	g3_start_instance_matrix(&model->offset, &submodel_matrix, true);
 
-// 	if ( flags & MR_SHOW_PIVOTS ) {
-// 		model_draw_debug_points( pm, &pm->submodel[mn], flags );
-// 	}
+	if ( flags & MR_DEPRECATED_SHOW_PIVOTS ) {
+		model_draw_debug_points( pm, &pm->submodel[mn], flags );
+	}
 
 	i = model->first_child;
 

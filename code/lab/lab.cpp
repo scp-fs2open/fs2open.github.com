@@ -1061,6 +1061,7 @@ void labviewer_render_model(float frametime)
 			g3_done_instance(true);
 		}
 
+		render_info.set_debug_flags(Lab_model_debug_flags);
 		render_info.set_flags(flagggs);
 		render_info.set_object_number(Lab_selected_object);
 

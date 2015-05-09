@@ -1193,7 +1193,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				// Check for unrealistic radii
 				if ( pm->submodel[n].rad <= 0.1f )
 				{
-					//Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", pm->submodel[n].name, filename);
+					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", pm->submodel[n].name, filename);
 				}
 				
 				// sanity first!
@@ -2719,21 +2719,12 @@ int model_create_instance(int model_num, int submodel_num)
 	polymodel *pm = model_get(model_num);
 
 	pmi->submodel = (submodel_instance*)vm_malloc( sizeof(submodel_instance)*pm->n_models );
-	pmi->submodel_render = (submodel_instance*)vm_malloc( sizeof(submodel_instance)*pm->n_models );
 
 	for ( i = 0; i < pm->n_models; i++ ) {
 		model_clear_submodel_instance( &pmi->submodel[i] );
-		model_clear_submodel_instance( &pmi->submodel_render[i] );
 	}
 
 	pmi->model_num = model_num;
-
-	if ( submodel_num < 0 ) {
-		// if using default arguments, use detail0 as the root submodel
-		pmi->root_submodel_num = pm->detail[0];
-	} else {
-		pmi->root_submodel_num = submodel_num;
-	}
 
 	return open_slot;
 }
@@ -2748,10 +2739,6 @@ void model_delete_instance(int model_instance_num)
 
 	if ( pmi->submodel ) {
 		vm_free(pmi->submodel);
-	}
-
-	if ( pmi->submodel_render ) {
-		vm_free(pmi->submodel_render);
 	}
 
 	vm_free(pmi);
@@ -4540,7 +4527,6 @@ void model_clear_submodel_instance( submodel_instance *sm_instance )
 	sm_instance->angs.h = 0.0f;
 	sm_instance->blown_off = false;
 	sm_instance->collision_checked = false;
-	sm_instance->moved_this_frame = false;
 }
 
 void model_clear_submodel_instances( int model_instance_num )
@@ -4665,7 +4651,6 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	if ( sub_model_num >= pm->n_models ) return;
 
 	submodel_instance *smi = &pmi->submodel[sub_model_num];
-	submodel_instance *smi_r = &pmi->submodel_render[sub_model_num];
 	bsp_info *sm = &pm->submodel[sub_model_num];
 
 	// Set the "blown out" flags	
@@ -4676,28 +4661,18 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 			pmi->submodel[sm->my_replacement].blown_off = false;
 			pmi->submodel[sm->my_replacement].angs = sii->angs;
 			pmi->submodel[sm->my_replacement].prev_angs = sii->prev_angs;
-
-			pmi->submodel_render[sm->my_replacement].blown_off = false;
-			pmi->submodel_render[sm->my_replacement].angs = sii->angs;
-			pmi->submodel_render[sm->my_replacement].prev_angs = sii->prev_angs;
 		}
 	} else {
 		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
 		// the replacement model from being drawn by marking it as having been blown off
 		if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
 			pmi->submodel[sm->my_replacement].blown_off = true;
-			pmi->submodel_render[sm->my_replacement].blown_off = true;
 		}
 	}
 
 	// Set the angles
 	smi->angs = sii->angs;
 	smi->prev_angs = sii->prev_angs;
-
-	smi_r->angs = sii->angs;
-	smi_r->prev_angs = sii->prev_angs;
-
-	smi->moved_this_frame = true;
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{
@@ -4711,30 +4686,24 @@ void model_instance_dumb_rotation_sub(polymodel_instance * pmi, polymodel *pm, i
 
 		bsp_info * sm = &pm->submodel[mn];
 		submodel_instance *smi = &pmi->submodel[mn];
-		submodel_instance *smi_r = &pmi->submodel_render[mn];
 
 		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ){
 			float *ang;
-			float *ang_r;
 			int axis = sm->movement_axis;
 			switch ( axis ) {
 			case MOVEMENT_AXIS_X:
 				ang = &smi->angs.p;
-				ang_r = &smi_r->angs.p;
 					break;
 			case MOVEMENT_AXIS_Z:
 				ang = &smi->angs.b;
-				ang_r = &smi_r->angs.b;
 					break;
 			default:
 			case MOVEMENT_AXIS_Y:
 				ang = &smi->angs.h;
-				ang_r = &smi_r->angs.h;
 					break;
 			}
 			*ang = sm->dumb_turn_rate * float(timestamp())/1000.0f;
 			*ang = ((*ang/(PI*2.0f))-float(int(*ang/(PI*2.0f))))*(PI*2.0f);
-			*ang_r = *ang;
 			//this keeps ang from getting bigger than 2PI
 		}
 

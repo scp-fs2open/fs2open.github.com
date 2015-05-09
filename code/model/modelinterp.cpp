@@ -1651,8 +1651,8 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 
 	model_interp_sub( pm->submodel[mn].bsp_data, pm, &pm->submodel[mn], 0 );
 
-//	if (Interp_flags & MR_SHOW_PIVOTS )
-//		model_draw_debug_points( pm, &pm->submodel[mn], Interp_flags );
+	if (Interp_flags & MR_DEPRECATED_SHOW_PIVOTS )
+		model_draw_debug_points( pm, &pm->submodel[mn], Interp_flags );
 
 	if ( pm->submodel[mn].num_arcs )	{
 		interp_render_lightning( pm, &pm->submodel[mn]);
@@ -1771,11 +1771,11 @@ int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_c
 				}
 			}
 
-//			if (Interp_flags & MR_SHOW_PIVOTS )	{
-//				#ifndef NDEBUG
-//				modelstats_num_boxes++;
-//				#endif
-//			}
+			if (Interp_flags & MR_DEPRECATED_SHOW_PIVOTS )	{
+				#ifndef NDEBUG
+				modelstats_num_boxes++;
+				#endif
+			}
 
 			if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 				if ( pushed )	{
@@ -3505,8 +3505,8 @@ void submodel_render_DEPRECATED(int model_num, int submodel_num, matrix *orient,
 		interp_render_lightning( pm, &pm->submodel[submodel_num]);
 	}
 
-// 	if (Interp_flags & MR_SHOW_PIVOTS )
-// 		model_draw_debug_points( pm, &pm->submodel[submodel_num], Interp_flags );
+	if (Interp_flags & MR_DEPRECATED_SHOW_PIVOTS )
+		model_draw_debug_points( pm, &pm->submodel[submodel_num], Interp_flags );
 
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_filter_pop();	
@@ -4785,8 +4785,8 @@ void model_render_children_buffers_DEPRECATED(polymodel *pm, int mn, int detail_
 	
 	model_render_buffers_DEPRECATED(pm, mn, render, true);
 
-// 	if (Interp_flags & MR_SHOW_PIVOTS)
-// 		model_draw_debug_points( pm, &pm->submodel[mn], Interp_flags );
+	if (Interp_flags & MR_DEPRECATED_SHOW_PIVOTS)
+		model_draw_debug_points( pm, &pm->submodel[mn], Interp_flags );
 
 	if (model->num_arcs)
 		interp_render_lightning( pm, &pm->submodel[mn]);
