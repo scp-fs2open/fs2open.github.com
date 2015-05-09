@@ -15,6 +15,7 @@
 #endif
 
 #include <limits.h>
+#include <algorithm>
 
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
