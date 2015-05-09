@@ -617,7 +617,6 @@ void geometry_shader_batcher::load_buffer(particle_pnt* buffer, int *n_verts)
 
 void geometry_shader_batcher::draw_bitmap(vertex *position, int orient, float rad, float depth)
 {
-	float radius = rad;
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
 
 	vec3d PNT(position->world);

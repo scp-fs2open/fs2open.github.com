@@ -163,7 +163,6 @@ void trail_add_batch(trail * trailp)
 	int i;
 	vec3d topv, botv, *fvec, last_pos, tmp_fvec;
 	vertex  top, bot, top_prev, bot_prev;
-	int nv = 0;
 	float w;
 	ubyte l;
 	vec3d centerv;

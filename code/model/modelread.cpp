@@ -759,7 +759,6 @@ void create_vertex_buffer(polymodel *pm)
 	bool use_batched_rendering = true;
 
 	if ( Use_GLSL >= 3 && !Cmdline_no_batching ) {
-		bool unequal_stride = false;
 		uint stride = 0;
 
 		// figure out if the vertex stride of this entire model matches. if not, turn off batched rendering for this model

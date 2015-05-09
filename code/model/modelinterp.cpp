@@ -4514,18 +4514,18 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 	buffer->vertex_offset = 0;
 	buffer->model_list = new(std::nothrow) poly_list;
 
-	size_t num_buffers;
+	int num_buffers;
 	int tex_num;
 
 	// need to first count how many indexes there are in this entire detail model hierarchy
-	for ( i = 0; i < submodel_list.size(); ++i ) {
+	for ( i = 0; i < (int)submodel_list.size(); ++i ) {
 		model_num = submodel_list[i];
 
 		if ( pm->submodel[model_num].is_thruster ) {
 			continue;
 		}
 
-		num_buffers = pm->submodel[model_num].buffer.tex_buf.size();
+		num_buffers = (int)pm->submodel[model_num].buffer.tex_buf.size();
 
 		buffer->flags |= pm->submodel[model_num].buffer.flags;
 
@@ -4549,12 +4549,12 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 		new_buffer.texture = i;
 	}
 
-	for ( i = 0; i < buffer->tex_buf.size(); ++i ) {
+	for ( i = 0; i < (int)buffer->tex_buf.size(); ++i ) {
 		buffer->tex_buf[i].n_verts = 0;
 	}
 
 	// finally copy over the indexes
-	for ( i = 0; i < submodel_list.size(); ++i ) {
+	for ( i = 0; i < (int)submodel_list.size(); ++i ) {
 		model_num = submodel_list[i];
 
 		if (pm->submodel[model_num].is_thruster) {
@@ -4565,7 +4565,7 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 	}
 
 	// check which buffers need to have the > USHORT flag
-	for ( i = 0; i < buffer->tex_buf.size(); ++i ) {
+	for ( i = 0; i < (int)buffer->tex_buf.size(); ++i ) {
 		if ( buffer->tex_buf[i].i_last >= USHRT_MAX ) {
 			buffer->tex_buf[i].flags |= VB_FLAG_LARGE_INDEX;
 		}
@@ -4574,8 +4574,6 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 
 void interp_create_detail_index_buffer(polymodel *pm, int detail_num)
 {
-	size_t i, j;
-	int model_num;
 	SCP_vector<int> submodel_list;
 
 	submodel_list.clear();
@@ -4623,7 +4621,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 	bool transparent_tri = false;
 	int num_tris = 0;
 
-	for ( int i = 0; i < tex_buffers.size(); ++i ) {
+	for ( int i = 0; i < (int)tex_buffers.size(); ++i ) {
 		buffer_data *tex_buf = &tex_buffers[i];
 
 		if ( tex_buf->n_verts < 1 ) {
@@ -4696,7 +4694,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 		buffer_data &new_buff = trans_buffer->tex_buf.back();
 		new_buff.texture = tex_buf->texture;
 
-		for ( int j = 0; j < transparent_indices.size(); ++j ) {
+		for ( int j = 0; j < (int)transparent_indices.size(); ++j ) {
 			new_buff.assign(j, transparent_indices[j]);
 		}
 	}
@@ -5430,7 +5428,6 @@ void bsp_polygon_data::process_defpoints(int off, ubyte* bsp_data)
 	int i, n;
 	int nverts = w(off + bsp_data + 8);
 	int offset = w(off + bsp_data + 16);
-	int next_norm = 0;
 
 	ubyte *normcount = off + bsp_data + 20;
 	vec3d *src = vp(off + bsp_data + offset);

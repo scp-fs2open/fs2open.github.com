@@ -1780,7 +1780,7 @@ poly_list& poly_list::operator = (poly_list &other_list)
 
 void poly_list::generate_sorted_index_list()
 {
-	for ( int j = 0; j < (uint)n_verts; ++j) {
+	for ( int j = 0; j < n_verts; ++j) {
 		sorted_indices[j] = j;
 	}
 
@@ -1796,7 +1796,7 @@ bool poly_list::finder::operator()(const uint a, const uint b)
 
 	Assert(search_list != NULL);
 
-	if ( a == search_list->n_verts ) {
+	if ( a == (uint)search_list->n_verts ) {
 		Assert(vert_to_find != NULL);
 		Assert(norm_to_find != NULL);
 		Assert(a != b);
@@ -1808,7 +1808,7 @@ bool poly_list::finder::operator()(const uint a, const uint b)
 		norm_a = &search_list->norm[a];
 	}
 	
-	if ( b == search_list->n_verts ) {
+	if ( b == (uint)search_list->n_verts ) {
 		Assert(vert_to_find != NULL);
 		Assert(norm_to_find != NULL);
 		Assert(a != b);

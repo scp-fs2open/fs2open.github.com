@@ -17934,7 +17934,6 @@ void ship_render_batch_thrusters(object *obj)
 	int num = obj->instance;
 	ship *shipp = &Ships[num];
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
-	bool show_thrusters = ((shipp->flags2 & SF2_NO_THRUSTERS) == 0) && !Rendering_to_shadow_map;
 
 	if ( Rendering_to_shadow_map ) return;
 

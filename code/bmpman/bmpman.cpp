@@ -156,8 +156,8 @@ float bitmap_lookup::get_channel_red(float u, float v)
 	CLAMP(u, 0.0, 1.0f);
 	CLAMP(v, 0.0, 1.0f);
 
-	int x = map_texture_address(u) * (Width-1);
-	int y = map_texture_address(v) * (Height-1);
+	int x = fl2i(map_texture_address(u) * (Width-1));
+	int y = fl2i(map_texture_address(v) * (Height-1));
 
 	return Bitmap_data[(y*Width + x)*Num_channels];
 }
@@ -169,8 +169,8 @@ float bitmap_lookup::get_channel_green(float u, float v)
 	CLAMP(u, 0.0, 1.0f);
 	CLAMP(v, 0.0, 1.0f);
 
-	int x = map_texture_address(u) * (Width-1);
-	int y = map_texture_address(v) * (Height-1);
+	int x = fl2i(map_texture_address(u) * (Width-1));
+	int y = fl2i(map_texture_address(v) * (Height-1));
 
 	return Bitmap_data[(y*Width + x)*Num_channels + 1];
 }
@@ -179,8 +179,8 @@ float bitmap_lookup::get_channel_blue(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
 
-	int x = map_texture_address(u) * (Width-1);
-	int y = map_texture_address(v) * (Height-1);
+	int x = fl2i(map_texture_address(u) * (Width-1));
+	int y = fl2i(map_texture_address(v) * (Height-1));
 
 	return Bitmap_data[(y*Width + x)*Num_channels + 2];
 }
@@ -189,8 +189,8 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
 
-	int x = map_texture_address(u) * (Width-1);
-	int y = map_texture_address(v) * (Height-1);
+	int x = fl2i(map_texture_address(u) * (Width-1));
+	int y = fl2i(map_texture_address(v) * (Height-1));
 
 	return Bitmap_data[(y*Width + x)*Num_channels + 3];
 }

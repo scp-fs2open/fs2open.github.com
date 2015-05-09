@@ -2666,13 +2666,11 @@ void model_render_immediate(model_render_params *render_info, int model_num, mat
 void model_render_queue(model_render_params *interp, draw_list *scene, int model_num, matrix *orient, vec3d *pos)
 {
 	int i;
-	int cull = 0;
 
 	const int objnum = interp->get_object_number();
 	const int model_flags = interp->get_model_flags();
 
 	polymodel *pm = model_get(model_num);
-	polymodel_instance * pmi = NULL;
 		
 	model_do_dumb_rotation(model_num);
 
@@ -2720,8 +2718,6 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 		}
 	}
 	
-	int tmp_detail_level = Game_detail_level;
-	
 	// Set the flags we will pass to the tmapper
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
@@ -2753,7 +2749,6 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 
 	bool is_outlines_only = (model_flags & MR_NO_POLYS) && ((model_flags & MR_SHOW_OUTLINE_PRESET) || (model_flags & MR_SHOW_OUTLINE));
 	bool is_outlines_only_htl = !Cmdline_nohtl && (model_flags & MR_NO_POLYS) && (model_flags & MR_SHOW_OUTLINE_HTL);
-	bool use_api = !is_outlines_only_htl || (gr_screen.mode == GR_OPENGL);
 
 	scene->push_transform(pos, orient);
 

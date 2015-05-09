@@ -31,11 +31,6 @@ light_frustum_info Shadow_frustums[MAX_SHADOW_CASCADES];
 
 bool shadows_obj_in_frustum(object *objp, matrix *light_orient, vec3d *min, vec3d *max)
 {
-	int i;
-	vec3d pts[8], tmp, pt, pos_lightspace, pos_viewspace;
-	vec3d obj_min = ZERO_VECTOR;
-	vec3d obj_max = ZERO_VECTOR;
-
 	vec3d pos, pos_rot;
 
 	vm_vec_sub(&pos, &objp->pos, &Eye_position);

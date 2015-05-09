@@ -827,8 +827,8 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	// setup shader flags for the things that we want/need
 	shader_flags = gr_determine_model_shader_flags(
 		lighting_is_enabled, 
-		GL_state.Fog(), 
-		textured, 
+		GL_state.Fog() ? true : false, 
+		textured ? true : false, 
 		Rendering_to_shadow_map,
 		GL_thrust_scale > 0.0f,
 		(flags & TMAP_FLAG_BATCH_TRANSFORMS) && (GL_transform_buffer_offset >= 0) && (bufferp->flags & VB_FLAG_MODEL_ID),

@@ -1725,7 +1725,6 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 	int alpha, tmap_type, r, g, b;
 	float u_scale = 1.0f, v_scale = 1.0f;
 	GLenum gl_mode = GL_TRIANGLE_FAN;
-	int attrib_index = -1;
 	int zbuff = ZBUFFER_TYPE_DEFAULT;
 	GL_CHECK_FOR_ERRORS("start of render3d()");
 
@@ -1739,7 +1738,6 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 
 	if ( flags & TMAP_FLAG_TEXTURED ) {
 		if ( flags & TMAP_FLAG_SOFT_QUAD ) {
-			int sdr_index;
 			if( (flags & TMAP_FLAG_DISTORTION) || (flags & TMAP_FLAG_DISTORTION_THRUSTER) )
 			{
 				glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
@@ -3136,7 +3134,7 @@ void gr_opengl_deferred_lighting_finish()
 	}
 
 	GL_state.SetAlphaBlendMode( ALPHA_BLEND_ADDITIVE);
-	int zbuff = gr_zbuffer_set(GR_ZBUFF_NONE);
+	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	//GL_state.DepthFunc(GL_GREATER);
 	//GL_state.DepthMask(GL_FALSE);
