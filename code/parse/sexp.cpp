@@ -8800,26 +8800,25 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	if (n == -1)
 	{
 		n = CDR(arg_handler_node);
+		int temp_node = n;
 
 		// pick an argument and iterate to it
 		random_argument = rand_internal(1, num_valid_args);
 		i = 0;
-		for (int j = 0; j >= num_valid_args; n = CDR(n))
+		for (int j = 0; j < num_valid_args; temp_node = CDR(temp_node))
 		{
 			Assert(n >= 0);
 
 			// count only valid arguments
-			if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID) {
+			if (Sexp_nodes[temp_node].flags & SNF_ARGUMENT_VALID) {
 				j++;
-				if (i < random_argument)
-					i++;
+				if (i < random_argument && (++i == random_argument)) {
+					// Found the node we want, store it for use
+					n = temp_node;
+				}
 
-				if ((Sexp_nodes[n].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[n].value == SEXP_NAN_FOREVER))
+				if ((Sexp_nodes[temp_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[temp_node].value == SEXP_NAN_FOREVER))
 					num_known_false++;
-
-				// if we're out of valid arguments, we're done
-				if (j >= num_valid_args)
-					break;
 			}
 		}
 
