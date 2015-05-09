@@ -1078,19 +1078,18 @@ void mc_check_subobj( int mn )
 		return;
 	}
 
-	// quickly bail if we aren't inside the full model bbox
-	if ( !mc_ray_boundingbox(&Mc_pm->mins, &Mc_pm->maxs, &Mc_p0, &Mc_direction, NULL) ) {
-		return;
-	}
-
-	// If we are checking the root submodel, then we might want
-	// to check the shield at this point
-	if (Mc->flags & MC_CHECK_SHIELD) {
-		if ( (Mc_pm->detail[0] == mn) && (Mc_pm->shield.ntris > 0) ) {
-			mc_check_shield();
+	if (Mc_pm->detail[0] == mn)	{
+		// Quickly bail if we aren't inside the full model bbox
+		if (!mc_ray_boundingbox( &Mc_pm->mins, &Mc_pm->maxs, &Mc_p0, &Mc_direction, NULL))	{
+			return;
 		}
 
-		return;
+		// If we are checking the root submodel, then we might want to check	
+		// the shield at this point
+		if ((Mc->flags & MC_CHECK_SHIELD) && (Mc_pm->shield.ntris > 0 )) {
+			mc_check_shield();
+			return;
+		}
 	}
 
 	if (!(Mc->flags & MC_CHECK_MODEL)) {
