@@ -3144,6 +3144,15 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 			stuff_vec3d(&metadata.departure_rvec);
 		}
 
+		if (optional_string("+arrive speed multiplier:"))
+		{
+			stuff_float(&metadata.arrive_speed_mult);
+		}
+		if (optional_string("+depart speed multiplier:"))
+		{
+			stuff_float(&metadata.depart_speed_mult);
+		}
+
 		//Add the new path_metadata to sip->pathMetadata keyed by path name
 		SCP_string pathName(path_name);
 		sip->pathMetadata[pathName] = metadata;
@@ -17758,6 +17767,8 @@ int ship_get_subobj_model_num(ship_info* sip, char* subobj_name)
 void init_path_metadata(path_metadata& metadata)
 {
 	vm_vec_zero(&metadata.departure_rvec);
+	metadata.arrive_speed_mult = FLT_MIN;
+	metadata.depart_speed_mult = FLT_MIN;
 }
 
 int ship_get_sound(object *objp, GameSoundsIndex id)

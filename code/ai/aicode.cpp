@@ -4011,9 +4011,55 @@ float ai_path_1()
 	dot_to_next = vm_vec_dot_to_point(&nvel_vec, &Pl_objp->pos, &gnvp);
 
 	// This path mode respects the "cap-waypoint-speed" SEXP
-	float max_allowed_speed = 0;
+	float max_allowed_speed = 0.0f;
 	if ( aip->waypoint_speed_cap > 0) {
 		max_allowed_speed = (float) aip->waypoint_speed_cap;
+	}
+
+	// Maybe gradually ramp up/down the speed of a ship flying a fighterbay path
+	if (aip->mode == AIM_BAY_EMERGE || (aip->mode == AIM_BAY_DEPART && aip->path_cur != aip->path_start)) {
+		SCP_string pathName(pm->paths[Path_points[aip->path_start].path_num].name);
+		ship_info *gsip = &Ship_info[gshipp->ship_info_index];
+		float speed_mult = 1.0f;
+
+		if (aip->mode == AIM_BAY_EMERGE) { // Arriving
+			if (gsip->pathMetadata.find(pathName) != gsip->pathMetadata.end()) {
+				speed_mult = gsip->pathMetadata[pathName].arrive_speed_mult;
+			}
+
+			if (speed_mult == FLT_MIN) {
+				speed_mult = The_mission.ai_profile->bay_arrive_speed_mult;
+			}
+		} else { // Departing
+			if (gsip->pathMetadata.find(pathName) != gsip->pathMetadata.end()) {
+				speed_mult = gsip->pathMetadata[pathName].depart_speed_mult;
+			}
+
+			if (speed_mult == FLT_MIN) {
+				speed_mult = The_mission.ai_profile->bay_depart_speed_mult;
+			}
+		}
+
+		if (speed_mult != 1.0f) {
+			// We use the distance between the first and last point on the path here; it's not accurate
+			// if the path is not straight, but should be good enough usually; can be changed if necessary.
+			float total_path_length = vm_vec_dist_quick(&Path_points[aip->path_start].pos, &Path_points[aip->path_start + num_points - 1].pos);
+			float dist_to_end;
+
+			if (aip->mode == AIM_BAY_EMERGE) { // Arriving
+				dist_to_end = vm_vec_dist_quick(&Pl_objp->pos, &Path_points[aip->path_start].pos);
+			} else { // Departing
+				dist_to_end = vm_vec_dist_quick(&Pl_objp->pos, &Path_points[aip->path_start + num_points - 1].pos);
+			}
+
+			// Calculate max speed, but respect the waypoint speed cap if it's lower
+			float max_bay_speed = sip->max_speed * (speed_mult + (1.0f - speed_mult) * (dist_to_end / total_path_length));
+			if (max_allowed_speed == 0.0f) {
+				max_allowed_speed = max_bay_speed;
+			} else {
+				max_allowed_speed = MIN(max_allowed_speed, max_bay_speed);
+			}
+		}
 	}
 
 	set_accel_for_docking(Pl_objp, aip, dot, dot_to_next, dist_to_next, dist_to_goal, sip, max_allowed_speed);
