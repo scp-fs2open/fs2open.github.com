@@ -4020,7 +4020,7 @@ float ai_path_1()
 	if (aip->mode == AIM_BAY_EMERGE || (aip->mode == AIM_BAY_DEPART && aip->path_cur != aip->path_start)) {
 		SCP_string pathName(pm->paths[Path_points[aip->path_start].path_num].name);
 		ship_info *gsip = &Ship_info[gshipp->ship_info_index];
-		float speed_mult = 1.0f;
+		float speed_mult = FLT_MIN;
 
 		if (aip->mode == AIM_BAY_EMERGE) { // Arriving
 			if (gsip->pathMetadata.find(pathName) != gsip->pathMetadata.end()) {
@@ -4040,7 +4040,7 @@ float ai_path_1()
 			}
 		}
 
-		if (speed_mult != 1.0f) {
+		if (speed_mult != FLT_MIN && speed_mult != 1.0f) {
 			// We use the distance between the first and last point on the path here; it's not accurate
 			// if the path is not straight, but should be good enough usually; can be changed if necessary.
 			float total_path_length = vm_vec_dist_quick(&Path_points[aip->path_start].pos, &Path_points[aip->path_start + num_points - 1].pos);
