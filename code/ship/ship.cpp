@@ -3147,10 +3147,28 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		if (optional_string("+arrive speed multiplier:"))
 		{
 			stuff_float(&metadata.arrive_speed_mult);
+
+			if (The_mission.ai_profile->ai_path_mode != AI_PATH_MODE_ALT1) {
+				static bool warned_about_metadata_bay_speed_multiplier_pathing = false;
+				if (!warned_about_metadata_bay_speed_multiplier_pathing)
+				{
+					Warning(LOCATION, "For +arrive speed multiplier or +depart speed multiplier to work on ship %s, $ai path mode must be set to alt1!", sip->name);
+					warned_about_metadata_bay_speed_multiplier_pathing = true;
+				}
+			}
 		}
 		if (optional_string("+depart speed multiplier:"))
 		{
 			stuff_float(&metadata.depart_speed_mult);
+
+			if (The_mission.ai_profile->ai_path_mode != AI_PATH_MODE_ALT1) {
+				static bool warned_about_metadata_bay_speed_multiplier_pathing = false;
+				if (!warned_about_metadata_bay_speed_multiplier_pathing)
+				{
+					Warning(LOCATION, "For +arrive speed multiplier or +depart speed multiplier to work on ship %s, $ai path mode must be set to alt1!", sip->name);
+					warned_about_metadata_bay_speed_multiplier_pathing = true;
+				}
+			}
 		}
 
 		//Add the new path_metadata to sip->pathMetadata keyed by path name
