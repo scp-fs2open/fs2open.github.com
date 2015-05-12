@@ -614,6 +614,10 @@
 		918A074C1804B4A600983AE1 /* libjansson.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 918A07221804AFAA00983AE1 /* libjansson.a */; };
 		918A074D1804B4A600983AE1 /* libmongoose.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 918A07141804AF0F00983AE1 /* libmongoose.a */; };
 		9193B29817EDFEB7003CC0BA /* profiling.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9193B29717EDFEB7003CC0BA /* profiling.cpp */; };
+		91BE0F0F1B029B9B00FF1365 /* shadows.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91BE0F0D1B029B9B00FF1365 /* shadows.cpp */; };
+		91BE0F101B029B9B00FF1365 /* shadows.h in Headers */ = {isa = PBXBuildFile; fileRef = 91BE0F0E1B029B9B00FF1365 /* shadows.h */; };
+		91BE0F131B029BA800FF1365 /* modelrender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91BE0F111B029BA800FF1365 /* modelrender.cpp */; };
+		91BE0F141B029BA800FF1365 /* modelrender.h in Headers */ = {isa = PBXBuildFile; fileRef = 91BE0F121B029BA800FF1365 /* modelrender.h */; };
 		91F4EE3A1AB32675006EF158 /* hashtable_seed.c in Sources */ = {isa = PBXBuildFile; fileRef = 91F4EE381AB32675006EF158 /* hashtable_seed.c */; };
 		91F4EE3B1AB32675006EF158 /* lookup3.h in Headers */ = {isa = PBXBuildFile; fileRef = 91F4EE391AB32675006EF158 /* lookup3.h */; };
 		F007DDF612F4F44600D2F6C1 /* jconfig.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB512F4F44600D2F6C1 /* jconfig.h */; };
@@ -1558,6 +1562,10 @@
 		918A07361804B01800983AE1 /* utf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utf.h; sourceTree = "<group>"; };
 		918A07371804B01800983AE1 /* value.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = value.c; sourceTree = "<group>"; };
 		9193B29717EDFEB7003CC0BA /* profiling.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = profiling.cpp; sourceTree = "<group>"; };
+		91BE0F0D1B029B9B00FF1365 /* shadows.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = shadows.cpp; sourceTree = "<group>"; };
+		91BE0F0E1B029B9B00FF1365 /* shadows.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = shadows.h; sourceTree = "<group>"; };
+		91BE0F111B029BA800FF1365 /* modelrender.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = modelrender.cpp; sourceTree = "<group>"; };
+		91BE0F121B029BA800FF1365 /* modelrender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = modelrender.h; sourceTree = "<group>"; };
 		91F4EE381AB32675006EF158 /* hashtable_seed.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hashtable_seed.c; sourceTree = "<group>"; };
 		91F4EE391AB32675006EF158 /* lookup3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lookup3.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
@@ -2268,6 +2276,8 @@
 		3459536208C3D6A0003B1351 /* graphics */ = {
 			isa = PBXGroup;
 			children = (
+				91BE0F0D1B029B9B00FF1365 /* shadows.cpp */,
+				91BE0F0E1B029B9B00FF1365 /* shadows.h */,
 				345A81150B4941D700282E7A /* grstub.cpp */,
 				3468A8D20991BD5B00123C87 /* generic.cpp */,
 				3468A8D30991BD5B00123C87 /* generic.h */,
@@ -2550,6 +2560,8 @@
 		3459544408C3D6A0003B1351 /* model */ = {
 			isa = PBXGroup;
 			children = (
+				91BE0F111B029BA800FF1365 /* modelrender.cpp */,
+				91BE0F121B029BA800FF1365 /* modelrender.h */,
 				349807E00A25B98A0013844A /* modelanim.cpp */,
 				3488083A0DA054F1001CAB39 /* modelanim.h */,
 				3459544508C3D6A0003B1351 /* model.h */,
@@ -3439,6 +3451,7 @@
 				34C71C2F08C41BD100459F5B /* outwnd.h in Headers */,
 				34C71C3108C41BD300459F5B /* osregistry.h in Headers */,
 				34C71C3308C41BD700459F5B /* osapi.h in Headers */,
+				91BE0F101B029B9B00FF1365 /* shadows.h in Headers */,
 				34C71C3608C41BE800459F5B /* palman.h in Headers */,
 				34C71C3808C41BED00459F5B /* sexp.h in Headers */,
 				34C71C3A08C41BEE00459F5B /* parselo.h in Headers */,
@@ -3468,6 +3481,7 @@
 				34C71C6D08C41C2A00459F5B /* fsspeech.h in Headers */,
 				34C71C7008C41C2F00459F5B /* ds.h in Headers */,
 				34C71C7208C41C3200459F5B /* ds3d.h in Headers */,
+				91BE0F141B029BA800FF1365 /* modelrender.h in Headers */,
 				34C71C7308C41C3500459F5B /* channel.h in Headers */,
 				34C71C7408C41C3600459F5B /* audiostr.h in Headers */,
 				34C71C7608C41C3900459F5B /* acm.h in Headers */,
@@ -4061,11 +4075,13 @@
 				34C71C3D08C41BEF00459F5B /* encrypt.cpp in Sources */,
 				34C71C3F08C41BF300459F5B /* particle.cpp in Sources */,
 				34C71C4108C41BF700459F5B /* pcxutils.cpp in Sources */,
+				91BE0F0F1B029B9B00FF1365 /* shadows.cpp in Sources */,
 				34C71C4308C41BFC00459F5B /* physics.cpp in Sources */,
 				34C71C4408C41BFF00459F5B /* playercontrol.cpp in Sources */,
 				34C71C4708C41C0100459F5B /* managepilot.cpp in Sources */,
 				34C71C4908C41C0400459F5B /* popupdead.cpp in Sources */,
 				34C71C4B08C41C0500459F5B /* popup.cpp in Sources */,
+				91BE0F131B029BA800FF1365 /* modelrender.cpp in Sources */,
 				34C71C4D08C41C0800459F5B /* radarsetup.cpp in Sources */,
 				34C71C4F08C41C0A00459F5B /* radarorb.cpp in Sources */,
 				34C71C5108C41C0A00459F5B /* radar.cpp in Sources */,
