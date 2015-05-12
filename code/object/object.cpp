@@ -1876,9 +1876,9 @@ void obj_remove_pairs( object * a )
 void obj_reset_all_collisions()
 {
 	// clear checkobjects
-#ifndef NDEBUG
-	memset(CheckObjects, 0, sizeof(checkobject) * MAX_OBJECTS);
-#endif
+//#ifndef NDEBUG
+//	memset(CheckObjects, 0, sizeof(checkobject) * MAX_OBJECTS);
+//#endif
 
 	// clear object pairs
 	if ( Cmdline_old_collision_sys ) {

@@ -314,7 +314,7 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p,ship_subsys *subs
 
 	// create debris shards
 	if (!(subsys->flags[Ship::Subsystem_Flags::Vanished]) && !no_explosion) {
-		shipfx_blow_up_model(ship_obj, model_num, psub->subobj_num, 50, &subobj_pos );
+		shipfx_blow_up_model(ship_objp, model_num, psub->subobj_num, 50, &subobj_pos );
 
 		// create live debris objects, if any
 		// TODO:  some MULITPLAYER implcations here!!

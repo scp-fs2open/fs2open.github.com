@@ -175,7 +175,7 @@ void parse_ai_profiles_tbl(const char *filename)
 		{
 			// base profile, so zero it out
 			if (profile == &Ai_profiles[0])
-			{
+			{			
 				memset(profile, 0, sizeof(ai_profile_t));
 			}
 			// brand new profile, so set it to the base defaults

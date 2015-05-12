@@ -6885,7 +6885,7 @@ void ship_destroy_instantly(object *ship_objp, int shipnum)
 	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_objp);
 	Script_system.RemHookVars(2, "Self", "Killer");
 
-	ship_obj->flags.set(Object::Object_Flags::Should_be_dead);
+	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
 	ship_cleanup(shipnum,SHIP_DESTROYED);
 }
 

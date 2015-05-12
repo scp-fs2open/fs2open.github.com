@@ -3353,8 +3353,6 @@ void weapon_expl_info_init()
 
 void weapon_reset_info()
 {
-	memset( Weapon_info, 0, sizeof(weapon_info) * MAX_WEAPON_TYPES );
-
 	for (int i = 0; i < MAX_WEAPON_TYPES; i++)
 		init_weapon_entry(i);
 }

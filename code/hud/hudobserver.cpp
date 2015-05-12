@@ -26,7 +26,7 @@ ai_info Hud_obs_ai;
 void hud_observer_init(ship *shipp, ai_info *aip)
 {
 	// setup the pseduo ship and ai
-	memcpy(&Hud_obs_ai, aip, sizeof(ai_info));
+	//memcpy(&Hud_obs_ai, aip, sizeof(ai_info));
 	// (we used to do a memcpy here, but that doesn't work any longer, so let's just assign the values we need)
 	Hud_obs_ship.clear();
 	strcpy_s(Hud_obs_ship.ship_name, shipp->ship_name);
