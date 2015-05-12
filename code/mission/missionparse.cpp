@@ -3477,8 +3477,8 @@ void parse_common_object_data(p_object	*objp)
 			for (j=0; j < sip->n_subsystems; ++j)
 				if (!subsystem_stricmp(sip->subsystems[j].subobj_name, Subsys_status[i].name))
 					break;
-			if (j == sip->n_subsystems)
-				Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
+			//if (j == sip->n_subsystems)
+				//Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
 		}
 
 		if (optional_string("$Damage:"))

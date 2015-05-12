@@ -68,7 +68,8 @@ typedef enum gr_alpha_blend {
 	ALPHA_BLEND_ADDITIVE,				// 1*SrcPixel + 1*DestPixel
 	ALPHA_BLEND_ALPHA_ADDITIVE,			// Alpha*SrcPixel + 1*DestPixel
 	ALPHA_BLEND_ALPHA_BLEND_ALPHA,		// Alpha*SrcPixel + (1-Alpha)*DestPixel
-	ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel
+	ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel
+	ALPHA_BLEND_PREMULTIPLIED			// 1*SrcPixel + (1-Alpha)*DestPixel
 } gr_alpha_blend;
 
 typedef enum gr_zbuffer_type {

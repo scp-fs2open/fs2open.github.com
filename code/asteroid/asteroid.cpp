@@ -1162,7 +1162,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	}
 }
 
-void asteroid_render(object * obj)
+void asteroid_render_DEPRECATED(object * obj)
 {
 	if (Asteroids_enabled) {
 		int			num;
@@ -1176,7 +1176,32 @@ void asteroid_render(object * obj)
 		Assert( asp->flags & AF_USED );
 
 		model_clear_instance( Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype]);
-		model_render(Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype], &obj->orient, &obj->pos, MR_NORMAL|MR_IS_ASTEROID, OBJ_INDEX(obj) );	//	Replace MR_NORMAL with 0x07 for big yellow blobs
+
+		model_render_DEPRECATED(Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype], &obj->orient, &obj->pos, MR_DEPRECATED_NORMAL|MR_DEPRECATED_IS_ASTEROID, OBJ_INDEX(obj) );	//	Replace MR_NORMAL with 0x07 for big yellow blobs
+	}
+}
+
+void asteroid_render(object * obj, draw_list *scene)
+{
+	if (Asteroids_enabled) {
+		int			num;
+		asteroid		*asp;
+		
+		num = obj->instance;
+
+		Assert((num >= 0) && (num < MAX_ASTEROIDS));
+		asp = &Asteroids[num];
+
+		Assert( asp->flags & AF_USED );
+
+		model_clear_instance( Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype]);
+
+		model_render_params render_info;
+
+		render_info.set_object_number( OBJ_INDEX(obj) );
+		render_info.set_flags(MR_IS_ASTEROID);
+
+		model_render_queue(&render_info, scene, Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype], &obj->orient, &obj->pos);	//	Replace MR_NORMAL with 0x07 for big yellow blobs
 	}
 }
 

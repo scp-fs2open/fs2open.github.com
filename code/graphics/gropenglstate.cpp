@@ -12,6 +12,8 @@
 #include "graphics/gropengl.h"
 #include "graphics/gropenglstate.h"
 #include "graphics/gropengllight.h"
+#include "graphics/gropenglshader.h"
+#include "math/vecmat.h"
 
 extern GLfloat GL_max_anisotropy;
 
@@ -213,7 +215,8 @@ void opengl_texture_state::Enable(GLuint tex_id)
 	}
 
 	if ( !shader_mode && (active_texture_unit < (uint)GL_supported_texture_units) ) {
-		glEnable( units[active_texture_unit].texture_target );
+		if( units[active_texture_unit].texture_target != GL_TEXTURE_2D_ARRAY_EXT)
+			glEnable( units[active_texture_unit].texture_target );
 		units[active_texture_unit].enabled = GL_TRUE;
 	}
 
@@ -231,8 +234,9 @@ void opengl_texture_state::Disable()
 		return;
 	}
 
-	if ( units[active_texture_unit].enabled) {
-		glDisable( units[active_texture_unit].texture_target );
+	if ( units[active_texture_unit].enabled ) {
+		if( units[active_texture_unit].texture_target != GL_TEXTURE_2D_ARRAY_EXT)
+			glDisable( units[active_texture_unit].texture_target );
 		units[active_texture_unit].enabled = GL_FALSE;
 	}
 
@@ -359,12 +363,22 @@ void opengl_state::init()
 	glDisable(GL_POLYGON_OFFSET_FILL);
 	polygonoffsetfill_Status = GL_FALSE;
 
+	polygon_offset_Factor = 0.0f;
+	polygon_offset_Unit = 0.0f;
+
 	glDisable(GL_NORMALIZE);
 	normalize_Status = GL_FALSE;
 
 	for (i = 0; i < (int)(sizeof(clipplane_Status) / sizeof(GLboolean)); i++) {
-		glDisable(GL_CLIP_PLANE0+i);
+		//glDisable(GL_CLIP_PLANE0+i);
 		clipplane_Status[i] = GL_FALSE;
+	}
+
+	if (GL_version >= 30) {
+		for (i = 0; i < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean)); i++) {
+			//glDisable(GL_CLIP_DISTANCE0+i);
+			clipdistance_Status[i] = GL_FALSE;
+		}
 	}
 
 	Assert( GL_max_lights > 0 );
@@ -550,6 +564,26 @@ GLboolean opengl_state::CullFace(GLint state)
 	return save_state;
 }
 
+void opengl_state::SetPolygonMode(GLenum face, GLenum mode)
+{
+	if ( polygon_mode_Face != face || polygon_mode_Mode != mode ) {
+		glPolygonMode(face, mode);
+
+		polygon_mode_Face = face;
+		polygon_mode_Mode = mode;
+	}
+}
+
+void opengl_state::SetPolygonOffset(GLfloat factor, GLfloat units)
+{
+	if ( polygon_offset_Factor != factor || polygon_offset_Unit != units) {
+		glPolygonOffset(factor, units);
+
+		polygon_offset_Factor = factor;
+		polygon_offset_Unit = units;
+	}
+}
+
 GLboolean opengl_state::PolygonOffsetFill(GLint state)
 {
 	GLboolean save_state = polygonoffsetfill_Status;
@@ -620,6 +654,26 @@ GLboolean opengl_state::ClipPlane(GLint num, GLint state)
 		} else {
 			glDisable(GL_CLIP_PLANE0+num);
 			clipplane_Status[num] = GL_FALSE;
+		}
+	}
+
+	return save_state;
+}
+
+GLboolean opengl_state::ClipDistance(GLint num, GLint state)
+{
+	Assert( (num >= 0) || (num < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean))) || GL_version >= 30 );
+
+	GLboolean save_state = clipdistance_Status[num];
+
+	if ( !((state == -1) || (state == clipdistance_Status[num])) ) {
+		if (state) {
+			Assert( state == GL_TRUE );
+			//glEnable(GL_CLIP_DISTANCE0+num);
+			clipdistance_Status[num] = GL_TRUE;
+		} else {
+			//glDisable(GL_CLIP_DISTANCE0+num);
+			clipdistance_Status[num] = GL_FALSE;
 		}
 	}
 
@@ -720,6 +774,10 @@ void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
 			GL_state.BlendFunc(/*GL_SRC_COLOR*/GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
 			break;
 
+		case ALPHA_BLEND_PREMULTIPLIED:
+			GL_state.BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			break;
+
 		default:
 			break;
 	}
@@ -817,7 +875,8 @@ void opengl_array_state::init(GLuint n_units)
 		client_texture_units[i].stride = 0;
 		client_texture_units[i].type = GL_FLOAT;
 		client_texture_units[i].buffer = 0;
-		client_texture_units[i].reset = false;
+		client_texture_units[i].reset_ptr = false;
+		client_texture_units[i].used_for_draw = false;
 	}
 
 	color_array_Buffer = 0;
@@ -826,14 +885,16 @@ void opengl_array_state::init(GLuint n_units)
 	color_array_type = GL_FLOAT;
 	color_array_stride = 0;
 	color_array_pointer = 0;
-	color_array_reset = false;
+	color_array_reset_ptr = false;
+	color_array_used_for_draw = false;
 
 	normal_array_Buffer = 0;
 	normal_array_Status = GL_FALSE;
 	normal_array_Type = GL_FLOAT;
 	normal_array_Stride = 0;
 	normal_array_Pointer = 0;
-	normal_array_reset = false;
+	normal_array_reset_ptr = false;
+	normal_array_used_for_draw = false;
 
 	vertex_array_Buffer = 0;
 	vertex_array_Status = GL_FALSE;
@@ -841,10 +902,13 @@ void opengl_array_state::init(GLuint n_units)
 	vertex_array_Type = GL_FLOAT;
 	vertex_array_Stride = 0;
 	vertex_array_Pointer = 0;
-	vertex_array_reset = false;
+	vertex_array_reset_ptr = false;
+	vertex_array_used_for_draw = false;
 
 	array_buffer = 0;
 	element_array_buffer = 0;
+	texture_array_buffer = 0;
+	uniform_buffer = 0;
 }
 
 void opengl_array_state::SetActiveClientUnit(GLuint id)
@@ -865,6 +929,8 @@ void opengl_array_state::SetActiveClientUnit(GLuint id)
 
 void opengl_array_state::EnableClientTexture()
 {
+	client_texture_units[active_client_texture_unit].used_for_draw = true;
+
 	if ( client_texture_units[active_client_texture_unit].status == GL_TRUE ) {
 		return;
 	}
@@ -890,7 +956,7 @@ void opengl_array_state::TexPointer(GLint size, GLenum type, GLsizei stride, GLv
 	opengl_client_texture_unit *ct_unit = &client_texture_units[active_client_texture_unit];
 
 	if ( 
-		!ct_unit->reset 
+		!ct_unit->reset_ptr 
 		&& ct_unit->pointer == pointer 
 		&& ct_unit->size == size 
 		&& ct_unit->type == type 
@@ -907,11 +973,13 @@ void opengl_array_state::TexPointer(GLint size, GLenum type, GLsizei stride, GLv
 	ct_unit->stride = stride;
 	ct_unit->pointer = pointer;
 	ct_unit->buffer = array_buffer;
-	ct_unit->reset = false;
+	ct_unit->reset_ptr = false;
 }
 
 void opengl_array_state::EnableClientColor()
 {
+	color_array_used_for_draw = true;
+
 	if ( color_array_Status == GL_TRUE ) {
 		return;
 	}
@@ -935,7 +1003,7 @@ void opengl_array_state::DisableClientColor()
 void opengl_array_state::ColorPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer)
 {
 	if ( 
-		!color_array_reset 
+		!color_array_reset_ptr 
 		&& color_array_size == size 
 		&& color_array_type == type 
 		&& color_array_stride == stride 
@@ -952,11 +1020,13 @@ void opengl_array_state::ColorPointer(GLint size, GLenum type, GLsizei stride, G
 	color_array_stride = stride;
 	color_array_pointer = pointer;
 	color_array_Buffer = array_buffer;
-	color_array_reset = false;
+	color_array_reset_ptr = false;
 }
 
 void opengl_array_state::EnableClientNormal()
 {
+	normal_array_used_for_draw = true;
+
 	if ( normal_array_Status == GL_TRUE ) {
 		return;
 	}
@@ -980,7 +1050,7 @@ void opengl_array_state::DisableClientNormal()
 void opengl_array_state::NormalPointer(GLenum type, GLsizei stride, GLvoid *pointer)
 {
 	if ( 
-		!normal_array_reset 
+		!normal_array_reset_ptr 
 		&& normal_array_Type == type 
 		&& normal_array_Stride == stride 
 		&& normal_array_Pointer == pointer 
@@ -995,11 +1065,13 @@ void opengl_array_state::NormalPointer(GLenum type, GLsizei stride, GLvoid *poin
 	normal_array_Stride = stride;
 	normal_array_Pointer = pointer;
 	normal_array_Buffer = array_buffer;
-	normal_array_reset = false;
+	normal_array_reset_ptr = false;
 }
 
 void opengl_array_state::EnableClientVertex()
 {
+	vertex_array_used_for_draw = true;
+
 	if ( vertex_array_Status == GL_TRUE ) {
 		return;
 	}
@@ -1023,7 +1095,7 @@ void opengl_array_state::DisableClientVertex()
 void opengl_array_state::VertexPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer)
 {
 	if (
-		!vertex_array_reset 
+		!vertex_array_reset_ptr 
 		&& vertex_array_Size == size 
 		&& vertex_array_Type == type 
 		&& vertex_array_Stride == stride 
@@ -1040,43 +1112,35 @@ void opengl_array_state::VertexPointer(GLint size, GLenum type, GLsizei stride, 
 	vertex_array_Stride = stride;
 	vertex_array_Pointer = pointer;
 	vertex_array_Buffer = array_buffer;
-	vertex_array_reset = false;
-}
-
-void opengl_array_state::ResetVertexPointer()
-{
-	vertex_array_Size = 4;
-	vertex_array_Type = GL_FLOAT;
-	vertex_array_Stride = 0;
-	vertex_array_Pointer = 0;
+	vertex_array_reset_ptr = false;
 }
 
 void opengl_array_state::EnableVertexAttrib(GLuint index)
 {
 	opengl_vertex_attrib_unit *va_unit = &vertex_attrib_units[index];
 
-	if ( va_unit->initialized && va_unit->status == GL_TRUE ) {
+	va_unit->used_for_draw = true;
+
+	if ( va_unit->status_init && va_unit->status == GL_TRUE ) {
 		return;
 	}
 
 	vglEnableVertexAttribArrayARB(index);
 	va_unit->status = GL_TRUE;
-
-	va_unit->initialized = true;
-
-	va_unit->used = true;
+	va_unit->status_init = true;
 }
 
 void opengl_array_state::DisableVertexAttrib(GLuint index)
 {
 	opengl_vertex_attrib_unit *va_unit = &vertex_attrib_units[index];
 
-	if ( !va_unit->initialized || va_unit->status == GL_FALSE ) {
+	if ( va_unit->status_init && va_unit->status == GL_FALSE ) {
 		return;
 	}
 
 	vglDisableVertexAttribArrayARB(index);
 	va_unit->status = GL_FALSE;
+	va_unit->status_init = true;
 }
 
 void opengl_array_state::VertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLvoid *pointer)
@@ -1084,8 +1148,8 @@ void opengl_array_state::VertexAttribPointer(GLuint index, GLint size, GLenum ty
 	opengl_vertex_attrib_unit *va_unit = &vertex_attrib_units[index];
 
 	if ( 
-		!va_unit->reset 
-		&& va_unit->initialized 
+		!va_unit->reset_ptr 
+		&& va_unit->ptr_init 
 		&& va_unit->normalized == normalized 
 		&& va_unit->pointer == pointer 
 		&& va_unit->size == size 
@@ -1104,28 +1168,47 @@ void opengl_array_state::VertexAttribPointer(GLuint index, GLint size, GLenum ty
 	va_unit->stride = stride;
 	va_unit->type = type;
 	va_unit->buffer = array_buffer;
-	va_unit->reset = false;
+	va_unit->reset_ptr = false;
 
-	va_unit->initialized = true;
+	va_unit->ptr_init = true;
 }
 
-void opengl_array_state::ResetVertexAttribUsed()
+void opengl_array_state::BindPointersBegin()
 {
-	SCP_map<GLuint,opengl_vertex_attrib_unit>::iterator it;
+	// set all available client states to not used
+	vertex_array_used_for_draw = false;
+	color_array_used_for_draw = false;
+	normal_array_used_for_draw = false;
 
-	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it ) {
-		it->second.used = false;
+	for (unsigned int i = 0; i < num_client_texture_units; i++) {
+		client_texture_units[i].used_for_draw = false;
+	}
+
+	SCP_map<GLuint, opengl_vertex_attrib_unit>::iterator it;
+
+	for (it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it) {
+		it->second.used_for_draw = false;
 	}
 }
 
-void opengl_array_state::DisabledVertexAttribUnused()
+void opengl_array_state::BindPointersEnd()
 {
-	SCP_map<GLuint,opengl_vertex_attrib_unit>::iterator it;
+	// any client states not used, disable them
+	if ( !vertex_array_used_for_draw ) DisableClientVertex();
+	if ( !color_array_used_for_draw ) DisableClientColor();
+	if ( !normal_array_used_for_draw ) DisableClientNormal();
 
-	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it ) {
-		if ( !it->second.used ) {
-			DisableVertexAttrib(it->first);
+	for (unsigned int i = 0; i < num_client_texture_units; i++) {
+		if ( !client_texture_units[i].used_for_draw ) {
+			SetActiveClientUnit(i);
+			DisableClientTexture();
 		}
+	}
+
+	SCP_map<GLuint, opengl_vertex_attrib_unit>::iterator it;
+
+	for (it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it) {
+		if ( !it->second.used_for_draw ) DisableVertexAttrib(it->first);
 	}
 }
 
@@ -1139,18 +1222,18 @@ void opengl_array_state::BindArrayBuffer(GLuint id)
 
 	array_buffer = id;
 
-	vertex_array_reset = true;
-	color_array_reset = true;
-	normal_array_reset = true;
+	vertex_array_reset_ptr = true;
+	color_array_reset_ptr = true;
+	normal_array_reset_ptr = true;
 
 	for (unsigned int i = 0; i < num_client_texture_units; i++) {
-		client_texture_units[i].reset = true;
+		client_texture_units[i].reset_ptr = true;
 	}
 
 	SCP_map<GLuint,opengl_vertex_attrib_unit>::iterator it;
 
 	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it ) {
-		it->second.reset = true;
+		it->second.reset_ptr = true;
 	}
 }
 
@@ -1165,20 +1248,406 @@ void opengl_array_state::BindElementBuffer(GLuint id)
 	element_array_buffer = id;
 }
 
-void gr_opengl_flush_data_states()
+void opengl_array_state::BindTextureBuffer(GLuint id)
 {
-	GL_state.Array.SetActiveClientUnit(1);
-	GL_state.Array.DisableClientTexture();
+	if ( !Is_Extension_Enabled(OGL_ARB_TEXTURE_BUFFER) ) {
+		return;
+	}
 
-	GL_state.Array.SetActiveClientUnit(0);
-	GL_state.Array.DisableClientTexture();
+	if ( texture_array_buffer == id ) {
+		return;
+	}
 
-	GL_state.Array.DisableClientColor();
-	GL_state.Array.DisableClientNormal();
-	GL_state.Array.DisableClientVertex();
+	vglBindBufferARB(GL_TEXTURE_BUFFER_ARB, id);
 
-	GL_state.Array.ResetVertexAttribUsed();
-	GL_state.Array.DisabledVertexAttribUnused();
+	texture_array_buffer = id;
+}
+
+void opengl_array_state::BindUniformBufferBindingIndex(GLuint id, GLuint index)
+{
+	if ( !Is_Extension_Enabled(OGL_ARB_UNIFORM_BUFFER_OBJECT) ) {
+		return;
+	}
+
+	if ( uniform_buffer_index_bindings[index] == id ) {
+		return;
+	}
+
+	vglBindBufferBaseEXT(GL_UNIFORM_BUFFER, index, id);
+
+	uniform_buffer_index_bindings[index] = id;
+}
+
+void opengl_array_state::BindUniformBuffer(GLuint id)
+{
+	if ( !Is_Extension_Enabled(OGL_ARB_UNIFORM_BUFFER_OBJECT) ) {
+		return;
+	}
+
+	if ( uniform_buffer == id ) {
+		return;
+	}
+
+	vglBindBufferARB(GL_UNIFORM_BUFFER, id);
+
+	uniform_buffer = id;
+}
+
+opengl_uniform_state::opengl_uniform_state()
+{
+}
+
+int opengl_uniform_state::findUniform(const SCP_string &name)
+{
+	SCP_map<SCP_string, int>::iterator iter;
+
+	iter = uniform_lookup.find(name);
+
+	if ( iter == uniform_lookup.end() ) {
+		return -1;
+	} else {
+		return iter->second;
+	}
+}
+
+void opengl_uniform_state::setUniformi(const SCP_string &name, const int val)
+{
+	int uniform_index = findUniform(name);
+	bool resident = false;
+
+	if ( uniform_index >= 0) {
+		Assert( (size_t)uniform_index < uniforms.size() );
+
+		uniform_bind *bind_info = &uniforms[uniform_index];
+
+		if ( bind_info->type == uniform_bind::INT ) {
+			if ( uniform_data_ints[bind_info->index] == val ) {
+				return;
+			} 
+
+			uniform_data_ints[bind_info->index] = val;
+			resident = true;
+		}
+	} 
+
+	if ( !resident ) {
+		// uniform doesn't exist in our previous uniform block so queue this new value
+		uniform_data_ints.push_back(val);
+
+		uniform_bind new_bind;
+
+		new_bind.count = 1;
+		new_bind.index = uniform_data_ints.size() - 1;
+		new_bind.type = uniform_bind::INT;
+		new_bind.name = name;
+
+		uniforms.push_back(new_bind);
+
+		uniform_lookup[name] = uniforms.size()-1;
+	}
+
+	vglUniform1iARB(opengl_shader_get_uniform(name.c_str()), val);
+}
+
+void opengl_uniform_state::setUniformf(const SCP_string &name, const float val)
+{
+	int uniform_index = findUniform(name);
+	bool resident = false;
+
+	if ( uniform_index >= 0) {
+		Assert( (size_t)uniform_index < uniforms.size() );
+
+		uniform_bind *bind_info = &uniforms[uniform_index];
+
+		if ( bind_info->type == uniform_bind::FLOAT ) {
+			if ( fl_equal(uniform_data_floats[bind_info->index], val) ) {
+				return;
+			}
+
+			uniform_data_floats[bind_info->index] = val;
+			resident = true;
+		}
+	} 
+
+	if ( !resident ) {
+		// uniform doesn't exist in our previous uniform block so queue this new value
+		uniform_data_floats.push_back(val);
+
+		uniform_bind new_bind;
+
+		new_bind.count = 1;
+		new_bind.index = uniform_data_floats.size() - 1;
+		new_bind.type = uniform_bind::FLOAT;
+		new_bind.name = name;
+
+		uniforms.push_back(new_bind);
+
+		uniform_lookup[name] = uniforms.size()-1;
+	}
+
+	vglUniform1fARB(opengl_shader_get_uniform(name.c_str()), val);
+}
+
+void opengl_uniform_state::setUniform2f(const SCP_string &name, const float x, const float y)
+{
+	vec2d temp;
+
+	temp.x = x;
+	temp.y = y;
+
+	setUniform2f(name, temp);
+}
+
+void opengl_uniform_state::setUniform2f(const SCP_string &name, const vec2d &val)
+{
+	int uniform_index = findUniform(name);
+	bool resident = false;
+
+	if ( uniform_index >= 0 ) {
+		Assert( (size_t)uniform_index < uniforms.size() );
+
+		uniform_bind *bind_info = &uniforms[uniform_index];
+
+		if ( bind_info->type == uniform_bind::VEC2 ) {
+			if ( vm_vec_equal(uniform_data_vec2d[bind_info->index], val) ) {
+				return;
+			}
+
+			uniform_data_vec2d[bind_info->index] = val;
+			resident = true;
+		}
+	} 
+
+	if ( !resident ) {
+		// uniform doesn't exist in our previous uniform block so queue this new value
+		uniform_data_vec2d.push_back(val);
+
+		uniform_bind new_bind;
+
+		new_bind.count = 1;
+		new_bind.index = uniform_data_vec2d.size() - 1;
+		new_bind.type = uniform_bind::VEC2;
+		new_bind.name = name;
+
+		uniforms.push_back(new_bind);
+
+		uniform_lookup[name] = uniforms.size()-1;
+	}
+
+	vglUniform2fARB(opengl_shader_get_uniform(name.c_str()), val.x, val.y);
+}
+
+void opengl_uniform_state::setUniform3f(const SCP_string &name, const float x, const float y, const float z)
+{
+	vec3d temp;
+
+	temp.xyz.x = x;
+	temp.xyz.y = y;
+	temp.xyz.z = z;
+
+	setUniform3f(name, temp);
+}
+
+void opengl_uniform_state::setUniform3f(const SCP_string &name, const vec3d &val)
+{
+	int uniform_index = findUniform(name);
+	bool resident = false;
+
+	if ( uniform_index >= 0 ) {
+		Assert( (size_t)uniform_index < uniforms.size() );
+
+		uniform_bind *bind_info = &uniforms[uniform_index];
+
+		if ( bind_info->type == uniform_bind::VEC3 ) {
+			if ( vm_vec_equal(uniform_data_vec3d[bind_info->index], val) ) {
+				return;
+			}
+
+			uniform_data_vec3d[bind_info->index] = val;
+			resident = true;
+		}
+	} 
+
+	if ( !resident ) {
+		// uniform doesn't exist in our previous uniform block so queue this new value
+		uniform_data_vec3d.push_back(val);
+
+		uniform_bind new_bind;
+
+		new_bind.count = 1;
+		new_bind.index = uniform_data_vec3d.size() - 1;
+		new_bind.type = uniform_bind::VEC3;
+		new_bind.name = name;
+
+		uniforms.push_back(new_bind);
+
+		uniform_lookup[name] = uniforms.size()-1;
+	}
+
+	vglUniform3fARB(opengl_shader_get_uniform(name.c_str()), val.a1d[0], val.a1d[1], val.a1d[2]);
+}
+
+void opengl_uniform_state::setUniform4f(const SCP_string &name, const vec4 &val)
+{
+	int uniform_index = findUniform(name);
+	bool resident = false;
+
+	if ( uniform_index >= 0 ) {
+		Assert( (size_t)uniform_index < uniforms.size() );
+
+		uniform_bind *bind_info = &uniforms[uniform_index];
+
+		if ( bind_info->type == uniform_bind::VEC4 ) {
+			if ( vm_vec_equal(uniform_data_vec4[bind_info->index], val) ) {
+				// if the values are close enough, pass.
+				return;
+			}
+
+			uniform_data_vec4[bind_info->index] = val;
+			resident = true;
+		}
+	} 
+
+	if ( !resident ) {
+		// uniform doesn't exist in our previous uniform block so queue this new value
+		uniform_data_vec4.push_back(val);
+
+		uniform_bind new_bind;
+
+		new_bind.count = 1;
+		new_bind.index = uniform_data_vec4.size() - 1;
+		new_bind.type = uniform_bind::VEC4;
+		new_bind.name = name;
+
+		uniforms.push_back(new_bind);
+
+		uniform_lookup[name] = uniforms.size()-1;
+	}
+
+	vglUniform4fARB(opengl_shader_get_uniform(name.c_str()), val.a1d[0], val.a1d[1], val.a1d[2], val.a1d[3]);
+}
+
+void opengl_uniform_state::setUniformMatrix4f(const SCP_string &name, const matrix4 &val)
+{
+	int uniform_index = findUniform(name);
+	bool resident = false;
+
+	if ( uniform_index >= 0) {
+		Assert( (size_t)uniform_index < uniforms.size() );
+
+		uniform_bind *bind_info = &uniforms[uniform_index];
+
+		if ( bind_info->type == uniform_bind::MATRIX4 && bind_info->count == 1 ) {
+			if ( vm_matrix_equal(uniform_data_matrix4[bind_info->index], val) ) {
+				return;
+			}
+
+			uniform_data_matrix4[bind_info->index] = val;
+			resident = true;
+		}
+	}
+
+	if ( !resident ) {
+		// uniform doesn't exist in our previous uniform block so queue this new value
+		//matrix_uniform_data[num_matrix_uniforms] = val;
+		//memcpy(&(matrix_uniform_data[num_matrix_uniforms]), &val, sizeof(matrix4));
+		uniform_data_matrix4.push_back(val);
+		//	num_matrix_uniforms += 1;
+
+		uniform_bind new_bind;
+		new_bind.count = 1;
+		new_bind.index = uniform_data_matrix4.size() - 1;
+		//	new_bind.index = num_matrix_uniforms - 1;
+		new_bind.type = uniform_bind::MATRIX4;
+		new_bind.name = name;
+
+		uniforms.push_back(new_bind);
+
+		uniform_lookup[name] = uniforms.size()-1;
+	}
+
+	vglUniformMatrix4fvARB(opengl_shader_get_uniform(name.c_str()), 1, GL_FALSE, (const GLfloat*)&val);
+}
+
+void opengl_uniform_state::setUniformMatrix4fv(const SCP_string &name, const int count, const matrix4 *val)
+{
+	int uniform_index = findUniform(name);
+	bool resident = false;
+
+	if ( uniform_index >= 0) {
+		Assert( (size_t)uniform_index < uniforms.size() );
+
+		uniform_bind *bind_info = &uniforms[uniform_index];
+
+		if ( bind_info->type == uniform_bind::MATRIX4 && bind_info->count == count ) {
+			bool equal = true;
+
+			// if the values are close enough, pass.
+			for ( int i = 0; i < count; ++i ) {
+				if ( !vm_matrix_equal(val[i], uniform_data_matrix4[bind_info->index+i]) ) {
+					equal = false;
+					break;
+				}
+			}
+
+			if ( equal ) {
+				return;
+			}
+
+			resident = true;
+			for ( int i = 0; i < count; ++i ) {
+				uniform_data_matrix4[bind_info->index+i] = val[i];
+			}
+		}
+	}
+
+	if ( !resident ) {
+		// uniform doesn't exist in our previous uniform block so queue this new value
+		for ( int i = 0; i < count; ++i ) {
+			uniform_data_matrix4.push_back(val[i]);
+		}
+
+		uniform_bind new_bind;
+		new_bind.count = count;
+		new_bind.index = uniform_data_matrix4.size() - count;
+		//	new_bind.index = num_matrix_uniforms - count;
+		new_bind.type = uniform_bind::MATRIX4;
+		new_bind.name = name;
+
+		uniforms.push_back(new_bind);
+
+		uniform_lookup[name] = uniforms.size()-1;
+	}
+
+	vglUniformMatrix4fvARB(opengl_shader_get_uniform(name.c_str()), count, GL_FALSE, (const GLfloat*)val);
+}
+
+void opengl_uniform_state::reset()
+{
+	uniforms.clear();
+
+	uniform_data_ints.clear();
+	uniform_data_floats.clear();
+	uniform_data_vec2d.clear();
+	uniform_data_vec3d.clear();
+	uniform_data_vec4.clear();
+	uniform_data_matrix4.clear();
+
+	uniform_lookup.clear();
+}
+
+void gr_opengl_clear_states()
+{
+	GL_state.Texture.DisableAll();
+
+	gr_zbias(0);
+	gr_zbuffer_set(ZBUFFER_TYPE_READ);
+	gr_set_cull(0);
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+	gr_reset_lighting();
+	gr_set_lighting(false, false);
+
+	opengl_shader_set_current();
 }
 
 void opengl_setup_render_states(int &r, int &g, int &b, int &alpha, int &tmap_type, int flags, int is_scaler)

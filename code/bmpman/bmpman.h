@@ -147,6 +147,26 @@ void *bm_malloc(int handle, int size);
  */
 void bm_update_memory_used(int n, int size);
 
+class bitmap_lookup {
+	float *Bitmap_data;
+
+	int Width;
+	int Height;
+	int Num_channels;
+
+	float map_texture_address(float address);
+public:
+	bitmap_lookup(int bitmap_num);
+	~bitmap_lookup();
+
+	bool valid();
+
+	float get_channel_red(float u, float v);
+	float get_channel_green(float u, float v);
+	float get_channel_blue(float u, float v);
+	float get_channel_alpha(float u, float v);
+};
+
 /**
  * @brief Loads a bitmap so we can draw with it later.
  *

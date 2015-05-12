@@ -88,7 +88,11 @@ float fl_isqrt( float x )
 } 
 */
 
-
+// sees if two floating point numbers are within the minimum tolerance
+inline bool fl_equal(float a, float b)
+{
+	return fl_abs(a - b) <= FLT_EPSILON * MAX(1.0f, MAX(fl_abs(a), fl_abs(b)));
+}
 
 // rounds off a floating point number to a multiple of some number
 extern float fl_roundoff(float x, int multiple);
