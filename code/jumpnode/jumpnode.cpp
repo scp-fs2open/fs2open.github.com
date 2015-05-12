@@ -11,6 +11,7 @@
 #include "jumpnode/jumpnode.h"
 #include "model/model.h"
 #include "hud/hud.h"
+#include "model/modelrender.h"
 
 SCP_list<CJumpNode> Jump_nodes;
 
@@ -245,7 +246,7 @@ bool CJumpNode::IsSpecialModel()
  * @param pos		World position
  * @param view_pos	Viewer's world position, can be NULL
  */
-void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
+void CJumpNode::RenderDEPRECATED(vec3d *pos, vec3d *view_pos)
 {
 	Assert(pos != NULL);
     // Assert(view_pos != NULL); - view_pos can be NULL
@@ -258,14 +259,14 @@ void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 	
 	matrix node_orient = IDENTITY_MATRIX;
 	
-	int mr_flags = MR_NO_LIGHTING | MR_LOCK_DETAIL;
+	int mr_flags = MR_NO_LIGHTING;
 	if(!(m_flags & JN_SHOW_POLYS)) {
 		mr_flags |= MR_NO_CULL | MR_NO_POLYS | MR_SHOW_OUTLINE_PRESET;
 	}
 	
 	if ( Fred_running ) {
 		gr_set_color_fast(&m_display_color);		
-		model_render(m_modelnum, &node_orient, pos, mr_flags );
+		model_render_DEPRECATED(m_modelnum, &node_orient, pos, mr_flags );
 	} else {
 		if (m_flags & JN_USE_DISPLAY_COLOR) {
 			gr_set_color_fast(&m_display_color);
@@ -296,9 +297,84 @@ void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 			gr_set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		}
 		
-		model_render(m_modelnum, &node_orient, pos, mr_flags );
+		model_render_DEPRECATED(m_modelnum, &node_orient, pos, mr_flags );
 	}
 	
+}
+
+void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
+{
+	draw_list scene;
+
+	Render(&scene, pos, view_pos);
+
+	scene.render_all();
+
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+	gr_clear_states();
+	gr_set_buffer(-1);
+}
+
+void CJumpNode::Render(draw_list* scene, vec3d *pos, vec3d *view_pos)
+{
+	Assert(pos != NULL);
+	// Assert(view_pos != NULL); - view_pos can be NULL
+
+	if(m_flags & JN_HIDE)
+		return;
+
+	if(m_modelnum < 0)
+		return;
+
+	matrix node_orient = IDENTITY_MATRIX;
+
+	int mr_flags = MR_NO_LIGHTING | MR_NO_BATCH;
+	if(!(m_flags & JN_SHOW_POLYS)) {
+		mr_flags |= MR_NO_CULL | MR_NO_POLYS | MR_SHOW_OUTLINE | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING;
+	}
+
+	model_render_params render_info;
+
+	render_info.set_detail_level_lock(0);
+	render_info.set_flags(mr_flags);
+
+	if ( Fred_running ) {
+		render_info.set_outline_color(m_display_color);
+
+		model_render_queue(&render_info, scene, m_modelnum, &node_orient, pos);
+	} else {
+		if (m_flags & JN_USE_DISPLAY_COLOR) {
+			//gr_set_color_fast(&m_display_color);
+			render_info.set_outline_color(m_display_color);
+		}
+		else if ( view_pos != NULL) {
+			int alpha_index = HUD_color_alpha;
+
+			// generate alpha index based on distance to jump this
+			float dist;
+
+			dist = vm_vec_dist_quick(view_pos, pos);
+
+			// linearly interpolate alpha.  At 1000m or less, full intensity.  At 10000m or more 1/2 intensity.
+			if ( dist < 1000 ) {
+				alpha_index = HUD_COLOR_ALPHA_USER_MAX - 2;
+			} else if ( dist > 10000 ) {
+				alpha_index = HUD_COLOR_ALPHA_USER_MIN;
+			} else {
+				alpha_index = fl2i( HUD_COLOR_ALPHA_USER_MAX - 2 + (dist-1000) * (HUD_COLOR_ALPHA_USER_MIN-HUD_COLOR_ALPHA_USER_MAX-2) / (9000) + 0.5f);
+				if ( alpha_index < HUD_COLOR_ALPHA_USER_MIN ) {
+					alpha_index = HUD_COLOR_ALPHA_USER_MIN;
+				}
+			}
+
+			render_info.set_outline_color(HUD_color_defaults[alpha_index]);
+		} else {
+			render_info.set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);
+		}
+
+		model_render_queue(&render_info, scene, m_modelnum, &node_orient, pos);
+	}
+
 }
 
 /**

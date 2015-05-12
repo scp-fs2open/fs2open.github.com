@@ -1062,6 +1062,12 @@
     <ClCompile Include="..\..\code\io\cursor.cpp">
       <Filter>Io</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\model\modelrender.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\graphics\shadows.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h">
@@ -1870,6 +1876,12 @@
     </ClInclude>
     <ClInclude Include="..\..\code\io\cursor.h">
       <Filter>Io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\model\modelrender.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\graphics\shadows.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

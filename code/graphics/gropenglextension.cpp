@@ -131,10 +131,10 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ false, false, 1, { "GL_ARB_shading_language_100" }, 0, { NULL } },
 
 	// shader objects and program object management
-	{ false, false, 1, { "GL_ARB_shader_objects" }, 18, { "glDeleteObjectARB", "glCreateShaderObjectARB", "glShaderSourceARB",
+	{ false, false, 1, { "GL_ARB_shader_objects" }, 19, { "glDeleteObjectARB", "glCreateShaderObjectARB", "glShaderSourceARB",
 		"glCompileShaderARB", "glGetObjectParameterivARB", "glGetInfoLogARB", "glCreateProgramObjectARB",
 		"glAttachObjectARB", "glLinkProgramARB", "glUseProgramObjectARB", "glValidateProgramARB", "glGetUniformLocationARB",
-		"glGetUniformivARB", "glUniform1fARB", "glUniform2fARB", "glUniform3fARB", "glUniform1iARB", "glUniformMatrix4fvARB" } },
+		"glGetUniformivARB", "glUniform1fARB", "glUniform2fARB", "glUniform3fARB", "glUniform4fARB", "glUniform1iARB", "glUniformMatrix4fvARB" } },
 
 	// programmable vertex level processing
 	// some of functions are provided by GL_ARB_vertex_program
@@ -150,7 +150,25 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ false, false, 1, { "GL_ARB_texture_float" }, 0, { NULL } },
 
 	{ false, false, 1, { "GL_ARB_draw_elements_base_vertex" }, 4, { "glDrawElementsBaseVertex", "glDrawRangeElementsBaseVertex", 
-		"glDrawElementsInstancedBaseVertex", "glMultiDrawElementsBaseVertex" } }
+		"glDrawElementsInstancedBaseVertex", "glMultiDrawElementsBaseVertex" } },
+
+	{ false, false, 1, {"GL_EXT_framebuffer_blit" }, 1, { "glBlitFramebufferEXT" } },
+
+	// geometry shaders
+	{ false, false, 1, { "GL_EXT_geometry_shader4" }, 2, { "glProgramParameteriEXT", "glFramebufferTextureEXT" } },
+
+	// array textures
+	{ false, false, 1, { "GL_EXT_texture_array" }, 1, { "glTexImage3D" } },
+
+	{ false, false, 1, { "GL_ARB_uniform_buffer_object" }, 7, { "glGetUniformIndices", "glGetActiveUniformsiv", "glGetActiveUniformName", 
+		"glGetUniformBlockIndex", "glGetActiveUniformBlockiv", "glGetActiveUniformBlockName", "glUniformBlockBinding" } },
+
+	{ false, false, 1, { "GL_EXT_transform_feedback" }, 7, { "glBeginTransformFeedbackEXT", "glEndTransformFeedbackEXT", "glBindBufferRangeEXT", 
+		"glBindBufferOffsetEXT", "glBindBufferBaseEXT", "glTransformFeedbackVaryingsEXT", "glGetTransformFeedbackVaryingEXT" } },
+
+	{ false, false, 1, { "GL_ARB_draw_instanced" }, 2, { "glDrawArraysInstancedARB", "glDrawElementsInstancedARB" } },
+
+	{ false, false, 1, { "GL_ARB_texture_buffer_object" }, 1, { "glTexBufferARB" } }
 };
 
 // ogl_funcion is:
@@ -226,7 +244,28 @@ ogl_function GL_Functions[NUM_OGL_FUNCTIONS] =
 	{ "glDrawElementsBaseVertex", 0	},
 	{ "glDrawRangeElementsBaseVertex", 0 }, 
 	{ "glDrawElementsInstancedBaseVertex", 0 },
-	{ "glMultiDrawElementsBaseVertex", 0 }
+	{ "glMultiDrawElementsBaseVertex", 0 },
+	{ "glBlitFramebufferEXT", 0},
+	{ "glProgramParameteriEXT", 0 },
+	{ "glTexImage3D", 0 },
+	{ "glFramebufferTextureEXT", 0 },
+	{ "glGetUniformIndices", 0 },
+	{ "glGetActiveUniformsiv", 0 },
+	{ "glGetActiveUniformName", 0 },
+	{ "glGetUniformBlockIndex", 0 },
+	{ "glGetActiveUniformBlockiv", 0 },
+	{ "glGetActiveUniformBlockName", 0 },
+	{ "glUniformBlockBinding", 0 },
+	{ "glBeginTransformFeedbackEXT", 0 },
+	{ "glEndTransformFeedbackEXT", 0 },
+	{ "glBindBufferRangeEXT", 0 },
+	{ "glBindBufferOffsetEXT", 0 },
+	{ "glBindBufferBaseEXT", 0 },
+	{ "glTransformFeedbackVaryingsEXT", 0 },
+	{ "glGetTransformFeedbackVaryingEXT", 0 },
+	{ "glDrawArraysInstancedARB", 0	},
+	{ "glDrawElementsInstancedARB", 0 },
+	{ "glTexBufferARB", 0 }
 };
 
 // special extensions (only special functions are supported at the moment)
@@ -390,6 +429,14 @@ void opengl_extensions_init()
 	if ( !(Is_Extension_Enabled(OGL_ARB_TEXTURE_CUBE_MAP) && Is_Extension_Enabled(OGL_ARB_TEXTURE_ENV_COMBINE)) ) {
 		Cmdline_env = 0;
 	}
+	
+	if ( !(Is_Extension_Enabled(OGL_EXT_GEOMETRY_SHADER4) && Is_Extension_Enabled(OGL_EXT_TEXTURE_ARRAY) && Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX)) ) {
+		Cmdline_shadow_quality = 0;
+		mprintf(("  No hardware support for shadow mapping. Shadows will be disabled. \n"));
+#ifdef NDEBUG
+		popup(0, 1, POPUP_OK, "No hardware support for shadow mapping. Shadows will be disabled.\n");
+#endif
+	}
 
 	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
 			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) ) {
@@ -426,6 +473,14 @@ void opengl_extensions_init()
 		Cmdline_normal = 0;
 		Cmdline_height = 0;
 		Cmdline_postprocess = 0;
+		Cmdline_shadow_quality = 0;
+		Cmdline_no_deferred_lighting = 1;
+	}
+
+	if ( Use_GLSL < 2 || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || !Is_Extension_Enabled(OGL_ARB_FLOATING_POINT_TEXTURES) ) {
+        mprintf(("  No hardware support for deferred lighting. Deferred lighting will be disabled. \n"));
+		Cmdline_no_deferred_lighting = 1;
+		Cmdline_no_batching = true;
 	}
 
 	if (Use_GLSL) {

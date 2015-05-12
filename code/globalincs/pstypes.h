@@ -75,6 +75,15 @@ typedef struct ccodes {
 
 struct vertex;
 
+typedef struct vec4 {
+	union {
+		struct {
+			float x,y,z,w;
+		} xyzw;
+		float a1d[4];
+	};
+} vec4;
+
 /** Represents a point in 3d space.
 
 Note: this is a struct, not a class, so no member functions. */
@@ -113,6 +122,16 @@ typedef struct matrix {
 		float a1d[9];
 	};
 } matrix;
+
+typedef struct matrix4 {
+	union {
+		struct {
+			vec4 rvec, uvec, fvec, pos;
+		} vec;
+		float a2d[4][4];
+		float a1d[16];
+	};
+} matrix4;
 
 typedef struct uv_pair {
 	float u,v;
@@ -168,6 +187,21 @@ typedef struct effect_vertex {
 	float radius;
 	ubyte r, g, b, a;
 } effect_vertex;
+
+struct particle_pnt {
+	vec3d position;
+	float size;
+	vec3d up;
+};
+
+struct trail_shader_info {
+	vec3d pos;
+	vec3d fvec;
+
+	float intensity;
+	float width;
+	uv_pair tex_coord;
+};
 
 //def_list
 typedef struct flag_def_list {
