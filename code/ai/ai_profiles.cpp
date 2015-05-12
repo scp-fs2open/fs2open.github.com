@@ -466,27 +466,9 @@ void parse_ai_profiles_tbl(const char *filename)
 				profile->bay_depart_speed_mult = 1.0f;
 				if (optional_string("$bay arrive speed multiplier:")) {
 					stuff_float(&profile->bay_arrive_speed_mult);
-
-					if (profile->ai_path_mode != AI_PATH_MODE_ALT1) {
-						static bool warned_about_profiles_bay_speed_multiplier_pathing = false;
-						if (!warned_about_profiles_bay_speed_multiplier_pathing)
-						{
-							Warning(LOCATION, "For $bay arrive speed multiplier or $bay depart speed multiplier to work, $ai path mode must be set to alt1!");
-							warned_about_profiles_bay_speed_multiplier_pathing = true;
-						}
-					}
 				}
 				if (optional_string("$bay depart speed multiplier:")) {
 					stuff_float(&profile->bay_depart_speed_mult);
-
-					if (profile->ai_path_mode != AI_PATH_MODE_ALT1) {
-						static bool warned_about_profiles_bay_speed_multiplier_pathing = false;
-						if (!warned_about_profiles_bay_speed_multiplier_pathing)
-						{
-							Warning(LOCATION, "For $bay arrive speed multiplier or $bay depart speed multiplier to work, $ai path mode must be set to alt1!");
-							warned_about_profiles_bay_speed_multiplier_pathing = true;
-						}
-					}
 				}
 
 				// ----------

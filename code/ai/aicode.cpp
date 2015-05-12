@@ -3647,7 +3647,7 @@ float maybe_recreate_path(object *objp, ai_info *aip, int force_recreate_flag, i
 /**
  * Set acceleration for ai_dock().
  */
-void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_next, float dist_to_next, float dist_to_goal, ship_info *sip, float max_allowed_speed)
+void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_next, float dist_to_next, float dist_to_goal, ship_info *sip, float max_allowed_speed, object *gobjp)
 {
 	float prev_dot_to_goal = aip->prev_dot_to_goal;
 	
@@ -3662,9 +3662,55 @@ void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_n
 			change_acceleration(aip, -1.0f);	//	-1.0f means subtract off flFrametime from acceleration value in 0.0..1.0
 		}
 	} else {
-		// If max_allowed_speed isn't set, use the ship max speed
+		float max_bay_speed = sip->max_speed;
+
+		// Maybe gradually ramp up/down the speed of a ship flying a fighterbay path
+		if (aip->mode == AIM_BAY_EMERGE || (aip->mode == AIM_BAY_DEPART && aip->path_cur != aip->path_start)) {
+			ship_info *gsip = &Ship_info[Ships[gobjp->instance].ship_info_index];
+			polymodel *pm = model_get(gsip->model_num);
+			SCP_string pathName(pm->paths[Path_points[aip->path_start].path_num].name);
+			float speed_mult = FLT_MIN;
+
+			if (aip->mode == AIM_BAY_EMERGE) { // Arriving
+				if (gsip->pathMetadata.find(pathName) != gsip->pathMetadata.end()) {
+					speed_mult = gsip->pathMetadata[pathName].arrive_speed_mult;
+				}
+
+				if (speed_mult == FLT_MIN) {
+					speed_mult = The_mission.ai_profile->bay_arrive_speed_mult;
+				}
+			} else { // Departing
+				if (gsip->pathMetadata.find(pathName) != gsip->pathMetadata.end()) {
+					speed_mult = gsip->pathMetadata[pathName].depart_speed_mult;
+				}
+
+				if (speed_mult == FLT_MIN) {
+					speed_mult = The_mission.ai_profile->bay_depart_speed_mult;
+				}
+			}
+
+			if (speed_mult != FLT_MIN && speed_mult != 1.0f) {
+				// We use the distance between the first and last point on the path here; it's not accurate
+				// if the path is not straight, but should be good enough usually; can be changed if necessary.
+				float total_path_length = vm_vec_dist_quick(&Path_points[aip->path_start].pos, &Path_points[aip->path_start + aip->path_length - 1].pos);
+				float dist_to_end;
+
+				if (aip->mode == AIM_BAY_EMERGE) { // Arriving
+					dist_to_end = vm_vec_dist_quick(&Pl_objp->pos, &Path_points[aip->path_start].pos);
+				} else { // Departing
+					dist_to_end = vm_vec_dist_quick(&Pl_objp->pos, &Path_points[aip->path_start + aip->path_length - 1].pos);
+				}
+
+				// Calculate max speed, but respect the waypoint speed cap if it's lower
+				max_bay_speed = sip->max_speed * (speed_mult + (1.0f - speed_mult) * (dist_to_end / total_path_length));
+			}
+		}
+
+		// Cap speed to max_allowed_speed, if it's set
 		if (max_allowed_speed <= 0)
-			max_allowed_speed = sip->max_speed;
+			max_allowed_speed = max_bay_speed;
+		else
+			max_allowed_speed = MIN(max_allowed_speed, max_bay_speed);
 
 		if ((aip->mode == AIM_DOCK) && (dist_to_next < 150.0f) && (aip->path_start + aip->path_length - 2 == aip->path_cur)) {
 			set_accel_for_target_speed(objp, max_allowed_speed * MAX(dist_to_next/500.0f, 1.0f));
@@ -3740,8 +3786,7 @@ void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_n
 //	Returns distance to goal point.
 float ai_path_0()
 {
-	polymodel	*pm;
-	int		num_paths, num_points;
+	int		num_points;
 	float		dot, dist_to_goal, dist_to_next, dot_to_next;
 	ship		*shipp = &Ships[Pl_objp->instance];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
@@ -3750,7 +3795,6 @@ float ai_path_0()
 	float		mag;
 	vec3d	temp_vec, *slop_vec;
 	object	*gobjp;
-	ship		*gshipp;
 	vec3d	*cvp, *nvp, next_vec, gcvp, gnvp;		//	current and next vertices in global coordinates.
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
@@ -3759,11 +3803,6 @@ float ai_path_0()
 	Assert(Objects[aip->goal_objnum].type == OBJ_SHIP);
 
 	gobjp = &Objects[aip->goal_objnum];
-	gshipp = &Ships[gobjp->instance];
-
-	pm = model_get(Ship_info[gshipp->ship_info_index].model_num);
-	num_paths = pm->n_paths;
-	Assert(num_paths > 0);
 
 	if (aip->path_start == -1) {
 		Assert(aip->goal_objnum >= 0 && aip->goal_objnum < MAX_OBJECTS);
@@ -3855,7 +3894,7 @@ float ai_path_0()
 	dot = vm_vec_dot_to_point(&nvel_vec, &Pl_objp->pos, &gcvp);
 	dot_to_next = vm_vec_dot_to_point(&nvel_vec, &Pl_objp->pos, &gnvp);
 
-	set_accel_for_docking(Pl_objp, aip, dot, dot_to_next, dist_to_next, dist_to_goal, sip, 0);
+	set_accel_for_docking(Pl_objp, aip, dot, dot_to_next, dist_to_next, dist_to_goal, sip, 0, gobjp);
 	aip->prev_dot_to_goal = dot;
 
 	//	If moving at a non-tiny velocity, detect attaining path point by its being close to
@@ -3891,8 +3930,7 @@ float ai_path_0()
 //  1. 
 float ai_path_1()
 {
-	polymodel	*pm;
-	int		num_paths, num_points;
+	int		num_points;
 	float		dot, dist_to_goal, dist_to_next, dot_to_next;
 	ship		*shipp = &Ships[Pl_objp->instance];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
@@ -3900,7 +3938,6 @@ float ai_path_1()
 	vec3d	nvel_vec;
 	float		mag;
 	object	*gobjp;
-	ship		*gshipp;
 	vec3d	*pvp, *cvp, *nvp, next_vec, gpvp, gcvp, gnvp;		//	previous, current and next vertices in global coordinates.
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
@@ -3909,12 +3946,6 @@ float ai_path_1()
 	Assert(Objects[aip->goal_objnum].type == OBJ_SHIP);
 
 	gobjp = &Objects[aip->goal_objnum];
-	gshipp = &Ships[gobjp->instance];
-
-	// Get path data
-	pm = model_get(Ship_info[gshipp->ship_info_index].model_num);
-	num_paths = pm->n_paths;
-	Assert(num_paths > 0);
 
 	if (aip->path_start == -1) {
 		Assert(aip->goal_objnum >= 0 && aip->goal_objnum < MAX_OBJECTS);
@@ -4016,53 +4047,7 @@ float ai_path_1()
 		max_allowed_speed = (float) aip->waypoint_speed_cap;
 	}
 
-	// Maybe gradually ramp up/down the speed of a ship flying a fighterbay path
-	if (aip->mode == AIM_BAY_EMERGE || (aip->mode == AIM_BAY_DEPART && aip->path_cur != aip->path_start)) {
-		SCP_string pathName(pm->paths[Path_points[aip->path_start].path_num].name);
-		ship_info *gsip = &Ship_info[gshipp->ship_info_index];
-		float speed_mult = FLT_MIN;
-
-		if (aip->mode == AIM_BAY_EMERGE) { // Arriving
-			if (gsip->pathMetadata.find(pathName) != gsip->pathMetadata.end()) {
-				speed_mult = gsip->pathMetadata[pathName].arrive_speed_mult;
-			}
-
-			if (speed_mult == FLT_MIN) {
-				speed_mult = The_mission.ai_profile->bay_arrive_speed_mult;
-			}
-		} else { // Departing
-			if (gsip->pathMetadata.find(pathName) != gsip->pathMetadata.end()) {
-				speed_mult = gsip->pathMetadata[pathName].depart_speed_mult;
-			}
-
-			if (speed_mult == FLT_MIN) {
-				speed_mult = The_mission.ai_profile->bay_depart_speed_mult;
-			}
-		}
-
-		if (speed_mult != FLT_MIN && speed_mult != 1.0f) {
-			// We use the distance between the first and last point on the path here; it's not accurate
-			// if the path is not straight, but should be good enough usually; can be changed if necessary.
-			float total_path_length = vm_vec_dist_quick(&Path_points[aip->path_start].pos, &Path_points[aip->path_start + num_points - 1].pos);
-			float dist_to_end;
-
-			if (aip->mode == AIM_BAY_EMERGE) { // Arriving
-				dist_to_end = vm_vec_dist_quick(&Pl_objp->pos, &Path_points[aip->path_start].pos);
-			} else { // Departing
-				dist_to_end = vm_vec_dist_quick(&Pl_objp->pos, &Path_points[aip->path_start + num_points - 1].pos);
-			}
-
-			// Calculate max speed, but respect the waypoint speed cap if it's lower
-			float max_bay_speed = sip->max_speed * (speed_mult + (1.0f - speed_mult) * (dist_to_end / total_path_length));
-			if (max_allowed_speed == 0.0f) {
-				max_allowed_speed = max_bay_speed;
-			} else {
-				max_allowed_speed = MIN(max_allowed_speed, max_bay_speed);
-			}
-		}
-	}
-
-	set_accel_for_docking(Pl_objp, aip, dot, dot_to_next, dist_to_next, dist_to_goal, sip, max_allowed_speed);
+	set_accel_for_docking(Pl_objp, aip, dot, dot_to_next, dist_to_next, dist_to_goal, sip, max_allowed_speed, gobjp);
 	aip->prev_dot_to_goal = dot;
 
 	//	If moving at a non-tiny velocity, detect attaining path point by its being close to
