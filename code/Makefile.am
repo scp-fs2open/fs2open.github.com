@@ -343,6 +343,7 @@ FS2_SOURCES =	\
 	graphics/grstub.cpp	\
 	graphics/grstub.h	\
 	graphics/line.h	\
+	graphics/shadows.cpp \
 	graphics/tmapper.h	\
 	hud/hud.cpp	\
 	hud/hud.h	\
@@ -501,6 +502,7 @@ FS2_SOURCES =	\
 	model/modelsinc.h	\
 	model/modeloctant.cpp	\
 	model/modelread.cpp	\
+	model/modelrender.cpp   \
 	nebula/neb.cpp	\
 	nebula/neb.h	\
 	nebula/neblightning.cpp	\

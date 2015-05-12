@@ -19,6 +19,7 @@
 class object;
 class polymodel;
 struct collision_info_struct;
+class draw_list;
 
 #define	MAX_ASTEROIDS			512
 
@@ -150,7 +151,8 @@ void	asteroid_init();
 void	asteroid_level_init();
 void	asteroid_level_close();
 void	asteroid_create_all();
-void	asteroid_render( object *asteroid_objp );
+void	asteroid_render_DEPRECATED( object *asteroid_objp );
+void	asteroid_render(object * obj, draw_list *scene);
 void	asteroid_delete( object *asteroid_objp );
 void	asteroid_process_pre( object *asteroid_objp, float frame_time);
 void	asteroid_process_post( object *asteroid_objp, float frame_time);
