@@ -274,77 +274,78 @@ int brief_text_wipe_finished();
 //
 void brief_parse_icon_tbl()
 {
-	int rval, icon;
+	int icon;
 	size_t species;
 	char name[MAX_FILENAME_LEN];
 
 	Assert(!Species_info.empty());
 	const size_t max_icons = Species_info.size() * MIN_BRIEF_ICONS;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "icons.tbl", rval));
-
-		return;
-	}
-
-	read_file_text("icons.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	required_string("#Start");
-
-	Briefing_icon_info.clear();
-	while (required_string_either("#End","$Name:"))
+	try
 	{
-		if(Briefing_icon_info.size() >= max_icons) {
-			Warning(LOCATION, "Too many icons in icons.tbl; only the first %d will be used", max_icons);
-			skip_to_start_of_string("#End");
-			break;
-		}
+		read_file_text("icons.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-		briefing_icon_info bii;
+		required_string("#Start");
 
-		// parse regular frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-		generic_anim_init(&bii.regular, name);
-	
-		// parse fade frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-		hud_anim_init(&bii.fade, 0, 0, name);
-
-		// parse highlighting frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-		hud_anim_init(&bii.highlight, 0, 0, name);
-
-		// add it to the collection
-		Briefing_icon_info.push_back(bii);
-	}
-	required_string("#End");
-
-
-	// now assign the icons to their species
-	const size_t num_species_covered = Briefing_icon_info.size() / MIN_BRIEF_ICONS;
-	size_t bii_index = 0;
-	for (icon = 0; icon < MIN_BRIEF_ICONS; icon++)
-	{
-		for (species = 0; species < num_species_covered; species++)
-			Species_info[species].bii_index[icon] = bii_index++;
-	}
-
-	// error check
-	if (num_species_covered < Species_info.size())
-	{
-		SCP_string errormsg = "The following species are missing icon info in icons.tbl:\n";
-
-		for (species = num_species_covered; species < Species_info.size(); species++)
+		Briefing_icon_info.clear();
+		while (required_string_either("#End", "$Name:"))
 		{
-			errormsg += Species_info[species].species_name;
-			errormsg += "\n";
+			if (Briefing_icon_info.size() >= max_icons) {
+				Warning(LOCATION, "Too many icons in icons.tbl; only the first %d will be used", max_icons);
+				skip_to_start_of_string("#End");
+				break;
+			}
+
+			briefing_icon_info bii;
+
+			// parse regular frames
+			required_string("$Name:");
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+			generic_anim_init(&bii.regular, name);
+
+			// parse fade frames
+			required_string("$Name:");
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+			hud_anim_init(&bii.fade, 0, 0, name);
+
+			// parse highlighting frames
+			required_string("$Name:");
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+			hud_anim_init(&bii.highlight, 0, 0, name);
+
+			// add it to the collection
+			Briefing_icon_info.push_back(bii);
+		}
+		required_string("#End");
+
+
+		// now assign the icons to their species
+		const size_t num_species_covered = Briefing_icon_info.size() / MIN_BRIEF_ICONS;
+		size_t bii_index = 0;
+		for (icon = 0; icon < MIN_BRIEF_ICONS; icon++)
+		{
+			for (species = 0; species < num_species_covered; species++)
+				Species_info[species].bii_index[icon] = bii_index++;
 		}
 
-		Error(LOCATION, errormsg.c_str());
+		// error check
+		if (num_species_covered < Species_info.size())
+		{
+			SCP_string errormsg = "The following species are missing icon info in icons.tbl:\n";
+
+			for (species = num_species_covered; species < Species_info.size(); species++)
+			{
+				errormsg += Species_info[species].species_name;
+				errormsg += "\n";
+			}
+
+			Error(LOCATION, errormsg.c_str());
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "icons.tbl", e.what()));
 	}
 }
 

@@ -34,7 +34,7 @@
 
 #define FS_VERSION_MAJOR 3					// major version
 #define FS_VERSION_MINOR 7					// increase by 1 for minor revs
-#define FS_VERSION_BUILD 1					// bugfix release
+#define FS_VERSION_BUILD 3					// bugfix release
 #define FS_VERSION_REVIS 000000				// SVN revision
 //#define FS_VERSION_IDENT NOX("custom")	// special build release identifier, must be a string (don't define unless it's supposed to be used!!)
 

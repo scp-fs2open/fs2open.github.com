@@ -45,6 +45,10 @@ ubyte *Compressed_service_buffer = NULL;	// Used to read in compressed data duri
 
 #define AS_HIGHEST_MAX	999999999	// max uncompressed filesize supported is 999 meg
 
+// Globalize the list of audio extensions for use in several sound related files
+const char *audio_ext_list[] = { ".ogg", ".wav" };
+const int NUM_AUDIO_EXT = sizeof(audio_ext_list) / sizeof(char*);
+
 
 int Audiostream_inited = 0;
 
@@ -436,8 +440,6 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 	int FileSize, FileOffset;
 	char fullpath[MAX_PATH];
 	char filename[MAX_FILENAME_LEN];
-	const int NUM_EXT = 2;
-	const char *audio_ext[NUM_EXT] = { ".ogg", ".wav" };
 
 	m_total_uncompressed_bytes_read = 0;
 	m_max_uncompressed_bytes_to_read = AS_HIGHEST_MAX;
@@ -448,8 +450,8 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 
 	// if we are supposed to load the file as passed...
 	if (keep_ext) {
-		for (int i = 0; i < NUM_EXT; i++) {
-			if ( stristr(pszFilename, audio_ext[i]) ) {
+		for (int i = 0; i < NUM_AUDIO_EXT; i++) {
+			if ( stristr(pszFilename, audio_ext_list[i]) ) {
 				rc = i;
 				break;
 			}
@@ -463,14 +465,14 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 	}
 	// ... otherwise we just find the best match
 	else {
-		rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+		rc = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
 	}
 
 	if (rc < 0) {
 		goto OPEN_ERROR;
 	} else {
 		// set proper filename for later use (assumes that it doesn't already have an extension)
-		strcat_s( filename, audio_ext[rc] );
+		strcat_s( filename, audio_ext_list[rc] );
 	}
 
 	m_snd_info.cfp = mmioOpen( fullpath, NULL, MMIO_ALLOCBUF | MMIO_READ );

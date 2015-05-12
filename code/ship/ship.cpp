@@ -859,6 +859,8 @@ void init_ship_entry(ship_info *sip)
 
 	sip->weapon_model_draw_distance = 200.0f;
 
+	sip->ship_recoil_modifier = 1.0f;
+
 	sip->max_hull_strength = 100.0f;
 	sip->max_shield_strength = 0.0f;
 
@@ -1102,7 +1104,7 @@ int parse_ship(const char *filename, bool replace)
 	// Use a template for this ship.
 	if( optional_string( "+Use Template:" ) ) {
 		Warning(LOCATION, "Ignoring '+Use Template' field for '%s'.  Ship templates have been broken since they were added, and are not currently supported.", sip->name);
-		}
+	}
 
 	rtn = parse_ship_values(sip, first_time, replace);
 
@@ -1253,6 +1255,60 @@ void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_st
 	}
 }
 
+void parse_allowed_weapons(ship_info *sip, bool is_primary, bool is_dogfight)
+{
+	int i, num_allowed;
+	int allowed_weapons[MAX_WEAPON_TYPES];
+	const int max_banks = (is_primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS);
+	const int weapon_type = (is_dogfight ? DOGFIGHT_WEAPON : REGULAR_WEAPON);
+	const int offset = (is_primary ? 0 : MAX_SHIP_PRIMARY_BANKS);
+	const char *allowed_banks_str = is_primary ? (is_dogfight ? "$Allowed Dogfight PBanks:" : "$Allowed PBanks:")
+		: (is_dogfight ? "$Allowed Dogfight SBanks:" : "$Allowed SBanks:");
+	const char *bank_type_str = is_primary ? "primary" : "secondary";
+
+	// Goober5000 - fixed Bobboau's implementation of restricted banks
+	int bank;
+
+	// Set the weapons filter used in weapons loadout (for primary weapons)
+	if (optional_string(allowed_banks_str))
+	{
+		bank = -1;
+
+		while (check_for_string("("))
+		{
+			bank++;
+
+			// make sure we don't specify more than we have banks for
+			if (bank >= max_banks)
+			{
+				Warning(LOCATION, "%s bank-specific loadout for %s exceeds permissible number of %s banks.  Ignoring the rest...", allowed_banks_str, sip->name, bank_type_str);
+				bank--;
+				break;
+			}
+
+			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+
+			// actually say which weapons are allowed
+			for ( i = 0; i < num_allowed; i++ )
+			{
+				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
+				{
+					sip->allowed_bank_restricted_weapons[offset+bank][allowed_weapons[i]] |= weapon_type;
+				}
+			}
+		}
+
+		// set flags if need be
+		if (bank > 0)	// meaning there was a restricted bank table entry
+		{
+			for (i=0; i<=bank; i++)
+			{
+				sip->restricted_loadout_flag[offset+i] |= weapon_type;
+			}
+		}
+	}
+}
+
 /**
  * Common method for parsing ship/subsystem primary/secondary weapons so that the parser doesn't flip out in the event of a problem.
  *
@@ -1352,8 +1408,7 @@ int parse_and_add_briefing_icon_info()
 int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
-	int i, j, num_allowed;
-	int allowed_weapons[MAX_WEAPON_TYPES];
+	int i, j;
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
 	
@@ -1364,11 +1419,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_string(sip->short_name, F_NAME, NAME_LENGTH);
 	else if(first_time)
 	{
-		char *srcpos, *srcend, *destpos, *destend;
+		char *srcpos, *srcend, *destpos;
 		srcpos = sip->name;
 		destpos = sip->short_name;
 		srcend = srcpos + strlen(sip->name);
-		destend = destpos + sizeof(sip->short_name) - 1;
 		while(srcpos < srcend)
 		{
 			if(*srcpos != ' ')
@@ -1575,8 +1629,8 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 				sip->replacement_textures.push_back(tr);
 			else
 				mprintf(("Too many replacement textures specified for ship '%s'!\n", sip->name));
-			}
 		}
+	}
 
 	// optional hud targeting model
 	if(optional_string( "$POF target file:"))
@@ -2218,86 +2272,9 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_float( &sip->weapon_model_draw_distance );
 	}
 
-	// Goober5000 - fixed Bobboau's implementation of restricted banks
-	int bank;
-
 	// Set the weapons filter used in weapons loadout (for primary weapons)
-	if (optional_string("$Allowed PBanks:"))
-	{
-		bank = -1;
-
-		while (check_for_string("("))
-		{
-			bank++;
-
-			// make sure we don't specify more than we have banks for
-			if (bank >= MAX_SHIP_PRIMARY_BANKS)
-			{
-				Warning(LOCATION, "$Allowed PBanks bank-specific loadout for %s exceeds permissible number of primary banks.  Ignoring the rest...", sip->name);
-				bank--;
-				break;
-			}
-
-			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-
-			// actually say which weapons are allowed
-			for ( i = 0; i < num_allowed; i++ )
-			{
-				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
-				{
-					sip->allowed_bank_restricted_weapons[bank][allowed_weapons[i]] |= REGULAR_WEAPON;
-				}
-			}
-		}
-
-		// set flags if need be
-		if (bank > 0)	// meaning there was a restricted bank table entry
-		{
-			for (i=0; i<=bank; i++)
-			{
-				sip->restricted_loadout_flag[i] |= REGULAR_WEAPON;
-			}
-		}
-	}
-
-	// Set the weapons filter used in weapons loadout (for primary weapons)
-	if (optional_string("$Allowed Dogfight PBanks:"))
-	{
-		bank = -1;
-
-		while (check_for_string("("))
-		{
-			bank++;
-
-			// make sure we don't specify more than we have banks for
-			if (bank >= MAX_SHIP_PRIMARY_BANKS)
-			{
-				Warning(LOCATION, "$Allowed Dogfight PBanks bank-specific loadout for %s exceeds permissible number of primary banks.  Ignoring the rest...", sip->name);
-				bank--;
-				break;
-			}
-
-			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-
-			// actually say which weapons are allowed
-			for ( i = 0; i < num_allowed; i++ )
-			{
-				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
-				{
-					sip->allowed_bank_restricted_weapons[bank][allowed_weapons[i]] |= DOGFIGHT_WEAPON;
-				}
-			}
-		}
-
-		// set flags if need be
-		if (bank > 0)	// meaning there was a restricted bank table entry
-		{
-			for (i=0; i<=bank; i++)
-			{
-				sip->restricted_loadout_flag[i] |= DOGFIGHT_WEAPON;
-			}
-		}
-	}
+	parse_allowed_weapons(sip, true, false);
+	parse_allowed_weapons(sip, true, true);
 
 	// Get primary bank weapons
 	parse_weapon_bank(sip, true, &sip->num_primary_banks, sip->primary_bank_weapons, sip->primary_bank_ammo_capacity);
@@ -2309,82 +2286,8 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	}
 
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
-	if (optional_string("$Allowed SBanks:"))
-	{
-		bank = -1;
-
-		while (check_for_string("("))
-		{
-			bank++;
-
-			// make sure we don't specify more than we have banks for
-			if (bank >= MAX_SHIP_SECONDARY_BANKS)
-			{
-				Warning(LOCATION, "$Allowed SBanks bank-specific loadout for %s exceeds permissible number of secondary banks.  Ignoring the rest...", sip->name);
-				bank--;
-				break;
-			}
-
-			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-
-			// actually say which weapons are allowed
-			for ( i = 0; i < num_allowed; i++ )
-			{
-				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
-				{
-					sip->allowed_bank_restricted_weapons[MAX_SHIP_PRIMARY_BANKS+bank][allowed_weapons[i]] |= REGULAR_WEAPON;
-				}
-			}
-		}
-
-		// set flags if need be
-		if (bank > 0)	// meaning there was a restricted bank table entry
-		{
-			for (i=0; i<=bank; i++)
-			{
-				sip->restricted_loadout_flag[MAX_SHIP_PRIMARY_BANKS+i] |= REGULAR_WEAPON;
-			}
-		}
-	}
-
-	// Set the weapons filter used in weapons loadout (for secondary weapons)
-	if (optional_string("$Allowed Dogfight SBanks:"))
-	{
-		bank = -1;
-
-		while (check_for_string("("))
-		{
-			bank++;
-
-			// make sure we don't specify more than we have banks for
-			if (bank >= MAX_SHIP_SECONDARY_BANKS)
-			{
-				Warning(LOCATION, "$Allowed Dogfight SBanks bank-specific loadout for %s exceeds permissible number of secondary banks.  Ignoring the rest...", sip->name);
-				bank--;
-				break;
-			}
-
-			num_allowed = stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
-
-			// actually say which weapons are allowed
-			for ( i = 0; i < num_allowed; i++ )
-			{
-				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
-				{
-					sip->allowed_bank_restricted_weapons[MAX_SHIP_PRIMARY_BANKS+bank][allowed_weapons[i]] |= DOGFIGHT_WEAPON;
-				}
-			}
-		}
-
-		// set flags if need be
-		if (bank > 0)	// meaning there was a restricted bank table entry
-		{
-			for (i=0; i<=bank; i++)
-			{
-				sip->restricted_loadout_flag[MAX_SHIP_PRIMARY_BANKS+i] |= DOGFIGHT_WEAPON;
-			}
-		}
-	}
+	parse_allowed_weapons(sip, false, false);
+	parse_allowed_weapons(sip, false, true);
 
 	// Get secondary bank weapons
 	parse_weapon_bank(sip, false, &sip->num_secondary_banks, sip->secondary_bank_weapons, sip->secondary_bank_ammo_capacity);
@@ -2393,6 +2296,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	{
 		sip->flags.set(Ship::Info_Flags::Draw_weapon_models);
 		stuff_bool_list(sip->draw_secondary_models, sip->num_secondary_banks);
+	}
+
+	if (optional_string("$Ship Recoil Modifier:")){
+		stuff_float(&sip->ship_recoil_modifier);
 	}
 
 	if(optional_string("$Shields:")) {
@@ -2790,7 +2697,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 	if (optional_string("$Closeup_zoom:")) {
 		stuff_float(&sip->closeup_zoom);
-		
+
 		if (sip->closeup_zoom <= 0.0f) {
 			mprintf(("Warning!  Ship '%s' has a $Closeup_zoom value that is less than or equal to 0 (%f). Setting to default value.\n", sip->name, sip->closeup_zoom));
 			sip->closeup_zoom = 0.5f;
@@ -3255,7 +3162,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	}
 
 	while (cont_flag) {
-		int r = required_string_3("#End", "$Subsystem:", "$Name" );
+		int r = required_string_one_of(3, "#End", "$Subsystem:", "$Name" );
 		switch (r) {
 		case 0:
 			cont_flag = 0;
@@ -3736,8 +3643,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		case 2:
 			cont_flag = 0;
 			break;
+		case -1:	// Possible return value if -noparseerrors is used
+			break;
 		default:
-			Int3();	// Impossible return value from required_string_3.
+			Assertion(false, "This should never happen.\n");	// Impossible return value from required_string_one_of.
 		}
 	}	
 
@@ -4031,13 +3940,8 @@ void parse_ship_type()
 
 void parse_shiptype_tbl(const char *filename)
 {
-	int rval;
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
-	}
-
+	try
+	{
 	if (filename != NULL)
 		read_file_text(filename, CF_TYPE_TABLES);
 	else
@@ -4071,6 +3975,12 @@ void parse_shiptype_tbl(const char *filename)
 
 	// add tbl/tbm to multiplayer validation list
 	fs2netd_add_table_validation(filename);
+}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 // The E - Simple lookup function for FRED.
@@ -4126,20 +4036,14 @@ void ship_set_default_player_ship()
 
 void parse_shiptbl(const char *filename)
 {
-	int rval;
-
-	if ((rval = setjmp(parse_abort)) != 0)
+	try
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
-	}
-
 	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	// parse default ship
 	//Override default player ship
-	if(optional_string("#Default Player Ship"))
+		if (optional_string("#Default Player Ship"))
 	{
 		required_string("$Name:");
 		stuff_string(default_player_ship, F_NAME, sizeof(default_player_ship));
@@ -4147,7 +4051,7 @@ void parse_shiptbl(const char *filename)
 	}
 	//Add engine washes
 	//This will override if they already exist
-	if(optional_string("#Engine Wash Info"))
+		if (optional_string("#Engine Wash Info"))
 	{
 		while (required_string_either("#End", "$Name:"))
 		{
@@ -4158,12 +4062,12 @@ void parse_shiptbl(const char *filename)
 	}
 
 	//Add ship classes
-	if(optional_string("#Ship Classes"))
+		if (optional_string("#Ship Classes"))
 	{
 
-		while (required_string_either("#End","$Name:"))
+			while (required_string_either("#End", "$Name:"))
 		{
-			if ( parse_ship(filename, Parsing_modular_table) ) {
+				if (parse_ship(filename, Parsing_modular_table)) {
 				continue;
 			}
 		}
@@ -4176,6 +4080,12 @@ void parse_shiptbl(const char *filename)
 
 	// add tbl/tbm to multiplayer validation list
 	fs2netd_add_table_validation(filename);
+}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 int ship_show_velocity_dot = 0;
@@ -6616,7 +6526,7 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 		return;
 	}
 
-	int i, tm_num, diffuse_target = -1, glow_target = -1, glow_handle = -1, diffuse_handle = -1;
+	int i, tm_num, glow_target = -1, glow_handle = -1, diffuse_handle = -1;
 	int w, h;
 	cockpit_display new_display;
 
@@ -6627,7 +6537,6 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 	{
 		tm_num = pm->maps[i].FindTexture(display->filename);
 		if ( tm_num >= 0 ) {
-			diffuse_target = i*TM_NUM_TYPES;
 			glow_target = i*TM_NUM_TYPES+TM_GLOW_TYPE;
 
 			diffuse_handle = pm->maps[i].textures[TM_BASE_TYPE].GetTexture();
@@ -6786,7 +6695,7 @@ void ship_subsystems_delete(ship *shipp)
 void ship_delete( object * obj )
 {
 	ship	*shipp;
-	int	num, objnum;
+	int	num, objnum __attribute__((__unused__));
 
 	num = obj->instance;
 	Assert( num >= 0);
@@ -6959,21 +6868,21 @@ void ship_actually_depart(int shipnum, int method)
 }
 
 // no destruction effects, not for player destruction and multiplayer, only self-destruction
-void ship_destroy_instantly(object *ship_obj, int shipnum)
+void ship_destroy_instantly(object *ship_objp, int shipnum)
 {
-	Assert(ship_obj->type == OBJ_SHIP);
-	Assert(!(ship_obj == Player_obj));
+	Assert(ship_objp->type == OBJ_SHIP);
+	Assert(!(ship_objp == Player_obj));
 	Assert(!(Game_mode & GM_MULTIPLAYER));
 
 	// undocking and death preparation
-	ship_stop_fire_primary(ship_obj);
-	ai_deathroll_start(ship_obj);
+	ship_stop_fire_primary(ship_objp);
+	ai_deathroll_start(ship_objp);
 
-	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_obj->instance].ship_name, NULL );
+	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
 	
 	// scripting stuff
-	Script_system.SetHookObject("Self", ship_obj);
-	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
+	Script_system.SetHookObject("Self", ship_objp);
+	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_objp);
 	Script_system.RemHookVars(2, "Self", "Killer");
 
 	ship_obj->flags.set(Object::Object_Flags::Should_be_dead);
@@ -9671,8 +9580,12 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		// if we have a player ship, then send the fired packet anyway so that the player
 		// who fired will get his 'out of countermeasures' sound
 		cmeasure_count = 0;
-		if ( objp->flags[Object::Object_Flags::Player_ship] ){
-			goto send_countermeasure_fired;
+		if (objp->flags[Object::Object_Flags::Player_ship]) {
+			// the new way of doing things
+			if (Game_mode & GM_MULTIPLAYER){
+				send_NEW_countermeasure_fired_packet(objp, cmeasure_count, -1);
+		}
+			return 0;
 		}
 
 		return 0;
@@ -9695,10 +9608,9 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 			snd_play_3d( &Snds[Weapon_info[shipp->current_cmeasure].launch_snd], &pos, &View_position );
 		}
 
-send_countermeasure_fired:
 		// the new way of doing things
 		if(Game_mode & GM_MULTIPLAYER){
-			send_NEW_countermeasure_fired_packet( objp, cmeasure_count, /*arand*/Objects[cobjnum].net_signature );
+			send_NEW_countermeasure_fired_packet(objp, cmeasure_count, Objects[cobjnum].net_signature);
 		}
 	}
 
@@ -9952,7 +9864,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	ship_weapon	*swp;
 	ship_info	*sip;
 	ai_info		*aip;
-	int			weapon, i, j, w, v, weapon_objnum;
+	int			weapon_idx, i, j, w, v, weapon_objnum;
 	int			bank_to_fire, num_fired = 0;	
 	int			banks_fired;				// used for multiplayer to help determine whether or not to send packet
 	banks_fired = 0;			// used in multiplayer -- bitfield of banks that were fired
@@ -10063,9 +9975,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		bank_to_fire = (swp->current_primary_bank+i) % swp->num_primary_banks;
 
 		
-		weapon = swp->primary_bank_weapons[bank_to_fire];
-		Assert( weapon >= 0 && weapon < MAX_WEAPON_TYPES );		
-		if ( (weapon < 0) || (weapon >= MAX_WEAPON_TYPES) ) {
+		weapon_idx = swp->primary_bank_weapons[bank_to_fire];
+		Assert( weapon_idx >= 0 && weapon_idx < MAX_WEAPON_TYPES );
+		if ( (weapon_idx < 0) || (weapon_idx >= MAX_WEAPON_TYPES) ) {
 			Int3();		// why would a ship try to fire a weapon that doesn't exist?
 			continue;
 		}		
@@ -10077,7 +9989,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				continue;
 		}
 
-		weapon_info* winfo_p = &Weapon_info[weapon];
+		weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
 		if (needs_target_pos) {
 			target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
@@ -10434,6 +10346,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				// Mark all these weapons as in the same group
 				int new_group_id = weapon_create_group_id();
 
+				vec3d total_impulse;
+				vec3d *firepoint_list;
+				size_t current_firepoint = 0;
+
+				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){
+					firepoint_list = new vec3d[numtimes * points];
+					vm_vec_zero(&total_impulse);
+				}
+
 				for ( w = 0; w < numtimes; w++ ) {
 					polymodel *weapon_model = NULL;
 					if(winfo_p->external_model_num >= 0) 
@@ -10548,9 +10469,20 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								firing_orient = obj->orient;
 							}
 							
+							if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){	// Function to add recoil functionality - DahBlount
+								vec3d local_impulse = firing_orient.vec.fvec;
+								
+								float recoil_force = (winfo_p->mass * winfo_p->max_speed * winfo_p->recoil_modifier * sip->ship_recoil_modifier);
+
+								firepoint_list[current_firepoint++] = firing_pos;
+
+								vm_vec_scale(&local_impulse, (-1 * recoil_force));
+								vm_vec_add2(&total_impulse, &local_impulse);
+							}
+
 							// create the weapon -- the network signature for multiplayer is created inside
 							// of weapon_create							
-							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id, 
+							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), new_group_id,
 								0, 0, swp->primary_bank_fof_cooldown[bank_to_fire] );
 							winfo_p = &Weapon_info[Weapons[Objects[weapon_objnum].instance].weapon_info_index];
 							has_fired = true;
@@ -10595,7 +10527,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							// create the muzzle flash effect
 							if ( (obj != Player_obj) || (sip->flags[Info_Flags::Show_ship_model]) || (Viewer_mode) ) {
 								// show the flash only if in not cockpit view, or if "show ship" flag is set
-								shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon );
+								shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon_idx );
 							}
 
 							// maybe shudder the ship - if its me
@@ -10610,6 +10542,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						}
 					}
 					swp->external_model_fp_counter[bank_to_fire]++;
+				}
+				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){
+					vec3d avg_firepoint;
+
+					vm_vec_avg_n(&avg_firepoint, current_firepoint, firepoint_list);
+
+					ship_apply_whack(&total_impulse, &avg_firepoint, obj);
+					delete[] firepoint_list;
 				}
 			}
 
@@ -10955,7 +10895,7 @@ extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_i
 //                need to avoid firing when normally called
 int ship_fire_secondary( object *obj, int allow_swarm )
 {
-	int			n, weapon, j, bank, bank_adjusted, starting_bank_count = -1, num_fired;
+	int			n, weapon_idx, j, bank, bank_adjusted, starting_bank_count = -1, num_fired;
 	ushort		starting_sig = 0;
 	ship			*shipp;
 	ship_weapon *swp;
@@ -11036,12 +10976,12 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			return 0;
 	}
 
-	weapon = swp->secondary_bank_weapons[bank];
+	weapon_idx = swp->secondary_bank_weapons[bank];
 	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
 	if((swp->secondary_bank_weapons[bank] < 0) || (swp->secondary_bank_weapons[bank] >= MAX_WEAPON_TYPES)){
 		return 0;
 	}
-	wip = &Weapon_info[weapon];
+	wip = &Weapon_info[weapon_idx];
 
 	if ( MULTIPLAYER_MASTER ) {
 		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
@@ -11162,11 +11102,11 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	float t;
 
-	if (Weapon_info[weapon].burst_shots > swp->burst_counter[bank_adjusted]) {
-		t = Weapon_info[weapon].burst_delay;
+	if (Weapon_info[weapon_idx].burst_shots > swp->burst_counter[bank_adjusted]) {
+		t = Weapon_info[weapon_idx].burst_delay;
 		swp->burst_counter[bank_adjusted]++;
 	} else {
-		t = Weapon_info[weapon].fire_wait;	// They can fire 5 times a second
+		t = Weapon_info[weapon_idx].fire_wait;	// They can fire 5 times a second
 		swp->burst_counter[bank_adjusted] = 0;
 	}
 	swp->next_secondary_fire_stamp[bank] = timestamp((int) (t * 1000.0f));
@@ -11179,7 +11119,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			if ( obj == Player_obj ) 
 				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
 					char missile_name[NAME_LENGTH];
-					strcpy_s(missile_name, Weapon_info[weapon].name);
+					strcpy_s(missile_name, Weapon_info[weapon_idx].name);
 					end_string_at_first_hash_symbol(missile_name);
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), missile_name);
 				}
@@ -11275,7 +11215,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
 
 			if ( Game_mode & GM_MULTIPLAYER ) {
-				Assert( Weapon_info[weapon].subtype == WP_MISSILE );
+				Assert( Weapon_info[weapon_idx].subtype == WP_MISSILE );
 			}
 
 			matrix firing_orient;
@@ -11292,17 +11232,17 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
+			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
 
 			if (weapon_num >= 0) {
-				weapon = Weapons[Objects[weapon_num].instance].weapon_info_index;
+				weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;
 				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
 				has_fired = true;
 
 				// create the muzzle flash effect
 				if ( (obj != Player_obj) || (sip->flags[Info_Flags::Show_ship_model]) || (Viewer_mode) ) {
 					// show the flash only if in not cockpit view, or if "show ship" flag is set
-					shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
+					shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon_idx);
 				}
 
 				if((wip->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
@@ -11325,8 +11265,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	if ( obj == Player_obj ) {
-		if ( Weapon_info[weapon].launch_snd != -1 ) {
-			snd_play( &Snds[Weapon_info[weapon].launch_snd], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
+		if ( Weapon_info[weapon_idx].launch_snd != -1 ) {
+			snd_play( &Snds[Weapon_info[weapon_idx].launch_snd], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 			swp = &Player_ship->weapons;
 			if (bank >= 0) {
 				wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
@@ -11339,8 +11279,8 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		}
 
 	} else {
-		if ( Weapon_info[weapon].launch_snd != -1 ) {
-			snd_play_3d( &Snds[Weapon_info[weapon].launch_snd], &obj->pos, &View_position );
+		if ( Weapon_info[weapon_idx].launch_snd != -1 ) {
+			snd_play_3d( &Snds[Weapon_info[weapon_idx].launch_snd], &obj->pos, &View_position );
 		}
 	}
 
@@ -11375,7 +11315,7 @@ done_secondary:
 		}
 	
 		// maybe announce a shockwave weapon
-		ai_maybe_announce_shockwave_weapon(obj, weapon);
+		ai_maybe_announce_shockwave_weapon(obj, weapon_idx);
 	}
 
 	// if we are out of ammo in this bank then don't carry over firing swarm/corkscrew
@@ -13433,7 +13373,7 @@ void ship_close()
 		Ship_types[i].ai_actively_pursues_temp.clear();
 	}
 	Ship_types.clear();
-
+	
 	if(CLOAKMAP != -1)
 		bm_release(CLOAKMAP);
 }	
@@ -15664,7 +15604,7 @@ void ship_page_in()
 
 	// Page in all the ship classes that are used on this level
 	int num_ship_types_used = 0;
-	int test_id = -1;
+	int test_id __attribute__((__unused__)) = -1;
 
 	memset( fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
 
@@ -16083,17 +16023,17 @@ int is_support_allowed(object *objp, bool do_simple_check)
 	// this is also somewhat expensive
 	if (!do_simple_check)
 	{
-	// Goober5000 - extra check to make sure this guy has a rearming dockpoint
-	if (model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, DOCK_TYPE_REARM) < 0)
-	{
+		// Goober5000 - extra check to make sure this guy has a rearming dockpoint
+		if (model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, DOCK_TYPE_REARM) < 0)
+		{
 			static bool warned_about_rearm_dockpoint = false;
 			if (!warned_about_rearm_dockpoint)
 			{
-		Warning(LOCATION, "Support not allowed for %s because its model lacks a rearming dockpoint!", shipp->ship_name);
+				Warning(LOCATION, "Support not allowed for %s because its model lacks a rearming dockpoint!", shipp->ship_name);
 				warned_about_rearm_dockpoint = true;
 			}
-		return 0;
-	}
+			return 0;
+		}
 	}
 
 	// Goober5000 - if we got this far, we can request support
@@ -17596,19 +17536,14 @@ void parse_armor_type()
 
 void armor_parse_table(const char *filename)
 {
-	int rval;
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
-	}
-
+	try
+	{
 	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
 	//Enumerate through all the armor types and add them.
-	while ( optional_string("#Armor Type") ) {
-		while ( required_string_either("#End", "$Name:") ) {
+		while (optional_string("#Armor Type")) {
+			while (required_string_either("#End", "$Name:")) {
 			parse_armor_type();
 			continue;
 		}
@@ -17618,6 +17553,12 @@ void armor_parse_table(const char *filename)
 
 	// add tbl/tbm to multiplayer validation list
 	fs2netd_add_table_validation(filename);
+}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 void armor_init()
@@ -17871,29 +17812,29 @@ bool ship_has_sound(object *objp, GameSoundsIndex id)
 /**
  * Given a ship with bounding box and a point, find the closest point on the bbox
  *
- * @param ship_obj Object that has the bounding box (should be a ship)
+ * @param ship_objp Object that has the bounding box (should be a ship)
  * @param start World position of the point being compared
  * @param box_pt OUTPUT PARAMETER: closest point on the bbox to start
  *
  * @return point is inside bbox, TRUE/1
  * @return point is outside bbox, FALSE/0
  */
-int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt)
+int get_nearest_bbox_point(object *ship_objp, vec3d *start, vec3d *box_pt)
 {
 	vec3d temp, rf_start;
 	polymodel *pm;
-	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+	pm = model_get(Ship_info[Ships[ship_objp->instance].ship_info_index].model_num);
 
 	// get start in ship rf
-	vm_vec_sub(&temp, start, &ship_obj->pos);
-	vm_vec_rotate(&rf_start, &temp, &ship_obj->orient);
+	vm_vec_sub(&temp, start, &ship_objp->pos);
+	vm_vec_rotate(&rf_start, &temp, &ship_objp->orient);
 
 	// find box_pt
 	int inside = project_point_onto_bbox(&pm->mins, &pm->maxs, &rf_start, &temp);
 
 	// get box_pt in world rf
-	vm_vec_unrotate(box_pt, &temp, &ship_obj->orient);
-	vm_vec_add2(box_pt, &ship_obj->pos);
+	vm_vec_unrotate(box_pt, &temp, &ship_objp->orient);
+	vm_vec_add2(box_pt, &ship_objp->pos);
 
 	return inside;
 }

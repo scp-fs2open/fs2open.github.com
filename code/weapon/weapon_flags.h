@@ -78,6 +78,7 @@ namespace Weapon {
 		Turret_Interceptable,				// These two flags mark a weapon as being interceptable by the AI
 		Fighter_Interceptable,				// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
 		Aoe_Electronics,					// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
+		Apply_Recoil,						// Apply Recoil
 
 		NUM_VALUES
 	};

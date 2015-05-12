@@ -94,18 +94,14 @@ int ai_path_type_match(char *p)
 
 void parse_ai_profiles_tbl(const char *filename)
 {
-	int i, rval;
+	int i;
 	char profile_name[NAME_LENGTH];
 	ai_profile_t dummy_profile;
 	char *saved_Mp = NULL;
 	char buf[NAME_LENGTH];
 
-	if ((rval = setjmp(parse_abort)) != 0)
+	try
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default ai_profiles.tbl>", rval));
-		return;
-	}
-
 	if (filename == NULL)
 		read_file_text_from_array(defaults_get_file("ai_profiles.tbl"));
 	else
@@ -122,7 +118,7 @@ void parse_ai_profiles_tbl(const char *filename)
 		stuff_string(Default_profile_name, F_NAME, NAME_LENGTH);
 
 	// begin reading data
-	while (required_string_either("#End","$Profile Name:"))
+		while (required_string_either("#End", "$Profile Name:"))
 	{
 		ai_profile_t *profile = &dummy_profile;
 		ai_profile_t *previous_profile = NULL;
@@ -164,7 +160,7 @@ void parse_ai_profiles_tbl(const char *filename)
 				// make sure we're under the limit
 				if (Num_ai_profiles >= MAX_AI_PROFILES)
 				{
-					Warning(LOCATION, "Too many profiles in ai_profiles.tbl!  Max is %d.\n", MAX_AI_PROFILES-1);	// -1 because one is built-in
+						Warning(LOCATION, "Too many profiles in ai_profiles.tbl!  Max is %d.\n", MAX_AI_PROFILES - 1);	// -1 because one is built-in
 					skip_to_string("#End", NULL);
 					break;
 				}
@@ -398,13 +394,14 @@ void parse_ai_profiles_tbl(const char *filename)
 			}
 
 			profile->ai_path_mode = AI_PATH_MODE_NORMAL;
-			if(optional_string("$ai path mode:"))
+				if (optional_string("$ai path mode:"))
 			{
 				stuff_string(buf, F_NAME, NAME_LENGTH);
 				int j = ai_path_type_match(buf);
-				if(j >= 0) {
+					if (j >= 0) {
 					profile->ai_path_mode = j;
-				} else {
+					}
+					else {
 					Warning(LOCATION, "Invalid ai path mode '%s' specified", buf);
 				}
 			}
@@ -417,7 +414,7 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (val)
 					profile->flags.set(AI::Profile_flags::No_warp_camera);
 			}
-			
+
 			if (optional_string("$fix ai path order bug:")) 
 			{
 				bool val;
@@ -462,7 +459,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 
 			// if we've been through once already and are at the same place, force a move
-			if ( saved_Mp && (saved_Mp == Mp) )
+				if (saved_Mp && (saved_Mp == Mp))
 			{
 				char tmp[60];
 				memset(tmp, 0, 60);
@@ -479,6 +476,12 @@ void parse_ai_profiles_tbl(const char *filename)
 	}
 	
 	required_string("#End");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", (filename) ? filename : "<default ai_profiles.tbl>", e.what()));
+		return;
+	}
 
 	// add tbl/tbm to multiplayer validation list
 	extern void fs2netd_add_table_validation(const char *tblname);

@@ -1259,7 +1259,7 @@ void game_loading_callback_close()
 	// Make sure bar shows all the way over.
 	game_loading_callback(COUNT_ESTIMATE);
 	
-	int real_count = game_busy_callback( NULL );
+	int real_count __attribute__((__unused__)) = game_busy_callback( NULL );
  	Mouse_hidden = 0;
 
 	Game_loading_callback_inited = 0;
@@ -1423,7 +1423,7 @@ int game_start_mission()
 {
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
-	int s1 = timer_get_milliseconds();
+	int s1 __attribute__((__unused__)) = timer_get_milliseconds();
 
 	// clear post processing settings
 	gr_post_process_set_defaults();
@@ -1480,9 +1480,9 @@ int game_start_mission()
 
 	bm_print_bitmaps();
 
-	int e1 = timer_get_milliseconds();
+	int e1 __attribute__((__unused__)) = timer_get_milliseconds();
 
-	printf("Level load took %f seconds.\n", (e1 - s1) / 1000.0f );
+	mprintf(("Level load took %f seconds.\n", (e1 - s1) / 1000.0f ));
 
 	return 1;
 }
@@ -1739,7 +1739,7 @@ char full_path[1024];
  */
 void game_init()
 {
-	int s1, e1;
+	int s1 __attribute__((__unused__)), e1 __attribute__((__unused__));
 	const char *ptr;
 	char whee[MAX_PATH_LEN];
 
@@ -2175,7 +2175,7 @@ void game_show_framerate()
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (Cmdline_frame_profile) {
-			gr_string(20, 100 + line_height, profile_output, GR_RESIZE_NONE);
+			gr_string(20, 100 + line_height, profile_output.c_str(), GR_RESIZE_NONE);
 		}
 
 		if (Show_framerate) {

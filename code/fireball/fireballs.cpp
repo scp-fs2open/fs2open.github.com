@@ -159,84 +159,93 @@ static void fireball_set_default_color(int idx)
  */
 void parse_fireball_tbl(const char *filename)
 {
-	int rval;
 	lod_checker lod_check;
 	color fb_color;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
+
+		required_string("#Start");
+
+		while (required_string_either("#End", "$Name:")) {
+			memset(&lod_check, 0, sizeof(lod_checker));
+
+			// base filename
+			required_string("$Name:");
+			stuff_string(lod_check.filename, F_NAME, MAX_FILENAME_LEN);
+
+			lod_check.override = -1;
+
+			// these entries should only be in TBMs, and it has to include at least one
+			if (Parsing_modular_table) {
+				if (optional_string("+Explosion_Medium")) {
+					lod_check.override = FIREBALL_EXPLOSION_MEDIUM;
+				}
+				else if (optional_string("+Warp_Effect")) {
+					lod_check.override = FIREBALL_WARP;
+				}
+				else if (optional_string("+Knossos_Effect")) {
+					lod_check.override = FIREBALL_KNOSSOS;
+				}
+				else if (optional_string("+Asteroid")) {
+					lod_check.override = FIREBALL_ASTEROID;
+				}
+				else if (optional_string("+Explosion_Large1")) {
+					lod_check.override = FIREBALL_EXPLOSION_LARGE1;
+				}
+				else if (optional_string("+Explosion_Large2")){
+					lod_check.override = FIREBALL_EXPLOSION_LARGE2;
+				}
+				else {
+					required_string("+Custom_Fireball");
+					stuff_int(&lod_check.override);
+				}
+			}
+
+			lod_check.num_lods = 1;
+
+			// Do we have an LOD num
+			if (optional_string("$LOD:")) {
+				stuff_int(&lod_check.num_lods);
+			}
+
+			if (lod_check.num_lods > MAX_FIREBALL_LOD) {
+				lod_check.num_lods = MAX_FIREBALL_LOD;
+			}
+
+			// check for particular lighting color
+			if (optional_string("$Light color:")) {
+				int r, g, b;
+
+				stuff_int(&r);
+				stuff_int(&g);
+				stuff_int(&b);
+
+				CLAMP(r, 0, 255);
+				CLAMP(g, 0, 255);
+				CLAMP(b, 0, 255);
+
+				gr_init_color(&fb_color, r, g, b);
+			}
+			else {
+				// to keep things simple, we just use 0 alpha to indicate that a default value should be used
+				memset(&fb_color, 0, sizeof(color));
+			}
+
+			// we may use one filename for multiple entries so we'll have to handle dupes post parse
+			LOD_checker.push_back(lod_check);
+			LOD_color.push_back(fb_color);
+		}
+
+		required_string("#End");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
-
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	required_string("#Start");
-
-	while (required_string_either("#End", "$Name:")) {
-		memset( &lod_check, 0, sizeof(lod_checker) );
-
-		// base filename
-		required_string("$Name:");
-		stuff_string(lod_check.filename, F_NAME, MAX_FILENAME_LEN);
-
-		lod_check.override = -1;
-
-		// these entries should only be in TBMs, and it has to include at least one
-		if ( Parsing_modular_table ) {
-			if (optional_string("+Explosion_Medium")) {
-				lod_check.override = FIREBALL_EXPLOSION_MEDIUM;
-			} else if (optional_string("+Warp_Effect")) {
-				lod_check.override = FIREBALL_WARP;
-			} else if (optional_string("+Knossos_Effect")) {
-				lod_check.override = FIREBALL_KNOSSOS;
-			} else if (optional_string("+Asteroid")) {
-				lod_check.override = FIREBALL_ASTEROID;
-			} else if (optional_string("+Explosion_Large1")) {
-				lod_check.override = FIREBALL_EXPLOSION_LARGE1;
-			} else if (optional_string("+Explosion_Large2")){
-				lod_check.override = FIREBALL_EXPLOSION_LARGE2;
-			} else {
-				required_string("+Custom_Fireball");
-				stuff_int(&lod_check.override);
-			}
-		}
-
-		lod_check.num_lods = 1;
-
-		// Do we have an LOD num
-		if (optional_string("$LOD:")) {
-			stuff_int(&lod_check.num_lods);
-		}
-
-		if (lod_check.num_lods > MAX_FIREBALL_LOD) {
-			lod_check.num_lods = MAX_FIREBALL_LOD;
-		}
-
-		// check for particular lighting color
-		if ( optional_string("$Light color:") ) {
-			int r, g, b;
-
-			stuff_int(&r);
-			stuff_int(&g);
-			stuff_int(&b);
-
-			CLAMP(r, 0, 255);
-			CLAMP(g, 0, 255);
-			CLAMP(b, 0, 255);
-
-			gr_init_color(&fb_color, r, g, b);
-		} else {
-			// to keep things simple, we just use 0 alpha to indicate that a default value should be used
-			memset( &fb_color, 0, sizeof(color) );
-		}
-
-		// we may use one filename for multiple entries so we'll have to handle dupes post parse
-		LOD_checker.push_back(lod_check);
-		LOD_color.push_back(fb_color);
-	}
-
-	required_string("#End");
 }
 
 void fireball_parse_tbl()

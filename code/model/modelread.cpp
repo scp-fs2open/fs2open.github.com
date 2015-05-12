@@ -739,8 +739,6 @@ void create_family_tree(polymodel *obj)
 	}
 }
 
-IBX ibuffer_info;
-
 void create_vertex_buffer(polymodel *pm)
 {
 	if (Cmdline_nohtl || Is_standalone) {
@@ -756,105 +754,10 @@ void create_vertex_buffer(polymodel *pm)
 		Error(LOCATION, "Could not generate vertex buffer for '%s'!", pm->filename);
 	}
 
-	// clear struct and prepare for IBX usage
-	memset( &ibuffer_info, 0, sizeof(IBX) );
-
-	// Begin IBX code
-	if ( !Cmdline_noibx ) {
-		// use the same filename as the POF but with an .bx extension
-		strcpy_s( ibuffer_info.name, pm->filename );
-		char *pb = strchr( ibuffer_info.name, '.' );
-		if ( pb ) *pb = 0;
-		strcat_s( ibuffer_info.name, NOX(".bx") );
-
-		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-		// check if it's a zero size file and if so bail out to create a new one
-		if ( (ibuffer_info.read != NULL) && !cfilelength(ibuffer_info.read) ) {
-			cfclose( ibuffer_info.read );
-			ibuffer_info.read = NULL;
-		}
-
-		if (ibuffer_info.read != NULL) {
-			bool ibx_valid = false;
-
-			// grab a checksum of the IBX, for debugging purposes
-			uint ibx_checksum = 0;
-			cfseek(ibuffer_info.read, 0, SEEK_SET);
-			cf_chksum_long(ibuffer_info.read, &ibx_checksum);
-			cfseek(ibuffer_info.read, 0, SEEK_SET);
-
-			// get the file size that we use to safety check with.
-			// be sure to subtract from this when we read something out
-			ibuffer_info.size = cfilelength( ibuffer_info.read );
-
-			// file id
-			int ibx = cfread_int( ibuffer_info.read );
-			ibuffer_info.size -= sizeof(int); // subtract
-
-			// make sure the file is valid
-			switch (ibx) {
-				// "XB  " - ("  BX" in file)
-				case 0x58422020:
-					ibx_valid = true;
-					break;
-			}
-
-			if (ibx_valid) {
-				// file is valid so grab the checksum out of the .bx and verify it matches the POF
-				uint ibx_sum = cfread_uint( ibuffer_info.read );
-				ibuffer_info.size -= sizeof(uint); // subtract
-
-				if (ibx_sum != Global_checksum) {
-					// bah, it's invalid for this POF
-					ibx_valid = false;
-
-					mprintf(("IBX:  Warning!  Found invalid IBX file: '%s'\n", ibuffer_info.name));
-				}
-			}
-
-
-			if ( !ibx_valid ) {
-				cfclose( ibuffer_info.read );
-				ibuffer_info.read = NULL;
-				ibuffer_info.size = 0;
-			} else {
-				mprintf(("IBX: Found a good IBX to read for '%s'.\n", pm->filename));
-				mprintf(("IBX-DEBUG => POF checksum: 0x%08x, IBX checksum: 0x%08x -- \"%s\"\n", Global_checksum, ibx_checksum, pm->filename));
-			}
-		}
-
-		// if the read file is absent or invalid then write out the new info
-		if (ibuffer_info.read == NULL) {
-			ibuffer_info.write = cfopen( ibuffer_info.name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-			if (ibuffer_info.write != NULL) {
-				mprintf(("IBX: Starting a new IBX for '%s'.\n", pm->filename));
-
-				// file id, default to version 1
-				cfwrite_int( 0x58422020, ibuffer_info.write ); // "XB  " - ("  BX" in file)
-
-				// POF checksum
-				cfwrite_uint( Global_checksum, ibuffer_info.write );
-			}
-		}
-	} // End IBX code
-
 	// determine the size and configuration of each buffer segment
 	for (i = 0; i < pm->n_models; i++) {
 		interp_configure_vertex_buffers(pm, i);
 	}
-
-	// these must be reset to NULL for the tests to work correctly later
-	if (ibuffer_info.read != NULL) {
-		cfclose( ibuffer_info.read );
-	}
-
-	if (ibuffer_info.write != NULL) {
-		cfclose( ibuffer_info.write );
-	}
-
-	memset( &ibuffer_info, 0, sizeof(IBX) );
 
 	// now actually fill the buffer with our info ...
 	for (i = 0; i < pm->n_models; i++) {

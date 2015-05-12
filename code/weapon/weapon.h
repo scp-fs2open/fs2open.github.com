@@ -329,6 +329,9 @@ typedef struct weapon_info {
 	float emp_intensity;					// intensity of the EMP effect
 	float emp_time;						// time of the EMP effect
 
+	// Recoil effect
+	float recoil_modifier;
+
 	// Energy suck effect
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems

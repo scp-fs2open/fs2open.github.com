@@ -128,13 +128,8 @@ void iff_init()
 	int i, j, k;
 	int string_idx;
 
-	int rval;
-	if ((rval = setjmp(parse_abort)) != 0)
+	try
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "iff_defs.tbl", rval));
-		return;
-	}
-
 	// Goober5000 - if table doesn't exist, use the default table
 	if (cf_exists_full("iff_defs.tbl", CF_TYPE_TABLES))
 		read_file_text("iff_defs.tbl", CF_TYPE_TABLES);
@@ -182,13 +177,13 @@ void iff_init()
 		iff_init_color(0xff, 0xff, 0x00);
 
 	// init radar blips colour table
-	int a_bright,a_dim;
+		int a_bright, a_dim;
 	bool alternate_blip_color = false;
-	for (i=0;i<5;i++)
+		for (i = 0; i < 5; i++)
 	{
-		for (j=0;j<2;j++)
+			for (j = 0; j < 2; j++)
 		{
-			for (k=0;k<3;k++)
+				for (k = 0; k < 3; k++)
 			{
 				radar_iff_color[i][j][k] = -1;
 			}
@@ -217,55 +212,55 @@ void iff_init()
 	if ((optional_string("$Missile Blip Color:")) || (optional_string("$Missile Blip Colour:")))
 	{
 		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-		for (i=0;i<3;i++)
+			for (i = 0; i < 3; i++)
 		{
 			Assert(rgb[i] >= 0 && rgb[i] <= 255);
 			radar_iff_color[0][1][i] = rgb[i];
-			radar_iff_color[0][0][i] = rgb[i]/2;
+				radar_iff_color[0][0][i] = rgb[i] / 2;
 		}
 	}		
 
 	if ((optional_string("$Navbuoy Blip Color:")) || (optional_string("$Navbuoy Blip Colour:")))
 	{
 		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-		for (i=0;i<3;i++)
+			for (i = 0; i < 3; i++)
 		{
 			Assert(rgb[i] >= 0 && rgb[i] <= 255);
 			radar_iff_color[1][1][i] = rgb[i];
-			radar_iff_color[1][0][i] = rgb[i]/2;
+				radar_iff_color[1][0][i] = rgb[i] / 2;
 		}
 	}
 
 	if ((optional_string("$Warping Blip Color:")) || (optional_string("$Warping Blip Colour:")))
 	{
 		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-		for (i=0;i<3;i++)
+			for (i = 0; i < 3; i++)
 		{
 			Assert(rgb[i] >= 0 && rgb[i] <= 255);
 			radar_iff_color[2][1][i] = rgb[i];
-			radar_iff_color[2][0][i] = rgb[i]/2;
+				radar_iff_color[2][0][i] = rgb[i] / 2;
 		}
 	}
 
 	if ((optional_string("$Node Blip Color:")) || (optional_string("$Node Blip Colour:")))
 	{
 		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-		for (i=0;i<3;i++)
+			for (i = 0; i < 3; i++)
 		{
 			Assert(rgb[i] >= 0 && rgb[i] <= 255);
 			radar_iff_color[3][1][i] = rgb[i];
-			radar_iff_color[3][0][i] = rgb[i]/2;
+				radar_iff_color[3][0][i] = rgb[i] / 2;
 		}
 	}
 
 	if ((optional_string("$Tagged Blip Color:")) || (optional_string("$Tagged Blip Colour:")))
 	{
 		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-		for (i=0;i<3;i++)
+			for (i = 0; i < 3; i++)
 		{
 			Assert(rgb[i] >= 0 && rgb[i] <= 255);
 			radar_iff_color[4][1][i] = rgb[i];
-			radar_iff_color[4][0][i] = rgb[i]/2;
+				radar_iff_color[4][0][i] = rgb[i] / 2;
 		}
 	}
 
@@ -273,11 +268,11 @@ void iff_init()
 	{
 		a_bright = iff_get_alpha_value(true);
 		a_dim = iff_get_alpha_value(false);
-		for (i=0;i<5;i++)
+			for (i = 0; i < 5; i++)
 		{
 			if (radar_iff_color[i][0][0] >= 0)
 			{
-				for (j=0;j<3;j++)
+					for (j = 0; j < 3; j++)
 				{
 					radar_iff_color[i][0][j] = radar_iff_color[i][1][j];
 				}
@@ -289,7 +284,7 @@ void iff_init()
 	}
 	else
 	{
-		for (i=0;i<5;i++)
+			for (i = 0; i < 5; i++)
 		{
 			if (radar_iff_color[i][0][0] >= 0)
 			{
@@ -397,7 +392,7 @@ void iff_init()
 		if (optional_string("$Default Ship Flags:"))
 		{
 			parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&iff->default_parse_flags, Parse_object_flags, num_parse_object_flags, NULL);
-		}
+					}
 
 		// again, for compatibility reasons
 		if (optional_string("$Default Ship Flags2:"))
@@ -493,6 +488,12 @@ void iff_init()
 	// add tbl/tbm to multiplayer validation list
 	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation("iff_defs.tbl");
+}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "iff_defs.tbl", e.what()));
+		return;
+	}
 }
 
 /**

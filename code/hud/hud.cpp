@@ -151,49 +151,6 @@ int Supernova_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-// used to draw the kills gauge
-hud_frames Kills_gauge;
-int Kills_gauge_loaded = 0;
-int Kills_gauge_coords[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		497, 361
-	},
-	{ // GR_1024
-		880, 624
-	}
-};
-int Kills_text_coords[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		503, 365
-	},
-	{ // GR_1024
-		886, 628
-	}
-};
-
-int Kills_text_val_coords_gr[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		615, 365
-	},
-	{ // GR_1024
-		984, 628
-	}
-};
-
-int Kills_text_val_coords[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		571, 365
-	},
-	{ // GR_1024
-		954, 628
-	}
-};
-
-char Kills_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
-	"kills1",
-	"kills1"
-};
-
 // used to draw the hud support view
 static int Hud_support_view_active;
 static int Hud_support_view_abort;		// active when we need to display abort message
@@ -237,7 +194,6 @@ int hud_subspace_notify_active();
 int hud_objective_notify_active();
 void hud_subspace_notify_abort();
 void hud_maybe_display_subspace_notify();
-void hud_init_kills_gauge();
 int hud_maybe_render_emp_icon();
 void hud_init_emp_icon();
 
@@ -1223,7 +1179,6 @@ void HUD_init()
 	hud_init_wingman_status_gauge();
 	hud_init_target_static();
 	hud_init_text_flash_gauge();
-	hud_init_kills_gauge();
 	hud_stop_subspace_notify();
 	hud_stop_objective_notify();
 	hud_target_last_transmit_level_init();
@@ -2569,14 +2524,6 @@ void HudGaugeLag::render(float frametime)
 		// Nothing to draw
 		return;
 	}
-}
-
-/**
- * @brief Obsolete initializer for the kills gauge. Now superseded by the new HUD code.
- */
-void hud_init_kills_gauge()
-{
-	Kills_gauge_loaded = 1;
 }
 
 /**

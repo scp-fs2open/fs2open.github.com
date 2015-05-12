@@ -52,6 +52,8 @@ typedef struct generic_bitmap {
 	int bitmap_id;
 } generic_bitmap;
 
+bool generic_bitmap_exists(const char *filename);
+bool generic_anim_exists(const char *filename);
 int generic_anim_init_and_stream(generic_anim *anim, const char *anim_filename, ubyte bg_type, bool attempt_hi_res);
 void generic_anim_init(generic_anim *ga);
 void generic_anim_init(generic_anim *ga, const char *filename);

@@ -384,22 +384,18 @@ int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 
 void parse_weapon_expl_tbl(const char *filename)
 {
-	int rval;
 	uint i;
 	lod_checker lod_check;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
-	}
-
+	try
+	{
 	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();		
 
 	required_string("#Start");
-	while (required_string_either("#End","$Name:"))
+		while (required_string_either("#End", "$Name:"))
 	{
-		memset( &lod_check, 0, sizeof(lod_checker) );
+			memset(&lod_check, 0, sizeof(lod_checker));
 
 		// base filename
 		required_string("$Name:");
@@ -413,21 +409,27 @@ void parse_weapon_expl_tbl(const char *filename)
 
 		// only bother with this if we have 1 or more lods and less than max lods,
 		// otherwise the stardard level loading will take care of the different effects
-		if ( (lod_check.num_lods > 0) || (lod_check.num_lods < MAX_WEAPON_EXPL_LOD) ) {
+			if ((lod_check.num_lods > 0) || (lod_check.num_lods < MAX_WEAPON_EXPL_LOD)) {
 			// name check, update lod count if it already exists
 			for (i = 0; i < LOD_checker.size(); i++) {
-				if ( !stricmp(LOD_checker[i].filename, lod_check.filename) ) {
+					if (!stricmp(LOD_checker[i].filename, lod_check.filename)) {
 					LOD_checker[i].num_lods = lod_check.num_lods;
 				}
 			}
 
 			// old entry not found, add new entry
-			if ( i == LOD_checker.size() ) {
+				if (i == LOD_checker.size()) {
 				LOD_checker.push_back(lod_check);
 			}
 		}
 	}
 	required_string("#End");
+}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 /**
@@ -541,7 +543,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 	bool set_nopierce = false;
 	SCP_vector<SCP_string> unparsed_or_special;
 	parse_string_flag_list<Weapon::Info_Flags, flagset<Weapon::Info_Flags>>(&weaponp->wi_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed_or_special);
-
+	
 	if (unparsed_or_special.size() > 0) {
 		SCP_vector<SCP_string>::iterator flag = unparsed_or_special.begin();
 
@@ -549,61 +551,61 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 			SCP_string flag_text = *flag;
 			//deal with spawn flag
 			if (!strnicmp(spawn_str, flag_text.c_str(), 5))
+		{
+            if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
 			{
-				if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
-				{
-					//We need more spawning slots
-					//allocate in slots of 10
+				//We need more spawning slots
+				//allocate in slots of 10
 					if ((Num_spawn_types % 10) == 0) {
 						Spawn_names = (char **) vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
-					}
+				}
 
-					int	skip_length, name_length;
+				int	skip_length, name_length;
 					char	*temp_string = new char[flag_text.size() + 1];
 
 					strcpy(temp_string, flag_text.c_str());
 
 					weaponp->wi_flags.set(Weapon::Info_Flags::Spawn);
 					weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short) Num_spawn_types;
-					skip_length = spawn_str_len + strspn(&temp_string[spawn_str_len], NOX(" \t"));
-					char *num_start = strchr(&temp_string[skip_length], ',');
-					if (num_start == NULL) {
-						weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
-						name_length = 999;
+				skip_length = spawn_str_len + strspn(&temp_string[spawn_str_len], NOX(" \t"));
+				char *num_start = strchr(&temp_string[skip_length], ',');
+				if (num_start == NULL) {
+					weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
+					name_length = 999;
 					}
 					else {
 						weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = (short) atoi(num_start + 1);
-						name_length = num_start - temp_string - skip_length;
-					}
+					name_length = num_start - temp_string - skip_length;
+				}
 
-					weaponp->total_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
+                weaponp->total_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
 
 					Spawn_names[Num_spawn_types] = vm_strndup(&flag_text[skip_length], name_length);
-					Num_spawn_types++;
-					weaponp->num_spawn_weapons_defined++;
+				Num_spawn_types++;
+                weaponp->num_spawn_weapons_defined++;
 				}
 				else {
-					Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
-				}
+				Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
 			}
+		}
 			else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
-				set_nopierce = true;
+			set_nopierce = true;
 			}
 			else if (!stricmp(NOX("beam no whack"), flag_text.c_str())) {
-				Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
-				weaponp->mass = 0.0f;
-			}
+			Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
+			weaponp->mass = 0.0f;
+		}
 			else if (!stricmp(NOX("interceptable"), flag_text.c_str())) {
 				weaponp->wi_flags.set(Weapon::Info_Flags::Turret_Interceptable);
 				weaponp->wi_flags.set(Weapon::Info_Flags::Fighter_Interceptable);
 			}
- 			else {
+			else {
 				Warning(LOCATION, "Unrecognized flag in flag list for weapon %s: \"%s\"", weaponp->name, (*flag).c_str());
 			}
 		}
 
 		//Do cleanup and sanity checks
-		if (set_nopierce)
+	if (set_nopierce)
 			weaponp->wi_flags.unset(Weapon::Info_Flags::Pierce_shields);
 
 		if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
@@ -619,8 +621,8 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 				weaponp->wi_flags.unset(Weapon::Info_Flags::Swarm);
 				weaponp->wi_flags.unset(Weapon::Info_Flags::Corkscrew);
 				Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!  Removing Swarm and Corkscrew attributes from weapon %s.\n", weaponp->name);
-			}
 		}
+	}
 
 		if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
 			weaponp->wi_flags.unset(Weapon::Info_Flags::Corkscrew);
@@ -629,35 +631,35 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 
 		if (weaponp->wi_flags[Weapon::Info_Flags::Local_ssm]) {
 			if (!is_homing(weaponp) || weaponp->subtype != WP_MISSILE) {
-				Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
-			}
+			Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
 		}
+	}
 
 		if (weaponp->wi_flags[Weapon::Info_Flags::Small_only] && weaponp->wi_flags[Weapon::Info_Flags::Huge])
-		{
+	{
 			Warning(LOCATION, "\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon", weaponp->name);
-		}
+	}
 
 		if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn])
-		{
+	{
 			Warning(LOCATION, "\"smart spawn\" flag used without \"spawn\" flag in %s\n", weaponp->name);
-		}
+	}
 
 		if (weaponp->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && (!weaponp->wi_flags[Weapon::Info_Flags::Child]))
-		{
+	{
 			Warning(LOCATION, "Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
-		}
+	}
 
 		if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])
-		{
+	{
 			Warning(LOCATION, "Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
-		}
+	}
 
 		if (!weaponp->wi_flags[Weapon::Info_Flags::Cmeasure] && weaponp->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on])
 		{
 			weaponp->wi_flags.unset(Weapon::Info_Flags::Cmeasure_aspect_home_on);
 			Warning(LOCATION, "Weapon %s has the \"pulls aspect seekers\" flag, but is not a countermeasure.\n", weaponp->name);
-		}
+}
 	}
 }
 
@@ -740,12 +742,12 @@ void init_weapon_entry(int weap_info_index)
 	Assert(weap_info_index > -1 && weap_info_index < MAX_WEAPON_TYPES);
 	weapon_info *wip = &Weapon_info[weap_info_index];
 	int i, j;
-	
+
 	wip->wi_flags.reset();
-	
+
 	wip->subtype = WP_UNUSED;
 	wip->render_type = WRT_NONE;
-	
+
 	memset(wip->name, 0, sizeof(wip->name));
 	memset(wip->title, 0, sizeof(wip->title));
 	wip->desc = NULL;
@@ -757,7 +759,7 @@ void init_weapon_entry(int weap_info_index)
 	
 	memset(wip->hud_filename, 0, sizeof(wip->hud_filename));
 	wip->hud_image_index = -1;
-	
+
 	memset(wip->pofbitmap_name, 0, sizeof(wip->pofbitmap_name));
 
 	wip->model_num = -1;
@@ -892,6 +894,7 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->emp_intensity = EMP_DEFAULT_INTENSITY;
 	wip->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
+	wip->recoil_modifier = 1.0f;
 	wip->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	wip->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
 
@@ -1239,10 +1242,22 @@ int parse_weapon(int subtype, bool replace)
 
 	if(optional_string("@Laser Color:"))
 	{
+		// This might be confusing at first glance. If we're a modular table (!first_time),
+		// AND we're providing a new color for the laser (being in this block at all),
+		// AND the RGB values for laser_color_1 and laser_color_2 match...
+		// THEN we conclude that laser_color_2 wasn't explicitly defined before, and the modder would probably prefer
+		// it if the laser didn't suddenly start changing colors from the new to the old over its lifespan. -MageKing17
+		bool reset = (!first_time && (
+			(wip->laser_color_1.red == wip->laser_color_2.red) &&
+			(wip->laser_color_1.green == wip->laser_color_2.green) &&
+			(wip->laser_color_1.blue == wip->laser_color_2.blue)));
 		stuff_ubyte(&r);
 		stuff_ubyte(&g);
 		stuff_ubyte(&b);
 		gr_init_color( &wip->laser_color_1, r, g, b );
+		if (reset) {
+			gr_init_color( &wip->laser_color_2, wip->laser_color_1.red, wip->laser_color_1.green, wip->laser_color_1.blue );
+		}
 	}
 
 	// optional string for cycling laser colors
@@ -1251,7 +1266,7 @@ int parse_weapon(int subtype, bool replace)
 		stuff_ubyte(&g);
 		stuff_ubyte(&b);
 		gr_init_color( &wip->laser_color_2, r, g, b );
-	} else {
+	} else if (first_time) {
 		gr_init_color( &wip->laser_color_2, wip->laser_color_1.red, wip->laser_color_1.green, wip->laser_color_1.blue );
 	}
 
@@ -1893,6 +1908,15 @@ int parse_weapon(int subtype, bool replace)
 		stuff_float(&wip->emp_time);
 	}
 
+	// This is an optional modifier for a weapon that uses the "apply recoil" flag. recoil_force in ship.cpp line 10445 is multiplied by this if defined.
+	if (optional_string("$Recoil Modifier:")){
+		if (!(wip->wi_flags[Weapon::Info_Flags::Apply_Recoil])){
+			Warning(LOCATION, "$Recoil Modifier specified for weapon %s but this weapon does not have the \"apply recoil\" weapon flag set. Automatically setting the flag", wip->name);
+			wip->wi_flags.set(Weapon::Info_Flags::Apply_Recoil);
+		}
+		stuff_float(&wip->recoil_modifier);
+	}
+
 	// Energy suck optional stuff (if WIF_ENERGY_SUCK is not set, none of this matters anyway)
 	if( optional_string("$Leech Weapon:") ){
 		stuff_float(&wip->weapon_reduce);
@@ -1936,7 +1960,7 @@ int parse_weapon(int subtype, bool replace)
 		else if(optional_string("+Old Style:")) {
 			wip->elec_use_new_style=0;
 		}
-		
+
 		if(optional_string("+Area Of Effect")) {
 			wip->wi_flags.set(Weapon::Info_Flags::Aoe_Electronics);
 		}
@@ -2722,57 +2746,51 @@ static char Default_cmeasure_name[NAME_LENGTH] = "";
 
 void parse_weaponstbl(const char *filename)
 {
-	int rval;
-
-	if ((rval = setjmp(parse_abort)) != 0)
+	try
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
-	}
-
 	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
 
-	if(optional_string("#Primary Weapons"))
+		if (optional_string("#Primary Weapons"))
 	{
 		while (required_string_either("#End", "$Name:")) {
 			// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-			if ( parse_weapon(WP_LASER, Parsing_modular_table) < 0 ) {
+				if (parse_weapon(WP_LASER, Parsing_modular_table) < 0) {
 				continue;
 			}
 		}
 		required_string("#End");
 	}
 
-	if(optional_string("#Secondary Weapons"))
+		if (optional_string("#Secondary Weapons"))
 	{
 		while (required_string_either("#End", "$Name:")) {
 			// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-			if ( parse_weapon(WP_MISSILE, Parsing_modular_table) < 0) {
+				if (parse_weapon(WP_MISSILE, Parsing_modular_table) < 0) {
 				continue;
 			}
 		}
 		required_string("#End");
 	}
 
-	if(optional_string("#Beam Weapons"))
+		if (optional_string("#Beam Weapons"))
 	{
 		while (required_string_either("#End", "$Name:")) {
 			// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-			if ( parse_weapon(WP_BEAM, Parsing_modular_table) < 0) {
+				if (parse_weapon(WP_BEAM, Parsing_modular_table) < 0) {
 				continue;
 			}
 		}
 		required_string("#End");
 	}
 
-	if(optional_string("#Countermeasures"))
+		if (optional_string("#Countermeasures"))
 	{
 		while (required_string_either("#End", "$Name:"))
 		{
 			int idx = parse_weapon(WP_MISSILE, Parsing_modular_table);
 
-			if(idx < 0) {
+				if (idx < 0) {
 				continue;
 			}
 
@@ -2780,7 +2798,7 @@ void parse_weaponstbl(const char *filename)
 			Weapon_info[idx].wi_flags.set(Weapon::Info_Flags::Cmeasure);
 
 			//Set cmeasure index
-			if(!strlen(Default_cmeasure_name)) {
+				if (!strlen(Default_cmeasure_name)) {
 				//We can't be sure that index will be the same after sorting, so save the name
 				strcpy_s(Default_cmeasure_name, Weapon_info[idx].name);
 			}
@@ -2792,13 +2810,19 @@ void parse_weaponstbl(const char *filename)
 	// Read in a list of weapon_info indicies that are an ordering of the player weapon precedence.
 	// This list is used to select an alternate weapon when a particular weapon is not available
 	// during weapon selection.
-	if ( (!Parsing_modular_table && required_string("$Player Weapon Precedence:")) || optional_string("$Player Weapon Precedence:") )
+		if ((!Parsing_modular_table && required_string("$Player Weapon Precedence:")) || optional_string("$Player Weapon Precedence:"))
 	{
 		Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 	}
 
 	// add tbl/tbm to multiplayer validation list
 	fs2netd_add_table_validation(filename);
+}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 //uses a simple bucket sort to sort weapons, order of importance is:
@@ -4106,15 +4130,15 @@ void weapon_home(object *obj, int num, float frame_time)
 		return;
 	}
 
-		if (wip->acceleration_time > 0.0f) {
-			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+	if (wip->acceleration_time > 0.0f) {
+		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
 			float t;
 
-				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-				obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
+			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+			obj->phys_info.speed = wp->launch_speed + (wp->weapon_max_vel - wp->launch_speed) * t;
 			vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
-			}
 		}
+	}
 
 	// AL 4-8-98: If original target for aspect lock missile is lost, stop homing
 	// WCS - or javelin
@@ -4750,7 +4774,14 @@ void weapon_process_post(object * obj, float frame_time)
 			//create the warphole
 			vm_vec_add2(&warpout,&obj->pos);
 			wp->lssm_warp_idx=fireball_create(&warpout, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,1,&vmd_zero_vector,wp->lssm_warp_time,0,&obj->orient);
-			wp->lssm_stage=2;
+
+			if (wp->lssm_warp_idx < 0) {
+				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
+				// Abort warping
+				wp->lssm_stage = 0;
+			} else {
+				wp->lssm_stage = 2;
+			}
 		}
 
 		//its just entered subspace subspace. don't collide or render

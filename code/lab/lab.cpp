@@ -41,6 +41,7 @@
 #define LAB_FLAG_FULLY_LOAD			(1<<5)	// use create_ship() to test the ships
 #define LAB_FLAG_SHOW_WEAPONS		(1<<6)	// determines if external weapons models are displayed
 #define LAB_FLAG_INITIAL_ROTATION	(1<<7)	// initial rotation setting
+#define LAB_FLAG_DESTROYED_SUBSYSTEMS	(1<<8)	// render model as if all subsystems are destroyed
 
 // modes
 #define LAB_MODE_NONE		0	// not showing anything
@@ -904,6 +905,13 @@ void labviewer_render_model(float frametime)
 				}
 			}
 		}
+
+		if (sip != NULL) {
+			if (Lab_viewer_flags & LAB_FLAG_DESTROYED_SUBSYSTEMS) {
+				model_show_damaged(Lab_model_num, 1);
+			}
+		}
+
 		opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS1);
 		opengl_shader_set_animated_timer(MIN((timer_get_milliseconds()-anim_timer_start)/1500.0f,2.0f));
 
@@ -1789,6 +1797,7 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Animated Shader", Lab_model_flags, MR_ANIMATED_SHADER);
 	ADD_RENDER_FLAG("Show Ship Weapons", Lab_viewer_flags, LAB_FLAG_SHOW_WEAPONS);
 	ADD_RENDER_FLAG("Initial Rotation", Lab_viewer_flags, LAB_FLAG_INITIAL_ROTATION);
+	ADD_RENDER_FLAG("Show Destroyed Subsystems", Lab_viewer_flags, LAB_FLAG_DESTROYED_SUBSYSTEMS);
 
 
 	// start tree
@@ -2168,6 +2177,7 @@ void labviewer_make_weap_window(Button* caller)
 			delete type_nodes[i];
 		}
 	}
+	delete[] type_nodes;
 
 	Lab_mode = LAB_MODE_WEAPON;
 

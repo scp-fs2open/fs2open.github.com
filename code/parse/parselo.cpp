@@ -43,12 +43,11 @@ int		Warning_count, Error_count;
 int		Warning_count_save = 0, Error_count_save = 0;
 int		fred_parse_flag = 0;
 int		Token_found_flag;
-jmp_buf	parse_abort;
 
 char 	*Mission_text = NULL;
 char	*Mission_text_raw = NULL;
 char	*Mp = NULL, *Mp_save = NULL;
-char	*token_found;
+const char	*token_found;
 
 static int Parsing_paused = 0;
 
@@ -467,7 +466,7 @@ int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end)
 // lines.
 //	If unable to find the required string after RS_MAX_TRIES tries, then
 //	abort using longjmp to parse_abort.
-int required_string(char *pstr)
+int required_string(const char *pstr)
 {
 	int	count = 0;
 
@@ -483,7 +482,7 @@ int required_string(char *pstr)
 	if (count == RS_MAX_TRIES) {
 		nprintf(("Error", "Error: Unable to find required token [%s]\n", pstr));
 		Warning(LOCATION, "Error: Unable to find required token [%s]\n", pstr);
-		longjmp(parse_abort, 1);
+        throw parse::ParseException("Required string not found");
 	}
 
 	Mp += strlen(pstr);
@@ -692,75 +691,9 @@ int required_string_either(char *str1, char *str2)
 	if (count == RS_MAX_TRIES) {
 		nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
 		Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
-		longjmp(parse_abort, 2);
+        throw parse::ParseException("Required string not found");
 	}
 
-	return -1;
-}
-
-//	Return 0 or 1 for str1 match, str2 match.  Return -1 if neither matches.
-//	Does not update Mp if token found.  If not found, advances, trying to
-//	find the string.  Doesn't advance past the found string.
-int required_string_3(char *str1, char *str2, char *str3)
-{
-	int	count = 0;
-
-	ignore_white_space();
-
-	while (count < RS_MAX_TRIES) {
-		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
-			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n", token_found = str1);
-			return 0;
-		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
-			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n", token_found = str2);
-			return 1;
-		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str3);
-			return 2;
-		}
-
-		error_display(1, "Required token = [%s], [%s] or [%s], found [%.32s].\n", str1, str2, str3, next_tokens());
-
-		advance_to_eoln(NULL);
-		ignore_white_space();
-		count++;
-	}
-
-	return -1;
-}
-
-int required_string_4(char *str1, char *str2, char *str3, char *str4)
-{
-	int	count = 0;
-	
-	ignore_white_space();
-	
-	while (count < RS_MAX_TRIES) {
-		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
-			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n", token_found = str1);
-			return 0;
-		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
-			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n", token_found = str2);
-			return 1;
-		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str3);
-			return 2;
-		} else if (strnicmp(str4, Mp, strlen(str4)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str4);
-			return 3;
-		}
-		
-		error_display(1, "Required token = [%s], [%s], [%s], or [%s], found [%.32s].\n", str1, str2, str3, str4, next_tokens());
-		
-		advance_to_eoln(NULL);
-		ignore_white_space();
-		count++;
-	}
-	
 	return -1;
 }
 
@@ -953,8 +886,8 @@ char* alloc_text_until(char* instr, char* endstr)
 
 	if(foundstr == NULL)
 	{
-		Error(LOCATION, "Missing [%s] in file");
-		longjmp(parse_abort, 3);
+        Error(LOCATION, "Missing [%s] in file", endstr);
+        throw parse::ParseException("End string not found");
 	}
 	else
 	{
@@ -989,7 +922,7 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 
 	if (foundstr == NULL) {
 		nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
-		longjmp(parse_abort, 3);
+        throw parse::ParseException("End string not found");
 	}
 
 	if (foundstr - instr + strlen(endstr) < (uint) max_chars) {
@@ -1000,7 +933,7 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 		nprintf(("Error", "Error.  Too much text (%i chars, %i allowed) before %s\n",
 			foundstr - instr - strlen(endstr), max_chars, endstr));
 
-		longjmp(parse_abort, 4);
+        throw parse::ParseException("Too much text found");
 	}
 
 	diag_printf("Here's the partial wad of text:\n%.30s\n", outstr);
@@ -1016,7 +949,7 @@ void copy_text_until(SCP_string &outstr, char *instr, char *endstr)
 
 	if (foundstr == NULL) {
 		nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
-		longjmp(parse_abort, 3);
+        throw parse::ParseException("End string not found");
 	}
 
 	outstr.assign(instr, foundstr - instr);
@@ -1113,7 +1046,7 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 	if(level > 0)
 	{
 		Error(LOCATION, "Unclosed pair of \"%s\" and \"%s\" on line %d in file", startstr, endstr, get_line_num());
-		longjmp(parse_abort, 3);
+        throw parse::ParseException("End string not found");
 	}
 	else
 	{
@@ -1261,27 +1194,12 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 
 	switch (type) {
 		case F_RAW:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_LNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_NAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_DATE:
+		case F_FILESPEC:
+		case F_PATHNAME:
+		case F_MESSAGE:
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
@@ -1293,13 +1211,6 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			copy_text_until(read_str, Mp, "$End Notes:", read_len);
 			Mp += strlen(read_str);
 			required_string("$End Notes:");
-			break;
-
-		case F_FILESPEC:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
@@ -1318,20 +1229,6 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			Mp += strlen(read_str);
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
-			break;
-
-		case F_PATHNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
-		case F_MESSAGE:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		default:
@@ -1371,27 +1268,12 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 
 	switch (type) {
 		case F_RAW:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_LNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_NAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_DATE:
+		case F_FILESPEC:
+		case F_PATHNAME:
+		case F_MESSAGE:
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
@@ -1403,13 +1285,6 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			copy_text_until(read_str, Mp, "$End Notes:");
 			Mp += read_str.length();
 			required_string("$End Notes:");
-			break;
-
-		case F_FILESPEC:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
 			break;
 
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
@@ -1429,20 +1304,6 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
 			break;
-
-		case F_PATHNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
-		case F_MESSAGE:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;	
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
@@ -2106,7 +1967,8 @@ void read_file_text(const char *filename, int mode, char *processed_text, char *
 {
 	// copy the filename
 	if (!filename)
-		longjmp(parse_abort, 10);
+        throw parse::ParseException("Invalid filename");
+
 	strcpy_s(Current_filename_sub, filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
@@ -2245,7 +2107,7 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	if (mf == NULL)
 	{
 		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
-		longjmp(parse_abort, 5);
+        throw parse::ParseException("Failed to open file");
 	}
 
 	// read the entire file in
@@ -2253,7 +2115,7 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 
 	if(!file_len) {
 		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
-		longjmp(parse_abort, 5);
+        throw parse::ParseException("Failed to open file");
 	}
 
 	// allocate, or reallocate, memory for Mission_text and Mission_text_raw based on size we need now
@@ -2725,7 +2587,7 @@ int stuff_bool_list(bool *blp, int max_bools)
 	
 	if (*Mp != '(') {
 		error_display(1, "Reading boolean list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2823,7 +2685,7 @@ int stuff_string_list(SCP_vector<SCP_string>& slp)
 
 	if ( *Mp != '(' ) {
 		error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 100);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2857,7 +2719,7 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 
 	if ( *Mp != '(' ) {
 		error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 100);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2914,7 +2776,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 
 	if (*Mp != '(') {
 		error_display(1, "Reading integer list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -3016,7 +2878,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 
 	if (*Mp != '(') {
 		error_display(1, "Reading loadout list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -3120,7 +2982,7 @@ int stuff_float_list(float* flp, int max_floats)
 
 	if (*Mp != '(') {
 		error_display(1, "Reading float list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -3153,7 +3015,7 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 
 	if (*Mp != '(') {
 		error_display(1, "Marking integer list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -3220,14 +3082,14 @@ void stuff_parenthesized_vec3d(vec3d *vp)
 
 	if (*Mp != '(') {
 		error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 11);
+        throw parse::ParseException("Syntax error");
 	} else {
 		Mp++;
 		stuff_vec3d(vp);
 		ignore_white_space();
 		if (*Mp != ')') {
 			error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting ')'.\n", *Mp);
-			longjmp(parse_abort, 12);
+            throw parse::ParseException("Syntax error");
 		}
 		Mp++;
 	}
@@ -3247,7 +3109,7 @@ int stuff_vec3d_list(vec3d *vlp, int max_vecs)
 
 	if (*Mp != '(') {
 		error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -3278,7 +3140,7 @@ int stuff_vec3d_list(SCP_vector<vec3d> &vec_list)
 
 	if (*Mp != '(') {
 		error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;

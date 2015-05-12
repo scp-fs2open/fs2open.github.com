@@ -858,7 +858,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	}
 
 	// if we are messaging a ship, and that ship is our target, no target type orders are ever active
-	if ( (Squad_msg_mode == SM_MODE_SHIP_COMMAND) && (target_objnum == Msg_instance) ){
+	if ( (Squad_msg_mode == SM_MODE_SHIP_COMMAND) && (Objects[target_objnum].instance == Msg_instance) ){
 		return 0;
 	}
 
@@ -1375,11 +1375,10 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 		target_shipname = NULL;
 		target_team = -1;
-		if ( ainfo->target_objnum != -1) {
-			if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
-				target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
-				target_team = Ships[Objects[ainfo->target_objnum].instance].team;
-			}
+
+		if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
+			target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
+			target_team = Ships[Objects[ainfo->target_objnum].instance].team;
 		}
 
 		Assert ( ainfo->shipnum != -1 );

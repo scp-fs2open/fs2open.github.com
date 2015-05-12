@@ -171,7 +171,7 @@ void ai_post_process_mission()
 		// Goober5000 - MK originally iterated on only the first wing; now we iterate on only the player wing
 		// because the player wing may not be first
 		for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {	
-			if ( Starting_wings[i] == Player_ship->wingnum ) {
+			if (Starting_wings[i] >= 0 && Starting_wings[i] == Player_ship->wingnum) {
 				wing *wingp;
 
 				wingp = &Wings[Starting_wings[i]];
@@ -528,7 +528,7 @@ int ai_goal_find_dockpoint(int shipnum, int dock_type)
 }
 
 // function to fix up dock point references for objects.
-// passed are the pointer to goal we are working with.  aip if the ai_info pointer
+// passed are the pointer to goal we are working with.  aip is the ai_info pointer
 // of the ship with the order.  aigp is a pointer to the goal (of aip) of which we are
 // fixing up the docking points
 void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
@@ -537,6 +537,7 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 
 	Assert ( aip->shipnum != -1 );
 	shipnum = ship_name_lookup( aigp->target_name );
+	Assertion ( shipnum != -1, "Couldn't find ai goal's target_name (%s); get a coder!\n", aigp->target_name );
 	docker_index = -1;
 	dockee_index = -1;
 
