@@ -15,13 +15,17 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "ship/ship.h"
-
+#include <list>
 #include <vector>
 #include <algorithm>
+#include "jumpnode/jumpnode.h"
 #include "weapon/weapon.h"
 #include "debris/debris.h"
 #include "asteroid/asteroid.h"
-
+#include "model/modelrender.h"
+#include "cmdline/cmdline.h"
+#include "graphics/gropengldraw.h"
+#include "parse/scripting.h"
 
 class sorted_obj
 {
@@ -104,7 +108,8 @@ inline bool sorted_obj::operator < (const sorted_obj &other) const
 
 SCP_vector<sorted_obj> Sorted_objects;
 SCP_vector<object*> effect_ships; 
-
+SCP_vector<object*> transparent_objects;
+bool object_had_transparency = false;
 // Used to (fairly) quicky find the 8 extreme
 // points around an object.
 vec3d check_offsets[8] = { 
@@ -281,17 +286,22 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		}
 
 		if ( obj_render_is_model(obj) ) {
-			if( (obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_active )
+			if( (obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_active || obj->type == OBJ_FIREBALL )
 				effect_ships.push_back(obj);
 			else 
 				(*render_function)(obj);
 		}
+		if(object_had_transparency)
+		{
+			object_had_transparency = false;
+			transparent_objects.push_back(obj);
+		}
 	}
-
+	gr_deferred_lighting_end();
 	Interp_no_flush = 0;
 
 	// we're done rendering models so flush render states
-	gr_flush_data_states();
+	gr_clear_states();
 	gr_set_buffer(-1);
 
 	// render everything else that isn't a model
@@ -337,3 +347,109 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	batch_render_all();
 }
 
+void obj_render_queue_all()
+{
+	object *objp;
+	int i;
+	draw_list scene;
+
+	objp = Objects;
+
+	gr_deferred_lighting_begin();
+
+	scene.init();
+
+	for ( i = 0; i <= Highest_object_index; i++,objp++ ) {
+		if ( (objp->type != OBJ_NONE) && ( objp->flags & OF_RENDERS ) )	{
+			objp->flags &= ~OF_WAS_RENDERED;
+
+			if ( !obj_in_view_cone(objp) ) {
+				continue;
+			}
+
+			if ( (The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running ) {
+				vec3d to_obj;
+				vm_vec_sub( &to_obj, &objp->pos, &Eye_position );
+				float z = vm_vec_dot( &Eye_matrix.vec.fvec, &to_obj );
+
+				if ( neb2_skip_render(objp, z) ){
+					continue;
+				}
+			}
+
+			if ( obj_render_is_model(objp) ) {
+				if( (objp->type == OBJ_SHIP) && Ships[objp->instance].shader_effect_active ) {
+					effect_ships.push_back(objp);
+				}
+			}
+
+			objp->flags |= OF_WAS_RENDERED;
+			profile_begin("Queue Render");
+			obj_queue_render(objp, &scene);
+			profile_end("Queue Render");
+		}
+	}
+
+	scene.init_render();
+
+	PROFILE("Submit Draws", scene.render_all(GR_ZBUFF_FULL));
+	gr_zbuffer_set(ZBUFFER_TYPE_READ);
+	gr_zbias(0);
+	gr_set_cull(0);
+
+	gr_clear_states();
+	gr_set_buffer(-1);
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+
+ 	gr_deferred_lighting_end();
+	PROFILE("Apply Lights", gr_deferred_lighting_finish());
+
+	gr_zbuffer_set(ZBUFFER_TYPE_READ);
+
+	gr_reset_lighting();
+	gr_set_lighting(false, false);
+
+	// now render transparent meshes
+	PROFILE("Submit Draws", scene.render_all(GR_ZBUFF_READ));
+	PROFILE("Submit Draws", scene.render_all(GR_ZBUFF_NONE));
+
+	// render electricity effects and insignias
+	scene.render_outlines();
+	scene.render_insignias();
+	scene.render_arcs();
+
+	gr_zbuffer_set(ZBUFFER_TYPE_READ);
+	gr_zbias(0);
+	gr_set_cull(0);
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+
+	gr_clear_states();
+	gr_set_buffer(-1);
+
+	gr_reset_lighting();
+	gr_set_lighting(false, false);
+
+	//WMC - draw maneuvering thrusters
+ 	extern void batch_render_man_thrusters();
+ 	batch_render_man_thrusters();
+
+	// if we're fullneb, switch off the fog effet
+	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
+		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+	}
+
+	PROFILE("Draw Effects", batch_render_all());
+
+	gr_zbias(0);
+	gr_zbuffer_set(ZBUFFER_TYPE_READ);
+	gr_set_cull(0);
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+
+	gr_clear_states();
+	gr_set_buffer(-1);
+
+	gr_reset_lighting();
+	gr_set_lighting(false, false);
+
+	GL_state.Texture.DisableAll();
+}

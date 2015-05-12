@@ -75,6 +75,9 @@ extern int Cmdline_bloom_intensity;
 extern bool Cmdline_fxaa;
 extern int Cmdline_fxaa_preset;
 extern bool Cmdline_fb_explosions;
+extern bool Cmdline_no_batching;
+extern int Cmdline_shadow_quality;
+extern int Cmdline_no_deferred_lighting;
 
 // Game Speed related
 extern int Cmdline_cache_bitmaps;
@@ -115,7 +118,6 @@ extern int Cmdline_objupd;
 // Troubleshooting
 extern int Cmdline_load_all_weapons;
 extern int Cmdline_nohtl;
-extern int Cmdline_noibx;
 extern int Cmdline_nomovies;	// WMC Toggles movie playing support
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_novbo;
@@ -129,6 +131,7 @@ extern int Cmdline_no_glsl_model_rendering;
 extern int Cmdline_drawelements;
 extern char* Cmdline_keyboard_layout;
 extern bool Cmdline_gl_finish;
+extern bool Cmdline_no_geo_sdr_effects;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;

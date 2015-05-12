@@ -9,38 +9,34 @@
 
 
 
-#include <limits.h>
-
 #include "globalincs/pstypes.h"
 #include "io/timer.h"
 #include "graphics/2d.h"
 #include "globalincs/alphacolors.h"
 
-#define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"	// for multi-thread macros
 
+#include <SDL_timer.h>
+#include <limits.h>
 
-
-#ifndef NDEBUG
-	#define USE_TIMING
-#endif
+static Uint64 Timer_perf_counter_freq = 0;	// perf counter frequency - number of ticks per second
 
 static int Timer_inited = 0;
 
-static SDL_mutex* Timer_lock;
+
+#define MICROSECONDS_PER_SECOND 1000000
 
 void timer_close()
 {
 	if ( Timer_inited )	{
 		Timer_inited = 0;
-		SDL_DestroyMutex( Timer_lock );
 	}
 }
 
 void timer_init()
 {
 	if ( !Timer_inited )	{
-		Timer_lock = SDL_CreateMutex();
+		Timer_perf_counter_freq = SDL_GetPerformanceFrequency();
 
 		Timer_inited = 1;
 
@@ -52,7 +48,6 @@ static uint timer_get()
 {
 	return SDL_GetTicks();
 }
-
 
 fix timer_get_fixed_seconds()
 {
@@ -106,6 +101,18 @@ int timer_get_microseconds()
 	}
 
 	return timer_get() * 1000;
+}
+
+uint timer_get_high_res_microseconds()
+{
+	if ( !Timer_inited ) {
+		Int3();
+		return 0;
+	}
+
+	Uint64 elapsed = SDL_GetPerformanceCounter();
+
+	return (uint)(elapsed * MICROSECONDS_PER_SECOND / Timer_perf_counter_freq);
 }
 
 // 0 means invalid,

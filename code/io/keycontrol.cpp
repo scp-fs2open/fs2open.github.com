@@ -60,79 +60,115 @@
 #include "cmdline/cmdline.h"
 #include "object/objectshield.h"
 
-#define MAX_NUM_SLOTS 6
-
-struct ftable
+/**
+* Natural number factor lookup class.
+*/
+class factor_table
 {
-int count;
-int table[ MAX_NUM_SLOTS ];
+public:
+	/**
+	* Constructor.
+	*
+	* @param size The desired initial size of the lookup table.
+	*/
+	factor_table(size_t size = 6);
+
+	/**
+	* Destructor.
+	*/
+	~factor_table();
+
+	/**
+	* Returns the next natural number factor for the given number and current factor.
+	*
+	* @param maximum The number to lookup the next natural number factor for.
+	* @param current The current natural number factor.
+	* @return A natural number factor.
+	*/
+	size_t getNext(size_t n, size_t current);
+
+private:
+
+	SCP_vector< SCP_vector<size_t> > _lookup;
+
+	/**
+	* Grow the internal lookup table based on the desired size.
+	*
+	* @param size The desired size.
+	*/
+	void resize(size_t size);
+
+	/**
+	* Returns true if the given factor is a natural number factor for the given value.
+	*
+	* @param factor The factor.
+	* @param n The value.
+	*/
+	static bool isNaturalNumberFactor(size_t factor, size_t n);
 };
 
-class factor_table
+factor_table::factor_table(size_t size)
+{
+	resize(size);
+}
+
+factor_table::~factor_table() {}
+
+size_t factor_table::getNext(size_t n, size_t current)
+{
+	Assertion(n >= 1, "factor_table::getNext() called with %d, when only natural numbers make sense; get a coder!\n", n);
+
+	// Resize lookup table if the value is greater than the current size
+	if (n > _lookup.size())
+		resize(n);
+
+	int index = n - 1;
+	for (size_t i = 0; i < _lookup[index].size(); ++i)
 	{
-	public:
-		factor_table();
-		~factor_table(){ delete[] table; }
-		int getNextSlots( int slots_on_ship, int cur_slots );
+		if (_lookup[index][i] == current)
+		{
+			if (_lookup[index].size() == i + 1)
+			{
+				// Overflow back to 1
+				return 1;
+			}
+			else
+			{
+				// Next factor in the table
+				return _lookup[index][i + 1];
+			}
+		}
+	}
 
-	private:
-		ftable * table;
-	};
+	Assertion(false, "For some reason, factor_table::getNext() was unable to locate the current factor. This should never happen; get a coder!\n");
+	return 1;
+}
 
+void factor_table::resize(size_t size)
+{
+	size_t oldSize = _lookup.size();
+	_lookup.resize(size);
+
+	// Fill lookup table for the missing values
+	for (size_t i = oldSize; i < size; ++i)
+	{
+		for (size_t j = 1; j <= i + 1; ++j)
+		{
+			if (isNaturalNumberFactor(j, i + 1))
+			{
+				_lookup[i].push_back(j);
+			}
+		}
+	}
+}
+
+bool factor_table::isNaturalNumberFactor(size_t factor, size_t n)
+{
+	return ((float)n / (float)factor) == n / factor;
+}
+
+// Natural number factor lookup table
 factor_table ftables;
-
-static bool isAPrimeFactor( int factor, int product )
-{
-return ( (float)product / (float)factor ) == (product / factor);
-}
-
-factor_table::factor_table()
-{
-table = new ftable[ MAX_NUM_SLOTS ];
-
-memset( table, 0x00, sizeof( ftable ) * MAX_NUM_SLOTS );
-for( int i = 0 ; i < MAX_NUM_SLOTS; ++i )
-	{
-	table[ i ].count = 0;
-	for( int j = 1; j <= i + 1; ++j )
-		{
-		if( isAPrimeFactor( j, i + 1 ) )
-			{
-			table[ i ].table[ table[ i ].count ] = j;
-			table[ i ].count ++;
-			}
-		}
-	}
-}
-
-int factor_table::getNextSlots(int slots_on_ship, int cur_slots)
-{
-Assertion( slots_on_ship <= MAX_NUM_SLOTS, "factor_table::getNextSlots() called with %d slots, when MAX_NUM_SLOTS is %d; get a coder!\n", slots_on_ship, MAX_NUM_SLOTS );
-Assertion( slots_on_ship >= 1, "factor_table::getNextSlots() called with %d slots, when only positive integers make sense; get a coder!\n" );
-
-int slots_index = slots_on_ship - 1;
-
-for( int i = 0; i < table[ slots_index ].count; ++i )
-	{
-	if( table[ slots_index ].table[ i ] == cur_slots )
-		{
-		if( table[ slots_index ].count == i + 1 )
-			{
-			//Overflow back to 1
-			return 1;
-			}
-		else
-			{
-			//Next block in the table
-			return table[ slots_index ].table[ i + 1 ];
-			}
-		}
-	}
-//Did not find cur_slots, try and get back on track
-
-Assertion( false, "For some reason, factor_table::getNextSlots() was unable to locate cur_slots. This should never happen; get a coder!\n" );
-return 1;
-}
 
 // --------------------------------------------------------------
 // Global to file 
@@ -1739,7 +1775,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
 				if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
 					polymodel *pm = model_get( sip->model_num );
-					count = ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
+					count = ftables.getNext( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
 					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
 					shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
 					shipp->last_fired_point[ swp->current_primary_bank ] -= 1;

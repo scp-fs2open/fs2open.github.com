@@ -4490,7 +4490,7 @@ int sexp_not(int n)
 		if (CAR(n) != -1)
 		{
 			result = is_sexp_true(CAR(n));
-			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER )
+			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_TRUE;												// not KNOWN_FALSE == KNOWN_TRUE;
 			else if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE )		// not KNOWN_TRUE == KNOWN_FALSE
 				return SEXP_KNOWN_FALSE;
@@ -8800,26 +8800,25 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	if (n == -1)
 	{
 		n = CDR(arg_handler_node);
+		int temp_node = n;
 
 		// pick an argument and iterate to it
 		random_argument = rand_internal(1, num_valid_args);
 		i = 0;
-		for (int j = 0; j >= num_valid_args; n = CDR(n))
+		for (int j = 0; j < num_valid_args; temp_node = CDR(temp_node))
 		{
 			Assert(n >= 0);
 
 			// count only valid arguments
-			if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID) {
+			if (Sexp_nodes[temp_node].flags & SNF_ARGUMENT_VALID) {
 				j++;
-				if (i < random_argument)
-					i++;
+				if (i < random_argument && (++i == random_argument)) {
+					// Found the node we want, store it for use
+					n = temp_node;
+				}
 
-				if ((Sexp_nodes[n].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[n].value == SEXP_NAN_FOREVER))
+				if ((Sexp_nodes[temp_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[temp_node].value == SEXP_NAN_FOREVER))
 					num_known_false++;
-
-				// if we're out of valid arguments, we're done
-				if (j >= num_valid_args)
-					break;
 			}
 		}
 
@@ -16931,6 +16930,8 @@ void sexp_beam_fire(int node, bool at_coords)
 	// hmm, this could be wacky. Let's just simply select the first beam weapon in the turret
 	fire_info.beam_info_index = -1;	
 	for (idx=0; idx<fire_info.turret->weapons.num_primary_banks; idx++) {
+		Assertion(fire_info.turret->weapons.primary_bank_weapons[idx] >= 0 && fire_info.turret->weapons.primary_bank_weapons[idx] < MAX_WEAPON_TYPES,
+				"sexp_beam_fire: found invalid weapon index (%i), get a coder\n!", fire_info.turret->weapons.primary_bank_weapons[idx]);
 		// store the weapon info index
 		if (Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags & WIF_BEAM) {
 			fire_info.beam_info_index = fire_info.turret->weapons.primary_bank_weapons[idx];

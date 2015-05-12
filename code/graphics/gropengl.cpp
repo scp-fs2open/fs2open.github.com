@@ -997,24 +997,29 @@ void gr_opengl_dump_frame()
 void gr_opengl_set_fill_mode(int mode)
 {
 	if (mode == GR_FILL_MODE_SOLID) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		GL_state.SetPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		return;
 	}
 
 	if (mode == GR_FILL_MODE_WIRE) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		GL_state.SetPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		return;
 	}
 
 	// default setting
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	GL_state.SetPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void gr_opengl_zbias(int bias)
 {
 	if (bias) {
 		GL_state.PolygonOffsetFill(GL_TRUE);
-		glPolygonOffset(0.0, -i2fl(bias));
+		if(bias < 0) {
+			GL_state.SetPolygonOffset(1.0, -i2fl(bias));
+		}
+		else {
+			GL_state.SetPolygonOffset(0.0, -i2fl(bias));
+		}
 	} else {
 		GL_state.PolygonOffsetFill(GL_FALSE);
 	}
@@ -1467,12 +1472,13 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_destroy_buffer		= gr_opengl_destroy_buffer;
 	gr_screen.gf_render_buffer		= gr_opengl_render_buffer;
 	gr_screen.gf_set_buffer			= gr_opengl_set_buffer;
+	gr_screen.gf_update_buffer_object		= gr_opengl_update_buffer_object;
 
-	gr_screen.gf_create_stream_buffer		= gr_opengl_create_stream_buffer;
-	gr_screen.gf_update_stream_buffer		= gr_opengl_update_stream_buffer;
+	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
+	gr_screen.gf_set_transform_buffer_offset	= gr_opengl_set_transform_buffer_offset;
+
+	gr_screen.gf_create_stream_buffer		= gr_opengl_create_stream_buffer_object;
 	gr_screen.gf_render_stream_buffer		= gr_opengl_render_stream_buffer;
-	gr_screen.gf_render_stream_buffer_start	= gr_opengl_render_stream_buffer_start;
-	gr_screen.gf_render_stream_buffer_end	= gr_opengl_render_stream_buffer_end;
 
 	gr_screen.gf_start_instance_matrix			= gr_opengl_start_instance_matrix;
 	gr_screen.gf_end_instance_matrix			= gr_opengl_end_instance_matrix;
@@ -1494,11 +1500,17 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_scene_texture_begin = gr_opengl_scene_texture_begin;
 	gr_screen.gf_scene_texture_end = gr_opengl_scene_texture_end;
+	gr_screen.gf_copy_effect_texture = gr_opengl_copy_effect_texture;
+
+	gr_screen.gf_deferred_lighting_begin = gr_opengl_deferred_lighting_begin;
+	gr_screen.gf_deferred_lighting_end = gr_opengl_deferred_lighting_end;
+	gr_screen.gf_deferred_lighting_finish = gr_opengl_deferred_lighting_finish;
 
 	gr_screen.gf_start_clip_plane	= gr_opengl_start_clip_plane;
 	gr_screen.gf_end_clip_plane		= gr_opengl_end_clip_plane;
 
 	gr_screen.gf_lighting			= gr_opengl_set_lighting;
+	gr_screen.gf_set_light_factor	= gr_opengl_set_light_factor;
 
 	gr_screen.gf_set_proj_matrix	= gr_opengl_set_projection_matrix;
 	gr_screen.gf_end_proj_matrix	= gr_opengl_end_projection_matrix;
@@ -1509,6 +1521,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_push_scale_matrix	= gr_opengl_push_scale_matrix;
 	gr_screen.gf_pop_scale_matrix	= gr_opengl_pop_scale_matrix;
 	gr_screen.gf_center_alpha		= gr_opengl_center_alpha;
+	gr_screen.gf_set_thrust_scale	= gr_opengl_set_thrust_scale;
 
 	gr_screen.gf_setup_background_fog	= gr_opengl_setup_background_fog;
 
@@ -1523,14 +1536,19 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_line_htl			= gr_opengl_line_htl;
 	gr_screen.gf_sphere_htl			= gr_opengl_sphere_htl;
 
+	gr_screen.gf_set_animated_effect = gr_opengl_shader_set_animated_effect;
+
 	gr_screen.gf_maybe_create_shader = gr_opengl_maybe_create_shader;
-
-	gr_screen.gf_flush_data_states	= gr_opengl_flush_data_states;
-
-	gr_screen.gf_set_team_color		= gr_opengl_set_team_color;
-	gr_screen.gf_disable_team_color = gr_opengl_disable_team_color;
+	gr_screen.gf_shadow_map_start	= gr_opengl_shadow_map_start;
+	gr_screen.gf_shadow_map_end		= gr_opengl_shadow_map_end;
 
 	gr_screen.gf_update_texture = gr_opengl_update_texture;
+	gr_screen.gf_get_bitmap_from_texture = gr_opengl_get_bitmap_from_texture;
+
+	gr_screen.gf_clear_states	= gr_opengl_clear_states;
+
+	gr_screen.gf_set_team_color		= gr_opengl_set_team_color;
+
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 	// *****************************************************************************
@@ -1592,13 +1610,16 @@ bool gr_opengl_init()
 	GL_state.init();
 
 	GLint max_texture_units = GL_supported_texture_units;
+	GLint max_texture_coords = GL_supported_texture_units;
 
 	if (Use_GLSL) {
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
 	}
 
+	glGetIntegerv(GL_MAX_TEXTURE_COORDS, &max_texture_coords);
+
 	GL_state.Texture.init(max_texture_units);
-	GL_state.Array.init(max_texture_units);
+	GL_state.Array.init(max_texture_coords);
 
 	opengl_set_texture_target();
 	GL_state.Texture.SetActiveUnit(0);
@@ -1656,6 +1677,7 @@ bool gr_opengl_init()
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &GL_max_elements_indices);
 
 	mprintf(( "  Max texture units: %i (%i)\n", GL_supported_texture_units, max_texture_units ));
+	mprintf(( "  Max client texture states: %i (%i)\n", GL_supported_texture_units, max_texture_coords ));
 	mprintf(( "  Max elements vertices: %i\n", GL_max_elements_vertices ));
 	mprintf(( "  Max elements indices: %i\n", GL_max_elements_indices ));
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
