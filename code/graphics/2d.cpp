@@ -32,6 +32,7 @@
 #include "parse/scripting.h"
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 #include "io/keycontrol.h" // m!m
+#include "graphics/gropengldraw.h"
 #include "debugconsole/console.h"
 #include "io/timer.h"
 
@@ -1525,6 +1526,11 @@ void poly_list::allocate(int _verts)
 		tsb = NULL;
 	}
 
+	if ( submodels != NULL ) {
+		vm_free(submodels);
+		submodels = NULL;
+	}
+
 	if ( sorted_indices != NULL ) {
 		vm_free(sorted_indices);
 		sorted_indices = NULL;
@@ -1536,6 +1542,10 @@ void poly_list::allocate(int _verts)
 
 		if (Cmdline_normal) {
 			tsb = (tsb_t*)vm_malloc(sizeof(tsb_t) * _verts);
+		}
+
+		if ( Use_GLSL >= 3 ) {
+			submodels = (int*)vm_malloc(sizeof(int) * _verts);
 		}
 
 		sorted_indices = (uint*)vm_malloc(sizeof(uint) * _verts);
@@ -1560,6 +1570,11 @@ poly_list::~poly_list()
 	if (tsb != NULL) {
 		vm_free(tsb);
 		tsb = NULL;
+	}
+
+	if ( submodels != NULL ) {
+		vm_free(submodels);
+		submodels = NULL;
 	}
 
 	if (sorted_indices != NULL) {
@@ -1692,7 +1707,7 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 
 	t1 = timer_get_milliseconds();
 
-	mprintf(("Index Buffer created in %d milliseconds\n", t1-t0));
+	//mprintf(("Index Buffer created in %d milliseconds\n", t1-t0));
 
 	// if there is nothig to change then bail
 	if (n_verts == nverts) {
@@ -1716,6 +1731,10 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 
 		if (Cmdline_normal) {
 			buffer_list_internal.tsb[z] = tsb[j];
+		}
+
+		if ( Use_GLSL >= 3 ) {
+			buffer_list_internal.submodels[z] = submodels[j];
 		}
 
 		buffer_list_internal.n_verts++;
@@ -1744,6 +1763,10 @@ poly_list& poly_list::operator = (poly_list &other_list)
 		memcpy(tsb, other_list.tsb, sizeof(tsb_t) * other_list.n_verts);
 	}
 
+	if ( Use_GLSL >= 3 ) {
+		memcpy(submodels, other_list.submodels, sizeof(int) * other_list.n_verts);
+	}
+
 	memcpy(sorted_indices, other_list.sorted_indices, sizeof(uint) * other_list.n_verts);
 
 	n_verts = other_list.n_verts;
@@ -1753,7 +1776,7 @@ poly_list& poly_list::operator = (poly_list &other_list)
 
 void poly_list::generate_sorted_index_list()
 {
-	for ( int j = 0; j < (uint)n_verts; ++j) {
+	for ( int j = 0; j < n_verts; ++j) {
 		sorted_indices[j] = j;
 	}
 
@@ -1769,7 +1792,7 @@ bool poly_list::finder::operator()(const uint a, const uint b)
 
 	Assert(search_list != NULL);
 
-	if ( a == search_list->n_verts ) {
+	if ( a == (uint)search_list->n_verts ) {
 		Assert(vert_to_find != NULL);
 		Assert(norm_to_find != NULL);
 		Assert(a != b);
@@ -1781,7 +1804,7 @@ bool poly_list::finder::operator()(const uint a, const uint b)
 		norm_a = &search_list->norm[a];
 	}
 	
-	if ( b == search_list->n_verts ) {
+	if ( b == (uint)search_list->n_verts ) {
 		Assert(vert_to_find != NULL);
 		Assert(norm_to_find != NULL);
 		Assert(a != b);
@@ -1913,4 +1936,101 @@ void gr_flip()
 	}
 
 	gr_screen.gf_flip();
+}
+
+uint gr_determine_model_shader_flags(
+	bool lighting, 
+	bool fog, 
+	bool textured, 
+	bool in_shadow_map, 
+	bool thruster_scale, 
+	bool transform,
+	bool team_color,
+	int tmap_flags, 
+	int spec_map, 
+	int glow_map, 
+	int normal_map, 
+	int height_map,
+	int env_map,
+	int misc_map
+) {
+	uint shader_flags = 0;
+
+	if ( Use_GLSL > 1 ) {
+		shader_flags |= SDR_FLAG_MODEL_CLIP;
+	}
+
+	if ( transform ) {
+		shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
+	}
+
+	if ( in_shadow_map ) {
+		// if we're building the shadow map, we likely only need the flags here and above so bail
+		shader_flags |= SDR_FLAG_MODEL_SHADOW_MAP;
+
+		return shader_flags;
+	}
+
+	// setup shader flags for the things that we want/need
+	if ( lighting ) {
+		shader_flags |= SDR_FLAG_MODEL_LIGHT;
+	}
+
+	if ( fog ) {
+		shader_flags |= SDR_FLAG_MODEL_FOG;
+	}
+
+	if ( tmap_flags & TMAP_ANIMATED_SHADER ) {
+		shader_flags |= SDR_FLAG_MODEL_ANIMATED;
+	}
+
+	if ( textured ) {
+		if ( !Basemap_override ) {
+			shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
+		}
+
+		if ( glow_map > 0 ) {
+			shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
+		}
+
+		if ( lighting ) {
+			if ( ( spec_map > 0 ) && !Specmap_override ) {
+				shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
+
+				if ( ( env_map > 0 ) && !Envmap_override ) {
+					shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
+				}
+			}
+
+			if ( ( normal_map > 0) && !Normalmap_override ) {
+				shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
+			}
+
+			if ( ( height_map > 0) && !Heightmap_override ) {
+				shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
+			}
+
+			if ( Cmdline_shadow_quality && !in_shadow_map && !Shadow_override) {
+				shader_flags |= SDR_FLAG_MODEL_SHADOWS;
+			}
+		}
+
+		if ( misc_map > 0 ) {
+			shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
+		}
+
+		if ( team_color ) {
+			shader_flags |= SDR_FLAG_MODEL_TEAMCOLOR;
+		}
+	}
+
+	if ( Deferred_lighting ) {
+		shader_flags |= SDR_FLAG_MODEL_DEFERRED;
+	}
+
+	if ( thruster_scale ) {
+		shader_flags |= SDR_FLAG_MODEL_THRUSTER;
+	}
+
+	return shader_flags;
 }

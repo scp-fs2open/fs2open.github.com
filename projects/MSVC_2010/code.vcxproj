@@ -435,6 +435,7 @@
     <ClCompile Include="..\..\code\graphics\gropenglstate.cpp" />
     <ClCompile Include="..\..\code\graphics\gropengltexture.cpp" />
     <ClCompile Include="..\..\code\graphics\gropengltnl.cpp" />
+    <ClCompile Include="..\..\code\graphics\shadows.cpp" />
     <ClCompile Include="..\..\code\hud\hud.cpp" />
     <ClCompile Include="..\..\code\hud\hudartillery.cpp" />
     <ClCompile Include="..\..\code\hud\hudbrackets.cpp" />
@@ -509,6 +510,7 @@
     <ClCompile Include="..\..\code\model\modelinterp.cpp" />
     <ClCompile Include="..\..\code\model\modeloctant.cpp" />
     <ClCompile Include="..\..\code\model\modelread.cpp" />
+    <ClCompile Include="..\..\code\model\modelrender.cpp" />
     <ClCompile Include="..\..\code\mod_table\mod_table.cpp" />
     <ClCompile Include="..\..\code\object\collidedebrisship.cpp" />
     <ClCompile Include="..\..\code\object\collidedebrisweapon.cpp" />
@@ -711,6 +713,7 @@
     <ClInclude Include="..\..\code\Graphics\2d.h" />
     <ClInclude Include="..\..\code\graphics\grbatch.h" />
     <ClInclude Include="..\..\code\graphics\grinternal.h" />
+    <ClInclude Include="..\..\code\graphics\shadows.h" />
     <ClInclude Include="..\..\code\graphics\tmapper.h" />
     <ClInclude Include="..\..\code\Graphics\font.h" />
     <ClInclude Include="..\..\code\graphics\generic.h" />
@@ -801,6 +804,7 @@
     <ClInclude Include="..\..\code\missionui\redalert.h" />
     <ClInclude Include="..\..\code\model\model.h" />
     <ClInclude Include="..\..\code\model\modelanim.h" />
+    <ClInclude Include="..\..\code\model\modelrender.h" />
     <ClInclude Include="..\..\code\model\modelsinc.h" />
     <ClInclude Include="..\..\code\mod_table\mod_table.h" />
     <ClInclude Include="..\..\code\object\deadobjectdock.h" />

@@ -1474,11 +1474,15 @@ void ship_select_do(float frametime)
 				rev_rate *= 3.0f;
 			}
 
+			model_render_params render_info;
+
 			if (sip->uses_team_colors) {
-				gr_set_team_color(sip->default_team_name, "none", 0, 0);
+				render_info.set_team_color(sip->default_team_name, "none", 0, 0);
 			}
 
-			draw_model_rotating(ShipSelectModelNum,
+			draw_model_rotating(
+				&render_info, 
+				ShipSelectModelNum,
 				Ship_anim_coords[gr_screen.res][0],
 				Ship_anim_coords[gr_screen.res][1],
 				Tech_ship_display_coords[gr_screen.res][2],
@@ -1487,11 +1491,9 @@ void ship_select_do(float frametime)
 				&sip->closeup_pos,
 				sip->closeup_zoom * 1.3f,
 				rev_rate,
-				MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING,
+				MR_AUTOCENTER | MR_NO_FOGGING,
 				GR_RESIZE_MENU,
 				sip->selection_effect);
-
-			gr_disable_team_color();
 		}
 	}
 
@@ -1528,7 +1530,7 @@ void ship_select_do(float frametime)
 
 			if(Ss_icons[Carried_ss_icon.ship_class].model_index != -1)
 			{
-				draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, sx, sy, w, h, sip, GR_RESIZE_MENU);
+				draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, sx, sy, w, h, sip, GR_RESIZE_MENU);
 			}
 			draw_brackets_square(sx, sy, sx + w, sy + h, GR_RESIZE_MENU);
 			//gr_shade(mouse_x + Ss_delta_x, mouse_y + Ss_delta_y, 32, 28, GR_RESIZE_MENU);
@@ -1714,7 +1716,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 		//gr_set_shader(shader_to_use);
 		if(ss_icon->model_index != -1)
 		{
-			draw_model_icon(ss_icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip, GR_RESIZE_MENU);
+			draw_model_icon(ss_icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip, GR_RESIZE_MENU);
 		}
 		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28, GR_RESIZE_MENU);
 		//gr_shade(Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, GR_RESIZE_MENU);
@@ -2220,7 +2222,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 			ship_info *sip = &Ship_info[Wss_slots[slot_index].ship_class];
 			gr_set_color_fast(color_to_draw);
 			//gr_set_shader(shader_to_use);
-			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip, GR_RESIZE_MENU);
+			draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip, GR_RESIZE_MENU);
 			draw_brackets_square(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28, GR_RESIZE_MENU);
 			//gr_shade(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, GR_RESIZE_MENU);
 		}
@@ -2301,7 +2303,7 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 			{
 				gr_set_color_fast(&Icon_colors[bmap_num]);
 				//gr_set_shader(&Icon_shaders[bmap_num]);
-				draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip, GR_RESIZE_MENU);
+				draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip, GR_RESIZE_MENU);
 				draw_brackets_square(x, y, x + 32, y + 28, GR_RESIZE_MENU);
 				//gr_shade(x, y, 32, 28, GR_RESIZE_MENU);
 			}
