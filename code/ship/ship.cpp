@@ -1124,7 +1124,7 @@ void ship_info::move(ship_info& other)
 	std::swap(allowed_weapons, other.allowed_weapons);
 
 	std::swap(restricted_loadout_flag, other.restricted_loadout_flag);
-	std::swap(allowed_bank_restricted_weapons, other.allowed_bank_restricted_weapons);
+	memcpy(allowed_bank_restricted_weapons, other.allowed_bank_restricted_weapons, sizeof(int) * MAX_SHIP_WEAPONS * MAX_WEAPON_TYPES);
 
 	shield_icon_index = other.shield_icon_index;
 	std::swap(icon_filename, other.icon_filename);
@@ -1145,7 +1145,7 @@ void ship_info::move(ship_info& other)
 	ct_count = other.ct_count;
 
 	num_nondark_colors = other.num_nondark_colors;
-	std::swap(nondark_colors, other.nondark_colors);
+	memcpy(nondark_colors, other.nondark_colors, sizeof(ubyte) * MAX_NONDARK_COLORS * 3);
 
 	std::swap(shield_color, other.shield_color);
 
@@ -1210,7 +1210,7 @@ void ship_info::move(ship_info& other)
 	radar_image_size = other.radar_image_size;
 	radar_projection_size_mult = other.radar_projection_size_mult;
 
-	std::swap(ship_iff_info, other.ship_iff_info);
+	memcpy(ship_iff_info, other.ship_iff_info, sizeof(int) * MAX_IFFS * MAX_IFFS);
 
 	aiming_flags = other.aiming_flags;
 	minimum_convergence_distance = other.minimum_convergence_distance;
