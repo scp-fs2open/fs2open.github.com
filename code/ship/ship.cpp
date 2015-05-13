@@ -958,6 +958,8 @@ void ship_info::clone(const ship_info& other)
 	displays = other.displays;
 
 	pathMetadata = other.pathMetadata;
+
+	glowpoint_bank_override_map = other.glowpoint_bank_override_map;
 }
 
 void ship_info::move(ship_info& other)
@@ -1228,6 +1230,8 @@ void ship_info::move(ship_info& other)
 	std::swap(displays, other.displays);
 
 	std::swap(pathMetadata, other.pathMetadata);
+
+	std::swap(glowpoint_bank_override_map, other.glowpoint_bank_override_map);
 }
 
 #define CHECK_THEN_FREE(attribute) \
@@ -1658,6 +1662,8 @@ ship_info::ship_info()
 	displays.clear();
 
 	pathMetadata.clear();
+
+	glowpoint_bank_override_map.clear();
 }
 
 ship_info::~ship_info()
