@@ -587,7 +587,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 							m_score.init(Ships[i].score);
 							m_assist_score.init((int)(Ships[i].assist_score_pct*100));
 
-							m_persona = Ships[i].persona_index + 1;
+							m_persona = Ships[i].persona_index;
 
 							// we use final_death_time member of ship structure for holding the amount of time before a mission
 							// to destroy this ship
@@ -625,8 +625,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 								m_hotkey = -1;
 							}
 
-							if ( Ships[i].persona_index != (m_persona-1) ){
-								m_persona = -1;
+							if ( Ships[i].persona_index != m_persona ){
+								m_persona = -2;
 							}
 							
 							if (Ships[i].wingnum != wing){
@@ -676,6 +676,16 @@ void CShipEditorDlg::initialize_data(int full_update)
 					m_departure_tree.hilite_item(i);
 				}
 			}
+		}
+
+		m_persona++;
+		if (m_persona > 0) {
+			int persona_index = 0;
+			for (int i = 0; i < m_persona; i++) {
+				if (Personas[i].flags & PERSONA_FLAG_WINGMAN)
+					persona_index++;
+			}
+			m_persona = persona_index;
 		}
 
 	} else {  // no ships selected, 0 or more player ships selected

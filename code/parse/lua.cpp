@@ -6040,9 +6040,10 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %=0, Pitch %=0
     CLAMP(rot_angles.h, 0.0f, 100.0f);
 
 	ship_info *sip = &Ship_info[idx];
+	model_render_params render_info;
 
 	if (sip->uses_team_colors) {
-		gr_set_team_color(sip->default_team_name, "none", 0, 0);
+		render_info.set_team_color(sip->default_team_name, "none", 0, 0);
 	}
 
 	//Make sure model is loaded
@@ -6080,14 +6081,16 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %=0, Pitch %=0
 
 	//Draw the ship!!
 	model_clear_instance(sip->model_num);
-	model_set_detail_level(0);
+	render_info.set_detail_level_lock(0);
 
-	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
+	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
 	if(sip->flags2 & SIF2_NO_LIGHTING)
 		render_flags |= MR_NO_LIGHTING;
 
-	model_render(sip->model_num, &orient, &vmd_zero_vector, render_flags);
+	render_info.set_flags(render_flags);
+
+	model_render_immediate(&render_info, sip->model_num, &orient, &vmd_zero_vector);
 
 	//OK we're done
 	gr_end_view_matrix();
@@ -6096,7 +6099,6 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %=0, Pitch %=0
 	//Bye!!
 	g3_end_frame();
 	gr_reset_clip();
-	gr_disable_team_color();
 
 	return ade_set_args(L, "b", true);
 }
@@ -6118,9 +6120,10 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, [orientation Orientatio
 		return ade_set_args(L, "b", false);
 
 	ship_info *sip = &Ship_info[idx];
+	model_render_params render_info;
 
 	if (sip->uses_team_colors) {
-		gr_set_team_color(sip->default_team_name, "none", 0, 0);
+		render_info.set_team_color(sip->default_team_name, "none", 0, 0);
 	}
 
 	//Make sure model is loaded
@@ -6151,14 +6154,16 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, [orientation Orientatio
 
 	//Draw the ship!!
 	model_clear_instance(sip->model_num);
-	model_set_detail_level(0);
+	render_info.set_detail_level_lock(0);
 
-	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
+	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
 	if(sip->flags2 & SIF2_NO_LIGHTING)
 		render_flags |= MR_NO_LIGHTING;
 
-	model_render(sip->model_num, orient, &vmd_zero_vector, render_flags);
+	render_info.set_flags(render_flags);
+
+	model_render_immediate(&render_info, sip->model_num, orient, &vmd_zero_vector);
 
 	//OK we're done
 	gr_end_view_matrix();
@@ -6167,7 +6172,6 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, [orientation Orientatio
 	//Bye!!
 	g3_end_frame();
 	gr_reset_clip();
-	gr_disable_team_color();
 
 	return ade_set_args(L, "b", true);
 }
@@ -13497,7 +13501,11 @@ ADE_FUNC(drawModel, l_Graphics, "model, position, orientation", "Draws the given
 	//Draw the ship!!
 	model_clear_instance(model_num);
 	model_set_detail_level(0);
-	model_render(model_num, orient, v, MR_NORMAL);
+	model_render_params render_info;
+
+	render_info.set_detail_level_lock(0);
+
+	model_render_immediate(&render_info, model_num, orient, v);
 
 	//OK we're done
 	gr_end_view_matrix();
@@ -13538,7 +13546,11 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, matrix Orienta
 
 	//Draw the ship!!
 	model_clear_instance(model_num);
-	model_render(model_num, orient, v, flags);
+
+	model_render_params render_info;
+	render_info.set_flags(flags);
+
+	model_render_immediate(&render_info, model_num, orient, v);
 
 	return ade_set_args(L, "i", 0);
 }

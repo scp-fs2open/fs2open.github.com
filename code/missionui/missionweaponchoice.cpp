@@ -871,15 +871,13 @@ void wl_render_overhead_view(float frametime)
 				vm_rotate_matrix_by_angles(&object_orient, &rot_angles);
 			}
 
+			model_render_params render_info;
+
 			gr_set_clip(Wl_overhead_coords[gr_screen.res][0], Wl_overhead_coords[gr_screen.res][1], gr_screen.res == 0 ? 291 : 467, gr_screen.res == 0 ? 226 : 362, GR_RESIZE_MENU);
 			g3_start_frame(1);
 			g3_set_view_matrix( &sip->closeup_pos, &Eye_matrix, zoom);
-			model_set_detail_level(0);
-
-			if (!Cmdline_nohtl) {
-				gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-				gr_set_view_matrix(&Eye_position, &Eye_matrix);
-			}
+			render_info.set_detail_level_lock(0);
+			
 
 			light_reset();
 			vec3d light_dir = vmd_zero_vector;
@@ -892,7 +890,29 @@ void wl_render_overhead_view(float frametime)
             Glowpoint_use_depth_buffer = false;
             
 			model_clear_instance(wl_ship->model_num);
-			model_render(wl_ship->model_num, &object_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1);
+			polymodel *pm = model_get(wl_ship->model_num);
+
+			if(Cmdline_shadow_quality)
+			{
+				gr_reset_clip();
+				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, 
+					-sip->closeup_pos.xyz.z + pm->rad + 200.0f, -sip->closeup_pos.xyz.z + pm->rad + 2000.0f, -sip->closeup_pos.xyz.z + pm->rad + 10000.0f);
+
+				render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
+
+				model_render_immediate(&render_info, wl_ship->model_num, &object_orient, &vmd_zero_vector);
+				shadows_end_render();
+				gr_set_clip(Wl_overhead_coords[gr_screen.res][0], Wl_overhead_coords[gr_screen.res][1], gr_screen.res == 0 ? 291 : 467, gr_screen.res == 0 ? 226 : 362, GR_RESIZE_MENU);
+			}
+			
+			if (!Cmdline_nohtl) {
+				gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+				gr_set_view_matrix(&Eye_position, &Eye_matrix);
+			}
+
+			render_info.set_flags(MR_AUTOCENTER | MR_NO_FOGGING);
+
+			model_render_immediate(&render_info, wl_ship->model_num, &object_orient, &vmd_zero_vector);
 
             Glowpoint_use_depth_buffer = true;
             
@@ -904,7 +924,6 @@ void wl_render_overhead_view(float frametime)
 			vec3d subobj_pos;
 			int x, y;
 			int xc, yc;
-			polymodel *pm = model_get(wl_ship->model_num);
 			int num_found = 2;
 
 			//Render selected primary lines
@@ -2665,7 +2684,9 @@ void weapon_select_do(float frametime)
 		static float WeapSelectScreenWeapRot = 0.0f;
 		wl_icon_info *sel_icon	= &Wl_icons[Selected_wl_class];
 		weapon_info *wip = &Weapon_info[Selected_wl_class];
-		draw_model_rotating(sel_icon->model_index,
+		model_render_params render_info;
+		draw_model_rotating(&render_info, 
+			sel_icon->model_index,
 			weapon_ani_coords[0],
 			weapon_ani_coords[1],
 			gr_screen.res == 0 ? 202 : 332,
@@ -2674,7 +2695,7 @@ void weapon_select_do(float frametime)
 			&Weapon_info->closeup_pos,
 			Weapon_info->closeup_zoom * 0.65f,
 			REVOLUTION_RATE,
-			MR_IS_MISSILE | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING,
+			MR_IS_MISSILE | MR_AUTOCENTER | MR_NO_FOGGING,
 			GR_RESIZE_MENU,
 			wip->selection_effect);
 	}
@@ -2730,7 +2751,7 @@ void weapon_select_do(float frametime)
 				if(icon->model_index != -1)
 				{
 					//Draw the model
-					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info->closeup_zoom / 2.5f, sx, sy, w, h, NULL, GR_RESIZE_MENU);
+					draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info->closeup_zoom / 2.5f, sx, sy, w, h, NULL, GR_RESIZE_MENU);
 				}
 				else if(icon->laser_bmap != -1)
 				{
@@ -2973,7 +2994,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		if(icon->model_index != -1)
 		{
 			//Draw the model
-			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info[index].closeup_zoom * 0.4f, x, y, 56, 24, NULL, GR_RESIZE_MENU);
+			draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info[index].closeup_zoom * 0.4f, x, y, 56, 24, NULL, GR_RESIZE_MENU);
 		}
 		else if(icon->laser_bmap != -1)
 		{

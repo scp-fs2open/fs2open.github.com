@@ -1583,7 +1583,8 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		}
 	}
 
-	model_set_detail_level(0);
+	model_render_params render_info;
+	render_info.set_detail_level_lock(0);
 
 	if (!Cmdline_nohtl)	{
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
@@ -1602,7 +1603,9 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 
 	Glowpoint_override = true;
 	model_clear_instance(model_id);
-	model_render(model_id, &object_orient, &vmd_zero_vector, flags, -1, -1);
+
+	render_info.set_flags(flags);
+	model_render_immediate(&render_info, model_id, &object_orient, &vmd_zero_vector);
 	Glowpoint_override = false;
 
 	if (!Cmdline_nohtl) 
@@ -1616,7 +1619,8 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	gr_reset_clip();
 }
 
-void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, int resize_mode, int effect)
+void light_set_all_relevent();
+void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, int resize_mode, int effect)
 {
 	//WMC - Can't draw a non-model
 	if (model_id < 0)
@@ -1693,7 +1697,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		float start_scale = MIN(time,0.5f)*2.5f;
 		float offset = size*0.5f*MIN(MAX(time-3.0f,0.0f),0.6f)*1.66667f;
 		if ( (time < 1.5f) && (time >= 0.5f) )  // Clip the grid if were in phase 1
-			g3_start_user_clip_plane(&plane_point,&wire_normal);
+			render_info->set_clip_plane(plane_point,wire_normal);
 
 		g3_start_instance_angles(&vmd_zero_vector,&view_angles);
 
@@ -1739,29 +1743,62 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 			light_reset();
 			vec3d light_dir = vmd_zero_vector;
 			light_dir.xyz.y = 1.0f;
+			light_dir.xyz.x = 0.0000001f;
 			light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
 			light_rotate_all();
 			// lighting for techroom
 
 			// render the ships
 			model_clear_instance(model_id);
-			model_set_detail_level(0);
-			model_set_outline_color(80,49,160);
-			opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS2);
-			opengl_shader_set_animated_timer(-clip);
+			render_info->set_detail_level_lock(0);
+
+			gr_zbuffer_set(true);
+			if(Cmdline_shadow_quality)
+            {
+				gr_end_view_matrix();
+				gr_end_proj_matrix();
+
+				gr_reset_clip();
+
+				model_render_params shadow_render_info;
+
+				shadow_render_info.set_detail_level_lock(0);
+				shadow_render_info.set_flags(flags | MR_NO_TEXTURING | MR_NO_LIGHTING);
+
+				if ( flags & MR_IS_MISSILE )  {
+					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
+				} else {
+					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f);
+				}
+
+				model_render_immediate(&shadow_render_info, model_id, &model_orient, &vmd_zero_vector);
+				shadows_end_render();
+
+				gr_set_clip(x1, y1, x2, y2, resize_mode);
+
+				gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+				gr_set_view_matrix(&Eye_position, &Eye_matrix);
+            }
+			gr_zbuffer_set(false);
+			gr_set_color(80,49,160);
+			render_info->set_outline_color(80, 49, 160);
+
+			render_info->set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS2, -clip);
 
 			if ( (time < 2.5f) && (time >= 0.5f) ) { // Phase 1 and 2 render the wireframe
 				if (time >= 1.5f) // Just clip the wireframe after Phase 1
-					g3_start_user_clip_plane(&plane_point,&wire_normal);
+					render_info->set_clip_plane(plane_point,wire_normal);
 				
-				model_render(model_id, &model_orient, &vmd_zero_vector, flags | MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_ANIMATED_SHADER);
-				g3_stop_user_clip_plane();
+				render_info->set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING | MR_NO_LIGHTING);
+
+				model_render_immediate(render_info, model_id, &model_orient, &vmd_zero_vector);
 			}
 
 			if (time >= 1.5f) { // Render the ship in Phase 2 onwards
-				g3_start_user_clip_plane(&plane_point,&ship_normal);
-				model_render(model_id, &model_orient, &vmd_zero_vector, flags | MR_ANIMATED_SHADER);
-				g3_stop_user_clip_plane();
+				render_info->set_clip_plane(plane_point,ship_normal);
+				render_info->set_flags(flags);
+
+				model_render_immediate(render_info, model_id, &model_orient, &vmd_zero_vector);
 			}
 
 			if (time < 2.5f) { // Render the scanline in Phase 1 and 2
@@ -1805,20 +1842,17 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		rot_angles.h = *rotation_buffer;
 		vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
 
-		gr_set_clip(x1, y1, x2, y2, resize_mode);
 		g3_start_frame(1);
+
+		polymodel *pm = model_get(model_id);
 
 		// render the wodel
 		if ( (closeup_pos != NULL) && (vm_vec_mag(closeup_pos) > 0.0f) ) {
 			g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
 		} else {
-			polymodel *pm = model_get(model_id);
 			vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
 			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
 		}
-
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		// lighting for techroom
 		light_reset();
@@ -1829,16 +1863,41 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 		// lighting for techroom
 
 		model_clear_instance(model_id);
-		model_set_detail_level(0);
+
+		render_info->set_detail_level_lock(0);
+
+		if(Cmdline_shadow_quality)
+		{
+			if ( flags & MR_IS_MISSILE )  {
+				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
+			} else {
+				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f);
+			}
+
+			model_render_params shadow_render_info;
+
+			shadow_render_info.set_flags(flags | MR_NO_TEXTURING | MR_NO_LIGHTING);
+			shadow_render_info.set_detail_level_lock(0);
+
+			model_render_immediate(&shadow_render_info, model_id, &model_orient, &vmd_zero_vector);
+			shadows_end_render();
+		}
+
+		gr_set_clip(x1, y1, x2, y2, resize_mode);
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
 		gr_set_color(0,128,0);
 
 		if (effect == 1) { // FS1 effect
-			opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS1);
-			opengl_shader_set_animated_timer(MIN(time*0.5f,2.0f));
-			model_render(model_id, &model_orient, &vmd_zero_vector, flags | MR_ANIMATED_SHADER);
+			render_info->set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS1, MIN(time*0.5f,2.0f));
+			render_info->set_flags(flags);
 		} else {
-			model_render(model_id, &model_orient, &vmd_zero_vector, flags);
+			render_info->set_flags(flags);
 		}
+
+		model_render_immediate(render_info, model_id, &model_orient, &vmd_zero_vector);
 
 		batch_render_all();
 

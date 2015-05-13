@@ -30,6 +30,7 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "cmdline/cmdline.h"
 
 
 
@@ -453,6 +454,8 @@ void tech_common_render()
 	}
 }
 
+void light_set_all_relevent();
+
 void techroom_ships_render(float frametime)
 {
 	// render all the common stuff
@@ -466,9 +469,10 @@ void techroom_ships_render(float frametime)
 	angles rot_angles, view_angles;
 	int z, i, j;
 	ship_info *sip = &Ship_info[Cur_entry_index];
+	model_render_params render_info;
 
 	if (sip->uses_team_colors) {
-		gr_set_team_color(sip->default_team_name, "none", 0, 0);
+		render_info.set_team_color(sip->default_team_name, "none", 0, 0);
 	}
 
 	// get correct revolution rate
@@ -519,15 +523,13 @@ void techroom_ships_render(float frametime)
 	g3_start_frame(1);
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	
 
 	// lighting for techroom
 	light_reset();
 	vec3d light_dir = vmd_zero_vector;
 	light_dir.xyz.y = 1.0f;	
+	light_dir.xyz.x = 0.0000001f;	
 	light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
 	light_rotate_all();
 	// lighting for techroom
@@ -535,15 +537,17 @@ void techroom_ships_render(float frametime)
 	Glowpoint_use_depth_buffer = false;
 
 	model_clear_instance(Techroom_ship_modelnum);
-	model_set_detail_level(0);
+	render_info.set_detail_level_lock(0);
 
+	polymodel *pm = model_get(Techroom_ship_modelnum);
+	
 	for (i = 0; i < sip->n_subsystems; i++) {
 		model_subsystem *msp = &sip->subsystems[i];
 		if (msp->type == SUBSYSTEM_TURRET) {
 
 			float p = 0.0f;
 			float h = 0.0f;
-												
+
 			for (j = 0; j < msp->n_triggers; j++) {
 
 				// special case for turrets
@@ -559,12 +563,32 @@ void techroom_ships_render(float frametime)
 		}
 	}
 
-	uint render_flags = MR_LOCK_DETAIL | MR_AUTOCENTER;
+    if(Cmdline_shadow_quality)
+    {
+        gr_reset_clip();
+
+		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, -sip->closeup_pos.xyz.z + pm->rad + 200.0f, -sip->closeup_pos.xyz.z + pm->rad + 2000.0f, -sip->closeup_pos.xyz.z + pm->rad + 10000.0f);
+        render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
+		
+		model_render_immediate(&render_info, Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector);
+        shadows_end_render();
+
+		gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD]);
+    }
+	
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
+
+	uint render_flags = MR_AUTOCENTER;
 
 	if(sip->flags2 & SIF2_NO_LIGHTING)
-				render_flags |= MR_NO_LIGHTING;
+		render_flags |= MR_NO_LIGHTING;
 
-	model_render(Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector, render_flags);
+	render_info.set_flags(render_flags);
+
+	model_render_immediate(&render_info, Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector);
 
 	Glowpoint_use_depth_buffer = true;
 
@@ -579,7 +603,6 @@ void techroom_ships_render(float frametime)
 	g3_end_frame();
 
 	gr_reset_clip();
-	gr_disable_team_color();
 }
 
 // select previous entry in current list

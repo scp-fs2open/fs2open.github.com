@@ -2196,4 +2196,16 @@ void flash_ball::render(float rad, float intinsity, float life){
 	flash_ball::batcher.render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
 }
 
+void flash_ball::render(int texture, float rad, float intinsity, float life){
+	flash_ball::batcher.allocate(n_rays);
+	for(int i = 0; i<n_rays; i++){
+		vec3d end;
+		vm_vec_interp_constant(&end, &ray[i].start.world, &ray[i].end.world, life);
+		vm_vec_scale(&end, rad);
+		vm_vec_add2(&end, &center);
+
+		batch_add_beam(texture, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT, &center, &end, ray[i].width*rad, intinsity);
+	}
+}
+
 geometry_batcher flash_ball::batcher;
