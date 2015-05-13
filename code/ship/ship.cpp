@@ -873,7 +873,7 @@ void ship_info::clone(const ship_info& other)
 	ct_count = other.ct_count;
 
 	num_nondark_colors = other.num_nondark_colors;
-	memcpy(nondark_colors, other.nondark_colors, sizeof(ubyte) * 3);
+	memcpy(nondark_colors, other.nondark_colors, sizeof(ubyte) * MAX_NONDARK_COLORS * 3);
 
 	memcpy(shield_color, other.shield_color, sizeof(ubyte) * 3);
 
@@ -971,17 +971,17 @@ void ship_info::move(ship_info& other)
 	class_type = other.class_type;
 
 	std::swap(type_str, other.type_str);
-	std::swap(type_str, other.maneuverability_str);
-	std::swap(type_str, other.armor_str);
-	std::swap(type_str, other.manufacturer_str);
-	std::swap(type_str, other.desc);
-	std::swap(type_str, other.tech_desc);
+	std::swap(maneuverability_str, other.maneuverability_str);
+	std::swap(armor_str, other.armor_str);
+	std::swap(manufacturer_str, other.manufacturer_str);
+	std::swap(desc, other.desc);
+	std::swap(tech_desc, other.tech_desc);
 
 	std::swap(tech_title, other.tech_title);
 
-	std::swap(type_str, other.ship_length);
-	std::swap(type_str, other.gun_mounts);
-	std::swap(type_str, other.missile_banks);
+	std::swap(ship_length, other.ship_length);
+	std::swap(gun_mounts, other.gun_mounts);
+	std::swap(missile_banks, other.missile_banks);
 
 	std::swap(cockpit_pof_file, other.cockpit_pof_file);
 	std::swap(cockpit_offset, other.cockpit_offset);
