@@ -464,6 +464,15 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$aspect bomb invulnerability fix:", AIPF2_ASPECT_INVULNERABILITY_FIX, AIP_FLAG2);
 
+				profile->bay_arrive_speed_mult = 1.0f;
+				profile->bay_depart_speed_mult = 1.0f;
+				if (optional_string("$bay arrive speed multiplier:")) {
+					stuff_float(&profile->bay_arrive_speed_mult);
+				}
+				if (optional_string("$bay depart speed multiplier:")) {
+					stuff_float(&profile->bay_depart_speed_mult);
+				}
+
 				// ----------
 
 				// compatibility
