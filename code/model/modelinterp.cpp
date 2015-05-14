@@ -4296,16 +4296,6 @@ void find_sortnorm(int offset, ubyte *bsp_data)
 	if (postlist) find_tri_counts(offset+postlist, bsp_data);
 }
 
-
-static void allocate_poly_list()
-{
-	for (int i = 0; i < MAX_MODEL_TEXTURES; i++) {
-		polygon_list[i].allocate(tri_count[i]*3);
-	}
-
-	model_allocate_interp_data(Interp_num_verts, Interp_num_norms);
-}
-
 void interp_pack_vertex_buffers(polymodel *pm, int mn)
 {
 	Assert( pm->vertex_buffer_id >= 0 );
