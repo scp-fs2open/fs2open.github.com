@@ -462,6 +462,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$strict turret-tagged-only targeting:", AIPF2_STRICT_TURRET_TAGGED_ONLY_TARGETING, AIP_FLAG2);
 
+				set_flag(profile, "$aspect bomb invulnerability fix:", AIPF2_ASPECT_INVULNERABILITY_FIX, AIP_FLAG2);
+
 				// ----------
 
 				// compatibility
