@@ -845,12 +845,13 @@ void draw_list::init_render()
 {
 	sort_draws();
 
-	Scene_light_handler.resetLightState();
 	TransformBufferHandler.submit_buffer_data();
 }
 
 void draw_list::render_all(int depth_mode)
 {
+	Scene_light_handler.resetLightState();
+
 	for ( size_t i = 0; i < Render_keys.size(); ++i ) {
 		int render_index = Render_keys[i];
 
