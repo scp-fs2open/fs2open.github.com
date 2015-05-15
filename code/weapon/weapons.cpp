@@ -5550,15 +5550,27 @@ void spawn_child_weapons(object *objp)
 	int	child_id;
 	int	parent_num;
 	ushort starting_sig;
-	weapon	*wp;
+	weapon	*wp = NULL;
+	beam	*bp = NULL;
 	weapon_info	*wip, *child_wip;
+	vec3d	*opos, *fvec;
 
-	Assert(objp->type == OBJ_WEAPON);
-	Assert((objp->instance >= 0) && (objp->instance < MAX_WEAPONS));
+	Assertion(objp->type == OBJ_WEAPON || objp->type == OBJ_BEAM, "spawn_child_weapons() doesn't make sense for non-weapon non-beam objects; get a coder!\n");
+	Assertion(objp->instance >= 0, "spawn_child_weapons() called with an object with an instance of %d; get a coder!\n", objp->instance);
+	Assertion(!(objp->type == OBJ_WEAPON) || (objp->instance < MAX_WEAPONS), "spawn_child_weapons() called with a weapon with an instance of %d while MAX_WEAPONS is %d; get a coder!\n", objp->instance, MAX_WEAPONS);
+	Assertion(!(objp->type == OBJ_BEAM) || (objp->instance < MAX_BEAMS), "spawn_child_weapons() called with a beam with an instance of %d while MAX_BEAMS is %d; get a coder!\n", objp->instance, MAX_BEAMS);
 
-	wp = &Weapons[objp->instance];
-	Assert((wp->weapon_info_index >= 0) && (wp->weapon_info_index < MAX_WEAPON_TYPES));
-	wip = &Weapon_info[wp->weapon_info_index];
+	if (objp->type == OBJ_WEAPON) {
+		wp = &Weapons[objp->instance];
+		Assertion((wp->weapon_info_index >= 0) && (wp->weapon_info_index < Num_weapon_types), "Invalid weapon_info_index of %d; get a coder!\n", wp->weapon_info_index);
+		wip = &Weapon_info[wp->weapon_info_index];
+	} else if (objp->type == OBJ_BEAM) {
+		bp = &Beams[objp->instance];
+		Assertion((bp->weapon_info_index >= 0) && (bp->weapon_info_index < Num_weapon_types), "Invalid weapon_info_index of %d; get a coder!\n", bp->weapon_info_index);
+		wip = &Weapon_info[bp->weapon_info_index];
+	} else {	// Let's make sure we don't do screwball things in a release build if this gets called with a non-weapon non-beam.
+		return;
+	}
 
 	parent_num = objp->parent;
 
@@ -5579,56 +5591,79 @@ void spawn_child_weapons(object *objp)
 		multi_set_network_signature( objp->net_signature, MULTI_SIG_NON_PERMANENT );
 	}
 
-    for (i = 0; i < wip->num_spawn_weapons_defined; i++)
-    {
-        for (j = 0; j < wip->spawn_info[i].spawn_count; j++) 
-        {
-    		int		weapon_objnum;
-	    	vec3d	tvec, pos;
-		    matrix	orient;
+	opos = &objp->pos;
+	fvec = &objp->orient.vec.fvec;
 
-            child_id = wip->spawn_info[i].spawn_type;
+	for (i = 0; i < wip->num_spawn_weapons_defined; i++)
+	{
+		for (j = 0; j < wip->spawn_info[i].spawn_count; j++)
+		{
+			int		weapon_objnum;
+			vec3d	tvec, pos;
+			matrix	orient;
+
+			child_id = wip->spawn_info[i].spawn_type;
 			child_wip = &Weapon_info[child_id];
 
-		    // for multiplayer, use the static randvec functions based on the network signatures to provide
-		    // the randomness so that it is the same on all machines.
-		    if ( Game_mode & GM_MULTIPLAYER ) {
-    			static_rand_cone(objp->net_signature + j, &tvec, &objp->orient.vec.fvec, wip->spawn_info[i].spawn_angle);
-	    	} else {
-		    	vm_vec_random_cone(&tvec, &objp->orient.vec.fvec, wip->spawn_info[i].spawn_angle);
-		    }
-		    vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
+			// for multiplayer, use the static randvec functions based on the network signatures to provide
+			// the randomness so that it is the same on all machines.
+			if ( Game_mode & GM_MULTIPLAYER ) {
+				static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
+			} else {
+				vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
+			}
+			vm_vec_scale_add(&pos, opos, &tvec, objp->radius);
 
-		    vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
-		    weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
+			// Let's allow beam-spawn! -MageKing17
+			if (child_wip->wi_flags & WIF_BEAM) {
+				beam_fire_info fire_info;
+				memset(&fire_info, 0, sizeof(beam_fire_info));
 
-			//if the child inherits parent target, do it only if the parent weapon was locked to begin with
-			if ((child_wip->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (wp->homing_object != &obj_used_list))
-			{
-				//Deal with swarm weapons
-				if (wp->swarm_index >= 0) {
-					swarm_info	*swarmp;
-					swarmp = &Swarm_missiles[wp->swarm_index];
+				fire_info.accuracy = 0.000001f;		// this will guarantee a hit
+				fire_info.shooter = &Objects[parent_num];
+				fire_info.turret = NULL;
+				fire_info.target = NULL;
+				fire_info.target_subsys = NULL;
+				fire_info.target_pos1 = fire_info.target_pos2 = pos;
+				fire_info.bfi_flags |= BFIF_FLOATING_BEAM | BFIF_TARGETING_COORDS;
+				fire_info.starting_pos = *opos;
+				fire_info.beam_info_index = child_id;
+				fire_info.team = static_cast<char>(obj_team(&Objects[parent_num]));
 
-					weapon_set_tracking_info(weapon_objnum, parent_num, swarmp->homing_objnum, 1, wp->homing_subsys);
-				} else {
-					weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+				// fire the beam
+				beam_fire(&fire_info);
+			} else {
+				vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
+				weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
+
+				//if the child inherits parent target, do it only if the parent weapon was locked to begin with
+				if ((child_wip->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (wp->homing_object != &obj_used_list))
+				{
+					//Deal with swarm weapons
+					if (wp->swarm_index >= 0) {
+						swarm_info	*swarmp;
+						swarmp = &Swarm_missiles[wp->swarm_index];
+
+						weapon_set_tracking_info(weapon_objnum, parent_num, swarmp->homing_objnum, 1, wp->homing_subsys);
+					} else {
+						weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+					}
+				}
+
+				//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
+				if (weapon_objnum != -1) {
+					float rand_val;
+
+					if ( Game_mode & GM_NORMAL ){
+						rand_val = frand();
+					} else {
+						rand_val = static_randf(objp->net_signature + j);
+					}
+
+					Weapons[Objects[weapon_objnum].instance].lifeleft *= rand_val*0.4f + 0.8f;
 				}
 			}
-
-    		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
-		    if (weapon_objnum != -1) {
-			    float rand_val;
-
-			    if ( Game_mode & GM_NORMAL ){
-				    rand_val = frand();
-			    } else {
-    				rand_val = static_randf(objp->net_signature + j);
-			    }
-
-			    Weapons[Objects[weapon_objnum].instance].lifeleft *= rand_val*0.4f + 0.8f;
-		    }
-        }
+		}
 
 	}
 
