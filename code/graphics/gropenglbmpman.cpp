@@ -11,6 +11,7 @@
 
 #include "globalincs/pstypes.h"
 #include "bmpman/bmpman.h"
+#include "graphics/gropenglbmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "tgautils/tgautils.h"
 #include "pngutils/pngutils.h"
@@ -91,7 +92,7 @@ void gr_opengl_bm_create(int n)
 //			c_type		= output for an updated BM_TYPE_*
 //			mm_lvl		= number of mipmap levels for the image
 //			size		= size of the data contained in the image
-int gr_opengl_bm_load(ubyte type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
+int gr_opengl_bm_load(BM_TYPE type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, int *size)
 {
 	int dds_ct;
 
@@ -421,7 +422,7 @@ extern bool opengl_texture_slot_valid(int n, int handle);
  */
 int gr_opengl_bm_lock( const char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
 {
-	ubyte c_type = BM_TYPE_NONE;
+	BM_TYPE c_type = BM_TYPE_NONE;
 	ubyte true_bpp;
 	int try_compress = 0;
 

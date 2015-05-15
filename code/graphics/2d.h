@@ -553,7 +553,7 @@ typedef struct screen {
 	// Here be the bitmap functions
 	void (*gf_bm_free_data)(int n, bool release);
 	void (*gf_bm_create)(int n);
-	int (*gf_bm_load)(ubyte type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size);
+	int(*gf_bm_load)(BM_TYPE type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, int *size);
 	void (*gf_bm_init)(int n);
 	void (*gf_bm_page_in_start)();
 	int (*gf_bm_lock)(const char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug);
@@ -885,7 +885,7 @@ __inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float
 #define gr_bm_free_data				GR_CALL(*gr_screen.gf_bm_free_data)
 #define gr_bm_create				GR_CALL(*gr_screen.gf_bm_create)
 #define gr_bm_init					GR_CALL(*gr_screen.gf_bm_init)
-__inline int gr_bm_load(ubyte type, int n, const char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, ubyte *c_type = 0, int *mm_lvl = 0, int *size = 0)
+__inline int gr_bm_load(BM_TYPE type, int n, const char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, BM_TYPE *c_type = 0, int *mm_lvl = 0, int *size = 0)
 {
 	return (*gr_screen.gf_bm_load)(type, n, filename, img_cfp, w, h, bpp, c_type, mm_lvl, size);
 }

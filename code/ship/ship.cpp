@@ -10407,6 +10407,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				if (winfo_p->wi_flags3 & WIF3_APPLY_RECOIL){
 					firepoint_list = new vec3d[numtimes * points];
 					vm_vec_zero(&total_impulse);
+				} else {
+					firepoint_list = nullptr;
 				}
 
 				for ( w = 0; w < numtimes; w++ ) {
