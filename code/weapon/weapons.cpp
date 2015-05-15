@@ -49,6 +49,24 @@
 #include "mod_table/mod_table.h"
 #include "model/modelrender.h"
 #include "debugconsole/console.h"
+#include "hud/hudartillery.h"
+
+// Since SSMs are parsed after weapons, if we want to allow SSM strikes to be specified by name, we need to store those names until after SSMs are parsed.
+typedef struct delayed_ssm_data {
+	SCP_string filename;
+	int linenum;
+	SCP_string ssm_entry;
+} delayed_ssm_data;
+SCP_map<SCP_string, delayed_ssm_data> Delayed_SSM_data;
+SCP_vector<SCP_string> Delayed_SSM_names;
+
+typedef struct delayed_ssm_index_data {
+	SCP_string filename;
+	int linenum;
+} delayed_ssm_index_data;
+SCP_map<SCP_string, delayed_ssm_index_data> Delayed_SSM_indices_data;
+SCP_vector<SCP_string> Delayed_SSM_indices;
+
 
 #ifndef NDEBUG
 int Weapon_flyby_sound_enabled = 1;
@@ -1087,7 +1105,7 @@ void init_weapon_entry(int weap_info_index)
 // return 0 if successful, otherwise return -1
 #define WEAPONS_MULTITEXT_LENGTH 2048
 
-int parse_weapon(int subtype, bool replace)
+int parse_weapon(int subtype, bool replace, const char *filename)
 {
 	char buf[WEAPONS_MULTITEXT_LENGTH];
 	weapon_info *wip = NULL;
@@ -2534,7 +2552,25 @@ int parse_weapon(int subtype, bool replace)
 	}	
 
 	if( optional_string("$SSM:")){
-		stuff_int(&wip->SSM_index);
+		if (stuff_int_optional(&wip->SSM_index) != 2) {
+			// We can't make an SSM lookup yet, because weapons are parsed first, but we can save the data to process later. -MageKing17
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+			delayed_ssm_data temp_data;
+			temp_data.filename = filename;
+			temp_data.linenum = get_line_num();
+			temp_data.ssm_entry = fname;
+			if (Delayed_SSM_data.find(wip->name) == Delayed_SSM_data.end())
+				Delayed_SSM_names.push_back(wip->name);
+			Delayed_SSM_data[wip->name] = temp_data;
+		} else {
+			// We'll still want to validate the index later. -MageKing17
+			delayed_ssm_index_data temp_data;
+			temp_data.filename = filename;
+			temp_data.linenum = get_line_num();
+			if (Delayed_SSM_indices_data.find(wip->name) == Delayed_SSM_indices_data.end())
+				Delayed_SSM_indices.push_back(wip->name);
+			Delayed_SSM_indices_data[wip->name] = temp_data;
+		}
 	}// SSM index -Bobboau
 
 	if(optional_string("$FOF:")){
@@ -2817,7 +2853,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:")) {
 				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-				if (parse_weapon(WP_LASER, Parsing_modular_table) < 0) {
+				if (parse_weapon(WP_LASER, Parsing_modular_table, filename) < 0) {
 					continue;
 				}
 			}
@@ -2828,7 +2864,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:")) {
 				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-				if (parse_weapon(WP_MISSILE, Parsing_modular_table) < 0) {
+				if (parse_weapon(WP_MISSILE, Parsing_modular_table, filename) < 0) {
 					continue;
 				}
 			}
@@ -2839,7 +2875,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:")) {
 				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-				if (parse_weapon(WP_BEAM, Parsing_modular_table) < 0) {
+				if (parse_weapon(WP_BEAM, Parsing_modular_table, filename) < 0) {
 					continue;
 				}
 			}
@@ -2850,7 +2886,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:"))
 			{
-				int idx = parse_weapon(WP_MISSILE, Parsing_modular_table);
+				int idx = parse_weapon(WP_MISSILE, Parsing_modular_table, filename);
 
 				if (idx < 0) {
 					continue;
@@ -7248,5 +7284,43 @@ void weapon_render(object* obj, draw_list *scene)
 
 	default:
 		Warning(LOCATION, "Unknown weapon rendering type = %i for weapon %s\n", wip->render_type, wip->name);
+	}
+}
+
+// Called by hudartillery.cpp after SSMs have been parsed to make sure that $SSM: entries defined in weapons are valid.
+void validate_SSM_entries()
+{
+	int wi;
+	SCP_vector<SCP_string>::const_iterator it;
+	weapon_info *wip;
+
+	for (it = Delayed_SSM_names.begin(); it != Delayed_SSM_names.end(); ++it) {
+		delayed_ssm_data *dat = &Delayed_SSM_data[*it];
+		wi = weapon_info_lookup(it->c_str());
+		Assertion(wi >= 0, "Trying to validate non-existant weapon '%s'; get a coder!\n", it->c_str());
+		wip = &Weapon_info[wi];
+		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
+		wip->SSM_index = ssm_info_lookup(dat->ssm_entry.c_str());
+		if (wip->SSM_index < 0) {
+			Warning(LOCATION, "Unknown SSM entry '%s' in specification for %s (%s:line %d).\n", dat->ssm_entry.c_str(), it->c_str(), dat->filename.c_str(), dat->linenum);
+		}
+		nprintf(("parse", "Validation complete, SSM_index is %d.\n", wip->SSM_index));
+	}
+
+	// This information is no longer relevant, so might as well clear it out.
+	Delayed_SSM_data.clear();
+	Delayed_SSM_names.clear();
+
+	for (it = Delayed_SSM_indices.begin(); it != Delayed_SSM_indices.end(); ++it) {
+		delayed_ssm_index_data *dat = &Delayed_SSM_indices_data[*it];
+		wi = weapon_info_lookup(it->c_str());
+		Assertion(wi >= 0, "Trying to validate non-existant weapon '%s'; get a coder!\n", it->c_str());
+		wip = &Weapon_info[wi];
+		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
+		if (wip->SSM_index < -1 || wip->SSM_index >= static_cast<int>(Ssm_info.size())) {
+			Warning(LOCATION, "Invalid SSM index '%d' (should be 0-%d) in specification for %s (%s:line %d).\n", wip->SSM_index, Ssm_info.size() - 1, it->c_str(), dat->filename.c_str(), dat->linenum);
+			wip->SSM_index = -1;
+		}
+		nprintf(("parse", "Validation complete, SSM-index is %d.\n", wip->SSM_index));
 	}
 }
