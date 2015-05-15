@@ -291,10 +291,10 @@
     <ClCompile Include="..\..\code\debugconsole\console.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-	<ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
+    <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-	<ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
+    <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fireball\fireballs.cpp">
@@ -1062,6 +1062,12 @@
     <ClCompile Include="..\..\code\globalincs\profiling.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\graphics\shadows.cpp">
+      <Filter>Graphics\OpenGLGr\OpenGL CPPs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\model\modelrender.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h">
@@ -1130,10 +1136,10 @@
     <ClInclude Include="..\..\code\Debris\debris.h">
       <Filter>Debris</Filter>
     </ClInclude>
-	<ClInclude Include="..\..\code\debugconsole\console.h">
+    <ClInclude Include="..\..\code\debugconsole\console.h">
       <Filter>DebugConsole</Filter>
     </ClInclude>
-	<ClInclude Include="..\..\code\debugconsole\consoleparse.h">
+    <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
       <Filter>DebugConsole</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\DirectX\vasync.h">
@@ -1867,6 +1873,12 @@
     </ClInclude>
     <ClInclude Include="..\..\code\PilotFile\pilotfile.h">
       <Filter>PilotFile</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\graphics\shadows.h">
+      <Filter>Graphics\OpenGLGr\OpenGL Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\model\modelrender.h">
+      <Filter>Model</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
