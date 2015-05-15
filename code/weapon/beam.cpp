@@ -392,7 +392,7 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
-		new_item->beam_secion_frame[i] = 0.0f;
+		new_item->beam_section_frame[i] = 0.0f;
 	
 	if (fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM) {
 		new_item->type = BEAM_TYPE_C;
@@ -1229,18 +1229,18 @@ void beam_render(beam *b, float u_offset)
 		int framenum = 0;
 
 		if (bwsi->texture.num_frames > 1) {
-			b->beam_secion_frame[s_idx] += flFrametime;
+			b->beam_section_frame[s_idx] += flFrametime;
 
 			// Sanity checks
-			if (b->beam_secion_frame[s_idx] < 0.0f)
-				b->beam_secion_frame[s_idx] = 0.0f;
-			if (b->beam_secion_frame[s_idx] > 100.0f)
-				b->beam_secion_frame[s_idx] = 0.0f;
+			if (b->beam_section_frame[s_idx] < 0.0f)
+				b->beam_section_frame[s_idx] = 0.0f;
+			if (b->beam_section_frame[s_idx] > 100.0f)
+				b->beam_section_frame[s_idx] = 0.0f;
 
-			while (b->beam_secion_frame[s_idx] > bwsi->texture.total_time)
-				b->beam_secion_frame[s_idx] -= bwsi->texture.total_time;
+			while (b->beam_section_frame[s_idx] > bwsi->texture.total_time)
+				b->beam_section_frame[s_idx] -= bwsi->texture.total_time;
 
-			framenum = fl2i( (b->beam_secion_frame[s_idx] * bwsi->texture.num_frames) / bwsi->texture.total_time );
+			framenum = fl2i( (b->beam_section_frame[s_idx] * bwsi->texture.num_frames) / bwsi->texture.total_time );
 
 			CLAMP(framenum, 0, bwsi->texture.num_frames-1);
 		}

@@ -139,7 +139,7 @@ typedef struct beam {
 	vec3d	last_start;				
 	int		shot_index;				// for type D beam weapons
 	float	beam_glow_frame;		// what frame a beam glow animation is on
-	float	beam_secion_frame[MAX_BEAM_SECTIONS];	// what frame a beam secion animation is on
+	float	beam_section_frame[MAX_BEAM_SECTIONS];	// what frame a beam section animation is on
 
 	// recent collisions
 	beam_collision r_collisions[MAX_FRAME_COLLISIONS];					// recent collisions
