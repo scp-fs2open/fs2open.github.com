@@ -8,9 +8,10 @@ compiler:
   - gcc
   - clang
 before_install:
+  - sudo add-apt-repository --yes ppa:zoogie/sdl2-snapshots
   - sudo apt-get update -qq
 install:
-  - sudo apt-get install libopenal-dev libogg-dev libvorbis-dev build-essential automake1.10 autoconf libsdl1.2-dev libtheora-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libtool
+  - sudo apt-get install libopenal-dev libogg-dev libvorbis-dev build-essential automake1.10 autoconf libsdl2-dev libtheora-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libtool
 before_script:
   - ./autogen.sh $AUTOGEN_CONFIG
 script:
