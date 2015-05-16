@@ -110,6 +110,7 @@ namespace AI {
 		Ai_guards_specific_ship_in_wing,
 		Fix_ai_path_order_bug,
 		Strict_turred_tagged_only_targeting,
+		Aspect_invulnerability_fix,
 
 		NUM_VALUES
 	};

@@ -60,7 +60,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			A_radius *= 2;		// Makes bombs easier to hit
 		}
 		
-		if (is_locked_homing(wipA)) {
+		if (The_mission.ai_profile->flags[AI::Profile_flags::Aspect_invulnerability_fix] && is_locked_homing(wipA) && (wpA->homing_object != &obj_used_list)) {
 			if ( (wipA->max_lifetime - wpA->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
@@ -72,7 +72,7 @@ int collide_weapon_weapon( obj_pair * pair )
 		if (!(wipB->wi_flags[Weapon::Info_Flags::Hard_target_bomb])) {
 			B_radius *= 2;		// Makes bombs easier to hit
 		}
-		if (is_locked_homing(wipB)) {
+		if (The_mission.ai_profile->flags[AI::Profile_flags::Aspect_invulnerability_fix] && is_locked_homing(wipB) && (wpB->homing_object != &obj_used_list)) {
 			if ( (wipB->max_lifetime - wpB->lifeleft) < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}

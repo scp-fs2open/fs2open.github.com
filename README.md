@@ -1,4 +1,5 @@
 [![Coverity](https://scan.coverity.com/projects/870/badge.svg)](https://scan.coverity.com/projects/870)
+[![Build Status](https://travis-ci.org/scp-fs2open/fs2open.github.com.svg?branch=master)](https://travis-ci.org/scp-fs2open/fs2open.github.com)
 
 Welcome to Freespace Open!
 

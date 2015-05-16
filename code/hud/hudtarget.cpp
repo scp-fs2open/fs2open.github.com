@@ -1092,7 +1092,7 @@ void hud_target_subobject_common(int next_flag)
 	target_shipp = &Ships[Objects[Player_ai->target_objnum].instance];
 
 	if (!Player_ai->targeted_subsys) {
-		start = GET_FIRST(&target_shipp->subsys_list);
+		start = END_OF_LIST(&target_shipp->subsys_list);
 	} else {
 		start = Player_ai->targeted_subsys;
 	}

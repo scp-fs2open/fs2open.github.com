@@ -1123,10 +1123,6 @@ void scene_lights::setLightFilter(int objnum, vec3d *pos, float rad)
 	// clear out current filtered lights
 	FilteredLights.clear();
 
-	if ( Deferred_lighting ) {
-		return;
-	}
-
 	for ( i = 0; i < AllLights.size(); ++i ) {
 		light& l = AllLights[i];
 

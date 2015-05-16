@@ -565,7 +565,7 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 	}
 
 	Assertion(shi->shield_hit_timers.size() > 0, "Shield hit info object for object '%s' has a size %d shield_hit_timers; get a coder!\n", Ships[objp->instance].ship_name, shi->shield_hit_timers.size());
-	Assertion(shi->hull_hit_index < shi->shield_hit_timers.size(), "Shield hit info object for object '%s' has a hull_hit_index of %d (should be between 0 and %d); get a coder!\n", Ships[objp->instance].ship_name, shi->hull_hit_index, shi->shield_hit_timers.size() - 1);
+	Assertion(shi->hull_hit_index < (int) shi->shield_hit_timers.size(), "Shield hit info object for object '%s' has a hull_hit_index of %d (should be between 0 and %d); get a coder!\n", Ships[objp->instance].ship_name, shi->hull_hit_index, shi->shield_hit_timers.size() - 1);
 
 	if ( quadrant >= 0 ) {
 		if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Model_point_shields]) )

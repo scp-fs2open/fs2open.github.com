@@ -3185,6 +3185,15 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 			stuff_vec3d(&metadata.departure_rvec);
 		}
 
+		if (optional_string("+arrive speed multiplier:"))
+		{
+			stuff_float(&metadata.arrive_speed_mult);
+		}
+		if (optional_string("+depart speed multiplier:"))
+		{
+			stuff_float(&metadata.depart_speed_mult);
+		}
+
 		//Add the new path_metadata to sip->pathMetadata keyed by path name
 		SCP_string pathName(path_name);
 		sip->pathMetadata[pathName] = metadata;
@@ -10388,6 +10397,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){
 					firepoint_list = new vec3d[numtimes * points];
 					vm_vec_zero(&total_impulse);
+				} else {
+					firepoint_list = nullptr;
 				}
 
 				for ( w = 0; w < numtimes; w++ ) {
@@ -17803,6 +17814,8 @@ int ship_get_subobj_model_num(ship_info* sip, char* subobj_name)
 void init_path_metadata(path_metadata& metadata)
 {
 	vm_vec_zero(&metadata.departure_rvec);
+	metadata.arrive_speed_mult = FLT_MIN;
+	metadata.depart_speed_mult = FLT_MIN;
 }
 
 int ship_get_sound(object *objp, GameSoundsIndex id)

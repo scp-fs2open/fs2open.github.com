@@ -1062,6 +1062,8 @@ typedef struct ship_collision_physics {
 
 typedef struct path_metadata {
 	vec3d departure_rvec;
+	float arrive_speed_mult;
+	float depart_speed_mult;
 } path_metadata;
 
 // The real FreeSpace ship_info struct.
