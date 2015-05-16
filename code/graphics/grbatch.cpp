@@ -898,7 +898,7 @@ int batch_add_polygon(int texture, int tmap_flags, vec3d *pos, matrix *orient, f
 
 	const int NUM_VERTICES = 4;
 	vec3d p[NUM_VERTICES] = { ZERO_VECTOR };
-	vertex v[NUM_VERTICES];
+	vertex v[NUM_VERTICES] = { vertex() };
 
 	p[0].xyz.x = width;
 	p[0].xyz.y = height;
