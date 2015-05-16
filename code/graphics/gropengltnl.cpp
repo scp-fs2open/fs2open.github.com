@@ -181,6 +181,7 @@ void opengl_bind_buffer_object(int handle)
 		break;
 	case GL_UNIFORM_BUFFER:
 		GL_state.Array.BindUniformBuffer(buffer_obj.buffer_id);
+		break;
 	default:
 		Int3();
 		return;

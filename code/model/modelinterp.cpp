@@ -4296,16 +4296,6 @@ void find_sortnorm(int offset, ubyte *bsp_data)
 	if (postlist) find_tri_counts(offset+postlist, bsp_data);
 }
 
-
-static void allocate_poly_list()
-{
-	for (int i = 0; i < MAX_MODEL_TEXTURES; i++) {
-		polygon_list[i].allocate(tri_count[i]*3);
-	}
-
-	model_allocate_interp_data(Interp_num_verts, Interp_num_norms);
-}
-
 void interp_pack_vertex_buffers(polymodel *pm, int mn)
 {
 	Assert( pm->vertex_buffer_id >= 0 );
@@ -5172,7 +5162,9 @@ bool model_get_team_color( team_color *clr, const SCP_string &team, const SCP_st
 			}
 
 			team_color end = Team_Colors[secondaryteam];
-			float time_remaining = (f2fl(Missiontime - timestamp) * 1000)/fadetime;
+			float time_remaining = 0.0f;
+			if (fadetime != 0) // avoid potential div-by-zero
+				time_remaining = (f2fl(Missiontime - timestamp) * 1000)/fadetime;
 			CLAMP(time_remaining, 0.0f, 1.0f);
 			model_mix_two_team_colors(&temp_color, &start, &end, time_remaining);
 

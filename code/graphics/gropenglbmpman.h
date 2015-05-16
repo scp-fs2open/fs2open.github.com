@@ -34,7 +34,7 @@ void gr_opengl_bm_create(int n);
 //			c_type		= output for an updated BM_TYPE_*
 //			mm_lvl		= number of mipmap levels for the image
 //			size		= size of the data contained in the image
-int gr_opengl_bm_load(ubyte type, int n, const char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, ubyte *c_type = 0, int *mm_lvl = 0, int *size = 0);
+int gr_opengl_bm_load(BM_TYPE type, int n, const char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, BM_TYPE *c_type = 0, int *mm_lvl = 0, int *size = 0);
 
 // API specific init instructions
 void gr_opengl_bm_init(int n);
