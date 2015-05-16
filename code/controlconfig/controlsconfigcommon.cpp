@@ -192,6 +192,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{ KEY_ALTED |               KEY_N,              -1, COMPUTER_TAB, false, "Cycle Nav Points",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 	{ KEY_ALTED |               KEY_G,              -1, SHIP_TAB,     false, "Toggle Gliding",                         CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 	{                           KEY_O,              -1, WEAPON_TAB,   false, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_Q,              -1, COMPUTER_TAB, false, "Toggle Auto Equalize Shields",           CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 	{                           -1,                 -1, -1,           false, "",                                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false }
 };
 

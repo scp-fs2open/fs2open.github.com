@@ -330,7 +330,9 @@ int Normal_key_set[] = {
 	NAV_CYCLE,
 
 	TOGGLE_GLIDING,
-	CYCLE_PRIMARY_WEAPON_SEQUENCE
+	CYCLE_PRIMARY_WEAPON_SEQUENCE,
+
+	TOGGLE_AUTO_SHIELD_EQUALIZE,
 };
 
 int Dead_key_set[] = {
@@ -394,6 +396,7 @@ int Critical_key_set[] = {
 	SHIELD_XFER_RIGHT,			
 	XFER_SHIELD,			
 	XFER_LASER,			
+	TOGGLE_AUTO_SHIELD_EQUALIZE,
 };
 
 int Non_critical_key_set[] = {
@@ -465,7 +468,9 @@ int Non_critical_key_set[] = {
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
 	TOGGLE_GLIDING,
-	CYCLE_PRIMARY_WEAPON_SEQUENCE
+	CYCLE_PRIMARY_WEAPON_SEQUENCE,
+
+	TOGGLE_AUTO_SHIELD_EQUALIZE,
 };
 
 int Ignored_keys[CCFG_MAX];
@@ -2311,11 +2316,6 @@ int button_function(int n)
 		case CYCLE_PREV_PRIMARY:	// cycle to previous primary weapon
 		case CYCLE_SECONDARY:		// cycle to next secondary weapon
 		case CYCLE_NUM_MISSLES:		// cycle number of missiles fired from secondary bank
-		case SHIELD_EQUALIZE:		// equalize shield energy to all quadrants
-		case SHIELD_XFER_TOP:		// transfer shield energy to front
-		case SHIELD_XFER_BOTTOM:	// transfer shield energy to rear
-		case SHIELD_XFER_LEFT:		// transfer shield energy to left
-		case SHIELD_XFER_RIGHT:		// transfer shield energy to right
 		case XFER_SHIELD:			// transfer energy to shield from weapons
 		case XFER_LASER:			// transfer energy to weapons from shield
 			return button_function_critical(n);
@@ -2334,6 +2334,18 @@ int button_function(int n)
 			}
 			return 1;
 			break;
+
+		case SHIELD_EQUALIZE:		// equalize shield energy to all quadrants
+			Player->flags &= ~PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_OVERRIDE;
+			return button_function_critical(n);
+
+		case SHIELD_XFER_TOP:		// transfer shield energy to front
+		case SHIELD_XFER_BOTTOM:	// transfer shield energy to rear
+		case SHIELD_XFER_LEFT:		// transfer shield energy to left
+		case SHIELD_XFER_RIGHT:		// transfer shield energy to right
+			Player->flags |= PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_OVERRIDE;
+			return button_function_critical(n);
+
 	}
 
 	/**
@@ -2521,6 +2533,7 @@ int button_function(int n)
 			if (!Sel_NextNav())
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 			break;
+
 		default:
 			keyHasBeenUsed = FALSE;
 			break;
@@ -2810,6 +2823,17 @@ int button_function(int n)
 
 		case TARGET_NEXT_ESCORT_SHIP:
 			hud_escort_target_next();
+			break;
+
+		case TOGGLE_AUTO_SHIELD_EQUALIZE:
+			Players[Player_num].flags ^= PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE;
+			if (Players[Player_num].flags & PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE) {
+				Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_OVERRIDE;
+				button_function(SHIELD_EQUALIZE);
+				HUD_printf(XSTR("Auto shield equalization activated", 1638));
+			} else {
+				HUD_printf(XSTR("Auto shield equalization deactivated", 1639));
+			}
 			break;
 
 		default:
