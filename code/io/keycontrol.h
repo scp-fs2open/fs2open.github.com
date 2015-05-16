@@ -39,5 +39,6 @@ void process_set_of_keys(int key, int count, int *list);
 void game_process_pause_key();
 void button_strip_noncritical_keys(button_info *bi);
 
+extern int button_function(int n);
 
 #endif

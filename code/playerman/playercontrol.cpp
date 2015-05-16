@@ -1293,6 +1293,10 @@ void player_save_target_and_weapon_link_prefs()
 			Player->flags &= ~PLAYER_FLAGS_LINK_SECONDARY;
 		}
 	}
+
+	if ( Player->flags & PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE ) {
+		Player->save_flags |= PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE;
+	}
 }
 
 /**

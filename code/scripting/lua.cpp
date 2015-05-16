@@ -230,6 +230,7 @@ flag_def_list plr_commands[] = {
 	{	"AUTO_PILOT_TOGGLE",					AUTO_PILOT_TOGGLE,						3	},
 	{	"NAV_CYCLE",							NAV_CYCLE,								3	},
 	{	"TOGGLE_GLIDING",						TOGGLE_GLIDING,							3	},
+	{	"TOGGLE_AUTO_SHIELD_EQUALIZE",			TOGGLE_AUTO_SHIELD_EQUALIZE,			3	},
 };
 
 int num_plr_commands = sizeof(plr_commands)/sizeof(flag_def_list);
