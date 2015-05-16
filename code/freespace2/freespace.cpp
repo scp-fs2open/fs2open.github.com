@@ -49,6 +49,7 @@
 #include "globalincs/version.h"
 #include "globalincs/mspdb_callstack.h"
 #include "graphics/font.h"
+#include "graphics/shadows.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudescort.h"
@@ -2020,7 +2021,8 @@ void game_init()
 	armor_init();
 	ai_init();
 	ai_profiles_init();		// Goober5000
-	weapon_init();	
+	weapon_init();
+	glowpoint_init();
 	ship_init();						// read in ships.tbl	
 
 	player_init();	
@@ -3666,7 +3668,8 @@ DCF_BOOL( subspace, Game_subspace_effect )
 void clip_frame_view();
 
 // Does everything needed to render a frame
-extern SCP_vector<object*> effect_ships; 
+extern SCP_vector<object*> effect_ships;
+extern SCP_vector<object*> transparent_objects;
 void game_render_frame( camid cid )
 {
 
@@ -3715,7 +3718,7 @@ void game_render_frame( camid cid )
 	// Note: environment mapping gets disabled when rendering to texture; if you change
 	// this, make sure that the current render target gets restored right afterwards!
 	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
-		setup_environment_mapping(cid);
+		PROFILE("Environment Mapping", setup_environment_mapping(cid));
 
 		if ( !Dynamic_environment ) {
 			Env_cubemap_drawn = true;
@@ -3740,15 +3743,13 @@ void game_render_frame( camid cid )
 		stars_draw(1,1,1,0,0);
 	}
 
-	bool draw_viewer_last = false;
-	obj_render_all(obj_render, &draw_viewer_last);
-	
-	//	Why do we not show the shield effect in these modes?  Seems ok.
-	//if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW))) {
-	render_shields();
-	//}
+	PROFILE("Build Shadow Map", shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position));
+	PROFILE("Render Scene", obj_render_queue_all());
 
-	PROFILE("Particles", particle_render_all());					// render particles after everything else.
+	render_shields();
+
+	PROFILE("Trails", trail_render_all());						// render missilie trails after everything else.
+	PROFILE("Particles", particle_render_all());					// render particles after everything else.	
 	
 #ifdef DYN_CLIP_DIST
 	if(!Cmdline_nohtl)
@@ -3761,8 +3762,6 @@ void game_render_frame( camid cid )
 #endif
 
 	beam_render_all();						// render all beam weapons
-	
-	PROFILE("Trails", trail_render_all());						// render missilie trails after everything else.	
 
 	// render nebula lightning
 	nebl_render_all();
@@ -3770,14 +3769,25 @@ void game_render_frame( camid cid )
 	// render local player nebula
 	neb2_render_player();
 
+	gr_copy_effect_texture();
+
 	// render all ships with shader effects on them
 	SCP_vector<object*>::iterator obji = effect_ships.begin();
 	for(;obji != effect_ships.end();++obji)
-		ship_render(*obji);
+	{
+		obj_render(*obji);
+	}
 	effect_ships.clear();
+
+	batch_render_distortion_map_bitmaps();
+
+	Shadow_override = true;
 	//Draw the viewer 'cause we didn't before.
 	//This is so we can change the minimum clipping distance without messing everything up.
-	if(draw_viewer_last && Viewer_obj)
+	if ( Viewer_obj
+		&& (Viewer_obj->type == OBJ_SHIP)
+		&& (Ship_info[Ships[Viewer_obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)) )
 	{
 		gr_post_process_save_zbuffer();
 		ship_render_show_ship_cockpit(Viewer_obj);
@@ -3813,10 +3823,10 @@ void game_render_frame( camid cid )
 		gr_end_proj_matrix();
 		gr_end_view_matrix();
 	}
-
+	Shadow_override = false;
 	//================ END OF 3D RENDERING STUFF ====================
 
-	gr_scene_texture_end();
+	PROFILE("Post Process", gr_scene_texture_end());
 
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){
@@ -7919,8 +7929,11 @@ void Time_model( int modelnum )
 		g3_set_view_matrix( &eye_pos, &eye_orient, VIEWER_ZOOM_DEFAULT );	
 
 		model_clear_instance( modelnum );
+
+		model_render_params render_info;
+		render_info.set_detail_level_lock(0);
 		model_set_detail_level(0);		// use highest detail level
-		model_render( modelnum, &model_orient, &model_pos, MR_LOCK_DETAIL);	//|MR_NO_POLYS );
+		model_render_immediate( &render_info, modelnum, &model_orient, &model_pos );	//|MR_NO_POLYS );
 
 		g3_end_frame();
 //		gr_flip();

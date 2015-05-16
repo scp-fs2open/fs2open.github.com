@@ -137,6 +137,9 @@ void ct_ship_process(ship *shipp)
 				shipp->trail_ptr[idx] = NULL;
 			}
 		}
+
+		// don't create or update trails if we're not moving fast enough
+		return;
 	}
 
 

@@ -273,7 +273,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					no_ets = tristate_set(shipp->flags[Ship::Ship_Flags::No_ets], no_ets);
 					cloaked = tristate_set(shipp->flags[Ship::Ship_Flags::Cloaked], cloaked);
 					scramble_messages = tristate_set(shipp->flags[Ship::Ship_Flags::Scramble_messages], scramble_messages);
-					no_collide = tristate_set(!(objp->flags & OF_COLLIDES), no_collide);
+					no_collide = tristate_set(!(objp->flags[Object::Object_Flags::Collides]), no_collide);
 
 					// check the final death time and set the internal variable according to whether or not
 					// the final_death_time is set.  Also, the value in the edit box must be set if all the
@@ -968,17 +968,17 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_no_collide.GetCheck()) {
 		case 1:
-			if ( objp->flags & OF_COLLIDES )
+			if ( objp->flags[Object::Object_Flags::Collides] )
 				set_modified();
 
-			objp->flags &= ~OF_COLLIDES;
+			objp->flags.unset(Object::Object_Flags::Collides);
 			break;
 
 		case 0:
-			if (!(objp->flags & OF_COLLIDES))
+			if (!(objp->flags[Object::Object_Flags::Collides]))
 				set_modified();
 
-			objp->flags |= OF_COLLIDES;
+			objp->flags.set(Object::Object_Flags::Collides);
 			break;
 	}
 

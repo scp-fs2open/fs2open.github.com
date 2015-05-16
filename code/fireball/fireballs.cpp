@@ -375,7 +375,7 @@ void fireball_init()
 
 MONITOR( NumFireballsRend )
 
-void fireball_render(object * obj)
+void fireball_render_DEPRECATED(object * obj)
 {
 	int		num;
 	vertex	p;
@@ -1054,3 +1054,74 @@ float fireball_wormhole_intensity( object *obj )
 	}
 	return rad;
 } 
+
+void fireball_render(object* obj, draw_list *scene)
+{
+	int		num;
+	vertex	p;
+	fireball	*fb;
+
+	MONITOR_INC( NumFireballsRend, 1 );	
+
+	num = obj->instance;
+	fb = &Fireballs[num];
+
+	if ( Fireballs[num].current_bitmap < 0 )
+		return;
+	
+	if ( Cmdline_nohtl ) {
+		g3_rotate_vertex(&p, &obj->pos );
+	} else {
+		g3_transfer_vertex(&p, &obj->pos);
+	}
+
+	switch ( fb->fireball_render_type )	{
+
+		case FIREBALL_MEDIUM_EXPLOSION: {
+			batch_add_bitmap (
+				Fireballs[num].current_bitmap, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+				&p, 
+				fb->orient, 
+				obj->radius
+				);
+		}
+		break;
+
+		case FIREBALL_LARGE_EXPLOSION: {
+			// Make the big explosions rotate with the viewer.
+			batch_add_bitmap_rotated ( 
+				Fireballs[num].current_bitmap, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+				&p, 
+				(i2fl(fb->orient)*PI)/180.0f,
+				obj->radius
+				);
+		}
+		break;
+
+		case FIREBALL_WARP_EFFECT: {
+			float percent_life = fb->time_elapsed / fb->total_time;
+
+			float rad;
+
+			// Code to make effect grow/shrink. 
+			float t = fb->time_elapsed;
+
+			if ( t < WARPHOLE_GROW_TIME )	{
+				rad = (float)pow(t/WARPHOLE_GROW_TIME,0.4f)*obj->radius;
+			} else if ( t < fb->total_time - WARPHOLE_GROW_TIME )	{
+				rad = obj->radius;
+			} else {
+				rad = (float)pow((fb->total_time - t)/WARPHOLE_GROW_TIME,0.4f)*obj->radius;
+			}
+
+			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_3D) );
+		}
+		break;
+
+
+		default:
+			Int3();
+	}
+}

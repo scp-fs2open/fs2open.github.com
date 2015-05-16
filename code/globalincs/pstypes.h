@@ -73,6 +73,15 @@ typedef struct ccodes {
 
 struct vertex;
 
+typedef struct vec4 {
+	union {
+		struct {
+			float x,y,z,w;
+		} xyzw;
+		float a1d[4];
+	};
+} vec4;
+
 /** Represents a point in 3d space.
 
 Note: this is a struct, not a class, so no member functions. */
@@ -111,6 +120,16 @@ typedef struct matrix {
 		float a1d[9];
 	};
 } matrix;
+
+typedef struct matrix4 {
+	union {
+		struct {
+			vec4 rvec, uvec, fvec, pos;
+		} vec;
+		float a2d[4][4];
+		float a1d[16];
+	};
+} matrix4;
 
 typedef struct uv_pair {
 	float u,v;
@@ -166,6 +185,21 @@ typedef struct effect_vertex {
 	float radius;
 	ubyte r, g, b, a;
 } effect_vertex;
+
+struct particle_pnt {
+	vec3d position;
+	float size;
+	vec3d up;
+};
+
+struct trail_shader_info {
+	vec3d pos;
+	vec3d fvec;
+
+	float intensity;
+	float width;
+	uv_pair tex_coord;
+};
 
 //def_list
 typedef struct flag_def_list {
@@ -772,6 +806,7 @@ class flagset {
 protected:
 	SCP_bitset<size> values;
 public:
+	
 	bool operator[](T idx) { return values[(static_cast<typename std::underlying_type<T>::type>(idx))]; };
 	flagset<T> operator&(flagset<T>& other) { 
 		flagset<T> result; 
@@ -796,22 +831,25 @@ public:
 	void set(T idx, bool value = true) { 
 		values.set(static_cast < typename std::underlying_type<T>::type>(idx), value); 
 	}
-	void set(T idx[], size_t arg_length) {
+	void set_multiple(T idx[], size_t arg_length) {
 		for (size_t i = 0; i < arg_length; ++i) {
 			values.set(static_cast <typename std::underlying_type<T>::type>(idx[i]));
 		}
 	}
+	
 	void unset(T idx) { 
 		values.set(static_cast < typename std::underlying_type<T>::type>(idx), false);
 	}
-	void unset(T idx [], size_t arg_length) {
+	void unset_multiple(T idx [], size_t arg_length) {
 		for (size_t i = 0; i < arg_length; ++i) {
 			values.set(static_cast <typename std::underlying_type<T>::type>(idx[i]), false);
 		}
 	}
+	
 	void toggle(T idx) {
 		values[static_cast <typename std::underlying_type<T>::type>(idx)] = !values[static_cast <typename std::underlying_type<T>::type>(idx)];
 	}
+	
 	bool any_set() { return values.any(); }
 	bool none_set() { return values.none(); }
 

@@ -32,6 +32,7 @@
 #include "hud/hud.h"
 #include "ship/ship_flags.h"
 #include "weapon/weapon_flags.h"
+#include "io/timer.h"
 
 #include <string>
 
@@ -155,6 +156,155 @@ typedef struct ship_weapon {
 
 	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
 	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
+
+	void init() {
+		num_primary_banks = 0;
+		num_secondary_banks = 0;
+		num_tertiary_banks = 0;
+
+		for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i)
+		{
+			primary_bank_weapons[i] = -1;
+
+			next_primary_fire_stamp[i] = timestamp(0);
+			last_primary_fire_stamp[i] = timestamp(-1);
+			last_primary_fire_sound_stamp[i] = timestamp(0);
+
+			primary_bank_slot_count[i] = 1;
+			primary_bank_ammo[i] = 0;
+			primary_bank_start_ammo[i] = 0;
+			primary_bank_capacity[i] = 0;
+
+			primary_bank_pattern_index[i] = 0;
+
+			primary_bank_rearm_time[i] = timestamp(0);
+			primary_animation_done_time[i] = timestamp(0);
+
+			primary_bank_fof_cooldown[i] = 0.0f;
+			primary_animation_position[i] = EModelAnimationPosition::MA_POS_NOT_SET;
+
+		}
+
+		for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i)
+		{
+			secondary_bank_weapons[i] = -1;
+			secondary_bank_ammo[i] = 0;
+			secondary_bank_start_ammo[i] = 0;
+			secondary_bank_capacity[i] = 0;
+			secondary_next_slot[i] = 0;
+
+			next_secondary_fire_stamp[i] = timestamp(0);
+			last_secondary_fire_stamp[i] = timestamp(-1);
+
+			secondary_bank_rearm_time[i] = timestamp(0);
+			secondary_animation_done_time[i] = timestamp(0);
+			secondary_animation_position[i] = EModelAnimationPosition::MA_POS_NOT_SET;
+
+			secondary_bank_pattern_index[i] = 0;
+		}
+
+		for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS; ++i)
+		{
+			burst_counter[i] = 0;
+			external_model_fp_counter[i] = 0;
+		}
+
+		tertiary_bank_ammo = 0;
+		tertiary_bank_start_ammo = 0;
+		tertiary_bank_capacity = 0;
+		tertiary_bank_rearm_time = timestamp(0);
+
+		current_primary_bank = 0;
+		current_secondary_bank = 0;
+		current_tertiary_bank = 0;
+
+		previous_primary_bank = 0;
+		previous_secondary_bank = 0;
+
+		last_fired_weapon_index = -1;
+		last_fired_weapon_signature = -1;
+		detonate_weapon_time = 0;
+		ai_class = 0;
+	}
+
+	ship_weapon() {
+		init();
+	}
+
+
+
+	ship_weapon(const ship_weapon &other) {
+		num_primary_banks = other.num_primary_banks;
+		num_secondary_banks = other.num_secondary_banks;
+		num_tertiary_banks = other.num_tertiary_banks;
+		
+
+		for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i)
+		{
+			primary_bank_weapons[i] = other.primary_bank_weapons[i];
+
+			next_primary_fire_stamp[i] = other.next_primary_fire_stamp[i];
+			last_primary_fire_stamp[i] = other.last_primary_fire_stamp[i];
+			last_primary_fire_sound_stamp[i] = other.last_primary_fire_sound_stamp[i];
+
+			primary_bank_slot_count[i] = other.primary_bank_slot_count[i];
+			primary_bank_ammo[i] = other.primary_bank_ammo[i];
+			primary_bank_start_ammo[i] = other.primary_bank_start_ammo[i];
+			primary_bank_capacity[i] = other.primary_bank_capacity[i];
+
+			primary_bank_pattern_index[i] = other.primary_bank_pattern_index[i];
+
+			primary_bank_rearm_time[i] = other.primary_bank_rearm_time[i];
+			primary_animation_done_time[i] = other.primary_animation_done_time[i];
+
+			primary_bank_fof_cooldown[i] = other.primary_bank_fof_cooldown[i];
+			primary_animation_position[i] = other.primary_animation_position[i];
+
+		}
+
+		for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i)
+		{
+			secondary_bank_weapons[i] = other.secondary_bank_weapons[i];
+			secondary_bank_ammo[i] = other.secondary_bank_ammo[i];
+			secondary_bank_start_ammo[i] = other.secondary_bank_start_ammo[i];
+			secondary_bank_capacity[i] = other.secondary_bank_capacity[i];
+			secondary_next_slot[i] = other.secondary_next_slot[i];
+
+			next_secondary_fire_stamp[i] = other.next_secondary_fire_stamp[i];
+			last_secondary_fire_stamp[i] = other.last_secondary_fire_stamp[i];
+
+			secondary_bank_rearm_time[i] = other.secondary_bank_rearm_time[i];
+			secondary_animation_done_time[i] = other.secondary_animation_done_time[i];
+			secondary_animation_position[i] = other.secondary_animation_position[i];
+
+			secondary_bank_pattern_index[i] = other.secondary_bank_pattern_index[i];
+		}
+
+		for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS; ++i)
+		{
+			burst_counter[i] = other.burst_counter[i];
+			external_model_fp_counter[i] = other.external_model_fp_counter[i];
+		}
+
+		tertiary_bank_ammo = other.tertiary_bank_ammo;
+		tertiary_bank_start_ammo = other.tertiary_bank_ammo;
+		tertiary_bank_capacity = other.tertiary_bank_capacity;
+		tertiary_bank_rearm_time = other.tertiary_bank_rearm_time;
+
+		current_primary_bank = other.current_primary_bank;
+		current_secondary_bank = other.current_secondary_bank;
+		current_tertiary_bank = other.current_tertiary_bank;
+
+		previous_primary_bank = other.previous_primary_bank;
+		previous_secondary_bank = other.previous_secondary_bank;
+
+		last_fired_weapon_index = other.last_fired_weapon_index;
+		last_fired_weapon_signature = other.last_fired_weapon_signature;
+		detonate_weapon_time = other.detonate_weapon_time;
+		ai_class = other.ai_class;
+
+		flags = other.flags;
+	}
 } ship_weapon;
 
 //**************************************************************
@@ -847,6 +997,20 @@ typedef struct man_thruster {
 	float radius;
 
 	vec3d pos, norm;
+
+	man_thruster() {
+		start_snd = -1;
+		loop_snd = -1;
+		stop_snd = -1;
+
+		tex_id = -1;
+		tex_nframes = 0;
+		tex_fps = 0;
+		length = 0.0f;
+		radius = 0.0f;
+		pos = ZERO_VECTOR;
+		norm = ZERO_VECTOR;
+	}
 } man_thruster;
 
 //Warp type defines
@@ -1159,8 +1323,7 @@ public:
 
 	SCP_map<GameSoundsIndex, int> ship_sounds;			// specifies ship-specific sound indexes
 
-	int num_maneuvering;
-	man_thruster maneuvering[MAX_MAN_THRUSTERS];
+	SCP_vector<man_thruster*> maneuver_thrusters;
 
 	int radar_image_2d_idx;
 	int radar_color_image_2d_idx;
@@ -1187,6 +1350,8 @@ public:
 	SCP_vector<cockpit_display_info> displays;
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
+
+	SCP_hash_map<int, void*> glowpoint_bank_override_map;
 };
 
 extern int Num_wings;
@@ -1313,7 +1478,8 @@ extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_model_change(int n, int ship_type);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
-extern void ship_render( object * objp );
+extern void ship_render_DEPRECATED( object * objp );
+extern void ship_render( object * obj, draw_list * scene );
 extern void ship_render_cockpit( object * objp);
 extern void ship_render_show_ship_cockpit( object * objp);
 extern void ship_delete( object * objp );

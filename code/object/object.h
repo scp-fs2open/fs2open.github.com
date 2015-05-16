@@ -136,6 +136,7 @@ typedef struct obj_flag_name {
 extern obj_flag_name Object_flag_names[];
 
 struct dock_instance;
+class draw_list;
 
 class object
 {
@@ -245,10 +246,14 @@ void obj_init();
 //object.  Returns 0 if failed, otherwise object index.
 //You can pass 0 for parent if you don't care about that.
 //You can pass null for orient and/or pos if you don't care.
-int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, flagset<Object::Object_Flags> flags );
+int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, flagset<Object::Object_Flags> &flags );
 
 //Render an object.  Calls one of several routines based on type
-void obj_render(object *obj);
+void obj_render_DEPRECATED(object *obj);
+
+void obj_render(object* obj);
+
+void obj_queue_render(object* obj, draw_list* scene);
 
 //Sorts and renders all the ojbects
 void obj_render_all(void (*render_function)(object *objp), bool* render_viewer_last );
@@ -337,5 +342,7 @@ bool object_get_gliding(object *objp);
 bool object_glide_forced(object* objp);
 int obj_get_by_signature(int sig);
 int object_get_model(object *objp);
+
+void obj_render_queue_all();
 
 #endif

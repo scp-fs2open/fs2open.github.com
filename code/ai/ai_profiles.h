@@ -22,6 +22,142 @@
 
 typedef struct ai_profile_t {
 
+	ai_profile_t() {
+		init();
+	}
+
+	ai_profile_t(const ai_profile_t &other) {
+		strcpy_s(profile_name, other.profile_name);
+		flags = other.flags;
+
+		for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
+			max_incoming_asteroids[i] = other.max_incoming_asteroids[i];
+			max_allowed_player_homers[i] = other.max_allowed_player_homers[i];
+			max_attackers[i] = other.max_attackers[i];
+			predict_position_delay[i] = other.predict_position_delay[i];
+			in_range_time[i] = other.in_range_time[i];
+			shield_manage_delay[i] = other.shield_manage_delay[i];
+
+			link_energy_levels_always[i] = other.link_energy_levels_always[i];
+			link_energy_levels_maybe[i] = other.link_energy_levels_maybe[i];
+
+			link_ammo_levels_always[i] = other.link_ammo_levels_always[i];
+			link_ammo_levels_maybe[i] = other.link_ammo_levels_maybe[i];
+			primary_ammo_burst_mult[i] = other.primary_ammo_burst_mult[i];
+
+			cmeasure_life_scale[i] = other.cmeasure_life_scale[i];
+			cmeasure_fire_chance[i] = other.cmeasure_fire_chance[i];
+			weapon_energy_scale[i] = other.weapon_energy_scale[i];
+			shield_energy_scale[i] = other.shield_energy_scale[i];
+			afterburner_recharge_scale[i] = other.afterburner_recharge_scale[i];
+			player_damage_scale[i] = other.player_damage_scale[i];
+
+			subsys_damage_scale[i] = other.subsys_damage_scale[i];
+			beam_friendly_damage_cap[i] = other.beam_friendly_damage_cap[i];
+			turn_time_scale[i] = other.turn_time_scale[i];
+			glide_attack_percent[i] = other.glide_attack_percent[i];
+			circle_strafe_percent[i] = other.circle_strafe_percent[i];
+			glide_strafe_percent[i] = other.glide_strafe_percent[i];
+			random_sidethrust_percent[i] = other.random_sidethrust_percent[i];
+			stalemate_time_thresh[i] = other.stalemate_time_thresh[i];
+			stalemate_dist_thresh[i] = other.stalemate_dist_thresh[i];
+			max_aim_update_delay[i] = other.max_aim_update_delay[i];
+
+			turret_max_aim_update_delay[i] = other.turret_max_aim_update_delay[i];
+			ship_fire_delay_scale_hostile[i] = other.ship_fire_delay_scale_hostile[i];
+			ship_fire_delay_scale_friendly[i] = other.ship_fire_delay_scale_friendly[i];
+
+			ship_fire_secondary_delay_scale_hostile[i] = other.ship_fire_secondary_delay_scale_hostile[i];
+			ship_fire_secondary_delay_scale_friendly[i] = other.ship_fire_secondary_delay_scale_friendly[i];
+
+			max_turret_ownage_target[i] = other.max_turret_ownage_target[i];
+			max_turret_ownage_player[i] = other.max_turret_ownage_player[i];
+
+			kill_percentage_scale[i] = other.kill_percentage_scale[i];
+			assist_percentage_scale[i] = other.assist_percentage_scale[i];
+			assist_award_percentage_scale[i] = other.assist_award_percentage_scale[i];
+
+			repair_penalty[i] = other.repair_penalty[i];
+
+			delay_bomb_arm_timer[i] = other.delay_bomb_arm_timer[i];
+
+			chance_to_use_missiles_on_plr[i] = other.chance_to_use_missiles_on_plr[i];
+
+			player_autoaim_fov[i] = other.player_autoaim_fov[i];
+		}
+
+		for (int i = 0; i < MAX_DETAIL_LEVEL + 1; ++i)
+			detail_distance_mult[i] = other.detail_distance_mult[i];
+
+		ai_path_mode = other.ai_path_mode;
+	}
+
+	void init() {
+		strcpy_s(profile_name, "\0");
+		flags.reset();
+
+		for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
+			max_incoming_asteroids[i] = 0;
+			max_allowed_player_homers[i] = 0;
+			max_attackers[i] = 0;
+			predict_position_delay[i] = 0;
+			in_range_time[i] = 0.0f;
+			shield_manage_delay[i] = 0.0f;
+
+			link_energy_levels_always[i] = 0.0f;
+			link_energy_levels_maybe[i] = 0.0f;
+
+			link_ammo_levels_always[i] = 0.0f;
+			link_ammo_levels_maybe[i] = 0.0f;
+			primary_ammo_burst_mult[i] = 0.0f;
+
+			cmeasure_life_scale[i] = 0.0f;
+			cmeasure_fire_chance[i] = 0.0f;
+			weapon_energy_scale[i] = 0.0f;
+			shield_energy_scale[i] = 0.0f;
+			afterburner_recharge_scale[i] = 0.0f;
+			player_damage_scale[i] = 0.0f;
+
+			subsys_damage_scale[i] = 0.0f;
+			beam_friendly_damage_cap[i] = 0.0f;
+			turn_time_scale[i] = 0.0f;
+			glide_attack_percent[i] = 0.0f;
+			circle_strafe_percent[i] = 0.0f;
+			glide_strafe_percent[i] = 0.0f;
+			random_sidethrust_percent[i] = 0.0f;
+			stalemate_time_thresh[i] = 0.0f;
+			stalemate_dist_thresh[i] = 0.0f;
+			max_aim_update_delay[i] = 0.0f;
+
+			turret_max_aim_update_delay[i] = 0.0f;
+			ship_fire_delay_scale_hostile[i] = 0.0f;
+			ship_fire_delay_scale_friendly[i] = 0.0f;
+
+			ship_fire_secondary_delay_scale_hostile[i] = 0.0f;
+			ship_fire_secondary_delay_scale_friendly[i] = 0.0f;
+
+			max_turret_ownage_target[i] = 0;
+			max_turret_ownage_player[i] = 0;
+
+			kill_percentage_scale[i] = 0.0f;
+			assist_percentage_scale[i] = 0.0f;
+			assist_award_percentage_scale[i] = 0.0f;
+
+			repair_penalty[i] = 0;
+
+			delay_bomb_arm_timer[i] = 0.0f;
+
+			chance_to_use_missiles_on_plr[i] = 0;
+
+			player_autoaim_fov[i] = 0.0f;
+		}
+
+		for (int i = 0; i < MAX_DETAIL_LEVEL + 1; ++i)
+			detail_distance_mult[i] = 0.0f;
+
+		ai_path_mode = 0;
+	}
+
 	char profile_name[NAME_LENGTH];
 
 	flagset<AI::Profile_flags> flags;
