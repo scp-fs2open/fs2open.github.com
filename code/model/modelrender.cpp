@@ -2475,6 +2475,8 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 					pe.max_rad = gpt->radius * tp->max_rad;
 					// How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 					pe.normal_variance = tp->variance;
+					pe.min_life = 0.0f;
+					pe.max_life = 1.0f;
 
 					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
 				}
