@@ -259,7 +259,7 @@ struct queued_buffer_draw
 		alpha(0.0f),
 		depth_mode(GR_ZBUFF_FULL),
 		transformation(),
-		scale{1.0f,1.0f,1.0f},
+		scale{ { {1.0f,1.0f,1.0f} } },
 		buffer(NULL),
 		texi(0),
 		flags(0),
