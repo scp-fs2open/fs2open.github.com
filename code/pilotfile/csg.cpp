@@ -49,6 +49,7 @@ void pilotfile::csg_write_flags()
 
 	// avoid having to read everything to get the rank
 	cfwrite_int(p->stats.rank, cfp);
+	json_object_set_new(csg_obj_flags, "rank", json_integer(p->stats.rank));
 
 	endSection();
 	json_object_set_new(csg_root, "flags (section)", csg_obj_flags);
@@ -1916,7 +1917,9 @@ bool pilotfile::save_savefile()
 	// json csg dump
 	if (Cmdline_json_pilot) {
 		cfp_json = cfopen((char*)filename_json.c_str(), "wt", CFILE_NORMAL, CF_TYPE_PLAYERS);
-		cfputs(json_dumps(csg_root, JSON_INDENT(4)|JSON_PRESERVE_ORDER), cfp_json);
+		char* tmp = json_dumps(csg_root, JSON_INDENT(4)|JSON_PRESERVE_ORDER);
+		cfputs(tmp, cfp_json);
+		free(tmp);
 		cfclose(cfp_json);
 	}
 

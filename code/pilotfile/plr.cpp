@@ -89,6 +89,7 @@ void pilotfile::plr_write_flags()
 
 	// which language was this pilot created with
 	cfwrite_string_len(p->language, cfp);
+	json_object_set_new(plr_flags, "language", json_string(p->language));
 
 	endSection();
 	json_object_set_new(plr_root, "flags (section)", plr_flags);
@@ -1195,7 +1196,9 @@ bool pilotfile::save_player(player *_p)
 
 	if (Cmdline_json_pilot) {
 		cfp_json = cfopen((char*)filename_json.c_str(), "wt", CFILE_NORMAL, CF_TYPE_PLAYERS);
-		cfputs(json_dumps(plr_root, JSON_INDENT(4)|JSON_PRESERVE_ORDER), cfp_json);
+		char* tmp = json_dumps(plr_root, JSON_INDENT(4)|JSON_PRESERVE_ORDER);
+		cfputs(tmp, cfp_json);
+		free(tmp);
 		cfclose(cfp_json);
 	}
 

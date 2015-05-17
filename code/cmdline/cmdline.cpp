@@ -473,7 +473,7 @@ cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
-cmdline_parm json_pilot("-json_pilot", NULL); //Cmdline_json_pilot
+cmdline_parm json_pilot("-json_pilot", NULL, AT_NONE); //Cmdline_json_pilot
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_old_collision_sys = 0;
