@@ -974,6 +974,7 @@ void init_ship_entry(ship_info *sip)
 	vm_vec_zero(&sip->topdown_offset);
 
 	sip->engine_snd = -1;
+	sip->min_engine_vol = -1.0f;
 	sip->glide_start_snd = -1;
 	sip->glide_end_snd = -1;
 
@@ -2664,6 +2665,9 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 	//Parse the engine sound
 	parse_sound("$EngineSnd:", &sip->engine_snd, sip->name);
+
+	if(optional_string("$Minimum Engine Volume:"))
+		stuff_float(&sip->min_engine_vol);
 
 	//Parse optional sound to be used for beginning of a glide
 	parse_sound("$GlideStartSnd:", &sip->glide_start_snd, sip->name);
