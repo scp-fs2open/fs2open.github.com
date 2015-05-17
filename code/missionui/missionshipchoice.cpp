@@ -123,6 +123,8 @@ int Hot_ss_slot;			// index for slot that mouse is over (0..MAX_WSS_SLOTS)
 ////////////////////////////////////////////////////////////
 UI_WINDOW	Ship_select_ui_window;	
 
+int Ship_select_overlay_id = -1;
+
 static int Ship_anim_coords[GR_NUM_RESOLUTIONS][2] = {
 	{
 		257, 84		// GR_640
@@ -658,7 +660,8 @@ void ship_select_init()
 
 	Ss_mouse_down_on_region = -1;
 
-	help_overlay_set_state(SS_OVERLAY,0);
+	Ship_select_overlay_id = help_overlay_get_index(SS_OVERLAY);
+	help_overlay_set_state(Ship_select_overlay_id,gr_screen.res,0);
 
 	if ( Ship_select_open ) {
 		//reset the animation
@@ -690,8 +693,6 @@ void ship_select_init()
 	ShipSelectMaskPtr = bm_lock(ShipSelectMaskBitmap, 8, BMP_AABITMAP);
 	ShipSelectMaskData = (ubyte*)ShipSelectMaskPtr->data;	
 	bm_get_info(ShipSelectMaskBitmap, &Shipselect_mask_w, &Shipselect_mask_h);
-
-	help_overlay_load(SS_OVERLAY);
 
 	// Set up the mask regions
    // initialize the different regions of the menu that will react when the mouse moves over it
@@ -916,7 +917,7 @@ void ss_maybe_flash_button()
 // blit any active ship information text
 void ship_select_blit_ship_info()
 {
-	int y_start;
+	int y_start, line_height;
 	ship_info *sip;
 	char str[100];
 	color *header = &Color_white;
@@ -934,12 +935,14 @@ void ship_select_blit_ship_info()
 	// starting line
 	y_start = Ship_info_coords[gr_screen.res][SHIP_SELECT_Y_COORD];
 
+	line_height = gr_get_font_height() + 1;
+
 	memset(str,0,100);
 
 	// blit the ship class (name)
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Class",739), GR_RESIZE_MENU);
-	y_start += 10;
+	y_start += line_height;
 	if(strlen((sip->alt_name[0]) ? sip->alt_name : sip->name)){
 		gr_set_color_fast(text);
 
@@ -950,12 +953,12 @@ void ship_select_blit_ship_info()
 
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, temp, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the ship type
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Type",740), GR_RESIZE_MENU);
-	y_start += 10;
+	y_start += line_height;
 	gr_set_color_fast(text);
 	if((sip->type_str != NULL) && strlen(sip->type_str)){
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->type_str, GR_RESIZE_MENU);
@@ -965,16 +968,16 @@ void ship_select_blit_ship_info()
 		ship_get_type(str, sip);
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
-	y_start+=10;
+	y_start+=line_height;
 
 	// blit the ship length
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Length",741), GR_RESIZE_MENU);
-	y_start += 10;
+	y_start += line_height;
 	gr_set_color_fast(text);
 	if((sip->ship_length != NULL) && strlen(sip->ship_length)){
-		if (Lcl_gr) {
-			// in german, drop the s from Meters and make sure M is caps
+		if (Lcl_gr || Lcl_pl) {
+			// in german and polish, drop the s from Meters and make sure M is caps
 			char *sp = strstr(sip->ship_length, "Meters");
 			if (sp) {
 				sp[5] = ' ';		// make the old s a space now
@@ -993,21 +996,21 @@ void ship_select_blit_ship_info()
 	{
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, "Unknown", GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the max velocity
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Max Velocity",742), GR_RESIZE_MENU);	
-	y_start += 10;
+	y_start += line_height;
 	sprintf(str, XSTR("%d m/s",743),fl2i((float)sip->max_vel.xyz.z * Hud_speed_multiplier));
 	gr_set_color_fast(text);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,str, GR_RESIZE_MENU);	
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the maneuverability
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Maneuverability",744), GR_RESIZE_MENU);
-	y_start += 10;
+	y_start += line_height;
 	gr_set_color_fast(text);
 	if((sip->maneuverability_str != NULL) && strlen(sip->maneuverability_str)){
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->maneuverability_str, GR_RESIZE_MENU);
@@ -1036,12 +1039,12 @@ void ship_select_blit_ship_info()
 	{
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, "Unknown", GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the armor
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Armor",745), GR_RESIZE_MENU);
-	y_start += 10;
+	y_start += line_height;
 	gr_set_color_fast(text);
 	if((sip->armor_str != NULL) && strlen(sip->armor_str)){
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->armor_str, GR_RESIZE_MENU);
@@ -1075,14 +1078,14 @@ void ship_select_blit_ship_info()
 
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the gun mounts 
 	gr_set_color_fast(header);
 	if((sip->gun_mounts != NULL) && strlen(sip->gun_mounts))
 	{
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Mounts",746), GR_RESIZE_MENU);
-		y_start += 10;
+		y_start += line_height;
 		gr_set_color_fast(text);
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->gun_mounts, GR_RESIZE_MENU);
 	}
@@ -1090,7 +1093,7 @@ void ship_select_blit_ship_info()
 	{
 		//Calculate the number of gun mounts
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Mounts",746), GR_RESIZE_MENU);
-		y_start += 10;
+		y_start += line_height;
 		gr_set_color_fast(text);
 		int i;
 		int sum = 0;
@@ -1108,7 +1111,7 @@ void ship_select_blit_ship_info()
 	else
 	{
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Banks",1626), GR_RESIZE_MENU);
-		y_start += 10;
+		y_start += line_height;
 		gr_set_color_fast(text);
 		if(sip->num_primary_banks)
 		{
@@ -1120,12 +1123,12 @@ void ship_select_blit_ship_info()
 		}
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the missile banks
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Missile Banks",747), GR_RESIZE_MENU);
-	y_start += 10;
+	y_start += line_height;
 	gr_set_color_fast(text);
 	if((sip->missile_banks != NULL) && strlen(sip->missile_banks)){
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->missile_banks, GR_RESIZE_MENU);
@@ -1142,7 +1145,7 @@ void ship_select_blit_ship_info()
 		}
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	if(ShipSelectModelNum >= 0)
 	{
@@ -1179,18 +1182,18 @@ void ship_select_blit_ship_info()
 		{
 			gr_set_color_fast(header);
 			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Turrets",1627), GR_RESIZE_MENU);
-			y_start += 10;
+			y_start += line_height;
 			gr_set_color_fast(text);
 			sprintf(str, "%d", num_turrets);
 			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
-			y_start += 10;
+			y_start += line_height;
 		}
 	}
 
 	// blit the manufacturer
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Manufacturer",748), GR_RESIZE_MENU);
-	y_start += 10;
+	y_start += line_height;
 	gr_set_color_fast(text);
 	if((sip->manufacturer_str != NULL) && strlen(sip->manufacturer_str)){
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->manufacturer_str, GR_RESIZE_MENU);
@@ -1199,7 +1202,7 @@ void ship_select_blit_ship_info()
 	{
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, Species_info[sip->species].species_name, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the _short_ text description, if it exists
 	// split the text info up	
@@ -1209,7 +1212,7 @@ void ship_select_blit_ship_info()
 
 	gr_set_color_fast(header);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Description",1571), GR_RESIZE_MENU);
-	y_start += 10;
+	y_start += line_height;
 
 	Assert(strlen(sip->desc));
 
@@ -1261,7 +1264,7 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(text);
 	for(int idx=0;idx<Ship_select_ship_info_line_count;idx++){
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, Ship_select_ship_info_lines[idx], GR_RESIZE_MENU);
-		y_start += 10;
+		y_start += line_height;
 	}
 	
 }
@@ -1453,10 +1456,44 @@ void ship_select_do(float frametime)
 		ship_select_redraw_pressed_buttons();
 		common_render_selected_screen_button();
 	}
-	if(!Cmdline_ship_choice_3d)
+	if(!Cmdline_ship_choice_3d && ((Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0)))
 	{
-		if ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0) ) {
-			generic_anim_render(&Ss_icons[Selected_ss_class].ss_anim, (help_overlay_active(SS_OVERLAY)) ? 0 : frametime, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], true);
+		generic_anim_render(&Ss_icons[Selected_ss_class].ss_anim, (help_overlay_active(Ship_select_overlay_id)) ? 0 : frametime, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], true);
+	} else {
+		// The new rendering code for 3D ships courtesy your friendly UnknownPlayer :)
+
+		// check we have a valid ship class selected
+		if ( (Selected_ss_class >= 0) && (ShipSelectModelNum >= 0) )
+		{
+			ship_info *sip = &Ship_info[Selected_ss_class];
+			float rev_rate = REVOLUTION_RATE;
+			if (sip->flags & SIF_BIG_SHIP) {
+				rev_rate *= 1.7f;
+			}
+			if (sip->flags & SIF_HUGE_SHIP) {
+				rev_rate *= 3.0f;
+			}
+
+			model_render_params render_info;
+
+			if (sip->uses_team_colors) {
+				render_info.set_team_color(sip->default_team_name, "none", 0, 0);
+			}
+
+			draw_model_rotating(
+				&render_info, 
+				ShipSelectModelNum,
+				Ship_anim_coords[gr_screen.res][0],
+				Ship_anim_coords[gr_screen.res][1],
+				Tech_ship_display_coords[gr_screen.res][2],
+				Tech_ship_display_coords[gr_screen.res][3],
+				&ShipSelectScreenShipRot,
+				&sip->closeup_pos,
+				sip->closeup_zoom * 1.3f,
+				rev_rate,
+				MR_AUTOCENTER | MR_NO_FOGGING,
+				GR_RESIZE_MENU,
+				sip->selection_effect);
 		}
 	}
 
@@ -1486,17 +1523,16 @@ void ship_select_do(float frametime)
 				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, Ss_icons[Carried_ss_icon.ship_class].model_index));
 			}
 			gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
-			//gr_set_shader(&Icon_shaders[ICON_FRAME_SELECTED]);
 
 			int w = 32;
 			int h = 28;
 
+			draw_brackets_square(sx, sy, sx + w, sy + h, GR_RESIZE_MENU);
+
 			if(Ss_icons[Carried_ss_icon.ship_class].model_index != -1)
 			{
-				draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, sx, sy, w, h, sip, GR_RESIZE_MENU);
+				draw_model_icon(Ss_icons[Carried_ss_icon.ship_class].model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, sx, sy, w, h, sip, GR_RESIZE_MENU);
 			}
-			draw_brackets_square(sx, sy, sx + w, sy + h, GR_RESIZE_MENU);
-			//gr_shade(mouse_x + Ss_delta_x, mouse_y + Ss_delta_y, 32, 28, GR_RESIZE_MENU);
 		}
 	}
 
@@ -1507,55 +1543,7 @@ void ship_select_do(float frametime)
 	ss_maybe_flash_button();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(SS_OVERLAY);
-
-	// If the commit button was pressed, do the commit button actions.  Done at the end of the
-	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
-	// the ship model is not in memory
-	if ( Commit_pressed ) {		
-		commit_pressed();		
-		Commit_pressed = 0;
-	}
-
-	// The new rendering code for 3D ships courtesy your friendly UnknownPlayer :)
-
-	//////////////////////////////////
-	// Render and draw the 3D model //
-	//////////////////////////////////
-	if( Cmdline_ship_choice_3d || ( (Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames == 0)) )
-	{
-		// check we have a valid ship class selected
-		if ( (Selected_ss_class >= 0) && (ShipSelectModelNum >= 0) )
-		{
-			ship_info *sip = &Ship_info[Selected_ss_class];
-			float rev_rate = REVOLUTION_RATE;
-			if (sip->flags & SIF_BIG_SHIP) {
-				rev_rate *= 1.7f;
-			}
-			if (sip->flags & SIF_HUGE_SHIP) {
-				rev_rate *= 3.0f;
-			}
-
-			if (sip->uses_team_colors) {
-				gr_set_team_color(sip->default_team_name, "<none>", 0, 0);
-			}
-
-			draw_model_rotating(ShipSelectModelNum,
-				Ship_anim_coords[gr_screen.res][0],
-				Ship_anim_coords[gr_screen.res][1],
-				Tech_ship_display_coords[gr_screen.res][2],
-				Tech_ship_display_coords[gr_screen.res][3],
-				&ShipSelectScreenShipRot,
-				&sip->closeup_pos,
-				sip->closeup_zoom * 1.3f,
-				rev_rate,
-				MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING,
-				GR_RESIZE_MENU,
-				sip->selection_effect);
-
-			gr_disable_team_color();
-		}
-	}
+	help_overlay_maybe_blit(Ship_select_overlay_id, gr_screen.res);
 
 	gr_reset_clip();
 	gr_flip();
@@ -1601,7 +1589,6 @@ void ship_select_close()
 
 	// unload the bitmaps
 	bm_release(ShipSelectMaskBitmap);
-	help_overlay_unload(SS_OVERLAY);
 
 	Ship_select_ui_window.destroy();
 
@@ -1725,13 +1712,11 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 			mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, ss_icon->model_index));
 		}
 		gr_set_color_fast(color_to_draw);
-		//gr_set_shader(shader_to_use);
+		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28, GR_RESIZE_MENU);
 		if(ss_icon->model_index != -1)
 		{
-			draw_model_icon(ss_icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip, GR_RESIZE_MENU);
+			draw_model_icon(ss_icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip, GR_RESIZE_MENU);
 		}
-		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28, GR_RESIZE_MENU);
-		//gr_shade(Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, GR_RESIZE_MENU);
 	}
 
 	// blit the number
@@ -1753,18 +1738,20 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 // in the tech room - UnknownPlayer
 void start_ship_animation(int ship_class, int play_sound)
 {
-	ship_info *sip = &Ship_info[ship_class];
 	char *p;
 	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
 
+	if (ship_class < 0) {
+		mprintf(("No ship class passed in to start_ship_animation\n"));
+		ShipSelectModelNum = -1;
+		return;
+	}
+    
+	ship_info *sip = &Ship_info[ship_class];
+    
 	anim_timer_start = timer_get_milliseconds();
 
 	if ( Cmdline_ship_choice_3d || !strlen(sip->anim_filename) ) {
-		if (ship_class < 0) {
-			mprintf(("No ship class passed in to start_ship_animation\n"));
-			ShipSelectModelNum = -1;
-			return;
-		}
 
 		//Unload Anim if one was playing
 		if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0) {
@@ -2231,10 +2218,8 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 		{
 			ship_info *sip = &Ship_info[Wss_slots[slot_index].ship_class];
 			gr_set_color_fast(color_to_draw);
-			//gr_set_shader(shader_to_use);
-			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip, GR_RESIZE_MENU);
 			draw_brackets_square(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28, GR_RESIZE_MENU);
-			//gr_shade(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, GR_RESIZE_MENU);
+			draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip, GR_RESIZE_MENU);
 		}
 	}
 }
@@ -2312,10 +2297,8 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 			if(icon->model_index != -1)
 			{
 				gr_set_color_fast(&Icon_colors[bmap_num]);
-				//gr_set_shader(&Icon_shaders[bmap_num]);
-				draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip, GR_RESIZE_MENU);
 				draw_brackets_square(x, y, x + 32, y + 28, GR_RESIZE_MENU);
-				//gr_shade(x, y, 32, 28, GR_RESIZE_MENU);
+				draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip, GR_RESIZE_MENU);
 			}
 		}
 	}

@@ -11,6 +11,7 @@
 
 #include "palman/palman.h"
 #include "bmpman/bmpman.h"
+#include "debugconsole/console.h"
 #include "pcxutils/pcxutils.h"
 #include "parse/parselo.h"
 #include "graphics/grinternal.h"
@@ -63,28 +64,30 @@ int palman_is_nondarkening(int r,int g, int b)
 
 void palman_load_pixels()
 {
-	int rval;
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "pixels.tbl", rval));
+	try
+	{
+		// open pixels.tbl
+		read_file_text("pixels.tbl", CF_TYPE_TABLES);
+		reset_parse();
+
+		// parse pixels	
+		while (!optional_string("#END")){
+			// nondarkening pixel
+			if (required_string("+ND")){
+				stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default][0]);
+				stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default][1]);
+				stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default++][2]);
+			}
+		}
+
+		// set this to be the active table
+		palman_set_nondarkening(Palman_non_darkening_default, Palman_num_nondarkening_default);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "pixels.tbl", e.what()));
 		return;
 	}
-
-	// open pixels.tbl
-	read_file_text("pixels.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	// parse pixels	
-	while(!optional_string("#END")){
-		// nondarkening pixel
-		if(required_string("+ND")){
-			stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default][0]);
-			stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default][1]);
-			stuff_ubyte(&Palman_non_darkening_default[Palman_num_nondarkening_default++][2]);
-		}
-	}
-
-	// set this to be the active table
-	palman_set_nondarkening(Palman_non_darkening_default, Palman_num_nondarkening_default);
 }
 
 void palman_set_nondarkening(ubyte colors[MAX_NONDARK_COLORS][3], int size)
@@ -165,17 +168,14 @@ void palette_load_table( const char * filename )
 
 DCF(palette,"Loads a new palette")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING|ARG_NONE);
-		if ( Dc_arg_type == ARG_NONE )	{
-		} else {
-			palette_load_table( Dc_arg );
-		}
-	}
-	if ( Dc_help )	{
-		dc_printf( "Usage: palette filename\nLoads the palette file.\n" );
+	char palette_file[MAX_FILENAME_LEN];
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: palette <filename>\nLoads the palette file.\n" );
 	}
 
+	dc_stuff_string_white(palette_file, MAX_FILENAME_LEN);
+	palette_load_table(palette_file);
 }
 
 int Palman_allow_any_color = 0;
@@ -278,7 +278,7 @@ uint palette_find( int r, int g, int b )
 void palette_write_cached1( char *name )
 {
 	CFILE *fp;
-	char new_name[128];
+	char new_name[MAX_PATH_LEN];
 
 	strcpy_s( new_name, name );
 	strcat_s( new_name, ".clr" );
@@ -320,7 +320,7 @@ void palette_write_cached1( char *name )
 int palette_read_cached( char *name )
 {
 	CFILE *fp;
-	char new_name[128];
+	char new_name[MAX_PATH_LEN];
 	int version;
 	uint id, new_checksum;
 	ubyte new_palette[768];
@@ -497,7 +497,7 @@ void palette_flush()
 void palette_update(const char *name_with_extension, int restrict_font_to_128)
 {
 	uint tmp_checksum;
-	char name[128];
+	char name[MAX_PATH_LEN];
 
 	Palman_restrict_colors = restrict_font_to_128;
 	
@@ -526,84 +526,6 @@ void palette_update(const char *name_with_extension, int restrict_font_to_128)
 	if ( palette_read_cached( name ) )	{
 		return;
 	}
-}
-
-ubyte *palette_get_fade_table()
-{
-	int i,l;
-
-	if ( palman_screen_signature != gr_screen.signature )	{
-		palman_screen_signature = gr_screen.signature;
-		palette_fade_table_calculated = 0;
-	}
-
-
-	if ( !palette_fade_table_calculated )	{
-		//mprintf(( "Creating fading table..." ));	
-
-		for (i=0; i<256; i++ )	{
-			int r, g, b;
-			int ur, ug, ub;
-			r = gr_palette[i*3+0];
-			g = gr_palette[i*3+1];
-			b = gr_palette[i*3+2];
-
-			if ( palman_is_nondarkening(r,g,b))		{
-				// Make pure white not fade
-				for (l=0; l<32; l++ )	{
-					gr_fade_table[((l+1)*256)+i] = (unsigned char)i;
-				}
-			} else {
-				for (l=0; l<32; l++ )	{
-
-					if ( l < 24 )	{
-						float f = (float)pow(i2fl(l)/23.0f, 1.0f/Gr_gamma);
-						ur = fl2i(i2fl(r)*f); if ( ur > 255 ) ur = 255;
-						ug = fl2i(i2fl(g)*f); if ( ug > 255 ) ug = 255;
-						ub = fl2i(i2fl(b)*f); if ( ub > 255 ) ub = 255;
-					} else {
-						int x,y;
-						int gi, gr, gg, gb;
-			
-						gi = (r+g+b)/3;
-
-						#ifdef RGB_LIGHTING
-							gr = r;
-							gg = g;
-							gb = gi*2;
-						#else
-							gr = r*2;
-							gg = g*2;
-							gb = b*2;
-						#endif
-				
-						x = l-24;			// x goes from 0 to 7
-						y = 31-l;			// y goes from 7 to 0
-
-						ur = ((gr*x)+(r*y))/7; if ( ur > 255 ) ur = 255;
-						ug = ((gg*x)+(g*y))/7; if ( ug > 255 ) ug = 255;
-						ub = ((gb*x)+(b*y))/7; if ( ub > 255 ) ub = 255;
-					}
-					gr_fade_table[((l+1)*256)+i] = (unsigned char)palette_find( ur, ug, ub );
-
-				}
-			}
-			gr_fade_table[ (0*256)+i ] = gr_fade_table[ (1*256)+i ];
-			gr_fade_table[ (33*256)+i ] = gr_fade_table[ (32*256)+i ];
-		}
-
-		// Mirror the fade table
-		for (i=0; i<34; i++ )	{
-			for ( l = 0; l < 256; l++ )	{
-				gr_fade_table[ ((67-i)*256)+l ] = gr_fade_table[ (i*256)+l ];
-			}
-		}
-
-//		mprintf(( "done\n" ));	
-		palette_fade_table_calculated = 1;
-	}
-
-	return &gr_fade_table[0];
 }
 
 
@@ -657,7 +579,7 @@ uint palette_compute_checksum( ubyte *pal )
 void palette_use_bm_palette(int n)
 {
 	ubyte tmp[768];
-	char name[128];
+	char name[MAX_PATH_LEN];
 
 	bm_get_palette(n, tmp, name);				// get the palette for this bitmap
 

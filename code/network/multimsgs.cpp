@@ -1138,7 +1138,7 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 		multi_ping_reset(&Net_players[new_player_num].s_info.ping);		
 
 		// add a chat message
-		if(Net_players[new_player_num].m_player->callsign != NULL){
+		if(*Net_players[new_player_num].m_player->callsign){
 			sprintf(notify_string,XSTR("<%s has joined>",717),Net_players[new_player_num].m_player->callsign);
 			multi_display_chat_msg(notify_string,0,0);
 		}
@@ -1531,7 +1531,7 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 	}
 
 	// add a chat message
-	if(Net_players[new_player_num].m_player->callsign != NULL){
+	if(*Net_players[new_player_num].m_player->callsign){
 		sprintf(notify_string,XSTR("<%s has joined>",717), Net_players[new_player_num].m_player->callsign);
 		multi_display_chat_msg(notify_string, 0, 0);
 	}	
@@ -3014,6 +3014,11 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	}
 
 	net_player_num = multi_find_player_by_object( objp );
+    
+	if ( net_player_num < 0 ) {
+		// Pass to higher level code to handle
+		return;
+	}
 
 	// getting here means a player fired.  Send the current packet to all players except the player
 	// who fired.  If nothing got fired, then don't send to the other players -- we will just send

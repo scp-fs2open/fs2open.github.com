@@ -22,6 +22,7 @@
 #define IAM_64BIT 1
 #endif
 
+
 #include "windows_stub/config.h"
 
 // value to represent an uninitialized state in any int or uint
@@ -72,6 +73,15 @@ typedef struct ccodes {
 
 struct vertex;
 
+typedef struct vec4 {
+	union {
+		struct {
+			float x,y,z,w;
+		} xyzw;
+		float a1d[4];
+	};
+} vec4;
+
 /** Represents a point in 3d space.
 
 Note: this is a struct, not a class, so no member functions. */
@@ -110,6 +120,16 @@ typedef struct matrix {
 		float a1d[9];
 	};
 } matrix;
+
+typedef struct matrix4 {
+	union {
+		struct {
+			vec4 rvec, uvec, fvec, pos;
+		} vec;
+		float a2d[4][4];
+		float a1d[16];
+	};
+} matrix4;
 
 typedef struct uv_pair {
 	float u,v;
@@ -165,6 +185,21 @@ typedef struct effect_vertex {
 	float radius;
 	ubyte r, g, b, a;
 } effect_vertex;
+
+struct particle_pnt {
+	vec3d position;
+	float size;
+	vec3d up;
+};
+
+struct trail_shader_info {
+	vec3d pos;
+	vec3d fvec;
+
+	float intensity;
+	float width;
+	uv_pair tex_coord;
+};
 
 //def_list
 typedef struct flag_def_list {
@@ -311,118 +346,12 @@ const float PI2			= (PI*2.0f);
 // half values
 const float PI_2		= (PI/2.0f);
 const int RAND_MAX_2	= (RAND_MAX/2);
+const float RAND_MAX_1f	= (1.0f / RAND_MAX);
 
 #define ANG_TO_RAD(x)	((x)*PI/180)
 
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
-
-
-//======================================================================================
-//======          D E B U G    C O N S O L E   S T U F F        ========================
-//======================================================================================
-
-// Here is a a sample command to toggle something that would
-// be called by doing "toggle it" from the debug console command window/
-
-/*
-DCF(toggle_it,"description")
-{
-	if (Dc_command) {
-		This_var = !This_var;
-	}
-
-	if (Dc_help) {
-		dc_printf( "Usage: sample\nToggles This_var on/off.\n" );
-	}
-
-	if (Dc_status) {
-		dc_printf( "The status is %d.\n", This_var );
-	}
-*/
-
-class debug_command {
-	public:
-	char *name;
-	char *help;
-	void (*func)();
-	debug_command(char *name,char *help,void (*func)());	// constructor
-};
-
-#define DCF(function_name,help_text)	\
-		void dcf_##function_name();	\
-		debug_command dc_##function_name(#function_name,help_text,dcf_##function_name);	\
-		void dcf_##function_name()
-
-// Starts the debug console
-extern void debug_console( void (*func)() = NULL );
-
-// The next three variables tell your function what to do.  It should
-// only change something if the dc_command is set.   A minimal function
-// needs to process the dc_command.   Usually, these will be called in
-// these combinations:
-// dc_command=true, dc_status=true  means process it and show status
-// dc_help=true means show help only
-// dc_status=true means show status only
-// I would recommend doing this in each function:
-// if (dc_command) { process command }
-// if (dc_help) { print out help }
-// if (dc_status) { print out status }
-// with the last two being optional
-
-extern int Dc_command;			// If this is set, then process the command
-extern int Dc_help;				// If this is set, then print out the help text in the form, "usage: ... \nLong description\n" );
-extern int Dc_status;			// If this is set, then print out the current status of the command.
-
-void dc_get_arg(uint flags);	// Gets the next argument.   If it doesn't match the flags, this function will print an error and not return.
-extern char *Dc_arg;			// The (lowercased) string value of the argument retrieved from dc_arg
-extern char *Dc_arg_org;		// Dc_arg before it got converted to lowercase
-extern uint Dc_arg_type;		// The type of dc_arg.
-extern char *Dc_command_line;	// The rest of the command line, from the end of the last processed arg on.
-extern int Dc_arg_int;			// If Dc_arg_type & ARG_INT or ARG_HEX is set, then this is the value
-extern ubyte Dc_arg_ubyte;		// If Dc_arg_type & ARG_UBYTE is set, then this is the value
-extern float Dc_arg_float;		// If Dc_arg_type & ARG_FLOAT is set, then this is the value
-
-// Outputs text to the console
-void dc_printf( char *format, ... );
-
-// Each dc_arg_type can have one or more of these flags set.
-// This is because some things can fit into two categories.
-// Like 1 can be an integer, a float, a string, or a true boolean
-// value.
-#define ARG_NONE		(1<<0)		// no argument
-#define ARG_ANY			0xFFFFFFFF	// Anything.
-#define ARG_STRING		(1<<1)		// any valid string
-#define ARG_QUOTE		(1<<2)		// a quoted string
-#define ARG_INT			(1<<3)		// a valid integer
-#define ARG_FLOAT		(1<<4)		// a valid floating point number
-
-// some specific commonly used predefined types. Can add up to (1<<31)
-#define ARG_HEX			(1<<5)		// a valid hexadecimal integer. Note that ARG_INT will always be set also in this case.
-#define ARG_TRUE		(1<<6)		// on, true, non-zero number
-#define ARG_FALSE		(1<<7)		// off, false, zero
-#define ARG_PLUS		(1<<8)		// Plus sign
-#define ARG_MINUS		(1<<9)		// Minus sign
-#define ARG_COMMA		(1<<10)		// a comma
-#define ARG_UBYTE		(1<<11)		// a valid ubyte
-
-// A shortcut for boolean only variables.
-// Example:  
-// DCF_BOOL( lighting, Show_lighting )
-//
-#define DCF_BOOL( function_name, bool_variable )	\
-	void dcf_##function_name();	\
-	debug_command dc_##function_name(#function_name,"Toggles "#bool_variable,dcf_##function_name );	\
-	void dcf_##function_name()	{	\
-	if ( Dc_command )	{	\
-		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		\
-		if ( Dc_arg_type & ARG_TRUE )	bool_variable = 1;	\
-		else if ( Dc_arg_type & ARG_FALSE ) bool_variable = 0;	\
-		else if ( Dc_arg_type & ARG_NONE ) bool_variable ^= 1;	\
-	}	\
-	if ( Dc_help )	dc_printf( "Usage: %s [bool]\nSets %s to true or false.  If nothing passed, then toggles it.\n", #function_name, #bool_variable );	\
-	if ( Dc_status )	dc_printf( "%s is %s\n", #function_name, (bool_variable?"TRUE":"FALSE") );	\
-}
 
 
 //======================================================================================
@@ -435,7 +364,7 @@ void dc_printf( char *format, ... );
 
 // Some constants for stuff
 #define MAX_FILENAME_LEN	32		// Length for filenames, ie "title.pcx"
-#define MAX_PATH_LEN		128		// Length for pathnames, ie "c:\bitmaps\title.pcx"
+#define MAX_PATH_LEN		256		// Length for pathnames, ie "c:\bitmaps\title.pcx"
 
 // contants and defined for byteswapping routines (useful for mac)
 
@@ -550,42 +479,6 @@ extern int game_busy_callback( void (*callback)(int count), int delta_step = -1 
 
 // Call whenever loading to display cursor
 extern void game_busy(const char *filename = NULL);
-
-//=========================================================
-// Functions to profile frame performance
-
-typedef struct profile_sample {
-	bool valid;
-	uint profile_instances;
-	int open_profiles;
-	char name[256];
-	float start_time;
-	float accumulator;
-	float children_sample_time;
-	uint num_parents;
-} profile_sample;
-
-typedef struct profile_sample_history {
-	bool valid;
-	char name[256];
-	float avg;
-	float min;
-	float max;
-} profile_sample_history;
-
-extern char profile_output[2048];
-
-void profile_init();
-void profile_deinit();
-void profile_begin(char* name);
-void profile_end(char* name);
-void profile_dump_output();
-void store_profile_in_history(char* name, float percent);
-void get_profile_from_history(char* name, float* avg, float* min, float* max);
-
-// Helper macro to encapsulate a single function call in a profile_begin()/profile_end() pair.
-#define PROFILE(name, function) { profile_begin(name); function; profile_end(name); }
-
 
 //=========================================================
 // Functions to monitor performance
@@ -786,5 +679,115 @@ public:
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
 
+// c++11 standard detection
+// for GCC with autotools, see AX_CXX_COMPILE_STDCXX_11 macro in configure.ac
+// this sets HAVE_CXX11 & -std=c++0x or -std=c++11 appropriately
+
+#ifndef HAVE_CXX11
+	// Use the visual studio version to detect C++11 support
+	#if _MSC_VER >= 1600
+	#	define HAVE_CXX11
+	#endif
+	// clang doesn't seem to have a feature check for is_trivial
+	// oh well, assume it'll be covered by one of the other two checks...
+	// http://clang.llvm.org/docs/LanguageExtensions.html#feature_check
+	#if defined(__clang__)
+		#if __has_feature(cxx_static_assert)
+			#if __has_feature(cxx_auto_type)
+				#define HAVE_CXX11
+			#endif // __has_feature(cxx_auto_type)
+		#endif // __has_feature(cxx_static_assert)
+	#endif // defined(__clang__)
+	// TODO: sort out cmake/gcc
+#endif // HAVE_CXX11
+
+// DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
+// would prefer std::is_trivially_copyable but it's not supported by gcc yet
+// ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
+#ifndef NDEBUG
+	#if defined(HAVE_CXX11)
+	// feature support seems to be: gcc   clang   msvc
+	// auto                         4.4   2.9     2010
+	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
+	// static_assert                4.3   2.9     2010
+	#include <type_traits>
+	#include <cstring>
+
+	// MEMSET!
+	const auto ptr_memset = std::memset;
+	#define memset memset_if_trivial_else_error
+
+	template<typename T>
+	void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memset on non-trivial object");
+		return ptr_memset(memset_data, ch, count);
+	}
+
+	// assume memset on a void* is "safe"
+	// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
+	inline void *memset_if_trivial_else_error(void *memset_data, int ch, size_t count)
+	{
+		return ptr_memset(memset_data, ch, count);
+	}
+
+	// MEMCPY!
+	const auto ptr_memcpy = std::memcpy;
+	#define memcpy memcpy_if_trivial_else_error
+
+	template<typename T, typename U>
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, U *src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		return ptr_memcpy(memcpy_dest, src, count);
+	}
+
+	// assume memcpy with void* is "safe"
+	// used in:
+	//   globalincs/systemvars.cpp:insertion_sort()
+	//   network/chat_api.cpp:AddChatCommandToQueue()
+	//   network/multi_obj.cpp:multi_oo_sort_func()
+	//   parse/lua.cpp:ade_get_args() && ade_set_args()
+	//
+	// probably should setup a static_assert on insertion_sort as well
+	template<typename U>
+	void *memcpy_if_trivial_else_error(void *memcpy_dest, U *memcpy_src, size_t count)
+	{
+		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+
+	template<typename T>
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, void *memcpy_src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+	template<typename T>
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, const void *memcpy_src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+
+	inline void *memcpy_if_trivial_else_error(void *memcpy_dest, void *memcpy_src, size_t count)
+	{
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+
+	// MEMMOVE!
+	const auto ptr_memmove = std::memmove;
+	#define memmove memmove_if_trivial_else_error
+
+	template<typename T, typename U>
+	void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memmove on non-trivial object T");
+		static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
+		return ptr_memmove(memmove_dest, memmove_src, count);
+	}
+	#endif // HAVE_CXX11
+#endif // NDEBUG
 
 #endif		// PS_TYPES_H

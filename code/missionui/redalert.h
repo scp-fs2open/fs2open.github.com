@@ -28,6 +28,7 @@ void red_alert_maybe_move_to_next_mission();
 
 void red_alert_store_wingman_status();
 void red_alert_bash_wingman_status();
+void red_alert_clear();
 
 void red_alert_voice_pause();
 void red_alert_voice_unpause();

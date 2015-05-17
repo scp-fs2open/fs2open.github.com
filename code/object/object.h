@@ -132,10 +132,11 @@ typedef struct obj_flag_name {
 	int flag_list;
 } obj_flag_name;
 
-#define MAX_OBJECT_FLAG_NAMES			9
+#define MAX_OBJECT_FLAG_NAMES			10
 extern obj_flag_name Object_flag_names[];
 
 struct dock_instance;
+class draw_list;
 
 class object
 {
@@ -170,6 +171,11 @@ public:
 	object();
 	~object();
 	void clear();
+
+private:
+	// An object should never be copied; there are allocated pointers, and linked list shenanigans.
+	object(const object& other); // no implementation
+	object& operator= (const object & other); // no implementation
 };
 
 struct object_h {
@@ -225,7 +231,8 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 // Use this instead of "objp - Objects" to get an object number
 // given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
-#define OBJ_INDEX(objp) (objp-Objects)
+// https://stackoverflow.com/questions/7954439/c-which-character-should-be-used-for-ptrdiff-t-in-printf
+#define OBJ_INDEX(objp) (ptrdiff_t)(objp-Objects)
 
 /*
  *		FUNCTIONS
@@ -242,7 +249,11 @@ void obj_init();
 int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, uint flags );
 
 //Render an object.  Calls one of several routines based on type
-void obj_render(object *obj);
+void obj_render_DEPRECATED(object *obj);
+
+void obj_render(object* obj);
+
+void obj_queue_render(object* obj, draw_list* scene);
 
 //Sorts and renders all the ojbects
 void obj_render_all(void (*render_function)(object *objp), bool* render_viewer_last );
@@ -335,5 +346,7 @@ bool object_get_gliding(object *objp);
 bool object_glide_forced(object* objp);
 int obj_get_by_signature(int sig);
 int object_get_model(object *objp);
+
+void obj_render_queue_all();
 
 #endif

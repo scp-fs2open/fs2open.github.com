@@ -48,6 +48,7 @@
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
 #include "pilotfile/pilotfile.h"
+#include "debugconsole/console.h"
 
 
 
@@ -1105,14 +1106,15 @@ void multi_process_incoming()
 //
 
 int eye_tog = 1;
-DCF(eye_tog, "")
+DCF(eye_tog, "Toggles setting of the local player eyepoint on every frame (Multiplayer)")
 {
-	eye_tog = !eye_tog;
-	if(eye_tog){
-		dc_printf("proper eye stuff on\n");
-	} else {
-		dc_printf("proper eye stuff off\n");
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("proper eye stuff is %s\n", eye_tog ? "ON" : "OFF");
+		return;
 	}
+
+	eye_tog = !eye_tog;
+	dc_printf("proper eye stuff is %s\n", eye_tog ? "ON" : "OFF");
 }
 
 void multi_do_frame()
@@ -1772,13 +1774,14 @@ void multi_reset_timestamps()
 }
 
 // netgame debug flags for debug console stuff
-DCF(netd, "change/list netgame debug flags")
+DCF(netd, "change netgame debug flags (Mulitplayer)")
 {
-	dc_get_arg(ARG_INT);
+	int value;
+	dc_stuff_int(&value);
 	
-	// if we got an integer, and we're the server, change flags
-	if((Dc_arg_type & ARG_INT) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Dc_arg_int <= 7)){
-		Netgame.debug_flags ^= (1<<Dc_arg_int);
+	// if we're the server, change flags
+	if ((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (value <= 7)) {
+		Netgame.debug_flags ^= (1 << value);
 	}
 
 	// display network flags
@@ -1790,6 +1793,7 @@ void multi_display_netinfo()
 {
 	int sx = gr_screen.max_w - 200;
 	int sy = 20;
+	int dy = gr_get_font_height() + 1;
 	int idx;
 
 	// not multiplayer
@@ -1811,30 +1815,30 @@ void multi_display_netinfo()
 
 	// server or client
 	if(MULTIPLAYER_MASTER){
-		gr_string(sx, sy, "SERVER", GR_RESIZE_NONE); sy += 10;
+		gr_string(sx, sy, "SERVER", GR_RESIZE_NONE); sy += dy;
 
 		for(idx=0; idx<MAX_PLAYERS; idx++){
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && (Net_players[idx].m_player != NULL)){
 				if(Net_players[idx].sv_last_pl < 0){
 					gr_printf_no_resize(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, 0);
-					sy += 10;
+					sy += dy;
 				} else {
 					gr_printf_no_resize(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, Net_players[idx].sv_last_pl);
-					sy += 10;
+					sy += dy;
 				}
 			}
 		}
 	} else {
-		gr_string(sx, sy, "CLIENT", GR_RESIZE_NONE); sy += 10;
+		gr_string(sx, sy, "CLIENT", GR_RESIZE_NONE); sy += dy;
 
 		// display PL
 		if(Net_player != NULL){
 			if(Net_player->cl_last_pl < 0){
 				gr_printf_no_resize(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, 0);
-				sy += 10;
+				sy += dy;
 			} else {
 				gr_printf_no_resize(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, Net_player->cl_last_pl);
-				sy += 10;
+				sy += dy;
 			}
 		}
 	}

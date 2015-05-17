@@ -473,25 +473,20 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 // associated ship
 void shield_info_reset(object *objp, shield_hit_info *shi)
 {
+	int n_quadrants = (objp != NULL) ? objp->n_quadrants : 0;
+
+	shi->members = n_quadrants + 1;
+	shi->hull_hit_index = n_quadrants;
+	shi->shield_hit_timers.resize(shi->members);
+	shi->shield_hit_next_flash.resize(shi->members);
+
+	for ( int i = 0; i < shi->members; i++ ) {
+		shi->shield_hit_timers[i] = timestamp(0);
+		shi->shield_hit_next_flash[i] = timestamp(0);
+	}
+
 	shi->shield_hit_status = 0;
 	shi->shield_show_bright = 0;
-
-	if (objp == NULL) {
-		shi->members = 0;
-		shi->hull_hit_index = 0;
-		shi->shield_hit_timers.clear();
-		shi->shield_hit_next_flash.clear();
-	} else {
-		shi->members = objp->n_quadrants + 1;
-		shi->hull_hit_index = shi->members - 1;
-		shi->shield_hit_timers.resize(shi->members);
-		shi->shield_hit_next_flash.resize(shi->members);
-
-		for ( int i = 0; i < shi->members; i++ ) {
-			shi->shield_hit_timers[i] = 1;
-			shi->shield_hit_next_flash[i] = 1;
-		}
-	}
 }
 
 // reset the timers and hit flags for the shield gauges
@@ -550,6 +545,11 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 	shield_hit_info	*shi;
 	int					num;
 
+	if (Game_mode & GM_STANDALONE_SERVER)
+		return;
+
+	Assertion(objp != NULL, "hud_shield_quadrant_hit() called with a NULL objp; get a coder!\n");
+
 	if ( objp->type != OBJ_SHIP )
 		return;
 
@@ -564,12 +564,16 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 		return;
 	}
 
+	Assertion(shi->shield_hit_timers.size() > 0, "Shield hit info object for object '%s' has a size %d shield_hit_timers; get a coder!\n", Ships[objp->instance].ship_name, shi->shield_hit_timers.size());
+	Assertion(shi->hull_hit_index < (int) shi->shield_hit_timers.size(), "Shield hit info object for object '%s' has a hull_hit_index of %d (should be between 0 and %d); get a coder!\n", Ships[objp->instance].ship_name, shi->hull_hit_index, shi->shield_hit_timers.size() - 1);
+
 	if ( quadrant >= 0 ) {
 		if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS) )
 			num = Quadrant_xlate[quadrant];
 		else
 			num = quadrant;
 
+		Assertion(num < shi->hull_hit_index, "Shield hit info object for object '%s' hit on quadrant #%d, despite having a hull_hit_index of %d; get a coder!\n", Ships[objp->instance].ship_name, num, shi->hull_hit_index);
 		shi->shield_hit_timers[num] = timestamp(SHIELD_HIT_DURATION_SHORT);
 	} else {
 		shi->shield_hit_timers[shi->hull_hit_index] = timestamp(SHIELD_HIT_DURATION_SHORT);
@@ -663,7 +667,6 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			g3_start_frame(1);
 		hud_save_restore_camera_data(1);
 		setClip(sx, sy, 112, 93);
-		model_set_detail_level(1);
 
 		//if(!digitus_improbus)
 			g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
@@ -682,7 +685,13 @@ void HudGaugeShield::showShields(object *objp, int mode)
 		ship_model_start(objp);
 		//if(!digitus_improbus)
 		{
-			model_render( sip->model_num, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->ship_replacement_textures);
+			model_render_params render_info;
+
+			render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING);
+			render_info.set_replacement_textures(sp->ship_replacement_textures);
+			render_info.set_detail_level_lock(1);
+
+			model_render_immediate( &render_info, sip->model_num, &object_orient, &vmd_zero_vector );
 		}
 		/*else
 		{
@@ -855,7 +864,7 @@ void HudGaugeShield::renderShieldIcon(coord2d coords[6])
 	int nx = 0, ny = 0, i;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;

@@ -29,6 +29,7 @@
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
 #include "parse/scripting.h"
+#include "debugconsole/console.h"
 
 
 #ifndef NDEBUG
@@ -177,6 +178,8 @@ static int Conflicts_tabs[NUM_TABS];
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 static UI_WINDOW Ui_window;
 static unsigned int Defaults_cycle_pos; // the controls preset that was last selected
+
+int Control_config_overlay_id;
 
 static struct {
 	int key;  // index of other control in conflict with this one
@@ -348,7 +351,7 @@ int Config_allowed[] = {
 #ifndef NDEBUG
 int Show_controls_info = 0;
 
-DCF_BOOL(show_controls_info, Show_controls_info)
+DCF_BOOL(show_controls_info, Show_controls_info);
 #endif
 
 static int Axes_origin[JOY_NUM_AXES];
@@ -1293,8 +1296,8 @@ void control_config_init()
 	Ui_window.tooltip_handler = control_config_tooltip_handler;
 
 	// load in help overlay bitmap	
-	help_overlay_load(CONTROL_CONFIG_OVERLAY);
-	help_overlay_set_state(CONTROL_CONFIG_OVERLAY,0);
+	Control_config_overlay_id = help_overlay_get_index(CONTROL_CONFIG_OVERLAY);
+	help_overlay_set_state(Control_config_overlay_id,gr_screen.res,0);
 
 	// reset conflict flashing
 	Conflict_stamp = -1;
@@ -1384,9 +1387,6 @@ void control_config_close()
 	while (Config_item_undo){
 		free_undo_block();
 	}
-
-	// unload the overlay bitmap
-	help_overlay_unload(CONTROL_CONFIG_OVERLAY);
 	
 	if (Background_bitmap){
 		bm_release(Background_bitmap);
@@ -1498,7 +1498,7 @@ void control_config_do_frame(float frametime)
 			}
 
 		} else {
-			if (help_overlay_active(CONTROL_CONFIG_OVERLAY)) {
+			if (help_overlay_active(Control_config_overlay_id)) {
 				CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 				Ui_window.set_ignore_gadgets(1);
 			}
@@ -1508,14 +1508,14 @@ void control_config_do_frame(float frametime)
 			Ui_window.process(0);
 
 			if ( (k > 0) || B1_JUST_RELEASED ) {
-				if (help_overlay_active(CONTROL_CONFIG_OVERLAY)) {
-					help_overlay_set_state(CONTROL_CONFIG_OVERLAY, 0);
+				if (help_overlay_active(Control_config_overlay_id)) {
+					help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 					Ui_window.set_ignore_gadgets(0);
 					k = 0;
 				}
 			}
 
-			if ( !help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
+			if ( !help_overlay_active(Control_config_overlay_id) ) {
 				Ui_window.set_ignore_gadgets(0);
 			}
 
@@ -1542,7 +1542,7 @@ void control_config_do_frame(float frametime)
 				}
 
 				if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
-					popup(0, 1, POPUP_OK, XSTR( "That is a non-bindable key.  Please try again.", 207));
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "That is a non-bindable key.  Please try again.", 207));
 					k = 0;
 				}
 
@@ -1609,7 +1609,7 @@ void control_config_do_frame(float frametime)
 		}
 
 	} else if (Search_mode) {
-		if (help_overlay_active(CONTROL_CONFIG_OVERLAY)) {
+		if (help_overlay_active(Control_config_overlay_id)) {
 			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 			Ui_window.set_ignore_gadgets(1);
 		}
@@ -1619,14 +1619,14 @@ void control_config_do_frame(float frametime)
 		Ui_window.process(0);
 
 		if ( (k > 0) || B1_JUST_RELEASED ) {
-			if ( help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
-				help_overlay_set_state(CONTROL_CONFIG_OVERLAY, 0);
+			if ( help_overlay_active(Control_config_overlay_id) ) {
+				help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 				Ui_window.set_ignore_gadgets(0);
 				k = 0;
 			}
 		}
 
-		if ( !help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
+		if ( !help_overlay_active(Control_config_overlay_id) ) {
 			Ui_window.set_ignore_gadgets(0);
 		}
 
@@ -1720,7 +1720,7 @@ void control_config_do_frame(float frametime)
 
 		CC_Buttons[gr_screen.res][UNDO_BUTTON].button.enable(Config_item_undo != NULL);
 
-		if ( help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
+		if ( help_overlay_active(Control_config_overlay_id) ) {
 			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 			Ui_window.set_ignore_gadgets(1);
 		}
@@ -1728,14 +1728,14 @@ void control_config_do_frame(float frametime)
 		k = Ui_window.process();
 
 		if ( (k > 0) || B1_JUST_RELEASED ) {
-			if ( help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
-				help_overlay_set_state(CONTROL_CONFIG_OVERLAY, 0);
+			if ( help_overlay_active(Control_config_overlay_id) ) {
+				help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 				Ui_window.set_ignore_gadgets(0);
 				k = 0;
 			}
 		}
 
-		if ( !help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
+		if ( !help_overlay_active(Control_config_overlay_id) ) {
 			Ui_window.set_ignore_gadgets(0);
 		}
 
@@ -2107,8 +2107,47 @@ void control_config_do_frame(float frametime)
 		List_buttons[i++].disable();
 	}
 
+	// If multiple controls presets are provided, display which one is in use
+	if (Control_config_presets.size() > 1) {
+		SCP_string preset_str;
+		int matching_preset = -1;
+
+		for (i=0; i<(int)Control_config_presets.size(); i++) {
+			bool this_preset_matches = true;
+			config_item *this_preset = Control_config_presets[i];
+
+			for (int j=0; j<CCFG_MAX; j++) {
+				if (!Control_config[j].disabled && Control_config[j].key_id != this_preset[j].key_default) {
+					this_preset_matches = false;
+					break;
+				}
+			}
+
+			if (this_preset_matches) {
+				matching_preset = i;
+				break;
+			}
+		}
+
+		if (matching_preset >= 0) {
+			sprintf(preset_str, "Controls: %s", Control_config_preset_names[matching_preset].c_str());
+		} else {
+			sprintf(preset_str, "Controls: custom");
+			
+		}
+
+		gr_get_string_size(&w, NULL, preset_str.c_str());
+		gr_set_color_fast(&Color_text_normal);
+
+		if (gr_screen.res == GR_640) {
+			gr_string(16, (24 - font_height) / 2, preset_str.c_str(), GR_RESIZE_MENU);
+		} else {
+			gr_string(24, (40 - font_height) / 2, preset_str.c_str(), GR_RESIZE_MENU);
+		}
+	}
+
 	// blit help overlay if active
-	help_overlay_maybe_blit(CONTROL_CONFIG_OVERLAY);
+	help_overlay_maybe_blit(Control_config_overlay_id, gr_screen.res);
 
 	gr_flip();
 }

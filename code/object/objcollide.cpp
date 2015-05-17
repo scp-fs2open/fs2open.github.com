@@ -668,15 +668,16 @@ int collide_subdivide(vec3d *p0, vec3d *p1, float prad, vec3d *q0, vec3d *q1, fl
 //			is useful if a moving object wants to prevent a collision.
 int objects_will_collide(object *A, object *B, float duration, float radius_scale)
 {
-	object	A_future;
+	vec3d	prev_pos;
 	vec3d	hitpos;
+	int ret;
 
 
-	A_future = *A;
-	vm_vec_scale_add2(&A_future.pos, &A->phys_info.vel, duration);
+	prev_pos = A->pos;
+	vm_vec_scale_add2(&A->pos, &A->phys_info.vel, duration);
 
 	if (radius_scale == 0.0f) {
-		return ship_check_collision_fast(B, &A_future, &hitpos );
+		ret = ship_check_collision_fast(B, A, &hitpos);
 	} else {
 		float		size_A, size_B, dist, r;
 		vec3d	nearest_point;
@@ -686,18 +687,23 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 
 		//	If A is moving, check along vector.
 		if (A->phys_info.speed != 0.0f) {
-			r = find_nearest_point_on_line(&nearest_point, &A->pos, &A_future.pos, &B->pos);
+			r = find_nearest_point_on_line(&nearest_point, &prev_pos, &A->pos, &B->pos);
 			if (r < 0) {
-				nearest_point = A->pos;
+				nearest_point = prev_pos;
 			} else if (r > 1) {
-				nearest_point = A_future.pos;
+				nearest_point = A->pos;
 			}
 			dist = vm_vec_dist_quick(&B->pos, &nearest_point);
-			return (dist < size_A + size_B);
+			ret = (dist < size_A + size_B);
 		} else {
-			return vm_vec_dist_quick(&B->pos, &A->pos) < size_A + size_B;
+			ret = vm_vec_dist_quick(&B->pos, &prev_pos) < size_A + size_B;
 		}
 	}
+
+	// Reset the position to the previous value
+	A->pos = prev_pos;
+
+	return ret;
 }
 
 //	Return true if the vector from *start_pos to *end_pos is within objp->radius*radius_scale of *objp

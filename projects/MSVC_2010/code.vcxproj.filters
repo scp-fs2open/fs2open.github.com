@@ -288,7 +288,13 @@
     <ClCompile Include="..\..\code\Debris\debris.cpp">
       <Filter>Debris</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\DebugConsole\console.cpp">
+    <ClCompile Include="..\..\code\debugconsole\console.cpp">
+      <Filter>DebugConsole</Filter>
+    </ClCompile>
+	<ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
+      <Filter>DebugConsole</Filter>
+    </ClCompile>
+	<ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\debugconsole\timerbar.cpp">
@@ -1059,6 +1065,12 @@
     <ClCompile Include="..\..\code\parse\generic_log.cpp">
       <Filter>Parse</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\model\modelrender.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\graphics\shadows.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h">
@@ -1126,6 +1138,12 @@
     </ClInclude>
     <ClInclude Include="..\..\code\Debris\debris.h">
       <Filter>Debris</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\debugconsole\console.h">
+      <Filter>DebugConsole</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
+      <Filter>DebugConsole</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\debugconsole\timerbar.h">
       <Filter>DebugConsole</Filter>
@@ -1861,6 +1879,12 @@
     </ClInclude>
     <ClInclude Include="..\..\code\parse\generic_log.h">
       <Filter>Parse</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\model\modelrender.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\graphics\shadows.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

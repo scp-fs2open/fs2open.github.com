@@ -51,7 +51,7 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 // Add any entries that don't work for software under here:
 // Make sure to disable them at top of grx_tmapper
 #define TMAP_FLAG_ALPHA				(1<<8)	// Has an alpha component
-#define TMAP_FLAG_NONDARKENING		(1<<9)	// RGB=255,255,255 doesn't darken
+#define TMAP_FLAG_BATCH_TRANSFORMS	(1<<9)	// Use batched transform data transmitted via texture/uniform buffer
 
 // Interface specific stuff (for separate filtering, sizing, etc.), replaces old TMAP_FLAG_BITMAP_SECTION 
 #define TMAP_FLAG_INTERFACE			(1<<10)
@@ -61,7 +61,7 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 
 // RT Flags added to determine whats being drawn for HT&L
 #define TMAP_HTL_3D_UNLIT			(1<<12)
-#define TMAP_HTL_2D					(1<<13)
+#define TMAP_HTL_2D					(1<<13)		// I don't think this flag is being used (Swifty)
 
 //tristrips, for trails mostly, might find other uses eventualy
 #define TMAP_FLAG_TRISTRIP			(1<<14)
@@ -86,6 +86,11 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 
 #define TMAP_FLAG_DESATURATE		(1<<23)
 
+#define TMAP_FLAG_POINTLIST			(1<<24)
+#define TMAP_FLAG_LINESTRIP			(1<<25)
+#define TMAP_FLAG_LINES				(1<<26)
+#define TMAP_FLAG_VERTEX_GEN		(1<<27)
+
 #define TMAP_ADDRESS_WRAP			1
 #define TMAP_ADDRESS_MIRROR			2
 #define TMAP_ADDRESS_CLAMP			3
@@ -109,11 +114,11 @@ struct bitmap_2d_list{
 //from 0,0 in the upper left to 1,1 in the lowwer right
 //out of range values are valid
 struct texture_rect_list{
-	texture_rect_list(float X=0, float Y=0, float W=1.0f, float H=1.0f):x(X),y(Y),w(W),h(H){}
-	float x;
-	float y;
-	float w;
-	float h;
+	texture_rect_list(float u0In=0.0f, float v0In=0.0f, float u1In=1.0f, float v1In=1.0f):u0(u0In),v0(v0In),u1(u1In),v1(v1In){}
+	float u0;
+	float v0;
+	float u1;
+	float v1;
 };
 
 struct bitmap_rect_list{

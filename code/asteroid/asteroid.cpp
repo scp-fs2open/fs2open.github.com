@@ -39,6 +39,8 @@
 #include "network/multimsgs.h"
 #include "network/multi.h"
 #include "parse/scripting.h"
+#include "debugconsole/console.h"
+
 #include <algorithm>
 #include "globalincs/compatibility.h"
 
@@ -859,7 +861,7 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 			dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 			dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
 			
-			if ((dot < 0.7f) || (dist > 3000.0f)) {
+			if ( (dot < 0.7f) || (dist > asfieldp->bound_rad) ) {
 				if (Num_asteroids > MAX_ASTEROIDS-10) {
 					objp->flags |= OF_SHOULD_BE_DEAD;
 				} else {
@@ -867,12 +869,11 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 					asteroid_wrap_pos(objp, asfieldp);
 					Asteroids[objp->instance].target_objnum = -1;
 
-					vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
+					dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
-					dist = vm_vec_dist_quick(&objp->pos, &Eye_position);
 					
-					if (( dot > 0.7f) && (dist < 3000.0f)) {
-						// player would see asteroid pop out other side, so reverse velocity instead of wrapping
+					if ( (dot > 0.7f) && (dist < (asfieldp->bound_rad * 1.3f)) ) {
+						// player would see asteroid pop out other side, so reverse velocity instead of wrapping						
 						objp->pos = old_asteroid_pos;		
 						vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
 						objp->phys_info.desired_vel = objp->phys_info.vel;
@@ -1161,7 +1162,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	}
 }
 
-void asteroid_render(object * obj)
+void asteroid_render_DEPRECATED(object * obj)
 {
 	if (Asteroids_enabled) {
 		int			num;
@@ -1175,7 +1176,32 @@ void asteroid_render(object * obj)
 		Assert( asp->flags & AF_USED );
 
 		model_clear_instance( Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype]);
-		model_render(Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype], &obj->orient, &obj->pos, MR_NORMAL|MR_IS_ASTEROID, OBJ_INDEX(obj) );	//	Replace MR_NORMAL with 0x07 for big yellow blobs
+
+		model_render_DEPRECATED(Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype], &obj->orient, &obj->pos, MR_DEPRECATED_NORMAL|MR_DEPRECATED_IS_ASTEROID, OBJ_INDEX(obj) );	//	Replace MR_NORMAL with 0x07 for big yellow blobs
+	}
+}
+
+void asteroid_render(object * obj, draw_list *scene)
+{
+	if (Asteroids_enabled) {
+		int			num;
+		asteroid		*asp;
+		
+		num = obj->instance;
+
+		Assert((num >= 0) && (num < MAX_ASTEROIDS));
+		asp = &Asteroids[num];
+
+		Assert( asp->flags & AF_USED );
+
+		model_clear_instance( Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype]);
+
+		model_render_params render_info;
+
+		render_info.set_object_number( OBJ_INDEX(obj) );
+		render_info.set_flags(MR_IS_ASTEROID);
+
+		model_render_queue(&render_info, scene, Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype], &obj->orient, &obj->pos);	//	Replace MR_NORMAL with 0x07 for big yellow blobs
 	}
 }
 
@@ -1404,23 +1430,8 @@ void asteroid_level_close()
 	Asteroid_field.num_initial_asteroids=0;
 }
 
-DCF(asteroids,"Turns asteroids on/off")
-{	
-	if ( Dc_command )	{	
-		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
-		if ( Dc_arg_type & ARG_TRUE )	
-			Asteroids_enabled = 1;	
-		else if ( Dc_arg_type & ARG_FALSE ) 
-			Asteroids_enabled = 0;	
-		else if ( Dc_arg_type & ARG_NONE ) 
-			Asteroids_enabled ^= 1;	
-	}	
-	if ( Dc_help )	
-		dc_printf( "Usage: asteroids [bool]\nTurns asteroid system on/off.  If nothing passed, then toggles it.\n" );	
-	
-	if ( Dc_status )	
-		dc_printf( "asteroids are %s\n", (Asteroids_enabled?"ON":"OFF") );	
-}
+DCF_BOOL2(asteroids, Asteroids_enabled, "enables or disables asteroids", "Usage: asteroids [bool]\nTurns asteroid system on/off.  If nothing passed, then toggles it.\n");
+
 
 void hud_target_asteroid()
 {
@@ -1901,151 +1912,149 @@ that is being protected.
 void asteroid_parse_tbl()
 {
 	char impact_ani_file[MAX_FILENAME_LEN];
-	int rval;
 
 	// How did we get here without having any species defined?
 	Assertion(Species_info.size() > 0,
 		"Cannot parse asteroids/debris if there "
 		"are no species for them to belong to."
 		);
+	
+	try
+	{
+		read_file_text("asteroid.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-	// open localization
-	lcl_ext_open();
+		required_string("#Asteroid Types");
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "asteroid.tbl", rval));
-		lcl_ext_close();
+		int tally = 0;
+		int max_asteroids =
+			NUM_DEBRIS_SIZES + Species_info.size() * NUM_DEBRIS_SIZES;
+
+#ifndef NDEBUG
+		SCP_vector<SCP_string> parsed_asteroids;
+#endif
+
+		// parse and tally each asteroid
+		while (required_string_either("#End", "$Name:"))
+		{
+			asteroid_info new_asteroid;
+
+			asteroid_parse_section(&new_asteroid);
+
+			int species = tally / NUM_DEBRIS_SIZES;
+			if (tally >= max_asteroids)
+			{
+#ifdef NDEBUG
+				// Bump the warning count in release so they get something
+				// even if the message never gets displayed.
+				Warning(LOCATION, "Ignoring extra asteroid/debris");
+#else
+				SCP_string msg("Ignoring extra asteroid/debris '");
+				msg.append(new_asteroid.name);
+				msg.append("'\n");
+				Warning(LOCATION, msg.c_str());
+				parsed_asteroids.push_back(msg);
+#endif
+			}
+			else
+			{
+#ifndef NDEBUG
+				SCP_string msg;
+				msg.append("Parsing asteroid: '");
+				msg.append(new_asteroid.name);
+				msg.append("' as a '");
+				msg.append((species == 0) ? "generic" : Species_info[species - 1].species_name);
+				msg.append("'");
+				switch (tally % NUM_DEBRIS_SIZES) {
+				case ASTEROID_TYPE_SMALL:
+					msg.append(" small\n");
+					break;
+				case ASTEROID_TYPE_MEDIUM:
+					msg.append(" medium\n");
+					break;
+				case ASTEROID_TYPE_LARGE:
+					msg.append(" large\n");
+					break;
+				default:
+					Error(LOCATION, "Get a coder! Math has broken!\n"
+						"Important numbers:\n"
+						"\ttally: %d\n"
+						"\tNUM_DEBRIS_SIZES: %d\n",
+						tally, NUM_DEBRIS_SIZES
+						);
+					msg.append(" unknown\n");
+				}
+				parsed_asteroids.push_back(msg);
+#endif
+				Asteroid_info.push_back(new_asteroid);
+			}
+			tally++;
+		}
+		required_string("#End");
+
+		if (tally != max_asteroids)
+		{
+#ifndef NDEBUG
+			for (SCP_vector<SCP_string>::iterator iter = parsed_asteroids.begin();
+				iter != parsed_asteroids.end(); ++iter)
+			{
+				mprintf(("Asteroid.tbl as parsed:\n"));
+				mprintf((iter->c_str()));
+			}
+#endif
+			Error(LOCATION,
+				"Found %d asteroids/debris when %d expected\n\n"
+				"<Number expected> = <Number of species> * %d + %d generic asteroids\n"
+				"%d = %d*%d + %d\n\n"
+#ifdef NDEBUG
+				"Run a debug build to see a list of all parsed asteroids\n",
+#else
+				"See the debug.log for a listing of all parsed asteroids\n",
+#endif
+				tally, max_asteroids,
+				NUM_DEBRIS_SIZES, NUM_DEBRIS_SIZES,
+				max_asteroids, Species_info.size(), NUM_DEBRIS_SIZES, NUM_DEBRIS_SIZES
+				);
+		}
+
+		Asteroid_impact_explosion_ani = -1;
+		required_string("$Impact Explosion:");
+		stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
+
+		if (VALID_FNAME(impact_ani_file)) {
+			int num_frames;
+			Asteroid_impact_explosion_ani = bm_load_animation(impact_ani_file, &num_frames, NULL, NULL, 1);
+		}
+
+		required_string("$Impact Explosion Radius:");
+		stuff_float(&Asteroid_impact_explosion_radius);
+
+		if (optional_string("$Briefing Icon Closeup Model:")) {
+			stuff_string(Asteroid_icon_closeup_model, F_NAME, NAME_LENGTH);
+		}
+		else {
+			strcpy_s(Asteroid_icon_closeup_model, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);	// magic file from retail
+		}
+
+		if (optional_string("$Briefing Icon Closeup Position:")) {
+			stuff_vec3d(&Asteroid_icon_closeup_position);
+		}
+		else {
+			vm_vec_make(&Asteroid_icon_closeup_position, 0.0f, 0.0f, -334.0f);  // magic numbers from retail
+		}
+
+		if (optional_string("$Briefing Icon Closeup Zoom:")) {
+			stuff_float(&Asteroid_icon_closeup_zoom);
+		}
+		else {
+			Asteroid_icon_closeup_zoom = 0.5f;	// magic number from retail
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "asteroid.tbl", e.what()));
 		return;
 	}
-
-	read_file_text("asteroid.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	required_string("#Asteroid Types");
-
-	int tally = 0;
-	int max_asteroids =
-		NUM_DEBRIS_SIZES + Species_info.size() * NUM_DEBRIS_SIZES;
-
-#ifndef NDEBUG
-	SCP_vector<SCP_string> parsed_asteroids;
-#endif
-
-	// parse and tally each asteroid
-	while (required_string_either("#End","$Name:"))
-	{
-		asteroid_info new_asteroid;
-
-		asteroid_parse_section( &new_asteroid );
-
-		int species = tally / NUM_DEBRIS_SIZES;
-		if (tally >= max_asteroids)
-		{
-#ifdef NDEBUG
-			// Bump the warning count in release so they get something
-			// even if the message never gets displayed.
-			Warning(LOCATION, "Ignoring extra asteroid/debris");
-#else
-			SCP_string msg("Ignoring extra asteroid/debris '");
-			msg.append(new_asteroid.name);
-			msg.append("'\n");
-			Warning(LOCATION,msg.c_str());
-			parsed_asteroids.push_back(msg);
-#endif
-		}
-		else
-		{
-#ifndef NDEBUG
-			SCP_string msg;
-			msg.append("Parsing asteroid: '");
-			msg.append(new_asteroid.name);
-			msg.append("' as a '");
-			msg.append((species == 0)?"generic":Species_info[species-1].species_name);
-			msg.append("'");
-			switch(tally % NUM_DEBRIS_SIZES) {
-			case ASTEROID_TYPE_SMALL:
-				msg.append(" small\n");
-				break;
-			case ASTEROID_TYPE_MEDIUM:
-				msg.append(" medium\n");
-				break;
-			case ASTEROID_TYPE_LARGE:
-				msg.append(" large\n");
-				break;
-			default:
-				Error(LOCATION, "Get a coder! Math has broken!\n"
-					"Important numbers:\n"
-					"\ttally: %d\n"
-					"\tNUM_DEBRIS_SIZES: %d\n",
-					tally, NUM_DEBRIS_SIZES
-					);
-				msg.append(" unknown\n");
-			}
-			parsed_asteroids.push_back(msg);
-#endif
-			Asteroid_info.push_back(new_asteroid);
-		}
-		tally++;
-	}
-	required_string("#End");
-
-	if (tally != max_asteroids)
-	{
-#ifndef NDEBUG
-		for(SCP_vector<SCP_string>::iterator iter = parsed_asteroids.begin();
-			iter != parsed_asteroids.end(); ++iter)
-		{
-			mprintf(("Asteroid.tbl as parsed:\n"));
-			mprintf((iter->c_str()));
-		}
-#endif
-		Error(LOCATION,
-			"Found %d asteroids/debris when %d expected\n\n"
-			"<Number expected> = <Number of species> * %d + %d generic asteroids\n"
-			"%d = %d*%d + %d\n\n"
-#ifdef NDEBUG
-			"Run a debug build to see a list of all parsed asteroids\n",
-#else
-			"See the debug.log for a listing of all parsed asteroids\n",
-#endif
-			tally, max_asteroids,
-			NUM_DEBRIS_SIZES, NUM_DEBRIS_SIZES,
-			max_asteroids, Species_info.size(), NUM_DEBRIS_SIZES, NUM_DEBRIS_SIZES
-			);
-	}
-
-	Asteroid_impact_explosion_ani = -1;
-	required_string("$Impact Explosion:");
-	stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
-
-	if ( VALID_FNAME(impact_ani_file) ) {
-		int num_frames;
-		Asteroid_impact_explosion_ani = bm_load_animation( impact_ani_file, &num_frames, NULL, NULL, 1);
-	}
-
-	required_string("$Impact Explosion Radius:");
-	stuff_float(&Asteroid_impact_explosion_radius);
-
-	if (optional_string("$Briefing Icon Closeup Model:")) {
-		stuff_string(Asteroid_icon_closeup_model, F_NAME, NAME_LENGTH);
-	} else {
-		strcpy_s(Asteroid_icon_closeup_model, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);	// magic file from retail
-	}
-
-	if (optional_string("$Briefing Icon Closeup Position:")) {
-		stuff_vec3d(&Asteroid_icon_closeup_position);
-	} else {
-		vm_vec_make(&Asteroid_icon_closeup_position, 0.0f, 0.0f, -334.0f);  // magic numbers from retail
-	}
-
-	if (optional_string("$Briefing Icon Closeup Zoom:")) {
-		stuff_float(&Asteroid_icon_closeup_zoom);
-	} else {
-		Asteroid_icon_closeup_zoom = 0.5f;	// magic number from retail
-	}
-
-	// close localization
-	lcl_ext_close();
 }
 
 /**

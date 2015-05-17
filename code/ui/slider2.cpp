@@ -34,7 +34,7 @@ void UI_SLIDER2::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _num
 
 	captureCallback = _captureCallback;	
 
-	Assert(_bitmapSliderControl > 0);
+	Assert(_bitmapSliderControl != NULL);
 
 	last_scrolled = 0;
 
@@ -198,22 +198,6 @@ void UI_SLIDER2::process(int focus)
 		slider_mode = S2M_MOVING;
 	}
 }
-
-void UI_SLIDER2::hide()
-{
-	hidden = 1;
-}
-
-void UI_SLIDER2::unhide()
-{
-	hidden = 0;
-}
-
-int UI_SLIDER2::get_hidden()
-{
-	return hidden;
-}
-
 
 // return number of itmes
 int UI_SLIDER2::get_numberItems() {

@@ -9,6 +9,9 @@
 
 
 
+extern int Sim_room_overlay_id;
+extern int Campaign_room_overlay_id;
+
 void sim_room_init();
 void sim_room_close();
 void sim_room_do_frame(float frametime);

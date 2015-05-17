@@ -887,11 +887,12 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 
 void chatbox_render_chat_lines()
 {
-   int started_at,player_num,count,ly;	
+   int started_at,player_num,count,ly,line_height;	
 	
 	started_at = Brief_start_display_index;
 	count = 0;	
 	ly = Chatbox_begin_y;
+	line_height = gr_get_font_height() + 1;
 	while((count < Chatbox_max_lines) && (count < Num_brief_chat_lines)){	
 		// determine what player this chat line came from, and set the appropriate text color
 		player_num = Brief_chat_lines[started_at][0];	   		
@@ -942,7 +943,7 @@ void chatbox_render_chat_lines()
 
 		// increment the count and line position
 		count++;		
-		ly += 10;
+		ly += line_height;
 		
 		// increment the started at index
 		started_at = Brief_chat_next_index[started_at];

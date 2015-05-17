@@ -43,6 +43,8 @@ extern UI_INPUTBOX	Common_multi_text_inputbox[3];
 extern int	Briefing_music_handle;
 extern int	Briefing_music_begin_timestamp;
 
+extern int Briefing_overlay_id;
+
 extern int Briefing_paused;	// for stopping audio and stage progression
 
 struct brief_icon;

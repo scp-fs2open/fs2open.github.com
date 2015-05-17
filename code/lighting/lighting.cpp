@@ -15,6 +15,10 @@
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "cmdline/cmdline.h"
+#include "model/modelrender.h"
+#include "graphics/gropengllight.h"
+#include "graphics/gropengldraw.h"
+#include "debugconsole/console.h"
 
 
 
@@ -62,52 +66,11 @@ int Lighting_flag = 1;
 
 DCF(light,"Changes lighting parameters")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING);
-		if ( !strcmp( Dc_arg, "ambient" ))	{
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
-				Dc_help = 1;
-			} else {
-				Ambient_light = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "reflect" ))	{
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
-				Dc_help = 1;
-			} else {
-				Reflective_light = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "default" ))	{
-			Lighting_mode = LM_BRIGHTEN;
-			Ambient_light = AMBIENT_LIGHT_DEFAULT;
-			Reflective_light = REFLECTIVE_LIGHT_DEFAULT;
-			Lighting_flag = 0;
-		} else if ( !strcmp( Dc_arg, "mode" ))	{
-			dc_get_arg(ARG_STRING);
-			if ( !strcmp(Dc_arg, "light") )	{
-				Lighting_mode = LM_BRIGHTEN;
-			} else if ( !strcmp(Dc_arg, "darken"))	{ 
-				Lighting_mode = LM_DARKEN;
-			} else {
-				Dc_help = 1;
-			}
-		} else if ( !strcmp( Dc_arg, "dynamic" ))	{
-			dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
-			if ( Dc_arg_type & ARG_TRUE )	Lighting_flag = 1;	
-			else if ( Dc_arg_type & ARG_FALSE ) Lighting_flag = 0;	
-			else if ( Dc_arg_type & ARG_NONE ) Lighting_flag ^= 1;	
-		} else if ( !strcmp( Dc_arg, "on" ) )	{
-			Lighting_off = 0;
-		} else if ( !strcmp( Dc_arg, "off" ) )	{
-			Lighting_off = 1;
-		} else {
-			// print usage, not stats
-			Dc_help = 1;
-		}
-	}
+	SCP_string arg_str;
+	float val_f;
+	bool  val_b;
 
-	if ( Dc_help )	{
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: light keyword\nWhere keyword can be in the following forms:\n" );
 		dc_printf( "light on|off          Turns all lighting on/off\n" );
 		dc_printf( "light default         Resets lighting to all default values\n" );
@@ -117,18 +80,70 @@ DCF(light,"Changes lighting parameters")
 		dc_printf( "light mode [light|darken]   Changes the lighting mode.\n" );
 		dc_printf( "   Where 'light' means the global light adds light.\n");
 		dc_printf( "   and 'darken' means the global light subtracts light.\n");
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
+		return;
 	}
 
-	if ( Dc_status )	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf( "Ambient light is set to %.2f\n", Ambient_light );
 		dc_printf( "Reflective light is set to %.2f\n", Reflective_light );
 		dc_printf( "Dynamic lighting is: %s\n", (Lighting_flag?"on":"off") );
-		switch( Lighting_mode )	{
-		case LM_BRIGHTEN:   dc_printf( "Lighting mode is: light\n" ); break;
-		case LM_DARKEN:   dc_printf( "Lighting mode is: darken\n" ); break;
-		default: dc_printf( "Lighting mode is: UNKNOWN\n" ); break;
+		switch( Lighting_mode ) {
+		case LM_BRIGHTEN:
+			dc_printf( "Lighting mode is: light\n" );
+			break;
+		case LM_DARKEN:
+			dc_printf( "Lighting mode is: darken\n" );
+			break;
+		default:
+			dc_printf( "Lighting mode is: UNKNOWN\n" );
 		}
+		return;
+	}
+	
+	if (dc_optional_string("ambient")) {
+		dc_stuff_float(&val_f);
+		if ((val_f < 0.0f) || (val_f > 1.0f)) {
+			dc_printf(" Error: ambient value must be between 0.0 and 1.0\n");
+		} else {
+			Ambient_light = val_f;
+		}
+	
+	} else if (dc_optional_string("reflect")) {
+		dc_stuff_float(&val_f);
+		if ( (val_f < 0.0f) || (val_f > 1.0f))	{
+			dc_printf(" Error: reflect value mus be between 0.0 and 1.0\n");
+		} else {
+			Reflective_light = val_f;
+		}
+	
+	} else if (dc_optional_string("default")) {
+		Lighting_mode = LM_BRIGHTEN;
+		Ambient_light = AMBIENT_LIGHT_DEFAULT;
+		Reflective_light = REFLECTIVE_LIGHT_DEFAULT;
+		Lighting_flag = 0;
+	
+	} else if (dc_optional_string("mode")) {
+		dc_stuff_string_white(arg_str);
+		if (arg_str == "light") {
+			Lighting_mode = LM_BRIGHTEN;
+	
+		} else if (arg_str == "darken") {
+			Lighting_mode = LM_DARKEN;
+		
+		} else {
+			dc_printf(" Error: unknown light mode: '%s'\n", arg_str.c_str());
+		}
+	
+	} else if (dc_optional_string("dynamic")) {
+		dc_stuff_boolean(&val_b);
+		Lighting_flag = val_b;
+
+	} else if(dc_maybe_stuff_boolean(&Lighting_off)) {
+		Lighting_off = !Lighting_off;
+
+	} else {
+		dc_stuff_string_white(arg_str);
+		dc_printf("Error: Unknown argument '%s'\n", arg_str.c_str());
 	}
 }
 
@@ -176,6 +191,9 @@ void light_rotate(light * l)
 			vm_vec_rotate(&l->local_vec2, &tempv, &Light_matrix );
 		}
 		break;
+
+	case LT_CONE:
+			break;
 
 	default:
 		Int3();	// Invalid light type
@@ -477,6 +495,9 @@ int light_filter_push( int objnum, vec3d *pos, float rad )
 			}
 			break;
 
+		case LT_CONE:
+			break;
+
 		default:
 			Int3();	// Invalid light type
 		}
@@ -538,6 +559,9 @@ int light_filter_push_box( vec3d *min, vec3d *max )
 			if ( is_inside(min, max, &l->local_vec, l->radb) || is_inside(min, max, &l->local_vec2, l->radb) )	{
 				Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
 			}
+			break;
+
+		case LT_CONE:
 			break;
 
 		default:
@@ -626,6 +650,10 @@ void light_set_all_relevent()
 
 	for (idx = 0; idx < (int)Static_light.size(); idx++)
 		gr_set_light( Static_light[idx] );
+
+	extern bool Deferred_lighting;
+	if(Deferred_lighting)
+		return;
 
 	// for simplicity sake were going to forget about dynamic lights for the moment
 
@@ -820,6 +848,9 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 			dist *= dist;	// since we use radius squared
 			break;
 
+		case LT_CONE:
+			continue;
+
 		// others. BAD
 		default:
 			Int3();
@@ -958,6 +989,12 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 			dist *= dist;	// since we use radius squared
 			break;
 
+		case LT_DIRECTIONAL:
+			continue;
+
+		case LT_CONE:
+			continue;
+
 		// others. BAD
 		default:
 			Int3();
@@ -1010,4 +1047,233 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 	*param_r = ubyte(fl2i(rval*255.0f));
 	*param_g = ubyte(fl2i(gval*255.0f));
 	*param_b = ubyte(fl2i(bval*255.0f));
+}
+
+void light_add_cone( vec3d * pos, vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular )
+{
+	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %d. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
+	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %d. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
+
+	if (r1 < 0.0001f || r2 < 0.0001f)
+		return;
+
+	if(!specular){
+		spec_r = r;
+		spec_g = g;
+		spec_b = b;
+	}
+
+	light * l;
+
+	if ( Lighting_off ) return;
+
+	if (!Lighting_flag) return;
+
+	if ( Num_lights >= MAX_LIGHTS ) {
+		mprintf(( "Out of lights!\n" ));
+		return;
+	}
+
+	l = &Lights[Num_lights++];
+
+	l->type = LT_CONE;
+	l->vec = *pos;
+	l->vec2= *dir;
+	l->cone_angle = angle;
+	l->cone_inner_angle = inner_angle;
+	l->dual_cone = dual_cone;
+	l->r = r;
+	l->g = g;
+	l->b = b;
+	l->spec_r = spec_r;
+	l->spec_g = spec_g;
+	l->spec_b = spec_b;
+	l->intensity = intensity;
+	l->rada = r1;
+	l->radb = r2;
+	l->rada_squared = l->rada*l->rada;
+	l->radb_squared = l->radb*l->radb;
+	l->light_ignore_objnum = light_ignore_objnum;
+	l->affected_objnum = -1;
+	l->instance = Num_lights-1;
+
+	Assert( Num_light_levels <= 1 );
+}
+
+bool light_compare_by_type(const light &a, const light &b)
+{
+	return a.type < b.type;
+}
+
+void scene_lights::addLight(light *light_ptr)
+{
+	Assert(light_ptr != NULL);
+
+	AllLights.push_back(*light_ptr);
+
+	if ( light_ptr->type == LT_DIRECTIONAL ) {
+		StaticLightIndices.push_back(AllLights.size() - 1);
+	}
+}
+
+void scene_lights::setLightFilter(int objnum, vec3d *pos, float rad)
+{
+	size_t i;
+
+	// clear out current filtered lights
+	FilteredLights.clear();
+
+	for ( i = 0; i < AllLights.size(); ++i ) {
+		light& l = AllLights[i];
+
+		switch ( l.type ) {
+			case LT_DIRECTIONAL:
+				break;
+			case LT_POINT: {
+				// if this is a "unique" light source, it only affects one guy
+				if ( l.affected_objnum >= 0 ) {
+					if ( objnum == l.affected_objnum ) {
+						vec3d to_light;
+						float dist_squared, max_dist_squared;
+						vm_vec_sub( &to_light, &l.vec, pos );
+						dist_squared = vm_vec_mag_squared(&to_light);
+
+						max_dist_squared = l.radb+rad;
+						max_dist_squared *= max_dist_squared;
+
+						if ( dist_squared < max_dist_squared )	{
+							FilteredLights.push_back(i);
+						}
+					}
+				} else { // otherwise check all relevant objects
+					vec3d to_light;
+					float dist_squared, max_dist_squared;
+					vm_vec_sub( &to_light, &l.vec, pos );
+					dist_squared = vm_vec_mag_squared(&to_light);
+
+					max_dist_squared = l.radb+rad;
+					max_dist_squared *= max_dist_squared;
+
+					if ( dist_squared < max_dist_squared )	{
+						FilteredLights.push_back(i);
+					}
+				}
+			}
+			break;
+			case LT_TUBE: {
+				if ( Use_GLSL > 1 ) {
+					if ( l.light_ignore_objnum != objnum ) {
+						vec3d nearest;
+						float dist_squared, max_dist_squared;
+						vm_vec_dist_squared_to_line(pos,&l.vec,&l.vec2,&nearest,&dist_squared);
+
+						max_dist_squared = l.radb+rad;
+						max_dist_squared *= max_dist_squared;
+
+						if ( dist_squared < max_dist_squared ) {
+							FilteredLights.push_back(i);
+						}
+					}
+				} else {
+					// all tubes are "unique" light sources for now
+					if ( ( l.affected_objnum >= 0 ) && ( objnum == l.affected_objnum ) ) {
+						FilteredLights.push_back(i);
+					}
+				}
+			}
+			break;
+
+			case LT_CONE:
+				break;
+
+			default:
+				break;
+		}
+	}
+}
+
+light_indexing_info scene_lights::bufferLights()
+{
+	size_t i;
+
+	light_indexing_info light_info;
+
+	light_info.index_start = 0;
+	light_info.num_lights = 0;
+
+	// make sure that there are lights to bind?
+	if ( FilteredLights.size() <= 0 ) {
+		return light_info;
+	}
+
+	light_info.index_start = BufferedLights.size();
+	
+	for ( i = 0; i < FilteredLights.size(); ++i ) {
+		BufferedLights.push_back(FilteredLights[i]);
+	}
+
+	light_info.num_lights = FilteredLights.size();
+
+	return light_info;
+}
+
+int scene_lights::getNumStaticLights()
+{
+	return StaticLightIndices.size();
+}
+
+void scene_lights::resetLightState()
+{
+	current_light_index = -1;
+	current_num_lights = -1;
+}
+
+bool scene_lights::setLights(light_indexing_info *info)
+{
+	if ( info->index_start == current_light_index && info->num_lights == current_num_lights ) {
+		// don't need to set new lights since the ones requested to be set are currently set
+		return false;
+	}
+
+	current_light_index = info->index_start;
+	current_num_lights = info->num_lights;
+
+	gr_reset_lighting();
+
+	gr_set_lighting(true, true);
+
+	for ( size_t i = 0; i < StaticLightIndices.size(); ++i) {
+		int light_index = StaticLightIndices[i];
+		
+		gr_set_light( &AllLights[light_index] );
+	}
+
+	extern bool Deferred_lighting;
+	if ( Deferred_lighting ) {
+		opengl_change_active_lights(0);
+		return false;
+	}
+
+	int index_start = info->index_start;
+	int num_lights = info->num_lights;
+
+	// check if there are any lights to actually set
+	if ( num_lights <= 0 || index_start < 0 ) {
+		opengl_change_active_lights(0);
+		return false;
+	}
+
+	// we definitely shouldn't be exceeding the number of buffered lights
+	Assert(index_start + num_lights <= (int)BufferedLights.size());
+
+	for ( int i = 0; i < num_lights; ++i ) {
+		int buffered_light_index = index_start + i;
+		int light_index = BufferedLights[buffered_light_index];
+
+		gr_set_light(&AllLights[light_index]);
+	}
+
+	opengl_change_active_lights(0);
+
+	return true;
 }

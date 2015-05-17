@@ -61,6 +61,7 @@ SCP_vector<bsp_collision_tree> Bsp_collision_tree_list;
 
 static int model_initted = 0;
 extern int Cmdline_nohtl;
+extern int Use_GLSL;
 
 #ifndef NDEBUG
 CFILE *ss_fp = NULL;			// file pointer used to dump subsystem information
@@ -84,7 +85,9 @@ static uint Global_checksum = 0;
 static int Model_signature = 0;
 
 void interp_configure_vertex_buffers(polymodel*, int);
-void interp_pack_vertex_buffers(polymodel*, int);
+void interp_pack_vertex_buffers(polymodel* pm, int mn);
+void interp_create_detail_index_buffer(polymodel *pm, int detail);
+void interp_create_transparency_index_buffer(polymodel *pm, int detail_num);
 
 void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem *subsystems);
 void model_set_bay_path_nums(polymodel *pm);
@@ -120,6 +123,8 @@ flag_def_list Dock_type_names[] =
 };
 
 int Num_dock_type_names = sizeof(Dock_type_names) / sizeof(flag_def_list);
+
+SCP_vector<glow_point_bank_override> glowpoint_bank_overrides;
 
 // Free up a model, getting rid of all its memory
 // With the basic page in system this can be called from outside of modelread.cpp
@@ -260,6 +265,10 @@ void model_unload(int modelnum, int force)
 
 	if ( pm->shield_collision_tree ) {
 		vm_free(pm->shield_collision_tree);
+	}
+
+	for ( int i = 0; i < MAX_MODEL_DETAIL_LEVELS; ++i ) {
+		pm->detail_buffers[i].clear();
 	}
 
 	// run through Ship_info[] and if the model has been loaded we'll need to reset the modelnum to -1.
@@ -720,8 +729,6 @@ void create_family_tree(polymodel *obj)
 	}
 }
 
-IBX ibuffer_info;
-
 void create_vertex_buffer(polymodel *pm)
 {
 	if (Cmdline_nohtl || Is_standalone) {
@@ -737,105 +744,44 @@ void create_vertex_buffer(polymodel *pm)
 		Error(LOCATION, "Could not generate vertex buffer for '%s'!", pm->filename);
 	}
 
-	// clear struct and prepare for IBX usage
-	memset( &ibuffer_info, 0, sizeof(IBX) );
-
-	// Begin IBX code
-	if ( !Cmdline_noibx ) {
-		// use the same filename as the POF but with an .bx extension
-		strcpy_s( ibuffer_info.name, pm->filename );
-		char *pb = strchr( ibuffer_info.name, '.' );
-		if ( pb ) *pb = 0;
-		strcat_s( ibuffer_info.name, NOX(".bx") );
-
-		ibuffer_info.read = cfopen( ibuffer_info.name, "rb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-		// check if it's a zero size file and if so bail out to create a new one
-		if ( (ibuffer_info.read != NULL) && !cfilelength(ibuffer_info.read) ) {
-			cfclose( ibuffer_info.read );
-			ibuffer_info.read = NULL;
-		}
-
-		if (ibuffer_info.read != NULL) {
-			bool ibx_valid = false;
-
-			// grab a checksum of the IBX, for debugging purposes
-			uint ibx_checksum = 0;
-			cfseek(ibuffer_info.read, 0, SEEK_SET);
-			cf_chksum_long(ibuffer_info.read, &ibx_checksum);
-			cfseek(ibuffer_info.read, 0, SEEK_SET);
-
-			// get the file size that we use to safety check with.
-			// be sure to subtract from this when we read something out
-			ibuffer_info.size = cfilelength( ibuffer_info.read );
-
-			// file id
-			int ibx = cfread_int( ibuffer_info.read );
-			ibuffer_info.size -= sizeof(int); // subtract
-
-			// make sure the file is valid
-			switch (ibx) {
-				// "XB  " - ("  BX" in file)
-				case 0x58422020:
-					ibx_valid = true;
-					break;
-			}
-
-			if (ibx_valid) {
-				// file is valid so grab the checksum out of the .bx and verify it matches the POF
-				uint ibx_sum = cfread_uint( ibuffer_info.read );
-				ibuffer_info.size -= sizeof(uint); // subtract
-
-				if (ibx_sum != Global_checksum) {
-					// bah, it's invalid for this POF
-					ibx_valid = false;
-
-					mprintf(("IBX:  Warning!  Found invalid IBX file: '%s'\n", ibuffer_info.name));
-				}
-			}
-
-
-			if ( !ibx_valid ) {
-				cfclose( ibuffer_info.read );
-				ibuffer_info.read = NULL;
-				ibuffer_info.size = 0;
-			} else {
-				mprintf(("IBX: Found a good IBX to read for '%s'.\n", pm->filename));
-				mprintf(("IBX-DEBUG => POF checksum: 0x%08x, IBX checksum: 0x%08x -- \"%s\"\n", Global_checksum, ibx_checksum, pm->filename));
-			}
-		}
-
-		// if the read file is absent or invalid then write out the new info
-		if (ibuffer_info.read == NULL) {
-			ibuffer_info.write = cfopen( ibuffer_info.name, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
-
-			if (ibuffer_info.write != NULL) {
-				mprintf(("IBX: Starting a new IBX for '%s'.\n", pm->filename));
-
-				// file id, default to version 1
-				cfwrite_int( 0x58422020, ibuffer_info.write ); // "XB  " - ("  BX" in file)
-
-				// POF checksum
-				cfwrite_uint( Global_checksum, ibuffer_info.write );
-			}
-		}
-	} // End IBX code
-
 	// determine the size and configuration of each buffer segment
 	for (i = 0; i < pm->n_models; i++) {
 		interp_configure_vertex_buffers(pm, i);
 	}
 
-	// these must be reset to NULL for the tests to work correctly later
-	if (ibuffer_info.read != NULL) {
-		cfclose( ibuffer_info.read );
+	// figure out which vertices are transparent
+	for ( i = 0; i < pm->n_models; i++ ) {
+		if ( !pm->submodel[i].is_thruster ) {
+			interp_create_transparency_index_buffer(pm, i);
+		}
 	}
 
-	if (ibuffer_info.write != NULL) {
-		cfclose( ibuffer_info.write );
+	bool use_batched_rendering = true;
+
+	if ( Use_GLSL >= 3 && !Cmdline_no_batching ) {
+		uint stride = 0;
+
+		// figure out if the vertex stride of this entire model matches. if not, turn off batched rendering for this model
+		for ( i = 0; i < pm->n_models; ++i ) {
+			if ( pm->submodel[i].buffer.model_list != NULL && pm->submodel[i].buffer.stride != stride) {
+				if ( stride == 0 ) {
+					stride = pm->submodel[i].buffer.stride;
+				} else {
+					use_batched_rendering = false;
+					break;
+				}
+			}
+		}
+	} else {
+		use_batched_rendering = false;
 	}
 
-	memset( &ibuffer_info, 0, sizeof(IBX) );
+	// create another set of indexes for the detail buffers
+	if ( use_batched_rendering ) {
+		for ( i = 0; i < pm->n_detail_levels; i++ )	{
+			interp_create_detail_index_buffer(pm, i);
+		}
+	}
 
 	// now actually fill the buffer with our info ...
 	for (i = 0; i < pm->n_models; i++) {
@@ -843,6 +789,21 @@ void create_vertex_buffer(polymodel *pm)
 
 		// release temporary memory
 		pm->submodel[i].buffer.release();
+		pm->submodel[i].trans_buffer.release();
+	}
+
+	if ( use_batched_rendering ) {
+		// pack the merged index buffers to the vbo.
+		for ( i = 0; i < pm->n_detail_levels; ++i ) {
+			if ( pm->detail_buffers[i].model_list == NULL ) {
+				continue;
+			}
+
+			gr_pack_buffer(pm->vertex_buffer_id, &pm->detail_buffers[i]);
+			pm->detail_buffers[i].release();
+		}
+
+		pm->flags |= PM_FLAG_BATCHED;
 	}
 
 	// ... and then finalize buffer
@@ -1791,7 +1752,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				{
 					glow_point_bank *bank = &pm->glow_point_banks[gpb];
 
-					bank->is_on = 1;
+					bank->is_on = true;
 					bank->glow_timestamp = 0;
 					bank->disp_time = cfread_int(fp);
 					bank->on_time = cfread_int(fp);
@@ -1805,8 +1766,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					if (bank->num_points > 0)
 						bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
 
-					if((bank->off_time > 0) && (bank->disp_time > 0))
-						bank->is_on = 0;
+					//if((bank->off_time > 0) && (bank->disp_time > 0))
+						//bank->is_on = false;
 	
 					cfread_string_len(props, MAX_PROP_LEN, fp);
 					// look for $glow_texture=xxx
@@ -1963,17 +1924,18 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 			case ID_TGUN:
 			case ID_TMIS: {
-				int n_banks, n_slots, parent;
-				model_subsystem *subsystemp;
-				int snum=-1;
-	
-				n_banks = cfread_int(fp);				// number of turret points
+				int n_banks = cfread_int(fp);			// Number of turrets
+
 				for ( i = 0; i < n_banks; i++ ) {
-					int physical_parent;			// who are we attached to?
-					parent = cfread_int( fp );			// get the turret parent of the object
+					int parent;							// The parent subobj of the turret (the gun base)
+					int physical_parent;				// The subobj that the firepoints are physically attached to (the gun barrel)
+					int n_slots;						// How many firepoints the turret has
+					model_subsystem *subsystemp;		// The actual turret subsystem
 
-					physical_parent = cfread_int(fp);	// The parent subobj that this is physically attached to
+					parent = cfread_int( fp );
+					physical_parent = cfread_int(fp);
 
+					int snum=-1;
 					if ( subsystems ) {
 						for ( snum = 0; snum < n_subsystems; snum++ ) {
 							subsystemp = &subsystems[snum];
@@ -1987,7 +1949,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 								n_slots = cfread_int( fp );
 								subsystemp->turret_gun_sobj = physical_parent;
 								if(n_slots > MAX_TFP) {
-									Warning(LOCATION, "Model %s has too many turret firing points on subsystem %s", subsystemp->name);
+									Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, n_slots, subsystemp->name, MAX_TFP);
 								}
 
 								for (j = 0; j < n_slots; j++ )	{
@@ -1999,7 +1961,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 										cfread_vector(&bogus, fp);
 									}
 								}
-								Assertion( n_slots > 0, "Turret %s has no firing points.\n", subsystemp->name );
+								Assertion( n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
 
 								subsystemp->turret_num_firing_points = n_slots;
 
@@ -2008,12 +1970,10 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						}
 					}
 
-//turret_gun_sobj
-
 					if ( (n_subsystems == 0) || (snum == n_subsystems) ) {
 						vec3d bogus;
 
-						nprintf(("Warning", "Turret object not found for turret firing point in model %s\n", model_filename));
+						nprintf(("Warning", "Turret submodel %i not found for turret %i in model %s\n", parent, i, pm->filename));
 						cfread_vector( &bogus, fp );
 						n_slots = cfread_int( fp );
 						for (j = 0; j < n_slots; j++ )
@@ -2409,24 +2369,52 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	int shader_flags = 0;
 
 	if (tbase->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_DIFFUSE_MAP;
+		shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
 	if (tglow->GetTexture() > 0 && Cmdline_glow)
-		shader_flags |= SDR_FLAG_GLOW_MAP;
+		shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
 	if (tspec->GetTexture() > 0 && Cmdline_spec)
-		shader_flags |= SDR_FLAG_SPEC_MAP;
+		shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
 	if (tnorm->GetTexture() > 0 && Cmdline_normal)
-		shader_flags |= SDR_FLAG_NORMAL_MAP;
+		shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
 	if (theight->GetTexture() > 0 && Cmdline_height)
-		shader_flags |= SDR_FLAG_HEIGHT_MAP;
+		shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
 	if (tspec->GetTexture() > 0 && Cmdline_env && Cmdline_spec) // No env maps without spec map
-		shader_flags |= SDR_FLAG_ENV_MAP;
+		shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
 	if (tmisc->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MISC_MAP;
+		shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
+	
+	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
 
-	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT);
-	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT | SDR_FLAG_FOG);
-	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT | SDR_FLAG_ANIMATED);
-	gr_maybe_create_shader(shader_flags | SDR_FLAG_LIGHT | SDR_FLAG_ANIMATED | SDR_FLAG_FOG);
+	if(Use_GLSL > 1)
+		shader_flags |= SDR_FLAG_MODEL_CLIP;
+
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
+	
+	if(Use_GLSL > 1)
+		shader_flags |= SDR_FLAG_MODEL_DEFERRED;
+
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
+	
+	if( !Cmdline_no_batching && Use_GLSL >= 3 ) {
+		shader_flags &= ~SDR_FLAG_MODEL_DEFERRED;
+		shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
+
+		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
+		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
+
+		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
+		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
+
+		shader_flags |= SDR_FLAG_MODEL_DEFERRED;
+
+		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
+		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
+
+		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
+		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
+	}
 }
 
 //returns the number of this model
@@ -2718,6 +2706,7 @@ int model_create_instance(int model_num, int submodel_num)
 	}
 
 	polymodel_instance *pmi = (polymodel_instance*)vm_malloc(sizeof(polymodel_instance));
+	memset(pmi, 0, sizeof(polymodel_instance));
 
 	// if not found, create a slot
 	if ( open_slot < 0 ) {
@@ -2736,13 +2725,6 @@ int model_create_instance(int model_num, int submodel_num)
 	}
 
 	pmi->model_num = model_num;
-
-	if ( submodel_num < 0 ) {
-		// if using default arguments, use detail0 as the root submodel
-		pmi->root_submodel_num = pm->detail[0];
-	} else {
-		pmi->root_submodel_num = submodel_num;
-	}
 
 	return open_slot;
 }
@@ -4384,6 +4366,20 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 
 }
 
+void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* pm, int mn)
+{
+	if ( pm->submodel[mn].buffer.model_list != NULL ) {
+		submodel_vector.push_back(mn);
+	}
+
+	int i = pm->submodel[mn].first_child;
+
+	while ( i >= 0 ) {
+		model_get_submodel_tree_list(submodel_vector, pm, i);
+
+		i = pm->submodel[i].next_sibling;
+	}
+}
 
 // Given a direction (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
@@ -5371,4 +5367,274 @@ void swap_sldc_data(ubyte *buffer)
 		}			
 	}
 #endif
+}
+
+void glowpoint_override_defaults(glow_point_bank_override *gpo)
+{
+	gpo->name[0] = 0;
+	gpo->type = 0;
+	gpo->on_time = 0;
+	gpo->off_time = 0;
+	gpo->disp_time = 0;
+	gpo->glow_bitmap = -1;
+	gpo->glow_neb_bitmap = -1;
+	gpo->is_on = true;
+	gpo->type_override = false;
+	gpo->on_time_override = false;
+	gpo->off_time_override = false;
+	gpo->disp_time_override = false;
+	gpo->glow_bitmap_override = false;
+	gpo->pulse_period_override = false;
+	gpo->pulse_type = 0;
+	gpo->pulse_period = 0;
+	gpo->pulse_amplitude = 1.0f;
+	gpo->pulse_bias = 0.0f;
+	gpo->pulse_exponent = 1.0f;
+	gpo->is_lightsource = false;
+	gpo->radius_multi = 15.0f;
+	gpo->light_color = vmd_zero_vector;
+	gpo->light_mix_color = vmd_zero_vector;
+	gpo->lightcone = false;
+	gpo->cone_angle = 90.0f;
+	gpo->cone_direction = vmd_zero_vector;
+	gpo->dualcone = false;
+	gpo->rotating = false;
+	gpo->rotation_axis = vmd_zero_vector;
+	gpo->rotation_speed = 0.0f;
+}
+
+SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name)
+{
+	SCP_vector<glow_point_bank_override>::iterator gpo = glowpoint_bank_overrides.begin();
+	for(;gpo != glowpoint_bank_overrides.end(); ++gpo)	{
+		if(!strcmp(gpo->name, name))	{
+			return gpo;
+		}
+	}
+	return glowpoint_bank_overrides.end();
+}
+
+void parse_glowpoint_table(const char *filename)
+{
+	try {
+		if (cf_exists_full(filename, CF_TYPE_TABLES))
+			read_file_text(filename, CF_TYPE_TABLES);
+		else
+			return;
+
+		reset_parse();
+
+		if (!optional_string("#Glowpoint overrides")) {
+			return;
+		}
+
+		while (!required_string_either("$Name:", "#End")) {
+			glow_point_bank_override gpo;
+			glowpoint_override_defaults(&gpo);
+
+			bool replace = false;
+			bool skip = false;
+
+			required_string("$Name:");
+			stuff_string(gpo.name, F_NAME, NAME_LENGTH);
+
+			if (optional_string("+nocreate")) {
+				if (Parsing_modular_table) {
+					replace = true;
+				}
+				else {
+					mprintf(("+nocreate specified in non-modular glowpoint table.\n"));
+				}
+			}
+
+			if (optional_string("$On:")) {
+				stuff_boolean(&gpo.is_on);
+			}
+
+			if (optional_string("$Displacement time:")) {
+				stuff_int(&gpo.disp_time);
+				gpo.disp_time_override = true;
+			}
+
+			if (optional_string("$On time:")) {
+				stuff_int(&gpo.on_time);
+				gpo.on_time_override = true;
+			}
+
+			if (optional_string("$Off time:")) {
+				stuff_int(&gpo.off_time);
+				gpo.off_time_override = true;
+			}
+
+			if (optional_string("$Texture:")) {
+				char glow_texture_name[32];
+				stuff_string(glow_texture_name, F_NAME, NAME_LENGTH);
+
+				gpo.glow_bitmap_override = true;
+
+				if (stricmp(glow_texture_name, "none")) {
+					gpo.glow_bitmap = bm_load(glow_texture_name);
+
+					if (gpo.glow_bitmap < 0)
+					{
+						Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by glowpoint present '%s'\n", glow_texture_name, gpo.name);
+					}
+					else
+					{
+						nprintf(("Model", "Glowpoint preset %s texture num is %d\n", gpo.name, gpo.glow_bitmap));
+					}
+
+					char glow_texture_neb_name[256];
+					strncpy(glow_texture_neb_name, glow_texture_name, 256);
+					strcat(glow_texture_neb_name, "-neb");
+					gpo.glow_neb_bitmap = bm_load(glow_texture_neb_name);
+
+					if (gpo.glow_neb_bitmap < 0)
+					{
+						gpo.glow_neb_bitmap = gpo.glow_bitmap;
+						nprintf(("Model", "Glowpoint preset nebula texture not found for '%s', using normal glowpoint texture instead\n", gpo.name));
+					}
+					else
+					{
+						nprintf(("Model", "Glowpoint preset %s nebula texture num is %d\n", gpo, gpo.glow_neb_bitmap));
+					}
+				}
+				else {
+					gpo.glow_bitmap_override = true;
+				}
+			}
+
+			if (optional_string("$Type:")) {
+				stuff_int(&gpo.type);
+				gpo.type_override = true;
+			}
+
+			if (optional_string("$Pulse type:")) {
+				char pulsetype[33];
+				stuff_string(pulsetype, F_NAME, NAME_LENGTH);
+				if (!stricmp(pulsetype, "sine")) {
+					gpo.pulse_type = PULSE_SIN;
+				}
+				else if (!stricmp(pulsetype, "cosine")) {
+					gpo.pulse_type = PULSE_COS;
+				}
+				else if (!stricmp(pulsetype, "triangle")) {
+					gpo.pulse_type = PULSE_TRI;
+				}
+				else if (!stricmp(pulsetype, "shiftedtriangle")) {
+					gpo.pulse_type = PULSE_SHIFTTRI;
+				}
+			}
+
+			if (optional_string("$Pulse period:")) {
+				stuff_int(&gpo.pulse_period);
+				gpo.pulse_period_override = true;
+			}
+
+			if (optional_string("$Pulse amplitude:")) {
+				stuff_float(&gpo.pulse_amplitude);
+			}
+
+			if (optional_string("$Pulse bias:")) {
+				stuff_float(&gpo.pulse_bias);
+			}
+
+			if (optional_string("$Pulse exponent:")) {
+				stuff_float(&gpo.pulse_exponent);
+			}
+
+			if (optional_string("+light")) {
+				gpo.is_lightsource = true;
+
+				if (optional_string("$Light radius multiplier:")) {
+					stuff_float(&gpo.radius_multi);
+				}
+
+				required_string("$Light color:");
+				int temp;
+				stuff_int(&temp);
+				gpo.light_color.xyz.x = temp / 255.0f;
+				stuff_int(&temp);
+				gpo.light_color.xyz.y = temp / 255.0f;
+				stuff_int(&temp);
+				gpo.light_color.xyz.z = temp / 255.0f;
+
+				if (optional_string("$Light mix color:")) {
+					stuff_int(&temp);
+					gpo.light_mix_color.xyz.x = temp / 255.0f;
+					stuff_int(&temp);
+					gpo.light_mix_color.xyz.y = temp / 255.0f;
+					stuff_int(&temp);
+					gpo.light_mix_color.xyz.z = temp / 255.0f;
+				}
+
+				if (optional_string("+lightcone")) {
+					gpo.lightcone = true;
+
+					if (optional_string("$Cone angle:")) {
+						stuff_float(&gpo.cone_angle);
+						gpo.cone_inner_angle = cos((gpo.cone_angle - (gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f) / 180.0f * PI);
+						gpo.cone_angle = cos(gpo.cone_angle / 180.0f * PI);
+					}
+
+					required_string("$Cone direction:");
+					stuff_float_list(gpo.cone_direction.a1d, 3);
+					if (vm_vec_mag_quick(&gpo.cone_direction) != 0.0f) {
+						vm_vec_normalize(&gpo.cone_direction);
+					}
+					else {
+						Warning(LOCATION, "Null vector specified in cone direction for glowpoint override %s. Discarding preset.", gpo.name);
+						skip = true;
+					}
+					if (optional_string("+dualcone")) {
+						gpo.dualcone = true;
+					}
+
+					if (optional_string("+rotating")) {
+						gpo.rotating = true;
+						required_string("$Rotation axis:");
+						stuff_float_list(gpo.rotation_axis.a1d, 3);
+						if (vm_vec_mag_quick(&gpo.rotation_axis) != 0.0f) {
+							vm_vec_normalize(&gpo.rotation_axis);
+						}
+						else {
+							Warning(LOCATION, "Null vector specified in rotation axis for glowpoint override %s. Discarding preset.", gpo.name);
+							skip = true;
+						}
+						required_string("$Rotation speed:");
+						stuff_float(&gpo.rotation_speed);
+					}
+				}
+			}
+			if (!skip) {
+				SCP_vector<glow_point_bank_override>::iterator gpoi = get_glowpoint_bank_override_by_name(gpo.name);
+				if (gpoi == glowpoint_bank_overrides.end()) {
+					if (!replace) {
+						glowpoint_bank_overrides.push_back(gpo);
+					}
+				}
+				else {
+					if (!replace) {
+						Warning(LOCATION, "+nocreate not specified for glowpoint override that already exists. Discarding duplicate entry: %s", gpo.name);
+					}
+					else {
+						glowpoint_bank_overrides.erase(gpoi);
+						glowpoint_bank_overrides.push_back(gpo);
+					}
+				}
+			}
+
+		}
+		required_string("#End");
+	} catch (const parse::ParseException& e) {
+		mprintf(("Unable to parse '%s'!  Error code = %d.\n", filename, e.what()));
+		return;
+	}
+}
+
+void glowpoint_init()
+{
+	glowpoint_bank_overrides.clear();
+	parse_glowpoint_table("glowpoints.tbl");
+	parse_modular_table(NOX("*-gpo.tbm"), parse_glowpoint_table);
 }

@@ -171,7 +171,6 @@ BEGIN
         POPUP "&Import"
         BEGIN
             MENUITEM "&FreeSpace 1 mission...",     33074
-            MENUITEM "&Weapon loadouts...",         33075
         END
         MENUITEM SEPARATOR
         MENUITEM "&Run FreeSpace\tAlt+R",       32985
@@ -624,7 +623,7 @@ CAPTION "About FRED2"
 FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,10,17,20,20,SS_REALSIZEIMAGE
-    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.7.1 OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
+    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.7.3 OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
     LTEXT           "Copyright © 1999 Volition, Inc.  All Rights Reserved",IDC_STATIC,39,17,164,8
     DEFPUSHBUTTON   "OK",IDOK,229,7,48,14,WS_GROUP
     LTEXT           """Fred2 is the omega of all giant unwieldy pieces of code. Its big, its horrifying, and it just doesn't care. View it at your own risk."" - Dave Baranec",IDC_STATIC,39,62,238,20
@@ -880,6 +879,7 @@ BEGIN
     PUSHBUTTON      "Sound Environment",IDC_SOUND_ENVIRONMENT_BUTTON,158,244,140,15
     CONTROL         "Always Show Mission Goals In Briefing",IDC_ALWAYS_SHOW_GOALS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,180,142,10
+    CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,190,142,10
 END
 
 IDD_PREFERENCES DIALOG  0, 0, 333, 81
@@ -1837,6 +1837,7 @@ BEGIN
     CONTROL         "Does Not Move",IDC_IMMOBILE,"Button",BS_3STATE | WS_TABSTOP,7,274,66,10
     CONTROL         "Cloaked",IDC_CLOAKED,"Button",BS_3STATE | WS_TABSTOP,165,167,42,10
     CONTROL         "Scramble Messages",IDC_SCRAMBLE_MESSAGES,"Button",BS_3STATE | WS_TABSTOP,165,177,79,10
+    CONTROL         "No Collisions",IDC_NO_COLLIDE,"Button",BS_3STATE | WS_TABSTOP,165,188,66,10
 END
 
 IDD_ADD_VARIABLE DIALOG  0, 0, 422, 102
@@ -1927,7 +1928,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,239,35,50,14
     LTEXT           "Old texture:",IDC_LABEL1,7,7,44,9
     LTEXT           "New texture:",IDC_LABEL2,152,7,44,9
-    COMBOBOX        IDC_OLD_TEXTURE_LIST,7,16,137,85,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_OLD_TEXTURE_LIST,7,16,137,85,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_SPECIAL_HITPOINTS DIALOG  0, 0, 234, 85
@@ -2055,10 +2056,10 @@ BEGIN
     COMBOBOX        IDC_BACKGROUND,7,16,83,265,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_FICTION_VIEWER DIALOG  0, 0, 205, 66
+IDD_FICTION_VIEWER DIALOGEX 0, 0, 205, 85
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Fiction Viewer Editor"
-FONT 8, "MS Sans Serif"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,148,7,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,148,24,50,14
@@ -2066,8 +2067,10 @@ BEGIN
     EDITTEXT        IDC_STORY_FILE,45,7,99,14,ES_AUTOHSCROLL
     RTEXT           "Font File",IDC_STATIC,7,27,32,8
     EDITTEXT        IDC_FONT_FILE,45,24,99,14,ES_AUTOHSCROLL
-    RTEXT           "Music",IDC_STATIC,14,43,25,8
-    COMBOBOX        IDC_FICTION_MUSIC,45,42,99,140,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    RTEXT           "Music",IDC_STATIC,15,60,25,8
+    COMBOBOX        IDC_FICTION_MUSIC,45,59,99,140,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Voice File",IDC_STATIC,9,43,32,8
+    EDITTEXT        IDC_VOICE_FILE,45,40,99,14,ES_AUTOHSCROLL
 END
 
 IDD_SOUND_ENVIRONMENT DIALOGEX 0, 0, 315, 89
@@ -2118,12 +2121,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Volition Inc."
             VALUE "FileDescription", "Fred 2 Open"
-            VALUE "FileVersion", "3.7.1.000000"
+            VALUE "FileVersion", "3.7.3.000000"
             VALUE "InternalName", "Fred 2 Open"
             VALUE "LegalCopyright", "Copyright © 1998"
             VALUE "OriginalFilename", "fred2.exe"
             VALUE "ProductName", "Fred 2 Open"
-            VALUE "ProductVersion", "3.7.1"
+            VALUE "ProductVersion", "3.7.3"
         END
     END
     BLOCK "VarFileInfo"
@@ -2693,12 +2696,12 @@ IDC_CURSOR2             CURSOR                  "res\\cursor2.cur"
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           "FRED2_OPEN 3.7.1 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
+    IDR_MAINFRAME           "FRED2_OPEN 3.7.3 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     AFX_IDS_APP_TITLE       "FRED2"
     AFX_IDS_IDLEMESSAGE     "For Help, press F1"

@@ -12,6 +12,9 @@
 #ifndef _MOVIE_HEADER_FILE
 #define _MOVIE_HEADER_FILE
 
+extern const char *movie_ext_list[];
+extern const int NUM_MOVIE_EXT;
+
 bool movie_play(char *name);
 void movie_play_two(char *name1, char *name2);
 

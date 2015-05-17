@@ -92,12 +92,6 @@ void lcl_add_dir(char *current_path);
 // maybe add localized directory to full path with file name when opening a localized file
 int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max);
 
-// open the externalization file for use during parsing (call before parsing a given file)
-void lcl_ext_open();
-
-// close the externalization file (call after parsing a given file)
-void lcl_ext_close();
-
 // Goober5000
 void lcl_replace_stuff(char *text, size_t max_len);
 void lcl_replace_stuff(SCP_string &text);
@@ -120,23 +114,6 @@ void lcl_ext_localize(const SCP_string &in, SCP_string &out, int *id = NULL);
 const char *XSTR(const char *str, int index);
 int lcl_get_xstr_offset(int index, int res);
 
-// translate umlauted chars from ascii to ansi codes
-// used in launcher
-#define LCL_TO_ANSI	0
-#define LCL_TO_ASCII	1
-char* lcl_fix_umlauts(char *str, int which_way);
-
-// covert some polish characters
-void lcl_fix_polish(char *str);
-void lcl_fix_polish(SCP_string &str);
-
-// macro for launcher xstrs
-#if defined(GERMAN_BUILD)
-#define LXSTR(str, i)		(lcl_fix_umlauts(XSTR(str, i), LCL_TO_ANSI))
-#else
-#define LXSTR(str, i)		(XSTR(str, i))
-#endif	// defined(GERMAN_BUILD)
-
 void lcl_translate_wep_name_gr(char *name);
 void lcl_translate_ship_name_gr(char *name);
 void lcl_translate_brief_icon_name_gr(char *name);
@@ -144,5 +121,6 @@ void lcl_translate_brief_icon_name_pl(char *name);
 void lcl_translate_targetbox_name_gr(char *name);
 void lcl_translate_targetbox_name_pl(char *name);
 void lcl_translate_medal_name_gr(char *name);
+void lcl_translate_medal_name_pl(char *name);
 
 #endif	// defined __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE

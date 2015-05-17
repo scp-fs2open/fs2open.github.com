@@ -1060,6 +1060,8 @@
 #define IDC_2D_MISSION2                 1549
 #define IDC_ALWAYS_SHOW_GOALS           1549
 #define IDC_LABEL2                      1550
+#define IDC_ALWAYS_SHOW_GOALS2          1550
+#define IDC_END_TO_MAINHALL             1550
 #define IDC_NEW_TEXTURE                 1551
 #define IDC_TEXTURES                    1552
 #define IDC_OLD_TEXTURE_LIST            1553
@@ -1152,6 +1154,8 @@
 #define IDC_FONT_FILE                   1619
 #define IDC_FICTION_MUSIC               1620
 #define IDC_SOUND_ENVIRONMENT_LABEL     1621
+#define IDC_FONT_FILE2                  1621
+#define IDC_VOICE_FILE                  1621
 #define IDC_SOUND_ENVIRONMENT_VOLUME_LABEL 1622
 #define IDC_SOUND_ENVIRONENT_DAMPING_LABEL 1623
 #define IDC_SOUND_ENVIRONMENT_DECAY_LABEL 1624
@@ -1175,6 +1179,7 @@
 #define IDC_MISSION_LOG_LAST_REPEAT     1640
 #define IDC_MISSION_LOG_1ST_TRIGGER     1641
 #define IDC_MISSION_LOG_LAST_TRIGGER    1642
+#define IDC_NO_COLLIDE                  1643
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1439,7 +1444,6 @@
 #define ID_FORMAT_FS1_RETAIL            33072
 #define ID_EDITORS_SET_GLOBAL_SHIP_FLAGS 33073
 #define ID_FILE_IMPORT_FSM              33074
-#define ID_FILE_IMPORT_WEAPONS          33075
 #define ID_VIEW_LIGHTING                33079
 #define ID_EDITORS_VOICE                33080
 #define ID_SHOW_IFF_0                   33081
@@ -1468,7 +1472,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        320
 #define _APS_NEXT_COMMAND_VALUE         33098
-#define _APS_NEXT_CONTROL_VALUE         1643
+#define _APS_NEXT_CONTROL_VALUE         1644
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

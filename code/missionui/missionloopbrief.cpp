@@ -25,6 +25,8 @@
 
 #include "graphics/generic.h"
 
+extern char default_loop_briefing_color;	// Doesn't seem worth including alphacolors.h for -MageKing17
+
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // MISSION LOOP BRIEF DEFINES/VARS
@@ -169,7 +171,7 @@ void loop_brief_init()
 
 	// init brief text
 	if(Campaign.missions[Campaign.current_mission].mission_branch_desc != NULL){
-		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_branch_desc, Loop_brief_text_coords[gr_screen.res][2]);
+		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_branch_desc, Loop_brief_text_coords[gr_screen.res][2], default_loop_briefing_color);
 	}
 
 	bool sound_played = false;

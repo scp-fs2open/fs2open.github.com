@@ -26,6 +26,12 @@
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
+#include "debugconsole/console.h"
+
+
+// Used for aspect locks. -MageKing17
+#define VIRTUAL_FRAME_HALF_WIDTH	320.0f
+#define VIRTUAL_FRAME_HALF_HEIGHT	240.0f
 
 
 vec3d lock_world_pos;
@@ -261,8 +267,9 @@ void HudGaugeLock::render(float frametime)
 		// show the rotating triangles if target is locked
 		renderLockTriangles(sx, sy, frametime);
 	} else {
-		sx = fl2i(lock_point.screen.xyw.x) - (Player->current_target_sx - Players[Player_num].lock_indicator_x); 
-		sy = fl2i(lock_point.screen.xyw.y) - (Player->current_target_sy - Players[Player_num].lock_indicator_y);
+		const float scaling_factor = (gr_screen.clip_center_x < gr_screen.clip_center_y) ? (gr_screen.clip_center_x / VIRTUAL_FRAME_HALF_WIDTH) : (gr_screen.clip_center_y / VIRTUAL_FRAME_HALF_HEIGHT);
+		sx = fl2i(lock_point.screen.xyw.x) - fl2i(i2fl(Player->current_target_sx - Players[Player_num].lock_indicator_x) * scaling_factor);
+		sy = fl2i(lock_point.screen.xyw.y) - fl2i(i2fl(Player->current_target_sy - Players[Player_num].lock_indicator_y) * scaling_factor);
 		gr_unsize_screen_pos(&sx, &sy);
 	}
 
@@ -333,7 +340,7 @@ int hud_lock_has_homing_point()
 }
 
 int Nebula_sec_range = 0;
-DCF_BOOL(nebula_sec_range, Nebula_sec_range)
+DCF_BOOL(nebula_sec_range, Nebula_sec_range);
 
 int hud_lock_world_pos_in_range(vec3d *target_world_pos, vec3d *vec_to_target)
 {
@@ -1154,8 +1161,9 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	if ( lock_local_pos.xyz.z > 0.0f ) {
 		// Get the location of our target in the "virtual frame" where the locking computation will be done
 		float w = 1.0f / lock_local_pos.xyz.z;
-		float sx = ((gr_screen.clip_center_x*2.0f) + (lock_local_pos.xyz.x*(gr_screen.clip_center_x*2.0f)*w))*0.5f;
-		float sy = ((gr_screen.clip_center_y*2.0f) - (lock_local_pos.xyz.y*(gr_screen.clip_center_y*2.0f)*w))*0.5f;
+		// Let's force our "virtual frame" to be 640x480. -MageKing17
+		float sx = gr_screen.clip_center_x + (lock_local_pos.xyz.x * VIRTUAL_FRAME_HALF_WIDTH * w);
+		float sy = gr_screen.clip_center_y - (lock_local_pos.xyz.y * VIRTUAL_FRAME_HALF_HEIGHT * w);
 
 		Player->current_target_sx = (int)sx;
 		Player->current_target_sy = (int)sy;

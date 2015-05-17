@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
@@ -34,21 +34,20 @@
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
 
-char		Current_filename[128];
-char		Current_filename_save[128];
-char		Current_filename_sub[128];	//Last attempted file to load, don't know if ex or not.
+char		Current_filename[MAX_PATH_LEN];
+char		Current_filename_save[MAX_PATH_LEN];
+char		Current_filename_sub[MAX_PATH_LEN];	//Last attempted file to load, don't know if ex or not.
 char		Error_str[ERROR_LENGTH];
 int		my_errno;
 int		Warning_count, Error_count;
 int		Warning_count_save = 0, Error_count_save = 0;
 int		fred_parse_flag = 0;
 int		Token_found_flag;
-jmp_buf	parse_abort;
 
 char 	*Mission_text = NULL;
 char	*Mission_text_raw = NULL;
 char	*Mp = NULL, *Mp_save = NULL;
-char	*token_found;
+const char	*token_found;
 
 static int Parsing_paused = 0;
 
@@ -231,14 +230,14 @@ void skip_token()
 void diag_printf(char *format, ...)
 {
 #ifndef NDEBUG
-	char	buffer[8192];
+	SCP_string buffer;
 	va_list args;
 
 	va_start(args, format);
 	vsprintf(buffer, format, args);
 	va_end(args);
 
-	nprintf(("Parse", "%s", buffer));
+	nprintf(("Parse", "%s", buffer.c_str()));
 #endif
 }
 
@@ -467,7 +466,7 @@ int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end)
 // lines.
 //	If unable to find the required string after RS_MAX_TRIES tries, then
 //	abort using longjmp to parse_abort.
-int required_string(char *pstr)
+int required_string(const char *pstr)
 {
 	int	count = 0;
 
@@ -483,7 +482,7 @@ int required_string(char *pstr)
 	if (count == RS_MAX_TRIES) {
 		nprintf(("Error", "Error: Unable to find required token [%s]\n", pstr));
 		Warning(LOCATION, "Error: Unable to find required token [%s]\n", pstr);
-		longjmp(parse_abort, 1);
+        throw parse::ParseException("Required string not found");
 	}
 
 	Mp += strlen(pstr);
@@ -541,14 +540,11 @@ int check_for_string_raw(const char *pstr)
 int optional_string(const char *pstr)
 {
 	ignore_white_space();
-//	mprintf(("lookint for optional string %s",pstr));
 
 	if (!strnicmp(pstr, Mp, strlen(pstr))) {
 		Mp += strlen(pstr);
-//		mprintf((", found it\n"));
 		return 1;
 	}
-//	mprintf((", didin't find it it\n"));
 
 	return 0;
 }
@@ -566,6 +562,33 @@ int optional_string_either(char *str1, char *str2)
 	}
 
 	return -1;
+}
+
+// generic parallel to required_string_one_of
+int optional_string_one_of(int arg_count, ...)
+{
+	Assertion(arg_count > 0, "optional_string_one_of() called with arg_count of %d; get a coder!\n", arg_count);
+	int idx, found = -1;
+	char *pstr;
+	va_list vl;
+
+	ignore_white_space();
+
+	va_start(vl, arg_count);
+	for (idx = 0; idx < arg_count; idx++)
+	{
+		pstr = va_arg(vl, char*);
+
+		if ( !strnicmp(pstr, Mp, strlen(pstr)) )
+		{
+			Mp += strlen(pstr);
+			found = idx;
+			break;
+		}
+	}
+	va_end(vl);
+
+	return found;
 }
 
 int required_string_fred(char *pstr, char *end)
@@ -667,76 +690,61 @@ int required_string_either(char *str1, char *str2)
 
 	if (count == RS_MAX_TRIES) {
 		nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
-		Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
-		longjmp(parse_abort, 2);
+        Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
+        throw parse::ParseException("Required string not found");
 	}
 
 	return -1;
 }
 
-//	Return 0 or 1 for str1 match, str2 match.  Return -1 if neither matches.
-//	Does not update Mp if token found.  If not found, advances, trying to
-//	find the string.  Doesn't advance past the found string.
-int required_string_3(char *str1, char *str2, char *str3)
+// Generic version of old required_string_3 and required_string_4; written by ngld, with some tweaks by MageKing17
+int required_string_one_of(int arg_count, ...)
 {
-	int	count = 0;
+	Assertion(arg_count > 0, "required_string_one_of() called with arg_count of %d; get a coder!\n", arg_count);
+	int count = 0;
+	int idx;
+	char *expected;
+	SCP_string message = "";
+	va_list vl;
 
 	ignore_white_space();
 
 	while (count < RS_MAX_TRIES) {
-		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
-			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n", token_found = str1);
-			return 0;
-		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
-			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n", token_found = str2);
-			return 1;
-		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str3);
-			return 2;
+		va_start(vl, arg_count);
+		for (idx = 0; idx < arg_count; idx++) {
+			expected = va_arg(vl, char*);
+			if (strnicmp(expected, Mp, strlen(expected)) == 0) {
+				diag_printf("Found required string [%s]", token_found = expected);
+				va_end(vl);
+				return idx;
+			}
+		}
+		va_end(vl);
+
+		if (!message.compare("")) {
+			va_start(vl, arg_count);
+			message = "Required token = ";
+			for (idx = 0; idx < arg_count; idx++) {
+				message += "[";
+				message += va_arg(vl, char*);
+				message += "]";
+				if (arg_count == 2 && idx == 0) {
+					message += " or ";
+				} else if (idx == arg_count - 2) {
+					message += ", or ";
+				} else if (idx < arg_count - 2) {
+					message += ", ";
+				}
+			}
+			va_end(vl);
 		}
 
-		error_display(1, "Required token = [%s], [%s] or [%s], found [%.32s].\n", str1, str2, str3, next_tokens());
-
+		error_display(1, "%s, found [%.32s]\n", message.c_str(), next_tokens());
 		advance_to_eoln(NULL);
 		ignore_white_space();
 		count++;
 	}
 
-	return -1;
-}
-
-int required_string_4(char *str1, char *str2, char *str3, char *str4)
-{
-	int	count = 0;
-	
-	ignore_white_space();
-	
-	while (count < RS_MAX_TRIES) {
-		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
-			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n", token_found = str1);
-			return 0;
-		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
-			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n", token_found = str2);
-			return 1;
-		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str3);
-			return 2;
-		} else if (strnicmp(str4, Mp, strlen(str4)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str4);
-			return 3;
-		}
-		
-		error_display(1, "Required token = [%s], [%s], [%s], or [%s], found [%.32s].\n", str1, str2, str3, str4, next_tokens());
-		
-		advance_to_eoln(NULL);
-		ignore_white_space();
-		count++;
-	}
-	
 	return -1;
 }
 
@@ -749,7 +757,7 @@ int required_string_either_fred(char *str1, char *str2)
 			// Mp += strlen(str1);
 			diag_printf("Found required string [%s]\n", token_found = str1);
 			return fred_parse_flag = 0;
-		
+
 		} else if (!strnicmp(str2, Mp, strlen(str2))) {
 			// Mp += strlen(str2);
 			diag_printf("Found required string [%s]\n", token_found = str2);
@@ -875,15 +883,21 @@ char* alloc_text_until(char* instr, char* endstr)
 {
 	Assert(instr && endstr);
 	char *foundstr = stristr(instr, endstr);
+
 	if(foundstr == NULL)
 	{
-		Error(LOCATION, "Missing [%s] in file");
-		longjmp(parse_abort, 3);
+        Error(LOCATION, "Missing [%s] in file", endstr);
+        throw parse::ParseException("End string not found");
 	}
 	else
 	{
+		if ( (foundstr - instr) <= 0 ) {
+			Int3();  // since this really shouldn't ever happen
+			return NULL;
+		}
+
 		char* rstr = NULL;
-		rstr = (char*) vm_malloc((foundstr - instr)*sizeof(char));
+		rstr = (char*) vm_malloc((foundstr - instr + 1)*sizeof(char));
 
 		if(rstr != NULL) {
 			strncpy(rstr, instr, foundstr-instr);
@@ -907,8 +921,8 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 	foundstr = stristr(instr, endstr);
 
 	if (foundstr == NULL) {
-		nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
-		longjmp(parse_abort, 3);
+        nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
+        throw parse::ParseException("End string not found");
 	}
 
 	if (foundstr - instr + strlen(endstr) < (uint) max_chars) {
@@ -919,7 +933,7 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 		nprintf(("Error", "Error.  Too much text (%i chars, %i allowed) before %s\n",
 			foundstr - instr - strlen(endstr), max_chars, endstr));
 
-		longjmp(parse_abort, 4);
+        throw parse::ParseException("Too much text found");
 	}
 
 	diag_printf("Here's the partial wad of text:\n%.30s\n", outstr);
@@ -934,8 +948,8 @@ void copy_text_until(SCP_string &outstr, char *instr, char *endstr)
 	foundstr = stristr(instr, endstr);
 
 	if (foundstr == NULL) {
-		nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
-		longjmp(parse_abort, 3);
+        nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
+        throw parse::ParseException("End string not found");
 	}
 
 	outstr.assign(instr, foundstr - instr);
@@ -1031,8 +1045,8 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 	//Check that we left the file
 	if(level > 0)
 	{
-		Error(LOCATION, "Unclosed pair of \"%s\" and \"%s\" on line %d in file", startstr, endstr, get_line_num());
-		longjmp(parse_abort, 3);
+        Error(LOCATION, "Unclosed pair of \"%s\" and \"%s\" on line %d in file", startstr, endstr, get_line_num());
+        throw parse::ParseException("End string not found");
 	}
 	else
 	{
@@ -1058,26 +1072,26 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 	return rval;
 }
 
-// Karajorma - Stuffs the provided char array with either the contents of a quoted string or the name of a string 
-// variable. Returns PARSING_FOUND_STRING if a string was found or PARSING_FOUND_VARIABLE if a variable was present. 
+// Karajorma - Stuffs the provided char array with either the contents of a quoted string or the name of a string
+// variable. Returns PARSING_FOUND_STRING if a string was found or PARSING_FOUND_VARIABLE if a variable was present.
 int get_string_or_variable (char *str)
 {
-	int result = -1; 
+	int result = -1;
 
 	ignore_white_space();
-	
+
 	// Variable
-	if (*Mp == '@') 
+	if (*Mp == '@')
 	{
 		Mp++;
-		stuff_string_white(str); 
-		int sexp_variable_index = get_index_sexp_variable_name(str); 
-		
+		stuff_string_white(str);
+		int sexp_variable_index = get_index_sexp_variable_name(str);
+
 		// We only want String variables
 		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str);
 		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
 
-		result = PARSING_FOUND_VARIABLE; 
+		result = PARSING_FOUND_VARIABLE;
 	}
 	// Quoted string
 	else if (*Mp == '"')
@@ -1088,7 +1102,7 @@ int get_string_or_variable (char *str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str); 
+		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str);
 	}
 
 	return result;
@@ -1097,22 +1111,22 @@ int get_string_or_variable (char *str)
 // ditto for SCP_string
 int get_string_or_variable (SCP_string &str)
 {
-	int result = -1; 
+	int result = -1;
 
 	ignore_white_space();
-	
+
 	// Variable
-	if (*Mp == '@') 
+	if (*Mp == '@')
 	{
 		Mp++;
-		stuff_string_white(str); 
+		stuff_string_white(str);
 		int sexp_variable_index = get_index_sexp_variable_name(str);
 
 		// We only want String variables
 		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str.c_str());
 		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
 
-		result = PARSING_FOUND_VARIABLE; 
+		result = PARSING_FOUND_VARIABLE;
 	}
 	// Quoted string
 	else if (*Mp == '"')
@@ -1123,7 +1137,7 @@ int get_string_or_variable (SCP_string &str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str()); 
+		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str());
 	}
 
 	return result;
@@ -1131,12 +1145,17 @@ int get_string_or_variable (SCP_string &str)
 
 /**
  * Stuff a string (" chars ") into *str, return length.
+ * Accepts an optional max length parameter. If it is omitted or negative, then no max length is enforced.
  */
-int get_string(char *str)
+int get_string(char *str, int max)
 {
 	int	len;
 
 	len = strcspn(Mp + 1, "\"");
+
+	if (max >= 0 && len >= max)
+		error_display(0, "String too long.  Length = %i.  Max is %i.\n", len, max);
+
 	strncpy(str, Mp + 1, len);
 	str[len] = 0;
 
@@ -1175,27 +1194,12 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 
 	switch (type) {
 		case F_RAW:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_LNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_NAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_DATE:
+		case F_FILESPEC:
+		case F_PATHNAME:
+		case F_MESSAGE:
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
@@ -1209,44 +1213,23 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			required_string("$End Notes:");
 			break;
 
-		case F_FILESPEC:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
 		// can be deleted once all missions are using new briefing format
 
-		case F_MULTITEXTOLD:		
+		case F_MULTITEXTOLD:
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$End Briefing Text:", read_len);
 			Mp += strlen(read_str);
 			required_string("$End Briefing Text:");
 			break;
 
-		case F_MULTITEXT:		
+		case F_MULTITEXT:
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$end_multi_text", read_len);
 			Mp += strlen(read_str);
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
 			break;
-
-		case F_PATHNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
-		case F_MESSAGE:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp, read_len);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;		
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
@@ -1285,27 +1268,12 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 
 	switch (type) {
 		case F_RAW:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_LNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_NAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		case F_DATE:
+		case F_FILESPEC:
+		case F_PATHNAME:
+		case F_MESSAGE:
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
@@ -1319,44 +1287,23 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			required_string("$End Notes:");
 			break;
 
-		case F_FILESPEC:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
 		// F_MULTITEXTOLD keeping for backwards compatability with old missions
 		// can be deleted once all missions are using new briefing format
 
-		case F_MULTITEXTOLD:		
+		case F_MULTITEXTOLD:
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$End Briefing Text:");
 			Mp += read_str.length();
 			required_string("$End Briefing Text:");
 			break;
 
-		case F_MULTITEXT:		
+		case F_MULTITEXT:
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$end_multi_text");
 			Mp += read_str.length();
 			drop_trailing_white_space(read_str);
 			required_string("$end_multi_text");
 			break;
-
-		case F_PATHNAME:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;
-
-		case F_MESSAGE:
-			ignore_gray_space();
-			copy_to_eoln(read_str, terminators, Mp);
-			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
-			break;		
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
@@ -1430,7 +1377,7 @@ void stuff_string_line(SCP_string &outstr)
 	diag_printf("Stuffed string = [%.30s]\n", outstr.c_str());
 }
 
-// Exactly the same as stuff string only Malloc's the buffer. 
+// Exactly the same as stuff string only Malloc's the buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
 char *stuff_and_malloc_string(int type, char *terminators)
@@ -1449,15 +1396,15 @@ char *stuff_and_malloc_string(int type, char *terminators)
 void stuff_malloc_string(char **dest, int type, char *terminators)
 {
 	Assert(dest != NULL); //wtf?
-	
+
 	char *new_val = stuff_and_malloc_string(type, terminators);
-	
+
 	if(new_val != NULL)
 	{
 		if((*dest) != NULL) {
 			vm_free(*dest);
 		}
-		
+
 		(*dest) = new_val;
 	}
 }
@@ -1512,20 +1459,17 @@ void compact_multitext_string(SCP_string &str)
 		str.resize(len-num_cr);
 }
 
+// Converts a character from Windows-1252 to CP437.
 int maybe_convert_foreign_character(int ch)
 {
-	// time to do some special foreign character conversion			
+	// time to do some special foreign character conversion
 	switch (ch) {
+		case -57:
+			ch = 128;
+			break;
+
 		case -4:
 			ch = 129;
-			break;
-
-		case -28:
-			ch = 132;
-			break;
-
-		case -10:
-			ch = 148;
 			break;
 
 		case -23:
@@ -1536,8 +1480,24 @@ int maybe_convert_foreign_character(int ch)
 			ch = 131;
 			break;
 
+		case -28:
+			ch = 132;
+			break;
+
+		case -32:
+			ch = 133;
+			break;
+
+		case -27:
+			ch = 134;
+			break;
+
 		case -25:
 			ch = 135;
+			break;
+
+		case -22:
+			ch = 136;
 			break;
 
 		case -21:
@@ -1556,16 +1516,36 @@ int maybe_convert_foreign_character(int ch)
 			ch = 140;
 			break;
 
+		case -20:
+			ch = 141;
+			break;
+
 		case -60:
 			ch = 142;
+			break;
+
+		case -59:
+			ch = 143;
 			break;
 
 		case -55:
 			ch = 144;
 			break;
 
+		case -26:
+			ch = 145;
+			break;
+
+		case -58:
+			ch = 146;
+			break;
+
 		case -12:
 			ch = 147;
+			break;
+
+		case -10:
+			ch = 148;
 			break;
 
 		case -14:
@@ -1580,12 +1560,32 @@ int maybe_convert_foreign_character(int ch)
 			ch = 151;
 			break;
 
+		case -1:
+			ch = 152;
+			break;
+
 		case -42:
 			ch = 153;
 			break;
 
 		case -36:
 			ch = 154;
+			break;
+
+		case -94:
+			ch = 155;
+			break;
+
+		case -93:
+			ch = 156;
+			break;
+
+		case -91:
+			ch = 157;
+			break;
+
+		case -125:
+			ch = 159;
 			break;
 
 		case -31:
@@ -1604,19 +1604,83 @@ int maybe_convert_foreign_character(int ch)
 			ch = 163;
 			break;
 
-		case -32:
-			ch = 133;
+		case -15:
+			ch = 164;
 			break;
 
-		case -22:
-			ch = 136;
+		case -47:
+			ch = 165;
 			break;
 
-		case -20:
-			ch = 141;
+		case -86:
+			ch = 166;
+			break;
+
+		case -70:
+			ch = 167;
+			break;
+
+		case -65:
+			ch = 168;
+			break;
+
+		case -84:
+			ch = 170;
+			break;
+
+		case -67:
+			ch = 171;
+			break;
+
+		case -68:
+			ch = 172;
+			break;
+
+		case -95:
+			ch = 173;
+			break;
+
+		case -85:
+			ch = 174;
+			break;
+
+		case -69:
+			ch = 175;
+			break;
+
+		case -33:
+			ch = 225;
+			break;
+
+		case -75:
+			ch = 230;
+			break;
+
+		case -79:
+			ch = 241;
+			break;
+
+		case -9:
+			ch = 246;
+			break;
+
+		case -80:
+			ch = 248;
+			break;
+
+		case -73:
+			ch = 250;
+			break;
+
+		case -78:
+			ch = 253;
+			break;
+
+		case -96:
+			ch = 255;
 			break;
 	}
-	
+
 	return ch;
 }
 
@@ -1627,6 +1691,9 @@ void maybe_convert_foreign_characters(char *line)
 	if (Fred_running)
 		return;
 
+	if (Lcl_pl)
+		return;
+
 	for (ch = line; *ch != '\0'; ch++)
 			*ch = (char) maybe_convert_foreign_character(*ch);
 }
@@ -1635,6 +1702,9 @@ void maybe_convert_foreign_characters(char *line)
 void maybe_convert_foreign_characters(SCP_string &line)
 {
 	if (Fred_running)
+		return;
+
+	if (Lcl_pl)
 		return;
 
 	for (SCP_string::iterator ii = line.begin(); ii != line.end(); ++ii)
@@ -1699,7 +1769,7 @@ bool get_number_before_separator(int &number, int &number_chars, const SCP_strin
 		// copying in progress
 		buf[len] = *ch;
 		len++;
-		ch++;
+		++ch;
 	}
 
 	// got an integer
@@ -1767,9 +1837,8 @@ bool matches_version_specific_tag(const char *line_start, bool &compatible_versi
 
 // Strip comments from a line of input.
 // Goober5000 - rewritten for the second time
-void strip_comments(char *line, bool &in_multiline_comment_a, bool &in_multiline_comment_b)
+void strip_comments(char *line, bool &in_quote, bool &in_multiline_comment_a, bool &in_multiline_comment_b)
 {
-	bool in_quote = false;
 	char *writep = line;
 	char *readp = line;
 
@@ -1872,7 +1941,7 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 		do {
 			if ( (cur - start) >= max_size ) {
 				*lineout = 0;
-				if ( lineout > t ) {		
+				if ( lineout > t ) {
 					return num_chars_read;
 				} else {
 					return 0;
@@ -1897,8 +1966,9 @@ int parse_get_line(char *lineout, int max_line_len, char *start, int max_size, c
 void read_file_text(const char *filename, int mode, char *processed_text, char *raw_text)
 {
 	// copy the filename
-	if (!filename)
-		longjmp(parse_abort, 10);
+    if (!filename)
+        throw parse::ParseException("Invalid filename");
+
 	strcpy_s(Current_filename_sub, filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
@@ -2036,16 +2106,16 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL)
 	{
-		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
-		longjmp(parse_abort, 5);
+        nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
+        throw parse::ParseException("Failed to open file");
 	}
 
 	// read the entire file in
 	int file_len = cfilelength(mf);
 
 	if(!file_len) {
-		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
-		longjmp(parse_abort, 5);
+        nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
+        throw parse::ParseException("Failed to open file");
 	}
 
 	// allocate, or reallocate, memory for Mission_text and Mission_text_raw based on size we need now
@@ -2064,8 +2134,8 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	file_is_unicode = is_unicode(raw_text);
 	if ( file_is_unicode )
 	{
-		nprintf(("Error", "Wokka!  File (%s) is in Unicode format!\n", filename));
-		longjmp(parse_abort, 5);
+		//This is probably fatal, so let's abort right here and now.
+		Error(LOCATION, "%s is in Unicode/UTF format and cannot be read by FreeSpace Open. Please convert it to ASCII/ANSI\n", filename);
 	}
 
 	if ( file_is_encrypted )
@@ -2097,6 +2167,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	char	*mp;
 	char	*mp_raw;
 	char outbuf[PARSE_BUF_SIZE], *str;
+	bool in_quote = false;
 	bool in_multiline_comment_a = false;
 	bool in_multiline_comment_b = false;
 	int raw_text_len = strlen(raw_text);
@@ -2118,19 +2189,37 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	while ( (num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0 ) {
 		mp_raw += num_chars_read;
 
-		strip_comments(outbuf, in_multiline_comment_a, in_multiline_comment_b);
+		// stupid hacks to make retail data work with fixed parser, per Mantis #3072
+		if (!strcmp(outbuf, "1402, \"Sie haben IPX-Protokoll als Protokoll ausgew\xE4hlt, aber dieses Protokoll ist auf Ihrer Maschine nicht installiert.\".\"\n")) {
+			outbuf[121] = ' ';
+			outbuf[122] = ' ';
+		} else if (!strcmp(outbuf, "1117, \"\\r\\n\"Aucun web browser trouva. Del\xE0 isn't on emm\xE9nagea ou if \\r\\non est emm\xE9nagea, ca isn't set pour soient la default browser.\\r\\n\\r\\n\"\n")) {
+			char *ch = &outbuf[11];
+			do {
+				*ch = *(ch+1);
+				++ch;
+			} while (*ch);
+		} else if (!strcmp(outbuf, "1337, \"(fr)Loading\"\n")) {
+			outbuf[3] = '6';
+		} else if (!strcmp(outbuf, "3966, \"Es sieht so aus, als habe Staffel Kappa Zugriff auf die GTVA-Zugangscodes f\xFCr das System gehabt. Das ist ein ernstes Sicherheitsleck. Ihre IFF-Kennung erschien als \"verb\xFCndet\", so da\xDF sie sich dem Konvoi ungehindert n\xE4hern konnten. Zum Gl\xFC\x63k flogen Sie und  Alpha 2 Geleitschutz und lie\xDF\x65n den Schwindel auffliegen, bevor Kappa ihren Befehl ausf\xFChren konnte.\"\n")) {
+			outbuf[171] = '\'';
+			outbuf[181] = '\'';
+		}
+
+		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
 
 		maybe_convert_foreign_characters(outbuf);
 
 		str = outbuf;
 		while (*str) {
-			if (*str == -33) {
+			if (*str == (Lcl_pl ? -33 : -31)) {
 				*mp++ = 's';
 				*mp++ = 's';
 				str++;
 
-			} else
+			} else {
 				*mp++ = *str++;
+			}
 		}
 
 //		strcpy_s(mp, outbuf);
@@ -2153,7 +2242,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 		strcpy_s(mp, outbuf);
 		mp += strlen(outbuf);
 	}
-	
+
 	*mp = *mp_raw = EOF_CHAR;
 */
 
@@ -2226,7 +2315,7 @@ int stuff_float_optional(float *f, bool raw)
 {
 	int skip_len;
 	bool comma = false;
-	
+
 	if (!raw)
 		ignore_white_space();
 
@@ -2234,7 +2323,7 @@ int stuff_float_optional(float *f, bool raw)
 	if(*(Mp+skip_len) == ',') {
 		comma = true;
 	}
-	
+
 	if(skip_len == 0)
 	{
 		if(comma) {
@@ -2270,7 +2359,7 @@ int stuff_int_optional(int *i, bool raw)
 {
 	int skip_len;
 	bool comma = false;
-	
+
 	if (!raw)
 		ignore_white_space();
 
@@ -2278,7 +2367,7 @@ int stuff_int_optional(int *i, bool raw)
 	if(*(Mp+skip_len) == ',') {
 		comma = true;
 	}
-	
+
 	if(skip_len == 0)
 	{
 		if(comma) {
@@ -2301,29 +2390,29 @@ int stuff_int_or_variable (int &i, bool positive_value)
 {
 	int index = NOT_SET_BY_SEXP_VARIABLE;
 
-	if (*Mp == '@') 
+	if (*Mp == '@')
 	{
 		Mp++;
-		int value = -1; 
+		int value = -1;
 		char str[128];
 		stuff_string(str, F_NAME, sizeof(str));
 
-		index = get_index_sexp_variable_name(str); 
-			
-		if (index > -1 && index < MAX_SEXP_VARIABLES) 
+		index = get_index_sexp_variable_name(str);
+
+		if (index > -1 && index < MAX_SEXP_VARIABLES)
 		{
 			if (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER)
 			{
 				value = atoi(Sexp_variables[index].text);
 			}
-			else 
+			else
 			{
 				Error(LOCATION, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str);
 			}
 		}
 		else
 		{
-			
+
 			Error(LOCATION, "Invalid variable name \"%s\" found.", str);
 		}
 
@@ -2333,44 +2422,44 @@ int stuff_int_or_variable (int &i, bool positive_value)
 			value = 0;
 		}
 
-		
-		// Record the value of the index for FreeSpace 
+
+		// Record the value of the index for FreeSpace
 		i = value;
 	}
-	else 
+	else
 	{
 		stuff_int(&i);
 	}
 	return index;
 }
 
-// Stuff an integer value pointed at by Mp.If a variable is found instead stuff the value of that variable and record the 
+// Stuff an integer value pointed at by Mp.If a variable is found instead stuff the value of that variable and record the
 // index of the variable in the following slot.
 int stuff_int_or_variable (int *ilp, int count, bool positive_value)
 {
-	if (*Mp == '@') 
+	if (*Mp == '@')
 	{
 		Mp++;
-		int value = -1; 
+		int value = -1;
 		char str[128];
 		stuff_string(str, F_NAME, sizeof(str));
 
-		int index = get_index_sexp_variable_name(str); 
-			
-		if (index > -1 && index < MAX_SEXP_VARIABLES) 
+		int index = get_index_sexp_variable_name(str);
+
+		if (index > -1 && index < MAX_SEXP_VARIABLES)
 		{
 			if (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER)
 			{
 				value = atoi(Sexp_variables[index].text);
 			}
-			else 
-			{ 
+			else
+			{
 				Error(LOCATION, "Invalid variable type \"%s\" found in mission. Variable must be a number variable!", str);
 			}
 		}
 		else
 		{
-			
+
 			Error(LOCATION, "Invalid variable name \"%s\" found.", str);
 		}
 
@@ -2380,16 +2469,16 @@ int stuff_int_or_variable (int *ilp, int count, bool positive_value)
 			value = 0;
 		}
 
-		
-		// Record the value of the index for FreeSpace 
+
+		// Record the value of the index for FreeSpace
 		ilp[count++] = value;
 		// Record the index itself because we may need it later.
 		ilp[count++] = index;
 	}
-	else 
+	else
 	{
 		stuff_int(&ilp[count++]);
-		// Since we have a numerical value we don't have a SEXP variable index to add for next slot. 
+		// Since we have a numerical value we don't have a SEXP variable index to add for next slot.
 		ilp[count++] = NOT_SET_BY_SEXP_VARIABLE;
 	}
 	return count;
@@ -2418,7 +2507,7 @@ void stuff_boolean_flag(int *i, int flag, bool a_to_eol)
 		*i &= ~(flag);
 }
 
-// Stuffs a boolean value pointed at by Mp.  
+// Stuffs a boolean value pointed at by Mp.
 // YES/NO (supporting 1/0 now as well)
 // Now supports localization :) -WMC
 
@@ -2476,10 +2565,10 @@ int stuff_bool_list(bool *blp, int max_bools)
 	bool trash_buf = false;
 
 	ignore_white_space();
-	
+
 	if (*Mp != '(') {
-		error_display(1, "Reading boolean list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading boolean list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2492,7 +2581,7 @@ int stuff_bool_list(bool *blp, int max_bools)
 		{
 			stuff_boolean(&blp[count++], false);
 			ignore_white_space();
-			
+
 			//Since Bobb has set a precedent, allow commas for bool lists -WMC
 			if(*Mp == ',')
 			{
@@ -2576,8 +2665,8 @@ int stuff_string_list(SCP_vector<SCP_string>& slp)
 	ignore_white_space();
 
 	if ( *Mp != '(' ) {
-		error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 100);
+        error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2610,8 +2699,8 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 	ignore_white_space();
 
 	if ( *Mp != '(' ) {
-		error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 100);
+        error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2639,7 +2728,7 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 	return count;
 }
 
-const char* get_lookup_type_name(int lookup_type) 
+const char* get_lookup_type_name(int lookup_type)
 {
 	switch (lookup_type) {
 		case SHIP_TYPE:
@@ -2667,8 +2756,8 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading integer list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading integer list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2738,7 +2827,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 			else
 				stuff_int(&dummy);
 		}
-		
+
 		ignore_white_space();
 	}
 
@@ -2750,7 +2839,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 // helper for the next function. Removes a broken entry from ship or weapon lists and advances to the next one
 void clean_loadout_list_entry()
 {
-	int dummy; 
+	int dummy;
 
 	// clean out the broken entry
 	ignore_white_space();
@@ -2758,19 +2847,19 @@ void clean_loadout_list_entry()
 	ignore_white_space();
 }
 
-// Karajorma - Stuffs an int list by parsing a list of ship or weapon choices. 
+// Karajorma - Stuffs an int list by parsing a list of ship or weapon choices.
 // Unlike stuff_int_list it can deal with variables and it also has better error reporting.
 int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 {
-	int count = 0; 
+	int count = 0;
 	int index, sexp_variable_index, variable_found;
 	char str[128];
 
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading loadout list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading loadout list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2783,13 +2872,18 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 
 		index = -1;
 		sexp_variable_index = NOT_SET_BY_SEXP_VARIABLE;
-		variable_found = get_string_or_variable (str); 
+		variable_found = get_string_or_variable (str);
 
-		// if we've got a variable get the variable index and copy it's value into str so that regardless of whether we found 
+		// if we've got a variable get the variable index and copy it's value into str so that regardless of whether we found
 		// a variable or not it now holds the name of the ship or weapon we're interested in.
 		if (variable_found) {
 			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
 			sexp_variable_index = get_index_sexp_variable_name(str);
+
+			if(sexp_variable_index<0) {
+				Error(LOCATION, "Invalid SEXP variable name \"%s\" found in stuff_loadout_list.", str);
+			}
+
 			strcpy_s (str, Sexp_variables[sexp_variable_index].text);
 		}
 
@@ -2808,44 +2902,44 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 				Int3();
 		}
 
-		// Complain if this isn't a valid ship or weapon and we are loading a mission. Campaign files can be loading containing 
-		// no ships from the current tables (when swapping mods) so don't report that as an error. 
+		// Complain if this isn't a valid ship or weapon and we are loading a mission. Campaign files can be loading containing
+		// no ships from the current tables (when swapping mods) so don't report that as an error.
 		if (index < 0 && (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)) {
 			// print a warning in debug mode
 			Warning(LOCATION, "Invalid type \"%s\" found in loadout of mission file...skipping", str);
-			// increment counter for release FRED builds. 
+			// increment counter for release FRED builds.
 			Num_unknown_loadout_classes++;
 
-			clean_loadout_list_entry(); 
+			clean_loadout_list_entry();
 			continue;
 		}
 
 		// similarly, complain if this is a valid ship or weapon class that the player can't use
 		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[index].flags & SIF_PLAYER_SHIP)) ) {
-			clean_loadout_list_entry(); 
+			clean_loadout_list_entry();
 			Warning(LOCATION, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
 			continue;
 		}
 		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[index].wi_flags & WIF_PLAYER_ALLOWED)) ) {
-			clean_loadout_list_entry(); 
+			clean_loadout_list_entry();
 			nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str));
 			if ( !Is_standalone )
 				Warning(LOCATION, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str);
 			continue;
 		}
-		
+
 		// we've found a real item. Add its index to the list.
 		if (count < max_ints) {
 			ilp[count++] = index;
 		}
-		
+
 		ignore_white_space();
 
 		// Campaign lists need go no further
 		if (lookup_type == CAMPAIGN_LOADOUT_SHIP_LIST || lookup_type == CAMPAIGN_LOADOUT_WEAPON_LIST) {
 			continue;
 		}
-		
+
 		// record the index of the variable that gave us this item if any
 		if (count < max_ints) {
 			ilp[count++] = sexp_variable_index;
@@ -2868,8 +2962,8 @@ int stuff_float_list(float* flp, int max_floats)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading float list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading float list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2901,8 +2995,8 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Marking integer list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Marking integer list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -2918,11 +3012,11 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 				case SHIP_TYPE:
 					num = ship_name_lookup(str);	// returns index of Ship[] entry with name
 					break;
-			
+
 				case SHIP_INFO_TYPE:
 					num = ship_info_lookup(str);	// returns index of Ship_info[] entry with name
 					break;
-	
+
 				case WEAPON_LIST_TYPE:
 					num = weapon_info_lookup(str);
 					break;
@@ -2936,7 +3030,7 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 				Error(LOCATION, "Unable to find string \"%s\" in mark_int_list.\n", str);
 
 //			ilp[num] = 1;
-		
+
 		} else {
 			int	tval;
 
@@ -2946,7 +3040,7 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 				ilp[tval] = 1;
 			}
 		}
-		
+
 		ignore_white_space();
 	}
 
@@ -2968,15 +3062,15 @@ void stuff_parenthesized_vec3d(vec3d *vp)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 11);
+        error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	} else {
 		Mp++;
 		stuff_vec3d(vp);
 		ignore_white_space();
 		if (*Mp != ')') {
-			error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting ')'.\n", *Mp);
-			longjmp(parse_abort, 12);
+            error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting ')'.\n", *Mp);
+            throw parse::ParseException("Syntax error");
 		}
 		Mp++;
 	}
@@ -2995,8 +3089,8 @@ int stuff_vec3d_list(vec3d *vlp, int max_vecs)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -3011,7 +3105,7 @@ int stuff_vec3d_list(vec3d *vlp, int max_vecs)
 			vec3d temp;
 			stuff_parenthesized_vec3d(&temp);
 		}
-		
+
 		ignore_white_space();
 	}
 
@@ -3026,8 +3120,8 @@ int stuff_vec3d_list(SCP_vector<vec3d> &vec_list)
 	ignore_white_space();
 
 	if (*Mp != '(') {
-		error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -3038,7 +3132,7 @@ int stuff_vec3d_list(SCP_vector<vec3d> &vec_list)
 		vec3d temp;
 		stuff_parenthesized_vec3d(&temp);
 		vec_list.push_back(temp);
-		
+
 		ignore_white_space();
 	}
 
@@ -3095,7 +3189,7 @@ void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, c
 	if (*addr < 0 && checking_ship_classes)
 	{
 		int idx = ship_info_lookup(token);
-		
+
 		if (idx >= 0)
 			*addr = string_lookup(Ship_info[idx].name, strlist, max, description, 0);
 		else
@@ -3106,7 +3200,7 @@ void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, c
 void find_and_stuff_optional(char *id, int *addr, int f_type, char *strlist[], int max, char *description)
 {
 	char token[128];
-	
+
 	if(optional_string(id))
 	{
 		stuff_string(token, f_type, sizeof(token));
@@ -3159,7 +3253,7 @@ void pause_parse()
 
 	strcpy_s(Current_filename_save, Current_filename);
 
-	Parsing_paused = 1;	
+	Parsing_paused = 1;
 }
 
 // unpause parsing to continue with previously parsing file
@@ -3211,7 +3305,7 @@ char *split_str_once(char *src, int max_pixel_w)
 
 	Assert(src);
 	Assert(max_pixel_w > 0);
-	
+
 	gr_get_string_size(&w, NULL, src);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
 		return NULL;  // string doesn't require a cut
@@ -3257,7 +3351,7 @@ char *split_str_once(char *src, int max_pixel_w)
 
 	if (!*src)
 		return NULL;  // end of the string anyway
-		
+
 	if (*src == '\n')
 		src++;
 
@@ -3267,7 +3361,7 @@ char *split_str_once(char *src, int max_pixel_w)
 #define SPLIT_STR_BUFFER_SIZE	512
 
 // --------------------------------------------------------------------------------------
-// split_str() 
+// split_str()
 //
 // A general function that will split a string into several lines.  Lines are allowed up
 // to max_pixel_w pixels.  Breaks are found in white space.
@@ -3292,14 +3386,14 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	const char *breakpoint = NULL;
 	int sw, new_line = 1, line_num = 0, last_was_white = 0;
 	int ignore_until_whitespace, buf_index;
-	
+
 	// check our assumptions..
 	Assert(src != NULL);
 	Assert(n_chars != NULL);
 	Assert(p_str != NULL);
 	Assert(max_lines > 0);
 	Assert(max_pixel_w > 0);
-	
+
 	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
 	buf_index = 0;
 	ignore_until_whitespace = 0;
@@ -3366,11 +3460,13 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 			last_was_white = 0;
 		}
 
+		Assertion(buf_index < SPLIT_STR_BUFFER_SIZE - 1, "buffer overflow in split_str: screen width causes this text to be longer than %d characters!", SPLIT_STR_BUFFER_SIZE - 1);
+
 		// throw it in our buffer
 		buffer[buf_index] = *src;
 		buf_index++;
 		buffer[buf_index] = 0;  // null terminate it
-	
+
 		gr_get_string_size(&sw, NULL, buffer);
 		if (sw >= max_pixel_w) {
 			const char *end;
@@ -3412,11 +3508,11 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 	const char *breakpoint = NULL;
 	int sw, new_line = 1, line_num = 0, last_was_white = 0;
 	int ignore_until_whitespace = 0, buf_index = 0;
-	
+
 	// check our assumptions..
 	Assert(src != NULL);
 	Assert(max_pixel_w > 0);
-	
+
 	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
 
 	// get rid of any leading whitespace
@@ -3479,11 +3575,13 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 			last_was_white = 0;
 		}
 
+		Assertion(buf_index < SPLIT_STR_BUFFER_SIZE - 1, "buffer overflow in split_str: screen width causes this text to be longer than %d characters!", SPLIT_STR_BUFFER_SIZE - 1);
+
 		// throw it in our buffer
 		buffer[buf_index] = *src;
 		buf_index++;
 		buffer[buf_index] = 0;  // null terminate it
-	
+
 		gr_get_string_size(&sw, NULL, buffer);
 		if (sw >= max_pixel_w) {
 			const char *end;
@@ -3732,7 +3830,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 			}
 			case 'c':
 			{
-				dest += (char) va_arg(ap, char);
+				dest += (char) va_arg(ap, int);
 				break;
 			}
 			case 'f':
@@ -3786,7 +3884,7 @@ bool end_string_at_first_hash_symbol(char *src)
 	p = get_pointer_to_first_hash_symbol(src);
 	if (p)
 	{
-		while (*(p-1) == ' ')
+		while ((p != src) && (*(p-1) == ' '))
 			p--;
 
 		*p = '\0';
@@ -4152,23 +4250,22 @@ void parse_int_list(int *ilist, int size)
 // parse a modular table of type "name_check" and parse it using the specified function callback
 int parse_modular_table(const char *name_check, void (*parse_callback)(const char *filename), int path_type, int sort_type)
 {
-	char tbl_file_arr[MAX_TBL_PARTS][MAX_FILENAME_LEN];
-	char *tbl_file_names[MAX_TBL_PARTS];
+	SCP_vector<SCP_string> tbl_file_names;
 	int i, num_files = 0;
 
 	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
-		Int3();
+		Assertion(false, "parse_modular_table() called with invalid arguments; get a coder!\n");
 		return 0;
 	}
 
-	num_files = cf_get_file_list_preallocated(MAX_TBL_PARTS, tbl_file_arr, tbl_file_names, path_type, name_check, sort_type);
+	num_files = cf_get_file_list(tbl_file_names, path_type, name_check, sort_type);
 
 	Parsing_modular_table = true;
 
 	for (i = 0; i < num_files; i++){
-		strcat(tbl_file_names[i], ".tbm");
-		mprintf(("TBM  =>  Starting parse of '%s' ...\n", tbl_file_names[i]));
-		(*parse_callback)(tbl_file_names[i]);
+		tbl_file_names[i] += ".tbm";
+		mprintf(("TBM  =>  Starting parse of '%s' ...\n", tbl_file_names[i].c_str()));
+		(*parse_callback)(tbl_file_names[i].c_str());
 	}
 
 	Parsing_modular_table = false;

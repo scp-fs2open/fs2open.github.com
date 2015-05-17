@@ -65,6 +65,7 @@ public:
 	CButton m_hide_ship_name;
 	CButton m_disable_ets;
 	CButton m_cloaked;
+	CButton m_no_collide;
 	CButton	m_set_class_dynamically;
 	CButton	m_scramble_messages;
 
@@ -126,6 +127,7 @@ protected:
 	afx_msg void OnDisableETS();
 	afx_msg void OnCloaked();
 	afx_msg void OnScrambleMessages();
+	afx_msg void OnNoCollide();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

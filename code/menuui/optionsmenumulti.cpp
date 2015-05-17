@@ -642,6 +642,7 @@ void options_multi_notify_process()
 	int line_count;
 	int y_start;
 	int idx;
+	int line_height;
 	
 	// if there is no timestamp, do nothing
 	if(Om_notify_stamp == -1){
@@ -655,6 +656,7 @@ void options_multi_notify_process()
 	}
 
 	// otherwise display the string
+	line_height = gr_get_font_height() + 1;
 	line_count = split_str(Om_notify_string, 600, n_chars, p_str, 3);	
 	y_start = OM_NOTIFY_Y;
 	gr_set_color_fast(&Color_bright);
@@ -665,7 +667,7 @@ void options_multi_notify_process()
 		gr_get_string_size(&w,NULL,line);
 		gr_string((600 - w)/2,y_start,line,GR_RESIZE_MENU);
 
-		y_start += 10;
+		y_start += line_height;
 	}	
 }
 
@@ -1203,6 +1205,7 @@ void options_multi_protocol_display_ips()
 {
 	int idx;
 	int y_start = Ip_list_coords[gr_screen.res][1];
+	int line_height = gr_get_font_height() + 1;
 		
 	// get the # of items we should be displaying based upon the # of addresses and the starting display point
 	if(Om_ip_start >= Ip_list_max_display[gr_screen.res]){
@@ -1220,7 +1223,7 @@ void options_multi_protocol_display_ips()
 		}
 
 		gr_printf_menu(Ip_list_coords[gr_screen.res][0], y_start, Om_ip_addrs[idx]);
-		y_start += 10;
+		y_start += line_height;
 	}
 }
 
@@ -1255,7 +1258,7 @@ void options_multi_protocol_check_ip_list()
 	if(Om_ip_button.pressed()){
 		// determine which item he clicked on	
 		Om_ip_button.get_mouse_pos(NULL, &click_y);
-		item = click_y / 10;
+		item = click_y / (gr_get_font_height() + 1);
 			
 		// determine if there is an item in this location, and select it if so
 		if(item < Om_ip_disp_count){
@@ -2055,10 +2058,12 @@ void options_multi_vox_process_player_list()
 	int selected_index,click_y;
 	char str[CALLSIGN_LEN+2];
 
+	int line_height = gr_get_font_height() + 1;
+
 	// check for mouse clicks
 	if(Om_vox_plist_button.pressed()){
 		Om_vox_plist_button.get_mouse_pos(NULL,&click_y);
-		selected_index = (click_y / 10) + Om_vox_plist_start;
+		selected_index = (click_y / line_height) + Om_vox_plist_start;
 
 		// if he clicked on a valid player, select him
 		if(Om_vox_players[selected_index] != NULL){
@@ -2088,7 +2093,7 @@ void options_multi_vox_process_player_list()
 			gr_string(Om_vox_plist_coords[gr_screen.res][0], y_start, str, GR_RESIZE_MENU);
 
 			// increment the y index
-			y_start += 10;
+			y_start += line_height;
 
 			// increment the player count
 			p_count++;

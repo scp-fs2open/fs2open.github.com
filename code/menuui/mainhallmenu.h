@@ -16,9 +16,38 @@
 // CommanderDJ - this is now dynamic
 // #define MAIN_HALLS_MAX			10
 
-typedef struct main_hall_defines {
+class main_hall_region
+{
+public:
+	int mask;
+	char key;
+	SCP_string description;
+	int action;
+	SCP_string lua_action;
+
+	main_hall_region(int _mask, char _key, const SCP_string &_description, int _action, const SCP_string &_lua_action)
+		: mask(_mask), key(_key), description(_description), action(_action), lua_action(_lua_action)
+	{}
+
+	main_hall_region()
+		: mask(0), key(0), description(), action(0), lua_action()
+	{}
+};
+
+class main_hall_defines
+{
+public:
 	// mainhall name identifier
 	SCP_string name;
+
+	SCP_vector<SCP_string> cheat;
+	SCP_vector<SCP_string> cheat_anim_from;
+	SCP_vector<SCP_string> cheat_anim_to;
+
+	// minimum resolution and aspect ratio needed to display this main hall
+	int min_width;
+	int min_height;
+	float min_aspect_ratio;
 
 	// bitmap and mask
 	SCP_string bitmap;
@@ -27,6 +56,14 @@ typedef struct main_hall_defines {
 	// music
 	SCP_string music_name;
 	SCP_string substitute_music_name;
+
+	// help overlay
+	SCP_string help_overlay_name;
+	int help_overlay_resolution_index;
+
+	// zoom area
+	int zoom_area_width;
+	int zoom_area_height;
 
 	// intercom defines -------------------
 
@@ -78,6 +115,9 @@ typedef struct main_hall_defines {
 	//flags for each of the misc anim sounds
 	SCP_vector<SCP_vector<int> > misc_anim_sound_flag;
 
+	// controls the render order
+	SCP_vector<bool> misc_anim_over_doors;
+
 
 	// door animations --------------------
 
@@ -99,13 +139,21 @@ typedef struct main_hall_defines {
 
 	// region descriptions ----------------
 
-	// text (tooltip) description
-	SCP_vector<const char*> region_descript;
+	// font used for the tooltips, version number, etc.
+	int font;
+
+	// action
+	SCP_vector<main_hall_region> regions;
+	
+	bool default_readyroom;
+
+	// num pixels shader is above/below tooltip text
+	int tooltip_padding;
 
 	// y coord of where to draw tooltip text
 	int region_yval;
 
-} main_hall_defines;
+};
 
 extern SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
 
@@ -138,7 +186,12 @@ main_hall_defines* main_hall_get_pointer(const SCP_string &name_to_find);
 
 int main_hall_get_index(const SCP_string &name_to_find);
 
+int main_hall_get_resolution_index(int main_hall_num);
+
 void main_hall_get_name(SCP_string &name, unsigned int index);
+
+int main_hall_get_overlay_id();
+int main_hall_get_overlay_resolution_index();
 
 // what main hall we're on
 int main_hall_id();

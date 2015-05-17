@@ -22,7 +22,7 @@
 #include "menuui/optionsmenumulti.h"
 #include "network/multi.h"
 #include "playerman/player.h"
-
+#include "debugconsole/console.h"
 
 
 // --------------------------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ int Multi_voice_stamps[MULTI_VOICE_MAX_STREAMS];
 
 // the token index of a voice stream is set to one of these values, or the index of the player who has the token
 #define MULTI_VOICE_TOKEN_INDEX_FREE				-1					// the token (and the stream are free)
-#define MULTI_VOICE_TOKEN_INDEX_RELEASED			0xDEADBEAD		// the token has been released but the stream is still active
+#define MULTI_VOICE_TOKEN_INDEX_RELEASED			0xBEAD		// the token has been released but the stream is still active
 
 typedef struct voice_stream {		
 	int token_status;															// status of the token (player index if a player has it) or one of the above defines
@@ -483,16 +483,17 @@ void multi_voice_process()
 // voice settings debug console function
 void multi_voice_dcf()
 {
-	dc_get_arg(ARG_STRING);
+	SCP_string arg;
+	int value;
+
+	dc_stuff_string_white(arg);
 
 	// set the quality of sound
-	if (strcmp(Dc_arg, NOX("qos")) == 0) {
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			if((Dc_arg_int >= 1) && (Dc_arg_int <= 10) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-				multi_voice_set_vars(Dc_arg_int,-1);
-				dc_printf("Quality of sound : %d\n",Dc_arg_int);
-			}
+	if (arg == NOX("qos")) {
+		dc_stuff_int(&value);
+		if((value >= 1) && (value <= 10) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			multi_voice_set_vars(value,-1);
+			dc_printf("Quality of sound : %d\n", value);
 		}
 	}
 }
@@ -1841,7 +1842,6 @@ void multi_voice_client_send_pending()
 		// add the current stream id#
 		ADD_DATA(Multi_voice_stream_id);
 
-		Assert(str->accum_buffer_usize[sent] < MULTI_VOICE_MAX_BUFFER_SIZE);
 		uc_size = (ushort)str->accum_buffer_usize[sent];
 		ADD_USHORT(uc_size);
 

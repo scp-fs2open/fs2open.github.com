@@ -27,6 +27,7 @@
 #include "controlconfig/controlsconfig.h"
 #include "missionui/redalert.h"
 #include "pilotfile/pilotfile.h"
+#include "localization/localize.h"
 
 
 static const unsigned short MAX_JOY_AXES_CONV = 5;
@@ -132,6 +133,7 @@ struct plr_data {
 
 	// basic flags and settings
 	int is_multi;
+	char language[LCL_LANG_NAME_LEN+1];
 	int tips;
 	int rank;
 	int skill_level;
@@ -281,7 +283,8 @@ class pilotfile_convert {
 				Settings		= 0x0010,
 				RedAlert		= 0x0011,
 				Variables		= 0x0012,
-				Missions		= 0x0013
+				Missions		= 0x0013,
+				Cutscenes		= 0x0014,
 			};
 		};
 
@@ -341,5 +344,6 @@ class pilotfile_convert {
 		void csg_export_redalert();
 		void csg_export_hud();
 		void csg_export_variables();
+		void csg_export_cutscenes();
 };
 

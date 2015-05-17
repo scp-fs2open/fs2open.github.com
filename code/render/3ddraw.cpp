@@ -321,6 +321,8 @@ int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap
 	const int NUM_VERTICES = 4;
 	vec3d p[NUM_VERTICES] = { ZERO_VECTOR };
 	vertex v[NUM_VERTICES];
+    
+    memset(v, 0, sizeof(v));
 
 	p[0].xyz.x = width;
 	p[0].xyz.y = height;
@@ -1909,8 +1911,8 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 		V->screen.xyw.x = (float)b->x;
 		V->screen.xyw.y = (float)b->y;	
 		V->screen.xyw.w = 0.0f;
-		V->texture_position.u = (float)t->x;
-		V->texture_position.v = (float)t->y;
+		V->texture_position.u = (float)t->u0;
+		V->texture_position.v = (float)t->v0;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
@@ -1918,8 +1920,8 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 		V->screen.xyw.x = (float)(b->x + b->w);
 		V->screen.xyw.y = (float)b->y;	
 		V->screen.xyw.w = 0.0f;
-		V->texture_position.u = (float)(t->x + t->w);
-		V->texture_position.v = (float)t->y;
+		V->texture_position.u = (float)t->u1;
+		V->texture_position.v = (float)t->v0;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
@@ -1927,8 +1929,8 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 		V->screen.xyw.x = (float)(b->x + b->w);
 		V->screen.xyw.y = (float)(b->y + b->h);	
 		V->screen.xyw.w = 0.0f;
-		V->texture_position.u = (float)(t->x + t->w);
-		V->texture_position.v = (float)(t->y + t->h);
+		V->texture_position.u = (float)t->u1;
+		V->texture_position.v = (float)t->v1;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 	
@@ -1937,8 +1939,8 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 		V->screen.xyw.x = (float)b->x;
 		V->screen.xyw.y = (float)b->y;	
 		V->screen.xyw.w = 0.0f;
-		V->texture_position.u = (float)t->x;
-		V->texture_position.v = (float)t->y;
+		V->texture_position.u = (float)t->u0;
+		V->texture_position.v = (float)t->v0;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
@@ -1946,8 +1948,8 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 		V->screen.xyw.x = (float)(b->x + b->w);
 		V->screen.xyw.y = (float)(b->y + b->h);	
 		V->screen.xyw.w = 0.0f;
-		V->texture_position.u = (float)(t->x + t->w);
-		V->texture_position.v = (float)(t->y + t->h);
+		V->texture_position.u = (float)t->u1;
+		V->texture_position.v = (float)t->v1;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;
 
@@ -1955,8 +1957,8 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 		V->screen.xyw.x = (float)b->x;
 		V->screen.xyw.y = (float)(b->y + b->h);	
 		V->screen.xyw.w = 0.0f;
-		V->texture_position.u = (float)t->x;
-		V->texture_position.v = (float)(t->y + t->h);
+		V->texture_position.u = (float)t->u0;
+		V->texture_position.v = (float)t->v1;
 		V->flags = PF_PROJECTED;
 		V->codes = 0;	
 	}
@@ -2192,6 +2194,18 @@ void flash_ball::render(float rad, float intinsity, float life){
 		flash_ball::batcher.draw_beam(&center, &end, ray[i].width*rad, intinsity);
 	}
 	flash_ball::batcher.render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+}
+
+void flash_ball::render(int texture, float rad, float intinsity, float life){
+	flash_ball::batcher.allocate(n_rays);
+	for(int i = 0; i<n_rays; i++){
+		vec3d end;
+		vm_vec_interp_constant(&end, &ray[i].start.world, &ray[i].end.world, life);
+		vm_vec_scale(&end, rad);
+		vm_vec_add2(&end, &center);
+
+		batch_add_beam(texture, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT, &center, &end, ray[i].width*rad, intinsity);
+	}
 }
 
 geometry_batcher flash_ball::batcher;

@@ -72,6 +72,11 @@ extern SCP_vector<briefing_icon_info> Briefing_icon_info;
 struct brief_icon;
 extern briefing_icon_info *brief_get_icon_info(brief_icon *bi);
 
+
+
+// Moving out of missionbriefcommon.cpp so it can be referenced elsewhere -MageKing17
+extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
+
 // ------------------------------------------------------------------------
 // Structures to hold briefing data
 // ------------------------------------------------------------------------
@@ -303,7 +308,7 @@ void brief_voice_pause(int stage_num);
 void brief_voice_unpause(int stage_num);
 
 // fancy briefing style text functions for use in other modules.
-int brief_color_text_init(const char *src, int w, int instance = 0, int max_lines = MAX_BRIEF_LINES);
+int brief_color_text_init(const char *src, int w, const char default_color = '\0', int instance = 0, int max_lines = MAX_BRIEF_LINES, const bool append = false);
 int brief_render_text(int line_offset, int x, int y, int h, float frametime, int instance = 0, int line_spacing = 0);
 
 void cmd_brief_reset();

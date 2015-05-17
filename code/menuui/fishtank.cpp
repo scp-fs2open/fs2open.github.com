@@ -73,11 +73,11 @@ void fish_generate()
 
 	// start location
 	if(f->left){
-		f->x = gr_screen.max_w_unscaled + frand_range(0.0f, 50.0f);
+		f->x = gr_screen.max_w_unscaled_zoomed + frand_range(0.0f, 50.0f);
 	} else {
 		f->x = frand_range(0.0f, -50.0f) - FISH_ANIM_WIDTH;
 	}
-	f->y = frand_range(-40.0f, (float)gr_screen.max_h_unscaled + 40.0f);
+	f->y = frand_range(-40.0f, (float)gr_screen.max_h_unscaled_zoomed + 40.0f);
 
 	// speed
 	if(f->left){
@@ -225,8 +225,8 @@ void fishtank_process()
 
 		// is he currently onscreen ?
 		onscreen = 0;
-		if( (f->x < (float)gr_screen.max_w_unscaled) && ((f->x + FISH_ANIM_WIDTH) >= 0.0f) &&
-			 (f->y < (float)gr_screen.max_h_unscaled) && ((f->y + FISH_ANIM_HEIGHT) >= 0.0f) ){
+		if( (f->x < (float)gr_screen.max_w_unscaled_zoomed) && ((f->x + FISH_ANIM_WIDTH) >= 0.0f) &&
+			 (f->y < (float)gr_screen.max_h_unscaled_zoomed) && ((f->y + FISH_ANIM_HEIGHT) >= 0.0f) ){
 			onscreen = 1;
 		}
 

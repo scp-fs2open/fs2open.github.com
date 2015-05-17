@@ -679,6 +679,9 @@ void message_log_init_scrollback(int pw)
 			// in german goal events, just say "objective" instead of objective name
 			// this is cuz we can't translate objective names
 			message_log_add_seg(Num_log_lines, OBJECT_X, c, "Einsatzziel");
+		} else if ( (Lcl_pl) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
+			// same thing for polish
+			message_log_add_seg(Num_log_lines, OBJECT_X, c, "Cel misji");
 		} else {
 			message_log_add_seg(Num_log_lines, OBJECT_X, c, entry->pname);
 		}

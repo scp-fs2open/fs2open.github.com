@@ -32,6 +32,7 @@
 #include "cfile/cfile.h"
 #include "io/mouse.h"
 #include "ai/aigoals.h"
+#include "mod_table/mod_table.h"
 
 #include <stdexcept>
 
@@ -336,7 +337,7 @@ void red_alert_init()
 	}
 
 	if ( Briefing->num_stages > 0 ) {
-		brief_color_text_init(Briefing->stages[0].text.c_str(), Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], 0);
+		brief_color_text_init(Briefing->stages[0].text.c_str(), Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], default_redalert_briefing_color, 0);
 	}
 
 	red_alert_voice_load();
@@ -460,7 +461,7 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	}
 
 	// edited to accommodate ballistics - Goober5000
-	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+	for (i = 0; i < swp->num_primary_banks; i++) {
 		weapons.index = swp->primary_bank_weapons[i];
 
 		if (weapons.index < 0) {
@@ -481,7 +482,7 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 		ras->primary_weapons.push_back( weapons );
 	}
 
-	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
+	for (i = 0; i < swp->num_secondary_banks; i++) {
 		weapons.index = swp->secondary_bank_weapons[i];
 
 		if (weapons.index < 0) {
@@ -902,6 +903,10 @@ void red_alert_bash_wingman_status()
 		}
 	}
 
+	// NOTE: in retail, red alert data was not loaded for ships that arrived later in the mission
+	if (!Red_alert_applies_to_delayed_ships)
+		return;
+
 	// go through all ships yet to arrive, and see if there is red alert status data for any
 
 	for ( poii = Parse_objects.begin(); poii != Parse_objects.end(); ++poii )
@@ -1090,4 +1095,15 @@ void red_alert_maybe_move_to_next_mission()
 	} else {
 		gameseq_post_event(GS_EVENT_END_GAME);
 	}
+}
+
+/*
+ * red_alert_clear()
+ *
+ * clear all red alert "wingman" data
+ * Allows data to be cleared from outside REDALERT_INTERNAL code
+ */
+void red_alert_clear()
+{
+	Red_alert_wingman_status.clear();
 }

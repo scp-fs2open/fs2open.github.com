@@ -64,6 +64,7 @@
 #include "iff_defs/iff_defs.h"
 #include "menuui/techmenu.h"
 #include "missionui/fictionviewer.h"
+#include "mod_table/mod_table.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -71,6 +72,8 @@
 #define MAX_DOCKS 1000
 
 #define UNKNOWN_USER		"Unknown"
+
+extern void ssm_init();	// Need this to populate Ssm_info so OPF_SSM_CLASS does something. -MageKing17
 
 int cur_wing = -1;
 int cur_wing_index;
@@ -308,6 +311,9 @@ bool fred_init()
 		exit(1);
 	}
 
+	// Load game_settings.tbl
+	mod_table_init();
+
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	// NOTE : Fred should ALWAYS run in English. Otherwise it might swap in another language
 	// when saving - which would cause inconsistencies when externalizing to tstrings.tbl via Exstr
@@ -393,9 +399,7 @@ bool fred_init()
 
 	hud_init_comm_orders();		// Goober5000
 
-	if (!new_alpha_colors_init()) {
-		old_alpha_colors_init();
-	}
+	alpha_colors_init();
 	
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
@@ -418,6 +422,7 @@ bool fred_init()
 	create_new_mission();
 	neb2_init();						// fullneb stuff
 	stars_init();
+	ssm_init();		// The game calls this after stars_init(), and we need Ssm_info initialized for OPF_SSM_CLASS. -MageKing17
 	brief_init_colors();
 	fred_preload_all_briefing_icons(); //phreak.  This needs to be done or else the briefing icons won't show up
 	event_music_init();
@@ -496,8 +501,8 @@ void fix_ship_name(int ship)
 int create_ship(matrix *orient, vec3d *pos, int ship_type)
 {
 	// Save the Current Working dir to restore in a minute - fred is being stupid
-	char pwd[128];
-	getcwd(pwd, 128); // get the present working dir - probably <fs2path>[/modpapth]/data/missions/
+	char pwd[MAX_PATH_LEN];
+	getcwd(pwd, MAX_PATH_LEN); // get the present working dir - probably <fs2path>[/modpapth]/data/missions/
 	
 
 	int obj, z1, z2;
@@ -713,9 +718,9 @@ int create_object(vec3d *pos, int waypoint_instance)
 			obj = create_player(Player_starts, pos, NULL, Default_player_model);
 
 	} else if (cur_model_index == Id_select_type_jump_node) {
-		CJumpNode* jnp = new CJumpNode(pos);
-		obj = jnp->GetSCPObjectNumber();
-		Jump_nodes.push_back(*jnp);
+		CJumpNode jnp(pos);
+		obj = jnp.GetSCPObjectNumber();
+		Jump_nodes.push_back(std::move(jnp));
 	} else if(Ship_info[cur_model_index].flags & SIF_NO_FRED){		
 		obj = -1;
 	} else {  // creating a ship
@@ -927,8 +932,8 @@ void clear_mission()
 	event_music_reset_choices();
 	clear_texture_replacements();
 
-	// alternate ship type names
-	mission_parse_reset_alt();
+	mission_parse_reset_alt();		// alternate ship type names
+	mission_parse_reset_callsign();
 
 	strcpy(Cargo_names[0], "Nothing");
 	Num_cargo = 1;
@@ -1466,28 +1471,6 @@ int delete_ship_from_wing(int ship)
 
 	set_modified();
 	return 0;
-}
-
-// What does this do?
-void add_ship_to_wing()
-{
-	int		org_object = cur_object_index;
-	vec3d	tvec;
-
-	set_cur_object_index();
-	if (Objects[org_object].type == OBJ_NONE) {
-		vm_vec_make(&tvec, 10.0f, 10.0f, 10.0f);
-		create_object(&tvec);
-	
-	} else {
-		Objects[cur_object_index] = Objects[org_object];
-		Objects[cur_object_index].pos.xyz.x += 3.0f;
-		Objects[cur_object_index].pos.xyz.y += 3.0f;
-		physics_init(&Objects[cur_object_index].phys_info);
-		Objects[cur_object_index].orient = Objects[org_object].orient;
-	}
-
-	set_modified();
 }
 
 //	Return true if current object is valid and is in a wing.

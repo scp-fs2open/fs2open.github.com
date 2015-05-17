@@ -68,7 +68,7 @@ void (*Rtv_callback)();
 // recording/encoding buffers
 static unsigned char *Rtv_capture_raw_buffer;
 static unsigned char *Rtv_capture_compressed_buffer;
-static int Rtv_capture_compressed_buffer_size;
+//static int Rtv_capture_compressed_buffer_size;
 static int Rtv_capture_raw_buffer_size;
 
 // playback/decoding buffers
@@ -278,7 +278,7 @@ int rtvoice_start_recording( void (*user_callback)(), int callback_time )
 // NOTE: function converts voice data into compressed format
 void rtvoice_get_data(unsigned char **outbuf, int *size, double *gain)
 {
-	int max_size, raw_size;
+	int max_size __attribute__((__unused__)), raw_size;
 	max_size = dscap_max_buffersize();
 
 	*outbuf=NULL;

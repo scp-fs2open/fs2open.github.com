@@ -20,6 +20,7 @@
 #include "weapon/emp.h"
 #include "localization/localize.h"
 #include "network/multi.h"
+#include "weapon/weapon.h"
 
 #define NUM_RETICLE_ANIS			11		// keep up to date when modifying the number of reticle ani files
 
@@ -277,7 +278,7 @@ void HudGaugeReticle::render(float frametime)
 
 void HudGaugeReticle::getFirepointStatus() {
 	//First, get the player ship
-	ship_info* pship;
+	ship_info* sip;
 	ship* shipp;
 	polymodel* pm;
 
@@ -285,30 +286,45 @@ void HudGaugeReticle::getFirepointStatus() {
 
 	if (Objects[Player->objnum].type == OBJ_SHIP) {
 		shipp = &Ships[Objects[Player->objnum].instance];
-		pship = &Ship_info[shipp->ship_info_index];
+		sip = &Ship_info[shipp->ship_info_index];
 	
 		//Get the player eyepoint
-		pm = model_get(pship->model_num);
+		pm = model_get(sip->model_num);
 
 		if (pm->n_view_positions == 0) {
 			mprintf(("Model %s does not have a defined eyepoint. Firepoint display could not be generated\n", pm->filename));
 		} else  {
-			if (pm->n_guns > 0) { 
-			
+			if (pm->n_guns > 0) {
 				eye eyepoint = pm->view_positions[shipp->current_viewpoint];
 				vec2d ep = { eyepoint.pnt.xyz.x, eyepoint.pnt.xyz.y };
 
 				for (int i = 0; i < pm->n_guns; i++) {
-					int isactive = 0;
+					int bankactive = 0;
+					ship_weapon *swp = &shipp->weapons;
 
 					if (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]))
-						isactive = 1;
+						bankactive = 1;
 					else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
-						isactive = 1;
+						bankactive = 1;
 					else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
-						isactive = 2;
+						bankactive = 2;
 
-					for (int j = 0; j < pm->gun_banks[i].num_slots; j++) {
+					int num_slots = pm->gun_banks[i].num_slots;
+					for (int j = 0; j < num_slots; j++) {
+						int fpactive = bankactive;
+
+						if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
+							// If this firepoint is not among the next shot(s) to be fired, dim it one step
+							if ( !( (j >= (shipp->last_fired_point[i]+1) % num_slots) && (j <= (shipp->last_fired_point[i]+swp->primary_bank_slot_count[i]) % num_slots) ) ) {
+								fpactive--;
+							}
+						} else if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CYCLE) {
+							// If this firepoint is not the next one to be fired, dim it one step
+							if (j != (shipp->last_fired_point[i]+1) % num_slots) {
+								fpactive--;
+							}
+						}
+
 						vec3d fpfromeye;
 
 						matrix eye_orient, player_transpose;
@@ -317,7 +333,7 @@ void HudGaugeReticle::getFirepointStatus() {
 						vm_matrix_x_matrix(&eye_orient, &player_transpose, &Eye_matrix);
 						vm_vec_rotate(&fpfromeye, &pm->gun_banks[i].pnt[j], &eye_orient);
 
-						firepoint tmp = { { fpfromeye.xyz.x - ep.x, ep.y - fpfromeye.xyz.y }, isactive };
+						firepoint tmp = { { fpfromeye.xyz.x - ep.x, ep.y - fpfromeye.xyz.y }, fpactive };
 						fp.push_back(tmp);
 					}
 				}
@@ -403,6 +419,16 @@ void HudGaugeThrottle::initMatchSpeedOffsets(int x, int y, bool custom)
 	Match_speed_offsets[0] = x;
 	Match_speed_offsets[1] = y;
 	Use_custom_match_speed = custom;
+
+	ubyte sc = lcl_get_font_index(font_num);
+	// NOTE: default to normal m because either
+	// a) the german font has no special m (its an a)
+	// b) the font has no special characters
+	if (sc == 0 || Lcl_gr) {
+		Match_speed_icon = ubyte ('m');
+	} else {
+		Match_speed_icon = sc + 3;
+	}
 }
 
 void HudGaugeThrottle::initBitmaps(char *fname)
@@ -572,13 +598,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 		}
 	} else if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
 		if ( Use_custom_match_speed ) {
-			if (Lcl_gr) {
-				// print an m, cuz the voice says its an m.  
-				// its a normal m cuz the german font has no special m (its an a)
-				renderString(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1], "m");
-			} else {
-				renderPrintf(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1], "%c", Lcl_special_chars + 3);
-			}
+			renderPrintf(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1], "%c", Match_speed_icon);
 		} else {
 			int offset;
 			if ( current_speed <= 9.5 ) {
@@ -587,13 +607,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 				offset = 3;
 			}
 
-			if (Lcl_gr) {
-				// print an m, cuz the voice says its an m.  
-				// its a normal m cuz the german font has no special m (its an a)
-				renderString(sx+offset, sy + h, "m");
-			} else {
-				renderPrintf(sx+offset, sy + h, "%c", Lcl_special_chars + 3);
-			}
+			renderPrintf(sx+offset, sy + h, "%c", Match_speed_icon);
 		}
 	}
 }

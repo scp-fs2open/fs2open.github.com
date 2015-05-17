@@ -53,7 +53,7 @@ extern int Num_weapon_subtypes;
 //#define	WIF_SHOCKWAVE		(1 << 8)				//	Explosion has a shockwave
 //WMC - These are no longer needed so these spots are free
 #define	WIF_HOMING_JAVELIN	(1 << 8)				// WC Saga Javelin HS style heatseeker, locks only on target's engines
-#define  WIF_TURNS			(1 << 9)				// Set this if the weapon ever changes heading.  If you
+#define	WIF_TURNS			(1 << 9)				// Set this if the weapon ever changes heading.  If you
 															// don't set this and the weapon turns, collision detection
 															// won't work, I promise!
 #define	WIF_SWARM			(1 << 10)			// Missile "swarms".. ie changes heading and twists on way to target
@@ -63,7 +63,7 @@ extern int Num_weapon_subtypes;
 #define	WIF_BOMB				(1 << 14)			// Bomb-type missile, can be targeted
 #define	WIF_HUGE				(1 << 15)			//	Huge damage (generally 500+), probably only fired at huge ships.
 #define	WIF_NO_DUMBFIRE	(1	<<	16)			// Missile cannot be fired dumbfire (ie requires aspect lock)
-#define  WIF_THRUSTER		(1 << 17)			// Has thruster cone and/or glow
+#define	WIF_THRUSTER		(1 << 17)			// Has thruster cone and/or glow
 #define	WIF_IN_TECH_DATABASE		(1 << 18)
 #define	WIF_PLAYER_ALLOWED		(1 << 19)   // allowed to be on starting wing ships/in weaponry pool
 #define	WIF_BOMBER_PLUS	(1 << 20)			//	Fire this missile only at a bomber or big ship.  But not a fighter.
@@ -71,14 +71,15 @@ extern int Num_weapon_subtypes;
 #define	WIF_CORKSCREW		(1 << 21)			// corkscrew style missile
 #define	WIF_PARTICLE_SPEW	(1 << 22)			// spews particles as it travels
 #define	WIF_EMP				(1 << 23)			// weapon explodes with a serious EMP effect
-#define  WIF_ENERGY_SUCK	(1 << 24)			// energy suck primary (impact effect)
+#define	WIF_ENERGY_SUCK	(1 << 24)			// energy suck primary (impact effect)
 #define	WIF_FLAK				(1 << 25)			// use for big-ship turrets - flak gun
 #define	WIF_BEAM				(1 << 26)			// if this is a beam weapon : NOTE - VERY SPECIAL CASE
 #define	WIF_TAG				(1 << 27)			// this weapon has a tag effect when it hits
 #define	WIF_SHUDDER			(1 << 28)			// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
-#define	WIF_MFLASH			(1 << 29)			// has muzzle flash
-#define	WIF_LOCKARM			(1 << 30)			// if the missile was fired without a lock, it does significanlty less damage on impact
-#define  WIF_STREAM			(1 << 31)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
+#define	WIF_LOCKARM			(1 << 29)			// if the missile was fired without a lock, it does significanlty less damage on impact
+#define	WIF_STREAM			(1 << 30)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
+// NOTE: the remaining WIF is reserved for a flag that truly needs to be in the WIF_ flag field,
+// as opposed to any typical new flag that can be added to WIF3
 
 #define WIF2_BALLISTIC					(1 << 0)	// ballistic primaries - Goober5000
 #define WIF2_PIERCE_SHIELDS				(1 << 1)	// shield pierceing -Bobboau
@@ -117,7 +118,11 @@ extern int Num_weapon_subtypes;
 #define WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS	(1 << 1)	// override MAX_TURRET_DISRUPT_TIME in emp.cpp - Goober5000
 #define WIF3_NO_LINKED_PENALTY			(1 << 2)	// This weapon does not count into linked firing penalty
 #define WIF3_NO_HOMING_SPEED_RAMP 		(1 << 3)	// Disables the 1s long speed ramping when firing locked-on secondaries
-
+#define WIF3_CMEASURE_ASPECT_HOME_ON	(1 << 4)	// This countermeasure flag makes aspect seekers home on the countermeasure instead of going into dumbfire mode
+#define WIF3_TURRET_INTERCEPTABLE		(1 << 5)	// These two flags mark a weapon as being interceptable by the AI
+#define WIF3_FIGHTER_INTERCEPTABLE		(1 << 6)	// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
+#define WIF3_AOE_ELECTRONICS			(1 << 7)	// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
+#define WIF3_APPLY_RECOIL				(1 << 8)	// Apply recoil using weapon and ship info
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -430,6 +435,9 @@ typedef struct weapon_info {
 	float emp_intensity;					// intensity of the EMP effect
 	float emp_time;						// time of the EMP effect
 
+	// Recoil effect
+	float recoil_modifier;
+
 	// Energy suck effect
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
@@ -598,7 +606,8 @@ int weapon_info_lookup(const char *name = NULL);
 void weapon_init();					// called at game startup
 void weapon_close();				// called at game shutdown
 void weapon_level_init();			// called before the start of each level
-void weapon_render(object * obj);
+void weapon_render_DEPRECATED(object * obj);
+void weapon_render(object* obj, draw_list *scene);
 void weapon_delete( object * obj );
 void weapon_process_pre( object *obj, float frame_time);
 void weapon_process_post( object *obj, float frame_time);
@@ -654,6 +663,8 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 void weapon_get_laser_color(color *c, object *objp);
 
 void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed);
+
+void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index);
 
 // return a scale factor for damage which should be applied for 2 collisions
 float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target);

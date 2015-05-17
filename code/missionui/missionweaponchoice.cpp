@@ -95,6 +95,8 @@ typedef struct wl_bitmap_group
 
 extern int anim_timer_start;
 
+int Weapon_select_overlay_id = -1;
+
 // convenient struct for handling all button controls
 struct wl_buttons {
 	char *filename;
@@ -777,12 +779,12 @@ void wl_render_overhead_view(float frametime)
 				if (gr_screen.res == GR_640)
 				{
 					// lo-res
-					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename);
+					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename, NULL, NULL, 0, CF_TYPE_INTERFACE);
 				} else {
 					// high-res
 					char filename[NAME_LENGTH+2] = "2_";
 					strcat_s(filename, sip->overhead_filename);
-					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename);
+					wl_ship->overhead_bitmap = bm_load_animation(sip->overhead_filename, NULL, NULL, 0, CF_TYPE_INTERFACE);
 				}
 
 				// load the bitmap
@@ -869,15 +871,13 @@ void wl_render_overhead_view(float frametime)
 				vm_rotate_matrix_by_angles(&object_orient, &rot_angles);
 			}
 
+			model_render_params render_info;
+
 			gr_set_clip(Wl_overhead_coords[gr_screen.res][0], Wl_overhead_coords[gr_screen.res][1], gr_screen.res == 0 ? 291 : 467, gr_screen.res == 0 ? 226 : 362, GR_RESIZE_MENU);
 			g3_start_frame(1);
 			g3_set_view_matrix( &sip->closeup_pos, &Eye_matrix, zoom);
-			model_set_detail_level(0);
-
-			if (!Cmdline_nohtl) {
-				gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-				gr_set_view_matrix(&Eye_position, &Eye_matrix);
-			}
+			render_info.set_detail_level_lock(0);
+			
 
 			light_reset();
 			vec3d light_dir = vmd_zero_vector;
@@ -890,7 +890,29 @@ void wl_render_overhead_view(float frametime)
             Glowpoint_use_depth_buffer = false;
             
 			model_clear_instance(wl_ship->model_num);
-			model_render(wl_ship->model_num, &object_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1);
+			polymodel *pm = model_get(wl_ship->model_num);
+
+			if(Cmdline_shadow_quality)
+			{
+				gr_reset_clip();
+				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, 
+					-sip->closeup_pos.xyz.z + pm->rad + 200.0f, -sip->closeup_pos.xyz.z + pm->rad + 2000.0f, -sip->closeup_pos.xyz.z + pm->rad + 10000.0f);
+
+				render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
+
+				model_render_immediate(&render_info, wl_ship->model_num, &object_orient, &vmd_zero_vector);
+				shadows_end_render();
+				gr_set_clip(Wl_overhead_coords[gr_screen.res][0], Wl_overhead_coords[gr_screen.res][1], gr_screen.res == 0 ? 291 : 467, gr_screen.res == 0 ? 226 : 362, GR_RESIZE_MENU);
+			}
+			
+			if (!Cmdline_nohtl) {
+				gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+				gr_set_view_matrix(&Eye_position, &Eye_matrix);
+			}
+
+			render_info.set_flags(MR_AUTOCENTER | MR_NO_FOGGING);
+
+			model_render_immediate(&render_info, wl_ship->model_num, &object_orient, &vmd_zero_vector);
 
             Glowpoint_use_depth_buffer = true;
             
@@ -902,7 +924,6 @@ void wl_render_overhead_view(float frametime)
 			vec3d subobj_pos;
 			int x, y;
 			int xc, yc;
-			polymodel *pm = model_get(wl_ship->model_num);
 			int num_found = 2;
 
 			//Render selected primary lines
@@ -1244,7 +1265,7 @@ void wl_load_icons(int weapon_class)
 
 	if(!Cmdline_weapon_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
 	{
-		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames);
+		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames, NULL, 0, CF_TYPE_INTERFACE);
 
 		for ( i = 0; (i < num_frames) && (i < NUM_ICON_FRAMES); i++ ) {
 			icon->icon_bmaps[i] = first_frame+i;
@@ -1955,7 +1976,8 @@ void weapon_select_init()
 	Assert( Wss_slots != NULL );
 	wl_set_disabled_weapons(Wss_slots[Selected_wl_slot].ship_class);
 
-	help_overlay_set_state(WL_OVERLAY,0);
+	Weapon_select_overlay_id = help_overlay_get_index(WL_OVERLAY);
+	help_overlay_set_state(Weapon_select_overlay_id,gr_screen.res,0);
 
 	if ( Weapon_select_open ) {
 		wl_maybe_reset_selected_weapon_class();
@@ -2255,6 +2277,8 @@ void wl_render_weapon_desc(float frametime)
 	int *weapon_desc_coords;
 	int *weapon_title_coords;
 
+	int line_height = gr_get_font_height() + 1;
+
 	// retrieve the correct set of text coordinates
 	if (Game_mode & GM_MULTIPLAYER) {
 		weapon_desc_coords = Wl_new_weapon_desc_coords_multi[gr_screen.res];
@@ -2283,12 +2307,12 @@ void wl_render_weapon_desc(float frametime)
 
 				// draw the strings
 				gr_set_color_fast(&Color_white);			
-				gr_string(weapon_title_coords[0], weapon_title_coords[1]+(10*i), Weapon_desc_lines[i], GR_RESIZE_MENU);
+				gr_string(weapon_title_coords[0], weapon_title_coords[1]+(line_height*i), Weapon_desc_lines[i], GR_RESIZE_MENU);
 
 				// draw the bright letters
 				gr_set_color_fast(&Color_bright_white);
 				gr_get_string_size(&w, &h, Weapon_desc_lines[i], curr_len);
-				gr_printf_menu(weapon_title_coords[0]+w, weapon_title_coords[1]+(10*i), "%c", bright_char[i]);
+				gr_printf_menu(weapon_title_coords[0]+w, weapon_title_coords[1]+(line_height*i), "%c", bright_char[i]);
 
 				// restore the bright char to the string
 				Weapon_desc_lines[i][bright_char_index] = bright_char[i];
@@ -2296,7 +2320,7 @@ void wl_render_weapon_desc(float frametime)
 			} else {
 				// draw the string
 				gr_set_color_fast(&Color_white);
-				gr_string(weapon_title_coords[0], weapon_title_coords[1]+(10*i), Weapon_desc_lines[i], GR_RESIZE_MENU);
+				gr_string(weapon_title_coords[0], weapon_title_coords[1]+(line_height*i), Weapon_desc_lines[i], GR_RESIZE_MENU);
 			}
 		}
 
@@ -2311,12 +2335,12 @@ void wl_render_weapon_desc(float frametime)
 
 				// draw the string
 				gr_set_color_fast(&Color_white);
-				gr_string(weapon_desc_coords[0], weapon_desc_coords[1]+(10*(i-2)), Weapon_desc_lines[i], GR_RESIZE_MENU);
+				gr_string(weapon_desc_coords[0], weapon_desc_coords[1]+(line_height*(i-2)), Weapon_desc_lines[i], GR_RESIZE_MENU);
 
 				// draw the bright letters
 				gr_set_color_fast(&Color_bright_white);
 				gr_get_string_size(&w, &h, Weapon_desc_lines[i], curr_len);
-				gr_printf_menu(weapon_desc_coords[0]+w, weapon_desc_coords[1]+(10*(i-2)), "%c", bright_char[i]);
+				gr_printf_menu(weapon_desc_coords[0]+w, weapon_desc_coords[1]+(line_height*(i-2)), "%c", bright_char[i]);
 
 				// restore the bright char to the string
 				Weapon_desc_lines[i][bright_char_index] = bright_char[i];
@@ -2324,7 +2348,7 @@ void wl_render_weapon_desc(float frametime)
 			} else {
 				// draw the string
 				gr_set_color_fast(&Color_white);
-				gr_string(weapon_desc_coords[0], weapon_desc_coords[1]+(10*(i-2)), Weapon_desc_lines[i], GR_RESIZE_MENU);
+				gr_string(weapon_desc_coords[0], weapon_desc_coords[1]+(line_height*(i-2)), Weapon_desc_lines[i], GR_RESIZE_MENU);
 			}
 		}
 
@@ -2341,11 +2365,11 @@ void wl_render_weapon_desc(float frametime)
 		// FIXME - change to use a for loop 
 		gr_set_color_fast(&Color_white);
 		gr_string(weapon_title_coords[0], weapon_title_coords[1], Weapon_desc_lines[0], GR_RESIZE_MENU);
-		gr_string(weapon_title_coords[0], weapon_title_coords[1] + 10, Weapon_desc_lines[1], GR_RESIZE_MENU);
+		gr_string(weapon_title_coords[0], weapon_title_coords[1] + line_height, Weapon_desc_lines[1], GR_RESIZE_MENU);
 		gr_string(weapon_desc_coords[0], weapon_desc_coords[1], Weapon_desc_lines[2], GR_RESIZE_MENU);
-		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + 10, Weapon_desc_lines[3], GR_RESIZE_MENU);
-		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + 20, Weapon_desc_lines[4], GR_RESIZE_MENU);
-		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + 30, Weapon_desc_lines[5], GR_RESIZE_MENU);
+		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height, Weapon_desc_lines[3], GR_RESIZE_MENU);
+		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height * 2, Weapon_desc_lines[4], GR_RESIZE_MENU);
+		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height * 3, Weapon_desc_lines[5], GR_RESIZE_MENU);
 	}
 }
 
@@ -2656,11 +2680,13 @@ void weapon_select_do(float frametime)
 		weapon_ani_coords = Wl_weapon_ani_coords[gr_screen.res];
 	}
 
-	if(Wl_icons[Selected_wl_class].model_index != -1) {
+	if(Selected_wl_class != -1 && Wl_icons[Selected_wl_class].model_index != -1) {
 		static float WeapSelectScreenWeapRot = 0.0f;
 		wl_icon_info *sel_icon	= &Wl_icons[Selected_wl_class];
 		weapon_info *wip = &Weapon_info[Selected_wl_class];
-		draw_model_rotating(sel_icon->model_index,
+		model_render_params render_info;
+		draw_model_rotating(&render_info, 
+			sel_icon->model_index,
 			weapon_ani_coords[0],
 			weapon_ani_coords[1],
 			gr_screen.res == 0 ? 202 : 332,
@@ -2669,7 +2695,7 @@ void weapon_select_do(float frametime)
 			&Weapon_info->closeup_pos,
 			Weapon_info->closeup_zoom * 0.65f,
 			REVOLUTION_RATE,
-			MR_IS_MISSILE | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING,
+			MR_IS_MISSILE | MR_AUTOCENTER | MR_NO_FOGGING,
 			GR_RESIZE_MENU,
 			wip->selection_effect);
 	}
@@ -2679,7 +2705,7 @@ void weapon_select_do(float frametime)
 		if ( Weapon_anim_class != Selected_wl_class )
 			start_weapon_animation(Selected_wl_class);
  
-		generic_anim_render(&Cur_Anim, (help_overlay_active(WL_OVERLAY)) ? 0 : frametime, weapon_ani_coords[0], weapon_ani_coords[1], true);
+		generic_anim_render(&Cur_Anim, (help_overlay_active(Weapon_select_overlay_id)) ? 0 : frametime, weapon_ani_coords[0], weapon_ani_coords[1], true);
 	}
 
 	if ( !Background_playing ) {
@@ -2725,7 +2751,7 @@ void weapon_select_do(float frametime)
 				if(icon->model_index != -1)
 				{
 					//Draw the model
-					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info->closeup_zoom / 2.5f, sx, sy, w, h, NULL, GR_RESIZE_MENU);
+					draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info->closeup_zoom / 2.5f, sx, sy, w, h, NULL, GR_RESIZE_MENU);
 				}
 				else if(icon->laser_bmap != -1)
 				{
@@ -2814,7 +2840,7 @@ void weapon_select_do(float frametime)
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(WL_OVERLAY);
+	help_overlay_maybe_blit(Weapon_select_overlay_id, gr_screen.res);
 	gr_flip();	
 
 	// If the commit button was pressed, do the commit button actions.  Done at the end of the
@@ -2851,8 +2877,6 @@ void weapon_select_close()
 	Weapon_ui_window.destroy();
 
 	// unload bitmaps
-	help_overlay_unload(WL_OVERLAY);
-
 	bm_release(WeaponSelectMaskBitmap);
 
 	wl_unload_icons();
@@ -2970,7 +2994,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		if(icon->model_index != -1)
 		{
 			//Draw the model
-			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info[index].closeup_zoom * 0.4f, x, y, 56, 24, NULL, GR_RESIZE_MENU);
+			draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info[index].closeup_zoom * 0.4f, x, y, 56, 24, NULL, GR_RESIZE_MENU);
 		}
 		else if(icon->laser_bmap != -1)
 		{

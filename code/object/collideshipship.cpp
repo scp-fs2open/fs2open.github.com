@@ -27,6 +27,7 @@
 #include "object/objectdock.h"
 #include "object/objectshield.h"
 #include "parse/scripting.h"
+#include "debugconsole/console.h"
 
 
 #define COLLIDE_DEBUG
@@ -171,15 +172,6 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		}
 	}
 
-	//	If either of these objects doesn't get collision checks, abort.
-	if (heavy_sip->flags & SIF_NO_COLLIDE) {
-		return 0;
-	}
-
-	if (light_sip->flags & SIF_NO_COLLIDE) {
-		return 0;
-	}
-
 	// Set up model_collide info
 	mc_info mc;
 	mc_info_init(&mc);
@@ -207,9 +199,16 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		mc.p0 = &p0_rotated;				// Point 1 of ray to check
 		vm_vec_sub(&ship_ship_hit_info->light_rel_vel, &p1, &p0_rotated);
 		vm_vec_scale(&ship_ship_hit_info->light_rel_vel, 1/flFrametime);
-	} else {
-		// should be no ships that can rotate this fast
-		Int3();
+	}
+	// should be no ships that can rotate this fast
+	else {
+#ifndef NDEBUG
+		static bool Warned_about_fast_rotational_collisions = false;
+		if (!Warned_about_fast_rotational_collisions) {
+			Warning(LOCATION, "Ship '%s' rotates too quickly!  Rotational collision detection has been skipped.", heavy_sip->name);
+			Warned_about_fast_rotational_collisions = true;
+		}
+#endif
 		ship_ship_hit_info->collide_rotate = 0;
 		mc.p0 = &p0;							// Point 1 of ray to check
 		vm_vec_sub(&ship_ship_hit_info->light_rel_vel, &light_obj->phys_info.vel, &heavy_obj->phys_info.vel);

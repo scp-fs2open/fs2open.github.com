@@ -33,7 +33,7 @@ plr_data::plr_data()
 	// not carried over, just for reference during conversion process
 	version = 0;
 	is_multi = 0;
-
+	lcl_get_language_name(language);
 
 	// basic flags and settings
 	tips = 0;
@@ -551,6 +551,9 @@ void pilotfile_convert::plr_export_flags()
 
 	// What game mode we were in last on this pilot
 	cfwrite_int(plr->is_multi, cfp);
+
+	// which language was this pilot created with
+	cfwrite_string_len(plr->language, cfp);
 
 	endSection();
 }

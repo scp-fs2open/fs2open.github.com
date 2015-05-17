@@ -47,6 +47,7 @@
 #include "network/multi_campaign.h"
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
+#include "pilotfile/pilotfile.h"
 
 
 #define MAX_TOTAL_DEBRIEF_LINES	200
@@ -59,6 +60,10 @@
 #define DEBRIEF_MISSION_KILLS		1
 #define DEBRIEF_ALLTIME_STATS		2
 #define DEBRIEF_ALLTIME_KILLS		3
+
+#define DEBRIEFING_FONT	FONT1
+
+extern float Brief_text_wipe_time_elapsed;
 
 // 3rd coord is max width in pixels
 int Debrief_title_coords[GR_NUM_RESOLUTIONS][3] = {
@@ -325,10 +330,6 @@ static int Recommend_active;
 static int Award_active;
 static int Text_offset;
 static int Num_text_lines = 0;
-static int Num_debrief_lines = 0;
-//static int Num_normal_debrief_lines = 0;
-static int Text_type[MAX_TOTAL_DEBRIEF_LINES];
-static char *Text[MAX_TOTAL_DEBRIEF_LINES];
 
 static int Debrief_inited = 0;
 static int New_stage;
@@ -340,6 +341,8 @@ static int Debrief_music_timeout = 0;
 
 static int Multi_list_size;
 static int Multi_list_offset;
+
+int Debrief_overlay_id;
 
 int Debrief_multi_stages_loaded = 0;
 int Debrief_multi_voice_loaded = 0;
@@ -490,7 +493,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Badge"))) {
 		if (Badge_bitmap >= 0){
-			return Medals[Player->stats.m_badge_earned].name;
+			return Medals[Player->stats.m_badge_earned.back()].name;
 		}
 	}
 
@@ -854,8 +857,8 @@ void debrief_ui_init()
 	debrief_buttons_init();
 
 	// load in help overlay bitmap	
-	help_overlay_load(DEBRIEFING_OVERLAY);
-	help_overlay_set_state(DEBRIEFING_OVERLAY,0);
+	Debrief_overlay_id = help_overlay_get_index(DEBRIEFING_OVERLAY);
+	help_overlay_set_state(Debrief_overlay_id,gr_screen.res,0);
 
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// close down any old instances of the chatbox
@@ -1018,25 +1021,25 @@ void debrief_award_init()
 
 	// handle badge earned
 	// only grant badge if earned and allowed.  (no_promotion really means no promotion and no badges)
-	if ( Player->stats.m_badge_earned != -1 ) {
-		debrief_choose_medal_variant(buf, Player->stats.m_badge_earned, Player->stats.medal_counts[Player->stats.m_badge_earned] - 1);
+	if ( Player->stats.m_badge_earned.size() ) {
+		debrief_choose_medal_variant(buf, Player->stats.m_badge_earned.back(), Player->stats.medal_counts[Player->stats.m_badge_earned.back()] - 1);
 		Badge_bitmap = bm_load(buf);
 
 		// see if we have a persona
 		int persona_index = debrief_find_persona_index();
 
 		// use persona-specific badge text if it exists; otherwise, use default
-		if (Medals[Player->stats.m_badge_earned].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned].promotion_text.end()) {
-			Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text[persona_index];
+		if (Medals[Player->stats.m_badge_earned.back()].promotion_text.find(persona_index) != Medals[Player->stats.m_badge_earned.back()].promotion_text.end()) {
+			Badge_stage.text = Medals[Player->stats.m_badge_earned.back()].promotion_text[persona_index];
 		} else {
-			Badge_stage.text = Medals[Player->stats.m_badge_earned].promotion_text[-1];
+			Badge_stage.text = Medals[Player->stats.m_badge_earned.back()].promotion_text[-1];
 		}
 		Badge_stage.recommendation_text = "";
 
 		// choose appropriate badge voice for this mission
-		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned].voice_base, persona_index);
+		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
 
-		debrief_add_award_text(Medals[Player->stats.m_badge_earned].name);
+		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].name);
 	}
 
 	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0)) {
@@ -1055,56 +1058,51 @@ void debrief_traitor_init()
 	if ( !inited ) {
 		debriefing		*debrief;
 		debrief_stage	*stagep;
-		int rval;
 		int stage_num;
+		
+		try
+		{
+			read_file_text("traitor.tbl", CF_TYPE_TABLES);
+			reset_parse();
 
-		// open localization
-		lcl_ext_open();
+			// simplied form of the debriefing stuff.
+			debrief = &Traitor_debriefing;
+			required_string("#Debriefing_info");
 
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "traitor.tbl", rval));
-			lcl_ext_close();
+			required_string("$Num stages:");
+			stuff_int(&debrief->num_stages);
+			Assert(debrief->num_stages == 1);
+
+			stage_num = 0;
+			stagep = &debrief->stages[stage_num++];
+			required_string("$Formula:");
+			stagep->formula = get_sexp_main();
+			required_string("$multi text");
+			stuff_string(stagep->text, F_MULTITEXT, NULL);
+			required_string("$Voice:");
+			char traitor_voice_file[MAX_FILENAME_LEN];
+			stuff_string(traitor_voice_file, F_FILESPEC, MAX_FILENAME_LEN);
+
+			// DKA 9/13/99	Only 1 traitor msg for FS2
+			//		if ( Player->main_hall ) {
+			//			strcpy_s(stagep->voice, NOX("3_"));
+			//		} else {
+			//			strcpy_s(stagep->voice, NOX("1_"));
+			//		}
+
+			// Goober5000
+			debrief_choose_voice(stagep->voice, traitor_voice_file, debrief_find_persona_index(), 1);
+
+			required_string("$Recommendation text:");
+			stuff_string(stagep->recommendation_text, F_MULTITEXT, NULL);
+
+			inited = 1;
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "traitor.tbl", e.what()));
 			return;
 		}
-
-		read_file_text("traitor.tbl", CF_TYPE_TABLES);
-		reset_parse();		
-
-		// simplied form of the debriefing stuff.
-		debrief = &Traitor_debriefing;
-		required_string("#Debriefing_info");
-
-		required_string("$Num stages:");
-		stuff_int(&debrief->num_stages);
-		Assert(debrief->num_stages == 1);
-
-		stage_num = 0;
-		stagep = &debrief->stages[stage_num++];
-		required_string("$Formula:");
-		stagep->formula = get_sexp_main();
-		required_string("$multi text");
-		stuff_string( stagep->text, F_MULTITEXT, NULL);
-		required_string("$Voice:");
-		char traitor_voice_file[MAX_FILENAME_LEN];
-		stuff_string(traitor_voice_file, F_FILESPEC, MAX_FILENAME_LEN);
-
-// DKA 9/13/99	Only 1 traitor msg for FS2
-//		if ( Player->main_hall ) {
-//			strcpy_s(stagep->voice, NOX("3_"));
-//		} else {
-//			strcpy_s(stagep->voice, NOX("1_"));
-//		}
-
-		// Goober5000
-		debrief_choose_voice(stagep->voice, traitor_voice_file, debrief_find_persona_index(), 1);
-
-		required_string("$Recommendation text:");
-		stuff_string( stagep->recommendation_text, F_MULTITEXT, NULL);
-
-		inited = 1;
-
-		// close localization
-		lcl_ext_close();
 	}
 
 	// disable the accept button if in single player and I am a traitor
@@ -1350,6 +1348,8 @@ void debrief_accept(int ok_to_post_start_game_event)
 		// mission that isn't in a campaign.
 		if ( Game_mode & GM_CAMPAIGN_MODE ) {
 
+			mission_campaign_store_variables();
+
 			// check for possible mission loop
 			// check for (1) mission loop available, (2) don't have to repeat last mission
 			if(!(Game_mode & GM_MULTIPLAYER)){
@@ -1389,8 +1389,8 @@ void debrief_accept(int ok_to_post_start_game_event)
 					Campaign.loop_enabled = 0;
 				}
 
-				// check if campaign is over
-				if ( Campaign.next_mission == -1 ) {
+				// check if campaign is over, or if FREDer wants the mainhall
+				if ( Campaign.next_mission == -1 || (The_mission.flags & MISSION_FLAG_END_TO_MAINHALL) ) {
 					gameseq_post_event(GS_EVENT_MAIN_MENU);
 				} else {
 					if ( ok_to_post_start_game_event ) {
@@ -1508,38 +1508,6 @@ void debrief_render_mission_time(int y_loc)
 	game_format_time(Missiontime, time_str);
 	gr_string(0, y_loc, XSTR( "Mission Time", 446), GR_RESIZE_MENU);
 	gr_string(Debrief_text_x2[gr_screen.res], y_loc, time_str, GR_RESIZE_MENU);	
-}
-
-// render out the debriefing text to the scroll window
-void debrief_render()
-{
-	int y, z, font_height;
-
-	if ( Num_stages <= 0 )
-		return;
-
-	font_height = gr_get_font_height();
-
-	gr_set_clip(Debrief_text_wnd_coords[gr_screen.res][0], Debrief_text_wnd_coords[gr_screen.res][1], Debrief_text_wnd_coords[gr_screen.res][2], Debrief_text_wnd_coords[gr_screen.res][3], GR_RESIZE_MENU);
-	y = 0;
-	z = Text_offset;
-	while (y + font_height <= Debrief_text_wnd_coords[gr_screen.res][3]) {
-		if (z >= Num_text_lines)
-			break;
-
-		if (Text_type[z] == TEXT_TYPE_NORMAL)
-			gr_set_color_fast(&Color_white);
-		else
-			gr_set_color_fast(&Color_bright_red);
-
-		if (Text[z])
-			gr_string(0, y, Text[z], GR_RESIZE_MENU);
-
-		y += font_height;
-		z++;
-	}
-
-	gr_reset_clip();
 }
 
 // render out the stats info to the scroll window
@@ -1692,7 +1660,7 @@ void debrief_button_pressed(int num)
 			break;
 
 		case TEXT_SCROLL_DOWN:
-			if (Max_debrief_Lines < Num_text_lines) {
+			if (Max_debrief_Lines < (Num_text_lines - Text_offset)) {
 				Text_offset++;
 				gamesnd_play_iface(SND_SCROLL);
 			} else {
@@ -1851,44 +1819,6 @@ void debrief_check_buttons()
 	*/
 }
 
-void debrief_text_stage_init(const char *src, int type)
-{
-	int i, n_lines, n_chars[MAX_DEBRIEF_LINES];
-	char line[MAX_DEBRIEF_LINE_LEN];
-	const char *p_str[MAX_DEBRIEF_LINES];
-
-	n_lines = split_str(src, Debrief_text_wnd_coords[gr_screen.res][2], n_chars, p_str, MAX_DEBRIEF_LINES);
-	Assert(n_lines >= 0);
-
-	// if you hit this, you proba	
-	if(n_lines >= MAX_DEBRIEF_LINES){
-		Warning(LOCATION, "You have come close to the limit of debriefing lines, try adding more stages");	
-	}
-
-	for ( i=0; i<n_lines; i++ ) {
-		Assert(n_chars[i] < MAX_DEBRIEF_LINE_LEN);
-		Assert(Num_text_lines < MAX_TOTAL_DEBRIEF_LINES);
-		strncpy(line, p_str[i], n_chars[i]);
-		line[n_chars[i]] = 0;
-		drop_white_space(line);
-		Text_type[Num_text_lines] = type;
-		Text[Num_text_lines++] = vm_strdup(line);
-	}
-
-	return;
-}
-
-void debrief_free_text()
-{
-	int i;
-
-	for (i=0; i<Num_debrief_lines; i++)
-		if (Text[i])
-			vm_free(Text[i]);
-
-	Num_debrief_lines = 0;
-}
-
 // setup the debriefing text lines for rendering
 void debrief_text_init()
 {
@@ -1905,21 +1835,20 @@ void debrief_text_init()
 		}
 	}
 
-	// release old text lines first
-	debrief_free_text();
-	Num_text_lines = Text_offset = 0;
+	Num_text_lines = Text_offset = brief_color_text_init("", Debrief_text_wnd_coords[gr_screen.res][2], default_debriefing_color, 0, 0);	// Initialize color stuff -MageKing17
 
 	fsspeech_start_buffer();
 
 	if (Current_mode == DEBRIEF_TAB) {
 		for (i=0; i<Num_debrief_stages; i++) {
 			if (i)
-				Text[Num_text_lines++] = NULL;  // add a blank line between stages
+				// add a blank line between stages
+				Num_text_lines += brief_color_text_init("\n", Debrief_text_wnd_coords[gr_screen.res][2], default_debriefing_color, 0, MAX_DEBRIEF_LINES, true);
 
 			src = Debrief_stages[i]->text.c_str();
 
 			if (*src) {
-				debrief_text_stage_init(src, TEXT_TYPE_NORMAL);
+				Num_text_lines += brief_color_text_init(src, Debrief_text_wnd_coords[gr_screen.res][2], default_debriefing_color, 0, MAX_DEBRIEF_LINES, true);
 
 				if (use_sim_speech && !Recommend_active) {
 					fsspeech_stuff_buffer(src);
@@ -1934,8 +1863,9 @@ void debrief_text_init()
 					src = XSTR( "We have no recommendations for you.", 1054);
 
 				if (*src) {
-					Text[Num_text_lines++] = NULL;
-					debrief_text_stage_init(src, TEXT_TYPE_RECOMMENDATION);
+					Num_text_lines += brief_color_text_init("\n", Debrief_text_wnd_coords[gr_screen.res][2], default_recommendation_color, 0, MAX_DEBRIEF_LINES, true);
+
+					Num_text_lines += brief_color_text_init(src, Debrief_text_wnd_coords[gr_screen.res][2], default_recommendation_color, 0, MAX_DEBRIEF_LINES, true);
 					r_count++;
 
 					if (use_sim_speech) {
@@ -1945,8 +1875,8 @@ void debrief_text_init()
 				}
 			}
 		}
+		Brief_text_wipe_time_elapsed = BRIEF_TEXT_WIPE_TIME;	// Skip the wipe effect
 
-		Num_debrief_lines = Num_text_lines;
 		if(use_sim_speech) {
 			fsspeech_play_buffer(FSSPEECH_FROM_BRIEFING);
 		}
@@ -1998,6 +1928,9 @@ void debrief_init()
 //	Campaign.loop_enabled = 0;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
 
+	// MageKing17 - Set the font so that wordwrapping in brief_color_text_init() calculates based on the same font as the debriefing itself.
+	gr_set_font(DEBRIEFING_FONT);
+
 	// set up the right briefing for this guy
 	if(MULTI_TEAM){
 		Debriefing = &Debriefings[Net_player->p_info.team];
@@ -2022,7 +1955,7 @@ void debrief_init()
 	Current_stage = -1;
 	New_stage = 0;
 	Debrief_cue_voice = 0;
-	Num_text_lines = Num_debrief_lines = 0;
+	Num_text_lines = 0;
 	Debrief_first_voice_flag = 1;
 
 	Debrief_multi_voice_loaded = 0;
@@ -2030,7 +1963,7 @@ void debrief_init()
 	if ( (Game_mode & GM_CAMPAIGN_MODE) && ( !MULTIPLAYER_CLIENT )	) {
 		// MUST store goals and events first - may be used to evaluate next mission
 		// store goals and events
-		mission_campaign_store_goals_and_events_and_variables();
+		mission_campaign_store_goals_and_events();
 
 		// evaluate next mission
 		mission_campaign_eval_next_mission();
@@ -2087,6 +2020,9 @@ void debrief_init()
 	}
 	*/
 
+	// Just calculate this once instead of every frame. -MageKing17
+	Max_debrief_Lines = Debrief_text_wnd_coords[gr_screen.res][3]/gr_get_font_height(); //Make the max number of lines dependent on the font height.
+
 	// start up the appropriate music
 	debrief_init_music();
 
@@ -2123,6 +2059,7 @@ void debrief_init()
 void debrief_close()
 {
 	int i;
+	scoring_struct *sc;
 
 	Assert(Debrief_inited);
 
@@ -2135,11 +2072,17 @@ void debrief_close()
 			if(MULTIPLAYER_MASTER){
 				for(i=0; i<MAX_PLAYERS; i++){
 					if(MULTI_CONNECTED(Net_players[i]) && !MULTI_STANDALONE(Net_players[i]) && !MULTI_PERM_OBSERVER(Net_players[i]) && (Net_players[i].m_player != NULL)){
-						scoring_backout_accept(&Net_players[i].m_player->stats);
+						sc = &Net_players[i].m_player->stats;
+						scoring_backout_accept(sc);
+
+						if (Net_player == &Net_players[i]) {
+							Pilot.update_stats_backout( sc );
+						}
 					}
 				}
 			} else {
 				scoring_backout_accept( &Player->stats );
+				Pilot.update_stats_backout( &Player->stats );
 			}
 		}
 	} else {
@@ -2150,6 +2093,7 @@ void debrief_close()
 				Campaign.next_mission = Campaign.current_mission;
 			}
 			scoring_backout_accept( &Player->stats );
+			Pilot.update_stats_backout( &Player->stats );
 		}
 	}
 
@@ -2158,19 +2102,8 @@ void debrief_close()
 		Player->show_skip_popup = 1;
 	}
 
-	if (Num_debrief_lines) {
-		for (i=0; i<Num_debrief_lines; i++){
-			if (Text[i]){
-				vm_free(Text[i]);
-			}
-		}
-	}
-
 	// clear out debrief info parsed from mission file - taylor
 	mission_debrief_common_reset();
-
-	// unload the overlay bitmap
-//	help_overlay_unload(DEBRIEFING_OVERLAY);
 
 	// clear out award text 
 	Debrief_award_text_num_lines = 0;
@@ -2327,6 +2260,8 @@ void debrief_add_award_text(char *str)
 	// maybe translate for displaying
 	if (Lcl_gr) {
 		lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
+	} else if (Lcl_pl) {
+		lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
 	}
 
 	Debrief_award_text_num_lines++;
@@ -2412,7 +2347,7 @@ void debrief_do_frame(float frametime)
 		Debrief_multi_voice_loaded = 1;
 	}
 
-	if ( help_overlay_active(DEBRIEFING_OVERLAY) ) {
+	if ( help_overlay_active(Debrief_overlay_id) ) {
 		Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 		Debrief_ui_window.set_ignore_gadgets(1);
 	}
@@ -2427,15 +2362,15 @@ void debrief_do_frame(float frametime)
 	}
 
 	if ( (k > 0) || (new_k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(DEBRIEFING_OVERLAY) ) {
-			help_overlay_set_state(DEBRIEFING_OVERLAY, 0);
+		if ( help_overlay_active(Debrief_overlay_id) ) {
+			help_overlay_set_state(Debrief_overlay_id, gr_screen.res, 0);
 			Debrief_ui_window.set_ignore_gadgets(0);
 			k = 0;
 			new_k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(DEBRIEFING_OVERLAY) ) {
+	if ( !help_overlay_active(Debrief_overlay_id) ) {
 		Debrief_ui_window.set_ignore_gadgets(0);
 	}
 
@@ -2537,6 +2472,9 @@ void debrief_do_frame(float frametime)
 	gr_printf_menu(Debrief_title_coords[gr_screen.res][0], Debrief_title_coords[gr_screen.res][1] - 10, NOX("[name: %s, mod: %s]"), Mission_filename, The_mission.modified);
 #endif
 
+	// Set the font for the debriefing instead of relying on the implicit font-setting of Debrief_ui_window.draw() -MageKing17
+	gr_set_font(DEBRIEFING_FONT);
+
 	// draw the screen-specific text
 	switch (Current_mode) {
 		case DEBRIEF_TAB:
@@ -2546,7 +2484,7 @@ void debrief_do_frame(float frametime)
 				gr_printf_menu(Debrief_text_wnd_coords[gr_screen.res][0], Debrief_text_wnd_coords[gr_screen.res][1], XSTR( "No Debriefing for mission: %s", 458), Game_current_mission_filename);
 
 			} else {
-				debrief_render();
+				brief_render_text(Text_offset, Debrief_text_wnd_coords[gr_screen.res][0], Debrief_text_wnd_coords[gr_screen.res][1], Debrief_text_wnd_coords[gr_screen.res][3], frametime);
 			}
 
 			break;
@@ -2556,16 +2494,10 @@ void debrief_do_frame(float frametime)
 			break;
 	} // end switch
 
-	if (gr_screen.res == 1) {
-		Max_debrief_Lines = 450/gr_get_font_height(); //Make the max number of lines dependent on the font height. 225 and 85 are magic numbers, based on the window size in retail. 
-	} else {
-		Max_debrief_Lines = 340/gr_get_font_height();
-	}
-
-	if (Max_debrief_Lines < Num_text_lines) {
+	if ( (Max_debrief_Lines + Text_offset) < Num_text_lines ) {
 		int w;
 
-		gr_set_color_fast(&Color_red);
+		gr_set_color_fast(&Color_more_indicator);
 		gr_get_string_size(&w, NULL, XSTR( "More", 459));
 		gr_printf_menu(Debrief_text_wnd_coords[gr_screen.res][0] + Debrief_text_wnd_coords[gr_screen.res][2] / 2 - w / 2, Debrief_text_wnd_coords[gr_screen.res][1] + Debrief_text_wnd_coords[gr_screen.res][3], XSTR( "More", 459));
 	}
@@ -2588,13 +2520,13 @@ void debrief_do_frame(float frametime)
 	// AL 3-6-98: Needed to move key reading here, since popups are launched from this code, and we don't
 	//				  want to include the mouse pointer which is drawn in the flip
 
-	if ( !help_overlay_active(DEBRIEFING_OVERLAY) ) {
+	if ( !help_overlay_active(Debrief_overlay_id) ) {
 		debrief_check_buttons();
 		debrief_do_keys(new_k);	
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(DEBRIEFING_OVERLAY);
+	help_overlay_maybe_blit(Debrief_overlay_id, gr_screen.res);
 
 	gr_flip();
 
