@@ -538,7 +538,7 @@ void obj_snd_do_frame()
 					}
 				} else {
 					// Volume ramps from min_engine_vol (when stationary) to 1.0 (when at full speed)
-					speed_vol_multiplier = sip->min_engine_vol + ((1.0f - sip->min_engine_vol) * percent_max)
+					speed_vol_multiplier = sip->min_engine_vol + ((1.0f - sip->min_engine_vol) * percent_max);
 				}
 			}
 			if (osp->ss != NULL)
