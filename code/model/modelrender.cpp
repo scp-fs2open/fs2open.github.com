@@ -493,18 +493,11 @@ void draw_list::add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags
 	draw_data.texi = texi;
 	draw_data.flags = tmap_flags;
 
-	draw_data.clr = gr_screen.current_color;
 	draw_data.alpha = Current_alpha;
 	draw_data.blend_filter = Current_blend_filter;
 	draw_data.depth_mode = Current_depth_mode;
 
 	if ( tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS ) {
- 		draw_data.transformation = transform();
- 
-  		draw_data.scale.xyz.x = 1.0f;
-  		draw_data.scale.xyz.y = 1.0f;
-  		draw_data.scale.xyz.z = 1.0f;
-
 		draw_data.transform_buffer_offset = TransformBufferHandler.get_buffer_offset();
 	} else {
 		draw_data.transformation = Current_transform;
