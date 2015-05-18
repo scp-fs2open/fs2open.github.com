@@ -2107,7 +2107,7 @@ void labviewer_make_ship_window(Button *caller)
 			stip = Lab_species_nodes[Species_info.size()];
 		}
 
-		ctip = cmp->AddItem(stip, it->name, idx, false, labviewer_change_ship);
+		ctip = cmp->AddItem(stip, it->name, std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
 
 		if ( !Lab_in_mission ) {
 			for (int j = 0; j < it->num_detail_levels; j++) {
