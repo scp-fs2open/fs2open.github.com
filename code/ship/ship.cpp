@@ -1846,8 +1846,6 @@ int parse_ship_template()
 	
 	rtn = parse_ship_values( sip, true, first_time, false );
 	
-	Assertion(ship_template_lookup(sip->name) == -1, "Somehow, despite checking for duplicate templates before parsing, we wound up with one (%s) anyway. Get a coder!\n", sip->name);
-	
 	return rtn;
 }
 
