@@ -56,15 +56,57 @@ CJumpNode::CJumpNode(vec3d *position) : m_radius(0.0f), m_modelnum(-1), m_objnum
     m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, &m_pos, m_radius, OF_RENDERS);
 }
 
+CJumpNode::CJumpNode(CJumpNode&& other)
+	: m_radius(other.m_radius), m_modelnum(other.m_modelnum), m_objnum(other.m_objnum), m_flags(other.m_flags)
+{
+	other.m_radius = 0.0f;
+	other.m_modelnum = -1;
+	other.m_objnum = -1;
+	other.m_flags = 0;
+
+	m_display_color = other.m_display_color;
+	m_pos = other.m_pos;
+
+	strcpy_s(m_name, other.m_name);
+}
+
+CJumpNode& CJumpNode::operator=(CJumpNode&& other)
+{
+	if (this != &other)
+	{
+		m_radius = other.m_radius;
+		m_modelnum = other.m_modelnum;
+		m_objnum = other.m_objnum;
+		m_flags = other.m_flags;
+
+		other.m_radius = 0.0f;
+		other.m_modelnum = -1;
+		other.m_objnum = -1;
+		other.m_flags = 0;
+
+		m_display_color = other.m_display_color;
+		m_pos = other.m_pos;
+
+		strcpy_s(m_name, other.m_name);
+	}
+
+	return *this;
+}
+
 /**
  * Destructor for CJumpNode class
  */
 CJumpNode::~CJumpNode()
 {
-	model_unload(m_modelnum);
+	if (m_modelnum >= 0)
+	{
+		model_unload(m_modelnum);
+	}
 
-	if (Objects[m_objnum].type != OBJ_NONE)
+	if (m_objnum >= 0 && Objects[m_objnum].type != OBJ_NONE)
+	{
 		obj_delete(m_objnum);
+	}
 }
 
 // Accessor functions for private variables

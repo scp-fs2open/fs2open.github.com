@@ -270,7 +270,7 @@ void trail_add_batch(trail * trailp)
 				// Last one...
 				vm_vec_avg(&centerv, &topv, &botv);
 
-				vertex center_vert;
+				vertex center_vert = vertex();
 
 				if (!Cmdline_nohtl)
 					g3_transfer_vertex(&center_vert, &centerv);
