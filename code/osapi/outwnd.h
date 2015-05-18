@@ -13,19 +13,12 @@
 
 #ifndef NDEBUG
 void load_filter_info(void);
-void outwnd_init(int display_under_freespace_window = 0);
+void outwnd_init();
 void outwnd_close();
 void outwnd_printf(const char *id, const char *format, ...);
 void outwnd_printf2(const char *format, ...);
 
 extern int Log_debug_output_to_file;
-
-void safe_point(const char *file, int line, const char *format, ...);
-#define SAFEPOINT(s) safe_point(__FILE__,__LINE__,(s))
-
-#else
-
-#define SAFEPOINT(s)
 
 #endif	// NDEBUG
 

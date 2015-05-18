@@ -457,7 +457,6 @@ cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL, AT_NONE);	// Cmdline_sh
 cmdline_parm pos_arg("-pos", NULL, AT_NONE);					// Cmdline_show_pos
 cmdline_parm stats_arg("-stats", NULL, AT_NONE);				// Cmdline_show_stats
 cmdline_parm save_render_targets_arg("-save_render_target", NULL, AT_NONE);	// Cmdline_save_render_targets
-cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 cmdline_parm window_arg("-window", NULL, AT_NONE);				// Cmdline_window
 cmdline_parm fullscreen_window_arg("-fullscreen_window", "Fullscreen/borderless window (Windows only)", AT_NONE);
 cmdline_parm res_arg("-res", "Resolution, formatted like 1600x900", AT_STRING);
@@ -481,7 +480,6 @@ int Cmdline_show_mem_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
-int Cmdline_debug_window = 0;
 int Cmdline_window = 0;
 int Cmdline_fullscreen_window = 0;
 char *Cmdline_res = 0;
@@ -1649,10 +1647,7 @@ bool SetCmdlineParams()
 
 	if ( save_render_targets_arg.found() )
 		Cmdline_save_render_targets = 1;
-
-	if ( debug_window_arg.found() )
-		Cmdline_debug_window = 1;
-
+	
 	if ( verify_vps_arg.found() )
 		Cmdline_verify_vps = 1;
 
