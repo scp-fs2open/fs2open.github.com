@@ -1307,7 +1307,7 @@ void model_draw_paths( int model_num, uint flags )
 			// For this example, I am just drawing a sphere at that
 			// point.
 			{
-				vertex tmp;
+				vertex tmp = vertex();
 				g3_rotate_vertex(&tmp,&pnt);
 
 				if ( pm->paths[i].verts[j].nturrets > 0 ){
@@ -1815,7 +1815,7 @@ void model_render_shields( polymodel * pm, uint flags )
 {
 	int i, j;
 	shield_tri *tri;
-	vertex pnt0, tmp, prev_pnt;
+	vertex pnt0, prev_pnt, tmp = vertex();
 
 	if ( flags & MR_SHOW_OUTLINE_PRESET )	{
 		return;
