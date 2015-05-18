@@ -61,6 +61,7 @@ typedef struct HUD_CONFIG_TYPE {
 } HUD_CONFIG_TYPE;
 
 extern HUD_CONFIG_TYPE HUD_config;
+extern char Hud_Gauge_Names[NUM_HUD_GAUGES][NAME_LENGTH];
 
 void hud_config_init();
 void hud_config_do_frame(float frametime);

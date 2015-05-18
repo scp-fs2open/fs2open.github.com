@@ -57,31 +57,42 @@ void pilotfile::plr_read_flags()
 
 void pilotfile::plr_write_flags()
 {
+	json_t *plr_flags;
+
 	startSection(Section::Flags);
+	plr_flags = json_object();
 
 	// tips
 	cfwrite_ubyte((unsigned char)p->tips, cfp);
+	json_object_set_new(plr_flags, "tips", json_integer(p->tips));
 
 	// saved flags
 	cfwrite_int(p->save_flags, cfp);
+	json_object_set_new(plr_flags, "save_flags", json_integer(p->save_flags));
 
 	// listing mode (single or campaign missions)
 	cfwrite_int(p->readyroom_listing_mode, cfp);
+	json_object_set_new(plr_flags, "readyroom_listing_mode", json_integer(p->readyroom_listing_mode));
 
 	// briefing auto-play
 	cfwrite_int(p->auto_advance, cfp);
+	json_object_set_new(plr_flags, "auto_advance", json_integer(p->auto_advance));
 
 	// special rank setting (to avoid having to read all stats on verify)
 	// should be multi only from now on
 	cfwrite_int(multi_stats.rank, cfp);
+	json_object_set_new(plr_flags, "rank", json_integer(multi_stats.rank));
 
 	// What game mode we were in last on this pilot
 	cfwrite_int(p->player_was_multi, cfp);
+	json_object_set_new(plr_flags, "player_was_multi", json_integer(p->player_was_multi));
 
 	// which language was this pilot created with
 	cfwrite_string_len(p->language, cfp);
+	json_object_set_new(plr_flags, "language", json_string(p->language));
 
 	endSection();
+	json_object_set_new(plr_root, "flags (section)", plr_flags);
 }
 
 void pilotfile::plr_read_info()
@@ -105,21 +116,29 @@ void pilotfile::plr_read_info()
 
 void pilotfile::plr_write_info()
 {
+	json_t *plr_info;
+
 	startSection(Section::Info);
+	plr_info = json_object();
 
 	// pilot image
 	cfwrite_string_len(p->image_filename, cfp);
+	json_object_set_new(plr_info, "image_filename", json_string(p->image_filename));
 
 	// multi squad name
 	cfwrite_string_len(p->m_squad_name, cfp);
+	json_object_set_new(plr_info, "m_squad_name", json_string(p->m_squad_name));
 
 	// squad image
 	cfwrite_string_len(p->m_squad_filename, cfp);
+	json_object_set_new(plr_info, "m_squad_filename", json_string(p->m_squad_filename));
 
 	// active campaign
 	cfwrite_string_len(p->current_campaign, cfp);
+	json_object_set_new(plr_info, "current_campaign", json_string(p->current_campaign));
 
 	endSection();
+	json_object_set_new(plr_root, "info (section)", plr_info);
 }
 
 void pilotfile::plr_read_hud()
@@ -172,37 +191,58 @@ void pilotfile::plr_read_hud()
 void pilotfile::plr_write_hud()
 {
 	int idx;
+	json_t *plr_hud, *plr_array;
 
 	startSection(Section::HUD);
+	plr_hud = json_object();
 
 	// flags
 	cfwrite_int(HUD_config.show_flags, cfp);
 	cfwrite_int(HUD_config.show_flags2, cfp);
+	json_object_set_new(plr_hud, "show_flags", json_integer(HUD_config.show_flags));
+	json_object_set_new(plr_hud, "show_flags2", json_integer(HUD_config.show_flags2));
 
 	cfwrite_int(HUD_config.popup_flags, cfp);
 	cfwrite_int(HUD_config.popup_flags2, cfp);
+	json_object_set_new(plr_hud, "popup_flags", json_integer(HUD_config.popup_flags));
+	json_object_set_new(plr_hud, "popup_flags2", json_integer(HUD_config.popup_flags2));
 
 	// settings
 	cfwrite_ubyte(HUD_config.num_msg_window_lines, cfp);
+	json_object_set_new(plr_hud, "num_msg_window_lines", json_integer(HUD_config.num_msg_window_lines));
 
 	cfwrite_int(HUD_config.rp_flags, cfp);
 	cfwrite_int(HUD_config.rp_dist, cfp);
+	json_object_set_new(plr_hud, "rp_flags", json_integer(HUD_config.rp_flags));
+	json_object_set_new(plr_hud, "rp_dist", json_integer(HUD_config.rp_dist));
 
 	// basic colors
 	cfwrite_int(HUD_config.main_color, cfp);
 	cfwrite_int(HUD_color_alpha, cfp);
+	json_object_set_new(plr_hud, "main_color", json_integer(HUD_config.main_color));
+	json_object_set_new(plr_hud, "HUD_color_alpha", json_integer(HUD_color_alpha));
 
 	// gauge-specific colors
 	cfwrite_int(NUM_HUD_GAUGES, cfp);
+	json_object_set_new(plr_hud, "NUM_HUD_GAUGES", json_integer(NUM_HUD_GAUGES));
 
+	plr_array = json_array();
 	for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
 		cfwrite_ubyte(HUD_config.clr[idx].red, cfp);
 		cfwrite_ubyte(HUD_config.clr[idx].green, cfp);
 		cfwrite_ubyte(HUD_config.clr[idx].blue, cfp);
 		cfwrite_ubyte(HUD_config.clr[idx].alpha, cfp);
+		json_array_append_new(plr_array, json_pack("{ss,si,si,si,si}",
+			"name*", Hud_Gauge_Names[idx],
+			"r", HUD_config.clr[idx].red,
+			"g", HUD_config.clr[idx].green,
+			"b", HUD_config.clr[idx].blue,
+			"a", HUD_config.clr[idx].alpha));
 	}
+	json_object_set_new(plr_hud, "hud gauge colours", plr_array);
 
 	endSection();
+	json_object_set_new(plr_root, "hud (section)", plr_hud);
 }
 
 void pilotfile::plr_read_variables()
@@ -232,20 +272,31 @@ void pilotfile::plr_write_variables()
 {
 	int list_size = 0;
 	int idx;
+	json_t *plr_variables, *plr_array;
 
 	startSection(Section::Variables);
+	plr_variables = json_object();
 
 	list_size = (int)p->variables.size();
 
 	cfwrite_int(list_size, cfp);
+	json_object_set_new(plr_variables, "list_size", json_integer(list_size));
 
+	plr_array = json_array();
 	for (idx = 0; idx < list_size; idx++) {
 		cfwrite_int(p->variables[idx].type, cfp);
 		cfwrite_string_len(p->variables[idx].text, cfp);
 		cfwrite_string_len(p->variables[idx].variable_name, cfp);
+		json_array_append_new(plr_array, json_pack("{ si, si, ss, ss }",
+			"idx*", idx,
+			"type", p->variables[idx].type,
+			"text", p->variables[idx].text,
+			"variable_name", p->variables[idx].variable_name));
 	}
+	json_object_set_new(plr_variables, "variable data", plr_array);
 
 	endSection();
+	json_object_set_new(plr_root, "variables (section)", plr_variables);
 }
 
 void pilotfile::plr_read_multiplayer()
@@ -279,7 +330,10 @@ void pilotfile::plr_read_multiplayer()
 
 void pilotfile::plr_write_multiplayer()
 {
+	json_t *plr_multiplayer;
+
 	startSection(Section::Multiplayer);
+	plr_multiplayer = json_object();
 
 	// netgame options
 	cfwrite_ubyte(p->m_server_options.squad_set, cfp);
@@ -294,14 +348,31 @@ void pilotfile::plr_write_multiplayer()
 	cfwrite_int((int)p->m_server_options.mission_time_limit, cfp);
 	cfwrite_int(p->m_server_options.kill_limit, cfp);
 
+	json_object_set_new(plr_multiplayer, "m_server_options.squad_set", json_integer(p->m_server_options.squad_set));
+	json_object_set_new(plr_multiplayer, "m_server_options.endgame_set", json_integer(p->m_server_options.endgame_set));
+	json_object_set_new(plr_multiplayer, "m_server_options.flags", json_integer(p->m_server_options.flags));
+	json_object_set_new(plr_multiplayer, "m_server_options.respawn", json_integer(p->m_server_options.respawn));
+	json_object_set_new(plr_multiplayer, "m_server_options.max_observers", json_integer(p->m_server_options.max_observers));
+	json_object_set_new(plr_multiplayer, "m_server_options.skill_level", json_integer(p->m_server_options.skill_level));
+	json_object_set_new(plr_multiplayer, "m_server_options.voice_qos", json_integer(p->m_server_options.voice_qos));
+	json_object_set_new(plr_multiplayer, "m_server_options.voice_token_wait", json_integer(p->m_server_options.voice_token_wait));
+	json_object_set_new(plr_multiplayer, "m_server_options.voice_record_time", json_integer(p->m_server_options.voice_record_time));
+	json_object_set_new(plr_multiplayer, "m_server_options.mission_time_limit", json_integer(p->m_server_options.mission_time_limit));
+	json_object_set_new(plr_multiplayer, "m_server_options.kill_limit", json_integer(p->m_server_options.kill_limit));
+
 	// local options
 	cfwrite_int(p->m_local_options.flags, cfp);
 	cfwrite_int(p->m_local_options.obj_update_level, cfp);
 
+	json_object_set_new(plr_multiplayer, "m_local_options.flags", json_integer(p->m_local_options.flags));
+	json_object_set_new(plr_multiplayer, "m_local_options.obj_update_level", json_integer(p->m_local_options.obj_update_level));
+
 	// netgame protocol
 	cfwrite_int(Multi_options_g.protocol, cfp);
+	json_object_set_new(plr_multiplayer, "Multi_options_g.protocol", json_integer(Multi_options_g.protocol));
 
 	endSection();
+	json_object_set_new(plr_root, "multiplayer (section)", plr_multiplayer);
 }
 
 void pilotfile::plr_read_stats()
@@ -406,8 +477,10 @@ void pilotfile::plr_read_stats()
 void pilotfile::plr_write_stats()
 {
 	int idx, list_size = 0;
+	json_t *plr_stats, *plr_array;
 
 	startSection(Section::Scoring);
+	plr_stats = json_object();
 
 	// global, all-time stats
 	cfwrite_int(all_time_stats.score, cfp);
@@ -430,25 +503,58 @@ void pilotfile::plr_write_stats()
 	cfwrite_int((int)all_time_stats.last_flown, cfp);
 	cfwrite_int((int)all_time_stats.last_backup, cfp);
 
+	json_object_set_new(plr_stats, "all_time_stats.score", json_integer(all_time_stats.score));
+	json_object_set_new(plr_stats, "all_time_stats.rank", json_integer(all_time_stats.rank));
+	json_object_set_new(plr_stats, "all_time_stats.assists", json_integer(all_time_stats.assists));
+	json_object_set_new(plr_stats, "all_time_stats.kill_count", json_integer(all_time_stats.kill_count));
+	json_object_set_new(plr_stats, "all_time_stats.kill_count_ok", json_integer(all_time_stats.kill_count_ok));
+	json_object_set_new(plr_stats, "all_time_stats.bonehead_kills", json_integer(all_time_stats.bonehead_kills));
+
+	json_object_set_new(plr_stats, "all_time_stats.p_shots_fired", json_integer(all_time_stats.p_shots_fired));
+	json_object_set_new(plr_stats, "all_time_stats.p_shots_hit", json_integer(all_time_stats.p_shots_hit));
+	json_object_set_new(plr_stats, "all_time_stats.p_bonehead_hits", json_integer(all_time_stats.p_bonehead_hits));
+
+	json_object_set_new(plr_stats, "all_time_stats.s_shots_fired", json_integer(all_time_stats.s_shots_fired));
+	json_object_set_new(plr_stats, "all_time_stats.s_shots_hit", json_integer(all_time_stats.s_shots_hit));
+	json_object_set_new(plr_stats, "all_time_stats.s_bonehead_hits", json_integer(all_time_stats.s_bonehead_hits));
+
+	json_object_set_new(plr_stats, "all_time_stats.flight_time", json_integer(all_time_stats.flight_time));
+	json_object_set_new(plr_stats, "all_time_stats.missions_flown", json_integer(all_time_stats.missions_flown));
+	json_object_set_new(plr_stats, "all_time_stats.last_flown", json_integer((int)all_time_stats.last_flown));
+	json_object_set_new(plr_stats, "all_time_stats.last_backup", json_integer((int)all_time_stats.last_backup));
+
 	// ship kills (contains ships across all mods, not just current)
 	list_size = (int)all_time_stats.ship_kills.size();
 	cfwrite_int(list_size, cfp);
+	json_object_set_new(plr_stats, "ship kills list_size", json_integer(list_size));
 
+	plr_array = json_array();
 	for (idx = 0; idx < list_size; idx++) {
 		cfwrite_string_len(all_time_stats.ship_kills[idx].name.c_str(), cfp);
 		cfwrite_int(all_time_stats.ship_kills[idx].val, cfp);
+		json_array_append_new(plr_array, json_pack("{ss,si}",
+			"name", all_time_stats.ship_kills[idx].name.c_str(),
+			"value", all_time_stats.ship_kills[idx].val));
 	}
+	json_object_set_new(plr_stats, "ship kills", plr_array);
 
 	// medals earned (contains medals across all mods, not just current)
 	list_size = (int)all_time_stats.medals_earned.size();
 	cfwrite_int(list_size, cfp);
+	json_object_set_new(plr_stats, "medals list_size", json_integer(list_size));
 
+	plr_array = json_array();
 	for (idx = 0; idx < list_size; idx++) {
 		cfwrite_string_len(all_time_stats.medals_earned[idx].name.c_str(), cfp);
 		cfwrite_int(all_time_stats.medals_earned[idx].val, cfp);
+		json_array_append_new(plr_array, json_pack("{ss,si}",
+			"name", all_time_stats.medals_earned[idx].name.c_str(),
+			"value", all_time_stats.medals_earned[idx].val));
 	}
+	json_object_set_new(plr_stats, "medals", plr_array);
 
 	endSection();
+	json_object_set_new(plr_root, "stats (section)", plr_stats);
 }
 
 void pilotfile::plr_read_stats_multi()
@@ -553,8 +659,10 @@ void pilotfile::plr_read_stats_multi()
 void pilotfile::plr_write_stats_multi()
 {
 	int idx, list_size = 0;
+	json_t *plr_m_stats, *plr_array;
 
 	startSection(Section::ScoringMulti);
+	plr_m_stats = json_object();
 
 	// global, all-time stats
 	cfwrite_int(multi_stats.score, cfp);
@@ -577,25 +685,58 @@ void pilotfile::plr_write_stats_multi()
 	cfwrite_int((int)multi_stats.last_flown, cfp);
 	cfwrite_int((int)multi_stats.last_backup, cfp);
 
+	json_object_set_new(plr_m_stats, "multi_stats.score", json_integer(multi_stats.score));
+	json_object_set_new(plr_m_stats, "multi_stats.rank", json_integer(multi_stats.rank));
+	json_object_set_new(plr_m_stats, "multi_stats.assists", json_integer(multi_stats.assists));
+	json_object_set_new(plr_m_stats, "multi_stats.kill_count", json_integer(multi_stats.kill_count));
+	json_object_set_new(plr_m_stats, "multi_stats.kill_count_ok", json_integer(multi_stats.kill_count_ok));
+	json_object_set_new(plr_m_stats, "multi_stats.bonehead_kills", json_integer(multi_stats.bonehead_kills));
+
+	json_object_set_new(plr_m_stats, "multi_stats.p_shots_fired", json_integer(multi_stats.p_shots_fired));
+	json_object_set_new(plr_m_stats, "multi_stats.p_shots_hit", json_integer(multi_stats.p_shots_hit));
+	json_object_set_new(plr_m_stats, "multi_stats.p_bonehead_hits", json_integer(multi_stats.p_bonehead_hits));
+
+	json_object_set_new(plr_m_stats, "multi_stats.s_shots_fired", json_integer(multi_stats.s_shots_fired));
+	json_object_set_new(plr_m_stats, "multi_stats.s_shots_hit", json_integer(multi_stats.s_shots_hit));
+	json_object_set_new(plr_m_stats, "multi_stats.s_bonehead_hits", json_integer(multi_stats.s_bonehead_hits));
+
+	json_object_set_new(plr_m_stats, "multi_stats.flight_time", json_integer(multi_stats.flight_time));
+	json_object_set_new(plr_m_stats, "multi_stats.missions_flown", json_integer(multi_stats.missions_flown));
+	json_object_set_new(plr_m_stats, "multi_stats.last_flown", json_integer((int)multi_stats.last_flown));
+	json_object_set_new(plr_m_stats, "multi_stats.last_backup", json_integer((int)multi_stats.last_backup));
+
 	// ship kills (contains medals across all mods, not just current)
 	list_size = (int)multi_stats.ship_kills.size();
 	cfwrite_int(list_size, cfp);
+	json_object_set_new(plr_m_stats, "multi ship kills list_size", json_integer(list_size));
 
+	plr_array = json_array();
 	for (idx = 0; idx < list_size; idx++) {
 		cfwrite_string_len(multi_stats.ship_kills[idx].name.c_str(), cfp);
 		cfwrite_int(multi_stats.ship_kills[idx].val, cfp);
+		json_array_append_new(plr_array, json_pack("{ss,si}",
+			"name", multi_stats.ship_kills[idx].name.c_str(),
+			"value", multi_stats.ship_kills[idx].val));
 	}
+	json_object_set_new(plr_m_stats, "multi ship kills", plr_array);
 
 	// medals earned (contains medals across all mods, not just current)
 	list_size = (int)multi_stats.medals_earned.size();
 	cfwrite_int(list_size, cfp);
+	json_object_set_new(plr_m_stats, "multi medals list_size", json_integer(list_size));
 
+	plr_array = json_array();
 	for (idx = 0; idx < list_size; idx++) {
 		cfwrite_string_len(multi_stats.medals_earned[idx].name.c_str(), cfp);
 		cfwrite_int(multi_stats.medals_earned[idx].val, cfp);
+		json_array_append_new(plr_array, json_pack("{ss,si}",
+			"name", multi_stats.medals_earned[idx].name.c_str(),
+			"value", multi_stats.medals_earned[idx].val));
 	}
+	json_object_set_new(plr_m_stats, "multi medals", plr_array);
 
 	endSection();
+	json_object_set_new(plr_root, "multi stats (section)", plr_m_stats);
 }
 
 void pilotfile::plr_read_controls()
@@ -631,26 +772,45 @@ void pilotfile::plr_read_controls()
 void pilotfile::plr_write_controls()
 {
 	int idx;
+	json_t *plr_controls, *plr_array;
 
 	startSection(Section::Controls);
+	plr_controls = json_object();
 
 	cfwrite_ushort(CCFG_MAX, cfp);
+	json_object_set_new(plr_controls, "CCFG_MAX", json_integer(CCFG_MAX));
 
+	plr_array = json_array();
 	for (idx = 0; idx < CCFG_MAX; idx++) {
 		cfwrite_short(Control_config[idx].key_id, cfp);
 		cfwrite_short(Control_config[idx].joy_id, cfp);
 		// placeholder? for future mouse_id?
 		cfwrite_short(-1, cfp);
+		json_array_append_new(plr_array, json_pack("{si,si,si,ss}",
+			"idx*", idx,
+			"key_id", Control_config[idx].key_id,
+			"joy_id", Control_config[idx].joy_id,
+			// skip the unused data for now
+			"text*", Control_config[idx].text));
 	}
+	json_object_set_new(plr_controls, "key/joy IDs*", plr_array);
 
 	cfwrite_int(NUM_JOY_AXIS_ACTIONS, cfp);
+	json_object_set_new(plr_controls, "NUM_JOY_AXIS_ACTIONS", json_integer(NUM_JOY_AXIS_ACTIONS));
 
+	plr_array = json_array();
 	for (idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
 		cfwrite_int(Axis_map_to[idx], cfp);
 		cfwrite_int(Invert_axis[idx], cfp);
+		json_array_append_new(plr_array, json_pack("{si,si,si}",
+			"idx*", idx,
+			"Axis_map_to", Axis_map_to[idx],
+			"Invert_axis", Invert_axis[idx]));
 	}
+	json_object_set_new(plr_controls, "Joy Axis Actions", plr_array);
 
 	endSection();
+	json_object_set_new(plr_root, "controls (section)", plr_controls);
 }
 
 void pilotfile::plr_read_settings()
@@ -697,7 +857,10 @@ void pilotfile::plr_read_settings()
 
 void pilotfile::plr_write_settings()
 {
+	json_t *plr_settings;
+
 	startSection(Section::Settings);
+	plr_settings = json_object();
 
 	// sound/voice/music
 	cfwrite_float(Master_sound_volume, cfp);
@@ -706,14 +869,26 @@ void pilotfile::plr_write_settings()
 
 	cfwrite_int(Briefing_voice_enabled, cfp);
 
+	json_object_set_new(plr_settings, "Master_sound_volume", json_real(Master_sound_volume));
+	json_object_set_new(plr_settings, "Master_event_music_volume", json_real(Master_event_music_volume));
+	json_object_set_new(plr_settings, "Master_voice_volume", json_real(Master_voice_volume));
+
+	json_object_set_new(plr_settings, "Briefing_voice_enabled", json_integer(Briefing_voice_enabled));
+
 	// skill level
 	cfwrite_int(Game_skill_level, cfp);
+	json_object_set_new(plr_settings, "Game_skill_level", json_integer(Game_skill_level));
 
 	// input options
 	cfwrite_int(Use_mouse_to_fly, cfp);
 	cfwrite_int(Mouse_sensitivity, cfp);
 	cfwrite_int(Joy_sensitivity, cfp);
 	cfwrite_int(Dead_zone_size, cfp);
+
+	json_object_set_new(plr_settings, "Use_mouse_to_fly", json_integer(Use_mouse_to_fly));
+	json_object_set_new(plr_settings, "Mouse_sensitivity", json_integer(Mouse_sensitivity));
+	json_object_set_new(plr_settings, "Joy_sensitivity", json_integer(Joy_sensitivity));
+	json_object_set_new(plr_settings, "Dead_zone_size", json_integer(Dead_zone_size));
 
 	// detail
 	cfwrite_int(Detail.setting, cfp);
@@ -729,7 +904,21 @@ void pilotfile::plr_write_settings()
 	cfwrite_int(Detail.planets_suns, cfp);
 	cfwrite_int(Detail.weapon_extras, cfp);
 
+	json_object_set_new(plr_settings, "Detail.setting", json_integer(Detail.setting));
+	json_object_set_new(plr_settings, "Detail.nebula_detail", json_integer(Detail.nebula_detail));
+	json_object_set_new(plr_settings, "Detail.detail_distance", json_integer(Detail.detail_distance));
+	json_object_set_new(plr_settings, "Detail.hardware_textures", json_integer(Detail.hardware_textures));
+	json_object_set_new(plr_settings, "Detail.num_small_debris", json_integer(Detail.num_small_debris));
+	json_object_set_new(plr_settings, "Detail.num_particles", json_integer(Detail.num_particles));
+	json_object_set_new(plr_settings, "Detail.num_stars", json_integer(Detail.num_stars));
+	json_object_set_new(plr_settings, "Detail.shield_effects", json_integer(Detail.shield_effects));
+	json_object_set_new(plr_settings, "Detail.lighting", json_integer(Detail.lighting));
+	json_object_set_new(plr_settings, "Detail.targetview_model", json_integer(Detail.targetview_model));
+	json_object_set_new(plr_settings, "Detail.planets_suns", json_integer(Detail.planets_suns));
+	json_object_set_new(plr_settings, "Detail.weapon_extras", json_integer(Detail.weapon_extras));
+
 	endSection();
+	json_object_set_new(plr_root, "settings (section)", plr_settings);
 }
 
 void pilotfile::plr_reset_data()
@@ -956,6 +1145,8 @@ bool pilotfile::save_player(player *_p)
 
 	filename = p->callsign;
 	filename += ".plr";
+	filename_json = p->callsign;
+	filename_json += ".plj";
 
 	if ( filename.size() == 4 ) {
 		mprintf(("PLR => Invalid filename '%s'!\n", filename.c_str()));
@@ -964,6 +1155,7 @@ bool pilotfile::save_player(player *_p)
 
 	// open it, hopefully...
 	cfp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	plr_root = json_object();
 
 	if ( !cfp ) {
 		mprintf(("PLR => Unable to open '%s' for saving!\n", filename.c_str()));
@@ -973,6 +1165,10 @@ bool pilotfile::save_player(player *_p)
 	// header and version
 	cfwrite_int(PLR_FILE_ID, cfp);
 	cfwrite_ubyte(PLR_VERSION, cfp);
+
+	json_object_set_new(plr_root, "Notes", json_string("* means data has been 'enriched/changed' from what is in the .csg. (non-zero) means non-zero entries have been excluded to make the data clearer"));
+	json_object_set_new(plr_root, "PLR_FILE_ID", json_integer(PLR_FILE_ID));
+	json_object_set_new(plr_root, "PLR_VERSION", json_integer(PLR_VERSION));
 
 	mprintf(("PLR => Saving '%s' with version %d...\n", filename.c_str(), (int)PLR_VERSION));
 
@@ -997,6 +1193,14 @@ bool pilotfile::save_player(player *_p)
 	plr_write_controls();
 	mprintf(("PLR => Saving:  Settings...\n"));
 	plr_write_settings();
+
+	if (Cmdline_json_pilot) {
+		cfp_json = cfopen((char*)filename_json.c_str(), "wt", CFILE_NORMAL, CF_TYPE_PLAYERS);
+		char* tmp = json_dumps(plr_root, JSON_INDENT(4)|JSON_PRESERVE_ORDER);
+		cfputs(tmp, cfp_json);
+		free(tmp);
+		cfclose(cfp_json);
+	}
 
 	// Done!
 	mprintf(("PLR => Saving complete!\n"));

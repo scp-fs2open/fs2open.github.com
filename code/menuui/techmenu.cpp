@@ -1418,6 +1418,21 @@ void techroom_do_frame(float frametime)
 	gr_flip();
 }
 
+/**
+ * lookup intel name by index, checking for invalid indexes
+ *
+ * @param Integer index to find
+ * @return char * to intel name
+ */
+char * intel_index_lookup(int intel_idx)
+{
+	if (intel_idx < 0 || intel_idx >= Intel_info_size) {
+		return "NULL";
+	}
+
+	return Intel_info[intel_idx].name;
+}
+
 // note: the name has to be pre-translated before being passed into this function
 int intel_info_lookup(char *name)
 {

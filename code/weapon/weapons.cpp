@@ -443,6 +443,23 @@ missile_obj *missile_obj_return_address(int index)
 	return &Missile_objs[index];
 }
 
+
+/**
+ * Return a weapons class name from an index (checks for invalid array indexes)
+ *
+ * @param Integer index to find
+ * @return char * to weapons name
+ */
+char * weapon_index_lookup(int weapon_idx)
+{
+	if (weapon_idx < 0 || weapon_idx >= Num_weapon_types) {
+		return "NULL";
+	}
+
+	return Weapon_info[weapon_idx].name;
+}
+
+
 /**
  * Return the index of Weapon_info[].name that is *name.
  */

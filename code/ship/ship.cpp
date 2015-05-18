@@ -12030,6 +12030,23 @@ int ship_info_lookup(const char *token)
 	return ship_info_lookup_sub(name);
 }
 
+
+/**
+ * Return a ships class name from an index (without risking invalid array indexes)
+ *
+ * @param Integer index to find
+ * @return char * to ships name
+ */
+char * ship_index_lookup(int ship_idx)
+{
+	if (ship_idx < 0 || ship_idx >= Num_ship_classes) {
+		return "NULL";
+	}
+
+	return Ship_info[ship_idx].name;
+}
+
+
 /**
  * Return the ship index of the ship with name *name.
  */

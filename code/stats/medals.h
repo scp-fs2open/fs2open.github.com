@@ -65,6 +65,7 @@ void medal_main_init(player *pl,int mode = MM_NORMAL);
 int medal_main_do();
 void medal_main_close();
 
+char * medals_index_lookup(int medal_index);
 int medals_info_lookup(const char *name);
 
 #endif

@@ -158,5 +158,6 @@ extern int Cmdline_reparse_mainhall;
 extern bool Cmdline_frame_profile;
 extern bool Cmdline_profile_write_file;
 extern bool Cmdline_no_unfocus_pause;
+extern bool Cmdline_json_pilot;
 
 #endif

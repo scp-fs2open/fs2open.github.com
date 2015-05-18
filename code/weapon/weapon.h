@@ -601,6 +601,7 @@ extern int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types,
 #define WEAPON_INFO_INDEX(wip)		(wip-Weapon_info)
 
 
+char * weapon_index_lookup(int weapon_idx);
 int weapon_info_lookup(const char *name = NULL);
 void weapon_init();					// called at game startup
 void weapon_close();				// called at game shutdown

@@ -855,6 +855,22 @@ void blit_medals()
 	gr_bitmap(Medal_display_info[Rank_medal_index].coords[gr_screen.res].x, Medal_display_info[Rank_medal_index].coords[gr_screen.res].y, GR_RESIZE_MENU);
 }
 
+/**
+ * lookup medal by index, checking for invalid indexes
+ *
+ * @param Integer index to find
+ * @return char * to medal name
+ */
+char * medals_index_lookup(int medal_index)
+{
+	if (medal_index < 0 || medal_index >= Num_medals) {
+		return "NULL";
+	}
+
+	return Medals[medal_index].name;
+}
+
+
 int medals_info_lookup(const char *name)
 {
 	if ( !name ) {
