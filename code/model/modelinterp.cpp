@@ -1307,7 +1307,7 @@ void model_draw_paths( int model_num, uint flags )
 			// For this example, I am just drawing a sphere at that
 			// point.
 			{
-				vertex tmp;
+				vertex tmp = vertex();
 				g3_rotate_vertex(&tmp,&pnt);
 
 				if ( pm->paths[i].verts[j].nturrets > 0 ){
@@ -1815,7 +1815,7 @@ void model_render_shields( polymodel * pm, uint flags )
 {
 	int i, j;
 	shield_tri *tri;
-	vertex pnt0, tmp, prev_pnt;
+	vertex pnt0, prev_pnt, tmp = vertex();
 
 	if ( flags & MR_SHOW_OUTLINE_PRESET )	{
 		return;
@@ -2579,8 +2579,8 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					pe.max_rad = gpt->radius * tp->max_rad;
 					// How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 					pe.normal_variance = tp->variance;
-					pe.min_life = 0.0;
-					pe.max_life = 1.0;
+					pe.min_life = 0.0f;
+					pe.max_life = 1.0f;
 
 					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
 				}
@@ -5162,7 +5162,9 @@ bool model_get_team_color( team_color *clr, const SCP_string &team, const SCP_st
 			}
 
 			team_color end = Team_Colors[secondaryteam];
-			float time_remaining = (f2fl(Missiontime - timestamp) * 1000)/fadetime;
+			float time_remaining = 0.0f;
+			if (fadetime != 0) // avoid potential div-by-zero
+				time_remaining = (f2fl(Missiontime - timestamp) * 1000)/fadetime;
 			CLAMP(time_remaining, 0.0f, 1.0f);
 			model_mix_two_team_colors(&temp_color, &start, &end, time_remaining);
 
