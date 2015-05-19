@@ -1353,7 +1353,7 @@ public:
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
 
-	SCP_hash_map<int, void*> glowpoint_bank_override_map;
+	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
 };
 
 extern int Num_wings;

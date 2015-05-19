@@ -7127,11 +7127,8 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 	}
 
 	if ( shockwave_speed > 0 ) {
-		shockwave_create_info sci;
-		shockwave_create_info_init(&sci);
+		shockwave_create_info sci = sip->shockwave;
 
-		strcpy_s(sci.name, sip->shockwave.name);
-		strcpy_s(sci.pof_name, sip->shockwave.pof_name);
 		sci.inner_rad = inner_rad;
 		sci.outer_rad = outer_rad;
 		sci.blast = max_blast;
