@@ -714,103 +714,100 @@ public:
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // would prefer std::is_trivially_copyable but it's not supported by gcc yet
 // ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
+#ifndef NDEBUG
+	#if defined(HAVE_CXX11)
+	// feature support seems to be: gcc   clang   msvc
+	// auto                         4.4   2.9     2010
+	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
+	// static_assert                4.3   2.9     2010
+	#include <type_traits>
+	#include <cstring>
 
-#if defined(HAVE_CXX11)
-#include <type_traits>
+	// MEMSET!
+	const auto ptr_memset = std::memset;
+	#define memset memset_if_trivial_else_error
 
-	#ifndef NDEBUG
-		// feature support seems to be: gcc   clang   msvc
-		// auto                         4.4   2.9     2010
-		// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
-		// static_assert                4.3   2.9     2010
-	
-		#include <cstring>
+	template<typename T>
+	void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memset on non-trivial object");
+		return ptr_memset(memset_data, ch, count);
+	}
 
-		// MEMSET!
-		const auto ptr_memset = std::memset;
-		#define memset memset_if_trivial_else_error
+	// assume memset on a void* is "safe"
+	// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
+	inline void *memset_if_trivial_else_error(void *memset_data, int ch, size_t count)
+	{
+		return ptr_memset(memset_data, ch, count);
+	}
 
-		template<typename T>
-		void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
-		{
-			static_assert(std::is_trivial<T>::value, "memset on non-trivial object");
-			return ptr_memset(memset_data, ch, count);
-		}
+	// MEMCPY!
+	const auto ptr_memcpy = std::memcpy;
+	#define memcpy memcpy_if_trivial_else_error
 
-		// assume memset on a void* is "safe"
-		// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
-		inline void *memset_if_trivial_else_error(void *memset_data, int ch, size_t count)
-		{
-			return ptr_memset(memset_data, ch, count);
-		}
+	template<typename T, typename U>
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, U *src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		return ptr_memcpy(memcpy_dest, src, count);
+	}
 
-		// MEMCPY!
-		const auto ptr_memcpy = std::memcpy;
-		#define memcpy memcpy_if_trivial_else_error
+	// assume memcpy with void* is "safe"
+	// used in:
+	//   globalincs/systemvars.cpp:insertion_sort()
+	//   network/chat_api.cpp:AddChatCommandToQueue()
+	//   network/multi_obj.cpp:multi_oo_sort_func()
+	//   parse/lua.cpp:ade_get_args() && ade_set_args()
+	//
+	// probably should setup a static_assert on insertion_sort as well
+	template<typename U>
+	void *memcpy_if_trivial_else_error(void *memcpy_dest, U *memcpy_src, size_t count)
+	{
+		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
 
-		template<typename T, typename U>
-		void *memcpy_if_trivial_else_error(T *memcpy_dest, U *src, size_t count)
-		{
-			static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
-			static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
-			return ptr_memcpy(memcpy_dest, src, count);
-		}
+	template<typename T>
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, void *memcpy_src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+	template<typename T>
+	void *memcpy_if_trivial_else_error(T *memcpy_dest, const void *memcpy_src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
 
-		// assume memcpy with void* is "safe"
-		// used in:
-		//   globalincs/systemvars.cpp:insertion_sort()
-		//   network/chat_api.cpp:AddChatCommandToQueue()
-		//   network/multi_obj.cpp:multi_oo_sort_func()
-		//   parse/lua.cpp:ade_get_args() && ade_set_args()
-		//
-		// probably should setup a static_assert on insertion_sort as well
-		template<typename U>
-		void *memcpy_if_trivial_else_error(void *memcpy_dest, U *memcpy_src, size_t count)
-		{
-			static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
-			return ptr_memcpy(memcpy_dest, memcpy_src, count);
-		}
+	inline void *memcpy_if_trivial_else_error(void *memcpy_dest, void *memcpy_src, size_t count)
+	{
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
 
-		template<typename T>
-		void *memcpy_if_trivial_else_error(T *memcpy_dest, void *memcpy_src, size_t count)
-		{
-			static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
-			return ptr_memcpy(memcpy_dest, memcpy_src, count);
-		}
-		template<typename T>
-		void *memcpy_if_trivial_else_error(T *memcpy_dest, const void *memcpy_src, size_t count)
-		{
-			static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
-			return ptr_memcpy(memcpy_dest, memcpy_src, count);
-		}
+	// MEMMOVE!
+	const auto ptr_memmove = std::memmove;
+	#define memmove memmove_if_trivial_else_error
 
-		inline void *memcpy_if_trivial_else_error(void *memcpy_dest, void *memcpy_src, size_t count)
-		{
-			return ptr_memcpy(memcpy_dest, memcpy_src, count);
-		}
-
-		// MEMMOVE!
-		const auto ptr_memmove = std::memmove;
-		#define memmove memmove_if_trivial_else_error
-
-		template<typename T, typename U>
-		void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
-		{
-			static_assert(std::is_trivial<T>::value, "memmove on non-trivial object T");
-			static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
-			return ptr_memmove(memmove_dest, memmove_src, count);
-		}
-	#endif // NDEBUG
-#endif // HAVE_CXX11
+	template<typename T, typename U>
+	void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
+	{
+		static_assert(std::is_trivial<T>::value, "memmove on non-trivial object T");
+		static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
+		return ptr_memmove(memmove_dest, memmove_src, count);
+	}
+	#endif // HAVE_CXX11
+#endif // NDEBUG
 /*Flagset*/
 
-template <class T, size_t size = static_cast < typename std::underlying_type<T>::type>(T::NUM_VALUES)>
+template <class T, size_t size = static_cast<typename std::underlying_type<T>::type>(T::NUM_VALUES)>
 class flagset {
 protected:
 	SCP_bitset<size> values;
 public:
 	
-	bool operator[](T idx) { return values[(static_cast < typename std::underlying_type<T>::type>(idx))]; };
+	bool operator[](T idx) { return values[(static_cast<typename std::underlying_type<T>::type>(idx))]; };
 	flagset<T> operator&(flagset<T>& other) { 
 		flagset<T> result; 
 		result.values = this->values & other.values;
@@ -836,7 +833,7 @@ public:
 	}
 	void set_multiple(T idx[], size_t arg_length) {
 		for (size_t i = 0; i < arg_length; ++i) {
-			values.set(static_cast < typename std::underlying_type<T>::type>(idx[i]));
+			values.set(static_cast <typename std::underlying_type<T>::type>(idx[i]));
 		}
 	}
 	
@@ -845,12 +842,12 @@ public:
 	}
 	void unset_multiple(T idx [], size_t arg_length) {
 		for (size_t i = 0; i < arg_length; ++i) {
-			values.set(static_cast < typename std::underlying_type<T>::type>(idx[i]), false);
+			values.set(static_cast <typename std::underlying_type<T>::type>(idx[i]), false);
 		}
 	}
 	
 	void toggle(T idx) {
-		values[static_cast < typename std::underlying_type<T>::type>(idx)] = !values[static_cast < typename std::underlying_type<T>::type>(idx)];
+		values[static_cast <typename std::underlying_type<T>::type>(idx)] = !values[static_cast <typename std::underlying_type<T>::type>(idx)];
 	}
 	
 	bool any_set() { return values.any(); }
