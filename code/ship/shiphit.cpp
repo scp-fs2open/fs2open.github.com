@@ -51,7 +51,7 @@
 //#pragma auto_inline(off)
 
 struct ssm_firing_info;
-extern void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *override, int team);
+extern void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info *override, int team);
 
 typedef struct spark_pair {
 	int index1, index2;
@@ -2357,6 +2357,8 @@ void ship_apply_tag(int ship_num, int tag_level, float tag_time, object *target,
 		// tag C creates an SSM strike, yay -Bobboau
 		Assert(target);
 		Assert(start);
+		if (ssm_index < 0)	// TAG-C? Is that you? -MageKing17
+			return;
 
 		ssm_create(target, start, ssm_index, NULL, ssm_team);
 	}

@@ -197,7 +197,7 @@ void ssm_level_init()
 }
 
 // start a subspace missile effect
-void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *override, int team)
+void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info *override, int team)
 {	
 	ssm_strike ssm;
 	matrix dir;
@@ -212,7 +212,7 @@ void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *ov
 	if(start == NULL){
 		return;
 	}
-	if ((ssm_index < 0) || (ssm_index >= static_cast<int>(Ssm_info.size()))) {
+	if (ssm_index >= Ssm_info.size()) {
 		return;
 	}
 

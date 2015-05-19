@@ -78,7 +78,7 @@ void hud_artillery_update();
 void hud_artillery_render();
 
 // start a subspace missile effect
-void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *override, int team);
+void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info *override, int team);
 
 // Goober5000
 extern int ssm_info_lookup(const char *name);
