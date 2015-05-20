@@ -17,6 +17,7 @@
 #include "graphics/gropenglextension.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglstate.h"
+#include "graphics/gropengldraw.h"
 #include "graphics/2d.h"
 #include "io/key.h"
 #include "osapi/osapi.h"
@@ -331,8 +332,6 @@ static void OGG_video_init(theora_info *tinfo)
 {
 	float scale_by = 0.0f;
 
-	GLhandleARB shader_id = 0;
-
 	if (video_inited)
 		return;
 
@@ -365,52 +364,11 @@ static void OGG_video_init(theora_info *tinfo)
 				return;
 			}
 
-			char *vert = NULL, *frag = NULL;
-			opengl_shader_t new_shader;
-			
-			// choose appropriate files
-			char *vert_name = "video-v.sdr";
-			char *frag_name = "video-f.sdr";
+			int sdr_handle = gr_maybe_create_shader(SDR_TYPE_VIDEO_PROCESS, 0);
 
-			mprintf(("Compiling video-processing shader ... \n"));
-
-			// read vertex shader
-			CFILE *cf_shader = cfopen(vert_name, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
-	
-			if (cf_shader != NULL) {
-				int len = cfilelength(cf_shader);
-				vert = (char*) vm_malloc(len + 1);
-				cfread(vert, len + 1, 1, cf_shader);
-				cfclose(cf_shader);
-			} else {
-				mprintf(("   Loading built-in default shader for: %s\n", vert_name));
-				vert = defaults_get_file(vert_name);
-			}
-
-			if(!vert)
-				use_shaders = false;
-
-			// read fragment shader
-			cf_shader = cfopen(frag_name, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
-	
-			if (cf_shader != NULL) {
-				int len = cfilelength(cf_shader);
-				frag = (char*) vm_malloc(len + 1);
-				cfread(frag, len + 1, 1, cf_shader);
-				cfclose(cf_shader);
-			} else {
-				mprintf(("   Loading built-in default shader for: %s\n", frag_name));
-				frag = defaults_get_file(frag_name);
-			}
-
-			if(!vert)
-				use_shaders = false;
-			Verify( vert != NULL );
-			Verify( frag != NULL );
-
-			shader_id = opengl_shader_create(vert, frag);
-			vglUseProgramObjectARB(shader_id);
-			if (!shader_id)
+			if ( sdr_handle >= 0)
+				opengl_shader_set_current(sdr_handle);
+			else
 				use_shaders = false;
 		} 
 
@@ -532,9 +490,9 @@ static void OGG_video_init(theora_info *tinfo)
 			gl_screenU = i2fl(tinfo->frame_width-1) / i2fl(2048) ;
 			gl_screenV = i2fl(tinfo->frame_height-1) / i2fl(2048);
 			GL_state.Texture.SetShaderMode(GL_TRUE);
-			vglUniform1iARB( vglGetUniformLocationARB(shader_id, "ytex"), 0 );
-			vglUniform1iARB( vglGetUniformLocationARB(shader_id, "utex"), 1 );
-			vglUniform1iARB( vglGetUniformLocationARB(shader_id, "vtex"), 2 );
+			GL_state.Uniform.setUniformi("ytex", 0);
+			GL_state.Uniform.setUniformi("utex", 1);
+			GL_state.Uniform.setUniformi("vtex", 2);
 		}
 
 		glVertices[0][0] = (GLfloat)g_screenX;
@@ -559,12 +517,12 @@ static void OGG_video_init(theora_info *tinfo)
 
 		GL_state.Array.BindArrayBuffer(0);
 
-		GL_state.Array.EnableClientVertex();
-		GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(glVertices[0]), glVertices);
+		vertex_layout vert_def;
 
-		GL_state.Array.SetActiveClientUnit(0);
-		GL_state.Array.EnableClientTexture();
-		GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(glVertices[0]), &(glVertices[0][2]));
+		vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), glVertices);
+		vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(glVertices[0]), &(glVertices[0][2]));
+
+		opengl_bind_vertex_layout(vert_def);
 	}
 	if(!use_shaders && tinfo->frame_height > 450) {
 		mprintf(("VIDEO: No shader support and hd video is beeing played this can get choppy."));
@@ -579,9 +537,6 @@ static void OGG_video_close()
 	}
 
 	if (gr_screen.mode == GR_OPENGL) {
-		GL_state.Array.DisableClientVertex();
-		GL_state.Array.DisableClientTexture();
-
 		if (scale_video) {
 			glMatrixMode(GL_MODELVIEW);
 			glPopMatrix();
@@ -604,7 +559,7 @@ static void OGG_video_close()
 		ytex = utex = vtex = 0;
 		GLtex = 0;
 		GL_state.Texture.SetShaderMode(GL_FALSE);
-		opengl_shader_set_current( 0 );
+		opengl_shader_set_current();
 	}
 
 	if (pixelbuf != NULL) {

@@ -11,6 +11,7 @@
 
 #include "globalincs/pstypes.h"
 #include "bmpman/bmpman.h"
+#include "graphics/gropenglbmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "tgautils/tgautils.h"
 #include "pngutils/pngutils.h"
@@ -18,6 +19,7 @@
 #include "pcxutils/pcxutils.h"
 #include "graphics/gropengltexture.h"
 #include "graphics/gropenglextension.h"
+#include "graphics/gropenglstate.h"
 #include "globalincs/systemvars.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
@@ -90,7 +92,7 @@ void gr_opengl_bm_create(int n)
 //			c_type		= output for an updated BM_TYPE_*
 //			mm_lvl		= number of mipmap levels for the image
 //			size		= size of the data contained in the image
-int gr_opengl_bm_load(ubyte type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
+int gr_opengl_bm_load(BM_TYPE type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, int *size)
 {
 	int dds_ct;
 
@@ -420,7 +422,7 @@ extern bool opengl_texture_slot_valid(int n, int handle);
  */
 int gr_opengl_bm_lock( const char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
 {
-	ubyte c_type = BM_TYPE_NONE;
+	BM_TYPE c_type = BM_TYPE_NONE;
 	ubyte true_bpp;
 	int try_compress = 0;
 
@@ -554,7 +556,7 @@ void gr_opengl_bm_save_render_target(int n)
 	bitmap_entry *be = &bm_bitmaps[n];
 	bitmap *bmp = &be->bm;
 
-	int rc = opengl_export_image(n, bmp->w, bmp->h, (bmp->true_bpp == 32), be->num_mipmaps, (ubyte*)bmp->data);
+	int rc = opengl_export_render_target( n, bmp->w, bmp->h, (bmp->true_bpp == 32), be->num_mipmaps, (ubyte*)bmp->data );
 
 	if (rc != be->mem_taken) {
 		Int3();

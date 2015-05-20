@@ -18,6 +18,7 @@
 #include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
 #include "debugconsole/console.h"
+#include "graphics/gropenglextension.h"
 
 #ifndef NDEBUG
 #include "io/timer.h"
@@ -40,6 +41,7 @@ static int Particles_enabled = 1;
 uint lastSignature = 0; // 0 is an invalid signature!
 
 int Particle_buffer_object = -1;
+int Geometry_shader_buffer_object = -1;
 
 // Reset everything between levels
 void particle_init()
@@ -70,6 +72,10 @@ void particle_init()
 	// grab a vertex buffer object
 	if ( Particle_buffer_object < 0 ) {
 		Particle_buffer_object = gr_create_stream_buffer();
+	}
+
+	if ( Geometry_shader_buffer_object < 0 && !Cmdline_no_geo_sdr_effects && Is_Extension_Enabled(OGL_EXT_GEOMETRY_SHADER4) ) {
+		Geometry_shader_buffer_object = gr_create_stream_buffer();
 	}
 }
 
@@ -434,7 +440,7 @@ void particle_render_all()
 			}
 			// draw as a regular bitmap
 			else {
-				batch_add_bitmap( framenum + cur_frame, tmap_flags, &pos, part->particle_index % 8, part->radius, alpha );
+				batch_add_bitmap( framenum + cur_frame, tmap_flags | TMAP_FLAG_VERTEX_GEN, &pos, part->particle_index % 8, part->radius, alpha );
 			}
 
 			render_batch = true;
@@ -443,6 +449,7 @@ void particle_render_all()
 
 	profile_begin("Batch Render");
 	if (render_batch) {
+		geometry_batch_render(Geometry_shader_buffer_object);
 		batch_render_all(Particle_buffer_object);
 	}
 	profile_end("Batch Render");
@@ -537,4 +544,3 @@ void particle_emit( particle_emitter *pe, int type, int optional_data, float ran
 		particle_create( &pe->pos, &tmp_vel, life, radius, type, optional_data );
 	}
 }
-

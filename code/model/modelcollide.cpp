@@ -377,6 +377,8 @@ int model_collide_parse_bsp_defpoints(ubyte * p)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
+	model_collide_allocate_point_list(nverts);
+
 	Assert( Mc_point_list != NULL );
 
 	for (n=0; n<nverts; n++ ) {
@@ -1078,19 +1080,18 @@ void mc_check_subobj( int mn )
 		return;
 	}
 
-	// quickly bail if we aren't inside the full model bbox
-	if ( !mc_ray_boundingbox(&Mc_pm->mins, &Mc_pm->maxs, &Mc_p0, &Mc_direction, NULL) ) {
-		return;
-	}
-
-	// If we are checking the root submodel, then we might want
-	// to check the shield at this point
-	if (Mc->flags & MC_CHECK_SHIELD) {
-		if ( (Mc_pm->detail[0] == mn) && (Mc_pm->shield.ntris > 0) ) {
-			mc_check_shield();
+	if (Mc_pm->detail[0] == mn)	{
+		// Quickly bail if we aren't inside the full model bbox
+		if (!mc_ray_boundingbox( &Mc_pm->mins, &Mc_pm->maxs, &Mc_p0, &Mc_direction, NULL))	{
+			return;
 		}
 
-		return;
+		// If we are checking the root submodel, then we might want to check	
+		// the shield at this point
+		if ((Mc->flags & MC_CHECK_SHIELD) && (Mc_pm->shield.ntris > 0 )) {
+			mc_check_shield();
+			return;
+		}
 	}
 
 	if (!(Mc->flags & MC_CHECK_MODEL)) {
@@ -1373,7 +1374,7 @@ void model_collide_preprocess_subobj(vec3d *pos, matrix *orient, polymodel *pm, 
 	}
 }
 
-void model_collide_preprocess(matrix *orient, int model_instance_num)
+void model_collide_preprocess(matrix *orient, int model_instance_num, int detail_num)
 {
 	polymodel_instance	*pmi;
 	polymodel *pm;
@@ -1381,10 +1382,12 @@ void model_collide_preprocess(matrix *orient, int model_instance_num)
 	pmi = model_get_instance(model_instance_num);
 	pm = model_get(pmi->model_num);
 
-	matrix current_orient = *orient;
+	matrix current_orient;
 	vec3d current_pos;
+
+	current_orient = *orient;
 
 	vm_vec_zero(&current_pos);
 
-	model_collide_preprocess_subobj(&current_pos, &current_orient, pm, pmi, pm->detail[0]);
+	model_collide_preprocess_subobj(&current_pos, &current_orient, pm, pmi, pm->detail[detail_num]);
 }

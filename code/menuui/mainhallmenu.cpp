@@ -414,7 +414,7 @@ void main_hall_campaign_cheat()
  */
 void main_hall_init(const SCP_string &main_hall_name)
 {
-	ubyte bg_type;
+	BM_TYPE bg_type;
 	if (Main_hall_inited) {
 		return;
 	}

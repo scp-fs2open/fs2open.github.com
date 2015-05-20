@@ -1144,6 +1144,8 @@ typedef struct ship_collision_physics {
 
 typedef struct path_metadata {
 	vec3d departure_rvec;
+	float arrive_speed_mult;
+	float depart_speed_mult;
 } path_metadata;
 
 // The real FreeSpace ship_info struct.
@@ -1434,6 +1436,8 @@ public:
 	SCP_vector<cockpit_display_info> displays;
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
+
+	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
 };
 
 extern int Num_wings;
@@ -1577,7 +1581,8 @@ extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_model_change(int n, int ship_type);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
-extern void ship_render( object * objp );
+extern void ship_render_DEPRECATED( object * objp );
+extern void ship_render( object * obj, draw_list * scene );
 extern void ship_render_cockpit( object * objp);
 extern void ship_render_show_ship_cockpit( object * objp);
 extern void ship_delete( object * objp );

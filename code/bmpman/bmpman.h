@@ -67,6 +67,33 @@
 #define BMP_FLAG_RENDER_TARGET_DYNAMIC      (1<<1)      //!< Texture is a dynamic type (animation)
 #define BMP_FLAG_CUBEMAP                    (1<<2)      //!< Texture is a cubemap
 
+// Bitmap types
+enum BM_TYPE
+{
+	BM_TYPE_NONE = 0,   //!< No type
+	BM_TYPE_USER,       //!< in-memory
+	BM_TYPE_PCX,        //!< PCX
+	BM_TYPE_TGA,        //!< 16 or 32 bit targa
+	BM_TYPE_DDS,        //!< generic identifier for DDS
+	BM_TYPE_PNG,        //!< PNG
+	BM_TYPE_JPG,        //!< 32 bit jpeg
+	BM_TYPE_ANI,        //!< in-house ANI format
+	BM_TYPE_EFF,        //!< specifies any type of animated image, the EFF itself is just text
+
+	// special types
+	BM_TYPE_RENDER_TARGET_STATIC,   //!< 24/32 bit setup internally as a static render target
+	BM_TYPE_RENDER_TARGET_DYNAMIC,  //!< 24/32 bit setup internally as a dynamic render target
+
+	// Compressed types (bitmap.c_type)
+	BM_TYPE_DXT1,           //!< 24 bit with switchable alpha
+	BM_TYPE_DXT3,           //!< 32 bit with 4 bit alpha
+	BM_TYPE_DXT5,           //!< 32 bit with 8 bit alpha
+	BM_TYPE_CUBEMAP_DDS,    //!< generic DDS cubemap (uncompressed cubemap surface)
+	BM_TYPE_CUBEMAP_DXT1,   //!< 24-bit cubemap        (compressed cubemap surface)
+	BM_TYPE_CUBEMAP_DXT3,   //!< 32-bit cubemap        (compressed cubemap surface)
+	BM_TYPE_CUBEMAP_DXT5    //!< 32-bit cubemap        (compressed cubemap surface)
+};
+
 /**
  * @}
  */
@@ -89,10 +116,10 @@ extern int bm_texture_ram;  //!< how many bytes of textures are used.
 
 extern int Bm_paging;   //!< Bool type that indicates if BMPMAN is currently paging.
 
-extern const ubyte bm_type_list[];       //!< List of valid bitmap types
+extern const BM_TYPE bm_type_list[];       //!< List of valid bitmap types
 extern const char *bm_ext_list[];        //!< List of extensions for those types
 extern const int BM_NUM_TYPES;           //!< Calculated number of bitmap types
-extern const ubyte bm_ani_type_list[];   //!< List of valid bitmap animation types
+extern const BM_TYPE bm_ani_type_list[];   //!< List of valid bitmap animation types
 extern const char *bm_ani_ext_list[];    //!< List of extensions for those types
 extern const int BM_ANI_NUM_TYPES;       //!< Calculated number of bitmap animation types
 
@@ -146,6 +173,26 @@ void *bm_malloc(int handle, int size);
  * @note z64 - Also fishy (see bm_malloc)
  */
 void bm_update_memory_used(int n, int size);
+
+class bitmap_lookup {
+	float *Bitmap_data;
+
+	int Width;
+	int Height;
+	int Num_channels;
+
+	float map_texture_address(float address);
+public:
+	bitmap_lookup(int bitmap_num);
+	~bitmap_lookup();
+
+	bool valid();
+
+	float get_channel_red(float u, float v);
+	float get_channel_green(float u, float v);
+	float get_channel_blue(float u, float v);
+	float get_channel_alpha(float u, float v);
+};
 
 /**
  * @brief Loads a bitmap so we can draw with it later.
@@ -295,7 +342,7 @@ uint bm_get_signature(int handle);
 /**
  * @brief Returns the image type of the given bitmap handle
  */
-ubyte bm_get_type(int handle);
+BM_TYPE bm_get_type(int handle);
 
 /**
  * @brief Unlocks a bitmap
@@ -632,6 +679,6 @@ int bm_set_render_target(int handle, int face = -1);
  *
  * @todo retval should be a bool
  */
-int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type);
+int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type);
 
 #endif

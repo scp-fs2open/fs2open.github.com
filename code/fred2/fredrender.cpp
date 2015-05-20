@@ -702,6 +702,7 @@ void render_one_model_briefing_screen(object *objp)
 void render_one_model_nohtl(object *objp)
 {
 	int j, z;
+	uint debug_flags = 0;
 	object *o2;
 
 	Assert(objp->type != OBJ_NONE);
@@ -755,11 +756,11 @@ void render_one_model_nohtl(object *objp)
 		}
 		
 		if(Show_dock_points){
-			j |= MR_BAY_PATHS;	
+			debug_flags |= MR_DEBUG_BAY_PATHS;	
 		}
 
 		if(Show_paths_fred){
-			j |= MR_SHOW_PATHS;
+			debug_flags |= MR_DEBUG_PATHS;
 		}
 
 		z = objp->instance;
@@ -768,12 +769,19 @@ void render_one_model_nohtl(object *objp)
 
 //		if (!viewpoint || OBJ_INDEX(objp) != cur_object_index)
 		{
+			model_render_params render_info;
+
 			if (Fred_outline)	{
-				model_set_outline_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-				model_render(Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos, j | MR_SHOW_OUTLINE, -1, -1, Ships[z].ship_replacement_textures);
+				render_info.set_flags(j | MR_SHOW_OUTLINE | MR_NO_TEXTURING | MR_NO_LIGHTING);
+				render_info.set_outline_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
 			} else {
-				model_render(Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos, j, -1, -1, Ships[z].ship_replacement_textures);
+				render_info.set_flags(j);
 			}
+
+			render_info.set_debug_flags(debug_flags);
+			render_info.set_replacement_textures(Ships[z].ship_replacement_textures);
+
+			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos);
 		}
 	
 	} else {
@@ -831,6 +839,7 @@ void render_one_model_nohtl(object *objp)
 void render_one_model_htl(object *objp)
 {
 	int j, z;
+	uint debug_flags = 0;
 	object *o2;
 
 	Assert(objp->type != OBJ_NONE);
@@ -878,6 +887,7 @@ void render_one_model_htl(object *objp)
 	// build flags
 	if ((Show_ship_models || Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))){
 		g3_start_instance_matrix(&Eye_position, &Eye_matrix, 0);
+				
 		if (Show_ship_models){
 			j = MR_NORMAL;
 		} else {
@@ -885,11 +895,11 @@ void render_one_model_htl(object *objp)
 		}
 		
 		if(Show_dock_points){
-			j |= MR_BAY_PATHS;	
+			debug_flags |= MR_DEBUG_BAY_PATHS;	
 		}
 
 		if(Show_paths_fred){
-			j |= MR_SHOW_PATHS;
+			debug_flags |= MR_DEBUG_PATHS;
 		}
 
 		z = objp->instance;
@@ -905,13 +915,19 @@ void render_one_model_htl(object *objp)
 			j |= MR_FULL_DETAIL;
 		}
 
+		model_render_params render_info;
+
 		if (Fred_outline)	{
-			model_set_outline_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-			j |= MR_SHOW_OUTLINE_HTL;
+			render_info.set_outline_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
+			j |= MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING;
 		}
 
+		render_info.set_flags(j);
+		render_info.set_debug_flags(debug_flags);
+		render_info.set_replacement_textures(Ships[z].ship_replacement_textures);
+
 		g3_done_instance(0);
-	  	model_render(Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos, j, -1, -1, Ships[z].ship_replacement_textures);
+	  	model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos);
 	} else {
 		int r = 0, g = 0, b = 0;
 

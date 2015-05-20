@@ -18,6 +18,7 @@
 #include "object/object.h"
 
 class object;
+class model_render_params;
 
 extern flag_def_list model_render_flags[];
 extern int model_render_flags_size;
@@ -94,7 +95,6 @@ typedef struct submodel_instance {
 // Data specific to a particular instance of a model.
 typedef struct polymodel_instance {
 	int model_num;					// global model num index, same as polymodel->id
-	int root_submodel_num;			// unused?
 	submodel_instance *submodel;	// array of submodel instances; mirrors the polymodel->submodel array
 } polymodel_instance;
 
@@ -249,16 +249,6 @@ typedef struct model_special {
 
 #define MAX_LIVE_DEBRIS	7
 
-
-// IBX stuff
-typedef struct IBX {
-	CFILE *read;		// reads, if an IBX file already exists
-	CFILE *write;		// writes, if new file created
-	int size;			// file size used to make sure an IBX contains enough data for the whole model
-	int version;		// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
-	char name[MAX_FILENAME_LEN];	// filename of the ibx, this is used in case a safety check fails and we delete the file
-} IBX;
-
 typedef struct model_tmap_vert {
 	ushort vertnum;
 	ushort normnum;
@@ -307,7 +297,8 @@ public:
 		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(NULL), collision_tree_index(-1),
 		rad(0.0f), blown_off(0), my_replacement(-1), i_replace(-1), is_live_debris(0), num_live_debris(0), sii(NULL),
 		is_thruster(0), is_damaged(0), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
-		num_arcs(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false), use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
+		num_arcs(0), outline_buffer(NULL), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
+		use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
 		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
 		look_at_num(-1)
 	{
@@ -378,6 +369,10 @@ public:
 	
 	// buffers used by HT&L
 	vertex_buffer buffer;
+	vertex_buffer trans_buffer;
+
+	vertex *outline_buffer;
+	uint n_verts_outline;
 
 	vec3d	render_box_min;
 	vec3d	render_box_max;
@@ -454,6 +449,11 @@ typedef struct thruster_bank {
 	int		submodel_num;	// what submodel number this bank is on; index to polymodel->submodel/polymodel_instance->submodel
 } thruster_bank;
 
+#define PULSE_SIN 1
+#define PULSE_COS 2
+#define PULSE_TRI 3
+#define PULSE_SHIFTTRI 4
+
 typedef struct glow_point_bank {  // glow bank structure -Bobboau
 	int			type;
 	int			glow_timestamp; 
@@ -468,6 +468,43 @@ typedef struct glow_point_bank {  // glow bank structure -Bobboau
 	int			glow_bitmap; 
 	int			glow_neb_bitmap; 
 } glow_point_bank;
+
+typedef struct glow_point_bank_override {
+	char		name[33];
+	int			type;
+	int			on_time; 
+	int			off_time; 
+	int			disp_time; 
+	int			glow_bitmap; 
+	int			glow_neb_bitmap;
+	bool		is_on;
+
+	bool		type_override;
+	bool		on_time_override; 
+	bool		off_time_override; 
+	bool		disp_time_override; 
+	bool		glow_bitmap_override;
+
+	ubyte		pulse_type;
+	int			pulse_period;
+	float		pulse_amplitude;
+	float		pulse_bias;
+	float		pulse_exponent;
+	bool		is_lightsource;
+	float		radius_multi;
+	vec3d		light_color;
+	vec3d		light_mix_color;
+	bool		lightcone;
+	float		cone_angle;
+	float		cone_inner_angle;
+	vec3d		cone_direction;
+	bool		dualcone;
+	bool		rotating;
+	vec3d		rotation_axis;
+	float		rotation_speed;
+
+	bool		pulse_period_override;
+} glow_point_bank_override;
 
 // defines for docking bay things.  The types are essentially flags since docking bays can probably
 // be used for multiple things in some cases (i.e. rearming and general docking)
@@ -579,6 +616,8 @@ typedef struct insignia {
 
 #define PM_FLAG_ALLOW_TILING		(1<<0)					// Allow texture tiling
 #define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
+#define PM_FLAG_TRANS_BUFFER		(1<<2)					// render transparency buffer
+#define PM_FLAG_BATCHED				(1<<3)					// this model can be batch rendered
 
 // Goober5000
 class texture_info
@@ -770,6 +809,8 @@ public:
 	float gun_submodel_rotation;
 
 	int vertex_buffer_id;			// HTL vertex buffer id
+
+	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
 };
 
 // Call once to initialize the model system
@@ -812,12 +853,12 @@ void model_set_detail_level(int n);
 // Flags you can pass to model_render
 #define MR_NORMAL					(0)			// Draw a normal object
 #define MR_SHOW_OUTLINE				(1<<0)		// Draw the object in outline mode. Color specified by model_set_outline_color
-#define MR_SHOW_PIVOTS				(1<<1)		// Show the pivot points
-#define MR_SHOW_PATHS				(1<<2)		// Show the paths associated with a model
-#define MR_SHOW_RADIUS				(1<<3)		// Show the radius around the object
-#define MR_SHOW_SHIELDS				(1<<4)		// Show the shield mesh
+#define MR_SKYBOX					(1<<1)		// Draw as a skybox
+#define MR_DESATURATED				(1<<2)		// Draw model in monochrome using outline color
+#define MR_EMPTY_SLOT0				(1<<3)		// Show the radius around the object
+#define MR_EMPTY_SLOT1				(1<<4)		// Show the shield mesh
 #define MR_SHOW_THRUSTERS			(1<<5)		// Show the engine thrusters. See model_set_thrust for how long it draws.
-#define MR_LOCK_DETAIL				(1<<6)		// Only draw the detail level defined in model_set_detail_level
+#define MR_EMPTY_SLOT2				(1<<6)		// Only draw the detail level defined in model_set_detail_level
 #define MR_NO_POLYS					(1<<7)		// Don't draw the polygons.
 #define MR_NO_LIGHTING				(1<<8)		// Don't perform any lighting on the model.
 #define MR_NO_TEXTURING				(1<<9)		// Draw textures as flat-shaded polygons.
@@ -828,12 +869,12 @@ void model_set_detail_level(int n);
 #define MR_SHOW_OUTLINE_PRESET		(1<<14)		// Draw the object in outline mode. Color assumed to be set already.	
 #define MR_SHOW_INVISIBLE_FACES		(1<<15)		// Show invisible faces as green...
 #define MR_AUTOCENTER				(1<<16)		// Always use the center of the hull bounding box as the center, instead of the pivot point
-#define MR_BAY_PATHS				(1<<17)		// draw bay paths
+#define MR_EMPTY_SLOT3				(1<<17)		// draw bay paths
 #define MR_ALL_XPARENT				(1<<18)		// render it fully transparent
 #define MR_NO_ZBUFFER				(1<<19)		// switch z-buffering off completely 
 #define MR_NO_CULL					(1<<20)		// don't cull backfacing poly's
-#define MR_FORCE_TEXTURE			(1<<21)		// force a given texture to always be used
-#define MR_FORCE_LOWER_DETAIL		(1<<22)		// force the model to draw 1 LOD lower, if possible
+#define MR_EMPTY_SLOT4				(1<<21)		// force a given texture to always be used
+#define MR_NO_BATCH					(1<<22)		// don't use submodel batching when rendering
 #define MR_EDGE_ALPHA				(1<<23)		// makes norms that are faceing away from you render more transparent -Bobboau
 #define MR_CENTER_ALPHA				(1<<24)		// oposite of above -Bobboau
 #define MR_NO_FOGGING				(1<<25)		// Don't fog - taylor
@@ -841,16 +882,61 @@ void model_set_detail_level(int n);
 #define MR_NO_GLOWMAPS				(1<<27)		// disable rendering of glowmaps - taylor
 #define MR_FULL_DETAIL				(1<<28)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
 #define MR_FORCE_CLAMP				(1<<29)		// force clamp - Hery
-#define MR_ANIMATED_SHADER			(1<<30)		// Use a animated Shader - Valathil
+#define MR_EMPTY_SLOT5				(1<<30)		// Use a animated Shader - Valathil
 #define MR_ATTACHED_MODEL			(1<<31)		// Used for attached weapon model lodding
+
+#define MR_DEPRECATED_NORMAL					(0)			// Draw a normal object
+#define MR_DEPRECATED_SHOW_OUTLINE				(1<<0)		// Draw the object in outline mode. Color specified by model_set_outline_color
+#define MR_DEPRECATED_SHOW_PIVOTS				(1<<1)		// Show the pivot points
+#define MR_DEPRECATED_SHOW_PATHS				(1<<2)		// Show the paths associated with a model
+#define MR_DEPRECATED_SHOW_RADIUS				(1<<3)		// Show the radius around the object
+#define MR_DEPRECATED_SHOW_SHIELDS				(1<<4)		// Show the shield mesh
+#define MR_DEPRECATED_SHOW_THRUSTERS			(1<<5)		// Show the engine thrusters. See model_set_thrust for how long it draws.
+#define MR_DEPRECATED_LOCK_DETAIL				(1<<6)		// Only draw the detail level defined in model_set_detail_level
+#define MR_DEPRECATED_NO_POLYS					(1<<7)		// Don't draw the polygons.
+#define MR_DEPRECATED_NO_LIGHTING				(1<<8)		// Don't perform any lighting on the model.
+#define MR_DEPRECATED_NO_TEXTURING				(1<<9)		// Draw textures as flat-shaded polygons.
+#define MR_DEPRECATED_NO_CORRECT				(1<<10)		// Don't to correct texture mapping
+#define MR_DEPRECATED_NO_SMOOTHING				(1<<11)		// Don't perform smoothing on vertices.
+#define MR_DEPRECATED_IS_ASTEROID				(1<<12)		// When set, treat this as an asteroid.  
+#define MR_DEPRECATED_IS_MISSILE				(1<<13)		// When set, treat this as a missilie.  No lighting, small thrusters.
+#define MR_DEPRECATED_SHOW_OUTLINE_PRESET		(1<<14)		// Draw the object in outline mode. Color assumed to be set already.	
+#define MR_DEPRECATED_SHOW_INVISIBLE_FACES		(1<<15)		// Show invisible faces as green...
+#define MR_DEPRECATED_AUTOCENTER				(1<<16)		// Always use the center of the hull bounding box as the center, instead of the pivot point
+#define MR_DEPRECATED_BAY_PATHS					(1<<17)		// draw bay paths
+#define MR_DEPRECATED_ALL_XPARENT				(1<<18)		// render it fully transparent
+#define MR_DEPRECATED_NO_ZBUFFER				(1<<19)		// switch z-buffering off completely 
+#define MR_DEPRECATED_NO_CULL					(1<<20)		// don't cull backfacing poly's
+#define MR_DEPRECATED_FORCE_TEXTURE				(1<<21)		// force a given texture to always be used
+#define MR_DEPRECATED_FORCE_LOWER_DETAIL		(1<<22)		// force the model to draw 1 LOD lower, if possible
+#define MR_DEPRECATED_EDGE_ALPHA				(1<<23)		// makes norms that are faceing away from you render more transparent -Bobboau
+#define MR_DEPRECATED_CENTER_ALPHA				(1<<24)		// oposite of above -Bobboau
+#define MR_DEPRECATED_NO_FOGGING				(1<<25)		// Don't fog - taylor
+#define MR_DEPRECATED_SHOW_OUTLINE_HTL			(1<<26)		// Show outlines (wireframe view) using HTL method
+#define MR_DEPRECATED_NO_GLOWMAPS				(1<<27)		// disable rendering of glowmaps - taylor
+#define MR_DEPRECATED_FULL_DETAIL				(1<<28)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
+#define MR_DEPRECATED_FORCE_CLAMP				(1<<29)		// force clamp - Hery
+#define MR_DEPRECATED_ANIMATED_SHADER			(1<<30)		// Use a animated Shader - Valathil
+#define MR_DEPRECATED_ATTACHED_MODEL			(1<<31)		// Used for attached weapon model lodding
+
+#define MR_DEBUG_PIVOTS				(1<<0)		// Show the pivot points
+#define MR_DEBUG_PATHS				(1<<1)		// Show the paths associated with a model
+#define MR_DEBUG_RADIUS				(1<<2)		// Show the radius around the object
+#define MR_DEBUG_SHIELDS			(1<<3)		// Show the shield mesh
+#define MR_DEBUG_BAY_PATHS			(1<<4)		// draw bay paths
+
+//Defines for the render parameter of model_render, model_really_render and model_render_buffers
+#define MODEL_RENDER_OPAQUE 1
+#define MODEL_RENDER_TRANS 2
+#define MODEL_RENDER_ALL 3
 
 // Renders a model and all it's submodels.
 // See MR_? defines for values for flags
-void model_render(int model_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int lighting_skip = -1, int *replacement_textures = NULL, const bool is_skybox = false);
+void model_render_DEPRECATED(int model_num, matrix *orient, vec3d * pos, uint flags = MR_DEPRECATED_NORMAL, int objnum = -1, int lighting_skip = -1, int *replacement_textures = NULL, int render = MODEL_RENDER_ALL, const bool is_skybox = false);
 
 // Renders just one particular submodel on a model.
 // See MR_? defines for values for flags
-void submodel_render(int model_num,int submodel_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int *replacement_textures = NULL);
+void submodel_render_DEPRECATED(int model_num,int submodel_num, matrix *orient, vec3d * pos, uint flags = MR_DEPRECATED_NORMAL, int objnum = -1, int *replacement_textures = NULL, int render = MODEL_RENDER_ALL);
 
 // Returns the radius of a model
 float model_get_radius(int modelnum);
@@ -937,6 +1023,9 @@ extern void find_submodel_instance_world_point(vec3d *outpnt, object *ship_obj, 
 
 // Given a polygon model index, find a list of rotating submodels to be used for collision
 void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp);
+
+// Given a polygon model index, get a list of a model tree starting from that index
+void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* pm, int mn);
 
 // For a rotating submodel, find a point on the axis
 void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int submodel_num);
@@ -1119,7 +1208,7 @@ bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
 void model_remove_bsp_collision_tree(int tree_index);
 int model_create_bsp_collision_tree();
 
-void model_collide_preprocess(matrix *orient, int model_instance_num);
+void model_collide_preprocess(matrix *orient, int model_instance_num, int detail = 0);
 
 // Sets the submodel instance data in a submodel
 // If show_damaged is true it shows only damaged submodels.
@@ -1181,7 +1270,7 @@ typedef struct mst_info {
 
 	bool use_ab;
 	float glow_noise;
-	const vec3d *rotvel;
+	vec3d rotvel;
 	vec3d length;
 
 	float glow_rad_factor;
@@ -1193,36 +1282,12 @@ typedef struct mst_info {
 	bool draw_distortion;
 
 	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1), distortion_bitmap(-1),
-					use_ab(false), glow_noise(1.0f), rotvel(NULL), length(vmd_zero_vector), glow_rad_factor(1.0f),
+					use_ab(false), glow_noise(1.0f), rotvel(vmd_zero_vector), length(vmd_zero_vector), glow_rad_factor(1.0f),
 					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f), distortion_rad_factor(1.0f), distortion_length_factor(1.0f),
 					draw_distortion(true)
 				{}
 } mst_info;
 
-
-//Valathil - Buffer struct for transparent object sorting
-typedef struct transparent_object {
-	int blend_filter;
-	float alpha;
-	int texture;
-	int glow_map;
-	int spec_map;
-	int norm_map;
-	int height_map;
-	int misc_map;
-	vertex_buffer *buffer;
-	unsigned int tmap_flags;
-	int i;
-	vec3d scale;
-} transparent_object;
-
-typedef struct transparent_submodel {
-	bsp_info *model;
-	matrix orient;
-	bool is_submodel;
-	bool pop_matrix;
-	SCP_vector<transparent_object> transparent_objects;
-} transparent_submodel;
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
 void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
@@ -1278,4 +1343,37 @@ void model_finish_cloak(int full_cloak);
 void model_do_look_at(int model_num); //Bobboau
 
 void model_do_dumb_rotation(int modelnum); //Bobboau
+
+int model_should_render_engine_glow(int objnum, int bank_obj);
+
+void model_interp_set_clip_plane(vec3d* pos = NULL, vec3d* normal = NULL);
+
+void model_interp_set_animated_effect_and_timer(int effect_num = 0, float effect_timer = 0.0f);
+
+bool model_get_team_color(team_color *clr, const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
+
+void model_interp_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
+
+void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition );
+
+void interp_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
+
+void model_render_insignias(polymodel *pm, int detail_level, int bitmap_num);
+
+void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags );
+
+void model_render_shields( polymodel * pm, uint flags );
+
+void model_draw_paths( int model_num, uint flags );
+
+void model_draw_paths_htl( int model_num, uint flags );
+
+void model_draw_bay_paths(int model_num);
+
+void model_draw_bay_paths_htl(int model_num);
+
+void glowpoint_init();
+SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name);
+extern SCP_vector<glow_point_bank_override> glowpoint_bank_overrides;
+
 #endif // _MODEL_H
