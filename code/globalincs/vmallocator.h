@@ -9,7 +9,7 @@
 #include <string>
 #include <queue>
 #include <deque>
-			#include <unordered_map>
+#include <unordered_map>
 
 template< typename T >
 class SCP_vector : public std::vector< T, std::allocator< T > > { };
@@ -35,7 +35,5 @@ class SCP_deque : public std::deque< T, std::allocator< T > > { };
 
 template< typename Key, typename T, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key> >
 class SCP_unordered_map : public std::unordered_map< Key, T, Hash, KeyEqual, std::allocator< std::pair<const Key, T> > > { };
-
-#define SCP_bitset std::bitset
 
 #endif // _VMALLOCATOR_H_INCLUDED_
