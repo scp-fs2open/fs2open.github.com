@@ -805,56 +805,14 @@ public:
 
 		
 /*Flagset*/
-#include <tuple>
 #include <bitset>
-// This is a hack because GCC 4.6 does not support std::underlying_type yet.
-// A specialization for each enum is preferred
-namespace detail {
-	template <typename T, typename Acc, typename... In>
-	struct filter;
 
-	template <typename T, typename Acc>
-	struct filter<T, Acc> {
-		typedef typename std::tuple_element<0, Acc>::type type;
-	};
-
-	template <typename T, typename... Acc, typename Head, typename... Tail>
-	struct filter<T, std::tuple<Acc...>, Head, Tail...>
-		: std::conditional<sizeof(T) == sizeof(Head) && (T(-1) < T(0)) == (Head(-1) < Head(0))
-		, filter<T, std::tuple<Acc..., Head>, Tail...>
-		, filter<T, std::tuple<Acc...>, Tail...>
-		>::type{};
-
-	template <typename T, typename... In>
-	struct find_best_match : filter<T, std::tuple<>, In...> {};
-}
-
-namespace workaround {
-	template <typename E>
-	struct underlying_type : detail::find_best_match<E,
-		signed short,
-		unsigned short,
-		signed int,
-		unsigned int,
-		signed long,
-		unsigned long,
-		signed long long,
-		unsigned long long,
-		bool,
-		char,
-		signed char,
-		unsigned char,
-		wchar_t,
-		char16_t,
-		char32_t> {};
-}
-
-template <class T, size_t size = static_cast < typename workaround::underlying_type<T>::type>(T::NUM_VALUES)>
+template <class T, size_t size = static_cast < size_t >(T::NUM_VALUES)>
 class flagset {
 protected:
 	std::bitset<size> values;
 public:
-	bool operator[](T idx) { return values[(static_cast < typename workaround::underlying_type<T>::type>(idx))]; };
+	bool operator[](T idx) { return values[(static_cast < size_t >(idx))]; };
 	flagset<T> operator&(flagset<T>& other) { 
 		flagset<T> result; 
 		result.values = this->values & other.values;
@@ -876,25 +834,25 @@ public:
 
 	void reset() { values.reset(); }
 	void set(T idx, bool value = true) { 
-		values.set(static_cast < typename workaround::underlying_type<T>::type>(idx), value);
+		values.set(static_cast < size_t >(idx), value);
 	}
 	void set_multiple(T idx[], size_t arg_length) {
 		for (size_t i = 0; i < arg_length; ++i) {
-			values.set(static_cast < typename workaround::underlying_type<T>::type>(idx[i]));
+			values.set(static_cast < size_t >(idx[i]));
 		}
 	}
 	
 	void unset(T idx) { 
-		values.set(static_cast < typename workaround::underlying_type<T>::type>(idx), false);
+		values.set(static_cast < size_t >(idx), false);
 	}
 	void unset_multiple(T idx [], size_t arg_length) {
 		for (size_t i = 0; i < arg_length; ++i) {
-			values.set(static_cast < typename workaround::underlying_type<T>::type>(idx[i]), false);
+			values.set(static_cast < size_t >(idx[i]), false);
 		}
 	}
 	
 	void toggle(T idx) {
-		values[static_cast < typename workaround::underlying_type<T>::type>(idx)] = !values[static_cast < typename workaround::underlying_type<T>::type>(idx)];
+		values[static_cast < size_t >(idx)] = !values[static_cast < size_t >(idx)];
 	}
 	
 	bool any_set() { return values.any(); }
