@@ -46,6 +46,7 @@
 #include "parse/parselo.h"
 #include "object/objectsnd.h"
 #include "mod_table/mod_table.h"
+#include "io/keycontrol.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -2114,6 +2115,10 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			if (piercing_pct > 0.0f) {
 				damage += (piercing_pct * pre_shield);
 				subsystem_damage += (piercing_pct * pre_shield_ss);
+			}
+
+			if (((Player->flags & (PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE | PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_OVERRIDE)) == PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE) && (ship_objp == Player_obj)) {
+				button_function(SHIELD_EQUALIZE);
 			}
 		}
 

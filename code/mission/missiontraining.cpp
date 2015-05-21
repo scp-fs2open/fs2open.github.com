@@ -363,8 +363,11 @@ void training_mission_init()
 	
 	// only clear player flags if this is actually a training mission
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
-		Player->flags &= ~(PLAYER_FLAGS_MATCH_TARGET | PLAYER_FLAGS_MSG_MODE | PLAYER_FLAGS_AUTO_TARGETING | PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_LINK_PRIMARY | PLAYER_FLAGS_LINK_SECONDARY );
+		Player->flags &= ~(PLAYER_FLAGS_MATCH_TARGET | PLAYER_FLAGS_MSG_MODE | PLAYER_FLAGS_AUTO_TARGETING | PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_LINK_PRIMARY | PLAYER_FLAGS_LINK_SECONDARY | PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE );
 	}
+
+	// never start with auto shield equalization on but overridden
+	Player->flags &= ~PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_OVERRIDE;
 }
 
 void training_mission_page_in()
