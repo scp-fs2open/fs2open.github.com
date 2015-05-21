@@ -4856,7 +4856,11 @@ void multi_create_list_select_item(int n)
 				}
 				else 
 				{
+<<<<<<< HEAD
 					Netgame.netgame_descript_info[0] = '\0';
+=======
+					strncpy(Netgame.netgame_descript_info, campaign_desc, 1);
+>>>>>>> bc26c94112960452079d73383c779238ac8adfe6
 					multi_common_set_text("");
 				}
 			}
