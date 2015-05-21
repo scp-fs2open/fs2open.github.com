@@ -3507,7 +3507,6 @@ void multi_create_setup_list_data(int mode)
 		switch (Multi_create_filter) {
 			case MISSION_TYPE_MULTI:
 				Multi_create_list_count = (int)Multi_create_campaign_list.size();
-
 				// if we switched modes and we have more than 0 items, sort them
 				if (switched_modes && (Multi_create_list_count > 0)){
 					should_sort = 1;
@@ -4725,7 +4724,8 @@ void multi_create_list_select_item(int n)
 	netgame_info *ng;
 	multi_create_info *mcip = NULL;
 
-	char *campaign_desc;
+	char * campaign_desc;
+	int netgame_descript_len = 0;
 
 	// if not on the standalone server
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
@@ -4789,7 +4789,9 @@ void multi_create_list_select_item(int n)
 		}
 
 		switch(Multi_create_list_mode){
-		case MULTI_CREATE_SHOW_MISSIONS:		
+		case MULTI_CREATE_SHOW_MISSIONS:
+			//Cyborg17 set Campaign to false
+			Netgame.is_multi_camp = MULTI_NOT_CAMPAIGN;
 			// don't forget to update the info box window thingie
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){			
 				ship_level_init();		// mwa -- 10/15/97.  Call this function to reset number of ships in mission
@@ -4840,15 +4842,28 @@ void multi_create_list_select_item(int n)
 				// multi_common_set_text(ng->title);
 				if (campaign_desc != NULL)
 				{
+					Netgame.is_multi_camp = MULTI_IS_CAMPAIGN;
 					multi_common_set_text(campaign_desc);
+					netgame_descript_len = strlen(campaign_desc);
+						if (netgame_descript_len > MAX_PACKET_SIZE - 10) 
+						{
+							strncat(Netgame.netgame_descript_info, campaign_desc, MAX_PACKET_SIZE - 10);
+						}
+						else
+						{
+							strcpy(Netgame.netgame_descript_info, campaign_desc);
+						}
 				}
 				else 
 				{
+					Netgame.netgame_descript_info[0] = '\0';
 					multi_common_set_text("");
 				}
 			}
 			// if on the standalone server, send a request for the description
 			else {
+				send_netgame_descript_packet(&Netgame.server_addr, 0);
+				multi_common_set_text("");
 				// no descriptions currently kept for campaigns
 			}
 

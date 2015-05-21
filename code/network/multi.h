@@ -491,6 +491,9 @@ typedef struct netgame_info {
 	char		title[NAME_LENGTH+1];			// title of the mission (as appears in the mission file)
 	char		campaign_name[NAME_LENGTH+1];	// current campaign name	
 	char		passwd[MAX_PASSWD_LEN+1];		// password for the game
+	char		netgame_descript_info[MAX_PACKET_SIZE-10];// Cyborg17, the desciption for the current campaign,
+														//this info is sent by send_netgame_descript_packet instead of 
+														//send_netgame_update_packet since the latter is filled with all the other data 
 	int		version_info;						// version info for this game.
 	int		type_flags;							// see NG_TYPE_* defines
 	int		mode;									// see NG_MODE_* defines
@@ -501,6 +504,7 @@ typedef struct netgame_info {
 	int		security;							// some random number that should hopefully be unique for each game started
 														// I'm also using this value to use as a starting base for the net_signature
 														// for object synchronization.
+	int		is_multi_camp;						// Cyborg17 allows host to hold multicampaign mode, not sent to clients, zero for non-campaign
 	float    ping_time;							// ping time to this server
 	net_addr	server_addr;						// address of the server
 	net_player *host;
@@ -715,6 +719,11 @@ typedef struct network_buffer {
 #define CONNECTION_SPEED_SISDN				2
 #define CONNECTION_SPEED_CABLE				3
 #define CONNECTION_SPEED_T1					4
+
+//Cyborg17 if we ever look to expand our multiplayer campaign options, we should have a section defining campaign mode types
+//We wouldn't be able to send them using send_netgame_update_packet, but may have to create a new function if needed.
+#define MULTI_NOT_CAMPAIGN					0  				//Option is used
+#define MULTI_IS_CAMPAIGN					1				//Option is used
 
 // use this to check and see whether a netgame is anywhere in mission (paused, etc, etc)
 #define MULTI_IN_MISSION						( (Netgame.game_state == NETGAME_STATE_IN_MISSION) || (Netgame.game_state == NETGAME_STATE_PAUSED) )
