@@ -1599,6 +1599,12 @@ void multi_create_standalone_object()
 
 	vm_vec_zero(&v);
 	objnum = observer_create(&m,&v);
+
+	if (objnum < 0) {
+		Error(LOCATION, "Failed to create standalone observer object! Please investigate!");
+		return;
+	}
+
 	Player_obj = &Objects[objnum];
 	obj_set_flags(Player_obj, Player_obj->flags & (~OF_COLLIDES) );
 	//obj_set_flags(Player_obj, Player_obj->flags | OF_SHOULD_BE_DEAD);

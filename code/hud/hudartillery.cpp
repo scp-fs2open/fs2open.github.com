@@ -62,71 +62,74 @@ int ssm_info_lookup(char *name)
 // game init
 void ssm_init()
 {	
-	int rval;
 	ssm_info bogus, *s;
 	char weapon_name[NAME_LENGTH];
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "ssm.tbl", rval));
-		return;
-	}
+	try
+	{
+		read_file_text("ssm.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-	read_file_text("ssm.tbl", CF_TYPE_TABLES);
-	reset_parse();
+		// parse the table
+		Ssm_info_count = 0;
+		while (!optional_string("#end")){
+			// another ssm definition
+			if (optional_string("$SSM:")){
+				// pointer to info struct
+				if (Ssm_info_count >= MAX_SSM_TYPES){
+					s = &bogus;
+				}
+				else {
+					s = &Ssm_info[Ssm_info_count];
+				}
 
-	// parse the table
-	Ssm_info_count = 0;
-	while(!optional_string("#end")){
-		// another ssm definition
-		if(optional_string("$SSM:")){
-			// pointer to info struct
-			if(Ssm_info_count >= MAX_SSM_TYPES){
-				s = &bogus;
-			} else {
-				s = &Ssm_info[Ssm_info_count];
-			}
+				// name
+				stuff_string(s->name, F_NAME, NAME_LENGTH);
 
-			// name
-			stuff_string(s->name, F_NAME, NAME_LENGTH);
+				// stuff data
+				required_string("+Weapon:");
+				stuff_string(weapon_name, F_NAME, NAME_LENGTH);
+				required_string("+Count:");
+				stuff_int(&s->count);
+				required_string("+WarpRadius:");
+				stuff_float(&s->warp_radius);
+				required_string("+WarpTime:");
+				stuff_float(&s->warp_time);
+				// According to fireballs.cpp, "Warp lifetime must be at least 4 seconds!"
+				if ((s->warp_time) < 4.0f) {
+					// So let's warn them before they try to use it, shall we?
+					Warning(LOCATION, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in weapon '%s'.\n Setting to 4.0, please check and set to a number 4.0 or greater!\n", s->warp_time, weapon_name);
+					// And then make the Assert obsolete -- Zacam
+					s->warp_time = 4.0f;
+				}
+				required_string("+Radius:");
+				stuff_float(&s->radius);
+				required_string("+Offset:");
+				stuff_float(&s->offset);
+				if (optional_string("+HUD Message:"))
+					stuff_boolean(&s->send_message);
+				else
+					s->send_message = true;
+				if (optional_string("+Custom Message:")) {
+					stuff_string(s->message, F_NAME, NAME_LENGTH);
+					s->use_custom_message = true;
+				}
+				parse_sound("+Alarm Sound:", &s->sound_index, s->name);
 
-			// stuff data
-			required_string("+Weapon:");
-			stuff_string(weapon_name, F_NAME, NAME_LENGTH);
-			required_string("+Count:");
-			stuff_int(&s->count);
-			required_string("+WarpRadius:");
-			stuff_float(&s->warp_radius);
-			required_string("+WarpTime:");
-			stuff_float(&s->warp_time);
-			// According to fireballs.cpp, "Warp lifetime must be at least 4 seconds!"
-			if ( (s->warp_time) < 4.0f) {
-				// So let's warn them before they try to use it, shall we?
-				Warning(LOCATION, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in weapon '%s'.\n Setting to 4.0, please check and set to a number 4.0 or greater!\n", s->warp_time, weapon_name);
-				// And then make the Assert obsolete -- Zacam
-				s->warp_time = 4.0f;
-			}
-			required_string("+Radius:");
-			stuff_float(&s->radius);
-			required_string("+Offset:");
-			stuff_float(&s->offset);
-			if (optional_string("+HUD Message:")) 
-				stuff_boolean(&s->send_message);
-			else
-				s->send_message = true;
-			if (optional_string("+Custom Message:")) {
-				stuff_string(s->message, F_NAME, NAME_LENGTH);
-				s->use_custom_message = true;
-			}
-			parse_sound("+Alarm Sound:", &s->sound_index, s->name);
-
-			// see if we have a valid weapon
-			s->weapon_info_index = -1;
-			s->weapon_info_index = weapon_info_lookup(weapon_name);
-			if(s->weapon_info_index >= 0){
-				// valid
-				Ssm_info_count++;
+				// see if we have a valid weapon
+				s->weapon_info_index = -1;
+				s->weapon_info_index = weapon_info_lookup(weapon_name);
+				if (s->weapon_info_index >= 0){
+					// valid
+					Ssm_info_count++;
+				}
 			}
 		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "ssm.tbl", e.what()));
+		return;
 	}
 }
 

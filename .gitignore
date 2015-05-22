@@ -137,7 +137,7 @@ packages/
 *.swp
 
 # *.lock - this is used and abused by many editors for many different things.
-#    For the main ones I use (e.g. Eclipse), it should be excluded 
+#    For the main ones I use (e.g. Eclipse), it should be excluded
 #    from source-control, but YMMV
 
 *.lock
@@ -149,7 +149,7 @@ packages/
 
 ####
 # Xcode temporary files that should never be committed
-# 
+#
 # NB: NIB/XIB files still exist even on Storyboard projects, so we want this...
 
 *~.nib
@@ -263,6 +263,17 @@ xcuserdata
 # .xccheckout
 #
 # Per http://stackoverflow.com/questions/18340453/should-xccheckout-files-in-xcode5-be-ignored-under-vcs
-# 
+#
 
 *.xccheckout
+
+####
+# Documentation
+#
+documentation/doxygen/*
+!documentation/doxygen/.gitkeep
+
+####
+# Ignore voice recognition files
+code/sound/grammar.h
+code/sound/phrases.cfg

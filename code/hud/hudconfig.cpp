@@ -1641,39 +1641,42 @@ void hud_config_color_save(char *name)
 
 void hud_config_color_load(char *name)
 {
-	int idx, rval;
+	int idx;
 	char str[1024];
 	char *fname;
 
 	fname = cf_add_ext(name, ".hcf");
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("HUDCONFIG: Unable to parse '%s'!  Error code = %i.\n", fname, rval));
-		return;
-	}
+	try
+	{
+		read_file_text(fname);
+		reset_parse();
 
-	read_file_text(fname);
-	reset_parse();
+		// First, set all gauges to the current main color
+		for (idx = 0; idx < NUM_HUD_GAUGES; idx++){
+			gr_init_alphacolor(&HUD_config.clr[idx], HUD_color_red, HUD_color_green, HUD_color_blue, (HUD_color_alpha + 1) * 16);
+		}
 
-	// First, set all gauges to the current main color
-	for (idx=0; idx<NUM_HUD_GAUGES; idx++){
-		gr_init_alphacolor(&HUD_config.clr[idx], HUD_color_red, HUD_color_green, HUD_color_blue, (HUD_color_alpha+1)*16);
-	}
+		// Now read in the color values for the gauges
+		while (optional_string("+Gauge:")) {
+			stuff_string(str, F_NAME, sizeof(str));
 
-	// Now read in the color values for the gauges
-	while (optional_string("+Gauge:")) {
-		stuff_string(str, F_NAME, sizeof(str));
-
-		for (idx=0; idx<NUM_HUD_GAUGES; idx++) {
-			if (!stricmp(str, Hud_Gauge_Names[idx])) {
-				required_string("+RGBA:");
-				stuff_ubyte(&HUD_config.clr[idx].red);
-				stuff_ubyte(&HUD_config.clr[idx].green);
-				stuff_ubyte(&HUD_config.clr[idx].blue);
-				stuff_ubyte(&HUD_config.clr[idx].alpha);
-				break;
+			for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
+				if (!stricmp(str, Hud_Gauge_Names[idx])) {
+					required_string("+RGBA:");
+					stuff_ubyte(&HUD_config.clr[idx].red);
+					stuff_ubyte(&HUD_config.clr[idx].green);
+					stuff_ubyte(&HUD_config.clr[idx].blue);
+					stuff_ubyte(&HUD_config.clr[idx].alpha);
+					break;
+				}
 			}
 		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("HUDCONFIG: Unable to parse '%s'!  Error message = %s.\n", fname, e.what()));
+		return;
 	}
 }
 

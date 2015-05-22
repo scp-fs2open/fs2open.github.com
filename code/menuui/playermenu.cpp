@@ -1292,25 +1292,26 @@ int Player_tips_shown = 0;
 // tooltips
 void player_tips_init()
 {
-	int rval;
-
 	Num_player_tips = 0;
+	
+	try
+	{
+		read_file_text("tips.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "tips.tbl", rval));
-		return;
-	}
+		while (!optional_string("#end")) {
+			required_string("+Tip:");
 
-	read_file_text("tips.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	while(!optional_string("#end")) {
-		required_string("+Tip:");
-
-		if(Num_player_tips >= MAX_PLAYER_TIPS) {
-			break;
+			if (Num_player_tips >= MAX_PLAYER_TIPS) {
+				break;
+			}
+			Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
 		}
-		Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "tips.tbl", e.what()));
+		return;
 	}
 }
 

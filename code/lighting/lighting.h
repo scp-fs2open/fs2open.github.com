@@ -25,23 +25,61 @@
 #define LT_DIRECTIONAL	0		// A light like a sun
 #define LT_POINT		1		// A point light, like an explosion
 #define LT_TUBE			2		// A tube light, like a fluorescent light
+#define LT_CONE			3		// A cone light, like a flood light
 
+#define MAX_LIGHT_LEVELS 16
 
 typedef struct light {
 	int		type;							// What type of light this is
 	vec3d	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
-	vec3d	vec2;							// second point on a tube light
-	vec3d	local_vec;					// rotated light vector
-	vec3d	local_vec2;					// rotated 2nd light vector for a tube light
-	float		intensity;					// How bright the light is.
-	float		rada, rada_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
-	float		radb, radb_squared;		// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
-	float		r,g,b;						// The color components of the light
-	float		spec_r,spec_g,spec_b;		// The specular color components of the light
+	vec3d	vec2;							// second point on a tube light or direction of a cone light
+	vec3d	local_vec;						// rotated light vector
+	vec3d	local_vec2;						// rotated 2nd light vector for a tube light
+	float	intensity;						// How bright the light is.
+	float	rada, rada_squared;				// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
+	float	radb, radb_squared;				// How big of an area a point light affect.  Is equal to l->intensity / MIN_LIGHT;
+	float	r,g,b;							// The color components of the light
+	float	spec_r,spec_g,spec_b;			// The specular color components of the light
 	int		light_ignore_objnum;			// Don't light this object.  Used to optimize weapons casting light on parents.
-	int		affected_objnum;			// for "unique lights". ie, lights which only affect one object (trust me, its useful)
+	int		affected_objnum;				// for "unique lights". ie, lights which only affect one object (trust me, its useful)
+	float	cone_angle;						// angle for cone lights
+	float	cone_inner_angle;				// the inner angle for calculating falloff
+	bool	dual_cone;						// should the cone be shining in both directions?
 	int instance;
 } light;
+
+extern SCP_vector<light*> Static_light;
+
+struct light_indexing_info
+{
+	int index_start;
+	int num_lights;
+};
+
+class scene_lights
+{
+	SCP_vector<light> AllLights;
+	
+	SCP_vector<int> StaticLightIndices;
+
+	SCP_vector<int> FilteredLights;
+
+	SCP_vector<int> BufferedLights;
+
+	int current_light_index;
+	int current_num_lights;
+public:
+	scene_lights()
+	{
+		resetLightState();
+	}
+	void addLight(light *light_ptr);
+	void setLightFilter(int objnum, vec3d *pos, float rad);
+	bool setLights(light_indexing_info *info);
+	void resetLightState();
+	int getNumStaticLights();
+	light_indexing_info bufferLights();
+};
 
 void light_reset();
 void light_set_ambient(float ambient_light);
@@ -52,6 +90,7 @@ void light_add_directional( vec3d *dir, float intensity, float r, float g, float
 void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
 void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
+void light_add_cone( vec3d * pos, vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false );
 void light_rotate_all();
 
 // Reset the list of lights to point to all lights.
@@ -85,6 +124,5 @@ int light_get_global_dir(vec3d *pos, int n);
 // Set to non-zero if we're in a shadow.
 void light_set_shadow( int state );
 
-extern int cell_shaded_lightmap;
-
+bool light_compare_by_type(const light &a, const light &b);
 #endif

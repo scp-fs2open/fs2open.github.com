@@ -404,6 +404,7 @@ char **Scan_code_text = Scan_code_text_english;
 char **Joy_button_text = Joy_button_text_english;
 
 SCP_vector<config_item*> Control_config_presets;
+SCP_vector<SCP_string> Control_config_preset_names;
 
 void set_modifier_status()
 {
@@ -810,6 +811,14 @@ void control_config_common_load_overrides()
 		config_item *cfg_preset = new config_item[CCFG_MAX + 1];
 		std::copy(Control_config, Control_config + CCFG_MAX + 1, cfg_preset);
 		Control_config_presets.push_back(cfg_preset);
+
+		SCP_string preset_name;
+		if (optional_string("$Name:")) {
+			stuff_string_line(preset_name);
+		} else {
+			preset_name = "<unnamed preset>";
+		}
+		Control_config_preset_names.push_back(preset_name);
 
 		while (required_string_either("#End","$Bind Name:")) {
 			const int iBufferLength = 64;

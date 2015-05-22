@@ -3477,8 +3477,8 @@ void parse_common_object_data(p_object	*objp)
 			for (j=0; j < sip->n_subsystems; ++j)
 				if (!subsystem_stricmp(sip->subsystems[j].subobj_name, Subsys_status[i].name))
 					break;
-			if (j == sip->n_subsystems)
-				Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
+			//if (j == sip->n_subsystems)
+				//Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
 		}
 
 		if (optional_string("$Damage:"))
@@ -4603,8 +4603,9 @@ void resolve_path_masks(int anchor, int *path_mask)
 		Assert(!(anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG));
 		parent_pobjp = mission_parse_get_parse_object(Parse_names[anchor]);
 
-		// load model for checking paths
-		modelnum = model_load(Ship_info[parent_pobjp->ship_class].pof_file, 0, NULL);
+		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
+		ship_info *sip = &Ship_info[parent_pobjp->ship_class];
+		modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 
 		// resolve names to indexes
 		*path_mask = 0;
@@ -4616,9 +4617,6 @@ void resolve_path_masks(int anchor, int *path_mask)
 
 			*path_mask |= (1 << bay_path);
 		}
-
-		// unload model
-		model_unload(modelnum);
 
 		// cache the result
 		prp->cached_mask = *path_mask;
@@ -4930,23 +4928,21 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 
 	required_string("#Waypoints");
 
-	CJumpNode *jnp;
 	char file_name[MAX_FILENAME_LEN] = { 0 };
 	char jump_name[NAME_LENGTH] = { 0 };
 
 	while (optional_string("$Jump Node:")) {
 		stuff_vec3d(&pos);
-		jnp = new CJumpNode(&pos);
-		Assert(jnp != NULL);
+		CJumpNode jnp(&pos);
 
 		if (optional_string("$Jump Node Name:") || optional_string("+Jump Node Name:")) {
 			stuff_string(jump_name, F_NAME, NAME_LENGTH);
-			jnp->SetName(jump_name);
+			jnp.SetName(jump_name);
 		}
 
 		if(optional_string("+Model File:")){
 			stuff_string(file_name, F_NAME, MAX_FILENAME_LEN);
-			jnp->SetModel(file_name);
+			jnp.SetModel(file_name);
 		}
 
 		if(optional_string("+Alphacolor:")) {
@@ -4955,16 +4951,16 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 			stuff_ubyte(&g);
 			stuff_ubyte(&b);
 			stuff_ubyte(&a);
-			jnp->SetAlphaColor(r, g, b, a);
+			jnp.SetAlphaColor(r, g, b, a);
 		}
 
 		if(optional_string("+Hidden:")) {
 			int hide;
 			stuff_boolean(&hide);
-			jnp->SetVisibility(!hide);
+			jnp.SetVisibility(!hide);
 		}
 
-		Jump_nodes.push_back(*jnp);
+		Jump_nodes.push_back(std::move(jnp));
 	}
 
 	while (required_string_either("#Messages", "$Name:"))
@@ -5852,39 +5848,38 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 	if (p) *p = 0; // remove any extension
 	strcat_s(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
 
-	int rval, filelength;
+	int filelength;
 
 	// if mission_p is NULL, make it point to The_mission
 	if ( mission_p == NULL )
 		mission_p = &The_mission;
 
-	do {
-		CFILE *ftemp = cfopen(real_fname, "rt");
-		if (!ftemp) {
-			rval = -1;
-			break;
-		}
+	CFILE *ftemp = cfopen(real_fname, "rt");
+	if (!ftemp) {
+		return -1;
+	}
 
-		// 7/9/98 -- MWA -- check for 0 length file.
-		filelength = cfilelength(ftemp);
-		cfclose(ftemp);
-		if (filelength == 0) {
-			rval = -1;
-			break;
-		}
+	// 7/9/98 -- MWA -- check for 0 length file.
+	filelength = cfilelength(ftemp);
+	cfclose(ftemp);
+	if (filelength == 0) {
+		return -1;
+	}
 
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", real_fname, rval));
-			break;
-		}
-
+	try
+	{
 		read_file_text(real_fname, CF_TYPE_MISSIONS);
-		mission_p->Reset( );
+		mission_p->Reset();
 		parse_init(basic);
 		parse_mission_info(mission_p, basic);
-	} while (0);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", real_fname, e.what()));
+		return -1;
+	}
 
-	return rval;
+	return 0;
 }
 
 /**
@@ -5946,22 +5941,27 @@ int parse_main(const char *mission_name, int flags)
 			cfclose(ftemp);
 		}
 
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", mission_name, rval));
+		try
+		{
+			// import?
+			if (flags & MPF_IMPORT_FSM) {
+				read_file_text(mission_name, CF_TYPE_ANY);
+				convertFSMtoFS2();
+			}
+			else {
+				read_file_text(mission_name, CF_TYPE_MISSIONS);
+			}
+
+			The_mission.Reset();
+			rval = parse_mission(&The_mission, flags);
+			display_parse_diagnostics();
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", mission_name, e.what()));
+			rval = 1;
 			break;
 		}
-
-		// import?
-		if (flags & MPF_IMPORT_FSM) {
-			read_file_text(mission_name, CF_TYPE_ANY);
-			convertFSMtoFS2();
-		} else {
-			read_file_text(mission_name, CF_TYPE_MISSIONS);
-		}
-
-		The_mission.Reset( );
-		rval = parse_mission(&The_mission, flags);
-		display_parse_diagnostics();
 	} while (0);
 
 	if (!Fred_running)
@@ -6303,7 +6303,7 @@ void mission_parse_set_up_initial_docks()
  */
 int mission_parse_is_multi(const char *filename, char *mission_name)
 {
-	int rval, game_type;
+	int game_type;
 	int filelength;
 	CFILE *ftemp;
 
@@ -6322,25 +6322,28 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 
 	game_type = 0;
 	do {
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		try
+		{
+			read_file_text(filename, CF_TYPE_MISSIONS);
+			reset_parse();
+
+			if (skip_to_string("$Name:") != 1) {
+				nprintf(("Network", "Unable to process %s because we couldn't find $Name:", filename));
+				break;
+			}
+			stuff_string(mission_name, F_NAME, NAME_LENGTH);
+
+			if (skip_to_string("+Game Type Flags:") != 1) {
+				nprintf(("Network", "Unable to process %s because we couldn't find +Game Type Flags:\n", filename));
+				break;
+			}
+			stuff_int(&game_type);
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 			break;
 		}
-
-		read_file_text(filename, CF_TYPE_MISSIONS);
-		reset_parse();
-
-		if ( skip_to_string("$Name:") != 1 ) {
-			nprintf(("Network", "Unable to process %s because we couldn't find $Name:", filename));
-			break;
-		}
-		stuff_string( mission_name, F_NAME, NAME_LENGTH );
-
-		if ( skip_to_string("+Game Type Flags:") != 1 ) {
-			nprintf(("Network", "Unable to process %s because we couldn't find +Game Type Flags:\n", filename));
-			break;
-		}
-		stuff_int(&game_type);
 	} while (0);
 
 	return (game_type & MISSION_TYPE_MULTI) ? game_type : 0;

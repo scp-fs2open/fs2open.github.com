@@ -112,7 +112,6 @@ void lcl_init(int lang_init)
 	char lang_string[128];
 	const char *ret;
 	int lang, idx, i;
-	int rval;
 
 	// initialize encryption
 	encrypt_init();
@@ -121,11 +120,13 @@ void lcl_init(int lang_init)
 	Lcl_languages.push_back(Lcl_builtin_languages[FS2_OPEN_DEFAULT_LANGUAGE]);
 
 	// check string.tbl to see which languages we support
-	if ( (rval = setjmp(parse_abort)) != 0 ) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "strings.tbl", rval));
-	}
-	else {
+	try
+	{
 		parse_stringstbl_quick("strings.tbl");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "strings.tbl", e.what()));
 	}
 
 	parse_modular_table(NOX("*-lcl.tbm"), parse_stringstbl_quick);
@@ -407,7 +408,7 @@ void parse_tstringstbl(const char *filename)
 // initialize the xstr table
 void lcl_xstr_init()
 {
-	int i, rval;
+	int i;
 
 
 	for (i = 0; i < XSTR_SIZE; i++)
@@ -417,18 +418,26 @@ void lcl_xstr_init()
 		Lcl_ext_str[i] = NULL;
 
 
-	if ( (rval = setjmp(parse_abort)) != 0 )
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "strings.tbl", rval));
-	else
+	try
+	{
 		parse_stringstbl("strings.tbl");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "strings.tbl", e.what()));
+	}
 
 	parse_modular_table(NOX("*-lcl.tbm"), parse_stringstbl);
 
 
-	if ( (rval = setjmp(parse_abort)) != 0 )
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "tstrings.tbl", rval));
-	else
+	try
+	{
 		parse_tstringstbl("tstrings.tbl");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "tstrings.tbl", e.what()));
+	}
 
 	parse_modular_table(NOX("*-tlc.tbm"), parse_tstringstbl);
 
@@ -1209,7 +1218,7 @@ void lcl_translate_brief_icon_name_gr(char *name)
 
 	} else if ((pos = strstr(name, "Transport")) != NULL) {
 		pos += 9;		// strlen of "transport"
-		strcpy_s(buf, "Transportowiec");
+		strcpy_s(buf, "Transporter");
 		strcat_s(buf, pos);
 		strcpy(name, buf);
 
@@ -1356,7 +1365,7 @@ char buf[128];
 
 	} else if ((pos = strstr(name, "Transport")) != NULL) {
 		pos += 9;		// strlen of "transport"
-		strcpy_s(buf, "Transporter");
+		strcpy_s(buf, "Transportowiec");
 		strcat_s(buf, pos);
 		strcpy(name, buf);
 

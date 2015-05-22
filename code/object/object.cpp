@@ -94,6 +94,8 @@ char *Object_type_names[MAX_OBJECT_TYPES] = {
 //XSTR:ON
 };
 
+extern int Use_GLSL;
+
 obj_flag_name Object_flag_names[] = {
 	{OF_INVULNERABLE,			"invulnerable",				1,	},
 	{OF_PROTECTED,				"protect-ship",				1,	},
@@ -1202,7 +1204,8 @@ void obj_move_all_post(object *objp, float frametime)
 						g = i2fl(c.green)/255.0f;
 						b = i2fl(c.blue)/255.0f;
 
-						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
+						//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
+						light_add_point( &objp->pos, 10.0f, Use_GLSL>1?100.0f:20.0f, 1.0f, r, g, b, objp->parent );
 					} else {
 						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
 					} 
@@ -1527,7 +1530,7 @@ MONITOR( NumObjectsRend )
  * Render an object.  Calls one of several routines based on type
  */
 extern int Cmdline_dis_weapons;
-void obj_render(object *obj)
+void obj_render_DEPRECATED(object *obj)
 {
 	SCP_list<CJumpNode>::iterator jnp;
 	
@@ -1548,22 +1551,22 @@ void obj_render(object *obj)
 			break;
 		case OBJ_WEAPON:
 			if(Cmdline_dis_weapons) return;
-			weapon_render(obj);
+			weapon_render_DEPRECATED(obj);
 			break;
 		case OBJ_SHIP:
-			ship_render(obj);
+			ship_render_DEPRECATED(obj);
 			break;
 		case OBJ_FIREBALL:
-			fireball_render(obj);
+			fireball_render_DEPRECATED(obj);
 			break;
 		case OBJ_SHOCKWAVE:
-			shockwave_render(obj);
+			shockwave_render_DEPRECATED(obj);
 			break;
 		case OBJ_DEBRIS:
-			debris_render(obj);
+			debris_render_DEPRECATED(obj);
 			break;
 		case OBJ_ASTEROID:
-			asteroid_render(obj);
+			asteroid_render_DEPRECATED(obj);
 			break;
 	/*	case OBJ_CMEASURE:
 			cmeasure_render(obj);
@@ -1572,7 +1575,7 @@ void obj_render(object *obj)
 			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
 				if(jnp->GetSCPObject() != obj)
 					continue;
-				jnp->Render(&obj->pos, &Eye_position);
+				jnp->RenderDEPRECATED(&obj->pos, &Eye_position);
 			}
 			break;
 		case OBJ_WAYPOINT:
@@ -1592,6 +1595,91 @@ void obj_render(object *obj)
 
 	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
 	Script_system.RemHookVar("Self");
+}
+
+void obj_render(object *obj)
+{
+	draw_list render_list;
+
+	obj_queue_render(obj, &render_list);
+
+	render_list.init_render();
+	render_list.render_all();
+
+	gr_zbias(0);
+	gr_set_cull(0);
+	gr_zbuffer_set(ZBUFFER_TYPE_READ);
+	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+
+	gr_clear_states();
+	gr_set_buffer(-1);
+
+	gr_reset_lighting();
+	gr_set_lighting(false, false);
+}
+
+void obj_queue_render(object* obj, draw_list* scene)
+{
+	if ( obj->flags & OF_SHOULD_BE_DEAD ) return;
+
+	// need to figure out what to do with this hook. 
+	// maybe save an array of these and run the script conditions after we finish drawing
+	Script_system.SetHookObject("Self", obj);
+
+	if ( Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj) ) {
+		Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
+		Script_system.RemHookVar("Self");
+		return;
+	}
+
+	switch ( obj->type ) {
+	case OBJ_NONE:
+#ifndef NDEBUG
+		mprintf(( "ERROR!!!! Bogus obj %d is rendering!\n", obj-Objects ));
+		Int3();
+#endif
+		break;
+	case OBJ_WEAPON:
+		if ( Cmdline_dis_weapons ) return;
+		weapon_render(obj, scene);
+		break;
+	case OBJ_SHIP:
+		ship_render(obj, scene);
+		break;
+	case OBJ_FIREBALL:
+		fireball_render(obj, scene);
+		break;
+	case OBJ_SHOCKWAVE:
+		shockwave_render(obj, scene);
+		break;
+	case OBJ_DEBRIS:
+		debris_render(obj, scene);
+		break;
+	case OBJ_ASTEROID:
+		asteroid_render(obj, scene);
+		break;
+	case OBJ_JUMP_NODE:
+		for ( SCP_list<CJumpNode>::iterator jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp ) {
+			if ( jnp->GetSCPObject() != obj ) {
+				continue;
+			}
+
+			jnp->Render(scene, &obj->pos, &Eye_position);
+		}
+		break;
+	case OBJ_WAYPOINT:
+		// 		if (Show_waypoints)	{
+		// 			gr_set_color( 128, 128, 128 );
+		// 			g3_draw_sphere_ez( &obj->pos, 5.0f );
+		// 		}
+		break;
+	case OBJ_GHOST:
+		break;
+	case OBJ_BEAM:
+		break;
+	default:
+		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
+	}
 }
 
 void obj_init_all_ships_physics()

@@ -12,6 +12,10 @@
 
 #define BMPMAN_INTERNAL
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "bmpman/bmpman.h"
 #include "bmpman/bm_internal.h"
 
@@ -34,10 +38,6 @@
 #include "pngutils/pngutils.h"
 #include "ship/ship.h"
 #include "tgautils/tgautils.h"
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 #include <ctype.h>
 #include <limits.h>
@@ -67,13 +67,13 @@ int bm_texture_ram = 0;
 int Bm_paging = 0;
 
 // Extension type lists
-const ubyte bm_type_list[] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_PNG, BM_TYPE_JPG, BM_TYPE_PCX };
+const BM_TYPE bm_type_list[] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_PNG, BM_TYPE_JPG, BM_TYPE_PCX };
 const char *bm_ext_list[] = { ".dds", ".tga", ".png", ".jpg", ".pcx" };
-const int BM_NUM_TYPES = sizeof(bm_type_list) / sizeof(ubyte);
+const int BM_NUM_TYPES = sizeof(bm_type_list) / sizeof(bm_type_list[0]);
 
-const ubyte bm_ani_type_list[] = { BM_TYPE_EFF, BM_TYPE_ANI };
+const BM_TYPE bm_ani_type_list[] = { BM_TYPE_EFF, BM_TYPE_ANI };
 const char *bm_ani_ext_list[] = { ".eff", ".ani" };
-const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(ubyte);
+const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(bm_ani_type_list[0]);
 
 void(*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 void(*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
@@ -108,21 +108,97 @@ static int Bm_ignore_load_count = 0;
 // --------------------------------------------------------------------------------------------------------------------
 // Declaration of private functions and templates(declared as static type func(type param);)
 
+bitmap_lookup::bitmap_lookup(int bitmap_num):
+	Bitmap_data(NULL)
+{
+	if ( !bm_is_valid(bitmap_num) ) return;
+
+	Num_channels = 3;
+
+	if ( bm_has_alpha_channel(bitmap_num) ) {
+		Num_channels = 4;
+	}
+
+	int n = bitmap_num % MAX_BITMAPS;
+
+	bitmap_entry *be = &bm_bitmaps[n];
+	
+	Width = be->bm.w;
+	Height = be->bm.h;
+
+	Bitmap_data = (float*)vm_malloc(Width * Height * Num_channels * sizeof(float));
+
+	gr_get_bitmap_from_texture((void*)Bitmap_data, bitmap_num);
+}
+
+bitmap_lookup::~bitmap_lookup()
+{
+	if ( Bitmap_data != NULL ) {
+		vm_free(Bitmap_data);
+	}
+}
+
+bool bitmap_lookup::valid()
+{
+	return Bitmap_data != NULL;
+}
+
+float bitmap_lookup::map_texture_address(float address)
+{
+	// assume we're just wrapping
+	return address - floorf(address);
+}
+
+float bitmap_lookup::get_channel_red(float u, float v)
+{
+	Assert( Bitmap_data != NULL );
+
+	CLAMP(u, 0.0, 1.0f);
+	CLAMP(v, 0.0, 1.0f);
+
+	int x = fl2i(map_texture_address(u) * (Width-1));
+	int y = fl2i(map_texture_address(v) * (Height-1));
+
+	return Bitmap_data[(y*Width + x)*Num_channels];
+}
+
+float bitmap_lookup::get_channel_green(float u, float v)
+{
+	Assert( Bitmap_data != NULL );
+
+	CLAMP(u, 0.0, 1.0f);
+	CLAMP(v, 0.0, 1.0f);
+
+	int x = fl2i(map_texture_address(u) * (Width-1));
+	int y = fl2i(map_texture_address(v) * (Height-1));
+
+	return Bitmap_data[(y*Width + x)*Num_channels + 1];
+}
+
+float bitmap_lookup::get_channel_blue(float u, float v)
+{
+	Assert( Bitmap_data != NULL );
+
+	int x = fl2i(map_texture_address(u) * (Width-1));
+	int y = fl2i(map_texture_address(v) * (Height-1));
+
+	return Bitmap_data[(y*Width + x)*Num_channels + 2];
+}
+
+float bitmap_lookup::get_channel_alpha(float u, float v)
+{
+	Assert( Bitmap_data != NULL );
+
+	int x = fl2i(map_texture_address(u) * (Width-1));
+	int y = fl2i(map_texture_address(v) * (Height-1));
+
+	return Bitmap_data[(y*Width + x)*Num_channels + 3];
+}
+
 /**
  * Converts the bitmap referenced by bmp to the type specified by flags
  */
 static void bm_convert_format(bitmap *bmp, ubyte flags);
-
-/**
- * Converts an 8-bit image to a 24-bit BGR image sending new bitmap data to "out_data"
- *
- * @returns 0 If successful, or
- * @returns 1 If not successful
- *
- * @todo upgrade retval to bool
- * @todo Doesn't seem to be called by anyone. Remove?
- */
-static int bm_convert_color_index_to_BGR(int num, ubyte **out_data);
 
 /**
  * Frees a bitmap's data if it can
@@ -344,87 +420,6 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 	gr_bm_create(n);
 
 	return bm_bitmaps[n].handle;
-}
-
-int bm_convert_color_index_to_BGR(int num, ubyte **out_data) {
-	int n = num % MAX_BITMAPS;
-	bitmap_entry *be;
-	bitmap *bmp;
-	ubyte *datap, *bgr_data = NULL, *palette = NULL;
-	char filename[MAX_FILENAME_LEN];
-	int i, j, bpp = 0, size = 0;
-	int index = 0, mult = 3;
-
-	Assert(out_data != NULL);
-	Assert(n >= 0);
-	Assert(num == bm_bitmaps[n].handle);
-
-	if (num != bm_bitmaps[n].handle)
-		return 1;
-
-	be = &bm_bitmaps[n];
-	bmp = &be->bm;
-
-	if ((bmp->bpp != 8) || !(bmp->data) || ((be->type != BM_TYPE_DDS) && (be->type != BM_TYPE_PCX))) {
-		return 1;
-	}
-
-	// it's up to the calling function to free() this but not to malloc() it!!
-	bgr_data = (ubyte*)vm_malloc_q(bmp->w * bmp->h * 3);
-
-	ubyte *in_data = (ubyte*)bmp->data;
-
-	if (bgr_data == NULL)
-		return 1;
-
-	memset(bgr_data, 0, bmp->w * bmp->h * 3);
-
-	palette = new ubyte[1024]; // 256*4, largest size we should have to process
-	Assert(palette != NULL);
-
-	// make sure we are using the correct filename in the case of an EFF.
-	// this will populate filename[] whether it's EFF or not
-	EFF_FILENAME_CHECK;
-
-	if (be->type == BM_TYPE_PCX) {
-		pcx_read_header(filename, NULL, NULL, NULL, &bpp, palette);
-		mult = 3; // PCX has RGB for 256 entries
-	} else if (be->type == BM_TYPE_DDS) {
-		dds_read_header(filename, NULL, NULL, NULL, &bpp, NULL, NULL, &size, palette);
-		mult = 4; // DDS has RGBX for 256 entries, 'X' being an alpha setting that we don't need
-	} else {
-		// we really shouldn't be here at this point but give it another check anyway
-		delete[] palette;
-		vm_free(bgr_data);
-		return 1;
-	}
-
-	Assert(bpp == 8);
-
-	// we can only accept 8bits obviously, but this is actually a read error check
-	if (bpp != 8) {
-		delete[] palette;
-		vm_free(bgr_data);
-		return 1;
-	}
-
-	datap = bgr_data;
-
-	for (i = 0; i < bmp->h; i++) {
-		for (j = 0; j < bmp->w; j++) {
-			index = *in_data++;
-			*datap++ = palette[index * mult + 2];
-			*datap++ = palette[index * mult + 1];
-			*datap++ = palette[index * mult];
-		}
-	}
-
-	*out_data = bgr_data;
-
-	delete[] palette;
-
-	// no errors
-	return 0;
 }
 
 void bm_convert_format(bitmap *bmp, ubyte flags) {
@@ -786,7 +781,7 @@ int bm_get_tcache_type(int num) {
 	return TCACHE_TYPE_NORMAL;
 }
 
-ubyte bm_get_type(int handle) {
+BM_TYPE bm_get_type(int handle) {
 	if (!bm_inited) bm_init();
 
 	int bitmapnum = handle % MAX_BITMAPS;
@@ -846,7 +841,7 @@ void bm_init() {
 
 int bm_is_compressed(int num) {
 	int n = num % MAX_BITMAPS;
-	ubyte type = BM_TYPE_NONE;
+	BM_TYPE type = BM_TYPE_NONE;
 
 	//duh
 	if (!Use_compressed_textures)
@@ -912,8 +907,8 @@ int bm_load(const char *real_filename) {
 	int rc = 0;
 	int bm_size = 0, mm_lvl = 0;
 	char filename[MAX_FILENAME_LEN];
-	ubyte type = BM_TYPE_NONE;
-	ubyte c_type = BM_TYPE_NONE;
+	BM_TYPE type = BM_TYPE_NONE;
+	BM_TYPE c_type = BM_TYPE_NONE;
 	CFILE *img_cfp = NULL;
 	int handle = -1;
 
@@ -1026,10 +1021,10 @@ int bm_load(const SCP_string& filename) {
 	return bm_load(filename.c_str());
 }
 
-int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, ubyte *type) {
-	int frames = 0, fps = 30, keyframe = 0, rval;
+int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type) {
+	int frames = 0, fps = 30, keyframe = 0;
 	char ext[8];
-	ubyte c_type = BM_TYPE_NONE;
+	BM_TYPE c_type = BM_TYPE_NONE;
 	char file_text[1024];
 	char file_text_raw[1024];
 
@@ -1040,27 +1035,30 @@ int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int 
 	// pause anything that may happen to be parsing right now
 	pause_parse();
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("BMPMAN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+	try
+	{
+		// now start parsing the EFF
+		read_file_text(filename, dir_type, file_text, file_text_raw);
+		reset_parse(file_text);
+
+		required_string("$Type:");
+		stuff_string(ext, F_NAME, sizeof(ext));
+
+		required_string("$Frames:");
+		stuff_int(&frames);
+
+		if (optional_string("$FPS:"))
+			stuff_int(&fps);
+
+		if (optional_string("$Keyframe:"))
+			stuff_int(&keyframe);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("BMPMAN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		unpause_parse();
 		return -1;
 	}
-
-	// now start parsing the EFF
-	read_file_text(filename, dir_type, file_text, file_text_raw);
-	reset_parse(file_text);
-
-	required_string("$Type:");
-	stuff_string(ext, F_NAME, sizeof(ext));
-
-	required_string("$Frames:");
-	stuff_int(&frames);
-
-	if (optional_string("$FPS:"))
-		stuff_int(&fps);
-
-	if (optional_string("$Keyframe:"))
-		stuff_int(&keyframe);
 
 	// done with EFF so unpause parsing so whatever can continue
 	unpause_parse();
@@ -1109,7 +1107,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	int reduced = 0;
 	int anim_fps = 0, anim_frames = 0, key = 0;
 	int anim_width = 0, anim_height = 0;
-	ubyte type = BM_TYPE_NONE, eff_type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
+	BM_TYPE type = BM_TYPE_NONE, eff_type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
 	int bpp = 0, mm_lvl = 0, img_size = 0;
 	char clean_name[MAX_FILENAME_LEN];
 

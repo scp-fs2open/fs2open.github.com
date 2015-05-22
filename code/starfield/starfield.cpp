@@ -25,8 +25,8 @@
 #include "parse/parselo.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
+#include "model/modelrender.h"
 #include "debugconsole/console.h"
-
 
 #define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
@@ -404,183 +404,192 @@ void parse_startbl(const char *filename)
 {
 	char name[MAX_FILENAME_LEN], tempf[16];
 	starfield_bitmap sbm;
-	int idx, rval;
+	int idx;
 	bool in_check = false;
 	int rc = -1;
 	int run_count = 0;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
+
+		// freaky! ;)
+		while (!check_for_eof()) {
+			while ((rc = optional_string_either("$Bitmap:", "$BitmapX:")) != -1) {
+				in_check = true;
+
+				starfield_bitmap_entry_init(&sbm);
+
+				stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
+				sbm.xparent = rc;  // 0 == intensity alpha bitmap,  1 == green xparency bitmap
+
+				if ((idx = stars_find_bitmap(sbm.filename)) >= 0) {
+					if (sbm.xparent == Starfield_bitmaps[idx].xparent) {
+						if (!Parsing_modular_table)
+							Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
+					}
+					else {
+						Warning(LOCATION, "Starfield bitmap '%s' already listed as a %sxparent bitmap!!  Only using the xparent version!",
+							(rc) ? "xparent" : "non-xparent", (rc) ? "xparent" : "non-xparent", sbm.filename);
+					}
+				}
+				else {
+					Starfield_bitmaps.push_back(sbm);
+				}
+			}
+
+			CHECK_END();
+
+			while (optional_string("$Sun:")) {
+				in_check = true;
+
+				starfield_bitmap_entry_init(&sbm);
+
+				stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
+
+				// associated glow
+				required_string("$Sunglow:");
+				stuff_string(sbm.glow_filename, F_NAME, MAX_FILENAME_LEN);
+
+				// associated lighting values
+				required_string("$SunRGBI:");
+				stuff_float(&sbm.r);
+				stuff_float(&sbm.g);
+				stuff_float(&sbm.b);
+				stuff_float(&sbm.i);
+
+				if (optional_string("$SunSpecularRGB:")) {
+					stuff_float(&sbm.spec_r);
+					stuff_float(&sbm.spec_g);
+					stuff_float(&sbm.spec_b);
+				}
+				else {
+					sbm.spec_r = sbm.r;
+					sbm.spec_g = sbm.g;
+					sbm.spec_b = sbm.b;
+				}
+
+				// lens flare stuff
+				if (optional_string("$Flare:")) {
+					sbm.flare = 1;
+
+					required_string("+FlareCount:");
+					stuff_int(&sbm.n_flares);
+
+					// if there's a flare, it has to have at least one texture
+					required_string("$FlareTexture1:");
+					stuff_string(sbm.flare_bitmaps[0].filename, F_NAME, MAX_FILENAME_LEN);
+
+					sbm.n_flare_bitmaps = 1;
+
+					for (idx = 1; idx < MAX_FLARE_BMP; idx++) {
+						// allow 9999 textures (theoretically speaking, that is)
+						sprintf(tempf, "$FlareTexture%d:", idx + 1);
+
+						if (optional_string(tempf)) {
+							sbm.n_flare_bitmaps++;
+							stuff_string(sbm.flare_bitmaps[idx].filename, F_NAME, MAX_FILENAME_LEN);
+						}
+						//	else break; //don't allow flaretexture1 and then 3, etc.
+					}
+
+					required_string("$FlareGlow1:");
+
+					required_string("+FlareTexture:");
+					stuff_int(&sbm.flare_infos[0].tex_num);
+
+					required_string("+FlarePos:");
+					stuff_float(&sbm.flare_infos[0].pos);
+
+					required_string("+FlareScale:");
+					stuff_float(&sbm.flare_infos[0].scale);
+
+					sbm.n_flares = 1;
+
+					for (idx = 1; idx < MAX_FLARE_COUNT; idx++) {
+						// allow a lot of glows
+						sprintf(tempf, "$FlareGlow%d:", idx + 1);
+
+						if (optional_string(tempf)) {
+							sbm.n_flares++;
+
+							required_string("+FlareTexture:");
+							stuff_int(&sbm.flare_infos[idx].tex_num);
+
+							required_string("+FlarePos:");
+							stuff_float(&sbm.flare_infos[idx].pos);
+
+							required_string("+FlareScale:");
+							stuff_float(&sbm.flare_infos[idx].scale);
+						}
+						//	else break; //don't allow "flare 1" and then "flare 3"
+					}
+				}
+
+				sbm.glare = !optional_string("$NoGlare:");
+
+				sbm.xparent = 1;
+
+				if ((idx = stars_find_sun(sbm.filename)) >= 0) {
+					if (Parsing_modular_table)
+						Sun_bitmaps[idx] = sbm;
+					else
+						Warning(LOCATION, "Sun bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
+				}
+				else {
+					Sun_bitmaps.push_back(sbm);
+				}
+			}
+
+			CHECK_END();
+
+			// normal debris pieces
+			while (optional_string("$Debris:")) {
+				in_check = true;
+
+				stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+				if (Num_debris_normal < MAX_DEBRIS_VCLIPS) {
+					strcpy_s(Debris_vclips_normal[Num_debris_normal++].name, name);
+				}
+				else {
+					Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
+				}
+			}
+
+			CHECK_END();
+
+			// nebula debris pieces
+			while (optional_string("$DebrisNeb:")) {
+				in_check = true;
+
+				stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+				if (Num_debris_nebula < MAX_DEBRIS_VCLIPS) {
+					strcpy_s(Debris_vclips_nebula[Num_debris_nebula++].name, name);
+				}
+				else {
+					Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
+				}
+			}
+
+			CHECK_END();
+
+			// since it's possible for some idiot to have a tbl screwed up enough
+			// that this ends up in an endless loop, give an opportunity to advance
+			// through the file no matter what, because even the retail tbl has an
+			// extra "#end" line in it.
+			if (optional_string("#end") || (run_count++ > 5)) {
+				run_count = 0;
+				advance_to_eoln(NULL);
+			}
+		}
 	}
-
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	// freaky! ;)
-	while ( !check_for_eof() ) {
-		while ( (rc = optional_string_either("$Bitmap:", "$BitmapX:")) != -1 ) {
-			in_check = true;
-
-			starfield_bitmap_entry_init( &sbm );
-
-			stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
-			sbm.xparent = rc;  // 0 == intensity alpha bitmap,  1 == green xparency bitmap
-
-			if ( (idx = stars_find_bitmap(sbm.filename)) >= 0 ) {
-				if (sbm.xparent == Starfield_bitmaps[idx].xparent) {
-					if ( !Parsing_modular_table )
-						Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
-				} else {
-					Warning(LOCATION, "Starfield bitmap '%s' already listed as a %sxparent bitmap!!  Only using the xparent version!",
-										(rc) ? "xparent" : "non-xparent", (rc) ? "xparent" : "non-xparent", sbm.filename);
-				}
-			} else {
-				Starfield_bitmaps.push_back(sbm);
-			}
-		}
-
-		CHECK_END();
-
-		while ( optional_string("$Sun:") ) {
-			in_check = true;
-
-			starfield_bitmap_entry_init( &sbm );
-
-			stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
-
-			// associated glow
-			required_string("$Sunglow:");
-			stuff_string(sbm.glow_filename, F_NAME, MAX_FILENAME_LEN);
-
-			// associated lighting values
-			required_string("$SunRGBI:");
-			stuff_float(&sbm.r);
-			stuff_float(&sbm.g);
-			stuff_float(&sbm.b);
-			stuff_float(&sbm.i);
-
-			if ( optional_string("$SunSpecularRGB:") ) {
-				stuff_float(&sbm.spec_r);
-				stuff_float(&sbm.spec_g);
-				stuff_float(&sbm.spec_b);
-			} else {
-				sbm.spec_r = sbm.r;
-				sbm.spec_g = sbm.g;
-				sbm.spec_b = sbm.b;
-			}
-
-			// lens flare stuff
-			if ( optional_string("$Flare:") ) {
-				sbm.flare = 1;
-
-				required_string("+FlareCount:");
-				stuff_int(&sbm.n_flares);
-
-				// if there's a flare, it has to have at least one texture
-				required_string("$FlareTexture1:");
-				stuff_string(sbm.flare_bitmaps[0].filename, F_NAME, MAX_FILENAME_LEN);
-
-				sbm.n_flare_bitmaps = 1;
-
-				for (idx = 1; idx < MAX_FLARE_BMP; idx++) {
-					// allow 9999 textures (theoretically speaking, that is)
-					sprintf(tempf, "$FlareTexture%d:", idx+1);
-
-					if (optional_string(tempf)) {
-						sbm.n_flare_bitmaps++;
-						stuff_string(sbm.flare_bitmaps[idx].filename, F_NAME, MAX_FILENAME_LEN);
-					}
-				//	else break; //don't allow flaretexture1 and then 3, etc.
-				}
-
-				required_string("$FlareGlow1:");
-
-				required_string("+FlareTexture:");
-				stuff_int(&sbm.flare_infos[0].tex_num);
-
-				required_string("+FlarePos:");
-				stuff_float(&sbm.flare_infos[0].pos);
-
-				required_string("+FlareScale:");
-				stuff_float(&sbm.flare_infos[0].scale);
-				
-				sbm.n_flares = 1;
-
-				for (idx = 1; idx < MAX_FLARE_COUNT; idx++) {
-					// allow a lot of glows
-					sprintf(tempf, "$FlareGlow%d:", idx+1);
-
-					if (optional_string(tempf)) {
-						sbm.n_flares++;
-
-						required_string("+FlareTexture:");
-						stuff_int(&sbm.flare_infos[idx].tex_num);
-
-						required_string("+FlarePos:");
-						stuff_float(&sbm.flare_infos[idx].pos);
-
-						required_string("+FlareScale:");
-						stuff_float(&sbm.flare_infos[idx].scale);
-					}
-				//	else break; //don't allow "flare 1" and then "flare 3"
-				}
-			}
-
-			sbm.glare = !optional_string("$NoGlare:");
-
-			sbm.xparent = 1;
-
-			if ( (idx = stars_find_sun(sbm.filename)) >= 0 ) {
-				if (Parsing_modular_table)
-					Sun_bitmaps[idx] = sbm;
-				else
-					Warning(LOCATION, "Sun bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
-			} else {
-				Sun_bitmaps.push_back(sbm);
-			}
-		}
-
-		CHECK_END();
-
-		// normal debris pieces
-		while ( optional_string("$Debris:") ) {
-			in_check = true;
-
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-
-			if (Num_debris_normal < MAX_DEBRIS_VCLIPS) {
-				strcpy_s(Debris_vclips_normal[Num_debris_normal++].name, name);
-			} else {
-				Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
-			}
-		}
-
-		CHECK_END();
-
-		// nebula debris pieces
-		while ( optional_string("$DebrisNeb:") ) {
-			in_check = true;
-
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-
-			if (Num_debris_nebula < MAX_DEBRIS_VCLIPS) {
-				strcpy_s(Debris_vclips_nebula[Num_debris_nebula++].name, name);
-			} else {
-				Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
-			}
-		}
-
-		CHECK_END();
-
-		// since it's possible for some idiot to have a tbl screwed up enough
-		// that this ends up in an endless loop, give an opportunity to advance
-		// through the file no matter what, because even the retail tbl has an
-		// extra "#end" line in it.
-		if ( optional_string("#end") || (run_count++ > 5) ) {
-			run_count = 0;
-			advance_to_eoln(NULL);
-		}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
 	}
 }
 
@@ -1422,12 +1431,14 @@ void subspace_render()
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u;
 	Interp_subspace_offset_v = 0.0f;
 
-	model_set_alpha(1.0f);
+	model_render_params render_info;
+	render_info.set_alpha(1.0f);
+	render_info.set_flags(render_flags);
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 
-	model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
+	model_render_immediate( &render_info, Subspace_model_outer, &tmp, &Eye_position);	//MR_NO_CORRECT|MR_SHOW_OUTLINE
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(0, 0, false);
@@ -1440,14 +1451,14 @@ void subspace_render()
 
 	vm_angles_2_matrix(&tmp,&angs);
 
-	model_set_outline_color(255,255,255);
-
-	model_set_alpha(1.0f);
+	render_info.set_outline_color(255, 255, 255);
+	render_info.set_alpha(1.0f);
+	render_info.set_flags(render_flags);
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 
-	model_render( Subspace_model_inner, &tmp, &Eye_position, render_flags  );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
+	model_render_immediate( &render_info, Subspace_model_inner, &tmp, &Eye_position );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(0, 0, false);
@@ -1802,7 +1813,7 @@ void stars_draw_debris()
 void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env)
 {
 	int gr_zbuffering_save = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE); 
+	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	Rendering_to_env = env;
 
@@ -2144,20 +2155,17 @@ void stars_draw_background()
 	if (Nmodel_num < 0)
 		return;
 
+	model_render_params render_info;
+
 	if (Nmodel_bitmap >= 0) {
-		model_set_forced_texture(Nmodel_bitmap);
-		Nmodel_flags |= MR_FORCE_TEXTURE;
+		render_info.set_forced_bitmap(Nmodel_bitmap);
 	}
 
 	// draw the model at the player's eye with no z-buffering
-	model_set_alpha(1.0f);
+	render_info.set_alpha(1.0f);
+	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
-	model_render(Nmodel_num, &Nmodel_orient, &Eye_position, Nmodel_flags, -1, -1, NULL, true);
-
-	if (Nmodel_bitmap >= 0) {
-		model_set_forced_texture(-1);
-		Nmodel_flags &= ~MR_FORCE_TEXTURE;
-	}
+	model_render_immediate(&render_info, Nmodel_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL);
 }
 
 // call this to set a specific model as the background model

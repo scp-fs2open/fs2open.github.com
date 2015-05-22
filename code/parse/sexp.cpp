@@ -3762,8 +3762,8 @@ int stuff_sexp_variable_list()
 
 	// check for start of list
 	if (*Mp != '(') {
-		error_display(1, "Reading sexp variable list.  Found [%c].  Expecting '('.\n", *Mp);
-		longjmp(parse_abort, 6);
+        error_display(1, "Reading sexp variable list.  Found [%c].  Expecting '('.\n", *Mp);
+        throw parse::ParseException("Syntax error");
 	}
 
 	Mp++;
@@ -4598,7 +4598,7 @@ int sexp_and(int n)
 		if (CAR(n) != -1)
 		{
 			result &= is_sexp_true(CAR(n));
-			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE )
+			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
 			if ( Sexp_nodes[CAR(n)].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
 				all_true = 0;
@@ -4612,7 +4612,7 @@ int sexp_and(int n)
 
 			new_result = is_sexp_true(CDR(n));
 			result &= new_result;
-			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE )
+			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
 			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
 				all_true = 0;
@@ -4641,7 +4641,7 @@ int sexp_and_in_sequence(int n)
 		if (CAR(n) != -1)
 		{
 			result &= is_sexp_true(CAR(n));
-			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE )
+			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_FALSE;														// if one of the AND clauses is FALSE, whole clause is false
 			if ( Sexp_nodes[CAR(n)].value != SEXP_KNOWN_TRUE )		// if value is true, mark our all_true variable for later checking
 				all_true = 0;
@@ -4664,7 +4664,7 @@ int sexp_and_in_sequence(int n)
 			if ( next_result && !result )				// if current result is true, and our running result is false, thngs didn't become true in order
 				return SEXP_KNOWN_FALSE;
 			result &= next_result;
-			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE )
+			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_FALSE;															// if one of the OR clauses is TRUE, whole clause is true
 			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_TRUE )				// if the value is still unknown, they all can't be false
 				all_true = 0;
@@ -4696,13 +4696,11 @@ int sexp_not(int n)
 		if (CAR(n) != -1)
 		{
 			result = is_sexp_true(CAR(n));
-			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE )
+			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_TRUE;												// not KNOWN_FALSE == KNOWN_TRUE;
 			else if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE )		// not KNOWN_TRUE == KNOWN_FALSE
 				return SEXP_KNOWN_FALSE;
 			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN )				// not NAN == TRUE (I think)
-				return SEXP_TRUE;
-			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_TRUE;
 		}
 		else
@@ -6450,7 +6448,7 @@ int sexp_directive_value(int n)
 		replace_current_value = eval_sexp(n);
 	}
 
-	if ((replace_current_value == SEXP_KNOWN_FALSE) || (replace_current_value == SEXP_FALSE) ) {
+	if (replace_current_value == SEXP_FALSE) { // note: any SEXP_KNOWN_FALSE result will return SEXP_FALSE
 		Directive_count += directive_value;
 	}
 	else {
@@ -8575,12 +8573,8 @@ int eval_perform_actions(int n)
 	}
 
 	// return whatever val was, but don't return known-*
-	if (val == SEXP_KNOWN_TRUE)
-		return SEXP_TRUE;
-	else if (val == SEXP_KNOWN_FALSE)
-		return SEXP_FALSE;
-	else
-		return val;
+	// note: SEXP_KNOWN_TRUE/SEXP_KNOWN_FALSE are never returned from eval_sexp
+	return val;
 }
 	
 /**
@@ -8618,7 +8612,7 @@ int eval_when(int n, int when_op_num)
 
 
 	// if value is true, perform the actions in the 'then' part
-	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+	if (val == SEXP_TRUE) // note: SEXP_KNOWN_TRUE is never returned from eval_sexp
 	{
 		// get the operator
 		int exp = CAR(actions);
@@ -8650,7 +8644,7 @@ int eval_when(int n, int when_op_num)
 		}
 	}
 	// if-then-else has actions to perform under "else"
-	else if ((val == SEXP_FALSE || val == SEXP_KNOWN_FALSE) && when_op_num == OP_IF_THEN_ELSE)
+	else if (val == SEXP_FALSE && when_op_num == OP_IF_THEN_ELSE) // note: SEXP_KNOWN_FALSE is never returned from eval_sexp
 	{
 		// skip past the "if" action
 		actions = CDR(actions);
@@ -8668,10 +8662,8 @@ int eval_when(int n, int when_op_num)
 		}
 
 		// invert val so that we behave like a when with opposite results
-		if (val == SEXP_KNOWN_FALSE)
-			val = SEXP_KNOWN_TRUE;
-		else
-			val = SEXP_TRUE;
+		// note: SEXP_KNOWN_FALSE is never returned from eval_sexp
+		val = SEXP_TRUE;
 	}
 
 	if (is_blank_argument_op(when_op_num))
@@ -8693,11 +8685,10 @@ int eval_when(int n, int when_op_num)
 	// thanks to MageKing17 for noticing that we need to short-circuit on the correct node!
 	int short_circuit_node = (arg_handler >= 0) ? arg_handler : cond;
 
-	if (Sexp_nodes[short_circuit_node].value == SEXP_KNOWN_FALSE)
+	if (Sexp_nodes[short_circuit_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[short_circuit_node].value == SEXP_NAN_FOREVER)
 		return SEXP_KNOWN_FALSE;  // no need to waste time on this anymore
 
-	if (val == SEXP_KNOWN_FALSE)
-		return SEXP_FALSE;  // can't return known false, as this would bypass future actions under the when
+	// note: val can't be SEXP_KNOWN_FALSE at this point
 
 	return val;
 }
@@ -8718,7 +8709,7 @@ int eval_cond(int n)
 
 		// if the conditional evaluated to true, then we must evaluate the rest of the expression returning
 		// the value of this evaluation
-		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		if (val == SEXP_TRUE) // note: any SEXP_KNOWN_TRUE result is returned as SEXP_TRUE
 		{
 			int actions, exp;
 
@@ -8774,6 +8765,13 @@ int test_argument_nodes_for_condition(int n, int condition_node, int *num_true, 
 			// evaluate conditional for current argument
 			Sexp_replacement_arguments.push_back(Sexp_nodes[n].text);
 			val = eval_sexp(condition_node);
+			if ( Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
+					Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
+				val = Sexp_nodes[condition_node].value;
+			} else if ( Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER ) {
+				// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
+				val = SEXP_KNOWN_FALSE;
+			}
 
 			switch (val)
 			{
@@ -8848,6 +8846,13 @@ int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool a
 			// evaluate conditional for current argument
 			Sexp_replacement_arguments.push_back(argument_vector[i]);
 			val = eval_sexp(condition_node);
+			if ( Sexp_nodes[condition_node].value == SEXP_KNOWN_TRUE ||
+					Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) {
+				val = Sexp_nodes[condition_node].value;
+			} else if ( Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER ) {
+				// In accordance with SEXP_NAN/SEXP_NAN_FOREVER becoming SEXP_FALSE in eval_sexp()
+				val = SEXP_KNOWN_FALSE;
+			}
 
 			switch (val)
 			{
@@ -8913,12 +8918,10 @@ int eval_any_of(int arg_handler_node, int condition_node)
 	num_valid_arguments = test_argument_nodes_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
 	// use the sexp_or algorithm
-	if (num_known_true)
-		return SEXP_KNOWN_TRUE;
+	if (num_known_true || num_true)
+		return SEXP_TRUE;
 	else if (num_known_false == num_valid_arguments)
 		return SEXP_KNOWN_FALSE;
-	else if (num_true)
-		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
 }
@@ -8936,10 +8939,8 @@ int eval_every_of(int arg_handler_node, int condition_node)
 	num_valid_arguments = test_argument_nodes_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
 	// use the sexp_and algorithm
-	if (num_known_false)
+	if ((!num_valid_arguments) || num_known_false)
 		return SEXP_KNOWN_FALSE;
-	else if (num_known_true == num_valid_arguments)
-		return SEXP_KNOWN_TRUE;
 	else if (num_false)
 		return SEXP_FALSE;
 	else
@@ -8964,12 +8965,10 @@ int eval_number_of(int arg_handler_node, int condition_node)
 
 	// use the sexp_or algorithm, modified
 	// (true if at least threshold arguments are true)
-	if (num_known_true >= threshold)
-		return SEXP_KNOWN_TRUE;
+	if (num_true + num_known_true >= threshold)
+		return SEXP_TRUE;
 	else if (num_valid_arguments - num_known_false < threshold)
 		return SEXP_KNOWN_FALSE;
-	else if (num_true + num_known_true >= threshold)
-		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
 }
@@ -8981,8 +8980,16 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // addendum: hook karajorma's random-multiple-of into the same sexp
 int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 {
-	int n = -1, i, val, num_valid_args, random_argument;
+	int n = -1, i, val, num_valid_args, random_argument, num_known_false = 0;
 	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	// get the number of valid arguments
+	num_valid_args = query_sexp_args_count(arg_handler_node, true);
+
+	if (num_valid_args == 0)
+	{
+		return SEXP_KNOWN_FALSE;	// Not much point in trying to evaluate it again.
+	}
 
 	// find which argument we picked, if we picked one
 	if (!multiple)
@@ -9001,31 +9008,30 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	if (n == -1)
 	{
 		n = CDR(arg_handler_node);
-
-		// get the number of valid arguments
-		num_valid_args = query_sexp_args_count(arg_handler_node, true);
-		if (num_valid_args == 0)
-		{
-			return SEXP_FALSE;
-		}
+		int temp_node = n;
 
 		// pick an argument and iterate to it
 		random_argument = rand_internal(1, num_valid_args);
 		i = 0;
-		while (true)
+		for (int j = 0; j < num_valid_args; temp_node = CDR(temp_node))
 		{
 			Assert(n >= 0);
 
 			// count only valid arguments
-			if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
-				i++;
+			if (Sexp_nodes[temp_node].flags & SNF_ARGUMENT_VALID) {
+				j++;
+				if (i < random_argument && (++i == random_argument)) {
+					// Found the node we want, store it for use
+					n = temp_node;
+				}
 
-			// if we're at the right one, we're done
-			if (i >= random_argument)
-				break;
+				if ((Sexp_nodes[temp_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[temp_node].value == SEXP_NAN_FOREVER))
+					num_known_false++;
+			}
+		}
 
-			// iterate
-			n = CDR(n);
+		if (num_known_false == num_valid_args) {
+			return SEXP_KNOWN_FALSE;	// We're going nowhere fast.
 		}
 
 		// save it, if we're saving
@@ -9048,9 +9054,11 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		val = eval_sexp(condition_node);
 
 		// true?
-		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		if (val == SEXP_TRUE)
 		{
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+		} else if ((!multiple || num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)) {
+			val = SEXP_KNOWN_FALSE;	// If we can't randomly pick another one and this one is guaranteed never to be true, then give up now.
 		}
 		
 		// clear argument, but not list, as we'll need it later
@@ -9097,9 +9105,11 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 		val = eval_sexp(condition_node);
 
 		// true?
-		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		if (val == SEXP_TRUE)
 		{
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+		} else if ((Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)) {
+			val = SEXP_KNOWN_FALSE;	// If we're wasting our time evaluating this ever again, just go ahead and short-circuit.
 		}
 
 		// clear argument, but not list, as we'll need it later
@@ -9159,19 +9169,22 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 	for (i = counter_start; ((counter_step > 0) ? i <= counter_stop : i >= counter_stop); i += counter_step)
 	{
 		sprintf(buf, "%d", i);
-		argument_vector.push_back(strdup(buf));
+		argument_vector.push_back(vm_strdup(buf));
 	}
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
 
+	while (!argument_vector.empty()) {
+		vm_free(argument_vector.back());
+		argument_vector.pop_back();
+	}
+
 	// use the sexp_or algorithm
-	if (num_known_true)
-		return SEXP_KNOWN_TRUE;
+	if (num_known_true || num_true)
+		return SEXP_TRUE;
 	else if (num_known_false == num_valid_arguments)
 		return SEXP_KNOWN_FALSE;
-	else if (num_true)
-		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
 }
@@ -17127,6 +17140,8 @@ void sexp_beam_fire(int node, bool at_coords)
 	// hmm, this could be wacky. Let's just simply select the first beam weapon in the turret
 	fire_info.beam_info_index = -1;	
 	for (idx=0; idx<fire_info.turret->weapons.num_primary_banks; idx++) {
+		Assertion(fire_info.turret->weapons.primary_bank_weapons[idx] >= 0 && fire_info.turret->weapons.primary_bank_weapons[idx] < MAX_WEAPON_TYPES,
+				"sexp_beam_fire: found invalid weapon index (%i), get a coder\n!", fire_info.turret->weapons.primary_bank_weapons[idx]);
 		// store the weapon info index
 		if (Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags & WIF_BEAM) {
 			fire_info.beam_info_index = fire_info.turret->weapons.primary_bank_weapons[idx];
@@ -22853,7 +22868,7 @@ int is_sexp_true(int cur_node, int referenced_node)
 {
 	int result = eval_sexp(cur_node, referenced_node);
 
-	return ((result == SEXP_TRUE) || (result == SEXP_KNOWN_TRUE));
+	return (result == SEXP_TRUE); // note: any SEXP_KNOWN_TRUE result will return SEXP_TRUE
 }
 
 
@@ -23112,7 +23127,13 @@ int eval_sexp(int cur_node, int referenced_node)
 			add_to_event_log_buffer(get_operator_index(cur_node), SEXP_KNOWN_FALSE);
 		}
 		return SEXP_FALSE;
-	}		
+	}
+	else if (Sexp_nodes[cur_node].value == SEXP_NAN_FOREVER) {
+		if (Log_event) {
+			add_to_event_log_buffer(get_operator_index(cur_node), SEXP_NAN_FOREVER);
+		}
+		return SEXP_FALSE;
+	}
 
 	if (Sexp_nodes[cur_node].first != -1) {
 		node = CAR(cur_node);
@@ -25317,7 +25338,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 		// if we haven't returned, check the sexp value of the sexpression evaluation.  A special
 		// value of known true or known false means that we should set the sexp.value field for
-		// short circuit eval (and return that special value as well).
+		// short circuit eval.
 		if (sexp_val == SEXP_KNOWN_TRUE) {
 			Sexp_nodes[cur_node].value = SEXP_KNOWN_TRUE;
 			return SEXP_TRUE;

@@ -147,7 +147,7 @@ MONITOR(NumHullDebrisRend)
 /**
  * Render debris
  */
-void debris_render(object * obj)
+void debris_render_DEPRECATED(object * obj)
 {
 	int			i, num, swapped;
 	polymodel	*pm;
@@ -191,10 +191,10 @@ void debris_render(object * obj)
 
 	if ( db->is_hull )	{
 		MONITOR_INC(NumHullDebrisRend,1);
-		submodel_render( db->model_num, db->submodel_num, &obj->orient, &obj->pos );
+		submodel_render_DEPRECATED( db->model_num, db->submodel_num, &obj->orient, &obj->pos );
 	} else {
 		MONITOR_INC(NumSmallDebrisRend,1);
-		submodel_render( db->model_num, db->submodel_num, &obj->orient, &obj->pos, MR_NO_LIGHTING );
+		submodel_render_DEPRECATED( db->model_num, db->submodel_num, &obj->orient, &obj->pos, MR_NO_LIGHTING );
 	}
 
 	if (tbase != NULL && (swapped!=-1) && pm)	{
@@ -1093,4 +1093,60 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs 
 	pi->I_body_inv.vec.fvec.xyz.x = 0.0f;
 	pi->I_body_inv.vec.fvec.xyz.y = 0.0f;
 	pi->I_body_inv.vec.fvec.xyz.z = 12.0f / (pi->mass *  (dx*dx + dy*dy));
+}
+
+void debris_render(object * obj, draw_list *scene)
+{
+	int			i, num, swapped;
+	polymodel	*pm;
+	debris		*db;
+
+
+	swapped = -1;
+	pm = NULL;	
+	num = obj->instance;
+
+	Assert(num >= 0 && num < MAX_DEBRIS_PIECES);
+	db = &Debris[num];
+
+	Assert(db->flags & DEBRIS_USED);
+
+	texture_info *tbase = NULL;
+
+	model_clear_instance( db->model_num );
+
+	// Swap in a different texture depending on the species
+	if (db->species >= 0)
+	{
+		pm = model_get( db->model_num );
+
+		//WMC - Someday, we should have glowing debris.
+		if ( pm != NULL && (pm->n_textures == 1) ) {
+			tbase = &pm->maps[0].textures[TM_BASE_TYPE];
+			swapped = tbase->GetTexture();
+			tbase->SetTexture(Species_info[db->species].debris_texture.bitmap_id);
+		}
+	}
+
+	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
+	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
+		for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
+			if ( timestamp_valid( db->arc_timestamp[i] ) )	{
+				model_add_arc( db->model_num, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_NORMAL );
+			}
+		}
+	}
+
+	model_render_params render_info;
+
+	if ( !db->is_hull )	{
+		render_info.set_flags(MR_NO_LIGHTING);
+	}
+
+	MONITOR_INC(NumHullDebrisRend,1);
+	submodel_render_queue( &render_info, scene, db->model_num, db->submodel_num, &obj->orient, &obj->pos );
+
+	if (tbase != NULL && (swapped!=-1) && pm)	{
+		tbase->SetTexture(swapped);
+	}
 }

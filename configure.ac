@@ -39,6 +39,8 @@ AC_SUBST(LDFLAGS)
 
 PKG_PROG_PKG_CONFIG()
 
+dnl lets see if we support c++11
+AX_CXX_COMPILE_STDCXX_11([noext], [optional])
 
 dnl The configuration options
 dnl -------------------------

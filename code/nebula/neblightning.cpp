@@ -155,122 +155,124 @@ DCF(lightning_intensity, "Sets lightning intensity between 0.0 and 1.0 (Default 
 void nebl_init()
 {
 	char name[MAX_FILENAME_LEN];
-	int rval;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "lightning.tbl", rval));
+	try
+	{
+		// parse the lightning table
+		read_file_text("lightning.tbl", CF_TYPE_TABLES);
+		reset_parse();
+
+		// parse the individual lightning bolt types
+		required_string("#Bolts begin");
+		while (!optional_string("#Bolts end")){
+			bolt_type new_bolt_type;
+
+			// bolt title
+			required_string("$Bolt:");
+			stuff_string(new_bolt_type.name, F_NAME, NAME_LENGTH);
+
+			// b_scale
+			required_string("+b_scale:");
+			stuff_float(&new_bolt_type.b_scale);
+
+			// b_shrink
+			required_string("+b_shrink:");
+			stuff_float(&new_bolt_type.b_shrink);
+
+			// b_poly_pct
+			required_string("+b_poly_pct:");
+			stuff_float(&new_bolt_type.b_poly_pct);
+
+			// child rand
+			required_string("+b_rand:");
+			stuff_float(&new_bolt_type.b_rand);
+
+			// z add
+			required_string("+b_add:");
+			stuff_float(&new_bolt_type.b_add);
+
+			// # strikes
+			required_string("+b_strikes:");
+			stuff_int(&new_bolt_type.num_strikes);
+
+			// lifetime
+			required_string("+b_lifetime:");
+			stuff_int(&new_bolt_type.lifetime);
+
+			// noise
+			required_string("+b_noise:");
+			stuff_float(&new_bolt_type.noise);
+
+			// emp effect
+			required_string("+b_emp:");
+			stuff_float(&new_bolt_type.emp_intensity);
+			stuff_float(&new_bolt_type.emp_time);
+
+			// texture
+			required_string("+b_texture:");
+			stuff_string(name, F_NAME, sizeof(name));
+			if (!Fred_running){
+				new_bolt_type.texture = bm_load(name);
+			}
+
+			// glow
+			required_string("+b_glow:");
+			stuff_string(name, F_NAME, sizeof(name));
+			if (!Fred_running){
+				new_bolt_type.glow = bm_load(name);
+			}
+
+			// brightness
+			required_string("+b_bright:");
+			stuff_float(&new_bolt_type.b_bright);
+
+			Bolt_types.push_back(new_bolt_type);
+		}
+
+		// parse lightning storm types
+		required_string("#Storms begin");
+		while (!optional_string("#Storms end")){
+			storm_type new_storm_type;
+
+			// bolt title
+			required_string("$Storm:");
+			stuff_string(new_storm_type.name, F_NAME, NAME_LENGTH);
+
+			// bolt types
+			while (optional_string("+bolt:")){
+				if (new_storm_type.num_bolt_types < MAX_BOLT_TYPES_PER_STORM){
+					stuff_string(name, F_NAME, sizeof(name));
+
+					new_storm_type.bolt_types[new_storm_type.num_bolt_types] = nebl_get_bolt_index(name);
+					Assert(new_storm_type.bolt_types[new_storm_type.num_bolt_types] != (size_t)-1);
+
+					new_storm_type.num_bolt_types++;
+				}
+			}
+
+			// flavor
+			required_string("+flavor:");
+			stuff_float(&new_storm_type.flavor.xyz.x);
+			stuff_float(&new_storm_type.flavor.xyz.y);
+			stuff_float(&new_storm_type.flavor.xyz.z);
+
+			// frequencies
+			required_string("+random_freq:");
+			stuff_int(&new_storm_type.min);
+			stuff_int(&new_storm_type.max);
+
+			// counts
+			required_string("+random_count:");
+			stuff_int(&new_storm_type.min_count);
+			stuff_int(&new_storm_type.max_count);
+
+			Storm_types.push_back(new_storm_type);
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "lightning.tbl", e.what()));
 		return;
-	}
-
-	// parse the lightning table
-	read_file_text("lightning.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	// parse the individual lightning bolt types
-	required_string("#Bolts begin");
-	while(!optional_string("#Bolts end")){
-		bolt_type new_bolt_type;
-
-		// bolt title
-		required_string("$Bolt:");
-		stuff_string(new_bolt_type.name, F_NAME, NAME_LENGTH);
-
-		// b_scale
-		required_string("+b_scale:");
-		stuff_float(&new_bolt_type.b_scale);
-
-		// b_shrink
-		required_string("+b_shrink:");
-		stuff_float(&new_bolt_type.b_shrink);
-
-		// b_poly_pct
-		required_string("+b_poly_pct:");
-		stuff_float(&new_bolt_type.b_poly_pct);		
-
-		// child rand
-		required_string("+b_rand:");
-		stuff_float(&new_bolt_type.b_rand);
-
-		// z add
-		required_string("+b_add:");
-		stuff_float(&new_bolt_type.b_add);
-
-		// # strikes
-		required_string("+b_strikes:");
-		stuff_int(&new_bolt_type.num_strikes);
-
-		// lifetime
-		required_string("+b_lifetime:");
-		stuff_int(&new_bolt_type.lifetime);
-
-		// noise
-		required_string("+b_noise:");
-		stuff_float(&new_bolt_type.noise);
-
-		// emp effect
-		required_string("+b_emp:");
-		stuff_float(&new_bolt_type.emp_intensity);
-		stuff_float(&new_bolt_type.emp_time);
-
-		// texture
-		required_string("+b_texture:");
-		stuff_string(name, F_NAME, sizeof(name));
-		if(!Fred_running){
-			new_bolt_type.texture = bm_load(name);
-		}
-
-		// glow
-		required_string("+b_glow:");
-		stuff_string(name, F_NAME, sizeof(name));
-		if(!Fred_running){
-			new_bolt_type.glow = bm_load(name);
-		}
-
-		// brightness
-		required_string("+b_bright:");
-		stuff_float(&new_bolt_type.b_bright);
-
-		Bolt_types.push_back(new_bolt_type);
-	}
-
-	// parse lightning storm types
-	required_string("#Storms begin");
-	while(!optional_string("#Storms end")){
-		storm_type new_storm_type;
-
-		// bolt title
-		required_string("$Storm:");
-		stuff_string(new_storm_type.name, F_NAME, NAME_LENGTH);
-
-		// bolt types
-		while(optional_string("+bolt:")){			
-			if(new_storm_type.num_bolt_types < MAX_BOLT_TYPES_PER_STORM){
-				stuff_string(name, F_NAME, sizeof(name));	
-				
-				new_storm_type.bolt_types[new_storm_type.num_bolt_types] = nebl_get_bolt_index(name);
-				Assert(new_storm_type.bolt_types[new_storm_type.num_bolt_types] != (size_t)-1);								
-
-				new_storm_type.num_bolt_types++;
-			} 			
-		}
-
-		// flavor
-		required_string("+flavor:");
-		stuff_float(&new_storm_type.flavor.xyz.x);
-		stuff_float(&new_storm_type.flavor.xyz.y);
-		stuff_float(&new_storm_type.flavor.xyz.z);
-
-		// frequencies
-		required_string("+random_freq:");
-		stuff_int(&new_storm_type.min);
-		stuff_int(&new_storm_type.max);
-
-		// counts
-		required_string("+random_count:");
-		stuff_int(&new_storm_type.min_count);
-		stuff_int(&new_storm_type.max_count);
-
-		Storm_types.push_back(new_storm_type);
 	}
 }
 

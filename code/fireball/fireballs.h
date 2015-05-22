@@ -13,6 +13,7 @@
 #define _FIREBALLS_H
 
 #include "globalincs/pstypes.h"
+#include "model/modelrender.h"
 
 class object;
 class ship_info;
@@ -76,7 +77,8 @@ typedef struct fireball {
 // end move
 
 void fireball_init();
-void fireball_render(object * obj);
+void fireball_render_DEPRECATED(object * obj);
+void fireball_render(object* obj, draw_list *scene);
 void fireball_delete( object * obj );
 void fireball_process_post(object * obj, float frame_time);
 
@@ -113,6 +115,8 @@ float fireball_wormhole_intensity( object *obj );
 
 // internal function to draw warp grid.
 extern void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d = 0 );
+
+extern void warpin_queue_render(draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d);
 
 extern int Warp_model;
 
