@@ -27067,16 +27067,19 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_BEAM_FLOATING_FIRE:
-			if (argnum == 0)
-				return OPF_WEAPON_NAME;
-			else if (argnum == 1 || argnum == 6)
-				return OPF_SHIP_OR_NONE;
-			else if (argnum == 2)
-				return OPF_IFF;
-			else if (argnum == 7)
-				return OPF_SUBSYSTEM_OR_NONE;
-			else
-				return OPF_NUMBER;
+			switch(argnum) {
+				case 0:
+					return OPF_WEAPON_NAME;
+				case 1:
+				case 6:
+					return OPF_SHIP_OR_NONE;
+				case 2:
+					return OPF_IFF;
+				case 7:
+					return OPF_SUBSYSTEM_OR_NONE;
+				default:
+					return OPF_NUMBER;
+			}
 
 		case OP_IS_TAGGED:
 			return OPF_SHIP;
