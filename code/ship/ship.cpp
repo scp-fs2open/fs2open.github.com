@@ -950,6 +950,7 @@ void init_ship_entry(ship_info *sip)
 	sip->thruster02_glow_len_factor = 1.0f;
 	sip->thruster_dist_rad_factor = 2.0f;
 	sip->thruster_dist_len_factor = 2.0f;
+	sip->thruster_glow_noise_mult = 1.0f;
 
 	sip->draw_distortion = true;
 
@@ -2872,6 +2873,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 	if ( optional_string("$Thruster Distortion:") ) {
 		stuff_boolean(&sip->draw_distortion);
+	}
+
+	if ( optional_string("$Thruster Glow Noise Mult:") ) {
+		stuff_float(&sip->thruster_glow_noise_mult);
 	}
 
 	while ( optional_string("$Thruster Particles:") ) {
@@ -6179,7 +6184,7 @@ void ship_render_DEPRECATED(object * obj)
 				mst.distortion_bitmap = shipp->thruster_distortion_bitmap;
 
 				mst.use_ab = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
-				mst.glow_noise = shipp->thruster_glow_noise;
+				mst.glow_noise = shipp->thruster_glow_noise * sip->thruster_glow_noise_mult;
 				mst.rotvel = Objects[shipp->objnum].phys_info.rotvel;
 
 				mst.glow_rad_factor = sip->thruster01_glow_rad_factor;
