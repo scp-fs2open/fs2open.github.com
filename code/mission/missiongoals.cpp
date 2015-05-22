@@ -927,6 +927,7 @@ void mission_process_event( int event )
 			Current_event_log_buffer = &Mission_events[event].event_log_buffer;
 			Current_event_log_variable_buffer = &Mission_events[event].event_log_variable_buffer;
 			Current_event_log_argument_buffer = &Mission_events[event].event_log_argument_buffer;
+			Current_event_log_container_buffer = &Mission_events[event].event_log_container_buffer;
 		}
 		result = eval_sexp(sindex);
 
