@@ -1276,7 +1276,7 @@ int CFred_mission_save::save_containers()
 				}
 
 				fout("\n$Data: ( "); 
-				for (SCP_hash_map<SCP_string, SCP_string>::iterator map_iter = Sexp_containers[i].map_data.begin(); map_iter != Sexp_containers[i].map_data.end(); map_iter++) {
+				for (auto map_iter = Sexp_containers[i].map_data.begin(); map_iter != Sexp_containers[i].map_data.end(); map_iter++) {
 					fout("\"%s\" \"%s\" ", map_iter->first.c_str(),  map_iter->second.c_str()); 
 				}
 

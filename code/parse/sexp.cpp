@@ -22576,9 +22576,7 @@ void sexp_get_map_keys(int node)
 		Sexp_containers[list_index].list_data.clear(); 
 	}
 
-	SCP_hash_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[map_index].map_data.begin();
-
-	for (; iter != Sexp_containers[map_index].map_data.end(); ++iter) {
+	for (auto iter = Sexp_containers[map_index].map_data.begin(); iter != Sexp_containers[map_index].map_data.end(); ++iter) {
 		Sexp_containers[list_index].list_data.push_back(iter->first);
 	}
 }
@@ -22633,7 +22631,7 @@ bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &look
 		key_ends_here = text.find('&', lookHere);
 
 		SCP_string key = text.substr(lookHere, key_ends_here - lookHere); 
-		SCP_hash_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[con_index].map_data.find(key);
+		auto iter = Sexp_containers[con_index].map_data.find(key);
 
 		if (iter == Sexp_containers[con_index].map_data.end()) {
 			Warning(LOCATION, "sexp_replace_container_with_values() found a container called %s to replace but the modifer is not recognised", Sexp_containers[con_index].container_name.c_str());
@@ -29041,7 +29039,7 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 { 	
 	if (Sexp_containers[container_index].type & SEXP_CONTAINER_MAP) {
 		char *buffer = CTEXT(node);
-		SCP_hash_map<SCP_string, SCP_string>::iterator value = Sexp_containers[container_index].map_data.find(buffer);
+		auto value = Sexp_containers[container_index].map_data.find(buffer);
 
 		// not found
 		if (value == Sexp_containers[container_index].map_data.end()) {

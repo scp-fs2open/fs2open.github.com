@@ -6523,7 +6523,7 @@ sexp_list_item *sexp_tree::get_listing_opf_map_keys(int parent_node, bool modifi
 
 	Assert(container_index >= 0); 
 
-	for (SCP_hash_map<SCP_string, SCP_string>::iterator map_iter = Sexp_containers[container_index].map_data.begin(); map_iter != Sexp_containers[container_index].map_data.end(); ++map_iter) {
+	for (auto map_iter = Sexp_containers[container_index].map_data.begin(); map_iter != Sexp_containers[container_index].map_data.end(); ++map_iter) {
 		if (modifier) {
 			head.add_data(map_iter->first.c_str(), (SEXPT_STRING | SEXPT_MODIFIER | SEXPT_VALID));
 		}

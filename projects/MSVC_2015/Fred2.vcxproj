@@ -770,6 +770,8 @@
     <ClCompile Include="..\..\code\fred2\debriefingeditordlg.cpp" />
     <ClCompile Include="..\..\code\fred2\dialog1.cpp" />
     <ClCompile Include="..\..\code\fred2\dumpstats.cpp" />
+    <ClCompile Include="..\..\code\fred2\editcontaineraddnewdlg.cpp" />
+    <ClCompile Include="..\..\code\fred2\editcontainerdlg.cpp" />
     <ClCompile Include="..\..\code\fred2\eventeditor.cpp" />
     <ClCompile Include="..\..\code\fred2\FictionViewerDlg.cpp" />
     <ClCompile Include="..\..\code\fred2\folderdlg.cpp" />
@@ -838,6 +840,8 @@
     <ClInclude Include="..\..\code\fred2\debriefingeditordlg.h" />
     <ClInclude Include="..\..\code\fred2\dialog1.h" />
     <ClInclude Include="..\..\code\fred2\dumpstats.h" />
+    <ClInclude Include="..\..\code\fred2\editcontaineraddnewdlg.h" />
+    <ClInclude Include="..\..\code\fred2\editcontainerdlg.h" />
     <ClInclude Include="..\..\code\fred2\editor.h" />
     <ClInclude Include="..\..\code\fred2\eventeditor.h" />
     <ClInclude Include="..\..\code\fred2\FictionViewerDlg.h" />

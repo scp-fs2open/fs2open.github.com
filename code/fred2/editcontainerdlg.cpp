@@ -183,7 +183,7 @@ void CEditContainerDlg::set_lister_data(int index)
 		}
 	}
 	else if  (edit_sexp_containers[index].type & SEXP_CONTAINER_MAP) {
-		for (SCP_hash_map<SCP_string, SCP_string>::iterator map_iter = edit_sexp_containers[index].map_data.begin(); map_iter != edit_sexp_containers[index].map_data.end(); map_iter++) {
+		for (auto map_iter = edit_sexp_containers[index].map_data.begin(); map_iter != edit_sexp_containers[index].map_data.end(); map_iter++) {
 			raw_data.push_back(map_iter->first); 
 			raw_data.push_back(map_iter->second); 
 		}

@@ -1094,7 +1094,7 @@ class sexp_container
 		int type;
 		int opf_type;
 		SCP_deque<SCP_string>	list_data;
-		SCP_hash_map<SCP_string, SCP_string> map_data;
+		SCP_unordered_map<SCP_string, SCP_string> map_data;
 };
 
 #define ARG_ITEM_F_DUP	(1<<0)
