@@ -4857,7 +4857,6 @@ void multi_create_list_select_item(int n)
 				else 
 				{
 					Netgame.netgame_descript_info[0] = '\0';
-					strncpy(Netgame.netgame_descript_info, campaign_desc, 1);
 					multi_common_set_text("");
 				}
 			}
