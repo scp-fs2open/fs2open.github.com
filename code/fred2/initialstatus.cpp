@@ -848,7 +848,7 @@ void initial_status::list_dockees(int dock_types)
 
 	// add "nothing"
 	z = cboDockees->AddString("Nothing");
-	cboDockees->SetItemData(z, -1);
+	cboDockees->SetItemData(z, static_cast<DWORD_PTR>(-1));
 
 	// add ships
 	for (object *objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp))

@@ -521,17 +521,24 @@ void obj_snd_do_frame()
 		rot_vol_mult = 1.0f;
 		alive_vol_mult = 1.0f;
 		if ( objp->type == OBJ_SHIP ) {
-			if ( !(is_big_huge(&Ship_info[Ships[objp->instance].ship_info_index])) ) {
-				if ( objp->phys_info.max_vel.xyz.z <= 0 ) {
+			ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+			if (!(is_big_huge(&Ship_info[Ships[objp->instance].ship_info_index]))) {
+				if (objp->phys_info.max_vel.xyz.z <= 0) {
 					percent_max = 0.0f;
 				}
 				else
 					percent_max = objp->phys_info.fspeed / objp->phys_info.max_vel.xyz.z;
 
-				if ( percent_max >= 0.5f )
+				if ( sip->min_engine_vol == -1.0f) {
+					// Retail behavior: volume ramps from 0.5 (when stationary) to 1.0 (when at half speed)
+					if ( percent_max >= 0.5f ) {
 					speed_vol_multiplier = 1.0f;
-				else {
+					} else {
 					speed_vol_multiplier = 0.5f + (percent_max);	// linear interp: 0.5->1.0 when 0.0->0.5
+				}
+				} else {
+					// Volume ramps from min_engine_vol (when stationary) to 1.0 (when at full speed)
+					speed_vol_multiplier = sip->min_engine_vol + ((1.0f - sip->min_engine_vol) * percent_max);
 				}
 			}
 			if (osp->ss != NULL)
