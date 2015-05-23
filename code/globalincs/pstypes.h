@@ -862,10 +862,6 @@ public:
 	ulong to_long() { return values.to_ulong(); }
 };
 
-#if _MSC_VER < 1600 //Since VC2010 does not implement strongly typed enums
-#define FLAG_LIST(Type) enum Type : size_t
-#else
 #define FLAG_LIST(Type) enum class Type : size_t
-#endif
 
 #endif		// PS_TYPES_H
