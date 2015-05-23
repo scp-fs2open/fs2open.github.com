@@ -301,7 +301,6 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 
 			Assert(packed_size == (save-dest_start) );
 			return packed_size;
-			break;
 			}
 
 		default:
@@ -467,7 +466,6 @@ int pack_frame(ubyte *frame, ubyte *frame2, ubyte *save, long size, long max, in
 
 			Assert(packed_size == (save-dest_start) );
 			return packed_size;
-			break;
 			}
 
 		default:

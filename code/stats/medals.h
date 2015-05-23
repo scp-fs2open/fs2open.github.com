@@ -33,6 +33,7 @@ public:
 	char	debrief_bitmap[MAX_FILENAME_LEN];
 	int	num_versions;
 	bool version_starts_at_1;
+	bool available_from_start;
 	int	kills_needed;
 
 	//If this is a badge (kills_needed > 0)

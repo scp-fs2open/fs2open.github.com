@@ -14,6 +14,7 @@
 
 #include <float.h>
 #include "globalincs/pstypes.h"
+#include "math/floating.h"
 
 //#define _INLINE_VECMAT
 
@@ -217,6 +218,16 @@ void vm_vec_scale_add2(vec3d *dest,vec3d *src,float k);
 void vm_vec_scale2(vec3d *dest,float n,float d);
 #endif
 
+bool vm_vec_equal(const vec2d &self, const vec2d &other);
+
+bool vm_vec_equal(const vec3d &self, const vec3d &other);
+
+bool vm_vec_equal(const vec4 &self, const vec4 &other);
+
+bool vm_matrix_equal(const matrix &self, const matrix &other);
+
+bool vm_matrix_equal(const matrix4 &self, const matrix4 &other);
+
 // finds the projection of source vector along a unit vector
 // returns the magnitude of the component
 float vm_vec_projection_parallel (vec3d *component, vec3d *src, vec3d *unit_vector);
@@ -366,6 +377,7 @@ matrix *vm_matrix_x_matrix(matrix *dest,matrix *src0,matrix *src1);
 
 //extract angles from a matrix
 angles *vm_extract_angles_matrix(angles *a,matrix *m);
+angles *vm_extract_angles_matrix_alternate(angles *a,matrix *m);
 
 //extract heading and pitch from a vector, assuming bank==0
 angles *vm_extract_angles_vector(angles *a,vec3d *v);

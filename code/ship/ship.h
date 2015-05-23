@@ -424,7 +424,7 @@ typedef struct ship_flag_name {
 	int flag_list;						// is this flag in the 1st or 2nd ship flags list?
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					16
+#define MAX_SHIP_FLAG_NAMES					17
 extern ship_flag_name Ship_flag_names[];
 
 // states for the flags variable within the ship structure
@@ -1144,6 +1144,8 @@ typedef struct ship_collision_physics {
 
 typedef struct path_metadata {
 	vec3d departure_rvec;
+	float arrive_speed_mult;
+	float depart_speed_mult;
 } path_metadata;
 
 // The real FreeSpace ship_info struct.
@@ -1293,6 +1295,9 @@ public:
 	bool draw_secondary_models[MAX_SHIP_SECONDARY_BANKS];
 	float weapon_model_draw_distance;
 
+	// Recoil modifier for the ship
+	float ship_recoil_modifier;
+
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
 	float	auto_shield_spread;
@@ -1325,7 +1330,9 @@ public:
 	int 	selection_effect;
 
 	int bii_index_ship;						// if this ship has a briefing icon that overrides the normal icon set
+	int bii_index_ship_with_cargo;
 	int bii_index_wing;
+	int bii_index_wing_with_cargo;
 
 	int	score;								// default score for this ship
 
@@ -1376,6 +1383,9 @@ public:
 	int splodeing_texture;
 	char splodeing_texture_name[MAX_FILENAME_LEN];
 
+	// Goober5000
+	SCP_vector<texture_replace> replacement_textures;
+
 	
 	int armor_type_idx;
 	int shield_armor_type_idx;
@@ -1393,6 +1403,7 @@ public:
 	vec3d topdown_offset;
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
+	float min_engine_vol;					// minimum volume modifier for engine sound when ship is stationary
 	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
 	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
 
@@ -1426,6 +1437,8 @@ public:
 	SCP_vector<cockpit_display_info> displays;
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
+
+	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
 };
 
 extern int Num_wings;
@@ -1569,7 +1582,8 @@ extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_model_change(int n, int ship_type);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
-extern void ship_render( object * objp );
+extern void ship_render_DEPRECATED( object * objp );
+extern void ship_render( object * obj, draw_list * scene );
 extern void ship_render_cockpit( object * objp);
 extern void ship_render_show_ship_cockpit( object * objp);
 extern void ship_delete( object * objp );
@@ -1615,9 +1629,7 @@ extern void physics_ship_init(object *objp);
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
-//Template stuff, here's as good a place as any.
-int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace);
-extern int ship_template_lookup(const char *name = NULL);
+int parse_ship_values(ship_info* sip, bool first_time, bool replace);
 void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string);
 
 extern int ship_info_lookup(const char *name = NULL);

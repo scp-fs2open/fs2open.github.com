@@ -171,7 +171,7 @@ void ai_post_process_mission()
 		// Goober5000 - MK originally iterated on only the first wing; now we iterate on only the player wing
 		// because the player wing may not be first
 		for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {	
-			if ( Starting_wings[i] == Player_ship->wingnum ) {
+			if (Starting_wings[i] >= 0 && Starting_wings[i] == Player_ship->wingnum) {
 				wing *wingp;
 
 				wingp = &Wings[Starting_wings[i]];
@@ -528,7 +528,7 @@ int ai_goal_find_dockpoint(int shipnum, int dock_type)
 }
 
 // function to fix up dock point references for objects.
-// passed are the pointer to goal we are working with.  aip if the ai_info pointer
+// passed are the pointer to goal we are working with.  aip is the ai_info pointer
 // of the ship with the order.  aigp is a pointer to the goal (of aip) of which we are
 // fixing up the docking points
 void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
@@ -537,6 +537,7 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 
 	Assert ( aip->shipnum != -1 );
 	shipnum = ship_name_lookup( aigp->target_name );
+	Assertion ( shipnum != -1, "Couldn't find ai goal's target_name (%s); get a coder!\n", aigp->target_name );
 	docker_index = -1;
 	dockee_index = -1;
 
@@ -977,6 +978,16 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 	if ( aigp->priority > MAX_GOAL_PRIORITY ) {
 		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", text, aigp->priority, MAX_GOAL_PRIORITY));
 		aigp->priority = MAX_GOAL_PRIORITY;
+	}
+
+	// Goober5000 - we now have an extra optional chase argument to allow chasing our own team
+	if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_DISABLE_SHIP || op == OP_AI_DISARM_SHIP ) {
+		if ((CDDDR(node) != -1) && is_sexp_true(CDDDR(node)))
+			aigp->flags |= AIGF_TARGET_OWN_TEAM;
+	}
+	if ( op == OP_AI_DESTROY_SUBSYS ) {
+		if ((CDDDDR(node) != -1) && is_sexp_true(CDDDDR(node)))
+			aigp->flags |= AIGF_TARGET_OWN_TEAM;
 	}
 
 	// Goober5000 - since none of the goals act on the actor,

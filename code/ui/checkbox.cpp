@@ -52,13 +52,13 @@ void UI_CHECKBOX::draw()
 			if ( flag ) {
 				if ( bmap_ids[CBOX_DISABLED_MARKED] != -1 ) {
 					gr_set_bitmap(bmap_ids[CBOX_DISABLED_MARKED]);
-					gr_bitmap(x,y);
+					gr_bitmap(x,y,GR_RESIZE_MENU);
 				}
 			}
 			else {
 				if ( bmap_ids[CBOX_DISABLED_CLEAR] != -1 ) {
 					gr_set_bitmap(bmap_ids[CBOX_DISABLED_CLEAR]);
-					gr_bitmap(x,y);
+					gr_bitmap(x,y,GR_RESIZE_MENU);
 				}
 			}
 		}
@@ -67,13 +67,13 @@ void UI_CHECKBOX::draw()
 				if ( flag ) {			// marked
 					if ( bmap_ids[CBOX_UP_MARKED] != -1 ) {
 						gr_set_bitmap(bmap_ids[CBOX_UP_MARKED]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 				else {					// not marked
 					if ( bmap_ids[CBOX_UP_CLEAR] != -1 ) {
 						gr_set_bitmap(bmap_ids[CBOX_UP_CLEAR]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 			}
@@ -81,13 +81,13 @@ void UI_CHECKBOX::draw()
 				if ( flag ) {			// marked
 					if ( bmap_ids[CBOX_DOWN_MARKED] != -1 ) {
 						gr_set_bitmap(bmap_ids[CBOX_DOWN_MARKED]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 				else {					// not marked
 					if ( bmap_ids[CBOX_DOWN_CLEAR] != -1 ) {
 						gr_set_bitmap(bmap_ids[CBOX_DOWN_CLEAR]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 			}
@@ -95,7 +95,7 @@ void UI_CHECKBOX::draw()
 
 	} else {
 		gr_set_font(my_wnd->f_id);
-		gr_set_clip( x, y, w, h );
+		gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 
 		if (position == 0 )	{
 			ui_draw_box_out( 0, 0, w-1, h-1 );
@@ -120,7 +120,7 @@ void UI_CHECKBOX::draw()
 
 		if (text) {
 			gr_reset_clip();
-			gr_string( x+w+4, y+2, text );
+			gr_string( x+w+4, y+2, text, GR_RESIZE_MENU );
 		}
 	}
 }

@@ -38,6 +38,7 @@
 #include "network/multi.h"
 #include "anim/packunpack.h" // for talking heads
 #include "anim/animplay.h"
+#include "parse/scripting.h"
 
 
 /* replaced with those static ints that follow
@@ -409,7 +410,15 @@ void HudGaugeMessages::scrollMessages()
 			*m = active_messages.back();
 			active_messages.pop_back();
 
-			continue;
+			if (active_messages.empty())
+			{
+				// We may not use the iterator any longer
+				break;
+			}
+			else
+			{
+				continue;
+			}
 		}
 
 		++m;
@@ -474,27 +483,28 @@ void HUD_fixed_printf(float duration, color col, const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	msg_length = strlen(tmp);
-	Assert(msg_length < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 
 	if ( !msg_length ) {
 		nprintf(("Warning", "HUD_fixed_printf ==> attempt to print a 0 length string in msg window\n"));
 		return;
 
 	} else if (msg_length > MAX_HUD_LINE_LEN - 1){
-		nprintf(("Warning", "HUD_fixed_printf ==> Following string truncated to %d chars: %s\n",MAX_HUD_LINE_LEN,tmp));
+		nprintf(("Warning", "HUD_fixed_printf ==> Following string truncated to %d chars: %s\n", MAX_HUD_LINE_LEN - 1, tmp));
+		tmp[MAX_HUD_LINE_LEN-1] = '\0';
 	}
+
+	strcpy_s(HUD_fixed_text[0].text, tmp);
 
 	if (duration == 0.0f){
 		HUD_fixed_text[0].end_time = timestamp(-1);
 	} else {
 		HUD_fixed_text[0].end_time = timestamp((int) (1000.0f * duration));
 	}
-
-	strncpy(HUD_fixed_text[0].text, tmp, MAX_HUD_LINE_LEN - 1);
 	HUD_fixed_text[0].color = col.red << 16 | col.green << 8 | col.blue; 
 }
 
@@ -521,7 +531,6 @@ void HUD_printf(const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
-	int len;
 
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
@@ -530,11 +539,10 @@ void HUD_printf(const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
-	len = strlen(tmp);
-	Assert(len < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(HUD_SOURCE_COMPUTER, tmp);
 }
 
@@ -542,18 +550,17 @@ void HUD_ship_sent_printf(int sh, const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
+	tmp[sizeof(tmp)-1] = '\0';
 	int len;
 
-	sprintf(tmp, NOX("%s: "), Ships[sh].ship_name);
+	snprintf(tmp, sizeof(tmp)-1, NOX("%s: "), Ships[sh].ship_name);
 	len = strlen(tmp);
-	Assert(len < HUD_MSG_LENGTH_MAX);
 
 	va_start(args, format);
-	vsprintf(tmp + len, format, args);
+	vsnprintf(tmp + len, sizeof(tmp)-1-len, format, args);
 	va_end(args);
 
-	len = strlen(tmp);
-	Assert(len < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
+	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(HUD_team_get_source(Ships[sh].team), tmp);
 }
 
@@ -576,9 +583,10 @@ void HUD_sourced_printf(int source, const char *format, ...)
 	}
 	
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
-	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
+	tmp[sizeof(tmp)-1] = '\0';
+
 	hud_sourced_print(source, tmp);
 }
 
@@ -599,6 +607,15 @@ void hud_sourced_print(int source, const char *msg)
 	new_msg.x = 0;
 
 	HUD_msg_buffer.push_back(new_msg);
+
+    // Invoke the scripting hook
+    Script_system.SetHookVar("Text", 's', const_cast<char*>(msg));
+    Script_system.SetHookVar("SourceType", 'i', &source);
+
+    Script_system.RunCondition(CHA_HUDMSGRECEIVED);
+
+    Script_system.RemHookVars(2, "Text", "SourceType");
+    
 }
 
 int hud_query_scrollback_size()
@@ -1059,13 +1076,13 @@ void hud_scrollback_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
 
 	/*
 	if ((Scrollback_mode == SCROLLBACK_MODE_OBJECTIVES) && (Status_bitmap >= 0)) {
 		gr_set_bitmap(Status_bitmap);
-		gr_bitmap(Hud_mission_log_status_coords[gr_screen.res][0], Hud_mission_log_status_coords[gr_screen.res][1]);
+		gr_bitmap(Hud_mission_log_status_coords[gr_screen.res][0], Hud_mission_log_status_coords[gr_screen.res][1], GR_RESIZE_MENU);
 	}
 	*/
 
@@ -1129,12 +1146,12 @@ void hud_scrollback_do_frame(float frametime)
 					}
 
 					if (node_ptr->time)
-						gr_print_timestamp(Hud_mission_log_list_coords[gr_screen.res][0], Hud_mission_log_list_coords[gr_screen.res][1] + y, node_ptr->time);
+						gr_print_timestamp(Hud_mission_log_list_coords[gr_screen.res][0], Hud_mission_log_list_coords[gr_screen.res][1] + y, node_ptr->time, GR_RESIZE_MENU);
 
 					x = Hud_mission_log_list2_coords[gr_screen.res][0] + node_ptr->x;
-					gr_printf(x, Hud_mission_log_list_coords[gr_screen.res][1] + y, "%s", node_ptr->text);
+					gr_printf_menu(x, Hud_mission_log_list_coords[gr_screen.res][1] + y, "%s", node_ptr->text);
 					if (node_ptr->underline_width)
-						gr_line(x, Hud_mission_log_list_coords[gr_screen.res][1] + y + font_height - 1, x + node_ptr->underline_width, Hud_mission_log_list_coords[gr_screen.res][1] + y + font_height - 1);
+						gr_line(x, Hud_mission_log_list_coords[gr_screen.res][1] + y + font_height - 1, x + node_ptr->underline_width, Hud_mission_log_list_coords[gr_screen.res][1] + y + font_height - 1, GR_RESIZE_MENU);
 
 					if ((node_ptr->source == HUD_SOURCE_FAILED) || (node_ptr->source == HUD_SOURCE_SATISFIED)) {
 						// draw goal icon
@@ -1144,13 +1161,13 @@ void hud_scrollback_do_frame(float frametime)
 							gr_set_color_fast(&Color_bright_green);
 
 						i = Hud_mission_log_list_coords[gr_screen.res][1] + y + font_height / 2 - 1;
-						gr_circle(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i, 5);
+						gr_circle(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i, 5, GR_RESIZE_MENU);
 
 						gr_set_color_fast(&Color_bright);
-						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 10, i, Hud_mission_log_list2_coords[gr_screen.res][0] - 8, i);
-						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i - 4, Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i - 2);
-						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 4, i, Hud_mission_log_list2_coords[gr_screen.res][0] - 2, i);
-						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i + 2, Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i + 4);
+						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 10, i, Hud_mission_log_list2_coords[gr_screen.res][0] - 8, i, GR_RESIZE_MENU);
+						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i - 4, Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i - 2, GR_RESIZE_MENU);
+						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 4, i, Hud_mission_log_list2_coords[gr_screen.res][0] - 2, i, GR_RESIZE_MENU);
+						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i + 2, Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i + 4, GR_RESIZE_MENU);
 					}
 
 					y += font_height + node_ptr->y;
@@ -1163,8 +1180,8 @@ void hud_scrollback_do_frame(float frametime)
 	}
 
 	gr_set_color_fast(&Color_text_heading);
-	gr_print_timestamp(Hud_mission_log_time_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, Missiontime);
-	gr_string(Hud_mission_log_time2_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, XSTR( "Current time", 289));
+	gr_print_timestamp(Hud_mission_log_time_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, Missiontime, GR_RESIZE_MENU);
+	gr_string(Hud_mission_log_time2_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, XSTR( "Current time", 289), GR_RESIZE_MENU);
 	gr_flip();
 }
 

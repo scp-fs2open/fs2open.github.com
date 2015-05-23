@@ -26,6 +26,7 @@
 #include "iff_defs/iff_defs.h"
 #include "network/multimsgs.h"
 #include "network/multi.h"
+#include "debugconsole/console.h"
 
 
 
@@ -464,7 +465,7 @@ int emp_should_blit_gauge()
 }
 
 // emp hud string
-void emp_hud_string(int x, int y, int gauge_id, const char *str, bool resize)
+void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode)
 {
 	char tmp[256] = "";
 
@@ -484,19 +485,20 @@ void emp_hud_string(int x, int y, int gauge_id, const char *str, bool resize)
 	}
 
 	// print the string out
-	gr_string(x, y, tmp, resize);
+	gr_string(x, y, tmp, resize_mode);
 }
 
 // emp hud printf
 void emp_hud_printf(int x, int y, int gauge_id, const char *format, ...)
 {
-	char tmp[256] = "";
+	char tmp[256];
 	va_list args;	
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 	
 	// if the emp effect is not active, don't even bother messing with the text
 	if(emp_active_local()){
@@ -637,13 +639,12 @@ float emp_current_intensity()
 DCF(zap, "zap a ship with an EMP effect")
 {
 	int shipnum;
+	SCP_string ship_str;
 
-	dc_get_arg(ARG_STRING);
-	if(Dc_arg_type & ARG_STRING){
-		 shipnum = ship_name_lookup(Dc_arg, 1);
+	dc_stuff_string_white(ship_str);
+	shipnum = ship_name_lookup(ship_str.c_str(), 1);
 
-		 if(shipnum >= 0){
-			emp_start_ship(&Objects[Ships[shipnum].objnum], 500.0f, 10.0f);
-		 }
+	if(shipnum >= 0){
+		emp_start_ship(&Objects[Ships[shipnum].objnum], 500.0f, 10.0f);
 	}
 }

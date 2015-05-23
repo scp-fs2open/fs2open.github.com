@@ -34,6 +34,7 @@
 #include "network/multiutil.h"
 #include "network/multi_obj.h"
 #include "parse/parselo.h"
+#include "debugconsole/console.h"
 
 #ifndef NDEBUG
 #include "io/key.h"
@@ -286,10 +287,16 @@ void do_view_chase(float frame_time)
 
 float camera_zoom_scale = 1.0f;
 
-DCF(camera_speed, "")
+DCF(camera_speed, "Sets the camera zoom scale")
 {
-	dc_get_arg(ARG_FLOAT);
-	camera_zoom_scale = Dc_arg_float;
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Camera zoom scale is %f\n", camera_zoom_scale);
+		return;
+	}
+
+	dc_stuff_float(&camera_zoom_scale);
+
+	dc_printf("Camera zoom scale set to %f\n", camera_zoom_scale);
 }
 
 void do_view_external(float frame_time)

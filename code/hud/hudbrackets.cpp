@@ -50,14 +50,14 @@ void hud_init_brackets()
 }
 
 //	Called by draw_bounding_brackets.  
-void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize)
+void draw_brackets_square(int x1, int y1, int x2, int y2, int resize_mode)
 {
 	int	width, height;
 
-	if(resize || gr_screen.rendering_to_texture != -1)
+	if(resize_mode != GR_RESIZE_NONE || gr_screen.rendering_to_texture != -1)
 	{
-		gr_resize_screen_pos(&x1, &y1);
-		gr_resize_screen_pos(&x2, &y2);
+		gr_resize_screen_pos(&x1, &y1, NULL, NULL, resize_mode);
+		gr_resize_screen_pos(&x2, &y2, NULL, NULL, resize_mode);
 	}
 	
 	width = x2 - x1;
@@ -71,24 +71,24 @@ void draw_brackets_square(int x1, int y1, int x2, int y2, bool resize)
 
 	// horizontal lines
 	if ( (x1 + bracket_width > 0) && (x1 < gr_screen.clip_width) ){
-		gr_gradient(x1,y1,x1+bracket_width-1,y1,false);	// top left
-		gr_gradient(x1,y2,x1+bracket_width-1,y2,false);	// bottom left
+		gr_gradient(x1,y1,x1+bracket_width-1,y1,GR_RESIZE_NONE);	// top left
+		gr_gradient(x1,y2,x1+bracket_width-1,y2,GR_RESIZE_NONE);	// bottom left
 	}
 
 	if ( (x2 - bracket_width < gr_screen.clip_width) && (x2 > 0) )	{
-		gr_gradient(x2, y1, x2-bracket_width+1,y1,false);	// top right
-		gr_gradient(x2, y2, x2-bracket_width+1,y2,false);	// bottom right
+		gr_gradient(x2, y1, x2-bracket_width+1,y1,GR_RESIZE_NONE);	// top right
+		gr_gradient(x2, y2, x2-bracket_width+1,y2,GR_RESIZE_NONE);	// bottom right
 	}
 
 	// vertical lines
 	if ( (y1 + bracket_height > 0) && (y1 < gr_screen.clip_height) ) {
-		gr_gradient(x1,y1,x1,y1+bracket_height-1,false);		// top left
-		gr_gradient(x2,y1,x2,y1+bracket_height-1,false);		// top right
+		gr_gradient(x1,y1,x1,y1+bracket_height-1,GR_RESIZE_NONE);		// top left
+		gr_gradient(x2,y1,x2,y1+bracket_height-1,GR_RESIZE_NONE);		// top right
 	}
 
 	if ( (y2 - bracket_height < gr_screen.clip_height) && (y2 > 0) )	{
-		gr_gradient(x1,y2,x1,y2-bracket_height+1,false);	// bottom left
-		gr_gradient(x2,y2,x2,y2-bracket_height+1,false);	// bottom right
+		gr_gradient(x1,y2,x1,y2-bracket_height+1,GR_RESIZE_NONE);	// bottom left
+		gr_gradient(x2,y2,x2,y2-bracket_height+1,GR_RESIZE_NONE);	// bottom right
 	}
 }
 

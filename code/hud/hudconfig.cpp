@@ -889,7 +889,7 @@ void hud_config_render_gauges()
 		// draw
 		if ( HC_gauge_regions[gr_screen.res][i].bitmap >= 0 ) {
 			gr_set_bitmap(HC_gauge_regions[gr_screen.res][i].bitmap);
-			gr_aabitmap(HC_gauge_regions[gr_screen.res][i].x, HC_gauge_regions[gr_screen.res][i].y);
+			gr_aabitmap(HC_gauge_regions[gr_screen.res][i].x, HC_gauge_regions[gr_screen.res][i].y, GR_RESIZE_MENU);
 		}
 		
 		/*
@@ -913,7 +913,7 @@ void hud_config_render_gauges()
 			if ( HC_gauge_regions[i].bitmap >= 0 ) {
 				Assert(offset < HC_gauge_regions[i].nframes);
 				gr_set_bitmap(HC_gauge_regions[i].bitmap+offset);
-				gr_bitmap(HC_gauge_regions[i].x, HC_gauge_regions[i].y);
+				gr_bitmap(HC_gauge_regions[i].x, HC_gauge_regions[i].y, GR_RESIZE_MENU);
 			}
 		}
 		*/
@@ -999,26 +999,26 @@ void hud_config_set_gauge_flags(int gauge_index, int on_flag, int popup_flag)
 	}
 }
 
-void hud_config_record_color(int color)
+void hud_config_record_color(int in_color)
 {
-	HUD_config.main_color = color;
-	HUD_color_red = HC_colors[color].r;
-	HUD_color_green = HC_colors[color].g;
-	HUD_color_blue = HC_colors[color].b;
+	HUD_config.main_color = in_color;
+	HUD_color_red = HC_colors[in_color].r;
+	HUD_color_green = HC_colors[in_color].g;
+	HUD_color_blue = HC_colors[in_color].b;
 }
 
 // Set the HUD color
-void hud_config_set_color(int color)
+void hud_config_set_color(int in_color)
 {
 	int idx;	
 
-	hud_config_record_color(color);
+	hud_config_record_color(in_color);
 
 	HUD_init_hud_color_array();
 
 	// apply the color to all gauges
 	for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-		gr_init_alphacolor(&HUD_config.clr[idx], HC_colors[color].r, HC_colors[color].g, HC_colors[color].b, (HUD_color_alpha+1)*16);
+		gr_init_alphacolor(&HUD_config.clr[idx], HC_colors[in_color].r, HC_colors[in_color].g, HC_colors[in_color].b, (HUD_color_alpha+1)*16);
 	}
 }
 
@@ -1421,7 +1421,7 @@ void hud_config_render_description()
 		gr_get_string_size(&w, &h, HC_gauge_descriptions(HC_gauge_selected));
 		sx = fl2i(HC_gauge_description_coords[gr_screen.res][0] + (HC_gauge_description_coords[gr_screen.res][2] - w)/2.0f);
 		sy = HC_gauge_description_coords[gr_screen.res][1];
-		gr_string(sx, sy, HC_gauge_descriptions(HC_gauge_selected));
+		gr_string(sx, sy, HC_gauge_descriptions(HC_gauge_selected), GR_RESIZE_MENU);
 	}
 }
 
@@ -1432,7 +1432,7 @@ void hud_config_render_special_bitmaps()
 	for (i=1; i<NUM_HC_SPECIAL_BITMAPS; i++) {
 		if (HC_special_bitmaps[i].bitmap >= 0) {
 			gr_set_bitmap(HC_special_bitmaps[i].bitmap);
-			gr_bitmap(HC_special_bitmaps[i].x, HC_special_bitmaps[i].y);
+			gr_bitmap(HC_special_bitmaps[i].x, HC_special_bitmaps[i].y, GR_RESIZE_MENU);
 		}
 	}
 	*/
@@ -1487,7 +1487,7 @@ void hud_config_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(HC_background_bitmap);
 	if ( HC_background_bitmap > 0 ) {
 		gr_set_bitmap(HC_background_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 
 	// rgb slider/button stuff
@@ -1503,7 +1503,7 @@ void hud_config_do_frame(float frametime)
 	if (HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap >= 0) {
 		hud_set_default_color();
 		gr_set_bitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap);
-		gr_aabitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].x, HC_special_bitmaps[HC_SPECIAL_RETICLE].y);
+		gr_aabitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].x, HC_special_bitmaps[HC_SPECIAL_RETICLE].y, GR_RESIZE_MENU);
 	}
 	*/
 
@@ -1641,31 +1641,43 @@ void hud_config_color_save(char *name)
 
 void hud_config_color_load(char *name)
 {
-	int idx, rval;
+	int idx;
 	char str[1024];
 	char *fname;
 
 	fname = cf_add_ext(name, ".hcf");
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("HUDCONFIG: Unable to parse '%s'!  Error code = %i.\n", fname, rval));
+	try
+	{
+		read_file_text(fname);
+		reset_parse();
+
+		// First, set all gauges to the current main color
+		for (idx = 0; idx < NUM_HUD_GAUGES; idx++){
+			gr_init_alphacolor(&HUD_config.clr[idx], HUD_color_red, HUD_color_green, HUD_color_blue, (HUD_color_alpha + 1) * 16);
+		}
+
+		// Now read in the color values for the gauges
+		while (optional_string("+Gauge:")) {
+			stuff_string(str, F_NAME, sizeof(str));
+
+			for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
+				if (!stricmp(str, Hud_Gauge_Names[idx])) {
+					required_string("+RGBA:");
+					stuff_ubyte(&HUD_config.clr[idx].red);
+					stuff_ubyte(&HUD_config.clr[idx].green);
+					stuff_ubyte(&HUD_config.clr[idx].blue);
+					stuff_ubyte(&HUD_config.clr[idx].alpha);
+					break;
+				}
+			}
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("HUDCONFIG: Unable to parse '%s'!  Error message = %s.\n", fname, e.what()));
 		return;
 	}
-
-	read_file_text(fname);
-	reset_parse();
-
-	// write out all gauges
-	for(idx=0; idx<NUM_HUD_GAUGES; idx++){		
-		required_string("+Gauge:");
-		stuff_string(str, F_NAME, sizeof(str));
-
-		required_string("+RGBA:");
-		stuff_ubyte(&HUD_config.clr[idx].red);
-		stuff_ubyte(&HUD_config.clr[idx].green);
-		stuff_ubyte(&HUD_config.clr[idx].blue);
-		stuff_ubyte(&HUD_config.clr[idx].alpha);
-	}	
 }
 
 void hud_config_alpha_slider_up()

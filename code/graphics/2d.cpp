@@ -15,6 +15,7 @@
 #endif
 
 #include <limits.h>
+#include <algorithm>
 
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
@@ -31,7 +32,9 @@
 #include "parse/scripting.h"
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 #include "io/keycontrol.h" // m!m
-
+#include "graphics/gropengldraw.h"
+#include "debugconsole/console.h"
+#include "io/timer.h"
 
 #if defined(SCP_UNIX) && !defined(__APPLE__)
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
@@ -88,75 +91,178 @@ float Max_draw_distance = Default_max_draw_distance;
 static int GL_cursor_nframes = 0;
 
 // Pre-computed screen resize vars
+static float Gr_full_resize_X = 1.0f, Gr_full_resize_Y = 1.0f;
 static float Gr_resize_X = 1.0f, Gr_resize_Y = 1.0f;
-static float Gr_unsize_X = 1.0f, Gr_unsize_Y = 1.0f;
+static float Gr_menu_offset_X = 0.0f, Gr_menu_offset_Y = 0.0f;
+static float Gr_menu_zoomed_offset_X = 0.0f, Gr_menu_zoomed_offset_Y = 0.0f;
 
+float Gr_save_full_resize_X = 1.0f, Gr_save_full_resize_Y = 1.0f;
 float Gr_save_resize_X = 1.0f, Gr_save_resize_Y = 1.0f;
-float Gr_save_unsize_X = 1.0f, Gr_save_unsize_Y = 1.0f;
+float Gr_save_menu_offset_X = 0.0f, Gr_save_menu_offset_Y = 0.0f;
+float Gr_save_menu_zoomed_offset_X = 0.0f, Gr_save_menu_zoomed_offset_Y = 0.0f;
 
 bool Save_custom_screen_size;
 
-void gr_set_screen_scale(int w, int h)
+void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int max_h, bool force_stretch)
 {
-	Gr_resize_X = (float)gr_screen.max_w / (float)w;
-	Gr_resize_Y = (float)gr_screen.max_h / (float)h;
+	bool do_zoom = zoom_w > 0 && zoom_h > 0 && (zoom_w != w || zoom_h != h);
 
-	Gr_unsize_X = (float)w / (float)gr_screen.max_w;
-	Gr_unsize_Y = (float)h / (float)gr_screen.max_h;
+	Gr_full_resize_X = (float)max_w / (float)w;
+	Gr_full_resize_Y = (float)max_h / (float)h;
 
-	Save_custom_screen_size = gr_screen.custom_size;
+	if (do_zoom) {
+		float aspect_quotient = ((float)max_w / (float)max_h) / ((float)zoom_w / (float)zoom_h);
 
-	gr_screen.custom_size = true;
-}
+		Gr_resize_X = (float)max_w / (float)zoom_w / ((aspect_quotient > 1.0f) ? aspect_quotient : 1.0f);
+		Gr_resize_Y = (float)max_h / (float)zoom_h * ((aspect_quotient < 1.0f) ? aspect_quotient : 1.0f);
 
-void gr_set_screen_scale(int w, int h, int max_w, int max_h)
-{
-	Gr_resize_X = (float)max_w / (float)w;
-	Gr_resize_Y = (float)max_h / (float)h;
+		Gr_menu_offset_X = (max_w - w * Gr_resize_X) / 2.0f;
+		Gr_menu_offset_Y = (max_h - h * Gr_resize_Y) / 2.0f;
 
-	Gr_unsize_X = (float)w / (float)max_w;
-	Gr_unsize_Y = (float)h / (float)max_h;
+		Gr_menu_zoomed_offset_X = (Gr_menu_offset_X >= 0.0f) ? Gr_menu_offset_X : 0.0f;
+		Gr_menu_zoomed_offset_Y = (Gr_menu_offset_Y >= 0.0f) ? Gr_menu_offset_Y : 0.0f;
 
-	Save_custom_screen_size = gr_screen.custom_size;
+		if (force_stretch || Cmdline_stretch_menu) {
+			if (Gr_menu_offset_X > 0.0f) {
+				Gr_resize_X = Gr_full_resize_X;
+				Gr_menu_offset_X = Gr_menu_zoomed_offset_X = 0.0f;
+			}
+			if (Gr_menu_offset_Y > 0.0f) {
+				Gr_resize_Y = Gr_full_resize_Y;
+				Gr_menu_offset_Y = Gr_menu_zoomed_offset_Y = 0.0f;
+			}
+		}
+	} else {
+		if (force_stretch || Cmdline_stretch_menu) {
+			Gr_resize_X = Gr_full_resize_X;
+			Gr_resize_Y = Gr_full_resize_Y;
 
-	gr_screen.custom_size = true;
+			Gr_menu_offset_X = Gr_menu_zoomed_offset_X = 0.0f;
+			Gr_menu_offset_Y = Gr_menu_zoomed_offset_Y = 0.0f;
+		} else {
+			float aspect_quotient = ((float)max_w / (float)max_h) / ((float)w / (float)h);
+
+			Gr_resize_X = Gr_full_resize_X / ((aspect_quotient > 1.0f) ? aspect_quotient : 1.0f);
+			Gr_resize_Y = Gr_full_resize_Y * ((aspect_quotient < 1.0f) ? aspect_quotient : 1.0f);
+
+			Gr_menu_offset_X = Gr_menu_zoomed_offset_X = (aspect_quotient > 1.0f) ? ((max_w - w * Gr_resize_X) / 2.0f) : 0.0f;
+			Gr_menu_offset_Y = Gr_menu_zoomed_offset_Y = (aspect_quotient < 1.0f) ? ((max_h - h * Gr_resize_Y) / 2.0f) : 0.0f;
+		}
+	}
+
+	gr_screen.custom_size = (w != max_w || h != max_h);
+
+	if (gr_screen.rendering_to_texture == -1) {
+		gr_screen.max_w_unscaled = w;
+		gr_screen.max_h_unscaled = h;
+
+		if (do_zoom) {
+			gr_screen.max_w_unscaled_zoomed = gr_screen.max_w_unscaled + fl2i(Gr_menu_offset_X * 2.0f / Gr_resize_X);
+			gr_screen.max_h_unscaled_zoomed = gr_screen.max_h_unscaled + fl2i(Gr_menu_offset_Y * 2.0f / Gr_resize_Y);
+			if (gr_screen.max_w_unscaled_zoomed > gr_screen.max_w_unscaled) {
+				gr_screen.max_w_unscaled_zoomed = gr_screen.max_w_unscaled;
+			}
+			if (gr_screen.max_h_unscaled_zoomed > gr_screen.max_h_unscaled) {
+				gr_screen.max_h_unscaled_zoomed = gr_screen.max_h_unscaled;
+			}
+		} else {
+			gr_screen.max_w_unscaled_zoomed = gr_screen.max_w_unscaled;
+			gr_screen.max_h_unscaled_zoomed = gr_screen.max_h_unscaled;
+		}
+	}
 }
 
 void gr_reset_screen_scale()
 {
+	Gr_full_resize_X = Gr_save_full_resize_X;
+	Gr_full_resize_Y = Gr_save_full_resize_Y;
+
 	Gr_resize_X = Gr_save_resize_X;
 	Gr_resize_Y = Gr_save_resize_Y;
 
-	Gr_unsize_X = Gr_save_unsize_X;
-	Gr_unsize_Y = Gr_save_unsize_Y;
+	Gr_menu_offset_X = Gr_save_menu_offset_X;
+	Gr_menu_offset_Y = Gr_save_menu_offset_Y;
+
+	Gr_menu_zoomed_offset_X = Gr_save_menu_zoomed_offset_X;
+	Gr_menu_zoomed_offset_Y = Gr_save_menu_zoomed_offset_Y;
 
 	gr_screen.custom_size = Save_custom_screen_size;
+
+	if (gr_screen.rendering_to_texture == -1) {
+		gr_screen.max_w_unscaled = gr_screen.max_w_unscaled_zoomed = (gr_screen.res == GR_1024) ? 1024 : 640;
+		gr_screen.max_h_unscaled = gr_screen.max_h_unscaled_zoomed = (gr_screen.res == GR_1024) ?  768 : 480;
+	}
 }
 
 /**
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
  * lengths in order to keep the correctly scaled to nonstandard resolutions
  *
- * @param x X value (width to be scaled), can be NULL
- * @param y Y value (height to be scaled), can be NULL
+ * @param x X value, can be NULL
+ * @param y Y value, can be NULL
+ * @param w width, can be NULL
+ * @param h height, can be NULL
+ * @param resize_mode
  * @return always true unless error
  */
-bool gr_resize_screen_pos(int *x, int *y)
+bool gr_resize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 {
-	if ( !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
+	if ( resize_mode == GR_RESIZE_NONE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
 		return false;
 	}
 
 	float xy_tmp = 0.0f;
 
-	if ( x && (*x != 0) ) {
-		xy_tmp = (*x) * Gr_resize_X;
-		(*x) = fl2i(xy_tmp);
+	if ( x ) {
+		switch (resize_mode) {
+		case GR_RESIZE_FULL:
+			xy_tmp = (*x) * Gr_full_resize_X;
+			break;
+
+		case GR_RESIZE_MENU:
+			xy_tmp = (*x) * Gr_resize_X + Gr_menu_offset_X;
+			break;
+
+		case GR_RESIZE_MENU_ZOOMED:
+			xy_tmp = (*x) * Gr_resize_X + Gr_menu_zoomed_offset_X;
+			break;
+
+		case GR_RESIZE_MENU_NO_OFFSET:
+			xy_tmp = (*x) * Gr_resize_X;
+			break;
+		}
+		(*x) = fl2ir(xy_tmp);
 	}
 
-	if ( y && (*y != 0) ) {
-		xy_tmp = (*y) * Gr_resize_Y;
-		(*y) = fl2i(xy_tmp);
+	if ( y ) {
+		switch (resize_mode) {
+		case GR_RESIZE_FULL:
+			xy_tmp = (*y) * Gr_full_resize_Y;
+			break;
+
+		case GR_RESIZE_MENU:
+			xy_tmp = (*y) * Gr_resize_Y + Gr_menu_offset_Y;
+			break;
+
+		case GR_RESIZE_MENU_ZOOMED:
+			xy_tmp = (*y) * Gr_resize_Y + Gr_menu_zoomed_offset_Y;
+			break;
+
+		case GR_RESIZE_MENU_NO_OFFSET:
+			xy_tmp = (*y) * Gr_resize_Y;
+			break;
+		}
+		(*y) = fl2ir(xy_tmp);
+	}
+
+	if ( w ) {
+		xy_tmp = (*w) * ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_X : Gr_resize_X);
+		(*w) = fl2ir(xy_tmp);
+	}
+
+	if ( h ) {
+		xy_tmp = (*h) * ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_Y : Gr_resize_Y);
+		(*h) = fl2ir(xy_tmp);
 	}
 
 	return true;
@@ -164,26 +270,71 @@ bool gr_resize_screen_pos(int *x, int *y)
 
 /**
  *
- * @param x X value (width to be unscaled), can be NULL
- * @param y Y value (height to be unscaled), can be NULL
+ * @param x X value, can be NULL
+ * @param y Y value, can be NULL
+ * @param w width, can be NULL
+ * @param h height, can be NULL
+ * @param resize_mode
  * @return always true unless error
  */
-bool gr_unsize_screen_pos(int *x, int *y)
+bool gr_unsize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 {
-	if ( !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
+	if ( resize_mode == GR_RESIZE_NONE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
 		return false;
 	}
 
 	float xy_tmp = 0.0f;
 
-	if ( x && (*x != 0) ) {
-		xy_tmp = (*x) * Gr_unsize_X;
-		(*x) = fl2i(xy_tmp);
+	if ( x ) {
+		switch (resize_mode) {
+		case GR_RESIZE_FULL:
+			xy_tmp = (*x) / Gr_full_resize_X;
+			break;
+
+		case GR_RESIZE_MENU:
+			xy_tmp = ((*x) - Gr_menu_offset_X) / Gr_resize_X;
+			break;
+
+		case GR_RESIZE_MENU_ZOOMED:
+			xy_tmp = ((*x) - Gr_menu_zoomed_offset_X) / Gr_resize_X;
+			break;
+
+		case GR_RESIZE_MENU_NO_OFFSET:
+			xy_tmp = (*x) / Gr_resize_X;
+			break;
+		}
+		(*x) = fl2ir(xy_tmp);
 	}
 
-	if ( y && (*y != 0) ) {
-		xy_tmp = (*y) * Gr_unsize_Y;
-		(*y) = fl2i(xy_tmp);
+	if ( y ) {
+		switch (resize_mode) {
+		case GR_RESIZE_FULL:
+			xy_tmp = (*y) / Gr_full_resize_Y;
+			break;
+
+		case GR_RESIZE_MENU:
+			xy_tmp = ((*y) - Gr_menu_offset_Y) / Gr_resize_Y;
+			break;
+
+		case GR_RESIZE_MENU_ZOOMED:
+			xy_tmp = ((*y) - Gr_menu_zoomed_offset_Y) / Gr_resize_Y;
+			break;
+
+		case GR_RESIZE_MENU_NO_OFFSET:
+			xy_tmp = (*y) / Gr_resize_Y;
+			break;
+		}
+		(*y) = fl2ir(xy_tmp);
+	}
+
+	if ( w ) {
+		xy_tmp = (*w) / ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_X : Gr_resize_X);
+		(*w) = fl2ir(xy_tmp);
+	}
+
+	if ( h ) {
+		xy_tmp = (*h) / ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_Y : Gr_resize_Y);
+		(*h) = fl2ir(xy_tmp);
 	}
 
 	return true;
@@ -193,42 +344,144 @@ bool gr_unsize_screen_pos(int *x, int *y)
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
  * lengths in order to keep the correctly scaled to nonstandard resolutions
  *
- * @param x X value (width to be scaled), can be NULL
- * @param y Y value (height to be scaled), can be NULL
+ * @param x X value, can be NULL
+ * @param y Y value, can be NULL
+ * @param w width, can be NULL
+ * @param h height, can be NULL
+ * @param resize_mode
  * @return always true unless error
  */
-bool gr_resize_screen_posf(float *x, float *y)
+bool gr_resize_screen_posf(float *x, float *y, float *w, float *h, int resize_mode)
 {
-	if ( !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
+	if ( resize_mode == GR_RESIZE_NONE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
 		return false;
 	}
 
-	if ( x && (*x != 0) )
-		(*x) *= Gr_resize_X;
+	float xy_tmp = 0.0f;
 
-	if ( y && (*y != 0) )
-		(*y) *= Gr_resize_Y;
+	if ( x ) {
+		switch (resize_mode) {
+		case GR_RESIZE_FULL:
+			xy_tmp = (*x) * Gr_full_resize_X;
+			break;
+
+		case GR_RESIZE_MENU:
+			xy_tmp = (*x) * Gr_resize_X + Gr_menu_offset_X;
+			break;
+
+		case GR_RESIZE_MENU_ZOOMED:
+			xy_tmp = (*x) * Gr_resize_X + Gr_menu_zoomed_offset_X;
+			break;
+
+		case GR_RESIZE_MENU_NO_OFFSET:
+			xy_tmp = (*x) * Gr_resize_X;
+			break;
+		}
+		(*x) = xy_tmp;
+	}
+
+	if ( y ) {
+		switch (resize_mode) {
+		case GR_RESIZE_FULL:
+			xy_tmp = (*y) * Gr_full_resize_Y;
+			break;
+
+		case GR_RESIZE_MENU:
+			xy_tmp = (*y) * Gr_resize_Y + Gr_menu_offset_Y;
+			break;
+
+		case GR_RESIZE_MENU_ZOOMED:
+			xy_tmp = (*y) * Gr_resize_Y + Gr_menu_zoomed_offset_Y;
+			break;
+
+		case GR_RESIZE_MENU_NO_OFFSET:
+			xy_tmp = (*y) * Gr_resize_Y;
+			break;
+		}
+		(*y) = xy_tmp;
+	}
+
+	if ( w ) {
+		xy_tmp = (*w) * ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_X : Gr_resize_X);
+		(*w) = xy_tmp;
+	}
+
+	if ( h ) {
+		xy_tmp = (*h) * ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_Y : Gr_resize_Y);
+		(*h) = xy_tmp;
+	}
 
 	return true;
 }
 
 /**
  *
- * @param x X value (width to be unscaled), can be NULL
- * @param y Y value (height to be unscaled), can be NULL
+ * @param x X value, can be NULL
+ * @param y Y value, can be NULL
+ * @param w width, can be NULL
+ * @param h height, can be NULL
+ * @param resize_mode
  * @return always true unless error
  */
-bool gr_unsize_screen_posf(float *x, float *y)
+bool gr_unsize_screen_posf(float *x, float *y, float *w, float *h, int resize_mode)
 {
-	if ( !gr_screen.custom_size && (gr_screen.rendering_to_texture == -1) ) {
+	if ( resize_mode == GR_RESIZE_NONE || (!gr_screen.custom_size && (gr_screen.rendering_to_texture == -1)) ) {
 		return false;
 	}
 
-	if ( x && (*x != 0) )
-		(*x) *= Gr_unsize_X;
+	float xy_tmp = 0.0f;
 
-	if ( y && (*y != 0) )
-		(*y) *= Gr_unsize_Y;
+	if ( x ) {
+		switch (resize_mode) {
+		case GR_RESIZE_FULL:
+			xy_tmp = (*x) / Gr_full_resize_X;
+			break;
+
+		case GR_RESIZE_MENU:
+			xy_tmp = ((*x) - Gr_menu_offset_X) / Gr_resize_X;
+			break;
+
+		case GR_RESIZE_MENU_ZOOMED:
+			xy_tmp = ((*x) - Gr_menu_zoomed_offset_X) / Gr_resize_X;
+			break;
+
+		case GR_RESIZE_MENU_NO_OFFSET:
+			xy_tmp = (*x) / Gr_resize_X;
+			break;
+		}
+		(*x) = xy_tmp;
+	}
+
+	if ( y ) {
+		switch (resize_mode) {
+		case GR_RESIZE_FULL:
+			xy_tmp = (*y) / Gr_full_resize_Y;
+			break;
+
+		case GR_RESIZE_MENU:
+			xy_tmp = ((*y) - Gr_menu_offset_Y) / Gr_resize_Y;
+			break;
+
+		case GR_RESIZE_MENU_ZOOMED:
+			xy_tmp = ((*y) - Gr_menu_zoomed_offset_Y) / Gr_resize_Y;
+			break;
+
+		case GR_RESIZE_MENU_NO_OFFSET:
+			xy_tmp = (*y) / Gr_resize_Y;
+			break;
+		}
+		(*y) = xy_tmp;
+	}
+
+	if ( w ) {
+		xy_tmp = (*w) / ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_X : Gr_resize_X);
+		(*w) = xy_tmp;
+	}
+
+	if ( h ) {
+		xy_tmp = (*h) / ((resize_mode == GR_RESIZE_FULL) ? Gr_full_resize_Y : Gr_resize_Y);
+		(*h) = xy_tmp;
+	}
 
 	return true;
 }
@@ -266,12 +519,9 @@ DCF(clear_color, "set clear color r, g, b")
 {
 	ubyte r, g, b;
 
-	dc_get_arg(ARG_UBYTE);
-	r = Dc_arg_ubyte;
-	dc_get_arg(ARG_UBYTE);
-	g = Dc_arg_ubyte;
-	dc_get_arg(ARG_UBYTE);
-	b = Dc_arg_ubyte;
+	dc_stuff_ubyte(&r);
+	dc_stuff_ubyte(&g);
+	dc_stuff_ubyte(&b);
 
 	// set the color
 	gr_set_clear_color(r, g, b);
@@ -340,8 +590,8 @@ void gr_screen_resize(int width, int height)
 		return;
 	}
 
-	gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = width;
-	gr_screen.save_max_h = gr_screen.max_h = gr_screen.max_h_unscaled = height;
+	gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = gr_screen.max_w_unscaled_zoomed = width;
+	gr_screen.save_max_h = gr_screen.max_h = gr_screen.max_h_unscaled = gr_screen.max_h_unscaled_zoomed = height;
 
 	gr_screen.offset_x = gr_screen.offset_x_unscaled = 0;
 	gr_screen.offset_y = gr_screen.offset_y_unscaled = 0;
@@ -356,12 +606,15 @@ void gr_screen_resize(int width, int height)
 
 	if (gr_screen.custom_size) {
 		gr_unsize_screen_pos( &gr_screen.max_w_unscaled, &gr_screen.max_h_unscaled );
+		gr_unsize_screen_pos( &gr_screen.max_w_unscaled_zoomed, &gr_screen.max_h_unscaled_zoomed );
 		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
 		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
 	}
 
 	gr_screen.save_max_w_unscaled = gr_screen.max_w_unscaled;
 	gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
+	gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
+	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
 	if (gr_screen.mode == GR_OPENGL) {
 		extern void opengl_setup_viewport();
@@ -382,7 +635,7 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 		gr_screen.custom_size = true;
 	}
 
-	if ( (width >= 1024) && (height >= 600) ) {
+	if ( (width >= GR_1024_THRESHOLD_WIDTH) && (height >= GR_1024_THRESHOLD_HEIGHT) ) {
 		res = GR_1024;
 	} else {
 		res = GR_640;
@@ -394,12 +647,30 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 		mode = GR_OPENGL;
 	}
 
-	Gr_save_resize_X = Gr_resize_X = (float)width / ((res == GR_1024) ? 1024.0f : 640.0f);
-	Gr_save_resize_Y = Gr_resize_Y = (float)height / ((res == GR_1024) ?  768.0f : 480.0f);
+	Save_custom_screen_size = gr_screen.custom_size;
 
-	Gr_save_unsize_X = Gr_unsize_X = ((res == GR_1024) ? 1024.0f : 640.0f) / (float)width;
-	Gr_save_unsize_Y = Gr_unsize_Y = ((res == GR_1024) ?  768.0f : 480.0f) / (float)height;
+	Gr_save_full_resize_X = Gr_full_resize_X = (float)width / ((res == GR_1024) ? 1024.0f : 640.0f);
+	Gr_save_full_resize_Y = Gr_full_resize_Y = (float)height / ((res == GR_1024) ?  768.0f : 480.0f);
 
+	if (gr_screen.custom_size && !Cmdline_stretch_menu) {
+		float aspect_quotient = ((float)width / (float)height) / (4.0f / 3.0f);
+
+		Gr_save_resize_X = Gr_resize_X = Gr_full_resize_X / ((aspect_quotient > 1.0f) ? aspect_quotient : 1.0f);
+		Gr_save_resize_Y = Gr_resize_Y = Gr_full_resize_Y * ((aspect_quotient < 1.0f) ? aspect_quotient : 1.0f);
+
+		Gr_save_menu_offset_X = Gr_menu_offset_X = (aspect_quotient > 1.0f) ? ((width - width / aspect_quotient) / 2.0f) : 0.0f;
+		Gr_save_menu_offset_Y = Gr_menu_offset_Y = (aspect_quotient < 1.0f) ? ((height - height * aspect_quotient) / 2.0f) : 0.0f;
+	} else {
+		Gr_save_resize_X = Gr_resize_X = Gr_full_resize_X;
+		Gr_save_resize_Y = Gr_resize_Y = Gr_full_resize_Y;
+
+		Gr_save_menu_offset_X = Gr_menu_offset_X = 0.0f;
+		Gr_save_menu_offset_Y = Gr_menu_offset_Y = 0.0f;
+	}
+
+	Gr_save_menu_zoomed_offset_X = Gr_menu_zoomed_offset_X = Gr_menu_offset_X;
+	Gr_save_menu_zoomed_offset_Y = Gr_menu_zoomed_offset_Y = Gr_menu_offset_Y;
+	
 
 	gr_screen.signature = Gr_signature++;
 	gr_screen.bits_per_pixel = depth;
@@ -411,8 +682,8 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 	gr_screen.res = res;
 	gr_screen.aspect = 1.0f;			// Normal PC screen
 
-	gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = width;
-	gr_screen.save_max_h = gr_screen.max_h = gr_screen.max_h_unscaled = height;
+	gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = gr_screen.max_w_unscaled_zoomed = width;
+	gr_screen.save_max_h = gr_screen.max_h = gr_screen.max_h_unscaled = gr_screen.max_h_unscaled_zoomed = height;
 
 	gr_screen.offset_x = gr_screen.offset_x_unscaled = 0;
 	gr_screen.offset_y = gr_screen.offset_y_unscaled = 0;
@@ -429,12 +700,15 @@ static bool gr_init_sub(int mode, int width, int height, int depth)
 
 	if (gr_screen.custom_size) {
 		gr_unsize_screen_pos( &gr_screen.max_w_unscaled, &gr_screen.max_h_unscaled );
+		gr_unsize_screen_pos( &gr_screen.max_w_unscaled_zoomed, &gr_screen.max_h_unscaled_zoomed );
 		gr_unsize_screen_pos( &gr_screen.clip_right_unscaled, &gr_screen.clip_bottom_unscaled );
 		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
 	}
 
 	gr_screen.save_max_w_unscaled = gr_screen.max_w_unscaled;
 	gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
+	gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
+	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
 #ifdef WIN32
 	// FRED doesn't need this
@@ -831,7 +1105,7 @@ int gr_get_cursor_bitmap()
 }
 
 // new bitmap functions
-void gr_bitmap(int _x, int _y, bool allow_scaling)
+void gr_bitmap(int _x, int _y, int resize_mode)
 {
 	int _w, _h;
 	float x, y, w, h;
@@ -849,9 +1123,8 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 	h = i2fl(_h);
 
 	// I will tidy this up later - RT
-	if ( allow_scaling && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-		gr_resize_screen_posf(&x, &y);
-		gr_resize_screen_posf(&w, &h);
+	if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+		gr_resize_screen_posf(&x, &y, &w, &h, resize_mode);
 	}
 
 	memset(verts, 0, sizeof(verts));
@@ -885,7 +1158,7 @@ void gr_bitmap(int _x, int _y, bool allow_scaling)
 	gr_zbuffer_set(saved_zbuffer_mode);
 }
 
-void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, bool allow_scaling)
+void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode)
 {
 	float x, y, w, h;
 	vertex verts[4];
@@ -900,9 +1173,8 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 	h = i2fl(_h);
 
 	// I will tidy this up later - RT
-	if ( allow_scaling && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-		gr_resize_screen_posf(&x, &y);
-		gr_resize_screen_posf(&w, &h);
+	if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+		gr_resize_screen_posf(&x, &y, &w, &h, resize_mode);
 	}
 
 	memset(verts, 0, sizeof(verts));
@@ -937,16 +1209,15 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 }
 
 // NEW new bitmap functions -Bobboau
-void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
+void gr_bitmap_list(bitmap_2d_list* list, int n_bm, int resize_mode)
 {
 	for (int i = 0; i < n_bm; i++) {
 		bitmap_2d_list *l = &list[i];
 
 		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
 
-		if ( allow_scaling && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-			gr_resize_screen_pos(&l->x, &l->y);
-			gr_resize_screen_pos(&l->w, &l->h);
+		if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+			gr_resize_screen_pos(&l->x, &l->y, &l->w, &l->h, resize_mode);
 		}
 	}
 
@@ -955,7 +1226,7 @@ void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 
 // _->NEW<-_ NEW new bitmap functions -Bobboau
 //takes a list of rectangles that have assosiated rectangles in a texture
-void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
+void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 {
 	for(int i = 0; i < n_bm; i++) {
 		bitmap_2d_list *l = &list[i].screen_rect;
@@ -965,9 +1236,8 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
 			bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
 		}
 
-		if ( allow_scaling && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-			gr_resize_screen_pos(&l->x, &l->y);
-			gr_resize_screen_pos(&l->w, &l->h);
+		if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+			gr_resize_screen_pos(&l->x, &l->y, &l->w, &l->h, resize_mode);
 		}
 	}
 
@@ -1003,7 +1273,7 @@ void gr_pline_helper(vec3d *out, vec3d *in1, vec3d *in2, int thickness)
  * is no more than 90 degrees away from a previous section.
  * Moreover, it is _really_ intended for use with 45 degree angles. 
  */
-void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
+void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode)
 {
 	vec3d s1, s2, e1, e2, dir;
 	vec3d last_e1, last_e2;
@@ -1011,6 +1281,8 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 	vertex *verts[4] = {&v[0], &v[1], &v[2], &v[3]};
 	int saved_zbuffer_mode, idx;
 	int started_frame = 0;
+
+	int num_pts = pts->size();
 
 	// if we have less than 2 pts, bail
 	if(num_pts < 2) {
@@ -1036,11 +1308,11 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 	int j;
 	for(idx=0; idx<num_pts-1; idx++) {
 		// get the start and endpoints
-		s1 = *pts[idx];											// start 1 (on the line)
-		gr_pline_helper(&s2, pts[idx], pts[idx+1], thickness);	// start 2
-		e1 = *pts[idx+1];										// end 1 (on the line)
-		vm_vec_sub(&dir, pts[idx+1], pts[idx]);
-		vm_vec_add(&e2, &s2, &dir);								// end 2
+		s1 = pts->at(idx);													// start 1 (on the line)
+		e1 = pts->at(idx+1);												// end 1 (on the line)
+		gr_pline_helper(&s2, &s1, &e1, thickness);	// start 2
+		vm_vec_sub(&dir, &e1, &s1);
+		vm_vec_add(&e2, &s2, &dir);											// end 2
 		
 		// stuff coords
 		v[0].screen.xyw.x = (float)ceil(s1.xyz.x);
@@ -1088,9 +1360,9 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 		v[3].b = gr_screen.current_color.blue;
 
 		//We could really do this better...but oh well. _WMC
-		if(resize) {
+		if(resize_mode != GR_RESIZE_NONE) {
 			for(j=0;j<4;j++) {
-				gr_resize_screen_posf(&v[j].screen.xyw.x,&v[j].screen.xyw.y);
+				gr_resize_screen_posf(&v[j].screen.xyw.x,&v[j].screen.xyw.y,NULL,NULL,resize_mode);
 			}
 		}
 
@@ -1135,9 +1407,9 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 			v[2].b = gr_screen.current_color.blue;
 
 			//Inefficiency or flexibility? you be the judge -WMC
-			if(resize) {
+			if(resize_mode != GR_RESIZE_NONE) {
 				for(j=0;j<3;j++) {
-					gr_resize_screen_posf(&v[j].screen.xyw.x,&v[j].screen.xyw.y);
+					gr_resize_screen_posf(&v[j].screen.xyw.x,&v[j].screen.xyw.y,NULL,NULL,resize_mode);
 				}
 			}
 
@@ -1183,6 +1455,20 @@ int poly_list::find_first_vertex(int idx)
 	return idx;
 }
 
+int poly_list::find_first_vertex_fast(int idx)
+{
+	uint* first_idx = std::lower_bound(sorted_indices, sorted_indices + n_verts, idx, finder(this, NULL, NULL));
+
+	if ( first_idx == sorted_indices + n_verts ) {
+		// if this happens then idx was never in the index list to begin with which is not good
+		mprintf(("Sorted index list missing index %d!", idx));
+		Int3();
+		return idx;
+	}
+
+	return *first_idx;
+}
+
 /**
  * Given a list (plist) find the index within the indexed list that the vert at position idx within list is at
  */
@@ -1208,6 +1494,17 @@ int poly_list::find_index(poly_list *plist, int idx)
 	return -1;
 }
 
+int poly_list::find_index_fast(poly_list *plist, int idx)
+{
+	// searching for an out of bounds index using the finder means we're trying to find the vert and norm we're passing into the finder instance
+	uint* first_idx = std::lower_bound(sorted_indices, sorted_indices + n_verts, n_verts, finder(this, &plist->vert[idx], &plist->norm[idx]));
+
+	if (first_idx == sorted_indices + n_verts) {
+		return -1;
+	}
+
+	return *first_idx;
+}
 
 void poly_list::allocate(int _verts)
 {
@@ -1229,6 +1526,16 @@ void poly_list::allocate(int _verts)
 		tsb = NULL;
 	}
 
+	if ( submodels != NULL ) {
+		vm_free(submodels);
+		submodels = NULL;
+	}
+
+	if ( sorted_indices != NULL ) {
+		vm_free(sorted_indices);
+		sorted_indices = NULL;
+	}
+
 	if (_verts) {
 		vert = (vertex*)vm_malloc(sizeof(vertex) * _verts);
 		norm = (vec3d*)vm_malloc(sizeof(vec3d) * _verts);
@@ -1236,6 +1543,12 @@ void poly_list::allocate(int _verts)
 		if (Cmdline_normal) {
 			tsb = (tsb_t*)vm_malloc(sizeof(tsb_t) * _verts);
 		}
+
+		if ( Use_GLSL >= 3 ) {
+			submodels = (int*)vm_malloc(sizeof(int) * _verts);
+		}
+
+		sorted_indices = (uint*)vm_malloc(sizeof(uint) * _verts);
 	}
 
 	n_verts = 0;
@@ -1257,6 +1570,16 @@ poly_list::~poly_list()
 	if (tsb != NULL) {
 		vm_free(tsb);
 		tsb = NULL;
+	}
+
+	if ( submodels != NULL ) {
+		vm_free(submodels);
+		submodels = NULL;
+	}
+
+	if (sorted_indices != NULL) {
+		vm_free(sorted_indices);
+		sorted_indices = NULL;
 	}
 }
 
@@ -1355,6 +1678,9 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 	int j, z = 0;
 	ubyte *nverts_good = NULL;
 
+	uint t0, t1;
+	t0 = timer_get_milliseconds();
+
 	// calculate tangent space data (must be done early)
 	calculate_tangent();
 
@@ -1369,13 +1695,19 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 
 	vertex_list.reserve(n_verts);
 
+	generate_sorted_index_list();
+
 	for (j = 0; j < n_verts; j++) {
-		if (find_first_vertex(j) == j) {
+		if (find_first_vertex_fast(j) == j) {
 			nverts++;
 			nverts_good[j] = 1;
 			vertex_list.push_back(j);
 		}
 	}
+
+	t1 = timer_get_milliseconds();
+
+	//mprintf(("Index Buffer created in %d milliseconds\n", t1-t0));
 
 	// if there is nothig to change then bail
 	if (n_verts == nverts) {
@@ -1401,6 +1733,10 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 			buffer_list_internal.tsb[z] = tsb[j];
 		}
 
+		if ( Use_GLSL >= 3 ) {
+			buffer_list_internal.submodels[z] = submodels[j];
+		}
+
 		buffer_list_internal.n_verts++;
 		z++;
 	}
@@ -1410,6 +1746,8 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 	if (nverts_good != NULL) {
 		vm_free(nverts_good);
 	}
+
+	buffer_list_internal.generate_sorted_index_list();
 
 	(*this) = buffer_list_internal;
 }
@@ -1425,24 +1763,111 @@ poly_list& poly_list::operator = (poly_list &other_list)
 		memcpy(tsb, other_list.tsb, sizeof(tsb_t) * other_list.n_verts);
 	}
 
+	if ( Use_GLSL >= 3 ) {
+		memcpy(submodels, other_list.submodels, sizeof(int) * other_list.n_verts);
+	}
+
+	memcpy(sorted_indices, other_list.sorted_indices, sizeof(uint) * other_list.n_verts);
+
 	n_verts = other_list.n_verts;
 
 	return *this;
 }
 
-void gr_shield_icon(coord2d coords[6], bool resize)
+void poly_list::generate_sorted_index_list()
+{
+	for ( int j = 0; j < n_verts; ++j) {
+		sorted_indices[j] = j;
+	}
+
+	std::sort(sorted_indices, sorted_indices + n_verts, finder(this));
+}
+
+bool poly_list::finder::operator()(const uint a, const uint b)
+{
+	vertex *vert_a; 
+	vertex *vert_b;
+	vec3d *norm_a;
+	vec3d *norm_b;
+
+	Assert(search_list != NULL);
+
+	if ( a == (uint)search_list->n_verts ) {
+		Assert(vert_to_find != NULL);
+		Assert(norm_to_find != NULL);
+		Assert(a != b);
+
+		vert_a = vert_to_find;
+		norm_a = norm_to_find;
+	} else {
+		vert_a = &search_list->vert[a];
+		norm_a = &search_list->norm[a];
+	}
+	
+	if ( b == (uint)search_list->n_verts ) {
+		Assert(vert_to_find != NULL);
+		Assert(norm_to_find != NULL);
+		Assert(a != b);
+
+		vert_b = vert_to_find;
+		norm_b = norm_to_find;
+	} else {
+		vert_b = &search_list->vert[b];
+		norm_b = &search_list->norm[b];
+	}
+
+	if (norm_a->xyz.x != norm_b->xyz.x) {
+		return norm_a->xyz.x < norm_b->xyz.x;
+	}
+
+	if (norm_a->xyz.y != norm_b->xyz.y) {
+		return norm_a->xyz.y < norm_b->xyz.y;
+	}
+
+	if (norm_a->xyz.z != norm_b->xyz.z) {
+		return norm_a->xyz.z < norm_b->xyz.z;
+	}
+
+	if (vert_a->world.xyz.x != vert_b->world.xyz.x) {
+		return vert_a->world.xyz.x < vert_b->world.xyz.x;
+	}
+
+	if (vert_a->world.xyz.y != vert_b->world.xyz.y) {
+		return vert_a->world.xyz.y < vert_b->world.xyz.y;
+	}
+
+	if (vert_a->world.xyz.z != vert_b->world.xyz.z) {
+		return vert_a->world.xyz.z < vert_b->world.xyz.z;
+	}
+
+	if (vert_a->texture_position.u != vert_b->texture_position.u) {
+		return vert_a->texture_position.u < vert_b->texture_position.u;
+	}
+
+	if ( vert_a->texture_position.v != vert_b->texture_position.v ) {
+		return vert_a->texture_position.v < vert_b->texture_position.v;
+	}
+
+	if ( !compare_indices ) {
+		return vert_a->texture_position.v < vert_b->texture_position.v;
+	} else {
+		return a < b;
+	}
+}
+
+void gr_shield_icon(coord2d coords[6], int resize_mode)
 {
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
 
-	if (resize) {
-		gr_resize_screen_pos(&coords[0].x, &coords[0].y);
-		gr_resize_screen_pos(&coords[1].x, &coords[1].y);
-		gr_resize_screen_pos(&coords[2].x, &coords[2].y);
-		gr_resize_screen_pos(&coords[3].x, &coords[3].y);
-		gr_resize_screen_pos(&coords[4].x, &coords[4].y);
-		gr_resize_screen_pos(&coords[5].x, &coords[5].y);
+	if (resize_mode != GR_RESIZE_NONE) {
+		gr_resize_screen_pos(&coords[0].x, &coords[0].y, NULL, NULL, resize_mode);
+		gr_resize_screen_pos(&coords[1].x, &coords[1].y, NULL, NULL, resize_mode);
+		gr_resize_screen_pos(&coords[2].x, &coords[2].y, NULL, NULL, resize_mode);
+		gr_resize_screen_pos(&coords[3].x, &coords[3].y, NULL, NULL, resize_mode);
+		gr_resize_screen_pos(&coords[4].x, &coords[4].y, NULL, NULL, resize_mode);
+		gr_resize_screen_pos(&coords[5].x, &coords[5].y, NULL, NULL, resize_mode);
 	}
 
 	g3_draw_2d_shield_icon(coords,
@@ -1452,15 +1877,14 @@ void gr_shield_icon(coord2d coords[6], bool resize)
 		gr_screen.current_color.alpha);
 }
 
-void gr_rect(int x, int y, int w, int h, bool resize)
+void gr_rect(int x, int y, int w, int h, int resize_mode)
 {
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
 
-	if (resize) {
-		gr_resize_screen_pos(&x, &y);
-		gr_resize_screen_pos(&w, &h);
+	if (resize_mode != GR_RESIZE_NONE) {
+		gr_resize_screen_pos(&x, &y, &w, &h, resize_mode);
 	}
 
 	g3_draw_2d_rect(x, y, w, h,
@@ -1470,7 +1894,7 @@ void gr_rect(int x, int y, int w, int h, bool resize)
 		gr_screen.current_color.alpha);
 }
 
-void gr_shade(int x, int y, int w, int h, bool resize)
+void gr_shade(int x, int y, int w, int h, int resize_mode)
 {
 	int r, g, b, a;
 
@@ -1478,9 +1902,8 @@ void gr_shade(int x, int y, int w, int h, bool resize)
 		return;
 	}
 
-	if (resize) {
-		gr_resize_screen_pos(&x, &y);
-		gr_resize_screen_pos(&w, &h);
+	if (resize_mode != GR_RESIZE_NONE) {
+		gr_resize_screen_pos(&x, &y, &w, &h, resize_mode);
 	}
 
 	r = (int)gr_screen.current_shader.r;
@@ -1513,4 +1936,101 @@ void gr_flip()
 	}
 
 	gr_screen.gf_flip();
+}
+
+uint gr_determine_model_shader_flags(
+	bool lighting, 
+	bool fog, 
+	bool textured, 
+	bool in_shadow_map, 
+	bool thruster_scale, 
+	bool transform,
+	bool team_color,
+	int tmap_flags, 
+	int spec_map, 
+	int glow_map, 
+	int normal_map, 
+	int height_map,
+	int env_map,
+	int misc_map
+) {
+	uint shader_flags = 0;
+
+	if ( Use_GLSL > 1 ) {
+		shader_flags |= SDR_FLAG_MODEL_CLIP;
+	}
+
+	if ( transform ) {
+		shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
+	}
+
+	if ( in_shadow_map ) {
+		// if we're building the shadow map, we likely only need the flags here and above so bail
+		shader_flags |= SDR_FLAG_MODEL_SHADOW_MAP;
+
+		return shader_flags;
+	}
+
+	// setup shader flags for the things that we want/need
+	if ( lighting ) {
+		shader_flags |= SDR_FLAG_MODEL_LIGHT;
+	}
+
+	if ( fog ) {
+		shader_flags |= SDR_FLAG_MODEL_FOG;
+	}
+
+	if ( tmap_flags & TMAP_ANIMATED_SHADER ) {
+		shader_flags |= SDR_FLAG_MODEL_ANIMATED;
+	}
+
+	if ( textured ) {
+		if ( !Basemap_override ) {
+			shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
+		}
+
+		if ( glow_map > 0 ) {
+			shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
+		}
+
+		if ( lighting ) {
+			if ( ( spec_map > 0 ) && !Specmap_override ) {
+				shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
+
+				if ( ( env_map > 0 ) && !Envmap_override ) {
+					shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
+				}
+			}
+
+			if ( ( normal_map > 0) && !Normalmap_override ) {
+				shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
+			}
+
+			if ( ( height_map > 0) && !Heightmap_override ) {
+				shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
+			}
+
+			if ( Cmdline_shadow_quality && !in_shadow_map && !Shadow_override) {
+				shader_flags |= SDR_FLAG_MODEL_SHADOWS;
+			}
+		}
+
+		if ( misc_map > 0 ) {
+			shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
+		}
+
+		if ( team_color ) {
+			shader_flags |= SDR_FLAG_MODEL_TEAMCOLOR;
+		}
+	}
+
+	if ( Deferred_lighting ) {
+		shader_flags |= SDR_FLAG_MODEL_DEFERRED;
+	}
+
+	if ( thruster_scale ) {
+		shader_flags |= SDR_FLAG_MODEL_THRUSTER;
+	}
+
+	return shader_flags;
 }

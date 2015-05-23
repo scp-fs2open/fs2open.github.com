@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
@@ -14,9 +14,7 @@
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
 
-#include <csetjmp>
-#include <cstdio>
-#include <string>
+#include <exception>
 
 // NOTE: although the main game doesn't need this anymore, FRED2 still does
 #define	MISSION_TEXT_SIZE	1000000
@@ -24,10 +22,9 @@
 extern char	*Mission_text;
 extern char	*Mission_text_raw;
 extern char	*Mp;
-extern char	*token_found;
+extern const char	*token_found;
 extern int fred_parse_flag;
 extern int Token_found_flag;
-extern jmp_buf parse_abort;
 
 
 #define	COMMENT_CHAR	(char)';'
@@ -48,10 +45,6 @@ extern jmp_buf parse_abort;
 #define F_LNAME					12	//Filenames
 
 #define PARSE_BUF_SIZE			4096
-
-//For modular TBL files -C
-#define MAX_TBL_PARTS 32
-
 
 #define	SHIP_TYPE			0	// used to identify which kind of array to do a search for a name in
 #define	SHIP_INFO_TYPE		1
@@ -106,13 +99,15 @@ extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = 
 extern void advance_to_eoln(char *terminators);
 extern void skip_token();
 
-// required
-extern int required_string(char *pstr);
+// optional
 extern int optional_string(const char *pstr);
 extern int optional_string_either(char *str1, char *str2);
+extern int optional_string_one_of(int arg_count, ...);
+
+// required
+extern int required_string(const char *pstr);
 extern int required_string_either(char *str1, char *str2);
-extern int required_string_3(char *str1, char *str2, char *str3);
-extern int required_string_4(char *str1, char *str2, char *str3, char *str4);
+extern int required_string_one_of(int arg_count, ...);
 
 // stuff
 extern void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max);
@@ -133,7 +128,7 @@ extern void stuff_string_line(SCP_string &outstr);
 //alloc
 extern char* alloc_block(char* startstr, char* endstr, int extra_chars = 0);
 
-// Exactly the same as stuff string only Malloc's the buffer. 
+// Exactly the same as stuff string only Malloc's the buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
 extern char *stuff_and_malloc_string(int type, char *terminators = NULL);
@@ -159,7 +154,7 @@ extern void find_and_stuff_optional(char *id, int *addr, int f_type, char *strli
 extern int match_and_stuff(int f_type, char *strlist[], int max, char *description);
 extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
 	int max, char *description);
-extern int get_string(char *str);
+extern int get_string(char *str, int max = -1);
 extern void get_string(SCP_string &str);
 extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
@@ -252,11 +247,21 @@ extern int parse_modular_table(const char *name_check, void (*parse_callback)(co
 // to know that we are parsing a modular table
 extern bool Parsing_modular_table;
 
-//Karajorma - Parses mission and campaign ship loadouts. 
+//Karajorma - Parses mission and campaign ship loadouts.
 int stuff_loadout_list (int *ilp, int max_ints, int lookup_type);
 int get_string_or_variable (char *str);
 int get_string_or_variable (SCP_string &str);
 #define PARSING_FOUND_STRING		0
 #define PARSING_FOUND_VARIABLE		1
+
+namespace parse
+{
+	class ParseException : public std::runtime_error
+	{
+	public:
+		ParseException(const std::string& msg) : std::runtime_error(msg) {}
+		~ParseException() throw() {}
+	};
+}
 
 #endif

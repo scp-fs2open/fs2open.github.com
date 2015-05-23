@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 #include <sstream>
 
@@ -31,7 +31,7 @@ void gamesnd_play_iface(int n)
 /**
  * Function to search for a given game_snd with the specified name
  * in the passed vector
- * 
+ *
  * @param name Name to search for
  * @param sounds Vector to seach in
  *
@@ -64,7 +64,7 @@ int gamesnd_lookup_name(const char* name, const SCP_vector<game_snd>& sounds)
 int gamesnd_get_by_name(const char* name)
 {
 	Assert( Snds.size() <= INT_MAX );
-	
+
 	int index = gamesnd_lookup_name(name, Snds);
 
 	if (index < 0)
@@ -98,7 +98,7 @@ int gamesnd_get_by_iface_name(const char* name)
 {
 	Assert( Snds_iface.size() <= INT_MAX );
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
-	
+
 	int index = gamesnd_lookup_name(name, Snds_iface);
 
 	if (index < 0)
@@ -148,8 +148,8 @@ int gamesnd_get_by_iface_tbl_index(int index)
 
 /**
  * Helper function for parse_sound and parse_sound_list. Do not use directly.
- * 
- * @param tag Tag 
+ *
+ * @param tag Tag
  * @param idx_dest Sound index destination
  * @param object_name Object name being parsed
  * @param buf Buffer holding string to be parsed
@@ -171,7 +171,7 @@ void parse_sound_core(const char* tag, int *idx_dest, const char* object_name, c
 	}
 
 	size_t size_to_check = 0;
-	
+
 	if(flags & PARSE_SOUND_INTERFACE_SOUND)
 	{
 		size_to_check = Snds_iface.size();
@@ -193,12 +193,12 @@ void parse_sound_core(const char* tag, int *idx_dest, const char* object_name, c
 }
 
 /**
- * Parse a sound. When using this function for a table entry, 
- * required_string and optional_string aren't needed, as this function deals with 
- * that as its tag parameter, just make sure that the destination sound index can 
+ * Parse a sound. When using this function for a table entry,
+ * required_string and optional_string aren't needed, as this function deals with
+ * that as its tag parameter, just make sure that the destination sound index can
  * handle -1 if things don't work out.
  *
- * @param tag Tag 
+ * @param tag Tag
  * @param idx_dest Sound index destination
  * @param object_name Object name being parsed
  * @param flags See the parse_sound_flags enum
@@ -216,13 +216,13 @@ void parse_sound(const char* tag, int *idx_dest, const char* object_name, parse_
 }
 
 /**
- * CommanderDJ - Parse a list of sounds. When using this function for a table entry, 
- * required_string and optional_string aren't needed, as this function deals with 
- * that as its tag parameter, just make sure that the destination sound index(es) can 
+ * CommanderDJ - Parse a list of sounds. When using this function for a table entry,
+ * required_string and optional_string aren't needed, as this function deals with
+ * that as its tag parameter, just make sure that the destination sound index(es) can
  * handle -1 if things don't work out.
  *
  * @param destination Vector where sound indexes are to be stored
- * @param tag Tag 
+ * @param tag Tag
  * @param object_name Name of object being parsed
  * @param flags See the parse_sound_flags enum
  *
@@ -315,7 +315,7 @@ void gamesnd_unload_gameplay_sounds()
 			snd_unload( gs->id );
 			gs->id = -1;
 		}
-	}	
+	}
 }
 
 /**
@@ -408,33 +408,58 @@ void parse_gamesnd_old(game_snd* gs)
 
 	advance_to_eoln(NULL);
 }
-
-void parse_gamesnd_new(game_snd* gs)
+bool required_string_no_create(const char* token, bool no_create)
 {
+    if (no_create)
+    {
+        return optional_string(token) == 1;
+    }
+
+    required_string(token);
+    return true;
+}
+
+void parse_gamesnd_new(game_snd* gs, bool no_create)
+{
+	char name[MAX_FILENAME_LEN];
 	// New extended format found
-	stuff_string(gs->filename, F_NAME, MAX_FILENAME_LEN);
-		
-	if (!stricmp(gs->filename, NOX("empty")))
+	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+	if (!stricmp(name, NOX("empty")))
 	{
 		gs->filename[0] = 0;
 		return;
 	}
 
-	required_string("+Preload:");
+	// If the name _doesn't_ match <same> put it into gs->filename;
+	if (stricmp(name, "<same>"))
+	{
+		strcpy_s(gs->filename, name);
+	}
+	else if (!no_create)
+	{
+		// Throw an error if <same> was specified but we are creating a new entry
+		error_display(1, "'<same>' is only allowed if +nocreate was specified!");
+		return;
+	}
 
-	stuff_boolean(&gs->preload);
+	if (required_string_no_create("+Preload:", no_create))
+	{
+		stuff_boolean(&gs->preload);
+	}
 
-	required_string("+Volume:");
-
-	stuff_float(&gs->default_volume);
+	if (required_string_no_create("+Volume:", no_create))
+	{
+		stuff_float(&gs->default_volume);
+	}
 
 	if (optional_string("+3D Sound:"))
 	{
 		gs->flags |= GAME_SND_USE_DS3D;
 		required_string("+Attenuation start:");
-		
+
 		stuff_int(&gs->min);
-		
+
 		required_string("+Attenuation end:");
 
 		stuff_int(&gs->max);
@@ -482,7 +507,7 @@ void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *loo
 
 	if (optional_string("+Filename:"))
 	{
-		parse_gamesnd_new(gs);
+		parse_gamesnd_new(gs, no_create);
 	}
 	else
 	{
@@ -492,18 +517,18 @@ void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *loo
 
 /**
  * Parse a sound effect entry by requiring the given tag at the beginning.
- * 
+ *
  * @param gs The game_snd instance to fill in
  * @param tag The tag that's required before an entry
  * @param lookupVector If non-NULL used to look up @c +nocreate entries
- * 
+ *
  * @return @c true when a new entry has been parsed and should be added to the list of known
  *			entries. @c false otherwise, for example in case of @c +nocreate
  */
 bool gamesnd_parse_line(game_snd *gs, const char *tag, SCP_vector<game_snd> *lookupVector = NULL)
 {
 	Assertion(gs != NULL, "Invalid game_snd pointer passed to gamesnd_parse_line!");
-	
+
 	required_string(const_cast<char*>(tag));
 
 	bool no_create = false;
@@ -693,82 +718,82 @@ static SCP_vector<species_info> missingFlybySounds;
 
 void parse_sound_table(const char* filename)
 {
-	int	rval;
-
-	if ((rval = setjmp(parse_abort)) != 0)
+	try
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
+
+		// Parse the gameplay sounds section
+		if (optional_string("#Game Sounds Start"))
+		{
+			while (!check_for_string("#Game Sounds End"))
+			{
+				game_snd tempSound;
+				if (gamesnd_parse_line(&tempSound, "$Name:", &Snds))
+				{
+					Snds.push_back(game_snd(tempSound));
+				}
+			}
+
+			required_string("#Game Sounds End");
+		}
+
+		// Parse the interface sounds section
+		if (optional_string("#Interface Sounds Start"))
+		{
+			while (!check_for_string("#Interface Sounds End"))
+			{
+				game_snd tempSound;
+				if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface))
+				{
+					Snds_iface.push_back(game_snd(tempSound));
+					Snds_iface_handle.push_back(-1);
+				}
+			}
+
+			required_string("#Interface Sounds End");
+		}
+
+		// parse flyby sound section
+		if (optional_string("#Flyby Sounds Start"))
+		{
+			char species_name_tag[NAME_LENGTH + 2];
+			int	sanity_check = 0;
+			size_t i;
+
+			while (!check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()))
+			{
+				for (i = 0; i < Species_info.size(); i++)
+				{
+					species_info *species = &Species_info[i];
+
+					sprintf(species_name_tag, "$%s:", species->species_name);
+
+					if (check_for_string(species_name_tag))
+					{
+						gamesnd_parse_line(&species->snd_flyby_fighter, species_name_tag);
+						gamesnd_parse_line(&species->snd_flyby_bomber, species_name_tag);
+						sanity_check--;
+					}
+					else
+					{
+						sanity_check++;
+					}
+				}
+			}
+
+			required_string("#Flyby Sounds End");
+		}
+
+		if (optional_string("#Sound Environments Start"))
+		{
+			parse_sound_environments();
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
-	}
-
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	// Parse the gameplay sounds section
-	if (optional_string("#Game Sounds Start"))
-	{
-		while (!check_for_string("#Game Sounds End"))
-		{
-			game_snd tempSound;
-			if (gamesnd_parse_line(&tempSound, "$Name:", &Snds))
-			{
-				Snds.push_back(game_snd(tempSound));
-			}
-		}
-
-		required_string("#Game Sounds End");
-	}
-
-	// Parse the interface sounds section
-	if (optional_string("#Interface Sounds Start"))
-	{
-		while (!check_for_string("#Interface Sounds End"))
-		{
-			game_snd tempSound;
-			if (gamesnd_parse_line( &tempSound, "$Name:", &Snds_iface))
-			{
-				Snds_iface.push_back(game_snd(tempSound));
-				Snds_iface_handle.push_back(-1);
-			}
-		}
-
-		required_string("#Interface Sounds End");
-	}
-
-	// parse flyby sound section	
-	if (optional_string("#Flyby Sounds Start"))
-	{
-		char species_name_tag[NAME_LENGTH + 2];
-		int	sanity_check = 0;
-		size_t i;
-
-		while (!check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()))
-		{
-			for (i = 0; i < Species_info.size(); i++)
-			{
-				species_info *species = &Species_info[i];
-
-				sprintf(species_name_tag, "$%s:", species->species_name);
-
-				if (check_for_string(species_name_tag))
-				{
-					gamesnd_parse_line(&species->snd_flyby_fighter, species_name_tag);
-					gamesnd_parse_line(&species->snd_flyby_bomber, species_name_tag);
-					sanity_check--;
-				}
-				else
-				{
-					sanity_check++;
-				}
-			}
-		}
-
-		required_string("#Flyby Sounds End");
-	}
-
-	if (optional_string("#Sound Environments Start"))
-	{
-		parse_sound_environments();
 	}
 }
 
@@ -777,17 +802,11 @@ void parse_sound_table(const char* filename)
  */
 void gamesnd_parse_soundstbl()
 {
-	// open localization
-	lcl_ext_open();
-
 	parse_sound_table("sounds.tbl");
 
 	parse_modular_table("*-snd.tbm", parse_sound_table);
 
-	// close localization
-	lcl_ext_close();
-
-	// if we are missing any species then report 
+	// if we are missing any species then report
 	if (missingFlybySounds.size() > 0)
 	{
 		SCP_string errorString;
@@ -796,7 +815,7 @@ void gamesnd_parse_soundstbl()
 			errorString.append(missingFlybySounds[i].species_name);
 			errorString.append("\n");
 		}
-		
+
 		Error(LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", errorString.c_str());
 	}
 

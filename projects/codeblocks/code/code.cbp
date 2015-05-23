@@ -218,6 +218,18 @@
 		<Unit filename="../../../code/debugconsole/console.cpp">
 			<Option virtualFolder="debugconsole/" />
 		</Unit>
+		<Unit filename="../../../code/debugconsole/console.h">
+			<Option virtualFolder="debugconsole/" />
+		</Unit>
+		<Unit filename="../../../code/debugconsole/consolecmds.cpp">
+			<Option virtualFolder="debugconsole/" />
+		</Unit>
+		<Unit filename="../../../code/debugconsole/consoleparse.cpp">
+			<Option virtualFolder="debugconsole/" />
+		</Unit>
+		<Unit filename="../../../code/debugconsole/consoleparse.h">
+			<Option virtualFolder="debugconsole/" />
+		</Unit>
 		<Unit filename="../../../code/debugconsole/timerbar.cpp">
 			<Option virtualFolder="debugconsole/" />
 		</Unit>

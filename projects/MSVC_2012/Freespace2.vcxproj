@@ -35,61 +35,60 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{92C8C611-75AA-4BD7-9B73-584822AAAEB5}</ProjectGuid>
-    <RootNamespace>Fred2</RootNamespace>
-    <Keyword>MFCProj</Keyword>
+    <ProjectGuid>{A8030FA3-CEAB-4297-99E3-CD2CFB89830B}</ProjectGuid>
+    <RootNamespace>Freespace2</RootNamespace>
     <VCTargetsPath Condition="'$(VCTargetsPath11)' != '' and '$(VSVersion)' == '' and $(VisualStudioVersion) == ''">$(VCTargetsPath11)</VCTargetsPath>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v110_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v110_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v110_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>v110_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>v110_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>v110_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
     <CharacterSet>NotSet</CharacterSet>
     <PlatformToolset>v110_xp</PlatformToolset>
   </PropertyGroup>
@@ -122,7 +121,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <_ProjectFileVersion>10.0.30128.1</_ProjectFileVersion>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\$(ProjectName)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
@@ -171,14 +170,14 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fred2_open_3_7_1-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fred2_open_3_7_1_SSE-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">fred2_open_3_7_1_SSE2-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">fred2_open_3_7_1_AVX-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fred2_open_3_7_1</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fred2_open_3_7_1_SSE2</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">fred2_open_3_7_1_SSE2</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">fred2_open_3_7_1_AVX</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fs2_open_3_7_3-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fs2_open_3_7_3_SSE-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">fs2_open_3_7_3_SSE2-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">fs2_open_3_7_3_AVX-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fs2_open_3_7_3</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fs2_open_3_7_3_SSE</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">fs2_open_3_7_3_SSE2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">fs2_open_3_7_3_AVX</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <CustomBuildStep>
@@ -199,7 +198,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;FRED;WINVER=0x410;_WIN32_WINNT=0x500;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -215,14 +214,22 @@
       <WarningLevel>Level4</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>NDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <EnablePREfast>false</EnablePREfast>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;_VC08;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+    </ProjectReference>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;code.lib;libjpeg.lib;liblua.lib;libpng.lib;zlib.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)\$(TargetFileName)</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>NotSet</ShowProgress>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(Configuration);../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>false</EnableUAC>
@@ -231,21 +238,24 @@
       <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
       <MapFileName>$(TargetDir)$(TargetName).map</MapFileName>
+      <MapExports>true</MapExports>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+      <OutputFile>
+      </OutputFile>
     </Bscmake>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
-      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copying build...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">
@@ -267,7 +277,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;FRED;WINVER=0x410;_WIN32_WINNT=0x500;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -285,14 +295,21 @@
       <WarningLevel>Level4</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>NDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;_VC08;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+    </ProjectReference>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;code.lib;libjpeg.lib;liblua.lib;libpng.lib;zlib.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)\$(TargetFileName)</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>NotSet</ShowProgress>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(Configuration);../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>false</EnableUAC>
@@ -301,21 +318,24 @@
       <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
       <MapFileName>$(TargetDir)$(TargetName).map</MapFileName>
+      <MapExports>true</MapExports>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+      <OutputFile>
+      </OutputFile>
     </Bscmake>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
-      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copying build...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">
@@ -337,7 +357,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;FRED;WINVER=0x410;_WIN32_WINNT=0x500;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -355,14 +375,21 @@
       <WarningLevel>Level4</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>NDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;_VC08;_SSE2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+    </ProjectReference>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;code.lib;libjpeg.lib;liblua.lib;libpng.lib;zlib.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)\$(TargetFileName)</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>NotSet</ShowProgress>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(Configuration);../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>false</EnableUAC>
@@ -371,21 +398,24 @@
       <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
       <MapFileName>$(TargetDir)$(TargetName).map</MapFileName>
+      <MapExports>true</MapExports>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+      <OutputFile>
+      </OutputFile>
     </Bscmake>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
-      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copying build...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">
@@ -407,7 +437,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;WIN32;_WINDOWS;FRED;WINVER=0x410;_WIN32_WINNT=0x500;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -425,14 +455,21 @@
       <WarningLevel>Level4</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>NDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;_VC08;_SSE2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
+    </ProjectReference>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;code.lib;libjpeg.lib;liblua.lib;libpng.lib;zlib.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)\$(TargetFileName)</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;ole32.lib;advapi32.lib;gdi32.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>NotSet</ShowProgress>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(Configuration);../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>false</EnableUAC>
@@ -441,21 +478,24 @@
       <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
       <MapFileName>$(TargetDir)$(TargetName).map</MapFileName>
+      <MapExports>true</MapExports>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
+      <OutputFile>
+      </OutputFile>
     </Bscmake>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
-      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copying build...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -475,7 +515,6 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -483,7 +522,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;FRED;WINVER=0x500;_WIN32_WINNT=0x500;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -496,17 +535,19 @@
       <BrowseInformation>
       </BrowseInformation>
       <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level2</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>_DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;_VC08;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>wsock32.lib;winmm.lib;msacm32.lib;vfw32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;code.lib;libjpeg.lib;liblua.lib;libpng.lib;zlib.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)\$(TargetFileName)</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(Configuration);../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>false</EnableUAC>
@@ -514,21 +555,25 @@
       <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
       <MapFileName>$(TargetDir)$(TargetName).map</MapFileName>
+      <MapExports>true</MapExports>
       <SubSystem>Windows</SubSystem>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Bscmake>
+      <AdditionalOptions>"$(IntDir)*.sbr" %(AdditionalOptions)</AdditionalOptions>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
-      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copying build...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">
@@ -548,7 +593,6 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Full</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -556,7 +600,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;FRED;WINVER=0x500;_WIN32_WINNT=0x500;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -570,17 +614,20 @@
       <BrowseInformation>
       </BrowseInformation>
       <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level2</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>_DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;_VC08;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>wsock32.lib;winmm.lib;msacm32.lib;vfw32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;code.lib;libjpeg.lib;liblua.lib;libpng.lib;zlib.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)\$(TargetFileName)</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(Configuration);../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>false</EnableUAC>
@@ -589,20 +636,23 @@
       <GenerateMapFile>true</GenerateMapFile>
       <MapFileName>$(TargetDir)$(TargetName).map</MapFileName>
       <SubSystem>Windows</SubSystem>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Bscmake>
+      <AdditionalOptions>"$(IntDir)*.sbr" %(AdditionalOptions)</AdditionalOptions>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
-      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copying build...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">
@@ -622,7 +672,6 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Full</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -630,7 +679,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;FRED;WINVER=0x500;_WIN32_WINNT=0x500;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -644,39 +693,46 @@
       <BrowseInformation>
       </BrowseInformation>
       <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level2</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>_DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;_VC08;_SSE2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>wsock32.lib;winmm.lib;msacm32.lib;vfw32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;code.lib;libjpeg.lib;liblua.lib;libpng.lib;zlib.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)\$(TargetFileName)</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(Configuration);../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>false</EnableUAC>
+      <UACUIAccess>false</UACUIAccess>
       <IgnoreSpecificDefaultLibraries>libc.lib;libcd.lib;libci.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
       <MapFileName>$(TargetDir)$(TargetName).map</MapFileName>
       <SubSystem>Windows</SubSystem>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Bscmake>
+      <AdditionalOptions>"$(IntDir)*.sbr" %(AdditionalOptions)</AdditionalOptions>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
-      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copying build...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">
@@ -696,7 +752,6 @@
       </HeaderFileName>
     </Midl>
     <ClCompile>
-      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Full</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -704,7 +759,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;FRED;WINVER=0x500;_WIN32_WINNT=0x500;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -718,213 +773,90 @@
       <BrowseInformation>
       </BrowseInformation>
       <BrowseInformationFile>$(IntDir)</BrowseInformationFile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level2</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <UndefinePreprocessorDefinitions>_DEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;_VC08;_SSE2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>wsock32.lib;winmm.lib;msacm32.lib;vfw32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;code.lib;libjpeg.lib;liblua.lib;libpng.lib;zlib.lib</AdditionalDependencies>
-      <OutputFile>$(OutDir)\$(TargetFileName)</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;winmm.lib;vfw32.lib;msacm32.lib;comctl32.lib;openal32.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;theora_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(Configuration);../../oggvorbis/lib;../../openal/libs/win32;../../openal/libs/win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>false</EnableUAC>
+      <UACUIAccess>false</UACUIAccess>
       <IgnoreSpecificDefaultLibraries>libc.lib;libcd.lib;libci.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
       <GenerateMapFile>true</GenerateMapFile>
       <MapFileName>$(TargetDir)$(TargetName).map</MapFileName>
       <SubSystem>Windows</SubSystem>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Bscmake>
+      <AdditionalOptions>"$(IntDir)*.sbr" %(AdditionalOptions)</AdditionalOptions>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>$(IntDir)$(ProjectName).bsc</OutputFile>
     </Bscmake>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "$(FS2PATH)\$(TargetFileName)"</Command>
-      <Message>Copying FRED build...</Message>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copying build...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\code\fred2\addvariabledlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\adjustgriddlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\AltShipClassDlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\asteroideditordlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\backgroundchooser.cpp" />
-    <ClCompile Include="..\..\code\fred2\bgbitmapdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\briefingeditordlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\campaigneditordlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\campaignfilelistbox.cpp" />
-    <ClCompile Include="..\..\code\fred2\campaigntreeview.cpp" />
-    <ClCompile Include="..\..\code\fred2\campaigntreewnd.cpp" />
-    <ClCompile Include="..\..\code\fred2\cmdbrief.cpp" />
-    <ClCompile Include="..\..\code\fred2\createwingdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\customwingnames.cpp" />
-    <ClCompile Include="..\..\code\fred2\debriefingeditordlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\dialog1.cpp" />
-    <ClCompile Include="..\..\code\fred2\dumpstats.cpp" />
-    <ClCompile Include="..\..\code\fred2\eventeditor.cpp" />
-    <ClCompile Include="..\..\code\fred2\FictionViewerDlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\folderdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\fred.cpp" />
-    <ClCompile Include="..\..\code\fred2\freddoc.cpp" />
-    <ClCompile Include="..\..\code\fred2\fredrender.cpp" />
-    <ClCompile Include="..\..\code\fred2\fredstubs.cpp" />
-    <ClCompile Include="..\..\code\fred2\fredview.cpp" />
-    <ClCompile Include="..\..\code\fred2\grid.cpp" />
-    <ClCompile Include="..\..\code\fred2\ignoreordersdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\initialships.cpp" />
-    <ClCompile Include="..\..\code\fred2\initialstatus.cpp" />
-    <ClCompile Include="..\..\code\fred2\mainfrm.cpp" />
-    <ClCompile Include="..\..\code\fred2\management.cpp" />
-    <ClCompile Include="..\..\code\fred2\messageeditordlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\missiongoalsdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\missionnotesdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\missionsave.cpp" />
-    <ClCompile Include="..\..\code\fred2\modifyvariabledlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\operatorargtypeselect.cpp" />
-    <ClCompile Include="..\..\code\fred2\orienteditor.cpp" />
-    <ClCompile Include="..\..\code\fred2\playerstarteditor.cpp" />
-    <ClCompile Include="..\..\code\fred2\prefsdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\reinforcementeditordlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\restrictpaths.cpp" />
-    <ClCompile Include="..\..\code\fred2\setglobalshipflags.cpp" />
-    <ClCompile Include="..\..\code\fred2\sexp_tree.cpp" />
-    <ClCompile Include="..\..\code\fred2\shieldsysdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\ship_select.cpp" />
-    <ClCompile Include="..\..\code\fred2\shipchecklistbox.cpp" />
-    <ClCompile Include="..\..\code\fred2\shipclasseditordlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\shipeditordlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\shipflagsdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\shipgoalsdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\shipspecialdamage.cpp" />
-    <ClCompile Include="..\..\code\fred2\shipspecialhitpoints.cpp" />
-    <ClCompile Include="..\..\code\fred2\shiptexturesdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\soundenvironmentdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\starfieldeditor.cpp" />
-    <ClCompile Include="..\..\code\fred2\stdafx.cpp" />
-    <ClCompile Include="..\..\code\fred2\textviewdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\voiceactingmanager.cpp" />
-    <ClCompile Include="..\..\code\fred2\waypointpathdlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\weaponeditordlg.cpp" />
-    <ClCompile Include="..\..\code\fred2\wing.cpp" />
-    <ClCompile Include="..\..\code\fred2\wing_editor.cpp" />
+    <None Include="..\..\code\freespace2\app_icon.ico" />
+    <None Include="..\..\code\freespace2\goal_com.bmp" />
+    <None Include="..\..\code\freespace2\goal_fail.bmp" />
+    <None Include="..\..\code\freespace2\goal_inc.bmp" />
+    <None Include="..\..\code\freespace2\goal_none.bmp" />
+    <None Include="..\..\code\freespace2\goal_ord.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\code\fred2\fred.rc" />
+    <ClCompile Include="..\..\code\freespace2\freespace.cpp" />
+    <ClCompile Include="..\..\code\freespace2\levelpaging.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\code\fred2\addvariabledlg.h" />
-    <ClInclude Include="..\..\code\fred2\adjustgriddlg.h" />
-    <ClInclude Include="..\..\code\fred2\AltShipClassDlg.h" />
-    <ClInclude Include="..\..\code\fred2\asteroideditordlg.h" />
-    <ClInclude Include="..\..\code\fred2\backgroundchooser.h" />
-    <ClInclude Include="..\..\code\fred2\bgbitmapdlg.h" />
-    <ClInclude Include="..\..\code\fred2\briefingeditordlg.h" />
-    <ClInclude Include="..\..\code\fred2\campaigneditordlg.h" />
-    <ClInclude Include="..\..\code\fred2\campaignfilelistbox.h" />
-    <ClInclude Include="..\..\code\fred2\campaigntreeview.h" />
-    <ClInclude Include="..\..\code\fred2\campaigntreewnd.h" />
-    <ClInclude Include="..\..\code\fred2\cmdbrief.h" />
-    <ClInclude Include="..\..\code\fred2\createwingdlg.h" />
-    <ClInclude Include="..\..\code\fred2\customwingnames.h" />
-    <ClInclude Include="..\..\code\fred2\debriefingeditordlg.h" />
-    <ClInclude Include="..\..\code\fred2\dialog1.h" />
-    <ClInclude Include="..\..\code\fred2\dumpstats.h" />
-    <ClInclude Include="..\..\code\fred2\editor.h" />
-    <ClInclude Include="..\..\code\fred2\eventeditor.h" />
-    <ClInclude Include="..\..\code\fred2\FictionViewerDlg.h" />
-    <ClInclude Include="..\..\code\fred2\folderdlg.h" />
-    <ClInclude Include="..\..\code\fred2\fred.h" />
-    <ClInclude Include="..\..\code\fred2\freddoc.h" />
-    <ClInclude Include="..\..\code\fred2\fredrender.h" />
-    <ClInclude Include="..\..\code\fred2\fredview.h" />
-    <ClInclude Include="..\..\code\fred2\grid.h" />
-    <ClInclude Include="..\..\code\fred2\ignoreordersdlg.h" />
-    <ClInclude Include="..\..\code\fred2\initialships.h" />
-    <ClInclude Include="..\..\code\fred2\initialstatus.h" />
-    <ClInclude Include="..\..\code\fred2\mainfrm.h" />
-    <ClInclude Include="..\..\code\fred2\management.h" />
-    <ClInclude Include="..\..\code\fred2\messageeditordlg.h" />
-    <ClInclude Include="..\..\code\fred2\missiongoalsdlg.h" />
-    <ClInclude Include="..\..\code\fred2\missionnotesdlg.h" />
-    <ClInclude Include="..\..\code\fred2\missionsave.h" />
-    <ClInclude Include="..\..\code\fred2\modifyvariabledlg.h" />
-    <ClInclude Include="..\..\code\fred2\operatorargtypeselect.h" />
-    <ClInclude Include="..\..\code\fred2\orienteditor.h" />
-    <ClInclude Include="..\..\code\fred2\playerstarteditor.h" />
-    <ClInclude Include="..\..\code\fred2\prefsdlg.h" />
-    <ClInclude Include="..\..\code\fred2\reinforcementeditordlg.h" />
-    <ClInclude Include="..\..\code\fred2\resource.h" />
-    <ClInclude Include="..\..\code\fred2\restrictpaths.h" />
-    <ClInclude Include="..\..\code\fred2\setglobalshipflags.h" />
-    <ClInclude Include="..\..\code\fred2\sexp_tree.h" />
-    <ClInclude Include="..\..\code\fred2\shieldsysdlg.h" />
-    <ClInclude Include="..\..\code\fred2\ship_select.h" />
-    <ClInclude Include="..\..\code\fred2\shipchecklistbox.h" />
-    <ClInclude Include="..\..\code\fred2\shipclasseditordlg.h" />
-    <ClInclude Include="..\..\code\fred2\shipeditordlg.h" />
-    <ClInclude Include="..\..\code\fred2\shipflagsdlg.h" />
-    <ClInclude Include="..\..\code\fred2\shipgoalsdlg.h" />
-    <ClInclude Include="..\..\code\fred2\shipspecialdamage.h" />
-    <ClInclude Include="..\..\code\fred2\shipspecialhitpoints.h" />
-    <ClInclude Include="..\..\code\fred2\shiptexturesdlg.h" />
-    <ClInclude Include="..\..\code\fred2\soundenvironmentdlg.h" />
-    <ClInclude Include="..\..\code\fred2\starfieldeditor.h" />
-    <ClInclude Include="..\..\code\fred2\stdafx.h" />
-    <ClInclude Include="..\..\code\fred2\textviewdlg.h" />
-    <ClInclude Include="..\..\code\fred2\voiceactingmanager.h" />
-    <ClInclude Include="..\..\code\fred2\waypointpathdlg.h" />
-    <ClInclude Include="..\..\code\fred2\weaponeditordlg.h" />
-    <ClInclude Include="..\..\code\fred2\wing.h" />
-    <ClInclude Include="..\..\code\fred2\wing_editor.h" />
+    <ClInclude Include="..\..\code\freespace2\freespace.h" />
+    <ClInclude Include="..\..\code\freespace2\freespaceresource.h" />
+    <ClInclude Include="..\..\code\graphics\grstub.h" />
+    <ClInclude Include="..\..\code\freespace2\levelpaging.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\code\fred2\res\bitmap1.bmp" />
-    <None Include="..\..\code\fred2\res\black_do.bmp" />
-    <None Include="..\..\code\fred2\res\bmp00001.bmp" />
-    <None Include="..\..\code\fred2\res\chained.bmp" />
-    <None Include="..\..\code\fred2\res\chained_directive.bmp" />
-    <None Include="..\..\code\fred2\res\cursor1.cur" />
-    <None Include="..\..\code\fred2\res\cursor2.cur" />
-    <None Include="..\..\code\fred2\res\data.bmp" />
-    <None Include="..\..\code\fred2\res\data00.bmp" />
-    <None Include="..\..\code\fred2\res\data05.bmp" />
-    <None Include="..\..\code\fred2\res\data10.bmp" />
-    <None Include="..\..\code\fred2\res\data15.bmp" />
-    <None Include="..\..\code\fred2\res\data20.bmp" />
-    <None Include="..\..\code\fred2\res\data25.bmp" />
-    <None Include="..\..\code\fred2\res\data30.bmp" />
-    <None Include="..\..\code\fred2\res\data35.bmp" />
-    <None Include="..\..\code\fred2\res\data40.bmp" />
-    <None Include="..\..\code\fred2\res\data45.bmp" />
-    <None Include="..\..\code\fred2\res\data50.bmp" />
-    <None Include="..\..\code\fred2\res\data55.bmp" />
-    <None Include="..\..\code\fred2\res\data60.bmp" />
-    <None Include="..\..\code\fred2\res\data65.bmp" />
-    <None Include="..\..\code\fred2\res\data70.bmp" />
-    <None Include="..\..\code\fred2\res\data75.bmp" />
-    <None Include="..\..\code\fred2\res\data80.bmp" />
-    <None Include="..\..\code\fred2\res\data85.bmp" />
-    <None Include="..\..\code\fred2\res\data90.bmp" />
-    <None Include="..\..\code\fred2\res\data95.bmp" />
-    <None Include="..\..\code\fred2\res\fred.ico" />
-    <None Include="..\..\code\fred2\res\fred.rc2" />
-    <None Include="..\..\code\fred2\res\freddoc.ico" />
-    <None Include="..\..\code\fred2\res\green_do.bmp" />
-    <None Include="..\..\code\fred2\res\root.bmp" />
-    <None Include="..\..\code\fred2\res\root_directive.bmp" />
-    <None Include="..\..\code\fred2\res\toolbar.bmp" />
-    <None Include="..\..\code\fred2\res\toolbar1.bmp" />
-    <None Include="..\..\code\fred2\res\variable.bmp" />
+    <ResourceCompile Include="..\..\code\freespace2\freespace.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="code.vcxproj">
+      <Project>{c55f5706-e947-41ef-a3e8-6d711cd4ecd8}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="libjpeg.vcxproj">
+      <Project>{42a241f2-7996-4aaf-8491-fb885e2dc37d}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="liblua.vcxproj">
+      <Project>{332c7037-05be-4202-93ac-182f1a2df2ac}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="libpng.vcxproj">
+      <Project>{86c01eac-2406-40a7-b744-aa858b7607a9}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="zlib.vcxproj">
+      <Project>{a2aff4a4-d3a1-4bd4-86d2-673592598c38}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

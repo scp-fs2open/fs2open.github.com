@@ -766,7 +766,23 @@
 			Name="DebugConsole"
 			>
 			<File
-				RelativePath="..\..\code\DebugConsole\console.cpp"
+				RelativePath="..\..\code\debugconsole\console.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\debugconsole\console.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\debugconsole\consolecmds.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\debugconsole\consoleparse.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\debugconsole\consoleparse.h"
 				>
 			</File>
 			<File

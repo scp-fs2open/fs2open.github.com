@@ -17,6 +17,8 @@
 #include "object/object.h"
 #include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
+#include "debugconsole/console.h"
+#include "graphics/gropenglextension.h"
 
 #ifndef NDEBUG
 #include "io/timer.h"
@@ -39,6 +41,7 @@ static int Particles_enabled = 1;
 uint lastSignature = 0; // 0 is an invalid signature!
 
 int Particle_buffer_object = -1;
+int Geometry_shader_buffer_object = -1;
 
 // Reset everything between levels
 void particle_init()
@@ -70,6 +73,10 @@ void particle_init()
 	if ( Particle_buffer_object < 0 ) {
 		Particle_buffer_object = gr_create_stream_buffer();
 	}
+
+	if ( Geometry_shader_buffer_object < 0 && !Cmdline_no_geo_sdr_effects && Is_Extension_Enabled(OGL_EXT_GEOMETRY_SHADER4) ) {
+		Geometry_shader_buffer_object = gr_create_stream_buffer();
+	}
 }
 
 // only call from game_shutdown()!!!
@@ -90,18 +97,7 @@ void particle_page_in()
 	bm_page_in_texture( Anim_bitmap_id_smoke2 );
 }
 
-DCF(particles,"Turns particles on/off")
-{
-	if ( Dc_command )	{	
-		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_NONE);		
-		if ( Dc_arg_type & ARG_TRUE )	Particles_enabled = 1;	
-		else if ( Dc_arg_type & ARG_FALSE ) Particles_enabled = 0;	
-		else if ( Dc_arg_type & ARG_NONE ) Particles_enabled ^= 1;	
-	}	
-	if ( Dc_help )	dc_printf( "Usage: particles [bool]\nTurns particle system on/off.  If nothing passed, then toggles it.\n" );	
-	if ( Dc_status )	dc_printf( "particles are %s\n", (Particles_enabled?"ON":"OFF") );	
-}
-
+DCF_BOOL2(particles, Particles_enabled, "Turns particles on/off", "Usage: particles [bool]\nTurns particle system on/off.  If nothing passed, then toggles it.\n");
 
 int Num_particles_hwm = 0;
 
@@ -444,7 +440,7 @@ void particle_render_all()
 			}
 			// draw as a regular bitmap
 			else {
-				batch_add_bitmap( framenum + cur_frame, tmap_flags, &pos, part->particle_index % 8, part->radius, alpha );
+				batch_add_bitmap( framenum + cur_frame, tmap_flags | TMAP_FLAG_VERTEX_GEN, &pos, part->particle_index % 8, part->radius, alpha );
 			}
 
 			render_batch = true;
@@ -453,6 +449,7 @@ void particle_render_all()
 
 	profile_begin("Batch Render");
 	if (render_batch) {
+		geometry_batch_render(Geometry_shader_buffer_object);
 		batch_render_all(Particle_buffer_object);
 	}
 	profile_end("Batch Render");
@@ -547,4 +544,3 @@ void particle_emit( particle_emitter *pe, int type, int optional_data, float ran
 		particle_create( &pe->pos, &tmp_vel, life, radius, type, optional_data );
 	}
 }
-

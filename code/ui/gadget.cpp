@@ -39,6 +39,11 @@ void UI_GADGET::reset()
 	m_flags = 0;
 }
 
+int UI_GADGET::is_hidden()
+{
+	return hidden;
+}
+
 // --------------------------------------------------------------------
 // Links a hotspot (palette index in mask) to the given gadget.
 //
@@ -202,6 +207,11 @@ void UI_GADGET::get_dimensions(int *x_, int *y_, int *w_, int *h_)
 void UI_GADGET::hide(int n)
 {
 	hidden = n ? 1 : 0;
+}
+
+void UI_GADGET::hide()
+{
+	hidden = 1;
 }
 
 void UI_GADGET::unhide()
@@ -375,7 +385,7 @@ int UI_GADGET::is_mouse_on()
 
 		// if the mouse values are out of range of the bitmap
 		// NOTE : this happens when using smaller mask bitmaps than the screen resolution (during development)
-		if((ui_mouse.x >= mask_w) || (ui_mouse.y >= mask_h)){
+		if((ui_mouse.x < 0) || (ui_mouse.x >= mask_w) || (ui_mouse.y < 0) || (ui_mouse.y >= mask_h)){
 			return 0;
 		}
 

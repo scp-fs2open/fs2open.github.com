@@ -159,91 +159,93 @@ static void fireball_set_default_color(int idx)
  */
 void parse_fireball_tbl(const char *filename)
 {
-	int rval;
 	lod_checker lod_check;
 	color fb_color;
 
-	// open localization
-	lcl_ext_open();
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
+		required_string("#Start");
+
+		while (required_string_either("#End", "$Name:")) {
+			memset(&lod_check, 0, sizeof(lod_checker));
+
+			// base filename
+			required_string("$Name:");
+			stuff_string(lod_check.filename, F_NAME, MAX_FILENAME_LEN);
+
+			lod_check.override = -1;
+
+			// these entries should only be in TBMs, and it has to include at least one
+			if (Parsing_modular_table) {
+				if (optional_string("+Explosion_Medium")) {
+					lod_check.override = FIREBALL_EXPLOSION_MEDIUM;
+				}
+				else if (optional_string("+Warp_Effect")) {
+					lod_check.override = FIREBALL_WARP;
+				}
+				else if (optional_string("+Knossos_Effect")) {
+					lod_check.override = FIREBALL_KNOSSOS;
+				}
+				else if (optional_string("+Asteroid")) {
+					lod_check.override = FIREBALL_ASTEROID;
+				}
+				else if (optional_string("+Explosion_Large1")) {
+					lod_check.override = FIREBALL_EXPLOSION_LARGE1;
+				}
+				else if (optional_string("+Explosion_Large2")){
+					lod_check.override = FIREBALL_EXPLOSION_LARGE2;
+				}
+				else {
+					required_string("+Custom_Fireball");
+					stuff_int(&lod_check.override);
+				}
+			}
+
+			lod_check.num_lods = 1;
+
+			// Do we have an LOD num
+			if (optional_string("$LOD:")) {
+				stuff_int(&lod_check.num_lods);
+			}
+
+			if (lod_check.num_lods > MAX_FIREBALL_LOD) {
+				lod_check.num_lods = MAX_FIREBALL_LOD;
+			}
+
+			// check for particular lighting color
+			if (optional_string("$Light color:")) {
+				int r, g, b;
+
+				stuff_int(&r);
+				stuff_int(&g);
+				stuff_int(&b);
+
+				CLAMP(r, 0, 255);
+				CLAMP(g, 0, 255);
+				CLAMP(b, 0, 255);
+
+				gr_init_color(&fb_color, r, g, b);
+			}
+			else {
+				// to keep things simple, we just use 0 alpha to indicate that a default value should be used
+				memset(&fb_color, 0, sizeof(color));
+			}
+
+			// we may use one filename for multiple entries so we'll have to handle dupes post parse
+			LOD_checker.push_back(lod_check);
+			LOD_color.push_back(fb_color);
+		}
+
+		required_string("#End");
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
-
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	required_string("#Start");
-
-	while (required_string_either("#End", "$Name:")) {
-		memset( &lod_check, 0, sizeof(lod_checker) );
-
-		// base filename
-		required_string("$Name:");
-		stuff_string(lod_check.filename, F_NAME, MAX_FILENAME_LEN);
-
-		lod_check.override = -1;
-
-		// these entries should only be in TBMs, and it has to include at least one
-		if ( Parsing_modular_table ) {
-			if (optional_string("+Explosion_Medium")) {
-				lod_check.override = FIREBALL_EXPLOSION_MEDIUM;
-			} else if (optional_string("+Warp_Effect")) {
-				lod_check.override = FIREBALL_WARP;
-			} else if (optional_string("+Knossos_Effect")) {
-				lod_check.override = FIREBALL_KNOSSOS;
-			} else if (optional_string("+Asteroid")) {
-				lod_check.override = FIREBALL_ASTEROID;
-			} else if (optional_string("+Explosion_Large1")) {
-				lod_check.override = FIREBALL_EXPLOSION_LARGE1;
-			} else if (optional_string("+Explosion_Large2")){
-				lod_check.override = FIREBALL_EXPLOSION_LARGE2;
-			} else {
-				required_string("+Custom_Fireball");
-				stuff_int(&lod_check.override);
-			}
-		}
-
-		lod_check.num_lods = 1;
-
-		// Do we have an LOD num
-		if (optional_string("$LOD:")) {
-			stuff_int(&lod_check.num_lods);
-		}
-
-		if (lod_check.num_lods > MAX_FIREBALL_LOD) {
-			lod_check.num_lods = MAX_FIREBALL_LOD;
-		}
-
-		// check for particular lighting color
-		if ( optional_string("$Light color:") ) {
-			int r, g, b;
-
-			stuff_int(&r);
-			stuff_int(&g);
-			stuff_int(&b);
-
-			CLAMP(r, 0, 255);
-			CLAMP(g, 0, 255);
-			CLAMP(b, 0, 255);
-
-			gr_init_color(&fb_color, r, g, b);
-		} else {
-			// to keep things simple, we just use 0 alpha to indicate that a default value should be used
-			memset( &fb_color, 0, sizeof(color) );
-		}
-
-		// we may use one filename for multiple entries so we'll have to handle dupes post parse
-		LOD_checker.push_back(lod_check);
-		LOD_color.push_back(fb_color);
-	}
-
-	required_string("#End");
-
-	// close localization
-	lcl_ext_close();
 }
 
 void fireball_parse_tbl()
@@ -373,7 +375,7 @@ void fireball_init()
 
 MONITOR( NumFireballsRend )
 
-void fireball_render(object * obj)
+void fireball_render_DEPRECATED(object * obj)
 {
 	int		num;
 	vertex	p;
@@ -381,7 +383,9 @@ void fireball_render(object * obj)
     
 	MONITOR_INC( NumFireballsRend, 1 );	
 	
-	num = obj->instance;
+	memset(&p, 0, sizeof(p));
+    
+    num = obj->instance;
 	fb = &Fireballs[num];
 
 	if ( Fireballs[num].current_bitmap < 0 )
@@ -1048,3 +1052,74 @@ float fireball_wormhole_intensity( object *obj )
 	}
 	return rad;
 } 
+
+void fireball_render(object* obj, draw_list *scene)
+{
+	int		num;
+	vertex	p;
+	fireball	*fb;
+
+	MONITOR_INC( NumFireballsRend, 1 );	
+
+	num = obj->instance;
+	fb = &Fireballs[num];
+
+	if ( Fireballs[num].current_bitmap < 0 )
+		return;
+	
+	if ( Cmdline_nohtl ) {
+		g3_rotate_vertex(&p, &obj->pos );
+	} else {
+		g3_transfer_vertex(&p, &obj->pos);
+	}
+
+	switch ( fb->fireball_render_type )	{
+
+		case FIREBALL_MEDIUM_EXPLOSION: {
+			batch_add_bitmap (
+				Fireballs[num].current_bitmap, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+				&p, 
+				fb->orient, 
+				obj->radius
+				);
+		}
+		break;
+
+		case FIREBALL_LARGE_EXPLOSION: {
+			// Make the big explosions rotate with the viewer.
+			batch_add_bitmap_rotated ( 
+				Fireballs[num].current_bitmap, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+				&p, 
+				(i2fl(fb->orient)*PI)/180.0f,
+				obj->radius
+				);
+		}
+		break;
+
+		case FIREBALL_WARP_EFFECT: {
+			float percent_life = fb->time_elapsed / fb->total_time;
+
+			float rad;
+
+			// Code to make effect grow/shrink. 
+			float t = fb->time_elapsed;
+
+			if ( t < WARPHOLE_GROW_TIME )	{
+				rad = (float)pow(t/WARPHOLE_GROW_TIME,0.4f)*obj->radius;
+			} else if ( t < fb->total_time - WARPHOLE_GROW_TIME )	{
+				rad = obj->radius;
+			} else {
+				rad = (float)pow((fb->total_time - t)/WARPHOLE_GROW_TIME,0.4f)*obj->radius;
+			}
+
+			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_3D) );
+		}
+		break;
+
+
+		default:
+			Int3();
+	}
+}

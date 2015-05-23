@@ -733,6 +733,8 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
                 }
 
                 char entityBuffer[1024];
+                memset(entityBuffer, 0, sizeof(entityBuffer));
+                
                 /*int readBytes = */mg_read(conn, &entityBuffer, sizeof(entityBuffer));
 
                 json_error_t parseError;

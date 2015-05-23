@@ -34,6 +34,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "mod_table/mod_table.h"
+#include "parse/scripting.h"
 
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
@@ -321,7 +322,7 @@ int add_avi( char *avi_name )
 	return ((int)Message_avis.size() - 1);
 }
 
-int add_wave( char *wave_name )
+int add_wave( const char *wave_name )
 {
 	int i;
 	message_extra extra; 
@@ -532,9 +533,6 @@ void parse_msgtbl()
 {
 	int i, j;
 
-	// open localization
-	lcl_ext_open();
-
 	//speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
 	Messages.reserve(500);
 	Message_waves.reserve(300);
@@ -563,7 +561,7 @@ void parse_msgtbl()
 
 	// now we can start parsing
 	if (optional_string("#Message Frequencies")) {
-		while (!required_string_3("$Name:", "#Personas", "#Moods" )) {
+		while (!required_string_one_of(3, "$Name:", "#Personas", "#Moods" )) {
 			message_frequency_parse();
 		}
 	}	
@@ -645,28 +643,27 @@ void parse_msgtbl()
 
 		required_string("#End");
 	}
-
-	
-	// close localization
-	lcl_ext_close();
 }
 
 // this is called at the start of each level
 void messages_init()
 {
-	int rval, i;
+	int i;
 	static int table_read = 0;
 
 	if ( !table_read ) {
 		Default_command_persona = -1;
-
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "messages.tbl", rval));
+		
+		try
+		{
+			parse_msgtbl();
+			table_read = 1;
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "messages.tbl", e.what()));
 			return;
 		}
-
-		parse_msgtbl();
-		table_read = 1;
 	}
 
 	Current_mission_mood = 0;
@@ -987,10 +984,7 @@ void message_remove_from_queue(message_q *q)
 //
 void message_load_wave(int index, const char *filename)
 {
-	if (index == -1) {
-		Int3();
-		return;
-	}
+	Assertion(index >= 0, "Invalid index passed!");
 
 	if ( Message_waves[index].num >= 0) {
 		return;
@@ -1178,8 +1172,9 @@ void message_play_anim( message_q *q )
 
 	// support ships use a wingman head.
 	// terran command uses its own set of heads.
-	int subhead_selected = FALSE;
-	if ( (q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1)) ) {
+	if ( (anim_info->anim_data.first_frame < 0) &&	// note, first_frame will be >= 0 when ani is an existing file, and will be < 0 when the file does not exist and needs a, b, or c appended
+		((q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1))) ) {
+		int subhead_selected = FALSE;
 		persona_index = m->persona_index;
 		
 		// if this ani should be converted to a terran command, set the persona to the command persona
@@ -1280,6 +1275,8 @@ void message_queue_process()
 	message_q *q;
 	int i;
 	MissionMessage *m;
+	bool builtinMessage = false; // gcc doesn't like var decls crossed by goto's
+	object* sender = NULL;
 
 	// Don't play messages until first frame has been rendered
 	if ( Framecount < 2 ) {
@@ -1349,7 +1346,7 @@ void message_queue_process()
 
 			// if both ani and wave are done, mark internal variable so we can do next message on queue, and
 			// global variable to clear voice brackets on hud
-			if ( wave_done && ani_done && ( timestamp_elapsed(Message_expire) || (Playing_messages[Num_messages_playing].wave != -1) || (Playing_messages[i].shipnum == -1) ) ) {
+			if ( wave_done && ani_done && ( timestamp_elapsed(Message_expire) || (Playing_messages[i].wave != -1) || (Playing_messages[i].shipnum == -1) ) ) {
 				nprintf(("messaging", "Message %d is done playing\n", i));
 				Message_shipnum = -1;
 				Num_messages_playing--;
@@ -1537,6 +1534,9 @@ void message_queue_process()
 
 	//	Don't play death scream unless a small ship.
 	if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
+		if (Message_shipnum < 0) {
+			goto all_done;
+		}
 		if (!((Ship_info[Ships[Message_shipnum].ship_info_index].flags & SIF_SMALL_SHIP) || (Ships[Message_shipnum].flags2 & SF2_ALWAYS_DEATH_SCREAM)) ) {
 			goto all_done;
 		}
@@ -1582,6 +1582,22 @@ void message_queue_process()
 	if ( Message_shipnum >= 0 ) {
 		hud_target_last_transmit_add(Message_shipnum);
 	}
+
+	Script_system.SetHookVar("Name", 's', m->name);
+	Script_system.SetHookVar("Message", 's', buf);
+	Script_system.SetHookVar("SenderString", 's', who_from);
+
+	builtinMessage = q->builtin_type != -1;
+	Script_system.SetHookVar("Builtin", 'b', &builtinMessage);
+
+	if (Message_shipnum >= 0) {
+		sender = &Objects[Ships[Message_shipnum].objnum];
+	}
+	Script_system.SetHookObject("Sender", sender);
+
+	Script_system.RunCondition(CHA_MSGRECEIVED, 0, NULL, sender);
+
+	Script_system.RemHookVars(5, "Name", "Message", "SenderString", "Builtin", "Sender");
 
 all_done:
 	Num_messages_playing++;
@@ -1649,7 +1665,9 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 
 	// Goober5000 - replace variables if necessary
 	strcpy_s(temp_buf, Messages[message_num].message);
-	if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
+	bool replace_var = sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH); 
+	bool replace_con = sexp_replace_container_with_values(temp_buf, MESSAGE_LENGTH); 
+	if ( replace_var || replace_con)
 		MessageQ[i].special_message = vm_strdup(temp_buf);
 
 	// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
@@ -1904,7 +1922,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	char *who_from;
 	int best_match = -1;
 
-	matching_builtin *current_builtin = new matching_builtin(); 
+	matching_builtin current_builtin;
 	SCP_vector <matching_builtin> matching_builtins; 
 
 
@@ -1966,52 +1984,52 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		// check the type of message
 		if ( !stricmp(Messages[i].name, name) ) {
 			// condition 1: we have a type match
-			current_builtin->message_index = i;
-			current_builtin->type_of_match =  BUILTIN_MATCHES_TYPE; 
+			current_builtin.message_index = i;
+			current_builtin.type_of_match =  BUILTIN_MATCHES_TYPE; 
 
 			// check the species of this persona (if required)
 			if ( (persona_species >= 0) && (Personas[Messages[i].persona_index].species == persona_species) ) {
 				// condition 2: we have a type + species match
-				current_builtin->type_of_match =  BUILTIN_MATCHES_SPECIES; 
+				current_builtin.type_of_match =  BUILTIN_MATCHES_SPECIES; 
 			}
 
 			// check the exact persona (if required)
 			// NOTE: doesn't need to be nested under the species condition above
 			if ( (persona_index >= 0) && (Messages[i].persona_index == persona_index) ) {
 				// condition 3: type + species + persona index match	
-				current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA_CHECK_MOOD; 
+				current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_CHECK_MOOD; 
 			}
 
 			// check if the personas mood suits this particular message, first check if it is excluded
-			if (!Messages[i].excluded_moods.empty() && (current_builtin->type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD)) {
+			if (!Messages[i].excluded_moods.empty() && (current_builtin.type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD)) {
 				for (SCP_vector<int>::iterator iter = Messages[i].excluded_moods.begin(); iter != Messages[i].excluded_moods.end(); ++iter) {
 					if (*iter == Current_mission_mood) {
-						current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA_EXCLUDED; 
+						current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_EXCLUDED; 
 						break; 
 					}
 				}
 			}
 
-			if (current_builtin->type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD) {
+			if (current_builtin.type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD) {
 				if (Current_mission_mood == Messages[i].mood) {
-					current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA_MOOD; 
+					current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_MOOD; 
 				}
 				else {
-					current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA; 
+					current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA; 
 				}
 			}			
 
-			if (current_builtin->type_of_match == best_match) {
+			if (current_builtin.type_of_match == best_match) {
 				num_matching_builtins++;
 			}
 			// otherwise check to see if the this is the best kind of match we've found so far
-			else if (current_builtin->type_of_match > best_match) {
-				best_match = current_builtin->type_of_match; 
+			else if (current_builtin.type_of_match > best_match) {
+				best_match = current_builtin.type_of_match; 
 				num_matching_builtins = 1;
 			}
 
 			// add the match to our list
-			matching_builtins.push_back(*current_builtin); 
+			matching_builtins.push_back(current_builtin); 
 		}
 	}
 

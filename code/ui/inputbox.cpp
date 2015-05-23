@@ -140,7 +140,6 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 	oldposition = position;
 	length = _text_len;
 	pressed_down = 0;
-//	first_time = 1;
 	changed_flag = 0;
 	flags = _flags;
 	pixel_limit = pixel_lim;
@@ -217,12 +216,12 @@ void UI_INPUTBOX::draw()
 		// draw the entire text box region
 		ui_draw_sunken_border( x-2, y-2, x+w+1, y+h+1 );
 		gr_set_color_fast( &CBLACK );
-		gr_rect( 0, 0, w, h );
+		gr_rect( 0, 0, w, h, GR_RESIZE_MENU );
 		w1 -= 4;
 		h1 -= 4;
-		gr_set_clip( x + 1, y + 1, w1 + 1, h1 + 1 );
+		gr_set_clip( x + 1, y + 1, w1 + 1, h1 + 1, GR_RESIZE_MENU );
 	} else {
-		gr_set_clip( x - 1, y - 1, w1 + 1, h1 + 1 );
+		gr_set_clip( x - 1, y - 1, w1 + 1, h1 + 1, GR_RESIZE_MENU );
 	}
 
 	if (flags & UI_INPUTBOX_FLAG_PASSWD){
@@ -231,21 +230,11 @@ void UI_INPUTBOX::draw()
 		gr_get_string_size(&tw, &th, text);
 	}
 
-	// If first_time is set, that means this input box got
-	// focus, but nothing is typed yet, so all the text is
-	// selected, if you type a character it will replace the
-	// text, if you type an arrow it will unselect it.
-	// So it needs to be colored differently to show this.
 	if (!disabled_flag && !(flags & UI_INPUTBOX_FLAG_NO_BACK)) {
-//		if ( (my_wnd->selected_gadget == this) && first_time ) {
-//			gr_set_color_fast( text_color );
-
-//		} else {
-			gr_set_color_fast( &CBLACK );
-//		}
+		gr_set_color_fast( &CBLACK );
 
 		// color the background behind the text	
-		gr_rect( 0, 0, tw + 1, th );
+		gr_rect( 0, 0, tw + 1, th, GR_RESIZE_MENU_NO_OFFSET );
 	}
 
 	if	( (my_wnd->selected_gadget == this) || disabled_flag ) {		
@@ -266,9 +255,9 @@ void UI_INPUTBOX::draw()
 
 	// draw the text
 	if (flags & UI_INPUTBOX_FLAG_PASSWD){
-		gr_string(text_x, text_y, passwd_text);
+		gr_string(text_x, text_y, passwd_text, GR_RESIZE_MENU);
 	} else {
-		gr_string(text_x, text_y, text);
+		gr_string(text_x, text_y, text, GR_RESIZE_MENU);
 	}
 
 	// draw the "cursor"
@@ -293,7 +282,7 @@ void UI_INPUTBOX::draw()
 
 				// draw current frame
 				gr_set_bitmap(cursor_first_frame + cursor_current_frame);
-				gr_bitmap(text_x + tw + 4, 1);
+				gr_bitmap(text_x + tw + 4, 1, GR_RESIZE_MENU_NO_OFFSET);
 			}
 		}
 	}
@@ -347,7 +336,6 @@ void UI_INPUTBOX::process(int focus)
 	// check if mouse is pressed
 	if (B1_PRESSED && is_mouse_on()) {
 		set_focus();
-//		first_time = 1;
 	}
 
 	if (disabled_flag)
@@ -355,8 +343,6 @@ void UI_INPUTBOX::process(int focus)
 
 	if (my_wnd->selected_gadget == this)
 		focus = 1;
-//	else
-//		first_time = 0;
 
 	key_used = 0;
 	changed_flag = 0;
@@ -382,8 +368,6 @@ void UI_INPUTBOX::process(int focus)
 
 				changed_flag = 1;
 				key_used = 1;
-//				if (first_time)
-//					first_time = 0;
 
 				break;
 
@@ -392,10 +376,7 @@ void UI_INPUTBOX::process(int focus)
 				locked = 0;
 				changed_flag = 1;
 				key_used = 1;
-//				if (first_time)
-//					first_time = 0;
 
-//				should_reset = 1;
 				break;
 
 			case KEY_ESC:
@@ -434,27 +415,13 @@ void UI_INPUTBOX::process(int focus)
 
 					ascii = validate_input(key_check);
 					if ((ascii > 0) && (ascii < 255)) {
-#ifndef NDEBUG
-						/*if ((ascii >= 0x20) && (ascii <= 0x7e))
-							mprintf(("  Inputbox: '%c'\n", ascii));
-						else
-							mprintf(("  Inputbox: 0x%02X\n", ascii));*/
-#endif
+
 						if (flags & UI_INPUTBOX_FLAG_LETTER_FIRST) {
 							if ((position == 0) && !is_letter((char) ascii))
 								break;
 						}
 
 						key_used = 1;
-//						if (should_reset) {
-//							should_reset = 0;
-//							position = 0;
-//						}
-
-//						if (first_time) {
-//							first_time = 0;
-//							position = 0;
-//						}
 
 						if ( position < length ) {
 							text[position] = (char) ascii;
@@ -499,9 +466,7 @@ void UI_INPUTBOX::process(int focus)
 
 		if (clear_lastkey || (key_used && (flags & UI_INPUTBOX_FLAG_EAT_USED)) )
 			my_wnd->last_keypress=0;
-
-//	} else {
-//		first_time = 1;
+        
 	}	
 }
 

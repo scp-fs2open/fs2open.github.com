@@ -35,7 +35,7 @@ bool gr_stub_pack_buffer(const int buffer_id, vertex_buffer *vb)
 }
 
 // NOTE: should return a failure
-bool gr_stub_config_buffer(const int buffer_id, vertex_buffer *vb)
+bool gr_stub_config_buffer(const int buffer_id, vertex_buffer *vb, bool update_ibuffer_only)
 {
 	return false;
 }
@@ -74,11 +74,11 @@ void gr_set_fill_mode_stub(int mode)
 {
 }
 
-void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize,bool mirror)
+void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,int resize_mode,bool mirror)
 {
 }
 
-void gr_stub_aabitmap(int x, int y,bool resize, bool mirror)
+void gr_stub_aabitmap(int x, int y,int resize_mode, bool mirror)
 {
 }
 
@@ -90,7 +90,7 @@ void gr_stub_activate(int active)
 {
 }
 
-void gr_stub_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize)
+void gr_stub_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode)
 {
 }
 
@@ -102,11 +102,15 @@ void gr_stub_center_alpha( int type)
 {
 }
 
-void gr_stub_circle( int xc, int yc, int d, bool resize )
+void gr_stub_set_thrust_scale(float scale)
 {
 }
 
-void gr_stub_unfilled_circle( int xc, int yc, int d, bool resize )
+void gr_stub_circle( int xc, int yc, int d, int resize_mode )
+{
+}
+
+void gr_stub_unfilled_circle( int xc, int yc, int d, int resize_mode )
 {
 }
 
@@ -118,11 +122,11 @@ void gr_stub_clear()
 {
 }
 
-void gr_stub_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct)
+void gr_stub_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode)
 {
 }
 
-void gr_stub_curve(int xc, int yc, int r, int direction)
+void gr_stub_curve(int xc, int yc, int r, int direction, int resize_mode)
 {
 }
 
@@ -195,11 +199,11 @@ void gr_stub_get_region(int front, int w, int h, ubyte *data)
 	data = NULL;
 }
 
-void gr_stub_gradient(int x1,int y1,int x2,int y2, bool resize)
+void gr_stub_gradient(int x1,int y1,int x2,int y2, int resize_mode)
 {
 }
 
-void gr_stub_line(int x1,int y1,int x2,int y2, bool resize = false)
+void gr_stub_line(int x1,int y1,int x2,int y2, int resize_mode = GR_RESIZE_NONE)
 {
 }
 
@@ -207,7 +211,7 @@ void gr_stub_modify_light(light* light, int idx, int priority)
 {
 }
 
-void gr_stub_pixel(int x, int y, bool resize)
+void gr_stub_pixel(int x, int y, int resize_mode)
 {
 }
 
@@ -235,7 +239,7 @@ void gr_stub_push_texture_matrix(int unit)
 {
 }
 
-void gr_stub_rect(int x, int y, int w, int h, bool resize)
+void gr_stub_rect(int x, int y, int w, int h, int resize_mode)
 {
 }
 
@@ -271,24 +275,27 @@ void gr_stub_set_buffer(int idx)
 {
 }
 
+void gr_stub_update_buffer_object(int handle, uint size, void* data)
+{
+
+}
+
+void gr_stub_update_transform_buffer(void* data, uint size)
+{
+
+}
+
+void gr_stub_set_transform_buffer_offset(int offset)
+{
+
+}
+
 int gr_stub_create_stream_buffer()
 {
 	return -1;
 }
 
-void gr_stub_update_stream_buffer(int buffer, effect_vertex *buffer_data, uint size)
-{
-}
-
-void gr_stub_render_stream_buffer(int offset, int n_verts, int flags)
-{
-}
-
-void gr_stub_render_stream_buffer_start(int buffer_id)
-{
-}
-
-void gr_stub_render_stream_buffer_end()
+void gr_stub_render_stream_buffer(int buffer_handle, int offset, int n_verts, int flags)
 {
 }
 
@@ -296,7 +303,7 @@ void gr_stub_set_clear_color(int r, int g, int b)
 {
 }
 
-void gr_stub_set_clip(int x, int y, int w, int h, bool resize)
+void gr_stub_set_clip(int x, int y, int w, int h, int resize_mode)
 {
 }
 
@@ -315,6 +322,10 @@ void gr_stub_set_gamma(float gamma)
 }
 
 void gr_stub_set_lighting(bool set, bool state)
+{
+}
+
+void gr_stub_set_light_factor(float factor)
 {
 }
 
@@ -354,7 +365,7 @@ void gr_stub_start_instance_matrix(vec3d *offset, matrix* rotation)
 {
 }
 
-void gr_stub_string( int sx, int sy, const char *s, bool resize = false)
+void gr_stub_string( int sx, int sy, const char *s, int resize_mode = GR_RESIZE_NONE)
 {
 }
 
@@ -420,6 +431,10 @@ void gr_stub_post_process_save_zbuffer()
 {
 }
 
+void gr_stub_post_process_blur_shadow_map()
+{
+}
+
 void gr_stub_post_process_begin()
 {
 }
@@ -433,6 +448,22 @@ void gr_stub_scene_texture_begin()
 }
 
 void gr_stub_scene_texture_end()
+{
+}
+
+void gr_stub_copy_effect_texture()
+{
+}
+
+void gr_stub_deferred_lighting_begin()
+{
+}
+
+void gr_stub_deferred_lighting_end()
+{
+}
+
+void gr_stub_deferred_lighting_finish()
 {
 }
 
@@ -478,7 +509,7 @@ void gr_stub_draw_line_list(colored_vector *lines, int num)
 {
 }
 
-void gr_stub_flush_data_states()
+void gr_stub_clear_states()
 {
 }
 
@@ -486,8 +517,13 @@ void gr_stub_update_texture(int bitmap_handle, int bpp, ubyte* data, int width, 
 {
 }
 
+void gr_stub_get_bitmap_from_texture(void* data_out, int bitmap_num)
+{
+
+}
+
 // bitmap functions
-int gr_stub_bm_load(ubyte type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
+int gr_stub_bm_load(BM_TYPE type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, int *size)
 {
 	int dds_ct;
 
@@ -578,7 +614,7 @@ int gr_stub_bm_load(ubyte type, int n, const char *filename, CFILE *img_cfp, int
 
 int gr_stub_bm_lock(const char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
 {
-	ubyte c_type = BM_TYPE_NONE;
+	BM_TYPE c_type = BM_TYPE_NONE;
 	ubyte true_bpp;
 
 	bitmap_entry *be = &bm_bitmaps[bitmapnum];
@@ -697,17 +733,24 @@ void gr_stub_bm_page_in_start()
 {
 }
 
-int gr_stub_maybe_create_shader(int flags) {
+int gr_stub_maybe_create_shader(shader_type shader, unsigned int flags) {
 	return -1;
 }
 
-void gr_stub_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime) {
+void gr_stub_set_animated_effect(int effect, float timer)
+{
+
 }
 
-void gr_stub_enable_team_color() {
+void gr_stub_set_team_color(team_color *colors) {
 }
 
-void gr_stub_disable_team_color() {
+void gr_stub_shadow_map_start(matrix4 *shadow_view_matrix, matrix* light_matrix)
+{
+}
+
+void gr_stub_shadow_map_end()
+{
 }
 
 bool gr_stub_init() 
@@ -833,11 +876,12 @@ bool gr_stub_init()
 	gr_screen.gf_render_buffer		= gr_stub_render_buffer;
 	gr_screen.gf_set_buffer			= gr_stub_set_buffer;
 
+	gr_screen.gf_update_transform_buffer	= gr_stub_update_transform_buffer;
+	gr_screen.gf_update_buffer_object		= gr_stub_update_buffer_object;
+	gr_screen.gf_set_transform_buffer_offset	= gr_stub_set_transform_buffer_offset;
+
 	gr_screen.gf_create_stream_buffer		= gr_stub_create_stream_buffer;
-	gr_screen.gf_update_stream_buffer		= gr_stub_update_stream_buffer;
 	gr_screen.gf_render_stream_buffer		= gr_stub_render_stream_buffer;
-	gr_screen.gf_render_stream_buffer_start	= gr_stub_render_stream_buffer_start;
-	gr_screen.gf_render_stream_buffer_end	= gr_stub_render_stream_buffer_end;
 
 	gr_screen.gf_start_instance_matrix			= gr_stub_start_instance_matrix;
 	gr_screen.gf_end_instance_matrix			= gr_stub_end_instance_matrix;
@@ -859,11 +903,17 @@ bool gr_stub_init()
 
 	gr_screen.gf_scene_texture_begin = gr_stub_scene_texture_begin;
 	gr_screen.gf_scene_texture_end = gr_stub_scene_texture_end;
+	gr_screen.gf_copy_effect_texture = gr_stub_copy_effect_texture;
+
+	gr_screen.gf_deferred_lighting_begin = gr_stub_deferred_lighting_begin;
+	gr_screen.gf_deferred_lighting_end = gr_stub_deferred_lighting_end;
+	gr_screen.gf_deferred_lighting_finish = gr_stub_deferred_lighting_finish;
 
 	gr_screen.gf_start_clip_plane	= gr_stub_start_clip_plane;
 	gr_screen.gf_end_clip_plane		= gr_stub_end_clip_plane;
 
 	gr_screen.gf_lighting			= gr_stub_set_lighting;
+	gr_screen.gf_set_light_factor	= gr_stub_set_light_factor;
 
 	gr_screen.gf_set_proj_matrix	= gr_stub_set_projection_matrix;
 	gr_screen.gf_end_proj_matrix	= gr_stub_end_projection_matrix;
@@ -874,6 +924,7 @@ bool gr_stub_init()
 	gr_screen.gf_push_scale_matrix	= gr_stub_push_scale_matrix;
 	gr_screen.gf_pop_scale_matrix	= gr_stub_pop_scale_matrix;
 	gr_screen.gf_center_alpha		= gr_stub_center_alpha;
+	gr_screen.gf_set_thrust_scale	= gr_stub_set_thrust_scale;
 
 	gr_screen.gf_setup_background_fog	= gr_stub_setup_background_fog;
 
@@ -888,14 +939,18 @@ bool gr_stub_init()
 	gr_screen.gf_line_htl			= gr_stub_draw_htl_line;
 	gr_screen.gf_sphere_htl			= gr_stub_draw_htl_sphere;
 
+	gr_screen.gf_shadow_map_start	= gr_stub_shadow_map_start;
+	gr_screen.gf_shadow_map_end		= gr_stub_shadow_map_end;
+
 	gr_screen.gf_maybe_create_shader = gr_stub_maybe_create_shader;
 
-	gr_screen.gf_flush_data_states	= gr_stub_flush_data_states;
+	gr_screen.gf_set_animated_effect = gr_stub_set_animated_effect;
+
+	gr_screen.gf_clear_states	= gr_stub_clear_states;
 
 	gr_screen.gf_set_team_color		= gr_stub_set_team_color;
-	gr_screen.gf_enable_team_color  = gr_stub_enable_team_color;
-	gr_screen.gf_disable_team_color = gr_stub_disable_team_color;
 
 	gr_screen.gf_update_texture = gr_stub_update_texture;
+	gr_screen.gf_get_bitmap_from_texture = gr_stub_get_bitmap_from_texture;
 	return true;
 }

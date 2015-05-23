@@ -258,6 +258,8 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vec3d *p
 	int		j;
 	vec3d	pnt;
 	vertex	verts[4];
+    
+    memset(verts, 0, sizeof(verts));
 
 	for (j=0; j<4; j++ )	{
 		// Rotate point into world coordinates
@@ -319,6 +321,8 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 	vec3d	pnt;
 	vertex	*verts[3];
 	vertex	points[3];
+    
+    memset(&verts, 0, sizeof(verts));
 
 	if (trip->trinum == -1)
 		return;	//	Means this is a quad, must have switched detail_level.

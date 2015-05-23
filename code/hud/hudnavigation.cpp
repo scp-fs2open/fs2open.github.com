@@ -35,6 +35,8 @@ void hud_draw_navigation()
 		vec3d *target_pos = Navs[CurrentNav].GetPosition();
 
 		color NavColor;
+        
+        memset(&target_point, 0, sizeof(target_point));
 
 		unsigned int alpha = HUD_COLOR_ALPHA_MAX * 16;
 

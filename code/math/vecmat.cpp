@@ -33,6 +33,34 @@ matrix vmd_identity_matrix = IDENTITY_MATRIX;
 
 #define	UNINITIALIZED_VALUE	-12345678.9f
 
+bool vm_vec_equal(const vec4 &self, const vec4 &other)
+{
+	return fl_equal(self.a1d[0], other.a1d[0]) && fl_equal(self.a1d[1], other.a1d[1]) && fl_equal(self.a1d[2], other.a1d[2]) && fl_equal(self.a1d[3], other.a1d[3]);
+}
+
+bool vm_vec_equal(const vec3d &self, const vec3d &other)
+{
+	return fl_equal(self.a1d[0], other.a1d[0]) && fl_equal(self.a1d[1], other.a1d[1]) && fl_equal(self.a1d[2], other.a1d[2]);
+}
+
+bool vm_vec_equal(const vec2d &self, const vec2d &other)
+{
+	return fl_equal(self.x, other.x) && fl_equal(self.y, other.y);
+}
+
+bool vm_matrix_equal(const matrix &self, const matrix &other)
+{
+	return vm_vec_equal(self.vec.fvec, other.vec.fvec) && vm_vec_equal(self.vec.uvec, other.vec.uvec) && vm_vec_equal(self.vec.rvec, other.vec.rvec);
+}
+
+bool vm_matrix_equal(const matrix4 &self, const matrix4 &other)
+{
+	return vm_vec_equal(self.vec.fvec, other.vec.fvec) && 
+		vm_vec_equal(self.vec.rvec, other.vec.rvec) && 
+		vm_vec_equal(self.vec.uvec, other.vec.uvec) && 
+		vm_vec_equal(self.vec.pos, other.vec.pos);
+}
+
 // -----------------------------------------------------------
 // atan2_safe()
 //
@@ -225,7 +253,7 @@ vec3d *vm_vec_avg4(vec3d *dest,vec3d *src0,vec3d *src1,vec3d *src2,vec3d *src3)
 }
 
 
-//scales a vector in place.  returns ptr to vector
+//scales a vector in place.
 #ifndef _INLINE_VECMAT
 void vm_vec_scale(vec3d *dest,float s)
 {
@@ -236,7 +264,7 @@ void vm_vec_scale(vec3d *dest,float s)
 #endif
 
 
-//scales and copies a vector.  returns ptr to dest
+//scales and copies a vector.
 #ifndef _INLINE_VECMAT
 void vm_vec_copy_scale(vec3d *dest,vec3d *src,float s)
 {
@@ -288,7 +316,7 @@ void vm_vec_scale_sub2(vec3d *dest,vec3d *src,float k)
 }
 #endif
 
-//scales a vector in place, taking n/d for scale.  returns ptr to vector
+//scales a vector in place, taking n/d for scale.
 //dest *= n/d
 #ifndef _INLINE_VECMAT
 void vm_vec_scale2(vec3d *dest,float n,float d)
@@ -321,26 +349,21 @@ float vm_vec_dot3(float x,float y,float z,vec3d *v)
 //returns magnitude of a vector
 float vm_vec_mag(vec3d *v)
 {
-	float x,y,z,mag1, mag2;
-	x = v->xyz.x*v->xyz.x;
-	y = v->xyz.y*v->xyz.y;
-	z = v->xyz.z*v->xyz.z;
+	float mag1;
 
-	mag1 = x+y+z;
+	mag1 = (v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z);
 
-	mag2 = fl_sqrt(mag1);
-	return mag2;
+	if (mag1 <= 0.0f) {
+		return 0.0f;
+	}
+
+	return fl_sqrt(mag1);
 }
 
 //returns squared magnitude of a vector, useful if you want to compare distances
 float vm_vec_mag_squared(vec3d *v)
 {
-	float x,y,z,mag1;
-	x = v->xyz.x*v->xyz.x;
-	y = v->xyz.y*v->xyz.y;
-	z = v->xyz.z*v->xyz.z;
-	mag1 = x+y+z;
-	return mag1;
+	return ((v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z));
 }
 
 float vm_vec_dist_squared(vec3d *v0, vec3d *v1)
@@ -390,14 +413,20 @@ float vm_vec_mag_quick(vec3d *v)
 		c = v->xyz.z;
 
 	if (a < b) {
-		float temp=a; a=b; b=temp;
+		t = a;
+		a = b;
+		b = t;
 	}
 
 	if (b < c) {
-		float temp=b; b=c; c=temp;
+		t = b;
+		b = c;
+		c = t;
 
 		if (a < b) {
-			float temp2=a; a=b; b=temp2;
+			t = a;
+			a = b;
+			b = t;
 		}
 	}
 
@@ -1064,6 +1093,46 @@ angles *vm_extract_angles_matrix(angles *a,matrix *m)
 			a->b = atan2_safe(sinb,cosb);
 	}
 
+
+	return a;
+}
+
+// alternate method for extracting angles which seems to be
+// less susceptible to rounding errors -- see section 8.7.2
+// (pages 278-281) of 3D Math Primer for Graphics and Game
+// Development, 2nd Edition
+// http://books.google.com/books?id=X3hmuhBoFF0C&printsec=frontcover#v=onepage&q&f=false
+angles *vm_extract_angles_matrix_alternate(angles *a, matrix *m)
+{
+	Assert(a != NULL);
+	Assert(m != NULL);
+
+	// Extract pitch from m32, being careful for domain errors with
+	// asin().  We could have values slightly out of range due to
+	// floating point arithmetic.
+	float sp = -m->vec.fvec.xyz.y;
+	if (sp <= -1.0f) {
+		a->p = -PI_2;	// -pi/2
+	} else if (sp >= 1.0f) {
+		a->p = PI_2;	// pi/2
+	} else {
+		a->p = asin(sp);
+	}
+
+	// Check for the Gimbal lock case, giving a slight tolerance
+	// for numerical imprecision
+	if (fabs(sp) > 0.9999f) {
+		// We are looking straight up or down.
+		// Slam bank to zero and just set heading
+		a->b = 0.0f;
+		a->h = atan2(-m->vec.rvec.xyz.z, m->vec.rvec.xyz.x);
+	} else {
+		// Compute heading
+		a->h = atan2(m->vec.fvec.xyz.x, m->vec.fvec.xyz.z);
+
+		// Compute bank
+		a->b = atan2(m->vec.rvec.xyz.y, m->vec.uvec.xyz.y);
+	}
 
 	return a;
 }
@@ -2514,7 +2583,7 @@ void vm_find_bounding_sphere(vec3d *pnts, int num_pnts, vec3d *center, float *ra
 		dia2 = ymax;
 	}
 	if ( zspan > maxspan ) {
-		maxspan = yspan;
+		maxspan = zspan;
 		dia1 = zmin;
 		dia2 = zmax;
 	}

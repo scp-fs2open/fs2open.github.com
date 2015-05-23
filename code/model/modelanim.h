@@ -96,7 +96,6 @@ struct trigger_instance{
 class triggered_rotation
 {
 	private:
-		vec3d snd_pnt;
 		int start_sound;
 		int loop_sound;
 		int end_sound;

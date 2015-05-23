@@ -119,6 +119,10 @@ do
       echo "Running autoreconf..."
       autoreconf --install
     )
+    # DIE if the subshell failed
+    if [ $? -ne 0 ]; then
+      exit 1
+    fi
   fi
 done
 

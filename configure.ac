@@ -2,7 +2,7 @@ dnl configure.ac for fs2_open
 dnl
 dnl $Id: configure.ac,v 1.31.2.4 2007-05-28 19:36:12 taylor Exp $
 
-AC_INIT(fs2_open, 3.7.1)
+AC_INIT(fs2_open, 3.7.3)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
 
 dnl we need at least version 2.54 of autoconf
@@ -13,7 +13,7 @@ AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
 dnl we need at least version 1.6.1 of automake, well it's as far down as has been tested anyway
-AM_INIT_AUTOMAKE([ 1.6.1 no-define dist-bzip2 ])
+AM_INIT_AUTOMAKE([ 1.6.1 no-define dist-bzip2 subdir-objects ])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 AC_DEFINE([NO_CD_CHECK])
 
@@ -26,8 +26,8 @@ CFLAGS_save="$CFLAGS"
 LDFLAGS_save="$LDFLAGS"
 
 AC_PROG_CC
-AC_PROG_RANLIB
 AC_PROG_CXX
+LT_INIT
 
 dnl ok we want to replace any defaults with our own since it's probably less freaky that way
 CXXFLAGS="$CXXFLAGS_save"
@@ -39,6 +39,8 @@ AC_SUBST(LDFLAGS)
 
 PKG_PROG_PKG_CONFIG()
 
+dnl lets see if we support c++11
+AX_CXX_COMPILE_STDCXX_11([noext], [optional])
 
 dnl The configuration options
 dnl -------------------------
@@ -147,9 +149,11 @@ case "$target" in
 		echo "* http://www.hard-light.net/forums/index.php?board=113.0 ***"
 		echo "************************************************************"
 		fs2_os_solaris="yes"
+		LDFLAGS="$LDFLAGS -L/opt/csw/lib"
+		CPPFLAGS="$CPPFLAGS -I/opt/csw/include"
 		;;
-	*freebsd*)
-		# FreeBSD 9.1
+	*freebsd* | *openbsd*)
+		# FreeBSD 10.1
 		echo "Using Unix defines (for $host_os $host_cpu)"
 		echo "************************************************************"
 		echo "************************ NOTE ******************************"
@@ -161,7 +165,7 @@ case "$target" in
 		fs2_os_bsd="yes"
 		if test "$host_cpu" = "amd64"
 		then
-			D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi"
+			D_CFLAGS="$D_CFLAGS -m64 -march=athlon64"
 		fi
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		LDFLAGS="$LDFLAGS -L/usr/local/lib"
@@ -173,7 +177,8 @@ case "$target" in
 		echo "check the configure.ac file"
 		echo "host_cpu:    " $host_cpu
 		echo "host_vendor: " $host_vendor
-		echo "host_os      " $host_os
+		echo "host_os:     " $host_os
+		echo "target:      " $target
 		echo "************************************************************"
 		echo "* Please let us know about successful builds on this OS at *"
 		echo "* http://www.hard-light.net/forums/index.php?board=113.0 ***"

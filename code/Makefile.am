@@ -263,7 +263,10 @@ FS2_SOURCES =	\
 	debris/debris.cpp	\
 	debris/debris.h	\
 	debugconsole/console.cpp	\
-	debugconsole/dbugfile.h	\
+	debugconsole/console.h	\
+	debugconsole/consolecmds.cpp	\
+	debugconsole/consoleparse.cpp	\
+	debugconsole/consoleparse.h	\
 	debugconsole/timerbar.cpp	\
 	debugconsole/timerbar.h	\
 	exceptionhandler/exceptionhandler.cpp	\
@@ -340,6 +343,7 @@ FS2_SOURCES =	\
 	graphics/grstub.cpp	\
 	graphics/grstub.h	\
 	graphics/line.h	\
+	graphics/shadows.cpp \
 	graphics/tmapper.h	\
 	hud/hud.cpp	\
 	hud/hud.h	\
@@ -498,6 +502,7 @@ FS2_SOURCES =	\
 	model/modelsinc.h	\
 	model/modeloctant.cpp	\
 	model/modelread.cpp	\
+	model/modelrender.cpp   \
 	nebula/neb.cpp	\
 	nebula/neb.h	\
 	nebula/neblightning.cpp	\

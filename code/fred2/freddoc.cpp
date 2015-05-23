@@ -79,7 +79,6 @@ BEGIN_MESSAGE_MAP(CFREDDoc, CDocument)
 	ON_COMMAND(ID_EDIT_UNDO, OnEditUndo)
 	ON_COMMAND(ID_FILE_PREFERENCES, OnFilePreferences)
 	ON_COMMAND(ID_FILE_IMPORT_FSM, OnFileImportFSM)
-	ON_COMMAND(ID_FILE_IMPORT_WEAPONS, OnFileImportWeapons)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -1013,89 +1012,6 @@ void CFREDDoc::OnFileImportFSM()
 
 	MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
 	recreate_dialogs();
-}
-
-void restore_default_weapons(char *ships_tbl);
-
-void CFREDDoc::OnFileImportWeapons() 
-{
-	int rval;
-	CString ships_tbl_mfc;
-	char ships_tbl[MAX_PATH_LEN];
-	char *ships_tbl_text;
-	char *ships_tbl_text_raw;
-	char *ch;
-	char temp[MAX_PATH_LEN];
-	char error_str[1024];
-
-	// set up import dialog
-	CFileDialog dlg(TRUE, "tbl", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "FreeSpace Tables (*.tbl)|*.tbl|All files (*.*)|*.*||");
-	dlg.m_ofn.lpstrTitle = "Specify the ships.tbl with the required loadouts";
-
-	// set initial path
-	strcpy_s(temp, Fred_exe_dir);
-	if ((ch = stristr(temp, "FreeSpace2")) != NULL)
-	{
-		strcpy(ch, "FreeSpace\\Data\\Tables");
-		dlg.m_ofn.lpstrInitialDir = temp;
-	}
-
-	// get ships.tbl
-	if (dlg.DoModal() != IDOK)
-		return;
-
-	ships_tbl_mfc = dlg.GetPathName();
-
-	if (strlen(ships_tbl_mfc) > MAX_PATH_LEN - 1)
-	{
-		MessageBox(NULL, "Path name is too long", "Error", MB_OK);
-		return;
-	}
-
-	if (!strlen(ships_tbl_mfc))
-		return;
-
-	strcpy_s(ships_tbl, ships_tbl_mfc);
-
-	// allocate junk
-	ships_tbl_text = (char *) malloc(sizeof(char) * MISSION_TEXT_SIZE);
-	ships_tbl_text_raw = (char *) malloc(sizeof(char) * MISSION_TEXT_SIZE);
-	if (!ships_tbl_text || !ships_tbl_text_raw)
-	{
-		free(ships_tbl_text);
-		free(ships_tbl_text_raw);
-
-		Error(LOCATION, "Not enough memory to import weapons.");
-		return;
-	}
-
-	// open localization
-	lcl_ext_open();
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("FREDDOC: Unable to parse '%s'!  Error code = %i.\n", ships_tbl, rval));
-		sprintf(error_str, "Could not parse file: %s", ships_tbl);
-
-		MessageBox(NULL, error_str, "Unable to import weapon loadouts!", MB_ICONERROR | MB_OK);
-		lcl_ext_close();
-		return;
-	}
-
-	// load the other table and convert, freeing memory after use
-	read_file_text(ships_tbl, CF_TYPE_ANY, ships_tbl_text, ships_tbl_text_raw);
-	free(ships_tbl_text_raw);
-	restore_default_weapons(ships_tbl_text);
-	free(ships_tbl_text);
-
-	// close localization
-	lcl_ext_close();
-
-	// we haven't saved it yet
-	set_modified(TRUE);
-
-	// error check and notify
-	if (!Fred_view_wnd->global_error_check())
-		Fred_view_wnd->MessageBox("Weapon loadouts successfully imported with no errors.", "Woohoo!");
 }
 
 void CFREDDoc::recreate_dialogs()

@@ -72,13 +72,13 @@ extern int gr_get_current_fontnum();
 extern int gr_get_fontnum(char *filename);
 extern void gr_set_font(int fontnum);
 
-void gr_print_timestamp(int x, int y, fix timestamp);
+void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode);
 char *gr_force_fit_string(char *str, int max_str, int max_width);
 void gr_font_init();
 void gr_font_close();
 
 extern font *Current_font;
 extern int get_char_width(ubyte c1,ubyte c2,int *width,int *spacing);
-extern int get_centered_x(const char *s);
+extern int get_centered_x(const char *s, bool scaled);
 
 #endif

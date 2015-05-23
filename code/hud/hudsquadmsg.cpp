@@ -832,6 +832,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 
 	// if it's a weapon, then it needs to be a WIF_BOMB weapon.  Only attack order valid, and only
 	// valid on bombs not on the player's team
+	// MageKing17: Now also works on WIF3_FIGHTER_INTERCEPTABLE weapons.
 	if ( objp->type == OBJ_WEAPON ) {
 		
 		if (Weapons[objp->instance].lssm_stage==3){
@@ -839,7 +840,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 		}
 		
 		if ( (Comm_orders[order].item == ATTACK_TARGET_ITEM )
-			&& (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
+			&& ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags3 & WIF3_FIGHTER_INTERCEPTABLE))
 			&& (Weapons[objp->instance].team != ordering_shipp->team) )
 
 			return 1;
@@ -857,7 +858,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	}
 
 	// if we are messaging a ship, and that ship is our target, no target type orders are ever active
-	if ( (Squad_msg_mode == SM_MODE_SHIP_COMMAND) && (target_objnum == Msg_instance) ){
+	if ( (Squad_msg_mode == SM_MODE_SHIP_COMMAND) && (Objects[target_objnum].instance == Msg_instance) ){
 		return 0;
 	}
 
@@ -1372,11 +1373,10 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 		target_shipname = NULL;
 		target_team = -1;
-		if ( ainfo->target_objnum != -1) {
-			if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
-				target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
-				target_team = Ships[Objects[ainfo->target_objnum].instance].team;
-			}
+
+		if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
+			target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
+			target_team = Ships[Objects[ainfo->target_objnum].instance].team;
 		}
 
 		Assert ( ainfo->shipnum != -1 );
@@ -2462,6 +2462,11 @@ int hud_query_order_issued(char *to, char *order_name, char *target_name, int ti
 							}
 							
 							int target_ship = ship_name_lookup(target_name);
+                            
+							if(target_ship<0) {
+								continue;
+							}
+                            
 							int subsys_index = ship_get_subsys_index(&Ships[target_ship], special_argument, 1); 
 							// if the order is for s different subsystem
 							if (Squadmsg_history[i].special_index != subsys_index) {

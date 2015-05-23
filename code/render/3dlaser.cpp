@@ -14,6 +14,7 @@
 #include "globalincs/systemvars.h"
 #include "io/key.h"
 #include "cmdline/cmdline.h"
+#include "debugconsole/console.h"
 
 
 

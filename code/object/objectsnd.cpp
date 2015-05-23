@@ -22,7 +22,7 @@
 #include "render/3d.h"
 #include "io/joy_ff.h"
 #include "species_defs/species_defs.h"
-
+#include "debugconsole/console.h"
 
 
 //  // --mharris port hack--
@@ -96,62 +96,65 @@ void obj_snd_source_pos(vec3d *sound_pos, obj_snd *osp)
 //XSTR:OFF
 DCF(objsnd, "Persistent sound stuff" )
 {
-	char		buf1[16], buf2[64];
-	obj_snd	*osp;
+	char buf1[4];
+	char buf2[MAX_NAME_LEN];
+	obj_snd *osp;
+	SCP_string arg;
 
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING|ARG_NONE);
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf ("Usage: objsnd [-list]\n");
+		dc_printf ("[-list] --  displays status of all objects with linked sounds\n");
+		dc_printf ("with no parameters, object sounds are toggled on/off\n");
+		return;
+	}
 
-		if ( Dc_arg_type & ARG_NONE ) {
-			if ( Obj_snd_enabled == TRUE ) {
-				obj_snd_stop_all();
-				Obj_snd_enabled = FALSE;
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf( "Object sounds are: %s\n", (Obj_snd_enabled?"ON":"OFF") );
+	}
+	
+	if (dc_optional_string("-list")) {
+		for ( osp = GET_FIRST(&obj_snd_list); osp !=END_OF_LIST(&obj_snd_list); osp = GET_NEXT(osp) ) {
+			vec3d source_pos;
+			float distance;
+
+			Assert(osp != NULL);
+			if ( osp->instance == -1 ) {
+				continue;
+				//sprintf(buf1,"OFF");
+			} else {
+				sprintf(buf1,"ON");
+			}
+
+			if ( Objects[osp->objnum].type == OBJ_SHIP ) {
+				strcpy_s(buf2, Ships[Objects[osp->objnum].instance].ship_name);
+			}
+			else if ( Objects[osp->objnum].type == OBJ_DEBRIS ) {
+				sprintf(buf2, "Debris");
 			}
 			else {
-				Obj_snd_enabled = TRUE;
+				sprintf(buf2, "Unknown");
 			}
-		}
-		if ( !stricmp( Dc_arg, "list" ))	{
-			for ( osp = GET_FIRST(&obj_snd_list); osp !=END_OF_LIST(&obj_snd_list); osp = GET_NEXT(osp) ) {
-				Assert(osp != NULL);
-				if ( osp->instance == -1 ) {
-					continue;
-					//sprintf(buf1,"OFF");
-				} else {
-					sprintf(buf1,"ON");
-				}
 
-				if ( Objects[osp->objnum].type == OBJ_SHIP ) {
-					strcpy_s(buf2, Ships[Objects[osp->objnum].instance].ship_name);
-				}
-				else if ( Objects[osp->objnum].type == OBJ_DEBRIS ) {
-					sprintf(buf2, "Debris");
-				}
-				else {
-					sprintf(buf2, "Unknown");
-				}
+			obj_snd_source_pos(&source_pos, osp);
+			distance = vm_vec_dist_quick( &source_pos, &View_position );
 
-				vec3d source_pos;
-				float distance;
+			dc_printf("Object %d => name: %s vol: %.2f pan: %.2f dist: %.2f status: %s\n", osp->objnum, buf2, osp->vol, osp->pan, distance, buf1);
+		} // end for
 
-				obj_snd_source_pos(&source_pos, osp);
-				distance = vm_vec_dist_quick( &source_pos, &View_position );
-
-				dc_printf("Object %d => name: %s vol: %.2f pan: %.2f dist: %.2f status: %s\n", osp->objnum, buf2, osp->vol, osp->pan, distance, buf1);
-			} // end for
-				dc_printf("Number object-linked sounds playing: %d\n", Num_obj_sounds_playing);
-		}
+		dc_printf("Number object-linked sounds playing: %d\n", Num_obj_sounds_playing);
+		return;
 	}
 
-	if ( Dc_help ) {
-		dc_printf ("Usage: objsnd [list]\n");
-		dc_printf ("[list] --  displays status of all objects with linked sounds\n");
-		dc_printf ("with no parameters, object sounds are toggled on/off\n");
-		Dc_status = 0;
-	}
-
-	if ( Dc_status )	{
-		dc_printf( "Object sounds are: %s\n", (Obj_snd_enabled?"ON":"OFF") );
+	if (!dc_maybe_stuff_string_white(arg)) {
+		// No arguments, toggle snd on/off
+		if ( Obj_snd_enabled == TRUE ) {
+				obj_snd_stop_all();
+				Obj_snd_enabled = FALSE;
+			} else {
+				Obj_snd_enabled = TRUE;
+		}
+	} else {
+		dc_printf("Unknown argument '%s'\n", arg.c_str());
 	}
 }
 //XSTR:ON
@@ -500,7 +503,7 @@ void obj_snd_do_frame()
 		} 
 
 		distance -= add_distance;
-		if ( distance < 0 ) {
+		if ( distance < 0.0f ) {
 			distance = 0.0f;
 		}
 
@@ -518,39 +521,48 @@ void obj_snd_do_frame()
 		rot_vol_mult = 1.0f;
 		alive_vol_mult = 1.0f;
 		if ( objp->type == OBJ_SHIP ) {
-			if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
-				if ( objp->phys_info.max_vel.xyz.z <= 0 ) {
+			ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+			if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+				if ( objp->phys_info.max_vel.xyz.z <= 0.0f ) {
 					percent_max = 0.0f;
 				}
 				else
 					percent_max = objp->phys_info.fspeed / objp->phys_info.max_vel.xyz.z;
 
-				if ( percent_max >= 0.5 )
-					speed_vol_multiplier = 1.0f;
-				else {
-					speed_vol_multiplier = 0.5f + (percent_max);	// linear interp: 0.5->1.0 when 0.0->0.5
+				if ( sip->min_engine_vol == -1.0f) {
+					// Retail behavior: volume ramps from 0.5 (when stationary) to 1.0 (when at half speed)
+					if ( percent_max >= 0.5f ) {
+						speed_vol_multiplier = 1.0f;
+					} else {
+						speed_vol_multiplier = 0.5f + (percent_max);	// linear interp: 0.5->1.0 when 0.0->0.5
+					}
+				} else {
+					// Volume ramps from min_engine_vol (when stationary) to 1.0 (when at full speed)
+					speed_vol_multiplier = sip->min_engine_vol + ((1.0f - sip->min_engine_vol) * percent_max);
 				}
 			}
 			if (osp->ss != NULL)
 			{
 				if (osp->flags & OS_TURRET_BASE_ROTATION)
 				{
-					if (osp->ss->base_rotation_rate_pct > 0)
+					if (osp->ss->base_rotation_rate_pct > 0.0f)
 						rot_vol_mult = ((0.25f + (0.75f * osp->ss->base_rotation_rate_pct)) * osp->ss->system_info->turret_base_rotation_snd_mult);
 					else
-						rot_vol_mult = 0;
+						rot_vol_mult = 0.0f;
 				}
 				if (osp->flags & OS_TURRET_GUN_ROTATION)
 				{
-					if (osp->ss->gun_rotation_rate_pct > 0)
+					if (osp->ss->gun_rotation_rate_pct > 0.0f)
 						rot_vol_mult = ((0.25f + (0.75f * osp->ss->gun_rotation_rate_pct)) * osp->ss->system_info->turret_gun_rotation_snd_mult);
 					else
-						rot_vol_mult = 0;
+						rot_vol_mult = 0.0f;
 				}
 				if (osp->flags & OS_SUBSYS_ROTATION )
 				{
 					if (osp->ss->flags & SSF_ROTATES) {
-						rot_vol_mult = 1.0;
+						rot_vol_mult = 1.0f;
+					} else {
+						rot_vol_mult = 0.0f;
 					}
 				}
 				if (osp->flags & OS_SUBSYS_ALIVE)
@@ -565,6 +577,8 @@ void obj_snd_do_frame()
 				{
 					if (osp->ss->current_hits <= 0.0f) {
 						alive_vol_mult = 1.0f;
+					} else {
+						alive_vol_mult = 0.0f;
 					}
 				}
 				if (osp->flags & OS_SUBSYS_DAMAGED) 
@@ -588,7 +602,7 @@ void obj_snd_do_frame()
 					new_vol = max_vol - (distance - Snds[osp->id].min) * max_vol / (Snds[osp->id].max - Snds[osp->id].min);
 				}
 
-				if ( new_vol < 0.1 ) {
+				if ( new_vol < 0.1f ) {
 					continue;
 				}
 

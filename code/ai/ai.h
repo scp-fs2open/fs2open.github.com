@@ -109,6 +109,7 @@ extern ai_flag_name Ai_flag_names[];
 #define AIGF_PURGE					(1<<5)	// purge this goal next time we process
 #define AIGF_GOALS_PURGED			(1<<6)	// this goal has already caused other goals to get purged
 #define AIGF_DEPART_SOUND_PLAYED	(1<<7)	// Goober5000 - replacement for AL's hack ;)
+#define AIGF_TARGET_OWN_TEAM		(1<<8)	// Goober5000 - removes standard precautions against AI ships taking traitorous actions
 
 #define AIGF_DOCK_INDEXES_VALID		(AIGF_DOCKER_INDEX_VALID|AIGF_DOCKEE_INDEX_VALID)
 

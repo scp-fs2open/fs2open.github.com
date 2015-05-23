@@ -35,6 +35,7 @@ private:
 	int save_mission_info();
 	int save_plot_info();
 	int save_variables();
+	int save_containers();
 //	int save_briefing_info();
 	int save_cutscenes();
 	int save_fiction();
@@ -80,7 +81,7 @@ public:
 	void fso_comment_pop(bool pop_all = false);
 
 	// Goober5000
-	void bypass_comment(char *comment);
+	void bypass_comment(const char *comment, const char *end = NULL);
 };
 
 #endif
