@@ -128,7 +128,7 @@ void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 	float fade_multi = 1.5f;
 	
 	if (b->objp->type == OBJ_SHIP) {
-		if (Ships[b->objp->instance].flags2 & SF2_STEALTH) {
+		if (Ships[b->objp->instance].flags[Ship::Ship_Flags::Stealth]) {
 			fade_multi *= 2.0f;
 		}
 	}

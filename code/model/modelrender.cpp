@@ -1117,7 +1117,7 @@ float model_render_determine_depth(int obj_num, int model_num, matrix* orient, v
 		}
 
 		// nebula ?
-		if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+		if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 			depth *= neb2_get_lod_scale(obj_num);
 		}
 
@@ -1665,7 +1665,7 @@ void submodel_render_queue(model_render_params *render_info, draw_list *scene, i
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
 	// if we're in nebula mode
-	if( ( The_mission.flags & MISSION_FLAG_FULLNEB ) && ( Neb2_render_mode != NEB2_RENDER_NONE ) ) {
+	if( ( The_mission.flags[Mission::Mission_Flags::Fullneb]) && ( Neb2_render_mode != NEB2_RENDER_NONE ) ) {
 		tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 
@@ -1798,7 +1798,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 	vm_vec_unrotate(&world_norm, &loc_norm, orient);
 
 	if ( shipp != NULL ) {
-		if ( (shipp->flags & (SF_ARRIVING) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+		if ( (is_ship_arriving(shipp) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
 			vec3d warp_pnt, tmp;
 			matrix warp_orient;
 
@@ -1811,7 +1811,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 			}
 		}
 
-		if ( (shipp->flags & (SF_DEPART_WARP) ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
+		if ( (shipp->flags[Ship::Ship_Flags::Depart_warp] ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
 			vec3d warp_pnt, tmp;
 			matrix warp_orient;
 
@@ -1852,7 +1852,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 
 
 				// fade them in the nebula as well
-				if ( The_mission.flags & MISSION_FLAG_FULLNEB ) {
+				if ( The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 					//vec3d npnt;
 					//vm_vec_add(&npnt, &loc_offset, pos);
 
@@ -2015,7 +2015,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 			vm_vec_sub(&tempv,&View_position,&loc_offset);
 			vm_vec_normalize(&tempv);
 
-			if ( The_mission.flags & MISSION_FLAG_FULLNEB ) {
+			if ( The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 				batch_add_quad(bank->glow_neb_bitmap, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT, verts);
 			} else {
 				batch_add_quad(bank->glow_bitmap, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT, verts);
@@ -2263,7 +2263,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 			if (shipp) {
 				// if ship is warping out, check position of the engine glow to the warp plane
-				if ( (shipp->flags & (SF_ARRIVING) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+				if ( (is_ship_arriving(shipp) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
 					vec3d warp_pnt, tmp;
 					matrix warp_orient;
 
@@ -2276,7 +2276,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 					}
 				}
 
-				if ( (shipp->flags & (SF_DEPART_WARP) ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
+				if ( (shipp->flags[Ship::Ship_Flags::Depart_warp] ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
 					vec3d warp_pnt, tmp;
 					matrix warp_orient;
 
@@ -2332,7 +2332,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			float fog_int = 1.0f;
 
 			// fade them in the nebula as well
-			if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+			if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 				vm_vec_unrotate(&npnt, &gpt->pnt, orient);
 				vm_vec_add2(&npnt, pos);
 
@@ -2406,7 +2406,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 					vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 2 * thruster_info.glow_length_factor);
 
-					if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+					if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 						vm_vec_add(&npnt, &pnt, pos);
 						d *= fog_int;
 					}
@@ -2725,7 +2725,7 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
 	// if we're in nebula mode, fog everything except for the warp holes and other non-fogged models
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(model_flags & MR_NO_FOGGING)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(model_flags & MR_NO_FOGGING)){
 		tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 	

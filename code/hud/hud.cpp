@@ -1090,7 +1090,7 @@ bool HudGauge::canRender()
 	}
 
 	if (gauge_config == HUD_ETS_GAUGE) {
-		if (Ships[Player_obj->instance].flags2 & SF2_NO_ETS) {
+		if (Ships[Player_obj->instance].flags[Ship::Ship_Flags::No_ets]) {
 			return false;
 		}
 	}
@@ -1194,7 +1194,7 @@ void HUD_init()
 	HUD_draw     = 1;
 	HUD_disable_except_messages = 0;
 
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		HUD_contrast = 1;
 	}
 
@@ -1389,7 +1389,7 @@ void hud_update_frame(float frametime)
 	if (Player_ai->target_objnum == -1){
 		retarget = 1;
 	} else if (Objects[Player_ai->target_objnum].type == OBJ_SHIP) {
-		if (Ships[Objects[Player_ai->target_objnum].instance].flags & SF_DYING){
+		if (Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Dying]){
 			if (timestamp_elapsed(Ships[Objects[Player_ai->target_objnum].instance].final_death_time)) {
 				retarget = 1;
 			}
@@ -1400,8 +1400,8 @@ void hud_update_frame(float frametime)
 	// only do this is not retargeting
 	if ((!retarget) && (Player_ai->target_objnum != -1)) {
 		if (Objects[Player_ai->target_objnum].type == OBJ_SHIP) {
-			if ( !(Ships[Objects[Player_ai->target_objnum].instance].flags & SF_DYING) ) {
-				if ( Ship_info[Ships[Objects[Player_ai->target_objnum].instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) ) {
+			if ( !(Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Dying]) ) {
+				if ( is_big_huge(&Ship_info[Ships[Objects[Player_ai->target_objnum].instance].ship_info_index]) ) {
 					ship_subsys *ss = Player_ai->targeted_subsys;
 					if (ss != NULL) {
 						if ((ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits == 0)) {
@@ -1481,7 +1481,7 @@ void hud_update_frame(float frametime)
 	int stop_targetting_this_thing = 0;
 
 	// check to see if the target is still alive
-	if ( targetp->flags&OF_SHOULD_BE_DEAD ) {
+	if ( targetp->flags[Object::Object_Flags::Should_be_dead] ) {
 		stop_targetting_this_thing = 1;
 	}
 
@@ -1491,10 +1491,10 @@ void hud_update_frame(float frametime)
 	if ( targetp->type == OBJ_SHIP ) {
 		Assert ( targetp->instance >=0 && targetp->instance < MAX_SHIPS );
 		target_shipp = &Ships[targetp->instance];
-		Player->target_is_dying = target_shipp->flags & SF_DYING;
+		Player->target_is_dying = target_shipp->flags[Ship::Ship_Flags::Dying];
 
 		// If it is warping out (or exploded), turn off targeting
-		if ( target_shipp->flags & (SF_DEPART_WARP|SF_EXPLODED) ) {
+		if ( target_shipp->flags[Ship::Ship_Flags::Depart_warp] || target_shipp->flags[Ship::Ship_Flags::Exploded] ) {
 			stop_targetting_this_thing = 1;
 		}
 	}
@@ -2668,11 +2668,11 @@ int hud_support_find_closest( int objnum )
 
 	sop = GET_FIRST(&Ship_obj_list);
 	while(sop != END_OF_LIST(&Ship_obj_list)){
-		if ( Ship_info[Ships[Objects[sop->objnum].instance].ship_info_index].flags & SIF_SUPPORT ) {
+		if ( Ship_info[Ships[Objects[sop->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Support] ) {
 			int pship_index, sindex;
 
 			// make sure support ship is not dying
-			if ( !(Ships[Objects[sop->objnum].instance].flags & (SF_DYING|SF_EXPLODED)) ) {
+			if (!(Ships[Objects[sop->objnum].instance].flags[Ship::Ship_Flags::Dying] || Ships[Objects[sop->objnum].instance].flags[Ship::Ship_Flags::Exploded])) {
 
 				Assert( objp->type == OBJ_SHIP );
 				aip = &Ai_info[Ships[Objects[sop->objnum].instance].ai_index];
@@ -2815,7 +2815,7 @@ void HudGaugeSupport::render(float frametime)
 	}
 
 	show_time = 0;
-	if (Player_ai->ai_flags & AIF_BEING_REPAIRED) {
+	if (Player_ai->ai_flags[AI::AI_Flags::Being_repaired]) {
 		Assert(Player_ship->ship_max_hull_strength > 0);
 		
 		if (!Cmdline_rearm_timer)
@@ -2858,7 +2858,7 @@ void HudGaugeSupport::render(float frametime)
 		}
 		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
 	}
-	else if (Player_ai->ai_flags & AIF_REPAIR_OBSTRUCTED) {
+	else if (Player_ai->ai_flags[AI::AI_Flags::Repair_obstructed]) {
 		strcpy_s(outstr, XSTR( "obstructed", 229));
 		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
 	} else {

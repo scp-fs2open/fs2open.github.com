@@ -2047,9 +2047,9 @@ void model_render_DEPRECATED(int model_num, matrix *orient, vec3d * pos, uint fl
 			}
 		}
 	
-		for (int i = 0; i < pm->n_glow_point_banks; i++ ) { //glow point blink code -Bobboau
-			glow_point_bank *bank = &pm->glow_point_banks[i];
-		
+	for (int i = 0; i < pm->n_glow_point_banks; i++ ) { //glow point blink code -Bobboau
+		glow_point_bank *bank = &pm->glow_point_banks[i];
+
 			if(!override_all && sip) {
 				gpoi = sip->glowpoint_bank_override_map.find(i);
 				if(gpoi != sip->glowpoint_bank_override_map.end()) {
@@ -2059,22 +2059,22 @@ void model_render_DEPRECATED(int model_num, matrix *orient, vec3d * pos, uint fl
 				}
 			}
 
-			if (bank->glow_timestamp == 0)
+		if (bank->glow_timestamp == 0)
 				bank->glow_timestamp=time;
 			if(((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time)){
 				if(bank->is_on){
 					if( ((gpo && gpo->on_time_override)?gpo->on_time:bank->on_time) > ((time - ((gpo && gpo->disp_time_override)?gpo->disp_time:bank->disp_time)) % (((gpo && gpo->on_time_override)?gpo->on_time:bank->on_time) + ((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time))) ){
 						bank->glow_timestamp=time;
 						bank->is_on=false;
-					}
+				}
 				}else{
 					if( ((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time) < ((time - ((gpo && gpo->disp_time_override)?gpo->disp_time:bank->disp_time)) % (((gpo && gpo->on_time_override)?gpo->on_time:bank->on_time) + ((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time))) ){
 						bank->glow_timestamp=time;
 						bank->is_on=true;
-					}
 				}
 			}
 		}
+	}
 	}
 
 	// maybe turn off (hardware) culling
@@ -2142,7 +2142,7 @@ void model_render_DEPRECATED(int model_num, matrix *orient, vec3d * pos, uint fl
 	}
 
 	// turn off fog after each model renders
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
@@ -2319,7 +2319,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	vm_vec_normalize(&norm);
 
 	// we need to disable fogging
-	if (The_mission.flags & MISSION_FLAG_FULLNEB)
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb])
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
 	for (i = 0; i < pm->n_thrusters; i++ ) {
@@ -2367,7 +2367,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			if (shipp) {
 				// if ship is warping out, check position of the engine glow to the warp plane
-				if ( (shipp->flags & (SF_ARRIVING) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+				if ( (is_ship_arriving(shipp) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
 					vec3d warp_pnt, tmp;
 					matrix warp_orient;
 
@@ -2380,7 +2380,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					}
 				}
 
-				if ( (shipp->flags & (SF_DEPART_WARP) ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
+				if ( (shipp->flags[Ship::Ship_Flags::Depart_warp] ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
 					vec3d warp_pnt, tmp;
 					matrix warp_orient;
 
@@ -2436,7 +2436,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			float fog_int = 1.0f;
 
 			// fade them in the nebula as well
-			if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+			if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 				vm_vec_unrotate(&npnt, &gpt->pnt, orient);
 				vm_vec_add2(&npnt, pos);
 
@@ -2510,7 +2510,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 					vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 2 * Interp_thrust_glow_len_factor);
 
-					if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+					if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 						vm_vec_add(&npnt, &pnt, pos);
 						d *= fog_int;
 					}
@@ -2599,7 +2599,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 	int i, j;
 
 	int cull = gr_set_cull(0);
-	
+
 	glow_point_bank_override *gpo = NULL;
 	bool override_all = false;
 	SCP_unordered_map<int, void*>::iterator gpoi;
@@ -2618,7 +2618,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 	
 	for (i = 0; i < pm->n_glow_point_banks; i++ ) {
 		glow_point_bank *bank = &pm->glow_point_banks[i];
-		
+
 		if(!override_all && sip) {
 			gpoi = sip->glowpoint_bank_override_map.find(i);
 			if(gpoi != sip->glowpoint_bank_override_map.end()) {
@@ -2678,7 +2678,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 					vm_vec_unrotate(&world_norm, &loc_norm, orient);
 
 					if ( shipp != NULL ) {
-						if ( (shipp->flags & (SF_ARRIVING) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+						if ( (is_ship_arriving(shipp) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
 							vec3d warp_pnt, tmp;
 							matrix warp_orient;
 
@@ -2691,7 +2691,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 							}
 						}
 
-						if ( (shipp->flags & (SF_DEPART_WARP) ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
+						if ( (shipp->flags[Ship::Ship_Flags::Depart_warp] ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
 							vec3d warp_pnt, tmp;
 							matrix warp_orient;
 
@@ -2720,7 +2720,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 								d = vm_vec_dot(&tempv,&world_norm);
 								d -= 0.25;	
 							}
-							
+					
 							float w = gpt->radius;
 							if (d > 0.0f) {
 								vertex p;
@@ -2732,7 +2732,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 
 
 								// fade them in the nebula as well
-								if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+								if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 									//vec3d npnt;
 									//vm_vec_add(&npnt, &loc_offset, pos);
 
@@ -2749,23 +2749,23 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 								} else {
 									g3_rotate_vertex(&p, &world_pnt);
 								}
-
+ 
 								p.r = p.g = p.b = p.a = (ubyte)(255.0f * MAX(d,0.0f));
 								
 								if((gpo && gpo->glow_bitmap_override)?(gpo->glow_bitmap > -1):(bank->glow_bitmap > -1)) {
-									int gpflags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
-									if (use_depth_buffer)
-										gpflags |= TMAP_FLAG_SOFT_QUAD;
-								
-									batch_add_bitmap(
+								int gpflags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
+								if (use_depth_buffer)
+									gpflags |= TMAP_FLAG_SOFT_QUAD;
+
+								batch_add_bitmap(
 										(gpo && gpo->glow_bitmap_override)?gpo->glow_bitmap:bank->glow_bitmap,
-										gpflags,  
-										&p,
-										0,
-										(w * 0.5f),
+									gpflags,  
+									&p,
+									0,
+									(w * 0.5f),
 										d * pulse,
 										w
-									);
+								);
 								}
 							} //d>0.0f
 							if(gpo && gpo->pulse_type) {
@@ -2788,7 +2788,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 								switch(gpo->pulse_type) {
 									case PULSE_SIN:
 										pulse = gpo->pulse_bias + gpo->pulse_amplitude * pow(sin( PI2 / period * x),gpo->pulse_exponent);
-										break;
+							break;
 									case PULSE_COS:
 										pulse = gpo->pulse_bias + gpo->pulse_amplitude * pow(cos( PI2 / period * x),gpo->pulse_exponent);
 										break;
@@ -2798,7 +2798,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 											x %= ( ((gpo && gpo->on_time_override)?gpo->on_time:bank->on_time) + ((gpo && gpo->off_time_override)?gpo->off_time:bank->off_time) );
 										} else {
 											x %= gpo->pulse_period;
-										}
+						}
 									case PULSE_TRI:
 										float inv;
 										if( x > period / 2) {
@@ -2890,7 +2890,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 							vm_vec_sub(&tempv,&View_position,&loc_offset);
 							vm_vec_normalize(&tempv);
 
-							if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+							if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 								gr_set_bitmap(bank->glow_neb_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
 							} else {
 								gr_set_bitmap(bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
@@ -2937,7 +2937,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
 
-			if (shipp->flags2 & SF2_GLOWMAPS_DISABLED)
+			if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled])
 				flags |= MR_DEPRECATED_NO_GLOWMAPS;
 		}
 	}
@@ -2971,7 +2971,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
 	// if we're in nebula mode, fog everything except for the warp holes and other non-fogged models
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(flags & MR_DEPRECATED_NO_FOGGING)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(flags & MR_DEPRECATED_NO_FOGGING)){
 		Interp_tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 
@@ -2987,7 +2987,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	}
 
  	if ( Interp_flags & MR_DEPRECATED_ANIMATED_SHADER )
- 		Interp_tmap_flags |= TMAP_ANIMATED_SHADER;
+		Interp_tmap_flags |= TMAP_ANIMATED_SHADER;
 
 	if ( Interp_desaturate ) {
 		Interp_tmap_flags |= TMAP_FLAG_DESATURATE;
@@ -3010,10 +3010,10 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
  	if ( Interp_flags & MR_DEPRECATED_SHOW_RADIUS )	{
  		if ( !(Interp_flags & MR_DEPRECATED_SHOW_OUTLINE_PRESET) )	{
- 			gr_set_color(0,64,0);
- 			g3_draw_sphere_ez(&vmd_zero_vector,pm->rad);
- 		}
- 	}
+			gr_set_color(0,64,0);
+			g3_draw_sphere_ez(&vmd_zero_vector,pm->rad);
+		}
+	}
 
 	Assert( pm->n_detail_levels < MAX_MODEL_DETAIL_LEVELS );
 
@@ -3058,7 +3058,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			i = Interp_detail_level_locked+1;
 		} else {
 			// nebula ?
-			if(The_mission.flags & MISSION_FLAG_FULLNEB){
+			if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 				depth *= neb2_get_lod_scale(Interp_objnum);
 			}
 
@@ -3231,7 +3231,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		i = pm->submodel[i].next_sibling;
 	}	
 
-		
+
 
 	model_radius = pm->submodel[pm->detail[Interp_detail_level]].rad;
 
@@ -3281,12 +3281,12 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
  	if (Interp_flags & MR_DEPRECATED_SHOW_PIVOTS )	{
  		model_draw_debug_points( pm, NULL, Interp_flags );
  		model_draw_debug_points( pm, &pm->submodel[pm->detail[Interp_detail_level]], Interp_flags );
- 
- 		if(pm->flags & PM_FLAG_AUTOCEN){
- 			gr_set_color(255, 255, 255);
- 			g3_draw_sphere_ez(&pm->autocenter, pm->rad / 4.5f);
- 		}
- 	}
+
+		if(pm->flags & PM_FLAG_AUTOCEN){
+			gr_set_color(255, 255, 255);
+			g3_draw_sphere_ez(&pm->autocenter, pm->rad / 4.5f);
+		}
+	}
 
 	model_radius = 0.0f;
 
@@ -3309,17 +3309,17 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
  	if ( Interp_flags & MR_DEPRECATED_SHOW_SHIELDS )	{
  		model_render_shields(pm, Interp_flags);
- 	}	
+	}	
 
  	if ( Interp_flags & MR_DEPRECATED_SHOW_PATHS ){
  		if (Cmdline_nohtl) model_draw_paths(model_num, Interp_flags);
  		else model_draw_paths_htl(model_num, Interp_flags);
- 	}
+	}
 
  	if (Interp_flags & MR_DEPRECATED_BAY_PATHS ){
- 		if (Cmdline_nohtl) model_draw_bay_paths(model_num);
- 		else model_draw_bay_paths_htl(model_num);
- 	}
+		if (Cmdline_nohtl) model_draw_bay_paths(model_num);
+		else model_draw_bay_paths_htl(model_num);
+	}
 
 	if ( (Interp_flags & MR_DEPRECATED_AUTOCENTER) && (set_autocen) ) {
 		g3_done_instance(use_api);
@@ -3378,7 +3378,7 @@ void submodel_render_DEPRECATED(int model_num, int submodel_num, matrix *orient,
 	Interp_tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
 	// if we're in nebula mode
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		Interp_tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 
@@ -3517,7 +3517,7 @@ void submodel_render_DEPRECATED(int model_num, int submodel_num, matrix *orient,
 	g3_done_instance(true);
 
 	// turn off fog after each model renders, RT This fixes HUD being fogged when debris is in target box
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
@@ -4563,7 +4563,7 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 }
 
 void interp_create_detail_index_buffer(polymodel *pm, int detail_num)
-{
+	{
 	SCP_vector<int> submodel_list;
 
 	submodel_list.clear();
@@ -4580,7 +4580,7 @@ void interp_create_detail_index_buffer(polymodel *pm, int detail_num)
 	// check if anything was even put into this buffer
 	if ( pm->detail_buffers[detail_num].tex_buf.size() < 1 ) {
 		return;
-	} 
+	}
 
 	gr_config_buffer(pm->vertex_buffer_id, &pm->detail_buffers[detail_num], true);
 	//gr_config_buffer(pm->vertex_buffer_id, &pm->trans_buff[detail_num], true);
@@ -4687,7 +4687,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 		for ( int j = 0; j < (int)transparent_indices.size(); ++j ) {
 			new_buff.assign(j, transparent_indices[j]);
 		}
-	}
+}
 
 	if ( trans_buffer->flags & VB_FLAG_TRANS ) {
 		gr_config_buffer(pm->vertex_buffer_id, trans_buffer, true);
@@ -4997,12 +4997,12 @@ void model_render_buffers_DEPRECATED(polymodel *pm, int mn, int render, bool is_
 			// for special shockwave/warpmap usage
 			alpha = (Interp_warp_alpha != -1.0f) ? Interp_warp_alpha : 0.8f;
 			blend_filter = GR_ALPHABLEND_FILTER;
-			
+
 		}
 		
-		if (forced_blend_filter != GR_ALPHABLEND_NONE) {
-			blend_filter = forced_blend_filter;
-		}
+			if (forced_blend_filter != GR_ALPHABLEND_NONE) {
+				blend_filter = forced_blend_filter;
+			}
 
 		extern bool object_had_transparency;
 		if (blend_filter != GR_ALPHABLEND_NONE) {
@@ -5022,9 +5022,9 @@ void model_render_buffers_DEPRECATED(polymodel *pm, int mn, int render, bool is_
 		{
 			if(render & MODEL_RENDER_OPAQUE)
 			{
-				gr_set_bitmap(texture, blend_filter, GR_BITBLT_MODE_NORMAL, alpha);
-				gr_render_buffer(0, &model->buffer, i, Interp_tmap_flags);
-			}
+			gr_set_bitmap(texture, blend_filter, GR_BITBLT_MODE_NORMAL, alpha);
+			gr_render_buffer(0, &model->buffer, i, Interp_tmap_flags);
+		}
 		}
 
 		GLOWMAP = -1;

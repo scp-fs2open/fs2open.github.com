@@ -89,7 +89,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 		// the first marked ship since they'd better all be the same anyway!!!
 		default_orders = 0;
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags & OF_MARKED)) {
+			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
 				int these_orders;
 
 				these_orders = ship_get_default_orders_accepted( &Ship_info[Ships[objp->instance].ship_info_index] );
@@ -158,7 +158,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 
 		first_time = 1;
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-			if (((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) && (objp->flags & OF_MARKED)) {
+			if (((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) && (objp->flags[Object::Object_Flags::Marked])) {
 
 				// get the orders for this ship.  If a state is not set 
 				orders_accepted = Ships[objp->instance].orders_accepted;
@@ -212,7 +212,7 @@ void ignore_orders_dlg::OnOK()
 		Ships[m_ship].orders_accepted = orders_accepted;
 	} else {
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags & OF_MARKED)) {
+			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
 				Ships[objp->instance].orders_accepted = 0;
 				for ( i = 0; i < m_num_checks_active; i++ ) {
 					int box_value;

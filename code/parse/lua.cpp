@@ -4265,16 +4265,16 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 	{
 		if(newVal)
 		{
-			info->wi_flags |= WIF_BOMB;
+			info->wi_flags.set(Weapon::Info_Flags::Bomb);
 		}
 		else
 		{
-			info->wi_flags &= ~WIF_BOMB;
+			info->wi_flags.unset(Weapon::Info_Flags::Bomb);
 		}
 	}
 		
 
-	if (info->wi_flags & WIF_BOMB)
+	if (info->wi_flags[Weapon::Info_Flags::Bomb])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -4400,7 +4400,7 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 	if(idx < 0 || idx >= Num_weapon_types)
 		return ADE_RETURN_FALSE;
 
-	if (Weapon_info[idx].wi_flags & WIF_BEAM || Weapon_info[idx].subtype == WP_BEAM)
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -6011,9 +6011,9 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 		return ade_set_error(L, "b", false);
 
 	bool b = false;
-	if(Player != NULL && (Player->flags & PLAYER_FLAGS_IS_MULTI) && (Ship_info[idx].flags & SIF_IN_TECH_DATABASE_M)) {
+	if(Player != NULL && (Player->flags & PLAYER_FLAGS_IS_MULTI) && (Ship_info[idx].flags[Ship::Info_Flags::In_tech_database_m])) {
 		b = true;
-	} else if(Ship_info[idx].flags & SIF_IN_TECH_DATABASE) {
+	} else if(Ship_info[idx].flags[Ship::Info_Flags::In_tech_database]) {
 		b = true;
 	}
 
@@ -6085,7 +6085,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %=0, Pitch %=0
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
+	if(sip->flags[Ship::Info_Flags::No_lighting])
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);
@@ -6158,7 +6158,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, [orientation Orientatio
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
+	if(sip->flags[Ship::Info_Flags::No_lighting])
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);
@@ -6774,12 +6774,12 @@ ADE_VIRTVAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or u
 		case SWH_PRIMARY:
 			if(ADE_SETTING_VAR && numargs > 1) {
 				if(newlink)
-					Ships[bh->objp->instance].flags |= SF_PRIMARY_LINKED;
+					Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Primary_linked);
 				else
-					Ships[bh->objp->instance].flags &= ~SF_PRIMARY_LINKED;
+					Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Primary_linked, false);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags & SF_PRIMARY_LINKED) > 0);
+			return ade_set_args(L, "b", Ships[bh->objp->instance].flags[Ship::Ship_Flags::Primary_linked]);
 
 		case SWH_SECONDARY:
 		case SWH_TERTIARY:
@@ -6806,12 +6806,12 @@ ADE_VIRTVAR(DualFire, l_WeaponBankType, "boolean", "Whether bank is in dual fire
 		case SWH_SECONDARY:
 			if(ADE_SETTING_VAR && numargs > 1) {
 				if(newfire)
-					Ships[bh->objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
+					Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				else
-					Ships[bh->objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
+					Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire, false);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags & SF_SECONDARY_DUAL_FIRE) > 0);
+			return ade_set_args(L, "b", Ships[bh->objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire]);
 
 		case SWH_PRIMARY:
 		case SWH_TERTIARY:
@@ -7191,15 +7191,15 @@ ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies wether this turrets
 	{
 		if(newVal)
 		{
-			sso->ss->system_info->flags |= MSS_FLAG_TURRET_RESET_IDLE;
+			sso->ss->system_info->flags.set(Model::Subsystem_Flags::Turret_reset_idle);
 		}
 		else
 		{
-			sso->ss->system_info->flags &= ~MSS_FLAG_TURRET_RESET_IDLE;
+			sso->ss->system_info->flags.unset(Model::Subsystem_Flags::Turret_reset_idle);
 		}
 	}
 
-	if (sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE)
+	if (sso->ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -7215,12 +7215,12 @@ ADE_VIRTVAR(TurretResetDelay, l_Subsystem, "number", "The time (in milliseconds)
 	if (!sso->IsValid())
 		return ade_set_error(L, "i", -1);
 
-	if (!(sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE))
+	if (!(sso->ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]))
 		return ade_set_error(L, "i", -1);
 
 	if(ADE_SETTING_VAR)
 	{
-		if ((sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE))
+		if ((sso->ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]))
 			sso->ss->system_info->turret_reset_delay = newVal;
 	}
 
@@ -7258,12 +7258,12 @@ ADE_VIRTVAR(Targetable, l_Subsystem, "boolean", "Targetability of this subsystem
 	if(ADE_SETTING_VAR)
 	{
 		if (!newVal)
-			sso->ss->flags &= ~SSF_UNTARGETABLE;
+			sso->ss->flags.set(Ship::Subsystem_Flags::Untargetable, false);
 		else
-			sso->ss->flags |= SSF_UNTARGETABLE;
+			sso->ss->flags.set(Ship::Subsystem_Flags::Untargetable);
 	}
 
-	return ade_set_args(L, "b", !(sso->ss->flags & SSF_UNTARGETABLE));
+	return ade_set_args(L, "b", !(sso->ss->flags[Ship::Subsystem_Flags::Untargetable]));
 }
 
 ADE_VIRTVAR(Radius, l_Subsystem, "number", "The radius of this subsystem", "number", "The radius or 0 on error")
@@ -7296,13 +7296,13 @@ ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked.
 	if(ADE_SETTING_VAR)
 	{
 		if (newVal) {
-			sso->ss->weapons.flags |= SW_FLAG_TURRET_LOCK;
+			sso->ss->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
 		} else {
-			sso->ss->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
+			sso->ss->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock, false);
 		}
 	}
 
-	return ade_set_args(L, "b", (sso->ss->weapons.flags & SW_FLAG_TURRET_LOCK));
+	return ade_set_args(L, "b", (sso->ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]));
 }
 
 ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret may attempt to fire", "number", "Mission time (seconds) or -1 on error")
@@ -7348,8 +7348,8 @@ ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boo
 	if(!sso->IsValid())
 		return ADE_RETURN_NIL;
 
-	if(sso->ss->flags & SSF_HAS_FIRED){
-		sso->ss->flags &= ~SSF_HAS_FIRED;
+	if(sso->ss->flags[Ship::Subsystem_Flags::Has_fired]){
+		sso->ss->flags.set(Ship::Subsystem_Flags::Has_fired, false);
 		return ADE_RETURN_TRUE;}
 	else
 		return ADE_RETURN_FALSE;
@@ -9152,12 +9152,12 @@ ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigge
 	if(ADE_SETTING_VAR)
     {
 		if(trig)
-			shipp->flags |= SF_TRIGGER_DOWN;
+			shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 		else
-			shipp->flags &= ~SF_TRIGGER_DOWN;
+			shipp->flags.set(Ship::Ship_Flags::Trigger_down, false);
     }
 
-	if (shipp->flags & SF_TRIGGER_DOWN)
+	if (shipp->flags[Ship::Ship_Flags::Trigger_down])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9405,13 +9405,13 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 
 	if(ADE_SETTING_VAR)
     {
-		if(set)
-			shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
+		if (set)
+			shipp->flags.set(Ship::Ship_Flags::Affected_by_gravity);
 		else
-			shipp->flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
+			shipp->flags.set(Ship::Ship_Flags::Affected_by_gravity, false);
     }
 
-	if (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY)
+	if (shipp->flags[Ship::Ship_Flags::Affected_by_gravity])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9436,16 +9436,16 @@ ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boo
 		if(set)
 		{
 			mission_log_add_entry(LOG_SHIP_DISABLED, shipp->ship_name, NULL );
-			shipp->flags |= SF_DISABLED;
+			shipp->flags.set(Ship::Ship_Flags::Disabled);
 		}
 		else
 		{
-			shipp->flags &= ~SF_DISABLED;
+			shipp->flags.set(Ship::Ship_Flags::Disabled, false);
 			ship_reset_disabled_physics( &Objects[shipp->objnum], shipp->ship_info_index );
 		}
 	}
 
-	if (shipp->flags & SF_DISABLED)
+	if (shipp->flags[Ship::Ship_Flags::Disabled])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9468,15 +9468,15 @@ ADE_VIRTVAR(Stealthed, l_Ship, "boolean", "Stealth status of this ship", "boolea
 	{
 		if(stealthed)
 		{
-			shipp->flags2 &= ~SF2_STEALTH;
+			shipp->flags.set(Ship::Ship_Flags::Stealth, false);
 		}
 		else
 		{
-			shipp->flags2 |= SF2_STEALTH;
+			shipp->flags.set(Ship::Ship_Flags::Stealth);
 		}
 	}
 
-	if (shipp->flags2 & SF2_STEALTH)
+	if (shipp->flags[Ship::Ship_Flags::Stealth])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9499,15 +9499,15 @@ ADE_VIRTVAR(HiddenFromSensors, l_Ship, "boolean", "Hidden from sensors status of
 	{
 		if(hidden)
 		{
-			shipp->flags &= ~SF_HIDDEN_FROM_SENSORS;
+			shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors, false);
 		}
 		else
 		{
-			shipp->flags |= SF_HIDDEN_FROM_SENSORS;
+			shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors);
 		}
 	}
 
-	if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
+	if (shipp->flags[Ship::Ship_Flags::Hidden_from_sensors])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9669,7 +9669,7 @@ ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has 
 
 	ship *shipp = &Ships[shiph->objp->instance];
 
-	if (shipp->flags & SF_DYING) {
+	if (shipp->flags[Ship::Ship_Flags::Dying]) {
 		if (shipp->final_death_time == 0) {
 			return ade_set_args(L, "i", 2);
 		}		
@@ -10025,7 +10025,7 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	control_info *cip = &aip->ai_override_ci;
 
 	aip->ai_override_timestamp = timestamp(t);
-	aip->ai_override_flags = 0;
+	aip->ai_override_flags.reset();
 
 	if (t < 2)
 		return ADE_RETURN_FALSE;
@@ -10036,41 +10036,41 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	}
 
 	if(f_rot) {
-		aip->ai_override_flags |= AIORF_FULL;
+		aip->ai_override_flags.set(AI::Override_flags::Full);
 		cip->heading = arr[0];
 		cip->pitch = arr[1];
 		cip->bank = arr[2];
 	} else {
 		if (arr[0] != 0) {
 			cip->heading = arr[0];
-			aip->ai_override_flags |= AIORF_HEADING;
+			aip->ai_override_flags.set(AI::Override_flags::Heading);
 		} 
 		if (arr[1] != 0) {
 			cip->pitch = arr[1];
-			aip->ai_override_flags |= AIORF_PITCH;
+			aip->ai_override_flags.set(AI::Override_flags::Pitch);
 		} 
 		if (arr[2] != 0) {
 			cip->bank = arr[2];
-			aip->ai_override_flags |= AIORF_ROLL;
+			aip->ai_override_flags.set(AI::Override_flags::Roll);
 		} 
 	}
 	if(f_move) {
-		aip->ai_override_flags |= AIORF_FULL_LAT;
+		aip->ai_override_flags.set(AI::Override_flags::Full_lat);
 		cip->vertical = arr[3];
 		cip->sideways = arr[4];
-		cip->forward = arr[5];	
+		cip->forward = arr[5];
 	} else {
 		if (arr[3] != 0) {
 			cip->vertical = arr[3];
-			aip->ai_override_flags |= AIORF_UP;
+			aip->ai_override_flags.set(AI::Override_flags::Up);
 		} 
 		if (arr[4] != 0) {
 			cip->sideways = arr[4];
-			aip->ai_override_flags |= AIORF_SIDEWAYS;
+			aip->ai_override_flags.set(AI::Override_flags::Sideways);
 		} 
 		if (arr[5] != 0) {
 			cip->forward = arr[5];
-			aip->ai_override_flags |= AIORF_FORWARD;
+			aip->ai_override_flags.set(AI::Override_flags::Forward);
 		} 
 	}
 	return ADE_RETURN_TRUE;
@@ -10144,7 +10144,7 @@ ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace driv
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags & SF2_NO_SUBSPACE_DRIVE){
+	if(shipp->flags[Ship::Ship_Flags::No_subspace_drive]){
 		return ADE_RETURN_FALSE;
 	}
 
@@ -10162,7 +10162,7 @@ ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags & SF_ARRIVING_STAGE_1){
+	if(shipp->flags[Ship::Ship_Flags::Arriving_stage_1]){
 		return ADE_RETURN_TRUE;
 	}
 
@@ -10370,12 +10370,12 @@ ADE_VIRTVAR(DestroyedByWeapon, l_Weapon, "boolean", "Whether weapon was destroye
 
 	if(ADE_SETTING_VAR && numargs > 1) {
 		if(b)
-			wp->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+			wp->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 		else
-			wp->weapon_flags &= ~WF_DESTROYED_BY_WEAPON;
+			wp->weapon_flags.unset(Weapon::Weapon_Flags::Destroyed_by_weapon);
 	}
 
-	return ade_set_args(L, "b", (wp->weapon_flags & WF_DESTROYED_BY_WEAPON) > 0);
+	return ade_set_args(L, "b", wp->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]);
 }
 
 ADE_VIRTVAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)", "number", "Life left (seconds) or 0 if weapon handle is invalid")
@@ -12037,7 +12037,7 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
 	} else {
 		LuaError(L, "Invalid sound index %i (Snds[%i]) in playGameSound()", idx, gamesnd_idx);
 		return ADE_RETURN_FALSE;
-	}
+}
 }
 
 ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
@@ -14416,7 +14416,7 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean"
 			Warning(LOCATION, "Invalid SEXP syntax: SEXPs must be surrounded by parentheses.  For backwards compatibility, the string has been enclosed in parentheses.  This may not be correct in all use cases.");
 		}
 		// this is the old sexp handling method, which is incorrect
-		snprintf(buf, 8191, "( when ( true ) ( %s ) )", s);
+	snprintf(buf, 8191, "( when ( true ) ( %s ) )", s);
 	}
 	else
 	{

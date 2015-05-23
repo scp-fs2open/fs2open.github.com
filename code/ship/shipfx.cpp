@@ -90,7 +90,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 
 	// get number of live debris objects to create
 	num_live_debris = pm->submodel[submodel_num].num_live_debris;
-	if ((num_live_debris <= 0) || (subsys->flags & SSF_NO_LIVE_DEBRIS)) {
+	if ((num_live_debris <= 0) || (subsys->flags[Ship::Subsystem_Flags::No_live_debris])) {
 		return;
 	}
 
@@ -160,7 +160,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 			vm_vec_sub(&delta_x, &end_world_pos, &world_axis_pt);
 			vm_vec_crossprod(&radial_vel, &rotvel, &delta_x);
 
-			if (Ship_info[ship_p->ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+			if (Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 				// set velocity to cross center of knossos device
 				vec3d rand_vec, vec_to_center;
 
@@ -194,7 +194,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 						scale = exp_mag;
 					}
 
-					if (Ship_info[ship_p->ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+					if (Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 						scale = 1.0f;
 					}
 
@@ -202,7 +202,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 				}
 
 				// scale up speed of debris if ship_obj > 125, but not for knossos
-				if (ship_objp->radius > 250 && !(Ship_info[ship_p->ship_info_index].flags & SIF_KNOSSOS_DEVICE)) {
+				if (ship_objp->radius > 250 && !(Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::Knossos_device])) {
 					vm_vec_scale(&live_debris_obj->phys_info.vel, ship_objp->radius/250.0f);
 				}
 			}
@@ -313,7 +313,7 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p,ship_subsys *subs
 	shipfx_remove_submodel_ship_sparks(ship_p, psub->subobj_num);
 
 	// create debris shards
-	if (!(subsys->flags & SSF_VANISHED) && !no_explosion) {
+	if (!(subsys->flags[Ship::Subsystem_Flags::Vanished]) && !no_explosion) {
 		shipfx_blow_up_model(ship_objp, model_num, psub->subobj_num, 50, &subobj_pos );
 
 		// create live debris objects, if any
@@ -533,8 +533,8 @@ float shipfx_calculate_warp_dist(object *objp)
 // fx don't work for some reason.
 void shipfx_actually_warpin(ship *shipp, object *objp)
 {
-	shipp->flags &= (~SF_ARRIVING_STAGE_1);
-	shipp->flags &= (~SF_ARRIVING_STAGE_2);
+	shipp->flags.unset(Ship::Ship_Flags::Arriving_stage_1);
+	shipp->flags.unset(Ship::Ship_Flags::Arriving_stage_2);
 
 	// let physics in on it too.
 	objp->phys_info.flags &= (~PF_WARP_IN);
@@ -556,7 +556,7 @@ int shipfx_special_warp_objnum_valid(int objnum)
 		return 0;
 
 	// must be a knossos
-	if (!(Ship_info[Ships[special_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE))
+	if (!(Ship_info[Ships[special_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device]))
 		return 0;
 
 	return 1;
@@ -574,7 +574,7 @@ void shipfx_warpin_start( object *objp )
 {
 	ship *shipp = &Ships[objp->instance];
 
-	if (shipp->flags & SF_ARRIVING)
+	if (is_ship_arriving(shipp))
 	{
 		mprintf(( "Ship '%s' is already arriving!\n", shipp->ship_name ));
 		Int3();
@@ -583,7 +583,7 @@ void shipfx_warpin_start( object *objp )
 
 	// docked ships who are not dock leaders don't use the warp effect code
 	// (the dock leader takes care of the whole group)
-	if (object_is_docked(objp) && !(shipp->flags & SF_DOCK_LEADER))
+	if (object_is_docked(objp) && !(shipp->flags[Ship::Ship_Flags::Dock_leader]))
 	{
 		return;
 	}
@@ -598,7 +598,7 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	// if there is no arrival warp, then skip the whole thing
-	if (shipp->flags & SF_NO_ARRIVAL_WARP)
+	if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
 	{
 		shipfx_actually_warpin(shipp,objp);
 		return;
@@ -616,7 +616,7 @@ void shipfx_warpin_frame( object *objp, float frametime )
 
 	shipp = &Ships[objp->instance];
 
-	if ( shipp->flags & SF_DYING ) return;
+	if ( shipp->flags[Ship::Ship_Flags::Dying] ) return;
 
 	shipp->warpin_effect->warpFrame(frametime);
 }
@@ -653,7 +653,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 	if ((ref_objnum >= 0) && (ref_objnum < MAX_OBJECTS)) {
 		sp_objp = &Objects[ref_objnum];
 		if (sp_objp->type == OBJ_SHIP) {
-			if (Ship_info[Ships[sp_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+			if (Ship_info[Ships[sp_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 				valid_reference_ship = TRUE;
 			}
 		}
@@ -691,7 +691,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 
 	// validate angle
 	float max_warpout_angle = 0.707f;	// 45 degree half-angle cone for small ships
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+	if (is_big_huge(&Ship_info[Ships[objp->instance].ship_info_index])) {
 		max_warpout_angle = 0.866f;	// 30 degree half-angle cone for BIG or HUGE
 	}
 
@@ -756,7 +756,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 
 
 	// If this is a huge ship, set the distance to the length of the ship
-	if (sip->flags & SIF_HUGE_SHIP)
+	if (is_huge_ship(sip))
 	{
 		ship_move_dist = 0.5f * ship_class_get_length(sip);
 	}
@@ -786,7 +786,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 	warp_dist = ship_move_dist;
 
 	// allow for off center
-	if (sip->flags & SIF_HUGE_SHIP) {
+	if (is_huge_ship(sip)) {
 		polymodel *pm = model_get(sip->model_num);
 		warp_dist -= pm->mins.xyz.z;
 	}
@@ -804,7 +804,7 @@ void shipfx_warpout_start( object *objp )
 	ship *shipp;
 	shipp = &Ships[objp->instance];
 
-	if ( 	shipp->flags & SF_DEPART_WARP )	{
+	if ( shipp->flags[Ship::Ship_Flags::Depart_warp] )	{
 		mprintf(( "Ship is already departing!\n" ));
 		return;
 	}
@@ -818,30 +818,30 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	// if we're dying return
-	if ( shipp->flags & SF_DYING ) {
+	if ( shipp->flags[Ship::Ship_Flags::Dying] ) {
 		return;
 	}
 
 	//return if disabled
-	if ( shipp->flags & SF_DISABLED ){
+	if ( shipp->flags[Ship::Ship_Flags::Disabled] ){
 		return;
 	}
 
 	// if we're HUGE, keep alive - set guardian
-	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP) {
+	if (is_huge_ship(&Ship_info[shipp->ship_info_index])) {
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 	}
 
 	// don't send ship depart packets for player ships
-	if ( (MULTIPLAYER_MASTER) && !(objp->flags & OF_PLAYER_SHIP) ){
+	if ( (MULTIPLAYER_MASTER) && !(objp->flags[Object::Object_Flags::Player_ship]) ){
 		send_ship_depart_packet( objp );
 	}
 
 	// don't do departure wormhole if ship flag is set which indicates no effect
-	if ( shipp->flags & SF_NO_DEPARTURE_WARP ) {
+	if ( shipp->flags[Ship::Ship_Flags::No_departure_warp] ) {
 		// DKA 5/25/99 If he's going to warpout, set it.  
 		// Next line fixes assert in wing cleanup code when no warp effect.
-		shipp->flags |= SF_DEPART_WARP;
+		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
 		shipfx_actually_warpout(objp->instance);
 		return;
@@ -858,12 +858,13 @@ void shipfx_warpout_frame( object *objp, float frametime )
 	ship *shipp;
 	shipp = &Ships[objp->instance];
 
-	if ( shipp->flags & SF_DYING ) return;
+	if ( shipp->flags[Ship::Ship_Flags::Dying] ) return;
 
 	//disabled ships should stay on the battlefield if they were disabled during warpout
 	//phreak 5/22/03
-	if (shipp->flags & SF_DISABLED){
-		shipp->flags &= ~(SF_DEPARTING);
+	if (shipp->flags[Ship::Ship_Flags::Disabled]){
+		shipp->flags.unset(Ship::Ship_Flags::Depart_dockbay);
+		shipp->flags.unset(Ship::Ship_Flags::Depart_warp);
 		return;
 	}
 
@@ -1107,7 +1108,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 				}
 			}
 
-			if ( sip->flags2 & SIF2_SHOW_SHIP_MODEL ) {
+			if ( sip->flags[Ship::Info_Flags::Show_ship_model] ) {
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
 				mc.model_num = sip->model_num;
 				mc.orient = &Viewer_obj->orient;
@@ -1242,7 +1243,7 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	// ALWAYS do this - since this is called once per firing
 	// if this is a cannon type weapon, create a muzzle flash
 	// HACK - let the flak guns do this on their own since they fire so quickly
-	if ((Weapon_info[weapon_info_index].muzzle_flash >= 0) && !(Weapon_info[weapon_info_index].wi_flags & WIF_FLAK)) {
+	if ((Weapon_info[weapon_info_index].muzzle_flash >= 0) && !(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak])) {
 		vec3d real_dir;
 		vm_vec_rotate(&real_dir, gun_dir,&objp->orient);	
 		mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);		
@@ -1491,7 +1492,7 @@ void shipfx_emit_spark( int n, int sn )
     //
     // phreak: Mantis 1676 - Re-enable warpout clipping.
 	
-	if ((shipp->flags & (SF_ARRIVING|SF_DEPART_WARP)) && (shipp->warpout_effect))
+	if ((is_ship_arriving(shipp) || shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect))
     {
         vec3d warp_pnt, tmp;
         matrix warp_orient;
@@ -1503,10 +1504,10 @@ void shipfx_emit_spark( int n, int sn )
         
         if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f )
         {
-			if (shipp->flags & SF_ARRIVING)// if in front of warp plane, don't create.
+			if (is_ship_arriving(shipp))// if in front of warp plane, don't create.
 				create_spark = 0;
 		} else {
-			if (shipp->flags & SF_DEPART_WARP)
+			if (shipp->flags[Ship::Ship_Flags::Depart_warp])
 				create_spark = 0;
 		}
 	}
@@ -1518,7 +1519,7 @@ void shipfx_emit_spark( int n, int sn )
 
 		pe.pos = outpnt;				// Where the particles emit from
 
-		if ( shipp->flags & (SF_ARRIVING|SF_DEPART_WARP) ) {
+		if ( is_ship_arriving(shipp) || shipp->flags[Ship::Ship_Flags::Depart_warp] ) {
 			// No velocity if going through warp.
 			pe.vel = vmd_zero_vector;
 		} else {
@@ -1561,7 +1562,7 @@ void shipfx_emit_spark( int n, int sn )
 		// first time through - set up end time and make heavier initially
 		if ( sn > -1 )	{
 			// Sparks for first time at this spot
-			if (si->flags & SIF_FIGHTER) {
+			if (si->flags[Ship::Info_Flags::Fighter]) {
 				if (hull_percent > 0.6f) {
 					// sparks only once when hull > 60%
 					float spark_duration = (float)pow(2.0f, -5.0f*(hull_percent-1.3f)) * (1.0f + 0.6f*(frand()-0.5f));	// +- 30%
@@ -2339,7 +2340,7 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 	if ( timestamp_elapsed(the_split_ship->explosion_flash_timestamp) ) {
 		if ( !the_split_ship->explosion_flash_started ) {
 			object* objp = &Objects[shipp->objnum];
-			if (objp->flags & OF_WAS_RENDERED) {
+			if (objp->flags[Object::Object_Flags::Was_rendered]) {
 				float excess_dist = vm_vec_dist(&Player_obj->pos, &objp->pos) - 2.0f*objp->radius - Player_obj->radius;
 				float intensity = 1.0f - 0.1f*excess_dist / objp->radius;
 
@@ -2347,7 +2348,7 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 					intensity = 1.0f;
 				}
 
-				if (intensity > 0.1f && Ship_info[shipp->ship_info_index].flags2 & SIF2_FLASH) {
+				if (intensity > 0.1f && Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Flash]) {
 					big_explosion_flash(intensity);
 				}
 			}
@@ -2676,13 +2677,13 @@ void shipfx_do_lightning_frame( ship *shipp )
 	objp = &Objects[shipp->objnum];	
 
 	// if this is not a nebula mission, don't do anything
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	if(!(The_mission.flags[Mission::Mission_Flags::Fullneb])){
 		shipp->lightning_stamp = -1;
 		return;
 	}
 	
 	// if this not a cruiser or big ship
-	if(!((sip->flags & SIF_CRUISER) || (sip->flags & SIF_BIG_SHIP) || (sip->flags & SIF_HUGE_SHIP))){
+	if(!((sip->flags & SIF_CRUISER) || (is_big_ships(sip)) || (is_huge_ship(sip)))){
 		shipp->lightning_stamp = -1;
 		return;
 	}
@@ -2693,7 +2694,7 @@ void shipfx_do_lightning_frame( ship *shipp )
 		count = l_cruiser_count;
 	} 
 	else {
-		if(sip->flags & SIF_HUGE_SHIP){
+		if(is_huge_ship(sip)){
 			stamp = (int)((float)(Nebl_supercap_min + ((Nebl_supercap_max - Nebl_supercap_min) * Nebl_intensity)) * frand_range(0.8f, 1.1f));
 			count = l_huge_count;
 		} else {
@@ -2843,7 +2844,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 		vm_vec_add(&shockwave_pos, &tail, &temp);
 
 		// if knossos device, make shockwave in center
-		if (Ship_info[shipp->ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+		if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 			shockwave_pos = Objects[shipp->objnum].pos;
 		}
 
@@ -2894,7 +2895,7 @@ void engine_wash_ship_process(ship *shipp)
 	float max_wash_dist, half_angle, radius_mult;
 
 	// if this is not a fighter or bomber, we don't care
-	if ((objp->type != OBJ_SHIP) || !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ) {
+	if ((objp->type != OBJ_SHIP) || !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) ) {
 		return;
 	}
 
@@ -2936,7 +2937,7 @@ void engine_wash_ship_process(ship *shipp)
 		ship_info *wash_sip = &Ship_info[wash_shipp->ship_info_index];
 
 		// don't do small ships
-		if ( (wash_sip->flags & SIF_SMALL_SHIP) ) {
+		if ( is_small_ship(wash_sip) ) {
 			continue;
 		}
 
@@ -2967,7 +2968,7 @@ void engine_wash_ship_process(ship *shipp)
 			// check if thruster bank has engine wash
 			if (bank->wash_info_pointer == NULL) {
 				// if huge, give default engine wash
-				if ((wash_sip->flags & SIF_HUGE_SHIP) && !Engine_wash_info.empty()) {
+				if ((is_huge_ship(wash_sip)) && Engine_wash_info.size()) {
 					bank->wash_info_pointer = &Engine_wash_info[0];
 					nprintf(("wash", "Adding default engine wash to ship %s", wash_sip->name));
 				} else {
@@ -3511,9 +3512,9 @@ int WarpEffect::warpEnd()
 	if(!this->isValid())
 		return 0;
 
-	shipp->flags &= (~SF_ARRIVING_STAGE_1);
-	shipp->flags &= (~SF_ARRIVING_STAGE_2);
-	shipp->flags &= (~SF_DEPART_WARP);
+	shipp->flags.unset(Ship::Ship_Flags::Arriving_stage_1);
+	shipp->flags.unset(Ship::Ship_Flags::Arriving_stage_2);
+	shipp->flags.unset(Ship::Ship_Flags::Depart_warp);
 
 	// let physics in on it too.
 	objp->phys_info.flags &= (~PF_WARP_IN);
@@ -3641,11 +3642,11 @@ int WE_Default::warpStart()
 		stage_duration[2] = fl2i(shipfx_calculate_warp_time(objp, WD_WARP_IN)*1000.0f);
 		stage_time_end = timestamp(stage_duration[1]);
 		total_time_end = stage_duration[1] + stage_duration[2];
-		shipp->flags |= SF_ARRIVING_STAGE_1;
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 	}
 	else if(direction == WD_WARP_OUT)
 	{
-		shipp->flags |= SF_DEPART_WARP;
+		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
 		// Make the warp effect stage 1 last SHIP_WARP_TIME1 seconds.
 		if ( objp == Player_obj )	{
@@ -3681,14 +3682,14 @@ int WE_Default::warpFrame(float frametime)
 {
 	if(direction == WD_WARP_IN)
 	{
-		if ((shipp->flags & SF_ARRIVING_STAGE_1) && timestamp_elapsed(stage_time_end))
+		if ((shipp->flags[Ship::Ship_Flags::Arriving_stage_1]) && timestamp_elapsed(stage_time_end))
 		{
 			// let physics know the ship is going to warp in.
 			objp->phys_info.flags |= PF_WARP_IN;
 
 			// done doing stage 1 of warp, so go on to stage 2
-			shipp->flags &= (~SF_ARRIVING_STAGE_1);
-			shipp->flags |= SF_ARRIVING_STAGE_2;
+			shipp->flags.unset(Ship::Ship_Flags::Arriving_stage_1);
+			shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
 
 			float warp_time = shipfx_calculate_warp_time(objp, WD_WARP_IN);
 			float speed = shipfx_calculate_warp_dist(objp) / warp_time;		// How long it takes to move through warp effect
@@ -3706,13 +3707,13 @@ int WE_Default::warpFrame(float frametime)
 
 			stage_time_end = timestamp(fl2i(warp_time*1000.0f));
 		}
-		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) )
+		else if ((shipp->flags[Ship::Ship_Flags::Arriving_stage_2]) && timestamp_elapsed(stage_time_end))
 		{
 			// done doing stage 2 of warp, so turn off arriving flag
 			this->warpEnd();
 
 			// notify physics to slow down
-			if (sip->flags & SIF_SUPERCAP) {
+			if (sip->flags[Ship::Info_Flags::Supercap]) {
 				// let physics know this is a special warp in
 				objp->phys_info.flags |= PF_SPECIAL_WARP_IN;
 			}
@@ -3760,9 +3761,9 @@ int WE_Default::warpFrame(float frametime)
 				}
 			}
 
-			// MWA 10/21/97 -- added shipp->flags & SF_NO_DEPARTURE_WARP part of next if statement.  For ships
+			// MWA 10/21/97 -- added shipp->flags[Ship::Ship_Flags::No_departure_warp] part of next if statement.  For ships
 			// that don't get a wormhole effect, I wanted to drop into this code immediately.
-			if ( (warp_pos > objp->radius)  || (shipp->flags & SF_NO_DEPARTURE_WARP) || timed_out )	{
+			if ( (warp_pos > objp->radius)  || (shipp->flags[Ship::Ship_Flags::No_departure_warp]) || timed_out )	{
 				this->warpEnd();
 			} 
 		}
@@ -3962,23 +3963,23 @@ int WE_BSG::warpStart()
 		vm_vec_sub(&autocenter, &dock_center, &objp->pos);
 	}
 
-	if(direction == WD_WARP_IN)
-		shipp->flags |= SF_ARRIVING_STAGE_1;
+	if (direction == WD_WARP_IN)
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 	else
-		shipp->flags |= SF_DEPART_WARP;
+		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
 	//*****Sound
 	int gs_start_index = -1;
 	int gs_end_index = -1;
 	if(direction == WD_WARP_IN)
 	{
-		shipp->flags |= SF_ARRIVING_STAGE_1;
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		gs_start_index = sip->warpin_snd_start;
 		gs_end_index = sip->warpin_snd_end;
 	}
 	else if(direction == WD_WARP_OUT)
 	{
-		shipp->flags |= SF_DEPART_WARP;
+		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 		gs_start_index = sip->warpout_snd_start;
 		gs_end_index = sip->warpout_snd_end;
 	}
@@ -4031,8 +4032,8 @@ int WE_BSG::warpFrame(float frametime)
 			case 1:
 				if(direction == WD_WARP_IN)
 				{
-					shipp->flags &= (~SF_ARRIVING_STAGE_1);
-					shipp->flags |= SF_ARRIVING_STAGE_2;
+					shipp->flags.unset(Ship::Ship_Flags::Arriving_stage_1);
+					shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
 				}
 				break;
 			default:
@@ -4299,12 +4300,12 @@ int WE_Homeworld::warpStart()
 	int gs_index = -1;
 	if(direction == WD_WARP_IN)
 	{
-		shipp->flags |= SF_ARRIVING_STAGE_1;
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		gs_index = sip->warpin_snd_start;
 	}
 	else if(direction == WD_WARP_OUT)
 	{
-		shipp->flags |= SF_DEPART_WARP;
+		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 		gs_index = sip->warpout_snd_start;
 	}
 	else
@@ -4344,8 +4345,8 @@ int WE_Homeworld::warpFrame(float frametime)
 				if(direction == WD_WARP_IN)
 				{
 					objp->phys_info.flags |= PF_WARP_IN;
-					shipp->flags &= (~SF_ARRIVING_STAGE_1);
-					shipp->flags |= SF_ARRIVING_STAGE_2;
+					shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+					shipp->flags.unset(Ship::Ship_Flags::Arriving_stage_2);
 				}
 
 				break;
@@ -4488,14 +4489,14 @@ int WE_Hyperspace::warpStart()
 
 	if(direction == WD_WARP_IN)
 	{
-		shipp->flags |= SF_ARRIVING_STAGE_1;
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		objp->phys_info.flags |= PF_WARP_IN;
 		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
-		objp->flags &= ~OF_PHYSICS;
+		objp->flags.unset(Object::Object_Flags::Physics);
 	}
 	else if(direction == WD_WARP_OUT)
 	{
-		shipp->flags |= SF_DEPART_WARP;
+		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 	}
 	else
 	{
@@ -4524,9 +4525,9 @@ int WE_Hyperspace::warpFrame(float frametime)
 			vm_vec_scale( &vel, initial_velocity );
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
-			shipp->flags |= SF_ARRIVING_STAGE_2;
+			shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
 		}
-		objp->flags |= OF_PHYSICS;
+		objp->flags.set(Object::Object_Flags::Physics);
 		this->warpEnd();
 	}
 	else

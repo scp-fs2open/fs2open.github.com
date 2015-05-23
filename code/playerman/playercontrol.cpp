@@ -715,7 +715,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (check_control(AFTERBURNER) && !Player_use_ai) {
 			if (!afterburner_last) {
 				Assert(Player_ship);
-				if ( !(Ship_info[Player_ship->ship_info_index].flags & SIF_AFTERBURNER) ) {
+				if ( !(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Afterburner]) ) {
 					gamesnd_play_error_beep();
 				} else {
 					ci->afterburner_start = 1;
@@ -752,7 +752,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		}
 
 		// if the player is warping out, cancel gliding
-		if (Player_ship->flags & SF_DEPART_WARP) {
+		if (Player_ship->flags[Ship::Ship_Flags::Depart_warp]) {
 			toggle_glide = 0;
 			press_glide = 0;
 		}
@@ -895,7 +895,7 @@ void read_player_controls(object *objp, float frametime)
 					Player->ci.forward = ((target_warpout_speed+diff) / Ships[objp->instance].current_max_speed);
 				} else {
 					// check if warp ability has been disabled
-					if ( Ships[objp->instance].flags & ( SF_WARP_BROKEN|SF_WARP_NEVER ) ) {
+					if (Ships[objp->instance].flags[Ship::Ship_Flags::Warp_broken] || Ships[objp->instance].flags[Ship::Ship_Flags::Warp_never]) {
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot warp out at this time.", 81));
 						warp_failed = 1;
 					} else {
@@ -957,7 +957,7 @@ void read_player_controls(object *objp, float frametime)
 	if(Player_obj->type == OBJ_SHIP && !Player_use_ai){	
 		// only read player control info if player ship is not dead
 		// or if Player_use_ai is disabed
-		if ( !(Ships[Player_obj->instance].flags & SF_DYING) ) {
+		if ( !(Ships[Player_obj->instance].flags[Ship::Ship_Flags::Dying]) ) {
 			vec3d wash_rot;
 			if ((Ships[objp->instance].wash_intensity > 0) && !((Player->control_mode == PCM_WARPOUT_STAGE1) || (Player->control_mode == PCM_WARPOUT_STAGE2) || (Player->control_mode == PCM_WARPOUT_STAGE3)) ) {
 				float intensity = 0.3f * MIN(Ships[objp->instance].wash_intensity, 1.0f);
@@ -1109,7 +1109,7 @@ void player_init_all_alone_msg()
 
 		if ( Ships[objp->instance].team == Player_ship->team ) {
 			int ship_type = Ship_info[Ships[objp->instance].ship_info_index].class_type;
-			if ( ship_type != -1 && (Ship_types[ship_type].message_bools & STI_MSG_COUNTS_FOR_ALONE) ) {
+			if (ship_type != -1 && (Ship_types[ship_type].message_bools[Ship::Type_Info_Msg::Counts_for_alone])) {
 				return;
 			}
 		}
@@ -1152,12 +1152,12 @@ void player_save_target_and_weapon_link_prefs()
 
 	// if we're in multiplayer mode don't do this because we will desync ourselves with the server
 	if(!(Game_mode & GM_MULTIPLAYER)){
-		if ( Player_ship->flags & SF_PRIMARY_LINKED ) {
+		if ( Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {
 			Player->save_flags |= PLAYER_FLAGS_LINK_PRIMARY;
 		} else {
 			Player->flags &= ~PLAYER_FLAGS_LINK_PRIMARY;
 		}
-		if ( Player_ship->flags & SF_SECONDARY_DUAL_FIRE ) {
+		if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] ) {
 			Player->save_flags |= PLAYER_FLAGS_LINK_SECONDARY;
 		} else {
 			Player->flags &= ~PLAYER_FLAGS_LINK_SECONDARY;
@@ -1179,14 +1179,14 @@ void player_restore_target_and_weapon_link_prefs()
 		Player->flags |= Player->save_flags;
 	}
 
-	if ( Player->flags & PLAYER_FLAGS_LINK_PRIMARY && !(player_sip->flags2 & SIF2_NO_PRIMARY_LINKING) ) {
+	if ( Player->flags & PLAYER_FLAGS_LINK_PRIMARY && !(player_sip->flags[Ship::Info_Flags::No_primary_linking]) ) {
 		if ( Player_ship->weapons.num_primary_banks > 1 ) {
-			Player_ship->flags |= SF_PRIMARY_LINKED;
+			Player_ship->flags.set(Ship::Ship_Flags::Primary_linked);
 		}
 	}
 
 	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY && (pm->n_missiles > 0 && pm->missile_banks[0].num_slots > 1) ) {
-		Player_ship->flags |= SF_SECONDARY_DUAL_FIRE;
+		Player_ship->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 	}
 }
 
@@ -1426,8 +1426,8 @@ int player_inspect_cargo(float frametime, char *outstr)
 	cargo_sip = &Ship_info[cargo_sp->ship_info_index];
 
 	// Goober5000 - possibly swap cargo scan behavior
-	scan_subsys = (cargo_sip->flags & SIF_HUGE_SHIP);
-	if (cargo_sp->flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
+	scan_subsys = (is_huge_ship(cargo_sip));
+	if (cargo_sp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
 		scan_subsys = !scan_subsys;
 	if (scan_subsys)
 		return player_inspect_cap_subsys_cargo(frametime, outstr);
@@ -1440,17 +1440,17 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 	// scannable cargo behaves differently.  Scannable cargo is either "scanned" or "not scanned".  This flag
 	// can be set on any ship.  Any ship with this set won't have "normal" cargo behavior
-	if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
-		if ( !(cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT)) ) {
+	if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
+		if (!(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport])) {
 			return 0;
 		}
 	}
 
 	// if cargo is already revealed
-	if ( cargo_sp->flags & SF_CARGO_REVEALED ) {
-		if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
+	if ( cargo_sp->flags[Ship::Ship_Flags::Cargo_revealed] ) {
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
 			char *cargo_name = Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
-			Assert( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) );
+			Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
 
 			if ( cargo_name[0] == '#' ) {
 				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
@@ -1475,7 +1475,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
 		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
 		if ( dot < CARGO_MIN_DOT_TO_REVEAL ) {
-			if ( !(cargo_sp->flags & SF_SCANNABLE) )
+			if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 				strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 			else
 				strcpy(outstr,XSTR( "not scanned", 87));
@@ -1489,7 +1489,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
 		}
 
-		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 			strcpy(outstr,XSTR( "cargo: inspecting", 88));
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
@@ -1500,7 +1500,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time = 0;
 		}
 	} else {
-		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 			strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 		else
 			strcpy(outstr,XSTR( "not scanned", 87));
@@ -1545,8 +1545,8 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	}
 
 	// if cargo is already revealed
-	if (subsys->flags & SSF_CARGO_REVEALED) {
-		if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
+	if (subsys->flags[Ship::Subsystem_Flags::Cargo_revealed]) {
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
 			char *cargo_name = Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
 
 			if ( cargo_name[0] == '#' ) {
@@ -1575,7 +1575,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	subsys_rad = subsys->system_info->radius;
 
 	// Goober5000
-	if (cargo_sip->flags & SIF_HUGE_SHIP) {
+	if (is_huge_ship(cargo_sip)) {
 		scan_dist = MAX(CAP_CARGO_REVEAL_MIN_DIST, (subsys_rad + CAPITAL_CARGO_RADIUS_DELTA));
 	} else {
 		scan_dist = MAX(CARGO_REVEAL_MIN_DIST, (subsys_rad + CARGO_RADIUS_DELTA));
@@ -1590,7 +1590,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		subsys_in_view = hud_targetbox_subsystem_in_view(cargo_objp, &x, &y);
 
 		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
-			if ( !(cargo_sp->flags & SF_SCANNABLE) )
+			if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 				strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 			else
 				strcpy(outstr,XSTR( "not scanned", 87));
@@ -1604,7 +1604,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
 		}
 
-		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 			strcpy(outstr,XSTR( "cargo: inspecting", 88));
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
@@ -1615,7 +1615,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time = 0;
 		}
 	} else {
-		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 			strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 		else
 			strcpy(outstr,XSTR( "not scanned", 87));
@@ -1852,7 +1852,7 @@ void player_maybe_play_all_alone_msg()
 
 		if ( Ships[objp->instance].team == Player_ship->team ) {
 			int ship_type = Ship_info[Ships[objp->instance].ship_info_index].class_type;
-			if ( ship_type != -1 && (Ship_types[ship_type].message_bools & STI_MSG_COUNTS_FOR_ALONE) ) {
+			if ( ship_type != -1 && (Ship_types[ship_type].message_bools[Ship::Type_Info_Msg::Counts_for_alone]) ) {
 				return;
 			}
 		}

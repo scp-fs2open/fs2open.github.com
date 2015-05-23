@@ -137,7 +137,9 @@ void waypoint_create_game_object(waypoint *wpt, int list_index, int wpt_index)
 	Assert(wpt != NULL);
 	Assert(list_index >= 0);
 	Assert(wpt_index >= 0);
-	wpt->objnum = obj_create(OBJ_WAYPOINT, -1, calc_waypoint_instance(list_index, wpt_index), NULL, wpt->get_pos(), 0.0f, OF_RENDERS);
+	flagset<Object::Object_Flags> objflags;
+	objflags.set(Object::Object_Flags::Renders);
+	wpt->objnum = obj_create(OBJ_WAYPOINT, -1, calc_waypoint_instance(list_index, wpt_index), NULL, wpt->get_pos(), 0.0f, objflags);
 }
 
 // done immediately after mission load; originally found in aicode.cpp

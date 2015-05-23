@@ -169,7 +169,7 @@ void popupdead_start()
 			Popupdead_button_text[2] = XSTR( "Don't Show Me This Again", 1475);
 			Popupdead_num_choices = POPUPDEAD_NUM_CHOICES_SKIP;
 			Popupdead_skip_active = 1;
-		} else if(The_mission.flags & MISSION_FLAG_RED_ALERT) {
+		} else if(The_mission.flags[Mission::Mission_Flags::Red_alert]) {
 			// We can't staticly declare these because they are externalized
 			Popupdead_button_text[0] = XSTR( "Quick Start Mission", 105);
 			Popupdead_button_text[1] = XSTR( "Return To Flight Deck", 106);

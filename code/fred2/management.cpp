@@ -530,14 +530,14 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
-	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags, Iff_info[shipp->team].default_parse_flags2);
+	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags);
 
 	// default shield setting
 	shipp->special_shield = -1;
 	z1 = Shield_sys_teams[shipp->team];
 	z2 = Shield_sys_types[ship_type];
 	if (((z1 == 1) && z2) || (z2 == 1))
-		Objects[obj].flags |= OF_NO_SHIELDS;
+		Objects[obj].flags.set(Object::Object_Flags::No_shields);
 
 	// set orders according to whether the ship is on the player ship's team
 	{
@@ -559,7 +559,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 		{
 			// if this ship is not a small ship, then make the orders be the default orders without
 			// the depart item
-			if (!(sip->flags & SIF_SMALL_SHIP))
+			if (!(is_small_ship(sip)))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
 				shipp->orders_accepted &= ~DEPART_ITEM;
@@ -642,10 +642,10 @@ int dup_object(object *objp)
 		for (i=0; i<MAX_AI_GOALS; i++)
 			aip1->goals[i] = aip2->goals[i];
 
-		if ( aip2->ai_flags & AIF_KAMIKAZE )
-			aip1->ai_flags |= AIF_KAMIKAZE;
-		if ( aip2->ai_flags & AIF_NO_DYNAMIC )
-			aip2->ai_flags |= AIF_NO_DYNAMIC;
+		if (aip2->ai_flags[AI::AI_Flags::Kamikaze])
+			aip1->ai_flags.set(AI::AI_Flags::Kamikaze);
+		if (aip2->ai_flags[AI::AI_Flags::No_dynamic])
+			aip2->ai_flags.set(AI::AI_Flags::No_dynamic);
 
 		aip1->kamikaze_damage = aip2->kamikaze_damage;
 
@@ -687,7 +687,7 @@ int dup_object(object *objp)
 
 	Objects[obj].pos = objp->pos;
 	Objects[obj].orient = objp->orient;
-	Objects[obj].flags |= OF_TEMP_MARKED;
+	Objects[obj].flags.set(Object::Object_Flags::Temp_marked);
 	return obj;
 }
 
@@ -721,7 +721,7 @@ int create_object(vec3d *pos, int waypoint_instance)
 		CJumpNode jnp(pos);
 		obj = jnp.GetSCPObjectNumber();
 		Jump_nodes.push_back(std::move(jnp));
-	} else if(Ship_info[cur_model_index].flags & SIF_NO_FRED){		
+	} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){
 		obj = -1;
 	} else {  // creating a ship
 		obj = create_ship(NULL, pos, cur_model_index);
@@ -886,7 +886,7 @@ void clear_mission()
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
 		count = 0;
 		for ( j = 0; j < MAX_SHIP_CLASSES; j++ ) {
-			if (Ship_info[j].flags & SIF_DEFAULT_PLAYER_SHIP) {
+			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
 				Team_data[i].ship_list[count] = j;
 				strcpy_s(Team_data[i].ship_list_variables[count], "");
 				Team_data[i].ship_count[count] = 5;
@@ -898,7 +898,7 @@ void clear_mission()
 
 		count = 0;
 		for (j=0; j<MAX_WEAPON_TYPES; j++){
-			if (Weapon_info[j].wi_flags & WIF_PLAYER_ALLOWED){
+			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]){
 				if(Weapon_info[j].subtype == WP_LASER){
 					Team_data[i].weaponry_count[count] = 16;
 				} else {
@@ -965,7 +965,7 @@ void clear_mission()
 	strcpy_s(The_mission.command_sender, DEFAULT_COMMAND); 
 
 	// Goober5000: reset ALL mission flags, not just nebula!
-	The_mission.flags = 0;
+	The_mission.flags.reset();
 	The_mission.support_ships.max_support_ships = -1;	// negative means infinite
 	The_mission.support_ships.max_hull_repair_val = 0.0f;
 	The_mission.support_ships.max_subsys_repair_val = 100.0f;
@@ -1389,7 +1389,7 @@ void delete_marked()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		next = GET_NEXT(ptr);
-		if (ptr->flags & OF_MARKED)
+		if (ptr->flags[Object::Object_Flags::Marked])
 			if (delete_object(ptr) == 2)  // user went to a reference, so don't get in the way.
 				break;
 		
@@ -1489,8 +1489,8 @@ int query_object_in_wing(int obj)
 void mark_object(int obj)
 {
 	Assert(query_valid_object(obj));
-	if (!(Objects[obj].flags & OF_MARKED)) {
-		Objects[obj].flags |= OF_MARKED;  // set as marked
+	if (!(Objects[obj].flags[Object::Object_Flags::Marked])) {
+		Objects[obj].flags.set(Object::Object_Flags::Marked);  // set as marked
 		Marked++;
 		Update_window = 1;
 		if (cur_object_index == -1){
@@ -1504,8 +1504,8 @@ void mark_object(int obj)
 void unmark_object(int obj)
 {
 	Assert(query_valid_object(obj));
-	if (Objects[obj].flags & OF_MARKED) {
-		Objects[obj].flags &= ~OF_MARKED;
+	if (Objects[obj].flags[Object::Object_Flags::Marked]) {
+		Objects[obj].flags.unset(Object::Object_Flags::Marked);
 		Marked--;
 		Update_window = 1;
 		if (obj == cur_object_index) {  // need to find a new index
@@ -1513,7 +1513,7 @@ void unmark_object(int obj)
 
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
-				if (ptr->flags & OF_MARKED) {
+				if (ptr->flags[Object::Object_Flags::Marked]) {
 					set_cur_object_index(OBJ_INDEX(ptr));  // found one
 					return;
 				}
@@ -1535,7 +1535,7 @@ void unmark_all()
 
 	if (Marked) {
 		for (i=0; i<MAX_OBJECTS; i++){
-			Objects[i].flags &= ~OF_MARKED;
+			Objects[i].flags.unset(Object::Object_Flags::Marked);
 		}
 
 		Marked = 0;
@@ -1600,7 +1600,7 @@ void generate_ship_popup_menu(CMenu *mptr, int first_id, int state, int filter)
 		if ((ptr->type == OBJ_SHIP) || ((ptr->type == OBJ_START) && (filter & SHIP_FILTER_PLAYERS))) {
 			z = 1;
 			if (filter & SHIP_FILTER_FLYABLE) {
-				if (Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index].flags & SIF_NOT_FLYABLE){
+				if (!is_flyable(&Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index])){
 					z = 0;
 				}
 			}
@@ -1720,11 +1720,11 @@ int set_reinforcement(char *name, int state)
 		// clear the ship/wing flag for this reinforcement
 		index = ship_name_lookup(name);
 		if ( index != -1 ){
-			Ships[index].flags &= ~SF_REINFORCEMENT;
+			Ships[index].flags.unset(Ship::Ship_Flags::Reinforcement);
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
-				Wings[index].flags &= ~WF_REINFORCEMENT;
+				Wings[index].flags.unset(Ship::Wing_Flags::Reinforcement);
 			}
 		}
 		if (index == -1 ){
@@ -1747,11 +1747,11 @@ int set_reinforcement(char *name, int state)
 		// set the reinforcement flag on the ship or wing
 		index = ship_name_lookup(name);
 		if ( index != -1 ){
-			Ships[index].flags |= SF_REINFORCEMENT;
+			Ships[index].flags.set(Ship::Ship_Flags::Reinforcement);
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
-				Wings[index].flags |= WF_REINFORCEMENT;
+				Wings[index].flags.set(Ship::Wing_Flags::Reinforcement);
 			}
 		}
 		if ( index == -1 ){
@@ -1767,11 +1767,11 @@ int set_reinforcement(char *name, int state)
 		// set the reinforcement flag on the ship or wing
 		index = ship_name_lookup(name);
 		if ( index != -1 ){
-			Ships[index].flags |= SF_REINFORCEMENT;
+			Ships[index].flags.set(Ship::Ship_Flags::Reinforcement);
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
-				Wings[index].flags |= WF_REINFORCEMENT;
+				Wings[index].flags.set(Ship::Wing_Flags::Reinforcement);
 			}
 		}
 		if ( index == -1 ){
@@ -1870,8 +1870,8 @@ void correct_marking()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED) {
-			if (ptr->flags & OF_HIDDEN)
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+			if (ptr->flags[Object::Object_Flags::Hidden])
 				unmark_object(OBJ_INDEX(ptr));
 
 			else switch (ptr->type) {
@@ -2334,7 +2334,7 @@ void object_moved(object *objp)
 	{
 		// reset the already-handled flag (inefficient, but it's FRED, so who cares)
 		for (int i = 0; i < MAX_OBJECTS; i++)
-			Objects[i].flags &= ~OF_DOCKED_ALREADY_HANDLED;
+			Objects[i].flags.unset(Object::Object_Flags::Docked_already_handled);
 
 		// move all docked objects docked to me
 		dock_move_docked_objects(objp);
@@ -2352,7 +2352,7 @@ int query_whole_wing_marked(int wing)
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED)
+		if (ptr->flags[Object::Object_Flags::Marked])
 			if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START))
 				if (Ships[get_ship_from_obj(ptr)].wingnum == wing)
 					count++;
@@ -2463,14 +2463,14 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 	// either add all ships to the list, or only add ships with docking bays.
 	if ( flags & SHIPS_2_COMBO_ALL_SHIPS ) {
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-			if ( ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && !(objp->flags & OF_MARKED) ) {
+			if ( ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && !(objp->flags[Object::Object_Flags::Marked]) ) {
 				id = box->AddString(Ships[get_ship_from_obj(objp)].ship_name);
 				box->SetItemData(id, get_ship_from_obj(objp));
 			}
 		}
 	} else if ( flags & SHIPS_2_COMBO_DOCKING_BAY_ONLY ) {
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-			if ( ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && !(objp->flags & OF_MARKED) ) {
+			if ( ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && !(objp->flags[Object::Object_Flags::Marked]) ) {
 				polymodel *pm;
 
 				// determine if this ship has a docking bay

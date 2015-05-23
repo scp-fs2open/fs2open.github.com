@@ -326,7 +326,7 @@ void nebl_render_all()
 	bolt_type *bi;
 
 	// no lightning in non-nebula missions
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	if(!(The_mission.flags[Mission::Mission_Flags::Fullneb])){
 		return;
 	}
 
@@ -460,7 +460,7 @@ void nebl_process()
 	uint num_bolts, idx;
 
 	// non-nebula mission
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	if(!(The_mission.flags[Mission::Mission_Flags::Fullneb])){
 		return;
 	}		
 	
@@ -571,7 +571,7 @@ void nebl_bolt(size_t type, vec3d *start, vec3d *strike)
 	bolt_type *bi;
 	float bolt_len;
 
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	if(!(The_mission.flags[Mission::Mission_Flags::Fullneb])){
 		return;
 	}
 

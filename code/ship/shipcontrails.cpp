@@ -435,10 +435,10 @@ bool ct_display_contrails()
 	bool display;
 
 	// normally display trails in a full nebula environment
-	display = (The_mission.flags & MISSION_FLAG_FULLNEB) ? true : false;
+	display = (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? true : false;
 
 	// toggle according to flag
-	if (The_mission.flags & MISSION_FLAG_TOGGLE_SHIP_TRAILS)
+	if (The_mission.flags[Mission::Mission_Flags::Toggle_ship_trails])
 		display = !display;
 
 	return display;

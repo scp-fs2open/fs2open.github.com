@@ -323,7 +323,7 @@ bool hud_squadmsg_exist_fighters( )
 			continue;
 			
 		// ship must be a fighter/bomber
-		if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+		if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
 			continue;
 
 		// this ship satisfies everything
@@ -353,7 +353,7 @@ int hud_squadmsg_count_ships(int add_to_menu)
 		Assert ( shipp->objnum != -1 );
 
 		// ships must be able to receive a message
-		if ( Ship_info[shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools & STI_AI_ACCEPT_PLAYER_ORDERS) )
+		if ( Ship_info[shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools[Ship::Type_Info_AI::Accept_player_orders]) )
 			continue;
 
 		// be sure ship is on correct team
@@ -366,7 +366,7 @@ int hud_squadmsg_count_ships(int add_to_menu)
 #endif
 
 		// departing or dying ships cannot be on list
-		if ( shipp->flags & (SF_DEPARTING|SF_DYING) )
+		if ( is_dying_departing(shipp) )
 			continue;
 
 		// cannot be my ship or an instructor
@@ -378,7 +378,7 @@ int hud_squadmsg_count_ships(int add_to_menu)
 			continue;
 
 		// if it is a player ship, we must be in multiplayer
-		if ( (objp->flags & OF_PLAYER_SHIP) && !(Game_mode & GM_MULTIPLAYER) )
+		if ( (objp->flags[Object::Object_Flags::Player_ship]) && !(Game_mode & GM_MULTIPLAYER) )
 			continue;
 
 		// if a messaging shortcut, be sure this ship can process the order
@@ -416,7 +416,7 @@ int hud_squadmsg_wing_valid(wing *wingp)
 
 	// a couple of special cases to account for before adding to count (or to menu).  Don't count
 	// wings that are leaving or left.
-	if ( wingp->flags & (WF_WING_GONE|WF_WING_DEPARTING) )
+	if ( wingp->flags[Ship::Wing_Flags::Gone] || wingp->flags[Ship::Wing_Flags::Departing] )
 		return 0;
 
 	// Goober5000 - instead of checking wing leader, let's check all ships in wing;
@@ -767,11 +767,11 @@ int hud_squadmsg_ship_order_valid( int shipnum, int order )
 	{
 		case DEPART_ITEM:
 			// disabled ships can't depart.
-			if (shipp->flags & SF_DISABLED)
+			if (shipp->flags[Ship::Ship_Flags::Disabled])
 				return 0;
 
 			// Goober5000: also can't depart if no subspace drives and no valid mothership
-			if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
+			if (shipp->flags[Ship::Ship_Flags::No_subspace_drive])
 			{
 				// check that we have a mothership and that we can depart to it
 				if (shipp->departure_location == DEPART_AT_DOCK_BAY)
@@ -840,7 +840,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 		}
 		
 		if ( (Comm_orders[order].item == ATTACK_TARGET_ITEM )
-			&& ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags3 & WIF3_FIGHTER_INTERCEPTABLE))
+			&& (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Fighter_Interceptable])
 			&& (Weapons[objp->instance].team != ordering_shipp->team) )
 
 			return 1;
@@ -853,7 +853,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	shipp = &Ships[objp->instance];
 
 	// if target is a navbouy, return 0
-	if ( Ship_info[shipp->ship_info_index].flags & SIF_NAVBUOY ){
+	if ( Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Navbuoy] ){
 		return 0;
 	}
 
@@ -863,7 +863,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	}
 
 	// if the order is a disable order or depart, and the ship is disabled, order isn't active
-	if ( (Comm_orders[order].item == DISABLE_TARGET_ITEM) && (shipp->flags & SF_DISABLED) ){
+	if ( (Comm_orders[order].item == DISABLE_TARGET_ITEM) && (shipp->flags[Ship::Ship_Flags::Disabled]) ){
 		return 0;
 	}
 
@@ -932,10 +932,10 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	for ( i = 0; i < Num_wings; i++ ) {
 		int shipnum;
 
-		if ( (Wings[i].flags & WF_WING_GONE) || (Wings[i].current_count == 0) )
+		if ( (Wings[i].flags[Ship::Wing_Flags::Gone]) || (Wings[i].current_count == 0) )
 			continue;
 
-		if ( Wings[i].flags & WF_WING_DEPARTING )
+		if ( Wings[i].flags[Ship::Wing_Flags::Departing] )
 			continue;
 
 		// get the first ship on the wing list and look at its team and then its type
@@ -952,7 +952,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// can't message if ship not fighter/bomber if the command isn't to everyone.
-		if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+		if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
 			continue;
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
@@ -985,11 +985,11 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// don't send message to non fighter wings
-		if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+		if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
 			continue;
 
 		// skip departing/dying ships
-		if ( shipp->flags & (SF_DEPARTING|SF_DYING) )
+		if ( is_dying_departing(shipp) )
 			continue;
 
 		// don't send command if ship won't accept if
@@ -1033,7 +1033,9 @@ int hud_squadmsg_enemies_present()
 	return 0;
 }
 
-#define OVERRIDE_PROTECT_SHIP_TYPE	(SIF_FIGHTER|SIF_BOMBER|SIF_FREIGHTER|SIF_TRANSPORT)
+inline bool override_protect_ship_type(ship_info* sip) {
+	return is_fighter_bomber(sip) || sip->flags[Ship::Info_Flags::Freighter] || sip->flags[Ship::Info_Flags::Transport];
+}
 // function which sends a message to a specific ship.  This routine can be called from one of two
 // places.  Either after selecting a ship when using a hotkey, or after selecting a command when
 // using the entire messaging menu system
@@ -1107,8 +1109,8 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 				Assert( ship_team != target_team );
 
 				// Orders to override protect
-				if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
-					Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+				if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
+					Objects[ainfo->target_objnum].flags.unset(Object::Object_Flags::Protected);
 				}
 
 				ai_mode = AI_GOAL_CHASE;
@@ -1126,8 +1128,8 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			Assert( ship_team != target_team );
 
 			// Orders to override protect
-			if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
-				Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+			if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
+				Objects[ainfo->target_objnum].flags.unset(Object::Object_Flags::Protected);
 			}
 
 			ai_mode = AI_GOAL_DISABLE_SHIP;
@@ -1140,8 +1142,8 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			Assert( ship_team != target_team );
 
 			// Orders to override protect
-			if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
-				Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+			if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
+				Objects[ainfo->target_objnum].flags.unset(Object::Object_Flags::Protected);
 			}
 
 			ai_mode = AI_GOAL_DISARM_SHIP;
@@ -1156,8 +1158,8 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			Assert( ainfo->targeted_subsys->current_hits > 0.0f);
 
 			// Orders to override protect
-			if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
-				Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+			if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
+				Objects[ainfo->target_objnum].flags.unset(Object::Object_Flags::Protected);
 			}
 
 			ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
@@ -1172,7 +1174,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			Assert(ainfo->target_objnum > -1);
 
-			Objects[ainfo->target_objnum].flags |= OF_PROTECTED;
+			Objects[ainfo->target_objnum].flags.set(Object::Object_Flags::Protected);
 
 			ai_mode = AI_GOAL_DOCK;
 			ai_submode = AIS_DOCK_0;
@@ -1233,7 +1235,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			ai_mode = AI_GOAL_WARP;
 			ai_submode = -1;
 			message = MESSAGE_WARP_OUT;
-			Ships[shipnum].flags |= SF_DEPARTURE_ORDERED;
+			Ships[shipnum].flags.set(Ship::Ship_Flags::Departure_ordered);
 			break;
 		
 		// the following are support ship options!!!
@@ -1309,7 +1311,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	}
 	
 	// this is the _response_
-	if ( send_message && (!(Ships[shipnum].flags2 & SF2_NO_BUILTIN_MESSAGES)))
+	if ( send_message && (!(Ships[shipnum].flags[Ship::Ship_Flags::No_builtin_messages])))
 	{
 		message_send_builtin_to_player( message, &Ships[shipnum], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_ANYTIME, 0, 0, player_num, message_team_filter );	
 	}
@@ -1486,7 +1488,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 			ai_mode = AI_GOAL_WARP;
 			ai_submode = -1;
 			message = MESSAGE_WARP_OUT;
-			Wings[wingnum].flags |= WF_DEPARTURE_ORDERED;
+			Wings[wingnum].flags.set(Ship::Wing_Flags::Departure_ordered);
 			break;
 
 		case REARM_REPAIR_ME_ITEM:
@@ -1660,7 +1662,7 @@ void hud_squadmsg_type_select( )
 
 	// check to see if the player is awaiting repair or being repaired.  Active the abort and inactive the repair items
 	// check to see if the player is scheduled to be repaired by incoming ship
-	if ( Ai_info[Ships[Player_obj->instance].ai_index].ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED) ) {
+	if (Ai_info[Ships[Player_obj->instance].ai_index].ai_flags[AI::AI_Flags::Awaiting_repair] || Ai_info[Ships[Player_obj->instance].ai_index].ai_flags[AI::AI_Flags::Being_repaired]) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
 	}
@@ -1803,8 +1805,8 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num)
 		if ( !stricmp(rp->name, Wings[i].name) ) {
 			// found a wingname.  Call the parse function to create all the ships in this wing
 			// we must set the arrival cue of the wing to true, otherwise, this won't work!!
-			Wings[i].flags &= ~WF_REINFORCEMENT;
-			Wings[i].flags |= WF_RESET_REINFORCEMENT;
+			Wings[i].flags.unset(Ship::Wing_Flags::Reinforcement);
+			Wings[i].flags.set(Ship::Wing_Flags::Reset_reinforcement);
 
 			// set up the arrival delay.  If it is 0, then make is some random number of seconds
 			delay = rp->arrival_delay;
@@ -1822,7 +1824,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num)
 		if ( p_objp ) {
 			// by resetting the reinforcement flag, we will allow code which normally handles arrivals
 			// to make this reinforcement arrive.  Doing so keeps the data structures clean.
-			p_objp->flags &= ~P_SF_REINFORCEMENT;
+			p_objp->flags.unset(Mission::Parse_Object_Flags::SF_Reinforcement);
 
 			// set up the arrival delay
 			delay = rp->arrival_delay;
@@ -2003,7 +2005,7 @@ void hud_squadmsg_ship_command()
 						continue;
 
 					// don't send message to non fighter wings
-					if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+					if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
 						continue;
 
 					all_accept &= shipp->orders_accepted;		// 'and'ing will either keep this bit set or zero it properly

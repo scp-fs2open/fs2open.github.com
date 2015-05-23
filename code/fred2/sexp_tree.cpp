@@ -4732,16 +4732,16 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 
 			}
 			else if (op == OP_CAP_SUBSYS_CARGO_KNOWN_DELAY) {
-				if ( ((Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP) &&	// big ship
-					!(Ships[ptr->instance].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) )||				// which is not flagged OR
-					((!(Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP)) &&  // small ship
-					(Ships[ptr->instance].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) ) ) {				// which is flagged
+				if ( ((is_huge_ship(&Ship_info[Ships[ptr->instance].ship_info_index]) &&	// big ship
+					!(Ships[ptr->instance].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) )||				// which is not flagged OR
+					((!is_huge_ship(&Ship_info[Ships[ptr->instance].ship_info_index]) &&  // small ship
+					(Ships[ptr->instance].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) ) ))) {				// which is flagged
 
 						head.add_data(Ships[ptr->instance].ship_name);
 				}
 			}
 			else {
-				if ( !require_cap_ship || (Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP) ) {
+				if ( !require_cap_ship || (is_huge_ship(&Ship_info[Ships[ptr->instance].ship_info_index])) ) {
 					head.add_data(Ships[ptr->instance].ship_name);
 				}
 			}
@@ -4914,14 +4914,14 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 			// awacs level
 			case OPS_AWACS:
-				if (subsys->system_info->flags & MSS_FLAG_AWACS) {
+				if (subsys->system_info->flags[Model::Subsystem_Flags::Awacs]) {
 					head.add_data(subsys->system_info->subobj_name);
 				}
 				break;
 
 			// rotating
 			case OPS_ROTATE:
-				if (subsys->system_info->flags & MSS_FLAG_ROTATES) {
+				if (subsys->system_info->flags[Model::Subsystem_Flags::Rotates]) {
 					head.add_data(subsys->system_info->subobj_name);
 				}
 				break;
@@ -5047,7 +5047,7 @@ sexp_list_item *sexp_tree::get_listing_opf_support_ship_class()
 
 	for (i=0; i<Num_ship_classes; i++)
 	{
-		if (Ship_info[i].flags & SIF_SUPPORT)
+		if (Ship_info[i].flags[Ship::Info_Flags::Support])
 		{
 			head.add_data(Ship_info[i].name);
 		}
@@ -5330,7 +5330,7 @@ sexp_list_item *sexp_tree::get_listing_opf_who_from()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START))
-			if (!(Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index].flags & SIF_NOT_FLYABLE))
+			if (is_flyable(&Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index]))
 				head.add_data(Ships[ptr->instance].ship_name);
 
 		ptr = GET_NEXT(ptr);
@@ -5724,7 +5724,7 @@ sexp_list_item *sexp_tree::get_listing_opf_huge_weapon()
 	sexp_list_item head;
 
 	for (i=0; i<Num_weapon_types; i++) {
-		if (Weapon_info[i].wi_flags & WIF_HUGE)
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Huge])
 			head.add_data(Weapon_info[i].name);
 	}
 

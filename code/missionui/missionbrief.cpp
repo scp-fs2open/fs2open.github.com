@@ -353,7 +353,7 @@ void brief_skip_training_pressed()
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	
 
-	if ( The_mission.flags & MISSION_FLAG_END_TO_MAINHALL ) {
+	if (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) {
 		gameseq_post_event( GS_EVENT_MAIN_MENU );
 	} else {
 		gameseq_post_event( GS_EVENT_START_GAME );
@@ -889,7 +889,7 @@ void brief_init()
 		return;
 	}
 
-	if (The_mission.flags & MISSION_FLAG_ALWAYS_SHOW_GOALS || !(The_mission.game_type & MISSION_TYPE_TRAINING))
+	if (The_mission.flags[Mission::Mission_Flags::Always_show_goals] || !(The_mission.game_type & MISSION_TYPE_TRAINING))
 		Num_brief_stages = Briefing->num_stages + 1;
 	else
 		Num_brief_stages = Briefing->num_stages;
@@ -1071,11 +1071,11 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	model_clear_instance( Closeup_icon->modelnum );
 
-	int is_neb = The_mission.flags & MISSION_FLAG_FULLNEB;
+	int is_neb = The_mission.flags[Mission::Mission_Flags::Fullneb];
 
 	// maybe switch off nebula rendering
 	if(is_neb){
-		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
+		The_mission.flags.unset(Mission::Mission_Flags::Fullneb);
 	}
 
 	model_render_params render_info;
@@ -1093,7 +1093,7 @@ void brief_render_closeup(int ship_class, float frametime)
 	model_render_immediate( &render_info, Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos );
 
 	if (is_neb) {
-		The_mission.flags |= MISSION_FLAG_FULLNEB;
+		The_mission.flags.set(Mission::Mission_Flags::Fullneb);
 	}
 
 	if (!Cmdline_nohtl)
@@ -1290,7 +1290,7 @@ int brief_setup_closeup(brief_icon *bi)
 		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
 
 		// Goober5000 - wcsaga doesn't want this
-		if (Ship_types[sip->class_type].hud_bools & STI_HUD_NO_CLASS_DISPLAY ) {
+		if (Ship_types[sip->class_type].hud_bools[Ship::Type_Info_Hud::No_class_display] ) {
 			strcat_s(Closeup_icon->closeup_label, XSTR( " class", 434));
 		}
 
@@ -1482,7 +1482,7 @@ void brief_do_frame(float frametime)
 	// commit if skipping briefing, but not in multi - Goober5000
 	if (!(Game_mode & GM_MULTIPLAYER))
 	{
-		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
+		if (The_mission.flags[Mission::Mission_Flags::No_briefing])
 		{
 			commit_pressed();
 			return;
@@ -1997,7 +1997,7 @@ int brief_only_allow_briefing()
 		return 1;
 	}
 
-	if ( The_mission.flags & (MISSION_FLAG_SCRAMBLE | MISSION_FLAG_RED_ALERT) ) {
+	if (The_mission.flags[Mission::Mission_Flags::Scramble] || The_mission.flags[Mission::Mission_Flags::Red_alert]) {
 		return 1;
 	}
 

@@ -138,7 +138,9 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	orient = vmd_identity_matrix;
 	vm_angles_2_matrix(&orient, &sw->rot_angles);
 
-	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, OF_RENDERS );
+	flagset<Object::Object_Flags> objflags;
+	objflags.set(Object::Object_Flags::Renders);
+	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, objflags );
 
 	if ( objnum == -1 ){
 		Int3();
@@ -177,7 +179,7 @@ void shockwave_delete_all()
 	while ( sw != &Shockwave_list ) {
 		next = sw->next;
 		Assert(sw->objnum != -1);
-		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
+		Objects[sw->objnum].flags.set(Object::Object_Flags::Should_be_dead);
 		sw = next;
 	}
 }
@@ -205,7 +207,7 @@ void shockwave_set_framenum(int index)
 	// ensure we don't go past the number of frames of animation
 	if ( framenum > (si->num_frames-1) ) {
 		framenum = (si->num_frames-1);
-		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
+		Objects[sw->objnum].flags.set(Object::Object_Flags::Should_be_dead);
 	}
 
 	if ( framenum < 0 ) {
@@ -236,7 +238,7 @@ int shockwave_get_framenum(int index, int num_frames)
 	// ensure we don't go past the number of frames of animation
 	if ( framenum > (num_frames-1) ) {
 		framenum = (num_frames-1);
-		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
+		Objects[sw->objnum].flags.set(Object::Object_Flags::Should_be_dead);
 	}
 
 	if ( framenum < 0 ) {
@@ -280,7 +282,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	sw->radius += (frametime * sw->speed);
 	if ( sw->radius > sw->outer_radius ) {
 		sw->radius = sw->outer_radius;
-		shockwave_objp->flags |= OF_SHOULD_BE_DEAD;
+		shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
 		return;
 	}
 
@@ -294,10 +296,10 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		if ( objp->type == OBJ_WEAPON ) {
 			// only apply to missiles with hitpoints
 			weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip->weapon_hitpoints <= 0 || !(wip->wi_flags2 & WIF2_TAKES_SHOCKWAVE_DAMAGE))
+			if (wip->weapon_hitpoints <= 0 || !(wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage]))
 				continue;
 			if (sw->weapon_info_index >= 0) {
-				if (Weapon_info[sw->weapon_info_index].wi_flags2 & WIF2_CIWS) {
+				if (Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws]) {
 					continue;
 				}
 			}
@@ -306,7 +308,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	
 		if ( objp->type == OBJ_SHIP ) {
 			// don't blast navbuoys
-			if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY ) {
+			if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy] ) {
 				continue;
 			}
 		}
@@ -338,7 +340,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		case OBJ_SHIP:
 			sw->obj_sig_hitlist[sw->num_objs_hit++] = objp->signature;
 			// If we're doing an AoE Electronics shockwave, do the electronics stuff. -MageKing17
-			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags3 & WIF3_AOE_ELECTRONICS) && !(objp->flags & OF_INVULNERABLE) ) {
+			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
 			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage );
@@ -355,7 +357,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
 				Weapons[objp->instance].lifeleft = 0.01f;
-				Weapons[objp->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 			}
 			break;
 		default:
@@ -406,7 +408,7 @@ void shockwave_render_DEPRECATED(object *objp)
 		return;
 
 	// turn off fogging
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 

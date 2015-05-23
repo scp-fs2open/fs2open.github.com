@@ -46,14 +46,16 @@ int observer_create(matrix *orient, vec3d *pos)
 	}
 	
 	// attempt to create the object
-	objnum = obj_create(OBJ_OBSERVER,-1,idx,orient,pos,1.0f,0);
+	flagset<Object::Object_Flags> objflags;
+	objflags.reset();
+	objnum = obj_create(OBJ_OBSERVER,-1,idx,orient,pos,1.0f, objflags);
 
 	// fail situation
 	if(objnum == -1)
 		return -1;
 
 	// give the observer Descent style physics
-	Objects[objnum].flags |= OF_PHYSICS;
+	Objects[objnum].flags.set(Object::Object_Flags::Physics);
 	physics_init(&Objects[objnum].phys_info);
 	pi = &Objects[objnum].phys_info;
 	pi->flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;

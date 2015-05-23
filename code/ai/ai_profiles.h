@@ -12,61 +12,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
-
-// flag int defines
-#define AIP_FLAG		1
-#define AIP_FLAG2		2
-
-// flags
-#define AIPF_SMART_SHIELD_MANAGEMENT								(1 << 0)
-#define AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS	(1 << 1)
-#define AIPF_SMART_PRIMARY_WEAPON_SELECTION							(1 << 2)
-#define AIPF_SMART_SECONDARY_WEAPON_SELECTION						(1 << 3)
-#define AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE							(1 << 4)
-#define AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS						(1 << 5)
-#define AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY					(1 << 6)
-#define AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY		(1 << 7)
-#define AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS				(1 << 8)
-#define AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP							(1 << 9)
-#define AIPF_NO_MIN_DOCK_SPEED_CAP									(1 << 10)
-#define AIPF_DISABLE_LINKED_FIRE_PENALTY							(1 << 11)
-#define AIPF_DISABLE_WEAPON_DAMAGE_SCALING							(1 << 12)
-#define AIPF_USE_ADDITIVE_WEAPON_VELOCITY							(1 << 13)
-#define AIPF_USE_NEWTONIAN_DAMPENING								(1 << 14)
-#define AIPF_INCLUDE_BEAMS_IN_STAT_CALCS							(1 << 15)
-#define AIPF_KILL_SCORING_SCALES_WITH_DAMAGE						(1 << 16)
-#define AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE						(1 << 17)
-#define AIPF_ALLOW_MULTI_EVENT_SCORING								(1 << 18)
-#define AIPF_SMART_AFTERBURNER_MANAGEMENT							(1 << 19)
-#define AIPF_FIX_LINKED_PRIMARY_BUG									(1 << 20)
-#define AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE					(1 << 21)
-#define AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS					(1 << 22)
-#define AIPF_FIX_HEAT_SEEKER_STEALTH_BUG							(1 << 23)
-#define AIPF_MULTI_ALLOW_EMPTY_PRIMARIES							(1 << 24)
-#define AIPF_MULTI_ALLOW_EMPTY_SECONDARIES							(1 << 25)
-#define AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY                    (1 << 26)
-#define AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS						(1 << 27)
-#define AIPF_ALLOW_VERTICAL_DODGE									(1 << 28)	//Allows AI ships to evade weapons vertically as well as horizontally
-#define AIPF_FORCE_BEAM_TURRET_FOV									(1 << 29)
-#define AIPF_FIX_AI_CLASS_BUG										(1 << 30)
-
-// flags2
-#define AIPF2_TURRETS_IGNORE_TARGET_RADIUS							(1 << 0)
-#define AIPF2_NO_SPECIAL_PLAYER_AVOID								(1 << 1)
-#define AIPF2_PERFORM_FEWER_SCREAM_CHECKS							(1 << 2)
-#define AIPF2_ALL_SHIPS_MANAGE_SHIELDS								(1 << 3)
-#define AIPF2_ADVANCED_TURRET_FOV_EDGE_CHECKS						(1 << 4)
-#define AIPF2_REQUIRE_TURRET_TO_HAVE_TARGET_IN_FOV					(1 << 5)
-#define AIPF2_AI_AIMS_FROM_SHIP_CENTER								(1 << 6)
-#define AIPF2_ALLOW_PRIMARY_LINK_AT_START							(1 << 7)
-#define	AIPF2_BEAMS_DAMAGE_WEAPONS									(1 << 8)
-#define AIPF2_PLAYER_WEAPON_SCALE_FIX								(1 << 9)
-#define AIPF2_NO_WARP_CAMERA										(1 << 10)
-#define AIPF2_ASPECT_LOCK_COUNTERMEASURE							(1 << 11)
-#define AIPF2_AI_GUARDS_SPECIFIC_SHIP_IN_WING						(1 << 12)
-#define AIPF2_FIX_AI_PATH_ORDER_BUG									(1 << 13)
-#define AIPF2_STRICT_TURRET_TAGGED_ONLY_TARGETING					(1 << 14)
-#define AIPF2_ASPECT_INVULNERABILITY_FIX							(1 << 15)
+#include "ai/ai_flags.h"
 
 // AI Path types
 #define	AI_PATH_MODE_NORMAL 0
@@ -76,10 +22,145 @@
 
 typedef struct ai_profile_t {
 
+	ai_profile_t() {
+		init();
+	}
+
+	ai_profile_t(const ai_profile_t &other) {
+		strcpy_s(profile_name, other.profile_name);
+		flags = other.flags;
+
+		for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
+			max_incoming_asteroids[i] = other.max_incoming_asteroids[i];
+			max_allowed_player_homers[i] = other.max_allowed_player_homers[i];
+			max_attackers[i] = other.max_attackers[i];
+			predict_position_delay[i] = other.predict_position_delay[i];
+			in_range_time[i] = other.in_range_time[i];
+			shield_manage_delay[i] = other.shield_manage_delay[i];
+
+			link_energy_levels_always[i] = other.link_energy_levels_always[i];
+			link_energy_levels_maybe[i] = other.link_energy_levels_maybe[i];
+
+			link_ammo_levels_always[i] = other.link_ammo_levels_always[i];
+			link_ammo_levels_maybe[i] = other.link_ammo_levels_maybe[i];
+			primary_ammo_burst_mult[i] = other.primary_ammo_burst_mult[i];
+
+			cmeasure_life_scale[i] = other.cmeasure_life_scale[i];
+			cmeasure_fire_chance[i] = other.cmeasure_fire_chance[i];
+			weapon_energy_scale[i] = other.weapon_energy_scale[i];
+			shield_energy_scale[i] = other.shield_energy_scale[i];
+			afterburner_recharge_scale[i] = other.afterburner_recharge_scale[i];
+			player_damage_scale[i] = other.player_damage_scale[i];
+
+			subsys_damage_scale[i] = other.subsys_damage_scale[i];
+			beam_friendly_damage_cap[i] = other.beam_friendly_damage_cap[i];
+			turn_time_scale[i] = other.turn_time_scale[i];
+			glide_attack_percent[i] = other.glide_attack_percent[i];
+			circle_strafe_percent[i] = other.circle_strafe_percent[i];
+			glide_strafe_percent[i] = other.glide_strafe_percent[i];
+			random_sidethrust_percent[i] = other.random_sidethrust_percent[i];
+			stalemate_time_thresh[i] = other.stalemate_time_thresh[i];
+			stalemate_dist_thresh[i] = other.stalemate_dist_thresh[i];
+			max_aim_update_delay[i] = other.max_aim_update_delay[i];
+
+			turret_max_aim_update_delay[i] = other.turret_max_aim_update_delay[i];
+			ship_fire_delay_scale_hostile[i] = other.ship_fire_delay_scale_hostile[i];
+			ship_fire_delay_scale_friendly[i] = other.ship_fire_delay_scale_friendly[i];
+
+			ship_fire_secondary_delay_scale_hostile[i] = other.ship_fire_secondary_delay_scale_hostile[i];
+			ship_fire_secondary_delay_scale_friendly[i] = other.ship_fire_secondary_delay_scale_friendly[i];
+
+			max_turret_ownage_target[i] = other.max_turret_ownage_target[i];
+			max_turret_ownage_player[i] = other.max_turret_ownage_player[i];
+
+			kill_percentage_scale[i] = other.kill_percentage_scale[i];
+			assist_percentage_scale[i] = other.assist_percentage_scale[i];
+			assist_award_percentage_scale[i] = other.assist_award_percentage_scale[i];
+
+			repair_penalty[i] = other.repair_penalty[i];
+
+			delay_bomb_arm_timer[i] = other.delay_bomb_arm_timer[i];
+
+			chance_to_use_missiles_on_plr[i] = other.chance_to_use_missiles_on_plr[i];
+
+			player_autoaim_fov[i] = other.player_autoaim_fov[i];
+		}
+
+		for (int i = 0; i < MAX_DETAIL_LEVEL + 1; ++i)
+			detail_distance_mult[i] = other.detail_distance_mult[i];
+
+		ai_path_mode = other.ai_path_mode;
+	}
+
+	void init() {
+		strcpy_s(profile_name, "\0");
+		flags.reset();
+
+		for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
+			max_incoming_asteroids[i] = 0;
+			max_allowed_player_homers[i] = 0;
+			max_attackers[i] = 0;
+			predict_position_delay[i] = 0;
+			in_range_time[i] = 0.0f;
+			shield_manage_delay[i] = 0.0f;
+
+			link_energy_levels_always[i] = 0.0f;
+			link_energy_levels_maybe[i] = 0.0f;
+
+			link_ammo_levels_always[i] = 0.0f;
+			link_ammo_levels_maybe[i] = 0.0f;
+			primary_ammo_burst_mult[i] = 0.0f;
+
+			cmeasure_life_scale[i] = 0.0f;
+			cmeasure_fire_chance[i] = 0.0f;
+			weapon_energy_scale[i] = 0.0f;
+			shield_energy_scale[i] = 0.0f;
+			afterburner_recharge_scale[i] = 0.0f;
+			player_damage_scale[i] = 0.0f;
+
+			subsys_damage_scale[i] = 0.0f;
+			beam_friendly_damage_cap[i] = 0.0f;
+			turn_time_scale[i] = 0.0f;
+			glide_attack_percent[i] = 0.0f;
+			circle_strafe_percent[i] = 0.0f;
+			glide_strafe_percent[i] = 0.0f;
+			random_sidethrust_percent[i] = 0.0f;
+			stalemate_time_thresh[i] = 0.0f;
+			stalemate_dist_thresh[i] = 0.0f;
+			max_aim_update_delay[i] = 0.0f;
+
+			turret_max_aim_update_delay[i] = 0.0f;
+			ship_fire_delay_scale_hostile[i] = 0.0f;
+			ship_fire_delay_scale_friendly[i] = 0.0f;
+
+			ship_fire_secondary_delay_scale_hostile[i] = 0.0f;
+			ship_fire_secondary_delay_scale_friendly[i] = 0.0f;
+
+			max_turret_ownage_target[i] = 0;
+			max_turret_ownage_player[i] = 0;
+
+			kill_percentage_scale[i] = 0.0f;
+			assist_percentage_scale[i] = 0.0f;
+			assist_award_percentage_scale[i] = 0.0f;
+
+			repair_penalty[i] = 0;
+
+			delay_bomb_arm_timer[i] = 0.0f;
+
+			chance_to_use_missiles_on_plr[i] = 0;
+
+			player_autoaim_fov[i] = 0.0f;
+		}
+
+		for (int i = 0; i < MAX_DETAIL_LEVEL + 1; ++i)
+			detail_distance_mult[i] = 0.0f;
+
+		ai_path_mode = 0;
+	}
+
 	char profile_name[NAME_LENGTH];
 
-	int flags;
-	int flags2;
+	flagset<AI::Profile_flags> flags;
 
 	// difficulty-related values
 	int max_incoming_asteroids[NUM_SKILL_LEVELS];			// max number of asteroids thrown at friendlies

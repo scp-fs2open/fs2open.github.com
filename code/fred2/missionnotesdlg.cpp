@@ -185,7 +185,8 @@ int CMissionNotesDlg::query_modified()
 
 void CMissionNotesDlg::OnOK()
 {
-	int new_m_type, flags, is_multi = 0, is_training = 0, is_single = 0;
+	int new_m_type, is_multi = 0, is_training = 0, is_single = 0;
+	flagset<Mission::Mission_Flags> flags;
 
 	UpdateData();
 	is_single = (((CButton *) GetDlgItem(IDC_SINGLE))->GetCheck() == 1);
@@ -232,60 +233,60 @@ void CMissionNotesDlg::OnOK()
 
 	// set flags for red alert
 	if ( m_red_alert ) {
-		The_mission.flags |= MISSION_FLAG_RED_ALERT;
+		The_mission.flags.set(Mission::Mission_Flags::Red_alert);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_RED_ALERT;
+		The_mission.flags.unset(Mission::Mission_Flags::Red_alert);
 	}
 
 	// set flags for scramble
 	if ( m_scramble ) {
-		The_mission.flags |= MISSION_FLAG_SCRAMBLE;
+		The_mission.flags.set(Mission::Mission_Flags::Scramble);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_SCRAMBLE;
+		The_mission.flags.unset(Mission::Mission_Flags::Scramble);
 	}
 
 	// set flags for dock trees
 	if ( m_daisy_chained_docking ) {
-		The_mission.flags |= MISSION_FLAG_ALLOW_DOCK_TREES;
+		The_mission.flags.set(Mission::Mission_Flags::Allow_dock_trees);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_ALLOW_DOCK_TREES;
+		The_mission.flags.unset(Mission::Mission_Flags::Allow_dock_trees);
 	}
 
 	// set the flags for no promotion
 	if ( m_no_promotion ) {
-		The_mission.flags |= MISSION_FLAG_NO_PROMOTION;
+		The_mission.flags.set(Mission::Mission_Flags::No_promotion);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_NO_PROMOTION;
+		The_mission.flags.unset(Mission::Mission_Flags::No_promotion);
 	}
 
 	// set flags for no builtin messages
 	if ( m_no_builtin_msgs ) {
-		The_mission.flags |= MISSION_FLAG_NO_BUILTIN_MSGS;
+		The_mission.flags.set(Mission::Mission_Flags::No_builtin_msgs);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_NO_BUILTIN_MSGS;
+		The_mission.flags.unset(Mission::Mission_Flags::No_builtin_msgs);
 	}
 
 	// set flags for no builtin command messages
 	if ( m_no_builtin_command_msgs ) 
 	{
-		The_mission.flags |= MISSION_FLAG_NO_BUILTIN_COMMAND;
+		The_mission.flags.set(Mission::Mission_Flags::No_builtin_command);
 	} else 
 	{
-		The_mission.flags &= ~MISSION_FLAG_NO_BUILTIN_COMMAND;
+		The_mission.flags.unset(Mission::Mission_Flags::No_builtin_command);
 	}
 
 	// set no traitor flags
 	if ( m_no_traitor ) {
-		The_mission.flags |= MISSION_FLAG_NO_TRAITOR;
+		The_mission.flags.set(Mission::Mission_Flags::No_traitor);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_NO_TRAITOR;
+		The_mission.flags.unset(Mission::Mission_Flags::No_traitor);
 	}
 
 	//set ship trail flags
 	if ( m_toggle_trails ) {
-		The_mission.flags |= MISSION_FLAG_TOGGLE_SHIP_TRAILS;
+		The_mission.flags.set(Mission::Mission_Flags::Toggle_ship_trails);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_TOGGLE_SHIP_TRAILS;
+		The_mission.flags.unset(Mission::Mission_Flags::Toggle_ship_trails);
 	}
 
 	// set ship trail threshold
@@ -297,71 +298,71 @@ void CMissionNotesDlg::OnOK()
 
 	//set support ship repairing flags
 	if ( m_support_repairs_hull ) {
-		The_mission.flags |= MISSION_FLAG_SUPPORT_REPAIRS_HULL;
+		The_mission.flags.set(Mission::Mission_Flags::Support_repairs_hull);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_SUPPORT_REPAIRS_HULL;
+		The_mission.flags.unset(Mission::Mission_Flags::Support_repairs_hull);
 	}
 
 	// set default beam free
 	if ( m_beam_free_all_by_default ) {
-		The_mission.flags |= MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT;
+		The_mission.flags.set(Mission::Mission_Flags::Beam_free_all_by_default);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT;
+		The_mission.flags.unset(Mission::Mission_Flags::Beam_free_all_by_default);
 	}
 
 	// set player AI by default
 	if ( m_player_start_using_ai ) {
-		The_mission.flags |= MISSION_FLAG_PLAYER_START_AI;
+		The_mission.flags.set(Mission::Mission_Flags::Player_start_ai);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_PLAYER_START_AI;
+		The_mission.flags.unset(Mission::Mission_Flags::Player_start_ai);
 	}
 
 	// set briefing
 	if ( m_no_briefing ) {
-		The_mission.flags |= MISSION_FLAG_NO_BRIEFING;
+		The_mission.flags.set(Mission::Mission_Flags::No_briefing);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_NO_BRIEFING;
+		The_mission.flags.unset(Mission::Mission_Flags::No_briefing);
 	}
 
 	// set debriefing
 	if ( m_no_debriefing ) {
-		The_mission.flags |= MISSION_FLAG_TOGGLE_DEBRIEFING;
+		The_mission.flags.set(Mission::Mission_Flags::Toggle_debriefing);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_TOGGLE_DEBRIEFING;
+		The_mission.flags.unset(Mission::Mission_Flags::Toggle_debriefing);
 	}
 
 	// set autopilot cinematics
 	if ( m_autpilot_cinematics ) {
-		The_mission.flags |= MISSION_FLAG_USE_AP_CINEMATICS;
+		The_mission.flags.set(Mission::Mission_Flags::Use_ap_cinematics);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_USE_AP_CINEMATICS;
+		The_mission.flags.unset(Mission::Mission_Flags::Use_ap_cinematics);
 	}
 
 	// 2D mission
 	if ( m_2d_mission ) {
-		The_mission.flags |= MISSION_FLAG_2D_MISSION;
+		The_mission.flags.set(Mission::Mission_Flags::Mission_2d);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_2D_MISSION;
+		The_mission.flags.unset(Mission::Mission_Flags::Mission_2d);
 	}
 	
 	// set autopilot disabled
 	if ( m_no_autpilot ) {
-		The_mission.flags |= MISSION_FLAG_DEACTIVATE_AP;
+		The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_DEACTIVATE_AP;
+		The_mission.flags.unset(Mission::Mission_Flags::Deactivate_ap);
 	}
 	
 	// always show mission goals
 	if ( m_always_show_goals ) {
-		The_mission.flags |= MISSION_FLAG_ALWAYS_SHOW_GOALS;
+		The_mission.flags.set(Mission::Mission_Flags::Always_show_goals);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_ALWAYS_SHOW_GOALS;
+		The_mission.flags.unset(Mission::Mission_Flags::Always_show_goals);
 	}
 
 	if ( m_end_to_mainhall ) {
-		The_mission.flags |= MISSION_FLAG_END_TO_MAINHALL;
+		The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall);
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_END_TO_MAINHALL;
+		The_mission.flags.unset(Mission::Mission_Flags::End_to_mainhall);
 	}
 
 	if ( flags != The_mission.flags ){
@@ -436,25 +437,25 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	convert_multiline_string(m_mission_notes, The_mission.notes);
 	convert_multiline_string(m_mission_desc_orig, The_mission.mission_desc);
 	convert_multiline_string(m_mission_desc, The_mission.mission_desc);
-	m_red_alert = (The_mission.flags & MISSION_FLAG_RED_ALERT) ? 1 : 0;
-	m_scramble = (The_mission.flags & MISSION_FLAG_SCRAMBLE) ? 1 : 0;
+	m_red_alert = (The_mission.flags[Mission::Mission_Flags::Red_alert]) ? 1 : 0;
+	m_scramble = (The_mission.flags[Mission::Mission_Flags::Scramble]) ? 1 : 0;
 	m_full_war = Mission_all_attack;
-	m_daisy_chained_docking = (The_mission.flags & MISSION_FLAG_ALLOW_DOCK_TREES) ? 1 : 0;
+	m_daisy_chained_docking = (The_mission.flags[Mission::Mission_Flags::Allow_dock_trees]) ? 1 : 0;
 	m_disallow_support = (The_mission.support_ships.max_support_ships == 0) ? 1 : 0;
-	m_no_promotion = (The_mission.flags & MISSION_FLAG_NO_PROMOTION) ? 1 : 0;
-	m_no_builtin_msgs = (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS) ? 1 : 0;
-	m_no_builtin_command_msgs = (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ? 1 : 0;
-	m_no_traitor = (The_mission.flags & MISSION_FLAG_NO_TRAITOR) ? 1 : 0;
-	m_toggle_trails = (The_mission.flags & MISSION_FLAG_TOGGLE_SHIP_TRAILS) ? 1 : 0;
-	m_support_repairs_hull = (The_mission.flags &MISSION_FLAG_SUPPORT_REPAIRS_HULL) ? 1 : 0;
-	m_beam_free_all_by_default = (The_mission.flags & MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT) ? 1 : 0;
-	m_player_start_using_ai = (The_mission.flags & MISSION_FLAG_PLAYER_START_AI) ? 1 : 0;
-	m_no_briefing = (The_mission.flags & MISSION_FLAG_NO_BRIEFING) ? 1 : 0;
-	m_no_debriefing = (The_mission.flags & MISSION_FLAG_TOGGLE_DEBRIEFING) ? 1 : 0;
-	m_autpilot_cinematics = (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) ? 1 : 0;
-	m_2d_mission = (The_mission.flags & MISSION_FLAG_2D_MISSION) ? 1 : 0;
-	m_no_autpilot =  (The_mission.flags & MISSION_FLAG_DEACTIVATE_AP) ? 1 : 0;
-	m_always_show_goals =  (The_mission.flags & MISSION_FLAG_ALWAYS_SHOW_GOALS) ? 1 : 0;
+	m_no_promotion = (The_mission.flags[Mission::Mission_Flags::No_promotion]) ? 1 : 0;
+	m_no_builtin_msgs = (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs]) ? 1 : 0;
+	m_no_builtin_command_msgs = (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ? 1 : 0;
+	m_no_traitor = (The_mission.flags[Mission::Mission_Flags::No_traitor]) ? 1 : 0;
+	m_toggle_trails = (The_mission.flags[Mission::Mission_Flags::Toggle_ship_trails]) ? 1 : 0;
+	m_support_repairs_hull = (The_mission.flags[Mission::Mission_Flags::Support_repairs_hull]) ? 1 : 0;
+	m_beam_free_all_by_default = (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default]) ? 1 : 0;
+	m_player_start_using_ai = (The_mission.flags[Mission::Mission_Flags::Player_start_ai]) ? 1 : 0;
+	m_no_briefing = (The_mission.flags[Mission::Mission_Flags::No_briefing]) ? 1 : 0;
+	m_no_debriefing = (The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]) ? 1 : 0;
+	m_autpilot_cinematics = (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) ? 1 : 0;
+	m_2d_mission = (The_mission.flags[Mission::Mission_Flags::Mission_2d]) ? 1 : 0;
+	m_no_autpilot =  (The_mission.flags[Mission::Mission_Flags::Deactivate_ap]) ? 1 : 0;
+	m_always_show_goals =  (The_mission.flags[Mission::Mission_Flags::Always_show_goals]) ? 1 : 0;
 
 	m_loading_640=_T(The_mission.loading_screen[GR_640]);
 	m_loading_1024=_T(The_mission.loading_screen[GR_1024]);
@@ -493,7 +494,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	box->AddString(DEFAULT_COMMAND);
 	for (i=0; i<MAX_SHIPS; i++){
 		if (Ships[i].objnum >= 0)
-			if (Ship_info[Ships[i].ship_info_index].flags & SIF_HUGE_SHIP)
+			if (is_huge_ship(&Ship_info[Ships[i].ship_info_index]))
 				box->AddString(Ships[i].ship_name);
 	}
 

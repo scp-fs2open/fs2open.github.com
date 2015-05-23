@@ -467,7 +467,7 @@ void techroom_ships_render(float frametime)
 	// now render the trackball ship, which is unique to the ships tab
 	float rev_rate = REVOLUTION_RATE;
 	angles rot_angles, view_angles;
-	int z, i, j;
+	int i, j;
 	ship_info *sip = &Ship_info[Cur_entry_index];
 	model_render_params render_info;
 
@@ -476,11 +476,10 @@ void techroom_ships_render(float frametime)
 	}
 
 	// get correct revolution rate
-	z = sip->flags;
-	if (z & SIF_BIG_SHIP) {
+	if (is_big_ship(sip)) {
 		rev_rate *= 1.7f;
 	}
-	if (z & SIF_HUGE_SHIP) {
+	if (is_huge_ship(sip)) {
 		rev_rate *= 3.0f;
 	}
 
@@ -540,14 +539,14 @@ void techroom_ships_render(float frametime)
 	render_info.set_detail_level_lock(0);
 
 	polymodel *pm = model_get(Techroom_ship_modelnum);
-	
+
 	for (i = 0; i < sip->n_subsystems; i++) {
 		model_subsystem *msp = &sip->subsystems[i];
 		if (msp->type == SUBSYSTEM_TURRET) {
 
 			float p = 0.0f;
 			float h = 0.0f;
-
+												
 			for (j = 0; j < msp->n_triggers; j++) {
 
 				// special case for turrets
@@ -583,8 +582,8 @@ void techroom_ships_render(float frametime)
 
 	uint render_flags = MR_AUTOCENTER;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
-		render_flags |= MR_NO_LIGHTING;
+	if(sip->flags[Ship::Info_Flags::No_lighting])
+				render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);
 
@@ -745,7 +744,9 @@ void techroom_anim_render(float frametime)
 
 void techroom_change_tab(int num)
 {
-	int i, multi = 0, mask, mask2, font_height, max_num_entries_viewable;	
+	int i, multi = 0, font_height, max_num_entries_viewable;	
+	Ship::Info_Flags si_mask, si_mask2;
+	Weapon::Info_Flags wi_mask, wi_mask2;
 
 	//unload the current animation, we load another one for the new current entry
 	if(Tab != SHIPS_DATA_TAB)
@@ -768,8 +769,8 @@ void techroom_change_tab(int num)
 
 	switch (Tab) {
 		case SHIPS_DATA_TAB:
-			mask = multi ? SIF_IN_TECH_DATABASE_M : SIF_IN_TECH_DATABASE;
-			mask2 = multi ? SIF2_DEFAULT_IN_TECH_DATABASE_M : SIF2_DEFAULT_IN_TECH_DATABASE;
+			si_mask = multi ? Ship::Info_Flags::In_tech_database_m : Ship::Info_Flags::In_tech_database;
+			si_mask2 = multi ? Ship::Info_Flags::Default_in_tech_database_m : Ship::Info_Flags::Default_in_tech_database;
 			
 			// load ship info if necessary
 			if ( Ships_loaded == 0 ) {
@@ -784,7 +785,7 @@ void techroom_change_tab(int num)
 
 				for (i=0; i<Num_ship_classes; i++)
 				{
-					if (Techroom_show_all || (Ship_info[i].flags & mask) || (Ship_info[i].flags2 & mask2))
+					if (Techroom_show_all || (Ship_info[i].flags[si_mask]) || (Ship_info[i].flags[si_mask2]))
 					{
 						// this ship should be displayed, fill out the entry struct
 						Ship_list[Ship_list_size].bitmap = -1;
@@ -837,12 +838,12 @@ void techroom_change_tab(int num)
 				}
 
 				Weapon_list_size = 0;
-				mask = multi ? WIF_PLAYER_ALLOWED : WIF_IN_TECH_DATABASE;
-				mask2 = WIF2_DEFAULT_IN_TECH_DATABASE;
+				wi_mask = multi ? Weapon::Info_Flags::Player_allowed : Weapon::Info_Flags::In_tech_database;
+				wi_mask2 = Weapon::Info_Flags::Default_in_tech_database;
 
 				for (i=0; i<Num_weapon_types; i++)
 				{
-					if (Techroom_show_all || (Weapon_info[i].wi_flags & mask) || (Weapon_info[i].wi_flags2 & mask2))
+					if (Techroom_show_all || (Weapon_info[i].wi_flags[wi_mask]) || (Weapon_info[i].wi_flags[wi_mask2]))
 					{ 
 						// we have a weapon that should be in the tech db, so fill out the entry struct
 						Weapon_list[Weapon_list_size].index = i;
@@ -1442,24 +1443,24 @@ void tech_reset_to_default()
 	// ships
 	for (i=0; i<Num_ship_classes; i++)
 	{
-		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE)
-			Ship_info[i].flags |= SIF_IN_TECH_DATABASE;
+		if (Ship_info[i].flags[Ship::Info_Flags::Default_in_tech_database])
+			Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
 		else
-			Ship_info[i].flags &= ~SIF_IN_TECH_DATABASE;
+			Ship_info[i].flags.unset(Ship::Info_Flags::Default_in_tech_database);
 
-		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE_M)
-			Ship_info[i].flags |= SIF_IN_TECH_DATABASE_M;
+		if (Ship_info[i].flags[Ship::Info_Flags::Default_in_tech_database_m])
+			Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database_m);
 		else
-			Ship_info[i].flags &= ~SIF_IN_TECH_DATABASE_M;
+			Ship_info[i].flags.unset(Ship::Info_Flags::Default_in_tech_database_m);
 	}
 
 	// weapons
 	for (i=0; i<Num_weapon_types; i++)
 	{
-		if (Weapon_info[i].wi_flags2 & WIF2_DEFAULT_IN_TECH_DATABASE)
-			Weapon_info[i].wi_flags |= WIF_IN_TECH_DATABASE;
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Default_in_tech_database])
+			Weapon_info[i].wi_flags.set(Weapon::Info_Flags::In_tech_database);
 		else
-			Weapon_info[i].wi_flags &= ~WIF_IN_TECH_DATABASE;
+			Weapon_info[i].wi_flags.unset(Weapon::Info_Flags::In_tech_database);
 	}
 
 	// intelligence

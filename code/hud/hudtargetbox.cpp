@@ -626,7 +626,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 
 		// set glowmap flag here since model_render (etc) require an objnum to handle glowmaps
 		// if we did pass the objnum, we'd also have thrusters drawn in the targetbox
-		if (target_shipp->flags2 & SF2_GLOWMAPS_DISABLED) {
+		if (target_shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 			flags |= MR_NO_GLOWMAPS;
 		}
 
@@ -807,7 +807,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	weapon		*wp = NULL;
 	object		*viewer_obj, *viewed_obj;
 	int *replacement_textures = NULL;
-	int			target_team, is_homing, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
+	int			target_team, is_homing_local, is_player_missile, missile_view, viewed_model_num, hud_target_lod, w, h;
 	float			factor;
 	char			outstr[100];				// temp buffer
 	int flags=0;
@@ -820,9 +820,9 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	if (target_wip->model_num == -1)
 		return;
 
-	is_homing = FALSE;
-	if ( target_wip->wi_flags & WIF_HOMING && wp->homing_object != &obj_used_list )
-		is_homing = TRUE;
+	is_homing_local = FALSE;
+	if ( is_homing(target_wip) && wp->homing_object != &obj_used_list )
+		is_homing_local = TRUE;
 
 	is_player_missile = FALSE;
 	if ( target_objp->parent_sig == Player_obj->signature ) {
@@ -839,7 +839,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		viewed_model_num	= target_wip->model_num;
 		hud_target_lod		= target_wip->hud_target_lod;
 		// adding a check here to make sure the homing object is a ship, technically it could be some other object just as well
-		if ( is_homing && is_player_missile && (wp->homing_object->type == OBJ_SHIP)) {
+		if ( is_homing_local && is_player_missile && (wp->homing_object->type == OBJ_SHIP)) {
 			homing_shipp = &Ships[wp->homing_object->instance];
 			homing_sip = &Ship_info[homing_shipp->ship_info_index];
 
@@ -975,7 +975,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 
 			// set glowmap flag here since model_render (etc) require an objnum to handle glowmaps
 			// if we did pass the objnum, we'd also have thrusters drawn in the targetbox
-			if (homing_shipp->flags2 & SF2_GLOWMAPS_DISABLED) {
+			if (homing_shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 				flags |= MR_NO_GLOWMAPS;
 			}
 		}
@@ -1027,7 +1027,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
 
 	// If a homing weapon, show time to impact
-	if ( is_homing ) {
+	if ( is_homing_local ) {
 		float dist, speed;
 
 		speed = vm_vec_mag(&target_objp->phys_info.vel);
@@ -1437,7 +1437,7 @@ void HudGaugeExtraTargetData::render(float frametime)
 		// Print out current orders if the targeted ship is friendly
 		// AL 12-26-97: only show orders and time to target for friendly ships
 		// Backslash: actually let's consult the IFF table.  Maybe we want to show orders for certain teams, or hide orders for friendlies
-		if ( ((Player_ship->team == target_shipp->team) || ((Iff_info[target_shipp->team].flags & IFFF_ORDERS_SHOWN) && !(Iff_info[target_shipp->team].flags & IFFF_ORDERS_HIDDEN)) ) && !(ship_get_SIF(target_shipp) & SIF_NOT_FLYABLE) ) {
+		if ( ((Player_ship->team == target_shipp->team) || ((Iff_info[target_shipp->team].flags & IFFF_ORDERS_SHOWN) && !(Iff_info[target_shipp->team].flags & IFFF_ORDERS_HIDDEN)) ) && is_flyable(&Ship_info[target_shipp->ship_info_index]) ) {
 			extra_data_shown=1;
 			if ( ship_return_orders(outstr, target_shipp) ) {
 				gr_force_fit_string(outstr, 255, 162);
@@ -1543,34 +1543,42 @@ void HudGaugeExtraTargetData::endFlashDock()
 }
 
 //from aicode.cpp. Less include...problems...this way.
-extern int turret_weapon_aggregate_flags(ship_weapon *swp);
-extern int turret_weapon_aggregate_flags2(ship_weapon *swp);
+extern bool turret_weapon_has_flags(ship_weapon *swp, flagset<Weapon::Info_Flags>* flags);
+extern flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(ship_weapon *swp);
 extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
 void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 {
 	Assert(swp != NULL);	// Goober5000 //WMC
 
+	flagset<Weapon::Info_Flags> beams;
+	beams.set(Weapon::Info_Flags::Beam);
+	flagset<Weapon::Info_Flags> flak;
+	flak.set(Weapon::Info_Flags::Flak);
+	flagset<Weapon::Info_Flags> ballistic;
+	ballistic.set(Weapon::Info_Flags::Ballistic); 
+	flagset<Weapon::Info_Flags> bomb;
+	bomb.set(Weapon::Info_Flags::Bomb);
+
 	//WMC - find the first weapon, if there is one
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
-		int flags = turret_weapon_aggregate_flags(swp);
-		int flags2 = turret_weapon_aggregate_flags2(swp);
+		flagset<Weapon::Info_Flags> flags = turret_weapon_aggregate_flags(swp);
 
 		// check if beam or flak using weapon flags
-		if (flags & WIF_BEAM) {
+		if (turret_weapon_has_flags(swp, &beams)) {
 			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
-		} else if (flags & WIF_FLAK) {
+		}else if (turret_weapon_has_flags(swp, &flak)) {
 			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
 		} else {
 			if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
 				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
 				// ballistic too! - Goober5000
-				if (flags2 & WIF2_BALLISTIC)
+				if (turret_weapon_has_flags(swp, &ballistic))
 				{
 					sprintf(outstr, "%s", XSTR("Turret", 1487));
 				}
 				// the TVWP has some primaries flagged as bombs
-				else if (flags & WIF_BOMB)
+				else if (turret_weapon_has_flags(swp, &bomb))
 				{
 					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 				}
@@ -1580,18 +1588,18 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 				}
 			} else {
 				// Mantis #2226: find out if there are any weapons here at all
-				if (flags == 0 && flags2 == 0) {
+				if (!flags.any_set()) {
 					sprintf(outstr, "%s", NOX("Unused"));
-				} else {
-					// Illegal subtype
+			} else {
+				// Illegal subtype
 					static bool Turret_illegal_subtype_warned = false;
 					if (!Turret_illegal_subtype_warned) {
 						Turret_illegal_subtype_warned = true;
 						Warning(LOCATION, "This turret has an illegal subtype!  Trace out and fix!");
 					}
-					sprintf(outstr, "%s", XSTR("Turret", 1487));
-				}
+				sprintf(outstr, "%s", XSTR("Turret", 1487));
 			}
+		}
 		}
 	} else if(swp->num_tertiary_banks) {
 		//TODO: add tertiary turret code stuff here
@@ -1764,8 +1772,8 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 	}
 
 	// print out 'disabled' on the monitor if the target is disabled
-	if ( (target_shipp->flags & SF_DISABLED) || (ship_subsys_disrupted(target_shipp, SUBSYSTEM_ENGINE)) ) {
-		if ( target_shipp->flags & SF_DISABLED ) {
+	if ( (target_shipp->flags[Ship::Ship_Flags::Disabled]) || (ship_subsys_disrupted(target_shipp, SUBSYSTEM_ENGINE)) ) {
+		if ( target_shipp->flags[Ship::Ship_Flags::Disabled] ) {
 			strcpy_s(outstr, XSTR( "DISABLED", 342));
 		} else {
 			strcpy_s(outstr, XSTR( "DISRUPTED", 343));
@@ -2250,7 +2258,7 @@ void hud_update_ship_status(object *targetp)
     
     if ( (targetp->instance >= 0) && (targetp->instance < MAX_SHIPS) ) {
     	// print out status of ship for the targetbox
-		if ( (Ships[targetp->instance].flags & SF_DISABLED) || (ship_subsys_disrupted(&Ships[targetp->instance], SUBSYSTEM_ENGINE)) ) {
+		if ( (Ships[targetp->instance].flags[Ship::Ship_Flags::Disabled]) || (ship_subsys_disrupted(&Ships[targetp->instance], SUBSYSTEM_ENGINE)) ) {
 			Current_ts = TS_DIS;
 		} else {
 			if ( Pl_target_integrity > 0.9 ) {

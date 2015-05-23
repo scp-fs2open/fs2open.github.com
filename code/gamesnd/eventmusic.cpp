@@ -1618,11 +1618,11 @@ int hostile_ships_present()
 			continue;
 
 		// check if ship is threatening
-		if ( (shipp->flags & (SF_DISABLED|SF_DYING|SF_DEPARTING)) || (ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) ) 
+		if ((shipp->flags[Ship::Ship_Flags::Disabled] || shipp->flags[Ship::Ship_Flags::Dying] || is_ship_departing(shipp)) || (ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)))
 			continue;
 	
 		// check if ship is flyable
-		if ( Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE ) {
+		if ( !is_flyable(&Ship_info[shipp->ship_info_index])) {
 			continue;
 		}
 
@@ -1651,7 +1651,7 @@ int hostile_ships_to_arrive()
 	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
 		// check if ship can arrive
-		if (p_objp->flags & P_SF_CANNOT_ARRIVE)
+		if (p_objp->flags[Mission::Parse_Object_Flags::SF_Cannot_arrive])
 			continue;
 
 		// check if ship is enemy ship (we attack it)

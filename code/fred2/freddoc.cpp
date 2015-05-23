@@ -383,7 +383,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 	obj_merge_created_list();
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_PLAYER_SHIP) {
+		if (objp->flags[Object::Object_Flags::Player_ship]) {
 			Assert(objp->type == OBJ_SHIP);
 			objp->type = OBJ_START;
 //			Player_starts++;
@@ -456,7 +456,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 	// RT, don't need this anymore
 #if 0
 
-	if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
+	if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
 		strcpy_s(name, NOX("gamepalette-subspace"));
 	} else {
 		strcpy_s(name, "gamepalette1-01");

@@ -357,7 +357,7 @@ int hud_lock_world_pos_in_range(vec3d *target_world_pos, vec3d *vec_to_target)
 	dist_to_target = vm_vec_mag(vec_to_target);
 
 	//local ssms are always in range :)
-	if (wip->wi_flags2 & WIF2_LOCAL_SSM)
+	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm])
 		weapon_range=wip->lssm_lock_range;
 	else
 		// calculate the range of the weapon, and only display the lead target indicator when
@@ -367,7 +367,7 @@ int hud_lock_world_pos_in_range(vec3d *target_world_pos, vec3d *vec_to_target)
 	
 
 	// reduce firing range in nebula
-	if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
+	if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
 		weapon_range *= 0.8f;
 	}
 
@@ -534,7 +534,7 @@ void hud_do_lock_indicator(float frametime)
 
 	// be sure to unset this flag, then possibly set later in this function so that
 	// threat indicators work properly.
-	Player_ai->ai_flags &= ~AIF_SEEK_LOCK;
+	Player_ai->ai_flags.unset(AI::AI_Flags::Seek_lock);
 
 	if ( hud_abort_lock() ) {
 		hud_lock_reset();
@@ -563,7 +563,7 @@ void hud_do_lock_indicator(float frametime)
 	vec3d dir_to_target;
 	vm_vec_normalized_dir(&dir_to_target, &tobjp->pos, &Player_obj->pos);
 
-	if ( !(wip->wi_flags & WIF_LOCKED_HOMING) ) {
+	if ( !(is_locked_homing(wip)) ) {
 		hud_lock_reset();
 		return;		
 	}
@@ -575,7 +575,7 @@ void hud_do_lock_indicator(float frametime)
 	}
 
 	// Javelins must lock on engines if locking on a ship and those must be in sight
-	if (wip->wi_flags & WIF_HOMING_JAVELIN && 
+	if (wip->wi_flags[Weapon::Info_Flags::Homing_javelin] && 
 		tobjp->type == OBJ_SHIP &&
 		Player->locking_subsys != NULL) {
 			vec3d subobj_pos;
@@ -589,7 +589,7 @@ void hud_do_lock_indicator(float frametime)
 			}
 	}
 
-	if (wip->wi_flags & WIF_HOMING_JAVELIN && 
+	if (wip->wi_flags[Weapon::Info_Flags::Homing_javelin] && 
 		tobjp->type == OBJ_SHIP &&
 		Player->locking_subsys == NULL) {
 			Player->locking_subsys =
@@ -652,7 +652,7 @@ void hud_do_lock_indicator(float frametime)
 		}
 	}
 	else {
-		Player_ai->ai_flags |= AIF_SEEK_LOCK;		// set this flag so multiplayer's properly track lock on other ships
+		Player_ai->ai_flags.set(AI::AI_Flags::Seek_lock);		// set this flag so multiplayer's properly track lock on other ships
 		if ( Missile_lock_loop != -1 && snd_is_playing(Missile_lock_loop) ) {
 			snd_stop(Missile_lock_loop);
 			Missile_lock_loop = -1;
@@ -1016,7 +1016,7 @@ void hud_lock_update_lock_pos(object *target_objp)
 	ship_weapon *swp = &Player_ship->weapons;
 	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
-	if ( Player_ai->targeted_subsys && !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
+	if ( Player_ai->targeted_subsys && !(wip->wi_flags[Weapon::Info_Flags::Homing_javelin]) ) {
 		get_subsystem_world_pos(target_objp, Player_ai->targeted_subsys, &lock_world_pos);
 		return;
 	}
@@ -1048,8 +1048,8 @@ void hud_lock_get_new_lock_pos(object *target_objp)
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
 	// if a large ship, lock to pos closest to center and within range
-	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) &&
-		 !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
+	if ( (target_shipp) && (is_big_huge(&Ship_info[target_shipp->ship_info_index])) &&
+		 !(wip->wi_flags[Weapon::Info_Flags::Homing_javelin]) ) {
 		// check all the subsystems and the center of the ship
 		
 		// assume best lock pos is the center of the ship
@@ -1087,7 +1087,7 @@ void hud_lock_get_new_lock_pos(object *target_objp)
 			}
 			ss = GET_NEXT( ss );
 		}
-	} else if ( (target_shipp) && (wip->wi_flags & WIF_HOMING_JAVELIN)) {
+	} else if ( (target_shipp) && (wip->wi_flags[Weapon::Info_Flags::Homing_javelin])) {
 		Player->locking_subsys = ship_get_closest_subsys_in_sight(target_shipp, SUBSYSTEM_ENGINE, &Player_obj->pos);
 		if (Player->locking_subsys != NULL) {
 			get_subsystem_world_pos(target_objp, Player->locking_subsys, &lock_world_pos);
@@ -1126,12 +1126,12 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
 	// If subsystem is targeted, we must try to lock on that
-	if ( Player_ai->targeted_subsys && !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
+	if ( Player_ai->targeted_subsys && !(wip->wi_flags[Weapon::Info_Flags::Homing_javelin]) ) {
 		hud_lock_update_lock_pos(target_objp);
 		Player->locking_on_center=0;
 		Player->locking_subsys=Player_ai->targeted_subsys;
 		Player->locking_subsys_parent=Player_ai->target_objnum;
-	} else if ( (wip->wi_flags & WIF_HOMING_JAVELIN) && (target_objp->type == OBJ_SHIP)) {
+	} else if ( (wip->wi_flags[Weapon::Info_Flags::Homing_javelin]) && (target_objp->type == OBJ_SHIP)) {
 		if (!Player->locking_subsys ||
 			Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE) {
 				Player->locking_subsys = ship_get_closest_subsys_in_sight(&Ships[target_objp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);

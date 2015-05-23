@@ -291,10 +291,10 @@
     <ClCompile Include="..\..\code\debugconsole\console.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
+	<ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
+	<ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fireball\fireballs.cpp">
@@ -1136,10 +1136,10 @@
     <ClInclude Include="..\..\code\Debris\debris.h">
       <Filter>Debris</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\console.h">
+	<ClInclude Include="..\..\code\debugconsole\console.h">
       <Filter>DebugConsole</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
+	<ClInclude Include="..\..\code\debugconsole\consoleparse.h">
       <Filter>DebugConsole</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\DirectX\vasync.h">
@@ -1879,6 +1879,24 @@
     </ClInclude>
     <ClInclude Include="..\..\code\model\modelrender.h">
       <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\ship\ship_flags.h">
+      <Filter>Ship</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\weapon\weapon_flags.h">
+      <Filter>Weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\mission\mission_flags.h">
+      <Filter>Mission</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\object\object_flags.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\model\model_flags.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\ai\ai_flags.h">
+      <Filter>AI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

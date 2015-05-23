@@ -19,6 +19,7 @@
 #include "weapon/shockwave.h"
 #include "graphics/generic.h"
 #include "model/model.h"
+#include "weapon/weapon_flags.h"
 
 class object;
 class ship_subsys;
@@ -34,113 +35,8 @@ extern int Num_weapon_subtypes;
 #define	WRT_LASER	1
 #define	WRT_POF		2
 
-//	Bitflags controlling weapon behavior
-#define	MAX_WEAPON_FLAGS	18						//	Maximum number of different bit flags legal to specify in a single weapons.tbl Flags line
-
-#define WIF_DEFAULT_VALUE	0
-#define WIF2_DEFAULT_VALUE	0
-#define WIF3_DEFAULT_VALUE	0
-
-#define	WIF_HOMING_HEAT	(1 << 0)				//	if set, this weapon homes via seeking heat
-#define	WIF_HOMING_ASPECT	(1 << 1)				//	if set, this weapon homes via chasing aspect
-#define	WIF_ELECTRONICS	(1 << 2)				//	Takes out electronics systems.
-#define	WIF_SPAWN			(1 << 3)				//	Spawns projectiles on detonation.
-#define	WIF_REMOTE			(1 << 4)				//	Can be remotely detonated by parent.
-#define	WIF_PUNCTURE		(1 << 5)				//	Punctures armor, damaging subsystems.
-#define	WIF_SUPERCAP		(1 << 6)				//	This is a weapon which does supercap class damage (meaning, it applies real damage to supercap ships)
-#define WIF_CMEASURE		(1 << 7)				// Weapon acts as a countermeasure
-//#define	WIF_AREA_EFFECT	(1 << 7)				//	Explosion has an area effect
-//#define	WIF_SHOCKWAVE		(1 << 8)				//	Explosion has a shockwave
-//WMC - These are no longer needed so these spots are free
-#define	WIF_HOMING_JAVELIN	(1 << 8)				// WC Saga Javelin HS style heatseeker, locks only on target's engines
-#define	WIF_TURNS			(1 << 9)				// Set this if the weapon ever changes heading.  If you
-															// don't set this and the weapon turns, collision detection
-															// won't work, I promise!
-#define	WIF_SWARM			(1 << 10)			// Missile "swarms".. ie changes heading and twists on way to target
-#define	WIF_TRAIL			(1 << 11)			//	Has a trail
-#define	WIF_BIG_ONLY		(1 << 12)			//	Only big ships (cruiser, capital, etc.) can arm this weapon
-#define	WIF_CHILD			(1 << 13)			//	No ship can have this weapon.  It gets created by weapon detonations.
-#define	WIF_BOMB				(1 << 14)			// Bomb-type missile, can be targeted
-#define	WIF_HUGE				(1 << 15)			//	Huge damage (generally 500+), probably only fired at huge ships.
-#define	WIF_NO_DUMBFIRE	(1	<<	16)			// Missile cannot be fired dumbfire (ie requires aspect lock)
-#define	WIF_THRUSTER		(1 << 17)			// Has thruster cone and/or glow
-#define	WIF_IN_TECH_DATABASE		(1 << 18)
-#define	WIF_PLAYER_ALLOWED		(1 << 19)   // allowed to be on starting wing ships/in weaponry pool
-#define	WIF_BOMBER_PLUS	(1 << 20)			//	Fire this missile only at a bomber or big ship.  But not a fighter.
-
-#define	WIF_CORKSCREW		(1 << 21)			// corkscrew style missile
-#define	WIF_PARTICLE_SPEW	(1 << 22)			// spews particles as it travels
-#define	WIF_EMP				(1 << 23)			// weapon explodes with a serious EMP effect
-#define	WIF_ENERGY_SUCK	(1 << 24)			// energy suck primary (impact effect)
-#define	WIF_FLAK				(1 << 25)			// use for big-ship turrets - flak gun
-#define	WIF_BEAM				(1 << 26)			// if this is a beam weapon : NOTE - VERY SPECIAL CASE
-#define	WIF_TAG				(1 << 27)			// this weapon has a tag effect when it hits
-#define	WIF_SHUDDER			(1 << 28)			// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
-#define	WIF_LOCKARM			(1 << 29)			// if the missile was fired without a lock, it does significanlty less damage on impact
-#define	WIF_STREAM			(1 << 30)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
-// NOTE: the remaining WIF is reserved for a flag that truly needs to be in the WIF_ flag field,
-// as opposed to any typical new flag that can be added to WIF3
-
-#define WIF2_BALLISTIC					(1 << 0)	// ballistic primaries - Goober5000
-#define WIF2_PIERCE_SHIELDS				(1 << 1)	// shield pierceing -Bobboau
-#define WIF2_DEFAULT_IN_TECH_DATABASE	(1 << 2)	// default in tech database - Goober5000
-#define WIF2_LOCAL_SSM					(1 << 3)	// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
-#define WIF2_TAGGED_ONLY				(1 << 4)	// can only fire if target is tagged
-#define WIF2_CYCLE						(1 << 5)	// will only fire from (shots (defalts to 1)) points at a time
-#define WIF2_SMALL_ONLY					(1 << 6)	// can only be used against small ships like fighters or bombers
-#define WIF2_SAME_TURRET_COOLDOWN		(1 << 7)	// the weapon has the same cooldown time on turrets
-#define WIF2_MR_NO_LIGHTING				(1 << 8)	// don't render with lighting, regardless of user options
-#define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
-#define WIF2_TRAINING					(1 << 10)	// Weapon does shield/hull damage, but doesn't hurt subsystems, whack you, or put marks on your ship.
-#define WIF2_SMART_SPAWN				(1 << 11)   // Spawn weapon that is fired via turrets like normal weapons
-#define WIF2_INHERIT_PARENT_TARGET		(1 << 12)   // child weapons home in on the target their parent is homing on.
-#define WIF2_NO_EMP_KILL				(1 << 13)	// though weapon has hitpoints it can not be disabled by EMP
-#define WIF2_VARIABLE_LEAD_HOMING		(1 << 14)	// allows user defined scaler to be added to lead (to enable, lead, pure or lag pursuit for missiles)
-#define WIF2_UNTARGETED_HEAT_SEEKER		(1 << 15)	// forces heat seeker to lose target immeadiately (and acquire a random new one)
-#define WIF2_HARD_TARGET_BOMB			(1 << 16)	// removes the radius doubling effect bombs have for collisions
-#define WIF2_NON_SUBSYS_HOMING			(1 << 17)	// spreads fired missiles around the target ships hull
-#define WIF2_NO_LIFE_LOST_IF_MISSED		(1 << 18)	// prevents game from shortening the lifeleft of the missed but still homing missiles
-#define WIF2_CUSTOM_SEEKER_STR			(1 << 19)	// sets the game to use custom seeker strengths instead of default values
-#define WIF2_CAN_BE_TARGETED			(1 << 20)	// allows non-bomb weapons to be targeted
-#define WIF2_SHOWN_ON_RADAR				(1 << 21)	// allows non-bombs be visible on radar
-#define WIF2_SHOW_FRIENDLY				(1 << 22)	// allows friendly weapon radar dots be drawn
-#define WIF2_CAPITAL_PLUS				(1 << 23)   // AI will not use this weapon on fighters or bombers
-#define WIF2_EXTERNAL_WEAPON_FP			(1 << 24)	// will try to use external models FPs if possible
-#define WIF2_EXTERNAL_WEAPON_LNCH		(1 << 25)	// render external secondary as a launcher
-#define WIF2_TAKES_BLAST_DAMAGE			(1 << 26)	// This weapon can take blast damage
-#define WIF2_TAKES_SHOCKWAVE_DAMAGE		(1 << 27)	// This weapon can take shockwave damage
-#define WIF2_DONT_SHOW_ON_RADAR			(1 << 28)   // Force a weapon to not show on radar
-#define WIF2_RENDER_FLAK				(1 << 29)	// Even though this is a flak weapon, render the shell
-#define WIF2_CIWS						(1 << 30)	// This weapons' burst and shockwave damage can damage bombs (Basically, a reverse for TAKES_BLAST/SHOCKWAVE_DAMAGE
-#define WIF2_ANTISUBSYSBEAM				(1 << 31)	// This beam can target subsystems as per normal
-
-#define WIF3_NOLINK						(1 << 0)	// This weapon can not be linked with others
-#define WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS	(1 << 1)	// override MAX_TURRET_DISRUPT_TIME in emp.cpp - Goober5000
-#define WIF3_NO_LINKED_PENALTY			(1 << 2)	// This weapon does not count into linked firing penalty
-#define WIF3_NO_HOMING_SPEED_RAMP 		(1 << 3)	// Disables the 1s long speed ramping when firing locked-on secondaries
-#define WIF3_CMEASURE_ASPECT_HOME_ON	(1 << 4)	// This countermeasure flag makes aspect seekers home on the countermeasure instead of going into dumbfire mode
-#define WIF3_TURRET_INTERCEPTABLE		(1 << 5)	// These two flags mark a weapon as being interceptable by the AI
-#define WIF3_FIGHTER_INTERCEPTABLE		(1 << 6)	// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
-#define WIF3_AOE_ELECTRONICS			(1 << 7)	// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
-#define WIF3_APPLY_RECOIL				(1 << 8)	// Apply recoil using weapon and ship info
-
-#define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
-#define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
-#define WIF_HURTS_BIG_SHIPS			(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
 
 #define	WEAPON_EXHAUST_DELTA_TIME	75		//	Delay in milliseconds between exhaust blobs
-
-#define WF_LOCK_WARNING_PLAYED		(1<<0)		// set when a lock warning sound is played for the player
-																//	(needed since we don't want to play multiple lock sounds)
-#define WF_ALREADY_APPLIED_STATS		(1<<1)		// for use in ship_apply_local and ship_apply_global damage functions
-																// so that we don't record multiple hits (stats) for one impact
-#define WF_PLAYED_FLYBY_SOUND			(1<<2)		// flyby sound has been played for this weapon
-#define WF_CONSIDER_FOR_FLYBY_SOUND	(1<<3)		// consider for flyby
-#define WF_DEAD_IN_WATER				(1<<4)		// a missiles engines have died
-#define WF_LOCKED_WHEN_FIRED			(1<<5)		// fired with a lock
-#define WF_DESTROYED_BY_WEAPON		(1<<6)		// destroyed by damage from other weapon
-#define WF_SPAWNED					(1<<7)		//Spawned from a spawning type weapon
-#define WF_HOMING_UPDATE_NEEDED		(1<<8)		// this is a newly spawned homing weapon which needs to update client machines
 
 // flags for setting burst fire 
 #define WBF_FAST_FIRING				(1<<0)		// burst is to use only the firewait to determine firing delays
@@ -169,7 +65,7 @@ typedef struct weapon {
 	int		target_sig;						//	So we know if the target is the same one we've been tracking
 	float		nearest_dist;					//	nearest distance yet attained to target
 	fix		creation_time;					//	time at which created, stuffed Missiontime
-	int		weapon_flags;					//	bit flags defining behavior, see WF_xxxx
+	flagset<Weapon::Weapon_Flags> weapon_flags;					//	bit flags defining behavior, see WF_xxxx
 	object*	homing_object;					//	object this weapon is homing on.
 	ship_subsys*	homing_subsys;			// subsystem this weapon is homing on
 	vec3d	homing_pos;						// world position missile is homing on
@@ -372,9 +268,7 @@ typedef struct weapon_info {
 	float max_lifetime ;						// How long this weapon will actually live for
 	float	lifetime;						// How long the AI thinks this thing lives (used for distance calculations etc)
 	float energy_consumed;					// Energy used up when weapon is fired
-	int	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
-	int wi_flags2;							// stupid int wi_flags, only 32 bits... argh - Goober5000
-	int wi_flags3;							// stupid int wi_flags2, only 32 bits... argh - The E
+	flagset<Weapon::Info_Flags>	wi_flags;
 	float turn_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
@@ -519,7 +413,7 @@ typedef struct weapon_info {
 
 	int	burst_shots;
 	float burst_delay;
-	int burst_flags;
+	flagset<Weapon::Burst_Flags> burst_flags;
 
 	// Thruster effects
 	generic_anim	thruster_flame;
@@ -673,5 +567,11 @@ void weapon_pause_sounds();
 
 // Unpauses all running weapon sounds
 void weapon_unpause_sounds();
+
+
+inline bool is_homing(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Homing_heat] || wip->wi_flags[Weapon::Info_Flags::Homing_aspect] || wip->wi_flags[Weapon::Info_Flags::Homing_javelin]; }
+inline bool is_locked_homing(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Homing_aspect] || wip->wi_flags[Weapon::Info_Flags::Homing_javelin]; }
+inline bool hurts_big_ships(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Bomb] || wip->wi_flags[Weapon::Info_Flags::Beam] || wip->wi_flags[Weapon::Info_Flags::Huge] || wip->wi_flags[Weapon::Info_Flags::Big_only]; }
+inline bool is_interceptable(weapon_info* wip) { return wip->wi_flags[Weapon::Info_Flags::Fighter_Interceptable] || wip->wi_flags[Weapon::Info_Flags::Turret_Interceptable]; }
 
 #endif

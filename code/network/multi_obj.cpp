@@ -231,17 +231,17 @@ void multi_oo_build_ship_list(net_player *pl)
 		}		
 			
 		// must be a ship, a weapon, and _not_ an observer
-		if (Objects[moveup->objnum].flags & OF_SHOULD_BE_DEAD){
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead]){
 			continue;
 		}
 
 		// don't send info for dying ships
-		if (Ships[Objects[moveup->objnum].instance].flags & SF_DYING){
+		if (Ships[Objects[moveup->objnum].instance].flags[Ship::Ship_Flags::Dying]){
 			continue;
 		}		
 
 		// never update the knossos device
-		if ((Ships[Objects[moveup->objnum].instance].ship_info_index >= 0) && (Ships[Objects[moveup->objnum].instance].ship_info_index < Num_ship_classes) && (Ship_info[Ships[Objects[moveup->objnum].instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE)){
+		if ((Ships[Objects[moveup->objnum].instance].ship_info_index >= 0) && (Ships[Objects[moveup->objnum].instance].ship_info_index < Num_ship_classes) && (Ship_info[Ships[Objects[moveup->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device])){
 			continue;
 		}
 				
@@ -286,13 +286,13 @@ int multi_oo_pack_client_data(ubyte *data)
 	if ( Player_ai->current_target_is_locked ){
 		out_flags |= OOC_TARGET_LOCKED;
 	}
-	if ( Player_ai->ai_flags & AIF_SEEK_LOCK ){	
+	if ( Player_ai->ai_flags[AI::AI_Flags::Seek_lock] ){	
 		out_flags |= OOC_TARGET_SEEK_LOCK;
 	}
 	if ( Player->locking_on_center ){
 		out_flags |= OOC_LOCKING_ON_CENTER;
 	}
-	if ( (Player_ship != NULL) && (Player_ship->flags & SF_TRIGGER_DOWN) ){
+	if ( (Player_ship != NULL) && (Player_ship->flags[Ship::Ship_Flags::Trigger_down]) ){
 		out_flags |= OOC_TRIGGER_DOWN;
 	}
 
@@ -307,7 +307,7 @@ int multi_oo_pack_client_data(ubyte *data)
 		}
 
 		// linked or not
-		if(Player_ship->flags & SF_PRIMARY_LINKED){
+		if(Player_ship->flags[Ship::Ship_Flags::Primary_linked]){
 			out_flags |= OOC_PRIMARY_LINKED;
 		}
 	}
@@ -353,6 +353,7 @@ int multi_oo_pack_client_data(ubyte *data)
 #define PACK_USHORT(v) { short swap = INTEL_SHORT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(short) ); packet_size += sizeof(short); }
 #define PACK_SHORT(v) { ushort swap = INTEL_SHORT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(ushort) ); packet_size += sizeof(ushort); }
 #define PACK_INT(v) { int swap = INTEL_INT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(int) ); packet_size += sizeof(int); }
+#define PACK_LONG(v) {long swap = INTEL_LONG(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(long)); packet_size += sizeof(long); }
 int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data_out)
 {	
 	ubyte data[255];
@@ -521,13 +522,13 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 	// if this ship is a support ship, send some extra info
 	ubyte support_extra = 0;
-	if(MULTIPLAYER_MASTER && (sip->flags & SIF_SUPPORT) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
+	if(MULTIPLAYER_MASTER && (sip->flags[Ship::Info_Flags::Support]) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
 		ushort dock_sig;
 
 		// flag
 		support_extra = 1;		
 		PACK_BYTE( support_extra );
-		PACK_INT( Ai_info[shipp->ai_index].ai_flags );
+		PACK_LONG( Ai_info[shipp->ai_index].ai_flags.to_long() );
 		PACK_INT( Ai_info[shipp->ai_index].mode );
 		PACK_INT( Ai_info[shipp->ai_index].submode );
 
@@ -620,9 +621,9 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 		// trigger down, bank info
 		if(shipp != NULL){
 			if(in_flags & OOC_TRIGGER_DOWN){
-				shipp->flags |= SF_TRIGGER_DOWN;
+				shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 			} else {
-				shipp->flags &= ~SF_TRIGGER_DOWN;
+				shipp->flags.set(Ship::Ship_Flags::Trigger_down, false);
 			}
 			
 			if(in_flags & OOC_PRIMARY_BANK){		
@@ -632,9 +633,9 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 			}
 
 			// linked or not								
-			shipp->flags &= ~SF_PRIMARY_LINKED;
+			shipp->flags.set(Ship::Ship_Flags::Primary_linked, false);
 			if(in_flags & OOC_PRIMARY_LINKED){				
-				shipp->flags |= SF_PRIMARY_LINKED;
+				shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 			}
 		}
 
@@ -642,9 +643,9 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 		if((shipp != NULL) && (shipp->ai_index != -1)){			
 			Ai_info[shipp->ai_index].current_target_is_locked = ( in_flags & OOC_TARGET_LOCKED) ? 1 : 0;
 			if	( in_flags & OOC_TARGET_SEEK_LOCK ) {
-				Ai_info[shipp->ai_index].ai_flags |= AIF_SEEK_LOCK;
+				Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Seek_lock);
 			} else {
-				Ai_info[shipp->ai_index].ai_flags &= ~AIF_SEEK_LOCK;
+				Ai_info[shipp->ai_index].ai_flags.unset(AI::AI_Flags::Seek_lock);
 			}
 		}
 
@@ -896,7 +897,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 			// add the value just generated (it was zero'ed above) into the array of generic system types
 			subsys_type = subsysp->system_info->type;					// this is the generic type of subsystem
 			Assert ( subsys_type < SUBSYSTEM_MAX );
-			if (!(subsysp->flags & SSF_NO_AGGREGATE)) {
+			if (!(subsysp->flags[Ship::Subsystem_Flags::No_aggregate])) {
 				shipp->subsys_info[subsys_type].aggregate_current_hits += val;
 			}
 			subsys_count++;
@@ -944,17 +945,18 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	GET_DATA(support_extra);
 	if(support_extra){
 		ushort dock_sig;
-		int ai_flags, ai_mode, ai_submode;
+		int ai_mode, ai_submode;
+		ulong ai_flags;
 
 		// flag		
-		GET_INT(ai_flags);
+		GET_LONG(ai_flags);
 		GET_INT(ai_mode);
 		GET_INT(ai_submode);
 		GET_USHORT(dock_sig);		
 
 		// valid ship?							
 		if((shipp != NULL) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
-			Ai_info[shipp->ai_index].ai_flags = ai_flags;
+			Ai_info[shipp->ai_index].ai_flags.from_long(ai_flags);
 			Ai_info[shipp->ai_index].mode = ai_mode;
 			Ai_info[shipp->ai_index].submode = ai_submode;
 
@@ -991,15 +993,15 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		}
 
 		// linked or not
-		shipp->flags &= ~SF_PRIMARY_LINKED;
+		shipp->flags.set(Ship::Ship_Flags::Primary_linked, false);
 		if(oo_flags & OO_PRIMARY_LINKED){
-			shipp->flags |= SF_PRIMARY_LINKED;
+			shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 		}
 
 		// trigger down or not - server doesn't care about this. he'll get it from clients anyway		
-		shipp->flags &= ~SF_TRIGGER_DOWN;
+		shipp->flags.set(Ship::Ship_Flags::Trigger_down, false);
 		if(oo_flags & OO_TRIGGER_DOWN){
-			shipp->flags |= SF_TRIGGER_DOWN;
+			shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 		}		
 	}
 	
@@ -1152,19 +1154,19 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	oo_flags = OO_POS_NEW | OO_ORIENT_NEW;
 
 	// if its a small ship, add weapon link info
-	if((sip != NULL) && (sip->flags & (SIF_FIGHTER | SIF_BOMBER))){
+	if((sip != NULL) && (is_fighter_bomber(sip))){
 		// primary bank 0 or 1
 		if(shipp->weapons.current_primary_bank > 0){
 			oo_flags |= OO_PRIMARY_BANK;
 		}
 
 		// linked or not
-		if(shipp->flags & SF_PRIMARY_LINKED){
+		if(shipp->flags[Ship::Ship_Flags::Primary_linked]){
 			oo_flags |= OO_PRIMARY_LINKED;
 		}
 
 		// trigger down or not
-		if(shipp->flags & SF_TRIGGER_DOWN){
+		if(shipp->flags[Ship::Ship_Flags::Trigger_down]){
 			oo_flags |= OO_TRIGGER_DOWN;
 		}
 	}	
@@ -1348,7 +1350,7 @@ void multi_oo_process()
 
 			// do firing stuff for this player
 			if((Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && !(Net_players[idx].flags & NETINFO_FLAG_LIMBO) && !(Net_players[idx].flags & NETINFO_FLAG_RESPAWNING)){
-				if((Objects[Net_players[idx].m_player->objnum].flags & OF_PLAYER_SHIP) && !(Objects[Net_players[idx].m_player->objnum].flags & OF_SHOULD_BE_DEAD)){
+				if((Objects[Net_players[idx].m_player->objnum].flags[Object::Object_Flags::Player_ship]) && !(Objects[Net_players[idx].m_player->objnum].flags[Object::Object_Flags::Should_be_dead])){
 					obj_player_fire_stuff( &Objects[Net_players[idx].m_player->objnum], Net_players[idx].m_player->ci );
 				}
 			}
@@ -1445,7 +1447,7 @@ void multi_oo_send_control_info()
 	int packet_size = 0;
 
 	// if I'm dying or my object type is not a ship, bail here
-	if((Player_obj != NULL) && (Player_ship->flags & SF_DYING)){
+	if((Player_obj != NULL) && (Player_ship->flags[Ship::Ship_Flags::Dying])){
 		return;
 	}	
 	
@@ -1852,7 +1854,7 @@ int multi_oo_is_interp_object(object *objp)
 	}
 
 	// servers only interpolate other player ships
-	if(!(objp->flags & OF_PLAYER_SHIP)){
+	if(!(objp->flags[Object::Object_Flags::Player_ship])){
 		return 0;
 	}
 

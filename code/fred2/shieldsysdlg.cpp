@@ -70,7 +70,7 @@ BOOL shield_sys_dlg::OnInitDialog()
 
 	for (i=0; i<MAX_SHIPS; i++)
 		if (Ships[i].objnum >= 0) {
-			z = (Objects[Ships[i].objnum].flags & OF_NO_SHIELDS) ? 1 : 0;
+			z = (Objects[Ships[i].objnum].flags[Object::Object_Flags::No_shields]) ? 1 : 0;
 			if (!teams[Ships[i].team])
 				Shield_sys_teams[Ships[i].team] = z;
 			else if (Shield_sys_teams[Ships[i].team] != z)
@@ -116,9 +116,9 @@ void shield_sys_dlg::OnOK()
 				z = 1;
 
 			if (!z)
-				Objects[Ships[i].objnum].flags &= ~OF_NO_SHIELDS;
+				Objects[Ships[i].objnum].flags.unset(Object::Object_Flags::No_shields);
 			else if (z == 1)
-				Objects[Ships[i].objnum].flags |= OF_NO_SHIELDS;
+				Objects[Ships[i].objnum].flags.set(Object::Object_Flags::No_shields);
 		}
 
 	CDialog::OnOK();

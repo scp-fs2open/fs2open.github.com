@@ -124,9 +124,6 @@
     <Filter Include="PilotFile">
       <UniqueIdentifier>{73764146-6640-4a00-9463-532184af6694}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Playerman">
-      <UniqueIdentifier>{9db79e68-6640-4232-9f4c-7811fcd113f4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Popup">
       <UniqueIdentifier>{a46119c3-864f-48b2-8830-d2e9dbc8f9bc}</UniqueIdentifier>
     </Filter>
@@ -204,6 +201,9 @@
     </Filter>
     <Filter Include="GameHelp\fs2netd">
       <UniqueIdentifier>{eaaf5609-a655-4b46-95b4-bee16c341561}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Playerman">
+      <UniqueIdentifier>{9db79e68-6640-4232-9f4c-7811fcd113f4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -288,7 +288,13 @@
     <ClCompile Include="..\..\code\Debris\debris.cpp">
       <Filter>Debris</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\DebugConsole\console.cpp">
+    <ClCompile Include="..\..\code\debugconsole\console.cpp">
+      <Filter>DebugConsole</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
+      <Filter>DebugConsole</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fireball\fireballs.cpp">
@@ -1139,6 +1145,12 @@
     <ClInclude Include="..\..\code\Debris\debris.h">
       <Filter>Debris</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\code\debugconsole\console.h">
+      <Filter>DebugConsole</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
+      <Filter>DebugConsole</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\code\DirectX\vasync.h">
       <Filter>DirectX</Filter>
     </ClInclude>
@@ -1871,14 +1883,20 @@
     <ClInclude Include="..\..\code\PilotFile\pilotfile.h">
       <Filter>PilotFile</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\timerbar.h">
-      <Filter>DebugConsole</Filter>
+    <ClInclude Include="..\..\code\ship\ship_flags.h">
+      <Filter>Ship</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\console.h">
-      <Filter>DebugConsole</Filter>
+    <ClInclude Include="..\..\code\weapon\weapon_flags.h">
+      <Filter>Weapon</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
-      <Filter>DebugConsole</Filter>
+    <ClInclude Include="..\..\code\mission\mission_flags.h">
+      <Filter>Mission</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\object\object_flags.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\model\model_flags.h">
+      <Filter>Model</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\graphics\shadows.h">
       <Filter>Graphics</Filter>

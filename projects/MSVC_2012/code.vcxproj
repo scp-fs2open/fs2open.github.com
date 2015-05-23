@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug AVX|Win32">
       <Configuration>Debug AVX</Configuration>
@@ -37,7 +37,6 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C55F5706-E947-41EF-A3E8-6D711CD4ECD8}</ProjectGuid>
     <RootNamespace>code</RootNamespace>
-    <VCTargetsPath Condition="'$(VCTargetsPath11)' != '' and '$(VSVersion)' == '' and $(VisualStudioVersion) == ''">$(VCTargetsPath11)</VCTargetsPath>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'" Label="Configuration">
@@ -50,7 +49,7 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v110_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
@@ -528,10 +527,9 @@
     <ClCompile Include="..\..\code\cutscene\mveplayer.cpp" />
     <ClCompile Include="..\..\code\cutscene\oggplayer.cpp" />
     <ClCompile Include="..\..\code\Debris\debris.cpp" />
-    <ClCompile Include="..\..\code\DebugConsole\console.cpp" />
+    <ClCompile Include="..\..\code\debugconsole\console.cpp" />
     <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp" />
     <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp" />
-    <ClCompile Include="..\..\code\debugconsole\timerbar.cpp" />
     <ClCompile Include="..\..\code\fireball\fireballs.cpp" />
     <ClCompile Include="..\..\code\fireball\warpineffect.cpp" />
     <ClCompile Include="..\..\code\gamehelp\contexthelp.cpp" />
@@ -812,10 +810,9 @@
     <ClInclude Include="..\..\code\cutscene\movie.h" />
     <ClInclude Include="..\..\code\cutscene\mvelib.h" />
     <ClInclude Include="..\..\code\cutscene\oggplayer.h" />
-    <ClInclude Include="..\..\code\Debris\debris.h" />
     <ClInclude Include="..\..\code\debugconsole\console.h" />
     <ClInclude Include="..\..\code\debugconsole\consoleparse.h" />
-    <ClInclude Include="..\..\code\debugconsole\timerbar.h" />
+    <ClInclude Include="..\..\code\Debris\debris.h" />
     <ClInclude Include="..\..\code\DirectX\vasync.h" />
     <ClInclude Include="..\..\code\DirectX\vdinput.h" />
     <ClInclude Include="..\..\code\DirectX\vdplay.h" />
@@ -931,10 +928,12 @@
     <ClInclude Include="..\..\code\missionui\missionstats.h" />
     <ClInclude Include="..\..\code\missionui\missionweaponchoice.h" />
     <ClInclude Include="..\..\code\missionui\redalert.h" />
+    <ClInclude Include="..\..\code\mission\mission_flags.h" />
     <ClInclude Include="..\..\code\model\model.h" />
     <ClInclude Include="..\..\code\model\modelanim.h" />
     <ClInclude Include="..\..\code\model\modelrender.h" />
     <ClInclude Include="..\..\code\model\modelsinc.h" />
+    <ClInclude Include="..\..\code\model\model_flags.h" />
     <ClInclude Include="..\..\code\mod_table\mod_table.h" />
     <ClInclude Include="..\..\code\object\deadobjectdock.h" />
     <ClInclude Include="..\..\code\object\objcollide.h" />
@@ -942,6 +941,7 @@
     <ClInclude Include="..\..\code\object\objectdock.h" />
     <ClInclude Include="..\..\code\object\objectshield.h" />
     <ClInclude Include="..\..\code\object\objectsnd.h" />
+    <ClInclude Include="..\..\code\object\object_flags.h" />
     <ClInclude Include="..\..\code\object\parseobjectdock.h" />
     <ClInclude Include="..\..\code\object\waypoint.h" />
     <ClInclude Include="..\..\code\Observer\observer.h" />
@@ -973,6 +973,7 @@
     <ClInclude Include="..\..\code\render\3dinternal.h" />
     <ClInclude Include="..\..\code\ship\afterburner.h" />
     <ClInclude Include="..\..\code\ship\awacs.h" />
+    <ClInclude Include="..\..\code\ship\ship_flags.h" />
     <ClInclude Include="..\..\code\ship\ship.h" />
     <ClInclude Include="..\..\code\ship\shipcontrails.h" />
     <ClInclude Include="..\..\code\ship\shipfx.h" />
@@ -1062,6 +1063,7 @@
     <ClInclude Include="..\..\code\iff_defs\iff_defs.h" />
     <ClInclude Include="..\..\code\external_dll\externalcode.h" />
     <ClInclude Include="..\..\code\external_dll\trackirpublic.h" />
+    <ClInclude Include="..\..\code\weapon\weapon_flags.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\code\directx\dxguid.lib" />

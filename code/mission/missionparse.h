@@ -19,6 +19,7 @@
 #include "sound/sound.h"
 #include "parse/sexp.h"
 #include "io/keycontrol.h"
+#include "mission/mission_flags.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -64,32 +65,6 @@ struct p_dock_instance;
 #define MISSION_TYPE_MULTI_TEAMS		(1<<4)
 #define MISSION_TYPE_MULTI_DOGFIGHT	(1<<5)
 
-#define MISSION_FLAG_SUBSPACE					(1<<0)	// mission takes place in subspace
-#define MISSION_FLAG_NO_PROMOTION				(1<<1)	// cannot get promoted or badges in this mission
-#define MISSION_FLAG_FULLNEB					(1<<2)	// mission is a full nebula mission
-#define MISSION_FLAG_NO_BUILTIN_MSGS			(1<<3)	// disables builtin msgs
-#define MISSION_FLAG_NO_TRAITOR					(1<<4)	// player cannot become a traitor
-#define MISSION_FLAG_TOGGLE_SHIP_TRAILS			(1<<5)	// toggles ship trails (off in nebula, on outside nebula)
-#define MISSION_FLAG_SUPPORT_REPAIRS_HULL		(1<<6)	// Toggles support ship repair of ship hulls
-#define MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT	(1<<7)	// Beam-free-all by default - Goober5000
-#define MISSION_FLAG_CURRENTLY_UNUSED_1			(1<<8)
-#define MISSION_FLAG_CURRENTLY_UNUSED_2			(1<<9)
-#define MISSION_FLAG_NO_BRIEFING				(1<<10)	// no briefing, jump right into mission - Goober5000
-#define MISSION_FLAG_TOGGLE_DEBRIEFING			(1<<11)	// Turn on debriefing for dogfight. Off for everything else - Goober5000
-#define MISSION_FLAG_CURRENTLY_UNUSED_3			(1<<12)
-#define MISSION_FLAG_ALLOW_DOCK_TREES			(1<<13)	// toggle between hub and tree model for ship docking (see objectdock.cpp) - Gooober5000
-#define MISSION_FLAG_2D_MISSION					(1<<14) // Mission is meant to be played top-down style; 2D physics and movement.
-#define MISSION_FLAG_CURRENTLY_UNUSED_4			(1<<15)
-#define MISSION_FLAG_RED_ALERT					(1<<16)	// a red-alert mission - Goober5000
-#define MISSION_FLAG_SCRAMBLE					(1<<17)	// a scramble mission - Goober5000
-#define MISSION_FLAG_NO_BUILTIN_COMMAND			(1<<18)	// turns off Command without turning off pilots - Karajorma
-#define MISSION_FLAG_PLAYER_START_AI			(1<<19) // Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
-#define MISSION_FLAG_ALL_ATTACK					(1<<20)	// all teams at war - Goober5000
-#define MISSION_FLAG_USE_AP_CINEMATICS			(1<<21) // Kazan - use autopilot cinematics
-#define MISSION_FLAG_DEACTIVATE_AP         	    (1<<22) // KeldorKatarn - deactivate autopilot (patch approved by Kazan)
-#define MISSION_FLAG_ALWAYS_SHOW_GOALS     	    (1<<23) // Karajorma - Show the mission goals, even for training missions
-#define MISSION_FLAG_END_TO_MAINHALL			(1<<24) // niffiwan - Return to the mainhall after debrief
-
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
 #define IS_MISSION_MULTI_TEAMS		(The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
@@ -123,7 +98,7 @@ typedef struct support_ship_info {
 typedef struct mission_cutscene {
 	int type; 
 	char filename[MAX_FILENAME_LEN];
-	int formula;
+	int formula; 
 } mission_cutscene;
 
 typedef struct mission {
@@ -135,7 +110,7 @@ typedef struct mission {
 	char	notes[NOTES_LENGTH];
 	char	mission_desc[MISSION_DESC_LENGTH];
 	int	game_type;
-	int	flags;
+	flagset<Mission::Mission_Flags>	flags;
 	int	num_players;									// valid in multiplayer missions -- number of players supported
 	uint	num_respawns;									// valid in multiplayer missions -- number of respawns allowed
 	int		max_respawn_delay;									// valid in multiplayer missions -- number of respawns allowed
@@ -179,7 +154,7 @@ typedef struct mission {
 		notes[ 0 ] = '\0';
 		mission_desc[ 0 ] = '\0';
 		game_type = 0;
-		flags = 0;
+		flags.reset();
 		num_players = 0;
 		num_respawns = 0;
 		max_respawn_delay = 0;
@@ -276,8 +251,8 @@ extern char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 
 extern char *Reinforcement_type_names[];
 extern char *Object_flags[];
-extern char *Parse_object_flags[];
-extern char *Parse_object_flags_2[];
+extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
+extern const size_t num_parse_object_flags;
 extern char *Icon_names[];
 extern char *Mission_event_log_flags[];
 
@@ -383,8 +358,7 @@ public:
 	int	wingnum;							// set to -1 if not in a wing -- Wing array index otherwise
 	int pos_in_wing;						// Goober5000 - needed for FRED with the new way things work
 
-	int	flags;								// mission savable flags
-	int flags2;								// Goober5000
+	flagset<Mission::Parse_Object_Flags> flags; // mission savable flags
 	int	escort_priority;					// priority in escort list
 	int	ai_class;
 	int	hotkey;								// hotkey number (between 0 and 9) -1 means no hotkey
@@ -434,85 +408,6 @@ public:
 	p_object();
 	~p_object();
 };
-
-// defines for flags used for p_objects when they are created.  Used to help create special
-// circumstances for those ships.  This list of bitfield indicators MUST correspond EXACTLY
-// (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
-
-#define MAX_PARSE_OBJECT_FLAGS	27
-
-#define P_SF_CARGO_KNOWN				(1<<0)
-#define P_SF_IGNORE_COUNT				(1<<1)
-#define P_OF_PROTECTED					(1<<2)
-#define P_SF_REINFORCEMENT				(1<<3)
-#define P_OF_NO_SHIELDS					(1<<4)
-#define P_SF_ESCORT						(1<<5)
-#define P_OF_PLAYER_START				(1<<6)
-#define P_SF_NO_ARRIVAL_MUSIC			(1<<7)
-#define P_SF_NO_ARRIVAL_WARP			(1<<8)
-#define P_SF_NO_DEPARTURE_WARP			(1<<9)
-#define P_SF_LOCKED						(1<<10)
-#define P_OF_INVULNERABLE				(1<<11)
-#define P_SF_HIDDEN_FROM_SENSORS		(1<<12)
-#define P_SF_SCANNABLE					(1<<13)	// ship is a "scannable" ship
-#define P_AIF_KAMIKAZE					(1<<14)
-#define P_AIF_NO_DYNAMIC				(1<<15)
-#define P_SF_RED_ALERT_STORE_STATUS		(1<<16)
-#define P_OF_BEAM_PROTECTED				(1<<17)
-#define P_OF_FLAK_PROTECTED				(1<<18)
-#define P_OF_LASER_PROTECTED			(1<<19)
-#define P_OF_MISSILE_PROTECTED			(1<<20)
-#define P_SF_GUARDIAN					(1<<21)
-#define P_KNOSSOS_WARP_IN				(1<<22)
-#define P_SF_VAPORIZE					(1<<23)
-#define P_SF2_STEALTH					(1<<24)
-#define P_SF2_FRIENDLY_STEALTH_INVIS	(1<<25)
-#define P_SF2_DONT_COLLIDE_INVIS		(1<<26)
-
-// the following parse object flags are used internally by FreeSpace
-#define P_SF_USE_UNIQUE_ORDERS		(1<<27)	// tells a newly created ship to use the default orders for that ship
-#define P_SF_DOCK_LEADER			(1<<28)	// Goober5000 - a docked parse object that is the leader of its group
-#define P_SF_CANNOT_ARRIVE			(1<<29)	// used to indicate that this ship's arrival cue will never be true
-#define P_SF_WARP_BROKEN			(1<<30)	// warp engine should be broken for this ship
-#define P_SF_WARP_NEVER				(1<<31)	// warp drive is destroyed
-
-// more parse flags! -- Goober5000
-// same caveat: This list of bitfield indicators MUST correspond EXACTLY
-// (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
-
-#define MAX_PARSE_OBJECT_FLAGS_2	24
-
-#define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
-#define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
-#define P2_SF2_NAV_CARRY_STATUS				(1<<2)
-#define P2_SF2_AFFECTED_BY_GRAVITY			(1<<3)
-#define P2_SF2_TOGGLE_SUBSYSTEM_SCANNING	(1<<4)
-#define P2_OF_TARGETABLE_AS_BOMB			(1<<5)
-#define P2_SF2_NO_BUILTIN_MESSAGES			(1<<6)
-#define P2_SF2_PRIMARIES_LOCKED				(1<<7)
-#define P2_SF2_SECONDARIES_LOCKED			(1<<8)
-#define P2_SF2_NO_DEATH_SCREAM				(1<<9)
-#define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<10)
-#define P2_SF2_NAV_NEEDSLINK				(1<<11)
-#define P2_SF2_HIDE_SHIP_NAME				(1<<12)
-#define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<13)
-#define P2_SF2_LOCK_ALL_TURRETS_INITIALLY	(1<<14)		
-#define P2_SF2_AFTERBURNER_LOCKED			(1<<15)	
-#define P2_OF_FORCE_SHIELDS_ON				(1<<16)
-#define P2_OF_IMMOBILE						(1<<17)
-#define P2_SF2_NO_ETS						(1<<18)
-#define P2_SF2_CLOAKED						(1<<19)
-#define P2_SF2_SHIP_LOCKED					(1<<20)
-#define P2_SF2_WEAPONS_LOCKED				(1<<21)
-#define P2_SF2_SCRAMBLE_MESSAGES			(1<<22)
-#define P2_OF_NO_COLLIDE					(1<<23) // This actually changes the OF_COLLIDES object flag
-
-// and again: these flags do not appear in the array
-//#define blah							(1<<28)
-//#define blah							(1<<29)
-#define P2_RED_ALERT_DELETED			(1<<30)	// Goober5000 - used analogously to SEF_PLAYER_DELETED
-#define P2_ALREADY_HANDLED				(1<<31)	// Goober5000 - used for docking currently, but could be used generically
-
 
 // Goober5000 - this is now dynamic
 extern SCP_vector<p_object> Parse_objects;
@@ -577,7 +472,7 @@ p_object *mission_parse_get_arrival_ship(const char *name);
 p_object *mission_parse_get_parse_object(ushort net_signature);
 p_object *mission_parse_get_parse_object(const char *name);
 int parse_create_object(p_object *objp);
-void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2);
+void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
 
 void mission_parse_close();
 

@@ -536,8 +536,8 @@
     <ClCompile Include="..\..\code\cutscene\oggplayer.cpp" />
     <ClCompile Include="..\..\code\Debris\debris.cpp" />
     <ClCompile Include="..\..\code\debugconsole\console.cpp" />
-    <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp" />
-    <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp" />
+	<ClCompile Include="..\..\code\debugconsole\consolecmds.cpp" />
+	<ClCompile Include="..\..\code\debugconsole\consoleparse.cpp" />
     <ClCompile Include="..\..\code\fireball\fireballs.cpp" />
     <ClCompile Include="..\..\code\fireball\warpineffect.cpp" />
     <ClCompile Include="..\..\code\gamehelp\contexthelp.cpp" />
@@ -798,6 +798,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h" />
+    <ClInclude Include="..\..\code\ai\ai_flags.h" />
     <ClInclude Include="..\..\code\ai\ai_profiles.h" />
     <ClInclude Include="..\..\code\ai\aibig.h" />
     <ClInclude Include="..\..\code\ai\aigoals.h" />
@@ -819,8 +820,8 @@
     <ClInclude Include="..\..\code\cutscene\mvelib.h" />
     <ClInclude Include="..\..\code\cutscene\oggplayer.h" />
     <ClInclude Include="..\..\code\debugconsole\console.h" />
-    <ClInclude Include="..\..\code\debugconsole\consoleparse.h" />
-    <ClInclude Include="..\..\code\Debris\debris.h" />
+	<ClInclude Include="..\..\code\debugconsole\consoleparse.h" />
+	<ClInclude Include="..\..\code\Debris\debris.h" />
     <ClInclude Include="..\..\code\DirectX\vasync.h" />
     <ClInclude Include="..\..\code\DirectX\vdinput.h" />
     <ClInclude Include="..\..\code\DirectX\vdplay.h" />
@@ -936,10 +937,12 @@
     <ClInclude Include="..\..\code\missionui\missionstats.h" />
     <ClInclude Include="..\..\code\missionui\missionweaponchoice.h" />
     <ClInclude Include="..\..\code\missionui\redalert.h" />
+    <ClInclude Include="..\..\code\mission\mission_flags.h" />
     <ClInclude Include="..\..\code\model\model.h" />
     <ClInclude Include="..\..\code\model\modelanim.h" />
     <ClInclude Include="..\..\code\model\modelrender.h" />
     <ClInclude Include="..\..\code\model\modelsinc.h" />
+    <ClInclude Include="..\..\code\model\model_flags.h" />
     <ClInclude Include="..\..\code\mod_table\mod_table.h" />
     <ClInclude Include="..\..\code\object\deadobjectdock.h" />
     <ClInclude Include="..\..\code\object\objcollide.h" />
@@ -947,6 +950,7 @@
     <ClInclude Include="..\..\code\object\objectdock.h" />
     <ClInclude Include="..\..\code\object\objectshield.h" />
     <ClInclude Include="..\..\code\object\objectsnd.h" />
+    <ClInclude Include="..\..\code\object\object_flags.h" />
     <ClInclude Include="..\..\code\object\parseobjectdock.h" />
     <ClInclude Include="..\..\code\object\waypoint.h" />
     <ClInclude Include="..\..\code\Observer\observer.h" />
@@ -978,6 +982,7 @@
     <ClInclude Include="..\..\code\render\3dinternal.h" />
     <ClInclude Include="..\..\code\ship\afterburner.h" />
     <ClInclude Include="..\..\code\ship\awacs.h" />
+    <ClInclude Include="..\..\code\ship\ship_flags.h" />
     <ClInclude Include="..\..\code\ship\ship.h" />
     <ClInclude Include="..\..\code\ship\shipcontrails.h" />
     <ClInclude Include="..\..\code\ship\shipfx.h" />
@@ -1067,6 +1072,7 @@
     <ClInclude Include="..\..\code\iff_defs\iff_defs.h" />
     <ClInclude Include="..\..\code\external_dll\externalcode.h" />
     <ClInclude Include="..\..\code\external_dll\trackirpublic.h" />
+    <ClInclude Include="..\..\code\weapon\weapon_flags.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\code\directx\dxguid.lib" />

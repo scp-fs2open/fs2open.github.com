@@ -16,6 +16,7 @@
 #include "globalincs/globals.h"
 #include "math/vecmat.h"
 #include "physics/physics.h"
+#include "object/object_flags.h"
 
 /*
  *		CONSTANTS
@@ -69,7 +70,7 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 //    {Put a call to this in OBJECT.C, function obj_delete_all_that_should_be_dead }
 //    WARNING: To kill an object, set it's OF_SHOULD_BE_DEAD flag.  Then,
 //    this function will get called when it's time to clean up the data.
-//    Assert( obj->flags & OF_SHOULD_BE_DEAD );
+//    Assert( obj->flags[Object::Object_Flags::Should_be_dead] );
 //    ...
 //    ... Free up all weapon-specfic data
 //    obj_delete(objnum);
@@ -127,9 +128,8 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_HIDDEN			(1<<31)	// Object is hidden (not shown) and can't be manipulated
 
 typedef struct obj_flag_name {
-	int flag;
+	Object::Object_Flags flag;
 	char flag_name[TOKEN_LENGTH];
-	int flag_list;
 } obj_flag_name;
 
 #define MAX_OBJECT_FLAG_NAMES			10
@@ -148,7 +148,7 @@ public:
 	int				parent_sig;		// This object's parent's signature
 	char			parent_type;	// This object's parent's type
 	int				instance;		// which instance.  ie.. if type is Robot, then this indexes into the Robots array
-	uint			flags;			// misc flags.  Call obj_set_flags to change this.
+	flagset<Object::Object_Flags> flags;			// misc flags.  Call obj_set_flags to change this.
 	vec3d			pos;				// absolute x,y,z coordinate of center of object
 	matrix			orient;			// orientation of object in world
 	float			radius;			// 3d size of object - for collision detection
@@ -198,7 +198,7 @@ typedef struct checkobject
 {
 	int	type;
 	int	signature;
-	uint	flags;
+	flagset<Object::Object_Flags> flags;
 	int	parent_sig;
 	int	parent_type;
 } checkobject;
@@ -246,7 +246,7 @@ void obj_init();
 //object.  Returns 0 if failed, otherwise object index.
 //You can pass 0 for parent if you don't care about that.
 //You can pass null for orient and/or pos if you don't care.
-int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, uint flags );
+int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, flagset<Object::Object_Flags> &flags );
 
 //Render an object.  Calls one of several routines based on type
 void obj_render_DEPRECATED(object *obj);
@@ -271,7 +271,7 @@ void obj_delete(int objnum);
 void obj_merge_created_list(void);
 
 // recalculate object pairs for an object
-#define OBJ_RECALC_PAIRS(obj_to_reset)		do {	obj_set_flags(obj_to_reset, obj_to_reset->flags & ~(OF_COLLIDES)); obj_set_flags(obj_to_reset, obj_to_reset->flags | OF_COLLIDES); } while(0);
+void obj_recalc_pairs(object* obj_to_reset);
 
 // Removes any occurances of object 'a' from the pairs list.
 void obj_remove_pairs( object * a );
@@ -310,11 +310,7 @@ void obj_player_fire_stuff( object *objp, control_info ci );
 // actually turn the object collision detection off.  By calling
 // this you shouldn't get Int3's in the checkobject code.  If you
 // do, then put code in here to correctly handle the case.
-void obj_set_flags(object *obj, uint new_flags);
-
-// get the Ship_info flags for a given ship (if you have the object)
-int obj_get_SIF(object *objp);
-int obj_get_SIF(int obj);
+void obj_set_flags(object *obj, flagset<Object::Object_Flags> new_flags);
 
 // get the team for any object
 int obj_team(object *objp);

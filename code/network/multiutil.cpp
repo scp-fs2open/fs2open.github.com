@@ -858,9 +858,9 @@ void multi_make_player_ai( object *pobj )
 	if ( pobj->type != OBJ_SHIP )
 		return;
 
-	pobj->flags &= ~(OF_PLAYER_SHIP);
-	obj_set_flags( pobj, pobj->flags | OF_COULD_BE_PLAYER );
-	obj_set_flags( pobj, pobj->flags & ~(OF_INVULNERABLE));		// Newly respawned players will still be invulnerable
+	pobj->flags.unset(Object::Object_Flags::Player_ship);
+	pobj->flags.set(Object::Object_Flags::Could_be_player);
+	pobj->flags.unset(Object::Object_Flags::Invulnerable);		// Newly respawned players will still be invulnerable
 
 	// target_objnum must be -1 or else new AI ship will fire on whatever this player
 	// had targeted.
@@ -1168,7 +1168,7 @@ void multi_do_client_warp(float frame_time)
    moveup = GET_FIRST(&Ship_obj_list);
 	while(moveup!=END_OF_LIST(&Ship_obj_list)){
 		// do all _necessary_ ship warp in (arrival) processing
-		if ( Ships[Objects[moveup->objnum].instance].flags & SF_ARRIVING )	
+		if ( is_ship_arriving(&Ships[Objects[moveup->objnum].instance]))	
 			shipfx_warpin_frame( &Objects[moveup->objnum], frame_time );
 		moveup = GET_NEXT(moveup);
 	}	
@@ -1431,9 +1431,9 @@ void multi_untag_player_ships()
 
 	moveup = GET_FIRST(&Ship_obj_list);
 	while(moveup != END_OF_LIST(&Ship_obj_list)){
-		if(Objects[moveup->objnum].flags & OF_PLAYER_SHIP){
-			Objects[moveup->objnum].flags &= ~(OF_PLAYER_SHIP);
-			obj_set_flags( &Objects[moveup->objnum], Objects[moveup->objnum].flags | OF_COULD_BE_PLAYER );
+		if(Objects[moveup->objnum].flags[Object::Object_Flags::Player_ship]){
+			Objects[moveup->objnum].flags.unset(Object::Object_Flags::Player_ship);
+			Objects[moveup->objnum].flags.unset(Object::Object_Flags::Could_be_player);
 		}
 		moveup = GET_NEXT(moveup);
 	}
@@ -1606,21 +1606,24 @@ void multi_create_standalone_object()
 	}
 
 	Player_obj = &Objects[objnum];
-	obj_set_flags(Player_obj, Player_obj->flags & (~OF_COLLIDES) );
-	//obj_set_flags(Player_obj, Player_obj->flags | OF_SHOULD_BE_DEAD);
-	obj_set_flags(Player_obj, Player_obj->flags & (~OF_PLAYER_SHIP));
+	flagset<Object::Object_Flags> flags = Player_obj->flags;
+	flags.unset(Object::Object_Flags::Collides);
+	flags.unset(Object::Object_Flags::Player_ship);
+	obj_set_flags(Player_obj, flags );
 	Net_player->m_player->objnum = objnum;
 
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
 	pobj_num = parse_create_object(Player_start_pobject);
 	Assert(pobj_num != -1);
-	obj_set_flags(&Objects[pobj_num],OF_PLAYER_SHIP);
+	flags = Objects[pobj_num].flags;
+	flags.set(Object::Object_Flags::Player_ship);
+	obj_set_flags(&Objects[pobj_num],flags);
 	Objects[pobj_num].net_signature = STANDALONE_SHIP_SIG;
 	Player_ship = &Ships[Objects[pobj_num].instance];
 
 	// make ship hidden from sensors so that this observer cannot target it.  Observers really have two ships
 	// one observer, and one "Player_ship".  Observer needs to ignore the Player_ship.
-	Player_ship->flags |= SF_HIDDEN_FROM_SENSORS;
+	Player_ship->flags.set(Ship::Ship_Flags::Hidden_from_sensors);
 	strcpy_s(Player_ship->ship_name, XSTR("Standalone Ship",904));
 	Player_ai = &Ai_info[Ships[Objects[pobj_num].instance].ai_index];		
 
@@ -2186,8 +2189,9 @@ void multi_warpout_all_players()
 		if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP)){
 
 			objp = &Objects[Net_players[idx].m_player->objnum];
-
-			obj_set_flags( objp, objp->flags & (~OF_COLLIDES) );
+			flagset<Object::Object_Flags> flags = objp->flags;
+			flags.unset(Object::Object_Flags::Collides);
+			obj_set_flags( objp, flags );
 			shipfx_warpout_start( objp );
 		}
 	}
@@ -2197,7 +2201,7 @@ void multi_warpout_all_players()
 	
 	// if we're an observer, or we're respawning, or we can't warp out. so just jump into the debrief state
 	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Net_player->flags & NETINFO_FLAG_RESPAWNING) ||
-		((Player_obj->type == OBJ_SHIP) && (Player_ship->flags & SF_CANNOT_WARP)) ){		
+		((Player_obj->type == OBJ_SHIP) && (ship_cannot_warp(Player_ship))) ){		
 
 		multi_handle_sudden_mission_end(); 
 
@@ -2210,7 +2214,9 @@ void multi_warpout_all_players()
 	// if we're a ship, then begin the warpout process
 	else {
 		// turn off collision detection for my ship
-		obj_set_flags(Player_obj, Player_obj->flags & (~OF_COLLIDES) );
+		flagset<Object::Object_Flags> flags = Player_obj->flags;
+		flags.unset(Object::Object_Flags::Collides);
+		obj_set_flags(Player_obj, flags);
 
 		// turn off gliding too or ships can't get upt to speed
 		if(object_get_gliding(Player_obj)) {
@@ -2747,7 +2753,7 @@ void multi_player_ships_available(int *team_0,int *team_1)
 	moveup = GET_FIRST(&Ship_obj_list);
 	while(moveup!=END_OF_LIST(&Ship_obj_list)){
 		// if this ship is flagged as OF_COULD_BE_PLAYER
-		if(Objects[moveup->objnum].flags & OF_COULD_BE_PLAYER){
+		if(Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]){
 			// get the team # for this ship
 			mp_team_num = multi_ts_get_team(Ships[Objects[moveup->objnum].instance].ship_name);
 			if(mp_team_num == 0){
@@ -2765,7 +2771,7 @@ void multi_player_ships_available(int *team_0,int *team_1)
 void multi_server_update_player_weapons(net_player *pl,ship *shipp)
 {
 	// don't process when the ship is dying.
-	if ( (shipp->flags & SF_DYING) || NETPLAYER_IS_DEAD(pl) )
+	if ( (shipp->flags[Ship::Ship_Flags::Dying]) || NETPLAYER_IS_DEAD(pl) )
 		return;
 
 	// primary bank status
@@ -2773,7 +2779,7 @@ void multi_server_update_player_weapons(net_player *pl,ship *shipp)
 
 	// primary link status
 	pl->s_info.cur_link_status &= ~(1<<0);
-	if(shipp->flags & SF_PRIMARY_LINKED){
+	if(shipp->flags[Ship::Ship_Flags::Primary_linked]){
 		pl->s_info.cur_link_status |= (1<<0);
 	}
 
@@ -2786,7 +2792,7 @@ void multi_server_update_player_weapons(net_player *pl,ship *shipp)
 
 	// secondary link status
 	pl->s_info.cur_link_status &= ~(1<<1);
-	if(shipp->flags & SF_SECONDARY_DUAL_FIRE){
+	if(shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]){
 		pl->s_info.cur_link_status |= (1<<1);
 	}
 
@@ -4184,7 +4190,7 @@ int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, ve
 // Currently supports the dogfight kill matrix and normal debriefing stages but if new types are created they should be added here
 void send_debrief_event() {	
 	// we have a special debriefing screen multiplayer furballs use by default
-	if((Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_DOGFIGHT && !(The_mission.flags & MISSION_FLAG_TOGGLE_DEBRIEFING)) {
+	if((Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_DOGFIGHT && !(The_mission.flags[Mission::Mission_Flags::Toggle_debriefing])) {
 		gameseq_post_event( GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
 	}
 	// do the normal debriefing for all other situations

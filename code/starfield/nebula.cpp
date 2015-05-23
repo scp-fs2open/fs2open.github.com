@@ -208,7 +208,7 @@ void nebula_render()
 	gr_zbuffer_set(saved_gr_zbuffering);
 
 	// always switch off fogging for good measure
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode == NEB2_RENDER_NONE)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode == NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 }
