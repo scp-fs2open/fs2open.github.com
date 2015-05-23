@@ -7,7 +7,7 @@ environment:
     ProjectPath: projects/MSVC_2010/Freespace2.vcxproj
   - VisualStudioVersion: 11.0
     PlatformToolset: v110
-    ProjectPath: projects/MSVC_2011/Freespace2.vcxproj
+    ProjectPath: projects/MSVC_2012/Freespace2.vcxproj
   - VisualStudioVersion: 12.0
     PlatformToolset: v120
     ProjectPath: projects/MSVC_2013/Freespace2.vcxproj
