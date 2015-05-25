@@ -1879,15 +1879,6 @@ void game_init()
 
 	if ( gr_init() == false ) {
 		SCP_Messagebox(MESSAGEBOX_ERROR, "Error intializing graphics!");
-#if defined(SCP_UNIX)
-		// the default entry should have been created already if it didn't exist, so if we're here then
-		// the current value is invalid and we need to replace it
-		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(1024x768)x16 bit"));
-
-		// courtesy
-		fprintf(stderr, "The default video entry is now in place.  Please try running the game again...\n");
-		fprintf(stderr, "(edit ~/.fs2_open/fs2_open.ini to change from default resolution)\n");
-#endif
 		exit(1);
 		return;
 	}

@@ -36,6 +36,7 @@
 #include "graphics/gropengldraw.h"
 #include "debugconsole/console.h"
 #include "io/timer.h"
+#include "parse/parselo.h"
 
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
@@ -757,15 +758,53 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 	// if we don't have a config string then construct one, using OpenGL 1024x768 32-bit as the default
 	if (ptr == NULL) {
-		ptr = Default_video_settings;
-	}
+		// If we don't have a display mode, use SDL to get default settings
+		// We need to initialize SDL to do this
 
-	Assert( ptr != NULL );
+		if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
+		{
+			SDL_DisplayMode mode;
+			if (SDL_GetDesktopDisplayMode(0, &mode) == 0)
+			{
+				width = mode.w;
+				height = mode.h;
+				int sdlBits = SDL_BITSPERPIXEL(mode.format);
 
-	// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
-	//       If the format of that string changes you'll have to change this too!!!
-	if ( sscanf(ptr+5, "(%dx%d)x%d ", &width, &height, &depth) != 3 ) {
-		Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
+				if (SDL_ISPIXELFORMAT_ALPHA(mode.format))
+				{
+					depth = sdlBits;
+				}
+				else
+				{
+					// Fix a few values
+					if (sdlBits == 24)
+					{
+						depth = 32;
+					}
+					else if (sdlBits == 15)
+					{
+						depth = 16;
+					}
+					else
+					{
+						depth = sdlBits;
+					}
+				}
+
+				SCP_string videomode;
+				sprintf(videomode, "OGL -(%dx%d)x%d bit", width, height, depth);
+
+				os_config_write_string(NULL, NOX("VideocardFs2open"), videomode.c_str());
+			}
+		}
+	} else {
+		Assert(ptr != NULL);
+
+		// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
+		//       If the format of that string changes you'll have to change this too!!!
+		if (sscanf(ptr + 5, "(%dx%d)x%d ", &width, &height, &depth) != 3) {
+			Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
+		}
 	}
 
 	if (Cmdline_res != NULL) {
@@ -797,18 +836,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 	// check for hi-res interface files so that we can verify our width/height is correct
 	bool has_sparky_hi = (cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("2_TechShipData-m.pcx", CF_TYPE_ANY));
-
-	// if we don't have it then fall back to 640x480 mode instead
-	if ( !has_sparky_hi ) {
-		if ( (width == 1024) && (height == 768) ) {
-			width = 640;
-			height = 480;
-		} else {
-			width = 800;
-			height = 600;
-		}
-	}
-
+	
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GR_STUB;
