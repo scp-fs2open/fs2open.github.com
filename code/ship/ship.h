@@ -1403,6 +1403,7 @@ public:
 	vec3d topdown_offset;
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
+	float min_engine_vol;					// minimum volume modifier for engine sound when ship is stationary
 	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
 	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
 
@@ -1437,7 +1438,7 @@ public:
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
 
-	SCP_hash_map<int, void*> glowpoint_bank_override_map;
+	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
 };
 
 extern int Num_wings;

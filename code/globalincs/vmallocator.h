@@ -9,33 +9,7 @@
 #include <string>
 #include <queue>
 #include <deque>
-
-#if defined __GNUC__
-#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-#if GCC_VERSION >= 40300
-#include <tr1/unordered_map>
-#define SCP_hash_map std::tr1::unordered_map
-#elif GCC_VERSION < 40300 || __clang__
-#include <ext/hash_map>
-#define SCP_hash_map __gnu_cxx::hash_map
-#endif // GCC_VERSION || __clang__
-#endif // __GNUC__
-
-#if ! defined __GNUC__
-	#if defined(_MSC_VER)
-		#if _MSC_VER < 1900
-			#include <hash_map>
-			#if _MSC_VER < 1400
-			#define SCP_hash_map std::hash_map
-			#else
-			#define SCP_hash_map stdext::hash_map
-			#endif
-		#else
-			#include <unordered_map>
-			#define SCP_hash_map std::unordered_map
-		#endif
-	#endif
-#endif // ! defined __GNUC__
+#include <unordered_map>
 
 template< typename T >
 class SCP_vector : public std::vector< T, std::allocator< T > > { };
@@ -58,6 +32,9 @@ class SCP_queue : public std::queue< T, std::deque< T, std::allocator< T > > > {
 
 template< typename T >
 class SCP_deque : public std::deque< T, std::allocator< T > > { };
+
+template< typename Key, typename T, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key> >
+class SCP_unordered_map : public std::unordered_map< Key, T, Hash, KeyEqual, std::allocator< std::pair<const Key, T> > > { };
 
 
 #endif // _VMALLOCATOR_H_INCLUDED_
