@@ -39,11 +39,17 @@ private:
 
     int m_flags;
     color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
-    vec3d m_pos;
+	vec3d m_pos;
+
+	CJumpNode(const CJumpNode&);
+	CJumpNode& operator=(const CJumpNode&);
 public:
     //Constructors
     CJumpNode();
     CJumpNode(vec3d *position);
+	CJumpNode(CJumpNode&& other);
+
+	CJumpNode& operator=(CJumpNode&&);
     
     //Destructor
     ~CJumpNode();

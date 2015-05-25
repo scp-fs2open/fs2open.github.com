@@ -822,8 +822,8 @@ void red_alert_bash_wingman_status()
 	SCP_vector<red_alert_ship_status>::iterator rasii;
 	SCP_vector<p_object>::iterator poii;
 
-	SCP_hash_map<int, int> Wing_pobjects_deleted;
-	SCP_hash_map<int, int>::iterator ii;
+	SCP_unordered_map<int, int> Wing_pobjects_deleted;
+	SCP_unordered_map<int, int>::iterator ii;
 
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) ) {
 		return;
