@@ -732,7 +732,6 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
 	const char *ptr = NULL;
-	const char *Default_video_settings = "OGL -(1024x768)x32 bit";
 
 	if ( !Gr_inited ) {
 		atexit(gr_close);
@@ -834,9 +833,6 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 		depth = d_depth;
 	}
 
-	// check for hi-res interface files so that we can verify our width/height is correct
-	bool has_sparky_hi = (cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("2_TechShipData-m.pcx", CF_TYPE_ANY));
-	
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GR_STUB;
