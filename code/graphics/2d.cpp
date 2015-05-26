@@ -833,6 +833,21 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 		depth = d_depth;
 	}
 
+	// check for hi-res interface files so that we can verify our width/height is correct
+	bool has_sparky_hi = (cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("2_TechShipData-m.pcx", CF_TYPE_ANY));
+
+	// if we don't have it then fall back to 640x480 mode instead
+	if (!has_sparky_hi) {
+		if ((width == 1024) && (height == 768)) {
+			width = 640;
+			height = 480;
+		}
+		else {
+			width = 800;
+			height = 600;
+		}
+	}
+
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GR_STUB;
