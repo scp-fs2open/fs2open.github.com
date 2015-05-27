@@ -291,10 +291,10 @@
     <ClCompile Include="..\..\code\debugconsole\console.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-	<ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
+    <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-	<ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
+    <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\debugconsole\timerbar.cpp">
@@ -333,7 +333,7 @@
     <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
-	<ClCompile Include="..\..\code\globalincs\profiling.cpp">
+    <ClCompile Include="..\..\code\globalincs\profiling.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\globalincs\safe_strings.cpp">
@@ -446,12 +446,6 @@
     </ClCompile>
     <ClCompile Include="..\..\code\hud\hudwingmanstatus.cpp">
       <Filter>Hud</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\io\joy.cpp">
-      <Filter>Io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\io\joy_ff.cpp">
-      <Filter>Io</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\io\key.cpp">
       <Filter>Io</Filter>
@@ -664,9 +658,6 @@
       <Filter>Observer</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\osapi\osapi.cpp">
-      <Filter>OsApi</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\osapi\osapi_unix.cpp">
       <Filter>OsApi</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\osapi\osregistry.cpp">
@@ -1070,6 +1061,15 @@
     </ClCompile>
     <ClCompile Include="..\..\code\graphics\shadows.cpp">
       <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\io\joy_ff-sdl.cpp">
+      <Filter>Io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\io\joy-sdl.cpp">
+      <Filter>Io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\io\cursor.cpp">
+      <Filter>Io</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1885,6 +1885,9 @@
     </ClInclude>
     <ClInclude Include="..\..\code\graphics\shadows.h">
       <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\io\cursor.h">
+      <Filter>Io</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
