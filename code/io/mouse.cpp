@@ -534,7 +534,7 @@ void mousewheel_motion(int x, int y) {
 		mouse_flags |= MOUSE_WHEEL_DOWN;
 		mouse_flags &= ~MOUSE_WHEEL_UP;
 	} else {
-		mouse_flags &= (~MOUSE_WHEEL_UP & ~MOUSE_WHEEL_DOWN);
+		mouse_flags &= ~(MOUSE_WHEEL_UP | MOUSE_WHEEL_DOWN);
 	}
 
 	if (Mouse_wheel_x > 0) {
@@ -546,7 +546,7 @@ void mousewheel_motion(int x, int y) {
 		mouse_flags |= MOUSE_WHEEL_LEFT;
 		mouse_flags &= ~MOUSE_WHEEL_RIGHT;
 	} else {
-		mouse_flags &= (~MOUSE_WHEEL_RIGHT & ~MOUSE_WHEEL_LEFT);
+		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
 }
 
@@ -567,10 +567,10 @@ void mousewheel_decay(int btn) {
 	}
 
 	if (Mouse_wheel_x == 0) {
-		mouse_flags &= (~MOUSE_WHEEL_UP & ~MOUSE_WHEEL_DOWN);
+		mouse_flags &= ~(MOUSE_WHEEL_UP | MOUSE_WHEEL_DOWN);
 	}
 	if (Mouse_wheel_y == 0) {
-		mouse_flags &= (~MOUSE_WHEEL_RIGHT & ~MOUSE_WHEEL_LEFT);
+		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
 }
 
