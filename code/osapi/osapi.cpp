@@ -195,10 +195,6 @@ const char *detect_home(void)
 // for the app name, which is where registry keys are stored.
 void os_init(const char * wclass, const char * title, const char *app_name, const char *version_string )
 {
-	// create default ini entries for the user
-	if (os_config_read_string(NULL, NOX("VideocardFs2open"), NULL) == NULL)
-		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(640x480)x16 bit"));
-
 	os_init_registry_stuff(Osreg_company_name, title, version_string);
 
 	strcpy_s( szWinTitle, title );
