@@ -22,6 +22,8 @@
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"
 
+#include "gamesequence/gamesequence.h"
+
 int mouse_inited = 0;
 
 LOCAL int Mouse_x;
@@ -410,8 +412,6 @@ void mouse_force_pos(int x, int y)
 	}
 }
 
-#include "gamesequence/gamesequence.h"
-
 // Reset deltas so we don't have duplicate mouse deltas
 void mouse_reset_deltas()
 {
@@ -498,11 +498,7 @@ int mouse_get_pos_unscaled( int *xpos, int *ypos )
 
 void mouse_get_real_pos(int *mx, int *my)
 {
-	POINT pnt;
-	getWindowMousePos(&pnt);
-	
-	*mx = pnt.x;
-	*my = pnt.y;
+	SDL_GetMouseState(mx, my);
 }
 
 void mouse_set_pos(int xpos, int ypos)
@@ -512,15 +508,12 @@ void mouse_set_pos(int xpos, int ypos)
 
 void mousewheel_motion(int x, int y) {
 
-	/**
-	 Commented out until SDL 2.0.4 or later is adopted
-	 **
-
+#if SDL_VERSION_ATLEAST(2, 0, 4)
 	if (direction == SDL_MOUSEWHEEL_FLIPPED) {
-	  x = -x;
-	  y = -y;
+		x = -x;
+		y = -y;
 	}
-	*/
+#endif
 
 	Mouse_wheel_x += x;
 	Mouse_wheel_y += y;
@@ -574,19 +567,4 @@ void mousewheel_decay(int btn) {
 	if (Mouse_wheel_y == 0) {
 		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
-}
-
-// portable routine to get the mouse position, relative
-// to current window
-void getWindowMousePos(POINT * pt)
-{
-	Assert(pt != NULL);
-
-	int x = 0;
-	int y = 0;
-
-	SDL_GetMouseState(&x, &y);
-
-	pt->x = x;
-	pt->y = y;
 }

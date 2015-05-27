@@ -14,10 +14,6 @@
 
 #include "globalincs/pstypes.h"
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 extern int Mouse_sensitivity;
 extern int Use_mouse_to_fly;
 
@@ -89,11 +85,6 @@ void mouse_event(int x, int y, int dx, int dy);
  * Called when there is motion on the mouse wheel(s). Supports 2 axes
  */
 void mousewheel_motion(int x, int y);
-
-// portable routines to get and set the mouse position, relative
-// to current window
-void getWindowMousePos(POINT * pt);
-void setWindowMousePos(POINT * pt);
 
 extern void mouse_force_pos(int x, int y);
 
