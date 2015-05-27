@@ -312,72 +312,6 @@ int joy_get_pos(int *x, int *y, int *z, int *rx)
 	return 1;
 }
 
-void joy_process(int time_delta)
-{
-	STUB_FUNCTION;
-
-/*	int i;
-	
-	if (!Joy_inited)
-		return;
-
-	int hat = SDL_JoystickGetHat(sdljoy, 0);
-	
-	for (i=0; i < JOY_TOTAL_BUTTONS; i++) {
-		int state = 0;
-		
-		if (i < JOY_NUM_BUTTONS) {
-			if (i < joy_num_buttons) {
-				state = SDL_JoystickGetButton(sdljoy, i);
-			}
-		} else { 
-			switch (i) {
-				case JOY_HATBACK:
-					state = (hat & SDL_HAT_DOWN) ? 1 : 0;
-					break;
-				case JOY_HATFORWARD:
-					state = (hat & SDL_HAT_UP) ? 1 : 0;
-					break;
-				case JOY_HATLEFT:
-					state = (hat & SDL_HAT_LEFT) ? 1 : 0;
-					break;
-				case JOY_HATRIGHT:
-					state = (hat & SDL_HAT_RIGHT) ? 1 : 0;
-					break;
-				default:
-					break;
-			}
-		}
-		
-		if (state != joy_buttons[i].actual_state) {
-			// Button position physically changed.
-			joy_buttons[i].actual_state = state;
-			
-			if ( state )    {
-				// went from up to down
-				joy_buttons[i].down_count++;
-				joy_buttons[i].down_time = 0;
-				
-				joy_buttons[i].state = 1;
-			} else {
-				// went from down to up
-				if ( joy_buttons[i].state )     {
-					joy_buttons[i].up_count++;
-				}
-				
-				joy_buttons[i].state = 0;
-			}
-		} else {
-			// Didn't move... increment time down if down.
-			if (joy_buttons[i].state) {
-				//joy_buttons[i].down_time += joy_pollrate;
-				joy_buttons[i].down_time += time_delta;
-			}
-		}	
-	} */
-}
-
-
 void joy_set_button_state(int button, int state)
 {
 	if (!Joy_inited)
@@ -457,26 +391,6 @@ void joy_set_hat_state(int position)
 			}
 		}
 	} 
-}
-
-void joy_poll()
-{
-	STUB_FUNCTION;
-
-/*	if (!Joy_inited)
-		return;
-
-	uint lasttic = 0;
-	uint curtic = SDL_GetTicks();
-	uint delta = curtic - lasttic;
-
-	while (delta >= (uint)joy_pollrate) {
-		joy_process(delta);
-
-		lasttic += joy_pollrate;
-
-		delta = curtic - lasttic;
-	} */
 }
 
 int joy_init()
