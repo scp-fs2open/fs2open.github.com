@@ -960,6 +960,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
 
+	wip->shield_impact_explosion_radius = 1.0f;
+
 	wip->dinky_impact_explosion_radius = 1.0f;
 	wip->dinky_impact_weapon_expl_index = -1;
 
@@ -1931,6 +1933,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	
 	if ( optional_string("$Impact Explosion Radius:") )
 		stuff_float(&wip->impact_explosion_radius);
+
+	if ( optional_string("$Shield Impact Explosion Radius:") ) {
+		stuff_float(&wip->shield_impact_explosion_radius);
+	} else if (first_time) {
+		wip->shield_impact_explosion_radius = wip->impact_explosion_radius;
+	}
 
 	if ( optional_string("$Dinky Impact Explosion:") ) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -7125,6 +7133,11 @@ void weapon_unpause_sounds()
 {
 	// Pause all beam sounds
 	beam_unpause_sounds();
+}
+
+void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx) {
+	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
+	particle_create( hitpos, &vmd_zero_vector, 0.0f, radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, -1.0f, objp );
 }
 
 void weapon_render(object* obj, draw_list *scene)
