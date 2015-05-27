@@ -27,15 +27,22 @@ int mouse_inited = 0;
 LOCAL int Mouse_x;
 LOCAL int Mouse_y;
 
+LOCAL int Mouse_wheel_x;
+LOCAL int Mouse_wheel_y;
+
 SDL_mutex* mouse_lock;
 
 int mouse_flags;
 int mouse_left_pressed = 0;
 int mouse_right_pressed = 0;
 int mouse_middle_pressed = 0;
+int mouse_x1_pressed = 0;
+int mouse_x2_pressed = 0;
 int mouse_left_up = 0;
 int mouse_right_up = 0;
 int mouse_middle_up = 0;
+int mouse_x1_up = 0;
+int mouse_x2_up = 0;
 
 int Mouse_dx = 0;
 int Mouse_dy = 0;
@@ -50,6 +57,12 @@ int Use_mouse_to_fly = 0;
 
 
 void mouse_force_pos(int x, int y);
+
+/**
+ * @brief Decays the mousewheel position back to 0 and clears the appropriate flags when nuetral
+ * @param[in] btn The button (wheel direction) to check against
+ */
+void mousewheel_decay(int btn);
 
 static bool Mouse_in_focus = true;
 
@@ -95,11 +108,14 @@ void mouse_init()
 	mouse_flags = 0;
 	Mouse_x = gr_screen.max_w / 2;
 	Mouse_y = gr_screen.max_h / 2;
+	Mouse_wheel_x = 0;
+	Mouse_wheel_y = 0;
 
 	// we do want to make sure that button presses go through event polling though
 	// (should be on by default already, just here as a reminder)
 	SDL_EventState( SDL_MOUSEBUTTONDOWN, SDL_ENABLE );
 	SDL_EventState( SDL_MOUSEBUTTONUP, SDL_ENABLE );
+	SDL_EventState( SDL_MOUSEWHEEL, SDL_ENABLE );
 
 	SDL_UnlockMutex( mouse_lock );	
 
@@ -107,15 +123,14 @@ void mouse_init()
 }
 
 
-// ----------------------------------------------------------------------------
-// mouse_mark_button() is called asynchronously by the OS when a mouse button
-// goes up or down.  The mouse button that is affected is passed via the 
-// flags parameter.  
-//
-// parameters:   flags ==> mouse button pressed/released
-//               set   ==> 1 - button is pressed
-//                         0 - button is released
-
+/******************************************************************************
+ * @brief Marks a mouse button as up or down
+ *
+ * @param[in] flags Which button(s) are pressed/released
+ * @param[in] set   Direction of the button(s). 1 = pressed, 0 = released
+ *
+ * @note This function is extern'ed by osapi.cpp and freespace.cpp
+ */
 void mouse_mark_button( uint flags, int set)
 {
 	if ( !mouse_inited ) return;
@@ -158,6 +173,28 @@ void mouse_mark_button( uint flags, int set)
 		}
 	}
 
+	if (!(mouse_flags & MOUSE_X1_BUTTON)) {
+
+		if ((flags & MOUSE_X1_BUTTON) && (set == 1)) {
+			mouse_x1_pressed++;
+		}
+	} else {
+		if ((flags & MOUSE_X1_BUTTON) && (set == 0)) {
+			mouse_x1_up++;
+		}
+	}
+
+	if (!(mouse_flags & MOUSE_X2_BUTTON)) {
+
+		if ((flags & MOUSE_X2_BUTTON) && (set == 1)) {
+			mouse_x2_pressed++;
+		}
+	} else {
+		if ((flags & MOUSE_X2_BUTTON) && (set == 0)) {
+			mouse_x2_up++;
+		}
+	}
+
 	if ( set ){
 		mouse_flags |= flags;
 	} else {
@@ -188,10 +225,13 @@ void mouse_flush()
 
 	mouse_reset_deltas();
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
+	Mouse_wheel_x = Mouse_wheel_y = 0;
 	SDL_LockMutex( mouse_lock );
 	mouse_left_pressed = 0;
 	mouse_right_pressed = 0;
 	mouse_middle_pressed = 0;
+	mouse_x1_pressed = 0;
+	mouse_x2_pressed = 0;
 	mouse_flags = 0;
 	SDL_UnlockMutex( mouse_lock );	
 }
@@ -224,6 +264,20 @@ int mouse_down_count(int n, int reset_count)
 			tmp = mouse_middle_pressed;
 			if ( reset_count ) {
 				mouse_middle_pressed = 0;
+			}
+			break;
+
+		case MOUSE_X1_BUTTON:
+			tmp = mouse_x1_pressed;
+			if (reset_count) {
+				mouse_x1_pressed = 0;
+			}
+			break;
+
+		case MOUSE_X2_BUTTON:
+			tmp = mouse_x2_pressed;
+			if (reset_count) {
+				mouse_x2_pressed = 0;
 			}
 			break;
 	} // end switch
@@ -263,6 +317,16 @@ int mouse_up_count(int n)
 			mouse_middle_up = 0;
 			break;
 
+		case MOUSE_X1_BUTTON:
+			tmp = mouse_x1_up;
+			mouse_x1_up = 0;
+			break;
+
+		case MOUSE_X2_BUTTON:
+			tmp = mouse_x2_up;
+			mouse_x2_up = 0;
+			break;
+
 		default:
 			Assert(0);	// can't happen
 			break;
@@ -280,16 +344,20 @@ int mouse_down(int btn)
 	int tmp;
 	if ( !mouse_inited ) return 0;
 
-	if ( (btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_BUTTON)) return 0;
+	if ((btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_WHEEL)) return 0;
 
 
 	SDL_LockMutex( mouse_lock );
 
 
-	if ( mouse_flags & btn )
+	if (mouse_flags & btn) {
 		tmp = 1;
-	else
+		if ((btn >= LOWEST_MOUSE_WHEEL) && (btn <= HIGHEST_MOUSE_WHEEL)) {
+			mousewheel_decay(btn);
+		}
+	} else {
 		tmp = 0;
+	}
 
 	SDL_UnlockMutex( mouse_lock );	
 
@@ -304,14 +372,18 @@ float mouse_down_time(int btn)
 	float tmp;
 	if ( !mouse_inited ) return 0.0f;
 
-	if ( (btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_BUTTON)) return 0.0f;
+	if ( (btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_WHEEL)) return 0.0f;
 
 	SDL_LockMutex( mouse_lock );
 
-	if ( mouse_flags & btn )
+	if (mouse_flags & btn) {
 		tmp = 1.0f;
-	else
+		if ((btn >= LOWEST_MOUSE_WHEEL) && (btn <= HIGHEST_MOUSE_WHEEL)) {
+			mousewheel_decay(btn);
+		}
+	} else {
 		tmp = 0.0f;
+	}
 
 	SDL_UnlockMutex( mouse_lock );
 
@@ -434,6 +506,72 @@ void mouse_get_real_pos(int *mx, int *my)
 void mouse_set_pos(int xpos, int ypos)
 {
 	mouse_force_pos(xpos, ypos);
+}
+
+void mousewheel_motion(int x, int y) {
+
+	/**
+	 Commented out until SDL 2.0.4 or later is adopted
+	 **
+
+	if (direction == SDL_MOUSEWHEEL_FLIPPED) {
+	  x = -x;
+	  y = -y;
+	}
+	*/
+
+	Mouse_wheel_x += x;
+	Mouse_wheel_y += y;
+
+	// These nested if's should take care of all edge cases.
+	// Since x and y's magnitudes can be larger than 1, it is possible to ignore the idle state
+	if (Mouse_wheel_y > 0) {
+		// UP
+		mouse_flags |= MOUSE_WHEEL_UP;
+		mouse_flags &= ~MOUSE_WHEEL_DOWN;
+	} else if (Mouse_wheel_y < 0) {
+		// DOWN
+		mouse_flags |= MOUSE_WHEEL_DOWN;
+		mouse_flags &= ~MOUSE_WHEEL_UP;
+	} else {
+		mouse_flags &= (~MOUSE_WHEEL_UP & ~MOUSE_WHEEL_DOWN);
+	}
+
+	if (Mouse_wheel_x > 0) {
+		// RIGHT
+		mouse_flags |= MOUSE_WHEEL_RIGHT;
+		mouse_flags &= ~MOUSE_WHEEL_LEFT;
+	} else if (Mouse_wheel_x < 0) {
+		// LEFT
+		mouse_flags |= MOUSE_WHEEL_LEFT;
+		mouse_flags &= ~MOUSE_WHEEL_RIGHT;
+	} else {
+		mouse_flags &= (~MOUSE_WHEEL_RIGHT & ~MOUSE_WHEEL_LEFT);
+	}
+}
+
+void mousewheel_decay(int btn) {
+	switch (btn) {
+	case MOUSE_WHEEL_UP:
+		Mouse_wheel_y -= 1;
+		break;
+	case MOUSE_WHEEL_DOWN:
+		Mouse_wheel_y += 1;
+		break;
+	case MOUSE_WHEEL_LEFT:
+		Mouse_wheel_x -= 1;
+		break;
+	case MOUSE_WHEEL_RIGHT:
+		Mouse_wheel_x += 1;
+		break;
+	}
+
+	if (Mouse_wheel_x == 0) {
+		mouse_flags &= (~MOUSE_WHEEL_UP & ~MOUSE_WHEEL_DOWN);
+	}
+	if (Mouse_wheel_y == 0) {
+		mouse_flags &= (~MOUSE_WHEEL_RIGHT & ~MOUSE_WHEEL_LEFT);
+	}
 }
 
 // portable routine to get the mouse position, relative
