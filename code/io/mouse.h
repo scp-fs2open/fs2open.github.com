@@ -50,7 +50,9 @@ extern void mouse_set_pos(int xpos,int ypos);
 
 #define MOUSE_NUM_BUTTONS		9
 
-// keep the following two #defines up to date with the #defines above
+// keep the following #defines up to date with the #defines above
+// These mouse_button defines are a quick check to verify the input button is a mouse button
+// Likewise, the mouse_wheel defines quickly check against the mousewheel directions
 #define LOWEST_MOUSE_BUTTON     MOUSE_LEFT_BUTTON
 #define HIGHEST_MOUSE_BUTTON    MOUSE_X2_BUTTON
 

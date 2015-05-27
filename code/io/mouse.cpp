@@ -344,6 +344,7 @@ int mouse_down(int btn)
 	int tmp;
 	if ( !mouse_inited ) return 0;
 
+	// Bail if not a button or wheel direction
 	if ((btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_WHEEL)) return 0;
 
 
@@ -372,6 +373,7 @@ float mouse_down_time(int btn)
 	float tmp;
 	if ( !mouse_inited ) return 0.0f;
 
+	// Bail if not a button or wheel direction
 	if ( (btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_WHEEL)) return 0.0f;
 
 	SDL_LockMutex( mouse_lock );
