@@ -420,6 +420,10 @@ void os_poll()
 		case SDL_MOUSEMOTION:
 			mouse_event(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
 			break;
+
+		case SDL_MOUSEWHEEL:
+			mousewheel_motion(event.wheel.x, event.wheel.y);
+			break;
 		}
 	}
 }
