@@ -199,7 +199,7 @@ bin_PROGRAMS = @FS2_BINARY@
 EXTRA_PROGRAMS = fs2_open_@PACKAGE_VERSION@ \
 	fs2_open_@PACKAGE_VERSION@_DEBUG \
 	wxFRED2_@PACKAGE_VERSION@ \
-	wxFRED2_@PACKAGE_VERSION@_DEBUG 
+	wxFRED2_@PACKAGE_VERSION@_DEBUG
 
 ###############################################################################
 ##
@@ -597,6 +597,8 @@ FS2_SOURCES =	\
 	observer/observer.h	\
 	osapi/osapi.cpp	\
 	osapi/osapi.h	\
+	osapi/outwnd.cpp	\
+	osapi/outwnd.h \
 	palman/palman.cpp	\
 	palman/palman.h	\
 	parse/encrypt.cpp	\
@@ -781,9 +783,7 @@ WIN32_SOURCES =	\
 	graphics/gl/wglext.h	\
 	osapi/monopub.h	\
 	osapi/osregistry.cpp	\
-	osapi/osregistry.h	\
-	osapi/outwnd.cpp	\
-	osapi/outwnd.h
+	osapi/osregistry.h
 endif
 
 ## Unix-specific sources
@@ -791,8 +791,6 @@ if FS2_OS_UNIX
 UNIX_SOURCES =	\
 	osapi/osregistry_unix.cpp	\
 	osapi/osregistry.h	\
-	osapi/outwnd_unix.cpp	\
-	osapi/outwnd.h	\
 	windows_stub/stubs.cpp	\
 	windows_stub/config.h
 endif
