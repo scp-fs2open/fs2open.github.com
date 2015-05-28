@@ -2763,7 +2763,7 @@ void vm_vec_random_cone(vec3d *out, vec3d *in, float min_angle, float max_angle,
 
 // given a start vector, an orientation and a radius, give a point on the plane of the circle
 // if on_edge is 1, the point is on the very edge of the circle
-void vm_vec_random_in_circle(vec3d *out, vec3d *in, matrix *orient, float radius, int on_edge)
+void vm_vec_random_in_circle(vec3d *out, vec3d *in, matrix *orient, const float radius, const int on_edge)
 {
 	vec3d temp;
 
@@ -2772,6 +2772,15 @@ void vm_vec_random_in_circle(vec3d *out, vec3d *in, matrix *orient, float radius
 
 	// rotate to a random point on the circle
 	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
+}
+
+// given a start vector, an orientation, and a radius, give a point in a spherical volume
+// if on_edge is 1, the point is on the very edge of the sphere
+void vm_vec_random_in_sphere(vec3d *out, vec3d *in, matrix *orient, const float radius, const int on_edge)
+{
+	vec3d temp;
+	vm_vec_random_in_circle(&temp, in, orient, radius, on_edge);
+	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 359.0f)), in, &orient->vec.rvec);
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in

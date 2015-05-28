@@ -950,6 +950,7 @@ void init_ship_entry(ship_info *sip)
 	sip->thruster02_glow_len_factor = 1.0f;
 	sip->thruster_dist_rad_factor = 2.0f;
 	sip->thruster_dist_len_factor = 2.0f;
+	sip->thruster_glow_noise_mult = 1.0f;
 
 	sip->draw_distortion = true;
 
@@ -2725,6 +2726,32 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_string(sip->icon_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
+	if ( optional_string("$Model Icon Direction:") ) {
+		char str[NAME_LENGTH];
+		stuff_string(str, F_NAME, NAME_LENGTH);
+
+		angles model_icon_angles = {0.0f,0.0f,0.0f};
+
+		if (!stricmp(str, "top")) {
+			model_icon_angles.p = -PI_2;
+		} else if (!stricmp(str, "bottom")) {
+			model_icon_angles.p = -PI_2;
+			model_icon_angles.b = 2 * PI_2;
+		} else if (!stricmp(str, "front")) {
+			model_icon_angles.h = 2 * PI_2;
+		} else if (!stricmp(str, "back")) {
+			model_icon_angles.h = 4 * PI_2;
+		} else if (!stricmp(str, "left")) {
+			model_icon_angles.h = -PI_2;
+		} else if (!stricmp(str, "right")) {
+			model_icon_angles.h = PI_2;
+		} else {
+			Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Icon Direction, ignoring...", str);
+		}
+
+		sip->model_icon_angles = model_icon_angles;
+	}
+
 	// read in filename for animation that is used in ship selection
 	if ( optional_string("$Ship_anim:") ) {
 		stuff_string(sip->anim_filename, F_NAME, MAX_FILENAME_LEN);
@@ -2872,6 +2899,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 	if ( optional_string("$Thruster Distortion:") ) {
 		stuff_boolean(&sip->draw_distortion);
+	}
+
+	if ( optional_string("$Thruster Glow Noise Mult:") ) {
+		stuff_float(&sip->thruster_glow_noise_mult);
 	}
 
 	while ( optional_string("$Thruster Particles:") ) {
@@ -6179,7 +6210,7 @@ void ship_render_DEPRECATED(object * obj)
 				mst.distortion_bitmap = shipp->thruster_distortion_bitmap;
 
 				mst.use_ab = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
-				mst.glow_noise = shipp->thruster_glow_noise;
+				mst.glow_noise = shipp->thruster_glow_noise * sip->thruster_glow_noise_mult;
 				mst.rotvel = Objects[shipp->objnum].phys_info.rotvel;
 
 				mst.glow_rad_factor = sip->thruster01_glow_rad_factor;
