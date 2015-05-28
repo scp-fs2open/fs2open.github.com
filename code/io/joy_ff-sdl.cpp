@@ -14,6 +14,7 @@
 #include "math/vecmat.h"
 #include "osapi/osregistry.h"
 #include "io/joy_ff.h"
+#include "io/joy.h"
 #include "osapi/osapi.h"
 
 #include "SDL_haptic.h"
@@ -22,8 +23,6 @@
 #ifndef SDL_INIT_HAPTIC
 #define SDL_INIT_HAPTIC		0x00001000
 #endif
-
-extern SDL_Joystick *sdljoy;
 
 static int Joy_ff_enabled = 0;
 static SDL_Haptic *haptic = NULL;
@@ -71,13 +70,13 @@ int joy_ff_init()
 		return -1;
 	}
 
-	if ( !SDL_JoystickIsHaptic(sdljoy) ) {
+	if (!SDL_JoystickIsHaptic(joy_get_device())) {
 		mprintf(("    ERROR: Joystick does not have haptic capabilities\n"));
 		SDL_QuitSubSystem(SDL_INIT_HAPTIC);
 		return -1;
 	}
 
-	haptic = SDL_HapticOpenFromJoystick(sdljoy);
+	haptic = SDL_HapticOpenFromJoystick(joy_get_device());
 
 	if (haptic == NULL) {
 		mprintf(("    ERROR: Unable to open haptic joystick\n"));

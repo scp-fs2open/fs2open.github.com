@@ -12,6 +12,9 @@
 #ifndef __JOY_H__
 #define __JOY_H__
 
+#include "globalincs/pstypes.h"
+#include "SDL_joystick.h"
+
 #define JOY_NUM_BUTTONS		32
 #define JOY_NUM_HAT_POS		4
 #define JOY_TOTAL_BUTTONS	(JOY_NUM_BUTTONS + JOY_NUM_HAT_POS)
@@ -52,5 +55,7 @@ void joy_get_delta(int *dx, int *dy);
 int joy_get_scaled_reading(int raw, int axn);
 int joy_get_unscaled_reading(int raw, int axn);
 void joy_close();
+void joy_device_changed(int state, int device);
+SDL_Joystick* joy_get_device();
 
 #endif	/* __JOY_H__ */

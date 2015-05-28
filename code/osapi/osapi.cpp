@@ -413,6 +413,10 @@ void os_poll()
 			}
 			break;
 		
+		case SDL_JOYDEVICEADDED:
+		case SDL_JOYDEVICEREMOVED:
+			joy_device_changed(event.jdevice.type, event.jdevice.which);
+			break;
 		case SDL_MOUSEMOTION:
 			mouse_event(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
 			break;
