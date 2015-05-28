@@ -370,26 +370,6 @@ extern int Fred_running;  // Is Fred running, or FreeSpace?
 
 // contants and defined for byteswapping routines (useful for mac)
 
-#define SWAPSHORT(x)	(							\
-						((ubyte)x << 8) |			\
-						(((ushort)x) >> 8)			\
-						)
-						
-#define SWAPINT(x)		(							\
-						(x << 24) |					\
-						(((ulong)x) >> 24) |		\
-						((x & 0x0000ff00) << 8) |	\
-						((x & 0x00ff0000) >> 8)		\
-						)
-
-#include "SDL_endian.h"
-
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-#ifndef BYTE_ORDER
-#define BYTE_ORDER	BIG_ENDIAN
-#endif // !BYTE_ORDER
-#endif // SDL_BYTEORDER
-
 #ifdef SCP_SOLARIS // Solaris
 #define INTEL_INT(x)	x
 #define INTEL_SHORT(x)	x
@@ -398,39 +378,9 @@ extern int Fred_running;  // Is Fred running, or FreeSpace?
 // turn off inline asm
 #undef USE_INLINE_ASM
 
-// tigital -
-inline float SWAPFLOAT(float *x)
-{
-#if !defined(__MWERKS__)
-	// Usage:  void __stwbrx( unsigned int, unsigned int *address, int byteOffsetFromAddress );
-#define __stwbrx(value, base, index) \
-	__asm__ ( "stwbrx %0, %1, %2" :  : "r" (value), "b%" (index), "r" (base) : "memory" )
-#endif
-
-	union
-	{
-		int		i;
-		float	f;
-	} buf;
-
-	// load the float into the integer unit
-	register int a = ((int*) x)[0];
-
-	// store it to the transfer union, with byteswapping
-	__stwbrx(a, 0, &buf.i);
-
-	// load it into the FPU and return it
-	return buf.f;
-}
-
-#ifdef SCP_UNIX
 #define INTEL_INT(x)	SDL_Swap32(x)
 #define INTEL_SHORT(x)	SDL_Swap16(x)
-#else
-#define INTEL_INT(x)	SWAPINT(x)
-#define INTEL_SHORT(x)	SWAPSHORT(x)
-#endif // (unix)
-#define INTEL_FLOAT(x)	SWAPFLOAT(x)
+#define INTEL_FLOAT(x)	SDL_SwapFloat((*x))
 
 #else // Little Endian -
 #define INTEL_INT(x)	x
