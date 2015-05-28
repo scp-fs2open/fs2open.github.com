@@ -66,20 +66,31 @@ int joy_ff_init()
 	mprintf(("  Initializing Haptic...\n"));
 
 	if (SDL_InitSubSystem(SDL_INIT_HAPTIC) < 0) {
-		mprintf(("    ERROR: Could not initialize Haptic subsystem\n"));
+		mprintf(("    ERROR: Could not initialize Haptic subsystem: %s\n", SDL_GetError()));
 		return -1;
 	}
 
-	if (!SDL_JoystickIsHaptic(joy_get_device())) {
-		mprintf(("    ERROR: Joystick does not have haptic capabilities\n"));
-		SDL_QuitSubSystem(SDL_INIT_HAPTIC);
-		return -1;
-	}
+#ifndef NDEBUG
+	auto numHaptics = SDL_NumHaptics();
+	mprintf(("  Available haptic devices:\n"));
 
+	if (numHaptics <= 0)
+	{
+		mprintf(("    <none>\n"));
+	}
+	else
+	{
+		for (int i = 0; i < numHaptics; ++i)
+		{
+			mprintf(("    %s\n", SDL_HapticName(i)));
+		}
+	}
+#endif
+	
 	haptic = SDL_HapticOpenFromJoystick(joy_get_device());
 
 	if (haptic == NULL) {
-		mprintf(("    ERROR: Unable to open haptic joystick\n"));
+		mprintf(("    ERROR: Unable to open haptic joystick: %s\n", SDL_GetError()));
 		SDL_QuitSubSystem(SDL_INIT_HAPTIC);
 		return -1;
 	}
