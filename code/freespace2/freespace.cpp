@@ -1774,7 +1774,7 @@ void game_init()
 	timer_init();
     
 #ifndef NDEBUG
-	outwnd_init(1);
+	outwnd_init();
 #endif
 
 	// init os stuff next
