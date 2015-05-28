@@ -7096,7 +7096,7 @@ int game_main(int argc, char *argv[])
 
 	game_init();
 	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
-	int trackIrInitResult = gTirDll_TrackIR.Init( (HWND)os_get_window( ) );
+	int trackIrInitResult = gTirDll_TrackIR.Init(os_get_window());
 	if ( trackIrInitResult != SCP_INITRESULT_SUCCESS )
 	{
 		mprintf( ("TrackIR Init Failed - %d\n", trackIrInitResult) );
