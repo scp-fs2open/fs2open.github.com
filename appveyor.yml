@@ -12,5 +12,5 @@ environment:
     PlatformToolset: v120
     ProjectPath: projects/MSVC_2013/Freespace2.vcxproj
 build_script:
-- msbuild "%ProjectPath%" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="%PlatformToolset%" /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+- msbuild "%ProjectPath%" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="%PlatformToolset%" /verbosity:minimal
 test: off
