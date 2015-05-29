@@ -1768,7 +1768,7 @@ int parse_ship(const char *filename, bool replace)
 		}
 
 		//Init vars
-		Ship_info.emplace_back();
+		Ship_info.push_back(ship_info());
 		sip = &Ship_info.back();
 		first_time = true;
 
@@ -1832,7 +1832,7 @@ int parse_ship_template()
 	}
 	else {
 		
-		Ship_templates.emplace_back();
+		Ship_templates.push_back(ship_info());
 		sip = &Ship_templates.back();
 		
 		strcpy_s(sip->name, buf);
