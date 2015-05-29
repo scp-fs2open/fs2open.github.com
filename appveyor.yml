@@ -1,0 +1,16 @@
+version: 3.7.3.{build}
+shallow_clone: true
+environment:
+  matrix:
+  - VisualStudioVersion: 10.0
+    PlatformToolset: v100
+    ProjectPath: projects/MSVC_2010/Freespace2.vcxproj
+  - VisualStudioVersion: 11.0
+    PlatformToolset: v110
+    ProjectPath: projects/MSVC_2012/Freespace2.vcxproj
+  - VisualStudioVersion: 12.0
+    PlatformToolset: v120
+    ProjectPath: projects/MSVC_2013/Freespace2.vcxproj
+build_script:
+- msbuild "%ProjectPath%" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="%PlatformToolset%" /verbosity:minimal
+test: off

@@ -18,49 +18,50 @@
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS
 //
-#define MAX_SSM_TYPES			10
-#define MAX_SSM_STRIKES			10
-#define MAX_SSM_COUNT			10
+
+// SSM shapes
+#define SSM_SHAPE_POINT			0
+#define SSM_SHAPE_CIRCLE		1
+#define SSM_SHAPE_SPHERE		2
 
 // global ssm types
 typedef struct ssm_info {
-	char			name[NAME_LENGTH];				// strike name
-	int			count;								// # of missiles in this type of strike
-	int			weapon_info_index;				// missile type
-	float			warp_radius;						// radius of associated warp effect	
-	float			warp_time;							// how long the warp effect lasts
-	float			radius;								// radius around the shooting ship	
-	float			offset;								// offset in front of the shooting ship
+	char		name[NAME_LENGTH];		// strike name
+	int			count;					// # of missiles in this type of strike
+	int			weapon_info_index;		// missile type
+	float		warp_radius;			// radius of associated warp effect	
+	float		warp_time;				// how long the warp effect lasts
+	float		radius;					// radius around the shooting ship	
+	float		offset;					// offset in front of the shooting ship
 	char		message[NAME_LENGTH];
 	bool		use_custom_message;
 	bool		send_message;
 	int			sound_index;
+	int			shape;
 } ssm_info;
 
 // creation info for the strike (useful for multiplayer)
 typedef struct ssm_firing_info {
-	int     delay_stamp[MAX_SSM_COUNT];	    // timestamps
-	vec3d   start_pos[MAX_SSM_COUNT];       // start positions
-	
-	int             ssm_index;							// index info ssm_info array
-	class object*  target;								// target for the strike
-    int             ssm_team;                           // team that fired the ssm.
+	SCP_vector<int>		delay_stamp;	// timestamps
+	SCP_vector<vec3d>	start_pos;		// start positions
+
+	int					ssm_index;		// index info ssm_info array
+	class object*		target;			// target for the strike
+	int					ssm_team;		// team that fired the ssm.
+	float				duration;		// how far into the warp effect to fire
 } ssm_firing_info;
 
 // the strike itself
 typedef struct ssm_strike {
-	int			fireballs[MAX_SSM_COUNT];		// warpin effect fireballs
-	int			done_flags[MAX_SSM_COUNT];		// when we've fired off the individual missiles
-	
+	SCP_vector<int>		fireballs;		// warpin effect fireballs
+	SCP_vector<bool>	done_flags;		// when we've fired off the individual missiles
+
 	// this is the info that controls how the strike behaves (just like for beam weapons)
 	ssm_firing_info		sinfo;
-
-	ssm_strike	*next, *prev;						// for list
 } ssm_strike;
 
 
-extern int Ssm_info_count;
-extern ssm_info Ssm_info[MAX_SSM_TYPES];
+extern SCP_vector<ssm_info> Ssm_info;
 
 
 // -----------------------------------------------------------------------------------------------------------------------
@@ -77,9 +78,9 @@ void hud_artillery_update();
 void hud_artillery_render();
 
 // start a subspace missile effect
-void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *override, int team);
+void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info *override, int team);
 
 // Goober5000
-extern int ssm_info_lookup(char *name);
+extern int ssm_info_lookup(const char *name);
 
 #endif

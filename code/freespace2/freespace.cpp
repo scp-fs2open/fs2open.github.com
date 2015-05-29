@@ -167,7 +167,13 @@
 
 extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
-
+#ifdef WIN32
+// According to AMD and NV, these _should_ force their drivers into high-performance mode
+extern "C" {
+	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
 
 #ifdef NDEBUG
 #ifdef FRED
