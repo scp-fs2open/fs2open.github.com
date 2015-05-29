@@ -22,8 +22,6 @@
 #define	SMALL_NUM	1e-7
 #define	SMALLER_NUM	1e-20
 #define	CONVERT_RADIANS	0.017453		// conversion factor from degrees to radians
-int index_largest (float a, float b, float c);	// returns index of largest, NO_LARGEST if all less than SMALL_NUM
-
 
 vec3d vmd_zero_vector = ZERO_VECTOR;
 vec3d vmd_x_vector = { { { 1.0f, 0.0f, 0.0f } } };
@@ -96,7 +94,7 @@ float atan2_safe(float y, float x)
 //
 // finds projection of a vector along a unit (normalized) vector 
 //
-float vm_vec_projection_parallel(vec3d *component, vec3d *src, vec3d *unit_vec)
+float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d *unit_vec)
 {
 	float mag;
 	Assert( vm_vec_mag(unit_vec) > 0.999f  &&  vm_vec_mag(unit_vec) < 1.001f );
@@ -111,7 +109,7 @@ float vm_vec_projection_parallel(vec3d *component, vec3d *src, vec3d *unit_vec)
 //
 // finds projection of a vector onto a plane specified by a unit normal vector 
 //
-void vm_vec_projection_onto_plane(vec3d *projection, vec3d *src, vec3d *unit_normal)
+void vm_vec_projection_onto_plane(vec3d *projection, const vec3d *src, const vec3d *unit_normal)
 {
 	float mag;
 	Assert( vm_vec_mag(unit_normal) > 0.999f  &&  vm_vec_mag(unit_normal) < 1.001f );
@@ -127,7 +125,7 @@ void vm_vec_projection_onto_plane(vec3d *projection, vec3d *src, vec3d *unit_nor
 // finds the point on a plane closest to a given point
 // moves the point in the direction of the plane normal until it is on the plane
 //
-void vm_project_point_onto_plane(vec3d *new_point, vec3d *point, vec3d *plane_normal, vec3d *plane_point)
+void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec3d *plane_normal, const vec3d *plane_point)
 {
 	float D;		// plane constant in Ax+By+Cz+D = 0   or   dot(X,n) - dot(Xp,n) = 0, so D = -dot(Xp,n)
 	float dist;
@@ -159,7 +157,7 @@ void vm_set_identity(matrix *m)
 //adds two vectors, fills in dest, returns ptr to dest
 //ok for dest to equal either source, but should use vm_vec_add2() if so
 #ifndef _INLINE_VECMAT
-void vm_vec_add(vec3d *dest,vec3d *src0,vec3d *src1)
+void vm_vec_add(vec3d *dest, const vec3d *src0, const vec3d *src1)
 {
 	dest->xyz.x = src0->xyz.x + src1->xyz.x;
 	dest->xyz.y = src0->xyz.y + src1->xyz.y;
@@ -170,7 +168,7 @@ void vm_vec_add(vec3d *dest,vec3d *src0,vec3d *src1)
 //subs two vectors, fills in dest, returns ptr to dest
 //ok for dest to equal either source, but should use vm_vec_sub2() if so
 #ifndef _INLINE_VECMAT
-void vm_vec_sub(vec3d *dest,vec3d *src0,vec3d *src1)
+void vm_vec_sub(vec3d *dest, const vec3d *src0, const vec3d *src1)
 {
 	dest->xyz.x = src0->xyz.x - src1->xyz.x;
 	dest->xyz.y = src0->xyz.y - src1->xyz.y;
@@ -182,7 +180,7 @@ void vm_vec_sub(vec3d *dest,vec3d *src0,vec3d *src1)
 //adds one vector to another. returns ptr to dest
 //dest can equal source
 #ifndef _INLINE_VECMAT
-void vm_vec_add2(vec3d *dest,vec3d *src)
+void vm_vec_add2(vec3d *dest, const vec3d *src)
 {
 	dest->xyz.x += src->xyz.x;
 	dest->xyz.y += src->xyz.y;
@@ -193,7 +191,7 @@ void vm_vec_add2(vec3d *dest,vec3d *src)
 //subs one vector from another, returns ptr to dest
 //dest can equal source
 #ifndef _INLINE_VECMAT
-void vm_vec_sub2(vec3d *dest,vec3d *src)
+void vm_vec_sub2(vec3d *dest, const vec3d *src)
 {
 	dest->xyz.x -= src->xyz.x;
 	dest->xyz.y -= src->xyz.y;
@@ -203,7 +201,7 @@ void vm_vec_sub2(vec3d *dest,vec3d *src)
 
 //averages n vectors. returns ptr to dest
 //dest can equal either source
-vec3d *vm_vec_avg_n(vec3d *dest, int n, vec3d src[])
+vec3d *vm_vec_avg_n(vec3d *dest, int n, const vec3d src[])
 {
 	float x=0,y=0,z=0;
 
@@ -223,7 +221,7 @@ vec3d *vm_vec_avg_n(vec3d *dest, int n, vec3d src[])
 
 //averages two vectors. returns ptr to dest
 //dest can equal either source
-vec3d *vm_vec_avg(vec3d *dest,vec3d *src0,vec3d *src1)
+vec3d *vm_vec_avg(vec3d *dest, const vec3d *src0, const vec3d *src1)
 {
 	dest->xyz.x = (src0->xyz.x + src1->xyz.x) * 0.5f;
 	dest->xyz.y = (src0->xyz.y + src1->xyz.y) * 0.5f;
@@ -234,7 +232,7 @@ vec3d *vm_vec_avg(vec3d *dest,vec3d *src0,vec3d *src1)
 
 //averages four vectors. returns ptr to dest
 //dest can equal any source
-vec3d *vm_vec_avg3(vec3d *dest,vec3d *src0,vec3d *src1,vec3d *src2)
+vec3d *vm_vec_avg3(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3d *src2)
 {
 	dest->xyz.x = (src0->xyz.x + src1->xyz.x + src2->xyz.x) * 0.333333333f;
 	dest->xyz.y = (src0->xyz.y + src1->xyz.y + src2->xyz.y) * 0.333333333f;
@@ -244,7 +242,7 @@ vec3d *vm_vec_avg3(vec3d *dest,vec3d *src0,vec3d *src1,vec3d *src2)
 
 //averages four vectors. returns ptr to dest
 //dest can equal any source
-vec3d *vm_vec_avg4(vec3d *dest,vec3d *src0,vec3d *src1,vec3d *src2,vec3d *src3)
+vec3d *vm_vec_avg4(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3d *src2, const vec3d *src3)
 {
 	dest->xyz.x = (src0->xyz.x + src1->xyz.x + src2->xyz.x + src3->xyz.x) * 0.25f;
 	dest->xyz.y = (src0->xyz.y + src1->xyz.y + src2->xyz.y + src3->xyz.y) * 0.25f;
@@ -255,7 +253,7 @@ vec3d *vm_vec_avg4(vec3d *dest,vec3d *src0,vec3d *src1,vec3d *src2,vec3d *src3)
 
 //scales a vector in place.
 #ifndef _INLINE_VECMAT
-void vm_vec_scale(vec3d *dest,float s)
+void vm_vec_scale(vec3d *dest, float s)
 {
 	dest->xyz.x = dest->xyz.x * s;
 	dest->xyz.y = dest->xyz.y * s;
@@ -266,7 +264,7 @@ void vm_vec_scale(vec3d *dest,float s)
 
 //scales and copies a vector.
 #ifndef _INLINE_VECMAT
-void vm_vec_copy_scale(vec3d *dest,vec3d *src,float s)
+void vm_vec_copy_scale(vec3d *dest, const vec3d *src, float s)
 {
 	dest->xyz.x = src->xyz.x*s;
 	dest->xyz.y = src->xyz.y*s;
@@ -277,7 +275,7 @@ void vm_vec_copy_scale(vec3d *dest,vec3d *src,float s)
 //scales a vector, adds it to another, and stores in a 3rd vector
 //dest = src1 + k * src2
 #ifndef _INLINE_VECMAT
-void vm_vec_scale_add(vec3d *dest,vec3d *src1,vec3d *src2,float k)
+void vm_vec_scale_add(vec3d *dest, const vec3d *src1, const vec3d *src2, float k)
 {
 	dest->xyz.x = src1->xyz.x + src2->xyz.x*k;
 	dest->xyz.y = src1->xyz.y + src2->xyz.y*k;
@@ -287,7 +285,7 @@ void vm_vec_scale_add(vec3d *dest,vec3d *src1,vec3d *src2,float k)
 
 //scales a vector, subtracts it to another, and stores in a 3rd vector
 //dest = src1 - k * src2
-void vm_vec_scale_sub(vec3d *dest, vec3d *src1, vec3d *src2, float k)
+void vm_vec_scale_sub(vec3d *dest, const vec3d *src1, const vec3d *src2, float k)
 {
 	dest->xyz.x = src1->xyz.x - src2->xyz.x*k;
 	dest->xyz.y = src1->xyz.y - src2->xyz.y*k;
@@ -297,7 +295,7 @@ void vm_vec_scale_sub(vec3d *dest, vec3d *src1, vec3d *src2, float k)
 //scales a vector and adds it to another
 //dest += k * src
 #ifndef _INLINE_VECMAT
-void vm_vec_scale_add2(vec3d *dest,vec3d *src,float k)
+void vm_vec_scale_add2(vec3d *dest, const vec3d *src, float k)
 {
 	dest->xyz.x += src->xyz.x*k;
 	dest->xyz.y += src->xyz.y*k;
@@ -308,7 +306,7 @@ void vm_vec_scale_add2(vec3d *dest,vec3d *src,float k)
 //scales a vector and adds it to another
 //dest += k * src
 #ifndef _INLINE_VECMAT
-void vm_vec_scale_sub2(vec3d *dest,vec3d *src,float k)
+void vm_vec_scale_sub2(vec3d *dest, const vec3d *src, float k)
 {
 	dest->xyz.x -= src->xyz.x*k;
 	dest->xyz.y -= src->xyz.y*k;
@@ -319,7 +317,7 @@ void vm_vec_scale_sub2(vec3d *dest,vec3d *src,float k)
 //scales a vector in place, taking n/d for scale.
 //dest *= n/d
 #ifndef _INLINE_VECMAT
-void vm_vec_scale2(vec3d *dest,float n,float d)
+void vm_vec_scale2(vec3d *dest, float n, float d)
 {	
 	d = 1.0f/d;
 
@@ -331,7 +329,7 @@ void vm_vec_scale2(vec3d *dest,float n,float d)
 
 //returns dot product of 2 vectors
 #ifndef _INLINE_VECMAT
-float vm_vec_dotprod(vec3d *v0,vec3d *v1)
+float vm_vec_dotprod(const vec3d *v0, const vec3d *v1)
 {
 	return (v1->xyz.x*v0->xyz.x)+(v1->xyz.y*v0->xyz.y)+(v1->xyz.z*v0->xyz.z);
 }
@@ -340,14 +338,14 @@ float vm_vec_dotprod(vec3d *v0,vec3d *v1)
 
 //returns dot product of <x,y,z> and vector
 #ifndef _INLINE_VECMAT
-float vm_vec_dot3(float x,float y,float z,vec3d *v)
+float vm_vec_dot3(float x, float y, float z, const vec3d *v)
 {
 	return (x*v->xyz.x)+(y*v->xyz.y)+(z*v->xyz.z);
 }
 #endif
 
 //returns magnitude of a vector
-float vm_vec_mag(vec3d *v)
+float vm_vec_mag(const vec3d *v)
 {
 	float mag1;
 
@@ -361,12 +359,12 @@ float vm_vec_mag(vec3d *v)
 }
 
 //returns squared magnitude of a vector, useful if you want to compare distances
-float vm_vec_mag_squared(vec3d *v)
+float vm_vec_mag_squared(const vec3d *v)
 {
 	return ((v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z));
 }
 
-float vm_vec_dist_squared(vec3d *v0, vec3d *v1)
+float vm_vec_dist_squared(const vec3d *v0, const vec3d *v1)
 {
 	float dx, dy, dz;
 
@@ -377,7 +375,7 @@ float vm_vec_dist_squared(vec3d *v0, vec3d *v1)
 }
 
 //computes the distance between two points. (does sub and mag)
-float vm_vec_dist(vec3d *v0,vec3d *v1)
+float vm_vec_dist(const vec3d *v0, const vec3d *v1)
 {
 	float t1;
 	vec3d t;
@@ -393,7 +391,7 @@ float vm_vec_dist(vec3d *v0,vec3d *v1)
 
 //computes an approximation of the magnitude of the vector
 //uses dist = largest + next_largest*3/8 + smallest*3/16
-float vm_vec_mag_quick(vec3d *v)
+float vm_vec_mag_quick(const vec3d *v)
 {
 	float a,b,c,bc, t;
 
@@ -439,7 +437,7 @@ float vm_vec_mag_quick(vec3d *v)
 
 //computes an approximation of the distance between two points.
 //uses dist = largest + next_largest*3/8 + smallest*3/16
-float vm_vec_dist_quick(vec3d *v0,vec3d *v1)
+float vm_vec_dist_quick(const vec3d *v0, const vec3d *v1)
 {
 	vec3d t;
 
@@ -449,7 +447,7 @@ float vm_vec_dist_quick(vec3d *v0,vec3d *v1)
 }
 
 //normalize a vector. returns mag of source vec
-float vm_vec_copy_normalize(vec3d *dest,vec3d *src)
+float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 {
 	float m;
 
@@ -519,7 +517,7 @@ float vm_vec_normalize_safe(vec3d *v)
 
 
 //returns approximation of 1/magnitude of a vector
-float vm_vec_imag(vec3d *v)
+static float vm_vec_imag(const vec3d *v)
 {
 #if _M_IX86_FP < 1
 	return 1.0f / sqrt( (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z) );
@@ -534,7 +532,7 @@ float vm_vec_imag(vec3d *v)
 }
 
 //normalize a vector. returns 1/mag of source vec. uses approx 1/mag
-float vm_vec_copy_normalize_quick(vec3d *dest,vec3d *src)
+float vm_vec_copy_normalize_quick(vec3d *dest,const vec3d *src)
 {
 //	return vm_vec_copy_normalize(dest, src);
 	float im;
@@ -570,7 +568,7 @@ float vm_vec_normalize_quick(vec3d *src)
 }
 
 //normalize a vector. returns mag of source vec. uses approx mag
-float vm_vec_copy_normalize_quick_mag(vec3d *dest,vec3d *src)
+float vm_vec_copy_normalize_quick_mag(vec3d *dest, const vec3d *src)
 {
 //	return vm_vec_copy_normalize(dest, src);
 
@@ -613,7 +611,7 @@ float vm_vec_normalize_quick_mag(vec3d *v)
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
-float vm_vec_normalized_dir(vec3d *dest,vec3d *end,vec3d *start)
+float vm_vec_normalized_dir(vec3d *dest, const vec3d *end, const vec3d *start)
 {
 	float t;
 
@@ -626,7 +624,7 @@ float vm_vec_normalized_dir(vec3d *dest,vec3d *end,vec3d *start)
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
-float vm_vec_normalized_dir_quick(vec3d *dest,vec3d *end,vec3d *start)
+float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *start)
 {
 	vm_vec_sub(dest,end,start);
 
@@ -636,7 +634,7 @@ float vm_vec_normalized_dir_quick(vec3d *dest,vec3d *end,vec3d *start)
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
-float vm_vec_normalized_dir_quick_mag(vec3d *dest,vec3d *end,vec3d *start)
+float vm_vec_normalized_dir_quick_mag(vec3d *dest, const vec3d *end, const vec3d *start)
 {
 	float t;
 	vm_vec_sub(dest,end,start);
@@ -648,7 +646,7 @@ float vm_vec_normalized_dir_quick_mag(vec3d *dest,vec3d *end,vec3d *start)
 //computes surface normal from three points. result is normalized
 //returns ptr to dest
 //dest CANNOT equal either source
-vec3d *vm_vec_normal(vec3d *dest,vec3d *p0,vec3d *p1,vec3d *p2)
+vec3d *vm_vec_normal(vec3d *dest, const vec3d *p0, const vec3d *p1, const vec3d *p2)
 {
 	Assert(dest != p0);
 	Assert(dest != p1);
@@ -667,7 +665,7 @@ vec3d *vm_vec_normal(vec3d *dest,vec3d *p0,vec3d *p1,vec3d *p2)
 //product of the magnitudes of the two source vectors.  This means it is
 //quite easy for this routine to overflow and underflow.  Be careful that
 //your inputs are ok.
-vec3d *vm_vec_crossprod(vec3d *dest,vec3d *src0,vec3d *src1)
+vec3d *vm_vec_crossprod(vec3d *dest, const vec3d *src0, const vec3d *src1)
 {
 	dest->xyz.x = (src0->xyz.y * src1->xyz.z) - (src0->xyz.z * src1->xyz.y);
 	dest->xyz.y = (src0->xyz.z * src1->xyz.x) - (src0->xyz.x * src1->xyz.z);
@@ -677,7 +675,7 @@ vec3d *vm_vec_crossprod(vec3d *dest,vec3d *src0,vec3d *src1)
 }
 
 // test if 2 vectors are parallel or not.
-int vm_test_parallel(vec3d *src0, vec3d *src1)
+int vm_test_parallel(const vec3d *src0, const vec3d *src1)
 {
 	if ( (fl_abs(src0->xyz.x - src1->xyz.x) < 1e-4) && (fl_abs(src0->xyz.y - src1->xyz.y) < 1e-4) && (fl_abs(src0->xyz.z - src1->xyz.z) < 1e-4) ) {
 		return 1;
@@ -689,7 +687,7 @@ int vm_test_parallel(vec3d *src0, vec3d *src1)
 //computes non-normalized surface normal from three points.
 //returns ptr to dest
 //dest CANNOT equal either source
-vec3d *vm_vec_perp(vec3d *dest,vec3d *p0,vec3d *p1,vec3d *p2)
+vec3d *vm_vec_perp(vec3d *dest, const vec3d *p0, const vec3d *p1,const vec3d *p2)
 {
 	Assert(dest != p0);
 	Assert(dest != p1);
@@ -709,7 +707,7 @@ vec3d *vm_vec_perp(vec3d *dest,vec3d *p0,vec3d *p1,vec3d *p2)
 //the forward vector (third parameter) can be NULL, in which case the absolute
 //value of the angle in returned.  Otherwise the angle around that vector is
 //returned.
-float vm_vec_delta_ang(vec3d *v0,vec3d *v1,vec3d *fvec)
+float vm_vec_delta_ang(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 {
 	float t;
 	vec3d t0,t1,t2;
@@ -728,7 +726,7 @@ float vm_vec_delta_ang(vec3d *v0,vec3d *v1,vec3d *fvec)
 }
 
 //computes the delta angle between two normalized vectors.
-float vm_vec_delta_ang_norm(vec3d *v0,vec3d *v1,vec3d *fvec)
+float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 {
 	float a;
 	vec3d t;
@@ -745,7 +743,7 @@ float vm_vec_delta_ang_norm(vec3d *v0,vec3d *v1,vec3d *fvec)
 	return a;
 }
 
-matrix *sincos_2_matrix(matrix *m,float sinp,float cosp,float sinb,float cosb,float sinh,float cosh)
+static matrix *sincos_2_matrix(matrix *m, float sinp, float cosp, float sinb, float cosb, float sinh, float cosh)
 {
 	float sbsh,cbch,cbsh,sbch;
 
@@ -774,7 +772,7 @@ matrix *sincos_2_matrix(matrix *m,float sinp,float cosp,float sinb,float cosb,fl
 }
 
 //computes a matrix from a set of three angles.  returns ptr to matrix
-matrix *vm_angles_2_matrix(matrix *m,angles *a)
+matrix *vm_angles_2_matrix(matrix *m, const angles *a)
 {
 	matrix * t;
 	float sinp,cosp,sinb,cosb,sinh,cosh;
@@ -818,7 +816,7 @@ matrix *vm_angle_2_matrix(matrix *m, float a, int angle_index)
 
 
 //computes a matrix from a forward vector and an angle
-matrix *vm_vec_ang_2_matrix(matrix *m,vec3d *v,float a)
+matrix *vm_vec_ang_2_matrix(matrix *m, const vec3d *v, float a)
 {
 	matrix * t;
 	float sinb,cosb,sinp,cosp,sinh,cosh;
@@ -867,9 +865,11 @@ void vm_vector_2_matrix_gen_vectors(matrix *m)
 //the up vector is used.  If only the forward vector is passed, a bank of
 //zero is assumed
 //returns ptr to matrix
-matrix *vm_vector_2_matrix(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec)
+matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
-	vec3d *xvec=&m->vec.rvec,*yvec=&m->vec.uvec,*zvec=&m->vec.fvec;
+	vec3d *xvec=&m->vec.rvec;
+	vec3d *yvec=&m->vec.uvec;
+	vec3d *zvec=&m->vec.fvec;
 
 	Assert(fvec != NULL);
 
@@ -914,7 +914,7 @@ matrix *vm_vector_2_matrix(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec)
 }
 
 //quicker version of vm_vector_2_matrix() that takes normalized vectors
-matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec)
+matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
 	vec3d *xvec=&m->vec.rvec;
 	vec3d *yvec=&m->vec.uvec;
@@ -958,7 +958,7 @@ matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec)
 //
 // Goober5000: FYI, the result of rotating a normalized vector through a rotation matrix will
 // also be a normalized vector.  It took me awhile to verify online that this was true. ;)
-vec3d *vm_vec_rotate(vec3d *dest,vec3d *src,matrix *m)
+vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m)
 {
 	Assert(dest != src);
 
@@ -984,7 +984,7 @@ vec3d *vm_vec_rotate(vec3d *dest,vec3d *src,matrix *m)
 //
 // Goober5000: FYI, the result of rotating a normalized vector through a rotation matrix will
 // also be a normalized vector.  It took me awhile to verify online that this was true. ;)
-vec3d *vm_vec_unrotate(vec3d *dest,vec3d *src,matrix *m)
+vec3d *vm_vec_unrotate(vec3d *dest, const vec3d *src, const matrix *m)
 {
 	Assert(dest != src);
 
@@ -1009,7 +1009,7 @@ matrix *vm_transpose_matrix(matrix *m)
 
 //copy and transpose a matrix. returns ptr to matrix
 //dest CANNOT equal source. use vm_transpose_matrix() if this is the case
-matrix *vm_copy_transpose_matrix(matrix *dest,matrix *src)
+matrix *vm_copy_transpose_matrix(matrix *dest, const matrix *src)
 {
 	Assert(dest != src);
 
@@ -1031,7 +1031,7 @@ matrix *vm_copy_transpose_matrix(matrix *dest,matrix *src)
 
 //mulitply 2 matrices, fill in dest.  returns ptr to dest
 //dest CANNOT equal either source
-matrix *vm_matrix_x_matrix(matrix *dest,matrix *src0,matrix *src1)
+matrix *vm_matrix_x_matrix(matrix *dest, const matrix *src0, const matrix *src1)
 {
 	Assert(dest!=src0 && dest!=src1);
 
@@ -1052,7 +1052,7 @@ matrix *vm_matrix_x_matrix(matrix *dest,matrix *src0,matrix *src1)
 
 
 //extract angles from a matrix
-angles *vm_extract_angles_matrix(angles *a,matrix *m)
+angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 {
 	float sinh,cosh,cosp;
 
@@ -1102,7 +1102,7 @@ angles *vm_extract_angles_matrix(angles *a,matrix *m)
 // (pages 278-281) of 3D Math Primer for Graphics and Game
 // Development, 2nd Edition
 // http://books.google.com/books?id=X3hmuhBoFF0C&printsec=frontcover#v=onepage&q&f=false
-angles *vm_extract_angles_matrix_alternate(angles *a, matrix *m)
+angles *vm_extract_angles_matrix_alternate(angles *a, const matrix *m)
 {
 	Assert(a != NULL);
 	Assert(m != NULL);
@@ -1139,7 +1139,7 @@ angles *vm_extract_angles_matrix_alternate(angles *a, matrix *m)
 
 
 //extract heading and pitch from a vector, assuming bank==0
-angles *vm_extract_angles_vector_normalized(angles *a,vec3d *v)
+static angles *vm_extract_angles_vector_normalized(angles *a, const vec3d *v)
 {
 
 	a->b = 0.0f;		//always zero bank
@@ -1155,7 +1155,7 @@ angles *vm_extract_angles_vector_normalized(angles *a,vec3d *v)
 }
 
 //extract heading and pitch from a vector, assuming bank==0
-angles *vm_extract_angles_vector(angles *a,vec3d *v)
+angles *vm_extract_angles_vector(angles *a, const vec3d *v)
 {
 	vec3d t;
 
@@ -1169,7 +1169,7 @@ angles *vm_extract_angles_vector(angles *a,vec3d *v)
 //of the plane (ebx), a point on the plane (edi), and the point to check (esi).
 //returns distance in eax
 //distance is signed, so negative dist is on the back of the plane
-float vm_dist_to_plane(vec3d *checkp,vec3d *norm,vec3d *planep)
+float vm_dist_to_plane(const vec3d *checkp, const vec3d *norm, const vec3d *planep)
 {
 	float t1;
 	vec3d t;
@@ -1229,7 +1229,7 @@ void vm_trackball( int idx, int idy, matrix * RotMat )
 }
 
 //	Compute the outer product of A = A * transpose(A).  1x3 vector becomes 3x3 matrix.
-void vm_vec_outer_product(matrix *mat, vec3d *vec)
+static void vm_vec_outer_product(matrix *mat, const vec3d *vec)
 {
 	mat->vec.rvec.xyz.x = vec->xyz.x * vec->xyz.x;
 	mat->vec.rvec.xyz.y = vec->xyz.x * vec->xyz.y;
@@ -1250,7 +1250,7 @@ void vm_vec_outer_product(matrix *mat, vec3d *vec)
 //	Returns value indicating whether *nearest_point is between *p0 and *p1.
 //	0.0f means *nearest_point is *p0, 1.0f means it's *p1. 2.0f means it's beyond p1 by 2x.
 //	-1.0f means it's "before" *p0 by 1x.
-float find_nearest_point_on_line(vec3d *nearest_point, vec3d *p0, vec3d *p1, vec3d *int_pnt)
+float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const vec3d *p1, const vec3d *int_pnt)
 {
 	vec3d	norm, xlated_int_pnt, projected_point;
 	matrix	mat;
@@ -1383,7 +1383,7 @@ void vm_fix_matrix(matrix *m)
 
 //Rotates the orient matrix by the angles in tangles and then
 //makes sure that the matrix is orthogonal.
-void vm_rotate_matrix_by_angles( matrix *orient, angles *tangles )
+void vm_rotate_matrix_by_angles( matrix *orient, const angles *tangles )
 {
 	matrix	rotmat,new_orient;
 	vm_angles_2_matrix(&rotmat,tangles);
@@ -1393,7 +1393,7 @@ void vm_rotate_matrix_by_angles( matrix *orient, angles *tangles )
 }
 
 //	dir must be normalized!
-float vm_vec_dot_to_point(vec3d *dir, vec3d *p1, vec3d *p2)
+float vm_vec_dot_to_point(const vec3d *dir, const vec3d *p1, const vec3d *p2)
 {
 	vec3d	tvec;
 
@@ -1408,7 +1408,7 @@ float vm_vec_dot_to_point(vec3d *dir, vec3d *p1, vec3d *p2)
 /////////////////////////////////////////////////////////
 //	Given a plane and a point, return the point on the plane closest the the point.
 //	Result returned in q.
-void compute_point_on_plane(vec3d *q, plane *planep, vec3d *p)
+void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p)
 {
 	float	k, tv;
 	vec3d	normal;
@@ -1442,7 +1442,7 @@ void vm_vec_rand_vec_quick(vec3d *rvec)
 // arbritary line defined by a point on the line "line_point" 
 // and the normalized line direction, "line_dir"
 // Returns the rotated point in "out".
-void vm_rot_point_around_line(vec3d *out, vec3d *in, float angle, vec3d *line_point, vec3d *line_dir)
+void vm_rot_point_around_line(vec3d *out, const vec3d *in, float angle, const vec3d *line_point, const vec3d *line_dir)
 {
 	vec3d tmp, tmp1;
 	matrix m, r;
@@ -1462,7 +1462,7 @@ void vm_rot_point_around_line(vec3d *out, vec3d *in, float angle, vec3d *line_po
 }
 
 // Given two position vectors, return 0 if the same, else non-zero.
-int vm_vec_cmp( vec3d * a, vec3d * b )
+int vm_vec_cmp( const vec3d * a, const vec3d * b )
 {
 	float diff = vm_vec_dist(a,b);
 //mprintf(( "Diff=%.32f\n", diff ));
@@ -1473,7 +1473,7 @@ int vm_vec_cmp( vec3d * a, vec3d * b )
 }
 
 // Given two orientation matrices, return 0 if the same, else non-zero.
-int vm_matrix_cmp( matrix * a, matrix * b )
+int vm_matrix_cmp(const matrix * a, const matrix * b)
 {
 	float tmp1,tmp2,tmp3;
 	tmp1 = fl_abs(vm_vec_dot( &a->vec.uvec, &b->vec.uvec ) - 1.0f);
@@ -1553,7 +1553,7 @@ float vm_delta_from_interp_angle( float current_angle, float desired_angle )
 }
 
 // check a matrix for zero rows and columns
-int vm_check_matrix_for_zeros(matrix *m)
+int vm_check_matrix_for_zeros(const matrix *m)
 {
 	if (!m->vec.fvec.xyz.x && !m->vec.fvec.xyz.y && !m->vec.fvec.xyz.z)
 		return 1;
@@ -1573,7 +1573,7 @@ int vm_check_matrix_for_zeros(matrix *m)
 }
 
 // see if two vectors are the same
-int vm_vec_same(vec3d *v1, vec3d *v2)
+int vm_vec_same(const vec3d *v1, const vec3d *v2)
 {
 	if ( v1->xyz.x == v2->xyz.x && v1->xyz.y == v2->xyz.y && v1->xyz.z == v2->xyz.z )
 		return 1;
@@ -1595,7 +1595,7 @@ int vm_matrix_same(matrix *m1, matrix *m2)
 
 // --------------------------------------------------------------------------------------
 
-void vm_quaternion_rotate(matrix *M, float theta, vec3d *u)
+void vm_quaternion_rotate(matrix *M, float theta, const vec3d *u)
 //  given an arbitrary rotation axis and rotation angle, function generates the
 //  corresponding rotation matrix
 //
@@ -1631,9 +1631,9 @@ void vm_quaternion_rotate(matrix *M, float theta, vec3d *u)
 // this is an optimized version vm_quaternion_rotate
 //
 //		inputs:	m			=>		point to resultant rotation matrix
-//					angle		=>		rotation angle about z axis (in radians)
+//				angle		=>		rotation angle about z axis (in radians)
 //
-void rotate_z ( matrix *m, float theta )
+static void rotate_z ( matrix *m, float theta )
 {
 	m->vec.rvec.xyz.x = cosf (theta);
 	m->vec.rvec.xyz.y = sinf (theta);
@@ -1659,7 +1659,7 @@ void rotate_z ( matrix *m, float theta )
 // rot_axis - the resultant axis of rotation
 // theta - the resultatn rotation around the axis
 // m - the initial matrix
-void vm_matrix_to_rot_axis_and_angle(matrix *m, float *theta, vec3d *rot_axis)
+void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_axis)
 {
 	float trace = m->a2d[0][0] + m->a2d[1][1] + m->a2d[2][2];
 	float cos_theta = 0.5f * (trace - 1.0f);
@@ -1741,8 +1741,8 @@ void vm_matrix_to_rot_axis_and_angle(matrix *m, float *theta, vec3d *rot_axis)
 // theta_goal	> 0
 // aa				> 0 
 // returns delta_theta
-float away(float w_in, float w_max, float theta_goal, float aa, float delta_t, float *w_out, int no_overshoot);
-float approach(float w_in, float w_max, float theta_goal, float aa, float delta_t, float *w_out, int no_overshoot)
+static float away(float w_in, float w_max, float theta_goal, float aa, float delta_t, float *w_out, int no_overshoot);
+static float approach(float w_in, float w_max, float theta_goal, float aa, float delta_t, float *w_out, int no_overshoot)
 {
 	float delta_theta;		// amount rotated during time delta_t
 	Assert(w_in >= 0);
@@ -1867,7 +1867,7 @@ float approach(float w_in, float w_max, float theta_goal, float aa, float delta_
 // theta_goal	> 0
 // aa				> 0 
 // returns angle rotated this frame
-float away(float w_in, float w_max, float theta_goal, float aa, float delta_t, float *w_out, int no_overshoot)
+static float away(float w_in, float w_max, float theta_goal, float aa, float delta_t, float *w_out, int no_overshoot)
 
 {
 	float delta_theta;// amount rotated during time
@@ -1906,8 +1906,8 @@ float away(float w_in, float w_max, float theta_goal, float aa, float delta_t, f
 
 // --------------------------------------------------------------------------------------
 
-void vm_matrix_interpolate(matrix *goal_orient, matrix *curr_orient, vec3d *w_in, float delta_t, 
-								matrix *next_orient, vec3d *w_out, vec3d *vel_limit, vec3d *acc_limit, int no_overshoot)
+void vm_matrix_interpolate(const matrix *goal_orient, const matrix *curr_orient, const vec3d *w_in, float delta_t,
+								matrix *next_orient, vec3d *w_out, const vec3d *vel_limit, const vec3d *acc_limit, int no_overshoot)
 {
 	matrix rot_matrix;		// rotation matrix from curr_orient to goal_orient
 	matrix Mtemp1;				// temp matrix
@@ -2052,7 +2052,7 @@ void vm_matrix_interpolate(matrix *goal_orient, matrix *curr_orient, vec3d *w_in
 // --------------------------------------------------------------------------------------
 
 
-void get_camera_limits(matrix *start_camera, matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max)
+void get_camera_limits(const matrix *start_camera, const matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max)
 {
 	matrix temp, rot_matrix;
 	float theta;
@@ -2108,8 +2108,8 @@ void get_camera_limits(matrix *start_camera, matrix *end_camera, float time, vec
 //		function moves the forward vector toward the goal forward vector taking account of anglular
 //		momentum (velocity)  Attempt to try to move bank by goal delta_bank.  Rotational velocity
 //		on x/y is rotated with bank, giving smoother motion.
-void vm_forward_interpolate(vec3d *goal_f, matrix *orient, vec3d *w_in, float delta_t, float delta_bank,
-		matrix *next_orient, vec3d *w_out, vec3d *vel_limit, vec3d *acc_limit, int no_overshoot)
+void vm_forward_interpolate(const vec3d *goal_f, const matrix *orient, const vec3d *w_in, float delta_t, float delta_bank,
+		matrix *next_orient, vec3d *w_out, const vec3d *vel_limit, const vec3d *acc_limit, int no_overshoot)
 {
 	matrix Mtemp1;				// temporary matrix
 	vec3d local_rot_axis;	// vector indicating direction of rotation axis (local coords)
@@ -2296,12 +2296,13 @@ void vm_forward_interpolate(vec3d *goal_f, matrix *orient, vec3d *w_in, float de
 //				radius		=>		OUTPUT PARAMETER:	continas radius of bounding sphere
 //
 #define BIGNUMBER	100000000.0f
-void vm_find_bounding_sphere(vec3d *pnts, int num_pnts, vec3d *center, float *radius)
+void vm_find_bounding_sphere(const vec3d *pnts, int num_pnts, vec3d *center, float *radius)
 {
 	int		i;
 	float		rad, rad_sq, xspan, yspan, zspan, maxspan;
 	float		old_to_p, old_to_p_sq, old_to_new;	
-	vec3d	diff, xmin, xmax, ymin, ymax, zmin, zmax, dia1, dia2, *p;
+	vec3d	diff, xmin, xmax, ymin, ymax, zmin, zmax, dia1, dia2;
+	const vec3d *p;
 	
 	xmin = vmd_zero_vector;
 	ymin = vmd_zero_vector;
@@ -2392,7 +2393,7 @@ void vm_find_bounding_sphere(vec3d *pnts, int num_pnts, vec3d *center, float *ra
 //				world_vec	=>		vector in world coordinates
 //				orient		=>		orientation matrix
 //
-vec3d* vm_rotate_vec_to_body(vec3d *body_vec, vec3d *world_vec, matrix *orient)
+vec3d* vm_rotate_vec_to_body(vec3d *body_vec, const vec3d *world_vec, const matrix *orient)
 {
 	return vm_vec_unrotate(body_vec, world_vec, orient);
 }
@@ -2403,11 +2404,11 @@ vec3d* vm_rotate_vec_to_body(vec3d *body_vec, vec3d *world_vec, matrix *orient)
 //
 // rotates a vector from body coordinates to world coordinates
 //
-//	inputs	world_vec	=>		vector in world coordinates
-//				body_vec		=>		vector in body coordinates
+//	inputs		world_vec	=>		vector in world coordinates
+//				body_vec	=>		vector in body coordinates
 //				orient		=>		orientation matrix
 //
-vec3d* vm_rotate_vec_to_world(vec3d *world_vec, vec3d *body_vec, matrix *orient)
+vec3d* vm_rotate_vec_to_world(vec3d *world_vec, const vec3d *body_vec, const matrix *orient)
 {
 	return vm_vec_rotate(world_vec, body_vec, orient);
 }
@@ -2418,11 +2419,11 @@ vec3d* vm_rotate_vec_to_world(vec3d *world_vec, vec3d *body_vec, matrix *orient)
 //
 // given a last orientation and current orientation, estimate the next orientation
 //
-//	inputs:	last_orient		=>		last orientation matrix
+//	inputs:		last_orient		=>		last orientation matrix
 //				current_orient	=>		current orientation matrix
 //				next_orient		=>		next orientation matrix		[the result]
 //
-void vm_estimate_next_orientation(matrix *last_orient, matrix *current_orient, matrix *next_orient)
+void vm_estimate_next_orientation(const matrix *last_orient, const matrix *current_orient, matrix *next_orient)
 {
 	//		R L = C		=>		R = C (L)^-1
 	//		N = R C		=>		N = C (L)^-1 C
@@ -2435,19 +2436,19 @@ void vm_estimate_next_orientation(matrix *last_orient, matrix *current_orient, m
 }
 
 //	Return true if all elements of *vec are legal, that is, not a NAN.
-int is_valid_vec(vec3d *vec)
+int is_valid_vec(const vec3d *vec)
 {
 	return !_isnan(vec->xyz.x) && !_isnan(vec->xyz.y) && !_isnan(vec->xyz.z);
 }
 
 //	Return true if all elements of *m are legal, that is, not a NAN.
-int is_valid_matrix(matrix *m)
+int is_valid_matrix(const matrix *m)
 {
 	return is_valid_vec(&m->vec.fvec) && is_valid_vec(&m->vec.uvec) && is_valid_vec(&m->vec.rvec);
 }
 
 // interpolate between 2 vectors. t goes from 0.0 to 1.0. at
-void vm_vec_interp_constant(vec3d *out, vec3d *v0, vec3d *v1, float t)
+void vm_vec_interp_constant(vec3d *out, const vec3d *v0, const vec3d *v1, float t)
 {
 	vec3d cross;
 	float total_ang;
@@ -2464,10 +2465,10 @@ void vm_vec_interp_constant(vec3d *out, vec3d *v0, vec3d *v1, float t)
 }
 
 // randomly perturb a vector around a given (normalized vector) or optional orientation matrix
-void vm_vec_random_cone(vec3d *out, vec3d *in, float max_angle, matrix *orient)
+void vm_vec_random_cone(vec3d *out, const vec3d *in, float max_angle, const matrix *orient)
 {
 	vec3d t1, t2;
-	matrix *rot;
+	const matrix *rot;
 	matrix m;
 
 	// get an orientation matrix
@@ -2488,9 +2489,9 @@ void vm_vec_random_cone(vec3d *out, vec3d *in, float max_angle, matrix *orient)
 	vm_rot_point_around_line(out, &t2, fl_radians(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
 }
 
-void vm_vec_random_cone(vec3d *out, vec3d *in, float min_angle, float max_angle, matrix *orient){
+void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_angle, const matrix *orient){
 	vec3d t1, t2;
-	matrix *rot;
+	const matrix *rot;
 	matrix m;
 
 	// get an orientation matrix
@@ -2527,7 +2528,7 @@ void vm_vec_random_cone(vec3d *out, vec3d *in, float min_angle, float max_angle,
 
 // given a start vector, an orientation and a radius, give a point on the plane of the circle
 // if on_edge is 1, the point is on the very edge of the circle
-void vm_vec_random_in_circle(vec3d *out, vec3d *in, matrix *orient, const float radius, const int on_edge)
+void vm_vec_random_in_circle(vec3d *out, const vec3d *in, const matrix *orient, float radius, int on_edge)
 {
 	vec3d temp;
 
@@ -2540,7 +2541,7 @@ void vm_vec_random_in_circle(vec3d *out, vec3d *in, matrix *orient, const float 
 
 // given a start vector, an orientation, and a radius, give a point in a spherical volume
 // if on_edge is 1, the point is on the very edge of the sphere
-void vm_vec_random_in_sphere(vec3d *out, vec3d *in, matrix *orient, const float radius, const int on_edge)
+void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, const matrix *orient, float radius, int on_edge)
 {
 	vec3d temp;
 	vm_vec_random_in_circle(&temp, in, orient, radius, on_edge);
@@ -2549,7 +2550,7 @@ void vm_vec_random_in_sphere(vec3d *out, vec3d *in, matrix *orient, const float 
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
 // returns 0 if the point is inside the line segment, -1 if "before" the line segment and 1 ir "after" the line segment
-int vm_vec_dist_to_line(vec3d *p, vec3d *l0, vec3d *l1, vec3d *nearest, float *dist)
+int vm_vec_dist_to_line(const vec3d *p, const vec3d *l0, const vec3d *l1, vec3d *nearest, float *dist)
 {
 	vec3d a, b, c;
 	float b_mag, comp;
@@ -2589,7 +2590,7 @@ int vm_vec_dist_to_line(vec3d *p, vec3d *l0, vec3d *l1, vec3d *nearest, float *d
 // Goober5000
 // Finds the distance squared to a line.  Same as above, except it uses vm_vec_dist_squared, which is faster;
 // and it doesn't check whether the nearest point is on the line segment.
-void vm_vec_dist_squared_to_line(vec3d *p, vec3d *l0, vec3d *l1, vec3d *nearest, float *dist_squared)
+void vm_vec_dist_squared_to_line(const vec3d *p, const vec3d *l0, const vec3d *l1, vec3d *nearest, float *dist_squared)
 {
 	vec3d a, b, c;
 	float b_mag, comp;
