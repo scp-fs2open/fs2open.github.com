@@ -1056,9 +1056,6 @@
     <ClCompile Include="..\..\code\io\cursor.cpp">
       <Filter>Io</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\timerbar.cpp">
-      <Filter>DebugConsole</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
@@ -1873,9 +1870,6 @@
     </ClInclude>
     <ClInclude Include="..\..\code\io\cursor.h">
       <Filter>Io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\timerbar.h">
-      <Filter>DebugConsole</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\debugconsole\console.h">
       <Filter>DebugConsole</Filter>
