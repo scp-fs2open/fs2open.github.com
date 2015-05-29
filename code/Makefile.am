@@ -199,7 +199,7 @@ bin_PROGRAMS = @FS2_BINARY@
 EXTRA_PROGRAMS = fs2_open_@PACKAGE_VERSION@ \
 	fs2_open_@PACKAGE_VERSION@_DEBUG \
 	wxFRED2_@PACKAGE_VERSION@ \
-	wxFRED2_@PACKAGE_VERSION@_DEBUG 
+	wxFRED2_@PACKAGE_VERSION@_DEBUG
 
 ###############################################################################
 ##
@@ -267,8 +267,6 @@ FS2_SOURCES =	\
 	debugconsole/consolecmds.cpp	\
 	debugconsole/consoleparse.cpp	\
 	debugconsole/consoleparse.h	\
-	debugconsole/timerbar.cpp	\
-	debugconsole/timerbar.h	\
 	exceptionhandler/exceptionhandler.cpp	\
 	exceptionhandler/exceptionhandler.h	\
 	external_dll/externalcode.h		\
