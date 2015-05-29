@@ -856,6 +856,7 @@ void ship_info::clone(const ship_info& other)
 
 	shield_icon_index = other.shield_icon_index;
 	strcpy_s(icon_filename, other.icon_filename);
+	model_icon_angles = other.model_icon_angles;
 	strcpy_s(anim_filename, other.anim_filename);
 	strcpy_s(overhead_filename, other.overhead_filename);
 	selection_effect = other.selection_effect;
@@ -901,6 +902,7 @@ void ship_info::clone(const ship_info& other)
 	thruster02_glow_len_factor = other.thruster02_glow_len_factor;
 	thruster_dist_rad_factor = other.thruster_dist_rad_factor;
 	thruster_dist_len_factor = other.thruster_dist_len_factor;
+	thruster_glow_noise_mult = other.thruster_glow_noise_mult;
 
 	draw_distortion = other.draw_distortion;
 
@@ -925,6 +927,7 @@ void ship_info::clone(const ship_info& other)
 	topdown_offset = other.topdown_offset;
 
 	engine_snd = other.engine_snd;
+	min_engine_vol = other.min_engine_vol;
 	glide_start_snd = other.glide_start_snd;
 	glide_end_snd = other.glide_end_snd;
 
@@ -1128,6 +1131,7 @@ void ship_info::move(ship_info& other)
 
 	shield_icon_index = other.shield_icon_index;
 	std::swap(icon_filename, other.icon_filename);
+	model_icon_angles = other.model_icon_angles;
 	std::swap(anim_filename, other.anim_filename);
 	std::swap(overhead_filename, other.overhead_filename);
 	selection_effect = other.selection_effect;
@@ -1173,6 +1177,7 @@ void ship_info::move(ship_info& other)
 	thruster02_glow_len_factor = other.thruster02_glow_len_factor;
 	thruster_dist_rad_factor = other.thruster_dist_rad_factor;
 	thruster_dist_len_factor = other.thruster_dist_len_factor;
+	thruster_glow_noise_mult = other.thruster_glow_noise_mult;
 
 	draw_distortion = other.draw_distortion;
 
@@ -1197,6 +1202,7 @@ void ship_info::move(ship_info& other)
 	std::swap(topdown_offset, other.topdown_offset);
 
 	engine_snd = other.engine_snd;
+	min_engine_vol = other.min_engine_vol;
 	glide_start_snd = other.glide_start_snd;
 	glide_end_snd = other.glide_end_snd;
 
@@ -1538,6 +1544,7 @@ ship_info::ship_info()
 
 	shield_icon_index = 255;		// stored as ubyte
 	icon_filename[0] = '\0';
+	memset(&model_icon_angles, 0, sizeof(angles));
 	anim_filename[0] = '\0';
 	overhead_filename[0] = '\0';
 
