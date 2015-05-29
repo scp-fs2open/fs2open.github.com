@@ -76,21 +76,6 @@ int filelength(int fd)
 	return buf.st_size;
 }
 
-// non-blocking process pause
-void Sleep(int mili)
-{
-#ifdef __APPLE__
-	// ewwww, I hate this!!  SDL_Delay() is causing issues for us though and this
-	// basically matches Apple examples of the same thing.  Same as SDL_Delay() but
-	// we aren't hitting up the system for anything during the process
-	uint then = SDL_GetTicks() + mili;
-
-	while (then > SDL_GetTicks());
-#else
-	SDL_Delay(mili);
-#endif
-}
-
 extern void os_deinit();
 // fatal assertion error
 void WinAssert(char * text, char *filename, int line)

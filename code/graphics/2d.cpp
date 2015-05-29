@@ -931,7 +931,7 @@ void gr_force_windowed()
 	}
 
 	if ( Os_debugger_running ) {
-		Sleep(1000);
+		os_sleep(1000);
 	}
 }
 

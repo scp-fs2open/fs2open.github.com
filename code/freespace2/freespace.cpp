@@ -4808,7 +4808,7 @@ void game_set_frametime(int state)
 		if (Frametime < cap) {
 			thistime = cap - Frametime;
 //  			mprintf(("Sleeping for %6.3f seconds.\n", f2fl(thistime)));
-			Sleep( DWORD(f2fl(thistime) * 1000.0f) );
+			os_sleep(static_cast<int>(f2fl(thistime) * 1000.0f));
 			Frametime = cap;
 			thistime = timer_get_fixed_seconds();
 		}
@@ -4818,7 +4818,7 @@ void game_set_frametime(int state)
 		(f2fl(Frametime) < ((float)1.0/(float)Multi_options_g.std_framecap))){
 
 		frame_cap_diff = ((float)1.0/(float)Multi_options_g.std_framecap) - f2fl(Frametime);		
-		Sleep((DWORD)(frame_cap_diff*1000)); 				
+		os_sleep(static_cast<int>(frame_cap_diff*1000)); 				
 		
 		thistime += fl2f((frame_cap_diff));		
 

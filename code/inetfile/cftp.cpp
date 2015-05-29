@@ -29,6 +29,7 @@
 #define WSAGetLastError()  (errno)
 #endif
 
+#include "osapi/osapi.h"
 #include "inetfile/cftp.h"
 
 
@@ -498,7 +499,7 @@ uint CFtpGet::ReadFTPServerReply()
 			strcat_s(recv_buffer,chunk);
 		}
 		
-		Sleep(1);	
+		os_sleep(1);	
 	}while(igotcrlf==0);
 					
 	if(recv_buffer[3] == '-')
@@ -538,7 +539,7 @@ uint CFtpGet::ReadDataChannel()
 			fwrite(sDataBuffer,nBytesRecv,1,LOCALFILE);
     	}
 
-		Sleep(1);
+		os_sleep(1);
 	}while (nBytesRecv > 0);
 	fclose(LOCALFILE);							
 	// Close the file and check for error returns.
@@ -577,6 +578,6 @@ void CFtpGet::FlushControlChannel()
 	{
 		recv(m_ControlSock,flushbuff,1,0);
 
-		Sleep(1);
+		os_sleep(1);
 	}
 }

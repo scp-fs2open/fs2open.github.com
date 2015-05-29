@@ -175,6 +175,7 @@ std::string base64_decode(std::string const& encoded_string) {
 #include "playerman/player.h"
 #include "mission/missiongoals.h"
 #include "ship/ship.h"
+#include "osapi/osapi.h"
 
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -410,7 +411,7 @@ json_t* serverPut(ResourceContext *context) {
         // update fs2netd with the info
         if (MULTI_IS_TRACKER_GAME) {
             fs2netd_gameserver_disconnect();
-            Sleep(50);
+            os_sleep(50);
             fs2netd_gameserver_start();
         }
     }
@@ -898,7 +899,7 @@ void std_connect_set_gamename(char *name)
 		// update fs2netd
 		if (MULTI_IS_TRACKER_GAME) {
 			fs2netd_gameserver_disconnect();
-			Sleep(50);
+			os_sleep(50);
 			fs2netd_gameserver_start();
 		}
 	}
