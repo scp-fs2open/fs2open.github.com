@@ -379,7 +379,7 @@ public:
 	void set_light_filter(int objnum, vec3d *pos, float rad);
 	void set_light_factor(float factor);
 
-	void init_render();
+	void init_render(bool sort = true);
 	void render_all(int depth_mode = -1);
 	void reset();
 };
@@ -393,7 +393,7 @@ public:
 };
 
 //void model_immediate_render(int model_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int lighting_skip = -1, int *replacement_textures = NULL);
-void model_render_immediate(model_render_params *render_info, int model_num, matrix *orient, vec3d * pos, int render = MODEL_RENDER_ALL);
+void model_render_immediate(model_render_params *render_info, int model_num, matrix *orient, vec3d * pos, int render = MODEL_RENDER_ALL, bool sort = true);
 void model_render_queue(model_render_params *render_info, draw_list* scene, int model_num, matrix *orient, vec3d *pos);
 //void model_queue_render(DrawList* scene, int model_num, int model_instance_num, matrix *orient, vec3d *pos, uint flags, int objnum, int *replacement_textures, const bool is_skybox = false);
 //void submodel_immediate_render(int model_num, int submodel_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int *replacement_textures = NULL);

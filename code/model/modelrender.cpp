@@ -841,9 +841,11 @@ void draw_list::init()
 	TransformBufferHandler.reset();
 }
 
-void draw_list::init_render()
+void draw_list::init_render(bool sort)
 {
-	sort_draws();
+	if ( sort ) {
+		sort_draws();
+	}
 
 	TransformBufferHandler.submit_buffer_data();
 }
@@ -2623,7 +2625,7 @@ void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, 
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 }
 
-void model_render_immediate(model_render_params *render_info, int model_num, matrix *orient, vec3d * pos, int render)
+void model_render_immediate(model_render_params *render_info, int model_num, matrix *orient, vec3d * pos, int render, bool sort)
 {
 	draw_list model_list;
 
@@ -2631,7 +2633,7 @@ void model_render_immediate(model_render_params *render_info, int model_num, mat
 
 	model_render_queue(render_info, &model_list, model_num, orient, pos);
 
-	model_list.init_render();
+	model_list.init_render(sort);
 
 	switch ( render ) {
 	case MODEL_RENDER_OPAQUE:
