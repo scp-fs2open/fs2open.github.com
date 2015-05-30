@@ -351,6 +351,7 @@ void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 	Render(&scene, pos, view_pos);
 
 	scene.render_all();
+	scene.render_outlines();
 
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 	gr_clear_states();
