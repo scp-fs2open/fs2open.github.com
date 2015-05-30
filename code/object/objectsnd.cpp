@@ -17,6 +17,7 @@
 #include "ship/ship.h"
 #include "gamesnd/gamesnd.h"
 #include "sound/ds.h"
+#include "cmdline/cmdline.h"
 #include "sound/ds3d.h"
 #include "io/timer.h"
 #include "render/3d.h"
@@ -52,8 +53,8 @@ typedef struct _obj_snd {
 #define MIN_FORWARD_SPEED		5
 #define SPEED_SOUND				600.0f				// speed of sound in FreeSpace
 
-#define MAX_OBJ_SOUNDS_PLAYING						5
-static	int Num_obj_sounds_playing;
+static int MAX_OBJ_SOUNDS_PLAYING = -1; // initialized in obj_snd_level_init()
+static int Num_obj_sounds_playing;
 
 #define OBJSND_CHANGE_FREQUENCY_THRESHOLD			10
 
@@ -191,6 +192,11 @@ int obj_snd_get_slot()
 void obj_snd_level_init()
 {
 	int i;
+
+	if (MAX_OBJ_SOUNDS_PLAYING < 0)
+	{
+		MAX_OBJ_SOUNDS_PLAYING = Cmdline_enhanced_sound ? 12 : 5;
+	}
 
 	list_init(&obj_snd_list);
 	for ( i = 0; i < MAX_OBJ_SNDS; i++ ) {
@@ -621,7 +627,7 @@ void obj_snd_do_frame()
 				} // end switch
 
 				if ( go_ahead_flag ) {
-					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, 1, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE);
+					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, 1, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE, NULL, 1.0f, 0, true);
 					if ( osp->instance != -1 ) {
 						Num_obj_sounds_playing++;
 					}
