@@ -381,13 +381,13 @@ void CJumpNode::Render(draw_list* scene, vec3d *pos, vec3d *view_pos)
 	render_info.set_flags(mr_flags);
 
 	if ( Fred_running ) {
-		render_info.set_outline_color(m_display_color);
+		render_info.set_color(m_display_color);
 
 		model_render_queue(&render_info, scene, m_modelnum, &node_orient, pos);
 	} else {
 		if (m_flags & JN_USE_DISPLAY_COLOR) {
 			//gr_set_color_fast(&m_display_color);
-			render_info.set_outline_color(m_display_color);
+			render_info.set_color(m_display_color);
 		}
 		else if ( view_pos != NULL) {
 			int alpha_index = HUD_color_alpha;
@@ -409,9 +409,9 @@ void CJumpNode::Render(draw_list* scene, vec3d *pos, vec3d *view_pos)
 				}
 			}
 
-			render_info.set_outline_color(HUD_color_defaults[alpha_index]);
+			render_info.set_color(HUD_color_defaults[alpha_index]);
 		} else {
-			render_info.set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);
+			render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		}
 
 		model_render_queue(&render_info, scene, m_modelnum, &node_orient, pos);
