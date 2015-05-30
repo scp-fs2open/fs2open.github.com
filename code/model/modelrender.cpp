@@ -2482,7 +2482,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 	}
 }
 
-void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint flags)
+void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint debug_flags)
 {
 	int i;
 
@@ -2529,14 +2529,14 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint f
 
 	g3_start_instance_matrix(&model->offset, &submodel_matrix, true);
 
-	if ( flags & MR_DEPRECATED_SHOW_PIVOTS ) {
-		model_draw_debug_points( pm, &pm->submodel[mn], flags );
+	if ( debug_flags & MR_DEBUG_PIVOTS ) {
+		model_draw_debug_points( pm, &pm->submodel[mn], debug_flags );
 	}
 
 	i = model->first_child;
 
 	while ( i >= 0 ) {
-		model_render_debug_children( pm, i, detail_level, flags );
+		model_render_debug_children( pm, i, detail_level, debug_flags );
 
 		i = pm->submodel[i].next_sibling;
 	}
@@ -2660,7 +2660,9 @@ void model_render_immediate(model_render_params *render_info, int model_num, mat
 
 	GL_state.Texture.DisableAll();
 
-	model_render_debug(model_num, orient, pos, render_info->get_model_flags(), render_info->get_debug_flags(), render_info->get_object_number(), render_info->get_detail_level_lock());
+	if ( render_info->get_debug_flags() ) {
+		model_render_debug(model_num, orient, pos, render_info->get_model_flags(), render_info->get_debug_flags(), render_info->get_object_number(), render_info->get_detail_level_lock());
+	}
 }
 
 void model_render_queue(model_render_params *interp, draw_list *scene, int model_num, matrix *orient, vec3d *pos)
