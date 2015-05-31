@@ -2899,16 +2899,16 @@ ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a
 	vec3d *impulse;
 	vec3d *offset = &vmd_zero_vector;
 	
-		if (!ade_get_args(L, "oo|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&impulse), l_Vector.GetPtr(&offset)))
-		 return ADE_RETURN_NIL;
+	if (!ade_get_args(L, "oo|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&impulse), l_Vector.GetPtr(&offset)))
+		return ADE_RETURN_NIL;
 	
-		objh = pih->objh;
+	objh = pih->objh;
 	
-		physics_apply_whack(impulse, offset, pih->pi, &objh.objp->orient, pih->pi->mass);
+	physics_apply_whack(impulse, offset, pih->pi, &objh.objp->orient, pih->pi->mass);
 	
-		return ADE_RETURN_TRUE;
+	return ADE_RETURN_TRUE;
 	
-		}
+}
 
 
 //**********HANDLE: sexpvariable
