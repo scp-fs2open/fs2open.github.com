@@ -4802,6 +4802,19 @@ void multi_create_list_select_item(int n)
 
 				// set the information area text
 				multi_common_set_text(The_mission.mission_desc);
+				netgame_descript_len = strlen(The_mission.mission_desc);
+				if (netgame_descript_len >= MAX_PACKET_SIZE - 10)
+				{
+					strncat(Netgame.netgame_descript_info, The_mission.mission_desc, MAX_PACKET_SIZE - 11);
+				}
+				else if (netgame_descript_len > 0)
+				{
+					strcpy(Netgame.netgame_descript_info, The_mission.mission_desc);
+				}
+				else
+				{
+					Netgame.netgame_descript_info[0] = '\0';
+				}
 			}
 			// if we're on the standalone, send a request for the description
 			else {
@@ -4822,6 +4835,7 @@ void multi_create_list_select_item(int n)
 			break;
 		case MULTI_CREATE_SHOW_CAMPAIGNS:
 			// if not on the standalone server
+			Netgame.is_multi_camp = MULTI_IS_CAMPAIGN;
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 				// get the campaign info				
 				memset(title,0,NAME_LENGTH+1);
@@ -4842,12 +4856,11 @@ void multi_create_list_select_item(int n)
 				// multi_common_set_text(ng->title);
 				if (campaign_desc != NULL)
 				{
-					Netgame.is_multi_camp = MULTI_IS_CAMPAIGN;
 					multi_common_set_text(campaign_desc);
 					netgame_descript_len = strlen(campaign_desc);
-						if (netgame_descript_len > MAX_PACKET_SIZE - 10) 
+						if (netgame_descript_len >= MAX_PACKET_SIZE - 10) 
 						{
-							strncat(Netgame.netgame_descript_info, campaign_desc, MAX_PACKET_SIZE - 10);
+							strncat(Netgame.netgame_descript_info, campaign_desc, MAX_PACKET_SIZE - 11);
 						}
 						else
 						{
@@ -4856,11 +4869,7 @@ void multi_create_list_select_item(int n)
 				}
 				else 
 				{
-<<<<<<< HEAD
 					Netgame.netgame_descript_info[0] = '\0';
-=======
-					strncpy(Netgame.netgame_descript_info, campaign_desc, 1);
->>>>>>> bc26c94112960452079d73383c779238ac8adfe6
 					multi_common_set_text("");
 				}
 			}

@@ -2172,44 +2172,21 @@ void send_netgame_descript_packet(net_addr *addr, int code)
 
 	val = (ubyte)code;
 	ADD_DATA(val);
-	if (code == 1)
-	{
-		//Cyborg17 figure out which description we need -- 
-		if (Netgame.is_multi_camp == MULTI_NOT_CAMPAIGN)
-		{
-		//add as much of the description as we dare
-			desc_len = strlen(The_mission.mission_desc);
-		}
-		else if (Netgame.is_multi_camp == MULTI_IS_CAMPAIGN)
-		{
-			desc_len = strlen(Netgame.netgame_descript_info);
-		}
 
+	if (code == 1){
+		// add as much of the description as we dare
+		desc_len = strlen(Netgame.netgame_descript_info);
 		if (desc_len > MAX_PACKET_SIZE - 10){
 			desc_len = MAX_PACKET_SIZE - 10;
 			ADD_INT(desc_len);
-			if (Netgame.is_multi_camp == MULTI_IS_CAMPAIGN){
-				memcpy(data + packet_size, Netgame.netgame_descript_info, desc_len);
-
-			} else {
-				memcpy(data + packet_size, The_mission.mission_desc, desc_len);
-			}
+			memcpy(data + packet_size, Netgame.netgame_descript_info, desc_len);
 			packet_size += desc_len;
-
 		}
-		else 
-		{
-			if (Netgame.is_multi_camp == MULTI_IS_CAMPAIGN){
-				ADD_STRING(Netgame.netgame_descript_info);
-
-			}
-			else 
-			{
-			ADD_STRING(The_mission.mission_desc);
-			}
+		else {
+			ADD_STRING(Netgame.netgame_descript_info);
 		}
 	}
-	
+
 	Assert(addr != NULL);
 	if (addr != NULL){
 		psnet_send(addr, data, packet_size);
