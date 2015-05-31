@@ -179,8 +179,6 @@
 		34C71AFF08C41AAA00459F5B /* ddsutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459530A08C3D69F003B1351 /* ddsutils.cpp */; };
 		34C71B0008C41AAD00459F5B /* debris.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459530E08C3D69F003B1351 /* debris.h */; };
 		34C71B0108C41AAD00459F5B /* debris.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459530D08C3D69F003B1351 /* debris.cpp */; };
-		34C71B0208C41AB000459F5B /* timerbar.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459531408C3D69F003B1351 /* timerbar.h */; };
-		34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531308C3D69F003B1351 /* timerbar.cpp */; };
 		34C71B0608C41AB200459F5B /* console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531008C3D69F003B1351 /* console.cpp */; };
 		34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459532D08C3D6A0003B1351 /* exceptionhandler.h */; };
 		34C71B0C08C41ABE00459F5B /* exceptionhandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459532C08C3D6A0003B1351 /* exceptionhandler.cpp */; };
@@ -1014,8 +1012,6 @@
 		3459530D08C3D69F003B1351 /* debris.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = debris.cpp; sourceTree = "<group>"; };
 		3459530E08C3D69F003B1351 /* debris.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debris.h; sourceTree = "<group>"; };
 		3459531008C3D69F003B1351 /* console.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = console.cpp; sourceTree = "<group>"; };
-		3459531308C3D69F003B1351 /* timerbar.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = timerbar.cpp; sourceTree = "<group>"; };
-		3459531408C3D69F003B1351 /* timerbar.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = timerbar.h; sourceTree = "<group>"; };
 		3459531E08C3D69F003B1351 /* dxguid.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = dxguid.lib; sourceTree = "<group>"; };
 		3459531F08C3D6A0003B1351 /* strmiids.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = strmiids.lib; sourceTree = "<group>"; };
 		3459532008C3D6A0003B1351 /* vasync.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vasync.h; sourceTree = "<group>"; };
@@ -2155,8 +2151,6 @@
 				F0E076E2190826C00069F480 /* consolecmds.cpp */,
 				F0E076E3190826C00069F480 /* consoleparse.cpp */,
 				F0E076E4190826C00069F480 /* consoleparse.h */,
-				3459531308C3D69F003B1351 /* timerbar.cpp */,
-				3459531408C3D69F003B1351 /* timerbar.h */,
 			);
 			path = debugconsole;
 			sourceTree = "<group>";
@@ -3314,7 +3308,6 @@
 				34C71AFC08C41A9B00459F5B /* cutscenes.h in Headers */,
 				34C71AFE08C41AAA00459F5B /* ddsutils.h in Headers */,
 				34C71B0008C41AAD00459F5B /* debris.h in Headers */,
-				34C71B0208C41AB000459F5B /* timerbar.h in Headers */,
 				34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */,
 				34C71B0E08C41AC100459F5B /* fireballs.h in Headers */,
 				34C71B1808C41ACB00459F5B /* gameplayhelp.h in Headers */,
@@ -3931,7 +3924,6 @@
 				34C71AFD08C41A9B00459F5B /* cutscenes.cpp in Sources */,
 				34C71AFF08C41AAA00459F5B /* ddsutils.cpp in Sources */,
 				34C71B0108C41AAD00459F5B /* debris.cpp in Sources */,
-				34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */,
 				34C71B0608C41AB200459F5B /* console.cpp in Sources */,
 				34C71B0C08C41ABE00459F5B /* exceptionhandler.cpp in Sources */,
 				34C71B0D08C41AC100459F5B /* warpineffect.cpp in Sources */,
@@ -4454,7 +4446,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.7.3";
+				CURRENT_PROJECT_VERSION = 3.7.3;
 				DEAD_CODE_STRIPPING = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -4502,7 +4494,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.7.3";
+				CURRENT_PROJECT_VERSION = 3.7.3;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
