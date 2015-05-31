@@ -75,7 +75,7 @@ class model_render_params
 	float Warp_alpha;
 	vec3d Warp_scale;
 
-	color Outline_color;
+	color Color;
 
 	float Xparent_alpha;
 
@@ -105,8 +105,8 @@ public:
 	void set_detail_level_lock(int detail_level_lock);
 	void set_depth_scale(float scale);
 	void set_warp_params(int bitmap, float alpha, vec3d &scale);
-	void set_outline_color(color &clr);
-	void set_outline_color(int r, int g, int b);
+	void set_color(color &clr);
+	void set_color(int r, int g, int b);
 	void set_alpha(float alpha);
 	void set_forced_bitmap(int bitmap);
 	void set_insignia_bitmap(int bitmap);
@@ -128,7 +128,7 @@ public:
 	int get_warp_bitmap();
 	float get_warp_alpha();
 	const vec3d& get_warp_scale();
-	const color& get_outline_color();
+	const color& get_color();
 	float get_alpha();
 	int get_forced_bitmap();
 	int get_insignia_bitmap();

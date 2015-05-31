@@ -1451,7 +1451,7 @@ void subspace_render()
 
 	vm_angles_2_matrix(&tmp,&angs);
 
-	render_info.set_outline_color(255, 255, 255);
+	render_info.set_color(255, 255, 255);
 	render_info.set_alpha(1.0f);
 	render_info.set_flags(render_flags);
 
