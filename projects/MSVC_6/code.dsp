@@ -7,19 +7,19 @@
 CFG=code - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
-!MESSAGE 
+!MESSAGE
 !MESSAGE NMAKE /f "code.mak".
-!MESSAGE 
+!MESSAGE
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
-!MESSAGE 
+!MESSAGE
 !MESSAGE NMAKE /f "code.mak" CFG="code - Win32 Debug"
-!MESSAGE 
+!MESSAGE
 !MESSAGE Possible choices for configuration are:
-!MESSAGE 
+!MESSAGE
 !MESSAGE "code - Win32 Release" (based on "Win32 (x86) Static Library")
 !MESSAGE "code - Win32 Debug" (based on "Win32 (x86) Static Library")
-!MESSAGE 
+!MESSAGE
 
 # Begin Project
 # PROP AllowPerConfigDependencies 0
@@ -74,7 +74,7 @@ LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo
 
-!ENDIF 
+!ENDIF
 
 # Begin Target
 
@@ -377,13 +377,6 @@ SOURCE=..\..\code\debugconsole\consoleparse.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\debugconsole\timerbar.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\debugconsole\timerbar.h
-# End Source File
-# End Group
 # Begin Group "DirectX"
 
 # PROP Default_Filter ""
@@ -2357,7 +2350,7 @@ InputName=phrases
 BuildCmds= \
 	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
 	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
-	
+
 
 "$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -2376,7 +2369,7 @@ InputName=phrases
 BuildCmds= \
 	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
 	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
-	
+
 
 "$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -2385,7 +2378,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ENDIF 
+!ENDIF
 
 # End Source File
 # Begin Source File
