@@ -23,7 +23,6 @@
 #include "ddsutils/ddsutils.h"
 #include "model/model.h"
 #include "debugconsole/console.h"
-#include "debugconsole/timerbar.h"
 #include "graphics/gropenglbmpman.h"
 #include "graphics/gropengllight.h"
 #include "graphics/gropengltexture.h"
@@ -166,7 +165,7 @@ void opengl_go_fullscreen()
 	ClipCursor(&cursor_clip);
 	ShowCursor(FALSE);
 
-	os_resume();  
+	os_resume();
 #else
 	if ( (os_config_read_uint(NULL, NOX("Fullscreen"), 1) == 1) && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) ) {
 		os_suspend();
@@ -221,7 +220,7 @@ void opengl_go_windowed()
 	ClipCursor(NULL);
 	ShowCursor(FALSE);
 
-	os_resume();  
+	os_resume();
 
 #else
 	if (SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) {
@@ -319,8 +318,8 @@ void gr_opengl_activate(int active)
 
 void gr_opengl_clear()
 {
-	glClearColor(gr_screen.current_clear_color.red / 255.0f, 
-		gr_screen.current_clear_color.green / 255.0f, 
+	glClearColor(gr_screen.current_clear_color.red / 255.0f,
+		gr_screen.current_clear_color.green / 255.0f,
 		gr_screen.current_clear_color.blue / 255.0f, gr_screen.current_clear_color.alpha / 255.0f);
 
 	glClear ( GL_COLOR_BUFFER_BIT );
@@ -334,9 +333,9 @@ void gr_opengl_flip()
 	gr_reset_clip();
 
 	mouse_eval_deltas();
-	
+
 	GL_mouse_saved = 0;
-	
+
 	if ( mouse_is_visible() ) {
 		int mx, my;
 
@@ -405,7 +404,7 @@ void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
 	if (y + h > max_h) {
 		h = max_h - y;
 	}
-	
+
 	if (w > max_w) {
 		w = max_w;
 	}
@@ -593,7 +592,7 @@ void gr_opengl_print_screen(const char *filename)
 }
 
 void gr_opengl_cleanup(int minimize)
-{	
+{
 	if ( !GL_initted ) {
 		return;
 	}
@@ -645,17 +644,17 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	Assert((r >= 0) && (r < 256));
 	Assert((g >= 0) && (g < 256));
 	Assert((b >= 0) && (b < 256));
-	
+
 	if (fog_mode == GR_FOGMODE_NONE) {
 		if ( GL_state.Fog() ) {
 			GL_state.Fog(GL_FALSE);
 		}
 
 		gr_screen.current_fog_mode = fog_mode;
-		
+
 		return;
 	}
-	
+
   	if (OGL_fogmode == 3) {
 		glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
 		glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
@@ -664,31 +663,31 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	else if ( (OGL_fogmode == 2) && Cmdline_nohtl ) {
 		glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT);
 		fog_near *= fog_near;		// it's faster this way
-		fog_far *= fog_far;		
+		fog_far *= fog_far;
 	} else {
 		glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
 	}
 
-	GL_state.Fog(GL_TRUE); 
+	GL_state.Fog(GL_TRUE);
 	glFogf(GL_FOG_MODE, GL_LINEAR);
 	glFogf(GL_FOG_START, fog_near);
 	glFogf(GL_FOG_END, fog_far);
 
 	gr_screen.current_fog_mode = fog_mode;
-	
+
 	if ( (gr_screen.current_fog_color.red != r) ||
 			(gr_screen.current_fog_color.green != g) ||
 			(gr_screen.current_fog_color.blue != b) )
 	{
 		GLfloat fc[4];
-		
+
 		gr_init_color( &gr_screen.current_fog_color, r, g, b );
-	
+
 		fc[0] = (float)r/255.0f;
 		fc[1] = (float)g/255.0f;
 		fc[2] = (float)b/255.0f;
 		fc[3] = 1.0f;
-		
+
 		glFogfv(GL_FOG_COLOR, fc);
 	}
 
@@ -920,7 +919,7 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-	
+
 	if (gr_screen.bits_per_pixel == 16) {
 		glReadPixels(0, gr_screen.max_h-h, w, h, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, data);
 	} else if (gr_screen.bits_per_pixel == 32) {
@@ -1205,7 +1204,7 @@ void gr_opengl_dump_frame_start(int first_frame, int frames_between_dumps)
 	GL_dump_frame_count = 0;
 	GL_dump_frame_count_max = frames_between_dumps; // only works if it's 1
 	GL_dump_frame_size = gr_screen.max_w * gr_screen.max_h * 3;
-	
+
 	if ( !GL_dump_buffer ) {
 		int size = GL_dump_frame_count_max * GL_dump_frame_size;
 
@@ -1222,11 +1221,11 @@ void gr_opengl_dump_frame_stop()
 	if ( !GL_dump_frames )	{
 		Int3();		//  We're not dumping frames.  See John.
 		return;
-	}	
+	}
 
 	// dump any remaining frames
 	opengl_flush_frame_dump();
-	
+
 	GL_dump_frames = 0;
 
 	if ( GL_dump_buffer )	{
@@ -1505,7 +1504,7 @@ int opengl_init_display_device()
 			Gr_blue.bits = 5;
 			Gr_blue.shift = 0;
 			Gr_blue.scale = 8;
-			Gr_blue.mask = 0x1F;		
+			Gr_blue.mask = 0x1F;
 
 			break;
 		}
@@ -1540,17 +1539,17 @@ int opengl_init_display_device()
 	Gr_t_red.mask = 0x7c00;
 	Gr_t_red.shift = 10;
 	Gr_t_red.scale = 8;
-	
+
 	Gr_t_green.bits = 5;
 	Gr_t_green.mask = 0x03e0;
 	Gr_t_green.shift = 5;
 	Gr_t_green.scale = 8;
-	
+
 	Gr_t_blue.bits = 5;
 	Gr_t_blue.mask = 0x001f;
 	Gr_t_blue.shift = 0;
 	Gr_t_blue.scale = 8;
-	
+
 	Gr_t_alpha.bits = 1;
 	Gr_t_alpha.mask = 0x8000;
 	Gr_t_alpha.scale = 255;
@@ -1561,17 +1560,17 @@ int opengl_init_display_device()
 	Gr_ta_red.mask = 0x0f00;
 	Gr_ta_red.shift = 8;
 	Gr_ta_red.scale = 17;
-	
+
 	Gr_ta_green.bits = 4;
 	Gr_ta_green.mask = 0x00f0;
 	Gr_ta_green.shift = 4;
 	Gr_ta_green.scale = 17;
-	
+
 	Gr_ta_blue.bits = 4;
 	Gr_ta_blue.mask = 0x000f;
 	Gr_ta_blue.shift = 0;
 	Gr_ta_blue.scale = 17;
-	
+
 	Gr_ta_alpha.bits = 4;
 	Gr_ta_alpha.mask = 0xf000;
 	Gr_ta_alpha.shift = 12;
@@ -1722,9 +1721,9 @@ int opengl_init_display_device()
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, (bpp == 32) ? 24 : 16);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, (bpp == 32) ? 8 : 1);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, db);
-	
+
 	int fsaa_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
-	
+
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (fsaa_samples == 0) ? 0 : 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, fsaa_samples);
 
@@ -1771,13 +1770,13 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_flip				= gr_opengl_flip;
 	gr_screen.gf_set_clip			= gr_opengl_set_clip;
 	gr_screen.gf_reset_clip			= gr_opengl_reset_clip;
-	
+
 	gr_screen.gf_clear				= gr_opengl_clear;
 //	gr_screen.gf_bitmap				= gr_opengl_bitmap;
 	gr_screen.gf_bitmap_ex			= gr_opengl_bitmap_ex;
 	gr_screen.gf_aabitmap			= gr_opengl_aabitmap;
 	gr_screen.gf_aabitmap_ex		= gr_opengl_aabitmap_ex;
-	
+
 //	gr_screen.gf_rect				= gr_opengl_rect;
 //	gr_screen.gf_shade				= gr_opengl_shade;
 	gr_screen.gf_string				= gr_opengl_string;
@@ -1803,7 +1802,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_fade_out			= gr_opengl_fade_out;
 	gr_screen.gf_flash				= gr_opengl_flash;
 	gr_screen.gf_flash_alpha		= gr_opengl_flash_alpha;
-	
+
 	gr_screen.gf_zbuffer_get		= gr_opengl_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_opengl_zbuffer_set;
 	gr_screen.gf_zbuffer_clear		= gr_opengl_zbuffer_clear;
@@ -1812,18 +1811,18 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_stencil_clear		= gr_opengl_stencil_clear;
 
 	gr_screen.gf_alpha_mask_set		= gr_opengl_alpha_mask_set;
-	
+
 	gr_screen.gf_save_screen		= gr_opengl_save_screen;
 	gr_screen.gf_restore_screen		= gr_opengl_restore_screen;
 	gr_screen.gf_free_screen		= gr_opengl_free_screen;
-	
+
 	gr_screen.gf_dump_frame_start	= gr_opengl_dump_frame_start;
 	gr_screen.gf_dump_frame_stop	= gr_opengl_dump_frame_stop;
 	gr_screen.gf_dump_frame			= gr_opengl_dump_frame;
-	
+
 	gr_screen.gf_set_gamma			= gr_opengl_set_gamma;
 
-	gr_screen.gf_fog_set			= gr_opengl_fog_set;	
+	gr_screen.gf_fog_set			= gr_opengl_fog_set;
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
 	gr_screen.gf_get_region			= gr_opengl_get_region;
@@ -1997,7 +1996,7 @@ bool gr_opengl_init()
 
 	// setup the lighting stuff that will get used later
 	opengl_light_init();
-	
+
 	// init state system (must come AFTER light is set up)
 	GL_state.init();
 
@@ -2049,7 +2048,7 @@ bool gr_opengl_init()
 
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	
+
 	glFlush();
 
 	Gr_current_red = &Gr_red;

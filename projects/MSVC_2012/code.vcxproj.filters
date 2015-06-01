@@ -1056,9 +1056,6 @@
     <ClCompile Include="..\..\code\globalincs\profiling.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\timerbar.cpp">
-      <Filter>DebugConsole</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
@@ -1870,9 +1867,6 @@
     </ClInclude>
     <ClInclude Include="..\..\code\PilotFile\pilotfile.h">
       <Filter>PilotFile</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\timerbar.h">
-      <Filter>DebugConsole</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\debugconsole\console.h">
       <Filter>DebugConsole</Filter>
