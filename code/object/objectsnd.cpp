@@ -195,7 +195,7 @@ void obj_snd_level_init()
 
 	if (MAX_OBJ_SOUNDS_PLAYING < 0)
 	{
-		MAX_OBJ_SOUNDS_PLAYING = Cmdline_enhanced_sound ? 12 : 5;
+		MAX_OBJ_SOUNDS_PLAYING = Cmdline_no_enhanced_sound ? 5 : 12;
 	}
 
 	list_init(&obj_snd_list);

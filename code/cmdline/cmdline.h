@@ -105,7 +105,7 @@ extern int Cmdline_stretch_menu;
 extern int Cmdline_query_speech;
 extern int Cmdline_snd_preload;
 extern int Cmdline_voice_recognition;
-extern int Cmdline_enhanced_sound;
+extern int Cmdline_no_enhanced_sound;
 
 // MOD related
 extern char *Cmdline_mod;	 // DTP for mod support

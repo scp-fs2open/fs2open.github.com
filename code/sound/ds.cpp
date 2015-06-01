@@ -1007,7 +1007,7 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
  */
 void ds_init_channels()
 {
-	MAX_CHANNELS = Cmdline_enhanced_sound? 128 : 32;
+	MAX_CHANNELS = Cmdline_no_enhanced_sound ? 32 : 128;
 
 	try {
 		Channels = new channel[MAX_CHANNELS];
@@ -1146,12 +1146,12 @@ int ds_init()
 		}
 	}
 
-	if (Cmdline_enhanced_sound)
+	if (!Cmdline_no_enhanced_sound)
 	{
 		if (!ds_check_for_openal_soft())
 		{
-			Warning(LOCATION, "Enhanced sound is enabled but you are not using OpenAL Soft. Disabling enhanced sound.\n");
-			Cmdline_enhanced_sound = 0;
+			mprintf(("You are not using OpenAL Soft. Disabling enhanced sound.\n"));
+			Cmdline_no_enhanced_sound = 1;
 		}
 	}
 
@@ -1625,7 +1625,7 @@ int ds_get_free_channel(float volume, int snd_id, int priority, int & enhanced_p
 	int first_free_channel = -1;
 	unsigned int enhanced_limit = 0;
 
-	if (Cmdline_enhanced_sound) {
+	if (!Cmdline_no_enhanced_sound) {
 		enhanced_priority = enhanced_sound_data.priority;
 		enhanced_limit = enhanced_sound_data.limit;
 
@@ -1724,7 +1724,7 @@ int ds_play_easy(int sid, float volume)
 	}
 
 	int ch_idx = -1;
-	if (Cmdline_enhanced_sound) {
+	if (!Cmdline_no_enhanced_sound) {
 		ds_get_free_channel_enhanced(volume, -1, SND_ENHANCED_PRIORITY_MUST_PLAY, SND_ENHANCED_MAX_LIMIT);
 	} else {
 		ds_get_free_channel_retail(volume, -1, DS_MUST_PLAY);
