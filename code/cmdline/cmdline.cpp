@@ -167,7 +167,7 @@ Flag exe_params[] =
 	{ "-snd_preload",		"Preload mission game sounds",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-snd_preload", },
 	{ "-nosound",			"Disable all sound",						false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
-	{ "-enhanced_sound", "Enable enhanced sound", false, 0, EASY_DEFAULT, "Audio", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-enhanced_sound", },
+	{ "-enhanced_sound",	"Enable enhanced sound",					false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-enhanced_sound", },
 
 	{ "-standalone",		"Run as standalone server",					false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
 	{ "-startgame",			"Skip mainhall and start hosting",			false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },

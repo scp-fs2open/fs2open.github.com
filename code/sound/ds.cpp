@@ -1035,8 +1035,12 @@ void ds_init_buffers()
 bool ds_check_for_openal_soft()
 {	
 	const ALchar * renderer = alGetString(AL_RENDERER);
-	Assertion(renderer!= NULL, "ds_check_for_openal_soft: renderer is null!");
-	if ((renderer != NULL) && !stricmp((const char *)renderer, "OpenAL Soft"))
+	if (renderer == NULL)
+	{
+		mprintf(("ds_check_for_openal_soft: renderer is null!"));
+		return false;
+	}
+	else if (!stricmp((const char *)renderer, "OpenAL Soft"))
 	{
 		return true;
 	}
