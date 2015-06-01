@@ -593,6 +593,8 @@ FS2_SOURCES =	\
 	object/waypoint.h	\
 	observer/observer.cpp	\
 	observer/observer.h	\
+	osapi/dialogs.cpp	\
+	osapi/dialogs.h	\
 	osapi/osapi.cpp	\
 	osapi/osapi.h	\
 	osapi/outwnd.cpp	\
