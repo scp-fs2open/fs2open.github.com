@@ -28,6 +28,39 @@
 #define SND_PRIORITY_DOUBLE_INSTANCE		2
 #define SND_PRIORITY_TRIPLE_INSTANCE		3
 
+// jg18 - new priority system
+enum EnhancedSoundPriority
+{
+	SND_ENHANCED_PRIORITY_MUST_PLAY		= 0,
+	SND_ENHANCED_PRIORITY_HIGH			= 1,
+	SND_ENHANCED_PRIORITY_MEDIUM_HIGH	= 2,
+	SND_ENHANCED_PRIORITY_MEDIUM		= 3,
+	SND_ENHANCED_PRIORITY_MEDIUM_LOW	= 4,
+	SND_ENHANCED_PRIORITY_LOW			= 5,
+	SND_ENHANCED_PRIORITY_INVALID		= 6
+};
+
+struct EnhancedSoundData
+{
+	int priority;
+	unsigned int limit;		// limit on how many instances of the sound can play concurrently
+
+	EnhancedSoundData() :
+		priority(SND_ENHANCED_PRIORITY_INVALID), limit(0)
+	{
+	}
+
+	EnhancedSoundData(const int new_priority, const unsigned int new_limit) :
+		priority(new_priority), limit(new_limit)
+	{
+		Assertion(priority >= SND_ENHANCED_PRIORITY_MUST_PLAY && priority <= SND_ENHANCED_PRIORITY_LOW,
+			"EnhancedSoundData ctor given invalid priority %d", priority);
+		Assertion(limit > 0, "EnhancedSoundData ctor given invalid limit %d", limit);
+	}
+};
+
+extern const unsigned int SND_ENHANCED_MAX_LIMIT;
+
 //For the adjust-audio-volume sexp
 #define AAV_MUSIC		0
 #define AAV_VOICE		1
@@ -49,6 +82,7 @@ public:
 	int	id;							//!< index into Sounds[], where sound data is stored
 	int	id_sig;						//!< signature of Sounds[] element
 	int	flags;
+	EnhancedSoundData enhanced_sound_data;
 
 	game_snd( );
 };
@@ -88,7 +122,7 @@ int snd_play_raw( int soundnum, float pan, float vol_scale=1.0f, int priority = 
 // Plays a sound with volume between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.  It scales
 // the pan and volume relative to the current viewer's location.
-int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius=0.0f, vec3d *vel = NULL, int looping = 0, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, vec3d *sound_fvec = NULL, float range_factor = 1.0f, int force = 0 );
+int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius=0.0f, vec3d *vel = NULL, int looping = 0, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, vec3d *sound_fvec = NULL, float range_factor = 1.0f, int force = 0, bool is_ambient = false );
 
 // update the given 3d sound with a new position
 void snd_update_3d_pos(int soudnnum, game_snd *gs, vec3d *new_pos, float radius = 0.0f, float range_factor = 1.0f);
