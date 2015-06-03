@@ -33,6 +33,7 @@
 #include "cfile/cfilesystem.h"
 #include "network/multimsgs.h"
 #include "mod_table/mod_table.h"
+#include "osapi/osapi.h"
 
 #ifndef WIN32
 #include <cstdio>
@@ -184,12 +185,12 @@ void fs2netd_reset_connection()
 	fs2netd_reset_state();
 
 	// wait a little to allow for the port to clear
-	Sleep(500);
+	os_sleep(500);
 
 	// try to reinit the server connection
 	fs2netd_login();
 
-	Sleep(250);
+	os_sleep(250);
 
 	if ( reset_gameserver && fs2netd_is_online() ) {
 		fs2netd_gameserver_start();
@@ -210,14 +211,14 @@ void fs2netd_disconnect()
 
 	fs2netd_reset_state();
 
-	Sleep(500);
+	os_sleep(500);
 }
 
 static int fs2netd_connect_do()
 {
 	int retval = FS2NetD_ConnectToServer(Multi_options_g.game_tracker_ip, Multi_options_g.tracker_port);
 
-	Sleep(5);
+	os_sleep(5);
 
 	switch (retval) {
 		// connection failed
@@ -396,7 +397,7 @@ bool fs2netd_login()
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Failed to connect to FS2NetD server!", 1578));
 		} else {
 			std_gen_set_text("Connect FAILED!", 1);
-			Sleep(2000);
+			os_sleep(2000);
 			std_destroy_gen_dialog();
 		}
 
@@ -511,7 +512,7 @@ bool fs2netd_login()
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, error_str);
 	} else if ( Is_standalone && std_gen_is_active() && strlen(std_error_str) ) {
 		std_gen_set_text(std_error_str, 1);
-		Sleep(2000);
+		os_sleep(2000);
 	}
 
 	if (retval) {
@@ -630,7 +631,7 @@ static void fs2netd_handle_messages()
 
 		bytes_read += read_size;
 
-		Sleep(20);
+		os_sleep(20);
 	}
 
 	if ( (bytes_read == 0) || (bytes_read < BASE_PACKET_SIZE) ) {
