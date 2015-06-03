@@ -75,7 +75,7 @@ class model_render_params
 	float Warp_alpha;
 	vec3d Warp_scale;
 
-	color Outline_color;
+	color Color;
 
 	float Xparent_alpha;
 
@@ -105,8 +105,8 @@ public:
 	void set_detail_level_lock(int detail_level_lock);
 	void set_depth_scale(float scale);
 	void set_warp_params(int bitmap, float alpha, vec3d &scale);
-	void set_outline_color(color &clr);
-	void set_outline_color(int r, int g, int b);
+	void set_color(color &clr);
+	void set_color(int r, int g, int b);
 	void set_alpha(float alpha);
 	void set_forced_bitmap(int bitmap);
 	void set_insignia_bitmap(int bitmap);
@@ -128,7 +128,7 @@ public:
 	int get_warp_bitmap();
 	float get_warp_alpha();
 	const vec3d& get_warp_scale();
-	const color& get_outline_color();
+	const color& get_color();
 	float get_alpha();
 	int get_forced_bitmap();
 	int get_insignia_bitmap();
@@ -379,7 +379,7 @@ public:
 	void set_light_filter(int objnum, vec3d *pos, float rad);
 	void set_light_factor(float factor);
 
-	void init_render();
+	void init_render(bool sort = true);
 	void render_all(int depth_mode = -1);
 	void reset();
 };
@@ -393,7 +393,7 @@ public:
 };
 
 //void model_immediate_render(int model_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int lighting_skip = -1, int *replacement_textures = NULL);
-void model_render_immediate(model_render_params *render_info, int model_num, matrix *orient, vec3d * pos, int render = MODEL_RENDER_ALL);
+void model_render_immediate(model_render_params *render_info, int model_num, matrix *orient, vec3d * pos, int render = MODEL_RENDER_ALL, bool sort = true);
 void model_render_queue(model_render_params *render_info, draw_list* scene, int model_num, matrix *orient, vec3d *pos);
 //void model_queue_render(DrawList* scene, int model_num, int model_instance_num, matrix *orient, vec3d *pos, uint flags, int objnum, int *replacement_textures, const bool is_skybox = false);
 //void submodel_immediate_render(int model_num, int submodel_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int *replacement_textures = NULL);

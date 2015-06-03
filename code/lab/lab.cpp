@@ -845,7 +845,7 @@ void labviewer_render_model(float frametime)
 	light_rotate_all();
 	// lighting for techroom
 
-	render_info.set_outline_color(255, 255, 255);
+	render_info.set_color(255, 255, 255);
 	render_info.set_detail_level_lock(Lab_model_LOD);
 
 	int flagggs = Lab_model_flags;

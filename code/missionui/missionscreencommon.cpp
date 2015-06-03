@@ -1786,7 +1786,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
             }
 			gr_zbuffer_set(false);
 			gr_set_color(80,49,160);
-			render_info->set_outline_color(80, 49, 160);
+			render_info->set_color(80, 49, 160);
 
 			render_info->set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS2, -clip);
 

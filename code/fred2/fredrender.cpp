@@ -773,7 +773,7 @@ void render_one_model_nohtl(object *objp)
 
 			if (Fred_outline)	{
 				render_info.set_flags(j | MR_SHOW_OUTLINE | MR_NO_TEXTURING | MR_NO_LIGHTING);
-				render_info.set_outline_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
+				render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
 			} else {
 				render_info.set_flags(j);
 			}
@@ -918,7 +918,7 @@ void render_one_model_htl(object *objp)
 		model_render_params render_info;
 
 		if (Fred_outline)	{
-			render_info.set_outline_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
+			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
 			j |= MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING;
 		}
 

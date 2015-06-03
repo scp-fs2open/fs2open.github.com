@@ -230,12 +230,6 @@
 		<Unit filename="../../../code/debugconsole/consoleparse.h">
 			<Option virtualFolder="debugconsole/" />
 		</Unit>
-		<Unit filename="../../../code/debugconsole/timerbar.cpp">
-			<Option virtualFolder="debugconsole/" />
-		</Unit>
-		<Unit filename="../../../code/debugconsole/timerbar.h">
-			<Option virtualFolder="debugconsole/" />
-		</Unit>
 		<Unit filename="../../../code/exceptionhandler/exceptionhandler.cpp">
 			<Option virtualFolder="exceptionhandler/" />
 		</Unit>
