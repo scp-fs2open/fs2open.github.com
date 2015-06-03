@@ -17,6 +17,7 @@
 #include "ship/ship.h"
 #include "gamesnd/gamesnd.h"
 #include "sound/ds.h"
+#include "cmdline/cmdline.h"
 #include "sound/ds3d.h"
 #include "io/timer.h"
 #include "render/3d.h"
@@ -52,8 +53,8 @@ typedef struct _obj_snd {
 #define MIN_FORWARD_SPEED		5
 #define SPEED_SOUND				600.0f				// speed of sound in FreeSpace
 
-#define MAX_OBJ_SOUNDS_PLAYING						5
-static	int Num_obj_sounds_playing;
+static int MAX_OBJ_SOUNDS_PLAYING = -1; // initialized in obj_snd_level_init()
+static int Num_obj_sounds_playing;
 
 #define OBJSND_CHANGE_FREQUENCY_THRESHOLD			10
 
@@ -191,6 +192,11 @@ int obj_snd_get_slot()
 void obj_snd_level_init()
 {
 	int i;
+
+	if (MAX_OBJ_SOUNDS_PLAYING < 0)
+	{
+		MAX_OBJ_SOUNDS_PLAYING = Cmdline_no_enhanced_sound ? 5 : 12;
+	}
 
 	list_init(&obj_snd_list);
 	for ( i = 0; i < MAX_OBJ_SNDS; i++ ) {
@@ -521,17 +527,24 @@ void obj_snd_do_frame()
 		rot_vol_mult = 1.0f;
 		alive_vol_mult = 1.0f;
 		if ( objp->type == OBJ_SHIP ) {
-			if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+			ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+			if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
 				if ( objp->phys_info.max_vel.xyz.z <= 0.0f ) {
 					percent_max = 0.0f;
 				}
 				else
 					percent_max = objp->phys_info.fspeed / objp->phys_info.max_vel.xyz.z;
 
-				if ( percent_max >= 0.5f )
-					speed_vol_multiplier = 1.0f;
-				else {
-					speed_vol_multiplier = 0.5f + (percent_max);	// linear interp: 0.5->1.0 when 0.0->0.5
+				if ( sip->min_engine_vol == -1.0f) {
+					// Retail behavior: volume ramps from 0.5 (when stationary) to 1.0 (when at half speed)
+					if ( percent_max >= 0.5f ) {
+						speed_vol_multiplier = 1.0f;
+					} else {
+						speed_vol_multiplier = 0.5f + (percent_max);	// linear interp: 0.5->1.0 when 0.0->0.5
+					}
+				} else {
+					// Volume ramps from min_engine_vol (when stationary) to 1.0 (when at full speed)
+					speed_vol_multiplier = sip->min_engine_vol + ((1.0f - sip->min_engine_vol) * percent_max);
 				}
 			}
 			if (osp->ss != NULL)
@@ -614,7 +627,7 @@ void obj_snd_do_frame()
 				} // end switch
 
 				if ( go_ahead_flag ) {
-					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, 1, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE);
+					osp->instance = snd_play_3d(gs, &source_pos, &View_position, add_distance, &objp->phys_info.vel, 1, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE, NULL, 1.0f, 0, true);
 					if ( osp->instance != -1 ) {
 						Num_obj_sounds_playing++;
 					}

@@ -689,7 +689,7 @@ void labviewer_add_model_thrusters(model_render_params *render_info, ship_info *
 	mst.distortion_bitmap = thruster_distortion_bitmap;
 
 	mst.use_ab = Lab_thrust_afterburn;
-	mst.glow_noise = thruster_glow_noise;
+	mst.glow_noise = thruster_glow_noise * sip->thruster_glow_noise_mult;
 	mst.rotvel = vmd_zero_vector;
 
 	if (Lab_mode == LAB_MODE_SHIP) {
@@ -845,7 +845,7 @@ void labviewer_render_model(float frametime)
 	light_rotate_all();
 	// lighting for techroom
 
-	render_info.set_outline_color(255, 255, 255);
+	render_info.set_color(255, 255, 255);
 	render_info.set_detail_level_lock(Lab_model_LOD);
 
 	int flagggs = Lab_model_flags;
