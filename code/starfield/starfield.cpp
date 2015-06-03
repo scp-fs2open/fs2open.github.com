@@ -1451,7 +1451,7 @@ void subspace_render()
 
 	vm_angles_2_matrix(&tmp,&angs);
 
-	render_info.set_outline_color(255, 255, 255);
+	render_info.set_color(255, 255, 255);
 	render_info.set_alpha(1.0f);
 	render_info.set_flags(render_flags);
 
@@ -2165,7 +2165,7 @@ void stars_draw_background()
 	render_info.set_alpha(1.0f);
 	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
-	model_render_immediate(&render_info, Nmodel_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL);
+	model_render_immediate(&render_info, Nmodel_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
 }
 
 // call this to set a specific model as the background model
