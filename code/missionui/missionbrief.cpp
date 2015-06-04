@@ -1084,7 +1084,7 @@ void brief_render_closeup(int ship_class, float frametime)
 	render_info.set_detail_level_lock(0);
 
 	if ( Closeup_icon->type == ICON_JUMP_NODE) {
-		render_info.set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);
+		render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING);
 	} else if (Cmdline_brief_lighting) {
 		render_info.set_flags(MR_AUTOCENTER);

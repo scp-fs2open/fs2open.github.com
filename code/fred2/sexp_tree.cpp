@@ -3099,7 +3099,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return (sexp_variable_count() > 0) ? 1 : 0;
 
 		case OPF_SSM_CLASS:
-			return (Ssm_info_count > 0) ? 1 : 0;
+			return (Ssm_info.size() > 0) ? 1 : 0;
 
 		case OPF_MISSION_MOOD:
 			return Builtin_moods.empty() ? 0 : 1;
@@ -5505,12 +5505,11 @@ sexp_list_item *sexp_tree::get_listing_opf_support_ship_class()
 
 sexp_list_item *sexp_tree::get_listing_opf_ssm_class()
 {
-	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Ssm_info_count; i++)
+	for (auto it = Ssm_info.cbegin(); it != Ssm_info.cend(); ++it)
 	{
-		head.add_data(Ssm_info[i].name);
+		head.add_data(it->name);
 	}
 
 	return head.next;

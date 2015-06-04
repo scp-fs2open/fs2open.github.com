@@ -2892,6 +2892,25 @@ ADE_FUNC(isGliding, l_Physics, NULL, "True if glide mode is on, false or nil if 
 		return ade_set_args(L, "b",  false);
 }
 
+ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a whack to an object at a position (a local vector) based on impulse supplied (a world vector). If no position is supplied, an empty vector is used.", "boolean", "true if it succeeded, false otherwise")
+ {
+	object_h objh;
+	physics_info_h *pih;
+	vec3d *impulse;
+	vec3d *offset = &vmd_zero_vector;
+	
+	if (!ade_get_args(L, "oo|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&impulse), l_Vector.GetPtr(&offset)))
+		return ADE_RETURN_NIL;
+	
+	objh = pih->objh;
+	
+	physics_apply_whack(impulse, offset, pih->pi, &objh.objp->orient, pih->pi->mass);
+	
+	return ADE_RETURN_TRUE;
+	
+}
+
+
 //**********HANDLE: sexpvariable
 struct sexpvar_h
 {

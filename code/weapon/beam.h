@@ -50,6 +50,7 @@ typedef struct beam_info {
 #define BFIF_IS_FIGHTER_BEAM	(1<<0)
 #define BFIF_FORCE_FIRING		(1<<1)
 #define BFIF_TARGETING_COORDS	(1<<2)
+#define BFIF_FLOATING_BEAM		(1<<3)
 
 // pass to beam fire 
 typedef struct beam_fire_info {
@@ -62,11 +63,13 @@ typedef struct beam_fire_info {
 	ship_subsys		*target_subsys;						// (optional), specific subsystem to be targeted on the target 
 	vec3d			target_pos1;							// if we're shooting off into space
 	vec3d			target_pos2;							// if we're shooting off into space (optional second point)
+	vec3d			starting_pos;							// starting positiong for floating beams -MageKing17
 	beam_info		*beam_info_override;			// (optional), pass this in to override all beam movement info (for multiplayer)
 	int				num_shots;						// (optional), only used for type D weapons
 	int bank;									// for fighters, which bank of the primary weapons are they in
 	int point;									// for fighters, which point on the bank it is from
 	int bfi_flags;
+	char team;									// for floating beams, determines which team the beam is on
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {
@@ -105,6 +108,7 @@ typedef struct beam_collision {
 #define BF_FORCE_FIRING					(1<<2)
 #define BF_IS_FIGHTER_BEAM				(1<<3)
 #define BF_TARGETING_COORDS				(1<<4)
+#define BF_FLOATING_BEAM				(1<<5)
 
 // beam struct (the actual weapon/object)
 typedef struct beam {
@@ -139,7 +143,7 @@ typedef struct beam {
 	vec3d	last_start;				
 	int		shot_index;				// for type D beam weapons
 	float	beam_glow_frame;		// what frame a beam glow animation is on
-	float	beam_secion_frame[MAX_BEAM_SECTIONS];	// what frame a beam secion animation is on
+	float	beam_section_frame[MAX_BEAM_SECTIONS];	// what frame a beam section animation is on
 
 	// recent collisions
 	beam_collision r_collisions[MAX_FRAME_COLLISIONS];					// recent collisions

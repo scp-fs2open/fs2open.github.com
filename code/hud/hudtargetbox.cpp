@@ -580,9 +580,9 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 				break;
 			case 1:
 				if (ship_is_tagged(target_objp))
-					render_info.set_outline_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
 				else
-					render_info.set_outline_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
+					render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
 
 				if (target_sip->uses_team_colors) {
 					render_info.set_team_color(target_shipp->team_name, target_shipp->secondary_team_name, target_shipp->team_change_timestamp, target_shipp->team_change_time);
@@ -596,9 +596,9 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 				break;
 			case 3:
 				if (ship_is_tagged(target_objp))
-					render_info.set_outline_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
 				else
-					render_info.set_outline_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
+					render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -619,6 +619,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 
 		if ( Desaturated ) {
 			flags |= MR_DESATURATED;
+			render_info.set_color(gauge_color);
 		} 
 
 		if (!Glowpoint_override)
@@ -738,7 +739,7 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 				break;
 			case 1:
-				render_info.set_outline_color(255, 255, 255);
+				render_info.set_color(255, 255, 255);
 
 				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
 				flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
@@ -747,7 +748,7 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 			case 2:
 				break;
 			case 3:
-				render_info.set_outline_color(255, 255, 255);
+				render_info.set_color(255, 255, 255);
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -764,6 +765,7 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 		if ( Desaturated ) {
 			flags |= MR_DESATURATED;
+			render_info.set_color(gauge_color);
 		}
 
 		render_info.set_flags(flags | MR_NO_FOGGING);
@@ -902,7 +904,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 
 					break;
 				case 1:
-					render_info.set_outline_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
+					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 
 					flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
 					flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
@@ -911,7 +913,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 				case 2:
 					break;
 				case 3:
-					render_info.set_outline_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
+					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 
 					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -927,9 +929,9 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 					break;
 				case 1:
 					if (ship_is_tagged(viewed_obj))
-						render_info.set_outline_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
 					else
-						render_info.set_outline_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+						render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
 
 					if (homing_sip->uses_team_colors) {
 						render_info.set_team_color(homing_shipp->team_name, homing_shipp->secondary_team_name, homing_shipp->team_change_timestamp, homing_shipp->team_change_time);
@@ -943,9 +945,9 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 					break;
 				case 3:
 					if (ship_is_tagged(viewed_obj))
-						render_info.set_outline_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
 					else
-						render_info.set_outline_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+						render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
 
 					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -967,6 +969,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 
 		if ( Desaturated ) {
 			flags |= MR_DESATURATED;
+			render_info.set_color(gauge_color);
 		}
 
 		if (missile_view == TRUE) {
@@ -1107,9 +1110,9 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 				break;
 			case 1:
 				if (time_to_impact>=0)
-					render_info.set_outline_color(255,255,255);
+					render_info.set_color(255,255,255);
 				else
-					render_info.set_outline_color(64,64,0);
+					render_info.set_color(64,64,0);
 
 				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
 				flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
@@ -1119,9 +1122,9 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 				break;
 			case 3:
 				if (time_to_impact>=0)
-					render_info.set_outline_color(255,255,255);
+					render_info.set_color(255,255,255);
 				else
-					render_info.set_outline_color(64,64,0);
+					render_info.set_color(64,64,0);
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -1138,6 +1141,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 
 		if ( Desaturated ) {
 			flags |= MR_DESATURATED;
+			render_info.set_color(gauge_color);
 		}
 
 		render_info.set_flags(flags | MR_NO_FOGGING);

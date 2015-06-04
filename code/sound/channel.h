@@ -22,10 +22,11 @@ typedef struct channel
 	int			priority;	// implementation dependant priority
 	unsigned int		last_position;
 	bool		is_voice_msg;
+	bool		is_ambient;
 
 	channel() :
 		sig(-1), snd_id(-1), source_id(0), sid(-1), looping(0), vol(1.0f),
-		priority(0), last_position(0), is_voice_msg(false)
+		priority(0), last_position(0), is_voice_msg(false), is_ambient(false)
 	{
 	}
 } channel;

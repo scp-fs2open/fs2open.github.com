@@ -7145,7 +7145,7 @@ void HudGaugeHardpoints::render(float frametime)
 	int zbuffer = gr_zbuffer_set(GR_ZBUFF_NONE);
 	gr_set_color_buffer(0);
 
-	render_info.set_outline_color(gauge_color.red, gauge_color.green, gauge_color.blue);
+	render_info.set_color(gauge_color);
 	render_info.set_detail_level_lock(detail_level_lock);
 	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_CULL);
 
@@ -7203,7 +7203,6 @@ void HudGaugeHardpoints::render(float frametime)
 
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
-					weapon_render_info.set_alpha(alpha);
 
 					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
 				}
@@ -7216,26 +7215,24 @@ void HudGaugeHardpoints::render(float frametime)
 
 					if (num_secondaries_rendered >= sp->weapons.secondary_bank_ammo[i])
 						break;
-
+					 
 					if(sp->secondary_point_reload_pct[i][k] <= 0.0)
 						continue;
 
+					model_render_params weapon_render_info;
+
 					if ( swp->current_secondary_bank == i && ( swp->secondary_next_slot[i] == k || ( swp->secondary_next_slot[i]+1 == k && sp->flags & SF_SECONDARY_DUAL_FIRE ) ) ) {
-						gr_set_color_fast(&Color_bright_blue);
+						weapon_render_info.set_color(Color_bright_blue);
 					} else {
-						gr_set_color_fast(&Color_bright_white);
-						
+						weapon_render_info.set_color(Color_bright_white);
 					}
 
 					num_secondaries_rendered++;
 
 					vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-sp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
 
-					model_render_params weapon_render_info;
-
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
-					weapon_render_info.set_alpha(alpha);
 
 					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos);
 				}

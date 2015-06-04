@@ -82,7 +82,9 @@ flag_def_list Script_actions[] =
 	{"On Ship Arrive",			CHA_ONSHIPARRIVE,	0},
 	{"On Beam Collision",		CHA_COLLIDEBEAM,	0},
 	{"On Message Received",		CHA_MSGRECEIVED,	0},
-    {"On HUD Message Received", CHA_HUDMSGRECEIVED, 0}
+	{"On HUD Message Received", CHA_HUDMSGRECEIVED, 0},
+	{"On Afterburner Engage",   CHA_AFTERBURNSTART, 0},
+	{"On Afterburner Stop",     CHA_AFTERBURNEND,   0}
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -318,7 +320,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 					if (action == CHA_COLLIDEWEAPON) {
 						if (stricmp(Weapon_info[more_data].name, scp->data.name) != 0)
 							return false;
-					} else if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED )) {
+					} else if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED)) {
 						if(objp == NULL || (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM))
 							return false;
 						else if (( objp->type == OBJ_WEAPON) && (stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name) != 0 ))
