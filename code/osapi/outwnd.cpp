@@ -55,7 +55,11 @@ void load_filter_info(void)
 	outwnd_filter_loaded = 1;
 
 	memset( pathname, 0, sizeof(pathname) );
+#ifdef WIN32
 	snprintf( pathname, MAX_PATH_LEN, "%s\\%s\\%s", detect_home(), Pathtypes[CF_TYPE_DATA].path, NOX("debug_filter.cfg") );
+#else
+	snprintf( pathname, MAX_PATH_LEN, "%s/%s/%s/%s", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path, NOX("debug_filter.cfg") );
+#endif
 
 	fp = fopen(pathname, "rt");
 
@@ -125,7 +129,11 @@ void save_filter_info(void)
 
 
 	memset( pathname, 0, sizeof(pathname) );
+#ifdef WIN32
 	snprintf( pathname, MAX_PATH_LEN, "%s\\%s\\%s", detect_home(), Pathtypes[CF_TYPE_DATA].path, NOX("debug_filter.cfg") );
+#else
+	snprintf( pathname, MAX_PATH_LEN, "%s/%s/%s/%s", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path, NOX("debug_filter.cfg") );
+#endif
 
 	fp = fopen(pathname, "wt");
 
@@ -239,7 +247,11 @@ void outwnd_init()
 		}
 
 		memset( pathname, 0, sizeof(pathname) );
+#ifdef WIN32
 		snprintf(pathname, MAX_PATH_LEN-1, "%s\\%s\\%s", detect_home(), Pathtypes[CF_TYPE_DATA].path, FreeSpace_logfilename);
+#else
+		snprintf(pathname, MAX_PATH_LEN, "%s/%s/%s/%s", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path, FreeSpace_logfilename);
+#endif
 
 		Log_fp = fopen(pathname, "wb");
 
