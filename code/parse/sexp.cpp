@@ -29130,7 +29130,7 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 				return true;
 
 			default:
-				Error(LOCATION, "Unknown modifier type found in collection");
+				Error(LOCATION, "Unknown modifier type found in container"); 
 		}
 	}
 
@@ -29213,6 +29213,8 @@ char *CTEXT(int n)
 
 	// Goober5000 - MWAHAHAHAHAHAHAHA!  Thank you, Volition programmers!  Without
 	// the CTEXT wrapper, when-argument would probably be infeasibly difficult to code.
+	// Karajorma - Due to the addition of the container code, coders shouldn't call CTEXT twice from the same function for the same sexp node.
+	// If you need Sexp_node[xx].text twice in the same function, store it because CTEXT may have changed the data the first time it was called. 
 	if (!strcmp(Sexp_nodes[n].text, SEXP_ARGUMENT_STRING))
 	{
 		if (Fred_running)
