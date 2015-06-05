@@ -12,50 +12,71 @@
 #include <stdarg.h>
 
 #include "globalincs/pstypes.h"
-#include "io/key.h"
-#include "palman/palman.h"
-#include "io/mouse.h"
-#include "osapi/outwnd.h"
-#include "sound/sound.h"
-#include "freespace2/freespaceresource.h"
-#include "playerman/managepilot.h"
-#include "io/joy.h"
-#include "io/joy_ff.h"
 #include "gamesequence/gamesequence.h"
 #include "freespace2/freespace.h"
 #include "osapi/osregistry.h"
 #include "cmdline/cmdline.h"
-#include "sound/voicerec.h"
-#include "graphics/2d.h"
-#include "cmdline/cmdline.h"
-
-
-#define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
 
-#include "SDL_syswm.h"
 
 #include <SDL_assert.h>
 
+#include <algorithm>
+#include <utility>
+#include <type_traits>
 
-// used to be a THREADED define but only use multiple process threads if this is defined
-// NOTE: may hang if set
-//#define THREADED_PROCESS
+namespace
+{
+	bool fAppActive = false;
 
-// ----------------------------------------------------------------------------------------------------
-// PLATFORM SPECIFIC FUNCTION FOLLOWING
-//
+	bool window_event_handler(const SDL_Event& e)
+	{
+		if (e.window.windowID == SDL_GetWindowID(os_get_window())) {
+			switch (e.window.event) {
+			case SDL_WINDOWEVENT_MINIMIZED:
+			case SDL_WINDOWEVENT_FOCUS_LOST:
+			{
+				if (fAppActive) {
+					if (!Cmdline_no_unfocus_pause) {
+						game_pause();
+					}
 
+					fAppActive = false;
+				}
+				break;
+			}
+			case SDL_WINDOWEVENT_MAXIMIZED:
+			case SDL_WINDOWEVENT_RESTORED:
+			case SDL_WINDOWEVENT_FOCUS_GAINED:
+			{
+				if (!fAppActive) {
+					if (!Cmdline_no_unfocus_pause) {
+						game_unpause();
+					}
+
+					fAppActive = true;
+				}
+				break;
+			}
+			case SDL_WINDOWEVENT_CLOSE:
+				gameseq_post_event(GS_EVENT_QUIT_GAME);
+				break;
+			}
+
+			gr_activate(fAppActive);
+
+			return true;
+		}
+
+		return false;
+	}
+}
 
 #ifdef WIN32
 
 // Windows specific includes
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <windowsx.h>
-#include <commctrl.h>
-#include <io.h>
-#include <winsock.h>
-#include <direct.h>
 
 // For FRED
 void os_set_window_from_hwnd(HWND handle)
@@ -151,7 +172,6 @@ void os_set_process_affinity()
 static SDL_Window* main_window = NULL;
 
 // os-wide globals
-static bool			fAppActive = false;
 static char			szWinTitle[128];
 static char			szWinClass[128];
 static int			Os_inited = 0;
@@ -229,6 +249,8 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 		os_set_process_affinity();
 	}
 #endif // WIN32
+
+	os::events::addEventListener(SDL_WINDOWEVENT, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
 
 	atexit(os_deinit);
 }
@@ -314,126 +336,6 @@ void os_deinit()
 	SDL_Quit();
 }
 
-extern SCP_map<int, int> SDLtoFS2;
-extern void joy_set_button_state(int button, int state);
-extern void joy_set_hat_state(int position);
-
-void os_poll()
-{
-	SDL_Event event;
-
-	while (SDL_PollEvent(&event)) {
-		switch (event.type) {
-		case SDL_WINDOWEVENT: {
-			if (event.window.windowID == SDL_GetWindowID(os_get_window())) {
-				switch (event.window.event) {
-				case SDL_WINDOWEVENT_MINIMIZED:
-					case SDL_WINDOWEVENT_FOCUS_LOST:
-					{
-						if (fAppActive) {
-							if (!Cmdline_no_unfocus_pause) {
-								game_pause();
-							}
-							
-							fAppActive = false;
-						}
-						break;
-					}
-					case SDL_WINDOWEVENT_MAXIMIZED:
-					case SDL_WINDOWEVENT_RESTORED:
-					case SDL_WINDOWEVENT_FOCUS_GAINED:
-					{
-						if (!fAppActive) {
-							if (!Cmdline_no_unfocus_pause) {
-								game_unpause();
-							}
-							
-							fAppActive = true;
-						}
-						break;
-					}
-					case SDL_WINDOWEVENT_CLOSE:
-						gameseq_post_event(GS_EVENT_QUIT_GAME);
-						break;
-				}
-			}
-			
-			gr_activate(fAppActive);
-			
-			break;
-		}
-
-		case SDL_SYSWMEVENT:
-#ifdef WIN32
-#ifdef FS2_VOICER
-			switch(event.syswm.msg->msg.win.msg)
-			{
-			case WM_RECOEVENT:
-				if ( Game_mode & GM_IN_MISSION && Cmdline_voice_recognition)
-				{
-					VOICEREC_process_event( event.syswm.msg->msg.win.hwnd );
-				}
-				break;
-			default:
-				break;
-			}
-#endif // FS2_VOICER
-#endif // WIN32
-			break;
-
-		case SDL_KEYDOWN:
-			if (SDLtoFS2[event.key.keysym.scancode]) {
-				key_mark(SDLtoFS2[event.key.keysym.scancode], 1, 0);
-			}
-			break;
-
-		case SDL_KEYUP:
-			if (SDLtoFS2[event.key.keysym.scancode]) {
-				key_mark(SDLtoFS2[event.key.keysym.scancode], 0, 0);
-			}
-			break;
-
-		case SDL_MOUSEBUTTONDOWN:
-		case SDL_MOUSEBUTTONUP:
-			if (event.button.button == SDL_BUTTON_LEFT)
-				mouse_mark_button(MOUSE_LEFT_BUTTON, event.button.state);
-			else if (event.button.button == SDL_BUTTON_MIDDLE)
-				mouse_mark_button(MOUSE_MIDDLE_BUTTON, event.button.state);
-			else if (event.button.button == SDL_BUTTON_RIGHT)
-				mouse_mark_button(MOUSE_RIGHT_BUTTON, event.button.state);
-
-			break;
-
-		case SDL_JOYAXISMOTION:
-			joy_event(event.jaxis.which, event.jaxis.axis, event.jaxis.value);
-			break;
-
-		case SDL_JOYHATMOTION:
-			joy_set_hat_state(event.jhat.value);
-			break;
-
-		case SDL_JOYBUTTONDOWN:
-		case SDL_JOYBUTTONUP:
-			if (event.jbutton.button < JOY_NUM_BUTTONS) {
-				joy_set_button_state(event.jbutton.button, event.jbutton.state);
-			}
-			break;
-		
-		case SDL_JOYDEVICEADDED:
-		case SDL_JOYDEVICEREMOVED:
-			joy_device_changed(event.jdevice.type, event.jdevice.which);
-			break;
-		case SDL_MOUSEMOTION:
-			mouse_event(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
-			break;
-
-		case SDL_MOUSEWHEEL:
-			mousewheel_motion(event.wheel.x, event.wheel.y);
-			break;
-		}
-	}
-}
-
 void debug_int3(char *file, int line)
 {
 	mprintf(("Int3(): From %s at line %d\n", file, line));
@@ -452,4 +354,106 @@ void debug_int3(char *file, int line)
 	os_deinit();
 
 	abort();
+}
+
+namespace os
+{
+	namespace events
+	{
+		namespace
+		{
+			ListenerIdentifier nextListenerIdentifier;
+
+			template<class E>
+			struct enum_hash
+			{
+				static_assert(std::is_enum<E>::value, "Type is not an enum!");
+
+			public:
+				size_t operator()(const E&e) const {
+					return std::hash<size_t>()(static_cast<size_t>(e));
+				}
+			};
+
+			struct EventListenerData
+			{
+				ListenerIdentifier identifier;
+				Listener listener;
+				int weight;
+
+				bool operator<(const EventListenerData& other) const
+				{
+					return weight < other.weight;
+				}
+			};
+
+			SCP_unordered_map<SDL_EventType, SCP_vector<EventListenerData>, enum_hash<SDL_EventType>> eventListeners;
+		}
+
+		ListenerIdentifier addEventListener(SDL_EventType type, int weigth, const Listener& listener)
+		{
+			Assertion(listener, "Invalid event handler passed!");
+
+			auto iter = eventListeners.find(type);
+
+			if (iter == eventListeners.end())
+			{
+				iter = eventListeners.insert(std::make_pair(type, SCP_vector<EventListenerData>())).first;
+			}
+
+			EventListenerData data;
+			data.identifier = ++nextListenerIdentifier;
+			data.listener = listener;
+			data.weight = weigth;
+
+			iter->second.push_back(data);
+
+			// This is suboptimal for runtime but we will iterate that vector often so cache hits are more important
+			std::sort(iter->second.begin(), iter->second.end());
+
+			return data.identifier;
+		}
+
+		bool removeEventListener(ListenerIdentifier identifier)
+		{
+			auto endIter = end(eventListeners);
+			for (auto iter = begin(eventListeners); iter != endIter; ++iter)
+			{
+				for (auto vectorIt = iter->second.begin(); vectorIt != iter->second.end(); ++vectorIt)
+				{
+					if (vectorIt->identifier == identifier)
+					{
+						iter->second.erase(vectorIt);
+						return true; // Identifiers are unique
+					}
+				}
+			}
+
+			return false;
+		}
+	}
+}
+
+void os_poll()
+{
+	using namespace os::events;
+
+	SDL_Event event;
+
+	while (SDL_PollEvent(&event)) {
+		auto iter = eventListeners.find(static_cast<SDL_EventType>(event.type));
+
+		if (iter != eventListeners.end())
+		{
+			auto endIter = end(iter->second);
+			for (auto listenerIter = begin(iter->second); listenerIter != endIter; ++listenerIter)
+			{
+				if (listenerIter->listener(event))
+				{
+					// Listener has handled the event
+					break;
+				}
+			}
+		}
+	}
 }

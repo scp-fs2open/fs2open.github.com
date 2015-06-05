@@ -7,6 +7,14 @@
  *
 */
 
+/** @defgroup osapi The OS API
+ *  Provides a number of function to interact with the operating system. The API is the same for every platform.
+ */
+
+/** @file
+ *  @ingroup osapi
+ */
+
 
 #ifndef _OSAPI_H
 #define _OSAPI_H
@@ -14,6 +22,10 @@
 #include "globalincs/pstypes.h"
 #include "osapi/osregistry.h"
 #include "osapi/dialogs.h"
+
+#include <functional>
+
+#include <SDL_events.h>
 
 // --------------------------------------------------------------------------------------------------
 // OSAPI DEFINES/VARS
@@ -68,5 +80,66 @@ void os_suspend();
 // resume message processing
 void os_resume(); 
 
+
+/**
+ * @defgroup eventhandling API for consuming OS events
+ * @ingroup osapi
+ * See \ref eventhandling_page for more information.
+ *  @{
+ */
+namespace os
+{
+	namespace events
+	{
+		/**
+		 * @brief The default weight of a listener.
+		 * The default event handler use this weight so other event handlers should have a weight that is less than this.
+		 */
+		const int DEFAULT_LISTENER_WEIGHT = 0;
+
+		/**
+		 * @brief An event handler
+		 * Gets the generated sdl event and must return if it handled the event or not.
+		 */
+		typedef std::function<bool(const SDL_Event&)> Listener;
+
+		/**
+		 * @brief An identification for a listener
+		 */
+		typedef size_t ListenerIdentifier;
+
+		/**
+		 * @brief Adds a new event handler
+		 * @param type The type of events to handle
+		 * @param weigth The weight of this handler, used for determining in which order handlers are called.
+		 * @param listener The listener that will be called
+		 * @return An idfentification which can be used to remove this handler again
+		 * @see removeEventListener()
+		 */
+		ListenerIdentifier addEventListener(SDL_EventType type, int weigth, const Listener& listener);
+
+		/**
+		 * @brief Removes the event handler with the given identifier
+		 * @param identifier The identifier of the event handler that should be removed
+		 * @return @c true if the event handler was removed, @c false otherwise
+		 */
+		bool removeEventListener(ListenerIdentifier identifier);
+	}
+}
+
+/** @} */ // end of OsAPI
+
+// Documentation pages
+/**
+ * @page osapi_page The OS API
+ * @subpage eventhandling_page
+ */
+
+/**
+ * @page eventhandling_page OS Event handling API
+ * The OS-API exposed a generic event handler interface to allow user code to consume SDL events. The handler will
+ * be passed the SDL_Event structure and should return @c true if it handled the event or @c false if not. If it handled the event then the processing of this event will be stopped and it will not be delivered to subsequent
+ * listeners.
+ */
 
 #endif // _OSAPI_H
