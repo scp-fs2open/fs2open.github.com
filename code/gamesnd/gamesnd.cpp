@@ -14,11 +14,249 @@
 #include "species_defs/species_defs.h"
 #include "parse/parselo.h"
 #include "sound/ds.h"
+#include "sound/sound.h"
 #include <limits.h>
 
 SCP_vector<game_snd>	Snds;
 SCP_vector<game_snd>	Snds_iface;
 SCP_vector<int>			Snds_iface_handle;
+
+// jg18 - default priorities and limits for retail gameplay sounds
+static const int NUM_RETAIL_GAMEPLAY_SOUNDS = 192; // indices 0-191, from retail sounds.tbl
+static EnhancedSoundData Default_sound_priorities[NUM_RETAIL_GAMEPLAY_SOUNDS] =
+{
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_MISSILE_TRACKING           = 0,  //!< Missle tracking to acquire a lock (looped)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_MISSILE_LOCK               = 1,  //!< Missle lock (non-looping)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_PRIMARY_CYCLE              = 2,  //!< cycle primary weapon
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_SECONDARY_CYCLE            = 3,  //!< cycle secondary weapon
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_ENGINE                     = 4,  //!< engine sound (as heard in cockpit)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_CARGO_REVEAL               = 5,  //!< cargo revealed
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  3), // SND_DEATH_ROLL                 = 6,  //!< ship death roll
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  2), // SND_SHIP_EXPLODE_1             = 7,  //!< ship explosion 1
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_TARGET_ACQUIRE             = 8,  //!< target acquried
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_ENERGY_ADJUST              = 9,  //!< energy level change success
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_ENERGY_ADJUST_FAIL         = 10, //!< energy level change fail
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_ENERGY_TRANS               = 11, //!< energy transfer success
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_ENERGY_TRANS_FAIL         = 12, //!< energy transfer fail
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_FULL_THROTTLE              = 13, //!< set full throttle
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_ZERO_THROTTLE              = 14, //!< set zero throttle
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_THROTTLE_UP                = 15, //!< set 1/3 or 2/3 throttle (up)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_THROTTLE_DOWN              = 16, //!< set 1/3 or 2/3 throttle (down)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_DOCK_APPROACH              = 17, //!< dock approach retros
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_DOCK_ATTACH                = 18, //!< dock attach
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_DOCK_DETACH                = 19, //!< dock detach
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_DOCK_DEPART                = 20, //!< dock depart retros
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  3), // SND_ABURN_ENGAGE               = 21, //!< afterburner engage
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  3), // SND_ABURN_LOOP                 = 22, //!< afterburner burn sound (looped)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  3), // SND_VAPORIZED                  = 23, //!< Destroyed by a beam (vaporized)
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  2), // SND_ABURN_FAIL                 = 24, //!< afterburner fail (no fuel when aburn pressed)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_HEATLOCK_WARN              = 25, //!< heat-seeker launch warning
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_OUT_OF_MISSLES             = 26, //!< tried to fire a missle when none are left
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_OUT_OF_WEAPON_ENERGY       = 27, //!< tried to fire lasers when not enough energy left
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_TARGET_FAIL                = 28, //!< target fail sound (i.e. press targeting key, but nothing happens)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_SQUADMSGING_ON             = 29, //!< squadmate message menu appears
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_SQUADMSGING_OFF            = 30, //!< squadmate message menu disappears
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  5), // SND_DEBRIS                     = 31, //!< debris sound (persistant, looping)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  2), // SND_SUBSYS_DIE_1               = 32, //!< subsystem gets destroyed on player ship
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_MISSILE_START_LOAD         = 33, //!< missle start load (during rearm/repair)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_MISSILE_LOAD               = 34, //!< missle load (during rearm/repair)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_SHIP_REPAIR                = 35, //!< ship is being repaired (during rearm/repair)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  3), // SND_PLAYER_HIT_LASER           = 36, //!< player ship is hit by laser fire
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  3), // SND_PLAYER_HIT_MISSILE         = 37, //!< player ship is hit by missile
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_CMEASURE_CYCLE             = 38, //!< countermeasure cycle
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  2), // SND_SHIELD_HIT                 = 39, //!< shield hit
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  2), // SND_SHIELD_HIT_YOU             = 40, //!< player shield is hit
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_GAME_MOUSE_CLICK           = 41, //!< mouse click
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  2), // SND_ASPECTLOCK_WARN            = 42, //!< aspect launch warning
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_SHIELD_XFER_OK             = 43, //!< shield quadrant transfer successful
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  5), // SND_ENGINE_WASH                = 44, //!< Engine wash (looped)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  2), // SND_WARP_IN                    = 45, //!< warp hole opening up for arriving
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  2), // SND_WARP_OUT                   = 46, //!< warp hole opening up for departing (Same as warp in for now)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_PLAYER_WARP_FAIL           = 47, //!< player warp has failed
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_STATIC                     = 48, //!< hud gauge static
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  3), // SND_SHIP_EXPLODE_2             = 49, //!< ship explosion 2
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_PLAYER_WARP_OUT            = 50, //!< ship is warping out in 3rd person
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  5), // SND_SHIP_SHIP_HEAVY            = 51, //!< heavy ship-ship collide sound
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  5), // SND_SHIP_SHIP_LIGHT            = 52, //!< light ship-ship collide sound
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  5), // SND_SHIP_SHIP_SHIELD           = 53, //!< shield ship-ship collide overlay sound
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_THREAT_FLASH               = 54, //!< missile threat indicator flashes
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  3), // SND_PROXIMITY_WARNING          = 55, //!< proximity warning (heat seeker)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  3), // SND_PROXIMITY_ASPECT_WARNING   = 56, //!< proximity warning (aspect)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  2), // SND_DIRECTIVE_COMPLETE         = 57, //!< directive complete
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  3), // SND_SUBSYS_EXPLODE             = 58, //!< other ship subsystem destroyed
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  2), // SND_CAPSHIP_EXPLODE            = 59, //!< captial ship explosion
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_CAPSHIP_SUBSYS_EXPLODE     = 60, //!< captial ship subsystem destroyed
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  2), // SND_LARGESHIP_WARPOUT          = 61, //!< large ship warps out
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  5), // SND_ASTEROID_EXPLODE_LARGE     = 62, //!< large asteroid blows up
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  5), // SND_ASTEROID_EXPLODE_SMALL     = 63, //!< small asteroid blows up
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  2), // SND_CUE_VOICE                  = 64, //!< sound to indicate voice is about to start
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  2), // SND_END_VOICE                  = 65, //!< sound to indicate voice has ended
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  2), // SND_CARGO_SCAN                 = 66, //!< cargo scanning (looped)
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  5), // SND_WEAPON_FLYBY               = 67, //!< weapon flyby sound
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  5), // SND_ASTEROID                   = 68, //!< asteroid sound (persistant, looped)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  2), // SND_CAPITAL_WARP_IN            = 69, //!< capital warp hole opening
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  2), // SND_CAPITAL_WARP_OUT           = 70, //!< capital warp hole closing
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  5), // SND_ENGINE_LOOP_LARGE          = 71, //!< LARGE engine ambient
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_SUBSPACE_LEFT_CHANNEL      = 72, //!< subspace ambient sound (left channel) (looped)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_SUBSPACE_RIGHT_CHANNEL     = 73, //!< subspace ambient sound (right channel) (looped)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  4), // SND_MISSILE_EVADED_POPUP       = 74, //!< "evaded" HUD popup
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_ENGINE_LOOP_HUGE           = 75, //!< HUGE engine ambient
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_LIGHT_LASER_FIRE           = 76, //!< SD-4 Sidearm laser fired
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_LIGHT_LASER_IMPACT         = 77, //!< DR-2 Scalpel fired
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_HVY_LASER_FIRE             = 78, //!< Flail II fired
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_HVY_LASER_IMPACT           = 79, //!< Prometheus R laser fired
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_MASSDRV_FIRED              = 80, //!< Prometheus S laser fired
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_MASSDRV_IMPACT             = 81, //!< GTW-66 Newton Cannon fired
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_FLAIL_FIRED                = 82, //!< UD-8 Kayser Laser fired
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_FLAIL_IMPACT               = 83, //!< GTW-19 Circe laser fired
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_NEUTRON_FLUX_FIRED         = 84, //!< GTW-83 Lich laser fired
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_NEUTRON_FLUX_IMPACT        = 85, //!< Laser impact
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_DEBUG_LASER_FIRED          = 86, //!< Subach-HLV Vasudan laser
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_ROCKEYE_FIRED              = 87, //!< rockeye missile launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_MISSILE_IMPACT1            = 88, //!< missile impact 1
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_MAG_MISSILE_LAUNCH         = 89, //!< mag pulse missile launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_FURY_MISSILE_LAUNCH        = 90, //!< fury missile launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_SHRIKE_MISSILE_LAUNCH      = 91, //!< shrike missile launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_ANGEL_MISSILE_LAUNCH       = 92, //!< angel fire missile launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_CLUSTER_MISSILE_LAUNCH     = 93, //!< cluster bomb launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_CLUSTERB_MISSILE_LAUNCH    = 94, //!< cluster baby bomb launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_STILETTO_MISSILE_LAUNCH    = 95, //!< stiletto bomb launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_TSUNAMI_MISSILE_LAUNCH     = 96, //!< tsunami bomb launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_HARBINGER_MISSILE_LAUNCH   = 97, //!< harbinger bomb launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_MEGAWOKKA_MISSILE_LAUNCH   = 98, //!< mega wokka launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_CMEASURE1_LAUNCH           = 99, //!< countermeasure 1 launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_SHIVAN_LIGHT_LASER_FIRE    = 100,//!< Shivan light laser
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_SHOCKWAVE_EXPLODE          = 101,//!< shockwave ignition
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_SWARM_MISSILE_LAUNCH       = 102,//!< swarm missile sound
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_UNDEFINED_103              = 103,//!< Shivan heavy laser
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  3), // SND_UNDEFINED_104              = 104,//!< Vasudan SuperCap engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  5), // SND_UNDEFINED_105              = 105,//!< Shivan SuperCap engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  5), // SND_UNDEFINED_106              = 106,//!< Terran SuperCap engine
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_UNDEFINED_107              = 107,//!< Vasudan light laser fired
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_UNDEFINED_108              = 108,//!< Shivan heavy laser
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  2), // SND_SHOCKWAVE_IMPACT           = 109,//!< shockwave impact
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_UNDEFINED_110              = 110,//!< TERRAN TURRET 1
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_UNDEFINED_111              = 111,//!< TERRAN TURRET 2
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_UNDEFINED_112              = 112,//!< VASUDAN TURRET 1
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_UNDEFINED_113              = 113,//!< VASUDAN TURRET 2
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_UNDEFINED_114              = 114,//!< SHIVAN TURRET 1
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_TARG_LASER_LOOP            = 115,//!< targeting laser loop sound
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  8), // SND_FLAK_FIRE                  = 116,//!< Flak Gun Launch
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_SHIELD_BREAKER             = 117,//!< Flak Gun Impact
+	EnhancedSoundData( SND_ENHANCED_PRIORITY_MEDIUM_LOW,  8), // SND_EMP_MISSILE                = 118,//!< EMP Missle
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  5), // SND_AUTOCANNON_LOOP            = 119,//!< Escape Pod Drone
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  5), // SND_AUTOCANNON_SHOT            = 120,//!< Beam Hit 1
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_BEAM_LOOP                  = 121,//!< beam loop
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_BEAM_UP                    = 122,//!< beam power up
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_BEAM_DOWN                  = 123,//!< beam power down
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_BEAM_SHOT                  = 124,//!< Beam shot 1
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_BEAM_VAPORIZE              = 125,//!< Beam shot 2
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_TERRAN_FIGHTER_ENG         = 126,//!< Terran fighter engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_TERRAN_BOMBER_ENG          = 127,//!< Terran bomber engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_TERRAN_CAPITAL_ENG         = 128,//!< Terran cruiser engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_SPECIESB_FIGHTER_ENG       = 129,//!< Vasudan fighter engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_SPECIESB_BOMBER_ENG        = 130,//!< Vasudan bomber engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_SPECIESB_CAPITAL_ENG       = 131,//!< Vasudan cruiser engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_SHIVAN_FIGHTER_ENG         = 132,//!< Shivan fighter engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_SHIVAN_BOMBER_ENG          = 133,//!< Shivan bomber engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_SHIVAN_CAPITAL_ENG         = 134,//!< Shivan cruiser engine
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  3), // SND_REPAIR_SHIP_ENG            = 135,//!< Repair ship beacon/engine sound
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_UNDEFINED_136              = 136,//!< Terran capital engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_UNDEFINED_137              = 137,//!< Vasudan capital engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  4), // SND_UNDEFINED_138              = 138,//!< Shivan capital engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  3), // SND_DEBRIS_ARC_01              = 139,//!< 0.10 second spark sound effect
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  3), // SND_DEBRIS_ARC_02              = 140,//!< 0.25 second spark sound effect
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  3), // SND_DEBRIS_ARC_03              = 141,//!< 0.50 second spark sound effect
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  3), // SND_DEBRIS_ARC_04              = 142,//!< 0.75 second spark sound effect
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  3), // SND_DEBRIS_ARC_05              = 143,//!< 1.00 second spark sound effect
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_144              = 144,//!< LTerSlash beam loop
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_145              = 145,//!< TerSlash	beam loop
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_146              = 146,//!< SGreen 	beam loop
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_147              = 147,//!< BGreen	beem loop
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_148              = 148,//!< BFGreen	been loop
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_149              = 149,//!< Antifighter 	beam loop
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_150              = 150,//!< 1 sec		warm up
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_151              = 151,//!< 1.5 sec 	warm up
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_152              = 152,//!< 2.5 sec 	warm up
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_153              = 153,//!< 3 sec 	warm up
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_154              = 154,//!< 3.5 sec 	warm up
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_155              = 155,//!< 5 sec 	warm up
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_156              = 156,//!< LTerSlash	warm down
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_157              = 157,//!< TerSlash	warm down
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_158              = 158,//!< SGreen	warm down
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_159              = 159,//!< BGreen	warm down
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_160              = 160,//!< BFGreen	warm down
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_161              = 161,//!< T_AntiFtr	warm down
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_COPILOT                    = 162,//!< copilot (SCP)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_163              = 163,//!< (Empty in Retail)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_164              = 164,//!< (Empty in Retail)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_165              = 165,//!< (Empty in Retail)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_166              = 166,//!< (Empty in Retail)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_167              = 167,//!< (Empty in Retail)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_168              = 168,//!< (Empty in Retail)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_169              = 169,//!< (Empty in Retail)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_170              = 170,//!< (Empty in Retail)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_171              = 171,//!< (Empty in Retail)
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_172              = 172,//!< (Empty in Retail)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_SUPERNOVA_1                = 173,//!< SuperNova (distant)
+	EnhancedSoundData(  SND_ENHANCED_PRIORITY_MUST_PLAY,  1), // SND_SUPERNOVA_2                = 174,//!< SuperNova (shockwave)
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  3), // SND_UNDEFINED_175              = 175,//!< Shivan large engine
+	EnhancedSoundData(     SND_ENHANCED_PRIORITY_MEDIUM,  3), // SND_UNDEFINED_176              = 176,//!< Shivan large engine
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_177              = 177,//!< SRed 		beam loop
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_178              = 178,//!< LRed		beam loop
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  3), // SND_UNDEFINED_179              = 179,//!< Antifighter	beam loop
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_LIGHTNING_1                = 180,//!< Thunder 1 sound in neblua
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  4), // SND_LIGHTNING_2                = 181,//!< Thunder 2 sound in neblua
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  3), // SND_UNDEFINED_182              = 182,//!< 1 sec 	warm up
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  3), // SND_UNDEFINED_183              = 183,//!< 1.5 sec 	warm up
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  3), // SND_UNDEFINED_184              = 184,//!< 3 sec 	warm up
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  2), // SND_UNDEFINED_185              = 185,//!< Shivan Commnode
+	EnhancedSoundData(       SND_ENHANCED_PRIORITY_HIGH,  1), // SND_UNDEFINED_186              = 186,//!< Volition PirateShip
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  3), // SND_UNDEFINED_187              = 187,//!< SRed 		warm down
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  3), // SND_UNDEFINED_188              = 188,//!< LRed 		warm down
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  3), // SND_UNDEFINED_189              = 189,//!< AntiFtr	warm down
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  2), // SND_UNDEFINED_190              = 190,//!< Instellation 1
+	EnhancedSoundData(SND_ENHANCED_PRIORITY_MEDIUM_HIGH,  2)  // SND_UNDEFINED_191              = 191,//!< Instellation 2
+};
+
+static const EnhancedSoundData default_enhanced_sound_data(SND_ENHANCED_PRIORITY_MEDIUM_HIGH, 1);
+
+
+/*
+ * Update any uninitialized EnhancedSoundData in Snds
+  * with hardcoded defaults for retail.
+ */
+void gamesnd_add_retail_default_enhanced_sound_data()
+{
+	int i = 0;
+
+	for (SCP_vector<game_snd>::iterator it = Snds.begin(), end = Snds.end(); it != end; ++it, ++i)
+	{
+		if (it->enhanced_sound_data.priority== SND_ENHANCED_PRIORITY_INVALID)
+		{
+			if (i < NUM_RETAIL_GAMEPLAY_SOUNDS)
+			{
+				it->enhanced_sound_data.priority= Default_sound_priorities[i].priority;
+			}
+			else
+			{
+				it->enhanced_sound_data.priority= default_enhanced_sound_data.priority;
+			}
+		}
+
+		if (it->enhanced_sound_data.limit < 1)
+		{
+			if (i < NUM_RETAIL_GAMEPLAY_SOUNDS)
+			{
+				it->enhanced_sound_data.limit = Default_sound_priorities[i].limit;
+			}
+			else
+			{
+				it->enhanced_sound_data.limit= default_enhanced_sound_data.limit;
+			}
+		}
+	}
+}
 
 void gamesnd_play_iface(int n)
 {
@@ -408,6 +646,42 @@ void parse_gamesnd_old(game_snd* gs)
 
 	advance_to_eoln(NULL);
 }
+
+EnhancedSoundPriority convert_to_enhanced_priority(const char * priority_str)
+{
+	Assertion(priority_str != NULL, "convert_to_enhanced_priority given null priority_str!");
+
+	if (!stricmp(priority_str, "Must Play"))
+	{
+		return SND_ENHANCED_PRIORITY_MUST_PLAY;
+	}
+	else if (!stricmp(priority_str, "High"))
+	{
+		return SND_ENHANCED_PRIORITY_HIGH;
+	}
+	else if (!stricmp(priority_str, "Medium-High"))
+	{
+		return SND_ENHANCED_PRIORITY_MEDIUM_HIGH;
+	}
+	else if (!stricmp(priority_str, "Medium"))
+	{
+		return SND_ENHANCED_PRIORITY_MEDIUM;
+	}
+	else if (!stricmp(priority_str, "Medium-Low"))
+	{
+		return SND_ENHANCED_PRIORITY_MEDIUM_LOW;
+	}
+	else if (!stricmp(priority_str, "Low"))
+	{
+		return SND_ENHANCED_PRIORITY_LOW;
+	}
+	else
+	{
+		error_display(1, "Unknown enhanced sound priority: %s\n", priority_str);
+		return SND_ENHANCED_PRIORITY_INVALID;
+	}
+}
+
 bool required_string_no_create(const char* token, bool no_create)
 {
     if (no_create)
@@ -468,6 +742,34 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	{
 		gs->min = 0;
 		gs->max = 0;
+	}
+
+	// jg18 - enhanced sound parameters
+	if (optional_string("+Priority:"))
+	{
+		SCP_string priority_string;
+		stuff_string(priority_string, F_NAME);
+		EnhancedSoundPriority priority = convert_to_enhanced_priority(priority_string.c_str());
+		if (priority != SND_ENHANCED_PRIORITY_INVALID)
+		{
+			gs->enhanced_sound_data.priority= priority;
+		}
+		// else case not needed since conversion function displays message on error
+	}
+
+	if (optional_string("+Limit:"))
+	{
+		int temp_limit;
+		stuff_int(&temp_limit);
+
+		if ((temp_limit > 0) && (temp_limit <= SND_ENHANCED_MAX_LIMIT))
+		{
+			gs->enhanced_sound_data.limit = (unsigned int)temp_limit;
+		}
+		else
+		{
+			error_display(1, "Invalid enhanced sound limit: %d\n", temp_limit);
+		}
 	}
 }
 
@@ -795,6 +1097,8 @@ void parse_sound_table(const char* filename)
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
+
+	gamesnd_add_retail_default_enhanced_sound_data();
 }
 
 /**
