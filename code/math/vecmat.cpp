@@ -1047,11 +1047,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 {
 	float sinh,cosh,cosp;
 
-	if (m->vec.fvec.xyz.x==0.0f && m->vec.fvec.xyz.z==0.0f)		//zero head
-		a->h = 0.0f;
-	else
-		// a->h = (float)atan2(m->vec.fvec.xyz.z,m->vec.fvec.xyz.x);
-		a->h = atan2_safe(m->vec.fvec.xyz.x,m->vec.fvec.xyz.z);
+	a->h = atan2_safe(m->vec.fvec.xyz.x,m->vec.fvec.xyz.z);
 
 	sinh = sinf(a->h); cosh = cosf(a->h);
 
@@ -1060,12 +1056,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 	else											//cosine is larger, so use it
 		cosp = m->vec.fvec.xyz.z*cosh;
 
-	if (cosp==0.0f && m->vec.fvec.xyz.y==0.0f)
-		a->p = 0.0f;
-	else
-		// a->p = (float)atan2(cosp,-m->vec.fvec.xyz.y);
-		a->p = atan2_safe(-m->vec.fvec.xyz.y, cosp);
-
+	a->p = atan2_safe(-m->vec.fvec.xyz.y, cosp);
 
 	if (cosp == 0.0f)	//the cosine of pitch is zero.  we're pitched straight up. say no bank
 
@@ -1077,11 +1068,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 		sinb = m->vec.rvec.xyz.y/cosp;
 		cosb = m->vec.uvec.xyz.y/cosp;
 
-		if (sinb==0.0f && cosb==0.0f)
-			a->b = 0.0f;
-		else
-			// a->b = (float)atan2(cosb,sinb);
-			a->b = atan2_safe(sinb,cosb);
+		a->b = atan2_safe(sinb,cosb);
 	}
 
 
@@ -1137,10 +1124,7 @@ static angles *vm_extract_angles_vector_normalized(angles *a, const vec3d *v)
 
 	a->p = asinf(-v->xyz.y);
 
-	if (v->xyz.x==0.0f && v->xyz.z==0.0f)
-		a->h = 0.0f;
-	else
-		a->h = atan2_safe(v->xyz.z,v->xyz.x);
+	a->h = atan2_safe(v->xyz.z,v->xyz.x);
 
 	return a;
 }
