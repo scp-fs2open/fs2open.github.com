@@ -886,8 +886,7 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 			vm_vec_crossprod(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
-			if (vm_vec_normalize(yvec) == 0.0f)
-				vm_vector_2_matrix_gen_vectors(m);
+			vm_vec_normalize(yvec);
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
 			vm_vec_crossprod(xvec,yvec,zvec);
@@ -899,8 +898,7 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 		vm_vec_crossprod(xvec,yvec,zvec);
 
 		//normalize new perpendicular vector
-		if (vm_vec_normalize(xvec) == 0.0f)
-			vm_vector_2_matrix_gen_vectors(m);
+		vm_vec_normalize(xvec);
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
 		vm_vec_crossprod(yvec,zvec,xvec);
@@ -927,8 +925,7 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 			vm_vec_crossprod(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
-			if (vm_vec_normalize(yvec) == 0.0f)
-				vm_vector_2_matrix_gen_vectors(m);
+			vm_vec_normalize(yvec);
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
 			vm_vec_crossprod(xvec,yvec,zvec);
@@ -938,8 +935,7 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 		vm_vec_crossprod(xvec,yvec,zvec);
 
 		//normalize new perpendicular vector
-		if (vm_vec_normalize(xvec) == 0.0f)
-			vm_vector_2_matrix_gen_vectors(m);
+		vm_vec_normalize(xvec);
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
 		vm_vec_crossprod(yvec,zvec,xvec);
@@ -1302,8 +1298,7 @@ void vm_orthogonalize_matrix(matrix *m_src)
 
 		} else {  // use the right vector to figure up vector
 			vm_vec_crossprod(&m->vec.uvec, &m->vec.fvec, &m_src->vec.rvec);
-			if (vm_vec_normalize(&m->vec.uvec) == 0.0f)
-				Error( LOCATION, "Bad vector!" );
+			vm_vec_normalize(&m->vec.uvec);
 		}
 
 	} else {  // use source up vector
@@ -1314,8 +1309,7 @@ void vm_orthogonalize_matrix(matrix *m_src)
 	vm_vec_crossprod(&m->vec.rvec, &m->vec.uvec, &m->vec.fvec);
 		
 	//normalize new perpendicular vector
-	if (vm_vec_normalize(&m->vec.rvec) == 0.0f)
-		Error( LOCATION, "Bad vector!" );
+	vm_vec_normalize(&m->vec.rvec);
 
 	//now recompute up vector, in case it wasn't entirely perpendicular
 	vm_vec_crossprod(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
