@@ -446,7 +446,7 @@ float vm_vec_dist_quick(const vec3d *v0, const vec3d *v1)
 	return vm_vec_mag_quick(&t);
 }
 
-//normalize a vector. returns mag of source vec
+//normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 {
 	float m;
@@ -873,19 +873,14 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 
 	Assert(fvec != NULL);
 
-	//  This had been commented out, but that's bogus.  Code below relies on a valid zvec.
-	if (vm_vec_copy_normalize(zvec,fvec) == 0.0f) {
-		Assert(0);
-		return m;
-	}
+	vm_vec_copy_normalize(zvec,fvec);
 
 	if (uvec == NULL) {
 		if (rvec == NULL) {     //just forward vec
 			vm_vector_2_matrix_gen_vectors(m);
 		}
 		else {                      //use right vec
-			if (vm_vec_copy_normalize(xvec,rvec) == 0.0f)
-				vm_vector_2_matrix_gen_vectors(m);
+			vm_vec_copy_normalize(xvec,rvec);
 
 			vm_vec_crossprod(yvec,zvec,xvec);
 
@@ -898,8 +893,7 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 		}
 	}
 	else {      //use up vec
-		if (vm_vec_copy_normalize(yvec,uvec) == 0.0f)
-			vm_vector_2_matrix_gen_vectors(m);
+		vm_vec_copy_normalize(yvec,uvec);
 
 		vm_vec_crossprod(xvec,yvec,zvec);
 
@@ -1159,8 +1153,8 @@ angles *vm_extract_angles_vector(angles *a, const vec3d *v)
 {
 	vec3d t;
 
-	if (vm_vec_copy_normalize(&t,v) != 0.0f)
-		vm_extract_angles_vector_normalized(a,&t);
+	vm_vec_copy_normalize(&t,v);
+	vm_extract_angles_vector_normalized(a,&t);
 
 	return a;
 }
@@ -1294,9 +1288,7 @@ void vm_orthogonalize_matrix(matrix *m_src)
 	matrix tempm;
 	matrix * m = &tempm;
 
-	if (vm_vec_copy_normalize(&m->vec.fvec,&m_src->vec.fvec) == 0.0f) {
-		Error( LOCATION, "forward vec should not be zero-length" );
-	}
+	vm_vec_copy_normalize(&m->vec.fvec,&m_src->vec.fvec);
 
 	umag = vm_vec_mag(&m_src->vec.uvec);
 	rmag = vm_vec_mag(&m_src->vec.rvec);
