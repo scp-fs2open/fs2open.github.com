@@ -87,6 +87,31 @@ static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at 
 int Cheats_enabled = 0;
 int Key_normal_game = 0;
 
+namespace
+{
+	bool key_down_event_handler(const SDL_Event& e)
+	{
+		if (SDLtoFS2[e.key.keysym.scancode]) {
+			key_mark(SDLtoFS2[e.key.keysym.scancode], 1, 0);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	bool key_up_event_handler(const SDL_Event& e)
+	{
+		if (SDLtoFS2[e.key.keysym.scancode]) {
+			key_mark(SDLtoFS2[e.key.keysym.scancode], 0, 0);
+
+			return true;
+		}
+
+		return false;
+	}
+}
+
 void FillSDLArray ()
 {
 	SDLtoFS2[SDL_SCANCODE_0] = KEY_0;
@@ -719,6 +744,9 @@ void key_init()
 	key_flush();
 
 	SDL_UnlockMutex( key_lock );
+
+	os::events::addEventListener(SDL_KEYDOWN, os::events::DEFAULT_LISTENER_WEIGHT, key_down_event_handler);
+	os::events::addEventListener(SDL_KEYUP, os::events::DEFAULT_LISTENER_WEIGHT, key_up_event_handler);
 
 	atexit(key_close);
 }
