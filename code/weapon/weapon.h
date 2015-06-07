@@ -674,4 +674,7 @@ void weapon_pause_sounds();
 // Unpauses all running weapon sounds
 void weapon_unpause_sounds();
 
+// Called by hudartillery.cpp after SSMs have been parsed to make sure that $SSM: entries defined in weapons are valid.
+void validate_SSM_entries();
+
 #endif
