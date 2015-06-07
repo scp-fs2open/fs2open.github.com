@@ -2175,15 +2175,14 @@ void send_netgame_descript_packet(net_addr *addr, int code)
 
 	if (code == 1){
 		// add as much of the description as we dare
-		desc_len = strlen(Netgame.netgame_descript_info);
+		desc_len = strlen(Netgame.netgame_descript);
 		if (desc_len > MAX_PACKET_SIZE - 10){
 			desc_len = MAX_PACKET_SIZE - 10;
 			ADD_INT(desc_len);
-			memcpy(data + packet_size, Netgame.netgame_descript_info, desc_len);
+			memcpy(data + packet_size, Netgame.netgame_descript, desc_len);
 			packet_size += desc_len;
-		}
-		else {
-			ADD_STRING(Netgame.netgame_descript_info);
+		} else {
+			ADD_STRING(Netgame.netgame_descript);
 		}
 	}
 

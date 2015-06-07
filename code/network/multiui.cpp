@@ -4803,17 +4803,12 @@ void multi_create_list_select_item(int n)
 				// set the information area text
 				multi_common_set_text(The_mission.mission_desc);
 				netgame_descript_len = strlen(The_mission.mission_desc);
-				if (netgame_descript_len >= MAX_PACKET_SIZE - 10)
-				{
-					strncat(Netgame.netgame_descript_info, The_mission.mission_desc, MAX_PACKET_SIZE - 11);
-				}
-				else if (netgame_descript_len > 0)
-				{
-					strcpy(Netgame.netgame_descript_info, The_mission.mission_desc);
-				}
-				else
-				{
-					Netgame.netgame_descript_info[0] = '\0';
+				if (netgame_descript_len >= MAX_PACKET_SIZE - 10){
+					strncat(Netgame.netgame_descript, The_mission.mission_desc, MAX_PACKET_SIZE - 11);
+				} else if (netgame_descript_len > 0){
+					strcpy(Netgame.netgame_descript, The_mission.mission_desc);
+				} else {
+					Netgame.netgame_descript[0] = '\0';
 				}
 			}
 			// if we're on the standalone, send a request for the description
@@ -4858,18 +4853,13 @@ void multi_create_list_select_item(int n)
 				{
 					multi_common_set_text(campaign_desc);
 					netgame_descript_len = strlen(campaign_desc);
-						if (netgame_descript_len >= MAX_PACKET_SIZE - 10) 
-						{
-							strncat(Netgame.netgame_descript_info, campaign_desc, MAX_PACKET_SIZE - 11);
+						if (netgame_descript_len >= MAX_PACKET_SIZE - 10){
+							strncat(Netgame.netgame_descript, campaign_desc, MAX_PACKET_SIZE - 11);
+						} else {
+							strcpy(Netgame.netgame_descript, campaign_desc);
 						}
-						else
-						{
-							strcpy(Netgame.netgame_descript_info, campaign_desc);
-						}
-				}
-				else 
-				{
-					Netgame.netgame_descript_info[0] = '\0';
+				} else {
+					Netgame.netgame_descript[0] = '\0';
 					multi_common_set_text("");
 				}
 			}
@@ -4877,7 +4867,6 @@ void multi_create_list_select_item(int n)
 			else {
 				send_netgame_descript_packet(&Netgame.server_addr, 0);
 				multi_common_set_text("");
-				// no descriptions currently kept for campaigns
 			}
 
 			// netgame respawns are always 0 for campaigns (until the first mission is loaded)

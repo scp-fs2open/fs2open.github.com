@@ -491,9 +491,7 @@ typedef struct netgame_info {
 	char		title[NAME_LENGTH+1];			// title of the mission (as appears in the mission file)
 	char		campaign_name[NAME_LENGTH+1];	// current campaign name	
 	char		passwd[MAX_PASSWD_LEN+1];		// password for the game
-	char		netgame_descript_info[MAX_PACKET_SIZE-10];// Cyborg17, the desciption for the current campaign,
-														//this info is sent by send_netgame_descript_packet instead of 
-														//send_netgame_update_packet since the latter is filled with all the other data 
+	char		netgame_descript[MAX_PACKET_SIZE-10];	// Cyborg17, the desciption for the current campaign or mission
 	int		version_info;						// version info for this game.
 	int		type_flags;							// see NG_TYPE_* defines
 	int		mode;									// see NG_MODE_* defines
@@ -524,7 +522,7 @@ typedef struct netgame_info {
 
 // structure for active games -- kind of like Descent, but using the linked list thing, we will
 // be able to support many more games in the list.
-#define AG_FLAG_COOP								(1<<0)			// is a coop game
+#define AG_FLAG_COOP							(1<<0)			// is a coop game
 #define AG_FLAG_TEAMS							(1<<1)			// is a team vs. team game
 #define AG_FLAG_DOGFIGHT						(1<<2)			// is a dogfight game
 #define AG_FLAG_FORMING							(1<<3)			// game is currently forming
@@ -540,9 +538,9 @@ typedef struct netgame_info {
 // flags for defining the connection speed
 #define AG_FLAG_CONNECTION_SPEED_MASK		((1<<12)|(1<<13)|(1<<14))	// mask for the connection speed
 
-#define AG_FLAG_VALID_MISSION					(1<<15)			// the mission is a "valid" tracker mission
+#define AG_FLAG_VALID_MISSION				(1<<15)						// the mission is a "valid" tracker mission
 
-#define AG_FLAG_CONNECTION_BIT				12						// number of bits to shift right or left to get speed
+#define AG_FLAG_CONNECTION_BIT				12							// number of bits to shift right or left to get speed
 
 #define AG_FLAG_TYPE_MASK						(AG_FLAG_COOP|AG_FLAG_TEAMS|AG_FLAG_DOGFIGHT)
 #define AG_FLAG_STATE_MASK						(AG_FLAG_FORMING|AG_FLAG_BRIEFING|AG_FLAG_DEBRIEF|AG_FLAG_PAUSE|AG_FLAG_IN_MISSION)
@@ -558,7 +556,7 @@ typedef struct active_game {
 	net_addr	server_addr;	
 	ushort	flags;								// see above AG_FLAG_* defines
 	ubyte		version,comp_version;			// version and compatible version
-	ping_struct ping;								// ping time to the server
+	ping_struct ping;							// ping time to the server
 } active_game;
 
 // permanent server list (read from tcp.cfg)
