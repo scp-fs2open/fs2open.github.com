@@ -789,9 +789,14 @@ matrix *vm_angle_2_matrix(matrix *m, float a, int angle_index)
 	matrix * t;
 	float sinp,cosp,sinb,cosb,sinh,cosh;
 
-	sinp = sinf(0.0f);	cosp = cosf(0.0f);
-	sinb = sinf(0.0f);	cosb = cosf(0.0f);
-	sinh = sinf(0.0f);	cosh = cosf(0.0f);
+	/*
+	 * Initialize sin and cos variables using an initial angle of
+	 * zero degrees.  Recall that sin(0) = 0 and cos(0) = 1.
+	 */
+
+	sinp = 0.0f;	cosp = 1.0f;
+	sinb = 0.0f;	cosb = 1.0f;
+	sinh = 0.0f;	cosh = 1.0f;
 
 	switch (angle_index) {
 	case 0:
