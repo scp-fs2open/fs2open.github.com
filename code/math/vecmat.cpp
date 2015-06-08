@@ -1576,13 +1576,13 @@ void vm_quaternion_rotate(matrix *M, float theta, const vec3d *u)
 //  this is adapted from Computer Graphics (Hearn and Bker 2nd ed.) p. 420
 //
 {
-
 	float a,b,c, s;
+	float sin_theta = sinf(theta * 0.5f);
 
-	a = (u->xyz.x * sinf(theta * 0.5f));
-	b = (u->xyz.y * sinf(theta * 0.5f));
-	c = (u->xyz.z * sinf(theta * 0.5f));
-	s = cosf(theta/2.0f);
+	a = (u->xyz.x * sin_theta);
+	b = (u->xyz.y * sin_theta);
+	c = (u->xyz.z * sin_theta);
+	s = cosf(theta * 0.5f);
 
 // 1st ROW vector
 	M->vec.rvec.xyz.x = 1.0f - 2.0f*b*b - 2.0f*c*c;
