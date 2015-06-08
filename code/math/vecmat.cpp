@@ -203,7 +203,8 @@ void vm_vec_sub2(vec3d *dest, const vec3d *src)
 //dest can equal either source
 vec3d *vm_vec_avg_n(vec3d *dest, int n, const vec3d src[])
 {
-	float x=0,y=0,z=0;
+	float x = 0.0f, y = 0.0f, z = 0.0f;
+	float inv_n = 1.0f / (float) n;;
 
 	for(int i = 0; i<n; i++){
 		x += src[i].xyz.x;
@@ -211,9 +212,9 @@ vec3d *vm_vec_avg_n(vec3d *dest, int n, const vec3d src[])
 		z += src[i].xyz.z;
 	}
 
-	dest->xyz.x = x / n;
-	dest->xyz.y = y / n;
-	dest->xyz.z = z / n;
+	dest->xyz.x = x * inv_n;
+	dest->xyz.y = y * inv_n;
+	dest->xyz.z = z * inv_n;
 
 	return dest;
 }
