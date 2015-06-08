@@ -352,7 +352,7 @@ float vm_vec_mag(const vec3d *v)
 
 	mag1 = (v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z);
 
-	if (mag1 <= 0.0f) {
+	if (mag1 == 0.0f) {
 		return 0.0f;
 	}
 
@@ -454,8 +454,8 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 
 	m = vm_vec_mag(src);
 
-	//	Mainly here to trap attempts to normalize a null vector.
-	if (m <= 0.0f) {
+	//	Trap attempts to normalize a zero vector.
+	if (m == 0.0f) {
 		Warning(LOCATION, "Null vec3d in vec3d normalize.\n"
 						  "Trace out of vecmat.cpp and find offending code.\n");
 
@@ -493,8 +493,8 @@ float vm_vec_normalize_safe(vec3d *v)
 
 	m = vm_vec_mag(v);
 
-	//	Mainly here to trap attempts to normalize a null vector.
-	if (m <= 0.0f) {
+	//	Trap attempts to normalize a null vector.
+	if (m == 0.0f) {
 		v->xyz.x = 1.0f;
 		v->xyz.y = 0.0f;
 		v->xyz.z = 0.0f;
@@ -1274,8 +1274,8 @@ void vm_orthogonalize_matrix(matrix *m_src)
 
 	umag = vm_vec_mag(&m_src->vec.uvec);
 	rmag = vm_vec_mag(&m_src->vec.rvec);
-	if (umag <= 0.0f) {  // no up vector to use..
-		if (rmag <= 0.0f) {  // no right vector either, so make something up
+	if (umag == 0.0f) {  // no up vector to use..
+		if (rmag == 0.0f) {  // no right vector either, so make something up
 			if (!m->vec.fvec.xyz.x && !m->vec.fvec.xyz.z && m->vec.fvec.xyz.y)  // vertical vector
 				vm_vec_make(&m->vec.uvec, 0.0f, 0.0f, 1.0f);
 			else
@@ -1310,7 +1310,7 @@ void vm_fix_matrix(matrix *m)
 	fmag = vm_vec_mag(&m->vec.fvec);
 	umag = vm_vec_mag(&m->vec.uvec);
 	rmag = vm_vec_mag(&m->vec.rvec);
-	if (fmag <= 0.0f) {
+	if (fmag == 0.0f) {
 		if ((umag > 0.0f) && (rmag > 0.0f) && !vm_test_parallel(&m->vec.uvec, &m->vec.rvec)) {
 			vm_vec_crossprod(&m->vec.fvec, &m->vec.uvec, &m->vec.rvec);
 			vm_vec_normalize(&m->vec.fvec);
@@ -1327,8 +1327,8 @@ void vm_fix_matrix(matrix *m)
 
 	// we now have a valid and normalized forward vector
 
-	if ((umag <= 0.0f) || vm_test_parallel(&m->vec.fvec, &m->vec.uvec)) {  // no up vector to use..
-		if ((rmag <= 0.0f) || vm_test_parallel(&m->vec.fvec, &m->vec.rvec)) {  // no right vector either, so make something up
+	if ((umag == 0.0f) || vm_test_parallel(&m->vec.fvec, &m->vec.uvec)) {  // no up vector to use..
+		if ((rmag == 0.0f) || vm_test_parallel(&m->vec.fvec, &m->vec.rvec)) {  // no right vector either, so make something up
 			if (!m->vec.fvec.xyz.x && m->vec.fvec.xyz.y && !m->vec.fvec.xyz.z)  // vertical vector
 				vm_vec_make(&m->vec.uvec, 0.0f, 0.0f, -1.0f);
 			else
