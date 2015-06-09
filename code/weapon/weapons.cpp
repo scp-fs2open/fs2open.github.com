@@ -879,6 +879,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->vel_inherit_amount = 1.0f;
 	wip->free_flight_time = 0.0f;
 	wip->fire_wait = 1.0f;
+	wip->max_delay = 0.0f;
+	wip->min_delay = 0.0f;
 	wip->damage = 0.0f;
 	
 	wip->damage_type_idx = -1;
@@ -1393,6 +1395,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(optional_string("$Fire Wait:")) {
 		stuff_float( &(wip->fire_wait) );
 		diag_printf ("Weapon fire wait -- %7.3f\n", wip->fire_wait);
+		// Min and max delay stuff for weapon fire wait randomization
+		if (optional_string("+Max Delay:")) {
+			stuff_float(&(wip->max_delay));
+			diag_printf("Weapon fire max delay -- %7.3f\n", wip->max_delay);
+		}
+		if (optional_string("+Min Delay:")) {
+			stuff_float(&(wip->min_delay));
+			diag_printf("Weapon fire min delay -- %7.3f\n", wip->min_delay);
+		}
 	}
 
 	if(optional_string("$Damage:")) {
