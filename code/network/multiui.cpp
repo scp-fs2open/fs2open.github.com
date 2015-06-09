@@ -4804,6 +4804,7 @@ void multi_create_list_select_item(int n)
 				multi_common_set_text(The_mission.mission_desc);
 				netgame_descript_len = strlen(The_mission.mission_desc);
 				if (netgame_descript_len >= MAX_PACKET_SIZE - 10){
+					Netgame.netgame_descript[0] = '\0';
 					strncat(Netgame.netgame_descript, The_mission.mission_desc, MAX_PACKET_SIZE - 11);
 				} else if (netgame_descript_len > 0){
 					strcpy(Netgame.netgame_descript, The_mission.mission_desc);
@@ -4854,6 +4855,7 @@ void multi_create_list_select_item(int n)
 					multi_common_set_text(campaign_desc);
 					netgame_descript_len = strlen(campaign_desc);
 						if (netgame_descript_len >= MAX_PACKET_SIZE - 10){
+							Netgame.netgame_descript[0] = '\0';
 							strncat(Netgame.netgame_descript, campaign_desc, MAX_PACKET_SIZE - 11);
 						} else {
 							strcpy(Netgame.netgame_descript, campaign_desc);
