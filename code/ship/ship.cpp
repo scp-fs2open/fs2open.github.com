@@ -10143,18 +10143,23 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		float next_fire_delay;
 		bool fast_firing = false;
 		if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
-			next_fire_delay = (float) winfo_p->burst_delay * 1000.0f;
+			next_fire_delay = winfo_p->burst_delay * 1000.0f;
 			swp->burst_counter[bank_to_fire]++;
 			if (winfo_p->burst_flags & WBF_FAST_FIRING)
 				fast_firing = true;
-		} else {
-			next_fire_delay	= (float) winfo_p->fire_wait * 1000.0f;
+		}
+		else if (winfo_p->max_delay != 0.0f && winfo_p->min_delay != 0.0f) {			// Random fire delay (DahBlount)
+			next_fire_delay = ((float)rand() / ((float)RAND_MAX + 1.0f) * (winfo_p->max_delay - winfo_p->min_delay + 1.0f) + winfo_p->min_delay) * 1000.0f;
+		}
+		else {
+			next_fire_delay = winfo_p->fire_wait * 1000.0f;
 			swp->burst_counter[bank_to_fire] = 0;
 		}
 		if (!((obj->flags & OF_PLAYER_SHIP) || (fast_firing))) {
 			if (shipp->team == Ships[Player_obj->instance].team){
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
-			} else {
+			}
+			else {
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_hostile;
 			}
 		}
