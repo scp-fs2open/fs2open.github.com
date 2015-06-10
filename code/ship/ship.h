@@ -592,6 +592,8 @@ public:
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;
 
+	float max_shield_recharge;
+
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 
 
@@ -1305,6 +1307,8 @@ public:
 	int		auto_shield_spread_from_lod;
 
 	int		shield_point_augment_ctrls[4];	// Re-mapping of shield augmentation controls for model point shields
+
+	float	max_shield_recharge;
 
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
