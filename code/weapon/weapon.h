@@ -352,6 +352,8 @@ typedef struct weapon_info {
 	float	free_flight_time;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
+	float max_delay;							// max time to delay a shot (DahBlount)
+	float min_delay;							// min time to delay a shot	(DahBlount)
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 
