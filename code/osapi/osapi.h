@@ -13,6 +13,7 @@
 
 #include "globalincs/pstypes.h"
 #include "osapi/osregistry.h"
+#include "osapi/dialogs.h"
 
 // --------------------------------------------------------------------------------------------------
 // OSAPI DEFINES/VARS

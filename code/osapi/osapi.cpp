@@ -29,14 +29,13 @@
 #include "graphics/2d.h"
 #include "cmdline/cmdline.h"
 
-#ifdef __linux__
-#include <execinfo.h>
-#endif
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
 
 #include "SDL_syswm.h"
+
+#include <SDL_assert.h>
 
 
 // used to be a THREADED define but only use multiple process threads if this is defined
@@ -437,38 +436,10 @@ void debug_int3(char *file, int line)
 
 	gr_activate(0);
 
-	
+	mprintf(("%s\n", dump_stacktrace().c_str()));
+
 #ifndef NDEBUG
-	// Try to get a backtrace on linux
-
-#	ifdef WIN32
-#		if defined(_MSC_VER) && _MSC_VER >= 1400
-	__debugbreak( );
-#		elif defined(_MSC_VER)
-	_asm int 3;
-#		elif defined __GNUC__
-	asm("int $3");
-#		else
-#			error debug_int3: unknown compiler
-#		endif
-#	elif defined(__linux__)
-#	define SIZE 1024
-	char **symbols;
-	int i, numstrings;
-	void *buffer[SIZE];
-
-	numstrings = backtrace(buffer, SIZE);
-	symbols = backtrace_symbols(buffer, numstrings);
-
-	if(symbols != NULL)
-	{
-		for(i = 0; i < numstrings; i++)
-		{
-			mprintf(("%s\n", symbols[i]));
-		}
-	}
-	free(symbols);
-#	endif
+	SDL_TriggerBreakpoint();
 #endif
 
 	gr_activate(1);

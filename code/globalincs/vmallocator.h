@@ -10,6 +10,7 @@
 #include <queue>
 #include <deque>
 #include <unordered_map>
+#include <sstream>
 
 template< typename T >
 class SCP_vector : public std::vector< T, std::allocator< T > > { };

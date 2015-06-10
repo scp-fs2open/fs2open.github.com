@@ -15,6 +15,7 @@
 #include "controlconfig/controlsconfig.h"
 #include "freespace2/freespace.h"
 #include "weapon/beam.h"
+#include "osapi/osapi.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
