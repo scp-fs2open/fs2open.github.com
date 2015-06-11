@@ -75,7 +75,15 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, ship_obj,  world_hitpos, quadrant_num);
 
-	damage = wip->damage;
+	if (wip->damage_time != 0.0f && wp->lifeleft <= wip->damage_time) {
+		if (wip->min_damage != 0.0f) {
+			damage = (((wip->damage - wip->min_damage) * (wp->lifeleft / wip->damage_time)) + wip->min_damage);
+		} else {
+			damage = wip->damage * (wp->lifeleft / wip->damage_time);
+		}
+	} else {
+		damage = wip->damage;
+	}
 
 	// deterine whack whack
 	float		blast = wip->mass;

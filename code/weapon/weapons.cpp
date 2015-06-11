@@ -882,6 +882,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->max_delay = 0.0f;
 	wip->min_delay = 0.0f;
 	wip->damage = 0.0f;
+	wip->damage_time = 0.0f;
+	wip->min_damage = 0.0f;
 	
 	wip->damage_type_idx = -1;
 	wip->damage_type_idx_sav = -1;
@@ -1412,6 +1414,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		//do this automagically
 		if(first_time) {
 			wip->shockwave.damage = wip->damage;
+		}
+	}
+
+	// Attenuation of non-beam primary weapon damage
+	if(optional_string("$Damage Time:")) {
+		stuff_float(&wip->damage_time);
+		if(optional_string("+Min Damage:")){
+			stuff_float(&wip->min_damage);
 		}
 	}
 	
