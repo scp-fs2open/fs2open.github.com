@@ -882,6 +882,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->max_delay = 0.0f;
 	wip->min_delay = 0.0f;
 	wip->damage = 0.0f;
+	wip->damage_time = 0.0f;
+	wip->min_damage = 0.0f;
 	
 	wip->damage_type_idx = -1;
 	wip->damage_type_idx_sav = -1;
@@ -1414,6 +1416,30 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->shockwave.damage = wip->damage;
 		}
 	}
+
+	// Attenuation of non-beam primary weapon damage
+	if(optional_string("$Damage Time:")) {
+		stuff_float(&wip->damage_time);
+		if(optional_string("+Min Damage:")){
+			stuff_float(&wip->min_damage);
+		}
+		if(wip->min_damage > wip->damage) {
+			Warning(LOCATION, "Min Damage is greater than Damage, resetting to zero.");
+			wip->min_damage = 0.0f;
+		}
+		if(optional_string("+Max Damage:")) {
+			stuff_float(&wip->max_damage);
+		}
+		if(wip->max_damage < wip->damage) {
+			Warning(LOCATION, "Max Damage is less than Damage, resetting to zero.");
+			wip->max_damage = 0.0f;
+		}
+		if(wip->min_damage != 0.0f && wip->max_damage != 0.0f) {
+			Warning(LOCATION, "Both Min Damage and Max Damage are set to values greater than zero, resetting both to zero.");
+			wip->min_damage = 0.0f;
+			wip->max_damage = 0.0f;
+		}
+	}
 	
 	if(optional_string("$Damage Type:")) {
 		//This is checked for validity on every armor type
@@ -1517,6 +1543,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Warning(LOCATION, "Lifetime min or max specified, but $Lifetime was also specified; min or max will be used.");
 		}
 		stuff_float(&wip->lifetime);
+		if (wip->damage_time > wip->lifetime) {
+			Warning(LOCATION, "Lifetime is lower than Damage Time, setting Damage Time to be one half the value of Lifetime.");
+			wip->damage_time = 0.5f * wip->lifetime;
+		}
 	}
 
 	if(optional_string("$Energy Consumed:")) {
