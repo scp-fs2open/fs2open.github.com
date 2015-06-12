@@ -352,6 +352,8 @@ typedef struct weapon_info {
 	float	free_flight_time;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
+	float max_delay;							// max time to delay a shot (DahBlount)
+	float min_delay;							// min time to delay a shot	(DahBlount)
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 
@@ -416,6 +418,7 @@ typedef struct weapon_info {
 
 	int	impact_weapon_expl_index;		// Index into Weapon_expl_info of which ANI should play when this thing impacts something
 	float	impact_explosion_radius;		// How big the explosion should be
+	float	shield_impact_explosion_radius;	// How big the shield hit explosion should be
 
 	int dinky_impact_weapon_expl_index;
 	float dinky_impact_explosion_radius;
@@ -676,5 +679,7 @@ void weapon_unpause_sounds();
 
 // Called by hudartillery.cpp after SSMs have been parsed to make sure that $SSM: entries defined in weapons are valid.
 void validate_SSM_entries();
+
+void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx);
 
 #endif

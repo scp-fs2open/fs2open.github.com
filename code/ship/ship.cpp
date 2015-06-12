@@ -867,6 +867,8 @@ void init_ship_entry(ship_info *sip)
 	sip->max_hull_strength = 100.0f;
 	sip->max_shield_strength = 0.0f;
 
+	sip->max_shield_recharge = 1.0f;
+
 	sip->auto_shield_spread = 0.0f;
 	sip->auto_shield_spread_bypass = false;
 	sip->auto_shield_spread_from_lod = -1;
@@ -1013,6 +1015,7 @@ void init_ship_entry(ship_info *sip)
 
 	sip->damage_lightning_type = SLT_DEFAULT;
 
+	sip->shield_impact_explosion_anim = -1;
 	sip->hud_gauges.clear();
 	sip->hud_enabled = false;
 	sip->hud_retail = false;
@@ -2360,6 +2363,19 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_ubyte(&sip->shield_color[0]);
 		stuff_ubyte(&sip->shield_color[1]);
 		stuff_ubyte(&sip->shield_color[2]);
+	}
+
+	if(optional_string("$Shield Impact Explosion:")) {
+		char fname[MAX_NAME_LEN];
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( VALID_FNAME(fname) )
+			sip->shield_impact_explosion_anim = Weapon_explosions.Load(fname);
+	}
+
+	if(optional_string("$Max Shield Recharge:")){
+		stuff_float(&sip->max_shield_recharge);
+		CLAMP(sip->max_shield_recharge, 0.0f, 1.0f);
 	}
 
 	// The next five fields are used for the ETS
@@ -5120,12 +5136,14 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	}
 	objp->hull_strength = shipp->ship_max_hull_strength;
 
+	shipp->max_shield_recharge = sip->max_shield_recharge;
+
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
-		shield_set_strength(objp, shipp->ship_max_shield_strength);
+		shield_set_strength(objp, shipp->ship_max_shield_strength * shipp->max_shield_recharge);
 	}
 
 	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
@@ -9291,6 +9309,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		objp->hull_strength = hull_pct * sp->ship_max_hull_strength;
 	}
 
+	sp->max_shield_recharge = sip->max_shield_recharge;
+
 	// set the correct shield strength
 	if (Fred_running) {
 		if (sp->ship_max_shield_strength)
@@ -10123,12 +10143,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		float next_fire_delay;
 		bool fast_firing = false;
 		if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
-			next_fire_delay = (float) winfo_p->burst_delay * 1000.0f;
+			next_fire_delay = winfo_p->burst_delay * 1000.0f;
 			swp->burst_counter[bank_to_fire]++;
 			if (winfo_p->burst_flags & WBF_FAST_FIRING)
 				fast_firing = true;
+		} else if (winfo_p->max_delay != 0.0f && winfo_p->min_delay != 0.0f) {			// Random fire delay (DahBlount)
+			next_fire_delay = (((float)rand()) / (((float)RAND_MAX + 1.0f) * (winfo_p->max_delay - winfo_p->min_delay + 1.0f) + winfo_p->min_delay)) * 1000.0f;
 		} else {
-			next_fire_delay	= (float) winfo_p->fire_wait * 1000.0f;
+			next_fire_delay = winfo_p->fire_wait * 1000.0f;
 			swp->burst_counter[bank_to_fire] = 0;
 		}
 		if (!((obj->flags & OF_PLAYER_SHIP) || (fast_firing))) {
@@ -12731,7 +12753,7 @@ float ship_calculate_rearm_duration( object *objp )
 
 	//find out time to repair shields
 	if(sip->sup_shield_repair_rate > 0.0f)
-		shield_rep_time = (sp->ship_max_shield_strength - shield_get_strength(objp)) / (sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
+		shield_rep_time = ((sp->ship_max_shield_strength * sp->max_shield_recharge) - shield_get_strength(objp)) / (sp->max_shield_recharge * sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
 	
 	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength) && (sip->sup_hull_repair_rate > 0.0f))
@@ -12867,7 +12889,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( !(objp->flags & OF_NO_SHIELDS) )
 	{
 		shield_str = shield_get_strength(objp);
-		if ( shield_str < shipp->ship_max_shield_strength ) {
+		if ( shield_str < (shipp->ship_max_shield_strength * shipp->max_shield_recharge) ) {
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
 			}
