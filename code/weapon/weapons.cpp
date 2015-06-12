@@ -1423,6 +1423,22 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if(optional_string("+Min Damage:")){
 			stuff_float(&wip->min_damage);
 		}
+		if(wip->min_damage > wip->damage) {
+			Warning(LOCATION, "Min Damage is greater than Damage, resetting to zero.");
+			wip->min_damage = 0.0f;
+		}
+		if(optional_string("+Max Damage:")) {
+			stuff_float(&wip->max_damage);
+		}
+		if(wip->max_damage < wip->damage) {
+			Warning(LOCATION, "Max Damage is less than Damage, resetting to zero.");
+			wip->max_damage = 0.0f;
+		}
+		if(wip->min_damage != 0.0f && wip->max_damage != 0.0f) {
+			Warning(LOCATION, "Both Min Damage and Max Damage are set to values greater than zero, resetting both to zero.");
+			wip->min_damage = 0.0f;
+			wip->max_damage = 0.0f;
+		}
 	}
 	
 	if(optional_string("$Damage Type:")) {
@@ -1527,6 +1543,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Warning(LOCATION, "Lifetime min or max specified, but $Lifetime was also specified; min or max will be used.");
 		}
 		stuff_float(&wip->lifetime);
+		if (wip->damage_time > wip->lifetime) {
+			Warning(LOCATION, "Lifetime is lower than Damage Time, setting Damage Time to be one half the value of Lifetime.");
+			wip->damage_time = 0.5f * wip->lifetime;
+		}
 	}
 
 	if(optional_string("$Energy Consumed:")) {
