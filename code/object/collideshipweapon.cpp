@@ -75,7 +75,17 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, ship_obj,  world_hitpos, quadrant_num);
 
-	damage = wip->damage;
+	if (wip->damage_time != 0.0f && wp->lifeleft <= wip->damage_time) {
+		if (wip->min_damage != 0.0f) {
+			damage = (((wip->damage - wip->min_damage) * (wp->lifeleft / wip->damage_time)) + wip->min_damage);
+		} else if (wip->max_damage != 0.0f) {
+			damage = (((wip->damage - wip->max_damage) * (wp->lifeleft / wip->damage_time)) + wip->max_damage);
+		} else {
+			damage = wip->damage * (wp->lifeleft / wip->damage_time);
+		}
+	} else {
+		damage = wip->damage;
+	}
 
 	// deterine whack whack
 	float		blast = wip->mass;
@@ -87,7 +97,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 
 		// if this is a player ship
 		if((np_index >= 0) && (np_index != MY_NET_PLAYER_NUM) && (wip->subtype == WP_LASER)){
-			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, ship_obj), &force, hitpos);
+			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, ship_obj), &force, hitpos, quadrant_num);
 		}
 	}	
 

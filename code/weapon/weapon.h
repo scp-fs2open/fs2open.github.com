@@ -356,6 +356,9 @@ typedef struct weapon_info {
 	float min_delay;							// min time to delay a shot	(DahBlount)
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
+	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
+	float	min_damage;							// lowest damage the weapon can deal. (DahBlount)
+	float	max_damage;							// highest damage the weapon can deal. (DahBlount)
 
 	shockwave_create_info shockwave;
 	shockwave_create_info dinky_shockwave;

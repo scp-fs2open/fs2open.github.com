@@ -72,7 +72,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed );
 int get_max_sparks(object* ship_obj);
 
 // player pain
-void ship_hit_pain(float damage);
+void ship_hit_pain(float damage, int quadrant);
 
 
 #endif //_SHIPHIT_H
