@@ -123,6 +123,7 @@ extern int Num_weapon_subtypes;
 #define WIF3_FIGHTER_INTERCEPTABLE		(1 << 6)	// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
 #define WIF3_AOE_ELECTRONICS			(1 << 7)	// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
 #define WIF3_APPLY_RECOIL				(1 << 8)	// Apply recoil using weapon and ship info
+#define WIF3_DONT_SPAWN_IF_SHOT			(1 << 9)	// Prevent shot down parent weapons from spawning children (DahBlount)
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
