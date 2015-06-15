@@ -1254,9 +1254,11 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 							in_fov = turret_fov_test(turret_subsys, tvec, &v2e);
 
 							if (turret_subsys->flags & SSF_FOV_EDGE_CHECK) {
-								if (in_fov == false)
-									if (object_in_turret_fov(&Objects[aip->target_objnum], turret_subsys, tvec, tpos, dist + Objects[aip->target_objnum].radius))
+								if (in_fov == false) {
+									if (object_in_turret_fov(&Objects[aip->target_objnum], turret_subsys, tvec, tpos, dist + Objects[aip->target_objnum].radius)) {
 										in_fov = true;
+									}
+								}
 							}
 							// MODIFY FOR ATTACKING BIG SHIP
 							// dot += (0.5f * Objects[aip->target_objnum].radius / dist);
@@ -1447,8 +1449,9 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 		in_fov = turret_fov_test(ss, gvec, &v2e);
 
 		if (ss->flags & SSF_FOV_EDGE_CHECK) {
-			if (in_fov == false)
+			if (in_fov == false) {
 				in_fov = is_object_radius_in_turret_fov(&Objects[ss->turret_enemy_objnum], ss, gvec, &gun_pos, &v2e, predicted_enemy_pos, 0.0f);
+			}
 		}
 
 		if (in_fov) {
