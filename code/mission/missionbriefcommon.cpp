@@ -265,7 +265,7 @@ void	brief_render_grid(grid *gridp);
 void	brief_modify_grid(grid *gridp);
 void	brief_rpd_line(vec3d *v0, vec3d *v1);
 void	brief_set_text_color(char color_tag);
-extern void get_camera_limits(const matrix *start_camera, const matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max);
+extern void get_camera_limits(matrix *start_camera, matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max);
 int brief_text_wipe_finished();
 
 // --------------------------------------------------------------------------------------

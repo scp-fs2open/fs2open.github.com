@@ -26,28 +26,18 @@
 // SPLINE FUNCTIONS
 //
 
-static float bez_fact_lookup[13] = {
-	1.0f,          // 0!
-	1.0f,          // 1!
-	2.0f,          // 2!
-	6.0f,          // 3!
-	24.0f,         // 4!
-	120.0f,        // 5!
-	720.0f,        // 6!
-	5040.0f,       // 7!
-	40320.0f,      // 8!
-	362880.0f,     // 9!
-	3628800.0f,    // 10!
-	39916800.0f,   // 11!
-	479001600.0f,  // 12!
-};
-
-// Limited Factorial
-static float bez_fact(int n)
+// integer factorial. =o
+int bez_fact(int n)
 {
-	Assert((n >= 0) && (n <= 12));
+	int idx;
+	int product = 1;
 
-	return bez_fact_lookup[n];
+	// do eet
+	for(idx=1; idx<=n; idx++){
+		product *= idx;
+	}
+
+	return product;
 }
 
 // bez constructor
@@ -84,7 +74,7 @@ void bez_spline::bez_set_points(int _num_pts, vec3d *_pts[MAX_BEZ_PTS])
 }
 
 // blend function
-#define COMB(_n, _k)		(bez_fact(_n) / (bez_fact(_k) * bez_fact(_n - _k)))
+#define COMB(_n, _k)		( (float)bez_fact(_n) / (float)(bez_fact(_k) * bez_fact(_n - _k)) )
 float bez_spline::BEZ(int k, int n, float u)
 {
 	float a = (float)COMB(n, k);
