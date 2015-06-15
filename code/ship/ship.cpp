@@ -257,8 +257,7 @@ flag_def_list Subsystem_flags[] = {
 	{ "only target if can fire",    MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE, 1},
 	{ "no disappear",			MSS_FLAG2_NO_DISAPPEAR, 1},
 	{ "collide submodel",		MSS_FLAG2_COLLIDE_SUBMODEL, 1},
-	{ "allow destroyed rotation",	MSS_FLAG2_DESTROYED_ROTATION, 1},
-	{ "turret ignore radius",	MSS_FLAG2_TURRET_IGNORE_RADIUS, 1}
+	{ "allow destroyed rotation",	MSS_FLAG2_DESTROYED_ROTATION, 1}
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);

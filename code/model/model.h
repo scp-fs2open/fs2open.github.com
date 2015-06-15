@@ -139,7 +139,6 @@ typedef struct polymodel_instance {
 #define MSS_FLAG2_NO_DISAPPEAR					 (1 << 2)	// Submodel won't disappear when subsystem destroyed
 #define MSS_FLAG2_COLLIDE_SUBMODEL				 (1 << 3)	// subsystem takes damage only from hits which impact the associated submodel
 #define MSS_FLAG2_DESTROYED_ROTATION			 (1 << 4)   // allows subobjects to continue to rotate even if they have been destroyed
-#define MSS_FLAG2_TURRET_IGNORE_RADIUS			 (1 << 5)	// prevent a turret from firing on an object if only the radius is in the fov (DahBlount)
 
 #define NUM_SUBSYSTEM_FLAGS			33
 
