@@ -156,7 +156,7 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
 			gr_printf_menu(sx,sy,text);
 			sy += dy;
-			if(Active_player->stats.mp_bonehead_hits>0)
+			if(Active_player->stats.mp_shots_fired>0)
 				pct=(float)100.0*((float)Active_player->stats.mp_bonehead_hits/(float)Active_player->stats.mp_shots_fired);
 			else pct=(float)0.0;
 			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
@@ -179,7 +179,7 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
 			gr_printf_menu(sx,sy,text);
 			sy += dy;
-			if(Active_player->stats.ms_bonehead_hits>0)
+			if(Active_player->stats.ms_shots_fired>0)
 				pct=(float)100.0*((float)Active_player->stats.ms_bonehead_hits/(float)Active_player->stats.ms_shots_fired);
 			else pct=(float)0.0;
 			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
