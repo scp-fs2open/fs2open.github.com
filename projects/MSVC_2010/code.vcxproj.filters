@@ -297,9 +297,6 @@
 	<ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\timerbar.cpp">
-      <Filter>DebugConsole</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\fireball\fireballs.cpp">
       <Filter>Fireball</Filter>
     </ClCompile>
@@ -1143,9 +1140,6 @@
       <Filter>DebugConsole</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
-      <Filter>DebugConsole</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\timerbar.h">
       <Filter>DebugConsole</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\DirectX\vasync.h">

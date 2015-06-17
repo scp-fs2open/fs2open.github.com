@@ -4558,7 +4558,7 @@ void multi_pxo_pinfo_build_vals()
 
 	// primary friendly hit %
 	memset(Multi_pxo_pinfo_vals[15], 0, 50);
-	if (fs->stats.p_shots_hit > 0) {		
+	if (fs->stats.p_shots_fired > 0) {		
 	   sprintf(Multi_pxo_pinfo_vals[15], "%d%%", (int)((float)100.0f*((float)fs->stats.p_bonehead_hits/(float)fs->stats.p_shots_fired)));
 	} else {		
 		strcpy_s(Multi_pxo_pinfo_vals[15], "0%");
@@ -4570,7 +4570,7 @@ void multi_pxo_pinfo_build_vals()
 
 	// secondary friendly hit %
 	memset(Multi_pxo_pinfo_vals[17], 0, 50);
-	if (fs->stats.s_shots_hit > 0) {
+	if (fs->stats.s_shots_fired > 0) {
 	   sprintf(Multi_pxo_pinfo_vals[17], "%d%%", (int)((float)100.0f*((float)fs->stats.s_bonehead_hits/(float)fs->stats.s_shots_fired)));
 	} else {		
 		strcpy_s(Multi_pxo_pinfo_vals[17], "0%");

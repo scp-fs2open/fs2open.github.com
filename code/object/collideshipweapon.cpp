@@ -75,7 +75,17 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, ship_obj,  world_hitpos, quadrant_num);
 
-	damage = wip->damage;
+	if (wip->damage_time != 0.0f && wp->lifeleft <= wip->damage_time) {
+		if (wip->min_damage != 0.0f) {
+			damage = (((wip->damage - wip->min_damage) * (wp->lifeleft / wip->damage_time)) + wip->min_damage);
+		} else if (wip->max_damage != 0.0f) {
+			damage = (((wip->damage - wip->max_damage) * (wp->lifeleft / wip->damage_time)) + wip->max_damage);
+		} else {
+			damage = wip->damage * (wp->lifeleft / wip->damage_time);
+		}
+	} else {
+		damage = wip->damage;
+	}
 
 	// deterine whack whack
 	float		blast = wip->mass;
@@ -87,7 +97,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 
 		// if this is a player ship
 		if((np_index >= 0) && (np_index != MY_NET_PLAYER_NUM) && (wip->subtype == WP_LASER)){
-			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, ship_obj), &force, hitpos);
+			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, ship_obj), &force, hitpos, quadrant_num);
 		}
 	}	
 
@@ -407,6 +417,11 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
 
 		if(!ship_override && !weapon_override) {
+			if (shield_collision && quadrant_num >= 0) {
+				if ((sip->shield_impact_explosion_anim > -1) && (wip->shield_impact_explosion_radius > 0)) {
+					shield_impact_explosion(&mc.hit_point, ship_objp, wip->shield_impact_explosion_radius, sip->shield_impact_explosion_anim);
+				}
+			}
 			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 

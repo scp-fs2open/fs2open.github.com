@@ -49,6 +49,24 @@
 #include "mod_table/mod_table.h"
 #include "model/modelrender.h"
 #include "debugconsole/console.h"
+#include "hud/hudartillery.h"
+
+// Since SSMs are parsed after weapons, if we want to allow SSM strikes to be specified by name, we need to store those names until after SSMs are parsed.
+typedef struct delayed_ssm_data {
+	SCP_string filename;
+	int linenum;
+	SCP_string ssm_entry;
+} delayed_ssm_data;
+SCP_map<SCP_string, delayed_ssm_data> Delayed_SSM_data;
+SCP_vector<SCP_string> Delayed_SSM_names;
+
+typedef struct delayed_ssm_index_data {
+	SCP_string filename;
+	int linenum;
+} delayed_ssm_index_data;
+SCP_map<SCP_string, delayed_ssm_index_data> Delayed_SSM_indices_data;
+SCP_vector<SCP_string> Delayed_SSM_indices;
+
 
 #ifndef NDEBUG
 int Weapon_flyby_sound_enabled = 1;
@@ -667,6 +685,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 			weaponp->wi_flags3 |= WIF3_FIGHTER_INTERCEPTABLE;
 		else if (!stricmp(NOX("apply recoil"), weapon_strings[i]))
 			weaponp->wi_flags3 |= WIF3_APPLY_RECOIL;
+		else if (!stricmp(NOX("don't spawn if shot"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_DONT_SPAWN_IF_SHOT;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -861,7 +881,11 @@ void init_weapon_entry(int weap_info_index)
 	wip->vel_inherit_amount = 1.0f;
 	wip->free_flight_time = 0.0f;
 	wip->fire_wait = 1.0f;
+	wip->max_delay = 0.0f;
+	wip->min_delay = 0.0f;
 	wip->damage = 0.0f;
+	wip->damage_time = 0.0f;
+	wip->min_damage = 0.0f;
 	
 	wip->damage_type_idx = -1;
 	wip->damage_type_idx_sav = -1;
@@ -941,6 +965,8 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
+
+	wip->shield_impact_explosion_radius = 1.0f;
 
 	wip->dinky_impact_explosion_radius = 1.0f;
 	wip->dinky_impact_weapon_expl_index = -1;
@@ -1087,7 +1113,7 @@ void init_weapon_entry(int weap_info_index)
 // return 0 if successful, otherwise return -1
 #define WEAPONS_MULTITEXT_LENGTH 2048
 
-int parse_weapon(int subtype, bool replace)
+int parse_weapon(int subtype, bool replace, const char *filename)
 {
 	char buf[WEAPONS_MULTITEXT_LENGTH];
 	weapon_info *wip = NULL;
@@ -1373,6 +1399,15 @@ int parse_weapon(int subtype, bool replace)
 	if(optional_string("$Fire Wait:")) {
 		stuff_float( &(wip->fire_wait) );
 		diag_printf ("Weapon fire wait -- %7.3f\n", wip->fire_wait);
+		// Min and max delay stuff for weapon fire wait randomization
+		if (optional_string("+Max Delay:")) {
+			stuff_float(&(wip->max_delay));
+			diag_printf("Weapon fire max delay -- %7.3f\n", wip->max_delay);
+		}
+		if (optional_string("+Min Delay:")) {
+			stuff_float(&(wip->min_delay));
+			diag_printf("Weapon fire min delay -- %7.3f\n", wip->min_delay);
+		}
 	}
 
 	if(optional_string("$Damage:")) {
@@ -1381,6 +1416,30 @@ int parse_weapon(int subtype, bool replace)
 		//do this automagically
 		if(first_time) {
 			wip->shockwave.damage = wip->damage;
+		}
+	}
+
+	// Attenuation of non-beam primary weapon damage
+	if(optional_string("$Damage Time:")) {
+		stuff_float(&wip->damage_time);
+		if(optional_string("+Min Damage:")){
+			stuff_float(&wip->min_damage);
+		}
+		if(wip->min_damage > wip->damage) {
+			Warning(LOCATION, "Min Damage is greater than Damage, resetting to zero.");
+			wip->min_damage = 0.0f;
+		}
+		if(optional_string("+Max Damage:")) {
+			stuff_float(&wip->max_damage);
+		}
+		if(wip->max_damage < wip->damage) {
+			Warning(LOCATION, "Max Damage is less than Damage, resetting to zero.");
+			wip->max_damage = 0.0f;
+		}
+		if(wip->min_damage != 0.0f && wip->max_damage != 0.0f) {
+			Warning(LOCATION, "Both Min Damage and Max Damage are set to values greater than zero, resetting both to zero.");
+			wip->min_damage = 0.0f;
+			wip->max_damage = 0.0f;
 		}
 	}
 	
@@ -1486,6 +1545,10 @@ int parse_weapon(int subtype, bool replace)
 			Warning(LOCATION, "Lifetime min or max specified, but $Lifetime was also specified; min or max will be used.");
 		}
 		stuff_float(&wip->lifetime);
+		if (wip->damage_time > wip->lifetime) {
+			Warning(LOCATION, "Lifetime is lower than Damage Time, setting Damage Time to be one half the value of Lifetime.");
+			wip->damage_time = 0.5f * wip->lifetime;
+		}
 	}
 
 	if(optional_string("$Energy Consumed:")) {
@@ -1913,6 +1976,12 @@ int parse_weapon(int subtype, bool replace)
 	
 	if ( optional_string("$Impact Explosion Radius:") )
 		stuff_float(&wip->impact_explosion_radius);
+
+	if ( optional_string("$Shield Impact Explosion Radius:") ) {
+		stuff_float(&wip->shield_impact_explosion_radius);
+	} else if (first_time) {
+		wip->shield_impact_explosion_radius = wip->impact_explosion_radius;
+	}
 
 	if ( optional_string("$Dinky Impact Explosion:") ) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -2534,7 +2603,25 @@ int parse_weapon(int subtype, bool replace)
 	}	
 
 	if( optional_string("$SSM:")){
-		stuff_int(&wip->SSM_index);
+		if (stuff_int_optional(&wip->SSM_index) != 2) {
+			// We can't make an SSM lookup yet, because weapons are parsed first, but we can save the data to process later. -MageKing17
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+			delayed_ssm_data temp_data;
+			temp_data.filename = filename;
+			temp_data.linenum = get_line_num();
+			temp_data.ssm_entry = fname;
+			if (Delayed_SSM_data.find(wip->name) == Delayed_SSM_data.end())
+				Delayed_SSM_names.push_back(wip->name);
+			Delayed_SSM_data[wip->name] = temp_data;
+		} else {
+			// We'll still want to validate the index later. -MageKing17
+			delayed_ssm_index_data temp_data;
+			temp_data.filename = filename;
+			temp_data.linenum = get_line_num();
+			if (Delayed_SSM_indices_data.find(wip->name) == Delayed_SSM_indices_data.end())
+				Delayed_SSM_indices.push_back(wip->name);
+			Delayed_SSM_indices_data[wip->name] = temp_data;
+		}
 	}// SSM index -Bobboau
 
 	if(optional_string("$FOF:")){
@@ -2817,7 +2904,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:")) {
 				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-				if (parse_weapon(WP_LASER, Parsing_modular_table) < 0) {
+				if (parse_weapon(WP_LASER, Parsing_modular_table, filename) < 0) {
 					continue;
 				}
 			}
@@ -2828,7 +2915,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:")) {
 				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-				if (parse_weapon(WP_MISSILE, Parsing_modular_table) < 0) {
+				if (parse_weapon(WP_MISSILE, Parsing_modular_table, filename) < 0) {
 					continue;
 				}
 			}
@@ -2839,7 +2926,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:")) {
 				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-				if (parse_weapon(WP_BEAM, Parsing_modular_table) < 0) {
+				if (parse_weapon(WP_BEAM, Parsing_modular_table, filename) < 0) {
 					continue;
 				}
 			}
@@ -2850,7 +2937,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:"))
 			{
-				int idx = parse_weapon(WP_MISSILE, Parsing_modular_table);
+				int idx = parse_weapon(WP_MISSILE, Parsing_modular_table, filename);
 
 				if (idx < 0) {
 					continue;
@@ -5514,15 +5601,27 @@ void spawn_child_weapons(object *objp)
 	int	child_id;
 	int	parent_num;
 	ushort starting_sig;
-	weapon	*wp;
+	weapon	*wp = NULL;
+	beam	*bp = NULL;
 	weapon_info	*wip, *child_wip;
+	vec3d	*opos, *fvec;
 
-	Assert(objp->type == OBJ_WEAPON);
-	Assert((objp->instance >= 0) && (objp->instance < MAX_WEAPONS));
+	Assertion(objp->type == OBJ_WEAPON || objp->type == OBJ_BEAM, "spawn_child_weapons() doesn't make sense for non-weapon non-beam objects; get a coder!\n");
+	Assertion(objp->instance >= 0, "spawn_child_weapons() called with an object with an instance of %d; get a coder!\n", objp->instance);
+	Assertion(!(objp->type == OBJ_WEAPON) || (objp->instance < MAX_WEAPONS), "spawn_child_weapons() called with a weapon with an instance of %d while MAX_WEAPONS is %d; get a coder!\n", objp->instance, MAX_WEAPONS);
+	Assertion(!(objp->type == OBJ_BEAM) || (objp->instance < MAX_BEAMS), "spawn_child_weapons() called with a beam with an instance of %d while MAX_BEAMS is %d; get a coder!\n", objp->instance, MAX_BEAMS);
 
-	wp = &Weapons[objp->instance];
-	Assert((wp->weapon_info_index >= 0) && (wp->weapon_info_index < MAX_WEAPON_TYPES));
-	wip = &Weapon_info[wp->weapon_info_index];
+	if (objp->type == OBJ_WEAPON) {
+		wp = &Weapons[objp->instance];
+		Assertion((wp->weapon_info_index >= 0) && (wp->weapon_info_index < Num_weapon_types), "Invalid weapon_info_index of %d; get a coder!\n", wp->weapon_info_index);
+		wip = &Weapon_info[wp->weapon_info_index];
+	} else if (objp->type == OBJ_BEAM) {
+		bp = &Beams[objp->instance];
+		Assertion((bp->weapon_info_index >= 0) && (bp->weapon_info_index < Num_weapon_types), "Invalid weapon_info_index of %d; get a coder!\n", bp->weapon_info_index);
+		wip = &Weapon_info[bp->weapon_info_index];
+	} else {	// Let's make sure we don't do screwball things in a release build if this gets called with a non-weapon non-beam.
+		return;
+	}
 
 	parent_num = objp->parent;
 
@@ -5543,56 +5642,79 @@ void spawn_child_weapons(object *objp)
 		multi_set_network_signature( objp->net_signature, MULTI_SIG_NON_PERMANENT );
 	}
 
-    for (i = 0; i < wip->num_spawn_weapons_defined; i++)
-    {
-        for (j = 0; j < wip->spawn_info[i].spawn_count; j++) 
-        {
-    		int		weapon_objnum;
-	    	vec3d	tvec, pos;
-		    matrix	orient;
+	opos = &objp->pos;
+	fvec = &objp->orient.vec.fvec;
 
-            child_id = wip->spawn_info[i].spawn_type;
+	for (i = 0; i < wip->num_spawn_weapons_defined; i++)
+	{
+		for (j = 0; j < wip->spawn_info[i].spawn_count; j++)
+		{
+			int		weapon_objnum;
+			vec3d	tvec, pos;
+			matrix	orient;
+
+			child_id = wip->spawn_info[i].spawn_type;
 			child_wip = &Weapon_info[child_id];
 
-		    // for multiplayer, use the static randvec functions based on the network signatures to provide
-		    // the randomness so that it is the same on all machines.
-		    if ( Game_mode & GM_MULTIPLAYER ) {
-    			static_rand_cone(objp->net_signature + j, &tvec, &objp->orient.vec.fvec, wip->spawn_info[i].spawn_angle);
-	    	} else {
-		    	vm_vec_random_cone(&tvec, &objp->orient.vec.fvec, wip->spawn_info[i].spawn_angle);
-		    }
-		    vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
+			// for multiplayer, use the static randvec functions based on the network signatures to provide
+			// the randomness so that it is the same on all machines.
+			if ( Game_mode & GM_MULTIPLAYER ) {
+				static_rand_cone(objp->net_signature + j, &tvec, fvec, wip->spawn_info[i].spawn_angle);
+			} else {
+				vm_vec_random_cone(&tvec, fvec, wip->spawn_info[i].spawn_angle);
+			}
+			vm_vec_scale_add(&pos, opos, &tvec, objp->radius);
 
-		    vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
-		    weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
+			// Let's allow beam-spawn! -MageKing17
+			if (child_wip->wi_flags & WIF_BEAM) {
+				beam_fire_info fire_info;
+				memset(&fire_info, 0, sizeof(beam_fire_info));
 
-			//if the child inherits parent target, do it only if the parent weapon was locked to begin with
-			if ((child_wip->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (wp->homing_object != &obj_used_list))
-			{
-				//Deal with swarm weapons
-				if (wp->swarm_index >= 0) {
-					swarm_info	*swarmp;
-					swarmp = &Swarm_missiles[wp->swarm_index];
+				fire_info.accuracy = 0.000001f;		// this will guarantee a hit
+				fire_info.shooter = &Objects[parent_num];
+				fire_info.turret = NULL;
+				fire_info.target = NULL;
+				fire_info.target_subsys = NULL;
+				fire_info.target_pos1 = fire_info.target_pos2 = pos;
+				fire_info.bfi_flags |= BFIF_FLOATING_BEAM | BFIF_TARGETING_COORDS;
+				fire_info.starting_pos = *opos;
+				fire_info.beam_info_index = child_id;
+				fire_info.team = static_cast<char>(obj_team(&Objects[parent_num]));
 
-					weapon_set_tracking_info(weapon_objnum, parent_num, swarmp->homing_objnum, 1, wp->homing_subsys);
-				} else {
-					weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+				// fire the beam
+				beam_fire(&fire_info);
+			} else {
+				vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
+				weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
+
+				//if the child inherits parent target, do it only if the parent weapon was locked to begin with
+				if ((child_wip->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (wp->homing_object != &obj_used_list))
+				{
+					//Deal with swarm weapons
+					if (wp->swarm_index >= 0) {
+						swarm_info	*swarmp;
+						swarmp = &Swarm_missiles[wp->swarm_index];
+
+						weapon_set_tracking_info(weapon_objnum, parent_num, swarmp->homing_objnum, 1, wp->homing_subsys);
+					} else {
+						weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+					}
+				}
+
+				//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
+				if (weapon_objnum != -1) {
+					float rand_val;
+
+					if ( Game_mode & GM_NORMAL ){
+						rand_val = frand();
+					} else {
+						rand_val = static_randf(objp->net_signature + j);
+					}
+
+					Weapons[Objects[weapon_objnum].instance].lifeleft *= rand_val*0.4f + 0.8f;
 				}
 			}
-
-    		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
-		    if (weapon_objnum != -1) {
-			    float rand_val;
-
-			    if ( Game_mode & GM_NORMAL ){
-				    rand_val = frand();
-			    } else {
-    				rand_val = static_randf(objp->net_signature + j);
-			    }
-
-			    Weapons[Objects[weapon_objnum].instance].lifeleft *= rand_val*0.4f + 0.8f;
-		    }
-        }
+		}
 
 	}
 
@@ -6239,7 +6361,9 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	// spawn weapons - note the change from FS 1 multiplayer.
 	if (wip->wi_flags & WIF_SPAWN){
-		spawn_child_weapons(weapon_obj);
+		if (!((wip->wi_flags3 & WIF3_DONT_SPAWN_IF_SHOT) && (sw_flag == SW_WEAPON_KILL))){			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
+			spawn_child_weapons(weapon_obj);
+		}
 	}	
 }
 
@@ -7056,6 +7180,11 @@ void weapon_unpause_sounds()
 	beam_unpause_sounds();
 }
 
+void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx) {
+	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
+	particle_create( hitpos, &vmd_zero_vector, 0.0f, radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, -1.0f, objp );
+}
+
 void weapon_render(object* obj, draw_list *scene)
 {
 	int num;
@@ -7248,5 +7377,43 @@ void weapon_render(object* obj, draw_list *scene)
 
 	default:
 		Warning(LOCATION, "Unknown weapon rendering type = %i for weapon %s\n", wip->render_type, wip->name);
+	}
+}
+
+// Called by hudartillery.cpp after SSMs have been parsed to make sure that $SSM: entries defined in weapons are valid.
+void validate_SSM_entries()
+{
+	int wi;
+	SCP_vector<SCP_string>::const_iterator it;
+	weapon_info *wip;
+
+	for (it = Delayed_SSM_names.begin(); it != Delayed_SSM_names.end(); ++it) {
+		delayed_ssm_data *dat = &Delayed_SSM_data[*it];
+		wi = weapon_info_lookup(it->c_str());
+		Assertion(wi >= 0, "Trying to validate non-existant weapon '%s'; get a coder!\n", it->c_str());
+		wip = &Weapon_info[wi];
+		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
+		wip->SSM_index = ssm_info_lookup(dat->ssm_entry.c_str());
+		if (wip->SSM_index < 0) {
+			Warning(LOCATION, "Unknown SSM entry '%s' in specification for %s (%s:line %d).\n", dat->ssm_entry.c_str(), it->c_str(), dat->filename.c_str(), dat->linenum);
+		}
+		nprintf(("parse", "Validation complete, SSM_index is %d.\n", wip->SSM_index));
+	}
+
+	// This information is no longer relevant, so might as well clear it out.
+	Delayed_SSM_data.clear();
+	Delayed_SSM_names.clear();
+
+	for (it = Delayed_SSM_indices.begin(); it != Delayed_SSM_indices.end(); ++it) {
+		delayed_ssm_index_data *dat = &Delayed_SSM_indices_data[*it];
+		wi = weapon_info_lookup(it->c_str());
+		Assertion(wi >= 0, "Trying to validate non-existant weapon '%s'; get a coder!\n", it->c_str());
+		wip = &Weapon_info[wi];
+		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
+		if (wip->SSM_index < -1 || wip->SSM_index >= static_cast<int>(Ssm_info.size())) {
+			Warning(LOCATION, "Invalid SSM index '%d' (should be 0-%d) in specification for %s (%s:line %d).\n", wip->SSM_index, Ssm_info.size() - 1, it->c_str(), dat->filename.c_str(), dat->linenum);
+			wip->SSM_index = -1;
+		}
+		nprintf(("parse", "Validation complete, SSM-index is %d.\n", wip->SSM_index));
 	}
 }

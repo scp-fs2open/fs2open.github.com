@@ -49,10 +49,19 @@ void shield_add_strength(object *objp, float delta)
 	if (delta == 0.0f)
 		return;
 
-	
+	float shield_str = shield_get_strength(objp);
+	float shield_recharge_limit = Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge;
+
+	if (shield_str >= shield_recharge_limit)
+		return;
+
 	if (!(Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
 		|| delta <= 0.0f) //SUSHI: We don't want smart shield management for negative delta
 	{
+		// set the limit for the shield recharge
+		if ((delta > 0.0f) && ((shield_str + delta) > shield_recharge_limit))
+			delta = shield_recharge_limit - shield_str;
+
 		for (int i = 0; i < objp->n_quadrants; i++)
 			shield_add_quad(objp, i, delta / objp->n_quadrants);
 	}
@@ -81,7 +90,11 @@ void shield_add_strength(object *objp, float delta)
 			// all quads are at full strength
 			if (weakest >= section_max)
 				break;
-		
+
+			// set the limit for the shield recharge
+			if ((delta > 0.0f) && ((shield_str + delta) > shield_recharge_limit))
+				delta = shield_recharge_limit - shield_str;
+
 			// throw all possible shield power at this quadrant
 			// if there's any left over then apply it to the next weakest on the next pass
 			float xfer_amount;

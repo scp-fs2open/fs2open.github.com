@@ -167,6 +167,7 @@ Flag exe_params[] =
 	{ "-snd_preload",		"Preload mission game sounds",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-snd_preload", },
 	{ "-nosound",			"Disable all sound",						false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
+	{ "-no_enhanced_sound",	"Disable enhanced sound",					false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_enhanced_sound", },
 
 	{ "-standalone",		"Run as standalone server",					false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
 	{ "-startgame",			"Skip mainhall and start hosting",			false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
@@ -198,6 +199,7 @@ Flag exe_params[] =
 	{ "-gl_finish",			"Fix input lag on some ATI+Linux systems",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gl_finish", },
 	{ "-no_batching",		"Disable batched model rendering",			true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-no_geo_effects",	"Disable geometry shader for effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
+	{ "-set_cpu_affinity",	"Sets processor affinity to config value",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 
 	{ "-ingame_join",		"Allow in-game joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Enable voice recognition",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
@@ -245,6 +247,7 @@ cmdline_parm allowbelow_arg("-allowbelow", "Ranks below this can join multi", AT
 cmdline_parm standalone_arg("-standalone", NULL, AT_NONE);
 cmdline_parm nosound_arg("-nosound", NULL, AT_NONE);			// Cmdline_freespace_no_sound
 cmdline_parm nomusic_arg("-nomusic", NULL, AT_NONE);			// Cmdline_freespace_no_music
+cmdline_parm noenhancedsound_arg("-no_enhanced_sound", NULL, AT_NONE);	// Cmdline_no_enhanced_sound
 cmdline_parm startgame_arg("-startgame", NULL, AT_NONE);		// Cmdline_start_netgame
 cmdline_parm gameclosed_arg("-closed", NULL, AT_NONE);		// Cmdline_closed_game
 cmdline_parm gamerestricted_arg("-restricted", NULL, AT_NONE);	// Cmdline_restricted_game
@@ -387,6 +390,7 @@ cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_r
 int Cmdline_query_speech = 0;
 int Cmdline_snd_preload = 0; // preload game sounds during mission load
 int Cmdline_voice_recognition = 0;
+int Cmdline_no_enhanced_sound = 0;
 
 // MOD related
 cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", AT_STRING, true);	// Cmdline_mod  -- DTP modsupport
@@ -427,6 +431,7 @@ cmdline_parm keyboard_layout("-keyboard_layout", "Specify keyboard layout (qwert
 cmdline_parm old_collision_system("-old_collision", NULL, AT_NONE); // Cmdline_old_collision_sys
 cmdline_parm gl_finish ("-gl_finish", NULL, AT_NONE);
 cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
+cmdline_parm set_cpu_affinity("-set_cpu_affinity", NULL, AT_NONE);
 
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nohtl = 0;
@@ -444,6 +449,7 @@ int Cmdline_drawelements = 0;
 char* Cmdline_keyboard_layout = NULL;
 bool Cmdline_gl_finish = false;
 bool Cmdline_no_geo_sdr_effects = false;
+bool Cmdline_set_cpu_affinity = false;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", "Skip mainhall and run this mission", AT_STRING);	// Cmdline_start_mission
@@ -1161,6 +1167,11 @@ bool SetCmdlineParams()
 		Cmdline_freespace_no_music = 1;
 	}
 
+	// Disable enhanced sound
+	if (noenhancedsound_arg.found()) {
+		Cmdline_no_enhanced_sound = 1;
+	}
+
 	// should we start a network game
 	if ( startgame_arg.found() ) {
 		Cmdline_use_last_pilot = 1;
@@ -1551,6 +1562,11 @@ bool SetCmdlineParams()
 	if ( no_geo_sdr_effects.found() )
 	{
 		Cmdline_no_geo_sdr_effects = true;
+	}
+
+	if (set_cpu_affinity.found())
+	{
+		Cmdline_set_cpu_affinity = true;
 	}
 
 	if ( snd_preload_arg.found() )

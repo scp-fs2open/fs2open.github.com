@@ -35,6 +35,7 @@
 #endif
 #include <limits.h>
 
+const unsigned int SND_ENHANCED_MAX_LIMIT = 15; // seems like a good max limit
 
 #define SND_F_USED			(1<<0)		// Sounds[] element is used
 
@@ -143,7 +144,6 @@ int snd_init()
 	}
 
 	snd_clear();
-
 
 	rval = ds_init();
 
@@ -557,7 +557,7 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 		return -1;
 
 	if ( volume > MIN_SOUND_VOLUME ) {
-		handle = ds_play( snd->sid, gs->id_sig, ds_priority(priority), volume, pan, 0, is_voice_msg);
+		handle = ds_play( snd->sid, gs->id_sig, ds_priority(priority), &gs->enhanced_sound_data, volume, pan, 0, is_voice_msg);
 	}
 
 	return handle;
@@ -589,7 +589,7 @@ MONITOR( Num3DSoundsLoaded )
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d *sound_fvec, float range_factor, int force )
+int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d *sound_fvec, float range_factor, int force, bool is_ambient )
 {
 	int		handle;
 	vec3d	vector_to_sound;
@@ -679,9 +679,9 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 			pan = vm_vec_dot(&View_matrix.vec.rvec, &vector_to_sound);
 		}
 
-		handle = ds_play(snd->sid, gs->id_sig, ds_priority(priority), volume / gs->default_volume, pan, looping);
+		handle = ds_play(snd->sid, gs->id_sig, ds_priority(priority), &gs->enhanced_sound_data, volume / gs->default_volume, pan, looping);
 	} else {
-		handle = ds3d_play(snd->sid, gs->id_sig, source_pos, source_vel, min_range, max_range, looping, (max_volume*Master_sound_volume*aav_effect_volume), volume, ds_priority(priority));
+		handle = ds3d_play(snd->sid, gs->id_sig, source_pos, source_vel, min_range, max_range, looping, (max_volume*Master_sound_volume*aav_effect_volume), volume, &gs->enhanced_sound_data, ds_priority(priority));
 	}
 
 	return handle;
@@ -855,7 +855,7 @@ int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, fl
 		volume = 1.0f;
 
 	if (volume > MIN_SOUND_VOLUME) {
-		handle = ds_play( snd->sid, gs->id_sig, DS_MUST_PLAY, volume, pan, 1);
+		handle = ds_play( snd->sid, gs->id_sig, DS_MUST_PLAY, &gs->enhanced_sound_data, volume, pan, 1);
 
 		if(handle != -1 && scriptingUpdateVolume) {
 			currentlyLoopingSoundInfos.push_back(LoopingSoundInfo(handle, gs->default_volume, vol_scale));

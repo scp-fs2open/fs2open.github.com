@@ -32,6 +32,8 @@ float Briefing_window_FOV = 0.29375f;
 bool Disable_hc_message_ani = false;
 bool Red_alert_applies_to_delayed_ships = false;
 bool Beams_use_damage_factors = false;
+float Generic_pain_flash_factor = 1.0f;
+float Shield_pain_flash_factor = 0.0f;
 
 
 void parse_mod_table(const char *filename)
@@ -179,6 +181,21 @@ void parse_mod_table(const char *filename)
 			mprintf(("Game Settings Table: Setting briefing window FOV from %f to %f\n", Briefing_window_FOV, fov));
 
 			Briefing_window_FOV = fov;
+		}
+
+		
+			if (optional_string("$Generic Pain Flash Factor:")) {
+			stuff_float(&Generic_pain_flash_factor);
+			if (Generic_pain_flash_factor != 1.0f)
+				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", Generic_pain_flash_factor));
+			
+		}
+		
+			if (optional_string("$Shield Pain Flash Factor:")) {
+			stuff_float(&Shield_pain_flash_factor);
+			if (Shield_pain_flash_factor != 0.0f)
+				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
+			
 		}
 
 		optional_string("#NETWORK SETTINGS");

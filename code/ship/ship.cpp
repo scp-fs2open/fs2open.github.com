@@ -867,6 +867,8 @@ void init_ship_entry(ship_info *sip)
 	sip->max_hull_strength = 100.0f;
 	sip->max_shield_strength = 0.0f;
 
+	sip->max_shield_recharge = 1.0f;
+
 	sip->auto_shield_spread = 0.0f;
 	sip->auto_shield_spread_bypass = false;
 	sip->auto_shield_spread_from_lod = -1;
@@ -950,6 +952,7 @@ void init_ship_entry(ship_info *sip)
 	sip->thruster02_glow_len_factor = 1.0f;
 	sip->thruster_dist_rad_factor = 2.0f;
 	sip->thruster_dist_len_factor = 2.0f;
+	sip->thruster_glow_noise_mult = 1.0f;
 
 	sip->draw_distortion = true;
 
@@ -974,6 +977,7 @@ void init_ship_entry(ship_info *sip)
 	vm_vec_zero(&sip->topdown_offset);
 
 	sip->engine_snd = -1;
+	sip->min_engine_vol = -1.0f;
 	sip->glide_start_snd = -1;
 	sip->glide_end_snd = -1;
 
@@ -1011,6 +1015,7 @@ void init_ship_entry(ship_info *sip)
 
 	sip->damage_lightning_type = SLT_DEFAULT;
 
+	sip->shield_impact_explosion_anim = -1;
 	sip->hud_gauges.clear();
 	sip->hud_enabled = false;
 	sip->hud_retail = false;
@@ -2360,6 +2365,19 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_ubyte(&sip->shield_color[2]);
 	}
 
+	if(optional_string("$Shield Impact Explosion:")) {
+		char fname[MAX_NAME_LEN];
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( VALID_FNAME(fname) )
+			sip->shield_impact_explosion_anim = Weapon_explosions.Load(fname);
+	}
+
+	if(optional_string("$Max Shield Recharge:")){
+		stuff_float(&sip->max_shield_recharge);
+		CLAMP(sip->max_shield_recharge, 0.0f, 1.0f);
+	}
+
 	// The next five fields are used for the ETS
 	if (optional_string("$Power Output:"))
 		stuff_float(&sip->power_output);
@@ -2665,6 +2683,9 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	//Parse the engine sound
 	parse_sound("$EngineSnd:", &sip->engine_snd, sip->name);
 
+	if(optional_string("$Minimum Engine Volume:"))
+		stuff_float(&sip->min_engine_vol);
+
 	//Parse optional sound to be used for beginning of a glide
 	parse_sound("$GlideStartSnd:", &sip->glide_start_snd, sip->name);
 
@@ -2719,6 +2740,32 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 	// read in filename for icon that is used in ship selection
 	if ( optional_string("$Ship_icon:") ) {
 		stuff_string(sip->icon_filename, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if ( optional_string("$Model Icon Direction:") ) {
+		char str[NAME_LENGTH];
+		stuff_string(str, F_NAME, NAME_LENGTH);
+
+		angles model_icon_angles = {0.0f,0.0f,0.0f};
+
+		if (!stricmp(str, "top")) {
+			model_icon_angles.p = -PI_2;
+		} else if (!stricmp(str, "bottom")) {
+			model_icon_angles.p = -PI_2;
+			model_icon_angles.b = 2 * PI_2;
+		} else if (!stricmp(str, "front")) {
+			model_icon_angles.h = 2 * PI_2;
+		} else if (!stricmp(str, "back")) {
+			model_icon_angles.h = 4 * PI_2;
+		} else if (!stricmp(str, "left")) {
+			model_icon_angles.h = -PI_2;
+		} else if (!stricmp(str, "right")) {
+			model_icon_angles.h = PI_2;
+		} else {
+			Warning(LOCATION, "Unrecognized value \"%s\" passed to $Model Icon Direction, ignoring...", str);
+		}
+
+		sip->model_icon_angles = model_icon_angles;
 	}
 
 	// read in filename for animation that is used in ship selection
@@ -2868,6 +2915,10 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 	if ( optional_string("$Thruster Distortion:") ) {
 		stuff_boolean(&sip->draw_distortion);
+	}
+
+	if ( optional_string("$Thruster Glow Noise Mult:") ) {
+		stuff_float(&sip->thruster_glow_noise_mult);
 	}
 
 	while ( optional_string("$Thruster Particles:") ) {
@@ -5085,12 +5136,14 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	}
 	objp->hull_strength = shipp->ship_max_hull_strength;
 
+	shipp->max_shield_recharge = sip->max_shield_recharge;
+
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
-		shield_set_strength(objp, shipp->ship_max_shield_strength);
+		shield_set_strength(objp, shipp->ship_max_shield_strength * shipp->max_shield_recharge);
 	}
 
 	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
@@ -6175,7 +6228,7 @@ void ship_render_DEPRECATED(object * obj)
 				mst.distortion_bitmap = shipp->thruster_distortion_bitmap;
 
 				mst.use_ab = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
-				mst.glow_noise = shipp->thruster_glow_noise;
+				mst.glow_noise = shipp->thruster_glow_noise * sip->thruster_glow_noise_mult;
 				mst.rotvel = Objects[shipp->objnum].phys_info.rotvel;
 
 				mst.glow_rad_factor = sip->thruster01_glow_rad_factor;
@@ -9256,6 +9309,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		objp->hull_strength = hull_pct * sp->ship_max_hull_strength;
 	}
 
+	sp->max_shield_recharge = sip->max_shield_recharge;
+
 	// set the correct shield strength
 	if (Fred_running) {
 		if (sp->ship_max_shield_strength)
@@ -10088,12 +10143,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		float next_fire_delay;
 		bool fast_firing = false;
 		if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
-			next_fire_delay = (float) winfo_p->burst_delay * 1000.0f;
+			next_fire_delay = winfo_p->burst_delay * 1000.0f;
 			swp->burst_counter[bank_to_fire]++;
 			if (winfo_p->burst_flags & WBF_FAST_FIRING)
 				fast_firing = true;
+		} else if (winfo_p->max_delay != 0.0f && winfo_p->min_delay != 0.0f) {			// Random fire delay (DahBlount)
+			next_fire_delay = (((float)rand()) / (((float)RAND_MAX + 1.0f) * (winfo_p->max_delay - winfo_p->min_delay + 1.0f) + winfo_p->min_delay)) * 1000.0f;
 		} else {
-			next_fire_delay	= (float) winfo_p->fire_wait * 1000.0f;
+			next_fire_delay = winfo_p->fire_wait * 1000.0f;
 			swp->burst_counter[bank_to_fire] = 0;
 		}
 		if (!((obj->flags & OF_PLAYER_SHIP) || (fast_firing))) {
@@ -12696,7 +12753,7 @@ float ship_calculate_rearm_duration( object *objp )
 
 	//find out time to repair shields
 	if(sip->sup_shield_repair_rate > 0.0f)
-		shield_rep_time = (sp->ship_max_shield_strength - shield_get_strength(objp)) / (sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
+		shield_rep_time = ((sp->ship_max_shield_strength * sp->max_shield_recharge) - shield_get_strength(objp)) / (sp->max_shield_recharge * sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
 	
 	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength) && (sip->sup_hull_repair_rate > 0.0f))
@@ -12832,7 +12889,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( !(objp->flags & OF_NO_SHIELDS) )
 	{
 		shield_str = shield_get_strength(objp);
-		if ( shield_str < shipp->ship_max_shield_strength ) {
+		if ( shield_str < (shipp->ship_max_shield_strength * shipp->max_shield_recharge) ) {
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
 			}

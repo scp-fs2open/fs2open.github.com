@@ -440,7 +440,7 @@ void asteroid_editor::update_init()
 	for (k = 0; k < MAX_ACTIVE_DEBRIS_TYPES; k++)
 	{
 		box_index = ((CComboBox*)GetDlgItem(Dlg_id[k]))->AddString("None");
-		((CComboBox*)GetDlgItem(Dlg_id[k]))->SetItemData(box_index, -1);
+		((CComboBox*)GetDlgItem(Dlg_id[k]))->SetItemData(box_index, static_cast<DWORD_PTR>(-1));
 	}
 
 	// now add each kind of debris to each box
