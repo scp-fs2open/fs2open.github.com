@@ -69,6 +69,7 @@
 #include "parse/sexp.h"
 #include "fs2netd/fs2netd_client.h"
 #include "network/multi_sexp.h"
+#include "mission/missioncampaign.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -2163,7 +2164,7 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 void send_netgame_descript_packet(net_addr *addr, int code)
 {
 	ubyte data[MAX_PACKET_SIZE],val;
-	int desc_len;
+	int desc_len = 0;
 	int packet_size = 0;
 
 	// build the header
@@ -2174,14 +2175,14 @@ void send_netgame_descript_packet(net_addr *addr, int code)
 
 	if(code == 1){
 		// add as much of the description as we dare
-		desc_len = strlen(The_mission.mission_desc);
+		desc_len = strlen(Netgame.netgame_descript);
 		if(desc_len > MAX_PACKET_SIZE - 10){
 			desc_len = MAX_PACKET_SIZE - 10;
 			ADD_INT(desc_len);
-			memcpy(data+packet_size, The_mission.mission_desc, desc_len);
+			memcpy(data + packet_size, Netgame.netgame_descript, desc_len);
 			packet_size += desc_len;
 		} else {
-			ADD_STRING(The_mission.mission_desc);
+			ADD_STRING(Netgame.netgame_descript);
 		}
 	} 
 	
