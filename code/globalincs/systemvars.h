@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 
 
@@ -74,8 +74,8 @@ typedef struct vei {
 	float		distance;		//	Distance from which to view, plus 2x radius.
 } vei;
 
-typedef struct vci {	
-	angles_t	angles;			
+typedef struct vci {
+	angles_t	angles;
 	float		distance;		// Distance from which to view, plus 3x radius
 } vci;
 
@@ -97,7 +97,7 @@ extern int Game_restoring;		// If set, this means we are restoring data from dis
 // should.   Anything above zero draws higher detail models longer than it should.
 // -2=lowest
 // -1=low
-// 0=normal (medium)	
+// 0=normal (medium)
 // 1=high
 // 2=extra high
 extern int Game_detail_level;
@@ -146,36 +146,36 @@ extern bool PostProcessing_override;
 extern bool Teamcolor_override;
 extern bool Shadow_override;
 
-// game skill levels 
+// game skill levels
 #define	NUM_SKILL_LEVELS	5
 
 //====================================================================================
 // DETAIL LEVEL STUFF
-// If you change any of this, be sure to increment the player file version 
-// in FreeSpace\ManagePilot.cpp and change Detail_defaults in SystemVars.cpp 
+// If you change any of this, be sure to increment the player file version
+// in FreeSpace\ManagePilot.cpp and change Detail_defaults in SystemVars.cpp
 // or bad things will happen, I promise.
 //====================================================================================
 
 #define MAX_DETAIL_LEVEL 4			// The highest valid value for the "analog" detail level settings
 
-// If you change this, update player file in ManagePilot.cpp 
+// If you change this, update player file in ManagePilot.cpp
 typedef struct detail_levels {
 
 	int		setting;						// Which default setting this was created from.   0=lowest... NUM_DEFAULT_DETAIL_LEVELS-1, -1=Custom
 
 	// "Analogs"
 	int		nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-	int		detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest	
+	int		detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest
 	int		hardware_textures;		// 0=max culling, MAX_DETAIL_LEVEL=no culling
 	int		num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
 	int		num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
 	int		num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
 	int		shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-	int		lighting;					// 0=min, MAX_DETAIL_LEVEL=max	
+	int		lighting;					// 0=min, MAX_DETAIL_LEVEL=max
 
 	// Booleans
-	int		targetview_model;			// 0=off, 1=on	
-	int		planets_suns;				// 0=off, 1=on			
+	int		targetview_model;			// 0=off, 1=on
+	int		planets_suns;				// 0=off, 1=on
 	int		weapon_extras;				// extra weapon details. trails, glows
 } detail_levels;
 
@@ -254,12 +254,6 @@ public:
 // Memory stuff from WinDebug.cpp
 extern int TotalRam;
 void windebug_memwatch_init();
-
-enum
-{
-	TIMERBAR_DEFAULT,
-	TIMERBAR_D3DCODE
-};
 
 #define MAX_LIGHTS 256
 #define MAX_LIGHT_LEVELS 16

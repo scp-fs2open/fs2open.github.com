@@ -159,8 +159,11 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 	// check to see if we're running under msdev
 	os_check_debugger();
 
-	// deal with processor affinity
-	os_set_process_affinity();
+	if (Cmdline_set_cpu_affinity)
+	{
+		// deal with processor affinity
+		os_set_process_affinity();
+	}
 
 	atexit(os_deinit);
 }

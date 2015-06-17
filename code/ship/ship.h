@@ -592,6 +592,8 @@ public:
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;
 
+	float max_shield_recharge;
+
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 
 
@@ -1306,6 +1308,8 @@ public:
 
 	int		shield_point_augment_ctrls[4];	// Re-mapping of shield augmentation controls for model point shields
 
+	float	max_shield_recharge;
+
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
 
@@ -1325,6 +1329,7 @@ public:
 
 	ubyte	shield_icon_index;				// index to locate ship-specific animation frames for the shield on HUD
 	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in ship selection
+	angles	model_icon_angles;					// angle from which the model icon should be rendered (if not 0,0,0)
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in ship selection
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 	int 	selection_effect;
@@ -1377,6 +1382,7 @@ public:
 	float		thruster02_glow_len_factor;
 	float		thruster_dist_rad_factor;
 	float		thruster_dist_len_factor;
+	float		thruster_glow_noise_mult;
 
 	bool		draw_distortion;
 
@@ -1403,6 +1409,7 @@ public:
 	vec3d topdown_offset;
 
 	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
+	float min_engine_vol;					// minimum volume modifier for engine sound when ship is stationary
 	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
 	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
 
@@ -1426,6 +1433,7 @@ public:
 	float emp_resistance_mod;
 
 	float piercing_damage_draw_limit;
+	int shield_impact_explosion_anim;
 
 	int damage_lightning_type;
 
