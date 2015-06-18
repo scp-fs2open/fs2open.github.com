@@ -364,7 +364,7 @@ void barracks_init_stats(scoring_struct *stats)
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary friendly hit %:", 56));
-	if (stats->p_bonehead_hits > 0) {
+	if (stats->p_shots_fired > 0) {
 		f = (float) stats->p_bonehead_hits * 100.0f / (float) stats->p_shots_fired;
 	} else {
 		f = 0.0f;
@@ -404,7 +404,7 @@ void barracks_init_stats(scoring_struct *stats)
 
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary friendly hit %:", 61));
-	if (stats->s_bonehead_hits > 0) {
+	if (stats->s_shots_fired > 0) {
 		f = (float) stats->s_bonehead_hits * 100.0f / (float) stats->s_shots_fired;
 	} else {
 		f = 0.0f;

@@ -479,14 +479,6 @@
 				RelativePath="..\..\code\debugconsole\consoleparse.h"
 				>
 			</File>
-			<File
-				RelativePath="..\..\code\debugconsole\timerbar.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\debugconsole\timerbar.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="DirectX"

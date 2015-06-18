@@ -167,6 +167,7 @@ Flag exe_params[] =
 	{ "-snd_preload",		"Preload mission game sounds",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-snd_preload", },
 	{ "-nosound",			"Disable all sound",						false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
+	{ "-no_enhanced_sound",	"Disable enhanced sound",					false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_enhanced_sound", },
 
 	{ "-standalone",		"Run as standalone server",					false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
 	{ "-startgame",			"Skip mainhall and start hosting",			false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
@@ -246,6 +247,7 @@ cmdline_parm allowbelow_arg("-allowbelow", "Ranks below this can join multi", AT
 cmdline_parm standalone_arg("-standalone", NULL, AT_NONE);
 cmdline_parm nosound_arg("-nosound", NULL, AT_NONE);			// Cmdline_freespace_no_sound
 cmdline_parm nomusic_arg("-nomusic", NULL, AT_NONE);			// Cmdline_freespace_no_music
+cmdline_parm noenhancedsound_arg("-no_enhanced_sound", NULL, AT_NONE);	// Cmdline_no_enhanced_sound
 cmdline_parm startgame_arg("-startgame", NULL, AT_NONE);		// Cmdline_start_netgame
 cmdline_parm gameclosed_arg("-closed", NULL, AT_NONE);		// Cmdline_closed_game
 cmdline_parm gamerestricted_arg("-restricted", NULL, AT_NONE);	// Cmdline_restricted_game
@@ -388,6 +390,7 @@ cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_r
 int Cmdline_query_speech = 0;
 int Cmdline_snd_preload = 0; // preload game sounds during mission load
 int Cmdline_voice_recognition = 0;
+int Cmdline_no_enhanced_sound = 0;
 
 // MOD related
 cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", AT_STRING, true);	// Cmdline_mod  -- DTP modsupport
@@ -466,6 +469,7 @@ cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_
 cmdline_parm window_arg("-window", NULL, AT_NONE);				// Cmdline_window
 cmdline_parm fullscreen_window_arg("-fullscreen_window", "Fullscreen/borderless window (Windows only)", AT_NONE);
 cmdline_parm res_arg("-res", "Resolution, formatted like 1600x900", AT_STRING);
+cmdline_parm center_res_arg("-center_res", "Resolution of center monitor, formatted like 1600x900", AT_STRING);
 cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
 #ifdef SCP_UNIX
@@ -493,6 +497,7 @@ int Cmdline_debug_window = 0;
 int Cmdline_window = 0;
 int Cmdline_fullscreen_window = 0;
 char *Cmdline_res = 0;
+char *Cmdline_center_res = 0;
 int Cmdline_verify_vps = 0;
 #ifdef SCP_UNIX
 int Cmdline_no_grab = 0;
@@ -1162,6 +1167,11 @@ bool SetCmdlineParams()
 		Cmdline_freespace_no_music = 1;
 	}
 
+	// Disable enhanced sound
+	if (noenhancedsound_arg.found()) {
+		Cmdline_no_enhanced_sound = 1;
+	}
+
 	// should we start a network game
 	if ( startgame_arg.found() ) {
 		Cmdline_use_last_pilot = 1;
@@ -1258,6 +1268,9 @@ bool SetCmdlineParams()
 
 	if(res_arg.found()){
 		Cmdline_res = res_arg.str();
+	}
+	if(center_res_arg.found()){
+		Cmdline_center_res = center_res_arg.str();
 	}
 	if(almission_arg.found()){//DTP for autoload mission // developer oritentated
 		Cmdline_almission = almission_arg.str();

@@ -48,6 +48,7 @@ extern int Cmdline_use_last_pilot;
 extern int Cmdline_window;
 extern int Cmdline_fullscreen_window;
 extern char *Cmdline_res;
+extern char *Cmdline_center_res;
 
 
 // FSO OPTIONS -------------------------------------------------
@@ -105,6 +106,7 @@ extern int Cmdline_stretch_menu;
 extern int Cmdline_query_speech;
 extern int Cmdline_snd_preload;
 extern int Cmdline_voice_recognition;
+extern int Cmdline_no_enhanced_sound;
 
 // MOD related
 extern char *Cmdline_mod;	 // DTP for mod support

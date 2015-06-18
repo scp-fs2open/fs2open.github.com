@@ -16557,6 +16557,7 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 	// ...and shields
 	target_pobjp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
 	target_pobjp->initial_shields = fl2i(get_shield_pct(source_objp) * 100.0f);
+	target_pobjp->max_shield_recharge = source_shipp->max_shield_recharge;
 
 
 	// search through all subsystems on source ship and map them onto target ship
@@ -21097,13 +21098,13 @@ void sexp_show_subtitle(int node)
 	bool post_shaded = false;
 
 	x_pos = eval_num(node);
-	if (gr_screen.max_w != 1024)
-		x_pos = (int) ((x_pos / 1024.0f) * gr_screen.max_w);
+	if (gr_screen.center_w != 1024)
+		x_pos = (int) ((x_pos / 1024.0f) * gr_screen.center_w);
 
 	n = CDR(node);
 	y_pos = eval_num(n);
-	if (gr_screen.max_h != 768)
-		y_pos = (int) ((y_pos / 768.0f) * gr_screen.max_h);
+	if (gr_screen.center_h != 768)
+		y_pos = (int) ((y_pos / 768.0f) * gr_screen.center_h);
 
 	n = CDR(n);
 	text = CTEXT(n);
@@ -21313,9 +21314,9 @@ void sexp_show_subtitle_text(int node)
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
 
 	// calculate pixel positions
-	int x_pos = (int) (gr_screen.max_w * (x_pct / 100.0f));
-	int y_pos = (int) (gr_screen.max_h * (y_pct / 100.0f));
-	int width = (int) (gr_screen.max_w * (width_pct / 100.0f));
+	int x_pos = (int) (gr_screen.center_w * (x_pct / 100.0f));
+	int y_pos = (int) (gr_screen.center_h * (y_pct / 100.0f));
+	int width = (int) (gr_screen.center_w * (width_pct / 100.0f));
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
@@ -21376,9 +21377,9 @@ void multi_sexp_show_subtitle_text()
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
 
 	// calculate pixel positions
-	int x_pos = (int)(gr_screen.max_w * (x_pct / 100.0f));
-	int y_pos = (int)(gr_screen.max_h * (y_pct / 100.0f));
-	int width = (int)(gr_screen.max_w * (width_pct / 100.0f));
+	int x_pos = (int)(gr_screen.center_w * (x_pct / 100.0f));
+	int y_pos = (int)(gr_screen.center_h * (y_pct / 100.0f));
+	int width = (int)(gr_screen.center_w * (width_pct / 100.0f));
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
@@ -21447,10 +21448,10 @@ void sexp_show_subtitle_image(int node)
 		height_pct = 100;
 
 	// calculate pixel positions
-	int x_pos = (int)(gr_screen.max_w * (x_pct / 100.0f));
-	int y_pos = (int)(gr_screen.max_h * (y_pct / 100.0f));
-	int width = (int)(gr_screen.max_w * (width_pct / 100.0f));
-	int height = (int)(gr_screen.max_h * (height_pct / 100.0f));
+	int x_pos = (int)(gr_screen.center_w * (x_pct / 100.0f));
+	int y_pos = (int)(gr_screen.center_h * (y_pct / 100.0f));
+	int width = (int)(gr_screen.center_w * (width_pct / 100.0f));
+	int height = (int)(gr_screen.center_h * (height_pct / 100.0f));
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);

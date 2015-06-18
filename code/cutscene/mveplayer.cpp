@@ -460,13 +460,13 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 	if (gr_screen.mode == GR_OPENGL) {
 		GLfloat scale_by = 1.0f;
 
-		float screen_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
+		float screen_ratio = (float)gr_screen.center_w / (float)gr_screen.center_h;
 		float movie_ratio = (float)g_width / (float)g_height;
 
 		if (screen_ratio > movie_ratio) {
-			scale_by = (float)gr_screen.max_h / (float)g_height;
+			scale_by = (float)gr_screen.center_h / (float)g_height;
 		} else {
-			scale_by = (float)gr_screen.max_w / (float)g_width;
+			scale_by = (float)gr_screen.center_w / (float)g_width;
 		}
 
 		// don't bother setting anything if we aren't going to need it
@@ -480,12 +480,12 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		}
 
 		if (mve_scale_video) {
-			g_screenX = ((ceil((gr_screen.max_w / scale_by) - 0.5f) - g_width) / 2);
-			g_screenY = ((ceil((gr_screen.max_h / scale_by) - 0.5f) - g_height) / 2);
+			g_screenX = ((ceil((gr_screen.center_w / scale_by) - 0.5f) - g_width) / 2) + ceil((gr_screen.center_offset_x / scale_by) - 0.5f);
+			g_screenY = ((ceil((gr_screen.center_h / scale_by) - 0.5f) - g_height) / 2) + ceil((gr_screen.center_offset_y / scale_by) - 0.5f);
 		} else {
 			// centers on 1024x768, fills on 640x480
-			g_screenX = ((float)(gr_screen.max_w - g_width) / 2.0f);
-			g_screenY = ((float)(gr_screen.max_h - g_height) / 2.0f);
+			g_screenX = ((float)(gr_screen.center_w - g_width) / 2.0f) + gr_screen.center_offset_x;
+			g_screenY = ((float)(gr_screen.center_h - g_height) / 2.0f) + gr_screen.center_offset_y;
 		}
 
 		// set additional values for screen width/height and UV coords

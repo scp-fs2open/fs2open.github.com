@@ -377,14 +377,14 @@ void parse_hud_gauges_tbl(const char *filename)
 			if (optional_string("$Required Aspect:")) {
 				// filter aspect ratio.
 				if (optional_string("Full Screen")) {
-					if ((float)gr_screen.max_w / (float)gr_screen.max_h > 1.5) {
+					if( (float)gr_screen.center_w / (float)gr_screen.center_h > 1.5) {
 						skip_to_start_of_string("#Gauge Config");
 						//skip_to_start_of_string_either("#Gauge Config", "#End");
 						continue;
 					}
 				}
 				else if (optional_string("Wide Screen")) {
-					if ((float)gr_screen.max_w / (float)gr_screen.max_h <= 1.5) {
+					if( (float)gr_screen.center_w / (float)gr_screen.center_h <= 1.5) {
 						skip_to_start_of_string("#Gauge Config");
 						//skip_to_start_of_string_either("#Gauge Config", "#End");
 						continue;
@@ -401,8 +401,8 @@ void parse_hud_gauges_tbl(const char *filename)
 					skip_to_start_of_string("#Gauge Config");
 					continue;
 				}
-				else if (min_res[0] == gr_screen.max_w) {
-					if (min_res[1] > gr_screen.max_h) {
+				else if (min_res[0] == gr_screen.center_w) {
+					if (min_res[1] > gr_screen.center_h) {
 						skip_to_start_of_string("#Gauge Config");
 						continue;
 					}
@@ -418,8 +418,8 @@ void parse_hud_gauges_tbl(const char *filename)
 					skip_to_start_of_string("#Gauge Config");
 					continue;
 				}
-				else if (max_res[0] == gr_screen.max_w) {
-					if (max_res[1] < gr_screen.max_h) {
+				else if (max_res[0] == gr_screen.center_w) {
+					if (max_res[1] < gr_screen.center_h) {
 						skip_to_start_of_string("#Gauge Config");
 						continue;
 					}
@@ -1084,19 +1084,33 @@ void adjust_base_res(int *base_res, bool scaling = true)
 	// Don't scale gauge if:
 	// no scaling is set and base res is smaller than current res
 	// Avoid HUD blurring caused solely by rounding errors
-	if ((!scaling && gr_screen.max_w >= base_res[0] && gr_screen.max_h >= base_res[1]) ||
-			(gr_screen.max_w >= base_res[0] && gr_screen.max_h == base_res[1]) ||
-			(gr_screen.max_w == base_res[0] && gr_screen.max_h >= base_res[1])) {
-		base_res[0] = gr_screen.max_w;
-		base_res[1] = gr_screen.max_h;
+	if ((!scaling && gr_screen.center_w >= base_res[0] && gr_screen.center_h >= base_res[1]) ||
+			(gr_screen.center_w >= base_res[0] && gr_screen.center_h == base_res[1]) ||
+			(gr_screen.center_w == base_res[0] && gr_screen.center_h >= base_res[1])) {
+		base_res[0] = gr_screen.center_w;
+		base_res[1] = gr_screen.center_h;
 		return;
 	}
 
-	float aspect_quotient = ((float)gr_screen.max_w / (float)gr_screen.max_h) / ((float)base_res[0] / (float)base_res[1]);
+	float aspect_quotient = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)base_res[0] / (float)base_res[1]);
 	if (aspect_quotient >= 1.0) {
 		base_res[0] = (int)(base_res[0] * aspect_quotient);
 	} else {
 		base_res[1] = (int)(base_res[1] / aspect_quotient);
+	}
+}
+
+void adjust_for_multimonitor(int *base_res, bool set_position, int *coords)
+{
+	float scale_w = (float)gr_screen.center_w / (float)base_res[0];
+	float scale_h = (float)gr_screen.center_h / (float)base_res[1];
+
+	base_res[0] = fl2ir(base_res[0] * ((float)gr_screen.max_w / (float)gr_screen.center_w));
+	base_res[1] = fl2ir(base_res[1] * ((float)gr_screen.max_h / (float)gr_screen.center_h));
+
+	if (set_position) {
+		coords[0] += fl2ir(gr_screen.center_offset_x / scale_w);
+		coords[1] += fl2ir(gr_screen.center_offset_y / scale_h);
 	}
 }
 
@@ -1188,7 +1202,12 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, SCP
 
 			required_string("Display Size:");
 			stuff_int_list(display_size, 2);
+		} else {
+			// adjust for multimonitor setups ONLY if not rendering gauge to a texture
+			adjust_for_multimonitor(base_res, true, coords);
 		}
+	} else {
+		adjust_for_multimonitor(base_res, true, coords);
 	}
 
 	if (set_colour) {
@@ -1317,6 +1336,9 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, S
 
 			required_string("Display Size:");
 			stuff_int_list(display_size, 2);
+		} else {
+			// adjust for multimonitor setups ONLY if not rendering gauge to a texture
+			adjust_for_multimonitor(base_res, true, coords);
 		}
 
 		if ( use_clr != NULL ) {
@@ -2993,6 +3015,9 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
+	} else {
+		// adjust for multimonitor setups ONLY if not rendering gauge to a texture
+		adjust_for_multimonitor(base_res, true, coords);
 	}
 
 	parse_sound("Loop Sound:", &loop_snd, "DRADIS HudGauge");

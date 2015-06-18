@@ -19,6 +19,7 @@
 #include "hud/hudets.h"
 #include "freespace2/freespace.h"
 #include "network/multi.h"
+#include "parse/scripting.h"
 
 // ----------------------------------------------------------
 // Global to file
@@ -147,6 +148,10 @@ void afterburners_start(object *objp)
 	} else {
 		snd_play_3d( &Snds[ship_get_sound(objp, SND_ABURN_ENGAGE)], &objp->pos, &View_position, objp->radius );
 	}
+
+	Script_system.SetHookObjects(1, "Ship", objp);
+	Script_system.RunCondition(CHA_AFTERBURNSTART, 0, NULL, objp);
+	Script_system.RemHookVars(1, "Ship");
 	
 	objp->phys_info.flags |= PF_AFTERBURNER_WAIT;
 }
@@ -296,6 +301,10 @@ void afterburners_stop(object *objp, int key_released)
 	if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 		return;
 	}
+
+	Script_system.SetHookObjects(1, "Ship", objp);
+	Script_system.RunCondition(CHA_AFTERBURNEND, 0, NULL, objp);
+	Script_system.RemHookVars(1, "Ship");
 
 	objp->phys_info.flags &= ~PF_AFTERBURNER_ON;
 
