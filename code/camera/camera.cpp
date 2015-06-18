@@ -653,20 +653,20 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 
 		//Center it?
 		if(center_x)
-			image_pos.x = (gr_screen.max_w - tw)/2;
+			image_pos.x = (gr_screen.center_w - tw)/2 + gr_screen.center_offset_x;
 		if(center_y)
-			image_pos.y = (gr_screen.max_h - th)/2;
+			image_pos.y = (gr_screen.center_h - th)/2 + gr_screen.center_offset_y;
 	}
 
 	if(in_x_pos < 0 && !center_x)
-		image_pos.x += gr_screen.max_w + in_x_pos;
+		image_pos.x += gr_screen.center_offset_x + gr_screen.center_w + in_x_pos;
 	else if(!center_x)
-		image_pos.x += in_x_pos;
+		image_pos.x += gr_screen.center_offset_x + in_x_pos;
 
 	if(in_y_pos < 0 && !center_y)
-		image_pos.y += gr_screen.max_h + in_y_pos;
+		image_pos.y += gr_screen.center_offset_y + gr_screen.center_h + in_y_pos;
 	else if(!center_y)
-		image_pos.y += in_y_pos;
+		image_pos.y += gr_screen.center_offset_y + in_y_pos;
 
 	image_pos.w = in_width;
 	image_pos.h = in_height;

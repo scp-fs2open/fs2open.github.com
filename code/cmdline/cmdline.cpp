@@ -469,6 +469,7 @@ cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_
 cmdline_parm window_arg("-window", NULL, AT_NONE);				// Cmdline_window
 cmdline_parm fullscreen_window_arg("-fullscreen_window", "Fullscreen/borderless window (Windows only)", AT_NONE);
 cmdline_parm res_arg("-res", "Resolution, formatted like 1600x900", AT_STRING);
+cmdline_parm center_res_arg("-center_res", "Resolution of center monitor, formatted like 1600x900", AT_STRING);
 cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
 #ifdef SCP_UNIX
@@ -496,6 +497,7 @@ int Cmdline_debug_window = 0;
 int Cmdline_window = 0;
 int Cmdline_fullscreen_window = 0;
 char *Cmdline_res = 0;
+char *Cmdline_center_res = 0;
 int Cmdline_verify_vps = 0;
 #ifdef SCP_UNIX
 int Cmdline_no_grab = 0;
@@ -1266,6 +1268,9 @@ bool SetCmdlineParams()
 
 	if(res_arg.found()){
 		Cmdline_res = res_arg.str();
+	}
+	if(center_res_arg.found()){
+		Cmdline_center_res = center_res_arg.str();
 	}
 	if(almission_arg.found()){//DTP for autoload mission // developer oritentated
 		Cmdline_almission = almission_arg.str();

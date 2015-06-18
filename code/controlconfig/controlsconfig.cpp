@@ -2204,7 +2204,7 @@ void control_check_indicate()
 #ifndef NDEBUG
 	if (Show_controls_info) {
 		gr_set_color_fast(&HUD_color_debug);
-		gr_printf_no_resize(gr_screen.max_w - 154, 5, NOX("Ctrls checked: %d"), Control_check_count);
+		gr_printf_no_resize(gr_screen.center_offset_x + gr_screen.center_w - 154, gr_screen.center_offset_y + 5, NOX("Ctrls checked: %d"), Control_check_count);
 	}
 #endif
 

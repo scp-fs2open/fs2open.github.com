@@ -13119,6 +13119,38 @@ ADE_FUNC(getScreenHeight, l_Graphics, NULL, "Gets screen height", "number", "Hei
 	return ade_set_args(L, "i", gr_screen.max_h);
 }
 
+ADE_FUNC(getCenterWidth, l_Graphics, NULL, "Gets width of center monitor (should be used in conjuction with getCenterOffsetX)", "number", "Width of center monitor in pixels, or 0 if graphics are not initialized yet")
+{
+	if(!Gr_inited)
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", gr_screen.center_w);
+}
+
+ADE_FUNC(getCenterHeight, l_Graphics, NULL, "Gets height of center monitor (should be used in conjuction with getCenterOffsetY)", "number", "Height of center monitor in pixels, or 0 if graphics are not initialized yet")
+{
+	if(!Gr_inited)
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", gr_screen.center_h);
+}
+
+ADE_FUNC(getCenterOffsetX, l_Graphics, NULL, "Gets X offset of center monitor", "number", "X offset of center monitor in pixels")
+{
+	if(!Gr_inited)
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", gr_screen.center_offset_x);
+}
+
+ADE_FUNC(getCenterOffsetY, l_Graphics, NULL, "Gets Y offset of center monitor", "number", "Y offset of center monitor in pixels")
+{
+	if(!Gr_inited)
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", gr_screen.center_offset_y);
+}
+
 ADE_FUNC(getCurrentCamera, l_Graphics, "[boolean]", "Gets the current camera handle, if argument is <i>true</i> then it will also return the main camera when no custom camera is in use", "camera", "camera handle or invalid handle on error")
 {
 	camid current;
@@ -13664,7 +13696,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	y1 -= padding;
 	y2 += padding;
 	if ( draw_box ) {
-		draw_brackets_square(x1, y1, x2, y2, false);
+		draw_brackets_square(x1, y1, x2, y2, GR_RESIZE_NONE);
 	}
 
 	if ( entered_frame )

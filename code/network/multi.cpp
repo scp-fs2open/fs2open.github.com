@@ -1791,8 +1791,8 @@ DCF(netd, "change netgame debug flags (Mulitplayer)")
 // display any multiplayer/networking information here
 void multi_display_netinfo()
 {
-	int sx = gr_screen.max_w - 200;
-	int sy = 20;
+	int sx = gr_screen.center_offset_x + gr_screen.center_w - 200;
+	int sy = gr_screen.center_offset_y + 20;
 	int dy = gr_get_font_height() + 1;
 	int idx;
 

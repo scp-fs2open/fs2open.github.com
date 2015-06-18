@@ -1096,7 +1096,7 @@ void multi_pxo_init(int use_last_channel)
 	Assert(Multi_pxo_com_bitmap != -1);
 
 	// create the interface window
-	Multi_pxo_window.create(0, 0, gr_screen.max_w, gr_screen.max_h, 0);
+	Multi_pxo_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Multi_pxo_window.set_mask_bmap(Multi_pxo_mask_fname[gr_screen.res]);
 
 	// multiplayer screen common palettes
@@ -1449,7 +1449,7 @@ void multi_pxo_blit_all()
 		int bmh = -1; 
 		if(bmap != -1){ 
 			bm_get_info( bmap, &bmw, &bmh); 
-			if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){
+			if((bmw != gr_screen.max_w_unscaled) || (bmh != gr_screen.max_h_unscaled)){
 				gr_clear();
 			} 
 		} else {
@@ -3777,7 +3777,7 @@ void multi_pxo_com_init(int input_len)
 	int idx;
 	
 	// create the interface window
-	Multi_pxo_com_window.create(0, 0, gr_screen.max_w,gr_screen.max_h, 0);
+	Multi_pxo_com_window.create(0, 0, gr_screen.max_w_unscaled,gr_screen.max_h_unscaled, 0);
 	Multi_pxo_com_window.set_mask_bmap(Multi_pxo_com_mask_fname[gr_screen.res]);	
 
 	// create the interface buttons
@@ -4585,7 +4585,7 @@ void multi_pxo_pinfo_init()
 	int idx;
 	
 	// create the interface window
-	Multi_pxo_pinfo_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_pxo_pinfo_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_pxo_pinfo_window.set_mask_bmap(Multi_pxo_pinfo_mask_fname[gr_screen.res]);	
 	
 	Multi_pxo_pinfo_bitmap = bm_load(Multi_pxo_pinfo_fname[gr_screen.res]);
@@ -4797,7 +4797,7 @@ void multi_pxo_notify_blit()
 	// otherwise blit the text
 	gr_set_color_fast(&Color_bright);
 	gr_get_string_size(&w,NULL,Multi_pxo_notify_text);
-	gr_string((gr_screen.max_w - w)/2,MULTI_PXO_NOTIFY_Y,Multi_pxo_notify_text,GR_RESIZE_MENU);
+	gr_string((gr_screen.max_w_unscaled - w)/2,MULTI_PXO_NOTIFY_Y,Multi_pxo_notify_text,GR_RESIZE_MENU);
 }
 
 
@@ -4816,7 +4816,7 @@ void multi_pxo_help_init()
 	}
 	
 	// create the interface window
-	Multi_pxo_help_window.create(0,0,gr_screen.max_w,gr_screen.max_h,0);
+	Multi_pxo_help_window.create(0,0,gr_screen.max_w_unscaled,gr_screen.max_h_unscaled,0);
 	Multi_pxo_help_window.set_mask_bmap(Multi_pxo_help_mask_fname[gr_screen.res]);
 
 	// create the interface buttons
