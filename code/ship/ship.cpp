@@ -832,6 +832,7 @@ void ship_info::clone(const ship_info& other)
 
 	max_hull_strength = other.max_hull_strength;
 	max_shield_strength = other.max_shield_strength;
+	max_shield_recharge = other.max_shield_recharge;
 	auto_shield_spread = other.auto_shield_spread;
 	auto_shield_spread_bypass = other.auto_shield_spread_bypass;
 	auto_shield_spread_from_lod = other.auto_shield_spread_from_lod;
@@ -954,6 +955,7 @@ void ship_info::clone(const ship_info& other)
 
 	damage_lightning_type = other.damage_lightning_type;
 
+	shield_impact_explosion_anim = other.shield_impact_explosion_anim;
 	hud_gauges = other.hud_gauges;
 	hud_enabled = other.hud_enabled;
 	hud_retail = other.hud_retail;
@@ -1108,6 +1110,7 @@ void ship_info::move(ship_info& other)
 
 	max_hull_strength = other.max_hull_strength;
 	max_shield_strength = other.max_shield_strength;
+	max_shield_recharge = other.max_shield_recharge;
 	auto_shield_spread = other.auto_shield_spread;
 	auto_shield_spread_bypass = other.auto_shield_spread_bypass;
 	auto_shield_spread_from_lod = other.auto_shield_spread_from_lod;
@@ -1229,6 +1232,7 @@ void ship_info::move(ship_info& other)
 
 	damage_lightning_type = other.damage_lightning_type;
 
+	shield_impact_explosion_anim = other.shield_impact_explosion_anim;
 	std::swap(hud_gauges, other.hud_gauges);
 	hud_enabled = other.hud_enabled;
 	hud_retail = other.hud_retail;
