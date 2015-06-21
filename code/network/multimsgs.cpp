@@ -69,6 +69,7 @@
 #include "parse/sexp.h"
 #include "fs2netd/fs2netd_client.h"
 #include "network/multi_sexp.h"
+#include "mission/missioncampaign.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -2162,31 +2163,31 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 // send a request or a reply for mission description, if code == 0, request, if code == 1, reply
 void send_netgame_descript_packet(net_addr *addr, int code)
 {
-	ubyte data[MAX_PACKET_SIZE],val;
-	int desc_len;
+	ubyte data[MAX_PACKET_SIZE], val;
+	int desc_len = 0;
 	int packet_size = 0;
 
 	// build the header
 	BUILD_HEADER(UPDATE_DESCRIPT);
 
 	val = (ubyte)code;
-	ADD_DATA(val);	
+	ADD_DATA(val);
 
-	if(code == 1){
+	if (code == 1){
 		// add as much of the description as we dare
-		desc_len = strlen(The_mission.mission_desc);
-		if(desc_len > MAX_PACKET_SIZE - 10){
+		desc_len = strlen(Netgame.netgame_descript);
+		if (desc_len > MAX_PACKET_SIZE - 10){
 			desc_len = MAX_PACKET_SIZE - 10;
 			ADD_INT(desc_len);
-			memcpy(data+packet_size, The_mission.mission_desc, desc_len);
+			memcpy(data + packet_size, Netgame.netgame_descript, desc_len);
 			packet_size += desc_len;
 		} else {
-			ADD_STRING(The_mission.mission_desc);
+			ADD_STRING(Netgame.netgame_descript);
 		}
-	} 
-	
+	}
+
 	Assert(addr != NULL);
-	if(addr != NULL){
+	if (addr != NULL){
 		psnet_send(addr, data, packet_size);
 	}
 }
@@ -3694,7 +3695,6 @@ void process_mission_item_packet(ubyte *data,header *hinfo)
 			mcip.flags = flags;
 			mcip.respawn = 0;
 			mcip.max_players = max_players;
-
 			Multi_create_campaign_list.push_back( mcip );
 		}
 

@@ -3507,7 +3507,6 @@ void multi_create_setup_list_data(int mode)
 		switch (Multi_create_filter) {
 			case MISSION_TYPE_MULTI:
 				Multi_create_list_count = (int)Multi_create_campaign_list.size();
-
 				// if we switched modes and we have more than 0 items, sort them
 				if (switched_modes && (Multi_create_list_count > 0)){
 					should_sort = 1;
@@ -4725,7 +4724,8 @@ void multi_create_list_select_item(int n)
 	netgame_info *ng;
 	multi_create_info *mcip = NULL;
 
-	char *campaign_desc;
+	char * campaign_desc;
+	int netgame_descript_len = 0;
 
 	// if not on the standalone server
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
@@ -4789,7 +4789,9 @@ void multi_create_list_select_item(int n)
 		}
 
 		switch(Multi_create_list_mode){
-		case MULTI_CREATE_SHOW_MISSIONS:		
+		case MULTI_CREATE_SHOW_MISSIONS:
+			//Cyborg17 set Campaign to false
+			Netgame.is_multi_camp = MULTI_NOT_CAMPAIGN;
 			// don't forget to update the info box window thingie
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){			
 				ship_level_init();		// mwa -- 10/15/97.  Call this function to reset number of ships in mission
@@ -4800,6 +4802,15 @@ void multi_create_list_select_item(int n)
 
 				// set the information area text
 				multi_common_set_text(The_mission.mission_desc);
+				netgame_descript_len = strlen(The_mission.mission_desc);
+				if (netgame_descript_len >= MAX_PACKET_SIZE - 10){
+					Netgame.netgame_descript[0] = '\0';
+					strncat(Netgame.netgame_descript, The_mission.mission_desc, MAX_PACKET_SIZE - 11);
+				} else if (netgame_descript_len > 0){
+					strcpy(Netgame.netgame_descript, The_mission.mission_desc);
+				} else {
+					Netgame.netgame_descript[0] = '\0';
+				}
 			}
 			// if we're on the standalone, send a request for the description
 			else {
@@ -4820,6 +4831,7 @@ void multi_create_list_select_item(int n)
 			break;
 		case MULTI_CREATE_SHOW_CAMPAIGNS:
 			// if not on the standalone server
+			Netgame.is_multi_camp = MULTI_IS_CAMPAIGN;
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 				// get the campaign info				
 				memset(title,0,NAME_LENGTH+1);
@@ -4841,15 +4853,22 @@ void multi_create_list_select_item(int n)
 				if (campaign_desc != NULL)
 				{
 					multi_common_set_text(campaign_desc);
-				}
-				else 
-				{
+					netgame_descript_len = strlen(campaign_desc);
+						if (netgame_descript_len >= MAX_PACKET_SIZE - 10){
+							Netgame.netgame_descript[0] = '\0';
+							strncat(Netgame.netgame_descript, campaign_desc, MAX_PACKET_SIZE - 11);
+						} else {
+							strcpy(Netgame.netgame_descript, campaign_desc);
+						}
+				} else {
+					Netgame.netgame_descript[0] = '\0';
 					multi_common_set_text("");
 				}
 			}
 			// if on the standalone server, send a request for the description
 			else {
-				// no descriptions currently kept for campaigns
+				send_netgame_descript_packet(&Netgame.server_addr, 0);
+				multi_common_set_text("");
 			}
 
 			// netgame respawns are always 0 for campaigns (until the first mission is loaded)
