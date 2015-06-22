@@ -24,7 +24,6 @@
 #include "lighting/lighting.h"
 #include "math/fvi.h"
 #include "model/model.h"
-#include "model/modelrender.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
