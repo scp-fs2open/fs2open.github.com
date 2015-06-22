@@ -14,7 +14,6 @@
 #include <stdarg.h>
 #include <setjmp.h>
 
-#include "cfile/cfile.h"
 #include "ctype.h"
 #include "globalincs/version.h"
 #include "localization/fhash.h"

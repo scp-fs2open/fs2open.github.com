@@ -7,11 +7,11 @@
  *
 */
 
-#include "globalincs/pstypes.h"	// for NULL
-#include "globalincs/globals.h"
-
 #ifndef _SEXP_H
 #define _SEXP_H
+
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"	// for NULL
 
 class ship_subsys;
 class ship;

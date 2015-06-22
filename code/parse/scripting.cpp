@@ -10,7 +10,6 @@
 #include "hud/hud.h"
 #include "io/key.h"
 #include "mission/missioncampaign.h"
-#include "parse/lua.h"
 #include "parse/parselo.h"
 #include "parse/scripting.h"
 #include "ship/ship.h"
