@@ -14,7 +14,6 @@
 #include "debugconsole/console.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
-#include "globalincs/pstypes.h"
 #include "io/joy_ff.h"
 #include "io/timer.h"
 #include "object/object.h"

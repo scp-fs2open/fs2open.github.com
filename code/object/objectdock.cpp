@@ -6,7 +6,6 @@
 
 
 
-#include "globalincs/pstypes.h"
 #include "math/bitarray.h"
 #include "math/vecmat.h"
 #include "mission/missionparse.h"

@@ -17,7 +17,6 @@
 #include "network/multiutil.h"
 #include "object/objcollide.h"
 #include "object/object.h"
-#include "parse/lua.h"
 #include "parse/scripting.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
