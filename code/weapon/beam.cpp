@@ -16,7 +16,6 @@
 #include "debugconsole/console.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
-#include "globalincs/globals.h"
 #include "globalincs/linklist.h"
 #include "hud/hudmessage.h"
 #include "hud/hudshield.h"
