@@ -13,7 +13,6 @@
 #include "cmdline/cmdline.h"
 #include "fireball/fireballs.h"
 #include "gamesnd/gamesnd.h"
-#include "globalincs/pstypes.h"
 #include "graphics/tmapper.h"
 #include "localization/localize.h"
 #include "model/model.h"

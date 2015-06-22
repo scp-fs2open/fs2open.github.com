@@ -11,13 +11,11 @@
 
 
 #include "cmdline/cmdline.h"
-#include "fireball/fireballs.h"
 #include "globalincs/pstypes.h"
 #include "graphics/tmapper.h"
 #include "math/vecmat.h"
 #include "mission/missionparse.h"
 #include "model/model.h"
-#include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "render/3d.h"
 #include "ship/ship.h"
