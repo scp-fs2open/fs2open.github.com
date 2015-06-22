@@ -9,11 +9,8 @@
 
 
 #include "debugconsole/console.h"
-#include "debugconsole/consoleparse.h"
 #include "globalincs/alphacolors.h"
-#include "globalincs/pstypes.h"
 #include "globalincs/version.h"
-#include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
 #include "io/key.h"
