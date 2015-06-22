@@ -31,7 +31,6 @@
 #include "math/vecmat.h"
 #include "model/model.h"
 #include "model/modelsinc.h"
-#include "object/object.h"
 #include "parse/parselo.h"
 #include "render/3dinternal.h"
 #include "ship/ship.h"
