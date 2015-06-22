@@ -10,7 +10,6 @@
 
 
 #include "globalincs/alphacolors.h"
-#include "io/key.h"
 #include "io/timer.h"
 #include "ui/ui.h"
 #include "ui/uidefs.h"
