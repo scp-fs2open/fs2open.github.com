@@ -69,7 +69,6 @@
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "sound/ds.h"
-#include "sound/sound.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
