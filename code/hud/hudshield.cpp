@@ -11,8 +11,6 @@
 
 
 #include "gamesnd/gamesnd.h"
-#include "graphics/2d.h"
-#include "hud/hud.h"
 #include "hud/hudescort.h"
 #include "hud/hudparse.h"
 #include "hud/hudshield.h"

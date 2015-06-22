@@ -14,8 +14,6 @@
 #include "ai/aigoals.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
-#include "graphics/2d.h"
-#include "hud/hud.h"
 #include "hud/hudmessage.h"
 #include "hud/hudsquadmsg.h"
 #include "hud/hudtargetbox.h"

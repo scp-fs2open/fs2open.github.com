@@ -14,14 +14,11 @@
 
 
 #include "anim/animplay.h"
-#include "anim/packunpack.h" // for talking heads
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
-#include "graphics/font.h"
-#include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudmessage.h"
 #include "iff_defs/iff_defs.h"

@@ -15,8 +15,6 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
-#include "graphics/font.h"
-#include "hud/hud.h"
 #include "hud/hudescort.h"
 #include "hud/hudmessage.h"
 #include "hud/hudparse.h"

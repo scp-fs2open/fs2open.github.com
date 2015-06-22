@@ -12,7 +12,6 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "hud/hud.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudtarget.h"
 #include "iff_defs/iff_defs.h"

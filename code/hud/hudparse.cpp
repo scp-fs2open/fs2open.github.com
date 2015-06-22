@@ -9,7 +9,6 @@
 #include <cstddef>
 
 #include "cmdline/cmdline.h"
-#include "graphics/2d.h"
 #include "graphics/font.h" //for gr_force_fit_string
 #include "hud/hud.h"
 #include "hud/hudbrackets.h"

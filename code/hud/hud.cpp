@@ -17,7 +17,6 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
-#include "graphics/font.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudescort.h"
@@ -26,7 +25,6 @@
 #include "hud/hudmessage.h"
 #include "hud/hudnavigation.h"	//kazan
 #include "hud/hudobserver.h"
-#include "hud/hudparse.h"
 #include "hud/hudreticle.h"
 #include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"

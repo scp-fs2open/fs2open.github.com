@@ -13,7 +13,6 @@
 #include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/systemvars.h"
-#include "hud/hud.h"
 #include "hud/hudets.h"
 #include "io/timer.h"
 #include "localization/localize.h"

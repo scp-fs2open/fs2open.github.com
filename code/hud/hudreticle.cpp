@@ -11,7 +11,6 @@
 
 
 #include "gamesnd/gamesnd.h"
-#include "hud/hud.h"
 #include "hud/hudreticle.h"
 #include "hud/hudtargetbox.h"
 #include "io/timer.h"

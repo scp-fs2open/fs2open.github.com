@@ -14,8 +14,6 @@
 
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
-#include "graphics/2d.h"
-#include "hud/hud.h"
 #include "hud/hudtargetbox.h"
 #include "hud/hudwingmanstatus.h"
 #include "iff_defs/iff_defs.h"

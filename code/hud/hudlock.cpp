@@ -14,8 +14,6 @@
 #include "debugconsole/console.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
-#include "graphics/2d.h"
-#include "hud/hud.h"
 #include "hud/hudlock.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
