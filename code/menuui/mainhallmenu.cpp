@@ -2125,7 +2125,7 @@ void parse_main_hall_table(const char* filename)
 						}
 					}
 					else {
-						snprintf(temp_string, MAX_FILENAME_LEN, "%d", count);
+						snprintf(temp_string, MAX_FILENAME_LEN, "%u", count);
 						m->name = temp_string;
 					}
 				}
