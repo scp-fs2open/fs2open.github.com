@@ -2,14 +2,12 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h" //VM_FREECAMERA etc
-#include "graphics/2d.h"
 #include "graphics/font.h"
 #include "hud/hud.h" //hud_get_draw
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h" //polymodel, model_get
 #include "parse/parselo.h"
-#include "physics/physics.h" //apply_physics
 #include "playerman/player.h" //player_get_padlock_orient
 #include "ship/ship.h" //compute_slew_matrix
 
