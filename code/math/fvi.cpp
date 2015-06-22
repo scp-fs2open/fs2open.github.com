@@ -8,10 +8,6 @@
 */ 
 
 
-
-#include <float.h>	// For FLT_MAX
-
-#include "globalincs/pstypes.h"
 #include "math/floating.h"
 #include "math/fvi.h"
 #include "math/vecmat.h"

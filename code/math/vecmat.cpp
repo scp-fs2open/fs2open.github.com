@@ -10,12 +10,10 @@
 
 
 #include <stdio.h>
-#include <math.h>
 #if _M_IX86_FP >= 1
 	#include <xmmintrin.h>
 #endif
 
-#include "math/floating.h"
 #include "math/vecmat.h"
 
 
