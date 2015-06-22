@@ -21,7 +21,6 @@
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "object/objcollide.h"
-#include "object/object.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
