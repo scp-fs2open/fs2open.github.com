@@ -17,7 +17,6 @@
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
-#include "graphics/gropengl.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengllight.h"
 #include "graphics/gropenglstate.h"

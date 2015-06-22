@@ -5,13 +5,13 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
-
-#include "globalincs/pstypes.h"
-#include "object/object.h"
+*/
 
 #ifndef _SHADOWS_H
 #define _SHADOWS_H
+
+#include "globalincs/pstypes.h"
+#include "object/object.h"
 
 #define MAX_SHADOW_CASCADES 4
 

@@ -1,8 +1,5 @@
-#include "anim/animplay.h"
 #include "anim/packunpack.h"
-#include "bmpman/bmpman.h"
 #include "globalincs/globals.h"
-#include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "graphics/generic.h"
 #define BMPMAN_INTERNAL

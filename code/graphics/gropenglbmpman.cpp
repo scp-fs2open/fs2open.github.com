@@ -11,10 +11,8 @@
 
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
-#include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
-#include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "graphics/gropenglbmpman.h"
 #include "graphics/gropenglextension.h"

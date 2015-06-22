@@ -8,8 +8,6 @@
 */
 
 
-#include "globalincs/pstypes.h"
-#include "graphics/gropengl.h"
 #include "graphics/gropengllight.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglstate.h"

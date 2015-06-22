@@ -10,7 +10,6 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "globalincs/pstypes.h"
 #include "graphics/gropengldraw.h"
 #include "graphics/gropengltnl.h"
 #include "graphics/shadows.h"
@@ -18,7 +17,6 @@
 #include "math/vecmat.h"
 #include "model/model.h"
 #include "model/modelrender.h"
-#include "object/object.h"
 #include "render/3d.h"
 
 extern vec3d check_offsets[8];

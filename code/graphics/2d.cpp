@@ -17,11 +17,9 @@
 #include <limits.h>
 #include <algorithm>
 
-#include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
-#include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
