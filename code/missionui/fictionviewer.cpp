@@ -11,7 +11,6 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
-#include "globalincs/pstypes.h"
 #include "io/key.h"
 #include "mission/missionbriefcommon.h"
 #include "missionui/fictionviewer.h"
