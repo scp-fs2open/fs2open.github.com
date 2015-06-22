@@ -10,8 +10,6 @@
 
 #include "cfile/cfile.h"
 #include "globalincs/def_files.h"
-#include "globalincs/pstypes.h"
-#include "graphics/generic.h"
 #include "iff_defs/iff_defs.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
