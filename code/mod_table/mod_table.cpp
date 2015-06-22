@@ -6,7 +6,6 @@
 
 #include "gamesnd/eventmusic.h"
 #include "globalincs/def_files.h"
-#include "globalincs/pstypes.h"
 #include "localization/localize.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionmessage.h"
