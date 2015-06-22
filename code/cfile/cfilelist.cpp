@@ -22,8 +22,8 @@
 #include <winbase.h>		/* needed for memory mapping of file functions */
 #endif
 
-#include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
+#include "globalincs/pstypes.h"
 
 
 void cf_sort_filenames( SCP_vector<SCP_string> &list, int sort, SCP_vector<file_list_info> *info )

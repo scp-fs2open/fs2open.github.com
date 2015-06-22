@@ -10,6 +10,9 @@
 #ifndef _AIINTERNAL_H
 #define _AIINTERNAL_H
 
+#include "ship/ship.h"
+#include "weapon/weapon.h"
+
 //Returns true if the specified object is a stealth ship, false if not
 bool is_object_stealth_ship(object* objp);
 

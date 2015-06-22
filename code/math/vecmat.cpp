@@ -15,8 +15,8 @@
 	#include <xmmintrin.h>
 #endif
 
-#include "math/vecmat.h"
 #include "math/floating.h"
+#include "math/vecmat.h"
 
 
 #define	SMALL_NUM	1e-7

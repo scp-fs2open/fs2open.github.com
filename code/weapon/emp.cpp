@@ -12,21 +12,21 @@
 #include <stdarg.h>
 
 
-#include "weapon/emp.h"
-#include "io/timer.h"
+#include "debugconsole/console.h"
 #include "freespace2/freespace.h"
 #include "globalincs/linklist.h"
+#include "hud/hud.h"
 #include "hud/hudlock.h"
 #include "hud/hudtarget.h"
-#include "hud/hud.h"
-#include "object/object.h"
-#include "weapon/weapon.h"
-#include "ship/ship.h"
-#include "parse/parselo.h"
 #include "iff_defs/iff_defs.h"
-#include "network/multimsgs.h"
+#include "io/timer.h"
 #include "network/multi.h"
-#include "debugconsole/console.h"
+#include "network/multimsgs.h"
+#include "object/object.h"
+#include "parse/parselo.h"
+#include "ship/ship.h"
+#include "weapon/emp.h"
+#include "weapon/weapon.h"
 
 
 

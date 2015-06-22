@@ -9,16 +9,16 @@
 
 
 
-#include "object/objcollide.h"
-#include "ship/ship.h"
-#include "debris/debris.h"
-#include "playerman/player.h"
-#include "ship/shiphit.h"
-#include "io/timer.h"
 #include "asteroid/asteroid.h"
+#include "debris/debris.h"
 #include "hud/hud.h"
+#include "io/timer.h"
+#include "object/objcollide.h"
 #include "object/object.h"
 #include "parse/scripting.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "ship/shiphit.h"
 
 
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);

@@ -4,15 +4,15 @@
 
 
 
-#include "hud/hudnavigation.h"
 #include "autopilot/autopilot.h"
-#include "hud/hudtarget.h"
-#include "ship/ship.h"
-#include "object/object.h"
-#include "render/3d.h"
 #include "hud/hud.h"
 #include "hud/hudbrackets.h"
+#include "hud/hudnavigation.h"
+#include "hud/hudtarget.h"
 #include "hud/hudtargetbox.h"
+#include "object/object.h"
+#include "render/3d.h"
+#include "ship/ship.h"
 
 
 extern void hud_target_show_dist_on_bracket(int x, int y, float distance, int font_num);

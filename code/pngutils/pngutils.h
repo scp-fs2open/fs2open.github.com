@@ -1,8 +1,8 @@
 #ifndef _PNGUTILS_H
 #define _PNGUTILS_H
 
-#include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
+#include "globalincs/pstypes.h"
 
 #define PNG_ERROR_INVALID		-1
 #define PNG_ERROR_NONE 			0

@@ -10,16 +10,16 @@
 
 
 
-#include "hud/hudreticle.h"
-#include "hud/hud.h"
-#include "playerman/player.h"
-#include "ship/ship.h"
-#include "io/timer.h"
 #include "gamesnd/gamesnd.h"
+#include "hud/hud.h"
+#include "hud/hudreticle.h"
 #include "hud/hudtargetbox.h"
-#include "weapon/emp.h"
+#include "io/timer.h"
 #include "localization/localize.h"
 #include "network/multi.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "weapon/emp.h"
 #include "weapon/weapon.h"
 
 #define NUM_RETICLE_ANIS			11		// keep up to date when modifying the number of reticle ani files

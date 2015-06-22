@@ -10,22 +10,22 @@
 
 
 
-#include "hud/hudshield.h"
+#include "gamesnd/gamesnd.h"
 #include "graphics/2d.h"
+#include "hud/hud.h"
+#include "hud/hudescort.h"
+#include "hud/hudparse.h"
+#include "hud/hudshield.h"
+#include "hud/hudtargetbox.h"
+#include "io/timer.h"
+#include "network/multi.h"
 #include "object/object.h"
 #include "object/objectshield.h"
-#include "hud/hud.h"
-#include "hud/hudparse.h"
-#include "hud/hudtargetbox.h"
-#include "playerman/player.h"
-#include "gamesnd/gamesnd.h"
-#include "io/timer.h"
-#include "hud/hudescort.h"
-#include "weapon/emp.h"
 #include "parse/parselo.h"
-#include "ship/ship.h"
+#include "playerman/player.h"
 #include "render/3d.h"	//For g3_start_frame
-#include "network/multi.h"
+#include "ship/ship.h"
+#include "weapon/emp.h"
 
 
 

@@ -9,17 +9,17 @@
 
 
 
-#include "weapon/shockwave.h"
-#include "render/3d.h"
-#include "weapon/weapon.h"
-#include "ship/ship.h"
-#include "io/timer.h"
-#include "globalincs/linklist.h"
-#include "ship/shiphit.h"
-#include "gamesnd/gamesnd.h"
 #include "asteroid/asteroid.h"
-#include "object/object.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
+#include "io/timer.h"
 #include "model/modelrender.h"
+#include "object/object.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "ship/shiphit.h"
+#include "weapon/shockwave.h"
+#include "weapon/weapon.h"
 
 // -----------------------------------------------------------
 // Module-wide globals

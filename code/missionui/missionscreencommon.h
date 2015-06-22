@@ -13,8 +13,8 @@
 #define _MISSION_SCREEN_COMMON_HEADER_FILE
 
 #include "globalincs/globals.h"
-#include "ui/ui.h"
 #include "model/model.h"
+#include "ui/ui.h"
 
 #define BACKGROUND_FRAME_TO_START_SHIP_ANIM	87
 #define BUTTON_SLIDE_IN_FRAME						1

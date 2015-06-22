@@ -12,13 +12,13 @@
 #ifndef _WEAPON_H
 #define _WEAPON_H
 
+#include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "globalincs/globals.h"
-#include "weapon/trails.h"
-#include "weapon/shockwave.h"
 #include "graphics/generic.h"
 #include "model/model.h"
+#include "weapon/shockwave.h"
+#include "weapon/trails.h"
 
 class object;
 class ship_subsys;

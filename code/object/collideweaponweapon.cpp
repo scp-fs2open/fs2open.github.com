@@ -9,15 +9,15 @@
 
 
 
+#include "freespace2/freespace.h"
+#include "network/multi.h"
 #include "object/objcollide.h"
 #include "object/object.h"
-#include "weapon/weapon.h"
-#include "ship/ship.h"
 #include "parse/lua.h"
 #include "parse/scripting.h"
-#include "freespace2/freespace.h"
+#include "ship/ship.h"
 #include "stats/scoring.h"
-#include "network/multi.h"
+#include "weapon/weapon.h"
 
 
 /**

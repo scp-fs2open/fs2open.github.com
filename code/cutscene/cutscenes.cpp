@@ -10,17 +10,17 @@
 
 
 #include "cutscene/cutscenes.h"
-#include "ui/ui.h"
-#include "gamesnd/gamesnd.h"
-#include "gamesequence/gamesequence.h"
 #include "freespace2/freespace.h"
-#include "io/key.h"
-#include "movie.h"
-#include "popup/popup.h"
-#include "menuui/mainhallmenu.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "io/key.h"
 #include "localization/localize.h"
+#include "menuui/mainhallmenu.h"
+#include "movie.h"
 #include "parse/parselo.h"
+#include "popup/popup.h"
+#include "ui/ui.h"
 
 
 extern int Cmdline_nomovies;

@@ -7,12 +7,12 @@
 
 
 
-#include "ship/ship.h"
+#include "globalincs/linklist.h"
+#include "io/timer.h"
 #include "model/model.h"
 #include "model/modelanim.h"
-#include "io/timer.h"
-#include "globalincs/linklist.h"
 #include "network/multi.h"
+#include "ship/ship.h"
 
 
 extern float flFrametime;

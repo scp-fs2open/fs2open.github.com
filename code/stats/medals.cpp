@@ -10,18 +10,18 @@
 
 
 
-#include "stats/medals.h"
-#include "menuui/snazzyui.h"
+#include "debugconsole/console.h"
 #include "gamesequence/gamesequence.h"
-#include "playerman/player.h"
-#include "palman/palman.h"
-#include "ui/ui.h"
-#include "io/key.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "io/key.h"
 #include "localization/localize.h"
+#include "menuui/snazzyui.h"
+#include "palman/palman.h"
 #include "parse/parselo.h"
-#include "debugconsole/console.h"
+#include "playerman/player.h"
+#include "stats/medals.h"
+#include "ui/ui.h"
 
 #ifndef NDEBUG
 #include "cmdline/cmdline.h"

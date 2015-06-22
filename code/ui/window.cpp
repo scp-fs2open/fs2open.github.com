@@ -9,19 +9,19 @@
 
 
 
-#include "globalincs/pstypes.h"
-#include "osapi/osapi.h"
-#include "ui/uidefs.h"
-#include "ui/ui.h"
-#include "freespace2/freespace.h"
 #include "bmpman/bmpman.h"
+#include "cmdline/cmdline.h"
+#include "freespace2/freespace.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/pstypes.h"
+#include "graphics/font.h"
+#include "io/timer.h"
+#include "localization/localize.h"
+#include "osapi/osapi.h"
 #include "palman/palman.h"
 #include "parse/parselo.h"
-#include "io/timer.h"
-#include "globalincs/alphacolors.h"
-#include "graphics/font.h"
-#include "localization/localize.h"
-#include "cmdline/cmdline.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
 
 
 

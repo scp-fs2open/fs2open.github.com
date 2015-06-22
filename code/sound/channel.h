@@ -11,6 +11,8 @@
 #ifndef __CHANNEL_H__
 #define __CHANNEL_H__
 
+#include "sound/openal.h"
+
 typedef struct channel
 {
 	int			sig;			// uniquely identifies the sound playing on the channel

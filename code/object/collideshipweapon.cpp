@@ -9,21 +9,21 @@
 
 
 
-#include "object/objcollide.h"
-#include "object/object.h"
-#include "weapon/weapon.h"
-#include "ship/ship.h"
-#include "ship/shiphit.h"
-#include "playerman/player.h"
 #include "hud/hudshield.h"
 #include "hud/hudwingmanstatus.h"
 #include "io/timer.h"
 #include "network/multi.h"
-#include "network/multiutil.h"
 #include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "object/objcollide.h"
+#include "object/object.h"
 #include "parse/lua.h"
 #include "parse/scripting.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
 #include "ship/shipfx.h"
+#include "ship/shiphit.h"
+#include "weapon/weapon.h"
 
 
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);

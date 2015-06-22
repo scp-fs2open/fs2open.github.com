@@ -10,26 +10,26 @@
 
 
 
-#include "freespace2/freespace.h"
 #include "controlconfig/controlsconfig.h"
+#include "debugconsole/console.h"
+#include "freespace2/freespace.h"
+#include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
 #include "hud/hudsquadmsg.h"
+#include "io/joy.h"
 #include "io/key.h"
 #include "io/timer.h"
-#include "ui/ui.h"
-#include "io/joy.h"
-#include "gamesnd/gamesnd.h"
 #include "missionui/missionscreencommon.h"
-#include "graphics/font.h"
-#include "pilotfile/pilotfile.h"
-#include "gamehelp/contexthelp.h"
-#include "popup/popup.h"
-#include "ui/uidefs.h"
-#include "globalincs/alphacolors.h"
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
 #include "parse/scripting.h"
-#include "debugconsole/console.h"
+#include "pilotfile/pilotfile.h"
+#include "popup/popup.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
 
 
 #ifndef NDEBUG

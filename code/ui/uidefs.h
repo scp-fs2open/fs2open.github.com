@@ -12,10 +12,10 @@
 #ifndef _UIDEFS_H
 #define _UIDEFS_H
 
+#include "freespace2/freespace.h"
 #include "globalincs/pstypes.h"
 #include "io/key.h"
 #include "io/mouse.h"
-#include "freespace2/freespace.h"
 
 #define CBLACK Color_black
 #define CGREEN Color_green

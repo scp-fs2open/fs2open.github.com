@@ -14,10 +14,10 @@
 
 #define MODEL_LIB
 
-#include "model/model.h"
-#include "math/vecmat.h"
-#include "model/modelsinc.h"
 #include "cmdline/cmdline.h"
+#include "math/vecmat.h"
+#include "model/model.h"
+#include "model/modelsinc.h"
 
 extern void model_allocate_interp_data(int n_verts, int n_norms, int n_list_verts = 0);
 

@@ -9,11 +9,11 @@
 
 
 
-#include "ui/uidefs.h"
-#include "ui/ui.h"
-#include "freespace2/freespace.h"
 #include "bmpman/bmpman.h"
+#include "freespace2/freespace.h"
 #include "io/timer.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
 
 
 

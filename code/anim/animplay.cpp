@@ -10,15 +10,15 @@
 
 
 #include "anim/animplay.h"
-#include "globalincs/linklist.h"
-#include "io/timer.h"
-#include "bmpman/bmpman.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
-#include "pcxutils/pcxutils.h"
 #include "anim/packunpack.h"
+#include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
+#include "globalincs/linklist.h"
+#include "graphics/2d.h"
+#include "io/timer.h"
+#include "pcxutils/pcxutils.h"
+#include "render/3d.h"
 
 
 

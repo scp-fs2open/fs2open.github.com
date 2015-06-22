@@ -13,6 +13,7 @@
 #include "asteroid/asteroid.h"
 #include "cmeasure/cmeasure.h"
 #include "debris/debris.h"
+#include "debugconsole/console.h"
 #include "fireball/fireballs.h"
 #include "freespace2/freespace.h"
 #include "globalincs/linklist.h"
@@ -23,10 +24,10 @@
 #include "mission/missionparse.h" //For 2D Mode
 #include "network/multi.h"
 #include "network/multiutil.h"
+#include "object/deadobjectdock.h"
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "object/objectdock.h"
-#include "object/deadobjectdock.h"
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
@@ -41,7 +42,6 @@
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
-#include "debugconsole/console.h"
 
 
 

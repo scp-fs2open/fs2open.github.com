@@ -11,22 +11,22 @@
 
 #include <limits.h>
 
-#include "math/vecmat.h"
-#include "render/3d.h"
-#include "starfield/starfield.h"
-#include "freespace2/freespace.h"
-#include "io/timer.h"
-#include "starfield/nebula.h"
-#include "lighting/lighting.h"
-#include "mission/missionparse.h"
-#include "nebula/neb.h"
-#include "starfield/supernova.h"
 #include "cmdline/cmdline.h"
-#include "parse/parselo.h"
+#include "debugconsole/console.h"
+#include "freespace2/freespace.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
+#include "io/timer.h"
+#include "lighting/lighting.h"
+#include "math/vecmat.h"
+#include "mission/missionparse.h"
 #include "model/modelrender.h"
-#include "debugconsole/console.h"
+#include "nebula/neb.h"
+#include "parse/parselo.h"
+#include "render/3d.h"
+#include "starfield/nebula.h"
+#include "starfield/starfield.h"
+#include "starfield/supernova.h"
 
 #define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000

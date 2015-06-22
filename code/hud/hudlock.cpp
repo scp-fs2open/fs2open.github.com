@@ -10,23 +10,23 @@
 
 
 
+#include "ai/ai.h"
+#include "debugconsole/console.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
+#include "graphics/2d.h"
 #include "hud/hud.h"
 #include "hud/hudlock.h"
-#include "playerman/player.h"
-#include "ship/ship.h"
-#include "weapon/weapon.h"
-#include "io/timer.h"
-#include "gamesnd/gamesnd.h"
-#include "ai/ai.h"
-#include "render/3d.h"
-#include "globalincs/linklist.h"
-#include "weapon/emp.h"
-#include "graphics/2d.h"
-#include "object/object.h"
-#include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
+#include "io/timer.h"
+#include "mission/missionparse.h"
 #include "network/multi.h"
-#include "debugconsole/console.h"
+#include "object/object.h"
+#include "playerman/player.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "weapon/emp.h"
+#include "weapon/weapon.h"
 
 
 // Used for aspect locks. -MageKing17

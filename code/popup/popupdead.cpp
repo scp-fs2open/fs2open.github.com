@@ -17,20 +17,20 @@
 
 #define POPUPDEAD_NUM_CHOICES_MAX		4
 
-#include "ui/ui.h"
-#include "io/key.h"
 #include "freespace2/freespace.h"
-#include "gamesnd/gamesnd.h"
-#include "playerman/player.h"
-#include "popup/popupdead.h"
-#include "globalincs/alphacolors.h"
 #include "gamesequence/gamesequence.h"
-#include "popup/popup.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "hud/hudmessage.h"
+#include "io/key.h"
+#include "io/timer.h"
 #include "mission/missioncampaign.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
-#include "io/timer.h"
-#include "hud/hudmessage.h"
+#include "playerman/player.h"
+#include "popup/popup.h"
+#include "popup/popupdead.h"
+#include "ui/ui.h"
 
 
 UI_WINDOW	Popupdead_window;

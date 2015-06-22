@@ -9,21 +9,21 @@
 
 
 
-#include "globalincs/pstypes.h"
-#include "bmpman/bmpman.h"
-#include "graphics/gropenglbmpman.h"
-#include "ddsutils/ddsutils.h"
-#include "tgautils/tgautils.h"
-#include "pngutils/pngutils.h"
-#include "jpgutils/jpgutils.h"
-#include "pcxutils/pcxutils.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropenglextension.h"
-#include "graphics/gropenglstate.h"
-#include "globalincs/systemvars.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
+#include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
+#include "ddsutils/ddsutils.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
+#include "graphics/gropenglbmpman.h"
+#include "graphics/gropenglextension.h"
+#include "graphics/gropenglstate.h"
+#include "graphics/gropengltexture.h"
+#include "jpgutils/jpgutils.h"
+#include "pcxutils/pcxutils.h"
+#include "pngutils/pngutils.h"
+#include "tgautils/tgautils.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"

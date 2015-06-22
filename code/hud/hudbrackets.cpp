@@ -9,25 +9,22 @@
 
 
 
-#include "hud/hudbrackets.h"
-#include "hud/hud.h"
-#include "playerman/player.h"
-#include "hud/hudtarget.h"
-#include "render/3d.h"
-#include "weapon/emp.h"
-#include "ship/ship.h"
-#include "object/object.h"
-#include "mission/missionparse.h"
-#include "iff_defs/iff_defs.h"
-
-//For target info ONLY
-#include "debris/debris.h"
 #include "asteroid/asteroid.h"
-#include "jumpnode/jumpnode.h"
-#include "weapon/weapon.h"
-#include "parse/parselo.h"
-
 #include "cmdline/cmdline.h"
+#include "debris/debris.h"
+#include "hud/hud.h"
+#include "hud/hudbrackets.h"
+#include "hud/hudtarget.h"
+#include "iff_defs/iff_defs.h"
+#include "jumpnode/jumpnode.h"
+#include "mission/missionparse.h"
+#include "object/object.h"
+#include "parse/parselo.h"
+#include "playerman/player.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "weapon/emp.h"
+#include "weapon/weapon.h"
 
 #define FADE_FACTOR	2			// how much the bounding brackets get faded
 #define LOWEST_RED	50			// lowest r value for bounding bracket

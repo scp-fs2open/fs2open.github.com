@@ -15,9 +15,9 @@
 // --------------------------------------------------------------------------------------------------------
 // NEBULA DEFINES/VARS
 //
-#include "globalincs/pstypes.h"
-#include "globalincs/globals.h"
 #include "camera/camera.h"
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 class ship;
 class object;

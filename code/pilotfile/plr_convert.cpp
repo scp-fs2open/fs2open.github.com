@@ -6,10 +6,10 @@
  *    place of these major numbers for /any/ reason, *ever*!
  */
 
-#include "pilotfile/pilotfile_convert.h"
-#include "network/psnet2.h"
 #include "cfile/cfilesystem.h"
 #include "mission/missionbriefcommon.h"
+#include "network/psnet2.h"
+#include "pilotfile/pilotfile_convert.h"
 
 
 // this struct isn't well packed, and is written whole to the pilot file, so

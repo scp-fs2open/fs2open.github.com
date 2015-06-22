@@ -11,10 +11,10 @@
 
 #include "gamesnd/gamesnd.h"
 #include "localization/localize.h"
-#include "species_defs/species_defs.h"
 #include "parse/parselo.h"
 #include "sound/ds.h"
 #include "sound/sound.h"
+#include "species_defs/species_defs.h"
 #include <limits.h>
 
 SCP_vector<game_snd>	Snds;

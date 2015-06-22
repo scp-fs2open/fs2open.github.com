@@ -17,33 +17,31 @@
 #include <limits.h>
 #include <algorithm>
 
-#include "globalincs/pstypes.h"
-#include "osapi/osapi.h"
-#include "graphics/2d.h"
-#include "graphics/grstub.h"
-#include "render/3d.h"
 #include "bmpman/bmpman.h"
-#include "palman/palman.h"
-#include "graphics/font.h"
-#include "graphics/grinternal.h"
-#include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
-#include "graphics/grbatch.h"
-#include "parse/scripting.h"
-#include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
-#include "io/keycontrol.h" // m!m
-#include "graphics/gropengldraw.h"
 #include "debugconsole/console.h"
+#include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
+#include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
+#include "graphics/2d.h"
+#include "graphics/font.h"
+#include "graphics/grbatch.h"
+#include "graphics/grinternal.h"
+#include "graphics/gropengl.h" // Includes for different rendering systems
+#include "graphics/gropengldraw.h"
+#include "graphics/grstub.h"
+#include "io/keycontrol.h" // m!m
 #include "io/timer.h"
+#include "osapi/osapi.h"
+#include "palman/palman.h"
+#include "parse/scripting.h"
+#include "render/3d.h"
 
 #if defined(SCP_UNIX) && !defined(__APPLE__)
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
 #endif
 #endif // SCP_UNIX && !__APPLE__
-
-// Includes for different rendering systems
-#include "graphics/gropengl.h"
 
 const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
 

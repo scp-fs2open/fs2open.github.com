@@ -9,14 +9,14 @@
 
 
 
-#include "lab/wmcgui.h"
+#include "freespace2/freespace.h"
+#include "globalincs/linklist.h"
 #include "graphics/2d.h"
 #include "hud/hudbrackets.h"
-#include "parse/parselo.h"
-#include "globalincs/linklist.h"
 #include "io/key.h"
-#include "freespace2/freespace.h"
+#include "lab/wmcgui.h"
 #include "localization/localize.h"
+#include "parse/parselo.h"
 
 //Gobals
 GUISystem GUI_system;

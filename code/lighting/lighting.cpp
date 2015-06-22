@@ -9,16 +9,16 @@
 
 
 
-#include "math/vecmat.h"
-#include "render/3d.h"
-#include "lighting/lighting.h"
+#include "cmdline/cmdline.h"
+#include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "cmdline/cmdline.h"
-#include "model/modelrender.h"
-#include "graphics/gropengllight.h"
 #include "graphics/gropengldraw.h"
-#include "debugconsole/console.h"
+#include "graphics/gropengllight.h"
+#include "lighting/lighting.h"
+#include "math/vecmat.h"
+#include "model/modelrender.h"
+#include "render/3d.h"
 
 
 

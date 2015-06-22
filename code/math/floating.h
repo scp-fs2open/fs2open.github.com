@@ -15,6 +15,8 @@
 #include <math.h>
 #include <float.h>
 
+#include "globalincs/pstypes.h"
+
 extern float frand();
 extern int rand_chance(float frametime, float chance = 1.0f);
 float frand_range(float min, float max);

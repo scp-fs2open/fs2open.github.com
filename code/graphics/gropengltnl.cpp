@@ -12,29 +12,27 @@
 #include <windows.h>
 #endif
 
-#include "globalincs/pstypes.h"
-#include "globalincs/def_files.h"
+#include "cmdline/cmdline.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/def_files.h"
+#include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
-
 #include "graphics/2d.h"
-#include "lighting/lighting.h"
 #include "graphics/grinternal.h"
 #include "graphics/gropengl.h"
-#include "graphics/gropenglextension.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropengllight.h"
-#include "graphics/gropengltnl.h"
 #include "graphics/gropengldraw.h"
+#include "graphics/gropenglextension.h"
+#include "graphics/gropengllight.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglstate.h"
-
-#include "math/vecmat.h"
-#include "render/3d.h"
-#include "cmdline/cmdline.h"
-#include "model/model.h"
-#include "weapon/trails.h"
+#include "graphics/gropengltexture.h"
+#include "graphics/gropengltnl.h"
 #include "graphics/shadows.h"
+#include "lighting/lighting.h"
+#include "math/vecmat.h"
+#include "model/model.h"
+#include "render/3d.h"
+#include "weapon/trails.h"
 
 extern int GLOWMAP;
 extern int CLOAKMAP;

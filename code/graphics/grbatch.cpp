@@ -6,14 +6,14 @@
  *
 */ 
 
-#include "globalincs/pstypes.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/grbatch.h"
-#include "graphics/2d.h"
-#include "cmdline/cmdline.h"
-#include "render/3d.h"
 #include "bmpman/bmpman.h"
+#include "cmdline/cmdline.h"
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
+#include "graphics/grbatch.h"
+#include "graphics/gropengldraw.h"
+#include "graphics/gropenglstate.h"
+#include "render/3d.h"
 
 geometry_batcher::~geometry_batcher()
 {

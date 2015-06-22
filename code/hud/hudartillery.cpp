@@ -10,21 +10,21 @@
 
 
 
-#include "hud/hudartillery.h"
-#include "parse/parselo.h"
-#include "weapon/weapon.h"
-#include "weapon/beam.h"
-#include "math/vecmat.h"
-#include "globalincs/linklist.h"
-#include "io/timer.h"
-#include "fireball/fireballs.h"
-#include "object/object.h"
 #include "ai/ai.h"
-#include "globalincs/alphacolors.h"
-#include "network/multi.h"
-#include "hud/hudmessage.h"
-#include "sound/sound.h"
+#include "fireball/fireballs.h"
 #include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
+#include "hud/hudartillery.h"
+#include "hud/hudmessage.h"
+#include "io/timer.h"
+#include "math/vecmat.h"
+#include "network/multi.h"
+#include "object/object.h"
+#include "parse/parselo.h"
+#include "sound/sound.h"
+#include "weapon/beam.h"
+#include "weapon/weapon.h"
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS

@@ -12,12 +12,12 @@
 
 #define MODEL_LIB
 
-#include "model/model.h"
-#include "math/vecmat.h"
+#include "cmdline/cmdline.h"
 #include "graphics/tmapper.h"
 #include "math/fvi.h"
+#include "math/vecmat.h"
+#include "model/model.h"
 #include "model/modelsinc.h"
-#include "cmdline/cmdline.h"
 
 
 

@@ -12,12 +12,12 @@
 #ifndef _AI_H
 #define _AI_H
 
-#include "globalincs/pstypes.h"
-#include "globalincs/globals.h"
-#include "globalincs/systemvars.h"
 #include "ai/ai_profiles.h"
-#include "physics/physics.h"
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
 #include "object/waypoint.h"
+#include "physics/physics.h"
 
 struct ship_weapon;
 class ship_subsys;

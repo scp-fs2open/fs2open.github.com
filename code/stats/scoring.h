@@ -13,8 +13,9 @@
 #define _SCORING_HEADER_FILE
 
 #include <time.h>
-#include "globalincs/pstypes.h"
+
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 class player;
 class ship;

@@ -12,8 +12,8 @@
 #ifndef __ANIMPLAY_H__
 #define __ANIMPLAY_H__
 
-#include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
+#include "globalincs/pstypes.h"
 
 struct anim;
 struct anim_info;

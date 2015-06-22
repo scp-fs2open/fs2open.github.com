@@ -11,11 +11,11 @@
 #ifndef _3D_H
 #define _3D_H
 
-#include "math/vecmat.h"
-#include "graphics/tmapper.h"
+#include "camera/camera.h"
 #include "graphics/2d.h"
 #include "graphics/grbatch.h"
-#include "camera/camera.h"
+#include "graphics/tmapper.h"
+#include "math/vecmat.h"
 
 //flags for point structure
 #define PF_PROJECTED 	 1	//has been projected, so sx,sy valid

@@ -12,12 +12,12 @@
 
 #include "cfile/cfile.h"
 #include "controlconfig/controlsconfig.h"
-#include "io/key.h"
+#include "globalincs/def_files.h"
+#include "globalincs/systemvars.h"
 #include "io/joy.h"
+#include "io/key.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
-#include "globalincs/systemvars.h"
-#include "globalincs/def_files.h"
 
 // z64: These enumerations MUST equal to those in controlsconfig.cpp...
 // z64: Really need a better way than this.

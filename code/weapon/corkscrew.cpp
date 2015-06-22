@@ -9,13 +9,13 @@
 
 
 
+#include "debugconsole/console.h"
+#include "freespace2/freespace.h"	// for Missiontime
+#include "io/timer.h"
+#include "object/object.h"
+#include "ship/ship.h"
 #include "weapon/corkscrew.h"
 #include "weapon/weapon.h"
-#include "ship/ship.h"
-#include "io/timer.h"
-#include "freespace2/freespace.h"	// for Missiontime
-#include "object/object.h"
-#include "debugconsole/console.h"
 
 
 

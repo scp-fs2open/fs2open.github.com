@@ -1,10 +1,10 @@
-#include "globalincs/pstypes.h"
-#include "globalincs/globals.h"
-#include "bmpman/bmpman.h"
-#include "graphics/generic.h"
-#include "graphics/2d.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
+#include "bmpman/bmpman.h"
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
+#include "graphics/generic.h"
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
 #ifdef _WIN32

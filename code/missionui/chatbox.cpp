@@ -10,19 +10,19 @@
 
 
 
-#include "ui/ui.h"
-#include "missionui/chatbox.h"
-#include "network/multimsgs.h"
-#include "gamesnd/gamesnd.h"
-#include "cmdline/cmdline.h"
-#include "io/key.h"
-#include "network/multi.h"
-#include "network/multiui.h"
-#include "network/multi_pmsg.h"
-#include "globalincs/alphacolors.h"
-#include "playerman/player.h"
-#include "parse/parselo.h"
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "io/key.h"
+#include "missionui/chatbox.h"
+#include "network/multi.h"
+#include "network/multi_pmsg.h"
+#include "network/multimsgs.h"
+#include "network/multiui.h"
+#include "parse/parselo.h"
+#include "playerman/player.h"
+#include "ui/ui.h"
 
 
 

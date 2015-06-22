@@ -11,18 +11,18 @@
 #include <windows.h>
 #endif
 
-#include "globalincs/pstypes.h"
-#include "globalincs/systemvars.h"
-#include "osapi/osregistry.h"
 #include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
+#include "ddsutils/ddsutils.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
+#include "graphics/grinternal.h"
 #include "graphics/gropengl.h"
-#include "graphics/gropengltexture.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropenglstate.h"
-#include "graphics/grinternal.h"
-#include "ddsutils/ddsutils.h"
+#include "graphics/gropengltexture.h"
 #include "math/vecmat.h"
+#include "osapi/osregistry.h"
 
 
 static tcache_slot_opengl *Textures = NULL;

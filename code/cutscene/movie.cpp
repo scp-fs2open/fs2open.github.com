@@ -13,15 +13,15 @@
 #include <windows.h>
 #endif
 
-#include "graphics/2d.h"
-#include "globalincs/systemvars.h"
-#include "cutscene/movie.h"
-#include "osapi/osapi.h"
-#include "cmdline/cmdline.h"	
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"	
 #include "cutscene/cutscenes.h" // cutscene_mark_viewable()
+#include "cutscene/movie.h"
 #include "cutscene/mvelib.h"
 #include "cutscene/oggplayer.h"
+#include "globalincs/systemvars.h"
+#include "graphics/2d.h"
+#include "osapi/osapi.h"
 
 extern int Game_mode;
 
