@@ -2,7 +2,6 @@
 #include "cutscene/cutscenes.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/eventmusic.h"
-#include "globalincs/pstypes.h"
 #include "hud/hudconfig.h"
 #include "io/joy.h"
 #include "io/mouse.h"

@@ -1,7 +1,6 @@
 
 #include "freespace2/freespace.h"
 #include "gamesnd/eventmusic.h"
-#include "globalincs/pstypes.h"
 #include "hud/hudconfig.h"
 #include "hud/hudsquadmsg.h"
 #include "io/joy.h"
