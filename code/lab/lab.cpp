@@ -12,7 +12,6 @@
 #include "cmdline/cmdline.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
-#include "globalincs/pstypes.h"
 #include "graphics/gropengldraw.h"
 #include "graphics/gropengllight.h"
 #include "graphics/gropenglshader.h"

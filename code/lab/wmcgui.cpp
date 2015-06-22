@@ -10,7 +10,6 @@
 
 
 #include "freespace2/freespace.h"
-#include "globalincs/linklist.h"
 #include "graphics/2d.h"
 #include "hud/hudbrackets.h"
 #include "io/key.h"
