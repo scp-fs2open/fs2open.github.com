@@ -612,8 +612,6 @@ int bm_get_tcache_type(int handle);
 
 /**
  * @brief Gets the size, in bytes, taken up by the bitmap indexed by handle
- *
- * @todo retval should be a size_t
  */
 size_t bm_get_size(int handle);
 
