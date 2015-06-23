@@ -610,10 +610,8 @@ int bm_get_tcache_type(int handle);
 
 /**
  * @brief Gets the size, in bytes, taken up by the bitmap indexed by handle
- *
- * @todo retval should be a size_t
  */
-int bm_get_size(int handle);
+size_t bm_get_size(int handle);
 
 /**
  * @brief Gets the number of mipmaps of the indexed texture
