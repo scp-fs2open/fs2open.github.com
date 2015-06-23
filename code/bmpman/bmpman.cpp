@@ -415,7 +415,7 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 
 	bm_bitmaps[n].load_count++;
 
-	bm_update_memory_used(n, bm_bitmaps[n].mem_taken);
+	bm_update_memory_used(n, (int)bm_bitmaps[n].mem_taken);
 
 	gr_bm_create(n);
 
@@ -648,9 +648,9 @@ void bm_get_frame_usage(int *ntotal, int *nnew) {
 	for (i = 0; i<MAX_BITMAPS; i++) {
 		if ((bm_bitmaps[i].type != BM_TYPE_NONE) && (bm_bitmaps[i].used_this_frame)) {
 			if (!bm_bitmaps[i].used_last_frame) {
-				*nnew += bm_bitmaps[i].mem_taken;
+				*nnew += (int)bm_bitmaps[i].mem_taken;
 			}
-			*ntotal += bm_bitmaps[i].mem_taken;
+			*ntotal += (int)bm_bitmaps[i].mem_taken;
 		}
 		bm_bitmaps[i].used_last_frame = bm_bitmaps[i].used_this_frame;
 		bm_bitmaps[i].used_this_frame = 0;
@@ -771,7 +771,7 @@ size_t bm_get_size(int handle) {
 	Assert(n >= 0);
 	Assert(handle == bm_bitmaps[n].handle);
 
-	return (size_t)bm_bitmaps[n].mem_taken;
+	return bm_bitmaps[n].mem_taken;
 }
 
 int bm_get_tcache_type(int num) {
@@ -1002,7 +1002,7 @@ int bm_load(const char *real_filename) {
 	bm_bitmaps[free_slot].bm.data = 0;
 	bm_bitmaps[free_slot].bm.palette = NULL;
 	bm_bitmaps[free_slot].num_mipmaps = mm_lvl;
-	bm_bitmaps[free_slot].mem_taken = bm_size;
+	bm_bitmaps[free_slot].mem_taken = (size_t)bm_size;
 	bm_bitmaps[free_slot].dir_type = CF_TYPE_ANY;
 	bm_bitmaps[free_slot].palette_checksum = 0;
 	bm_bitmaps[free_slot].handle = handle;
@@ -1317,7 +1317,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		bm_bitmaps[n + i].handle = first_handle*MAX_BITMAPS + n + i;
 		bm_bitmaps[n + i].last_used = -1;
 		bm_bitmaps[n + i].num_mipmaps = mm_lvl;
-		bm_bitmaps[n + i].mem_taken = img_size;
+		bm_bitmaps[n + i].mem_taken = (size_t)img_size;
 		bm_bitmaps[n + i].dir_type = dir_type;
 
 		bm_bitmaps[n + i].load_count++;
@@ -1559,7 +1559,7 @@ void bm_lock_ani(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 
 	bm = &bm_bitmaps[first_frame].bm;
 	size = bm->w * bm->h * (bpp >> 3);
-	be->mem_taken = size;
+	be->mem_taken = (size_t)size;
 
 	Assert(size > 0);
 
@@ -1677,19 +1677,19 @@ void bm_lock_dds(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 #if BYTE_ORDER == BIG_ENDIAN
 	// same as with TGA, we need to byte swap 16 & 32-bit, uncompressed, DDS images
 	if ((be->comp_type == BM_TYPE_DDS) || (be->comp_type == BM_TYPE_CUBEMAP_DDS)) {
-		unsigned int i = 0;
+		size_t i = 0;
 
 		if (dds_bpp == 32) {
 			unsigned int *swap_tmp;
 
-			for (i = 0; i < (unsigned int)be->mem_taken; i += 4) {
+			for (i = 0; i < be->mem_taken; i += 4) {
 				swap_tmp = (unsigned int *)(data + i);
 				*swap_tmp = INTEL_INT(*swap_tmp);
 			}
 		} else if (dds_bpp == 16) {
 			unsigned short *swap_tmp;
 
-			for (i = 0; i < (unsigned int)be->mem_taken; i += 2) {
+			for (i = 0; i < be->mem_taken; i += 2) {
 				swap_tmp = (unsigned short *)(data + i);
 				*swap_tmp = INTEL_SHORT(*swap_tmp);
 			}
@@ -1994,7 +1994,7 @@ int bm_make_render_target(int width, int height, int flags) {
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
 	bm_bitmaps[n].num_mipmaps = mm_lvl;
-	bm_bitmaps[n].mem_taken = size;
+	bm_bitmaps[n].mem_taken = (size_t)size;
 	bm_bitmaps[n].dir_type = CF_TYPE_ANY;
 
 	bm_bitmaps[n].palette_checksum = 0;
