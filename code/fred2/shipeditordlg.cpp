@@ -17,6 +17,7 @@
 #include "render/3d.h"
 #include "physics/physics.h"
 #include "editor.h"
+#include "ai/ailocal.h"
 #include "ai/aigoals.h"
 #include "parse/parselo.h"
 #include "Management.h"

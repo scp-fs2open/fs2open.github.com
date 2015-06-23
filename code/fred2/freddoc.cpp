@@ -25,6 +25,7 @@
 #include "object/object.h"
 #include "editor.h"
 #include "ai/ai.h"
+#include "ai/ailocal.h"
 #include "cfile/cfile.h"
 
 #include "cfile/cfilesystem.h"
