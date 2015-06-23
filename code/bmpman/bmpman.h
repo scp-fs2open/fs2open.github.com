@@ -629,7 +629,7 @@ int bm_get_num_mipmaps(int handle);
  *
  * @todo retval should be a bool
  */
-int bm_has_alpha_channel(int handle);
+bool bm_has_alpha_channel(int handle);
 
 /**
  * @brief (DEBUG) Prints all loaded bitmaps to an outwindow
