@@ -765,11 +765,11 @@ uint bm_get_signature(int handle) {
 	return bm_bitmaps[bitmapnum].signature;
 }
 
-size_t bm_get_size(int num) {
-	int n = num % MAX_BITMAPS;
+size_t bm_get_size(int handle) {
+	int n = handle % MAX_BITMAPS;
 
 	Assert(n >= 0);
-	Assert(num == bm_bitmaps[n].handle);
+	Assert(handle == bm_bitmaps[n].handle);
 
 	return (size_t)bm_bitmaps[n].mem_taken;
 }
