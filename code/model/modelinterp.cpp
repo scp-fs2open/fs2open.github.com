@@ -129,10 +129,6 @@ static vertex **Interp_list = NULL;
 static int  Num_interp_list_verts_allocated = 0;
 
 static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes and spheres
-static vec3d Interp_render_box_min = ZERO_VECTOR;
-static vec3d Interp_render_box_max = ZERO_VECTOR;
-static float Interp_render_sphere_radius = 0.0f;
-static vec3d Interp_render_sphere_offset = ZERO_VECTOR;
 
 // -------------------------------------------------------------------
 // lighting save stuff 
@@ -424,10 +420,6 @@ void interp_clear_instance()
 	}
 
 	Interp_box_scale = 1.0f;
-	Interp_render_box_min = vmd_zero_vector;
-	Interp_render_box_max = vmd_zero_vector;
-	Interp_render_sphere_radius = 0.0f;
-	Interp_render_sphere_offset = vmd_zero_vector;
 
 	Interp_team_color_set = false;
 
@@ -4723,21 +4715,25 @@ void model_render_children_buffers_DEPRECATED(polymodel *pm, int mn, int detail_
 
 	// if using detail boxes or spheres, check that we are valid for the range
 	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_box ) {
-		vm_vec_copy_scale(&Interp_render_box_min, &model->render_box_min, Interp_box_scale);
-		vm_vec_copy_scale(&Interp_render_box_max, &model->render_box_max, Interp_box_scale);
+		vec3d box_min, box_max;
 
-		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &model->offset, &View_position)) )
+		vm_vec_copy_scale(&box_min, &model->render_box_min, Interp_box_scale);
+		vm_vec_copy_scale(&box_max, &model->render_box_max, Interp_box_scale);
+
+		if ( (-model->use_render_box + in_box(&box_min, &box_max, &model->offset, &View_position)) )
 			return;
 	}
 	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
-		Interp_render_sphere_radius = model->render_sphere_radius * Interp_box_scale;
+		float radius = model->render_sphere_radius * Interp_box_scale;
 
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
-		model_find_submodel_offset(&offset, pm->id, mn);
-		vm_vec_add2(&offset, &model->render_sphere_offset);
+		if (model->use_render_sphere_offset)
+			offset = model->render_sphere_offset;
+		else
+			model_find_submodel_offset(&offset, pm->id, mn);
 
-		if ( (-model->use_render_sphere + in_sphere(&offset, Interp_render_sphere_radius, &View_position)) )
+		if ( (-model->use_render_sphere + in_sphere(&offset, radius, &View_position)) )
 			return;
 	}
 
@@ -4818,21 +4814,25 @@ void model_render_buffers_DEPRECATED(polymodel *pm, int mn, int render, bool is_
 
 	// if using detail boxes or spheres, check that we are valid for the range
 	if ( !is_child && !(Interp_flags & MR_FULL_DETAIL) && model->use_render_box ) {
-		vm_vec_copy_scale(&Interp_render_box_min, &model->render_box_min, Interp_box_scale);
-		vm_vec_copy_scale(&Interp_render_box_max, &model->render_box_max, Interp_box_scale);
+		vec3d box_min, box_max;
 
-		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &model->offset, &View_position)) )
+		vm_vec_copy_scale(&box_min, &model->render_box_min, Interp_box_scale);
+		vm_vec_copy_scale(&box_max, &model->render_box_max, Interp_box_scale);
+
+		if ( (-model->use_render_box + in_box(&box_min, &box_max, &model->offset, &View_position)) )
 			return;
 	}
 	if ( !is_child && !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
-		Interp_render_sphere_radius = model->render_sphere_radius * Interp_box_scale;
+		float radius = model->render_sphere_radius * Interp_box_scale;
 
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
-		model_find_submodel_offset(&offset, pm->id, mn);
-		vm_vec_add2(&offset, &model->render_sphere_offset);
+		if (model->use_render_sphere_offset)
+			offset = model->render_sphere_offset;
+		else
+			model_find_submodel_offset(&offset, pm->id, mn);
 
-		if ( (-model->use_render_sphere + in_sphere(&offset, Interp_render_sphere_radius, &View_position)) )
+		if ( (-model->use_render_sphere + in_sphere(&offset, radius, &View_position)) )
 			return;
 	}
 
