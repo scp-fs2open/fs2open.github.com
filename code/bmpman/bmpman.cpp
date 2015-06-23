@@ -790,7 +790,7 @@ BM_TYPE bm_get_type(int handle) {
 	return bm_bitmaps[bitmapnum].type;
 }
 
-int bm_has_alpha_channel(int handle) {
+bool bm_has_alpha_channel(int handle) {
 	int n = handle % MAX_BITMAPS;
 
 	Assert(n >= 0);

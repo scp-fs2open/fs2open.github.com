@@ -626,10 +626,8 @@ int bm_get_num_mipmaps(int handle);
  * @brief Checks to see if the indexed bitmap has an alpha channel
  *
  * @note Currently just checks if the bitmap is 32bpp and is not a .PCX
- *
- * @todo retval should be a bool
  */
-int bm_has_alpha_channel(int handle);
+bool bm_has_alpha_channel(int handle);
 
 /**
  * @brief (DEBUG) Prints all loaded bitmaps to an outwindow
