@@ -2220,8 +2220,8 @@ void bm_page_in_xparent_texture(int bitmapnum, int nframes) {
 	}
 }
 
-bool bm_page_out(int bitmap_id) {
-	int n = bitmap_id % MAX_BITMAPS;
+bool bm_page_out(int handle) {
+	int n = handle % MAX_BITMAPS;
 
 	Assert(n >= 0 && n < MAX_BITMAPS);
 
@@ -2229,7 +2229,7 @@ bool bm_page_out(int bitmap_id) {
 	if (bm_bitmaps[n].type == BM_TYPE_NONE)
 		return 0;
 
-	Assert(bm_bitmaps[n].handle == bitmap_id);	// INVALID BITMAP HANDLE
+	Assert(bm_bitmaps[n].handle == handle);	// INVALID BITMAP HANDLE
 
 	// it's possible to hit < 0 here when model_page_out_textures() is called from
 	// anywhere other than in a mission
@@ -2242,7 +2242,7 @@ bool bm_page_out(int bitmap_id) {
 		return 0;
 	}
 
-	return (bm_unload(bitmap_id) == 1);
+	return (bm_unload(handle) == 1);
 }
 
 void bm_print_bitmaps() {
