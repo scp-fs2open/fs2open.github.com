@@ -184,6 +184,9 @@
     <Filter Include="Cmdline">
       <UniqueIdentifier>{4feafd16-d55a-4ce8-b2a7-31ea81d03b2b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="fs2netd">
+      <UniqueIdentifier>{eaaf5609-a655-4b46-95b4-bee16c341561}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Species_Defs">
       <UniqueIdentifier>{ab2a00a5-8e90-4bec-ba37-9ba23bfc53cd}</UniqueIdentifier>
     </Filter>
@@ -200,10 +203,7 @@
       <UniqueIdentifier>{34eefea3-a25d-40cd-8198-13c48ad8a6eb}</UniqueIdentifier>
     </Filter>
     <Filter Include="mod_table">
-      <UniqueIdentifier>{b8fecc33-7ae8-42db-beaa-e7cc8abded39}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameHelp\fs2netd">
-      <UniqueIdentifier>{eaaf5609-a655-4b46-95b4-bee16c341561}</UniqueIdentifier>
+      <UniqueIdentifier>{272d3303-d2fe-4ae6-85d0-d63c202aa197}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -291,10 +291,10 @@
     <ClCompile Include="..\..\code\debugconsole\console.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
+	<ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
+	<ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fireball\fireballs.cpp">
@@ -328,6 +328,9 @@
       <Filter>GlobalIncs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp">
+      <Filter>GlobalIncs</Filter>
+    </ClCompile>
+	<ClCompile Include="..\..\code\globalincs\profiling.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\globalincs\safe_strings.cpp">
@@ -579,10 +582,16 @@
     <ClCompile Include="..\..\code\missionui\missionpause.cpp">
       <Filter>MissionUI</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\missionui\missionrecommend.cpp">
+      <Filter>MissionUI</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\code\missionui\missionscreencommon.cpp">
       <Filter>MissionUI</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\missionui\missionshipchoice.cpp">
+      <Filter>MissionUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\missionui\missionstats.cpp">
       <Filter>MissionUI</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\missionui\missionweaponchoice.cpp">
@@ -1021,13 +1030,13 @@
       <Filter>Cmdline</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fs2netd\fs2netd_client.cpp">
-      <Filter>GameHelp\fs2netd</Filter>
+      <Filter>fs2netd</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fs2netd\tcp_client.cpp">
-      <Filter>GameHelp\fs2netd</Filter>
+      <Filter>fs2netd</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fs2netd\tcp_socket.cpp">
-      <Filter>GameHelp\fs2netd</Filter>
+      <Filter>fs2netd</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\species_defs\species_defs.cpp">
       <Filter>Species_Defs</Filter>
@@ -1053,14 +1062,11 @@
     <ClCompile Include="..\..\code\parse\generic_log.cpp">
       <Filter>Parse</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\globalincs\profiling.cpp">
-      <Filter>GlobalIncs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\graphics\shadows.cpp">
-      <Filter>Graphics\OpenGLGr\OpenGL CPPs</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\code\model\modelrender.cpp">
       <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\graphics\shadows.cpp">
+      <Filter>Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1077,6 +1083,9 @@
       <Filter>AI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\ai\aiinternal.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\ai\ailocal.h">
       <Filter>AI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\anim\animplay.h">
@@ -1451,10 +1460,16 @@
     <ClInclude Include="..\..\code\missionui\missionpause.h">
       <Filter>MissionUI</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\code\missionui\missionrecommend.h">
+      <Filter>MissionUI</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\code\missionui\missionscreencommon.h">
       <Filter>MissionUI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\missionui\missionshipchoice.h">
+      <Filter>MissionUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\missionui\missionstats.h">
       <Filter>MissionUI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\missionui\missionweaponchoice.h">
@@ -1809,16 +1824,16 @@
       <Filter>Cmdline</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fs2netd\fs2netd_client.h">
-      <Filter>GameHelp\fs2netd</Filter>
+      <Filter>fs2netd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fs2netd\protocol.h">
-      <Filter>GameHelp\fs2netd</Filter>
+      <Filter>fs2netd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fs2netd\tcp_client.h">
-      <Filter>GameHelp\fs2netd</Filter>
+      <Filter>fs2netd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fs2netd\tcp_socket.h">
-      <Filter>GameHelp\fs2netd</Filter>
+      <Filter>fs2netd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\species_defs\species_defs.h">
       <Filter>Species_Defs</Filter>
@@ -1847,23 +1862,23 @@
     <ClInclude Include="..\..\code\radar\radardradis.h">
       <Filter>Radar</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\mod_table\mod_table.h">
-      <Filter>mod_table</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\parse\generic_log.h">
-      <Filter>Parse</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\code\PilotFile\pilotfile_convert.h">
       <Filter>PilotFile</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\PilotFile\pilotfile.h">
       <Filter>PilotFile</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\code\graphics\shadows.h">
-      <Filter>Graphics\OpenGLGr\OpenGL Headers</Filter>
+    <ClInclude Include="..\..\code\mod_table\mod_table.h">
+      <Filter>mod_table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\parse\generic_log.h">
+      <Filter>Parse</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\model\modelrender.h">
       <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\graphics\shadows.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -288,13 +288,7 @@
     <ClCompile Include="..\..\code\Debris\debris.cpp">
       <Filter>Debris</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\console.cpp">
-      <Filter>DebugConsole</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
-      <Filter>DebugConsole</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
+    <ClCompile Include="..\..\code\DebugConsole\console.cpp">
       <Filter>DebugConsole</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\fireball\fireballs.cpp">
@@ -579,10 +573,16 @@
     <ClCompile Include="..\..\code\missionui\missionpause.cpp">
       <Filter>MissionUI</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\missionui\missionrecommend.cpp">
+      <Filter>MissionUI</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\code\missionui\missionscreencommon.cpp">
       <Filter>MissionUI</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\missionui\missionshipchoice.cpp">
+      <Filter>MissionUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\missionui\missionstats.cpp">
       <Filter>MissionUI</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\missionui\missionweaponchoice.cpp">
@@ -1056,8 +1056,14 @@
     <ClCompile Include="..\..\code\globalincs\profiling.cpp">
       <Filter>GlobalIncs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp">
+      <Filter>DebugConsole</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp">
+      <Filter>DebugConsole</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\code\graphics\shadows.cpp">
-      <Filter>Graphics\OpenGLGr\OpenGL CPPs</Filter>
+      <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\code\model\modelrender.cpp">
       <Filter>Model</Filter>
@@ -1077,6 +1083,9 @@
       <Filter>AI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\ai\aiinternal.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\ai\ailocal.h">
       <Filter>AI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\anim\animplay.h">
@@ -1126,12 +1135,6 @@
     </ClInclude>
     <ClInclude Include="..\..\code\Debris\debris.h">
       <Filter>Debris</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\console.h">
-      <Filter>DebugConsole</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
-      <Filter>DebugConsole</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\DirectX\vasync.h">
       <Filter>DirectX</Filter>
@@ -1451,10 +1454,16 @@
     <ClInclude Include="..\..\code\missionui\missionpause.h">
       <Filter>MissionUI</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\code\missionui\missionrecommend.h">
+      <Filter>MissionUI</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\code\missionui\missionscreencommon.h">
       <Filter>MissionUI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\missionui\missionshipchoice.h">
+      <Filter>MissionUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\missionui\missionstats.h">
       <Filter>MissionUI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\missionui\missionweaponchoice.h">
@@ -1859,8 +1868,14 @@
     <ClInclude Include="..\..\code\PilotFile\pilotfile.h">
       <Filter>PilotFile</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\code\debugconsole\console.h">
+      <Filter>DebugConsole</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\debugconsole\consoleparse.h">
+      <Filter>DebugConsole</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\code\graphics\shadows.h">
-      <Filter>Graphics\OpenGLGr\OpenGL Headers</Filter>
+      <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\model\modelrender.h">
       <Filter>Model</Filter>

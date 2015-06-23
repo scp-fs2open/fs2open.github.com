@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
+#include "ai/ailocal.h"
 #include "ai/ai.h"
 #include "cfile/cfile.h"
 #include "ship/ship.h"

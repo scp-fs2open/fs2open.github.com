@@ -34,6 +34,7 @@
 #include "model/model.h"
 #include "palman/palman.h"
 #include "editor.h"
+#include "ai/ailocal.h"
 #include "ship/ship.h"
 #include "cfile/cfile.h"
 #include "mission/missionparse.h"

@@ -215,6 +215,7 @@ FS2_SOURCES =	\
 	ai/aigoals.cpp	\
 	ai/aigoals.h	\
 	ai/aiinternal.h	\
+	ai/ailocal.h	\
 	ai/aiturret.cpp	\
 	ai/ai_profiles.cpp	\
 	ai/ai_profiles.h	\
@@ -477,10 +478,14 @@ FS2_SOURCES =	\
 	missionui/missionloopbrief.h	\
 	missionui/missionpause.cpp	\
 	missionui/missionpause.h	\
+	missionui/missionrecommend.cpp	\
+	missionui/missionrecommend.h	\
 	missionui/missionscreencommon.cpp	\
 	missionui/missionscreencommon.h	\
 	missionui/missionshipchoice.cpp	\
 	missionui/missionshipchoice.h	\
+	missionui/missionstats.cpp	\
+	missionui/missionstats.h	\
 	missionui/missionweaponchoice.cpp	\
 	missionui/missionweaponchoice.h	\
 	missionui/redalert.cpp	\
