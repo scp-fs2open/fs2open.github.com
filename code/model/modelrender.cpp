@@ -1601,8 +1601,12 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
-		model_find_submodel_offset(&offset, pm->id, submodel_num);
-		vm_vec_add2(&offset, &model->render_sphere_offset);
+
+		if (model->use_render_sphere_offset) {
+			offset = model->render_sphere_offset;
+		} else {
+			model_find_submodel_offset(&offset, pm->id, submodel_num);
+		}
 
 		if ( (-model->use_render_sphere + in_sphere(&offset, sphere_radius, view_pos)) ) {
 			return false;

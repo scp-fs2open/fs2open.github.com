@@ -4728,10 +4728,13 @@ void model_render_children_buffers_DEPRECATED(polymodel *pm, int mn, int detail_
 
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
-		if (model->use_render_sphere_offset)
-			offset = model->render_sphere_offset;
-		else
+		if (model->use_render_sphere_offset) {
 			model_find_submodel_offset(&offset, pm->id, mn);
+			vm_vec_sub(&offset, &vmd_zero_vector, &offset);
+			vm_vec_add2(&offset, &model->render_sphere_offset);
+		} else {
+			offset = vmd_zero_vector;
+		}
 
 		if ( (-model->use_render_sphere + in_sphere(&offset, radius, &View_position)) )
 			return;
@@ -4827,10 +4830,13 @@ void model_render_buffers_DEPRECATED(polymodel *pm, int mn, int render, bool is_
 
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
-		if (model->use_render_sphere_offset)
-			offset = model->render_sphere_offset;
-		else
+		if (model->use_render_sphere_offset) {
 			model_find_submodel_offset(&offset, pm->id, mn);
+			vm_vec_sub(&offset, &vmd_zero_vector, &offset);
+			vm_vec_add2(&offset, &model->render_sphere_offset);
+		} else {
+			offset = vmd_zero_vector;
+		}
 
 		if ( (-model->use_render_sphere + in_sphere(&offset, radius, &View_position)) )
 			return;

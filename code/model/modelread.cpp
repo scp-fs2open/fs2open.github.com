@@ -1361,6 +1361,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						pm->submodel[n].render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
 						while (*p != ',') p++;
 						pm->submodel[n].render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+
+						pm->submodel[n].use_render_sphere_offset = true;
 					} else {
 						pm->submodel[n].render_sphere_offset = vmd_zero_vector;
 					}
