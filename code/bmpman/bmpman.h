@@ -502,8 +502,6 @@ void bm_page_in_aabitmap(int bitmapnum, int num_frames = 1);
  * @returns 0 If the bitmap had already been released, or
  * @returns 0 If the handle is invalid, or
  * @returns 1 If successful
- *
- * @todo The return type should be a bool
  */
 bool bm_page_out(int handle);
 
