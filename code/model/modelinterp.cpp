@@ -4715,12 +4715,20 @@ void model_render_children_buffers_DEPRECATED(polymodel *pm, int mn, int detail_
 
 	// if using detail boxes or spheres, check that we are valid for the range
 	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_box ) {
-		vec3d box_min, box_max;
+		vec3d box_min, box_max, offset;
+
+		if (model->use_render_box_offset) {
+			model_find_submodel_offset(&offset, pm->id, mn);
+			vm_vec_sub(&offset, &vmd_zero_vector, &offset);
+			vm_vec_add2(&offset, &model->render_box_offset);
+		} else {
+			offset = vmd_zero_vector;
+		}
 
 		vm_vec_copy_scale(&box_min, &model->render_box_min, Interp_box_scale);
 		vm_vec_copy_scale(&box_max, &model->render_box_max, Interp_box_scale);
 
-		if ( (-model->use_render_box + in_box(&box_min, &box_max, &model->offset, &View_position)) )
+		if ( (-model->use_render_box + in_box(&box_min, &box_max, &offset, &View_position)) )
 			return;
 	}
 	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
@@ -4817,12 +4825,20 @@ void model_render_buffers_DEPRECATED(polymodel *pm, int mn, int render, bool is_
 
 	// if using detail boxes or spheres, check that we are valid for the range
 	if ( !is_child && !(Interp_flags & MR_FULL_DETAIL) && model->use_render_box ) {
-		vec3d box_min, box_max;
+		vec3d box_min, box_max, offset;
+
+		if (model->use_render_box_offset) {
+			model_find_submodel_offset(&offset, pm->id, mn);
+			vm_vec_sub(&offset, &vmd_zero_vector, &offset);
+			vm_vec_add2(&offset, &model->render_box_offset);
+		} else {
+			offset = vmd_zero_vector;
+		}
 
 		vm_vec_copy_scale(&box_min, &model->render_box_min, Interp_box_scale);
 		vm_vec_copy_scale(&box_max, &model->render_box_max, Interp_box_scale);
 
-		if ( (-model->use_render_box + in_box(&box_min, &box_max, &model->offset, &View_position)) )
+		if ( (-model->use_render_box + in_box(&box_min, &box_max, &offset, &View_position)) )
 			return;
 	}
 	if ( !is_child && !(Interp_flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
