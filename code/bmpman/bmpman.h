@@ -505,7 +505,7 @@ void bm_page_in_aabitmap(int bitmapnum, int num_frames = 1);
  *
  * @todo The return type should be a bool
  */
-int bm_page_out(int handle);
+bool bm_page_out(int handle);
 
 /**
  * @brief Sets BMPMAN's memory mode

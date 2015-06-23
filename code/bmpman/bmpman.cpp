@@ -2220,7 +2220,7 @@ void bm_page_in_xparent_texture(int bitmapnum, int nframes) {
 	}
 }
 
-int bm_page_out(int bitmap_id) {
+bool bm_page_out(int bitmap_id) {
 	int n = bitmap_id % MAX_BITMAPS;
 
 	Assert(n >= 0 && n < MAX_BITMAPS);
