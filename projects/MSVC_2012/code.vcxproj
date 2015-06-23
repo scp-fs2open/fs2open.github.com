@@ -475,7 +475,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FunctionLevelLinking>false</FunctionLevelLinking>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Precise</FloatingPointModel>
       <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
@@ -532,7 +532,7 @@
     <ClCompile Include="..\..\code\cutscene\mveplayer.cpp" />
     <ClCompile Include="..\..\code\cutscene\oggplayer.cpp" />
     <ClCompile Include="..\..\code\Debris\debris.cpp" />
-    <ClCompile Include="..\..\code\DebugConsole\console.cpp" />
+    <ClCompile Include="..\..\code\debugconsole\console.cpp" />
     <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp" />
     <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp" />
     <ClCompile Include="..\..\code\fireball\fireballs.cpp" />
@@ -631,10 +631,8 @@
     <ClCompile Include="..\..\code\missionui\missiondebrief.cpp" />
     <ClCompile Include="..\..\code\missionui\missionloopbrief.cpp" />
     <ClCompile Include="..\..\code\missionui\missionpause.cpp" />
-    <ClCompile Include="..\..\code\missionui\missionrecommend.cpp" />
     <ClCompile Include="..\..\code\missionui\missionscreencommon.cpp" />
     <ClCompile Include="..\..\code\missionui\missionshipchoice.cpp" />
-    <ClCompile Include="..\..\code\missionui\missionstats.cpp" />
     <ClCompile Include="..\..\code\missionui\missionweaponchoice.cpp" />
     <ClCompile Include="..\..\code\missionui\redalert.cpp" />
     <ClCompile Include="..\..\code\model\modelanim.cpp" />
@@ -799,7 +797,6 @@
     <ClInclude Include="..\..\code\ai\aibig.h" />
     <ClInclude Include="..\..\code\ai\aigoals.h" />
     <ClInclude Include="..\..\code\ai\aiinternal.h" />
-    <ClInclude Include="..\..\code\ai\ailocal.h" />
     <ClInclude Include="..\..\code\anim\animplay.h" />
     <ClInclude Include="..\..\code\anim\packunpack.h" />
     <ClInclude Include="..\..\code\Asteroid\asteroid.h" />
@@ -815,9 +812,9 @@
     <ClInclude Include="..\..\code\cutscene\movie.h" />
     <ClInclude Include="..\..\code\cutscene\mvelib.h" />
     <ClInclude Include="..\..\code\cutscene\oggplayer.h" />
-    <ClInclude Include="..\..\code\Debris\debris.h" />
     <ClInclude Include="..\..\code\debugconsole\console.h" />
     <ClInclude Include="..\..\code\debugconsole\consoleparse.h" />
+    <ClInclude Include="..\..\code\Debris\debris.h" />
     <ClInclude Include="..\..\code\DirectX\vasync.h" />
     <ClInclude Include="..\..\code\DirectX\vdinput.h" />
     <ClInclude Include="..\..\code\DirectX\vdplay.h" />
@@ -927,10 +924,8 @@
     <ClInclude Include="..\..\code\missionui\missiondebrief.h" />
     <ClInclude Include="..\..\code\missionui\missionloopbrief.h" />
     <ClInclude Include="..\..\code\missionui\missionpause.h" />
-    <ClInclude Include="..\..\code\missionui\missionrecommend.h" />
     <ClInclude Include="..\..\code\missionui\missionscreencommon.h" />
     <ClInclude Include="..\..\code\missionui\missionshipchoice.h" />
-    <ClInclude Include="..\..\code\missionui\missionstats.h" />
     <ClInclude Include="..\..\code\missionui\missionweaponchoice.h" />
     <ClInclude Include="..\..\code\missionui\redalert.h" />
     <ClInclude Include="..\..\code\model\model.h" />

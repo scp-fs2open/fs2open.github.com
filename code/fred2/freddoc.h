@@ -12,7 +12,6 @@
 #ifndef _FREDDOC_H
 #define _FREDDOC_H
 
-#include "ai/ailocal.h"
 #include "MissionSave.h"
 
 #define MISSION_BACKUP_NAME	"Backup"
