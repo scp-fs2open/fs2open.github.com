@@ -481,8 +481,6 @@ FS2_SOURCES =	\
 	missionui/missionscreencommon.h	\
 	missionui/missionshipchoice.cpp	\
 	missionui/missionshipchoice.h	\
-	missionui/missionstats.cpp	\
-	missionui/missionstats.h	\
 	missionui/missionweaponchoice.cpp	\
 	missionui/missionweaponchoice.h	\
 	missionui/redalert.cpp	\
