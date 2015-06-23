@@ -478,8 +478,6 @@ FS2_SOURCES =	\
 	missionui/missionloopbrief.h	\
 	missionui/missionpause.cpp	\
 	missionui/missionpause.h	\
-	missionui/missionrecommend.cpp	\
-	missionui/missionrecommend.h	\
 	missionui/missionscreencommon.cpp	\
 	missionui/missionscreencommon.h	\
 	missionui/missionshipchoice.cpp	\
