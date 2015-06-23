@@ -17,7 +17,6 @@
 #include "physics/physics.h"
 #include "object/object.h"
 #include "editor.h"
-#include "ai/ailocal.h"
 #include "ship/ship.h"
 #include "math/vecmat.h"
 #include "Management.h"

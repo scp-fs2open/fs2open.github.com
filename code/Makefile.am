@@ -215,7 +215,6 @@ FS2_SOURCES =	\
 	ai/aigoals.cpp	\
 	ai/aigoals.h	\
 	ai/aiinternal.h	\
-	ai/ailocal.h	\
 	ai/aiturret.cpp	\
 	ai/ai_profiles.cpp	\
 	ai/ai_profiles.h	\
