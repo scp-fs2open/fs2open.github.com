@@ -1126,7 +1126,7 @@ void obj_move_all_pre(object *objp, float frametime)
 		break;
 	case OBJ_ASTEROID:
 		if (!physics_paused){
-			asteroid_process_pre(objp,frametime);
+			asteroid_process_pre(objp);
 		}
 		break;
 /*	case OBJ_CMEASURE:
