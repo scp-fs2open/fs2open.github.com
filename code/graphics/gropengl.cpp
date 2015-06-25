@@ -991,7 +991,7 @@ int gr_opengl_save_screen()
 			sptr = (ubyte *)pixels;
 			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
 
-			for (i = 0; i < gr_get_cursor_size(); i++) {
+			for (i = 0; i < (int)gr_get_cursor_size(); i++) {
 				memcpy(dptr, sptr, mouse_times_pixel);
 				sptr += mouse_times_pixel;
 				dptr -= width_times_pixel;
@@ -1039,7 +1039,7 @@ int gr_opengl_save_screen()
 			sptr = (ubyte *)GL_saved_mouse_data;
 			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
 
-			for (i = 0; i < gr_get_cursor_size(); i++) {
+			for (i = 0; i < (int)gr_get_cursor_size(); i++) {
 				memcpy(dptr, sptr, mouse_times_pixel);
 				sptr += mouse_times_pixel;
 				dptr -= width_times_pixel;
