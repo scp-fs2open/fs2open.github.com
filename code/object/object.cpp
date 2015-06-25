@@ -1340,7 +1340,7 @@ void obj_move_all_post(object *objp, float frametime)
 		case OBJ_ASTEROID:
 		{
 			if ( !physics_paused )
-				asteroid_process_post(objp, frametime);
+				asteroid_process_post(objp);
 
 			break;
 		}

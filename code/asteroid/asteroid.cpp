@@ -1739,7 +1739,7 @@ void asteroid_verify_collide_objnum(asteroid *asp)
 	}
 }
 
-void asteroid_process_post(object * obj, float frame_time)
+void asteroid_process_post(object * obj)
 {
 	if (Asteroids_enabled) {
 		int num;
