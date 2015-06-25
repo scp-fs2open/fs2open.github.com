@@ -61,8 +61,9 @@ char Gr_current_palette_name[128] = NOX("none");
 
 // cursor stuff
 int Gr_cursor_handle = -1;
-int Web_cursor_bitmap = -1;
 size_t Gr_cursor_size = 32;	// default w/h
+
+int Web_cursor_bitmap = -1;
 
 int Gr_inited = 0;
 
