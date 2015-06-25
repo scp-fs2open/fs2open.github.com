@@ -49,6 +49,8 @@ const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
 
 screen gr_screen;
 
+CCursor g_Cursor;
+
 color_gun Gr_red, Gr_green, Gr_blue, Gr_alpha;
 color_gun Gr_t_red, Gr_t_green, Gr_t_blue, Gr_t_alpha;
 color_gun Gr_ta_red, Gr_ta_green, Gr_ta_blue, Gr_ta_alpha;
@@ -59,9 +61,6 @@ ubyte Gr_original_palette[768];		// The palette
 ubyte Gr_current_palette[768];
 char Gr_current_palette_name[128] = NOX("none");
 
-// cursor stuff
-int Gr_cursor_handle = -1;
-size_t Gr_cursor_size = 32;	// default w/h
 
 int Web_cursor_bitmap = -1;
 
@@ -1053,22 +1052,8 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 	bm_init();
 
-	if ( !bm_is_valid(gr_get_cursor_bitmap()) ) {
-		int w, h;
-
-		Gr_cursor_handle = bm_load( "cursor" );
-
-		if ( bm_is_valid(gr_get_cursor_bitmap()) ) {
-			// get cursor size, so that we can be sure to account for the full thing
-			// in later cursor hiding code
-			bm_get_info(gr_get_cursor_bitmap(), &w, &h);
-			Gr_cursor_size = MAX(w, h);
-
-			if (gr_get_cursor_size() <= 0) {
-				Int3();
-			}
-		}
-	}
+	if ( !bm_is_valid(g_Cursor.getHandle()) )
+		g_Cursor.setHandle( bm_load( "cursor" ) );
 
 	// load the web pointer cursor bitmap
 	if (Web_cursor_bitmap < 0) {
@@ -1227,17 +1212,37 @@ void gr_set_shader(shader *shade)
 	}
 }
 
+// ****************************************************************************
+// CCursor class
+// ****************************************************************************
+
+/**
+ * Destructor
+ */
+CCursor::~CCursor(void)
+{
+	if (bm_is_valid(_cursor_handle)) {
+		bm_unload(_cursor_handle);
+		_cursor_handle = -1;
+		_cursor_size = 0;
+	}	
+}
+
 /**
  * Set the bitmap for the mouse pointer.  This is called by the animating mouse
  * pointer code.
  *
- * The lock parameter just locks basically disables the next call of this function that doesn't
- * have an unlock feature.  If adding in more cursor-changing situations, be aware of
- * unexpected results. You have been warned.
+ * @param n 	Handle to bitmap
+ * @param lock	See CCursor::cursor_status. Default value is GR_CURSOR_UNKNOWN
  *
- * @todo investigate memory leak of original Gr_cursor_handle bitmap when this is called
+ * The lock parameter just locks basically disables the next call of this 
+ * function that doesn't have an unlock feature.  If adding in more 
+ * cursor-changing situations, be aware of unexpected results. 
+ * You have been warned.
+ *
+ * @todo investigate original _cursor_handle memory leak  when this is called
  */
-void gr_set_cursor_bitmap(int n, int lock)
+void CCursor::setHandle(int n, cursor_status lock)
 {
 	int w, h;
 	static int locked = 0;
@@ -1245,27 +1250,28 @@ void gr_set_cursor_bitmap(int n, int lock)
 	if ( !locked || (lock == GR_CURSOR_UNLOCK) ) {
 		// if we are changing the cursor to something different
 		// then unload the previous cursor's data - taylor
-		if ( bm_is_valid(gr_get_cursor_bitmap()) && (gr_get_cursor_bitmap() != n) ) {
-			// be sure to avoid changing a cursor which is simply another frame
-			if ( (GL_cursor_nframes < 2) || ((n - gr_get_cursor_bitmap()) >= GL_cursor_nframes) ) {
-				gr_unset_cursor_bitmap(gr_get_cursor_bitmap());
+		if ( bm_is_valid(getHandle()) && (getHandle() != n) ) {
+			// Avoid changing cursor which is simply another frame
+			if ( (GL_cursor_nframes < 2) || 
+			     ((n - getHandle()) >= GL_cursor_nframes) ) {
+				unloadHandle(getHandle());
 			}
 		}
 
-		if (n != gr_get_cursor_bitmap()) {
-			// get cursor size, so that we can be sure to account for the full thing
-			// in later cursor hiding code
+		if (n != getHandle()) {
+			// get cursor size, so that we can account for the 
+			// full thing in later cursor hiding code
 			bm_get_info(n, &w, &h, NULL, &GL_cursor_nframes);
 			Assert( GL_cursor_nframes > 0 );
 
-			Gr_cursor_size = MAX(w, h);
+			_cursor_size = MAX(w, h);
 
-			if (gr_get_cursor_size() <= 0) {
+			if (getCursorSize() <= 0) {
 				Int3();
 			}
 		}
 
-		Gr_cursor_handle = n;
+		_cursor_handle = n;
 	} else {
 		locked = 0;
 	}
@@ -1275,36 +1281,44 @@ void gr_set_cursor_bitmap(int n, int lock)
 	}
 }
 
-void gr_unset_cursor_bitmap(int n)
+/**
+ * Unloads resources held by a cursor bitmap and resets CCursor object
+ *
+ * @param n Handle to bitmap
+ */
+void CCursor::unloadHandle(int n)
 {
-	if (n < 0) {
+	if (!bm_is_valid(n))
 		return;
-	}
 
-	if (gr_get_cursor_bitmap() == n) {
-		bm_unload(gr_get_cursor_bitmap());
-		Gr_cursor_handle = -1;
+	if (getHandle() == n) {
+		bm_unload(getHandle());
+		_cursor_handle = -1;
+		_cursor_size = 0;
 	}
 }
 
 /**
- * Retrieves the current bitmap
- * Used in UI_GADGET to save/restore current cursor state
+ * Retrieves the current bitmap handle
+ *
+ * @return Current cursor bitmap handle
  */
-int gr_get_cursor_bitmap()
+int CCursor::getHandle() const
 {
-	return Gr_cursor_handle;
+	return _cursor_handle;
 }
 
 /**
  * Retrieves the current bitmap size
  *
- * @return Current bitmap size in width or height (assumed square)
+ * @return Current cursor bitmap size in width or height (assumed square)
  */
-size_t gr_get_cursor_size()
+size_t CCursor::getCursorSize() const
 {
-	return Gr_cursor_size;
+	return _cursor_size;
 }
+
+// ****************************************************************************
 
 // new bitmap functions
 void gr_bitmap(int _x, int _y, int resize_mode)

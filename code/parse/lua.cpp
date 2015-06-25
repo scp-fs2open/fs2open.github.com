@@ -12627,16 +12627,16 @@ ADE_FUNC(setCursorImage, l_Mouse, "Image filename, [LOCK or UNLOCK]", "Sets mous
 	if(!ade_get_args(L, "s|o", &s, l_Enum.GetPtr(&u)))
 		return ADE_RETURN_NIL;
 
-	int ul = 0;
+	CCursor::cursor_status ul = CCursor::GR_CURSOR_UNKNOWN;
 	if(u != NULL)
 	{
 		if(u->index == LE_LOCK)
-			ul = GR_CURSOR_LOCK;
+			ul = CCursor::GR_CURSOR_LOCK;
 		else if(u->index == LE_UNLOCK)
-			ul = GR_CURSOR_UNLOCK;
+			ul = CCursor::GR_CURSOR_UNLOCK;
 	}
 
-	gr_set_cursor_bitmap(bm_load(s), ul);
+	g_Cursor.setHandle(bm_load(s), ul);
 
 	return ADE_RETURN_NIL;
 }

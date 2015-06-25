@@ -436,8 +436,8 @@ void UI_BUTTON::maybe_show_custom_cursor()
 	// set the mouseover cursor 
 	if (is_mouse_on()) {
 		if ((custom_cursor_bmap >= 0) && (previous_cursor_bmap < 0)) {
-			previous_cursor_bmap = gr_get_cursor_bitmap();
-			gr_set_cursor_bitmap(custom_cursor_bmap, GR_CURSOR_LOCK);			// set and lock
+			previous_cursor_bmap = g_Cursor.getHandle();
+			g_Cursor.setHandle(custom_cursor_bmap, CCursor::GR_CURSOR_LOCK);
 		}
 	}
 }
@@ -445,7 +445,7 @@ void UI_BUTTON::maybe_show_custom_cursor()
 void UI_BUTTON::restore_previous_cursor()
 {
 	if (previous_cursor_bmap >= 0) {
-		gr_set_cursor_bitmap(previous_cursor_bmap, GR_CURSOR_UNLOCK);		// restore and unlock
+		g_Cursor.setHandle(previous_cursor_bmap, CCursor::GR_CURSOR_UNLOCK);
 		previous_cursor_bmap = -1;
 	}
 }

@@ -742,13 +742,29 @@ extern void gr_set_palette(const char *name, ubyte *palette, int restrict_to_128
 void gr_get_string_size_win(int *w, int *h, const char *text);
 void gr_string_win(int x, int y, const char *s );
 
-// set the mouse pointer to a specific bitmap, used for animating cursors
-#define GR_CURSOR_LOCK		1
-#define GR_CURSOR_UNLOCK	2
-void gr_set_cursor_bitmap(int n, int lock = 0);
-void gr_unset_cursor_bitmap(int n);
-int gr_get_cursor_bitmap();
-size_t gr_get_cursor_size();
+class CCursor
+{
+public:
+	enum cursor_status 
+	{
+		GR_CURSOR_UNKNOWN = 0,		
+		GR_CURSOR_LOCK,
+		GR_CURSOR_UNLOCK
+	};
+
+	CCursor	 () : _cursor_handle(-1), _cursor_size(0) {}
+	~CCursor (void);
+	void 	setHandle(int n, cursor_status lock = GR_CURSOR_UNKNOWN);
+	void 	unloadHandle(int n);
+	int 	getHandle() const;
+	size_t 	getCursorSize() const;
+
+private:
+	int 	_cursor_handle;
+	size_t 	_cursor_size;
+};
+
+extern CCursor g_Cursor;
 
 extern int Web_cursor_bitmap;
 
