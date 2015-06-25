@@ -1052,15 +1052,15 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 	bm_init();
 
-	if (Gr_cursor < 0) {
+	if (gr_get_cursor_bitmap() < 0) {
 		int w, h;
 
 		Gr_cursor = bm_load( "cursor" );
 
-		if (Gr_cursor >= 0) {
+		if (gr_get_cursor_bitmap() >= 0) {
 			// get cursor size, so that we can be sure to account for the full thing
 			// in later cursor hiding code
-			bm_get_info(Gr_cursor, &w, &h);
+			bm_get_info(gr_get_cursor_bitmap(), &w, &h);
 			Gr_cursor_size = MAX(w, h);
 
 			if (Gr_cursor_size <= 0) {
@@ -1245,14 +1245,14 @@ void gr_set_cursor_bitmap(int n, int lock)
 	if ( !locked || (lock == GR_CURSOR_UNLOCK) ) {
 		// if we are changing the cursor to something different
 		// then unload the previous cursor's data - taylor
-		if ( (Gr_cursor >= 0) && (Gr_cursor != n) ) {
+		if ( (gr_get_cursor_bitmap() >= 0) && (gr_get_cursor_bitmap() != n) ) {
 			// be sure to avoid changing a cursor which is simply another frame
-			if ( (GL_cursor_nframes < 2) || ((n - Gr_cursor) >= GL_cursor_nframes) ) {
-				gr_unset_cursor_bitmap(Gr_cursor);
+			if ( (GL_cursor_nframes < 2) || ((n - gr_get_cursor_bitmap()) >= GL_cursor_nframes) ) {
+				gr_unset_cursor_bitmap(gr_get_cursor_bitmap());
 			}
 		}
 
-		if (n != Gr_cursor) {
+		if (n != gr_get_cursor_bitmap()) {
 			// get cursor size, so that we can be sure to account for the full thing
 			// in later cursor hiding code
 			bm_get_info(n, &w, &h, NULL, &GL_cursor_nframes);
@@ -1282,8 +1282,8 @@ void gr_unset_cursor_bitmap(int n)
 		return;
 	}
 
-	if (Gr_cursor == n) {
-		bm_unload(Gr_cursor);
+	if (gr_get_cursor_bitmap() == n) {
+		bm_unload(gr_get_cursor_bitmap());
 		Gr_cursor = -1;
 	}
 }
