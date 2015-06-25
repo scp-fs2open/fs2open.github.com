@@ -622,7 +622,7 @@ extern void init_ai_system(void);
 extern void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp);
 extern void ai_evade_object(object *evader, object *evaded);
 extern void ai_ignore_object(object *ignorer, object *ignored, int ignore_new);
-extern void ai_ignore_wing(object *ignorer, int wingnum, int priority);
+extern void ai_ignore_wing(object *ignorer, int wingnum);
 extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int dock_type);
 extern void ai_stay_still(object *still_objp, vec3d *view_pos);
 extern void ai_do_default_behavior(object *obj);

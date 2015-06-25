@@ -2485,7 +2485,7 @@ void ai_ignore_object(object *ignorer, object *ignored, int ignore_new)
 /**
  * Ignore some object without changing mode.
  */
-void ai_ignore_wing(object *ignorer, int wingnum, int priority)
+void ai_ignore_wing(object *ignorer, int wingnum)
 {
 	ai_info	*aip;
 
