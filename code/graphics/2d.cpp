@@ -1288,14 +1288,12 @@ void CCursor::setHandle(int n, cursor_status lock)
  */
 void CCursor::unloadHandle(int n)
 {
-	if (!bm_is_valid(n))
+	if (!bm_is_valid(n) || !(getHandle() == n))
 		return;
 
-	if (getHandle() == n) {
-		bm_unload(getHandle());
-		_cursor_handle = -1;
-		_cursor_size = 0;
-	}
+	bm_unload(getHandle());
+	_cursor_handle = -1;
+	_cursor_size = 0;
 }
 
 /**
