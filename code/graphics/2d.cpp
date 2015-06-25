@@ -1052,12 +1052,12 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 	bm_init();
 
-	if (gr_get_cursor_bitmap() < 0) {
+	if ( !bm_is_valid(gr_get_cursor_bitmap()) ) {
 		int w, h;
 
 		Gr_cursor = bm_load( "cursor" );
 
-		if (gr_get_cursor_bitmap() >= 0) {
+		if ( bm_is_valid(gr_get_cursor_bitmap()) ) {
 			// get cursor size, so that we can be sure to account for the full thing
 			// in later cursor hiding code
 			bm_get_info(gr_get_cursor_bitmap(), &w, &h);
@@ -1245,7 +1245,7 @@ void gr_set_cursor_bitmap(int n, int lock)
 	if ( !locked || (lock == GR_CURSOR_UNLOCK) ) {
 		// if we are changing the cursor to something different
 		// then unload the previous cursor's data - taylor
-		if ( (gr_get_cursor_bitmap() >= 0) && (gr_get_cursor_bitmap() != n) ) {
+		if ( bm_is_valid(gr_get_cursor_bitmap()) && (gr_get_cursor_bitmap() != n) ) {
 			// be sure to avoid changing a cursor which is simply another frame
 			if ( (GL_cursor_nframes < 2) || ((n - gr_get_cursor_bitmap()) >= GL_cursor_nframes) ) {
 				gr_unset_cursor_bitmap(gr_get_cursor_bitmap());
