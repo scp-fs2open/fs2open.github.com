@@ -2047,7 +2047,7 @@ void model_render_set_glow_points(polymodel *pm, int objnum)
 		if ( objp != NULL && objp->type == OBJ_SHIP ) {
 			shipp = &Ships[Objects[objnum].instance];
 			sip = &Ship_info[shipp->ship_info_index];
-			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(-1);
+			gpoi = sip->glowpoint_bank_override_map.find(-1);
 
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
 				override_all = true;
@@ -2106,7 +2106,7 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 
 	if ( shipp ) {
 		sip = &Ship_info[shipp->ship_info_index];
-		SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(-1);
+		gpoi = sip->glowpoint_bank_override_map.find(-1);
 
 		if(gpoi != sip->glowpoint_bank_override_map.end()) {
 			override_all = true;
