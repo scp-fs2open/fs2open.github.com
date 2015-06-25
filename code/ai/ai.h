@@ -727,7 +727,7 @@ void process_subobjects(int objnum);
 void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile);
 
 //SUSHI: Updating AI aim
-void ai_update_aim(ai_info *aip, object* En_Objp);
+void ai_update_aim(ai_info *aip, object* En_objp);
 
 //SUSHI: Random evasive sidethrust
 void do_random_sidethrust(ai_info *aip, ship_info *sip);

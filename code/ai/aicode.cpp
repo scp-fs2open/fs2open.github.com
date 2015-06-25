@@ -3494,7 +3494,7 @@ void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *pla
 }
 
 //	--------------------------------------------------------------------------
-void ai_update_aim(ai_info *aip, object* En_Objp)
+void ai_update_aim(ai_info *aip, object* En_objp)
 {
 	if (Missiontime >= aip->next_aim_pos_time)
 	{
