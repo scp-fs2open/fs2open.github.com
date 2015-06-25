@@ -342,7 +342,7 @@ void gr_opengl_flip()
 		gr_reset_clip();
 		mouse_get_pos( &mx, &my );
 
-	//	opengl_save_mouse_area(mx, my, Gr_cursor_size, Gr_cursor_size);
+	//	opengl_save_mouse_area(mx, my, gr_get_cursor_size(), gr_get_cursor_size());
 
 		if (bm_is_valid(gr_get_cursor_bitmap())) {
 			gr_set_bitmap(gr_get_cursor_bitmap());
@@ -936,13 +936,13 @@ void opengl_save_mouse_area(int x, int y, int w, int h)
 	GL_CHECK_FOR_ERRORS("start of save_mouse_area()");
 
 	// lazy - taylor
-	cursor_size = (Gr_cursor_size * Gr_cursor_size);
+	cursor_size = (gr_get_cursor_size() * gr_get_cursor_size());
 
 	// no reason to be bigger than the cursor, should never be smaller
-	if (w != Gr_cursor_size)
-		w = Gr_cursor_size;
-	if (h != Gr_cursor_size)
-		h = Gr_cursor_size;
+	if (w != gr_get_cursor_size())
+		w = gr_get_cursor_size();
+	if (h != gr_get_cursor_size())
+		h = gr_get_cursor_size();
 
 	GL_mouse_saved_x1 = x;
 	GL_mouse_saved_y1 = y;
@@ -1033,7 +1033,7 @@ int gr_opengl_save_screen()
 		pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 
 		width_times_pixel = (gr_screen.max_w * 4);
-		mouse_times_pixel = (Gr_cursor_size * 4);
+		mouse_times_pixel = (gr_get_cursor_size() * 4);
 
 		sptr = (ubyte *)pixels;
 		dptr = (ubyte *)&GL_saved_screen[gr_screen.max_w * gr_screen.max_h * 4];
@@ -1055,7 +1055,7 @@ int gr_opengl_save_screen()
 			sptr = (ubyte *)pixels;
 			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
 
-			for (i = 0; i < Gr_cursor_size; i++) {
+			for (i = 0; i < gr_get_cursor_size(); i++) {
 				memcpy(dptr, sptr, mouse_times_pixel);
 				sptr += mouse_times_pixel;
 				dptr -= width_times_pixel;
@@ -1089,7 +1089,7 @@ int gr_opengl_save_screen()
 		dptr = (ubyte *)GL_saved_screen;
 
 		width_times_pixel = (gr_screen.max_w * 4);
-		mouse_times_pixel = (Gr_cursor_size * 4);
+		mouse_times_pixel = (gr_get_cursor_size() * 4);
 
 		for (i = 0; i < gr_screen.max_h; i++) {
 			sptr -= width_times_pixel;
@@ -1103,7 +1103,7 @@ int gr_opengl_save_screen()
 			sptr = (ubyte *)GL_saved_mouse_data;
 			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
 
-			for (i = 0; i < Gr_cursor_size; i++) {
+			for (i = 0; i < gr_get_cursor_size(); i++) {
 				memcpy(dptr, sptr, mouse_times_pixel);
 				sptr += mouse_times_pixel;
 				dptr -= width_times_pixel;

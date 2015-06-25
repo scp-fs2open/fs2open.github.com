@@ -748,6 +748,8 @@ void gr_string_win(int x, int y, const char *s );
 void gr_set_cursor_bitmap(int n, int lock = 0);
 void gr_unset_cursor_bitmap(int n);
 int gr_get_cursor_bitmap();
+size_t gr_get_cursor_size();
+
 extern int Web_cursor_bitmap;
 
 // Called by OS when application gets/looses focus

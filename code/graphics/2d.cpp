@@ -62,7 +62,7 @@ char Gr_current_palette_name[128] = NOX("none");
 // cursor stuff
 int Gr_cursor = -1;
 int Web_cursor_bitmap = -1;
-int Gr_cursor_size = 32;	// default w/h
+size_t Gr_cursor_size = 32;	// default w/h
 
 int Gr_inited = 0;
 
@@ -1063,9 +1063,8 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 			bm_get_info(gr_get_cursor_bitmap(), &w, &h);
 			Gr_cursor_size = MAX(w, h);
 
-			if (Gr_cursor_size <= 0) {
+			if (gr_get_cursor_size() <= 0) {
 				Int3();
-				Gr_cursor_size = 32;
 			}
 		}
 	}
@@ -1260,9 +1259,8 @@ void gr_set_cursor_bitmap(int n, int lock)
 
 			Gr_cursor_size = MAX(w, h);
 
-			if (Gr_cursor_size <= 0) {
+			if (gr_get_cursor_size() <= 0) {
 				Int3();
-				Gr_cursor_size = 32;
 			}
 		}
 
@@ -1295,6 +1293,16 @@ void gr_unset_cursor_bitmap(int n)
 int gr_get_cursor_bitmap()
 {
 	return Gr_cursor;
+}
+
+/**
+ * Retrieves the current bitmap size
+ *
+ * @return Current bitmap size in width or height (assumed square)
+ */
+size_t gr_get_cursor_size()
+{
+	return Gr_cursor_size;
 }
 
 // new bitmap functions
