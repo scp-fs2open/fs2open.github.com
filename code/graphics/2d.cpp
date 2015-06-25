@@ -60,7 +60,7 @@ ubyte Gr_current_palette[768];
 char Gr_current_palette_name[128] = NOX("none");
 
 // cursor stuff
-int Gr_cursor = -1;
+int Gr_cursor_handle = -1;
 int Web_cursor_bitmap = -1;
 size_t Gr_cursor_size = 32;	// default w/h
 
@@ -1055,7 +1055,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 	if ( !bm_is_valid(gr_get_cursor_bitmap()) ) {
 		int w, h;
 
-		Gr_cursor = bm_load( "cursor" );
+		Gr_cursor_handle = bm_load( "cursor" );
 
 		if ( bm_is_valid(gr_get_cursor_bitmap()) ) {
 			// get cursor size, so that we can be sure to account for the full thing
@@ -1234,7 +1234,7 @@ void gr_set_shader(shader *shade)
  * have an unlock feature.  If adding in more cursor-changing situations, be aware of
  * unexpected results. You have been warned.
  *
- * @todo investigate memory leak of original Gr_cursor bitmap when this is called
+ * @todo investigate memory leak of original Gr_cursor_handle bitmap when this is called
  */
 void gr_set_cursor_bitmap(int n, int lock)
 {
@@ -1264,7 +1264,7 @@ void gr_set_cursor_bitmap(int n, int lock)
 			}
 		}
 
-		Gr_cursor = n;
+		Gr_cursor_handle = n;
 	} else {
 		locked = 0;
 	}
@@ -1282,7 +1282,7 @@ void gr_unset_cursor_bitmap(int n)
 
 	if (gr_get_cursor_bitmap() == n) {
 		bm_unload(gr_get_cursor_bitmap());
-		Gr_cursor = -1;
+		Gr_cursor_handle = -1;
 	}
 }
 
@@ -1292,7 +1292,7 @@ void gr_unset_cursor_bitmap(int n)
  */
 int gr_get_cursor_bitmap()
 {
-	return Gr_cursor;
+	return Gr_cursor_handle;
 }
 
 /**
