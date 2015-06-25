@@ -94,15 +94,15 @@ typedef struct shader {
 // gr_get_colors after calling gr_set_colors_fast.
 typedef struct color {
 	uint		screen_sig;
+	int		is_alphacolor;
+	int		alphacolor;
+	int		magic;
 	ubyte		red;
 	ubyte		green;
 	ubyte		blue;
 	ubyte		alpha;
 	ubyte		ac_type;							// The type of alphacolor.  See AC_TYPE_??? defines
-	int		is_alphacolor;
 	ubyte		raw8;
-	int		alphacolor;
-	int		magic;		
 } color;
 
 // Used by the team coloring code
