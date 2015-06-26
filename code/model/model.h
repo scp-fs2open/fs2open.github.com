@@ -396,8 +396,6 @@ public:
 	char	look_at[MAX_NAME_LEN];	//VA - name of submodel to be looked at by this submodel
 };
 
-void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
-
 #define MP_TYPE_UNUSED 0
 #define MP_TYPE_SUBSYS 1
 
