@@ -973,7 +973,7 @@ void parse_cutscenes(mission *pm)
 	{
 		mission_cutscene scene;
 
-		while (true)
+		while (!optional_string("#end"))
 		{
 			// this list should correspond to the MOVIE_* #defines
 			scene.type = optional_string_one_of(6,
@@ -1000,9 +1000,6 @@ void parse_cutscenes(mission *pm)
 			// add it
 			pm->cutscenes.push_back(scene);
 		}
-
-		// for reverse compatibility, check that we have a closing tag
-		optional_string("#end");
 	}
 }
 
