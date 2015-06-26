@@ -407,18 +407,18 @@ void HudGaugeMessages::scrollMessages()
 				}
 			}
 		} else {
+			bool at_end = m == (active_messages.end() - 1);
+
+			if (at_end) {
+				// Iterator will be invalid
+				active_messages.pop_back();
+				break;
+			}
+
 			*m = active_messages.back();
 			active_messages.pop_back();
 
-			if (active_messages.empty())
-			{
-				// We may not use the iterator any longer
-				break;
-			}
-			else
-			{
-				continue;
-			}
+			continue;
 		}
 
 		++m;
