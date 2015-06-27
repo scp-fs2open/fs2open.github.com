@@ -250,17 +250,22 @@ struct queued_buffer_draw
 
 	float thrust_scale;
 
-	queued_buffer_draw()
-	{
-		depth_mode = GR_ZBUFF_FULL;
-
-		texture_maps[TM_BASE_TYPE]		= -1;
-		texture_maps[TM_GLOW_TYPE]		= -1;
-		texture_maps[TM_HEIGHT_TYPE]	= -1;
-		texture_maps[TM_MISC_TYPE]		= -1;
-		texture_maps[TM_NORMAL_TYPE]	= -1;
-		texture_maps[TM_SPECULAR_TYPE]	= -1;
-	}
+	queued_buffer_draw():
+		render_state_handle(0),
+		texture_maps{-1,-1,-1,-1,-1,-1},
+		transform_buffer_offset(0),
+		clr(gr_screen.current_color),
+		blend_filter(0),
+		alpha(0.0f),
+		depth_mode(GR_ZBUFF_FULL),
+		transformation(),
+		scale{ { {1.0f,1.0f,1.0f} } },
+		buffer(NULL),
+		texi(0),
+		flags(0),
+		sdr_flags(0),
+		thrust_scale(0.0f)
+	{}
 };
 
 struct outline_draw
