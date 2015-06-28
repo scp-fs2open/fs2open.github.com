@@ -14,6 +14,9 @@
 
 #include "globalincs/pstypes.h"
 
+//finds distance from point to plane
+float fvi_point_dist_plane(	vec3d *plane_pnt,vec3d *plane_norm, vec3d *point);
+
 // fvi functions - fvi stands for Find Vector Intersection
 // fvi_a_b - means find the intersection of something of type a with something of type b
 // type can be:
@@ -54,6 +57,14 @@ float fvi_ray_plane(vec3d *new_pnt,
                     const vec3d *plane_pnt, const vec3d *plane_norm,		// Plane description, a point and a normal
                     const vec3d *ray_origin, const vec3d *ray_direction,	// Ray description, a point and a direction
 						  float rad);
+
+
+//find the point on the specified plane where the line segment intersects
+//returns true if point found, false if line parallel to plane
+//new_pnt is the found point on the plane
+//plane_pnt & plane_norm describe the plane
+//p0 & p1 are the ends of the line
+int fvi_segment_plane(vec3d *new_pnt, vec3d *plane_pnt, vec3d *plane_norm, vec3d *p0, vec3d *p1, float rad);
 
 
 // fvi_point_face

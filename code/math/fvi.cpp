@@ -22,6 +22,8 @@
 #define	UNINITIALIZED_VALUE	-1234567.8f
 #define WARN_DIST	1.0
 
+void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 );
+
 static float matrix_determinant_from_vectors(const vec3d *v1, const vec3d *v2, const vec3d *v3)
 {
 	float ans;
@@ -61,6 +63,25 @@ void fvi_two_lines_in_3space(const vec3d *p1, const vec3d *v1, const vec3d *p2, 
 		*s = FLT_MAX;
 		*t = FLT_MAX;
 	}
+}
+
+/**
+ * Tells distance from a plain to a point-Bobboau
+ *
+ * @param plane_pnt		Plane description, a point
+ * @param plane_norm	Plane description, a normal
+ * @param point			A point to test
+ */
+float fvi_point_dist_plane(	vec3d *plane_pnt, vec3d *plane_norm,
+					    vec3d *point
+						)
+{
+	float dist,D;
+		
+	D = -vm_vec_dot(plane_norm,plane_pnt);
+
+	dist = vm_vec_dot(plane_norm, point) + D;
+	return dist;
 }
 
 /**
@@ -127,6 +148,39 @@ float fvi_ray_plane(vec3d *new_pnt,
 		vm_vec_scale_add(new_pnt,ray_origin,ray_direction,t);
 
 	return t;
+}
+
+/**
+ * Find the point on the specified plane where the line intersects
+ *
+ * @param new_pnt		The found point on the plane
+ * @param plane_pnt		Plane description, a point
+ * @param plane_norm	Plane description, a normal
+ * @param p0			The first end of the line
+ * @param p1			The second end of the line
+ * @param rad			Radius
+ *
+ * @return true if point found, false if line parallel to plane
+ */
+  
+int fvi_segment_plane(vec3d *new_pnt,
+										vec3d *plane_pnt,vec3d *plane_norm,
+                                 vec3d *p0,vec3d *p1,float rad)
+{
+	float t;
+	vec3d d;
+
+	vm_vec_sub( &d, p1, p0 );
+	
+	t = fvi_ray_plane(new_pnt,
+                    plane_pnt,plane_norm,		// Plane description, a point and a normal
+                    p0,&d,	// Ray description, a point and a direction
+						  rad);
+
+	if ( t < 0.0f ) return 0;		// intersection lies behind p0
+	if ( t > 1.0f ) return 0;		// intersection lies past p1
+
+	return 1;		// They intersect!
 }
 
 /**
@@ -445,6 +499,8 @@ int fvi_point_face(const vec3d *checkp, int nv, vec3d const *const *verts, const
 //
 // ****************************************************************************
 
+int check_sphere_point( vec3d *point, vec3d *sphere_start, vec3d *sphere_vel, float radius, float *collide_time );
+
 /**
  * Returns whether a sphere hits a given plane in the time [0,1]
  * If two collisions occur, returns earliest legal time
@@ -500,6 +556,130 @@ int fvi_sphere_plane(vec3d *intersect_point, const vec3d *sphere_center_start, c
 	*crossing_time = t2 - t1;
 
 	return ( (t1 < 1) && (t2 > 0) );
+}
+
+/**
+ * Returns whether a sphere hits and edge for the case the edge is perpendicular to sphere_velocity
+ * If two collisions occur, returns the earliest legal time
+ * returns the intersection point on the edge
+ *
+ * @param intersect_point		position on plane where sphere makes first contact [RESULT]
+ * @param sphere_center_start	initial sphere center
+ * @param sphere_velocity		initial sphere velocity
+ * @param sphere_radius			radius of sphere
+ * @param edge_point1			first edge point
+ * @param edge_point2			second edge point
+ * @param collide_time			actual time of the collision
+ */		
+int fvi_sphere_perp_edge(vec3d *intersect_point, vec3d *sphere_center_start, vec3d *sphere_velocity,
+								 float sphere_radius, vec3d *edge_point1, vec3d *edge_point2, float *collide_time)
+{
+	// find the intersection in the plane normal to sphere velocity and edge velocity
+	// choose a plane point V0 (first vertex of the edge)
+	// project vectors and points into the plane
+	// find the projection of the intersection and see if it lies on the edge
+
+	vec3d edge_velocity;
+	vec3d V0, V1;
+	vec3d Xe_proj, Xs_proj;
+
+	V0 = *edge_point1;
+	V1 = *edge_point2;
+	vm_vec_sub(&edge_velocity, &V1, &V0);
+
+	// define a set of local unit vectors
+	vec3d x_hat, y_hat, z_hat;
+	float max_edge_parameter;
+
+	vm_vec_copy_normalize( &x_hat, &edge_velocity );
+	vm_vec_copy_normalize( &y_hat, sphere_velocity );
+	vm_vec_crossprod( &z_hat, &x_hat, &y_hat );
+	max_edge_parameter = vm_vec_mag( &edge_velocity );
+
+	vec3d temp;
+	// next two temp should be same as starting velocities
+	vm_vec_projection_onto_plane(&temp, sphere_velocity, &z_hat);
+	Assert ( !vm_vec_cmp(&temp, sphere_velocity) );
+	vm_vec_projection_onto_plane(&temp, &edge_velocity,  &z_hat);
+	Assert ( !vm_vec_cmp(&temp, &edge_velocity) );
+
+	// should return V0
+	vm_project_point_onto_plane(&Xe_proj, &V0, &z_hat, &V0);
+	Assert ( !vm_vec_cmp(&Xe_proj, &V0) );
+
+	vm_project_point_onto_plane(&Xs_proj, sphere_center_start, &z_hat, &V0);
+
+	vec3d plane_coord;
+	plane_coord.xyz.x = vm_vec_dotprod(&Xs_proj, &x_hat);
+	plane_coord.xyz.y = vm_vec_dotprod(&Xe_proj, &y_hat);
+	plane_coord.xyz.z = vm_vec_dotprod(&Xe_proj, &z_hat);
+
+	// determime the position on the edge line
+	vm_vec_copy_scale( intersect_point, &x_hat, plane_coord.xyz.x );
+	vm_vec_scale_add2( intersect_point, &y_hat, plane_coord.xyz.y );
+	vm_vec_scale_add2( intersect_point, &z_hat, plane_coord.xyz.z );
+
+	// check if point is actually on edge
+	float edge_parameter;
+	vec3d temp_vec;
+
+	vm_vec_sub( &temp_vec, intersect_point, &V0 );
+	edge_parameter = vm_vec_dotprod( &temp_vec, &x_hat );
+
+	if ( edge_parameter < 0 || edge_parameter > max_edge_parameter ) {
+		return 0;
+	}
+
+	return ( check_sphere_point(intersect_point, sphere_center_start, sphere_velocity, sphere_radius, collide_time) );
+}
+	
+
+/**
+ * Determines whether and where a moving sphere hits a point
+ *
+ * @param point			point sphere collides with
+ * @param sphere_start	initial sphere center
+ * @param sphere_vel	velocity of sphere
+ * @param radius		radius of sphere
+ * @param collide_time	time of first collision with t >= 0
+ */
+int check_sphere_point( vec3d *point, vec3d *sphere_start, vec3d *sphere_vel, float radius, float *collide_time )
+{
+	vec3d delta_x;
+	float delta_x_sqr, vs_sqr, delta_x_dot_vs;
+
+	vm_vec_sub( &delta_x, sphere_start, point );
+	delta_x_sqr = vm_vec_mag_squared( &delta_x );
+	vs_sqr = vm_vec_mag_squared( sphere_vel );
+	delta_x_dot_vs = vm_vec_dotprod( &delta_x, sphere_vel );
+
+	float discriminant = delta_x_dot_vs*delta_x_dot_vs - vs_sqr*(delta_x_sqr - radius*radius);
+	if (discriminant < 0) {
+		return 0;
+	}
+
+	float radical, time1, time2;
+	radical = fl_sqrt(discriminant);
+	time1 = (-delta_x_dot_vs + radical) / vs_sqr;
+	time2 = (-delta_x_dot_vs - radical) / vs_sqr;
+
+	if (time1 > time2) {
+		float temp = time1;
+		time1 = time2;
+		time2 = temp;
+	}
+
+	if (time1 >= 0 && time1 <= 1.0) {
+		*collide_time = time1;
+		return 1;
+	}
+
+	if (time2 >= 0 && time2 <= 1.0) {
+		*collide_time = time2;
+		return 1;
+	}
+
+	return 0;
 }
 
 /**
@@ -736,7 +916,173 @@ Hit:
 	}
 }
 
+/**
+ * Finds the closest point on a line to a given fixed point
+ *
+ * @param closest_point		the closest point on the line
+ * @param fixed_point		the fixed point
+ * @param line_point1		first point on the line
+ * @param line_point2		second point on the line
+ */
+void fvi_closest_point_on_line_segment(vec3d *closest_point, vec3d *fixed_point, vec3d *line_point1, vec3d *line_point2)
+{
+	vec3d delta_x, line_velocity;
+	float t;
+
+	vm_vec_sub(&line_velocity, line_point2, line_point1);
+	vm_vec_sub(&delta_x, line_point1, fixed_point);
+	t = -vm_vec_dotprod(&delta_x, &line_velocity) / vm_vec_mag_squared(&line_velocity);
+
+	// Constrain t to be in range [0,1]
+	if (t < 0) {
+		t = 0.0f;
+	} else if (t > 1) {
+		t = 1.0f;
+	}
+
+	vm_vec_scale_add(closest_point, line_point1, &line_velocity, t);
+}
+
+/**
+ * checks whether two spheres hit given initial and starting positions and radii
+ * does not check whether sphere are already touching.
+ *
+ * @param x_p0		polymodel sphere, start point
+ * @param x_p1		polymodel sphere, end point
+ * @param x_s0		other sphere, start point
+ * @param x_s1		other sphere, end point
+ * @param radius_p	radius of polymodel sphere
+ * @param radius_s	radius of other sphere
+ * @param t1		time pointer 1
+ * @param t2		time pointer 2
+ *
+ * @return 1 if spheres overlap, 0 otherwise
+ */
+int fvi_check_sphere_sphere(vec3d *x_p0, vec3d *x_p1, vec3d *x_s0, vec3d *x_s1, float radius_p, float radius_s, float *t1, float *t2)
+{
+	vec3d delta_x, delta_v;
+	float discriminant, separation, delta_x_dot_delta_v, delta_v_sqr, delta_x_sqr;
+	float time1, time2;
+
+	// Check that there are either 0 or 2 pointers to time
+	Assert( (!(t1) && !(t2)) || (t1 && t2) );
+
+	vm_vec_sub(&delta_x, x_s0, x_p0);
+	delta_x_sqr = vm_vec_mag_squared(&delta_x);
+	separation = radius_p + radius_s;
+
+	// Check if already touching
+	if (delta_x_sqr < separation*separation) {
+		 if ( !t1 ) {
+			return 1;
+		 }
+	}
+
+	// Find delta_v (in polymodel sphere frame of ref)
+	// Note: x_p0 and x_p1 will be same for fixed polymodel
+	vm_vec_sub(&delta_v, x_s1, x_s0);
+	vm_vec_add2(&delta_v, x_p0);
+	vm_vec_sub2(&delta_v, x_p1);
+
+	delta_x_dot_delta_v = vm_vec_dotprod(&delta_x, &delta_v);
+	delta_v_sqr = vm_vec_mag_squared(&delta_v);
+
+	discriminant = delta_x_dot_delta_v*delta_x_dot_delta_v - delta_v_sqr*(delta_x_sqr - separation*separation);
+
+	if (discriminant < 0) {
+		return 0;
+	}
+
+	float radical = fl_sqrt(discriminant);
+
+	time1 = (-delta_x_dot_delta_v + radical) / delta_v_sqr;
+	time2 = (-delta_x_dot_delta_v - radical) / delta_v_sqr;
+
+	// sort t1 < t2
+	float temp;
+	if (time1 > time2) {
+		temp  = time1;
+		time1 = time2;
+		time2 = temp;
+	}
+
+	if ( t1 ) {
+		*t1 = time1;
+		*t2 = time2;
+	}
+
+	// check whether the range from t1 to t2 intersects [0,1]
+	if (time1 > 1 || time2 < 0) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+/**
+ * Culls polyfaces which moving sphere can not intersect
+ *
+ * Polygon face is characterized by a center and a radius.  This routine checks whether it is 
+ * *impossible* for a moving sphere to intersect a fixed polygon face.
+ *
+ * @param poly_center	center of polygon face to test
+ * @param poly_r		radius of polygon face in question
+ * @param sphere_start	start point of moving sphere
+ * @param sphere_end	end point of moving sphere
+ * @param sphere_r		radius of moving sphere
+ *
+ * @return 0 if no collision is possible, 1 if collision may be possible
+ */
+int fvi_cull_polyface_sphere(vec3d *poly_center, float poly_r, vec3d *sphere_start, vec3d *sphere_end, float sphere_r)
+{
+	vec3d closest_point, closest_separation;
+	float max_sep;
+
+	fvi_closest_point_on_line_segment(&closest_point, poly_center, sphere_start, sphere_end);
+	vm_vec_sub(&closest_separation, &closest_point, poly_center);
+
+	max_sep = vm_vec_mag(&closest_separation) + poly_r;
+
+	if ( max_sep > sphere_r ) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+/**
+ * Finds the closest points between two lines
+ */
+void fvi_closest_line_line( vec3d *x0, vec3d *vx, vec3d *y0, vec3d *vy, float *x_time, float *y_time )
+{
+	vec3d vx_cross_vy, delta_l, delta_l_cross_vx, delta_l_cross_vy;
+	float denominator;
+
+	vm_vec_sub(&delta_l, y0, x0);
+
+	vm_vec_crossprod(&vx_cross_vy, vx, vy);
+	vm_vec_crossprod(&delta_l_cross_vx, &delta_l, vx);
+	vm_vec_crossprod(&delta_l_cross_vy, &delta_l, vy);
+
+	denominator = vm_vec_mag_squared(&vx_cross_vy);
+
+	*x_time = vm_vec_dotprod(&delta_l_cross_vy, &vx_cross_vy) / denominator; 
+	*y_time = vm_vec_dotprod(&delta_l_cross_vx, &vx_cross_vy) / denominator; 
+}
+
 // --------------------------------------------------------------------------------------------------------------------
+void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 )
+{
+	float root = fl_sqrt(discriminant);
+
+	if (B > 0) {
+		*root1 = 2.0f*C / (-B - root);
+		*root2 = (-B - root) / (2.0f*A);
+	} else {	// B < 0
+		*root1 = (-B + root) / (2.0f*A);
+		*root2 = 2.0f*C / (-B + root);
+	}
+}
 
 /**
  * Project point on bounding box
