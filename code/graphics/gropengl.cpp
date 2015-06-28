@@ -91,11 +91,7 @@ static GLuint GL_screen_pbo = 0;
 
 static int GL_mouse_saved = 0;
 static int GL_mouse_saved_x1 = 0;
-static int GL_mouse_saved_y1 = 0;
-static int GL_mouse_saved_x2 = 0;
 static int GL_mouse_saved_y2 = 0;
-
-void opengl_save_mouse_area(int x, int y, int w, int h);
 
 extern const char *Osreg_title;
 
@@ -342,10 +338,8 @@ void gr_opengl_flip()
 		gr_reset_clip();
 		mouse_get_pos( &mx, &my );
 
-	//	opengl_save_mouse_area(mx, my, Gr_cursor_size, Gr_cursor_size);
-
-		if (Gr_cursor != -1 && bm_is_valid(Gr_cursor)) {
-			gr_set_bitmap(Gr_cursor);
+		if (bm_is_valid( g_Cursor.getHandle()) ) {
+			gr_set_bitmap( g_Cursor.getHandle() );
 			gr_bitmap( mx, my, GR_RESIZE_NONE);
 		}
 	}
@@ -929,64 +923,6 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 
 }
 
-void opengl_save_mouse_area(int x, int y, int w, int h)
-{
-	int cursor_size;
-
-	GL_CHECK_FOR_ERRORS("start of save_mouse_area()");
-
-	// lazy - taylor
-	cursor_size = (Gr_cursor_size * Gr_cursor_size);
-
-	// no reason to be bigger than the cursor, should never be smaller
-	if (w != Gr_cursor_size)
-		w = Gr_cursor_size;
-	if (h != Gr_cursor_size)
-		h = Gr_cursor_size;
-
-	GL_mouse_saved_x1 = x;
-	GL_mouse_saved_y1 = y;
-	GL_mouse_saved_x2 = x+w-1;
-	GL_mouse_saved_y2 = y+h-1;
-
-	CLAMP(GL_mouse_saved_x1, gr_screen.clip_left, gr_screen.clip_right );
-	CLAMP(GL_mouse_saved_x2, gr_screen.clip_left, gr_screen.clip_right );
-	CLAMP(GL_mouse_saved_y1, gr_screen.clip_top, gr_screen.clip_bottom );
-	CLAMP(GL_mouse_saved_y2, gr_screen.clip_top, gr_screen.clip_bottom );
-
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
-	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-
-	if ( Use_PBOs ) {
-		// since this is used a lot, and is pretty small in size, we just create it once and leave it until exit
-		if (!GL_cursor_pbo) {
-			vglGenBuffersARB(1, &GL_cursor_pbo);
-			vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_cursor_pbo);
-			vglBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, cursor_size * 4, NULL, GL_STATIC_READ);
-		}
-
-		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_cursor_pbo);
-		glReadBuffer(GL_BACK);
-		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
-	} else {
-		// this should really only have to be malloc'd once
-		if (GL_saved_mouse_data == NULL)
-			GL_saved_mouse_data = (ubyte*)vm_malloc_q(cursor_size * 4);
-
-		if (GL_saved_mouse_data == NULL)
-			return;
-
-		glReadBuffer(GL_BACK);
-		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, GL_saved_mouse_data);
-	}
-
-	GL_CHECK_FOR_ERRORS("end of save_mouse_area()");
-
-	GL_mouse_saved = 1;
-}
-
 int gr_opengl_save_screen()
 {
 	int i;
@@ -1033,7 +969,7 @@ int gr_opengl_save_screen()
 		pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 
 		width_times_pixel = (gr_screen.max_w * 4);
-		mouse_times_pixel = (Gr_cursor_size * 4);
+		mouse_times_pixel = (g_Cursor.getCursorSize() * 4);
 
 		sptr = (ubyte *)pixels;
 		dptr = (ubyte *)&GL_saved_screen[gr_screen.max_w * gr_screen.max_h * 4];
@@ -1055,7 +991,7 @@ int gr_opengl_save_screen()
 			sptr = (ubyte *)pixels;
 			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
 
-			for (i = 0; i < Gr_cursor_size; i++) {
+			for (i = 0; i < (int)g_Cursor.getCursorSize(); i++) {
 				memcpy(dptr, sptr, mouse_times_pixel);
 				sptr += mouse_times_pixel;
 				dptr -= width_times_pixel;
@@ -1089,7 +1025,7 @@ int gr_opengl_save_screen()
 		dptr = (ubyte *)GL_saved_screen;
 
 		width_times_pixel = (gr_screen.max_w * 4);
-		mouse_times_pixel = (Gr_cursor_size * 4);
+		mouse_times_pixel = (g_Cursor.getCursorSize() * 4);
 
 		for (i = 0; i < gr_screen.max_h; i++) {
 			sptr -= width_times_pixel;
@@ -1103,7 +1039,7 @@ int gr_opengl_save_screen()
 			sptr = (ubyte *)GL_saved_mouse_data;
 			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
 
-			for (i = 0; i < Gr_cursor_size; i++) {
+			for (i = 0; i < g_Cursor.getCursorSize(); i++) {
 				memcpy(dptr, sptr, mouse_times_pixel);
 				sptr += mouse_times_pixel;
 				dptr -= width_times_pixel;

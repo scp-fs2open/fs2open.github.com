@@ -7564,7 +7564,7 @@ void unload_animating_pointer()
 		Assert( (am->first_frame+i) >= 0 );
 
 		// if we are the current cursor then reset to avoid gr_close() issues - taylor
-		gr_unset_cursor_bitmap(am->first_frame + i);
+		g_Cursor.unloadHandle(am->first_frame + i);
 	}
 
 	// this will release all of the frames at once
@@ -7592,7 +7592,7 @@ void game_render_mouse(float frametime)
 			am->current_frame = 0;
 			am->elapsed_time = 0.0f;
 		}
-		gr_set_cursor_bitmap(am->first_frame + am->current_frame);
+		g_Cursor.setHandle(am->first_frame + am->current_frame);
 	}
 }
 
