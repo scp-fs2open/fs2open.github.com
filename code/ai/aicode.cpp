@@ -3494,7 +3494,7 @@ void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *pla
 }
 
 //	--------------------------------------------------------------------------
-void ai_update_aim(ai_info *aip, object* En_objp)
+void ai_update_aim(ai_info *aip)
 {
 	if (Missiontime >= aip->next_aim_pos_time)
 	{
@@ -8247,7 +8247,7 @@ void ai_chase()
 	vm_vec_sub(&real_vec_to_enemy, &enemy_pos, &player_pos);
 
 	//Enemy position for the purpose of aiming is already calculated differently, do it explicitly here
-	ai_update_aim(aip, En_objp);
+	ai_update_aim(aip);
 
 	vm_vec_normalize(&real_vec_to_enemy);
 
