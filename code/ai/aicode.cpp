@@ -3493,7 +3493,11 @@ void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *pla
 
 }
 
-//	--------------------------------------------------------------------------
+/**
+ * Updates AI aim automatically based on targetted enemy.
+ *
+ * @param aip Pointer to AI info
+ */
 void ai_update_aim(ai_info *aip)
 {
 	if (Missiontime >= aip->next_aim_pos_time)
