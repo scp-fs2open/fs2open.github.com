@@ -133,11 +133,11 @@ static int dbg_print_ogg_error(const char *filename, int rc)
 	return fatal;
 }
 
-static int audiostr_read_uint(HMMIO rw, uint *i)
+static int audiostr_read_uint(CFILE* cf, uint *i)
 {
-	int rc = mmioRead( rw, (char *)i, sizeof(uint) );
+	int rc = cfread(i, sizeof(uint), 1, cf);
 
-	if (rc != sizeof(uint))
+	if (rc != 1)
 		return 0;
 
 	*i = INTEL_INT(*i); //-V570
@@ -145,11 +145,11 @@ static int audiostr_read_uint(HMMIO rw, uint *i)
 	return 1;
 }
 
-static int audiostr_read_word(HMMIO rw, WORD *i)
+static int audiostr_read_word(CFILE* cf, WORD *i)
 {
-	int rc = mmioRead( rw, (char *)i, sizeof(WORD) );
+	int rc = cfread(i, sizeof(WORD), 1, cf);
 
-	if (rc != sizeof(WORD))
+	if (rc != 1)
 		return 0;
 
 	*i = INTEL_SHORT(*i); //-V570
@@ -157,11 +157,11 @@ static int audiostr_read_word(HMMIO rw, WORD *i)
 	return 1;
 }
 
-static int audiostr_read_dword(HMMIO rw, DWORD *i)
+static int audiostr_read_dword(CFILE* cf, DWORD *i)
 {
-	int rc = mmioRead( rw, (char *)i, sizeof(DWORD) );
+	int rc = cfread(i, sizeof(DWORD), 1, cf);
 
-	if (rc != sizeof(DWORD))
+	if (rc != 1)
 		return 0;
 
 	*i = INTEL_INT(*i); //-V570
@@ -362,8 +362,6 @@ void WaveFile::Init(void)
 	// Init data members
 	m_data_offset = 0;
 	m_snd_info.cfp = NULL;
-	m_snd_info.true_offset = 0;
-	m_snd_info.size = 0;
 	m_pwfmt_original = NULL;
 	m_nBlockAlign= 0;
 	m_nUncompressedAvgDataRate = 0;
@@ -398,10 +396,8 @@ void WaveFile::Close(void)
 		if (m_wave_format == OGG_FORMAT_VORBIS)
 			ov_clear(&m_snd_info.vorbis_file);
 
-		mmioClose( m_snd_info.cfp, 0 );
+		cfclose(m_snd_info.cfp);
 		m_snd_info.cfp = NULL;
-		m_snd_info.true_offset = 0;
-		m_snd_info.size = 0;
 	}
 }
 
@@ -453,21 +449,14 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 		strcat_s( filename, audio_ext_list[rc] );
 	}
 
-	m_snd_info.cfp = mmioOpen( fullpath, NULL, MMIO_ALLOCBUF | MMIO_READ );
+	m_snd_info.cfp = cfopen_special(fullpath, "rb", FileSize, FileOffset, CF_TYPE_ANY);
 
 	if (m_snd_info.cfp == NULL)
 		goto OPEN_ERROR;
-
-	m_snd_info.true_offset = FileOffset;
-	m_snd_info.size = FileSize;
-
-	// if in a VP then position the stream at the start of the file
-	if (FileOffset > 0)
-		mmioSeek( m_snd_info.cfp, FileOffset, SEEK_SET );
-
+	
 	// if Ogg Vorbis...
 	if (rc == 0) {
-		if ( ov_open_callbacks(&m_snd_info, &m_snd_info.vorbis_file, NULL, 0, mmio_callbacks) == 0 ) {
+		if ( ov_open_callbacks(m_snd_info.cfp, &m_snd_info.vorbis_file, NULL, 0, cfile_callbacks) == 0 ) {
 			// got an Ogg Vorbis, so lets read the info in
 			ov_info(&m_snd_info.vorbis_file, -1);
 
@@ -517,7 +506,7 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 
 		// Skip the "RIFF" tag and file size (8 bytes)
 		// Skip the "WAVE" tag (4 bytes)
-		mmioSeek( m_snd_info.cfp, 12+FileOffset, SEEK_SET );
+		cfseek(m_snd_info.cfp, 12, CF_SEEK_SET );
 
 		// Now read RIFF tags until the end of file
 		uint tag, size, next_chunk;
@@ -529,7 +518,7 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 			if ( !audiostr_read_uint(m_snd_info.cfp, &size) )
 				break;
 
-			next_chunk = mmioSeek(m_snd_info.cfp, 0, SEEK_CUR );
+			next_chunk = cftell(m_snd_info.cfp);
 			next_chunk += size;
 
 			switch (tag)
@@ -555,7 +544,7 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 
 						// Read those extra bytes, append to WAVEFORMATEX structure
 						if (cbExtra != 0)
-							mmioRead( m_snd_info.cfp, ((char *)(m_pwfmt_original) + sizeof(WAVEFORMATEX)), cbExtra );
+							cfread(((char *)(m_pwfmt_original) + sizeof(WAVEFORMATEX)), cbExtra, 1, m_snd_info.cfp);
 					} else {
 						Int3();		// malloc failed
 						goto OPEN_ERROR;
@@ -568,7 +557,7 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 				{
 					m_nDataSize = size;	// This is size of data chunk.  Compressed if ADPCM.
 					m_data_bytes_left = size;
-					m_data_offset = mmioSeek( m_snd_info.cfp, 0, SEEK_CUR );
+					m_data_offset = cftell(m_snd_info.cfp);
 					done = true;
 
 					break;
@@ -578,7 +567,7 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 					break;
 			}	// end switch
 
-			mmioSeek( m_snd_info.cfp, next_chunk, SEEK_SET );
+			cfseek(m_snd_info.cfp, next_chunk, CF_SEEK_SET);
 		}
 
 		// make sure that we did good
@@ -663,10 +652,8 @@ OPEN_ERROR:
 
 	if (m_snd_info.cfp != NULL) {
 		// Close file
-		mmioClose( m_snd_info.cfp, 0 );
+		cfclose(m_snd_info.cfp);
 		m_snd_info.cfp = NULL;
-		m_snd_info.true_offset = 0;
-		m_snd_info.size = 0;
 	}
 
 	if (m_pwfmt_original) {
@@ -699,7 +686,7 @@ bool WaveFile::Cue (void)
 	if (m_wave_format == OGG_FORMAT_VORBIS) {
 		rval = (int)ov_raw_seek(&m_snd_info.vorbis_file, m_data_offset);
 	} else {
-		rval = mmioSeek( m_snd_info.cfp, m_data_offset, SEEK_SET );
+		rval = cfseek(m_snd_info.cfp, m_data_offset, CF_SEEK_SET);
 	}
 
 	if ( rval == -1 ) {
@@ -873,7 +860,7 @@ int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 		// IEEE FLOAT is special too, downsampling can give short buffers
 		else if (m_wave_format == WAVE_FORMAT_IEEE_FLOAT) {
 			while ( !m_abort_next_read && ((uint)actual_read < num_bytes_read) ) {
-				rc = mmioRead(m_snd_info.cfp, (char *)dest_buf, num_bytes_read);
+				rc = cfread((char *)dest_buf, 1, num_bytes_read, m_snd_info.cfp);
 
 				if (rc <= 0) {
 					break;
@@ -926,7 +913,7 @@ int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 		}
 		// standard WAVE reading
 		else {
-			actual_read = mmioRead( m_snd_info.cfp, (char *)dest_buf, num_bytes_read );
+			actual_read = cfread((char *)dest_buf, 1, num_bytes_read, m_snd_info.cfp);
 		}
 
 		if ( (actual_read <= 0) || (m_abort_next_read) ) {
@@ -961,7 +948,7 @@ int WaveFile::Read(ubyte *pbDest, uint cbSize, int service)
 		Assert(src_bytes_used <= num_bytes_read);
 		if ( src_bytes_used < num_bytes_read ) {
 			// seek back file pointer to reposition before unused source data
-			mmioSeek( m_snd_info.cfp, src_bytes_used - num_bytes_read, SEEK_CUR );
+			cfseek(m_snd_info.cfp, src_bytes_used - num_bytes_read, CF_SEEK_CUR);
 		}
 
 		// Adjust number of bytes left
