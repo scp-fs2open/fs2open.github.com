@@ -2485,7 +2485,7 @@ void ai_ignore_object(object *ignorer, object *ignored, int ignore_new)
 /**
  * Ignore some object without changing mode.
  */
-void ai_ignore_wing(object *ignorer, int wingnum, int priority)
+void ai_ignore_wing(object *ignorer, int wingnum)
 {
 	ai_info	*aip;
 
@@ -3411,7 +3411,7 @@ float compute_collision_time(vec3d *targpos, vec3d *targvel, vec3d *attackpos, f
 // This function doesn't account for the fact that by the time the player
 // (or his laser) gets to the current enemy position, the enemy will have moved.
 // This is dealt with in polish_predicted_enemy_pos.
-float compute_time_to_enemy(float dist_to_enemy, object *pobjp, object *eobjp)
+float compute_time_to_enemy(float dist_to_enemy, object *pobjp)
 {
 	float	time_to_enemy;
 	float	pl_speed = pobjp->phys_info.speed;
@@ -3493,8 +3493,12 @@ void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *pla
 
 }
 
-//	--------------------------------------------------------------------------
-void ai_update_aim(ai_info *aip, object* En_Objp)
+/**
+ * Updates AI aim automatically based on targetted enemy.
+ *
+ * @param aip Pointer to AI info
+ */
+void ai_update_aim(ai_info *aip)
 {
 	if (Missiontime >= aip->next_aim_pos_time)
 	{
@@ -8243,11 +8247,11 @@ void ai_chase()
 
 	ai_set_positions(Pl_objp, En_objp, aip, &player_pos, &enemy_pos);
 	dist_to_enemy = vm_vec_dist_quick(&player_pos, &enemy_pos);
-	time_to_enemy = compute_time_to_enemy(dist_to_enemy, Pl_objp, En_objp);
+	time_to_enemy = compute_time_to_enemy(dist_to_enemy, Pl_objp);
 	vm_vec_sub(&real_vec_to_enemy, &enemy_pos, &player_pos);
 
 	//Enemy position for the purpose of aiming is already calculated differently, do it explicitly here
-	ai_update_aim(aip, En_objp);
+	ai_update_aim(aip);
 
 	vm_vec_normalize(&real_vec_to_enemy);
 

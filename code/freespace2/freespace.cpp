@@ -465,7 +465,7 @@ fs_builtin_mission Game_builtin_mission_list[MAX_BUILTIN_MISSIONS] = {
 // Internal function prototypes
 void game_maybe_draw_mouse(float frametime);
 void init_animating_pointer();
-void load_animating_pointer(char *filename, int dx, int dy);
+void load_animating_pointer(char *filename);
 void unload_animating_pointer();
 void game_do_training_checks();
 void game_shutdown(void);
@@ -2056,7 +2056,7 @@ void game_init()
 	pilot_load_pic_list();	
 	pilot_load_squad_pic_list();
 
-	load_animating_pointer(NOX("cursor"), 0, 0);	
+	load_animating_pointer(NOX("cursor"));
 
 	if(!Cmdline_reparse_mainhall)
 	{
@@ -7530,16 +7530,14 @@ void init_animating_pointer()
 //
 // input:	filename	=>	filename of animation file that holds the animation
 // 
-void load_animating_pointer(char *filename, int dx, int dy)
+void load_animating_pointer(char *filename)
 {
 	int				fps;
 	animating_obj *am;
 
 	init_animating_pointer();
 
-//TEMP
 	mprintf(("loading animated cursor \"%s\"\n", filename));
-
 
 	am = &Animating_mouse;
 	am->first_frame = bm_load_animation(filename, &am->num_frames, &fps);

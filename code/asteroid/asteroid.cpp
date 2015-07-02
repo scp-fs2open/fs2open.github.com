@@ -898,7 +898,7 @@ void lerp(float *goal, float f1, float f2, float scale)
 	*goal = (f2 - f1) * scale + f1;
 }
 
-void asteroid_process_pre( object *objp, float frame_time)
+void asteroid_process_pre( object *objp )
 {
 	if (Asteroids_enabled) {
 		//	Make vel chase desired_vel
@@ -1739,7 +1739,7 @@ void asteroid_verify_collide_objnum(asteroid *asp)
 	}
 }
 
-void asteroid_process_post(object * obj, float frame_time)
+void asteroid_process_post(object * obj)
 {
 	if (Asteroids_enabled) {
 		int num;
