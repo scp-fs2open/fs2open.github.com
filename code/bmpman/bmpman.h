@@ -502,10 +502,8 @@ void bm_page_in_aabitmap(int bitmapnum, int num_frames = 1);
  * @returns 0 If the bitmap had already been released, or
  * @returns 0 If the handle is invalid, or
  * @returns 1 If successful
- *
- * @todo The return type should be a bool
  */
-int bm_page_out(int handle);
+bool bm_page_out(int handle);
 
 /**
  * @brief Sets BMPMAN's memory mode
@@ -612,10 +610,8 @@ int bm_get_tcache_type(int handle);
 
 /**
  * @brief Gets the size, in bytes, taken up by the bitmap indexed by handle
- *
- * @todo retval should be a size_t
  */
-int bm_get_size(int handle);
+size_t bm_get_size(int handle);
 
 /**
  * @brief Gets the number of mipmaps of the indexed texture
@@ -626,10 +622,8 @@ int bm_get_num_mipmaps(int handle);
  * @brief Checks to see if the indexed bitmap has an alpha channel
  *
  * @note Currently just checks if the bitmap is 32bpp and is not a .PCX
- *
- * @todo retval should be a bool
  */
-int bm_has_alpha_channel(int handle);
+bool bm_has_alpha_channel(int handle);
 
 /**
  * @brief (DEBUG) Prints all loaded bitmaps to an outwindow

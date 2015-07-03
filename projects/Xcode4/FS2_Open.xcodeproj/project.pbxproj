@@ -135,7 +135,6 @@
 		34C7187008C4085A00459F5B /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C7186F08C4085A00459F5B /* OpenAL.framework */; };
 		34C7188C08C40DEB00459F5B /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C7188B08C40DEB00459F5B /* SDL.framework */; };
 		34C71AD308C419CB00459F5B /* aiturret.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345952D908C3D69F003B1351 /* aiturret.cpp */; };
-		34C71AD408C419CB00459F5B /* ailocal.h in Headers */ = {isa = PBXBuildFile; fileRef = 345952D808C3D69F003B1351 /* ailocal.h */; };
 		34C71AD508C419CC00459F5B /* aiinternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 345952D708C3D69F003B1351 /* aiinternal.h */; };
 		34C71AD608C419CC00459F5B /* aigoals.h in Headers */ = {isa = PBXBuildFile; fileRef = 345952D608C3D69F003B1351 /* aigoals.h */; };
 		34C71AD708C419CD00459F5B /* aigoals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345952D508C3D69F003B1351 /* aigoals.cpp */; };
@@ -179,8 +178,6 @@
 		34C71AFF08C41AAA00459F5B /* ddsutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459530A08C3D69F003B1351 /* ddsutils.cpp */; };
 		34C71B0008C41AAD00459F5B /* debris.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459530E08C3D69F003B1351 /* debris.h */; };
 		34C71B0108C41AAD00459F5B /* debris.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459530D08C3D69F003B1351 /* debris.cpp */; };
-		34C71B0208C41AB000459F5B /* timerbar.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459531408C3D69F003B1351 /* timerbar.h */; };
-		34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531308C3D69F003B1351 /* timerbar.cpp */; };
 		34C71B0608C41AB200459F5B /* console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531008C3D69F003B1351 /* console.cpp */; };
 		34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459532D08C3D6A0003B1351 /* exceptionhandler.h */; };
 		34C71B0C08C41ABE00459F5B /* exceptionhandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459532C08C3D6A0003B1351 /* exceptionhandler.cpp */; };
@@ -347,14 +344,10 @@
 		34C71BC108C41B7000459F5B /* redalert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543F08C3D6A0003B1351 /* redalert.cpp */; };
 		34C71BC208C41B7000459F5B /* missionweaponchoice.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543E08C3D6A0003B1351 /* missionweaponchoice.h */; };
 		34C71BC308C41B7000459F5B /* missionweaponchoice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543D08C3D6A0003B1351 /* missionweaponchoice.cpp */; };
-		34C71BC408C41B7100459F5B /* missionstats.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543C08C3D6A0003B1351 /* missionstats.h */; };
-		34C71BC508C41B7100459F5B /* missionstats.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543B08C3D6A0003B1351 /* missionstats.cpp */; };
 		34C71BC608C41B7200459F5B /* missionshipchoice.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543A08C3D6A0003B1351 /* missionshipchoice.h */; };
 		34C71BC708C41B7300459F5B /* missionshipchoice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543908C3D6A0003B1351 /* missionshipchoice.cpp */; };
 		34C71BC808C41B7300459F5B /* missionscreencommon.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543808C3D6A0003B1351 /* missionscreencommon.h */; };
 		34C71BC908C41B7300459F5B /* missionscreencommon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543708C3D6A0003B1351 /* missionscreencommon.cpp */; };
-		34C71BCA08C41B7400459F5B /* missionrecommend.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543608C3D6A0003B1351 /* missionrecommend.h */; };
-		34C71BCB08C41B7500459F5B /* missionrecommend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543508C3D6A0003B1351 /* missionrecommend.cpp */; };
 		34C71BCC08C41B7500459F5B /* missionpause.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543408C3D6A0003B1351 /* missionpause.h */; };
 		34C71BCD08C41B7600459F5B /* missionpause.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543308C3D6A0003B1351 /* missionpause.cpp */; };
 		34C71BCE08C41B7600459F5B /* missionloopbrief.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543208C3D6A0003B1351 /* missionloopbrief.h */; };
@@ -976,7 +969,6 @@
 		345952D508C3D69F003B1351 /* aigoals.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = aigoals.cpp; sourceTree = "<group>"; };
 		345952D608C3D69F003B1351 /* aigoals.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = aigoals.h; sourceTree = "<group>"; };
 		345952D708C3D69F003B1351 /* aiinternal.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = aiinternal.h; sourceTree = "<group>"; };
-		345952D808C3D69F003B1351 /* ailocal.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ailocal.h; sourceTree = "<group>"; };
 		345952D908C3D69F003B1351 /* aiturret.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = aiturret.cpp; sourceTree = "<group>"; };
 		345952DB08C3D69F003B1351 /* animplay.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = animplay.cpp; sourceTree = "<group>"; };
 		345952DC08C3D69F003B1351 /* animplay.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = animplay.h; sourceTree = "<group>"; };
@@ -1014,8 +1006,6 @@
 		3459530D08C3D69F003B1351 /* debris.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = debris.cpp; sourceTree = "<group>"; };
 		3459530E08C3D69F003B1351 /* debris.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debris.h; sourceTree = "<group>"; };
 		3459531008C3D69F003B1351 /* console.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = console.cpp; sourceTree = "<group>"; };
-		3459531308C3D69F003B1351 /* timerbar.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = timerbar.cpp; sourceTree = "<group>"; };
-		3459531408C3D69F003B1351 /* timerbar.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = timerbar.h; sourceTree = "<group>"; };
 		3459531E08C3D69F003B1351 /* dxguid.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = dxguid.lib; sourceTree = "<group>"; };
 		3459531F08C3D6A0003B1351 /* strmiids.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = strmiids.lib; sourceTree = "<group>"; };
 		3459532008C3D6A0003B1351 /* vasync.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vasync.h; sourceTree = "<group>"; };
@@ -1230,14 +1220,10 @@
 		3459543208C3D6A0003B1351 /* missionloopbrief.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionloopbrief.h; sourceTree = "<group>"; };
 		3459543308C3D6A0003B1351 /* missionpause.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionpause.cpp; sourceTree = "<group>"; };
 		3459543408C3D6A0003B1351 /* missionpause.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionpause.h; sourceTree = "<group>"; };
-		3459543508C3D6A0003B1351 /* missionrecommend.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionrecommend.cpp; sourceTree = "<group>"; };
-		3459543608C3D6A0003B1351 /* missionrecommend.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionrecommend.h; sourceTree = "<group>"; };
 		3459543708C3D6A0003B1351 /* missionscreencommon.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionscreencommon.cpp; sourceTree = "<group>"; };
 		3459543808C3D6A0003B1351 /* missionscreencommon.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionscreencommon.h; sourceTree = "<group>"; };
 		3459543908C3D6A0003B1351 /* missionshipchoice.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionshipchoice.cpp; sourceTree = "<group>"; };
 		3459543A08C3D6A0003B1351 /* missionshipchoice.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionshipchoice.h; sourceTree = "<group>"; };
-		3459543B08C3D6A0003B1351 /* missionstats.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionstats.cpp; sourceTree = "<group>"; };
-		3459543C08C3D6A0003B1351 /* missionstats.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionstats.h; sourceTree = "<group>"; };
 		3459543D08C3D6A0003B1351 /* missionweaponchoice.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionweaponchoice.cpp; sourceTree = "<group>"; };
 		3459543E08C3D6A0003B1351 /* missionweaponchoice.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionweaponchoice.h; sourceTree = "<group>"; };
 		3459543F08C3D6A0003B1351 /* redalert.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = redalert.cpp; sourceTree = "<group>"; };
@@ -2014,7 +2000,6 @@
 				345952D508C3D69F003B1351 /* aigoals.cpp */,
 				345952D608C3D69F003B1351 /* aigoals.h */,
 				345952D708C3D69F003B1351 /* aiinternal.h */,
-				345952D808C3D69F003B1351 /* ailocal.h */,
 				345952D908C3D69F003B1351 /* aiturret.cpp */,
 			);
 			path = ai;
@@ -2155,8 +2140,6 @@
 				F0E076E2190826C00069F480 /* consolecmds.cpp */,
 				F0E076E3190826C00069F480 /* consoleparse.cpp */,
 				F0E076E4190826C00069F480 /* consoleparse.h */,
-				3459531308C3D69F003B1351 /* timerbar.cpp */,
-				3459531408C3D69F003B1351 /* timerbar.h */,
 			);
 			path = debugconsole;
 			sourceTree = "<group>";
@@ -2532,14 +2515,10 @@
 				3459543208C3D6A0003B1351 /* missionloopbrief.h */,
 				3459543308C3D6A0003B1351 /* missionpause.cpp */,
 				3459543408C3D6A0003B1351 /* missionpause.h */,
-				3459543508C3D6A0003B1351 /* missionrecommend.cpp */,
-				3459543608C3D6A0003B1351 /* missionrecommend.h */,
 				3459543708C3D6A0003B1351 /* missionscreencommon.cpp */,
 				3459543808C3D6A0003B1351 /* missionscreencommon.h */,
 				3459543908C3D6A0003B1351 /* missionshipchoice.cpp */,
 				3459543A08C3D6A0003B1351 /* missionshipchoice.h */,
-				3459543B08C3D6A0003B1351 /* missionstats.cpp */,
-				3459543C08C3D6A0003B1351 /* missionstats.h */,
 				3459543D08C3D6A0003B1351 /* missionweaponchoice.cpp */,
 				3459543E08C3D6A0003B1351 /* missionweaponchoice.h */,
 				3459543F08C3D6A0003B1351 /* redalert.cpp */,
@@ -3292,7 +3271,6 @@
 				F093F85010FDC09B0042E30F /* gropenglpostprocessing.h in Headers */,
 				F093F85110FDC09B0042E30F /* gropenglshader.h in Headers */,
 				F093F85210FDC09B0042E30F /* gropenglstate.h in Headers */,
-				34C71AD408C419CB00459F5B /* ailocal.h in Headers */,
 				34C71AD508C419CC00459F5B /* aiinternal.h in Headers */,
 				34C71AD608C419CC00459F5B /* aigoals.h in Headers */,
 				34C71AD908C419CE00459F5B /* aibig.h in Headers */,
@@ -3314,7 +3292,6 @@
 				34C71AFC08C41A9B00459F5B /* cutscenes.h in Headers */,
 				34C71AFE08C41AAA00459F5B /* ddsutils.h in Headers */,
 				34C71B0008C41AAD00459F5B /* debris.h in Headers */,
-				34C71B0208C41AB000459F5B /* timerbar.h in Headers */,
 				34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */,
 				34C71B0E08C41AC100459F5B /* fireballs.h in Headers */,
 				34C71B1808C41ACB00459F5B /* gameplayhelp.h in Headers */,
@@ -3402,10 +3379,8 @@
 				34C71BBE08C41B6B00459F5B /* missionbriefcommon.h in Headers */,
 				34C71BC008C41B6F00459F5B /* redalert.h in Headers */,
 				34C71BC208C41B7000459F5B /* missionweaponchoice.h in Headers */,
-				34C71BC408C41B7100459F5B /* missionstats.h in Headers */,
 				34C71BC608C41B7200459F5B /* missionshipchoice.h in Headers */,
 				34C71BC808C41B7300459F5B /* missionscreencommon.h in Headers */,
-				34C71BCA08C41B7400459F5B /* missionrecommend.h in Headers */,
 				34C71BCC08C41B7500459F5B /* missionpause.h in Headers */,
 				34C71BCE08C41B7600459F5B /* missionloopbrief.h in Headers */,
 				34C71BD008C41B7700459F5B /* missiondebrief.h in Headers */,
@@ -3931,7 +3906,6 @@
 				34C71AFD08C41A9B00459F5B /* cutscenes.cpp in Sources */,
 				34C71AFF08C41AAA00459F5B /* ddsutils.cpp in Sources */,
 				34C71B0108C41AAD00459F5B /* debris.cpp in Sources */,
-				34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */,
 				34C71B0608C41AB200459F5B /* console.cpp in Sources */,
 				34C71B0C08C41ABE00459F5B /* exceptionhandler.cpp in Sources */,
 				34C71B0D08C41AC100459F5B /* warpineffect.cpp in Sources */,
@@ -4013,10 +3987,8 @@
 				34C71BBF08C41B6C00459F5B /* missionbriefcommon.cpp in Sources */,
 				34C71BC108C41B7000459F5B /* redalert.cpp in Sources */,
 				34C71BC308C41B7000459F5B /* missionweaponchoice.cpp in Sources */,
-				34C71BC508C41B7100459F5B /* missionstats.cpp in Sources */,
 				34C71BC708C41B7300459F5B /* missionshipchoice.cpp in Sources */,
 				34C71BC908C41B7300459F5B /* missionscreencommon.cpp in Sources */,
-				34C71BCB08C41B7500459F5B /* missionrecommend.cpp in Sources */,
 				34C71BCD08C41B7600459F5B /* missionpause.cpp in Sources */,
 				34C71BCF08C41B7700459F5B /* missionloopbrief.cpp in Sources */,
 				34C71BD108C41B7800459F5B /* missiondebrief.cpp in Sources */,

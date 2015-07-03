@@ -424,7 +424,7 @@ typedef struct ship_flag_name {
 	int flag_list;						// is this flag in the 1st or 2nd ship flags list?
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					17
+#define MAX_SHIP_FLAG_NAMES					18
 extern ship_flag_name Ship_flag_names[];
 
 // states for the flags variable within the ship structure
@@ -505,6 +505,7 @@ extern ship_flag_name Ship_flag_names[];
 #define SF2_WEAPONS_LOCKED					(1<<25)		// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
 #define SF2_SHIP_SELECTIVE_LINKING			(1<<26)		// RSAXVC - Allow pilot to pick firing configuration
 #define SF2_SCRAMBLE_MESSAGES				(1<<27)		// Goober5000 - all messages sent from this ship appear scrambled
+#define SF2_NO_SECONDARY_LOCKON				(1<<28)		// zookeeper - secondary lock-on disabled
 
 // If any of these bits in the ship->flags are set, ignore this ship when targeting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -591,6 +592,8 @@ public:
 
 	float ship_max_shield_strength;
 	float ship_max_hull_strength;
+
+	float max_shield_recharge;
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 
@@ -1306,6 +1309,8 @@ public:
 
 	int		shield_point_augment_ctrls[4];	// Re-mapping of shield augmentation controls for model point shields
 
+	float	max_shield_recharge;
+
 	float	hull_repair_rate;				//How much of the hull is repaired every second
 	float	subsys_repair_rate;		//How fast 
 
@@ -1429,6 +1434,7 @@ public:
 	float emp_resistance_mod;
 
 	float piercing_damage_draw_limit;
+	int shield_impact_explosion_anim;
 
 	int damage_lightning_type;
 

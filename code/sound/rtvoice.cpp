@@ -451,7 +451,8 @@ int rtvoice_play(int index, unsigned char *data, int size)
 	}
 
 	// play the voice
-	rval = ds_play(ds_handle, -100, DS_MUST_PLAY, Master_voice_volume, 0, 0);
+	EnhancedSoundData enhanced_sound_data(SND_ENHANCED_PRIORITY_MUST_PLAY, SND_ENHANCED_MAX_LIMIT);
+	rval = ds_play(ds_handle, -100, DS_MUST_PLAY, &enhanced_sound_data, Master_voice_volume, 0, 0);
 	return rval;
 }
 

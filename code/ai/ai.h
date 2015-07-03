@@ -622,7 +622,7 @@ extern void init_ai_system(void);
 extern void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp);
 extern void ai_evade_object(object *evader, object *evaded);
 extern void ai_ignore_object(object *ignorer, object *ignored, int ignore_new);
-extern void ai_ignore_wing(object *ignorer, int wingnum, int priority);
+extern void ai_ignore_wing(object *ignorer, int wingnum);
 extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int dock_type);
 extern void ai_stay_still(object *still_objp, vec3d *view_pos);
 extern void ai_do_default_behavior(object *obj);
@@ -726,8 +726,7 @@ void process_subobjects(int objnum);
 //SUSHI: Setting ai_info stuff from both ai class and ai profile
 void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile);
 
-//SUSHI: Updating AI aim
-void ai_update_aim(ai_info *aip, object* En_Objp);
+void ai_update_aim(ai_info *aip);
 
 //SUSHI: Random evasive sidethrust
 void do_random_sidethrust(ai_info *aip, ship_info *sip);

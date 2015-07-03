@@ -1883,9 +1883,8 @@ int ai_goal_priority_compare(const void *a, const void *b)
 //	Prioritize goal list.
 //	First sort on priority.
 //	Then sort on time for goals of equivalent priority.
-//	objnum	The object number to act upon.  Redundant with *aip.
 //	*aip		The AI info to act upon.  Goals are stored at aip->goals
-void prioritize_goals(int objnum, ai_info *aip)
+void prioritize_goals(ai_info *aip)
 {
 	//	First sort based on priority field.
 	insertion_sort(aip->goals, MAX_AI_GOALS, sizeof(ai_goal), ai_goal_priority_compare);
@@ -2001,7 +2000,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	validate_mission_goals(objnum, aip);
 
 	//	Sort the goal array by priority and other factors.
-	prioritize_goals(objnum, aip);
+	prioritize_goals(aip);
 
 	//	Make sure there's a goal to pursue, else return.
 	if (aip->goals[0].signature == -1) {

@@ -286,7 +286,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		}
 
 		if ( obj_render_is_model(obj) ) {
-			if( (obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_active || obj->type == OBJ_FIREBALL )
+			if( ((obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_active) || (obj->type == OBJ_FIREBALL) )
 				effect_ships.push_back(obj);
 			else 
 				(*render_function)(obj);
