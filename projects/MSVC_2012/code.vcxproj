@@ -656,6 +656,7 @@
     <ClCompile Include="..\..\code\object\parseobjectdock.cpp" />
     <ClCompile Include="..\..\code\object\waypoint.cpp" />
     <ClCompile Include="..\..\code\Observer\observer.cpp" />
+    <ClCompile Include="..\..\code\osapi\dialogs.cpp" />
     <ClCompile Include="..\..\code\osapi\osapi.cpp" />
     <ClCompile Include="..\..\code\osapi\osregistry.cpp" />
     <ClCompile Include="..\..\code\osapi\osregistry_unix.cpp" />
@@ -944,6 +945,7 @@
     <ClInclude Include="..\..\code\object\parseobjectdock.h" />
     <ClInclude Include="..\..\code\object\waypoint.h" />
     <ClInclude Include="..\..\code\Observer\observer.h" />
+    <ClInclude Include="..\..\code\osapi\dialogs.h" />
     <ClInclude Include="..\..\code\osapi\monopub.h" />
     <ClInclude Include="..\..\code\osapi\osapi.h" />
     <ClInclude Include="..\..\code\osapi\osregistry.h" />

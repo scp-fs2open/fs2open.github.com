@@ -1068,6 +1068,9 @@
     <ClCompile Include="..\..\code\io\cursor.cpp">
       <Filter>Io</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\code\osapi\dialogs.cpp">
+      <Filter>OsApi</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\code\ai\ai.h">
@@ -1882,6 +1885,9 @@
     </ClInclude>
     <ClInclude Include="..\..\code\io\cursor.h">
       <Filter>Io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\code\osapi\dialogs.h">
+      <Filter>OsApi</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
