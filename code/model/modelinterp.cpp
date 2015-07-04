@@ -2600,7 +2600,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 	if(shipp)
 	{
 		sip = &Ship_info[shipp->ship_info_index];
-		SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(-1);
+		gpoi = sip->glowpoint_bank_override_map.find(-1);
 		
 		if(gpoi != sip->glowpoint_bank_override_map.end()) {
 			override_all = true;
