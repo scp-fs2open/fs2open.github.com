@@ -383,8 +383,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	int sdr_index = -1;
 	int empty_idx;
 	char *vert = NULL, *frag = NULL, *geom = NULL;
-
-	bool in_error = false;
 	opengl_shader_t new_shader;
 
 	Assert(sdr < NUM_SHADER_TYPES);
@@ -411,13 +409,11 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 	// read vertex shader
 	if ((vert = opengl_load_shader(sdr_info->type_id, sdr_info->vert, flags)) == NULL) {
-		in_error = true;
 		goto Done;
 	}
 	
 	// read fragment shader
 	if ((frag = opengl_load_shader(sdr_info->type_id, sdr_info->frag, flags)) == NULL) {
-		in_error = true;
 		goto Done;
 	}
 
@@ -428,7 +424,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 		// read geometry shader
 		if ((geom = opengl_load_shader(sdr_info->type_id, sdr_info->geo, flags)) == NULL) {
-			in_error = true;
 			goto Done;
 		}
 
@@ -441,7 +436,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	new_shader.program_id = opengl_shader_create(vert, frag, geom);
 
 	if (!new_shader.program_id) {
-		in_error = true;
 		goto Done;
 	}
 
