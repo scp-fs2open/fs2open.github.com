@@ -8014,10 +8014,6 @@ void ai_cruiser_chase()
 		return;
 	}
 
-	ship			*eshipp;
-
-	eshipp = &Ships[En_objp->instance];
-
 	vec3d	goal_pos;
 	float turn_time = Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time;
 
