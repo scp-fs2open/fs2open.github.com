@@ -10712,7 +10712,6 @@ void ai_dock()
 	//	This mode means to follow the path until just before the end.
 	case AIS_DOCK_1:
 	{
-		float	dist;
 		int	r;
 
 		if ((r = maybe_dock_obstructed(Pl_objp, goal_objp, 1)) != -1) {
@@ -10723,7 +10722,7 @@ void ai_dock()
 			}
 		} //else {
 		{
-			dist = ai_path();
+			ai_path();
 
 			if (aip->path_cur-aip->path_start >= aip->path_length-1) {		//	If got this far, advance no matter what.
 				aip->submode = AIS_DOCK_2;
