@@ -809,7 +809,6 @@ extern int Interp_thrust_scale_subobj;
 extern float Interp_thrust_scale;
 static void opengl_render_pipeline_program(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags)
 {
-	int render_pass = 0;
 	unsigned int shader_flags = 0;
 	int sdr_index = -1;
 	int r, g, b, a, tmap_type;
@@ -868,11 +867,7 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	opengl_setup_render_states(r, g, b, a, tmap_type, flags);
 	GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
-
-	render_pass = 0;
-
 	GL_state.Texture.SetShaderMode(GL_TRUE);
-
 
 	// basic setup of all data
 	opengl_init_arrays(vbp, bufferp);
