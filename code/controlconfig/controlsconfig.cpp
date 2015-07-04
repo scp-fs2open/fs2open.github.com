@@ -1440,7 +1440,7 @@ void control_config_do_frame(float frametime)
 {
 	const char *str;
 	char buf[256];
-	int i, j, k, w, x, y, z, len, line, conflict;
+	int i, j, k, w, x, y, z, line, conflict;
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 	static float timer = 0.0f;
@@ -2025,7 +2025,6 @@ void control_config_do_frame(float frametime)
 
 					gr_printf_menu(x, y, buf);
 
-					len = strlen(buf);
 					Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
 					gr_get_string_size(&w, NULL, buf);
 					Cc_lines[line].kw = w;
