@@ -666,7 +666,7 @@ void control_config_bind_axis(int i, int axis)
 
 int control_config_remove_binding()
 {
-	int z, k;
+	int z;
 	config_item_undo *ptr;
 
 	if (Selected_line < 0) {
@@ -696,7 +696,6 @@ int control_config_remove_binding()
 		return -1;
 	}
 
-	k = -1;
 	ptr = get_undo_block(1);
 	ptr->index[0] = z;
 	ptr->list[0] = Control_config[z];
