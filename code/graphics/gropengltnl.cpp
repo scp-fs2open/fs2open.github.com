@@ -1375,7 +1375,6 @@ void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, 
 	int alpha, tmap_type, r, g, b;
 	float u_scale = 1.0f, v_scale = 1.0f;
 	GLenum gl_mode = GL_TRIANGLE_FAN;
-	int zbuff = ZBUFFER_TYPE_DEFAULT;
 	GL_CHECK_FOR_ERRORS("start of render3d()");
 
 	int stride = 0;
@@ -1433,11 +1432,11 @@ void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, 
 				if ( radius_offset >= 0 ) {
 					vert_def.add_vertex_component(vertex_format_data::RADIUS, stride, ptr + radius_offset);
 				}
-				zbuff = gr_zbuffer_set(GR_ZBUFF_READ);
+				gr_zbuffer_set(GR_ZBUFF_READ);
 			} else if ( Cmdline_softparticles ) {
 				opengl_tnl_set_material_soft_particle(flags);
 
-				zbuff = gr_zbuffer_set(GR_ZBUFF_NONE);
+				gr_zbuffer_set(GR_ZBUFF_NONE);
 
 				if ( radius_offset >= 0 ) {
 					vert_def.add_vertex_component(vertex_format_data::RADIUS, stride, ptr + radius_offset);
