@@ -1439,7 +1439,7 @@ void control_config_close()
 void control_config_do_frame(float frametime)
 {
 	const char *str;
-	char buf[256], *jptr;
+	char buf[256];
 	int i, j, k, w, x, y, z, len, line, conflict;
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
@@ -1999,7 +1999,6 @@ void control_config_do_frame(float frametime)
 			k = Control_config[z].key_id;
 			j = Control_config[z].joy_id;
 			x = Control_list_key_x[gr_screen.res];
-			jptr = NULL;
 			*buf = 0;
 
 			if ((k < 0) && (j < 0)) {
