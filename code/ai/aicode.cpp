@@ -8162,7 +8162,7 @@ void ai_cruiser_chase()
  */
 void ai_chase()
 {
-	float		dist_to_enemy, time_to_enemy;
+	float		dist_to_enemy;
 	float		dot_to_enemy, dot_from_enemy, real_dot_to_enemy;
 	vec3d		player_pos, enemy_pos, predicted_enemy_pos, real_vec_to_enemy, predicted_vec_to_enemy;
 	ship		*shipp = &Ships[Pl_objp->instance];
@@ -8243,7 +8243,6 @@ void ai_chase()
 
 	ai_set_positions(Pl_objp, En_objp, aip, &player_pos, &enemy_pos);
 	dist_to_enemy = vm_vec_dist_quick(&player_pos, &enemy_pos);
-	time_to_enemy = compute_time_to_enemy(dist_to_enemy, Pl_objp);
 	vm_vec_sub(&real_vec_to_enemy, &enemy_pos, &player_pos);
 
 	//Enemy position for the purpose of aiming is already calculated differently, do it explicitly here
