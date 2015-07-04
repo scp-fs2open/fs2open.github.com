@@ -693,11 +693,7 @@ void opengl_tnl_init()
 
 		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
-		bool rval = true;
-
-		if ( opengl_check_for_errors("post_init_framebuffer()") ) {
-			rval = false;
-		}
+		opengl_check_for_errors("post_init_framebuffer()");
 	}
 }
 
