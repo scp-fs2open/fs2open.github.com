@@ -254,7 +254,7 @@ anim_instance *anim_play(anim_play_struct *aps)
 int anim_show_next_frame(anim_instance *instance, float frametime)
 {
 	int	bitmap_id, bitmap_flags=0, new_frame_num, frame_diff=0, i, n_frames=0,frame_save;
-	float percent_through, render_time, time;
+	float percent_through, time;
 	vertex	image_vertex;
 	int aabitmap = 0;
 	int bpp = 16;
@@ -512,7 +512,6 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 	}
 
 	t2 = timer_get_fixed_seconds();
-	render_time = f2fl(t2-t1);
 
 	return 0;
 }
