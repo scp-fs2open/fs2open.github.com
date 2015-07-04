@@ -4339,7 +4339,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 
 		// set submodel ID
 		if ( Use_GLSL >= 3 ) {
-			for ( int j = 0; j < polygon_list[i].n_verts; ++j ) {
+			for ( j = 0; j < polygon_list[i].n_verts; ++j ) {
 				polygon_list[i].submodels[j] = mn;
 			}
 		}
