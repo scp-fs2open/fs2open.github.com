@@ -3129,8 +3129,8 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 					to = banktoken.substr(fromtopos+1);
 					ifrom = atoi(from.data()) - 1;
 					ito = atoi(to.data()) - 1;
-					for(int i = ifrom; i <= ito; ++i) {
-						sip->glowpoint_bank_override_map[i] = (void*)(&(*gpo));
+					for(int bank = ifrom; bank <= ito; ++bank) {
+						sip->glowpoint_bank_override_map[bank] = (void*)(&(*gpo));
 					}
 				} else {
 					int bank = atoi(banktoken.data()) - 1;
