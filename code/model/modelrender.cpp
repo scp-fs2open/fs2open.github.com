@@ -2557,12 +2557,6 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint d
 
 void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, uint debug_flags, int objnum, int detail_level_locked )
 {
-	object *objp = NULL;
-
-	if ( objnum >= 0 ) {
-		objp = &Objects[objnum];
-	}
-
 	polymodel *pm = model_get(model_num);	
 	
 	g3_start_instance_matrix(pos, orient, true);
