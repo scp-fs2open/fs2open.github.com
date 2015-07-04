@@ -2668,7 +2668,6 @@ int bm_unload_fast(int handle, int clear_render_targets) {
 
 void bm_unlock(int handle) {
 	bitmap_entry	*be;
-	bitmap			*bmp;
 
 	if (!bm_inited) bm_init();
 
@@ -2685,7 +2684,6 @@ void bm_unlock(int handle) {
 	Assert((bitmapnum >= 0) && (bitmapnum < MAX_BITMAPS));
 
 	be = &bm_bitmaps[bitmapnum];
-	bmp = &be->bm;
 
 	be->ref_count--;
 	Assert(be->ref_count >= 0);		// Trying to unlock data more times than lock was called!!!
