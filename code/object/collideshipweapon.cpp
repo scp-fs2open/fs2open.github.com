@@ -467,10 +467,10 @@ int collide_ship_weapon( obj_pair * pair )
 {
 	int		did_hit;
 	object *ship = pair->a;
-	object *weapon = pair->b;
+	object *weapon_obj = pair->b;
 	
 	Assert( ship->type == OBJ_SHIP );
-	Assert( weapon->type == OBJ_WEAPON );
+	Assert( weapon_obj->type == OBJ_WEAPON );
 
 	ship_info *sip = &Ship_info[Ships[ship->instance].ship_info_index];
 
@@ -480,30 +480,30 @@ int collide_ship_weapon( obj_pair * pair )
 			return 0;
 	}
 
-	if (reject_due_collision_groups(ship, weapon))
+	if (reject_due_collision_groups(ship, weapon_obj))
 		return 0;
 
 	// Cull lasers within big ship spheres by casting a vector forward for (1) exit sphere or (2) lifetime of laser
 	// If it does hit, don't check the pair until about 200 ms before collision.  
 	// If it does not hit and is within error tolerance, cull the pair.
 
-	if ( (sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) && (Weapon_info[Weapons[weapon->instance].weapon_info_index].subtype == WP_LASER) ) {
+	if ( (sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) && (Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].subtype == WP_LASER) ) {
 		// Check when within ~1.1 radii.  
 		// This allows good transition between sphere checking (leaving the laser about 200 ms from radius) and checking
 		// within the sphere with little time between.  There may be some time for "small" big ships
 		// Note: culling ships with auto spread shields seems to waste more performance than it saves,
 		// so we're not doing that here
-		if ( !(sip->flags2 & SIF2_AUTO_SPREAD_SHIELDS) && vm_vec_dist_squared(&ship->pos, &weapon->pos) < (1.2f*ship->radius*ship->radius) ) {
-			return check_inside_radius_for_big_ships( ship, weapon, pair );
+		if ( !(sip->flags2 & SIF2_AUTO_SPREAD_SHIELDS) && vm_vec_dist_squared(&ship->pos, &weapon_obj->pos) < (1.2f*ship->radius*ship->radius) ) {
+			return check_inside_radius_for_big_ships( ship, weapon_obj, pair );
 		}
 	}
 
-	did_hit = ship_weapon_check_collision( ship, weapon );
+	did_hit = ship_weapon_check_collision( ship, weapon_obj );
 
 	if ( !did_hit )	{
 		// Since we didn't hit, check to see if we can disable all future collisions
 		// between these two.
-		return weapon_will_never_hit( weapon, ship, pair );
+		return weapon_will_never_hit( weapon_obj, ship, pair );
 	}
 
 	return 0;
