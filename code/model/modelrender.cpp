@@ -777,10 +777,10 @@ void draw_list::set_lighting(bool lighting)
 	Current_render_state.lighting = lighting;
 }
 
-void draw_list::set_team_color(const team_color &color)
+void draw_list::set_team_color(const team_color &clr)
 {
 	Current_render_state.using_team_color = true;
-	Current_render_state.tm_color = color;
+	Current_render_state.tm_color = clr;
 }
 
 void draw_list::set_team_color()
