@@ -41,7 +41,7 @@ void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient);
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 
 int ship_hit_shield(object *obj, mc_info *mc, collision_info_struct *sshs);
-void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_info, collision_info_struct *ship_ship_hit_info);
+void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc_info *mc_info, collision_info_struct *ship_ship_hit_info);
 
 #ifndef NDEBUG
 static int Collide_friendly = 1;
@@ -1313,7 +1313,7 @@ int collide_ship_ship( obj_pair * pair )
 	return 0;
 }
 
-void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_info, collision_info_struct *ship_ship_hit_info)
+void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc_info *mc_info, collision_info_struct *ship_ship_hit_info)
 {
 	// slower moving object [A] is checked at its final position (polygon and position is found on obj)
 	// faster moving object [B] is reduced to a point and a ray is drawn from its last_pos to pos
@@ -1328,7 +1328,7 @@ void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_in
 	vec3d *heavy_collide_cm_pos = &ship_ship_hit_info->heavy_collision_cm_pos;
 	vec3d *light_collide_cm_pos = &ship_ship_hit_info->light_collision_cm_pos;
 
-	float core_rad = model_get_core_radius(Ship_info[Ships[light->instance].ship_info_index].model_num);
+	float core_rad = model_get_core_radius(Ship_info[Ships[lighter_obj->instance].ship_info_index].model_num);
 
 	// get info needed for ship_ship_collision_physics
 	Assert(mc_info->hit_dist > 0);
@@ -1365,7 +1365,7 @@ void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_in
 
 	vm_vec_zero(heavy_collide_cm_pos);
 
-	float q = vm_vec_dist(heavy_collide_cm_pos, light_collide_cm_pos) / (heavy->radius + core_rad);
+	float q = vm_vec_dist(heavy_collide_cm_pos, light_collide_cm_pos) / (heavier_obj->radius + core_rad);
 	if (q > 1.0f) {
 		nprintf(("Physics", "Warning: q = %f.  Supposed to be <= 1.0.\n", q));
 	}
@@ -1376,14 +1376,14 @@ void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_in
 // sphere_sphere_case_handled separately
 #ifdef COLLIDE_DEBUG
 	nprintf(("Physics", "Frame: %i %s info: last_pos: [%4.1f, %4.1f, %4.1f], collide_pos: [%4.1f, %4.1f %4.1f] vel: [%4.1f, %4.1f %4.1f]\n",
-	Framecount, Ships[heavy->instance].ship_name, heavy->last_pos.x, heavy->last_pos.y, heavy->last_pos.z,
+	Framecount, Ships[heavier_obj->instance].ship_name, heavier_obj->last_pos.x, heavier_obj->last_pos.y, heavier_obj->last_pos.z,
 	heavy_collide_cm_pos.x, heavy_collide_cm_pos.y, heavy_collide_cm_pos.z,
-	heavy->phys_info.vel.x, heavy->phys_info.vel.y, heavy->phys_info.vel.z));
+	heavier_obj->phys_info.vel.x, heavier_obj->phys_info.vel.y, heavier_obj->phys_info.vel.z));
 
 	nprintf(("Physics", "Frame: %i %s info: last_pos: [%4.1f, %4.1f, %4.1f], collide_pos: [%4.1f, %4.1f, %4.1f] vel: [%4.1f, %4.1f, %4.1f]\n",
-	Framecount, Ships[light->instance].ship_name, light->last_pos.x, light->last_pos.y, light->last_pos.z,
+	Framecount, Ships[lighter_obj->instance].ship_name, lighter_obj->last_pos.x, lighter_obj->last_pos.y, lighter_obj->last_pos.z,
 	light_collide_cm_pos.x, light_collide_cm_pos.y, light_collide_cm_pos.z,
-	light->phys_info.vel.x, light->phys_info.vel.y, light->phys_info.vel.z));
+	lighter_obj->phys_info.vel.x, lighter_obj->phys_info.vel.y, lighter_obj->phys_info.vel.z));
 #endif
 
 }	
