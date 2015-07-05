@@ -27,7 +27,7 @@
 
 
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
-int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *pair );
+int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair );
 float estimate_ship_speed_upper_limit( object *ship, float time );
 extern float flFrametime;
 
@@ -540,7 +540,7 @@ float estimate_ship_speed_upper_limit( object *ship, float time )
  * @return 1 if pair can be culled
  * @return 0 if pair can not be culled
  */
-int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *pair )
+int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair )
 {
 	vec3d error_vel;		// vel perpendicular to laser
 	float error_vel_mag;	// magnitude of error_vel
@@ -550,11 +550,11 @@ int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *p
 	if (max_error < 2)
 		max_error = 2.0f;
 
-	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon->pos)) / (weapon->phys_info.max_vel.xyz.z - ship->phys_info.max_vel.xyz.z);
+	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon_obj->pos)) / (weapon_obj->phys_info.max_vel.xyz.z - ship->phys_info.max_vel.xyz.z);
 	ship_speed_at_exit_sphere = estimate_ship_speed_upper_limit( ship, time_to_exit_sphere );
 	// update estimated time to exit sphere
-	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon->pos)) / (weapon->phys_info.max_vel.xyz.z - ship_speed_at_exit_sphere);
-	vm_vec_scale_add( &error_vel, &ship->phys_info.vel, &weapon->orient.vec.fvec, -vm_vec_dotprod(&ship->phys_info.vel, &weapon->orient.vec.fvec) );
+	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon_obj->pos)) / (weapon_obj->phys_info.max_vel.xyz.z - ship_speed_at_exit_sphere);
+	vm_vec_scale_add( &error_vel, &ship->phys_info.vel, &weapon_obj->orient.vec.fvec, -vm_vec_dotprod(&ship->phys_info.vel, &weapon_obj->orient.vec.fvec) );
 	error_vel_mag = vm_vec_mag_quick( &error_vel );
 	error_vel_mag += 0.5f * (ship->phys_info.max_vel.xyz.z - error_vel_mag)*(time_to_exit_sphere/ship->phys_info.forward_accel_time_const);
 	// error_vel_mag is now average velocity over period
@@ -566,17 +566,17 @@ int check_inside_radius_for_big_ships( object *ship, object *weapon, obj_pair *p
 	// if ship_weapon_check_collision comes back with a hit_time > error limit, ok
 	// if ship_weapon_check_collision comes finds no collision, next check time based on error time
 	float limit_time;		// furthest time to check (either lifetime or exit sphere)
-	if ( time_to_exit_sphere < Weapons[weapon->instance].lifeleft ) {
+	if ( time_to_exit_sphere < Weapons[weapon_obj->instance].lifeleft ) {
 		limit_time = time_to_exit_sphere;
 	} else {
-		limit_time = Weapons[weapon->instance].lifeleft;
+		limit_time = Weapons[weapon_obj->instance].lifeleft;
 	}
 
 	// Note:  when estimated hit time is less than 200 ms, look at every frame
 	int hit_time;	// estimated time of hit in ms
 
 	// modify ship_weapon_check_collision to do damage if hit_time is negative (ie, hit occurs in this frame)
-	if ( ship_weapon_check_collision( ship, weapon, limit_time, &hit_time ) ) {
+	if ( ship_weapon_check_collision( ship, weapon_obj, limit_time, &hit_time ) ) {
 		// hit occured in while in sphere
 		if (hit_time < 0) {
 			// hit occured in the frame
