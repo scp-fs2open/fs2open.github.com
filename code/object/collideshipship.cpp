@@ -454,13 +454,13 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
  * modified mass is 10x, 4x, or 2x larger than asteroid mass
  * @return 1 if modified mass is larger than given mass, 0 otherwise 
  */
-int check_special_cruiser_asteroid_collision(object *heavy, object *light, float *cruiser_mass, int *cruiser_light)
+int check_special_cruiser_asteroid_collision(object *heavy, object *lighter, float *cruiser_mass, int *cruiser_light)
 {
 	int asteroid_type;
 
 	if (heavy->type == OBJ_ASTEROID) {
-		Assert(light->type == OBJ_SHIP);
-		if (Ship_info[Ships[light->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+		Assert(lighter->type == OBJ_SHIP);
+		if (Ship_info[Ships[lighter->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
 
 			asteroid_type = Asteroids[heavy->instance].asteroid_type;
 			if (asteroid_type == 0) {
@@ -471,22 +471,22 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *light, float
 				*cruiser_mass = 2.0f * heavy->phys_info.mass;
 			}
 
-			if (*cruiser_mass > light->phys_info.mass) {
+			if (*cruiser_mass > lighter->phys_info.mass) {
 				*cruiser_light = 1;
 				return 1;
 			}
 		}
-	} else if (light->type == OBJ_ASTEROID) {
+	} else if (lighter->type == OBJ_ASTEROID) {
 		Assert(heavy->type == OBJ_SHIP);
 		if (Ship_info[Ships[heavy->instance].ship_info_index].flags & SIF_BIG_SHIP) {
 
-			asteroid_type = Asteroids[light->instance].asteroid_type;
+			asteroid_type = Asteroids[lighter->instance].asteroid_type;
 			if (asteroid_type == 0) {
-				*cruiser_mass = 10.0f * light->phys_info.mass;
+				*cruiser_mass = 10.0f * lighter->phys_info.mass;
 			} else if (asteroid_type == 1) {
-				*cruiser_mass = 4.0f * light->phys_info.mass;
+				*cruiser_mass = 4.0f * lighter->phys_info.mass;
 			} else {
-				*cruiser_mass = 2.0f * light->phys_info.mass;
+				*cruiser_mass = 2.0f * lighter->phys_info.mass;
 			}
 
 			if (*cruiser_mass > heavy->phys_info.mass) {
