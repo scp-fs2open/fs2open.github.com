@@ -41,7 +41,7 @@ void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient);
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 
 int ship_hit_shield(object *obj, mc_info *mc, collision_info_struct *sshs);
-void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc_info *mc_info, collision_info_struct *ship_ship_hit_info);
+void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc_info *mc_info_obj, collision_info_struct *ship_ship_hit_info);
 
 #ifndef NDEBUG
 static int Collide_friendly = 1;
@@ -1313,7 +1313,7 @@ int collide_ship_ship( obj_pair * pair )
 	return 0;
 }
 
-void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc_info *mc_info, collision_info_struct *ship_ship_hit_info)
+void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc_info *mc_info_obj, collision_info_struct *ship_ship_hit_info)
 {
 	// slower moving object [A] is checked at its final position (polygon and position is found on obj)
 	// faster moving object [B] is reduced to a point and a ray is drawn from its last_pos to pos
@@ -1331,14 +1331,14 @@ void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc
 	float core_rad = model_get_core_radius(Ship_info[Ships[lighter_obj->instance].ship_info_index].model_num);
 
 	// get info needed for ship_ship_collision_physics
-	Assert(mc_info->hit_dist > 0);
+	Assert(mc_info_obj->hit_dist > 0);
 
 	// get light_collide_cm_pos
 	if ( !ship_ship_hit_info->submodel_rot_hit ) {
 		vec3d displacement;
-		vm_vec_sub(&displacement, mc_info->p1, mc_info->p0);
+		vm_vec_sub(&displacement, mc_info_obj->p1, mc_info_obj->p0);
 
-		*light_collide_cm_pos = *mc_info->p0;
+		*light_collide_cm_pos = *mc_info_obj->p0;
 		vm_vec_scale_add2(light_collide_cm_pos, &displacement, ship_ship_hit_info->hit_time);
 	}
 	
