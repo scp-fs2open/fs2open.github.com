@@ -267,7 +267,7 @@ void model_unload(int modelnum, int force)
 		vm_free(pm->shield_collision_tree);
 	}
 
-	for ( int i = 0; i < MAX_MODEL_DETAIL_LEVELS; ++i ) {
+	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; ++i) {
 		pm->detail_buffers[i].clear();
 	}
 
