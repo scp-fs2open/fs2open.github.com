@@ -6155,7 +6155,7 @@ int might_hit_teammate(object *firing_objp)
 
 void render_all_ship_bay_paths(object *objp)
 {
-	int		i,j,color;
+	int		i,j,clr;
 	polymodel	*pm;
 	model_path	*mp;
 
@@ -6168,17 +6168,17 @@ void render_all_ship_bay_paths(object *objp)
 
 	memset(&v, 0, sizeof(v));
     
-    for ( i = 0; i < pm->ship_bay->num_paths; i++ ) {
+	for ( i = 0; i < pm->ship_bay->num_paths; i++ ) {
 		mp = &pm->paths[pm->ship_bay->path_indexes[i]];
 
 		for ( j = 0; j < mp->nverts; j++ ) {
 			vm_vec_unrotate(&global_path_point, &mp->verts[j].pos, &objp->orient);
 			vm_vec_add2(&global_path_point, &objp->pos);
 			g3_rotate_vertex(&v, &global_path_point);
-			color = 255 - j*50;
-			if ( color < 50 ) 
-				color = 100;
-			gr_set_color(0, color, 0);
+			clr = 255 - j*50;
+			if ( clr < 50 )
+				clr = 100;
+			gr_set_color(0, clr, 0);
 
 			if ( j == mp->nverts-1 ) {
 				gr_set_color(255, 0, 0);
@@ -6200,7 +6200,7 @@ void render_all_ship_bay_paths(object *objp)
  */
 void render_all_subsys_paths(object *objp)
 {
-	int		i,j,color;
+	int		i,j,clr;
 	polymodel	*pm;
 	model_path	*mp;
 
@@ -6211,7 +6211,7 @@ void render_all_subsys_paths(object *objp)
 	if ( pm->ship_bay == NULL )
 		return;
     
-    memset(&v, 0, sizeof(v));
+	memset(&v, 0, sizeof(v));
 
 	for ( i = 0; i < pm->n_paths; i++ ) {
 		mp = &pm->paths[i];
@@ -6219,10 +6219,10 @@ void render_all_subsys_paths(object *objp)
 			vm_vec_unrotate(&global_path_point, &mp->verts[j].pos, &objp->orient);
 			vm_vec_add2(&global_path_point, &objp->pos);
 			g3_rotate_vertex(&v, &global_path_point);
-			color = 255 - j*50;
-			if ( color < 50 ) 
-				color = 100;
-			gr_set_color(0, color, 0);
+			clr = 255 - j*50;
+			if ( clr < 50 )
+				clr = 100;
+			gr_set_color(0, clr, 0);
 
 			if ( j == mp->nverts-1 ) {
 				gr_set_color(255, 0, 0);
