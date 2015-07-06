@@ -64,16 +64,16 @@ void update_danger_weapon(object *pship_obj, object *weapon_obj)
  * Deal with weapon-ship hit stuff.  
  * Separated from check_collision routine below because of multiplayer reasons.
  */
-void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world_hitpos, vec3d *hitpos, int quadrant_num, int submodel_num, vec3d /*not a pointer intentionaly*/ hit_dir)
+void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *world_hitpos, vec3d *hitpos, int quadrant_num, int submodel_num, vec3d /*not a pointer intentionaly*/ hit_dir)
 {
 	weapon	*wp = &Weapons[weapon_obj->instance];
-	weapon_info	*wip = &Weapon_info[wp->weapon_info_index];
-	ship *shipp = &Ships[ship_obj->instance];	
+	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
+	ship *shipp = &Ships[pship_obj->instance];
 	float damage;
 	vec3d force;		
 
 	// Apply hit & damage & stuff to weapon
-	weapon_hit(weapon_obj, ship_obj,  world_hitpos, quadrant_num);
+	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num);
 
 	if (wip->damage_time != 0.0f && wp->lifeleft <= wip->damage_time) {
 		if (wip->min_damage != 0.0f) {
@@ -93,21 +93,21 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 
 	// send player pain packet
 	if ( (MULTIPLAYER_MASTER) && !(shipp->flags & SF_DYING) ){
-		int np_index = multi_find_player_by_object(ship_obj);
+		int np_index = multi_find_player_by_object(pship_obj);
 
 		// if this is a player ship
 		if((np_index >= 0) && (np_index != MY_NET_PLAYER_NUM) && (wip->subtype == WP_LASER)){
-			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, ship_obj), &force, hitpos, quadrant_num);
+			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, pship_obj), &force, hitpos, quadrant_num);
 		}
 	}	
 
-	ship_apply_local_damage(ship_obj, weapon_obj, world_hitpos, damage, quadrant_num, CREATE_SPARKS, submodel_num);
+	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, quadrant_num, CREATE_SPARKS, submodel_num);
 
 	// let the hud shield gauge know when Player or Player target is hit
-	hud_shield_quadrant_hit(ship_obj, quadrant_num);
+	hud_shield_quadrant_hit(pship_obj, quadrant_num);
 
 	// Let wingman status gauge know a wingman ship was hit
-	if ( (Ships[ship_obj->instance].wing_status_wing_index >= 0) && ((Ships[ship_obj->instance].wing_status_wing_pos >= 0)) ) {
+	if ( (Ships[pship_obj->instance].wing_status_wing_index >= 0) && ((Ships[pship_obj->instance].wing_status_wing_pos >= 0)) ) {
 		hud_wingman_status_start_flash(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
 	}
 
@@ -116,7 +116,7 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 	// don't apply whack for multiplayer_client from laser - will occur with pain packet
 	if (!((wip->subtype == WP_LASER) && MULTIPLAYER_CLIENT) ) {		
 		// apply a whack		
-		ship_apply_whack( &force, hitpos, ship_obj );
+		ship_apply_whack( &force, hitpos, pship_obj );
 	}
 
 }
