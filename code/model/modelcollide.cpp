@@ -1212,9 +1212,9 @@ MONITOR(NumFVI)
 // See model.h for usage.   I don't want to put the
 // usage here because you need to see the #defines and structures
 // this uses while reading the help.   
-int model_collide(mc_info * mc_info)
+int model_collide(mc_info *mc_info_obj)
 {
-	Mc = mc_info;
+	Mc = mc_info_obj;
 
 	MONITOR_INC(NumFVI,1);
 

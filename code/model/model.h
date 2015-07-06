@@ -1201,7 +1201,7 @@ inline void mc_info_init(mc_info *mc)
 	}
 */
 
-int model_collide(mc_info * mc_info);
+int model_collide(mc_info *mc_info_obj);
 void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int version);
 
 bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
