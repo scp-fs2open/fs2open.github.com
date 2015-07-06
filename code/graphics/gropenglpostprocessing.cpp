@@ -679,9 +679,9 @@ static bool opengl_post_init_table()
 	}
 }
 
-void opengl_post_load_shader(SCP_string &sflags, shader_type shader, int flags)
+void opengl_post_load_shader(SCP_string &sflags, shader_type shader_t, int flags)
 {
-	if ( shader == SDR_TYPE_POST_PROCESS_MAIN ) {
+	if ( shader_t == SDR_TYPE_POST_PROCESS_MAIN ) {
 		for (size_t idx = 0; idx < Post_effects.size(); idx++) {
 			if (flags & (1 << idx)) {
 				sflags += "#define ";
@@ -689,11 +689,11 @@ void opengl_post_load_shader(SCP_string &sflags, shader_type shader, int flags)
 				sflags += "\n";
 			}
 		}
-	} else if ( shader == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS ) {
+	} else if ( shader_t == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS ) {
 		char temp[64];
 		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_samplenum);
 		sflags += temp;
-	} else if ( shader == SDR_TYPE_POST_PROCESS_FXAA ) {
+	} else if ( shader_t == SDR_TYPE_POST_PROCESS_FXAA ) {
 		switch (Cmdline_fxaa_preset) {
 		case 0:
 			sflags += "#define FXAA_QUALITY_PRESET 10\n";
