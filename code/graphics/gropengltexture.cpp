@@ -1357,10 +1357,16 @@ int opengl_get_texture( GLenum target, GLenum pixel_format, GLenum data_format, 
 	return m_offset;
 }
 
-// sends a texture object out to "image_data", which should be memory which is already allocated
-// this should only be used for uncompressed 24-bit or 32-bit (distiguished by "alpha" var) images
-// returns 0 on failure, size of data on success
-int opengl_export_render_target( int slot, int width, int height, int alpha, int num_mipmaps, ubyte *image_data )
+/**
+ * Sends a texture object out to "image_data"
+ *
+ * Image_data should be memory which is already allocated. Function should only
+ * be used for uncompressed 24-bit or 32-bit (distiguished by "alpha" var) images
+ *
+ * @return 0 on failure
+ * @return size of data on success
+ */
+size_t opengl_export_render_target( int slot, int width, int height, int alpha, int num_mipmaps, ubyte *image_data )
 {
 	tcache_slot_opengl *ts = &Textures[slot];
 
@@ -1423,7 +1429,7 @@ int opengl_export_render_target( int slot, int width, int height, int alpha, int
 
 	GL_CHECK_FOR_ERRORS("end of export_image()");
 
-	return m_offset;
+	return (size_t)m_offset;
 }
 
 void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data, int width, int height)
