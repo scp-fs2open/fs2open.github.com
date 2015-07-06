@@ -348,14 +348,14 @@ static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
 
 		if (cf_shader != NULL) {
 			int len = cfilelength(cf_shader);
-			char *shader = (char*)vm_malloc(len + flags_len + 1);
+			char *shader_c = (char*)vm_malloc(len + flags_len + 1);
 
-			strcpy(shader, shader_flags);
-			memset(shader + flags_len, 0, len + 1);
-			cfread(shader + flags_len, len + 1, 1, cf_shader);
+			strcpy(shader_c, shader_flags);
+			memset(shader_c + flags_len, 0, len + 1);
+			cfread(shader_c + flags_len, len + 1, 1, cf_shader);
 			cfclose(cf_shader);
 
-			return shader;
+			return shader_c;
 		}
 	}
 
@@ -363,12 +363,12 @@ static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
 	mprintf(("   Loading built-in default shader for: %s\n", filename));
 	char* def_shader = defaults_get_file(filename);
 	size_t len = strlen(def_shader);
-	char *shader = (char*)vm_malloc(len + flags_len + 1);
+	char *shader_c = (char*)vm_malloc(len + flags_len + 1);
 
-	strcpy(shader, shader_flags);
-	strcat(shader, def_shader);
+	strcpy(shader_c, shader_flags);
+	strcat(shader_c, def_shader);
 
-	return shader;
+	return shader_c;
 }
 
 /**
