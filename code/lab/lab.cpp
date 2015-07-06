@@ -940,7 +940,7 @@ void labviewer_render_model(float frametime)
 
 			//render weapon models if selected
 			if ( Lab_mode == LAB_MODE_SHIP && ( Lab_viewer_flags & LAB_FLAG_SHOW_WEAPONS ) ) {
-				int j,k,l;
+				int k,l;
 				g3_start_instance_matrix(&vmd_zero_vector, &Lab_viewer_orient, true);
 				l = 0;
 
