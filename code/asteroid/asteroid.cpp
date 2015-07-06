@@ -1611,20 +1611,20 @@ int asteroid_get_random_in_cone(vec3d *pos, vec3d *dir, float ang, int danger)
 	return -1;
 }
 
-void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc, bool lazy = false)
+void asteroid_test_collide(object *pasteroid_obj, object *ship_obj, mc_info *mc, bool lazy = false)
 {
 	float		asteroid_ray_dist;
 	vec3d	asteroid_fvec, terminus;
 
 	// See if ray from asteroid intersects bounding box of escort ship
-	asteroid_ray_dist = vm_vec_mag_quick(&asteroid_obj->phys_info.desired_vel) * ASTEROID_MIN_COLLIDE_TIME;
-	asteroid_fvec = asteroid_obj->phys_info.desired_vel;	
+	asteroid_ray_dist = vm_vec_mag_quick(&pasteroid_obj->phys_info.desired_vel) * ASTEROID_MIN_COLLIDE_TIME;
+	asteroid_fvec = pasteroid_obj->phys_info.desired_vel;
 
 	if(IS_VEC_NULL_SQ_SAFE(&asteroid_fvec)){
-		terminus = asteroid_obj->pos;
+		terminus = pasteroid_obj->pos;
 	} else {
 		vm_vec_normalize(&asteroid_fvec);
-		vm_vec_scale_add(&terminus, &asteroid_obj->pos, &asteroid_fvec, asteroid_ray_dist);
+		vm_vec_scale_add(&terminus, &pasteroid_obj->pos, &asteroid_fvec, asteroid_ray_dist);
 	}
 
 	Assert(ship_obj->type == OBJ_SHIP);
@@ -1633,14 +1633,14 @@ void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc, 
 	mc->model_num = Ship_info[Ships[ship_obj->instance].ship_info_index].model_num;			// Fill in the model to check
 	mc->orient = &ship_obj->orient;										// The object's orientation
 	mc->pos = &ship_obj->pos;												// The object's position
-	mc->p0 = &asteroid_obj->pos;											// Point 1 of ray to check
+	mc->p0 = &pasteroid_obj->pos;											// Point 1 of ray to check
 	mc->p1 = &terminus;														// Point 2 of ray to check
 	if (lazy) {
 		mc->flags = MC_CHECK_MODEL | MC_ONLY_BOUND_BOX;
 	} else {
 		mc->flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 	}
-	mc->radius = asteroid_obj->radius;
+	mc->radius = pasteroid_obj->radius;
 
 	model_collide(mc);
 
