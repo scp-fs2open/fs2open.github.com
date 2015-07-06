@@ -1009,26 +1009,26 @@ void mission_campaign_store_goals_and_events()
 {
 	char *name;
 	int cur, i;
-	cmission *mission;
+	cmission *mission_obj;
 
 	cur = Campaign.current_mission;
 	name = Campaign.missions[cur].name;
 
-	mission = &Campaign.missions[cur];
+	mission_obj = &Campaign.missions[cur];
 
 	// first we must save the status of the current missions goals in the campaign mission structure.
 	// After that, we can determine which mission is tagged as the next mission.  Finally, we
 	// can save the campaign save file
 	// we might have goal and event status if the player replayed a mission
-	if ( mission->goals != NULL ) {
-		vm_free( mission->goals );
-		mission->goals = NULL;
+	if ( mission_obj->goals != NULL ) {
+		vm_free( mission_obj->goals );
+		mission_obj->goals = NULL;
 	}
 
-	mission->num_goals = Num_goals;
-	if ( mission->num_goals > 0 ) {
-		mission->goals = (mgoal *)vm_malloc( sizeof(mgoal) * Num_goals );
-		Assert( mission->goals != NULL );
+	mission_obj->num_goals = Num_goals;
+	if ( mission_obj->num_goals > 0 ) {
+		mission_obj->goals = (mgoal *)vm_malloc( sizeof(mgoal) * Num_goals );
+		Assert( mission_obj->goals != NULL );
 	}
 
 	// copy the needed info from the Mission_goal struct to our internal structure
@@ -1037,24 +1037,24 @@ void mission_campaign_store_goals_and_events()
 			char goal_name[NAME_LENGTH];
 
 			sprintf(goal_name, NOX("Goal #%d"), i);
-			strcpy_s( mission->goals[i].name, goal_name);
+			strcpy_s( mission_obj->goals[i].name, goal_name);
 		} else
-			strcpy_s( mission->goals[i].name, Mission_goals[i].name );
+			strcpy_s( mission_obj->goals[i].name, Mission_goals[i].name );
 		Assert ( Mission_goals[i].satisfied != GOAL_INCOMPLETE );		// should be true or false at this point!!!
-		mission->goals[i].status = (char)Mission_goals[i].satisfied;
+		mission_obj->goals[i].status = (char)Mission_goals[i].satisfied;
 	}
 
 	// do the same thing for events as we did for goals
 	// we might have goal and event status if the player replayed a mission
-	if ( mission->events != NULL ) {
-		vm_free( mission->events );
-		mission->events = NULL;
+	if ( mission_obj->events != NULL ) {
+		vm_free( mission_obj->events );
+		mission_obj->events = NULL;
 	}
 
-	mission->num_events = Num_mission_events;
-	if ( mission->num_events > 0 ) {
-		mission->events = (mevent *)vm_malloc( sizeof(mevent) * Num_mission_events );
-		Assert( mission->events != NULL );
+	mission_obj->num_events = Num_mission_events;
+	if ( mission_obj->num_events > 0 ) {
+		mission_obj->events = (mevent *)vm_malloc( sizeof(mevent) * Num_mission_events );
+		Assert( mission_obj->events != NULL );
 	}
 
 	// copy the needed info from the Mission_goal struct to our internal structure
@@ -1063,10 +1063,10 @@ void mission_campaign_store_goals_and_events()
 			char event_name[NAME_LENGTH];
 
 			sprintf(event_name, NOX("Event #%d"), i);
-			nprintf(("Warning", "Mission goal in mission %s must have a +Name field! using %s for campaign save file\n", mission->name, name));
-			strcpy_s( mission->events[i].name, event_name);
+			nprintf(("Warning", "Mission goal in mission %s must have a +Name field! using %s for campaign save file\n", mission_obj->name, name));
+			strcpy_s( mission_obj->events[i].name, event_name);
 		} else
-			strcpy_s( mission->events[i].name, Mission_events[i].name );
+			strcpy_s( mission_obj->events[i].name, Mission_events[i].name );
 
 		// getting status for the events is a little different.  If the formula value for the event entry
 		// is -1, then we know the value of the result field will never change.  If the formula is
@@ -1074,9 +1074,9 @@ void mission_campaign_store_goals_and_events()
 		// event evaluation
 		if ( Mission_events[i].formula == -1 ) {
 			if ( Mission_events[i].result )
-				mission->events[i].status = EVENT_SATISFIED;
+				mission_obj->events[i].status = EVENT_SATISFIED;
 			else
-				mission->events[i].status = EVENT_FAILED;
+				mission_obj->events[i].status = EVENT_FAILED;
 		} else
 			Int3();
 	}
