@@ -1085,35 +1085,17 @@ void mission_campaign_store_goals_and_events()
 void mission_campaign_store_variables()
 {
 	int cur, i, j;
-	cmission *mission;
+	cmission *mission_obj;
 
 	cur = Campaign.current_mission;
-	mission = &Campaign.missions[cur];
+	mission_obj = &Campaign.missions[cur];
 
 	// Goober5000 - handle campaign-persistent variables -------------------------------------
-	if (mission->variables != NULL) {
-		vm_free( mission->variables );
-		mission->variables = NULL;
-	}
-/*
-	mission->num_variables = sexp_campaign_persistent_variable_count();
-	if ( mission->num_variables > 0) {
-		mission->variables = (sexp_variable *)vm_malloc( sizeof(sexp_variable) * mission->num_variables);
-		Assert( mission->variables != NULL );
+	if (mission_obj->variables != NULL) {
+		vm_free( mission_obj->variables );
+		mission_obj->variables = NULL;
 	}
 
-	// copy the needed variable info
-	j=0;
-	for (i = 0; i < sexp_variable_count(); i++) {
-		if (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT)
-		{
-			mission->variables[j].type = Sexp_variables[i].type;
-			strcpy_s(mission->variables[j].text, Sexp_variables[i].text);
-			strcpy_s(mission->variables[j].variable_name, Sexp_variables[i].variable_name);
-			j++;
-		}
-	}
-*/
 	int num_mission_variables = sexp_campaign_persistent_variable_count();
 
 	if (num_mission_variables > 0) {
