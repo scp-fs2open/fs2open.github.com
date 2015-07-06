@@ -1597,7 +1597,7 @@ int mission_campaign_find_mission( char *name )
 
 void mission_campaign_maybe_play_movie(int type)
 {
-	int mission;
+	int mission_idx;
 	char *filename;
 
 	// only support pre mission movies for now.
@@ -1606,15 +1606,15 @@ void mission_campaign_maybe_play_movie(int type)
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
-	mission = Campaign.current_mission;
-	Assert( mission != -1 );
+	mission_idx = Campaign.current_mission;
+	Assert( mission_idx != -1 );
 
 	// get a possible filename for a movie to play.
 	filename = NULL;
 	switch( type ) {
 	case CAMPAIGN_MOVIE_PRE_MISSION:
-		if ( strlen(Campaign.missions[mission].briefing_cutscene) )
-			filename = Campaign.missions[mission].briefing_cutscene;
+		if ( strlen(Campaign.missions[mission_idx].briefing_cutscene) )
+			filename = Campaign.missions[mission_idx].briefing_cutscene;
 		break;
 
 	default:
