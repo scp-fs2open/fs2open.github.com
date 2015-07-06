@@ -1611,7 +1611,7 @@ int asteroid_get_random_in_cone(vec3d *pos, vec3d *dir, float ang, int danger)
 	return -1;
 }
 
-void asteroid_test_collide(object *pasteroid_obj, object *ship_obj, mc_info *mc, bool lazy = false)
+void asteroid_test_collide(object *pasteroid_obj, object *pship_obj, mc_info *mc, bool lazy = false)
 {
 	float		asteroid_ray_dist;
 	vec3d	asteroid_fvec, terminus;
@@ -1627,12 +1627,12 @@ void asteroid_test_collide(object *pasteroid_obj, object *ship_obj, mc_info *mc,
 		vm_vec_scale_add(&terminus, &pasteroid_obj->pos, &asteroid_fvec, asteroid_ray_dist);
 	}
 
-	Assert(ship_obj->type == OBJ_SHIP);
+	Assert(pship_obj->type == OBJ_SHIP);
 
-	mc->model_instance_num = Ships[ship_obj->instance].model_instance_num;
-	mc->model_num = Ship_info[Ships[ship_obj->instance].ship_info_index].model_num;			// Fill in the model to check
-	mc->orient = &ship_obj->orient;										// The object's orientation
-	mc->pos = &ship_obj->pos;												// The object's position
+	mc->model_instance_num = Ships[pship_obj->instance].model_instance_num;
+	mc->model_num = Ship_info[Ships[pship_obj->instance].ship_info_index].model_num;			// Fill in the model to check
+	mc->orient = &pship_obj->orient;										// The object's orientation
+	mc->pos = &pship_obj->pos;												// The object's position
 	mc->p0 = &pasteroid_obj->pos;											// Point 1 of ray to check
 	mc->p1 = &terminus;														// Point 2 of ray to check
 	if (lazy) {
