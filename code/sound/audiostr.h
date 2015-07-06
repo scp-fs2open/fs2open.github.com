@@ -33,13 +33,11 @@
 #endif
 
 #include "sound/ogg/ogg.h"
+#include "cfile/cfile.h"
 
 // audio stream file handle information
 typedef struct {
-	HMMIO cfp;		// handle for mmio
-
-	long true_offset;	// true offset of file into VP
-	uint size;			// total size of file being read
+	CFILE* cfp;		// handle for io operations
 
 	// for OGGs
 	OggVorbis_File vorbis_file;	// vorbis file info
