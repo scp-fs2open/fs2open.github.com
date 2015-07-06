@@ -1197,7 +1197,7 @@ void mission_campaign_store_goals_and_events_and_variables()
 void mission_campaign_mission_over(bool do_next_mission)
 {
 	int mission_num, i;
-	cmission *mission;
+	cmission *mission_obj;
 
 	// I don't think that we should have a record for these -- maybe we might??????  If we do,
 	// then we should free them
@@ -1207,7 +1207,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 	mission_num = Campaign.current_mission;
 	Assert( mission_num != -1 );
-	mission = &Campaign.missions[mission_num];
+	mission_obj = &Campaign.missions[mission_num];
 
 	// determine if any ships/weapons were granted this mission
 	for ( i=0; i<Num_granted_ships; i++ ){
@@ -1225,9 +1225,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 	// update campaign.mission stats (used to allow backout inRedAlert)
 	// .. but we don't do this if we are inside of the prev/current loop hack
 	if ( Campaign.prev_mission != Campaign.current_mission ) {
-		mission->stats.assign( Player->stats );
+		mission_obj->stats.assign( Player->stats );
 		if(!(Game_mode & GM_MULTIPLAYER)){
-			scoring_backout_accept( &mission->stats );
+			scoring_backout_accept( &mission_obj->stats );
 		}
 	}
 
@@ -1253,26 +1253,26 @@ void mission_campaign_mission_over(bool do_next_mission)
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact
 		// that the player played this mission in the campaign.
-		if (mission->goals != NULL) {
-			vm_free( mission->goals );
-			mission->goals = NULL;
+		if (mission_obj->goals != NULL) {
+			vm_free( mission_obj->goals );
+			mission_obj->goals = NULL;
 		}
-		mission->num_goals = 0;
+		mission_obj->num_goals = 0;
 
-		if (mission->events != NULL) {
-			vm_free( mission->events );
-			mission->events = NULL;
+		if (mission_obj->events != NULL) {
+			vm_free( mission_obj->events );
+			mission_obj->events = NULL;
 		}
-		mission->num_events = 0;
+		mission_obj->num_events = 0;
 
 		// Goober5000
-		if (mission->variables != NULL) {
-			vm_free( mission->variables );
-			mission->variables = NULL;
+		if (mission_obj->variables != NULL) {
+			vm_free( mission_obj->variables );
+			mission_obj->variables = NULL;
 		}
-		mission->num_variables = 0;
+		mission_obj->num_variables = 0;
 
-		Sexp_nodes[mission->formula].value = SEXP_UNKNOWN;
+		Sexp_nodes[mission_obj->formula].value = SEXP_UNKNOWN;
 	}
 
 	if (do_next_mission)
