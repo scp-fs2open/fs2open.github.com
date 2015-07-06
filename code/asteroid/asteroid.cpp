@@ -950,14 +950,14 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	Assert( ship_obj->type == OBJ_SHIP );
 
 	object* heavy = asteroid_hit_info->heavy;
-	object* light = asteroid_hit_info->light;
+	object* lighter = asteroid_hit_info->light;
 	object *heavy_obj = heavy;
-	object *light_obj = light;
+	object *light_obj = lighter;
 
 	vec3d zero, p0, p1;
 	vm_vec_zero( &zero );
-	vm_vec_sub( &p0, &light->last_pos, &heavy->last_pos );
-	vm_vec_sub( &p1, &light->pos, &heavy->pos );
+	vm_vec_sub( &p0, &lighter->last_pos, &heavy->last_pos );
+	vm_vec_sub( &p1, &lighter->pos, &heavy->pos );
 
 	mc.pos = &zero;								// The object's position
 	mc.p0 = &p0;									// Point 1 of ray to check
@@ -979,11 +979,11 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		// HACK - this applies to big ships warping in/out of asteroid fields - not sure what it does
 		if (vm_vec_mag(&asteroid_hit_info->light_rel_vel) > 300) {
 			asteroid_hit_info->collide_rotate = 0;
-			vm_vec_sub( &asteroid_hit_info->light_rel_vel, &light->phys_info.vel, &heavy->phys_info.vel );
+			vm_vec_sub( &asteroid_hit_info->light_rel_vel, &lighter->phys_info.vel, &heavy->phys_info.vel );
 		}
 	} else {
 		asteroid_hit_info->collide_rotate = 0;
-		vm_vec_sub( &asteroid_hit_info->light_rel_vel, &light->phys_info.vel, &heavy->phys_info.vel );
+		vm_vec_sub( &asteroid_hit_info->light_rel_vel, &lighter->phys_info.vel, &heavy->phys_info.vel );
 	}
 
 	int mc_ret_val = 0;
