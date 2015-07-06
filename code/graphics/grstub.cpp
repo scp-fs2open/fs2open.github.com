@@ -733,7 +733,7 @@ void gr_stub_bm_page_in_start()
 {
 }
 
-int gr_stub_maybe_create_shader(shader_type shader, unsigned int flags) {
+int gr_stub_maybe_create_shader(shader_type shader_t, unsigned int flags) {
 	return -1;
 }
 
