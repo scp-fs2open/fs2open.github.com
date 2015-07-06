@@ -95,15 +95,15 @@ typedef struct shader {
 // gr_get_colors after calling gr_set_colors_fast.
 typedef struct color {
 	uint		screen_sig;
+	int		is_alphacolor;
+	int		alphacolor;
+	int		magic;
 	ubyte		red;
 	ubyte		green;
 	ubyte		blue;
 	ubyte		alpha;
 	ubyte		ac_type;							// The type of alphacolor.  See AC_TYPE_??? defines
-	int		is_alphacolor;
 	ubyte		raw8;
-	int		alphacolor;
-	int		magic;		
 } color;
 
 // Used by the team coloring code
@@ -361,9 +361,13 @@ typedef struct screen {
 	int	max_w, max_h;		// Width and height
 	int max_w_unscaled, max_h_unscaled;
 	int max_w_unscaled_zoomed, max_h_unscaled_zoomed;
+	int center_w, center_h;	// Width and height of center monitor
+	int center_offset_x, center_offset_y;
 	int	save_max_w, save_max_h;		// Width and height
 	int save_max_w_unscaled, save_max_h_unscaled;
 	int save_max_w_unscaled_zoomed, save_max_h_unscaled_zoomed;
+	int save_center_w, save_center_h;	// Width and height of center monitor
+	int save_center_offset_x, save_center_offset_y;
 	int	res;					// GR_640 or GR_1024
 	int	mode;					// What mode gr_init was called with.
 	float	aspect, clip_aspect;				// Aspect ratio, aspect of clip_width/clip_height
@@ -703,11 +707,12 @@ extern screen gr_screen;
 
 #define GR_RESIZE_NONE				0
 #define GR_RESIZE_FULL				1
-#define GR_RESIZE_MENU				2
-#define GR_RESIZE_MENU_ZOOMED		3
-#define GR_RESIZE_MENU_NO_OFFSET	4
+#define GR_RESIZE_FULL_CENTER		2
+#define GR_RESIZE_MENU				3
+#define GR_RESIZE_MENU_ZOOMED		4
+#define GR_RESIZE_MENU_NO_OFFSET	5
 
-void gr_set_screen_scale(int x, int y, int zoom_x = -1, int zoom_y = -1, int max_x = gr_screen.max_w, int max_y = gr_screen.max_h, bool force_stretch = false);
+void gr_set_screen_scale(int x, int y, int zoom_x = -1, int zoom_y = -1, int max_x = gr_screen.max_w, int max_y = gr_screen.max_h, int center_x = gr_screen.center_w, int center_y = gr_screen.center_h, bool force_stretch = false);
 void gr_reset_screen_scale();
 bool gr_unsize_screen_pos(int *x, int *y, int *w = NULL, int *h = NULL, int resize_mode = GR_RESIZE_FULL);
 bool gr_resize_screen_pos(int *x, int *y, int *w = NULL, int *h = NULL, int resize_mode = GR_RESIZE_FULL);

@@ -1839,11 +1839,11 @@ int main_hall_get_index(const SCP_string &name_to_find)
 int main_hall_get_resolution_index(int main_hall_num)
 {
 	unsigned int i;
-	float aspect_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
+	float aspect_ratio = (float)gr_screen.center_w / (float)gr_screen.center_h;
 
 	for (i = Main_hall_defines.at(main_hall_num).size() - 1; i >= 1; i--) {
 		main_hall_defines* m = &Main_hall_defines.at(main_hall_num).at(i);
-		if (gr_screen.max_w >= m->min_width && gr_screen.max_h >= m->min_height && aspect_ratio >= m->min_aspect_ratio) {
+		if (gr_screen.center_w >= m->min_width && gr_screen.center_h >= m->min_height && aspect_ratio >= m->min_aspect_ratio) {
 			return i;
 		}
 	}
@@ -2125,7 +2125,7 @@ void parse_main_hall_table(const char* filename)
 						}
 					}
 					else {
-						snprintf(temp_string, MAX_FILENAME_LEN, "%d", count);
+						snprintf(temp_string, MAX_FILENAME_LEN, "%u", count);
 						m->name = temp_string;
 					}
 				}

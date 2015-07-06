@@ -251,7 +251,7 @@ void draw_brackets_diamond(int x1, int y1, int x2, int y2)
 	gr_gradient(center_x + x_delta, y2 - y_delta, center_x, y2);
 }
 
-void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2, int thick)
+void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2)
 {
 	int width, height, half_width, half_height;
 	int center_x, center_y;

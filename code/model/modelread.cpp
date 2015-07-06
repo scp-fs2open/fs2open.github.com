@@ -1315,6 +1315,18 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					while (*p == ' ') p++;
 					pm->submodel[n].use_render_box = atoi(p);
 
+					if ( (p = strstr(props, "$box_offset:")) != NULL ) {
+						p += 12;
+						while (*p == ' ') p++;
+						pm->submodel[n].render_box_offset.xyz.x = (float)strtod(p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_offset.xyz.y = (float)strtod(++p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+
+						pm->submodel[n].use_render_box_offset = true;
+					}
+
 					if ( (p = strstr(props, "$box_min:")) != NULL ) {
 						p += 9;
 						while (*p == ' ') p++;
@@ -1361,6 +1373,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						pm->submodel[n].render_sphere_offset.xyz.y = (float)strtod(++p, (char **)NULL);
 						while (*p != ',') p++;
 						pm->submodel[n].render_sphere_offset.xyz.z = (float)strtod(++p, (char **)NULL);
+
+						pm->submodel[n].use_render_sphere_offset = true;
 					} else {
 						pm->submodel[n].render_sphere_offset = vmd_zero_vector;
 					}

@@ -123,6 +123,7 @@ extern int Num_weapon_subtypes;
 #define WIF3_FIGHTER_INTERCEPTABLE		(1 << 6)	// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
 #define WIF3_AOE_ELECTRONICS			(1 << 7)	// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
 #define WIF3_APPLY_RECOIL				(1 << 8)	// Apply recoil using weapon and ship info
+#define WIF3_DONT_SPAWN_IF_SHOT			(1 << 9)	// Prevent shot down parent weapons from spawning children (DahBlount)
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -141,6 +142,7 @@ extern int Num_weapon_subtypes;
 #define WF_DESTROYED_BY_WEAPON		(1<<6)		// destroyed by damage from other weapon
 #define WF_SPAWNED					(1<<7)		//Spawned from a spawning type weapon
 #define WF_HOMING_UPDATE_NEEDED		(1<<8)		// this is a newly spawned homing weapon which needs to update client machines
+#define WF_NO_HOMING				(1<<9)		// this weapon should ignore any homing behavior it'd usually have
 
 // flags for setting burst fire 
 #define WBF_FAST_FIRING				(1<<0)		// burst is to use only the firewait to determine firing delays
@@ -352,8 +354,13 @@ typedef struct weapon_info {
 	float	free_flight_time;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
+	float max_delay;							// max time to delay a shot (DahBlount)
+	float min_delay;							// min time to delay a shot	(DahBlount)
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
+	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
+	float	min_damage;							// lowest damage the weapon can deal. (DahBlount)
+	float	max_damage;							// highest damage the weapon can deal. (DahBlount)
 
 	shockwave_create_info shockwave;
 	shockwave_create_info dinky_shockwave;
@@ -416,6 +423,7 @@ typedef struct weapon_info {
 
 	int	impact_weapon_expl_index;		// Index into Weapon_expl_info of which ANI should play when this thing impacts something
 	float	impact_explosion_radius;		// How big the explosion should be
+	float	shield_impact_explosion_radius;	// How big the shield hit explosion should be
 
 	int dinky_impact_weapon_expl_index;
 	float dinky_impact_explosion_radius;
@@ -676,5 +684,7 @@ void weapon_unpause_sounds();
 
 // Called by hudartillery.cpp after SSMs have been parsed to make sure that $SSM: entries defined in weapons are valid.
 void validate_SSM_entries();
+
+void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx);
 
 #endif

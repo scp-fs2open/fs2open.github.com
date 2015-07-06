@@ -8393,7 +8393,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 #define GET_NORM_VEC(d) do { char vnorm[3]; memcpy(vnorm, data+offset, 3); d.x = (float)vnorm[0] / 127.0f; d.y = (float)vnorm[1] / 127.0f; d.z = (float)vnorm[2] / 127.0f; } while(0);
 
 // player pain packet
-void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos)
+void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos, int quadrant_num)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	short windex;
@@ -8417,6 +8417,7 @@ void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage
 	ADD_USHORT(udamage);
 	ADD_VECTOR((*force));
 	ADD_VECTOR((*hitpos));
+	ADD_INT(quadrant_num);
 
 	// send to the player
 	multi_io_send(pl, data, packet_size);
@@ -8432,6 +8433,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	vec3d force;
 	vec3d local_hit_pos;
 	weapon_info *wip;
+	int quadrant_num;
 
 	// get the data for the pain packet
 	offset = HEADER_LENGTH;		
@@ -8439,6 +8441,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	GET_USHORT(udamage);
 	GET_VECTOR(force);
 	GET_VECTOR(local_hit_pos);
+	GET_INT(quadrant_num);
 	PACKET_SET_SIZE();
 
 	// mprintf(("PAIN!\n"));
@@ -8460,7 +8463,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	weapon_hit_do_sound(Player_obj, wip, &Player_obj->pos, true);
 
 	// we need to do 3 things here. player pain (game flash), weapon hit sound, ship_apply_whack()
-	ship_hit_pain((float)udamage);
+	ship_hit_pain((float)udamage, quadrant_num);
 
 	// apply the whack	
 	ship_apply_whack(&force, &local_hit_pos, Player_obj);	

@@ -1888,6 +1888,10 @@ int beam_start_firing(beam *b)
 		// niffwan - if launch_snd < 0, don't play any sound
 	}	
 
+	Script_system.SetHookObjects(3, "Beam", &Objects[b->objnum], "User", b->objp, "Target", b->target);
+	Script_system.RunCondition(CHA_BEAMFIRE, 0, NULL, b->objp, b->weapon_info_index);
+	Script_system.RemHookVars(3, "Beam", "User", "Target");
+
 	// success
 	return 1;
 }

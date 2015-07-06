@@ -201,6 +201,57 @@ public:
     virtual void execute() = 0;
 };
 
+class ChangeServerInformationCommand : public WebapiCommand
+{
+	SCP_string name;
+	bool hasName;
+
+	SCP_string passwd;
+	bool hasPasswd;
+
+	int framecap;
+
+public:
+	ChangeServerInformationCommand() : hasName(false), hasPasswd(false), framecap(0) {}
+
+	void setFrameCap(int cap) { framecap = cap; }
+
+	void setName(const char* newName)
+	{
+		hasName = true;
+		name.assign(newName);
+	}
+
+	void setPasswd(const char* newPasswd)
+	{
+		hasPasswd = true;
+		passwd.assign(newPasswd);
+	}
+
+	virtual void execute()
+	{
+		if (hasName) {
+			strcpy_s(Netgame.name, name.c_str());
+			strcpy_s(Multi_options_g.std_pname, name.c_str());
+			// update fs2netd with the info
+			if (MULTI_IS_TRACKER_GAME) {
+				fs2netd_gameserver_disconnect();
+				os_sleep(50);
+				fs2netd_gameserver_start();
+			}
+		}
+
+		if (hasPasswd) {
+			strcpy_s(Multi_options_g.std_passwd, passwd.c_str());
+		}
+
+		if (framecap)
+		{
+			Multi_options_g.std_framecap = framecap;
+		}
+	}
+};
+
 class KickPlayerCommand: public WebapiCommand {
 public:
     KickPlayerCommand(int playerId)
@@ -273,6 +324,7 @@ void webapiExecuteCommands() {
     for (SCP_vector<WebapiCommand*>::iterator iter = webapiCommandQueue.begin(); iter != webapiCommandQueue.end();
             ++iter) {
         (*iter)->execute();
+		delete *iter;
     }
 
     webapiCommandQueue.clear();
@@ -404,28 +456,25 @@ json_t* serverGet(ResourceContext *context) {
 }
 
 json_t* serverPut(ResourceContext *context) {
-    const char* name = json_string_value(json_object_get(context->requestEntity, "name"));
-    if (name) {
-        strcpy_s(Netgame.name, name);
-        strcpy_s(Multi_options_g.std_pname, name);
-        // update fs2netd with the info
-        if (MULTI_IS_TRACKER_GAME) {
-            fs2netd_gameserver_disconnect();
-            os_sleep(50);
-            fs2netd_gameserver_start();
-        }
-    }
-    const char* passwd = json_string_value(json_object_get(context->requestEntity, "password"));
-    if (passwd) {
-        strcpy_s(Multi_options_g.std_passwd, passwd);
-    }
-    int framecap = atoi(json_string_value(json_object_get(context->requestEntity, "framecap")));
-    if (framecap)
-    {
-        Multi_options_g.std_framecap = framecap;
-    }
+	ChangeServerInformationCommand* changeCommand = new ChangeServerInformationCommand();
 
-    return json_object();
+	const char* name = json_string_value(json_object_get(context->requestEntity, "name"));
+	if (name) {
+		changeCommand->setName(name);
+	}
+	const char* passwd = json_string_value(json_object_get(context->requestEntity, "password"));
+	if (passwd) {
+		changeCommand->setPasswd(passwd);
+	}
+	int framecap = atoi(json_string_value(json_object_get(context->requestEntity, "framecap")));
+	if (framecap)
+	{
+		changeCommand->setFrameCap(framecap);
+	}
+
+	webapiAddCommand(changeCommand);
+
+	return json_object();
 }
 
 json_t* serverDelete(ResourceContext *context) {
@@ -640,7 +689,7 @@ json_t* chatPost(ResourceContext *context) {
         send_game_chat_packet(Net_player, const_cast<char*>(message), MULTI_MSG_ALL, NULL);
         std_add_chat_text(const_cast<char*>(message), 0 /*MY_NET_PLAYER_NUM*/, 1);
     }
-    
+
     return emptyResource(context);
 }
 
@@ -701,13 +750,13 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
             if (pathMatch && r->method == method) {
 
                 std::string userNameAndPassword;
-                
+
                 userNameAndPassword += Multi_options_g.webapiUsername.c_str();
                 userNameAndPassword += ":";
                 userNameAndPassword += Multi_options_g.webapiPassword.c_str();
-                
+
                 std::string basicAuthValue = "Basic ";
-                
+
                 basicAuthValue += base64_encode(reinterpret_cast<const unsigned char*>(userNameAndPassword.c_str()), userNameAndPassword.length());
 
                 const char* authValue = mg_get_header(conn, "Authorization");
@@ -735,7 +784,7 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
 
                 char entityBuffer[1024];
                 memset(entityBuffer, 0, sizeof(entityBuffer));
-                
+
                 /*int readBytes = */mg_read(conn, &entityBuffer, sizeof(entityBuffer));
 
                 json_error_t parseError;
@@ -895,7 +944,7 @@ void std_connect_set_gamename(char *name)
 		}
 	} else {
 		strcpy_s(Netgame.name,name);
-        
+
 		// update fs2netd
 		if (MULTI_IS_TRACKER_GAME) {
 			fs2netd_gameserver_disconnect();
