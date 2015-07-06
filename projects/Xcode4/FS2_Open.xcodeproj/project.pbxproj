@@ -1009,17 +1009,6 @@
 		3459530D08C3D69F003B1351 /* debris.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = debris.cpp; sourceTree = "<group>"; };
 		3459530E08C3D69F003B1351 /* debris.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debris.h; sourceTree = "<group>"; };
 		3459531008C3D69F003B1351 /* console.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = console.cpp; sourceTree = "<group>"; };
-		3459531E08C3D69F003B1351 /* dxguid.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = dxguid.lib; sourceTree = "<group>"; };
-		3459531F08C3D6A0003B1351 /* strmiids.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = strmiids.lib; sourceTree = "<group>"; };
-		3459532008C3D6A0003B1351 /* vasync.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vasync.h; sourceTree = "<group>"; };
-		3459532108C3D6A0003B1351 /* vd3dtypes.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vd3dtypes.h; sourceTree = "<group>"; };
-		3459532208C3D6A0003B1351 /* vddraw.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vddraw.h; sourceTree = "<group>"; };
-		3459532308C3D6A0003B1351 /* vdinput.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vdinput.h; sourceTree = "<group>"; };
-		3459532408C3D6A0003B1351 /* vdinput.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = vdinput.lib; sourceTree = "<group>"; };
-		3459532508C3D6A0003B1351 /* vdplay.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vdplay.h; sourceTree = "<group>"; };
-		3459532608C3D6A0003B1351 /* vdplobby.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vdplobby.h; sourceTree = "<group>"; };
-		3459532708C3D6A0003B1351 /* vdsetup.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vdsetup.h; sourceTree = "<group>"; };
-		3459532A08C3D6A0003B1351 /* vdvp.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vdvp.h; sourceTree = "<group>"; };
 		3459532C08C3D6A0003B1351 /* exceptionhandler.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = exceptionhandler.cpp; sourceTree = "<group>"; };
 		3459532D08C3D6A0003B1351 /* exceptionhandler.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = exceptionhandler.h; sourceTree = "<group>"; };
 		3459532F08C3D6A0003B1351 /* fireballs.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = fireballs.cpp; sourceTree = "<group>"; };
@@ -1931,7 +1920,6 @@
 				3459530908C3D69F003B1351 /* ddsutils */,
 				3459530C08C3D69F003B1351 /* debris */,
 				3459530F08C3D69F003B1351 /* debugconsole */,
-				3459531B08C3D69F003B1351 /* directx */,
 				3459532B08C3D6A0003B1351 /* exceptionhandler */,
 				60E7978910F59BF700904FA6 /* external_dll */,
 				3459532E08C3D6A0003B1351 /* fireball */,
@@ -2143,24 +2131,6 @@
 				F0E076E4190826C00069F480 /* consoleparse.h */,
 			);
 			path = debugconsole;
-			sourceTree = "<group>";
-		};
-		3459531B08C3D69F003B1351 /* directx */ = {
-			isa = PBXGroup;
-			children = (
-				3459531E08C3D69F003B1351 /* dxguid.lib */,
-				3459531F08C3D6A0003B1351 /* strmiids.lib */,
-				3459532008C3D6A0003B1351 /* vasync.h */,
-				3459532108C3D6A0003B1351 /* vd3dtypes.h */,
-				3459532208C3D6A0003B1351 /* vddraw.h */,
-				3459532308C3D6A0003B1351 /* vdinput.h */,
-				3459532408C3D6A0003B1351 /* vdinput.lib */,
-				3459532508C3D6A0003B1351 /* vdplay.h */,
-				3459532608C3D6A0003B1351 /* vdplobby.h */,
-				3459532708C3D6A0003B1351 /* vdsetup.h */,
-				3459532A08C3D6A0003B1351 /* vdvp.h */,
-			);
-			path = directx;
 			sourceTree = "<group>";
 		};
 		3459532B08C3D6A0003B1351 /* exceptionhandler */ = {
