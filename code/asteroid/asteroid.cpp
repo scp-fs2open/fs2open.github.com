@@ -1648,14 +1648,17 @@ void asteroid_test_collide(object *pasteroid_obj, object *ship_obj, mc_info *mc,
 	mc->p1 = NULL;
 }
 
-// Return !0 is the asteroid will collide with the escort ship within ASTEROID_MIN_COLLIDE_TIME
-// seconds
-int asteroid_will_collide(object *asteroid_obj, object *escort_objp)
+/**
+ * Test if asteroid will collide with escort ship within ASTEROID_MIN_COLLIDE_TIME seconds
+ *
+ * @return !0 if the asteroid will collide with the escort
+ */
+int asteroid_will_collide(object *pasteroid_obj, object *escort_objp)
 {
 	mc_info	mc;
 	mc_info_init(&mc);
 
-	asteroid_test_collide(asteroid_obj, escort_objp, &mc);
+	asteroid_test_collide(pasteroid_obj, escort_objp, &mc);
 
 	if ( !mc.num_hits ) {
 		return 0;
