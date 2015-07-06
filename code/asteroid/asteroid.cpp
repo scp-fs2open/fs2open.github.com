@@ -946,8 +946,8 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	}
 
 	// asteroid ship collision -- use asteroid_hit_info to calculate physics
-	object *ship_obj = other_obj;
-	Assert( ship_obj->type == OBJ_SHIP );
+	object *pship_obj = other_obj;
+	Assert( pship_obj->type == OBJ_SHIP );
 
 	object* heavy = asteroid_hit_info->heavy;
 	object* lighter = asteroid_hit_info->light;
@@ -988,10 +988,10 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 	int mc_ret_val = 0;
 
-	if ( asteroid_hit_info->heavy == ship_obj ) {	// ship is heavier, so asteroid is sphere. Check sphere collision against ship poly model
-		mc.model_instance_num = Ships[ship_obj->instance].model_instance_num;
-		mc.model_num = Ship_info[Ships[ship_obj->instance].ship_info_index].model_num;		// Fill in the model to check
-		mc.orient = &ship_obj->orient;								// The object's orient
+	if ( asteroid_hit_info->heavy == pship_obj ) {	// ship is heavier, so asteroid is sphere. Check sphere collision against ship poly model
+		mc.model_instance_num = Ships[pship_obj->instance].model_instance_num;
+		mc.model_num = Ship_info[Ships[pship_obj->instance].ship_info_index].model_num;		// Fill in the model to check
+		mc.orient = &pship_obj->orient;								// The object's orient
 		mc.radius = pasteroid->radius;
 		mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);
 
@@ -1020,7 +1020,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 				// Get polymodel and turn off all rotating submodels, collide against only 1 at a time.
 				pm = model_get(Ship_info[Ships[heavy_obj->instance].ship_info_index].model_num);
-				pmi = model_get_instance(Ships[ship_obj->instance].model_instance_num);
+				pmi = model_get_instance(Ships[pship_obj->instance].model_instance_num);
 
 				// turn off all rotating submodels and test for collision
 				for (size_t j=0; j<submodel_vector.size(); j++) {
@@ -1111,7 +1111,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];		// Fill in the model to check
 		model_clear_instance( mc.model_num );
 		mc.orient = &pasteroid->orient;				// The object's orient
-		mc.radius = model_get_core_radius(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+		mc.radius = model_get_core_radius(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
 
 		// check for collision between asteroid model and ship sphere
 		mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);
