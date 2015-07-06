@@ -36,13 +36,13 @@ extern float flFrametime;
  * If weapon_obj is likely to hit ship_obj sooner than current aip->danger_weapon_objnum,
  * then update danger_weapon_objnum.
  */
-void update_danger_weapon(object *ship_obj, object *weapon_obj)
+void update_danger_weapon(object *pship_obj, object *weapon_obj)
 {
 	ai_info	*aip;
 
-	Assert(ship_obj->type == OBJ_SHIP);
+	Assert(pship_obj->type == OBJ_SHIP);
 
-	aip = &Ai_info[Ships[ship_obj->instance].ai_index];
+	aip = &Ai_info[Ships[pship_obj->instance].ai_index];
 
 	if (aip->danger_weapon_objnum == -1) {
 		aip->danger_weapon_objnum = weapon_obj-Objects;
@@ -50,8 +50,8 @@ void update_danger_weapon(object *ship_obj, object *weapon_obj)
 	} else if (aip->danger_weapon_signature == Objects[aip->danger_weapon_objnum].signature) {
 		float	danger_old_time, danger_new_time;
 
-		danger_old_time = ai_endangered_time(ship_obj, &Objects[aip->danger_weapon_objnum]);
-		danger_new_time = ai_endangered_time(ship_obj, weapon_obj);
+		danger_old_time = ai_endangered_time(pship_obj, &Objects[aip->danger_weapon_objnum]);
+		danger_new_time = ai_endangered_time(pship_obj, weapon_obj);
 
 		if (danger_new_time < danger_old_time) {
 			aip->danger_weapon_objnum = weapon_obj-Objects;
