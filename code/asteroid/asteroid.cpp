@@ -1355,42 +1355,42 @@ void asteroid_do_area_effect(object *asteroid_objp)
 /**
  * Upon asteroid asteroid_obj being hit. Apply damage and maybe make it break into smaller asteroids.
  *
- * @param asteroid_obj	pointer to asteroid object getting hit
+ * @param pasteroid_obj		pointer to asteroid object getting hit
  * @param other_obj		object that hit asteroid, can be NULL if asteroid hit by area effect
  * @param hitpos		world position asteroid was hit, can be NULL if hit by area effect
  * @param damage		amount of damage to apply to asteroid
  */
-void asteroid_hit( object * asteroid_obj, object * other_obj, vec3d * hitpos, float damage )
+void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, float damage )
 {
 	float		explosion_life;
 	asteroid	*asp;
 
-	asp = &Asteroids[asteroid_obj->instance];
+	asp = &Asteroids[pasteroid_obj->instance];
 
-	if (asteroid_obj->flags & OF_SHOULD_BE_DEAD){
+	if (pasteroid_obj->flags & OF_SHOULD_BE_DEAD){
 		return;
 	}
 
 	if ( MULTIPLAYER_MASTER ){
-		send_asteroid_hit( asteroid_obj, other_obj, hitpos, damage );
+		send_asteroid_hit( pasteroid_obj, other_obj, hitpos, damage );
 	}
 
-	asteroid_obj->hull_strength -= damage;
+	pasteroid_obj->hull_strength -= damage;
 
-	if (asteroid_obj->hull_strength < 0.0f) {
+	if (pasteroid_obj->hull_strength < 0.0f) {
 		if ( asp->final_death_time <= 0 ) {
 			int play_loud_collision = 0;
 
-			explosion_life = asteroid_create_explosion(asteroid_obj);
+			explosion_life = asteroid_create_explosion(pasteroid_obj);
 
-			asteriod_explode_sound(asteroid_obj, asp->asteroid_type, play_loud_collision);
-			asteroid_do_area_effect(asteroid_obj);
+			asteriod_explode_sound(pasteroid_obj, asp->asteroid_type, play_loud_collision);
+			asteroid_do_area_effect(pasteroid_obj);
 
 			asp->final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the asteroid up.
 			if ( hitpos ) {
 				asp->death_hit_pos = *hitpos;
 			} else {
-				asp->death_hit_pos = asteroid_obj->pos;
+				asp->death_hit_pos = pasteroid_obj->pos;
 				// randomize hit pos a bit, otherwise we will get a NULL vector when trying to find direction to toss child asteroids
 				vec3d rand_vec;
 				vm_vec_rand_vec_quick(&rand_vec);
@@ -1409,7 +1409,7 @@ void asteroid_hit( object * asteroid_obj, object * other_obj, vec3d * hitpos, fl
 	}
 
 	// evaluate any relevant player scoring implications
-	scoring_eval_hit(asteroid_obj,other_obj);
+	scoring_eval_hit(pasteroid_obj,other_obj);
 }
 
 /**
