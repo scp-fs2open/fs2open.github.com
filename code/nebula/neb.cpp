@@ -233,7 +233,7 @@ void neb2_pre_render(camid cid);
 void neb2_get_eye_pos(vec3d *eye_vector);
 
 // fill in the eye orient for this frame
-void neb2_get_eye_orient(matrix *eye);
+void neb2_get_eye_orient(matrix *eye_matrix);
 
 // get a (semi) random bitmap to use for a poof
 int neb2_get_bitmap();
@@ -1419,9 +1419,9 @@ void neb2_get_eye_pos(vec3d *eye_vector)
 }
 
 // fill in the eye orient for this frame
-void neb2_get_eye_orient(matrix *eye)
+void neb2_get_eye_orient(matrix *eye_matrix)
 {
-	*eye = Eye_matrix;
+	*eye_matrix = Eye_matrix;
 }
 
 // get a (semi) random bitmap to use for a poof
