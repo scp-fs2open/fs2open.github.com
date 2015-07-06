@@ -1474,21 +1474,21 @@ int asteroid_count()
  * See if asteroid should split up.  
  * We delay splitting up to allow the explosion animation to play for a bit.
  */
-void asteroid_maybe_break_up(object *asteroid_obj)
+void asteroid_maybe_break_up(object *pasteroid_obj)
 {
 	asteroid *asp;
 	asteroid_info *asip;
 
-	asp = &Asteroids[asteroid_obj->instance];
+	asp = &Asteroids[pasteroid_obj->instance];
 	asip = &Asteroid_info[asp->asteroid_type];
 
 	if ( timestamp_elapsed(asp->final_death_time) ) {
 		vec3d	relvec, vfh, tvec;
 
-		Script_system.SetHookObject("Self", asteroid_obj);
-		if(!Script_system.IsConditionOverride(CHA_DEATH, asteroid_obj))
+		Script_system.SetHookObject("Self", pasteroid_obj);
+		if(!Script_system.IsConditionOverride(CHA_DEATH, pasteroid_obj))
 		{
-			asteroid_obj->flags |= OF_SHOULD_BE_DEAD;
+			pasteroid_obj->flags |= OF_SHOULD_BE_DEAD;
 
 			// multiplayer clients won't go through the following code.  asteroid_sub_create will send
 			// a create packet to the client in the above named function
@@ -1499,29 +1499,29 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 						case ASTEROID_TYPE_SMALL:
 							break;
 						case ASTEROID_TYPE_MEDIUM:
-							asc_get_relvec(&relvec, asteroid_obj, &asp->death_hit_pos);
-							asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &relvec);
+							asc_get_relvec(&relvec, pasteroid_obj, &asp->death_hit_pos);
+							asteroid_sub_create(pasteroid_obj, ASTEROID_TYPE_SMALL, &relvec);
 						
-							vm_vec_normalized_dir(&vfh, &asteroid_obj->pos, &asp->death_hit_pos);
+							vm_vec_normalized_dir(&vfh, &pasteroid_obj->pos, &asp->death_hit_pos);
 							vm_vec_copy_scale(&tvec, &vfh, 2.0f);
 							vm_vec_sub2(&tvec, &relvec);
-							asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &tvec);
+							asteroid_sub_create(pasteroid_obj, ASTEROID_TYPE_SMALL, &tvec);
 							
 							break;
 						case ASTEROID_TYPE_LARGE:
-							asc_get_relvec(&relvec, asteroid_obj, &asp->death_hit_pos);
-							asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_MEDIUM, &relvec);
+							asc_get_relvec(&relvec, pasteroid_obj, &asp->death_hit_pos);
+							asteroid_sub_create(pasteroid_obj, ASTEROID_TYPE_MEDIUM, &relvec);
 						
-							vm_vec_normalized_dir(&vfh, &asteroid_obj->pos, &asp->death_hit_pos);
+							vm_vec_normalized_dir(&vfh, &pasteroid_obj->pos, &asp->death_hit_pos);
 							vm_vec_copy_scale(&tvec, &vfh, 2.0f);
 							vm_vec_sub2(&tvec, &relvec);
-							asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_MEDIUM, &tvec);
+							asteroid_sub_create(pasteroid_obj, ASTEROID_TYPE_MEDIUM, &tvec);
 
 							while (frand() > 0.6f) {
 								vec3d	rvec, tvec2;
 								vm_vec_rand_vec_quick(&rvec);
 								vm_vec_scale_add(&tvec2, &vfh, &rvec, 0.75f);
-								asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &tvec2);
+								asteroid_sub_create(pasteroid_obj, ASTEROID_TYPE_SMALL, &tvec2);
 							}
 							break;
 
@@ -1570,24 +1570,24 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 						vm_vec_random_cone(&dir_vec, &tempv, (360.0f / total_roids / 2));
 
 						// Make the roid inherit half of the parent's velocity
-						vm_vec_copy_normalize(&parent_vel, &asteroid_obj->phys_info.vel);
+						vm_vec_copy_normalize(&parent_vel, &pasteroid_obj->phys_info.vel);
 						vm_vec_scale(&parent_vel, 0.5f);
 
 						// Make the hit position affect the direction, but only a little
-						vm_vec_sub(&hit_rel_vec, &asteroid_obj->pos, &asp->death_hit_pos);
+						vm_vec_sub(&hit_rel_vec, &pasteroid_obj->pos, &asp->death_hit_pos);
 						vm_vec_normalize(&hit_rel_vec);
 						vm_vec_scale(&hit_rel_vec, 0.25f);
 
 						vm_vec_avg3(&final_vec, &parent_vel, &hit_rel_vec, &dir_vec);
 						vm_vec_normalize(&final_vec);
 
-						asteroid_sub_create(asteroid_obj, roids_to_create[i], &final_vec);
+						asteroid_sub_create(pasteroid_obj, roids_to_create[i], &final_vec);
 					}
 				}
 			}
 			asp->final_death_time = timestamp(-1);
 		}
-		Script_system.RunCondition(CHA_DEATH, '\0', NULL, asteroid_obj);
+		Script_system.RunCondition(CHA_DEATH, '\0', NULL, pasteroid_obj);
 		Script_system.RemHookVar("Self");
 	}
 }
