@@ -3119,21 +3119,25 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
 }
 
 
-// Returns zero is x1,y1,x2,y2 are valid
-// returns 1 for invalid model, 2 for point offscreen.
-// note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
+/**
+ * Find 2D bound for model
+ *
+ * Note that x1,y1,x2,y2 aren't clipped to 2D screen coordinates.
+ *
+ * @return zero if x1,y1,x2,y2 are valid
+ * @return 2 for point offscreen
+ */
 int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
 	float t,w,h;
 	vertex pnt;
-	ubyte flags;
 	polymodel * po;
 
 	po = model_get(model_num);
 	float width = po->rad;
 	float height = po->rad;
 
-	flags = g3_rotate_vertex(&pnt,pos);
+	g3_rotate_vertex(&pnt,pos);
 
 	if ( pnt.flags & CC_BEHIND ) 
 		return 2;
@@ -3159,19 +3163,23 @@ int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *
 	return 0;
 }
 
-// Returns zero is x1,y1,x2,y2 are valid
-// returns 2 for point offscreen.
-// note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
+/**
+ * Find 2D bound for sub object
+ *
+ * Note that x1,y1,x2,y2 aren't clipped to 2D screen coordinates.
+ *
+ * @return zero if x1,y1,x2,y2 are valid
+ * @return 2 for point offscreen
+ */
 int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
 	float t,w,h;
 	vertex pnt;
-	ubyte flags;
 
 	float width = radius;
 	float height = radius;
 
-	flags = g3_rotate_vertex(&pnt,pos);
+	g3_rotate_vertex(&pnt,pos);
 
 	if ( pnt.flags & CC_BEHIND ) 
 		return 2;
