@@ -11852,9 +11852,8 @@ int ai_formation()
 	} else {
 		vec3d	v2f2;
 		float	dot_to_f2;
-		float	dist_to_f2;
 
-		dist_to_f2 = vm_vec_normalized_dir(&v2f2, &future_goal_point_2, &Pl_objp->pos);
+		vm_vec_normalized_dir(&v2f2, &future_goal_point_2, &Pl_objp->pos);
 		dot_to_f2 = vm_vec_dot(&v2f2, &Pl_objp->orient.vec.fvec);
 
 		//	Leader flying like a maniac.  Don't try hard to form on wing.
