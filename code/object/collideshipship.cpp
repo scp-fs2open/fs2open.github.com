@@ -1156,10 +1156,6 @@ int collide_ship_ship( obj_pair * pair )
 				do_kamikaze_crash(A, B);
 
 				if (ship_ship_hit_info.impulse > 0) {
-					float	q;
-
-					q = vm_vec_dist_quick(&A->pos, &B->pos) / (A->radius + B->radius);
-
 					//Only flash the "Collision" text if not landing
 					if ( player_involved && !ship_ship_hit_info.is_landing) {					
 						hud_start_text_flash(XSTR("Collision", 1431), 2000);
