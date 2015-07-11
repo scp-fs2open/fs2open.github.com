@@ -2113,7 +2113,7 @@ void control_config_do_frame(float frametime)
 			bool this_preset_matches = true;
 			config_item *this_preset = Control_config_presets[i];
 
-			for (int j=0; j<CCFG_MAX; j++) {
+			for (j=0; j<CCFG_MAX; j++) {
 				if (!Control_config[j].disabled && Control_config[j].key_id != this_preset[j].key_default) {
 					this_preset_matches = false;
 					break;
