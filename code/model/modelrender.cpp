@@ -2895,7 +2895,7 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 			i = pm->submodel[i].next_sibling;
 		}
 
-		vec3d view_pos = scene->get_view_position();
+		view_pos = scene->get_view_position();
 
 		if ( model_render_check_detail_box(&view_pos, pm, pm->detail[detail_level], model_flags) ) {
 			int detail_model_num = pm->detail[detail_level];
