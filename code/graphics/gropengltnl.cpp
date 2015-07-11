@@ -116,7 +116,7 @@ struct opengl_vertex_buffer {
 
 	opengl_vertex_buffer() :
 		array_list(NULL), index_list(NULL), 
-		vbo_size(0), ibo_size(0), vb_handle(-1), ib_handle(-1)
+		vb_handle(-1), ib_handle(-1), vbo_size(0), ibo_size(0)
 	{
 	}
 
