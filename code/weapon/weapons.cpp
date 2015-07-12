@@ -7371,12 +7371,9 @@ void weapon_render(object* obj, draw_list *scene)
 			if (wp->lssm_stage==3)
 				break;
 
-			int clip_plane=0;
-
 			// start a clip plane
 			if ( wp->lssm_stage == 2 ) {
 				object *wobj=&Objects[wp->lssm_warp_idx];		//warphole object
-				clip_plane=1;
 
 				render_info.set_clip_plane(wobj->pos, wobj->orient.vec.fvec);
 			}

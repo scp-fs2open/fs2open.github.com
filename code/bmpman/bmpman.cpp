@@ -247,7 +247,7 @@ DCF(bm_frag, "Shows BmpMan fragmentation") {
 		dc_printf("Displays a graphic showing the BmpMan fragmentation. Color key:\n");
 		dc_printf("\tGray  : NONE\n");
 		dc_printf("\tRed   : PCXn");
-		dc_printf("\tGreen : USER, TGA, PNG, DDS\n");
+		dc_printf("\tGreen : USER, TGA, PNG, DDS, other\n");
 		dc_printf("\tBlue  : ANI, EFF\n\n");
 
 		dc_printf("Once done reviewing the graphic, press any key to return to the console\n");
@@ -277,6 +277,9 @@ DCF(bm_frag, "Shows BmpMan fragmentation") {
 		case BM_TYPE_ANI:
 		case BM_TYPE_EFF:
 			gr_set_color(0, 0, 255);
+			break;
+		default:
+			gr_set_color(0, 255, 0);
 			break;
 		}
 
@@ -874,9 +877,10 @@ int bm_is_compressed(int num) {
 
 	case BM_TYPE_CUBEMAP_DXT5:
 		return DDS_CUBEMAP_DXT5;
-	}
 
-	return 0;
+	default:
+		return 0;
+	}
 }
 
 int bm_is_render_target(int bitmap_id) {
@@ -2174,6 +2178,9 @@ void bm_page_in_texture(int bitmapnum, int nframes) {
 		case BM_TYPE_CUBEMAP_DXT5:
 			bm_bitmaps[n + i].used_flags = BMP_TEX_CUBEMAP;
 			continue;
+
+		default:
+			continue;
 		}
 	}
 }
@@ -2215,6 +2222,9 @@ void bm_page_in_xparent_texture(int bitmapnum, int nframes) {
 		case BM_TYPE_CUBEMAP_DXT3:
 		case BM_TYPE_CUBEMAP_DXT5:
 			bm_bitmaps[n + i].used_flags = BMP_TEX_CUBEMAP;
+			continue;
+
+		default:
 			continue;
 		}
 	}
@@ -2668,7 +2678,6 @@ int bm_unload_fast(int handle, int clear_render_targets) {
 
 void bm_unlock(int handle) {
 	bitmap_entry	*be;
-	bitmap			*bmp;
 
 	if (!bm_inited) bm_init();
 
@@ -2685,7 +2694,6 @@ void bm_unlock(int handle) {
 	Assert((bitmapnum >= 0) && (bitmapnum < MAX_BITMAPS));
 
 	be = &bm_bitmaps[bitmapnum];
-	bmp = &be->bm;
 
 	be->ref_count--;
 	Assert(be->ref_count >= 0);		// Trying to unlock data more times than lock was called!!!

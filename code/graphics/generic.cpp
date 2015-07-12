@@ -32,13 +32,13 @@ bool generic_anim_exists(const char *filename)
 }
 
 // Goober5000
-int generic_anim_init_and_stream(generic_anim *anim, const char *anim_filename, BM_TYPE bg_type, bool attempt_hi_res)
+int generic_anim_init_and_stream(generic_anim *ga, const char *anim_filename, BM_TYPE bg_type, bool attempt_hi_res)
 {
 	int stream_result = -1;
 	char filename[NAME_LENGTH];
 	char *p;
 
-	Assert(anim != NULL);
+	Assert(ga != NULL);
 	Assert(anim_filename != NULL);
 
 	// hi-res support
@@ -55,9 +55,9 @@ int generic_anim_init_and_stream(generic_anim *anim, const char *anim_filename, 
 		}
 
 		// attempt to stream the hi-res ani
-		generic_anim_init(anim, filename);
-		anim->ani.bg_type = bg_type;
-		stream_result = generic_anim_stream(anim);
+		generic_anim_init(ga, filename);
+		ga->ani.bg_type = bg_type;
+		stream_result = generic_anim_stream(ga);
 	}
 
 	// we failed to stream hi-res, or we aren't running in hi-res, so try low-res
@@ -71,9 +71,9 @@ int generic_anim_init_and_stream(generic_anim *anim, const char *anim_filename, 
 		}
 
 		// attempt to stream the low-res ani
-		generic_anim_init(anim, filename);
-		anim->ani.bg_type = bg_type;
-		stream_result = generic_anim_stream(anim);
+		generic_anim_init(ga, filename);
+		ga->ani.bg_type = bg_type;
+		stream_result = generic_anim_stream(ga);
 	}
 
 	return stream_result;

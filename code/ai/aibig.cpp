@@ -1263,10 +1263,9 @@ int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos)
 			aip->submode = AIS_STRAFE_RETREAT1;
 			aip->submode_start_time = Missiontime;
 
-			float box_dist;
 			int is_inside;
 			vec3d goal_point;
-			box_dist = get_world_closest_box_point_with_delta(&goal_point, En_objp, &Pl_objp->pos, &is_inside, STRAFE_RETREAT_BOX_DIST);
+			get_world_closest_box_point_with_delta(&goal_point, En_objp, &Pl_objp->pos, &is_inside, STRAFE_RETREAT_BOX_DIST);
 
 			// set goal point
 			aip->goal_point = goal_point;

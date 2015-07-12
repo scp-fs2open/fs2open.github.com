@@ -1244,8 +1244,6 @@ void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<in
 	SCP_vector<int> overlappers;
 
 	float min;
-	float max;
-	float overlap_min;
 	float overlap_max;
 	
 	overlappers.clear();
@@ -1254,10 +1252,8 @@ void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<in
 		overlapped = false;
 
 		min = obj_get_collider_endpoint((*list)[i], axis, true);
-		max = obj_get_collider_endpoint((*list)[i], axis, false);
 
 		for ( j = 0; j < overlappers.size(); ) {
-			overlap_min = obj_get_collider_endpoint(overlappers[j], axis, true);
 			overlap_max = obj_get_collider_endpoint(overlappers[j], axis, false);
 			if ( min <= overlap_max ) {
 				overlapped = true;

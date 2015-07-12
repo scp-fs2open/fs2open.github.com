@@ -199,12 +199,17 @@ void ai_post_process_mission()
 	return;
 }
 
-// function which determines is a goal is valid for a particular type of ship
-int ai_query_goal_valid( int ship, int ai_goal )
+/**
+ * Determines if a goal is valid for a particular type of ship
+ *
+ * @param ship Ship type to test
+ * @param ai_goal_type Goal type to test
+ */
+int ai_query_goal_valid( int ship, int ai_goal_type )
 {
 	int accepted;
 
-	if (ai_goal == AI_GOAL_NONE)
+	if (ai_goal_type == AI_GOAL_NONE)
 		return 1;  // anything can have no orders.
 
 	accepted = 0;
@@ -214,7 +219,7 @@ int ai_query_goal_valid( int ship, int ai_goal )
 	int ship_type = Ship_info[Ships[ship].ship_info_index].class_type;
 	if(ship_type > -1)
 	{
-		if(ai_goal & Ship_types[ship_type].ai_valid_goals) {
+		if(ai_goal_type & Ship_types[ship_type].ai_valid_goals) {
 			accepted = 1;
 		}
 	}
