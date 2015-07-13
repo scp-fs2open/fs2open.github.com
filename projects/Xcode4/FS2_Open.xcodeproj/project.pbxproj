@@ -264,7 +264,6 @@
 		34C71B7108C41B2A00459F5B /* key.h in Headers */ = {isa = PBXBuildFile; fileRef = 345953C708C3D6A0003B1351 /* key.h */; };
 		34C71B7208C41B2B00459F5B /* key.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345953C608C3D6A0003B1351 /* key.cpp */; };
 		34C71B7308C41B2E00459F5B /* joy.h in Headers */ = {isa = PBXBuildFile; fileRef = 345953C308C3D6A0003B1351 /* joy.h */; };
-		34C71B7408C41B2F00459F5B /* joy-unix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345953C108C3D6A0003B1351 /* joy-unix.cpp */; };
 		34C71B7708C41B3500459F5B /* jpgutils.h in Headers */ = {isa = PBXBuildFile; fileRef = 345953D708C3D6A0003B1351 /* jpgutils.h */; };
 		34C71B7808C41B3600459F5B /* jpgutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345953D608C3D6A0003B1351 /* jpgutils.cpp */; };
 		34C71B7908C41B3800459F5B /* jumpnode.h in Headers */ = {isa = PBXBuildFile; fileRef = 345953DA08C3D6A0003B1351 /* jumpnode.h */; };
@@ -1125,7 +1124,6 @@
 		345953BD08C3D6A0003B1351 /* chttpget.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = chttpget.h; sourceTree = "<group>"; };
 		345953BE08C3D6A0003B1351 /* inetgetfile.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = inetgetfile.cpp; sourceTree = "<group>"; };
 		345953BF08C3D6A0003B1351 /* inetgetfile.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = inetgetfile.h; sourceTree = "<group>"; };
-		345953C108C3D6A0003B1351 /* joy-unix.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = "joy-unix.cpp"; sourceTree = "<group>"; };
 		345953C308C3D6A0003B1351 /* joy.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = joy.h; sourceTree = "<group>"; };
 		345953C508C3D6A0003B1351 /* joy_ff.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = joy_ff.h; sourceTree = "<group>"; };
 		345953C608C3D6A0003B1351 /* key.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = key.cpp; sourceTree = "<group>"; };
@@ -2357,7 +2355,6 @@
 				918A738E1B4C224900C00507 /* cursor.h */,
 				918A738F1B4C224900C00507 /* joy_ff-sdl.cpp */,
 				918A73901B4C224900C00507 /* joy-sdl.cpp */,
-				345953C108C3D6A0003B1351 /* joy-unix.cpp */,
 				345953C308C3D6A0003B1351 /* joy.h */,
 				345953C508C3D6A0003B1351 /* joy_ff.h */,
 				345953C608C3D6A0003B1351 /* key.cpp */,
@@ -3956,7 +3953,6 @@
 				34C71B6E08C41B2700459F5B /* mouse.cpp in Sources */,
 				34C71B7008C41B2800459F5B /* keycontrol.cpp in Sources */,
 				34C71B7208C41B2B00459F5B /* key.cpp in Sources */,
-				34C71B7408C41B2F00459F5B /* joy-unix.cpp in Sources */,
 				34C71B7808C41B3600459F5B /* jpgutils.cpp in Sources */,
 				34C71B7A08C41B3900459F5B /* jumpnode.cpp in Sources */,
 				34C71B7C08C41B3C00459F5B /* wmcgui.cpp in Sources */,
