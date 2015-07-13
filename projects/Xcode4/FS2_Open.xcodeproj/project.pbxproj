@@ -61,9 +61,7 @@
 		344BA9BE095A5B6F00B9D97D /* lvm.h in Headers */ = {isa = PBXBuildFile; fileRef = 344BA98A095A5B6F00B9D97D /* lvm.h */; };
 		344BA9BF095A5B6F00B9D97D /* lzio.c in Sources */ = {isa = PBXBuildFile; fileRef = 344BA98B095A5B6F00B9D97D /* lzio.c */; };
 		344BA9C0095A5B6F00B9D97D /* lzio.h in Headers */ = {isa = PBXBuildFile; fileRef = 344BA98C095A5B6F00B9D97D /* lzio.h */; };
-		3459585208C3D8CB003B1351 /* SDLMain.h in Headers */ = {isa = PBXBuildFile; fileRef = F5A47A9D01A0482F01D3D55B /* SDLMain.h */; };
 		3459594908C3D8CB003B1351 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
-		3459594C08C3D8CB003B1351 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = F5A47A9E01A0483001D3D55B /* SDLMain.m */; };
 		34595A7108C3D8CB003B1351 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		34595A7208C3D8CB003B1351 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80002 /* OpenGL.framework */; };
 		34595A7308C3D8CB003B1351 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67F1E04C773E400A80002 /* GLUT.framework */; };
@@ -1659,8 +1657,6 @@
 		F0ED189E101064C70011978C /* safe_strings_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings_test.cpp; sourceTree = "<group>"; };
 		F0ED189F101064C70011978C /* safe_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = safe_strings.h; sourceTree = "<group>"; };
 		F0ED18A0101064C70011978C /* safe_strings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings.cpp; sourceTree = "<group>"; };
-		F5A47A9D01A0482F01D3D55B /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = SOURCE_ROOT; };
-		F5A47A9E01A0483001D3D55B /* SDLMain.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = SDLMain.m; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1763,8 +1759,6 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				F5A47A9D01A0482F01D3D55B /* SDLMain.h */,
-				F5A47A9E01A0483001D3D55B /* SDLMain.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -3258,7 +3252,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3459585208C3D8CB003B1351 /* SDLMain.h in Headers */,
 				60B56A33124BBFD5005AF5A9 /* fsmemory.h in Headers */,
 				60B18456127F544400CD9F1E /* pilotfile.h in Headers */,
 				60B18458127F544400CD9F1E /* pilotfile_convert.h in Headers */,
@@ -3872,7 +3865,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3459594C08C3D8CB003B1351 /* SDLMain.m in Sources */,
 				606CBAE2126A1BFF007BE418 /* fsmemory.cpp in Sources */,
 				60B18453127F544400CD9F1E /* csg.cpp in Sources */,
 				60B18454127F544400CD9F1E /* csg_convert.cpp in Sources */,
