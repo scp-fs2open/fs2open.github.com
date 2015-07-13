@@ -116,7 +116,7 @@ struct opengl_vertex_buffer {
 
 	opengl_vertex_buffer() :
 		array_list(NULL), index_list(NULL), 
-		vbo_size(0), ibo_size(0), vb_handle(-1), ib_handle(-1)
+		vb_handle(-1), ib_handle(-1), vbo_size(0), ibo_size(0)
 	{
 	}
 
@@ -693,11 +693,7 @@ void opengl_tnl_init()
 
 		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
-		bool rval = true;
-
-		if ( opengl_check_for_errors("post_init_framebuffer()") ) {
-			rval = false;
-		}
+		opengl_check_for_errors("post_init_framebuffer()");
 	}
 }
 
@@ -809,7 +805,6 @@ extern int Interp_thrust_scale_subobj;
 extern float Interp_thrust_scale;
 static void opengl_render_pipeline_program(int start, const vertex_buffer *bufferp, const buffer_data *datap, int flags)
 {
-	int render_pass = 0;
 	unsigned int shader_flags = 0;
 	int sdr_index = -1;
 	int r, g, b, a, tmap_type;
@@ -868,11 +863,7 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 	opengl_setup_render_states(r, g, b, a, tmap_type, flags);
 	GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
-
-	render_pass = 0;
-
 	GL_state.Texture.SetShaderMode(GL_TRUE);
-
 
 	// basic setup of all data
 	opengl_init_arrays(vbp, bufferp);
@@ -1375,7 +1366,6 @@ void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, 
 	int alpha, tmap_type, r, g, b;
 	float u_scale = 1.0f, v_scale = 1.0f;
 	GLenum gl_mode = GL_TRIANGLE_FAN;
-	int zbuff = ZBUFFER_TYPE_DEFAULT;
 	GL_CHECK_FOR_ERRORS("start of render3d()");
 
 	int stride = 0;
@@ -1433,11 +1423,11 @@ void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, 
 				if ( radius_offset >= 0 ) {
 					vert_def.add_vertex_component(vertex_format_data::RADIUS, stride, ptr + radius_offset);
 				}
-				zbuff = gr_zbuffer_set(GR_ZBUFF_READ);
+				gr_zbuffer_set(GR_ZBUFF_READ);
 			} else if ( Cmdline_softparticles ) {
 				opengl_tnl_set_material_soft_particle(flags);
 
-				zbuff = gr_zbuffer_set(GR_ZBUFF_NONE);
+				gr_zbuffer_set(GR_ZBUFF_NONE);
 
 				if ( radius_offset >= 0 ) {
 					vert_def.add_vertex_component(vertex_format_data::RADIUS, stride, ptr + radius_offset);

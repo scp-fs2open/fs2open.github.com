@@ -203,7 +203,8 @@ void vm_vec_sub2(vec3d *dest, const vec3d *src)
 //dest can equal either source
 vec3d *vm_vec_avg_n(vec3d *dest, int n, const vec3d src[])
 {
-	float x=0,y=0,z=0;
+	float x = 0.0f, y = 0.0f, z = 0.0f;
+	float inv_n = 1.0f / (float) n;;
 
 	for(int i = 0; i<n; i++){
 		x += src[i].xyz.x;
@@ -211,9 +212,9 @@ vec3d *vm_vec_avg_n(vec3d *dest, int n, const vec3d src[])
 		z += src[i].xyz.z;
 	}
 
-	dest->xyz.x = x / n;
-	dest->xyz.y = y / n;
-	dest->xyz.z = z / n;
+	dest->xyz.x = x * inv_n;
+	dest->xyz.y = y * inv_n;
+	dest->xyz.z = z * inv_n;
 
 	return dest;
 }
@@ -446,7 +447,7 @@ float vm_vec_dist_quick(const vec3d *v0, const vec3d *v1)
 	return vm_vec_mag_quick(&t);
 }
 
-//normalize a vector. returns mag of source vec
+//normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 {
 	float m;
@@ -479,7 +480,7 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 	return m;
 }
 
-//normalize a vector. returns mag of source vec
+//normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_normalize(vec3d *v)
 {
 	float t;
@@ -793,9 +794,14 @@ matrix *vm_angle_2_matrix(matrix *m, float a, int angle_index)
 	matrix * t;
 	float sinp,cosp,sinb,cosb,sinh,cosh;
 
-	sinp = sinf(0.0f);	cosp = cosf(0.0f);
-	sinb = sinf(0.0f);	cosb = cosf(0.0f);
-	sinh = sinf(0.0f);	cosh = cosf(0.0f);
+	/*
+	 * Initialize sin and cos variables using an initial angle of
+	 * zero degrees.  Recall that sin(0) = 0 and cos(0) = 1.
+	 */
+
+	sinp = 0.0f;	cosp = 1.0f;
+	sinb = 0.0f;	cosb = 1.0f;
+	sinh = 0.0f;	cosh = 1.0f;
 
 	switch (angle_index) {
 	case 0:
@@ -873,39 +879,31 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 
 	Assert(fvec != NULL);
 
-	//  This had been commented out, but that's bogus.  Code below relies on a valid zvec.
-	if (vm_vec_copy_normalize(zvec,fvec) == 0.0f) {
-		Assert(0);
-		return m;
-	}
+	vm_vec_copy_normalize(zvec,fvec);
 
 	if (uvec == NULL) {
 		if (rvec == NULL) {     //just forward vec
 			vm_vector_2_matrix_gen_vectors(m);
 		}
 		else {                      //use right vec
-			if (vm_vec_copy_normalize(xvec,rvec) == 0.0f)
-				vm_vector_2_matrix_gen_vectors(m);
+			vm_vec_copy_normalize(xvec,rvec);
 
 			vm_vec_crossprod(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
-			if (vm_vec_normalize(yvec) == 0.0f)
-				vm_vector_2_matrix_gen_vectors(m);
+			vm_vec_normalize(yvec);
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
 			vm_vec_crossprod(xvec,yvec,zvec);
 		}
 	}
 	else {      //use up vec
-		if (vm_vec_copy_normalize(yvec,uvec) == 0.0f)
-			vm_vector_2_matrix_gen_vectors(m);
+		vm_vec_copy_normalize(yvec,uvec);
 
 		vm_vec_crossprod(xvec,yvec,zvec);
 
 		//normalize new perpendicular vector
-		if (vm_vec_normalize(xvec) == 0.0f)
-			vm_vector_2_matrix_gen_vectors(m);
+		vm_vec_normalize(xvec);
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
 		vm_vec_crossprod(yvec,zvec,xvec);
@@ -932,8 +930,7 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 			vm_vec_crossprod(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
-			if (vm_vec_normalize(yvec) == 0.0f)
-				vm_vector_2_matrix_gen_vectors(m);
+			vm_vec_normalize(yvec);
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
 			vm_vec_crossprod(xvec,yvec,zvec);
@@ -943,8 +940,7 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 		vm_vec_crossprod(xvec,yvec,zvec);
 
 		//normalize new perpendicular vector
-		if (vm_vec_normalize(xvec) == 0.0f)
-			vm_vector_2_matrix_gen_vectors(m);
+		vm_vec_normalize(xvec);
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
 		vm_vec_crossprod(yvec,zvec,xvec);
@@ -1056,11 +1052,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 {
 	float sinh,cosh,cosp;
 
-	if (m->vec.fvec.xyz.x==0.0f && m->vec.fvec.xyz.z==0.0f)		//zero head
-		a->h = 0.0f;
-	else
-		// a->h = (float)atan2(m->vec.fvec.xyz.z,m->vec.fvec.xyz.x);
-		a->h = atan2_safe(m->vec.fvec.xyz.x,m->vec.fvec.xyz.z);
+	a->h = atan2_safe(m->vec.fvec.xyz.x,m->vec.fvec.xyz.z);
 
 	sinh = sinf(a->h); cosh = cosf(a->h);
 
@@ -1069,12 +1061,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 	else											//cosine is larger, so use it
 		cosp = m->vec.fvec.xyz.z*cosh;
 
-	if (cosp==0.0f && m->vec.fvec.xyz.y==0.0f)
-		a->p = 0.0f;
-	else
-		// a->p = (float)atan2(cosp,-m->vec.fvec.xyz.y);
-		a->p = atan2_safe(-m->vec.fvec.xyz.y, cosp);
-
+	a->p = atan2_safe(-m->vec.fvec.xyz.y, cosp);
 
 	if (cosp == 0.0f)	//the cosine of pitch is zero.  we're pitched straight up. say no bank
 
@@ -1086,11 +1073,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 		sinb = m->vec.rvec.xyz.y/cosp;
 		cosb = m->vec.uvec.xyz.y/cosp;
 
-		if (sinb==0.0f && cosb==0.0f)
-			a->b = 0.0f;
-		else
-			// a->b = (float)atan2(cosb,sinb);
-			a->b = atan2_safe(sinb,cosb);
+		a->b = atan2_safe(sinb,cosb);
 	}
 
 
@@ -1146,10 +1129,7 @@ static angles *vm_extract_angles_vector_normalized(angles *a, const vec3d *v)
 
 	a->p = asinf(-v->xyz.y);
 
-	if (v->xyz.x==0.0f && v->xyz.z==0.0f)
-		a->h = 0.0f;
-	else
-		a->h = atan2_safe(v->xyz.z,v->xyz.x);
+	a->h = atan2_safe(v->xyz.z,v->xyz.x);
 
 	return a;
 }
@@ -1159,8 +1139,8 @@ angles *vm_extract_angles_vector(angles *a, const vec3d *v)
 {
 	vec3d t;
 
-	if (vm_vec_copy_normalize(&t,v) != 0.0f)
-		vm_extract_angles_vector_normalized(a,&t);
+	vm_vec_copy_normalize(&t,v);
+	vm_extract_angles_vector_normalized(a,&t);
 
 	return a;
 }
@@ -1294,9 +1274,7 @@ void vm_orthogonalize_matrix(matrix *m_src)
 	matrix tempm;
 	matrix * m = &tempm;
 
-	if (vm_vec_copy_normalize(&m->vec.fvec,&m_src->vec.fvec) == 0.0f) {
-		Error( LOCATION, "forward vec should not be zero-length" );
-	}
+	vm_vec_copy_normalize(&m->vec.fvec,&m_src->vec.fvec);
 
 	umag = vm_vec_mag(&m_src->vec.uvec);
 	rmag = vm_vec_mag(&m_src->vec.rvec);
@@ -1309,8 +1287,7 @@ void vm_orthogonalize_matrix(matrix *m_src)
 
 		} else {  // use the right vector to figure up vector
 			vm_vec_crossprod(&m->vec.uvec, &m->vec.fvec, &m_src->vec.rvec);
-			if (vm_vec_normalize(&m->vec.uvec) == 0.0f)
-				Error( LOCATION, "Bad vector!" );
+			vm_vec_normalize(&m->vec.uvec);
 		}
 
 	} else {  // use source up vector
@@ -1321,8 +1298,7 @@ void vm_orthogonalize_matrix(matrix *m_src)
 	vm_vec_crossprod(&m->vec.rvec, &m->vec.uvec, &m->vec.fvec);
 		
 	//normalize new perpendicular vector
-	if (vm_vec_normalize(&m->vec.rvec) == 0.0f)
-		Error( LOCATION, "Bad vector!" );
+	vm_vec_normalize(&m->vec.rvec);
 
 	//now recompute up vector, in case it wasn't entirely perpendicular
 	vm_vec_crossprod(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
@@ -1604,13 +1580,13 @@ void vm_quaternion_rotate(matrix *M, float theta, const vec3d *u)
 //  this is adapted from Computer Graphics (Hearn and Bker 2nd ed.) p. 420
 //
 {
-
 	float a,b,c, s;
+	float sin_theta = sinf(theta * 0.5f);
 
-	a = (u->xyz.x * sinf(theta * 0.5f));
-	b = (u->xyz.y * sinf(theta * 0.5f));
-	c = (u->xyz.z * sinf(theta * 0.5f));
-	s = cosf(theta/2.0f);
+	a = (u->xyz.x * sin_theta);
+	b = (u->xyz.y * sin_theta);
+	c = (u->xyz.z * sin_theta);
+	s = cosf(theta * 0.5f);
 
 // 1st ROW vector
 	M->vec.rvec.xyz.x = 1.0f - 2.0f*b*b - 2.0f*c*c;

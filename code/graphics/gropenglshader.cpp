@@ -224,11 +224,11 @@ void opengl_shader_set_current(int handle)
 /**
  * Given a set of flags, determine whether a shader with these flags exists within the GL_shader vector. If no shader with the requested flags exists, attempt to compile one.
  *
- * @param shader  shader_type variable, a reference to the shader program needed
+ * @param shader_t  shader_type variable, a reference to the shader program needed
  * @param flags	Integer variable, holding a combination of SDR_* flags
  * @return 		Index into GL_shader, referencing a valid shader, or -1 if shader compilation failed
  */
-int gr_opengl_maybe_create_shader(shader_type shader, unsigned int flags)
+int gr_opengl_maybe_create_shader(shader_type shader_t, unsigned int flags)
 {
 	if (Use_GLSL < 2)
 		return -1;
@@ -237,13 +237,13 @@ int gr_opengl_maybe_create_shader(shader_type shader, unsigned int flags)
 	size_t max = GL_shader.size();
 
 	for (idx = 0; idx < max; idx++) {
-		if (GL_shader[idx].shader == shader && GL_shader[idx].flags == flags) {
+		if (GL_shader[idx].shader == shader_t && GL_shader[idx].flags == flags) {
 			return idx;
 		}
 	}
 
 	// If we are here, it means we need to compile a new shader
-	return opengl_compile_shader(shader, flags);
+	return opengl_compile_shader(shader_t, flags);
 }
 
 void opengl_delete_shader(int sdr_handle)
@@ -348,14 +348,14 @@ static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
 
 		if (cf_shader != NULL) {
 			int len = cfilelength(cf_shader);
-			char *shader = (char*)vm_malloc(len + flags_len + 1);
+			char *shader_c = (char*)vm_malloc(len + flags_len + 1);
 
-			strcpy(shader, shader_flags);
-			memset(shader + flags_len, 0, len + 1);
-			cfread(shader + flags_len, len + 1, 1, cf_shader);
+			strcpy(shader_c, shader_flags);
+			memset(shader_c + flags_len, 0, len + 1);
+			cfread(shader_c + flags_len, len + 1, 1, cf_shader);
 			cfclose(cf_shader);
 
-			return shader;
+			return shader_c;
 		}
 	}
 
@@ -363,12 +363,12 @@ static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
 	mprintf(("   Loading built-in default shader for: %s\n", filename));
 	char* def_shader = defaults_get_file(filename);
 	size_t len = strlen(def_shader);
-	char *shader = (char*)vm_malloc(len + flags_len + 1);
+	char *shader_c = (char*)vm_malloc(len + flags_len + 1);
 
-	strcpy(shader, shader_flags);
-	strcat(shader, def_shader);
+	strcpy(shader_c, shader_flags);
+	strcat(shader_c, def_shader);
 
-	return shader;
+	return shader_c;
 }
 
 /**
@@ -383,8 +383,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	int sdr_index = -1;
 	int empty_idx;
 	char *vert = NULL, *frag = NULL, *geom = NULL;
-
-	bool in_error = false;
 	opengl_shader_t new_shader;
 
 	Assert(sdr < NUM_SHADER_TYPES);
@@ -411,13 +409,11 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 	// read vertex shader
 	if ((vert = opengl_load_shader(sdr_info->type_id, sdr_info->vert, flags)) == NULL) {
-		in_error = true;
 		goto Done;
 	}
 	
 	// read fragment shader
 	if ((frag = opengl_load_shader(sdr_info->type_id, sdr_info->frag, flags)) == NULL) {
-		in_error = true;
 		goto Done;
 	}
 
@@ -428,7 +424,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 		// read geometry shader
 		if ((geom = opengl_load_shader(sdr_info->type_id, sdr_info->geo, flags)) == NULL) {
-			in_error = true;
 			goto Done;
 		}
 
@@ -441,7 +436,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	new_shader.program_id = opengl_shader_create(vert, frag, geom);
 
 	if (!new_shader.program_id) {
-		in_error = true;
 		goto Done;
 	}
 

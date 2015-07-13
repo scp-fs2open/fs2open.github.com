@@ -533,18 +533,18 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 //************************************//
 
 // Checks if the given subtype matches a particular animation
-bool subtype_check(model_subsystem *psub, queued_animation *anim, int subtype)
+bool subtype_check(model_subsystem *psub, queued_animation *anim_q, int subtype)
 {
 	Assert( psub != NULL );
-	Assert( anim != NULL );
+	Assert( anim_q != NULL );
 
-	if ( (subtype == ANIMATION_SUBTYPE_ALL) || (anim->subtype == ANIMATION_SUBTYPE_ALL) )
+	if ( (subtype == ANIMATION_SUBTYPE_ALL) || (anim_q->subtype == ANIMATION_SUBTYPE_ALL) )
 		return true;
 
 	// Fighterbay door animations can have negative subtypes, so handle those
 	// separately here
-	if (anim->type == TRIGGER_TYPE_DOCK_BAY_DOOR) {
-		int anim_subtype = anim->subtype -1; // in the tables, bay door +sub_types are 1-based so change to 0-based
+	if (anim_q->type == TRIGGER_TYPE_DOCK_BAY_DOOR) {
+		int anim_subtype = anim_q->subtype -1; // in the tables, bay door +sub_types are 1-based so change to 0-based
 
 		if (anim_subtype < 0) {
 			if (abs(anim_subtype) != subtype) {
@@ -556,7 +556,7 @@ bool subtype_check(model_subsystem *psub, queued_animation *anim, int subtype)
 			}
 		}
 	} else {
-		if ( anim->subtype == subtype )
+		if ( anim_q->subtype == subtype )
 			return true;
 	}
 

@@ -2031,7 +2031,7 @@ void model_render_DEPRECATED(int model_num, matrix *orient, vec3d * pos, uint fl
 		{
 			shipp = &Ships[Objects[objnum].instance];
 			sip = &Ship_info[shipp->ship_info_index];
-			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(-1);
+			gpoi = sip->glowpoint_bank_override_map.find(-1);
 		
 			if(gpoi != sip->glowpoint_bank_override_map.end()) {
 				override_all = true;
@@ -2600,7 +2600,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 	if(shipp)
 	{
 		sip = &Ship_info[shipp->ship_info_index];
-		SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(-1);
+		gpoi = sip->glowpoint_bank_override_map.find(-1);
 		
 		if(gpoi != sip->glowpoint_bank_override_map.end()) {
 			override_all = true;
@@ -4339,7 +4339,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 
 		// set submodel ID
 		if ( Use_GLSL >= 3 ) {
-			for ( int j = 0; j < polygon_list[i].n_verts; ++j ) {
+			for ( j = 0; j < polygon_list[i].n_verts; ++j ) {
 				polygon_list[i].submodels[j] = mn;
 			}
 		}

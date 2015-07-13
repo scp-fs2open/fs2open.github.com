@@ -57,8 +57,8 @@ model_render_params::model_render_params():
 	Warp_alpha(-1.0f),
 	Xparent_alpha(1.0f),
 	Forced_bitmap(-1),
-	Replacement_textures(NULL),
 	Insignia_bitmap(-1),
+	Replacement_textures(NULL),
 	Team_color_set(false),
 	Clip_plane_set(false),
 	Animated_effect(-1),
@@ -777,10 +777,10 @@ void draw_list::set_lighting(bool lighting)
 	Current_render_state.lighting = lighting;
 }
 
-void draw_list::set_team_color(const team_color &color)
+void draw_list::set_team_color(const team_color &clr)
 {
 	Current_render_state.using_team_color = true;
-	Current_render_state.tm_color = color;
+	Current_render_state.tm_color = clr;
 }
 
 void draw_list::set_team_color()
@@ -2557,17 +2557,6 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint d
 
 void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, uint debug_flags, int objnum, int detail_level_locked )
 {
-	ship *shipp = NULL;
-	object *objp = NULL;
-
-	if ( objnum >= 0 ) {
-		objp = &Objects[objnum];
-
-		if ( objp->type == OBJ_SHIP ) {
-			shipp = &Ships[objp->instance];
-		}
-	}
-
 	polymodel *pm = model_get(model_num);	
 	
 	g3_start_instance_matrix(pos, orient, true);
@@ -2906,7 +2895,7 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 			i = pm->submodel[i].next_sibling;
 		}
 
-		vec3d view_pos = scene->get_view_position();
+		view_pos = scene->get_view_position();
 
 		if ( model_render_check_detail_box(&view_pos, pm, pm->detail[detail_level], model_flags) ) {
 			int detail_model_num = pm->detail[detail_level];

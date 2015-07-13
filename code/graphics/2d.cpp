@@ -1812,9 +1812,6 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 	int j, z = 0;
 	ubyte *nverts_good = NULL;
 
-	uint t0, t1;
-	t0 = timer_get_milliseconds();
-
 	// calculate tangent space data (must be done early)
 	calculate_tangent();
 
@@ -1838,10 +1835,6 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 			vertex_list.push_back(j);
 		}
 	}
-
-	t1 = timer_get_milliseconds();
-
-	//mprintf(("Index Buffer created in %d milliseconds\n", t1-t0));
 
 	// if there is nothig to change then bail
 	if (n_verts == nverts) {
@@ -2079,7 +2072,7 @@ uint gr_determine_model_shader_flags(
 	bool in_shadow_map, 
 	bool thruster_scale, 
 	bool transform,
-	bool team_color,
+	bool team_color_set,
 	int tmap_flags, 
 	int spec_map, 
 	int glow_map, 
@@ -2153,7 +2146,7 @@ uint gr_determine_model_shader_flags(
 			shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
 		}
 
-		if ( team_color ) {
+		if ( team_color_set ) {
 			shader_flags |= SDR_FLAG_MODEL_TEAMCOLOR;
 		}
 	}

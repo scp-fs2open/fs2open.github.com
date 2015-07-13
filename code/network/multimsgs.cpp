@@ -8470,7 +8470,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 }
 
 // lightning packet
-void send_lightning_packet(int bolt_type, vec3d *start, vec3d *strike)
+void send_lightning_packet(int bolt_type_internal, vec3d *start, vec3d *strike)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	char val;
@@ -8478,7 +8478,7 @@ void send_lightning_packet(int bolt_type, vec3d *start, vec3d *strike)
 
 	// build the header and add the data
 	BUILD_HEADER(LIGHTNING_PACKET);
-	val = (char)bolt_type;
+	val = (char)bolt_type_internal;
 	ADD_DATA(val);
 	ADD_VECTOR((*start));
 	ADD_VECTOR((*strike));
@@ -8490,23 +8490,23 @@ void send_lightning_packet(int bolt_type, vec3d *start, vec3d *strike)
 void process_lightning_packet(ubyte *data, header *hinfo)
 {
 	int offset;
-	char bolt_type;
+	char bolt_type_internal;
 	vec3d start, strike;
 
 	// read the data
 	offset = HEADER_LENGTH;
-	GET_DATA(bolt_type);
+	GET_DATA(bolt_type_internal);
 	GET_VECTOR(start);
 	GET_VECTOR(strike);
 	PACKET_SET_SIZE();
 
 	// invalid bolt?
-	if(bolt_type < 0){
+	if(bolt_type_internal < 0){
 		return;
 	}
 
 	// fire it up
-	nebl_bolt(bolt_type, &start, &strike);
+	nebl_bolt(bolt_type_internal, &start, &strike);
 }
 
 void send_bytes_recvd_packet(net_player *pl)
