@@ -15,7 +15,6 @@
 #include "FREDDoc.h"
 #include "FREDView.h"
 #include "FredRender.h"
-#include "ai/ailocal.h"
 #include "ai/aigoals.h"
 #include "ship/ship.h"
 #include "globalincs/linklist.h"

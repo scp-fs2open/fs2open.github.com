@@ -61,8 +61,8 @@ int iff_get_alpha_value(bool is_bright)
  */
 int iff_init_color(int r, int g, int b)
 {
-	typedef struct temp_color_t {
-		int	r;
+	typedef struct {
+		int r;
 		int g;
 		int b;
 	} temp_color_t;

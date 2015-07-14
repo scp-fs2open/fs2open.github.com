@@ -669,7 +669,7 @@ void HudGauge::renderString(int x, int y, const char *str)
 	int nx = 0, ny = 0;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;
@@ -692,7 +692,7 @@ void HudGauge::renderString(int x, int y, int gauge_id, const char *str)
 	int nx = 0, ny = 0;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;
@@ -707,7 +707,7 @@ void HudGauge::renderString(int x, int y, int gauge_id, const char *str)
 	}
 
 	if ( gauge_id > -2 ) {
-		emp_hud_string(x + nx, y + ny, gauge_id, str, true);
+		emp_hud_string(x + nx, y + ny, gauge_id, str, GR_RESIZE_FULL);
 	} else {
 		gr_string(x + nx, y + ny, str);
 	}
@@ -762,7 +762,7 @@ void HudGauge::renderBitmapColor(int frame, int x, int y)
 	emp_hud_jitter(&x, &y);
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;
@@ -792,7 +792,7 @@ void HudGauge::renderBitmap(int x, int y)
 	emp_hud_jitter(&x, &y);
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;
@@ -830,7 +830,7 @@ void HudGauge::renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int
 	gr_set_bitmap(frame);
 
 	if( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;
@@ -854,7 +854,7 @@ void HudGauge::renderLine(int x1, int y1, int x2, int y2)
 	int nx = 0, ny = 0;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;
@@ -877,7 +877,7 @@ void HudGauge::renderGradientLine(int x1, int y1, int x2, int y2)
 	int nx = 0, ny = 0;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 	} else {
 		if(reticle_follow) {
 			nx = HUD_nose_x;
@@ -900,7 +900,7 @@ void HudGauge::renderRect(int x, int y, int w, int h)
 	int nx = 0, ny = 0;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;
@@ -923,7 +923,7 @@ void HudGauge::renderCircle(int x, int y, int diameter)
 	int nx = 0, ny = 0;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;
@@ -947,7 +947,7 @@ void HudGauge::setClip(int x, int y, int w, int h)
 	int hy = fl2i(HUD_offset_y);
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 
 		hx = display_offset_x;
 		hy = display_offset_y;
@@ -983,7 +983,7 @@ void HudGauge::resetClip()
 	int w, h;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, true);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 		
 		hx = display_offset_x;
 		hy = display_offset_y;

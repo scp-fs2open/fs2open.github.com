@@ -843,18 +843,18 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 	}
 	
 	// debris ship collision -- use debris_hit_info to calculate physics
-	object *ship_obj = other_obj;
-	Assert( ship_obj->type == OBJ_SHIP );
+	object *pship_obj = other_obj;
+	Assert( pship_obj->type == OBJ_SHIP );
 
 	object *heavy = debris_hit_info->heavy;
-	object *light = debris_hit_info->light;
+	object *lighter = debris_hit_info->light;
 	object *heavy_obj = heavy;
-	object *light_obj = light;
+	object *light_obj = lighter;
 
 	vec3d zero, p0, p1;
 	vm_vec_zero(&zero);
-	vm_vec_sub(&p0, &light->last_pos, &heavy->last_pos);
-	vm_vec_sub(&p1, &light->pos, &heavy->pos);
+	vm_vec_sub(&p0, &lighter->last_pos, &heavy->last_pos);
+	vm_vec_sub(&p1, &lighter->pos, &heavy->pos);
 
 	mc.pos = &zero;								// The object's position
 	mc.p0 = &p0;									// Point 1 of ray to check
@@ -875,15 +875,15 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		vm_vec_scale(&debris_hit_info->light_rel_vel, 1/flFrametime);
 	} else {
 		debris_hit_info->collide_rotate = 0;
-		vm_vec_sub(&debris_hit_info->light_rel_vel, &light->phys_info.vel, &heavy->phys_info.vel);
+		vm_vec_sub(&debris_hit_info->light_rel_vel, &lighter->phys_info.vel, &heavy->phys_info.vel);
 	}
 
 	int mc_ret_val = 0;
 
-	if ( debris_hit_info->heavy == ship_obj ) {	// ship is heavier, so debris is sphere. Check sphere collision against ship poly model
-		mc.model_instance_num = Ships[ship_obj->instance].model_instance_num;
-		mc.model_num = Ship_info[Ships[ship_obj->instance].ship_info_index].model_num;	// Fill in the model to check
-		mc.orient = &ship_obj->orient;								// The object's orient
+	if ( debris_hit_info->heavy == pship_obj ) {	// ship is heavier, so debris is sphere. Check sphere collision against ship poly model
+		mc.model_instance_num = Ships[pship_obj->instance].model_instance_num;
+		mc.model_num = Ship_info[Ships[pship_obj->instance].ship_info_index].model_num;	// Fill in the model to check
+		mc.orient = &pship_obj->orient;								// The object's orient
 		mc.radius = pdebris->radius;
 		mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);
 
@@ -900,7 +900,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		polymodel *pm;
 		polymodel_instance *pmi;
 
-		ship_model_start(ship_obj);
+		ship_model_start(pship_obj);
 
 		if (model_collide(&mc)) {
 
@@ -1007,7 +1007,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		mc.submodel_num = Debris[num].submodel_num;
 		model_clear_instance( mc.model_num );
 		mc.orient = &pdebris->orient;				// The object's orient
-		mc.radius = model_get_core_radius(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+		mc.radius = model_get_core_radius(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
 
 		// check for collision between debris model and ship sphere
 		mc.flags = (MC_CHECK_MODEL | MC_SUBMODEL | MC_CHECK_SPHERELINE);

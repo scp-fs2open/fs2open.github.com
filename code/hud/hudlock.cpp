@@ -426,6 +426,10 @@ int hud_abort_lock()
 		return 1;
 	}
 
+	if ( Player_ship->flags2 & SF2_NO_SECONDARY_LOCKON ) {
+		return 1;
+	}
+
 	// if we're on the same team and the team doesn't attack itself, then don't lock!
 	if ((Player_ship->team == target_team) && (!iff_x_attacks_y(Player_ship->team, target_team)))
 	{
@@ -469,10 +473,10 @@ int hud_lock_on_subsys_ok()
 // Determine if locking point is in the locking cone
 void hud_lock_check_if_target_in_lock_cone()
 {
-	float		dist, dot;
+	float	dot;
 	vec3d	vec_to_target;
 
-	dist = vm_vec_normalized_dir(&vec_to_target, &lock_world_pos, &Player_obj->pos);
+	vm_vec_normalized_dir(&vec_to_target, &lock_world_pos, &Player_obj->pos);
 	dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
 	if ( dot > 0.85) {

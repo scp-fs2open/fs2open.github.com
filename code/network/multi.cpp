@@ -49,6 +49,7 @@
 #include "fs2netd/fs2netd_client.h"
 #include "pilotfile/pilotfile.h"
 #include "debugconsole/console.h"
+#include "network/psnet2.h"
 
 
 
@@ -337,9 +338,11 @@ void multi_check_listen()
 		}
 
 		// the connection was accepted in check_for_listen.  Find the netplayer whose address we connected
-		// with and assign the socket descriptor
+		// with and assign the socket descriptor.
+		// Updated to utilize psnet_same() for address comparison so the port is also taken into account.
+		// This allows multiple players using NAT to access a remote server simultneously.
 		for (i = 0; i < MAX_PLAYERS; i++ ) {
-			if ( (Net_players[i].flags & NETINFO_FLAG_CONNECTED) && (!memcmp(&(addr.addr), &(Net_players[i].p_info.addr.addr), 6)) ) {
+			if ( (Net_players[i].flags & NETINFO_FLAG_CONNECTED) && (psnet_same(&addr, &(Net_players[i].p_info.addr))) ) {
 				// mark this flag so we know he's "fully" connected
 				Net_players[i].flags |= NETINFO_FLAG_RELIABLE_CONNECTED;
 				Net_players[i].reliable_socket = sock;
@@ -1791,8 +1794,8 @@ DCF(netd, "change netgame debug flags (Mulitplayer)")
 // display any multiplayer/networking information here
 void multi_display_netinfo()
 {
-	int sx = gr_screen.max_w - 200;
-	int sy = 20;
+	int sx = gr_screen.center_offset_x + gr_screen.center_w - 200;
+	int sy = gr_screen.center_offset_y + 20;
 	int dy = gr_get_font_height() + 1;
 	int idx;
 

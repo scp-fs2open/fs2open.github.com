@@ -255,11 +255,16 @@ void snd_spew_debug_info()
 
 	// spew info
 	int line_height = gr_get_font_height() + 1;
+	int sx = gr_screen.center_offset_x + 30;
+	int sy = gr_screen.center_offset_y + 100;
 	gr_set_color_fast(&Color_normal);
-	gr_printf_no_resize(30, 100, "Game sounds : %d\n", game_sounds);
-	gr_printf_no_resize(30, 100 + line_height, "Interface sounds : %d\n", interface_sounds);
-	gr_printf_no_resize(30, 100 + (line_height * 2), "Message sounds : %d\n", message_sounds);
-	gr_printf_no_resize(30, 100 + (line_height * 3), "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
+	gr_printf_no_resize(sx, sy, "Game sounds : %d\n", game_sounds);
+	sy += line_height;
+	gr_printf_no_resize(sx, sy, "Interface sounds : %d\n", interface_sounds);
+	sy += line_height;
+	gr_printf_no_resize(sx, sy, "Message sounds : %d\n", message_sounds);
+	sy += line_height;
+	gr_printf_no_resize(sx, sy, "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
 }
 
 // ---------------------------------------------------------------------------------------
@@ -345,7 +350,12 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	// ds_parse_sound() will do a NULL check on fp for us
 	if ( ds_parse_sound(fp, &si->data, &si->size, &header, (rc == 0), &si->ogg_info) == -1 ) {
 		nprintf(("Sound", "SOUND ==> Could not read sound file!\n"));
- 		return -1;
+
+		if (fp != NULL) {
+			cfclose(fp);
+		}
+
+		return -1;
 	}
 
 	// Load was a success, should be some sort of WAV or an OGG

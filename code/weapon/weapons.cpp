@@ -685,6 +685,8 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 			weaponp->wi_flags3 |= WIF3_FIGHTER_INTERCEPTABLE;
 		else if (!stricmp(NOX("apply recoil"), weapon_strings[i]))
 			weaponp->wi_flags3 |= WIF3_APPLY_RECOIL;
+		else if (!stricmp(NOX("don't spawn if shot"), weapon_strings[i]))
+			weaponp->wi_flags3 |= WIF3_DONT_SPAWN_IF_SHOT;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -879,7 +881,11 @@ void init_weapon_entry(int weap_info_index)
 	wip->vel_inherit_amount = 1.0f;
 	wip->free_flight_time = 0.0f;
 	wip->fire_wait = 1.0f;
+	wip->max_delay = 0.0f;
+	wip->min_delay = 0.0f;
 	wip->damage = 0.0f;
+	wip->damage_time = 0.0f;
+	wip->min_damage = 0.0f;
 	
 	wip->damage_type_idx = -1;
 	wip->damage_type_idx_sav = -1;
@@ -959,6 +965,8 @@ void init_weapon_entry(int weap_info_index)
 
 	wip->impact_explosion_radius = 1.0f;
 	wip->impact_weapon_expl_index = -1;
+
+	wip->shield_impact_explosion_radius = 1.0f;
 
 	wip->dinky_impact_explosion_radius = 1.0f;
 	wip->dinky_impact_weapon_expl_index = -1;
@@ -1391,6 +1399,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(optional_string("$Fire Wait:")) {
 		stuff_float( &(wip->fire_wait) );
 		diag_printf ("Weapon fire wait -- %7.3f\n", wip->fire_wait);
+		// Min and max delay stuff for weapon fire wait randomization
+		if (optional_string("+Max Delay:")) {
+			stuff_float(&(wip->max_delay));
+			diag_printf("Weapon fire max delay -- %7.3f\n", wip->max_delay);
+		}
+		if (optional_string("+Min Delay:")) {
+			stuff_float(&(wip->min_delay));
+			diag_printf("Weapon fire min delay -- %7.3f\n", wip->min_delay);
+		}
 	}
 
 	if(optional_string("$Damage:")) {
@@ -1399,6 +1416,30 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		//do this automagically
 		if(first_time) {
 			wip->shockwave.damage = wip->damage;
+		}
+	}
+
+	// Attenuation of non-beam primary weapon damage
+	if(optional_string("$Damage Time:")) {
+		stuff_float(&wip->damage_time);
+		if(optional_string("+Min Damage:")){
+			stuff_float(&wip->min_damage);
+		}
+		if(wip->min_damage > wip->damage) {
+			Warning(LOCATION, "Min Damage is greater than Damage, resetting to zero.");
+			wip->min_damage = 0.0f;
+		}
+		if(optional_string("+Max Damage:")) {
+			stuff_float(&wip->max_damage);
+		}
+		if(wip->max_damage < wip->damage) {
+			Warning(LOCATION, "Max Damage is less than Damage, resetting to zero.");
+			wip->max_damage = 0.0f;
+		}
+		if(wip->min_damage != 0.0f && wip->max_damage != 0.0f) {
+			Warning(LOCATION, "Both Min Damage and Max Damage are set to values greater than zero, resetting both to zero.");
+			wip->min_damage = 0.0f;
+			wip->max_damage = 0.0f;
 		}
 	}
 	
@@ -1504,6 +1545,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Warning(LOCATION, "Lifetime min or max specified, but $Lifetime was also specified; min or max will be used.");
 		}
 		stuff_float(&wip->lifetime);
+		if (wip->damage_time > wip->lifetime) {
+			Warning(LOCATION, "Lifetime is lower than Damage Time, setting Damage Time to be one half the value of Lifetime.");
+			wip->damage_time = 0.5f * wip->lifetime;
+		}
 	}
 
 	if(optional_string("$Energy Consumed:")) {
@@ -1931,6 +1976,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	
 	if ( optional_string("$Impact Explosion Radius:") )
 		stuff_float(&wip->impact_explosion_radius);
+
+	if ( optional_string("$Shield Impact Explosion Radius:") ) {
+		stuff_float(&wip->shield_impact_explosion_radius);
+	} else if (first_time) {
+		wip->shield_impact_explosion_radius = wip->impact_explosion_radius;
+	}
 
 	if ( optional_string("$Dinky Impact Explosion:") ) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -4820,7 +4871,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 
 	// a single player or multiplayer server function -- it affects actual weapon movement.
-	if (wip->wi_flags & WIF_HOMING) {
+	if (wip->wi_flags & WIF_HOMING && !(wp->weapon_flags & WF_NO_HOMING)) {
 		weapon_home(obj, num, frame_time);
 		
 		// If this is a swarm type missile,  
@@ -4999,11 +5050,25 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	wp = &Weapons[Objects[weapon_objnum].instance];
 	wip = &Weapon_info[wp->weapon_info_index];
 
+	if (wp->weapon_flags & WF_NO_HOMING) {
+		return;
+	}
+
 	if (parent_objnum >= 0) {
 		parent_objp = &Objects[parent_objnum];
 		Assert(parent_objp->type == OBJ_SHIP);
 	} else {
 		parent_objp = NULL;
+	}
+
+	if (parent_objp != NULL && (Ships[parent_objp->instance].flags2 & SF2_NO_SECONDARY_LOCKON)) {
+		wp->weapon_flags |= WF_NO_HOMING;
+		wp->homing_object = NULL;
+		wp->homing_subsys = NULL;
+		wp->target_num = -1;
+		wp->target_sig = -1;
+
+		return;
 	}
 
 	if ( parent_objp == NULL || Ships[parent_objp->instance].ai_index >= 0 ) {
@@ -6310,7 +6375,9 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	// spawn weapons - note the change from FS 1 multiplayer.
 	if (wip->wi_flags & WIF_SPAWN){
-		spawn_child_weapons(weapon_obj);
+		if (!((wip->wi_flags3 & WIF3_DONT_SPAWN_IF_SHOT) && (sw_flag == SW_WEAPON_KILL))){			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
+			spawn_child_weapons(weapon_obj);
+		}
 	}	
 }
 
@@ -7127,6 +7194,11 @@ void weapon_unpause_sounds()
 	beam_unpause_sounds();
 }
 
+void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx) {
+	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
+	particle_create( hitpos, &vmd_zero_vector, 0.0f, radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, -1.0f, objp );
+}
+
 void weapon_render(object* obj, draw_list *scene)
 {
 	int num;
@@ -7299,12 +7371,9 @@ void weapon_render(object* obj, draw_list *scene)
 			if (wp->lssm_stage==3)
 				break;
 
-			int clip_plane=0;
-
 			// start a clip plane
 			if ( wp->lssm_stage == 2 ) {
 				object *wobj=&Objects[wp->lssm_warp_idx];		//warphole object
-				clip_plane=1;
 
 				render_info.set_clip_plane(wobj->pos, wobj->orient.vec.fvec);
 			}

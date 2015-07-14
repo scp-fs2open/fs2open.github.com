@@ -78,6 +78,7 @@ struct image_desc
 #define CHA_HUDMSGRECEIVED	35
 #define CHA_AFTERBURNSTART	36
 #define CHA_AFTERBURNEND    37
+#define CHA_BEAMFIRE        38
 
 // management stuff
 void scripting_state_init();

@@ -556,7 +556,7 @@ void gr_opengl_bm_save_render_target(int n)
 	bitmap_entry *be = &bm_bitmaps[n];
 	bitmap *bmp = &be->bm;
 
-	int rc = opengl_export_render_target( n, bmp->w, bmp->h, (bmp->true_bpp == 32), be->num_mipmaps, (ubyte*)bmp->data );
+	size_t rc = opengl_export_render_target( n, bmp->w, bmp->h, (bmp->true_bpp == 32), be->num_mipmaps, (ubyte*)bmp->data );
 
 	if (rc != be->mem_taken) {
 		Int3();

@@ -388,10 +388,10 @@ void parse_helptbl(const char *filename)
 			}
 
 			if (optional_string("+font")) {
-				int font;
+				int font_index;
 				for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
-					stuff_int(&font);
-					help_overlaylist[overlay_id].fontlist.push_back(font);
+					stuff_int(&font_index);
+					help_overlaylist[overlay_id].fontlist.push_back(font_index);
 				}
 			}
 			else {

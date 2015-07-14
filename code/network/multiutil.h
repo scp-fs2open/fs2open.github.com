@@ -80,7 +80,7 @@ void multi_unpack_orient_matrix(ubyte *data,matrix *m);
 // catchall to do any necessary client-side simulation processing or master side process for menu pauses, etc.
 void multi_do_client_warp(float frame_time);
 
-void multi_assign_player_ship( int net_player, object *objp, int ship_class );
+void multi_assign_player_ship( int net_player_num, object *objp, int ship_class );
 
 // -------------------------------------------------------------------
 // ship status change functions (used both client and server side)

@@ -1153,6 +1153,14 @@ int ds_init()
 			mprintf(("You are not using OpenAL Soft. Disabling enhanced sound.\n"));
 			Cmdline_no_enhanced_sound = 1;
 		}
+		else
+		{
+			mprintf(("Enhanced sound is enabled.\n"));
+		}
+	}
+	else
+	{
+		mprintf(("Enhanced sound is manually disabled.\n"));
 	}
 
 	// setup default listener position/orientation

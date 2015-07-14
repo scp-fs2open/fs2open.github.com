@@ -2001,7 +2001,7 @@ void multi_join_blit_top_stuff()
 		bm_get_info(Multi_common_icons[MICON_CD], &cd_w, NULL, NULL, NULL, NULL);
 
 		gr_set_bitmap(Multi_common_icons[MICON_CD]);
-		gr_bitmap((gr_screen.max_w / 2) - (cd_w / 2), Mj_cd_coords[gr_screen.res], GR_RESIZE_MENU);
+		gr_bitmap((gr_screen.max_w_unscaled / 2) - (cd_w / 2), Mj_cd_coords[gr_screen.res], GR_RESIZE_MENU);
 	} 	
 }
 
