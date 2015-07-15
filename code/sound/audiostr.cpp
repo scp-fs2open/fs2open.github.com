@@ -294,7 +294,7 @@ protected:
 // constructor
 void Timer::constructor(void)
 {
-	m_nIDTimer = NULL;
+	m_nIDTimer = 0;
 }
 
 
@@ -303,7 +303,7 @@ void Timer::destructor(void)
 {
 	if (m_nIDTimer) {
 		SDL_RemoveTimer(m_nIDTimer);
-		m_nIDTimer = NULL;
+		m_nIDTimer = 0;
 	}
 }
 
@@ -321,7 +321,7 @@ bool Timer::Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCall
 	m_dwUser = dwUser;
 	m_pfnCallback = pfnCallback;
 
-	if ((m_nIDTimer = SDL_AddTimer(m_nPeriod, TimeProc, (void*)this)) == NULL) {
+	if ((m_nIDTimer = SDL_AddTimer(m_nPeriod, TimeProc, (void*)this)) == 0) {
 	  bRtn = false;
 	}
 
@@ -346,7 +346,7 @@ uint Timer::TimeProc(uint interval, void *dwUser)
 		return interval;
     } else {
 		SDL_RemoveTimer(ptimer->m_nIDTimer);
-		ptimer->m_nIDTimer = NULL;
+		ptimer->m_nIDTimer = 0;
 		return 0;
     }
 }
