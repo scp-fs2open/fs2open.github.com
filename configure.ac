@@ -185,12 +185,6 @@ case "$target" in
 		echo "* Create a new thread about your build experience and what *"
 		echo "* was required to make the build successful. ***************"
 		echo "************************************************************"
-		echo "************************************************************"
-		echo "* Please let us know about successful builds on this OS at *"
-		echo "* http://www.hard-light.net/forums/index.php?board=113.0 ***"
-		echo "* Create a new thread about your build experience and what *"
-		echo "* was required to make the build successful. ***************"
-		echo "************************************************************"
 		exit 1;
 		;;
 esac
