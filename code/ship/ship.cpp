@@ -3129,8 +3129,8 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 					to = banktoken.substr(fromtopos+1);
 					ifrom = atoi(from.data()) - 1;
 					ito = atoi(to.data()) - 1;
-					for(int i = ifrom; i <= ito; ++i) {
-						sip->glowpoint_bank_override_map[i] = (void*)(&(*gpo));
+					for(int bank = ifrom; bank <= ito; ++bank) {
+						sip->glowpoint_bank_override_map[bank] = (void*)(&(*gpo));
 					}
 				} else {
 					int bank = atoi(banktoken.data()) - 1;
@@ -18375,18 +18375,13 @@ void ship_render(object* obj, draw_list* scene)
 		render_flags |= MR_SHOW_THRUSTERS;
 	}
 
-	// If the ship is going "through" the warp effect, then
-	// set up the model renderer to only draw the polygons in front
-	// of the warp in effect
-	int clip_started = 0;
-
 	// Warp_shipp points to the ship that is going through a
 	// warp... either this ship or the ship it is docked with.
 	if ( warp_shipp != NULL ) {
 		if ( warp_shipp->flags & SF_ARRIVING ) {
-			clip_started = warp_shipp->warpin_effect->warpShipClip(&render_info);
+			warp_shipp->warpin_effect->warpShipClip(&render_info);
 		} else if ( warp_shipp->flags & SF_DEPART_WARP ) {
-			clip_started = warp_shipp->warpout_effect->warpShipClip(&render_info);
+			warp_shipp->warpout_effect->warpShipClip(&render_info);
 		}
 	}
 

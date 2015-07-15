@@ -2950,7 +2950,7 @@ void gr_opengl_scene_texture_end()
 	} else {
 		GLboolean depth = GL_state.DepthTest(GL_FALSE);
 		GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-		GLboolean light = GL_state.Lighting(GL_FALSE);
+		GLboolean lighting = GL_state.Lighting(GL_FALSE);
 		GLboolean blend = GL_state.Blend(GL_FALSE);
 		GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -3023,7 +3023,7 @@ void gr_opengl_scene_texture_end()
 		// reset state
 		GL_state.DepthTest(depth);
 		GL_state.DepthMask(depth_mask);
-		GL_state.Lighting(light);
+		GL_state.Lighting(lighting);
 		GL_state.Blend(blend);
 		GL_state.CullFace(cull);
 	}
@@ -3051,7 +3051,7 @@ void opengl_clear_deferred_buffers()
 {
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean light = GL_state.Lighting(GL_FALSE);
+	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -3063,7 +3063,7 @@ void opengl_clear_deferred_buffers()
 
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(light);
+	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 }
@@ -3214,7 +3214,7 @@ void gr_opengl_deferred_lighting_finish()
 
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean light = GL_state.Lighting(GL_FALSE);
+	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -3262,7 +3262,7 @@ void gr_opengl_deferred_lighting_finish()
 	// reset state
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(light);
+	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 
@@ -3275,7 +3275,7 @@ void gr_opengl_update_distortion()
 {
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean light = GL_state.Lighting(GL_FALSE);
+	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -3352,7 +3352,7 @@ void gr_opengl_update_distortion()
 
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(light);
+	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 }

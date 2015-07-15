@@ -473,10 +473,10 @@ int hud_lock_on_subsys_ok()
 // Determine if locking point is in the locking cone
 void hud_lock_check_if_target_in_lock_cone()
 {
-	float		dist, dot;
+	float	dot;
 	vec3d	vec_to_target;
 
-	dist = vm_vec_normalized_dir(&vec_to_target, &lock_world_pos, &Player_obj->pos);
+	vm_vec_normalized_dir(&vec_to_target, &lock_world_pos, &Player_obj->pos);
 	dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
 	if ( dot > 0.85) {

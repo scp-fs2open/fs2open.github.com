@@ -350,7 +350,12 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	// ds_parse_sound() will do a NULL check on fp for us
 	if ( ds_parse_sound(fp, &si->data, &si->size, &header, (rc == 0), &si->ogg_info) == -1 ) {
 		nprintf(("Sound", "SOUND ==> Could not read sound file!\n"));
- 		return -1;
+
+		if (fp != NULL) {
+			cfclose(fp);
+		}
+
+		return -1;
 	}
 
 	// Load was a success, should be some sort of WAV or an OGG
