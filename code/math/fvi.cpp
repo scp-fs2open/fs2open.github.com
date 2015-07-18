@@ -705,7 +705,7 @@ int fvi_polyedge_sphereline(vec3d *hit_point, const vec3d *xs0, const vec3d *vs,
 	float delta_x_dot_ve, delta_x_dot_vs, ve_dot_vs, ve_sqr, vs_sqr, delta_x_sqr;
 	vec3d temp_edge_hit, temp_sphere_hit;
 	float t_sphere_hit = 0.0f;
-	float A, B, C, temp, discriminant, inv2A;
+	float A, B, C, temp, discriminant, invA;
 	float root, root1, root2;
 	float Rs2 = (Rs * Rs);
 	float Rs_point2 = (0.2f * Rs);
@@ -736,17 +736,29 @@ int fvi_polyedge_sphereline(vec3d *hit_point, const vec3d *xs0, const vec3d *vs,
 		ve_dot_vs = vm_vec_dotprod(&ve, vs);
 		ve_sqr = vm_vec_mag_squared(&ve);
 
-		// solve for sphere time
+		/*
+		 * Solve for sphere time
+		 *
+		 * This code uses the following variation of the quadratic equation:
+		 *        A*x*x + 2*B*x + C = 0
+		 *
+		 * Solving for x yields ...
+		 *
+		 *       -B +- sqrt(B*B - A*C)
+		 *   x = ---------------------
+		 *                A
+		 */
+
 		A = ve_dot_vs*ve_dot_vs - ve_sqr*vs_sqr;
-		B = 2.0f * (delta_x_dot_ve*ve_dot_vs - delta_x_dot_vs*ve_sqr);
+		B = delta_x_dot_ve*ve_dot_vs - delta_x_dot_vs*ve_sqr;
 		C = delta_x_dot_ve*delta_x_dot_ve + Rs2*ve_sqr - delta_x_sqr*ve_sqr;
 
-		discriminant = B*B - 4.0f*A*C;
+		discriminant = B*B - A*C;
 		if (discriminant > 0.0f) {
-			inv2A = 1.0f / (2.0f * A);
+			invA = 1.0f / A;
 			root = sqrt(discriminant);
-			root1 = (-B + root) * inv2A;
-			root2 = (-B - root) * inv2A;
+			root1 = (-B + root) * invA;
+			root2 = (-B - root) * invA;
 
 			// sort root1 and root2
 			if (root2 < root1) {
@@ -777,12 +789,12 @@ int fvi_polyedge_sphereline(vec3d *hit_point, const vec3d *xs0, const vec3d *vs,
 
 		// solve for edge time
 		A *= ve_sqr;
-		B = 2.0f*ve_sqr * (delta_x_dot_ve*vs_sqr - delta_x_dot_vs*ve_dot_vs);
+		B = ve_sqr * (delta_x_dot_ve*vs_sqr - delta_x_dot_vs*ve_dot_vs);
 		C = 2.0f*delta_x_dot_ve*delta_x_dot_vs*ve_dot_vs + Rs2*ve_dot_vs*ve_dot_vs 
 			 - delta_x_sqr*ve_dot_vs*ve_dot_vs - delta_x_dot_ve*delta_x_dot_ve*vs_sqr;
 
-		discriminant = B*B - 4.0f*A*C;
-		inv2A = 1.0f / (2.0f * A);
+		discriminant = B*B - A*C;
+		invA = 1.0f / A;
 
 		// guard against nearly perpendicular sphere edge velocities
 		if (discriminant < 0.0f)
@@ -790,8 +802,8 @@ int fvi_polyedge_sphereline(vec3d *hit_point, const vec3d *xs0, const vec3d *vs,
 		else
 			root = fl_sqrt(discriminant);
 
-		root1 = (-B + root) * inv2A;
-		root2 = (-B - root) * inv2A;
+		root1 = (-B + root) * invA;
+		root2 = (-B - root) * invA;
 
 		// given sphere position, find which edge time (position) allows a valid solution
 		if ( (root1 <= 1.0f) && (root1 >= 0.0f) ) {
@@ -818,7 +830,7 @@ int fvi_polyedge_sphereline(vec3d *hit_point, const vec3d *xs0, const vec3d *vs,
 TryVertex:
 		// try V0
 		A = vs_sqr;
-		B = 2.0f*delta_x_dot_vs;
+		B = delta_x_dot_vs;
 		C = delta_x_sqr - Rs2;
 		int v0_hit;
 		float sphere_v0, sphere_v1;
@@ -827,12 +839,12 @@ TryVertex:
 		sphere_v0 = UNINITIALIZED_VALUE;
 		sphere_v1 = UNINITIALIZED_VALUE;
 
-		inv2A = 1.0f / (2.0f * A);
-		discriminant = B*B - 4.0f*A*C;
+		invA = 1.0f / A;
+		discriminant = B*B - A*C;
 		if (discriminant > 0.0f) {
 			root = fl_sqrt(discriminant);
-			root1 = (-B + root) * inv2A;
-			root2 = (-B - root) * inv2A;
+			root1 = (-B + root) * invA;
+			root2 = (-B - root) * invA;
 
 			if (root1 > root2) {
 				temp = root1;
@@ -853,15 +865,15 @@ TryVertex:
 		delta_x_dot_vs = vm_vec_dotprod( &delta_x, vs );
 		int v1_hit;
 
-		B = 2.0f*delta_x_dot_vs;
+		B = delta_x_dot_vs;
 		C = delta_x_sqr - Rs2;
 
 		v1_hit = 0;
-		discriminant = B*B - 4.0f*A*C;
+		discriminant = B*B - A*C;
 		if (discriminant > 0.0f) {
 			root = fl_sqrt(discriminant);
-			root1 = (-B + root) * inv2A;
-			root2 = (-B - root) * inv2A;
+			root1 = (-B + root) * invA;
+			root2 = (-B - root) * invA;
 
 			if (root1 > root2) {
 				temp = root1;
