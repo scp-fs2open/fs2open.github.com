@@ -873,6 +873,7 @@ void init_ship_entry(ship_info *sip)
 	sip->auto_shield_spread = 0.0f;
 	sip->auto_shield_spread_bypass = false;
 	sip->auto_shield_spread_from_lod = -1;
+	sip->auto_shield_spread_min_span = -1.0f;
 
 	for (i = 0; i < 4; i++)
 	{
@@ -2316,6 +2317,11 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 		if(optional_string("+Auto Spread:")) {
 			stuff_float(&sip->auto_shield_spread);
+		}
+		if(optional_string("+Minimum Weapon Span:")) {
+			stuff_float(&sip->auto_shield_spread_min_span);
+		} else if (first_time) {
+			sip->auto_shield_spread_min_span = sip->auto_shield_spread;
 		}
 		if(optional_string("+Allow Bypass:")) {
 			stuff_boolean(&sip->auto_shield_spread_bypass);
