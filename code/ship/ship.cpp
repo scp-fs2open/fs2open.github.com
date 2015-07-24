@@ -2320,8 +2320,6 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		}
 		if(optional_string("+Minimum Weapon Span:")) {
 			stuff_float(&sip->auto_shield_spread_min_span);
-		} else if (first_time) {
-			sip->auto_shield_spread_min_span = sip->auto_shield_spread;
 		}
 		if(optional_string("+Allow Bypass:")) {
 			stuff_boolean(&sip->auto_shield_spread_bypass);

@@ -210,8 +210,14 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 			// The weapon is not allowed to impact the shield before it reaches this point
 			vec3d shield_ignored_until = weapon_objp->last_pos;
 
-			float min_weapon_span = sip->auto_shield_spread_min_span;
 			float weapon_flown_for = vm_vec_dist(&wp->start_pos, &weapon_objp->last_pos);
+			float min_weapon_span;
+
+			if (sip->auto_shield_spread_min_span >= 0.0f) {
+				min_weapon_span = sip->auto_shield_spread_min_span;
+			} else {
+				min_weapon_span = sip->auto_shield_spread;
+			}
 
 			// If weapon hasn't yet flown a distance greater than the maximum ignore
 			// range, then some part of the currently checked range needs to be
