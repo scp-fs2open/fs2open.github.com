@@ -1234,7 +1234,7 @@ int collide_ship_ship( obj_pair * pair )
 
 					// don't draw sparks (using sphere hitpos)
 					ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, dam2, MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
-					hud_shield_quadrant_hit(ship_ship_hit_info.light, quadrant_num);
+					hud_shield_quadrant_hit(ship_ship_hit_info.light, -1);
 
 					maybe_push_little_ship_from_fast_big_ship(ship_ship_hit_info.heavy, ship_ship_hit_info.light, ship_ship_hit_info.impulse, &ship_ship_hit_info.collision_normal);
 				}
