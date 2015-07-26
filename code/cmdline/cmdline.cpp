@@ -696,6 +696,12 @@ void os_parse_parms(int argc, char *argv[])
 
 	for (int i = 0; i < argc; i++)
 	{
+		// On mac this gets passed if the application was launched by double-clicking in the finder
+		if (i == 1 && strncmp(argv[1], "-psn", 4) == 0)
+		{
+			continue;
+		}
+
 		for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
 			if (!stricmp(parmp->name, argv[i]))
 			{
