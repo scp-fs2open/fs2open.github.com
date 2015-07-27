@@ -211,14 +211,21 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 			vec3d shield_ignored_until = weapon_objp->last_pos;
 
 			float weapon_flown_for = vm_vec_dist(&wp->start_pos, &weapon_objp->last_pos);
+			float min_weapon_span;
+
+			if (sip->auto_shield_spread_min_span >= 0.0f) {
+				min_weapon_span = sip->auto_shield_spread_min_span;
+			} else {
+				min_weapon_span = sip->auto_shield_spread;
+			}
 
 			// If weapon hasn't yet flown a distance greater than the maximum ignore
 			// range, then some part of the currently checked range needs to be
 			// ignored
-			if (weapon_flown_for < sip->auto_shield_spread) {
+			if (weapon_flown_for < min_weapon_span) {
 				vm_vec_sub(&shield_ignored_until, &weapon_end_pos, &wp->start_pos);
 				vm_vec_normalize(&shield_ignored_until);
-				vm_vec_scale(&shield_ignored_until, sip->auto_shield_spread);
+				vm_vec_scale(&shield_ignored_until, min_weapon_span);
 				vm_vec_add2(&shield_ignored_until, &wp->start_pos);
 			}
 
@@ -253,7 +260,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 			// If no collision with the model found in the ignore range, only
 			// then do we check for sphereline collisions with the model during the
 			// non-ignored range
-			if (!shield_collision && weapon_flown_for + this_range > sip->auto_shield_spread) {
+			if (!shield_collision && weapon_flown_for + this_range > min_weapon_span) {
 				mc_shield.p0 = &shield_ignored_until;
 
 				mc_shield.p1 = &weapon_end_pos;

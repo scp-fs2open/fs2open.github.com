@@ -1306,6 +1306,7 @@ public:
 	float	auto_shield_spread;
 	bool	auto_shield_spread_bypass;
 	int		auto_shield_spread_from_lod;
+	float	auto_shield_spread_min_span;	// Minimum distance weapons must travel until allowed to collide with the shield
 
 	int		shield_point_augment_ctrls[4];	// Re-mapping of shield augmentation controls for model point shields
 
