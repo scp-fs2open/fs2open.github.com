@@ -20,6 +20,7 @@
 #include "io/key.h"
 #include "io/timer.h"
 #include "mission/missionbriefcommon.h"
+#include "mission/missionparse.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/redalert.h"
