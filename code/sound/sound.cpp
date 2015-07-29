@@ -12,9 +12,11 @@
 #include "render/3d.h"
 #include "sound/sound.h"
 #include "sound/audiostr.h"
+#include "gamesnd/eventmusic.h"
 #include "cmdline/cmdline.h"
 #include "osapi/osapi.h"
 #include "globalincs/vmallocator.h"
+#include "debugconsole/console.h"
 
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
@@ -33,6 +35,7 @@
 #endif
 #include <limits.h>
 
+const unsigned int SND_ENHANCED_MAX_LIMIT = 15; // seems like a good max limit
 
 #define SND_F_USED			(1<<0)		// Sounds[] element is used
 
@@ -144,7 +147,6 @@ int snd_init()
 
 	snd_clear();
 
-
 	rval = ds_init();
 
 	if ( rval != 0 ) {
@@ -202,14 +204,15 @@ void snd_spew_info()
 }
 
 int Sound_spew = 0;
-DCF(show_sounds, "")
+DCF(show_sounds, "Toggles display of sound debug info")
 {
-	Sound_spew = !Sound_spew;
-	if(Sound_spew){
-		dc_printf("Sound debug info ON");
-	} else {
-		dc_printf("Sound debug info OFF");
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Sound debug info is %s", (Sound_spew ? "ON" : "OFF"));
+		return;
 	}
+
+	Sound_spew = !Sound_spew;
+	dc_printf("Sound debug info is %s", (Sound_spew ? "ON" : "OFF"));
 }
 void snd_spew_debug_info()
 {
@@ -253,11 +256,17 @@ void snd_spew_debug_info()
 	}
 
 	// spew info
+	int line_height = gr_get_font_height() + 1;
+	int sx = gr_screen.center_offset_x + 30;
+	int sy = gr_screen.center_offset_y + 100;
 	gr_set_color_fast(&Color_normal);
-	gr_printf(30, 100, "Game sounds : %d\n", game_sounds);
-	gr_printf(30, 110, "Interface sounds : %d\n", interface_sounds);
-	gr_printf(30, 120, "Message sounds : %d\n", message_sounds);
-	gr_printf(30, 130, "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
+	gr_printf_no_resize(sx, sy, "Game sounds : %d\n", game_sounds);
+	sy += line_height;
+	gr_printf_no_resize(sx, sy, "Interface sounds : %d\n", interface_sounds);
+	sy += line_height;
+	gr_printf_no_resize(sx, sy, "Message sounds : %d\n", message_sounds);
+	sy += line_height;
+	gr_printf_no_resize(sx, sy, "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
 }
 
 // ---------------------------------------------------------------------------------------
@@ -283,8 +292,6 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	int				rc, FileSize, FileOffset;
 	char			fullpath[MAX_PATH];
 	char			filename[MAX_FILENAME_LEN];
-	const int		NUM_EXT = 2;
-	const char		*audio_ext[NUM_EXT] = { ".ogg", ".wav" };
 	size_t			n;
 
 
@@ -312,7 +319,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	if ( n == Sounds.size() ) {
 		sound new_sound;
 		new_sound.sid = -1;
-		new_sound.flags &= ~SND_F_USED;
+		new_sound.flags = 0;
 
 		Sounds.push_back( new_sound );
 	}
@@ -329,7 +336,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	char *p = strrchr(filename, '.');
 	if ( p ) *p = 0;
 
-	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+	rc = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
 
 	if (rc < 0)
 		return -1;
@@ -338,14 +345,19 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	CFILE *fp = cfopen_special(fullpath, "rb", FileSize, FileOffset);
 
 	// ok, we got it, so set the proper filename for logging purposes
-	strcat_s(filename, audio_ext[rc]);
+	strcat_s(filename, audio_ext_list[rc]);
 
 	nprintf(("Sound", "SOUND => Loading '%s'\n", filename));
 
 	// ds_parse_sound() will do a NULL check on fp for us
 	if ( ds_parse_sound(fp, &si->data, &si->size, &header, (rc == 0), &si->ogg_info) == -1 ) {
 		nprintf(("Sound", "SOUND ==> Could not read sound file!\n"));
- 		return -1;
+
+		if (fp != NULL) {
+			cfclose(fp);
+		}
+
+		return -1;
 	}
 
 	// Load was a success, should be some sort of WAV or an OGG
@@ -552,7 +564,7 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 		return -1;
 
 	if ( volume > MIN_SOUND_VOLUME ) {
-		handle = ds_play( snd->sid, gs->id_sig, ds_priority(priority), volume, pan, 0, is_voice_msg);
+		handle = ds_play( snd->sid, gs->id_sig, ds_priority(priority), &gs->enhanced_sound_data, volume, pan, 0, is_voice_msg);
 	}
 
 	return handle;
@@ -584,7 +596,7 @@ MONITOR( Num3DSoundsLoaded )
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d *sound_fvec, float range_factor, int force )
+int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d *sound_fvec, float range_factor, int force, bool is_ambient )
 {
 	int		handle;
 	vec3d	vector_to_sound;
@@ -674,9 +686,9 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 			pan = vm_vec_dot(&View_matrix.vec.rvec, &vector_to_sound);
 		}
 
-		handle = ds_play(snd->sid, gs->id_sig, ds_priority(priority), volume / gs->default_volume, pan, looping);
+		handle = ds_play(snd->sid, gs->id_sig, ds_priority(priority), &gs->enhanced_sound_data, volume / gs->default_volume, pan, looping);
 	} else {
-		handle = ds3d_play(snd->sid, gs->id_sig, source_pos, source_vel, min_range, max_range, looping, (max_volume*Master_sound_volume*aav_effect_volume), volume, ds_priority(priority));
+		handle = ds3d_play(snd->sid, gs->id_sig, source_pos, source_vel, min_range, max_range, looping, (max_volume*Master_sound_volume*aav_effect_volume), volume, &gs->enhanced_sound_data, ds_priority(priority));
 	}
 
 	return handle;
@@ -685,16 +697,49 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 // update the given 3d sound with a new position
 void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius, float range_factor)
 {
-	float vol, pan;
-	
-	// get new volume and pan vals
-	snd_get_3d_vol_and_pan(gs, new_pos, &vol, &pan, radius, range_factor);
+	if (Cmdline_no_3d_sound) {
+		float vol, pan;
+		
+		// get new volume and pan vals
+		snd_get_3d_vol_and_pan(gs, new_pos, &vol, &pan, radius, range_factor);
 
-	// set volume
-	snd_set_volume(soundnum, vol);
+		// set volume
+		snd_set_volume(soundnum, vol);
 
-	// set pan
-	snd_set_pan(soundnum, pan);
+		// set pan
+		snd_set_pan(soundnum, pan);
+	} else {
+		// MageKing17 - It's a 3D sound effect, we should use the function for setting the position of a 3D sound effect.
+		sound *snd;
+		int channel;
+
+		if (!ds_initialized)
+			return;
+
+		Assertion( gs != NULL, "*gs was NULL in snd_update_3d_pos(); get a coder!\n" );
+
+		if ( gs->id == -1 ) {
+			gs->id = snd_load(gs);
+		}
+
+		if (gs->id == -1)
+			return;
+
+		snd = &Sounds[gs->id];
+		if ( !(snd->flags & SND_F_USED) )
+			return;
+
+		channel = ds_get_channel(soundnum);
+		if (channel == -1) {
+			nprintf(( "Sound", "WARNING: Trying to set position for a non-playing sound.\n" ));
+			return;
+		}
+
+		float min_range = (float) (fl2i( (gs->min) * range_factor));
+		float max_range = (float) (fl2i( (gs->max) * range_factor + 0.5f));
+
+		ds3d_update_buffer(channel, min_range, max_range, new_pos, NULL);
+	}
 }
 
 // ---------------------------------------------------------------------------------------
@@ -728,10 +773,7 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	if (!ds_initialized)
 		return -1;
 
-	if (gs == NULL) {
-		Int3();
-		return -1;
-	}
+	Assertion( gs != NULL, "*gs was NULL in snd_get_3d_vol_and_pan(); get a coder!\n" );
 
 	if ( gs->id == -1 ) {
 		gs->id = snd_load(gs);
@@ -820,7 +862,7 @@ int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, fl
 		volume = 1.0f;
 
 	if (volume > MIN_SOUND_VOLUME) {
-		handle = ds_play( snd->sid, gs->id_sig, DS_MUST_PLAY, volume, pan, 1);
+		handle = ds_play( snd->sid, gs->id_sig, DS_MUST_PLAY, &gs->enhanced_sound_data, volume, pan, 1);
 
 		if(handle != -1 && scriptingUpdateVolume) {
 			currentlyLoopingSoundInfos.push_back(LoopingSoundInfo(handle, gs->default_volume, vol_scale));
@@ -1058,6 +1100,14 @@ int snd_get_duration(int snd_id)
 		return Sounds[snd_id].duration;
 	else
 		return 0;
+}
+
+// return the time in ms for the duration of the sound
+const char *snd_get_filename(int snd_id)
+{
+	Assertion(snd_id >= 0 && snd_id < (int) Sounds.size(), "Invalid sound id %d!", snd_id);
+
+	return Sounds[snd_id].filename;
 }
 
 
@@ -1479,6 +1529,12 @@ void adjust_volume_on_frame(float* volume_now, aav* data)
 	//apply change
 	*volume_now = data->start_volume + (data->delta * done);
 	CLAMP(*volume_now, 0.0f, 1.0f);
+
+	// if setting music volume, trigger volume change in playing tracks
+	// done here in order to avoid setting music volume in every frame regardless if it changed or not
+	if (&aav_music_volume == volume_now) {
+		audiostream_set_volume_all(Master_event_music_volume * aav_music_volume, ASF_EVENTMUSIC);
+	}
 }
 
 void snd_aav_init()

@@ -106,7 +106,7 @@ void UI_BUTTON::draw_forced(int frame_num)
 	if (uses_bmaps) {
 		if (bmap_ids[frame_num] >= 0) {
 			gr_set_bitmap(bmap_ids[frame_num]);
-			gr_bitmap(x, y);
+			gr_bitmap(x, y, GR_RESIZE_MENU);
 			
 			// my_wnd->draw_tooltip();
 
@@ -147,11 +147,11 @@ void UI_BUTTON::draw()
 
 		if (frame_num >= 0) {
 			gr_set_bitmap(bmap_ids[frame_num]);
-			gr_bitmap(x, y);
+			gr_bitmap(x, y, GR_RESIZE_MENU);
 		}
 	} else {
 		gr_set_font(my_wnd->f_id);
-		gr_set_clip( x, y, w, h );
+		gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 
 		// draw the button's box
 		if (button_down()) {

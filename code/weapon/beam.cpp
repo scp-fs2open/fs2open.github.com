@@ -35,7 +35,8 @@
 #include "iff_defs/iff_defs.h"
 #include "globalincs/globals.h"
 #include "cmdline/cmdline.h"
-
+#include "parse/scripting.h"
+#include "debugconsole/console.h"
 
 extern int Cmdline_nohtl;
 // ------------------------------------------------------------------------------------------------
@@ -98,10 +99,7 @@ int Beam_test_framecount = 0;
 #define BEAM_WARMUP_PCT(b)			( ((float)Weapon_info[b->weapon_info_index].b_info.beam_warmup - (float)timestamp_until(b->warmup_stamp)) / (float)Weapon_info[b->weapon_info_index].b_info.beam_warmup ) 
 
 // beam warmdown completion %		
-#define BEAM_WARMDOWN_PCT(b)		( ((float)Weapon_info[b->weapon_info_index].b_info.beam_warmdown - (float)timestamp_until(b->warmdown_stamp)) / (float)Weapon_info[b->weapon_info_index].b_info.beam_warmdown ) 
-
-// timestamp for spewing muzzle particles
-//int Beam_muzzle_stamp = -1;
+#define BEAM_WARMDOWN_PCT(b)		( ((float)Weapon_info[b->weapon_info_index].b_info.beam_warmdown - (float)timestamp_until(b->warmdown_stamp)) / (float)Weapon_info[b->weapon_info_index].b_info.beam_warmdown )
 
 // link into the physics paused system
 extern int physics_paused;
@@ -122,20 +120,22 @@ float b_whack_small = 2000.0f;	// used to be 500.0f with the retail whack bug
 float b_whack_big = 10000.0f;	// used to be 1500.0f with the retail whack bug
 float b_whack_damage = 150.0f;
 
-DCF(b_whack_small, "")
+DCF(b_whack_small, "Sets the whack factor for small whacks (Default is 2000f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	b_whack_small = Dc_arg_float;
+	dc_stuff_float(&b_whack_small);
 }
-DCF(b_whack_big, "")
+DCF(b_whack_big, "Sets the whack factor for big whacks (Default is 10000f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	b_whack_big = Dc_arg_float;
+	dc_stuff_float(&b_whack_big);
 }
-DCF(b_whack_damage, "")
+DCF(b_whack_damage, "Sets the whack damage threshold (Default is 150f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	b_whack_damage = Dc_arg_float;
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Sets the threshold to determine whether a big whack or a small whack should be applied. Values equal or greater than this threshold will trigger a big whack, while smaller values will trigger a small whack\n");
+		return;
+	}
+
+	dc_stuff_float(&b_whack_damage);
 }
 
 
@@ -286,7 +286,7 @@ int beam_fire(beam_fire_info *fire_info)
 {
 	beam *new_item;
 	weapon_info *wip;
-	ship *firing_ship;
+	ship *firing_ship = NULL;
 	int objnum;		
 
 	// sanity check
@@ -311,18 +311,20 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	// make sure the beam_info_index is valid
-	Assert((fire_info->beam_info_index >= 0) && (fire_info->beam_info_index < MAX_WEAPON_TYPES) && (Weapon_info[fire_info->beam_info_index].wi_flags & WIF_BEAM));
-	if((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= MAX_WEAPON_TYPES) || !(Weapon_info[fire_info->beam_info_index].wi_flags & WIF_BEAM)){
+	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= Num_weapon_types) || !(Weapon_info[fire_info->beam_info_index].wi_flags & WIF_BEAM)) {
+		Assertion(false, "beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, Num_weapon_types);
 		return -1;
 	}
 
 	wip = &Weapon_info[fire_info->beam_info_index];	
 	// make sure a ship is firing this
-	Assert((fire_info->shooter->type == OBJ_SHIP) && (fire_info->shooter->instance >= 0) && (fire_info->shooter->instance < MAX_SHIPS));
-	if ( (fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS) ) {
+	if (!(fire_info->bfi_flags & BFIF_FLOATING_BEAM) && ((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS)) ) {
+		Assertion(false, "Fixed beam fired without a valid ship!\n");
 		return -1;
 	}
-	firing_ship = &Ships[fire_info->shooter->instance];
+	if (fire_info->shooter != NULL) {
+		firing_ship = &Ships[fire_info->shooter->instance];
+	}
 
 	// get a free beam
 	new_item = GET_FIRST(&Beam_free_list);
@@ -352,9 +354,8 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->warmdown_stamp = -1;
 	new_item->weapon_info_index = fire_info->beam_info_index;	
 	new_item->objp = fire_info->shooter;
-	new_item->sig = fire_info->shooter->signature;
+	new_item->sig = (fire_info->shooter != NULL) ? fire_info->shooter->signature : 0;
 	new_item->subsys = fire_info->turret;	
-	new_item->local_pnt = fire_info->turret->system_info->pnt;
 	new_item->life_left = wip->b_info.beam_life;	
 	new_item->life_total = wip->b_info.beam_life;
 	new_item->r_collision_count = 0;
@@ -369,19 +370,22 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->flags = 0;
 	new_item->shot_index = 0;
 	new_item->shrink = 1.0f;	
-	new_item->team = (char)firing_ship->team;
+	new_item->team = (firing_ship == NULL) ? fire_info->team : static_cast<char>(firing_ship->team);
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
 	new_item->bank = fire_info->bank;
 	new_item->Beam_muzzle_stamp = -1;
 	new_item->beam_glow_frame = 0.0f;
-	new_item->firingpoint = fire_info->turret->turret_next_fire_pos;
+	new_item->firingpoint = (fire_info->bfi_flags & BFIF_FLOATING_BEAM) ? -1 : fire_info->turret->turret_next_fire_pos;
 	new_item->beam_width = wip->b_info.beam_width;
+	new_item->last_start = fire_info->starting_pos;
 
 	if (fire_info->bfi_flags & BFIF_FORCE_FIRING)
 		new_item->flags |= BF_FORCE_FIRING;
 	if (fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM)
 		new_item->flags |= BF_IS_FIGHTER_BEAM;
+	if (fire_info->bfi_flags & BFIF_FLOATING_BEAM)
+		new_item->flags |= BF_FLOATING_BEAM;
 
 	if (fire_info->bfi_flags & BFIF_TARGETING_COORDS) {
 		new_item->flags |= BF_TARGETING_COORDS;
@@ -393,7 +397,7 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
-		new_item->beam_secion_frame[i] = 0.0f;
+		new_item->beam_section_frame[i] = 0.0f;
 	
 	if (fire_info->bfi_flags & BFIF_IS_FIGHTER_BEAM) {
 		new_item->type = BEAM_TYPE_C;
@@ -428,7 +432,7 @@ int beam_fire(beam_fire_info *fire_info)
 	}	
 
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
+	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
 	if(objnum < 0){
 		beam_delete(new_item);
 		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
@@ -571,8 +575,6 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 		Int3();
 		return -1;
 	}
-
-//	Objects[objnum].instance = objnum
 	
 	return objnum;
 }
@@ -593,7 +595,6 @@ int beam_get_parent(object *bm)
 	}
 	b = &Beams[bm->instance];
 
-	Assert(b->objp != NULL);
 	if(b->objp == NULL){
 		return -1;
 	}
@@ -602,7 +603,6 @@ int beam_get_parent(object *bm)
 	if(b->objp->signature != b->sig){
 		return -1;
 	}
- //comented out to see if this is the weak link in the fighter beam hit recording -Bobboau
 
 	// return the handle
 	return OBJ_INDEX(b->objp);
@@ -620,7 +620,7 @@ int beam_get_weapon_info_index(object *bm)
 	if (bm->instance < 0) {
 		return -1;
 	}
-//make sure it's returning a valid info index
+    //make sure it's returning a valid info index
 	Assert((Beams[bm->instance].weapon_info_index > -1) && (Beams[bm->instance].weapon_info_index < Num_weapon_types));
 
 	// return weapon_info_index
@@ -738,7 +738,8 @@ void beam_type_a_move(beam *b)
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+	if (b->subsys != NULL)
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -762,7 +763,8 @@ void beam_type_b_move(beam *b)
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+	if (b->subsys != NULL)
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -829,7 +831,8 @@ void beam_type_d_move(beam *b)
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+	if (b->subsys != NULL)
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &temp2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -883,7 +886,11 @@ void beam_type_d_get_status(beam *b, int *shot_index, int *fire_wait)
 // type e functions
 void beam_type_e_move(beam *b)
 {
-	vec3d temp, turret_norm;	
+	vec3d temp, turret_norm;
+
+	if (b->subsys == NULL) {	// If we're a free-floating beam, there's nothing to calculate here.
+		return;
+	}
 
 	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
 	// get the "originating point" of the beam for this frame. essentially bashes last_start
@@ -915,7 +922,7 @@ void beam_move_all_pre()
 		b = moveup;
 
 		// check if parent object has died, if so then delete beam
-		if (b->objp->type == OBJ_NONE) {
+		if (b->objp != NULL && b->objp->type == OBJ_NONE) {
 			// set next beam
 			moveup = GET_NEXT(moveup);
 			// delete current beam
@@ -929,10 +936,13 @@ void beam_move_all_pre()
 
 		if ( !physics_paused ) {
 			// make sure to check that firingpoint is still properly set
-			int temp = b->subsys->turret_next_fire_pos;
+			int temp = -1;
+			if (b->subsys != NULL) {
+				temp = b->subsys->turret_next_fire_pos;
 
-			if (!(b->flags & BF_IS_FIGHTER_BEAM))
-				b->subsys->turret_next_fire_pos = b->firingpoint;
+				if (!(b->flags & BF_IS_FIGHTER_BEAM))
+					b->subsys->turret_next_fire_pos = b->firingpoint;
+			}
 
 			// move the beam
 			switch (b->type)
@@ -966,7 +976,9 @@ void beam_move_all_pre()
 				default :
 					Int3();
 			}
-			b->subsys->turret_next_fire_pos = temp;
+			if (b->subsys != NULL) {
+				b->subsys->turret_next_fire_pos = temp;
+			}
 		}
 
 		// next
@@ -985,11 +997,9 @@ void beam_move_all_post()
 	// traverse through all active beams
 	moveup = GET_FIRST(&Beam_used_list);
 	while(moveup != END_OF_LIST(&Beam_used_list)){				
-		 bwi = &Weapon_info[moveup->weapon_info_index].b_info;
+        bwi = &Weapon_info[moveup->weapon_info_index].b_info;
 
-//mprintf(("moveing beam with weapon info index %d, post\n", moveup->weapon_info_index));
-
-		 // check the status of the beam
+        // check the status of the beam
 		bf_status = beam_ok_to_fire(moveup);
 
 		// if we're warming up
@@ -998,24 +1008,23 @@ void beam_move_all_post()
 
 			// should we be stopping?
 			if(bf_status < 0){
-//				mprintf(("killing beam becase it isn't ok to be fireing\n"));
 				beam_delete(moveup);
 			} else {
-				// add a muzzle light for the shooter
-				beam_add_light(moveup, OBJ_INDEX(moveup->objp), 0, NULL);
+				if (moveup->objp != NULL) {
+					// add a muzzle light for the shooter
+					beam_add_light(moveup, OBJ_INDEX(moveup->objp), 0, NULL);
+				}
 
 				// if the warming up timestamp has expired, start firing
 				if(timestamp_elapsed(moveup->warmup_stamp)){							
 					// start firing
 					if(!beam_start_firing(moveup)){
-//						mprintf(("killing beam becase it shouldn't have started fireing yet\n"));
 						beam_delete(moveup);												
 					} 			
 				} 
 			}
 
 			// next
-//			mprintf(("beam is warming up, moveing to next\n"));
 			moveup = next_one;
 			continue;
 		} 
@@ -1025,29 +1034,29 @@ void beam_move_all_post()
 
 			// should we be stopping?
 			if(bf_status < 0){
-//				mprintf(("killing beam becase it isn't ok to fire\n"));
 				beam_delete(moveup);
 			} else {
-				// add a muzzle light for the shooter
-				beam_add_light(moveup, OBJ_INDEX(moveup->objp), 0, NULL);
+				if (moveup->objp != NULL) {
+					// add a muzzle light for the shooter
+					beam_add_light(moveup, OBJ_INDEX(moveup->objp), 0, NULL);
+				}
 
 				// if we're done warming down, the beam is finished
-				if(timestamp_elapsed(moveup->warmdown_stamp)){	
-//					mprintf(("euthaniseing beam\n"));
+				if(timestamp_elapsed(moveup->warmdown_stamp)){
 					beam_delete(moveup);				
 				}			
 			}
 
 			// next
-//			mprintf(("beam is warming down, moveing to next\n"));
 			moveup = next_one;
 			continue;
 		}
-//		mprintf(("beam is fireing\n"));
 		// otherwise, we're firing away.........		
 
-		// add a muzzle light for the shooter
-		beam_add_light(moveup, OBJ_INDEX(moveup->objp), 0, NULL);
+		if (moveup->objp != NULL) {
+			// add a muzzle light for the shooter
+			beam_add_light(moveup, OBJ_INDEX(moveup->objp), 0, NULL);
+		}
 
 		// subtract out the life left for the beam
 		if(!physics_paused){
@@ -1068,7 +1077,7 @@ void beam_move_all_post()
 		}		
 
 		// add tube light for the beam
-		if(Use_GLSL > 1)
+		if(Use_GLSL > 1 && moveup->objp != NULL)
 			beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, NULL);
 
 		// stop shooting?
@@ -1077,7 +1086,6 @@ void beam_move_all_post()
 
 			// if beam should abruptly stop
 			if(bf_status == -1){
-//				mprintf(("beam stoping abruptly\n"));
 				beam_delete(moveup);							
 			}
 			// if the beam should just power down
@@ -1087,79 +1095,37 @@ void beam_move_all_post()
 			
 			// next beam
 			moveup = next_one;
-//			mprintf(("beam stopping\n"));
 			continue;
 		}				
 
 		// increment framecount
-		moveup->framecount++;		
-//		mprintf(("frame %d\n", moveup->framecount));
+		moveup->framecount++;
 		// type c weapons live for one frame only
-/*		if(moveup->type == BEAM_TYPE_C){
-			if(moveup->framecount > 1){
-				next_one = GET_NEXT(moveup);
-				beam_delete(moveup);							
-//			mprintf(("type c beams only live for one frame\n"));
-				moveup = next_one;
-				continue;
-			}
-		}
 		// done firing, so go into the warmdown phase
-		else*/ {
+		{
 			if((moveup->life_left <= 0.0f) &&
                (moveup->warmdown_stamp == -1) &&
                (moveup->framecount > 1))
             {
 				beam_start_warmdown(moveup);
 				
-				moveup = GET_NEXT(moveup);	
-//				mprintf(("warming beam down\n"));
+				moveup = GET_NEXT(moveup);
 				continue;
 			}				
-		}	
-//		mprintf(("starting collisions\n"));
+		}
 
 		// handle any collisions which occured collision (will take care of applying damage to all objects which got hit)
 		beam_handle_collisions(moveup);						
 
-//		mprintf(("recalcing sounds\n"));
 		// recalculate beam sounds
 		beam_recalc_sounds(moveup);
 
 		// next item
 		moveup = GET_NEXT(moveup);
-//		mprintf(("moved, getting next\n"));
 	}
 
 	// apply all beam lighting
-//	mprintf(("applying light\n"));
 	beam_apply_lighting();
-
-	// process beam culling info
-#ifndef NDEBUG
-	/*
-	if(Beam_test_stamp == -1){
-		Beam_test_stamp = timestamp(BEAM_TEST_STAMP_TIME);
-		Beam_test_ints = 0;
-		Beam_test_framecount = 0;
-	} else {
-		if(timestamp_elapsed(Beam_test_stamp)){			
-			// report the results
-			nprintf(("General", "Performed %f beam ints/frame (%d, %d, %d, %d), over %f seconds\n", (float)Beam_test_ints/(float)Beam_test_framecount, Beam_test_ints, Beam_test_framecount, Beam_test_ship, Beam_test_ast, (float)BEAM_TEST_STAMP_TIME / 1000.0f));
-
-			// reset vars
-			Beam_test_stamp = timestamp(BEAM_TEST_STAMP_TIME);
-			Beam_test_ints = 0;
-			Beam_test_ship = 0;
-			Beam_test_ast = 0;
-			Beam_test_framecount = 0;
-		} else {
-			Beam_test_framecount++;
-		}
-	}
-	*/
-#endif
-//	mprintf(("done beam_move_all_post\n"));
 }
 
 // -----------------------------===========================------------------------------
@@ -1213,6 +1179,8 @@ void beam_render(beam *b, float u_offset)
 	// turn off backface culling
 	int cull = gr_set_cull(0);
 
+	length = vm_vec_dist(&b->last_start, &b->last_shot);					// beam tileing -Bobboau
+
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
 	// draw all sections	
@@ -1242,10 +1210,8 @@ void beam_render(beam *b, float u_offset)
 		P_VERTICES();						
 		STUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
 
-		length = vm_vec_dist(&b->last_start, &b->last_shot);					// beam tileing -Bobboau
-		
 		if (bwsi->tile_type == 1)
-			u_scale = length / (bwsi->width /2) / bwsi->tile_factor;	// beam tileing, might make a tileing factor in beam index later -Bobboau
+			u_scale = length / (bwsi->width * 0.5f) / bwsi->tile_factor;	// beam tileing, might make a tileing factor in beam index later -Bobboau
 		else
 			u_scale = bwsi->tile_factor;
 
@@ -1261,14 +1227,16 @@ void beam_render(beam *b, float u_offset)
 		//this should never happen but, just to be safe
 		CLAMP(per, 0.0f, 1.0f);
 
-		verts[1]->r = (ubyte)(255 * per);
-		verts[2]->r = (ubyte)(255 * per);
-		verts[1]->g = (ubyte)(255 * per);
-		verts[2]->g = (ubyte)(255 * per);
-		verts[1]->b = (ubyte)(255 * per);
-		verts[2]->b = (ubyte)(255 * per);
-		verts[1]->a = (ubyte)(255 * per);
-		verts[2]->a = (ubyte)(255 * per);
+		ubyte alpha = (ubyte)(255.0f * per);
+
+		verts[1]->r = alpha;
+		verts[2]->r = alpha;
+		verts[1]->g = alpha;
+		verts[2]->g = alpha;
+		verts[1]->b = alpha;
+		verts[2]->b = alpha;
+		verts[1]->a = alpha;
+		verts[2]->a = alpha;
 
 		verts[0]->r = 255;
 		verts[3]->r = 255;
@@ -1283,18 +1251,18 @@ void beam_render(beam *b, float u_offset)
 		int framenum = 0;
 
 		if (bwsi->texture.num_frames > 1) {
-			b->beam_secion_frame[s_idx] += flFrametime;
+			b->beam_section_frame[s_idx] += flFrametime;
 
 			// Sanity checks
-			if (b->beam_secion_frame[s_idx] < 0.0f)
-				b->beam_secion_frame[s_idx] = 0.0f;
-			if (b->beam_secion_frame[s_idx] > 100.0f)
-				b->beam_secion_frame[s_idx] = 0.0f;
+			if (b->beam_section_frame[s_idx] < 0.0f)
+				b->beam_section_frame[s_idx] = 0.0f;
+			if (b->beam_section_frame[s_idx] > 100.0f)
+				b->beam_section_frame[s_idx] = 0.0f;
 
-			while (b->beam_secion_frame[s_idx] > bwsi->texture.total_time)
-				b->beam_secion_frame[s_idx] -= bwsi->texture.total_time;
+			while (b->beam_section_frame[s_idx] > bwsi->texture.total_time)
+				b->beam_section_frame[s_idx] -= bwsi->texture.total_time;
 
-			framenum = fl2i( (b->beam_secion_frame[s_idx] * bwsi->texture.num_frames) / bwsi->texture.total_time );
+			framenum = fl2i( (b->beam_section_frame[s_idx] * bwsi->texture.num_frames) / bwsi->texture.total_time );
 
 			CLAMP(framenum, 0, bwsi->texture.num_frames-1);
 		}
@@ -1312,10 +1280,9 @@ void beam_render(beam *b, float u_offset)
 
 // generate particles for the muzzle glow
 int hack_time = 100;
-DCF(h_time, "")
+DCF(h_time, "Sets the hack time for beam muzzle glow (Default is 100)")
 {
-	dc_get_arg(ARG_INT);
-	hack_time = Dc_arg_int;
+	dc_stuff_int(&hack_time);
 }
 
 void beam_generate_muzzle_particles(beam *b)
@@ -1323,7 +1290,7 @@ void beam_generate_muzzle_particles(beam *b)
 	int particle_count;
 	int idx;
 	weapon_info *wip;
-	vec3d turret_norm, turret_pos, particle_pos, particle_dir, p_temp;
+	vec3d turret_norm, turret_pos, particle_pos, particle_dir;
 	matrix m;
 	particle_info pinfo;
 
@@ -1351,36 +1318,29 @@ void beam_generate_muzzle_particles(beam *b)
 	// randomly generate 10 to 20 particles
 	particle_count = (int)frand_range(0.0f, (float)wip->b_info.beam_particle_count);
 
-	// get turret info - position and normal	
-//	turret_pos = b->last_start;
-//	vm_vec_sub(&turret_norm, &b->last_start,&b->last_shot);
-//	vm_vec_normalize(&turret_norm);
-
-	//turret_pos  = b->subsys->system_info->turret_firing_point[b->subsys->turret_next_fire_pos % b->subsys->system_info->turret_num_firing_points];
-//	turret_pos = b->subsys->system_info->pnt;
-	turret_pos = b->local_pnt;
-	turret_norm = b->subsys->system_info->turret_norm;	
+	// get turret info - position and normal
+	turret_pos = b->last_start;
+	if (b->subsys != NULL) {
+		turret_norm = b->subsys->system_info->turret_norm;	
+	} else {
+		vm_vec_normalized_dir(&turret_norm, &b->last_shot, &b->last_start);
+	}
 
 	// randomly perturb a vector within a cone around the normal
 	vm_vector_2_matrix(&m, &turret_norm, NULL, NULL);
 	for(idx=0; idx<particle_count; idx++){
 		// get a random point in the cone
 		vm_vec_random_cone(&particle_dir, &turret_norm, wip->b_info.beam_particle_angle, &m);
-		p_temp = turret_pos;
-		vm_vec_scale_add(&p_temp, &turret_pos, &particle_dir, wip->b_info.beam_muzzle_radius * frand_range(0.75f, 0.9f));
-
-		// transform into world coords		
-		vm_vec_unrotate(&particle_pos, &p_temp, &b->objp->orient);
-		vm_vec_add2(&particle_pos, &b->objp->pos);
-		p_temp = particle_dir;
-		vm_vec_unrotate(&particle_dir, &p_temp, &b->objp->orient);
+		vm_vec_scale_add(&particle_pos, &turret_pos, &particle_dir, wip->b_info.beam_muzzle_radius * frand_range(0.75f, 0.9f));
 
 		// now generate some interesting values for the particle
 		float p_time_ref = wip->b_info.beam_life + ((float)wip->b_info.beam_warmup / 1000.0f);		
 		float p_life = frand_range(p_time_ref * 0.5f, p_time_ref * 0.7f);
 		float p_vel = (wip->b_info.beam_muzzle_radius / p_life) * frand_range(0.85f, 1.2f);
 		vm_vec_scale(&particle_dir, -p_vel);
-		vm_vec_add2(&particle_dir, &b->objp->phys_info.vel);	//move along with our parent
+		if (b->objp != NULL) {
+			vm_vec_add2(&particle_dir, &b->objp->phys_info.vel);	//move along with our parent
+		}
 
 		memset(&pinfo, 0, sizeof(particle_info));
 		pinfo.pos = particle_pos;
@@ -1395,6 +1355,32 @@ void beam_generate_muzzle_particles(beam *b)
 		pinfo.tracer_length = -1.0f;		
 		particle_create(&pinfo);
 	}
+}
+
+static float get_current_alpha(vec3d *pos)
+{
+	float dist;
+	float alpha;
+
+	const float inner_radius = 15.0f;
+	const float magic_num = 2.75f;
+
+	// determine what alpha to draw this bitmap with
+	// higher alpha the closer the bitmap gets to the eye
+	dist = vm_vec_dist_quick(&Eye_position, pos);	
+
+	// if the point is inside the inner radius, alpha is based on distance to the player's eye,
+	// becoming more transparent as it gets close
+	if (dist <= inner_radius) {
+		// alpha per meter between the magic # and the inner radius
+		alpha = 0.8f / (inner_radius - magic_num);
+
+		// above value times the # of meters away we are
+		alpha *= (dist - magic_num);
+		return (alpha < 0.005f) ? 0.0f : alpha;
+	}
+
+	return 0.8f;
 }
 
 // render the muzzle glow for a beam weapon
@@ -1435,6 +1421,11 @@ void beam_render_muzzle_glow(beam *b)
 	if (rad <= 0.0f)
 		return;
 
+	float alpha = get_current_alpha(&b->last_start);
+
+	if (alpha <= 0.0f)
+		return;
+
 	// draw the bitmap
 	if (Cmdline_nohtl)
 		g3_rotate_vertex(&pt, &b->last_start);
@@ -1450,7 +1441,7 @@ void beam_render_muzzle_glow(beam *b)
 		// Sanity checks
 		if (b->beam_glow_frame < 0.0f)
 			b->beam_glow_frame = 0.0f;
-		if (b->beam_glow_frame > 100.0f)
+		else if (b->beam_glow_frame > 100.0f)
 			b->beam_glow_frame = 0.0f;
 
 		while (b->beam_glow_frame > bwi->beam_glow.total_time)
@@ -1461,7 +1452,7 @@ void beam_render_muzzle_glow(beam *b)
 		CLAMP(framenum, 0, bwi->beam_glow.num_frames-1);
 	}
 
-	gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);
+	gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
 
 	// draw 1 bitmap
 	g3_draw_bitmap(&pt, 0, rad, tmap_flags);
@@ -1485,12 +1476,6 @@ void beam_render_all()
 	// moves the U value of texture coods in beams if desired-Bobboau
 	static float u_offset = 0.0f;
 	u_offset += flFrametime;
-
-	//don't wrap since it causes the beam to jump	
-//	if(u_offset > 1.0f){
-//		u_offset = u_offset - 1.0f;	//keeps it below 1.0-Bobboau
-//	}
-
 
 	// traverse through all active beams
 	moveup = GET_FIRST(&Beam_used_list);
@@ -1543,16 +1528,15 @@ void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, floa
 	// VECMAT-ERROR: NULL VEC3D (value of, fvec == rvec)
 	vm_vec_normalize_safe(&uvec);
 
-	vm_vec_scale_add( top, &temp, &uvec, w/2.0f );
-	vm_vec_scale_add( bot, &temp, &uvec, -w/2.0f );	
+	vm_vec_scale_add( top, &temp, &uvec, w * 0.5f );
+	vm_vec_scale_add( bot, &temp, &uvec, -w * 0.5f );	
 }
 
 // light scale factor
 float blight = 25.5f;
-DCF(blight, "")
+DCF(blight, "Sets the beam light scale factor (Default is 25.5f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	blight = Dc_arg_float;
+	dc_stuff_float(&blight);
 }
 
 // call to add a light source to a small object
@@ -1622,7 +1606,6 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 		pct = 1.0f;
 	}
 	// add a unique light
-	// noise *= 0.1f;			// a little less noise here, since we want the beam to generally cast a bright light
 	light_add_point_unique(&near_pt, light_rad * 0.0001f, light_rad, pct, fr, fg, fb, OBJ_INDEX(objp));
 }
 
@@ -1774,7 +1757,6 @@ void beam_delete(beam *b)
 	list_append(&Beam_free_list, b);
 
 	// delete our associated object
-	// Assert(b->objnum >= 0);
 	if(b->objnum >= 0){
 		obj_delete(b->objnum);
 	}
@@ -1906,6 +1888,10 @@ int beam_start_firing(beam *b)
 		// niffwan - if launch_snd < 0, don't play any sound
 	}	
 
+	Script_system.SetHookObjects(3, "Beam", &Objects[b->objnum], "User", b->objp, "Target", b->target);
+	Script_system.RunCondition(CHA_BEAMFIRE, 0, NULL, b->objp, b->weapon_info_index);
+	Script_system.RemHookVars(3, "Beam", "User", "Target");
+
 	// success
 	return 1;
 }
@@ -1979,15 +1965,25 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots)
 	beam_weapon_info *bwi;
 	float miss_factor;
 
-	int temp = b->subsys->turret_next_fire_pos;
+	if (b->subsys != NULL) {
+		int temp = b->subsys->turret_next_fire_pos;
 
-	if (!(b->flags & BF_IS_FIGHTER_BEAM))
-		b->subsys->turret_next_fire_pos = b->firingpoint;
+		if (!(b->flags & BF_IS_FIGHTER_BEAM))
+			b->subsys->turret_next_fire_pos = b->firingpoint;
 
-	// where the shot is originating from (b->last_start gets filled in)
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, &turret_norm, 1, &p2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
+		// where the shot is originating from (b->last_start gets filled in)
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_point, &turret_norm, 1, &p2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
-	b->subsys->turret_next_fire_pos = temp;
+		b->subsys->turret_next_fire_pos = temp;
+	} else {
+		turret_point = b->last_start;
+		if (b->flags & BF_TARGETING_COORDS) {
+			p2 = b->target_pos1;
+		} else {
+			p2 = b->target->pos;
+		}
+		vm_vec_normalized_dir(&turret_norm, &p2, &turret_point);
+	}
 
 	// get a model # to work with
 	model_num = beam_get_model(b->target);
@@ -2111,25 +2107,27 @@ void beam_aim(beam *b)
 		}
 	}
 
-	int temp_int = b->subsys->turret_next_fire_pos;
+	if (b->subsys != NULL && b->type != BEAM_TYPE_C) {	// Type C beams don't use this information.
+		int temp_int = b->subsys->turret_next_fire_pos;
 
-	if (!(b->flags & BF_IS_FIGHTER_BEAM))
-		b->subsys->turret_next_fire_pos = b->firingpoint;
+		if (!(b->flags & BF_IS_FIGHTER_BEAM))
+			b->subsys->turret_next_fire_pos = b->firingpoint;
 
-	// setup our initial shot point and aim direction
-	switch(b->type){
-	case BEAM_TYPE_A:	
 		// where the shot is originating from (b->last_start gets filled in)
 		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
 
+		b->subsys->turret_next_fire_pos = temp_int;
+	}
+
+	// setup our initial shot point and aim direction
+	switch(b->type){
+	case BEAM_TYPE_A:
 		// if we're targeting a subsystem - shoot directly at it
-		if(b->target_subsys != NULL){			
-			// unrotate the center of the subsystem
-//			vm_vec_unrotate(&b->last_shot, &b->local_pnt, &b->target->orient);
+		if(b->target_subsys != NULL){
 			vm_vec_unrotate(&b->last_shot, &b->target_subsys->system_info->pnt, &b->target->orient);
-			vm_vec_add2(&b->last_shot, &b->target->pos);		 
+			vm_vec_add2(&b->last_shot, &b->target->pos);
 			vm_vec_sub(&temp, &b->last_shot, &b->last_start);
-			
+
 			vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, 2.0f);
 			break;
 		}
@@ -2145,7 +2143,7 @@ void beam_aim(beam *b)
 			vm_vec_scale_add(&b->last_shot, &b->last_start, &p2, 2.0f);
 			break;
 		}
-		
+
 		// point at the center of the target...
 		if (b->flags & BF_TARGETING_COORDS) {
 			b->last_shot = b->target_pos1;
@@ -2154,29 +2152,23 @@ void beam_aim(beam *b)
 			// ...then jitter based on shot_aim (requires target)
 			beam_jitter_aim(b, b->binfo.shot_aim[0]);
 		}
-		break;	
+		break;
 
-	case BEAM_TYPE_B:		
-		// where the shot is originating from (b->last_start gets filled in)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
-
+	case BEAM_TYPE_B:
 		// set the shot point
 		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->binfo.dir_a, b->range);
-		Assert(is_valid_vec(&b->last_shot));		
+		Assert(is_valid_vec(&b->last_shot));
 		break;
 
 	case BEAM_TYPE_C:
 		// start point
-		temp = b->targeting_laser_offset;	
+		temp = b->targeting_laser_offset;
 		vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
 		vm_vec_add2(&b->last_start, &b->objp->pos);
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);		
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 		break;
 
-	case BEAM_TYPE_D:				
-		// where the shot is originating from (b->last_start gets filled in)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);		
-		
+	case BEAM_TYPE_D:
 		// point at the center of the target...
 		if (b->flags & BF_TARGETING_COORDS) {
 			b->last_shot = b->target_pos1;
@@ -2189,18 +2181,13 @@ void beam_aim(beam *b)
 		break;
 
 	case BEAM_TYPE_E:
-		// where the shot is originating from (b->last_start gets filled in)
-		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 1, &p2, (b->flags & BF_IS_FIGHTER_BEAM) > 0);		
-
 		// point directly in the direction of the turret
 		vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, b->range);
 		break;
 
 	default:
-		Int3();
-	}		
-
-	b->subsys->turret_next_fire_pos = temp_int;
+		Assertion(false, "Impossible beam type (%d); get a coder!\n", b->type);
+	}
 
 	// recalculate object pairs
 	OBJ_RECALC_PAIRS((&Objects[b->objnum]));
@@ -2258,7 +2245,6 @@ void beam_jitter_aim(beam *b, float aim)
 	vm_vector_2_matrix(&m, &forward, NULL, NULL);
 
 	// get a vector on the circle - this should appear to be pretty random
-	// vm_vec_scale_add(&circle, &b->last_shot, &m.rvec, aim * b->target->radius);
 	vm_vec_random_in_circle(&circle, &b->last_shot, &m, aim * b->target->radius, 0);
 	
 	// get the vector pointing to the circle point
@@ -2274,7 +2260,8 @@ void beam_jitter_aim(beam *b, float aim)
 // collide a beam with a ship, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_ship(obj_pair *pair)
 {
-	beam *b;	
+	beam *b;
+	object *weapon_objp;
 	object *ship_objp;
 	ship *shipp;
 	ship_info *sip;
@@ -2292,6 +2279,7 @@ int beam_collide_ship(obj_pair *pair)
 	Assert(pair->a->instance >= 0);
 	Assert(pair->a->type == OBJ_BEAM);
 	Assert(Beams[pair->a->instance].objnum == OBJ_INDEX(pair->a));
+	weapon_objp = pair->a;
 	b = &Beams[pair->a->instance];
 
 	// Don't check collisions for warping out player if past stage 1.
@@ -2385,6 +2373,30 @@ int beam_collide_ship(obj_pair *pair)
 	int hull_enter_collision = model_collide(&mc_hull_enter);
 	int hull_exit_collision = (beam_will_tool_target(b, ship_objp)) ? model_collide(&mc_hull_exit) : 0;
 
+    // If we have a range less than the "far" range, check if the ray actually hit within the range
+    if (b->range < BEAM_FAR_LENGTH
+        && (shield_collision || hull_enter_collision || hull_exit_collision))
+    {
+        // We can't use hit_dist as "1" is the distance between p0 and p1
+        float rangeSq = b->range * b->range;
+
+        // actually make sure that the collision points are within range of our beam
+        if (shield_collision && vm_vec_dist_squared(&b->last_start, &mc_shield.hit_point_world) > rangeSq)
+        {
+            shield_collision = 0;
+        }
+
+        if (hull_enter_collision && vm_vec_dist_squared(&b->last_start, &mc_hull_enter.hit_point_world) > rangeSq)
+        {
+            hull_enter_collision = 0;
+        }
+
+        if (hull_exit_collision && vm_vec_dist_squared(&mc_hull_exit.hit_point_world, &b->last_start) > rangeSq)
+        {
+            hull_exit_collision = 0;
+        }
+    }
+
 	// check shields for impact
 	// (tooled ships are probably not going to be maintaining a shield over their exit hole,
 	// therefore we need only check the entrance, just as with conventional weapons)
@@ -2392,9 +2404,9 @@ int beam_collide_ship(obj_pair *pair)
 	{
 		// pick out the shield quadrant
 		if (shield_collision)
-			quadrant_num = get_quadrant(&mc_shield.hit_point);
+			quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
 		else if (hull_enter_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS))
-			quadrant_num = get_quadrant(&mc_hull_enter.hit_point);
+			quadrant_num = get_quadrant(&mc_hull_enter.hit_point, ship_objp);
 
 		// make sure that the shield is active in that quadrant
 		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !ship_is_shield_up(ship_objp, quadrant_num)))
@@ -2436,7 +2448,26 @@ int beam_collide_ship(obj_pair *pair)
 	// if we got a hit
 	if (valid_hit_occurred) {
 		// add to the collision_list
-		beam_add_collision(b, ship_objp, &mc, quadrant_num);
+
+		Script_system.SetHookObjects(4, "Ship", ship_objp, "Beam", weapon_objp, "Self",ship_objp, "Object", weapon_objp);
+		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, ship_objp);
+
+		Script_system.SetHookObjects(2, "Self",weapon_objp, "Object", ship_objp);
+		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
+
+		if(!ship_override && !weapon_override) {
+			beam_add_collision(b, ship_objp, &mc, quadrant_num);
+		}
+
+		Script_system.SetHookObjects(2, "Self",ship_objp, "Object", weapon_objp);
+		if(!(weapon_override && !ship_override))
+			Script_system.RunCondition(CHA_COLLIDEBEAM, '\0', NULL, ship_objp);
+
+		Script_system.SetHookObjects(2, "Self",weapon_objp, "Object", ship_objp);
+		if((weapon_override && !ship_override) || (!weapon_override && !ship_override))
+			Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, weapon_objp);
+
+		Script_system.RemHookVars(4, "Ship", "Beam", "Self","Object");
 
 		// if we got "tooled", add an exit hole too
 		if (hull_exit_collision)
@@ -2514,8 +2545,31 @@ int beam_collide_asteroid(obj_pair *pair)
 	// if we got a hit
 	if(test_collide.num_hits){
 		// add to the collision list
-		beam_add_collision(b, pair->b, &test_collide);
-	}	
+
+		Script_system.SetHookObjects(4, "Beam", pair->a, "Asteroid", pair->b, "Self",pair->a, "Object", pair->b);
+		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, pair->a);
+
+		Script_system.SetHookObjects(2, "Self",pair->b, "Object", pair->a);
+		bool asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, pair->b);
+
+		if(!weapon_override && !asteroid_override)
+		{
+			beam_add_collision(b, pair->b, &test_collide);
+		}
+
+		Script_system.SetHookObjects(2, "Self",pair->a, "Object", pair->b);
+		if(!(asteroid_override && !weapon_override))
+			Script_system.RunCondition(CHA_COLLIDEASTEROID, '\0', NULL, pair->a);
+
+		Script_system.SetHookObjects(2, "Self",pair->b, "Object", pair->a);
+		if((asteroid_override && !weapon_override) || (!asteroid_override && !weapon_override))
+			Script_system.RunCondition(CHA_COLLIDEBEAM, '\0', NULL, pair->b);
+
+		Script_system.RemHookVars(4, "Beam", "Asteroid", "Self","Object");
+		return 0;
+
+
+	}
 
 	// add this guy to the lighting list
 	if(Use_GLSL < 2)
@@ -2585,7 +2639,33 @@ int beam_collide_missile(obj_pair *pair)
 	// if we got a hit
 	if(test_collide.num_hits){
 		// add to the collision list
-		beam_add_collision(b, pair->b, &test_collide);
+
+		Script_system.SetHookObjects(4, "Beam", pair->a, "Weapon", pair->b, "Self",pair->a, "Object", pair->b);
+		bool a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, pair->a);
+
+		//Should be reversed
+		Script_system.SetHookObjects(2, "Self",pair->b, "Object", pair->a);
+		bool b_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, pair->b);
+
+		if(!a_override && !b_override){
+			beam_add_collision(b, pair->b, &test_collide);
+		}
+
+
+		if(!(b_override && !a_override))
+		{
+			Script_system.SetHookObjects(4, "Beam", pair->a, "Weapon", pair->b, "Self",pair->a, "Object", pair->b);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, pair->a);
+		}
+		if((b_override && !a_override) || (!b_override && !a_override))
+		{
+			//Should be reversed
+			Script_system.SetHookObjects(4, "Weapon", pair->b, "Beam", pair->a, "Self",pair->b, "Object", pair->a);
+			Script_system.RunCondition(CHA_COLLIDEBEAM, '\0', NULL, pair->b);
+		}
+
+		Script_system.RemHookVars(4, "Weapon", "Beam", "Self","Object");
+
 	}
 
 	// reset timestamp to timeout immediately
@@ -2651,9 +2731,30 @@ int beam_collide_debris(obj_pair *pair)
 
 	// if we got a hit
 	if(test_collide.num_hits){
-		// add to the collision list
-		beam_add_collision(b, pair->b, &test_collide);
-	}	
+
+		Script_system.SetHookObjects(4, "Beam", pair->a, "Debris", pair->b, "Self", pair->a, "Object", pair->b);
+		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, pair->a);
+
+		Script_system.SetHookObjects(2, "Self",pair->b, "Object",  pair->a);
+		bool debris_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, pair->b);
+
+		if(!weapon_override && !debris_override)
+		{
+			// add to the collision list
+			beam_add_collision(b, pair->b, &test_collide);
+		}
+
+		Script_system.SetHookObjects(2, "Self", pair->a, "Object", pair->b);
+		if(!(debris_override && !weapon_override))
+			Script_system.RunCondition(CHA_COLLIDEDEBRIS, '\0', NULL, pair->a);
+
+		Script_system.SetHookObjects(2, "Self", pair->b, "Object", pair->a);
+		if((debris_override && !weapon_override) || (!debris_override && !weapon_override))
+			Script_system.RunCondition(CHA_COLLIDEBEAM, '\0', NULL, pair->b);
+
+		Script_system.RemHookVars(4, "Beam", "Debris", "Self","Object");
+
+	}
 
 	// add this guy to the lighting list
 	if(Use_GLSL < 2)
@@ -2868,6 +2969,8 @@ void beam_handle_collisions(beam *b)
 		r_coll[r_coll_count].c_sig = Objects[target].signature;
 		r_coll[r_coll_count].c_stamp = -1;
 		r_coll[r_coll_count].cinfo = b->f_collisions[idx].cinfo;
+		r_coll[r_coll_count].quadrant = -1;
+		r_coll[r_coll_count].is_exit_collision = 0;
 		
 		// if he was already on the recent collision list, copy his timestamp
 		// also, be sure not to play the impact sound again.
@@ -3145,15 +3248,6 @@ void beam_get_cull_vals(object *objp, beam *b, float *cull_dot, float *cull_dist
 		return;
 
 	case OBJ_SHIP:
-		// for cap ships, only cull for 90deg or better
-		/*
-		if(Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_CAPITAL){
-			*cull_dot = 0.0f;
-			*cull_dist = 0.0f;
-			return;
-		}
-		*/
-
 		// for large ships, cull at some multiple of the radius
 		if(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)){
 			*cull_dot = 1.0f - ((1.0f - beam_get_cone_dot(b)) * 1.25f);
@@ -3201,6 +3295,9 @@ float beam_get_cone_dot(beam *b)
 // if it is legal for the beam to fire, or continue firing
 int beam_ok_to_fire(beam *b)
 {
+	if (b->objp == NULL) {	// If we don't have a firing object, none of these checks make sense.
+		return 1;
+	}
 	// if my own object is invalid, stop firing
 	if (b->objp->signature != b->sig) {
 		mprintf(("BEAM : killing beam because of invalid parent object SIGNATURE!\n"));
@@ -3218,21 +3315,20 @@ int beam_ok_to_fire(beam *b)
 		ship *shipp = &Ships[b->objp->instance];
 
 		if (shipp->weapon_energy <= 0.0f) {
-		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(Weapon_info[shipp->weapons.primary_bank_weapons[b->bank]].b_info.beam_warmdown*2);
-		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(2000);
-		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(shipp->weapons.next_primary_fire_stamp[b->bank] * 2); Valathil - Just do nothing to the timestamp, you can fire after the fire_wait period.
 
 			if ( OBJ_INDEX(Player_obj) == shipp->objnum && !(b->life_left>0.0f)) {
-				extern int ship_maybe_play_primary_fail_sound();
+				extern void ship_maybe_play_primary_fail_sound();
 				ship_maybe_play_primary_fail_sound();
 			}
-
-		//	mprintf(("killing fighter beam becase it ran out of energy\n"));
 
 			return 0;
 		} else {
 			return 1;
 		}
+	}
+
+	if (b->subsys == NULL) {	// IF we don't have a firing turret, none of these checks make sense.
+		return 1;
 	}
 
 	if (!(b->flags & BF_FORCE_FIRING)) {
@@ -3444,12 +3540,11 @@ int beam_will_tool_target(beam *b, object *objp)
 }
 
 float beam_accuracy = 1.0f;
-DCF(b_aim, "")
+DCF(b_aim, "Adjusts the beam accuracy factor (Default is 1.0f)")
 {
-	dc_get_arg(ARG_FLOAT);
-	beam_accuracy = Dc_arg_float;
+	dc_stuff_float(&beam_accuracy);
 }
-DCF(beam_list, "")
+DCF(beam_list, "Lists all beams")
 {
 	int idx;
 	int b_count = 0;

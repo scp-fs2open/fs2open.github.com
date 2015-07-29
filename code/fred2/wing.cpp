@@ -17,7 +17,6 @@
 #include "physics/physics.h"
 #include "object/object.h"
 #include "editor.h"
-#include "ai/ailocal.h"
 #include "ship/ship.h"
 #include "math/vecmat.h"
 #include "Management.h"
@@ -189,7 +188,7 @@ void remove_ship_from_wing(int ship, int min)
 				obj = wing_objects[wing][i] = wing_objects[wing][end];
 				Wings[wing].ship_index[i] = Wings[wing].ship_index[end];
 				if (Objects[obj].type == OBJ_SHIP) {
-					sprintf(buf, "%s %d", Wings[wing].name, i + 1);
+					wing_bash_ship_name(buf, Wings[wing].name, i + 1);
 					rename_ship(Wings[wing].ship_index[i], buf);
 				}
 			}
@@ -383,7 +382,7 @@ int create_wing()
 					remove_player_from_wing(ptr->instance);
 			}
 
-			sprintf(msg, "%s %d", Wings[wing].name, i + 1);
+			wing_bash_ship_name(msg, Wings[wing].name, i + 1);
 			rename_ship(ship, msg);
 
 			Wings[wing].ship_index[i] = ship;
@@ -511,109 +510,4 @@ int get_free_objnum(void)
 			return i;
 
 	return -1;
-}
-
-//	Create a wing.
-//	wing_type is the type of wing from the Wing_formations array to create.
-//	leader_index is the index in Objects of the leader object.  This object must
-//	have a position and an orientation.
-//	*wingmen is a list of indices of existing ships to be added to the wing.
-//	The wingmen list is terminated by -1.
-//	max_size is the maximum number of ships to add to the wing
-//	fill_flag is set if more ships are to be added to fill out the wing to max_size
-void create_wing(int wing_type, int leader_index, int *wingmen, int max_size, int fill_flag)
-{
-	int			num_placed, num_vectors, cur_vec_index;
-	object		*lobjp = &Objects[leader_index];
-	formation	*wingp;
-	object		*parent;
-	int			wing_list[MAX_OBJECTS];
-	matrix		rotmat;
-
-	initialize_wings();
-
-	Assert((wing_type >= 0) && (wing_type < MAX_WING_FORMATIONS));
-	Assert(Wing_formations[wing_type].num_vectors > 0);
-	Assert(Wing_formations[wing_type].num_vectors < MAX_WING_VECTORS);
-
-	Assert(Objects[leader_index].type != OBJ_NONE);
-	Assert(max_size < MAX_SHIPS_PER_WING);
-
-	num_placed = 0;
-	wingp = &Wing_formations[wing_type];
-	num_vectors = wingp->num_vectors;
-	cur_vec_index = 0;
-	parent = lobjp;
-	vm_copy_transpose_matrix(&rotmat, &lobjp->orient);
-
-	while (num_placed < max_size) {
-		vec3d	wvec;
-		int		curobj;
-
-		if (*wingmen == -1) {
-			if (!fill_flag)
-				break;
-			else {
-				curobj = get_free_objnum();
-				Assert(curobj != -1);
-				Objects[curobj].type = lobjp->type;
-				Assert(Wings[cur_wing].wave_count < MAX_SHIPS_PER_WING);
-// JEH		Wings[cur_wing].ship_list[Wings[cur_wing].count] = curobj;
-				Wings[cur_wing].wave_count++;
-			}
-		} else
-			curobj = *wingmen++;
-
-		Objects[curobj] = *lobjp;
-		vm_vec_rotate(&wvec, &wingp->offsets[cur_vec_index], &rotmat);
-		cur_vec_index = (cur_vec_index + 1) % num_vectors;
-		
-		if (num_placed < num_vectors)
-			parent = lobjp;
-		else
-			parent = &Objects[wing_list[num_placed - num_vectors]];
-		
-		wing_list[num_placed] = curobj;
-
-		vm_vec_add(&Objects[curobj].pos, &parent->pos, &wvec);
-
-		num_placed++;
-	}
-
-}
-
-//	Create a wing.
-//	cur_object_index becomes the leader.
-//	If count == -1, then all objects of wing cur_wing get added to the wing.
-//	If count == +n, then n objects are added to the wing.
-void test_form_wing(int count)
-{
-	int	i, wingmen[MAX_OBJECTS];
-	int	j, fill_flag;
-
-	j = 0;
-
-	Assert(cur_object_index != -1);
-	Assert(Objects[cur_object_index].type != OBJ_NONE);
-	Assert(get_wingnum(cur_object_index) != -1);
-	get_wingnum(cur_object_index);
-
-	wingmen[0] = -1;
-
-	for (i=1; i<MAX_OBJECTS; i++)
-		if ((get_wingnum(i) == cur_wing) && (Objects[i].type != OBJ_NONE))
-			if (i != cur_object_index)
-				wingmen[j++] = i;
-	
-	wingmen[j] = -1;
-
-	fill_flag = 0;
-
-	if (count > 0) {
-		fill_flag = 1;
-		j += count;
-	}
-
-	set_wingnum(cur_object_index, cur_wing);
-	create_wing(0, cur_object_index, wingmen, j, fill_flag);
 }

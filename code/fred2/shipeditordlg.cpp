@@ -17,7 +17,6 @@
 #include "render/3d.h"
 #include "physics/physics.h"
 #include "editor.h"
-#include "ai/ailocal.h"
 #include "ai/aigoals.h"
 #include "parse/parselo.h"
 #include "Management.h"
@@ -587,7 +586,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 							m_score.init(Ships[i].score);
 							m_assist_score.init((int)(Ships[i].assist_score_pct*100));
 
-							m_persona = Ships[i].persona_index + 1;
+							m_persona = Ships[i].persona_index;
 
 							// we use final_death_time member of ship structure for holding the amount of time before a mission
 							// to destroy this ship
@@ -625,8 +624,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 								m_hotkey = -1;
 							}
 
-							if ( Ships[i].persona_index != (m_persona-1) ){
-								m_persona = -1;
+							if ( Ships[i].persona_index != m_persona ){
+								m_persona = -2;
 							}
 							
 							if (Ships[i].wingnum != wing){
@@ -676,6 +675,16 @@ void CShipEditorDlg::initialize_data(int full_update)
 					m_departure_tree.hilite_item(i);
 				}
 			}
+		}
+
+		m_persona++;
+		if (m_persona > 0) {
+			int persona_index = 0;
+			for (int i = 0; i < m_persona; i++) {
+				if (Personas[i].flags & PERSONA_FLAG_WINGMAN)
+					persona_index++;
+			}
+			m_persona = persona_index;
 		}
 
 	} else {  // no ships selected, 0 or more player ships selected
@@ -1164,7 +1173,7 @@ int CShipEditorDlg::update_data(int redraw)
 					break;
 
 			Assert(i < Wings[wing].wave_count);
-			sprintf(old_name, "%s %d", Wings[wing].name, i + 1);
+			wing_bash_ship_name(old_name, Wings[wing].name, i + 1);
 			if (strcmp(old_name, m_ship_name)) {
 				if (bypass_errors)
 					return 0;
@@ -2037,7 +2046,7 @@ void CShipEditorDlg::OnSpecialExp()
 // alternate ship name stuff
 void CShipEditorDlg::ship_alt_name_init(int base_ship)
 {
-	int idx;
+	int idx, sel_idx;
 	CComboBox *ptr = (CComboBox*)GetDlgItem(IDC_SHIP_ALT);
 	if(ptr == NULL){
 		Int3();
@@ -2054,21 +2063,17 @@ void CShipEditorDlg::ship_alt_name_init(int base_ship)
 	// reset the combobox and add all relevant strings
 	ptr->ResetContent();
 	ptr->AddString("<none>");
+	sel_idx = (base_ship < 0 || !strlen(Fred_alt_names[base_ship])) ? -1 : -2;
 	for(idx=0; idx<Mission_alt_type_count; idx++){
 		ptr->AddString(Mission_alt_types[idx]);
+		if (sel_idx == -2 && !strcmp(Mission_alt_types[idx], Fred_alt_names[base_ship])) {
+			sel_idx = idx;
+		}
 	}
+	Assertion(sel_idx >= -1, "Alt name exists but can't be found in Mission_alt_types; get a coder!\n");
 
-	// "none"
-	if(base_ship < 0){
-		ptr->SetCurSel(0);
-	}
-
-	// otherwise look his stuff up
-	if(strlen(Fred_alt_names[base_ship])){
-		ptr->SelectString(0, Fred_alt_names[base_ship]);
-	} else {
-		ptr->SetCurSel(0);
-	}
+	sel_idx += 1;
+	ptr->SetCurSel(sel_idx);
 }
 
 void CShipEditorDlg::ship_alt_name_close(int base_ship)
@@ -2137,7 +2142,7 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 // callsign stuff
 void CShipEditorDlg::ship_callsign_init(int base_ship)
 {
-	int idx;
+	int idx, sel_idx;
 	CComboBox *ptr = (CComboBox*)GetDlgItem(IDC_SHIP_CALLSIGN);
 	if(ptr == NULL){
 		Int3();
@@ -2154,21 +2159,17 @@ void CShipEditorDlg::ship_callsign_init(int base_ship)
 	// reset the combobox and add all relevant strings
 	ptr->ResetContent();
 	ptr->AddString("<none>");
+	sel_idx = (base_ship < 0 || !strlen(Fred_callsigns[base_ship])) ? -1 : -2;
 	for(idx=0; idx<Mission_callsign_count; idx++){
 		ptr->AddString(Mission_callsigns[idx]);
+		if (sel_idx == -2 && !strcmp(Mission_callsigns[idx], Fred_callsigns[base_ship])) {
+			sel_idx = idx;
+		}
 	}
+	Assertion(sel_idx >= -1, "Callsign exists but can't be found in Mission_callsigns; get a coder!\n");
 
-	// "none"
-	if(base_ship < 0){
-		ptr->SetCurSel(0);
-	}
-
-	// otherwise look his stuff up
-	if(strlen(Fred_callsigns[base_ship])){
-		ptr->SelectString(0, Fred_callsigns[base_ship]);
-	} else {
-		ptr->SetCurSel(0);
-	}
+	sel_idx += 1;
+	ptr->SetCurSel(sel_idx);
 }
 
 void CShipEditorDlg::ship_callsign_close(int base_ship)

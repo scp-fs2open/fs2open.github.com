@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #include "graphics/2d.h"
 #include "cfile/cfile.h"
@@ -110,7 +111,7 @@ int get_char_width(ubyte c1,ubyte c2,int *width,int *spacing)
 }
 
 // NOTE: this returns an unscaled size for non-standard resolutions
-int get_centered_x(const char *s)
+int get_centered_x(const char *s, bool scaled)
 {
 	int w,w2,s2;
 
@@ -119,31 +120,31 @@ int get_centered_x(const char *s)
 		w += s2;
 	}
 
-	return ((gr_screen.clip_width_unscaled - w) / 2);
+	return (((scaled ? gr_screen.clip_width : gr_screen.clip_width_unscaled) - w) / 2);
 }
 
 /**
  * Draws a character centered on x
  */
-void gr_char_centered(int x, int y, char chr)
+void gr_char_centered(int x, int y, char chr, ubyte sc1, int resize_mode)
 {
 	char str[2];
-	int w, sc;
+	int w;
 
-	sc = Lcl_special_chars;
 	if (chr == '1')
-		chr = (char)(sc + 1);
+		chr = (char)sc1;
 
 	str[0] = chr;
 	str[1] = 0;
 	gr_get_string_size(&w, NULL, str);
-	gr_string(x - w / 2, y, str);
+	gr_string(x - w / 2, y, str, resize_mode);
 }
 
-void gr_print_timestamp(int x, int y, fix timestamp)
+void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 {
 	char h[2], m[3], s[3];
-	int w, c;
+	int w, c, font_num;
+	ubyte sc;
 
 	int time = (int)f2fl(timestamp);  // convert to seconds
 
@@ -155,19 +156,32 @@ void gr_print_timestamp(int x, int y, fix timestamp)
 	gr_get_string_size(&w, NULL, "0");
 	gr_get_string_size(&c, NULL, ":");
 
-	gr_string(x + w, y, ":");
-	gr_string(x + w * 3 + c, y, ":");
+	gr_string(x + w, y, ":", resize_mode);
+	gr_string(x + w * 3 + c, y, ":", resize_mode);
+
+	font_num = gr_get_current_fontnum();
+	if (font_num == -1) {
+		Warning(LOCATION, "Font not set - timestamps may not work correctly");
+		sc = 0;
+	} else {
+		sc = lcl_get_font_index(font_num);
+	}
+	if (sc == 0) {
+		sc = ubyte ('1'); // make do with non-mono-spaced 1
+	} else {
+		sc += 1;
+	}
 
 	x += w / 2;
-	gr_char_centered(x, y, h[0]);
+	gr_char_centered(x, y, h[0], sc, resize_mode);
 	x += w + c;
-	gr_char_centered(x, y, m[0]);
+	gr_char_centered(x, y, m[0], sc, resize_mode);
 	x += w;
-	gr_char_centered(x, y, m[1]);
+	gr_char_centered(x, y, m[1], sc, resize_mode);
 	x += w + c;
-	gr_char_centered(x, y, s[0]);
+	gr_char_centered(x, y, s[0], sc, resize_mode);
 	x += w;
-	gr_char_centered(x, y, s[1]);
+	gr_char_centered(x, y, s[1], sc, resize_mode);
 }
 
 int gr_get_font_height()
@@ -290,10 +304,39 @@ void _cdecl gr_printf( int x, int y, const char * format, ... )
 	if ( !Current_font ) return;
 	
 	va_start(args, format);
-	vsprintf(grx_printf_text,format,args);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text)-1, format, args);
 	va_end(args);
+	grx_printf_text[sizeof(grx_printf_text)-1] = '\0';
 
 	gr_string(x,y,grx_printf_text);
+}
+
+void _cdecl gr_printf_menu( int x, int y, const char * format, ... )
+{
+	va_list args;
+
+	if ( !Current_font ) return;
+	
+	va_start(args, format);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text)-1, format, args);
+	va_end(args);
+	grx_printf_text[sizeof(grx_printf_text)-1] = '\0';
+
+	gr_string(x,y,grx_printf_text,GR_RESIZE_MENU);
+}
+
+void _cdecl gr_printf_menu_zoomed( int x, int y, const char * format, ... )
+{
+	va_list args;
+
+	if ( !Current_font ) return;
+
+	va_start(args, format);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text)-1, format, args);
+	va_end(args);
+	grx_printf_text[sizeof(grx_printf_text)-1] = '\0';
+
+	gr_string(x,y,grx_printf_text,GR_RESIZE_MENU_ZOOMED);
 }
 
 void _cdecl gr_printf_no_resize( int x, int y, const char * format, ... )
@@ -303,10 +346,11 @@ void _cdecl gr_printf_no_resize( int x, int y, const char * format, ... )
 	if ( !Current_font ) return;
 	
 	va_start(args, format);
-	vsprintf(grx_printf_text,format,args);
+	vsnprintf(grx_printf_text, sizeof(grx_printf_text)-1, format, args);
 	va_end(args);
+	grx_printf_text[sizeof(grx_printf_text)-1] = '\0';
 
-	gr_string(x,y,grx_printf_text,false);
+	gr_string(x,y,grx_printf_text,GR_RESIZE_NONE);
 }
 
 void gr_font_close()
@@ -523,17 +567,19 @@ void gr_set_font(int fontnum)
 {
 	if ( fontnum < 0 ) {
 		Current_font = NULL;
+		Lcl_special_chars = 0;
 		return;
 	}
 
 	if ( fontnum >= 0 && fontnum < Num_fonts) {
 		Current_font = &Fonts[fontnum];
+		Lcl_special_chars = lcl_get_font_index(fontnum);
 	}
 }
 
 void parse_fonts_tbl(char *only_parse_first_font, size_t only_parse_first_font_size)
 {
-	int rval;
+	int i;
 	char *filename;
 	
 	// choose file name
@@ -545,49 +591,103 @@ void parse_fonts_tbl(char *only_parse_first_font, size_t only_parse_first_font_s
 		filename = NULL;
 	}
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : NOX("<default fonts.tbl>"), rval));
+	try
+	{
+		if (filename != NULL) {
+			read_file_text(filename, CF_TYPE_TABLES);
+		}
+		else {
+			read_file_text_from_array(defaults_get_file("fonts.tbl"));
+		}
+
+		reset_parse();
+
+		// start parsing
+		required_string("#Fonts");
+
+		// read fonts
+		while (required_string_either("#End", "$Font:")) {
+			char font_filename[MAX_FILENAME_LEN];
+
+			// grab font
+			required_string("$Font:");
+			stuff_string(font_filename, F_NAME, MAX_FILENAME_LEN);
+
+			// if we only need the first font, copy it and bail
+			if (only_parse_first_font != NULL) {
+				strcpy_s(only_parse_first_font, only_parse_first_font_size, font_filename);
+				return;
+			}
+
+			// create font
+			int font_id = gr_create_font(font_filename);
+			if (font_id < 0) {
+				Warning(LOCATION, "Could not create font from typeface '%s'!", font_filename);
+				skip_to_start_of_string_either("#End", "$Font:");
+			}
+			else {
+				// max allowed special char index; i.e. 7 special chars in retail fonts 1 & 3
+				static const int MAX_SPECIAL_CHAR_IDX = UCHAR_MAX - 6;
+
+				// 'default' special char index for all languages using this font
+				int default_special_char_index = 0;
+				if (optional_string("+Default Special Character Index:")) {
+					stuff_int(&default_special_char_index);
+
+					if (default_special_char_index < 0 || default_special_char_index >= MAX_SPECIAL_CHAR_IDX) {
+						Error(LOCATION, "Default special character index (%d) for font (%s), must be 0 - %u", default_special_char_index, font_filename, MAX_SPECIAL_CHAR_IDX);
+					}
+
+					for (i = 0; i < (int)Lcl_languages.size(); ++i) {
+						Lcl_languages[i].special_char_indexes[font_id] = (ubyte)default_special_char_index;
+					}
+				}
+
+				while (optional_string("+Language:")) {
+					char lang_name[LCL_LANG_NAME_LEN + 1];
+					int special_char_index, lang_idx = -1;
+
+					stuff_string(lang_name, F_NAME, LCL_LANG_NAME_LEN + 1);
+
+					// find language and set the index, or if not found move to the next one
+					for (i = 0; i < (int)Lcl_languages.size(); ++i) {
+						if (!strcmp(Lcl_languages[i].lang_name, lang_name)) {
+							lang_idx = i;
+							break;
+						}
+					}
+
+					if (lang_idx == -1) {
+						Warning(LOCATION, "Ignoring invalid language (%s) specified by font (%s); not built-in or in strings.tbl", lang_name, font_filename);
+						skip_to_start_of_string_either("+Language:", "$Font:", "#End");
+						continue;
+					}
+
+					if (optional_string("+Special Character Index:")) {
+						stuff_int(&special_char_index);
+
+						if (special_char_index < 0 || special_char_index >= MAX_SPECIAL_CHAR_IDX) {
+							Error(LOCATION, "Special character index (%d) for font (%s), language (%s) is invalid, must be 0 - %u", special_char_index, font_filename, lang_name, MAX_SPECIAL_CHAR_IDX);
+						}
+
+						Lcl_languages[lang_idx].special_char_indexes[font_id] = (ubyte)special_char_index;
+					}
+				}
+			}
+		}
+
+		// done parsing
+		required_string("#End");
+
+		// double check
+		if (Num_fonts < 3) {
+			Error(LOCATION, "There must be at least three fonts in %s!", (filename) ? filename : NOX("<default fonts.tbl>"));
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", (filename) ? filename : NOX("<default fonts.tbl>"), e.what()));
 		return;
-	}
-
-	if (filename != NULL) {
-		read_file_text(filename, CF_TYPE_TABLES);
-	} else {
-		read_file_text_from_array(defaults_get_file("fonts.tbl"));
-	}
-
-	reset_parse();		
-
-	// start parsing
-	required_string("#Fonts");
-
-	// read fonts
-	while (required_string_either("#End","$Font:")) {
-		char font_filename[MAX_FILENAME_LEN];
-
-		// grab font
-		required_string("$Font:");
-		stuff_string(font_filename, F_NAME, MAX_FILENAME_LEN);
-
-		// if we only need the first font, copy it and bail
-		if (only_parse_first_font != NULL) {
-			strcpy_s(only_parse_first_font, only_parse_first_font_size, font_filename);
-			return;
-		}
-
-		// create font
-		int font_id = gr_create_font(font_filename);
-		if (font_id < 0) {
-			Warning(LOCATION, "Could not create font from typeface '%s'!", font_filename);
-		}
-	}
-
-	// done parsing
-	required_string("#End");
-
-	// double check
-	if (Num_fonts < 3) {
-		Error(LOCATION, "There must be at least three fonts in %s!", (filename) ? filename : NOX("<default fonts.tbl>"));
 	}
 }
 

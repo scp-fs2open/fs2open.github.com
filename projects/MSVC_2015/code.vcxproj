@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug AVX|Win32">
       <Configuration>Debug AVX</Configuration>
@@ -37,52 +37,51 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C55F5706-E947-41EF-A3E8-6D711CD4ECD8}</ProjectGuid>
     <RootNamespace>code</RootNamespace>
-    <VCTargetsPath Condition="'$(VCTargetsPath11)' != '' and '$(VSVersion)' == '' and $(VisualStudioVersion) == ''">$(VCTargetsPath11)</VCTargetsPath>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -159,10 +158,10 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
@@ -383,7 +382,7 @@
       <ExceptionHandling>Sync</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Precise</FloatingPointModel>
       <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
@@ -427,7 +426,7 @@
       <ExceptionHandling>Sync</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Precise</FloatingPointModel>
       <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
@@ -471,8 +470,8 @@
       <ExceptionHandling>Sync</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FunctionLevelLinking>false</FunctionLevelLinking>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Precise</FloatingPointModel>
       <PrecompiledHeaderOutputFile>$(OutDir)$(ProjectName).pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
@@ -528,7 +527,9 @@
     <ClCompile Include="..\..\code\cutscene\mveplayer.cpp" />
     <ClCompile Include="..\..\code\cutscene\oggplayer.cpp" />
     <ClCompile Include="..\..\code\Debris\debris.cpp" />
-    <ClCompile Include="..\..\code\DebugConsole\console.cpp" />
+    <ClCompile Include="..\..\code\debugconsole\console.cpp" />
+    <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp" />
+    <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp" />
     <ClCompile Include="..\..\code\fireball\fireballs.cpp" />
     <ClCompile Include="..\..\code\fireball\warpineffect.cpp" />
     <ClCompile Include="..\..\code\gamehelp\contexthelp.cpp" />
@@ -561,6 +562,7 @@
     <ClCompile Include="..\..\code\graphics\gropenglstate.cpp" />
     <ClCompile Include="..\..\code\graphics\gropengltexture.cpp" />
     <ClCompile Include="..\..\code\graphics\gropengltnl.cpp" />
+    <ClCompile Include="..\..\code\graphics\shadows.cpp" />
     <ClCompile Include="..\..\code\hud\hud.cpp" />
     <ClCompile Include="..\..\code\hud\hudartillery.cpp" />
     <ClCompile Include="..\..\code\hud\hudbrackets.cpp" />
@@ -624,10 +626,8 @@
     <ClCompile Include="..\..\code\missionui\missiondebrief.cpp" />
     <ClCompile Include="..\..\code\missionui\missionloopbrief.cpp" />
     <ClCompile Include="..\..\code\missionui\missionpause.cpp" />
-    <ClCompile Include="..\..\code\missionui\missionrecommend.cpp" />
     <ClCompile Include="..\..\code\missionui\missionscreencommon.cpp" />
     <ClCompile Include="..\..\code\missionui\missionshipchoice.cpp" />
-    <ClCompile Include="..\..\code\missionui\missionstats.cpp" />
     <ClCompile Include="..\..\code\missionui\missionweaponchoice.cpp" />
     <ClCompile Include="..\..\code\missionui\redalert.cpp" />
     <ClCompile Include="..\..\code\model\modelanim.cpp" />
@@ -635,6 +635,7 @@
     <ClCompile Include="..\..\code\model\modelinterp.cpp" />
     <ClCompile Include="..\..\code\model\modeloctant.cpp" />
     <ClCompile Include="..\..\code\model\modelread.cpp" />
+    <ClCompile Include="..\..\code\model\modelrender.cpp" />
     <ClCompile Include="..\..\code\mod_table\mod_table.cpp" />
     <ClCompile Include="..\..\code\object\collidedebrisship.cpp" />
     <ClCompile Include="..\..\code\object\collidedebrisweapon.cpp" />
@@ -791,7 +792,6 @@
     <ClInclude Include="..\..\code\ai\aibig.h" />
     <ClInclude Include="..\..\code\ai\aigoals.h" />
     <ClInclude Include="..\..\code\ai\aiinternal.h" />
-    <ClInclude Include="..\..\code\ai\ailocal.h" />
     <ClInclude Include="..\..\code\anim\animplay.h" />
     <ClInclude Include="..\..\code\anim\packunpack.h" />
     <ClInclude Include="..\..\code\Asteroid\asteroid.h" />
@@ -807,6 +807,8 @@
     <ClInclude Include="..\..\code\cutscene\movie.h" />
     <ClInclude Include="..\..\code\cutscene\mvelib.h" />
     <ClInclude Include="..\..\code\cutscene\oggplayer.h" />
+    <ClInclude Include="..\..\code\debugconsole\console.h" />
+    <ClInclude Include="..\..\code\debugconsole\consoleparse.h" />
     <ClInclude Include="..\..\code\Debris\debris.h" />
     <ClInclude Include="..\..\code\DirectX\vasync.h" />
     <ClInclude Include="..\..\code\DirectX\vdinput.h" />
@@ -834,6 +836,7 @@
     <ClInclude Include="..\..\code\Graphics\2d.h" />
     <ClInclude Include="..\..\code\graphics\grbatch.h" />
     <ClInclude Include="..\..\code\graphics\grinternal.h" />
+    <ClInclude Include="..\..\code\graphics\shadows.h" />
     <ClInclude Include="..\..\code\graphics\tmapper.h" />
     <ClInclude Include="..\..\code\Graphics\font.h" />
     <ClInclude Include="..\..\code\graphics\generic.h" />
@@ -916,14 +919,13 @@
     <ClInclude Include="..\..\code\missionui\missiondebrief.h" />
     <ClInclude Include="..\..\code\missionui\missionloopbrief.h" />
     <ClInclude Include="..\..\code\missionui\missionpause.h" />
-    <ClInclude Include="..\..\code\missionui\missionrecommend.h" />
     <ClInclude Include="..\..\code\missionui\missionscreencommon.h" />
     <ClInclude Include="..\..\code\missionui\missionshipchoice.h" />
-    <ClInclude Include="..\..\code\missionui\missionstats.h" />
     <ClInclude Include="..\..\code\missionui\missionweaponchoice.h" />
     <ClInclude Include="..\..\code\missionui\redalert.h" />
     <ClInclude Include="..\..\code\model\model.h" />
     <ClInclude Include="..\..\code\model\modelanim.h" />
+    <ClInclude Include="..\..\code\model\modelrender.h" />
     <ClInclude Include="..\..\code\model\modelsinc.h" />
     <ClInclude Include="..\..\code\mod_table\mod_table.h" />
     <ClInclude Include="..\..\code\object\deadobjectdock.h" />

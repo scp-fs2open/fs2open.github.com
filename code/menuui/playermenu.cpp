@@ -31,6 +31,7 @@
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
 #include "network/multi.h"
+#include "debugconsole/console.h"
 
 
 // --------------------------------------------------------------------------------------------------------
@@ -202,6 +203,27 @@ void player_select_cancel_create();
 
 extern int delete_pilot_file(char *pilot_name);
 
+/*
+ * validate that a pilot/player was created with the same language FSO is currently using
+ *
+ * @param pilots callsign
+ * @note not longer needed if intel entry "primary keys" change to a non-translated value
+ */
+bool valid_pilot_lang(char *callsign)
+{
+	char pilot_lang[LCL_LANG_NAME_LEN+1], current_lang[LCL_LANG_NAME_LEN+1];
+	SCP_string filename = callsign;
+
+	filename += ".plr";
+	lcl_get_language_name(current_lang);
+
+	if (Pilot.verify(filename.c_str(), NULL, pilot_lang)) {
+		if (!strcmp(current_lang, pilot_lang)) {
+			return true;
+		}
+	}
+	return false;
+}
 
 // basically, gray out all controls (gray == 1), or ungray the controls (gray == 0)
 void player_select_set_controls(int gray)
@@ -329,7 +351,7 @@ void player_select_do()
 	if ((Global_warning_count > 10 || Global_error_count > 0) && !Startup_warning_dialog_displayed) {
 		char text[512];
 		sprintf(text, "Warning!\n\nThe currently active mod has generated %d warnings and/or errors during program startup.  These could have been caused by anything from incorrectly formated table files to corrupt models.  While FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.  Source Code Project staff cannot provide assistance or support for these problems, as they are caused by the mod's data files, not FreeSpace Open's source code.", Global_warning_count + Global_error_count);
-		popup(PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, text);
+		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, text);
 		Startup_warning_dialog_displayed = true;
 	}
 		
@@ -385,8 +407,9 @@ void player_select_do()
 	}
 
 	// draw the player select pseudo-dialog over it
+	GR_MAYBE_CLEAR_RES(Player_select_background_bitmap);
 	gr_set_bitmap(Player_select_background_bitmap);
-	gr_bitmap(0,0);
+	gr_bitmap(0,0,GR_RESIZE_MENU);
 
 	// press the accept button
 	if (Player_select_autoaccept) {
@@ -537,7 +560,14 @@ void player_select_button_pressed(int n)
 		if (Player_select_pilot < 0) {
 			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR( "You must select a valid pilot first", 378));
 		} else {
-			player_select_commit();
+			if (valid_pilot_lang(Pilots[Player_select_pilot])) {
+				player_select_commit();
+			} else {
+				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(
+					"Selected pilot was created with a different language\n"
+					"to the currently active language.\n\n"
+					"Please select a different pilot or change the language", 1637));
+			}
 		}
 		break;
 
@@ -917,7 +947,7 @@ void player_select_draw_list()
 			gr_set_color_fast(&Color_text_normal);
 		}
 		// draw the actual callsign
-		gr_printf(Choose_list_coords[gr_screen.res][0], Choose_list_coords[gr_screen.res][1] + (idx * gr_get_font_height()), Pilots[idx + Player_select_list_start]);
+		gr_printf_menu(Choose_list_coords[gr_screen.res][0], Choose_list_coords[gr_screen.res][1] + (idx * gr_get_font_height()), Pilots[idx + Player_select_list_start]);
 	}
 }
 
@@ -945,21 +975,7 @@ void player_select_process_noninput(int k)
 
 	// delete the currently highlighted pilot
 	case KEY_DELETE:
-		if (Player_select_pilot >= 0) {
-			int ret;
-
-			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-				popup(PF_TITLE_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Pilots can only be deleted from the single player menu!", 1611));
-			} else {
-				// display a popup requesting confirmation
-				ret = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON,2,POPUP_NO,POPUP_YES,XSTR( "Are you sure you want to delete this pilot?", 383));										
-
-				// delete the pilot
-				if (ret == 1) {
-					player_select_delete_pilot();
-				}
-			}
-		}
+		player_select_button_pressed(DELETE_BUTTON);
 		break;
 	}
 
@@ -1110,22 +1126,18 @@ void player_select_display_copyright()
 
 //	sprintf(Copyright_msg1, NOX("FreeSpace 2"));
 	get_version_string(Copyright_msg1, sizeof(Copyright_msg1));
-	if (Lcl_gr) {
-		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\xA8');
-	} else {
-		sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), '\x83');
-	}
+	sprintf(Copyright_msg2, XSTR("Copyright %c 1999, Volition, Inc.  All rights reserved.", 385), Lcl_special_chars + 4);
 
 	gr_get_string_size(&w, NULL, Copyright_msg1);
 	sx = fl2i((gr_screen.max_w_unscaled / 2) - w/2.0f + 0.5f);
 	sy = (gr_screen.max_h_unscaled - 2) - 2*gr_get_font_height();
-	gr_string(sx, sy, Copyright_msg1);
+	gr_string(sx, sy, Copyright_msg1, GR_RESIZE_MENU);
 
 	gr_get_string_size(&w, NULL, Copyright_msg2);
 	sx = fl2i((gr_screen.max_w_unscaled / 2) - w/2.0f + 0.5f);
 	sy = (gr_screen.max_h_unscaled - 2) - gr_get_font_height();
 
-	gr_string(sx, sy, Copyright_msg2);
+	gr_string(sx, sy, Copyright_msg2, GR_RESIZE_MENU);
 }
 
 void player_select_display_all_text()
@@ -1138,7 +1150,7 @@ void player_select_display_all_text()
 
 		w = (gr_screen.max_w_unscaled - w) / 2;
 		gr_set_color_fast(&Color_bright_white);
-		gr_printf(w, Player_select_bottom_text_y[gr_screen.res], Player_select_bottom_text);
+		gr_printf_menu(w, Player_select_bottom_text_y[gr_screen.res], Player_select_bottom_text);
 	}
 
 	// only draw if we actually have a valid string
@@ -1147,7 +1159,7 @@ void player_select_display_all_text()
 
 		w = (gr_screen.max_w_unscaled - w) / 2;
 		gr_set_color_fast(&Color_bright_white);
-		gr_printf(w, Player_select_middle_text_y[gr_screen.res], Player_select_middle_text);
+		gr_printf_menu(w, Player_select_middle_text_y[gr_screen.res], Player_select_middle_text);
 	}
 }
 
@@ -1236,39 +1248,38 @@ void player_select_cancel_create()
 
 DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 {
+	int idx;
+	
 	if(gameseq_get_state() != GS_STATE_INITIAL_PLAYER_SELECT) {
-		dc_printf("This command can only be run in the initial player select screen.\n");
+		dc_printf("This command can only be run while in the initial player select screen.\n");
 		return;
 	}
 
-	if (Dc_command) {
-		dc_get_arg(ARG_INT | ARG_NONE);
-
-		if (Dc_arg_type & ARG_INT) {
-			int idx = Dc_arg_int;
-
-			Assert(Main_hall_defines.at(gr_screen.res).size() < INT_MAX);
-			if (idx < 0 || idx >= (int) Main_hall_defines.at(gr_screen.res).size()) {
-				dc_printf("Main hall index out of range\n");
-			} else {
-				Player_select_force_main_hall = main_hall_get_name(idx);
-				dc_printf("Player is now on main hall '%d'\n", Player_select_force_main_hall.c_str());
-			}
-		} else {
-			Player_select_force_main_hall = "1";
-			dc_printf("Player is now on the Bastion... hopefully\n");
-		}
-		Dc_status = 0;
-	}
-
-	if (Dc_help) {
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: bastion [index]\n");
-		dc_printf("       [index] -- optional main hall index; if not supplied, defaults to 1\n");
-		Dc_status = 0;
+		dc_printf("    [index] -- optional main hall index; if not supplied, defaults to 1\n");
+		return;
 	}
 
-	if (Dc_status) {
-		dc_printf("There is no current main hall, as the player has not been selected yet!\n");
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Player is on main hall '%s'\n", Player_select_force_main_hall.c_str());
+		return;
+	}
+
+	if (dc_maybe_stuff_int(&idx)) {
+		Assert(Main_hall_defines.size() < INT_MAX);
+		if ((idx < 0) || (idx >= (int) Main_hall_defines.size())) {
+			dc_printf("Main hall index out of range\n");
+
+		} else {
+			main_hall_get_name(Player_select_force_main_hall, idx);
+			dc_printf("Player is now on main hall '%d'\n", Player_select_force_main_hall.c_str());
+		}
+	
+	} else {
+		// No argument passed
+		Player_select_force_main_hall = "1";
+		dc_printf("Player is now on the Bastion... hopefully\n");
 	}
 }
 
@@ -1281,33 +1292,27 @@ int Player_tips_shown = 0;
 // tooltips
 void player_tips_init()
 {
-	int rval;
-
 	Num_player_tips = 0;
+	
+	try
+	{
+		read_file_text("tips.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-	// begin external localization stuff
-	lcl_ext_open();
+		while (!optional_string("#end")) {
+			required_string("+Tip:");
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "tips.tbl", rval));
-		lcl_ext_close();
+			if (Num_player_tips >= MAX_PLAYER_TIPS) {
+				break;
+			}
+			Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "tips.tbl", e.what()));
 		return;
 	}
-
-	read_file_text("tips.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	while(!optional_string("#end")) {
-		required_string("+Tip:");
-
-		if(Num_player_tips >= MAX_PLAYER_TIPS) {
-			break;
-		}
-		Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
-	}
-
-	// stop externalizing, homey
-	lcl_ext_close();
 }
 
 // close out player tips - *only call from game_shutdown()*

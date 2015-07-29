@@ -54,7 +54,7 @@ class UI_RADIO;
 class UI_SCROLLBAR;
 class UI_LISTBOX;
 class UI_INPUTBOX;
-// class UI_SLIDER;
+class UI_SLIDER2;
 class UI_DOT_SLIDER;
 class UI_DOT_SLIDER_NEW;
 
@@ -68,7 +68,7 @@ class UI_GADGET
 	friend class UI_SCROLLBAR;
 	friend class UI_LISTBOX;
 	friend class UI_INPUTBOX;
-	// friend class UI_SLIDER;
+	friend class UI_SLIDER2;
 	friend class UI_DOT_SLIDER;	
 	friend class UI_DOT_SLIDER_NEW;
 
@@ -92,7 +92,6 @@ class UI_GADGET
 		// Data for supporting bitmaps associated with different states of the control
 		int uses_bmaps;
 		int m_num_frames;
-//		ubyte		*bmap_storage[MAX_BMAPS_PER_GADGET];
 
 		void drag_with_children( int dx, int dy );
 		void start_drag_with_children();
@@ -121,7 +120,7 @@ class UI_GADGET
 		UI_GADGET();	// constructor
 		virtual ~UI_GADGET();	// destructor
 
-		void base_create( UI_WINDOW *wnd, int kind, int x, int y, int w, int h );
+		void base_create( UI_WINDOW *wnd, int _kind, int _x, int _y, int _w, int _h );
 		virtual void draw();
 		void set_focus();
 		void clear_focus();
@@ -134,12 +133,13 @@ class UI_GADGET
 		int mouse_captured(UI_GADGET *gadget = NULL);
 		int disabled();
 		int enabled();
-		virtual void hide(int n = 1);
+		virtual void hide(int n);
+		virtual void hide();
 		virtual void unhide();
-		void update_dimensions(int x, int y, int w, int h);
-		void get_dimensions(int *x, int *y, int *w, int *h);
+		void update_dimensions(int _x, int _y, int _w, int _h);
+		void get_dimensions(int *_x, int *_y, int *_w, int *_h);
 		int is_mouse_on();
-		void get_mouse_pos(int *x, int *y);
+		void get_mouse_pos(int *xx, int *yy);
 
 		void link_hotspot(int num);
 		int get_hotspot();
@@ -152,7 +152,7 @@ class UI_GADGET
 		int set_bmaps(char *ani_filename, int nframes = 3, int start_frame = 1);		// extracts MAX_BMAPS_PER_GADGET from .ani file		
 
 		void reset();  // zero out m_flags
-		int is_hidden() { return hidden; }
+		virtual int is_hidden();
 };
 
 // xstrings for a window
@@ -195,7 +195,7 @@ typedef struct UI_XSTR {
 class UI_BUTTON : public UI_GADGET
 {
 	friend class UI_SCROLLBAR;
-	// friend class UI_SLIDER;
+	friend class UI_SLIDER2;
 	friend class UI_DOT_SLIDER;
 	friend class UI_DOT_SLIDER_NEW;
 
@@ -245,7 +245,7 @@ class UI_BUTTON : public UI_GADGET
 		void reset_timestamps();
 		void skip_first_highlight_callback();
 		void repeatable(int yes);
-		void set_custom_cursor_bmap(int bmap_id) { custom_cursor_bmap = bmap_id; };
+		void set_custom_cursor_bmap(int bmap_id) { custom_cursor_bmap = bmap_id; }
 };
 
 class UI_KEYTRAP : public UI_GADGET
@@ -256,9 +256,10 @@ class UI_KEYTRAP : public UI_GADGET
 
 	public:
 		int pressed();
-		void create(UI_WINDOW *wnd, int hotkey, void (*_user_function)(void) );
+		void create(UI_WINDOW *wnd, int key, void (*_user_function)(void) );
 };
 
+/** TODO
 class UI_USERBOX : public UI_GADGET
 {
 		int b1_held_down;
@@ -273,6 +274,7 @@ class UI_USERBOX : public UI_GADGET
 		int mouse_x, mouse_y;
 		int bitmap_number;
 };
+ */
 
 class UI_INPUTBOX : public UI_GADGET
 {
@@ -286,8 +288,6 @@ class UI_INPUTBOX : public UI_GADGET
 		int flags;
 		int pixel_limit;    // base max characters on how wide the string is (-1 to ignore) in pixels
 		int locked;
-//		int should_reset;
-		int ignore_escape;
 		color *text_color;
 		char *valid_chars;
 		char *invalid_chars;
@@ -307,9 +307,7 @@ class UI_INPUTBOX : public UI_GADGET
 		virtual void destroy();
 
 	public:
-//		int first_time;
-
-		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _textlen, char *text, int _flags = 0, int pixel_lim = -1, color *clr = NULL);
+		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _textlen, char *_text, int _flags = 0, int pixel_lim = -1, color *clr = NULL);
 		void set_valid_chars(char *vchars);
 		void set_invalid_chars(char *ichars);
 		int changed();
@@ -423,7 +421,6 @@ class UI_SCROLLBAR : public UI_GADGET
 		int changed();
 		void hide();
 		void unhide();
-		int get_hidden();
 		void link_hotspot(int up_button_num, int down_button_num);
 		int set_bmaps(char *up_button_fname, char *down_button_fname, char *line_fname);
 };
@@ -478,11 +475,6 @@ class UI_SLIDER2 : public UI_GADGET
 
 		// force up
 		void forceUp();
-
-		// general ui commands
-		void hide();
-		void unhide();
-		int get_hidden();
 };
 
 // to be phased out eventually in FS2
@@ -500,7 +492,7 @@ class UI_DOT_SLIDER : public UI_GADGET
 	public:
 		int pos;  // 0 thru 10
 
-		void create(UI_WINDOW *wnd, int _x, int _y, char *bm, int id, int end_buttons = 1, int num_pos = 10);		
+		void create(UI_WINDOW *wnd, int _x, int _y, char *bm, int id, int end_buttons = 1, int _num_pos = 10);		
 		virtual void draw();
 		virtual void process(int focus = 0);
 		virtual void destroy();
@@ -519,10 +511,10 @@ class UI_DOT_SLIDER_NEW : public UI_GADGET
 	public:
 		int pos;  // 0 thru 10
 
-		void create(UI_WINDOW *wnd, int _x, int _y, int num_pos, char *bm_slider, int slider_mask,
+		void create(UI_WINDOW *wnd, int _x, int _y, int _num_pos, char *bm_slider, int slider_mask,
 																					char *bm_left = NULL, int left_mask = -1, int left_x = -1, int left_y = -1,
 																					char *bm_right = NULL, int right_mask = -1, int right_x = -1, int right_y = -1,
-																					int dot_width = 19);
+																					int _dot_width = 19);
 		virtual void draw();
 		virtual void process(int focus = 0);		
 };
@@ -599,7 +591,6 @@ class UI_WINDOW
 	friend class UI_SCROLLBAR;
 	friend class UI_LISTBOX;
 	friend class UI_INPUTBOX;
-	// friend class UI_SLIDER;
 	friend class UI_SLIDER2;
 	friend class UI_DOT_SLIDER;
 	friend class UI_DOT_SLIDER_NEW;
@@ -642,7 +633,7 @@ public:
 	void set_mask_bmap(char *fname);
 	void set_mask_bmap(int bmap, char *name);
 	void set_foreground_bmap(char *fname);
-	void create( int x, int y, int w, int h, int flags, int f_id = -1 );
+	void create( int _x, int _y, int _w, int _h, int _flags, int _f_id = -1 );
 	int process( int key_in = -1,int process_mouse = 1);
 	void draw();
 	void draw_tooltip();
@@ -652,7 +643,7 @@ public:
 	ubyte *get_mask_data(int *w_md, int *h_md) { *w_md = mask_w; *h_md = mask_h; return mask_data; }
 	void render_tooltip(char *str);
 	void set_ignore_gadgets(int state);
-	void add_XSTR(char *string, int xstr_id, int x, int y, UI_GADGET *assoc, int color_type, int font_id = -1);
+	void add_XSTR(char *string, int _xstr_id, int _x, int _y, UI_GADGET *_assoc, int _color_type, int _font_id = -1);
 	void add_XSTR(UI_XSTR *xstr);
 
 	const char *(*tooltip_handler)(const char *text);
@@ -672,72 +663,7 @@ typedef struct ui_button_info {
 } ui_button_info;
 
 
-/*
-typedef struct {
-	char *mask;
-	int start;
-	int end;
-} tooltip_group;
-
-typedef struct {
-	int hotspot;
-	char *text;
-} tooltip;
-
-#define MAX_TOOLTIP_GROUPS	50
-#define MAX_TOOLTIPS			500
-
-extern int Num_tooltip_groups;
-extern tooltip_group Tooltip_groups[MAX_TOOLTIP_GROUPS];
-extern tooltip Tooltips[MAX_TOOLTIPS];
-*/
-
 int ui_getfilelist( int MaxNum, char **list, char *filespec );
 void ui_sort_filenames( int n, char **list );
-
-/*
-class UI_SLIDER : public UI_GADGET
-{
-	friend class UI_BUTTON;
-		int horz;
-		int position;
-		int window_size;
-		int fake_length;
-		int fake_position;
-		int fake_size;
-		UI_BUTTON left_button;
-		UI_BUTTON right_button;
-		int last_scrolled;
-		int drag_x, drag_y;
-		int drag_starting;
-		int dragging;
-		int moved;
-
-		int marker_x, marker_y, marker_w, marker_h;
-		int n_positions, pixel_range, increment;
-		float start, stop, current;
-		int mouse_locked;
-
-		virtual void draw();
-		virtual void process(int focus = 0);
-
-		// Used to index into bmap_ids[] array to locate right bitmap for slider
-		enum { SLIDER_BAR_NORMAL = 0 };
-		enum { SLIDER_BAR_DISABLED = 1 };
-		enum { SLIDER_MARKER_NORMAL = 2 };
-		enum { SLIDER_MARKER_DISABLED = 3 };
-
-	public:
-		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, float _start, float _stop, float _pos, int n_positions);
-		int getpos();
-		float getcurrent();
-		int changed();
-		void hide();
-		void unhide();
-		int get_hidden();
-		void link_hotspot(int up_button_num, int down_button_num);
-		int set_bmaps(char *left_button_fname, char *right_button_fname, char *bar_fname, char *marker_fname);
-};
-*/
 
 #endif

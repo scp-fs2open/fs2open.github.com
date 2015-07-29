@@ -82,14 +82,14 @@ void ml_update_recent_missions(char *filename)
 // returns -1 if failed, 0 if successful
 int mission_load(char *filename_ext)
 {
-	char filename[128], *ext;
+	char filename[MAX_PATH_LEN], *ext;
 
 	if ( (filename_ext != NULL) && (Game_current_mission_filename != filename_ext) )
 		strncpy(Game_current_mission_filename, filename_ext, MAX_FILENAME_LEN-1);
 
 	mprintf(("MISSION LOAD: '%s'\n", filename_ext));
 
-	strncpy(filename, filename_ext, 127);
+	strcpy_s( filename, filename_ext );
 	ext = strrchr(filename, '.');
 	if (ext) {
 		mprintf(( "Hmmm... Extension passed to mission_load...\n" ));
@@ -338,11 +338,11 @@ void mission_load_menu_do()
 
 	gr_clear();
 	gr_set_color_fast( &Color_bright );
-	gr_printf( 0x8000, 10, NOX("Select Mission") );
+	gr_printf_menu( 0x8000, 10, NOX("Select Mission") );
 
-	gr_printf( 50, 135, NOX("Campaign Filter"));
-	gr_printf( 250, 135, NOX("Recently Played"));
-	gr_printf( 450, 135, NOX("Mission List"));
+	gr_printf_menu( 50, 135, NOX("Campaign Filter"));
+	gr_printf_menu( 250, 135, NOX("Recently Played"));
+	gr_printf_menu( 450, 135, NOX("Mission List"));
 	mlm_window.draw();
 
 	gr_flip();

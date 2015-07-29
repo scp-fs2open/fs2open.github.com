@@ -12,6 +12,8 @@
 #ifndef _BARRACKS_H
 #define _BARRACKS_H
 
+extern int Barracks_overlay_id;
+
 // initialize the barracks 
 void barracks_init();
 

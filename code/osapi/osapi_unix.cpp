@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 
+#include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "io/key.h"
 #include "io/mouse.h"
@@ -69,7 +70,7 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 {
 	// create default ini entries for the user
 	if (os_config_read_string(NULL, NOX("VideocardFs2open"), NULL) == NULL)
-		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(640x480)x16 bit"));
+		os_config_write_string(NULL, NOX("VideocardFs2open"), NOX("OGL -(1024x768)x32 bit"));
 
 	os_init_registry_stuff(Osreg_company_name, title, version_string);
 	
@@ -161,10 +162,13 @@ DWORD unix_process(DWORD lparam)
 			case SDL_ACTIVEEVENT:
 				if( (event.active.state & SDL_APPACTIVE) || (event.active.state & SDL_APPINPUTFOCUS) ) {
 					if (fAppActive != event.active.gain) {
-						if (fAppActive)
-							game_pause();
-						else
-							game_unpause();
+						if(!Cmdline_no_unfocus_pause)
+						{
+							if (fAppActive)
+								game_pause();
+							else
+								game_unpause();
+						}
 					}
 					fAppActive = event.active.gain;
 					gr_activate(fAppActive);

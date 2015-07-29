@@ -24,6 +24,7 @@
 #include "mission/missionparse.h"
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
+#include "debugconsole/console.h"
 
 
 // --------------------------------------------------------------------------------------------------------
@@ -229,10 +230,10 @@ float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha);
 void neb2_pre_render(camid cid);
 
 // fill in the position of the eye for this frame
-void neb2_get_eye_pos(vec3d *eye);
+void neb2_get_eye_pos(vec3d *eye_vector);
 
 // fill in the eye orient for this frame
-void neb2_get_eye_orient(matrix *eye);
+void neb2_get_eye_orient(matrix *eye_matrix);
 
 // get a (semi) random bitmap to use for a poof
 int neb2_get_bitmap();
@@ -248,48 +249,52 @@ void neb2_regen();
 // initialize neb2 stuff at game startup
 void neb2_init()
 {
-	int rval;
 	char name[MAX_FILENAME_LEN];
 
-	if ( ( rval = setjmp(parse_abort) ) != 0 ) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "nebula.tbl", rval));
+	try
+	{
+		// read in the nebula.tbl
+		read_file_text("nebula.tbl", CF_TYPE_TABLES);
+		reset_parse();
+
+		// background bitmaps
+		Neb2_bitmap_count = 0;
+		while (!optional_string("#end")) {
+			// nebula
+			required_string("+Nebula:");
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+			if (Neb2_bitmap_count < MAX_NEB2_BITMAPS) {
+				strcpy_s(Neb2_bitmap_filenames[Neb2_bitmap_count++], name);
+			}
+			else {
+				WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebulas (%d)!\nSkipping %s.", MAX_NEB2_BITMAPS, name);
+			}
+		}
+
+		// poofs
+		Neb2_poof_count = 0;
+		while (!optional_string("#end")) {
+			// nebula
+			required_string("+Poof:");
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+			if (Neb2_poof_count < MAX_NEB2_POOFS) {
+				strcpy_s(Neb2_poof_filenames[Neb2_poof_count++], name);
+			}
+			else {
+				WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebula poofs (%d)!\nSkipping %s.", MAX_NEB2_POOFS, name);
+			}
+		}
+
+		// should always have 6 neb poofs
+		Assert(Neb2_poof_count == 6);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "nebula.tbl", e.what()));
 		return;
 	}
-
-	// read in the nebula.tbl
-	read_file_text("nebula.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	// background bitmaps
-	Neb2_bitmap_count = 0;
-	while ( !optional_string("#end") ) {
-		// nebula
-		required_string("+Nebula:");
-		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( Neb2_bitmap_count < MAX_NEB2_BITMAPS ) {
-			strcpy_s(Neb2_bitmap_filenames[Neb2_bitmap_count++], name);
-		} else {
-			WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebulas (%d)!\nSkipping %s.", MAX_NEB2_BITMAPS, name);
-		}
-	}
-
-	// poofs
-	Neb2_poof_count = 0;
-	while ( !optional_string("#end") ) {
-		// nebula
-		required_string("+Poof:");
-		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( Neb2_poof_count < MAX_NEB2_POOFS ) {
-			strcpy_s(Neb2_poof_filenames[Neb2_poof_count++], name);
-		} else {
-			WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebula poofs (%d)!\nSkipping %s.", MAX_NEB2_POOFS, name);
-		}
-	}
-
-	// should always have 6 neb poofs
-	Assert(Neb2_poof_count == 6);
 }
 
 // set detail level
@@ -333,6 +338,13 @@ void neb2_post_level_init()
 		return;
 	}
 
+	// Skip actual rendering if we're in FRED.
+	if(Fred_running)
+	{
+		Neb2_render_mode = NEB2_RENDER_NONE;
+		return;
+	}
+
 	// if the mission is not a fullneb mission, skip
 	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) ) {
 		Neb2_render_mode = NEB2_RENDER_NONE;
@@ -340,7 +352,7 @@ void neb2_post_level_init()
 		return;
 	}
 
-	if ( (Cmdline_nohtl || Fred_running) && (The_mission.flags & MISSION_FLAG_FULLNEB) ) {
+	if ( (Cmdline_nohtl) && (The_mission.flags & MISSION_FLAG_FULLNEB) ) {
 		// by default we'll use pof rendering
 		Neb2_render_mode = NEB2_RENDER_POF;
 		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
@@ -502,8 +514,8 @@ void neb2_page_in()
 }
 
 // should we not render this object because its obscured by the nebula?
-int neb_skip_opt = 1;
-DCF(neb_skip, "")
+int neb_skip_opt = 0;
+DCF(neb_skip, "Toggles culling of objects obscured by nebula")
 {
 	neb_skip_opt = !neb_skip_opt;
 	if (neb_skip_opt) {
@@ -896,12 +908,14 @@ void neb2_regen()
 	}
 }
 
+/*
+ * TODO: remove this
 float max_area = 100000000.0f;
 DCF(max_area, "")
 {
-	dc_get_arg(ARG_FLOAT);
-	max_area = Dc_arg_float;
+	dc_stuff_float(&max_area);
 }
+*/
 
 float g3_draw_rotated_bitmap_area(vertex *pnt, float angle, float rad, uint tmap_flags, float area);
 int neb_mode = 1;
@@ -936,6 +950,8 @@ void neb2_render_player()
 	if ((Neb2_render_mode == NEB2_RENDER_LAME) || (Neb2_render_mode == NEB2_RENDER_NONE)) {
 		return;
 	}
+    
+    memset(&p, 0, sizeof(p));
 
 	// get eye position and orientation
 	neb2_get_eye_pos(&eye_pos);
@@ -1397,15 +1413,15 @@ void neb2_set_backg_color(int r, int g, int b)
 }
 
 // fill in the position of the eye for this frame
-void neb2_get_eye_pos(vec3d *eye)
+void neb2_get_eye_pos(vec3d *eye_vector)
 {
-	*eye = Eye_position;
+	*eye_vector = Eye_position;
 }
 
 // fill in the eye orient for this frame
-void neb2_get_eye_orient(matrix *eye)
+void neb2_get_eye_orient(matrix *eye_matrix)
 {
-	*eye = Eye_matrix;
+	*eye_matrix = Eye_matrix;
 }
 
 // get a (semi) random bitmap to use for a poof
@@ -1443,7 +1459,7 @@ int neb2_get_bitmap()
 }
 
 // nebula DCF functions ------------------------------------------------------
-
+// TODO: With the new debug parser in place, most of these sub-commands can now be handled by neb2. This should clear up the DCF list a bit
 DCF(neb2, "list nebula console commands")
 {		
 //	dc_printf("neb2_fog <X> <float> <float>  : set near and far fog planes for ship type X\n");
@@ -1463,7 +1479,7 @@ DCF(neb2, "list nebula console commands")
 	dc_printf("neb2_cinner      : poof cube inner dimension\n");
 	dc_printf("neb2_couter      : poof cube outer dimension\n");
 	dc_printf("neb2_jitter      : poof jitter\n");
-	dc_printf("neb2_mode        : switch between no nebula, polygon background, pof background, lame or HTL rendering (0, 1, 2, 3 and 4 respectively)\n\n");	
+	dc_printf("neb2_mode        : switch between no nebula, polygon background, pof background, lame, or HTL rendering (0, 1, 2, 3 and 4 respectively)\n\n");	
 	dc_printf("neb2_ff          : flash fade/sec\n");
 	dc_printf("neb2_background	: rgb background color\n");
 	dc_printf("neb2_fog_color   : rgb fog color\n");
@@ -1471,95 +1487,91 @@ DCF(neb2, "list nebula console commands")
 //	dc_printf("neb2_fog_vals    : display all the current settings for all above values\n");	
 }
 
-DCF(neb2_prad, "")
+DCF(neb2_prad, "set cloud poof radius")
 {
-	dc_get_arg(ARG_FLOAT);
-	Nd->prad = Dc_arg_float;
+	dc_stuff_float(&Nd->prad);
 }
-DCF(neb2_cdim, "")
+DCF(neb2_cdim, "poof cube dimension")
 {
-	dc_get_arg(ARG_FLOAT);
-	Nd->cube_dim = Dc_arg_float;
+	dc_stuff_float(&Nd->cube_dim);
 }
 
-DCF(neb2_cinner, "")
+DCF(neb2_cinner, "poof cube inner dimension")
 {
-	dc_get_arg(ARG_FLOAT);
-	Nd->cube_inner = Dc_arg_float;
+	dc_stuff_float(&Nd->cube_inner);
 }
 
-DCF(neb2_couter, "")
+DCF(neb2_couter, "poof cube outer dimension")
 {
-	dc_get_arg(ARG_FLOAT);
-	Nd->cube_outer = Dc_arg_float;
+	dc_stuff_float(&Nd->cube_outer);
 }
 
-DCF(neb2_jitter, "")
+DCF(neb2_jitter, "poof jitter")
 {
-	dc_get_arg(ARG_FLOAT);
-	Nd->hj = Nd->dj = Nd->wj = Dc_arg_float;
+	float value;
+	dc_stuff_float(&value);
+	Nd->hj = Nd->dj = Nd->wj = value;
 }
 
-DCF(neb2_max_alpha, "")
+DCF(neb2_max_alpha, "max alpha value (0.0 to 1.0) for cloud poofs.")
 {
-	dc_get_arg(ARG_FLOAT);
-	Nd->max_alpha_glide = Dc_arg_float;
+	dc_stuff_float(&Nd->max_alpha_glide);
 }
 
-DCF(neb2_break_alpha, "")
+DCF(neb2_break_alpha, "alpha value (0.0 to 1.0) at which faded polygons are not drawn.")
 {
-	dc_get_arg(ARG_FLOAT);
-	Nd->break_alpha = Dc_arg_float;
+	dc_stuff_float(&Nd->break_alpha);
 }
 
-DCF(neb2_break_off, "")
+DCF(neb2_break_off, "how many pixels offscreen (left, right, top, bottom) when a cloud poof becomes fully transparent.")
 {
-	dc_get_arg(ARG_INT);
-	Nd->break_y = (float)Dc_arg_int;
-	Nd->break_x = Nd->break_y * 1.3333f;
+	int value;
+	dc_stuff_int(&value);
+	Nd->break_y = (float)value;
+	Nd->break_x = Nd->break_y * gr_screen.aspect;
 }
 
-DCF(neb2_smooth, "")
+DCF(neb2_smooth, "magic fog smoothing modes (0 - 3)")
 {
 	int index;
-	dc_get_arg(ARG_INT);
-	index = Dc_arg_int;
+	dc_stuff_int(&index);
 	if ( (index >= 0) && (index <= 3) ) {
 		wacky_scheme = index;
+	} else {
+		dc_printf("Invalid smooth mode %i", index);
 	}
 }
 
-DCF(neb2_select, "")
+DCF(neb2_select, "Enables/disables a poof bitmap")
 {
-	dc_get_arg(ARG_INT);
-	int bmap = Dc_arg_int;
+	int bmap;
+	bool val_b;
+
+	dc_stuff_int(&bmap);
+
 	if ( (bmap >= 0) && (bmap < Neb2_poof_count) ) {
-		dc_get_arg(ARG_INT);
-		if (Dc_arg_int) {
-			Neb2_poof_flags |= (1<<bmap);
-		} else {
-			Neb2_poof_flags &= ~(1<<bmap);
-		}
+		dc_stuff_boolean(&val_b);
+
+		val_b ? (Neb2_poof_flags |= (1<<bmap)) : (Neb2_poof_flags &= ~(1<<bmap));
 	}
 }
 
-DCF(neb2_rot, "")
+DCF(neb2_rot, "set max rotation speed for poofs")
 {
-	dc_get_arg(ARG_FLOAT);
-	max_rotation = Dc_arg_float;
+	dc_stuff_float(&max_rotation);
 }
 
-DCF(neb2_ff, "")
+DCF(neb2_ff, "flash fade/sec")
 {
-	dc_get_arg(ARG_FLOAT);
-	neb2_flash_fade = Dc_arg_float;
+	dc_stuff_float(&neb2_flash_fade);
 }
 
-DCF(neb2_mode, "")
+DCF(neb2_mode, "Switches nebula render modes")
 {
-	dc_get_arg(ARG_INT);
+	int mode;
+	dc_stuff_int(&mode);
 
-	switch (Dc_arg_int) {
+	switch (mode) {
 		case NEB2_RENDER_NONE:
 			Neb2_render_mode = NEB2_RENDER_NONE;
 		break;
@@ -1586,39 +1598,32 @@ DCF(neb2_mode, "")
 	}
 }
 
-DCF(neb2_slices, "")
+DCF(neb2_slices, "Sets how many 'slices' are used in the nebula")
 {
-	dc_get_arg(ARG_INT);
-	Neb2_slices = Dc_arg_int;
+	dc_stuff_int(&Neb2_slices);
 	neb2_eye_changed();
 }
 
-DCF(neb2_background, "")
+DCF(neb2_background, "Sets the RGB background color (lame rendering)")
 {
 	int r, g, b;
 
-	dc_get_arg(ARG_INT);
-	r = Dc_arg_int;
-	dc_get_arg(ARG_INT);
-	g = Dc_arg_int;
-	dc_get_arg(ARG_INT);
-	b = Dc_arg_int;
+	dc_stuff_int(&r);
+	dc_stuff_int(&g);
+	dc_stuff_int(&b);
 
 	Neb2_background_color[0] = r;
 	Neb2_background_color[1] = g;
 	Neb2_background_color[2] = b;
 }
 
-DCF(neb2_fog_color, "")
+DCF(neb2_fog_color, "Sets the RGB fog color (HTL)")
 {
 	ubyte r, g, b;
 
-	dc_get_arg(ARG_UBYTE);
-	r = Dc_arg_ubyte;
-	dc_get_arg(ARG_UBYTE);
-	g = Dc_arg_ubyte;
-	dc_get_arg(ARG_UBYTE);
-	b = Dc_arg_ubyte;
+	dc_stuff_ubyte(&r);
+	dc_stuff_ubyte(&g);
+	dc_stuff_ubyte(&b);
 
 	Neb2_fog_color_r = r;
 	Neb2_fog_color_g = g;

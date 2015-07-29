@@ -14,6 +14,7 @@
 #include "io/key.h"
 #include "controlconfig/controlsconfig.h"
 #include "freespace2/freespace.h"
+#include "weapon/beam.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -37,6 +38,7 @@ flag_def_list Script_conditions[] =
 	{"Ship type",	CHC_SHIPTYPE,		0},
 	{"Weapon class",CHC_WEAPONCLASS,	0},
 	{"KeyPress",	CHC_KEYPRESS,		0},
+	{"Action",		CHC_ACTION,			0},
 	{"Version",		CHC_VERSION,		0},
 	{"Application",	CHC_APPLICATION,	0}
 };
@@ -49,6 +51,8 @@ flag_def_list Script_actions[] =
 	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
 	{"On State Start",			CHA_ONSTATESTART,	0},
 	{"On Frame",				CHA_ONFRAME,		0},
+	{"On Action",				CHA_ONACTION,		0},
+	{"On Action Stopped",		CHA_ONACTIONSTOPPED,0},
 	{"On Key Pressed",			CHA_KEYPRESSED,		0},
 	{"On Key Released",			CHA_KEYRELEASED,	0},
 	{"On Mouse Moved",			CHA_MOUSEMOVED,		0},
@@ -74,7 +78,14 @@ flag_def_list Script_actions[] =
 	{"On Gameplay Start",		CHA_GAMEPLAYSTART,	0},
 	{"On Turret Fired",			CHA_ONTURRETFIRED,	0},
 	{"On Primary Fire",			CHA_PRIMARYFIRE,	0},
-	{"On Secondary Fire",		CHA_SECONDARYFIRE,	0}
+	{"On Secondary Fire",		CHA_SECONDARYFIRE,	0},
+	{"On Ship Arrive",			CHA_ONSHIPARRIVE,	0},
+	{"On Beam Collision",		CHA_COLLIDEBEAM,	0},
+	{"On Message Received",		CHA_MSGRECEIVED,	0},
+    {"On HUD Message Received", CHA_HUDMSGRECEIVED, 0},
+	{ "On Afterburner Engage",	CHA_AFTERBURNSTART, 0 },
+	{ "On Afterburner Stop",	CHA_AFTERBURNEND,	0 },
+	{ "On Beam Fire",			CHA_BEAMFIRE,		0 }
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -101,46 +112,42 @@ bool script_hook_valid(script_hook *hook)
 void script_parse_table(const char *filename)
 {
 	script_state *st = &Script_system;
-	int rval;
-	if ((rval = setjmp(parse_abort)) != 0)
+	
+	try
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
-	}
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
 
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
+		if (optional_string("#Global Hooks"))
+		{
+			//int num = 42;
+			//Script_system.SetHookVar("Version", 'i', &num);
+			if (optional_string("$Global:")) {
+				st->ParseChunk(&Script_globalhook, "Global");
+			}
 
-	if(optional_string("#Global Hooks"))
-	{
-		//int num = 42;
-		//Script_system.SetHookVar("Version", 'i', &num);
-		if(optional_string("$Global:")) {
-			st->ParseChunk(&Script_globalhook, "Global");
+			if (optional_string("$Splash:")) {
+				st->ParseChunk(&Script_splashhook, "Splash");
+			}
+
+			if (optional_string("$GameInit:")) {
+				st->ParseChunk(&Script_gameinithook, "GameInit");
+			}
+
+			if (optional_string("$Simulation:")) {
+				st->ParseChunk(&Script_simulationhook, "Simulation");
+			}
+
+			if (optional_string("$HUD:")) {
+				st->ParseChunk(&Script_hudhook, "HUD");
+			}
+
+			required_string("#End");
 		}
-
-		if(optional_string("$Splash:")) {
-			st->ParseChunk(&Script_splashhook, "Splash");
-		}
-
-		if(optional_string("$GameInit:")) {
-			st->ParseChunk(&Script_gameinithook, "GameInit");
-		}
-
-		if(optional_string("$Simulation:")) {
-			st->ParseChunk(&Script_simulationhook, "Simulation");
-		}
-
-		if(optional_string("$HUD:")) {
-			st->ParseChunk(&Script_hudhook, "HUD");
-		}
-
-		required_string("#End");
-	}
-/*
-	if(optional_string("#State Hooks"))
-	{
-		while(optional_string("$State:")) {
+		/*
+			if(optional_string("#State Hooks"))
+			{
+			while(optional_string("$State:")) {
 			char buf[NAME_LENGTH];
 			int idx;
 			stuff_string(buf, F_NAME, sizeof(buf));
@@ -149,25 +156,31 @@ void script_parse_table(const char *filename)
 
 			if(optional_string("$Hook:"))
 			{
-				if(idx > -1) {
-					GS_state_hooks[idx] = st->ParseChunk(buf);
-				} else {
-					st->ParseChunk(buf);
-				}
+			if(idx > -1) {
+			GS_state_hooks[idx] = st->ParseChunk(buf);
+			} else {
+			st->ParseChunk(buf);
 			}
+			}
+			}
+			required_string("#End");
+			}
+			*/
+		if (optional_string("#Conditional Hooks"))
+		{
+			while (st->ParseCondition(filename));
+			required_string("#End");
 		}
-		required_string("#End");
-	}
-*/
-	if(optional_string("#Conditional Hooks"))
-	{
-		while(st->ParseCondition(filename));
-		required_string("#End");
-	}
 
-	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(const char *tblname);
-	fs2netd_add_table_validation(filename);
+		// add tbl/tbm to multiplayer validation list
+		extern void fs2netd_add_table_validation(const char *tblname);
+		fs2netd_add_table_validation(filename);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 //Initializes the (global) scripting system, as well as any subsystems.
@@ -303,12 +316,17 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 						return false;
 					break;
 				}
-			case CHC_WEAPONCLASS: 
+			case CHC_WEAPONCLASS:
 				{
-					if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED )) {
-						if(objp == NULL || objp->type != OBJ_WEAPON)
+					if (action == CHA_COLLIDEWEAPON) {
+						if (stricmp(Weapon_info[more_data].name, scp->data.name) != 0)
 							return false;
-						else if(stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name) != 0) 
+					} else if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED )) {
+						if(objp == NULL || (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM))
+							return false;
+						else if (( objp->type == OBJ_WEAPON) && (stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name) != 0 ))
+							return false;
+						else if (( objp->type == OBJ_BEAM) && (stricmp(Weapon_info[Beams[objp->instance].weapon_info_index].name, scp->data.name) != 0 ))
 							return false;
 					} else if(objp == NULL || objp->type != OBJ_SHIP) {
 						return false;
@@ -412,6 +430,11 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 									return false;
 								break;
 							}
+							case CHA_BEAMFIRE: {
+								if (!(stricmp(Weapon_info[more_data].name, scp->data.name) == 0))
+									return false;
+								break;
+							}
 
 						}
 					} // case CHC_WEAPONCLASS
@@ -432,6 +455,17 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 						return false;
 					//WMC - could be more efficient, but whatever.
 					if(stricmp(textify_scancode(Current_key_down), scp->data.name))
+						return false;
+					break;
+				}
+			case CHC_ACTION:
+				{
+					if(gameseq_get_depth() < 0)
+						return false;
+
+					int action_index = more_data;
+
+					if (action_index <= 0 || stricmp(scp->data.name, Control_config[action_index].text))
 						return false;
 					break;
 				}
@@ -648,6 +682,8 @@ void script_state::SetHookVar(char *name, char format, void *data)
 			{
 				if(format == 's')
 					ade_set_args(LuaState, fmt, data);
+				else if (format == 'i')
+					ade_set_args(LuaState, fmt, *(int*)data);
 				else
 					ade_set_args(LuaState, fmt, *(ade_odata*)data);
 			}
@@ -1044,7 +1080,7 @@ int script_state::OutputMeta(char *filename)
 	return 1;
 }
 
-bool script_state::EvalString(char* string, char *format, void *rtn, char *debug_str)
+bool script_state::EvalString(const char *string, const char *format, void *rtn, const char *debug_str)
 {
 	char lastchar = string[strlen(string)-1];
 
@@ -1322,7 +1358,7 @@ bool script_state::ParseCondition(const char *filename)
 			case CHC_VERSION:
 			case CHC_APPLICATION:
 			default:
-				stuff_string(sct.data.name, F_NAME, NAME_LENGTH);
+				stuff_string(sct.data.name, F_NAME, CONDITION_LENGTH);
 				break;
 		}
 

@@ -16,6 +16,8 @@
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengltexture.h"
 
+#define MAX_UNIFORM_BUFFERS 6
+
 struct opengl_texture_unit {
 	GLboolean active;	// unit is active
 	GLboolean enabled;	// has texture target enabled
@@ -70,7 +72,7 @@ class opengl_texture_state
 		void SetTarget(GLenum tex_target);
 		void SetActiveUnit(GLuint id = 0);
 		void Enable(GLuint tex_id = 0);
-		void Disable(bool force = false);
+		void Disable();
 		void DisableUnused();
 		void DisableAll();
 		void ResetUsed();
@@ -177,7 +179,9 @@ struct opengl_client_texture_unit
 	GLenum type;
 	GLsizei stride;
 	GLvoid *pointer;
-	bool reset;
+
+	bool reset_ptr;
+	bool used_for_draw;
 };
 
 struct opengl_vertex_attrib_unit
@@ -191,9 +195,11 @@ struct opengl_vertex_attrib_unit
 	GLsizei stride;
 	GLvoid *pointer;
 
-	bool used;
-	bool initialized;
-	bool reset;
+	bool status_init;
+	bool ptr_init;
+
+	bool reset_ptr;
+	bool used_for_draw;
 };
 
 class opengl_array_state
@@ -210,14 +216,16 @@ class opengl_array_state
 		GLenum color_array_type;
 		GLsizei color_array_stride;
 		GLvoid *color_array_pointer;
-		bool color_array_reset;
+		bool color_array_reset_ptr;
+		bool color_array_used_for_draw;
 
 		GLboolean normal_array_Status;
 		GLuint normal_array_Buffer;
 		GLenum normal_array_Type;
 		GLsizei normal_array_Stride;
 		GLvoid *normal_array_Pointer;
-		bool normal_array_reset;
+		bool normal_array_reset_ptr;
+		bool normal_array_used_for_draw;
 
 		GLboolean vertex_array_Status;
 		GLuint vertex_array_Buffer;
@@ -225,14 +233,23 @@ class opengl_array_state
 		GLenum vertex_array_Type;
 		GLsizei vertex_array_Stride;
 		GLvoid *vertex_array_Pointer;
-		bool vertex_array_reset;
+		bool vertex_array_reset_ptr;
+		bool vertex_array_used_for_draw;
 
 		SCP_map<GLuint, opengl_vertex_attrib_unit> vertex_attrib_units;
 
 		GLuint array_buffer;
 		GLuint element_array_buffer;
+		GLuint texture_array_buffer;
+		GLuint uniform_buffer;
+
+		GLuint uniform_buffer_index_bindings[MAX_UNIFORM_BUFFERS];
 	public:
-		opengl_array_state(): active_client_texture_unit(0), client_texture_units(NULL) {}
+		opengl_array_state(): active_client_texture_unit(0), client_texture_units(NULL) {
+			for ( int i = 0; i < MAX_UNIFORM_BUFFERS; ++i ) {
+				uniform_buffer_index_bindings[i] = 0;
+			}
+		}
 		~opengl_array_state();
 
 		void init(GLuint n_units);
@@ -253,16 +270,69 @@ class opengl_array_state
 		void EnableClientVertex();
 		void DisableClientVertex();
 		void VertexPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer);
-		void ResetVertexPointer();
 
-		void ResetVertexAttribUsed();
-		void DisabledVertexAttribUnused();
 		void EnableVertexAttrib(GLuint index);
 		void DisableVertexAttrib(GLuint index);
 		void VertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLvoid *pointer);
 
+		void BindPointersBegin();
+		void BindPointersEnd();
+
 		void BindArrayBuffer(GLuint id);
 		void BindElementBuffer(GLuint id);
+		void BindTextureBuffer(GLuint id);
+		void BindUniformBuffer(GLuint id);
+		void BindUniformBufferBindingIndex(GLuint id, GLuint index);
+};
+
+struct uniform_bind
+{
+	SCP_string name;
+
+	enum data_type {
+		INT,
+		FLOAT,
+		VEC2,
+		VEC3,
+		VEC4,
+		MATRIX4
+	};
+
+	uniform_bind::data_type type;
+	int index;
+
+	int count;
+	int tranpose;
+};
+
+class opengl_uniform_state
+{
+	SCP_vector<uniform_bind> uniforms;
+
+	SCP_vector<int> uniform_data_ints;
+	SCP_vector<float> uniform_data_floats;
+	SCP_vector<vec2d> uniform_data_vec2d;
+	SCP_vector<vec3d> uniform_data_vec3d;
+	SCP_vector<vec4> uniform_data_vec4;
+	SCP_vector<matrix4> uniform_data_matrix4;
+
+	SCP_map<SCP_string, int> uniform_lookup;
+
+	int findUniform(const SCP_string &name);
+public:
+	opengl_uniform_state();
+
+	void setUniformi(const SCP_string &name, const int value);
+	void setUniformf(const SCP_string &name, const float value);
+	void setUniform2f(const SCP_string &name, const float x, const float y);
+	void setUniform2f(const SCP_string &name, const vec2d &val);
+	void setUniform3f(const SCP_string &name, const float x, const float y, const float z);
+	void setUniform3f(const SCP_string &name, const vec3d &value);
+	void setUniform4f(const SCP_string &name, const vec4 &val);
+	void setUniformMatrix4fv(const SCP_string &name, const int count, const matrix4 *value);
+	void setUniformMatrix4f(const SCP_string &name, const matrix4 &val);
+
+	void reset();
 };
 
 class opengl_state
@@ -280,6 +350,7 @@ class opengl_state
 		GLboolean polygonoffsetfill_Status;
 		GLboolean normalize_Status;
 		GLboolean clipplane_Status[6];
+		GLboolean clipdistance_Status[6];
 		GLboolean *light_Status;
 		GLboolean depthmask_Status;
 		GLboolean lighting_Status;
@@ -295,11 +366,15 @@ class opengl_state
 		GLenum blendfunc_Value[2];
 		GLenum depthfunc_Value;
 
+		GLenum polygon_mode_Face;
+		GLenum polygon_mode_Mode;
+
+		GLfloat polygon_offset_Factor;
+		GLfloat polygon_offset_Unit;
+
 		gr_alpha_blend Current_alpha_blend_mode;
 		gr_zbuffer_type Current_zbuffer_type;
         gr_stencil_type Current_stencil_type;
-
-
 	public:
 		opengl_state() : light_Status(NULL) {}
 		~opengl_state();
@@ -308,11 +383,14 @@ class opengl_state
 
 		opengl_texture_state Texture;
 		opengl_array_state Array;
+		opengl_uniform_state Uniform;
 
 		void SetTextureSource(gr_texture_source ts);
 		void SetAlphaBlendMode(gr_alpha_blend ab);
 		void SetZbufferType(gr_zbuffer_type zt);
         void SetStencilType(gr_stencil_type st);
+		void SetPolygonOffset(GLfloat factor, GLfloat units);
+		void SetPolygonMode(GLenum face, GLenum mode);
 
 		// the GLboolean functions will return the current state if no argument
 		// and the previous state if an argument is passed
@@ -328,6 +406,7 @@ class opengl_state
 		GLboolean Normalize(GLint state = -1);
 		GLboolean Light(GLint num, GLint state = -1);
 		GLboolean ClipPlane(GLint num, GLint state = -1);
+		GLboolean ClipDistance(GLint num, GLint state = -1);
 		GLboolean DepthMask(GLint state = -1);
         GLboolean ColorMask(GLint state = -1);
 
@@ -425,7 +504,7 @@ inline void opengl_state::InvalidateColor()
 
 extern opengl_state GL_state;
 
-void gr_opengl_flush_data_states();
+void gr_opengl_clear_states();
 void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type, int flags, int is_scaler = 0);
 
 

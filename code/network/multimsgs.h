@@ -525,11 +525,11 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 void process_flak_fired_packet(ubyte *data, header *hinfo);
 
 // player pain packet
-void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos);
+void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos, int quadrant_num);
 void process_player_pain_packet(ubyte *data, header *hinfo);
 
 // lightning packet
-void send_lightning_packet(int bolt_type, vec3d *start, vec3d *strike);
+void send_lightning_packet(int bolt_type_internal, vec3d *start, vec3d *strike);
 void process_lightning_packet(ubyte *data, header *hinfo);
 
 // bytes sent

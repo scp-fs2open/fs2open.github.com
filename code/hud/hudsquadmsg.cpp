@@ -51,9 +51,7 @@ int Msg_instance;						// variable which holds ship/wing instance to send the me
 int Msg_shortcut_command;			// holds command when using a shortcut key
 LOCAL int Msg_target_objnum;				// id of the current target of the player
 LOCAL ship_subsys *Msg_targeted_subsys;// pointer to current subsystem which is targeted
-//#ifndef NDEBUG
 LOCAL	int Msg_enemies;						// tells us whether or not to message enemy ships or friendlies
-//#endif
 
 LOCAL int Msg_eat_key_timestamp;			// used to temporarily "eat" keys
 
@@ -763,20 +761,27 @@ int hud_squadmsg_ship_order_valid( int shipnum, int order )
 {
 	// Goober5000
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
+	ship *shipp = &Ships[shipnum];
 
 	switch ( order  )
 	{
 		case DEPART_ITEM:
 			// disabled ships can't depart.
-			if (Ships[shipnum].flags & SF_DISABLED)
+			if (shipp->flags & SF_DISABLED)
 				return 0;
 
-			// Goober5000: also can't depart if no subspace drives and no capships in the area
-			if (Ships[shipnum].flags2 & SF2_NO_SUBSPACE_DRIVE)
+			// Goober5000: also can't depart if no subspace drives and no valid mothership
+			if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
 			{
-				// locate a capital ship on the same team:
-				if (ship_get_ship_with_dock_bay(Ships[shipnum].team) < 0)
-					return 0;
+				// check that we have a mothership and that we can depart to it
+				if (shipp->departure_location == DEPART_AT_DOCK_BAY)
+				{
+					int anchor_shipnum = ship_name_lookup(Parse_names[shipp->departure_anchor]);
+					if (anchor_shipnum >= 0 && ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
+						return 1;
+				}
+
+				return 0;
 			}
 
 			break;
@@ -827,6 +832,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 
 	// if it's a weapon, then it needs to be a WIF_BOMB weapon.  Only attack order valid, and only
 	// valid on bombs not on the player's team
+	// MageKing17: Now also works on WIF3_FIGHTER_INTERCEPTABLE weapons.
 	if ( objp->type == OBJ_WEAPON ) {
 		
 		if (Weapons[objp->instance].lssm_stage==3){
@@ -834,7 +840,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 		}
 		
 		if ( (Comm_orders[order].item == ATTACK_TARGET_ITEM )
-			&& (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
+			&& ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags3 & WIF3_FIGHTER_INTERCEPTABLE))
 			&& (Weapons[objp->instance].team != ordering_shipp->team) )
 
 			return 1;
@@ -852,7 +858,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	}
 
 	// if we are messaging a ship, and that ship is our target, no target type orders are ever active
-	if ( (Squad_msg_mode == SM_MODE_SHIP_COMMAND) && (target_objnum == Msg_instance) ){
+	if ( (Squad_msg_mode == SM_MODE_SHIP_COMMAND) && (Objects[target_objnum].instance == Msg_instance) ){
 		return 0;
 	}
 
@@ -1367,11 +1373,10 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 		target_shipname = NULL;
 		target_team = -1;
-		if ( ainfo->target_objnum != -1) {
-			if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
-				target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
-				target_team = Ships[Objects[ainfo->target_objnum].instance].team;
-			}
+
+		if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
+			target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
+			target_team = Ships[Objects[ainfo->target_objnum].instance].team;
 		}
 
 		Assert ( ainfo->shipnum != -1 );
@@ -1658,13 +1663,13 @@ void hud_squadmsg_type_select( )
 	if ( Ai_info[Ships[Player_obj->instance].ai_index].ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
-	} else if ( mission_is_repair_scheduled(Player_obj) ) {
+	}
+	else if ( mission_is_repair_scheduled(Player_obj) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
 	}
-
 	// if no support available, can't call one in
-	if ( !is_support_allowed(Player_obj) ) {
+	else if ( !is_support_allowed(Player_obj) ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
 	}
@@ -2177,7 +2182,6 @@ void hud_squadmsg_toggle()
 	Player->flags ^= PLAYER_FLAGS_MSG_MODE;
 }
 
-//#ifndef NDEBUG
 // extern entry point to allow messaging of enemies
 void hud_enemymsg_toggle()
 {
@@ -2186,7 +2190,6 @@ void hud_enemymsg_toggle()
 	if ( Player->flags & PLAYER_FLAGS_MSG_MODE )
 		Msg_enemies = 1;
 }
-//#endif
 
 // external entry point into code when a keyboard shortcut is used for a command
 // we are passed in an ID for the command to set internal variables.  This command
@@ -2459,6 +2462,11 @@ int hud_query_order_issued(char *to, char *order_name, char *target_name, int ti
 							}
 							
 							int target_ship = ship_name_lookup(target_name);
+                            
+							if(target_ship<0) {
+								continue;
+							}
+                            
 							int subsys_index = ship_get_subsys_index(&Ships[target_ship], special_argument, 1); 
 							// if the order is for s different subsystem
 							if (Squadmsg_history[i].special_index != subsys_index) {

@@ -196,8 +196,8 @@ anim_instance *anim_play(anim_play_struct *aps)
 	}
 
 	if(aps->base_w < 0 || aps->base_h < 0) {
-		instance->base_w = gr_screen.max_w_unscaled;
-		instance->base_h = gr_screen.max_h_unscaled;
+		instance->base_w = gr_screen.max_w_unscaled_zoomed;
+		instance->base_h = gr_screen.max_h_unscaled_zoomed;
 	} else {
 		instance->base_w = aps->base_w;
 		instance->base_h = aps->base_h;
@@ -254,7 +254,7 @@ anim_instance *anim_play(anim_play_struct *aps)
 int anim_show_next_frame(anim_instance *instance, float frametime)
 {
 	int	bitmap_id, bitmap_flags=0, new_frame_num, frame_diff=0, i, n_frames=0,frame_save;
-	float percent_through, decompress_time, render_time, time;
+	float percent_through, time;
 	vertex	image_vertex;
 	int aabitmap = 0;
 	int bpp = 16;
@@ -461,8 +461,6 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 		instance->file_offset = instance->parent->file_offset;
 		instance->loop_count++;
 	}
-		
-	decompress_time = f2fl(t2-t1);
 
 	t1 = timer_get_fixed_seconds();
 	if ( frame_diff == 0 && instance->last_bitmap != -1 ) {
@@ -488,16 +486,20 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 		
 		// determine x,y to display the bitmap at
 		if ( instance->world_pos == NULL ) {
+			int old_max_w_unscaled = gr_screen.max_w_unscaled;
+			int old_max_h_unscaled = gr_screen.max_h_unscaled;
+			int old_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
+			int old_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 			gr_set_screen_scale(instance->base_w, instance->base_h);
-			gr_set_clip(0, 0, instance->base_w, instance->base_h, false);
+			gr_set_clip(0, 0, instance->base_w, instance->base_h, GR_RESIZE_MENU);
 			if ( instance->aa_color == NULL ) {
-				gr_bitmap(instance->x, instance->y);
+				gr_bitmap(instance->x, instance->y, GR_RESIZE_MENU_NO_OFFSET);
 			}
 			else {
 				gr_set_color_fast( (color*)instance->aa_color );
-				gr_aabitmap(instance->x, instance->y);
+				gr_aabitmap(instance->x, instance->y, GR_RESIZE_MENU_NO_OFFSET);
 			}
-			gr_reset_screen_scale();
+			gr_set_screen_scale(old_max_w_unscaled, old_max_h_unscaled, old_max_w_unscaled_zoomed, old_max_h_unscaled_zoomed);
 			gr_reset_clip();
 		}
 		else {
@@ -510,7 +512,6 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 	}
 
 	t2 = timer_get_fixed_seconds();
-	render_time = f2fl(t2-t1);
 
 	return 0;
 }

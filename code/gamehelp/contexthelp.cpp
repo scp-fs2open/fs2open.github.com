@@ -14,19 +14,31 @@
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "menuui/mainhallmenu.h"
+#include "missionui/missionbrief.h"
+#include "missionui/missionshipchoice.h"
+#include "missionui/missionweaponchoice.h"
+#include "menuui/barracks.h"
+#include "controlconfig/controlsconfig.h"
+#include "missionui/missiondebrief.h"
+#include "network/multiui.h"
+#include "mission/missionhotkey.h"
+#include "menuui/readyroom.h"
+#include "menuui/techmenu.h"
+#include "missionui/missioncmdbrief.h"
 #include "graphics/2d.h"
 #include "parse/parselo.h"
 #include "localization/localize.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
+#include "debugconsole/console.h"
 
 
 
 ////////////////////////////////////////////////////////////////////
 // private function prototypes / structs
 ////////////////////////////////////////////////////////////////////
-void parse_helptbl();
-void help_overlay_blit(int overlay_id);
+void parse_helptbl(const char *filename);
+void help_overlay_blit(int overlay_id, int resolution_index);
 void help_overlay_init();
 
 
@@ -35,8 +47,7 @@ typedef struct {
 } help_line;
 
 typedef struct {
-	vec3d vtx[HELP_MAX_PLINE_VERTICES];
-	vec3d *pvtx[HELP_MAX_PLINE_VERTICES];
+	SCP_vector<vec3d> vtx;
 	int vtxcount;
 } help_pline;
 
@@ -54,35 +65,18 @@ typedef struct {
 } help_right_bracket;
 
 typedef struct {
-	help_pline				plinelist[GR_NUM_RESOLUTIONS][HELP_MAX_ITEM];
-	help_text				textlist[GR_NUM_RESOLUTIONS][HELP_MAX_ITEM];
-	help_left_bracket		lbracketlist[GR_NUM_RESOLUTIONS][HELP_MAX_ITEM];
-	help_right_bracket	rbracketlist[GR_NUM_RESOLUTIONS][HELP_MAX_ITEM];
+	char name[HELP_MAX_NAME_LENGTH];
+	int num_resolutions;
+	SCP_vector<int>	fontlist;
+	SCP_vector<SCP_vector<help_pline> >			plinelist;
+	SCP_vector<SCP_vector<help_text> >			textlist;
+	SCP_vector<SCP_vector<help_left_bracket> >	lbracketlist;
+	SCP_vector<SCP_vector<help_right_bracket> >	rbracketlist;
 	int plinecount;
 	int textcount;
 	int lbracketcount;
 	int rbracketcount;
 } help_overlay;
-
-// new help.tbl file way
-char *help_overlay_section_names[MAX_HELP_OVERLAYS] = {
-	"$ship",					// ship_help
-	"$weapon",				// weapon_help
-	"$briefing",			// briefing
-	"$main",					//	main help overlay
-	"$barracks",			// barracks
-	"$control",				// control help
-	"$debrief",				// debrief help
-	"$multicreate",		// multicreate help
-	"$multistart",			// multistart help
-	"$multijoin",			// multijoin help
-	"$main2",				// main help overlay2
-	"$hotkey",				// hotkey help
-	"$campaign",			// campaign help
-	"$simulator",			//	simulator help
-	"$tech",					// tech help
-	"$command"				// command help
-};
 
 ////////////////////////////////////////////////////////////////////
 // Game-wide globals
@@ -95,8 +89,10 @@ shader Grey_shader;
 static int help_left_bracket_bitmap;
 static int help_right_bracket_bitmap;
 static help_overlay help_overlaylist[MAX_HELP_OVERLAYS];
+int num_help_overlays;
 
 static int current_helpid = -1;		// the currently active overlay_id, only really used for the debug console funxions
+static int current_resolution = -1;
 int Help_overlay_flags;
 static int Source_game_state;			// state from where F1 was pressed
 
@@ -105,50 +101,57 @@ static int Source_game_state;			// state from where F1 was pressed
 ////////////////////////////////////////////////////////////////////
 
 
+int help_overlay_get_index(const char* overlay_name)
+{
+	for (int i = 0; i < num_help_overlays; i++) {
+		if (!stricmp(overlay_name, help_overlaylist[i].name)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 // query whether a help overlay is active (ie being displayed)
 int help_overlay_active(int overlay_id)
 {
-	Assert(overlay_id >= 0 && overlay_id < MAX_HELP_OVERLAYS);
+	Assert(overlay_id < MAX_HELP_OVERLAYS);
+
+	if (overlay_id < 0) {
+		return 0;
+	}
+
 	return Help_overlay_flags & (1<<overlay_id);
 }
 
 // stop displaying a help overlay
-void help_overlay_set_state(int overlay_id, int state)
+void help_overlay_set_state(int overlay_id, int resolution_index, int state)
 {
-	Assert(overlay_id >= 0 && overlay_id < MAX_HELP_OVERLAYS);
+	Assert(overlay_id < MAX_HELP_OVERLAYS);
 
-	if ( state > 0 ) {
-		Help_overlay_flags |= (1<<overlay_id);
-		current_helpid = overlay_id;
-	} else {
-		Help_overlay_flags &= ~(1<<overlay_id);
-		//current_helpid = -1;
+	if ( (overlay_id >= 0) && (overlay_id < num_help_overlays) &&
+			(resolution_index >= 0) && (resolution_index < help_overlaylist[overlay_id].num_resolutions) ) {
+		if ( state > 0 ) {
+			Help_overlay_flags |= (1<<overlay_id);
+			current_helpid = overlay_id;
+			current_resolution = resolution_index;
+		} else {
+			Help_overlay_flags &= ~(1<<overlay_id);
+			//current_helpid = -1;
+		}
 	}
 
 }
 
-// load in the bitmap for a help overlay
-// FIXME - leftover from the old bitmap overlay days - prune this out sometime
-void help_overlay_load(int overlay_id)
-{
-	return;
-} 
-
-// unload a bitmap of a help overlay
-// FIXME - leftover from the old bitmap overlay days - prune this out sometime
-void help_overlay_unload(int overlay_id)
-{
-	return; 
-}
-
 // maybe blit a bitmap of a help overlay to the screen
-void help_overlay_maybe_blit(int overlay_id)
+void help_overlay_maybe_blit(int overlay_id, int resolution_index)
 {
-	Assert(overlay_id >= 0 && overlay_id < MAX_HELP_OVERLAYS);
+	Assert(overlay_id < MAX_HELP_OVERLAYS);
 
-	if ( Help_overlay_flags & (1<<overlay_id) ) {
+	if ( (overlay_id >= 0) && (Help_overlay_flags & (1<<overlay_id)) &&
+			(resolution_index >= 0) && (resolution_index < help_overlaylist[overlay_id].num_resolutions) ) {
 		context_help_grey_screen();
-		help_overlay_blit(overlay_id);				
+		help_overlay_blit(overlay_id, resolution_index);
 	}
 }
 
@@ -183,26 +186,23 @@ void context_help_init()
 void context_help_grey_screen()
 {
 	gr_set_shader(&Grey_shader);
-	gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, false);
+	gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, GR_RESIZE_NONE);
 }
 
 // launch_context_help() will switch to a context sensitive help state
 void launch_context_help()
 {
+	int overlay_id = -1;
+	int resolution_index = gr_screen.res;
+
 	// look at the state the game was in when F1 was pressed
 	Source_game_state = gameseq_get_state();
 
 	switch (Source_game_state) {
 
 		case GS_STATE_MAIN_MENU:
-			int main_hall_num;
-			main_hall_num = (main_hall_id() == 0) ? MH_OVERLAY : MH2_OVERLAY;
-			if ( !help_overlay_active(main_hall_num) ) {
-				help_overlay_set_state(main_hall_num, 1);
-			}
-			else {
-				help_overlay_set_state(main_hall_num, 0);
-			}
+			overlay_id = main_hall_get_overlay_id();
+			resolution_index = main_hall_get_overlay_resolution_index();
 			break;
 
 		case GS_STATE_GAME_PLAY:
@@ -212,139 +212,59 @@ void launch_context_help()
 			break;
 
 		case GS_STATE_BRIEFING:
-			if ( !help_overlay_active(BR_OVERLAY) ) {
-				help_overlay_set_state(BR_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(BR_OVERLAY, 0);
-			}
+			overlay_id = Briefing_overlay_id;
 			break;
 
 		case GS_STATE_SHIP_SELECT:
-			if ( !help_overlay_active(SS_OVERLAY) ) {
-				help_overlay_set_state(SS_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(SS_OVERLAY, 0);
-			}
+			overlay_id = Ship_select_overlay_id;
 			break;
 
 		case GS_STATE_WEAPON_SELECT:
-			if ( !help_overlay_active(WL_OVERLAY) ) {
-				help_overlay_set_state(WL_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(WL_OVERLAY, 0);
-			}
+			overlay_id = Weapon_select_overlay_id;
 			break;
 
 		case GS_STATE_BARRACKS_MENU:
-			if ( !help_overlay_active(BARRACKS_OVERLAY) ) {
-				help_overlay_set_state(BARRACKS_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(BARRACKS_OVERLAY, 0);
-			}
+			overlay_id = Barracks_overlay_id;
 			break;
 
 		case GS_STATE_CONTROL_CONFIG:
-			if ( !help_overlay_active(CONTROL_CONFIG_OVERLAY) ) {
-				help_overlay_set_state(CONTROL_CONFIG_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(CONTROL_CONFIG_OVERLAY, 0);
-			}
+			overlay_id = Control_config_overlay_id;
 			break;
 
 		case GS_STATE_DEBRIEF:
-			if ( !help_overlay_active(DEBRIEFING_OVERLAY) ) {
-				help_overlay_set_state(DEBRIEFING_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(DEBRIEFING_OVERLAY, 0);
-			}
+			overlay_id = Debrief_overlay_id;
 			break;
 
 		case GS_STATE_MULTI_HOST_SETUP:
-			if ( !help_overlay_active(MULTI_CREATE_OVERLAY) ) {
-				help_overlay_set_state(MULTI_CREATE_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(MULTI_CREATE_OVERLAY, 0);
-			}
+			overlay_id = Multi_create_overlay_id;
 			break;
 
 		case GS_STATE_MULTI_START_GAME:
-			if ( !help_overlay_active(MULTI_START_OVERLAY) ) {
-				help_overlay_set_state(MULTI_START_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(MULTI_START_OVERLAY, 0);
-			}
+			overlay_id = Multi_sg_overlay_id;
 			break;
-/*
-		case GS_STATE_NET_CHAT:
-			if (!help_overlay_active(FS2OX_OVERLAY) ) {
-				help_overlay_set_state(FS2OX_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(FS2OX_OVERLAY, 1);
-			}
-			break;
-*/
+
 		case GS_STATE_MULTI_JOIN_GAME:
-			if ( !help_overlay_active(MULTI_JOIN_OVERLAY) ) {
-				help_overlay_set_state(MULTI_JOIN_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(MULTI_JOIN_OVERLAY, 0);
-			}
+			overlay_id = Multi_join_overlay_id;
 			break;
 
 		case GS_STATE_HOTKEY_SCREEN:
-			if ( !help_overlay_active(HOTKEY_OVERLAY) ) {
-				help_overlay_set_state(HOTKEY_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(HOTKEY_OVERLAY, 0);
-			}
+			overlay_id = Hotkey_overlay_id;
 			break;
 
 		case GS_STATE_CAMPAIGN_ROOM:
-			if ( !help_overlay_active(CAMPAIGN_ROOM_OVERLAY) ) {
-				help_overlay_set_state(CAMPAIGN_ROOM_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(CAMPAIGN_ROOM_OVERLAY, 0);
-			}
+			overlay_id = Campaign_room_overlay_id;
 			break;
 
 		case GS_STATE_SIMULATOR_ROOM:
-			if ( !help_overlay_active(SIM_ROOM_OVERLAY) ) {
-				help_overlay_set_state(SIM_ROOM_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(SIM_ROOM_OVERLAY, 0);
-			}
+			overlay_id = Sim_room_overlay_id;
 			break;
 
-		case GS_STATE_TECH_MENU: {				
-			if ( !help_overlay_active(TECH_ROOM_OVERLAY) ) {
-				help_overlay_set_state(TECH_ROOM_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(TECH_ROOM_OVERLAY, 0);
-			}
+		case GS_STATE_TECH_MENU:
+			overlay_id = Techroom_overlay_id;
 			break;
-		}
 
 		case GS_STATE_CMD_BRIEF:
-			if ( !help_overlay_active(CMD_BRIEF_OVERLAY) ) {
-				help_overlay_set_state(CMD_BRIEF_OVERLAY, 1);
-			}
-			else {
-				help_overlay_set_state(CMD_BRIEF_OVERLAY, 0);
-			}
+			overlay_id = Cmd_brief_overlay_id;
 			break;
 
 		default:
@@ -352,12 +272,24 @@ void launch_context_help()
 			break;
 
 	} // end switch
+
+	if (overlay_id >= 0) {
+		if ( !help_overlay_active(overlay_id) ) {
+			help_overlay_set_state(overlay_id, resolution_index, 1);
+		}
+		else {
+			help_overlay_set_state(overlay_id, resolution_index, 0);
+		}
+	}
 }
 
 void close_help(){
 	for (int overlay_id=0; overlay_id<MAX_HELP_OVERLAYS; overlay_id++){
-		for(int i = 0; i<HELP_MAX_ITEM; i++)
-		safe_kill(help_overlaylist[overlay_id].textlist[GR_640][i].string);
+		if (help_overlaylist[overlay_id].textlist.size() > 0) {
+			for(SCP_vector<help_text>::iterator ii = help_overlaylist[overlay_id].textlist.at(0).begin(); ii != help_overlaylist[overlay_id].textlist.at(0).end(); ++ii) {
+				safe_kill(ii->string);
+			}
+		}
 	}
 }
 
@@ -375,145 +307,200 @@ void help_overlay_init()
 	Assertion( help_left_bracket_bitmap >= 0, "Failed to load bitmap left_bracket for help overlay\n");
 
 	atexit(close_help);
+
+	num_help_overlays = 0;
+
 	// parse help.tbl
-	parse_helptbl();
+	parse_helptbl(HELP_OVERLAY_FILENAME);
+
+	// look for any modular tables
+	parse_modular_table(NOX("*-hlp.tbm"), parse_helptbl);
 }
 
 // parses help.tbl and populates help_overlaylist[]
-void parse_helptbl()
+void parse_helptbl(const char *filename)
 {
-	int overlay_id, currcount;
+	int overlay_id, currcount, vtxcount;
+	char name[HELP_MAX_NAME_LENGTH];
 	char buf[HELP_MAX_STRING_LENGTH + 1];
-	int i, rval;
+	int i, j;
 
-	// open localization
-	lcl_ext_open();
+	SCP_vector<help_pline> pline_temp;
+	help_pline pline_temp2;
+	SCP_vector<help_text> text_temp;
+	help_text text_temp2;
+	SCP_vector<help_right_bracket> rbracket_temp;
+	help_right_bracket rbracket_temp2;
+	SCP_vector<help_left_bracket> lbracket_temp;
+	help_left_bracket lbracket_temp2;
+	vec3d vec3d_temp;
 	
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", HELP_OVERLAY_FILENAME, rval));
-		lcl_ext_close();
-		return;
-	} 
-
-	read_file_text(HELP_OVERLAY_FILENAME, CF_TYPE_TABLES);
-
-	// for each overlay...
-	for (overlay_id=0; overlay_id<MAX_HELP_OVERLAYS; overlay_id++) {
-
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
-		skip_to_string(help_overlay_section_names[overlay_id]);
 
-		// clear out counters in the overlay struct
-		help_overlaylist[overlay_id].plinecount = 0;
-		help_overlaylist[overlay_id].textcount = 0;
-		help_overlaylist[overlay_id].rbracketcount = 0;
-		help_overlaylist[overlay_id].lbracketcount = 0;
-		
-		// read in all elements for this overlay
-		while (!(check_for_string("$end")))  {
+		// for each overlay...
+		while (optional_string("$")) {
 
-			if (optional_string("+pline")) {
+			stuff_string(name, F_NAME, HELP_MAX_NAME_LENGTH);
 
-				currcount = help_overlaylist[overlay_id].plinecount;
-				int a, b;		// temp vars to read in int before cast to float;
+			overlay_id = help_overlay_get_index(name);
 
-				if (currcount < HELP_MAX_ITEM) {
+			if (overlay_id < 0) {
+				if (num_help_overlays >= MAX_HELP_OVERLAYS) {
+					Warning(LOCATION, "Could not load help overlay after '%s' as maximum number of help overlays was reached (Max is %d)", help_overlaylist[overlay_id - 1].name, MAX_HELP_OVERLAYS);
+
+					if (!skip_to_string("$end")) {
+						Error(LOCATION, "Couldn't find $end. Help.tbl or -hlp.tbm is invalid.\n");
+					}
+
+					continue;
+				}
+				else {
+					overlay_id = num_help_overlays;
+					strcpy_s(help_overlaylist[overlay_id].name, name);
+					num_help_overlays++;
+				}
+			}
+
+			// clear out counters in the overlay struct
+			help_overlaylist[overlay_id].plinecount = 0;
+			help_overlaylist[overlay_id].textcount = 0;
+			help_overlaylist[overlay_id].rbracketcount = 0;
+			help_overlaylist[overlay_id].lbracketcount = 0;
+
+			help_overlaylist[overlay_id].fontlist.clear();
+			help_overlaylist[overlay_id].plinelist.clear();
+			help_overlaylist[overlay_id].textlist.clear();
+			help_overlaylist[overlay_id].rbracketlist.clear();
+			help_overlaylist[overlay_id].lbracketlist.clear();
+
+			if (optional_string("+resolutions")) {
+				stuff_int(&help_overlaylist[overlay_id].num_resolutions);
+			}
+			else {
+				help_overlaylist[overlay_id].num_resolutions = 2;
+			}
+
+			if (help_overlaylist[overlay_id].num_resolutions < 1) {
+				Error(LOCATION, "+resolutions in %s is %d. (Must be 1 or greater)", filename, help_overlaylist[overlay_id].num_resolutions);
+			}
+
+			if (optional_string("+font")) {
+				int font_index;
+				for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
+					stuff_int(&font_index);
+					help_overlaylist[overlay_id].fontlist.push_back(font_index);
+				}
+			}
+			else {
+				for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
+					help_overlaylist[overlay_id].fontlist.push_back(FONT1);
+				}
+			}
+
+			for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
+				help_overlaylist[overlay_id].plinelist.push_back(pline_temp);
+				help_overlaylist[overlay_id].textlist.push_back(text_temp);
+				help_overlaylist[overlay_id].rbracketlist.push_back(rbracket_temp);
+				help_overlaylist[overlay_id].lbracketlist.push_back(lbracket_temp);
+			}
+
+			int type;
+			// read in all elements for this overlay
+			while ((type = required_string_one_of(5, "+pline", "+text", "+right_bracket", "+left_bracket", "$end")) != 4) {	// Doing it this way means an error lists "$end" at the end, which seems appropriate. -MageKing17
+
+				switch (type) {
+				case 0:	// +pline
+					required_string("+pline");
+					currcount = help_overlaylist[overlay_id].plinecount;
+					int a, b;		// temp vars to read in int before cast to float;
+
 					// read number of pline vertices
-					stuff_int(&help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtxcount);		// note that it is read into GR_640
-					// help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtxcount = help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtxcount;			// set equal to 1024 version vertex count to prevent bugs
-					Assert(help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtxcount <= HELP_MAX_PLINE_VERTICES);
-					// get 640x480 vertex coordinates
-					for (i=0; i<help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtxcount; i++) {
-						stuff_int(&a);
-						stuff_int(&b);
-						help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i].xyz.x = (float)a;
-						help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i].xyz.y = (float)b;
-						help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i].xyz.z = 0.0f;
-						help_overlaylist[overlay_id].plinelist[GR_640][currcount].pvtx[i] = &help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[i];
+					stuff_int(&vtxcount);
+					// get vertex coordinates for each resolution
+					for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
+						help_overlaylist[overlay_id].plinelist.at(i).push_back(pline_temp2);
+						for (j = 0; j < vtxcount; j++) {
+							help_overlaylist[overlay_id].plinelist.at(i).at(currcount).vtx.push_back(vec3d_temp);
+							help_overlaylist[overlay_id].plinelist.at(i).at(currcount).vtxcount = vtxcount;
+							stuff_int(&a);
+							stuff_int(&b);
+							help_overlaylist[overlay_id].plinelist.at(i).at(currcount).vtx.at(j).xyz.x = (float)a;
+							help_overlaylist[overlay_id].plinelist.at(i).at(currcount).vtx.at(j).xyz.y = (float)b;
+							help_overlaylist[overlay_id].plinelist.at(i).at(currcount).vtx.at(j).xyz.z = 0.0f;
+						}
 					}
-					// get 1024x768 vertex coordinates
-					for (i=0; i<help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtxcount; i++) {
-						stuff_int(&a);
-						stuff_int(&b);
-						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i].xyz.x = (float)a;
-						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i].xyz.y = (float)b;
-						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i].xyz.z = 0.0f;
-						help_overlaylist[overlay_id].plinelist[GR_1024][currcount].pvtx[i] = &help_overlaylist[overlay_id].plinelist[GR_1024][currcount].vtx[i];
+
+					help_overlaylist[overlay_id].plinecount++;
+					break;
+				case 1:	// +text
+					required_string("+text");
+					currcount = help_overlaylist[overlay_id].textcount;
+
+					// get coordinates for each resolution
+					for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
+						help_overlaylist[overlay_id].textlist.at(i).push_back(text_temp2);
+						stuff_int(&(help_overlaylist[overlay_id].textlist.at(i).at(currcount).x_coord));
+						stuff_int(&(help_overlaylist[overlay_id].textlist.at(i).at(currcount).y_coord));
 					}
-				}
 
-				//mprintf(("Found pline - start location (%f,%f), end location (%f,%f)\n", help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[0].xyz.x, help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[0].xyz.y, help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[2].xyz.x, help_overlaylist[overlay_id].plinelist[GR_640][currcount].vtx[2].xyz.y));
-				help_overlaylist[overlay_id].plinecount++;
-
-			} else if (optional_string("+text")) {
-
-				currcount = help_overlaylist[overlay_id].textcount;
-
-				if (currcount < HELP_MAX_ITEM) {
-					// get 640x480 coordinates
-					stuff_int(&(help_overlaylist[overlay_id].textlist[GR_640][currcount].x_coord));
-					stuff_int(&(help_overlaylist[overlay_id].textlist[GR_640][currcount].y_coord));
-					// get 1024x768 coordinates
-					stuff_int(&(help_overlaylist[overlay_id].textlist[GR_1024][currcount].x_coord));
-					stuff_int(&(help_overlaylist[overlay_id].textlist[GR_1024][currcount].y_coord));
-
-					// get string (always use the GR_640 one)
+					// get string (always use the first resolution)
 					stuff_string(buf, F_MESSAGE, sizeof(buf));
-					help_overlaylist[overlay_id].textlist[GR_640][currcount].string = vm_strdup(buf);
+					help_overlaylist[overlay_id].textlist.at(0).at(currcount).string = vm_strdup(buf);
 
-					//mprintf(("Found text %d on overlay %d - location (%d,%d) @ 640x480 :: location (%d,%d) @ 1024x768\n", currcount, overlay_id, help_overlaylist[overlay_id].textlist[GR_640][currcount].x_coord, help_overlaylist[overlay_id].textlist[GR_640][currcount].y_coord, help_overlaylist[overlay_id].textlist[GR_1024][currcount].x_coord, help_overlaylist[overlay_id].textlist[GR_1024][currcount].x_coord));
 					help_overlaylist[overlay_id].textcount++;
-				}
+					break;
+				case 2: // +right_bracket
+					required_string("+right_bracket");
+					currcount = help_overlaylist[overlay_id].rbracketcount;
 
-			} else if (optional_string("+right_bracket")) {
+					// get coordinates for each resolution
+					for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
+						help_overlaylist[overlay_id].rbracketlist.at(i).push_back(rbracket_temp2);
+						stuff_int(&(help_overlaylist[overlay_id].rbracketlist.at(i).at(currcount).x_coord));
+						stuff_int(&(help_overlaylist[overlay_id].rbracketlist.at(i).at(currcount).y_coord));
+					}
 
-				currcount = help_overlaylist[overlay_id].rbracketcount;
-
-				if (currcount < HELP_MAX_ITEM) {
-					// get 640x480 coordinates
-					stuff_int(&(help_overlaylist[overlay_id].rbracketlist[GR_640][currcount].x_coord));
-					stuff_int(&(help_overlaylist[overlay_id].rbracketlist[GR_640][currcount].y_coord));
-					// get 1024x768 coordinates
-					stuff_int(&(help_overlaylist[overlay_id].rbracketlist[GR_1024][currcount].x_coord));
-					stuff_int(&(help_overlaylist[overlay_id].rbracketlist[GR_1024][currcount].y_coord));
-
-					//mprintf(("Found rbracket %d on overlay %d - location (%d,%d) @ 640x480 :: location (%d,%d) @ 1024x768\n", currcount, overlay_id, help_overlaylist[overlay_id].rbracketlist[GR_640][currcount].x_coord, help_overlaylist[overlay_id].rbracketlist[GR_640][currcount].y_coord, help_overlaylist[overlay_id].rbracketlist[GR_1024][currcount].x_coord, help_overlaylist[overlay_id].rbracketlist[GR_1024][currcount].y_coord));
 					help_overlaylist[overlay_id].rbracketcount++;
-				}
+					break;
+				case 3: // +left_bracket
+					required_string("+left_bracket");
+					currcount = help_overlaylist[overlay_id].lbracketcount;
 
-			} else if (optional_string("+left_bracket")) {
+					// get coordinates for each resolution
+					for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
+						help_overlaylist[overlay_id].lbracketlist.at(i).push_back(lbracket_temp2);
+						stuff_int(&(help_overlaylist[overlay_id].lbracketlist.at(i).at(currcount).x_coord));
+						stuff_int(&(help_overlaylist[overlay_id].lbracketlist.at(i).at(currcount).y_coord));
+					}
 
-				currcount = help_overlaylist[overlay_id].lbracketcount;
-
-				if (currcount < HELP_MAX_ITEM) {
-					// get 640x480 coordinates
-					stuff_int(&(help_overlaylist[overlay_id].lbracketlist[GR_640][currcount].x_coord));
-					stuff_int(&(help_overlaylist[overlay_id].lbracketlist[GR_640][currcount].y_coord));
-					// get 1024x768 coordinates
-					stuff_int(&(help_overlaylist[overlay_id].lbracketlist[GR_1024][currcount].x_coord));
-					stuff_int(&(help_overlaylist[overlay_id].lbracketlist[GR_1024][currcount].y_coord));
-
-					//mprintf(("Found lbracket %d on overlay %d - location (%d,%d) @ 640x480 :: location (%d,%d) @ 1024x768\n", currcount, overlay_id, help_overlaylist[overlay_id].lbracketlist[GR_640][currcount].x_coord, help_overlaylist[overlay_id].lbracketlist[GR_640][currcount].y_coord, help_overlaylist[overlay_id].lbracketlist[GR_1024][currcount].x_coord, help_overlaylist[overlay_id].lbracketlist[GR_1024][currcount].y_coord));
 					help_overlaylist[overlay_id].lbracketcount++;
+					break;
+				case -1:
+					// -noparseerrors is set
+					break;
+				case 4: // $end
+				default:
+					Assertion(false, "This should never happen.\n");
+					break;
 				}
-
-			} else {
-				// help.tbl is corrupt
-				Assert(0);
-
-			}		// end if
-
+			}		// end while
+			required_string("$end");
 		}		// end while
-	}		// end for
-
-	// close localization
-	lcl_ext_close();
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 
 
 // draw overlay on the screen
-void help_overlay_blit(int overlay_id) 
+void help_overlay_blit(int overlay_id, int resolution_index)
 {
 	int idx, width, height;
 	int plinecount = help_overlaylist[overlay_id].plinecount;
@@ -523,32 +510,34 @@ void help_overlay_blit(int overlay_id)
 
 	Assert(overlay_id >= 0 && overlay_id < MAX_HELP_OVERLAYS);
 
-	// this draws each line of help text with white on black text (use the GR_640 index for the string)
+	// this draws each line of help text with white on black text (use the first resolution index for the string)
+	gr_set_font(help_overlaylist[overlay_id].fontlist.at(resolution_index));
 	for (idx = 0; idx < textcount; idx++) {
 		gr_set_color_fast(&Color_black);
-		gr_get_string_size(&width, &height, help_overlaylist[overlay_id].textlist[GR_640][idx].string, strlen(help_overlaylist[overlay_id].textlist[GR_640][idx].string));
-		gr_rect(help_overlaylist[overlay_id].textlist[gr_screen.res][idx].x_coord-2*HELP_PADDING, help_overlaylist[overlay_id].textlist[gr_screen.res][idx].y_coord-3*HELP_PADDING, width+4*HELP_PADDING, height+4*HELP_PADDING);
+		gr_get_string_size(&width, &height, help_overlaylist[overlay_id].textlist.at(0).at(idx).string, strlen(help_overlaylist[overlay_id].textlist.at(0).at(idx).string));
+		gr_rect(help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).x_coord-2*HELP_PADDING, help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).y_coord-3*HELP_PADDING, width+4*HELP_PADDING, height+4*HELP_PADDING, GR_RESIZE_MENU);
 		gr_set_color_fast(&Color_bright_white);
-		gr_printf(help_overlaylist[overlay_id].textlist[gr_screen.res][idx].x_coord, help_overlaylist[overlay_id].textlist[gr_screen.res][idx].y_coord, help_overlaylist[overlay_id].textlist[GR_640][idx].string);
+		gr_printf_menu(help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).x_coord, help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).y_coord, help_overlaylist[overlay_id].textlist.at(0).at(idx).string);
 	}
+	gr_set_font(FONT1);
 
 	// this draws each right bracket
 	for (idx = 0; idx < rbracketcount; idx++) {
 		gr_set_bitmap(help_right_bracket_bitmap);
-		gr_bitmap(help_overlaylist[overlay_id].rbracketlist[gr_screen.res][idx].x_coord, help_overlaylist[overlay_id].rbracketlist[gr_screen.res][idx].y_coord);
+		gr_bitmap(help_overlaylist[overlay_id].rbracketlist.at(resolution_index).at(idx).x_coord, help_overlaylist[overlay_id].rbracketlist.at(resolution_index).at(idx).y_coord, GR_RESIZE_MENU);
 	}
 
 	// this draws each left bracket
 	for (idx = 0; idx < lbracketcount; idx++) {
 		gr_set_bitmap(help_left_bracket_bitmap);
-		gr_bitmap(help_overlaylist[overlay_id].lbracketlist[gr_screen.res][idx].x_coord, help_overlaylist[overlay_id].lbracketlist[gr_screen.res][idx].y_coord);
+		gr_bitmap(help_overlaylist[overlay_id].lbracketlist.at(resolution_index).at(idx).x_coord, help_overlaylist[overlay_id].lbracketlist.at(resolution_index).at(idx).y_coord, GR_RESIZE_MENU);
 	}	
 
 	// this draws each 2d line for the help screen
 	//gr_set_color_fast(&Color_yellow);
 	gr_set_color(255, 255, 0);
 	for (idx = 0; idx<plinecount; idx++) {
-		gr_pline_special(help_overlaylist[overlay_id].plinelist[gr_screen.res][idx].pvtx	, help_overlaylist[overlay_id].plinelist[GR_640][idx].vtxcount, HELP_PLINE_THICKNESS);
+		gr_pline_special(&help_overlaylist[overlay_id].plinelist.at(resolution_index).at(idx).vtx, HELP_PLINE_THICKNESS, GR_RESIZE_MENU);
 	}
 }
 
@@ -556,224 +545,185 @@ void help_overlay_blit(int overlay_id)
 // --------------------------------------------------
 // DEBUGGING STUFF
 // --------------------------------------------------
-
+// z64: These DCF's really need a do-over.
 DCF(help_reload, "Reloads help overlay data from help.tbl")
 {
-	if (Dc_command)	{
-		parse_helptbl();
-	}
-
-	if (Dc_help)	{
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: sample\nCrashes your machine.\n" );
 	}
 
-	if (Dc_status)	{
-		dc_printf( "Yes, my master." );
-	}
+	num_help_overlays = 0;
+	parse_helptbl(HELP_OVERLAY_FILENAME);
+	parse_modular_table(NOX("*-hlp.tbm"), parse_helptbl);
 }
 
 int h_textnum=0, h_amt=0, h_vtx = 0;
 
 void nudgetext_x(int textnum, int amount)
 {
-	help_overlaylist[current_helpid].textlist[gr_screen.res][textnum].x_coord += amount;
+	help_overlaylist[current_helpid].textlist.at(current_resolution).at(textnum).x_coord += amount;
 }
 void nudgetext_y(int textnum, int amount)
 {
-	help_overlaylist[current_helpid].textlist[gr_screen.res][textnum].y_coord += amount;
+	help_overlaylist[current_helpid].textlist.at(current_resolution).at(textnum).y_coord += amount;
 }
 void nudgepline_x(int plinenum, int plinevert, int amount)
 {
-	help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[plinevert].xyz.x += amount;
+	help_overlaylist[current_helpid].plinelist.at(current_resolution).at(plinenum).vtx[plinevert].xyz.x += amount;
 }
 void nudgepline_y(int plinenum, int plinevert, int amount)
 {
-	help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[plinevert].xyz.y += amount;
+	help_overlaylist[current_helpid].plinelist.at(current_resolution).at(plinenum).vtx[plinevert].xyz.y += amount;
 }
 void nudgerbracket_x(int num, int amount)
 {
-	help_overlaylist[current_helpid].rbracketlist[gr_screen.res][num].x_coord += amount;
+	help_overlaylist[current_helpid].rbracketlist.at(current_resolution).at(num).x_coord += amount;
 }
 void nudgerbracket_y(int num, int amount)
 {
-	help_overlaylist[current_helpid].rbracketlist[gr_screen.res][num].y_coord += amount;
+	help_overlaylist[current_helpid].rbracketlist.at(current_resolution).at(num).y_coord += amount;
 }
 void nudgelbracket_x(int num, int amount)
 {
-	help_overlaylist[current_helpid].lbracketlist[gr_screen.res][num].x_coord += amount;
+	help_overlaylist[current_helpid].lbracketlist.at(current_resolution).at(num).x_coord += amount;
 }
 void nudgelbracket_y(int num, int amount)
 {
-	help_overlaylist[current_helpid].lbracketlist[gr_screen.res][num].y_coord += amount;
+	help_overlaylist[current_helpid].lbracketlist.at(current_resolution).at(num).y_coord += amount;
 }
 void showtextpos(int textnum)
 {
-	dc_printf("text %d is now located at (%d, %d)", textnum, help_overlaylist[current_helpid].textlist[gr_screen.res][textnum].x_coord, help_overlaylist[current_helpid].textlist[gr_screen.res][textnum].y_coord );
+	dc_printf("text %d is now located at (%d, %d)", textnum, help_overlaylist[current_helpid].textlist.at(current_resolution).at(textnum).x_coord, help_overlaylist[current_helpid].textlist.at(current_resolution).at(textnum).y_coord );
 }
 void showrbracketpos(int num)
 {
-	dc_printf("rbracket %d is now located at (%d, %d)", num, help_overlaylist[current_helpid].rbracketlist[gr_screen.res][num].x_coord, help_overlaylist[current_helpid].rbracketlist[gr_screen.res][num].y_coord );
+	dc_printf("rbracket %d is now located at (%d, %d)", num, help_overlaylist[current_helpid].rbracketlist.at(current_resolution).at(num).x_coord, help_overlaylist[current_helpid].rbracketlist.at(current_resolution).at(num).y_coord );
 }
 void showlbracketpos(int num)
 {
-	dc_printf("lbracket %d on overlay %d is now located at (%d, %d)", num, current_helpid, help_overlaylist[current_helpid].lbracketlist[gr_screen.res][num].x_coord, help_overlaylist[current_helpid].lbracketlist[gr_screen.res][num].y_coord );
+	dc_printf("lbracket %d on overlay %d is now located at (%d, %d)", num, current_helpid, help_overlaylist[current_helpid].lbracketlist.at(current_resolution).at(num).x_coord, help_overlaylist[current_helpid].lbracketlist.at(current_resolution).at(num).y_coord );
 }
 void showplinepos(int plinenum)
 {
 	int i;
-	dc_printf("pline %d on overlay %d vertices are now ", plinenum, current_helpid, help_overlaylist[current_helpid].textlist[gr_screen.res][plinenum].y_coord );
-	for (i=0; i<help_overlaylist[current_helpid].plinelist[GR_640][plinenum].vtxcount; i++)
+	dc_printf("pline %d on overlay %d vertices are now ", plinenum, current_helpid, help_overlaylist[current_helpid].textlist.at(current_resolution).at(plinenum).y_coord );
+	for (i=0; i<help_overlaylist[current_helpid].plinelist.at(gr_screen.res).at(plinenum).vtxcount; i++)
 	{
-		dc_printf("(%3.0f %3.0f) ", help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[i].xyz.x, help_overlaylist[current_helpid].plinelist[gr_screen.res][plinenum].vtx[i].xyz.y);
+		dc_printf("(%3.0f %3.0f) ", help_overlaylist[current_helpid].plinelist.at(current_resolution).at(plinenum).vtx.at(i).xyz.x, help_overlaylist[current_helpid].plinelist.at(current_resolution).at(plinenum).vtx.at(i).xyz.y);
 	}
 }
 
 DCF(help_nudgetext_x, "Use to visually position overlay text.")
 {
-	if (Dc_command)	{
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_textnum = Dc_arg_int;		
-		}
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_amt = Dc_arg_int;		
-		}
-		nudgetext_x(h_textnum, h_amt);
-	}
 
-	if (Dc_help)	{
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: sample\nCrashes your machine.\n" );
+		return;
 	}
 
-	if (Dc_status)	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		showtextpos(h_textnum);
+		return;
 	}
+
+	dc_stuff_int(&h_textnum);
+	dc_stuff_int(&h_amt);
+
+	nudgetext_x(h_textnum, h_amt);
 }
 
 DCF(help_nudgetext_y, "Use to visually position overlay text.")
 {
-	if (Dc_command)	{
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_textnum = Dc_arg_int;		
-		}
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_amt = Dc_arg_int;		
-		}
-		nudgetext_y(h_textnum, h_amt);
-	}
-
-	if (Dc_help)	{
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: sample\nCrashes your machine.\n" );
+		return;
 	}
 
-	if (Dc_status)	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		showtextpos(h_textnum);
+		return;
 	}
+
+	dc_stuff_int(&h_textnum);
+	dc_stuff_int(&h_amt);
+	
+	nudgetext_y(h_textnum, h_amt);
 }
 
 DCF(help_nudgepline_x, "Use to visually position overlay polylines.")
 {
-	if (Dc_command)	{
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_textnum = Dc_arg_int;		
-		}
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_vtx = Dc_arg_int;		
-		}
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_amt = Dc_arg_int;		
-		}
-		nudgepline_x(h_textnum, h_vtx, h_amt);
-	}
-
-	if (Dc_help)	{
+		if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: help_nudgepline [pline_number] [vertex_number] [distance]\n" );
+		return;
 	}
 
-	if (Dc_status)	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))	{
 		showplinepos(h_textnum);
+		return;
 	}
+
+	dc_stuff_int(&h_textnum);
+	dc_stuff_int(&h_vtx);
+	dc_stuff_int(&h_amt);
+
+	nudgepline_x(h_textnum, h_vtx, h_amt);
 }
 
 
 DCF(help_nudgepline_y, "Use to visually position overlay polylines.")
 {
-	if (Dc_command)	{
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_textnum = Dc_arg_int;		
-		}
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_vtx = Dc_arg_int;		
-		}
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_amt = Dc_arg_int;		
-		}
-		nudgepline_y(h_textnum, h_vtx, h_amt);
-	}
-
-	if (Dc_help)	{
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: help_nudgepline [pline_number] [vertex_number] [distance]\n" );
+		return;
 	}
 
-	if (Dc_status)	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))	{
 		showplinepos(h_textnum);
+		return;
 	}
+
+	dc_stuff_int(&h_textnum);
+	dc_stuff_int(&h_vtx);
+	dc_stuff_int(&h_amt);
+
+	nudgepline_y(h_textnum, h_vtx, h_amt);
 }
 
 
 DCF(help_nudgerbracket_x, "Use to visually position overlay right bracket.")
 {
-	if (Dc_command)	{
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_textnum = Dc_arg_int;		
-		}
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_amt = Dc_arg_int;		
-		}
-		nudgerbracket_x(h_textnum, h_amt);
-	}
-
-	if (Dc_help)	{
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: help_nudgerbracket_x [num] [amount]\n" );
+		return;
 	}
 
-	if (Dc_status)	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))	{
 		showrbracketpos(h_textnum);
+		return;
 	}
+
+	dc_stuff_int(&h_textnum);
+	dc_stuff_int(&h_amt);
+
+	nudgerbracket_x(h_textnum, h_amt);
 }
 
 DCF(help_nudgerbracket_y, "Use to visually position overlay right bracket.")
 {
-	if (Dc_command)	{
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_textnum = Dc_arg_int;		
-		}
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_amt = Dc_arg_int;		
-		}
-		nudgerbracket_y(h_textnum, h_amt);
-	}
-
-	if (Dc_help)	{
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: help_nudgerbracket_y [num] [amount]\n" );
+		return;
 	}
 
-	if (Dc_status)	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))	{
 		showrbracketpos(h_textnum);
+		return;
 	}
+
+	dc_stuff_int(&h_textnum);
+	dc_stuff_int(&h_amt);
+	
+	nudgerbracket_y(h_textnum, h_amt);
 }
 
 
@@ -781,46 +731,37 @@ DCF(help_nudgerbracket_y, "Use to visually position overlay right bracket.")
 
 DCF(help_nudgelbracket_x, "Use to visually position overlay left bracket.")
 {
-	if (Dc_command)	{
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_textnum = Dc_arg_int;		
-		}
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_amt = Dc_arg_int;		
-		}
-		nudgelbracket_x(h_textnum, h_amt);
-	}
 
-	if (Dc_help)	{
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: help_nudgelbracket_x [num] [amount]\n" );
+		return;
 	}
 
-	if (Dc_status)	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		showlbracketpos(h_textnum);
+		return;
 	}
+
+	dc_stuff_int(&h_textnum);
+	dc_stuff_int(&h_amt);
+
+	nudgelbracket_x(h_textnum, h_amt);
 }
 
 DCF(help_nudgelbracket_y, "Use to visually position overlay left bracket.")
 {
-	if (Dc_command)	{
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_textnum = Dc_arg_int;		
-		}
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			 h_amt = Dc_arg_int;		
-		}
-		nudgelbracket_y(h_textnum, h_amt);
-	}
-
-	if (Dc_help)	{
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: help_nudgelbracket_y [num] [amount]\n" );
+		return;
 	}
 
-	if (Dc_status)	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?"))	{
 		showlbracketpos(h_textnum);
+		return;
 	}
+
+	dc_stuff_int(&h_textnum);
+	dc_stuff_int(&h_amt);
+
+	nudgelbracket_y(h_textnum, h_amt);
 }

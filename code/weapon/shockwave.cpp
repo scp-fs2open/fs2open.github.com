@@ -19,7 +19,7 @@
 #include "gamesnd/gamesnd.h"
 #include "asteroid/asteroid.h"
 #include "object/object.h"
-
+#include "model/modelrender.h"
 
 // -----------------------------------------------------------
 // Module-wide globals
@@ -294,8 +294,13 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		if ( objp->type == OBJ_WEAPON ) {
 			// only apply to missiles with hitpoints
 			weapon_info* wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip->weapon_hitpoints <= 0 || !(wip->wi_flags2 & WIF2_TAKES_SHOCKWAVE_DAMAGE) || (Weapon_info[sw->weapon_info_index].wi_flags2 & WIF2_CIWS))
+			if (wip->weapon_hitpoints <= 0 || !(wip->wi_flags2 & WIF2_TAKES_SHOCKWAVE_DAMAGE))
 				continue;
+			if (sw->weapon_info_index >= 0) {
+				if (Weapon_info[sw->weapon_info_index].wi_flags2 & WIF2_CIWS) {
+					continue;
+				}
+			}
 		}
 
 	
@@ -332,6 +337,10 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		switch(objp->type) {
 		case OBJ_SHIP:
 			sw->obj_sig_hitlist[sw->num_objs_hit++] = objp->signature;
+			// If we're doing an AoE Electronics shockwave, do the electronics stuff. -MageKing17
+			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags3 & WIF3_AOE_ELECTRONICS) && !(objp->flags & OF_INVULNERABLE) ) {
+				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
+			}
 			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage );
 			weapon_area_apply_blast(NULL, objp, &sw->pos, blast, 1);
 			break;
@@ -378,7 +387,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
  *
  * @param objp	pointer to shockwave object
  */
-void shockwave_render(object *objp)
+void shockwave_render_DEPRECATED(object *objp)
 {
 	shockwave		*sw;
 	vertex			p;
@@ -386,6 +395,7 @@ void shockwave_render(object *objp)
 	Assert(objp->type == OBJ_SHOCKWAVE);
 	Assert(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES);
 
+    memset(&p, 0, sizeof(p));
 	sw = &Shockwaves[objp->instance];
 
 	if( (sw->delay_stamp != -1) && !timestamp_elapsed(sw->delay_stamp)){
@@ -408,7 +418,7 @@ void shockwave_render(object *objp)
 		float dist = vm_vec_dist_quick( &sw->pos, &Eye_position );
 
 		model_set_detail_level((int)(dist / (sw->radius * 10.0f)));
-		model_render( sw->model_id, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NO_FOGGING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL, sw->objnum);
+		model_render_DEPRECATED( sw->model_id, &Objects[sw->objnum].orient, &sw->pos, MR_DEPRECATED_NO_LIGHTING | MR_DEPRECATED_NO_FOGGING | MR_DEPRECATED_NORMAL | MR_DEPRECATED_CENTER_ALPHA | MR_DEPRECATED_NO_CULL, sw->objnum);
 
 		model_set_warp_globals();
 		if(Cmdline_fb_explosions)
@@ -441,6 +451,79 @@ void shockwave_render(object *objp)
 				((sw->time_elapsed/sw->total_time)>0.9f)?(1.0f-(sw->time_elapsed/sw->total_time))*10.0f:1.0f
 			);
 		}
+		batch_add_bitmap_rotated(
+			sw->current_bitmap, 
+			TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,
+			&p, 
+			fl_radians(sw->rot_angles.p), 
+			sw->radius
+		);
+	}
+}
+
+void shockwave_render(object *objp, draw_list *scene)
+{
+	shockwave		*sw;
+	vertex			p;
+
+	Assert(objp->type == OBJ_SHOCKWAVE);
+	Assert(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES);
+
+	sw = &Shockwaves[objp->instance];
+
+	if( (sw->delay_stamp != -1) && !timestamp_elapsed(sw->delay_stamp)){
+		return;
+	}
+
+	if ( (sw->current_bitmap < 0) && (sw->model_id < 0) )
+		return;
+
+	if (sw->model_id > -1) {
+		vec3d scale;
+		scale.xyz.x = scale.xyz.y = scale.xyz.z = sw->radius / 50.0f;
+
+		model_render_params render_info;
+
+		render_info.set_warp_params(-1, 1.0f - (sw->radius/sw->outer_radius), scale);
+
+		float dist = vm_vec_dist_quick( &sw->pos, &Eye_position );
+
+		render_info.set_detail_level_lock((int)(dist / (sw->radius * 10.0f)));
+		render_info.set_flags(MR_NO_LIGHTING | MR_NO_FOGGING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL | MR_NO_BATCH);
+		render_info.set_object_number(sw->objnum);
+
+		model_render_queue( &render_info, scene, sw->model_id, &Objects[sw->objnum].orient, &sw->pos);
+
+		if ( Cmdline_fb_explosions ) {
+			g3_transfer_vertex(&p, &sw->pos);
+
+			distortion_add_bitmap_rotated(
+				Shockwave_info[1].bitmap_id+shockwave_get_framenum(objp->instance, 94), 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_DISTORTION, 
+				&p, 
+				fl_radians(sw->rot_angles.p), 
+				sw->radius,
+				((sw->time_elapsed/sw->total_time)>0.9f)?(1.0f-(sw->time_elapsed/sw->total_time))*10.0f:1.0f
+				);
+		}
+	} else {
+		if (!Cmdline_nohtl) {
+			g3_transfer_vertex(&p, &sw->pos);
+		} else {
+			g3_rotate_vertex(&p, &sw->pos);
+		}
+
+		if ( Cmdline_fb_explosions ) {
+			distortion_add_bitmap_rotated(
+				sw->current_bitmap, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_DISTORTION, 
+				&p, 
+				fl_radians(sw->rot_angles.p), 
+				sw->radius,
+				((sw->time_elapsed/sw->total_time)>0.9f)?(1.0f-(sw->time_elapsed/sw->total_time))*10.0f:1.0f
+			);
+		}
+
 		batch_add_bitmap_rotated(
 			sw->current_bitmap, 
 			TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,
@@ -649,7 +732,7 @@ void shockwave_render_all()
 	while ( sw != &Shockwave_list ) {
 		next = sw->next;
 		Assert(sw->objnum != -1);
-		shockwave_render(&Objects[sw->objnum]);
+		shockwave_render_DEPRECATED(&Objects[sw->objnum]);
 		sw = next;
 	}
 }
@@ -719,7 +802,7 @@ void shockwave_page_in()
 		} else if (Shockwave_info[i].model_id >= 0) {
 			// for a model we have to run model_load() on it again to make sure
 			// that it's ref_count is sane for this mission
-			int idx = model_load( Shockwave_info[i].filename, 0, NULL );
+			int idx __attribute__((__unused__)) = model_load( Shockwave_info[i].filename, 0, NULL );
 			Assert( idx == Shockwave_info[i].model_id );
 
 			model_page_in_textures( Shockwave_info[i].model_id );

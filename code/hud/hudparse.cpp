@@ -45,6 +45,7 @@ float Hud_speed_multiplier = 1.0f;	//The E
 int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
 
 bool Hud_retail = true;
+bool Scale_retail_gauges = true;
 
 int Hud_font = -1;
 
@@ -163,7 +164,7 @@ int parse_ship_start()
 
 void parse_hud_gauges_tbl(const char *filename)
 {
-	int i, rval;
+	int i;
 	char *saved_Mp = NULL;
 
 	int colors[3] = {255, 255, 255};
@@ -171,110 +172,110 @@ void parse_hud_gauges_tbl(const char *filename)
 	color ship_color;
 	color *hud_clr_p = NULL;
 	color *ship_clr_p = NULL;
+	bool scale_gauge = true;
 
-	// open localization
-	lcl_ext_open();
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
-		return;
-	}
-
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	if(optional_string("$Load Retail Configuration:")) {
-		stuff_boolean(&Hud_retail);
-	}
-
-	if ( optional_string("$Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-		gr_init_alphacolor(&hud_color, colors[0], colors[1], colors[2], 255);
-		hud_clr_p = &hud_color;
-	}
-
-	if(optional_string("$Font:")) {
-		stuff_int(&Hud_font);
-	}
-	
-	if(optional_string("$Max Directives:")) {
-		stuff_int(&Max_directives);
-	}
-
-	if(optional_string("$Max Escort Ships:")) {
-		stuff_int(&Max_escort_ships);
-	}
-
-	if(optional_string("$Length Unit Multiplier:"))	{
-		stuff_float(&Hud_unit_multiplier);
-
-		if (Hud_unit_multiplier <= 0.0f) {
-			Warning(LOCATION, "\"$Length Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
-			Hud_unit_multiplier = 1.0f;
+		if (optional_string("$Load Retail Configuration:")) {
+			stuff_boolean(&Hud_retail);
 		}
-	}
 
-	if(optional_string("$Speed Unit Multiplier:")) {
-		stuff_float(&Hud_speed_multiplier);
+		if (optional_string("$Color:")) {
+			stuff_int_list(colors, 3);
 
-		if (Hud_speed_multiplier <= 0.0f) {
-			Warning(LOCATION, "\"$Speed Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_speed_multiplier);
-			Hud_speed_multiplier = 1.0f;
+			check_color(colors);
+			gr_init_alphacolor(&hud_color, colors[0], colors[1], colors[2], 255);
+			hud_clr_p = &hud_color;
 		}
-	} else {
-		Hud_speed_multiplier = Hud_unit_multiplier;
-	} 
 
-	if (optional_string("$Wireframe Targetbox:")) {
-		stuff_int(&Targetbox_wire);
-		if ((Targetbox_wire < 0) || (Targetbox_wire > 3)) {
-			Targetbox_wire = 0;
+		if (optional_string("$Font:")) {
+			stuff_int(&Hud_font);
 		}
-	}
 
-	if (optional_string("$Targetbox Shader Effect:")) {
-		stuff_int(&Targetbox_shader_effect);
-		if (Targetbox_shader_effect < 0) {
-			Targetbox_shader_effect = 0;
+		if (optional_string("$Max Directives:")) {
+			stuff_int(&Max_directives);
 		}
-	}
 
-	if (optional_string("$Lock Wireframe Mode:")) {
-		stuff_boolean(&Lock_targetbox_mode);
-	}
+		if (optional_string("$Max Escort Ships:")) {
+			stuff_int(&Max_escort_ships);
+		}
 
-	if(optional_string("$Reticle Style:")) {
-		int temp = required_string_either("FS1", "FS2"); 
+		if (optional_string("$Length Unit Multiplier:"))	{
+			stuff_float(&Hud_unit_multiplier);
 
-		// using require_string_either won't advance the Mp pointer to the next token so force it instead
-		skip_to_start_of_string("#Gauge Config");
+			if (Hud_unit_multiplier <= 0.0f) {
+				Warning(LOCATION, "\"$Length Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
+				Hud_unit_multiplier = 1.0f;
+			}
+		}
 
-		if (temp < 0)
-			Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
-		else
-			Hud_reticle_style = temp;
-	}
+		if (optional_string("$Speed Unit Multiplier:")) {
+			stuff_float(&Hud_speed_multiplier);
 
-	int base_res[2];
-	int ship_idx = -1;
-	int ship_font = -1;
-	int gauge_type = -1;
-	int use_font = -1;
-	color *use_clr_p = NULL;
-	SCP_vector<int> ship_classes;
-	bool retail_config = false;
-	int n_ships = 0;
+			if (Hud_speed_multiplier <= 0.0f) {
+				Warning(LOCATION, "\"$Speed Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_speed_multiplier);
+				Hud_speed_multiplier = 1.0f;
+			}
+		}
+		else {
+			Hud_speed_multiplier = Hud_unit_multiplier;
+		}
 
-	while(optional_string("#Gauge Config")) {
-		ship_classes.clear();
-		switch (optional_string_either("$Ship:", "$Ships:")) {
+		if (optional_string("$Wireframe Targetbox:")) {
+			stuff_int(&Targetbox_wire);
+			if ((Targetbox_wire < 0) || (Targetbox_wire > 3)) {
+				Targetbox_wire = 0;
+			}
+		}
+
+		if (optional_string("$Targetbox Shader Effect:")) {
+			stuff_int(&Targetbox_shader_effect);
+			if (Targetbox_shader_effect < 0) {
+				Targetbox_shader_effect = 0;
+			}
+		}
+
+		if (optional_string("$Lock Wireframe Mode:")) {
+			stuff_boolean(&Lock_targetbox_mode);
+		}
+
+		if (optional_string("$Scale Gauges:")) {
+			stuff_boolean(&scale_gauge);
+			Scale_retail_gauges = scale_gauge;
+		}
+
+		if (optional_string("$Reticle Style:")) {
+			int temp = required_string_either("FS1", "FS2");
+
+			// using require_string_either won't advance the Mp pointer to the next token so force it instead
+			skip_to_start_of_string("#Gauge Config");
+
+			if (temp < 0)
+				Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
+			else
+				Hud_reticle_style = temp;
+		}
+
+		int base_res[2];
+		int ship_idx = -1;
+		int ship_font = -1;
+		int gauge_type = -1;
+		int use_font = -1;
+		color *use_clr_p = NULL;
+		SCP_vector<int> ship_classes;
+		bool retail_config = false;
+		int n_ships = 0;
+
+		while (optional_string("#Gauge Config")) {
+			ship_classes.clear();
+			switch (optional_string_either("$Ship:", "$Ships:")) {
 			case 0:
 				mprintf(("$Ship in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"$Ships: (\"Some ship class\") instead.\n"));
 
-				if(!ships_inited) {
+				if (!ships_inited) {
 					// just in case ship info has not been initialized.
 					skip_to_start_of_string("#Gauge Config");
 					continue;
@@ -284,15 +285,15 @@ void parse_hud_gauges_tbl(const char *filename)
 				ship_idx = parse_ship_start();
 				ship_classes.push_back(ship_idx);
 
-				if(ship_idx >= 0) {
+				if (ship_idx >= 0) {
 					Ship_info[ship_idx].hud_enabled = true;
 
 					// see if we need to load defaults for this configuration
-					if(optional_string("$Load Retail Configuration:")) {
+					if (optional_string("$Load Retail Configuration:")) {
 						stuff_boolean(&Ship_info[ship_idx].hud_retail);
 					}
 
-					if ( optional_string("$Color:") ) {
+					if (optional_string("$Color:")) {
 						stuff_int_list(colors, 3);
 
 						check_color(colors);
@@ -300,10 +301,11 @@ void parse_hud_gauges_tbl(const char *filename)
 						ship_clr_p = &ship_color;
 					}
 
-					if(optional_string("$Font:")) {
+					if (optional_string("$Font:")) {
 						stuff_int(&ship_font);
 					}
-				} else {
+				}
+				else {
 					// can't find ship class. move on.
 					ship_classes.push_back(-1);
 					skip_to_start_of_string("#Gauge Config");
@@ -316,7 +318,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				n_ships = stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
 
-				if(optional_string("$Load Retail Configuration:")) {
+				if (optional_string("$Load Retail Configuration:")) {
 					stuff_boolean(&retail_config);
 				}
 
@@ -326,7 +328,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					Ship_info[shiparray[i]].hud_retail = retail_config;
 				}
 
-				if ( optional_string("$Color:") ) {
+				if (optional_string("$Color:")) {
 					stuff_int_list(colors, 3);
 
 					check_color(colors);
@@ -334,118 +336,132 @@ void parse_hud_gauges_tbl(const char *filename)
 					ship_clr_p = &ship_color;
 				}
 
-				if(optional_string("$Font:")) {
+				if (optional_string("$Font:")) {
 					stuff_int(&ship_font);
 				}
 				break;
 			default:
-			// No particular ship. -1 for default HUD configuration.
-			ship_classes.push_back(-1);
-			ship_font = -1;
-			ship_clr_p = NULL;
-			break; 
-		}
+				// No particular ship. -1 for default HUD configuration.
+				ship_classes.push_back(-1);
+				ship_font = -1;
+				ship_clr_p = NULL;
+				break;
+			}
 
-		if ( ship_clr_p != NULL ) {
-			use_clr_p = ship_clr_p;
-		} else {
-			use_clr_p = hud_clr_p;
-		}
+			if (ship_clr_p != NULL) {
+				use_clr_p = ship_clr_p;
+			}
+			else {
+				use_clr_p = hud_clr_p;
+			}
 
-		if(ship_font >= 0) {
-			use_font = ship_font;
-		} else {
-			use_font = Hud_font;
-		}
+			if (ship_font >= 0) {
+				use_font = ship_font;
+			}
+			else {
+				use_font = Hud_font;
+			}
 
-		// Now start going through resolution info for this HUD layout
-		required_string("$Base:");
+			// Now start going through resolution info for this HUD layout
+			required_string("$Base:");
 
-		// get the base width and height describing this HUD
-		stuff_int_list(base_res, 2, RAW_INTEGER_TYPE);
+			// get the base width and height describing this HUD
+			stuff_int_list(base_res, 2, RAW_INTEGER_TYPE);
 
-		// Pruning time. Let's see if the current resolution defined by the user matches the conditions set by this entry
-		if(optional_string("$Required Aspect:")) {
-			// filter aspect ratio.
-			if(optional_string("Full Screen")) {
-				if( (float)gr_screen.max_w / (float)gr_screen.max_h > 1.5) {
-					skip_to_start_of_string("#Gauge Config");
-					//skip_to_start_of_string_either("#Gauge Config", "#End");
-					continue;
+			// gauge scaling for this base res?
+			if (optional_string("$Scale Gauges:")) {
+				stuff_boolean(&scale_gauge);
+			}
+
+			// Pruning time. Let's see if the current resolution defined by the user matches the conditions set by this entry
+			if (optional_string("$Required Aspect:")) {
+				// filter aspect ratio.
+				if (optional_string("Full Screen")) {
+					if( (float)gr_screen.center_w / (float)gr_screen.center_h > 1.5) {
+						skip_to_start_of_string("#Gauge Config");
+						//skip_to_start_of_string_either("#Gauge Config", "#End");
+						continue;
+					}
 				}
-			} else if(optional_string("Wide Screen")) {
-				if( (float)gr_screen.max_w / (float)gr_screen.max_h <= 1.5) {
-					skip_to_start_of_string("#Gauge Config");
-					//skip_to_start_of_string_either("#Gauge Config", "#End");
-					continue;
-				}
-			} 
-		}
-		
-		// check minimum resolution
-		if(optional_string("$Min:")) {
-			int min_res[2];
-			stuff_int_list(min_res, 2, RAW_INTEGER_TYPE);
-			
-			if(min_res[0] > gr_screen.max_w) {
-				skip_to_start_of_string("#Gauge Config");
-				continue;
-			} else if (min_res[0] == gr_screen.max_w) {
-				if(min_res[1] > gr_screen.max_h) {
-					skip_to_start_of_string("#Gauge Config");
-					continue;
+				else if (optional_string("Wide Screen")) {
+					if( (float)gr_screen.center_w / (float)gr_screen.center_h <= 1.5) {
+						skip_to_start_of_string("#Gauge Config");
+						//skip_to_start_of_string_either("#Gauge Config", "#End");
+						continue;
+					}
 				}
 			}
-		}
 
-		// check maximum resolution
-		if(optional_string("$Max:")) {
-			int max_res[2];
-			stuff_int_list(max_res, 2, RAW_INTEGER_TYPE);
+			// check minimum resolution
+			if (optional_string("$Min:")) {
+				int min_res[2];
+				stuff_int_list(min_res, 2, RAW_INTEGER_TYPE);
 
-			if(max_res[0] < gr_screen.max_w) {
-				skip_to_start_of_string("#Gauge Config");
-				continue;
-			} else if (max_res[0] == gr_screen.max_w) {
-				if(max_res[1] < gr_screen.max_h) {
+				if (min_res[0] > gr_screen.max_w) {
 					skip_to_start_of_string("#Gauge Config");
 					continue;
 				}
+				else if (min_res[0] == gr_screen.center_w) {
+					if (min_res[1] > gr_screen.center_h) {
+						skip_to_start_of_string("#Gauge Config");
+						continue;
+					}
+				}
 			}
+
+			// check maximum resolution
+			if (optional_string("$Max:")) {
+				int max_res[2];
+				stuff_int_list(max_res, 2, RAW_INTEGER_TYPE);
+
+				if (max_res[0] < gr_screen.max_w) {
+					skip_to_start_of_string("#Gauge Config");
+					continue;
+				}
+				else if (max_res[0] == gr_screen.center_w) {
+					if (max_res[1] < gr_screen.center_h) {
+						skip_to_start_of_string("#Gauge Config");
+						continue;
+					}
+				}
+			}
+
+			// let's start parsing for gauges.
+			required_string("$Gauges:");
+
+			while (!check_for_string("$Gauges:") && !check_for_string("$End Gauges")) {
+				// find out what type of gauge we're parsing.
+				gauge_type = parse_gauge_type();
+
+				// then call the specific gauge load handler function for this gauge type.
+				if (optional_string("default")) {
+					// sending -1 base width and height will indicate GR_640 or GR_1024 to the handlers
+					load_gauge(gauge_type, -1, -1, use_font, scale_gauge, &ship_classes, use_clr_p);
+				}
+				else {
+					load_gauge(gauge_type, base_res[0], base_res[1], use_font, scale_gauge, &ship_classes, use_clr_p);
+				}
+
+				if (saved_Mp && (saved_Mp == Mp)) {
+					Mp++;
+				}
+
+				skip_to_start_of_string_either("$", "+");
+				// stolened from AI_profiles
+				// if we've been through once already and are at the same place, force a move
+
+				saved_Mp = Mp;
+			}
+
+			required_string("$End Gauges");
+			required_string("#End");
 		}
-
-		// let's start parsing for gauges.
-		required_string("$Gauges:");
-
-		while (!check_for_string("$Gauges:") && !check_for_string("$End Gauges")) {
-			// find out what type of gauge we're parsing.
-			gauge_type = parse_gauge_type();
-
-			// then call the specific gauge load handler function for this gauge type.
-			if(optional_string("default")) {
-				// sending -1 base width and height will indicate GR_640 or GR_1024 to the handlers
-				load_gauge(gauge_type, -1, -1, use_font, &ship_classes, use_clr_p);
-			} else {
-				load_gauge(gauge_type, base_res[0], base_res[1], use_font, &ship_classes, use_clr_p);
-			}
-
-			if ( saved_Mp && (saved_Mp == Mp) ) {
-				Mp++;
-			}
-
-			skip_to_start_of_string_either("$", "+");
-			// stolened from AI_profiles
-			// if we've been through once already and are at the same place, force a move
-
-			saved_Mp = Mp;
-		}
-
-		required_string("$End Gauges");
-		required_string("#End");
 	}
-
-	// close localization
-	lcl_ext_close();
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
 }
 
 void hud_positions_init()
@@ -487,7 +503,7 @@ void load_missing_retail_gauges()
 			}
 
 			if(!retail_gauge_loaded) {
-				load_gauge(retail_gauges[i], -1, -1, Hud_font);
+				load_gauge(retail_gauges[i], -1, -1, Hud_font, Scale_retail_gauges);
 			}
 		}
 
@@ -504,9 +520,9 @@ void load_missing_retail_gauges()
 		// load radar gauge if not loaded.
 		if(!retail_gauge_loaded) {
 			if(Cmdline_orb_radar) {
-				load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font);
+				load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, Scale_retail_gauges);
 			} else {
-				load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font);
+				load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, Scale_retail_gauges);
 			}
 		}
 
@@ -520,7 +536,7 @@ void load_missing_retail_gauges()
 			}
 
 			if(!retail_gauge_loaded) {
-				load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font);
+				load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, Scale_retail_gauges);
 			}
 		}
 	}
@@ -540,9 +556,7 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					SCP_vector<int> sindex;
-					sindex.push_back(k);
-					load_gauge(retail_gauges[i], -1, -1, Hud_font, &sindex);
+					load_gauge(retail_gauges[i], -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				}
 			}
 
@@ -559,9 +573,9 @@ void load_missing_retail_gauges()
 			// load radar gauge if not loaded.
 			if(!retail_gauge_loaded) {
 				if(Cmdline_orb_radar) {
-					load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, &sindex);
+					load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				} else {
-					load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, &sindex);
+					load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				}
 			}
 
@@ -575,7 +589,7 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, &sindex);
+					load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, Scale_retail_gauges, &sindex);
 				}
 			}
 		}
@@ -627,9 +641,14 @@ void init_hud() {
 	}
 }
 
+extern void hud_init_ballistic_index();
+
 void set_current_hud()
 {
 	int i, num_gauges, config_type;
+
+	// before we load any hud gauges, see whether we're carring a ballistic weapon (Mantis #2962)
+	hud_init_ballistic_index();
 
 	// go through all HUD gauges. Load gauge properties defined in the HUD config if gauge is not customized.
 	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
@@ -853,10 +872,12 @@ int parse_gauge_type()
 	if ( optional_string("+Secondary Weapons:") )
 		return HUD_OBJECT_SECONDARY_WEAPONS;
 
+	error_display(1, "Invalid gauge type [%.32s]", next_tokens());
+	
 	return -1;
 }
 
-void load_gauge(int gauge, int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge(int gauge, int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	SCP_vector<int> ship_index;
 	ship_index.push_back(-1);
@@ -865,175 +886,176 @@ void load_gauge(int gauge, int base_w, int base_h, int hud_font, SCP_vector<int>
 	}
 	switch(gauge) {
 	case HUD_OBJECT_CUSTOM:
-		load_gauge_custom(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_custom(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_MESSAGES:
-		load_gauge_messages(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_messages(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_TRAINING_MESSAGES:
-		load_gauge_training_messages(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_training_messages(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_SUPPORT:
-		load_gauge_support(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_support(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_DAMAGE:
-		load_gauge_damage(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_damage(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_WINGMAN_STATUS:
-		load_gauge_wingman_status(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_wingman_status(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_AUTO_SPEED:
-		load_gauge_auto_speed(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_auto_speed(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_AUTO_TARGET:
-		load_gauge_auto_target(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_auto_target(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_CMEASURES:
-		load_gauge_countermeasures(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_countermeasures(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_TALKING_HEAD:
-		load_gauge_talking_head(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_talking_head(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_DIRECTIVES:
-		load_gauge_directives(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_directives(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_WEAPONS:
-		load_gauge_weapons(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_weapons(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_OBJ_NOTIFY:
-		load_gauge_objective_notify(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_objective_notify(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_SQUAD_MSG:
-		load_gauge_squad_message(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_squad_message(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_LAG:
-		load_gauge_lag(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_lag(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_MINI_SHIELD:
-		load_gauge_mini_shields(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_mini_shields(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_PLAYER_SHIELD:
-		load_gauge_player_shields(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_player_shields(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_TARGET_SHIELD:
-		load_gauge_target_shields(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_target_shields(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_ESCORT:
-		load_gauge_escort_view(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_escort_view(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_MISSION_TIME:
-		load_gauge_mission_time(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_mission_time(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_ETS_WEAPONS:
-		load_gauge_ets_weapons(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_ets_weapons(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_ETS_SHIELDS:
-		load_gauge_ets_shields(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_ets_shields(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_ETS_ENGINES:
-		load_gauge_ets_engines(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_ets_engines(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_ETS_RETAIL:
-		load_gauge_ets_retail(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_ets_retail(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_TARGET_MONITOR:
-		load_gauge_target_monitor(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_target_monitor(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_EXTRA_TARGET_DATA:
-		load_gauge_extra_target_data(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_extra_target_data(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_RADAR_STD:
-		load_gauge_radar_std(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_radar_std(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_RADAR_ORB:
-		load_gauge_radar_orb(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_radar_orb(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_RADAR_BSG:
-		load_gauge_radar_dradis(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_radar_dradis(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_AFTERBURNER:
-		load_gauge_afterburner(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_afterburner(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_WEAPON_ENERGY:
-		load_gauge_weapon_energy(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_weapon_energy(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_TEXT_WARNINGS:
-		load_gauge_text_warnings(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_text_warnings(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_CENTER_RETICLE:
-		load_gauge_center_reticle(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_center_reticle(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_THROTTLE:
-		load_gauge_throttle(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_throttle(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_THREAT:
-		load_gauge_threat_indicator(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_threat_indicator(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_LEAD:
-		load_gauge_lead(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_lead(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_LEAD_SIGHT:
-		load_gauge_lead_sight(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_lead_sight(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_LOCK:
-		load_gauge_lock(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_lock(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_WEAPON_LINKING:
-		load_gauge_weapon_linking(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_weapon_linking(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_MULTI_MSG:
-		load_gauge_multi_msg(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_multi_msg(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_VOICE_STATUS:
-		load_gauge_voice_status(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_voice_status(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_PING:
-		load_gauge_ping(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_ping(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_SUPERNOVA:
-		load_gauge_supernova(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_supernova(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_OFFSCREEN:
-		load_gauge_offscreen(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_offscreen(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_BRACKETS:
-		load_gauge_brackets(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_brackets(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_ORIENTATION_TEE:
-		load_gauge_orientation_tee(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_orientation_tee(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_HOSTILE_TRI:
-		load_gauge_hostile_tri(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_hostile_tri(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_TARGET_TRI:
-		load_gauge_target_tri(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_target_tri(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_MISSILE_TRI:
-		load_gauge_missile_tri(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_missile_tri(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_KILLS:
-		load_gauge_kills(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_kills(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_FIXED_MESSAGES:
-		load_gauge_fixed_messages(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_fixed_messages(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_FLIGHT_PATH:
-		load_gauge_flight_path(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_flight_path(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_WARHEAD_COUNT:
-		load_gauge_warhead_count(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_warhead_count(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_HARDPOINTS:
-		load_gauge_hardpoints(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_hardpoints(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_PRIMARY_WEAPONS:
-		load_gauge_primary_weapons(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_primary_weapons(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	case HUD_OBJECT_SECONDARY_WEAPONS:
-		load_gauge_secondary_weapons(base_w, base_h, hud_font, ship_idx, use_clr);
+		load_gauge_secondary_weapons(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr);
 		break;
 	default:
-		Warning(LOCATION, "Invalid gauge found in hud_gauges.tbl");
+		// It's either -1, indicating we're ignoring a parse error, or it's a coding error.
+		Assertion(gauge == -1, "Invalid value '%d' passed to load_gauge(); get a coder!\n", gauge);
 		break;
 	}
 }
@@ -1056,10 +1078,196 @@ void check_color(int *colorp)
 	}
 }
 
-void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void adjust_base_res(int *base_res, bool scaling = true)
+{
+	// Don't scale gauge if:
+	// no scaling is set and base res is smaller than current res
+	// Avoid HUD blurring caused solely by rounding errors
+	if ((!scaling && gr_screen.center_w >= base_res[0] && gr_screen.center_h >= base_res[1]) ||
+			(gr_screen.center_w >= base_res[0] && gr_screen.center_h == base_res[1]) ||
+			(gr_screen.center_w == base_res[0] && gr_screen.center_h >= base_res[1])) {
+		base_res[0] = gr_screen.center_w;
+		base_res[1] = gr_screen.center_h;
+		return;
+	}
+
+	float aspect_quotient = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)base_res[0] / (float)base_res[1]);
+	if (aspect_quotient >= 1.0) {
+		base_res[0] = (int)(base_res[0] * aspect_quotient);
+	} else {
+		base_res[1] = (int)(base_res[1] / aspect_quotient);
+	}
+}
+
+void adjust_for_multimonitor(int *base_res, bool set_position, int *coords)
+{
+	float scale_w = (float)gr_screen.center_w / (float)base_res[0];
+	float scale_h = (float)gr_screen.center_h / (float)base_res[1];
+
+	base_res[0] = fl2ir(base_res[0] * ((float)gr_screen.max_w / (float)gr_screen.center_w));
+	base_res[1] = fl2ir(base_res[1] * ((float)gr_screen.max_h / (float)gr_screen.center_h));
+
+	if (set_position) {
+		coords[0] += fl2ir(gr_screen.center_offset_x / scale_w);
+		coords[1] += fl2ir(gr_screen.center_offset_y / scale_h);
+	}
+}
+
+template<class T>
+T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr,
+					 float default_origin_x, float default_origin_y, int default_offset_x, int default_offset_y,
+					 bool default_position = false, int default_position_x = 0, int default_position_y = 0,
+					 bool set_position = true, bool set_colour = true, bool slew = false, T* preAllocated = NULL)
+{
+	int coords[2] = {default_position_x, default_position_y};
+	float origin[2] = {default_origin_x, default_origin_y};
+	int offset[2] = {default_offset_x, default_offset_y};
+	int base_res[2];
+	int font_num = FONT1;
+	int colors[3] = {255, 255, 255};
+	bool lock_color = false;
+
+	// render to texture parameters
+	char display_name[MAX_FILENAME_LEN] = "";
+	int display_size[2] = {0, 0};
+	int display_offset[2] = {0, 0};
+	int canvas_size[2] = {0, 0};
+
+	if(gr_screen.res == GR_640) {
+		base_res[0] = 640;
+		base_res[1] = 480;
+	} else {
+		base_res[0] = 1024;
+		base_res[1] = 768;
+	}
+
+	if(check_base_res(base_w, base_h)) {
+		base_res[0] = base_w;
+		base_res[1] = base_h;
+
+		if (set_position) {
+			if(optional_string("Position:")) {
+				stuff_int_list(coords, 2);
+			} else {
+				if(optional_string("Scale Gauge:")) {
+					stuff_boolean(&scale_gauge);;
+				}
+
+				adjust_base_res(base_res, scale_gauge);
+
+				// If no positioning information is specified, use the default position
+				bool use_default_pos = true;
+
+				if(optional_string("Origin:")) {
+					stuff_float_list(origin, 2);
+					use_default_pos = false;
+
+					required_string("Offset:");
+					stuff_int_list(offset, 2);
+				}
+
+				if(optional_string("Offset:")) {
+					Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
+				}
+
+				if ( !(default_position && use_default_pos) ) {
+					coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+					coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+				}
+			}
+		} else {
+			adjust_base_res(base_res, scale_gauge);
+		}
+	} else {
+		adjust_base_res(base_res, scale_gauge);
+
+		if (set_position && !default_position) {
+			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+		}
+	}
+
+	if (set_position) {
+		if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
+			stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
+
+			if ( optional_string("Canvas Size:") ) {
+				stuff_int_list(canvas_size, 2);
+			}
+
+			if ( optional_string("Display Offset:") ) {
+				stuff_int_list(display_offset, 2);
+			}
+
+			required_string("Display Size:");
+			stuff_int_list(display_size, 2);
+		} else {
+			// adjust for multimonitor setups ONLY if not rendering gauge to a texture
+			adjust_for_multimonitor(base_res, true, coords);
+		}
+	} else {
+		adjust_for_multimonitor(base_res, true, coords);
+	}
+
+	if (set_colour) {
+		if ( use_clr != NULL ) {
+			colors[0] = use_clr->red;
+			colors[1] = use_clr->green;
+			colors[2] = use_clr->blue;
+
+			lock_color = true;
+		} else if ( optional_string("Color:") ) {
+			stuff_int_list(colors, 3);
+
+			check_color(colors);
+
+			lock_color = true;
+		}
+	}
+
+	if(optional_string("Font:")) {
+		stuff_int(&font_num);
+	} else {
+		if ( hud_font >=0 ) {
+			font_num = hud_font;
+		}
+	}
+
+	if (set_position) {
+		if(optional_string("Slew:")) {
+			stuff_boolean(&slew);
+		}
+	}
+
+	T* instance = preAllocated;
+
+	if (instance == NULL)
+	{
+		instance = new T();
+	}
+
+	instance->initBaseResolution(base_res[0], base_res[1]);
+	instance->initFont(font_num);
+	if (set_position) {
+		instance->initPosition(coords[0], coords[1]);
+		instance->initSlew(slew);
+		instance->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	}
+	if (set_colour) {
+		instance->updateColor(colors[0], colors[1], colors[2]);
+		instance->lockConfigColor(lock_color);
+	}
+
+	return instance;
+}
+
+void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	int i;
-	int coords[2];
+	float origin[2] = {0.0, 0.0};
+	int offset[2] = {0, 0};
+	int coords[2] = {0, 0};
+
 	int base_res[2] = {640, 480};
 	char gauge_string[MAX_FILENAME_LEN];
 	char name[MAX_FILENAME_LEN];
@@ -1086,6 +1294,32 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 		
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
+		} else {
+			if(optional_string("Scale Gauge:")) {
+				stuff_boolean(&scale_gauge);;
+			}
+
+			adjust_base_res(base_res, scale_gauge);
+
+			// If no positioning information is specified, use the default position
+			bool use_default_pos = true;
+
+			if(optional_string("Origin:")) {
+				stuff_float_list(origin, 2);
+				use_default_pos = false;
+
+				required_string("Offset:");
+				stuff_int_list(offset, 2);
+			}
+
+			if(optional_string("Offset:")) {
+				Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
+			}
+
+			if (!use_default_pos) {
+				coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+				coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+			}
 		}
 
 		if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
@@ -1101,6 +1335,9 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 
 			required_string("Display Size:");
 			stuff_int_list(display_size, 2);
+		} else {
+			// adjust for multimonitor setups ONLY if not rendering gauge to a texture
+			adjust_for_multimonitor(base_res, true, coords);
 		}
 
 		if ( use_clr != NULL ) {
@@ -1182,98 +1419,28 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 	}
 }
 
-void load_gauge_lag(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_lag(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	char fname[MAX_FILENAME_LEN] = "netlag1";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
 
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 386;
-		coords[1] = 331;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 66;
+		offset[1] = 91;
 	} else {
-		coords[0] = 627;
-		coords[1] = 529;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 115;
+		offset[1] = 145;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-		
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
+	HudGaugeLag* hud_gauge = gauge_load_common<HudGaugeLag>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
 
-	HudGaugeLag* hud_gauge = new HudGaugeLag();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1287,31 +1454,18 @@ void load_gauge_lag(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_
 	}
 }
 
-void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_mini_shields(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Mini_3digit_offsets[2];
 	int Mini_1digit_offsets[2];
 	int Mini_2digit_offsets[2];
 	char fname[MAX_FILENAME_LEN] = "targhit1";
-	bool slew = true;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 305;
-		coords[1] = 291;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -15;
+		offset[1] = 51;
 
 		Mini_3digit_offsets[0] = 5;
 		Mini_3digit_offsets[1] = 7;
@@ -1320,11 +1474,8 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<in
 		Mini_2digit_offsets[0] = 8;
 		Mini_2digit_offsets[1] = 7;
 	} else {
-		coords[0] = 497;
-		coords[1] = 470;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -15;
+		offset[1] = 86;
 
 		Mini_3digit_offsets[0] = 5;
 		Mini_3digit_offsets[1] = 7;
@@ -1334,54 +1485,12 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<in
 		Mini_2digit_offsets[1] = 7;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeShieldMini* hud_gauge = gauge_load_common<HudGaugeShieldMini>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -1395,18 +1504,10 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<in
 		stuff_int_list(Mini_1digit_offsets, 2);
 	}
 
-	HudGaugeShieldMini* hud_gauge = new HudGaugeShieldMini();
 	hud_gauge->init1DigitOffsets(Mini_1digit_offsets[0], Mini_1digit_offsets[1]);
 	hud_gauge->init2DigitOffsets(Mini_2digit_offsets[0], Mini_2digit_offsets[1]);
 	hud_gauge->init3DigitOffsets(Mini_3digit_offsets[0], Mini_3digit_offsets[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1420,10 +1521,10 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, SCP_vector<in
 	}
 }
 
-void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
 	int text_alignment = 0;
@@ -1435,16 +1536,6 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 	int weapon_alignment = 0;
 	bool show_weapons = false;
 	char fname[MAX_FILENAME_LEN];
-	bool slew = true;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
@@ -1461,22 +1552,16 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 	}
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 416;
-		coords[1] = 265;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 96;
+		offset[1] = 25;
 
 		Wenergy_text_offsets[0] = 23;
 		Wenergy_text_offsets[1] = 53;
 
 		Wenergy_h = 60;
 	} else {
-		coords[0] = 666;
-		coords[1] = 424;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 154;
+		offset[1] = 40;
 
 		Wenergy_text_offsets[0] = 43;
 		Wenergy_text_offsets[1] = 85;
@@ -1484,54 +1569,12 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 		Wenergy_h = 96;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeWeaponEnergy* hud_gauge = gauge_load_common<HudGaugeWeaponEnergy>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}	
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -1571,9 +1614,6 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 		}
 	}
 
-	HudGaugeWeaponEnergy* hud_gauge = new HudGaugeWeaponEnergy();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initEnergyHeight(Wenergy_h);
 	hud_gauge->initTextOffsets(Wenergy_text_offsets[0], Wenergy_text_offsets[1]);
@@ -1582,11 +1622,6 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 	hud_gauge->initMoveText(moving_text);
 	hud_gauge->initShowBallistics(show_ballistic);
 	hud_gauge->initArmedOffsets(armed_weapon_offsets[0], armed_weapon_offsets[1], armed_weapon_h, show_weapons);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1600,92 +1635,20 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, SCP_vector<i
 	}
 }
 
-void load_gauge_target_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_target_shields(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
+	float origin[2] = {0.5, 1.0};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 142;
-		coords[1] = 379;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -178;
+		offset[1] = -101;
 	} else {
-		coords[0] = 292;
-		coords[1] = 670;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -220;
+		offset[1] = -98;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
-
-	HudGaugeShieldTarget* hud_gauge = new HudGaugeShieldTarget();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	HudGaugeShieldTarget* hud_gauge = gauge_load_common<HudGaugeShieldTarget>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1699,92 +1662,20 @@ void load_gauge_target_shields(int base_w, int base_h, int hud_font, SCP_vector<
 	}
 }
 
-void load_gauge_player_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_player_shields(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
+	float origin[2] = {0.5, 1.0};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 396;
-		coords[1] = 379;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 76;
+		offset[1] = -101;
 	} else {
-		coords[0] = 634;
-		coords[1] = 670;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 122;
+		offset[1] = -98;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
-
-	HudGaugeShieldPlayer* hud_gauge = new HudGaugeShieldPlayer();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	HudGaugeShieldPlayer* hud_gauge = gauge_load_common<HudGaugeShieldPlayer>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1798,10 +1689,10 @@ void load_gauge_player_shields(int base_w, int base_h, int hud_font, SCP_vector<
 	}
 }
 
-void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 0.5};
+	int offset[2];
 	int header_text_offsets[2];
 	int list_start_offsets[2];
 	int entry_h;
@@ -1811,27 +1702,14 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 	int ship_name_max_w = 100;
 	int ship_integrity_offsets[2];
 	int ship_status_offsets[2];
-	char header_text[MAX_FILENAME_LEN] = "monitoring";
+	char header_text[MAX_FILENAME_LEN] = "";
 	char fname_top[MAX_FILENAME_LEN] = "escort1";
 	char fname_middle[MAX_FILENAME_LEN] = "escort2";
 	char fname_bottom[MAX_FILENAME_LEN] = "escort3";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 486;
-		coords[1] = 200;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -154;
+		offset[1] = -40;
 
 		header_text_offsets[0] = 3;
 		header_text_offsets[1] = 2;
@@ -1846,11 +1724,8 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 		ship_status_offsets[0] = -12;
 		ship_status_offsets[1] = 0;
 	} else {
-		coords[0] = 865;
-		coords[1] = 330;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -159;
+		offset[1] = -54;
 
 		header_text_offsets[0] = 3;
 		header_text_offsets[1] = 2;
@@ -1866,54 +1741,8 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 		ship_status_offsets[1] = 0;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-		
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
+	HudGaugeEscort* hud_gauge = gauge_load_common<HudGaugeEscort>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -1955,9 +1784,10 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 		stuff_int(&ship_name_max_w);
 	}
 
-	HudGaugeEscort* hud_gauge = new HudGaugeEscort();
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
+	if (header_text[0] == '\0') {
+		strcpy_s(header_text, XSTR("monitoring", 285));
+	}
+
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
 	hud_gauge->initEntryHeight(entry_h);
 	hud_gauge->initEntryStaggerWidth(entry_stagger_w);
@@ -1969,11 +1799,6 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 	hud_gauge->initShipNameOffsets(ship_name_offsets[0], ship_name_offsets[1]);
 	hud_gauge->initShipStatusOffsets(ship_status_offsets[0], ship_status_offsets[1]);
 	hud_gauge->initShipNameMaxWidth(ship_name_max_w);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -1987,22 +1812,12 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 }
 
-void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_afterburner(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int energy_h;
 	char fname[MAX_FILENAME_LEN];
-	bool slew = true;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
@@ -2019,71 +1834,23 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 171;
-		coords[1] = 265;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -149;
+		offset[1] = 25;
 
 		energy_h = 60;
 	} else {
-		coords[0] = 274;
-		coords[1] = 424;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -238;
+		offset[1] = 40;
 
 		energy_h = 96;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeAfterburner *hud_gauge = gauge_load_common<HudGaugeAfterburner>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}	
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -2091,17 +1858,8 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int
 		stuff_int(&energy_h);
 	}
 
-	HudGaugeAfterburner *hud_gauge = new HudGaugeAfterburner();
-
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initEnergyHeight(energy_h);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2116,92 +1874,29 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, SCP_vector<int
 }
 
 
-void load_gauge_mission_time(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_mission_time(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int time_text_offsets[2];
 	int time_val_offsets[2];
 	char fname[MAX_FILENAME_LEN] = "time1";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 587;
-		coords[1] = 448;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -53;
+		offset[1] = -32;
 	} else {
-		coords[0] = 969;
-		coords[1] = 716;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -55;
+		offset[1] = -52;
 	}
-
 	time_text_offsets[0] = 4;
 	time_text_offsets[1] = 4;
 
 	time_val_offsets[0] = 26;
 	time_val_offsets[1] = 12;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-		
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
+	HudGaugeMissionTime* hud_gauge = gauge_load_common<HudGaugeMissionTime>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -2212,17 +1907,9 @@ void load_gauge_mission_time(int base_w, int base_h, int hud_font, SCP_vector<in
 		stuff_int_list(time_val_offsets, 2);
 	}
 
-	HudGaugeMissionTime* hud_gauge = new HudGaugeMissionTime();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTextOffsets(time_text_offsets[0], time_text_offsets[1]);
 	hud_gauge->initValueOffsets(time_val_offsets[0], time_val_offsets[1]);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2236,33 +1923,21 @@ void load_gauge_mission_time(int base_w, int base_h, int hud_font, SCP_vector<in
 	}
 }
 
-void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
 	int Laser_warn_offsets[2];
 	int Lock_warn_offsets[2];
 	char fname_arc[MAX_FILENAME_LEN];
 	char fname_laser[MAX_FILENAME_LEN];
 	char fname_lock[MAX_FILENAME_LEN];
-	bool slew = true;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
 
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 241;
-			coords[1] = 137;
-
-			base_res[0] = 640;
-			base_res[1] = 480;
+			offset[0] = -79;
+			offset[1] = -103;
 
 			Laser_warn_offsets[0] = 59;
 			Laser_warn_offsets[1] = 0;
@@ -2274,11 +1949,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 			strcpy_s(fname_laser, "toparc2_fs1");
 			strcpy_s(fname_lock, "toparc3_fs1");
 		} else {
-			coords[0] = 386;
-			coords[1] = 219;
-
-			base_res[0] = 1024;
-			base_res[1] = 768;
+			offset[0] = -126;
+			offset[1] = -165;
 
 			Laser_warn_offsets[0] = 94;
 			Laser_warn_offsets[1] = 0;
@@ -2292,11 +1964,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 		}
 	} else {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 359;
-			coords[1] = 168;
-
-			base_res[0] = 640;
-			base_res[1] = 480;
+			offset[0] = 39;
+			offset[1] = -72;
 
 			Laser_warn_offsets[0] = 41;
 			Laser_warn_offsets[1] = 77;
@@ -2308,11 +1977,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 			strcpy_s(fname_laser, "toparc2");
 			strcpy_s(fname_lock, "toparc3");
 		} else {
-			coords[0] = 574;
-			coords[1] = 269;
-
-			base_res[0] = 1024;
-			base_res[1] = 768;
+			offset[0] = 62;
+			offset[1] = -115;
 
 			Laser_warn_offsets[0] = 66;
 			Laser_warn_offsets[1] = 124;
@@ -2326,54 +1992,12 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 		}
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeThreatIndicator* hud_gauge = gauge_load_common<HudGaugeThreatIndicator>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Arc Filename:")) {
 		stuff_string(fname_arc, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -2390,17 +2014,9 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 		stuff_int_list(Lock_warn_offsets, 2);
 	}
 
-	HudGaugeThreatIndicator* hud_gauge = new HudGaugeThreatIndicator();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBitmaps(fname_arc, fname_laser, fname_lock);
 	hud_gauge->initLaserWarnOffsets(Laser_warn_offsets[0], Laser_warn_offsets[1]);
 	hud_gauge->initLockWarnOffsets(Lock_warn_offsets[0], Lock_warn_offsets[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2414,108 +2030,48 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, SCP_vecto
 	}
 }
 
-void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_center_reticle(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	char fname[MAX_FILENAME_LEN];
-	int font_num = FONT1;
 	bool firepoints = false;
 	int scaleX = 15;
 	int scaleY = 10;
 	int size = 5;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 308;
-			coords[1] = 235;
-
-			base_res[0] = 640;
-			base_res[1] = 480;
+			offset[0] = -12;
+			offset[1] = -5;
 
 			strcpy_s(fname, "reticle1_fs1");
 		} else {
-			coords[0] = 493;
-			coords[1] = 376;
-
-			base_res[0] = 1024;
-			base_res[1] = 768;
+			offset[0] = -19;
+			offset[1] = -8;
 
 			strcpy_s(fname, "2_reticle1_fs1");
 		}
 	} else {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 308;
-			coords[1] = 235;
-
-			base_res[0] = 640;
-			base_res[1] = 480;
+			offset[0] = -12;
+			offset[1] = -5;
 
 			strcpy_s(fname, "reticle1");
 		} else {
-			coords[0] = 493;
-			coords[1] = 370;
-
-			base_res[0] = 1024;
-			base_res[1] = 768;
+			offset[0] = -19;
+			offset[1] = -14;
 
 			strcpy_s(fname, "2_reticle1");
 		}
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeReticle* hud_gauge = gauge_load_common<HudGaugeReticle>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -2532,15 +2088,8 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 	if (optional_string("Firepoint Y coordinate multiplier:"))
 		stuff_int(&scaleY);
 
-	HudGaugeReticle* hud_gauge = new HudGaugeReticle();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initFont(font_num);
 	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2554,10 +2103,10 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, SCP_vector<
 	}
 }
 
-void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_throttle(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int bottom_offset_y;
 	int throttle_h, throttle_w;
 	int throttle_aburn_h;
@@ -2577,25 +2126,12 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	bool custom_match = false;
 	char fname[MAX_FILENAME_LEN];
 	bool show_background = false;
-	bool slew = true;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	// default values for the throttle
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 217;
-			coords[1] = 244;
-
-			base_res[0] = 640;
-			base_res[1] = 480;
+			offset[0] = -103;
+			offset[1] = 4;
 
 			bottom_offset_y = 65;
 			throttle_h = 50;
@@ -2610,11 +2146,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 			orbit_radius = 104;
 			strcpy_s(fname, "leftarc_fs1");
 		} else {
-			coords[0] = 347;
-			coords[1] = 390;
-
-			base_res[0] = 1024;
-			base_res[1] = 768;
+			offset[0] = -165;
+			offset[1] = 6;
 
 			bottom_offset_y = 104;
 			throttle_h = 80;
@@ -2632,11 +2165,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 		show_background = true;
 	} else {
 		if(gr_screen.res == GR_640) {
-			coords[0] = 216;
-			coords[1] = 168;
-
-			base_res[0] = 640;
-			base_res[1] = 480;
+			offset[0] = -104;
+			offset[1] = -72;
 
 			bottom_offset_y = 139;
 			throttle_h = 50;
@@ -2651,11 +2181,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 			orbit_radius = 104;
 			strcpy_s(fname, "leftarc");
 		} else {
-			coords[0] = 346;
-			coords[1] = 269;
-
-			base_res[0] = 1024;
-			base_res[1] = 768;
+			offset[0] = -166;
+			offset[1] = -115;
 
 			bottom_offset_y = 222;
 			throttle_h = 80;
@@ -2672,54 +2199,12 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 		}
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeThrottle* hud_gauge = gauge_load_common<HudGaugeThrottle>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -2776,10 +2261,6 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 		custom_match = true;
 	}
 
-	HudGaugeThrottle* hud_gauge = new HudGaugeThrottle();
-
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initThrottleStartY(bottom_offset_y);
 	hud_gauge->initThrottleSizes(throttle_w, throttle_h);
 	hud_gauge->initAburnHeight(throttle_aburn_h);
@@ -2792,11 +2273,6 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	hud_gauge->initMatchSpeedOffsets(match_speed_offset[0], match_speed_offset[1], custom_match);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->showBackground(show_background);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2814,29 +2290,20 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, SCP_vector<int>* 
  * Load retail style ETS gauge
  * i.e. treats weapons, shields & engines gauges as a single gauge
  */
-void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_ets_retail(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int coords[2];
-	int base_res[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
 	int bottom_offsets[2];
 	char ets_letters[num_retail_ets_gauges];
 	char fname[MAX_FILENAME_LEN] = "energy1";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
 	int gauge_offset; // distance between micro gauges
 	int i;
 	int gauge_positions[num_retail_ets_gauges];
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if (Lcl_gr) {
 		ets_letters[0] = 'G'; ets_letters[1] = 'S'; ets_letters[2] = 'A'; // German
@@ -2848,19 +2315,13 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 
 	// default values which may be overwritten by .tbl
 	if(gr_screen.res == GR_640) {
-		coords[0] = 523;
-		coords[1] = 380;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -117;
+		offset[1] = -100;
 
 		gauge_offset = 17;
 	} else {
-		coords[0] = 880;
-		coords[1] = 648;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -144;
+		offset[1] = -120;
 
 		gauge_offset = 18;
 	}
@@ -2872,55 +2333,8 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	// parse data from .tbl
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeEtsRetail* hud_gauge = gauge_load_common<HudGaugeEtsRetail>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -2941,25 +2355,19 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 	}
 
 	// calculate offsets for the three gauges
-	for (i = 0; i < num_retail_ets_gauges; ++i)
+	// re-use coords[2] since it's not needed after calling gauge_load_common
+	hud_gauge->getPosition(&coords[0], &coords[1]);
+	for (i = 0; i < num_retail_ets_gauges; ++i) {
 		gauge_positions[i] = coords[0] + gauge_offset * i;
+	}
 
-	HudGaugeEtsRetail* hud_gauge = new HudGaugeEtsRetail();
-
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initLetters(ets_letters);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
 	hud_gauge->initTopOffsets(top_offsets[0], top_offsets[1]);
 	hud_gauge->initBottomOffsets(bottom_offsets[0], bottom_offsets[1]);
 	hud_gauge->initBarHeight(bar_h);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
 	hud_gauge->initGaugePositions(gauge_positions);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -2973,26 +2381,16 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, SCP_vector<int>
 	}
 }
 
-void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
 	int bottom_offsets[2];
 	char letter;
 	char fname[MAX_FILENAME_LEN] = "energy1";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(Lcl_gr) {
 		// German
@@ -3006,17 +2404,11 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 523;
-		coords[1] = 380;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -117;
+		offset[1] = -100;
 	} else {
-		coords[0] = 880;
-		coords[1] = 648;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -144;
+		offset[1] = -120;
 	}
 	bar_h = 41;
 	letter_offsets[0] = 2;
@@ -3026,54 +2418,8 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-	
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
+	HudGaugeEtsWeapons* hud_gauge = gauge_load_common<HudGaugeEtsWeapons>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -3090,20 +2436,12 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int
 		stuff_int_list(bottom_offsets, 2);
 	}
 
-	HudGaugeEtsWeapons* hud_gauge = new HudGaugeEtsWeapons();
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initLetter(letter);
 	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
 	hud_gauge->initTopOffsets(top_offsets[0], top_offsets[1]);
 	hud_gauge->initBottomOffsets(bottom_offsets[0], bottom_offsets[1]);
 	hud_gauge->initBarHeight(bar_h);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3117,26 +2455,16 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 }
 
-void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_ets_shields(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
 	int bottom_offsets[2];
 	char letter;
 	char fname[MAX_FILENAME_LEN] = "energy1";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(Lcl_gr){
 		// German
@@ -3150,17 +2478,11 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 540;
-		coords[1] = 380;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -100;
+		offset[1] = -100;
 	} else {
-		coords[0] = 898;
-		coords[1] = 648;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -126;
+		offset[1] = -120;
 	}
 	bar_h = 41;
 
@@ -3171,54 +2493,8 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeEtsShields* hud_gauge = gauge_load_common<HudGaugeEtsShields>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -3235,21 +2511,12 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int
 		stuff_int_list(bottom_offsets, 2);
 	}
 
-	HudGaugeEtsShields* hud_gauge = new HudGaugeEtsShields();
-
 	hud_gauge->initBarHeight(bar_h);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initBottomOffsets(bottom_offsets[0], bottom_offsets[1]);
 	hud_gauge->initLetter(letter);
 	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTopOffsets(top_offsets[0], top_offsets[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3263,26 +2530,16 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 }
 
-void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_ets_engines(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
 	int bottom_offsets[2];
 	char letter;
 	char fname[MAX_FILENAME_LEN] = "energy1";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(Lcl_gr){
 		// German
@@ -3296,17 +2553,11 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 557;
-		coords[1] = 380;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -83;
+		offset[1] = -100;
 	} else {
-		coords[0] = 916;
-		coords[1] = 648;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -108;
+		offset[1] = -120;
 	}
 
 	bar_h = 41;
@@ -3318,54 +2569,8 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeEtsEngines* hud_gauge = gauge_load_common<HudGaugeEtsEngines>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -3382,21 +2587,12 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int
 		stuff_int_list(bottom_offsets, 2);
 	}
 
-	HudGaugeEtsEngines* hud_gauge = new HudGaugeEtsEngines();
-
 	hud_gauge->initBarHeight(bar_h);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initBottomOffsets(bottom_offsets[0], bottom_offsets[1]);
 	hud_gauge->initLetter(letter);
 	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTopOffsets(top_offsets[0], top_offsets[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3410,32 +2606,19 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 }
 
-void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.0, 1.0};
+	int offset[2];
 	int dock_offsets[2];
 	int time_offsets[2];
 	int bracket_offsets[2];
 	int order_offsets[2];
 	char fname[MAX_FILENAME_LEN] = "targetview3";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 280;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 5;
+		offset[1] = -200;
 
 		dock_offsets[0] = 8;
 		dock_offsets[1] = 19;
@@ -3443,73 +2626,24 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 		time_offsets[0] = 8;
 		time_offsets[1] = 10;
 	} else {
-		coords[0] = 5;
-		coords[1] = 552;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 5;
+		offset[1] = -216;
 
 		dock_offsets[0] = 8;
 		dock_offsets[1] = 18;
 
 		time_offsets[0] = 8;
-		time_offsets[1] = 9; 
+		time_offsets[1] = 9;
 	}
 
 	bracket_offsets[0] = 0;
 	bracket_offsets[1] = 3;
 
 	order_offsets[0] = 8;
-	order_offsets[1] = 0; 
+	order_offsets[1] = 0;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeExtraTargetData* hud_gauge = gauge_load_common<HudGaugeExtraTargetData>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -3526,20 +2660,11 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 		stuff_int_list(time_offsets, 2);
 	}
 
-	HudGaugeExtraTargetData* hud_gauge = new HudGaugeExtraTargetData();
-
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initBracketOffsets(bracket_offsets[0], bracket_offsets[1]);
 	hud_gauge->initDockOffsets(dock_offsets[0], dock_offsets[1]);
 	hud_gauge->initOrderOffsets(order_offsets[0], order_offsets[1]);
 	hud_gauge->initTimeOffsets(time_offsets[0], time_offsets[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3553,32 +2678,20 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, SCP_vect
 	}
 }
 
-void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_radar_std(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 1.0};
+	int offset[2];
 	int Radar_blip_radius_normal;
 	int Radar_blip_radius_target;
 	int Radar_radius[2];
 	int Radar_dist_offsets[RR_MAX_RANGES][2];
 	float Radar_center_offsets[2];
 	char fname[MAX_FILENAME_LEN];
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 257;
-		coords[1] = 369;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -63;
+		offset[1] = -111;
 
 		Radar_blip_radius_normal = 2;
 		Radar_blip_radius_target = 5;
@@ -3600,11 +2713,8 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 
 		strcpy_s(fname, "radar1");
 	} else {
-		coords[0] = 411;
-		coords[1] = 590;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -101;
+		offset[1] = -178;
 
 		Radar_blip_radius_normal = 4;
 		Radar_blip_radius_target = 8;
@@ -3627,51 +2737,8 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 		strcpy_s(fname, "2_radar1");
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeRadarStd* hud_gauge = gauge_load_common<HudGaugeRadarStd>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -3687,9 +2754,6 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 
 	// Only load this if the user hasn't specified a preference
 	if (Cmdline_orb_radar == 0) {
-		HudGaugeRadarStd* hud_gauge = new HudGaugeRadarStd();
-		hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-		hud_gauge->initPosition(coords[0], coords[1]);
 		hud_gauge->initBitmaps(fname);
 		hud_gauge->initBlipRadius(Radar_blip_radius_normal, Radar_blip_radius_target);
 		hud_gauge->initCenterOffsets(Radar_center_offsets[0], Radar_center_offsets[1]);
@@ -3697,10 +2761,7 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 		hud_gauge->initDistanceLongOffsets(Radar_dist_offsets[1][0], Radar_dist_offsets[1][1]);
 		hud_gauge->initDistanceShortOffsets(Radar_dist_offsets[0][0], Radar_dist_offsets[0][1]);
 		hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
-		hud_gauge->initFont(font_num);
-		hud_gauge->lockConfigColor(lock_color);
-		hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-		hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+		hud_gauge->initInfinityIcon();
 
 		if(ship_idx->at(0) >= 0) {
 			for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3713,34 +2774,27 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, SCP_vector<int>*
 			default_hud_gauges.push_back(hud_gauge);
 		}
 	}
+	else
+	{
+		// cleanup
+		delete hud_gauge;
+	}
 }
 
-void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_radar_orb(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 1.0};
+	int offset[2];
 	int Radar_blip_radius_normal;
 	int Radar_blip_radius_target;
 	int Radar_radius[2];
 	int Radar_dist_offsets[RR_MAX_RANGES][2];
 	float Radar_center_offsets[2];
 	char fname[MAX_FILENAME_LEN];
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 257;
-		coords[1] = 369;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -63;
+		offset[1] = -111;
 
 		Radar_blip_radius_normal = 2;
 		Radar_blip_radius_target = 5;
@@ -3762,11 +2816,8 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 
 		strcpy_s(fname, "radar1");
 	} else {
-		coords[0] = 411;
-		coords[1] = 590;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -101;
+		offset[1] = -178;
 
 		Radar_blip_radius_normal = 4;
 		Radar_blip_radius_target = 8;
@@ -3789,51 +2840,8 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 		strcpy_s(fname, "2_radar1");
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeRadarOrb* hud_gauge = gauge_load_common<HudGaugeRadarOrb>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -3849,9 +2857,6 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 
 	//only load this if the user actually wants to use the orb radar.
 	if (Cmdline_orb_radar == 1) {
-		HudGaugeRadarOrb* hud_gauge = new HudGaugeRadarOrb();
-		hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-		hud_gauge->initPosition(coords[0], coords[1]);
 		hud_gauge->initBitmaps(fname);
 		hud_gauge->initBlipRadius(Radar_blip_radius_normal, Radar_blip_radius_target);
 		hud_gauge->initCenterOffsets(Radar_center_offsets[0], Radar_center_offsets[1]);
@@ -3859,10 +2864,7 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 		hud_gauge->initDistanceLongOffsets(Radar_dist_offsets[1][0], Radar_dist_offsets[1][1]);
 		hud_gauge->initDistanceShortOffsets(Radar_dist_offsets[0][0], Radar_dist_offsets[0][1]);
 		hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
-		hud_gauge->initFont(font_num);
-		hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-		hud_gauge->lockConfigColor(lock_color);
-		hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+		hud_gauge->initInfinityIcon();
 
 		if(ship_idx->at(0) >= 0) {
 			for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -3875,12 +2877,23 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, SCP_vector<int>*
 			default_hud_gauges.push_back(hud_gauge);
 		}
 	}
+	else
+	{
+		// cleanup
+		delete hud_gauge;
+	}
 }
 
-void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+/**
+ * BSG style DRADIS as used by Diaspora
+ * Unfortunately, I can't see how to make this fit the gauge_load_common function
+ */
+void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
 	// basic radar gauge info
-	int coords[2];
+	float origin[2] = {0.5, 1.0};
+	int offset[2];
+	int coords[2] = {0, 0};
 	int base_res[2];
 	int Radar_radius[2];
 
@@ -3912,38 +2925,64 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, SCP_vector<in
 	float departure_beep_delay = 0.0f;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 231;
-		coords[1] = 332;
-
 		base_res[0] = 640;
 		base_res[1] = 480;
-	} else {
-		coords[0] = 369;
-		coords[1] = 531;
 
+		offset[0] = -89;
+		offset[1] = -148;
+	} else {
 		base_res[0] = 1024;
 		base_res[1] = 768;
+
+		offset[0] = -143;
+		offset[1] = -237;
 	}
 
 	Radar_radius[0] = 281;
 	Radar_radius[1] = 233;
-	
+
 	if(check_base_res(base_w, base_h)) {
 		base_res[0] = base_w;
 		base_res[1] = base_h;
 
 		if(optional_string("Position:")) {
 			stuff_int_list(coords, 2);
+		} else {
+			if (optional_string("Scale Gauge:")) {
+				stuff_boolean(&scale_gauge);
+			}
+
+			adjust_base_res(base_res, scale_gauge);
+
+			if(optional_string("Origin:")) {
+				stuff_float_list(origin, 2);
+
+				required_string("Offset:");
+				stuff_int_list(offset, 2);
+			}
+
+			if(optional_string("Offset:")) {
+				Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
+			}
+
+			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
 		}
+	} else {
+		adjust_base_res(base_res, scale_gauge);
+
+		coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
+		coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
 	}
 
-	if ( optional_string("Font:") ) {
+	if(optional_string("Font:")) {
 		stuff_int(&font_num);
 	} else {
 		if ( hud_font >=0 ) {
 			font_num = hud_font;
 		}
 	}
+
 	if(optional_string("Size:")) {
 		stuff_int_list(Radar_radius, 2);
 	}
@@ -3975,6 +3014,9 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, SCP_vector<in
 
 		required_string("Display Size:");
 		stuff_int_list(display_size, 2);
+	} else {
+		// adjust for multimonitor setups ONLY if not rendering gauge to a texture
+		adjust_for_multimonitor(base_res, true, coords);
 	}
 
 	parse_sound("Loop Sound:", &loop_snd, "DRADIS HudGauge");
@@ -4039,92 +3081,24 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, SCP_vector<in
 	}
 }
 
-void load_gauge_text_warnings(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_text_warnings(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	bool slew = true;
-	int font_num = FONT3;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 172;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 0;
+		offset[1] = -68;
 	} else {
-		coords[0] = 512;
-		coords[1] = 275;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 0;
+		offset[1] = -109;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
-
-	HudGaugeTextWarnings* hud_gauge = new HudGaugeTextWarnings();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	HudGaugeTextWarnings* hud_gauge = gauge_load_common<HudGaugeTextWarnings>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4138,10 +3112,10 @@ void load_gauge_text_warnings(int base_w, int base_h, int hud_font, SCP_vector<i
 	}
 }
 
-void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_target_monitor(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.0, 1.0};
+	int offset[2];
 	int Viewport_size[2];
 	int Viewport_offsets[2];
 	int Integrity_bar_offsets[2];
@@ -4156,17 +3130,15 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 	int Cargo_scan_start_offsets[2];
 	int Cargo_scan_size[2];
 
-	int Subsys_name_offsets[2];
+	int Subsys_name_offsets[2] = {0, 0};
 	bool Use_subsys_name_offsets = false;
 	
-	int Subsys_integrity_offsets[2];
+	int Subsys_integrity_offsets[2] = {0, 0};
 	bool Use_subsys_integrity_offsets = false;
 
-	int Disabled_status_offsets[2];
+	int Disabled_status_offsets[2] = {0, 0};
 	bool Use_disabled_status_offsets = false;
 
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
 	bool desaturate = false;
 
 	char fname_monitor[MAX_FILENAME_LEN] = "targetview1";
@@ -4174,26 +3146,12 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 	char fname_static[MAX_FILENAME_LEN] = "TargetStatic";
 	char fname_monitor_mask[MAX_FILENAME_LEN] = "";
 
-	int font_num = FONT1;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
-
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 319;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 5;
+		offset[1] = -161;
 	} else {
-		coords[0] = 5;
-		coords[1] = 590;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 5;
+		offset[1] = -178;
 	}
 
 	Viewport_size[0] = 131;
@@ -4227,51 +3185,8 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 	Cargo_scan_size[0] = 130;
 	Cargo_scan_size[1] = 109;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeTargetBox* hud_gauge = gauge_load_common<HudGaugeTargetBox>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
 	if(optional_string("Monitor Filename:")) {
 		stuff_string(fname_monitor, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -4336,9 +3251,6 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 		stuff_boolean(&desaturate);
 	}
 
-	HudGaugeTargetBox* hud_gauge = new HudGaugeTargetBox();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initViewportOffsets(Viewport_offsets[0], Viewport_offsets[1]);
 	hud_gauge->initViewportSize(Viewport_size[0], Viewport_size[1]);
 	hud_gauge->initIntegrityOffsets(Integrity_bar_offsets[0], Integrity_bar_offsets[1]);
@@ -4357,10 +3269,6 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 	hud_gauge->initDisabledStatusOffsets(Disabled_status_offsets[0], Disabled_status_offsets[1], Use_disabled_status_offsets);
 	hud_gauge->initDesaturate(desaturate);
 	hud_gauge->initBitmaps(fname_monitor, fname_monitor_mask, fname_integrity, fname_static);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4374,10 +3282,10 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, SCP_vector<
 	}
 }
 
-void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_squad_message(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 0.0};
+	int offset[2];
 	int Pgup_offsets[2];
 	int Pgdn_offsets[2];
 	int Header_offsets[2];
@@ -4389,34 +3297,18 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 	char fname_top[MAX_FILENAME_LEN] = "message1";
 	char fname_middle[MAX_FILENAME_LEN] = "message2";
 	char fname_bottom[MAX_FILENAME_LEN] = "message3";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 445;
-		coords[1] = 5;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -195;
+		offset[1] = 5;
 
 		Pgup_offsets[0] = 145;
 		Pgup_offsets[1] = 4;
 		Pgdn_offsets[0] = 145;
 		Pgdn_offsets[1] = 115;
 	} else {
-		coords[0] = 827;
-		coords[1] = 5;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -197;
+		offset[1] = 5;
 
 		Pgup_offsets[0] = 110;
 		Pgup_offsets[1] = 5;
@@ -4432,54 +3324,8 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 	Item_h = 10;
 	Item_offset_x = 17;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeSquadMessage* hud_gauge = gauge_load_common<HudGaugeSquadMessage>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -4514,10 +3360,7 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 		stuff_int_list(Pgdn_offsets, 2);
 	}
 
-	HudGaugeSquadMessage* hud_gauge = new HudGaugeSquadMessage();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initHeaderOffsets(Header_offsets[0], Header_offsets[1]);
 	hud_gauge->initItemStartOffsets(Item_start_offsets[0], Item_start_offsets[1]);
 	hud_gauge->initMiddleFrameStartOffsetY(Middle_frame_start_offset_y);
@@ -4526,11 +3369,6 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 	hud_gauge->initItemOffsetX(Item_offset_x);
 	hud_gauge->initPgUpOffsets(Pgup_offsets[0], Pgup_offsets[1]);
 	hud_gauge->initPgDnOffsets(Pgdn_offsets[0], Pgdn_offsets[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4544,10 +3382,10 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, SCP_vector<i
 	}
 }
 
-void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_objective_notify(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Objective_text_offset_y;
 	int Objective_text_val_offset_y;
 	int Subspace_text_offset_y;
@@ -4555,23 +3393,10 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 	int Red_text_offset_y;
 	int Red_text_val_offset_y;
 	char fname[MAX_FILENAME_LEN] = "objective1";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 245;
-		coords[1] = 114;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -75;
+		offset[1] = -126;
 
 		Objective_text_offset_y = 2;
 		Objective_text_val_offset_y = 11;
@@ -4580,11 +3405,8 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 		Red_text_offset_y = 2;
 		Red_text_val_offset_y = 10;
 	} else {
-		coords[0] = 436;
-		coords[1] = 184;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -76;
+		offset[1] = -200;
 
 		Objective_text_offset_y = 2;
 		Objective_text_val_offset_y = 11;
@@ -4594,54 +3416,8 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 		Red_text_val_offset_y = 10;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeObjectiveNotify* hud_gauge = gauge_load_common<HudGaugeObjectiveNotify>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -4664,9 +3440,6 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 		stuff_int(&Red_text_val_offset_y);
 	}
 
-	HudGaugeObjectiveNotify* hud_gauge = new HudGaugeObjectiveNotify();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initObjTextOffsetY(Objective_text_offset_y);
 	hud_gauge->initObjValueOffsetY(Objective_text_val_offset_y);
@@ -4674,11 +3447,6 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 	hud_gauge->initSubspaceValueOffsetY(Subspace_text_val_offset_y);
 	hud_gauge->initRedAlertTextOffsetY(Red_text_offset_y);
 	hud_gauge->initRedAlertValueOffsetY(Red_text_val_offset_y);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4692,10 +3460,10 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, SCP_vecto
 	}
 }
 
-void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int top_offset_x[NUM_HUD_SETTINGS];
 	int Weapon_header_offsets[NUM_HUD_SETTINGS][2];
 	int frame_offset_x[NUM_HUD_SETTINGS];
@@ -4713,10 +3481,6 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	int sname_start_offset_y;
 	int primary_text_h;
 	int secondary_text_h;
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
 
 	// thank god both GR640 and GR1024 use the same weapons gauge bitmaps
 	char fname_p_top[MAX_FILENAME_LEN] = "weapons1";
@@ -4733,24 +3497,12 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	char fname_s_bottom[MAX_FILENAME_LEN] = "weapons5";
 	char fname_s_bottom_b[MAX_FILENAME_LEN] = "weapons5_b";
 
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
-
 	if(gr_screen.res == GR_640) {
-		coords[0] = 497;
-		coords[1] = 252;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -143;
+		offset[1] = -228;
 	} else {
-		coords[0] = 880;
-		coords[1] = 511;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -144;
+		offset[1] = -257;
 	}
 
 	top_offset_x[0] = 12;
@@ -4781,54 +3533,8 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	primary_text_h = 12;
 	secondary_text_h = 9;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeWeapons* hud_gauge = gauge_load_common<HudGaugeWeapons>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Primary List Top Background Filename:")) {
 		stuff_string(fname_p_top, F_NAME, MAX_FILENAME_LEN);
 		if(optional_string("Alt Ballistic Filename:")) {
@@ -4926,9 +3632,6 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 		stuff_int(&secondary_text_h);
 	}
 
-	HudGaugeWeapons* hud_gauge = new HudGaugeWeapons();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initBitmapsPrimaryTop(fname_p_top, fname_p_top_b);
 	hud_gauge->initBitmapsPrimaryMiddle(fname_p_middle, fname_p_middle_b);
 	hud_gauge->initBitmapsPrimaryLast(fname_p_last, fname_p_last_b);
@@ -4944,11 +3647,7 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	hud_gauge->initSecondaryWeaponOffsets(Weapon_sammo_offset_x, Weapon_sname_offset_x, Weapon_sreload_offset_x, Weapon_slinked_offset_x, Weapon_sunlinked_offset_x);
 	hud_gauge->initPrimaryHeights(top_primary_h, primary_text_h);
 	hud_gauge->initSecondaryHeights(top_secondary_h, secondary_text_h);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initLinkIcon();
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -4962,10 +3661,10 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	}
 }
 
-void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_directives(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.0, 0.5};
+	int offset[2];
 	int header_offsets[2];
 	int middle_frame_offset_y;
 	int text_start_offsets[2];
@@ -4975,27 +3674,13 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 	char fname_middle[MAX_FILENAME_LEN] = "directives2";
 	char fname_bottom[MAX_FILENAME_LEN] = "directives3";
 	int bottom_bg_offset = 0;
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 178;
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 5;
+		offset[1] = -62;
 	} else {
-		coords[0] = 5;
-		coords[1] = 278;
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 5;
+		offset[1] = -106;
 	}
 
 	header_offsets[0] = 2;
@@ -5005,54 +3690,8 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 	text_start_offsets[1] = 14;
 	text_h = 9;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-		
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
+	HudGaugeDirectives* hud_gauge = gauge_load_common<HudGaugeDirectives>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -5081,21 +3720,13 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 		stuff_int(&max_line_width);
 	}
 
-	HudGaugeDirectives* hud_gauge = new HudGaugeDirectives();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
 	hud_gauge->initMiddleFrameOffsetY(middle_frame_offset_y);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTextHeight(text_h);
 	hud_gauge->initBottomBgOffset(bottom_bg_offset);
 	hud_gauge->initTextStartOffsets(text_start_offsets[0], text_start_offsets[1]);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initMaxLineWidth(max_line_width);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5109,34 +3740,21 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, SCP_vector<int>
 	}
 }
 
-void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_talking_head(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.0, 0.0};
+	int offset[2];
 	int Header_offsets[2];
 	int Anim_offsets[2];
 	int Anim_size[2];
 	char fname[MAX_FILENAME_LEN] = "head1";
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 35;
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 5;
+		offset[1] = 35;
 	} else {
-		coords[0] = 5;
-		coords[1] = 56;
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 5;
+		offset[1] = 56;
 	}
 
 	Header_offsets[0] = 2;
@@ -5146,51 +3764,8 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<in
 	Anim_size[0] = 160;
 	Anim_size[1] = 120;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-		
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
+	HudGaugeTalkingHead* hud_gauge = gauge_load_common<HudGaugeTalkingHead>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -5204,17 +3779,10 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<in
 		stuff_int_list(Anim_size, 2);
 	}
 
-	HudGaugeTalkingHead* hud_gauge = new HudGaugeTalkingHead();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initAnimOffsets(Anim_offsets[0], Anim_offsets[1]);
 	hud_gauge->initAnimSizes(Anim_size[0], Anim_size[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initHeaderOffsets(Header_offsets[0], Header_offsets[1]);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5228,88 +3796,28 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, SCP_vector<in
 	}
 }
 
-void load_gauge_countermeasures(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_countermeasures(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int cm_text_offset[2];
 	int cm_text_val_offset[2];
 	char fname[MAX_FILENAME_LEN] = "countermeasure1";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 497;
-		coords[1] = 343;
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -143;
+		offset[1] = -137;
 	} else {
-		coords[0] = 880;
-		coords[1] = 602;
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -144;
+		offset[1] = -166;
 	}
 	cm_text_offset[0] = 36;
 	cm_text_offset[1] = 4;
 	cm_text_val_offset[0] = 9;
 	cm_text_val_offset[1] = 4;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeCmeasures* hud_gauge = gauge_load_common<HudGaugeCmeasures>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}	
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -5320,17 +3828,9 @@ void load_gauge_countermeasures(int base_w, int base_h, int hud_font, SCP_vector
 		stuff_int_list(cm_text_val_offset, 2);
 	}
 
-	HudGaugeCmeasures* hud_gauge = new HudGaugeCmeasures();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initCountTextOffsets(cm_text_offset[0], cm_text_offset[1]);
 	hud_gauge->initCountValueOffsets(cm_text_val_offset[0], cm_text_val_offset[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5344,92 +3844,37 @@ void load_gauge_countermeasures(int base_w, int base_h, int hud_font, SCP_vector
 	}
 }
 
-void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_auto_target(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int auto_text_offset[2];
 	int target_text_offset[2];
 	char fname[MAX_FILENAME_LEN] = "toggle1";
-	bool slew = false;
-	int font_num = FONT1;
 
 	int on_color[4] = {0, 0, 0, 255};
 	int off_color[4] = {-1, -1, -1, -1};
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		base_res[0] = 640;
-		base_res[1] = 480;
-		coords[0] = 577;
-		coords[1] = 380;
+		offset[0] = -63;
+		offset[1] = -100;
 	} else {
-		base_res[0] = 1024;
-		base_res[1] = 768;
-		coords[0] = 960;
-		coords[1] = 648;
+		offset[0] = -64;
+		offset[1] = -120;
 	}
 
 	auto_text_offset[0] = 13;
 	auto_text_offset[1] = 2;
-	target_text_offset[0] = 7;
-	target_text_offset[1] = 10;
-
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
+	if (Lcl_pl) {
+		target_text_offset[0] = 2;
+		target_text_offset[1] = 10;
+	} else {
+		target_text_offset[0] = 7;
+		target_text_offset[1] = 10;
 	}
 	
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
+	HudGaugeAutoTarget* hud_gauge = gauge_load_common<HudGaugeAutoTarget>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
+
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -5448,19 +3893,11 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int
 		stuff_int_list(off_color, 4);
 	}
 
-	HudGaugeAutoTarget* hud_gauge = new HudGaugeAutoTarget();
 	hud_gauge->initAutoTextOffsets(auto_text_offset[0], auto_text_offset[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTargetTextOffsets(target_text_offset[0], target_text_offset[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
 	hud_gauge->initOnColor(on_color[0], on_color[1], on_color[2], on_color[3]);
 	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5474,91 +3911,36 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 }
 
-void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_auto_speed(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int auto_text_offset[2];
 	int speed_text_offset[2];
 	char fname[MAX_FILENAME_LEN] = "toggle1";
-	bool slew = false;
-	int font_num = FONT1;
 	int on_color[4] = {0, 0, 0, 255};
 	int off_color[4] = {-1, -1, -1, -1};
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		base_res[0] = 640;
-		base_res[1] = 480;
-		coords[0] = 577;
-		coords[1] = 404;
+		offset[0] = -63;
+		offset[1] = -76;
 	} else {
-		base_res[0] = 1024;
-		base_res[1] = 768;
-		coords[0] = 960;
-		coords[1] = 672;
+		offset[0] = -64;
+		offset[1] = -96;
 	}
 
 	auto_text_offset[0] = 13;
 	auto_text_offset[1] = 2;
-	speed_text_offset[0] = 10;
-	speed_text_offset[1] = 10;
-
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
+	if (Lcl_pl) {
+		speed_text_offset[0] = 9;
+		speed_text_offset[1] = 10;
+	} else {
+		speed_text_offset[0] = 10;
+		speed_text_offset[1] = 10;
 	}
 	
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
+	HudGaugeAutoSpeed* hud_gauge = gauge_load_common<HudGaugeAutoSpeed>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
+
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -5577,19 +3959,11 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>
 		stuff_int_list(off_color, 4);
 	}
 
-	HudGaugeAutoSpeed* hud_gauge = new HudGaugeAutoSpeed();
 	hud_gauge->initAutoTextOffsets(auto_text_offset[0], auto_text_offset[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initSpeedTextOffsets(speed_text_offset[0], speed_text_offset[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
 	hud_gauge->initOnColor(on_color[0], on_color[1], on_color[2], on_color[3]);
 	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5603,10 +3977,10 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, SCP_vector<int>
 	}
 }
 
-void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_wingman_status(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 0.0};
+	int offset[2];
 	int header_offsets[2];
 	int left_frame_end_x;
 	
@@ -5615,10 +3989,6 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 	int wing_width;
 	int right_bg_offset = 0;
 	int wing_name_offsets[2];
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
 
 	int wingmate_offsets[MAX_SHIPS_PER_WING][2];
 	char fname_left[MAX_FILENAME_LEN] = "wingman1";
@@ -5627,24 +3997,12 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 	char fname_dots[MAX_FILENAME_LEN] = "wingman4";
 	// "wingman5" isn't used anymore since Goober implemented string based wing names
 
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
-
 	if(gr_screen.res == GR_640) {
-		coords[0] = 550;
-		coords[1] = 144;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -90;
+		offset[1] = 144;
 	} else {
-		coords[0] = 932;
-		coords[1] = 144;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -92;
+		offset[1] = 144;
 	}
 
 	header_offsets[0] = 2;
@@ -5672,54 +4030,8 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 	wingmate_offsets[5][0] = 22;
 	wingmate_offsets[5][1] = 16;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeWingmanStatus* hud_gauge = gauge_load_common<HudGaugeWingmanStatus>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Left Background Filename:")) {
 		stuff_string(fname_left, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -5780,13 +4092,10 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 			grow_mode = 2;
 	}
 
-	HudGaugeWingmanStatus* hud_gauge = new HudGaugeWingmanStatus();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname_left, fname_middle, fname_right, fname_dots);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initLeftFrameEndX(left_frame_end_x);
 	hud_gauge->initMultipleWingOffsets(multiple_wing_offsets[0], multiple_wing_offsets[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initSingleWingOffsets(single_wing_offsets[0], single_wing_offsets[1]);
 	hud_gauge->initWingmate1Offsets(wingmate_offsets[0][0], wingmate_offsets[0][1]);
 	hud_gauge->initWingmate2Offsets(wingmate_offsets[1][0],	wingmate_offsets[1][1]);
@@ -5798,11 +4107,6 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 	hud_gauge->initWingWidth(wing_width);
 	hud_gauge->initRightBgOffset(right_bg_offset);
 	hud_gauge->initGrowMode(grow_mode);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5816,10 +4120,10 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, SCP_vector<
 	}
 }
 
-void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_damage(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.0};
+	int offset[2];
 	int header_offsets[2];
 	int hull_integ_offsets[2];
 	int hull_integ_val_offset_x;
@@ -5831,27 +4135,13 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 	char fname_top[MAX_FILENAME_LEN] = "damage1";
 	char fname_middle[MAX_FILENAME_LEN] = "damage2";
 	char fname_bottom[MAX_FILENAME_LEN] = "damage3";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 245;
-		coords[1] = 38;
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -75;
+		offset[1] = 38;
 	} else {
-		coords[0] = 440;
-		coords[1] = 61;
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -72;
+		offset[1] = 61;
 	}
 	header_offsets[0] = 3;
 	header_offsets[1] = 2;
@@ -5864,54 +4154,8 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 	subsys_integ_val_offset_x = 142;
 	line_h = 9;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeDamage* hud_gauge = gauge_load_common<HudGaugeDamage>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -5946,23 +4190,15 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 		stuff_int(&bottom_bg_offset);
 	}
 
-	HudGaugeDamage* hud_gauge = new HudGaugeDamage();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
 	hud_gauge->initHullIntegOffsets(hull_integ_offsets[0], hull_integ_offsets[1]);
 	hud_gauge->initHullIntegValueOffsetX(hull_integ_val_offset_x);
 	hud_gauge->initLineHeight(line_h);
 	hud_gauge->initMiddleFrameStartOffsetY(middle_frame_start_offset_y);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initSubsysIntegStartOffsets(subsys_integ_start_offsets[0], subsys_integ_start_offsets[1]);
 	hud_gauge->initSubsysIntegValueOffsetX(subsys_integ_val_offset_x);
 	hud_gauge->initBottomBgOffset(bottom_bg_offset);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -5976,32 +4212,19 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, SCP_vector<int>* sh
 	}
 }
 
-void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_support(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int header_offsets[2];
 	int text_val_offset_y;
 	int text_dock_offset_x;
 	int text_dock_val_offset_x;
 	char fname[MAX_FILENAME_LEN] = "support1";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 265;
-		coords[1] = 334;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -55;
+		offset[1] = 94;
 
 		header_offsets[0] = 2;
 		header_offsets[1] = 1;
@@ -6009,11 +4232,8 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 		text_dock_offset_x = 5;
 		text_dock_val_offset_x = 63;
 	} else {
-		coords[0] = 459;
-		coords[1] = 534;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -53;
+		offset[1] = 150;
 
 		header_offsets[0] = 3;
 		header_offsets[1] = 2;
@@ -6022,54 +4242,8 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 		text_dock_val_offset_x = 65;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeSupport* hud_gauge = gauge_load_common<HudGaugeSupport>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -6086,19 +4260,11 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 		stuff_int(&text_dock_val_offset_x);
 	}
 
-	HudGaugeSupport* hud_gauge = new HudGaugeSupport();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initTextDockOffsetX(text_dock_offset_x);
 	hud_gauge->initTextDockValueOffsetX(text_dock_val_offset_x);
 	hud_gauge->initTextValueOffsetY(text_val_offset_y);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6112,69 +4278,20 @@ void load_gauge_support(int base_w, int base_h, int hud_font, SCP_vector<int>* s
 	}
 }
 
-void load_gauge_training_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_training_messages(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	int font_num = FONT1;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 174;
-		coords[1] = 40;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -146;
+		offset[1] = -200;
 	} else {
-		coords[0] = 379;
-		coords[1] = 125;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -133;
+		offset[1] = -259;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-		
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-
-	HudGaugeTrainingMessages* hud_gauge = new HudGaugeTrainingMessages();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initFont(font_num);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	HudGaugeTrainingMessages* hud_gauge = gauge_load_common<HudGaugeTrainingMessages>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6188,10 +4305,10 @@ void load_gauge_training_messages(int base_w, int base_h, int hud_font, SCP_vect
 	}
 }
 
-void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_messages(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.0, 0.0};
+	int offset[2];
 
 	int max_lines = 3;
 	int max_width;
@@ -6201,80 +4318,17 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	int line_height = 9;
 	bool hidden_by_comms_menu = true;
 
-	coords[0] = 8;
-	coords[1] = 5;
-	int font_num = FONT1;
-	bool slew = false;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
+	offset[0] = 8;
+	offset[1] = 5;
 
 	if(gr_screen.res == GR_640) {
-		base_res[0] = 640;
-		base_res[1] = 480;
-
 		max_width = 620;
 	} else {
-		base_res[0] = 1024;
-		base_res[1] = 768;
-
 		max_width = 1004;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeMessages* hud_gauge = gauge_load_common<HudGaugeMessages>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-
-	if ( optional_string("Slew:") ) {
-		stuff_boolean(&slew);
-	}
 	if ( optional_string("Max Lines:") ) {
 		stuff_int(&max_lines);
 	}
@@ -6297,11 +4351,6 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 		stuff_boolean(&hidden_by_comms_menu);
 	}
 
-	HudGaugeMessages* hud_gauge = new HudGaugeMessages();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initFont(font_num);
-	hud_gauge->initSlew(slew);
 	hud_gauge->initMaxLines(max_lines);
 	hud_gauge->initMaxWidth(max_width);
 	hud_gauge->initScrollTime(scroll_time);
@@ -6309,9 +4358,6 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	hud_gauge->initTotalLife(total_life);
 	hud_gauge->initLineHeight(line_height);
 	hud_gauge->initHiddenByCommsMenu(hidden_by_comms_menu);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6325,69 +4371,20 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	}
 }
 
-void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
+	float origin[2] = {0.5, 0.0};
+	int offset[2] = {0, 0};
 	int coords[2];
-	int base_res[2];
 
 	gr_set_font(FONT1);
 	int h = gr_get_font_height();
 
 	coords[0] = 0x8000; //Magic number, means "Center on X"
 	coords[1] = 5 + (h * 3);
-	int font_num = FONT1;
 
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
-
-	if(gr_screen.res == GR_640) {
-		base_res[0] = 640;
-		base_res[1] = 480;
-	} else {
-		base_res[0] = 1024;
-		base_res[1] = 768;
-	}
-
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-
-	HudGaugeFixedMessages* hud_gauge = new HudGaugeFixedMessages();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initFont(font_num);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	HudGaugeFixedMessages* hud_gauge = gauge_load_common<HudGaugeFixedMessages>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1],
+																					true, coords[0], coords[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6401,10 +4398,10 @@ void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, SCP_vector<
 	}
 }
 
-void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Weapon_link_offsets[NUM_WEAPON_LINK_MODES][2];
 	char fname_arc[MAX_FILENAME_LEN];
 	char fname_primary_link_1[MAX_FILENAME_LEN];
@@ -6412,23 +4409,10 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 	char fname_secondary_link_1[MAX_FILENAME_LEN];
 	char fname_secondary_link_2[MAX_FILENAME_LEN];
 	char fname_secondary_link_3[MAX_FILENAME_LEN];
-	bool slew = true;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 374;
-		coords[1] = 242;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 54;
+		offset[1] = 2;
 
 		Weapon_link_offsets[LINK_ONE_PRIMARY][0] = 32;
 		Weapon_link_offsets[LINK_ONE_PRIMARY][1] = 11;
@@ -6448,11 +4432,8 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 		strcpy_s(fname_secondary_link_2, "rightarc5_fs1");
 		strcpy_s(fname_secondary_link_3, "rightarc6_fs1");
 	} else {
-		coords[0] = 598;
-		coords[1] = 387;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 86;
+		offset[1] = 3;
 
 		Weapon_link_offsets[LINK_ONE_PRIMARY][0] = 52;
 		Weapon_link_offsets[LINK_ONE_PRIMARY][1] = 18;
@@ -6473,54 +4454,12 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 		strcpy_s(fname_secondary_link_3, "2_rightarc6_fs1");
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeWeaponLinking* hud_gauge = gauge_load_common<HudGaugeWeaponLinking>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Arc Filename:")) {
 		stuff_string(fname_arc, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -6555,20 +4494,12 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 		stuff_int_list(Weapon_link_offsets[LINK_THREE_SECONDARY], 2);
 	}
 
-	HudGaugeWeaponLinking* hud_gauge = new HudGaugeWeaponLinking();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->init1PrimaryOffsets(Weapon_link_offsets[LINK_ONE_PRIMARY][0], Weapon_link_offsets[LINK_ONE_PRIMARY][1]);
 	hud_gauge->init2PrimaryOffsets(Weapon_link_offsets[LINK_TWO_PRIMARY][0], Weapon_link_offsets[LINK_TWO_PRIMARY][1]);
 	hud_gauge->init1SecondaryOffsets(Weapon_link_offsets[LINK_ONE_SECONDARY][0], Weapon_link_offsets[LINK_ONE_SECONDARY][1]);
 	hud_gauge->init2SecondaryOffsets(Weapon_link_offsets[LINK_TWO_SECONDARY][0], Weapon_link_offsets[LINK_TWO_SECONDARY][1]);
 	hud_gauge->init3SecondaryOffsets(Weapon_link_offsets[LINK_THREE_SECONDARY][0], Weapon_link_offsets[LINK_THREE_SECONDARY][1]);
 	hud_gauge->initBitmaps(fname_arc, fname_primary_link_1, fname_primary_link_2, fname_secondary_link_1, fname_secondary_link_2, fname_secondary_link_3);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6582,69 +4513,20 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, SCP_vector<
 	}
 }
 
-void load_gauge_multi_msg(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_multi_msg(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	int font_num = FONT1;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
+	float origin[2] = {0.0, 0.5};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 150;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 5;
+		offset[1] = -90;
 	} else {
-		coords[0] = 8;
-		coords[1] = 240;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 8;
+		offset[1] = -144;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-
-	HudGaugeMultiMsg* hud_gauge = new HudGaugeMultiMsg();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initFont(font_num);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	HudGaugeMultiMsg* hud_gauge = gauge_load_common<HudGaugeMultiMsg>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6658,92 +4540,20 @@ void load_gauge_multi_msg(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	}
 }
 
-void load_gauge_voice_status(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_voice_status(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
+	float origin[2] = {0.0, 0.5};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 5;
-		coords[1] = 165;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 5;
+		offset[1] = -75;
 	} else {
-		coords[0] = 8;
-		coords[1] = 255;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 8;
+		offset[1] = -129;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
-
-	HudGaugeVoiceStatus* hud_gauge = new HudGaugeVoiceStatus();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	HudGaugeVoiceStatus* hud_gauge = gauge_load_common<HudGaugeVoiceStatus>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6757,92 +4567,20 @@ void load_gauge_voice_status(int base_w, int base_h, int hud_font, SCP_vector<in
 	}
 }
 
-void load_gauge_ping(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_ping(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
+	float origin[2] = {1.0, 0.0};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 560;
-		coords[1] = 3;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -80;
+		offset[1] = 3;
 	} else {
-		coords[0] = 896;
-		coords[1] = 5;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -128;
+		offset[1] = 5;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
-
-	HudGaugePing* hud_gauge = new HudGaugePing();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	HudGaugePing* hud_gauge = gauge_load_common<HudGaugePing>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6856,92 +4594,20 @@ void load_gauge_ping(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 	}
 }
 
-void load_gauge_supernova(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_supernova(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 100;
-		coords[1] = 100;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -220;
+		offset[1] = -140;
 	} else {
-		coords[0] = 170;
-		coords[1] = 170;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -342;
+		offset[1] = -214;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
-
-	HudGaugeSupernova* hud_gauge = new HudGaugeSupernova();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	HudGaugeSupernova* hud_gauge = gauge_load_common<HudGaugeSupernova>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -6955,9 +4621,8 @@ void load_gauge_supernova(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	}
 }
 
-void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_lock(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int base_res[2];
 	int Lock_gauge_half_w;
 	int Lock_gauge_half_h;
 	int Lockspin_half_w;
@@ -6969,13 +4634,9 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 	bool loop_locked_anim;
 	char fname_lock[MAX_FILENAME_LEN];
 	char fname_spin[MAX_FILENAME_LEN];
-	int font_num = FONT1;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			base_res[0] = 640;
-			base_res[1] = 480;
-
 			Lock_gauge_half_w = 15;
 			Lock_gauge_half_h = 15;
 			Lockspin_half_w = 16;
@@ -6989,9 +4650,6 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 			strcpy_s(fname_lock, "lock1_fs1");
 			strcpy_s(fname_spin, "lockspin_fs1");
 		} else {
-			base_res[0] = 1024;
-			base_res[1] = 768;
-
 			Lock_gauge_half_w = 24;
 			Lock_gauge_half_h = 25;
 			Lockspin_half_w = 26;
@@ -7007,9 +4665,6 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 		}
 	} else {
 		if(gr_screen.res == GR_640) {
-			base_res[0] = 640;
-			base_res[1] = 480;
-
 			Lock_gauge_half_w = 17;
 			Lock_gauge_half_h = 15;
 			Lockspin_half_w = 31;
@@ -7023,9 +4678,6 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 			strcpy_s(fname_lock, "lock1");
 			strcpy_s(fname_spin, "lockspin");
 		} else {
-			base_res[0] = 1024;
-			base_res[1] = 768;
-
 			Lock_gauge_half_w = 28;
 			Lock_gauge_half_h = 25;
 			Lockspin_half_w = 50;
@@ -7041,18 +4693,8 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 		}
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-	}
+	HudGaugeLock* hud_gauge = gauge_load_common<HudGaugeLock>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, 0, 0, 0, 0, false, 0, 0, false, false);
 
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
 	if(optional_string("Lock Filename:")) {
 		stuff_string(fname_lock, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -7076,8 +4718,6 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 		Lockspin_half_h = temp[1];
 	}
 
-	HudGaugeLock* hud_gauge = new HudGaugeLock();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname_lock, fname_spin);
 	hud_gauge->initLoopLockedAnim(loop_locked_anim);
 	hud_gauge->initGaugeHalfSize(Lock_gauge_half_w, Lock_gauge_half_h);
@@ -7085,7 +4725,6 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 	hud_gauge->initTriHeight(Lock_triangle_height);
 	hud_gauge->initTriBase(Lock_triangle_base);
 	hud_gauge->initTargetBoxSize(Lock_target_box_width,	Lock_target_box_height);
-	hud_gauge->initFont(font_num);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7099,53 +4738,31 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 	}
 }
 
-void load_gauge_offscreen(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_offscreen(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int base_res[2];
 	float Max_offscreen_tri_seperation;
 	float Max_front_seperation;
 	float Offscreen_tri_base;
 	float Offscreen_tri_height;
-	int font_num = FONT1;
 
 	if(gr_screen.res == GR_640) {
-		base_res[0] = 640;
-		base_res[1] = 480;
-
 		Max_offscreen_tri_seperation = 10.0f;
 		Max_front_seperation = 10.0f;
 		Offscreen_tri_base = 6.0f;
 		Offscreen_tri_height = 7.0f;
 	} else {
-		base_res[0] = 1024;
-		base_res[1] = 768;
-
 		Max_offscreen_tri_seperation = 16.0f;
 		Max_front_seperation = 16.0f;
 		Offscreen_tri_base = 9.5f;
 		Offscreen_tri_height = 11.0f;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-	}
+	HudGaugeOffscreen* hud_gauge = gauge_load_common<HudGaugeOffscreen>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, 0, 0, 0, 0, false, 0, 0, false, false);
 
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-
-	HudGaugeOffscreen* hud_gauge = new HudGaugeOffscreen();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initMaxTriSeperation(Max_offscreen_tri_seperation);
 	hud_gauge->initMaxFrontSeperation(Max_front_seperation);
 	hud_gauge->initTriBase(Offscreen_tri_base);
 	hud_gauge->initTriHeight(Offscreen_tri_height);
-	hud_gauge->initFont(font_num);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7159,52 +4776,33 @@ void load_gauge_offscreen(int base_w, int base_h, int hud_font, SCP_vector<int>*
 	}
 }
 
-void load_gauge_brackets(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_brackets(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int base_res[2];
 	int min_target_box[2];
 	int min_subtarget_box[2];
 	char fname[MAX_FILENAME_LEN] = "attacker";
-	int font_num = FONT1;
 
 	if(gr_screen.res == GR_640) {
-		base_res[0] = 640;
-		base_res[1] = 480;
 		min_target_box[0] = 20;
 		min_target_box[1] = 20;
 		min_subtarget_box[0] = 12;
 		min_subtarget_box[1] = 12;
 	} else {
-		base_res[0] = 1024;
-		base_res[1] = 768;
 		min_target_box[0] = 30;
 		min_target_box[1] = 30;
 		min_subtarget_box[0] = 24;
 		min_subtarget_box[1] = 24;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-	}
+	HudGaugeBrackets* hud_gauge = gauge_load_common<HudGaugeBrackets>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, 0, 0, 0, 0, false, 0, 0, false, false);
 
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
 	if(optional_string("Dot Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
 
-	HudGaugeBrackets* hud_gauge = new HudGaugeBrackets();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initMinSubTargetBoxSizes(min_subtarget_box[0], min_subtarget_box[1]);
 	hud_gauge->initMinTargetBoxSizes(min_target_box[0], min_target_box[1]);
-	hud_gauge->initFont(font_num);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7218,57 +4816,36 @@ void load_gauge_brackets(int base_w, int base_h, int hud_font, SCP_vector<int>* 
 	}
 }
 
-void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
-	bool slew = true;
-	int font_num = FONT1;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 242;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 0;
+		offset[1] = 2;
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
 		Radius = 104;
 	} else {
-		coords[0] = 512;
-		coords[1] = 387;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 0;
+		offset[1] = 3;
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
 		Radius = 166;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-		
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
+	HudGaugeHostileTriangle* hud_gauge = gauge_load_common<HudGaugeHostileTriangle>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
 	}
@@ -7279,14 +4856,9 @@ void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, SCP_vector<int
 		stuff_float(&Target_triangle_height);
 	}
 
-	HudGaugeHostileTriangle* hud_gauge = new HudGaugeHostileTriangle();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initRadius(Radius);
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7300,57 +4872,36 @@ void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 }
 
-void load_gauge_target_tri(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_target_tri(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
-	bool slew = true;
-	int font_num = FONT1;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 242;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 0;
+		offset[1] = 2;
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
 		Radius = 104;
 	} else {
-		coords[0] = 512;
-		coords[1] = 387;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 0;
+		offset[1] = 3;
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
 		Radius = 166;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-		
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
+	HudGaugeTargetTriangle* hud_gauge = gauge_load_common<HudGaugeTargetTriangle>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
 	}
@@ -7361,14 +4912,9 @@ void load_gauge_target_tri(int base_w, int base_h, int hud_font, SCP_vector<int>
 		stuff_float(&Target_triangle_height);
 	}
 
-	HudGaugeTargetTriangle* hud_gauge = new HudGaugeTargetTriangle();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initRadius(Radius);
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7382,57 +4928,36 @@ void load_gauge_target_tri(int base_w, int base_h, int hud_font, SCP_vector<int>
 	}
 }
 
-void load_gauge_missile_tri(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_missile_tri(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
-	bool slew = true;
-	int font_num = FONT1;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 242;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 0;
+		offset[1] = 2;
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
 		Radius = 104;
 	} else {
-		coords[0] = 512;
-		coords[1] = 387;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 0;
+		offset[1] = 3;
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
 		Radius = 166;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-		
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
+	HudGaugeMissileTriangles* hud_gauge = gauge_load_common<HudGaugeMissileTriangles>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
 	}
@@ -7443,14 +4968,9 @@ void load_gauge_missile_tri(int base_w, int base_h, int hud_font, SCP_vector<int
 		stuff_float(&Target_triangle_height);
 	}
 
-	HudGaugeMissileTriangles* hud_gauge = new HudGaugeMissileTriangles();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initRadius(Radius);
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7464,26 +4984,18 @@ void load_gauge_missile_tri(int base_w, int base_h, int hud_font, SCP_vector<int
 	}
 }
 
-void load_gauge_lead(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_lead(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int base_res[2];
 	float Lead_indicator_half[2];
 	char fname[MAX_FILENAME_LEN];
-	int font_num = FONT1;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			base_res[0] = 640;
-			base_res[1] = 480;
-
 			Lead_indicator_half[0] = 12.5f;
 			Lead_indicator_half[1] = 12.5f;
 
 			strcpy_s(fname, "lead1_fs1");
 		} else {
-			base_res[0] = 1024;
-			base_res[1] = 768;
-
 			Lead_indicator_half[0] = 20.0f;
 			Lead_indicator_half[1] = 20.0f;
 
@@ -7491,17 +5003,11 @@ void load_gauge_lead(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 		}
 	} else {
 		if(gr_screen.res == GR_640) {
-			base_res[0] = 640;
-			base_res[1] = 480;
-
 			Lead_indicator_half[0] = 8.0f;
 			Lead_indicator_half[1] = 8.0f;
 
 			strcpy_s(fname, "lead1");
 		} else {
-			base_res[0] = 1024;
-			base_res[1] = 768;
-
 			Lead_indicator_half[0] = 13.0f;
 			Lead_indicator_half[1] = 13.0f;
 
@@ -7509,18 +5015,8 @@ void load_gauge_lead(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 		}
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-	}
+	HudGaugeLeadIndicator* hud_gauge = gauge_load_common<HudGaugeLeadIndicator>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, 0, 0, 0, 0, false, 0, 0, false, false);
 
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -7533,11 +5029,8 @@ void load_gauge_lead(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 		Lead_indicator_half[1] = i2fl(temp[1]);
 	}
 
-	HudGaugeLeadIndicator* hud_gauge = new HudGaugeLeadIndicator();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initHalfSize(Lead_indicator_half[0], Lead_indicator_half[1]);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initFont(font_num);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7551,61 +5044,35 @@ void load_gauge_lead(int base_w, int base_h, int hud_font, SCP_vector<int>* ship
 	}
 }
 
-void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	int Radius;
-	bool slew = true;
-	int font_num = FONT1;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 242;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 0;
+		offset[1] = 2;
 
 		Radius = 104;
 	} else {
-		coords[0] = 512;
-		coords[1] = 387;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 0;
+		offset[1] = 3;
 
 		Radius = 166;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeOrientationTee* hud_gauge = gauge_load_common<HudGaugeOrientationTee>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
 	}
 
-	HudGaugeOrientationTee* hud_gauge = new HudGaugeOrientationTee();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
 	hud_gauge->initRadius(Radius);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7619,70 +5086,31 @@ void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, SCP_vector
 	}
 }
 
-void load_gauge_lead_sight(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_lead_sight(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {0.5, 0.5};
+	int offset[2];
 	char fname[MAX_FILENAME_LEN] = "leadsight";
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 320;
-		coords[1] = 242;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = 0;
+		offset[1] = 2;
 	} else {
-		coords[0] = 512;
-		coords[1] = 387;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = 0;
+		offset[1] = 3;
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeLeadSight* hud_gauge = gauge_load_common<HudGaugeLeadSight>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
 
-	HudGaugeLeadSight* hud_gauge = new HudGaugeLeadSight();
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7696,39 +5124,25 @@ void load_gauge_lead_sight(int base_w, int base_h, int hud_font, SCP_vector<int>
 	}
 }
 
-void load_gauge_kills(int base_w, int base_h, int hud_font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_kills(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int text_offsets[2] = {6, 4};
 	int text_value_offsets[2] = {74, 4};
 	char fname[MAX_FILENAME_LEN] = "kills1";
-	bool slew = false;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 497;
-		coords[1] = 361;
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -143;
+		offset[1] = -119;
 		
 		if(Lcl_gr) {
 			text_value_offsets[0] = 118;
 			text_value_offsets[1] = 4;
 		}
 	} else {
-		coords[0] = 880;
-		coords[1] = 624;
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -144;
+		offset[1] = -144;
 
 		if(Lcl_gr) {
 			text_value_offsets[0] = 104;
@@ -7736,54 +5150,8 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, SCP_vector<int>* shi
 		}
 	}
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
+	HudGaugeKills* hud_gauge = gauge_load_common<HudGaugeKills>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
-		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
-		}
-	}
-	if(optional_string("Slew:")) {
-		stuff_boolean(&slew);
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -7794,20 +5162,9 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, SCP_vector<int>* shi
 		stuff_int_list(text_value_offsets, 2);
 	}
 
-	HudGaugeKills* hud_gauge = new HudGaugeKills();
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initTextOffsets(text_offsets[0], text_offsets[1]);
 	hud_gauge->initTextValueOffsets(text_value_offsets[0], text_value_offsets[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
-
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7821,52 +5178,16 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, SCP_vector<int>* shi
 	}
 }
 
-void load_gauge_flight_path(int base_w, int base_h, int font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_flight_path(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int base_res[2];
 	int Marker_half[2];
 	char fname[MAX_FILENAME_LEN] = "flight_path";
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	if(gr_screen.res == GR_640) {
-		base_res[0] = 640;
-		base_res[1] = 480;
-	} else {
-		base_res[0] = 1024;
-		base_res[1] = 768;
-	}
 
 	Marker_half[0] = 21;
 	Marker_half[1] = 21;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-	}
+	HudGaugeFlightPath* hud_gauge = gauge_load_common<HudGaugeFlightPath>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, 0, 0, 0, 0, false, 0, 0, false, true);
 
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( font >=0 ) {
-			font_num = font;
-		}
-	}
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
@@ -7874,13 +5195,8 @@ void load_gauge_flight_path(int base_w, int base_h, int font, SCP_vector<int>* s
 		stuff_int_list(Marker_half, 2);
 	}
 
-	HudGaugeFlightPath* hud_gauge = new HudGaugeFlightPath();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initHalfSize(Marker_half[0], Marker_half[1]);
 	hud_gauge->initBitmap(fname);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -7894,10 +5210,10 @@ void load_gauge_flight_path(int base_w, int base_h, int font, SCP_vector<int>* s
 	}
 }
 
-void load_gauge_warhead_count(int base_w, int base_h, int font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_warhead_count(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 	int warhead_name_offsets[2] = {6, 4};
 	int warhead_count_offsets[2] = {74, 4};
 	int icon_width = 0;
@@ -7906,77 +5222,20 @@ void load_gauge_warhead_count(int base_w, int base_h, int font, SCP_vector<int>*
 	int max_columns = 0;
 	int alignment = 0;
 	char fname[MAX_FILENAME_LEN] = "warhead_icon";
-	bool slew = true;
-	int font_num = FONT1;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if ( gr_screen.res == GR_640 ) {
-		coords[0] = 497;
-		coords[1] = 361;
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -143;
+		offset[1] = -119;
 	} else {
-		coords[0] = 880;
-		coords[1] = 624;
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -144;
+		offset[1] = -144;
 	}
 
-	if( check_base_res(base_w, base_h) ) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if ( optional_string("Position:") ) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( font >=0 ) {
-			font_num = font;
-		}
-	}
-	if ( optional_string("Slew:") ) {
-		stuff_boolean(&slew);
-	}
+	HudGaugeWarheadCount* hud_gauge = gauge_load_common<HudGaugeWarheadCount>
+		(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr,
+		origin[0], origin[1], offset[0], offset[1],
+		false, 0, 0,
+		true, true, true);
 
 	if ( optional_string("Filename:") ) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -8014,9 +5273,6 @@ void load_gauge_warhead_count(int base_w, int base_h, int font, SCP_vector<int>*
 		}
 	}
 
-	HudGaugeWarheadCount* hud_gauge = new HudGaugeWarheadCount();
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
 	hud_gauge->initBitmap(fname);
 	hud_gauge->initNameOffsets(warhead_name_offsets[0], warhead_name_offsets[1]);
 	hud_gauge->initCountOffsets(warhead_count_offsets[0], warhead_count_offsets[1]);
@@ -8024,11 +5280,6 @@ void load_gauge_warhead_count(int base_w, int base_h, int font, SCP_vector<int>*
 	hud_gauge->initMaxSymbols(max_icons);
 	hud_gauge->initMaxColumns(max_columns);
 	hud_gauge->initTextAlign(alignment);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -8042,89 +5293,26 @@ void load_gauge_warhead_count(int base_w, int base_h, int font, SCP_vector<int>*
 	}
 }
 
-void load_gauge_hardpoints(int base_w, int base_h, int font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_hardpoints(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	bool slew = false;
-	int font_num = FONT1;
+	float origin[2] = {1.0, 1.0};
+	int offset[2];
 
 	int sizes[2] = {150, 150};
 	float line_width = 1.0f;
 	int view_dir = HudGaugeHardpoints::TOP;
 	bool show_primary = false;
 	bool show_secondary = true;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
-
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
 
 	if(gr_screen.res == GR_640) {
-		coords[0] = 396;
-		coords[1] = 379;
-
-		base_res[0] = 640;
-		base_res[1] = 480;
+		offset[0] = -244;
+		offset[1] = -101;
 	} else {
-		coords[0] = 634;
-		coords[1] = 670;
-
-		base_res[0] = 1024;
-		base_res[1] = 768;
+		offset[0] = -390;
+		offset[1] = -98;
 	}
 
-	if( check_base_res(base_w, base_h) ) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if ( optional_string("Position:") ) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( font >=0 ) {
-			font_num = font;
-		}
-	}
-	if ( optional_string("Slew:") ) {
-		stuff_boolean(&slew);
-	}
+	HudGaugeHardpoints* hud_gauge = gauge_load_common<HudGaugeHardpoints>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if ( optional_string("Size:") ) {
 		stuff_int_list(sizes, 2);
@@ -8150,18 +5338,10 @@ void load_gauge_hardpoints(int base_w, int base_h, int font, SCP_vector<int>* sh
 		stuff_boolean(&show_secondary);
 	}
 
-	HudGaugeHardpoints* hud_gauge = new HudGaugeHardpoints();
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initSlew(slew);
-	hud_gauge->initFont(font_num);
 	hud_gauge->initSizes(sizes[0], sizes[1]);
 	hud_gauge->initLineWidth(line_width);
 	hud_gauge->initViewDir(view_dir);
 	hud_gauge->initDrawOptions(show_primary, show_secondary);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -8175,12 +5355,10 @@ void load_gauge_hardpoints(int base_w, int base_h, int font, SCP_vector<int>* sh
 	}
 }
 
-void load_gauge_primary_weapons(int base_w, int base_h, int font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_primary_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	bool slew = false;
-	int font_num = FONT1;
+	float origin[2] = {0.0, 0.0};
+	int offset[2] = {0, 0};
 
 	char fname_first[MAX_FILENAME_LEN] = "weapon_list1";
 	char fname_entry[MAX_FILENAME_LEN] = "weapon_list2";
@@ -8198,64 +5376,8 @@ void load_gauge_primary_weapons(int base_w, int base_h, int font, SCP_vector<int
 	int ammo_x = 28;
 	int link_x = 33;
 	int name_x = 35;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
 
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
-
-	if( check_base_res(base_w, base_h) ) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if ( optional_string("Position:") ) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( font >=0 ) {
-			font_num = font;
-		}
-	}
-
-	if ( optional_string("Slew:") ) {
-		stuff_boolean(&slew);
-	}
+	HudGaugePrimaryWeapons* hud_gauge = gauge_load_common<HudGaugePrimaryWeapons>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if ( optional_string("Header Offsets:") ) {
 		stuff_int_list(header_offsets, 2);
@@ -8320,13 +5442,6 @@ void load_gauge_primary_weapons(int base_w, int base_h, int font, SCP_vector<int
 	if ( optional_string("Name X-offset:") ) {
 		stuff_int(&name_x);
 	}
-
-	HudGaugePrimaryWeapons* hud_gauge = new HudGaugePrimaryWeapons();
-	
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initFont(font_num);
-	hud_gauge->initSlew(slew);
 	
 	hud_gauge->initBitmaps(fname_first, fname_entry, fname_last);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
@@ -8342,9 +5457,7 @@ void load_gauge_primary_weapons(int base_w, int base_h, int font, SCP_vector<int
 	hud_gauge->initPrimaryAmmoOffsetX(ammo_x);
 	hud_gauge->initPrimaryLinkOffsetX(link_x);
 	hud_gauge->initPrimaryNameOffsetX(name_x);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initLinkIcon();
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
@@ -8358,12 +5471,10 @@ void load_gauge_primary_weapons(int base_w, int base_h, int font, SCP_vector<int
 	}
 }
 
-void load_gauge_secondary_weapons(int base_w, int base_h, int font, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_secondary_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, SCP_vector<int>* ship_idx, color *use_clr)
 {
-	int coords[2];
-	int base_res[2];
-	bool slew = false;
-	int font_num = FONT1;
+	float origin[2] = {0.0, 0.0};
+	int offset[2] = {0, 0};
 
 	char fname_first[MAX_FILENAME_LEN] = "weapon_list1";
 	char fname_entry[MAX_FILENAME_LEN] = "weapon_list2";
@@ -8383,64 +5494,8 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int font, SCP_vector<i
 	int name_x = 39;
 	int reload_x = 118;
 	int unlink_x = 33;
-	int colors[3] = {255, 255, 255};
-	bool lock_color = false;
 
-	// render to texture parameters
-	char display_name[MAX_FILENAME_LEN] = "";
-	int display_size[2] = {0, 0};
-	int display_offset[2] = {0, 0};
-	int canvas_size[2] = {0, 0};
-
-	if( check_base_res(base_w, base_h) ) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if ( optional_string("Position:") ) {
-			stuff_int_list(coords, 2);
-		}
-	}
-
-	if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
-		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
-
-		if ( optional_string("Canvas Size:") ) {
-			stuff_int_list(canvas_size, 2);
-		}
-
-		if ( optional_string("Display Offset:") ) {
-			stuff_int_list(display_offset, 2);
-		}
-
-		required_string("Display Size:");
-		stuff_int_list(display_size, 2);
-	}
-
-	if ( use_clr != NULL ) {
-		colors[0] = use_clr->red;
-		colors[1] = use_clr->green;
-		colors[2] = use_clr->blue;
-
-		lock_color = true;
-	} else if ( optional_string("Color:") ) {
-		stuff_int_list(colors, 3);
-
-		check_color(colors);
-
-		lock_color = true;
-	}
-
-	if ( optional_string("Font:") ) {
-		stuff_int(&font_num);
-	} else {
-		if ( font >=0 ) {
-			font_num = font;
-		}
-	}
-
-	if ( optional_string("Slew:") ) {
-		stuff_boolean(&slew);
-	}
+	HudGaugeSecondaryWeapons* hud_gauge = gauge_load_common<HudGaugeSecondaryWeapons>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if ( optional_string("Header Offsets:") ) {
 		stuff_int_list(header_offsets, 2);
@@ -8514,13 +5569,6 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int font, SCP_vector<i
 		stuff_int(&reload_x);
 	}
 
-	HudGaugeSecondaryWeapons* hud_gauge = new HudGaugeSecondaryWeapons();
-
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initFont(font_num);
-	hud_gauge->initSlew(slew);
-
 	hud_gauge->initBitmaps(fname_first, fname_entry, fname_last);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initHeaderText(header_text);
@@ -8537,9 +5585,7 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int font, SCP_vector<i
 	hud_gauge->initSecondaryNameOffsetX(name_x);
 	hud_gauge->initSecondaryReloadOffsetX(reload_x);
 	hud_gauge->initSecondaryUnlinkedOffsetX(unlink_x);
-	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
-	hud_gauge->lockConfigColor(lock_color);
-	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
+	hud_gauge->initLinkIcon();
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {

@@ -236,6 +236,7 @@ public:
 	sexp_list_item *get_listing_opf_variable_names();
 	sexp_list_item *get_listing_opf_variable_type();
 	sexp_list_item *get_listing_opf_skybox_model();
+	sexp_list_item *get_listing_opf_skybox_flags();
 	sexp_list_item *get_listing_opf_background_bitmap();
 	sexp_list_item *get_listing_opf_sun_bitmap();
 	sexp_list_item *get_listing_opf_nebula_storm_type();
@@ -275,6 +276,7 @@ public:
 	sexp_list_item *get_listing_opf_ship_flags();
 	sexp_list_item *get_listing_opf_team_colors();
 	sexp_list_item *get_listing_opf_nebula_patterns();
+	sexp_list_item *get_listing_opf_game_snds();
 
 	int m_mode;
 	int item_index;

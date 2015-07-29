@@ -22,5 +22,12 @@ extern int Default_detail_level;
 extern bool Full_color_head_anis;
 extern bool Weapons_inherit_parent_collision_group;
 extern bool Flight_controls_follow_eyepoint_orientation;
+extern int FS2NetD_port;
+extern float Briefing_window_FOV;
+extern bool Disable_hc_message_ani;
+extern bool Red_alert_applies_to_delayed_ships;
+extern bool Beams_use_damage_factors;
+extern float Generic_pain_flash_factor;
+extern float Shield_pain_flash_factor;
 
 void mod_table_init();

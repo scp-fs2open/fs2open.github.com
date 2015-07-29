@@ -31,6 +31,7 @@
 #include "radar/radarsetup.h"
 #include "iff_defs/iff_defs.h"
 #include "globalincs/linklist.h"
+#include "debugconsole/console.h"
 
 int Radar_static_looping = -1;
 
@@ -84,12 +85,7 @@ extern int radar_iff_color[5][2][4];
 
 int See_all = 0;
 
-DCF_BOOL(see_all, See_all)
-
-static const char radar_default_filenames[2][16]=
-{
-	"radar1","2_radar1"
-};
+DCF_BOOL(see_all, See_all);
 
 void radar_stuff_blip_info(object *objp, int is_bright, color **blip_color, int *blip_type)
 {
@@ -319,14 +315,14 @@ void radar_plot_object( object *objp )
 		if (awacs_level < 1.0f)
 			b->flags |= BLIP_DRAW_DISTORTED;
 
-		ship_info Iff_ship_info = Ship_info[Ships[objp->instance].ship_info_index];
+		ship_info *Iff_ship_info = &Ship_info[Ships[objp->instance].ship_info_index];
 
-		if (Iff_ship_info.radar_image_2d_idx >= 0 || Iff_ship_info.radar_color_image_2d_idx >= 0)
+		if (Iff_ship_info->radar_image_2d_idx >= 0 || Iff_ship_info->radar_color_image_2d_idx >= 0)
 		{
-			b->radar_image_2d = Iff_ship_info.radar_image_2d_idx;
-			b->radar_color_image_2d = Iff_ship_info.radar_color_image_2d_idx;
-			b->radar_image_size = Iff_ship_info.radar_image_size;
-			b->radar_projection_size = Iff_ship_info.radar_projection_size_mult;
+			b->radar_image_2d = Iff_ship_info->radar_image_2d_idx;
+			b->radar_color_image_2d = Iff_ship_info->radar_color_image_2d_idx;
+			b->radar_image_size = Iff_ship_info->radar_image_size;
+			b->radar_projection_size = Iff_ship_info->radar_projection_size_mult;
 		}
 	}
 
@@ -381,6 +377,18 @@ HudGauge(HUD_OBJECT_RADAR_STD, HUD_RADAR, false, false, (VM_EXTERNAL | VM_DEAD_V
 HudGaugeRadar::HudGaugeRadar(int _gauge_object, int r, int g, int b):
 HudGauge(_gauge_object, HUD_RADAR, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), r, g, b)
 {
+}
+
+void HudGaugeRadar::initInfinityIcon()
+{
+	ubyte sc = lcl_get_font_index(font_num);
+	// default to a '*' if the font has no special chars
+	// nothing is really close to the infinity symbol...
+	if (sc == 0) {
+		Radar_infinity_icon = ubyte ('*');
+	} else {
+		Radar_infinity_icon = sc;
+	}
 }
 
 void HudGaugeRadar::initRadius(int w, int h)
@@ -438,14 +446,18 @@ void HudGaugeRadar::initialize()
 
 	int w,h;
 	gr_set_font(FONT1);
+	ubyte sc = lcl_get_font_index(FONT1);
+	if (sc == 0) {
+		Warning(LOCATION, "1st font doesn't have a special characters index, radar may not work");
+	}
 
-	Small_blip_string[0] = ubyte(SMALL_BLIP_CHAR);
+	Small_blip_string[0] = sc + 5;
 	Small_blip_string[1] = 0;
 	gr_get_string_size( &w, &h, Small_blip_string );
 	Small_blip_offset_x = -w/2;
 	Small_blip_offset_y = -h/2;
 
-	Large_blip_string[0] = ubyte(LARGE_BLIP_CHAR);
+	Large_blip_string[0] = sc + 6;
 	Large_blip_string[1] = 0;
 	gr_get_string_size( &w, &h, Large_blip_string );
 	Large_blip_offset_x = -w/2;
@@ -456,8 +468,6 @@ void HudGaugeRadar::initialize()
 
 void HudGaugeRadar::drawRange()
 {
-	char buf[32];
-
 	// hud_set_bright_color();
 	setGaugeColor(HUD_C_BRIGHT);
 
@@ -472,8 +482,7 @@ void HudGaugeRadar::drawRange()
 		break;
 
 	case RR_INFINITY:
-		sprintf(buf, NOX("%c"), Lcl_special_chars);
-		renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], buf);
+		renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "%c", Radar_infinity_icon);
 		break;
 
 	default:

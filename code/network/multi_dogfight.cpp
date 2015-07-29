@@ -30,7 +30,7 @@
 #include "stats/scoring.h"
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
-
+#include "pilotfile/pilotfile.h"
 #include "fs2netd/fs2netd_client.h"
 #include "cfile/cfile.h"
 
@@ -270,7 +270,7 @@ void multi_df_debrief_do()
 	GR_MAYBE_CLEAR_RES(Multi_df_background_bitmap);
 	if (Multi_df_background_bitmap >= 0) {
 		gr_set_bitmap(Multi_df_background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 
 	// draw the window
@@ -286,7 +286,7 @@ void multi_df_debrief_do()
 	strcpy_s(buf, The_mission.name);
 	gr_force_fit_string(buf, 255, Kill_matrix_title_coords[gr_screen.res][2]);
 	gr_set_color_fast(&Color_bright_white);
-	gr_string(Kill_matrix_title_coords[gr_screen.res][0], Kill_matrix_title_coords[gr_screen.res][1], buf);
+	gr_string(Kill_matrix_title_coords[gr_screen.res][0], Kill_matrix_title_coords[gr_screen.res][1], buf, GR_RESIZE_MENU);
 
 	// flip
 	gr_flip();
@@ -296,6 +296,7 @@ void multi_df_debrief_do()
 void multi_df_debrief_close()
 {
 	int idx;
+	scoring_struct *sc;
 
 	// shutdown the chatbox
 	chatbox_close();
@@ -307,11 +308,17 @@ void multi_df_debrief_close()
 			if(MULTIPLAYER_MASTER){
 				for(idx=0; idx<MAX_PLAYERS; idx++){
 					if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL)){
-						scoring_backout_accept(&Net_players[idx].m_player->stats);
+						sc = &Net_players[idx].m_player->stats;
+						scoring_backout_accept(sc);
+
+						if (Net_player == &Net_players[idx]) {
+							Pilot.update_stats_backout( sc );
+						}
 					}
 				}
 			} else {
 				scoring_backout_accept( &Player->stats );
+				Pilot.update_stats_backout( &Player->stats );
 			}
 		}
 	}
@@ -380,6 +387,7 @@ void multi_df_blit_kill_matrix()
 	int idx, s_idx, str_len;
 	int cx, cy;
 	char squashed_string[CALLSIGN_LEN+1] = "";
+	int dy = gr_get_font_height() + 1;
 
 	// max width of an individual item, and the text that can be in that item
 	float max_item_width = ((float)Multi_df_display_coords[gr_screen.res][2] - 40.0f) / (float)(Multi_df_score_count + 1);
@@ -391,7 +399,7 @@ void multi_df_blit_kill_matrix()
 
 	// start x for the side bar
 	int side_x_start = Multi_df_display_coords[gr_screen.res][0];
-	int side_y_start = Multi_df_display_coords[gr_screen.res][1] + 10;
+	int side_y_start = Multi_df_display_coords[gr_screen.res][1] + dy;
 
 	// draw the top bar
 	cx = top_x_start;
@@ -407,7 +415,7 @@ void multi_df_blit_kill_matrix()
 		if(Multi_df_score[idx].np_index >= 0){
 			gr_set_color_fast(Color_netplayer[Multi_df_score[idx].np_index]);
 		}
-		gr_string(cx + (int)((max_item_width - (float)str_len)/2.0f), cy, squashed_string);
+		gr_string(cx + (int)((max_item_width - (float)str_len)/2.0f), cy, squashed_string, GR_RESIZE_MENU);
 
 		// next spot
 		cx += (int)max_item_width;
@@ -422,7 +430,7 @@ void multi_df_blit_kill_matrix()
 		if(!MULTI_CONNECTED(Net_players[Multi_df_score[idx].np_index]) || (Net_players[Multi_df_score[idx].np_index].state == NETPLAYER_STATE_DEBRIEF_ACCEPT) || (Net_players[Multi_df_score[idx].np_index].state == NETPLAYER_STATE_DEBRIEF_REPLAY)){
 			if(Multi_common_icons[MICON_VALID] != -1){
 				gr_set_bitmap(Multi_common_icons[MICON_VALID]);
-				gr_bitmap(Multi_df_check_coords[gr_screen.res], cy);
+				gr_bitmap(Multi_df_check_coords[gr_screen.res], cy, GR_RESIZE_MENU);
 			}
 		}
 
@@ -435,7 +443,7 @@ void multi_df_blit_kill_matrix()
 		if(Multi_df_score[idx].np_index >= 0){
 			gr_set_color_fast(Color_netplayer[Multi_df_score[idx].np_index]);
 		}
-		gr_string(cx, cy, squashed_string);
+		gr_string(cx, cy, squashed_string, GR_RESIZE_MENU);
 
 		cx = top_x_start;
 		row_total = 0;
@@ -455,7 +463,7 @@ void multi_df_blit_kill_matrix()
 			// draw the string
 			gr_force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
 			gr_get_string_size(&str_len, NULL, squashed_string);
-			gr_string(cx + (int)((max_item_width - (float)str_len)/2.0f), cy, squashed_string);
+			gr_string(cx + (int)((max_item_width - (float)str_len)/2.0f), cy, squashed_string, GR_RESIZE_MENU);
 
 			// next spot
 			cx += (int)max_item_width;
@@ -465,9 +473,9 @@ void multi_df_blit_kill_matrix()
 		gr_set_color_fast(Color_netplayer[Multi_df_score[idx].np_index]);
 		sprintf(squashed_string, "(%d)", row_total);
 		gr_get_string_size(&str_len, NULL, squashed_string);
-		gr_string(Multi_df_display_coords[gr_screen.res][0] + Multi_df_display_coords[gr_screen.res][2] - (MULTI_DF_TOTAL_ADJUST + str_len), cy, squashed_string);
+		gr_string(Multi_df_display_coords[gr_screen.res][0] + Multi_df_display_coords[gr_screen.res][2] - (MULTI_DF_TOTAL_ADJUST + str_len), cy, squashed_string, GR_RESIZE_MENU);
 
-		cy += 10;
+		cy += dy;
 	}
 }
 

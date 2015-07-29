@@ -109,6 +109,7 @@ extern ai_flag_name Ai_flag_names[];
 #define AIGF_PURGE					(1<<5)	// purge this goal next time we process
 #define AIGF_GOALS_PURGED			(1<<6)	// this goal has already caused other goals to get purged
 #define AIGF_DEPART_SOUND_PLAYED	(1<<7)	// Goober5000 - replacement for AL's hack ;)
+#define AIGF_TARGET_OWN_TEAM		(1<<8)	// Goober5000 - removes standard precautions against AI ships taking traitorous actions
 
 #define AIGF_DOCK_INDEXES_VALID		(AIGF_DOCKER_INDEX_VALID|AIGF_DOCKEE_INDEX_VALID)
 
@@ -621,10 +622,9 @@ extern void init_ai_system(void);
 extern void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp);
 extern void ai_evade_object(object *evader, object *evaded);
 extern void ai_ignore_object(object *ignorer, object *ignored, int ignore_new);
-extern void ai_ignore_wing(object *ignorer, int wingnum, int priority);
+extern void ai_ignore_wing(object *ignorer, int wingnum);
 extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int dock_type);
 extern void ai_stay_still(object *still_objp, vec3d *view_pos);
-extern void ai_set_default_behavior(object *obj, int classnum);
 extern void ai_do_default_behavior(object *obj);
 extern void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags);
 extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_quadrant, vec3d *hit_normal);
@@ -726,8 +726,7 @@ void process_subobjects(int objnum);
 //SUSHI: Setting ai_info stuff from both ai class and ai profile
 void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t *profile);
 
-//SUSHI: Updating AI aim
-void ai_update_aim(ai_info *aip, object* En_Objp);
+void ai_update_aim(ai_info *aip);
 
 //SUSHI: Random evasive sidethrust
 void do_random_sidethrust(ai_info *aip, ship_info *sip);

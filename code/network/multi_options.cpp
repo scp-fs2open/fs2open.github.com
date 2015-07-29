@@ -28,6 +28,8 @@
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
 
+#include <limits.h>
+
 
 
 // ----------------------------------------------------------------------------------
@@ -199,7 +201,17 @@ void multi_options_read_config()
 				if ( SETTING("+webapi_server_port") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						Multi_options_g.webapiPort = atoi(tok);
+						long int result = strtol(tok, NULL, 10);
+						if(result <= 0 || result > USHRT_MAX) {
+							mprintf(("ERROR: Invalid or out of range webapi_server_port '%s' specified in multi.cfg, must be integer between 1024 and %i.\n", tok, USHRT_MAX));
+						}
+						else if(result < 1024) {
+							mprintf(("ERROR: webapi_server_port '%d' in multi.cfg is too low, must be between 1024 and %i.\n", result, USHRT_MAX));
+						}
+						else {
+							mprintf(("Using webapi_server_port '%d' from multi.cfg.\n", result));
+							Multi_options_g.webapiPort = (ushort) result;
+						}
 					}
 				}
 			}
@@ -573,6 +585,11 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 	// find out who is sending this data	
 	player_index = find_player_id(hinfo->id);
 
+	if (player_index < 0) {
+		nprintf(("Network", "Received packet from unknown player!\n"));
+		return;
+	}
+
 	// get the packet code
 	GET_DATA(code);
 	switch(code){
@@ -600,20 +617,9 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			break;
 		}
 
-#ifndef _WIN32
-		if(Netgame.name == NULL){
-			// if a permanent name exists, use that instead of the default
-			if(strlen(Multi_options_g.std_pname)){
-				strcpy_s(Netgame.name, Multi_options_g.std_pname);
-			} else {
-				strcpy_s(Netgame.name,XSTR("Standalone Server",916));
-			}
-		}
-#else
 		// update standalone stuff
 		std_connect_set_gamename(Netgame.name);
 		std_multi_update_netgame_info_controls();
-#endif
 		break;
 
 	// get mission choice options
@@ -662,7 +668,6 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 			Netgame.campaign_mode = 1;
 
-#ifdef _WIN32
 			// put brackets around the campaign name
 			if(Game_mode & GM_STANDALONE_SERVER){
 				strcpy_s(str,"(");
@@ -670,7 +675,6 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 				strcat_s(str,")");
 				std_multi_set_standalone_mission_name(str);
 			}
-#endif
 		}
 		// non-campaign mode
 		else {
@@ -688,12 +692,11 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			}			
 
 			Netgame.campaign_mode = 0;
-#ifdef _WIN32
+            
 			// set the mission name
 			if(Game_mode & GM_STANDALONE_SERVER){
 				std_multi_set_standalone_mission_name(Netgame.mission_name);			
 			}
-#endif
 		}
 
 		// update FS2NetD as well

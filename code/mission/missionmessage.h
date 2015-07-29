@@ -219,6 +219,9 @@ int message_filter_multi(int id);
 // Goober5000
 bool message_filename_is_generic(char *filename);
 
+// m!m
+void message_load_wave(int index, const char *filename);
+
 // Kazan
 // Use these functions with caution as everything else uses indexes... so make sure if you're going to
 // use these there will be no remove_messages called before your message is displayed.

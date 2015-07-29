@@ -77,6 +77,7 @@
 #include "network/multi_rate.h"
 #include "fs2netd/fs2netd_client.h"
 #include "parse/parselo.h"
+#include "debugconsole/console.h"
 
 extern int ascii_table[];
 extern int shifted_ascii_table[];
@@ -688,20 +689,20 @@ void stuff_netplayer_info( net_player *nplayer, net_addr *addr, int ship_class, 
 
 // multi_assign_player_ship takes a Net_player index and an object * and assigned that player to
 // that object
-void multi_assign_player_ship( int net_player, object *objp,int ship_class )
+void multi_assign_player_ship( int net_player_num, object *objp,int ship_class )
 {
 	ship *shipp;
 	int idx;
 
-	Assert ( MULTI_CONNECTED(Net_players[net_player]) );
+	Assert ( MULTI_CONNECTED(Net_players[net_player_num]) );
 
 	shipp = &Ships[objp->instance];
 
-	Net_players[net_player].m_player->objnum = OBJ_INDEX(objp);
-	Net_players[net_player].p_info.ship_class = ship_class;
+	Net_players[net_player_num].m_player->objnum = OBJ_INDEX(objp);
+	Net_players[net_player_num].p_info.ship_class = ship_class;
 
 	// check to see if we are assigning my player -- if so, then set Player_ship and Player_ai
-	if ( Net_player == &Net_players[net_player] ) {
+	if ( Net_player == &Net_players[net_player_num] ) {
 		Player_obj = objp;
 		Player_ship = shipp;
 		Player_ai = &Ai_info[Player_ship->ai_index];
@@ -709,14 +710,14 @@ void multi_assign_player_ship( int net_player, object *objp,int ship_class )
 
 	// find the parse object for this ship.  Also, set the wingman status stuff so wingman status gauge
 	// works properly.
-	Net_players[net_player].p_info.p_objp = mission_parse_get_arrival_ship( shipp->ship_name );
-	Assert( Net_players[net_player].p_info.p_objp != NULL );		// get allender -- ship should be on list
+	Net_players[net_player_num].p_info.p_objp = mission_parse_get_arrival_ship( shipp->ship_name );
+	Assert( Net_players[net_player_num].p_info.p_objp != NULL );		// get allender -- ship should be on list
 
 	// game server and this client need to initialize this information so object updating
 	// works properly.
-	if ( MULTIPLAYER_MASTER || (Net_player == &Net_players[net_player]) ) {
-		Net_players[net_player].s_info.eye_pos = objp->pos;
-		Net_players[net_player].s_info.eye_orient = objp->orient;
+	if ( MULTIPLAYER_MASTER || (Net_player == &Net_players[net_player_num]) ) {
+		Net_players[net_player_num].s_info.eye_pos = objp->pos;
+		Net_players[net_player_num].s_info.eye_orient = objp->orient;
 	}
 
 	// zero update info	
@@ -989,7 +990,7 @@ void delete_player(int player_num,int kicked_reason)
 	multi_rate_reset(player_num);
 
 	// display a message that this guy has left
-	if(Net_players[player_num].m_player->callsign){
+	if(*Net_players[player_num].m_player->callsign){
 		sprintf(notify_string,XSTR("<%s has left>",901),Net_players[player_num].m_player->callsign);
 		multi_display_chat_msg(notify_string,0,0);
 	}
@@ -1598,6 +1599,12 @@ void multi_create_standalone_object()
 
 	vm_vec_zero(&v);
 	objnum = observer_create(&m,&v);
+
+	if (objnum < 0) {
+		Error(LOCATION, "Failed to create standalone observer object! Please investigate!");
+		return;
+	}
+
 	Player_obj = &Objects[objnum];
 	obj_set_flags(Player_obj, Player_obj->flags & (~OF_COLLIDES) );
 	//obj_set_flags(Player_obj, Player_obj->flags | OF_SHOULD_BE_DEAD);
@@ -2190,7 +2197,7 @@ void multi_warpout_all_players()
 	
 	// if we're an observer, or we're respawning, or we can't warp out. so just jump into the debrief state
 	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Net_player->flags & NETINFO_FLAG_RESPAWNING) ||
-		(Net_player->flags & NETINFO_FLAG_OBSERVER) || ((Player_obj->type == OBJ_SHIP) && (Player_ship->flags & SF_CANNOT_WARP)) ){		
+		((Player_obj->type == OBJ_SHIP) && (Player_ship->flags & SF_CANNOT_WARP)) ){		
 
 		multi_handle_sudden_mission_end(); 
 
@@ -3198,65 +3205,74 @@ short multi_get_new_id()
 // ------------------------------------
 
 //XSTR:OFF
-DCF(multi,"changes multiplayer settings")
+DCF(multi,"changes multiplayer settings (Multiplayer)")
 {
-	if(Dc_command){
-		dc_get_arg(ARG_STRING);
-		
-		if(strcmp(Dc_arg, "kick")==0){				// kick a player
-			multi_dcf_kick();
+	if (dc_optional_string("kick")) {
+		// kick a player
+		multi_dcf_kick();
+
 #ifndef NDEBUG
-		} else if(strcmp(Dc_arg, "stats")==0) {
-			// multi_toggle_stats();
-		} else if(strcmp(Dc_arg, "show_stats")==0) {
-			// multi_show_basic_stats(0);
-		} else if(strcmp(Dc_arg, "dump_stats")==0) {
-			// multi_show_basic_stats(1);
+	} else if (dc_optional_string("stats")) {
+		// multi_toggle_stats();
+
+	} else if (dc_optional_string("show_stats")) {
+		// multi_show_basic_stats(0);
+
+	} else if (dc_optional_string("dump_stats")) {
+		// multi_show_basic_stats(1);
 #endif
-		} else if(strcmp(Dc_arg, "voice")==0){				// settings for multiplayer voice
-			multi_voice_dcf();
-		} else if(strcmp(Dc_arg, "respawn_chump")==0){	// set a really large # of respawns
-			if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)){			
-				Netgame.respawn = 9999;
-				Netgame.options.respawn = 9999;				
 
-				// if i'm the server, send a netgame update
-				if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-					send_netgame_update_packet();
-				} 
-			}
-		} else if(strcmp(Dc_arg, "ss_leaders")==0){		// only host or team captains can modify ships
-			if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)){			
-				Netgame.options.flags |= MSO_FLAG_SS_LEADERS;
-				multi_options_update_netgame();
-			}
-		} else if(strcmp(Dc_arg, "make_players")==0){
-#ifndef NDEBUG
-			multi_make_fake_players(MAX_PLAYERS);
-#endif
-		} else if(strcmp(Dc_arg, "givecd")==0){
-			extern int Multi_has_cd;
-			Multi_has_cd = 1;
-		} else if(strcmp(Dc_arg, "oo")==0){						
-			int new_flags = -1;
+	} else if (dc_optional_string("voice")) {
+		// settings for multiplayer voice
+		multi_voice_dcf();
 
-			dc_get_arg(ARG_INT);
-			if(Dc_arg_type & ARG_INT){
-				new_flags = Dc_arg_int;
-			}
+	} else if (dc_optional_string("respawn_chump")){
+		// set a really large # of respawns
+		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+			Netgame.respawn = 9999;
+			Netgame.options.respawn = 9999;
 
-			dc_printf("Interesting flags\nPos : %d\nVelocity : %d\nDesired vel : %d\nOrient : %d\nRotvel : %d\nDesired rotvel %d\n",
-						 1<<0, 1<<7, 1<<8, 1<<1, 1<<9, 1<<10);						
-		} else if(strcmp(Dc_arg, "oo_sort")==0){			
-			extern int OO_sort;
-
-			OO_sort = !OO_sort;
-			if(OO_sort){
-				dc_printf("Network object sorting ENABLED\n");
-			} else {
-				dc_printf("Network object sorting DISABLED\n");
-			}
+			// if i'm the server, send a netgame update
+			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+				send_netgame_update_packet();
+			} 
 		}
+
+	} else if (dc_optional_string("ss_leaders")) {
+		// only host or team captains can modify ships
+		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+			Netgame.options.flags |= MSO_FLAG_SS_LEADERS;
+			multi_options_update_netgame();
+		}
+
+	} else if (dc_optional_string("make_players")) {
+#ifndef NDEBUG
+		multi_make_fake_players(MAX_PLAYERS);
+#endif
+
+	} else if (dc_optional_string("givecd")) {
+		extern int Multi_has_cd;
+		Multi_has_cd = 1;
+
+	} else if (dc_optional_string("oo")) {
+		int new_flags;
+
+		if(!dc_maybe_stuff_int(&new_flags))
+			new_flags = -1;
+
+		dc_printf("Interesting flags\n");
+		dc_printf("Pos : %d\n", 1 << 0);
+		dc_printf("Velocity    : %d\n", 1 << 7);
+		dc_printf("Desired vel : %d\n", 1 << 8);
+		dc_printf("Orient : %d\n", 1 << 1);
+		dc_printf("Rotvel : %d\n", 1 << 9);
+		dc_printf("Desired rotvel : %d\n", 1 << 10);
+
+	} else if (dc_optional_string("oo_sort")) {
+		extern int OO_sort;
+
+		OO_sort = !OO_sort;
+		dc_printf("Network object sorting %s\n", OO_sort ? "ENABLED" : "DISABLED");
 	}
 }
 
@@ -3265,7 +3281,7 @@ DCF(multi,"changes multiplayer settings")
 // PXO crc checking stuff
 
 
-void multi_spew_pxo_checksums(int max_files, char *outfile)
+void multi_spew_pxo_checksums(int max_files, const char *outfile)
 {
 	char **file_names;
 	char full_name[MAX_PATH_LEN];
@@ -3447,19 +3463,20 @@ Done:
 }
 */
 
-DCF(pxospew,"spew PXO 32 bit checksums for all visible mission files")
+DCF(pxospew,"spew PXO 32 bit checksums for all visible mission files (Multiplayer)")
 {
 	int max_files;
+	char file_str[MAX_NAME_LEN];
 
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){
-		max_files = Dc_arg_int;	
-
-		dc_get_arg(ARG_STRING);
-		if(Dc_arg_type & ARG_STRING){
-			multi_spew_pxo_checksums(max_files, Dc_arg);
-		}
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: pxospew <max_files> <filename>\n");
+		return;
 	}
+
+	dc_stuff_int(&max_files);
+	dc_stuff_string_white(file_str, MAX_NAME_LEN);
+
+	multi_spew_pxo_checksums(max_files, file_str);
 }
 
 

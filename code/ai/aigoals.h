@@ -121,7 +121,7 @@ extern void ai_update_goal_references(ai_goal *goals, int type, const char *old_
 extern int query_referenced_in_ai_goals(ai_goal *goals, int type, const char *name);
 extern char *ai_add_dock_name(const char *str);
 
-extern int ai_query_goal_valid( int ship, int ai_goal );
+extern int ai_query_goal_valid( int ship, int ai_goal_type );
 
 extern void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int docker_point, int dockee_point, int immediate = 1 );
 extern void ai_add_goal_wing_internal( wing *wingp, int goal_type, char *name, int immediate = 1 );

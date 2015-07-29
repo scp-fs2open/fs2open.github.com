@@ -70,8 +70,8 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 	mouse_get_pos_unscaled( &x, &y ); 
 
 	// boundary conditions
-	if((y > mask_h - 1) || (x > mask_w - 1)){
-		pixel_value = 0;
+	if((y < 0) || (y > mask_h - 1) || (x < 0) || (x > mask_w - 1)){
+		pixel_value = 255;
 	} else {
 		// check the pixel value under the mouse
 		offset = y * mask_w + x;
@@ -133,7 +133,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 	gr_set_font( FONT1 );
 
 	if ((mouse_on_choice >= 0) && (mouse_on_choice <= (num_regions)) && (i >=0)) {
-		gr_printf( 0x8000, 450, regions[i].text );
+		gr_printf_menu( 0x8000, 450, regions[i].text );
 	}
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ){
@@ -160,7 +160,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 //
 //
 
-void snazzy_menu_add_region(MENU_REGION* region, char* text, int mask, int key, int click_sound)
+void snazzy_menu_add_region(MENU_REGION* region, const char* text, int mask, int key, int click_sound)
 {
 	region->mask = mask;
 	region->key = key;
@@ -188,15 +188,9 @@ void read_menu_tbl(char* menu_name, char* bkg_filename, char* mask_filename, MEN
 
 	*num_regions=0;
 
-	// open localization
-	lcl_ext_open();
-
 	fp = cfopen( NOX("menu.tbl"), "rt" );
 	if (fp == NULL) {
 		Error(LOCATION, "menu.tbl could not be opened\n");
-
-		// close localization
-		lcl_ext_close();
 
 		return;
 	}
@@ -208,9 +202,6 @@ void read_menu_tbl(char* menu_name, char* bkg_filename, char* mask_filename, MEN
 		p1 = p3 = strchr( tmp_line, '[' );
 
 		if (p3 && state == 1) {	
-			// close localization
-			lcl_ext_close();
-
 			cfclose(fp);
 			return;
 		}
@@ -233,9 +224,6 @@ void read_menu_tbl(char* menu_name, char* bkg_filename, char* mask_filename, MEN
 				p2 = strchr( tmp_line+1, '\"' );
 				if (!p2) {
 					nprintf(("Warning","Error parsing menu file\n"));
-
-					// close localization
-					lcl_ext_close();
 
 					return;
 				}
@@ -279,9 +267,6 @@ void read_menu_tbl(char* menu_name, char* bkg_filename, char* mask_filename, MEN
 		}
 	}	
 	cfclose(fp);
-	
-	// close localization
-	lcl_ext_close();
 }
 
 // snazzy_menu_close() is called when the menu using a snazzy interface is exited

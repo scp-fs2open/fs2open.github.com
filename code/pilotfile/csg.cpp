@@ -30,6 +30,11 @@ void pilotfile::csg_read_flags()
 {
 	// tips?
 	p->tips = (int)cfread_ubyte(cfp);
+
+	// avoid having to read everything to get the rank
+	if (csg_ver >= 5) {
+		p->stats.rank = cfread_int(cfp);
+	}
 }
 
 void pilotfile::csg_write_flags()
@@ -38,6 +43,9 @@ void pilotfile::csg_write_flags()
 
 	// tips
 	cfwrite_ubyte((ubyte)p->tips, cfp);
+
+	// avoid having to read everything to get the rank
+	cfwrite_int(p->stats.rank, cfp);
 
 	endSection();
 }
@@ -211,8 +219,8 @@ void pilotfile::csg_write_info()
 	cfwrite_int(Campaign.next_mission, cfp);
 
 	// loop state
-	cfwrite_int(Campaign.loop_enabled, cfp);
 	cfwrite_int(Campaign.loop_reentry, cfp);
+	cfwrite_int(Campaign.loop_enabled, cfp);
 
 	// missions completed
 	cfwrite_int(Campaign.num_missions_completed, cfp);
@@ -237,7 +245,7 @@ void pilotfile::csg_write_info()
 void pilotfile::csg_read_missions()
 {
 	int i, j, idx, list_size;
-	cmission *mission;
+	cmission *missionp;
 
 	if ( !m_have_info ) {
 		throw "Missions before Info!";
@@ -245,74 +253,74 @@ void pilotfile::csg_read_missions()
 
 	for (i = 0; i < Campaign.num_missions_completed; i++) {
 		idx = cfread_int(cfp);
-		mission = &Campaign.missions[idx];
+		missionp = &Campaign.missions[idx];
 
-		mission->completed = 1;
+		missionp->completed = 1;
 
 		// flags
-		mission->flags = cfread_int(cfp);
+		missionp->flags = cfread_int(cfp);
 
 		// goals
-		mission->num_goals = cfread_int(cfp);
+		missionp->num_goals = cfread_int(cfp);
 
-		if (mission->num_goals > 0) {
-			mission->goals = (mgoal *) vm_malloc( mission->num_goals * sizeof(mgoal) );
-			Verify( mission->goals != NULL );
+		if (missionp->num_goals > 0) {
+			missionp->goals = (mgoal *) vm_malloc( missionp->num_goals * sizeof(mgoal) );
+			Verify( missionp->goals != NULL );
 
-			memset( mission->goals, 0, mission->num_goals * sizeof(mgoal) );
+			memset( missionp->goals, 0, missionp->num_goals * sizeof(mgoal) );
 
-			for (j = 0; j < mission->num_goals; j++) {
-				cfread_string_len(mission->goals[j].name, NAME_LENGTH, cfp);
-				mission->goals[j].status = cfread_char(cfp);
+			for (j = 0; j < missionp->num_goals; j++) {
+				cfread_string_len(missionp->goals[j].name, NAME_LENGTH, cfp);
+				missionp->goals[j].status = cfread_char(cfp);
 			}
 		}
 
 		// events
-		mission->num_events = cfread_int(cfp);
+		missionp->num_events = cfread_int(cfp);
 
-		if (mission->num_events > 0) {
-			mission->events = (mevent *) vm_malloc( mission->num_events * sizeof(mevent) );
-			Verify( mission->events != NULL );
+		if (missionp->num_events > 0) {
+			missionp->events = (mevent *) vm_malloc( missionp->num_events * sizeof(mevent) );
+			Verify( missionp->events != NULL );
 
-			memset( mission->events, 0, mission->num_events * sizeof(mevent) );
+			memset( missionp->events, 0, missionp->num_events * sizeof(mevent) );
 
-			for (j = 0; j < mission->num_events; j++) {
-				cfread_string_len(mission->events[j].name, NAME_LENGTH, cfp);
-				mission->events[j].status = cfread_char(cfp);
+			for (j = 0; j < missionp->num_events; j++) {
+				cfread_string_len(missionp->events[j].name, NAME_LENGTH, cfp);
+				missionp->events[j].status = cfread_char(cfp);
 			}
 		}
 
 		// variables
-		mission->num_variables = cfread_int(cfp);
+		missionp->num_variables = cfread_int(cfp);
 
-		if (mission->num_variables > 0) {
-			mission->variables = (sexp_variable *) vm_malloc( mission->num_variables * sizeof(sexp_variable) );
-			Verify( mission->variables != NULL );
+		if (missionp->num_variables > 0) {
+			missionp->variables = (sexp_variable *) vm_malloc( missionp->num_variables * sizeof(sexp_variable) );
+			Verify( missionp->variables != NULL );
 
-			memset( mission->variables, 0, mission->num_variables * sizeof(sexp_variable) );
+			memset( missionp->variables, 0, missionp->num_variables * sizeof(sexp_variable) );
 
-			for (j = 0; j < mission->num_variables; j++) {
-				mission->variables[j].type = cfread_int(cfp);
-				cfread_string_len(mission->variables[j].text, TOKEN_LENGTH, cfp);
-				cfread_string_len(mission->variables[j].variable_name, TOKEN_LENGTH, cfp);
+			for (j = 0; j < missionp->num_variables; j++) {
+				missionp->variables[j].type = cfread_int(cfp);
+				cfread_string_len(missionp->variables[j].text, TOKEN_LENGTH, cfp);
+				cfread_string_len(missionp->variables[j].variable_name, TOKEN_LENGTH, cfp);
 			}
 		}
 
 		// scoring stats
-		mission->stats.score = cfread_int(cfp);
-		mission->stats.rank = cfread_int(cfp);
-		mission->stats.assists = cfread_int(cfp);
-		mission->stats.kill_count = cfread_int(cfp);
-		mission->stats.kill_count_ok = cfread_int(cfp);
-		mission->stats.bonehead_kills = cfread_int(cfp);
+		missionp->stats.score = cfread_int(cfp);
+		missionp->stats.rank = cfread_int(cfp);
+		missionp->stats.assists = cfread_int(cfp);
+		missionp->stats.kill_count = cfread_int(cfp);
+		missionp->stats.kill_count_ok = cfread_int(cfp);
+		missionp->stats.bonehead_kills = cfread_int(cfp);
 
-		mission->stats.p_shots_fired = cfread_uint(cfp);
-		mission->stats.p_shots_hit = cfread_uint(cfp);
-		mission->stats.p_bonehead_hits = cfread_uint(cfp);
+		missionp->stats.p_shots_fired = cfread_uint(cfp);
+		missionp->stats.p_shots_hit = cfread_uint(cfp);
+		missionp->stats.p_bonehead_hits = cfread_uint(cfp);
 
-		mission->stats.s_shots_fired = cfread_uint(cfp);
-		mission->stats.s_shots_hit = cfread_uint(cfp);
-		mission->stats.s_bonehead_hits = cfread_uint(cfp);
+		missionp->stats.s_shots_fired = cfread_uint(cfp);
+		missionp->stats.s_shots_hit = cfread_uint(cfp);
+		missionp->stats.s_bonehead_hits = cfread_uint(cfp);
 
 		// ship kills (scoring)
 		list_size = (int)ship_list.size();
@@ -320,7 +328,7 @@ void pilotfile::csg_read_missions()
 			idx = cfread_int(cfp);
 
 			if (ship_list[j].index >= 0) {
-				mission->stats.kills[ship_list[j].index] = idx;
+				missionp->stats.kills[ship_list[j].index] = idx;
 			}
 		}
 
@@ -330,7 +338,7 @@ void pilotfile::csg_read_missions()
 			idx = cfread_int(cfp);
 
 			if (medals_list[j].index >= 0) {
-				mission->stats.medal_counts[medals_list[j].index] = idx;
+				missionp->stats.medal_counts[medals_list[j].index] = idx;
 			}
 		}
 	}
@@ -339,68 +347,68 @@ void pilotfile::csg_read_missions()
 void pilotfile::csg_write_missions()
 {
 	int idx, j;
-	cmission *mission;
+	cmission *missionp;
 
 	startSection(Section::Missions);
 
 	for (idx = 0; idx < MAX_CAMPAIGN_MISSIONS; idx++) {
 		if (Campaign.missions[idx].completed) {
-			mission = &Campaign.missions[idx];
+			missionp = &Campaign.missions[idx];
 
 			cfwrite_int(idx, cfp);
 
 			// flags
-			cfwrite_int(mission->flags, cfp);
+			cfwrite_int(missionp->flags, cfp);
 
 			// goals
-			cfwrite_int(mission->num_goals, cfp);
+			cfwrite_int(missionp->num_goals, cfp);
 
-			for (j = 0; j < mission->num_goals; j++) {
-				cfwrite_string_len(mission->goals[j].name, cfp);
-				cfwrite_char(mission->goals[j].status, cfp);
+			for (j = 0; j < missionp->num_goals; j++) {
+				cfwrite_string_len(missionp->goals[j].name, cfp);
+				cfwrite_char(missionp->goals[j].status, cfp);
 			}
 
 			// events
-			cfwrite_int(mission->num_events, cfp);
+			cfwrite_int(missionp->num_events, cfp);
 
-			for (j = 0; j < mission->num_events; j++) {
-				cfwrite_string_len(mission->events[j].name, cfp);
-				cfwrite_char(mission->events[j].status, cfp);
+			for (j = 0; j < missionp->num_events; j++) {
+				cfwrite_string_len(missionp->events[j].name, cfp);
+				cfwrite_char(missionp->events[j].status, cfp);
 			}
 
 			// variables
-			cfwrite_int(mission->num_variables, cfp);
+			cfwrite_int(missionp->num_variables, cfp);
 
-			for (j = 0; j < mission->num_variables; j++) {
-				cfwrite_int(mission->variables[j].type, cfp);
-				cfwrite_string_len(mission->variables[j].text, cfp);
-				cfwrite_string_len(mission->variables[j].variable_name, cfp);
+			for (j = 0; j < missionp->num_variables; j++) {
+				cfwrite_int(missionp->variables[j].type, cfp);
+				cfwrite_string_len(missionp->variables[j].text, cfp);
+				cfwrite_string_len(missionp->variables[j].variable_name, cfp);
 			}
 
 			// scoring stats
-			cfwrite_int(mission->stats.score, cfp);
-			cfwrite_int(mission->stats.rank, cfp);
-			cfwrite_int(mission->stats.assists, cfp);
-			cfwrite_int(mission->stats.kill_count, cfp);
-			cfwrite_int(mission->stats.kill_count_ok, cfp);
-			cfwrite_int(mission->stats.bonehead_kills, cfp);
+			cfwrite_int(missionp->stats.score, cfp);
+			cfwrite_int(missionp->stats.rank, cfp);
+			cfwrite_int(missionp->stats.assists, cfp);
+			cfwrite_int(missionp->stats.kill_count, cfp);
+			cfwrite_int(missionp->stats.kill_count_ok, cfp);
+			cfwrite_int(missionp->stats.bonehead_kills, cfp);
 
-			cfwrite_uint(mission->stats.p_shots_fired, cfp);
-			cfwrite_uint(mission->stats.p_shots_hit, cfp);
-			cfwrite_uint(mission->stats.p_bonehead_hits, cfp);
+			cfwrite_uint(missionp->stats.p_shots_fired, cfp);
+			cfwrite_uint(missionp->stats.p_shots_hit, cfp);
+			cfwrite_uint(missionp->stats.p_bonehead_hits, cfp);
 
-			cfwrite_uint(mission->stats.s_shots_fired, cfp);
-			cfwrite_uint(mission->stats.s_shots_hit, cfp);
-			cfwrite_uint(mission->stats.s_bonehead_hits, cfp);
+			cfwrite_uint(missionp->stats.s_shots_fired, cfp);
+			cfwrite_uint(missionp->stats.s_shots_hit, cfp);
+			cfwrite_uint(missionp->stats.s_bonehead_hits, cfp);
 
 			// ship kills (scoring)
 			for (j = 0; j < Num_ship_classes; j++) {
-				cfwrite_int(mission->stats.kills[j], cfp);
+				cfwrite_int(missionp->stats.kills[j], cfp);
 			}
 
 			// medals earned (scoring)
 			for (j = 0; j < Num_medals; j++) {
-				cfwrite_int(mission->stats.medal_counts[j], cfp);
+				cfwrite_int(missionp->stats.medal_counts[j], cfp);
 			}
 		}
 	}
@@ -782,10 +790,6 @@ void pilotfile::csg_read_redalert()
 		return;
 	}
 
-	// about to read new redalert data so flush any existing data
-	// otherwise wingman entries will multiply like rabbits
-	Red_alert_wingman_status.clear();
-
 	cfread_string_len(t_string, MAX_FILENAME_LEN, cfp);
 
 	Red_alert_precursor_mission = t_string;
@@ -1029,6 +1033,29 @@ void pilotfile::csg_read_variables()
 			cfread_string_len(Campaign.variables[idx].variable_name, TOKEN_LENGTH, cfp);
 		}
 	}
+
+	if (csg_ver < 4) { // CSG files before version 4 don't have a Red Alert set of CPVs to load, so just copy the regular set.
+		Campaign.redalert_num_variables = Campaign.num_variables;
+		Campaign.redalert_variables = (sexp_variable *) vm_malloc( Campaign.redalert_num_variables * sizeof(sexp_variable) );
+		Verify( Campaign.redalert_variables != NULL);
+
+		memcpy( Campaign.redalert_variables, Campaign.variables, Campaign.num_variables * sizeof(sexp_variable));
+	} else {
+		Campaign.redalert_num_variables = cfread_int(cfp);
+
+		if (Campaign.redalert_num_variables > 0) {
+			Campaign.redalert_variables = (sexp_variable *) vm_malloc( Campaign.redalert_num_variables * sizeof(sexp_variable) );
+			Verify( Campaign.redalert_variables != NULL );
+
+			memset( Campaign.redalert_variables, 0, Campaign.redalert_num_variables * sizeof(sexp_variable) );
+
+			for (idx = 0; idx < Campaign.redalert_num_variables; idx++) {
+				Campaign.redalert_variables[idx].type = cfread_int(cfp);
+				cfread_string_len(Campaign.redalert_variables[idx].text, TOKEN_LENGTH, cfp);
+				cfread_string_len(Campaign.redalert_variables[idx].variable_name, TOKEN_LENGTH, cfp);
+			}
+		}
+	}
 }
 
 void pilotfile::csg_write_variables()
@@ -1043,6 +1070,14 @@ void pilotfile::csg_write_variables()
 		cfwrite_int(Campaign.variables[idx].type, cfp);
 		cfwrite_string_len(Campaign.variables[idx].text, cfp);
 		cfwrite_string_len(Campaign.variables[idx].variable_name, cfp);
+	}
+
+	cfwrite_int(Campaign.redalert_num_variables, cfp);
+
+	for (idx = 0; idx < Campaign.redalert_num_variables; idx++) {
+		cfwrite_int(Campaign.redalert_variables[idx].type, cfp);
+		cfwrite_string_len(Campaign.redalert_variables[idx].text, cfp);
+		cfwrite_string_len(Campaign.redalert_variables[idx].variable_name, cfp);
 	}
 
 	endSection();
@@ -1075,19 +1110,21 @@ void pilotfile::csg_read_settings()
 	Joy_sensitivity = cfread_int(cfp);
 	Dead_zone_size = cfread_int(cfp);
 
-	// detail
-	Detail.setting = cfread_int(cfp);
-	Detail.nebula_detail = cfread_int(cfp);
-	Detail.detail_distance = cfread_int(cfp);
-	Detail.hardware_textures = cfread_int(cfp);
-	Detail.num_small_debris = cfread_int(cfp);
-	Detail.num_particles = cfread_int(cfp);
-	Detail.num_stars = cfread_int(cfp);
-	Detail.shield_effects = cfread_int(cfp);
-	Detail.lighting = cfread_int(cfp);
-	Detail.targetview_model = cfread_int(cfp);
-	Detail.planets_suns = cfread_int(cfp);
-	Detail.weapon_extras = cfread_int(cfp);
+	if (csg_ver < 3) {
+		// detail
+		int dummy  __attribute__((__unused__)) = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+		dummy = cfread_int(cfp);
+	}
 }
 
 void pilotfile::csg_write_settings()
@@ -1110,27 +1147,13 @@ void pilotfile::csg_write_settings()
 	cfwrite_int(Joy_sensitivity, cfp);
 	cfwrite_int(Dead_zone_size, cfp);
 
-	// detail
-	cfwrite_int(Detail.setting, cfp);
-	cfwrite_int(Detail.nebula_detail, cfp);
-	cfwrite_int(Detail.detail_distance, cfp);
-	cfwrite_int(Detail.hardware_textures, cfp);
-	cfwrite_int(Detail.num_small_debris, cfp);
-	cfwrite_int(Detail.num_particles, cfp);
-	cfwrite_int(Detail.num_stars, cfp);
-	cfwrite_int(Detail.shield_effects, cfp);
-	cfwrite_int(Detail.lighting, cfp);
-	cfwrite_int(Detail.targetview_model, cfp);
-	cfwrite_int(Detail.planets_suns, cfp);
-	cfwrite_int(Detail.weapon_extras, cfp);
-
 	endSection();
 }
 
 void pilotfile::csg_read_controls()
 {
 	int idx, list_size;
-	short id1, id2, id3;
+	short id1, id2, id3 __attribute__((__unused__));
 
 	list_size = (int)cfread_ushort(cfp);
 
@@ -1238,7 +1261,7 @@ void pilotfile::csg_write_lastmissions()
 void pilotfile::csg_reset_data()
 {
 	int idx;
-	cmission *mission;
+	cmission *missionp;
 
 	// internals
 	m_have_flags = false;
@@ -1268,29 +1291,38 @@ void pilotfile::csg_reset_data()
 		Campaign.variables = NULL;
 	}
 
+	if (Campaign.redalert_variables) {
+		Campaign.redalert_num_variables = 0;
+		vm_free(Campaign.redalert_variables);
+		Campaign.redalert_variables = NULL;
+	}
+
+	// clear red alert data
+	Red_alert_wingman_status.clear();
+
 	// clear out mission stuff
 	for (idx = 0; idx < MAX_CAMPAIGN_MISSIONS; idx++) {
-		mission = &Campaign.missions[idx];
+		missionp = &Campaign.missions[idx];
 
-		if (mission->goals) {
-			mission->num_goals = 0;
-			vm_free(mission->goals);
-			mission->goals = NULL;
+		if (missionp->goals) {
+			missionp->num_goals = 0;
+			vm_free(missionp->goals);
+			missionp->goals = NULL;
 		}
 
-		if (mission->events) {
-			mission->num_events = 0;
-			vm_free(mission->events);
-			mission->events = NULL;
+		if (missionp->events) {
+			missionp->num_events = 0;
+			vm_free(missionp->events);
+			missionp->events = NULL;
 		}
 
-		if (mission->variables) {
-			mission->num_variables = 0;
-			vm_free(mission->variables);
-			mission->variables = NULL;
+		if (missionp->variables) {
+			missionp->num_variables = 0;
+			vm_free(missionp->variables);
+			missionp->variables = NULL;
 		}
 
-		mission->stats.init();
+		missionp->stats.init();
 	}
 }
 
@@ -1578,3 +1610,89 @@ bool pilotfile::save_savefile()
 	return true;
 }
 
+/*
+ * get_csg_rank: this function is called from plr.cpp & is
+ * tightly linked with pilotfile::verify()
+ */
+bool pilotfile::get_csg_rank(int *rank)
+{
+	player t_csg;
+
+	// set player ptr first thing
+	p = &t_csg;
+
+	// filename has already been set
+	cfp = cfopen((char*)filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+
+	if ( !cfp ) {
+		mprintf(("CSG => Unable to open '%s'!\n", filename.c_str()));
+		return false;
+	}
+
+	unsigned int csg_id = cfread_uint(cfp);
+
+	if (csg_id != CSG_FILE_ID) {
+		mprintf(("CSG => Invalid header id for '%s'!\n", filename.c_str()));
+		csg_close();
+		return false;
+	}
+
+	// version, now used
+	csg_ver = cfread_ubyte(cfp);
+
+	mprintf(("CSG => Get Rank from '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
+
+	// the point of all this: read in the CSG contents
+	while ( !m_have_flags && !cfeof(cfp) ) {
+		ushort section_id = cfread_ushort(cfp);
+		uint section_size = cfread_uint(cfp);
+
+		size_t start_pos = cftell(cfp);
+		size_t offset_pos;
+
+		// safety, to help protect against long reads
+		cf_set_max_read_len(cfp, section_size);
+
+		try {
+			switch (section_id) {
+				case Section::Flags:
+					mprintf(("CSG => Parsing:  Flags...\n"));
+					m_have_flags = true;
+					csg_read_flags();
+					break;
+
+				default:
+					break;
+			}
+		} catch (cfile::max_read_length &msg) {
+			// read to max section size, move to next section, discarding
+			// extra/unknown data
+			mprintf(("CSG => (0x%04x) %s\n", section_id, msg.what()));
+		} catch (const char *err) {
+			mprintf(("CSG => ERROR: %s\n", err));
+			csg_close();
+			return false;
+		}
+
+		// reset safety catch
+		cf_set_max_read_len(cfp, 0);
+
+		// skip to next section (if not already there)
+		offset_pos = (start_pos + section_size) - cftell(cfp);
+
+		if (offset_pos) {
+			mprintf(("CSG => Warning: (0x%04x) Short read, information may have been lost!\n", section_id));
+			cfseek(cfp, offset_pos, CF_SEEK_CUR);
+		}
+	}
+
+	// this is what we came for...
+	*rank = p->stats.rank;
+
+	mprintf(("CSG => Get Rank complete!\n"));
+
+	// cleanup & return
+	csg_close();
+
+	return true;
+}

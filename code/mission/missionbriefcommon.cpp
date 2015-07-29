@@ -32,6 +32,7 @@
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
+#include "mod_table/mod_table.h"
 
 
 // --------------------------------------------------------------------------------------
@@ -116,6 +117,8 @@ int Brief_text_max_lines[GR_NUM_RESOLUTIONS] = {
 #define LOOKAT_DIST	500.0f
 #define STAGE_ADVANCE_DELAY	1000		// time in ms to wait after voice stops before advancing stage
 
+extern const float		BRIEF_TEXT_WIPE_TIME	= 1.5f;		// time in seconds for wipe to occur
+
 // --------------------------------------------------------------------------------------
 // Game-wide global data
 // --------------------------------------------------------------------------------------
@@ -134,6 +137,8 @@ static int Last_new_stage;
 int	Cur_brief_id;
 
 const char BRIEF_META_CHAR = '$';
+
+const int HIGHEST_COLOR_STACK_INDEX = 9;
 
 // camera related
 static vec3d	Current_cam_pos;		// current camera position
@@ -178,60 +183,12 @@ int		Top_brief_text_line;
 typedef struct colored_char
 {
 	char	letter;
-	ubyte	color;		// index into Brief_text_colors[]
+	char	color;		// tag to look up in Tagged_Colors
 } colored_char;
 
 typedef SCP_vector<colored_char> briefing_line; 
 typedef SCP_vector<briefing_line> briefing_stream; 
 static briefing_stream Colored_stream[MAX_TEXT_STREAMS];
-
-#define MAX_BRIEF_TEXT_COLORS		20
-#define BRIEF_TEXT_WHITE			0
-#define BRIEF_TEXT_BRIGHT_WHITE		1
-#define BRIEF_TEXT_RED				2
-#define BRIEF_TEXT_GREEN			3
-#define BRIEF_TEXT_YELLOW			4
-#define BRIEF_TEXT_BLUE				5
-#define BRIEF_TEXT_FRIENDLY			6
-#define BRIEF_TEXT_HOSTILE			7
-#define BRIEF_TEXT_NEUTRAL			8
-#define BRIEF_TEXT_BRIGHT_BLUE		9
-#define BRIEF_TEXT_BRIGHT_GREEN		10
-#define BRIEF_TEXT_BRIGHT_RED		11
-#define BRIEF_TEXT_BRIGHT_YELLOW	12
-#define BRIEF_TEXT_BLACK			13
-#define BRIEF_TEXT_GREY				14
-#define BRIEF_TEXT_SILVER			15
-#define BRIEF_TEXT_VIOLET_GRAY		16
-#define BRIEF_TEXT_VIOLET			17
-#define BRIEF_TEXT_PINK				18
-#define BRIEF_TEXT_LIGHT_PINK		19
-
-color Brief_color_red, Brief_color_green, Brief_color_legacy_neutral;
-
-color *Brief_text_colors[MAX_BRIEF_TEXT_COLORS] = 
-{
-	&Color_white,
-	&Color_bright_white,
-	&Color_red,
-	&Color_green,
-	&Color_yellow,
-	&Color_blue,
-	&Brief_color_green,
-	&Brief_color_red,
-	&Brief_color_legacy_neutral,
-	&Color_bright_blue,
-	&Color_bright_green,
-	&Color_bright_red,
-	&Color_bright_yellow,
-	&Color_black,
-	&Color_grey,
-	&Color_silver,
-	&Color_violet_gray,
-	&Color_violet,
-	&Color_pink,
-	&Color_light_pink,
-};
 
 #define BRIGHTEN_LEAD	2
 
@@ -241,7 +198,6 @@ static int Max_briefing_line_len;
 static int Voice_started_time;
 static int Voice_ended_time;
 
-const float		BRIEF_TEXT_WIPE_TIME	= 1.5f;		// time in seconds for wipe to occur
 static int		Brief_text_wipe_snd;					// sound handle of sound effect for text wipe
 static int		Play_brief_voice;
 
@@ -308,8 +264,8 @@ grid	*brief_create_default_grid(void);
 void	brief_render_grid(grid *gridp);
 void	brief_modify_grid(grid *gridp);
 void	brief_rpd_line(vec3d *v0, vec3d *v1);
-void	brief_set_text_color(int color_index);
-extern void get_camera_limits(matrix *start_camera, matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max);
+void	brief_set_text_color(char color_tag);
+extern void get_camera_limits(const matrix *start_camera, const matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max);
 int brief_text_wipe_finished();
 
 // --------------------------------------------------------------------------------------
@@ -318,84 +274,78 @@ int brief_text_wipe_finished();
 //
 void brief_parse_icon_tbl()
 {
-	int rval, icon;
+	int icon;
 	size_t species;
 	char name[MAX_FILENAME_LEN];
 
 	Assert(!Species_info.empty());
 	const size_t max_icons = Species_info.size() * MIN_BRIEF_ICONS;
 
-	// open localization
-	lcl_ext_open();
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "icons.tbl", rval));
-		lcl_ext_close();
-
-		return;
-	}
-
-	read_file_text("icons.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	required_string("#Start");
-
-	Briefing_icon_info.clear();
-	while (required_string_either("#End","$Name:"))
+	try
 	{
-		if(Briefing_icon_info.size() >= max_icons) {
-			Warning(LOCATION, "Too many icons in icons.tbl; only the first %d will be used", max_icons);
-			skip_to_start_of_string("#End");
-			break;
-		}
+		read_file_text("icons.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-		briefing_icon_info bii;
+		required_string("#Start");
 
-		// parse regular frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-		generic_anim_init(&bii.regular, name);
-	
-		// parse fade frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-		hud_anim_init(&bii.fade, 0, 0, name);
-
-		// parse highlighting frames
-		required_string("$Name:");
-		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-		hud_anim_init(&bii.highlight, 0, 0, name);
-
-		// add it to the collection
-		Briefing_icon_info.push_back(bii);
-	}
-	required_string("#End");
-
-	// close localization
-	lcl_ext_close();
-
-
-	// now assign the icons to their species
-	const size_t num_species_covered = Briefing_icon_info.size() / MIN_BRIEF_ICONS;
-	size_t bii_index = 0;
-	for (icon = 0; icon < MIN_BRIEF_ICONS; icon++)
-	{
-		for (species = 0; species < num_species_covered; species++)
-			Species_info[species].bii_index[icon] = bii_index++;
-	}
-
-	// error check
-	if (num_species_covered < Species_info.size())
-	{
-		SCP_string errormsg = "The following species are missing icon info in icons.tbl:\n";
-
-		for (species = num_species_covered; species < Species_info.size(); species++)
+		Briefing_icon_info.clear();
+		while (required_string_either("#End", "$Name:"))
 		{
-			errormsg += Species_info[species].species_name;
-			errormsg += "\n";
+			if (Briefing_icon_info.size() >= max_icons) {
+				Warning(LOCATION, "Too many icons in icons.tbl; only the first %d will be used", max_icons);
+				skip_to_start_of_string("#End");
+				break;
+			}
+
+			briefing_icon_info bii;
+
+			// parse regular frames
+			required_string("$Name:");
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+			generic_anim_init(&bii.regular, name);
+
+			// parse fade frames
+			required_string("$Name:");
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+			hud_anim_init(&bii.fade, 0, 0, name);
+
+			// parse highlighting frames
+			required_string("$Name:");
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+			hud_anim_init(&bii.highlight, 0, 0, name);
+
+			// add it to the collection
+			Briefing_icon_info.push_back(bii);
+		}
+		required_string("#End");
+
+
+		// now assign the icons to their species
+		const size_t num_species_covered = Briefing_icon_info.size() / MIN_BRIEF_ICONS;
+		size_t bii_index = 0;
+		for (icon = 0; icon < MIN_BRIEF_ICONS; icon++)
+		{
+			for (species = 0; species < num_species_covered; species++)
+				Species_info[species].bii_index[icon] = bii_index++;
 		}
 
-		Error(LOCATION, errormsg.c_str());
+		// error check
+		if (num_species_covered < Species_info.size())
+		{
+			SCP_string errormsg = "The following species are missing icon info in icons.tbl:\n";
+
+			for (species = num_species_covered; species < Species_info.size(); species++)
+			{
+				errormsg += Species_info[species].species_name;
+				errormsg += "\n";
+			}
+
+			Error(LOCATION, errormsg.c_str());
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "icons.tbl", e.what()));
 	}
 }
 
@@ -604,9 +554,35 @@ briefing_icon_info *brief_get_icon_info(brief_icon *bi)
 	// ship info might override the usual briefing icon
 	if (sip->bii_index_ship >= 0)
 	{
-		if ((sip->bii_index_wing >= 0) && (bi->flags & BI_USE_WING_ICON))
-			return &Briefing_icon_info[sip->bii_index_wing];
+		if (bi->flags & BI_USE_WING_ICON)
+		{
+			if (bi->flags & BI_USE_CARGO_ICON)
+			{
+				if (sip->bii_index_wing_with_cargo >= 0)
+					return &Briefing_icon_info[sip->bii_index_wing_with_cargo];
+				else
+					mprintf(("Ship '%s' is missing the wing-with-cargo briefing icon!", sip->name));
+			}
+			else
+			{
+				if (sip->bii_index_wing >= 0)
+					return &Briefing_icon_info[sip->bii_index_wing];
+				else
+					mprintf(("Ship '%s' is missing the wing briefing icon!", sip->name));
+			}
+		}
+		else
+		{
+			if (bi->flags & BI_USE_CARGO_ICON)
+			{
+				if (sip->bii_index_ship_with_cargo >= 0)
+					return &Briefing_icon_info[sip->bii_index_ship_with_cargo];
+				else
+					mprintf(("Ship '%s' is missing the ship-with-cargo briefing icon!", sip->name));
+			}
+		}
 
+		// this will be reached if we just want the plain ship icon, or if we specified icon modifiers which didn't exist
 		return &Briefing_icon_info[sip->bii_index_ship];
 	}
 
@@ -764,7 +740,7 @@ void brief_render_fade_outs(float frametime)
 			bm_get_info( fi->fade_anim.first_frame, &w, &h, NULL);
 			float screenX = tv.screen.xyw.x;
 			float screenY = tv.screen.xyw.y;
-			gr_unsize_screen_posf( &screenX, &screenY );
+			gr_unsize_screen_posf( &screenX, &screenY, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET );
 
 			bxf = screenX - w / 2.0f + 0.5f;
 			byf = screenY - h / 2.0f + 0.5f;
@@ -774,7 +750,7 @@ void brief_render_fade_outs(float frametime)
 			if ( fi->fade_anim.first_frame >= 0 ) {
 				fi->fade_anim.sx = bx;
 				fi->fade_anim.sy = by;
-				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, true);
+				hud_anim_render(&fi->fade_anim, frametime, 1, 0, 0, 0, GR_RESIZE_MENU);
 			}
 		}
 	}
@@ -862,7 +838,7 @@ void brief_render_icon_line(int stage_num, int line_num)
 
 	brief_set_icon_color(icon[0]->team);
 
-	gr_line(fl2i(icon_x[0]), fl2i(icon_y[0]), fl2i(icon_x[1]), fl2i(icon_y[1]), false);
+	gr_line(fl2i(icon_x[0]), fl2i(icon_y[0]), fl2i(icon_x[1]), fl2i(icon_y[1]), GR_RESIZE_NONE);
 }
 
 /**
@@ -938,7 +914,6 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		briefing_icon_info *bii = brief_get_icon_info(bi);
 		if (bii == NULL) {
-			Int3();
 			return;
 		}
 
@@ -962,7 +937,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		float sx = tv.screen.xyw.x;
 		float sy = tv.screen.xyw.y;
-		gr_unsize_screen_posf( &sx, &sy );
+		gr_unsize_screen_posf( &sx, &sy, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET );
 	
 		scaled_w = icon_w * w_scale_factor;
 		scaled_h = icon_h * h_scale_factor;
@@ -992,7 +967,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				hud_anim_render(ha, frametime, 1, 0, 1, 0, true, mirror_icon);
+				hud_anim_render(ha, frametime, 1, 0, 1, 0, GR_RESIZE_MENU, mirror_icon);
 
 				if ( Brief_stage_highlight_sound_handle < 0 ) {
 					if ( !Fred_running) {
@@ -1010,7 +985,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				ha->sy = by;
 				brief_set_icon_color(bi->team);
 
-				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, true, mirror_icon) == 0 ) {
+				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, GR_RESIZE_MENU, mirror_icon) == 0 ) {
 					bi->flags &= ~BI_FADEIN;
 				}
 			} else {
@@ -1020,12 +995,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-			gr_aabitmap(bx, by, true,mirror_icon);
+			gr_aabitmap(bx, by, GR_RESIZE_MENU,mirror_icon);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {
 				gr_get_string_size(&w,&h,Players[Player_num].callsign);
-				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign);
+				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign, GR_RESIZE_MENU);
 			}
 			else {
 				if (Lcl_gr) {
@@ -1033,10 +1008,16 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_gr(buf);
 					gr_get_string_size(&w, &h, buf);
-					gr_string(bc - fl2i(w/2.0f), by - h, buf);
+					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
+				} else if (Lcl_pl) {
+					char buf[128];
+					strcpy_s(buf, bi->label);
+					lcl_translate_brief_icon_name_pl(buf);
+					gr_get_string_size(&w, &h, buf);
+					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
 				} else {
 					gr_get_string_size(&w,&h,bi->label);
-					gr_string(bc - fl2i(w/2.0f), by - h, bi->label);
+					gr_string(bc - fl2i(w/2.0f), by - h, bi->label, GR_RESIZE_MENU);
 				}
 			}
 
@@ -1120,7 +1101,7 @@ void brief_start_highlight_anims(int stage_num)
 //
 void brief_render_map(int stage_num, float frametime)
 {
-	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2);
+	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, GR_RESIZE_MENU);
 
     if (stage_num >= Briefing->num_stages) {
 		gr_reset_clip();
@@ -1130,7 +1111,7 @@ void brief_render_map(int stage_num, float frametime)
 	Assert(Briefing);
 
 	g3_start_frame(0);
-	g3_set_view_matrix(&Current_cam_pos, &Current_cam_orient, 0.5f);
+	g3_set_view_matrix(&Current_cam_pos, &Current_cam_orient, Briefing_window_FOV);
 
 	brief_maybe_create_new_grid(The_grid, &Current_cam_pos, &Current_cam_orient);
 	brief_render_grid(The_grid);
@@ -1164,9 +1145,9 @@ void brief_blit_stage_num(int stage_num, int stage_max)
 	gr_set_color_fast(&Color_text_heading);
 	sprintf(buf, XSTR( "Stage %d of %d", 394), stage_num + 1, stage_max);
 	if (Game_mode & GM_MULTIPLAYER) {
-		gr_printf(Brief_stage_text_coords_multi[gr_screen.res][0], Brief_stage_text_coords_multi[gr_screen.res][1], buf);
+		gr_printf_menu(Brief_stage_text_coords_multi[gr_screen.res][0], Brief_stage_text_coords_multi[gr_screen.res][1], buf);
 	} else {
-		gr_printf(Brief_stage_text_coords[gr_screen.res][0], Brief_stage_text_coords[gr_screen.res][1], buf);
+		gr_printf_menu(Brief_stage_text_coords[gr_screen.res][0], Brief_stage_text_coords[gr_screen.res][1], buf);
 	}
 }
 
@@ -1218,7 +1199,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
 	// The following algorithm builds a character sequence of color 'last_color' into 'line' buffer.
 	// When the color changes, the buffer is drawn and reset.
 	{
-		int last_color = src->at(0).color;    
+		char last_color = src->at(0).color;
 		for (int current_pos=0; current_pos<truncate_len; current_pos++) {
 			colored_char &current_char=src->at(current_pos);		
 			//when the current color changes, the accumulated character sequence is drawn.
@@ -1229,7 +1210,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
 				{	// Draw coloured text, and increment cariage position
 					int w=0,h=0;
 					brief_set_text_color(last_color);        
-					gr_string(x + offset, y, char_seq);
+					gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);
 					gr_get_string_size(&w, &h, char_seq);
 					offset += w;
 				}
@@ -1247,7 +1228,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
         {	// Draw coloured text, and increment cariage position
 			int w=0,h=0;
 			brief_set_text_color(last_color);        
-			gr_string(x + offset, y, char_seq);
+			gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);
 			gr_get_string_size(&w, &h, char_seq);
 			offset += w;
 		}
@@ -1262,7 +1243,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
 		Assert(char_seq_pos < (int)sizeof(char_seq));
 		char_seq[char_seq_pos] = 0;
 		gr_set_color_fast(&Color_bright_white);
-		gr_string(x + offset, y, char_seq);    
+		gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);    
 	}
 }
 
@@ -1430,84 +1411,18 @@ void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 }
 
 
-ubyte brief_return_color_index(char c)
+bool brief_verify_color_tag(char color_tag)
 {
-	switch (c) {
-		case 'f':
-			return BRIEF_TEXT_FRIENDLY;
-
-		case 'h':
-			return BRIEF_TEXT_HOSTILE;
-
-		case 'n':
-			return BRIEF_TEXT_NEUTRAL;
-
-		case 'r':
-			return BRIEF_TEXT_RED;
-
-		case 'g':
-			return BRIEF_TEXT_GREEN;
-
-		case 'b':
-			return BRIEF_TEXT_BLUE;
-
-//The following added by Zacam for expanded BRIEF colors
- 		case 'w':
- 			return BRIEF_TEXT_WHITE;
-
- 		case 'y':
- 			return BRIEF_TEXT_YELLOW;
-
-		case 'W':
-			return BRIEF_TEXT_BRIGHT_WHITE;
-
-		case 'B':
-			return BRIEF_TEXT_BRIGHT_BLUE;
-
-		case 'G':
-			return BRIEF_TEXT_BRIGHT_GREEN;
-
-		case 'R':
-			return BRIEF_TEXT_BRIGHT_RED;
-
-		case 'Y':
-			return BRIEF_TEXT_BRIGHT_YELLOW;
-
-		case 'k':
-			return BRIEF_TEXT_BLACK;
-
-		case 'e':
-			return BRIEF_TEXT_GREY;
-
-		case 'E':
-			return BRIEF_TEXT_SILVER;
-
-		case 'v':
-			return BRIEF_TEXT_VIOLET_GRAY;
-
-		case 'V':
-			return BRIEF_TEXT_VIOLET;
-
-		case 'p':
-			return BRIEF_TEXT_PINK;
-
-		case 'P':
-			return BRIEF_TEXT_LIGHT_PINK;
-
-		case '|':	//This is not a duplicate, but a Non-Breaking Space case. Do not remove.
-			return BRIEF_TEXT_WHITE;
-
-		default:	//Zacam: Changed fron an Int3() in order to provide better feedback while still allowing play.
-			Warning(LOCATION, "Unrecognized or undefined case character: '$%c' used in Briefing in mission: '%s'. Tell Zacam.", c, Mission_filename);
-	} // end switch
-
-	return BRIEF_TEXT_WHITE;
+	if ( Tagged_Colors.find(color_tag) == Tagged_Colors.end() ) {
+		Warning(LOCATION, "Invalid text color tag '$%c' used in mission: '%s'.\n", color_tag, Mission_filename);
+		return false;
+	}
+	return true;
 }
 
-void brief_set_text_color(int color_index)
+void brief_set_text_color(char color_tag)
 {
-	Assert(color_index < MAX_BRIEF_TEXT_COLORS);
-	gr_set_color_fast(Brief_text_colors[color_index]);
+	gr_set_color_fast(Tagged_Colors[color_tag]);
 }
 
 /**
@@ -1517,7 +1432,7 @@ void brief_set_text_color(int color_index)
  */
 bool is_a_word_separator(char character)
 {
-	return character <= 32;					//  all control characters including space, newline, and tab
+	return ((character >= 0) && (character <= 32)); // all control characters including space, newline, and tab
 }
 
 /**
@@ -1530,23 +1445,19 @@ bool is_a_word_separator(char character)
  *
  * @param src a not null pointer to a C string terminated by a /0 char.
  * @param instance index into Colored_stream where the result should be placed. Value is 0 unless multiple text streams are required.
+ * @param[in,out] default_color_stack pointer to an array containing a stack of default colors (for color spans)
+ * @param[in,out] color_stack_index pointer to the current index in the above stack
  * @return number of character of the resulting sequence.
  */
-int brief_text_colorize(char *src, int instance)
+int brief_text_colorize(char *src, int instance, char default_color_stack[], int &color_stack_index)
 {
 	Assert(src);
 	Assert((0 <= instance) && (instance < (int)(sizeof(Colored_stream) / sizeof(*Colored_stream))));
 
-	// manage different default colors (don't use a SCP_ stack because eh)
-	const int HIGHEST_COLOR_STACK_INDEX = 9;
-	ubyte default_color_stack[10];
-	int color_stack_index = 0;
-
 	briefing_line dest_line;	//the resulting vector of colored character
-	ubyte active_color_index;	//the current drawing color
+	char active_color_index;	//the current drawing color
 
-	// start off with white
-	default_color_stack[0] = active_color_index = BRIEF_TEXT_WHITE;
+	active_color_index = default_color_stack[color_stack_index];
 
 	int src_len = strlen(src);
 	for (int i = 0; i < src_len; i++)
@@ -1567,29 +1478,34 @@ int brief_text_colorize(char *src, int instance)
 				}
 				i++;	// consume the }
 			}
+			// breaking character
+			else if (src[i] == '|')
+			{
+				active_color_index = default_color_stack[color_stack_index];
+				i++;	// consume the |
+			}
 			// normal $c or $c{
 			else
 			{
-				active_color_index = brief_return_color_index(src[i]);
+				if (brief_verify_color_tag(src[i])) active_color_index = src[i];
 				i++; // Consume the color identifier and focus on the white character (if any)
+
+				// special case: color spans (different default color within braces)
+				// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
+				if (src[i] == '{')
+				{
+					if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
+					{
+						color_stack_index++;
+						default_color_stack[color_stack_index] = active_color_index;
+					}
+					i++;	// consume the {
+				}
 			}
 
-			// special case: color spans (different default color within braces)
-			// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
-			if (src[i] == '{')
-			{
-				if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
-				{
-					color_stack_index++;
-					default_color_stack[color_stack_index] = active_color_index;
-				}
-				i++;	// consume the {
-			}
- 
 			// Skip every whitespace until the next word is reached
 			while ( (i < src_len) && is_white_space(src[i]) )
 				i++;
-
 			//The next character is not a whitespace, let's process it as usual
 			//(subtract 1 because the for loop will add it again)
 			i--;
@@ -1616,15 +1532,28 @@ int brief_text_colorize(char *src, int instance)
  *
  * @param src paragraph of text to process
  * @param w	max width of line in pixels
+ * @param[in] default_color optional, default color for this text (defaults to '\0', which gets converted to the first defined color tag (should be 'w'))
  * @param instance optional parameter, used when multiple text streams are required (default value is 0)
  * @param max_lines maximum number of lines
+ * @param[in] append add on to the existing lines instead of replacing them (defaults to false)
  */
-int brief_color_text_init(const char* src, int w, int instance, int max_lines)
+int brief_color_text_init(const char* src, int w, const char default_color, int instance, int max_lines, const bool append)
 {
 	int i, n_lines, len;
 	SCP_vector<int> n_chars;
 	SCP_vector<const char*> p_str;
-	char brief_line[MAX_BRIEF_LINE_LEN];
+	char tmp_brief_line[MAX_BRIEF_LINE_LEN];
+
+	// manage different default colors (don't use a SCP_ stack because eh)
+	char default_color_stack[HIGHEST_COLOR_STACK_INDEX + 1];
+	int color_stack_index = 0;
+
+	// start off with white, or whatever our default is
+	if (default_color == '\0' || !brief_verify_color_tag(default_color)) {	// call brief_verify_color_tag() to make sure our default is actually a defined color tag
+		default_color_stack[0] = Color_Tags[0];
+	} else {
+		default_color_stack[0] = default_color;
+	}
 
 	Assert(src != NULL);
 	n_lines = split_str(src, w, n_chars, p_str, BRIEF_META_CHAR);
@@ -1635,14 +1564,20 @@ int brief_color_text_init(const char* src, int w, int instance, int max_lines)
 		n_lines = max_lines; 
 	}
 
-	Max_briefing_line_len = 1;
-	Colored_stream[instance].clear();
+	if (!append) {
+		Max_briefing_line_len = 1;
+		Colored_stream[instance].clear();
+	} else if (n_lines == 0 && !strcmp(src, "\n")) {	// Silly hack to allow inserting blank lines for debriefings -MageKing17
+		n_lines = 1;
+		p_str.push_back(0);
+		n_chars.push_back(0);
+	}
 	for (i=0; i<n_lines; i++) {
 		Assert(n_chars[i] < MAX_BRIEF_LINE_LEN);
-		strncpy(brief_line, p_str[i], n_chars[i]);
-		brief_line[n_chars[i]] = 0;
-		drop_leading_white_space(brief_line);
-		len = brief_text_colorize(&brief_line[0], instance);
+		strncpy(tmp_brief_line, p_str[i], n_chars[i]);
+		tmp_brief_line[n_chars[i]] = 0;
+		drop_leading_white_space(tmp_brief_line);
+		len = brief_text_colorize(&tmp_brief_line[0], instance, default_color_stack, color_stack_index);
 		if (len > Max_briefing_line_len)
 			Max_briefing_line_len = len;
 	}
@@ -1650,7 +1585,11 @@ int brief_color_text_init(const char* src, int w, int instance, int max_lines)
 	Brief_text_wipe_time_elapsed = 0.0f;
 	Play_brief_voice = 0;
 
-	Num_brief_text_lines[instance] = n_lines;
+	if (append) {
+		Num_brief_text_lines[instance] += n_lines;
+	} else {
+		Num_brief_text_lines[instance] = n_lines;
+	}
 	return n_lines;
 }
 
@@ -1764,7 +1703,6 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 		if ( is_new ) {
 			briefing_icon_info *bii = brief_get_icon_info(&newb->icons[i]);
 			if (bii == NULL) {
-				Int3();
 				return 0;
 			}
 
@@ -1831,10 +1769,10 @@ void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 
 	if (gr_screen.res == GR_640) {
 		// GR_640
-		Num_brief_text_lines[0] = brief_color_text_init(msg, MAX_BRIEF_LINE_W_640);
+		Num_brief_text_lines[0] = brief_color_text_init(msg, MAX_BRIEF_LINE_W_640, default_briefing_color);
 	} else {
 		// GR_1024
-		Num_brief_text_lines[0] = brief_color_text_init(msg, MAX_BRIEF_LINE_W_1024);		
+		Num_brief_text_lines[0] = brief_color_text_init(msg, MAX_BRIEF_LINE_W_1024, default_briefing_color);
 	}
 
 	Top_brief_text_line = 0;
@@ -2162,7 +2100,7 @@ void brief_rpd_line(vec3d *v0, vec3d *v1)
 	g3_rotate_vertex(&tv0, v0);
 	g3_rotate_vertex(&tv1, v1);
 
-	gr_set_color_fast(&Color_grey);
+	gr_set_color_fast(&Color_briefing_grid);
 	g3_draw_line(&tv0, &tv1);
 }
 

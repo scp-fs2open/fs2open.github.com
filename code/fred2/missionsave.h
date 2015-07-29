@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
-#include "ai/ailocal.h"
 #include "ai/ai.h"
 #include "cfile/cfile.h"
 #include "ship/ship.h"
@@ -80,7 +79,7 @@ public:
 	void fso_comment_pop(bool pop_all = false);
 
 	// Goober5000
-	void bypass_comment(char *comment);
+	void bypass_comment(const char *comment, const char *end = NULL);
 };
 
 #endif

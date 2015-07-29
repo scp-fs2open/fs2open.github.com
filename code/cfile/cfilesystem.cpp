@@ -388,7 +388,7 @@ void cf_build_root_list(const char *cdrom_dir)
 
 			// truncated string check
 			if ( (strlen(Cfile_user_dir) + strlen(str_temp) + 1) >= CF_MAX_PATHNAME_LENGTH ) {
-				Int3();
+				Error(LOCATION, "Home directory plus mod directory exceeds CF_MAX_PATHNAME_LENGTH\n");
 			}
 
 			root = cf_create_root();
@@ -444,7 +444,7 @@ void cf_build_root_list(const char *cdrom_dir)
 
 			// truncated string check
 			if ( (strlen(root->path) + strlen(str_temp) + 1) >= CF_MAX_PATHNAME_LENGTH ) {
-				Int3();
+				Error(LOCATION, "Installed path plus mod directory exceeds CF_MAX_PATHNAME_LENGTH\n");
 			}
 
 			path_len = strlen(root->path);
@@ -507,7 +507,7 @@ int is_ext_in_list( const char *ext_list, const char *ext )
 {
 	char tmp_ext[128];
 
-	strncpy( tmp_ext, ext, 127 );
+	strcpy_s( tmp_ext, ext);
 	strlwr(tmp_ext);
 	if ( strstr(ext_list, tmp_ext ))	{
 		return 1;
@@ -695,6 +695,7 @@ void cf_search_root_pack(int root_index)
 		find.offset = INTEL_INT( find.offset ); //-V570
 		find.size = INTEL_INT( find.size ); //-V570
 		find.write_time = INTEL_INT( find.write_time ); //-V570
+		find.filename[sizeof(find.filename)-1] = '\0';
 
 		if ( find.size == 0 )	{
 			int search_path_len = strlen(search_path);

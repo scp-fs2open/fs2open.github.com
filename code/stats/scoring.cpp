@@ -31,6 +31,7 @@
 #include "network/multi_pmsg.h"
 #include "ai/ai_profiles.h"
 #include "pilotfile/pilotfile.h"
+#include "debugconsole/console.h"
 
 /*
 // uncomment to get extra debug messages when a player scores
@@ -58,54 +59,64 @@ void parse_rank_tbl()
 {
 	atexit(scoreing_close);
 	char buf[MULTITEXT_LENGTH];
-	int rval, idx;
+	int idx, persona;
 
-	// open localization
-	lcl_ext_open();
+	try
+	{
+		read_file_text("rank.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "rank.tbl", rval));
-		lcl_ext_close();
-		return;
-	} 
+		// parse in all the rank names
+		idx = 0;
+		skip_to_string("[RANK NAMES]");
+		ignore_white_space();
+		while (required_string_either("#End", "$Name:")) {
+			Assert(idx < NUM_RANKS);
+			required_string("$Name:");
+			stuff_string(Ranks[idx].name, F_NAME, NAME_LENGTH);
+			required_string("$Points:");
+			stuff_int(&Ranks[idx].points);
+			required_string("$Bitmap:");
+			stuff_string(Ranks[idx].bitmap, F_NAME, MAX_FILENAME_LEN);
+			required_string("$Promotion Voice Base:");
+			stuff_string(Ranks[idx].promotion_voice_base, F_NAME, MAX_FILENAME_LEN);
+			while (check_for_string("$Promotion Text:")) {
+				required_string("$Promotion Text:");
+				stuff_string(buf, F_MULTITEXT, sizeof(buf));
+				drop_white_space(buf);
+				compact_multitext_string(buf);
+				persona = -1;
+				if (optional_string("+Persona:")) {
+					stuff_int(&persona);
+					if (persona < 0) {
+						Warning(LOCATION, "Debriefing text for %s rank is assigned to an invalid persona: %i (must be 0 or greater).\n", Ranks[idx].name, persona);
+						continue;
+					}
+				}
+				Ranks[idx].promotion_text[persona] = vm_strdup(buf);
+			}
+			if (Ranks[idx].promotion_text.find(-1) == Ranks[idx].promotion_text.end()) {
+				Warning(LOCATION, "%s rank is missing default debriefing text.\n", Ranks[idx].name);
+				Ranks[idx].promotion_text[-1] = "";
+			}
+			idx++;
+		}
 
-	read_file_text("rank.tbl", CF_TYPE_TABLES);
-	reset_parse();
+		required_string("#End");
 
-	// parse in all the rank names
-	idx = 0;
-	skip_to_string("[RANK NAMES]");
-	ignore_white_space();
-	while ( required_string_either("#End", "$Name:") ) {
-		Assert ( idx < NUM_RANKS );
-		required_string("$Name:");
-		stuff_string( Ranks[idx].name, F_NAME, NAME_LENGTH );
-		required_string("$Points:");
-		stuff_int( &Ranks[idx].points );
-		required_string("$Bitmap:");
-		stuff_string( Ranks[idx].bitmap, F_NAME, MAX_FILENAME_LEN );
-		required_string("$Promotion Voice Base:");
-		stuff_string( Ranks[idx].promotion_voice_base, F_NAME, MAX_FILENAME_LEN );
-		required_string("$Promotion Text:");
-		stuff_string(buf, F_MULTITEXT, sizeof(buf));
-		drop_white_space(buf);
-		compact_multitext_string(buf);
-		Ranks[idx].promotion_text = vm_strdup(buf);
-		idx++;
-	}
-
-	required_string("#End");
-
-	// be sure that all rank points are in order
+		// be sure that all rank points are in order
 #ifndef NDEBUG
-	for ( idx = 0; idx < NUM_RANKS-1; idx++ ) {
-		if ( Ranks[idx].points >= Ranks[idx+1].points )
-			Int3();
-	}
+		for (idx = 0; idx < NUM_RANKS - 1; idx++) {
+			if (Ranks[idx].points >= Ranks[idx + 1].points)
+				Int3();
+		}
 #endif
-
-	// close localization
-	lcl_ext_close();
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "rank.tbl", e.what()));
+		return;
+	}
 }
 
 // initialize a nice blank scoring element
@@ -138,7 +149,7 @@ void scoring_struct::init()
 
 	m_medal_earned = -1;		// hasn't earned a medal yet
 	m_promotion_earned = -1;
-	m_badge_earned = -1;
+	m_badge_earned.clear();
 
 	m_score = 0;
 	memset(m_kills, 0, MAX_SHIP_CLASSES * sizeof(int));
@@ -208,34 +219,12 @@ void scoring_struct::assign(const scoring_struct &s)
 	memcpy(m_dogfight_kills, s.m_dogfight_kills, MAX_PLAYERS * sizeof(int));
 }
 
-#ifndef NDEBUG
-//XSTR:OFF
-void scoring_eval_harbison( ship *shipp )
-{
-	FILE *fp;
-
-	if ( !stricmp(shipp->ship_name, "alpha 2") && (!stricmp(Game_current_mission_filename, "demo01") || !stricmp(Game_current_mission_filename, "sm1-01")) ) {
-		int death_count;
-
-		fp = fopen("i:\\volition\\cww\\harbison.txt", "r+t");
-		if ( !fp )
-			return;
-		fscanf(fp, "%d", &death_count );
-		death_count++;
-		fseek(fp, 0, SEEK_SET);
-		fprintf(fp, "%d\n", death_count);
-		fclose(fp);
-	}
-}
-//XSTR:ON
-#endif
-
 // initialize the Player's mission-based stats before he goes into a mission
 void scoring_level_init( scoring_struct *scp )
 {
 	scp->m_medal_earned = -1;		// hasn't earned a medal yet
 	scp->m_promotion_earned = -1;
-	scp->m_badge_earned = -1;
+	scp->m_badge_earned.clear();
 	scp->m_score = 0;
 	scp->m_assists = 0;
 	scp->mp_shots_fired = 0;
@@ -319,8 +308,7 @@ void scoring_eval_badges(scoring_struct *sc)
 	}
 
 	// total_kills should now reflect the number of kills on hostile fighters/bombers.  Check this number
-	// against badge kill numbers, and return the badge index if we would get a new one.
-	int badge = -1;
+	// against badge kill numbers, and award the appropriate badges as neccessary.
 	int last_badge_kills = 0;
 	for (i = 0; i < Num_medals; i++ ) {
 		if ( total_kills >= Medals[i].kills_needed
@@ -328,15 +316,11 @@ void scoring_eval_badges(scoring_struct *sc)
 			&& Medals[i].kills_needed > 0 )
 		{
 			last_badge_kills = Medals[i].kills_needed;
-			badge = i;
+			if (sc->medal_counts[i] < 1) {
+				sc->medal_counts[i] = 1;
+				sc->m_badge_earned.push_back(i);
+			}
 		}
-	}
-
-	// if player could have a badge based on kills, and doesn't currently have this badge, then
-	// return the badge id.
-	if ( (badge != -1 ) && (sc->medal_counts[badge] < 1) ) {
-		sc->medal_counts[badge] = 1;
-		sc->m_badge_earned = badge;
 	}
 }
 
@@ -395,8 +379,10 @@ void scoring_backout_accept( scoring_struct *score )
 	int idx;
 
 	// if a badge was earned, take it back
-	if ( score->m_badge_earned != -1){
-		score->medal_counts[score->m_badge_earned] = 0;
+	if ( score->m_badge_earned.size() ){
+		for (size_t medal = 0; medal < score->m_badge_earned.size(); medal++) {
+			score->medal_counts[score->m_badge_earned[medal]] = 0;
+		}
 	}
 
 	// return when in training mission.  We can grant a medal in training, but don't
@@ -487,9 +473,11 @@ void scoring_level_close(int accepted)
 			}
 
 			// if a badge was earned, take it back
-			if ( Player->stats.m_badge_earned != -1){
-				Player->stats.medal_counts[Player->stats.m_badge_earned] = 0;
-				Player->stats.m_badge_earned = -1;
+			if ( Player->stats.m_badge_earned.size() ){
+				for (size_t medal = 0; medal < Player->stats.m_badge_earned.size(); medal++) {
+					Player->stats.medal_counts[Player->stats.m_badge_earned[medal]] = 0;
+				}
+				Player->stats.m_badge_earned.clear();
 			}
 		}
 
@@ -500,7 +488,7 @@ void scoring_level_close(int accepted)
 }
 
 // STATS damage, assists recording stuff
-void scoring_add_damage(object *ship_obj,object *other_obj,float damage)
+void scoring_add_damage(object *ship_objp,object *other_obj,float damage)
 {
 	int found_slot, signature;
 	int lowest_index,idx;
@@ -534,16 +522,16 @@ void scoring_add_damage(object *ship_obj,object *other_obj,float damage)
 	}
 	
 	// don't count damage done to a ship by himself
-	if(use_obj == ship_obj){
+	if(use_obj == ship_objp){
 		return;
 	}
 
 	// get a pointer to the ship and add the actual amount of damage done to it
 	// get the ship object, and determine the _actual_ amount of damage done
-	sp = &Ships[ship_obj->instance];
+	sp = &Ships[ship_objp->instance];
 	// see comments at beginning of function
-	if(ship_obj->hull_strength < 0.0f){
-		actual_damage = damage + ship_obj->hull_strength;
+	if(ship_objp->hull_strength < 0.0f){
+		actual_damage = damage + ship_objp->hull_strength;
 	} else {
 		actual_damage = damage;
 	}
@@ -562,7 +550,7 @@ void scoring_add_damage(object *ship_obj,object *other_obj,float damage)
 
 	// only evaluate possible kill/assist numbers if the hitting object (use_obj) is a piloted ship (ie, ignore asteroids, etc)
 	// don't store damage a ship may do to himself
-	if((ship_obj->type == OBJ_SHIP) && (use_obj->type == OBJ_SHIP)){
+	if((ship_objp->type == OBJ_SHIP) && (use_obj->type == OBJ_SHIP)){
 		found_slot = 0;
 		// try and find an open slot
 		for(idx=0;idx<MAX_DAMAGE_SLOTS;idx++){
@@ -598,7 +586,7 @@ void scoring_add_damage(object *ship_obj,object *other_obj,float damage)
 char Scoring_debug_text[4096];
 
 // evaluate a kill on a ship
-int scoring_eval_kill(object *ship_obj)
+int scoring_eval_kill(object *ship_objp)
 {		
 	float max_damage_pct;		// the pct% of total damage the max damage object did
 	int max_damage_index;		// the index into the dying ship's damage_ship[] array corresponding the greatest amount of damage
@@ -619,19 +607,19 @@ int scoring_eval_kill(object *ship_obj)
 	}
 
 	// we don't evaluate kills on anything except ships
-	if(ship_obj->type != OBJ_SHIP){
+	if(ship_objp->type != OBJ_SHIP){
 		return -1;	
 	}
-	if((ship_obj->instance < 0) || (ship_obj->instance >= MAX_SHIPS)){
+	if((ship_objp->instance < 0) || (ship_objp->instance >= MAX_SHIPS)){
 		return -1;
 	}
 
 	// assign the dead ship
-	dead_ship = &Ships[ship_obj->instance];
+	dead_ship = &Ships[ship_objp->instance];
 
 	// evaluate player deaths
 	if(Game_mode & GM_MULTIPLAYER){
-		net_player_num = multi_find_player_by_object(ship_obj);
+		net_player_num = multi_find_player_by_object(ship_objp);
 		if(net_player_num != -1){
 			Net_players[net_player_num].m_player->stats.m_player_deaths++;
 			nprintf(("Network","Setting player %s deaths to %d\n",Net_players[net_player_num].m_player->callsign,Net_players[net_player_num].m_player->stats.m_player_deaths));
@@ -639,15 +627,10 @@ int scoring_eval_kill(object *ship_obj)
 			is_enemy_player = true;
 		}
 	} else {
-		if(ship_obj == Player_obj){
+		if(ship_objp == Player_obj){
 			Player->stats.m_player_deaths++;
 		}
 	}
-
-
-#ifndef NDEBUG
-	scoring_eval_harbison( dead_ship );
-#endif
 
 	net_player_num = -1;
 
@@ -749,7 +732,7 @@ int scoring_eval_kill(object *ship_obj)
 			// otherwise increment his valid kill count and score
 			else {
 				// dogfight mode
-				if(MULTI_DOGFIGHT && (multi_find_player_by_object(ship_obj) < 0)){
+				if(MULTI_DOGFIGHT && (multi_find_player_by_object(ship_objp) < 0)){
 					// don't add a kill for dogfight kills on non-players
 				} else {
 					plr->stats.m_okKills[si_index]++;		
@@ -823,7 +806,7 @@ int scoring_eval_kill(object *ship_obj)
 				// send appropriate stats
 				if(Netgame.type_flags & NG_TYPE_DOGFIGHT){
 					// evaluate dogfight kills
-					multi_df_eval_kill(&Net_players[net_player_num], ship_obj);
+					multi_df_eval_kill(&Net_players[net_player_num], ship_objp);
 
 					// update stats
 					send_player_stats_block_packet(&Net_players[net_player_num], STATS_DOGFIGHT_KILLS);
@@ -884,6 +867,11 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 
 	weapon *dead_wp;						// the weapon that was killed
 	weapon_info *dead_wip;				// info on the weapon that was killed
+
+	if((weapon_obj->instance < 0) || (weapon_obj->instance >= MAX_WEAPONS)){
+		return -1;
+	}
+    
 	dead_wp = &Weapons[weapon_obj->instance]; //assign the dead weapon
 	dead_wip = &Weapon_info[dead_wp->weapon_info_index];
 
@@ -899,10 +887,6 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 
 	// we don't evaluate kills on anything except bombs, currently. -Halleck
 	if(!(dead_wip->wi_flags & WIF_BOMB))  {
-		return -1;
-	}
-
-	if((weapon_obj->instance < 0) || (weapon_obj->instance >= MAX_WEAPONS)){
 		return -1;
 	}
 
@@ -1495,26 +1479,53 @@ void scoring_bash_rank(player *pl,int rank)
 	pl->stats.rank = rank;
 }
 
-DCF(rank, "changes scoring vars")
+DCF(rank, "changes player rank")
 {
-	if(Dc_command){		
-		dc_get_arg(ARG_INT);		
-		
-		// parse the argument and change things around accordingly		
-		if((Dc_arg_type & ARG_INT) && (Player != NULL)){							
-			scoring_bash_rank(Player,Dc_arg_int);
-		}		
+	int rank;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: rank <index>\n");
+		dc_printf(" <index> The rank index you wish to have. For retail ranks, these correspond to:\n");
+		dc_printf("\t0 : Ensign\n");
+		dc_printf("\t1 : Lieutenant Junior Grade\n");
+		dc_printf("\t2 : Lietenant\n");
+		dc_printf("\t3 : Lieutenant Commander\n");
+		dc_printf("\t4 : Commander\n");
+		dc_printf("\t5 : Captain\n");
+		dc_printf("\t6 : Commodore\n");
+		dc_printf("\t7 : Rear Admiral\n");
+		dc_printf("\t8 : Vice Admiral\n");
+		dc_printf("\t9 : Admiral\n\n");
+		return;
 	}
-	dc_printf("Usage\n0 : Ensign\n1 : Lieutenant Junior Grade\n");
-	dc_printf("2 : Lietenant\n3 : Lieutenant Commander\n");
-	dc_printf("4 : Commander\n5 : Captain\n6 : Commodore\n");
-	dc_printf("7 : Rear Admiral\n8 : Vice Admiral\n9 : Admiral");
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		if (Player != NULL) {
+			dc_printf("Current rank is %i\n", Player->stats.rank);
+		} else {
+			dc_printf("Error! Current Player not active or loaded\n");
+		}
+	}
+
+	dc_stuff_int(&rank);
+	
+	// parse the argument and change things around accordingly
+	if (Player != NULL) {
+			scoring_bash_rank(Player, rank);
+	} else {
+		dc_printf("Error! Current Player not active or loaded\n");
+	}
 }
 
 void scoreing_close()
 {
+	SCP_map<int, char*>::iterator it;
 	for(int i = 0; i<NUM_RANKS; i++) {
-		if(Ranks[i].promotion_text)
-			vm_free(Ranks[i].promotion_text);
+		for (it = Ranks[i].promotion_text.begin(); it != Ranks[i].promotion_text.end(); ++it) {
+			if (it->second) {
+				vm_free(it->second);
+			}
+		}
+		Ranks[i].promotion_text.clear();
 	}
 }

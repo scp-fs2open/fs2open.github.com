@@ -10,6 +10,7 @@
 #include "graphics/gropengltexture.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropenglstate.h"
+#include "graphics/gropengldraw.h"
 
 #include "globalincs/pstypes.h"
 #include "cutscene/mvelib.h"
@@ -459,13 +460,13 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 	if (gr_screen.mode == GR_OPENGL) {
 		GLfloat scale_by = 1.0f;
 
-		float screen_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
+		float screen_ratio = (float)gr_screen.center_w / (float)gr_screen.center_h;
 		float movie_ratio = (float)g_width / (float)g_height;
 
 		if (screen_ratio > movie_ratio) {
-			scale_by = (float)gr_screen.max_h / (float)g_height;
+			scale_by = (float)gr_screen.center_h / (float)g_height;
 		} else {
-			scale_by = (float)gr_screen.max_w / (float)g_width;
+			scale_by = (float)gr_screen.center_w / (float)g_width;
 		}
 
 		// don't bother setting anything if we aren't going to need it
@@ -479,12 +480,12 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		}
 
 		if (mve_scale_video) {
-			g_screenX = ((ceil((gr_screen.max_w / scale_by) - 0.5f) - g_width) / 2);
-			g_screenY = ((ceil((gr_screen.max_h / scale_by) - 0.5f) - g_height) / 2);
+			g_screenX = ((ceil((gr_screen.center_w / scale_by) - 0.5f) - g_width) / 2) + ceil((gr_screen.center_offset_x / scale_by) - 0.5f);
+			g_screenY = ((ceil((gr_screen.center_h / scale_by) - 0.5f) - g_height) / 2) + ceil((gr_screen.center_offset_y / scale_by) - 0.5f);
 		} else {
 			// centers on 1024x768, fills on 640x480
-			g_screenX = ((float)(gr_screen.max_w - g_width) / 2.0f);
-			g_screenY = ((float)(gr_screen.max_h - g_height) / 2.0f);
+			g_screenX = ((float)(gr_screen.center_w - g_width) / 2.0f) + gr_screen.center_offset_x;
+			g_screenY = ((float)(gr_screen.center_h - g_height) / 2.0f) + gr_screen.center_offset_y;
 		}
 
 		// set additional values for screen width/height and UV coords
@@ -518,12 +519,12 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 
 		GL_state.Array.BindArrayBuffer(0);
 
-		GL_state.Array.EnableClientVertex();
-		GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(glVertices[0]), glVertices);
+		vertex_layout vertex_def;
 
-		GL_state.Array.SetActiveClientUnit(0);
-		GL_state.Array.EnableClientTexture();
-		GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(glVertices[0]), &(glVertices[0][2]));
+		vertex_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), glVertices);
+		vertex_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(glVertices[0]), &(glVertices[0][2]));
+
+		opengl_bind_vertex_layout(vertex_def);
 	}
 
 	return 1;
@@ -614,7 +615,7 @@ void mve_video_display()
 		// DDOI - This is probably really fricking slow
 		int bitmap = bm_create (16, g_screenWidth, g_screenHeight, pixelbuf, 0);
 		gr_set_bitmap (bitmap);
-		gr_bitmap ((int)g_screenX, (int)g_screenY, true);
+		gr_bitmap ((int)g_screenX, (int)g_screenY, GR_RESIZE_FULL);
 		bm_release (bitmap);
 	}
 
@@ -797,9 +798,6 @@ void mve_play(MVESTREAM *mve)
 void mve_shutdown()
 {
 	if (gr_screen.mode == GR_OPENGL) {
-		GL_state.Array.DisableClientVertex();
-		GL_state.Array.DisableClientTexture();
-
 		if (mve_scale_video) {
 			glMatrixMode(GL_MODELVIEW);
 			glPopMatrix();

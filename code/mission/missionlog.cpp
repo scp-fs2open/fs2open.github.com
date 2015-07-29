@@ -679,6 +679,9 @@ void message_log_init_scrollback(int pw)
 			// in german goal events, just say "objective" instead of objective name
 			// this is cuz we can't translate objective names
 			message_log_add_seg(Num_log_lines, OBJECT_X, c, "Einsatzziel");
+		} else if ( (Lcl_pl) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
+			// same thing for polish
+			message_log_add_seg(Num_log_lines, OBJECT_X, c, "Cel misji");
 		} else {
 			message_log_add_seg(Num_log_lines, OBJECT_X, c, entry->pname);
 		}
@@ -859,7 +862,7 @@ void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int li
 
 		if (Log_line_timestamps[line]) {
 			gr_set_color_fast(&Color_text_normal);
-			gr_print_timestamp(list_x + TIME_X, list_y + y, Log_line_timestamps[line]);
+			gr_print_timestamp(list_x + TIME_X, list_y + y, Log_line_timestamps[line], GR_RESIZE_MENU);
 		}
 
 		seg = Log_lines[line];
@@ -892,7 +895,7 @@ void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int li
 				gr_force_fit_string(buf, 256, list_w - seg->x);
 
 			end_string_at_first_hash_symbol(buf);
-			gr_string(list_x + seg->x, list_y + y, buf);
+			gr_string(list_x + seg->x, list_y + y, buf, GR_RESIZE_MENU);
 
 			// possibly "print" some symbols for interesting log entries
 			if ( (seg->flags & LOG_FLAG_GOAL_TRUE) || (seg->flags & LOG_FLAG_GOAL_FAILED) ) {
@@ -904,13 +907,13 @@ void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int li
 					gr_set_color_fast(&Color_bright_green);
 
 				i = list_y + y + font_h / 2 - 1;
-				gr_circle(list_x + TIME_X - 6, i, 5);
+				gr_circle(list_x + TIME_X - 6, i, 5, GR_RESIZE_MENU);
 
 				gr_set_color_fast(&Color_bright);
-				gr_line(list_x + TIME_X - 10, i, list_x + TIME_X - 8, i);
-				gr_line(list_x + TIME_X - 6, i - 4, list_x + TIME_X - 6, i - 2);
-				gr_line(list_x + TIME_X - 4, i, list_x + TIME_X - 2, i);
-				gr_line(list_x + TIME_X - 6, i + 2, list_x + TIME_X - 6, i + 4);
+				gr_line(list_x + TIME_X - 10, i, list_x + TIME_X - 8, i, GR_RESIZE_MENU);
+				gr_line(list_x + TIME_X - 6, i - 4, list_x + TIME_X - 6, i - 2, GR_RESIZE_MENU);
+				gr_line(list_x + TIME_X - 4, i, list_x + TIME_X - 2, i, GR_RESIZE_MENU);
+				gr_line(list_x + TIME_X - 6, i + 2, list_x + TIME_X - 6, i + 4, GR_RESIZE_MENU);
 			}
 
 			seg = seg->next;

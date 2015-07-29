@@ -395,11 +395,11 @@ void multi_pinfo_popup_do()
 
 		// grey the screen
 		gr_set_shader(&Grey_shader);
-		gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, false);
+		gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, GR_RESIZE_NONE);
 		
 		// draw the background bitmap
 		gr_set_bitmap(Multi_pinfo_bitmap);
-		gr_bitmap(0,0);		
+		gr_bitmap(0,0,GR_RESIZE_MENU);		
 
 		// blit the selected pilot image
 		multi_pinfo_blit_pilot_image();
@@ -489,7 +489,7 @@ void multi_pinfo_blit_pilot_image()
 
 		// center the text
 		gr_get_string_size(&w,NULL,place_text);
-		gr_string(Multi_pinfo_pilot_coords[gr_screen.res][0] + ((Multi_pinfo_pilot_coords[gr_screen.res][2] - w)/2), Multi_pinfo_pilot_coords[gr_screen.res][1], place_text);
+		gr_string(Multi_pinfo_pilot_coords[gr_screen.res][0] + ((Multi_pinfo_pilot_coords[gr_screen.res][2] - w)/2), Multi_pinfo_pilot_coords[gr_screen.res][1], place_text, GR_RESIZE_MENU);
 	} 
 	// otherwise blit the bitmap
 	else {
@@ -500,7 +500,8 @@ void multi_pinfo_blit_pilot_image()
 		bm_get_info(Mp_pilot.bitmap, &bm_w, &bm_h, NULL, NULL, NULL);
 
 		gr_bitmap(Multi_pinfo_pilot_coords[gr_screen.res][0] + ((Multi_pinfo_pilot_coords[gr_screen.res][2] - bm_w)/2), 
-					 Multi_pinfo_pilot_coords[gr_screen.res][1] + ((Multi_pinfo_pilot_coords[gr_screen.res][3] - bm_h)/2));
+					 Multi_pinfo_pilot_coords[gr_screen.res][1] + ((Multi_pinfo_pilot_coords[gr_screen.res][3] - bm_h)/2),
+					 GR_RESIZE_MENU);
 		// g3_draw_2d_poly_bitmap(Multi_pinfo_pilot_coords[gr_screen.res][0], Multi_pinfo_pilot_coords[gr_screen.res][1], Multi_pinfo_pilot_coords[gr_screen.res][2], Multi_pinfo_pilot_coords[gr_screen.res][3]);
 	}
 }
@@ -535,19 +536,20 @@ void multi_pinfo_blit_squadron_logo()
 
 		// center the text
 		gr_get_string_size(&w, NULL, place_text);
-		gr_string(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - w)/2), Multi_pinfo_squad_coords[gr_screen.res][1], place_text);
+		gr_string(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - w)/2), Multi_pinfo_squad_coords[gr_screen.res][1], place_text, GR_RESIZE_MENU);
 	} 
 	// otherwise blit the bitmap
 	else {
 		gr_set_bitmap(Mp_squad.bitmap);
-		// gr_bitmap(MPI_SQUAD_X, MPI_SQUAD_Y);
+		// gr_bitmap(MPI_SQUAD_X, MPI_SQUAD_Y, GR_RESIZE_MENU);
 
 		// get width and heigh
 		int bm_w, bm_h;
 		bm_get_info(Mp_squad.bitmap, &bm_w, &bm_h, NULL, NULL, NULL);
 
 		gr_bitmap(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - bm_w)/2), 
-					 Multi_pinfo_squad_coords[gr_screen.res][1] + ((Multi_pinfo_squad_coords[gr_screen.res][3] - bm_h)/2));
+					 Multi_pinfo_squad_coords[gr_screen.res][1] + ((Multi_pinfo_squad_coords[gr_screen.res][3] - bm_h)/2),
+					 GR_RESIZE_MENU);
 		// g3_draw_2d_poly_bitmap(Multi_pinfo_squad_coords[gr_screen.res][0], Multi_pinfo_squad_coords[gr_screen.res][1], Multi_pinfo_squad_coords[gr_screen.res][2], Multi_pinfo_squad_coords[gr_screen.res][3]);
 	}
 }
@@ -559,22 +561,22 @@ void multi_pinfo_blit_player_stats()
 
 	// blit the player's callsign and "all time stats"
 	gr_set_color_fast(&Color_bright);
-	gr_string(Multi_pinfo_stats_area_coords[gr_screen.res][0], Multi_pinfo_stats_area_coords[gr_screen.res][1], Multi_pinfo_popup_player->m_player->callsign);
-	gr_string(Multi_pinfo_stats_x[gr_screen.res], Multi_pinfo_stats_area_coords[gr_screen.res][1], XSTR("All Time Stats", 128));
+	gr_string(Multi_pinfo_stats_area_coords[gr_screen.res][0], Multi_pinfo_stats_area_coords[gr_screen.res][1], Multi_pinfo_popup_player->m_player->callsign, GR_RESIZE_MENU);
+	gr_string(Multi_pinfo_stats_x[gr_screen.res], Multi_pinfo_stats_area_coords[gr_screen.res][1], XSTR("All Time Stats", 128), GR_RESIZE_MENU);
 	
 	gr_set_color_fast(&Color_normal);
 
 	// blit all the labels
 	y_start = Multi_pinfo_stats_area_coords[gr_screen.res][1] + 15;
 	for(idx=0;idx<MULTI_PINFO_NUM_STATS_LABELS;idx++){
-		gr_string(Multi_pinfo_stats_area_coords[gr_screen.res][0], y_start, Multi_pinfo_stats_labels[idx]);
+		gr_string(Multi_pinfo_stats_area_coords[gr_screen.res][0], y_start, Multi_pinfo_stats_labels[idx], GR_RESIZE_MENU);
 		y_start += Multi_pinfo_stats_label_offsets[idx];
 	}	
 
 	// blit all the stats values themselves
 	y_start = Multi_pinfo_stats_area_coords[gr_screen.res][1] + 15;
 	for(idx=0;idx<MULTI_PINFO_NUM_STATS_LABELS;idx++){
-		gr_string(Multi_pinfo_stats_x[gr_screen.res], y_start, Multi_pinfo_stats_vals[idx]);
+		gr_string(Multi_pinfo_stats_x[gr_screen.res], y_start, Multi_pinfo_stats_vals[idx], GR_RESIZE_MENU);
 		y_start += Multi_pinfo_stats_label_offsets[idx];
 	}	
 }

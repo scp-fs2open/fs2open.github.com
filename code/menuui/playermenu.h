@@ -38,4 +38,7 @@ void player_tips_close();
 // select screen but let us not overwrite current values with defaults when we aren't - taylor
 extern int Player_select_screen_active;
 
+// check the pilots language
+bool valid_pilot_lang(char *callsign);
+
 #endif

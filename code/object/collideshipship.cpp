@@ -27,6 +27,7 @@
 #include "object/objectdock.h"
 #include "object/objectshield.h"
 #include "parse/scripting.h"
+#include "debugconsole/console.h"
 
 
 #define COLLIDE_DEBUG
@@ -40,7 +41,7 @@ void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient);
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 
 int ship_hit_shield(object *obj, mc_info *mc, collision_info_struct *sshs);
-void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_info, collision_info_struct *ship_ship_hit_info);
+void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc_info *mc_info_obj, collision_info_struct *ship_ship_hit_info);
 
 #ifndef NDEBUG
 static int Collide_friendly = 1;
@@ -171,15 +172,6 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		}
 	}
 
-	//	If either of these objects doesn't get collision checks, abort.
-	if (heavy_sip->flags & SIF_NO_COLLIDE) {
-		return 0;
-	}
-
-	if (light_sip->flags & SIF_NO_COLLIDE) {
-		return 0;
-	}
-
 	// Set up model_collide info
 	mc_info mc;
 	mc_info_init(&mc);
@@ -207,9 +199,16 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		mc.p0 = &p0_rotated;				// Point 1 of ray to check
 		vm_vec_sub(&ship_ship_hit_info->light_rel_vel, &p1, &p0_rotated);
 		vm_vec_scale(&ship_ship_hit_info->light_rel_vel, 1/flFrametime);
-	} else {
-		// should be no ships that can rotate this fast
-		Int3();
+	}
+	// should be no ships that can rotate this fast
+	else {
+#ifndef NDEBUG
+		static bool Warned_about_fast_rotational_collisions = false;
+		if (!Warned_about_fast_rotational_collisions) {
+			Warning(LOCATION, "Ship '%s' rotates too quickly!  Rotational collision detection has been skipped.", heavy_sip->name);
+			Warned_about_fast_rotational_collisions = true;
+		}
+#endif
 		ship_ship_hit_info->collide_rotate = 0;
 		mc.p0 = &p0;							// Point 1 of ray to check
 		vm_vec_sub(&ship_ship_hit_info->light_rel_vel, &light_obj->phys_info.vel, &heavy_obj->phys_info.vel);
@@ -351,7 +350,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	if (valid_hit_occured) {
 
 		// Collision debug stuff
-#ifdef DEBUG
+#ifndef NDEBUG
 		object *collide_obj = NULL;
 		if (heavy_obj == Player_obj) {
 			collide_obj = light_obj;
@@ -455,13 +454,13 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
  * modified mass is 10x, 4x, or 2x larger than asteroid mass
  * @return 1 if modified mass is larger than given mass, 0 otherwise 
  */
-int check_special_cruiser_asteroid_collision(object *heavy, object *light, float *cruiser_mass, int *cruiser_light)
+int check_special_cruiser_asteroid_collision(object *heavy, object *lighter, float *cruiser_mass, int *cruiser_light)
 {
 	int asteroid_type;
 
 	if (heavy->type == OBJ_ASTEROID) {
-		Assert(light->type == OBJ_SHIP);
-		if (Ship_info[Ships[light->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+		Assert(lighter->type == OBJ_SHIP);
+		if (Ship_info[Ships[lighter->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
 
 			asteroid_type = Asteroids[heavy->instance].asteroid_type;
 			if (asteroid_type == 0) {
@@ -472,22 +471,22 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *light, float
 				*cruiser_mass = 2.0f * heavy->phys_info.mass;
 			}
 
-			if (*cruiser_mass > light->phys_info.mass) {
+			if (*cruiser_mass > lighter->phys_info.mass) {
 				*cruiser_light = 1;
 				return 1;
 			}
 		}
-	} else if (light->type == OBJ_ASTEROID) {
+	} else if (lighter->type == OBJ_ASTEROID) {
 		Assert(heavy->type == OBJ_SHIP);
 		if (Ship_info[Ships[heavy->instance].ship_info_index].flags & SIF_BIG_SHIP) {
 
-			asteroid_type = Asteroids[light->instance].asteroid_type;
+			asteroid_type = Asteroids[lighter->instance].asteroid_type;
 			if (asteroid_type == 0) {
-				*cruiser_mass = 10.0f * light->phys_info.mass;
+				*cruiser_mass = 10.0f * lighter->phys_info.mass;
 			} else if (asteroid_type == 1) {
-				*cruiser_mass = 4.0f * light->phys_info.mass;
+				*cruiser_mass = 4.0f * lighter->phys_info.mass;
 			} else {
-				*cruiser_mass = 2.0f * light->phys_info.mass;
+				*cruiser_mass = 2.0f * lighter->phys_info.mass;
 			}
 
 			if (*cruiser_mass > heavy->phys_info.mass) {
@@ -537,26 +536,26 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 
 	// make local copies of hit_struct parameters
 	object *heavy = ship_ship_hit_info->heavy;
-	object *light = ship_ship_hit_info->light;
+	object *lighter = ship_ship_hit_info->light;
 
 	// gurgh... this includes asteroids and debris too
 	Assert(heavy->type == OBJ_SHIP || heavy->type == OBJ_ASTEROID || heavy->type == OBJ_DEBRIS);
-	Assert(light->type == OBJ_SHIP || light->type == OBJ_ASTEROID || light->type == OBJ_DEBRIS);
+	Assert(lighter->type == OBJ_SHIP || lighter->type == OBJ_ASTEROID || lighter->type == OBJ_DEBRIS);
 
-	ship_info *light_sip = (light->type == OBJ_SHIP) ? &Ship_info[Ships[light->instance].ship_info_index] : NULL;
+	ship_info *light_sip = (lighter->type == OBJ_SHIP) ? &Ship_info[Ships[lighter->instance].ship_info_index] : NULL;
 	ship_info *heavy_sip = (heavy->type == OBJ_SHIP) ? &Ship_info[Ships[heavy->instance].ship_info_index] : NULL;
 
 	// make cruiser/asteroid collision softer on cruisers.
 	int special_cruiser_asteroid_collision;
 	int cruiser_light = 0;
 	float cruiser_mass = 0.0f, copy_mass = 0.0f;
-	special_cruiser_asteroid_collision = check_special_cruiser_asteroid_collision(heavy, light, &cruiser_mass, &cruiser_light);
+	special_cruiser_asteroid_collision = check_special_cruiser_asteroid_collision(heavy, lighter, &cruiser_mass, &cruiser_light);
 
 	if (special_cruiser_asteroid_collision) {
 		if (cruiser_light) {
-			Assert(light->phys_info.mass < cruiser_mass);
-			copy_mass = light->phys_info.mass;
-			light->phys_info.mass = cruiser_mass;
+			Assert(lighter->phys_info.mass < cruiser_mass);
+			copy_mass = lighter->phys_info.mass;
+			lighter->phys_info.mass = cruiser_mass;
 		} else {
 			Assert(heavy->phys_info.mass < cruiser_mass);
 			copy_mass = heavy->phys_info.mass;
@@ -645,7 +644,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		vm_vec_zero(&local_vel_from_submodel);
 	}
 
-	vm_vec_unrotate(&world_rotvel_light_m, &light->phys_info.rotvel, &light->orient);		// light's world rotvel before collision
+	vm_vec_unrotate(&world_rotvel_light_m, &lighter->phys_info.rotvel, &lighter->orient);		// light's world rotvel before collision
 	vm_vec_crossprod(&vel_from_rotvel_light_m, &world_rotvel_light_m, &ship_ship_hit_info->r_light);	// light's velocity from rotvel before collision
 	vm_vec_add(&vel_light_m, &vel_from_rotvel_light_m, &ship_ship_hit_info->light_rel_vel);
 	vm_vec_sub(&v_rel_m, &vel_light_m, &vel_heavy_m);
@@ -675,12 +674,12 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	float light_uvec_dot_norm = 0.0f;
 	float light_fvec_dot_norm = 0.0f;
 	float light_rvec_dot_norm = 0.0f;
-	bool subsys_landing_allowed = light->type == OBJ_SHIP && heavy->type == OBJ_SHIP && check_subsystem_landing_allowed(heavy_sip, ship_ship_hit_info);
+	bool subsys_landing_allowed = lighter->type == OBJ_SHIP && heavy->type == OBJ_SHIP && check_subsystem_landing_allowed(heavy_sip, ship_ship_hit_info);
 	if (subsys_landing_allowed) {
-		vm_vec_rotate(&light_local_vel, &ship_ship_hit_info->light_rel_vel, &light->orient);
-		light_uvec_dot_norm = vm_vec_dot(&ship_ship_hit_info->collision_normal, &light->orient.vec.uvec);
-		light_fvec_dot_norm = vm_vec_dot(&ship_ship_hit_info->collision_normal, &light->orient.vec.fvec);
-		light_rvec_dot_norm = vm_vec_dot(&ship_ship_hit_info->collision_normal, &light->orient.vec.rvec);
+		vm_vec_rotate(&light_local_vel, &ship_ship_hit_info->light_rel_vel, &lighter->orient);
+		light_uvec_dot_norm = vm_vec_dot(&ship_ship_hit_info->collision_normal, &lighter->orient.vec.uvec);
+		light_fvec_dot_norm = vm_vec_dot(&ship_ship_hit_info->collision_normal, &lighter->orient.vec.fvec);
+		light_rvec_dot_norm = vm_vec_dot(&ship_ship_hit_info->collision_normal, &lighter->orient.vec.rvec);
 	}
 	if (subsys_landing_allowed &&	
 		light_local_vel.xyz.z < light_sip->collision_physics.landing_max_z &&
@@ -708,7 +707,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	impulse = ship_ship_hit_info->collision_normal;
 	vm_vec_projection_onto_plane(&v_rel_parallel_m, &v_rel_m, &ship_ship_hit_info->collision_normal);
 	collision_speed_parallel = vm_vec_normalize_safe(&v_rel_parallel_m);
-	float friction = (light->type == OBJ_SHIP) ? light_sip->collision_physics.friction : COLLISION_FRICTION_FACTOR;
+	float friction = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.friction : COLLISION_FRICTION_FACTOR;
 	parallel_mag = float(-friction) * collision_speed_parallel / vm_vec_mag(&v_rel_m);
 	vm_vec_scale_add2(&impulse, &v_rel_parallel_m, parallel_mag);
 	
@@ -739,14 +738,14 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// SUSHI: If on a landing surface, use the same shortcut the player gets
 	// This is a bit of a hack, but gets around some nasty unpredictable collision behavior
 	// when trying to do AI landings for certain ships
-	if (light == Player_obj || subsys_landing_allowed) {
+	if (lighter == Player_obj || subsys_landing_allowed) {
 		vm_vec_zero( &delta_rotvel_light );
-		light_denom = 1.0f / light->phys_info.mass;
+		light_denom = 1.0f / lighter->phys_info.mass;
 	} else {
 		vm_vec_crossprod(&rotational_impulse_light, &ship_ship_hit_info->r_light, &impulse);
-		get_I_inv(&light_I_inv, &light->phys_info.I_body_inv, &light->orient);
+		get_I_inv(&light_I_inv, &lighter->phys_info.I_body_inv, &lighter->orient);
 		vm_vec_rotate(&delta_rotvel_light, &rotational_impulse_light, &light_I_inv);
-		float rotation_factor = (light->type == OBJ_SHIP) ? light_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
+		float rotation_factor = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
 		vm_vec_scale(&delta_rotvel_light, rotation_factor);		// hack decrease rotation (delta_rotvel)
 		vm_vec_crossprod(&delta_vel_from_delta_rotvel_light, &delta_rotvel_light, &ship_ship_hit_info->r_light);
 		light_denom = vm_vec_dotprod(&delta_vel_from_delta_rotvel_light, &ship_ship_hit_info->collision_normal);
@@ -754,7 +753,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			// sanity check
 			light_denom = 0.0f;
 		}
-		light_denom += 1.0f / light->phys_info.mass;
+		light_denom += 1.0f / lighter->phys_info.mass;
 	} 
 
 	// calculate the necessary impulse to achieved the desired relative velocity after the collision
@@ -771,7 +770,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// physics should not have to recalculate this, just change into body coords (done in collide_whack)
 	vm_vec_scale(&impulse, impulse_mag);
 	vm_vec_scale(&delta_rotvel_light, impulse_mag);	
-	physics_collide_whack(&impulse, &delta_rotvel_light, &light->phys_info, &light->orient, ship_ship_hit_info->is_landing);
+	physics_collide_whack(&impulse, &delta_rotvel_light, &lighter->phys_info, &lighter->orient, ship_ship_hit_info->is_landing);
 	vm_vec_negate(&impulse);
 	vm_vec_scale(&delta_rotvel_heavy, -impulse_mag);
 	physics_collide_whack(&impulse, &delta_rotvel_heavy, &heavy->phys_info, &heavy->orient, true);
@@ -799,14 +798,14 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		float xzVelDotOrient = MIN(MAX((xzVelMag > 0 ? (light_local_vel.xyz.x / xzVelMag) : 0), -0.5f), 0.5f);
 		landing_delta_rotvel.xyz.y = (xzVelMag > 2) ? (xzVelDotOrient * light_sip->collision_physics.reorient_mult) : 0;
 		landing_delta_rotvel.xyz.z = light_rvec_dot_norm * light_sip->collision_physics.reorient_mult * -1;
-		vm_vec_add2( &light->phys_info.rotvel, &landing_delta_rotvel );
+		vm_vec_add2( &lighter->phys_info.rotvel, &landing_delta_rotvel );
 	}
 
 	// Find final positions
 	// We will try not to worry about the left over time in the frame
 	// heavy's position unchanged by collision
 	// light's position is heavy's position plus relative position from heavy
-	vm_vec_add(&light->pos, &heavy->pos, &ship_ship_hit_info->light_collision_cm_pos);
+	vm_vec_add(&lighter->pos, &heavy->pos, &ship_ship_hit_info->light_collision_cm_pos);
 
 	// Try to move each body back to its position just before collision occured to prevent interpenetration
 	// Move away in direction of light and away in direction of normal
@@ -815,21 +814,21 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	vm_vec_normalize_safe(&direction_light);
 
 	Assert( !vm_is_vec_nan(&direction_light) );
-	vm_vec_scale_add2(&heavy->pos, &direction_light,  0.2f * light->phys_info.mass / (heavy->phys_info.mass + light->phys_info.mass));
-	vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * light->phys_info.mass / (heavy->phys_info.mass + light->phys_info.mass));
+	vm_vec_scale_add2(&heavy->pos, &direction_light,  0.2f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
+	vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 	//For landings, we want minimal movement on the light ship (just enough to keep the collision detection honest)
 	if (ship_ship_hit_info->is_landing) {
-		vm_vec_scale_add2(&light->pos, &ship_ship_hit_info->collision_normal, LANDING_POS_OFFSET);
+		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal, LANDING_POS_OFFSET);
 	}
 	else {
-		vm_vec_scale_add2(&light->pos, &direction_light, -0.2f * heavy->phys_info.mass / (heavy->phys_info.mass + light->phys_info.mass));
-		vm_vec_scale_add2(&light->pos, &ship_ship_hit_info->collision_normal,  0.1f * heavy->phys_info.mass / (heavy->phys_info.mass + light->phys_info.mass));
+		vm_vec_scale_add2(&lighter->pos, &direction_light, -0.2f * heavy->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
+		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal,  0.1f * heavy->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 	}
 
 	// restore mass in case of special cruiser / asteroid collision
 	if (special_cruiser_asteroid_collision) {
 		if (cruiser_light) {
-			light->phys_info.mass = copy_mass;
+			lighter->phys_info.mass = copy_mass;
 		} else {
 			heavy->phys_info.mass = copy_mass;
 		}
@@ -937,7 +936,7 @@ int get_ship_quadrant_from_global(vec3d *global_pos, object *objp)
 
 	vm_vec_sub(&tpos, global_pos, &objp->pos);
 	vm_vec_rotate(&rotpos, &tpos, &objp->orient);
-	return get_quadrant(&rotpos);
+	return get_quadrant(&rotpos, objp);
 }
 
 #define	MIN_REL_SPEED_FOR_LOUD_COLLISION		50		// relative speed of two colliding objects at which we play the "loud" collide sound
@@ -1157,10 +1156,6 @@ int collide_ship_ship( obj_pair * pair )
 				do_kamikaze_crash(A, B);
 
 				if (ship_ship_hit_info.impulse > 0) {
-					float	q;
-
-					q = vm_vec_dist_quick(&A->pos, &B->pos) / (A->radius + B->radius);
-
 					//Only flash the "Collision" text if not landing
 					if ( player_involved && !ship_ship_hit_info.is_landing) {					
 						hud_start_text_flash(XSTR("Collision", 1431), 2000);
@@ -1239,7 +1234,7 @@ int collide_ship_ship( obj_pair * pair )
 
 					// don't draw sparks (using sphere hitpos)
 					ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, dam2, MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
-					hud_shield_quadrant_hit(ship_ship_hit_info.light, quadrant_num);
+					hud_shield_quadrant_hit(ship_ship_hit_info.light, -1);
 
 					maybe_push_little_ship_from_fast_big_ship(ship_ship_hit_info.heavy, ship_ship_hit_info.light, ship_ship_hit_info.impulse, &ship_ship_hit_info.collision_normal);
 				}
@@ -1314,7 +1309,7 @@ int collide_ship_ship( obj_pair * pair )
 	return 0;
 }
 
-void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_info, collision_info_struct *ship_ship_hit_info)
+void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc_info *mc_info_obj, collision_info_struct *ship_ship_hit_info)
 {
 	// slower moving object [A] is checked at its final position (polygon and position is found on obj)
 	// faster moving object [B] is reduced to a point and a ray is drawn from its last_pos to pos
@@ -1329,17 +1324,17 @@ void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_in
 	vec3d *heavy_collide_cm_pos = &ship_ship_hit_info->heavy_collision_cm_pos;
 	vec3d *light_collide_cm_pos = &ship_ship_hit_info->light_collision_cm_pos;
 
-	float core_rad = model_get_core_radius(Ship_info[Ships[light->instance].ship_info_index].model_num);
+	float core_rad = model_get_core_radius(Ship_info[Ships[lighter_obj->instance].ship_info_index].model_num);
 
 	// get info needed for ship_ship_collision_physics
-	Assert(mc_info->hit_dist > 0);
+	Assert(mc_info_obj->hit_dist > 0);
 
 	// get light_collide_cm_pos
 	if ( !ship_ship_hit_info->submodel_rot_hit ) {
 		vec3d displacement;
-		vm_vec_sub(&displacement, mc_info->p1, mc_info->p0);
+		vm_vec_sub(&displacement, mc_info_obj->p1, mc_info_obj->p0);
 
-		*light_collide_cm_pos = *mc_info->p0;
+		*light_collide_cm_pos = *mc_info_obj->p0;
 		vm_vec_scale_add2(light_collide_cm_pos, &displacement, ship_ship_hit_info->hit_time);
 	}
 	
@@ -1366,7 +1361,7 @@ void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_in
 
 	vm_vec_zero(heavy_collide_cm_pos);
 
-	float q = vm_vec_dist(heavy_collide_cm_pos, light_collide_cm_pos) / (heavy->radius + core_rad);
+	float q = vm_vec_dist(heavy_collide_cm_pos, light_collide_cm_pos) / (heavier_obj->radius + core_rad);
 	if (q > 1.0f) {
 		nprintf(("Physics", "Warning: q = %f.  Supposed to be <= 1.0.\n", q));
 	}
@@ -1377,14 +1372,14 @@ void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_in
 // sphere_sphere_case_handled separately
 #ifdef COLLIDE_DEBUG
 	nprintf(("Physics", "Frame: %i %s info: last_pos: [%4.1f, %4.1f, %4.1f], collide_pos: [%4.1f, %4.1f %4.1f] vel: [%4.1f, %4.1f %4.1f]\n",
-	Framecount, Ships[heavy->instance].ship_name, heavy->last_pos.x, heavy->last_pos.y, heavy->last_pos.z,
+	Framecount, Ships[heavier_obj->instance].ship_name, heavier_obj->last_pos.x, heavier_obj->last_pos.y, heavier_obj->last_pos.z,
 	heavy_collide_cm_pos.x, heavy_collide_cm_pos.y, heavy_collide_cm_pos.z,
-	heavy->phys_info.vel.x, heavy->phys_info.vel.y, heavy->phys_info.vel.z));
+	heavier_obj->phys_info.vel.x, heavier_obj->phys_info.vel.y, heavier_obj->phys_info.vel.z));
 
 	nprintf(("Physics", "Frame: %i %s info: last_pos: [%4.1f, %4.1f, %4.1f], collide_pos: [%4.1f, %4.1f, %4.1f] vel: [%4.1f, %4.1f, %4.1f]\n",
-	Framecount, Ships[light->instance].ship_name, light->last_pos.x, light->last_pos.y, light->last_pos.z,
+	Framecount, Ships[lighter_obj->instance].ship_name, lighter_obj->last_pos.x, lighter_obj->last_pos.y, lighter_obj->last_pos.z,
 	light_collide_cm_pos.x, light_collide_cm_pos.y, light_collide_cm_pos.z,
-	light->phys_info.vel.x, light->phys_info.vel.y, light->phys_info.vel.z));
+	lighter_obj->phys_info.vel.x, lighter_obj->phys_info.vel.y, lighter_obj->phys_info.vel.z));
 #endif
 
 }	

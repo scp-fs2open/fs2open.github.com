@@ -27,7 +27,6 @@
 #include "math/fvi.h"	//	For find_plane_line_intersection
 #include "math/vecmat.h"
 #include "io/key.h"
-#include "ai/ailocal.h"
 #include "ai/ai.h"
 #include "ai/aigoals.h"
 #include "ship/ship.h"	// for ship names
@@ -1095,7 +1094,7 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
-						sprintf(Ships[ship].ship_name, "%s %d", Wings[Duped_wing].name,
+						wing_bash_ship_name(Ships[ship].ship_name, Wings[Duped_wing].name,
 							Wings[Duped_wing].wave_count + 1);
 
 						Wings[Duped_wing].ship_index[Wings[Duped_wing].wave_count] = ship;
@@ -2688,6 +2687,46 @@ int CFREDView::global_error_check()
 					internal_error("Invalid dockee point (\"%s\" initially docked with \"%s\")", Ships[i].ship_name, Ships[ship].ship_name);
 				}
 			}
+
+			wing = Ships[i].wingnum;
+			bool is_in_loadout_screen = (ptr->type == OBJ_START);
+			if (!is_in_loadout_screen && wing >= 0) {
+				if ( multi && The_mission.game_type & MISSION_TYPE_MULTI_TEAMS )
+				{
+					for (n = 0; n < MAX_TVT_WINGS; n++) {
+						if (!strcmp(Wings[wing].name, TVT_wing_names[n])) {
+							is_in_loadout_screen = true;
+							break;
+						}
+					}
+				} else {
+					for (n = 0; n < MAX_STARTING_WINGS; n++) {
+						if (!strcmp(Wings[wing].name, Starting_wing_names[n])) {
+							is_in_loadout_screen = true;
+							break;
+						}
+					}
+				}
+			}
+			if (is_in_loadout_screen) {
+				int illegal = 0;
+				z = Ships[i].ship_info_index;
+				for (n = 0; n < MAX_SHIP_PRIMARY_BANKS; n++){
+					if (Ships[i].weapons.primary_bank_weapons[n] >= 0 && !Ship_info[z].allowed_weapons[Ships[i].weapons.primary_bank_weapons[n]]){
+						illegal++;
+					}
+				}
+
+				for (n = 0; n < MAX_SHIP_SECONDARY_BANKS; n++){
+					if (Ships[i].weapons.secondary_bank_weapons[n] >= 0 && !Ship_info[z].allowed_weapons[Ships[i].weapons.secondary_bank_weapons[n]]){
+						illegal++;
+					}
+				}
+
+				if (illegal && error("%d illegal weapon(s) found on ship \"%s\"", illegal, Ships[i].ship_name)) {
+					return 1;
+				}
+			}
 		}
 	}
 
@@ -2721,7 +2760,7 @@ int CFREDView::global_error_check()
 				
 				if ((Objects[obj].type == OBJ_SHIP) || (Objects[obj].type == OBJ_START)) {
 					ship = Objects[obj].instance;
-					sprintf(buf, "%s %d", Wings[i].name, j + 1);
+					wing_bash_ship_name(buf, Wings[i].name, j + 1);
 					if (stricmp(buf, Ships[ship].ship_name)){
 						return internal_error("Ship \"%s\" in wing should be called \"%s\"", Ships[ship].ship_name, buf);
 					}
@@ -3267,8 +3306,9 @@ int CFREDView::error(const char *msg, ...)
 	va_list args;
 
 	va_start(args, msg);
-	vsprintf(buf, msg, args);
+	vsnprintf(buf, sizeof(buf)-1, msg, args);
 	va_end(args);
+	buf[sizeof(buf)-1] = '\0';
 
 	g_err = 1;
 	if (MessageBox(buf, "Error", MB_OKCANCEL | MB_ICONEXCLAMATION) == IDOK)
@@ -3283,8 +3323,9 @@ int CFREDView::internal_error(const char *msg, ...)
 	va_list args;
 
 	va_start(args, msg);
-	vsprintf(buf, msg, args);
+	vsnprintf(buf, sizeof(buf)-1, msg, args);
 	va_end(args);
+	buf[sizeof(buf)-1] = '\0';
 
 	g_err = 1;
 

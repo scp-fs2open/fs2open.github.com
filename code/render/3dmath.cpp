@@ -86,7 +86,7 @@ ubyte g3_transfer_vertex(vertex *dest,vec3d *src)
 	dest->world = *src;
 
 	dest->codes = 0;
-	dest->flags |= PF_PROJECTED;
+	dest->flags = 0;
 
 	return 0;
 }

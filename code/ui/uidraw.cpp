@@ -17,12 +17,12 @@
 
 void ui_hline(int x1, int x2, int y )
 {
-	gr_line(x1,y,x2,y);
+	gr_line(x1,y,x2,y,GR_RESIZE_MENU);
 }
 
 void ui_vline(int y1, int y2, int x )
 {
-	gr_line(x,y1,x,y2);
+	gr_line(x,y1,x,y2,GR_RESIZE_MENU);
 }
 
 void ui_string_centered( int x, int y, char * s )
@@ -31,7 +31,7 @@ void ui_string_centered( int x, int y, char * s )
 
 	gr_get_string_size( &width, &height, s );
 
-	gr_string(x-((width-1)/2), y-((height-1)/2), s );
+	gr_string(x-((width-1)/2), y-((height-1)/2), s, GR_RESIZE_MENU );
 }
 
 
@@ -63,14 +63,14 @@ void ui_draw_frame( int x1, int y1, int x2, int y2 )
 
 void ui_rect( int x1, int y1, int x2, int y2 )
 {
-	gr_rect( x1, y1, x2-x1+1, y2-y1+1 );
+	gr_rect( x1, y1, x2-x1+1, y2-y1+1, GR_RESIZE_MENU_NO_OFFSET );
 }
 
 void ui_draw_box_out( int x1, int y1, int x2, int y2 )
 {
 
 	gr_set_color_fast( &CWHITE );
-	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1 );
+	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1, GR_RESIZE_MENU_NO_OFFSET );
 
 	ui_draw_shad( x1+0, y1+0, x2-0, y2-0, &CBRIGHT, &CGRAY );
 	ui_draw_shad( x1+1, y1+1, x2-1, y2-1, &CBRIGHT, &CGRAY );
@@ -81,7 +81,7 @@ void ui_draw_box_in( int x1, int y1, int x2, int y2 )
 {
 
 	gr_set_color_fast( &CWHITE );
-	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1 );
+	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1, GR_RESIZE_MENU_NO_OFFSET );
 
 	ui_draw_shad( x1+0, y1+0, x2-0, y2-0, &CGRAY, &CBRIGHT );
 	ui_draw_shad( x1+1, y1+1, x2-1, y2-1, &CGRAY, &CBRIGHT );

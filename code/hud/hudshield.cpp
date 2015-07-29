@@ -117,7 +117,7 @@ hud_frames Shield_mini_gauge;
 static shield_hit_info	Shield_hit_data[2];
 
 // translate between clockwise-from-top shield quadrant ordering to way quadrants are numbered in the game
-ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS] = {1,0,2,3};
+ubyte Quadrant_xlate[DEFAULT_SHIELD_SECTIONS] = {1,0,2,3};
 
 // called at the start of each level from HUD_init.  Use Hud_shield_init so we only init Shield_gauges[] once.
 void hud_shield_level_init()
@@ -125,7 +125,7 @@ void hud_shield_level_init()
 	unsigned int i;
 	hud_frames temp;
 
-	hud_shield_hit_reset(1);	// reset for the player
+	hud_shield_hit_reset(Player_obj, 1);	// reset for the player
 
 	if ( !Hud_shield_inited ) {
 		for ( i = 0; i < Hud_shield_filenames.size(); i++ ) {
@@ -139,7 +139,7 @@ void hud_shield_level_init()
 
 	Shield_mini_gauge.first_frame = bm_load_animation("targhit1", &Shield_mini_gauge.num_frames);
 	if ( Shield_mini_gauge.first_frame == -1 ) {
-		Warning(LOCATION, "Could not load in the HUD shield ani: targethit1\n");
+		Warning(LOCATION, "Could not load in the HUD shield ani: targhit1\n");
 		return;
 	}
 	Shield_mini_loaded = 1;
@@ -206,7 +206,7 @@ void hud_ship_icon_page_in(ship_info *sip)
 // ------------------------------------------------------------------
 // hud_shield_equalize()
 //
-// Equalize the four shield quadrants for an object
+// Equalize all shield quadrants for an object
 //
 void hud_shield_equalize(object *objp, player *pl)
 {
@@ -232,7 +232,7 @@ void hud_shield_equalize(object *objp, player *pl)
 
 	// are all quadrants equal?
 	all_equal = 1;
-	for (idx = 0; idx < MAX_SHIELD_SECTIONS - 1; idx++) {
+	for (idx = 0; idx < objp->n_quadrants - 1; idx++) {
 		if (objp->shield_quadrant[idx] != objp->shield_quadrant[idx + 1]) {
 			all_equal = 0;
 			break;
@@ -279,14 +279,25 @@ void hud_shield_equalize(object *objp, player *pl)
 //
 void hud_augment_shield_quadrant(object *objp, int direction)
 {
+	Assert(objp->type == OBJ_SHIP);
+
+	ship *shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	float	xfer_amount, energy_avail, percent_to_take, delta;
 	float	max_quadrant_val;
 	int	i;
 
-	Assert(direction >= 0 && direction < MAX_SHIELD_SECTIONS);
-	Assert(objp->type == OBJ_SHIP);
+	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
+		direction = sip->shield_point_augment_ctrls[direction];
+
+		// The re-mapped direction can be -1 if this direction cannot be augmented
+		if (direction < 0)
+			return;
+	}
+
+	Assert(direction >= 0 && direction < objp->n_quadrants);
 	
-	xfer_amount = Ships[objp->instance].ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
+	xfer_amount = shipp->ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
 	max_quadrant_val = get_max_shield_quad(objp);
 
 	if ( (objp->shield_quadrant[direction] + xfer_amount) > max_quadrant_val )
@@ -302,7 +313,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	}
 
 	energy_avail = 0.0f;
-	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+	for ( i = 0; i < objp->n_quadrants; i++ ) {
 		if ( i == direction )
 			continue;
 		energy_avail += objp->shield_quadrant[i];
@@ -312,7 +323,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	if ( percent_to_take > 1.0f )
 		percent_to_take = 1.0f;
 
-	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+	for ( i = 0; i < objp->n_quadrants; i++ ) {
 		if ( i == direction )
 			continue;
 		delta = percent_to_take * objp->shield_quadrant[i];
@@ -409,25 +420,25 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	sy = (y_force == -1) ? Shield_mini_coords[gr_screen.res][1]+fl2i(HUD_offset_y) : y_force;
 
 	// draw the ship first
-	hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, HULL_HIT_OFFSET);
+	hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
 	hud_show_mini_ship_integrity(objp, x_force + x_hull_offset,y_force + y_hull_offset);
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
 	max_shield = get_max_shield_quad(objp);
 
-	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+	for ( i = 0; i < objp->n_quadrants; i++ ) {
 
-		if ( objp->flags & OF_NO_SHIELDS ) {
+		if ( objp->flags & OF_NO_SHIELDS || i >= DEFAULT_SHIELD_SECTIONS) {
 			break;
 		}
 
-		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		if (objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 
 		if ( hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, i) ) {
-			frame_offset = i+MAX_SHIELD_SECTIONS;
+			frame_offset = i+objp->n_quadrants;
 		} else {
 			frame_offset = i;
 		}
@@ -458,16 +469,24 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 }
 
 // reset the shield_hit_info data structure
-void shield_info_reset(shield_hit_info *shi)
+// pass NULL as objp if you only need to initialize a shield_hit_info without an
+// associated ship
+void shield_info_reset(object *objp, shield_hit_info *shi)
 {
-	int i;
+	int n_quadrants = (objp != NULL) ? objp->n_quadrants : 0;
+
+	shi->members = n_quadrants + 1;
+	shi->hull_hit_index = n_quadrants;
+	shi->shield_hit_timers.resize(shi->members);
+	shi->shield_hit_next_flash.resize(shi->members);
+
+	for ( int i = 0; i < shi->members; i++ ) {
+		shi->shield_hit_timers[i] = timestamp(0);
+		shi->shield_hit_next_flash[i] = timestamp(0);
+	}
 
 	shi->shield_hit_status = 0;
 	shi->shield_show_bright = 0;
-	for ( i = 0; i < NUM_SHIELD_HIT_MEMBERS; i++ ) {
-		shi->shield_hit_timers[i] = 1;
-		shi->shield_hit_next_flash[i] = 1;
-	}
 }
 
 // reset the timers and hit flags for the shield gauges
@@ -477,7 +496,7 @@ void shield_info_reset(shield_hit_info *shi)
 // input:	player	=>	optional parameter (default value 0).  This is to indicate that player shield hit
 //								info should be reset.  This is normally not the case.
 //								is for the player's current target
-void hud_shield_hit_reset(int player)
+void hud_shield_hit_reset(object *objp, int player)
 {
 	shield_hit_info	*shi;
 
@@ -487,7 +506,7 @@ void hud_shield_hit_reset(int player)
 		shi = &Shield_hit_data[SHIELD_HIT_TARGET];
 	}
 
-	shield_info_reset(shi);
+	shield_info_reset(objp, shi);
 }
 
 // called once per frame to update the state of Shield_hit_status based on the Shield_hit_timers[]
@@ -501,7 +520,7 @@ void hud_shield_hit_update()
 	}
 
 	for ( i = 0; i < limit; i++ ) {
-		for ( j = 0; j < NUM_SHIELD_HIT_MEMBERS; j++ ) {
+		for ( j = 0; j < Shield_hit_data[i].members; j++ ) {
 			if ( timestamp_elapsed(Shield_hit_data[i].shield_hit_timers[j]) ) {
 				Shield_hit_data[i].shield_hit_status &= ~(1<<j);
 				Shield_hit_data[i].shield_show_bright &= ~(1<<j);
@@ -526,6 +545,11 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 	shield_hit_info	*shi;
 	int					num;
 
+	if (Game_mode & GM_STANDALONE_SERVER)
+		return;
+
+	Assertion(objp != NULL, "hud_shield_quadrant_hit() called with a NULL objp; get a coder!\n");
+
 	if ( objp->type != OBJ_SHIP )
 		return;
 
@@ -540,11 +564,19 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 		return;
 	}
 
+	Assertion(shi->shield_hit_timers.size() > 0, "Shield hit info object for object '%s' has a size %d shield_hit_timers; get a coder!\n", Ships[objp->instance].ship_name, shi->shield_hit_timers.size());
+	Assertion(shi->hull_hit_index < (int) shi->shield_hit_timers.size(), "Shield hit info object for object '%s' has a hull_hit_index of %d (should be between 0 and %d); get a coder!\n", Ships[objp->instance].ship_name, shi->hull_hit_index, shi->shield_hit_timers.size() - 1);
+
 	if ( quadrant >= 0 ) {
-		num = Quadrant_xlate[quadrant];
+		if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS) )
+			num = Quadrant_xlate[quadrant];
+		else
+			num = quadrant;
+
+		Assertion(num < shi->hull_hit_index, "Shield hit info object for object '%s' hit on quadrant #%d, despite having a hull_hit_index of %d; get a coder!\n", Ships[objp->instance].ship_name, num, shi->hull_hit_index);
 		shi->shield_hit_timers[num] = timestamp(SHIELD_HIT_DURATION_SHORT);
 	} else {
-		shi->shield_hit_timers[HULL_HIT_OFFSET] = timestamp(SHIELD_HIT_DURATION_SHORT);
+		shi->shield_hit_timers[shi->hull_hit_index] = timestamp(SHIELD_HIT_DURATION_SHORT);
 		hud_targetbox_start_flash(TBOX_FLASH_HULL); 
 	}
 }
@@ -613,7 +645,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	sy += fl2i(HUD_offset_y);
 
 	// draw the ship first
-	maybeFlashShield(SHIELD_HIT_PLAYER, HULL_HIT_OFFSET);
+	maybeFlashShield(SHIELD_HIT_PLAYER, Shield_hit_data[SHIELD_HIT_PLAYER].hull_hit_index);
 
 	if(sip->shield_icon_index != 255)
 	{
@@ -635,7 +667,6 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			g3_start_frame(1);
 		hud_save_restore_camera_data(1);
 		setClip(sx, sy, 112, 93);
-		model_set_detail_level(1);
 
 		//if(!digitus_improbus)
 			g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
@@ -654,7 +685,13 @@ void HudGaugeShield::showShields(object *objp, int mode)
 		ship_model_start(objp);
 		//if(!digitus_improbus)
 		{
-			model_render( sip->model_num, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->ship_replacement_textures);
+			model_render_params render_info;
+
+			render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING);
+			render_info.set_replacement_textures(sp->ship_replacement_textures);
+			render_info.set_detail_level_lock(1);
+
+			model_render_immediate( &render_info, sip->model_num, &object_orient, &vmd_zero_vector );
 		}
 		/*else
 		{
@@ -687,25 +724,34 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	if(!sip->max_shield_strength)
 		return;
 
-	// draw the four quadrants
+	// draw the quadrants
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
 	max_shield = get_max_shield_quad(objp);
 
 	coord2d shield_icon_coords[6];
 
-	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+	for ( i = 0; i < objp->n_quadrants; i++ ) {
 
 		if ( objp->flags & OF_NO_SHIELDS ) {
 			break;
 		}
 
-		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
-			continue;
+		if ( !(sip->flags2 & SIF2_MODEL_POINT_SHIELDS) ) {
+			if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f )
+				continue;
+		} else {
+			if ( objp->shield_quadrant[i] < 0.1f )
+				continue;
 		}
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
-		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
+
+		if ( !(sip->flags2 & SIF2_MODEL_POINT_SHIELDS) )
+			hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
+		else
+			hud_color_index = fl2i( (objp->shield_quadrant[i] / max_shield) * range);
+
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 
 		if ( hud_color_index < 0 ) {
@@ -726,7 +772,9 @@ void HudGaugeShield::showShields(object *objp, int mode)
 
 			if(sip->shield_icon_index != 255)
 			{
-				renderBitmap(sgp->first_frame+i+1, sx, sy);
+				int framenum = sgp->first_frame+i+1;
+				if (framenum < sgp->first_frame+sgp->num_frames)
+					renderBitmap(framenum, sx, sy);
 			}
 			else
 			{
@@ -816,7 +864,7 @@ void HudGaugeShield::renderShieldIcon(coord2d coords[6])
 	int nx = 0, ny = 0, i;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, target_w, target_h);
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;
@@ -962,14 +1010,14 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 	sy = position[1]+fl2i(HUD_offset_y);
 
 	// draw the ship first
-	maybeFlashShield(SHIELD_HIT_TARGET, HULL_HIT_OFFSET);
+	maybeFlashShield(SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
 	showIntegrity(get_hull_pct(objp));
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
 	max_shield = get_max_shield_quad(objp);
 
-	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+	for ( i = 0; i < objp->n_quadrants; i++ ) {
 
 		if ( objp->flags & OF_NO_SHIELDS ) {
 			break;
@@ -980,7 +1028,7 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 		}
 
 		if ( maybeFlashShield(SHIELD_HIT_TARGET, i) ) {
-			frame_offset = i+MAX_SHIELD_SECTIONS;
+			frame_offset = i+objp->n_quadrants;
 		} else {
 			frame_offset = i;
 		}
@@ -1004,7 +1052,8 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 			setGaugeColor(hud_color_index);
 		}					 
 
-		renderBitmap(Shield_mini_gauge.first_frame + frame_offset, sx, sy);		
+		if (frame_offset < Shield_mini_gauge.num_frames)
+			renderBitmap(Shield_mini_gauge.first_frame + frame_offset, sx, sy);		
 	}
 	
 	// hud_set_default_color();

@@ -1067,7 +1067,7 @@ static HWND Player_stats[MAX_PLAYER_STAT_FIELDS];		// text boxes for player allt
 static HWND Player_mstats[MAX_PLAYER_STAT_FIELDS];		// text boxes for player mission statistics info
 
 // sprintf and set window text to the passed int
-#define STD_ADDSTRING(hwnd,val) { sprintf(txt,"%d",(int)val); SetWindowText(hwnd,txt); }
+#define STD_ADDSTRING(hwnd,val) { snprintf(txt,sizeof(txt)-1,"%d",(int)val); SetWindowText(hwnd,txt); }
 
 // intialize all the controls in the player info tab
 void std_pinfo_init_player_info_controls(HWND hwndDlg);
@@ -1078,7 +1078,8 @@ int std_pinfo_player_is_active(net_player *p);
 // start displaying info for the passed player on this page
 void std_pinfo_display_player_info(net_player *p)
 {
-	char txt[40];		
+	char txt[40];
+	txt[sizeof(txt)-1] = '\0';
 
 	// set his ship type
 	SetWindowText(Player_ship_type,Ship_info[p->p_info.ship_class].name);
@@ -2405,13 +2406,17 @@ DWORD standalone_process(WORD lparam)
 	return 0;
 }
 
+void std_init_os()
+{
+	os_init_registry_stuff(Osreg_company_name, Osreg_app_name,NULL);
+}
+
+
 // called when freespace initialized
 void std_init_standalone()
 {
 	// start the main thread
 	Standalone_thread = CreateThread( NULL, 0, (LPTHREAD_START_ROUTINE)standalone_process, NULL, 0, &Standalone_thread_id );
-
-	os_init_registry_stuff(Osreg_company_name, Osreg_app_name,NULL);
 	
 	// set the close functions
 	atexit(std_deinit_standalone);

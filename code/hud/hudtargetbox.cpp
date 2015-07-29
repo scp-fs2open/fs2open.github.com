@@ -166,6 +166,34 @@ void hud_targetbox_truncate_subsys_name(char *outstr)
 		} else if ( strstr(outstr, "laser") || strstr(outstr, "turret") || strstr(outstr, "missile") ) {
 			strcpy(outstr, "tourelle");
 		} 
+	} else if(Lcl_pl){	
+		if ( strstr(outstr, "communication") )	{
+			strcpy(outstr, "komunikacja");
+		} else if ( !stricmp(outstr, "weapons") ) {
+			strcpy(outstr, "uzbrojenie");
+		} else if ( strstr(outstr, "engine") || strstr(outstr, "Engine")) {
+			strcpy(outstr, "silnik");
+		} else if ( !stricmp(outstr, "sensors") ) {
+			strcpy(outstr, "sensory");
+		} else if ( strstr(outstr, "navigat") ) {
+			strcpy(outstr, "nawigacja");
+		} else if ( strstr(outstr, "fighterbay") || strstr(outstr, "Fighterbay") ) {
+			strcpy(outstr, "dok my\x9Cliw.");
+		} else if ( strstr(outstr, "missile") ) {
+			strcpy(outstr, "wie\xBF. rakiet.");
+		} else if ( strstr(outstr, "laser") || strstr(outstr, "turret") ) {
+			strcpy(outstr, "wie\xBFyczka");
+		} else if ( strstr(outstr, "Command Tower") || strstr(outstr, "Bridge") ) {
+			strcpy(outstr, "mostek");
+		} else if ( strstr(outstr, "Barracks") ) {
+			strcpy(outstr, "koszary");
+		} else if ( strstr(outstr, "Reactor") ) {
+			strcpy(outstr, "reaktor");
+		} else if ( strstr(outstr, "RadarDish") || strstr(outstr, "Radar Dish") ) {
+			strcpy(outstr, "antena radaru");
+		} else if (!stricmp(outstr, "Gas Collector")) {
+			strcpy(outstr, "zbieracz gazu");
+		} 
 	} else {
 		if (strstr(outstr, XSTR("communication", 333)))	{
 			strcpy(outstr, XSTR("comm", 334));
@@ -543,6 +571,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		//                 is largely copied over from renderTargetShip(). To keep the codes similar please update
 		//                 both if and when needed
 		ship_model_start( target_objp );
+		model_render_params render_info;
 
 		switch (Targetbox_wire) {
 			case 0:
@@ -551,25 +580,25 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 				break;
 			case 1:
 				if (ship_is_tagged(target_objp))
-					model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, 1));
+					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
 				else
-					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
+					render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
 
-				if (Ship_info[Ships[target_objp->instance].ship_info_index].uses_team_colors) {
-					gr_set_team_color(Ships[target_objp->instance].team_name, Ships[target_objp->instance].secondary_team_name, Ships[target_objp->instance].team_change_timestamp, Ships[target_objp->instance].team_change_time);
+				if (target_sip->uses_team_colors) {
+					render_info.set_team_color(target_shipp->team_name, target_shipp->secondary_team_name, target_shipp->team_change_timestamp, target_shipp->team_change_time);
 				}
 
 				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
-				flags |= MR_NO_POLYS | MR_NO_LIGHTING;
+				flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
 				break;
 			case 2:
 				break;
 			case 3:
 				if (ship_is_tagged(target_objp))
-					model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, 1));
+					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
 				else
-					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
+					render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -577,19 +606,21 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		}
 
 		if (target_sip->hud_target_lod >= 0) {
-			model_set_detail_level(target_sip->hud_target_lod);
+			render_info.set_detail_level_lock(target_sip->hud_target_lod);
 		}
 
 		if(Targetbox_shader_effect > -1) {
-			flags |= MR_ANIMATED_SHADER;
-
-			opengl_shader_set_animated_effect(Targetbox_shader_effect);
+			render_info.set_animated_effect(Targetbox_shader_effect, 0.0f);
 		}
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_READ);
 		}
-		Interp_desaturate = Desaturated;
+
+		if ( Desaturated ) {
+			flags |= MR_DESATURATED;
+			render_info.set_color(gauge_color);
+		} 
 
 		if (!Glowpoint_override)
 			Glowpoint_override = true;
@@ -600,18 +631,21 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 			flags |= MR_NO_GLOWMAPS;
 		}
 
+		render_info.set_flags(flags | MR_AUTOCENTER | MR_NO_FOGGING);
+
 		// maybe render a special hud-target-only model
 		if(target_sip->model_num_hud >= 0){
-			model_render( target_sip->model_num_hud, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+			model_render_immediate( &render_info, target_sip->model_num_hud, &target_objp->orient, &obj_pos);
 		} else {
-			model_render( target_sip->model_num, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, target_shipp->ship_replacement_textures);
+			render_info.set_replacement_textures(target_shipp->ship_replacement_textures);
+
+			model_render_immediate( &render_info, target_sip->model_num, &target_objp->orient, &obj_pos);
 		}
 
 		Interp_desaturate = false;
 		Glowpoint_override = false;
 
 		ship_model_stop( target_objp );
-		gr_disable_team_color();
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
@@ -697,22 +731,24 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		renderTargetSetup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(debrisp->model_num);
 
+		model_render_params render_info;
+
 		switch (Targetbox_wire) {
 			case 0:
 				flags |= MR_NO_LIGHTING;
 
 				break;
 			case 1:
-				model_set_outline_color(255,255,255);
+				render_info.set_color(255, 255, 255);
 
 				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
-				flags |= MR_NO_POLYS | MR_NO_LIGHTING;
+				flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
 				break;
 			case 2:
 				break;
 			case 3:
-				model_set_outline_color(255,255,255);
+				render_info.set_color(255, 255, 255);
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -720,21 +756,22 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		}
 
 		if(Targetbox_shader_effect > -1) {
-			flags |= MR_ANIMATED_SHADER;
-
-			opengl_shader_set_animated_effect(Targetbox_shader_effect);
+			render_info.set_animated_effect(Targetbox_shader_effect, 0.0f);
 		}
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_READ);
 		}
 
-		Interp_desaturate = Desaturated;
+		if ( Desaturated ) {
+			flags |= MR_DESATURATED;
+			render_info.set_color(gauge_color);
+		}
+
+		render_info.set_flags(flags | MR_NO_FOGGING);
 
 		// This calls the colour that doesn't get reset
-		submodel_render( debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING );
-
-		Interp_desaturate = false;
+		submodel_render_immediate( &render_info, debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos);
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
@@ -856,6 +893,8 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		renderTargetSetup(&camera_eye, &camera_orient, View_zoom/3);
 		model_clear_instance(viewed_model_num);
 		
+		model_render_params render_info;
+
 		// IMPORTANT NOTE! Code handling the rendering when 'missile_view == TRUE' is largely copied over from
 		//                 renderTargetShip(). To keep the codes similar please update both if and when needed
 		if (missile_view == FALSE) {
@@ -865,16 +904,16 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 
 					break;
 				case 1:
-					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
+					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 
 					flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
-					flags |= MR_NO_POLYS | MR_NO_LIGHTING;
+					flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
 					break;
 				case 2:
 					break;
 				case 3:
-					model_set_outline_color_fast(iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
+					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 
 					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -890,25 +929,25 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 					break;
 				case 1:
 					if (ship_is_tagged(viewed_obj))
-						model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, 1));
+						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
 					else
-						model_set_outline_color_fast(iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+						render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
 
 					if (homing_sip->uses_team_colors) {
-						gr_set_team_color(homing_shipp->team_name, homing_shipp->secondary_team_name, homing_shipp->team_change_timestamp, homing_shipp->team_change_time);
+						render_info.set_team_color(homing_shipp->team_name, homing_shipp->secondary_team_name, homing_shipp->team_change_timestamp, homing_shipp->team_change_time);
 					}
 
 					flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
-					flags |= MR_NO_POLYS | MR_NO_LIGHTING;
+					flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
 					break;
 				case 2:
 					break;
 				case 3:
 					if (ship_is_tagged(viewed_obj))
-						model_set_outline_color_fast(iff_get_color(IFF_COLOR_TAGGED, 1));
+						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
 					else
-						model_set_outline_color_fast(iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+						render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
 
 					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -917,20 +956,21 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		}
 
 		if (hud_target_lod >= 0) {
-			model_set_detail_level(hud_target_lod);
+			render_info.set_detail_level_lock(hud_target_lod);
 		}
 
 		if(Targetbox_shader_effect > -1) {
-			flags |= MR_ANIMATED_SHADER;
-
-			opengl_shader_set_animated_effect(Targetbox_shader_effect);
+			render_info.set_animated_effect(Targetbox_shader_effect, 0.0f);
 		}
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_READ);
 		}
 
-		Interp_desaturate = Desaturated;
+		if ( Desaturated ) {
+			flags |= MR_DESATURATED;
+			render_info.set_color(gauge_color);
+		}
 
 		if (missile_view == TRUE) {
 			if (!Glowpoint_override)
@@ -944,23 +984,29 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		}
 		
 		if (missile_view == FALSE ) {
-			model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING, -1, -1, replacement_textures);
+			render_info.set_flags(flags | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING);
+			render_info.set_replacement_textures(replacement_textures);
+
+			model_render_immediate( &render_info, viewed_model_num, &viewed_obj->orient, &obj_pos );
 		} else {
 			// maybe render a special hud-target-only model
 			// autocentering is bad in this one
 			if(homing_sip->model_num_hud >= 0){
-				model_render( homing_sip->model_num_hud, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING);
+				render_info.set_flags(flags | MR_NO_FOGGING);
+
+				model_render_immediate( &render_info, homing_sip->model_num_hud, &viewed_obj->orient, &obj_pos);
 			} else {
-				model_render( homing_sip->model_num, &viewed_obj->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING, -1, -1, homing_shipp->ship_replacement_textures);
+				render_info.set_flags(flags | MR_NO_FOGGING);
+				render_info.set_replacement_textures(homing_shipp->ship_replacement_textures);
+
+				model_render_immediate( &render_info, homing_sip->model_num, &viewed_obj->orient, &obj_pos );
 			}
 		}
 
-		Interp_desaturate = false;
 		if (missile_view == TRUE) {
 			Glowpoint_override = false;
 
 			ship_model_stop( viewed_obj );
-			gr_disable_team_color();
 		}
 
 		if ( Monitor_mask >= 0 ) {
@@ -1055,6 +1101,8 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		renderTargetSetup(&camera_eye, &camera_orient, 0.5f);
 		model_clear_instance(Asteroid_info[asteroidp->asteroid_type].model_num[pof]);
 		
+		model_render_params render_info;
+
 		switch (Targetbox_wire) {
 			case 0:
 				flags |= MR_NO_LIGHTING;
@@ -1062,21 +1110,21 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 				break;
 			case 1:
 				if (time_to_impact>=0)
-					model_set_outline_color(255,255,255);
+					render_info.set_color(255,255,255);
 				else
-					model_set_outline_color(64,64,0);
+					render_info.set_color(64,64,0);
 
 				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
-				flags |= MR_NO_POLYS | MR_NO_LIGHTING;
+				flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
 				break;
 			case 2:
 				break;
 			case 3:
 				if (time_to_impact>=0)
-					model_set_outline_color(255,255,255);
+					render_info.set_color(255,255,255);
 				else
-					model_set_outline_color(64,64,0);
+					render_info.set_color(64,64,0);
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -1084,20 +1132,21 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		}
 
 		if(Targetbox_shader_effect > -1) {
-			flags |= MR_ANIMATED_SHADER;
-
-			opengl_shader_set_animated_effect(Targetbox_shader_effect);
+			render_info.set_animated_effect(Targetbox_shader_effect, 0.0f);
 		}
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_READ);
 		}
 
-		Interp_desaturate = Desaturated;
+		if ( Desaturated ) {
+			flags |= MR_DESATURATED;
+			render_info.set_color(gauge_color);
+		}
 
-		model_render(Asteroid_info[asteroidp->asteroid_type].model_num[pof], &target_objp->orient, &obj_pos, flags | MR_LOCK_DETAIL | MR_NO_FOGGING );
+		render_info.set_flags(flags | MR_NO_FOGGING);
 
-		Interp_desaturate = false;
+		model_render_immediate( &render_info, Asteroid_info[asteroidp->asteroid_type].model_num[pof], &target_objp->orient, &obj_pos );
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
@@ -1498,8 +1547,8 @@ void HudGaugeExtraTargetData::endFlashDock()
 }
 
 //from aicode.cpp. Less include...problems...this way.
-extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
-extern bool turret_weapon_has_flags2(ship_weapon *swp, int flags);
+extern int turret_weapon_aggregate_flags(ship_weapon *swp);
+extern int turret_weapon_aggregate_flags2(ship_weapon *swp);
 extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
 void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 {
@@ -1507,21 +1556,25 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 
 	//WMC - find the first weapon, if there is one
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
+		int flags = turret_weapon_aggregate_flags(swp);
+		int flags2 = turret_weapon_aggregate_flags2(swp);
+
 		// check if beam or flak using weapon flags
-		if (turret_weapon_has_flags(swp, WIF_BEAM)) {
+		if (flags & WIF_BEAM) {
 			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
-		}else if (turret_weapon_has_flags(swp, WIF_FLAK)) {
+		} else if (flags & WIF_FLAK) {
 			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
 		} else {
-
-			if (!turret_weapon_has_subtype(swp, WP_MISSILE) && turret_weapon_has_subtype(swp, WP_LASER)) {
+			if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
+				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
+			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
 				// ballistic too! - Goober5000
-				if (turret_weapon_has_flags2(swp, WIF2_BALLISTIC))
+				if (flags2 & WIF2_BALLISTIC)
 				{
 					sprintf(outstr, "%s", XSTR("Turret", 1487));
 				}
 				// the TVWP has some primaries flagged as bombs
-				else if (turret_weapon_has_flags(swp, WIF_BOMB))
+				else if (flags & WIF_BOMB)
 				{
 					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 				}
@@ -1529,12 +1582,19 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 				{
 					sprintf(outstr, "%s", XSTR("Laser turret", 1568));
 				}
-			} else if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
-				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 			} else {
-				// Illegal subtype
-				Int3();
-				sprintf(outstr, "%s", XSTR("Turret", 1487));
+				// Mantis #2226: find out if there are any weapons here at all
+				if (flags == 0 && flags2 == 0) {
+					sprintf(outstr, "%s", NOX("Unused"));
+				} else {
+					// Illegal subtype
+					static bool Turret_illegal_subtype_warned = false;
+					if (!Turret_illegal_subtype_warned) {
+						Turret_illegal_subtype_warned = true;
+						Warning(LOCATION, "This turret has an illegal subtype!  Trace out and fix!");
+					}
+					sprintf(outstr, "%s", XSTR("Turret", 1487));
+				}
 			}
 		}
 	} else if(swp->num_tertiary_banks) {
@@ -1673,7 +1733,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		if (n_linebreaks) {
 			p_line = strtok(outstr,linebreak);
 			while (p_line != NULL) {
-				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-(10*n_linebreaks), p_line);
+				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-((h+1)*n_linebreaks), p_line);
 				p_line = strtok(NULL,linebreak);
 				n_linebreaks--;
 			}
@@ -1945,9 +2005,9 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 	char outstr2[256];	
 	if ( Show_target_debug_info && (is_ship == 1) ) {
 		int sx, sy, dy;
-		sx = 5;
+		sx = gr_screen.center_offset_x + 5;
 		dy = gr_get_font_height() + 1;
-		sy = 300 - 7*dy;
+		sy = gr_screen.center_offset_y + 300 - 7*dy;
 
 		gr_set_color_fast(&HUD_color_debug);
 
@@ -1973,10 +2033,10 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 				break;
 			}
 
-			gr_printf(sx, sy, outstr);
+			gr_printf_no_resize(sx, sy, outstr);
 			sy += dy;
 
-			gr_printf(sx, sy, "Max speed = %d, (%d%%)", (int) shipp->current_max_speed, (int) (100.0f * vm_vec_mag(&target_objp->phys_info.vel)/shipp->current_max_speed));
+			gr_printf_no_resize(sx, sy, "Max speed = %d, (%d%%)", (int) shipp->current_max_speed, (int) (100.0f * vm_vec_mag(&target_objp->phys_info.vel)/shipp->current_max_speed));
 			sy += dy;
 			
 			// data can be found in target montior
@@ -1990,7 +2050,7 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 				else
 					sprintf(target_str, "%s", Ships[Objects[aip->target_objnum].instance].ship_name);
 
-				gr_printf(sx, sy, "Targ: %s", target_str);
+				gr_printf_no_resize(sx, sy, "Targ: %s", target_str);
 				sy += dy;
 
 				dist = vm_vec_dist_quick(&Objects[Player_ai->target_objnum].pos, &Objects[aip->target_objnum].pos);
@@ -1999,27 +2059,27 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 				dot = vm_vec_dot(&v2t, &Objects[Player_ai->target_objnum].orient.vec.fvec);
 
 				// data can be found in target monitor
-				gr_printf(sx, sy, "Targ dot: %3.2f", dot);
+				gr_printf_no_resize(sx, sy, "Targ dot: %3.2f", dot);
 				sy += dy;
-				gr_printf(sx, sy, "Targ dst: %3.2f", dist);
+				gr_printf_no_resize(sx, sy, "Targ dst: %3.2f", dist);
 				sy += dy;
 
 				if ( aip->targeted_subsys != NULL ) {
 					sprintf(outstr, "Subsys: %s", aip->targeted_subsys->system_info->subobj_name);
-					gr_printf(sx, sy, outstr);
+					gr_printf_no_resize(sx, sy, outstr);
 				}
 				sy += dy;
 			}
 
 			// print out energy transfer information on the ship
-			sy = 70;
+			sy = gr_screen.center_offset_y + 70;
 
 			sprintf(outstr,"MAX G/E: %.0f/%.0f",shipp->weapon_energy,shipp->current_max_speed);
-			gr_printf(sx, sy, outstr);
+			gr_printf_no_resize(sx, sy, outstr);
 			sy += dy;
 			 
 			sprintf(outstr,"G/S/E: %.2f/%.2f/%.2f",Energy_levels[shipp->weapon_recharge_index],Energy_levels[shipp->shield_recharge_index],Energy_levels[shipp->engine_recharge_index]);
-			gr_printf(sx, sy, outstr);
+			gr_printf_no_resize(sx, sy, outstr);
 			sy += dy;
 
 			//	Show information about attacker.
@@ -2043,11 +2103,11 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 
 							dot = vm_vec_dot(&v2t, &Enemy_attacker->orient.vec.fvec);
 
-							gr_printf(sx, sy, "#%i: %s", Enemy_attacker-Objects, Ships[Enemy_attacker->instance].ship_name);
+							gr_printf_no_resize(sx, sy, "#%i: %s", Enemy_attacker-Objects, Ships[Enemy_attacker->instance].ship_name);
 							sy += dy;
-							gr_printf(sx, sy, "Targ dist: %5.1f", dist);
+							gr_printf_no_resize(sx, sy, "Targ dist: %5.1f", dist);
 							sy += dy;
-							gr_printf(sx, sy, "Targ dot: %3.2f", dot);
+							gr_printf_no_resize(sx, sy, "Targ dot: %3.2f", dot);
 							sy += dy;
 						}
 					}
@@ -2077,14 +2137,14 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 
 			// Show target size
 			// hud_target_w
-			gr_printf(sx, sy, "Targ size: %dx%d", Hud_target_w, Hud_target_h );
+			gr_printf_no_resize(sx, sy, "Targ size: %dx%d", Hud_target_w, Hud_target_h );
 			sy += dy;
 
 			polymodel *pm = model_get(sip->model_num);
-			gr_printf(sx, sy, "POF:%s", pm->filename );
+			gr_printf_no_resize(sx, sy, "POF:%s", pm->filename );
 			sy += dy;
 
-			gr_printf(sx, sy, "Mass: %.2f\n", pm->mass);
+			gr_printf_no_resize(sx, sy, "Mass: %.2f\n", pm->mass);
 			sy += dy;
 		}
 	}
@@ -2095,26 +2155,26 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 		ship_weapon *swp;
 
 		swp = &shipp->weapons;
-		sx = 400;
-		sy = 100;
+		sx = gr_screen.center_offset_x + 400;
+		sy = gr_screen.center_offset_y + 100;
 		dy = gr_get_font_height();
 
 		sprintf(outstr,"Num primaries: %d", swp->num_primary_banks);
-		gr_printf(sx,sy,outstr);
+		gr_printf_no_resize(sx,sy,outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
 			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->primary_bank_weapons[i]].name);
-			gr_printf(sx,sy,outstr);
+			gr_printf_no_resize(sx,sy,outstr);
 			sy += dy;
 		}
 
 		sy += dy;
 		sprintf(outstr,"Num secondaries: %d", swp->num_secondary_banks);
-		gr_printf(sx,sy,outstr);
+		gr_printf_no_resize(sx,sy,outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_secondary_banks; i++ ) {
 			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->secondary_bank_weapons[i]].name);
-			gr_printf(sx,sy,outstr);
+			gr_printf_no_resize(sx,sy,outstr);
 			sy += dy;
 		}
 	}

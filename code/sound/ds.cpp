@@ -11,6 +11,8 @@
 
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
+#include "sound/sound.h" // jg18 - for enhanced sound
 #include "sound/openal.h"
 #include "sound/ds.h"
 #include "sound/ds3d.h"
@@ -18,6 +20,7 @@
 #include "sound/acm.h"
 #include "osapi/osapi.h"
 #include "sound/dscap.h"
+#include "sound/audiostr.h"
 
 
 typedef struct sound_buffer
@@ -39,7 +42,7 @@ typedef struct sound_buffer
 } sound_buffer;
 
 
-static int MAX_CHANNELS = 32;		// initialized properly in ds_init_channels()
+static int MAX_CHANNELS;		// initialized properly in ds_init_channels()
 channel *Channels = NULL;
 static int channel_next_sig = 1;
 
@@ -460,8 +463,6 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 	int				rc, FileSize, FileOffset;
 	char			fullpath[MAX_PATH];
 	char			filename[MAX_FILENAME_LEN];
-	const int		NUM_EXT = 2;
-	const char		*audio_ext[NUM_EXT] = { ".ogg", ".wav" };
 	int				rval = -1;
 
 	if ( (real_filename == NULL) || (s_info == NULL) ) {
@@ -473,7 +474,7 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 	char *p = strrchr(filename, '.');
 	if ( p ) *p = 0;
 
-	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+	rc = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
 
 	if (rc < 0) {
 		return -1;
@@ -1006,6 +1007,8 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
  */
 void ds_init_channels()
 {
+	MAX_CHANNELS = Cmdline_no_enhanced_sound ? 32 : 128;
+
 	try {
 		Channels = new channel[MAX_CHANNELS];
 	} catch (std::bad_alloc) {
@@ -1022,6 +1025,29 @@ void ds_init_buffers()
 
 	// pre-allocate for at least BUFFER_BUMP buffers
 	sound_buffers.reserve( BUFFER_BUMP );
+}
+
+/**
+* Check if the player is using OpenAL Soft,
+* which is required to use enhanced sound.
+* Returns true on success, false otherwise.
+*/
+bool ds_check_for_openal_soft()
+{	
+	const ALchar * renderer = alGetString(AL_RENDERER);
+	if (renderer == NULL)
+	{
+		mprintf(("ds_check_for_openal_soft: renderer is null!"));
+		return false;
+	}
+	else if (!stricmp((const char *)renderer, "OpenAL Soft"))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 /**
@@ -1118,6 +1144,23 @@ int ds_init()
 		for (size_t i = 0; i < EAX_ENVIRONMENT_COUNT; i++) {
 			EFX_presets.push_back( EFX_Reverb_Defaults[i] );
 		}
+	}
+
+	if (!Cmdline_no_enhanced_sound)
+	{
+		if (!ds_check_for_openal_soft())
+		{
+			mprintf(("You are not using OpenAL Soft. Disabling enhanced sound.\n"));
+			Cmdline_no_enhanced_sound = 1;
+		}
+		else
+		{
+			mprintf(("Enhanced sound is enabled.\n"));
+		}
+	}
+	else
+	{
+		mprintf(("Enhanced sound is manually disabled.\n"));
 	}
 
 	// setup default listener position/orientation
@@ -1314,6 +1357,7 @@ void ds_close()
 
 /**
  * Find a free channel to play a sound on.  If no free channels exists, free up one based on volume levels.
+ * This is the original retail version of ds_get_free_channel().
  *
  * @param new_volume Volume for sound to play at
  * @param snd_id Which kind of sound to play
@@ -1323,7 +1367,7 @@ void ds_close()
  *
  * NOTE: snd_id is needed since we limit the number of concurrent samples
  */
-int ds_get_free_channel(float new_volume, int snd_id, int priority)
+int ds_get_free_channel_retail(float new_volume, int snd_id, int priority)
 {
 	int			i, first_free_channel, limit = 100;
 	int			instance_count;	// number of instances of sound already playing
@@ -1445,6 +1489,169 @@ int ds_get_free_channel(float new_volume, int snd_id, int priority)
 }
 
 /**
+ * Find a free channel to play a sound on.  If no free channels exists, free up one based on priority and volume levels.
+ * Special version for enhanced mode.
+ *
+ * @param new_volume Volume for sound to play at
+ * @param snd_id Which kind of sound to play
+ * @param enhanced_priority Priority level, see EnhancedSoundPriority enum in gamesnd.h
+ * @param enhanced_limit Per-sound concurrency limit
+ *
+ * @returns	Channel number to play sound on, or -1 if no channel could be found
+ *
+ * NOTE: snd_id is needed since we limit the number of concurrent samples
+ */
+int ds_get_free_channel_enhanced(float new_volume, int snd_id, int enhanced_priority, unsigned int enhanced_limit)
+{
+	int			i, first_free_channel;
+	int			instance_count;	// number of instances of sound already playing
+	// least important means lowest volume among lowest priority
+	// note that higher priority value means lower priority
+	int			least_important_index = -1, least_important_instance_index = -1;
+	float		least_important_vol = 1.1f, least_important_instance_vol = 1.1f;
+	int			least_important_priority = -1, least_important_instance_priority = -1;
+	channel		*chp;
+	int status;
+
+	instance_count = 0;
+	first_free_channel = -1;
+
+	// Look for a channel to use to play this sample
+	for ( i = 0; i < MAX_CHANNELS; i++ ) {
+		chp = &Channels[i];
+
+		// source not created yet
+		if (chp->source_id == 0) {
+			if (first_free_channel == -1) {
+				first_free_channel = i;
+			}
+			continue;
+		}
+
+		// source not bound to a buffer
+		if (chp->sid == -1) {
+			if (first_free_channel == -1) {
+				first_free_channel = i;
+			}
+			continue;
+		}
+
+		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), continue );
+
+		if ( (status == AL_INITIAL) || (status == AL_STOPPED) ) {
+			ds_close_channel_fast(i);
+
+			if (first_free_channel == -1) {
+				first_free_channel = i;
+			}
+			continue;
+		} else {
+			if ( chp->snd_id == snd_id ) {
+				instance_count++;
+
+				// looping or ambient soudns can't be preempted
+				if ((chp->looping == FALSE) && !chp->is_ambient)
+				{
+					if (chp->priority > least_important_instance_priority) {
+						least_important_instance_vol = chp->vol;
+						least_important_instance_priority = chp->priority;
+						least_important_instance_index = i;
+					} else if ((chp->priority == least_important_instance_priority)
+						 && (chp->vol < least_important_instance_vol)) {
+						least_important_instance_vol = chp->vol;
+						least_important_instance_priority = chp->priority;
+						least_important_instance_index = i;
+					}
+				}
+			} else if ( chp->is_voice_msg || (chp->looping == TRUE) || chp->is_ambient ) {
+				// a playing voice message, looping sound, or ambient sound is not allowed to be preempted.
+			} else if ( (chp->priority > least_important_priority) ) {
+				least_important_index = i;
+				least_important_vol = chp->vol;
+				least_important_priority = chp->priority;
+			} else if ( (chp->priority == least_important_priority) && (chp->vol < least_important_vol) ) {
+				least_important_index = i;
+				least_important_vol = chp->vol;
+				least_important_priority = chp->priority;
+			}
+		}
+	}
+
+	// If we've exceeded the limit, then stop the least important duplicate if it is lower or equal volume
+	// otherwise, don't play the sound
+	if ( ((unsigned int)instance_count >= enhanced_limit) && (least_important_instance_index >= 0) ) {
+		if (least_important_instance_vol <= new_volume) {
+			ds_close_channel_fast(least_important_instance_index);
+			first_free_channel =least_important_instance_index;
+		} else {
+			// don't exceed per-sound concurrency limits, even if there are spare channels
+			first_free_channel = -1;
+		}
+	} else if (first_free_channel == -1) {
+		// we haven't reached the limit, but we have run out of channels
+		// attempt to stop the least important sound to play our sound if priority demands it
+		if ( (least_important_index != -1)) {
+			// Check if the priority difference is great enough (must play or at least 2 levels away)
+			// and if the least important sound's volume playing is less than or equal to the volume of the requested sound.
+			// If so, then we are going to trash the least important sound.
+			if ( (enhanced_priority == SND_ENHANCED_PRIORITY_MUST_PLAY) || (Channels[least_important_index].priority - enhanced_priority >= 2)) {
+				if ( Channels[least_important_index].vol <= new_volume ) {
+					ds_close_channel_fast(least_important_index);
+					first_free_channel = least_important_index;
+				}
+			}
+		}
+	}
+
+	if ( (first_free_channel >= 0) && (Channels[first_free_channel].source_id == 0) ) {
+		OpenAL_ErrorCheck( alGenSources(1, &Channels[first_free_channel].source_id), return -1 );
+	}
+	return first_free_channel;
+}
+
+/**
+ * Generic function for getting a free channel
+ *  If enhanced soudn is used, set priority to the computed priority.
+ *  Returns -1 if no free channel could be found.
+ */
+
+/**
+ * Find a free channel to play a sound on.  If no free channels exists, free up one based on volume levels.
+ * This is the new generic version of ds_get_free_channel().
+ *
+ * @param new_volume Volume for sound to play at
+ * @param snd_id Which kind of sound to play
+ * @param priority From retail :DS_MUST_PLAY, ::DS_LIMIT_ONE, ::DS_LIMIT_TWO, ::DS_LIMIT_THREE
+ * @param enhanced_priority Output param that's updated with correct priority if enhanced sound is enabled
+ *
+ * @returns	Channel number to play sound on, or -1 if no channel could be found
+ *
+ * NOTE: snd_id is needed since we limit the number of concurrent samples
+ */
+int ds_get_free_channel(float volume, int snd_id, int priority, int & enhanced_priority, const EnhancedSoundData & enhanced_sound_data)
+{
+	int first_free_channel = -1;
+	unsigned int enhanced_limit = 0;
+
+	if (!Cmdline_no_enhanced_sound) {
+		enhanced_priority = enhanced_sound_data.priority;
+		enhanced_limit = enhanced_sound_data.limit;
+
+		// exception: if retail priority is must play, we assume it's for a good reason
+		// and thus follow suit with enhanced sound
+		if (priority == DS_MUST_PLAY) {
+			enhanced_priority = SND_ENHANCED_PRIORITY_MUST_PLAY;
+		}
+
+		first_free_channel = ds_get_free_channel_enhanced(volume, snd_id, enhanced_priority, enhanced_limit);
+	} else { // enhanced sound is off
+		first_free_channel = ds_get_free_channel_retail(volume, snd_id, priority);
+	}
+
+	return first_free_channel;
+}
+
+/**
  * Create a sound buffer in software, without locking any data in
  */
 int ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nseconds)
@@ -1524,7 +1731,12 @@ int ds_play_easy(int sid, float volume)
 		return -1;
 	}
 
-	int ch_idx = ds_get_free_channel(volume, -1, DS_MUST_PLAY);
+	int ch_idx = -1;
+	if (!Cmdline_no_enhanced_sound) {
+		ds_get_free_channel_enhanced(volume, -1, SND_ENHANCED_PRIORITY_MUST_PLAY, SND_ENHANCED_MAX_LIMIT);
+	} else {
+		ds_get_free_channel_retail(volume, -1, DS_MUST_PLAY);
+	}
 
 	if (ch_idx < 0) {
 		return -1;
@@ -1569,15 +1781,16 @@ int ds_play_easy(int sid, float volume)
  * 
  * @return 1 if sound effect could not be started, >=0 sig for sound effect successfully started
  */
-int ds_play(int sid, int snd_id, int priority, float volume, float pan, int looping, bool is_voice_msg)
+int ds_play(int sid, int snd_id, int priority, const EnhancedSoundData * enhanced_sound_data, float volume, float pan, int looping, bool is_voice_msg)
 {
 	int ch_idx;
+	int enhanced_priority = SND_ENHANCED_PRIORITY_INVALID;
 
 	if (!ds_initialized) {
 		return -1;
 	}
 
-	ch_idx = ds_get_free_channel(volume, snd_id, priority);
+	ch_idx = ds_get_free_channel(volume, snd_id, priority, enhanced_priority, *enhanced_sound_data);
 
 	if (ch_idx < 0) {
 		return -1;
@@ -1587,7 +1800,12 @@ int ds_play(int sid, int snd_id, int priority, float volume, float pan, int loop
 		return -1;
 	}
 
-	OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_POSITION, pan, 0.0f, 0.0f) );
+	if (pan) {
+		OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_POSITION, pan, 0.0f, 1.0f) );
+	} else {
+		OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_POSITION, 0.0f, 0.0f, 0.0f) );
+	}
+
 	OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
 
 	OpenAL_ErrorPrint( alDopplerFactor(0.0f) );
@@ -1624,7 +1842,8 @@ int ds_play(int sid, int snd_id, int priority, float volume, float pan, int loop
 	Channels[ch_idx].is_voice_msg = is_voice_msg;
 	Channels[ch_idx].vol = volume;
 	Channels[ch_idx].looping = looping;
-	Channels[ch_idx].priority = priority;
+	Channels[ch_idx].priority = enhanced_priority;
+	Channels[ch_idx].is_ambient = false; // no support for 2D ambient sounds
 
 	if (channel_next_sig < 0) {
 		channel_next_sig = 1;
@@ -1656,12 +1875,12 @@ int ds_get_channel(int sig)
 /**
  * @todo Documentation
  */
-int ds_is_channel_playing(int channel)
+int ds_is_channel_playing(int channel_id)
 {
-	if ( Channels[channel].source_id != 0 ) {
+	if ( Channels[channel_id].source_id != 0 ) {
 		ALint status;
 
-		OpenAL_ErrorPrint( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status) );
+		OpenAL_ErrorPrint( alGetSourcei(Channels[channel_id].source_id, AL_SOURCE_STATE, &status) );
 
 		return (status == AL_PLAYING);
 	}
@@ -1672,10 +1891,10 @@ int ds_is_channel_playing(int channel)
 /**
  * @todo Documentation
  */
-void ds_stop_channel(int channel)
+void ds_stop_channel(int channel_id)
 {
-	if ( Channels[channel].source_id != 0 ) {
-		OpenAL_ErrorPrint( alSourceStop(Channels[channel].source_id) );
+	if ( Channels[channel_id].source_id != 0 ) {
+		OpenAL_ErrorPrint( alSourceStop(Channels[channel_id].source_id) );
 	}
 }
 
@@ -1697,13 +1916,13 @@ void ds_stop_channel_all()
  * @brief Set the volume for a channel.  The volume is expected to be in linear scale
  * @details If the sound is a 3D sound buffer, this is like re-establishing the maximum volume.
  */
-void ds_set_volume( int channel, float vol )
+void ds_set_volume( int channel_id, float vol )
 {
-	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
+	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
 		return;
 	}
 
-	ALuint source_id = Channels[channel].source_id;
+	ALuint source_id = Channels[channel_id].source_id;
 
 	if (source_id != 0) {
 		CAP(vol, 0.0f, 1.0f);
@@ -1714,39 +1933,39 @@ void ds_set_volume( int channel, float vol )
 /**
  * Set the pan for a channel.  The pan is expected to be in DirectSound units
  */
-void ds_set_pan( int channel, float pan )
+void ds_set_pan( int channel_id, float pan )
 {
-	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
+	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
 		return;
 	}
 
 	ALint state;
 
-	OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &state), return );
+	OpenAL_ErrorCheck( alGetSourcei(Channels[channel_id].source_id, AL_SOURCE_STATE, &state), return );
 
 	if (state == AL_PLAYING) {
-		OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
-		OpenAL_ErrorPrint( alSource3f(Channels[channel].source_id, AL_POSITION, pan, 0.0f, 0.0f) );
+		//OpenAL_ErrorPrint( alSourcei(Channels[channel_id].source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
+		OpenAL_ErrorPrint( alSource3f(Channels[channel_id].source_id, AL_POSITION, pan, 0.0f, 1.0f) );
 	}
 }
 
 /**
  * Get the pitch of a channel
  */
-int ds_get_pitch(int channel)
+int ds_get_pitch(int channel_id)
 {
 	ALint status;
 	ALfloat alpitch = 0;
 	int pitch;
 
-	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
+	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
 		return -1;
 	}
 
-	OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status), return -1 );
+	OpenAL_ErrorCheck( alGetSourcei(Channels[channel_id].source_id, AL_SOURCE_STATE, &status), return -1 );
 
 	if (status == AL_PLAYING) {
-		OpenAL_ErrorPrint( alGetSourcef(Channels[channel].source_id, AL_PITCH, &alpitch) );
+		OpenAL_ErrorPrint( alGetSourcef(Channels[channel_id].source_id, AL_PITCH, &alpitch) );
 	}
 
 	// convert OpenAL values to DirectSound values and return
@@ -1758,11 +1977,11 @@ int ds_get_pitch(int channel)
 /**
  * Set the pitch of a channel
  */
-void ds_set_pitch(int channel, int pitch)
+void ds_set_pitch(int channel_id, int pitch)
 {
 	ALint status;
 
-	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
+	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
 		return;
 	}
 
@@ -1774,24 +1993,24 @@ void ds_set_pitch(int channel, int pitch)
 		pitch = MAX_PITCH;
 	}
 
-	OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status), return );
+	OpenAL_ErrorCheck( alGetSourcei(Channels[channel_id].source_id, AL_SOURCE_STATE, &status), return );
 
 	if (status == AL_PLAYING) {
 		ALfloat alpitch = log10f((float)pitch) - 2.0f;
-		OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_PITCH, alpitch) );
+		OpenAL_ErrorPrint( alSourcef(Channels[channel_id].source_id, AL_PITCH, alpitch) );
 	}
 }
 
 /**
  * @todo Documentation
  */
-void ds_chg_loop_status(int channel, int loop)
+void ds_chg_loop_status(int channel_id, int loop)
 {
-	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
+	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
 		return;
 	}
 
-	ALuint source_id = Channels[channel].source_id;
+	ALuint source_id = Channels[channel_id].source_id;
 
 	OpenAL_ErrorPrint( alSourcei(source_id, AL_LOOPING, loop ? AL_TRUE : AL_FALSE) );
 }
@@ -1812,101 +2031,104 @@ void ds_chg_loop_status(int channel, int loop)
  *
  * @return 0 if sound started successfully, -1 if sound could not be played
  */
-int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max, int looping, float max_volume, float estimated_vol, int priority )
+int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max, int looping, float max_volume, float estimated_vol, const EnhancedSoundData * enhanced_sound_data, int priority, bool is_ambient)
 {
-	int channel;
+	int channel_id;
+	int enhanced_priority = SND_ENHANCED_PRIORITY_INVALID;
+
 
 	if (!ds_initialized) {
 		return -1;
 	}
 
-	channel = ds_get_free_channel(estimated_vol, snd_id, priority);
+	channel_id = ds_get_free_channel(estimated_vol, snd_id, priority, enhanced_priority, *enhanced_sound_data);
 
-	if (channel < 0) {
+	if (channel_id < 0) {
 		return -1;
 	}
 
-	if ( Channels[channel].source_id == 0 ) {
+	if ( Channels[channel_id].source_id == 0 ) {
 		return -1;
 	}
 
 	// set up 3D sound data here
-	ds3d_update_buffer(channel, min, max, pos, vel);
+	ds3d_update_buffer(channel_id, min, max, pos, vel);
 
 
-	OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_PITCH, 1.0f) );
+	OpenAL_ErrorPrint( alSourcef(Channels[channel_id].source_id, AL_PITCH, 1.0f) );
 
-	OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_GAIN, max_volume) );
+	OpenAL_ErrorPrint( alSourcef(Channels[channel_id].source_id, AL_GAIN, max_volume) );
 
 	ALint status;
-	OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status), return -1 );
+	OpenAL_ErrorCheck( alGetSourcei(Channels[channel_id].source_id, AL_SOURCE_STATE, &status), return -1 );
 	
 	if (status == AL_PLAYING) {
-		OpenAL_ErrorPrint( alSourceStop(Channels[channel].source_id) );
+		OpenAL_ErrorPrint( alSourceStop(Channels[channel_id].source_id) );
 	}
 
 
-	OpenAL_ErrorCheck( alSourcei(Channels[channel].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
+	OpenAL_ErrorCheck( alSourcei(Channels[channel_id].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
 
 	if (Ds_eax_inited) {
-		OpenAL_ErrorPrint( alSource3i(Channels[channel].source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
+		OpenAL_ErrorPrint( alSource3i(Channels[channel_id].source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
 	}
 
-	OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_SOURCE_RELATIVE, AL_FALSE) );
+	OpenAL_ErrorPrint( alSourcei(Channels[channel_id].source_id, AL_SOURCE_RELATIVE, AL_FALSE) );
 
-	OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_LOOPING, (looping) ? AL_TRUE : AL_FALSE) );
+	OpenAL_ErrorPrint( alSourcei(Channels[channel_id].source_id, AL_LOOPING, (looping) ? AL_TRUE : AL_FALSE) );
 
-	OpenAL_ErrorPrint( alSourcePlay(Channels[channel].source_id) );
+	OpenAL_ErrorPrint( alSourcePlay(Channels[channel_id].source_id) );
 
 
-	sound_buffers[sid].channel_id = channel;
+	sound_buffers[sid].channel_id = channel_id;
 
-	Channels[channel].sid = sid;
-	Channels[channel].snd_id = snd_id;
-	Channels[channel].sig = channel_next_sig++;
-	Channels[channel].last_position = 0;
-	Channels[channel].is_voice_msg = false;
-	Channels[channel].vol = max_volume;
-	Channels[channel].looping = looping;
-	Channels[channel].priority = priority;
+	Channels[channel_id].sid = sid;
+	Channels[channel_id].snd_id = snd_id;
+	Channels[channel_id].sig = channel_next_sig++;
+	Channels[channel_id].last_position = 0;
+	Channels[channel_id].is_voice_msg = false;
+	Channels[channel_id].vol = max_volume;
+	Channels[channel_id].looping = looping;
+	Channels[channel_id].priority = enhanced_priority;
+	Channels[channel_id].is_ambient = is_ambient;
 
 	if (channel_next_sig < 0 ) {
 		channel_next_sig = 1;
 	}
 
-	return Channels[channel].sig;
+	return Channels[channel_id].sig;
 }
 
 /**
  * @todo Documentation
  */
-void ds_set_position(int channel, unsigned int offset)
+void ds_set_position(int channel_id, unsigned int offset)
 {
-	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
+	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
 		return;
 	}
 
-	OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_BYTE_OFFSET, offset) );
+	OpenAL_ErrorPrint( alSourcei(Channels[channel_id].source_id, AL_BYTE_OFFSET, offset) );
 }
 
 /**
  * @todo Documentation
  */
-unsigned int ds_get_play_position(int channel)
+unsigned int ds_get_play_position(int channel_id)
 {
-	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
+	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
 		return 0;
 	}
 
 	ALint pos = -1;
-	int	sid = Channels[channel].sid;
+	int	sid = Channels[channel_id].sid;
 
 	if ( (sid < 0) || ((size_t)sid >= sound_buffers.size()) ) {
 		return 0;
 	}
 
 	if (AL_play_position) {
-		OpenAL_ErrorPrint( alGetSourcei(Channels[channel].source_id, AL_BYTE_LOKI, &pos) );
+		OpenAL_ErrorPrint( alGetSourcei(Channels[channel_id].source_id, AL_BYTE_LOKI, &pos) );
 
 		if ( pos < 0 ) {
 			pos = 0;
@@ -1921,7 +2143,7 @@ unsigned int ds_get_play_position(int channel)
 			pos = (ALint)(pos * ((float)sound_buffers[sid].nbytes / size));
 		}
 	} else {
-		OpenAL_ErrorPrint( alGetSourcei(Channels[channel].source_id, AL_BYTE_OFFSET, &pos) );
+		OpenAL_ErrorPrint( alGetSourcei(Channels[channel_id].source_id, AL_BYTE_OFFSET, &pos) );
 
 		if (pos < 0) {
 			pos = 0;
@@ -1934,7 +2156,7 @@ unsigned int ds_get_play_position(int channel)
 /**
  * @todo Documentation
  */
-unsigned int ds_get_write_position(int channel)
+unsigned int ds_get_write_position(int channel_id)
 {
 	return 0;
 }
@@ -1942,13 +2164,13 @@ unsigned int ds_get_write_position(int channel)
 /**
  * @todo Documentation
  */
-int ds_get_channel_size(int channel)
+int ds_get_channel_size(int channel_id)
 {
-	if ( (channel < 0) || (channel >= MAX_CHANNELS) ) {
+	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
 		return 0;
 	}
 
-	int sid = Channels[channel].sid;
+	int sid = Channels[channel_id].sid;
 
 	if ( (sid < 0) || ((size_t)sid >= sound_buffers.size()) ) {
 		return 0;
@@ -2404,10 +2626,10 @@ void ds_do_frame()
 /**
  * Given a valid channel return the sound id
  */
-int ds_get_sound_id(int channel)
+int ds_get_sound_id(int channel_id)
 {
-	Assert( channel >= 0 );
+	Assert( channel_id >= 0 );
 
-	return Channels[channel].snd_id;
+	return Channels[channel_id].snd_id;
 }
 

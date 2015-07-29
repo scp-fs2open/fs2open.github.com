@@ -42,6 +42,8 @@ extern int Ds_float_supported;
 #define DS_LIMIT_TWO	2
 #define DS_LIMIT_THREE	3
 
+struct EnhancedSoundData;
+
 #define DS_3D		(1<<0)
 
 typedef struct sound_info {
@@ -65,7 +67,7 @@ int ds_parse_sound(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 int ds_parse_sound_info(char *real_filename, sound_info *s_info);
 int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int flags);
 void ds_unload_buffer(int sid);
-int ds_play(int sid, int snd_id, int priority, float volume, float pan, int looping, bool is_voice_msg = false);
+int ds_play(int sid, int snd_id, int priority, const EnhancedSoundData * enhanced_sound_data, float volume, float pan, int looping, bool is_voice_msg = false);
 int ds_get_channel(int sig);
 int ds_is_channel_playing(int channel);
 void ds_stop_channel(int channel);
@@ -92,7 +94,7 @@ int ds_get_sound_id(int channel);
 // Returns the number of channels that are actually playing
 int ds_get_number_channels();
 
-int ds3d_play( int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max, int looping, float max_volume, float estimated_vol, int priority=DS_MUST_PLAY );
+int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max, int looping, float max_volume, float estimated_vol, const EnhancedSoundData * enhanced_sound_data, int priority = DS_MUST_PLAY, bool is_ambient = false);
 
 void ds_do_frame();
 

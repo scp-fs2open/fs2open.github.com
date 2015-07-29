@@ -29,6 +29,7 @@ float frand_range(float min, float max);
 #define fl_abs(fl) fabsf(fl)
 #define i2fl(i) ((float)(i))
 #define fl2i(fl) ((int)(fl))
+#define fl2ir(fl) ((int)(fl + ((fl < 0.0f) ? -0.5f : 0.5f)))
 #define flceil(fl) (int)ceil(fl)
 #define flfloor(fl) (int)floor(fl)
 #define f2fl(fx) ((float)(fx)/65536.0f)
@@ -36,10 +37,10 @@ float frand_range(float min, float max);
 #define fl_tan(fl) tanf(fl)
 
 // convert a measurement in degrees to radians
-#define fl_radians(fl)	((float)((fl * PI)/180.0f))
+#define fl_radians(fl)	((float)((fl) * (PI / 180.0f)))
 
 // convert a measurement in radians to degrees
-#define fl_degrees(fl)	((float)((fl * 180.0f)/PI))
+#define fl_degrees(fl)	((float)((fl) * (180.0f / PI)))
 
 // use this instead of:
 // for:  (int)floor(x+0.5f) use fl_round_2048(x)
@@ -87,7 +88,11 @@ float fl_isqrt( float x )
 } 
 */
 
-
+// sees if two floating point numbers are within the minimum tolerance
+inline bool fl_equal(float a, float b)
+{
+	return fl_abs(a - b) <= FLT_EPSILON * MAX(1.0f, MAX(fl_abs(a), fl_abs(b)));
+}
 
 // rounds off a floating point number to a multiple of some number
 extern float fl_roundoff(float x, int multiple);

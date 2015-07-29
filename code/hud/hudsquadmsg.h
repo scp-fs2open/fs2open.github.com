@@ -112,7 +112,7 @@ typedef struct squadmsg_history {
 	int order_from;			// ship that sent the order
 	int special_index;		// any extra data the order might need (subsystem names for instance)
 	fix order_time;			// when this order was sent (or received by the server in multiplayer)
-	squadmsg_history(): order_to(-1), order(-1), target(-1), order_from(-1), special_index(-1), order_time(0) {};
+	squadmsg_history(): order_to(-1), order(-1), target(-1), order_from(-1), special_index(-1), order_time(0) {}
 } squadmsg_history;
 
 extern SCP_vector<squadmsg_history> Squadmsg_history; 
@@ -162,9 +162,7 @@ extern void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_nu
 
 extern int hud_squadmsg_reinforcements_available(int team);
 
-//#ifndef NDEBUG
 void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
-//#endif
 
 // Added for voicer implementation
 void hud_squadmsg_do_mode( int mode );

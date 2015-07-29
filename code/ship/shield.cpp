@@ -258,6 +258,8 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vec3d *p
 	int		j;
 	vec3d	pnt;
 	vertex	verts[4];
+    
+    memset(verts, 0, sizeof(verts));
 
 	for (j=0; j<4; j++ )	{
 		// Rotate point into world coordinates
@@ -319,6 +321,8 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 	vec3d	pnt;
 	vertex	*verts[3];
 	vertex	points[3];
+    
+    memset(&verts, 0, sizeof(verts));
 
 	if (trip->trinum == -1)
 		return;	//	Means this is a quad, must have switched detail_level.
@@ -646,7 +650,7 @@ float apply_damage_to_shield(object *objp, int quadrant, float damage)
 		return damage;
 	}
 
-	if ( (quadrant < 0)  || (quadrant >= MAX_SHIELD_SECTIONS) ) return damage;	
+	if ( (quadrant < 0)  || (quadrant >= objp->n_quadrants) ) return damage;	
 	
 	Assert(objp->type == OBJ_SHIP);
 	aip = &Ai_info[Ships[objp->instance].ai_index];
@@ -959,7 +963,7 @@ void ship_draw_shield( object *objp)
  */
 int ship_is_shield_up( object *obj, int quadrant )
 {
-	if ( (quadrant >= 0) && (quadrant < MAX_SHIELD_SECTIONS))	{
+	if ( (quadrant >= 0) && (quadrant < obj->n_quadrants))	{
 		// Just check one quadrant
 		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * get_max_shield_quad(obj)))	{
 			return 1;
@@ -981,15 +985,31 @@ int ship_is_shield_up( object *obj, int quadrant )
 //	  / \.
 //	/  2  \.
 //	Note: This is in the object's local reference frame.  Do _not_ pass a vector in the world frame.
-int get_quadrant(vec3d *hit_pnt)
+int get_quadrant(vec3d *hit_pnt, object *shipobjp)
 {
-	int	result = 0;
+	if (shipobjp != NULL && Ship_info[Ships[shipobjp->instance].ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS) {
+		int closest = -1;
+		float closest_dist = FLT_MAX;
 
-	if (hit_pnt->xyz.x < hit_pnt->xyz.z)
-		result |= 1;
+		for (unsigned int i=0; i<Ships[shipobjp->instance].shield_points.size(); i++) {
+			float dist = vm_vec_dist(hit_pnt, &Ships[shipobjp->instance].shield_points.at(i));
 
-	if (hit_pnt->xyz.x < -hit_pnt->xyz.z)
-		result |= 2;
+			if (dist < closest_dist) {
+				closest = i;
+				closest_dist = dist;
+			}
+		}
 
-	return result;
+		return closest;
+	} else {
+		int	result = 0;
+
+		if (hit_pnt->xyz.x < hit_pnt->xyz.z)
+			result |= 1;
+
+		if (hit_pnt->xyz.x < -hit_pnt->xyz.z)
+			result |= 2;
+
+		return result;
+	}
 }

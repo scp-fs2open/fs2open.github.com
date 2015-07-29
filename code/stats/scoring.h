@@ -63,7 +63,7 @@ extern int Num_medals;
 
 typedef struct rank_stuff {
 	char		name[NAME_LENGTH];		// name of this rank
-	char		*promotion_text;			// text to display when promoted to this rank
+	SCP_map<int, char*>	promotion_text;		// text to display when promoted to this rank
 	int		points;						// points needed to reach this rank
 	char		bitmap[MAX_FILENAME_LEN];		// bitmap of this rank medal
 	char		promotion_voice_base[MAX_FILENAME_LEN];
@@ -104,7 +104,7 @@ public:
 
 	// Mission total
 	int m_medal_earned;					// which medal (if any) earned this mission
-	int m_badge_earned;					// which badge was earned.  Calculated after mission is over
+	SCP_vector<int> m_badge_earned;		// which badge(s) was(/were) earned.  Calculated after mission is over
 	int m_promotion_earned;				// was a promotion earned.  Calculated after mission is over
 
 	int m_score;
