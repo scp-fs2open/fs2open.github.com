@@ -501,6 +501,10 @@ sexp_oper Operators[] = {
 	{ "ship-turret-target-order",		OP_SHIP_TURRET_TARGET_ORDER,			1,	1+NUM_TURRET_ORDER_TYPES,	SEXP_ACTION_OPERATOR,	},	//WMC
 	{ "turret-subsys-target-disable",	OP_TURRET_SUBSYS_TARGET_DISABLE,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "turret-subsys-target-enable",	OP_TURRET_SUBSYS_TARGET_ENABLE,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "turret-set-primary-ammo",		OP_TURRET_SET_PRIMARY_AMMO,				4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
+	{ "turret-set-secondary-ammo",		OP_TURRET_SET_SECONDARY_AMMO,			4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
+	{ "turret-get-primary-ammo",		OP_TURRET_GET_PRIMARY_AMMO,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
+	{ "turret-get-secondary-ammo",		OP_TURRET_GET_SECONDARY_AMMO,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
 	
 	//Models and Textures Sub-Category
 	{ "change-ship-class",				OP_CHANGE_SHIP_CLASS,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -17975,6 +17979,240 @@ void sexp_ship_turret_target_order(int node)
 	}
 }
 
+// DahBlount
+int sexp_get_turret_primary_ammo(int node)
+{
+	int sindex;
+	ship_subsys *turret = NULL;
+	ship_weapon *swp;
+	int bank, check, ammo_left = 0;
+
+	sindex = ship_name_lookup(CTEXT(node));
+	if (sindex < 0) {
+		return 0;
+	}
+	if (Ships[sindex].objnum < 0) {
+		return 0;
+	}
+
+	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+	if (turret == NULL) {
+		return 0;
+	}
+	if (!(turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO)) {
+		return 0;
+	}
+
+	swp = &turret->weapons;
+
+	check = eval_num(CDR(node));
+	if (check < 0) {
+		return 0;
+	}
+
+	if (check >= swp->num_primary_banks)
+	{
+		for (bank = 0; bank < swp->num_primary_banks; bank++)
+		{
+			// Only ballistic weapons need to be counted
+			if (Weapon_info[swp->primary_bank_weapons[bank]].wi_flags2 & WIF2_BALLISTIC)
+			{
+				ammo_left += swp->primary_bank_ammo[bank];
+			}
+		}
+	} else {
+		// Again only ballistic weapons need to be counted
+		if (Weapon_info[swp->primary_bank_weapons[check]].wi_flags2 & WIF2_BALLISTIC)
+		{
+			ammo_left = swp->primary_bank_ammo[check];
+		}
+	}
+
+	return ammo_left;
+}
+
+// DahBlount - Sets a turrets primary ammo capacity
+void sexp_set_turret_primary_ammo(int node)
+{
+	int sindex;
+	ship_subsys *turret = NULL;
+	int requested_bank;
+	int requested_weapons;
+
+	// Check that a ship has been supplied
+	sindex = ship_name_lookup(CTEXT(node));
+	if (sindex < 0)
+	{
+		return;
+	}
+
+	// Get the turret
+	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+	if (turret == NULL) {
+		return;
+	}
+
+	// Get the bank to set the number on
+	requested_bank = eval_num(CDR(node));
+	if (requested_bank < 0)
+	{
+		return;
+	}
+
+	//  Get the number of weapons requested	
+	node = CDR(node);
+	requested_weapons = eval_num(CDR(node));
+	if (requested_weapons < 0)
+	{
+		return;
+	}
+
+	set_turret_primary_ammo(turret, requested_bank, requested_weapons);
+}
+
+// DahBlount - Helper function for setting turret primary ammo
+void set_turret_primary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo, bool update)
+{
+	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
+	// the banks or a non-existant bank
+	if ((requested_bank > turret->weapons.num_primary_banks) || requested_bank < 0)
+	{
+		return;
+	}
+
+	// Check that this isn't a non-ballistic bank as it's pointless to set the amount of ammo for those
+	if (!(Weapon_info[turret->weapons.primary_bank_weapons[requested_bank]].wi_flags2 & WIF2_BALLISTIC))
+	{
+		return;
+	}
+
+	if (requested_ammo < 0)
+	{
+		return;
+	}
+
+	// Is the number requested larger than the maximum allowed for that particular bank? 
+	int maximum_allowed = fl2i(turret->weapons.primary_bank_capacity[requested_bank]
+		/ Weapon_info[turret->weapons.primary_bank_weapons[requested_bank]].cargo_size);
+	if (maximum_allowed < requested_ammo)
+	{
+		requested_ammo = maximum_allowed;
+	}
+
+	// Set the number of weapons
+	turret->weapons.primary_bank_ammo[requested_bank] = requested_ammo;
+}
+
+// DahBlount - Gets a turrets secondary ammo capacity
+int sexp_get_turret_secondary_ammo(int node)
+{
+	int sindex;
+	ship_subsys *turret = NULL;
+	ship_weapon *swp;
+	int bank, check, ammo_left = 0;
+
+	sindex = ship_name_lookup(CTEXT(node));
+	if (sindex < 0) {
+		return 0;
+	}
+	if (Ships[sindex].objnum < 0) {
+		return 0;
+	}
+
+	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+	if (turret == NULL) {
+		return 0;
+	}
+	if (!(turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO)) {
+		return 0;
+	}
+
+	swp = &turret->weapons;
+
+	check = eval_num(CDR(node));
+	if (check < 0) {
+		return 0;
+	}
+
+	if (check >= swp->num_secondary_banks)
+	{
+		for (bank = 0; bank < swp->num_secondary_banks; bank++)
+		{
+			ammo_left += swp->secondary_bank_ammo[bank];
+		}
+	} else {
+		ammo_left = swp->primary_bank_ammo[check];
+	}
+
+	return ammo_left;
+}
+
+// DahBlount - Sets a turrets secondary ammo capacity
+void sexp_set_turret_secondary_ammo(int node)
+{
+	int sindex;
+	ship_subsys *turret = NULL;
+	int requested_bank;
+	int requested_weapons;
+
+	// Check that a ship has been supplied
+	sindex = ship_name_lookup(CTEXT(node));
+	if (sindex < 0)
+	{
+		return;
+	}
+
+	// Get the turret
+	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
+	if (turret == NULL) {
+		return;
+	}
+
+	// Get the bank to set the number on
+	requested_bank = eval_num(CDR(node));
+	if (requested_bank < 0)
+	{
+		return;
+	}
+
+	//  Get the number of weapons requested	
+	node = CDR(node);
+	requested_weapons = eval_num(CDR(node));
+	if (requested_weapons < 0)
+	{
+		return;
+	}
+
+	set_turret_secondary_ammo(turret, requested_bank, requested_weapons);
+}
+
+// DahBlount - Helper function for setting turret secondary ammo
+void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo, bool update)
+{
+	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
+	// the banks or a non-existant bank
+	if ((requested_bank > turret->weapons.num_secondary_banks) || requested_bank < 0)
+	{
+		return;
+	}
+
+	if (requested_ammo < 0)
+	{
+		return;
+	}
+
+	// Is the number requested larger than the maximum allowed for that particular bank? 
+	int maximum_allowed = fl2i(turret->weapons.secondary_bank_capacity[requested_bank]
+		/ Weapon_info[turret->weapons.secondary_bank_weapons[requested_bank]].cargo_size);
+	if (maximum_allowed < requested_ammo)
+	{
+		requested_ammo = maximum_allowed;
+	}
+
+	// Set the number of weapons
+	turret->weapons.secondary_bank_ammo[requested_bank] = requested_ammo;
+}
+
 // Goober5000
 void sexp_set_subsys_rotation_lock_free(int node, int locked)
 {
@@ -24747,6 +24985,24 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_player_is_cheating_bastard();
 				break;
 
+			case OP_TURRET_GET_PRIMARY_AMMO:
+				sexp_val = sexp_get_turret_primary_ammo(node);
+				break;
+
+			case OP_TURRET_GET_SECONDARY_AMMO:
+				sexp_val = sexp_get_turret_secondary_ammo(node);
+				break;
+
+			case OP_TURRET_SET_PRIMARY_AMMO:
+				sexp_val = SEXP_TRUE;
+				sexp_set_turret_primary_ammo(node);
+				break;
+
+			case OP_TURRET_SET_SECONDARY_AMMO:
+				sexp_val = SEXP_TRUE;
+				sexp_set_turret_secondary_ammo(node);
+				break;
+
 			default:
 				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				break;
@@ -25420,6 +25676,8 @@ int query_operator_return_type(int op)
 		case OP_NUM_VALID_ARGUMENTS:
 		case OP_STRING_GET_LENGTH:
 		case OP_GET_ETS_VALUE:
+		case OP_TURRET_GET_PRIMARY_AMMO:
+		case OP_TURRET_GET_SECONDARY_AMMO:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -25743,6 +26001,8 @@ int query_operator_return_type(int op)
 		case OP_SET_ETS_VALUES:
 		case OP_CALL_SSM_STRIKE:
 		case OP_SET_MOTION_DEBRIS:
+		case OP_TURRET_SET_PRIMARY_AMMO:
+		case OP_TURRET_SET_SECONDARY_AMMO:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -27396,7 +27656,19 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			}
 
-			
+		// DahBlount
+		case OP_TURRET_GET_PRIMARY_AMMO:
+		case OP_TURRET_GET_SECONDARY_AMMO:
+		case OP_TURRET_SET_PRIMARY_AMMO:
+		case OP_TURRET_SET_SECONDARY_AMMO:
+			if (argnum == 0){
+				return OPF_SHIP;
+			} else if (argnum == 1){
+				return OPF_SUBSYSTEM;
+			} else {
+				return OPF_NUMBER;
+			}
+
 		case OP_GET_NUM_COUNTERMEASURES:
 			return OPF_SHIP;
 
@@ -29397,6 +29669,10 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_TURRET_TARGET_ORDER:
 		case OP_TURRET_SUBSYS_TARGET_DISABLE:
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
+		case OP_TURRET_SET_PRIMARY_AMMO:
+		case OP_TURRET_SET_SECONDARY_AMMO:
+		case OP_TURRET_GET_PRIMARY_AMMO:
+		case OP_TURRET_GET_SECONDARY_AMMO:
 			return CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS;
 
 		case OP_CHANGE_SHIP_CLASS:
@@ -32127,6 +32403,32 @@ sexp_help_struct Sexp_help[] = {
 		"\t2: Turret to set\r\n"
 		"\t3: True = Set new list, False = Reset to turret default\r\n"
 		"\trest: Priorities to set (max 32) or blank for no priorities\r\n"},
+
+	{ OP_TURRET_GET_PRIMARY_AMMO, "turret-get-primary-ammo\r\n"
+		"\tGets the turret's primary bank ammo, only works with ballistic weapons\r\n"
+		"\t1: Ship turret is on\r\n"
+		"\t2: Turret the bank is on\r\n"
+		"\t3: Bank to check ammo\r\n"},
+
+	{ OP_TURRET_GET_SECONDARY_AMMO, "turret-get-secondary-ammo\r\n"
+		"\tGets the turret's secondary bank ammo\r\n"
+		"\t1: Ship turret is on\r\n"
+		"\t2: Turret to check ammo\r\n"
+		"\t3: Bank to check ammo\r\n" },
+
+	{ OP_TURRET_SET_PRIMARY_AMMO, "turret-set-primary-ammo\r\n"
+		"\tGets the turret's primary bank ammo, only works with ballistic weapons\r\n"
+		"\t1: Ship turret is on\r\n"
+		"\t2: Turret the bank is on\r\n"
+		"\t3: Bank to add ammo to\r\n" 
+		"\t4: Amount to add" },
+
+	{ OP_TURRET_SET_SECONDARY_AMMO, "turret-set-secondary-ammo\r\n"
+		"\tGets the turret's secondary bank ammos\r\n"
+		"\t1: Ship turret is on\r\n"
+		"\t2: Turret the bank is on\r\n"
+		"\t3: Bank to add ammo to\r\n"
+		"\t4: Amount to add" },
 
 	{ OP_SET_ARMOR_TYPE, "set-armor-type\r\n"
 		"\tSets the armor type for a ship or subsystem\r\n"

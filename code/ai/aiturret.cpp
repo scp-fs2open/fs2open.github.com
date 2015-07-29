@@ -1881,7 +1881,15 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			swp = &turret->weapons;
 			int bank_to_fire = swp->current_secondary_bank;
 			if ((turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO) && (swp->secondary_bank_ammo[bank_to_fire] < 0)) {
-				return false;
+				if (!(turret->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS)) {
+					swp->current_secondary_bank++;
+					if (swp->current_secondary_bank >= swp->num_secondary_banks) {
+						swp->current_secondary_bank = 0;
+					}
+					return false;
+				} else {
+					return false;
+				}
 			} else {
 				turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos);
 
@@ -1925,6 +1933,12 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 						if (swp->primary_bank_ammo[bank_to_fire] >= 0) {
 							swp->primary_bank_ammo[bank_to_fire] -= points;
+						} else if (!(turret->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS) && (swp->primary_bank_ammo[bank_to_fire] < 0)) {
+							swp->current_primary_bank++;
+							if (swp->current_primary_bank >= swp->num_primary_banks) {
+								swp->current_primary_bank = 0;
+							}
+							return false;
 						} else {
 							return false;
 						}
@@ -1954,6 +1968,12 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 							if (swp->secondary_bank_ammo[bank_to_fire] >= 0) {
 								swp->secondary_bank_ammo[bank_to_fire]--;
+							} else if (!(turret->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS) && (swp->secondary_bank_ammo[bank_to_fire] < 0)) {
+								swp->current_secondary_bank++;
+								if (swp->current_secondary_bank >= swp->num_secondary_banks) {
+									swp->current_secondary_bank = 0;
+								}
+								return false;
 							} else {
 								return false;
 							}
