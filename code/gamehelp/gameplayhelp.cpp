@@ -169,16 +169,16 @@ void gameplay_help_blit_control_line(int x, int y, int id)
 		strcpy_s(buf, XSTR( "no binding", 130));
 	}
 
-	gr_string(x,y,buf);
+	gr_string(x,y,buf,GR_RESIZE_MENU);
 
-//	gr_string(x+KEY_DESCRIPTION_OFFSET,y,ci->text);
-	gr_string(x+KEY_DESCRIPTION_OFFSET, y, XSTR(ci->text, CONTROL_CONFIG_XSTR + id));
+//	gr_string(x+KEY_DESCRIPTION_OFFSET,y,ci->text,GR_RESIZE_MENU);
+	gr_string(x+KEY_DESCRIPTION_OFFSET, y, XSTR(ci->text, CONTROL_CONFIG_XSTR + id), GR_RESIZE_MENU);
 }
 
 void gameplay_help_blit_control_line_raw(int x, int y, const char *control_text, const char *control_description)
 {
-	gr_string(x,y,control_text);
-	gr_string(x+KEY_DESCRIPTION_OFFSET,y,control_description);
+	gr_string(x,y,control_text,GR_RESIZE_MENU);
+	gr_string(x+KEY_DESCRIPTION_OFFSET,y,control_description,GR_RESIZE_MENU);
 }
 
 // game_play_help_set_title() will display the title for the help screen and
@@ -189,9 +189,9 @@ void gameplay_help_set_title(const char *title)
 	char buf[128];
 
 	gr_set_color_fast(&Color_bright);
-	gr_printf(0x8000,sy,title);
+	gr_printf_menu(0x8000,sy,title);
 	sprintf(buf, XSTR( "Page %d of %d", 132),  Current_help_page+1, Gp_last_screen+1);
-	gr_printf(0x8000,sy+gr_get_font_height()+2,buf);
+	gr_printf_menu(0x8000,sy+gr_get_font_height()+2,buf);
 	gr_set_color_fast(&Color_normal);
 }
 
@@ -364,7 +364,7 @@ void gameplay_help_draw_text()
 			y_offset += separation;
 
 			gr_set_color_fast(&Color_bright);
-			gr_printf(0x8000,y_offset,XSTR( "Function Keys", 134));
+			gr_printf_menu(0x8000,y_offset,XSTR( "Function Keys", 134));
 			gr_set_color_fast(&Color_normal);
 
 			y_offset += separation;
@@ -755,7 +755,7 @@ void gameplay_help_draw_text()
 
 			// ingame messaging
 			gr_set_color_fast(&Color_bright);
-			gr_printf(0x8000,y_offset,XSTR( "Ingame messaging keys (tap for text, hold for voice)", 168));
+			gr_printf_menu(0x8000,y_offset,XSTR( "Ingame messaging keys (tap for text, hold for voice)", 168));
 			gr_set_color_fast(&Color_normal);
 			
 			y_offset += separation;
@@ -804,7 +804,7 @@ void gameplay_help_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
 
 	Ui_window.draw();

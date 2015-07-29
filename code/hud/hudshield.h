@@ -18,12 +18,12 @@
 #define SHIELD_HIT_DURATION	1400	// time a shield quadrant flashes after being hit
 #define SHIELD_FLASH_INTERVAL	200	// time between shield quadrant flashes
 
-#define NUM_SHIELD_HIT_MEMBERS	5
-#define HULL_HIT_OFFSET				4		// used to access the members in shield_hit_info that pertain to the hull
 typedef struct shield_hit_info
 {
-	int shield_hit_timers[NUM_SHIELD_HIT_MEMBERS];	// timestamps that get set for SHIELD_FLASH_TIME when a quadrant is hit
-	int shield_hit_next_flash[NUM_SHIELD_HIT_MEMBERS];
+	int members;
+	int hull_hit_index; // used to access the members in shield_hit_info that pertain to the hull
+	SCP_vector<int> shield_hit_timers; // timestamps that get set for SHIELD_FLASH_TIME when a quadrant is hit
+	SCP_vector<int> shield_hit_next_flash;
 	int shield_hit_status;		// bitfield, if offset for shield quadrant is set, that means shield is being hit
 	int shield_show_bright;		// bitfield, if offset for shield quadrant is set, that means play bright frame
 } shield_hit_info;
@@ -44,9 +44,9 @@ void hud_show_mini_ship_integrity(object *objp, int force_x = -1, int force_y = 
 void hud_shield_show_mini(object *objp, int x_force = -1, int y_force = -1, int x_hull_offset = 0, int y_hull_offset = 0);
 void hud_shield_hit_update();
 void hud_shield_quadrant_hit(object *objp, int quadrant);
-void hud_shield_hit_reset(int player=0);
+void hud_shield_hit_reset(object *objp, int player=0);
 
-void shield_info_reset(shield_hit_info *shi);
+void shield_info_reset(object *objp, shield_hit_info *shi);
 
 // random page in stuff - moved here by Goober5000
 extern void hud_ship_icon_page_in(ship_info *sip);

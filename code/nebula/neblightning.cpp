@@ -13,6 +13,7 @@
 #include "parse/parselo.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
+#include "debugconsole/console.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "render/3d.h"
@@ -82,52 +83,43 @@ vec3d Nebl_bolt_strike;			// strike point of the bolt being generated
 storm_type *Storm = NULL;
 
 // vars
-DCF(b_scale, "")
+DCF(b_scale, "Sets the scale factor for debug nebula bolts")
 {
-	dc_get_arg(ARG_FLOAT);
-	Bolt_types[DEBUG_BOLT].b_scale = Dc_arg_float;
+	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_scale);
 }
-DCF(b_rand, "")
+DCF(b_rand, "Sets the randomness factor for debug nebula bolts")
 {
-	dc_get_arg(ARG_FLOAT);
-	Bolt_types[DEBUG_BOLT].b_rand = Dc_arg_float;
+	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_rand);
 }
-DCF(b_shrink, "")
+DCF(b_shrink, "Sets the shrink factor for debug nebula bolts")
 {
-	dc_get_arg(ARG_FLOAT);
-	Bolt_types[DEBUG_BOLT].b_shrink = Dc_arg_float;
+	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_shrink);
 }
-DCF(b_poly_pct, "")
+DCF(b_poly_pct, "Sets b_poly_pct")
 {
-	dc_get_arg(ARG_FLOAT);
-	Bolt_types[DEBUG_BOLT].b_poly_pct = Dc_arg_float;
+	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_poly_pct);
 }
-DCF(b_add, "")
+DCF(b_add, "Sets b_add")
 {
-	dc_get_arg(ARG_FLOAT);
-	Bolt_types[DEBUG_BOLT].b_add = Dc_arg_float;
+	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_add);
 }
-DCF(b_strikes, "")
+DCF(b_strikes, "Sets num_strikes")
 {
-	dc_get_arg(ARG_INT);
-	Bolt_types[DEBUG_BOLT].num_strikes = Dc_arg_int;
+	dc_stuff_int(&Bolt_types[DEBUG_BOLT].num_strikes);
 }
-DCF(b_noise, "")
+DCF(b_noise, "Sets noise factor")
 {
-	dc_get_arg(ARG_FLOAT);
-	Bolt_types[DEBUG_BOLT].noise = Dc_arg_float;
+	dc_stuff_float(&Bolt_types[DEBUG_BOLT].noise);
 }
-DCF(b_bright, "")
+DCF(b_bright, "Sets brightness factor")
 {
-	dc_get_arg(ARG_FLOAT);
-	Bolt_types[DEBUG_BOLT].b_bright = Dc_arg_float;
+	dc_stuff_float(&Bolt_types[DEBUG_BOLT].b_bright);
 }
-DCF(b_lifetime, "")
+DCF(b_lifetime, "Sets lifetime duration")
 {
-	dc_get_arg(ARG_INT);
-	Bolt_types[DEBUG_BOLT].lifetime = Dc_arg_int;
+	dc_stuff_int(&Bolt_types[DEBUG_BOLT].lifetime);
 }
-DCF(b_list, "")
+DCF(b_list, "Displays status of debug lightning commands")
 {
 	dc_printf("Debug lightning bolt settings :\n");
 
@@ -145,12 +137,12 @@ DCF(b_list, "")
 // nebula lightning intensity (0.0 to 1.0)
 float Nebl_intensity = 0.6667f;
 
-DCF(lightning_intensity, "")
+DCF(lightning_intensity, "Sets lightning intensity between 0.0 and 1.0 (Default is 0.6667)")
 {
-	dc_get_arg(ARG_FLOAT);
-	float val = Dc_arg_float;
-    
-    CLAMP(val, 0.0f, 1.0f);
+	float val;
+	dc_stuff_float(&val);
+
+	CLAMP(val, 0.0f, 1.0f);
 
 	Nebl_intensity = 1.0f - val;
 }
@@ -164,122 +156,124 @@ DCF(lightning_intensity, "")
 void nebl_init()
 {
 	char name[MAX_FILENAME_LEN];
-	int rval;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "lightning.tbl", rval));
+	try
+	{
+		// parse the lightning table
+		read_file_text("lightning.tbl", CF_TYPE_TABLES);
+		reset_parse();
+
+		// parse the individual lightning bolt types
+		required_string("#Bolts begin");
+		while (!optional_string("#Bolts end")){
+			bolt_type new_bolt_type;
+
+			// bolt title
+			required_string("$Bolt:");
+			stuff_string(new_bolt_type.name, F_NAME, NAME_LENGTH);
+
+			// b_scale
+			required_string("+b_scale:");
+			stuff_float(&new_bolt_type.b_scale);
+
+			// b_shrink
+			required_string("+b_shrink:");
+			stuff_float(&new_bolt_type.b_shrink);
+
+			// b_poly_pct
+			required_string("+b_poly_pct:");
+			stuff_float(&new_bolt_type.b_poly_pct);
+
+			// child rand
+			required_string("+b_rand:");
+			stuff_float(&new_bolt_type.b_rand);
+
+			// z add
+			required_string("+b_add:");
+			stuff_float(&new_bolt_type.b_add);
+
+			// # strikes
+			required_string("+b_strikes:");
+			stuff_int(&new_bolt_type.num_strikes);
+
+			// lifetime
+			required_string("+b_lifetime:");
+			stuff_int(&new_bolt_type.lifetime);
+
+			// noise
+			required_string("+b_noise:");
+			stuff_float(&new_bolt_type.noise);
+
+			// emp effect
+			required_string("+b_emp:");
+			stuff_float(&new_bolt_type.emp_intensity);
+			stuff_float(&new_bolt_type.emp_time);
+
+			// texture
+			required_string("+b_texture:");
+			stuff_string(name, F_NAME, sizeof(name));
+			if (!Fred_running){
+				new_bolt_type.texture = bm_load(name);
+			}
+
+			// glow
+			required_string("+b_glow:");
+			stuff_string(name, F_NAME, sizeof(name));
+			if (!Fred_running){
+				new_bolt_type.glow = bm_load(name);
+			}
+
+			// brightness
+			required_string("+b_bright:");
+			stuff_float(&new_bolt_type.b_bright);
+
+			Bolt_types.push_back(new_bolt_type);
+		}
+
+		// parse lightning storm types
+		required_string("#Storms begin");
+		while (!optional_string("#Storms end")){
+			storm_type new_storm_type;
+
+			// bolt title
+			required_string("$Storm:");
+			stuff_string(new_storm_type.name, F_NAME, NAME_LENGTH);
+
+			// bolt types
+			while (optional_string("+bolt:")){
+				if (new_storm_type.num_bolt_types < MAX_BOLT_TYPES_PER_STORM){
+					stuff_string(name, F_NAME, sizeof(name));
+
+					new_storm_type.bolt_types[new_storm_type.num_bolt_types] = nebl_get_bolt_index(name);
+					Assert(new_storm_type.bolt_types[new_storm_type.num_bolt_types] != (size_t)-1);
+
+					new_storm_type.num_bolt_types++;
+				}
+			}
+
+			// flavor
+			required_string("+flavor:");
+			stuff_float(&new_storm_type.flavor.xyz.x);
+			stuff_float(&new_storm_type.flavor.xyz.y);
+			stuff_float(&new_storm_type.flavor.xyz.z);
+
+			// frequencies
+			required_string("+random_freq:");
+			stuff_int(&new_storm_type.min);
+			stuff_int(&new_storm_type.max);
+
+			// counts
+			required_string("+random_count:");
+			stuff_int(&new_storm_type.min_count);
+			stuff_int(&new_storm_type.max_count);
+
+			Storm_types.push_back(new_storm_type);
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "lightning.tbl", e.what()));
 		return;
-	}
-
-	// parse the lightning table
-	read_file_text("lightning.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	// parse the individual lightning bolt types
-	required_string("#Bolts begin");
-	while(!optional_string("#Bolts end")){
-		bolt_type new_bolt_type;
-
-		// bolt title
-		required_string("$Bolt:");
-		stuff_string(new_bolt_type.name, F_NAME, NAME_LENGTH);
-
-		// b_scale
-		required_string("+b_scale:");
-		stuff_float(&new_bolt_type.b_scale);
-
-		// b_shrink
-		required_string("+b_shrink:");
-		stuff_float(&new_bolt_type.b_shrink);
-
-		// b_poly_pct
-		required_string("+b_poly_pct:");
-		stuff_float(&new_bolt_type.b_poly_pct);		
-
-		// child rand
-		required_string("+b_rand:");
-		stuff_float(&new_bolt_type.b_rand);
-
-		// z add
-		required_string("+b_add:");
-		stuff_float(&new_bolt_type.b_add);
-
-		// # strikes
-		required_string("+b_strikes:");
-		stuff_int(&new_bolt_type.num_strikes);
-
-		// lifetime
-		required_string("+b_lifetime:");
-		stuff_int(&new_bolt_type.lifetime);
-
-		// noise
-		required_string("+b_noise:");
-		stuff_float(&new_bolt_type.noise);
-
-		// emp effect
-		required_string("+b_emp:");
-		stuff_float(&new_bolt_type.emp_intensity);
-		stuff_float(&new_bolt_type.emp_time);
-
-		// texture
-		required_string("+b_texture:");
-		stuff_string(name, F_NAME, sizeof(name));
-		if(!Fred_running){
-			new_bolt_type.texture = bm_load(name);
-		}
-
-		// glow
-		required_string("+b_glow:");
-		stuff_string(name, F_NAME, sizeof(name));
-		if(!Fred_running){
-			new_bolt_type.glow = bm_load(name);
-		}
-
-		// brightness
-		required_string("+b_bright:");
-		stuff_float(&new_bolt_type.b_bright);
-
-		Bolt_types.push_back(new_bolt_type);
-	}
-
-	// parse lightning storm types
-	required_string("#Storms begin");
-	while(!optional_string("#Storms end")){
-		storm_type new_storm_type;
-
-		// bolt title
-		required_string("$Storm:");
-		stuff_string(new_storm_type.name, F_NAME, NAME_LENGTH);
-
-		// bolt types
-		while(optional_string("+bolt:")){			
-			if(new_storm_type.num_bolt_types < MAX_BOLT_TYPES_PER_STORM){
-				stuff_string(name, F_NAME, sizeof(name));	
-				
-				new_storm_type.bolt_types[new_storm_type.num_bolt_types] = nebl_get_bolt_index(name);
-				Assert(new_storm_type.bolt_types[new_storm_type.num_bolt_types] != (size_t)-1);								
-
-				new_storm_type.num_bolt_types++;
-			} 			
-		}
-
-		// flavor
-		required_string("+flavor:");
-		stuff_float(&new_storm_type.flavor.xyz.x);
-		stuff_float(&new_storm_type.flavor.xyz.y);
-		stuff_float(&new_storm_type.flavor.xyz.z);
-
-		// frequencies
-		required_string("+random_freq:");
-		stuff_int(&new_storm_type.min);
-		stuff_int(&new_storm_type.max);
-
-		// counts
-		required_string("+random_count:");
-		stuff_int(&new_storm_type.min_count);
-		stuff_int(&new_storm_type.max_count);
-
-		Storm_types.push_back(new_storm_type);
 	}
 }
 
@@ -940,6 +934,7 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 	size_t idx;	
 	vec3d temp, pt;
 	vec3d glow_a, glow_b;
+	vertex tempv;
 
 	// direction matrix
 	vm_vec_sub(&dir, &a->pos, &b->pos);
@@ -954,6 +949,8 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 
 	// rotate the basic section into world	
 	for(idx=0; idx<3; idx++){
+		memset(&tempv, 0, sizeof(tempv));
+        
 		// rotate to world		
 		if(pinch_a){			
 			vm_vec_rotate(&pt, &Nebl_ring_pinched[idx], &m);
@@ -963,39 +960,30 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 		}
 		vm_vec_add2(&pt, &a->pos);
 			
-		// transform
-		if (Cmdline_nohtl) {
-			g3_rotate_vertex(&c->vex[idx], &pt);
-		} else {
-			g3_transfer_vertex(&c->vex[idx], &pt);
-		}
-		g3_project_vertex(&c->vex[idx]);		
+		g3_transfer_vertex(&c->vex[idx], &pt);
+		g3_rotate_vertex(&tempv, &pt);
+		g3_project_vertex(&tempv);
 
 		// if first frame, keep track of the average screen pos
-		if((c->vex[idx].screen.xyw.x >= 0)
-			&& (c->vex[idx].screen.xyw.x < gr_screen.max_w)
-			&& (c->vex[idx].screen.xyw.y >= 0)
-			&& (c->vex[idx].screen.xyw.y < gr_screen.max_h))
-		{
-			Nebl_flash_x += c->vex[idx].screen.xyw.x;
-			Nebl_flash_y += c->vex[idx].screen.xyw.y;
+		if (tempv.codes == 0) {
+			Nebl_flash_x += tempv.screen.xyw.x;
+			Nebl_flash_y += tempv.screen.xyw.y;
 			Nebl_flash_count++;
+		}
+
+		if (Cmdline_nohtl) {
+			memcpy(&c->vex[idx], &tempv, sizeof(vertex));
 		}
 	}
 	// calculate the glow points		
 	nebl_calc_facing_pts_smart(&glow_a, &glow_b, &dir_normal, &a->pos, pinch_a ? 0.5f : width * 6.0f, Nebl_type->b_add);
 	if (Cmdline_nohtl) {
 		g3_rotate_vertex(&c->glow_vex[0], &glow_a);
-	} else {
-		g3_transfer_vertex(&c->glow_vex[0], &glow_a);
-	}
-	g3_project_vertex(&c->glow_vex[0]);
-	if (Cmdline_nohtl) {
 		g3_rotate_vertex(&c->glow_vex[1], &glow_b);
 	} else {
+		g3_transfer_vertex(&c->glow_vex[0], &glow_a);
 		g3_transfer_vertex(&c->glow_vex[1], &glow_b);
 	}
-	g3_project_vertex(&c->glow_vex[1]);	
 
 	// maybe do a cap
 	if(cap != NULL){		
@@ -1010,23 +998,19 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 			}
 			vm_vec_add2(&pt, &b->pos);
 			
-			// transform
-			if (Cmdline_nohtl) {
-				g3_rotate_vertex(&cap->vex[idx], &pt);
-			} else {
-				g3_transfer_vertex(&cap->vex[idx], &pt);
-			}
-			g3_project_vertex(&cap->vex[idx]);			
+			g3_transfer_vertex(&cap->vex[idx], &pt);
+			g3_rotate_vertex(&tempv, &pt);
+			g3_project_vertex(&tempv);
 
-			// if first frame, keep track of the average screen pos			
-			if( (c->vex[idx].screen.xyw.x >= 0)
-				&& (c->vex[idx].screen.xyw.x < gr_screen.max_w)
-				&& (c->vex[idx].screen.xyw.y >= 0)
-				&& (c->vex[idx].screen.xyw.y < gr_screen.max_h))
-			{
-				Nebl_flash_x += c->vex[idx].screen.xyw.x;
-				Nebl_flash_y += c->vex[idx].screen.xyw.y;
+			// if first frame, keep track of the average screen pos
+			if (tempv.codes == 0) {
+				Nebl_flash_x += tempv.screen.xyw.x;
+				Nebl_flash_y += tempv.screen.xyw.y;
 				Nebl_flash_count++;
+			}
+
+			if (Cmdline_nohtl) {
+				memcpy(&cap->vex[idx], &tempv, sizeof(vertex));
 			}
 		}
 		
@@ -1034,16 +1018,11 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 		nebl_calc_facing_pts_smart(&glow_a, &glow_b, &dir_normal, &b->pos, pinch_b ? 0.5f : width * 6.0f, bi->b_add);
 		if (Cmdline_nohtl) {
 			g3_rotate_vertex(&cap->glow_vex[0], &glow_a);
-		} else {
-			g3_transfer_vertex(&cap->glow_vex[0], &glow_a);
-		}
-		g3_project_vertex(&cap->glow_vex[0]);
-		if (Cmdline_nohtl) {
 			g3_rotate_vertex(&cap->glow_vex[1], &glow_b);
 		} else {
+			g3_transfer_vertex(&cap->glow_vex[0], &glow_a);
 			g3_transfer_vertex(&cap->glow_vex[1], &glow_b);
 		}
-		g3_project_vertex(&cap->glow_vex[1]);
 	}
 }
 

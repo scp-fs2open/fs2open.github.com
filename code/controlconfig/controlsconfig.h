@@ -8,6 +8,8 @@
 */ 
 
 
+#include "globalincs/pstypes.h"
+
 #ifndef CONTROLS_CONFIG_H
 #define CONTROLS_CONFIG_H
 
@@ -67,6 +69,7 @@ typedef struct config_item {
 	short joy_id;			//!< joystick button bound to action
 	int used;				//!< has control been used yet in mission?  If so, this is the timestamp
 	bool disabled;			//!< whether this action should be available at all
+	bool continuous_ongoing;//!< whether this action is a continuous one and is currently ongoing
 } config_item;
 
 /*!
@@ -285,7 +288,11 @@ extern int Axis_map_to[];
 extern int Invert_axis[];
 extern int Invert_axis_defaults[];
 
+extern int Control_config_overlay_id;
+
 extern config_item Control_config[];		//!< Stores the keyboard configuration
+extern SCP_vector<config_item*> Control_config_presets; // tabled control presets; pointers to config_item arrays
+extern SCP_vector<SCP_string> Control_config_preset_names; // names for Control_config_presets (identical order of items)
 extern char **Scan_code_text;
 extern char **Joy_button_text;
 
@@ -297,8 +304,8 @@ void control_config_close();
 
 void control_config_cancel_exit();
 
-void control_config_reset_defaults();
-int translate_key_to_index(char *key);
+void control_config_reset_defaults(int presetnum=-1);
+int translate_key_to_index(const char *key, bool find_override=true);
 char *translate_key(char *key);
 char *textify_scancode(int code);
 float check_control_timef(int id);

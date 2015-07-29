@@ -13,6 +13,7 @@
 #include "hud/hudartillery.h"
 #include "parse/parselo.h"
 #include "weapon/weapon.h"
+#include "weapon/beam.h"
 #include "math/vecmat.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
@@ -37,97 +38,130 @@
 // test code for subspace missile strike -------------------------------------------
 
 // ssm_info, like ship_info etc.
-int Ssm_info_count = 0;
-ssm_info Ssm_info[MAX_SSM_TYPES];
+SCP_vector<ssm_info> Ssm_info;
 
-// list of active/free strikes
-int Num_ssm_strikes = 0;
-ssm_strike Ssm_strikes[MAX_SSM_STRIKES];
-ssm_strike Ssm_free_list;
-ssm_strike Ssm_used_list;
+// list of active strikes
+SCP_list<ssm_strike> Ssm_strikes;
 
 // Goober5000
-int ssm_info_lookup(char *name)
+int ssm_info_lookup(const char *name)
 {
 	if(name == NULL)
 		return -1;
 
-	for (int i = 0; i < Ssm_info_count; i++)
-		if (!stricmp(name, Ssm_info[i].name))
-			return i;
+	for (auto it = Ssm_info.cbegin(); it != Ssm_info.cend(); ++it)
+		if (!stricmp(name, it->name))
+			return std::distance(Ssm_info.cbegin(), it);
 
 	return -1;
 }
 
-// game init
-void ssm_init()
-{	
-	int rval;
-	ssm_info bogus, *s;
+void parse_ssm(const char *filename)
+{
 	char weapon_name[NAME_LENGTH];
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "ssm.tbl", rval));
-		return;
-	}
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
 
-	read_file_text("ssm.tbl", CF_TYPE_TABLES);
-	reset_parse();
-
-	// parse the table
-	Ssm_info_count = 0;
-	while(!optional_string("#end")){
-		// another ssm definition
-		if(optional_string("$SSM:")){
-			// pointer to info struct
-			if(Ssm_info_count >= MAX_SSM_TYPES){
-				s = &bogus;
-			} else {
-				s = &Ssm_info[Ssm_info_count];
-			}
+		// parse the table
+		while(required_string_either("#end", "$SSM:")) {
+			required_string("$SSM:");
+			ssm_info s;
 
 			// name
-			stuff_string(s->name, F_NAME, NAME_LENGTH);
+			stuff_string(s.name, F_NAME, NAME_LENGTH);
 
 			// stuff data
 			required_string("+Weapon:");
 			stuff_string(weapon_name, F_NAME, NAME_LENGTH);
-			required_string("+Count:");
-			stuff_int(&s->count);
+			if (optional_string("+Count:"))
+				stuff_int(&s.count);
+			else
+				s.count = 1;
 			required_string("+WarpRadius:");
-			stuff_float(&s->warp_radius);
-			required_string("+WarpTime:");
-			stuff_float(&s->warp_time);
-			// According to fireballs.cpp, "Warp lifetime must be at least 4 seconds!"
-			if ( (s->warp_time) < 4.0f) {
-				// So let's warn them before they try to use it, shall we?
-				Warning(LOCATION, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in weapon '%s'.\n Setting to 4.0, please check and set to a number 4.0 or greater!\n", s->warp_time, weapon_name);
-				// And then make the Assert obsolete -- Zacam
-				s->warp_time = 4.0f;
+			stuff_float(&s.warp_radius);
+			if (optional_string("+WarpTime:")) {
+				stuff_float(&s.warp_time);
+				// According to fireballs.cpp, "Warp lifetime must be at least 4 seconds!"
+				if ( (s.warp_time) < 4.0f) {
+					// So let's warn them before they try to use it, shall we?
+					Warning(LOCATION, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in weapon '%s'.\n Setting to 4.0, please check and set to a number 4.0 or greater!\n", s.warp_time, weapon_name);
+					// And then make the Assert obsolete -- Zacam
+					s.warp_time = 4.0f;
+				}
+			} else {
+				s.warp_time = 4.0f;
 			}
 			required_string("+Radius:");
-			stuff_float(&s->radius);
-			required_string("+Offset:");
-			stuff_float(&s->offset);
-			if (optional_string("+HUD Message:")) 
-				stuff_boolean(&s->send_message);
+			stuff_float(&s.radius);
+			if (optional_string("+Offset:"))
+				stuff_float(&s.offset);
 			else
-				s->send_message = true;
-			if (optional_string("+Custom Message:")) {
-				stuff_string(s->message, F_NAME, NAME_LENGTH);
-				s->use_custom_message = true;
+				s.offset = 0.0f;
+			if (optional_string("+Shape:")) {
+				switch(required_string_one_of(3, "Point", "Circle", "Sphere")) {
+				case 0:
+					required_string("Point");
+					s.shape = SSM_SHAPE_POINT;
+					break;
+				case 1:
+					required_string("Circle");
+				case -1:	// If we're ignoring parse errors and can't identify the shape, go with a circle.
+					s.shape = SSM_SHAPE_CIRCLE;
+					break;
+				case 2:
+					required_string("Sphere");
+					s.shape = SSM_SHAPE_SPHERE;
+					break;
+				default:
+					Assertion(false, "Impossible return value from required_string_one_of(); get a coder!\n");
+				}
+			} else {
+				s.shape = SSM_SHAPE_CIRCLE;
 			}
-			parse_sound("+Alarm Sound:", &s->sound_index, s->name);
+			if (optional_string("+HUD Message:"))
+				stuff_boolean(&s.send_message);
+			else
+				s.send_message = true;
+			if (optional_string("+Custom Message:")) {
+				stuff_string(s.message, F_NAME, NAME_LENGTH);
+				s.use_custom_message = true;
+			}
+			parse_sound("+Alarm Sound:", &s.sound_index, s.name);
 
 			// see if we have a valid weapon
-			s->weapon_info_index = -1;
-			s->weapon_info_index = weapon_info_lookup(weapon_name);
-			if(s->weapon_info_index >= 0){
+			s.weapon_info_index = weapon_info_lookup(weapon_name);
+			if(s.weapon_info_index >= 0) {
 				// valid
-				Ssm_info_count++;
+				int existing = ssm_info_lookup(s.name);
+				if (existing >= 0) {	// Redefined the existing entry instead of adding a duplicate.
+					Ssm_info[existing] = s;
+				} else {
+					Ssm_info.push_back(s);
+				}
 			}
 		}
 	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
+}
+
+// game init
+void ssm_init()
+{
+	if (cf_exists_full("ssm.tbl", CF_TYPE_TABLES)) {
+		mprintf(("TABLES => Starting parse of 'ssm.tbl'...\n"));
+		parse_ssm("ssm.tbl");
+	}
+	parse_modular_table(NOX("*-ssm.tbm"), parse_ssm);
+
+	// Now that we've populated Ssm_info, let's validate weapon $SSM: entries.
+	validate_SSM_entries();
 }
 
 void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, int ssm_index)
@@ -135,8 +169,23 @@ void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, int ssm_
 	vec3d temp;
 	ssm_info *s = &Ssm_info[ssm_index];
 
-	// get a random vector in the circle of the firing plane
-	vm_vec_random_in_circle(&temp, start, orient, s->radius, 1);
+	switch (s->shape) {
+	case SSM_SHAPE_SPHERE:
+		// get a random vector in a sphere around the target
+		vm_vec_random_in_sphere(&temp, start, orient, s->radius, 1);
+		break;
+	case SSM_SHAPE_CIRCLE:
+		// get a random vector in the circle of the firing plane
+		vm_vec_random_in_circle(&temp, start, orient, s->radius, 1);
+		break;
+	case SSM_SHAPE_POINT:
+		// boooring
+		vm_vec_scale_add(&temp, start, &orient->vec.fvec, s->radius);
+		break;
+	default:
+		Assertion(false, "Unknown shape '%d' in SSM type #%d ('%s'). This should not be possible; get a coder!\n", s->shape, ssm_index, s->name);
+		break;
+	}
 
 	// offset it a bit
 	vm_vec_scale_add(out, &temp, &orient->vec.fvec, s->offset);
@@ -145,31 +194,14 @@ void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, int ssm_
 // level init
 void ssm_level_init()
 {
-	int i;
-
-	Num_ssm_strikes = 0;
-	list_init( &Ssm_free_list );
-	list_init( &Ssm_used_list );
-
-	// Link all object slots into the free list
-	for (i=0; i<MAX_SSM_STRIKES; i++)	{
-		list_append(&Ssm_free_list, &Ssm_strikes[i] );
-	}
 }
 
 // start a subspace missile effect
-void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *override, int team)
+void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info *override, int team)
 {	
-	ssm_strike *ssm;		
+	ssm_strike ssm;
 	matrix dir;
-	int idx;
-
-	if (Num_ssm_strikes >= MAX_SSM_STRIKES ) {
-		#ifndef NDEBUG
-		mprintf(("Ssm creation failed - too many ssms!\n" ));
-		#endif
-		return;
-	}
+	int idx, count;
 
 	// sanity
 	Assert(target != NULL);
@@ -180,47 +212,49 @@ void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *ov
 	if(start == NULL){
 		return;
 	}
-	if((ssm_index < 0) || (ssm_index >= MAX_SSM_TYPES)){
+	if (ssm_index >= Ssm_info.size()) {
 		return;
 	}
 
-	// Find next available trail
-	ssm = GET_FIRST(&Ssm_free_list);
-	Assert( ssm != &Ssm_free_list );		// shouldn't have the dummy element
-
-	// remove trailp from the free list
-	list_remove( &Ssm_free_list, ssm );
-	
-	// insert trailp onto the end of used list
-	list_append( &Ssm_used_list, ssm );
-
-	// increment counter
-	Num_ssm_strikes++;	
-
 	// Init the ssm data
+
+	count = Ssm_info[ssm_index].count;
 
 	// override in multiplayer
 	if(override != NULL){
-		ssm->sinfo = *override;
+		ssm.sinfo = *override;
 	}
 	// single player or the server
 	else {
 		// forward orientation
 		vec3d temp;
 
-        vm_vec_sub(&temp, &target->pos, start);
-        vm_vec_normalize(&temp);
+		vm_vec_sub(&temp, &target->pos, start);
+		vm_vec_normalize(&temp);
 
 		vm_vector_2_matrix(&dir, &temp, NULL, NULL);
 
 		// stuff info
-		ssm->sinfo.ssm_index = ssm_index;
-		ssm->sinfo.target = target;
-        ssm->sinfo.ssm_team = team;
+		ssm.sinfo.ssm_index = ssm_index;
+		ssm.sinfo.target = target;
+		ssm.sinfo.ssm_team = team;
 
-		for(idx=0; idx<Ssm_info[ssm_index].count; idx++){
-			ssm->sinfo.delay_stamp[idx] = timestamp(200 + (int)frand_range(-199.0f, 1000.0f));
-			ssm_get_random_start_pos(&ssm->sinfo.start_pos[idx], start, &dir, ssm_index);
+		// Instead of pushing them on one at a time, let's just grab all the memory we'll need at once
+		// (as a side effect, don't need to change the logic from the old array-based code)
+		ssm.sinfo.delay_stamp.resize(count);
+		ssm.sinfo.start_pos.resize(count);
+
+		for (idx = 0; idx < count; idx++) {
+			ssm.sinfo.delay_stamp[idx] = timestamp(200 + (int)frand_range(-199.0f, 1000.0f));
+			ssm_get_random_start_pos(&ssm.sinfo.start_pos[idx], start, &dir, ssm_index);
+		}
+
+		ssm_info *si = &Ssm_info[ssm_index];
+		weapon_info *wip = &Weapon_info[si->weapon_info_index];
+		if (wip->wi_flags & WIF_BEAM) {
+			ssm.sinfo.duration = ((si->warp_time - ((wip->b_info.beam_warmup / 1000.0f) + wip->b_info.beam_life + (wip->b_info.beam_warmdown / 1000.0f))) / 2.0f) / si->warp_time;
+		} else {
+			ssm.sinfo.duration = 0.5f;
 		}
 
 		// if we're the server, send a packet
@@ -229,11 +263,10 @@ void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *ov
 		}
 	}
 
-	// clear timestamps, handles, etc
-	for(idx=0; idx<MAX_SSM_COUNT; idx++){
-		ssm->done_flags[idx] = 0;
-		ssm->fireballs[idx] = -1;
-	}
+	ssm.done_flags.clear();
+	ssm.done_flags.resize(count);
+	ssm.fireballs.clear();
+	ssm.fireballs.resize(count, -1);
 	
 	if(Ssm_info[ssm_index].send_message) {
 		if (!Ssm_info[ssm_index].use_custom_message)
@@ -244,34 +277,27 @@ void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *ov
 	if (Ssm_info[ssm_index].sound_index >= 0) {
 		snd_play(&Snds[Ssm_info[ssm_index].sound_index]);
 	}
+
+	Ssm_strikes.push_back(ssm);
 }
 
 // delete a finished ssm effect
-void ssm_delete(ssm_strike *ssm)
+void ssm_delete(SCP_list<ssm_strike>::iterator ssm)
 {
-	// remove objp from the used list
-	list_remove( &Ssm_used_list, ssm );
-
-	// add objp to the end of the free
-	list_append( &Ssm_free_list, ssm );
-
-	// decrement counter
-	Num_ssm_strikes--;
-
-	nprintf(("General", "Recycling SSM, %d left", Num_ssm_strikes));
+	Ssm_strikes.erase(ssm);
 }
 
 // process subspace missile stuff
 void ssm_process()
 {
 	int idx, finished;
-	ssm_strike *moveup, *next_one;
+	SCP_list<ssm_strike>::iterator moveup, eraser;
 	ssm_info *si;
-    int weapon_objnum;
-	
-	// process all strikes	
-	moveup=GET_FIRST(&Ssm_used_list);
-	while ( moveup!=END_OF_LIST(&Ssm_used_list) )	{		
+	int weapon_objnum;
+
+	// process all strikes
+	moveup = Ssm_strikes.begin();
+	while ( moveup != Ssm_strikes.end() ) {
 		// get the type
 		if(moveup->sinfo.ssm_index < 0){
 			continue;
@@ -287,29 +313,50 @@ void ssm_process()
 
 				// if he already has the fireball effect
 				if(moveup->fireballs[idx] >= 0){
-					// if the warp effect is half done, fire the missile
-					if((1.0f - fireball_lifeleft_percent(&Objects[moveup->fireballs[idx]])) >= 0.5f){
-						// get an orientation
-						vec3d temp;
-						matrix orient;
+					if ((1.0f - fireball_lifeleft_percent(&Objects[moveup->fireballs[idx]])) >= moveup->sinfo.duration) {
+						weapon_info *wip = &Weapon_info[si->weapon_info_index];
+						// are we a beam? -MageKing17
+						if (wip->wi_flags & WIF_BEAM) {
+							beam_fire_info fire_info;
+							memset(&fire_info, 0, sizeof(beam_fire_info));
 
-						vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
-						vm_vec_normalize(&temp);
-						vm_vector_2_matrix(&orient, &temp, NULL, NULL);
+							fire_info.accuracy = 0.000001f;		// this will guarantee a hit
+							fire_info.shooter = NULL;
+							fire_info.turret = NULL;
+							fire_info.target = moveup->sinfo.target;
+							fire_info.target_subsys = NULL;
+							fire_info.bfi_flags |= BFIF_FLOATING_BEAM;
+							fire_info.starting_pos = moveup->sinfo.start_pos[idx];
+							fire_info.beam_info_index = si->weapon_info_index;
+							fire_info.team = static_cast<char>(moveup->sinfo.ssm_team);
 
-						// fire the missile and flash the screen
-						weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
+							// fire the beam
+							beam_fire(&fire_info);
 
-						if (weapon_objnum >= 0) {
-							Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;
-							Weapons[Objects[weapon_objnum].instance].homing_object = moveup->sinfo.target;
-							Weapons[Objects[weapon_objnum].instance].target_sig = moveup->sinfo.target->signature;
+							moveup->done_flags[idx] = true;
+						} else {
+							// get an orientation
+							vec3d temp;
+							matrix orient;
+
+							vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
+							vm_vec_normalize(&temp);
+							vm_vector_2_matrix(&orient, &temp, NULL, NULL);
+
+							// fire the missile and flash the screen
+							weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
+
+							if (weapon_objnum >= 0) {
+								Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;
+								Weapons[Objects[weapon_objnum].instance].homing_object = moveup->sinfo.target;
+								Weapons[Objects[weapon_objnum].instance].target_sig = moveup->sinfo.target->signature;
+							}
+
+							// this makes this particular missile done
+							moveup->done_flags[idx] = true;
 						}
-
-						// this makes this particular missile done
-						moveup->done_flags[idx] = 1;
 					}
-				} 
+				}
 				// maybe create his warpin effect
 				else if((moveup->sinfo.delay_stamp[idx] >= 0) && timestamp_elapsed(moveup->sinfo.delay_stamp[idx])){
 					// get an orientation
@@ -324,14 +371,14 @@ void ssm_process()
 			}
 		}
 		if(finished){
-			next_one = GET_NEXT(moveup);			
-			ssm_delete(moveup);															
-			moveup = next_one;
+			eraser = moveup;
+			++moveup;
+			ssm_delete(eraser);
 			continue;
 		}
 		
-		moveup=GET_NEXT(moveup);
-	}	
+		++moveup;
+	}
 }
 
 
@@ -353,6 +400,6 @@ void hud_artillery_render()
 	// render how long the player has been painting his target	
 	if((Player_ai != NULL) && (Player_ai->artillery_objnum >= 0)){
 		gr_set_color_fast(&Color_bright_blue);
-		gr_printf(10, 50, "%f", Player_ai->artillery_lock_time);
+		gr_printf_no_resize(gr_screen.center_offset_x + 10, gr_screen.center_offset_y + 50, "%f", Player_ai->artillery_lock_time);
 	}
 }

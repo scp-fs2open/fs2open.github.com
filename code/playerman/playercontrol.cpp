@@ -34,6 +34,7 @@
 #include "network/multiutil.h"
 #include "network/multi_obj.h"
 #include "parse/parselo.h"
+#include "debugconsole/console.h"
 
 #ifndef NDEBUG
 #include "io/key.h"
@@ -286,10 +287,16 @@ void do_view_chase(float frame_time)
 
 float camera_zoom_scale = 1.0f;
 
-DCF(camera_speed, "")
+DCF(camera_speed, "Sets the camera zoom scale")
 {
-	dc_get_arg(ARG_FLOAT);
-	camera_zoom_scale = Dc_arg_float;
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Camera zoom scale is %f\n", camera_zoom_scale);
+		return;
+	}
+
+	dc_stuff_float(&camera_zoom_scale);
+
+	dc_printf("Camera zoom scale set to %f\n", camera_zoom_scale);
 }
 
 void do_view_external(float frame_time)
@@ -630,22 +637,22 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (Axis_map_to[JOY_HEADING_AXIS] >= 0) {
 			// check the heading on the x axis
 			if ( check_control(BANK_WHEN_PRESSED) ) {
-				delta = f2fl( axis[JOY_HEADING_AXIS] );
+				delta = f2fl( axis[Axis_map_to[JOY_HEADING_AXIS]] );
 				if ( (delta > 0.05f) || (delta < -0.05f) ) {
 					ci->bank -= delta;
 				}
 			} else {
-				ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
+				ci->heading += f2fl( axis[Axis_map_to[JOY_HEADING_AXIS]] );
 			}
 		}
 
 		// check the pitch on the y axis
 		if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
-			ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
+			ci->pitch -= f2fl( axis[Axis_map_to[JOY_PITCH_AXIS]] );
 		}
 
 		if (Axis_map_to[JOY_BANK_AXIS] >= 0) {
-			ci->bank -= f2fl( axis[JOY_BANK_AXIS] ) * 1.5f;
+			ci->bank -= f2fl( axis[Axis_map_to[JOY_BANK_AXIS]] ) * 1.5f;
 		}
 
 		// axis 2 is for throttle

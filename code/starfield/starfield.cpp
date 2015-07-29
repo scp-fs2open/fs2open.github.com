@@ -25,7 +25,8 @@
 #include "parse/parselo.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
-
+#include "model/modelrender.h"
+#include "debugconsole/console.h"
 
 #define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
@@ -171,7 +172,7 @@ int Num_debris_normal = 0;
 int Num_debris_nebula = 0;
 
 bool Dynamic_environment = false;
-
+bool Motion_debris_override = false;
 
 void stars_release_debris_vclips(debris_vclip *vclips)
 {
@@ -403,183 +404,192 @@ void parse_startbl(const char *filename)
 {
 	char name[MAX_FILENAME_LEN], tempf[16];
 	starfield_bitmap sbm;
-	int idx, rval;
+	int idx;
 	bool in_check = false;
 	int rc = -1;
 	int run_count = 0;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		return;
+	try
+	{
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
+
+		// freaky! ;)
+		while (!check_for_eof()) {
+			while ((rc = optional_string_either("$Bitmap:", "$BitmapX:")) != -1) {
+				in_check = true;
+
+				starfield_bitmap_entry_init(&sbm);
+
+				stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
+				sbm.xparent = rc;  // 0 == intensity alpha bitmap,  1 == green xparency bitmap
+
+				if ((idx = stars_find_bitmap(sbm.filename)) >= 0) {
+					if (sbm.xparent == Starfield_bitmaps[idx].xparent) {
+						if (!Parsing_modular_table)
+							Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
+					}
+					else {
+						Warning(LOCATION, "Starfield bitmap '%s' already listed as a %sxparent bitmap!!  Only using the xparent version!",
+							(rc) ? "xparent" : "non-xparent", (rc) ? "xparent" : "non-xparent", sbm.filename);
+					}
+				}
+				else {
+					Starfield_bitmaps.push_back(sbm);
+				}
+			}
+
+			CHECK_END();
+
+			while (optional_string("$Sun:")) {
+				in_check = true;
+
+				starfield_bitmap_entry_init(&sbm);
+
+				stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
+
+				// associated glow
+				required_string("$Sunglow:");
+				stuff_string(sbm.glow_filename, F_NAME, MAX_FILENAME_LEN);
+
+				// associated lighting values
+				required_string("$SunRGBI:");
+				stuff_float(&sbm.r);
+				stuff_float(&sbm.g);
+				stuff_float(&sbm.b);
+				stuff_float(&sbm.i);
+
+				if (optional_string("$SunSpecularRGB:")) {
+					stuff_float(&sbm.spec_r);
+					stuff_float(&sbm.spec_g);
+					stuff_float(&sbm.spec_b);
+				}
+				else {
+					sbm.spec_r = sbm.r;
+					sbm.spec_g = sbm.g;
+					sbm.spec_b = sbm.b;
+				}
+
+				// lens flare stuff
+				if (optional_string("$Flare:")) {
+					sbm.flare = 1;
+
+					required_string("+FlareCount:");
+					stuff_int(&sbm.n_flares);
+
+					// if there's a flare, it has to have at least one texture
+					required_string("$FlareTexture1:");
+					stuff_string(sbm.flare_bitmaps[0].filename, F_NAME, MAX_FILENAME_LEN);
+
+					sbm.n_flare_bitmaps = 1;
+
+					for (idx = 1; idx < MAX_FLARE_BMP; idx++) {
+						// allow 9999 textures (theoretically speaking, that is)
+						sprintf(tempf, "$FlareTexture%d:", idx + 1);
+
+						if (optional_string(tempf)) {
+							sbm.n_flare_bitmaps++;
+							stuff_string(sbm.flare_bitmaps[idx].filename, F_NAME, MAX_FILENAME_LEN);
+						}
+						//	else break; //don't allow flaretexture1 and then 3, etc.
+					}
+
+					required_string("$FlareGlow1:");
+
+					required_string("+FlareTexture:");
+					stuff_int(&sbm.flare_infos[0].tex_num);
+
+					required_string("+FlarePos:");
+					stuff_float(&sbm.flare_infos[0].pos);
+
+					required_string("+FlareScale:");
+					stuff_float(&sbm.flare_infos[0].scale);
+
+					sbm.n_flares = 1;
+
+					for (idx = 1; idx < MAX_FLARE_COUNT; idx++) {
+						// allow a lot of glows
+						sprintf(tempf, "$FlareGlow%d:", idx + 1);
+
+						if (optional_string(tempf)) {
+							sbm.n_flares++;
+
+							required_string("+FlareTexture:");
+							stuff_int(&sbm.flare_infos[idx].tex_num);
+
+							required_string("+FlarePos:");
+							stuff_float(&sbm.flare_infos[idx].pos);
+
+							required_string("+FlareScale:");
+							stuff_float(&sbm.flare_infos[idx].scale);
+						}
+						//	else break; //don't allow "flare 1" and then "flare 3"
+					}
+				}
+
+				sbm.glare = !optional_string("$NoGlare:");
+
+				sbm.xparent = 1;
+
+				if ((idx = stars_find_sun(sbm.filename)) >= 0) {
+					if (Parsing_modular_table)
+						Sun_bitmaps[idx] = sbm;
+					else
+						Warning(LOCATION, "Sun bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
+				}
+				else {
+					Sun_bitmaps.push_back(sbm);
+				}
+			}
+
+			CHECK_END();
+
+			// normal debris pieces
+			while (optional_string("$Debris:")) {
+				in_check = true;
+
+				stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+				if (Num_debris_normal < MAX_DEBRIS_VCLIPS) {
+					strcpy_s(Debris_vclips_normal[Num_debris_normal++].name, name);
+				}
+				else {
+					Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
+				}
+			}
+
+			CHECK_END();
+
+			// nebula debris pieces
+			while (optional_string("$DebrisNeb:")) {
+				in_check = true;
+
+				stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+				if (Num_debris_nebula < MAX_DEBRIS_VCLIPS) {
+					strcpy_s(Debris_vclips_nebula[Num_debris_nebula++].name, name);
+				}
+				else {
+					Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
+				}
+			}
+
+			CHECK_END();
+
+			// since it's possible for some idiot to have a tbl screwed up enough
+			// that this ends up in an endless loop, give an opportunity to advance
+			// through the file no matter what, because even the retail tbl has an
+			// extra "#end" line in it.
+			if (optional_string("#end") || (run_count++ > 5)) {
+				run_count = 0;
+				advance_to_eoln(NULL);
+			}
+		}
 	}
-
-	read_file_text(filename, CF_TYPE_TABLES);
-	reset_parse();
-
-	// freaky! ;)
-	while ( !check_for_eof() ) {
-		while ( (rc = optional_string_either("$Bitmap:", "$BitmapX:")) != -1 ) {
-			in_check = true;
-
-			starfield_bitmap_entry_init( &sbm );
-
-			stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
-			sbm.xparent = rc;  // 0 == intensity alpha bitmap,  1 == green xparency bitmap
-
-			if ( (idx = stars_find_bitmap(sbm.filename)) >= 0 ) {
-				if (sbm.xparent == Starfield_bitmaps[idx].xparent) {
-					if ( !Parsing_modular_table )
-						Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
-				} else {
-					Warning(LOCATION, "Starfield bitmap '%s' already listed as a %sxparent bitmap!!  Only using the xparent version!",
-										(rc) ? "xparent" : "non-xparent", (rc) ? "xparent" : "non-xparent", sbm.filename);
-				}
-			} else {
-				Starfield_bitmaps.push_back(sbm);
-			}
-		}
-
-		CHECK_END();
-
-		while ( optional_string("$Sun:") ) {
-			in_check = true;
-
-			starfield_bitmap_entry_init( &sbm );
-
-			stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
-
-			// associated glow
-			required_string("$Sunglow:");
-			stuff_string(sbm.glow_filename, F_NAME, MAX_FILENAME_LEN);
-
-			// associated lighting values
-			required_string("$SunRGBI:");
-			stuff_float(&sbm.r);
-			stuff_float(&sbm.g);
-			stuff_float(&sbm.b);
-			stuff_float(&sbm.i);
-
-			if ( optional_string("$SunSpecularRGB:") ) {
-				stuff_float(&sbm.spec_r);
-				stuff_float(&sbm.spec_g);
-				stuff_float(&sbm.spec_b);
-			} else {
-				sbm.spec_r = sbm.r;
-				sbm.spec_g = sbm.g;
-				sbm.spec_b = sbm.b;
-			}
-
-			// lens flare stuff
-			if ( optional_string("$Flare:") ) {
-				sbm.flare = 1;
-
-				required_string("+FlareCount:");
-				stuff_int(&sbm.n_flares);
-
-				// if there's a flare, it has to have at least one texture
-				required_string("$FlareTexture1:");
-				stuff_string(sbm.flare_bitmaps[0].filename, F_NAME, MAX_FILENAME_LEN);
-
-				sbm.n_flare_bitmaps = 1;
-
-				for (idx = 1; idx < MAX_FLARE_BMP; idx++) {
-					// allow 9999 textures (theoretically speaking, that is)
-					sprintf(tempf, "$FlareTexture%d:", idx+1);
-
-					if (optional_string(tempf)) {
-						sbm.n_flare_bitmaps++;
-						stuff_string(sbm.flare_bitmaps[idx].filename, F_NAME, MAX_FILENAME_LEN);
-					}
-				//	else break; //don't allow flaretexture1 and then 3, etc.
-				}
-
-				required_string("$FlareGlow1:");
-
-				required_string("+FlareTexture:");
-				stuff_int(&sbm.flare_infos[0].tex_num);
-
-				required_string("+FlarePos:");
-				stuff_float(&sbm.flare_infos[0].pos);
-
-				required_string("+FlareScale:");
-				stuff_float(&sbm.flare_infos[0].scale);
-				
-				sbm.n_flares = 1;
-
-				for (idx = 1; idx < MAX_FLARE_COUNT; idx++) {
-					// allow a lot of glows
-					sprintf(tempf, "$FlareGlow%d:", idx+1);
-
-					if (optional_string(tempf)) {
-						sbm.n_flares++;
-
-						required_string("+FlareTexture:");
-						stuff_int(&sbm.flare_infos[idx].tex_num);
-
-						required_string("+FlarePos:");
-						stuff_float(&sbm.flare_infos[idx].pos);
-
-						required_string("+FlareScale:");
-						stuff_float(&sbm.flare_infos[idx].scale);
-					}
-				//	else break; //don't allow "flare 1" and then "flare 3"
-				}
-			}
-
-			sbm.glare = !optional_string("$NoGlare:");
-
-			sbm.xparent = 1;
-
-			if ( (idx = stars_find_sun(sbm.filename)) >= 0 ) {
-				if (Parsing_modular_table)
-					Sun_bitmaps[idx] = sbm;
-				else
-					Warning(LOCATION, "Sun bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
-			} else {
-				Sun_bitmaps.push_back(sbm);
-			}
-		}
-
-		CHECK_END();
-
-		// normal debris pieces
-		while ( optional_string("$Debris:") ) {
-			in_check = true;
-
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-
-			if (Num_debris_normal < MAX_DEBRIS_VCLIPS) {
-				strcpy_s(Debris_vclips_normal[Num_debris_normal++].name, name);
-			} else {
-				Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
-			}
-		}
-
-		CHECK_END();
-
-		// nebula debris pieces
-		while ( optional_string("$DebrisNeb:") ) {
-			in_check = true;
-
-			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-
-			if (Num_debris_nebula < MAX_DEBRIS_VCLIPS) {
-				strcpy_s(Debris_vclips_nebula[Num_debris_nebula++].name, name);
-			} else {
-				Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
-			}
-		}
-
-		CHECK_END();
-
-		// since it's possible for some idiot to have a tbl screwed up enough
-		// that this ends up in an endless loop, give an opportunity to advance
-		// through the file no matter what, because even the retail tbl has an
-		// extra "#end" line in it.
-		if ( optional_string("#end") || (run_count++ > 5) ) {
-			run_count = 0;
-			advance_to_eoln(NULL);
-		}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
 	}
 }
 
@@ -765,6 +775,7 @@ void stars_pre_level_init(bool clear_backgrounds)
 	}
 
 	Dynamic_environment = false;
+	Motion_debris_override = false;
 }
 
 // call this in game_post_level_init() so we know whether we're running in full nebula mode or not
@@ -865,75 +876,11 @@ uint Star_flags = STAR_FLAG_DEFAULT;
 //XSTR:OFF
 DCF(stars,"Set parameters for starfield")
 {
-	if ( Dc_command ) {
-		dc_get_arg(ARG_STRING);
-		if ( !strcmp( Dc_arg, "tail" )) {
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) ) {
-				Dc_help = 1;
-			} else {
-				Star_amount = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "len" )) {
-			dc_get_arg(ARG_FLOAT);
-			Star_max_length = Dc_arg_float;
-		} else if ( !strcmp( Dc_arg, "dim" )) {
-			dc_get_arg(ARG_FLOAT);
-			if ( Dc_arg_float < 0.0f ) {
-				Dc_help = 1;
-			} else {
-				Star_dim = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "flag" )) {
-			dc_get_arg(ARG_STRING);
-			if ( !strcmp( Dc_arg, "tail" )) {
-				Star_flags ^= STAR_FLAG_TAIL;
-			} else if ( !strcmp( Dc_arg, "dim" )) {
-				Star_flags ^= STAR_FLAG_DIM;
-			} else if ( !strcmp( Dc_arg, "aa" )) {
-				Star_flags ^= STAR_FLAG_ANTIALIAS;
-			} else {
-				Dc_help = 1;
-			}
-		} else if ( !strcmp( Dc_arg, "cap" )) {
-			dc_get_arg(ARG_FLOAT);
-			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 255.0f) ) {
-				Dc_help = 1;
-			} else {
-				Star_cap = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "m0" )) {
-			Star_amount = 0.0f;
-			Star_dim = 0.0f;
-			Star_cap = 0.0f;
-			Star_flags = 0;
-			Star_max_length = STAR_MAX_LENGTH_DEFAULT;
-		} else if ( !strcmp( Dc_arg, "m1" ) || !strcmp( Dc_arg, "default" )) {
-			Star_amount = STAR_AMOUNT_DEFAULT;
-			Star_dim = STAR_DIM_DEFAULT;
-			Star_cap = STAR_CAP_DEFAULT;
-			Star_flags = STAR_FLAG_DEFAULT;
-			Star_max_length = STAR_MAX_LENGTH_DEFAULT;
-		} else if ( !strcmp( Dc_arg, "m2" )) {
-			Star_amount = 0.75f;
-			Star_dim = 20.0f;
-			Star_cap = 75.0f;
-			Star_flags = STAR_FLAG_TAIL|STAR_FLAG_DIM|STAR_FLAG_ANTIALIAS;
-			Star_max_length = STAR_MAX_LENGTH_DEFAULT;
-		} else if ( !strcmp( Dc_arg, "num" )) {
-			dc_get_arg(ARG_INT);
-			if ( (Dc_arg_int < 0) || (Dc_arg_int > MAX_STARS) ) {
-				Dc_help = 1;
-			} else {
-				Num_stars = Dc_arg_int;
-			} 
-		} else {
-			// print usage, not stats
-			Dc_help = 1;
-		}
-	}
+	SCP_string arg;
+	float val_f;
+	int val_i;
 
-	if ( Dc_help ) {
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf( "Usage: stars keyword\nWhere keyword can be in the following forms:\n" );
 		dc_printf( "stars default   Resets stars to all default values\n" );
 		dc_printf( "stars num X     Sets number of stars to X.  Between 0 and %d.\n", MAX_STARS );
@@ -948,21 +895,105 @@ DCF(stars,"Set parameters for starfield")
 		dc_printf( "\nHINT: set cap to 0 to get dim rate and tail down, then use\n" );
 		dc_printf( "cap to keep the lines from going away when moving too fast.\n" );
 		dc_printf( "\nUse '? stars' to see current values.\n" );
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
+		return;	// don't print status if help is printed.  Too messy.
 	}
 
-	if ( Dc_status ) {
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf( "Num_stars: %d\n", Num_stars );
 		dc_printf( "Tail: %.2f\n", Star_amount );
-		dc_printf( "Dim: %.2f\n", Star_dim );
-		dc_printf( "Cap: %.2f\n", Star_cap );
+		dc_printf( "Dim : %.2f\n", Star_dim );
+		dc_printf( "Cap : %.2f\n", Star_cap );
 		dc_printf( "Max length: %.2f\n", Star_max_length );
 		dc_printf( "Flags:\n" );
-		dc_printf( "  Tail: %s\n", (Star_flags&STAR_FLAG_TAIL?"On":"Off") );
-		dc_printf( "  Dim: %s\n", (Star_flags&STAR_FLAG_DIM?"On":"Off") );
+		dc_printf( "  Tail : %s\n", (Star_flags&STAR_FLAG_TAIL?"On":"Off") );
+		dc_printf( "  Dim  : %s\n", (Star_flags&STAR_FLAG_DIM?"On":"Off") );
 		dc_printf( "  Antialias: %s\n", (Star_flags&STAR_FLAG_ANTIALIAS?"On":"Off") );
 		dc_printf( "\nTHESE AREN'T SAVED TO DISK, SO IF YOU TWEAK\n" );
 		dc_printf( "THESE AND LIKE THEM, WRITE THEM DOWN!!\n" );
+		return;
+	}
+
+	dc_stuff_string_white(arg);
+	// "stars default" is handled by "stars m1"
+	if (arg == "num") {
+		dc_stuff_int(&val_i);
+
+		CLAMP(val_i, 0, MAX_STARS);
+		Num_stars = val_i;
+
+		dc_printf("Num_stars set to %i\n", Num_stars);
+	
+	} else if (arg == "tail") {
+		dc_stuff_float(&val_f);
+		CLAMP(val_f, 0.0, 1.0);
+		Star_amount = val_f;
+		
+		dc_printf("Star_amount set to %f\n", Star_amount);
+
+	} else if (arg == "dim") {
+		dc_stuff_float(&val_f);
+
+		if (val_f > 0.0f ) {
+			Star_dim = val_f;
+			dc_printf("Star_dim set to %f\n", Star_dim);
+		
+		} else {
+			dc_printf("Error: Star_dim value must be non-negative\n");
+		}
+	
+	} else if (arg == "cap") {
+		dc_stuff_float(&val_f);
+		CLAMP(val_f, 0.0, 255);
+		Star_cap = val_f;
+		
+		dc_printf("Star_cap set to %f\n", Star_cap);
+	
+	} else if (arg == "len") {
+		dc_stuff_float(&Star_max_length);
+
+		dc_printf("Star_max_length set to %f\n", Star_max_length);
+
+	} else if (arg == "m0") {
+		Star_amount = 0.0f;
+		Star_dim = 0.0f;
+		Star_cap = 0.0f;
+		Star_flags = 0;
+		Star_max_length = STAR_MAX_LENGTH_DEFAULT;
+
+		dc_printf("Starfield set: Old 'pixel type' crappy stars. flags=none\n");
+	
+	} else if ((arg == "m1") || (arg == "default")) {
+		Star_amount = STAR_AMOUNT_DEFAULT;
+		Star_dim = STAR_DIM_DEFAULT;
+		Star_cap = STAR_CAP_DEFAULT;
+		Star_flags = STAR_FLAG_DEFAULT;
+		Star_max_length = STAR_MAX_LENGTH_DEFAULT;
+
+		dc_printf("Starfield set: (default) tail=.75, dim=20.0, cap=75.0, flags=dim,tail\n");
+
+	} else if (arg == "m2") {
+		Star_amount = 0.75f;
+		Star_dim = 20.0f;
+		Star_cap = 75.0f;
+		Star_flags = STAR_FLAG_TAIL|STAR_FLAG_DIM|STAR_FLAG_ANTIALIAS;
+		Star_max_length = STAR_MAX_LENGTH_DEFAULT;
+
+		dc_printf("Starfield set: tail=.75, dim=20.0, cap=75.0, flags=dim,tail,aa\n");
+
+	} else if (arg == "flag") {
+		dc_stuff_string_white(arg);
+		if (arg == "tail") {
+			Star_flags ^= STAR_FLAG_TAIL;
+		} else if (arg == "dim" ) {
+			Star_flags ^= STAR_FLAG_DIM;
+		} else if (arg == "aa" ) {
+			Star_flags ^= STAR_FLAG_ANTIALIAS;
+		} else {
+			dc_printf("Error: unknown flag argument '%s'\n", arg.c_str());
+		}
+
+	} else {
+		dc_printf("Error: Unknown argument '%s'", arg.c_str());
 	}
 }
 //XSTR:ON
@@ -1283,39 +1314,44 @@ float Subspace_glow_rate = 1.0f;
 //XSTR:OFF
 DCF(subspace_set,"Set parameters for subspace effect")
 {
-	if ( Dc_command ) {
-		dc_get_arg(ARG_STRING);
-		if ( !strcmp( Dc_arg, "u" )) {
-			dc_get_arg(ARG_FLOAT);
-			if ( Dc_arg_float < 0.0f ) {
-				Dc_help = 1;
-			} else {
-				subspace_u_speed = Dc_arg_float;
-			} 
-		} else if ( !strcmp( Dc_arg, "v" )) {
-			dc_get_arg(ARG_FLOAT);
-			if ( Dc_arg_float < 0.0f ) {
-				Dc_help = 1;
-			} else {
-				subspace_v_speed = Dc_arg_float;
-			}
-		} else {
-			// print usage, not stats
-			Dc_help = 1;
-		}
+	SCP_string arg;
+	float value;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: subspace [--status] <axis> <speed>\n");
+		dc_printf("[--status] -- Displays the current speeds for both axes\n");
+		dc_printf("<axis>  -- May be either 'u' or 'v', and corresponds to the texture axis\n");
+		dc_printf("<speed> -- is the speed along the axis that the texture is moved\n");
+		return;
 	}
 
-	if ( Dc_help ) {
-		dc_printf( "Usage: subspace keyword\nWhere keyword can be in the following forms:\n" );
-		dc_printf( "subspace u X    Where X is how fast u moves.\n", MAX_STARS );
-		dc_printf( "subspace v X    Where X is how fast v moves.\n" );
-		dc_printf( "\nUse '? subspace' to see current values.\n" );
-		Dc_status = 0;	// don't print status if help is printed.  Too messy.
-	}
-
-	if ( Dc_status ) {
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf( "u: %.2f\n", subspace_u_speed );
 		dc_printf( "v: %.2f\n", subspace_v_speed );
+		return;
+	}
+
+	dc_stuff_string_white(arg);
+	if (arg == "u") {
+		dc_stuff_float(&value);
+
+		if ( value < 0.0f ) {
+			dc_printf("Error: speed must be non-negative");
+			return;
+		}
+		subspace_u_speed = value;
+
+	} else if (arg == "v") {
+		dc_stuff_float(&value);
+
+		if (value < 0.0f) {
+			dc_printf("Error: speed must be non-negative");
+			return;
+		}
+		subspace_v_speed = value;
+
+	} else {
+		dc_printf("Error: Unknown axis '%s'", arg.c_str());
 	}
 }
 //XSTR:ON
@@ -1395,12 +1431,14 @@ void subspace_render()
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u;
 	Interp_subspace_offset_v = 0.0f;
 
-	model_set_alpha(1.0f);
+	model_render_params render_info;
+	render_info.set_alpha(1.0f);
+	render_info.set_flags(render_flags);
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 
-	model_render( Subspace_model_outer, &tmp, &Eye_position, render_flags );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
+	model_render_immediate( &render_info, Subspace_model_outer, &tmp, &Eye_position);	//MR_NO_CORRECT|MR_SHOW_OUTLINE
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(0, 0, false);
@@ -1413,14 +1451,14 @@ void subspace_render()
 
 	vm_angles_2_matrix(&tmp,&angs);
 
-	model_set_outline_color(255,255,255);
-
-	model_set_alpha(1.0f);
+	render_info.set_color(255, 255, 255);
+	render_info.set_alpha(1.0f);
+	render_info.set_flags(render_flags);
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 
-	model_render( Subspace_model_inner, &tmp, &Eye_position, render_flags  );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
+	model_render_immediate( &render_info, Subspace_model_inner, &tmp, &Eye_position );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
 
 	if (!Cmdline_nohtl)
 		gr_set_texture_panning(0, 0, false);
@@ -1703,6 +1741,12 @@ void stars_draw_debris()
 	float vdist;
 	vec3d tmp;
 	vertex p;
+
+	extern bool Motion_debris_override;
+
+	if (Motion_debris_override)
+		return;
+
 	gr_set_color( 0, 0, 0 );
 
 	// turn off fogging
@@ -1769,7 +1813,7 @@ void stars_draw_debris()
 void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env)
 {
 	int gr_zbuffering_save = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE); 
+	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	Rendering_to_env = env;
 
@@ -2111,20 +2155,17 @@ void stars_draw_background()
 	if (Nmodel_num < 0)
 		return;
 
+	model_render_params render_info;
+
 	if (Nmodel_bitmap >= 0) {
-		model_set_forced_texture(Nmodel_bitmap);
-		Nmodel_flags |= MR_FORCE_TEXTURE;
+		render_info.set_forced_bitmap(Nmodel_bitmap);
 	}
 
 	// draw the model at the player's eye with no z-buffering
-	model_set_alpha(1.0f);
+	render_info.set_alpha(1.0f);
+	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
-	model_render(Nmodel_num, &Nmodel_orient, &Eye_position, Nmodel_flags);
-
-	if (Nmodel_bitmap >= 0) {
-		model_set_forced_texture(-1);
-		Nmodel_flags &= ~MR_FORCE_TEXTURE;
-	}
+	model_render_immediate(&render_info, Nmodel_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
 }
 
 // call this to set a specific model as the background model

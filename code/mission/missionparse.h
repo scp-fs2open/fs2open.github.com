@@ -93,6 +93,8 @@ struct p_dock_instance;
 #define MISSION_FLAG_ALL_ATTACK					(1<<20)	// all teams at war - Goober5000
 #define MISSION_FLAG_USE_AP_CINEMATICS			(1<<21) // Kazan - use autopilot cinematics
 #define MISSION_FLAG_DEACTIVATE_AP         	    (1<<22) // KeldorKatarn - deactivate autopilot (patch approved by Kazan)
+#define MISSION_FLAG_ALWAYS_SHOW_GOALS     	    (1<<23) // Karajorma - Show the mission goals, even for training missions
+#define MISSION_FLAG_END_TO_MAINHALL			(1<<24) // niffiwan - Return to the mainhall after debrief
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
@@ -126,14 +128,8 @@ typedef struct support_ship_info {
 // defines a mission cutscene.
 typedef struct mission_cutscene {
 	int type; 
-	char cutscene_name[NAME_LENGTH];	
-	int formula; 
-
-	mission_cutscene( ) 
-		: type( 0 ), formula( -1 )
-	{ 
-		cutscene_name[ 0 ] = 0;
-	}
+	char filename[MAX_FILENAME_LEN];
+	int formula;
 } mission_cutscene;
 
 struct mission {
@@ -434,9 +430,10 @@ public:
 	float ship_max_hull_strength;			// Needed to deal with special hitpoints
 	float ship_max_shield_strength;
 
+	float max_shield_recharge;
+
 	// Goober5000
-	int num_texture_replacements;
-	texture_replace replacement_textures[MAX_REPLACEMENT_TEXTURES];	// replacement textures - Goober5000
+	SCP_vector<texture_replace> replacement_textures;
 
 	SCP_vector<alt_class> alt_classes;	
 
@@ -491,7 +488,7 @@ public:
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	22
+#define MAX_PARSE_OBJECT_FLAGS_2	24
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -515,10 +512,13 @@ public:
 #define P2_SF2_CLOAKED						(1<<19)
 #define P2_SF2_SHIP_LOCKED					(1<<20)
 #define P2_SF2_WEAPONS_LOCKED				(1<<21)
+#define P2_SF2_SCRAMBLE_MESSAGES			(1<<22)
+#define P2_OF_NO_COLLIDE					(1<<23) // This actually changes the OF_COLLIDES object flag
 
 // and again: these flags do not appear in the array
+//#define blah							(1<<28)
 //#define blah							(1<<29)
-//#define blah							(1<<30)
+#define P2_RED_ALERT_DELETED			(1<<30)	// Goober5000 - used analogously to SEF_PLAYER_DELETED
 #define P2_ALREADY_HANDLED				(1<<31)	// Goober5000 - used for docking currently, but could be used generically
 
 

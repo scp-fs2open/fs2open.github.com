@@ -18,6 +18,7 @@
 #include "freespace2/freespace.h"
 #include "playerman/player.h"
 #include "io/timer.h"
+#include "debugconsole/console.h"
 
 
 // ----------------------------------------------------------------------------------
@@ -137,18 +138,14 @@ int multi_kick_is_banned(net_addr *addr)
 void multi_dcf_kick()
 {
 	int player_num,idx;
+	SCP_string arg;
 
 	// get the callsign of the player to kick
-	dc_get_arg(ARG_STRING);
-
-	if(Dc_arg[0] == '\0'){
-		dc_printf("Invalid player callsign!\n");
-		return ;
-	}
+	dc_stuff_string(arg);
 
 	player_num = -1;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && (stricmp(Net_players[idx].m_player->callsign,Dc_arg)==0)){
+		if(MULTI_CONNECTED(Net_players[idx]) && (stricmp(Net_players[idx].m_player->callsign, arg.c_str()) == 0)) {
 			player_num = idx;
 			break;
 		}
@@ -156,7 +153,7 @@ void multi_dcf_kick()
 
 	// if we didn't find the player, notify of the results
 	if(player_num == -1){
-		dc_printf("Could not find player %s to kick!",Dc_arg);
+		dc_printf("Could not find player %s to kick!", arg.c_str());
 	} 
 	// if we found the guy, then try and kick him
 	else {

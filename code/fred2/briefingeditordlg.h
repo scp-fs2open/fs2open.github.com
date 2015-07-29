@@ -67,6 +67,7 @@ public:
 	int		m_current_briefing;
 	BOOL	m_flipicon;
 	BOOL	m_use_wing;
+	BOOL	m_use_cargo;
 	//}}AFX_DATA
 
 	CBitmap m_play_bm;
@@ -133,6 +134,7 @@ protected:
 	afx_msg void OnPasteView();
 	afx_msg void OnFlipIcon();
 	afx_msg void OnWingIcon();
+	afx_msg void OnCargoIcon();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:

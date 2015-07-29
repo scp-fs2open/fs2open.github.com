@@ -40,8 +40,13 @@ typedef struct escort_info
 	int					objnum;
 	int					obj_signature;	// so we are sure we have a valid objnum
 	int					priority;		// higher priority is higher in the list
-	short					np_id;			// netplayer id (for multiplayer dogfight mode)
-	shield_hit_info	hit_info;
+	short				np_id;			// netplayer id (for multiplayer dogfight mode)
+
+	// These parallel the way the shield_hit_info struct works; intentionally
+	// not using it here because this is a lot simpler and less error-prone
+	int					escort_hit_timer;
+	int					escort_hit_next_flash;
+	bool				escort_show_bright;
 } escort_info;
 
 escort_info		Escort_ships[MAX_COMPLETE_ESCORT_LIST];
@@ -234,9 +239,6 @@ int HudGaugeEscort::setGaugeColorEscort(int index, int team)
 	int is_flashing = 0;
 	int is_bright = 0;
 	int seen_from_team = (Player_ship != NULL) ? Player_ship->team : -1;
-	shield_hit_info	*shi;
-
-	shi = &Escort_ships[index].hit_info;
 
 	// multiplayer dogfight
 	if(MULTI_DOGFIGHT)
@@ -246,10 +248,10 @@ int HudGaugeEscort::setGaugeColorEscort(int index, int team)
 	}
 	
 	// set flashing color
-	if (!timestamp_elapsed(shi->shield_hit_timers[HULL_HIT_OFFSET]))
+	if (!timestamp_elapsed(Escort_ships[index].escort_hit_timer))
 	{
 		is_flashing = 1;
-		if (shi->shield_show_bright & (1 << HULL_HIT_OFFSET))
+		if (Escort_ships[index].escort_show_bright)
 		{
 			is_bright = 1;
 		}
@@ -441,20 +443,16 @@ void HudGaugeEscort::renderIconDogfight(int x, int y, int index)
 
 void hud_escort_update_list()
 {
-	shield_hit_info	*shi;
-
 	if(Num_escort_ships)
 	{
 		for(int i = 0; i < Num_escort_ships; i++)
 		{
-			shi = &Escort_ships[i].hit_info;
-
-			if (!timestamp_elapsed(shi->shield_hit_timers[HULL_HIT_OFFSET]))
+			if (!timestamp_elapsed(Escort_ships[i].escort_hit_timer))
 			{
-				if (timestamp_elapsed(shi->shield_hit_next_flash[HULL_HIT_OFFSET]))
+				if (timestamp_elapsed(Escort_ships[i].escort_hit_next_flash))
 				{
-					shi->shield_hit_next_flash[HULL_HIT_OFFSET] = timestamp(SHIELD_FLASH_INTERVAL);
-					shi->shield_show_bright ^= (1 << HULL_HIT_OFFSET);	// toggle between default and bright frames
+					Escort_ships[i].escort_hit_next_flash = timestamp(SHIELD_FLASH_INTERVAL);
+					Escort_ships[i].escort_show_bright = !Escort_ships[i].escort_show_bright;	// toggle between default and bright frames
 				}
 			}
 		}
@@ -485,7 +483,9 @@ void hud_escort_clear_all(bool clear_flags)
 		}
 		Escort_ships[i].obj_signature = -99;
 		Escort_ships[i].np_id = -1;
-		shield_info_reset(&Escort_ships[i].hit_info);
+		Escort_ships[i].escort_hit_timer = 0;
+		Escort_ships[i].escort_hit_next_flash = 0;
+		Escort_ships[i].escort_show_bright = false;
 	}
 }
 
@@ -563,6 +563,9 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 				escorts[*num_escorts].obj_signature = -1;
 				escorts[*num_escorts].priority = -1;
 				escorts[*num_escorts].np_id = Net_players[idx].player_id;
+				escorts[*num_escorts].escort_hit_timer = 0;
+				escorts[*num_escorts].escort_hit_next_flash = 0;
+				escorts[*num_escorts].escort_show_bright = false;
 				(*num_escorts)++;
 			}
 		}
@@ -624,6 +627,9 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 			escorts[*num_escorts].obj_signature = objp->signature;
 			escorts[*num_escorts].priority = Ships[objp->instance].escort_priority;
 			escorts[*num_escorts].np_id = -1;
+			escorts[*num_escorts].escort_hit_timer = 0;
+			escorts[*num_escorts].escort_hit_next_flash = 0;
+			escorts[*num_escorts].escort_show_bright = false;
 			(*num_escorts)++;			
 		}
 	}
@@ -660,6 +666,9 @@ void hud_setup_escort_list(int level)
 		Escort_ships[Num_escort_ships].priority = complete_escorts[Num_escort_ships].priority;
 		Escort_ships[Num_escort_ships].objnum = complete_escorts[Num_escort_ships].objnum;
 		Escort_ships[Num_escort_ships].np_id = complete_escorts[Num_escort_ships].np_id;
+		Escort_ships[Num_escort_ships].escort_hit_timer = 0;
+		Escort_ships[Num_escort_ships].escort_hit_next_flash = 0;
+		Escort_ships[Num_escort_ships].escort_show_bright = false;
 	}
 
 	if(level){
@@ -720,7 +729,9 @@ void merge_escort_lists(escort_info *complete_escorts, int num_complete_escorts)
 				continue;
 			}
 			if ( !valid_hit_info[i] ) {
-				shield_info_reset(&Escort_ships[i].hit_info);
+				Escort_ships[i].escort_hit_timer = 0;
+				Escort_ships[i].escort_hit_next_flash = 0;
+				Escort_ships[i].escort_show_bright = false;
 			}	
 		}
 	}
@@ -856,6 +867,9 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 		complete_escorts[num_complete_escorts].objnum = objnum;
 		complete_escorts[num_complete_escorts].obj_signature = Objects[objnum].signature;
 		complete_escorts[num_complete_escorts].priority = Ships[Objects[objnum].instance].escort_priority;
+		complete_escorts[num_complete_escorts].escort_hit_timer = 0;
+		complete_escorts[num_complete_escorts].escort_hit_next_flash = 0;
+		complete_escorts[num_complete_escorts].escort_show_bright = false;
 
 		// add him to escort list
 		Ships[Objects[objnum].instance].flags |= SF_ESCORT;
@@ -967,27 +981,16 @@ void hud_remove_ship_from_escort(int objnum)
  */
 void hud_escort_ship_hit(object *objp, int quadrant)
 {
-	int num, i;
-	shield_hit_info	*shi;
-
 	// no ships on the escort list in multiplayer dogfight
 	if(MULTI_DOGFIGHT){
 		return;
 	}
 
-	for ( i = 0; i < Num_escort_ships; i++ ) {
+	for ( int i = 0; i < Num_escort_ships; i++ ) {
 		if ( Escort_ships[i].objnum == OBJ_INDEX(objp) ) {
-			shi = &Escort_ships[i].hit_info;
-			
 			hud_gauge_popup_start(HUD_ESCORT_VIEW);
-			if ( quadrant >= 0 ) {
-				// If no shields present on the hit object, quadrant is negative one
-				// otherwise, use the quadrant value as an index into the array
-				num = Quadrant_xlate[quadrant];
-				shi->shield_hit_timers[num] = timestamp(SHIELD_HIT_DURATION);
-			} else {
-				shi->shield_hit_timers[HULL_HIT_OFFSET] = timestamp(SHIELD_HIT_DURATION);
-			}
+			Escort_ships[i].escort_hit_timer = timestamp(SHIELD_HIT_DURATION);
+			Escort_ships[i].escort_hit_next_flash = timestamp(SHIELD_FLASH_INTERVAL);
 		}
 	}
 }

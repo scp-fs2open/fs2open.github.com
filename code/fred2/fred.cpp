@@ -676,7 +676,7 @@ void CFREDApp::record_window_data(window_data *wndd, CWnd *wnd)
 
 void CAboutDlg::OnBug() 
 {
-	char *path = "http://mgo.maxgaming.net/mantis/login_page.php";
+	char *path = "http://scp.indiegames.us/mantis/";
 
 	char buffer[MAX_PATH];
 	sprintf(buffer,"explorer.exe \"%s\"", path);

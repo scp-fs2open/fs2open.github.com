@@ -288,7 +288,7 @@ void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 	vm_matrix_x_matrix(&tempm,&tempm2,&View_matrix);
 	View_matrix = tempm;
 
-	vm_matrix_x_matrix(&Object_matrix,orient,&instance_stack[instance_depth-1].om);
+	vm_matrix_x_matrix(&Object_matrix,&instance_stack[instance_depth-1].om,orient);
 
 	// Update the lighting matrix
 	matrix saved_orient = Light_matrix;
@@ -393,12 +393,12 @@ void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 		G3_user_clip_point = *plane_point;
 		gr_start_clip();
 	}
-	vm_vec_rotate(&G3_user_clip_normal, plane_normal, &View_matrix );
+	vm_vec_rotate(&G3_user_clip_normal, plane_normal, &Eye_matrix );
 	vm_vec_normalize(&G3_user_clip_normal);
 
 	vec3d tempv;
-	vm_vec_sub(&tempv,plane_point,&View_position);
-	vm_vec_rotate(&G3_user_clip_point,&tempv,&View_matrix );
+	vm_vec_sub(&tempv,plane_point,&Eye_position);
+	vm_vec_rotate(&G3_user_clip_point,&tempv,&Eye_matrix );
 }
 
 /**

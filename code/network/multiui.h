@@ -85,6 +85,8 @@ void multi_common_verify_cd();
 extern SCP_vector<multi_create_info> Multi_create_mission_list;
 extern SCP_vector<multi_create_info> Multi_create_campaign_list;
 
+extern int Multi_create_overlay_id;
+
 void multi_create_list_load_missions();
 void multi_create_list_load_campaigns();
 
@@ -94,7 +96,11 @@ int multi_create_lookup_mission(char *fname);
 // returns an index into Multi_create_campaign_list
 int multi_create_lookup_campaign(char *fname);
 
+extern int Multi_sg_overlay_id;
+
 void multi_sg_rank_build_name(char *in,char *out);
+
+extern int Multi_join_overlay_id;
 
 void multi_join_game_init();
 void multi_join_game_close();

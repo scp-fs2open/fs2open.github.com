@@ -72,6 +72,8 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_autpilot_cinematics = FALSE;
 	m_no_autpilot = FALSE;
 	m_2d_mission = FALSE;
+	m_always_show_goals = FALSE;
+	m_end_to_mainhall = FALSE;
 	m_max_hull_repair_val = 0.0f;
 	m_max_subsys_repair_val = 100.0f;
 	m_contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
@@ -122,6 +124,8 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_USE_AUTOPILOT_CINEMATICS, m_autpilot_cinematics);
 	DDX_Check(pDX, IDC_2D_MISSION, m_2d_mission);
 	DDX_Check(pDX, IDC_DEACTIVATE_AUTOPILOT, m_no_autpilot);
+	DDX_Check(pDX, IDC_ALWAYS_SHOW_GOALS, m_always_show_goals);
+	DDX_Check(pDX, IDC_END_TO_MAINHALL, m_end_to_mainhall);
 	DDX_Text(pDX, IDC_MAX_HULL_REPAIR_VAL, m_max_hull_repair_val);
 	DDV_MinMaxFloat(pDX, m_max_hull_repair_val, 0, 100);
 	DDX_Text(pDX, IDC_MAX_SUBSYS_REPAIR_VAL, m_max_subsys_repair_val);
@@ -346,6 +350,19 @@ void CMissionNotesDlg::OnOK()
 	} else {
 		The_mission.flags &= ~MISSION_FLAG_DEACTIVATE_AP;
 	}
+	
+	// always show mission goals
+	if ( m_always_show_goals ) {
+		The_mission.flags |= MISSION_FLAG_ALWAYS_SHOW_GOALS;
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_ALWAYS_SHOW_GOALS;
+	}
+
+	if ( m_end_to_mainhall ) {
+		The_mission.flags |= MISSION_FLAG_END_TO_MAINHALL;
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_END_TO_MAINHALL;
+	}
 
 	if ( flags != The_mission.flags ){
 		set_modified();
@@ -437,6 +454,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_autpilot_cinematics = (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) ? 1 : 0;
 	m_2d_mission = (The_mission.flags & MISSION_FLAG_2D_MISSION) ? 1 : 0;
 	m_no_autpilot =  (The_mission.flags & MISSION_FLAG_DEACTIVATE_AP) ? 1 : 0;
+	m_always_show_goals =  (The_mission.flags & MISSION_FLAG_ALWAYS_SHOW_GOALS) ? 1 : 0;
 
 	m_loading_640=_T(The_mission.loading_screen[GR_640]);
 	m_loading_1024=_T(The_mission.loading_screen[GR_1024]);

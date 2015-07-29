@@ -42,7 +42,7 @@ static int state_in_event_processer = 0;
 
 script_hook GS_state_hooks[GS_NUM_STATES];
 
-// Text of state, corresponding to #define values for GS_STATE_*
+// Text of state, corresponding to enum values for GS_STATE_*
 //XSTR:OFF
 char *GS_event_text[] =
 {
@@ -106,19 +106,19 @@ char *GS_event_text[] =
 	"GS_EVENT_RED_ALERT",
 	"GS_EVENT_SIMULATOR_ROOM",
 	"GS_EVENT_END_CAMPAIGN",
-	"GS_EVENT_LOOP_BRIEF",
+	"GS_EVENT_LOOP_BRIEF",							// 60
 	"GS_EVENT_CAMPAIGN_CHEAT",
 	"GS_EVENT_PXO",
 	"GS_EVENT_LAB",
-	"GS_EVENT_PXO_HELP",							// 65
-	"GS_EVENT_FICTION_VIEWER",
+	"GS_EVENT_PXO_HELP",
+	"GS_EVENT_FICTION_VIEWER",						// 65
 	"GS_EVENT_SCRIPTING"
 };
 //XSTR:ON
 
 int Num_gs_event_text = sizeof(GS_event_text)/sizeof(char*);
 
-// Text of state, corresponding to #define values for GS_STATE_*
+// Text of state, corresponding to enum values for GS_STATE_*
 //XSTR:OFF
 char *GS_state_text[] =
 {
@@ -171,8 +171,8 @@ char *GS_state_text[] =
 	"GS_STATE_GAMEPLAY_HELP",
 	"GS_STATE_LOOP_BRIEF",
 	"GS_STATE_PXO",
-	"GS_STATE_LAB",									// 50
-	"GS_STATE_PXO_HELP",
+	"GS_STATE_LAB",
+	"GS_STATE_PXO_HELP",							// 50
 	"GS_STATE_START_GAME",
 	"GS_STATE_FICTION_VIEWER",
 	"GS_STATE_SCRIPTING"

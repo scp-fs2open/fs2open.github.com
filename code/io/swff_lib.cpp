@@ -811,10 +811,10 @@ BOOL SWFF_RegisterVFXObject(IN LPCTSTR pszVFXPath)
 		&&	SWFF_WriteRegString("\\VFX", "VFX Object")
 		&&	SWFF_WriteRegString("\\VFX\\CurVer", "VFX1.0")
 		&&	SWFF_WriteRegString("\\VFX\\CLSID", GUID_VFX_Object)
-		&&	SWFF_WriteRegString("\\CLSID\\"GUID_VFX_Object, "VFX Object")
-		&&	SWFF_WriteRegString("\\CLSID\\"GUID_VFX_Object"\\VersionIndependentProgID", "VFX")
-		&&	SWFF_WriteRegString("\\CLSID\\"GUID_VFX_Object"\\InprocServer32", pszVFXPath)
-		&&	SWFF_WriteRegString("\\CLSID\\"GUID_VFX_Object"\\NotInsertable", "");
+		&&	SWFF_WriteRegString("\\CLSID\\" GUID_VFX_Object, "VFX Object")
+		&&	SWFF_WriteRegString("\\CLSID\\" GUID_VFX_Object "\\VersionIndependentProgID", "VFX")
+		&&	SWFF_WriteRegString("\\CLSID\\" GUID_VFX_Object "\\InprocServer32", pszVFXPath)
+		&&	SWFF_WriteRegString("\\CLSID\\" GUID_VFX_Object "\\NotInsertable", "");
 }
 
 // ----------------------------------------------------------------------------

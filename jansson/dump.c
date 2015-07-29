@@ -1,11 +1,14 @@
 /*
- * Copyright (c) 2009-2012 Petri Lehtinen <petri@digip.org>
+ * Copyright (c) 2009-2014 Petri Lehtinen <petri@digip.org>
  *
  * Jansson is free software; you can redistribute it and/or modify
  * it under the terms of the MIT license. See LICENSE for details.
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +21,9 @@
 
 #define MAX_INTEGER_STR_LENGTH  100
 #define MAX_REAL_STR_LENGTH     100
+
+#define FLAGS_TO_INDENT(f)      ((f) & 0x1F)
+#define FLAGS_TO_PRECISION(f)   (((f) >> 11) & 0x1F)
 
 struct object_key {
     size_t serial;
@@ -38,13 +44,13 @@ static int dump_to_file(const char *buffer, size_t size, void *data)
 }
 
 /* 32 spaces (the maximum indentation size) */
-static char whitespace[] = "                                ";
+static const char whitespace[] = "                                ";
 
 static int dump_indent(size_t flags, int depth, int space, json_dump_callback_t dump, void *data)
 {
-    if(JSON_INDENT(flags) > 0)
+    if(FLAGS_TO_INDENT(flags) > 0)
     {
-        int i, ws_count = JSON_INDENT(flags);
+        int i, ws_count = FLAGS_TO_INDENT(flags);
 
         if(dump("\n", 1, data))
             return -1;
@@ -62,24 +68,25 @@ static int dump_indent(size_t flags, int depth, int space, json_dump_callback_t 
     return 0;
 }
 
-static int dump_string(const char *str, json_dump_callback_t dump, void *data, size_t flags)
+static int dump_string(const char *str, size_t len, json_dump_callback_t dump, void *data, size_t flags)
 {
-    const char *pos, *end;
+    const char *pos, *end, *lim;
     int32_t codepoint;
 
     if(dump("\"", 1, data))
         return -1;
 
     end = pos = str;
+    lim = str + len;
     while(1)
     {
         const char *text;
         char seq[13];
         int length;
 
-        while(*end)
+        while(end < lim)
         {
-            end = utf8_iterate(pos, &codepoint);
+            end = utf8_iterate(pos, lim - pos, &codepoint);
             if(!end)
                 return -1;
 
@@ -123,7 +130,7 @@ static int dump_string(const char *str, json_dump_callback_t dump, void *data, s
                 /* codepoint is in BMP */
                 if(codepoint < 0x10000)
                 {
-                    sprintf(seq, "\\u%04x", codepoint);
+                    sprintf(seq, "\\u%04X", codepoint);
                     length = 6;
                 }
 
@@ -136,7 +143,7 @@ static int dump_string(const char *str, json_dump_callback_t dump, void *data, s
                     first = 0xD800 | ((codepoint & 0xffc00) >> 10);
                     last = 0xDC00 | (codepoint & 0x003ff);
 
-                    sprintf(seq, "\\u%04x\\u%04x", first, last);
+                    sprintf(seq, "\\u%04X\\u%04X", first, last);
                     length = 12;
                 }
 
@@ -171,6 +178,9 @@ static int object_key_compare_serials(const void *key1, const void *key2)
 static int do_dump(const json_t *json, size_t flags, int depth,
                    json_dump_callback_t dump, void *data)
 {
+    if(!json)
+        return -1;
+
     switch(json_typeof(json)) {
         case JSON_NULL:
             return dump("null", 4, data);
@@ -201,7 +211,8 @@ static int do_dump(const json_t *json, size_t flags, int depth,
             int size;
             double value = json_real_value(json);
 
-            size = jsonp_dtostr(buffer, MAX_REAL_STR_LENGTH, value);
+            size = jsonp_dtostr(buffer, MAX_REAL_STR_LENGTH, value,
+                                FLAGS_TO_PRECISION(flags));
             if(size < 0)
                 return -1;
 
@@ -209,7 +220,7 @@ static int do_dump(const json_t *json, size_t flags, int depth,
         }
 
         case JSON_STRING:
-            return dump_string(json_string_value(json), dump, data, flags);
+            return dump_string(json_string_value(json), json_string_length(json), dump, data, flags);
 
         case JSON_ARRAY:
         {
@@ -330,7 +341,7 @@ static int do_dump(const json_t *json, size_t flags, int depth,
                     value = json_object_get(json, key);
                     assert(value);
 
-                    dump_string(key, dump, data, flags);
+                    dump_string(key, strlen(key), dump, data, flags);
                     if(dump(separator, separator_length, data) ||
                        do_dump(value, flags, depth + 1, dump, data))
                     {
@@ -366,8 +377,9 @@ static int do_dump(const json_t *json, size_t flags, int depth,
                 while(iter)
                 {
                     void *next = json_object_iter_next((json_t *)json, iter);
+                    const char *key = json_object_iter_key(iter);
 
-                    dump_string(json_object_iter_key(iter), dump, data, flags);
+                    dump_string(key, strlen(key), dump, data, flags);
                     if(dump(separator, separator_length, data) ||
                        do_dump(json_object_iter_value(iter), flags, depth + 1,
                                dump, data))

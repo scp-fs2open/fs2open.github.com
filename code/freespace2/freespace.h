@@ -36,6 +36,8 @@ extern fix Frametime;
 extern float flRealframetime;
 extern float flFrametime;
 extern fix Missiontime;
+extern int Last_frame_timestamp; // A timestamp for when the previous frame ended
+extern fix Skybox_timestamp;	// A timestamp for animated skyboxes -MageKing17
 
 // 0 - 4
 extern int Game_skill_level;

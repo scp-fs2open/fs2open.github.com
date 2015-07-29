@@ -22,8 +22,7 @@
 #include "menuui/optionsmenumulti.h"
 #include "network/multi.h"
 #include "playerman/player.h"
-#include "object/object.h"
-
+#include "debugconsole/console.h"
 
 
 // --------------------------------------------------------------------------------------------------
@@ -107,7 +106,7 @@ int Multi_voice_stamps[MULTI_VOICE_MAX_STREAMS];
 
 // the token index of a voice stream is set to one of these values, or the index of the player who has the token
 #define MULTI_VOICE_TOKEN_INDEX_FREE				-1					// the token (and the stream are free)
-#define MULTI_VOICE_TOKEN_INDEX_RELEASED			0xDEADBEAD		// the token has been released but the stream is still active
+#define MULTI_VOICE_TOKEN_INDEX_RELEASED			0xBEAD		// the token has been released but the stream is still active
 
 typedef struct voice_stream {		
 	int token_status;															// status of the token (player index if a player has it) or one of the above defines
@@ -213,7 +212,7 @@ int multi_voice_get_stream(int stream_id);
 void multi_voice_alg_init();
 
 // process incoming sound data in whatever way necessary (this function should take care of playing data when necessary)
-void multi_voice_alg_process_data(int player_index,int stream_index,ushort chunk_index,ushort chunk_size);		
+void multi_voice_alg_process_data(int stream_index);
 
 // process existing streams
 void multi_voice_alg_process_streams();
@@ -484,16 +483,17 @@ void multi_voice_process()
 // voice settings debug console function
 void multi_voice_dcf()
 {
-	dc_get_arg(ARG_STRING);
+	SCP_string arg;
+	int value;
+
+	dc_stuff_string_white(arg);
 
 	// set the quality of sound
-	if (strcmp(Dc_arg, NOX("qos")) == 0) {
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			if((Dc_arg_int >= 1) && (Dc_arg_int <= 10) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-				multi_voice_set_vars(Dc_arg_int,-1);
-				dc_printf("Quality of sound : %d\n",Dc_arg_int);
-			}
+	if (arg == NOX("qos")) {
+		dc_stuff_int(&value);
+		if((value >= 1) && (value <= 10) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			multi_voice_set_vars(value,-1);
+			dc_printf("Quality of sound : %d\n", value);
 		}
 	}
 }
@@ -889,7 +889,8 @@ void multi_voice_release_token()
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		// mark the token as being released
 		int stream_index = multi_voice_find_token(MY_NET_PLAYER_NUM);
-		Multi_voice_stream[stream_index].token_status = MULTI_VOICE_TOKEN_INDEX_RELEASED;
+		if (stream_index != -1)
+			Multi_voice_stream[stream_index].token_status = MULTI_VOICE_TOKEN_INDEX_RELEASED;
 				
 		// timestamp this guy so that he can't get the token back immediately
 		Net_player->s_info.voice_token_timestamp = timestamp(Netgame.options.voice_token_wait);
@@ -1227,7 +1228,7 @@ int multi_voice_process_data(ubyte *data, int player_index,int msg_mode,net_play
 			
 		// pass the data into the smart voice algorithm
 		if(player_index != -1){
-			multi_voice_alg_process_data(player_index,stream_index,chunk_index,chunk_size);		
+			multi_voice_alg_process_data(stream_index);
 		}
 	}
 
@@ -1586,16 +1587,17 @@ int multi_voice_process_data_dummy(ubyte *data)
 	GET_DATA(stream_id);
 
 	// get the proper stream index
-	stream_index = multi_voice_get_stream((int)stream_id);
+	if ( (stream_index = multi_voice_get_stream((int)stream_id) ) != -1 ) {
 
-	// set the token timestamp
-	Multi_voice_stream[stream_index].token_stamp = timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
+		// set the token timestamp
+		Multi_voice_stream[stream_index].token_stamp = timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
 
-	// set the last heard time
-	Multi_voice_stream[stream_index].stream_last_heard = timer_get_fixed_seconds();
+		// set the last heard time
+		Multi_voice_stream[stream_index].stream_last_heard = timer_get_fixed_seconds();
 
-	// set the timeout timestamp
-	Multi_voice_stamps[stream_index] = timestamp(MV_ALG_TIMEOUT);	
+		// set the timeout timestamp
+		Multi_voice_stamps[stream_index] = timestamp(MV_ALG_TIMEOUT);
+	}
 
 	// return bytes processed
 	return offset;
@@ -1840,7 +1842,6 @@ void multi_voice_client_send_pending()
 		// add the current stream id#
 		ADD_DATA(Multi_voice_stream_id);
 
-		Assert(str->accum_buffer_usize[sent] < MULTI_VOICE_MAX_BUFFER_SIZE);
 		uc_size = (ushort)str->accum_buffer_usize[sent];
 		ADD_USHORT(uc_size);
 
@@ -1969,13 +1970,8 @@ int multi_voice_alg_should_play(int stream_index)
 }
 
 // process incoming sound data in whatever way necessary (this function should take care of playing data when necessary)
-void multi_voice_alg_process_data(int player_index,int stream_index,ushort chunk_index,ushort chunk_size)
+void multi_voice_alg_process_data(int stream_index)
 {
-	// do this so we don't get compiler warnings
-	chunk_index = 0;
-	chunk_size = 0;
-	player_index = 0;
-
 	// update the timestamp for this window
 	Multi_voice_stamps[stream_index] = timestamp(MV_ALG_TIMEOUT);	
 }

@@ -25,6 +25,8 @@
 
 #include "graphics/generic.h"
 
+extern char default_loop_briefing_color;	// Doesn't seem worth including alphacolors.h for -MageKing17
+
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // MISSION LOOP BRIEF DEFINES/VARS
@@ -169,7 +171,7 @@ void loop_brief_init()
 
 	// init brief text
 	if(Campaign.missions[Campaign.current_mission].mission_branch_desc != NULL){
-		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_branch_desc, Loop_brief_text_coords[gr_screen.res][2]);
+		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_branch_desc, Loop_brief_text_coords[gr_screen.res][2], default_loop_briefing_color);
 	}
 
 	bool sound_played = false;
@@ -237,7 +239,7 @@ void loop_brief_do(float frametime)
 	GR_MAYBE_CLEAR_RES(Loop_brief_bitmap);
 	if (Loop_brief_bitmap >= 0) {
 		gr_set_bitmap(Loop_brief_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 	
 	// draw the window
@@ -253,7 +255,7 @@ void loop_brief_do(float frametime)
 		bm_get_info((Loop_anim.streaming) ? Loop_anim.bitmap_id : Loop_anim.first_frame, &x, &y, NULL, NULL, NULL);
 		x = Loop_brief_anim_center_coords[gr_screen.res][0] - x / 2;
 		y = Loop_brief_anim_center_coords[gr_screen.res][1] - y / 2;
-		generic_anim_render(&Loop_anim, frametime, x, y);
+		generic_anim_render(&Loop_anim, frametime, x, y, true);
 	}
 
 	// render all anims

@@ -32,18 +32,18 @@
 //					-1		=>		failure
 //
 //
-int ds3d_update_buffer(int channel, float min, float max, vec3d *pos, vec3d *vel)
+int ds3d_update_buffer(int channel_id, float min, float max, vec3d *pos, vec3d *vel)
 {
 	if (Cmdline_no_3d_sound) {
 		nprintf(("Sound", "Aborting ds3d_update_buffer due to Cmdline_no_3d_sound..."));
 		return -1;
 	}
 
-	if (channel < 0) {
+	if (channel_id < 0) {
 		return 0;
 	}
 
-	ALuint source_id = Channels[channel].source_id;
+	ALuint source_id = Channels[channel_id].source_id;
 	ALfloat rolloff = 1.0f;
 
 	if (pos) {
@@ -88,7 +88,7 @@ int ds3d_update_buffer(int channel, float min, float max, vec3d *pos, vec3d *vel
 int ds3d_update_listener(vec3d *pos, vec3d *vel, matrix *orient)
 {
 	if (Cmdline_no_3d_sound) {
-		nprintf(("Sound", "Aborting ds3d_update_buffer due to Cmdline_no_3d_sound..."));
+		nprintf(("Sound", "Aborting ds3d_update_listener due to Cmdline_no_3d_sound..."));
 		return -1;
 	}
 

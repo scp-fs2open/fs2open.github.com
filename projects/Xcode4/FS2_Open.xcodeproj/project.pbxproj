@@ -135,7 +135,6 @@
 		34C7187008C4085A00459F5B /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C7186F08C4085A00459F5B /* OpenAL.framework */; };
 		34C7188C08C40DEB00459F5B /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C7188B08C40DEB00459F5B /* SDL.framework */; };
 		34C71AD308C419CB00459F5B /* aiturret.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345952D908C3D69F003B1351 /* aiturret.cpp */; };
-		34C71AD408C419CB00459F5B /* ailocal.h in Headers */ = {isa = PBXBuildFile; fileRef = 345952D808C3D69F003B1351 /* ailocal.h */; };
 		34C71AD508C419CC00459F5B /* aiinternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 345952D708C3D69F003B1351 /* aiinternal.h */; };
 		34C71AD608C419CC00459F5B /* aigoals.h in Headers */ = {isa = PBXBuildFile; fileRef = 345952D608C3D69F003B1351 /* aigoals.h */; };
 		34C71AD708C419CD00459F5B /* aigoals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345952D508C3D69F003B1351 /* aigoals.cpp */; };
@@ -179,8 +178,6 @@
 		34C71AFF08C41AAA00459F5B /* ddsutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459530A08C3D69F003B1351 /* ddsutils.cpp */; };
 		34C71B0008C41AAD00459F5B /* debris.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459530E08C3D69F003B1351 /* debris.h */; };
 		34C71B0108C41AAD00459F5B /* debris.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459530D08C3D69F003B1351 /* debris.cpp */; };
-		34C71B0208C41AB000459F5B /* timerbar.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459531408C3D69F003B1351 /* timerbar.h */; };
-		34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531308C3D69F003B1351 /* timerbar.cpp */; };
 		34C71B0608C41AB200459F5B /* console.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459531008C3D69F003B1351 /* console.cpp */; };
 		34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459532D08C3D6A0003B1351 /* exceptionhandler.h */; };
 		34C71B0C08C41ABE00459F5B /* exceptionhandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459532C08C3D6A0003B1351 /* exceptionhandler.cpp */; };
@@ -347,14 +344,10 @@
 		34C71BC108C41B7000459F5B /* redalert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543F08C3D6A0003B1351 /* redalert.cpp */; };
 		34C71BC208C41B7000459F5B /* missionweaponchoice.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543E08C3D6A0003B1351 /* missionweaponchoice.h */; };
 		34C71BC308C41B7000459F5B /* missionweaponchoice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543D08C3D6A0003B1351 /* missionweaponchoice.cpp */; };
-		34C71BC408C41B7100459F5B /* missionstats.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543C08C3D6A0003B1351 /* missionstats.h */; };
-		34C71BC508C41B7100459F5B /* missionstats.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543B08C3D6A0003B1351 /* missionstats.cpp */; };
 		34C71BC608C41B7200459F5B /* missionshipchoice.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543A08C3D6A0003B1351 /* missionshipchoice.h */; };
 		34C71BC708C41B7300459F5B /* missionshipchoice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543908C3D6A0003B1351 /* missionshipchoice.cpp */; };
 		34C71BC808C41B7300459F5B /* missionscreencommon.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543808C3D6A0003B1351 /* missionscreencommon.h */; };
 		34C71BC908C41B7300459F5B /* missionscreencommon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543708C3D6A0003B1351 /* missionscreencommon.cpp */; };
-		34C71BCA08C41B7400459F5B /* missionrecommend.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543608C3D6A0003B1351 /* missionrecommend.h */; };
-		34C71BCB08C41B7500459F5B /* missionrecommend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543508C3D6A0003B1351 /* missionrecommend.cpp */; };
 		34C71BCC08C41B7500459F5B /* missionpause.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543408C3D6A0003B1351 /* missionpause.h */; };
 		34C71BCD08C41B7600459F5B /* missionpause.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459543308C3D6A0003B1351 /* missionpause.cpp */; };
 		34C71BCE08C41B7600459F5B /* missionloopbrief.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459543208C3D6A0003B1351 /* missionloopbrief.h */; };
@@ -614,6 +607,12 @@
 		918A074C1804B4A600983AE1 /* libjansson.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 918A07221804AFAA00983AE1 /* libjansson.a */; };
 		918A074D1804B4A600983AE1 /* libmongoose.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 918A07141804AF0F00983AE1 /* libmongoose.a */; };
 		9193B29817EDFEB7003CC0BA /* profiling.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9193B29717EDFEB7003CC0BA /* profiling.cpp */; };
+		91BE0F0F1B029B9B00FF1365 /* shadows.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91BE0F0D1B029B9B00FF1365 /* shadows.cpp */; };
+		91BE0F101B029B9B00FF1365 /* shadows.h in Headers */ = {isa = PBXBuildFile; fileRef = 91BE0F0E1B029B9B00FF1365 /* shadows.h */; };
+		91BE0F131B029BA800FF1365 /* modelrender.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91BE0F111B029BA800FF1365 /* modelrender.cpp */; };
+		91BE0F141B029BA800FF1365 /* modelrender.h in Headers */ = {isa = PBXBuildFile; fileRef = 91BE0F121B029BA800FF1365 /* modelrender.h */; };
+		91F4EE3A1AB32675006EF158 /* hashtable_seed.c in Sources */ = {isa = PBXBuildFile; fileRef = 91F4EE381AB32675006EF158 /* hashtable_seed.c */; };
+		91F4EE3B1AB32675006EF158 /* lookup3.h in Headers */ = {isa = PBXBuildFile; fileRef = 91F4EE391AB32675006EF158 /* lookup3.h */; };
 		F007DDF612F4F44600D2F6C1 /* jconfig.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB512F4F44600D2F6C1 /* jconfig.h */; };
 		F007DDF712F4F44600D2F6C1 /* jdct.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB612F4F44600D2F6C1 /* jdct.h */; };
 		F007DDF912F4F44600D2F6C1 /* jerror.h in Headers */ = {isa = PBXBuildFile; fileRef = F007DDB812F4F44600D2F6C1 /* jerror.h */; };
@@ -717,6 +716,10 @@
 		F0AAA94F10FA0D060086B1B4 /* zutil.h in Headers */ = {isa = PBXBuildFile; fileRef = F0AAA93610FA0D060086B1B4 /* zutil.h */; };
 		F0B73A9410FA065F005E1A69 /* pngutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0B73A9010FA065F005E1A69 /* pngutils.cpp */; };
 		F0B73A9510FA065F005E1A69 /* pngutils.h in Headers */ = {isa = PBXBuildFile; fileRef = F0B73A9110FA065F005E1A69 /* pngutils.h */; };
+		F0E076E1190826A30069F480 /* console.h in Headers */ = {isa = PBXBuildFile; fileRef = F0E076E0190826A30069F480 /* console.h */; };
+		F0E076E5190826C00069F480 /* consolecmds.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0E076E2190826C00069F480 /* consolecmds.cpp */; };
+		F0E076E6190826C00069F480 /* consoleparse.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F0E076E3190826C00069F480 /* consoleparse.cpp */; };
+		F0E076E7190826C00069F480 /* consoleparse.h in Headers */ = {isa = PBXBuildFile; fileRef = F0E076E4190826C00069F480 /* consoleparse.h */; };
 		F0E986A311C66F5700CF5169 /* bitarray.h in Headers */ = {isa = PBXBuildFile; fileRef = F0E986A211C66F5700CF5169 /* bitarray.h */; };
 		F0ECA11612F03A9E009EB0F4 /* freespace.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459533408C3D6A0003B1351 /* freespace.cpp */; };
 		F0ECA11712F03ABB009EB0F4 /* freespace.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459533508C3D6A0003B1351 /* freespace.h */; };
@@ -966,7 +969,6 @@
 		345952D508C3D69F003B1351 /* aigoals.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = aigoals.cpp; sourceTree = "<group>"; };
 		345952D608C3D69F003B1351 /* aigoals.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = aigoals.h; sourceTree = "<group>"; };
 		345952D708C3D69F003B1351 /* aiinternal.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = aiinternal.h; sourceTree = "<group>"; };
-		345952D808C3D69F003B1351 /* ailocal.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ailocal.h; sourceTree = "<group>"; };
 		345952D908C3D69F003B1351 /* aiturret.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = aiturret.cpp; sourceTree = "<group>"; };
 		345952DB08C3D69F003B1351 /* animplay.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = animplay.cpp; sourceTree = "<group>"; };
 		345952DC08C3D69F003B1351 /* animplay.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = animplay.h; sourceTree = "<group>"; };
@@ -1004,8 +1006,6 @@
 		3459530D08C3D69F003B1351 /* debris.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = debris.cpp; sourceTree = "<group>"; };
 		3459530E08C3D69F003B1351 /* debris.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = debris.h; sourceTree = "<group>"; };
 		3459531008C3D69F003B1351 /* console.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = console.cpp; sourceTree = "<group>"; };
-		3459531308C3D69F003B1351 /* timerbar.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = timerbar.cpp; sourceTree = "<group>"; };
-		3459531408C3D69F003B1351 /* timerbar.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = timerbar.h; sourceTree = "<group>"; };
 		3459531E08C3D69F003B1351 /* dxguid.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = dxguid.lib; sourceTree = "<group>"; };
 		3459531F08C3D6A0003B1351 /* strmiids.lib */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = strmiids.lib; sourceTree = "<group>"; };
 		3459532008C3D6A0003B1351 /* vasync.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = vasync.h; sourceTree = "<group>"; };
@@ -1220,14 +1220,10 @@
 		3459543208C3D6A0003B1351 /* missionloopbrief.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionloopbrief.h; sourceTree = "<group>"; };
 		3459543308C3D6A0003B1351 /* missionpause.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionpause.cpp; sourceTree = "<group>"; };
 		3459543408C3D6A0003B1351 /* missionpause.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionpause.h; sourceTree = "<group>"; };
-		3459543508C3D6A0003B1351 /* missionrecommend.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionrecommend.cpp; sourceTree = "<group>"; };
-		3459543608C3D6A0003B1351 /* missionrecommend.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionrecommend.h; sourceTree = "<group>"; };
 		3459543708C3D6A0003B1351 /* missionscreencommon.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionscreencommon.cpp; sourceTree = "<group>"; };
 		3459543808C3D6A0003B1351 /* missionscreencommon.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionscreencommon.h; sourceTree = "<group>"; };
 		3459543908C3D6A0003B1351 /* missionshipchoice.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionshipchoice.cpp; sourceTree = "<group>"; };
 		3459543A08C3D6A0003B1351 /* missionshipchoice.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionshipchoice.h; sourceTree = "<group>"; };
-		3459543B08C3D6A0003B1351 /* missionstats.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionstats.cpp; sourceTree = "<group>"; };
-		3459543C08C3D6A0003B1351 /* missionstats.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionstats.h; sourceTree = "<group>"; };
 		3459543D08C3D6A0003B1351 /* missionweaponchoice.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = missionweaponchoice.cpp; sourceTree = "<group>"; };
 		3459543E08C3D6A0003B1351 /* missionweaponchoice.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = missionweaponchoice.h; sourceTree = "<group>"; };
 		3459543F08C3D6A0003B1351 /* redalert.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = redalert.cpp; sourceTree = "<group>"; };
@@ -1449,7 +1445,6 @@
 		3459554F08C3D6A0003B1351 /* config.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
 		3459555008C3D6A0003B1351 /* stubs.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = stubs.cpp; sourceTree = "<group>"; };
 		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FS2_Open (debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		345A81150B4941D700282E7A /* grstub.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grstub.cpp; sourceTree = "<group>"; };
 		345A81170B4941F100282E7A /* deadobjectdock.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = deadobjectdock.cpp; sourceTree = "<group>"; };
 		345A81180B4941F100282E7A /* deadobjectdock.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = deadobjectdock.h; sourceTree = "<group>"; };
@@ -1553,6 +1548,12 @@
 		918A07361804B01800983AE1 /* utf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utf.h; sourceTree = "<group>"; };
 		918A07371804B01800983AE1 /* value.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = value.c; sourceTree = "<group>"; };
 		9193B29717EDFEB7003CC0BA /* profiling.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = profiling.cpp; sourceTree = "<group>"; };
+		91BE0F0D1B029B9B00FF1365 /* shadows.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = shadows.cpp; sourceTree = "<group>"; };
+		91BE0F0E1B029B9B00FF1365 /* shadows.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = shadows.h; sourceTree = "<group>"; };
+		91BE0F111B029BA800FF1365 /* modelrender.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = modelrender.cpp; sourceTree = "<group>"; };
+		91BE0F121B029BA800FF1365 /* modelrender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = modelrender.h; sourceTree = "<group>"; };
+		91F4EE381AB32675006EF158 /* hashtable_seed.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hashtable_seed.c; sourceTree = "<group>"; };
+		91F4EE391AB32675006EF158 /* lookup3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lookup3.h; sourceTree = "<group>"; };
 		B2F67ED704C74A3F00A80002 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		B2F67F1E04C773E400A80002 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = /System/Library/Frameworks/GLUT.framework; sourceTree = "<absolute>"; };
 		F007DDB512F4F44600D2F6C1 /* jconfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jconfig.h; sourceTree = "<group>"; };
@@ -1641,6 +1642,10 @@
 		F0AAA93610FA0D060086B1B4 /* zutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zutil.h; sourceTree = "<group>"; };
 		F0B73A9010FA065F005E1A69 /* pngutils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pngutils.cpp; sourceTree = "<group>"; };
 		F0B73A9110FA065F005E1A69 /* pngutils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pngutils.h; sourceTree = "<group>"; };
+		F0E076E0190826A30069F480 /* console.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = console.h; sourceTree = "<group>"; };
+		F0E076E2190826C00069F480 /* consolecmds.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = consolecmds.cpp; sourceTree = "<group>"; };
+		F0E076E3190826C00069F480 /* consoleparse.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = consoleparse.cpp; sourceTree = "<group>"; };
+		F0E076E4190826C00069F480 /* consoleparse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = consoleparse.h; sourceTree = "<group>"; };
 		F0E986A211C66F5700CF5169 /* bitarray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bitarray.h; sourceTree = "<group>"; };
 		F0ED189E101064C70011978C /* safe_strings_test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = safe_strings_test.cpp; sourceTree = "<group>"; };
 		F0ED189F101064C70011978C /* safe_strings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = safe_strings.h; sourceTree = "<group>"; };
@@ -1778,7 +1783,6 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */,
 				34C71A8208C4147700459F5B /* libcode.a */,
 				34C71A9108C4184200459F5B /* libjpeg.a */,
 				34DCF83408CFA6B900A528A0 /* cfilearchiver */,
@@ -1996,7 +2000,6 @@
 				345952D508C3D69F003B1351 /* aigoals.cpp */,
 				345952D608C3D69F003B1351 /* aigoals.h */,
 				345952D708C3D69F003B1351 /* aiinternal.h */,
-				345952D808C3D69F003B1351 /* ailocal.h */,
 				345952D908C3D69F003B1351 /* aiturret.cpp */,
 			);
 			path = ai;
@@ -2133,8 +2136,10 @@
 			isa = PBXGroup;
 			children = (
 				3459531008C3D69F003B1351 /* console.cpp */,
-				3459531308C3D69F003B1351 /* timerbar.cpp */,
-				3459531408C3D69F003B1351 /* timerbar.h */,
+				F0E076E0190826A30069F480 /* console.h */,
+				F0E076E2190826C00069F480 /* consolecmds.cpp */,
+				F0E076E3190826C00069F480 /* consoleparse.cpp */,
+				F0E076E4190826C00069F480 /* consoleparse.h */,
 			);
 			path = debugconsole;
 			sourceTree = "<group>";
@@ -2254,6 +2259,8 @@
 		3459536208C3D6A0003B1351 /* graphics */ = {
 			isa = PBXGroup;
 			children = (
+				91BE0F0D1B029B9B00FF1365 /* shadows.cpp */,
+				91BE0F0E1B029B9B00FF1365 /* shadows.h */,
 				345A81150B4941D700282E7A /* grstub.cpp */,
 				3468A8D20991BD5B00123C87 /* generic.cpp */,
 				3468A8D30991BD5B00123C87 /* generic.h */,
@@ -2508,14 +2515,10 @@
 				3459543208C3D6A0003B1351 /* missionloopbrief.h */,
 				3459543308C3D6A0003B1351 /* missionpause.cpp */,
 				3459543408C3D6A0003B1351 /* missionpause.h */,
-				3459543508C3D6A0003B1351 /* missionrecommend.cpp */,
-				3459543608C3D6A0003B1351 /* missionrecommend.h */,
 				3459543708C3D6A0003B1351 /* missionscreencommon.cpp */,
 				3459543808C3D6A0003B1351 /* missionscreencommon.h */,
 				3459543908C3D6A0003B1351 /* missionshipchoice.cpp */,
 				3459543A08C3D6A0003B1351 /* missionshipchoice.h */,
-				3459543B08C3D6A0003B1351 /* missionstats.cpp */,
-				3459543C08C3D6A0003B1351 /* missionstats.h */,
 				3459543D08C3D6A0003B1351 /* missionweaponchoice.cpp */,
 				3459543E08C3D6A0003B1351 /* missionweaponchoice.h */,
 				3459543F08C3D6A0003B1351 /* redalert.cpp */,
@@ -2536,6 +2539,8 @@
 		3459544408C3D6A0003B1351 /* model */ = {
 			isa = PBXGroup;
 			children = (
+				91BE0F111B029BA800FF1365 /* modelrender.cpp */,
+				91BE0F121B029BA800FF1365 /* modelrender.h */,
 				349807E00A25B98A0013844A /* modelanim.cpp */,
 				3488083A0DA054F1001CAB39 /* modelanim.h */,
 				3459544508C3D6A0003B1351 /* model.h */,
@@ -3106,6 +3111,8 @@
 		918A07261804B01800983AE1 /* jansson */ = {
 			isa = PBXGroup;
 			children = (
+				91F4EE381AB32675006EF158 /* hashtable_seed.c */,
+				91F4EE391AB32675006EF158 /* lookup3.h */,
 				918A07271804B01800983AE1 /* dump.c */,
 				918A07281804B01800983AE1 /* error.c */,
 				918A07291804B01800983AE1 /* hashtable.c */,
@@ -3256,6 +3263,7 @@
 				F093F88510FDC3790042E30F /* externalcode.h in Headers */,
 				F093F88210FDC3250042E30F /* trackirpublic.h in Headers */,
 				F093F88010FDC3160042E30F /* levelpaging.h in Headers */,
+				F0E076E7190826C00069F480 /* consoleparse.h in Headers */,
 				F093F88110FDC3160042E30F /* multi_sexp.h in Headers */,
 				F093F87410FDC2170042E30F /* vmallocator.h in Headers */,
 				F093F86A10FDC1290042E30F /* safe_strings.h in Headers */,
@@ -3263,7 +3271,6 @@
 				F093F85010FDC09B0042E30F /* gropenglpostprocessing.h in Headers */,
 				F093F85110FDC09B0042E30F /* gropenglshader.h in Headers */,
 				F093F85210FDC09B0042E30F /* gropenglstate.h in Headers */,
-				34C71AD408C419CB00459F5B /* ailocal.h in Headers */,
 				34C71AD508C419CC00459F5B /* aiinternal.h in Headers */,
 				34C71AD608C419CC00459F5B /* aigoals.h in Headers */,
 				34C71AD908C419CE00459F5B /* aibig.h in Headers */,
@@ -3285,7 +3292,6 @@
 				34C71AFC08C41A9B00459F5B /* cutscenes.h in Headers */,
 				34C71AFE08C41AAA00459F5B /* ddsutils.h in Headers */,
 				34C71B0008C41AAD00459F5B /* debris.h in Headers */,
-				34C71B0208C41AB000459F5B /* timerbar.h in Headers */,
 				34C71B0B08C41ABE00459F5B /* exceptionhandler.h in Headers */,
 				34C71B0E08C41AC100459F5B /* fireballs.h in Headers */,
 				34C71B1808C41ACB00459F5B /* gameplayhelp.h in Headers */,
@@ -3359,6 +3365,7 @@
 				34C71BA308C41B5B00459F5B /* readyroom.h in Headers */,
 				34C71BA508C41B5C00459F5B /* snazzyui.h in Headers */,
 				34C71BA908C41B5E00459F5B /* techmenu.h in Headers */,
+				F0E076E1190826A30069F480 /* console.h in Headers */,
 				34C71BAB08C41B5F00459F5B /* trainingmenu.h in Headers */,
 				34C71BAC08C41B6200459F5B /* missiontraining.h in Headers */,
 				34C71BAE08C41B6300459F5B /* missionparse.h in Headers */,
@@ -3372,10 +3379,8 @@
 				34C71BBE08C41B6B00459F5B /* missionbriefcommon.h in Headers */,
 				34C71BC008C41B6F00459F5B /* redalert.h in Headers */,
 				34C71BC208C41B7000459F5B /* missionweaponchoice.h in Headers */,
-				34C71BC408C41B7100459F5B /* missionstats.h in Headers */,
 				34C71BC608C41B7200459F5B /* missionshipchoice.h in Headers */,
 				34C71BC808C41B7300459F5B /* missionscreencommon.h in Headers */,
-				34C71BCA08C41B7400459F5B /* missionrecommend.h in Headers */,
 				34C71BCC08C41B7500459F5B /* missionpause.h in Headers */,
 				34C71BCE08C41B7600459F5B /* missionloopbrief.h in Headers */,
 				34C71BD008C41B7700459F5B /* missiondebrief.h in Headers */,
@@ -3421,6 +3426,7 @@
 				34C71C2F08C41BD100459F5B /* outwnd.h in Headers */,
 				34C71C3108C41BD300459F5B /* osregistry.h in Headers */,
 				34C71C3308C41BD700459F5B /* osapi.h in Headers */,
+				91BE0F101B029B9B00FF1365 /* shadows.h in Headers */,
 				34C71C3608C41BE800459F5B /* palman.h in Headers */,
 				34C71C3808C41BED00459F5B /* sexp.h in Headers */,
 				34C71C3A08C41BEE00459F5B /* parselo.h in Headers */,
@@ -3450,6 +3456,7 @@
 				34C71C6D08C41C2A00459F5B /* fsspeech.h in Headers */,
 				34C71C7008C41C2F00459F5B /* ds.h in Headers */,
 				34C71C7208C41C3200459F5B /* ds3d.h in Headers */,
+				91BE0F141B029BA800FF1365 /* modelrender.h in Headers */,
 				34C71C7308C41C3500459F5B /* channel.h in Headers */,
 				34C71C7408C41C3600459F5B /* audiostr.h in Headers */,
 				34C71C7608C41C3900459F5B /* acm.h in Headers */,
@@ -3532,6 +3539,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				918A07461804B01800983AE1 /* utf.h in Headers */,
+				91F4EE3B1AB32675006EF158 /* lookup3.h in Headers */,
 				918A073B1804B01800983AE1 /* hashtable.h in Headers */,
 				918A073E1804B01800983AE1 /* jansson_private.h in Headers */,
 				918A07431804B01800983AE1 /* strbuffer.h in Headers */,
@@ -3616,7 +3624,6 @@
 			name = FS2_Open;
 			productInstallPath = "$(HOME)/Applications";
 			productName = FS2_Open;
-			productReference = 34595A7508C3D8CB003B1351 /* FS2_Open (debug).app */;
 			productType = "com.apple.product-type.application";
 		};
 		34C71A8108C4147700459F5B /* code */ = {
@@ -3767,7 +3774,7 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 0510;
 			};
 			buildConfigurationList = 34BE723808C940D200673B45 /* Build configuration list for PBXProject "FS2_Open" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -3899,7 +3906,6 @@
 				34C71AFD08C41A9B00459F5B /* cutscenes.cpp in Sources */,
 				34C71AFF08C41AAA00459F5B /* ddsutils.cpp in Sources */,
 				34C71B0108C41AAD00459F5B /* debris.cpp in Sources */,
-				34C71B0308C41AB000459F5B /* timerbar.cpp in Sources */,
 				34C71B0608C41AB200459F5B /* console.cpp in Sources */,
 				34C71B0C08C41ABE00459F5B /* exceptionhandler.cpp in Sources */,
 				34C71B0D08C41AC100459F5B /* warpineffect.cpp in Sources */,
@@ -3924,6 +3930,7 @@
 				34C71B4708C41B0600459F5B /* hudwingmanstatus.cpp in Sources */,
 				34C71B4908C41B0700459F5B /* hudtargetbox.cpp in Sources */,
 				34C71B4B08C41B0800459F5B /* hudtarget.cpp in Sources */,
+				F0E076E5190826C00069F480 /* consolecmds.cpp in Sources */,
 				34C71B4D08C41B0A00459F5B /* hudsquadmsg.cpp in Sources */,
 				34C71B4F08C41B0A00459F5B /* hudshield.cpp in Sources */,
 				34C71B5108C41B0B00459F5B /* hudreticle.cpp in Sources */,
@@ -3980,10 +3987,8 @@
 				34C71BBF08C41B6C00459F5B /* missionbriefcommon.cpp in Sources */,
 				34C71BC108C41B7000459F5B /* redalert.cpp in Sources */,
 				34C71BC308C41B7000459F5B /* missionweaponchoice.cpp in Sources */,
-				34C71BC508C41B7100459F5B /* missionstats.cpp in Sources */,
 				34C71BC708C41B7300459F5B /* missionshipchoice.cpp in Sources */,
 				34C71BC908C41B7300459F5B /* missionscreencommon.cpp in Sources */,
-				34C71BCB08C41B7500459F5B /* missionrecommend.cpp in Sources */,
 				34C71BCD08C41B7600459F5B /* missionpause.cpp in Sources */,
 				34C71BCF08C41B7700459F5B /* missionloopbrief.cpp in Sources */,
 				34C71BD108C41B7800459F5B /* missiondebrief.cpp in Sources */,
@@ -4042,11 +4047,13 @@
 				34C71C3D08C41BEF00459F5B /* encrypt.cpp in Sources */,
 				34C71C3F08C41BF300459F5B /* particle.cpp in Sources */,
 				34C71C4108C41BF700459F5B /* pcxutils.cpp in Sources */,
+				91BE0F0F1B029B9B00FF1365 /* shadows.cpp in Sources */,
 				34C71C4308C41BFC00459F5B /* physics.cpp in Sources */,
 				34C71C4408C41BFF00459F5B /* playercontrol.cpp in Sources */,
 				34C71C4708C41C0100459F5B /* managepilot.cpp in Sources */,
 				34C71C4908C41C0400459F5B /* popupdead.cpp in Sources */,
 				34C71C4B08C41C0500459F5B /* popup.cpp in Sources */,
+				91BE0F131B029BA800FF1365 /* modelrender.cpp in Sources */,
 				34C71C4D08C41C0800459F5B /* radarsetup.cpp in Sources */,
 				34C71C4F08C41C0A00459F5B /* radarorb.cpp in Sources */,
 				34C71C5108C41C0A00459F5B /* radar.cpp in Sources */,
@@ -4111,6 +4118,7 @@
 				349807CE0A25B46F0013844A /* decoder16.cpp in Sources */,
 				349807CF0A25B46F0013844A /* mve_audio.cpp in Sources */,
 				349807D00A25B46F0013844A /* mvelib.cpp in Sources */,
+				F0E076E6190826C00069F480 /* consoleparse.cpp in Sources */,
 				349807D20A25B46F0013844A /* mveplayer.cpp in Sources */,
 				349807E10A25B98A0013844A /* modelanim.cpp in Sources */,
 				34A759D90B49248B00C5E7AA /* decoder8.cpp in Sources */,
@@ -4206,6 +4214,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				91F4EE3A1AB32675006EF158 /* hashtable_seed.c in Sources */,
 				918A07451804B01800983AE1 /* utf.c in Sources */,
 				918A07391804B01800983AE1 /* error.c in Sources */,
 				918A07441804B01800983AE1 /* strconv.c in Sources */,
@@ -4407,6 +4416,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -4415,7 +4426,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.7.1-trunk";
+				CURRENT_PROJECT_VERSION = "3.7.3";
 				DEAD_CODE_STRIPPING = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -4437,8 +4448,8 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESS = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				PRODUCT_NAME = "FS2_Open (debug)";
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				PRODUCT_NAME = "FS2_Open $(CURRENT_PROJECT_VERSION) (debug)";
 				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 				WARNING_CFLAGS = (
@@ -4453,6 +4464,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -4461,7 +4474,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.7.1-trunk";
+				CURRENT_PROJECT_VERSION = "3.7.3";
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
@@ -4486,8 +4499,8 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_PREPROCESS = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				PRODUCT_NAME = FS2_Open;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				PRODUCT_NAME = "FS2_Open $(CURRENT_PROJECT_VERSION)";
 				SDKROOT = macosx;
 				SEPARATE_STRIP = YES;
 				STRIP_INSTALLED_PRODUCT = NO;
@@ -4574,6 +4587,13 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				EXECUTABLE_PREFIX = lib;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					_DEBUG,
+					SCP_UNIX,
+					USE_OPENAL,
+					APPLE_APP,
+					HAVE_STDINT_H,
+				);
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -4586,6 +4606,13 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				EXECUTABLE_PREFIX = lib;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NDEBUG,
+					SCP_UNIX,
+					USE_OPENAL,
+					APPLE_APP,
+					HAVE_STDINT_H,
+				);
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

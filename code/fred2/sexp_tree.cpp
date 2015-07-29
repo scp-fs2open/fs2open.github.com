@@ -719,6 +719,12 @@ void sexp_tree::right_clicked(int mode)
 								type = tree_nodes[first_arg].type;
 							}
 						}
+
+						// Goober5000 - certain types accept both integers and a list of strings
+						if (op_type == OPF_GAME_SND || op_type == OPF_WEAPON_BANK_NUMBER)
+						{
+							type = SEXPT_NUMBER | SEXPT_STRING;
+						}
 						
 						if ( (type & SEXPT_STRING) || (type & SEXPT_NUMBER) ) {
 
@@ -741,7 +747,8 @@ void sexp_tree::right_clicked(int mode)
 										if ( Sexp_variables[idx].type & SEXP_VARIABLE_STRING ) {
 											flag &= ~MF_GRAYED;
 										}
-									} else if ( type & SEXPT_NUMBER ) {
+									}
+									if ( type & SEXPT_NUMBER ) {
 										if ( Sexp_variables[idx].type & SEXP_VARIABLE_NUMBER ) {
 											flag &= ~MF_GRAYED;
 										}
@@ -831,6 +838,8 @@ void sexp_tree::right_clicked(int mode)
 							case OP_CUTSCENES_SHOW_SUBTITLE:
 							case OP_ORDER:
 							case OP_TECH_ADD_INTEL:
+							case OP_HUD_GAUGE_SET_ACTIVE:
+							case OP_HUD_ACTIVATE_GAUGE_TYPE:
 								j = Num_op_menus;	// don't allow these operators to be visible
 								break;
 						}
@@ -871,6 +880,8 @@ void sexp_tree::right_clicked(int mode)
 							case OP_CUTSCENES_SHOW_SUBTITLE:
 							case OP_ORDER:
 							case OP_TECH_ADD_INTEL:
+							case OP_HUD_GAUGE_SET_ACTIVE:
+							case OP_HUD_ACTIVATE_GAUGE_TYPE:
 								j = Num_submenus;	// don't allow these operators to be visible
 								break;
 						}
@@ -1095,13 +1106,18 @@ void sexp_tree::right_clicked(int mode)
 
 			} else if (type == OPF_NULL) {  // takes operator that doesn't return a value
 				replace_type = OPR_NULL;
-
-			// Goober5000
-			} else if (type == OPF_FLEXIBLE_ARGUMENT) {
-				replace_type = OPR_FLEXIBLE_ARGUMENT;
-
 			} else if (type == OPF_AI_GOAL) {
 				replace_type = OPR_AI_GOAL;
+			}
+
+			// Goober5000
+			else if (type == OPF_FLEXIBLE_ARGUMENT) {
+				replace_type = OPR_FLEXIBLE_ARGUMENT;
+			}
+			// Goober5000
+			else if (type == OPF_GAME_SND || type == OPF_WEAPON_BANK_NUMBER) {
+				// enable number even though we are also going to default to string
+				menu.EnableMenuItem(ID_REPLACE_NUMBER, MF_ENABLED);
 			}
 
 			// default to string
@@ -2199,7 +2215,8 @@ int sexp_tree::add_default_operator(int op, int argnum)
 				(argnum == 1 && Operators[op].value == OP_INT_TO_STRING) ||
 				(argnum == 3 && Operators[op].value == OP_STRING_GET_SUBSTRING) ||
 				(argnum == 4 && Operators[op].value == OP_STRING_SET_SUBSTRING) ||
-				(argnum == 1 && Operators[op].value == OP_COPY_VARIABLE_FROM_INDEX))
+				(argnum == 1 && Operators[op].value == OP_COPY_VARIABLE_FROM_INDEX) ||
+				(argnum == 1 && Operators[op].value == OP_SCRIPT_EVAL_STRING))
 			{
 
 				int sexp_var_index = get_index_sexp_variable_name(item.text);
@@ -2315,9 +2332,6 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 					case 7:
 						temp = 100;
 						break;
-					case 10:
-						temp = SND_SHIP_EXPLODE_1;
-						break;
 					case 11:
 						temp = (int)EMP_DEFAULT_INTENSITY;
 						break;
@@ -2345,12 +2359,6 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 						break;
 					case 7:
 						temp = 10;
-						break;
-					case 8:
-						temp = SND_CAPITAL_WARP_IN;
-						break;
-					case 9:
-						temp = SND_CAPITAL_WARP_OUT;
 						break;
 					default:
 						temp = 0;
@@ -2414,6 +2422,32 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			}
 
 			return 0;
+
+		// Goober5000 - special cases that used to be numbers but are now hybrids
+		case OPF_GAME_SND:
+			int sound_index = -1;
+
+			if ( (Operators[op].value == OP_EXPLOSION_EFFECT) )
+			{
+				sound_index = SND_SHIP_EXPLODE_1;
+			}
+			else if ( (Operators[op].value == OP_WARP_EFFECT) )
+			{
+				sound_index = (i == 8) ? SND_CAPITAL_WARP_IN : SND_CAPITAL_WARP_OUT;
+			}
+
+			if (sound_index >= 0)
+			{
+				game_snd *snd = &Snds[sound_index];
+				if (can_construe_as_integer(snd->name.c_str()))
+					item->set_data(snd->name.c_str(), (SEXPT_NUMBER | SEXPT_VALID));
+				else
+					item->set_data(snd->name.c_str(), (SEXPT_STRING | SEXPT_VALID));
+				return 0;
+			}
+
+			// if no hardcoded default, just use the listing default
+			break;
 	}
 
 	list = get_listing_opf(type, index, i);
@@ -2630,6 +2664,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_FLEXIBLE_ARGUMENT:
 		case OPF_ANYTHING:
 		case OPF_SKYBOX_MODEL_NAME:
+		case OPF_SKYBOX_FLAGS:
 		case OPF_SHIP_OR_NONE:
 		case OPF_SUBSYSTEM_OR_NONE:
 		case OPF_SHIP_WING_POINT_OR_NONE:
@@ -2656,6 +2691,9 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_ANIMATION_TYPE:
 		case OPF_SHIP_FLAG:
 		case OPF_NEBULA_PATTERN:
+		case OPF_NAV_POINT:
+		case OPF_TEAM_COLOR:
+		case OPF_GAME_SND:
 			return 1;
 
 		case OPF_SHIP:
@@ -2694,10 +2732,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 0;
 
 		case OPF_PERSONA:
-			if (Num_personas)
-				return 1;
-			return 0;
-			
+			return (Num_personas > 0) ? 1 : 0;
 
 		case OPF_POINT:
 		case OPF_WAYPOINT_PATH:
@@ -2759,29 +2794,13 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 0;
 
 		case OPF_VARIABLE_NAME:
-			if (sexp_variable_count() > 0) {
-				return 1;
-			} else {
-				return 0;
-			}
-
-		case OPF_NAV_POINT:
-			return 1;
+			return (sexp_variable_count() > 0) ? 1 : 0;
 
 		case OPF_SSM_CLASS:
-			if (Ssm_info_count > 0)
-				return 1;
-			else
-				return 0;
+			return (Ssm_info.size() > 0) ? 1 : 0;
 
 		case OPF_MISSION_MOOD:
-			if (Builtin_moods.empty()) 
-				return 0;
-			else
-				return 1;
-
-		case OPF_TEAM_COLOR:
-			return 1;
+			return Builtin_moods.empty() ? 0 : 1;
 
 		default:
 			Int3();
@@ -4343,6 +4362,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_skybox_model();
 			break;
 
+		case OPF_SKYBOX_FLAGS:
+			list = get_listing_opf_skybox_flags();
+			break;
+
 		case OPF_BACKGROUND_BITMAP:
 			list = get_listing_opf_background_bitmap();
 			break;
@@ -4441,6 +4464,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 		case OPF_NEBULA_PATTERN:
 			list = get_listing_opf_nebula_patterns();
+			break;
+
+		case OPF_GAME_SND:
+			list = get_listing_opf_game_snds();
 			break;
 
 		default:
@@ -5031,12 +5058,11 @@ sexp_list_item *sexp_tree::get_listing_opf_support_ship_class()
 
 sexp_list_item *sexp_tree::get_listing_opf_ssm_class()
 {
-	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Ssm_info_count; i++)
+	for (auto it = Ssm_info.cbegin(); it != Ssm_info.cend(); ++it)
 	{
-		head.add_data(Ssm_info[i].name);
+		head.add_data(it->name);
 	}
 
 	return head.next;
@@ -5787,6 +5813,17 @@ sexp_list_item *sexp_tree::get_listing_opf_skybox_model()
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_skybox_flags()
+{
+	sexp_list_item head;
+	int i;
+
+	for (i = 0; i < Num_skybox_flags; ++i) {
+		head.add_data(Skybox_flags[i]);
+	}
+	return head.next;
+}
+
 sexp_list_item *sexp_tree::get_listing_opf_background_bitmap()
 {
 	sexp_list_item head;
@@ -5983,7 +6020,20 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_patterns()
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_game_snds()
+{
+	sexp_list_item head;
 
+	head.add_data(SEXP_NONE_STRING);
+
+	for (SCP_vector<game_snd>::iterator iter = Snds.begin(); iter != Snds.end(); ++iter) {
+		if (!can_construe_as_integer(iter->name.c_str())) {
+			head.add_data(iter->name.c_str());
+		}
+	}
+
+	return head.next;
+}
 
 // Deletes sexp_variable from sexp_tree.
 // resets tree to not include given variable, and resets text and type

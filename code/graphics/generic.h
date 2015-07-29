@@ -4,6 +4,7 @@
 #define _GENERIC_H_
 
 #include "globalincs/pstypes.h"
+#include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "anim/animplay.h"
 
@@ -31,7 +32,7 @@ typedef struct generic_anim {
 		struct {
 			anim *animation;
 			anim_instance *instance;
-			unsigned char bg_type;	//to store background type to avoid messed up colours
+			BM_TYPE bg_type;	//to store background type to avoid messed up colours
 		} ani;
 		struct {
 			int next_frame;
@@ -52,7 +53,9 @@ typedef struct generic_bitmap {
 	int bitmap_id;
 } generic_bitmap;
 
-int generic_anim_init_and_stream(generic_anim *anim, const char *anim_filename, ubyte bg_type, bool attempt_hi_res);
+bool generic_bitmap_exists(const char *filename);
+bool generic_anim_exists(const char *filename);
+int generic_anim_init_and_stream(generic_anim *ga, const char *anim_filename, BM_TYPE bg_type, bool attempt_hi_res);
 void generic_anim_init(generic_anim *ga);
 void generic_anim_init(generic_anim *ga, const char *filename);
 void generic_anim_init(generic_anim *ga, const SCP_string& filename);
@@ -61,6 +64,6 @@ int generic_anim_load(generic_anim *ga);
 int generic_anim_stream(generic_anim *ga);
 int generic_bitmap_load(generic_bitmap *gb);
 void generic_anim_unload(generic_anim *ga);
-void generic_anim_render(generic_anim *ga, float frametime, int x, int y);
+void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu = false);
 
 #endif

@@ -22,6 +22,7 @@
 #include "iff_defs/iff_defs.h"
 #include "weapon/muzzleflash.h"
 #include "parse/scripting.h"
+#include "debugconsole/console.h"
 
 #include <limits.h>
 
@@ -38,8 +39,7 @@
 float Lethality_range_const = 2.0f;
 DCF(lethality_range, "N for modifying range: 1 / (1+N) at 100")
 {
-	dc_get_arg(ARG_FLOAT);
-	Lethality_range_const = Dc_arg_float;
+	dc_stuff_float(&Lethality_range_const);
 }
 
 float Player_lethality_bump[NUM_SKILL_LEVELS] = {
@@ -355,6 +355,54 @@ bool turret_weapon_has_flags2(ship_weapon *swp, int flags)
 }
 
 /**
+ * Just gloms all the flags from all the weapons into one variable.  More efficient if all you need to do is test for the existence of a flag.
+ */
+int turret_weapon_aggregate_flags(ship_weapon *swp)
+{
+	Assert(swp != NULL);
+
+	int i = 0, flags = 0;
+	for (i = 0; i < swp->num_primary_banks; i++)
+	{
+		if (swp->primary_bank_weapons[i] >= 0) {
+			flags |= Weapon_info[swp->primary_bank_weapons[i]].wi_flags;
+		}
+	}
+	for (i = 0; i < swp->num_secondary_banks; i++)
+	{
+		if (swp->secondary_bank_weapons[i] >= 0) {
+			flags |= Weapon_info[swp->secondary_bank_weapons[i]].wi_flags;
+		}
+	}
+
+	return flags;
+}
+
+/**
+ * Just gloms all the flags from all the weapons into one variable.  More efficient if all you need to do is test for the existence of a flag.
+ */
+int turret_weapon_aggregate_flags2(ship_weapon *swp)
+{
+	Assert(swp != NULL);
+
+	int i = 0, flags2 = 0;
+	for (i = 0; i < swp->num_primary_banks; i++)
+	{
+		if (swp->primary_bank_weapons[i] >= 0) {
+			flags2 |= Weapon_info[swp->primary_bank_weapons[i]].wi_flags2;
+		}
+	}
+	for (i = 0; i < swp->num_secondary_banks; i++)
+	{
+		if (swp->secondary_bank_weapons[i] >= 0) {
+			flags2 |= Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2;
+		}
+	}
+
+	return flags2;
+}
+
+/**
  * Returns true if any of the weapons in swp have the subtype specified
  *
  * @note It might be a little faster to optimize based on WP_LASER should only appear in primaries
@@ -479,7 +527,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		}
 
 		// don't shoot at ships without collision check
-		if (sip->flags & SIF_NO_COLLIDE) {
+		if (!(objp->flags & OF_COLLIDES)) {
 			return 0;
 		}
 
@@ -501,7 +549,11 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		weapon *wp = &Weapons[objp->instance];
 		weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
-		if ( (!(wip->wi_flags & WIF_BOMB) && !(Ai_info[Ships[turret_parent->instance].ai_index].ai_profile_flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
+		if (wip->subtype == WP_LASER && !(wip->wi_flags3 & WIF3_TURRET_INTERCEPTABLE)) {	// If the thing can't be shot down, don't try. -MageKing17
+			return 0;
+		}
+
+		if ( (!((wip->wi_flags & WIF_BOMB) || (wip->wi_flags3 & WIF3_TURRET_INTERCEPTABLE)) && !(Ai_info[Ships[turret_parent->instance].ai_index].ai_profile_flags & AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY) ) ) {
 			return 0;
 		}
 
@@ -598,9 +650,15 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			}
 		}
 
-		// check if	turret flagged to only target tagged ships
+		// check if turret flagged to only target tagged ships
+		// Note: retail behaviour was turrets with tagged-only could fire at bombs
+		// and could fire their spawn weapons
+		// this check is almost redundant; see the almost identical check in ai_fire_from_turret
+		// however if this is removed turrets still track targets but don't fire at them (which looks silly)
 		if (eeo->eeo_flags & EEOF_TAGGED_ONLY) {
-			if (!ship_is_tagged(objp)) {
+			if (!ship_is_tagged(objp) &&
+					( (The_mission.ai_profile->flags2 & AIPF2_STRICT_TURRET_TAGGED_ONLY_TARGETING) ||
+					( !(objp->type == OBJ_WEAPON) && !(turret_weapon_has_flags(&eeo->turret_subsys->weapons, WIF_SPAWN))) )) {
 				return;
 			}
 		}
@@ -1049,7 +1107,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 							objp = &Objects[mo->objnum];
 							
 							Assert(objp->type == OBJ_WEAPON);
-							if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB)
+							if ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags3 & WIF3_TURRET_INTERCEPTABLE))
 							{
 								evaluate_obj_as_target(objp, &eeo);
 							}
@@ -1365,7 +1423,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 		//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
 		if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
-			vm_vec_sub2(&target_moving_direction, &objp->phys_info.vel);
+			vm_vec_scale_sub2(&target_moving_direction, &objp->phys_info.vel, wip->vel_inherit_amount);
 		}
 
 		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
@@ -1466,10 +1524,16 @@ ship_subsys *aifft_list[MAX_AIFFT_TURRETS];
 float aifft_rank[MAX_AIFFT_TURRETS];
 int aifft_list_size = 0;
 int aifft_max_checks = 5;
-DCF(mf, "")
+DCF(mf, "Adjusts the maximum number of tries an AI may do when trying to pick a subsystem to attack (Default is 5)")
 {
-	dc_get_arg(ARG_INT);
-	aifft_max_checks = Dc_arg_int;
+	dc_stuff_int(&aifft_max_checks);
+
+	if (aifft_max_checks <= 0) {
+		dc_printf("Value must be a non-negative, non-zero integer\n");
+		dc_printf("aifft_max_checks set to default value of 5\n");
+
+		aifft_max_checks = 5;
+	}
 }
 
 
@@ -1820,8 +1884,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 		// now do anything else
 		else {
-			for (int i=0; i < wip->shots; i++)
-			{
+			for (int i = 0; i < wip->shots; i++) {
 				// zookeeper - Firepoints should cycle normally between shots, 
 				// so we need to get the position info separately for each shot
 				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, turret_pos, turret_fvec, 1, NULL);
@@ -1831,9 +1894,9 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
 				if (weapon_objnum != -1) {
-					objp=&Objects[weapon_objnum];
-					wp=&Weapons[objp->instance];
-					wip=&Weapon_info[wp->weapon_info_index];
+					objp = &Objects[weapon_objnum];
+					wp = &Weapons[objp->instance];
+					wip = &Weapon_info[wp->weapon_info_index];
 
 					parent_ship->last_fired_turret = turret;
 					turret->last_fired_weapon_info_index = wp->weapon_info_index;
@@ -1846,7 +1909,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[parent_objnum]);
 
 					// if the gun is a flak gun
-					if(wip->wi_flags & WIF_FLAK){			
+					if (wip->wi_flags & WIF_FLAK) {			
 						// show a muzzle flash
 						flak_muzzle_flash(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
 
@@ -1862,8 +1925,10 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						{
 							flak_set_range(objp, flak_range_override);
 						}
-					} else if(wip->muzzle_flash > -1) {	
-						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);		
+					}
+					// otherwise just do mflash if the weapon has it
+					else if (wip->muzzle_flash >= 0) {
+						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
 					}
 
 					// in multiplayer (and the master), then send a turret fired packet.
@@ -1953,6 +2018,11 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		Weapons[Objects[weapon_objnum].instance].turret_subsys = tsi->turret;
 		Weapons[Objects[weapon_objnum].instance].target_num = tsi->turret->turret_enemy_objnum;
 
+		// muzzle flash?
+		if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
+			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
+		}
+
 		// maybe sound
 		if ( Weapon_info[tsi->weapon_class].launch_snd != -1 ) {
 			// Don't play turret firing sound if turret sits on player ship... it gets annoying.
@@ -1960,8 +2030,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 				snd_play_3d( &Snds[Weapon_info[tsi->weapon_class].launch_snd], &turret_pos, &View_position );
 			}
 		}
-		if(Weapon_info[tsi->weapon_class].muzzle_flash > -1)
-			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
+
 		// in multiplayer (and the master), then send a turret fired packet.
 		if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
 			int subsys_index;
@@ -2048,7 +2117,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			// (NOTE: this will probably get changed by other parts of the code (swarming, beams, etc) to be
 			// a more accurate time, but we need to give it a long enough time for the other parts of the code
 			// to change the timestamp before it gets acted upon - taylor)
-			ss->turret_animation_done_time = timestamp(1000);
+			ss->turret_animation_done_time = timestamp(200);
 		} else {
 			return;
 		}
@@ -2218,6 +2287,8 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					}
 				}
 
+				bool tagged_only = ((wip->wi_flags2 & WIF2_TAGGED_ONLY) || (ss->weapons.flags & SW_FLAG_TAGGED_ONLY));
+
 				if (lep->type == OBJ_SHIP) {
 					// Check if we're targeting a protected ship
 					if (lep->flags & OF_PROTECTED) {
@@ -2250,14 +2321,16 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 						ss->turret_time_enemy_in_range = 0.0f;
 						continue;
 					}
+					// Check if weapon or turret is set to tagged-only
+					// must check here in case turret has multiple weapons and not all are tagged-only
+					else if (!ship_is_tagged(lep) && tagged_only) {
+						continue;
+					}
 				}
 				else
 				{
-					//can't tag anything else, other than asteroids
-					//but we don't want to waste this type of
-					//weaponary on asteroids now do we?
-					if ((wip->wi_flags2 & WIF2_TAGGED_ONLY) || (ss->weapons.flags & SW_FLAG_TAGGED_ONLY))
-					{
+					// check tagged-only for non-ship targets
+					if (tagged_only && (!(lep->type == OBJ_WEAPON) || (The_mission.ai_profile->flags2 & AIPF2_STRICT_TURRET_TAGGED_ONLY_TARGETING))) {
 						continue;
 					}
 				}

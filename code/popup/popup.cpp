@@ -641,7 +641,7 @@ void popup_draw_title(int sy, char *line, int flags)
 	sx = fl2i(Title_coords[gr_screen.res][4] - w/2.0f + 0.5f);
 
 	popup_set_title_color(flags);
-	gr_string(sx,sy,line);
+	gr_string(sx,sy,line,GR_RESIZE_MENU);
 }
 
 // calculate the starting display index
@@ -725,14 +725,14 @@ void popup_draw_msg_text(popup_info *pi, int flags)
 
 		gr_get_string_size(&w, &h, pi->msg_lines[i]);
 		sx = fl2i(Title_coords[gr_screen.res][4] - w/2.0f + 0.5f);
-		gr_string(sx, sy + line_count * h, pi->msg_lines[i]);
+		gr_string(sx, sy + line_count * h, pi->msg_lines[i], GR_RESIZE_MENU);
 	}
 
 	// maybe draw "more"
 	h = 10;
 	if(i < pi->nlines){
-		gr_set_color_fast(&Color_bright_red);
-		gr_string(Title_coords[gr_screen.res][4], sy + (Popup_max_display[gr_screen.res]) * h, XSTR("More", 459));
+		gr_set_color_fast(&Color_more_bright);
+		gr_string(Title_coords[gr_screen.res][4], sy + (Popup_max_display[gr_screen.res]) * h, XSTR("More", 459), GR_RESIZE_MENU);
 	}
 
 	gr_set_font(FONT1);	// reset back to regular font size
@@ -756,7 +756,7 @@ void popup_draw_button_text(popup_info *pi, int flags)
 			sy = Button_regions[gr_screen.res][i][1]+4;
 		}
 
-		gr_string(sx, sy, pi->button_text[i]);
+		gr_string(sx, sy, pi->button_text[i], GR_RESIZE_MENU);
 
 		// figure out where to draw underline char
 		if ( pi->shortcut_index[i] > 0 ) {
@@ -769,7 +769,7 @@ void popup_draw_button_text(popup_info *pi, int flags)
 		}
 		
 		if ( pi->shortcut_index[i] >= 0 ) {
-			gr_printf(sx, sy, NOX("%c"), 95);
+			gr_printf_menu(sx, sy, NOX("%c"), 95);
 		}
 	}
 }
@@ -819,6 +819,13 @@ int popup_do(popup_info *pi, int flags)
 	}
 
 	screen_id = gr_save_screen();
+
+	int old_max_w_unscaled = gr_screen.max_w_unscaled;
+	int old_max_h_unscaled = gr_screen.max_h_unscaled;
+	int old_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
+	int old_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
+
+	gr_reset_screen_scale();
 
 	while(!done) {
 		int k;
@@ -871,6 +878,8 @@ int popup_do(popup_info *pi, int flags)
 		gr_flip();
 	}
 
+	gr_set_screen_scale(old_max_w_unscaled, old_max_h_unscaled, old_max_w_unscaled_zoomed, old_max_h_unscaled_zoomed);
+
 	popup_close(pi,screen_id);
 	return choice;
 }
@@ -882,6 +891,13 @@ int popup_do_with_condition(popup_info *pi, int flags, int(*condition)())
 	screen_id = gr_save_screen();
 	if ( popup_init(pi, flags) == -1 )
 		return -1;
+
+	int old_max_w_unscaled = gr_screen.max_w_unscaled;
+	int old_max_h_unscaled = gr_screen.max_h_unscaled;
+	int old_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
+	int old_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
+
+	gr_reset_screen_scale();
 
 	while(!done) {
 		int k;
@@ -918,6 +934,8 @@ int popup_do_with_condition(popup_info *pi, int flags, int(*condition)())
 			}
 		}		
 	}
+
+	gr_set_screen_scale(old_max_w_unscaled, old_max_h_unscaled, old_max_w_unscaled_zoomed, old_max_h_unscaled_zoomed);
 
 	popup_close(pi,screen_id);
 	return choice;
@@ -1000,10 +1018,9 @@ int popup(int flags, int nchoices, ... )
 
 	// get msg text
 	format = va_arg( args, char * );
-	Popup_info.raw_text[0] = 0;
-	vsprintf(Popup_info.raw_text, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
 	va_end(args);
-	Assert(strlen(Popup_info.raw_text) < POPUP_MAX_CHARS );
+	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
 	
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
@@ -1054,11 +1071,10 @@ int popup_till_condition(int (*condition)(), ...)
 
 	// get msg text
 	format = va_arg( args, char * );
-	Popup_info.raw_text[0] = 0;
-	vsprintf(Popup_info.raw_text, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
 	va_end(args);
-	Popup_info.raw_text[POPUP_MAX_CHARS-1] = '\0';
-		
+	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
+
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
 	Mouse_hidden = 0;

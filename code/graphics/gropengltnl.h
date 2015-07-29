@@ -14,14 +14,22 @@
 #define _GROPENGLTNL_H
 
 
+#include "graphics/gropengl.h"
 #include "globalincs/pstypes.h"
-
+#include "model/model.h"
+#include "graphics/shadows.h"
 
 extern GLint GL_max_elements_vertices;
 extern GLint GL_max_elements_indices;
 
 class poly_list;
 class vertex_buffer;
+
+extern float shadow_veryneardist;
+extern float shadow_neardist;
+extern float shadow_middist;
+extern float shadow_fardist;
+extern bool Rendering_to_shadow_map;
 
 void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation);
 void gr_opengl_start_instance_angles(vec3d *pos, angles *rotation);
@@ -40,25 +48,32 @@ void gr_opengl_end_clip_plane();
 
 int gr_opengl_create_buffer();
 bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb);
-bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb);
+bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb, bool update_ibuffer_only);
 void gr_opengl_destroy_buffer(int idx);
 void gr_opengl_set_buffer(int idx);
 void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags);
 void gr_opengl_render_to_env(int FACE);
 
-int gr_opengl_create_stream_buffer();
-void gr_opengl_update_stream_buffer(int buffer, effect_vertex *buffer_data, uint size);
-void gr_opengl_render_stream_buffer(int offset, int n_verts, int flags);
-void gr_opengl_render_stream_buffer_start(int buffer_id);
-void gr_opengl_render_stream_buffer_end();
+void gr_opengl_update_buffer_object(int handle, uint size, void* data);
+void opengl_delete_buffer_object(int handle);
+
+void gr_opengl_update_transform_buffer(void* data, uint size);
+void gr_opengl_set_transform_buffer_offset(int offset);
+
+int gr_opengl_create_stream_buffer_object();
+void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, int flags);
 
 void gr_opengl_start_state_block();
 int gr_opengl_end_state_block();
 void gr_opengl_set_state_block(int);
 
-void gr_opengl_set_team_color(const SCP_string &team, const SCP_string &secondaryteam = "<none>", fix timestamp = 0, int fadetime = 0);
-void gr_opengl_disable_team_color();
+void gr_opengl_set_thrust_scale(float scale = -1.0f);
+void gr_opengl_set_team_color(team_color *colors);
 
 void opengl_tnl_shutdown();
+
+void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type);
+void opengl_tnl_set_material_distortion(uint flags);
+void opengl_tnl_set_material_soft_particle(uint flags);
 
 #endif //_GROPENGLTNL_H

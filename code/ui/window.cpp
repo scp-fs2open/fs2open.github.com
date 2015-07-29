@@ -229,7 +229,7 @@ void UI_WINDOW::draw()
 
 	if (foreground_bmap_id >= 0) {
 		gr_set_bitmap(foreground_bmap_id);
-		gr_bitmap(x, y);
+		gr_bitmap(x, y, GR_RESIZE_MENU);
 	}
 
 	if (flags & WIN_FILLED)	{
@@ -390,14 +390,14 @@ void UI_WINDOW::render_tooltip(char *str)
 	if (ttx + str_w + 2 > gr_screen.max_w_unscaled)
 		ttx = gr_screen.max_w_unscaled - str_w;
 
-	if (tty + str_h + 2 > gr_screen.max_w_unscaled)
+	if (tty + str_h + 2 > gr_screen.max_h_unscaled)
 		tty = gr_screen.max_h_unscaled - str_h;
 
 	gr_set_color_fast(&Color_black);
-	gr_rect(ttx - 1, tty - 1, str_w + 2, str_h + 1);
+	gr_rect(ttx - 1, tty - 1, str_w + 2, str_h + 1, GR_RESIZE_MENU);
 
 	gr_set_color_fast(&Color_bright_white);
-	gr_string(ttx, tty, str);
+	gr_string(ttx, tty, str, GR_RESIZE_MENU);
 }
 
 // key_in: If not -1, this means to use this key as input, and not call game_poll()
@@ -641,10 +641,10 @@ void UI_WINDOW::draw_one_xstr(UI_XSTR *xs, int frame)
 	strncpy(str, XSTR(xs->xstr, xs->xstr_id), 254);
 	if(str[0] == '&'){
 		if(strlen(str) > 1){			
-			gr_string((xs->x) + xoffset, xs->y, str + 1);
+			gr_string((xs->x) + xoffset, xs->y, str + 1, GR_RESIZE_MENU);
 		}
 	} else {
-		gr_string((xs->x) + xoffset, xs->y, str);
+		gr_string((xs->x) + xoffset, xs->y, str, GR_RESIZE_MENU);
 	}
 
 	// maybe restore the old font

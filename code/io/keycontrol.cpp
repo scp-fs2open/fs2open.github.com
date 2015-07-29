@@ -7,141 +7,168 @@
  *
 */ 
 
-#include "ai/ai.h"
-#include "asteroid/asteroid.h"
-#include "autopilot/autopilot.h"
-#include "camera/camera.h"
-#include "cmdline/cmdline.h"
-#include "cmeasure/cmeasure.h"
-#include "controlconfig/controlsconfig.h"
-#include "freespace2/freespace.h"
-#include "gamesequence/gamesequence.h"
-#include "gamesnd/eventmusic.h"
-#include "gamesnd/gamesnd.h"
+
+
+
+#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 #include "globalincs/linklist.h"
-#include "globalincs/pstypes.h"
-#include "globalincs/safe_strings.h"
-#include "globalincs/systemvars.h"
-#include "hud/hud.h"
-#include "hud/hudescort.h"
-#include "hud/hudets.h"
-#include "hud/hudmessage.h"
-#include "hud/hudsquadmsg.h"
-#include "hud/hudtarget.h"
-#include "hud/hudtargetbox.h"
-#include "hud/hudshield.h"
-#include "iff_defs/iff_defs.h"
-#include "io/joy.h"
 #include "io/key.h"
-#include "io/keycontrol.h"
+#include "io/joy.h"
 #include "io/timer.h"
-#include "localization/localize.h"
-#include "math/vecmat.h"
-#include "math/floating.h"
-#include "menuui/mainhallmenu.h"
+#include "ship/ship.h"
+#include "playerman/player.h"
+#include "weapon/weapon.h"
+#include "hud/hud.h"
+#include "gamesequence/gamesequence.h"
 #include "mission/missiongoals.h"
+#include "hud/hudets.h"
+#include "gamesnd/gamesnd.h"
+#include "hud/hudsquadmsg.h"
+#include "gamesnd/eventmusic.h"
+#include "freespace2/freespace.h"
 #include "mission/missionhotkey.h"
+#include "hud/hudescort.h"
+#include "hud/hudshield.h"
+#include "io/keycontrol.h"
+#include "ship/shiphit.h"
+#include "ship/shipfx.h"
 #include "mission/missionlog.h"
-#include "mission/missionmessage.h"
-#include "missionui/missionpause.h"
-#include "model/model.h"
-#include "network/multi.h"
-#include "network/multi_endgame.h"
-#include "network/multi_observer.h"
-#include "network/multi_pause.h"
-#include "network/multi_pmsg.h"
-#include "network/multimsgs.h"
-#include "network/multiutil.h"
+#include "hud/hudtargetbox.h"
+#include "popup/popup.h"
 #include "object/objcollide.h"
 #include "object/object.h"
-#include "playerman/player.h"
-#include "popup/popup.h"
-#include "render/3d.h"
-#include "sound/sound.h"
-#include "ship/ship.h"
-#include "ship/shipfx.h"
-#include "ship/shiphit.h"
+#include "hud/hudconfig.h"
+#include "hud/hudmessage.h"
+#include "network/multi_pmsg.h"
 #include "starfield/supernova.h"
-#include "weapon/weapon.h"
+#include "mission/missionmessage.h"
+#include "menuui/mainhallmenu.h"
+#include "missionui/missionpause.h"
+#include "hud/hudgauges.h"
+#include "freespace2/freespace.h"	//For time compression stuff
+#include "species_defs/species_defs.h"
+#include "asteroid/asteroid.h"
+#include "iff_defs/iff_defs.h"
+#include "network/multi.h"
+#include "network/multiutil.h"
+#include "network/multimsgs.h"
+#include "network/multi_pause.h"
+#include "network/multi_observer.h"
+#include "network/multi_endgame.h"
+#include "autopilot/autopilot.h"
+#include "cmdline/cmdline.h"
+#include "object/objectshield.h"
 
-#include <memory>
-#include <stdio.h>	// for NULL
-#include <string>
-
-#define MAX_NUM_SLOTS 6
-
-struct ftable
+/**
+* Natural number factor lookup class.
+*/
+class factor_table
 {
-int count;
-int table[ MAX_NUM_SLOTS ];
+public:
+	/**
+	* Constructor.
+	*
+	* @param size The desired initial size of the lookup table.
+	*/
+	factor_table(size_t size = 6);
+
+	/**
+	* Destructor.
+	*/
+	~factor_table();
+
+	/**
+	* Returns the next natural number factor for the given number and current factor.
+	*
+	* @param maximum The number to lookup the next natural number factor for.
+	* @param current The current natural number factor.
+	* @return A natural number factor.
+	*/
+	size_t getNext(size_t n, size_t current);
+
+private:
+
+	SCP_vector< SCP_vector<size_t> > _lookup;
+
+	/**
+	* Grow the internal lookup table based on the desired size.
+	*
+	* @param size The desired size.
+	*/
+	void resize(size_t size);
+
+	/**
+	* Returns true if the given factor is a natural number factor for the given value.
+	*
+	* @param factor The factor.
+	* @param n The value.
+	*/
+	static bool isNaturalNumberFactor(size_t factor, size_t n);
 };
 
-#define MAX_SLOT_COUNT 25
+factor_table::factor_table(size_t size)
+{
+	resize(size);
+}
 
-class factor_table
+factor_table::~factor_table() {}
+
+size_t factor_table::getNext(size_t n, size_t current)
+{
+	Assertion(n >= 1, "factor_table::getNext() called with %d, when only natural numbers make sense; get a coder!\n", n);
+
+	// Resize lookup table if the value is greater than the current size
+	if (n > _lookup.size())
+		resize(n);
+
+	int index = n - 1;
+	for (size_t i = 0; i < _lookup[index].size(); ++i)
 	{
-	public:
-		factor_table();
-		~factor_table(){ delete[] table; };
-		int getNextSlots( int slots_on_ship, int cur_slots );
+		if (_lookup[index][i] == current)
+		{
+			if (_lookup[index].size() == i + 1)
+			{
+				// Overflow back to 1
+				return 1;
+			}
+			else
+			{
+				// Next factor in the table
+				return _lookup[index][i + 1];
+			}
+		}
+	}
 
-	private:
-		ftable * table;
-	};
+	Assertion(false, "For some reason, factor_table::getNext() was unable to locate the current factor. This should never happen; get a coder!\n");
+	return 1;
+}
 
+void factor_table::resize(size_t size)
+{
+	size_t oldSize = _lookup.size();
+	_lookup.resize(size);
+
+	// Fill lookup table for the missing values
+	for (size_t i = oldSize; i < size; ++i)
+	{
+		for (size_t j = 1; j <= i + 1; ++j)
+		{
+			if (isNaturalNumberFactor(j, i + 1))
+			{
+				_lookup[i].push_back(j);
+			}
+		}
+	}
+}
+
+bool factor_table::isNaturalNumberFactor(size_t factor, size_t n)
+{
+	return ((float)n / (float)factor) == n / factor;
+}
+
+// Natural number factor lookup table
 factor_table ftables;
-
-static bool isAPrimeFactor( int factor, int product )
-{
-return ( (float)product / (float)factor ) == (product / factor);
-}
-
-factor_table::factor_table()
-{
-table = new ftable[ MAX_NUM_SLOTS ];
-
-memset( table, 0x00, sizeof( ftable ) * MAX_NUM_SLOTS );
-for( int i = 0 ; i < MAX_NUM_SLOTS; ++i )
-	{
-	table[ i ].count = 0;
-	for( int j = 1; j <= i; ++j )
-		{
-		if( isAPrimeFactor( j, i ) )
-			{
-			table[ i ].table[ table[ i ].count ] = j;
-			table[ i ].count ++;
-			}
-		}
-	}
-}
-
-int factor_table::getNextSlots(int slots_on_ship, int cur_slots)
-{
-Assert( slots_on_ship <= MAX_NUM_SLOTS );
-Assert( slots_on_ship >= 0 );
-
-for( int i = 0; i < table[ slots_on_ship ].count; ++i )
-	{
-	if( table[ slots_on_ship ].table[ i ] == cur_slots )
-		{
-		if( table[ slots_on_ship ].count == i + 1 )
-			{
-			//Overflow back to 1
-			return 1;
-			}
-		else
-			{
-			//Next block in the table
-			return table[ slots_on_ship ].table[ i + 1 ];
-			}
-		}
-	}
-//Did not find cur_slots, try and get back on track
-
-Assert( 0 );
-return 1;
-}
 
 // --------------------------------------------------------------
 // Global to file 
@@ -645,6 +672,7 @@ void process_debug_keys(int k)
 
 	switch (k) {
 		case KEY_DEBUGGED + KEY_Q:
+		case KEY_DEBUGGED1 + KEY_Q:
 			Snapshot_all_events = true;
 			break;
 
@@ -1309,7 +1337,7 @@ void ppsk_hotkeys(int k)
 		case KEY_F10 + KEY_SHIFTED + KEY_ALTED:
 		case KEY_F11 + KEY_SHIFTED + KEY_ALTED:
 		case KEY_F12 + KEY_SHIFTED + KEY_ALTED:
-			hotkey_set = mission_hotkey_get_set_num(k & ~KEY_SHIFTED+KEY_ALTED);
+			hotkey_set = mission_hotkey_get_set_num(k & (~(KEY_SHIFTED+KEY_ALTED)));
 			hud_target_hotkey_clear( hotkey_set );
 			break;
 
@@ -1745,12 +1773,14 @@ int button_function_critical(int n, net_player *p = NULL)
 				ship * shipp = &Ships[objp->instance];
 				ship_weapon *swp = &shipp->weapons;
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
-				polymodel *pm = model_get( sip->model_num );
-				count = ftables.getNextSlots( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
-				swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
-				shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
-				shipp->last_fired_point[ swp->current_primary_bank ] -= 1;
-				shipp->last_fired_point[ swp->current_primary_bank ] %= swp->primary_bank_slot_count[ swp->current_primary_bank ];
+				if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
+					polymodel *pm = model_get( sip->model_num );
+					count = ftables.getNext( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
+					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
+					shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
+					shipp->last_fired_point[ swp->current_primary_bank ] -= 1;
+					shipp->last_fired_point[ swp->current_primary_bank ] %= swp->primary_bank_slot_count[ swp->current_primary_bank ];
+				}
 			}
 			break;
 
@@ -1964,28 +1994,28 @@ int button_function_critical(int n, net_player *p = NULL)
 			if(at_self){
    			control_used(SHIELD_XFER_TOP);
 			}
-			hud_augment_shield_quadrant(objp, 1);
+			hud_augment_shield_quadrant(objp, FRONT_QUAD);
 			break;
 
 		// transfer shield energy to rear
 		case SHIELD_XFER_BOTTOM:
 			if(at_self)
 				control_used(SHIELD_XFER_BOTTOM);
-			hud_augment_shield_quadrant(objp, 2);
+			hud_augment_shield_quadrant(objp, REAR_QUAD);
 			break;
 
 		// transfer shield energy to left
 		case SHIELD_XFER_LEFT:
 			if(at_self)
 				control_used(SHIELD_XFER_LEFT);
-			hud_augment_shield_quadrant(objp, 3);
+			hud_augment_shield_quadrant(objp, LEFT_QUAD);
 			break;
 			
 		// transfer shield energy to right
 		case SHIELD_XFER_RIGHT:
 			if(at_self)
 				control_used(SHIELD_XFER_RIGHT);
-			hud_augment_shield_quadrant(objp, 0);
+			hud_augment_shield_quadrant(objp, RIGHT_QUAD);
 			break;
 
 		// transfer energy to shield from weapons
@@ -2509,7 +2539,7 @@ int button_function(int n)
 	control_used(n);
 
 	if ( hud_sensors_ok(Player_ship) ) {
-		int keyHasBeenUsed = TRUE;
+		keyHasBeenUsed = TRUE;
 		switch(n) {
 			// target next
 			case TARGET_NEXT:

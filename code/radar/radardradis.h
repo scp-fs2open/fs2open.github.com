@@ -70,13 +70,13 @@ protected:
 public:
 	HudGaugeRadarDradis();
 	void initBitmaps(char* fname_xy, char* fname_xz_yz, char* fname_sweep, char* fname_target_brackets, char* fname_unknown);
-	void initSound(int loop_snd, float loop_sound_volume,  int arrival_snd, int departue_snd, int stealth_arrival_snd, int stealth_departue_snd, float arrival_delay, float departure_delay);
+	void initSound(int loop_snd, float _loop_sound_volume,  int arrival_snd, int departue_snd, int stealth_arrival_snd, int stealth_departue_snd, float arrival_delay, float departure_delay);
 
 	void blipDrawDistorted(blip *b, vec3d *pos, float alpha);
 	void blipDrawFlicker(blip *b, vec3d *pos, float alpha);
 	void drawBlips(int blip_type, int bright, int distort);
 	void drawBlipsSorted(int distort);
-	void drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha, float scale);
+	void drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha, float scale_factor);
 	void drawContactImage(vec3d *pnt, int rad, int idx, int clr_idx, float mult);
 	void drawSweeps();
 	void drawCrosshairs( vec3d pnt );

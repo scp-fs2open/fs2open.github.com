@@ -2,6 +2,8 @@
 #
 # This file uses GNU Automake to generate makefiles
 
+ACLOCAL_AMFLAGS = -I m4
+
 SUBDIRS = mongoose code
 
 
@@ -39,6 +41,8 @@ EXTRA_PROGRAMS = cfilearchiver cfileextractor
 ## Begin utilitites
 ##
 
+CPPSOURCES=$(wildcard code/*/*.cpp code/*/*.h)
+
 # cfilearchiver -- to create VPs
 cfilearchiver_SOURCES =	\
 	code/cfilearchiver/cfilearchiver.cpp
@@ -53,6 +57,11 @@ tools: cfilearchiver cfileextractor
 # cleaning
 clean-tools:
 	-test -z "$(EXTRA_PROGRAMS)" || rm -f $(EXTRA_PROGRAMS)
+
+## cppcheck    : check for many code issues
+cppcheck: ${CPPSOURCES}
+	cppcheck ${CPPSOURCES} --enable=all --platform=unix64 \
+	--std=c99 --inline-suppr --quiet
 
 ##
 ## End utilitites

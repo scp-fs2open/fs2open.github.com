@@ -1138,7 +1138,7 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 		multi_ping_reset(&Net_players[new_player_num].s_info.ping);		
 
 		// add a chat message
-		if(Net_players[new_player_num].m_player->callsign != NULL){
+		if(*Net_players[new_player_num].m_player->callsign){
 			sprintf(notify_string,XSTR("<%s has joined>",717),Net_players[new_player_num].m_player->callsign);
 			multi_display_chat_msg(notify_string,0,0);
 		}
@@ -1514,11 +1514,6 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 
 	// add netgame type flags
 	ADD_INT(Netgame.type_flags);
-	
-//#ifndef NDEBUG
-	// char buffer[100];
-	// nprintf(("Network", "About to send accept packet to %s on port %d\n", get_text_address(buffer, addr->addr), addr->port ));
-//#endif
 
 	// actually send the packet	
 	psnet_send(&Net_players[new_player_num].p_info.addr, data, packet_size);
@@ -1536,7 +1531,7 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 	}
 
 	// add a chat message
-	if(Net_players[new_player_num].m_player->callsign != NULL){
+	if(*Net_players[new_player_num].m_player->callsign){
 		sprintf(notify_string,XSTR("<%s has joined>",717), Net_players[new_player_num].m_player->callsign);
 		multi_display_chat_msg(notify_string, 0, 0);
 	}	
@@ -3019,6 +3014,11 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	}
 
 	net_player_num = multi_find_player_by_object( objp );
+    
+	if ( net_player_num < 0 ) {
+		// Pass to higher level code to handle
+		return;
+	}
 
 	// getting here means a player fired.  Send the current packet to all players except the player
 	// who fired.  If nothing got fired, then don't send to the other players -- we will just send
@@ -6421,6 +6421,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 			idx += MAX_SHIPS_PER_PACKET; 
 		}
 
+		Assert( (Num_medals >= 0) && (Num_medals < USHRT_MAX) );
 		ADD_USHORT( (ushort)Num_medals );
 
 		// medal information
@@ -6532,8 +6533,8 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	scoring_struct *sc,bogus;
 	short player_id;
 	int offset = HEADER_LENGTH;
-	ushort u_tmp;
-	int i_tmp, num_medals;
+	ushort u_tmp, num_medals;
+	int i_tmp;
 
 	// nprintf(("Network","----------++++++++++********RECEIVED STATS***********+++++++++----------\n"));
 
@@ -6999,7 +7000,7 @@ void send_client_update_packet(net_player *pl)
 	// when not paused, send hull/shield/subsystem updates to all clients (except for ingame joiners)
 	if ( val & UPDATE_HULL_INFO ) {
 		object *objp;
-		ubyte percent, ns, threats;
+		ubyte percent, ns, threats, n_quadrants;
 		ship_info *sip;
 		ship *shipp;
 		ship_subsys *subsysp;
@@ -7022,8 +7023,11 @@ void send_client_update_packet(net_player *pl)
 		}
 		ADD_DATA( percent );
 
-		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+		n_quadrants = (ubyte)objp->n_quadrants;
+		ADD_DATA( n_quadrants );
+		for (i = 0; i < n_quadrants; i++ ) {
 			percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
+
 			ADD_DATA( percent );
 		}
 
@@ -7097,7 +7101,8 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		float fl_val;
 		ship_info *sip;
 		ship *shipp;
-		ubyte hull_percent, shield_percent[MAX_SHIELD_SECTIONS], n_subsystems, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
+		ubyte hull_percent, n_quadrants, n_subsystems, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
+		SCP_vector<ubyte> shield_percent;
 		ubyte ub_tmp;
 		ship_subsys *subsysp;
 		object *objp;
@@ -7107,7 +7112,9 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		// percentage value since that should be close enough
 		GET_DATA( hull_percent );
 
-		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ){
+		GET_DATA( n_quadrants );
+		shield_percent.resize(n_quadrants);
+		for (i = 0; i < n_quadrants; i++ ){
 			GET_DATA(ub_tmp);
 			shield_percent[i] = ub_tmp;
 		}
@@ -7141,9 +7148,11 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			fl_val = hull_percent * shipp->ship_max_hull_strength / 100.0f;
 			objp->hull_strength = fl_val;
 
-			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-				fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
-				objp->shield_quadrant[i] = fl_val;
+			for ( i = 0; i < n_quadrants; i++ ) {
+				if (i < objp->n_quadrants) {
+					fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
+					objp->shield_quadrant[i] = fl_val;
+				}
 			}
 
 			// for sanity, be sure that the number of susbystems that I read in matches the player.  If not,
@@ -8384,7 +8393,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 #define GET_NORM_VEC(d) do { char vnorm[3]; memcpy(vnorm, data+offset, 3); d.x = (float)vnorm[0] / 127.0f; d.y = (float)vnorm[1] / 127.0f; d.z = (float)vnorm[2] / 127.0f; } while(0);
 
 // player pain packet
-void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos)
+void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos, int quadrant_num)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	short windex;
@@ -8408,6 +8417,7 @@ void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage
 	ADD_USHORT(udamage);
 	ADD_VECTOR((*force));
 	ADD_VECTOR((*hitpos));
+	ADD_INT(quadrant_num);
 
 	// send to the player
 	multi_io_send(pl, data, packet_size);
@@ -8423,6 +8433,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	vec3d force;
 	vec3d local_hit_pos;
 	weapon_info *wip;
+	int quadrant_num;
 
 	// get the data for the pain packet
 	offset = HEADER_LENGTH;		
@@ -8430,6 +8441,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	GET_USHORT(udamage);
 	GET_VECTOR(force);
 	GET_VECTOR(local_hit_pos);
+	GET_INT(quadrant_num);
 	PACKET_SET_SIZE();
 
 	// mprintf(("PAIN!\n"));
@@ -8451,14 +8463,14 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	weapon_hit_do_sound(Player_obj, wip, &Player_obj->pos, true);
 
 	// we need to do 3 things here. player pain (game flash), weapon hit sound, ship_apply_whack()
-	ship_hit_pain((float)udamage);
+	ship_hit_pain((float)udamage, quadrant_num);
 
 	// apply the whack	
 	ship_apply_whack(&force, &local_hit_pos, Player_obj);	
 }
 
 // lightning packet
-void send_lightning_packet(int bolt_type, vec3d *start, vec3d *strike)
+void send_lightning_packet(int bolt_type_internal, vec3d *start, vec3d *strike)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	char val;
@@ -8466,7 +8478,7 @@ void send_lightning_packet(int bolt_type, vec3d *start, vec3d *strike)
 
 	// build the header and add the data
 	BUILD_HEADER(LIGHTNING_PACKET);
-	val = (char)bolt_type;
+	val = (char)bolt_type_internal;
 	ADD_DATA(val);
 	ADD_VECTOR((*start));
 	ADD_VECTOR((*strike));
@@ -8478,23 +8490,23 @@ void send_lightning_packet(int bolt_type, vec3d *start, vec3d *strike)
 void process_lightning_packet(ubyte *data, header *hinfo)
 {
 	int offset;
-	char bolt_type;
+	char bolt_type_internal;
 	vec3d start, strike;
 
 	// read the data
 	offset = HEADER_LENGTH;
-	GET_DATA(bolt_type);
+	GET_DATA(bolt_type_internal);
 	GET_VECTOR(start);
 	GET_VECTOR(strike);
 	PACKET_SET_SIZE();
 
 	// invalid bolt?
-	if(bolt_type < 0){
+	if(bolt_type_internal < 0){
 		return;
 	}
 
 	// fire it up
-	nebl_bolt(bolt_type, &start, &strike);
+	nebl_bolt(bolt_type_internal, &start, &strike);
 }
 
 void send_bytes_recvd_packet(net_player *pl)

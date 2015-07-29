@@ -147,7 +147,7 @@ MONITOR(NumHullDebrisRend)
 /**
  * Render debris
  */
-void debris_render(object * obj)
+void debris_render_DEPRECATED(object * obj)
 {
 	int			i, num, swapped;
 	polymodel	*pm;
@@ -191,10 +191,10 @@ void debris_render(object * obj)
 
 	if ( db->is_hull )	{
 		MONITOR_INC(NumHullDebrisRend,1);
-		submodel_render( db->model_num, db->submodel_num, &obj->orient, &obj->pos );
+		submodel_render_DEPRECATED( db->model_num, db->submodel_num, &obj->orient, &obj->pos );
 	} else {
 		MONITOR_INC(NumSmallDebrisRend,1);
-		submodel_render( db->model_num, db->submodel_num, &obj->orient, &obj->pos, MR_NO_LIGHTING );
+		submodel_render_DEPRECATED( db->model_num, db->submodel_num, &obj->orient, &obj->pos, MR_NO_LIGHTING );
 	}
 
 	if (tbase != NULL && (swapped!=-1) && pm)	{
@@ -526,11 +526,11 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		// Create Debris piece n!
 		if ( hull_flag ) {
 			if (rand() < RAND_MAX/6)	// Make some pieces blow up shortly after explosion.
-				db->lifeleft = 2.0f * ((float) myrand()/(float) RAND_MAX) + 0.5f;
+				db->lifeleft = 2.0f * (myrand() * RAND_MAX_1f) + 0.5f;
 			else
 				db->lifeleft = -1.0f;		// large hull pieces stay around forever
 		} else {
-			db->lifeleft = (i2fl(myrand())/i2fl(RAND_MAX))*2.0f+0.1f;
+			db->lifeleft = (myrand() * RAND_MAX_1f) * 2.0f + 0.1f;
 		}
 	}
 
@@ -843,18 +843,18 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 	}
 	
 	// debris ship collision -- use debris_hit_info to calculate physics
-	object *ship_obj = other_obj;
-	Assert( ship_obj->type == OBJ_SHIP );
+	object *pship_obj = other_obj;
+	Assert( pship_obj->type == OBJ_SHIP );
 
 	object *heavy = debris_hit_info->heavy;
-	object *light = debris_hit_info->light;
+	object *lighter = debris_hit_info->light;
 	object *heavy_obj = heavy;
-	object *light_obj = light;
+	object *light_obj = lighter;
 
 	vec3d zero, p0, p1;
 	vm_vec_zero(&zero);
-	vm_vec_sub(&p0, &light->last_pos, &heavy->last_pos);
-	vm_vec_sub(&p1, &light->pos, &heavy->pos);
+	vm_vec_sub(&p0, &lighter->last_pos, &heavy->last_pos);
+	vm_vec_sub(&p1, &lighter->pos, &heavy->pos);
 
 	mc.pos = &zero;								// The object's position
 	mc.p0 = &p0;									// Point 1 of ray to check
@@ -875,15 +875,15 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		vm_vec_scale(&debris_hit_info->light_rel_vel, 1/flFrametime);
 	} else {
 		debris_hit_info->collide_rotate = 0;
-		vm_vec_sub(&debris_hit_info->light_rel_vel, &light->phys_info.vel, &heavy->phys_info.vel);
+		vm_vec_sub(&debris_hit_info->light_rel_vel, &lighter->phys_info.vel, &heavy->phys_info.vel);
 	}
 
 	int mc_ret_val = 0;
 
-	if ( debris_hit_info->heavy == ship_obj ) {	// ship is heavier, so debris is sphere. Check sphere collision against ship poly model
-		mc.model_instance_num = Ships[ship_obj->instance].model_instance_num;
-		mc.model_num = Ship_info[Ships[ship_obj->instance].ship_info_index].model_num;	// Fill in the model to check
-		mc.orient = &ship_obj->orient;								// The object's orient
+	if ( debris_hit_info->heavy == pship_obj ) {	// ship is heavier, so debris is sphere. Check sphere collision against ship poly model
+		mc.model_instance_num = Ships[pship_obj->instance].model_instance_num;
+		mc.model_num = Ship_info[Ships[pship_obj->instance].ship_info_index].model_num;	// Fill in the model to check
+		mc.orient = &pship_obj->orient;								// The object's orient
 		mc.radius = pdebris->radius;
 		mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);
 
@@ -900,7 +900,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		polymodel *pm;
 		polymodel_instance *pmi;
 
-		ship_model_start(ship_obj);
+		ship_model_start(pship_obj);
 
 		if (model_collide(&mc)) {
 
@@ -1007,7 +1007,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		mc.submodel_num = Debris[num].submodel_num;
 		model_clear_instance( mc.model_num );
 		mc.orient = &pdebris->orient;				// The object's orient
-		mc.radius = model_get_core_radius(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
+		mc.radius = model_get_core_radius(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
 
 		// check for collision between debris model and ship sphere
 		mc.flags = (MC_CHECK_MODEL | MC_SUBMODEL | MC_CHECK_SPHERELINE);
@@ -1093,4 +1093,60 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs 
 	pi->I_body_inv.vec.fvec.xyz.x = 0.0f;
 	pi->I_body_inv.vec.fvec.xyz.y = 0.0f;
 	pi->I_body_inv.vec.fvec.xyz.z = 12.0f / (pi->mass *  (dx*dx + dy*dy));
+}
+
+void debris_render(object * obj, draw_list *scene)
+{
+	int			i, num, swapped;
+	polymodel	*pm;
+	debris		*db;
+
+
+	swapped = -1;
+	pm = NULL;	
+	num = obj->instance;
+
+	Assert(num >= 0 && num < MAX_DEBRIS_PIECES);
+	db = &Debris[num];
+
+	Assert(db->flags & DEBRIS_USED);
+
+	texture_info *tbase = NULL;
+
+	model_clear_instance( db->model_num );
+
+	// Swap in a different texture depending on the species
+	if (db->species >= 0)
+	{
+		pm = model_get( db->model_num );
+
+		//WMC - Someday, we should have glowing debris.
+		if ( pm != NULL && (pm->n_textures == 1) ) {
+			tbase = &pm->maps[0].textures[TM_BASE_TYPE];
+			swapped = tbase->GetTexture();
+			tbase->SetTexture(Species_info[db->species].debris_texture.bitmap_id);
+		}
+	}
+
+	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
+	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
+		for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
+			if ( timestamp_valid( db->arc_timestamp[i] ) )	{
+				model_add_arc( db->model_num, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_NORMAL );
+			}
+		}
+	}
+
+	model_render_params render_info;
+
+	if ( !db->is_hull )	{
+		render_info.set_flags(MR_NO_LIGHTING);
+	}
+
+	MONITOR_INC(NumHullDebrisRend,1);
+	submodel_render_queue( &render_info, scene, db->model_num, db->submodel_num, &obj->orient, &obj->pos );
+
+	if (tbase != NULL && (swapped!=-1) && pm)	{
+		tbase->SetTexture(swapped);
+	}
 }

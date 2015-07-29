@@ -12,7 +12,6 @@
 #ifndef _FREDDOC_H
 #define _FREDDOC_H
 
-#include "ai/ailocal.h"
 #include "MissionSave.h"
 
 #define MISSION_BACKUP_NAME	"Backup"
@@ -89,7 +88,6 @@ protected:
 	afx_msg void OnFileNew();
 	afx_msg void editor_init_mission();
 	afx_msg void OnFileImportFSM();
-	afx_msg void OnFileImportWeapons();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

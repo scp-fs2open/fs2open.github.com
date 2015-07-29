@@ -72,6 +72,7 @@
 #include "popup/popupdead.h"
 #include "sound/sound.h"
 #include "sound/ds.h"
+#include "parse/scripting.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -309,6 +310,8 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"cloaked",
 	"ship-locked",
 	"weapons-locked",
+	"scramble-messages",
+	"no-collide",
 };
 
 char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
@@ -382,6 +385,8 @@ void parse_object_clear_all_handled_flags();
 int parse_object_on_arrival_list(p_object *pobjp);
 int add_path_restriction();
 
+static bool Warned_about_team_out_of_range;
+
 // Goober5000
 void mission_parse_mark_non_arrival(p_object *p_objp);
 void mission_parse_mark_non_arrival(wing *wingp);
@@ -389,9 +394,6 @@ void mission_parse_mark_non_arrivals();
 
 // Goober5000 - FRED import
 void convertFSMtoFS2();
-void restore_default_weapons(char *ships_tbl);
-void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons);
-void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
 
 
 MONITOR(NumShipArrivals)
@@ -880,18 +882,19 @@ void parse_player_info2(mission *pm)
 			ptr->default_ship = ship_info_lookup(str);
 			if (-1 == ptr->default_ship) {
 				WarningEx(LOCATION, "Mission: %s\nUnknown default ship %s!  Defaulting to %s.", pm->name, str, Ship_info[ptr->ship_list[0]].name );
+				ptr->default_ship = ptr->ship_list[0]; // default to 1st in list
 			}
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
 			// do we do?  choose the first allowable one?
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
 				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
 					for (i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-						if ( Campaign.ships_allowed[ptr->default_ship] ) {
+						if ( Campaign.ships_allowed[i] ) {
 							ptr->default_ship = i;
 							break;
 						}
 					}
-					Assert( i < MAX_SHIP_CLASSES );
+					Assertion( i < MAX_SHIP_CLASSES, "Mission: %s: Could not find a valid default ship.\n", pm->name );
 				}
 			}
 		}
@@ -962,49 +965,40 @@ void parse_player_info2(mission *pm)
 		Error(LOCATION, "Not enough ship/weapon pools for mission.  There are %d teams and only %d pools.", Num_teams, nt);
 }
 
-// a little helper for the next function
-void parse_single_cutscene (mission *pm, int type) 
-{
-	mission_cutscene scene; 
-
-	scene.type = type; 
-	stuff_string (scene.cutscene_name, F_NAME, NAME_LENGTH);
-	
-	if ( required_string("+formula:") ) {
-		scene.formula = get_sexp_main();
-	}
-
-	pm->cutscenes.push_back(scene); 
-}
-
 void parse_cutscenes(mission *pm) 
 {
 	pm->cutscenes.clear(); 
 
-	if (optional_string("#Cutscenes")) {		
-		while(!optional_string("#end")){
-			if (optional_string("$Fiction Viewer Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_FICTION);
-			}
-			
-			if (optional_string("$Command Brief Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_CMD_BRIEF);
-			}
-			
-			if (optional_string("$Briefing Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_BRIEF);
-			}
-			
-			if (optional_string("$Pre-game Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_GAME);
-			}
-			
-			if (optional_string("$Debriefing Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_PRE_DEBRIEF);
-			}
-			if (optional_string("$Campaign End Cutscene:")) {
-				parse_single_cutscene(pm, MOVIE_END_CAMPAIGN);
-			}
+	if (optional_string("#Cutscenes"))
+	{
+		mission_cutscene scene;
+
+		while (!optional_string("#end"))
+		{
+			// this list should correspond to the MOVIE_* #defines
+			scene.type = optional_string_one_of(6,
+				"$Fiction Viewer Cutscene:",
+				"$Command Brief Cutscene:",
+				"$Briefing Cutscene:",
+				"$Pre-game Cutscene:",
+				"$Debriefing Cutscene:",
+				"$Campaign End Cutscene:");
+
+			// no more cutscenes specified?
+			if (scene.type < 0)
+				break;
+
+			// get the cutscene file
+			stuff_string(scene.filename, F_NAME, NAME_LENGTH);
+
+			// get the sexp if we have one
+			if (optional_string("+formula:"))
+				scene.formula = get_sexp_main();
+			else
+				scene.formula = Locked_sexp_true;
+
+			// add it
+			pm->cutscenes.push_back(scene);
 		}
 	}
 }
@@ -1113,21 +1107,30 @@ void parse_music(mission *pm, int flags)
 	if (optional_string("$Debriefing Success Music:"))
 	{
 		stuff_string(temp, F_NAME, NAME_LENGTH);
-		event_music_set_score(SCORE_DEBRIEF_SUCCESS, temp);
+		index = event_music_get_spooled_music_index(temp);
+		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
+			event_music_set_score(SCORE_DEBRIEF_SUCCESS, temp);
+		}
 	}
 
 	// not old, just added since it makes sense
 	if (optional_string("$Debriefing Average Music:"))
 	{
 		stuff_string(temp, F_NAME, NAME_LENGTH);
-		event_music_set_score(SCORE_DEBRIEF_AVERAGE, temp);
+		index = event_music_get_spooled_music_index(temp);
+		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
+			event_music_set_score(SCORE_DEBRIEF_AVERAGE, temp);
+		}
 	}
 
 	// old stuff
 	if (optional_string("$Debriefing Fail Music:"))
 	{
 		stuff_string(temp, F_NAME, NAME_LENGTH);
-		event_music_set_score(SCORE_DEBRIEF_FAIL, temp);
+		index = event_music_get_spooled_music_index(temp);
+		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
+			event_music_set_score(SCORE_DEBRIEF_FAIL, temp);
+		}
 	}
 
 	// new stuff
@@ -1253,6 +1256,7 @@ void parse_fiction(mission *pm)
 {
 	char filename[MAX_FILENAME_LEN];
 	char font_filename[MAX_FILENAME_LEN];
+	char voice_filename[MAX_FILENAME_LEN];
 
 	fiction_viewer_reset();
 
@@ -1268,7 +1272,13 @@ void parse_fiction(mission *pm)
 		strcpy_s(font_filename, "");
 	}
 
-	fiction_viewer_load(filename, font_filename);
+	if (optional_string("$Voice:")) {
+		stuff_string(voice_filename, F_FILESPEC, MAX_FILENAME_LEN);
+	} else {
+		strcpy_s(voice_filename, "");
+	}
+
+	fiction_viewer_load(filename, font_filename, voice_filename);
 }
 
 /**
@@ -1825,6 +1835,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
 	shipp->ship_max_hull_strength =  p_objp->ship_max_hull_strength;
+	shipp->max_shield_recharge = p_objp->max_shield_recharge;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
@@ -1919,7 +1930,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->base_texture_anim_frametime = game_get_overall_frametime();
 
 	// handle the replacement textures
-	if (p_objp->num_texture_replacements > 0)
+	if (!p_objp->replacement_textures.empty())
 	{
 		shipp->ship_replacement_textures = (int *) vm_malloc( MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
@@ -1928,7 +1939,7 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// now fill them in
-	for (i = 0; i < p_objp->num_texture_replacements; i++)
+	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
 	{
 		pm = model_get(sip->model_num);
 
@@ -1937,9 +1948,9 @@ int parse_create_object_sub(p_object *p_objp)
 		{
 			texture_map *tmap = &pm->maps[j];
 
-			int tnum = tmap->FindTexture(p_objp->replacement_textures[i].old_texture);
+			int tnum = tmap->FindTexture(tr->old_texture);
 			if(tnum > -1)
-				shipp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = p_objp->replacement_textures[i].new_texture_id;
+				shipp->ship_replacement_textures[j * TM_NUM_TYPES + tnum] = tr->new_texture_id;
 		}
 	}
 
@@ -2082,12 +2093,7 @@ int parse_create_object_sub(p_object *p_objp)
 				for (j=k=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
 				{
 					if ((sssp->primary_banks[j] >= 0) || Fred_running)
-					{
-						wp->primary_bank_weapons[k] = sssp->primary_banks[j];						
-
-						// next
-						k++;
-					}
+						wp->primary_bank_weapons[k++] = sssp->primary_banks[j];
 				}
 
 				if (Fred_running)
@@ -2117,8 +2123,10 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
 				}
-				else
+				else if (Weapon_info[wp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC)
 				{
+					Assert(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f);
+
 					int capacity = fl2i(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j] + 0.5f);
 					wp->primary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size + 0.5f);
 				}
@@ -2132,6 +2140,8 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 				else
 				{
+					Assert(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f);
+
 					int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j] + 0.5f);
 					wp->secondary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size + 0.5f);
 				}
@@ -2236,9 +2246,9 @@ int parse_create_object_sub(p_object *p_objp)
 		int max_allowed_sparks, num_sparks, iLoop;
 
 		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
-		for (iLoop = 0; iLoop<MAX_SHIELD_SECTIONS; iLoop++)
+		for (iLoop = 0; iLoop<Objects[objnum].n_quadrants; iLoop++)
 		{
-			Objects[objnum].shield_quadrant[iLoop] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
+			Objects[objnum].shield_quadrant[iLoop] = (float) (shipp->max_shield_recharge * p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 		}
 
 		// initial velocities now do not apply to ships which warp in after mission starts
@@ -2353,8 +2363,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	wing *wingp = &Wings[wingnum];
 
 	// link ship and wing together
-	// (do this first because mission log relies on ship_index
-	// and hud_wingman_status_set_index relies on ship's wingnum)
+	// (do this first because mission log relies on ship_index)
 	wingp->ship_index[p_objp->pos_in_wing] = shipnum;
 	Ships[shipnum].wingnum = wingnum;
 
@@ -2378,7 +2387,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	// at this point the wing has arrived, so handle the stuff for this particular ship
 
 	// set up wingman status index
-	hud_wingman_status_set_index(shipnum);
+	hud_wingman_status_set_index(wingp, &Ships[shipnum], p_objp);
 
 	// copy to parse object
 	p_objp->wing_status_wing_index = Ships[shipnum].wing_status_wing_index;
@@ -2563,6 +2572,13 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_SF2_WEAPONS_LOCKED)
 		shipp->flags2 |= SF2_WEAPONS_LOCKED;
+
+	if (parse_flags2 & P2_SF2_SCRAMBLE_MESSAGES)
+		shipp->flags2 |= SF2_SCRAMBLE_MESSAGES;
+
+	// don't remove no-collide if not set in the mission
+	if (parse_flags2 & P2_OF_NO_COLLIDE)
+		obj_set_flags(objp, objp->flags & ~OF_COLLIDES);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
@@ -2649,7 +2665,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
 	if (p_objp->ship_class < 0)
 	{
-		mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name));
+		if (Fred_running) {
+			Warning(LOCATION, "Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name);
+		} 
+		else {
+			mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name));
+		}
 
 		p_objp->ship_class = 0;
 		Num_unknown_ship_classes++;
@@ -2668,7 +2689,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 		if (is_variable) {
 			new_alt_class.variable_index = get_index_sexp_variable_name(alt_ship_class);
-			new_alt_class.ship_class = ship_info_lookup(Sexp_variables[new_alt_class.variable_index].text);
+			if(new_alt_class.variable_index >= 0) {
+				new_alt_class.ship_class = ship_info_lookup(Sexp_variables[new_alt_class.variable_index].text);
+			}
+			else {
+				new_alt_class.ship_class = -1;
+			}
 		}
 		else {
 			new_alt_class.variable_index = -1;
@@ -2988,12 +3014,13 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	if (optional_string("$Special Explosion:")) {
 		p_objp->use_special_explosion = true;
+		bool period_detected = false;
 
 		if (required_string("+Special Exp Damage:")) {
 			stuff_int(&p_objp->special_exp_damage);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion damage has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3002,7 +3029,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			stuff_int(&p_objp->special_exp_blast);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion blast has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3011,7 +3038,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			stuff_int(&p_objp->special_exp_inner);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion inner radius has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3020,7 +3047,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			stuff_int(&p_objp->special_exp_outer);
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion outer radius has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
@@ -3030,13 +3057,17 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			p_objp->use_shockwave = true;
 
 			if (*Mp == '.') {
-				Warning(LOCATION, "Special explosion shockwave speed has been returned to integer format");
+				period_detected = true;
 				advance_to_eoln(NULL);
 			}
 		}
 
 		if (optional_string("+Special Exp Death Roll Time:")) {
 			stuff_int(&p_objp->special_exp_deathroll_time);
+		}
+
+		if (period_detected) {
+			nprintf(("Warning", "Special explosion attributes have been returned to integer format"));
 		}
 	}
 
@@ -3077,6 +3108,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	p_objp->max_shield_recharge = Ship_info[p_objp->ship_class].max_shield_recharge;
 
 
 	// if the kamikaze flag is set, we should have the next flag
@@ -3196,64 +3228,69 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_int(&p_objp->persona_index);
 
 	// texture replacement - Goober5000
-	p_objp->num_texture_replacements = 0;
+	p_objp->replacement_textures = Ship_info[p_objp->ship_class].replacement_textures;	// initialize our set with the ship class set, which may be empty
 	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
 	{
+		texture_replace tr;
 		char *p;
 
-		while ((p_objp->num_texture_replacements < MAX_REPLACEMENT_TEXTURES) && (optional_string("+old:")))
+		while (optional_string("+old:"))
 		{
-			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, F_NAME, MAX_FILENAME_LEN);
+			strcpy_s(tr.ship_name, p_objp->name);
+			tr.new_texture_id = -1;
+
+			stuff_string(tr.old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
-			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, F_NAME, MAX_FILENAME_LEN);
+			stuff_string(tr.new_texture, F_NAME, MAX_FILENAME_LEN);
 
 			// get rid of extensions
-			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, '.');
+			p = strchr(tr.old_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.old_texture));
 				*p = 0;
 			}
-			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, '.');
+			p = strchr(tr.new_texture, '.');
 			if (p)
 			{
-				mprintf(("Extraneous extension found on replacement texture %s!\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", tr.new_texture));
 				*p = 0;
 			}
 
-			// load the texture
-			if (!stricmp(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, "invisible"))
-			{
-				// invisible is a special case
-				p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = REPLACE_WITH_INVISIBLE;
-			}
+			// add it if we aren't over the limit
+			if (p_objp->replacement_textures.size() < MAX_MODEL_TEXTURES)
+				p_objp->replacement_textures.push_back(tr);
 			else
-			{
-				// try to load texture or anim as normal
-				p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load_either(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-			}
+				mprintf(("Too many replacement textures specified for ship '%s'!\n", p_objp->name));
+		}
+	}
 
-			// not found?
-			if (p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id < 0)
-			{
-				mprintf(("Could not load replacement texture %s for ship %s\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, p_objp->name));
-			}
+	// now load the textures (do this outside the parse loop because we may have ship class replacements too)
+	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
+	{
+		// load the texture
+		if (!stricmp(tr->new_texture, "invisible"))
+		{
+			// invisible is a special case
+			tr->new_texture_id = REPLACE_WITH_INVISIBLE;
+		}
+		else
+		{
+			// try to load texture or anim as normal
+			tr->new_texture_id = bm_load_either(tr->new_texture);
+		}
 
-			// *** account for FRED
-			if (Fred_running)
-			{
-				texture_replace tr;
+		// not found?
+		if (tr->new_texture_id < 0)
+		{
+			mprintf(("Could not load replacement texture %s for ship %s\n", tr->new_texture, p_objp->name));
+		}
 
-				strcpy_s(tr.ship_name, p_objp->name);
-				strcpy_s(tr.old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
-				strcpy_s(tr.new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-				tr.new_texture_id = -1;
-
-				Fred_texture_replacements.push_back(tr);
-			}
-
-			// increment
-			p_objp->num_texture_replacements++;
+		// account for FRED
+		if (Fred_running)
+		{
+			Fred_texture_replacements.push_back(*tr);
+			Fred_texture_replacements.back().new_texture_id = -1;
 		}
 	}
 
@@ -3439,8 +3476,8 @@ void parse_common_object_data(p_object	*objp)
 			for (j=0; j < sip->n_subsystems; ++j)
 				if (!subsystem_stricmp(sip->subsystems[j].subobj_name, Subsys_status[i].name))
 					break;
-			if (j == sip->n_subsystems)
-				Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
+			//if (j == sip->n_subsystems)
+				//Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
 		}
 
 		if (optional_string("$Damage:"))
@@ -3861,7 +3898,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			if ( shipnum == -1 ) {
 				int num_remaining;
 				// since this wing cannot arrive from this place, we need to mark the wing as destroyed and
-				// set the wing variables appropriatly.  Good for directives.
+				// set the wing variables appropriately.  Good for directives.
 
 				// set the gone flag
 				wingp->flags |= WF_WING_GONE;
@@ -3978,6 +4015,23 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			specific_instance--;
 			continue;
 		}
+		// when not creating a specific ship, we should skip over any ships that weren't carried along in the red-alert
+		else if (p_objp->flags2 & P2_RED_ALERT_DELETED)
+		{
+			num_to_create--;
+			num_create_save--;
+			ship_add_ship_type_count(p_objp->ship_class, -1);
+			wingp->red_alert_skipped_ships++;
+
+			// clear the flag so that this parse object can be used for the next wave
+			p_objp->flags2 &= ~P2_RED_ALERT_DELETED;
+
+			// skip over this parse object
+			if (num_to_create == 0)
+				break;
+			else
+				continue;
+		}
 
 		Assert (!(p_objp->flags & P_SF_CANNOT_ARRIVE));		// get allender
 
@@ -3990,17 +4044,15 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		}
 
 		// bash the ship name to be the name of the wing + some number if there is > 1 wave in this wing
+		wingp->total_arrived_count++;
+		if (wingp->num_waves > 1)
+			wing_bash_ship_name(p_objp->name, wingp->name, wingp->total_arrived_count + wingp->red_alert_skipped_ships);
+
 		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
 		if (Game_mode & GM_MULTIPLAYER)
 		{
 			p_objp->net_signature = (ushort) (wingp->net_signature + wingp->total_arrived_count);
-		}
-
-		wingp->total_arrived_count++;
-		if (wingp->num_waves > 1)
-		{
-			sprintf(p_objp->name, NOX("%s %d"), wingp->name, wingp->total_arrived_count);
 		}
 
 
@@ -4030,7 +4082,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		}
 
 		// set up wingman status index
-		hud_wingman_status_set_index(Objects[objnum].instance);
+		hud_wingman_status_set_index(wingp, &Ships[Objects[objnum].instance], p_objp);
 
 		p_objp->wing_status_wing_index = Ships[Objects[objnum].instance].wing_status_wing_index;
 		p_objp->wing_status_wing_pos = Ships[Objects[objnum].instance].wing_status_wing_pos;
@@ -4085,23 +4137,32 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 	Assert (num_to_create == 0);
 
 	// wing current_count needs to match the end of the ship_index[] list, but there
-	// is a very off chance it could have holes in it, so make sure to compact the list
-	for (i = 0; i < (MAX_SHIPS_PER_WING-1); i++) {
-		if (wingp->ship_index[i] == -1) {
-			j = i;
-			while ( j < (MAX_SHIPS_PER_WING-1) ) {
+	// is a very off chance it could have holes in it (especially if it's a red-alert
+	// wing that arrives late), so make sure to compact the list
+	int length = MAX_SHIPS_PER_WING;
+	for (i = 0; i < length; i++)
+	{
+		if (wingp->ship_index[i] == -1)
+		{
+			// shift actual values downward
+			for (j = i; j < length - 1; j++)
+			{
 				wingp->ship_index[j] = wingp->ship_index[j+1];
 
 				// update "special" ship too
-				if (wingp->special_ship == j+1) {
+				if (wingp->special_ship == j+1)
 					wingp->special_ship--;
-				}
-
-				j++;
 			}
+
+			// last value becomes -1
+			wingp->ship_index[j] = -1;
+			length--;
+
+			// stay on the current index in case we still have a -1
+			i--;
 		}
 	}
-			
+	
 	// possibly play some event driven music here.  Send a network packet indicating the wing was
 	// created.  Only do this stuff if actually in the mission.
 	if ( (objnum != -1) && (Game_mode & GM_IN_MISSION) ) {		// if true, we have created at least one new ship.
@@ -4130,6 +4191,24 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 		// possibly change the location where these ships arrive based on the wings arrival location
 		mission_set_wing_arrival_location( wingp, num_create_save );
+
+		for (it = 0; it < wingp->current_count; it++ ) {
+			int shipobjnum = Ships[wingp->ship_index[it]].objnum;
+			int anchor_objnum = -1;
+
+			if (wingp->arrival_anchor >= 0) {
+				int parentshipnum = ship_name_lookup(Parse_names[wingp->arrival_anchor]);
+				anchor_objnum = Ships[parentshipnum].objnum;
+			}
+
+			if (anchor_objnum >= 0)
+				Script_system.SetHookObjects(2, "Ship", &Objects[shipobjnum], "Parent", &Objects[anchor_objnum]);
+			else
+				Script_system.SetHookObjects(2, "Ship", &Objects[shipobjnum], "Parent", NULL);
+
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[shipobjnum]);
+			Script_system.RemHookVars(2, "Ship", "Parent");
+		}
 
 		// if in multiplayer (and I am the host) and in the mission, send a wing create command to all
 		// other players
@@ -4179,6 +4258,7 @@ void parse_wing(mission *pm)
 	wingnum = Num_wings;
 
 	wingp->total_arrived_count = 0;
+	wingp->red_alert_skipped_ships = 0;
 	wingp->total_destroyed = 0;
 	wingp->total_departed = 0;	// Goober5000
 	wingp->total_vanished = 0;	// Goober5000
@@ -4522,8 +4602,9 @@ void resolve_path_masks(int anchor, int *path_mask)
 		Assert(!(anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG));
 		parent_pobjp = mission_parse_get_parse_object(Parse_names[anchor]);
 
-		// load model for checking paths
-		modelnum = model_load(Ship_info[parent_pobjp->ship_class].pof_file, 0, NULL);
+		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
+		ship_info *sip = &Ship_info[parent_pobjp->ship_class];
+		modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 
 		// resolve names to indexes
 		*path_mask = 0;
@@ -4535,9 +4616,6 @@ void resolve_path_masks(int anchor, int *path_mask)
 
 			*path_mask |= (1 << bay_path);
 		}
-
-		// unload model
-		model_unload(modelnum);
 
 		// cache the result
 		prp->cached_mask = *path_mask;
@@ -4715,10 +4793,10 @@ void parse_event(mission *pm)
 
 		// sanity check
 		if (event->team < -1 || event->team >= MAX_TVT_TEAMS) {
-			if (Fred_running)
+			if (Fred_running && !Warned_about_team_out_of_range) {
 				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
-			else
-				nprintf(("Warning", "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.\n"));
+				Warned_about_team_out_of_range = true;
+			}
 			event->team = -1;
 		}
 	}
@@ -4810,7 +4888,10 @@ void parse_goal(mission *pm)
 
 		// sanity check
 		if (goalp->team < -1 || goalp->team >= Num_iffs) {
-			Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+			if (Fred_running && !Warned_about_team_out_of_range) {
+				Warning(LOCATION, "+Team: value was out of range in the mission file!  This was probably caused by a bug in an older version of FRED.  Using -1 for now.");
+				Warned_about_team_out_of_range = true;
+			}
 			goalp->team = -1;
 		}
 	}
@@ -4846,23 +4927,21 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 
 	required_string("#Waypoints");
 
-	CJumpNode *jnp;
 	char file_name[MAX_FILENAME_LEN] = { 0 };
 	char jump_name[NAME_LENGTH] = { 0 };
 
 	while (optional_string("$Jump Node:")) {
 		stuff_vec3d(&pos);
-		jnp = new CJumpNode(&pos);
-		Assert(jnp != NULL);
+		CJumpNode jnp(&pos);
 
 		if (optional_string("$Jump Node Name:") || optional_string("+Jump Node Name:")) {
 			stuff_string(jump_name, F_NAME, NAME_LENGTH);
-			jnp->SetName(jump_name);
+			jnp.SetName(jump_name);
 		}
 
 		if(optional_string("+Model File:")){
 			stuff_string(file_name, F_NAME, MAX_FILENAME_LEN);
-			jnp->SetModel(file_name);
+			jnp.SetModel(file_name);
 		}
 
 		if(optional_string("+Alphacolor:")) {
@@ -4871,16 +4950,16 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 			stuff_ubyte(&g);
 			stuff_ubyte(&b);
 			stuff_ubyte(&a);
-			jnp->SetAlphaColor(r, g, b, a);
+			jnp.SetAlphaColor(r, g, b, a);
 		}
 
 		if(optional_string("+Hidden:")) {
 			int hide;
 			stuff_boolean(&hide);
-			jnp->SetVisibility(!hide);
+			jnp.SetVisibility(!hide);
 		}
 
-		Jump_nodes.push_back(*jnp);
+		Jump_nodes.push_back(std::move(jnp));
 	}
 
 	while (required_string_either("#Messages", "$Name:"))
@@ -5296,6 +5375,13 @@ void parse_asteroid_fields(mission *pm)
 		required_string("$Maximum:");
 		stuff_vec3d(&Asteroid_field.max_bound);
 
+		vec3d a_rad;
+		vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
+		vm_vec_scale(&a_rad, 0.5f);
+		float b_rad = vm_vec_mag(&a_rad);
+
+		Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
+
 		if (optional_string("+Inner Bound:")) {
 			Asteroid_field.has_inner_bound = 1;
 
@@ -5374,6 +5460,7 @@ int parse_mission(mission *pm, int flags)
 	int saved_error_count = Global_error_count;
 
 	int i;
+	Warned_about_team_out_of_range = false;
 
 	waypoint_parse_init();
 
@@ -5487,7 +5574,7 @@ int parse_mission(mission *pm, int flags)
 	if ((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0) {
 		char text[512];
 		sprintf(text, "Warning!\n\nThe current mission has generated %d warnings and/or errors during load.  These are usually caused by corrupted ship models or syntax errors in the mission file.  While FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.  Source Code Project staff cannot provide assistance or support for these problems, as they are caused by the mission's data files, not FreeSpace Open's source code.", (saved_warning_count - Global_warning_count) + (saved_error_count - Global_error_count));
-		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_NO_NETWORKING, 1, POPUP_OK, text);
+		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, text);
 	}
 
 	log_printf(LOGFILE_EVENT_LOG, "Mission %s loaded.\n", pm->name); 
@@ -5707,15 +5794,6 @@ void post_process_mission()
 	Mission_departure_timestamp = timestamp( DEPARTURE_TIMESTAMP );
 	Mission_end_time = -1;
 
-	if(Game_mode & GM_MULTIPLAYER){ 
-		multi_respawn_build_points();
-	}	
-
-	// maybe reset hotkey defaults when loading new mission
-	if ( Last_file_checksum != Current_file_checksum ){
-		mission_hotkey_reset_saved();
-	}
-
 	Allow_arrival_music_timestamp=timestamp(0);
 	Allow_arrival_message_timestamp=timestamp(0);
 	Arrival_message_delay_timestamp = timestamp(-1);
@@ -5727,6 +5805,14 @@ void post_process_mission()
 		Arrival_message_delay_timestamp_m[idx] = timestamp(-1);
 	}	
 
+	if(Game_mode & GM_MULTIPLAYER){ 
+		multi_respawn_build_points();
+	}	
+
+	// maybe reset hotkey defaults when loading new mission
+	if ( Last_file_checksum != Current_file_checksum ){
+		mission_hotkey_reset_saved();
+	}
 	Last_file_checksum = Current_file_checksum;
 }
 
@@ -5741,45 +5827,38 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 	if (p) *p = 0; // remove any extension
 	strcat_s(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
 
-	int rval, filelength;
+	int filelength;
 
 	// if mission_p is NULL, make it point to The_mission
 	if ( mission_p == NULL )
 		mission_p = &The_mission;
 
-	// open localization
-	lcl_ext_open();
+	CFILE *ftemp = cfopen(real_fname, "rt");
+	if (!ftemp) {
+		return -1;
+	}
 
-	do {
-		CFILE *ftemp = cfopen(real_fname, "rt");
-		if (!ftemp) {
-			rval = -1;
-			break;
-		}
+	// 7/9/98 -- MWA -- check for 0 length file.
+	filelength = cfilelength(ftemp);
+	cfclose(ftemp);
+	if (filelength == 0) {
+		return -1;
+	}
 
-		// 7/9/98 -- MWA -- check for 0 length file.
-		filelength = cfilelength(ftemp);
-		cfclose(ftemp);
-		if (filelength == 0) {
-			rval = -1;
-			break;
-		}
-
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", real_fname, rval));
-			break;
-		}
-
+	try
+	{
 		read_file_text(real_fname, CF_TYPE_MISSIONS);
-		mission_p->Reset( );
+		mission_p->Reset();
 		parse_init(basic);
 		parse_mission_info(mission_p, basic);
-	} while (0);
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", real_fname, e.what()));
+		return -1;
+	}
 
-	// close localization
-	lcl_ext_close();
-
-	return rval;
+	return 0;
 }
 
 /**
@@ -5819,9 +5898,6 @@ int parse_main(const char *mission_name, int flags)
 
 	for (i = 0; i < Num_ship_classes; i++)
 		Ship_class_names[i] = Ship_info[i].name;
-
-	// open localization
-	lcl_ext_open();
 	
 	do {
 		// don't do this for imports
@@ -5844,26 +5920,28 @@ int parse_main(const char *mission_name, int flags)
 			cfclose(ftemp);
 		}
 
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", mission_name, rval));
+		try
+		{
+			// import?
+			if (flags & MPF_IMPORT_FSM) {
+				read_file_text(mission_name, CF_TYPE_ANY);
+				convertFSMtoFS2();
+			}
+			else {
+				read_file_text(mission_name, CF_TYPE_MISSIONS);
+			}
+
+			The_mission.Reset();
+			rval = parse_mission(&The_mission, flags);
+			display_parse_diagnostics();
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", mission_name, e.what()));
+			rval = 1;
 			break;
 		}
-
-		// import?
-		if (flags & MPF_IMPORT_FSM) {
-			read_file_text(mission_name, CF_TYPE_ANY);
-			convertFSMtoFS2();
-		} else {
-			read_file_text(mission_name, CF_TYPE_MISSIONS);
-		}
-
-		The_mission.Reset( );
-		rval = parse_mission(&The_mission, flags);
-		display_parse_diagnostics();
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	if (!Fred_running)
 		strcpy_s(Mission_filename, mission_name);
@@ -6204,7 +6282,7 @@ void mission_parse_set_up_initial_docks()
  */
 int mission_parse_is_multi(const char *filename, char *mission_name)
 {
-	int rval, game_type;
+	int game_type;
 	int filelength;
 	CFILE *ftemp;
 
@@ -6221,34 +6299,31 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 	if ( filelength == 0 )
 		return 0;
 
-	// open localization
-	lcl_ext_open();
-
 	game_type = 0;
 	do {
-		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		try
+		{
+			read_file_text(filename, CF_TYPE_MISSIONS);
+			reset_parse();
+
+			if (skip_to_string("$Name:") != 1) {
+				nprintf(("Network", "Unable to process %s because we couldn't find $Name:", filename));
+				break;
+			}
+			stuff_string(mission_name, F_NAME, NAME_LENGTH);
+
+			if (skip_to_string("+Game Type Flags:") != 1) {
+				nprintf(("Network", "Unable to process %s because we couldn't find +Game Type Flags:\n", filename));
+				break;
+			}
+			stuff_int(&game_type);
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 			break;
 		}
-
-		read_file_text(filename, CF_TYPE_MISSIONS);
-		reset_parse();
-
-		if ( skip_to_string("$Name:") != 1 ) {
-			nprintf(("Network", "Unable to process %s because we couldn't find $Name:", filename));
-			break;
-		}
-		stuff_string( mission_name, F_NAME, NAME_LENGTH );
-
-		if ( skip_to_string("+Game Type Flags:") != 1 ) {
-			nprintf(("Network", "Unable to process %s because we couldn't find +Game Type Flags:\n", filename));
-			break;
-		}
-		stuff_int(&game_type);
 	} while (0);
-
-	// close localization
-	lcl_ext_close();
 
 	return (game_type & MISSION_TYPE_MULTI) ? game_type : 0;
 }
@@ -6581,6 +6656,24 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 		mission_parse_support_arrived(objnum);
 	else
 		list_remove(&Ship_arrival_list, p_objp);
+
+	int anchor_objnum = -1;
+	if (p_objp->arrival_anchor >= 0) {
+		int shipnum = ship_name_lookup(Parse_names[p_objp->arrival_anchor]);
+
+		// This shouldn't be happening
+		Assertion(shipnum >= 0 && shipnum < MAX_SHIPS, "Arriving ship '%s' does not exist!", Parse_names[p_objp->arrival_anchor]);
+
+		anchor_objnum = Ships[shipnum].objnum;
+	}
+
+	if (anchor_objnum >= 0)
+		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", &Objects[anchor_objnum]);
+	else
+		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
+
+	Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[objnum]);
+	Script_system.RemHookVars(2, "Ship", "Parent");
 }
 
 // Goober5000
@@ -6867,6 +6960,10 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
+	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
+	// or revert to our default behavior
+	ai_abort_rearm_request(objp);
+
 	// if our current goal is to warp, then we won't consider departing to a bay, because the goal explicitly says to warp out
 	// (this sort of goal can be assigned in FRED, either in the ship's initial orders or as the ai-warp-out goal)
 	if (goal_is_to_warp)
@@ -6927,16 +7024,10 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 			goto try_to_warp;
 		}
 
-		// make sure ship not dying or departing
-		if (Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
+		// see if we can actually depart to the ship
+		if (!ship_useful_for_departure(anchor_shipnum, shipp->departure_path_mask))
 		{
-			return 0;
-		}
-
-		// make sure fighterbays aren't destroyed
-		if (ship_fighterbays_all_destroyed(&Ships[anchor_shipnum]))
-		{
-			mprintf(("Anchor ship %s's fighterbays are destroyed!  Trying to warp...\n", name));
+			mprintf(("Anchor ship %s not suitable for departure (dying, departing, bays destroyed, etc.).  Trying to warp...\n", name));
 			goto try_to_warp;
 		}
 
@@ -6955,20 +7046,28 @@ try_to_warp:
 	// make sure we can actually warp
 	if (ship_can_use_warp_drive(shipp))
 	{
+		mprintf(("Setting mode to warpout\n"));
+
 		ai_set_mode_warp_out(objp, aip);
 		MONITOR_INC(NumShipDepartures,1);
 
-		mprintf(("Setting mode to warpout\n"));
 		return 1;
 	}
+	// find something else to do
 	else
 	{
-		shipp->flags &= ~SF_DEPARTING;
-
-		// find something else to do
-		aip->mode = AIM_NONE;
-
+		// NOTE: this point should no longer be reached in the standard goal code, since the goal or comm order must be achievable
+		// for this function to be called.  This point should only be reached if the ship has no subspace drive, AND either has no
+		// mothership assigned (or departs to hyperspace) or the mothership was destroyed, AND falls into one of the following cases:
+		// 1) The ship's departure cue evaluates to true in the mission
+		// 2) A support ship has had its hull fall to 25% when it has no repair targets
+		// 3) A fighter or bomber with an IFF that doesn't allow support ships has its warp_out_timestamp elapse (but this seems to not be a possibility anymore)
+		// 4) An instructor in a training mission has been fired upon
 		mprintf(("Can't warp!  Doing something else instead.\n"));
+
+		shipp->flags &= ~SF_DEPARTING;
+		ai_do_default_behavior(objp);
+
 		return 0;
 	}
 }
@@ -7087,7 +7186,10 @@ int allocate_subsys_status()
 
 	Verify( Subsys_status != NULL );
 
-	memset( &Subsys_status[Subsys_index], 0, sizeof(subsys_status) );
+	// the memset is redundant to the below assignments
+	//memset( &Subsys_status[Subsys_index], 0, sizeof(subsys_status) );
+
+	Subsys_status[Subsys_index].name[0] = '\0';
 
 	Subsys_status[Subsys_index].percent = 0.0f;
 
@@ -7110,6 +7212,9 @@ int allocate_subsys_status()
 	}
 
 	Subsys_status[Subsys_index].ai_class = SUBSYS_STATUS_NO_CHANGE;
+
+	Subsys_status[Subsys_index].subsys_cargo_name = 0;	// "Nothing"
+
 	return Subsys_index++;
 }
 
@@ -7120,16 +7225,29 @@ int insert_subsys_status(p_object *pobjp)
 
 	// this is not good; we have to allocate another slot, but then bump all the
 	// slots upward so that this particular parse object's subsystems are contiguous
-	allocate_subsys_status();
+	new_index = allocate_subsys_status();
 
-	// shift elements upward
-	for (i = Subsys_index - 1; i > (pobjp->subsys_index + pobjp->subsys_count); i--)
+	// only bump the subsystems if this isn't the very last subsystem
+	if (new_index != pobjp->subsys_index + pobjp->subsys_count)
 	{
-		memcpy(&Subsys_status[i], &Subsys_status[i-1], sizeof(subsys_status));
+		// copy the new blank entry for future reference
+		subsys_status temp_entry;
+		memcpy(&temp_entry, &Subsys_status[new_index], sizeof(subsys_status));
+
+		// shift elements upward
+		for (i = Subsys_index - 1; i > (pobjp->subsys_index + pobjp->subsys_count); i--)
+		{
+			memcpy(&Subsys_status[i], &Subsys_status[i-1], sizeof(subsys_status));
+		}
+
+		// correct the index so that the new subsystem belongs to the proper p_object
+		new_index = pobjp->subsys_index + pobjp->subsys_count;
+
+		// put the blank entry in the p_object
+		memcpy(&Subsys_status[new_index], &temp_entry, sizeof(subsys_status));
 	}
 
-	// generate index for new element
-	new_index = pobjp->subsys_index + pobjp->subsys_count;
+	// make the p_object aware of its new subsystem
 	pobjp->subsys_count++;
 
 	// we also have to adjust all the indexes in existing parse objects
@@ -7439,6 +7557,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	// set support ship hitpoints
 	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
 	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
+	pobj->max_shield_recharge = Ship_info[i].max_shield_recharge;
 
 	pobj->team = requester_shipp->team;
 
@@ -7501,9 +7620,6 @@ void mission_bring_in_support_ship( object *requester_objp )
 	if ( Player_obj->flags & OF_NO_SHIELDS )
 		pobj->flags |= P_OF_NO_SHIELDS;	// support ships have no shields when player has not shields
 
-	if ( Ships[Player_obj->instance].flags2 & SF2_NO_SUBSPACE_DRIVE )
-		pobj->flags2 |= P2_SF2_NO_SUBSPACE_DRIVE;	// support ships have no subspace drive when player has not subspace drive
-
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;
 	pobj->score = 0;
@@ -7519,7 +7635,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->respawn_count = 0;
 	pobj->alt_type_index = -1;
 	pobj->callsign_index = -1;
-	pobj->num_texture_replacements = 0;
+	pobj->replacement_textures.clear();
 }
 
 /**
@@ -7814,130 +7930,6 @@ void convertFSMtoFS2()
 {
 	// fix punctuation
 	conv_fix_punctuation();
-}
-
-// Goober5000
-void restore_default_weapons(char *ships_tbl)
-{
-	int i, j, si_subsys;
-	char *ch, *subsys;
-	char ship_class[NAME_LENGTH];
-	ship_subsys *ss;
-	ship_info *sip;
-
-	// guesstimate that this actually is a ships.tbl
-	if (!strstr(ships_tbl, "#Ship Classes"))
-	{
-		MessageBox(NULL, "This is not a ships.tbl file.  Aborting conversion...", "Error", MB_OK);
-		return;
-	}
-
-	// for every ship
-	for (i = 0; i < MAX_SHIPS; i++)
-	{
-		// ensure the ship slot is used in this mission
-		if (Ships[i].objnum >= 0)
-		{
-			// get ship_info
-			sip = &Ship_info[Ships[i].ship_info_index];
-
-			// find the ship class
-			ch = strstr(ships_tbl, ship_class);
-			if (!ch) continue;
-
-			// check pbanks (capital ships have these specified but empty)
-			Mp = strstr(ch, "$Default PBanks");
-			Mp = strchr(Mp, '(');
-			restore_one_primary_bank(Ships[i].weapons.primary_bank_weapons, sip->primary_bank_weapons);
-
-			// check sbanks (capital ships have these specified but empty)
-			Mp = strstr(ch, "$Default SBanks");
-			Mp = strchr(Mp, '(');
-			restore_one_secondary_bank(Ships[i].weapons.secondary_bank_weapons, sip->secondary_bank_weapons);
-
-			// see if we have any turrets
-			ch = strstr(ch, "$Subsystem");
-			for (ss = GET_FIRST(&Ships[i].subsys_list); ss != END_OF_LIST(&Ships[i].subsys_list); ss = GET_NEXT(ss))
-			{
-				// we do
-				if (ss->system_info->type == SUBSYSTEM_TURRET)
-				{
-					// find it in the ship_info subsys list
-					si_subsys = -1;
-					for (j = 0; j < sip->n_subsystems; j++)
-					{
-						if (!subsystem_stricmp(ss->system_info->subobj_name, sip->subsystems[j].subobj_name))
-						{
-							si_subsys = j;
-							break;
-						}
-					}
-					if (si_subsys < 0) continue;
-
-					// find it in the file - make sure it belongs to *this* ship
-					subsys = stristr(ch, ss->system_info->subobj_name);
-					if (!subsys) continue;
-					if (subsys > strstr(ch, "$Name")) continue;
-
-					// check pbanks - make sure they are *this* subsystem's banks
-					Mp = strstr(subsys, "$Default PBanks");
-					if (Mp < strstr(subsys + 1, "$Subsystem"))
-					{
-						Mp = strchr(Mp, '(');
-						restore_one_primary_bank(ss->weapons.primary_bank_weapons, sip->subsystems[si_subsys].primary_banks);
-					}
-
-					// check sbanks - make sure they are *this* subsystem's banks
-					Mp = strstr(subsys, "$Default SBanks");
-					if (Mp < strstr(subsys + 1, "$Subsystem"))
-					{
-						Mp = strchr(Mp, '(');
-						restore_one_secondary_bank(ss->weapons.secondary_bank_weapons, sip->subsystems[si_subsys].secondary_banks);
-					}
-				}
-			}
-		}
-	}
-}
-
-// Goober5000
-void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_weapons)
-{
-	int i, count, original_weapon;
-	char weapon_list[MAX_SHIP_PRIMARY_BANKS][NAME_LENGTH];
-
-	// stuff weapon list
-	count = stuff_string_list(weapon_list, MAX_SHIP_PRIMARY_BANKS);
-
-	// check for default weapons - if same as default, overwrite with the one from the table
-	for (i = 0; i < count; i++)
-	{
-		if (ship_primary_weapons[i] == default_primary_weapons[i])
-		{
-			if ((original_weapon = weapon_info_lookup(weapon_list[i])) >= 0)
-			ship_primary_weapons[i] = original_weapon;
-		}
-	}
-}
-
-// Goober5000
-void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons)
-{
-	int i, count, original_weapon;
-	char weapon_list[MAX_SHIP_SECONDARY_BANKS][NAME_LENGTH];
-
-	// stuff weapon list
-	count = stuff_string_list(weapon_list, MAX_SHIP_SECONDARY_BANKS);
-
-	// check for default weapons - if same as default, overwrite with the one from the table
-	for (i = 0; i < count; i++)
-	{
-		if (ship_secondary_weapons[i] == default_secondary_weapons[i])
-		{
-			if ((original_weapon = weapon_info_lookup(weapon_list[i])) >= 0)
-			ship_secondary_weapons[i] = original_weapon;
-		}
-	}
 }
 
 void clear_texture_replacements() 

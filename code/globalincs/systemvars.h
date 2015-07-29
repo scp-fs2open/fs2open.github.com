@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 
 
@@ -74,12 +74,13 @@ typedef struct vei {
 	float		distance;		//	Distance from which to view, plus 2x radius.
 } vei;
 
-typedef struct vci {	
-	angles_t	angles;			
+typedef struct vci {
+	angles_t	angles;
 	float		distance;		// Distance from which to view, plus 3x radius
 } vci;
 
 extern fix Missiontime;
+extern fix Skybox_timestamp;
 extern fix Frametime;
 extern int Framecount;
 
@@ -96,7 +97,7 @@ extern int Game_restoring;		// If set, this means we are restoring data from dis
 // should.   Anything above zero draws higher detail models longer than it should.
 // -2=lowest
 // -1=low
-// 0=normal (medium)	
+// 0=normal (medium)
 // 1=high
 // 2=extra high
 extern int Game_detail_level;
@@ -143,37 +144,38 @@ extern bool Glowpoint_use_depth_buffer;
 extern bool GLSL_override;
 extern bool PostProcessing_override;
 extern bool Teamcolor_override;
+extern bool Shadow_override;
 
-// game skill levels 
+// game skill levels
 #define	NUM_SKILL_LEVELS	5
 
 //====================================================================================
 // DETAIL LEVEL STUFF
-// If you change any of this, be sure to increment the player file version 
-// in FreeSpace\ManagePilot.cpp and change Detail_defaults in SystemVars.cpp 
+// If you change any of this, be sure to increment the player file version
+// in FreeSpace\ManagePilot.cpp and change Detail_defaults in SystemVars.cpp
 // or bad things will happen, I promise.
 //====================================================================================
 
 #define MAX_DETAIL_LEVEL 4			// The highest valid value for the "analog" detail level settings
 
-// If you change this, update player file in ManagePilot.cpp 
+// If you change this, update player file in ManagePilot.cpp
 typedef struct detail_levels {
 
 	int		setting;						// Which default setting this was created from.   0=lowest... NUM_DEFAULT_DETAIL_LEVELS-1, -1=Custom
 
 	// "Analogs"
 	int		nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-	int		detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest	
+	int		detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest
 	int		hardware_textures;		// 0=max culling, MAX_DETAIL_LEVEL=no culling
 	int		num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
 	int		num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
 	int		num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
 	int		shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-	int		lighting;					// 0=min, MAX_DETAIL_LEVEL=max	
+	int		lighting;					// 0=min, MAX_DETAIL_LEVEL=max
 
 	// Booleans
-	int		targetview_model;			// 0=off, 1=on	
-	int		planets_suns;				// 0=off, 1=on			
+	int		targetview_model;			// 0=off, 1=on
+	int		planets_suns;				// 0=off, 1=on
 	int		weapon_extras;				// extra weapon details. trails, glows
 } detail_levels;
 
@@ -191,16 +193,67 @@ void detail_level_set(int level);
 // Returns the current detail level or -1 if custom.
 int current_detail_level();
 
+//=========================================================
+// Functions to profile frame performance
+
+typedef struct profile_sample {
+	uint profile_instances;
+	int open_profiles;
+	//char name[256];
+	SCP_string name;
+	uint start_time;	// in microseconds
+	uint accumulator;
+	uint children_sample_time;
+	uint num_parents;
+	uint num_children;
+	int parent;
+} profile_sample;
+
+typedef struct profile_sample_history {
+	bool valid;
+	//char name[256];
+	SCP_string name;
+	float avg;
+	float min;
+	float max;
+	uint avg_micro_sec;
+	uint min_micro_sec;
+	uint max_micro_sec;
+} profile_sample_history;
+
+extern SCP_string profile_output;
+
+void profile_init();
+void profile_deinit();
+void profile_begin(const char* name);
+void profile_begin(SCP_string &output_handle, const char* name);
+void profile_end(const char* name);
+void profile_dump_output();
+void store_profile_in_history(SCP_string &name, float percent, uint time);
+void get_profile_from_history(SCP_string &name, float* avg, float* min, float* max, uint *avg_micro_sec, uint *min_micro_sec, uint *max_micro_sec);
+
+class profile_auto
+{
+	SCP_string name;
+public:
+	profile_auto(const char* profile_name): name(profile_name)
+	{
+		profile_begin(profile_name);
+	}
+
+	~profile_auto()
+	{
+		profile_end(name.c_str());
+	}
+};
+
+// Helper macro to encapsulate a single function call in a profile_begin()/profile_end() pair.
+#define PROFILE(name, function) { profile_begin(name); function; profile_end(name); }
+
 //====================================================================================
 // Memory stuff from WinDebug.cpp
 extern int TotalRam;
 void windebug_memwatch_init();
-
-enum
-{
-	TIMERBAR_DEFAULT,
-	TIMERBAR_D3DCODE
-};
 
 #define MAX_LIGHTS 256
 #define MAX_LIGHT_LEVELS 16

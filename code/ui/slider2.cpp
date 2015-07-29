@@ -34,7 +34,7 @@ void UI_SLIDER2::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _num
 
 	captureCallback = _captureCallback;	
 
-	Assert(_bitmapSliderControl > 0);
+	Assert(_bitmapSliderControl != NULL);
 
 	last_scrolled = 0;
 
@@ -77,7 +77,7 @@ void UI_SLIDER2::draw() {
 			gr_set_bitmap(bmap_ids[S2_NORMAL]);  // draw slider level
 			break;
 		}
-		gr_bitmap(x, y+currentPosition);
+		gr_bitmap(x, y+currentPosition, GR_RESIZE_MENU);
 	}
 }
 
@@ -199,22 +199,6 @@ void UI_SLIDER2::process(int focus)
 	}
 }
 
-void UI_SLIDER2::hide()
-{
-	hidden = 1;
-}
-
-void UI_SLIDER2::unhide()
-{
-	hidden = 0;
-}
-
-int UI_SLIDER2::get_hidden()
-{
-	return hidden;
-}
-
-
 // return number of itmes
 int UI_SLIDER2::get_numberItems() {
 	return numberItems;
@@ -279,7 +263,11 @@ void UI_SLIDER2::set_currentItem(int _currentItem) {
 		}
 	}	
 	
-	currentPosition = fl2i(((float)currentItem/(float)numberItems) * (float)numberPositions);	
+	if (numberItems > 0) {
+		currentPosition = fl2i(((float)currentItem/(float)numberItems) * (float)numberPositions);
+	} else {
+		currentPosition = 0;
+	}
 
 cpSafety: // helps fix math problem on x86_64
 	if (currentPosition > numberItems)

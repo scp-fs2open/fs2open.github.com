@@ -29,22 +29,40 @@
 
 #ifdef SCP_UNIX
 #include "osapi/osapi.h"
+#include <dirent.h>
 #endif
 
 #include <string.h>
 #include <stdlib.h>
 
+enum cmdline_arg_type
+{
+	AT_NONE       =0,
+	AT_INT,
+	AT_FLOAT,
+	AT_STRING
+};
+// values and order MUST match cmdline_arg_type
+const char *cmdline_arg_types[] =
+{
+	"NONE",
+	"INT",
+	"FLOAT",
+	"STRING",
+};
+
 // variables
 class cmdline_parm {
 public:
 	cmdline_parm *next, *prev;
-	char *name;						// name of parameter, must start with '-' char
-	char *help;						// help text for this parameter
-	bool stacks;					// whether this arg stacks with each use or is replaced by newest use (should only be used for strings!!)
+	const char *name;						// name of parameter, must start with '-' char
+	const char *help;						// help text for this parameter
+	const bool stacks;					// whether this arg stacks with each use or is replaced by newest use (should only be used for strings!!)
 	char *args;						// string value for parameter arguments (NULL if no arguments)
 	int name_found;				// true if parameter on command line, otherwise false
+	const int arg_type;					// from enum cmdline_arg_type; used for help
 
-	cmdline_parm(char *name, char *help, bool stacks = false);
+	cmdline_parm(const char *name, const char *help, const int arg_type, const bool stacks = false);
 	~cmdline_parm();
 	int found();
 	int get_int();
@@ -53,11 +71,10 @@ public:
 	bool check_if_args_is_valid();
 };
 
-static cmdline_parm Parm_list(NULL, NULL);
+static cmdline_parm Parm_list(NULL, NULL, AT_NONE);
 static int Parm_list_inited = 0;
 
 extern int Show_framerate;	// from freespace.cpp
-
 
 enum
 {
@@ -83,7 +100,7 @@ enum
 
 typedef struct
 {
-	// DO NOT CHANGE THE SIZE OF THIS STRING!
+	// DO NOT CHANGE THE SIZE OF THIS AT_STRING!
 	char name[32];
 
 } EasyFlag;
@@ -113,21 +130,25 @@ typedef struct
 // Please group them by type, ie graphics, gameplay etc, maximum 20 different types
 Flag exe_params[] = 
 {
-	{ "-nospec",			"Disable specular",							true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-spec", },
-	{ "-noglow",			"Disable glow maps",						true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-glow", },
-	{ "-noenv",				"Disable environment maps",					true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
+	{ "-nospec",			"Disable specular",							true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-spec", },
+	{ "-noglow",			"Disable glow maps",						true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-glow", },
+	{ "-noenv",				"Disable environment maps",					true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-missile_lighting",	"Apply lighting to missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missile_lighting", },
-	{ "-nonormal",			"Disable normal maps",						true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
+	{ "-nonormal",			"Disable normal maps",						true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
+	{ "-noheight",			"Disable height/parallax maps",				true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-height" },
 	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
-	{ "-post_process",		"Enable post processing",					true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-post_process" },
-	{ "-soft_particles",	"Enable soft particles",					true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-soft_particles" },
-	{ "-fxaa",				"Enable FXAA anti-aliasing",				true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fxaa" },
-	{ "-nolightshafts",		"Disable lightshafts",						true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-flightshaftsoff"},
-
+	{ "-post_process",		"Enable post processing",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-post_process" },
+	{ "-soft_particles",	"Enable soft particles",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-soft_particles" },
+	{ "-fxaa",				"Enable FXAA anti-aliasing",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fxaa" },
+	{ "-nolightshafts",		"Disable lightshafts",						true,	EASY_DEFAULT,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-flightshaftsoff"},
+	{ "-fb_explosions",		"Enable Framebuffer Shockwaves",			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_explosions", },
+	{ "-no_deferred",		"Disable Deferred Lighting",				true,	EASY_DEFAULT_MEM,	EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_deferred"},
+	{ "-disable_shadows",	"Disable Shadows",							true,	EASY_DEFAULT_MEM,	EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_shadows"},
 	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-img2dds", },
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
+	{ "-no_fps_capping",	"Don't limit frames-per-second",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_fps_capping", },
 	{ "-cache_bitmaps",		"Cache bitmaps between missions",			true,	0,					EASY_DEFAULT_MEM,	"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-cache_bitmaps", },
 
 	{ "-dualscanlines",		"Add another pair of scanning lines",		true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-dualscanlines", },
@@ -141,10 +162,12 @@ Flag exe_params[] =
 	{ "-3dwarp",			"Enable 3D warp",							true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
+	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 
 	{ "-snd_preload",		"Preload mission game sounds",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-snd_preload", },
 	{ "-nosound",			"Disable all sound",						false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
+	{ "-no_enhanced_sound",	"Disable enhanced sound",					false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_enhanced_sound", },
 
 	{ "-standalone",		"Run as standalone server",					false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
 	{ "-startgame",			"Skip mainhall and start hosting",			false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
@@ -160,23 +183,27 @@ Flag exe_params[] =
 	{ "-noparseerrors",		"Disable parsing errors",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noparseerrors", },
 	{ "-query_speech",		"Check if this build has speech",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-query_speech", },
 	{ "-novbo",				"Disable OpenGL VBO",						true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-novbo", },
-	{ "-noibx",				"Don't use cached index buffers (IBX)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noibx", },
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
 	{ "-disable_fbo",		"Disable OpenGL RenderTargets",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_fbo", },
+	{ "-disable_pbo",		"Disable OpenGL Pixel Buffer Objects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_pbo", },
 	{ "-no_glsl",			"Disable GLSL (shader) support",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_glsl", },
-	{ "-ati_swap",			"Fix colour issues on some ATI cards",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://scp.indiegames.us/mantis/view.php?id=1669", },
+	{ "-ati_swap",			"Fix colour issues on some ATI cards",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ati_swap", },
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_3d_sound", },
 	{ "-disable_glsl_model","Don't use shaders for model rendering",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_glsl_model", },
 	{ "-mipmap",			"Enable mipmapping",						true,	0,					EASY_DEFAULT_MEM,	"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
  #ifndef SCP_UNIX
-	{ "-disable_di_mouse",	"Don't use DirectInput for mouse control",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
+	{ "-disable_di_mouse",	"Don't use DirectInput for mouse control",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_di_mouse", },
  #endif
-	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
-	{ "-old_collision",		"Use old collision detection system",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
+	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-use_gldrawelements", },
+	{ "-old_collision",		"Use old collision detection system",		true,	EASY_DEFAULT,		EASY_ALL_ON,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-old_collision", },
+	{ "-gl_finish",			"Fix input lag on some ATI+Linux systems",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gl_finish", },
+	{ "-no_batching",		"Disable batched model rendering",			true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
+	{ "-no_geo_effects",	"Disable geometry shader for effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
+	{ "-set_cpu_affinity",	"Sets processor affinity to config value",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 
 	{ "-ingame_join",		"Allow in-game joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Enable voice recognition",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
-	{ "-fb_explosions",		"Enable Framebuffer Shockwaves",			true,	0,					EASY_DEFAULT,		"Experimental",	"", },
+	{ "-brief_lighting",	"Enable lighting on briefing models",		true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-brief_lighting", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
@@ -187,9 +214,9 @@ Flag exe_params[] =
 	{ "-stats",				"Show statistics",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stats", },
 	{ "-coords",			"Show coordinates",							false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-coords", },
 	{ "-show_mem_usage",	"Show memory usage",						true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-show_mem_usage", },
-	{ "-pofspew",			"",											false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pofspew", },
-	{ "-tablecrcs",			"",											true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-tablecrcs", },
-	{ "-missioncrcs",		"",											true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missioncrcs", },
+	{ "-pofspew",			"Generate all ibx files immediately",		false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pofspew", },
+	{ "-tablecrcs",			"Dump table CRCs for multi validation",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-tablecrcs", },
+	{ "-missioncrcs",		"Dump mission CRCs for multi validation",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missioncrcs", },
 	{ "-dis_collisions",	"Disable collisions",						true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-dis_collisions", },
 	{ "-dis_weapons",		"Disable weapon rendering",					true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-dis_weapons", },
 	{ "-output_sexps",		"Output SEXPs to sexps.html",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_sexps", },
@@ -201,30 +228,36 @@ Flag exe_params[] =
 	{ "-nograb",			"Don't grab mouse/keyboard in a window",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
  #endif
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
-	{ "-profile_frame_time","Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
+	{ "-profile_frame_time", "Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
+	{ "-profile_write_file", "Write profiling information to file",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
+	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 };
+
+// forward declaration
+const char * get_param_desc(const char *flag_name);
 
 // here are the command line parameters that we will be using for FreeSpace
 
 // RETAIL options ----------------------------------------------
-cmdline_parm connect_arg("-connect", NULL);			// Cmdline_connect_addr
-cmdline_parm gamename_arg("-gamename", NULL);		// Cmdline_game_name
-cmdline_parm gamepassword_arg("-password", NULL);	// Cmdline_game_password
-cmdline_parm allowabove_arg("-allowabove", NULL);	// Cmdline_rank_above
-cmdline_parm allowbelow_arg("-allowbelow", NULL);	// Cmdline_rank_below
-cmdline_parm standalone_arg("-standalone", NULL);
-cmdline_parm nosound_arg("-nosound", NULL);			// Cmdline_freespace_no_sound
-cmdline_parm nomusic_arg("-nomusic", NULL);			// Cmdline_freespace_no_music
-cmdline_parm startgame_arg("-startgame", NULL);		// Cmdline_start_netgame
-cmdline_parm gameclosed_arg("-closed", NULL);		// Cmdline_closed_game
-cmdline_parm gamerestricted_arg("-restricted", NULL);	// Cmdline_restricted_game
-cmdline_parm port_arg("-port", NULL);
-cmdline_parm multilog_arg("-multilog", NULL);		// Cmdline_multi_log
-cmdline_parm client_dodamage("-clientdamage", NULL);	// Cmdline_client_dodamage
-cmdline_parm pof_spew("-pofspew", NULL);			// Cmdline_spew_pof_info
-cmdline_parm mouse_coords("-coords", NULL);			// Cmdline_mouse_coords
-cmdline_parm timeout("-timeout", NULL);				// Cmdline_timeout
-cmdline_parm bit32_arg("-32bit", NULL);				// (only here for retail compatibility reasons, doesn't actually do anything)
+cmdline_parm connect_arg("-connect", "Automatically connect to multiplayer IP:PORT", AT_STRING);			// Cmdline_connect_addr
+cmdline_parm gamename_arg("-gamename", "Set multiplayer game name", AT_STRING);		// Cmdline_game_name
+cmdline_parm gamepassword_arg("-password", "Set multiplayer game password", AT_STRING);	// Cmdline_game_password
+cmdline_parm allowabove_arg("-allowabove", "Ranks above this can join multi", AT_STRING);	// Cmdline_rank_above
+cmdline_parm allowbelow_arg("-allowbelow", "Ranks below this can join multi", AT_STRING);	// Cmdline_rank_below
+cmdline_parm standalone_arg("-standalone", NULL, AT_NONE);
+cmdline_parm nosound_arg("-nosound", NULL, AT_NONE);			// Cmdline_freespace_no_sound
+cmdline_parm nomusic_arg("-nomusic", NULL, AT_NONE);			// Cmdline_freespace_no_music
+cmdline_parm noenhancedsound_arg("-no_enhanced_sound", NULL, AT_NONE);	// Cmdline_no_enhanced_sound
+cmdline_parm startgame_arg("-startgame", NULL, AT_NONE);		// Cmdline_start_netgame
+cmdline_parm gameclosed_arg("-closed", NULL, AT_NONE);		// Cmdline_closed_game
+cmdline_parm gamerestricted_arg("-restricted", NULL, AT_NONE);	// Cmdline_restricted_game
+cmdline_parm port_arg("-port", "Multiplayer network port", AT_INT);
+cmdline_parm multilog_arg("-multilog", NULL, AT_NONE);		// Cmdline_multi_log
+cmdline_parm client_dodamage("-clientdamage", NULL, AT_NONE);	// Cmdline_client_dodamage
+cmdline_parm pof_spew("-pofspew", NULL, AT_NONE);			// Cmdline_spew_pof_info
+cmdline_parm mouse_coords("-coords", NULL, AT_NONE);			// Cmdline_mouse_coords
+cmdline_parm timeout("-timeout", "Multiplayer network timeout (secs)", AT_INT);				// Cmdline_timeout
+cmdline_parm bit32_arg("-32bit", "Deprecated", AT_NONE);				// (only here for retail compatibility reasons, doesn't actually do anything)
 
 char *Cmdline_connect_addr = NULL;
 char *Cmdline_game_name = NULL;
@@ -251,31 +284,36 @@ int Cmdline_use_last_pilot = 0;
 // FSO options -------------------------------------------------
 
 // Graphics related
-cmdline_parm spec_exp_arg("-spec_exp", NULL);		// comand line FOV -Bobboau
-cmdline_parm clip_dist_arg("-clipdist", NULL);		// Cmdline_clip_dist
-cmdline_parm fov_arg("-fov", NULL);					// Cmdline_fov  -- comand line FOV -Bobboau
-cmdline_parm ogl_spec_arg("-ogl_spec", NULL);		// Cmdline_ogl_spec
-cmdline_parm spec_static_arg("-spec_static", NULL);
-cmdline_parm spec_point_arg("-spec_point", NULL);
-cmdline_parm spec_tube_arg("-spec_tube", NULL);
-cmdline_parm ambient_factor_arg("-ambient_factor", NULL);		// Cmdline_ambient_factor
-cmdline_parm env("-noenv", NULL);								// Cmdline_env
-cmdline_parm missile_lighting_arg("-missile_lighting", NULL);	// Cmdline_missile_lighting
-cmdline_parm glow_arg("-noglow", NULL); 						// Cmdline_glow  -- use Bobs glow code
-cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
-cmdline_parm noscalevid_arg("-noscalevid", NULL);				// Cmdline_noscalevid  -- disable video scaling that fits to window
-cmdline_parm spec_arg("-nospec", NULL);							// Cmdline_spec  -- 
-cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive  -- don't use emissive light in OGL
-cmdline_parm normal_arg("-nonormal", NULL);						// Cmdline_normal  -- disable normal mapping
-cmdline_parm height_arg("-noheight", NULL);						// Cmdline_height  -- enable support for parallax mapping
-cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL);
-cmdline_parm softparticles_arg("-soft_particles", NULL);
-cmdline_parm postprocess_arg("-post_process", NULL);
-cmdline_parm bloom_intensity_arg("-bloom_intensity", NULL);
-cmdline_parm fxaa_arg("-fxaa", NULL);
-cmdline_parm fxaa_preset_arg("-fxaa_preset", NULL);
-cmdline_parm fb_explosions_arg("-fb_explosions", NULL);
-cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL);
+cmdline_parm fov_arg("-fov", "Vertical field-of-view factor", AT_FLOAT);					// Cmdline_fov  -- comand line FOV -Bobboau
+cmdline_parm clip_dist_arg("-clipdist", "Changes the distance from the viewpoint for the near-clipping plane", AT_FLOAT);		// Cmdline_clip_dist
+cmdline_parm spec_exp_arg("-spec_exp", "Adjusts the size of shiny spots on ships", AT_FLOAT);
+cmdline_parm ogl_spec_arg("-ogl_spec", "Shininess of specular light", AT_FLOAT);		// Cmdline_ogl_spec
+cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specular highlights", AT_FLOAT);
+cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
+cmdline_parm spec_tube_arg("-spec_tube", "Adjusts beam weapons contribution to specular highlights", AT_FLOAT);
+cmdline_parm ambient_factor_arg("-ambient_factor", "Adjusts ambient light applied to all parts of a ship", AT_INT);		// Cmdline_ambient_factor
+cmdline_parm missile_lighting_arg("-missile_lighting", NULL, AT_NONE);	// Cmdline_missile_lighting
+cmdline_parm env("-noenv", NULL, AT_NONE);								// Cmdline_env
+cmdline_parm glow_arg("-noglow", NULL, AT_NONE); 						// Cmdline_glow  -- use Bobs glow code
+cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, AT_NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
+cmdline_parm noscalevid_arg("-noscalevid", NULL, AT_NONE);				// Cmdline_noscalevid  -- disable video scaling that fits to window
+cmdline_parm spec_arg("-nospec", NULL, AT_NONE);			// Cmdline_spec  --
+cmdline_parm noemissive_arg("-no_emissive_light", "Disable emissive light from ships", AT_NONE);		// Cmdline_no_emissive  -- don't use emissive light in OGL
+cmdline_parm normal_arg("-nonormal", NULL, AT_NONE);						// Cmdline_normal  -- disable normal mapping
+cmdline_parm height_arg("-noheight", NULL, AT_NONE);						// Cmdline_height  -- enable support for parallax mapping
+cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL, AT_NONE);
+cmdline_parm softparticles_arg("-soft_particles", NULL, AT_NONE);
+cmdline_parm postprocess_arg("-post_process", NULL, AT_NONE);
+cmdline_parm bloom_intensity_arg("-bloom_intensity", "Set bloom intensity, requires -post_process", AT_INT);
+cmdline_parm fxaa_arg("-fxaa", NULL, AT_NONE);
+cmdline_parm fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-9), requires -post_process and -fxaa", AT_INT);
+cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
+cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
+cmdline_parm brieflighting_arg("-brief_lighting", NULL, AT_NONE);
+cmdline_parm no_batching("-no_batching", NULL, AT_NONE);
+cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_NONE);
+cmdline_parm disable_shadows_arg("-disable_shadows", NULL, AT_NONE);
+cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -299,13 +337,17 @@ bool Cmdline_fxaa = false;
 int Cmdline_fxaa_preset = 6;
 extern int Fxaa_preset_last_frame;
 bool Cmdline_fb_explosions = 0;
+bool Cmdline_no_batching = false;
 extern bool ls_force_off;
+bool Cmdline_brief_lighting = 0;
+int Cmdline_shadow_quality = 2;
+int Cmdline_no_deferred_lighting = 0;
 
 // Game Speed related
-cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
-cmdline_parm img2dds_arg("-img2dds", NULL);			// Cmdline_img2dds
-cmdline_parm no_fpscap("-no_fps_capping", NULL);	// Cmdline_NoFPSCap
-cmdline_parm no_vsync_arg("-no_vsync", NULL);		// Cmdline_no_vsync
+cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL, AT_NONE);	// Cmdline_cache_bitmaps
+cmdline_parm img2dds_arg("-img2dds", NULL, AT_NONE);			// Cmdline_img2dds
+cmdline_parm no_fpscap("-no_fps_capping", "Don't limit frames-per-second", AT_NONE);	// Cmdline_NoFPSCap
+cmdline_parm no_vsync_arg("-no_vsync", NULL, AT_NONE);		// Cmdline_no_vsync
 
 int Cmdline_cache_bitmaps = 0;	// caching of bitmaps between missions (faster loads, can hit swap on reload with <512 Meg RAM though) - taylor
 int Cmdline_img2dds = 0;
@@ -313,11 +355,11 @@ int Cmdline_NoFPSCap = 0; // Disable FPS capping - kazan
 int Cmdline_no_vsync = 0;
 
 // HUD related
-cmdline_parm ballistic_gauge("-ballistic_gauge", NULL);	// Cmdline_ballistic_gauge
-cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Cmdline_dualscanlines  -- Change to phreaks options including new targeting code
-cmdline_parm orb_radar("-orbradar", NULL);			// Cmdline_orb_radar
-cmdline_parm rearm_timer_arg("-rearm_timer", NULL);	// Cmdline_rearm_timer
-cmdline_parm targetinfo_arg("-targetinfo", NULL);	// Cmdline_targetinfo  -- Adds ship name/class to right of target box -C
+cmdline_parm ballistic_gauge("-ballistic_gauge", NULL, AT_NONE);	// Cmdline_ballistic_gauge
+cmdline_parm dualscanlines_arg("-dualscanlines", NULL, AT_NONE); // Cmdline_dualscanlines  -- Change to phreaks options including new targeting code
+cmdline_parm orb_radar("-orbradar", NULL, AT_NONE);			// Cmdline_orb_radar
+cmdline_parm rearm_timer_arg("-rearm_timer", NULL, AT_NONE);	// Cmdline_rearm_timer
+cmdline_parm targetinfo_arg("-targetinfo", NULL, AT_NONE);	// Cmdline_targetinfo  -- Adds ship name/class to right of target box -C
 
 int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
 int Cmdline_dualscanlines = 0;
@@ -326,39 +368,42 @@ int Cmdline_rearm_timer = 0;
 int Cmdline_targetinfo = 0;
 
 // Gameplay related
-cmdline_parm use_3dwarp("-3dwarp", NULL);			// Cmdline_3dwarp
-cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);	// Cmdline_ship_choice_3d
-cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL);	// Cmdline_weapon_choice_3d
-cmdline_parm use_warp_flash("-warp_flash", NULL);	// Cmdline_warp_flash
-cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL);	// Cmdline_warp_flash
+cmdline_parm use_3dwarp("-3dwarp", NULL, AT_NONE);			// Cmdline_3dwarp
+cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL, AT_NONE);	// Cmdline_ship_choice_3d
+cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", NULL, AT_NONE);	// Cmdline_weapon_choice_3d
+cmdline_parm use_warp_flash("-warp_flash", NULL, AT_NONE);	// Cmdline_warp_flash
+cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL, AT_NONE);
+cmdline_parm stretch_menu("-stretch_menu", NULL, AT_NONE);	// Cmdline_stretch_menu
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
 int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
+int Cmdline_stretch_menu = 0;
 
 // Audio related
-cmdline_parm query_speech_arg("-query_speech", NULL);	// Cmdline_query_speech
-cmdline_parm snd_preload_arg("-snd_preload", NULL);		// Cmdline_snd_preload
-cmdline_parm voice_recognition_arg("-voicer", NULL);	// Cmdline_voice_recognition
+cmdline_parm query_speech_arg("-query_speech", NULL, AT_NONE);	// Cmdline_query_speech
+cmdline_parm snd_preload_arg("-snd_preload", NULL, AT_NONE);		// Cmdline_snd_preload
+cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
 
 int Cmdline_query_speech = 0;
 int Cmdline_snd_preload = 0; // preload game sounds during mission load
 int Cmdline_voice_recognition = 0;
+int Cmdline_no_enhanced_sound = 0;
 
 // MOD related
-cmdline_parm mod_arg("-mod", NULL, true);	// Cmdline_mod  -- DTP modsupport
+cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", AT_STRING, true);	// Cmdline_mod  -- DTP modsupport
 
 char *Cmdline_mod = NULL; //DTP for mod argument
 
 // Multiplayer/Network related
-cmdline_parm almission_arg("-almission", NULL);		// Cmdline_almission  -- DTP for autoload Multi mission
-cmdline_parm ingamejoin_arg("-ingame_join", NULL);	// Cmdline_ingamejoin
-cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
-cmdline_parm missioncrcspew_arg("-missioncrcs", NULL);		// Cmdline_spew_mission_crcs
-cmdline_parm tablecrcspew_arg("-tablecrcs", NULL);			// Cmdline_spew_table_crcs
-cmdline_parm objupd_arg("-cap_object_update", NULL);
+cmdline_parm almission_arg("-almission", "Autoload multiplayer mission", AT_STRING);		// Cmdline_almission  -- DTP for autoload Multi mission
+cmdline_parm ingamejoin_arg("-ingame_join", NULL, AT_NONE);	// Cmdline_ingamejoin
+cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL, AT_NONE);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
+cmdline_parm missioncrcspew_arg("-missioncrcs", NULL, AT_STRING);		// Cmdline_spew_mission_crcs
+cmdline_parm tablecrcspew_arg("-tablecrcs", NULL, AT_STRING);			// Cmdline_spew_table_crcs
+cmdline_parm objupd_arg("-cap_object_update", "Multiplayer object update cap (0-3)", AT_INT);
 
 char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
 int Cmdline_ingamejoin = 0;
@@ -368,29 +413,33 @@ char *Cmdline_spew_table_crcs = NULL;
 int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Troubleshooting
-cmdline_parm loadallweapons_arg("-loadallweps", NULL);	// Cmdline_load_all_weapons
-cmdline_parm htl_arg("-nohtl", NULL);				// Cmdline_nohtl  -- don't use HT&L
-cmdline_parm noibx_arg("-noibx", NULL);				// Cmdline_noibx
-cmdline_parm nomovies_arg("-nomovies", NULL);		// Cmdline_nomovies  -- Allows video streaming
-cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL);	// Cmdline_no_set_gamma
-cmdline_parm no_vbo_arg("-novbo", NULL);			// Cmdline_novbo
-cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
-cmdline_parm noglsl_arg("-no_glsl", NULL);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
-cmdline_parm mipmap_arg("-mipmap", NULL);			// Cmdline_mipmap
-cmdline_parm atiswap_arg("-ati_swap", NULL);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
-cmdline_parm no3dsound_arg("-no_3d_sound", NULL);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
-cmdline_parm no_glsl_models_arg("-disable_glsl_model", NULL); // Cmdline_no_glsl_model_rendering -- switches model rendering to fixed pipeline
-cmdline_parm no_di_mouse_arg("-disable_di_mouse", NULL); // Cmdline_no_di_mouse -- Disables directinput use for mouse control
-cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
-cmdline_parm keyboard_layout("-keyboard_layout", NULL);
+cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
+cmdline_parm htl_arg("-nohtl", NULL, AT_NONE);				// Cmdline_nohtl  -- don't use HT&L
+cmdline_parm nomovies_arg("-nomovies", NULL, AT_NONE);		// Cmdline_nomovies  -- Allows video streaming
+cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL, AT_NONE);	// Cmdline_no_set_gamma
+cmdline_parm no_vbo_arg("-novbo", NULL, AT_NONE);			// Cmdline_novbo
+cmdline_parm no_fbo_arg("-disable_fbo", NULL, AT_NONE);		// Cmdline_no_fbo
+cmdline_parm no_pbo_arg("-disable_pbo", NULL, AT_NONE);		// Cmdline_no_pbo
+cmdline_parm noglsl_arg("-no_glsl", NULL, AT_NONE);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
+cmdline_parm mipmap_arg("-mipmap", NULL, AT_NONE);			// Cmdline_mipmap
+cmdline_parm atiswap_arg("-ati_swap", NULL, AT_NONE);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
+cmdline_parm no3dsound_arg("-no_3d_sound", NULL, AT_NONE);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
+cmdline_parm no_glsl_models_arg("-disable_glsl_model", NULL, AT_NONE); // Cmdline_no_glsl_model_rendering -- switches model rendering to fixed pipeline
+cmdline_parm no_di_mouse_arg("-disable_di_mouse", "Disable DirectInput mouse code (Windows only)", AT_NONE); // Cmdline_no_di_mouse -- Disables directinput use for mouse control
+cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL, AT_NONE); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
+cmdline_parm keyboard_layout("-keyboard_layout", "Specify keyboard layout (qwertz or azerty)", AT_STRING);
+cmdline_parm old_collision_system("-old_collision", NULL, AT_NONE); // Cmdline_old_collision_sys
+cmdline_parm gl_finish ("-gl_finish", NULL, AT_NONE);
+cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
+cmdline_parm set_cpu_affinity("-set_cpu_affinity", NULL, AT_NONE);
 
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nohtl = 0;
-int Cmdline_noibx = 0;
 int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_no_fbo = 0;
+int Cmdline_no_pbo = 0;
 int Cmdline_noglsl = 0;
 int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
@@ -398,33 +447,38 @@ int Cmdline_no_glsl_model_rendering = 0;
 int Cmdline_no_di_mouse = 0;
 int Cmdline_drawelements = 0;
 char* Cmdline_keyboard_layout = NULL;
+bool Cmdline_gl_finish = false;
+bool Cmdline_no_geo_sdr_effects = false;
+bool Cmdline_set_cpu_affinity = false;
 
 // Developer/Testing related
-cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
-cmdline_parm old_collision_system("-old_collision", NULL); // Cmdline_new_collision
-cmdline_parm dis_collisions("-dis_collisions", NULL);	// Cmdline_dis_collisions
-cmdline_parm dis_weapons("-dis_weapons", NULL);		// Cmdline_dis_weapons
-cmdline_parm noparseerrors_arg("-noparseerrors", NULL);	// Cmdline_noparseerrors  -- turns off parsing errors -C
+cmdline_parm start_mission_arg("-start_mission", "Skip mainhall and run this mission", AT_STRING);	// Cmdline_start_mission
+cmdline_parm dis_collisions("-dis_collisions", NULL, AT_NONE);	// Cmdline_dis_collisions
+cmdline_parm dis_weapons("-dis_weapons", NULL, AT_NONE);		// Cmdline_dis_weapons
+cmdline_parm noparseerrors_arg("-noparseerrors", NULL, AT_NONE);	// Cmdline_noparseerrors  -- turns off parsing errors -C
 #ifdef Allow_NoWarn
-cmdline_parm nowarn_arg("-no_warn", NULL);			// Cmdline_nowarn
+cmdline_parm nowarn_arg("-no_warn", "Disable warnings (not recommended)", AT_NONE);			// Cmdline_nowarn
 #endif
-cmdline_parm extra_warn_arg("-extra_warn", NULL);	// Cmdline_extra_warn
-cmdline_parm fps_arg("-fps", NULL);					// Cmdline_show_fps
-cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL);	// Cmdline_show_mem_usage
-cmdline_parm pos_arg("-pos", NULL);					// Cmdline_show_pos
-cmdline_parm stats_arg("-stats", NULL);				// Cmdline_show_stats
-cmdline_parm save_render_targets_arg("-save_render_target", NULL);	// Cmdline_save_render_targets
-cmdline_parm debug_window_arg("-debug_window", NULL);	// Cmdline_debug_window
-cmdline_parm window_arg("-window", NULL);				// Cmdline_window
-cmdline_parm fullscreen_window_arg("-fullscreen_window",NULL);
-cmdline_parm res_arg("-res", NULL);					// Cmdline_lores
-cmdline_parm verify_vps_arg("-verify_vps", NULL);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
-cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, NULL); 
+cmdline_parm extra_warn_arg("-extra_warn", "Enable 'extra' warnings", AT_NONE);	// Cmdline_extra_warn
+cmdline_parm fps_arg("-fps", NULL, AT_NONE);					// Cmdline_show_fps
+cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL, AT_NONE);	// Cmdline_show_mem_usage
+cmdline_parm pos_arg("-pos", NULL, AT_NONE);					// Cmdline_show_pos
+cmdline_parm stats_arg("-stats", NULL, AT_NONE);				// Cmdline_show_stats
+cmdline_parm save_render_targets_arg("-save_render_target", NULL, AT_NONE);	// Cmdline_save_render_targets
+cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
+cmdline_parm window_arg("-window", NULL, AT_NONE);				// Cmdline_window
+cmdline_parm fullscreen_window_arg("-fullscreen_window", "Fullscreen/borderless window (Windows only)", AT_NONE);
+cmdline_parm res_arg("-res", "Resolution, formatted like 1600x900", AT_STRING);
+cmdline_parm center_res_arg("-center_res", "Resolution of center monitor, formatted like 1600x900", AT_STRING);
+cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
+cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
 #ifdef SCP_UNIX
-cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
+cmdline_parm no_grab("-nograb", NULL, AT_NONE);				// Cmdline_no_grab
 #endif
-cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL); //Cmdline_reparse_mainhall
-cmdline_parm frame_profile_arg("-profile_frame_time", NULL); //Cmdline_frame_profile
+cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
+cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
+cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
+cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_old_collision_sys = 0;
@@ -443,25 +497,28 @@ int Cmdline_debug_window = 0;
 int Cmdline_window = 0;
 int Cmdline_fullscreen_window = 0;
 char *Cmdline_res = 0;
+char *Cmdline_center_res = 0;
 int Cmdline_verify_vps = 0;
 #ifdef SCP_UNIX
 int Cmdline_no_grab = 0;
 #endif
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_frame_profile = false;
+bool Cmdline_profile_write_file = false;
+bool Cmdline_no_unfocus_pause = false;
 
 // Other
-cmdline_parm get_flags_arg("-get_flags", NULL);
-cmdline_parm output_sexp_arg("-output_sexps", NULL); //WMC - outputs all SEXPs to sexps.html
-cmdline_parm output_scripting_arg("-output_scripting", NULL);	//WMC
+cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_NONE);
+cmdline_parm output_sexp_arg("-output_sexps", NULL, AT_NONE); //WMC - outputs all SEXPs to sexps.html
+cmdline_parm output_scripting_arg("-output_scripting", NULL, AT_NONE);	//WMC
 
 // Deprecated flags - CommanderDJ
-cmdline_parm deprecated_spec_arg("-spec", NULL);
-cmdline_parm deprecated_glow_arg("-glow", NULL);
-cmdline_parm deprecated_normal_arg("-normal", NULL);
-cmdline_parm deprecated_env_arg("-env", NULL);
-cmdline_parm deprecated_tbp_arg("-tbp", NULL);
-cmdline_parm deprecated_jpgtga_arg("-jpgtga", NULL);
+cmdline_parm deprecated_spec_arg("-spec", "Deprecated", AT_NONE);
+cmdline_parm deprecated_glow_arg("-glow", "Deprecated", AT_NONE);
+cmdline_parm deprecated_normal_arg("-normal", "Deprecated", AT_NONE);
+cmdline_parm deprecated_env_arg("-env", "Deprecated", AT_NONE);
+cmdline_parm deprecated_tbp_arg("-tbp", "Deprecated", AT_NONE);
+cmdline_parm deprecated_jpgtga_arg("-jpgtga", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -731,11 +788,19 @@ void os_validate_parms(char *cmdline)
 
 					// not the prettiest thing but the job gets done
 					static const int STR_SIZE = 25;  // max len of exe_params.name + 5 spaces
-					int p=0, sp=0;
-					while (exe_params[p].name[0] == '-') {
-						sp = strlen(exe_params[p].name);
-						printf("    [ %s ]%*s- %s\n", exe_params[p].name, (STR_SIZE - sp - 1), NOX(" "), exe_params[p].desc);
-						p++;
+					const int AT_SIZE = 8;  // max len of cmdline_arg_types[] + 2 spaces
+					int sp=0, atp=0;
+					for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
+						// don't output deprecated flags
+						if (stricmp("deprecated", parmp->help)) {
+							sp = strlen(parmp->name);
+							if (parmp->arg_type != AT_NONE) {
+								atp = strlen(cmdline_arg_types[parmp->arg_type]);
+								printf("    [ %s ]%*s[ %s ]%*s- %s\n", parmp->name, (STR_SIZE - sp -1), NOX(" "), cmdline_arg_types[parmp->arg_type], AT_SIZE-atp, NOX(" "), parmp->help);
+							} else {
+								printf("    [ %s ]%*s- %s\n", parmp->name, (STR_SIZE - sp -1 +AT_SIZE+4), NOX(" "), parmp->help);
+							}
+						}
 					}
 
 					printf("\n");
@@ -758,113 +823,119 @@ void os_validate_parms(char *cmdline)
 void os_init_cmdline(char *cmdline)
 {
 	FILE *fp;
-
-	bool parse_config = true;
 	
-	if (strstr(cmdline, PARSE_COMMAND_LINE_STRING) != NULL) {
-		parse_config =  false;
-	}
+	if (strstr(cmdline, PARSE_COMMAND_LINE_STRING) == NULL) {
 
-	// read the cmdline.cfg file from the data folder, and pass the command line arguments to
-	// the the parse_parms and validate_parms line.  Read these first so anything actually on
-	// the command line will take precedence
+		// read the cmdline_fso.cfg file from the data folder, and pass the command line arguments to
+		// the the parse_parms and validate_parms line.  Read these first so anything actually on
+		// the command line will take precedence
 #ifdef _WIN32
-	fp = fopen("data\\cmdline_fso.cfg", "rt");
+		fp = fopen("data\\cmdline_fso.cfg", "rt");
 #elif defined(APPLE_APP)
-	char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
+		char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
      
-	GetCurrentDirectory(MAX_PATH_LEN-1, data_path);
-	snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
+		GetCurrentDirectory(MAX_PATH_LEN-1, data_path);
+		snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
 
-	fp = fopen(resolved_path, "rt");
+		fp = fopen(resolved_path, "rt");
 #else
-	fp = fopen("data/cmdline_fso.cfg", "rt");
+		fp = fopen("data/cmdline_fso.cfg", "rt");
 #endif
 
-	// if the file exists, get a single line, and deal with it
-	if ( fp && parse_config ) {
-		char *buf, *p;
+		// if the file exists, get a single line, and deal with it
+		if ( fp ) {
+			char *buf, *p;
 
-		size_t len = filelength( fileno(fp) ) + 2;
-		buf = new char [len];
+			size_t len = filelength( fileno(fp) ) + 2;
+			buf = new char [len];
 
-		fgets(buf, len-1, fp);
+			fgets(buf, len-1, fp);
 
-		// replace the newline character with a NULL
-		if ( (p = strrchr(buf, '\n')) != NULL ) {
-			*p = '\0';
+			// replace the newline character with a NULL
+			if ( (p = strrchr(buf, '\n')) != NULL ) {
+				*p = '\0';
+			}
+
+#ifdef SCP_UNIX
+			// append a space for the os_parse_parms() check
+			strcat_s(buf, len, " ");
+#endif
+
+			os_parse_parms(buf);
+			os_validate_parms(buf);
+			delete [] buf;
+			fclose(fp);
 		}
 
 #ifdef SCP_UNIX
-		// append a space for the os_parse_parms() check
-		strcat_s(buf, len, " ");
-#endif
+		// parse user specific cmdline_fso config file (will supersede options in global file)
+		char cmdname[MAX_PATH];
 
-		os_parse_parms(buf);
-		os_validate_parms(buf);
-		delete [] buf;
-		fclose(fp);
-	}
-
-#ifdef SCP_UNIX
-	// parse user specific cmdline config file (will supersede options in global file)
-	char cmdname[MAX_PATH];
-
-	snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline_fso.cfg", detect_home(), Osreg_user_dir);
-	fp = fopen(cmdname, "rt");
-
-	if ( !fp ) {
-		// try for non "_fso", for older code versions
-		snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline.cfg", detect_home(), Osreg_user_dir);
+		snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline_fso.cfg", detect_home(), Osreg_user_dir);
 		fp = fopen(cmdname, "rt");
-	}
 
-	// if the file exists, get a single line, and deal with it
-	if ( fp ) {
-		char *buf, *p;
-
-		size_t len = filelength( fileno(fp) ) + 2;
-		buf = new char [len];
-
-		fgets(buf, len-1, fp);
-
-		// replace the newline character with a NULL
-		if ( (p = strrchr(buf, '\n')) != NULL ) {
-			*p = '\0';
+		if ( !fp ) {
+			// try for non "_fso", for older code versions
+			snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline.cfg", detect_home(), Osreg_user_dir);
+			fp = fopen(cmdname, "rt");
 		}
 
-		// append a space for the os_parse_parms() check
-		strcat_s(buf, len, " ");
+		// if the file exists, get a single line, and deal with it
+		if ( fp ) {
+			char *buf, *p;
 
-		os_parse_parms(buf);
-		os_validate_parms(buf);
-		delete [] buf;
-		fclose(fp);
-	}
+			size_t len = filelength( fileno(fp) ) + 2;
+			buf = new char [len];
+
+			fgets(buf, len-1, fp);
+
+			// replace the newline character with a NULL
+			if ( (p = strrchr(buf, '\n')) != NULL ) {
+				*p = '\0';
+			}
+
+			// append a space for the os_parse_parms() check
+			strcat_s(buf, len, " ");
+
+			os_parse_parms(buf);
+			os_validate_parms(buf);
+			delete [] buf;
+			fclose(fp);
+		}
 #endif
-
+	} // If cmdline included PARSE_COMMAND_LINE_STRING
+    
+	// By parsing cmdline last, anything actually on the command line will take precedence.
 	os_parse_parms(cmdline);
 	os_validate_parms(cmdline);
 }
 
 
-// arg constructor
-// name_ - name of the parameter, must start with '-' character
-// help_ - help text for this parameter
-cmdline_parm::cmdline_parm(char *name_, char *help_, bool stacks_)
+/*
+ * arg constructor
+ *
+ * @param name_    name of the parameter, must start with '-' character
+ * @param help_    help text for this parameter
+ * @param arg_type_    parameters arguement type (if any)
+ * @param stacks_    can the parameter be stacked
+ */
+cmdline_parm::cmdline_parm(const char *name_, const char *help_, const int arg_type_, const bool stacks_):
+	name(name_), help(help_), stacks(stacks_), arg_type(arg_type_)
 {
-	name = name_;
-	help = help_;
-	stacks = stacks_;
 	args = NULL;
 	name_found = 0;
 
 	if (Parm_list_inited == 0) {
-		list_init(&Parm_list);
+		Assertion(&Parm_list == this, "Coding error! 1st initialised cmdline_parm must be static Parm_list\n");
+		list_init(this);
 		Parm_list_inited = 1;
-	}
-
-	if (name != NULL) {
+	} else {
+		Assertion(name, "Coding error! cmdline_parm's must have a non-NULL name\n");
+		Assertion(name[0] == '-', "Coding error! cmdline_parm's must start with a '-'\n");
+		// not in the static Parm_list init, so lookup the NULL help args
+		if (help == NULL) {
+			help = get_param_desc(name);
+		}
 		list_append(&Parm_list, this);
 	}
 }
@@ -906,6 +977,7 @@ int cmdline_parm::found()
 // returns - the interger representation for the parameter argument
 int cmdline_parm::get_int()
 {
+	Assertion(arg_type == AT_INT, "Coding error! Cmdline arg (%s) called cmdline_parm::get_int() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
 	int offset = 0;
@@ -930,6 +1002,7 @@ int cmdline_parm::get_int()
 // returns - the float representation for the parameter argument
 float cmdline_parm::get_float()
 {
+	Assertion(arg_type == AT_FLOAT, "Coding error! Cmdline arg (%s) called cmdline_parm::get_float() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
 	int offset = 0;
@@ -954,6 +1027,7 @@ float cmdline_parm::get_float()
 // returns - the string value for the parameter argument
 char *cmdline_parm::str()
 {
+	Assertion(arg_type == AT_STRING, "Coding error! Cmdline arg (%s) called cmdline_parm::str() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
 	return args;
@@ -1093,6 +1167,11 @@ bool SetCmdlineParams()
 		Cmdline_freespace_no_music = 1;
 	}
 
+	// Disable enhanced sound
+	if (noenhancedsound_arg.found()) {
+		Cmdline_no_enhanced_sound = 1;
+	}
+
 	// should we start a network game
 	if ( startgame_arg.found() ) {
 		Cmdline_use_last_pilot = 1;
@@ -1190,6 +1269,9 @@ bool SetCmdlineParams()
 	if(res_arg.found()){
 		Cmdline_res = res_arg.str();
 	}
+	if(center_res_arg.found()){
+		Cmdline_center_res = center_res_arg.str();
+	}
 	if(almission_arg.found()){//DTP for autoload mission // developer oritentated
 		Cmdline_almission = almission_arg.str();
 		Cmdline_use_last_pilot = 1;
@@ -1221,12 +1303,6 @@ bool SetCmdlineParams()
 	if(mod_arg.found() ) {
 		Cmdline_mod = mod_arg.str();
 
-		// be sure that this string fits in our limits
-		/* This has to be disabled because the max size is going to be mods*MAX_FILENAME_LEN
-		if ( strlen(Cmdline_mod) > MAX_FILENAME_LEN ) {
-			Cmdline_mod[MAX_FILENAME_LEN-1] = '\0';
-		}*/
-
 		// strip off blank space it it's there
 		if ( Cmdline_mod[strlen(Cmdline_mod)-1] == ' ' ) {
 			Cmdline_mod[strlen(Cmdline_mod)-1] = '\0';
@@ -1238,7 +1314,49 @@ bool SetCmdlineParams()
 		memset( modlist, 0, len + 2 );
 		strcpy_s(modlist, len+2, Cmdline_mod);
 
-		//modlist[len]= '\0'; // double null termination at the end
+#ifdef SCP_UNIX
+		// for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
+		DIR *dp;
+		dirent *dirp;
+		char *cur_pos, *temp;
+		char cur_dir[CF_MAX_PATHNAME_LENGTH], delim[] = ",";
+		SCP_vector<SCP_string> temp_modlist;
+		size_t total_len = 0;
+
+		if ( !_getcwd(cur_dir, CF_MAX_PATHNAME_LENGTH ) ) {
+			Error(LOCATION, "Can't get current working directory -- %d", errno );
+		}
+
+		for (cur_pos = strtok(modlist, delim); cur_pos != NULL; cur_pos = strtok(NULL, delim))
+		{
+			if ((dp = opendir(cur_dir)) == NULL) {
+				Error(LOCATION, "Can't open directory '%s' -- %d", cur_dir, errno );
+			}
+
+			while ((dirp = readdir(dp)) != NULL) {
+				if (!stricmp(dirp->d_name, cur_pos)) {
+					temp_modlist.push_back(dirp->d_name);
+					total_len += (strlen(dirp->d_name) + 1);
+				}
+			}
+			(void)closedir(dp);
+		}
+
+		// create new char[] to replace modlist
+		char *new_modlist = new char[total_len+1];
+		memset( new_modlist, 0, total_len + 1 );
+		SCP_vector<SCP_string>::iterator ii, end = temp_modlist.end();
+		for (ii = temp_modlist.begin(); ii != end; ++ii) {
+			strcat_s(new_modlist, total_len+1, ii->c_str());
+			strcat_s(new_modlist, total_len+1, ","); // replace later with NUL
+		}
+
+		// make the rest of the function unaware that anything happened here
+		temp = modlist;
+		modlist = new_modlist;
+		delete [] temp;
+		len = total_len;
+#endif
 
 		// null terminate each individual
 		for (int i = 0; i < len; i++)
@@ -1302,6 +1420,10 @@ bool SetCmdlineParams()
 
 	if ( allow_autpilot_interrupt.found() )	{
 		Cmdline_autopilot_interruptable = 0;
+	}
+
+	if ( stretch_menu.found() )	{
+		Cmdline_stretch_menu = 1;
 	}
 	// specular comand lines
 	if ( spec_exp_arg.found() ) {
@@ -1417,6 +1539,11 @@ bool SetCmdlineParams()
 		Cmdline_novbo = 1;
 	}
 
+	if ( no_pbo_arg.found() )
+	{
+		Cmdline_no_pbo = 1;
+	}
+
 	if ( no_drawrangeelements.found() )
 	{
 		Cmdline_drawelements = 1;
@@ -1425,6 +1552,21 @@ bool SetCmdlineParams()
 	if( keyboard_layout.found())
 	{
 		Cmdline_keyboard_layout = keyboard_layout.str();
+	}
+
+	if (gl_finish.found())
+	{
+		Cmdline_gl_finish = true;
+	}
+
+	if ( no_geo_sdr_effects.found() )
+	{
+		Cmdline_no_geo_sdr_effects = true;
+	}
+
+	if (set_cpu_affinity.found())
+	{
+		Cmdline_set_cpu_affinity = true;
 	}
 
 	if ( snd_preload_arg.found() )
@@ -1452,10 +1594,6 @@ bool SetCmdlineParams()
 
 	if(dis_weapons.found())
 		Cmdline_dis_weapons = 1;
-
-	if ( noibx_arg.found() ) {
-		Cmdline_noibx = 1;
-	}
 
 	if ( no_fbo_arg.found() ) {
 		Cmdline_no_fbo = 1;
@@ -1509,6 +1647,16 @@ bool SetCmdlineParams()
 		Cmdline_fb_explosions = 1;
 	}
 
+	if ( no_batching.found() ) 
+	{
+		Cmdline_no_batching = true;
+	}
+
+	if ( brieflighting_arg.found() )
+	{
+		Cmdline_brief_lighting = 1;
+	}
+
 	if ( postprocess_arg.found() )
 	{
 		Cmdline_postprocess = 1;
@@ -1529,9 +1677,35 @@ bool SetCmdlineParams()
 		Cmdline_reparse_mainhall = 1;
 	}
 
+	if( shadow_quality_arg.found() )
+	{
+		Cmdline_shadow_quality = shadow_quality_arg.get_int();
+	}
+
+	if( disable_shadows_arg.found() )
+	{
+		Cmdline_shadow_quality = 0;
+	}
+
+	if( no_deferred_lighting_arg.found() )
+	{
+		Cmdline_no_deferred_lighting = 1;
+	}
+
 	if (frame_profile_arg.found() )
 	{
 		Cmdline_frame_profile = true;
+	}
+
+	if (frame_profile_write_file.found())
+	{
+		Cmdline_frame_profile = true;
+		Cmdline_profile_write_file = true;
+	}
+
+	if (no_unfocused_pause_arg.found())
+	{
+		Cmdline_no_unfocus_pause = true;
 	}
 
 	//Deprecated flags - CommanderDJ
@@ -1610,4 +1784,17 @@ int parse_cmdline(char *cmdline)
 	// If you're looking for the list of if (someparam.found()) { cmdline_someparam = something; } look above at this function
 	// I did this because of fred2_parse_cmdline()
 	return SetCmdlineParams();
+}
+
+const char * get_param_desc(const char *flag_name)
+{
+	int i;
+	int flag_size = sizeof(Flag);
+	int num_flags = sizeof(exe_params) / flag_size;
+	for (i = 0; i < num_flags; ++i) {
+		if (!strcmp(flag_name, exe_params[i].name)) {
+			return exe_params[i].desc;
+		}
+	}
+	return "UNKNOWN - FIXME!";
 }

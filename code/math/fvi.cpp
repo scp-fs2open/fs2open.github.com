@@ -22,10 +22,9 @@
 #define	UNINITIALIZED_VALUE	-1234567.8f
 #define WARN_DIST	1.0
 
-void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 );
+static void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 );
 
-
-float matrix_determinant_from_vectors(vec3d *v1,vec3d *v2,vec3d *v3)
+static float matrix_determinant_from_vectors(const vec3d *v1, const vec3d *v2, const vec3d *v3)
 {
 	float ans;
 	ans =  v1->xyz.x * v2->xyz.y * v3->xyz.z;
@@ -44,7 +43,7 @@ float matrix_determinant_from_vectors(vec3d *v1,vec3d *v2,vec3d *v3)
  *
  * lines: L1 = P1 + V1s  and   L2 = P2 + V2t
  */
-void fvi_two_lines_in_3space(vec3d *p1, vec3d *v1, vec3d *p2, vec3d *v2, float *s, float *t)
+void fvi_two_lines_in_3space(const vec3d *p1, const vec3d *v1, const vec3d *p2, const vec3d *v2, float *s, float *t)
 {
 	vec3d cross,delta;
 	vm_vec_crossprod(&cross, v1, v2);
@@ -73,8 +72,8 @@ void fvi_two_lines_in_3space(vec3d *p1, vec3d *v1, vec3d *p2, vec3d *v2, float *
  * @param plane_norm	Plane description, a normal
  * @param point			A point to test
  */
-float fvi_point_dist_plane(	vec3d *plane_pnt, vec3d *plane_norm,
-					    vec3d *point
+float fvi_point_dist_plane(const vec3d *plane_pnt,const vec3d *plane_norm,
+					    const vec3d *point
 						)
 {
 	float dist,D;
@@ -121,8 +120,8 @@ float fvi_point_dist_plane(	vec3d *plane_pnt, vec3d *plane_norm,
  * intersection if the return value is between 0 and 1.
  */
 float fvi_ray_plane(vec3d *new_pnt,
-                    vec3d *plane_pnt,vec3d *plane_norm,
-                    vec3d *ray_origin,vec3d *ray_direction,
+                    const vec3d *plane_pnt, const vec3d *plane_norm,
+                    const vec3d *ray_origin, const vec3d *ray_direction,
 						  float rad)
 {
 	vec3d w;
@@ -165,8 +164,8 @@ float fvi_ray_plane(vec3d *new_pnt,
  */
   
 int fvi_segment_plane(vec3d *new_pnt,
-										vec3d *plane_pnt,vec3d *plane_norm,
-                                 vec3d *p0,vec3d *p1,float rad)
+										const vec3d *plane_pnt, const vec3d *plane_norm,
+                                 const vec3d *p0, const vec3d *p1,float rad)
 {
 	float t;
 	vec3d d;
@@ -190,7 +189,7 @@ int fvi_segment_plane(vec3d *new_pnt,
  * vector defined by p0,p1 
  * @return 1 if intersects, and fills in intp, else returns 0
  */
-int fvi_segment_sphere(vec3d *intp,vec3d *p0,vec3d *p1,vec3d *sphere_pos,float sphere_rad)
+int fvi_segment_sphere(vec3d *intp, const vec3d *p0, const vec3d *p1, const vec3d *sphere_pos, float sphere_rad)
 {
 	vec3d d,dn,w,closest_point;
 	float mag_d,dist,w_dist,int_dist;
@@ -257,7 +256,7 @@ int fvi_segment_sphere(vec3d *intp,vec3d *p0,vec3d *p1,vec3d *sphere_pos,float s
  * vector defined by p0,p1 
  * @return 1 if intersects, and fills in intp. else returns 0
  */
-int fvi_ray_sphere(vec3d *intp,vec3d *p0,vec3d *p1,vec3d *sphere_pos,float sphere_rad)
+int fvi_ray_sphere(vec3d *intp, const vec3d *p0, const vec3d *p1, const vec3d *sphere_pos,float sphere_rad)
 {
 	vec3d d,dn,w,closest_point;
 	float mag_d,dist,w_dist,int_dist;
@@ -323,10 +322,9 @@ int fvi_ray_sphere(vec3d *intp,vec3d *p0,vec3d *p1,vec3d *sphere_pos,float spher
  * the point where the ray begins inside the box.
  * Fast ray-box intersection taken from Graphics Gems I, pages 395,736.
  */
-int fvi_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d *hitpt )
+int fvi_ray_boundingbox(const vec3d *min, const vec3d *max, const vec3d * p0, const vec3d *pdir, vec3d *hitpt )
 {
-	bool inside = true;
-	bool middle[3] = { true, true, true };
+	int middle = ((1<<0) | (1<<1) | (1<<2));
 	int i;
 	int which_plane;
 	float maxt[3];
@@ -335,48 +333,51 @@ int fvi_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d 
 	for (i = 0; i < 3; i++) {
 		if (p0->a1d[i] < min->a1d[i]) {
 			candidate_plane[i] = min->a1d[i];
-			middle[i] = false;
-			inside = false;
+			middle &= ~(1<<i);
 		} else if (p0->a1d[i] > max->a1d[i]) {
 			candidate_plane[i] = max->a1d[i];
-			middle[i] = false;
-			inside = false;
+			middle &= ~(1<<i);
 		}
 	}
 
-	// ray origin inside bounding box			
-	if ( inside ) {
+	// ray origin inside bounding box?
+	// (are all three bits still set?)
+	if (middle == ((1<<0) | (1<<1) | (1<<2))) {
 		*hitpt = *p0;
 		return 1;
 	}
 
 	// calculate T distances to candidate plane
 	for (i = 0; i < 3; i++) {
-		if ( !middle[i] && (pdir->a1d[i] != 0.0f) )
-			maxt[i] = (candidate_plane[i] - p0->a1d[i]) / pdir->a1d[i];
-		else
+		if ( (middle & (1<<i)) || (pdir->a1d[i] == 0.0f) ) {
 			maxt[i] = -1.0f;
+		} else {
+			maxt[i] = (candidate_plane[i] - p0->a1d[i]) / pdir->a1d[i];
+		}
 	}
 
 	// Get largest of the maxt's for final choice of intersection
 	which_plane = 0;
 	for (i = 1; i < 3; i++) {
-		if (maxt[which_plane] < maxt[i])
+		if (maxt[which_plane] < maxt[i]) {
 			which_plane = i;
+		}
 	}
 
 	// check final candidate actually inside box
-	if (maxt[which_plane] < 0.0f)
+	if (maxt[which_plane] < 0.0f) {
 		return 0;
+	}
 
 	for (i = 0; i < 3; i++) {
-		if (which_plane != i) {
-			hitpt->a1d[i] = p0->a1d[i] + maxt[which_plane] * pdir->a1d[i];
-
-			if ( (hitpt->a1d[i] < min->a1d[i]) || (hitpt->a1d[i] > max->a1d[i]) )
-				return 0;
-		} else {
+		if (which_plane == i) {
 			hitpt->a1d[i] = candidate_plane[i];
+		} else {
+			hitpt->a1d[i] = (maxt[which_plane] * pdir->a1d[i]) + p0->a1d[i];
+
+			if ( (hitpt->a1d[i] < min->a1d[i]) || (hitpt->a1d[i] > max->a1d[i]) ) {
+				return 0;
+			}
 		}
 	}
 
@@ -387,7 +388,7 @@ int fvi_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d 
  * Given largest componant of normal, return i & j
  * If largest componant is negative, swap i & j
  */
-int ij_table[3][2] =        {
+static int ij_table[3][2] =        {
 							{2,1},          //pos x biggest
 							{0,2},          //pos y biggest
 							{1,0},          //pos z biggest
@@ -419,9 +420,10 @@ int ij_table[3][2] =        {
  * and never need doubles.   -JAS Aug22,1997
  */
 #define delta 0.0001f
-int fvi_point_face(vec3d *checkp, int nv, vec3d **verts, vec3d * norm1, float *u_out,float *v_out, uv_pair * uvls )
+int fvi_point_face(const vec3d *checkp, int nv, vec3d const *const *verts, const vec3d * norm1, float *u_out,float *v_out, const uv_pair * uvls )
 {
-	float *norm, *P;
+	const float *norm;
+	const float *P;
 	vec3d t;
 	int i0, i1,i2;
 
@@ -497,7 +499,7 @@ int fvi_point_face(vec3d *checkp, int nv, vec3d **verts, vec3d * norm1, float *u
 //
 // ****************************************************************************
 
-int check_sphere_point( vec3d *point, vec3d *sphere_start, vec3d *sphere_vel, float radius, float *collide_time );
+static int check_sphere_point(const vec3d *point, const vec3d *sphere_start, const vec3d *sphere_vel, float radius, float *collide_time );
 
 /**
  * Returns whether a sphere hits a given plane in the time [0,1]
@@ -515,8 +517,8 @@ int check_sphere_point( vec3d *point, vec3d *sphere_start, vec3d *sphere_vel, fl
  *
  * @return 1 if sphere may be in contact with plane in time range [0-1], 0 otherwise
  */
-int fvi_sphere_plane(vec3d *intersect_point, vec3d *sphere_center_start, vec3d *sphere_velocity, float sphere_radius, 
-							vec3d *plane_normal, vec3d *plane_point, float *hit_time, float *crossing_time)
+int fvi_sphere_plane(vec3d *intersect_point, const vec3d *sphere_center_start, const vec3d *sphere_velocity, float sphere_radius, 
+							const vec3d *plane_normal, const vec3d *plane_point, float *hit_time, float *crossing_time)
 {
 	float	D, xs0_dot_norm, vs_dot_norm;
 	float t1, t2;
@@ -569,7 +571,7 @@ int fvi_sphere_plane(vec3d *intersect_point, vec3d *sphere_center_start, vec3d *
  * @param edge_point2			second edge point
  * @param collide_time			actual time of the collision
  */		
-int fvi_sphere_perp_edge(vec3d *intersect_point, vec3d *sphere_center_start, vec3d *sphere_velocity,
+int fvi_sphere_perp_edge(vec3d *intersect_point, const vec3d *sphere_center_start, const vec3d *sphere_velocity,
 								 float sphere_radius, vec3d *edge_point1, vec3d *edge_point2, float *collide_time)
 {
 	// find the intersection in the plane normal to sphere velocity and edge velocity
@@ -641,7 +643,7 @@ int fvi_sphere_perp_edge(vec3d *intersect_point, vec3d *sphere_center_start, vec
  * @param radius		radius of sphere
  * @param collide_time	time of first collision with t >= 0
  */
-int check_sphere_point( vec3d *point, vec3d *sphere_start, vec3d *sphere_vel, float radius, float *collide_time )
+static int check_sphere_point(const vec3d *point, const vec3d *sphere_start, const vec3d *sphere_vel, float radius, float *collide_time )
 {
 	vec3d delta_x;
 	float delta_x_sqr, vs_sqr, delta_x_dot_vs;
@@ -693,17 +695,24 @@ int check_sphere_point( vec3d *point, vec3d *sphere_start, vec3d *sphere_vel, fl
  *
  * @return 1 if sphere hits polyedge, 0 if sphere misses
  */
-int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, int nv, vec3d **verts, float *hit_time)
+int fvi_polyedge_sphereline(vec3d *hit_point, const vec3d *xs0, const vec3d *vs, float Rs, int nv, vec3d const *const *verts, float *hit_time)
 {
 	int i;
 	vec3d v0, v1;
 	vec3d ve;						// edge velocity
 	float best_sphere_time;		// earliest time sphere hits edge
 	vec3d delta_x;
-	float delta_x_dot_ve, delta_x_dot_vs, ve_dot_vs, ve_sqr, vs_sqr, delta_x_sqr, inv2A;
+	float delta_x_dot_ve, delta_x_dot_vs, ve_dot_vs, ve_sqr, vs_sqr, delta_x_sqr;
 	vec3d temp_edge_hit, temp_sphere_hit;
+	float t_sphere_hit = 0.0f;
+	float A, B, C, temp, discriminant, invA;
+	float root, root1, root2;
+	float Rs2 = (Rs * Rs);
+	float Rs_point2 = (0.2f * Rs);
 
 	best_sphere_time = FLT_MAX;
+
+	vs_sqr = vm_vec_mag_squared(vs);
 
 	for (i = 0; i < nv; i++) {
 		// Get vertices of edge to check
@@ -726,23 +735,30 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 		delta_x_sqr = vm_vec_mag_squared(&delta_x);
 		ve_dot_vs = vm_vec_dotprod(&ve, vs);
 		ve_sqr = vm_vec_mag_squared(&ve);
-		vs_sqr = vm_vec_mag_squared(vs);
 
-		float t_sphere_hit, temp;
+		/*
+		 * Solve for sphere time
+		 *
+		 * This code uses the following variation of the quadratic equation:
+		 *        A*x*x + 2*B*x + C = 0
+		 *
+		 * Solving for x yields ...
+		 *
+		 *       -B +- sqrt(B*B - A*C)
+		 *   x = ---------------------
+		 *                A
+		 */
 
-		// solve for sphere time
-		float A, B, C, root, discriminant;
-		float root1, root2;
 		A = ve_dot_vs*ve_dot_vs - ve_sqr*vs_sqr;
-		B = 2 * (delta_x_dot_ve*ve_dot_vs - delta_x_dot_vs*ve_sqr);
-		C = delta_x_dot_ve*delta_x_dot_ve + Rs*Rs*ve_sqr - delta_x_sqr*ve_sqr;
+		B = delta_x_dot_ve*ve_dot_vs - delta_x_dot_vs*ve_sqr;
+		C = delta_x_dot_ve*delta_x_dot_ve + Rs2*ve_sqr - delta_x_sqr*ve_sqr;
 
-		discriminant = B*B - 4*A*C;
-		if (discriminant > 0) {
-			root = fl_sqrt(discriminant);
-			inv2A = 1.0f/(2*A);
-			root1 = (float) ((-B + root)*inv2A);
-			root2 = (float) ((-B - root)*inv2A);
+		discriminant = B*B - A*C;
+		if (discriminant > 0.0f) {
+			invA = 1.0f / A;
+			root = sqrt(discriminant);
+			root1 = (-B + root) * invA;
+			root2 = (-B - root) * invA;
 
 			// sort root1 and root2
 			if (root2 < root1) {
@@ -751,12 +767,11 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 				root2 = temp;
 			}
 
-			if ( (root1 >= -0.05f) && (root1 < 0.0f) ) {
+			if ( (root1 < 0.0f) && (root1 >= -0.05f) )
 				root1 = 0.000001f;
-			}
 
 			// look only at first hit
-			if ( (root1 >= 0) && (root1 <= 1) ) {
+			if ( (root1 <= 1.0f) && (root1 >= 0.0f) ) {
 				t_sphere_hit = root1;
 			} else {
 				goto TryVertex;
@@ -771,40 +786,40 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 			continue;
 
 		vm_vec_scale_add( &temp_sphere_hit, xs0, vs, t_sphere_hit );
-		float q;
+
 		// solve for edge time
-		A = ve_sqr * (ve_dot_vs*ve_dot_vs - ve_sqr*vs_sqr);
-		B = 2*ve_sqr * (delta_x_dot_ve*vs_sqr - delta_x_dot_vs*ve_dot_vs);
-		C = 2*delta_x_dot_ve*delta_x_dot_vs*ve_dot_vs + Rs*Rs*ve_dot_vs*ve_dot_vs 
+		A *= ve_sqr;
+		B = ve_sqr * (delta_x_dot_ve*vs_sqr - delta_x_dot_vs*ve_dot_vs);
+		C = 2.0f*delta_x_dot_ve*delta_x_dot_vs*ve_dot_vs + Rs2*ve_dot_vs*ve_dot_vs 
 			 - delta_x_sqr*ve_dot_vs*ve_dot_vs - delta_x_dot_ve*delta_x_dot_ve*vs_sqr;
 
-		discriminant = B*B - 4*A*C;
+		discriminant = B*B - A*C;
+		invA = 1.0f / A;
 
 		// guard against nearly perpendicular sphere edge velocities
-		if ( (discriminant < 0) ) {
-			discriminant = 0;
-		}
+		if (discriminant < 0.0f)
+			root = 0.0f;
+		else
+			root = fl_sqrt(discriminant);
 
-		root = fl_sqrt(discriminant);
-		inv2A = 1.0f/(2*A);
-		root1 = (float) ((-B + root)*inv2A);
-		root2 = (float) ((-B - root)*inv2A);
+		root1 = (-B + root) * invA;
+		root2 = (-B - root) * invA;
 
 		// given sphere position, find which edge time (position) allows a valid solution
-		if ( (root1 >= 0) && (root1 <= 1) ) {
+		if ( (root1 <= 1.0f) && (root1 >= 0.0f) ) {
 			// try edge root1
 			vm_vec_scale_add( &temp_edge_hit, &v0, &ve, root1 );
-			q = vm_vec_dist_squared(&temp_edge_hit, &temp_sphere_hit);
-			if ( fl_abs(q - Rs*Rs) < 0.2*Rs ) {	// error less than 0.1m absolute (2*delta*Radius)
+			float q = vm_vec_dist_squared(&temp_edge_hit, &temp_sphere_hit);
+			if ( fl_abs(q - Rs2) < Rs_point2 ) {	// error less than 0.1m absolute (2*delta*Radius)
 				goto Hit;
 			}
 		}
 
-		if ( (root2 >= 0) && (root2 <= 1) ) {
+		if ( (root2 <= 1.0f) && (root2 >= 0.0f) ) {
 			// try edge root2
 			vm_vec_scale_add( &temp_edge_hit, &v0, &ve, root2 );
-			q = vm_vec_dist_squared(&temp_edge_hit, &temp_sphere_hit);
-			if ( fl_abs(q - Rs*Rs) < 0.2*Rs ) {	// error less than 0.1m absolute
+			float q = vm_vec_dist_squared(&temp_edge_hit, &temp_sphere_hit);
+			if ( fl_abs(q - Rs2) < Rs_point2 ) {	// error less than 0.1m absolute
 				goto Hit;
 			}
 		} else {
@@ -815,21 +830,21 @@ int fvi_polyedge_sphereline(vec3d *hit_point, vec3d *xs0, vec3d *vs, float Rs, i
 TryVertex:
 		// try V0
 		A = vs_sqr;
-		B = 2*delta_x_dot_vs;
-		C = delta_x_sqr - Rs*Rs;
+		B = delta_x_dot_vs;
+		C = delta_x_sqr - Rs2;
 		int v0_hit;
 		float sphere_v0, sphere_v1;
 
+		v0_hit = 0;
 		sphere_v0 = UNINITIALIZED_VALUE;
 		sphere_v1 = UNINITIALIZED_VALUE;
 
-		v0_hit = 0;
-		discriminant = B*B - 4*A*C;
-		if (discriminant > 0) {
+		invA = 1.0f / A;
+		discriminant = B*B - A*C;
+		if (discriminant > 0.0f) {
 			root = fl_sqrt(discriminant);
-			inv2A = 1.0f/(2*A);
-			root1 = (float) ((-B + root)*inv2A);
-			root2 = (float) ((-B - root)*inv2A);
+			root1 = (-B + root) * invA;
+			root2 = (-B - root) * invA;
 
 			if (root1 > root2) {
 				temp = root1;
@@ -837,11 +852,10 @@ TryVertex:
 				root2 = temp;
 			}
 
-			// look only at the fist hit  (ignore negative first hit)
-			if ( (root1 > 0) && (root1 < 1) ) {
+			// look only at the first hit  (ignore negative first hit)
+			if ( (root1 < 1.0f) && (root1 > 0.0f) ) {
 				v0_hit = 1;
 				sphere_v0 = root1;
-				vm_vec_scale_add( &temp_sphere_hit, xs0, vs, root1 );
 			}
 		}
 
@@ -851,16 +865,15 @@ TryVertex:
 		delta_x_dot_vs = vm_vec_dotprod( &delta_x, vs );
 		int v1_hit;
 
-		B = 2*delta_x_dot_vs;
-		C = delta_x_sqr - Rs*Rs;
+		B = delta_x_dot_vs;
+		C = delta_x_sqr - Rs2;
 
 		v1_hit = 0;
-		discriminant = B*B - 4*A*C;
-		if (discriminant > 0) {
+		discriminant = B*B - A*C;
+		if (discriminant > 0.0f) {
 			root = fl_sqrt(discriminant);
-			inv2A = 1.0f/(2*A);
-			root1 = (float) ((-B + root)*inv2A);
-			root2 = (float) ((-B - root)*inv2A);
+			root1 = (-B + root) * invA;
+			root2 = (-B - root) * invA;
 
 			if (root1 > root2) {
 				temp = root1;
@@ -869,10 +882,9 @@ TryVertex:
 			}
 
 			// look only at the first hit (ignore negative first hit)
-			if ( (root1 > 0) && (root1 < 1) ) {
+			if ( (root1 < 1.0f) && (root1 > 0.0f) ) {
 				v1_hit = 1;
 				sphere_v1 = root1;
-				vm_vec_scale_add( &temp_sphere_hit, xs0, vs, root1 );
 			}
 		}
 
@@ -897,8 +909,8 @@ TryVertex:
 			continue;
 		}
 
-		vm_vec_scale_add( &temp_sphere_hit, xs0, vs, t_sphere_hit );
-		q = vm_vec_dist_squared(&temp_edge_hit, &temp_sphere_hit);
+		//vm_vec_scale_add( &temp_sphere_hit, xs0, vs, t_sphere_hit );
+		//q = vm_vec_dist_squared(&temp_edge_hit, &temp_sphere_hit);
 
 
 Hit:
@@ -924,7 +936,7 @@ Hit:
  * @param line_point1		first point on the line
  * @param line_point2		second point on the line
  */
-void fvi_closest_point_on_line_segment(vec3d *closest_point, vec3d *fixed_point, vec3d *line_point1, vec3d *line_point2)
+void fvi_closest_point_on_line_segment(vec3d *closest_point, const vec3d *fixed_point, const vec3d *line_point1, const vec3d *line_point2)
 {
 	vec3d delta_x, line_velocity;
 	float t;
@@ -958,7 +970,7 @@ void fvi_closest_point_on_line_segment(vec3d *closest_point, vec3d *fixed_point,
  *
  * @return 1 if spheres overlap, 0 otherwise
  */
-int fvi_check_sphere_sphere(vec3d *x_p0, vec3d *x_p1, vec3d *x_s0, vec3d *x_s1, float radius_p, float radius_s, float *t1, float *t2)
+int fvi_check_sphere_sphere(const vec3d *x_p0, const vec3d *x_p1, const vec3d *x_s0, const vec3d *x_s1, float radius_p, float radius_s, float *t1, float *t2)
 {
 	vec3d delta_x, delta_v;
 	float discriminant, separation, delta_x_dot_delta_v, delta_v_sqr, delta_x_sqr;
@@ -1033,7 +1045,7 @@ int fvi_check_sphere_sphere(vec3d *x_p0, vec3d *x_p1, vec3d *x_s0, vec3d *x_s1, 
  *
  * @return 0 if no collision is possible, 1 if collision may be possible
  */
-int fvi_cull_polyface_sphere(vec3d *poly_center, float poly_r, vec3d *sphere_start, vec3d *sphere_end, float sphere_r)
+int fvi_cull_polyface_sphere(const vec3d *poly_center, float poly_r, const vec3d *sphere_start, const vec3d *sphere_end, float sphere_r)
 {
 	vec3d closest_point, closest_separation;
 	float max_sep;
@@ -1053,7 +1065,7 @@ int fvi_cull_polyface_sphere(vec3d *poly_center, float poly_r, vec3d *sphere_sta
 /**
  * Finds the closest points between two lines
  */
-void fvi_closest_line_line( vec3d *x0, vec3d *vx, vec3d *y0, vec3d *vy, float *x_time, float *y_time )
+void fvi_closest_line_line(const vec3d *x0, const vec3d *vx, const vec3d *y0, const vec3d *vy, float *x_time, float *y_time )
 {
 	vec3d vx_cross_vy, delta_l, delta_l_cross_vx, delta_l_cross_vy;
 	float denominator;
@@ -1071,7 +1083,7 @@ void fvi_closest_line_line( vec3d *x0, vec3d *vx, vec3d *y0, vec3d *vy, float *x
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 )
+static void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 )
 {
 	float root = fl_sqrt(discriminant);
 
@@ -1096,7 +1108,7 @@ void accurate_square_root( float A, float B, float C, float discriminant, float 
  *
  * @return 1 if inside, 0 otherwise.
  */
-int project_point_onto_bbox(vec3d *mins, vec3d *maxs, vec3d *start, vec3d *box_pt)
+int project_point_onto_bbox(const vec3d *mins, const vec3d *maxs, const vec3d *start, vec3d *box_pt)
 {
 	int inside = TRUE;
 

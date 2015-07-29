@@ -133,10 +133,10 @@ int CFred_mission_save::save_mission_file(char *pathname)
 		err = -3;
 //	else if (save_briefing_info())
 //		err = -4;
-	else if (save_fiction())
-		err = -3;
 	else if (save_cutscenes())
 		err = -4;
+	else if (save_fiction())
+		err = -3;
 	else if (save_cmd_briefs())
 		err = -4;
 	else if (save_briefing())
@@ -384,13 +384,13 @@ int CFred_mission_save::save_mission_info()
 		fout(" %d", The_mission.num_respawns);
 
 		if ( Format_fs2_open != FSO_FORMAT_RETAIL ) {
+			fso_comment_push(";;FSO 3.6.11;;");
 			if (optional_string_fred("+Max Respawn Time:"))
 				parse_comments(2);
 			else {
-				fso_comment_push(";;FSO 3.6.11;;");
 				fout_version("\n+Max Respawn Time:");
-				fso_comment_pop();
 			}
+			fso_comment_pop();
 
 			fout(" %d", The_mission.max_respawn_delay);
 		}
@@ -561,29 +561,29 @@ int CFred_mission_save::save_mission_info()
 		if (period != NULL)
 			*period = 0;
 
+		fso_comment_push(";;FSO 3.6.0;;");
 		if (optional_string_fred("$Skybox Model:")) {
 			parse_comments(2);
 			fout(" %s.pof", out_str);
 		} else {
-			fso_comment_push(";;FSO 3.6.0;;");
 			fout_version("\n\n$Skybox Model: %s.pof", out_str);
-			fso_comment_pop();
 		}
+		fso_comment_pop();
 	} else {
 		bypass_comment(";;FSO 3.6.0;; $Skybox Model:");
 	}
 
 	// orientation?
 	if ((strlen(The_mission.skybox_model) > 0) && !vm_matrix_same(&vmd_identity_matrix, &The_mission.skybox_orientation)) {
+		fso_comment_push(";;FSO 3.6.14;;");
 		if (optional_string_fred("+Skybox Orientation:")) {
 			parse_comments(1);
 			save_matrix(The_mission.skybox_orientation);
 		} else {
-			fso_comment_push(";;FSO 3.6.14;;");
 			fout_version("\n+Skybox Orientation:");
 			save_matrix(The_mission.skybox_orientation);
-			fso_comment_pop();
 		}
+		fso_comment_pop();
 	} else {
 		bypass_comment(";;FSO 3.6.14;; +Skybox Orientation:");
 	}
@@ -591,14 +591,14 @@ int CFred_mission_save::save_mission_info()
 	// are skybox flags in use?
 	if (The_mission.skybox_flags != DEFAULT_NMODEL_FLAGS) {
 		//char out_str[4096];
+		fso_comment_push(";;FSO 3.6.11;;");
 		if (optional_string_fred("+Skybox Flags:")) {
 			parse_comments(1);
 			fout( " %d", The_mission.skybox_flags);
 		} else {
-			fso_comment_push(";;FSO 3.6.11;;");
 			fout_version("\n+Skybox Flags: %d", The_mission.skybox_flags);
-			fso_comment_pop();
 		}
+		fso_comment_pop();
 	} else {
 		bypass_comment(";;FSO 3.6.11;; +Skybox Flags:");
 	}
@@ -607,14 +607,14 @@ int CFred_mission_save::save_mission_info()
 	int profile_index = (The_mission.ai_profile - Ai_profiles);
 	Assert(profile_index >= 0 && profile_index < MAX_AI_PROFILES);
 
+	fso_comment_push(";;FSO 3.6.9;;");
 	if (optional_string_fred("$AI Profile:")) {
 		parse_comments(2);
 		fout(" %s", The_mission.ai_profile->profile_name);
 	} else {
-		fso_comment_push(";;FSO 3.6.9;;");
 		fout_version("\n\n$AI Profile: %s", The_mission.ai_profile->profile_name);
-		fso_comment_pop();
 	}
+	fso_comment_pop();
 
 	// sound environment (EFX/EAX) - taylor
 	sound_env *m_env = &The_mission.sound_environment;
@@ -714,7 +714,7 @@ int CFred_mission_save::save_cutscenes()
 			}
 
 			for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
-				if ( strlen(The_mission.cutscenes[i].cutscene_name) ) {
+				if ( strlen(The_mission.cutscenes[i].filename) ) {
 					// determine the name of this cutscene type
 					switch (The_mission.cutscenes[i].type) {
 						case MOVIE_PRE_FICTION:
@@ -742,10 +742,10 @@ int CFred_mission_save::save_cutscenes()
 					
 					if (optional_string_fred(type)) {
 						parse_comments();
-						fout(" %s", The_mission.cutscenes[i].cutscene_name); 
+						fout(" %s", The_mission.cutscenes[i].filename); 
 					}
 					else {
-						fout_version("%s %s\n", type, The_mission.cutscenes[i].cutscene_name); 
+						fout_version("%s %s\n", type, The_mission.cutscenes[i].filename); 
 					}
 
 					required_string_fred("+formula:");
@@ -795,6 +795,18 @@ int CFred_mission_save::save_fiction()
 			}
 			else
 				optional_string_fred("$Font:");
+
+			// save voice
+			if (strlen(fiction_voice()) > 0) //-V805
+			{
+				if (optional_string_fred("$Voice:"))
+					parse_comments();
+				else
+					fout("\n$Voice:");
+				fout(" %s", fiction_voice());
+			}
+			else
+				optional_string_fred("$Voice:");
 		}
 		else
 		{
@@ -1172,6 +1184,13 @@ int CFred_mission_save::save_players()
 	int var_idx;
 	int used_pool[MAX_WEAPON_TYPES];
 
+	if (optional_string_fred("#Alternate Types:")) {	// Make sure the parser doesn't get out of sync
+		required_string_fred("#end");
+	}
+	if (optional_string_fred("#Callsigns:")) {
+		required_string_fred("#end");
+	}
+
 	// write out alternate name list
 	if(Mission_alt_type_count > 0){
 		fout("\n\n#Alternate Types:\n");
@@ -1358,7 +1377,7 @@ void CFred_mission_save::save_single_dock_instance(ship *shipp, dock_instance *d
 int CFred_mission_save::save_objects()
 {
 	SCP_string sexp_out;
-	int i, j, k, z;
+	int i, j, z;
 	ai_info *aip;
 	object *objp;
 	ship *shipp;
@@ -1392,22 +1411,19 @@ int CFred_mission_save::save_objects()
 
 		//alt classes stuff
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
-			if ((int)shipp->s_alt_classes.size()) {
-				for (k = 0; k < (int)shipp->s_alt_classes.size() ; k++) {
-					// is this a variable?
-					if (shipp->s_alt_classes[k].variable_index != -1) {
-						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: @%s", Sexp_variables[shipp->s_alt_classes[k].variable_index].variable_name);  
-					}
-					else {
-						fout_version("\n;;FSO 3.6.10;; $Alt Ship Class: \"%s\"", Ship_info[shipp->s_alt_classes[k].ship_class].name);
-					}
-
-					// default class?					
-					if (shipp->s_alt_classes[k].default_to_this_class) {
-						fout_version("\n;;FSO 3.6.10;; +Default Class:");
-					}
+			for (SCP_vector<alt_class>::iterator ii = shipp->s_alt_classes.begin(); ii != shipp->s_alt_classes.end(); ++ii) {
+				// is this a variable?
+				if (ii->variable_index != -1) {
+					fout("\n$Alt Ship Class: @%s", Sexp_variables[ii->variable_index].variable_name);  
+				}
+				else {
+					fout("\n$Alt Ship Class: \"%s\"", Ship_info[ii->ship_class].name);
 				}
 
+				// default class?					
+				if (ii->default_to_this_class) {
+					fout("\n+Default Class:");
+				}
 			}
 		}
 
@@ -1731,6 +1747,10 @@ int CFred_mission_save::save_objects()
 				fout(" \"ship-locked\"");
 			if (shipp->flags2 & SF2_WEAPONS_LOCKED)
 				fout(" \"weapons-locked\"");
+			if (shipp->flags2 & SF2_SCRAMBLE_MESSAGES)
+				fout(" \"scramble-messages\"");
+			if (!(objp->flags & OF_COLLIDES))
+				fout(" \"no-collide\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
@@ -1750,6 +1770,7 @@ int CFred_mission_save::save_objects()
 		// special explosions
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if (shipp->use_special_explosion) {
+				fso_comment_push(";;FSO 3.6.13;;");
 				if (optional_string_fred("$Special Explosion:", "$Name:")) {
 					parse_comments();
 
@@ -1775,7 +1796,7 @@ int CFred_mission_save::save_objects()
 						fout(" %d", shipp->special_exp_shockwave_speed);
 					}
 					else {
-						bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:");
+						bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:", "$Name:");
 					}
 
 					if (shipp->special_exp_deathroll_time > 0) {
@@ -1784,11 +1805,10 @@ int CFred_mission_save::save_objects()
 						fout(" %d", shipp->special_exp_deathroll_time);
 					}
 					else {
-						bypass_comment(";;FSO 3.6.13;; +Special Exp Death Roll Time:");
+						bypass_comment(";;FSO 3.6.13;; +Special Exp Death Roll Time:", "$Name:");
 					}
 				}
 				else {
-					fso_comment_push(";;FSO 3.6.13;;");
 					fout_version("\n$Special Explosion:");
 
 					fout_version("\n+Special Exp Damage:"); 
@@ -1813,12 +1833,12 @@ int CFred_mission_save::save_objects()
 						fout(" %d", shipp->special_exp_deathroll_time);
 					}
 
-					fso_comment_pop();
 				}
+				fso_comment_pop();
 			}
 			else {
-				bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:");
-				bypass_comment(";;FSO 3.6.13;; +Special Exp Death Roll Time:");
+				bypass_comment(";;FSO 3.6.13;; +Special Exp Shockwave Speed:", "$Name:");
+				bypass_comment(";;FSO 3.6.13;; +Special Exp Death Roll Time:", "$Name:");
 			}
 		}
 			// retail format special explosions
@@ -1846,33 +1866,33 @@ int CFred_mission_save::save_objects()
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if (shipp->special_hitpoints) {
+				fso_comment_push(";;FSO 3.6.13;;");
 				if (optional_string_fred("+Special Hitpoints:", "$Name:")) {
 					parse_comments();
 				} else {
-					fso_comment_push(";;FSO 3.6.13;;");
 					fout_version("\n+Special Hitpoints:");
-					fso_comment_pop();
 				}
+				fso_comment_pop();
 
 				fout(" %d", shipp->special_hitpoints);
 			}
 			else {
-				bypass_comment(";;FSO 3.6.13;; +Special Hitpoints:");
+				bypass_comment(";;FSO 3.6.13;; +Special Hitpoints:", "$Name:");
 			}
 
 			if (shipp->special_shield >= 0) {
+				fso_comment_push(";;FSO 3.6.13;;");
 				if (optional_string_fred("+Special Shield Points:", "$Name:")) {
 					parse_comments();
 				} else {
-					fso_comment_push(";;FSO 3.6.13;;");
 					fout_version("\n+Special Shield Points:");
-					fso_comment_pop();
 				}
+				fso_comment_pop();
 
 				fout(" %d", shipp->special_shield);
 			}
 			else {
-				bypass_comment(";;FSO 3.6.13;; +Special Shield Points:");
+				bypass_comment(";;FSO 3.6.13;; +Special Shield Points:", "$Name:");
 			}
 		}
 		// -----------------------------------------------------------
@@ -1971,16 +1991,16 @@ int CFred_mission_save::save_objects()
 		// always write out the score to ensure backwards compatibility. If the score is the same as the value 
 		// in the table write out a flag to tell the game to simply use whatever is in the table instead
 		if (Ship_info[shipp->ship_info_index].score == shipp->score ) {
+			fso_comment_push(";;FSO 3.6.10;;");
 			if ( optional_string_fred("+Use Table Score:", "$Name:") ) {
 				parse_comments();
 			} else {
-				fso_comment_push(";;FSO 3.6.10;;");
 				fout_version("\n+Use Table Score:");
-				fso_comment_pop();
 			}		
+			fso_comment_pop();
 		}
 		else {
-			bypass_comment(";;FSO 3.6.10;; +Use Table Score:");
+			bypass_comment(";;FSO 3.6.10;; +Use Table Score:", "$Name:");
 		}
 
 		if (optional_string_fred("+Score:", "$Name:"))
@@ -1992,18 +2012,18 @@ int CFred_mission_save::save_objects()
 	
 		
 		if (Format_fs2_open != FSO_FORMAT_RETAIL && shipp->assist_score_pct != 0) {
+			fso_comment_push(";;FSO 3.6.10;;");
 			if ( optional_string_fred("+Assist Score Percentage:") ) {
 				parse_comments();
 			} else {
-				fso_comment_push(";;FSO 3.6.10;;");
 				fout_version("\n+Assist Score Percentage:");
-				fso_comment_pop();
 			}
+			fso_comment_pop();
 			
 			fout(" %f", shipp->assist_score_pct);
 		}
 		else {
-			bypass_comment(";;FSO 3.6.10;; +Assist Score Percentage:");
+			bypass_comment(";;FSO 3.6.10;; +Assist Score Percentage:", "$Name:");
 		}
 
 		// deal with the persona for this ship as well.
@@ -2019,6 +2039,7 @@ int CFred_mission_save::save_objects()
 		// Goober5000 - deal with texture replacement ----------------
 		if (!Fred_texture_replacements.empty()) {
 			bool needs_header = true;
+			fso_comment_push(";;FSO 3.6.8;;");
 
 			for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii) {
 				if ( !stricmp(shipp->ship_name, ii->ship_name) ) {
@@ -2026,7 +2047,6 @@ int CFred_mission_save::save_objects()
 						if (optional_string_fred("$Texture Replace:")) {
 							parse_comments(1);
 						} else {
-							fso_comment_push(";;FSO 3.6.8;;");
 							fout_version("\n$Texture Replace:");
 						}
 
@@ -2052,7 +2072,7 @@ int CFred_mission_save::save_objects()
 
 			fso_comment_pop();
 		} else {
-			bypass_comment(";;FSO 3.6.8;; $Texture Replace:");
+			bypass_comment(";;FSO 3.6.8;; $Texture Replace:", "$Name:");
 		}
 
 		// end of texture replacement -------------------------------
@@ -2773,11 +2793,16 @@ int CFred_mission_save::save_matrix(matrix &m)
 
 // Goober5000 - move past the comment without copying it to the output file
 // (used for special FSO comment tags)
-void CFred_mission_save::bypass_comment(char *comment)
+void CFred_mission_save::bypass_comment(const char *comment, const char *end)
 {
 	char *ch = strstr(raw_ptr, comment);
 	if (ch != NULL)
 	{
+		if (end != NULL) {
+			char *ep = strstr(raw_ptr, end);
+			if (ep != NULL && ep < ch)
+				return;
+		}
 		char *writep = ch;
 		char *readp = strchr(writep, '\n');
 
@@ -2799,6 +2824,7 @@ void CFred_mission_save::parse_comments(int newlines)
 {
 	char *comment_start = NULL;
 	int state = 0, same_line = 0, first_comment = 1, tab = 0, flag = 0;
+	bool version_added = false;
 
 	if (newlines < 0) {
 		newlines = -newlines;
@@ -2812,11 +2838,12 @@ void CFred_mission_save::parse_comments(int newlines)
 		while (newlines-- > 0)
 			fout("\n");
 
-		if (tab)
+		if (tab && token_found)
+			fout_version("\t%s", token_found);
+		else if (token_found)
+			fout_version("%s", token_found);
+		else if (tab)
 			fout("\t");
-
-		if (token_found)
-			fout("%s", token_found);
 
 		return;
 	}
@@ -2830,11 +2857,18 @@ void CFred_mission_save::parse_comments(int newlines)
 						fout("\n");
 					
 					if (tab) {
-						fout("\t");
+						fout_version("\t");
 						fout("%s", token_found);
 					} else {
-						fout("%s", token_found);
+						fout_version("%s", token_found);
 					}
+
+					// If you have a bunch of lines that all start with the same token (like, say, "+Subsystem:"),
+					// this makes it so it won't just repeatedly match the first one. -MageKing17
+					raw_ptr++;
+
+					if (version_added)
+						fso_comment_pop();
 
 					return;
 				}
@@ -2859,9 +2893,9 @@ void CFred_mission_save::parse_comments(int newlines)
 						s_num = 3;
 					}
 
-					if ( (s_num == 3) && (major <= FS_VERSION_MAJOR) && (minor <= FS_VERSION_MINOR) && (build <= FS_VERSION_BUILD) ) {
+					if ( (s_num == 3) && ((major < FS_VERSION_MAJOR) || ((major == FS_VERSION_MAJOR) && ((minor < FS_VERSION_MINOR) || ((minor == FS_VERSION_MINOR) && (build <= FS_VERSION_BUILD))))) ) {
 						state = 3;
-					} else if ( (s_num == 4) && (major <= FS_VERSION_MAJOR) && (minor <= FS_VERSION_MINOR) && (build <= FS_VERSION_BUILD) && (revis <= FS_VERSION_REVIS) ) {
+					} else if ( (s_num == 4) && ((major < FS_VERSION_MAJOR) || ((major == FS_VERSION_MAJOR) && ((minor < FS_VERSION_MINOR) || ((minor == FS_VERSION_MINOR) && ((build < FS_VERSION_BUILD) || ((build == FS_VERSION_BUILD) && (revis <= FS_VERSION_REVIS))))))) ) {
 						state = 3;
 					} else {
 						state = 4;
@@ -2927,7 +2961,10 @@ void CFred_mission_save::parse_comments(int newlines)
 			if ( (*raw_ptr == ';') && (raw_ptr[1] == ';') && (state == 3) ) {
 				state = raw_ptr[2];
 				raw_ptr[2] = 0;
-				fso_comment_pop();
+				if (version_added)
+					fso_comment_pop();
+				else
+					version_added = true;
 				fso_comment_push(comment_start);
 				raw_ptr[2] = (char)state;
 				state = first_comment = flag = 0;
@@ -2937,6 +2974,9 @@ void CFred_mission_save::parse_comments(int newlines)
 
 		raw_ptr++;
 	}
+
+	if (version_added)
+		fso_comment_pop();
 
 	return;
 }
@@ -3340,13 +3380,13 @@ int CFred_mission_save::save_events()
 		}
 
 		if (Format_fs2_open != FSO_FORMAT_RETAIL && Mission_events[i].trigger_count != 1 ) {
+			fso_comment_push(";;FSO 3.6.11;;");
 			if ( optional_string_fred("+Trigger Count:", "$Formula:")){
 				parse_comments();
 			} else {
-				fso_comment_push(";;FSO 3.6.11;;");
 				fout_version("\n+Trigger Count:");
-				fso_comment_pop(); 
 			}
+			fso_comment_pop(); 
 
 			fout(" %d", Mission_events[i].trigger_count);
 		}
@@ -3411,13 +3451,13 @@ int CFred_mission_save::save_events()
 		}
 
 		if (Format_fs2_open != FSO_FORMAT_RETAIL && Mission_events[i].mission_log_flags != 0 ) {
+			fso_comment_push(";;FSO 3.6.11;;");
 			if ( optional_string_fred("+Event Log Flags: (", "$Formula:")){
 				parse_comments();
 			} else {
-				fso_comment_push(";;FSO 3.6.11;;");
 				fout_version("\n+Event Log Flags: (");
-				fso_comment_pop(); 
 			}
+			fso_comment_pop(); 
 
 			for (j = 0; j < MAX_MISSION_EVENT_LOG_FLAGS ; j++) {
 				add_flag = 1 << j; 
@@ -3567,10 +3607,10 @@ int CFred_mission_save::save_bitmaps()
 		bool tag = (i < Num_backgrounds - 1);
 		background_t *background = &Backgrounds[i];
 
+		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Bitmap List:")) {
 			parse_comments(2);
 		} else {
-			fso_comment_push(";;FSO 3.6.9;;");
 			fout_version("\n\n$Bitmap List:");
 		}
 
@@ -3636,14 +3676,14 @@ int CFred_mission_save::save_bitmaps()
 
 	// taylor's environment map thingy
 	if (strlen(The_mission.envmap_name) > 0) { //-V805
+		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Environment Map:")) {
 			parse_comments(2);
 			fout(" %s", The_mission.envmap_name);
 		} else {
-			fso_comment_push(";;FSO 3.6.9;;");
 			fout_version("\n\n$Environment Map: %s", The_mission.envmap_name);
-			fso_comment_pop();
 		}
+		fso_comment_pop();
 	} else {
 		bypass_comment(";;FSO 3.6.9;; $Environment Map:");
 	}
@@ -3762,14 +3802,14 @@ int CFred_mission_save::save_music()
 
 	// Goober5000 - save using the special comment prefix
 	if (stricmp(The_mission.substitute_event_music_name, "None")) {
+		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Substitute Event Music:")) {
 			parse_comments(1);
 			fout(" %s", The_mission.substitute_event_music_name);
 		} else {
-			fso_comment_push(";;FSO 3.6.9;;");
 			fout_version("\n$Substitute Event Music: %s", The_mission.substitute_event_music_name);
-			fso_comment_pop();
 		}
+		fso_comment_pop();
 	} else {
 		bypass_comment(";;FSO 3.6.9;; $Substitute Event Music:");
 	}
@@ -3783,14 +3823,14 @@ int CFred_mission_save::save_music()
 
 	// Goober5000 - save using the special comment prefix
 	if (stricmp(The_mission.substitute_briefing_music_name, "None")) {
+		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Substitute Briefing Music:")) {
 			parse_comments(1);
 			fout(" %s", The_mission.substitute_briefing_music_name);
 		} else {
-			fso_comment_push(";;FSO 3.6.9;;");
 			fout_version("\n$Substitute Briefing Music: %s", The_mission.substitute_briefing_music_name);
-			fso_comment_pop();
 		}
+		fso_comment_pop();
 	} else {
 		bypass_comment(";;FSO 3.6.9;; $Substitute Briefing Music:");
 	}
@@ -3826,14 +3866,14 @@ int CFred_mission_save::save_music()
 
 	// Goober5000 - save using the special comment prefix
 	if (mission_has_fiction() && Mission_music[SCORE_FICTION_VIEWER] >= 0) {
+		fso_comment_push(";;FSO 3.6.11;;");
 		if (optional_string_fred("$Fiction Viewer Music:")) {
 			parse_comments(1);
 			fout(" %s", Spooled_music[Mission_music[SCORE_FICTION_VIEWER]].name);
 		} else {
-			fso_comment_push(";;FSO 3.6.11;;");
 			fout_version("\n$Fiction Viewer Music: %s", Spooled_music[Mission_music[SCORE_FICTION_VIEWER]].name);
-			fso_comment_pop();
 		}
+		fso_comment_pop();
 	} else {
 		bypass_comment(";;FSO 3.6.11;; $Fiction Viewer Music:");
 	}
@@ -4030,14 +4070,14 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 		}
 
 		if ( Campaign.missions[m].debrief_persona_index > 0 ) {
+			fso_comment_push(";;FSO 3.6.8;;");
 			if (optional_string_fred("+Debriefing Persona Index:")) {
 				parse_comments(1);
 				fout(" %d", Campaign.missions[m].debrief_persona_index);
 			} else {
-				fso_comment_push(";;FSO 3.6.8;;");
 				fout_version("\n+Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
-				fso_comment_pop();
 			}
+			fso_comment_pop();
 		} else {
 			bypass_comment(";;FSO 3.6.8;; +Debriefing Persona Index:");
 		}
@@ -4216,10 +4256,10 @@ void CFred_mission_save::fso_comment_push(char *ver)
 		elem1 = elem2 = 3;
 	}
 
-	if ( (elem1 == 3) && ((major > in_major) || (minor > in_minor) || (build > in_build)) ) {
+	if ( (elem1 == 3) && ((major > in_major) || ((major == in_major) && ((minor > in_minor) || ((minor == in_minor) && (build > in_build))))) ) {
 		// the push'd version is older than our current version, so just push a copy of the previous version
 		fso_ver_comment.push_back( before );
-	} else if ( (elem1 == 4) && ((major > in_major) || (minor > in_minor) || (build > in_build) || (revis > in_revis)) ) {
+	} else if ( (elem1 == 4) && ((major > in_major) || ((major == in_major) && ((minor > in_minor) || ((minor == in_minor) && ((build > in_build) || ((build == in_build) || (revis > in_revis))))))) ) {
 		// the push'd version is older than our current version, so just push a copy of the previous version
 		fso_ver_comment.push_back( before );
 	} else {
