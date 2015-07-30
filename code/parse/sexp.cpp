@@ -18068,6 +18068,29 @@ void sexp_set_turret_primary_ammo(int node)
 	}
 
 	set_turret_primary_ammo(turret, requested_bank, requested_weapons);
+
+	// Multiplayer call back
+	char *subsys = CTEXT(node);
+	multi_start_callback();
+	multi_send_int(sindex);
+	multi_send_string(subsys);
+	multi_send_int(requested_bank);
+	multi_send_int(requested_weapons);
+	multi_end_callback();
+}
+
+void multi_sexp_set_turret_primary_ammo()
+{
+	int sindex, requested_bank, requested_weapons;
+	char *subsys;
+	multi_get_int(sindex);
+	multi_get_string(subsys);
+	multi_get_int(requested_bank);
+	multi_get_int(requested_weapons);
+
+	ship_subsys *turret = ship_get_subsys(&Ships[sindex], subsys);
+
+	set_turret_primary_ammo(turret, requested_bank, requested_weapons);
 }
 
 // DahBlount - Helper function for setting turret primary ammo
@@ -18182,6 +18205,29 @@ void sexp_set_turret_secondary_ammo(int node)
 	{
 		return;
 	}
+
+	set_turret_secondary_ammo(turret, requested_bank, requested_weapons);
+
+	// Multiplayer call back
+	char *subsys = CTEXT(node);
+	multi_start_callback();
+	multi_send_int(sindex);
+	multi_send_string(subsys);
+	multi_send_int(requested_bank);
+	multi_send_int(requested_weapons);
+	multi_end_callback();
+}
+
+void multi_sexp_set_turret_secondary_ammo()
+{
+	int sindex, requested_bank, requested_weapons;
+	char *subsys;
+	multi_get_int(sindex);
+	multi_get_string(subsys);
+	multi_get_int(requested_bank);
+	multi_get_int(requested_weapons);
+
+	ship_subsys *turret = ship_get_subsys(&Ships[sindex], subsys);
 
 	set_turret_secondary_ammo(turret, requested_bank, requested_weapons);
 }
