@@ -25399,6 +25399,14 @@ void multi_sexp_eval()
 				multi_sexp_script_eval_multi();
 				break;
 
+			case OP_TURRET_SET_PRIMARY_AMMO:
+				multi_sexp_set_turret_primary_ammo();
+				break;
+
+			case OP_TURRET_SET_SECONDARY_AMMO:
+				multi_sexp_set_turret_secondary_ammo();
+				break;
+
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
