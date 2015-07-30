@@ -1106,6 +1106,13 @@ int ds_init()
 
 	alcMakeContextCurrent(ds_sound_context);
 
+	alcGetError(ds_sound_device);
+
+	mprintf(("  OpenAL Vendor     : %s\n", alGetString(AL_VENDOR)));
+	mprintf(("  OpenAL Renderer   : %s\n", alGetString(AL_RENDERER)));
+	mprintf(("  OpenAL Version    : %s\n", alGetString(AL_VERSION)));
+	mprintf(("\n"));
+
 	// we need to clear out all errors before moving on
 	alcGetError(NULL);
 	alGetError();
