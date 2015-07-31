@@ -1877,14 +1877,109 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 		// don't fire swam, but set up swarm info instead
 		else if ((wip->wi_flags & WIF_SWARM) || (wip->wi_flags & WIF_CORKSCREW)) {
-			turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos);
+			ship_weapon *swp;
+			swp = &turret->weapons;
+			int bank_to_fire = swp->current_secondary_bank;
+			if ((turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO) && (swp->secondary_bank_ammo[bank_to_fire] < 0)) {
+				if (!(turret->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS)) {
+					swp->current_secondary_bank++;
+					if (swp->current_secondary_bank >= swp->num_secondary_banks) {
+						swp->current_secondary_bank = 0;
+					}
+					return false;
+				} else {
+					return false;
+				}
+			} else {
+				turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos);
 
-			turret->flags |= SSF_HAS_FIRED;	//set fired flag for scripting -nike
-			return true;
+				turret->flags |= SSF_HAS_FIRED;	//set fired flag for scripting -nike
+				return true;
+			}
 		}
 		// now do anything else
 		else {
 			for (int i = 0; i < wip->shots; i++) {
+				if (turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO) {
+					ship_weapon *swp;
+					swp = &turret->weapons;
+					int bank_to_fire, num_slots = turret->system_info->turret_num_firing_points;
+					if (wip->subtype == WP_LASER) {
+						int points;
+						if (swp->num_primary_banks <= 0) {
+							return false;
+						}
+
+						if (swp->current_primary_bank < 0){
+							return false;
+						}
+
+						int	num_primary_banks = swp->num_primary_banks;
+
+						Assert(num_primary_banks > 0);
+						if (num_primary_banks < 1){
+							return false;
+						}
+
+						for (int j = 0; j < num_primary_banks; i++) {
+							bank_to_fire = (swp->current_primary_bank + i) % swp->num_primary_banks;
+						}
+
+						if (turret->system_info->flags & MSS_FLAG_TURRET_SALVO) {
+							points = num_slots;
+						} else {
+							points = 1;
+						}
+
+						if (swp->primary_bank_ammo[bank_to_fire] >= 0) {
+							swp->primary_bank_ammo[bank_to_fire] -= points;
+						} else if (!(turret->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS) && (swp->primary_bank_ammo[bank_to_fire] < 0)) {
+							swp->current_primary_bank++;
+							if (swp->current_primary_bank >= swp->num_primary_banks) {
+								swp->current_primary_bank = 0;
+							}
+							return false;
+						} else {
+							return false;
+						}
+					}
+					else if (wip->subtype == WP_MISSILE) {
+						if (swp->num_secondary_banks <= 0) {
+							return false;
+						}
+
+						if (swp->current_secondary_bank < 0){
+							return false;
+						}
+
+						bank_to_fire = swp->current_secondary_bank;
+
+						int start_slot, end_slot;
+
+						start_slot = swp->secondary_next_slot[bank_to_fire];
+						end_slot = start_slot;
+
+						for (int j = start_slot; j <= end_slot; i++) {
+							swp->secondary_next_slot[bank_to_fire]++;
+
+							if (swp->secondary_next_slot[bank_to_fire] > (num_slots - 1)){
+								swp->secondary_next_slot[bank_to_fire] = 0;
+							}
+
+							if (swp->secondary_bank_ammo[bank_to_fire] >= 0) {
+								swp->secondary_bank_ammo[bank_to_fire]--;
+							} else if (!(turret->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS) && (swp->secondary_bank_ammo[bank_to_fire] < 0)) {
+								swp->current_secondary_bank++;
+								if (swp->current_secondary_bank >= swp->num_secondary_banks) {
+									swp->current_secondary_bank = 0;
+								}
+								return false;
+							} else {
+								return false;
+							}
+						}
+					}
+				}
 				// zookeeper - Firepoints should cycle normally between shots, 
 				// so we need to get the position info separately for each shot
 				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, turret_pos, turret_fvec, 1, NULL);
