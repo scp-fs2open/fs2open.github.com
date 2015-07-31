@@ -381,11 +381,6 @@ bool openal_init_device(SCP_string *playback, SCP_string *capture)
 
 	alcGetError(device);
 
-	mprintf(( "  OpenAL Vendor     : %s\n", alGetString( AL_VENDOR ) ));
-	mprintf(( "  OpenAL Renderer   : %s\n", alGetString( AL_RENDERER ) ));
-	mprintf(( "  OpenAL Version    : %s\n", alGetString( AL_VERSION ) ));
-	mprintf(( "\n" ));
-
 	// close default device
 	alcMakeContextCurrent(NULL);
 	alcDestroyContext(context);
