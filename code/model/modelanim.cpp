@@ -846,7 +846,7 @@ void model_anim_set_initial_states(ship *shipp)
 					pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
 					pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
 				} else {
-					Assert(pss->triggered_rotation_index >= 0);
+					Assertion(pss->triggered_rotation_index >= 0, "Unable to find triggered rotation for ship %s.", shipp->ship_name);
 					triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
 
 					tr->set_to_initial(&psub->triggers[i]);
