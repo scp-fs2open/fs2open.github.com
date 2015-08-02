@@ -1921,8 +1921,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 							return false;
 						}
 
-						for (int j = 0; j < num_primary_banks; i++) {
-							bank_to_fire = (swp->current_primary_bank + i) % swp->num_primary_banks;
+						for (int j = 0; j < num_primary_banks; j++) {
+							bank_to_fire = (swp->current_primary_bank + j) % swp->num_primary_banks;
 						}
 
 						if (turret->system_info->flags & MSS_FLAG_TURRET_SALVO) {
@@ -1959,7 +1959,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						start_slot = swp->secondary_next_slot[bank_to_fire];
 						end_slot = start_slot;
 
-						for (int j = start_slot; j <= end_slot; i++) {
+						for (int j = start_slot; j <= end_slot; j++) {
 							swp->secondary_next_slot[bank_to_fire]++;
 
 							if (swp->secondary_next_slot[bank_to_fire] > (num_slots - 1)){
