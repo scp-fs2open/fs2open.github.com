@@ -926,6 +926,10 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				// reset flags to check MC_CHECK_MODEL | MC_CHECK_SPHERELINE and maybe MC_CHECK_INVISIBLE_FACES and MC_SUBMODEL_INSTANCE
 				mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
 
+				if (Ship_info[Ships[pship_obj->instance].ship_info_index].collision_lod > -1) {
+					mc.lod = Ship_info[Ships[pship_obj->instance].ship_info_index].collision_lod;
+				}
+
 				// check each submodel in turn
 				for (smv = submodel_vector.begin(); smv != submodel_vector.end(); ++smv) {
 					// turn on submodel for collision test
