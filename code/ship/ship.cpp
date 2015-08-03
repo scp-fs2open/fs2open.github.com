@@ -692,6 +692,7 @@ void init_ship_entry(ship_info *sip)
 	sip->pof_file_hud[0] = '\0';
 	sip->num_detail_levels = 1;
 	sip->detail_distance[0] = 0;
+	sip->collision_lod = -1;
 	sip->cockpit_model_num = -1;
 	sip->model_num = -1;
 	sip->model_num_hud = -1;
@@ -1671,6 +1672,13 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 	if(optional_string("$Detail distance:")) {
 		sip->num_detail_levels = stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+	}
+
+	if(optional_string("$Collision LOD:")) {
+		stuff_int(&sip->collision_lod);
+
+		// Cap to sane values, just in case
+		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels));
 	}
 
 	// check for optional pixel colors
