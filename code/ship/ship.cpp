@@ -4278,7 +4278,7 @@ void ship_parse_post_cleanup()
 			}
 			else
 			{
-				Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.");
+				Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.", sip->name);
 				sip->flags &= ~SIF_SHIP_COPY;
 			}
 		}
