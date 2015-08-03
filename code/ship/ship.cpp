@@ -4278,7 +4278,7 @@ void ship_parse_post_cleanup()
 			}
 			else
 			{
-				Warning(LOCATION, "Ships %s is defined as a copy (ship flag 'ship copy' is set), but is not named like one (no '#').\n", sip->name);
+				Warning(LOCATION, "Ship %s is defined as a copy (ship flag 'ship copy' is set), but is not named like one (no '#').\n", sip->name);
 				sip->flags &= ~SIF_SHIP_COPY;
 			}
 		}
