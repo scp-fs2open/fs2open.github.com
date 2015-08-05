@@ -2429,7 +2429,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_float(&sip->max_hull_strength);
 		if (sip->max_hull_strength < 0.0f)
 		{
-			Warning(LOCATION, "Max hull strength on ship %s cannot be less than 0.  Defaulting to 100.\n", sip->name, sip->max_hull_strength);
+			Warning(LOCATION, "Max hull strength on ship %s cannot be less than 0.  Defaulting to 100.\n", sip->name);
 			sip->max_hull_strength = 100.0f;
 		}
 	}
