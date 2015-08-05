@@ -20531,10 +20531,10 @@ void sexp_debug(int node)
 
 	//send the message
 	#ifndef NDEBUG
-		Warning(LOCATION, temp_buf);
+		Warning(LOCATION, "%s", temp_buf);
     #else	
 	if (!no_release_message) {	
-		Warning(LOCATION, temp_buf);
+		Warning(LOCATION, "%s", temp_buf);
 	}
 	#endif
 }
