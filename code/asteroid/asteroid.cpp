@@ -1955,7 +1955,7 @@ void asteroid_parse_tbl()
 				SCP_string msg("Ignoring extra asteroid/debris '");
 				msg.append(new_asteroid.name);
 				msg.append("'\n");
-				Warning(LOCATION, msg.c_str());
+				Warning(LOCATION, "%s", msg.c_str());
 				parsed_asteroids.push_back(msg);
 #endif
 			}
