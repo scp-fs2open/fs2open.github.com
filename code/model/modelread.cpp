@@ -5655,7 +5655,7 @@ void parse_glowpoint_table(const char *filename)
 		}
 		required_string("#End");
 	} catch (const parse::ParseException& e) {
-		mprintf(("Unable to parse '%s'!  Error code = %d.\n", filename, e.what()));
+		mprintf(("Unable to parse '%s'!  Error code = %s.\n", filename, e.what()));
 		return;
 	}
 }
