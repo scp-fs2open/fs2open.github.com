@@ -4587,7 +4587,7 @@ int sexp_number_compare(int n, int op)
 				break;
 
 			default:
-				Warning(LOCATION, "Unhandled comparison case!  Operator = ", op);
+				Warning(LOCATION, "Unhandled comparison case!  Operator = %d", op);
 				break;
 		}
 	}
