@@ -2002,7 +2002,7 @@ void asteroid_parse_tbl()
 				iter != parsed_asteroids.end(); ++iter)
 			{
 				mprintf(("Asteroid.tbl as parsed:\n"));
-				mprintf((iter->c_str()));
+				mprintf(("%s", iter->c_str()));
 			}
 #endif
 			Error(LOCATION,
