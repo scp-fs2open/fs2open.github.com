@@ -5176,7 +5176,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		if (Fred_running) 
 			MessageBox(NULL, err_msg, "Error", MB_OK);
 		else
-			Error(LOCATION, err_msg);
+			Error(LOCATION, "%s", err_msg);
 	}
 
 	ets_init_ship(objp);	// init ship fields that are used for the ETS
