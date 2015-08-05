@@ -6,7 +6,6 @@
  * create based on the source.
  */
 
-#include <ai/ailocal.h>
 #include <cfile/cfile.h>
 #include <mission/missionparse.h>
 #include <object/waypoint.h>
