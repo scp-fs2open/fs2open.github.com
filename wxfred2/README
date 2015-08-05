@@ -27,14 +27,13 @@ Be sure to download _both_ the wxWidgets-2.9.X_Headers.7z and the appropriate wx
 
 SHOULD THERE BE NO AVAILABLE BINARIES FOR YOUR MSVC VERSION, you'll have to compile from the source (see section below)
 
-You can optionally grab the wxMSW-2.9.X_vcXXReleaseDLL.msi and have the release versions of the .dll's installed to your System32 (or SysWOW64) directory. We'll be investigating the significance of this at a later date, we're hoping that we can direct end-users to download these and not be forced to redistribute the .dll's along with wxFRED2's main files.
+You can optionally grab the wxMSW-2.9.X_vcXX_x86_ReleaseDLL.msi and have the release versions of the .dll's installed to your System32 (or SysWOW64) directory. This will allow you to run wxfred in your FSO directory without needing to copy over the dll's. We're hoping that we can just direct our end-users to download the "default libs" and not resort to distributing our own flavor.
 
 
 ==Other IDE's and Compiling from Source==
 All other programming environments must compile their libraries from the source. Download the source code package appropriate to your operating system (such as wxMSW for Windows, wxGTK for Linux, wxMac for Mac OS) and extract them to your code directory, such as "C:\code\wxWidgets-2.9.4". The version number is optional, but recommended since common workflow is to have a directory per wxWidgets version.
 
 The "/build" subdirectory contains makefiles and a number of solution and project files for a number of the more popular IDE's. If you have a version of MSVS that is newer than the provided .sln files (within /build/msw)
-
 
 
 ==wxWidgets Manual==
