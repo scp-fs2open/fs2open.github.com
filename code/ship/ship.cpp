@@ -257,7 +257,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "only target if can fire",    MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE, 1},
 	{ "no disappear",			MSS_FLAG2_NO_DISAPPEAR, 1},
 	{ "collide submodel",		MSS_FLAG2_COLLIDE_SUBMODEL, 1},
-	{ "allow destroyed rotation",	MSS_FLAG2_DESTROYED_ROTATION, 1}
+	{ "allow destroyed rotation",	MSS_FLAG2_DESTROYED_ROTATION, 1},
+	{ "turret use ammo",		MSS_FLAG2_TURRET_USE_AMMO, 1}
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -691,6 +692,7 @@ void init_ship_entry(ship_info *sip)
 	sip->pof_file_hud[0] = '\0';
 	sip->num_detail_levels = 1;
 	sip->detail_distance[0] = 0;
+	sip->collision_lod = -1;
 	sip->cockpit_model_num = -1;
 	sip->model_num = -1;
 	sip->model_num_hud = -1;
@@ -873,6 +875,7 @@ void init_ship_entry(ship_info *sip)
 	sip->auto_shield_spread = 0.0f;
 	sip->auto_shield_spread_bypass = false;
 	sip->auto_shield_spread_from_lod = -1;
+	sip->auto_shield_spread_min_span = -1.0f;
 
 	for (i = 0; i < 4; i++)
 	{
@@ -1671,6 +1674,13 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		sip->num_detail_levels = stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
 	}
 
+	if(optional_string("$Collision LOD:")) {
+		stuff_int(&sip->collision_lod);
+
+		// Cap to sane values, just in case
+		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels));
+	}
+
 	// check for optional pixel colors
 	while(optional_string("$ND:")){		
 		ubyte nr, ng, nb;
@@ -2316,6 +2326,9 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 
 		if(optional_string("+Auto Spread:")) {
 			stuff_float(&sip->auto_shield_spread);
+		}
+		if(optional_string("+Minimum Weapon Span:")) {
+			stuff_float(&sip->auto_shield_spread_min_span);
 		}
 		if(optional_string("+Allow Bypass:")) {
 			stuff_boolean(&sip->auto_shield_spread_bypass);
@@ -3129,8 +3142,8 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 					to = banktoken.substr(fromtopos+1);
 					ifrom = atoi(from.data()) - 1;
 					ito = atoi(to.data()) - 1;
-					for(int i = ifrom; i <= ito; ++i) {
-						sip->glowpoint_bank_override_map[i] = (void*)(&(*gpo));
+					for(int bank = ifrom; bank <= ito; ++bank) {
+						sip->glowpoint_bank_override_map[bank] = (void*)(&(*gpo));
 					}
 				} else {
 					int bank = atoi(banktoken.data()) - 1;
@@ -4273,7 +4286,7 @@ void ship_parse_post_cleanup()
 			}
 			else
 			{
-				Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.");
+				Warning(LOCATION, "Ship %s is defined as a copy (ship flag 'ship copy' is set), but is not named like one (no '#').\n", sip->name);
 				sip->flags &= ~SIF_SHIP_COPY;
 			}
 		}
@@ -18375,18 +18388,13 @@ void ship_render(object* obj, draw_list* scene)
 		render_flags |= MR_SHOW_THRUSTERS;
 	}
 
-	// If the ship is going "through" the warp effect, then
-	// set up the model renderer to only draw the polygons in front
-	// of the warp in effect
-	int clip_started = 0;
-
 	// Warp_shipp points to the ship that is going through a
 	// warp... either this ship or the ship it is docked with.
 	if ( warp_shipp != NULL ) {
 		if ( warp_shipp->flags & SF_ARRIVING ) {
-			clip_started = warp_shipp->warpin_effect->warpShipClip(&render_info);
+			warp_shipp->warpin_effect->warpShipClip(&render_info);
 		} else if ( warp_shipp->flags & SF_DEPART_WARP ) {
-			clip_started = warp_shipp->warpout_effect->warpShipClip(&render_info);
+			warp_shipp->warpout_effect->warpShipClip(&render_info);
 		}
 	}
 

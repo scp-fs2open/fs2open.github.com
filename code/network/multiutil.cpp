@@ -689,20 +689,20 @@ void stuff_netplayer_info( net_player *nplayer, net_addr *addr, int ship_class, 
 
 // multi_assign_player_ship takes a Net_player index and an object * and assigned that player to
 // that object
-void multi_assign_player_ship( int net_player, object *objp,int ship_class )
+void multi_assign_player_ship( int net_player_num, object *objp,int ship_class )
 {
 	ship *shipp;
 	int idx;
 
-	Assert ( MULTI_CONNECTED(Net_players[net_player]) );
+	Assert ( MULTI_CONNECTED(Net_players[net_player_num]) );
 
 	shipp = &Ships[objp->instance];
 
-	Net_players[net_player].m_player->objnum = OBJ_INDEX(objp);
-	Net_players[net_player].p_info.ship_class = ship_class;
+	Net_players[net_player_num].m_player->objnum = OBJ_INDEX(objp);
+	Net_players[net_player_num].p_info.ship_class = ship_class;
 
 	// check to see if we are assigning my player -- if so, then set Player_ship and Player_ai
-	if ( Net_player == &Net_players[net_player] ) {
+	if ( Net_player == &Net_players[net_player_num] ) {
 		Player_obj = objp;
 		Player_ship = shipp;
 		Player_ai = &Ai_info[Player_ship->ai_index];
@@ -710,14 +710,14 @@ void multi_assign_player_ship( int net_player, object *objp,int ship_class )
 
 	// find the parse object for this ship.  Also, set the wingman status stuff so wingman status gauge
 	// works properly.
-	Net_players[net_player].p_info.p_objp = mission_parse_get_arrival_ship( shipp->ship_name );
-	Assert( Net_players[net_player].p_info.p_objp != NULL );		// get allender -- ship should be on list
+	Net_players[net_player_num].p_info.p_objp = mission_parse_get_arrival_ship( shipp->ship_name );
+	Assert( Net_players[net_player_num].p_info.p_objp != NULL );		// get allender -- ship should be on list
 
 	// game server and this client need to initialize this information so object updating
 	// works properly.
-	if ( MULTIPLAYER_MASTER || (Net_player == &Net_players[net_player]) ) {
-		Net_players[net_player].s_info.eye_pos = objp->pos;
-		Net_players[net_player].s_info.eye_orient = objp->orient;
+	if ( MULTIPLAYER_MASTER || (Net_player == &Net_players[net_player_num]) ) {
+		Net_players[net_player_num].s_info.eye_pos = objp->pos;
+		Net_players[net_player_num].s_info.eye_orient = objp->orient;
 	}
 
 	// zero update info	

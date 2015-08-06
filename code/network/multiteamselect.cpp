@@ -1717,11 +1717,11 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index,
 	} 
 	// if we're _not_ in team vs. team mode
 	else {
-		int wing, ship;
+		int wing_index, ship;
 		for (idx = 0; idx < MAX_STARTING_WINGS; idx++) {
 			// get wing
 			if ( !strnicmp(ship_name, Starting_wing_names[idx], strlen(Starting_wing_names[idx])) && multi_ts_validate_ship(ship_name, Starting_wing_names[idx]) ) {
-				wing = idx;
+				wing_index = idx;
 				ship = (ship_name[strlen(ship_name)-1] - '1');
 
 				// just Assert(), if this is wrong then we're pretty much screwed either way
@@ -1729,7 +1729,7 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index,
 
 				// team is 0, slot is the starting slot for all ships
 				*team_index = 0;
-				*slot_index = wing * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship;
+				*slot_index = wing_index * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship;
 			}
 		}
 	}

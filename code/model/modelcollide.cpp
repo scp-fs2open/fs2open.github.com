@@ -1131,7 +1131,22 @@ void mc_check_subobj( int mn )
 			if ( Cmdline_old_collision_sys ) {
 				model_collide_sub(sm->bsp_data);
 			} else {
-				model_collide_bsp(model_get_bsp_collision_tree(sm->collision_tree_index), 0);
+				if (Mc->lod > 0 && sm->num_details > 0) {
+					bsp_info *lod_sm = sm;
+
+					for (int i = Mc->lod - 1; i >= 0; i--) {
+						if (sm->details[i] != -1) {
+							lod_sm = &Mc_pm->submodel[sm->details[i]];
+
+							//mprintf(("Checking %s collision for %s using %s instead\n", Mc_pm->filename, sm->name, lod_sm->name));
+							break;
+						}
+					}
+
+					model_collide_bsp(model_get_bsp_collision_tree(lod_sm->collision_tree_index), 0);
+				} else {
+					model_collide_bsp(model_get_bsp_collision_tree(sm->collision_tree_index), 0);
+				}
 			}
 		}
 	}
@@ -1212,9 +1227,9 @@ MONITOR(NumFVI)
 // See model.h for usage.   I don't want to put the
 // usage here because you need to see the #defines and structures
 // this uses while reading the help.   
-int model_collide(mc_info * mc_info)
+int model_collide(mc_info *mc_info_obj)
 {
-	Mc = mc_info;
+	Mc = mc_info_obj;
 
 	MONITOR_INC(NumFVI,1);
 
