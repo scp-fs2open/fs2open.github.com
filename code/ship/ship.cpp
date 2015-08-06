@@ -691,6 +691,7 @@ void ship_info::clone(const ship_info& other)
 	strcpy_s(pof_file_hud, other.pof_file_hud);
 	num_detail_levels = other.num_detail_levels;
 	memcpy(detail_distance, other.detail_distance, sizeof(int) * MAX_SHIP_DETAIL_LEVELS);
+	collision_lod = other.collision_lod;
 
 	// I'm not sure if these three are A) a good idea or B) relevant at all. -MageKing17
 	cockpit_model_num = other.cockpit_model_num;
@@ -838,6 +839,7 @@ void ship_info::clone(const ship_info& other)
 	auto_shield_spread = other.auto_shield_spread;
 	auto_shield_spread_bypass = other.auto_shield_spread_bypass;
 	auto_shield_spread_from_lod = other.auto_shield_spread_from_lod;
+	auto_shield_spread_min_span = other.auto_shield_spread_min_span;
 
 	// ...Hmm. A memcpy() seems slightly overkill here, but I've settled into the pattern of "array gets memcpy'd", so... -MageKing17
 	memcpy(shield_point_augment_ctrls, other.shield_point_augment_ctrls, sizeof(int) * 4);
@@ -996,6 +998,7 @@ void ship_info::move(ship_info& other)
 	std::swap(pof_file_hud, other.pof_file_hud);
 	num_detail_levels = other.num_detail_levels;
 	std::swap(detail_distance, other.detail_distance);
+	collision_lod = other.collision_lod;
 
 	cockpit_model_num = other.cockpit_model_num;
 	model_num = other.model_num;
@@ -1116,6 +1119,7 @@ void ship_info::move(ship_info& other)
 	auto_shield_spread = other.auto_shield_spread;
 	auto_shield_spread_bypass = other.auto_shield_spread_bypass;
 	auto_shield_spread_from_lod = other.auto_shield_spread_from_lod;
+	auto_shield_spread_min_span = other.auto_shield_spread_min_span;
 
 	std::swap(shield_point_augment_ctrls, other.shield_point_augment_ctrls);
 
