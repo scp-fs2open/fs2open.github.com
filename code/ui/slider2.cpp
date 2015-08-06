@@ -263,7 +263,11 @@ void UI_SLIDER2::set_currentItem(int _currentItem) {
 		}
 	}	
 	
-	currentPosition = fl2i(((float)currentItem/(float)numberItems) * (float)numberPositions);	
+	if (numberItems > 0) {
+		currentPosition = fl2i(((float)currentItem/(float)numberItems) * (float)numberPositions);
+	} else {
+		currentPosition = 0;
+	}
 
 cpSafety: // helps fix math problem on x86_64
 	if (currentPosition > numberItems)
