@@ -430,8 +430,8 @@ void parse_startbl(const char *filename)
 							Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
 					}
 					else {
-						Warning(LOCATION, "Starfield bitmap '%s' already listed as a %sxparent bitmap!!  Only using the xparent version!",
-							(rc) ? "xparent" : "non-xparent", (rc) ? "xparent" : "non-xparent", sbm.filename);
+						Warning(LOCATION, "Starfield bitmap '%s' already listed as a %s bitmap!!  Only using the xparent version!",
+							sbm.filename, (rc) ? "xparent" : "non-xparent");
 					}
 				}
 				else {

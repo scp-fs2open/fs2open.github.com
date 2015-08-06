@@ -263,10 +263,10 @@ void swarm_update_direction(object *objp, float frametime)
 
 			missile_speed = pi->speed;
 			missile_dist = missile_speed * swarmp->change_time/1000.0f;
-			if (missile_dist == 0.0f) // Just in case of div by zero, which can happen with local SSMs
-				swarmp->angle_offset = (float)asin(SWARM_DIST_OFFSET);
-			else
-				swarmp->angle_offset = (float)(asin(SWARM_DIST_OFFSET / missile_dist));
+			if ( missile_dist < SWARM_DIST_OFFSET ) {
+				missile_dist = i2fl(SWARM_DIST_OFFSET);
+			}
+			swarmp->angle_offset = (float)(asin(SWARM_DIST_OFFSET / missile_dist));
 			Assert(!_isnan(swarmp->angle_offset) );
 		}
 
@@ -484,7 +484,6 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	// increment ship tsi counter
 	shipp->num_turret_swarm_info++;
 
-
     // *Unnecessary check, now done on startup   -Et1
     /*
 
@@ -494,12 +493,23 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 #endif
 
     */
+
+	ship_weapon *swp = &turret->weapons;
+	int bank_fired = swp->current_secondary_bank;
+
 	// initialize tsi
 	tsi->weapon_class = WEAPON_INFO_INDEX(wip);
-	if (wip->wi_flags & WIF_SWARM)
+	if (wip->wi_flags & WIF_SWARM) {
 		tsi->num_to_launch = wip->swarm_count;
-	else
+		if (turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO) {
+			swp->secondary_bank_ammo[bank_fired] -= wip->swarm_count;
+		}
+	} else {
 		tsi->num_to_launch = wip->cs_num_fired;
+		if (turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO) {
+			swp->secondary_bank_ammo[bank_fired] -= wip->cs_num_fired;
+		}
+	}
 	tsi->parent_objnum = parent_objnum;
 	tsi->parent_sig    = parent_obj->signature;
 	tsi->target_objnum = turret->turret_enemy_objnum;

@@ -940,7 +940,7 @@ void labviewer_render_model(float frametime)
 
 			//render weapon models if selected
 			if ( Lab_mode == LAB_MODE_SHIP && ( Lab_viewer_flags & LAB_FLAG_SHOW_WEAPONS ) ) {
-				int j,k,l;
+				int k,l;
 				g3_start_instance_matrix(&vmd_zero_vector, &Lab_viewer_orient, true);
 				l = 0;
 
@@ -2494,7 +2494,7 @@ void lab_do_frame(float frametime)
 		}
 
 		//Due to switch scoping rules, this has to be declared here
-		SCP_map<SCP_string, team_color>::iterator color = Team_Colors.find(Lab_team_color);
+		SCP_map<SCP_string, team_color>::iterator color_itr = Team_Colors.find(Lab_team_color);
 		// handle any key presses
 		switch (key) {
 			// switch between the current insignia bitmap to render with
@@ -2581,20 +2581,20 @@ void lab_do_frame(float frametime)
 				break;
 
 			case KEY_T:
-				if (color == Team_Colors.begin()) {
-					color = --Team_Colors.end();
-					Lab_team_color = color->first;
+				if (color_itr == Team_Colors.begin()) {
+					color_itr = --Team_Colors.end();
+					Lab_team_color = color_itr->first;
 				} else {
-					--color;
-					Lab_team_color = color->first;
+					--color_itr;
+					Lab_team_color = color_itr->first;
 				}
 				break;
 
 			case KEY_Y:
-				++color;
-				if (color == Team_Colors.end())
-					color = Team_Colors.begin();
-				Lab_team_color = color->first;
+				++color_itr;
+				if (color_itr == Team_Colors.end())
+					color_itr = Team_Colors.begin();
+				Lab_team_color = color_itr->first;
 				break;
 
 			// bail...

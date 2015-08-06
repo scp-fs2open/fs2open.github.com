@@ -97,7 +97,7 @@ void WinAssert(char * text, char *filename, int line)
 {
 	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d\n", text, filename, line);
 
-	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
+	// this stuff migt be really useful for solving bug reports and user errors. We should output it!
 	mprintf(("ASSERTION: \"%s\" at %s:%d\n", text, strrchr(filename, '/')+1, line ));
 
 #ifdef Allow_NoWarn
@@ -149,7 +149,7 @@ void WinAssert(char * text, char *filename, int line, const char * format, ... )
 
 	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d  %s\n", text, filename, line, buffer);
 
-	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
+	// this stuff migt be really useful for solving bug reports and user errors. We should output it!
 	mprintf(("ASSERTION: \"%s\" at %s:%d  %s\n", text, strrchr(filename, '/')+1, line, buffer ));
 
 #ifdef Allow_NoWarn
@@ -279,7 +279,7 @@ void Error( const char * filename, int line, const char * format, ... )
 }
 
 extern lua_Debug Ade_debug_info;
-void LuaError(struct lua_State *L, char *format, ...)
+void LuaError(struct lua_State *L, const char *format, ...)
 {
 	va_list args;
 	memset( &buffer, 0, sizeof(buffer) );
@@ -310,7 +310,7 @@ void LuaError(struct lua_State *L, char *format, ...)
 	fprintf(stderr, "Source:  %s\n",  Ade_debug_info.source);
 	fprintf(stderr, "Short source:  %s\n",  Ade_debug_info.short_src);
 	fprintf(stderr, "Current line:  %d\n",  Ade_debug_info.currentline);
-	
+
 	fprintf(stderr, "------------------------------------------------------------------\n");
 	fprintf(stderr, "LUA Stack:\n");
 	fprintf(stderr, "\n");
@@ -382,9 +382,9 @@ char *clean_filename(char *name)
 	while( (p > name) && (*p != '\\') && (*p != '/') && (*p != ':') )
 		p--;
 
-	p++;	
+	p++;
 
-	return p;	
+	return p;
 }
 
 // high precision timer
@@ -395,7 +395,7 @@ bool QueryPerformanceCounter(LARGE_INTEGER *pcount)
 	gettimeofday(&timer_now, NULL);
 
 	pcount->QuadPart = (longlong)timer_now.tv_usec;
-	
+
 	return 1;
 }
 

@@ -247,7 +247,7 @@ DCF(bm_frag, "Shows BmpMan fragmentation") {
 		dc_printf("Displays a graphic showing the BmpMan fragmentation. Color key:\n");
 		dc_printf("\tGray  : NONE\n");
 		dc_printf("\tRed   : PCXn");
-		dc_printf("\tGreen : USER, TGA, PNG, DDS\n");
+		dc_printf("\tGreen : USER, TGA, PNG, DDS, other\n");
 		dc_printf("\tBlue  : ANI, EFF\n\n");
 
 		dc_printf("Once done reviewing the graphic, press any key to return to the console\n");
@@ -277,6 +277,9 @@ DCF(bm_frag, "Shows BmpMan fragmentation") {
 		case BM_TYPE_ANI:
 		case BM_TYPE_EFF:
 			gr_set_color(0, 0, 255);
+			break;
+		default:
+			gr_set_color(0, 255, 0);
 			break;
 		}
 
@@ -415,7 +418,7 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 
 	bm_bitmaps[n].load_count++;
 
-	bm_update_memory_used(n, bm_bitmaps[n].mem_taken);
+	bm_update_memory_used(n, (int)bm_bitmaps[n].mem_taken);
 
 	gr_bm_create(n);
 
@@ -648,9 +651,9 @@ void bm_get_frame_usage(int *ntotal, int *nnew) {
 	for (i = 0; i<MAX_BITMAPS; i++) {
 		if ((bm_bitmaps[i].type != BM_TYPE_NONE) && (bm_bitmaps[i].used_this_frame)) {
 			if (!bm_bitmaps[i].used_last_frame) {
-				*nnew += bm_bitmaps[i].mem_taken;
+				*nnew += (int)bm_bitmaps[i].mem_taken;
 			}
-			*ntotal += bm_bitmaps[i].mem_taken;
+			*ntotal += (int)bm_bitmaps[i].mem_taken;
 		}
 		bm_bitmaps[i].used_last_frame = bm_bitmaps[i].used_this_frame;
 		bm_bitmaps[i].used_this_frame = 0;
@@ -765,11 +768,11 @@ uint bm_get_signature(int handle) {
 	return bm_bitmaps[bitmapnum].signature;
 }
 
-int bm_get_size(int num) {
-	int n = num % MAX_BITMAPS;
+size_t bm_get_size(int handle) {
+	int n = handle % MAX_BITMAPS;
 
 	Assert(n >= 0);
-	Assert(num == bm_bitmaps[n].handle);
+	Assert(handle == bm_bitmaps[n].handle);
 
 	return bm_bitmaps[n].mem_taken;
 }
@@ -790,7 +793,7 @@ BM_TYPE bm_get_type(int handle) {
 	return bm_bitmaps[bitmapnum].type;
 }
 
-int bm_has_alpha_channel(int handle) {
+bool bm_has_alpha_channel(int handle) {
 	int n = handle % MAX_BITMAPS;
 
 	Assert(n >= 0);
@@ -874,9 +877,10 @@ int bm_is_compressed(int num) {
 
 	case BM_TYPE_CUBEMAP_DXT5:
 		return DDS_CUBEMAP_DXT5;
-	}
 
-	return 0;
+	default:
+		return 0;
+	}
 }
 
 int bm_is_render_target(int bitmap_id) {
@@ -1002,7 +1006,7 @@ int bm_load(const char *real_filename) {
 	bm_bitmaps[free_slot].bm.data = 0;
 	bm_bitmaps[free_slot].bm.palette = NULL;
 	bm_bitmaps[free_slot].num_mipmaps = mm_lvl;
-	bm_bitmaps[free_slot].mem_taken = bm_size;
+	bm_bitmaps[free_slot].mem_taken = (size_t)bm_size;
 	bm_bitmaps[free_slot].dir_type = CF_TYPE_ANY;
 	bm_bitmaps[free_slot].palette_checksum = 0;
 	bm_bitmaps[free_slot].handle = handle;
@@ -1317,7 +1321,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		bm_bitmaps[n + i].handle = first_handle*MAX_BITMAPS + n + i;
 		bm_bitmaps[n + i].last_used = -1;
 		bm_bitmaps[n + i].num_mipmaps = mm_lvl;
-		bm_bitmaps[n + i].mem_taken = img_size;
+		bm_bitmaps[n + i].mem_taken = (size_t)img_size;
 		bm_bitmaps[n + i].dir_type = dir_type;
 
 		bm_bitmaps[n + i].load_count++;
@@ -1559,7 +1563,7 @@ void bm_lock_ani(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 
 	bm = &bm_bitmaps[first_frame].bm;
 	size = bm->w * bm->h * (bpp >> 3);
-	be->mem_taken = size;
+	be->mem_taken = (size_t)size;
 
 	Assert(size > 0);
 
@@ -1677,19 +1681,19 @@ void bm_lock_dds(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 #if BYTE_ORDER == BIG_ENDIAN
 	// same as with TGA, we need to byte swap 16 & 32-bit, uncompressed, DDS images
 	if ((be->comp_type == BM_TYPE_DDS) || (be->comp_type == BM_TYPE_CUBEMAP_DDS)) {
-		unsigned int i = 0;
+		size_t i = 0;
 
 		if (dds_bpp == 32) {
 			unsigned int *swap_tmp;
 
-			for (i = 0; i < (unsigned int)be->mem_taken; i += 4) {
+			for (i = 0; i < be->mem_taken; i += 4) {
 				swap_tmp = (unsigned int *)(data + i);
 				*swap_tmp = INTEL_INT(*swap_tmp);
 			}
 		} else if (dds_bpp == 16) {
 			unsigned short *swap_tmp;
 
-			for (i = 0; i < (unsigned int)be->mem_taken; i += 2) {
+			for (i = 0; i < be->mem_taken; i += 2) {
 				swap_tmp = (unsigned short *)(data + i);
 				*swap_tmp = INTEL_SHORT(*swap_tmp);
 			}
@@ -1994,7 +1998,7 @@ int bm_make_render_target(int width, int height, int flags) {
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
 	bm_bitmaps[n].num_mipmaps = mm_lvl;
-	bm_bitmaps[n].mem_taken = size;
+	bm_bitmaps[n].mem_taken = (size_t)size;
 	bm_bitmaps[n].dir_type = CF_TYPE_ANY;
 
 	bm_bitmaps[n].palette_checksum = 0;
@@ -2174,6 +2178,9 @@ void bm_page_in_texture(int bitmapnum, int nframes) {
 		case BM_TYPE_CUBEMAP_DXT5:
 			bm_bitmaps[n + i].used_flags = BMP_TEX_CUBEMAP;
 			continue;
+
+		default:
+			continue;
 		}
 	}
 }
@@ -2216,25 +2223,30 @@ void bm_page_in_xparent_texture(int bitmapnum, int nframes) {
 		case BM_TYPE_CUBEMAP_DXT5:
 			bm_bitmaps[n + i].used_flags = BMP_TEX_CUBEMAP;
 			continue;
+
+		default:
+			continue;
 		}
 	}
 }
 
-int bm_page_out(int bitmap_id) {
-	int n = bitmap_id % MAX_BITMAPS;
+bool bm_page_out(int handle) {
+	int n = handle % MAX_BITMAPS;
 
-	Assert(n >= 0 && n < MAX_BITMAPS);
+	Assert(n >= 0);
+	Assert(handle == bm_bitmaps[n].handle);
 
 	// in case it's already been released
 	if (bm_bitmaps[n].type == BM_TYPE_NONE)
 		return 0;
 
-	Assert(bm_bitmaps[n].handle == bitmap_id);	// INVALID BITMAP HANDLE
-
-	// it's possible to hit < 0 here when model_page_out_textures() is called from
-	// anywhere other than in a mission
+	// it's possible to hit < 0 here when model_page_out_textures() is
+	// called from anywhere other than in a mission
 	if (bm_bitmaps[n].preload_count > 0) {
-		nprintf(("BmpMan", "PAGE-OUT: %s - preload_count remaining: %d\n", bm_bitmaps[n].filename, bm_bitmaps[n].preload_count));
+		nprintf(("BmpMan",
+			 "PAGE-OUT: %s - preload_count remaining: %d\n",
+			 bm_bitmaps[n].filename,
+			 bm_bitmaps[n].preload_count));
 
 		// lets decrease it for next time around
 		bm_bitmaps[n].preload_count--;
@@ -2242,7 +2254,7 @@ int bm_page_out(int bitmap_id) {
 		return 0;
 	}
 
-	return (bm_unload(bitmap_id) == 1);
+	return (bm_unload(handle) == 1);
 }
 
 void bm_print_bitmaps() {
@@ -2666,7 +2678,6 @@ int bm_unload_fast(int handle, int clear_render_targets) {
 
 void bm_unlock(int handle) {
 	bitmap_entry	*be;
-	bitmap			*bmp;
 
 	if (!bm_inited) bm_init();
 
@@ -2683,7 +2694,6 @@ void bm_unlock(int handle) {
 	Assert((bitmapnum >= 0) && (bitmapnum < MAX_BITMAPS));
 
 	be = &bm_bitmaps[bitmapnum];
-	bmp = &be->bm;
 
 	be->ref_count--;
 	Assert(be->ref_count >= 0);		// Trying to unlock data more times than lock was called!!!

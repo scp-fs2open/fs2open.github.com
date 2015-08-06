@@ -52,9 +52,7 @@ inline bool sorted_obj::operator < (const sorted_obj &other) const
 		model_num_a = sip->model_num;
 	} else if ( obj->type == OBJ_WEAPON ){
 		weapon_info *wip;
-		weapon *wp;
 
-		wp = &Weapons[obj->instance];
 		wip = &Weapon_info[Weapons[obj->instance].weapon_info_index];
 
 		if ( wip->render_type == WRT_POF ) {
@@ -78,9 +76,7 @@ inline bool sorted_obj::operator < (const sorted_obj &other) const
 		model_num_b = sip->model_num;
 	} else if ( other.obj->type == OBJ_WEAPON ){
 		weapon_info *wip;
-		weapon *wp;
 
-		wp = &Weapons[other.obj->instance];
 		wip = &Weapon_info[Weapons[other.obj->instance].weapon_info_index];
 
 		if ( wip->render_type == WRT_POF ) {
@@ -286,7 +282,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		}
 
 		if ( obj_render_is_model(obj) ) {
-			if( (obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_active || obj->type == OBJ_FIREBALL )
+			if( ((obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_active) || (obj->type == OBJ_FIREBALL) )
 				effect_ships.push_back(obj);
 			else 
 				(*render_function)(obj);

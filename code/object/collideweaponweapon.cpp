@@ -163,17 +163,6 @@ int collide_weapon_weapon( obj_pair * pair )
 					scoring_eval_hit(B, A, 0);
 				}
 			}
-
-	#ifndef NDEBUG
-			float dist = 0.0f;
-
-			if (Weapons[A->instance].lifeleft == 0.01f) {
-				dist = vm_vec_dist_quick(&A->pos, &wpA->homing_pos);
-			}
-			if (Weapons[B->instance].lifeleft == 0.01f) {
-				dist = vm_vec_dist_quick(&B->pos, &wpB->homing_pos);
-			}
-	#endif
 		}
 
 		if(!(b_override && !a_override))

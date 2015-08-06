@@ -129,7 +129,7 @@ extern opengl_shader_t *Current_shader;
 
 extern geometry_sdr_params *Current_geo_sdr_params;
 
-int gr_opengl_maybe_create_shader(shader_type shader, unsigned int flags);
+int gr_opengl_maybe_create_shader(shader_type shader_t, unsigned int flags);
 void opengl_delete_shader(int sdr_handle);
 void opengl_shader_set_current(opengl_shader_t *shader_obj = NULL);
 void opengl_shader_set_current(int handle);

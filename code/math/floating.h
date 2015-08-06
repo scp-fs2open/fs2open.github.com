@@ -37,10 +37,10 @@ float frand_range(float min, float max);
 #define fl_tan(fl) tanf(fl)
 
 // convert a measurement in degrees to radians
-#define fl_radians(fl)	((float)((fl * PI)/180.0f))
+#define fl_radians(fl)	((float)((fl) * (PI / 180.0f)))
 
 // convert a measurement in radians to degrees
-#define fl_degrees(fl)	((float)((fl * 180.0f)/PI))
+#define fl_degrees(fl)	((float)((fl) * (180.0f / PI)))
 
 // use this instead of:
 // for:  (int)floor(x+0.5f) use fl_round_2048(x)

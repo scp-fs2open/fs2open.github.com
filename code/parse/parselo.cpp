@@ -661,16 +661,21 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 	return 1;
 }
 
-//	Return 0 or 1 for str1 match, str2 match.  Return -1 if neither matches.
-//	Does not update Mp if token found.  If not found, advances, trying to
-//	find the string.  Doesn't advance past the found string.
+/**
+ * @brief Checks for one of two required strings
+ *
+ * @retval 0 for str1 match
+ * @retval 1 for str2 match
+ * @throws parse::ParseException If neither strings were found
+ *
+ * @details Advances the Mp until a string is found or exceeds RS_MAX_TRIES. Once a string is found, Mp is located at
+ * the start of the found string.
+ */
 int required_string_either(char *str1, char *str2)
 {
-	int	count = 0;
-
 	ignore_white_space();
 
-	while (count < RS_MAX_TRIES) {
+	for (int count = 0; count < RS_MAX_TRIES; ++count) {
 		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
 			// Mp += strlen(str1);
 			diag_printf("Found required string [%s]\n", token_found = str1);
@@ -685,19 +690,22 @@ int required_string_either(char *str1, char *str2)
 
 		advance_to_eoln(NULL);
 		ignore_white_space();
-		count++;
 	}
 
-	if (count == RS_MAX_TRIES) {
-		nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
-        Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
-        throw parse::ParseException("Required string not found");
-	}
-
-	return -1;
+	nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
+	Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
+	throw parse::ParseException("Required string not found");
+	return -1;	// Dead code, but some compilers still complain about it
 }
 
-// Generic version of old required_string_3 and required_string_4; written by ngld, with some tweaks by MageKing17
+/**
+ * @brief Checks for one of any of the given required strings.
+ *
+ * @returns The index number of the found string, if it was found
+ * @returns -1 if a string was not found
+ *
+ * @details By ngld, with some tweaks by MageKing17. 
+ */
 int required_string_one_of(int arg_count, ...)
 {
 	Assertion(arg_count > 0, "required_string_one_of() called with arg_count of %d; get a coder!\n", arg_count);

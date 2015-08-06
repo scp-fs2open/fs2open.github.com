@@ -1068,7 +1068,7 @@ void LuaDebugPrint(lua_Debug &ar)
 
 extern lua_Debug Ade_debug_info;
 extern char debug_stack[4][32];
-void LuaError(struct lua_State *L, char *format, ...)
+void LuaError(struct lua_State *L, const char *format, ...)
 {
 	int val;
 

@@ -27,7 +27,6 @@
 #include "math/fvi.h"	//	For find_plane_line_intersection
 #include "math/vecmat.h"
 #include "io/key.h"
-#include "ai/ailocal.h"
 #include "ai/ai.h"
 #include "ai/aigoals.h"
 #include "ship/ship.h"	// for ship names

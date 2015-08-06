@@ -351,7 +351,7 @@ public:
 	void set_center_alpha(int center_alpha);
 	void set_lighting(bool mode);
 	void set_buffer(int buffer);
-	void set_team_color(const team_color &color);
+	void set_team_color(const team_color &clr);
 	void set_team_color();
 	void set_color(const color &clr);
 	void set_animated_timer(float time);

@@ -400,8 +400,8 @@
     <ClCompile Include="..\..\code\cutscene\oggplayer.cpp" />
     <ClCompile Include="..\..\code\Debris\debris.cpp" />
     <ClCompile Include="..\..\code\debugconsole\console.cpp" />
-	<ClCompile Include="..\..\code\debugconsole\consolecmds.cpp" />
-	<ClCompile Include="..\..\code\debugconsole\consoleparse.cpp" />
+    <ClCompile Include="..\..\code\debugconsole\consolecmds.cpp" />
+    <ClCompile Include="..\..\code\debugconsole\consoleparse.cpp" />
     <ClCompile Include="..\..\code\fireball\fireballs.cpp" />
     <ClCompile Include="..\..\code\fireball\warpineffect.cpp" />
     <ClCompile Include="..\..\code\gamehelp\contexthelp.cpp" />
@@ -413,8 +413,8 @@
     <ClCompile Include="..\..\code\globalincs\def_files.cpp" />
     <ClCompile Include="..\..\code\globalincs\fsmemory.cpp" />
     <ClCompile Include="..\..\code\globalincs\mspdb_callstack.cpp" />
-	<ClCompile Include="..\..\code\globalincs\profiling.cpp" />
-	<ClCompile Include="..\..\code\globalincs\safe_strings.cpp" />
+    <ClCompile Include="..\..\code\globalincs\profiling.cpp" />
+    <ClCompile Include="..\..\code\globalincs\safe_strings.cpp" />
     <ClCompile Include="..\..\code\globalincs\safe_strings_test.cpp" />
     <ClCompile Include="..\..\code\globalincs\systemvars.cpp" />
     <ClCompile Include="..\..\code\globalincs\version.cpp" />
@@ -498,10 +498,8 @@
     <ClCompile Include="..\..\code\missionui\missiondebrief.cpp" />
     <ClCompile Include="..\..\code\missionui\missionloopbrief.cpp" />
     <ClCompile Include="..\..\code\missionui\missionpause.cpp" />
-    <ClCompile Include="..\..\code\missionui\missionrecommend.cpp" />
     <ClCompile Include="..\..\code\missionui\missionscreencommon.cpp" />
     <ClCompile Include="..\..\code\missionui\missionshipchoice.cpp" />
-    <ClCompile Include="..\..\code\missionui\missionstats.cpp" />
     <ClCompile Include="..\..\code\missionui\missionweaponchoice.cpp" />
     <ClCompile Include="..\..\code\missionui\redalert.cpp" />
     <ClCompile Include="..\..\code\model\modelanim.cpp" />
@@ -666,7 +664,6 @@
     <ClInclude Include="..\..\code\ai\aibig.h" />
     <ClInclude Include="..\..\code\ai\aigoals.h" />
     <ClInclude Include="..\..\code\ai\aiinternal.h" />
-    <ClInclude Include="..\..\code\ai\ailocal.h" />
     <ClInclude Include="..\..\code\anim\animplay.h" />
     <ClInclude Include="..\..\code\anim\packunpack.h" />
     <ClInclude Include="..\..\code\Asteroid\asteroid.h" />
@@ -683,8 +680,8 @@
     <ClInclude Include="..\..\code\cutscene\mvelib.h" />
     <ClInclude Include="..\..\code\cutscene\oggplayer.h" />
     <ClInclude Include="..\..\code\Debris\debris.h" />
-	<ClInclude Include="..\..\code\debugconsole\console.h" />
-	<ClInclude Include="..\..\code\debugconsole\consoleparse.h" />
+    <ClInclude Include="..\..\code\debugconsole\console.h" />
+    <ClInclude Include="..\..\code\debugconsole\consoleparse.h" />
     <ClInclude Include="..\..\code\DirectX\vasync.h" />
     <ClInclude Include="..\..\code\DirectX\vdinput.h" />
     <ClInclude Include="..\..\code\DirectX\vdplay.h" />
@@ -794,10 +791,8 @@
     <ClInclude Include="..\..\code\missionui\missiondebrief.h" />
     <ClInclude Include="..\..\code\missionui\missionloopbrief.h" />
     <ClInclude Include="..\..\code\missionui\missionpause.h" />
-    <ClInclude Include="..\..\code\missionui\missionrecommend.h" />
     <ClInclude Include="..\..\code\missionui\missionscreencommon.h" />
     <ClInclude Include="..\..\code\missionui\missionshipchoice.h" />
-    <ClInclude Include="..\..\code\missionui\missionstats.h" />
     <ClInclude Include="..\..\code\missionui\missionweaponchoice.h" />
     <ClInclude Include="..\..\code\missionui\redalert.h" />
     <ClInclude Include="..\..\code\model\model.h" />

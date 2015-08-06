@@ -57,8 +57,8 @@ model_render_params::model_render_params():
 	Warp_alpha(-1.0f),
 	Xparent_alpha(1.0f),
 	Forced_bitmap(-1),
-	Replacement_textures(NULL),
 	Insignia_bitmap(-1),
+	Replacement_textures(NULL),
 	Team_color_set(false),
 	Clip_plane_set(false),
 	Animated_effect(-1),
@@ -777,10 +777,10 @@ void draw_list::set_lighting(bool lighting)
 	Current_render_state.lighting = lighting;
 }
 
-void draw_list::set_team_color(const team_color &color)
+void draw_list::set_team_color(const team_color &clr)
 {
 	Current_render_state.using_team_color = true;
-	Current_render_state.tm_color = color;
+	Current_render_state.tm_color = clr;
 }
 
 void draw_list::set_team_color()
@@ -1586,16 +1586,20 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 	float box_scale = model_render_determine_box_scale();
 
 	if ( !( flags & MR_FULL_DETAIL ) && model->use_render_box ) {
-		vec3d box_min, box_max;
+		vec3d box_min, box_max, offset;
+
+		if (model->use_render_box_offset) {
+			offset = model->render_box_offset;
+		} else {
+			model_find_submodel_offset(&offset, pm->id, submodel_num);
+		}
 
 		vm_vec_copy_scale(&box_min, &model->render_box_min, box_scale);
 		vm_vec_copy_scale(&box_max, &model->render_box_max, box_scale);
 
-		if ( (-model->use_render_box + in_box(&box_min, &box_max, &model->offset, view_pos)) ) {
+		if ( (-model->use_render_box + in_box(&box_min, &box_max, &offset, view_pos)) ) {
 			return false;
 		}
-
-		return true;
 	}
 
 	if ( !(flags & MR_FULL_DETAIL) && model->use_render_sphere ) {
@@ -1603,14 +1607,16 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 
 		// TODO: doesn't consider submodel rotations yet -zookeeper
 		vec3d offset;
-		model_find_submodel_offset(&offset, pm->id, submodel_num);
-		vm_vec_add2(&offset, &model->render_sphere_offset);
+
+		if (model->use_render_sphere_offset) {
+			offset = model->render_sphere_offset;
+		} else {
+			model_find_submodel_offset(&offset, pm->id, submodel_num);
+		}
 
 		if ( (-model->use_render_sphere + in_sphere(&offset, sphere_radius, view_pos)) ) {
 			return false;
 		}
-
-		return true;
 	}
 
 	return true;
@@ -2047,7 +2053,7 @@ void model_render_set_glow_points(polymodel *pm, int objnum)
 		if ( objp != NULL && objp->type == OBJ_SHIP ) {
 			shipp = &Ships[Objects[objnum].instance];
 			sip = &Ship_info[shipp->ship_info_index];
-			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(-1);
+			gpoi = sip->glowpoint_bank_override_map.find(-1);
 
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
 				override_all = true;
@@ -2106,7 +2112,7 @@ void model_render_glow_points(polymodel *pm, ship *shipp, matrix *orient, vec3d 
 
 	if ( shipp ) {
 		sip = &Ship_info[shipp->ship_info_index];
-		SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(-1);
+		gpoi = sip->glowpoint_bank_override_map.find(-1);
 
 		if(gpoi != sip->glowpoint_bank_override_map.end()) {
 			override_all = true;
@@ -2551,17 +2557,6 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint d
 
 void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, uint debug_flags, int objnum, int detail_level_locked )
 {
-	ship *shipp = NULL;
-	object *objp = NULL;
-
-	if ( objnum >= 0 ) {
-		objp = &Objects[objnum];
-
-		if ( objp->type == OBJ_SHIP ) {
-			shipp = &Ships[objp->instance];
-		}
-	}
-
 	polymodel *pm = model_get(model_num);	
 	
 	g3_start_instance_matrix(pos, orient, true);
@@ -2900,7 +2895,7 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 			i = pm->submodel[i].next_sibling;
 		}
 
-		vec3d view_pos = scene->get_view_position();
+		view_pos = scene->get_view_position();
 
 		if ( model_render_check_detail_box(&view_pos, pm, pm->detail[detail_level], model_flags) ) {
 			int detail_model_num = pm->detail[detail_level];

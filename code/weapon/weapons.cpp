@@ -4871,7 +4871,7 @@ void weapon_process_post(object * obj, float frame_time)
 	}
 
 	// a single player or multiplayer server function -- it affects actual weapon movement.
-	if (wip->wi_flags & WIF_HOMING) {
+	if (wip->wi_flags & WIF_HOMING && !(wp->weapon_flags & WF_NO_HOMING)) {
 		weapon_home(obj, num, frame_time);
 		
 		// If this is a swarm type missile,  
@@ -5050,11 +5050,25 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	wp = &Weapons[Objects[weapon_objnum].instance];
 	wip = &Weapon_info[wp->weapon_info_index];
 
+	if (wp->weapon_flags & WF_NO_HOMING) {
+		return;
+	}
+
 	if (parent_objnum >= 0) {
 		parent_objp = &Objects[parent_objnum];
 		Assert(parent_objp->type == OBJ_SHIP);
 	} else {
 		parent_objp = NULL;
+	}
+
+	if (parent_objp != NULL && (Ships[parent_objp->instance].flags2 & SF2_NO_SECONDARY_LOCKON)) {
+		wp->weapon_flags |= WF_NO_HOMING;
+		wp->homing_object = NULL;
+		wp->homing_subsys = NULL;
+		wp->target_num = -1;
+		wp->target_sig = -1;
+
+		return;
 	}
 
 	if ( parent_objp == NULL || Ships[parent_objp->instance].ai_index >= 0 ) {
@@ -7357,12 +7371,9 @@ void weapon_render(object* obj, draw_list *scene)
 			if (wp->lssm_stage==3)
 				break;
 
-			int clip_plane=0;
-
 			// start a clip plane
 			if ( wp->lssm_stage == 2 ) {
 				object *wobj=&Objects[wp->lssm_warp_idx];		//warphole object
-				clip_plane=1;
 
 				render_info.set_clip_plane(wobj->pos, wobj->orient.vec.fvec);
 			}

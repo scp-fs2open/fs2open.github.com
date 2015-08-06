@@ -199,12 +199,17 @@ void ai_post_process_mission()
 	return;
 }
 
-// function which determines is a goal is valid for a particular type of ship
-int ai_query_goal_valid( int ship, int ai_goal )
+/**
+ * Determines if a goal is valid for a particular type of ship
+ *
+ * @param ship Ship type to test
+ * @param ai_goal_type Goal type to test
+ */
+int ai_query_goal_valid( int ship, int ai_goal_type )
 {
 	int accepted;
 
-	if (ai_goal == AI_GOAL_NONE)
+	if (ai_goal_type == AI_GOAL_NONE)
 		return 1;  // anything can have no orders.
 
 	accepted = 0;
@@ -214,7 +219,7 @@ int ai_query_goal_valid( int ship, int ai_goal )
 	int ship_type = Ship_info[Ships[ship].ship_info_index].class_type;
 	if(ship_type > -1)
 	{
-		if(ai_goal & Ship_types[ship_type].ai_valid_goals) {
+		if(ai_goal_type & Ship_types[ship_type].ai_valid_goals) {
 			accepted = 1;
 		}
 	}
@@ -1883,9 +1888,8 @@ int ai_goal_priority_compare(const void *a, const void *b)
 //	Prioritize goal list.
 //	First sort on priority.
 //	Then sort on time for goals of equivalent priority.
-//	objnum	The object number to act upon.  Redundant with *aip.
 //	*aip		The AI info to act upon.  Goals are stored at aip->goals
-void prioritize_goals(int objnum, ai_info *aip)
+void prioritize_goals(ai_info *aip)
 {
 	//	First sort based on priority field.
 	insertion_sort(aip->goals, MAX_AI_GOALS, sizeof(ai_goal), ai_goal_priority_compare);
@@ -2001,7 +2005,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	validate_mission_goals(objnum, aip);
 
 	//	Sort the goal array by priority and other factors.
-	prioritize_goals(objnum, aip);
+	prioritize_goals(aip);
 
 	//	Make sure there's a goal to pursue, else return.
 	if (aip->goals[0].signature == -1) {

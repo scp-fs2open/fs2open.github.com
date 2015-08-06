@@ -1106,6 +1106,13 @@ int ds_init()
 
 	alcMakeContextCurrent(ds_sound_context);
 
+	alcGetError(ds_sound_device);
+
+	mprintf(("  OpenAL Vendor     : %s\n", alGetString(AL_VENDOR)));
+	mprintf(("  OpenAL Renderer   : %s\n", alGetString(AL_RENDERER)));
+	mprintf(("  OpenAL Version    : %s\n", alGetString(AL_VERSION)));
+	mprintf(("\n"));
+
 	// we need to clear out all errors before moving on
 	alcGetError(NULL);
 	alGetError();
@@ -1153,6 +1160,14 @@ int ds_init()
 			mprintf(("You are not using OpenAL Soft. Disabling enhanced sound.\n"));
 			Cmdline_no_enhanced_sound = 1;
 		}
+		else
+		{
+			mprintf(("Enhanced sound is enabled.\n"));
+		}
+	}
+	else
+	{
+		mprintf(("Enhanced sound is manually disabled.\n"));
 	}
 
 	// setup default listener position/orientation
