@@ -297,7 +297,6 @@ static int				Num_mask_regions;
 
 //stuff for ht&l. vars and such
 extern float View_zoom, Canv_h2, Canv_w2;
-extern int Cmdline_nohtl;
 
 //////////////////////////////////////////////////////
 // Drag and Drop variables

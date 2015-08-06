@@ -409,8 +409,7 @@ void particle_render_all()
 				continue;
 			}
 
-			if (!Cmdline_nohtl)
-				g3_transfer_vertex(&pos, &p_pos);
+			g3_transfer_vertex(&pos, &p_pos);
 		}
 
 		// pct complete for the particle

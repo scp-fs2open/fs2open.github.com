@@ -613,30 +613,7 @@ void display_active_ship_subsystem()
 				// get subsys name
 				strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
 	
-				if (Cmdline_nohtl)
-				{
-					// get bounding box
-					if ( get_subsys_bounding_rect(objp, Render_subsys.cur_subsys, &x1, &x2, &y1, &y2) )
-					{
-	
-						// set color
-						gr_set_color(255, 32, 32);
-	
-						// draw box
-						gr_line(x1, y1, x1, y2);  gr_line(x1-1, y1, x1-1, y2);
-						gr_line(x1, y2, x2, y2);  gr_line(x1, y2+1, x2, y2+1);
-						gr_line(x2, y2, x2, y1);  gr_line(x2+1, y2, x2+1, y1);
-						gr_line(x2, y1, x1, y1);  gr_line(x2, y1-1, x1, y1-1);
-
-						// draw text
-						gr_set_color_fast(&colour_white);
-						gr_string_win( (x1+x2)/2,  y2 + 10, buf);
-					}
-				}
-				else
-				{		
-					fredhtl_render_subsystem_bounding_box(&Render_subsys);
-				}
+				fredhtl_render_subsystem_bounding_box(&Render_subsys);
 			}
 			else
 			{
@@ -661,19 +638,11 @@ void render_models(void)
 	}
 
 	bool f=false;
-	if (Cmdline_nohtl)
-	{
-		obj_render_all(render_one_model_nohtl,&f);
-	}
-	else
-	{
-		fred_enable_htl();
-		
-		obj_render_all(render_one_model_htl,&f);
+	
+	fred_enable_htl();
+	obj_render_all(render_one_model_htl,&f);
+	fred_disable_htl();
 
-		fred_disable_htl();
-
-	}
 
 	if (Briefing_dialog)
 	{
@@ -1390,11 +1359,8 @@ void fred_render_grid(grid *gridp)
 {
 	int	i, ncols, nrows;
 
-	if (!Cmdline_nohtl)
-	{
-		fred_enable_htl();
-		gr_zbuffer_set(0);
-	}	
+	fred_enable_htl();
+	gr_zbuffer_set(0);
 	
 	if ( !Fred_grid_colors_inited )	{
 		Fred_grid_colors_inited = 1;
@@ -1420,14 +1386,12 @@ void fred_render_grid(grid *gridp)
 	//	Draw the column lines.
 	for (i=0; i<=ncols; i++)
 	{
-		if (Cmdline_nohtl) rpd_line(&gridp->gpoints1[i], &gridp->gpoints2[i]);
-		else g3_draw_htl_line(&gridp->gpoints1[i], &gridp->gpoints2[i]);
+		g3_draw_htl_line(&gridp->gpoints1[i], &gridp->gpoints2[i]);
 	}
 	//	Draw the row lines.
 	for (i=0; i<=nrows; i++)
 	{
-		if (Cmdline_nohtl) rpd_line(&gridp->gpoints3[i], &gridp->gpoints4[i]);
-		else g3_draw_htl_line(&gridp->gpoints3[i], &gridp->gpoints4[i]);
+		g3_draw_htl_line(&gridp->gpoints3[i], &gridp->gpoints4[i]);
 	}
 
 	ncols = gridp->ncols / 2;
@@ -1441,21 +1405,16 @@ void fred_render_grid(grid *gridp)
 	
 	for (i=0; i<=ncols; i++)
 	{
-		if (Cmdline_nohtl) rpd_line(&gridp->gpoints5[i], &gridp->gpoints6[i]);
-		else g3_draw_htl_line(&gridp->gpoints5[i], &gridp->gpoints6[i]);
+		g3_draw_htl_line(&gridp->gpoints5[i], &gridp->gpoints6[i]);
 	}
 
 	for (i=0; i<=nrows; i++)
 	{
-		if (Cmdline_nohtl) rpd_line(&gridp->gpoints7[i], &gridp->gpoints8[i]);
-		else g3_draw_htl_line(&gridp->gpoints7[i], &gridp->gpoints8[i]);
+		g3_draw_htl_line(&gridp->gpoints7[i], &gridp->gpoints8[i]);
 	}
 
-	if (!Cmdline_nohtl)
-	{
-		fred_disable_htl();
-		gr_zbuffer_set(1);
-	}
+	fred_disable_htl();
+	gr_zbuffer_set(1);
 }
 
 void render_frame()

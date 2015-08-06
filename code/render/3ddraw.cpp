@@ -112,7 +112,7 @@ free_points:
 int g3_draw_line(vertex *p0,vertex *p1)
 {
 #ifdef FRED_OGL_COMMENT_OUT_FOR_NOW
-	if(Fred_running && !Cmdline_nohtl)
+	if(Fred_running)
 	{
   		gr_aaline( p0, p1 );
 		return 0;
@@ -212,30 +212,12 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 
 	Assert( G3_count == 1 );
 
-	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
+	if(tmap_flags & TMAP_HTL_3D_UNLIT) {
 		gr_tmapper( nv, pointlist, tmap_flags );
 		return 0;
 	}
 	//don't clip in HT&L mode, the card does it for us
-	if(!Cmdline_nohtl && (tmap_flags & TMAP_FLAG_TRISTRIP)) {
-		gr_tmapper( nv, pointlist, tmap_flags );
-		return 0;
-	}
-	if(Cmdline_nohtl && (tmap_flags & TMAP_FLAG_TRISTRIP)){
-		bool starting = true;
-		int offset = 0;
-		for (i=0;i<nv;i++){
-			if (!(pointlist[i]->flags&PF_PROJECTED))g3_project_vertex(pointlist[i]);
-			if (pointlist[i]->flags&PF_OVERFLOW){
-				if(starting)
-					offset++;
-				nv--;
-			}else
-				starting = false;
-			if(nv<3)return 1;
-		}
-		if(nv<3)return 1;
-		pointlist += offset;
+	if(tmap_flags & TMAP_FLAG_TRISTRIP) {
 		gr_tmapper( nv, pointlist, tmap_flags );
 		return 0;
 	}
@@ -386,7 +368,7 @@ int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float co
 
 	Assert( G3_count == 1 );
 
-	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
+	if(tmap_flags & TMAP_HTL_3D_UNLIT) {
 		gr_tmapper( nv, pointlist, tmap_flags );
 		return 0;
 	}
@@ -648,7 +630,7 @@ int g3_draw_bitmap_3d_volume(vertex *pnt, int orient, float rad, uint tmap_flags
 // Orient
 int g3_draw_bitmap(vertex *pnt, int orient, float rad, uint tmap_flags, float depth)
 {
-	if ( !Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT) ) {
+	if ( tmap_flags & TMAP_HTL_3D_UNLIT ) {
 		return g3_draw_bitmap_3d(pnt, orient, rad, tmap_flags, depth);
 	}
 
@@ -843,7 +825,7 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 //returns 1 if off screen, 0 if drew
 int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, float depth)
 {
-	if(!Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT)) {
+	if(tmap_flags & TMAP_HTL_3D_UNLIT) {
 		return g3_draw_rotated_bitmap_3d(pnt, angle, rad, tmap_flags, depth);
 	}
 	vertex v[4];
@@ -1295,10 +1277,8 @@ int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, u
 		if ( verts )	{
 			pts[i] = verts[i];
 		}
-		if(Cmdline_nohtl)
-			g3_rotate_vertex( &pts[i], &vecs[i] );
-		else
-			g3_transfer_vertex( &pts[i], &vecs[i] );
+
+		g3_transfer_vertex( &pts[i], &vecs[i] );
 	}
 	ptlist[0]->texture_position.u = 0.0f;
 	ptlist[0]->texture_position.v = 0.0f;
@@ -1373,13 +1353,8 @@ int g3_draw_rod(int num_points, vec3d *pvecs, float width, uint tmap_flags)
 		ptlist[nv] = &pts[nv];
 		ptlist[nv+1] = &pts[nv+1];
 
-		if (Cmdline_nohtl) {
-			g3_rotate_vertex( &pts[nv], &vecs[0] );
-			g3_rotate_vertex( &pts[nv+1], &vecs[1] );
-		} else {
-			g3_transfer_vertex( &pts[nv], &vecs[0] );
-			g3_transfer_vertex( &pts[nv+1], &vecs[1] );
-		}
+		g3_transfer_vertex( &pts[nv], &vecs[0] );
+		g3_transfer_vertex( &pts[nv+1], &vecs[1] );
 
 		ptlist[nv]->texture_position.u = 1.0f;
 		ptlist[nv]->texture_position.v = i2fl(i);
@@ -1975,19 +1950,11 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 
 void g3_draw_htl_line(vec3d *start, vec3d *end)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	gr_line_htl(start,end);
 }
 
 void g3_draw_htl_sphere(vec3d* position, float radius)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
 
 	gr_sphere_htl(radius);

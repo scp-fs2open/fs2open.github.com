@@ -1147,9 +1147,6 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 static int GL_texture_panning_enabled = 0;
 void gr_opengl_set_texture_panning(float u, float v, bool enable)
 {
-	if (Cmdline_nohtl)
-		return;
-
 	GLint current_matrix;
 
 	if (enable) {
