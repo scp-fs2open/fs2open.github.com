@@ -301,7 +301,6 @@ int Brief_max_line_width[GR_NUM_RESOLUTIONS] = {
 };
 
 //stuff for ht&l. vars and such
-extern int Cmdline_nohtl;
 extern bool Cmdline_brief_lighting;
 
 
@@ -1051,11 +1050,8 @@ void brief_render_closeup(int ship_class, float frametime)
 	g3_start_frame(1);
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
 
-
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	
 	if (Cmdline_brief_lighting) {
 		// the following is copied from menuui/techmenu.cpp ... it works heehee :D  - delt.
@@ -1096,12 +1092,9 @@ void brief_render_closeup(int ship_class, float frametime)
 		The_mission.flags |= MISSION_FLAG_FULLNEB;
 	}
 
-	if (!Cmdline_nohtl)
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
-
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+	
 	g3_end_frame();
 
 	gr_set_color_fast(&Color_bright_white);

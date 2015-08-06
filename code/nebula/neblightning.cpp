@@ -22,7 +22,6 @@
 #include "weapon/emp.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-extern int Cmdline_nohtl;
 
 // ------------------------------------------------------------------------------------------------------
 // NEBULA LIGHTNING DEFINES/VARS
@@ -970,20 +969,13 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 			Nebl_flash_count++;
 		}
 
-		if (Cmdline_nohtl) {
-			memcpy(&c->vex[idx], &tempv, sizeof(vertex));
-		}
 	}
 	// calculate the glow points		
 	nebl_calc_facing_pts_smart(&glow_a, &glow_b, &dir_normal, &a->pos, pinch_a ? 0.5f : width * 6.0f, Nebl_type->b_add);
-	if (Cmdline_nohtl) {
-		g3_rotate_vertex(&c->glow_vex[0], &glow_a);
-		g3_rotate_vertex(&c->glow_vex[1], &glow_b);
-	} else {
-		g3_transfer_vertex(&c->glow_vex[0], &glow_a);
-		g3_transfer_vertex(&c->glow_vex[1], &glow_b);
-	}
-
+	
+	g3_transfer_vertex(&c->glow_vex[0], &glow_a);
+	g3_transfer_vertex(&c->glow_vex[1], &glow_b);
+	
 	// maybe do a cap
 	if(cap != NULL){		
 		// rotate the basic section into world
@@ -1007,21 +999,12 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 				Nebl_flash_y += tempv.screen.xyw.y;
 				Nebl_flash_count++;
 			}
-
-			if (Cmdline_nohtl) {
-				memcpy(&cap->vex[idx], &tempv, sizeof(vertex));
-			}
-		}
+					}
 		
 		// calculate the glow points		
 		nebl_calc_facing_pts_smart(&glow_a, &glow_b, &dir_normal, &b->pos, pinch_b ? 0.5f : width * 6.0f, bi->b_add);
-		if (Cmdline_nohtl) {
-			g3_rotate_vertex(&cap->glow_vex[0], &glow_a);
-			g3_rotate_vertex(&cap->glow_vex[1], &glow_b);
-		} else {
-			g3_transfer_vertex(&cap->glow_vex[0], &glow_a);
-			g3_transfer_vertex(&cap->glow_vex[1], &glow_b);
-		}
+		g3_transfer_vertex(&cap->glow_vex[0], &glow_a);
+		g3_transfer_vertex(&cap->glow_vex[1], &glow_b);
 	}
 }
 

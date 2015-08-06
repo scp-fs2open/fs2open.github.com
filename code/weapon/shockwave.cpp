@@ -44,7 +44,6 @@ int Shockwave_inited = 0;
 // Externals
 // -----------------------------------------------------------
 extern int Show_area_effect;
-extern int Cmdline_nohtl;
 extern int Cmdline_enable_3d_shockwave;
 extern bool Cmdline_fb_explosions;
 
@@ -435,11 +434,8 @@ void shockwave_render_DEPRECATED(object *objp)
 			);
 		}
 	}else{
-		if (!Cmdline_nohtl) {
-			g3_transfer_vertex(&p, &sw->pos);
-		} else {
-			g3_rotate_vertex(&p, &sw->pos);
-		}
+		g3_transfer_vertex(&p, &sw->pos);
+
 		if(Cmdline_fb_explosions)
 		{
 			distortion_add_bitmap_rotated(
@@ -507,12 +503,8 @@ void shockwave_render(object *objp, draw_list *scene)
 				);
 		}
 	} else {
-		if (!Cmdline_nohtl) {
-			g3_transfer_vertex(&p, &sw->pos);
-		} else {
-			g3_rotate_vertex(&p, &sw->pos);
-		}
-
+		g3_transfer_vertex(&p, &sw->pos);
+		
 		if ( Cmdline_fb_explosions ) {
 			distortion_add_bitmap_rotated(
 				sw->current_bitmap, 

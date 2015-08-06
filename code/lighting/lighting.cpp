@@ -29,7 +29,6 @@ int cell_shaded_lightmap = -1;
 
 light Lights[MAX_LIGHTS];
 int Num_lights=0;
-extern int Cmdline_nohtl;
 
 light *Relevent_lights[MAX_LIGHTS][MAX_LIGHT_LEVELS];
 int Num_relevent_lights[MAX_LIGHT_LEVELS];

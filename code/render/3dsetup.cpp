@@ -58,7 +58,6 @@ int instance_depth = 0;
 
 int G3_count = 0;
 int G3_frame_count = 0;
-extern int Cmdline_nohtl;
 
 /**
  * Check if in frame
@@ -98,7 +97,7 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 	//compute aspect ratio for this canvas
 	s = aspect*(float)Canvas_height/(float)Canvas_width;
 
-	if ( !Cmdline_nohtl || (s <= 0.0f) ) {		//scale x
+	if ( s <= 0.0f ) {		//scale x
 		Window_scale.xyz.x = s;
 		Window_scale.xyz.y = 1.0f;
 	}
@@ -201,21 +200,10 @@ void scale_matrix(void)
 
 	float s = 1.0f;
 
-	if (Cmdline_nohtl) {
-		if (View_zoom <= 1.0f) { 		//zoom in by scaling z
-			Matrix_scale.xyz.z =  Matrix_scale.xyz.z*View_zoom;
-		} else {			//zoom out by scaling x&y
-			s = 1.0f / View_zoom;
+	s = 1.0f / tanf(Proj_fov * 0.5f);
 
-			Matrix_scale.xyz.x *= s;
-			Matrix_scale.xyz.y *= s;
-		}
-	} else {
-		s = 1.0f / tanf(Proj_fov * 0.5f);
-
-		Matrix_scale.xyz.x *= s;
-		Matrix_scale.xyz.y *= s;
-	}
+	Matrix_scale.xyz.x *= s;
+	Matrix_scale.xyz.y *= s;
 
 	//now scale matrix elements
 
@@ -303,7 +291,7 @@ void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 
 	vm_matrix_x_matrix(&Light_matrix,&saved_orient, orient);
 
-	if(!Cmdline_nohtl && set_api)
+	if(set_api)
 		gr_start_instance_matrix(pos,orient);
 
 }
@@ -329,7 +317,7 @@ void g3_start_instance_angles(vec3d *pos,angles *orient)
 
 	g3_start_instance_matrix(pos,&tm, false);
 
-	if(!Cmdline_nohtl)gr_start_angles_instance_matrix(pos, orient);
+	gr_start_angles_instance_matrix(pos, orient);
 
 }
 
@@ -352,7 +340,7 @@ void g3_done_instance(bool use_api)
 	Object_matrix = instance_stack[instance_depth].om;
 	Object_position = instance_stack[instance_depth].op;
 
-	if (!Cmdline_nohtl && use_api)
+	if ( use_api)
 		gr_end_instance_matrix();
 }
 
@@ -388,11 +376,9 @@ void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 	}
 
 	G3_user_clip = 1;
-	if(!Cmdline_nohtl) {
-		G3_user_clip_normal = *plane_normal;
-		G3_user_clip_point = *plane_point;
-		gr_start_clip();
-	}
+	G3_user_clip_normal = *plane_normal;
+	G3_user_clip_point = *plane_point;
+	gr_start_clip();
 	vm_vec_rotate(&G3_user_clip_normal, plane_normal, &Eye_matrix );
 	vm_vec_normalize(&G3_user_clip_normal);
 
@@ -407,9 +393,7 @@ void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 void g3_stop_user_clip_plane()
 {
 	G3_user_clip = 0;
-	if(!Cmdline_nohtl) {
-		gr_end_clip();
-	}
+	gr_end_clip();
 }
 
 /**

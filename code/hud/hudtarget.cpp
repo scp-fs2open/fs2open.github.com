@@ -7128,11 +7128,9 @@ void HudGaugeHardpoints::render(float frametime)
 
 	g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom*1.5f);
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
-
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	
 	setGaugeColor();
 
 	//We're ready to show stuff
@@ -7283,11 +7281,9 @@ void HudGaugeHardpoints::render(float frametime)
 	}
 	
 	//We're done
-	if(!Cmdline_nohtl)
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+	
 	if(g3_yourself)
 		g3_end_frame();
 
