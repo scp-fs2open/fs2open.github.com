@@ -412,7 +412,7 @@ void opengl_extensions_init()
 	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
 
 	//allow VBOs to be used
-	if ( !Cmdline_nohtl && !Cmdline_novbo && Is_Extension_Enabled(OGL_ARB_VERTEX_BUFFER_OBJECT) ) {
+	if ( !Cmdline_novbo && Is_Extension_Enabled(OGL_ARB_VERTEX_BUFFER_OBJECT) ) {
 		Use_VBOs = 1;
 	}
 

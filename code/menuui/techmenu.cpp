@@ -253,9 +253,6 @@ void tech_scroll_list_up();
 void tech_scroll_list_down();
 
 
-//stuff for ht&l, vars and such
-extern int Cmdline_nohtl;
-
 ////////////////////////////////////////////////////
 // like, functions and stuff
 
@@ -576,11 +573,9 @@ void techroom_ships_render(float frametime)
 		gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD]);
     }
 	
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
-
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	
 	uint render_flags = MR_AUTOCENTER;
 
 	if(sip->flags2 & SIF2_NO_LIGHTING)
@@ -594,12 +589,9 @@ void techroom_ships_render(float frametime)
 
 	batch_render_all();
 
-	if (!Cmdline_nohtl)
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
-
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+	
 	g3_end_frame();
 
 	gr_reset_clip();

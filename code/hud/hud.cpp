@@ -3549,7 +3549,7 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
 
 		vm_vec_scale_add( &tmp, &Eye_position, &eye_orient->vec.fvec, 100.0f );
 		
-		(void) g3_rotate_vertex(&pt,&tmp);
+		g3_rotate_vertex(&pt,&tmp);
 
 		g3_project_vertex(&pt);
 

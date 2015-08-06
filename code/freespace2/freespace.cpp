@@ -3207,11 +3207,7 @@ void setup_environment_mapping(camid cid)
 	matrix new_orient = IDENTITY_MATRIX;
 	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
 	int i = 0;
-
-
-	if (Cmdline_nohtl)
-		return;
-
+	
 	if(!cid.isValid())
 		return;
 
@@ -3746,10 +3742,8 @@ void game_render_frame( camid cid )
 	neb2_render_setup(cid);
 
 #ifndef DYN_CLIP_DIST
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 #endif
 
 	if ( Game_subspace_effect )	{
@@ -3767,13 +3761,10 @@ void game_render_frame( camid cid )
 	PROFILE("Particles", particle_render_all());					// render particles after everything else.	
 	
 #ifdef DYN_CLIP_DIST
-	if(!Cmdline_nohtl)
-	{
-		gr_end_proj_matrix();
-		gr_end_view_matrix();
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 #endif
 
 	beam_render_all();						// render all beam weapons
@@ -3815,11 +3806,8 @@ void game_render_frame( camid cid )
 	snd_spew_debug_info();
 #endif
 
-	if(!Cmdline_nohtl)
-	{
-		gr_end_proj_matrix();
-		gr_end_view_matrix();
-	}
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
 
 	//Draw viewer cockpit
 	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN && Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0)
@@ -3828,16 +3816,15 @@ void game_render_frame( camid cid )
 		ship_render_cockpit(Viewer_obj);
 	}
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-		// Do the sunspot
-		game_sunspot_process(flFrametime);
+	// Do the sunspot
+	game_sunspot_process(flFrametime);
 
-		gr_end_proj_matrix();
-		gr_end_view_matrix();
-	}
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
+	
 	Shadow_override = false;
 	//================ END OF 3D RENDERING STUFF ====================
 
@@ -8101,10 +8088,7 @@ void get_version_string(char *str, int max_size)
 			strcat_s( str, max_size, " OpenGL" );
 			break;
 	}
-
-	if (Cmdline_nohtl)
-		strcat_s( str, max_size, " non-HT&L" );
-
+	
 	// if a custom identifier exists, put it at the very end
 	#ifdef FS_VERSION_IDENT
 		strcat_s( str, max_size, " (" );

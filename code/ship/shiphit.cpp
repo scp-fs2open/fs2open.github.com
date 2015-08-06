@@ -2477,8 +2477,6 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 	}
 }
 
-extern int Cmdline_nohtl;
-
 // This gets called to apply damage when a damaging force hits a ship, but at no 
 // point in particular.  Like from a shockwave.   This routine will see if the
 // shield got hit and if so, apply damage to it.
@@ -2510,7 +2508,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, vec3d *force
 
 		// world_hitpos use force_center for shockwave
 		// Goober5000 check for NULL
-		if (Cmdline_nohtl && (other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE) && (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_HUGE_SHIP))
+		if ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE) && (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_HUGE_SHIP))
 		{
 			world_hitpos = *force_center;
 		}
