@@ -32471,14 +32471,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Bank to check ammo\r\n" },
 
 	{ OP_TURRET_SET_PRIMARY_AMMO, "turret-set-primary-ammo\r\n"
-		"\tGets the turret's primary bank ammo, only works with ballistic weapons\r\n"
+		"\tSets the turret's primary bank ammo, only works with ballistic weapons\r\n"
 		"\t1: Ship turret is on\r\n"
 		"\t2: Turret the bank is on\r\n"
 		"\t3: Bank to add ammo to\r\n" 
 		"\t4: Amount to add" },
 
 	{ OP_TURRET_SET_SECONDARY_AMMO, "turret-set-secondary-ammo\r\n"
-		"\tGets the turret's secondary bank ammos\r\n"
+		"\tSets the turret's secondary bank ammo\r\n"
 		"\t1: Ship turret is on\r\n"
 		"\t2: Turret the bank is on\r\n"
 		"\t3: Bank to add ammo to\r\n"
