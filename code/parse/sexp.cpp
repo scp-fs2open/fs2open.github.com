@@ -22143,12 +22143,12 @@ void multi_sexp_set_jumpnode_name() //CommanderDJ
 
 void sexp_set_jumpnode_color(int n)
 {
-	CJumpNode *jnp = jumpnode_get_by_name(CTEXT(n));
+	char* jumpnode_name = CTEXT(n); //for multi
+
+	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
 
 	if(jnp==NULL)
 		return;
-
-	char* jumpnode_name = CTEXT(n); //for multi
 
 	n=CDR(n);
 
