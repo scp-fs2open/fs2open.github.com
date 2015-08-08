@@ -1749,7 +1749,7 @@ void game_init()
 {
 	int s1 __attribute__((__unused__)), e1 __attribute__((__unused__));
 	const char *ptr;
-	char whee[MAX_PATH_LEN];
+	char *base_path;
 
 	Game_current_mission_filename[0] = 0;
 
@@ -1794,21 +1794,23 @@ void game_init()
 	cmdline_debug_print_cmdline();
 #endif
 
-	memset(whee, 0, sizeof(whee));
-
-	GetCurrentDirectory(MAX_PATH_LEN-1, whee);
-
-	strcat_s(whee, DIR_SEPARATOR_STR);
+	base_path = SDL_GetBasePath();
+	if ( base_path == NULL ) {
+		SCP_Messagebox(MESSAGEBOX_ERROR, "Error finding base path");
+		exit(1);
+	}
 
 	profile_init();
 	//Initialize the libraries
 	s1 = timer_get_milliseconds();
 
-	if ( cfile_init(whee, strlen(Game_CDROM_dir) ? Game_CDROM_dir : NULL) ) {			// initialize before calling any cfopen stuff!!!
+	if ( cfile_init(base_path, strlen(Game_CDROM_dir) ? Game_CDROM_dir : NULL) ) {			// initialize before calling any cfopen stuff!!!
 		exit(1);
 	}
 
 	e1 = timer_get_milliseconds();
+
+	SDL_free(base_path);
 
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	lcl_init( detect_lang() );	
