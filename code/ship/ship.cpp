@@ -15594,13 +15594,36 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
 
+	Assertion(ship_class < Num_ship_classes, "Invalid ship_class of %d is >= Num_ship_classes (%d); get a coder!\n", ship_class, Num_ship_classes);
+	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
+	Assertion(ammo_type < Num_weapon_types, "Invalid ammo_type of %d is >= Num_weapon_types (%d); get a coder!\n", ammo_type, Num_weapon_types);
+
 	if (ship_class < 0 || bank < 0 || ammo_type < 0) {
 		return 0;
 	} else {
-	capacity = (float) Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
-	size = (float) Weapon_info[ammo_type].cargo_size;
-	return (int) (capacity / size);
+		capacity = (float) Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
+		size = (float) Weapon_info[ammo_type].cargo_size;
+		return (int) (capacity / size);
+	}
 }
+
+/**
+ * The same as above, but for a specific turret's bank.
+ */
+int get_max_ammo_count_for_turret_bank(ship_weapon *swp, int bank, int ammo_type)
+{
+	float capacity, size;
+
+	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
+	Assertion(ammo_type < Num_weapon_types, "Invalid ammo_type of %d is >= Num_weapon_types (%d); get a coder!\n", ammo_type, Num_weapon_types);
+
+	if (!swp || bank < 0 || ammo_type < 0) {
+		return 0;
+	} else {
+		capacity = (float) swp->secondary_bank_capacity[bank];
+		size = (float) Weapon_info[ammo_type].cargo_size;
+		return (int) (capacity / size);
+	}
 }
 
 /**
