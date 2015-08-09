@@ -13,10 +13,13 @@
 #include <wx/docview.h>
 #include <wx/wx.h>
 
-// Class responsible for handling interactions between the application (wxFRED2) and mission file.
-// Document criteria:
-//  Each document handles 1 mission.
+/**
+* @class Class responsible for handling interactions between the application (wxFRED2) and mission file.
 
+* @details Each document handles 1 mission. The_Mission can be thought as the working copy of mission files, docFRED's would be used whenever wxFRED wants to read from or
+* save to disk.
+* Real-time Collaborative editing might be possible by sending .diff's of the document or by sending command stacks periodically to a server (and then to all clients)
+*/
 class docFRED2 : public wxDocument
 {
 public:
@@ -45,7 +48,5 @@ private:
 	int Save_briefing_info( CFILE *fp );
 	int Save_plot_info( CFILE *fp );
 	int Save_mission_info( CFILE *fp );
-
-	//mission The_mission;	// The mission object for this document
 };
 #endif // _DOCFRED_H
