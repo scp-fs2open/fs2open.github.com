@@ -496,13 +496,13 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	// "pop" and cfile_chdirs off the sta
 	chdir(Fred_base_dir);
 
-
 	obj = ship_create(orient, pos, ship_type);
-	if (obj == -1)
-		return -1;
 
 	// ok, done with file io, restore the pwd
 	chdir(pwd);
+
+	if (obj == -1)
+		return -1;
 
 	Objects[obj].phys_info.speed = 33.0f;
 
@@ -699,7 +699,7 @@ int create_object(vec3d *pos, int waypoint_instance)
 			obj = -2;
 
 		} else
-			obj = create_player(Player_starts, pos, NULL, Default_player_model);
+			obj = create_player(pos, NULL, Default_player_model);
 
 	} else if (cur_model_index == Id_select_type_jump_node) {
 		CJumpNode jnp(pos);
@@ -727,7 +727,7 @@ int create_object(vec3d *pos, int waypoint_instance)
 	return obj;
 }
 
-int create_player(int num, vec3d *pos, matrix *orient, int type, int init)
+int create_player(vec3d *pos, matrix *orient, int type)
 {
 	int obj;
 
@@ -767,7 +767,7 @@ void create_new_mission()
 void reset_mission()
 {
 	clear_mission();
-	player_start1 = create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+	player_start1 = create_player(&vmd_zero_vector, &vmd_identity_matrix);
 }
 
 void clear_mission()
@@ -905,14 +905,14 @@ void clear_mission()
 	Num_mission_events = 0;
 	Num_goals = 0;
 	unmark_all();
-	obj_init();
-	model_free_all();				// Free all existing models
+	//obj_init();
+	//model_free_all();				// Free all existing models
 	fred_render_init();
 	init_sexp();
 	messages_init();
 	brief_reset();
 	debrief_reset();
-	ship_init();
+	//ship_init();
 	event_music_reset_choices();
 	clear_texture_replacements();
 

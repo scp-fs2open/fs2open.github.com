@@ -74,7 +74,7 @@ void	set_physics_controls();
 int	dup_object(object *objp);
 int	create_object_on_grid(int waypoint_instance = -1);
 int	create_object(vec3d *pos, int waypoint_instance = -1);
-int	create_player(int num, vec3d *pos, matrix *orient, int type = -1, int init = 1);
+int	create_player(vec3d *pos, matrix *orient, int type = -1);
 void	create_new_mission();
 void	reset_mission();
 void	clear_mission();
