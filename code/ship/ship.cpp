@@ -5709,7 +5709,9 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 
 		for (k=0; k<MAX_SHIP_SECONDARY_BANKS; k++) {
-			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.secondary_bank_capacity[k]);
+			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[i]].cargo_size;
+			Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[sip->secondary_bank_weapons[i]].name );
+			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.secondary_bank_capacity[k] / weapon_size + 0.5f);
 
 			ship_system->weapons.secondary_next_slot[k] = 0;
 		}
@@ -5717,7 +5719,9 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		// Goober5000
 		for (k=0; k<MAX_SHIP_PRIMARY_BANKS; k++)
 		{
-			ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.primary_bank_capacity[k]);
+			float weapon_size = Weapon_info[ship_system->weapons.primary_bank_weapons[i]].cargo_size;
+			Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[sip->secondary_bank_weapons[i]].name );
+			ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.primary_bank_capacity[k] / weapon_size + 0.5f);
 		}
 
 		ship_system->weapons.last_fired_weapon_index = -1;
