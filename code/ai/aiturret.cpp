@@ -1877,8 +1877,10 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 		// don't fire swam, but set up swarm info instead
 		else if ((wip->wi_flags & WIF_SWARM) || (wip->wi_flags & WIF_CORKSCREW)) {
-			ship_weapon *swp;
-			swp = &turret->weapons;
+			ship_weapon *swp = &turret->weapons;
+			if (swp->current_secondary_bank < 0) {
+				swp->current_secondary_bank = 0;
+			}
 			int bank_to_fire = swp->current_secondary_bank;
 			if ((turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO) && (swp->secondary_bank_ammo[bank_to_fire] < 0)) {
 				if (!(turret->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS)) {
@@ -1911,6 +1913,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						}
 
 						if (swp->current_primary_bank < 0){
+							swp->current_primary_bank = 0;
 							return false;
 						}
 
@@ -1921,9 +1924,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 							return false;
 						}
 
-						for (int j = 0; j < num_primary_banks; j++) {
-							bank_to_fire = (swp->current_primary_bank + j) % swp->num_primary_banks;
-						}
+						bank_to_fire = swp->current_primary_bank;
 
 						if (turret->system_info->flags & MSS_FLAG_TURRET_SALVO) {
 							points = num_slots;
@@ -1949,6 +1950,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						}
 
 						if (swp->current_secondary_bank < 0){
+							swp->current_secondary_bank = 0;
 							return false;
 						}
 
