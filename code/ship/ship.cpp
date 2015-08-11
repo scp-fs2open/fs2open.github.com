@@ -16256,7 +16256,7 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
 
-	Assertion(ship_class < Num_ship_classes, "Invalid ship_class of %d is >= Num_ship_classes (%d); get a coder!\n", ship_class, Num_ship_classes);
+	Assertion(ship_class < Ship_info.size(), "Invalid ship_class of %d is >= Ship_info.size() (%d); get a coder!\n", ship_class, Ship_info.size());
 	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
 	Assertion(ammo_type < Num_weapon_types, "Invalid ammo_type of %d is >= Num_weapon_types (%d); get a coder!\n", ammo_type, Num_weapon_types);
 
