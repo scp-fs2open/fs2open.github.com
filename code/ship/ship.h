@@ -1827,6 +1827,7 @@ int primary_out_of_ammo(ship_weapon *swp, int bank);
 int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type);
 
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type);
+int get_max_ammo_count_for_turret_bank(ship_weapon *swp, int bank, int ammo_type);
 
 int is_support_allowed(object *objp, bool do_simple_check = false);
 
