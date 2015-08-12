@@ -875,7 +875,7 @@ bool pilotfile_convert::plr_convert(const char *fname, bool inferno)
 	cfp = cfopen(const_cast<char*>(filename.c_str()), "rb", CFILE_NORMAL);
 
 	if ( !cfp ) {
-		mprintf(("  PL2 => Unable to open for import!\n", fname));
+		mprintf(("  PL2 => Unable to open '%s' for import!\n", fname));
 		return false;
 	}
 
@@ -899,7 +899,7 @@ bool pilotfile_convert::plr_convert(const char *fname, bool inferno)
 	cfp = cfopen(const_cast<char*>(filename.c_str()), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
 
 	if ( !cfp ) {
-		mprintf(("  PLR => Unable to open for export!\n", fname));
+		mprintf(("  PLR => Unable to open '%s' for export!\n", fname));
 		return false;
 	}
 

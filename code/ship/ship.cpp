@@ -3190,7 +3190,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		stuff_float(&sip->max_hull_strength);
 		if (sip->max_hull_strength < 0.0f)
 		{
-			Warning(LOCATION, "Max hull strength on %s '%s' cannot be less than 0.  Defaulting to 100.\n", info_type_name, sip->name, sip->max_hull_strength);
+			Warning(LOCATION, "Max hull strength on %s '%s' cannot be less than 0.  Defaulting to 100.\n", info_type_name, sip->name);
 			sip->max_hull_strength = 100.0f;
 		}
 	}
@@ -5936,7 +5936,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		if (Fred_running) 
 			MessageBox(NULL, err_msg, "Error", MB_OK);
 		else
-			Error(LOCATION, err_msg);
+			Error(LOCATION, "%s", err_msg);
 	}
 
 	ets_init_ship(objp);	// init ship fields that are used for the ETS

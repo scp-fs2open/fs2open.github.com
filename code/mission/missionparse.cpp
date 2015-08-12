@@ -5721,11 +5721,11 @@ void post_process_mission()
 				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
 
 				if (!Fred_running) {
-					nprintf(("Error", error_msg.c_str()));
-					Error(LOCATION, error_msg.c_str());
+					nprintf(("Error", "%s", error_msg.c_str()));
+					Error(LOCATION, "%s", error_msg.c_str());
 				} else {
-					nprintf(("Warning", error_msg.c_str()));
-					Warning(LOCATION, error_msg.c_str());
+					nprintf(("Warning", "%s", error_msg.c_str()));
+					Warning(LOCATION, "%s", error_msg.c_str());
 				}
 			}
 		}
