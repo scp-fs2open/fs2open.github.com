@@ -5720,8 +5720,10 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		for (k=0; k<MAX_SHIP_PRIMARY_BANKS; k++)
 		{
 			float weapon_size = Weapon_info[ship_system->weapons.primary_bank_weapons[k]].cargo_size;
-			Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[ship_system->weapons.primary_bank_weapons[k]].name );
-			ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.primary_bank_capacity[k] / weapon_size + 0.5f);
+
+			if (weapon_size > 0.0f) {	// Non-ballistic primaries are supposed to have a cargo_size of 0
+				ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.primary_bank_capacity[k] / weapon_size + 0.5f);
+			}
 		}
 
 		ship_system->weapons.last_fired_weapon_index = -1;
