@@ -801,7 +801,7 @@ void techroom_change_tab(int num)
 				}
 
 				// make sure that at least the default entry is cleared out if we didn't grab anything
-				if (Ship_info.size() && !Ship_list_size) {
+				if (!Ship_info.empty() && !Ship_list_size) {
 					Ship_list[0].index = -1;
 					Ship_list[0].desc = NULL;
 					Ship_list[0].name = NULL;
