@@ -184,7 +184,7 @@ void pilotfile::csg_write_info()
 	startSection(Section::Info);
 
 	// ship list
-	cfwrite_int(Ship_info.size(), cfp);
+	cfwrite_int(static_cast<int>(Ship_info.size()), cfp);
 
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 		cfwrite_string_len(it->name, cfp);

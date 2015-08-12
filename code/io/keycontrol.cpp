@@ -494,7 +494,7 @@ void debug_cycle_player_ship(int delta)
 			si_index = 0;
 		}
 		if ( si_index < 0 ){
-			si_index = Ship_info.size() - 1;
+			si_index = static_cast<int>(Ship_info.size() - 1);
 		}
 		sip = &Ship_info[si_index];
 		if ( sip->flags & SIF_PLAYER_SHIP ){
@@ -541,7 +541,7 @@ void debug_cycle_targeted_ship(int delta)
 		if ( si_index >= static_cast<int>(Ship_info.size()) )
 			si_index = 0;
 		if ( si_index < 0 )
-			si_index = Ship_info.size() - 1;
+			si_index = static_cast<int>(Ship_info.size() - 1);
 
 	
 		sip = &Ship_info[si_index];
