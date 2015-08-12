@@ -4587,7 +4587,7 @@ int sexp_number_compare(int n, int op)
 				break;
 
 			default:
-				Warning(LOCATION, "Unhandled comparison case!  Operator = ", op);
+				Warning(LOCATION, "Unhandled comparison case!  Operator = %d", op);
 				break;
 		}
 	}
@@ -7603,7 +7603,7 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
 				if ( mission_log_get_time(LOG_SHIP_ARRIVED, name, NULL, NULL) )
 					count++;
 			} else
-				Error("Invalid status check '%d' for ship '%s' in sexp_percent_ships_depart_destroy_disarm_disable", what, name);
+				Error(LOCATION, "Invalid status check '%d' for ship '%s' in sexp_percent_ships_depart_destroy_disarm_disable", what, name);
 
 		}
 	}
@@ -20531,10 +20531,10 @@ void sexp_debug(int node)
 
 	//send the message
 	#ifndef NDEBUG
-		Warning(LOCATION, temp_buf);
+		Warning(LOCATION, "%s", temp_buf);
     #else	
 	if (!no_release_message) {	
-		Warning(LOCATION, temp_buf);
+		Warning(LOCATION, "%s", temp_buf);
 	}
 	#endif
 }

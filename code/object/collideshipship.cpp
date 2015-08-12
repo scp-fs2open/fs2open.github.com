@@ -1360,7 +1360,7 @@ void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc
 	float dot = vm_vec_dotprod( r_light, &ship_ship_hit_info->collision_normal );
 	if ( dot > 0 )
 	{
-		nprintf(("Physics", "Framecount: %i r dot normal  > 0\n", Framecount, dot));
+		nprintf(("Physics", "Framecount: %i r dot normal %f > 0\n", Framecount, dot));
 	}
 
 	vm_vec_zero(heavy_collide_cm_pos);

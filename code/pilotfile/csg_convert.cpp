@@ -1187,7 +1187,7 @@ bool pilotfile_convert::csg_convert(const char *fname, bool inferno)
 	cfp = cfopen(const_cast<char*>(filename.c_str()), "rb", CFILE_NORMAL);
 
 	if ( !cfp ) {
-		mprintf(("    CS2 => Unable to open for import!\n", fname));
+		mprintf(("    CS2 => Unable to open '%s' for import!\n", fname));
 		delete csg;
 		csg = NULL;
 
@@ -1217,7 +1217,7 @@ bool pilotfile_convert::csg_convert(const char *fname, bool inferno)
 	cfp = cfopen(const_cast<char*>(filename.c_str()), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
 
 	if ( !cfp ) {
-		mprintf(("    CSG => Unable to open for export!\n", fname));
+		mprintf(("    CSG => Unable to open '%s' for export!\n", fname));
 		return false;
 	}
 
