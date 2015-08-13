@@ -1452,18 +1452,20 @@ public:
 
 	ship_info();
 	~ship_info();
-	ship_info(const ship_info& other);
+	void clone(const ship_info& other);
 
-	ship_info(ship_info&& other);
+	ship_info(ship_info&& other) NOEXCEPT;
 
-	ship_info &operator=(ship_info&& other);
+	ship_info &operator=(ship_info&& other) NOEXCEPT;
 
-	const ship_info &operator=(const ship_info& other);
 	void free_strings();
 
 private:
-	void clone(const ship_info& other);
-	void move(ship_info& other);
+	void move(ship_info&& other);
+
+	// Private and unimplemented so nobody tries to use them by accident.
+	ship_info(const ship_info& other);
+	const ship_info &operator=(const ship_info& other);
 };
 
 extern int Num_wings;

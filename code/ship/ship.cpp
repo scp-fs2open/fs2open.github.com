@@ -971,7 +971,7 @@ void ship_info::clone(const ship_info& other)
 	glowpoint_bank_override_map = other.glowpoint_bank_override_map;
 }
 
-void ship_info::move(ship_info& other)
+void ship_info::move(ship_info&& other)
 {
 	std::swap(name, other.name);
 	std::swap(alt_name, other.alt_name);
@@ -1271,26 +1271,17 @@ void ship_info::free_strings()
 	CHECK_THEN_FREE(missile_banks);
 }
 
-const ship_info &ship_info::operator= (const ship_info& other)
+ship_info &ship_info::operator= (ship_info&& other) NOEXCEPT
 {
 	if (this != &other) {
-		free_strings();
-		clone(other);
+		move(std::move(other));
 	}
 	return *this;
 }
 
-ship_info &ship_info::operator= (ship_info&& other)
+ship_info::ship_info(ship_info&& other) NOEXCEPT
 {
-	if (this != &other) {
-		move(other);
-	}
-	return *this;
-}
-
-ship_info::ship_info(const ship_info& other)
-{
-	// MageKing17 - Initialize these pointers to NULL because otherwise clone() will leave them uninitialized.
+	// MageKing17 - Initialize these pointers to NULL because otherwise move() will leave them uninitialized.
 	type_str = NULL;
 	maneuverability_str = NULL;
 	armor_str = NULL;
@@ -1303,27 +1294,8 @@ ship_info::ship_info(const ship_info& other)
 	subsystems = NULL;
 	n_subsystems = 0;
 
-	// Then we copy everything.
-	clone(other);
-}
-
-ship_info::ship_info(ship_info&& other)
-{
-	// Same as above, for similar reasons.
-	type_str = NULL;
-	maneuverability_str = NULL;
-	armor_str = NULL;
-	manufacturer_str = NULL;
-	desc = NULL;
-	tech_desc = NULL;
-	ship_length = NULL;
-	gun_mounts = NULL;
-	missile_banks = NULL;
-	subsystems = NULL;
-	n_subsystems = 0;
-
-	// Then we swap everything.
-	move(other);
+	// Then we swap everything (well, everything that matters to the deconstructor).
+	move(std::move(other));
 }
 
 ship_info::ship_info()
@@ -1801,7 +1773,7 @@ int parse_ship(const char *filename, bool replace)
 			int template_id = ship_template_lookup(template_name);
 			if ( template_id != -1 ) {
 				first_time = false;
-				*sip = Ship_templates[template_id];
+				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, buf);
 			}
 			else {
@@ -1859,7 +1831,7 @@ int parse_ship_template()
 			
 			if ( template_id != -1 ) {
 				first_time = false;
-				*sip = Ship_templates[template_id];
+				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, buf);
 			}
 			else {
@@ -4889,10 +4861,8 @@ void ship_set_default_player_ship()
 	if(strlen(default_player_ship))
 		return;
 
-	auto it = Ship_info.cbegin();
-
 	// find the first with the default flag
-	for( ; it != Ship_info.end(); ++it)
+	for(auto it = Ship_info.cbegin(); it != Ship_info.end(); ++it)
 	{
 		if(it->flags & SIF_DEFAULT_PLAYER_SHIP)
 		{
@@ -4902,7 +4872,7 @@ void ship_set_default_player_ship()
 	}
 
 	// find the first player ship
-	for(it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+	for(auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 	{
 		if(it->flags & SIF_PLAYER_SHIP)
 		{
@@ -16258,7 +16228,7 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
 
-	Assertion(ship_class < Ship_info.size(), "Invalid ship_class of %d is >= Ship_info.size() (%d); get a coder!\n", ship_class, Ship_info.size());
+	Assertion(ship_class < static_cast<int>(Ship_info.size()), "Invalid ship_class of %d is >= Ship_info.size() (%d); get a coder!\n", ship_class, static_cast<int>(Ship_info.size()));
 	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
 	Assertion(ammo_type < Num_weapon_types, "Invalid ammo_type of %d is >= Num_weapon_types (%d); get a coder!\n", ammo_type, Num_weapon_types);
 
@@ -16311,7 +16281,7 @@ void ship_page_in()
 	for (auto sip = Ship_info.begin(); sip != Ship_info.end(); ++sip) {
 		if (sip->flags & SIF_SUPPORT) {
 			nprintf(( "Paging", "Found support ship '%s'\n", sip->name ));
-			int i = std::distance(Ship_info.begin(), sip);
+			i = std::distance(Ship_info.begin(), sip);
 			ship_class_used[i]++;
 
 			num_subsystems_needed += sip->n_subsystems;

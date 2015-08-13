@@ -733,6 +733,14 @@ public:
 	// TODO: sort out cmake/gcc
 #endif // HAVE_CXX11
 
+//	In compilers before VS 2015, the noexcept keyword isn't defined. Nonetheless, we need to define it in VS 2015 and non-MS compilers.
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#	define NOEXCEPT
+#else
+#	define NOEXCEPT noexcept
+#endif
+
+
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // would prefer std::is_trivially_copyable but it's not supported by gcc yet
 // ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
