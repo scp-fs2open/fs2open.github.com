@@ -14388,7 +14388,8 @@ float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 	}
 
 	if(hit_objp->shield_quadrant[quadrant_num] > max_quadrant)
-		mprintf((LOCATION, "Warning: \"%s\" has shield quadrant strength of %f out of %f\n", Ships[hit_objp->instance].ship_name, hit_objp->shield_quadrant[quadrant_num], max_quadrant));
+		mprintf(("Warning: \"%s\" has shield quadrant strength of %f out of %f\n",
+				Ships[hit_objp->instance].ship_name, hit_objp->shield_quadrant[quadrant_num], max_quadrant));
 
 	return hit_objp->shield_quadrant[quadrant_num]/max_quadrant;
 }
