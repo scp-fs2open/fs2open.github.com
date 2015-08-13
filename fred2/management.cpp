@@ -629,7 +629,7 @@ int dup_object(object *objp)
 		if ( aip2->ai_flags & AIF_KAMIKAZE )
 			aip1->ai_flags |= AIF_KAMIKAZE;
 		if ( aip2->ai_flags & AIF_NO_DYNAMIC )
-			aip2->ai_flags |= AIF_NO_DYNAMIC;
+			aip1->ai_flags |= AIF_NO_DYNAMIC;
 
 		aip1->kamikaze_damage = aip2->kamikaze_damage;
 
