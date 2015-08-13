@@ -518,11 +518,8 @@ void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orie
 
 	setClip(position[0] + Viewport_offsets[0], position[1] + Viewport_offsets[1], Viewport_w, Viewport_h);
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
-
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
 
 extern bool Interp_desaturate;
@@ -588,7 +585,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 					render_info.set_team_color(target_shipp->team_name, target_shipp->secondary_team_name, target_shipp->team_change_timestamp, target_shipp->team_change_time);
 				}
 
-				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+				flags = MR_SHOW_OUTLINE_HTL;
 				flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
 				break;
@@ -741,7 +738,7 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 			case 1:
 				render_info.set_color(255, 255, 255);
 
-				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+				flags =  MR_SHOW_OUTLINE_HTL;
 				flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
 				break;
@@ -906,7 +903,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 				case 1:
 					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 
-					flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+					flags = MR_SHOW_OUTLINE_HTL;
 					flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
 					break;
@@ -937,7 +934,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 						render_info.set_team_color(homing_shipp->team_name, homing_shipp->secondary_team_name, homing_shipp->team_change_timestamp, homing_shipp->team_change_time);
 					}
 
-					flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+					flags = MR_SHOW_OUTLINE_HTL;
 					flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
 					break;
@@ -1114,7 +1111,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 				else
 					render_info.set_color(64,64,0);
 
-				flags = (Cmdline_nohtl) ? MR_SHOW_OUTLINE : MR_SHOW_OUTLINE_HTL;
+				flags = MR_SHOW_OUTLINE_HTL;
 				flags |= MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
 				break;
@@ -1333,11 +1330,9 @@ int HudGaugeTargetBox::maybeFlashElement(int index, int flash_fast)
 
 void HudGaugeTargetBox::renderTargetClose()
 {
-	if (!Cmdline_nohtl) {
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
-
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+	
 	g3_end_frame();
 	hud_save_restore_camera_data(0);
 	resetClip();

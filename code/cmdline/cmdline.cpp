@@ -414,7 +414,6 @@ int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Troubleshooting
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
-cmdline_parm htl_arg("-nohtl", NULL, AT_NONE);				// Cmdline_nohtl  -- don't use HT&L
 cmdline_parm nomovies_arg("-nomovies", NULL, AT_NONE);		// Cmdline_nomovies  -- Allows video streaming
 cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL, AT_NONE);	// Cmdline_no_set_gamma
 cmdline_parm no_vbo_arg("-novbo", NULL, AT_NONE);			// Cmdline_novbo
@@ -434,7 +433,6 @@ cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
 cmdline_parm set_cpu_affinity("-set_cpu_affinity", NULL, AT_NONE);
 
 int Cmdline_load_all_weapons = 0;
-int Cmdline_nohtl = 0;
 int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
@@ -1446,12 +1444,7 @@ bool SetCmdlineParams()
 	{
 		Cmdline_spec = 0;
 	}
-
-	if ( htl_arg.found() ) 
-	{
-		Cmdline_nohtl = 1;
-	}
-
+	
 	if( no_set_gamma_arg.found() )
 	{
 		Cmdline_no_set_gamma = 1;

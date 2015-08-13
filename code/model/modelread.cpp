@@ -60,7 +60,6 @@ SCP_vector<polymodel_instance*> Polygon_model_instances;
 SCP_vector<bsp_collision_tree> Bsp_collision_tree_list;
 
 static int model_initted = 0;
-extern int Cmdline_nohtl;
 extern int Use_GLSL;
 
 #ifndef NDEBUG
@@ -231,10 +230,8 @@ void model_unload(int modelnum, int force)
 
 	if (pm->submodel) {
 		for (i = 0; i < pm->n_models; i++) {
-			if ( !Cmdline_nohtl ) {
-				pm->submodel[i].buffer.clear();
-			}
-
+			pm->submodel[i].buffer.clear();
+			
 			if ( pm->submodel[i].bsp_data )	{
 				vm_free(pm->submodel[i].bsp_data);
 			}
@@ -247,9 +244,7 @@ void model_unload(int modelnum, int force)
 		delete[] pm->submodel;
 	}
 
-	if ( !Cmdline_nohtl ) {
-		gr_destroy_buffer(pm->vertex_buffer_id);
-	}
+	gr_destroy_buffer(pm->vertex_buffer_id);
 
 	if ( pm->xc ) {
 		vm_free(pm->xc);
@@ -731,7 +726,7 @@ void create_family_tree(polymodel *obj)
 
 void create_vertex_buffer(polymodel *pm)
 {
-	if (Cmdline_nohtl || Is_standalone) {
+	if (Is_standalone) {
 		return;
 	}
 

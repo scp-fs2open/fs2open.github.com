@@ -104,8 +104,6 @@ extern bool splodeing;
 extern float splode_level;
 extern int splodeingtexture;
 
-extern int Cmdline_nohtl;
-
 extern void fs2netd_add_table_validation(const char *tblname);
 
 #define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f
@@ -6536,12 +6534,9 @@ void ship_render_cockpit(object *objp)
 	vec3d pos = vmd_zero_vector;
 
 	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
-	if (!Cmdline_nohtl)
-	{
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f*pm->rad);
-		gr_set_view_matrix(&vmd_zero_vector, &Eye_matrix);
-	}
-
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f*pm->rad);
+	gr_set_view_matrix(&vmd_zero_vector, &Eye_matrix);
+	
 	//Deal with the model
 	model_clear_instance(sip->cockpit_model_num);
 
@@ -6552,12 +6547,9 @@ void ship_render_cockpit(object *objp)
 
 	model_render_immediate(&render_info, sip->cockpit_model_num, &eye_ori, &pos);
 
-	if (!Cmdline_nohtl) 
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
-
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+	
 	hud_save_restore_camera_data(0);
 }
 

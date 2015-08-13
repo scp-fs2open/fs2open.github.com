@@ -38,8 +38,6 @@ extern rcol Radar_color_rgb[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
 
 extern int radar_target_id_flags;
 
-extern int Cmdline_nohtl;
-
 vec3d orb_ring_yz[NUM_ORB_RING_SLICES];
 vec3d orb_ring_xy[NUM_ORB_RING_SLICES];
 vec3d orb_ring_xz[NUM_ORB_RING_SLICES];
@@ -194,14 +192,7 @@ void HudGaugeRadarOrb::blipDrawDistorted(blip *b, vec3d *pos)
 	vm_vec_random_cone(&out,pos,distortion_angle);
 	vm_vec_scale(&out,dist);
 
-    if (Cmdline_nohtl)
-    {
-	    drawContact(&out,b->rad);
-    }
-    else
-    {
-        drawContactHtl(&out,b->rad);
-    }
+    drawContactHtl(&out,b->rad);
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
@@ -240,14 +231,7 @@ void HudGaugeRadarOrb::blipDrawFlicker(blip *b, vec3d *pos)
 	vm_vec_random_cone(&out,pos,distortion_angle);
 	vm_vec_scale(&out,dist);
 
-	if (Cmdline_nohtl)
-    {
-	    drawContact(&out,b->rad);
-    }
-    else
-    {
-        drawContactHtl(&out,b->rad);
-    }
+	drawContactHtl(&out,b->rad);
 }
 
 // Draw all the active radar blips
@@ -299,11 +283,7 @@ void HudGaugeRadarOrb::drawBlips(int blip_type, int bright, int distort)
 		}
 		else
 		{
-            if (Cmdline_nohtl)
-            {
-               drawContact(&pos,b->rad);
-            }
-            else if (b->radar_image_2d >= 0 || b->radar_color_image_2d >= 0)
+            if (b->radar_image_2d >= 0 || b->radar_color_image_2d >= 0)
 			{
 				drawContactImage(&pos, b->rad, b->radar_image_2d, b->radar_color_image_2d, b->radar_projection_size);
 			}
@@ -501,18 +481,9 @@ void HudGaugeRadarOrb::render(float frametime)
 	blitGauge();
 	drawRange();
 
-    if (Cmdline_nohtl)
-    {
-        setupView();
-        drawOutlines();
-    }
-    else
-    {
-        setupViewHtl();
-        drawOutlinesHtl();
-    }
-	
-
+    setupViewHtl();
+    drawOutlinesHtl();
+    
 	if ( timestamp_elapsed(Radar_static_next) ) {
 		Radar_static_playing ^= 1;
 		Radar_static_next = timestamp_rand(50, 750);
@@ -543,15 +514,8 @@ void HudGaugeRadarOrb::render(float frametime)
 		}
 	}
 	
-    if (Cmdline_nohtl)
-    {
-	    doneDrawing();
-    }
-    else
-    {
-        doneDrawingHtl();
-    }
-
+    doneDrawingHtl();
+   
 	if(g3_yourself)
 		g3_end_frame();
 }
