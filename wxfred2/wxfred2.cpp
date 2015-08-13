@@ -295,32 +295,203 @@ bool wxFRED2::Mission_load(const wxString infile) {
 
 void wxFRED2::Mission_reset() {
 	Mission_clear();
-	Create_player(&vmd_zero_vector, &vmd_identity_matrix);
+	Create_player(&vmd_zero_vector, &vmd_identity_matrix, -1);
 }
 
-OIN_t wxFRED2::Object_create(MTIN_t mtin, vec3d *pos, matrix *orient, WIN_t win = -1) {
-	OIN_t obj;
-		if (obj >= 0) {
-			// Successfully created ship
-			int n;
+OIN_t wxFRED2::Copy_object(OIN_t oin) {
+	OIN_t oin_copy = -1;
+	object* objp;
 
-			n = Objects[obj].instance;
-			Ships[n].arrival_cue = alloc_sexp("true", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-			Ships[n].departure_cue = alloc_sexp("false", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-			Ships[n].cargo1 = 0;
-		}
-
-	if (obj >= 0) {
-		// Successfully created object
-		obj_merge_created_list();
-		Document.Modify(true);
+	if (oin < 0) {
+		throw Fred_exception("Error: Could not copy object - invalid input");
+		return -1;
 	}
 
-	return obj;
+	objp = &Objects[oin];
+
+	switch (objp->type) {
+	case OBJ_JUMP_NODE:
+		oin_copy = Create_jumpnode(&objp->pos);
+		break;
+
+	case OBJ_SHIP:
+	case OBJ_START:
+		int inst;		// Index in Ships[] to object
+		int inst_copy;	// Index in Ships[] to object's copy
+
+		inst = objp->instance;
+
+		// MSVC doesn't like function pointers to class members, so gotta call directly
+		if (objp->type == OBJ_SHIP) {
+			oin_copy = Create_ship(&objp->pos, &objp->orient, Ships[inst].ship_info_index);
+		} else {
+			oin_copy = Create_player(&objp->pos, &objp->orient, Ships[inst].ship_info_index);
+		}
+		Assert(oin_copy >= 0);
+
+		// New ship created, now copy all relevant settings
+		// Ship info
+		inst_copy = Objects[oin_copy].instance;
+		Ships[inst_copy].team = Ships[inst].team;
+		Ships[inst_copy].arrival_cue = dup_sexp_chain(Ships[inst].arrival_cue);
+		Ships[inst_copy].departure_cue = dup_sexp_chain(Ships[inst].departure_cue);
+		Ships[inst_copy].cargo1 = Ships[inst].cargo1;
+		Ships[inst_copy].arrival_location = Ships[inst].arrival_location;
+		Ships[inst_copy].departure_location = Ships[inst].departure_location;
+		Ships[inst_copy].arrival_delay = Ships[inst].arrival_delay;
+		Ships[inst_copy].departure_delay = Ships[inst].departure_delay;
+		Ships[inst_copy].weapons = Ships[inst].weapons;
+		Ships[inst_copy].hotkey = Ships[inst].hotkey;
+
+		// AI Info
+		ai_info* aip1;  // ai_info of object
+		ai_info* aip2;  // ai_info of object's copy
+
+		aip1 = &Ai_info[Ships[inst].ai_index];
+		aip2 = &Ai_info[Ships[inst_copy].ai_index];
+
+		aip2->behavior = aip1->behavior;
+		aip2->ai_class = aip1->ai_class;
+		for (int i = 0; i < MAX_AI_GOALS; i++) {
+			aip2->goals[i] = aip1->goals[i];
+		}
+
+		if (aip1->ai_flags & AIF_KAMIKAZE)
+			aip2->ai_flags |= AIF_KAMIKAZE;
+		if (aip1->ai_flags & AIF_NO_DYNAMIC)
+			aip2->ai_flags |= AIF_NO_DYNAMIC;
+
+		aip2->kamikaze_damage = aip1->kamikaze_damage;
+
+		// Physics, Hull, and Shield
+		object *objp_copy;      // object* to copy
+
+		objp_copy = &Objects[oin_copy];
+		objp_copy->phys_info.speed = objp->phys_info.speed;
+		objp_copy->phys_info.fspeed = objp->phys_info.fspeed;
+		objp_copy->hull_strength = objp->hull_strength;
+		objp_copy->shield_quadrant[0] = objp->shield_quadrant[0];
+
+		// Subsystems
+		ship_subsys* subp1;     // ship_subsys* of object 
+		ship_subsys* subp2;     // ship_subsys* of object's copy
+
+		subp1 = GET_FIRST(&Ships[inst].subsys_list);
+		subp2 = GET_FIRST(&Ships[inst_copy].subsys_list);
+		while (subp2 != END_OF_LIST(&Ships[inst_copy].subsys_list)) {
+			Assert(subp1 != END_OF_LIST(&Ships[inst].subsys_list));
+			subp2->current_hits = subp1->current_hits;
+			subp2 = GET_NEXT(subp2);
+			subp1 = GET_NEXT(subp1);
+		}
+
+		// Reinforcements
+		for (int i = 0, int j = 0; i < Num_reinforcements; i++)
+			if (!stricmp(Reinforcements[i].name, Ships[inst].ship_name)) {
+				// object has reinforcements, so object's copy will have reinforcements, too
+				if (Num_reinforcements < MAX_REINFORCEMENTS) {
+					j = Num_reinforcements;
+					Num_reinforcements++;
+					strcpy_s(Reinforcements[j].name, Ships[inst_copy].ship_name);
+					Reinforcements[j].type = Reinforcements[i].type;
+					Reinforcements[j].uses = Reinforcements[i].uses;
+				} else {
+					warning_stack.push_back("Warning: Copy_object - Could not create reinforcements for copied object. (Too many reinforcements already)\n");
+				}
+
+				break;
+			}
+		break;
+
+	case OBJ_WAYPOINT:
+		oin_copy = Create_waypoint(&objp->pos);
+		break;
+
+	default:
+		throw Fred_exception("Error: Could not copy object - invalid object type\n");
+	}
+
+	return oin_copy;
 }
 
-// TODO: dup_object in fred has wierdness with waypoints. Need to figure out how to do that SANELY
-OIN_t wxFRED2::Object_copy(object *objp) {
+
+void wxFRED2::Copy_objects(SCP_vector<OIN_t> &selq) {
+	SCP_vector<OIN_t> wp_queue;
+	SCP_vector<OIN_t> new_selq;
+	OIN_t new_oin;
+	bool has_errors = false;
+
+	if (selq.size() == 0) {
+		throw Fred_exception("Error: Couldn't copy objects (nothing in selection queue)\n");
+		return;
+	}
+
+	for (auto it = selq.begin(); it != selq.end(); ++it) {
+		if (Objects[*it].type == OBJ_WAYPOINT) {
+			// Defer copying waypoints until later
+			wp_queue.push_back(*it);
+
+		} else {
+			try {
+				new_oin = Copy_object(*it);
+
+			} catch (Fred_exception e) {
+				// Couldn't copy this one, so skip it
+				has_errors = true;
+
+				warning_stack.push_back(e.what());
+				continue;
+			}
+		}
+	}
+
+	if (!wp_queue.empty()) {
+		int wp_inst  = -1;   // Waypoint instance to append a new waypoint to. Value of -1 makes a new list
+		int wpl_idx1 = -1;   // Previous WPL
+		int wpl_idx2;        // Current WPL
+
+		// Assumption: Waypoint's instances are a simple hash which contains their list idx and their sequence idx
+		// within that list, and is sortable (see /object/waypoint.cpp)
+		std::sort(wp_queue.begin(), wp_queue.end());
+
+		for (auto it = wp_queue.begin(); it != wp_queue.end(); ++it) {
+			wpl_idx2 = calc_waypoint_list_index(Objects[*it].instance);
+
+			if (wpl_idx1 != wpl_idx2) {
+				// New list detected, reset vars
+				wp_inst = -1;
+				wpl_idx1 = wpl_idx2;
+			}
+
+			// Copy the waypoint. If wp_inst = -1 a new list is formed
+			new_oin = waypoint_add(&Objects[*it].pos, wp_inst);
+
+			if (new_oin >= 0) {
+				// Keep the instance for next iteration
+				wp_inst = Objects[new_oin].instance;
+
+				// Copy complete, push to selection
+				new_selq.push_back(new_oin);
+
+			} else {
+				// Couln't copy this one for some reason
+				has_errors = true;
+				warning_stack.push_back("Error: couldn't copy waypoint");
+			}
+		}
+
+		obj_merge_created_list();
+	}
+
+	if (has_errors) {
+		throw Fred_exception("One or more errors occured during Copy_objects. Please review the warning stack.\n");
+	}
+
+	// Copy job done
+	Document.Modify(true);
+	selq = new_selq;
+
+	return;
 }
 
 OIN_t wxFRED2::Create_jumpnode(vec3d *pos) {
@@ -342,13 +513,13 @@ OIN_t wxFRED2::Create_player(vec3d *pos, matrix *orient, MTIN_t type) {
 	// Check that we're able to add a new player start
 	if (Player_starts >= 1) {
 		if (Player_starts >= MAX_PLAYERS) {
-			throw Fred_exception("Unable to create new player start point. You have reached the maximum limit.\n");
+			throw Fred_exception("Error: Unable to create new player start point. You have reached the maximum limit.\n");
 
 		} else if (The_mission.game_type & MISSION_TYPE_SINGLE) {
-			throw Fred_exception("You can't have more than one player start in single player missions.\n");
+			throw Fred_exception("Error: You can't have more than one player start in single player missions.\n");
 
 		} else if (The_mission.game_type & MISSION_TYPE_TRAINING) {
-			throw Fred_exception("You can't have more than one player start in training missions.\n");
+			throw Fred_exception("Error: You can't have more than one player start in training missions.\n");
 		}
 
 	} else {
@@ -364,7 +535,7 @@ OIN_t wxFRED2::Create_player(vec3d *pos, matrix *orient, MTIN_t type) {
 		} catch (Fred_exception &e) {
 			// Rethrow with more descriptive message
 			// TODO: Include player start number in message
-			throw Fred_exception("Could not create ship for player start.\n");
+			throw Fred_exception("Error: Could not create ship for player start.\n");
 		}
 
 		Assert(obj >= 0);
@@ -388,8 +559,8 @@ OIN_t wxFRED2::Create_ship(vec3d *pos, matrix *orient, MTIN_t type) {
 
 	if (Ship_info[type].flags & SIF_NO_FRED) {
 		// Is a Non-FRED-able object
-		throw Fred_exception("Unable to create Non-FRED-able object");
-		return -1;
+throw Fred_exception("Error: Unable to create Non-FRED-able object");
+return -1;
 	}
 
 	// ship::ship_create() tries to look in the cwd for the .pof's when loading in new models.
@@ -402,7 +573,7 @@ OIN_t wxFRED2::Create_ship(vec3d *pos, matrix *orient, MTIN_t type) {
 	wxSetWorkingDirectory(pwd);
 
 	if (obj < 0) {
-		throw Fred_exception("Unable to create new ship. (Unknown cause)");
+		throw Fred_exception("Error: Unable to create new ship. (Unknown cause)");
 		return -1;
 	}
 
@@ -473,17 +644,44 @@ OIN_t wxFRED2::Create_ship(vec3d *pos, matrix *orient, MTIN_t type) {
 	return obj;
 }
 
-OIN_t wxFRED2::Create_waypoint(vec3d *pos, WIN_t win) {
-	int obj = waypoint_add(pos, win);
+OIN_t wxFRED2::Create_waypoint(vec3d *pos, OIN_t oin) {
+	int inst;   // Object instance of the waypoint indexed by oin, if supplied
+	int obj;    // Object instance of the new waypoint
 
+	if (oin >= 0) {
+		if (Objects[oin].type == OBJ_WAYPOINT) {
+			inst = Objects[oin].instance;
+		} else {
+			inst = -1;
+		}
+	}
+
+	obj = waypoint_add(pos, inst);
 
 	if (obj >= 0) {
 		Document.Modify(true);
 		obj_merge_created_list();
 	} else {
-		throw Fred_exception("Unable to create waypoint (Unknown cause)");
+		throw Fred_exception("Error: Unable to create waypoint (Unknown cause)");
 	}
 
 	return obj;
+}
+
+bool wxFRED2::Has_warnings() {
+	bool retval;
+
+	(warning_stack.size() > 0) ? (retval = true) : (retval = false);
+	return retval;
+}
+
+void wxFRED2::Get_warnings(SCP_vector<SCP_string> &warnings) {
+	warnings = warning_stack;
+
+	warning_stack.clear();
+}
+
+void wxFRED2::Ignore_warnings() {
+	warning_stack.clear();
 }
 
