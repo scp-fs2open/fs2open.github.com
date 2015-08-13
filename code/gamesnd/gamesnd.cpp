@@ -761,7 +761,7 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 		int temp_limit;
 		stuff_int(&temp_limit);
 
-		if ((temp_limit > 0) && (temp_limit <= SND_ENHANCED_MAX_LIMIT))
+		if ((temp_limit > 0) && (static_cast<uint>(temp_limit) <= SND_ENHANCED_MAX_LIMIT))
 		{
 			gs->enhanced_sound_data.limit = (unsigned int)temp_limit;
 		}
