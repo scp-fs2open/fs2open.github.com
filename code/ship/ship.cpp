@@ -17646,7 +17646,8 @@ void ArmorType::ParseData()
 		{
 			if(adt.Calculations.size() != adt.Arguments.size())
 			{
-				Warning(LOCATION, "Armor '%s', damage type %d: Armor has a different number of calculation types than arguments (%d, %d)", Name, DamageTypes.size(), adt.Calculations.size(), adt.Arguments.size());
+				Warning(LOCATION, "Armor '%s', damage type " SIZE_T_ARG ": Armor has a different number of calculation types than arguments (" SIZE_T_ARG ", " SIZE_T_ARG ")",
+						Name, DamageTypes.size(), adt.Calculations.size(), adt.Arguments.size());
 			}
 			DamageTypes.push_back(adt);
 		}

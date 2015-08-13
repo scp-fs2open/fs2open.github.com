@@ -292,7 +292,7 @@ void brief_parse_icon_tbl()
 		while (required_string_either("#End", "$Name:"))
 		{
 			if (Briefing_icon_info.size() >= max_icons) {
-				Warning(LOCATION, "Too many icons in icons.tbl; only the first %d will be used", max_icons);
+				Warning(LOCATION, "Too many icons in icons.tbl; only the first " SIZE_T_ARG " will be used", max_icons);
 				skip_to_start_of_string("#End");
 				break;
 			}
