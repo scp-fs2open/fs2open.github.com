@@ -3110,7 +3110,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 			SCP_string name, banks;
 			size_t seppos;
 			seppos = token->find_first_of(':');
-			if(seppos == -1) {
+			if(seppos == SCP_string::npos) {
 				Warning(LOCATION, "Couldn't find ':' seperator in Glowpoint override for ship %s ignoring token", sip->name);
 				continue;
 			}
@@ -3135,7 +3135,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 				
 				size_t fromtopos;
 				fromtopos = banktoken.find_first_of('-');
-				if(fromtopos != -1) {
+				if(fromtopos != SCP_string::npos) {
 					SCP_string from, to;
 					int ifrom, ito;
 					from = banktoken.substr(0, fromtopos);
