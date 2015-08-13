@@ -18082,7 +18082,7 @@ void sexp_set_turret_primary_ammo(int node)
 void multi_sexp_set_turret_primary_ammo()
 {
 	int sindex, requested_bank, requested_weapons;
-	char *subsys;
+	char subsys[TOKEN_LENGTH];
 	multi_get_int(sindex);
 	multi_get_string(subsys);
 	multi_get_int(requested_bank);
@@ -18221,7 +18221,7 @@ void sexp_set_turret_secondary_ammo(int node)
 void multi_sexp_set_turret_secondary_ammo()
 {
 	int sindex, requested_bank, requested_weapons;
-	char *subsys;
+	char subsys[TOKEN_LENGTH];
 	multi_get_int(sindex);
 	multi_get_string(subsys);
 	multi_get_int(requested_bank);
