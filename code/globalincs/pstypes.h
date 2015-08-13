@@ -711,6 +711,16 @@ public:
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
 
+// Macros for portable printf argument specification
+#ifdef _MSC_VER
+#define SIZE_T_ARG "%Iu"
+#define PTRDIFF_T_ARG "%Id"
+#else
+	// Asume C99 compatibility for everyone else
+#define SIZE_T_ARG "%zu"
+#define PTRDIFF_T_ARG "%zd"
+#endif
+
 // c++11 standard detection
 // for GCC with autotools, see AX_CXX_COMPILE_STDCXX_11 macro in configure.ac
 // this sets HAVE_CXX11 & -std=c++0x or -std=c++11 appropriately
