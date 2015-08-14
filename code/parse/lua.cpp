@@ -16646,7 +16646,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 		}
 		else
 		{
-			LuaError(L, "ade_table_entry::SetTable - Could not set data for '%s' (%d)", GetName(), ADE_INDEX(this));
+			LuaError(L, "ade_table_entry::SetTable - Could not set data for '%s' (" PTRDIFF_T_ARG ")", GetName(), ADE_INDEX(this));
 		}
 
 		if(data_ldx != INT_MAX)
@@ -16694,7 +16694,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 					//so we can always find out what it is for debugging
 					lua_pushstring(L, GetName());
 					if(lua_setupvalue(L, data_ldx, 1) == NULL) {
-						LuaError(L, "ade_table_entry::SetTable - Could not set upvalue for '%s' (%d)", GetName(), ADE_INDEX(this));
+						LuaError(L, "ade_table_entry::SetTable - Could not set upvalue for '%s' (" PTRDIFF_T_ARG ")", GetName(), ADE_INDEX(this));
 					}
 				}
 
@@ -16714,7 +16714,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 			}
 			else
 			{
-				LuaError(L, "ade_table_entry::SetTable - Could not instance '%s' (%d)", GetName(), ADE_INDEX(this));
+				LuaError(L, "ade_table_entry::SetTable - Could not instance '%s' (" PTRDIFF_T_ARG ")", GetName(), ADE_INDEX(this));
 			}
 		}
 	}
