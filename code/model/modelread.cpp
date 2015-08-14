@@ -5521,7 +5521,7 @@ void parse_glowpoint_table(const char *filename)
 					}
 					else
 					{
-						nprintf(("Model", "Glowpoint preset %s nebula texture num is %d\n", gpo, gpo.glow_neb_bitmap));
+						nprintf(("Model", "Glowpoint preset %s nebula texture num is %d\n", gpo.name, gpo.glow_neb_bitmap));
 					}
 				}
 				else {
