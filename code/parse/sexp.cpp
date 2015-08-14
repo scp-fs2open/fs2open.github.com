@@ -24271,6 +24271,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_BEAM_FLOATING_FIRE:
+				sexp_beam_floating_fire(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_IS_TAGGED:
 				sexp_val = sexp_is_tagged(node);
 				break;
