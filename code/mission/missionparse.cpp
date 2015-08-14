@@ -2209,11 +2209,11 @@ int parse_create_object_sub(p_object *p_objp)
 						ptr->weapons.secondary_bank_weapons[j] = sssp->secondary_banks[j];
 
 				// Goober5000
-				for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
+				for (j = 0; j < ptr->weapons.num_primary_banks; j++)
 				{
 					if (Fred_running) {
 						ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
-					} else {
+					} else if (Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC) {
 						Assert(Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size > 0.0f);
 
 						int capacity = fl2i(sssp->primary_ammo[j]/100.0f * ptr->weapons.primary_bank_capacity[j] + 0.5f);
@@ -2221,7 +2221,7 @@ int parse_create_object_sub(p_object *p_objp)
 					}
 				}
 
-				for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
+				for (j = 0; j < ptr->weapons.num_secondary_banks; j++)
 				{
 					if (Fred_running) {
 						ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];
