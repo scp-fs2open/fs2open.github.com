@@ -2019,13 +2019,6 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 			vm_vec_unrotate(&pos, &G3_user_clip_point, &Eye_matrix);
 			vm_vec_add2(&pos, &Eye_position);
 
-			vec4 clip_plane_equation;
-
-			clip_plane_equation.a1d[0] = normal.a1d[0];
-			clip_plane_equation.a1d[1] = normal.a1d[1];
-			clip_plane_equation.a1d[2] = normal.a1d[2];
-			clip_plane_equation.a1d[3] = vm_vec_mag(&pos);
-
 			matrix4 model_matrix;
 			memset( &model_matrix, 0, sizeof(model_matrix) );
 
