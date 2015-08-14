@@ -2032,16 +2032,16 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	}
 
 	if (best_match == BUILTIN_MATCHES_PERSONA_EXCLUDED) {
-		mprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index ));
-		mprintf(("MESSAGING", "using an excluded message for this persona\n"));
+		nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index ));
+		nprintf(("MESSAGING", "using an excluded message for this persona\n"));
 	}else if (best_match == BUILTIN_MATCHES_SPECIES) {
-		mprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
-		mprintf(("MESSAGING", "using a message for any persona of that species\n"));
+		nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
+		nprintf(("MESSAGING", "using a message for any persona of that species\n"));
 	} else if (best_match == BUILTIN_MATCHES_TYPE) {
-		mprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
-		mprintf(("MESSAGING", "looking for message for any persona of any species\n"));
+		nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
+		nprintf(("MESSAGING", "looking for message for any persona of any species\n"));
 	} else if (best_match < 0) {
-		mprintf(("MESSAGING", "Couldn't find any builtin message of type %d\n", type ));
+		nprintf(("MESSAGING", "Couldn't find any builtin message of type %d\n", type ));
 		Int3();
 		return; 
 	}
