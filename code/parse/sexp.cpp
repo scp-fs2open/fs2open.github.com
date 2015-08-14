@@ -17009,10 +17009,12 @@ void sexp_beam_floating_fire(int n)
 	}
 	n = CDR(n);
 
-	if (n >= 0 && stricmp(CTEXT(n), SEXP_NONE_STRING))
+	if (n >= 0)
 	{
-		if (sindex >= 0)
-			fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+		if (stricmp(CTEXT(n), SEXP_NONE_STRING)) {
+			if (sindex >= 0)
+				fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+		}
 
 		n = CDR(n);
 	}
