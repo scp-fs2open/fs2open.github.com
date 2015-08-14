@@ -882,7 +882,7 @@ struct enum_h {
 	enum_h(){index=-1; is_constant=false;}
 	enum_h(int n_index){index=n_index; is_constant=false;}
 
-	bool IsValid(){return (this != NULL && index > -1 && index < ENUM_NEXT_INDEX);}
+	bool IsValid(){return (index > -1 && index < ENUM_NEXT_INDEX);}
 };
 ade_obj<enum_h> l_Enum("enumeration", "Enumeration object");
 
@@ -1424,7 +1424,7 @@ public:
 	gameevent_h(){edx=-1;}
 	gameevent_h(int n_event){edx=n_event;}
 
-	bool IsValid(){return (this != NULL && edx > -1 && edx < Num_gs_event_text);}
+	bool IsValid(){return (edx > -1 && edx < Num_gs_event_text);}
 
 	int Get(){return edx;}
 };
@@ -1472,7 +1472,7 @@ public:
 	gamestate_h(){sdx=-1;}
 	gamestate_h(int n_state){sdx=n_state;}
 
-	bool IsValid(){return (this != NULL && sdx > -1 && sdx < Num_gs_state_text);}
+	bool IsValid(){return (sdx > -1 && sdx < Num_gs_state_text);}
 
 	int Get(){return sdx;}
 };
@@ -1638,7 +1638,7 @@ public:
 	}
 
 	bool IsValid(){
-		return (this != NULL && model != NULL && mid > -1 && model_get(mid) == model);
+		return (model != NULL && mid > -1 && model_get(mid) == model);
 	}
 
 	model_h(int n_modelnum) {
@@ -1715,7 +1715,7 @@ struct thrusterbank_h
 
 	bool isValid()
 	{
-		return this != NULL && bank != NULL;
+		return bank != NULL;
 	}
 };
 
@@ -1745,7 +1745,7 @@ struct glowpoint_h
 
 	bool isValid()
 	{
-		return (this != NULL && point != NULL);
+		return point != NULL;
 	}
 
 };
@@ -6323,7 +6323,7 @@ struct waypointlist_h
 		}
 	}
 	bool IsValid() {
-		return (this != NULL && wlp != NULL && !strcmp(wlp->get_name(), name));
+		return (wlp != NULL && !strcmp(wlp->get_name(), name));
 	}
 };
 
@@ -11730,7 +11730,7 @@ public:
 
 	bool isValid()
 	{
-		if (this != NULL && part != NULL && part->signature != 0 && part->signature == this->sig)
+		if (part != NULL && part->signature != 0 && part->signature == this->sig)
 			return true;
 		else
 			return false;
