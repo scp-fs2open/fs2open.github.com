@@ -116,7 +116,7 @@ factor_table::~factor_table() {}
 
 size_t factor_table::getNext(size_t n, size_t current)
 {
-	Assertion(n >= 1, "factor_table::getNext() called with %d, when only natural numbers make sense; get a coder!\n", n);
+	Assertion(n >= 1, "factor_table::getNext() called with " SIZE_T_ARG ", when only natural numbers make sense; get a coder!\n", n);
 
 	// Resize lookup table if the value is greater than the current size
 	if (n > _lookup.size())
