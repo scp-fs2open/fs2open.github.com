@@ -326,7 +326,7 @@ void parse_species_tbl(const char *filename)
 					species->awacs_multiplier = 1.0f;
 
 				// let them know
-				Warning(LOCATION, "$AwacsMultiplier not specified for species %s in species_defs.tbl!  Defaulting to %.2d.\n", species->species_name, species->awacs_multiplier);
+				Warning(LOCATION, "$AwacsMultiplier not specified for species %s in species_defs.tbl!  Defaulting to %.2f.\n", species->species_name, species->awacs_multiplier);
 			}
 
 			// Goober5000 - countermeasure type
