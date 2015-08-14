@@ -223,7 +223,7 @@ fi
 
 if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
-	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-write-strings -Wshadow -funroll-loops"
+	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings -Wshadow -funroll-loops"
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
@@ -233,7 +233,7 @@ if test "$fs2_debug" = "yes" ; then
 	fi
 else
 	AC_DEFINE([NDEBUG])
-	D_CFLAGS="$D_CFLAGS -O2 -Wall -Wno-write-strings -funroll-loops"
+	D_CFLAGS="$D_CFLAGS -O2 -Wall -Wno-unused-function -Wno-write-strings -funroll-loops"
 	D_LDFLAGS="$D_LDFLAGS "
 
 	if test "$fs2_fred" = "yes" ; then
