@@ -1012,7 +1012,7 @@ void ds_init_channels()
 	try {
 		Channels = new channel[MAX_CHANNELS];
 	} catch (std::bad_alloc) {
-		Error(LOCATION, "Unable to allocate %d bytes for %d audio channels.", sizeof(channel) * MAX_CHANNELS, MAX_CHANNELS);
+		Error(LOCATION, "Unable to allocate " SIZE_T_ARG " bytes for %d audio channels.", sizeof(channel) * MAX_CHANNELS, MAX_CHANNELS);
 	}
 }
 
@@ -2639,4 +2639,3 @@ int ds_get_sound_id(int channel_id)
 
 	return Channels[channel_id].snd_id;
 }
-
