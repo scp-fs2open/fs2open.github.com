@@ -228,7 +228,7 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 		return;
 	}
 
-	int flags, desired_buffer, sample_rate;
+	int flags, sample_rate;
 
 	mas = (mve_audio_t *) vm_malloc ( sizeof(mve_audio_t) );
 	memset(mas, 0, sizeof(mve_audio_t));
@@ -237,7 +237,6 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 
 	flags = mve_get_ushort(data + 2);
 	sample_rate = mve_get_ushort(data + 4);
-	desired_buffer = mve_get_int(data + 6);
 
 	mas->channels = (flags & 0x0001) ? 2 : 1;
 	mas->bitsize = (flags & 0x0002) ? 16 : 8;
@@ -419,15 +418,9 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 	}
 
 	short w, h;
-	short count, truecolor;
+	short truecolor;
 	w = mve_get_short(data);
 	h = mve_get_short(data+2);
-
-	if (minor > 0) {
-		count = mve_get_short(data+4);
-	} else {
-		count = 1;
-	}
 
 	if (minor > 1) {
 		truecolor = mve_get_short(data+6);
@@ -725,18 +718,9 @@ void mve_video_codemap(ubyte *data, int len)
 
 void mve_video_data(ubyte *data, int len)
 {
-	short nFrameHot, nFrameCold;
-	short nXoffset, nYoffset;
-	short nXsize, nYsize;
 	ushort nFlags;
 	ubyte *temp;
 
-	nFrameHot = mve_get_short(data);
-	nFrameCold = mve_get_short(data+2);
-	nXoffset = mve_get_short(data+4);
-	nYoffset = mve_get_short(data+6);
-	nXsize = mve_get_short(data+8);
-	nYsize = mve_get_short(data+10);
 	nFlags = mve_get_ushort(data+12);
 
 	if (nFlags & 1) {
