@@ -2154,7 +2154,7 @@ void parse_main_hall_table(const char* filename)
 					if (temp_scp_string.size() > MAIN_HALL_MAX_CHEAT_LEN) {
 						// Since the value is longer than the cheat buffer it will never match.
 
-						Warning(LOCATION, "The value '%s' for '+Cheat String:' is too long! It can be at most %d characters long.", temp_scp_string.size(), MAIN_HALL_MAX_CHEAT_LEN);
+						Warning(LOCATION, "The value '%s' for '+Cheat String:' is too long! It can be at most %d characters long.", temp_scp_string.c_str(), MAIN_HALL_MAX_CHEAT_LEN);
 					}
 
 					required_string("+Anim To Change:");
