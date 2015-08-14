@@ -382,10 +382,10 @@ void credits_parse_table(const char* filename)
 				numLines = split_str(line.c_str(), Credits_text_coords[gr_screen.res][2], charNum, lines, -1);
 
 				// Make sure that we have valid data
-				Assertion(lines.size() == (size_t)numLines, "split_str reported %d lines but vector contains %d entries!", numLines, lines.size());
+				Assertion(lines.size() == (size_t)numLines, "split_str reported %d lines but vector contains " SIZE_T_ARG " entries!", numLines, lines.size());
 
 				Assertion(lines.size() <= charNum.size(),
-					"Something has gone wrong while splitting strings. Got %d lines but only %d chacter lengths.",
+					"Something has gone wrong while splitting strings. Got " SIZE_T_ARG " lines but only " SIZE_T_ARG " chacter lengths.",
 					lines.size(), charNum.size());
 
 				// Now add all splitted lines to the credit text and append a newline to the end
