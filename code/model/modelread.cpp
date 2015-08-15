@@ -2642,6 +2642,12 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 				}
 				dl2 = tolower(sm2->name[first_diff]) - 'a';
 
+				// Handle LODs named "detail0/1/2/etc" too (as opposed to "detaila/b/c/etc")
+				if (sm1->parent == -1 && sm2->parent == -1 && !sm1->is_damaged && !sm2->is_damaged && !sm1->is_live_debris && !sm2->is_live_debris) {
+					dl2 = dl2 - dl1;
+					dl1 = 0;
+				}
+
 				if ( (dl1<0) || (dl2<0) || (dl1>=MAX_MODEL_DETAIL_LEVELS) || (dl2>=MAX_MODEL_DETAIL_LEVELS) ) continue;	// invalid detail levels
 
 				if ( dl1 == 0 )	{
@@ -5649,7 +5655,7 @@ void parse_glowpoint_table(const char *filename)
 		}
 		required_string("#End");
 	} catch (const parse::ParseException& e) {
-		mprintf(("Unable to parse '%s'!  Error code = %d.\n", filename, e.what()));
+		mprintf(("Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
 }

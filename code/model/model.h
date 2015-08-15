@@ -139,6 +139,7 @@ typedef struct polymodel_instance {
 #define MSS_FLAG2_NO_DISAPPEAR					 (1 << 2)	// Submodel won't disappear when subsystem destroyed
 #define MSS_FLAG2_COLLIDE_SUBMODEL				 (1 << 3)	// subsystem takes damage only from hits which impact the associated submodel
 #define MSS_FLAG2_DESTROYED_ROTATION			 (1 << 4)   // allows subobjects to continue to rotate even if they have been destroyed
+#define MSS_FLAG2_TURRET_USE_AMMO				 (1 << 5)	// enables ammo consumption for turrets (DahBlount)
 
 #define NUM_SUBSYSTEM_FLAGS			33
 
@@ -1112,6 +1113,7 @@ typedef struct mc_info {
 	vec3d	*p1;					// The ending point of the ray (sphere) to check
 	int		flags;				// Flags that the model_collide code looks at.  See MC_??? defines
 	float		radius;				// If MC_CHECK_THICK is set, checks a sphere moving with the radius.
+	int		lod;				// Which detail level of the submodel to check instead
 	
 	// Return values
 	int		num_hits;			// How many collisions were found

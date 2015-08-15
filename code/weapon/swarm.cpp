@@ -484,7 +484,6 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	// increment ship tsi counter
 	shipp->num_turret_swarm_info++;
 
-
     // *Unnecessary check, now done on startup   -Et1
     /*
 
@@ -494,12 +493,20 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 #endif
 
     */
+
+	ship_weapon *swp = &turret->weapons;
+	int bank_fired = swp->current_secondary_bank;
+
 	// initialize tsi
 	tsi->weapon_class = WEAPON_INFO_INDEX(wip);
-	if (wip->wi_flags & WIF_SWARM)
+	if (wip->wi_flags & WIF_SWARM) {
 		tsi->num_to_launch = wip->swarm_count;
-	else
+	} else {
 		tsi->num_to_launch = wip->cs_num_fired;
+	}
+	if (turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO) {
+		swp->secondary_bank_ammo[bank_fired] -= tsi->num_to_launch;
+	}
 	tsi->parent_objnum = parent_objnum;
 	tsi->parent_sig    = parent_obj->signature;
 	tsi->target_objnum = turret->turret_enemy_objnum;

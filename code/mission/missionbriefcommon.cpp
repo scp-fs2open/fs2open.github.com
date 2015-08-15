@@ -340,7 +340,7 @@ void brief_parse_icon_tbl()
 				errormsg += "\n";
 			}
 
-			Error(LOCATION, errormsg.c_str());
+			Error(LOCATION, "%s", errormsg.c_str());
 		}
 	}
 	catch (const parse::ParseException& e)

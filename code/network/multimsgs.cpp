@@ -2751,7 +2751,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 
 	// do a sanity check on the wing to be sure that we are actually working on a valid wing
 	if ( (index < 0) || (index >= Num_wings) || (Wings[index].num_waves == -1) ) {
-		nprintf(("Network", "invalid index %d for wing create packet\n"));
+		nprintf(("Network", "Invalid index %d for wing create packet\n", index));
 		return;
 	}
 	if ( (num_to_create <= 0) || (num_to_create > Wings[index].wave_count) ) {

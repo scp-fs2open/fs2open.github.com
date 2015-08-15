@@ -2209,13 +2209,29 @@ int parse_create_object_sub(p_object *p_objp)
 						ptr->weapons.secondary_bank_weapons[j] = sssp->secondary_banks[j];
 
 				// Goober5000
-				for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
-					ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
+				for (j = 0; j < ptr->weapons.num_primary_banks; j++)
+				{
+					if (Fred_running) {
+						ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
+					} else if (Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC) {
+						Assert(Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size > 0.0f);
 
-				// AL 3-5-98:  This is correct for FRED, but not for FreeSpace... but is this even used?
-				//					As far as I know, turrets cannot run out of ammo
-				for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
-					ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];
+						int capacity = fl2i(sssp->primary_ammo[j]/100.0f * ptr->weapons.primary_bank_capacity[j] + 0.5f);
+						ptr->weapons.primary_bank_ammo[j] = fl2i(capacity / Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size + 0.5f);
+					}
+				}
+
+				for (j = 0; j < ptr->weapons.num_secondary_banks; j++)
+				{
+					if (Fred_running) {
+						ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];
+					} else {
+						Assert(Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size > 0.0f);
+
+						int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * ptr->weapons.secondary_bank_capacity[j] + 0.5f);
+						ptr->weapons.secondary_bank_ammo[j] = fl2i(capacity / Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size + 0.5f);
+					}
+				}
 
 				ptr->subsys_cargo_name = sssp->subsys_cargo_name;
 
@@ -5705,11 +5721,11 @@ void post_process_mission()
 				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
 
 				if (!Fred_running) {
-					nprintf(("Error", error_msg.c_str()));
-					Error(LOCATION, error_msg.c_str());
+					nprintf(("Error", "%s", error_msg.c_str()));
+					Error(LOCATION, "%s", error_msg.c_str());
 				} else {
-					nprintf(("Warning", error_msg.c_str()));
-					Warning(LOCATION, error_msg.c_str());
+					nprintf(("Warning", "%s", error_msg.c_str()));
+					Warning(LOCATION, "%s", error_msg.c_str());
 				}
 			}
 		}
