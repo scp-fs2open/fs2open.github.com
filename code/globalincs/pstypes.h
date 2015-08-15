@@ -712,7 +712,21 @@ public:
 #include "globalincs/safe_strings.h"
 
 // Macros for portable printf argument specification
-#ifdef _MSC_VER
+#ifdef DOXYGEN
+// Special section for doxygen
+/**
+ * @brief Format specifier for a @c size_t argument
+ * Due to different runtimes using different format specifier for these types
+ * it's necessary to hide these changes behind a macro. Use this in place of %zu
+ */
+#define SIZE_T_ARG
+/**
+ * @brief Format specifier for a @c ptrdiff_t argument
+ * Due to different runtimes using different format specifier for these types
+ * it's necessary to hide these changes behind a macro. Use this in place of %zd
+ */
+#define PTRDIFF_T_ARG
+#elif defined(_MSC_VER)
 #define SIZE_T_ARG "%Iu"
 #define PTRDIFF_T_ARG "%Id"
 #else
