@@ -2227,7 +2227,7 @@ int hud_anim_load(hud_anim *ha)
  * @param loop			Anim should loop (default 1)
  * @param hold_last		Should last frame be held (default 0)
  * @param reverse		Play animation in reverse (default 0)
- * @param resize		Resize for non-standard resolutions
+ * @param resize_mode		Resize for non-standard resolutions
  * @param mirror		Mirror along y-axis so icon points left instead of right
  */
 int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse, int resize_mode, bool mirror)
