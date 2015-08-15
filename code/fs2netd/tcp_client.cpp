@@ -218,7 +218,7 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 		uint rc_total = 0;
 		ubyte reply_type = 0;
 		int si_index = 0;
-        ushort bogus __attribute__((unused));
+		ushort bogus __attribute__((unused));
 		ushort num_type_kills = 0, num_medals = 0;
 		char ship_name[NAME_LENGTH];
 		int idx;
