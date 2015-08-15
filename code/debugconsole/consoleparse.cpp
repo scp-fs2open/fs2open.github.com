@@ -90,7 +90,7 @@ void dc_get_token_no_advance(SCP_string &out_str);
  * @param[in] ch   Points to the start of the string to parse
  * @param[in] type The expected type. is thrown along with ch when an unexpected/malformed float is found
  *
- * @ret The value of the parsed token
+ * @return The value of the parsed token
  * @details
  *   The returned double may be cast to a single-precision float, but be sure to check it before doing so!
  */
