@@ -1394,8 +1394,6 @@ void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p)
 	k = (planep->D + vm_vec_dot(&normal, p)) / vm_vec_dot(&normal, &normal);
 
 	vm_vec_scale_add(q, p, &normal, -k);
-
-	// tv = planep->A * q->xyz.x + planep->B * q->xyz.y + planep->C * q->xyz.z + planep->D;
 }
 
 
