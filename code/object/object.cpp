@@ -148,7 +148,7 @@ void object::clear()
 /**
  * Scan the object list, freeing down to num_used objects
  *
- * @param  Number of used objects to free down to
+ * @param  num_used Number of used objects to free down to
  * @return Returns number of slots freed
  */
 int free_object_slots(int num_used)
