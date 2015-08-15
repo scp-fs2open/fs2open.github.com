@@ -322,7 +322,7 @@ int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, i
  * @details Also converts the bitmap to the appropriate format specified by bpp and flags. Only lock a bitmap when you
  *   need it!
  *
- * @param bitmapnum The number indexing the desired bitmap
+ * @param handle    The number indexing the desired bitmap
  * @param bpp       The desired bpp of the bitmep
  * @param flags     The desired bitmap format
  * @param nodebug
