@@ -394,6 +394,10 @@ int control_config_detect_axis()
 void control_config_conflict_check()
 {
 	int i, j;
+	
+	for (i=0; i<CCFG_MAX; i++) {
+		Conflicts[i].key = Conflicts[i].joy = -1;
+	}
 
 	for (i=0; i<NUM_TABS; i++) {
 		Conflicts_tabs[i] = 0;
