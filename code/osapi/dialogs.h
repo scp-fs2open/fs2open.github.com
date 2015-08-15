@@ -21,7 +21,7 @@ namespace os
 		 * @param format An optional message to display in addition to the specified text
 		 */
 		void AssertMessage(const char* text, const char* filename, int linenum,
-				const char* format = nullptr, ...);
+				SCP_FORMAT_STRING const char* format = nullptr, ...) SCP_FORMAT_STRING_ARGS(4, 5);
 
 		/**
 		 * @brief Shows a lua error.
@@ -30,7 +30,7 @@ namespace os
 		 * @param L The lua_State to capture the state of
 		 * @param format The error message to display, may be @c nullptr
 		 */
-		void LuaError(lua_State *L, const char *format = nullptr, ...);
+		void LuaError(lua_State *L, SCP_FORMAT_STRING const char *format = nullptr, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 
 		/**
 		 * @brief Shows an error dialog.
@@ -41,7 +41,7 @@ namespace os
 		 * @param line The source code line number where this function was called
 		 * @param format The error message to display (a format string)
 		 */
-		void Error(const char* filename, int line, const char* format, ...);
+		void Error(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
 
 		/**
 		 * @brief Shows an error dialog.
@@ -59,7 +59,7 @@ namespace os
 		 * @param line The source code line number where this function was called
 		 * @param format The message to display
 		 */
-		void Warning(const char* filename, int line, const char* format, ...);
+		void Warning(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
 
 		/**
 		 * @brief Shows an extra warning.
@@ -69,7 +69,7 @@ namespace os
 		 * @param line The source code line number where this function was called
 		 * @param format The message to display
 		 */
-		void WarningEx(const char* filename, int line, const char* format, ...);
+		void WarningEx(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
 	}
 }
 
