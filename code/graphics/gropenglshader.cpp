@@ -621,12 +621,15 @@ GLhandleARB opengl_shader_compile_object(const GLcharARB *shader_source, GLenum 
 }
 
 /**
- * Link a vertex shader object and a fragment shader object into a usable shader executable.
+ * Link vertex shader, fragment shader and geometry shader objects into a
+ * usable shader executable.
+ *
  * Prints linker errors (if any) to the log.
  * 
  * @param vertex_object		Compiled vertex shader object
  * @param fragment_object	Compiled fragment shader object
- * @return					Shader executable
+ * @param geometry_object	Compiled geometry shader object
+ * @return			Shader executable
  */
 GLhandleARB opengl_shader_link_object(GLhandleARB vertex_object, GLhandleARB fragment_object, GLhandleARB geometry_object)
 {
