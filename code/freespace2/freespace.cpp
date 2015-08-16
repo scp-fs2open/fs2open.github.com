@@ -228,6 +228,8 @@ typedef struct big_expl_flash {
 #define DEFAULT_SKILL_LEVEL	1
 int	Game_skill_level = DEFAULT_SKILL_LEVEL;
 
+#define EXE_FNAME			("fs2.exe")
+
 #define LAUNCHER_FNAME	("Launcher.exe")
 
 // JAS: Code for warphole camera.
@@ -1799,6 +1801,7 @@ void game_init()
 	GetCurrentDirectory(MAX_PATH_LEN-1, whee);
 
 	strcat_s(whee, DIR_SEPARATOR_STR);
+	strcat_s(whee, EXE_FNAME);
 
 	profile_init();
 	//Initialize the libraries
