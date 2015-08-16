@@ -696,8 +696,8 @@ void os_parse_parms(int argc, char *argv[])
 
 	for (int i = 0; i < argc; i++)
 	{
-		// On mac this gets passed if the application was launched by double-clicking in the finder
-		if (i == 1 && strncmp(argv[1], "-psn", 4) == 0)
+		// On OS X this gets passed if the application was launched by double-clicking in the Finder
+		if (i == 1 && strncmp(argv[i], "-psn", 4) == 0)
 		{
 			continue;
 		}
@@ -727,8 +727,14 @@ void os_validate_parms(int argc, char *argv[])
 	{
 		token = argv[i];
 
+		// On OS X this gets passed if the application was launched by double-clicking in the Finder
+		if (i == 1 && strncmp(token, "-psn", 4) == 0) {
+			continue;
+		}
+
 		if (token[0] == '-') {
 			parm_found = 0;
+
 			for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
 				if (!stricmp(parmp->name, token)) {
 					parm_found = 1;
@@ -886,6 +892,11 @@ bool has_cmdline_only_flag(int argc, char *argv[])
 void os_init_cmdline(int argc, char *argv[])
 {
 	FILE *fp;
+
+#if defined(APPLE_APP)
+	char *path_name = SDL_GetBasePath();
+	SetCurrentDirectory(path_name);
+#endif
 	
 	if (!has_cmdline_only_flag(argc, argv)) {
 
