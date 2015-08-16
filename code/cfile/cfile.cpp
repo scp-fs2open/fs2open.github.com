@@ -161,11 +161,15 @@ int cfile_in_root_dir(const char *exe_path)
 	return 0;
 }
 
-// cfile_init() initializes the cfile system.  Called once at application start.
-//
-//	returns:  success ==> 0
-//           error   ==> non-zero
-//
+/**
+ * Initializes the cfile system. Called once at application start.
+ *
+ * @param exe_dir Path to a file (not a directory)
+ * @param cdrom_dir Path to a CD drive mount point (may be NULL)
+ *
+ * @return 0 On success
+ * @return 1 On error
+ */
 int cfile_init(const char *exe_dir, const char *cdrom_dir)
 {
 	int i;
