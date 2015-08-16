@@ -196,11 +196,34 @@ BOOL CFREDApp::InitInstance()
 	EnableShellOpen();
 	RegisterShellFileTypes(TRUE);	*/
 
+	// setup the fred exe directory so CFILE can init properly
+	/*
+	c = GetCommandLine();
+	Assert(c != NULL);
+	if(c == NULL){
+		return FALSE;
+	} 
+	tok = strtok(c, " \n");
+	Assert(tok != NULL);
+	if(tok == NULL){
+		return FALSE;		
+	}
+	// Fred_exe_dir = strdup(c);		
+	strcpy_s(Fred_exe_dir, tok);
+	*/
+
 	// we need a full path, and if run from a shell that may not happen, so work that case out...
 
 	Assert( strlen(__argv[0]) > 2 );
 
-	Fred_exe_dir = SDL_GetBasePath();
+	// see if we have a ':', and if not then assume that we don't have a full path
+	if (__argv[0][1] != ':') {
+		GetCurrentDirectory( sizeof(Fred_exe_dir)-1, Fred_exe_dir );
+		strcat_s(Fred_exe_dir, "\\");
+		strcat_s(Fred_exe_dir, __argv[0]);
+	} else {
+		strcpy_s(Fred_exe_dir, __argv[0]);
+	}
 
 	strcpy_s(Fred_base_dir, Fred_exe_dir);
 

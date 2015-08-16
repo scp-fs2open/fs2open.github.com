@@ -164,13 +164,13 @@ int cfile_in_root_dir(const char *exe_path)
 /**
  * Initializes the cfile system. Called once at application start.
  *
- * @param path_dir Path to a directory, must be terminated with a directory separator
+ * @param exe_dir Path to a file (not a directory)
  * @param cdrom_dir Path to a CD drive mount point (may be NULL)
  *
  * @return 0 On success
  * @return 1 On error
  */
-int cfile_init(const char *path_dir, const char *cdrom_dir)
+int cfile_init(const char *exe_dir, const char *cdrom_dir)
 {
 	int i;
 
@@ -183,17 +183,23 @@ int cfile_init(const char *path_dir, const char *cdrom_dir)
 		cfile_inited = 1;
 
 		memset(buf, 0, CFILE_ROOT_DIRECTORY_LEN);
-		strncpy(buf, path_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
+		strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
 		i = strlen(buf);
 
 		// are we in a root directory?		
 		if(cfile_in_root_dir(buf)){
 			MessageBox((HWND)NULL, "FreeSpace2/Fred2 cannot be run from a drive root directory!", "Error", MB_OK);
 			return 1;
-		}
+		}		
+
+		while (i--) {
+			if (buf[i] == DIR_SEPARATOR_CHAR){
+				break;
+			}
+		}						
 
 		if (i >= 2) {					
-			buf[i] = 0;
+			buf[i] = 0;						
 			cfile_chdir(buf);
 		} else {
 			MessageBox((HWND)NULL, "Error trying to determine executable root directory!", "Error", MB_OK);
