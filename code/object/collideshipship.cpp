@@ -269,6 +269,10 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 			// reset flags to check MC_CHECK_MODEL | MC_CHECK_SPHERELINE and maybe MC_CHECK_INVISIBLE_FACES and MC_SUBMODEL_INSTANCE
 			mc.flags = copy_flags | MC_SUBMODEL_INSTANCE;
 
+			if (heavy_sip->collision_lod > -1) {
+				mc.lod = heavy_sip->collision_lod;
+			}
+
 			// check each submodel in turn
 			for (smv = submodel_vector.begin(); smv != submodel_vector.end(); ++smv) {
 				// turn on submodel for collision test
@@ -1234,7 +1238,7 @@ int collide_ship_ship( obj_pair * pair )
 
 					// don't draw sparks (using sphere hitpos)
 					ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, dam2, MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
-					hud_shield_quadrant_hit(ship_ship_hit_info.light, quadrant_num);
+					hud_shield_quadrant_hit(ship_ship_hit_info.light, -1);
 
 					maybe_push_little_ship_from_fast_big_ship(ship_ship_hit_info.heavy, ship_ship_hit_info.light, ship_ship_hit_info.impulse, &ship_ship_hit_info.collision_normal);
 				}
@@ -1356,7 +1360,7 @@ void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc
 	float dot = vm_vec_dotprod( r_light, &ship_ship_hit_info->collision_normal );
 	if ( dot > 0 )
 	{
-		nprintf(("Physics", "Framecount: %i r dot normal  > 0\n", Framecount, dot));
+		nprintf(("Physics", "Framecount: %i r dot normal %f > 0\n", Framecount, dot));
 	}
 
 	vm_vec_zero(heavy_collide_cm_pos);

@@ -257,7 +257,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "only target if can fire",    MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE, 1},
 	{ "no disappear",			MSS_FLAG2_NO_DISAPPEAR, 1},
 	{ "collide submodel",		MSS_FLAG2_COLLIDE_SUBMODEL, 1},
-	{ "allow destroyed rotation",	MSS_FLAG2_DESTROYED_ROTATION, 1}
+	{ "allow destroyed rotation",	MSS_FLAG2_DESTROYED_ROTATION, 1},
+	{ "turret use ammo",		MSS_FLAG2_TURRET_USE_AMMO, 1}
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -691,6 +692,7 @@ void init_ship_entry(ship_info *sip)
 	sip->pof_file_hud[0] = '\0';
 	sip->num_detail_levels = 1;
 	sip->detail_distance[0] = 0;
+	sip->collision_lod = -1;
 	sip->cockpit_model_num = -1;
 	sip->model_num = -1;
 	sip->model_num_hud = -1;
@@ -873,6 +875,7 @@ void init_ship_entry(ship_info *sip)
 	sip->auto_shield_spread = 0.0f;
 	sip->auto_shield_spread_bypass = false;
 	sip->auto_shield_spread_from_lod = -1;
+	sip->auto_shield_spread_min_span = -1.0f;
 
 	for (i = 0; i < 4; i++)
 	{
@@ -1671,6 +1674,13 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		sip->num_detail_levels = stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
 	}
 
+	if(optional_string("$Collision LOD:")) {
+		stuff_int(&sip->collision_lod);
+
+		// Cap to sane values, just in case
+		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels));
+	}
+
 	// check for optional pixel colors
 	while(optional_string("$ND:")){		
 		ubyte nr, ng, nb;
@@ -2317,6 +2327,9 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		if(optional_string("+Auto Spread:")) {
 			stuff_float(&sip->auto_shield_spread);
 		}
+		if(optional_string("+Minimum Weapon Span:")) {
+			stuff_float(&sip->auto_shield_spread_min_span);
+		}
 		if(optional_string("+Allow Bypass:")) {
 			stuff_boolean(&sip->auto_shield_spread_bypass);
 		}
@@ -2416,7 +2429,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 		stuff_float(&sip->max_hull_strength);
 		if (sip->max_hull_strength < 0.0f)
 		{
-			Warning(LOCATION, "Max hull strength on ship %s cannot be less than 0.  Defaulting to 100.\n", sip->name, sip->max_hull_strength);
+			Warning(LOCATION, "Max hull strength on ship %s cannot be less than 0.  Defaulting to 100.\n", sip->name);
 			sip->max_hull_strength = 100.0f;
 		}
 	}
@@ -4273,7 +4286,7 @@ void ship_parse_post_cleanup()
 			}
 			else
 			{
-				Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.");
+				Warning(LOCATION, "Ship %s is defined as a copy (ship flag 'ship copy' is set), but is not named like one (no '#').\n", sip->name);
 				sip->flags &= ~SIF_SHIP_COPY;
 			}
 		}
@@ -5163,7 +5176,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		if (Fred_running) 
 			MessageBox(NULL, err_msg, "Error", MB_OK);
 		else
-			Error(LOCATION, err_msg);
+			Error(LOCATION, "%s", err_msg);
 	}
 
 	ets_init_ship(objp);	// init ship fields that are used for the ETS
@@ -5695,16 +5708,22 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 
-		for (k=0; k<MAX_SHIP_SECONDARY_BANKS; k++) {
-			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.secondary_bank_capacity[k]);
+		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
+			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
+			Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].name );
+			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : fl2i(ship_system->weapons.secondary_bank_capacity[k] / weapon_size + 0.5f));
 
 			ship_system->weapons.secondary_next_slot[k] = 0;
 		}
 
 		// Goober5000
-		for (k=0; k<MAX_SHIP_PRIMARY_BANKS; k++)
+		for (k=0; k<ship_system->weapons.num_primary_banks; k++)
 		{
-			ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.primary_bank_capacity[k]);
+			float weapon_size = Weapon_info[ship_system->weapons.primary_bank_weapons[k]].cargo_size;
+
+			if (weapon_size > 0.0f) {	// Non-ballistic primaries are supposed to have a cargo_size of 0
+				ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : fl2i(ship_system->weapons.primary_bank_capacity[k] / weapon_size + 0.5f));
+			}
 		}
 
 		ship_system->weapons.last_fired_weapon_index = -1;
@@ -15581,13 +15600,36 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
 
+	Assertion(ship_class < Num_ship_classes, "Invalid ship_class of %d is >= Num_ship_classes (%d); get a coder!\n", ship_class, Num_ship_classes);
+	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
+	Assertion(ammo_type < Num_weapon_types, "Invalid ammo_type of %d is >= Num_weapon_types (%d); get a coder!\n", ammo_type, Num_weapon_types);
+
 	if (ship_class < 0 || bank < 0 || ammo_type < 0) {
 		return 0;
 	} else {
-	capacity = (float) Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
-	size = (float) Weapon_info[ammo_type].cargo_size;
-	return (int) (capacity / size);
+		capacity = (float) Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
+		size = (float) Weapon_info[ammo_type].cargo_size;
+		return (int) (capacity / size);
+	}
 }
+
+/**
+ * The same as above, but for a specific turret's bank.
+ */
+int get_max_ammo_count_for_turret_bank(ship_weapon *swp, int bank, int ammo_type)
+{
+	float capacity, size;
+
+	Assertion(bank < MAX_SHIP_SECONDARY_BANKS, "Invalid secondary bank of %d (max is %d); get a coder!\n", bank, MAX_SHIP_SECONDARY_BANKS - 1);
+	Assertion(ammo_type < Num_weapon_types, "Invalid ammo_type of %d is >= Num_weapon_types (%d); get a coder!\n", ammo_type, Num_weapon_types);
+
+	if (!swp || bank < 0 || ammo_type < 0) {
+		return 0;
+	} else {
+		capacity = (float) swp->secondary_bank_capacity[bank];
+		size = (float) Weapon_info[ammo_type].cargo_size;
+		return (int) (capacity / size);
+	}
 }
 
 /**

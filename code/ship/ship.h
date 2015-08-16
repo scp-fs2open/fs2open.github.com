@@ -1180,6 +1180,7 @@ public:
 	char		pof_file_hud[MAX_FILENAME_LEN];		// POF file to load for the HUD target box
 	int		num_detail_levels;				// number of detail levels for this ship
 	int		detail_distance[MAX_SHIP_DETAIL_LEVELS];					// distance to change detail levels at
+	int		collision_lod;						// check for collisions using a LOD
 	int		cockpit_model_num;					// cockpit model
 	int		model_num;							// ship model
 	int		model_num_hud;						// model to use when rendering to the HUD (eg, mini supercap)
@@ -1306,6 +1307,7 @@ public:
 	float	auto_shield_spread;
 	bool	auto_shield_spread_bypass;
 	int		auto_shield_spread_from_lod;
+	float	auto_shield_spread_min_span;	// Minimum distance weapons must travel until allowed to collide with the shield
 
 	int		shield_point_augment_ctrls[4];	// Re-mapping of shield augmentation controls for model point shields
 
@@ -1825,6 +1827,7 @@ int primary_out_of_ammo(ship_weapon *swp, int bank);
 int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type);
 
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type);
+int get_max_ammo_count_for_turret_bank(ship_weapon *swp, int bank, int ammo_type);
 
 int is_support_allowed(object *objp, bool do_simple_check = false);
 

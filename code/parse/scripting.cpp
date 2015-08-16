@@ -702,7 +702,7 @@ void script_state::SetHookVar(char *name, char format, void *data)
 		}
 		else
 		{
-			LuaError(LuaState, "Could not get HookVariable library to set hook variable '%s' - get a coder", name);
+			LuaError(LuaState, "Could not get HookVariable library to set hook variable '%s'", name);
 			if(data_ldx)
 				lua_pop(LuaState, 1);
 		}
@@ -740,7 +740,7 @@ bool script_state::GetHookVar(char *name, char format, void *data)
 		}
 		else
 		{
-			LuaError(LuaState, "Could not get HookVariable library to get hook variable '%' - get a coder", name);
+			LuaError(LuaState, "Could not get HookVariable library to get hook variable '%s'", name);
 		}
 	}
 

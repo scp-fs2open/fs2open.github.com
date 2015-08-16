@@ -819,6 +819,6 @@ bool multi_get_ushort(ushort &value)
 void multi_discard_remaining_callback_data()
 {
 	if (!multi_sexp_discard_operator()) {
-		Warning(LOCATION, "Attempt to discard remaining data failed! Callback for operator %d lacks proper termination. Entire packet may be corrupt. Discarding remaining packet"); 
+		Warning(LOCATION, "Attempt to discard remaining data failed! Callback lacks proper termination. Entire packet may be corrupt. Discarding remaining packet");
 	}
 }

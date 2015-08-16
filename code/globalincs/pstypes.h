@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 
 
@@ -65,6 +65,38 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 
+// Format specifier macros
+#ifdef DOXYGEN
+// Documentation macros, only used by DOXYGEN
+/**
+ * @brief Identifies a printf-style format string
+ */
+#define SCP_FORMAT_STRING
+
+/**
+ * @brief Specifies which arguments are involved in printf-style string formatting
+ *
+ * @details Expands to a compiler specific attribute which specify where the
+ *          format arguments are located. Parameters are 1-based which also includes
+ *          the 'this' parameter at position 1 for class methods.
+ *
+ * @param formatArg The location of the format string argument in the argument list
+ * @param varArgs The location where the variable arguments begin
+ */
+#define SCP_FORMAT_STRING_ARGS(formatArg, varArgs)
+#elif defined(_MSC_VER)
+#include <sal.h>
+
+#define SCP_FORMAT_STRING _Printf_format_string_
+#define SCP_FORMAT_STRING_ARGS(x, y)
+#elif defined(__GNUC__) || defined(__clang__)
+// GCC and clang use function attributes
+#define SCP_FORMAT_STRING
+#define SCP_FORMAT_STRING_ARGS(x, y) __attribute__ ((format (printf, x, y)))
+#else
+#define SCP_FORMAT_STRING
+#define SCP_FORMAT_STRING_ARGS(x, y)
+#endif
 
 #define HARDWARE_ONLY
 
@@ -238,15 +270,15 @@ extern int Global_error_count;
 #define mprintf(args) outwnd_printf2 args
 #define nprintf(args) outwnd_printf args
 #else
-#define mprintf(args) 
-#define nprintf(args) 
+#define mprintf(args)
+#define nprintf(args)
 #endif
 
 #define LOCATION __FILE__,__LINE__
 
 // To flag an error, you can do this:
 // Error( __FILE__, __LINE__, "Error opening %s", filename );
-// or, 
+// or,
 // Error( LOCATION, "Error opening %s", filename );
 
 /*******************NEVER UNCOMMENT Assert ************************************************/
@@ -309,7 +341,7 @@ extern int Global_error_count;
 // VerifyEx
 #ifndef _MSC_VER   // non MS compilers
 #	define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, ##__VA_ARGS__); } ASSUME(x); } while(0)
-#else 
+#else
 #	if _MSC_VER >= 1400	// VC 2005 or greater
 #		define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, __VA_ARGS__); } ASSUME(x); } while(0)
 #	else // everything else
@@ -319,7 +351,7 @@ extern int Global_error_count;
 
 #if defined(NDEBUG)
 	// No debug version of Int3
-	#define Int3() do { } while (0) 
+	#define Int3() do { } while (0)
 #else
 	void debug_int3(char *file, int line);
 
@@ -403,7 +435,7 @@ typedef struct lod_checker {
 #define VALID_FNAME(x) ( strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>") )
 
 
-// Callback Loading function. 
+// Callback Loading function.
 // If you pass a function to this, that function will get called
 // around 10x per second, so you can update the screen.
 // Pass NULL to turn it off.
@@ -415,7 +447,7 @@ typedef struct lod_checker {
 // by calling game_busy_callback(NULL).   Game_busy_callback
 // returns the current count, so you can tell how many times
 // game_busy got called.
-// If delta_step is above 0, then it will also make sure it 
+// If delta_step is above 0, then it will also make sure it
 // calls the callback each time count steps 'delta_step' even
 // if 1/10th of a second hasn't elapsed.
 extern int game_busy_callback( void (*callback)(int count), int delta_step = -1 );
@@ -431,7 +463,7 @@ class monitor {
 	public:
 	char	*name;
 	int	value;					// Value that gets cleared to 0 each frame.
-	int	min, max, sum, cnt;		// Min & Max of value.  Sum is used to calculate average 
+	int	min, max, sum, cnt;		// Min & Max of value.  Sum is used to calculate average
 	monitor(char *name);		// constructor
 };
 
@@ -477,7 +509,7 @@ template <class T> void CAP( T& v, T mn, T mx )
 // ========================================================
 
 // here is the define for the stamp for this set of code
-#define STAMP_STRING "\001\001\001\001\002\002\002\002Read the Foundation Novels from Asimov.  I liked them." 
+#define STAMP_STRING "\001\001\001\001\002\002\002\002Read the Foundation Novels from Asimov.  I liked them."
 #define STAMP_STRING_LENGTH			80
 #define DEFAULT_CHECKSUM_STRING		"\001\001\001\001"
 #define DEFAULT_TIME_STRING			"\002\002\002\002"
@@ -522,7 +554,7 @@ void vm_free_all();
 	// allocates some RAM for a string of a certain length
 	char *_vm_strndup( const char *ptr, int size, char *filename, int line );
 
-	// Frees some RAM. 
+	// Frees some RAM.
 	void _vm_free( void *ptr, char *filename = NULL, int line= -1 );
 
 	// reallocates some RAM
@@ -550,7 +582,7 @@ void vm_free_all();
 	// allocates some RAM for a strings of a certain length
 	char *_vm_strndup( const char *ptr, int size );
 
-	// Frees some RAM. 
+	// Frees some RAM.
 	void _vm_free( void *ptr );
 
 	// reallocates some RAM
