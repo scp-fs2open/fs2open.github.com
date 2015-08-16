@@ -892,6 +892,11 @@ bool has_cmdline_only_flag(int argc, char *argv[])
 void os_init_cmdline(int argc, char *argv[])
 {
 	FILE *fp;
+
+#if defined(APPLE_APP)
+	char *path_name = SDL_GetBasePath();
+	SetCurrentDirectory(path_name);
+#endif
 	
 	if (!has_cmdline_only_flag(argc, argv)) {
 
