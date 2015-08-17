@@ -22,18 +22,22 @@
 // ------------------------------------------------------------------------------------------------------------
 // REGISTRY DEFINES/VARS
 //
+#ifdef SCP_UNIX
+// Initialize path of old pilot files
+#ifdef __APPLE__
+const char* Osreg_user_dir_legacy = "Library/FS2_Open";
+#else
+const char* Osreg_user_dir_legacy = ".fs2_open";
+#endif // __APPLE__
+#endif
 
 const char *Osreg_company_name = "Volition";
 const char *Osreg_class_name = "FreeSpace2Class";
 
 const char *Osreg_app_name = "FreeSpace2";
 const char *Osreg_title = "FreeSpace 2";
-#ifdef __APPLE__
-	const char *Osreg_user_dir = "Library/FS2_Open";
-#else
-	const char *Osreg_user_dir = ".fs2_open";
-#endif // __APPLE__
-	#define PROFILE_NAME "fs2_open.ini"
+
+#define PROFILE_NAME "fs2_open.ini"
 
 #define DEFAULT_SECTION "Default"
 
@@ -145,15 +149,22 @@ static char *trim_string(char *str)
 	return ptr;
 }
 
-static Profile *profile_read(char *file)
+static Profile *profile_read(const char *file)
 {
-	char fullname[MAX_PATH_LEN];
 	FILE *fp = NULL;
 	char *str;
+	
+	fp = fopen(os_get_config_path(file).c_str(), "rt");
 
-	snprintf(fullname, MAX_PATH_LEN, "%s%s%s%s%s", detect_home(), DIR_SEPARATOR_STR, Osreg_user_dir, DIR_SEPARATOR_STR, file);
-
-	fp = fopen(fullname, "rt");
+#ifdef SCP_UNIX
+	// If the file could not be opened, try to use the config file at the legacy location
+	if (fp == nullptr) {
+		char legacy_path[MAX_PATH_LEN];
+		snprintf(legacy_path, MAX_PATH_LEN, "%s/%s/%s", getenv("HOME"), Osreg_user_dir_legacy, file);
+		
+		fp = fopen(legacy_path, "rt");
+	}
+#endif
 
 	if (fp == NULL)
 		return NULL;
@@ -357,19 +368,16 @@ static char *profile_get_value(Profile *profile, const char *section, const char
 	return NULL;
 }
 
-static void profile_save(Profile *profile, char *file)
+static void profile_save(Profile *profile, const char *file)
 {
 	FILE *fp = NULL;
 	char tmp[MAX_PATH] = "";
 	char tmp2[MAX_PATH] = "";
-	char fullname[MAX_PATH_LEN];
 	
 	if (profile == NULL)
 		return;
 
-	snprintf(fullname, MAX_PATH_LEN, "%s%s%s%s%s", detect_home(), DIR_SEPARATOR_STR, Osreg_user_dir, DIR_SEPARATOR_STR, file);
-
-	fp = fopen(fullname, "wt");
+	fp = fopen(os_get_config_path(file).c_str(), "wt");
 
 	if (fp == NULL)
 		return;

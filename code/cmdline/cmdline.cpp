@@ -22,6 +22,7 @@
 #include "globalincs/version.h"
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
+#include "cfile/cfilesystem.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -942,18 +943,26 @@ void os_init_cmdline(int argc, char *argv[])
 			fclose(fp);
 		}
 
-#ifdef SCP_UNIX
 		// parse user specific cmdline_fso config file (will supersede options in global file)
-		char cmdname[MAX_PATH];
+		fp = fopen(os_get_config_path("data/cmdline_fso.cfg").c_str(), "rt");
 
-		snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline_fso.cfg", detect_home(), Osreg_user_dir);
-		fp = fopen(cmdname, "rt");
-
+#ifdef SCP_UNIX
+		// Read old config files
 		if ( !fp ) {
-			// try for non "_fso", for older code versions
-			snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline.cfg", detect_home(), Osreg_user_dir);
-			fp = fopen(cmdname, "rt");
+			extern const char* Osreg_user_dir_legacy;
+
+			char legacy_path[MAX_PATH_LEN];
+			snprintf(legacy_path, MAX_PATH_LEN, "%s/%s/%s", getenv("HOME"), Osreg_user_dir_legacy, "cmdline_fso.cfg");
+
+			fp = fopen(legacy_path, "rt");
+
+			if (!fp) {
+				// try for non "_fso", for older code versions
+				snprintf(legacy_path, MAX_PATH_LEN, "%s/%s/%s", getenv("HOME"), Osreg_user_dir_legacy, "cmdline.cfg");
+				fp = fopen(legacy_path, "rt");
+			}
 		}
+#endif
 
 		// if the file exists, get a single line, and deal with it
 		if ( fp ) {
@@ -977,7 +986,6 @@ void os_init_cmdline(int argc, char *argv[])
 			delete [] buf;
 			fclose(fp);
 		}
-#endif
 	} // If cmdline included PARSE_COMMAND_LINE_STRING
     
 	// By parsing cmdline last, anything actually on the command line will take precedence.

@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <algorithm>
 
 #include "globalincs/pstypes.h"
 #include "io/key.h"
@@ -41,6 +42,14 @@
 // used to be a THREADED define but only use multiple process threads if this is defined
 // NOTE: may hang if set
 //#define THREADED_PROCESS
+
+namespace
+{
+	const char* ORGANIZATION_NAME = "HardLightProductions"; // FreeSpace SourceCode Project
+	const char* APPLICATION_NAME = "FreeSpaceOpen";
+	
+	char* preferencesPath = nullptr;
+}
 
 // ----------------------------------------------------------------------------------------------------
 // PLATFORM SPECIFIC FUNCTION FOLLOWING
@@ -171,23 +180,6 @@ void os_deinit();
 // OSAPI FUNCTIONS
 //
 
-// detect home/base directory  (placeholder for possible future Win32 userdir support, just returns current directory for now)
-char Cur_path[MAX_PATH_LEN];
-const char *detect_home(void)
-{
-#ifdef WIN32
-	if ( strlen(Cfile_root_dir) )
-		return Cfile_root_dir;
-
-	memset( Cur_path, 0, MAX_PATH_LEN );
-	GetCurrentDirectory( MAX_PATH_LEN-1, Cur_path );
-
-	return Cur_path;
-#else
-	return (getenv("HOME"));
-#endif
-}
-
 // initialization/shutdown functions -----------------------------------------------
 
 // If app_name is NULL or ommited, then TITLE is used
@@ -309,6 +301,11 @@ void os_resume()
 // called at shutdown. Makes sure all thread processing terminates.
 void os_deinit()
 {
+	if (preferencesPath) {
+		SDL_free(preferencesPath);
+		preferencesPath = nullptr;
+	}
+	
 	SDL_DestroyMutex(Os_lock);
 
 	SDL_Quit();
@@ -432,6 +429,35 @@ void os_poll()
 			break;
 		}
 	}
+}
+
+SCP_string os_get_config_path(const SCP_string& subpath)
+{
+	// Lazily initialize the preferences path
+	if (!preferencesPath) {
+		preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
+		if (!preferencesPath) {
+			mprintf(("Failed to get preferences path from SDL: %s\n", SDL_GetError()));
+		}
+	}
+	
+	// Make path platform compatible
+	SCP_string compatiblePath(subpath);
+	std::replace(compatiblePath.begin(), compatiblePath.end(), '/', DIR_SEPARATOR_CHAR);
+	
+	SCP_stringstream ss;
+	
+	if (preferencesPath) {
+		ss << preferencesPath;
+	}
+	else {
+		// No preferences path, try current directory
+		ss << "./";
+	}
+	
+	ss << compatiblePath;
+	
+	return ss.str();
 }
 
 void debug_int3(char *file, int line)

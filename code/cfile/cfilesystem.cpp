@@ -37,7 +37,7 @@
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "localization/localize.h"
-
+#include "osapi/osapi.h"
 
 #define CF_ROOTTYPE_PATH 0
 #define CF_ROOTTYPE_PACK 1
@@ -94,7 +94,6 @@ typedef struct cf_file_block {
 
 static uint Num_files = 0;
 static cf_file_block  *File_blocks[CF_MAX_FILE_BLOCKS];
-
 
 // Return a pointer to to file 'index'.
 cf_file *cf_get_file(int index)
@@ -360,6 +359,36 @@ void cf_build_pack_list( cf_root *root )
 	vm_free(temp_roots_sort);
 }
 
+static void cf_add_mod_roots(const char* rootDirectory)
+{
+	if (Cmdline_mod)
+	{
+		for (const char* cur_pos=Cmdline_mod; strlen(cur_pos) != 0; cur_pos+= (strlen(cur_pos)+1))
+		{
+			SCP_stringstream ss;
+			ss << rootDirectory;
+
+			if (rootDirectory[strlen(rootDirectory) - 1] != DIR_SEPARATOR_CHAR)
+			{
+				ss << DIR_SEPARATOR_CHAR;
+			}
+
+			ss << cur_pos << DIR_SEPARATOR_STR;
+
+			SCP_string rootPath = ss.str();
+			if (rootPath.size() + 1 >= CF_MAX_PATHNAME_LENGTH) {
+				Error(LOCATION, "The length of mod directory path '%s' exceeds the maximum of %d!\n", rootPath.c_str(), CF_MAX_PATHNAME_LENGTH);
+			}
+
+			cf_root* root = cf_create_root();
+
+			strncpy(root->path, rootPath.c_str(),  CF_MAX_PATHNAME_LENGTH-1);
+
+			root->roottype = CF_ROOTTYPE_PATH;
+			cf_build_pack_list(root);
+		}
+	}
+}
 
 void cf_build_root_list(const char *cdrom_dir)
 {
@@ -367,40 +396,11 @@ void cf_build_root_list(const char *cdrom_dir)
 	Num_path_roots = 0;
 
 	cf_root	*root;
-	char str_temp[CF_MAX_PATHNAME_LENGTH], *cur_pos;
 	int path_len;
 
-#ifdef SCP_UNIX
 	// =========================================================================
 	// now look for mods under the users HOME directory to use before system ones
-	if (Cmdline_mod) {
-		for (cur_pos=Cmdline_mod; strlen(cur_pos) != 0; cur_pos+= (strlen(cur_pos)+1))
-		{
-			memset(str_temp, 0, CF_MAX_PATHNAME_LENGTH);
-			strncpy(str_temp, cur_pos, CF_MAX_PATHNAME_LENGTH-1);
-
-			strncat(str_temp, DIR_SEPARATOR_STR, (CF_MAX_PATHNAME_LENGTH - strlen(str_temp) - 1));
-
-			// truncated string check
-			if ( (strlen(Cfile_user_dir) + strlen(str_temp) + 1) >= CF_MAX_PATHNAME_LENGTH ) {
-				Error(LOCATION, "Home directory plus mod directory exceeds CF_MAX_PATHNAME_LENGTH\n");
-			}
-
-			root = cf_create_root();
-
-			strncpy( root->path, Cfile_user_dir, CF_MAX_PATHNAME_LENGTH-1 );
-
-			// do we already have a slash? as in the case of a root directory install
-			if ( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
-				strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
-			}
-
-			strncat(root->path, str_temp, (CF_MAX_PATHNAME_LENGTH - strlen(root->path) - 1));
-
-			root->roottype = CF_ROOTTYPE_PATH;
-			cf_build_pack_list(root);
-		}
-	}
+	cf_add_mod_roots(Cfile_user_dir);
 	// =========================================================================
 
 	// =========================================================================
@@ -421,46 +421,37 @@ void cf_build_root_list(const char *cdrom_dir)
 	// Next, check any VP files under the current directory.
 	cf_build_pack_list(root);
 	// =========================================================================
-#endif
 
-	if(Cmdline_mod) {
-		// stackable Mod support -- Kazan
-		for (cur_pos=Cmdline_mod; *cur_pos != '\0'; cur_pos+= (strlen(cur_pos)+1))
-		{
-			memset(str_temp, 0, CF_MAX_PATHNAME_LENGTH);
-			strncpy(str_temp, cur_pos, CF_MAX_PATHNAME_LENGTH-1);
+	// =========================================================================
+#ifdef SCP_UNIX
+	// For compatibility with old installations we need to also add the legacy path as a root
+	cf_add_mod_roots(Cfile_user_dir_legacy);
+	
+	root = cf_create_root();
+	strncpy( root->path, Cfile_user_dir_legacy, CF_MAX_PATHNAME_LENGTH-1 );
 
-			strncat(str_temp, DIR_SEPARATOR_STR, (CF_MAX_PATHNAME_LENGTH - strlen(str_temp) - 1));
-			root = cf_create_root();
-
-			if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
-				Error(LOCATION, "Can't get current working directory -- %d", errno );
-			}
-
-			// truncated string check
-			if ( (strlen(root->path) + strlen(str_temp) + 1) >= CF_MAX_PATHNAME_LENGTH ) {
-				Error(LOCATION, "Installed path plus mod directory exceeds CF_MAX_PATHNAME_LENGTH\n");
-			}
-
-			path_len = strlen(root->path);
-
-			// do we already have a slash? as in the case of a root directory install
-			if ( (path_len < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[path_len-1] != DIR_SEPARATOR_CHAR) ) {
-				strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
-				path_len++;
-			}
-
-			strncat(root->path, str_temp, (CF_MAX_PATHNAME_LENGTH - path_len - 1));
-			root->roottype = CF_ROOTTYPE_PATH;
-			cf_build_pack_list(root);
-		}
+	// do we already have a slash? as in the case of a root directory install
+	if( (strlen(root->path) < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[strlen(root->path)-1] != DIR_SEPARATOR_CHAR) ) {
+		strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 	}
+	root->roottype = CF_ROOTTYPE_PATH;
+
+	// Next, check any VP files under the current directory.
+	cf_build_pack_list(root);
+#endif
+	// =========================================================================
+
+	char working_directory[CF_MAX_PATHNAME_LENGTH];
+	
+	if ( !_getcwd(working_directory, CF_MAX_PATHNAME_LENGTH ) ) {
+		Error(LOCATION, "Can't get current working directory -- %d", errno );
+	}
+	
+	cf_add_mod_roots(working_directory);
 
 	root = cf_create_root();
 	
-	if ( !_getcwd(root->path, CF_MAX_PATHNAME_LENGTH ) ) {
-		Error(LOCATION, "Can't get current working directory -- %d", errno );
-	}
+	strcpy_s(root->path, working_directory);
 
 	path_len = strlen(root->path);
 
@@ -2128,18 +2119,11 @@ int cf_create_default_path_string( SCP_string &path, int pathtype, const char *f
 void cfile_spew_pack_file_crcs()
 {
 	int i;
-	char out_path[CFILE_ROOT_DIRECTORY_LEN+MAX_FILENAME_LEN];
 	char datetime[45];
 	uint chksum = 0;
 	time_t my_time;
 	
-#ifdef SCP_UNIX
-	sprintf(out_path, "%s%svp_crcs.txt", Cfile_user_dir, DIR_SEPARATOR_STR);
-#else
-	sprintf(out_path, "%s%svp_crcs.txt", Cfile_root_dir, DIR_SEPARATOR_STR);
-#endif
-
-	FILE *out = fopen(out_path, "w");
+	FILE *out = fopen(os_get_config_path("vp_crcs.txt").c_str(), "w");
 
 	if (out == NULL) {
 		Int3();
