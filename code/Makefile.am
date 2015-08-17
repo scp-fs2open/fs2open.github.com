@@ -592,6 +592,8 @@ FS2_SOURCES =	\
 	osapi/dialogs.h	\
 	osapi/osapi.cpp	\
 	osapi/osapi.h	\
+	osapi/osregistry.cpp	\
+	osapi/osregistry.h  \
 	osapi/outwnd.cpp	\
 	osapi/outwnd.h \
 	palman/palman.cpp	\
@@ -776,16 +778,12 @@ WIN32_SOURCES =	\
 	graphics/gl/Gl.h	\
 	graphics/gl/Glext.h	\
 	graphics/gl/wglext.h	\
-	osapi/monopub.h	\
-	osapi/osregistry.cpp	\
-	osapi/osregistry.h
+	osapi/monopub.h
 endif
 
 ## Unix-specific sources
 if FS2_OS_UNIX
 UNIX_SOURCES =	\
-	osapi/osregistry_unix.cpp	\
-	osapi/osregistry.h	\
 	windows_stub/stubs.cpp	\
 	windows_stub/config.h
 endif

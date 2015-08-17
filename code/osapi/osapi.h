@@ -28,9 +28,6 @@ extern int Os_debugger_running;
 
 // initialization/shutdown functions -----------------------------------------------
 
-// detect the home/base/writable directory to use
-extern const char *detect_home(void);
-
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.
 void os_init(const char * wclass, const char * title, const char *app_name=NULL, const char *version_string=NULL );
@@ -68,5 +65,18 @@ void os_suspend();
 // resume message processing
 void os_resume(); 
 
+/**
+ * @brief Determines if FSO is running in legacy config mode
+ */
+bool os_is_legacy_mode();
+
+/**
+ * @brief Gets a path to a configuration file
+ * A relative path to the wanted file or directory. Directories should be separated with '/'
+ * @param subpath The path of the wanted file or directory, may be emtpy to get the config directory
+ * 
+ * @returns The path to the specified config path
+ */
+SCP_string os_get_config_path(const SCP_string& subpath = "");
 
 #endif // _OSAPI_H

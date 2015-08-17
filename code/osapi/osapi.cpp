@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <algorithm>
 
 #include "globalincs/pstypes.h"
 #include "io/key.h"
@@ -41,6 +42,37 @@
 // used to be a THREADED define but only use multiple process threads if this is defined
 // NOTE: may hang if set
 //#define THREADED_PROCESS
+
+namespace
+{
+	const char* ORGANIZATION_NAME = "HardLightProductions";
+	const char* APPLICATION_NAME = "FreeSpaceOpen";
+	
+	char* preferencesPath = nullptr;
+
+	bool checkedLegacyMode = false;
+	bool legacyMode = false;
+
+	const char* getPreferencesPath()
+	{
+		// Lazily initialize the preferences path
+		if (!preferencesPath) {
+			preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
+			if (!preferencesPath) {
+				mprintf(("Failed to get preferences path from SDL: %s\n", SDL_GetError()));
+			}
+		}
+
+		if (preferencesPath) {
+			return preferencesPath;
+		}
+		else {
+			// No preferences path, try current directory
+			return "." DIR_SEPARATOR_STR;
+		}
+
+	}
+}
 
 // ----------------------------------------------------------------------------------------------------
 // PLATFORM SPECIFIC FUNCTION FOLLOWING
@@ -171,23 +203,6 @@ void os_deinit();
 // OSAPI FUNCTIONS
 //
 
-// detect home/base directory  (placeholder for possible future Win32 userdir support, just returns current directory for now)
-char Cur_path[MAX_PATH_LEN];
-const char *detect_home(void)
-{
-#ifdef WIN32
-	if ( strlen(Cfile_root_dir) )
-		return Cfile_root_dir;
-
-	memset( Cur_path, 0, MAX_PATH_LEN );
-	GetCurrentDirectory( MAX_PATH_LEN-1, Cur_path );
-
-	return Cur_path;
-#else
-	return (getenv("HOME"));
-#endif
-}
-
 // initialization/shutdown functions -----------------------------------------------
 
 // If app_name is NULL or ommited, then TITLE is used
@@ -302,6 +317,47 @@ void os_resume()
 	SDL_UnlockMutex( Os_lock );	
 }
 
+bool os_is_legacy_mode()
+{
+	// Make this check a little faster by caching the result
+	if (checkedLegacyMode)
+	{
+		return legacyMode;
+	}
+
+	if (Cmdline_portable_mode) {
+		// When the portable mode option is given, non-legacy is implied
+		legacyMode = false;
+		checkedLegacyMode = true;
+	}
+	else {
+		SCP_stringstream path_stream;
+		path_stream << getPreferencesPath() << DIR_SEPARATOR_CHAR << Osreg_config_file_name;
+
+		// Use the existance of the fs2_open.ini file for determining if the launcher supports the new mode
+		auto file = fopen(path_stream.str().c_str(), "r");
+
+		if (file == nullptr)
+		{
+			legacyMode = true;
+		}
+		else
+		{
+			fclose(file);
+			legacyMode = false;
+		}
+	}
+
+	if (legacyMode) {
+		// Print a message for the people running it from the terminal
+		fprintf(stdout, "FSO is running in legacy config mode. Please either update your launcher or"
+			" copy the configuration and pilot files to '%s' for better future compatibility.", getPreferencesPath());
+	}
+
+	checkedLegacyMode = true;
+	return legacyMode;
+}
+
 // ----------------------------------------------------------------------------------------------------
 // OSAPI FORWARD DECLARATIONS
 //
@@ -309,6 +365,11 @@ void os_resume()
 // called at shutdown. Makes sure all thread processing terminates.
 void os_deinit()
 {
+	if (preferencesPath) {
+		SDL_free(preferencesPath);
+		preferencesPath = nullptr;
+	}
+	
 	SDL_DestroyMutex(Os_lock);
 
 	SDL_Quit();
@@ -432,6 +493,40 @@ void os_poll()
 			break;
 		}
 	}
+}
+
+SCP_string os_get_config_path(const SCP_string& subpath)
+{
+	// Make path platform compatible
+	SCP_string compatiblePath(subpath);
+	std::replace(compatiblePath.begin(), compatiblePath.end(), '/', DIR_SEPARATOR_CHAR);
+
+	SCP_stringstream ss;
+
+	if (Cmdline_portable_mode) {
+		// Use the current directory
+		ss << "." << DIR_SEPARATOR_CHAR << compatiblePath;
+		return ss.str();
+	}
+
+	// Avoid infinite recursion when checking legacy mode
+	if (os_is_legacy_mode()) {
+#ifdef WIN32
+		// Use the current directory
+		ss << ".";
+#else
+		extern const char* Osreg_user_dir_legacy;
+		// Use the home directory
+		ss << getenv("HOME") << DIR_SEPARATOR_CHAR << Osreg_user_dir_legacy;
+#endif
+
+		ss << DIR_SEPARATOR_CHAR << compatiblePath;
+		return ss.str();
+	}
+	
+	ss << getPreferencesPath() << compatiblePath;
+	
+	return ss.str();
 }
 
 void debug_int3(char *file, int line)
