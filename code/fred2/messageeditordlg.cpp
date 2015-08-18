@@ -297,6 +297,8 @@ int CMessageEditorDlg::find_event()
 
 	for (i=0; i<Num_mission_events; i++) {
 		node = Mission_events[i].formula;
+		Assertion(node >= 0, "Can't have a formula point to sexp node -1!");
+
 		if ( get_operator_const(CTEXT(node)) == OP_WHEN || get_operator_const(CTEXT(node)) == OP_EVERY_TIME
 			|| get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT
 			|| get_operator_const(CTEXT(node)) == OP_IF_THEN_ELSE || get_operator_const(CTEXT(node)) == OP_PERFORM_ACTIONS )

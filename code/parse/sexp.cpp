@@ -1558,6 +1558,7 @@ int find_argnum(int parent, int arg)
 int get_operator_index(const char *token)
 {
 	int	i;
+	Assert(token != NULL);
 
 	for (i=0; i<Num_operators; i++){
 		if (!stricmp(token, Operators[i].text)){
@@ -1569,10 +1570,12 @@ int get_operator_index(const char *token)
 }
 
 /**
- * From a sexp node, return the index in the array Operators or 0 if not an operator
+ * From a sexp node, return the index in the array Operators or NOT_A_SEXP_OPERATOR if not an operator
  */
 int get_operator_index(int node)
 {
+	Assert(node >= 0 && node < Num_sexp_nodes);
+
 	if (!Fred_running && (Sexp_nodes[node].op_index != NO_OPERATOR_INDEX_DEFINED) ) {
 		return Sexp_nodes[node].op_index;
 	}
@@ -28767,8 +28770,8 @@ char *CTEXT(int n)
 	char variable_name[TOKEN_LENGTH];
 	char *current_argument; 
 
+	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index to CTEXT!");
 	if ( n < 0 ) {
-		Int3();
 		return NULL;
 	}
 
