@@ -1558,7 +1558,7 @@ int find_argnum(int parent, int arg)
 int get_operator_index(const char *token)
 {
 	int	i;
-	Assert(token != NULL);
+	Assertion(token != NULL, "get_operator_index(char*) called with a null token; get a coder!\n");
 
 	for (i=0; i<Num_operators; i++){
 		if (!stricmp(token, Operators[i].text)){
@@ -1574,7 +1574,7 @@ int get_operator_index(const char *token)
  */
 int get_operator_index(int node)
 {
-	Assert(node >= 0 && node < Num_sexp_nodes);
+	Assert(node >= 0 && node < Num_sexp_nodes, "Passed an out-of-range node index to get_operator_index(int)!");
 
 	if (!Fred_running && (Sexp_nodes[node].op_index != NO_OPERATOR_INDEX_DEFINED) ) {
 		return Sexp_nodes[node].op_index;
