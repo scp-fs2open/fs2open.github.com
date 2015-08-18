@@ -1574,7 +1574,7 @@ int get_operator_index(const char *token)
  */
 int get_operator_index(int node)
 {
-	Assert(node >= 0 && node < Num_sexp_nodes, "Passed an out-of-range node index to get_operator_index(int)!");
+	Assertion(node >= 0 && node < Num_sexp_nodes, "Passed an out-of-range node index (%d) to get_operator_index(int)!", node);
 
 	if (!Fred_running && (Sexp_nodes[node].op_index != NO_OPERATOR_INDEX_DEFINED) ) {
 		return Sexp_nodes[node].op_index;
@@ -28770,7 +28770,7 @@ char *CTEXT(int n)
 	char variable_name[TOKEN_LENGTH];
 	char *current_argument; 
 
-	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index to CTEXT!");
+	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index (%d) to CTEXT!", n);
 	if ( n < 0 ) {
 		return NULL;
 	}
