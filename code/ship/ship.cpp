@@ -10785,6 +10785,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp, 1);
 
 		Script_system.RunCondition(CHA_PRIMARYFIRE, 0, NULL, objp);
+		Script_system.RemHookVars(2, "User", "Target");
 	}
 
 	return num_fired;
@@ -11506,6 +11507,7 @@ done_secondary:
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
 		Script_system.RunCondition(CHA_SECONDARYFIRE, 0, NULL, objp);
+		Script_system.RemHookVars(2, "User", "Target");
 	}
 
 	return num_fired;
@@ -11727,6 +11729,7 @@ int ship_select_next_primary(object *objp, int direction)
 			Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
+			Script_system.RemHookVars(2, "User", "Target");
 			return 1;
 		}
 
@@ -11755,6 +11758,7 @@ int ship_select_next_primary(object *objp, int direction)
 	Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
 	Script_system.SetHookObjects(2, "User", objp, "Target", target);
 	Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
+	Script_system.RemHookVars(2, "User", "Target");
 
 	return 1;
 }
@@ -11844,6 +11848,7 @@ int ship_select_next_secondary(object *objp)
 			Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
+			Script_system.RemHookVars(2, "User", "Target");
 			return 1;
 		}
 	} // end if

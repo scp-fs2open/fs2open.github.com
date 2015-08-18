@@ -2004,6 +2004,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 					Script_system.SetHookObjects(3, "Ship", &Objects[parent_objnum], "Weapon", objp, "Target", &Objects[turret->turret_enemy_objnum]);
 					Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[parent_objnum]);
+					Script_system.RemHookVars(3, "Ship", "Weapon", "Target");
 
 					// if the gun is a flak gun
 					if (wip->wi_flags & WIF_FLAK) {			
