@@ -8793,8 +8793,6 @@ void game_title_screen_display()
 	}
 	*/
 
-	//Script_system.SetHookVar("SplashScreenImage", 's', Game_title_screen_fname[gr_screen.res]);
-	//Script_system.SetHookVar("SplashScreenLogo", 's', Game_logo_screen_fname[gr_screen.res]);
 	bool globalhook_override = Script_system.IsOverride(Script_splashhook);
 	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
 	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
@@ -8839,8 +8837,6 @@ void game_title_screen_display()
 		Script_system.RunCondition(CHA_SPLASHSCREEN);
 		
 	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
-		
-	Script_system.RemHookVars(2, "SplashScreenImage", "SplashScreenLogo");
 
 	// flip
 	gr_flip();

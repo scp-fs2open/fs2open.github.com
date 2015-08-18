@@ -177,7 +177,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, B, wpB->weapon_info_index);
 		}
 
-		Script_system.RemHookVars(4, "Weapon", "WeaponB", "Self","ObjectB");
+		Script_system.RemHookVars(4, "Weapon", "WeaponB", "Self", "Object");
 		return 1;
 	}
 
