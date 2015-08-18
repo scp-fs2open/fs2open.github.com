@@ -1564,8 +1564,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, i
 	{
 		//WMC - Do scripting stuff
 		Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_objp);
-		Script_system.RemHookVar("Self");
-		Script_system.RemHookVar("Killer");
+		Script_system.RemHookVars(2, "Self", "Killer");
 		return;
 	}
 
