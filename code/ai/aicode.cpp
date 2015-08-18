@@ -1999,11 +1999,6 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 					}
 
 					if (eno->trial_objp->flags & OF_PLAYER_SHIP){
-						// Goober5000: oh dear, it looks like this was originally meant to scale
-						// the distance according to skill, but as it is, the effect appears negligible.
-						// I could fix it with parentheses, but we all know how quickly AI pilots
-						// die usually, so the overall effect would probably be worse.  So I left
-						// this unchanged.
 						dist *= 1.0f + (NUM_SKILL_LEVELS - Game_skill_level - 1)/NUM_SKILL_LEVELS;	//	Favor attacking non-players based on skill level.
 					}
 
