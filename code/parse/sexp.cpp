@@ -1468,8 +1468,8 @@ int find_sexp_list(int num)
 			return i;
 	}
 
-	// assume that it was the first item in the list
-	return num;
+	// not found
+	return -1;
 }
 
 /**
@@ -1478,30 +1478,35 @@ int find_sexp_list(int num)
 int find_parent_operator(int node)
 {
 	int i;
-	int n = node;
-
 	Assert((node >= 0) && (node < Num_sexp_nodes));
 
-	if (Sexp_nodes[n].subtype == SEXP_ATOM_OPERATOR)
-		n = find_sexp_list(n);
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR)
+	{
+		node = find_sexp_list(node);
 
-	Assert( (n >= 0) && (n < Num_sexp_nodes) );
+		// are we already at the top of the list?  this will happen for non-standard sexps
+		// (sexps that fire instantly instead of using a conditional) such as:
+		// $Formula: ( do-nothing ) 
+		if (node < 0)
+			return -1;
+	}
 
-	while (Sexp_nodes[n].subtype != SEXP_ATOM_OPERATOR)
+	// iterate backwards through the sexps nodes (i.e. do the inverse of CDR)
+	while (Sexp_nodes[node].subtype != SEXP_ATOM_OPERATOR)
 	{
 		for (i = 0; i < Num_sexp_nodes; i++)
 		{
-			if (Sexp_nodes[i].rest == n)
+			if (Sexp_nodes[i].rest == node)
 				break;
 		}
 
 		if (i == Num_sexp_nodes)
 			return -1;  // not found, probably at top node already.
 
-		n = i;
+		node = i;
 	}
 
-	return n;
+	return node;
 }
 
 /**
@@ -3452,7 +3457,7 @@ int get_sexp()
 		{
 			// get the first op of the parent, which should be a *_of operator
 			arg_handler = CADR(parent);
-			if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
+			if (arg_handler >= 0 && !is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
 				arg_handler = -1;
 		}
 
@@ -8995,6 +9000,10 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
+	// thanks to woutersmits for finding this loophole
+	if (arg_handler < 0)
+		return;
+
 	// can't change validity of for-counter
 	if (get_operator_const(CTEXT(arg_handler)) == OP_FOR_COUNTER)
 		return;
@@ -9047,6 +9056,10 @@ void sexp_change_argument_validity(int n, bool invalidate)
 	bool toggled;
 
 	arg_handler = get_handler_for_x_of_operator(n);
+
+	// thanks to woutersmits for finding this loophole
+	if (arg_handler < 0)
+		return;
 
 	// can't change validity of for-counter
 	if (get_operator_const(CTEXT(arg_handler)) == OP_FOR_COUNTER)
@@ -9132,12 +9145,11 @@ int get_handler_for_x_of_operator(int n)
 
 	// get the first op of the parent, which should be a *_of operator
 	arg_handler = CADR(conditional);
-	if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler)))) {
+	if (arg_handler < 0 || !is_blank_of_op(get_operator_const(CTEXT(arg_handler)))) {
 		return -1;
 	}
 
 	return arg_handler;
-
 }
 
 // Goober5000
