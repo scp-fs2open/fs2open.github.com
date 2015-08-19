@@ -102,7 +102,7 @@ void parse_ssm(const char *filename)
 				s.warp_time = 4.0f;
 			}
 			s.max_radius = -1.0f;
-			if (use_min = required_string_either("+Radius:", "+Min Radius:"))
+			if ((use_min = required_string_either("+Radius:", "+Min Radius:")))
 				required_string("+Min Radius:");
 			else
 				required_string("+Radius:");
