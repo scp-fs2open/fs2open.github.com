@@ -715,7 +715,8 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.uvec, yVal);
 
 			// Only do the glide cap if we have one and are actively thrusting in some direction.
-			if ( curGlideCap >= 0.0f && (ci->forward != 0.0f || ci->sideways != 0.0f || ci->vertical != 0.0f) ) {
+			// Unless AIPF2_GLIDE_DECAY_REQUIRES_THRUST isn't set. -MageKing17
+			if ( curGlideCap >= 0.0f && (!(The_mission.ai_profile->flags2 & AIPF2_GLIDE_DECAY_REQUIRES_THRUST) || ci->forward != 0.0f || ci->sideways != 0.0f || ci->vertical != 0.0f) ) {
 				float currentmag = vm_vec_mag(&pi->desired_vel);
 				if ( currentmag > curGlideCap ) {
 					vm_vec_scale( &pi->desired_vel, curGlideCap / currentmag );
