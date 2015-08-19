@@ -4795,7 +4795,7 @@ void game_set_frametime(int state)
 		fix frame_speed = F1_0 / Debug_dump_frames;
 
 		if (Frametime > frame_speed ){
-			nprintf(("warning","slow frame: %x\n",Frametime));
+			nprintf(("warning","slow frame: %x\n",(int)Frametime));
 		} else {			
 			do {
 				thistime = timer_get_fixed_seconds();
