@@ -1,5 +1,4 @@
 
-#include "globalincs/pstypes.h"
 #include "pilotfile/pilotfile.h"
 #include "ship/ship.h"
 #include "stats/medals.h"

@@ -10,10 +10,10 @@
 #ifndef _MODELRENDER_H
 #define _MODELRENDER_H
 
-#include "model/model.h"
-#include "math/vecmat.h"
-#include "lighting/lighting.h"
 #include "graphics/gropengltnl.h"
+#include "lighting/lighting.h"
+#include "math/vecmat.h"
+#include "model/model.h"
 
 extern light Lights[MAX_LIGHTS];
 extern int Num_lights;

@@ -11,26 +11,24 @@
 
 
 
-#include "object/object.h"
-#include "ship/ship.h"
-#include "globalincs/linklist.h"
-#include "hud/hud.h"
-#include "hud/hudmessage.h"
-#include "hud/hudtargetbox.h"
-#include "hud/hudescort.h"
-#include "hud/hudshield.h"
 #include "gamesnd/gamesnd.h"
-#include "graphics/font.h"
-#include "io/timer.h"
-#include "weapon/emp.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
-#include "playerman/player.h"
+#include "hud/hudescort.h"
+#include "hud/hudmessage.h"
 #include "hud/hudparse.h"
+#include "hud/hudshield.h"
+#include "hud/hudtargetbox.h"
+#include "iff_defs/iff_defs.h"
+#include "io/timer.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
-#include "iff_defs/iff_defs.h"
+#include "object/object.h"
 #include "parse/parselo.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "weapon/emp.h"
 
 
 int Show_escort_view;

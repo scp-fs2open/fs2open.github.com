@@ -1,17 +1,15 @@
 #include "camera/camera.h"
-#include "math/vecmat.h"
-#include "graphics/2d.h"
 #include "globalincs/alphacolors.h"
-#include "parse/parselo.h"
-#include "physics/physics.h" //apply_physics
+#include "globalincs/linklist.h"
 #include "globalincs/systemvars.h" //VM_FREECAMERA etc
+#include "graphics/font.h"
 #include "hud/hud.h" //hud_get_draw
+#include "math/vecmat.h"
+#include "mod_table/mod_table.h"
 #include "model/model.h" //polymodel, model_get
+#include "parse/parselo.h"
 #include "playerman/player.h" //player_get_padlock_orient
 #include "ship/ship.h" //compute_slew_matrix
-#include "graphics/font.h"
-#include "mod_table/mod_table.h"
-#include "globalincs/linklist.h"
 
 //*************************IMPORTANT GLOBALS*************************
 float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97

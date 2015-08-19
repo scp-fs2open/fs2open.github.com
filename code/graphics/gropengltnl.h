@@ -14,10 +14,10 @@
 #define _GROPENGLTNL_H
 
 
-#include "graphics/gropengl.h"
 #include "globalincs/pstypes.h"
-#include "model/model.h"
+#include "graphics/gropengl.h"
 #include "graphics/shadows.h"
+#include "model/model.h"
 
 extern GLint GL_max_elements_vertices;
 extern GLint GL_max_elements_indices;

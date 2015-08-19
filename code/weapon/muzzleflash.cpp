@@ -8,12 +8,12 @@
 */
 
 #include "globalincs/systemvars.h"
-#include "parse/parselo.h"
-#include "weapon/muzzleflash.h"
-#include "particle/particle.h"
 #include "graphics/2d.h"
 #include "math/vecmat.h"
 #include "object/object.h"
+#include "parse/parselo.h"
+#include "particle/particle.h"
+#include "weapon/muzzleflash.h"
 
 
 // ---------------------------------------------------------------------------------------------------------------------

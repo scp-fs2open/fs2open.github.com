@@ -11,8 +11,8 @@
 
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
-#include "io/mouse.h"
 #include "globalincs/pstypes.h"
+#include "io/mouse.h"
 
 #include <string>
 #include <limits.h>

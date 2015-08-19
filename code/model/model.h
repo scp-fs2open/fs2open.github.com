@@ -12,8 +12,8 @@
 #ifndef _MODEL_H
 #define _MODEL_H
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH
+#include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "object/object.h"
 

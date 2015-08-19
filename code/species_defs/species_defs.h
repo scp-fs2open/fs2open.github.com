@@ -12,12 +12,12 @@
 #ifndef _SPECIES_DEFS_H_
 #define _SPECIES_DEFS_H_
 
-#include "globalincs/pstypes.h"
-#include "globalincs/globals.h"
-#include "graphics/generic.h"
 #include "gamesnd/gamesnd.h"
-#include "mission/missionbriefcommon.h"
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
+#include "graphics/generic.h"
 #include "hud/hudparse.h"
+#include "mission/missionbriefcommon.h"
 
 // for bitmap thrusters
 typedef struct thrust_pair_bitmap {

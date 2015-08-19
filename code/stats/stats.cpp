@@ -16,10 +16,10 @@
 #endif
 
 #include "globalincs/systemvars.h"
-#include "playerman/player.h"
-#include "stats/stats.h"
 #include "hud/hud.h"
 #include "network/multi.h"
+#include "playerman/player.h"
+#include "stats/stats.h"
 
 
 #define MISSION_STATS_START_Y 80

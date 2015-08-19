@@ -9,22 +9,22 @@
 
 
 
-#include "nebula/neb.h"
-#include "render/3d.h"
 #include "bmpman/bmpman.h"
-#include "object/object.h"
+#include "cmdline/cmdline.h"
+#include "ddsutils/ddsutils.h"
+#include "debugconsole/console.h"
 #include "freespace2/freespace.h"
-#include "starfield/starfield.h"
+#include "jpgutils/jpgutils.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
+#include "object/object.h"
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
-#include "tgautils/tgautils.h"
-#include "jpgutils/jpgutils.h"
 #include "pngutils/pngutils.h"
-#include "ddsutils/ddsutils.h"
-#include "mission/missionparse.h"
+#include "render/3d.h"
 #include "ship/ship.h"
-#include "cmdline/cmdline.h"
-#include "debugconsole/console.h"
+#include "starfield/starfield.h"
+#include "tgautils/tgautils.h"
 
 
 // --------------------------------------------------------------------------------------------------------

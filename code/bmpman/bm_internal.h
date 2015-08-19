@@ -22,7 +22,6 @@
 #endif
 
 #include "bmpman/bmpman.h"
-#include "globalincs/pstypes.h"
 
 union bm_extra_info {
 	struct {

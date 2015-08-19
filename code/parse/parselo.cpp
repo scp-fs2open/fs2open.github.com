@@ -14,17 +14,16 @@
 #include <stdarg.h>
 #include <setjmp.h>
 
+#include "ctype.h"
+#include "globalincs/version.h"
+#include "localization/fhash.h"
+#include "localization/localize.h"
+#include "mission/missionparse.h"
+#include "parse/encrypt.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
-#include "mission/missionparse.h"
-#include "ctype.h"
-#include "parse/encrypt.h"
-#include "localization/localize.h"
-#include "localization/fhash.h"
-#include "cfile/cfile.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
-#include "globalincs/version.h"
 
 
 

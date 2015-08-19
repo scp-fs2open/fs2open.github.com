@@ -8,6 +8,8 @@
 */ 
 
 
+#ifndef _READYROOM_H
+#define _READYROOM_H
 
 extern int Sim_room_overlay_id;
 extern int Campaign_room_overlay_id;
@@ -22,3 +24,5 @@ int readyroom_continue_campaign();
 void campaign_room_init();
 void campaign_room_close();
 void campaign_room_do_frame(float frametime);
+
+#endif

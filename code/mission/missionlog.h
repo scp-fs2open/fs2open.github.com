@@ -12,8 +12,8 @@
 #ifndef _MISSIONLOG_H
 #define _MISSIONLOG_H
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 // defined for different mission log entries
 

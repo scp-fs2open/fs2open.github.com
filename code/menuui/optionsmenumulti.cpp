@@ -10,23 +10,22 @@
 
 
 
-#include "ui/ui.h"
-#include "io/key.h"
-#include "graphics/font.h"
+#include "cfile/cfile.h"
 #include "gamesnd/gamesnd.h"
-#include "playerman/player.h"
-#include "network/multi.h"
-#include "network/multi_voice.h"
-#include "sound/rtvoice.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
+#include "io/key.h"
+#include "io/timer.h"
 #include "menuui/optionsmenu.h"
 #include "menuui/optionsmenumulti.h"
-#include "popup/popup.h"
+#include "network/multi.h"
+#include "network/multi_voice.h"
 #include "osapi/osregistry.h"
-#include "globalincs/alphacolors.h"
-#include "io/timer.h"
-#include "cfile/cfile.h"
 #include "parse/parselo.h"
+#include "playerman/player.h"
+#include "popup/popup.h"
 #include "sound/ds.h"
+#include "sound/rtvoice.h"
 
 
 

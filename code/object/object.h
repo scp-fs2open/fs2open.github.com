@@ -12,8 +12,8 @@
 #ifndef _OBJECT_H
 #define _OBJECT_H
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 #include "math/vecmat.h"
 #include "physics/physics.h"
 

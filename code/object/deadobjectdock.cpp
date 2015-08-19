@@ -6,7 +6,6 @@
 
 
 
-#include "globalincs/pstypes.h"
 #include "object/deadobjectdock.h"
 #include "object/object.h"
 

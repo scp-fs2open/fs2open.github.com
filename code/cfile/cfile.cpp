@@ -29,10 +29,10 @@
 #endif
 
 #include "cfile/cfile.h"
-#include "parse/encrypt.h"
-#include "cfile/cfilesystem.h"
 #include "cfile/cfilearchive.h"
+#include "cfile/cfilesystem.h"
 #include "osapi/osapi.h"
+#include "parse/encrypt.h"
 
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";

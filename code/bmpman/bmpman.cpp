@@ -16,16 +16,13 @@
 #include <windows.h>
 #endif
 
-#include "bmpman/bmpman.h"
-#include "bmpman/bm_internal.h"
-
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
-#include "cfile/cfile.h"
+#include "bmpman/bm_internal.h"
+#include "bmpman/bmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
-#include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 #include "io/key.h"

@@ -8,14 +8,12 @@
  */
 
 
-#include "globalincs/pstypes.h"
-#include "globalincs/def_files.h"
-#include "species_defs/species_defs.h"
 #include "cfile/cfile.h"
-#include "parse/parselo.h"
+#include "globalincs/def_files.h"
 #include "iff_defs/iff_defs.h"
-#include "graphics/generic.h"
 #include "localization/localize.h"
+#include "parse/parselo.h"
+#include "species_defs/species_defs.h"
 
 
 SCP_vector<species_info> Species_info;

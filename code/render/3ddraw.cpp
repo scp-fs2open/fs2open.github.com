@@ -9,14 +9,14 @@
 
 
 
-#include "render/3dinternal.h"
-#include "graphics/tmapper.h"
-#include "physics/physics.h"		// For Physics_viewer_bank for g3_draw_rotated_bitmap
 #include "bmpman/bmpman.h"
-#include "globalincs/alphacolors.h"
 #include "cmdline/cmdline.h"
+#include "globalincs/alphacolors.h"
 #include "graphics/grbatch.h"
+#include "graphics/tmapper.h"
 #include "io/key.h"
+#include "physics/physics.h"		// For Physics_viewer_bank for g3_draw_rotated_bitmap
+#include "render/3dinternal.h"
 
 
 //vertex buffers for polygon drawing and clipping

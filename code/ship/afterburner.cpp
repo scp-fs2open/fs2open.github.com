@@ -9,17 +9,17 @@
 
 
 
-#include "ship/afterburner.h"
-#include "io/joy_ff.h"
-#include "gamesnd/gamesnd.h"
-#include "ship/ship.h"
-#include "object/object.h"
-#include "io/timer.h"
-#include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
-#include "hud/hudets.h"
 #include "freespace2/freespace.h"
+#include "gamesnd/gamesnd.h"
+#include "hud/hudets.h"
+#include "io/joy_ff.h"
+#include "io/timer.h"
 #include "network/multi.h"
+#include "object/object.h"
 #include "parse/scripting.h"
+#include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
+#include "ship/afterburner.h"
+#include "ship/ship.h"
 
 // ----------------------------------------------------------
 // Global to file

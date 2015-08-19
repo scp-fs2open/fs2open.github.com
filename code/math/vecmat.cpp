@@ -10,13 +10,11 @@
 
 
 #include <stdio.h>
-#include <math.h>
 #if _M_IX86_FP >= 1
 	#include <xmmintrin.h>
 #endif
 
 #include "math/vecmat.h"
-#include "math/floating.h"
 
 
 #define	SMALL_NUM	1e-7

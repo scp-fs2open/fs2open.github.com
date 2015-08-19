@@ -9,23 +9,24 @@
 
 
 
-
-#include "object/object.h"
-#include "render/3d.h"
-#include "mission/missionparse.h"
-#include "nebula/neb.h"
-#include "ship/ship.h"
+#include <algorithm>
 #include <list>
 #include <vector>
-#include <algorithm>
-#include "jumpnode/jumpnode.h"
-#include "weapon/weapon.h"
-#include "debris/debris.h"
+
 #include "asteroid/asteroid.h"
-#include "model/modelrender.h"
 #include "cmdline/cmdline.h"
+#include "debris/debris.h"
 #include "graphics/gropengldraw.h"
+#include "jumpnode/jumpnode.h"
+#include "mission/missionparse.h"
+#include "model/modelrender.h"
+#include "nebula/neb.h"
+#include "object/object.h"
 #include "parse/scripting.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
+
 
 class sorted_obj
 {

@@ -28,11 +28,11 @@
 #include "grammar.h"
 
 // FreeSpace includes
+#include "cfile/cfile.h"
 #include "hud/hudsquadmsg.h"
 #include "io/keycontrol.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
-#include "cfile/cfile.h"
 
 CComPtr<ISpRecoGrammar>         p_grammarObject; // Pointer to our grammar object
 CComPtr<ISpRecoContext>         p_recogContext;  // Pointer to our recognition context

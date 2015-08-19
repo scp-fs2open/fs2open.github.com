@@ -15,10 +15,9 @@
 #define __pxo_client_h_
 
 
-#include "globalincs/pstypes.h"
-
 #include "fs2netd/protocol.h"
 #include "fs2netd/tcp_socket.h"
+#include "globalincs/pstypes.h"
 
 #include <string>
 

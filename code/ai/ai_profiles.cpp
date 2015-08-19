@@ -7,13 +7,13 @@
 
 
 
-#include "globalincs/pstypes.h"
-#include "globalincs/def_files.h"
 #include "ai/ai_profiles.h"
-#include "parse/parselo.h"
+#include "globalincs/def_files.h"
+#include "globalincs/pstypes.h"
 #include "localization/localize.h"
-#include "weapon/weapon.h"
+#include "parse/parselo.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 
 
 // global stuff

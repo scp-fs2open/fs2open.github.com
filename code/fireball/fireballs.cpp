@@ -9,18 +9,17 @@
 
 
 
+#include "asteroid/asteroid.h"
+#include "cmdline/cmdline.h"
 #include "fireball/fireballs.h"
+#include "gamesnd/gamesnd.h"
 #include "graphics/tmapper.h"
-#include "render/3d.h"
+#include "localization/localize.h"
 #include "model/model.h"
 #include "object/object.h"
-#include "ship/ship.h"
-#include "gamesnd/gamesnd.h"
-#include "localization/localize.h"
-#include "cmdline/cmdline.h"
 #include "parse/parselo.h"
-#include "globalincs/pstypes.h"
-#include "asteroid/asteroid.h"
+#include "render/3d.h"
+#include "ship/ship.h"
 
 #include <stdlib.h>
 

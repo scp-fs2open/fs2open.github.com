@@ -14,22 +14,22 @@
 
 
 
+#include "ai/ai.h"
+#include "fireball/fireballs.h"
 #include "globalincs/globals.h"		// for defintions of token lengths -- maybe move this elsewhere later (Goober5000 - moved to globals.h)
+#include "globalincs/pstypes.h"
 #include "graphics/2d.h"			// for color def
+#include "hud/hud.h"
+#include "hud/hudparse.h"
 #include "model/model.h"
 #include "model/modelanim.h"
-#include "palman/palman.h"
-#include "weapon/trails.h"
-#include "ai/ai.h"
 #include "network/multi_obj.h"
-#include "hud/hudparse.h"
-#include "render/3d.h"
+#include "palman/palman.h"
 #include "radar/radarsetup.h"
-#include "weapon/shockwave.h"
+#include "render/3d.h"
 #include "species_defs/species_defs.h"
-#include "globalincs/pstypes.h"
-#include "fireball/fireballs.h"
-#include "hud/hud.h"
+#include "weapon/shockwave.h"
+#include "weapon/trails.h"
 
 #include <string>
 

@@ -9,13 +9,13 @@
 
 
 
-#include "object/objcollide.h"
-#include "object/object.h"
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
-#include "weapon/weapon.h"
 #include "math/fvi.h"
+#include "object/objcollide.h"
+#include "object/object.h"
 #include "parse/scripting.h"
+#include "weapon/weapon.h"
 
 
 

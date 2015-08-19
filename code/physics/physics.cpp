@@ -14,14 +14,13 @@
 #include <string.h>
 #include <math.h>
 
-#include "physics/physics.h"
+#include "ai/ai_profiles.h"  // for the damping issue
 #include "freespace2/freespace.h"
 #include "io/timer.h"
-// for the damping issue
-#include "ai/ai_profiles.h"
 #include "mission/missionparse.h"
-#include "ship/ship.h"
 #include "mod_table/mod_table.h"
+#include "physics/physics.h"
+#include "ship/ship.h"
 
 
 

@@ -8,9 +8,9 @@
 */ 
 
 
+#include "hud/hud.h"
 #include "jumpnode/jumpnode.h"
 #include "model/model.h"
-#include "hud/hud.h"
 #include "model/modelrender.h"
 
 SCP_list<CJumpNode> Jump_nodes;

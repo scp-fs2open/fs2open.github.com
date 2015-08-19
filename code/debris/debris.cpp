@@ -9,26 +9,26 @@
 
 
 
+#include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "render/3d.h"
 #include "fireball/fireballs.h"
-#include "radar/radar.h"
-#include "gamesnd/gamesnd.h"
-#include "object/objectsnd.h"
-#include "globalincs/linklist.h"
-#include "particle/particle.h"
 #include "freespace2/freespace.h"
-#include "object/objcollide.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
 #include "io/timer.h"
-#include "species_defs/species_defs.h"
-#include "ship/ship.h"
-#include "ship/shipfx.h"
-#include "radar/radarsetup.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "object/objcollide.h"
+#include "object/objectsnd.h"
+#include "particle/particle.h"
+#include "radar/radar.h"
+#include "radar/radarsetup.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
+#include "species_defs/species_defs.h"
 #include "weapon/weapon.h"
-#include "cmdline/cmdline.h"
 
 #define MAX_LIFE									10.0f
 #define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant

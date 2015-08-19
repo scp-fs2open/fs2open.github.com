@@ -15,14 +15,14 @@
 //		3		Shrink-wrapped texture.  Lasts half-time.
 //		4		Shrink-wrapped texture.  Lasts full-time.
 
-#include "render/3d.h"
-#include "model/model.h"
 #include "freespace2/freespace.h"
 #include "mission/missionparse.h"
+#include "model/model.h"
 #include "network/multi.h"
 #include "object/objectshield.h"
-#include "species_defs/species_defs.h"
+#include "render/3d.h"
 #include "ship/ship.h"
+#include "species_defs/species_defs.h"
 
 int	Show_shield_mesh = 0;
 

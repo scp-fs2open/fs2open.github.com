@@ -13,17 +13,17 @@
 
 
 
-#include "fs2netd/tcp_client.h"
-#include "fs2netd/protocol.h"
-#include "fs2netd/tcp_socket.h"
 #include "fs2netd/fs2netd_client.h"
-#include "network/multi_log.h"
+#include "fs2netd/protocol.h"
+#include "fs2netd/tcp_client.h"
+#include "fs2netd/tcp_socket.h"
+#include "globalincs/pstypes.h"
+#include "io/timer.h"
 #include "network/multi.h"
+#include "network/multi_log.h"
 #include "network/multiutil.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
-#include "io/timer.h"
-#include "globalincs/pstypes.h"
 
 #include <iostream>
 #include <string>

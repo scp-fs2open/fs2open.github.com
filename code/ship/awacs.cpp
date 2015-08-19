@@ -10,15 +10,15 @@
 
 
 
-#include "ship/awacs.h"
-#include "io/timer.h"
-#include "ship/ship.h"
 #include "globalincs/linklist.h"
-#include "nebula/neb.h"
-#include "mission/missionparse.h"
-#include "network/multi.h"
-#include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
+#include "io/timer.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
+#include "network/multi.h"
+#include "ship/awacs.h"
+#include "ship/ship.h"
+#include "species_defs/species_defs.h"
 
 
 // ----------------------------------------------------------------------------------------------------

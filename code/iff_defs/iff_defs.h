@@ -9,8 +9,8 @@
 #ifndef _IFF_DEFS_H_
 #define _IFF_DEFS_H_
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 
 class object;

@@ -10,15 +10,15 @@
 
 
 
-#include "menuui/snazzyui.h"
-#include "io/key.h"
-#include "graphics/font.h"
-#include "io/mouse.h"
-#include "gamesnd/gamesnd.h"
-#include "freespace2/freespace.h"
-#include "globalincs/alphacolors.h"
 #include "cfile/cfile.h"
+#include "freespace2/freespace.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
+#include "io/key.h"
+#include "io/mouse.h"
 #include "localization/localize.h"
+#include "menuui/snazzyui.h"
 
 
 extern int ascii_table[];

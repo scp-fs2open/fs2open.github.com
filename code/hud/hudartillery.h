@@ -12,8 +12,8 @@
 #ifndef _FS2_HUD_ARTILLERY_HEADER_FILE
 #define _FS2_HUD_ARTILLERY_HEADER_FILE
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS

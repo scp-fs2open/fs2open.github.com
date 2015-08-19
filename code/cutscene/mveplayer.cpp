@@ -6,22 +6,21 @@
 #include <sys/time.h>
 #endif
 
+#include "bmpman/bmpman.h"
+#include "cutscene/movie.h"
+#include "cutscene/mvelib.h"
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
 #include "graphics/gropengl.h"
-#include "graphics/gropengltexture.h"
+#include "graphics/gropengldraw.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropenglstate.h"
-#include "graphics/gropengldraw.h"
-
-#include "globalincs/pstypes.h"
-#include "cutscene/mvelib.h"
-#include "cutscene/movie.h"
-#include "graphics/2d.h"
+#include "graphics/gropengltexture.h"
 #include "io/key.h"
-#include "osapi/osapi.h"
 #include "io/timer.h"
-#include "sound/sound.h"
+#include "osapi/osapi.h"
 #include "sound/openal.h"
-#include "bmpman/bmpman.h"
+#include "sound/sound.h"
 
 
 extern int Cmdline_noscalevid;

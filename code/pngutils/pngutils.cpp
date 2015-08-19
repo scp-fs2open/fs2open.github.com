@@ -1,14 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "png.h"
-
-#include "globalincs/pstypes.h"
-#include "pngutils/pngutils.h"
-#include "cfile/cfile.h"
 #include "bmpman/bmpman.h"
-#include "palman/palman.h"
+#include "cfile/cfile.h"
+#include "globalincs/pstypes.h"
 #include "graphics/2d.h"
+#include "palman/palman.h"
+#include "png.h"
+#include "pngutils/pngutils.h"
 
 CFILE *png_file = NULL;
 

@@ -9,18 +9,18 @@
 
 
 
-#include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
-#include "sound/sound.h" // jg18 - for enhanced sound
-#include "sound/openal.h"
+#include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
+#include "sound/acm.h"
+#include "sound/audiostr.h"
+#include "sound/channel.h"
 #include "sound/ds.h"
 #include "sound/ds3d.h"
-#include "sound/channel.h"
-#include "sound/acm.h"
-#include "osapi/osapi.h"
 #include "sound/dscap.h"
-#include "sound/audiostr.h"
+#include "sound/openal.h"
+#include "sound/sound.h" // jg18 - for enhanced sound
 
 
 typedef struct sound_buffer

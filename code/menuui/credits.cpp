@@ -11,22 +11,22 @@
 
 #include <stdlib.h>
 
-#include "menuui/credits.h"
+#include "cfile/cfile.h"
+#include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"	/* for Master_event_music_volume */
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
 #include "graphics/font.h"
 #include "io/key.h"
 #include "io/timer.h"
-#include "gamesnd/gamesnd.h"
-#include "sound/audiostr.h"
-#include "gamesnd/eventmusic.h"	/* for Master_event_music_volume */
-#include "ui/ui.h"
-#include "missionui/missionscreencommon.h"
-#include "playerman/player.h"
-#include "freespace2/freespace.h"
-#include "globalincs/alphacolors.h"
 #include "localization/localize.h"
-#include "cfile/cfile.h"
+#include "menuui/credits.h"
+#include "missionui/missionscreencommon.h"
 #include "parse/parselo.h"
+#include "playerman/player.h"
+#include "sound/audiostr.h"
+#include "ui/ui.h"
 
 
 

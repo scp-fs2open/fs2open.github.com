@@ -12,10 +12,8 @@
 // @todo Make a fast version of the parse_long, parse_ulong, etc. That just checks the first 1-3 characters. The fast version will be used in retail builds while the slow/safe version will be in debug's
 // @todo Maybe make parser functions case-insensitive
 ////////////////
-#include "debugconsole/consoleparse.h"
 
-#include "debugconsole/console.h"
-#include "globalincs/pstypes.h"
+#include "debugconsole/consoleparse.h"
 #include "parse/parselo.h"
 
 #include <algorithm>

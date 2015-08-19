@@ -10,14 +10,13 @@
 
 
 
-#include "ui/uidefs.h"
-#include "ui/ui.h"
-#include "io/timer.h"
-
-#include "missionui/missionscreencommon.h"
 #include "bmpman/bmpman.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "io/timer.h"
+#include "missionui/missionscreencommon.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
 
 
 

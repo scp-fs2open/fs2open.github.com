@@ -8,26 +8,22 @@
 */
 
 
-#include "globalincs/pstypes.h"
-#include "globalincs/def_files.h"
-
-#include "graphics/2d.h"
-#include "lighting/lighting.h"
-#include "graphics/grinternal.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropenglextension.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropengllight.h"
-#include "graphics/gropengltnl.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropenglshader.h"
-#include "graphics/gropenglpostprocessing.h"
-#include "graphics/gropenglstate.h"
-
-#include "math/vecmat.h"
-#include "render/3d.h"
 #include "cmdline/cmdline.h"
+#include "globalincs/def_files.h"
+#include "graphics/2d.h"
+#include "graphics/grinternal.h"
+#include "graphics/gropengldraw.h"
+#include "graphics/gropenglextension.h"
+#include "graphics/gropengllight.h"
+#include "graphics/gropenglpostprocessing.h"
+#include "graphics/gropenglshader.h"
+#include "graphics/gropenglstate.h"
+#include "graphics/gropengltexture.h"
+#include "graphics/gropengltnl.h"
+#include "lighting/lighting.h"
+#include "math/vecmat.h"
 #include "mod_table/mod_table.h"
+#include "render/3d.h"
 
 SCP_vector<opengl_shader_t> GL_shader;
 

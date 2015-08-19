@@ -9,11 +9,10 @@
 
 
 
-#include "math/vecmat.h"
-#include "graphics/2d.h"
-#include "render/3d.h"
 #include "globalincs/alphacolors.h"
+#include "graphics/2d.h"
 #include "math/spline.h"
+#include "render/3d.h"
 
 
 

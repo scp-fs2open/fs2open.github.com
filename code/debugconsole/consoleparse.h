@@ -14,6 +14,7 @@
  * @details A lot of functions here are blatently copied from parselo.h :D
   */
 
+#include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
 
 #include <cstdarg>

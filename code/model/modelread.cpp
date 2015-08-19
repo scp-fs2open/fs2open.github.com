@@ -19,24 +19,21 @@
 
 #define MODEL_LIB
 
+#include "bmpman/bmpman.h"
+#include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
+#include "freespace2/freespace.h"		// For flFrameTime
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
+#include "io/key.h"
+#include "io/timer.h"
+#include "math/fvi.h"
+#include "math/vecmat.h"
 #include "model/model.h"
 #include "model/modelsinc.h"
-#include "math/vecmat.h"
-#include "object/object.h"
-#include "bmpman/bmpman.h"
-#include "io/key.h"
-#include "render/3dinternal.h"
-#include "globalincs/linklist.h"
-#include "io/timer.h"
-#include "freespace2/freespace.h"		// For flFrameTime
-#include "math/fvi.h"
-#include "ship/ship.h"
-#include "cfile/cfile.h"
 #include "parse/parselo.h"
-#include "cmdline/cmdline.h"
-
-
-#include "gamesnd/gamesnd.h"
+#include "render/3dinternal.h"
+#include "ship/ship.h"
 
 flag_def_list model_render_flags[] =
 {
