@@ -1,20 +1,19 @@
 
+#include "cmdline/cmdline.h"
+#include "freespace2/freespace.h"
+#include "globalincs/def_files.h"
 #include "graphics/gropengl.h"
+#include "graphics/gropengldraw.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropenglpostprocessing.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglstate.h"
-#include "graphics/gropengldraw.h"
-
 #include "io/timer.h"
+#include "lighting/lighting.h"
+#include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "parse/parselo.h"
-#include "cmdline/cmdline.h"
-#include "mod_table/mod_table.h"
-#include "globalincs/def_files.h"
 #include "ship/ship.h"
-#include "freespace2/freespace.h"
-#include "lighting/lighting.h"
 
 
 extern bool PostProcessing_override;

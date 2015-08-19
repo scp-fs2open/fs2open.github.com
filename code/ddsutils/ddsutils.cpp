@@ -36,7 +36,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	int retval = DDS_ERROR_NONE;
 	int ct = DDS_UNCOMPRESSED;
 	int bits = 0;
-	int i, trash, is_cubemap = 0;
+	int i, is_cubemap = 0;
 	int d_width = 0, d_height = 0, d_depth = 0, d_size = 0;
 
 
@@ -80,7 +80,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 
 	// skip over the crap we don't care about
 	for (i = 0; i < 11; i++)
-		trash = cfread_uint(ddsfile);
+		cfread_uint(ddsfile);
 
 	dds_header.ddpfPixelFormat.dwSize				= cfread_uint(ddsfile);
 	dds_header.ddpfPixelFormat.dwFlags				= cfread_uint(ddsfile);

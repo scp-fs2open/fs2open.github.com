@@ -10,21 +10,21 @@
 
 
 
-#include "missionui/missionpause.h"
-#include "ui/ui.h"
-#include "popup/popup.h"
-#include "io/key.h"
-#include "sound/audiostr.h"
-#include "gamesequence/gamesequence.h"
+#include "controlconfig/controlsconfig.h"
 #include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
 #include "hud/hud.h"
 #include "hud/hudmessage.h"
-#include "object/object.h"
-#include "graphics/font.h"
-#include "globalincs/alphacolors.h"
-#include "weapon/weapon.h"	
-#include "controlconfig/controlsconfig.h"
+#include "io/key.h"
+#include "missionui/missionpause.h"
 #include "network/multi_pause.h"
+#include "object/object.h"
+#include "popup/popup.h"
+#include "sound/audiostr.h"
+#include "ui/ui.h"
+#include "weapon/weapon.h"	
 
 
 

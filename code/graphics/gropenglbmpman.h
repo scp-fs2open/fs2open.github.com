@@ -12,8 +12,8 @@
 #ifndef _OGL_BMPMAN_H
 #define _OGL_BMPMAN_H
 
-#include "globalincs/pstypes.h"
 #include "bmpman/bmpman.h"
+#include "globalincs/pstypes.h"
 
 
 // anything API specific to freeing bm data

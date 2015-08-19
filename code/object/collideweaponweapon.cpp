@@ -9,15 +9,14 @@
 
 
 
+#include "freespace2/freespace.h"
+#include "network/multi.h"
 #include "object/objcollide.h"
 #include "object/object.h"
-#include "weapon/weapon.h"
-#include "ship/ship.h"
-#include "parse/lua.h"
 #include "parse/scripting.h"
-#include "freespace2/freespace.h"
+#include "ship/ship.h"
 #include "stats/scoring.h"
-#include "network/multi.h"
+#include "weapon/weapon.h"
 
 
 /**
@@ -177,7 +176,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, B, wpB->weapon_info_index);
 		}
 
-		Script_system.RemHookVars(4, "Weapon", "WeaponB", "Self","ObjectB");
+		Script_system.RemHookVars(4, "Weapon", "WeaponB", "Self", "Object");
 		return 1;
 	}
 

@@ -11,12 +11,12 @@
 
 
 #include <ctype.h>
+#include "cfile/cfile.h"
 #include "localization/localize.h"
-#include "parse/parselo.h"
 #include "osapi/osregistry.h"
 #include "parse/encrypt.h"
+#include "parse/parselo.h"
 #include "playerman/player.h"
-#include "cfile/cfile.h"
 
 
 

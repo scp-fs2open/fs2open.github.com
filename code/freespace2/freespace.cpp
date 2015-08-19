@@ -26,7 +26,6 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "bmpman/bmpman.h"
-#include "camera/camera.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
@@ -40,14 +39,15 @@
 #include "freespace2/freespace.h"
 #include "freespace2/freespaceresource.h"
 #include "freespace2/levelpaging.h"
+#include "fs2netd/fs2netd_client.h"
 #include "gamehelp/contexthelp.h"
 #include "gamehelp/gameplayhelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
-#include "globalincs/version.h"
 #include "globalincs/mspdb_callstack.h"
+#include "globalincs/version.h"
 #include "graphics/font.h"
 #include "graphics/shadows.h"
 #include "hud/hud.h"
@@ -55,10 +55,10 @@
 #include "hud/hudescort.h"
 #include "hud/hudlock.h"
 #include "hud/hudmessage.h"
-#include "hud/hudshield.h"
-#include "hud/hudtargetbox.h"
 #include "hud/hudparse.h"
+#include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"
+#include "hud/hudtargetbox.h"
 #include "iff_defs/iff_defs.h"
 #include "io/joy.h"
 #include "io/joy_ff.h"
@@ -130,6 +130,7 @@
 #include "parse/scripting.h"
 #include "parse/sexp.h"
 #include "particle/particle.h"
+#include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -158,10 +159,6 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
-#include "fs2netd/fs2netd_client.h"
-#include "pilotfile/pilotfile.h"
-
-#include "globalincs/pstypes.h"
 
 #include <stdexcept>
 
@@ -8791,8 +8788,6 @@ void game_title_screen_display()
 	}
 	*/
 
-	//Script_system.SetHookVar("SplashScreenImage", 's', Game_title_screen_fname[gr_screen.res]);
-	//Script_system.SetHookVar("SplashScreenLogo", 's', Game_logo_screen_fname[gr_screen.res]);
 	bool globalhook_override = Script_system.IsOverride(Script_splashhook);
 	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
 	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
@@ -8837,8 +8832,6 @@ void game_title_screen_display()
 		Script_system.RunCondition(CHA_SPLASHSCREEN);
 		
 	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
-		
-	Script_system.RemHookVars(2, "SplashScreenImage", "SplashScreenLogo");
 
 	// flip
 	gr_flip();

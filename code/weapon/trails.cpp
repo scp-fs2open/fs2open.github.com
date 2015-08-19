@@ -9,13 +9,13 @@
 
 
 
-#include "weapon/trails.h"
-#include "globalincs/systemvars.h"
-#include "render/3d.h" 
-#include "io/timer.h"
-#include "ship/ship.h"
-#include "graphics/gropenglextension.h"
 #include "cmdline/cmdline.h"
+#include "globalincs/systemvars.h"
+#include "graphics/gropenglextension.h"
+#include "io/timer.h"
+#include "render/3d.h" 
+#include "ship/ship.h"
+#include "weapon/trails.h"
 
 int Num_trails;
 trail Trails;

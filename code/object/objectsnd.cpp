@@ -10,20 +10,19 @@
 
 
 
-#include "globalincs/pstypes.h"
+#include "cmdline/cmdline.h"
+#include "debugconsole/console.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
+#include "io/joy_ff.h"
+#include "io/timer.h"
 #include "object/object.h"
 #include "object/objectsnd.h"
-#include "globalincs/linklist.h"
-#include "ship/ship.h"
-#include "gamesnd/gamesnd.h"
-#include "sound/ds.h"
-#include "cmdline/cmdline.h"
-#include "sound/ds3d.h"
-#include "io/timer.h"
 #include "render/3d.h"
-#include "io/joy_ff.h"
+#include "ship/ship.h"
+#include "sound/ds.h"
+#include "sound/ds3d.h"
 #include "species_defs/species_defs.h"
-#include "debugconsole/console.h"
 
 
 //  // --mharris port hack--

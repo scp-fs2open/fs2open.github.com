@@ -10,11 +10,11 @@
 #ifndef __HUD_H__
 #define __HUD_H__
 
-#include "hud/hudgauges.h"
-#include "graphics/2d.h"
-#include "hud/hudparse.h"
 #include "globalincs/vmallocator.h"
+#include "graphics/2d.h"
 #include "graphics/font.h"
+#include "hud/hudgauges.h"
+#include "hud/hudparse.h"
 
 class object;
 struct cockpit_display;

@@ -9,9 +9,9 @@
 
 
 
-#include "ui/uidefs.h"
-#include "ui/ui.h"
 #include "globalincs/alphacolors.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
 
 
 

@@ -21,58 +21,57 @@
 #include <setjmp.h>
 
 
-#include "mission/missionparse.h"
-#include "parse/generic_log.h"
-#include "parse/parselo.h"
-#include "mission/missiongoals.h"
-#include "mission/missionlog.h"
-#include "mission/missionmessage.h"
-#include "globalincs/linklist.h"
-#include "globalincs/alphacolors.h"
-#include "io/timer.h"
-#include "ship/ship.h"
 #include "ai/aigoals.h"
-#include "playerman/player.h"
-#include "starfield/starfield.h"
+#include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
-#include "lighting/lighting.h"
+#include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
+#include "debris/debris.h"
 #include "gamesnd/eventmusic.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
+#include "hud/hudescort.h"
+#include "hud/hudets.h"
+#include "hud/hudwingmanstatus.h"
+#include "iff_defs/iff_defs.h"
+#include "io/timer.h"
+#include "jumpnode/jumpnode.h"
+#include "lighting/lighting.h"
+#include "localization/localize.h"
+#include "math/fvi.h"
+#include "math/staticrand.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
-#include "ship/shipfx.h"
-#include "debris/debris.h"
-#include "starfield/nebula.h"
-#include "hud/hudets.h"
+#include "mission/missiongoals.h"
 #include "mission/missionhotkey.h"
-#include "hud/hudescort.h"
-#include "asteroid/asteroid.h"
-#include "ship/shiphit.h"
-#include "math/staticrand.h"
+#include "mission/missionlog.h"
+#include "mission/missionmessage.h"
+#include "mission/missionparse.h"
+#include "missionui/fictionviewer.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
-#include "hud/hudwingmanstatus.h"
-#include "jumpnode/jumpnode.h"
-#include "localization/localize.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
-#include "math/fvi.h"
-#include "weapon/weapon.h"
-#include "cfile/cfile.h"
-#include "iff_defs/iff_defs.h"
 #include "network/multi.h"
-#include "network/multiutil.h"
-#include "network/multimsgs.h"
-#include "network/multi_respawn.h"
 #include "network/multi_endgame.h"
+#include "network/multi_respawn.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
 #include "object/parseobjectdock.h"
 #include "object/waypoint.h"
-#include "missionui/fictionviewer.h"
-#include "cmdline/cmdline.h"
+#include "parse/generic_log.h"
+#include "parse/parselo.h"
+#include "parse/scripting.h"
+#include "playerman/player.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
-#include "sound/sound.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
+#include "ship/shiphit.h"
 #include "sound/ds.h"
-#include "parse/scripting.h"
+#include "starfield/nebula.h"
+#include "starfield/starfield.h"
+#include "weapon/weapon.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -2209,11 +2208,11 @@ int parse_create_object_sub(p_object *p_objp)
 						ptr->weapons.secondary_bank_weapons[j] = sssp->secondary_banks[j];
 
 				// Goober5000
-				for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
+				for (j = 0; j < ptr->weapons.num_primary_banks; j++)
 				{
 					if (Fred_running) {
 						ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
-					} else {
+					} else if (Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC) {
 						Assert(Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size > 0.0f);
 
 						int capacity = fl2i(sssp->primary_ammo[j]/100.0f * ptr->weapons.primary_bank_capacity[j] + 0.5f);
@@ -2221,7 +2220,7 @@ int parse_create_object_sub(p_object *p_objp)
 					}
 				}
 
-				for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
+				for (j = 0; j < ptr->weapons.num_secondary_banks; j++)
 				{
 					if (Fred_running) {
 						ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];

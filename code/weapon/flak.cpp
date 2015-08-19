@@ -9,9 +9,9 @@
 
 
 
+#include "object/object.h"
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
-#include "object/object.h"
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 // FLAK FUNCTIONS

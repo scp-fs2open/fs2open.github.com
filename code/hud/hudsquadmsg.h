@@ -12,8 +12,8 @@
 #ifndef _HUD_SQUADMSG
 #define _HUD_SQUADMSG
 
-#include "network/multi.h"
 #include "hud/hud.h"
+#include "network/multi.h"
 
 #define SM_MODE_TYPE_SELECT			1		//am I going to message a ship or a wing
 #define SM_MODE_SHIP_SELECT			2		//choosing actual ship

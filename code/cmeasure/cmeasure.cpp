@@ -10,14 +10,14 @@
 
 
 #include "cmeasure/cmeasure.h"
-#include "ship/ship.h"
-#include "math/staticrand.h"
-#include "object/object.h"
-#include "weapon/weapon.h"
-#include "hud/hud.h"
 #include "gamesnd/gamesnd.h"
-#include "network/multimsgs.h"
+#include "hud/hud.h"
+#include "math/staticrand.h"
 #include "mission/missionparse.h"
+#include "network/multimsgs.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 
 int	Cmeasures_homing_check = 0;
 int	Countermeasures_enabled = 1;			//	Debug, set to 0 means no one can fire countermeasures.

@@ -1,28 +1,28 @@
 
 
-#include "globalincs/systemvars.h"
-#include "ship/ship.h"
-#include "weapon/weapon.h"
-#include "freespace2/freespace.h"
+#include "ai/aibig.h"
+#include "ai/aiinternal.h"
 #include "asteroid/asteroid.h"
-#include "globalincs/linklist.h"
-#include "weapon/beam.h"
-#include "weapon/swarm.h"
-#include "io/timer.h"
-#include "render/3d.h"
+#include "debugconsole/console.h"
+#include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
-#include "ship/shipfx.h"
-#include "network/multimsgs.h"
-#include "weapon/flak.h"
+#include "globalincs/linklist.h"
+#include "globalincs/systemvars.h"
+#include "iff_defs/iff_defs.h"
+#include "io/timer.h"
 #include "math/staticrand.h"
 #include "network/multi.h"
-#include "ai/aibig.h"
+#include "network/multimsgs.h"
 #include "object/objectdock.h"
-#include "ai/aiinternal.h"	//Included last, so less includes are needed
-#include "iff_defs/iff_defs.h"
-#include "weapon/muzzleflash.h"
 #include "parse/scripting.h"
-#include "debugconsole/console.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
+#include "weapon/beam.h"
+#include "weapon/flak.h"
+#include "weapon/muzzleflash.h"
+#include "weapon/swarm.h"
+#include "weapon/weapon.h"
 
 #include <limits.h>
 
@@ -2004,6 +2004,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 					Script_system.SetHookObjects(3, "Ship", &Objects[parent_objnum], "Weapon", objp, "Target", &Objects[turret->turret_enemy_objnum]);
 					Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[parent_objnum]);
+					Script_system.RemHookVars(3, "Ship", "Weapon", "Target");
 
 					// if the gun is a flak gun
 					if (wip->wi_flags & WIF_FLAK) {			

@@ -9,10 +9,10 @@
 
 
 
-#include "ui/uidefs.h"
-#include "ui/ui.h"
-#include "io/timer.h"
 #include "globalincs/alphacolors.h"
+#include "io/timer.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
 
 
 

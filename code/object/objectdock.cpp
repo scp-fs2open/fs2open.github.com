@@ -6,13 +6,12 @@
 
 
 
-#include "globalincs/pstypes.h"
-#include "object/objectdock.h"
-#include "object/object.h"
 #include "math/bitarray.h"
-#include "ship/ship.h"
 #include "math/vecmat.h"
 #include "mission/missionparse.h"
+#include "object/object.h"
+#include "object/objectdock.h"
+#include "ship/ship.h"
 
 
 

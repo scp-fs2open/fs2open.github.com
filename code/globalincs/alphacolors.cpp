@@ -7,10 +7,10 @@
  *
 */ 
 
+#include "globalincs/alphacolors.h"
+#include "globalincs/def_files.h"
 #include "graphics/2d.h"
 #include "parse/parselo.h"
-#include "globalincs/def_files.h"
-#include "globalincs/alphacolors.h"
 
 SCP_map<SCP_string, team_color> Team_Colors;
 SCP_vector<SCP_string> Team_Names;

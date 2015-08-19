@@ -9,16 +9,16 @@
 
 
 
+#include "bmpman/bmpman.h"
+#include "cmdline/cmdline.h"
+#include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "render/3d.h" 
-#include "bmpman/bmpman.h"
-#include "particle/particle.h"
-#include "object/object.h"
-#include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
-#include "debugconsole/console.h"
 #include "graphics/gropenglextension.h"
+#include "object/object.h"
+#include "particle/particle.h"
+#include "render/3d.h" 
 
 #ifndef NDEBUG
 #include "io/timer.h"

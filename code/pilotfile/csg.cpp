@@ -1,22 +1,21 @@
 
-#include "globalincs/pstypes.h"
+#include "cutscene/cutscenes.h"
+#include "freespace2/freespace.h"
+#include "gamesnd/eventmusic.h"
+#include "hud/hudconfig.h"
+#include "io/joy.h"
+#include "io/mouse.h"
+#include "menuui/techmenu.h"
+#include "mission/missioncampaign.h"
+#include "mission/missionload.h"
+#include "missionui/missionscreencommon.h"
+#include "missionui/missionshipchoice.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
-#include "weapon/weapon.h"
-#include "stats/medals.h"
-#include "menuui/techmenu.h"
-#include "hud/hudconfig.h"
-#include "cutscene/cutscenes.h"
-#include "missionui/missionscreencommon.h"
-#include "mission/missioncampaign.h"
-#include "missionui/missionshipchoice.h"
-#include "mission/missionload.h"
 #include "sound/audiostr.h"
-#include "io/joy.h"
-#include "io/mouse.h"
-#include "gamesnd/eventmusic.h"
-#include "freespace2/freespace.h"
+#include "stats/medals.h"
+#include "weapon/weapon.h"
 
 #define REDALERT_INTERNAL
 #include "missionui/redalert.h"
@@ -1556,7 +1555,7 @@ bool pilotfile::save_savefile()
 	// assertion before writing so that we don't corrupt the .csg by asserting halfway through writing
 	// assertion should also prevent loss of major campaign progress
 	// i.e. lose one mission, not several missions worth (in theory)
-	Assertion(Red_alert_wingman_status.size() <= MAX_SHIPS, "Invalid number of Red_alert_wingman_status entries: %u\n", Red_alert_wingman_status.size());
+	Assertion(Red_alert_wingman_status.size() <= MAX_SHIPS, "Invalid number of Red_alert_wingman_status entries: " SIZE_T_ARG "\n", Red_alert_wingman_status.size());
 
 	// open it, hopefully...
 	cfp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);

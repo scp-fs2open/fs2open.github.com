@@ -3,28 +3,26 @@
 #include "asteroid/asteroid.h"
 #include "camera/camera.h"
 #include "cfile/cfilesystem.h"
+#include "cmdline/cmdline.h"
 #include "cutscene/movie.h"
 #include "debris/debris.h"
-#include "cmdline/cmdline.h"
+#include "external_dll/trackirpublic.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
+#include "globalincs/linklist.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
 #include "graphics/gropenglpostprocessing.h"
-#include "globalincs/linklist.h"
-#include "globalincs/pstypes.h"
 #include "hud/hudbrackets.h"
-#include "hud/hudescort.h"
 #include "hud/hudconfig.h"
+#include "hud/hudescort.h"
 #include "hud/hudets.h"
 #include "hud/hudgauges.h"
-#include "hud/hudets.h"
 #include "hud/hudshield.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "external_dll/trackirpublic.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "menuui/credits.h"
@@ -38,7 +36,6 @@
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-#include "object/object.h"
 #include "object/objectshield.h"
 #include "object/waypoint.h"
 #include "parse/lua.h"
@@ -53,8 +50,9 @@
 #include "ship/shiphit.h"
 #include "sound/audiostr.h"
 #include "sound/ds.h"
-#include "weapon/weapon.h"
 #include "weapon/beam.h"
+#include "weapon/weapon.h"
+
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
 
@@ -884,7 +882,7 @@ struct enum_h {
 	enum_h(){index=-1; is_constant=false;}
 	enum_h(int n_index){index=n_index; is_constant=false;}
 
-	bool IsValid(){return (this != NULL && index > -1 && index < ENUM_NEXT_INDEX);}
+	bool IsValid(){return (index > -1 && index < ENUM_NEXT_INDEX);}
 };
 ade_obj<enum_h> l_Enum("enumeration", "Enumeration object");
 
@@ -1426,7 +1424,7 @@ public:
 	gameevent_h(){edx=-1;}
 	gameevent_h(int n_event){edx=n_event;}
 
-	bool IsValid(){return (this != NULL && edx > -1 && edx < Num_gs_event_text);}
+	bool IsValid(){return (edx > -1 && edx < Num_gs_event_text);}
 
 	int Get(){return edx;}
 };
@@ -1474,7 +1472,7 @@ public:
 	gamestate_h(){sdx=-1;}
 	gamestate_h(int n_state){sdx=n_state;}
 
-	bool IsValid(){return (this != NULL && sdx > -1 && sdx < Num_gs_state_text);}
+	bool IsValid(){return (sdx > -1 && sdx < Num_gs_state_text);}
 
 	int Get(){return sdx;}
 };
@@ -1640,7 +1638,7 @@ public:
 	}
 
 	bool IsValid(){
-		return (this != NULL && model != NULL && mid > -1 && model_get(mid) == model);
+		return (model != NULL && mid > -1 && model_get(mid) == model);
 	}
 
 	model_h(int n_modelnum) {
@@ -1717,7 +1715,7 @@ struct thrusterbank_h
 
 	bool isValid()
 	{
-		return this != NULL && bank != NULL;
+		return bank != NULL;
 	}
 };
 
@@ -1747,7 +1745,7 @@ struct glowpoint_h
 
 	bool isValid()
 	{
-		return (this != NULL && point != NULL);
+		return point != NULL;
 	}
 
 };
@@ -6325,7 +6323,7 @@ struct waypointlist_h
 		}
 	}
 	bool IsValid() {
-		return (this != NULL && wlp != NULL && !strcmp(wlp->get_name(), name));
+		return (wlp != NULL && !strcmp(wlp->get_name(), name));
 	}
 };
 
@@ -11732,7 +11730,7 @@ public:
 
 	bool isValid()
 	{
-		if (this != NULL && part != NULL && part->signature != 0 && part->signature == this->sig)
+		if (part != NULL && part->signature != 0 && part->signature == this->sig)
 			return true;
 		else
 			return false;
@@ -16648,7 +16646,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 		}
 		else
 		{
-			LuaError(L, "ade_table_entry::SetTable - Could not set data for '%s' (%d)", GetName(), ADE_INDEX(this));
+			LuaError(L, "ade_table_entry::SetTable - Could not set data for '%s' (" PTRDIFF_T_ARG ")", GetName(), ADE_INDEX(this));
 		}
 
 		if(data_ldx != INT_MAX)
@@ -16696,7 +16694,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 					//so we can always find out what it is for debugging
 					lua_pushstring(L, GetName());
 					if(lua_setupvalue(L, data_ldx, 1) == NULL) {
-						LuaError(L, "ade_table_entry::SetTable - Could not set upvalue for '%s' (%d)", GetName(), ADE_INDEX(this));
+						LuaError(L, "ade_table_entry::SetTable - Could not set upvalue for '%s' (" PTRDIFF_T_ARG ")", GetName(), ADE_INDEX(this));
 					}
 				}
 
@@ -16716,7 +16714,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 			}
 			else
 			{
-				LuaError(L, "ade_table_entry::SetTable - Could not instance '%s' (%d)", GetName(), ADE_INDEX(this));
+				LuaError(L, "ade_table_entry::SetTable - Could not instance '%s' (" PTRDIFF_T_ARG ")", GetName(), ADE_INDEX(this));
 			}
 		}
 	}

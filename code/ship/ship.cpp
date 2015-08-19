@@ -12,77 +12,77 @@
 
 #include <setjmp.h>
 
-#include "globalincs/def_files.h"
-#include "globalincs/alphacolors.h"
-#include "ship/ship.h"
-#include "object/object.h"
-#include "weapon/weapon.h"
-#include "radar/radar.h"
-#include "render/3d.h"
-#include "fireball/fireballs.h"
-#include "hud/hud.h"
-#include "io/timer.h"
-#include "mission/missionlog.h"
-#include "io/joy_ff.h"
-#include "playerman/player.h"
-#include "parse/parselo.h"
-#include "freespace2/freespace.h"
-#include "globalincs/linklist.h"
-#include "hud/hudets.h"
-#include "hud/hudshield.h"
-#include "hud/hudmessage.h"
 #include "ai/aigoals.h"
-#include "gamesnd/gamesnd.h"
-#include "gamesnd/eventmusic.h"
-#include "ship/shipfx.h"
+#include "asteroid/asteroid.h"
+#include "autopilot/autopilot.h"
+#include "cmdline/cmdline.h"
+#include "cmeasure/cmeasure.h"
+#include "debugconsole/console.h"
+#include "fireball/fireballs.h"
+#include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/def_files.h"
+#include "globalincs/linklist.h"
+#include "graphics/gropenglshader.h"
+#include "hud/hud.h"
+#include "hud/hudartillery.h"
+#include "hud/hudets.h"
+#include "hud/hudmessage.h"
+#include "hud/hudshield.h"
+#include "hud/hudsquadmsg.h"
+#include "hud/hudtargetbox.h"
+#include "hud/hudwingmanstatus.h"
+#include "iff_defs/iff_defs.h"
+#include "io/joy_ff.h"
+#include "io/timer.h"
+#include "jumpnode/jumpnode.h"
+#include "lighting/lighting.h"
+#include "localization/localize.h"
+#include "math/fvi.h"
+#include "math/staticrand.h"
+#include "math/vecmat.h"
+#include "mission/missioncampaign.h"
+#include "mission/missionlog.h"
+#include "mission/missionmessage.h"
+#include "missionui/missionshipchoice.h"
+#include "missionui/redalert.h"
+#include "mod_table/mod_table.h"
+#include "model/model.h"
+#include "model/modelrender.h"
+#include "nebula/neb.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "object/deadobjectdock.h"
+#include "object/objcollide.h"
+#include "object/object.h"
+#include "object/objectdock.h"
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
-#include "cmeasure/cmeasure.h"
-#include "ship/afterburner.h"
-#include "weapon/shockwave.h"
-#include "hud/hudsquadmsg.h"
-#include "weapon/swarm.h"
-#include "ship/subsysdamage.h"
-#include "mission/missionmessage.h"
-#include "lighting/lighting.h"
+#include "parse/parselo.h"
+#include "parse/scripting.h"
 #include "particle/particle.h"
+#include "playerman/player.h"
+#include "radar/radar.h"
+#include "radar/radarsetup.h"
+#include "render/3d.h"
+#include "ship/afterburner.h"
+#include "ship/ship.h"
+#include "ship/shipcontrails.h"
+#include "ship/shipfx.h"
 #include "ship/shiphit.h"
-#include "asteroid/asteroid.h"
-#include "hud/hudtargetbox.h"
-#include "hud/hudwingmanstatus.h"
-#include "jumpnode/jumpnode.h"
-#include "missionui/redalert.h"
+#include "ship/subsysdamage.h"
+#include "species_defs/species_defs.h"
+#include "weapon/beam.h"
 #include "weapon/corkscrew.h"
 #include "weapon/emp.h"
-#include "localization/localize.h"
-#include "nebula/neb.h"
-#include "ship/shipcontrails.h"
-#include "weapon/beam.h"
-#include "math/staticrand.h"
-#include "math/fvi.h"
-#include "missionui/missionshipchoice.h"
-#include "hud/hudartillery.h"
-#include "species_defs/species_defs.h"
 #include "weapon/flak.h"								//phreak addded 11/05/02 for flak primaries
-#include "mission/missioncampaign.h"
-#include "radar/radarsetup.h"
-#include "object/objectdock.h"
-#include "object/deadobjectdock.h"
-#include "iff_defs/iff_defs.h"
-#include "network/multiutil.h"
-#include "network/multimsgs.h"
-#include "autopilot/autopilot.h"
-#include "cmdline/cmdline.h"
-#include "object/objcollide.h"
-#include "parse/scripting.h"
-#include "graphics/gropenglshader.h"
-#include "model/model.h"
-#include "mod_table/mod_table.h"
-#include "model/modelrender.h"
-#include "debugconsole/console.h"
-#include "math/vecmat.h"
+#include "weapon/shockwave.h"
+#include "weapon/swarm.h"
+#include "weapon/weapon.h"
 
 #define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
 												//     we can't easily go fully dynamic)
@@ -3843,7 +3843,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 			SCP_string name, banks;
 			size_t seppos;
 			seppos = token->find_first_of(':');
-			if(seppos == -1) {
+			if(seppos == SCP_string::npos) {
 				Warning(LOCATION, "Couldn't find ':' seperator in Glowpoint override for ship %s ignoring token", sip->name);
 				continue;
 			}
@@ -3868,7 +3868,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				
 				size_t fromtopos;
 				fromtopos = banktoken.find_first_of('-');
-				if(fromtopos != -1) {
+				if(fromtopos != SCP_string::npos) {
 					SCP_string from, to;
 					int ifrom, ito;
 					from = banktoken.substr(0, fromtopos);
@@ -6438,21 +6438,21 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 
-		for (k=0; k<MAX_SHIP_SECONDARY_BANKS; k++) {
+		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
 			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
 			Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].name );
-			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.secondary_bank_capacity[k] / weapon_size + 0.5f);
+			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : fl2i(ship_system->weapons.secondary_bank_capacity[k] / weapon_size + 0.5f));
 
 			ship_system->weapons.secondary_next_slot[k] = 0;
 		}
 
 		// Goober5000
-		for (k=0; k<MAX_SHIP_PRIMARY_BANKS; k++)
+		for (k=0; k<ship_system->weapons.num_primary_banks; k++)
 		{
 			float weapon_size = Weapon_info[ship_system->weapons.primary_bank_weapons[k]].cargo_size;
 
 			if (weapon_size > 0.0f) {	// Non-ballistic primaries are supposed to have a cargo_size of 0
-				ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : ship_system->weapons.primary_bank_capacity[k] / weapon_size + 0.5f);
+				ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : fl2i(ship_system->weapons.primary_bank_capacity[k] / weapon_size + 0.5f));
 			}
 		}
 
@@ -7745,7 +7745,7 @@ void ship_destroy_instantly(object *ship_objp, int shipnum)
 	// scripting stuff
 	Script_system.SetHookObject("Self", ship_objp);
 	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_objp);
-	Script_system.RemHookVars(2, "Self", "Killer");
+	Script_system.RemHookVar("Self");
 
 	ship_objp->flags |= OF_SHOULD_BE_DEAD;
 	ship_cleanup(shipnum,SHIP_DESTROYED);
@@ -11514,6 +11514,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp, 1);
 
 		Script_system.RunCondition(CHA_PRIMARYFIRE, 0, NULL, objp);
+		Script_system.RemHookVars(2, "User", "Target");
 	}
 
 	return num_fired;
@@ -12235,6 +12236,7 @@ done_secondary:
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
 		Script_system.RunCondition(CHA_SECONDARYFIRE, 0, NULL, objp);
+		Script_system.RemHookVars(2, "User", "Target");
 	}
 
 	return num_fired;
@@ -12456,6 +12458,7 @@ int ship_select_next_primary(object *objp, int direction)
 			Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
+			Script_system.RemHookVars(2, "User", "Target");
 			return 1;
 		}
 
@@ -12484,6 +12487,7 @@ int ship_select_next_primary(object *objp, int direction)
 	Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
 	Script_system.SetHookObjects(2, "User", objp, "Target", target);
 	Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
+	Script_system.RemHookVars(2, "User", "Target");
 
 	return 1;
 }
@@ -12573,6 +12577,7 @@ int ship_select_next_secondary(object *objp)
 			Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
+			Script_system.RemHookVars(2, "User", "Target");
 			return 1;
 		}
 	} // end if
@@ -15011,7 +15016,8 @@ float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 	}
 
 	if(hit_objp->shield_quadrant[quadrant_num] > max_quadrant)
-		mprintf((LOCATION, "Warning: \"%s\" has shield quadrant strength of %f out of %f\n", Ships[hit_objp->instance].ship_name, hit_objp->shield_quadrant[quadrant_num], max_quadrant));
+		mprintf(("Warning: \"%s\" has shield quadrant strength of %f out of %f\n",
+				Ships[hit_objp->instance].ship_name, hit_objp->shield_quadrant[quadrant_num], max_quadrant));
 
 	return hit_objp->shield_quadrant[quadrant_num]/max_quadrant;
 }
@@ -18267,7 +18273,8 @@ void ArmorType::ParseData()
 		{
 			if(adt.Calculations.size() != adt.Arguments.size())
 			{
-				Warning(LOCATION, "Armor '%s', damage type %d: Armor has a different number of calculation types than arguments (%d, %d)", Name, DamageTypes.size(), adt.Calculations.size(), adt.Arguments.size());
+				Warning(LOCATION, "Armor '%s', damage type " SIZE_T_ARG ": Armor has a different number of calculation types than arguments (" SIZE_T_ARG ", " SIZE_T_ARG ")",
+						Name, DamageTypes.size(), adt.Calculations.size(), adt.Arguments.size());
 			}
 			DamageTypes.push_back(adt);
 		}

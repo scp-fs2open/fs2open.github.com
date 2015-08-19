@@ -8,20 +8,22 @@
 */ 
 
 
-#include "hud/hud.h"
+#include "ai/aigoals.h"
 #include "asteroid/asteroid.h"
+#include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
-#include "graphics/font.h"
+#include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudescort.h"
 #include "hud/hudets.h"
 #include "hud/hudlock.h"
 #include "hud/hudmessage.h"
+#include "hud/hudnavigation.h"	//kazan
 #include "hud/hudobserver.h"
 #include "hud/hudreticle.h"
 #include "hud/hudshield.h"
@@ -29,9 +31,7 @@
 #include "hud/hudtarget.h"
 #include "hud/hudtargetbox.h"
 #include "hud/hudwingmanstatus.h"
-#include "hud/hudparse.h"
-#include "object/objectdock.h"
-#include "hud/hudnavigation.h"	//kazan
+#include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "mission/missiongoals.h"
@@ -40,21 +40,19 @@
 #include "mission/missiontraining.h"
 #include "missionui/redalert.h"
 #include "model/model.h"
+#include "network/multi_pmsg.h"
+#include "network/multi_voice.h"
+#include "network/multiutil.h"
 #include "object/object.h"
+#include "object/objectdock.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
+#include "radar/radarsetup.h"
 #include "render/3d.h"
-#include "ai/aigoals.h"
 #include "ship/ship.h"
 #include "starfield/supernova.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
-#include "radar/radarsetup.h"
-#include "iff_defs/iff_defs.h"
-#include "network/multiutil.h"
-#include "network/multi_voice.h"
-#include "network/multi_pmsg.h"
-#include "bmpman/bmpman.h"
 
 SCP_vector<HudGauge*> default_hud_gauges;
 
@@ -2224,7 +2222,7 @@ int hud_anim_load(hud_anim *ha)
  * @param loop			Anim should loop (default 1)
  * @param hold_last		Should last frame be held (default 0)
  * @param reverse		Play animation in reverse (default 0)
- * @param resize		Resize for non-standard resolutions
+ * @param resize_mode		Resize for non-standard resolutions
  * @param mirror		Mirror along y-axis so icon points left instead of right
  */
 int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse, int resize_mode, bool mirror)

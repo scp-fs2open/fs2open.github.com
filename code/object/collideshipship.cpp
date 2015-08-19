@@ -9,25 +9,25 @@
 
 
 
-#include "object/objcollide.h"
-#include "object/object.h"
-#include "ship/ship.h"
-#include "freespace2/freespace.h"
-#include "ship/shiphit.h"
-#include "gamesnd/gamesnd.h"
-#include "render/3d.h"			// needed for View_position, which is used when playing 3d sound
-#include "gamesequence/gamesequence.h"
-#include "hud/hudshield.h"
-#include "hud/hudmessage.h"
-#include "io/joy_ff.h"
-#include "io/timer.h"
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
-#include "playerman/player.h"
+#include "debugconsole/console.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "hud/hudmessage.h"
+#include "hud/hudshield.h"
+#include "io/joy_ff.h"
+#include "io/timer.h"
+#include "object/objcollide.h"
+#include "object/object.h"
 #include "object/objectdock.h"
 #include "object/objectshield.h"
 #include "parse/scripting.h"
-#include "debugconsole/console.h"
+#include "playerman/player.h"
+#include "render/3d.h"			// needed for View_position, which is used when playing 3d sound
+#include "ship/ship.h"
+#include "ship/shiphit.h"
 
 
 #define COLLIDE_DEBUG

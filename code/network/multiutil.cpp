@@ -2346,16 +2346,12 @@ void multi_file_xfer_notify(int handle)
 {
 	char *filename;
 	int len,idx;
-	int force_dir;
 	int cf_type;
 	int is_mission = 0;	
 
 	// get the filename of the file we are receiving
 	filename = NULL;
 	filename = multi_xfer_get_filename(handle);
-
-	// get the directory the file is forced into
-	force_dir = multi_xfer_get_force_dir(handle);
 		
 	// something is messed up
 	if(filename == NULL){

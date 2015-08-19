@@ -19,8 +19,6 @@
 
 #include "debugconsole/console.h"
 #include "debugconsole/consoleparse.h"
-#include "globalincs/pstypes.h"
-#include "globalincs/vmallocator.h"
 #include "io/key.h"
 
 #include <algorithm>

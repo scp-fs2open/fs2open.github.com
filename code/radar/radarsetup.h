@@ -12,8 +12,8 @@
 #ifndef _FS2OPEN_RADARSETUP_H
 #define _FS2OPEN_RADARSETUP_H
 
-#include "hud/hudconfig.h"
 #include "hud/hud.h"
+#include "hud/hudconfig.h"
 
 //which radar type are we using
 //to add another radar type, begin by adding a RADAR_MODE_* define and increment MAX_RADAR_MODES

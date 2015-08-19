@@ -13,6 +13,7 @@
 #include "asteroid/asteroid.h"
 #include "cmeasure/cmeasure.h"
 #include "debris/debris.h"
+#include "debugconsole/console.h"
 #include "fireball/fireballs.h"
 #include "freespace2/freespace.h"
 #include "globalincs/linklist.h"
@@ -23,10 +24,10 @@
 #include "mission/missionparse.h" //For 2D Mode
 #include "network/multi.h"
 #include "network/multiutil.h"
+#include "object/deadobjectdock.h"
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "object/objectdock.h"
-#include "object/deadobjectdock.h"
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
@@ -41,7 +42,6 @@
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
-#include "debugconsole/console.h"
 
 
 
@@ -148,7 +148,7 @@ void object::clear()
 /**
  * Scan the object list, freeing down to num_used objects
  *
- * @param  Number of used objects to free down to
+ * @param  num_used Number of used objects to free down to
  * @return Returns number of slots freed
  */
 int free_object_slots(int num_used)
@@ -1453,6 +1453,7 @@ void obj_move_all(float frametime)
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPEQUIPPED, 0, NULL, objp);
 		}
+		Script_system.RemHookVars(2, "User", "Target");
 	}
 
 	//	After all objects have been moved, move all docked objects.
@@ -1545,7 +1546,7 @@ void obj_render_DEPRECATED(object *obj)
 		switch( obj->type )	{
 		case OBJ_NONE:
 			#ifndef NDEBUG
-			mprintf(( "ERROR!!!! Bogus obj %d is rendering!\n", obj-Objects ));
+			mprintf(( "ERROR!!!! Bogus obj " PTRDIFF_T_ARG " is rendering!\n", obj-Objects ));
 			Int3();
 			#endif
 			break;
@@ -1635,7 +1636,7 @@ void obj_queue_render(object* obj, draw_list* scene)
 	switch ( obj->type ) {
 	case OBJ_NONE:
 #ifndef NDEBUG
-		mprintf(( "ERROR!!!! Bogus obj %d is rendering!\n", obj-Objects ));
+		mprintf(( "ERROR!!!! Bogus obj " PTRDIFF_T_ARG " is rendering!\n", obj-Objects ));
 		Int3();
 #endif
 		break;

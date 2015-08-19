@@ -7,10 +7,10 @@
  *
 */ 
 
+#include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "io/timer.h"
-#include "cmdline/cmdline.h"
 
 #include <fstream>
 

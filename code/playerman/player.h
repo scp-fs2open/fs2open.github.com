@@ -12,14 +12,14 @@
 #ifndef _PLAYER_H
 #define _PLAYER_H
 
-#include "physics/physics.h"
+#include "globalincs/globals.h"
 #include "hud/hudtarget.h"				// for targeting hotkey lists
-#include "stats/scoring.h"             // for scoring/stats
 #include "io/keycontrol.h"				// for button_info
+#include "localization/localize.h"
 #include "network/multi_options.h"
 #include "parse/sexp.h"
-#include "globalincs/globals.h"
-#include "localization/localize.h"
+#include "physics/physics.h"
+#include "stats/scoring.h"             // for scoring/stats
 
 struct campaign_info;
 

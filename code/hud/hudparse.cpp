@@ -8,32 +8,31 @@
 
 #include <cstddef>
 
-#include "parse/parselo.h"
-#include "graphics/2d.h"
-#include "localization/localize.h"
+#include "cmdline/cmdline.h"
+#include "graphics/font.h" //for gr_force_fit_string
 #include "hud/hud.h"
+#include "hud/hudbrackets.h"
+#include "hud/hudconfig.h" // for retrieving user's hud config
 #include "hud/hudescort.h"
 #include "hud/hudets.h"
+#include "hud/hudlock.h"
 #include "hud/hudmessage.h"
+#include "hud/hudparse.h" //Duh.
 #include "hud/hudreticle.h"
 #include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"
 #include "hud/hudtarget.h"
-#include "hud/hudwingmanstatus.h"
-#include "hud/hudbrackets.h"
-#include "hud/hudlock.h"
-#include "mission/missiontraining.h"
-#include "mission/missionmessage.h"
-#include "hud/hudparse.h" //Duh.
-#include "radar/radarsetup.h"
-#include "radar/radar.h"
-#include "radar/radarorb.h"
-#include "radar/radardradis.h"
-#include "ship/ship.h" //for ship struct
-#include "graphics/font.h" //for gr_force_fit_string
 #include "hud/hudtargetbox.h" 
-#include "cmdline/cmdline.h"
-#include "hud/hudconfig.h" // for retrieving user's hud config
+#include "hud/hudwingmanstatus.h"
+#include "localization/localize.h"
+#include "mission/missionmessage.h"
+#include "mission/missiontraining.h"
+#include "parse/parselo.h"
+#include "radar/radar.h"
+#include "radar/radardradis.h"
+#include "radar/radarorb.h"
+#include "radar/radarsetup.h"
+#include "ship/ship.h" //for ship struct
 
 //Global stuffs
 extern int ships_inited; //Need this

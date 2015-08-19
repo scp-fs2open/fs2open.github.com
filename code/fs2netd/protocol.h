@@ -14,8 +14,8 @@
 #define __pxo_protocol_h_
 
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 
 #define PXO_PROTO_VER "2.0"

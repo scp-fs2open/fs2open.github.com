@@ -12,12 +12,12 @@
 
 #define MODEL_LIB
 
-#include "model/model.h"
-#include "math/vecmat.h"
+#include "cmdline/cmdline.h"
 #include "graphics/tmapper.h"
 #include "math/fvi.h"
+#include "math/vecmat.h"
+#include "model/model.h"
 #include "model/modelsinc.h"
-#include "cmdline/cmdline.h"
 
 
 
@@ -1134,7 +1134,7 @@ void mc_check_subobj( int mn )
 				if (Mc->lod > 0 && sm->num_details > 0) {
 					bsp_info *lod_sm = sm;
 
-					for (int i = Mc->lod - 1; i >= 0; i--) {
+					for (i = Mc->lod - 1; i >= 0; i--) {
 						if (sm->details[i] != -1) {
 							lod_sm = &Mc_pm->submodel[sm->details[i]];
 

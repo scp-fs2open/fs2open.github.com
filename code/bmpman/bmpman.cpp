@@ -16,16 +16,13 @@
 #include <windows.h>
 #endif
 
-#include "bmpman/bmpman.h"
-#include "bmpman/bm_internal.h"
-
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
-#include "cfile/cfile.h"
+#include "bmpman/bm_internal.h"
+#include "bmpman/bmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
-#include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 #include "io/key.h"
@@ -809,8 +806,8 @@ bool bm_has_alpha_channel(int handle) {
 void bm_init() {
 	int i;
 
-	mprintf(("Size of bitmap info = %d KB\n", sizeof(bm_bitmaps) / 1024));
-	mprintf(("Size of bitmap extra info = %d bytes\n", sizeof(bm_extra_info)));
+	mprintf(("Size of bitmap info = " SIZE_T_ARG " KB\n", sizeof(bm_bitmaps) / 1024));
+	mprintf(("Size of bitmap extra info = " SIZE_T_ARG " bytes\n", sizeof(bm_extra_info)));
 
 	if (!bm_inited) {
 		bm_inited = 1;

@@ -7,7 +7,8 @@
  *
 */
 
-
+#ifndef _MANAGEPILOT_H
+#define _MANAGEPILOT_H
 
 #include "globalincs/pstypes.h"
 
@@ -53,3 +54,5 @@ void pilot_format_callsign_personal(char *in_callsign,char *out_callsign);
 int pilot_verify_overwrite();
 
 void pilot_set_start_campaign(player* p);
+
+#endif	// _MANAGEPILOT_H

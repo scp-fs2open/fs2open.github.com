@@ -11,18 +11,18 @@
 
 
 #include "ai/aigoals.h"
-#include "parse/sexp.h"
+#include "globalincs/linklist.h"
 #include "mission/missionlog.h"
 #include "mission/missionparse.h"
-#include "object/object.h"
-#include "globalincs/linklist.h"
-#include "playerman/player.h"
-#include "network/multimsgs.h"
 #include "network/multi.h"
-#include "ship/ship.h"
-#include "weapon/weapon.h"
+#include "network/multimsgs.h"
+#include "object/object.h"
 #include "object/objectdock.h"
 #include "object/waypoint.h"
+#include "parse/sexp.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 
 
 // all ai goals dealt with in this code are goals that are specified through

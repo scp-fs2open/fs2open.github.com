@@ -26,90 +26,88 @@
 	#include <stdint.h>
 #endif
 
-#include "parse/parselo.h"
-#include "parse/sexp.h"
-#include "ship/ship.h"
-#include "freespace2/freespace.h"
-#include "weapon/weapon.h"
-#include "mission/missionlog.h"
-#include "mission/missionparse.h"		// for p_object definition
-#include "mission/missionmessage.h"
-#include "mission/missiontraining.h"
-#include "globalincs/linklist.h"
 #include "ai/aigoals.h"
-#include "mission/missioncampaign.h"
-#include "mission/missiongoals.h"
-#include "mission/missionbriefcommon.h"
-#include "io/timer.h"
-#include "ship/shiphit.h"
-#include "gamesequence/gamesequence.h"
-#include "stats/medals.h"
-#include "playerman/player.h"
-#include "hud/hud.h"
-#include "hud/hudconfig.h"
-#include "missionui/redalert.h"
-#include "jumpnode/jumpnode.h"
-#include "hud/hudshield.h"
-#include "hud/hudescort.h"
-#include "weapon/beam.h"
-#include "starfield/supernova.h"
-#include "hud/hudets.h"
-#include "math/fvi.h"
-#include "ship/awacs.h"
-#include "hud/hudsquadmsg.h"		// for the order sexp
-#include "gamesnd/eventmusic.h"		// for change-soundtrack
-#include "menuui/techmenu.h"		// for intel stuff
-#include "fireball/fireballs.h"		// for explosion stuff
-#include "gamesnd/gamesnd.h"
-#include "render/3d.h"
 #include "asteroid/asteroid.h"
-#include "weapon/shockwave.h"
-#include "weapon/emp.h"
-#include "sound/audiostr.h"
-#include "sound/ds.h"
-#include "sound/sound.h"
+#include "autopilot/autopilot.h"
+#include "camera/camera.h"
 #include "cmdline/cmdline.h"
-#include "hud/hudparse.h"
-#include "hud/hudmessage.h"
-#include "starfield/starfield.h"
-#include "hud/hudartillery.h"
-#include "object/objectdock.h"
+#include "debugconsole/console.h"
+#include "fireball/fireballs.h"		// for explosion stuff
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"		// for change-soundtrack
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
-#include "camera/camera.h"
+#include "graphics/2d.h"
+#include "graphics/font.h"
+#include "hud/hud.h"
+#include "hud/hudartillery.h"
+#include "hud/hudconfig.h"
+#include "hud/hudescort.h"
+#include "hud/hudets.h"
+#include "hud/hudmessage.h"
+#include "hud/hudparse.h"
+#include "hud/hudshield.h"
+#include "hud/hudsquadmsg.h"		// for the order sexp
 #include "iff_defs/iff_defs.h"
+#include "io/keycontrol.h"
+#include "io/timer.h"
+#include "jumpnode/jumpnode.h"
+#include "localization/localize.h"
+#include "math/fvi.h"
+#include "menuui/techmenu.h"		// for intel stuff
+#include "mission/missionbriefcommon.h"
+#include "mission/missioncampaign.h"
+#include "mission/missiongoals.h"
+#include "mission/missionlog.h"
+#include "mission/missionmessage.h"
+#include "mission/missionparse.h"		// for p_object definition
+#include "mission/missiontraining.h"
+#include "missionui/redalert.h"
+#include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "network/multi.h"
+#include "network/multi_obj.h"
+#include "network/multi_sexp.h"
+#include "network/multi_team.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "network/multi_team.h"
-#include "network/multi_obj.h"
-#include "parse/lua.h"
-#include "parse/scripting.h"
 #include "object/objcollide.h"
-#include "object/waypoint.h"
-#include "graphics/2d.h"
+#include "object/objectdock.h"
+#include "object/objectshield.h"
 #include "object/objectsnd.h"
-#include "graphics/font.h"
-#include "asteroid/asteroid.h"
-#include "mod_table/mod_table.h"
+#include "object/waypoint.h"
+#include "parse/generic_log.h"
+#include "parse/lua.h"
+#include "parse/parselo.h"
+#include "parse/scripting.h"
+#include "parse/sexp.h"
+#include "playerman/player.h"
+#include "render/3d.h"
 #include "ship/afterburner.h"
-#include "globalincs/alphacolors.h"
-#include "debugconsole/console.h"
-#include "debugconsole/console.h"
+#include "ship/awacs.h"
+#include "ship/ship.h"
+#include "ship/shiphit.h"
+#include "sound/audiostr.h"
+#include "sound/ds.h"
+#include "sound/sound.h"
+#include "starfield/starfield.h"
+#include "starfield/supernova.h"
+#include "stats/medals.h"
+#include "weapon/beam.h"
+#include "weapon/emp.h"
+#include "weapon/shockwave.h"
+#include "weapon/weapon.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
 #endif
 
-#include "autopilot/autopilot.h"
-#include "object/objectshield.h"
-#include "network/multi_sexp.h"
-#include "io/keycontrol.h"
-#include "parse/generic_log.h"
-#include "localization/localize.h"
-#include "hud/hudets.h"
+
 
 
 
@@ -1468,8 +1466,8 @@ int find_sexp_list(int num)
 			return i;
 	}
 
-	// assume that it was the first item in the list
-	return num;
+	// not found
+	return -1;
 }
 
 /**
@@ -1478,30 +1476,35 @@ int find_sexp_list(int num)
 int find_parent_operator(int node)
 {
 	int i;
-	int n = node;
-
 	Assert((node >= 0) && (node < Num_sexp_nodes));
 
-	if (Sexp_nodes[n].subtype == SEXP_ATOM_OPERATOR)
-		n = find_sexp_list(n);
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR)
+	{
+		node = find_sexp_list(node);
 
-	Assert( (n >= 0) && (n < Num_sexp_nodes) );
+		// are we already at the top of the list?  this will happen for non-standard sexps
+		// (sexps that fire instantly instead of using a conditional) such as:
+		// $Formula: ( do-nothing ) 
+		if (node < 0)
+			return -1;
+	}
 
-	while (Sexp_nodes[n].subtype != SEXP_ATOM_OPERATOR)
+	// iterate backwards through the sexps nodes (i.e. do the inverse of CDR)
+	while (Sexp_nodes[node].subtype != SEXP_ATOM_OPERATOR)
 	{
 		for (i = 0; i < Num_sexp_nodes; i++)
 		{
-			if (Sexp_nodes[i].rest == n)
+			if (Sexp_nodes[i].rest == node)
 				break;
 		}
 
 		if (i == Num_sexp_nodes)
 			return -1;  // not found, probably at top node already.
 
-		n = i;
+		node = i;
 	}
 
-	return n;
+	return node;
 }
 
 /**
@@ -1558,6 +1561,7 @@ int find_argnum(int parent, int arg)
 int get_operator_index(const char *token)
 {
 	int	i;
+	Assertion(token != NULL, "get_operator_index(char*) called with a null token; get a coder!\n");
 
 	for (i=0; i<Num_operators; i++){
 		if (!stricmp(token, Operators[i].text)){
@@ -1569,10 +1573,12 @@ int get_operator_index(const char *token)
 }
 
 /**
- * From a sexp node, return the index in the array Operators or 0 if not an operator
+ * From a sexp node, return the index in the array Operators or NOT_A_SEXP_OPERATOR if not an operator
  */
 int get_operator_index(int node)
 {
+	Assertion(node >= 0 && node < Num_sexp_nodes, "Passed an out-of-range node index (%d) to get_operator_index(int)!", node);
+
 	if (!Fred_running && (Sexp_nodes[node].op_index != NO_OPERATOR_INDEX_DEFINED) ) {
 		return Sexp_nodes[node].op_index;
 	}
@@ -3451,7 +3457,7 @@ int get_sexp()
 		{
 			// get the first op of the parent, which should be a *_of operator
 			arg_handler = CADR(parent);
-			if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
+			if (arg_handler >= 0 && !is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
 				arg_handler = -1;
 		}
 
@@ -8994,6 +9000,10 @@ void sexp_change_all_argument_validity(int n, bool invalidate)
 
 	arg_handler = get_handler_for_x_of_operator(n);
 
+	// thanks to woutersmits for finding this loophole
+	if (arg_handler < 0)
+		return;
+
 	// can't change validity of for-counter
 	if (get_operator_const(CTEXT(arg_handler)) == OP_FOR_COUNTER)
 		return;
@@ -9046,6 +9056,10 @@ void sexp_change_argument_validity(int n, bool invalidate)
 	bool toggled;
 
 	arg_handler = get_handler_for_x_of_operator(n);
+
+	// thanks to woutersmits for finding this loophole
+	if (arg_handler < 0)
+		return;
 
 	// can't change validity of for-counter
 	if (get_operator_const(CTEXT(arg_handler)) == OP_FOR_COUNTER)
@@ -9131,12 +9145,11 @@ int get_handler_for_x_of_operator(int n)
 
 	// get the first op of the parent, which should be a *_of operator
 	arg_handler = CADR(conditional);
-	if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler)))) {
+	if (arg_handler < 0 || !is_blank_of_op(get_operator_const(CTEXT(arg_handler)))) {
 		return -1;
 	}
 
 	return arg_handler;
-
 }
 
 // Goober5000
@@ -17011,10 +17024,12 @@ void sexp_beam_floating_fire(int n)
 	}
 	n = CDR(n);
 
-	if (n >= 0 && stricmp(CTEXT(n), SEXP_NONE_STRING))
+	if (n >= 0)
 	{
-		if (sindex >= 0)
-			fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+		if (stricmp(CTEXT(n), SEXP_NONE_STRING)) {
+			if (sindex >= 0)
+				fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
+		}
 
 		n = CDR(n);
 	}
@@ -18084,7 +18099,7 @@ void sexp_set_turret_primary_ammo(int node)
 void multi_sexp_set_turret_primary_ammo()
 {
 	int sindex, requested_bank, requested_weapons;
-	char *subsys;
+	char subsys[TOKEN_LENGTH];
 	multi_get_int(sindex);
 	multi_get_string(subsys);
 	multi_get_int(requested_bank);
@@ -18223,7 +18238,7 @@ void sexp_set_turret_secondary_ammo(int node)
 void multi_sexp_set_turret_secondary_ammo()
 {
 	int sindex, requested_bank, requested_weapons;
-	char *subsys;
+	char subsys[TOKEN_LENGTH];
 	multi_get_int(sindex);
 	multi_get_string(subsys);
 	multi_get_int(requested_bank);
@@ -24273,6 +24288,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_BEAM_FLOATING_FIRE:
+				sexp_beam_floating_fire(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_IS_TAGGED:
 				sexp_val = sexp_is_tagged(node);
 				break;
@@ -28762,8 +28782,8 @@ char *CTEXT(int n)
 	char variable_name[TOKEN_LENGTH];
 	char *current_argument; 
 
+	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index (%d) to CTEXT!", n);
 	if ( n < 0 ) {
-		Int3();
 		return NULL;
 	}
 

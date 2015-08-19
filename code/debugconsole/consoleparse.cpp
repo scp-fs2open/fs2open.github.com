@@ -12,10 +12,8 @@
 // @todo Make a fast version of the parse_long, parse_ulong, etc. That just checks the first 1-3 characters. The fast version will be used in retail builds while the slow/safe version will be in debug's
 // @todo Maybe make parser functions case-insensitive
 ////////////////
-#include "debugconsole/consoleparse.h"
 
-#include "debugconsole/console.h"
-#include "globalincs/pstypes.h"
+#include "debugconsole/consoleparse.h"
 #include "parse/parselo.h"
 
 #include <algorithm>
@@ -90,7 +88,7 @@ void dc_get_token_no_advance(SCP_string &out_str);
  * @param[in] ch   Points to the start of the string to parse
  * @param[in] type The expected type. is thrown along with ch when an unexpected/malformed float is found
  *
- * @ret The value of the parsed token
+ * @return The value of the parsed token
  * @details
  *   The returned double may be cast to a single-precision float, but be sure to check it before doing so!
  */
@@ -1067,7 +1065,7 @@ void dc_stuff_float(float *f)
 	value_d = dc_parse_double(token.c_str(), DCT_FLOAT);	// Parse and convert
 	
 	// Stuff value if within bounds
-	if ((abs(value_d) < FLT_MAX) && (abs(value_d) > FLT_MIN)) {
+	if ((std::abs(value_d) < FLT_MAX) && (std::abs(value_d) > FLT_MIN)) {
 		*f = static_cast<float>(value_d);
 	} else {
 		throw errParse(token.c_str(), DCT_FLOAT);

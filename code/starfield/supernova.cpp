@@ -9,19 +9,19 @@
 
 
 
-#include "starfield/supernova.h"
-#include "freespace2/freespace.h"
-#include "math/vecmat.h"
-#include "starfield/starfield.h"
-#include "particle/particle.h"
-#include "ship/ship.h"
-#include "io/timer.h"
-#include "popup/popupdead.h"
-#include "mission/missioncampaign.h"
-#include "gamesequence/gamesequence.h"
-#include "gamesnd/gamesnd.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "io/timer.h"
+#include "math/vecmat.h"
+#include "mission/missioncampaign.h"
+#include "particle/particle.h"
+#include "popup/popupdead.h"
+#include "ship/ship.h"
+#include "starfield/starfield.h"
+#include "starfield/supernova.h"
 
 // --------------------------------------------------------------------------------------------------------------------------
 // SUPERNOVA DEFINES/VARS
