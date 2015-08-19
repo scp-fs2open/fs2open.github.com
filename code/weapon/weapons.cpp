@@ -1528,7 +1528,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Warning(LOCATION, "Lifetime max for weapon '%s' cannot be less than 0. Setting to 0.\n", wip->name);
 		} else if (wip->life_max < wip->life_min) {
 			wip->life_max = wip->life_min + 0.1f;
-			Warning(LOCATION, "Lifetime max for weapon '%s' cannot be less than its Lifetime Min (%d) value. Setting to %d.\n", wip->name, wip->life_min, wip->life_max);
+			Warning(LOCATION, "Lifetime max for weapon '%s' cannot be less than its Lifetime Min (%f) value. Setting to %f.\n", wip->name, wip->life_min, wip->life_max);
 		} else {
 			wip->lifetime = (wip->life_min+wip->life_max)*0.5f;
 		}
@@ -1537,7 +1537,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(wip->life_min >= 0.0f && wip->life_max < 0.0f) {
 		wip->lifetime = wip->life_min;
 		wip->life_min = -1.0f;
-		Warning(LOCATION, "Lifetime min, but not lifetime max, specified for weapon %s. Assuming static lifetime of %.2f seconds.\n", wip->lifetime);
+		Warning(LOCATION, "Lifetime min, but not lifetime max, specified for weapon %s. Assuming static lifetime of %.2f seconds.\n", wip->name, wip->lifetime);
 	}
 
 	if(optional_string("$Lifetime:")) {
@@ -2809,7 +2809,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				size_t current_size = wip->num_substitution_patterns;
 				size_t desired_size = current_size*period;
 				if (desired_size > MAX_SUBSTITUTION_PATTERNS) {
-					Warning(LOCATION, "The period is too large for the number of substitution patterns!  desired size=%d, max size=%d", desired_size, MAX_SUBSTITUTION_PATTERNS);
+					Warning(LOCATION, "The period is too large for the number of substitution patterns!  desired size=" SIZE_T_ARG ", max size=%d", desired_size, MAX_SUBSTITUTION_PATTERNS);
 				}
 				else {
 					wip->num_substitution_patterns = desired_size;
@@ -7422,7 +7422,7 @@ void validate_SSM_entries()
 		wip = &Weapon_info[wi];
 		nprintf(("parse", "Starting validation of '%s' [wip->name is '%s'], currently has an SSM_index of %d.\n", it->c_str(), wip->name, wip->SSM_index));
 		if (wip->SSM_index < -1 || wip->SSM_index >= static_cast<int>(Ssm_info.size())) {
-			Warning(LOCATION, "Invalid SSM index '%d' (should be 0-%d) in specification for %s (%s:line %d).\n", wip->SSM_index, Ssm_info.size() - 1, it->c_str(), dat->filename.c_str(), dat->linenum);
+			Warning(LOCATION, "Invalid SSM index '%d' (should be 0-" SIZE_T_ARG ") in specification for %s (%s:line %d).\n", wip->SSM_index, Ssm_info.size() - 1, it->c_str(), dat->filename.c_str(), dat->linenum);
 			wip->SSM_index = -1;
 		}
 		nprintf(("parse", "Validation complete, SSM-index is %d.\n", wip->SSM_index));

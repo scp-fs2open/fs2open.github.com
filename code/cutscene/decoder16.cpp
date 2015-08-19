@@ -15,7 +15,7 @@ static void genLoopkupTable();
 
 void decodeFrame16(ubyte *pFrame, ubyte *pMap, int mapRemain, unsigned char *pData, int dataRemain)
 {
-	ubyte *pOrig, *pOffData, *pEnd, op;
+	ubyte *pOrig, *pOffData, op;
 	ushort offset;
 	int length = 0, i, j, xb, yb;
 
@@ -32,7 +32,6 @@ void decodeFrame16(ubyte *pFrame, ubyte *pMap, int mapRemain, unsigned char *pDa
 	offset = pData[0]|(pData[1]<<8);
 
 	pOffData = pData + offset;
-	pEnd = pData + offset;
 
 	pData += 2;
 
@@ -55,7 +54,8 @@ void decodeFrame16(ubyte *pFrame, ubyte *pMap, int mapRemain, unsigned char *pDa
 	}
 
 	if ((length-(pData-pOrig)) != 0) {
-		nprintf(("MVE", "DEBUG: junk left over: %d,%d,%d\n", (pData-pOrig), length, (length-(pData-pOrig))));
+		nprintf(("MVE", "DEBUG: junk left over: " PTRDIFF_T_ARG ",%d," PTRDIFF_T_ARG "\n",
+			(pData-pOrig), length, (length-(pData-pOrig))));
 	}
 }
 

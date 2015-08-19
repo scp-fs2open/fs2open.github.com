@@ -1065,7 +1065,7 @@ void dc_stuff_float(float *f)
 	value_d = dc_parse_double(token.c_str(), DCT_FLOAT);	// Parse and convert
 	
 	// Stuff value if within bounds
-	if ((abs(value_d) < FLT_MAX) && (abs(value_d) > FLT_MIN)) {
+	if ((std::abs(value_d) < FLT_MAX) && (std::abs(value_d) > FLT_MIN)) {
 		*f = static_cast<float>(value_d);
 	} else {
 		throw errParse(token.c_str(), DCT_FLOAT);

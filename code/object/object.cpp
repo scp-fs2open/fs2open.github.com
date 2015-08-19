@@ -1546,7 +1546,7 @@ void obj_render_DEPRECATED(object *obj)
 		switch( obj->type )	{
 		case OBJ_NONE:
 			#ifndef NDEBUG
-			mprintf(( "ERROR!!!! Bogus obj %d is rendering!\n", obj-Objects ));
+			mprintf(( "ERROR!!!! Bogus obj " PTRDIFF_T_ARG " is rendering!\n", obj-Objects ));
 			Int3();
 			#endif
 			break;
@@ -1636,7 +1636,7 @@ void obj_queue_render(object* obj, draw_list* scene)
 	switch ( obj->type ) {
 	case OBJ_NONE:
 #ifndef NDEBUG
-		mprintf(( "ERROR!!!! Bogus obj %d is rendering!\n", obj-Objects ));
+		mprintf(( "ERROR!!!! Bogus obj " PTRDIFF_T_ARG " is rendering!\n", obj-Objects ));
 		Int3();
 #endif
 		break;

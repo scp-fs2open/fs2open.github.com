@@ -887,7 +887,7 @@ int debrief_find_persona_index()
 {
 	int i, j;
 
-	if ((Campaign.current_mission >= 0) && (Campaign.missions[Campaign.current_mission].name) && (Campaign.filename))
+	if ((Campaign.current_mission >= 0) && (Campaign.missions[Campaign.current_mission].name))
 	{
 		// Goober5000 - first see if the campaign supplied a persona index
 		// (0 means use the Volition default)

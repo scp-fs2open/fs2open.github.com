@@ -196,7 +196,6 @@ void gr_stub_free_screen(int id)
 
 void gr_stub_get_region(int front, int w, int h, ubyte *data)
 {
-	data = NULL;
 }
 
 void gr_stub_gradient(int x1,int y1,int x2,int y2, int resize_mode)

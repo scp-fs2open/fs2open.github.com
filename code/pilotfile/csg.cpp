@@ -1555,7 +1555,7 @@ bool pilotfile::save_savefile()
 	// assertion before writing so that we don't corrupt the .csg by asserting halfway through writing
 	// assertion should also prevent loss of major campaign progress
 	// i.e. lose one mission, not several missions worth (in theory)
-	Assertion(Red_alert_wingman_status.size() <= MAX_SHIPS, "Invalid number of Red_alert_wingman_status entries: %u\n", Red_alert_wingman_status.size());
+	Assertion(Red_alert_wingman_status.size() <= MAX_SHIPS, "Invalid number of Red_alert_wingman_status entries: " SIZE_T_ARG "\n", Red_alert_wingman_status.size());
 
 	// open it, hopefully...
 	cfp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);

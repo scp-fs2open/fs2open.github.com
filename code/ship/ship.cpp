@@ -3110,7 +3110,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 			SCP_string name, banks;
 			size_t seppos;
 			seppos = token->find_first_of(':');
-			if(seppos == -1) {
+			if(seppos == SCP_string::npos) {
 				Warning(LOCATION, "Couldn't find ':' seperator in Glowpoint override for ship %s ignoring token", sip->name);
 				continue;
 			}
@@ -3135,7 +3135,7 @@ int parse_ship_values(ship_info* sip, bool first_time, bool replace)
 				
 				size_t fromtopos;
 				fromtopos = banktoken.find_first_of('-');
-				if(fromtopos != -1) {
+				if(fromtopos != SCP_string::npos) {
 					SCP_string from, to;
 					int ifrom, ito;
 					from = banktoken.substr(0, fromtopos);
@@ -14388,7 +14388,8 @@ float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 	}
 
 	if(hit_objp->shield_quadrant[quadrant_num] > max_quadrant)
-		mprintf((LOCATION, "Warning: \"%s\" has shield quadrant strength of %f out of %f\n", Ships[hit_objp->instance].ship_name, hit_objp->shield_quadrant[quadrant_num], max_quadrant));
+		mprintf(("Warning: \"%s\" has shield quadrant strength of %f out of %f\n",
+				Ships[hit_objp->instance].ship_name, hit_objp->shield_quadrant[quadrant_num], max_quadrant));
 
 	return hit_objp->shield_quadrant[quadrant_num]/max_quadrant;
 }
@@ -17646,7 +17647,8 @@ void ArmorType::ParseData()
 		{
 			if(adt.Calculations.size() != adt.Arguments.size())
 			{
-				Warning(LOCATION, "Armor '%s', damage type %d: Armor has a different number of calculation types than arguments (%d, %d)", Name, DamageTypes.size(), adt.Calculations.size(), adt.Arguments.size());
+				Warning(LOCATION, "Armor '%s', damage type " SIZE_T_ARG ": Armor has a different number of calculation types than arguments (" SIZE_T_ARG ", " SIZE_T_ARG ")",
+						Name, DamageTypes.size(), adt.Calculations.size(), adt.Arguments.size());
 			}
 			DamageTypes.push_back(adt);
 		}

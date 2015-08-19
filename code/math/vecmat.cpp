@@ -1384,7 +1384,7 @@ float vm_vec_dot_to_point(const vec3d *dir, const vec3d *p1, const vec3d *p2)
 //	Result returned in q.
 void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p)
 {
-	float	k, tv;
+	float	k;
 	vec3d	normal;
 
 	normal.xyz.x = planep->A;
@@ -1394,8 +1394,6 @@ void compute_point_on_plane(vec3d *q, const plane *planep, const vec3d *p)
 	k = (planep->D + vm_vec_dot(&normal, p)) / vm_vec_dot(&normal, &normal);
 
 	vm_vec_scale_add(q, p, &normal, -k);
-
-	tv = planep->A * q->xyz.x + planep->B * q->xyz.y + planep->C * q->xyz.z + planep->D;
 }
 
 
@@ -2599,4 +2597,3 @@ void vm_vec_boxscale(vec2d *vec, float scale)
 	vec->x *= ratio;
 	vec->y *= ratio;
 }
-

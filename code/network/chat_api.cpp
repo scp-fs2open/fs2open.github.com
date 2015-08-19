@@ -654,7 +654,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 
 	static char szResponse[MAXLOCALSTRING] = "";
 
-	int iNickLen;
 	int iPrefixLen = 0;	// JAS: Get rid of optimized warning
 
 	szRemLine[MAXLOCALSTRING-1] = '\0';
@@ -695,7 +694,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 			strncpy(szNick,szPrefix,31);
          szNick[31]=0;
 		}
-		iNickLen=strlen(szNick);
 		iPrefixLen=strlen(szPrefix);
 	}
 	else if(iMode==MSG_LOCAL)
@@ -703,7 +701,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 		strncpy(szRemLine, Line, sizeof(szRemLine)-1);
 		strncpy(szNick, Nick_name, sizeof(szNick)-1);
 		strncpy(szPrefix, Nick_name, sizeof(szPrefix)-1);
-		iNickLen=-2;
 		iPrefixLen=-2;
 	}
 	//Next is the command

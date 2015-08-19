@@ -5521,7 +5521,7 @@ void parse_glowpoint_table(const char *filename)
 					}
 					else
 					{
-						nprintf(("Model", "Glowpoint preset %s nebula texture num is %d\n", gpo, gpo.glow_neb_bitmap));
+						nprintf(("Model", "Glowpoint preset %s nebula texture num is %d\n", gpo.name, gpo.glow_neb_bitmap));
 					}
 				}
 				else {
@@ -5598,7 +5598,7 @@ void parse_glowpoint_table(const char *filename)
 
 					if (optional_string("$Cone angle:")) {
 						stuff_float(&gpo.cone_angle);
-						gpo.cone_inner_angle = cos((gpo.cone_angle - (gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f) / 180.0f * PI);
+						gpo.cone_inner_angle = cos((gpo.cone_angle - ((gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f)) / 180.0f * PI);
 						gpo.cone_angle = cos(gpo.cone_angle / 180.0f * PI);
 					}
 

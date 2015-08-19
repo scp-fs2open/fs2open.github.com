@@ -174,7 +174,7 @@ void WarningEx( char *filename, int line, const char *format, ... )
 		va_start(args, format);
 		vsprintf(msg, format, args);
 		va_end(args);
-		Warning(filename, line, msg);
+		Warning(filename, line, "%s", msg);
 	}
 #endif
 }

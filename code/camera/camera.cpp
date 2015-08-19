@@ -80,7 +80,7 @@ void camera::reset()
 
 void camera::set_name(char *in_name)
 {
-	if(name != NULL)
+	if(in_name != NULL)
 		strncpy(name, in_name, NAME_LENGTH-1);
 }
 

@@ -2008,7 +2008,7 @@ void asteroid_parse_tbl()
 			Error(LOCATION,
 				"Found %d asteroids/debris when %d expected\n\n"
 				"<Number expected> = <Number of species> * %d + %d generic asteroids\n"
-				"%d = %d*%d + %d\n\n"
+				"%d = " SIZE_T_ARG "*%d + %d\n\n"
 #ifdef NDEBUG
 				"Run a debug build to see a list of all parsed asteroids\n",
 #else

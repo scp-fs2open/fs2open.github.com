@@ -937,7 +937,7 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 		outstr[foundstr - instr] = 0;
 
 	} else {
-		nprintf(("Error", "Error.  Too much text (%i chars, %i allowed) before %s\n",
+		nprintf(("Error", "Error.  Too much text (" SIZE_T_ARG " chars, %i allowed) before %s\n",
 			foundstr - instr - strlen(endstr), max_chars, endstr));
 
         throw parse::ParseException("Too much text found");
@@ -3808,7 +3808,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 			++p;
 			if (!*p || (buf_src_len >= MAX_BUF-1))
 			{
-				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos %d!", MAX_BUF-1, format, (p - format));
+				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos " SIZE_T_ARG "!", MAX_BUF-1, format, (p - format));
 
 				// unsafe to continue handling this va_list
 				dest += buf_src;
