@@ -13994,7 +13994,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 
 			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < static_cast<int>(Ship_info.size())),
 				"Ship '%s' does not have a valid pointer to a ship class. Pointer is %d, which is smaller than 0 or bigger than %d",
-				shipp->ship_name, shipp->ship_info_index, Ship_info.size());
+				shipp->ship_name, shipp->ship_info_index, static_cast<int>(Ship_info.size()));
 
 			sip = &Ship_info[shipp->ship_info_index];
 
