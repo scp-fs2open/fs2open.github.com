@@ -76,10 +76,17 @@ void parse_ssm(const char *filename)
 			// stuff data
 			required_string("+Weapon:");
 			stuff_string(weapon_name, F_NAME, NAME_LENGTH);
-			if (optional_string("+Count:"))
-				stuff_int(&s.count);
-			else
+			s.max_count = -1;
+			int use_min = optional_string_either("+Count:", "+Min Count:");
+			if (use_min < 0)
 				s.count = 1;
+			else {
+				stuff_int(&s.count);
+				if (use_min) {
+					required_string("+Max Count:");
+					stuff_int(&s.max_count);
+				}
+			}
 			required_string("+WarpRadius:");
 			stuff_float(&s.warp_radius);
 			if (optional_string("+WarpTime:")) {
@@ -94,12 +101,27 @@ void parse_ssm(const char *filename)
 			} else {
 				s.warp_time = 4.0f;
 			}
-			required_string("+Radius:");
-			stuff_float(&s.radius);
-			if (optional_string("+Offset:"))
-				stuff_float(&s.offset);
+			s.max_radius = -1.0f;
+			if (use_min = required_string_either("+Radius:", "+Min Radius:"))
+				required_string("+Min Radius:");
 			else
+				required_string("+Radius:");
+			stuff_float(&s.radius);
+			if (use_min) {
+				required_string("+Max Radius:");
+				stuff_float(&s.max_radius);
+			}
+			s.max_offset = -1.0f;
+			use_min = optional_string_either("+Offset:", "+Min Offset:");
+			if (use_min < 0)
 				s.offset = 0.0f;
+			else {
+				stuff_float(&s.offset);
+				if (use_min) {
+					required_string("+Max Offset:");
+					stuff_float(&s.max_offset);
+				}
+			}
 			if (optional_string("+Shape:")) {
 				switch(required_string_one_of(3, "Point", "Circle", "Sphere")) {
 				case 0:
@@ -168,19 +190,30 @@ void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, int ssm_
 {
 	vec3d temp;
 	ssm_info *s = &Ssm_info[ssm_index];
+	float radius, offset;
+
+	if (s->max_radius == -1.0f)
+		radius = s->radius;
+	else
+		radius = frand_range(s->radius, s->max_radius);
+
+	if (s->max_offset == -1.0f)
+		offset = s->offset;
+	else
+		offset = frand_range(s->offset, s->max_offset);
 
 	switch (s->shape) {
 	case SSM_SHAPE_SPHERE:
 		// get a random vector in a sphere around the target
-		vm_vec_random_in_sphere(&temp, start, orient, s->radius, 1);
+		vm_vec_random_in_sphere(&temp, start, orient, radius, 1);
 		break;
 	case SSM_SHAPE_CIRCLE:
 		// get a random vector in the circle of the firing plane
-		vm_vec_random_in_circle(&temp, start, orient, s->radius, 1);
+		vm_vec_random_in_circle(&temp, start, orient, radius, 1);
 		break;
 	case SSM_SHAPE_POINT:
 		// boooring
-		vm_vec_scale_add(&temp, start, &orient->vec.fvec, s->radius);
+		vm_vec_scale_add(&temp, start, &orient->vec.fvec, radius);
 		break;
 	default:
 		Assertion(false, "Unknown shape '%d' in SSM type #%d ('%s'). This should not be possible; get a coder!\n", s->shape, ssm_index, s->name);
@@ -188,7 +221,7 @@ void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, int ssm_
 	}
 
 	// offset it a bit
-	vm_vec_scale_add(out, &temp, &orient->vec.fvec, s->offset);
+	vm_vec_scale_add(out, &temp, &orient->vec.fvec, offset);
 }
 
 // level init
@@ -219,6 +252,11 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 	// Init the ssm data
 
 	count = Ssm_info[ssm_index].count;
+	if (Ssm_info[ssm_index].max_count != -1) {
+		// To get a range of values between min and max, inclusive:
+		// random value = min + randon number % (max - min + 1)
+		count += rand32() % (Ssm_info[ssm_index].max_count - count + 1);
+	}
 
 	// override in multiplayer
 	if(override != NULL){
@@ -235,6 +273,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 		vm_vector_2_matrix(&dir, &temp, NULL, NULL);
 
 		// stuff info
+		ssm.sinfo.count = count;
 		ssm.sinfo.ssm_index = ssm_index;
 		ssm.sinfo.target = target;
 		ssm.sinfo.ssm_team = team;
@@ -306,7 +345,7 @@ void ssm_process()
 
 		// check all the individual missiles
 		finished = 1;
-		for(idx=0; idx<si->count; idx++){
+		for(idx=0; idx<moveup->sinfo.count; idx++){
 			// if this guy is not marked as done
 			if(!moveup->done_flags[idx]){
 				finished = 0;				
