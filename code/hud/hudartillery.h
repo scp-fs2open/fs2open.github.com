@@ -28,11 +28,14 @@
 typedef struct ssm_info {
 	char		name[NAME_LENGTH];		// strike name
 	int			count;					// # of missiles in this type of strike
+	int			max_count;				// Maximum # of missiles in this type of strike (-1 for no variance)
 	int			weapon_info_index;		// missile type
-	float		warp_radius;			// radius of associated warp effect	
+	float		warp_radius;			// radius of associated warp effect
 	float		warp_time;				// how long the warp effect lasts
-	float		radius;					// radius around the shooting ship	
-	float		offset;					// offset in front of the shooting ship
+	float		radius;					// radius around the target ship
+	float		max_radius;				// Maximum radius around the target ship (-1.0f for no variance)
+	float		offset;					// offset in front of the target ship
+	float		max_offset;				// Maximum offset in front of the target ship (-1.0f for no variance)
 	char		message[NAME_LENGTH];
 	bool		use_custom_message;
 	bool		send_message;
@@ -45,6 +48,7 @@ typedef struct ssm_firing_info {
 	SCP_vector<int>		delay_stamp;	// timestamps
 	SCP_vector<vec3d>	start_pos;		// start positions
 
+	int					count;			// The ssm_info count may be variable; this stores the actual number of projectiles for this strike.
 	int					ssm_index;		// index info ssm_info array
 	class object*		target;			// target for the strike
 	int					ssm_team;		// team that fired the ssm.
