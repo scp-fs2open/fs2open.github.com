@@ -500,7 +500,7 @@ void joy_event(SDL_JoystickID id, uint8_t axis_id, int16_t value)
 		return;
 	}
 
-	joy_axes[axis_id] = value;
+	joy_axes[axis_id] = value + 32768;
 }
 
 SDL_Joystick* joy_get_device()
