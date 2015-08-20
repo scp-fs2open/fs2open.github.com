@@ -3136,7 +3136,7 @@ void beam_handle_collisions(beam *b)
 			}
 		}
 
-		if(do_damage && !physics_paused){
+		if(!physics_paused){
 
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
