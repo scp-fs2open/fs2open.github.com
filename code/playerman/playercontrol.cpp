@@ -393,22 +393,44 @@ void playercontrol_read_stick(int *axis, float frame_time)
 		factor = factor * factor / frame_time / 0.6f;
 
 		mouse_get_delta(&dx, &dy, &dz);
+		int x_axis, y_axis, z_axis;
+		x_axis = y_axis = z_axis = -1;
 
-		if ( Invert_axis[0] ) {
-			dx = -dx;
+		for (i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
+			switch(Axis_map_to[i])
+			{
+			case JOY_X_AXIS:
+				x_axis = i;
+				break;
+			case JOY_Y_AXIS:
+				y_axis = i;
+				break;
+			case JOY_Z_AXIS:
+				z_axis = i;
+				break;
+			}
 		}
 
-		if ( Invert_axis[1] ) {
-			dy = -dy;
+		if (x_axis >= 0) {
+			if (Invert_axis[x_axis]) {
+				dx = -dx;
+			}
+			axis[x_axis] += (int) ((float) dx * factor);
 		}
 
-		if ( Invert_axis[3] ) {
-			dz = -dz;
+		if (y_axis >= 0) {
+			if (Invert_axis[y_axis]) {
+				dy = -dy;
+			}
+			axis[y_axis] += (int) ((float) dy * factor);
 		}
 
-		axis[0] += (int) ((float) dx * factor);
-		axis[1] += (int) ((float) dy * factor);
-		axis[3] += (int) ((float) dz * factor);
+		if (z_axis >= 0) {
+			if (Invert_axis[z_axis]) {
+				dz = -dz;
+			}
+			axis[z_axis] += (int) ((float) dz * factor);
+		}
 	}
 }
 
