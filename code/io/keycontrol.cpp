@@ -1095,6 +1095,13 @@ void process_debug_keys(int k)
 			break;
 		}
 
+		// Goober5000
+		case KEY_DEBUGGED + KEY_SHIFTED + KEY_R:
+		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_R:
+		{
+			// rearm yourself, even if the mission nominally won't let you
+		}
+
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_UP:
 			Game_detail_level++;
 			HUD_printf( XSTR( "Detail level set to %+d\n", 22), Game_detail_level );
