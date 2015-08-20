@@ -404,6 +404,10 @@ void os_poll()
 
 			break;
 
+		case SDL_JOYAXISMOTION:
+			joy_event(event.jaxis.which, event.jaxis.axis, event.jaxis.value);
+			break;
+
 		case SDL_JOYHATMOTION:
 			joy_set_hat_state(event.jhat.value);
 			break;

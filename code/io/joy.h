@@ -58,4 +58,15 @@ void joy_close();
 void joy_device_changed(int state, int device);
 SDL_Joystick* joy_get_device();
 
+/**
+ * @brief Called asychronously when the OS detects a change on any monitored joystick axis
+ *
+ * @param[in] id      The joystick instance index
+ * @param[in] axis_id The id of the axis that changed
+ * @param[in] value   The new value of the axis
+ */
+void joy_event(SDL_JoystickID id, uint8_t axis_id, int16_t value);
+
+
+
 #endif	/* __JOY_H__ */
