@@ -73,6 +73,11 @@ static int Player_all_alone_msg_inited=0;	// flag used for initializing a player
 	DCF_BOOL( show_killer_weapon, Show_killer_weapon )
 #endif
 
+/**
+ * @brief Reads and combines the axes from the player's joystick and mouse.
+ * @param[out] axis       Pointer to axes array
+ * @param[in]  frame_time The frame time when this was called
+ */
 void playercontrol_read_stick(int *axis, float frame_time);
 void player_set_padlock_state();
 
@@ -356,34 +361,12 @@ void player_control_reset_ci( control_info *ci )
 	ci->forward_cruise_percent = oldspeed;
 }
 
-// Read the 4 joystick axis.  This is its own function
-// because we only want to read it at a certain rate,
-// since it takes time.
-
-static int Joystick_saved_reading[JOY_NUM_AXES];
-static int Joystick_last_reading = -1;
-
 void playercontrol_read_stick(int *axis, float frame_time)
 {
 	int i;
 
-#ifndef NDEBUG
-	// Make sure things get reset properly between missions.
-	if ( (Joystick_last_reading != -1) && (timestamp_until(Joystick_last_reading) > 1000) ) {
-		Int3();		// Get John!  John, the joystick last reading didn't get reset btwn levels.
-		Joystick_last_reading = -1;
-	}
-#endif
-
-	if ( (Joystick_last_reading == -1)  || timestamp_elapsed(Joystick_last_reading) ) {
-		// Read the stick
-		control_get_axes_readings(&Joystick_saved_reading[0], &Joystick_saved_reading[1], &Joystick_saved_reading[2], &Joystick_saved_reading[3], &Joystick_saved_reading[4]);
-		Joystick_last_reading = timestamp( 1000/10 );	// Read 10x per second, like we did in Descent.
-	}
-
-	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
-		axis[i] = Joystick_saved_reading[i];
-	}
+	// Read the stick
+	control_get_axes_readings(&axis[0], &axis[1], &axis[2], &axis[3], &axis[4]);
 
 	if (Use_mouse_to_fly) {
 		int dx, dy, dz;
@@ -1234,8 +1217,6 @@ void player_level_init()
 	Player_ai = NULL;
 
 	Player_use_ai = 0;	// Goober5000
-
-	Joystick_last_reading = -1;				// Make the joystick read right away.
 
 	if(Player == NULL)
 		return;
