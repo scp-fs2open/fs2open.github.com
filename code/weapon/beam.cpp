@@ -1387,7 +1387,7 @@ void beam_render_muzzle_glow(beam *b)
 {
 	vertex pt;
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
-	beam_weapon_info *bwi = &Weapon_info[b->weapon_info_index].b_info;
+	beam_weapon_info *bwi = &wip->b_info;
 	float rad, pct, rand_val;
 	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
 	pt.flags = 0;    // avoid potential read of uninit var
@@ -3136,12 +3136,12 @@ void beam_handle_collisions(beam *b)
 			}
 		}
 
-		if(do_damage && !physics_paused){
+		if(!physics_paused){
 
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
 				// hit the debris - the debris hit code takes care of checking for MULTIPLAYER_CLIENT, etc
-				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, Weapon_info[b->weapon_info_index].damage);
+				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage);
 				break;
 
 			case OBJ_WEAPON:
@@ -3160,7 +3160,7 @@ void beam_handle_collisions(beam *b)
 								}
 							}
 
-							float damage = Weapon_info[b->weapon_info_index].damage * attenuation;
+							float damage = wi->damage * attenuation;
 
 							trgt->hull_strength -= damage;
 
@@ -3188,7 +3188,7 @@ void beam_handle_collisions(beam *b)
 			case OBJ_ASTEROID:
 				// hit the asteroid
 				if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
-					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, Weapon_info[b->weapon_info_index].damage);
+					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage);
 				}
 				break;
 			case OBJ_SHIP:	
