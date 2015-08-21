@@ -3777,101 +3777,26 @@ bool can_construe_as_integer(const char *text)
 // yoinked gratefully from dbugfile.cpp
 void vsprintf(SCP_string &dest, const char *format, va_list ap)
 {
-	const int MAX_BUF = 64;
-	const char *handled_types = "diouxXcfsn%";
+	va_list copy;
+	
+#if defined(_MSC_VER) && _MSC_VER < 1800
+	// Only Visual Studio >= 2013 supports va_copy
+	// This isn't portable but should work for Visual Studio
+	copy = ap;
+#else
+	va_copy(copy, ap);
+#endif
 
-	int buf_src_len;
-	char buf_src[MAX_BUF];
-	char buf_dest[MAX_BUF];
+	int needed_length = vsnprintf(nullptr, 0, format, copy);
+	va_end(copy);
 
-	const char *p;
-	int *pint;
-	long ival;
-	double dval;
-
-	// clear string
-	dest = "";
-
-	// Add each extra parameter to string
-	for (p = format; *p; ++p)
-	{
-		if (*p != '%')
-		{
-			dest += *p;
-			continue;
-		}
-
-		// find the specifier that comes next
-		buf_src[0] = '%';
-		buf_src_len = 1;
-		do {
-			++p;
-			if (!*p || (buf_src_len >= MAX_BUF-1))
-			{
-				Warning(LOCATION, "Could not find a sprintf specifier within %d characters for format '%s', pos " SIZE_T_ARG "!", MAX_BUF-1, format, (p - format));
-
-				// unsafe to continue handling this va_list
-				dest += buf_src;
-				return;
-			}
-
-			buf_src[buf_src_len] = *p;
-			buf_src_len++;
-		} while (strchr(handled_types, *p) == NULL);
-		buf_src[buf_src_len] = 0;
-
-		// handle it
-		switch (*p)
-		{
-			case 'd':
-			case 'i':
-			case 'o':
-			case 'u':
-			case 'x':
-			case 'X':
-			{
-				ival = va_arg(ap, int);
-				sprintf(buf_dest, buf_src, ival);
-				dest += buf_dest;
-				break;
-			}
-			case 'c':
-			{
-				dest += (char) va_arg(ap, int);
-				break;
-			}
-			case 'f':
-			{
-				dval = va_arg(ap, double);
-				sprintf(buf_dest, buf_src, dval);
-				dest += buf_dest;
-				break;
-			}
-			case 's':
-			{
-				dest += va_arg(ap, char *);
-				break;
-			}
-			case 'n':
-			{
-				pint = va_arg(ap, int *);
-				Assert(pint != NULL);
-				*pint = dest.length();
-				break;
-			}
-			case '%':
-			{
-				dest += '%';	// escaped %
-				break;
-			}
-			default:
-			{
-				sprintf(buf_dest, "N/A: %%%c", *p);
-				dest += buf_dest;
-				break;
-			}
-		}
+	if (needed_length < 0) {
+		// Error
+		return;
 	}
+
+	dest.resize(static_cast<size_t>(needed_length));
+	vsnprintf(&dest[0], dest.size(), format, ap);
 }
 
 void sprintf(SCP_string &dest, const char *format, ...)
