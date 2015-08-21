@@ -719,8 +719,10 @@ int bm_get_next_handle() {
 
 	//Due to the way bm_next_handle is used to generate the /actual/ bitmap handles ( (bm_next_handle * MAX_BITMAPS) + free slot index in bm_bitmaps[]),
 	//this check is necessary to ensure we don't start giving out negative handles all of a sudden.
-	if (((bm_next_handle + 1) * MAX_BITMAPS) > INT_MAX)
+	if ((bm_next_handle + 1) > INT_MAX / MAX_BITMAPS) {
 		bm_next_handle = 1;
+		mprintf(("BMPMAN: bitmap handles wrapped back to 1\n"));
+	}
 
 	return bm_next_handle;
 }
