@@ -2049,6 +2049,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						}
 						break;
 
+					case OP_BEAM_FLOATING_FIRE:
+						ship_index = CDDDDDR(CDDR(op_node));
+						break;
+
 					case OP_QUERY_ORDERS:
 						ship_index = CDR(CDR(CDR(CDR(op_node))));
 						break;
@@ -2371,6 +2375,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_NULL:
 				if (type2 != OPR_NULL){
 					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				break;
+
+			case OPF_SSM_CLASS:
+				if ( type2 != SEXP_ATOM_STRING ) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (ssm_info_lookup(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_SSM_CLASS;
 				}
 
 				break;
@@ -28719,6 +28734,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_GAME_SND:
 			return "Invalid game sound";
+
+		case SEXP_CHECK_INVALID_SSM_CLASS:
+			return "Invalid SSM class";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
