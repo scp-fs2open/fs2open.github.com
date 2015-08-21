@@ -272,8 +272,3 @@ xcuserdata
 #
 documentation/doxygen/*
 !documentation/doxygen/.gitkeep
-
-####
-# Ignore voice recognition files
-code/sound/grammar.h
-code/sound/phrases.cfg
