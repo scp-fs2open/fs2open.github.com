@@ -283,9 +283,10 @@ void player_start_editor::reset_controls()
 	// create a checklistbox for each "player" ship type	
 	m_ship_list.ResetContent();
 	ct = 0;
-	for (i=0; i<Num_ship_classes; i++) {
-		if (Ship_info[i].flags & SIF_PLAYER_SHIP) {
-			m_ship_list.AddString(Ship_info[i].name);
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+		if (it->flags & SIF_PLAYER_SHIP) {
+			i = std::distance(Ship_info.cbegin(), it);
+			m_ship_list.AddString(it->name);
 			
 			// if the ship currently has pool entries or was set by a variable, check it
 			if((static_ship_pool[selected_team][i] > 0) || (static_ship_variable_pool[selected_team][i] != -1)) {
@@ -808,7 +809,7 @@ void player_start_editor::OnOK()
 
 		// Now we deal with the loadout ships that are statically assigned by class
 
-		for(idx=0; idx<Num_ship_classes; idx++) {
+		for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
 			// if we have ships here
 			if(static_ship_pool[i][idx] > 0 || static_ship_variable_pool[i][idx] > -1) {
 				Team_data[i].ship_list[num_choices] = idx;

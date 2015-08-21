@@ -183,10 +183,10 @@ void pilotfile::csg_write_info()
 	startSection(Section::Info);
 
 	// ship list
-	cfwrite_int(Num_ship_classes, cfp);
+	cfwrite_int(static_cast<int>(Ship_info.size()), cfp);
 
-	for (idx = 0; idx < Num_ship_classes; idx++) {
-		cfwrite_string_len(Ship_info[idx].name, cfp);
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+		cfwrite_string_len(it->name, cfp);
 	}
 
 	// weapon list
@@ -225,7 +225,7 @@ void pilotfile::csg_write_info()
 	cfwrite_int(Campaign.num_missions_completed, cfp);
 
 	// allowed ships
-	for (idx = 0; idx < Num_ship_classes; idx++) {
+	for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
 		cfwrite_ubyte(Campaign.ships_allowed[idx], cfp);
 	}
 
@@ -401,7 +401,7 @@ void pilotfile::csg_write_missions()
 			cfwrite_uint(missionp->stats.s_bonehead_hits, cfp);
 
 			// ship kills (scoring)
-			for (j = 0; j < Num_ship_classes; j++) {
+			for (j = 0; j < static_cast<int>(Ship_info.size()); j++) {
 				cfwrite_int(missionp->stats.kills[j], cfp);
 			}
 
@@ -480,9 +480,9 @@ void pilotfile::csg_write_techroom()
 	startSection(Section::Techroom);
 
 	// visible ships
-	for (idx = 0; idx < Num_ship_classes; idx++) {
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 		// only visible if not in techroom by default
-		if ( (Ship_info[idx].flags & SIF_IN_TECH_DATABASE) && !(Ship_info[idx].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE) ) {
+		if ( (it->flags & SIF_IN_TECH_DATABASE) && !(it->flags2 & SIF2_DEFAULT_IN_TECH_DATABASE) ) {
 			visible = 1;
 		} else {
 			visible = 0;
@@ -642,7 +642,7 @@ void pilotfile::csg_write_loadout()
 	cfwrite_string_len(Player_loadout.last_modified, cfp);
 
 	// ship pool
-	for (idx = 0; idx < Num_ship_classes; idx++) {
+	for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
 		cfwrite_int(Player_loadout.ship_pool[idx], cfp);
 	}
 
@@ -759,7 +759,7 @@ void pilotfile::csg_write_stats()
 	cfwrite_int((int)p->stats.last_backup, cfp);
 
 	// ship kills (scoring)
-	for (idx = 0; idx < Num_ship_classes; idx++) {
+	for (idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
 		cfwrite_int(p->stats.kills[idx], cfp);
 	}
 
@@ -809,7 +809,7 @@ void pilotfile::csg_read_redalert()
 		} else if ( (i < 0 ) && (i >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {  // ship destroyed/exited
 			ras.ship_class = i;
 		} else {
-		ras.ship_class = ship_list[i].index;
+			ras.ship_class = ship_list[i].index;
 		}
 
 		// subsystem hits

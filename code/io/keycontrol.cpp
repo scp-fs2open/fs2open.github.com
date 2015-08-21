@@ -490,11 +490,11 @@ void debug_cycle_player_ship(int delta)
 	ship_info	*sip;
 	while ( TRUE ) {
 		si_index += delta;
-		if ( si_index > Num_ship_classes ){
+		if ( si_index >= static_cast<int>(Ship_info.size()) ){
 			si_index = 0;
 		}
 		if ( si_index < 0 ){
-			si_index = Num_ship_classes - 1;
+			si_index = static_cast<int>(Ship_info.size() - 1);
 		}
 		sip = &Ship_info[si_index];
 		if ( sip->flags & SIF_PLAYER_SHIP ){
@@ -503,7 +503,7 @@ void debug_cycle_player_ship(int delta)
 
 		// just in case
 		sanity++;
-		if ( sanity > Num_ship_classes ){
+		if ( sanity >= static_cast<int>(Ship_info.size()) ){
 			break;
 		}
 	}
@@ -538,10 +538,10 @@ void debug_cycle_targeted_ship(int delta)
 
 	while ( TRUE ) {
 		si_index += delta;
-		if ( si_index > Num_ship_classes )
+		if ( si_index >= static_cast<int>(Ship_info.size()) )
 			si_index = 0;
 		if ( si_index < 0 )
-			si_index = Num_ship_classes-1;
+			si_index = static_cast<int>(Ship_info.size() - 1);
 
 	
 		sip = &Ship_info[si_index];
@@ -557,7 +557,7 @@ void debug_cycle_targeted_ship(int delta)
 
 		// just in case
 		sanity++;
-		if ( sanity > Num_ship_classes )
+		if ( sanity >= static_cast<int>(Ship_info.size()) )
 			break;
 	}
 

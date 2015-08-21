@@ -373,16 +373,16 @@ void mission_campaign_get_sw_info()
 
 	// set allowable ships to the SIF_PLAYER_SHIPs
 	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
-	for (i = 0; i < Num_ship_classes; i++ ) {
-		if ( Ship_info[i].flags & SIF_PLAYER_SHIP )
-			Campaign.ships_allowed[i] = 1;
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
+		if ( it->flags & SIF_PLAYER_SHIP )
+			Campaign.ships_allowed[std::distance(Ship_info.cbegin(), it)] = 1;
 	}
 
 	for (i = 0; i < MAX_WEAPON_TYPES; i++ )
 		Campaign.weapons_allowed[i] = 1;
 
 	if ( optional_string("+Starting Ships:") ) {
-		for (i = 0; i < Num_ship_classes; i++ )
+		for (i = 0; i < static_cast<int>(Ship_info.size()); i++ )
 			Campaign.ships_allowed[i] = 0;
 
 		count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);

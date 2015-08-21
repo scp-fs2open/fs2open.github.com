@@ -145,7 +145,7 @@ void labviewer_setup_subsys_rotation()
 		return;
 	}
 
-	if (Lab_selected_index >= Num_ship_classes) {
+	if (Lab_selected_index >= static_cast<int>(Ship_info.size())) {
 		Int3();
 		return;
 	}
@@ -1775,7 +1775,7 @@ void labviewer_update_variables_window()
 	// IMPORTANT NOTE: If you add something here, make sure you add it to labviewer_populate_variables_window() as well!
 	// ship variables ...
 	if (Lab_mode == LAB_MODE_SHIP) {
-		Assert( Lab_selected_index < Num_ship_classes );
+		Assert( Lab_selected_index < static_cast<int>(Ship_info.size()) );
 		ship_info *sip = &Ship_info[Lab_selected_index];
 
 		VAR_SET_VALUE(sip->name);
@@ -2099,17 +2099,17 @@ void labviewer_make_ship_window(Button *caller)
 	SCP_string lod_name;
 	char buf[33];
 
-	for (idx = 0; idx < Num_ship_classes; idx++) {
-		if ( (Ship_info[idx].species >= 0) && (Ship_info[idx].species < (int)Species_info.size()) ) {
-			stip = Lab_species_nodes[Ship_info[idx].species];
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+		if ( (it->species >= 0) && (it->species < (int)Species_info.size()) ) {
+			stip = Lab_species_nodes[it->species];
 		} else {
 			stip = Lab_species_nodes[Species_info.size()];
 		}
 
-		ctip = cmp->AddItem(stip, Ship_info[idx].name, idx, false, labviewer_change_ship);
+		ctip = cmp->AddItem(stip, it->name, std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
 
 		if ( !Lab_in_mission ) {
-			for (int j = 0; j < Ship_info[idx].num_detail_levels; j++) {
+			for (int j = 0; j < it->num_detail_levels; j++) {
 				sprintf(buf, "%d", j);
 				lod_name = "LOD ";
 				lod_name += buf;

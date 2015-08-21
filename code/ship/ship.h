@@ -1449,6 +1449,23 @@ public:
 	SCP_map<SCP_string, path_metadata> pathMetadata;
 
 	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
+
+	ship_info();
+	~ship_info();
+	void clone(const ship_info& other);
+
+	ship_info(ship_info&& other) NOEXCEPT;
+
+	ship_info &operator=(ship_info&& other) NOEXCEPT;
+
+	void free_strings();
+
+private:
+	void move(ship_info&& other);
+
+	// Private and unimplemented so nobody tries to use them by accident.
+	ship_info(const ship_info& other);
+	const ship_info &operator=(const ship_info& other);
 };
 
 extern int Num_wings;
@@ -1560,8 +1577,7 @@ extern int ai_paused;
 extern int CLOAKMAP;
 
 extern int Num_reinforcements;
-extern int Num_ship_classes;
-extern ship_info Ship_info[MAX_SHIP_CLASSES];
+extern SCP_vector<ship_info> Ship_info;
 extern reinforcements Reinforcements[MAX_REINFORCEMENTS];
 
 // structure definition for ship type counts.  Used to give a count of the number of ships
@@ -1639,7 +1655,8 @@ extern void physics_ship_init(object *objp);
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
-int parse_ship_values(ship_info* sip, bool first_time, bool replace);
+int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace);
+int ship_template_lookup(const char *name = NULL);
 void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string);
 
 extern int ship_info_lookup(const char *name = NULL);

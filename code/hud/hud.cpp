@@ -1199,18 +1199,17 @@ void HUD_init()
 	// reset to infinite
 	Hud_max_targeting_range = 0;
 
-	int i;
 	size_t j, num_gauges;
 
 	// go through all HUD gauges and call their initialization functions
-	for (i = 0; i < Num_ship_classes; i++) {
-		if(Ship_info[i].hud_enabled) {
-			num_gauges = Ship_info[i].hud_gauges.size();
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+		if(it->hud_enabled) {
+			num_gauges = it->hud_gauges.size();
 
 			for(j = 0; j < num_gauges; j++) {
-				Ship_info[i].hud_gauges[j]->initialize();
-				Ship_info[i].hud_gauges[j]->resetTimers();
-				Ship_info[i].hud_gauges[j]->updateSexpOverride(false);
+				it->hud_gauges[j]->initialize();
+				it->hud_gauges[j]->resetTimers();
+				it->hud_gauges[j]->updateSexpOverride(false);
 			}
 		}
 	}
@@ -1229,15 +1228,14 @@ void HUD_init()
  */
 void hud_level_close()
 {
-	int i;
 	size_t j, num_gauges;
 
-	for ( i = 0; i < Num_ship_classes; i++ ) {
-		if(Ship_info[i].hud_enabled) {
-			num_gauges = Ship_info[i].hud_gauges.size();
+	for ( auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
+		if(it->hud_enabled) {
+			num_gauges = it->hud_gauges.size();
 
 			for(j = 0; j < num_gauges; j++) {
-				Ship_info[i].hud_gauges[j]->resetCockpitTarget();
+				it->hud_gauges[j]->resetCockpitTarget();
 			}
 		}
 	}
@@ -1248,17 +1246,16 @@ void hud_level_close()
  */
 void hud_close()
 {
-	int i;
 	size_t j, num_gauges = 0;
 
-	for (i = 0; i < Num_ship_classes; i++) {
-		num_gauges = Ship_info[i].hud_gauges.size();
+	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
+		num_gauges = it->hud_gauges.size();
 
 		for(j = 0; j < num_gauges; j++) {
-			vm_free(Ship_info[i].hud_gauges[j]);
-			Ship_info[i].hud_gauges[j] = NULL;
+			vm_free(it->hud_gauges[j]);
+			it->hud_gauges[j] = NULL;
 		}
-		Ship_info[i].hud_gauges.clear();
+		it->hud_gauges.clear();
 	}
 
 	num_gauges = default_hud_gauges.size();
@@ -3701,15 +3698,14 @@ extern void hudtarget_page_in();
 void hud_page_in()
 {
 	// Go through all hud gauges to page them in 
-	int i;
 	size_t j, num_gauges = 0;
-	for (i = 0; i < Num_ship_classes; i++) {
-		if(Ship_info[i].hud_enabled) {
-			if(Ship_info[i].hud_gauges.size() > 0) {
-				num_gauges = Ship_info[i].hud_gauges.size();
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+		if(it->hud_enabled) {
+			if(it->hud_gauges.size() > 0) {
+				num_gauges = it->hud_gauges.size();
 
 				for(j = 0; j < num_gauges; j++) {
-					Ship_info[i].hud_gauges[j]->pageIn();
+					it->hud_gauges[j]->pageIn();
 				}
 			}
 		}

@@ -541,15 +541,16 @@ void load_missing_retail_gauges()
 	}
 
 	// for each ship class, check if their specific HUD config is enabled
-	for (int k = 0; k < Num_ship_classes; k++) {
+	int k = 0;
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); k++, ++it) {
 		SCP_vector<int> sindex;
 		sindex.push_back(k);
-		if(Ship_info[k].hud_enabled && Ship_info[k].hud_retail) {
-			int num_loaded_gauges = (int)Ship_info[k].hud_gauges.size();
+		if(it->hud_enabled && it->hud_retail) {
+			int num_loaded_gauges = (int)it->hud_gauges.size();
 
 			for(int i = 0; i < num_default_gauges; i++) {
 				for(int j = 0; j < num_loaded_gauges; j++) {
-					if(retail_gauges[i] == Ship_info[k].hud_gauges[j]->getObjectType()) {
+					if(retail_gauges[i] == it->hud_gauges[j]->getObjectType()) {
 						retail_gauge_loaded = true;
 					}
 				}
@@ -562,9 +563,9 @@ void load_missing_retail_gauges()
 			// if we're missing a radar gauge, load either orb or standard
 			retail_gauge_loaded = false;
 			for(int j = 0; j < num_loaded_gauges; j++) {
-				if(HUD_OBJECT_RADAR_ORB == Ship_info[k].hud_gauges[j]->getObjectType() || 
-					HUD_OBJECT_RADAR_STD == Ship_info[k].hud_gauges[j]->getObjectType() ||
-					HUD_OBJECT_RADAR_BSG == Ship_info[k].hud_gauges[j]->getObjectType()) {
+				if(HUD_OBJECT_RADAR_ORB == it->hud_gauges[j]->getObjectType() || 
+					HUD_OBJECT_RADAR_STD == it->hud_gauges[j]->getObjectType() ||
+					HUD_OBJECT_RADAR_BSG == it->hud_gauges[j]->getObjectType()) {
 					retail_gauge_loaded = true;
 				}
 			}
@@ -582,7 +583,7 @@ void load_missing_retail_gauges()
 			retail_gauge_loaded = false;
 			if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 				for(int j = 0; j < num_loaded_gauges; j++) {
-					if(HUD_OBJECT_WEAPON_LINKING == Ship_info[k].hud_gauges[j]->getObjectType()) {
+					if(HUD_OBJECT_WEAPON_LINKING == it->hud_gauges[j]->getObjectType()) {
 						retail_gauge_loaded = true;
 					}
 				}

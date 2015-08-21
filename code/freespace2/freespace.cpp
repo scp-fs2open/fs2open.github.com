@@ -2823,7 +2823,7 @@ void game_tst_mark(object *objp, ship *shipp)
 	}
 
 	// bogus
-	if((objp == NULL) || (shipp == NULL) || (shipp->ship_info_index < 0) || (shipp->ship_info_index >= Num_ship_classes)){
+	if((objp == NULL) || (shipp == NULL) || (shipp->ship_info_index < 0) || (shipp->ship_info_index >= static_cast<int>(Ship_info.size()))){
 		return;
 	}
 	sip = &Ship_info[shipp->ship_info_index];
@@ -4026,7 +4026,7 @@ void game_simulation_frame()
 		ship_info *sip;
 		while((moveup != END_OF_LIST(&Ship_obj_list)) && (moveup != NULL)){
 			// bogus
-			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= Num_ship_classes)){
+			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= static_cast<int>(Ship_info.size()))){
 				moveup = GET_NEXT(moveup);
 				continue;
 			}
@@ -7047,7 +7047,7 @@ int game_main(char *cmdline)
 
 	// check if networking should be disabled, this could probably be done later but the sooner the better
 	// TODO: remove this when multi is fixed to handle more than MAX_SHIP_CLASSES_MULTI
-	if ( Num_ship_classes > MAX_SHIP_CLASSES_MULTI ) {
+	if ( Ship_info.size() > MAX_SHIP_CLASSES_MULTI ) {
 		Networking_disabled = 1;
 	}
 
@@ -7991,9 +7991,7 @@ void Do_model_timings_test()
 	}
 	
 	// Load them all
-	for (i=0; i<Num_ship_classes; i++ )	{
-		ship_info *sip = &Ship_info[i];
-
+	for (auto sip = Ship_info.begin(); sip != Ship_info.end(); ++sip ) {
 		sip->model_num = model_load(sip->pof_file, 0, NULL);
 
 		model_used[sip->model_num % MAX_POLYGON_MODELS]++;

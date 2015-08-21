@@ -408,21 +408,15 @@ const char *multi_random_chat_start()
 
 int multi_ship_class_lookup(const char* ship_name)
 {
-	int i, player_ship_class;
-
 	// find the ship_info index for the ship_name
 
-	player_ship_class = -1;
-	for (i = 0; i < Num_ship_classes; i++) {
-		if ( !stricmp(Ship_info[i].name, ship_name) ) {
-			player_ship_class = i;
+	int player_ship_class = -1;
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+		if ( !stricmp(it->name, ship_name) ) {
+			player_ship_class = std::distance(Ship_info.cbegin(), it);
 			break;
 		}
-	} // end for 
-
-	if (i == Num_ship_classes){
-		return -1;
-	}
+	} // end for
 
 	return player_ship_class;
 }
@@ -739,7 +733,7 @@ void multi_assign_player_ship( int net_player_num, object *objp,int ship_class )
 int multi_create_player( int net_player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id)
 {
 	int player_ship_class = ship_class;
-	int i,current_player_count;
+	int current_player_count;
 
 	Assert ( net_player_num < MAX_PLAYERS );				// probably shoudln't be able to even get into this routine if no room	
 	
@@ -757,16 +751,16 @@ int multi_create_player( int net_player_num, player *pl, const char* name, net_a
 
 		// find the ship that matches the string stored in default_player_ship
 
-		for (i = 0; i < Num_ship_classes; i++) {
-			if ( !stricmp(Ship_info[i].name, default_player_ship) ) {
-				player_ship_class = i;
+		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+			if ( !stricmp(it->name, default_player_ship) ) {
+				player_ship_class = std::distance(Ship_info.cbegin(), it);
 				break;
 			}
 		}
 
-		if (i == Num_ship_classes)
+		if (player_ship_class == -1)	// if ship_class is -1 (as the condition to enter this branch at all means), then player_ship_class is initialized to -1 as well.
 		{
-			if(Num_ship_classes)
+			if(!Ship_info.empty())
 			{
 				player_ship_class = 0;
 				Warning(LOCATION, "Invalid default player ship specified in ship tables. Setting to %s", Ship_info[player_ship_class].name);
@@ -778,9 +772,9 @@ int multi_create_player( int net_player_num, player *pl, const char* name, net_a
 		}
 	}
 	
-	if ( player_ship_class >= Num_ship_classes ) {
-		player_ship_class = multi_ship_class_lookup(default_player_ship);
+	if ( player_ship_class >= static_cast<int>(Ship_info.size()) ) {
 		nprintf(("Network","Network ==> Ship class was %d Creating a default ship for multiplayer\n", player_ship_class));
+		player_ship_class = multi_ship_class_lookup(default_player_ship);
 	}
 
 	// blast the old player data

@@ -1748,7 +1748,7 @@ void debrief_setup_ship_kill_stats(int stage_num)
 
 	if(Debrief_stats_kills == NULL)
 	{
-		Debrief_stats_kills = new debrief_stats_kill_info[Num_ship_classes];
+		Debrief_stats_kills = new debrief_stats_kill_info[Ship_info.size()];
 	}
 
 	Assert(Debrief_player != NULL);
@@ -1761,7 +1761,8 @@ void debrief_setup_ship_kill_stats(int stage_num)
 	}
 
 	Num_text_lines = 0;
-	for ( i=0; i<MAX_SHIP_CLASSES; i++ ) {
+	i = 0;
+	for ( auto it = Ship_info.begin(); it != Ship_info.end(); i++, ++it ) {
 
 		// code used to add in mission kills, but the new system assumes that the player will accept, so
 		// all time stats already have mission stats added in.
@@ -1774,7 +1775,7 @@ void debrief_setup_ship_kill_stats(int stage_num)
 
 		kill_info->num = kill_arr[i];
 
-		strcpy_s(kill_info->text, Ship_info[i].name);
+		strcpy_s(kill_info->text, it->name);
 		strcat_s(kill_info->text, NOX(":"));
 	}
 

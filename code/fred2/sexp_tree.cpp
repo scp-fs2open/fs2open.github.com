@@ -5040,16 +5040,15 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_class()
 
 sexp_list_item *sexp_tree::get_listing_opf_support_ship_class()
 {
-	int i;
 	sexp_list_item head;
 
 	head.add_data("<species support ship class>");
 
-	for (i=0; i<Num_ship_classes; i++)
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 	{
-		if (Ship_info[i].flags & SIF_SUPPORT)
+		if (it->flags & SIF_SUPPORT)
 		{
-			head.add_data(Ship_info[i].name);
+			head.add_data(it->name);
 		}
 	}
 
@@ -5697,11 +5696,10 @@ sexp_list_item *sexp_tree::get_listing_opf_intel_name()
 
 sexp_list_item *sexp_tree::get_listing_opf_ship_class_name()
 {
-	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Num_ship_classes; i++)
-		head.add_data(Ship_info[i].name);
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+		head.add_data(it->name);
 
 	return head.next;
 }

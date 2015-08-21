@@ -263,8 +263,8 @@ BOOL CShipEditorDlg::Create()
 
 	ptr = (CComboBox *) GetDlgItem(IDC_SHIP_CLASS);
 	ptr->ResetContent();
-	for (i=0; i<Num_ship_classes; i++){
-		ptr->AddString(Ship_info[i].name);
+	for (auto it = Ship_info.cbegin(); it != Ship_info.end(); ++it){
+		ptr->AddString(it->name);
 	}
 
 	ptr = (CComboBox *) GetDlgItem(IDC_AI_CLASS);

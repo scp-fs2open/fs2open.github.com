@@ -243,9 +243,9 @@ bool StartAutopilot()
 			if (shipp->team != Player_ship->team)
 				continue;
 
-			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < MAX_SHIP_CLASSES),
+			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < static_cast<int>(Ship_info.size())),
 				"Ship '%s' does not have a valid pointer to a ship class. Pointer is %d, which is smaller than 0 or bigger than %d",
-				shipp->ship_name, shipp->ship_info_index, MAX_SHIP_CLASSES);
+				shipp->ship_name, shipp->ship_info_index, static_cast<int>(Ship_info.size()));
 			ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 			if ( !(sip->flags & SIF_SUPPORT) )

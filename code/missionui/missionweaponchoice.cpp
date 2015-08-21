@@ -727,7 +727,7 @@ void wl_render_overhead_view(float frametime)
 	Assert( Wss_slots != NULL );
 
 	ship_class = Wss_slots[Selected_wl_slot].ship_class;
-	if (ship_class < 0 || ship_class > Num_ship_classes)
+	if (ship_class < 0 || ship_class >= static_cast<int>(Ship_info.size()))
 	{
 		Warning(LOCATION, "Invalid ship class (%d) passed for render_overhead_view", ship_class);
 		return;
@@ -1114,7 +1114,7 @@ void wl_set_disabled_weapons(int ship_class)
 	if ( ship_class == - 1 )
 		return;
 
-	Assert(ship_class >= 0 && ship_class < MAX_SHIP_CLASSES);
+	Assert(ship_class >= 0 && ship_class < static_cast<int>(Ship_info.size()));
 	Assert( Wl_icons != NULL );
 
 	sip = &Ship_info[ship_class];
@@ -1353,7 +1353,7 @@ void wl_init_ship_class_data()
 	int i;
 	wl_ship_class_info	*wl_ship;
 
-	for ( i=0; i<MAX_SHIP_CLASSES; i++ ) {
+	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
 		wl_ship = &Wl_ships[i];
 		wl_ship->overhead_bitmap = -1;
 		wl_ship->model_num = -1;
@@ -1369,7 +1369,7 @@ void wl_free_ship_class_data()
 	int i;
 	wl_ship_class_info	*wl_ship;
 
-	for ( i=0; i<Num_ship_classes; i++ ) {
+	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
 		wl_ship = &Wl_ships[i];
 
 		if ( wl_ship->overhead_bitmap != -1 ) {
@@ -1533,7 +1533,7 @@ void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count)
 	ship_info	*sip;
 	int i;
 
-	Assert(ship_class >= 0 && ship_class < Num_ship_classes);
+	Assert(ship_class >= 0 && ship_class < static_cast<int>(Ship_info.size()));
 	sip = &Ship_info[ship_class];
 
 	// reset weapons arrays

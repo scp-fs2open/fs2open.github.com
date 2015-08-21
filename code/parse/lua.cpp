@@ -81,8 +81,8 @@ public:
 		ate.Type = 'o';
 		ate.Value.Object.idx = Ade_table_entries.size();
 		ate.Value.Object.sig = NULL;
-		ate.Value.Object.buf = &Num_ship_classes;	//WMC - I just chose Num_ship_classes randomly.
-		ate.Value.Object.size = sizeof(Num_ship_classes);
+		ate.Value.Object.buf = &Num_reinforcements;	//WMC - I just chose Num_ship_classes randomly. MageKing17 - changed to Num_reinforcements, likewise at random, due to the removal of Num_ship_classes
+		ate.Value.Object.size = sizeof(Num_reinforcements);
 		ate.Description = in_desc;
 
 		if(parent != NULL)
@@ -5498,7 +5498,7 @@ public:
 
 	bool isValid()
 	{
-		if (m_ship_info_idx < 0 || m_ship_info_idx >= Num_ship_classes)
+		if (m_ship_info_idx < 0 || m_ship_info_idx >= static_cast<int>(Ship_info.size()))
 		{
 			return false;
 		}
@@ -5616,7 +5616,7 @@ ADE_FUNC(__tostring, l_Shipclass, NULL, "Ship class name", "string", "Ship class
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Ship_info[idx].name);
@@ -5628,10 +5628,10 @@ ADE_FUNC(__eq, l_Shipclass, "shipclass, shipclass", "Checks if the two classes a
 	if(!ade_get_args(L, "oo", l_Shipclass.Get(&idx1), l_Shipclass.Get(&idx2)))
 		return ade_set_error(L, "b", false);
 
-	if(idx1 < 0 || idx1 > Num_ship_classes)
+	if(idx1 < 0 || idx1 >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "b", false);
 
-	if(idx2 < 0 || idx2 > Num_ship_classes)
+	if(idx2 < 0 || idx2 >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "b", false);
 
 	return ade_set_args(L, "b", idx1 == idx2);
@@ -5644,7 +5644,7 @@ ADE_VIRTVAR(Name, l_Shipclass, "string", "Ship class name", "string", "Ship clas
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
@@ -5661,7 +5661,7 @@ ADE_VIRTVAR(ShortName, l_Shipclass, "string", "Ship class short name", "string",
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
@@ -5678,7 +5678,7 @@ ADE_VIRTVAR(TypeString, l_Shipclass, "string", "Ship class type string", "string
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "s", "");
 
 	ship_info *sip = &Ship_info[idx];
@@ -5706,7 +5706,7 @@ ADE_VIRTVAR(ManeuverabilityString, l_Shipclass, "string", "Ship class maneuverab
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "s", "");
 
 	ship_info *sip = &Ship_info[idx];
@@ -5734,7 +5734,7 @@ ADE_VIRTVAR(ArmorString, l_Shipclass, "string", "Ship class armor string", "stri
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "s", "");
 
 	ship_info *sip = &Ship_info[idx];
@@ -5762,7 +5762,7 @@ ADE_VIRTVAR(ManufacturerString, l_Shipclass, "string", "Ship class manufacturer"
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "s", "");
 
 	ship_info *sip = &Ship_info[idx];
@@ -5791,7 +5791,7 @@ ADE_VIRTVAR(Description, l_Shipclass, "string", "Ship class description", "strin
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "s", "");
 
 	ship_info *sip = &Ship_info[idx];
@@ -5819,7 +5819,7 @@ ADE_VIRTVAR(TechDescription, l_Shipclass, "string", "Ship class tech description
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "s", "");
 
 	ship_info *sip = &Ship_info[idx];
@@ -5847,7 +5847,7 @@ ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacit
 	if(!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &fuel))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && fuel >= 0.0f)
@@ -5863,7 +5863,7 @@ ADE_VIRTVAR(CountermeasuresMax, l_Shipclass, "number", "Maximum number of counte
 	if(!ade_get_args(L, "o|i", l_Shipclass.Get(&idx), &i))
 		return ade_set_error(L, "i", 0);
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR && i > -1) {
@@ -5880,7 +5880,7 @@ ADE_VIRTVAR(Model, l_Shipclass, "model", "Model", "model", "Ship class model, or
 	if(!ade_get_args(L, "o|o", l_Shipclass.Get(&ship_info_idx), l_Model.GetPtr(&mdl)))
 		return ade_set_error(L, "o", l_Model.Set(-1));
 
-	if(ship_info_idx < 0 || ship_info_idx > Num_ship_classes)
+	if(ship_info_idx < 0 || ship_info_idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "o", l_Model.Set(-1));
 
 	ship_info *sip = &Ship_info[ship_info_idx];
@@ -5901,7 +5901,7 @@ ADE_VIRTVAR(CockpitModel, l_Shipclass, "model", "Model used for first-person coc
 	if(!ade_get_args(L, "o|o", l_Shipclass.Get(&ship_info_idx), l_Model.GetPtr(&mdl)))
 		return ade_set_error(L, "o", l_Model.Set(model_h()));
 
-	if(ship_info_idx < 0 || ship_info_idx > Num_ship_classes)
+	if(ship_info_idx < 0 || ship_info_idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "o", l_Model.Set(model_h()));
 
 	ship_info *sip = &Ship_info[ship_info_idx];
@@ -5922,7 +5922,7 @@ ADE_VIRTVAR(CockpitDisplays, l_Shipclass, "cockpitdisplays", "Gets the cockpit d
 	if(!ade_get_args(L, "o|o", l_Shipclass.Get(&ship_info_idx), l_CockpitDisplayInfos.GetPtr(&cdih)))
 		return ade_set_error(L, "o", l_CockpitDisplayInfos.Set(cockpit_displays_info_h()));
 
-	if(ship_info_idx < 0 || ship_info_idx > Num_ship_classes)
+	if(ship_info_idx < 0 || ship_info_idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "o", l_CockpitDisplayInfos.Set(cockpit_displays_info_h()));
 
 	if(ADE_SETTING_VAR) {
@@ -5939,7 +5939,7 @@ ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints", "number
 	if(!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && f >= 0.0f) {
@@ -5956,7 +5956,7 @@ ADE_VIRTVAR(Species, l_Shipclass, "Species", "Ship class species", "species", "S
 	if(!ade_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Species.Get(&sidx)))
 		return ade_set_error(L, "o", l_Species.Set(-1));
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "o", l_Species.Set(-1));
 
 	if(ADE_SETTING_VAR && sidx > -1 && sidx < (int)Species_info.size()) {
@@ -5973,7 +5973,7 @@ ADE_VIRTVAR(Type, l_Shipclass, "shiptype", "Ship class type", "shiptype", "Ship 
 	if(!ade_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Shiptype.Get(&sidx)))
 		return ade_set_error(L, "o", l_Shiptype.Set(-1));
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "o", l_Shiptype.Set(-1));
 
 	if(ADE_SETTING_VAR && sidx > -1 && sidx < (int)Ship_types.size()) {
@@ -5990,7 +5990,7 @@ ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "st
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &newName))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && newName != NULL) {
@@ -6012,7 +6012,7 @@ ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
@@ -6024,7 +6024,7 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ade_set_error(L, "b", false);
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_error(L, "b", false);
 
 	bool b = false;
@@ -6046,7 +6046,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %=0, Pitch %=0
 	if(!ade_get_args(L, "oiiii|ffff", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom))
 		return ade_set_error(L, "b", false);
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_args(L, "b", false);
 
 	if(x2 < x1 || y2 < y1)
@@ -6130,7 +6130,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, [orientation Orientatio
 	if(!ade_get_args(L, "oiiiio|f", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2,  l_Matrix.GetPtr(&mh), &zoom))
 		return ade_set_error(L, "b", false);
 
-	if(idx < 0 || idx > Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_args(L, "b", false);
 
 	if(x2 < x1 || y2 < y1)
@@ -6221,7 +6221,7 @@ ADE_FUNC(getShipClassIndex, l_Shipclass, NULL, "Gets the index valus of the ship
 	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ade_set_args(L, "i", -1);
 
-	if(idx < 0 || idx >= Num_ship_classes)
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
 		return ade_set_args(L, "i", -1);
 
 	return ade_set_args(L, "i", idx + 1); // Lua is 1-based
@@ -6263,7 +6263,7 @@ ADE_VIRTVAR(OriginClass, l_Debris, "shipclass", "The shipclass of the ship this 
 	debris *db = &Debris[oh->objp->instance];
 
 	if(ADE_SETTING_VAR) {
-		if (shipIdx < 0 || shipIdx > MAX_SHIP_CLASSES)
+		if (shipIdx < 0 || shipIdx >= static_cast<int>(Ship_info.size()))
 			db->ship_info_index = shipIdx;
 	}
 
@@ -15513,7 +15513,7 @@ ADE_INDEXER(l_Tables_ShipClasses, "number Index/string Name", "Array of ship cla
 	
 	if(idx < 0) {
 		idx = atoi(name);
-		if(idx < 1 || idx > Num_ship_classes)
+		if(idx < 1 || idx >= static_cast<int>(Ship_info.size()))
 			return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
 		idx--;	//Lua->FS2
@@ -15527,7 +15527,7 @@ ADE_FUNC(__len, l_Tables_ShipClasses, NULL, "Number of ship classes", "number", 
 	if(!ships_inited)
 		return ade_set_args(L, "i", 0);	//No ships loaded...should be 0
 
-	return ade_set_args(L, "i", Num_ship_classes);
+	return ade_set_args(L, "i", Ship_info.size());
 }
 
 //*****SUBLIBRARY: Tables/WeaponClasses

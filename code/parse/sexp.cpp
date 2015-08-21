@@ -2337,17 +2337,19 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (!stricmp(CTEXT(node), "<any support ship class>"))
 					break;
 
-				for (i = 0; i < Num_ship_classes; i++ ) {
-					if ( !stricmp(CTEXT(node), Ship_info[i].name) )
+				i = -1;
+				for ( auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
+					if ( !stricmp(CTEXT(node), it->name) )
 					{
-						if (Ship_info[i].flags & SIF_SUPPORT)
+						if (it->flags & SIF_SUPPORT)
 						{
+							i = std::distance(Ship_info.cbegin(), it);
 							break;
 						}
 					}
 				}
 
-				if ( i == Num_ship_classes )
+				if ( i == -1 )
 					return SEXP_CHECK_INVALID_SUPPORT_SHIP_CLASS;
 
 				break;
@@ -7550,7 +7552,7 @@ int sexp_get_damage_caused(int node)
 		damage_caused += get_damage_caused (damaged_sig, attacker_sig);
 	}
 	
-	Assert ((ship_class > -1) && (ship_class < MAX_SHIP_CLASSES));
+	Assertion((ship_class > -1) && (ship_class < static_cast<int>(Ship_info.size())), "Invalid ship class '%d' passed to sexp_get_damage_caused() (should be >= 0 and < %d); get a coder!\n", ship_class, static_cast<int>(Ship_info.size()));
 	return (int) ((damage_caused/Ship_info[ship_class].max_hull_strength) * 100.0f);
 }
 
@@ -15726,7 +15728,7 @@ int sexp_shield_quad_low(int node)
 	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)){
 		return SEXP_FALSE;
 	}
-	if((Ships[sindex].ship_info_index < 0) || (Ships[sindex].ship_info_index >= Num_ship_classes)){
+	if((Ships[sindex].ship_info_index < 0) || (Ships[sindex].ship_info_index >= static_cast<int>(Ship_info.size()))){
 		return SEXP_FALSE;
 	}
 	objp = &Objects[Ships[sindex].objnum];
@@ -19883,7 +19885,7 @@ int sexp_num_type_kills(int node)
 
 	// look stuff up	
 	total = 0;
-	for(idx=0; idx<Num_ship_classes; idx++){
+	for(idx = 0; idx < static_cast<int>(Ship_info.size()); idx++) {
 		if((p->stats.m_okKills[idx] > 0) && ship_class_query_general_type(idx)==st_index){
 			total += p->stats.m_okKills[idx];
 		}
@@ -19932,7 +19934,7 @@ int sexp_num_class_kills(int node)
 
 	// get the ship type we're looking for
 	si_index = ship_info_lookup(CTEXT(CDR(node)));
-	if((si_index < 0) || (si_index > Num_ship_classes)){
+	if((si_index < 0) || (si_index >= static_cast<int>(Ship_info.size()))){
 		return 0;
 	}
 

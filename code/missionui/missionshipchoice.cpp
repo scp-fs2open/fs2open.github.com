@@ -436,7 +436,7 @@ void ss_set_carried_icon(int from_slot, int ship_class)
 void clear_active_list()
 {
 	int i;
-	for ( i = 0; i < Num_ship_classes; i++ ) { //DTP singleplayer ship choice fix 
+	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) { //DTP singleplayer ship choice fix 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { 
 		SS_active_items[i].flags = 0;
 		SS_active_items[i].ship_class = -1;
@@ -452,7 +452,7 @@ void clear_active_list()
 ss_active_item *get_free_active_list_node()
 {
 	int i;
-	for ( i = 0; i < Num_ship_classes; i++ ) { 
+	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) { 
 	//for ( i = 0; i < MAX_WSS_SLOTS; i++ ) { //DTP, ONLY MAX_WSS_SLOTS SHIPS ???
 	if ( SS_active_items[i].flags == 0 ) {
 			SS_active_items[i].flags |= SS_ACTIVE_ITEM_USED;
@@ -504,7 +504,7 @@ void init_active_list()
 	clear_active_list();
 
 	// build the active list
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
+	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
 		if ( Ss_pool[i] > 0 ) {
 			sai = get_free_active_list_node();
 			if ( sai != NULL ) {
@@ -2493,7 +2493,7 @@ void update_player_ship(int si_index)
  */
 int create_default_player_ship(int use_last_flown)
 {
-	int	player_ship_class=-1, i;
+	int	player_ship_class=-1;
 
 	// find the ship that matches the string stored in default_player_ship
 
@@ -2501,15 +2501,15 @@ int create_default_player_ship(int use_last_flown)
 		player_ship_class = Players[Player_num].last_ship_flown_si_index;
 	}
 	else {
-		for (i = 0; i < Num_ship_classes; i++) {
-			if ( !stricmp(Ship_info[i].name, default_player_ship) ) {
-				player_ship_class = i;
+		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+			if ( !stricmp(it->name, default_player_ship) ) {
+				player_ship_class = std::distance(Ship_info.cbegin(), it);
 				Players[Player_num].last_ship_flown_si_index = player_ship_class;
 				break;
 			}
 		}
 
-		if (i == Num_ship_classes)
+		if (player_ship_class == -1)
 			return 1;
 	}
 
@@ -2681,7 +2681,7 @@ void ss_reset_selected_ship()
 
 	if ( Selected_ss_class == -1 ) {
 		Int3();
-		for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
+		for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
 			if ( Ss_pool[i] > 0 ) {
 				Selected_ss_class = i;
 			}

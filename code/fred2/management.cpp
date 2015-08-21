@@ -442,9 +442,9 @@ bool fred_init()
 	// Get the default player ship
 	Default_player_model = cur_model_index = get_default_player_ship_index();
 
-	Id_select_type_start = Num_ship_classes + 2;
-	Id_select_type_jump_node = Num_ship_classes + 1;
-	Id_select_type_waypoint = Num_ship_classes;
+	Id_select_type_start = Ship_info.size() + 2;
+	Id_select_type_jump_node = Ship_info.size() + 1;
+	Id_select_type_waypoint = Ship_info.size();
 	Fred_main_wnd -> init_tools();	
 	return true;
 }

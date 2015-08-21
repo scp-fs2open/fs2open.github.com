@@ -196,8 +196,8 @@ void briefing_editor_dlg::create()
 		box->AddString(Iff_info[i].iff_name);
 
 	box = (CComboBox *) GetDlgItem(IDC_SHIP_TYPE);
-	for (i=0; i<Num_ship_classes; i++)
-		box->AddString(Ship_info[i].name);
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+		box->AddString(it->name);
 
 	box = (CComboBox *) GetDlgItem(IDC_BRIEFING_MUSIC);
 	box->AddString("None");
@@ -1127,11 +1127,11 @@ void briefing_editor_dlg::OnMakeIcon()
 	else if(jnp != Jump_nodes.end()){
 		// find the first navbuoy
 		iconp->ship_class = -1;
-		for (int i = 0; i < Num_ship_classes; i++)
+		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 		{
-			if (Ship_info[i].flags & SIF_NAVBUOY)
+			if (it->flags & SIF_NAVBUOY)
 			{
-				iconp->ship_class = i;
+				iconp->ship_class = std::distance(Ship_info.cbegin(), it);
 				break;
 			}
 		}
@@ -1141,11 +1141,11 @@ void briefing_editor_dlg::OnMakeIcon()
 	else {
 		// find the first navbuoy
 		iconp->ship_class = -1;
-		for (int i = 0; i < Num_ship_classes; i++)
+		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 		{
-			if (Ship_info[i].flags & SIF_NAVBUOY)
+			if (it->flags & SIF_NAVBUOY)
 			{
-				iconp->ship_class = i;
+				iconp->ship_class = std::distance(Ship_info.cbegin(), it);
 				break;
 			}
 		}

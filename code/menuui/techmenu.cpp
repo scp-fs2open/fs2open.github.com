@@ -774,7 +774,7 @@ void techroom_change_tab(int num)
 			// load ship info if necessary
 			if ( Ships_loaded == 0 ) {
 				if (Ship_list == NULL) {
-					Ship_list = new tech_list_entry[Num_ship_classes];
+					Ship_list = new tech_list_entry[Ship_info.size()];
 
 					if (Ship_list == NULL)
 						Error(LOCATION, "Couldn't init ships list!");
@@ -782,17 +782,17 @@ void techroom_change_tab(int num)
 
 				Ship_list_size = 0;
 
-				for (i=0; i<Num_ship_classes; i++)
+				for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it)
 				{
-					if (Techroom_show_all || (Ship_info[i].flags & mask) || (Ship_info[i].flags2 & mask2))
+					if (Techroom_show_all || (it->flags & mask) || (it->flags2 & mask2))
 					{
 						// this ship should be displayed, fill out the entry struct
 						Ship_list[Ship_list_size].bitmap = -1;
-						Ship_list[Ship_list_size].index = i;
+						Ship_list[Ship_list_size].index = std::distance(Ship_info.begin(), it);
 						Ship_list[Ship_list_size].animation.num_frames = 0;			// no anim for ships
 						Ship_list[Ship_list_size].has_anim = 0;				// no anim for ships
-						Ship_list[Ship_list_size].name = *Ship_info[i].tech_title ? Ship_info[i].tech_title : (*Ship_info[i].alt_name ? Ship_info[i].alt_name : Ship_info[i].name);
-						Ship_list[Ship_list_size].desc = Ship_info[i].tech_desc;
+						Ship_list[Ship_list_size].name = *it->tech_title ? it->tech_title : (*it->alt_name ? it->alt_name : it->name);
+						Ship_list[Ship_list_size].desc = it->tech_desc;
 						Ship_list[Ship_list_size].model_num = -1;
 						Ship_list[Ship_list_size].textures_loaded = 0;
 
@@ -801,7 +801,7 @@ void techroom_change_tab(int num)
 				}
 
 				// make sure that at least the default entry is cleared out if we didn't grab anything
-				if (Num_ship_classes && !Ship_list_size) {
+				if (!Ship_info.empty() && !Ship_list_size) {
 					Ship_list[0].index = -1;
 					Ship_list[0].desc = NULL;
 					Ship_list[0].name = NULL;
@@ -1180,7 +1180,7 @@ void techroom_init()
 	help_overlay_set_state(Techroom_overlay_id, gr_screen.res, 0);
 
 	// setup slider
-	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], Num_ship_classes, Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
+	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], Ship_info.size(), Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
 
 	// zero intel anim/bitmap stuff
 	for(idx=0; idx<MAX_INTEL_ENTRIES; idx++){
@@ -1440,17 +1440,17 @@ void tech_reset_to_default()
 	int i;
 
 	// ships
-	for (i=0; i<Num_ship_classes; i++)
+	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it)
 	{
-		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE)
-			Ship_info[i].flags |= SIF_IN_TECH_DATABASE;
+		if (it->flags2 & SIF2_DEFAULT_IN_TECH_DATABASE)
+			it->flags |= SIF_IN_TECH_DATABASE;
 		else
-			Ship_info[i].flags &= ~SIF_IN_TECH_DATABASE;
+			it->flags &= ~SIF_IN_TECH_DATABASE;
 
-		if (Ship_info[i].flags2 & SIF2_DEFAULT_IN_TECH_DATABASE_M)
-			Ship_info[i].flags |= SIF_IN_TECH_DATABASE_M;
+		if (it->flags2 & SIF2_DEFAULT_IN_TECH_DATABASE_M)
+			it->flags |= SIF_IN_TECH_DATABASE_M;
 		else
-			Ship_info[i].flags &= ~SIF_IN_TECH_DATABASE_M;
+			it->flags &= ~SIF_IN_TECH_DATABASE_M;
 	}
 
 	// weapons
