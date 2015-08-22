@@ -22586,9 +22586,11 @@ void sexp_call_ssm_strike(int node) {
 		if (ship_num >= 0) {
 			int obj_num = Ships[ship_num].objnum;
 			object *target_ship = &Objects[obj_num];
-			vec3d *start = &target_ship->pos; 
+			vec3d start = target_ship->pos;
 
-			ssm_create(target_ship, start, ssm_index, NULL, calling_team);
+			vm_vec_scale_add(&start, &start, &target_ship->orient.vec.fvec, -1);
+
+			ssm_create(target_ship, &start, ssm_index, NULL, calling_team);
 		}
 	}
 }
