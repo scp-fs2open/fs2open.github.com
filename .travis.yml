@@ -1,13 +1,35 @@
 language: cpp
 os:
   - linux
-env:
-  - AUTOGEN_CONFIG="--enable-debug"
-  - AUTOGEN_CONFIG=""
 compiler:
+  # note that gcc needs to be 1st for Coverity
   - gcc
   - clang
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "C3wF967ZeliwwP1vC12EMIBOaC568n26Z/cPnwzn317ve59DWH3YSfPZVgvt08GzmaXITGGsJvPB+qxfGoKvQzYE4O1B73q81RpUe5pB3IhF+ThQ91VfQZIRJR5xEGJaLINUlHTTZGX5jxlkVO9wAcauVj/s3b8sQ3dvUZauPvk="
+  matrix:
+    - AUTOGEN_CONFIG="--enable-debug"
+    - AUTOGEN_CONFIG=""
+addons:
+  coverity_scan:
+    project:
+      name: "scp-fs2open/fs2open.github.com"
+      description: "Coverity via Travis CI"
+    notification_email: niffiwan.scp@gmail.com
+    build_command_prepend: "./autogen.sh --enable-debug"
+    build_command:   "make -j2"
+    # must match TRAVIS_BRANCH check below
+    branch_pattern: coverity_scan
 before_install:
+  # ugly hack; if running a coverity scan abort all except the 1st build
+  # see note re gcc compiler above needing to be 1st
+  # also note that branch_pattern & the TRAVIS_BRANCH check must match
+  # unfortunately COVERITY_SCAN_BRANCH isn't defined until later in the
+  # build process
+  - if ([[ "${TRAVIS_JOB_NUMBER##*.}" != "1" ]] && [[ "${TRAVIS_BRANCH}" == "coverity_scan" ]]); then false ; fi
   - sudo apt-get update -qq
 install:
   - sudo apt-get install libopenal-dev libogg-dev libvorbis-dev build-essential automake1.10 autoconf libsdl1.2-dev libtheora-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libtool
