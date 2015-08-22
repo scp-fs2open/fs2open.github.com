@@ -3796,7 +3796,7 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 	}
 
 	dest.resize(static_cast<size_t>(needed_length));
-	vsnprintf(&dest[0], dest.size(), format, ap);
+	vsnprintf(&dest[0], dest.size() + 1, format, ap);
 }
 
 void sprintf(SCP_string &dest, const char *format, ...)
