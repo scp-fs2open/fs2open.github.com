@@ -889,6 +889,9 @@ void control_config_common_load_overrides()
 					if (optional_string("+Disable")) {
 						r_ccConfig.disabled = true;
 					}
+					if (optional_string("$Disable:")) {
+						stuff_boolean(&r_ccConfig.disabled);
+					}
 					
 					// Nerf the buffer now.
 					szTempBuffer[0] = '\0';
