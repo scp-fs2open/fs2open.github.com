@@ -2959,6 +2959,10 @@ void beam_handle_collisions(beam *b)
 			}
 		}
 
+		//Don't draw effects if we're in the cockpit of the hit ship
+		if (Viewer_obj == &Objects[target])
+			draw_effects = 0;
+
 		// add lighting
 		if(Use_GLSL < 2)
 			beam_add_light(b, target, 2, &b->f_collisions[idx].cinfo.hit_point_world);
