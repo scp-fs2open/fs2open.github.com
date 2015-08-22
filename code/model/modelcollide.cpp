@@ -1126,7 +1126,7 @@ void mc_check_subobj( int mn )
 			Mc->hit_bitmap = -1;
 			Mc->num_hits++;
 		} else {
-			// The ray interects this bounding box, so we have to check all the
+			// The ray intersects this bounding box, so we have to check all the
 			// polygons in this submodel.
 			if ( Cmdline_old_collision_sys ) {
 				model_collide_sub(sm->bsp_data);
