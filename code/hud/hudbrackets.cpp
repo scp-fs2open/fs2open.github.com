@@ -681,6 +681,18 @@ int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, boo
 			draw_brackets_diamond_quick(x1, y1, x2, y2);
 		}
 	}
+	
+	if (draw_coords != nullptr)
+	{
+		// Positions are unsized, we need to resize them to get the actual screen coordinates
+		gr_resize_screen_pos(&x1, &y1);
+		gr_resize_screen_pos(&x2, &y2);
+
+		draw_coords[0] = x1;
+		draw_coords[1] = y1;
+		draw_coords[2] = x2;
+		draw_coords[3] = y2;
+	}
 	// mprintf(("Drawing subobject brackets at %4i, %4i\n", sx, sy));
 	
 	return in_sight;
