@@ -1945,6 +1945,11 @@ void opengl_setup_function_pointers()
 
 static void gr_opengl_initialize_workarounds()
 {
+	auto vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+	if (!stricmp(vendor, "ATI Technologies Inc."))
+	{
+		GL_enabled_workarounds[OGL_NO_SHADER_VERSION] = true;
+	}
 }
 
 bool gr_opengl_init()
