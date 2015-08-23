@@ -1,4 +1,5 @@
 language: cpp
+sudo: true
 matrix:
     include:
         - os: linux
