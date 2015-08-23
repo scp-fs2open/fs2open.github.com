@@ -885,7 +885,7 @@ void clear_mission()
 	// of ships for all teams
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
 		count = 0;
-		for ( j = 0; j < MAX_SHIP_CLASSES; j++ ) {
+		for ( j = 0; j < static_cast<int>(Ship_info.size()); j++ ) {
 			if (Ship_info[j].flags & SIF_DEFAULT_PLAYER_SHIP) {
 				Team_data[i].ship_list[count] = j;
 				strcpy_s(Team_data[i].ship_list_variables[count], "");
