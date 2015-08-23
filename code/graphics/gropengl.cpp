@@ -110,7 +110,16 @@ static int GL_minimized = 0;
 
 static GLenum GL_read_format = GL_BGRA;
 
-static bool GL_enabled_workarounds[OGL_MAX_WORKAROUNDS] = {false};
+struct ogl_workaround_status
+{
+	bool enabled;
+	const char* name;
+	const char* description;
+};
+
+static ogl_workaround_status GL_enabled_workarounds[OGL_MAX_WORKAROUNDS] = {
+		{ false, "No #version", "Don't add #version to OpenGL shaders" },
+};
 
 void opengl_go_fullscreen()
 {
@@ -1948,8 +1957,26 @@ static void gr_opengl_initialize_workarounds()
 	auto vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
 	if (!stricmp(vendor, "ATI Technologies Inc."))
 	{
-		GL_enabled_workarounds[OGL_NO_SHADER_VERSION] = true;
+		GL_enabled_workarounds[OGL_NO_SHADER_VERSION].enabled = true;
 	}
+
+#ifndef NDEBUG
+	// Dump a statistic to the log
+	mprintf(("  Using OpenGL driver workarounds:\n"));
+	bool have_workaround = false;
+	for (int i = 0; i < OGL_MAX_WORKAROUNDS; ++i)
+	{
+		if (GL_enabled_workarounds[i].enabled)
+		{
+			mprintf(("    %s: %s\n", GL_enabled_workarounds[i].name, GL_enabled_workarounds[i].description));
+		}
+	}
+
+	if (!have_workaround)
+	{
+		mprintf(("    <none>\n"));
+	}
+#endif
 }
 
 bool gr_opengl_init()
@@ -2115,7 +2142,7 @@ bool opengl_use_workaround(ogl_driver_workaround workaround)
 
 	Assertion(index >= 0 && index < static_cast<int>(OGL_MAX_WORKAROUNDS), "Invalid OpenGL driver workaround index!");
 
-	return GL_enabled_workarounds[index];
+	return GL_enabled_workarounds[index].enabled;
 }
 
 DCF(ogl_minimize, "Minimizes opengl")
