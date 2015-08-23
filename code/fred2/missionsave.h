@@ -61,6 +61,8 @@ private:
 	void convert_special_tags_to_retail(SCP_string &text);
 	void convert_special_tags_to_retail();
 
+	void save_mission_internal(const char *pathname);
+
 public:
 	void save_turret_info(ship_subsys *ptr, int ship);
 	int save_bitmaps();
