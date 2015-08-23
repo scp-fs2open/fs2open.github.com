@@ -1,17 +1,38 @@
 language: cpp
-os:
-  - linux
-env:
-  - AUTOGEN_CONFIG="--enable-debug"
-  - AUTOGEN_CONFIG=""
-compiler:
-  - gcc
-  - clang
+sudo: true
+matrix:
+    include:
+        - os: linux
+          compiler: gcc
+          env: CONFIGURATION="Release"
+        - os: linux
+          compiler: clang
+          env: CONFIGURATION="Release"
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Release" MACOSX_ARCH=i386
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Release" MACOSX_ARCH=x86_64
+          
+        - os: linux
+          compiler: gcc
+          env: CONFIGURATION="Debug"
+        - os: linux
+          compiler: clang
+          env: CONFIGURATION="Debug"
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Debug" MACOSX_ARCH=i386
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Debug" MACOSX_ARCH=x86_64
+
 before_install:
-  - sudo apt-get update -qq
+    - ./ci/travis/before_install.sh
 install:
-  - sudo apt-get install libopenal-dev libogg-dev libvorbis-dev build-essential automake1.10 autoconf libsdl1.2-dev libtheora-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libtool
+    - ./ci/travis/install.sh
 before_script:
-  - ./autogen.sh $AUTOGEN_CONFIG
+    - ./ci/travis/before_script.sh
 script:
-  - make -j 2
+    - ./ci/travis/script.sh
