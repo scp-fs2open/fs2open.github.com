@@ -110,6 +110,7 @@ static int GL_minimized = 0;
 
 static GLenum GL_read_format = GL_BGRA;
 
+static bool GL_enabled_workarounds[OGL_MAX_WORKAROUNDS] = {false};
 
 void opengl_go_fullscreen()
 {
@@ -1942,6 +1943,9 @@ void opengl_setup_function_pointers()
 	// *****************************************************************************
 }
 
+static void gr_opengl_initialize_workarounds()
+{
+}
 
 bool gr_opengl_init()
 {
@@ -1990,6 +1994,8 @@ bool gr_opengl_init()
 
 	// initialize the extensions and make sure we aren't missing something that we need
 	opengl_extensions_init();
+
+	gr_opengl_initialize_workarounds();
 
 	// setup the lighting stuff that will get used later
 	opengl_light_init();
@@ -2096,6 +2102,15 @@ bool gr_opengl_init()
         GL_read_format = GL_RGBA;
 
 	return true;
+}
+
+bool opengl_use_workaround(ogl_driver_workaround workaround)
+{
+	int index = static_cast<int>(workaround);
+
+	Assertion(index >= 0 && index < static_cast<int>(OGL_MAX_WORKAROUNDS), "Invalid OpenGL driver workaround index!");
+
+	return GL_enabled_workarounds[index];
 }
 
 DCF(ogl_minimize, "Minimizes opengl")
