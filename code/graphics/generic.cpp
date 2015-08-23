@@ -190,7 +190,6 @@ int generic_anim_stream(generic_anim *ga)
 
 	cfclose(img_cfp);
 
-	//TODO: add streaming EFF
 	if(ga->type == BM_TYPE_ANI) {
 		bpp = ANI_BPP_CHECK;
 		if(ga->use_hud_color)
@@ -482,7 +481,6 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 		CLAMP(ga->current_frame, 0, ga->num_frames - 1);
 		if(ga->streaming) {
 			//handle streaming - render one frame
-			//TODO: add EFF streaming
 			if(ga->type == BM_TYPE_ANI) {
 				generic_render_ani_stream(ga);
 			} else {
