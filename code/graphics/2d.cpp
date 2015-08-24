@@ -83,8 +83,6 @@ const float Default_max_draw_distance = 1e10;
 float Min_draw_distance = Default_min_draw_distance;
 float Max_draw_distance = Default_max_draw_distance;
 
-static int GL_cursor_nframes = 0;
-
 // Pre-computed screen resize vars
 static float Gr_full_resize_X = 1.0f, Gr_full_resize_Y = 1.0f;
 static float Gr_full_center_resize_X = 1.0f, Gr_full_center_resize_Y = 1.0f;
@@ -927,14 +925,14 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 		if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
 		{
-			SDL_DisplayMode mode;
-			if (SDL_GetDesktopDisplayMode(0, &mode) == 0)
+			SDL_DisplayMode displayMode;
+			if (SDL_GetDesktopDisplayMode(0, &displayMode) == 0)
 			{
-				width = mode.w;
-				height = mode.h;
-				int sdlBits = SDL_BITSPERPIXEL(mode.format);
+				width = displayMode.w;
+				height = displayMode.h;
+				int sdlBits = SDL_BITSPERPIXEL(displayMode.format);
 
-				if (SDL_ISPIXELFORMAT_ALPHA(mode.format))
+				if (SDL_ISPIXELFORMAT_ALPHA(displayMode.format))
 				{
 					depth = sdlBits;
 				}
