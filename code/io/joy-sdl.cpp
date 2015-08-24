@@ -621,12 +621,12 @@ int joystick_read_raw_axis(int num_axes, int *axis)
 {
 	int i;
 	
-	if (!Joy_inited || sdljoy == nullptr) {
-		// fake a return value so that controlconfig doesn't get freaky with no joystick
-		for (i = 0; i < num_axes; i++) {
-			axis[i] = JOY_AXIS_CENTER;
-		}
+	for (i = 0; i < num_axes; i++) {
+		axis[i] = JOY_AXIS_CENTER;
+	}
 
+	if (!Joy_inited || sdljoy == nullptr) {
+		// no stick available, bail
 		return 0;
 	}
 
@@ -635,8 +635,6 @@ int joystick_read_raw_axis(int num_axes, int *axis)
 	for (i = 0; i < num_axes; i++) {
 		if (i < joy_num_axes) {
 			axis[i] = joy_axes[i];
-		} else {
-			axis[i] = JOY_AXIS_CENTER;
 		}
 	}
 	
