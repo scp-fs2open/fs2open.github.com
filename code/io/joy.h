@@ -15,6 +15,8 @@
 #include "globalincs/pstypes.h"
 #include "SDL_joystick.h"
 
+#include <climits>
+
 #define JOY_NUM_BUTTONS		32
 #define JOY_NUM_HAT_POS		4
 #define JOY_TOTAL_BUTTONS	(JOY_NUM_BUTTONS + JOY_NUM_HAT_POS)
@@ -29,7 +31,7 @@
 
 const int JOY_AXIS_MIN = 0;
 const int JOY_AXIS_CENTER = -SHRT_MIN;
-const int JOY_AXIS_MAX = (SHRT_MAX - SHRT_MIN) + 1; // +1, since this is always checked to be less. ex: if (x < JOY_AXIS_MAX) {du_stoof();}
+const int JOY_AXIS_MAX = USHRT_MAX + 1; // 1 since this is always checked to be less. ex: if (x < JOY_AXIS_MAX) {du_stoof();}
 
 typedef struct Joy_info {
 	int axis_valid[JOY_NUM_AXES];   // (bool) 0 if invalid axis, 1 if valid
