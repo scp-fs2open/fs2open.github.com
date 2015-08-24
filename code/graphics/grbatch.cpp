@@ -6,14 +6,14 @@
  *
 */ 
 
-#include "globalincs/pstypes.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/grbatch.h"
-#include "graphics/2d.h"
-#include "cmdline/cmdline.h"
-#include "render/3d.h"
 #include "bmpman/bmpman.h"
+#include "cmdline/cmdline.h"
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
+#include "graphics/grbatch.h"
+#include "graphics/gropengldraw.h"
+#include "graphics/gropenglstate.h"
+#include "render/3d.h"
 
 geometry_batcher::~geometry_batcher()
 {
@@ -631,7 +631,7 @@ void geometry_shader_batcher::draw_bitmap(vertex *position, int orient, float ra
 		vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
 
 	particle_pnt new_particle;
-	vec3d up = {0.0f, 1.0f, 0.0f};
+	vec3d up = {{{0.0f, 1.0f, 0.0f}}};
 
 	new_particle.position = position->world;
 	new_particle.size = rad;

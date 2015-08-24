@@ -409,6 +409,7 @@ bool fred_init()
 	armor_init();
 	weapon_init();
 	parse_medal_tbl();			// get medal names for sexpression usage
+	glowpoint_init();
 	ship_init();
 	parse_init();
 	techroom_intel_init();
@@ -442,9 +443,9 @@ bool fred_init()
 	// Get the default player ship
 	Default_player_model = cur_model_index = get_default_player_ship_index();
 
-	Id_select_type_start = Num_ship_classes + 2;
-	Id_select_type_jump_node = Num_ship_classes + 1;
-	Id_select_type_waypoint = Num_ship_classes;
+	Id_select_type_start = Ship_info.size() + 2;
+	Id_select_type_jump_node = Ship_info.size() + 1;
+	Id_select_type_waypoint = Ship_info.size();
 	Fred_main_wnd -> init_tools();	
 	return true;
 }
@@ -884,7 +885,7 @@ void clear_mission()
 	// of ships for all teams
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
 		count = 0;
-		for ( j = 0; j < MAX_SHIP_CLASSES; j++ ) {
+		for ( j = 0; j < static_cast<int>(Ship_info.size()); j++ ) {
 			if (Ship_info[j].flags & SIF_DEFAULT_PLAYER_SHIP) {
 				Team_data[i].ship_list[count] = j;
 				strcpy_s(Team_data[i].ship_list_variables[count], "");

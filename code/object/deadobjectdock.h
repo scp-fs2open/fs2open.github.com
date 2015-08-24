@@ -10,7 +10,7 @@
 #define _DEAD_OBJECT_DOCK_H
 
 #include "globalincs/globals.h"
-#include "objectdock.h"
+#include "object/objectdock.h"
 
 
 // get the first object in objp's dock list

@@ -2,11 +2,11 @@
 #ifndef _CAMERA_H
 #define _CAMERA_H
 
-#include "graphics/2d.h"
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
-#include "physics/physics.h"	//for avd
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
 #include "object/object.h"
+#include "physics/physics.h"	//for avd
 
 #include <string>
 

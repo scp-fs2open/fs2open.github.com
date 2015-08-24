@@ -114,7 +114,6 @@ extern char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN];
 #endif
 
 //================= LOW-LEVEL FUNCTIONS ==================
-// Call this once at the beginning of the program
 int cfile_init(const char *exe_dir, const char *cdrom_dir=NULL);
 
 // Call this if pack files got added or removed or the

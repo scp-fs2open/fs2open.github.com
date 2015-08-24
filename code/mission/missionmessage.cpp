@@ -10,31 +10,31 @@
 
 
 
+#include "anim/animplay.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "hud/hud.h"
+#include "hud/hudconfig.h"
+#include "hud/hudgauges.h"
+#include "hud/hudmessage.h"
+#include "hud/hudtarget.h"
+#include "iff_defs/iff_defs.h"
+#include "io/timer.h"
+#include "localization/localize.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
-#include "hud/hudmessage.h"
-#include "hud/hudgauges.h"
-#include "hud/hudtarget.h"
-#include "io/timer.h"
-#include "parse/parselo.h"
-#include "gamesnd/gamesnd.h"
-#include "gamesequence/gamesequence.h"
-#include "anim/animplay.h"
-#include "hud/hud.h"
-#include "ship/ship.h"
-#include "ship/subsysdamage.h"
-#include "weapon/emp.h"
-#include "localization/localize.h"
-#include "hud/hudconfig.h"
-#include "sound/fsspeech.h"
-#include "species_defs/species_defs.h"
-#include "parse/sexp.h"
-#include "iff_defs/iff_defs.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "mod_table/mod_table.h"
+#include "parse/parselo.h"
 #include "parse/scripting.h"
+#include "parse/sexp.h"
+#include "ship/ship.h"
+#include "ship/subsysdamage.h"
+#include "sound/fsspeech.h"
+#include "species_defs/species_defs.h"
+#include "weapon/emp.h"
 
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
@@ -2032,16 +2032,16 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	}
 
 	if (best_match == BUILTIN_MATCHES_PERSONA_EXCLUDED) {
-		mprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index ));
-		mprintf(("MESSAGING", "using an excluded message for this persona\n"));
+		nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index ));
+		nprintf(("MESSAGING", "using an excluded message for this persona\n"));
 	}else if (best_match == BUILTIN_MATCHES_SPECIES) {
-		mprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
-		mprintf(("MESSAGING", "using a message for any persona of that species\n"));
+		nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
+		nprintf(("MESSAGING", "using a message for any persona of that species\n"));
 	} else if (best_match == BUILTIN_MATCHES_TYPE) {
-		mprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
-		mprintf(("MESSAGING", "looking for message for any persona of any species\n"));
+		nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
+		nprintf(("MESSAGING", "looking for message for any persona of any species\n"));
 	} else if (best_match < 0) {
-		mprintf(("MESSAGING", "Couldn't find any builtin message of type %d\n", type ));
+		nprintf(("MESSAGING", "Couldn't find any builtin message of type %d\n", type ));
 		Int3();
 		return; 
 	}

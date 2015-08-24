@@ -7,11 +7,11 @@
  *
 */
 
-#include "globalincs/pstypes.h"	// for NULL
-#include "globalincs/globals.h"
-
 #ifndef _SEXP_H
 #define _SEXP_H
+
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"	// for NULL
 
 class ship_subsys;
 class ship;
@@ -993,6 +993,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_TEAM_COLOR			-157
 #define SEXP_CHECK_INVALID_SKYBOX_FLAG			-158
 #define SEXP_CHECK_INVALID_GAME_SND				-159
+#define SEXP_CHECK_INVALID_SSM_CLASS			-160
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)

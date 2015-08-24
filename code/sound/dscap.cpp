@@ -8,9 +8,9 @@
 */
 
 #include "globalincs/pstypes.h"
-#include "sound/openal.h"
 #include "sound/ds.h"
 #include "sound/dscap.h"
+#include "sound/openal.h"
 
 #include <string>
 

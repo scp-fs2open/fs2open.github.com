@@ -1,17 +1,17 @@
 
 
-#include "graphics/2d.h"
-#include "graphics/grinternal.h"
-#include "bmpman/bmpman.h"
-#include "ddsutils/ddsutils.h"
-#include "tgautils/tgautils.h"
-#include "pngutils/pngutils.h"
-#include "jpgutils/jpgutils.h"
-#include "pcxutils/pcxutils.h"
-#include "globalincs/systemvars.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
+#include "bmpman/bmpman.h"
+#include "ddsutils/ddsutils.h"
+#include "globalincs/systemvars.h"
+#include "graphics/2d.h"
+#include "graphics/grinternal.h"
+#include "jpgutils/jpgutils.h"
 #include "model/model.h"
+#include "pcxutils/pcxutils.h"
+#include "pngutils/pngutils.h"
+#include "tgautils/tgautils.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
@@ -196,7 +196,6 @@ void gr_stub_free_screen(int id)
 
 void gr_stub_get_region(int front, int w, int h, ubyte *data)
 {
-	data = NULL;
 }
 
 void gr_stub_gradient(int x1,int y1,int x2,int y2, int resize_mode)

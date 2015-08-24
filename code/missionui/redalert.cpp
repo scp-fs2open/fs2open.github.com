@@ -9,30 +9,30 @@
 
 
 #define REDALERT_INTERNAL
-#include "missionui/redalert.h"
-#include "model/model.h"
-#include "gamesnd/gamesnd.h"
+#include "ai/aigoals.h"
+#include "cfile/cfile.h"
+#include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
-#include "missionui/missionscreencommon.h"
-#include "missionui/missionweaponchoice.h"
-#include "io/key.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
 #include "graphics/font.h"
-#include "mission/missionbriefcommon.h"
+#include "hud/hudwingmanstatus.h"
+#include "io/key.h"
+#include "io/mouse.h"
 #include "io/timer.h"
+#include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
-#include "globalincs/linklist.h"
-#include "hud/hudwingmanstatus.h"
-#include "sound/audiostr.h"
-#include "freespace2/freespace.h"
-#include "globalincs/alphacolors.h"
-#include "sound/fsspeech.h"
-#include "ship/ship.h"
-#include "weapon/weapon.h"
-#include "cfile/cfile.h"
-#include "io/mouse.h"
-#include "ai/aigoals.h"
+#include "missionui/missionscreencommon.h"
+#include "missionui/missionweaponchoice.h"
+#include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
+#include "model/model.h"
+#include "ship/ship.h"
+#include "sound/audiostr.h"
+#include "sound/fsspeech.h"
+#include "weapon/weapon.h"
 
 #include <stdexcept>
 
@@ -863,7 +863,7 @@ void red_alert_bash_wingman_status()
 					// if necessary, restore correct ship class
 					if ( ras->ship_class != shipp->ship_info_index )
 					{
-						if (ras->ship_class >= 0 && ras->ship_class < MAX_SHIP_CLASSES)
+						if (ras->ship_class >= 0 && ras->ship_class < static_cast<int>(Ship_info.size()))
 							change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
 						else
 							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
@@ -952,7 +952,7 @@ void red_alert_bash_wingman_status()
 					// if necessary, restore correct ship class
 					if ( ras->ship_class != pobjp->ship_class )
 					{
-						if (ras->ship_class >= 0 && ras->ship_class < MAX_SHIP_CLASSES)
+						if (ras->ship_class >= 0 && ras->ship_class < static_cast<int>(Ship_info.size()))
 							swap_parse_object(pobjp, ras->ship_class);
 						else
 						{

@@ -9,9 +9,9 @@
 
 
 
-#include "observer/observer.h"
-#include "object/object.h"
 #include "globalincs/systemvars.h"
+#include "object/object.h"
+#include "observer/observer.h"
 #include "playerman/player.h"
 
 

@@ -13,6 +13,7 @@
 #define __FREESPACE_ACM_H__
 
 #ifdef _WIN32
+#include <windows.h>
 #include "mm/mmreg.h"
 #endif
 

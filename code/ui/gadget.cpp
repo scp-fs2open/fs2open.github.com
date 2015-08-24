@@ -9,10 +9,10 @@
 
 
 
-#include "ui/uidefs.h"
-#include "ui/ui.h"
-#include "bmpman/bmpman.h"
 #include "anim/animplay.h"
+#include "bmpman/bmpman.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
 
 
 // constructor

@@ -9,16 +9,16 @@
 
 
 
-#include "object/objcollide.h"
-#include "ship/ship.h"
-#include "debris/debris.h"
-#include "playerman/player.h"
-#include "ship/shiphit.h"
-#include "io/timer.h"
 #include "asteroid/asteroid.h"
+#include "debris/debris.h"
 #include "hud/hud.h"
+#include "io/timer.h"
+#include "object/objcollide.h"
 #include "object/object.h"
 #include "parse/scripting.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "ship/shiphit.h"
 
 
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
@@ -66,9 +66,7 @@ int collide_debris_ship( obj_pair * pair )
 		hit = debris_check_collision(pdebris, pship, &hitpos, &debris_hit_info );
 		if ( hit )
 		{
-			Script_system.SetHookObjects(2, "Ship", pship, "Debris", pdebris);
-
-			Script_system.SetHookObjects(2, "Self",pship, "Object", pdebris);
+			Script_system.SetHookObjects(4, "Ship", pship, "Debris", pdebris, "Self", pship, "Object", pdebris);
 			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, pship);
 
 			Script_system.SetHookObjects(2, "Self",pdebris, "Object", pship);
@@ -143,7 +141,7 @@ int collide_debris_ship( obj_pair * pair )
 			if((debris_override && !ship_override) || (!debris_override && !ship_override))
 				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, pdebris);
 
-			Script_system.RemHookVars(4, "Ship", "Debris", "Self","ObjectB");
+			Script_system.RemHookVars(4, "Ship", "Debris", "Self", "Object");
 
 			return 0;
 		}
@@ -304,7 +302,7 @@ int collide_asteroid_ship( obj_pair * pair )
 			if((asteroid_override && !ship_override) || (!asteroid_override && !ship_override))
 				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, pasteroid);
 
-			Script_system.RemHookVars(4, "Ship", "Asteroid", "Self","ObjectB");
+			Script_system.RemHookVars(4, "Ship", "Asteroid", "Self", "Object");
 
 			return 0;
 		}

@@ -9,11 +9,11 @@
 
 
 
+#include "hud/hudconfig.h"
 #include "hud/hudobserver.h"
 #include "hud/hudtargetbox.h"
-#include "hud/hudconfig.h"
-#include "ship/ship.h"
 #include "network/multi.h"
+#include "ship/ship.h"
 
 
 // use these to redirect Player_ship and Player_ai when switching into ai mode

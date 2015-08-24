@@ -9,25 +9,21 @@
 
 
 
-#include "hud/hudbrackets.h"
-#include "hud/hud.h"
-#include "playerman/player.h"
-#include "hud/hudtarget.h"
-#include "render/3d.h"
-#include "weapon/emp.h"
-#include "ship/ship.h"
-#include "object/object.h"
-#include "mission/missionparse.h"
-#include "iff_defs/iff_defs.h"
-
-//For target info ONLY
-#include "debris/debris.h"
 #include "asteroid/asteroid.h"
-#include "jumpnode/jumpnode.h"
-#include "weapon/weapon.h"
-#include "parse/parselo.h"
-
 #include "cmdline/cmdline.h"
+#include "debris/debris.h"
+#include "hud/hudbrackets.h"
+#include "hud/hudtarget.h"
+#include "iff_defs/iff_defs.h"
+#include "jumpnode/jumpnode.h"
+#include "mission/missionparse.h"
+#include "object/object.h"
+#include "parse/parselo.h"
+#include "playerman/player.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "weapon/emp.h"
+#include "weapon/weapon.h"
 
 #define FADE_FACTOR	2			// how much the bounding brackets get faded
 #define LOWEST_RED	50			// lowest r value for bounding bracket
@@ -684,6 +680,18 @@ int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, boo
 		} else {
 			draw_brackets_diamond_quick(x1, y1, x2, y2);
 		}
+	}
+	
+	if (draw_coords != nullptr)
+	{
+		// Positions are unsized, we need to resize them to get the actual screen coordinates
+		gr_resize_screen_pos(&x1, &y1);
+		gr_resize_screen_pos(&x2, &y2);
+
+		draw_coords[0] = x1;
+		draw_coords[1] = y1;
+		draw_coords[2] = x2;
+		draw_coords[3] = y2;
 	}
 	// mprintf(("Drawing subobject brackets at %4i, %4i\n", sx, sy));
 	

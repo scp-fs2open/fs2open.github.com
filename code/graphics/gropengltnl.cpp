@@ -12,29 +12,23 @@
 #include <windows.h>
 #endif
 
-#include "globalincs/pstypes.h"
-#include "globalincs/def_files.h"
+#include "cmdline/cmdline.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/def_files.h"
 #include "globalincs/systemvars.h"
-
 #include "graphics/2d.h"
-#include "lighting/lighting.h"
 #include "graphics/grinternal.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropenglextension.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropengllight.h"
-#include "graphics/gropengltnl.h"
 #include "graphics/gropengldraw.h"
+#include "graphics/gropenglextension.h"
+#include "graphics/gropengllight.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglstate.h"
-
+#include "graphics/gropengltexture.h"
+#include "graphics/gropengltnl.h"
+#include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "render/3d.h"
-#include "cmdline/cmdline.h"
-#include "model/model.h"
 #include "weapon/trails.h"
-#include "graphics/shadows.h"
 
 extern int GLOWMAP;
 extern int CLOAKMAP;
@@ -2024,13 +2018,6 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 
 			vm_vec_unrotate(&pos, &G3_user_clip_point, &Eye_matrix);
 			vm_vec_add2(&pos, &Eye_position);
-
-			vec4 clip_plane_equation;
-
-			clip_plane_equation.a1d[0] = normal.a1d[0];
-			clip_plane_equation.a1d[1] = normal.a1d[1];
-			clip_plane_equation.a1d[2] = normal.a1d[2];
-			clip_plane_equation.a1d[3] = vm_vec_mag(&pos);
 
 			matrix4 model_matrix;
 			memset( &model_matrix, 0, sizeof(model_matrix) );

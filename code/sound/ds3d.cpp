@@ -9,14 +9,14 @@
 
 
 
-#include "globalincs/pstypes.h"
-#include "sound/openal.h"
-#include "sound/ds3d.h"
-#include "sound/ds.h"
-#include "sound/channel.h"
-#include "sound/sound.h"
-#include "object/object.h"
 #include "cmdline/cmdline.h"
+#include "globalincs/pstypes.h"
+#include "object/object.h"
+#include "sound/channel.h"
+#include "sound/ds.h"
+#include "sound/ds3d.h"
+#include "sound/openal.h"
+#include "sound/sound.h"
 
 
 // ---------------------------------------------------------------------------------------

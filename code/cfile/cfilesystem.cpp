@@ -9,8 +9,6 @@
 
 
 
-#include "globalincs/pstypes.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -33,11 +31,11 @@
 #include <unistd.h>
 #endif
 
-#include "cmdline/cmdline.h"
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"
+#include "cmdline/cmdline.h"
+#include "globalincs/pstypes.h"
 #include "localization/localize.h"
-
 
 
 #define CF_ROOTTYPE_PATH 0

@@ -10,30 +10,30 @@
 
 
 
-#include "mission/missiongoals.h"
-#include "mission/missionlog.h"
-#include "missionui/missionscreencommon.h"
 #include "debugconsole/console.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
 #include "hud/hud.h"
 #include "hud/hudmessage.h"
 #include "io/key.h"
 #include "io/timer.h"
+#include "localization/localize.h"
+#include "mission/missiongoals.h"
+#include "mission/missionlog.h"
+#include "missionui/missionscreencommon.h"
+#include "mod_table/mod_table.h"
+#include "network/multi.h"
+#include "network/multi_sexp.h"
+#include "network/multi_team.h"
+#include "network/multimsgs.h"
+#include "network/stand_gui.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
-#include "gamesnd/eventmusic.h"
-#include "network/stand_gui.h"
-#include "ui/ui.h"
-#include "gamesnd/gamesnd.h"
-#include "globalincs/alphacolors.h"
 #include "playerman/player.h"
-#include "localization/localize.h"
-#include "network/multi.h"
-#include "network/multimsgs.h"
-#include "network/multi_team.h"
-#include "network/multi_sexp.h"
-#include "mod_table/mod_table.h"
+#include "ui/ui.h"
 
 
 
@@ -978,10 +978,11 @@ void mission_process_event( int event )
 	}
 
 	// decrement the trigger count.  When at 0, set the repeat count to 0 so we don't eval this function anymore
-	if (result && (Mission_events[event].trigger_count > 0) && (Mission_events[event].flags & MEF_USING_TRIGGER_COUNT) ) {
-		Mission_events[event].trigger_count--;
+	if (result && (Mission_events[event].trigger_count != 0) && (Mission_events[event].flags & MEF_USING_TRIGGER_COUNT) ) {
+		if (Mission_events[event].trigger_count > 0)
+			Mission_events[event].trigger_count--;
 		if (Mission_events[event].trigger_count == 0) {
-			 Mission_events[event].repeat_count = 0; 
+			 Mission_events[event].repeat_count = 0;
 		}
 		else {
 			bump_timestamp = true;
@@ -1008,7 +1009,7 @@ void mission_process_event( int event )
 		}
 		// Set the timestamp for the next check on this event unless we only have a trigger count and no repeat count and 
 		// this event didn't trigger this frame. 
-		else if (bump_timestamp || (!( Mission_events[event].repeat_count == -1 && Mission_events[event].trigger_count > 0 ))) {
+		else if (bump_timestamp || (!((Mission_events[event].repeat_count == -1) && (Mission_events[event].flags & MEF_USING_TRIGGER_COUNT) && (Mission_events[event].trigger_count != 0)))) {
 			// set the timestamp to time out 'interval' seconds in the future.  
 			Mission_events[event].timestamp = timestamp( Mission_events[event].interval * 1000 );
 		}

@@ -12,10 +12,10 @@
 #ifndef __MISSIONBRIEFCOMMON_H__
 #define __MISSIONBRIEFCOMMON_H__
 
-#include "globalincs/globals.h"
 #include "anim/packunpack.h"
-#include "hud/hud.h"
+#include "globalincs/globals.h"
 #include "graphics/generic.h"
+#include "hud/hud.h"
 
 #define MAX_TEXT_STREAMS	2		// how many concurrent streams of text can be displayed
 

@@ -10,19 +10,19 @@
 
 
 
+#include "cmdline/cmdline.h"
 #include "gamesnd/eventmusic.h"
-#include "object/object.h"
-#include "ship/ship.h"
 #include "globalincs/linklist.h"
-#include "mission/missionparse.h"
+#include "iff_defs/iff_defs.h"
 #include "io/timer.h"
+#include "localization/localize.h"
+#include "mission/missiongoals.h"
+#include "mission/missionparse.h"
+#include "object/object.h"
+#include "parse/parselo.h"
+#include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "sound/sound.h"
-#include "cmdline/cmdline.h"
-#include "mission/missiongoals.h"
-#include "localization/localize.h"
-#include "parse/parselo.h"
-#include "iff_defs/iff_defs.h"
 
 
 

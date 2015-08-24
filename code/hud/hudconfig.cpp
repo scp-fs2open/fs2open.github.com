@@ -10,20 +10,20 @@
 
 
 
-#include "hud/hudconfig.h"
+#include "cfile/cfile.h"
 #include "gamesequence/gamesequence.h"
-#include "playerman/player.h"
-#include "io/key.h"
-#include "ui/ui.h"
-#include "hud/hudobserver.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/pstypes.h"
+#include "hud/hudconfig.h"
+#include "hud/hudobserver.h"
+#include "iff_defs/iff_defs.h"
+#include "io/key.h"
+#include "parse/parselo.h"
+#include "playerman/player.h"
 #include "popup/popup.h"
 #include "ship/ship.h"
-#include "parse/parselo.h"
-#include "cfile/cfile.h"
-#include "iff_defs/iff_defs.h"
+#include "ui/ui.h"
 
 
 //////////////////////////////////////////////////////////////////////////////

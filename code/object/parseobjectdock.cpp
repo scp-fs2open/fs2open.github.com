@@ -7,9 +7,9 @@
 
 
 #include "globalincs/pstypes.h"
-#include "object/parseobjectdock.h"
-#include "mission/missionparse.h"
 #include "math/bitarray.h"
+#include "mission/missionparse.h"
+#include "object/parseobjectdock.h"
 
 
 

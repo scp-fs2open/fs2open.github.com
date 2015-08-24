@@ -9,12 +9,12 @@
 
 
 
-#include "graphics/2d.h"
-#include "render/3dinternal.h"
-#include "globalincs/systemvars.h"
-#include "io/key.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
+#include "globalincs/systemvars.h"
+#include "graphics/2d.h"
+#include "io/key.h"
+#include "render/3dinternal.h"
 
 
 

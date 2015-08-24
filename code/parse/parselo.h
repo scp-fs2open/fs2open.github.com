@@ -10,8 +10,8 @@
 #ifndef _PARSELO_H
 #define _PARSELO_H
 
-#include "globalincs/globals.h"
 #include "cfile/cfile.h"
+#include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
 #include <exception>

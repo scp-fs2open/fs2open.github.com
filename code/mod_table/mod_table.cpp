@@ -4,15 +4,14 @@
  * create based on the source.
  */
 
-#include "globalincs/pstypes.h"
+#include "gamesnd/eventmusic.h"
 #include "globalincs/def_files.h"
+#include "localization/localize.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionmessage.h"
 #include "mod_table/mod_table.h"
-#include "localization/localize.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
-#include "gamesnd/eventmusic.h"
 
 int Directive_wait_time = 3000;
 bool True_loop_argument_sexps = false;

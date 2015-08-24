@@ -19,24 +19,21 @@
 
 #define MODEL_LIB
 
+#include "bmpman/bmpman.h"
+#include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
+#include "freespace2/freespace.h"		// For flFrameTime
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
+#include "io/key.h"
+#include "io/timer.h"
+#include "math/fvi.h"
+#include "math/vecmat.h"
 #include "model/model.h"
 #include "model/modelsinc.h"
-#include "math/vecmat.h"
-#include "object/object.h"
-#include "bmpman/bmpman.h"
-#include "io/key.h"
-#include "render/3dinternal.h"
-#include "globalincs/linklist.h"
-#include "io/timer.h"
-#include "freespace2/freespace.h"		// For flFrameTime
-#include "math/fvi.h"
-#include "ship/ship.h"
-#include "cfile/cfile.h"
 #include "parse/parselo.h"
-#include "cmdline/cmdline.h"
-
-
-#include "gamesnd/gamesnd.h"
+#include "render/3dinternal.h"
+#include "ship/ship.h"
 
 flag_def_list model_render_flags[] =
 {
@@ -271,18 +268,18 @@ void model_unload(int modelnum, int force)
 		pm->detail_buffers[i].clear();
 	}
 
-	// run through Ship_info[] and if the model has been loaded we'll need to reset the modelnum to -1.
-	for (i = 0; i < Num_ship_classes; i++) {
-		if ( pm->id == Ship_info[i].model_num ) {
-			Ship_info[i].model_num = -1;
+	// run through Ship_info and if the model has been loaded we'll need to reset the modelnum to -1.
+	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
+		if ( pm->id == it->model_num ) {
+			it->model_num = -1;
 		}
 
-		if ( pm->id == Ship_info[i].cockpit_model_num ) {
-			Ship_info[i].cockpit_model_num = -1;
+		if ( pm->id == it->cockpit_model_num ) {
+			it->cockpit_model_num = -1;
 		}
 
-		if ( pm->id == Ship_info[i].model_num_hud ) {
-			Ship_info[i].model_num_hud = -1;
+		if ( pm->id == it->model_num_hud ) {
+			it->model_num_hud = -1;
 		}
 	}
 
@@ -5524,7 +5521,7 @@ void parse_glowpoint_table(const char *filename)
 					}
 					else
 					{
-						nprintf(("Model", "Glowpoint preset %s nebula texture num is %d\n", gpo, gpo.glow_neb_bitmap));
+						nprintf(("Model", "Glowpoint preset %s nebula texture num is %d\n", gpo.name, gpo.glow_neb_bitmap));
 					}
 				}
 				else {
@@ -5601,7 +5598,7 @@ void parse_glowpoint_table(const char *filename)
 
 					if (optional_string("$Cone angle:")) {
 						stuff_float(&gpo.cone_angle);
-						gpo.cone_inner_angle = cos((gpo.cone_angle - (gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f) / 180.0f * PI);
+						gpo.cone_inner_angle = cos((gpo.cone_angle - ((gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f)) / 180.0f * PI);
 						gpo.cone_angle = cos(gpo.cone_angle / 180.0f * PI);
 					}
 

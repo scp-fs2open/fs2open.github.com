@@ -11,22 +11,22 @@
 
 #include <stdlib.h>
 
-#include "menuui/credits.h"
+#include "cfile/cfile.h"
+#include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"	/* for Master_event_music_volume */
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
 #include "graphics/font.h"
 #include "io/key.h"
 #include "io/timer.h"
-#include "gamesnd/gamesnd.h"
-#include "sound/audiostr.h"
-#include "gamesnd/eventmusic.h"	/* for Master_event_music_volume */
-#include "ui/ui.h"
-#include "missionui/missionscreencommon.h"
-#include "playerman/player.h"
-#include "freespace2/freespace.h"
-#include "globalincs/alphacolors.h"
 #include "localization/localize.h"
-#include "cfile/cfile.h"
+#include "menuui/credits.h"
+#include "missionui/missionscreencommon.h"
 #include "parse/parselo.h"
+#include "playerman/player.h"
+#include "sound/audiostr.h"
+#include "ui/ui.h"
 
 
 
@@ -382,10 +382,10 @@ void credits_parse_table(const char* filename)
 				numLines = split_str(line.c_str(), Credits_text_coords[gr_screen.res][2], charNum, lines, -1);
 
 				// Make sure that we have valid data
-				Assertion(lines.size() == (size_t)numLines, "split_str reported %d lines but vector contains %d entries!", numLines, lines.size());
+				Assertion(lines.size() == (size_t)numLines, "split_str reported %d lines but vector contains " SIZE_T_ARG " entries!", numLines, lines.size());
 
 				Assertion(lines.size() <= charNum.size(),
-					"Something has gone wrong while splitting strings. Got %d lines but only %d chacter lengths.",
+					"Something has gone wrong while splitting strings. Got " SIZE_T_ARG " lines but only " SIZE_T_ARG " chacter lengths.",
 					lines.size(), charNum.size());
 
 				// Now add all splitted lines to the credit text and append a newline to the end

@@ -8,14 +8,13 @@
 */
 
 #include <sstream>
+#include <limits.h>
 
 #include "gamesnd/gamesnd.h"
 #include "localization/localize.h"
-#include "species_defs/species_defs.h"
 #include "parse/parselo.h"
 #include "sound/ds.h"
-#include "sound/sound.h"
-#include <limits.h>
+#include "species_defs/species_defs.h"
 
 SCP_vector<game_snd>	Snds;
 SCP_vector<game_snd>	Snds_iface;
@@ -426,7 +425,8 @@ void parse_sound_core(const char* tag, int *idx_dest, const char* object_name, c
 	if((*idx_dest) < -1 || (*idx_dest) >= (int)size_to_check)
 	{
 		(*idx_dest) = -1;
-		Warning(LOCATION, "%s sound index out of range on '%s'. Must be between 0 and %d. Forcing to -1 (Nonexistent sound).\n", tag, object_name, size_to_check);
+		Warning(LOCATION, "%s sound index out of range on '%s'. Must be between 0 and " SIZE_T_ARG ". Forcing to -1 (Nonexistent sound).\n",
+			tag, object_name, size_to_check);
 	}
 }
 
@@ -495,7 +495,7 @@ void parse_sound_list(const char* tag, SCP_vector<int>& destination, const char*
 		//if we're using the old format, double check the size)
 		if(!(flags & PARSE_SOUND_SCP_SOUND_LIST) && (destination.size() != (unsigned)check))
 		{
-			mprintf(("%s in '%s' has %i entries. This does not match entered size of %i.", tag, object_name, destination.size(), check));
+			mprintf(("%s in '%s' has " SIZE_T_ARG " entries. This does not match entered size of %i.", tag, object_name, destination.size(), check));
 		}
 	}
 }
@@ -762,7 +762,7 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 		int temp_limit;
 		stuff_int(&temp_limit);
 
-		if ((temp_limit > 0) && (temp_limit <= SND_ENHANCED_MAX_LIMIT))
+		if ((temp_limit > 0) && (static_cast<uint>(temp_limit) <= SND_ENHANCED_MAX_LIMIT))
 		{
 			gs->enhanced_sound_data.limit = (unsigned int)temp_limit;
 		}

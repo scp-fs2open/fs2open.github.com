@@ -5,8 +5,8 @@
 #ifndef _HUDPARSE_H
 #define _HUDPARSE_H
 
-#include "globalincs/globals.h"
 #include "ai/ai.h"
+#include "globalincs/globals.h"
 #include "graphics/2d.h"
 
 //Variables

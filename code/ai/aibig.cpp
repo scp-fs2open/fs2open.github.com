@@ -10,17 +10,17 @@
 
 
 #include "ai/aibig.h"
-#include "globalincs/linklist.h"
-#include "object/object.h"
-#include "ship/ship.h"
-#include "ship/afterburner.h"
-#include "freespace2/freespace.h"
-#include "weapon/weapon.h"
-#include "io/timer.h"
-#include "mission/missionparse.h"
-#include "iff_defs/iff_defs.h"
-#include "math/staticrand.h"
 #include "ai/aigoals.h"
+#include "freespace2/freespace.h"
+#include "globalincs/linklist.h"
+#include "iff_defs/iff_defs.h"
+#include "io/timer.h"
+#include "math/staticrand.h"
+#include "mission/missionparse.h"
+#include "object/object.h"
+#include "ship/afterburner.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 
 
 

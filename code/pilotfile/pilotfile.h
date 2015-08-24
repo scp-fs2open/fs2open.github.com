@@ -2,8 +2,8 @@
 #ifndef _PILOTFILE_H
 #define _PILOTFILE_H
 
-#include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
+#include "globalincs/pstypes.h"
 #include "stats/scoring.h"
 
 

@@ -5,28 +5,28 @@
 
 
 
-#include "autopilot/autopilot.h"
 #include "ai/ai.h"
 #include "ai/aigoals.h"
-#include "ship/ship.h"
-#include "object/object.h"
-#include "object/objcollide.h"
-#include "object/waypoint.h"
-#include "parse/sexp.h"
+#include "asteroid/asteroid.h"
+#include "autopilot/autopilot.h"
+#include "camera/camera.h"
+#include "cfile/cfile.h"
 #include "freespace2/freespace.h"
+#include "gamesnd/eventmusic.h"
+#include "globalincs/def_files.h"
 #include "globalincs/linklist.h"
 #include "iff_defs/iff_defs.h"
-#include "sound/audiostr.h"
-#include "mission/missiontraining.h"
-#include "mission/missionmessage.h"
 #include "io/timer.h"
-#include "gamesnd/eventmusic.h"
-#include "cfile/cfile.h"
-#include "parse/parselo.h"
-#include "globalincs/def_files.h"
 #include "localization/localize.h"
-#include "camera/camera.h"
-#include "asteroid/asteroid.h"
+#include "mission/missionmessage.h"
+#include "mission/missiontraining.h"
+#include "object/objcollide.h"
+#include "object/waypoint.h"
+#include "parse/parselo.h"
+#include "parse/sexp.h"
+#include "ship/ship.h"
+#include "sound/audiostr.h"
+
 #include <map>
 
 // Extern functions/variables
@@ -243,9 +243,9 @@ bool StartAutopilot()
 			if (shipp->team != Player_ship->team)
 				continue;
 
-			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < MAX_SHIP_CLASSES),
+			Assertion((shipp->ship_info_index >= 0) && (shipp->ship_info_index < static_cast<int>(Ship_info.size())),
 				"Ship '%s' does not have a valid pointer to a ship class. Pointer is %d, which is smaller than 0 or bigger than %d",
-				shipp->ship_name, shipp->ship_info_index, MAX_SHIP_CLASSES);
+				shipp->ship_name, shipp->ship_info_index, static_cast<int>(Ship_info.size()));
 			ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 			if ( !(sip->flags & SIF_SUPPORT) )

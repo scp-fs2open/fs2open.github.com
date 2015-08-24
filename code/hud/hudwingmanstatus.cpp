@@ -12,19 +12,17 @@
 #include <ctype.h> // for 'tolower'
 
 
-#include "hud/hud.h"
-#include "hud/hudwingmanstatus.h"
-#include "ship/ship.h"
-#include "graphics/2d.h"
-#include "io/timer.h"
-#include "hud/hudtargetbox.h"
-#include "globalincs/linklist.h"
-#include "weapon/emp.h"
-#include "mission/missionparse.h"
-#include "object/object.h"
-#include "iff_defs/iff_defs.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
+#include "hud/hudtargetbox.h"
+#include "hud/hudwingmanstatus.h"
+#include "iff_defs/iff_defs.h"
+#include "io/timer.h"
+#include "mission/missionparse.h"
 #include "network/multi.h"
+#include "object/object.h"
+#include "ship/ship.h"
+#include "weapon/emp.h"
 
 
 #define HUD_WINGMAN_STATUS_NUM_FRAMES	5

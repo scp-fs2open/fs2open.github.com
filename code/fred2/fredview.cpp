@@ -1467,9 +1467,9 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 					(UINT) species_submenu[i].m_hMenu, Species_info[i].species_name);
 			}
 
-			for (i=0; i<Num_ship_classes; i++)
-				species_submenu[Ship_info[i].species].AppendMenu(MF_STRING |
-					MF_ENABLED, SHIP_TYPES + i, Ship_info[i].name);
+			for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+				species_submenu[it->species].AppendMenu(MF_STRING |
+					MF_ENABLED, SHIP_TYPES + i, it->name);
 
 			pPopup->AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
 				(UINT) shipPopup.m_hMenu, "New Object Type");
@@ -1619,7 +1619,7 @@ BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* 
 	int id = (int) nID;
 
 	if (!pHandlerInfo) {
-		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + Num_ship_classes + 3)) {
+		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + static_cast<int>(Ship_info.size()) + 3)) {
 			if (nCode == CN_COMMAND) {
 				cur_model_index = id - SHIP_TYPES;
 				m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
@@ -2453,7 +2453,7 @@ int CFREDView::global_error_check()
 			}
 
 			z = Ships[i].ship_info_index;
-			if ((z < 0) || (z >= Num_ship_classes)){
+			if ((z < 0) || (z >= static_cast<int>(Ship_info.size()))){
 				return internal_error("A ship has an illegal class");
 			}
 

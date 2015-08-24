@@ -12,26 +12,26 @@
 #include <ctype.h>
 
 
-#include "menuui/barracks.h"
-#include "playerman/managepilot.h"
-#include "pilotfile/pilotfile.h"
-#include "ui/ui.h"
+#include "cfile/cfile.h"
+#include "freespace2/freespace.h"
+#include "gamehelp/contexthelp.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
 #include "graphics/font.h"
 #include "io/key.h"
-#include "gamesnd/gamesnd.h"
-#include "popup/popup.h"
-#include "menuui/playermenu.h"
-#include "gamesequence/gamesequence.h"
-#include "gamehelp/contexthelp.h"
-#include "freespace2/freespace.h"
 #include "io/mouse.h"
-#include "osapi/osregistry.h"
-#include "globalincs/alphacolors.h"
-#include "playerman/player.h"
-#include "ship/ship.h"
-#include "cfile/cfile.h"
-#include "parse/parselo.h"
+#include "menuui/barracks.h"
+#include "menuui/playermenu.h"
 #include "mission/missioncampaign.h"
+#include "osapi/osregistry.h"
+#include "parse/parselo.h"
+#include "pilotfile/pilotfile.h"
+#include "playerman/managepilot.h"
+#include "playerman/player.h"
+#include "popup/popup.h"
+#include "ship/ship.h"
+#include "ui/ui.h"
 
 
 
@@ -307,7 +307,7 @@ void barracks_squad_change_popup();
 
 void barracks_init_stats(scoring_struct *stats)
 {
-	int Max_stat_lines = Num_ship_classes + 23;
+	int Max_stat_lines = Ship_info.size() + 23;
 	int i;
 	float f;
 	int score_from_kills = 0;
@@ -457,9 +457,10 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	// Goober5000 - make sure we have room for all ships
-	Assert((Num_stat_lines + Num_ship_classes) < Max_stat_lines);
+	Assert((Num_stat_lines + static_cast<int>(Ship_info.size())) < Max_stat_lines);
 
-	for (i=0; i<Num_ship_classes; i++) {
+	i = 0;
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); i++, ++it) {
 		if (stats->kills[i]) {
 			Assert(Num_stat_lines < Max_stat_lines);
 
@@ -469,13 +470,13 @@ void barracks_init_stats(scoring_struct *stats)
 				break;
 			}
 
-			Assert(strlen(Ship_info[i].name) + 1 < STAT_COLUMN1_W);
-			sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), Ship_info[i].name);
+			Assert(strlen(it->name) + 1 < STAT_COLUMN1_W);
+			sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), it->name);
 			sprintf(Stats[Num_stat_lines], "%d", stats->kills[i]);
 			Num_stat_lines++;
 
 			// work out the total score from ship kills
-			score_from_kills += stats->kills[i] * Ship_info[i].score;
+			score_from_kills += stats->kills[i] * it->score;
 		}
 	}
 

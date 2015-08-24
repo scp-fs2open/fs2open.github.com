@@ -12,39 +12,39 @@
 
 #include <limits.h>		// this is need even when not building debug!!
 
+#include "anim/animplay.h"
+#include "cmdline/cmdline.h"
+#include "cutscene/cutscenes.h"
+#include "cutscene/movie.h"
+#include "gamehelp/contexthelp.h"
+#include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
+#include "graphics/2d.h"
+#include "graphics/gropenglshader.h"
+#include "hud/hudwingmanstatus.h"
 #include "io/key.h"
+#include "io/mouse.h"
+#include "io/timer.h"
+#include "lighting/lighting.h"
+#include "missionui/chatbox.h"
+#include "missionui/missionbrief.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
-#include "missionui/missionbrief.h"
-#include "io/timer.h"
-#include "gamesequence/gamesequence.h"
-#include "gamesnd/gamesnd.h"
-#include "palman/palman.h"
-#include "io/mouse.h"
-#include "gamehelp/contexthelp.h"
-#include "cmdline/cmdline.h"
-#include "globalincs/linklist.h"
-#include "popup/popup.h"
-#include "hud/hudwingmanstatus.h"
-#include "ui/uidefs.h"
-#include "anim/animplay.h"
-#include "ship/ship.h"
-#include "weapon/weapon.h"
-#include "render/3d.h"
-#include "lighting/lighting.h"
 #include "network/multi.h"
-#include "network/multimsgs.h"
-#include "network/multiutil.h"
-#include "network/multiteamselect.h"
 #include "network/multi_endgame.h"
-#include "missionui/chatbox.h"
-#include "cutscene/movie.h"
-#include "cutscene/cutscenes.h"
+#include "network/multimsgs.h"
+#include "network/multiteamselect.h"
+#include "network/multiutil.h"
+#include "palman/palman.h"
 #include "parse/sexp.h"
-#include "graphics/2d.h"
-#include "graphics/gropenglshader.h"
+#include "popup/popup.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "ui/uidefs.h"
+#include "weapon/weapon.h"
 
 //////////////////////////////////////////////////////////////////
 // Game Globals
@@ -1081,11 +1081,11 @@ void wss_maybe_restore_loadout()
 	// record the ship classes / weapons used last time
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
-		if ((slot->ship_class >= 0) && (slot->ship_class < MAX_SHIP_CLASSES)) {
+		if ((slot->ship_class >= 0) && (slot->ship_class < static_cast<int>(Ship_info.size()))) {
 			++last_loadout_ships[slot->ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((slot->wep[j] >= 0) && (slot->wep[j] < MAX_WEAPON_TYPES)) {
+				if ((slot->wep[j] >= 0) && (slot->wep[j] < Num_weapon_types)) {
 					last_loadout_weapons[slot->wep[j]] += slot->wep_count[j]; 
 				}
 			}
@@ -1094,11 +1094,11 @@ void wss_maybe_restore_loadout()
 
 	// record the ships classes / weapons used by the player and wingmen. We don't include the amount in the pools yet
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-		if ((Wss_slots[i].ship_class >= 0) && (Wss_slots[i].ship_class < MAX_SHIP_CLASSES)) {
+		if ((Wss_slots[i].ship_class >= 0) && (Wss_slots[i].ship_class < static_cast<int>(Ship_info.size()))) {
 			++this_loadout_ships[Wss_slots[i].ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < MAX_WEAPON_TYPES)) {
+				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < Num_weapon_types)) {
 					this_loadout_weapons[Wss_slots[i].wep[j]] += Wss_slots[i].wep_count[j];
 				}
 			}
@@ -1107,7 +1107,7 @@ void wss_maybe_restore_loadout()
 
 	// now compare the two, adding in what was left in the pools. If there are less of a ship or weapon class in the mission now
 	// than there were last time, we can't restore and must abort.
-	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+	for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
 		if (Ss_pool[i] >= 1) {
 			this_loadout_ships[i] += Ss_pool[i];
 		}
@@ -1116,7 +1116,7 @@ void wss_maybe_restore_loadout()
 		}
 	}
 	
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+	for (i = 0; i < Num_weapon_types; i++) {
 		if (Wl_pool[i] >= 1) {
 			this_loadout_weapons[i] += Wl_pool[i];
 		}
@@ -1129,7 +1129,7 @@ void wss_maybe_restore_loadout()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
 
-		if ((slot->ship_class >= 0) && (slot->ship_class < MAX_SHIP_CLASSES)) {
+		if ((slot->ship_class >= 0) && (slot->ship_class < static_cast<int>(Ship_info.size()))) {
 			--this_loadout_ships[slot->ship_class];
 			Assertion((this_loadout_ships[slot->ship_class] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of ships available");
 
@@ -1138,7 +1138,7 @@ void wss_maybe_restore_loadout()
 		Wss_slots[i].ship_class = slot->ship_class;
 
 		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			if ((slot->ship_class >= 0) && (slot->wep[j] >= 0) && (slot->wep[j] < MAX_WEAPON_TYPES)) {
+			if ((slot->ship_class >= 0) && (slot->wep[j] >= 0) && (slot->wep[j] < Num_weapon_types)) {
 				this_loadout_weapons[slot->wep[j]] -= slot->wep_count[j];
 				Assertion((this_loadout_weapons[slot->wep[j]] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of weapons available");
 			}
@@ -1149,12 +1149,12 @@ void wss_maybe_restore_loadout()
 	}	
 
 	// restore the ship pool
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
+	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
 		Ss_pool[i] = this_loadout_ships[i]; 
 	}
 
 	// restore the weapons pool
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
+	for ( i = 0; i < Num_weapon_types; i++ ) {
 		Wl_pool[i] = this_loadout_weapons[i]; 
 	}
 }
@@ -1315,7 +1315,7 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 
 
 	// write the ship pool 
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
+	for ( i = 0; i < static_cast<int>(Ship_info.size()); i++ ) {
 		if ( Ss_pool[i] > 0 ) {	
 			block[offset++] = (ubyte)i;
 			Assert( Ss_pool[i] < UCHAR_MAX );
@@ -1332,7 +1332,7 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 	block[offset++] = 0xff;	// signals start of weapons pool
 
 	// write the weapon pool
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
+	for ( i = 0; i < Num_weapon_types; i++ ) {
 		if ( Wl_pool[i] > 0 ) {
 			block[offset++] = (ubyte)i;
 			ishort = INTEL_SHORT( (short)Wl_pool[i] );
