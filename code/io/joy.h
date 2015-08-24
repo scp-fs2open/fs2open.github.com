@@ -27,11 +27,15 @@
 
 #define JOY_AXIS_UNDEFINED		-10000
 
+const int JOY_AXIS_MIN = 0;
+const int JOY_AXIS_CENTER = -SHRT_MIN;
+const int JOY_AXIS_MAX = (SHRT_MAX - SHRT_MIN) + 1; // +1, since this is always checked to be less. ex: if (x < JOY_AXIS_MAX) {du_stoof();}
+
 typedef struct Joy_info {
-	int	axis_valid[JOY_NUM_AXES];
-	int	axis_min[JOY_NUM_AXES];
-	int	axis_center[JOY_NUM_AXES];
-	int	axis_max[JOY_NUM_AXES];
+	int axis_valid[JOY_NUM_AXES];   // (bool) 0 if invalid axis, 1 if valid
+	int axis_min[JOY_NUM_AXES];     // minimum value of each axis (default is JOY_AXIS_MIN)
+	int axis_center[JOY_NUM_AXES];  // center value of each axis (default is JOY_AXIS_CENTER)
+	int axis_max[JOY_NUM_AXES];     // maximum value of each axis (default is JOY_AXIS_MAX)
 } Joy_info;
 
 extern int Joy_sensitivity;

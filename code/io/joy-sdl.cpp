@@ -138,9 +138,9 @@ namespace
 			// Fake a calibration
 			if (joy_num_sticks > 0) {
 				for (int i = 0; i<JOY_NUM_AXES; i++) {
-					joystick.axis_center[i] = 32768;
-					joystick.axis_min[i] = 0;
-					joystick.axis_max[i] = 65536;
+					joystick.axis_center[i] = JOY_AXIS_CENTER;
+					joystick.axis_min[i] = JOY_AXIS_MIN;
+					joystick.axis_max[i] = JOY_AXIS_MAX;
 				}
 			}
 		}
@@ -240,7 +240,7 @@ void joy_flush()
 	}
 
 	for (i = 0; i < JOY_NUM_AXES; i++) {
-		joy_axes[i] = 32768;
+		joy_axes[i] = JOY_AXIS_CENTER;
 	}
 }
 
@@ -500,7 +500,7 @@ void joy_event(SDL_JoystickID id, uint8_t axis_id, int16_t value)
 		return;
 	}
 
-	joy_axes[axis_id] = value + 32768;
+	joy_axes[axis_id] = value + JOY_AXIS_CENTER;
 }
 
 SDL_Joystick* joy_get_device()
@@ -624,7 +624,7 @@ int joystick_read_raw_axis(int num_axes, int *axis)
 	if (!Joy_inited || sdljoy == nullptr) {
 		// fake a return value so that controlconfig doesn't get freaky with no joystick
 		for (i = 0; i < num_axes; i++) {
-			axis[i] = 32768;
+			axis[i] = JOY_AXIS_CENTER;
 		}
 
 		return 0;
@@ -636,7 +636,7 @@ int joystick_read_raw_axis(int num_axes, int *axis)
 		if (i < joy_num_axes) {
 			axis[i] = joy_axes[i];
 		} else {
-			axis[i] = 32768;
+			axis[i] = JOY_AXIS_CENTER;
 		}
 	}
 	
