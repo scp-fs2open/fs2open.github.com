@@ -24,6 +24,9 @@
 #include "network/multiutil.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
+#include "io/timer.h"
+#include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
 
 #include <iostream>
 #include <string>
@@ -63,7 +66,7 @@ int FS2NetD_CheckSingleMission(const char *m_name, uint crc32, bool do_send)
 
 			rc_total += rc;
 
-			Sleep(20);
+			os_sleep(20);
 		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
 
 		if (rc < BASE_PACKET_SIZE) {
@@ -165,7 +168,7 @@ int FS2NetD_SendPlayerData(const char *player_name, player *pl, bool do_send)
 
 			rc_total += rc;
 
-			Sleep(20);
+			os_sleep(20);
 		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
 
 		if (rc < BASE_PACKET_SIZE) {
@@ -232,7 +235,7 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 
 			rc_total += rc;
 
-			Sleep(20);
+			os_sleep(20);
 		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
 
 		if (rc < BASE_PACKET_SIZE) {
@@ -261,7 +264,7 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 				rc_total += rc;
 			}
 
-			Sleep(20);
+			os_sleep(20);
 		}
 
 		PXO_GET_DATA( reply_type );
@@ -344,7 +347,7 @@ int FS2NetD_GetBanList(SCP_vector<SCP_string> &mask_list, bool do_send)
 
 			rc_total += rc;
 
-			Sleep(20);
+			os_sleep(20);
 		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
 
 		if (rc < BASE_PACKET_SIZE) {
@@ -373,7 +376,7 @@ int FS2NetD_GetBanList(SCP_vector<SCP_string> &mask_list, bool do_send)
 				rc_total += rc;
 			}
 
-			Sleep(20);
+			os_sleep(20);
 		}
 
 		PXO_GET_INT( num_files );
@@ -418,7 +421,7 @@ int FS2NetD_GetMissionsList(SCP_vector<file_record> &m_list, bool do_send)
 
 			rc_total += rc;
 
-			Sleep(20);
+			os_sleep(20);
 		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
 
 		if (rc < BASE_PACKET_SIZE) {
@@ -447,7 +450,7 @@ int FS2NetD_GetMissionsList(SCP_vector<file_record> &m_list, bool do_send)
 				rc_total += rc;
 			}
 
-			Sleep(20);
+			os_sleep(20);
 		}
 
 		PXO_GET_INT( num_files );
@@ -501,7 +504,7 @@ int FS2NetD_Login(const char *username, const char *password, bool do_send)
 
 			rc_total += rc;
 
-			Sleep(20);
+			os_sleep(20);
 		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
 
 		if (rc < BASE_PACKET_SIZE) {
@@ -722,7 +725,7 @@ int FS2NetD_ValidateTableList(bool do_send)
 
 			rc_total += rc;
 
-			Sleep(20);
+			os_sleep(20);
 		} while ( FS2NetD_DataReady() && (rc_total < (int)sizeof(buffer)) );
 
 		if (rc < BASE_PACKET_SIZE) {
@@ -747,7 +750,7 @@ int FS2NetD_ValidateTableList(bool do_send)
 				rc_total += rc;
 			}
 
-			Sleep(20);
+			os_sleep(20);
 		}
 
 		PXO_GET_USHORT( num_tables );

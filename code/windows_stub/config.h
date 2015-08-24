@@ -6,6 +6,23 @@
 #define _CONFIG_H
 
 
+#ifndef BYTE_ORDER
+#include "SDL_endian.h"
+#endif
+
+#ifndef BYTE_ORDER
+#define LITTLE_ENDIAN 1234
+#define BIG_ENDIAN    4321
+
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+#define BYTE_ORDER   LITTLE_ENDIAN
+#elif SDL_BYTEORDER == SDL_BIG_ENDIAN
+#define BYTE_ORDER   BIG_ENDIAN
+#else
+#error unknown byte order
+#endif
+#endif  // BYTE_ORDER
+
 #if defined _WIN32
 
 // Goober5000 - now these warnings will only be disabled when compiling with MSVC :)
@@ -20,7 +37,7 @@
 // 4410 illegal size for operand... ie... 	fxch st(1)
 // 4511 copy constructor could not be generated (happens a lot in Windows include headers)
 // 4512 assignment operator could not be generated (happens a lot in Windows include headers)
-// 4514 unreferenced inline function removed, 
+// 4514 unreferenced inline function removed,
 // 4611 _setjmp warning.  Since we use setjmp alot, and we don't really use constructors or destructors, this warning doesn't really apply to us.
 // 4663 C++ language change (template specification)
 // 4710 is inline function not expanded (who cares?)
@@ -40,20 +57,11 @@
 
 #endif
 
-#if !defined BYTE_ORDER
- #define LITTLE_ENDIAN 1234
- #define BIG_ENDIAN    4321
-
- #if defined _M_IX86 || defined _X86_
-  #define BYTE_ORDER   LITTLE_ENDIAN
- #else
-  #error unknown byte order
- #endif
-#endif  // BYTE_ORDER
-
 #ifndef snprintf
 #define snprintf _snprintf
 #endif
+
+#define STUB_FUNCTION nprintf(( "Warning", "STUB: %s in "__FILE__" at line %d\n", __FUNCTION__, __LINE__))
 
 #else  // ! Win32
 
@@ -225,23 +233,23 @@ bool QueryPerformanceCounter(LARGE_INTEGER *pcount);
 #define _unlink(s)					unlink(s)
 
 // mmio stuff
-typedef struct { 
-	DWORD		dwFlags; 
-	FOURCC		fccIOProc; 
-	LPMMIOPROC	pIOProc; 
-	UINT		wErrorRet; 
-	HTASK		hTask; 
-	LONG		cchBuffer; 
-	HPSTR		pchBuffer; 
-	HPSTR		pchNext; 
-	HPSTR		pchEndRead; 
-	HPSTR		pchEndWrite; 
-	LONG		lBufOffset; 
-	LONG		lDiskOffset; 
-	DWORD		adwInfo[4]; 
-	DWORD		dwReserved1; 
-	DWORD		dwReserved2; 
-	HMMIO		hmmio; 
+typedef struct {
+	DWORD		dwFlags;
+	FOURCC		fccIOProc;
+	LPMMIOPROC	pIOProc;
+	UINT		wErrorRet;
+	HTASK		hTask;
+	LONG		cchBuffer;
+	HPSTR		pchBuffer;
+	HPSTR		pchNext;
+	HPSTR		pchEndRead;
+	HPSTR		pchEndWrite;
+	LONG		lBufOffset;
+	LONG		lDiskOffset;
+	DWORD		adwInfo[4];
+	DWORD		dwReserved1;
+	DWORD		dwReserved2;
+	HMMIO		hmmio;
 } MMIOINFO;
 
 typedef MMIOINFO *LPMMIOINFO;
@@ -281,7 +289,6 @@ char *strnset( char *string, int fill, size_t count);
 #define _hypot(x, y)  hypot(x, y)
 
 int MulDiv(int number, int numerator, int denominator);
-void Sleep(int mili);
 
 struct POINT {
 	int x, y;

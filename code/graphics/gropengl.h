@@ -22,8 +22,6 @@
 	#include "graphics/gl/glu.h"
 	#include "graphics/gl/glext.h"
  	#include "graphics/gl/wglext.h"
-
-	#define STUB_FUNCTION 0
 #elif defined(SCP_UNIX)
 #ifdef __APPLE__
 	#define GL_GLEXT_LEGACY // I'd like to punch the idiot that made this needed

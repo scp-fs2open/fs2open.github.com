@@ -33,13 +33,14 @@
 #include "osapi/osapi.h"
 #include "palman/palman.h"
 #include "parse/scripting.h"
+#include "parse/parselo.h"
 #include "render/3d.h"
 
-#if defined(SCP_UNIX) && !defined(__APPLE__)
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
 #endif
-#endif // SCP_UNIX && !__APPLE__
+
+#include "SDL_surface.h"
 
 const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
 
@@ -56,9 +57,7 @@ ubyte Gr_current_palette[768];
 char Gr_current_palette_name[128] = NOX("none");
 
 // cursor stuff
-int Gr_cursor = -1;
-int Web_cursor_bitmap = -1;
-int Gr_cursor_size = 32;	// default w/h
+io::mouse::Cursor* Web_cursor = NULL;
 
 int Gr_inited = 0;
 
@@ -83,8 +82,6 @@ const float Default_min_draw_distance = 1.0f;
 const float Default_max_draw_distance = 1e10;
 float Min_draw_distance = Default_min_draw_distance;
 float Max_draw_distance = Default_max_draw_distance;
-
-static int GL_cursor_nframes = 0;
 
 // Pre-computed screen resize vars
 static float Gr_full_resize_X = 1.0f, Gr_full_resize_Y = 1.0f;
@@ -238,7 +235,7 @@ bool gr_resize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 		case GR_RESIZE_MENU_NO_OFFSET:
 			xy_tmp = (*x) * Gr_resize_X;
 			break;
-		}
+	}
 		(*x) = fl2ir(xy_tmp);
 	}
 
@@ -263,7 +260,7 @@ bool gr_resize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 		case GR_RESIZE_MENU_NO_OFFSET:
 			xy_tmp = (*y) * Gr_resize_Y;
 			break;
-		}
+	}
 		(*y) = fl2ir(xy_tmp);
 	}
 
@@ -346,7 +343,7 @@ bool gr_unsize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 		case GR_RESIZE_MENU_NO_OFFSET:
 			xy_tmp = (*x) / Gr_resize_X;
 			break;
-		}
+	}
 		(*x) = fl2ir(xy_tmp);
 	}
 
@@ -371,7 +368,7 @@ bool gr_unsize_screen_pos(int *x, int *y, int *w, int *h, int resize_mode)
 		case GR_RESIZE_MENU_NO_OFFSET:
 			xy_tmp = (*y) / Gr_resize_Y;
 			break;
-		}
+	}
 		(*y) = fl2ir(xy_tmp);
 	}
 
@@ -874,16 +871,7 @@ static bool gr_init_sub(int mode, int width, int height, int depth, float center
 	gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
 	gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
-
-#ifdef WIN32
-	// FRED doesn't need this
-	if ( !Fred_running && !Is_standalone ) {
-		// for Windows, we need to do this just before the *_init() calls
-		extern void win32_create_window(int width, int height);
-		win32_create_window( width, height );
-	}
-#endif
-
+	
 	switch (mode) {
 		case GR_OPENGL:
 			rc = gr_opengl_init();
@@ -907,7 +895,6 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
 	float center_aspect_ratio = -1.0f;
 	const char *ptr = NULL;
-	const char *Default_video_settings = "OGL -(1024x768)x32 bit";
 
 	if ( !Gr_inited ) {
 		atexit(gr_close);
@@ -933,15 +920,53 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 	// if we don't have a config string then construct one, using OpenGL 1024x768 32-bit as the default
 	if (ptr == NULL) {
-		ptr = Default_video_settings;
-	}
+		// If we don't have a display mode, use SDL to get default settings
+		// We need to initialize SDL to do this
 
-	Assert( ptr != NULL );
+		if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
+		{
+			SDL_DisplayMode displayMode;
+			if (SDL_GetDesktopDisplayMode(0, &displayMode) == 0)
+			{
+				width = displayMode.w;
+				height = displayMode.h;
+				int sdlBits = SDL_BITSPERPIXEL(displayMode.format);
 
-	// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
-	//       If the format of that string changes you'll have to change this too!!!
-	if ( sscanf(ptr+5, "(%dx%d)x%d ", &width, &height, &depth) != 3 ) {
-		Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
+				if (SDL_ISPIXELFORMAT_ALPHA(displayMode.format))
+				{
+					depth = sdlBits;
+				}
+				else
+				{
+					// Fix a few values
+					if (sdlBits == 24)
+					{
+						depth = 32;
+					}
+					else if (sdlBits == 15)
+					{
+						depth = 16;
+					}
+					else
+					{
+						depth = sdlBits;
+					}
+				}
+
+				SCP_string videomode;
+				sprintf(videomode, "OGL -(%dx%d)x%d bit", width, height, depth);
+
+				os_config_write_string(NULL, NOX("VideocardFs2open"), videomode.c_str());
+			}
+		}
+	} else {
+		Assert(ptr != NULL);
+
+		// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
+		//       If the format of that string changes you'll have to change this too!!!
+		if (sscanf(ptr + 5, "(%dx%d)x%d ", &width, &height, &depth) != 3) {
+			Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
+		}
 	}
 
 	if (Cmdline_res != NULL) {
@@ -983,12 +1008,12 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 	bool has_sparky_hi = (cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("2_TechShipData-m.pcx", CF_TYPE_ANY));
 
 	// if we don't have it then fall back to 640x480 mode instead
-	if ( !has_sparky_hi ) {
-		if ( (width == 1024) && (height == 768) ) {
+	if (!has_sparky_hi) {
+		if ((width == 1024) && (height == 768)) {
 			width = 640;
 			height = 480;
-			center_aspect_ratio = -1.0f;
-		} else {
+		}
+		else {
 			width = 800;
 			height = 600;
 			center_aspect_ratio = -1.0f;
@@ -1047,29 +1072,12 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 
 	bm_init();
-
-	if (Gr_cursor < 0) {
-		int w, h;
-
-		Gr_cursor = bm_load( "cursor" );
-
-		if (Gr_cursor >= 0) {
-			// get cursor size, so that we can be sure to account for the full thing
-			// in later cursor hiding code
-			bm_get_info(Gr_cursor, &w, &h);
-			Gr_cursor_size = MAX(w, h);
-
-			if (Gr_cursor_size <= 0) {
-				Int3();
-				Gr_cursor_size = 32;
-			}
-		}
-	}
+	io::mouse::CursorManager::init();
 
 	// load the web pointer cursor bitmap
-	if (Web_cursor_bitmap < 0) {
+	if (Web_cursor == NULL) {
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
-		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb")) < 0 ) {
+		if ( (Web_cursor = io::mouse::CursorManager::get()->loadCursor("cursorweb", true)) == NULL ) {
 			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
 				"\t1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
 				"\t2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"
@@ -1108,7 +1116,7 @@ void gr_force_windowed()
 	}
 
 	if ( Os_debugger_running ) {
-		Sleep(1000);
+		os_sleep(1000);
 	}
 }
 
@@ -1221,76 +1229,6 @@ void gr_set_shader(shader *shade)
 	} else {
 		gr_create_shader( &gr_screen.current_shader, 0, 0, 0, 0 );
 	}
-}
-
-/**
- * Set the bitmap for the mouse pointer.  This is called by the animating mouse
- * pointer code.
- *
- * The lock parameter just locks basically disables the next call of this function that doesn't
- * have an unlock feature.  If adding in more cursor-changing situations, be aware of
- * unexpected results. You have been warned.
- *
- * @todo investigate memory leak of original Gr_cursor bitmap when this is called
- */
-void gr_set_cursor_bitmap(int n, int lock)
-{
-	int w, h;
-	static int locked = 0;
-
-	if ( !locked || (lock == GR_CURSOR_UNLOCK) ) {
-		// if we are changing the cursor to something different
-		// then unload the previous cursor's data - taylor
-		if ( (Gr_cursor >= 0) && (Gr_cursor != n) ) {
-			// be sure to avoid changing a cursor which is simply another frame
-			if ( (GL_cursor_nframes < 2) || ((n - Gr_cursor) >= GL_cursor_nframes) ) {
-				gr_unset_cursor_bitmap(Gr_cursor);
-			}
-		}
-
-		if (n != Gr_cursor) {
-			// get cursor size, so that we can be sure to account for the full thing
-			// in later cursor hiding code
-			bm_get_info(n, &w, &h, NULL, &GL_cursor_nframes);
-			Assert( GL_cursor_nframes > 0 );
-
-			Gr_cursor_size = MAX(w, h);
-
-			if (Gr_cursor_size <= 0) {
-				Int3();
-				Gr_cursor_size = 32;
-			}
-		}
-
-		Gr_cursor = n;
-	} else {
-		locked = 0;
-	}
-
-	if (lock == GR_CURSOR_LOCK) {
-		locked = 1;
-	}
-}
-
-void gr_unset_cursor_bitmap(int n)
-{
-	if (n < 0) {
-		return;
-	}
-
-	if (Gr_cursor == n) {
-		bm_unload(Gr_cursor);
-		Gr_cursor = -1;
-	}
-}
-
-/**
- * Retrieves the current bitmap
- * Used in UI_GADGET to save/restore current cursor state
- */
-int gr_get_cursor_bitmap()
-{
-	return Gr_cursor;
 }
 
 // new bitmap functions

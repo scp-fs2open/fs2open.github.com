@@ -6,7 +6,6 @@
 
 //Setup the OGG stuff to use cfile
 extern ov_callbacks cfile_callbacks;
-extern ov_callbacks mmio_callbacks;
 
 //Init the ogg system
 int OGG_init();

@@ -26,6 +26,7 @@
 #include "network/multi.h"
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
+#include "osapi/osapi.h"
 
 
 
@@ -440,7 +441,7 @@ void multi_pause_do()
 	}
 	// standalone pretty much does nothing here
 	else {
-		Sleep(1);
+		os_sleep(1);
 	}
 }
 

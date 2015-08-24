@@ -21,6 +21,10 @@
 #include <malloc.h>
 #endif
 
+#ifdef __linux__
+#include <execinfo.h>
+#endif
+
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
@@ -28,12 +32,6 @@
 
 bool env_enabled = false;
 bool cell_enabled = false;
-
-int Global_warning_count = 0;
-int Global_error_count = 0;
-
-#define MAX_BUF_SIZE	1024
-static char buffer[MAX_BUF_SIZE], buffer_tmp[MAX_BUF_SIZE];
 
 #ifndef NDEBUG
 #ifdef __APPLE__
@@ -76,251 +74,33 @@ int filelength(int fd)
 	return buf.st_size;
 }
 
-// non-blocking process pause
-void Sleep(int mili)
-{
-#ifdef __APPLE__
-	// ewwww, I hate this!!  SDL_Delay() is causing issues for us though and this
-	// basically matches Apple examples of the same thing.  Same as SDL_Delay() but
-	// we aren't hitting up the system for anything during the process
-	uint then = SDL_GetTicks() + mili;
 
-	while (then > SDL_GetTicks());
+SCP_string dump_stacktrace()
+{
+#ifdef __linux__
+	const int SIZE = 1024;
+	SCP_stringstream stackstream;
+	char **symbols;
+	int i, numstrings;
+	void *addresses[SIZE];
+
+	numstrings = backtrace(addresses, SIZE);
+	symbols = backtrace_symbols(addresses, numstrings);
+
+	if(symbols != NULL)
+	{
+		for(i = 0; i < numstrings; i++)
+		{
+			stackstream << symbols[i] << "\n";
+		}
+	}
+	free(symbols);
+
+	return stackstream.str();
 #else
-	SDL_Delay(mili);
+	return "No stacktrace available";
 #endif
 }
-
-extern void os_deinit();
-// fatal assertion error
-void WinAssert(char * text, char *filename, int line)
-{
-	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d\n", text, filename, line);
-
-	// this stuff migt be really useful for solving bug reports and user errors. We should output it!
-	mprintf(("ASSERTION: \"%s\" at %s:%d\n", text, strrchr(filename, '/')+1, line ));
-
-#ifdef Allow_NoWarn
-	if (Cmdline_nowarn) {
-		return;
-	}
-#endif
-
-	// we have to call os_deinit() before abort() so we make sure that SDL gets
-	// closed out and we don't lose video/input control
-	os_deinit();
-
-	abort();
-}
-
-// fatal assertion error
-void WinAssert(char * text, char *filename, int line, const char * format, ... )
-{
-	// Karajorma - Nicked the code from the Warning function below
-	va_list args;
-	int i;
-	int slen = 0;
-
-	memset( buffer, 0, sizeof(buffer) );
-	memset( buffer_tmp, 0, sizeof(buffer_tmp) );
-
-	va_start(args, format);
-	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
-	va_end(args);
-
-	slen = strlen(buffer_tmp);
-
-	// strip out the newline char so the output looks better
-	for (i = 0; i < slen; i++){
-		if (buffer_tmp[i] == (char)0x0a) {
-			buffer[i] = ' ';
-		} else {
-			buffer[i] = buffer_tmp[i];
-		}
-	}
-
-	// kill off extra white space at end
-	if (buffer[slen-1] == (char)0x20) {
-		buffer[slen-1] = '\0';
-	} else {
-		// just being careful
-		buffer[slen] = '\0';
-	}
-
-	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d  %s\n", text, filename, line, buffer);
-
-	// this stuff migt be really useful for solving bug reports and user errors. We should output it!
-	mprintf(("ASSERTION: \"%s\" at %s:%d  %s\n", text, strrchr(filename, '/')+1, line, buffer ));
-
-#ifdef Allow_NoWarn
-	if (Cmdline_nowarn) {
-		return;
-	}
-#endif
-
-	// we have to call os_deinit() before abort() so we make sure that SDL gets
-	// closed out and we don't lose video/input control
-	os_deinit();
-
-	abort();
-}
-
-void WarningEx( char *filename, int line, const char *format, ... )
-{
-#ifndef NDEBUG
-	if (Cmdline_extra_warn) {
-		char msg[2 * MAX_BUF_SIZE];
-		va_list args;
-		va_start(args, format);
-		vsprintf(msg, format, args);
-		va_end(args);
-		Warning(filename, line, "%s", msg);
-	}
-#endif
-}
-
-// standard warning message
-void Warning( char * filename, int line, const char * format, ... )
-{
-	Global_warning_count++;
-
-#ifndef NDEBUG
-	va_list args;
-	int i;
-	int slen = 0;
-
-	memset( buffer, 0, sizeof(buffer) );
-	memset( buffer_tmp, 0, sizeof(buffer_tmp) );
-
-	va_start(args, format);
-	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
-	va_end(args);
-
-	slen = strlen(buffer_tmp);
-
-	// strip out the newline char so the output looks better
-	for (i = 0; i < slen; i++){
-		if (buffer_tmp[i] == (char)0x0a) {
-			buffer[i] = ' ';
-		} else {
-			buffer[i] = buffer_tmp[i];
-		}
-	}
-
-	// kill off extra white space at end
-	if (buffer[slen-1] == (char)0x20) {
-		buffer[slen-1] = '\0';
-	} else {
-		// just being careful
-		buffer[slen] = '\0';
-	}
-
-	mprintf(("WARNING: \"%s\" at %s:%d\n", buffer, strrchr(filename, '/')+1, line));
-
-	// Order UP!!
-	fprintf(stderr, "WARNING: \"%s\" at %s:%d\n", buffer, filename, line);
-#endif
-}
-
-// fatal error message
-void Error( const char * filename, int line, const char * format, ... )
-{
-	Global_error_count++;
-
-	va_list args;
-#ifndef APPLE_APP
-	int i;
-	int slen = 0;
-#endif
-
-	memset( buffer, 0, sizeof(buffer) );
-	memset( buffer_tmp, 0, sizeof(buffer_tmp) );
-
-	va_start(args, format);
-	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
-	va_end(args);
-
-	mprintf(("ERROR: %s\nFile: %s\nLine: %d\n", buffer_tmp, filename, line));
-
-#if defined(APPLE_APP)
-	CFStringRef AsMessage;
-	char AsText[1024];
-	CFOptionFlags result;
-
-	snprintf(AsText, 1024, "Error: %s\n\nFile: %s\nLine %d\n", buffer_tmp, filename, line);
-	AsMessage = CFStringCreateWithCString(NULL, AsText, kCFStringEncodingASCII);
-
-	CFUserNotificationDisplayAlert(0, kCFUserNotificationStopAlertLevel, NULL, NULL, NULL, CFSTR("Error!"), AsMessage, CFSTR("Exit"), NULL, NULL, &result);
-#else
-	slen = strlen(buffer_tmp);
-
-	// strip out the newline char so the output looks better
-	for (i = 0; i < slen; i++){
-		if (buffer_tmp[i] == (char)0x0a) {
-			buffer[i] = ' ';
-		} else {
-			buffer[i] = buffer_tmp[i];
-		}
-	}
-
-	// kill off extra white space at end
-	if (buffer[slen-1] == (char)0x20) {
-		buffer[slen-1] = '\0';
-	} else {
-		// just being careful
-		buffer[slen] = '\0';
-	}
-
-	// Order UP!!
-	fprintf(stderr, "ERROR: \"%s\" at %s:%d\n", buffer, filename, line);
-#endif
-
-	exit(EXIT_FAILURE);
-}
-
-extern lua_Debug Ade_debug_info;
-void LuaError(struct lua_State *L, const char *format, ...)
-{
-	va_list args;
-	memset( &buffer, 0, sizeof(buffer) );
-
-	if (format == NULL) {
-		// make sure to cap to a sane string size
-		snprintf( buffer, sizeof(buffer) - 1, "%s", lua_tostring(L, -1) );
-		lua_pop(L, -1);
-	} else {
-		va_start(args, format);
-		vsnprintf(buffer, sizeof(buffer) - 1, format, args);
-		va_end(args);
-	}
-
-	// Order UP!!
-	fprintf(stderr, "LUA ERROR: \"%s\"\n", buffer);
-	fprintf(stderr, "\n");
-
-	fprintf(stderr, "------------------------------------------------------------------\n");
-	fprintf(stderr, "ADE Debug:\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Name:  %s\n",  Ade_debug_info.name);
-	fprintf(stderr, "Name of:  %s\n",  Ade_debug_info.namewhat);
-	fprintf(stderr, "Function type:  %s\n",  Ade_debug_info.what);
-	fprintf(stderr, "Defined on:  %d\n",  Ade_debug_info.linedefined);
-	fprintf(stderr, "Upvalues:  %d\n",  Ade_debug_info.nups);
-	fprintf(stderr, "\n" );
-	fprintf(stderr, "Source:  %s\n",  Ade_debug_info.source);
-	fprintf(stderr, "Short source:  %s\n",  Ade_debug_info.short_src);
-	fprintf(stderr, "Current line:  %d\n",  Ade_debug_info.currentline);
-
-	fprintf(stderr, "------------------------------------------------------------------\n");
-	fprintf(stderr, "LUA Stack:\n");
-	fprintf(stderr, "\n");
-	ade_stackdump(L, buffer);
-	fprintf(stderr, "%s\n", buffer);
-	fprintf(stderr, "\n");
-
-	exit(EXIT_FAILURE);
-}
-
 
 HMMIO mmioOpen(LPSTR szFilename, LPMMIOINFO lpmmioinfo, DWORD dwOpenFlags)
 {

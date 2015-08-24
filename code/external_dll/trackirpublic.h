@@ -1,8 +1,13 @@
 #ifndef TRACKIRPUBLIC_H_INCLUDED_
 #define TRACKIRPUBLIC_H_INCLUDED_
 
+#ifdef WIN32
+#	include "SDL_syswm.h" // For SDL_SysWMinfo
+#endif
+
 #include "external_dll/externalcode.h"
 #include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
 
 #define TRACKIRBRIDGEDLLNAME "scptrackir.dll"
 
@@ -83,10 +88,26 @@ public:
 	}
 
 	/* Returns 0 on success */
-	int Init( HWND hwnd )
+	int Init( SDL_Window* window )
 	{
-		if ( m_Init )
-			return m_Init( hwnd );
+		// This is only supported on windows
+#ifdef WIN32
+		if (m_Init)
+		{
+			SDL_SysWMinfo info;
+			SDL_VERSION(&info.version); // initialize info structure with SDL version info
+
+			if (SDL_GetWindowWMInfo(os_get_window(), &info)) { // the call returns true on success
+															   // success
+				return m_Init(info.info.win.window);
+			}
+			else {
+				// call failed
+				mprintf(("TrackIR: Couldn't get window information: %s\n", SDL_GetError()));
+			}
+		}
+#endif
+
 		return 0;
 	}
 

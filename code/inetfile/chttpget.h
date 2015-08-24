@@ -69,9 +69,7 @@ protected:
 	FILE *LOCALFILE;
 	char recv_buffer[1000];
 
-#ifdef SCP_UNIX
 	SDL_Thread *thread_id;
-#endif
 };
 
 

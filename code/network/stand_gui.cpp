@@ -36,6 +36,7 @@
 #include "ship/ship.h"
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
+#include "osapi/osapi.h"
 
 #include <string>
 
@@ -388,7 +389,7 @@ void std_connect_set_gamename(char *name)
 		// update fs2netd
 		if (MULTI_IS_TRACKER_GAME) {
 			fs2netd_gameserver_disconnect();
-			Sleep(50);
+			os_sleep(50);
 			fs2netd_gameserver_start();
 		}
 	}
@@ -428,7 +429,7 @@ void std_connect_handle_name_change()
 		// update fs2netd with the info
 		if (MULTI_IS_TRACKER_GAME) {
 			fs2netd_gameserver_disconnect();
-			Sleep(50);
+			os_sleep(50);
 			fs2netd_gameserver_start();
 		}
 	}

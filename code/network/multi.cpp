@@ -1598,7 +1598,7 @@ void standalone_main_init()
 void standalone_main_do()
 {
  
-   Sleep(10);  // since nothing will really be going on here, we can afford to give some time
+   os_sleep(10);  // since nothing will really be going on here, we can afford to give some time
                // back to the operating system.
 
 	// kind of a do-nothing spin state.

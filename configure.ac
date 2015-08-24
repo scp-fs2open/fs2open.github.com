@@ -224,7 +224,7 @@ fi
 if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
 	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings -Wshadow -funroll-loops"
-	D_LDFLAGS="$D_LDFLAGS -g"
+	D_LDFLAGS="$D_LDFLAGS -g -rdynamic"
 
 	if test "$fs2_fred" = "yes" ; then
 		AC_SUBST(FS2_BINARY, ["wxFRED2_${PACKAGE_VERSION}_DEBUG"])
@@ -320,14 +320,14 @@ dnl Setup paths for lib and include dirs
 
 dnl SDL check
 if test "$fs2_os_linux" = "yes" || test "$fs2_os_bsd" = "yes" ; then
-	dnl Check for SDL 1.2.6+
-	SDL_VERSION=1.2.6
-	AM_PATH_SDL($SDL_VERSION,:,AC_MSG_ERROR([*** SDL >= $SDL_VERSION not found!]))
+	dnl Check for SDL 2.0.0+
+	SDL_VERSION=2.0.0
+	AM_PATH_SDL2($SDL_VERSION,:,AC_MSG_ERROR([*** SDL >= $SDL_VERSION not found!]))
 elif test "$fs2_os_osx" = "yes" ; then
 	SDL_LIBS="-framework SDL"
-	dnl Check for SDL 1.2.6+
-	SDL_VERSION=1.2.6
-	AM_PATH_SDL($SDL_VERSION,:,[AC_CHECK_HEADER(/Library/Frameworks/SDL.framework/Headers/SDL.h,
+	dnl Check for SDL 2.0.0+
+	SDL_VERSION=2.0.0
+	AM_PATH_SDL2($SDL_VERSION,:,[AC_CHECK_HEADER(/Library/Frameworks/SDL.framework/Headers/SDL.h,
 		SDL_CFLAGS="-I/Library/Frameworks/SDL.framework/Headers",
 		[AC_CHECK_HEADER($HOME/Library/Frameworks/SDL.framework/Headers/SDL.h,
 			SDL_CFLAGS="-I$HOME/Library/Frameworks/SDL.framework/Headers",
@@ -335,8 +335,8 @@ elif test "$fs2_os_osx" = "yes" ; then
 			SDL_CFLAGS="-I/System/Library/Frameworks/SDL.framework/Headers",
 			AC_MSG_ERROR([*** Cannot find SDL which is required! ***]))])])])
 elif test "$fs2_os_solaris" = "yes" ; then
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/usr/include/SDL"
-	FS2_LDFLAGS="$FS2_LDFLAGS -lpng -lpng12 -ljpeg -lpthread -logg -lSDL -ltheora -lopenal -lsocket -lvorbisfile -lvorbis -lnsl -lGL -lGLU"
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/usr/include/SDL2"
+	FS2_LDFLAGS="$FS2_LDFLAGS -lpng -lpng12 -ljpeg -lpthread -logg -lSDL2 -ltheora -lopenal -lsocket -lvorbisfile -lvorbis -lnsl -lGL -lGLU"
 	## don't need the CFLAGS here if recent SDL is used
 fi
 
