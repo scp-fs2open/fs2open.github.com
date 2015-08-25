@@ -1960,6 +1960,40 @@ static void gr_opengl_initialize_workarounds()
 		GL_enabled_workarounds[OGL_NO_SHADER_VERSION].enabled = true;
 	}
 
+	if (Cmdline_opengl_workaround_override != nullptr)
+	{
+		const char* name_begin = Cmdline_opengl_workaround_override;
+		mprintf(("  Using workaround overrides:\n"));
+
+		const char* name_end;
+		do
+		{
+			name_end = strchr(name_begin, ';');
+
+			size_t subsLen = name_end == nullptr ? strlen(name_begin) : static_cast<size_t>(std::distance(name_begin, name_end));
+
+			SCP_string overrideName(name_begin, subsLen);
+
+			if (!overrideName.empty())
+			{
+				for (auto& workaround : GL_enabled_workarounds)
+				{
+					if (overrideName == workaround.name)
+					{
+						// Flip the enabled state
+						workaround.enabled = !workaround.enabled;
+						mprintf(("    \"%s\" is now %s\n", workaround.name, workaround.enabled ? "enabled" : "disabled"));
+						break;
+					}
+				}
+			}
+
+			name_begin = name_end;
+			// Skip the ;
+			std::advance(name_begin, 1);
+		} while(name_end != nullptr);
+	}
+
 #ifndef NDEBUG
 	// Dump a statistic to the log
 	mprintf(("  Using OpenGL driver workarounds:\n"));
