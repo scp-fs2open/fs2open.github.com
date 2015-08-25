@@ -151,6 +151,7 @@ void parse_ssm(const char *filename)
 				stuff_string(s.message, F_NAME, NAME_LENGTH);
 				s.use_custom_message = true;
 			}
+			s.sound_index = -1;
 			parse_sound("+Alarm Sound:", &s.sound_index, s.name);
 
 			// see if we have a valid weapon
