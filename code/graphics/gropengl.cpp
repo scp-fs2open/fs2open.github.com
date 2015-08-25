@@ -1,6 +1,6 @@
 
 
-
+#include <iterator>
 
 
 #include "bmpman/bmpman.h"
@@ -1976,13 +1976,14 @@ static void gr_opengl_initialize_workarounds()
 
 			if (!overrideName.empty())
 			{
-				for (auto& workaround : GL_enabled_workarounds)
+				auto endIter = std::end(GL_enabled_workarounds);
+				for (auto iter = std::begin(GL_enabled_workarounds); iter != endIter; iter = std::next(iter))
 				{
-					if (overrideName == workaround.name)
+					if (overrideName == iter->name)
 					{
 						// Flip the enabled state
-						workaround.enabled = !workaround.enabled;
-						mprintf(("    \"%s\" is now %s\n", workaround.name, workaround.enabled ? "enabled" : "disabled"));
+						iter->enabled = !iter->enabled;
+						mprintf(("    \"%s\" is now %s\n", iter->name, iter->enabled ? "enabled" : "disabled"));
 						break;
 					}
 				}
