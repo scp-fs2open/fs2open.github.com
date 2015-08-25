@@ -69,26 +69,35 @@ void parse_ssm(const char *filename)
 		while(required_string_either("#end", "$SSM:")) {
 			required_string("$SSM:");
 			ssm_info s;
+			int string_index;
 
 			// name
 			stuff_string(s.name, F_NAME, NAME_LENGTH);
+			if (*s.name == 0) {
+				sprintf_s(s.name, "SSM " SIZE_T_ARG, Ssm_info.size());
+				Warning(LOCATION, "SSM entries must have a name!  Assigning \"%s\"\n", s.name);
+			}
 
 			// stuff data
 			required_string("+Weapon:");
 			stuff_string(weapon_name, F_NAME, NAME_LENGTH);
-			s.max_count = -1;
-			int use_min = optional_string_either("+Count:", "+Min Count:");
-			if (use_min < 0)
-				s.count = 1;
-			else {
+
+			string_index = optional_string_either("+Count:", "+Min Count:");
+			if (string_index == 0) {
 				stuff_int(&s.count);
-				if (use_min) {
-					required_string("+Max Count:");
-					stuff_int(&s.max_count);
-				}
+				s.max_count = -1;
+			} else if (string_index == 1) {
+				stuff_int(&s.count);
+				required_string("+Max Count:");
+				stuff_int(&s.max_count);
+			} else {
+				s.count = 1;
+				s.max_count = -1;
 			}
+
 			required_string("+WarpRadius:");
 			stuff_float(&s.warp_radius);
+
 			if (optional_string("+WarpTime:")) {
 				stuff_float(&s.warp_time);
 				// According to fireballs.cpp, "Warp lifetime must be at least 4 seconds!"
@@ -101,27 +110,32 @@ void parse_ssm(const char *filename)
 			} else {
 				s.warp_time = 4.0f;
 			}
-			s.max_radius = -1.0f;
-			if ((use_min = required_string_either("+Radius:", "+Min Radius:")) != 0)
-				required_string("+Min Radius:");
-			else
+
+			string_index = required_string_either("+Radius:", "+Min Radius:");
+			if (string_index == 0) {
 				required_string("+Radius:");
-			stuff_float(&s.radius);
-			if (use_min) {
+				stuff_float(&s.radius);
+				s.max_radius = -1.0f;
+			} else {
+				required_string("+Min Radius:");
+				stuff_float(&s.radius);
 				required_string("+Max Radius:");
 				stuff_float(&s.max_radius);
 			}
-			s.max_offset = -1.0f;
-			use_min = optional_string_either("+Offset:", "+Min Offset:");
-			if (use_min < 0)
-				s.offset = 0.0f;
-			else {
+
+			string_index = optional_string_either("+Offset:", "+Min Offset:");
+			if (string_index == 0) {
 				stuff_float(&s.offset);
-				if (use_min) {
-					required_string("+Max Offset:");
-					stuff_float(&s.max_offset);
-				}
+				s.max_offset = -1.0f;
+			} else if (string_index == 1) {
+				stuff_float(&s.offset);
+				required_string("+Max Offset:");
+				stuff_float(&s.max_offset);
+			} else {
+				s.offset = 0.0f;
+				s.max_offset = -1.0f;
 			}
+			
 			if (optional_string("+Shape:")) {
 				switch(required_string_one_of(3, "Point", "Circle", "Sphere")) {
 				case 0:
@@ -143,14 +157,17 @@ void parse_ssm(const char *filename)
 			} else {
 				s.shape = SSM_SHAPE_CIRCLE;
 			}
+
 			if (optional_string("+HUD Message:"))
 				stuff_boolean(&s.send_message);
 			else
 				s.send_message = true;
+
 			if (optional_string("+Custom Message:")) {
 				stuff_string(s.message, F_NAME, NAME_LENGTH);
 				s.use_custom_message = true;
 			}
+
 			s.sound_index = -1;
 			parse_sound("+Alarm Sound:", &s.sound_index, s.name);
 
