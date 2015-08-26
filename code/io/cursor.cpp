@@ -187,7 +187,7 @@ namespace io
 
 		void CursorManager::setCurrentCursor(Cursor* cursor)
 		{
-			Assertion(cursor != NULL, "Invalud cursor pointer passed!");
+			Assertion(cursor != NULL, "Invalid cursor pointer passed!");
 			Assertion(std::find(mLoadedCursors.begin(), mLoadedCursors.end(), cursor) != mLoadedCursors.end(),
 				"Cursor pointer is not in the loaded cursors vector!");
 
@@ -230,10 +230,6 @@ namespace io
 		void CursorManager::init()
 		{
 			mSingleton = new CursorManager();
-
-			// Load the default cursor and enable it
-			Cursor* cursor = mSingleton->loadCursor("cursor", true);
-			mSingleton->setCurrentCursor(cursor);
 
 			// Hide the cursor initially
 			mSingleton->showCursor(false);
