@@ -183,10 +183,13 @@ class briefing
 public:
 	int			num_stages;
 	brief_stage	stages[MAX_BRIEF_STAGES];
+	char		background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 
 	briefing()
 		: num_stages(0)
-	{}
+	{
+		memset(background, GR_NUM_RESOLUTIONS * MAX_FILENAME_LEN * sizeof(char), 0);
+	}
 };
 
 class debriefing

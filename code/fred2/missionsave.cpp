@@ -883,6 +883,20 @@ int CFred_mission_save::save_briefing()
 		required_string_fred("$start_briefing");
 		parse_comments();
 
+		// Goober5000's briefing background stuff (c.f. Phreak's loading screen stuff)
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
+		{
+			if (strlen(Briefings[nb].background[GR_640]) > 0)
+			{
+				fout("\n$background_640: %s", Briefings[nb].background[GR_640]);
+			}
+
+			if (strlen(Briefings[nb].background[GR_1024]) > 0)
+			{
+				fout("\n$background_1024: %s", Briefings[nb].background[GR_1024]);
+			}
+		}
+
 		Assert(Briefings[nb].num_stages <= MAX_BRIEF_STAGES);
 		required_string_fred("$num_stages:");
 		parse_comments();
