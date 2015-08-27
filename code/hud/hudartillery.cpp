@@ -75,7 +75,7 @@ void parse_ssm(const char *filename)
 			stuff_string(s.name, F_NAME, NAME_LENGTH);
 			if (*s.name == 0) {
 				sprintf(s.name, "SSM " SIZE_T_ARG, Ssm_info.size());
-				Warning(LOCATION, "SSM entries must have a name!  Assigning \"%s\"\n", s.name);
+				mprintf(("Found an SSM entry without a name.  Assigning \"%s\".\n", s.name));
 			}
 
 			// stuff data
