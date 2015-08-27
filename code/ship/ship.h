@@ -1304,9 +1304,9 @@ public:
 
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
-	float	auto_shield_spread;
-	bool	auto_shield_spread_bypass;
-	int		auto_shield_spread_from_lod;
+	float	auto_shield_spread;				// Thickness of the shield
+	bool	auto_shield_spread_bypass;		// Whether weapons fired up close can bypass shields
+	int		auto_shield_spread_from_lod;	// Which LOD to project the shield from
 	float	auto_shield_spread_min_span;	// Minimum distance weapons must travel until allowed to collide with the shield
 
 	int		shield_point_augment_ctrls[4];	// Re-mapping of shield augmentation controls for model point shields

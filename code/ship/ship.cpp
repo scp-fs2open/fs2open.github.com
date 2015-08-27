@@ -1744,7 +1744,7 @@ int parse_ship(const char *filename, bool replace)
 		//Check if there are too many ship classes
 		if(Ship_info.size() >= MAX_SHIP_CLASSES) {
 			if (!warning_too_many_ship_classes) {
-				Warning(LOCATION, "Too many ship classes before '%s'; maximum is %d, so only the first %d will be used\nPlease check also the debug log as it may contain other ship classes which are over the limit", buf, MAX_SHIP_CLASSES, Ship_info.size());
+				Warning(LOCATION, "Too many ship classes before '%s'; maximum is %d, so only the first " SIZE_T_ARG " will be used\nPlease check also the debug log as it may contain other ship classes which are over the limit", buf, MAX_SHIP_CLASSES, Ship_info.size());
 				warning_too_many_ship_classes = true;
 			} else {
 				mprintf(("Warning: Too many ship classes before '%s'\n", buf));

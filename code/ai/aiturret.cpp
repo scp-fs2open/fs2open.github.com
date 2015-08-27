@@ -2127,6 +2127,9 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		Weapons[Objects[weapon_objnum].instance].turret_subsys = tsi->turret;
 		Weapons[Objects[weapon_objnum].instance].target_num = tsi->turret->turret_enemy_objnum;
 
+		Ships[Objects[tsi->parent_objnum].instance].last_fired_turret = tsi->turret;
+		tsi->turret->last_fired_weapon_info_index = tsi->weapon_class;
+
 		Script_system.SetHookObjects(4, "Ship", &Objects[tsi->parent_objnum], "Weapon", &Objects[weapon_objnum], "Beam", nullptr, "Target", &Objects[tsi->turret->turret_enemy_objnum]);
 		Script_system.RunCondition(CHA_ONTURRETFIRED, 0, NULL, &Objects[tsi->parent_objnum]);
 		Script_system.RemHookVars(4, "Ship", "Weapon", "Beam", "Target");
