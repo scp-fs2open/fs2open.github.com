@@ -9,8 +9,8 @@
 #ifndef _AI_PROFILES_H_
 #define _AI_PROFILES_H_
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 
 // flag int defines
@@ -67,6 +67,7 @@
 #define AIPF2_FIX_AI_PATH_ORDER_BUG									(1 << 13)
 #define AIPF2_STRICT_TURRET_TAGGED_ONLY_TARGETING					(1 << 14)
 #define AIPF2_ASPECT_INVULNERABILITY_FIX							(1 << 15)
+#define AIPF2_GLIDE_DECAY_REQUIRES_THRUST							(1 << 16)
 
 // AI Path types
 #define	AI_PATH_MODE_NORMAL 0

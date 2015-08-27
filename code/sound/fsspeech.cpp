@@ -17,10 +17,10 @@
 #include <windows.h>
 #endif
 
+#include "globalincs/pstypes.h"
+#include "osapi/osregistry.h"
 #include "sound/fsspeech.h"
 #include "sound/speech.h"
-#include "osapi/osregistry.h"
-#include "globalincs/pstypes.h"
 
 
 extern int Cmdline_freespace_no_sound;

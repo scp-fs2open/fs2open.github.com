@@ -10,9 +10,9 @@
 #ifndef _GLOBAL_ALPHACOLORS_HEADER_FILE
 #define _GLOBAL_ALPHACOLORS_HEADER_FILE
 
+#include "globalincs/def_files.h"
 #include "graphics/2d.h"
 #include "parse/parselo.h"
-#include "globalincs/def_files.h"
 
 // -----------------------------------------------------------------------------------
 // ALPHA DEFINES/VARS

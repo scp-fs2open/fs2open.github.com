@@ -9,14 +9,14 @@
 
 
 
-#include "object/objcollide.h"
-#include "object/object.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
+#include "object/objcollide.h"
+#include "object/object.h"
+#include "object/objectdock.h"
 #include "ship/ship.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
-#include "object/objectdock.h"
 
 
 

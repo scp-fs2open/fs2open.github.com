@@ -17,35 +17,30 @@
 #include <limits.h>
 #include <algorithm>
 
-#include "globalincs/pstypes.h"
-#include "osapi/osapi.h"
-#include "graphics/2d.h"
-#include "graphics/grstub.h"
-#include "render/3d.h"
-#include "bmpman/bmpman.h"
-#include "palman/palman.h"
-#include "graphics/font.h"
-#include "graphics/grinternal.h"
-#include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
-#include "graphics/grbatch.h"
-#include "parse/scripting.h"
-#include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
-#include "io/keycontrol.h" // m!m
-#include "io/cursor.h"
-#include "graphics/gropengldraw.h"
 #include "debugconsole/console.h"
+#include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
+#include "globalincs/systemvars.h"
+#include "graphics/2d.h"
+#include "graphics/font.h"
+#include "graphics/grbatch.h"
+#include "graphics/grinternal.h"
+#include "graphics/gropengl.h" // Includes for different rendering systems
+#include "graphics/gropengldraw.h"
+#include "graphics/grstub.h"
+#include "io/keycontrol.h" // m!m
 #include "io/timer.h"
+#include "osapi/osapi.h"
+#include "palman/palman.h"
+#include "parse/scripting.h"
 #include "parse/parselo.h"
+#include "render/3d.h"
 
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
 #endif
 
 #include "SDL_surface.h"
-
-// Includes for different rendering systems
-#include "graphics/gropengl.h"
 
 const char *Resolution_prefixes[GR_NUM_RESOLUTIONS] = { "", "2_" };
 
@@ -87,8 +82,6 @@ const float Default_min_draw_distance = 1.0f;
 const float Default_max_draw_distance = 1e10;
 float Min_draw_distance = Default_min_draw_distance;
 float Max_draw_distance = Default_max_draw_distance;
-
-static int GL_cursor_nframes = 0;
 
 // Pre-computed screen resize vars
 static float Gr_full_resize_X = 1.0f, Gr_full_resize_Y = 1.0f;
@@ -932,14 +925,14 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 		if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
 		{
-			SDL_DisplayMode mode;
-			if (SDL_GetDesktopDisplayMode(0, &mode) == 0)
+			SDL_DisplayMode displayMode;
+			if (SDL_GetDesktopDisplayMode(0, &displayMode) == 0)
 			{
-				width = mode.w;
-				height = mode.h;
-				int sdlBits = SDL_BITSPERPIXEL(mode.format);
+				width = displayMode.w;
+				height = displayMode.h;
+				int sdlBits = SDL_BITSPERPIXEL(displayMode.format);
 
-				if (SDL_ISPIXELFORMAT_ALPHA(mode.format))
+				if (SDL_ISPIXELFORMAT_ALPHA(displayMode.format))
 				{
 					depth = sdlBits;
 				}

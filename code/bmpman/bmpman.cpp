@@ -16,16 +16,13 @@
 #include <windows.h>
 #endif
 
-#include "bmpman/bmpman.h"
-#include "bmpman/bm_internal.h"
-
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
-#include "cfile/cfile.h"
+#include "bmpman/bm_internal.h"
+#include "bmpman/bmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
-#include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 #include "io/key.h"
@@ -722,8 +719,10 @@ int bm_get_next_handle() {
 
 	//Due to the way bm_next_handle is used to generate the /actual/ bitmap handles ( (bm_next_handle * MAX_BITMAPS) + free slot index in bm_bitmaps[]),
 	//this check is necessary to ensure we don't start giving out negative handles all of a sudden.
-	if (((bm_next_handle + 1) * MAX_BITMAPS) > INT_MAX)
+	if ((bm_next_handle + 1) > INT_MAX / MAX_BITMAPS) {
 		bm_next_handle = 1;
+		mprintf(("BMPMAN: bitmap handles wrapped back to 1\n"));
+	}
 
 	return bm_next_handle;
 }
@@ -809,8 +808,8 @@ bool bm_has_alpha_channel(int handle) {
 void bm_init() {
 	int i;
 
-	mprintf(("Size of bitmap info = %d KB\n", sizeof(bm_bitmaps) / 1024));
-	mprintf(("Size of bitmap extra info = %d bytes\n", sizeof(bm_extra_info)));
+	mprintf(("Size of bitmap info = " SIZE_T_ARG " KB\n", sizeof(bm_bitmaps) / 1024));
+	mprintf(("Size of bitmap extra info = " SIZE_T_ARG " bytes\n", sizeof(bm_extra_info)));
 
 	if (!bm_inited) {
 		bm_inited = 1;

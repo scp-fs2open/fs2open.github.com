@@ -11,9 +11,9 @@
 #ifndef GR_OPENGLDRAW_H
 #define GR_OPENGLDRAW_H
 
+#include "graphics/2d.h"
 #include "graphics/gropenglstate.h"
 #include "graphics/shadows.h"
-#include "graphics/2d.h"
 
 void gr_opengl_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror);
 void gr_opengl_aabitmap(int x, int y, int resize_mode, bool mirror);

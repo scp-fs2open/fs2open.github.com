@@ -1,21 +1,20 @@
 #include <stdio.h>
 #include <stdarg.h>
-#include "parse/scripting.h"
-#include "parse/lua.h"
-#include "parse/parselo.h"
-#include "globalincs/version.h"
-#include "gamesequence/gamesequence.h"
+
 #include "bmpman/bmpman.h"
-#include "globalincs/systemvars.h"
-#include "hud/hud.h"
-#include "ship/ship.h"
-#include "mission/missioncampaign.h"
-#include "weapon/weapon.h"
-#include "io/key.h"
 #include "controlconfig/controlsconfig.h"
 #include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "globalincs/systemvars.h"
+#include "globalincs/version.h"
+#include "hud/hud.h"
+#include "io/key.h"
+#include "mission/missioncampaign.h"
+#include "parse/parselo.h"
+#include "parse/scripting.h"
+#include "ship/ship.h"
 #include "weapon/beam.h"
-#include "osapi/osapi.h"
+#include "weapon/weapon.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");

@@ -344,7 +344,6 @@ void CMainFrame::OnClose()
 
 void CMainFrame::init_tools()
 {
-	int i;
 	//int highest_terran_index;
 	//char ship_name[256];
 	//int ship_index;
@@ -359,14 +358,14 @@ void CMainFrame::init_tools()
 		return;
 	}
 
-	for (i=0; i<Num_ship_classes; i++){
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it){
 		// don't add the pirate ship
-		if(Ship_info[i].flags & SIF_NO_FRED){
+		if(it->flags & SIF_NO_FRED){
 			m_new_ship_type_combo_box.AddString("");
 			continue;
 		}
 
-		m_new_ship_type_combo_box.AddString(Ship_info[i].name);
+		m_new_ship_type_combo_box.AddString(it->name);
 	}
 
 //	m_new_ship_type_combo_box.AddString("Player Start");		
@@ -407,7 +406,7 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
 
 	// I think we need to do a lookup by ship name here	
-	if(lpDrawItemStruct->itemID >= (uint)Num_ship_classes){
+	if(lpDrawItemStruct->itemID >= Ship_info.size()){
 		z = lpDrawItemStruct->itemID;
 	} else {		
 		memset(ship_name, 0, 256);
@@ -423,7 +422,7 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		COLORREF newTextColor = RGB(0x80, 0x80, 0x80);  // light gray
 		if (!fDisabled)
 		{
-			if (z >= Num_ship_classes)
+			if (z >= static_cast<int>(Ship_info.size()))
 				newTextColor = RGB(0, 0, 0);
 			else
 			{
@@ -498,7 +497,7 @@ void color_combo_box::MeasureItem(LPMEASUREITEMSTRUCT)
 
 int color_combo_box::SetCurSelNEW(int model_index)
 {	
-	if((model_index < 0) || (model_index >= Num_ship_classes)){
+	if((model_index < 0) || (model_index >= static_cast<int>(Ship_info.size()))){
 		return SetCurSel(model_index);
 	}	
 
@@ -513,9 +512,9 @@ int color_combo_box::GetCurSelNEW()
 	char ship_name[256];
 	char *hmmm = ship_name;
 
-	// see if we have a special item (>= Num_ship_classes)
+	// see if we have a special item (>= Ship_info.size())
 	cur_sel = GetCurSel();
-	if(cur_sel >= Num_ship_classes){
+	if(cur_sel >= static_cast<int>(Ship_info.size())){
 		return cur_sel;
 	}
 
@@ -525,7 +524,7 @@ int color_combo_box::GetCurSelNEW()
 		return CB_ERR;
 	}
 	ship_info = ship_info_lookup(ship_name);
-	if((ship_info < 0) || (ship_info >= Num_ship_classes)){
+	if((ship_info < 0) || (ship_info >= static_cast<int>(Ship_info.size()))){
 		return CB_ERR;
 	}
 	return ship_info;

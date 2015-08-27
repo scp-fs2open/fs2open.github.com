@@ -15,8 +15,8 @@
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON DEFINES/VARS
 //
-#include "model/model.h"
 #include "globalincs/globals.h"
+#include "model/model.h"
 
 // prototypes
 class object;

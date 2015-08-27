@@ -11,8 +11,8 @@
 
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
-#include "io/mouse.h"
 #include "globalincs/pstypes.h"
+#include "io/mouse.h"
 
 #include <string>
 #include <limits.h>
@@ -130,7 +130,7 @@ public:
 
 	//--GET FUNCTIONS
 	int GetImageHandle(int ID=CIE_HANDLE_N){return Handles[ID].Image;}
-	ubyte GetColorHandle(int ColorID, int ID=CIE_HANDLE_N){if(this==NULL){return 0;}else{return Handles[ID].Colors[ColorID];}}
+	ubyte GetColorHandle(int ColorID, int ID=CIE_HANDLE_N){return Handles[ID].Colors[ColorID];}
 	//Copies the coordinates to the given location if coordinates are set.
 	int GetCoords(int *x, int *y);
 };

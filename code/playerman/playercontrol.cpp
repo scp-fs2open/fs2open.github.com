@@ -8,39 +8,38 @@
 */
 
 
-#include "playerman/player.h"
+#include "autopilot/autopilot.h"
+#include "camera/camera.h"
+#include "debugconsole/console.h"
+#include "external_dll/trackirpublic.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
+#include "hud/hud.h"
+#include "hud/hudmessage.h"
+#include "hud/hudsquadmsg.h"
+#include "hud/hudtargetbox.h"
 #include "io/joy.h"
 #include "io/joy_ff.h"
 #include "io/mouse.h"
 #include "io/timer.h"
-#include "external_dll/trackirpublic.h"
+#include "mission/missiongoals.h"
+#include "mission/missionmessage.h"
+#include "network/multi_obj.h"
+#include "network/multiutil.h"
 #include "object/object.h"
-#include "hud/hud.h"
-#include "hud/hudtargetbox.h"
+#include "object/objectdock.h"
+#include "observer/observer.h"
+#include "parse/parselo.h"
+#include "playerman/player.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
-#include "freespace2/freespace.h"
-#include "gamesnd/gamesnd.h"
-#include "gamesequence/gamesequence.h"
-#include "mission/missionmessage.h"
-#include "globalincs/linklist.h"
-#include "mission/missiongoals.h"
-#include "hud/hudsquadmsg.h"
-#include "hud/hudmessage.h"
-#include "observer/observer.h"
 #include "weapon/weapon.h"
-#include "object/objectdock.h"
-#include "camera/camera.h"
-#include "network/multiutil.h"
-#include "network/multi_obj.h"
-#include "parse/parselo.h"
-#include "debugconsole/console.h"
 
 #ifndef NDEBUG
 #include "io/key.h"
 #endif
-
-#include "autopilot/autopilot.h"
 
 
 ////////////////////////////////////////////////////////////
@@ -74,6 +73,11 @@ static int Player_all_alone_msg_inited=0;	// flag used for initializing a player
 	DCF_BOOL( show_killer_weapon, Show_killer_weapon )
 #endif
 
+/**
+ * @brief Reads and combines the axes from the player's joystick and mouse.
+ * @param[out] axis       Pointer to axes array
+ * @param[in]  frame_time The frame time when this was called
+ */
 void playercontrol_read_stick(int *axis, float frame_time);
 void player_set_padlock_state();
 
@@ -357,34 +361,12 @@ void player_control_reset_ci( control_info *ci )
 	ci->forward_cruise_percent = oldspeed;
 }
 
-// Read the 4 joystick axis.  This is its own function
-// because we only want to read it at a certain rate,
-// since it takes time.
-
-static int Joystick_saved_reading[JOY_NUM_AXES];
-static int Joystick_last_reading = -1;
-
 void playercontrol_read_stick(int *axis, float frame_time)
 {
 	int i;
 
-#ifndef NDEBUG
-	// Make sure things get reset properly between missions.
-	if ( (Joystick_last_reading != -1) && (timestamp_until(Joystick_last_reading) > 1000) ) {
-		Int3();		// Get John!  John, the joystick last reading didn't get reset btwn levels.
-		Joystick_last_reading = -1;
-	}
-#endif
-
-	if ( (Joystick_last_reading == -1)  || timestamp_elapsed(Joystick_last_reading) ) {
-		// Read the stick
-		control_get_axes_readings(&Joystick_saved_reading[0], &Joystick_saved_reading[1], &Joystick_saved_reading[2], &Joystick_saved_reading[3], &Joystick_saved_reading[4]);
-		Joystick_last_reading = timestamp( 1000/10 );	// Read 10x per second, like we did in Descent.
-	}
-
-	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
-		axis[i] = Joystick_saved_reading[i];
-	}
+	// Read the stick
+	control_get_axes_readings(&axis[0], &axis[1], &axis[2], &axis[3], &axis[4]);
 
 	if (Use_mouse_to_fly) {
 		int dx, dy, dz;
@@ -394,22 +376,44 @@ void playercontrol_read_stick(int *axis, float frame_time)
 		factor = factor * factor / frame_time / 0.6f;
 
 		mouse_get_delta(&dx, &dy, &dz);
+		int x_axis, y_axis, z_axis;
+		x_axis = y_axis = z_axis = -1;
 
-		if ( Invert_axis[0] ) {
-			dx = -dx;
+		for (i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
+			switch(Axis_map_to[i])
+			{
+			case JOY_X_AXIS:
+				x_axis = i;
+				break;
+			case JOY_Y_AXIS:
+				y_axis = i;
+				break;
+			case JOY_Z_AXIS:
+				z_axis = i;
+				break;
+			}
 		}
 
-		if ( Invert_axis[1] ) {
-			dy = -dy;
+		if (x_axis >= 0) {
+			if (Invert_axis[x_axis]) {
+				dx = -dx;
+			}
+			axis[x_axis] += (int) ((float) dx * factor);
 		}
 
-		if ( Invert_axis[3] ) {
-			dz = -dz;
+		if (y_axis >= 0) {
+			if (Invert_axis[y_axis]) {
+				dy = -dy;
+			}
+			axis[y_axis] += (int) ((float) dy * factor);
 		}
 
-		axis[0] += (int) ((float) dx * factor);
-		axis[1] += (int) ((float) dy * factor);
-		axis[3] += (int) ((float) dz * factor);
+		if (z_axis >= 0) {
+			if (Invert_axis[z_axis]) {
+				dz = -dz;
+			}
+			axis[z_axis] += (int) ((float) dz * factor);
+		}
 	}
 }
 
@@ -637,22 +641,22 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (Axis_map_to[JOY_HEADING_AXIS] >= 0) {
 			// check the heading on the x axis
 			if ( check_control(BANK_WHEN_PRESSED) ) {
-				delta = f2fl( axis[Axis_map_to[JOY_HEADING_AXIS]] );
+				delta = f2fl( axis[JOY_HEADING_AXIS] );
 				if ( (delta > 0.05f) || (delta < -0.05f) ) {
 					ci->bank -= delta;
 				}
 			} else {
-				ci->heading += f2fl( axis[Axis_map_to[JOY_HEADING_AXIS]] );
+				ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
 			}
 		}
 
 		// check the pitch on the y axis
 		if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
-			ci->pitch -= f2fl( axis[Axis_map_to[JOY_PITCH_AXIS]] );
+			ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
 		}
 
 		if (Axis_map_to[JOY_BANK_AXIS] >= 0) {
-			ci->bank -= f2fl( axis[Axis_map_to[JOY_BANK_AXIS]] ) * 1.5f;
+			ci->bank -= f2fl( axis[JOY_BANK_AXIS] ) * 1.5f;
 		}
 
 		// axis 2 is for throttle
@@ -1213,8 +1217,6 @@ void player_level_init()
 	Player_ai = NULL;
 
 	Player_use_ai = 0;	// Goober5000
-
-	Joystick_last_reading = -1;				// Make the joystick read right away.
 
 	if(Player == NULL)
 		return;

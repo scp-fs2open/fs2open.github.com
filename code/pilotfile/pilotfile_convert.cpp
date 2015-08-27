@@ -1,7 +1,5 @@
 
-#include "globalincs/pstypes.h"
 #include "pilotfile/pilotfile_convert.h"
-#include "cfile/cfile.h"
 #include "playerman/managepilot.h"
 
 

@@ -26,7 +26,6 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "bmpman/bmpman.h"
-#include "camera/camera.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
@@ -40,14 +39,15 @@
 #include "freespace2/freespace.h"
 #include "freespace2/freespaceresource.h"
 #include "freespace2/levelpaging.h"
+#include "fs2netd/fs2netd_client.h"
 #include "gamehelp/contexthelp.h"
 #include "gamehelp/gameplayhelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
-#include "globalincs/version.h"
 #include "globalincs/mspdb_callstack.h"
+#include "globalincs/version.h"
 #include "graphics/font.h"
 #include "graphics/shadows.h"
 #include "hud/hud.h"
@@ -55,10 +55,10 @@
 #include "hud/hudescort.h"
 #include "hud/hudlock.h"
 #include "hud/hudmessage.h"
-#include "hud/hudshield.h"
-#include "hud/hudtargetbox.h"
 #include "hud/hudparse.h"
+#include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"
+#include "hud/hudtargetbox.h"
 #include "iff_defs/iff_defs.h"
 #include "io/joy.h"
 #include "io/joy_ff.h"
@@ -131,6 +131,7 @@
 #include "parse/scripting.h"
 #include "parse/sexp.h"
 #include "particle/particle.h"
+#include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -159,10 +160,6 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
-#include "fs2netd/fs2netd_client.h"
-#include "pilotfile/pilotfile.h"
-
-#include "globalincs/pstypes.h"
 
 #include <stdexcept>
 #include <SDL.h>
@@ -2819,7 +2816,7 @@ void game_tst_mark(object *objp, ship *shipp)
 	}
 
 	// bogus
-	if((objp == NULL) || (shipp == NULL) || (shipp->ship_info_index < 0) || (shipp->ship_info_index >= Num_ship_classes)){
+	if((objp == NULL) || (shipp == NULL) || (shipp->ship_info_index < 0) || (shipp->ship_info_index >= static_cast<int>(Ship_info.size()))){
 		return;
 	}
 	sip = &Ship_info[shipp->ship_info_index];
@@ -4022,7 +4019,7 @@ void game_simulation_frame()
 		ship_info *sip;
 		while((moveup != END_OF_LIST(&Ship_obj_list)) && (moveup != NULL)){
 			// bogus
-			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= Num_ship_classes)){
+			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= static_cast<int>(Ship_info.size()))){
 				moveup = GET_NEXT(moveup);
 				continue;
 			}
@@ -4791,7 +4788,7 @@ void game_set_frametime(int state)
 		fix frame_speed = F1_0 / Debug_dump_frames;
 
 		if (Frametime > frame_speed ){
-			nprintf(("warning","slow frame: %x\n",Frametime));
+			nprintf(("warning","slow frame: %x\n",(int)Frametime));
 		} else {			
 			do {
 				thistime = timer_get_fixed_seconds();
@@ -7039,7 +7036,7 @@ int game_main(int argc, char *argv[])
 
 	// check if networking should be disabled, this could probably be done later but the sooner the better
 	// TODO: remove this when multi is fixed to handle more than MAX_SHIP_CLASSES_MULTI
-	if ( Num_ship_classes > MAX_SHIP_CLASSES_MULTI ) {
+	if ( Ship_info.size() > MAX_SHIP_CLASSES_MULTI ) {
 		Networking_disabled = 1;
 	}
 
@@ -7690,9 +7687,7 @@ void Do_model_timings_test()
 	}
 	
 	// Load them all
-	for (i=0; i<Num_ship_classes; i++ )	{
-		ship_info *sip = &Ship_info[i];
-
+	for (auto sip = Ship_info.begin(); sip != Ship_info.end(); ++sip ) {
 		sip->model_num = model_load(sip->pof_file, 0, NULL);
 
 		model_used[sip->model_num % MAX_POLYGON_MODELS]++;
@@ -8484,8 +8479,6 @@ void game_title_screen_display()
 	}
 	*/
 
-	//Script_system.SetHookVar("SplashScreenImage", 's', Game_title_screen_fname[gr_screen.res]);
-	//Script_system.SetHookVar("SplashScreenLogo", 's', Game_logo_screen_fname[gr_screen.res]);
 	bool globalhook_override = Script_system.IsOverride(Script_splashhook);
 	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
 	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
@@ -8530,8 +8523,6 @@ void game_title_screen_display()
 		Script_system.RunCondition(CHA_SPLASHSCREEN);
 		
 	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
-		
-	Script_system.RemHookVars(2, "SplashScreenImage", "SplashScreenLogo");
 
 	// flip
 	gr_flip();

@@ -12,9 +12,11 @@
 #include "camera/camera.h" //VIEWER_ZOOM_DEFAULT
 #include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
+#include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
-#include "network/multi.h"
+#include "globalincs/version.h"
 #include "hud/hudconfig.h"
+#include "network/multi.h"
 #include "parse/scripting.h"
 #include "parse/sexp.h"
 #include "globalincs/version.h"

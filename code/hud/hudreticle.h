@@ -12,7 +12,6 @@
 #ifndef _HUDRETICLE_H
 #define _HUDRETICLE_H
 
-#include "graphics/2d.h"
 #include "hud/hud.h"
 
 class player;

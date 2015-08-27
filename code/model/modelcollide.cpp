@@ -12,12 +12,12 @@
 
 #define MODEL_LIB
 
-#include "model/model.h"
-#include "math/vecmat.h"
+#include "cmdline/cmdline.h"
 #include "graphics/tmapper.h"
 #include "math/fvi.h"
+#include "math/vecmat.h"
+#include "model/model.h"
 #include "model/modelsinc.h"
-#include "cmdline/cmdline.h"
 
 
 
@@ -1126,7 +1126,7 @@ void mc_check_subobj( int mn )
 			Mc->hit_bitmap = -1;
 			Mc->num_hits++;
 		} else {
-			// The ray interects this bounding box, so we have to check all the
+			// The ray intersects this bounding box, so we have to check all the
 			// polygons in this submodel.
 			if ( Cmdline_old_collision_sys ) {
 				model_collide_sub(sm->bsp_data);
@@ -1134,7 +1134,7 @@ void mc_check_subobj( int mn )
 				if (Mc->lod > 0 && sm->num_details > 0) {
 					bsp_info *lod_sm = sm;
 
-					for (int i = Mc->lod - 1; i >= 0; i--) {
+					for (i = Mc->lod - 1; i >= 0; i--) {
 						if (sm->details[i] != -1) {
 							lod_sm = &Mc_pm->submodel[sm->details[i]];
 

@@ -33,9 +33,6 @@
 bool env_enabled = false;
 bool cell_enabled = false;
 
-#define MAX_BUF_SIZE	1024
-static char buffer[MAX_BUF_SIZE], buffer_tmp[MAX_BUF_SIZE];
-
 #ifndef NDEBUG
 #ifdef __APPLE__
 #include <malloc/malloc.h>
@@ -85,10 +82,10 @@ SCP_string dump_stacktrace()
 	SCP_stringstream stackstream;
 	char **symbols;
 	int i, numstrings;
-	void *buffer[SIZE];
+	void *addresses[SIZE];
 
-	numstrings = backtrace(buffer, SIZE);
-	symbols = backtrace_symbols(buffer, numstrings);
+	numstrings = backtrace(addresses, SIZE);
+	symbols = backtrace_symbols(addresses, numstrings);
 
 	if(symbols != NULL)
 	{

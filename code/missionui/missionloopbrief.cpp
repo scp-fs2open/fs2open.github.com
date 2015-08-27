@@ -9,21 +9,20 @@
 
 
 
-#include "missionui/missionloopbrief.h"
-#include "missionui/missionscreencommon.h"
-#include "gamesnd/gamesnd.h"
-#include "gamesnd/eventmusic.h"
-#include "sound/audiostr.h"
-#include "io/key.h"
-#include "gamesequence/gamesequence.h"
-#include "mission/missioncampaign.h"
-#include "mission/missionbriefcommon.h"
 #include "anim/animplay.h"
 #include "freespace2/freespace.h"
-#include "sound/fsspeech.h"
-#include "popup/popup.h"
-
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"
+#include "gamesnd/gamesnd.h"
 #include "graphics/generic.h"
+#include "io/key.h"
+#include "mission/missionbriefcommon.h"
+#include "mission/missioncampaign.h"
+#include "missionui/missionloopbrief.h"
+#include "missionui/missionscreencommon.h"
+#include "popup/popup.h"
+#include "sound/audiostr.h"
+#include "sound/fsspeech.h"
 
 extern char default_loop_briefing_color;	// Doesn't seem worth including alphacolors.h for -MageKing17
 

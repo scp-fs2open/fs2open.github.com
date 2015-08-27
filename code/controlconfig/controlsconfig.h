@@ -8,10 +8,10 @@
 */
 
 
-#include "globalincs/pstypes.h"
-
 #ifndef CONTROLS_CONFIG_H
 #define CONTROLS_CONFIG_H
+
+#include "globalincs/pstypes.h"
 
 #define CONTROL_CONFIG_XSTR	507
 

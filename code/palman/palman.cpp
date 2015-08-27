@@ -9,13 +9,13 @@
 
 
 
-#include "palman/palman.h"
 #include "bmpman/bmpman.h"
-#include "debugconsole/console.h"
-#include "pcxutils/pcxutils.h"
-#include "parse/parselo.h"
-#include "graphics/grinternal.h"
 #include "cfile/cfile.h"
+#include "debugconsole/console.h"
+#include "graphics/grinternal.h"
+#include "palman/palman.h"
+#include "parse/parselo.h"
+#include "pcxutils/pcxutils.h"
 
 
 #define	SQUARE(x) ((x)*(x))

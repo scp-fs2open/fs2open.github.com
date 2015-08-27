@@ -12,7 +12,6 @@
 #define _GROPENGLSHADER_H
 
 #include "globalincs/pstypes.h"
-
 #include "graphics/gropengl.h"
 
 #include <string>

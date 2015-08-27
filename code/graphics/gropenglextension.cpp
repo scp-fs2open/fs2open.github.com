@@ -14,15 +14,12 @@
 #include <windows.h>
 #endif
 
-#include "globalincs/pstypes.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropenglextension.h"
-#include "graphics/gropengltexture.h"
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
-#include "popup/popup.h"
-
+#include "graphics/gropenglextension.h"
+#include "graphics/gropengltexture.h"
 #include "osapi/outwnd.h"
+#include "popup/popup.h"
 
 
 

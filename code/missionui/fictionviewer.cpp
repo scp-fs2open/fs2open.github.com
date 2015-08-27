@@ -6,18 +6,17 @@
 
 
 
-#include "globalincs/pstypes.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "io/key.h"
 #include "mission/missionbriefcommon.h"
 #include "missionui/fictionviewer.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/redalert.h"
-#include "gamesequence/gamesequence.h"
-#include "gamesnd/gamesnd.h"
-#include "gamesnd/eventmusic.h"
-#include "io/key.h"
-#include "freespace2/freespace.h"
-#include "globalincs/alphacolors.h"
 #include "sound/audiostr.h"
 
 

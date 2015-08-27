@@ -12,8 +12,8 @@
 #ifndef _OBJECT_H
 #define _OBJECT_H
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 #include "math/vecmat.h"
 #include "physics/physics.h"
 
@@ -182,7 +182,7 @@ struct object_h {
 	object *objp;
 	int sig;
 
-	bool IsValid(){return (this != NULL && objp != NULL && objp->signature == sig);}
+	bool IsValid(){return (objp != NULL && objp->signature == sig);}
 	object_h(object *in){objp=in; if(objp!=NULL){sig=in->signature;}}
 	object_h(){objp=NULL;sig=-1;}
 };

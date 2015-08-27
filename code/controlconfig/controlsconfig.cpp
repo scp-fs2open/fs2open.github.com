@@ -10,26 +10,26 @@
 
 
 
-#include "freespace2/freespace.h"
 #include "controlconfig/controlsconfig.h"
+#include "debugconsole/console.h"
+#include "freespace2/freespace.h"
+#include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
 #include "hud/hudsquadmsg.h"
+#include "io/joy.h"
 #include "io/key.h"
 #include "io/timer.h"
-#include "ui/ui.h"
-#include "io/joy.h"
-#include "gamesnd/gamesnd.h"
 #include "missionui/missionscreencommon.h"
-#include "graphics/font.h"
-#include "pilotfile/pilotfile.h"
-#include "gamehelp/contexthelp.h"
-#include "popup/popup.h"
-#include "ui/uidefs.h"
-#include "globalincs/alphacolors.h"
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
 #include "parse/scripting.h"
-#include "debugconsole/console.h"
+#include "pilotfile/pilotfile.h"
+#include "popup/popup.h"
+#include "ui/ui.h"
+#include "ui/uidefs.h"
 
 
 #ifndef NDEBUG
@@ -393,21 +393,10 @@ int control_config_detect_axis()
 
 void control_config_conflict_check()
 {
-	int i, j, shift = -1, alt = -1;
-
+	int i, j;
+	
 	for (i=0; i<CCFG_MAX; i++) {
 		Conflicts[i].key = Conflicts[i].joy = -1;
-		switch (Control_config[i].key_id) {
-			case KEY_LSHIFT:
-			case KEY_RSHIFT:
-				shift = i;
-				break;
-
-			case KEY_LALT:
-			case KEY_RALT:
-				alt = i;
-				break;
-		}
 	}
 
 	for (i=0; i<NUM_TABS; i++) {
@@ -468,15 +457,12 @@ void control_config_conflict_check()
 // do list setup required prior to rendering and checking for the controls listing.  Called when list changes
 void control_config_list_prepare()
 {
-	int j, k, y, z;
+	int j, y, z;
 	int font_height = gr_get_font_height();
 
 	Num_cc_lines = y = z = 0;
 	while (z < CCFG_MAX) {
 		if (Control_config[z].tab == Tab && !Control_config[z].disabled) {
-			k = Control_config[z].key_id;
-			j = Control_config[z].joy_id;
-
 			if (Control_config[z].hasXSTR) {
 				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text, CONTROL_CONFIG_XSTR + z);
 			} else {

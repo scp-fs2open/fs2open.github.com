@@ -9,18 +9,17 @@
 
 
 
+#include "asteroid/asteroid.h"
+#include "cmdline/cmdline.h"
 #include "fireball/fireballs.h"
+#include "gamesnd/gamesnd.h"
 #include "graphics/tmapper.h"
-#include "render/3d.h"
+#include "localization/localize.h"
 #include "model/model.h"
 #include "object/object.h"
-#include "ship/ship.h"
-#include "gamesnd/gamesnd.h"
-#include "localization/localize.h"
-#include "cmdline/cmdline.h"
 #include "parse/parselo.h"
-#include "globalincs/pstypes.h"
-#include "asteroid/asteroid.h"
+#include "render/3d.h"
+#include "ship/ship.h"
 
 #include <stdlib.h>
 
@@ -76,7 +75,7 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 
 	if(fb->warp_open_sound_index > -1) {
 		sound_index = fb->warp_open_sound_index;
-	} else if((ship_class >= 0) && (ship_class < Num_ship_classes)){
+	} else if ((ship_class >= 0) && (ship_class < static_cast<int>(Ship_info.size()))) {
 		if ( Ship_info[ship_class].flags & SIF_HUGE_SHIP ) {
 			sound_index = SND_CAPITAL_WARP_IN;
 			fb->flags |= FBF_WARP_CAPITAL_SIZE;

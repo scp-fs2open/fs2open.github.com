@@ -9,12 +9,12 @@
 
 
 
+#include "globalincs/linklist.h"
+#include "io/timer.h"
+#include "object/object.h"
+#include "ship/ship.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
-#include "ship/ship.h"
-#include "io/timer.h"
-#include "globalincs/linklist.h"
-#include "object/object.h"
 
 
 

@@ -87,8 +87,8 @@ BOOL shield_sys_dlg::OnInitDialog()
 
 	box = (CComboBox *) GetDlgItem(IDC_TYPE);
 	box->ResetContent();
-	for (i=0; i<Num_ship_classes; i++)
-		box->AddString(Ship_info[i].name);
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+		box->AddString(it->name);
 
 	box = (CComboBox *) GetDlgItem(IDC_TEAM);
 	box->ResetContent();

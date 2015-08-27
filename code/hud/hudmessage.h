@@ -12,9 +12,9 @@
 #ifndef _HUDMESSAGE_H
 #define _HUDMESSAGE_H
 
-#include "hud/hud.h"
 #include "anim/packunpack.h"
 #include "graphics/generic.h"
+#include "hud/hud.h"
 
 #define MAX_HUD_LINE_LEN			256			// maximum number of characters for a HUD message
 

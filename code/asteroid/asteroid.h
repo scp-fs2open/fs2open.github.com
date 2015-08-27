@@ -12,8 +12,8 @@
 #ifndef __ASTEROID_H__
 #define __ASTEROID_H__
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"		// for NAME_LENGTH
+#include "globalincs/pstypes.h"
 
 
 class object;

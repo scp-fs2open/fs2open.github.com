@@ -9,6 +9,7 @@
 
 #include "globalincs/pstypes.h"
 #include "object/object.h"
+
 #include <map>
 
 // milliseconds between updates

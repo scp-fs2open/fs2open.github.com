@@ -6,13 +6,13 @@
  *    place of these major numbers for /any/ reason, *ever*!
  */
 
+#include "cfile/cfilesystem.h"
+#include "cutscene/cutscenes.h"
+#include "menuui/techmenu.h"
 #include "pilotfile/pilotfile_convert.h"
 #include "ship/ship.h"
-#include "weapon/weapon.h"
 #include "stats/medals.h"
-#include "cfile/cfilesystem.h"
-#include "menuui/techmenu.h"
-#include "cutscene/cutscenes.h"
+#include "weapon/weapon.h"
 
 #include <iostream>
 #include <sstream>

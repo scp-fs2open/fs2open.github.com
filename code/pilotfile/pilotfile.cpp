@@ -1,5 +1,4 @@
 
-#include "globalincs/pstypes.h"
 #include "pilotfile/pilotfile.h"
 #include "ship/ship.h"
 #include "stats/medals.h"
@@ -156,14 +155,15 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 	}
 
 	// ship kills
-	for (idx = 0; idx < Num_ship_classes; idx++) {
+	idx = 0;
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); idx++, ++it) {
 		if (stats->m_okKills[idx] > 0) {
 			list_size = (int)p_stats->ship_kills.size();
 
 			j = -1;
 
 			for (i = 0; i < list_size; i++) {
-				if ( p_stats->ship_kills[i].name.compare(Ship_info[idx].name) == 0 ) {
+				if ( p_stats->ship_kills[i].name.compare(it->name) == 0 ) {
 					j = i;
 					break;
 				}
@@ -172,7 +172,7 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 			if (j >= 0) {
 				p_stats->ship_kills[j].val += stats->m_okKills[idx];
 			} else {
-				ilist.name = Ship_info[idx].name;
+				ilist.name = it->name;
 				ilist.index = idx;
 				ilist.val = stats->m_okKills[idx];
 
@@ -273,15 +273,16 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 	}
 
 	// ship kills
-	for (i = 0; i < Num_ship_classes; i++) {
+	i = 0;
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); i++, ++it) {
 		if (stats->m_okKills[i] > 0) {
 			list_size = p_stats->ship_kills.size();
 
 			j = -1;
 
 			for (idx = 0; idx < list_size; idx++) {
-				if ( p_stats->ship_kills[idx].name.compare(Ship_info[i].name) == 0 ) {
-					j = i;
+				if ( p_stats->ship_kills[idx].name.compare(it->name) == 0 ) {
+					j = idx;
 					break;
 				}
 			}
@@ -289,7 +290,7 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 			if (j >= 0) {
 				p_stats->ship_kills[j].val -= stats->m_okKills[i];
 			} else {
-				Assertion(false, "Ship kills of '%s' not found, should have been added by pilotfile::update_stats.", stats->m_okKills[i]);
+				Assertion(false, "Ship kills of '%s' not found, should have been added by pilotfile::update_stats.", Ship_info[i].name);
 			}
 		}
 	}

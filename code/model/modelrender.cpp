@@ -9,23 +9,20 @@
 
 #include <algorithm>
 
-#include "globalincs/pstypes.h"
-#include "io/timer.h"
-#include "math/vecmat.h"
-#include "model/model.h"
-#include "model/modelrender.h"
-#include "ship/ship.h"
-#include "ship/shipfx.h"
 #include "cmdline/cmdline.h"
-#include "nebula/neb.h"
-#include "graphics/tmapper.h"
+#include "gamesequence/gamesequence.h"
+#include "graphics/gropengldraw.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropenglshader.h"
-#include "graphics/gropengldraw.h"
-#include "particle/particle.h"
-#include "gamesequence/gamesequence.h"
-#include "render/3dinternal.h"
+#include "graphics/tmapper.h"
+#include "io/timer.h"
 #include "math/staticrand.h"
+#include "model/modelrender.h"
+#include "nebula/neb.h"
+#include "particle/particle.h"
+#include "render/3dinternal.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
 
 extern int Model_texturing;
 extern int Model_polys;

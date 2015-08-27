@@ -11,9 +11,9 @@
 
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
-#include "menuui/fishtank.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
+#include "menuui/fishtank.h"
 
 
 

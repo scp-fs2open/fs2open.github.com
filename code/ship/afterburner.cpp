@@ -9,17 +9,17 @@
 
 
 
-#include "ship/afterburner.h"
-#include "io/joy_ff.h"
-#include "gamesnd/gamesnd.h"
-#include "ship/ship.h"
-#include "object/object.h"
-#include "io/timer.h"
-#include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
-#include "hud/hudets.h"
 #include "freespace2/freespace.h"
+#include "gamesnd/gamesnd.h"
+#include "hud/hudets.h"
+#include "io/joy_ff.h"
+#include "io/timer.h"
 #include "network/multi.h"
+#include "object/object.h"
 #include "parse/scripting.h"
+#include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
+#include "ship/afterburner.h"
+#include "ship/ship.h"
 
 // ----------------------------------------------------------
 // Global to file
@@ -80,7 +80,7 @@ void afterburners_start(object *objp)
 	Assert( objp->instance >= 0 && objp->instance < MAX_SHIPS );
 
 	shipp = &Ships[objp->instance];
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()) );
 	sip = &Ship_info[shipp->ship_info_index];
 	
 	// bail if afterburners are locked
@@ -177,7 +177,7 @@ void afterburners_update(object *objp, float fl_frametime)
 
 	shipp = &Ships[objp->instance];
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()) );
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if ( (objp->flags & OF_PLAYER_SHIP ) && (Game_mode & GM_DEAD) ) {
@@ -286,7 +286,7 @@ void afterburners_stop(object *objp, int key_released)
 
 	shipp = &Ships[objp->instance];
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes );
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()) );
 	sip = &Ship_info[shipp->ship_info_index];
 
 	if ( (objp->flags & OF_PLAYER_SHIP) && key_released ) {

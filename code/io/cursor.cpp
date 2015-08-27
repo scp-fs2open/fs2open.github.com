@@ -118,7 +118,7 @@ namespace io
 
 		CursorManager* CursorManager::mSingleton = NULL;
 
-		CursorManager::CursorManager() : mCursorShown(true), mCurrentCursor(NULL), mLoadedCursors(SCP_vector<Cursor*>())
+		CursorManager::CursorManager() : mCurrentCursor(NULL), mCursorShown(true), mMouseGrabbed(false)
 		{
 		}
 

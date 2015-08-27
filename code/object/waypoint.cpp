@@ -1,7 +1,9 @@
-#include "object/waypoint.h"
-#include "object/object.h"
-#include "globalincs/linklist.h"
+
 #include <ctype.h>
+
+#include "globalincs/linklist.h"
+#include "object/object.h"
+#include "object/waypoint.h"
 
 //********************GLOBALS********************
 SCP_list<waypoint_list> Waypoint_lists;

@@ -9,16 +9,16 @@
 
 
 
-#include "gamesequence/gamesequence.h"
-#include "freespace2/freespace.h"
-#include "io/key.h"
 #include "controlconfig/controlsconfig.h"
-#include "ui/ui.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
-#include "missionui/missionscreencommon.h"
 #include "globalincs/alphacolors.h"
-#include "weapon/weapon.h"
+#include "io/key.h"
+#include "missionui/missionscreencommon.h"
 #include "sound/audiostr.h"
+#include "ui/ui.h"
+#include "weapon/weapon.h"
 
 
 

@@ -9,16 +9,16 @@
 
 
 
-#include "math/vecmat.h"
-#include "render/3d.h"
-#include "lighting/lighting.h"
+#include "cmdline/cmdline.h"
+#include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "cmdline/cmdline.h"
-#include "model/modelrender.h"
-#include "graphics/gropengllight.h"
 #include "graphics/gropengldraw.h"
-#include "debugconsole/console.h"
+#include "graphics/gropengllight.h"
+#include "lighting/lighting.h"
+#include "math/vecmat.h"
+#include "model/modelrender.h"
+#include "render/3d.h"
 
 
 
@@ -252,8 +252,8 @@ void light_add_directional( vec3d *dir, float intensity, float r, float g, float
 
 void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
 {
-	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %d. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
-	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %d. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
+	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
+	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
 
 	if (r1 < 0.0001f || r2 < 0.0001f)
 		return;
@@ -1051,8 +1051,8 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 
 void light_add_cone( vec3d * pos, vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular )
 {
-	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %d. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
-	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %d. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
+	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
+	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
 
 	if (r1 < 0.0001f || r2 < 0.0001f)
 		return;

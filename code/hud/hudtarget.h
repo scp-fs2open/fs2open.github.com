@@ -12,7 +12,6 @@
 #ifndef _HUDTARGET_H
 #define _HUDTARGET_H
 
-#include "graphics/2d.h"
 #include "hud/hud.h"
 
 class ship;

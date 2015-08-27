@@ -10,10 +10,10 @@
 
 
 #include "globalincs/pstypes.h"
-#include "sound/sound.h"
 #include "sound/ds.h"
 #include "sound/dscap.h"
 #include "sound/rtvoice.h"
+#include "sound/sound.h"
 
 
 typedef struct rtv_format
