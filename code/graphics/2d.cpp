@@ -1079,9 +1079,9 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
 		if ( (Web_cursor = io::mouse::CursorManager::get()->loadCursor("cursorweb", true)) == NULL ) {
 			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
-				"\t1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
-				"\t2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"
-				"\t3) You haven't installed FreeSpace 2 at all.  (Note that installing FreeSpace Open does NOT remove the need for a FreeSpace 2 installation.)\n"
+				"    1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
+				"    2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"
+				"    3) You haven't installed FreeSpace 2 at all.  (Note that installing FreeSpace Open does NOT remove the need for a FreeSpace 2 installation.)\n"
 				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.\n");
 		}
 	}

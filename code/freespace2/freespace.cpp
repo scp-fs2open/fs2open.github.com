@@ -2046,7 +2046,9 @@ void game_init()
 	pilot_load_pic_list();	
 	pilot_load_squad_pic_list();
 
-	io::mouse::CursorManager::init();
+	// Load the default cursor and enable it
+	io::mouse::Cursor* cursor = io::mouse::CursorManager::get()->loadCursor("cursor", true);
+	io::mouse::CursorManager::get()->setCurrentCursor(cursor);
 
 	if(!Cmdline_reparse_mainhall)
 	{
