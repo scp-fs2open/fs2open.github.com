@@ -49,6 +49,8 @@ namespace
 	SDL_JoystickID currentJoystickID = -1;
 
 	joy_button_info joy_buttons[JOY_TOTAL_BUTTONS];
+	
+	int joy_axes[JOY_NUM_AXES];
 
 	SCP_string getJoystickGUID(SDL_Joystick* stick)
 	{
@@ -136,9 +138,9 @@ namespace
 			// Fake a calibration
 			if (joy_num_sticks > 0) {
 				for (int i = 0; i<JOY_NUM_AXES; i++) {
-					joystick.axis_center[i] = 32768;
-					joystick.axis_min[i] = 0;
-					joystick.axis_max[i] = 65536;
+					joystick.axis_center[i] = JOY_AXIS_CENTER;
+					joystick.axis_min[i] = JOY_AXIS_MIN;
+					joystick.axis_max[i] = JOY_AXIS_MAX;
 				}
 			}
 		}
@@ -235,6 +237,10 @@ void joy_flush()
 		bi->up_count = 0;
 		bi->down_time = 0;
 		bi->last_down_check = timer_get_milliseconds();
+	}
+
+	for (i = 0; i < JOY_NUM_AXES; i++) {
+		joy_axes[i] = JOY_AXIS_CENTER;
 	}
 }
 
@@ -480,6 +486,23 @@ void joy_device_changed(int state, int device)
 	}
 }
 
+void joy_event(SDL_JoystickID id, uint8_t axis_id, int16_t value)
+{
+	Assertion((id >= 0), "Invalid joystick id passed during SDL_JOYAXISMOTION event.\n");
+
+	// z64: This'll later be updated to handle multiple controllers. For now, just bail if it isn't our current controller
+	if (id != currentJoystickID) {
+		return;
+	}
+
+	if (axis_id >= JOY_NUM_AXES) {
+		// whoops, can't support this axis
+		return;
+	}
+
+	joy_axes[axis_id] = value + JOY_AXIS_CENTER;
+}
+
 SDL_Joystick* joy_get_device()
 {
 	return sdljoy;
@@ -598,12 +621,12 @@ int joystick_read_raw_axis(int num_axes, int *axis)
 {
 	int i;
 	
-	if (!Joy_inited || sdljoy == nullptr) {
-		// fake a return value so that controlconfig doesn't get freaky with no joystick
-		for (i = 0; i < num_axes; i++) {
-			axis[i] = 32768;
-		}
+	for (i = 0; i < num_axes; i++) {
+		axis[i] = JOY_AXIS_CENTER;
+	}
 
+	if (!Joy_inited || sdljoy == nullptr) {
+		// no stick available, bail
 		return 0;
 	}
 
@@ -611,9 +634,7 @@ int joystick_read_raw_axis(int num_axes, int *axis)
 
 	for (i = 0; i < num_axes; i++) {
 		if (i < joy_num_axes) {
-			axis[i] = SDL_JoystickGetAxis(sdljoy, i) + 32768;
-		} else {
-			axis[i] = 32768;
+			axis[i] = joy_axes[i];
 		}
 	}
 	

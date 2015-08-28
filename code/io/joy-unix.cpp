@@ -48,6 +48,7 @@ int JOYSTICKID1 = 0; 	// DDOI - temporary
 static SDL_Joystick *sdljoy;
 
 joy_button_info joy_buttons[JOY_TOTAL_BUTTONS];
+int joy_axes[JOY_NUM_AXES];
 
 
 void joy_close()
@@ -149,6 +150,22 @@ float joy_down_time(int btn)
 	return rval;
 }
 
+void joy_event(SDL_JoystickID id, uint8_t axis_id, int16_t value) {
+	Assertion((id >= 0), "Invalid joystick id passed during SDL_JOYAXISMOTION event.\n");
+
+	// z64: This'll later be updated to handle multiple controllers. For now, just bail if it isn't our current controller
+	if (id != currentJoystickID) {
+		return;
+	}
+
+	if (axis_id >= JOY_NUM_AXES) {
+		// whoops, can't support this axis
+		return;
+	}
+
+	joy_axes[axis_id] = value + 32768;
+}
+
 void joy_flush()
 {
 	int                     i;
@@ -165,6 +182,10 @@ void joy_flush()
 		bi->up_count = 0;
 		bi->down_time = 0;
 		bi->last_down_check = timer_get_milliseconds();
+	}
+
+	for (i = 0; i < JOY_NUM_AXES; i++) {
+		joy_axes[i] = 32768;
 	}
 }
 
@@ -563,7 +584,7 @@ int joystick_read_raw_axis(int num_axes, int *axis)
 
 	for (i = 0; i < num_axes; i++) {
 		if (i < joy_num_axes) {
-			axis[i] = SDL_JoystickGetAxis(sdljoy, i) + 32768;
+			axis[i] = joy_axes[i];
 		} else {
 			axis[i] = 32768;
 		}
