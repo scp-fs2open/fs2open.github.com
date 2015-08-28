@@ -449,33 +449,3 @@ void debug_int3(char *file, int line)
 
 	abort();
 }
-
-void SCP_Messagebox(MessageBoxType type, const char* message, const char* title) 
-{
-	int flags = 1;
-
-	switch (type) 
-	{
-		case MESSAGEBOX_ERROR:
-			flags = SDL_MESSAGEBOX_ERROR;
-			if (title == NULL)
-				title = "Error";
-			break;
-		case MESSAGEBOX_INFORMATION:
-			flags = SDL_MESSAGEBOX_INFORMATION;
-			if (title == NULL)
-				title = "Information";
-			break;
-		case MESSAGEBOX_WARNING:
-			flags = SDL_MESSAGEBOX_WARNING;
-			if (title == NULL)
-				title = "Warning";
-			break;
-		default:
-			Int3();
-			title = ""; // Remove warning about unitialized variable
-			break;
-	}
-
-	SDL_ShowSimpleMessageBox(flags, title, message, os_get_window());
-}

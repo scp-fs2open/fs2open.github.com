@@ -288,19 +288,6 @@ void _splitpath (char *path, char *drive, char *dir, char *fname, char *ext)
 	}
 }
 
-// some type of info message
-int MessageBox(HWND h, const char *s1, const char *s2, int i)
-{
-	if ( (h != NULL) && (i > -1) ) {
-		// placeholder for some future time
-	}
-
-	fprintf(stderr, "%s: \"%s\"\n", s2, s1);
-
-	return 0;
-}
-
-
 int MulDiv(int number, int numerator, int denominator)
 {
 	int result;
