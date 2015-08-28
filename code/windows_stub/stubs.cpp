@@ -102,57 +102,6 @@ SCP_string dump_stacktrace()
 #endif
 }
 
-HMMIO mmioOpen(LPSTR szFilename, LPMMIOINFO lpmmioinfo, DWORD dwOpenFlags)
-{
-	SDL_RWops *handle = NULL;
-
-	char *mode = "rb";
-
-	if (dwOpenFlags & MMIO_READ)
-		mode = "rb";
-	else if (dwOpenFlags & MMIO_READWRITE)
-		mode = "r+b";
-	else if (dwOpenFlags & MMIO_WRITE)
-		mode = "wb";
-
-	if ( szFilename != NULL ) {
-		Assert( lpmmioinfo == NULL );
-
-		handle = SDL_RWFromFile( szFilename, mode );
-	} else if ( lpmmioinfo != NULL ) {
-		Assert( szFilename == NULL );
-
-		handle = SDL_RWFromMem( lpmmioinfo->pchBuffer, lpmmioinfo->cchBuffer );
-	}
-
-	return handle;
-}
-
-long mmioSeek(HMMIO hmmio, long lOffset, int iOrigin)
-{
-	return (long) SDL_RWseek( hmmio, lOffset, iOrigin );
-}
-
-long mmioRead(HMMIO hmmio, HPSTR pch, long cch)
-{
-	return (long) SDL_RWread( hmmio, pch, 1, cch );
-}
-
-MMRESULT mmioClose(HMMIO hmmio, uint wFlags)
-{
-	if (wFlags != 0)
-		STUB_FUNCTION;
-
-	int rc = 0;
-
-	rc = SDL_RWclose( hmmio );
-
-	if (rc)
-		return MMIOERR_CANNOTWRITE;
-
-	return 0;
-}
-
 // get a filename minus any leading path
 char *clean_filename(char *name)
 {
