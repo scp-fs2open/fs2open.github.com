@@ -167,18 +167,6 @@ char *clean_filename(char *name)
 	return p;
 }
 
-// high precision timer
-bool QueryPerformanceCounter(LARGE_INTEGER *pcount)
-{
-	struct timeval timer_now;
-
-	gettimeofday(&timer_now, NULL);
-
-	pcount->QuadPart = (longlong)timer_now.tv_usec;
-
-	return 1;
-}
-
 #ifndef NDEBUG
 int TotalRam = 0;
 #endif
