@@ -20,6 +20,7 @@
 #include "hud/hudgauges.h"
 #include "hud/hudshield.h"
 #include "iff_defs/iff_defs.h"
+#include "io/joy.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
@@ -12711,6 +12712,21 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(getMouseSensitivity, l_Mouse, NULL, "Gets mouse sensitivity setting", "number", "Mouse sensitivity in range of 0-9")
+{
+	return ade_set_args(L, "i", Mouse_sensitivity);
+}
+
+ADE_FUNC(getJoySensitivity, l_Mouse, NULL, "Gets joystick sensitivity setting", "number", "Joystick sensitivity in range of 0-9")
+{
+	return ade_set_args(L, "i", Joy_sensitivity);
+}
+
+ADE_FUNC(getJoyDeadzone, l_Mouse, NULL, "Gets joystick deadzone setting", "number", "Joystick deadzone in range of 0-9")
+{
+	return ade_set_args(L, "i", Dead_zone_size / 5);
 }
 
 //trackir funcs
