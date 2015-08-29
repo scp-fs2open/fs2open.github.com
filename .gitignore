@@ -272,3 +272,4 @@ xcuserdata
 #
 documentation/doxygen/*
 !documentation/doxygen/.gitkeep
+/code/sound
