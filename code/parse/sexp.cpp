@@ -107,7 +107,10 @@
 #include "hud/hudmessage.h"
 #endif
 
-
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
 
 
 

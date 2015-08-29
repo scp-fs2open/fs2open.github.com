@@ -84,6 +84,11 @@
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
 
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
 #define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
 												//     we can't easily go fully dynamic)
 

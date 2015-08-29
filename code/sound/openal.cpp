@@ -11,6 +11,11 @@
 #include <windows.h>
 #endif
 
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
 
 static SCP_string Playback_device;
 static SCP_string Capture_device;

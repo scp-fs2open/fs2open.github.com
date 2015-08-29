@@ -38,6 +38,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
 enum cmdline_arg_type
 {
 	AT_NONE       =0,

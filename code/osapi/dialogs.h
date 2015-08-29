@@ -7,6 +7,11 @@
 
 struct lua_State;
 
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
 namespace os
 {
 	namespace dialogs
