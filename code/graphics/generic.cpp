@@ -223,14 +223,14 @@ int generic_anim_stream(generic_anim *ga)
 		char *p = strrchr( ga->filename, '.' );
 		if ( p )
 			*p = 0;
-		char frame_name[32];
-		snprintf(frame_name, 32, "%s_0000", ga->filename);
+		char frame_name[MAX_FILENAME_LEN];
+		snprintf(frame_name, MAX_FILENAME_LEN, "%s_0000", ga->filename);
 		ga->bitmap_id = bm_load(frame_name);
 		if(ga->bitmap_id < 0) {
 			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s", ga->filename));
 			return -1;
 		}
-		snprintf(frame_name, 32, "%s_0001", ga->filename);
+		snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename);
 		ga->eff.next_frame = bm_load(frame_name);
 		bm_get_info(ga->bitmap_id, &ga->width, &ga->height);
 		ga->previous_frame = 0;
@@ -326,8 +326,8 @@ void generic_render_eff_stream(generic_anim *ga)
 		mprintf(("=========================\n"));
 		mprintf(("frame: %d\n", ga->current_frame));
 	#endif
-		char frame_name[32];
-		snprintf(frame_name, 32, "%s_%.4d", ga->filename, ga->current_frame);
+		char frame_name[MAX_FILENAME_LEN];
+		snprintf(frame_name, MAX_FILENAME_LEN, "%s_%.4d", ga->filename, ga->current_frame);
 		if(bm_reload(ga->eff.next_frame, frame_name) == ga->eff.next_frame)
 		{
 			bitmap* next_frame_bmp = bm_lock(ga->eff.next_frame, bpp, (bpp==8)?BMP_AABITMAP:BMP_TEX_NONCOMP, true);

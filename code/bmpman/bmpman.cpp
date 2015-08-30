@@ -1259,7 +1259,6 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 	int first_handle = bm_get_next_handle();
 
-	Assert(strlen(filename) < MAX_FILENAME_LEN);
 	for (i = 0; i < anim_frames; i++) {
 		memset(&bm_bitmaps[n + i], 0, sizeof(bitmap_entry));
 
