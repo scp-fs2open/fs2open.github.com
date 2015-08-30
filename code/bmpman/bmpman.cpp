@@ -342,6 +342,15 @@ DCF(bmpman, "Shows/changes bitmap caching parameters and usage") {
 	}
 }
 
+DCF(bmpslots, "Writes bitmap slot info to fs2_open.log") {
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: bmpslots\n");
+		dc_printf("\tWrites bitmap slot info to fs2_open.log\n");
+		return;
+	}
+	bm_print_bitmaps();
+}
+
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of all functions, in alphabetical order
 void bm_clean_slot(int n) {
