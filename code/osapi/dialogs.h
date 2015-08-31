@@ -7,10 +7,23 @@
 
 struct lua_State;
 
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
 namespace os
 {
 	namespace dialogs
 	{
+		// These map onto the SDL ShowSimpleMessageBox flags
+		enum MessageBoxType
+		{
+			MESSAGEBOX_ERROR,
+			MESSAGEBOX_WARNING,
+			MESSAGEBOX_INFORMATION,
+		};
+		
 		/**
 		 * @brief Displays an assert message.
 		 * @note Used by Assert() and Assertion() to display an error message, should not be used directly
@@ -70,6 +83,8 @@ namespace os
 		 * @param format The message to display
 		 */
 		void WarningEx(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
+		
+		void MessageBox(MessageBoxType type, const char* message, const char* title = NULL);
 	}
 }
 

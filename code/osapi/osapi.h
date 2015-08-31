@@ -68,15 +68,5 @@ void os_suspend();
 // resume message processing
 void os_resume(); 
 
-// These map onto the SDL ShowSimpleMessageBox flags
-enum MessageBoxType
-{
-	MESSAGEBOX_ERROR,
-	MESSAGEBOX_WARNING,
-	MESSAGEBOX_INFORMATION,
-};
-
-// Display a simple messagebox through SDL
-void SCP_Messagebox(MessageBoxType type, const char* message, const char* title = NULL);
 
 #endif // _OSAPI_H

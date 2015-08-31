@@ -38,6 +38,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
 enum cmdline_arg_type
 {
 	AT_NONE       =0,
@@ -781,7 +786,7 @@ void os_validate_parms(int argc, char *argv[])
 					char buffer[128];
 					sprintf(buffer, "Unrecognized command line parameter %s.", token);
 
-					SCP_Messagebox(MESSAGEBOX_INFORMATION, buffer);
+					os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_INFORMATION, buffer);
 				}
 			}
 		}
@@ -1114,7 +1119,7 @@ bool SetCmdlineParams()
 		FILE *fp = fopen("flags.lch","w");
 		
 		if (fp == NULL) {
-			SCP_Messagebox(MESSAGEBOX_ERROR,"Error creating flag list for launcher");
+			os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_ERROR, "Error creating flag list for launcher");
 			return false; 
 		}
 		
