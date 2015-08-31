@@ -97,8 +97,6 @@ typedef unsigned int *PDWORD, *LPDWORD;
 typedef unsigned long FOURCC;
 typedef unsigned long DWORD, *PDWORD, *LPDWORD;
 #endif
-//typedef void *HMMIO;
-typedef SDL_RWops *HMMIO;
 typedef void *HACMSTREAM;
 typedef long LONG;
 typedef long HRESULT;
@@ -186,10 +184,6 @@ typedef struct {
 
 typedef SDL_mutex* CRITICAL_SECTION;
 
-// timer stuff
-typedef timeval TIMEVAL;
-bool QueryPerformanceCounter(LARGE_INTEGER *pcount);
-
 // file related items
 #define _MAX_FNAME					255
 #define _MAX_PATH					255
@@ -197,43 +191,6 @@ bool QueryPerformanceCounter(LARGE_INTEGER *pcount);
 #define SetCurrentDirectory(s)		_chdir(s)
 #define GetCurrentDirectory(i, s)	_getcwd((s), (i))
 #define _unlink(s)					unlink(s)
-
-// mmio stuff
-typedef struct {
-	DWORD		dwFlags;
-	FOURCC		fccIOProc;
-	LPMMIOPROC	pIOProc;
-	UINT		wErrorRet;
-	HTASK		hTask;
-	LONG		cchBuffer;
-	HPSTR		pchBuffer;
-	HPSTR		pchNext;
-	HPSTR		pchEndRead;
-	HPSTR		pchEndWrite;
-	LONG		lBufOffset;
-	LONG		lDiskOffset;
-	DWORD		adwInfo[4];
-	DWORD		dwReserved1;
-	DWORD		dwReserved2;
-	HMMIO		hmmio;
-} MMIOINFO;
-
-typedef MMIOINFO *LPMMIOINFO;
-
-#define FOURCC_MEM	0
-
-#define MMIO_READ		(1<<0)
-#define MMIO_READWRITE	(1<<1)
-#define MMIO_WRITE		(1<<2)
-#define MMIO_ALLOCBUF	(1<<3)
-
-#define MMIOERR_CANNOTWRITE		1
-
-HMMIO mmioOpen(LPSTR szFilename, LPMMIOINFO lpmmioinfo, DWORD dwOpenFlags);
-long mmioSeek(HMMIO hmmio, long lOffset, int iOrigin);
-long mmioRead(HMMIO hmmio, HPSTR pch, long cch);
-MMRESULT mmioClose(HMMIO hmmio, uint wFlags);
-
 
 int filelength(int fd);
 int _chdir(const char *path);

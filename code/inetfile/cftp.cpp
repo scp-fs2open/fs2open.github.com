@@ -561,7 +561,7 @@ uint CFtpGet::ReadDataChannel()
 void CFtpGet::FlushControlChannel()
 {
 	fd_set read_fds;	           
-	TIMEVAL timeout;   	
+	struct timeval timeout;   	
 	char flushbuff[3];
 
 	timeout.tv_sec = 0;            

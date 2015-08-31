@@ -207,7 +207,7 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 		{
 			//Do a few select to check for an error, or to see if we are writeable (connected)
 			fd_set write_fds,error_fds;	           
-			TIMEVAL timeout;   
+			struct timeval timeout;   
 
 			timeout.tv_sec=0;            
 			timeout.tv_usec=0;
@@ -470,7 +470,7 @@ int SetNewChatChannel(char *channel)
 char *ChatGetString(void)
 {
 	fd_set read_fds;	           
-	TIMEVAL timeout; 
+	struct timeval timeout; 
 	char ch[2];
 	char *p;
 	int bytesread;
