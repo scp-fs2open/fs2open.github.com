@@ -399,6 +399,36 @@ MONITOR(NumShipArrivals)
 MONITOR(NumShipDepartures)
 
 
+// Goober5000
+void parse_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, char *string_field_640, char *string_field_1024)
+{
+	int found640 = 0, found1024 = 0;
+	strcpy(string_field_640, "");
+	strcpy(string_field_1024, "");
+
+	// custom mission loading background, or whatever
+	if (optional_string(expected_string_640))
+	{
+		found640 = 1;
+		stuff_string(string_field_640, F_NAME, MAX_FILENAME_LEN);
+	}
+	if (optional_string(expected_string_1024))
+	{
+		found1024 = 1;
+		stuff_string(string_field_1024, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	// error testing
+	if (Fred_running && (found640) && !(found1024))
+	{
+		Warning(LOCATION, "Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_640, expected_string_1024);
+	}
+	if (Fred_running && !(found640) && (found1024))
+	{
+		Warning(LOCATION, "Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_1024, expected_string_640);
+	}
+}
+
 void parse_mission_info(mission *pm, bool basic = false)
 {
 	int i;
@@ -688,30 +718,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 		Num_teams = 2;
 	}
 
-	int found640=0, found1024=0;
-	strcpy_s(pm->loading_screen[GR_640],"");
-	strcpy_s(pm->loading_screen[GR_1024],"");
-	//custom mission loading background
-	if (optional_string("$Load Screen 640:"))
-	{
-		found640=1;
-		stuff_string(pm->loading_screen[GR_640], F_NAME, MAX_FILENAME_LEN);	
-	}
-	if (optional_string("$Load Screen 1024:"))
-	{
-		found1024=1;
-		stuff_string(pm->loading_screen[GR_1024], F_NAME, MAX_FILENAME_LEN);
-	}
-
-	//error testing
-	if (Fred_running && (found640) && !(found1024))
-	{
-		Warning(LOCATION, "Mission: %s\nhas a 640x480 loading screen but no 1024x768 loading screen!",pm->name);
-	}
-	if (Fred_running && !(found640) && (found1024))
-	{
-		Warning(LOCATION, "Mission: %s\nhas a 1024x768 loading screen but no 640x480 loading screen!",pm->name);
-	}
+	// Goober5000 - made this into a function since we use much the same technique for the briefing background
+	parse_custom_bitmap("$Load Screen 640:", "$Load Screen 1024:", pm->loading_screen[GR_640], pm->loading_screen[GR_1024]);
 
 	strcpy_s(pm->skybox_model, "");
 	if (optional_string("$Skybox Model:"))
@@ -1345,8 +1353,11 @@ void parse_briefing(mission *pm, int flags)
 			break;
 
 		bp = &Briefings[nt];
-
 		required_string("$start_briefing");
+
+		// Goober5000 - use the same code as for mission loading screens
+		parse_custom_bitmap("$background_640:", "$background_1024:", bp->background[GR_640], bp->background[GR_1024]);
+
 		required_string("$num_stages:");
 		stuff_int(&bp->num_stages);
 		Assert(bp->num_stages <= MAX_BRIEF_STAGES);
