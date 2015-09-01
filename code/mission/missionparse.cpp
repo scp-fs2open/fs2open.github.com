@@ -6677,10 +6677,14 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 	if (p_objp->arrival_anchor >= 0) {
 		int shipnum = ship_name_lookup(Parse_names[p_objp->arrival_anchor]);
 
-		// This shouldn't be happening
-		Assertion(shipnum >= 0 && shipnum < MAX_SHIPS, "Arriving ship '%s' does not exist!", Parse_names[p_objp->arrival_anchor]);
-
-		anchor_objnum = Ships[shipnum].objnum;
+		// Hopefully we found the ship
+		if (shipnum >= 0) {
+			anchor_objnum = Ships[shipnum].objnum;
+		}
+		// This shouldn't happen, but can if the FREDder was illogical
+		else {
+			Warning(LOCATION, "Arriving ship '%s' refers to an arrival anchor '%s' which does not exist!", p_objp->name, Parse_names[p_objp->arrival_anchor]);
+		}
 	}
 
 	if (anchor_objnum >= 0)
