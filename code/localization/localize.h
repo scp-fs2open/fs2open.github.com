@@ -40,6 +40,10 @@ typedef struct lang_info {
 	int checksum;										// used for language auto-detection
 } lang_info;
 
+// These are the original languages supported by FS2. The code expects these languages to be supported even if the tables don't
+#define NUM_BUILTIN_LANGUAGES		4
+extern lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES];
+
 extern SCP_vector<lang_info> Lcl_languages; 
 
 // following is the offset where special characters start in our font

@@ -8557,8 +8557,8 @@ int detect_lang()
 	detect = NULL;
 
 	// now compare the checksum/filesize against known #'s
-	for (idx=0; idx < (int)Lcl_languages.size(); idx++) {
-		if (Lcl_languages[idx].checksum == (int)file_checksum) {
+	for (idx=0; idx < NUM_BUILTIN_LANGUAGES; idx++) {
+		if (Lcl_builtin_languages[idx].checksum == (int)file_checksum) {
 			mprintf(( "AutoLang: Language auto-detection successful...\n" ));
 			return idx;
 		}
