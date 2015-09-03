@@ -450,13 +450,13 @@ void gr_opengl_print_screen(const char *filename)
 	}
 }
 
-void gr_opengl_cleanup(int minimize)
+void gr_opengl_cleanup(bool closing, int minimize)
 {
 	if ( !GL_initted ) {
 		return;
 	}
 
-	if ( !Fred_running ) {
+	if ( !closing && !Fred_running ) {
 		gr_reset_clip();
 		gr_clear();
 		gr_flip();
@@ -1560,7 +1560,7 @@ bool gr_opengl_init()
 		atexit(opengl_close);
 
 	if (GL_initted) {
-		gr_opengl_cleanup();
+		gr_opengl_cleanup(false);
 		GL_initted = false;
 	}
 

@@ -651,7 +651,7 @@ typedef void (APIENTRYP PFNGLMULTIDRAWELEMENTSBASEVERTEXPROC) (GLenum mode, cons
 const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
 
 bool gr_opengl_init();
-void gr_opengl_cleanup(int minimize=1);
+void gr_opengl_cleanup(bool closing, int minimize=1);
 int opengl_check_for_errors(char *err_at = NULL);
 
 #ifndef NDEBUG
