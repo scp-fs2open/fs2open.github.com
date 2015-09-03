@@ -3491,7 +3491,9 @@ void multi_make_fake_players(int count)
 // PACK UNPACK STUFF
 //
 
+#ifdef _MSC_VER
 #pragma optimize("", off)
+#endif
 
 typedef struct bitbuffer {
 	ubyte		mask;
@@ -4194,5 +4196,6 @@ void multi_send_anti_timeout_ping()
 	}
 }
 
-
+#ifdef _MSC_VER
 #pragma optimize("", on)
+#endif
