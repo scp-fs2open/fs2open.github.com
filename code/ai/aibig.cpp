@@ -23,9 +23,10 @@
 #include "weapon/weapon.h"
 
 
-
+#ifdef _MSC_VER
 #pragma optimize("", off)
 #pragma auto_inline(off)
+#endif
 
 #define SCAN_FIGHTERS_INTERVAL	2000		// how often an AI fighter/bomber should scan for enemy fighter/bombers
 														// if sitting still and pounding on a big ship.  If enemy fighters are
