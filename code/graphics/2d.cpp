@@ -641,7 +641,7 @@ void gr_close()
 
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
-			gr_opengl_cleanup();
+			gr_opengl_cleanup(true);
 			break;
 	
 		case GR_STUB:
@@ -904,7 +904,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 	if (Gr_inited) {
 		switch (gr_screen.mode) {
 			case GR_OPENGL:
-				gr_opengl_cleanup();
+				gr_opengl_cleanup(false);
 				break;
 			
 			case GR_STUB:
