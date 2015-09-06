@@ -109,10 +109,13 @@ void opengl_go_fullscreen()
 		}
 		else
 		{
-			SDL_Window* window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL);
+			uint display = os_config_read_uint("Video", "Display", 0);
+			SDL_Window* window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+				gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL);
 			if (window == NULL) {
 				mprintf(("Couldn't go fullscreen!\n"));
-				if ((window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_OPENGL)) == NULL) {
+				if ((window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+					gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_OPENGL)) == NULL) {
 					mprintf(("Couldn't drop back to windowed mode either!\n"));
 					exit(1);
 				}
@@ -143,7 +146,9 @@ void opengl_go_windowed()
 		}
 		else
 		{
-			SDL_Window* new_window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_OPENGL);
+			uint display = os_config_read_uint("Video", "Display", 0);
+			SDL_Window* new_window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+				gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_OPENGL);
 			if (new_window == NULL) {
 				Warning( LOCATION, "Unable to enter windowed mode: %s!", SDL_GetError() );
 			}
@@ -1333,10 +1338,12 @@ int opengl_init_display_device()
 
 	if (os_get_window() == NULL)
 	{
-		SDL_Window* window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, gr_screen.max_w, gr_screen.max_h, windowflags);
+		uint display = os_config_read_uint("Video", "Display", 0);
+		SDL_Window* window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+			gr_screen.max_w, gr_screen.max_h, windowflags);
 		if (window == NULL)
 		{
-			fprintf(stderr, "Couldn't set video mode: %s", SDL_GetError());
+			mprintf(("Could not create window: %s", SDL_GetError()));
 			return 1;
 		}
 
