@@ -2996,11 +2996,6 @@ void beam_handle_collisions(beam *b)
             r_coll[r_coll_count].c_stamp = timestamp(fl2i(delay_time));
 		}
 
-		// if no damage - don't even indicate it has been hit
-		if(wi->damage <= 0){
-			do_damage = 0;
-		}
-
 		// increment collision count
 		r_coll_count++;		
 
@@ -3140,7 +3135,7 @@ void beam_handle_collisions(beam *b)
 			}
 		}
 
-		if(!physics_paused){
+		if(do_damage && !physics_paused){
 
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
@@ -3475,6 +3470,9 @@ float beam_get_ship_damage(beam *b, object *objp)
 
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
 
+	if (wip->damage <= 0)
+		return 0.0f;	// Not much point in calculating the attenuation if the beam doesn't hurt in the first place.
+
 	float attenuation = 1.0f;
 
 	if ((b->damage_threshold >= 0.0f) && (b->damage_threshold < 1.0f)) {
@@ -3493,7 +3491,7 @@ float beam_get_ship_damage(beam *b, object *objp)
 		damage = The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
 	} else {
 		// normal damage
-		damage = Weapon_info[b->weapon_info_index].damage * attenuation;
+		damage = wip->damage * attenuation;
 	}
 
 	return damage;
