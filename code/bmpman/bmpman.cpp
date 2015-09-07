@@ -1033,7 +1033,7 @@ int bm_load(const SCP_string& filename) {
 	return bm_load(filename.c_str());
 }
 
-int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type) {
+bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type) {
 	int frames = 0, fps = 30, keyframe = 0;
 	char ext[8];
 	BM_TYPE c_type = BM_TYPE_NONE;
@@ -1069,7 +1069,7 @@ int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int 
 	{
 		mprintf(("BMPMAN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		unpause_parse();
-		return -1;
+		return false;
 	}
 
 	// done with EFF so unpause parsing so whatever can continue
@@ -1087,13 +1087,13 @@ int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int 
 		c_type = BM_TYPE_PCX;
 	} else {
 		mprintf(("BMPMAN: Unknown file type in EFF parse!\n"));
-		return -1;
+		return false;
 	}
 
 	// did we do anything?
 	if (c_type == BM_TYPE_NONE || frames == 0) {
 		mprintf(("BMPMAN: EFF parse ERROR!\n"));
-		return -1;
+		return false;
 	}
 
 	if (type)
@@ -1108,7 +1108,7 @@ int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int 
 	if (key)
 		*key = keyframe;
 
-	return 0;
+	return true;
 }
 
 int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type) {
@@ -1204,7 +1204,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 	// it's an effect file, any readable image type with eff being txt
 	if (type == BM_TYPE_EFF) {
-		if (bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &key, &eff_type) != 0) {
+		if (!bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &key, &eff_type)) {
 			mprintf(("BMPMAN: Error reading EFF\n"));
 			return -1;
 		} else {
