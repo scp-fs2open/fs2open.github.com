@@ -2488,7 +2488,7 @@ void bm_set_low_mem(int mode) {
 	Bm_low_mem = mode;
 }
 
-int bm_set_render_target(int handle, int face) {
+bool bm_set_render_target(int handle, int face) {
 	int n = handle % MAX_BITMAPS;
 
 	if (n >= 0) {
@@ -2497,7 +2497,7 @@ int bm_set_render_target(int handle, int face) {
 		if ((bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET_STATIC) && (bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET_DYNAMIC)) {
 			// odds are that someone passed a normal texture created with bm_load()
 			mprintf(("Trying to set invalid bitmap (slot: %i, handle: %i) as render target!\n", n, handle));
-			return 0;
+			return false;
 		}
 	}
 
@@ -2562,10 +2562,10 @@ int bm_set_render_target(int handle, int face) {
 			opengl_setup_viewport();
 		}
 
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 int bm_unload(int handle, int clear_render_targets, bool nodebug) {
