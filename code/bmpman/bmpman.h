@@ -651,12 +651,10 @@ int bm_is_render_target(int handle);
 /**
  * @brief (GR function) Calls gr_bm_set_render target for the given bitmap indexed by handle
  *
- * @returns 1 if successful, or
- * @returns 0 if unsuccessful
- *
- * @todo retval should be a bool
+ * @returns true if successful, or
+ * @returns false if unsuccessful
  */
-int bm_set_render_target(int handle, int face = -1);
+bool bm_set_render_target(int handle, int face = -1);
 
 /**
  * @brief Loads and parses an .EFF
