@@ -666,11 +666,9 @@ bool bm_set_render_target(int handle, int face = -1);
  * @param[out] key     (optional) If given, is set to the keyframe index of this .EFF
  * @param[out] type    (optional) If given, is set to the BM_TYPE of the .EFF
  *
- * @returns 0 If successful,
- * @returns -1 if not successful
- *
- * @todo retval should be a bool
+ * @returns true If successful
+ * @returns false If not successful
  */
-int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type);
+bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type);
 
 #endif
