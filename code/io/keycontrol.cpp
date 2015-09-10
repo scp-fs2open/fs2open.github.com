@@ -469,8 +469,6 @@ int Non_critical_key_set[] = {
 	NAV_CYCLE,
 	TOGGLE_GLIDING,
 	CYCLE_PRIMARY_WEAPON_SEQUENCE,
-
-	TOGGLE_AUTO_SHIELD_EQUALIZE,
 };
 
 int Ignored_keys[CCFG_MAX];
