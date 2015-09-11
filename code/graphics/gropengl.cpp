@@ -1959,6 +1959,11 @@ static void gr_opengl_initialize_workarounds()
 	{
 		GL_enabled_workarounds[OGL_NO_SHADER_VERSION].enabled = true;
 	}
+	
+	if (!stricmp(vendor, "NVIDIA Corporation"))
+	{
+		GL_enabled_workarounds[OGL_NO_SHADER_VERSION].enabled = true;
+	}
 
 	if (Cmdline_opengl_workaround_override != nullptr)
 	{
