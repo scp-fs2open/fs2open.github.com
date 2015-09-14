@@ -7,6 +7,7 @@
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
+#include "pngutils/pngutils.h"
 
 #define GENERIC_ANIM_DIRECTION_FORWARDS		0
 #define GENERIC_ANIM_DIRECTION_BACKWARDS	1
@@ -37,6 +38,10 @@ typedef struct generic_anim {
 		struct {
 			int next_frame;
 		} eff;
+		struct {
+			apng::apng_ani* anim;
+			float previous_frame_time;
+		} png;
 	};
 	ubyte type;
 	unsigned char streaming;

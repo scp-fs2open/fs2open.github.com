@@ -162,9 +162,9 @@ int generic_anim_stream(generic_anim *ga)
 	int anim_fps = 0;
 	char full_path[MAX_PATH];
 	int size = 0, offset = 0;
-	const int NUM_TYPES = 2;
-	const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI};
-	const char *ext_list[NUM_TYPES] = {".eff", ".ani"};
+	const int NUM_TYPES = 3;
+	const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI, BM_TYPE_PNG};
+	const char *ext_list[NUM_TYPES] = {".eff", ".ani", ".png"};
 	int rval = -1;
 	int bpp;
 
@@ -219,6 +219,27 @@ int generic_anim_stream(generic_anim *ga)
 
 		ga->previous_frame = -1;
 	}
+	else if (ga->type == BM_TYPE_PNG) {
+		if (ga->png.anim == nullptr) {
+			try {
+				ga->png.anim = new apng::apng_ani(ga->filename);
+			}
+			catch (const apng::ApngException& e) {
+				Warning(LOCATION, "Failed to load apng (%s) Message: %s", ga->filename, e.what());
+				return -1;
+			}
+			nprintf(("apng", "png read: %i %i %i %f\n", ga->png.anim->w, ga->png.anim->h,
+					ga->png.anim->bpp, ga->png.anim->anim_time));
+		}
+		ga->png.anim->current_frame = 0;
+		ga->png.previous_frame_time = 0.0f;
+		ga->num_frames = ga->png.anim->nframes;
+		ga->height = ga->png.anim->h;
+		ga->width = ga->png.anim->w;
+		ga->previous_frame = -1;
+		ga->buffer = ga->png.anim->frame.data.data();
+		ga->bitmap_id = bm_create(ga->png.anim->bpp, ga->width, ga->height, ga->buffer, 0);
+	}
 	else {
 		bpp = 32;
 		if(ga->use_hud_color)
@@ -267,8 +288,13 @@ int generic_anim_stream(generic_anim *ga)
 
 	ga->streaming = 1;
 
-	Assert(anim_fps != 0);
-	ga->total_time = ga->num_frames / (float) anim_fps;
+	if (ga->type == BM_TYPE_PNG) {
+		ga->total_time = ga->png.anim->anim_time;
+	}
+	else {
+		Assert(anim_fps != 0);
+		ga->total_time = ga->num_frames / (float) anim_fps;
+	}
 	ga->done_playing = 0;
 	ga->anim_time = 0.0f;
 
@@ -301,6 +327,12 @@ void generic_anim_unload(generic_anim *ga)
 					bm_release(ga->eff.next_frame);
 				if(ga->bitmap_id >= 0)
 					bm_release(ga->bitmap_id);
+			}
+			if(ga->type == BM_TYPE_PNG) {
+				if(ga->bitmap_id >= 0)
+					bm_release(ga->bitmap_id);
+				if (ga->png.anim)
+					delete ga->png.anim;
 			}
 		}
 		else {
@@ -434,7 +466,48 @@ void generic_render_ani_stream(generic_anim *ga)
 	#endif
 }
 
-void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu)
+/*
+ * @brief apng specific animation rendering
+ *
+ * @param [in] ga  pointer to generic_anim struct
+ */
+void generic_render_png_stream(generic_anim* ga)
+{
+	if(ga->current_frame == ga->previous_frame) {
+		return;
+	}
+
+	try {
+		if ((ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) && (ga->previous_frame != -1)) {
+			// mainhall door anims start backwards to ensure they stay shut
+			// in that case (i.e. previous_frame is -1) we actually want to call
+			// next_frame, in order to retrieve the 1st frame of the animation
+			ga->png.anim->prev_frame();
+		}
+		else {
+			ga->png.anim->next_frame();
+		}
+	}
+	catch (const apng::ApngException& e) {
+		nprintf(("apng", "Unable to get next/prev apng frame (%s) Message: %s\n", ga->filename, e.what()));
+	}
+
+	bm_lock(ga->bitmap_id, ga->png.anim->bpp, BMP_TEX_NONCOMP, true);  // lock in 32 bpp for png
+	ubyte bpp = ga->png.anim->bpp;
+	if (ga->use_hud_color) {
+		bpp = 8;
+	}
+	gr_update_texture(ga->bitmap_id, bpp, ga->buffer, ga->width, ga->height);  // this will convert to 8 bpp if required
+	bm_unlock(ga->bitmap_id);
+}
+
+/*
+ * @brief calculate current frame for fixed frame delay animation formats (ani & eff)
+ *
+ * @param [in] *ga  animation data
+ * @param [in] frametime  how long this frame took
+ */
+void generic_anim_render_fixed_frame_delay(generic_anim* ga, float frametime)
 {
 	float keytime = 0.0;
 
@@ -500,6 +573,109 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 		else {
 			gr_set_bitmap(ga->first_frame + ga->current_frame);
 		}
+	}
+}
+
+/*
+ * @brief calculate current frame for variable frame delay animation formats (e.g. apng)
+ *
+ * @param [in] *ga  animation data
+ * @param [in] frametime  how long this frame took
+ */
+void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime)
+{
+	Assertion(ga->type == BM_TYPE_PNG, "only valid for apngs (currently); get a coder!");
+	if (ga->keyframe != 0) {
+		Warning(LOCATION, "apngs don't support keyframes");
+		return;
+	}
+
+	// don't change the frame time if we're paused
+	if((ga->direction & GENERIC_ANIM_DIRECTION_PAUSED) == 0) {
+		if(ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) {
+			// playing backwards
+			ga->anim_time -= frametime;
+			if((ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) && ga->anim_time <= 0.0) {
+				ga->anim_time = 0;  //stop on first frame when playing in reverse
+			}
+			else {
+				if (ga->anim_time <= 0.0) {
+					// loop back to end
+					ga->anim_time = ga->total_time - 0.001f;
+					ga->png.previous_frame_time = ga->total_time;
+					ga->png.anim->current_frame = ga->num_frames-1;
+					ga->current_frame = ga->num_frames-1;
+				}
+			}
+		}
+		else {
+			// playing forwards
+			ga->anim_time += frametime;
+			if(ga->anim_time >= ga->total_time) {
+				if(ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) {
+					ga->anim_time = ga->total_time - 0.001f;  // stop on last frame when playing - if it's equal fmod sets back to 0.0f
+				}
+				else {
+					// loop back to start
+					ga->png.previous_frame_time = 0.0f;
+					ga->png.anim->current_frame = 0;
+					ga->current_frame = 0;
+				}
+				ga->done_playing = 1;
+			}
+		}
+		ga->anim_time = fmod(ga->anim_time, ga->total_time);
+	}
+
+	if (ga->num_frames > 0) {
+
+		if (ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) {
+			if (ga->anim_time <= ga->png.previous_frame_time - ga->png.anim->frame.delay) {
+				ga->png.previous_frame_time -= ga->png.anim->frame.delay;
+				ga->current_frame--;
+			}
+		}
+		else {
+			if (ga->anim_time >= ga->png.previous_frame_time + ga->png.anim->frame.delay) {
+				ga->png.previous_frame_time += ga->png.anim->frame.delay;
+				ga->current_frame++;
+			}
+		}
+
+		nprintf(("apng", "apng generic times: %04f %04f %04f %04f %03i %03i %03i\n",
+				frametime, ga->anim_time, ga->png.anim->frame.delay, ga->png.previous_frame_time,
+				ga->previous_frame, ga->current_frame, ga->png.anim->current_frame));
+
+		if(ga->streaming) {
+			generic_render_png_stream(ga);
+			gr_set_bitmap(ga->bitmap_id);
+		}
+		else {
+			Error(LOCATION, "non-streaming apngs not implemented yet");
+		}
+	}
+}
+
+
+/*
+ * @brief render animations
+ *
+ * @param [in] *ga  animation data
+ * @param [in] frametime  how long this frame took
+ * @param [in] x  2D screen x co-ordinate to render at
+ * @param [in] y  2D screen y co-ordinate to render at
+ * @param [in] menu select if this is rendered in menu screen, or fullscreen
+ */
+void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu)
+{
+	if (ga->type == BM_TYPE_PNG) {
+		generic_anim_render_variable_frame_delay(ga, frametime);
+	}
+	else {
+		generic_anim_render_fixed_frame_delay(ga, frametime);
+	}
+
+	if(ga->num_frames > 0) {
 		ga->previous_frame = ga->current_frame;
 		if(ga->use_hud_color)
 			gr_aabitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
