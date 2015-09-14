@@ -812,8 +812,10 @@ void control_config_common_load_overrides()
 	LoadEnumsIntoMaps();
 
 	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES)) {
+		mprintf(("Found controlconfigdefaults.tbl\n"));
 		read_file_text("controlconfigdefaults.tbl", CF_TYPE_TABLES);
 	} else {
+		mprintf(("Didn't find controlconfigdefaults.tbl, using hardcoded values\n"));
 		read_file_text_from_default(defaults_get_file("controlconfigdefaults.tbl"));
 	}
 
@@ -829,8 +831,10 @@ void control_config_common_load_overrides()
 		SCP_string preset_name;
 		if (optional_string("$Name:")) {
 			stuff_string_line(preset_name);
+			mprintf(("  Found preset %s\n", preset_name.c_str()));
 		} else {
 			preset_name = "<unnamed preset>";
+			mprintf(("  Found unnamed preset\n"));
 		}
 		Control_config_preset_names.push_back(preset_name);
 
@@ -902,9 +906,13 @@ void control_config_common_load_overrides()
 
 					if (optional_string("+Disable")) {
 						r_ccConfig.disabled = true;
+						mprintf(("  Deprecated option '+Disable' found. Please use '$Disable: true' instead\n"));
+						mprintf(("  Bind '%s' was disabled\n", r_ccConfig.text));
 					}
+
 					if (optional_string("$Disable:")) {
 						stuff_boolean(&r_ccConfig.disabled);
+						mprintf(("  Bind '%s' was %s\n", r_ccConfig.text, (r_ccConfig.disabled == true) ? "disabled" : "enabled"));
 					}
 					
 					// Nerf the buffer now.
