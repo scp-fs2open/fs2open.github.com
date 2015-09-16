@@ -1089,6 +1089,30 @@ int CFred_mission_save::save_debriefing()
 		required_string_fred("#Debriefing_info");
 		parse_comments(2);
 
+		// Yarn's debriefing background stuff, based on Goober5000's briefing background stuff
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
+		{
+			bool background_written = false;
+
+			if (strlen(Debriefing[j].background[GR_640]) > 0)
+			{
+				if (!background_written) {
+					fout("\n");
+				}
+				fout("\n$Background 640: %s", Debriefing[j].background[GR_640]);
+				background_written = true;
+			}
+
+			if (strlen(Debriefing[j].background[GR_1024]) > 0)
+			{
+				if (!background_written) {
+					fout("\n");
+				}
+				fout("\n$Background 1024: %s", Debriefing[j].background[GR_1024]);
+				background_written = true;
+			}
+		}
+
 		required_string_fred("$Num stages:");
 		parse_comments(2);
 		fout(" %d", Debriefing->num_stages);

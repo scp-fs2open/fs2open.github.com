@@ -1572,6 +1572,9 @@ void parse_debriefing_new(mission *pm)
 
 		db = &Debriefings[nt];
 
+		// Yarn - use the same code as for mission loading screens
+		parse_custom_bitmap("$Background 640:", "$Background 1024:", db->background[GR_640], db->background[GR_1024]);
+
 		required_string("$Num stages:");
 		stuff_int(&db->num_stages);
 		Assert(db->num_stages <= MAX_DEBRIEF_STAGES);

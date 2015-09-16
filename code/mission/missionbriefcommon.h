@@ -199,6 +199,7 @@ class debriefing
 public:
 	int				num_stages;
 	debrief_stage	stages[MAX_DEBRIEF_STAGES];
+	char			background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 
 	debriefing()
 		: num_stages(0)
