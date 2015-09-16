@@ -323,17 +323,28 @@ void red_alert_init()
 
 	// set up red alert hotkeys
 	Buttons[gr_screen.res][RA_CONTINUE].button.set_hotkey(KEY_CTRLED | KEY_ENTER);
-
-	// load in background image and flashing red alert animation
-	Background_bitmap = bm_load(Red_alert_fname[gr_screen.res]);
 	
 	// hud_anim_init(&Flash_anim, Ra_flash_coords[gr_screen.res][RA_X_COORD], Ra_flash_coords[gr_screen.res][RA_Y_COORD], NOX("AlertFlash"));
 	// hud_anim_load(&Flash_anim);
 
 	Red_alert_voice = -1;
+	Background_bitmap = -1;
 
 	if ( !Briefing ) {
 		Briefing = &Briefings[0];			
+	}
+
+	// load in background image and flashing red alert animation
+	if (*Briefing->background[gr_screen.res]) {
+		Background_bitmap = bm_load(Briefing->background[gr_screen.res]);
+		if (Background_bitmap < 0) {
+			mprintf(("Failed to load custom briefing bitmap %s!\n", Briefing->background[gr_screen.res]));
+		}
+	}
+
+	// if special background failed to load, or if no special background was supplied, load the standard bitmap
+	if (Background_bitmap < 0) {
+		Background_bitmap = bm_load(Red_alert_fname[gr_screen.res]);
 	}
 
 	if ( Briefing->num_stages > 0 ) {
