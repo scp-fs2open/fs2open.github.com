@@ -1118,21 +1118,21 @@ int CFred_mission_save::save_debriefing()
 		{
 			bool background_written = false;
 
-			if (strlen(Debriefing[j].background[GR_640]) > 0)
+			if (strlen(Debriefing->background[GR_640]) > 0)
 			{
 				if (!background_written) {
 					fout("\n");
 				}
-				fout("\n$Background 640: %s", Debriefing[j].background[GR_640]);
+				fout("\n$Background 640: %s", Debriefing->background[GR_640]);
 				background_written = true;
 			}
 
-			if (strlen(Debriefing[j].background[GR_1024]) > 0)
+			if (strlen(Debriefing->background[GR_1024]) > 0)
 			{
 				if (!background_written) {
 					fout("\n");
 				}
-				fout("\n$Background 1024: %s", Debriefing[j].background[GR_1024]);
+				fout("\n$Background 1024: %s", Debriefing->background[GR_1024]);
 				background_written = true;
 			}
 		}
