@@ -830,6 +830,30 @@ int CFred_mission_save::save_cmd_brief()
 	if (The_mission.game_type & MISSION_TYPE_MULTI)
 		return err;  // no command briefings allowed in multiplayer missions.
 
+		// Yarn's command briefing background stuff, based on Goober5000's briefing background stuff
+		if (Format_fs2_open != FSO_FORMAT_RETAIL)
+		{
+			bool background_written = false;
+
+			if (strlen(Cur_cmd_brief->background[GR_640]) > 0)
+			{
+				if (!background_written) {
+					fout("\n");
+				}
+				fout("\n$Background 640: %s", Cur_cmd_brief->background[GR_640]);
+				background_written = true;
+			}
+
+			if (strlen(Cur_cmd_brief->background[GR_1024]) > 0)
+			{
+				if (!background_written) {
+					fout("\n");
+				}
+				fout("\n$Background 1024: %s", Cur_cmd_brief->background[GR_1024]);
+				background_written = true;
+			}
+		}
+
 	for (stage=0; stage<Cur_cmd_brief->num_stages; stage++) {
 		required_string_fred("$Stage Text:");
 		parse_comments(2);

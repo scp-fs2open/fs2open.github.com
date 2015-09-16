@@ -563,13 +563,26 @@ void cmd_brief_init(int team)
 	gr_flip();
 	Mouse_hidden--;
 
-	// first determine which layout to use
-	Uses_scroll_buttons = 1;	// assume true
-	Cmd_brief_background_bitmap = bm_load(Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);	// try to load extra one first
-	if (Cmd_brief_background_bitmap < 0)	// failed to load
-	{
-		Uses_scroll_buttons = 0;	// nope, sorry
-		Cmd_brief_background_bitmap = bm_load(Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);
+	Cmd_brief_background_bitmap = -1;
+
+	if (*Cur_cmd_brief->background[gr_screen.res]) {
+		Uses_scroll_buttons = 1;	// always true for custom backgrounds
+		Cmd_brief_background_bitmap = bm_load(Cur_cmd_brief->background[gr_screen.res]);
+		if (Cmd_brief_background_bitmap < 0) {
+			mprintf(("Failed to load custom briefing bitmap %s!\n", Cur_cmd_brief->background[gr_screen.res]));
+		}
+	}
+
+	// if special background failed to load, or if no special background was supplied, load the standard bitmap
+	if (Cmd_brief_background_bitmap < 0) {
+		// first determine which layout to use
+		Uses_scroll_buttons = 1;	// assume true
+		Cmd_brief_background_bitmap = bm_load(Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);	// try to load extra one first
+		if (Cmd_brief_background_bitmap < 0)	// failed to load
+		{
+			Uses_scroll_buttons = 0;	// nope, sorry
+			Cmd_brief_background_bitmap = bm_load(Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);
+		}
 	}
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);

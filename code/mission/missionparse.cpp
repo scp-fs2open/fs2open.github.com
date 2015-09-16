@@ -1299,6 +1299,10 @@ void parse_cmd_brief(mission *pm)
 	stage = 0;
 
 	required_string("#Command Briefing");
+
+	// Yarn - use the same code as for mission loading screens
+	parse_custom_bitmap("$Background 640:", "$Background 1024:", Cur_cmd_brief->background[GR_640], Cur_cmd_brief->background[GR_1024]);
+
 	while (optional_string("$Stage Text:")) {
 		Assert(stage < CMD_BRIEF_STAGES_MAX);
 		stuff_string(Cur_cmd_brief->stage[stage].text, F_MULTITEXT, NULL);
