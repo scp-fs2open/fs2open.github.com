@@ -895,6 +895,16 @@ int CFred_mission_save::save_briefing()
 			{
 				fout("\n$background_1024: %s", Briefings[nb].background[GR_1024]);
 			}
+			
+			if (strlen(Briefings[nb].ship_select_background[GR_640]) > 0)
+			{
+				fout("\n$ship_select_background_640: %s", Briefings[nb].ship_select_background[GR_640]);
+			}
+
+			if (strlen(Briefings[nb].ship_select_background[GR_1024]) > 0)
+			{
+				fout("\n$ship_select_background_1024: %s", Briefings[nb].ship_select_background[GR_1024]);
+			}
 		}
 
 		Assert(Briefings[nb].num_stages <= MAX_BRIEF_STAGES);

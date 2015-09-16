@@ -739,7 +739,19 @@ void ship_select_init()
 	ship_select_buttons_init();
 
 	// init ship selection background bitmap
-	Ship_select_background_bitmap = bm_load(Ship_select_background_fname[gr_screen.res]);
+	Ship_select_background_bitmap = -1;
+
+	if (Briefing && *Briefing->ship_select_background[gr_screen.res]) {
+		Ship_select_background_bitmap = bm_load(Briefing->ship_select_background[gr_screen.res]);
+		if (Ship_select_background_bitmap < 0) {
+			mprintf(("Failed to load custom ship select bitmap %s!\n", Briefing->ship_select_background[gr_screen.res]));
+		}
+	}
+
+	// if special background failed to load, or if no special background was supplied, load the standard bitmap
+	if (Ship_select_background_bitmap < 0) {
+		Ship_select_background_bitmap = bm_load(Ship_select_background_fname[gr_screen.res]);
+	}
 
 	// init ship selection ship model rendering window
 	start_ship_animation( Selected_ss_class );
