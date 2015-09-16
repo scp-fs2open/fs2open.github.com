@@ -185,6 +185,7 @@ public:
 	brief_stage	stages[MAX_BRIEF_STAGES];
 	char		background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 	char		ship_select_background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
+	char		weapon_select_background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 
 	briefing()
 		: num_stages(0)

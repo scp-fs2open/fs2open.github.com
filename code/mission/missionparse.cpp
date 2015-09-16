@@ -1358,6 +1358,7 @@ void parse_briefing(mission *pm, int flags)
 		// Goober5000 - use the same code as for mission loading screens
 		parse_custom_bitmap("$background_640:", "$background_1024:", bp->background[GR_640], bp->background[GR_1024]);
 		parse_custom_bitmap("$ship_select_background_640:", "$ship_select_background_1024:", bp->ship_select_background[GR_640], bp->ship_select_background[GR_1024]);
+		parse_custom_bitmap("$weapon_select_background_640:", "$weapon_select_background_1024:", bp->weapon_select_background[GR_640], bp->weapon_select_background[GR_1024]);
 
 		required_string("$num_stages:");
 		stuff_int(&bp->num_stages);
