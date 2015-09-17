@@ -956,7 +956,7 @@ void arg_item::add_data_dup(char *str)
 
 	// create item
 	item = new arg_item;
-	item->text = strdup(str);
+	item->text = vm_strdup(str);
 	item->flags |= ARG_ITEM_F_DUP;
 	item->nesting_level = Sexp_current_argument_nesting_level;
 
@@ -1003,7 +1003,7 @@ void arg_item::expunge()
 		ptr = this->next->next;
 
 		if (this->next->flags & ARG_ITEM_F_DUP)
-			free(this->next->text);
+			vm_free(this->next->text);
 		delete this->next;
 
 		this->next = ptr;
@@ -1020,7 +1020,7 @@ void arg_item::clear_nesting_level()
 		ptr = this->next->next;
 
 		if (this->next->flags & ARG_ITEM_F_DUP)
-			free(this->next->text);
+			vm_free(this->next->text);
 		delete this->next;
 
 		this->next = ptr;
@@ -8698,7 +8698,7 @@ int test_argument_vector_for_condition(SCP_vector<char*> argument_vector, bool a
 			// if the argument was already dup'd, but not added as an applicable argument,
 			// we need to free it here before we cause a memory leak
 			if ((val == SEXP_FALSE || val == SEXP_KNOWN_FALSE) && already_dupped)
-				free(argument_vector[i]);
+				vm_free(argument_vector[i]);
 
 			// clear argument, but not list, as we'll need it later
 			Sexp_replacement_arguments.pop_back();
@@ -8990,15 +8990,16 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 	{
 		sprintf(buf, "%d", i);
 		argument_vector.push_back(vm_strdup(buf));
+		// Note: we do not call vm_free() on the contents of argument_vector, and we don't for the very good
+		// reason that those pointers are then passed along by test_argument_vector_for_condition(), below.
+		// The strings will then be freed by arg_item::expunge() or arg_item::clear_nesting_level(), or even
+		// inside test_argument_vector_for_condition() (if the argument doesn't satisfy the condition). So
+		// under no circumstances try to free these strings inside this function! It will cause a double-free
+		// situation, resulting in a crash at best. -MageKing17
 	}
 
 	// test the whole argument vector
 	num_valid_arguments = test_argument_vector_for_condition(argument_vector, true, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
-
-	while (!argument_vector.empty()) {
-		vm_free(argument_vector.back());
-		argument_vector.pop_back();
-	}
 
 	// use the sexp_or algorithm
 	if (num_known_true || num_true)
