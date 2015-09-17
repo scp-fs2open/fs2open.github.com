@@ -1780,6 +1780,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum);
 int parse_create_object_sub(p_object *p_objp)
 {
 	int	i, j, k, objnum, shipnum;
+	int anchor_objnum = -1;
 	ai_info *aip;
 	ship_subsys *ptr;
 	ship *shipp;
@@ -2335,7 +2336,7 @@ int parse_create_object_sub(p_object *p_objp)
 				if (MULTIPLAYER_CLIENT)
 					location = ARRIVE_AT_LOCATION;
 
-				mission_set_arrival_location(p_objp->arrival_anchor, location, p_objp->arrival_distance, objnum, p_objp->arrival_path_mask, NULL, NULL);
+				anchor_objnum = mission_set_arrival_location(p_objp->arrival_anchor, location, p_objp->arrival_distance, objnum, p_objp->arrival_path_mask, NULL, NULL);
 
 				// Goober5000 - warpin start moved to parse_create_object
 			}
@@ -2368,6 +2369,16 @@ int parse_create_object_sub(p_object *p_objp)
 			if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
 				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
 		}
+	}
+
+	if (Game_mode & GM_IN_MISSION) {
+		if (anchor_objnum >= 0)
+			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", &Objects[anchor_objnum]);
+		else
+			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
+
+		Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[objnum]);
+		Script_system.RemHookVars(2, "Ship", "Parent");
 	}
 
 	return objnum;
@@ -4218,24 +4229,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// possibly change the location where these ships arrive based on the wings arrival location
 		mission_set_wing_arrival_location( wingp, num_create_save );
 
-		for (it = 0; it < wingp->current_count; it++ ) {
-			int shipobjnum = Ships[wingp->ship_index[it]].objnum;
-			int anchor_objnum = -1;
-
-			if (wingp->arrival_anchor >= 0) {
-				int parentshipnum = ship_name_lookup(Parse_names[wingp->arrival_anchor]);
-				anchor_objnum = Ships[parentshipnum].objnum;
-			}
-
-			if (anchor_objnum >= 0)
-				Script_system.SetHookObjects(2, "Ship", &Objects[shipobjnum], "Parent", &Objects[anchor_objnum]);
-			else
-				Script_system.SetHookObjects(2, "Ship", &Objects[shipobjnum], "Parent", NULL);
-
-			Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[shipobjnum]);
-			Script_system.RemHookVars(2, "Ship", "Parent");
-		}
-
 		// if in multiplayer (and I am the host) and in the mission, send a wing create command to all
 		// other players
 		if ( MULTIPLAYER_MASTER ){
@@ -6022,7 +6015,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 		// or in front of some other ship.
 		index = wingp->current_count - num_to_set;
 		leader_objp = &Objects[Ships[wingp->ship_index[index]].objnum];
-		if (mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(leader_objp), wingp->arrival_path_mask, &pos, &orient)) {
+		if (mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(leader_objp), wingp->arrival_path_mask, &pos, &orient) != -1) {
 			// modify the remaining ships created
 			index++;
 			wing_index = 1;
@@ -6413,7 +6406,7 @@ p_object *mission_parse_get_arrival_ship(ushort net_signature)
 
 /**
  * Sets the arrival location of a parse object according to the arrival location of the object.
- * @return true if object set to new position, false if not.
+ * @return objnum of anchor ship if there is one, -1 otherwise.
  */
 int mission_set_arrival_location(int anchor, int location, int dist, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient)
 {
@@ -6422,7 +6415,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 	matrix orient;
 
 	if ( location == ARRIVE_AT_LOCATION )
-		return 0;
+		return -1;
 
 	Assert(anchor >= 0);
 
@@ -6453,7 +6446,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 	{
 		Assert ( location != ARRIVE_FROM_DOCK_BAY );		// bogus data somewhere!!!  get mwa
 		nprintf (("allender", "couldn't find ship for arrival anchor -- using location ship created at"));
-		return 0;
+		return -1;
 	}
 
 	// take the shipnum and get the position.  once we have positions, we can determine where
@@ -6469,7 +6462,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 		// if we get an error, just let the ship arrive(?)
 		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask, &pos, &fvec) == -1 ) {
 			Int3();			// get MWA or AL -- not sure what to do here when we cannot acquire a path
-			return 0;
+			return -1;
 		}
 		Objects[objnum].pos = pos;
 		vm_vector_2_matrix(&Objects[objnum].orient, &fvec, NULL, NULL);
@@ -6547,7 +6540,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 	if ( new_orient )
 		memcpy( new_orient, &Objects[objnum].orient, sizeof(matrix) );
 
-	return 1;
+	return anchor_objnum;
 }
 
 /**
@@ -6683,24 +6676,6 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 		mission_parse_support_arrived(objnum);
 	else
 		list_remove(&Ship_arrival_list, p_objp);
-
-	int anchor_objnum = -1;
-	if (p_objp->arrival_anchor >= 0) {
-		int shipnum = ship_name_lookup(Parse_names[p_objp->arrival_anchor]);
-
-		// This shouldn't be happening
-		Assertion(shipnum >= 0 && shipnum < MAX_SHIPS, "Arriving ship '%s' does not exist!", Parse_names[p_objp->arrival_anchor]);
-
-		anchor_objnum = Ships[shipnum].objnum;
-	}
-
-	if (anchor_objnum >= 0)
-		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", &Objects[anchor_objnum]);
-	else
-		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
-
-	Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[objnum]);
-	Script_system.RemHookVars(2, "Ship", "Parent");
 }
 
 // Goober5000
