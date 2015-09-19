@@ -335,6 +335,11 @@ void generic_render_eff_stream(generic_anim *ga)
 				gr_update_texture(ga->bitmap_id, bpp, (ubyte*)next_frame_bmp->data, ga->width, ga->height);
 			bm_unlock(ga->eff.next_frame);
 			bm_unload(ga->eff.next_frame, 0, true);
+			if (ga->current_frame == ga->num_frames-1)
+			{
+				snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename);
+				bm_reload(ga->eff.next_frame, frame_name);
+			}
 		}
 	#ifdef TIMER
 		mprintf(("end: %d\n", timer_get_fixed_seconds() - start_time));
