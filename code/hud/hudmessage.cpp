@@ -1245,8 +1245,7 @@ anim_instance* HudGaugeTalkingHead::createAnim(int anim_start_frame, anim* anim_
 }
 
 /**
- * Renders everything for a head animation except the actual head animation
- * ANI (see anim_render_all), i.e. the background, border & title
+ * Renders everything for a head animation
  * Also checks for when new head ani's need to start playing
  */
 void HudGaugeTalkingHead::render(float frametime)
