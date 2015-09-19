@@ -25,6 +25,7 @@ public:
 	CString	m_story_file;
 	CString	m_font_file;
 	CString m_voice_file;
+	int		m_fiction_ui;
 	int		m_fiction_music;
 	//}}AFX_DATA
 

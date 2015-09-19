@@ -25,6 +25,11 @@
 // MISSION FICTION VIEWER DEFINES/VARS
 //
 #define NUM_FVW_SETTINGS	2
+char *Fiction_viewer_ui_names[NUM_FVW_SETTINGS] =
+{
+	"FS2",	// FreeSpace 2
+	"WCS"	// Wing Commander Saga
+};
 
 char *Fiction_viewer_screen_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
 {
@@ -273,15 +278,20 @@ void fiction_viewer_init()
 	// music
 	common_music_init(SCORE_FICTION_VIEWER);
 
-	// see if we have a background bitmap, and if so, which one
-	// currently, we prioritize the UI that comes latest in the array;
-	// in the future we might specify this in the mission or in a tbl
-	for (Fiction_viewer_ui = NUM_FVW_SETTINGS - 1; Fiction_viewer_ui >= 0; Fiction_viewer_ui--)
+	if (Fiction_viewer_ui < 0)
 	{
-		// load the first available background bitmap
+		// no UI specified; use the last UI in the array that has an available background bitmap
+		for (Fiction_viewer_ui = NUM_FVW_SETTINGS - 1; Fiction_viewer_ui >= 0; Fiction_viewer_ui--)
+		{
+			Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
+			if (Fiction_viewer_bitmap >= 0)
+				break;
+		}
+	}
+	else
+	{
+		// use the specified UI's background bitmap
 		Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
-		if (Fiction_viewer_bitmap >= 0)
-			break;
 	}
 	
 	// no ui is valid?
@@ -477,6 +487,37 @@ const char *fiction_voice()
 	return Fiction_viewer_voice_filename;
 }
 
+int fiction_ui_index()
+{
+	return Fiction_viewer_ui;
+}
+
+const char *fiction_ui_name()
+{
+	if (Fiction_viewer_ui >= 0 && Fiction_viewer_ui < NUM_FVW_SETTINGS)
+	{
+		return Fiction_viewer_ui_names[Fiction_viewer_ui];
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
+int fiction_viewer_ui_name_to_index(char *ui_name)
+{
+	int i;
+	for (i = 0; i < NUM_FVW_SETTINGS; i++)
+	{
+		if (!stricmp(ui_name, Fiction_viewer_ui_names[i]))
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 void fiction_viewer_reset()
 {
 	if (Fiction_viewer_text != NULL)
@@ -494,9 +535,11 @@ void fiction_viewer_reset()
 		audiostream_close_file(Fiction_viewer_voice);
 		Fiction_viewer_voice = -1;
 	}
+
+	Fiction_viewer_ui = -1;
 }
 
-void fiction_viewer_load(const char *filename, const char *font_filename, const char *voice_filename)
+void fiction_viewer_load(const char *filename, const char *font_filename, const char *voice_filename, int ui_index)
 {
 	int file_length;
 	Assertion(filename, "Invalid fictionviewer filename pointer given!");
@@ -514,6 +557,9 @@ void fiction_viewer_load(const char *filename, const char *font_filename, const 
 	strcpy_s(Fiction_viewer_filename, filename);
 	strcpy_s(Fiction_viewer_font_filename, font_filename);
 	strcpy_s(Fiction_viewer_voice_filename, voice_filename);
+
+	// save the ui index
+	Fiction_viewer_ui = ui_index;
 
 	// see if we have a matching font
 	Fiction_viewer_fontnum = gr_get_fontnum(Fiction_viewer_font_filename);

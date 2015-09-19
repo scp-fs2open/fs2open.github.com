@@ -807,6 +807,17 @@ int CFred_mission_save::save_fiction()
 			}
 			else
 				optional_string_fred("$Voice:");
+
+			// save UI
+			const char *ui_name = fiction_ui_name();
+			if (ui_name)
+			{
+				if (optional_string_fred("$UI:"))
+					parse_comments();
+				else
+					fout("\n$UI:");
+				fout(" %s", ui_name);
+			}
 		}
 		else
 		{
