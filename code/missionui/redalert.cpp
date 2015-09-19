@@ -328,24 +328,13 @@ void red_alert_init()
 	// hud_anim_load(&Flash_anim);
 
 	Red_alert_voice = -1;
-	Background_bitmap = -1;
 
 	if ( !Briefing ) {
 		Briefing = &Briefings[0];			
 	}
 
 	// load in background image and flashing red alert animation
-	if (*Briefing->background[gr_screen.res]) {
-		Background_bitmap = bm_load(Briefing->background[gr_screen.res]);
-		if (Background_bitmap < 0) {
-			mprintf(("Failed to load custom briefing bitmap %s!\n", Briefing->background[gr_screen.res]));
-		}
-	}
-
-	// if special background failed to load, or if no special background was supplied, load the standard bitmap
-	if (Background_bitmap < 0) {
-		Background_bitmap = bm_load(Red_alert_fname[gr_screen.res]);
-	}
+	Background_bitmap = mission_ui_background_load(Briefing->background[gr_screen.res], Red_alert_fname[gr_screen.res]);
 
 	if ( Briefing->num_stages > 0 ) {
 		brief_color_text_init(Briefing->stages[0].text.c_str(), Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], default_redalert_briefing_color, 0);

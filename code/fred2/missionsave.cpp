@@ -535,19 +535,7 @@ int CFred_mission_save::save_mission_info()
 		}
 	}
 
-	// Phreak's loading screen stuff
-	if (Format_fs2_open != FSO_FORMAT_RETAIL) //-V581
-	{
-		if (strlen(The_mission.loading_screen[GR_640]) > 0) //-V805
-		{
-			fout("\n\n$Load Screen 640:\t%s",The_mission.loading_screen[GR_640]);
-		}
-
-		if (strlen(The_mission.loading_screen[GR_1024]) > 0) //-V805
-		{
-			fout("\n$Load Screen 1024:\t%s",The_mission.loading_screen[GR_1024]);
-		}
-	}
+	save_custom_bitmap("$Load Screen 640:", "$Load Screen 1024:", The_mission.loading_screen[GR_640], The_mission.loading_screen[GR_1024], 1);
 
 	// Phreak's skybox stuff
 	if (strlen(The_mission.skybox_model) > 0) //-V805
@@ -841,29 +829,7 @@ int CFred_mission_save::save_cmd_brief()
 	if (The_mission.game_type & MISSION_TYPE_MULTI)
 		return err;  // no command briefings allowed in multiplayer missions.
 
-		// Yarn's command briefing background stuff, based on Goober5000's briefing background stuff
-		if (Format_fs2_open != FSO_FORMAT_RETAIL)
-		{
-			bool background_written = false;
-
-			if (strlen(Cur_cmd_brief->background[GR_640]) > 0)
-			{
-				if (!background_written) {
-					fout("\n");
-				}
-				fout("\n$Background 640: %s", Cur_cmd_brief->background[GR_640]);
-				background_written = true;
-			}
-
-			if (strlen(Cur_cmd_brief->background[GR_1024]) > 0)
-			{
-				if (!background_written) {
-					fout("\n");
-				}
-				fout("\n$Background 1024: %s", Cur_cmd_brief->background[GR_1024]);
-				background_written = true;
-			}
-		}
+	save_custom_bitmap("$Background 640:", "$Background 1024:", Cur_cmd_brief->background[GR_640], Cur_cmd_brief->background[GR_1024], 1);
 
 	for (stage=0; stage<Cur_cmd_brief->num_stages; stage++) {
 		required_string_fred("$Stage Text:");
@@ -918,39 +884,9 @@ int CFred_mission_save::save_briefing()
 		required_string_fred("$start_briefing");
 		parse_comments();
 
-		// Goober5000's briefing background stuff (c.f. Phreak's loading screen stuff)
-		if (Format_fs2_open != FSO_FORMAT_RETAIL)
-		{
-			if (strlen(Briefings[nb].background[GR_640]) > 0)
-			{
-				fout("\n$briefing_background_640: %s", Briefings[nb].background[GR_640]);
-			}
-
-			if (strlen(Briefings[nb].background[GR_1024]) > 0)
-			{
-				fout("\n$briefing_background_1024: %s", Briefings[nb].background[GR_1024]);
-			}
-			
-			if (strlen(Briefings[nb].ship_select_background[GR_640]) > 0)
-			{
-				fout("\n$ship_select_background_640: %s", Briefings[nb].ship_select_background[GR_640]);
-			}
-
-			if (strlen(Briefings[nb].ship_select_background[GR_1024]) > 0)
-			{
-				fout("\n$ship_select_background_1024: %s", Briefings[nb].ship_select_background[GR_1024]);
-			}
-			
-			if (strlen(Briefings[nb].weapon_select_background[GR_640]) > 0)
-			{
-				fout("\n$weapon_select_background_640: %s", Briefings[nb].weapon_select_background[GR_640]);
-			}
-
-			if (strlen(Briefings[nb].weapon_select_background[GR_1024]) > 0)
-			{
-				fout("\n$weapon_select_background_1024: %s", Briefings[nb].weapon_select_background[GR_1024]);
-			}
-		}
+		save_custom_bitmap("$briefing_background_640:", "$briefing_background_1024:", Briefings[nb].background[GR_640], Briefings[nb].background[GR_1024]);
+		save_custom_bitmap("$ship_select_background_640:", "$ship_select_background_1024:", Briefings[nb].ship_select_background[GR_640], Briefings[nb].ship_select_background[GR_1024]);
+		save_custom_bitmap("$weapon_select_background_640:", "$weapon_select_background_1024:", Briefings[nb].weapon_select_background[GR_640], Briefings[nb].weapon_select_background[GR_1024]);
 
 		Assert(Briefings[nb].num_stages <= MAX_BRIEF_STAGES);
 		required_string_fred("$num_stages:");
@@ -1124,29 +1060,7 @@ int CFred_mission_save::save_debriefing()
 		required_string_fred("#Debriefing_info");
 		parse_comments(2);
 
-		// Yarn's debriefing background stuff, based on Goober5000's briefing background stuff
-		if (Format_fs2_open != FSO_FORMAT_RETAIL)
-		{
-			bool background_written = false;
-
-			if (strlen(Debriefing->background[GR_640]) > 0)
-			{
-				if (!background_written) {
-					fout("\n");
-				}
-				fout("\n$Background 640: %s", Debriefing->background[GR_640]);
-				background_written = true;
-			}
-
-			if (strlen(Debriefing->background[GR_1024]) > 0)
-			{
-				if (!background_written) {
-					fout("\n");
-				}
-				fout("\n$Background 1024: %s", Debriefing->background[GR_1024]);
-				background_written = true;
-			}
-		}
+		save_custom_bitmap("$Background 640:", "$Background 1024:", Debriefing->background[GR_640], Debriefing->background[GR_1024], 1);
 
 		required_string_fred("$Num stages:");
 		parse_comments(2);
@@ -3974,6 +3888,28 @@ int CFred_mission_save::save_music()
 	fso_comment_pop(true);
 
 	return err;
+}
+
+void CFred_mission_save::save_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, const char *string_field_640, const char *string_field_1024, int blank_lines)
+{
+	if (Format_fs2_open != FSO_FORMAT_RETAIL)
+	{
+		if ((*string_field_640 != '\0') || (*string_field_1024 != '\0'))
+		{
+			while (blank_lines-- > 0)
+				fout("\n");
+		}
+
+		if (*string_field_640 != '\0')
+		{
+			fout("\n%s %s", expected_string_640, string_field_640);
+		}
+
+		if (*string_field_1024 != '\0')
+		{
+			fout("\n%s %s", expected_string_1024, string_field_1024);
+		}
+	}
 }
 
 void CFred_mission_save::save_turret_info(ship_subsys *ptr, int ship)

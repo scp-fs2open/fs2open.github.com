@@ -860,34 +860,18 @@ void debrief_ui_init()
 	Debrief_overlay_id = help_overlay_get_index(DEBRIEFING_OVERLAY);
 	help_overlay_set_state(Debrief_overlay_id,gr_screen.res,0);
 
-	Background_bitmap = -1;
-
-	if ( *Debriefing->background[gr_screen.res] ) {
-		Background_bitmap = bm_load(Debriefing->background[gr_screen.res]);
-		if ( Background_bitmap < 0 ) {
-			mprintf(("Failed to load custom debriefing bitmap %s!\n", Debriefing->background[gr_screen.res]));
-		}
-	}
-
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		// close down any old instances of the chatbox
 		chatbox_close();
 
 		// create the new one
 		chatbox_create();
-		// if special background failed to load, or if no special background was supplied, load the standard bitmap
-		if ( Background_bitmap < 0 ) {
-			Background_bitmap = bm_load(Debrief_multi_name[gr_screen.res]);
-		}
 		List_region.create(&Debrief_ui_window, "", Debrief_list_coords[gr_screen.res][0], Debrief_list_coords[gr_screen.res][1], Debrief_list_coords[gr_screen.res][2], Debrief_list_coords[gr_screen.res][3], 0, 1);
 		List_region.hide();
 
-	} else {
-		// if special background failed to load, or if no special background was supplied, load the standard bitmap
-		if ( Background_bitmap < 0 ) {
-			Background_bitmap = bm_load(Debrief_single_name[gr_screen.res]);
-		}
 	}
+
+	Background_bitmap = mission_ui_background_load(Debriefing->background[gr_screen.res], Debrief_single_name[gr_screen.res], Debrief_multi_name[gr_screen.res]);
 
 	if ( Background_bitmap < 0 ) {
 		Warning(LOCATION, "Could not load the background bitmap for debrief screen");

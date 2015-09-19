@@ -1154,19 +1154,7 @@ void multi_ts_init_graphics()
 	Multi_ts_window.set_mask_bmap(Multi_ts_bitmap_mask_fname[gr_screen.res]);
 
 	// load the background bitmap
-	Multi_ts_bitmap = -1;
-
-	if(Briefing && *Briefing->ship_select_background[gr_screen.res]) {
-		Multi_ts_bitmap = bm_load(Briefing->ship_select_background[gr_screen.res]);
-		if (Multi_ts_bitmap < 0) {
-			mprintf(("Failed to load custom ship select bitmap %s!\n", Briefing->ship_select_background[gr_screen.res]));
-		}
-	}
-
-	// if special background failed to load, or if no special background was supplied, load the standard bitmap
-	if(Multi_ts_bitmap < 0) {
-		Multi_ts_bitmap = bm_load(Multi_ts_bitmap_fname[gr_screen.res]);
-	}
+	Multi_ts_bitmap = mission_ui_background_load(Briefing->ship_select_background[gr_screen.res], Multi_ts_bitmap_fname[gr_screen.res]);
 
 	if(Multi_ts_bitmap < 0){
 		// we failed to load the bitmap - this is very bad

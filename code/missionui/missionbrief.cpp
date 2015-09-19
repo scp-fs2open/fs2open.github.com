@@ -739,23 +739,7 @@ void brief_load_bitmaps()
 //
 void brief_ui_init()
 {
-	Brief_background_bitmap = -1;
-
-	if (*Briefing->background[gr_screen.res]) {
-		Brief_background_bitmap = bm_load(Briefing->background[gr_screen.res]);
-		if (Brief_background_bitmap < 0) {
-			mprintf(("Failed to load custom briefing bitmap %s!\n", Briefing->background[gr_screen.res]));
-		}
-	}
-
-	// if special background failed to load, or if no special background was supplied, load the standard bitmap
-	if (Brief_background_bitmap < 0) {
-		if (Game_mode & GM_MULTIPLAYER) {
-			Brief_background_bitmap = bm_load(Brief_multi_filename[gr_screen.res]);
-		} else {
-			Brief_background_bitmap = bm_load(Brief_filename[gr_screen.res]);
-		}
-	}
+	Brief_background_bitmap = mission_ui_background_load(Briefing->background[gr_screen.res], Brief_filename[gr_screen.res], Brief_multi_filename[gr_screen.res]);
 
 	if ( Num_brief_stages <= 0 ){
 		return;
