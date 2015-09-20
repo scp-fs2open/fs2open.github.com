@@ -163,6 +163,7 @@ static int Fiction_viewer_inited = 0;
 static int Fiction_viewer_old_fontnum = -1;
 static int Fiction_viewer_fontnum = -1;
 
+static char Fiction_viewer_background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 static char Fiction_viewer_filename[MAX_FILENAME_LEN];
 static char Fiction_viewer_font_filename[MAX_FILENAME_LEN];
 static char Fiction_viewer_voice_filename[MAX_FILENAME_LEN];
@@ -278,20 +279,35 @@ void fiction_viewer_init()
 	// music
 	common_music_init(SCORE_FICTION_VIEWER);
 
-	if (Fiction_viewer_ui < 0)
+	Fiction_viewer_bitmap = -1;
+
+	if (*Fiction_viewer_background[gr_screen.res] != '\0')
 	{
-		// no UI specified; use the last UI in the array that has an available background bitmap
-		for (Fiction_viewer_ui = NUM_FVW_SETTINGS - 1; Fiction_viewer_ui >= 0; Fiction_viewer_ui--)
-		{
-			Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
-			if (Fiction_viewer_bitmap >= 0)
-				break;
-		}
+		Fiction_viewer_bitmap = bm_load(Fiction_viewer_background[gr_screen.res]);
+		if (Fiction_viewer_bitmap < 0)
+			mprintf(("Failed to load custom background bitmap %s!\n", Fiction_viewer_background[gr_screen.res]));
+		else if (Fiction_viewer_ui < 0)
+			Fiction_viewer_ui = 0;
 	}
-	else
+
+	// if special background failed to load, or if no special background was supplied, load the standard bitmap
+	if (Fiction_viewer_bitmap < 0)
 	{
-		// use the specified UI's background bitmap
-		Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
+		if (Fiction_viewer_ui < 0)
+		{
+			// no UI specified; use the last UI in the array that has an available background bitmap
+			for (Fiction_viewer_ui = NUM_FVW_SETTINGS - 1; Fiction_viewer_ui >= 0; Fiction_viewer_ui--)
+			{
+				Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
+				if (Fiction_viewer_bitmap >= 0)
+					break;
+			}
+		}
+		else
+		{
+			// use the specified UI's background bitmap
+			Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
+		}
 	}
 	
 	// no ui is valid?
@@ -472,19 +488,9 @@ int mission_has_fiction()
 		return (Fiction_viewer_text != NULL);
 }
 
-const char *fiction_file()
+const char *fiction_background(int res)
 {
-	return Fiction_viewer_filename;
-}
-
-const char *fiction_font()
-{
-	return Fiction_viewer_font_filename;
-}
-
-const char *fiction_voice()
-{
-	return Fiction_viewer_voice_filename;
+	return Fiction_viewer_background[res];
 }
 
 int fiction_ui_index()
@@ -518,11 +524,28 @@ int fiction_viewer_ui_name_to_index(char *ui_name)
 	return -1;
 }
 
+const char *fiction_file()
+{
+	return Fiction_viewer_filename;
+}
+
+const char *fiction_font()
+{
+	return Fiction_viewer_font_filename;
+}
+
+const char *fiction_voice()
+{
+	return Fiction_viewer_voice_filename;
+}
+
 void fiction_viewer_reset()
 {
 	if (Fiction_viewer_text != NULL)
 		vm_free(Fiction_viewer_text);
 	Fiction_viewer_text = NULL;
+
+	Fiction_viewer_ui = -1;
 
 	*Fiction_viewer_filename = 0;
 	*Fiction_viewer_font_filename = 0;
@@ -535,11 +558,9 @@ void fiction_viewer_reset()
 		audiostream_close_file(Fiction_viewer_voice);
 		Fiction_viewer_voice = -1;
 	}
-
-	Fiction_viewer_ui = -1;
 }
 
-void fiction_viewer_load(const char *filename, const char *font_filename, const char *voice_filename, int ui_index)
+void fiction_viewer_load(const char *background_640, const char *background_1024, int ui_index, const char *filename, const char *font_filename, const char *voice_filename)
 {
 	int file_length;
 	Assertion(filename, "Invalid fictionviewer filename pointer given!");
@@ -553,13 +574,15 @@ void fiction_viewer_load(const char *filename, const char *font_filename, const 
 		fiction_viewer_reset();
 	}
 
+	// save the ui index
+	Fiction_viewer_ui = ui_index;
+
 	// save our filenames
+	strcpy_s(Fiction_viewer_background[GR_640], background_640);
+	strcpy_s(Fiction_viewer_background[GR_1024], background_1024);
 	strcpy_s(Fiction_viewer_filename, filename);
 	strcpy_s(Fiction_viewer_font_filename, font_filename);
 	strcpy_s(Fiction_viewer_voice_filename, voice_filename);
-
-	// save the ui index
-	Fiction_viewer_ui = ui_index;
 
 	// see if we have a matching font
 	Fiction_viewer_fontnum = gr_get_fontnum(Fiction_viewer_font_filename);

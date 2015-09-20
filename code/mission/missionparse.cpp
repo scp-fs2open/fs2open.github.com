@@ -1262,15 +1262,32 @@ done_briefing_music:
  */
 void parse_fiction(mission *pm)
 {
+	char background_640[MAX_FILENAME_LEN];
+	char background_1024[MAX_FILENAME_LEN];
+	int ui_index = -1;
 	char filename[MAX_FILENAME_LEN];
 	char font_filename[MAX_FILENAME_LEN];
 	char voice_filename[MAX_FILENAME_LEN];
-	int ui_index = -1;
 
 	fiction_viewer_reset();
 
 	if (!optional_string("#Fiction Viewer"))
 		return;
+
+	parse_custom_bitmap("$Background 640:", "$Background 1024:", background_640, background_1024);
+
+	if (optional_string("$UI:")) {
+		char ui_name[NAME_LENGTH];
+		stuff_string(ui_name, F_NAME, NAME_LENGTH);
+		ui_index = fiction_viewer_ui_name_to_index(ui_name);
+		if (ui_index < 0)
+		{
+			Warning(LOCATION, "Unrecognized fiction viewer UI: %s", ui_name);
+		}
+	}
+	if (!Fred_running && ui_index < 0) {
+		ui_index = Default_fiction_viewer_ui;
+	}
 
 	required_string("$File:");
 	stuff_string(filename, F_FILESPEC, MAX_FILENAME_LEN);
@@ -1287,20 +1304,7 @@ void parse_fiction(mission *pm)
 		strcpy_s(voice_filename, "");
 	}
 
-	if (optional_string("$UI:")) {
-		char ui_name[NAME_LENGTH];
-		stuff_string(ui_name, F_NAME, NAME_LENGTH);
-		ui_index = fiction_viewer_ui_name_to_index(ui_name);
-		if (ui_index < 0)
-		{
-			Warning(LOCATION, "Unrecognized fiction viewer UI: %s", ui_name);
-		}
-	}
-	if (!Fred_running && ui_index < 0) {
-		ui_index = Default_fiction_viewer_ui;
-	}
-
-	fiction_viewer_load(filename, font_filename, voice_filename, ui_index);
+	fiction_viewer_load(background_640, background_1024, ui_index, filename, font_filename, voice_filename);
 }
 
 /**

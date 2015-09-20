@@ -767,6 +767,20 @@ int CFred_mission_save::save_fiction()
 
 			fout("\n");
 
+			// save background
+			save_custom_bitmap("$Background 640:", "$Background 1024:", fiction_background(GR_640), fiction_background(GR_1024));
+
+			// save UI
+			const char *ui_name = fiction_ui_name();
+			if (ui_name)
+			{
+				if (optional_string_fred("$UI:"))
+					parse_comments();
+				else
+					fout("\n$UI:");
+				fout(" %s", ui_name);
+			}
+
 			// save file
 			required_string_fred("$File:");
 			parse_comments();
@@ -795,17 +809,6 @@ int CFred_mission_save::save_fiction()
 			}
 			else
 				optional_string_fred("$Voice:");
-
-			// save UI
-			const char *ui_name = fiction_ui_name();
-			if (ui_name)
-			{
-				if (optional_string_fred("$UI:"))
-					parse_comments();
-				else
-					fout("\n$UI:");
-				fout(" %s", ui_name);
-			}
 		}
 		else
 		{
