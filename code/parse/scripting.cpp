@@ -839,7 +839,7 @@ void script_state::UnloadImages()
 {
 	for(int i = 0; i < (int)ScriptImages.size(); i++)
 	{
-		bm_unload(ScriptImages[i].handle);
+		bm_release(ScriptImages[i].handle);
 	}
 
 	ScriptImages.clear();
