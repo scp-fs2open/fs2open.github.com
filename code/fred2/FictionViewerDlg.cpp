@@ -60,6 +60,9 @@ BOOL FictionViewerDlg::OnInitDialog()
 	}
 
 	// init variables
+	m_fiction_background_640 = _T(fiction_background(GR_640));
+	m_fiction_background_1024 = _T(fiction_background(GR_1024));
+	m_fiction_ui = fiction_ui_index();
 	m_story_file = _T(fiction_file());
 	m_font_file = _T(fiction_font());
 	m_voice_file = _T(fiction_voice());
@@ -76,7 +79,7 @@ void FictionViewerDlg::OnOK()
 
 	// load it up
 	fiction_viewer_reset();
-	fiction_viewer_load((const char *)(LPCSTR)m_story_file, (const char *)(LPCSTR)m_font_file, (const char *)(LPCSTR)m_voice_file);
+	fiction_viewer_load((const char *)(LPCSTR)m_fiction_background_640, (const char *)(LPCSTR)m_fiction_background_1024, m_fiction_ui, (const char *)(LPCSTR)m_story_file, (const char *)(LPCSTR)m_font_file, (const char *)(LPCSTR)m_voice_file);
 
 	// set music
 	Mission_music[SCORE_FICTION_VIEWER] = m_fiction_music - 1;

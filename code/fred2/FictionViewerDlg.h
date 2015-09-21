@@ -22,6 +22,9 @@ public:
 // Dialog Data
 	//{{AFX_DATA(FictionViewerDlg)
 	enum { IDD = IDD_FICTION_VIEWER };
+	CString	m_fiction_background_640;
+	CString	m_fiction_background_1024;
+	int		m_fiction_ui;
 	CString	m_story_file;
 	CString	m_font_file;
 	CString m_voice_file;

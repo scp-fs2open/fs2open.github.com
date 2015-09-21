@@ -565,11 +565,11 @@ void cmd_brief_init(int team)
 
 	// first determine which layout to use
 	Uses_scroll_buttons = 1;	// assume true
-	Cmd_brief_background_bitmap = bm_load(Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);	// try to load extra one first
+	Cmd_brief_background_bitmap = mission_ui_background_load(Cur_cmd_brief->background[gr_screen.res], Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);	// try to load extra one first
 	if (Cmd_brief_background_bitmap < 0)	// failed to load
 	{
 		Uses_scroll_buttons = 0;	// nope, sorry
-		Cmd_brief_background_bitmap = bm_load(Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);
+		Cmd_brief_background_bitmap = mission_ui_background_load(NULL, Cmd_brief_fname[Uses_scroll_buttons][gr_screen.res]);
 	}
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);

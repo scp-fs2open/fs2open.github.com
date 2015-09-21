@@ -50,6 +50,7 @@
 #include "missionui/fictionviewer.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
+#include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "network/multi.h"
@@ -1261,6 +1262,9 @@ done_briefing_music:
  */
 void parse_fiction(mission *pm)
 {
+	char background_640[MAX_FILENAME_LEN];
+	char background_1024[MAX_FILENAME_LEN];
+	int ui_index = -1;
 	char filename[MAX_FILENAME_LEN];
 	char font_filename[MAX_FILENAME_LEN];
 	char voice_filename[MAX_FILENAME_LEN];
@@ -1269,6 +1273,21 @@ void parse_fiction(mission *pm)
 
 	if (!optional_string("#Fiction Viewer"))
 		return;
+
+	parse_custom_bitmap("$Background 640:", "$Background 1024:", background_640, background_1024);
+
+	if (optional_string("$UI:")) {
+		char ui_name[NAME_LENGTH];
+		stuff_string(ui_name, F_NAME, NAME_LENGTH);
+		ui_index = fiction_viewer_ui_name_to_index(ui_name);
+		if (ui_index < 0)
+		{
+			Warning(LOCATION, "Unrecognized fiction viewer UI: %s", ui_name);
+		}
+	}
+	if (!Fred_running && ui_index < 0) {
+		ui_index = Default_fiction_viewer_ui;
+	}
 
 	required_string("$File:");
 	stuff_string(filename, F_FILESPEC, MAX_FILENAME_LEN);
@@ -1285,7 +1304,7 @@ void parse_fiction(mission *pm)
 		strcpy_s(voice_filename, "");
 	}
 
-	fiction_viewer_load(filename, font_filename, voice_filename);
+	fiction_viewer_load(background_640, background_1024, ui_index, filename, font_filename, voice_filename);
 }
 
 /**
@@ -1299,6 +1318,10 @@ void parse_cmd_brief(mission *pm)
 	stage = 0;
 
 	required_string("#Command Briefing");
+
+	// Yarn - use the same code as for mission loading screens
+	parse_custom_bitmap("$Background 640:", "$Background 1024:", Cur_cmd_brief->background[GR_640], Cur_cmd_brief->background[GR_1024]);
+
 	while (optional_string("$Stage Text:")) {
 		Assert(stage < CMD_BRIEF_STAGES_MAX);
 		stuff_string(Cur_cmd_brief->stage[stage].text, F_MULTITEXT, NULL);
@@ -1356,7 +1379,9 @@ void parse_briefing(mission *pm, int flags)
 		required_string("$start_briefing");
 
 		// Goober5000 - use the same code as for mission loading screens
-		parse_custom_bitmap("$background_640:", "$background_1024:", bp->background[GR_640], bp->background[GR_1024]);
+		parse_custom_bitmap("$briefing_background_640:", "$briefing_background_1024:", bp->background[GR_640], bp->background[GR_1024]);
+		parse_custom_bitmap("$ship_select_background_640:", "$ship_select_background_1024:", bp->ship_select_background[GR_640], bp->ship_select_background[GR_1024]);
+		parse_custom_bitmap("$weapon_select_background_640:", "$weapon_select_background_1024:", bp->weapon_select_background[GR_640], bp->weapon_select_background[GR_1024]);
 
 		required_string("$num_stages:");
 		stuff_int(&bp->num_stages);
@@ -1569,6 +1594,9 @@ void parse_debriefing_new(mission *pm)
 		stage_num = 0;
 
 		db = &Debriefings[nt];
+
+		// Yarn - use the same code as for mission loading screens
+		parse_custom_bitmap("$Background 640:", "$Background 1024:", db->background[GR_640], db->background[GR_1024]);
 
 		required_string("$Num stages:");
 		stuff_int(&db->num_stages);

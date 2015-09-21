@@ -866,13 +866,12 @@ void debrief_ui_init()
 
 		// create the new one
 		chatbox_create();
-		Background_bitmap = bm_load(Debrief_multi_name[gr_screen.res]);
 		List_region.create(&Debrief_ui_window, "", Debrief_list_coords[gr_screen.res][0], Debrief_list_coords[gr_screen.res][1], Debrief_list_coords[gr_screen.res][2], Debrief_list_coords[gr_screen.res][3], 0, 1);
 		List_region.hide();
 
-	} else {
-		Background_bitmap = bm_load(Debrief_single_name[gr_screen.res]);
 	}
+
+	Background_bitmap = mission_ui_background_load(Debriefing->background[gr_screen.res], Debrief_single_name[gr_screen.res], Debrief_multi_name[gr_screen.res]);
 
 	if ( Background_bitmap < 0 ) {
 		Warning(LOCATION, "Could not load the background bitmap for debrief screen");

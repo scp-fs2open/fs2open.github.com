@@ -739,7 +739,7 @@ void ship_select_init()
 	ship_select_buttons_init();
 
 	// init ship selection background bitmap
-	Ship_select_background_bitmap = bm_load(Ship_select_background_fname[gr_screen.res]);
+	Ship_select_background_bitmap = mission_ui_background_load(Briefing->ship_select_background[gr_screen.res], Ship_select_background_fname[gr_screen.res]);
 
 	// init ship selection ship model rendering window
 	start_ship_animation( Selected_ss_class );
