@@ -12438,7 +12438,7 @@ int l_cf_get_path_id(char* n_path)
 
 	//Remove trailing slashes
 	i = path_len -1;
-	while(buf[i] == '\\' || buf[i] == '/')
+	while(i >= 0 && (buf[i] == '\\' || buf[i] == '/'))
 		buf[i--] = '\0';
 
 	//Remove leading slashes
