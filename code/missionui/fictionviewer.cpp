@@ -167,7 +167,7 @@ static int Fiction_viewer_inited = 0;
 static int Fiction_viewer_old_fontnum = -1;
 static int Fiction_viewer_fontnum = -1;
 
-static char *Fiction_viewer_text = NULL;
+static char *Fiction_viewer_text = nullptr;
 static int Fiction_viewer_voice = -1;
 
 static int Fiction_viewer_ui = -1;
@@ -489,7 +489,7 @@ bool mission_has_fiction()
 	if (Fred_running)
 		return !Fiction_viewer_stages.empty();
 	else
-		return (Fiction_viewer_text != NULL);
+		return (Fiction_viewer_text != nullptr);
 }
 
 int fiction_viewer_ui_name_to_index(const char *ui_name)
@@ -508,9 +508,9 @@ int fiction_viewer_ui_name_to_index(const char *ui_name)
 
 void fiction_viewer_reset()
 {
-	if (Fiction_viewer_text != NULL)
+	if (Fiction_viewer_text != nullptr)
 		vm_free(Fiction_viewer_text);
-	Fiction_viewer_text = NULL;
+	Fiction_viewer_text = nullptr;
 
 	Fiction_viewer_stages.clear();
 	Fiction_viewer_active_stage = -1;
@@ -531,9 +531,9 @@ void fiction_viewer_load(int stage)
 	Assertion(stage >= 0 && static_cast<size_t>(stage) < Fiction_viewer_stages.size(), "stage parameter must be in range of Fiction_viewer_stages!");
 
 	// just to be sure
-	if (Fiction_viewer_text != NULL)
+	if (Fiction_viewer_text != nullptr)
 	{
-		Error(LOCATION, "Fiction viewer text should be NULL here!  Trace out and fix!");
+		Assertion(Fiction_viewer_text != nullptr, "Fiction viewer text should be a null pointer, but instead is '%s'. Trace out and fix!\n", Fiction_viewer_text);
 		return;
 	}
 
