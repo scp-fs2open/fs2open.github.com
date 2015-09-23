@@ -619,6 +619,7 @@ typedef struct insignia {
 #define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
 #define PM_FLAG_TRANS_BUFFER		(1<<2)					// render transparency buffer
 #define PM_FLAG_BATCHED				(1<<3)					// this model can be batch rendered
+#define PM_FLAGS_HAS_LOOK_AT		(1<<4)					// this model has a submodel that does look_at
 
 // Goober5000
 class texture_info

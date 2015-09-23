@@ -2011,6 +2011,10 @@ void model_render_DEPRECATED(int model_num, matrix *orient, vec3d * pos, uint fl
 
 	polymodel *pm = model_get(model_num);
 
+	if (pm->flags & PM_FLAGS_HAS_LOOK_AT) {
+		model_do_look_at(model_num);
+	}
+
 	model_do_dumb_rotation(model_num);
 
 	if (flags & MR_FORCE_CLAMP)
