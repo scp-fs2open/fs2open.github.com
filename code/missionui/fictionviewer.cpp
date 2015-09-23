@@ -533,7 +533,7 @@ void fiction_viewer_load(int stage)
 	// just to be sure
 	if (Fiction_viewer_text != nullptr)
 	{
-		Assertion(Fiction_viewer_text != nullptr, "Fiction viewer text should be a null pointer, but instead is '%s'. Trace out and fix!\n", Fiction_viewer_text);
+		Assertion(Fiction_viewer_text == nullptr, "Fiction viewer text should be a null pointer, but instead is '%s'. Trace out and fix!\n", Fiction_viewer_text);
 		return;
 	}
 
