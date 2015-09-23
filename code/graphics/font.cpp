@@ -551,7 +551,7 @@ int gr_get_current_fontnum()
 	}
 }
 
-int gr_get_fontnum(char *filename)
+int gr_get_fontnum(const char *filename)
 {
 	int i;
 	for(i = 0; i < Num_fonts; i++)

@@ -1262,49 +1262,47 @@ done_briefing_music:
  */
 void parse_fiction(mission *pm)
 {
-	char background_640[MAX_FILENAME_LEN];
-	char background_1024[MAX_FILENAME_LEN];
-	int ui_index = -1;
-	char filename[MAX_FILENAME_LEN];
-	char font_filename[MAX_FILENAME_LEN];
-	char voice_filename[MAX_FILENAME_LEN];
-
 	fiction_viewer_reset();
 
-	if (!optional_string("#Fiction Viewer"))
-		return;
+	if (optional_string("#Fiction Viewer"))
+	{
+		bool fiction_viewer_loaded = false;
 
-	parse_custom_bitmap("$Background 640:", "$Background 1024:", background_640, background_1024);
-
-	if (optional_string("$UI:")) {
-		char ui_name[NAME_LENGTH];
-		stuff_string(ui_name, F_NAME, NAME_LENGTH);
-		ui_index = fiction_viewer_ui_name_to_index(ui_name);
-		if (ui_index < 0)
+		while (check_for_string("$File:"))
 		{
-			Warning(LOCATION, "Unrecognized fiction viewer UI: %s", ui_name);
+			fiction_viewer_stage stage;
+			memset(&stage, 0, sizeof(fiction_viewer_stage));
+			stage.formula = Locked_sexp_true;
+
+			required_string("$File:");
+			stuff_string(stage.story_filename, F_FILESPEC, MAX_FILENAME_LEN);
+
+			if (optional_string("$Font:"))
+				stuff_string(stage.font_filename, F_FILESPEC, MAX_FILENAME_LEN);
+
+			if (optional_string("$Voice:"))
+				stuff_string(stage.voice_filename, F_FILESPEC, MAX_FILENAME_LEN);
+
+			if (optional_string("$UI:"))
+				stuff_string(stage.ui_name, F_NAME, NAME_LENGTH);
+
+			parse_custom_bitmap("$Background 640:", "$Background 1024:", stage.background[GR_640], stage.background[GR_1024]);
+
+			// get the sexp if we have one
+			if (optional_string("$Formula:"))
+				stage.formula = get_sexp_main();
+
+			// now, store this stage
+			Fiction_viewer_stages.push_back(stage);
+
+			// see if this is the stage we want to display, then display it
+			if (!Fred_running && !fiction_viewer_loaded && is_sexp_true(stage.formula))
+			{
+				fiction_viewer_load(Fiction_viewer_stages.size() - 1);
+				fiction_viewer_loaded = true;
+			}
 		}
 	}
-	if (!Fred_running && ui_index < 0) {
-		ui_index = Default_fiction_viewer_ui;
-	}
-
-	required_string("$File:");
-	stuff_string(filename, F_FILESPEC, MAX_FILENAME_LEN);
-
-	if (optional_string("$Font:")) {
-		stuff_string(font_filename, F_FILESPEC, MAX_FILENAME_LEN);
-	} else {
-		strcpy_s(font_filename, "");
-	}
-
-	if (optional_string("$Voice:")) {
-		stuff_string(voice_filename, F_FILESPEC, MAX_FILENAME_LEN);
-	} else {
-		strcpy_s(voice_filename, "");
-	}
-
-	fiction_viewer_load(background_640, background_1024, ui_index, filename, font_filename, voice_filename);
 }
 
 /**

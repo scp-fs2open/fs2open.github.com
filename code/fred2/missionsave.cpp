@@ -704,54 +704,74 @@ int CFred_mission_save::save_fiction()
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if (optional_string_fred("#Fiction Viewer"))
-				parse_comments();
+				parse_comments(2);
 			else
 				fout("\n\n#Fiction Viewer");
 
-			fout("\n");
-
-			// save background
-			save_custom_bitmap("$Background 640:", "$Background 1024:", fiction_background(GR_640), fiction_background(GR_1024));
-
-			// save UI
-			const char *ui_name = fiction_ui_name();
-			if (ui_name)
+			// we have multiple stages now, so save them all
+			for (SCP_vector<fiction_viewer_stage>::iterator stage = Fiction_viewer_stages.begin(); stage != Fiction_viewer_stages.end(); ++stage)
 			{
-				if (optional_string_fred("$UI:"))
-					parse_comments();
-				else
-					fout("\n$UI:");
-				fout(" %s", ui_name);
-			}
+				fout("\n");
 
-			// save file
-			required_string_fred("$File:");
-			parse_comments();
-			fout(" %s", fiction_file());
+				// save file
+				required_string_fred("$File:");
+				parse_comments();
+				fout(" %s", stage->story_filename);
 
-			// save font
-			if (strlen(fiction_font()) > 0) //-V805
-			{
-				if (optional_string_fred("$Font:"))
-					parse_comments();
+				// save font
+				if (strlen(stage->font_filename) > 0) //-V805
+				{
+					if (optional_string_fred("$Font:"))
+						parse_comments();
+					else
+						fout("\n$Font:");
+					fout(" %s", stage->font_filename);
+				}
 				else
-					fout("\n$Font:");
-				fout(" %s", fiction_font());
-			}
-			else
-				optional_string_fred("$Font:");
+					optional_string_fred("$Font:");
 
-			// save voice
-			if (strlen(fiction_voice()) > 0) //-V805
-			{
-				if (optional_string_fred("$Voice:"))
-					parse_comments();
+				// save voice
+				if (strlen(stage->voice_filename) > 0) //-V805
+				{
+					if (optional_string_fred("$Voice:"))
+						parse_comments();
+					else
+						fout("\n$Voice:");
+					fout(" %s", stage->voice_filename);
+				}
 				else
-					fout("\n$Voice:");
-				fout(" %s", fiction_voice());
+					optional_string_fred("$Voice:");
+
+				// save UI
+				if (strlen(stage->ui_name) > 0)
+				{
+					if (optional_string_fred("$UI:"))
+						parse_comments();
+					else
+						fout("\n$UI:");
+					fout(" %s", stage->ui_name);
+				}
+				else
+					optional_string_fred("$UI:");
+
+				// save background
+				save_custom_bitmap("$Background 640:", "$Background 1024:", stage->background[GR_640], stage->background[GR_1024]);
+
+				// save sexp formula if we have one
+				if (stage->formula >= 0 && stage->formula != Locked_sexp_true)
+				{
+					SCP_string sexp_out;
+					convert_sexp_to_string(sexp_out, stage->formula, SEXP_SAVE_MODE);
+
+					if (optional_string_fred("$Formula:"))
+						parse_comments();
+					else
+						fout("\n$Formula:");
+					fout(" %s", sexp_out.c_str());
+				}
+				else
+					optional_string_fred("$Formula:");
 			}
-			else
-				optional_string_fred("$Voice:");
 		}
 		else
 		{
