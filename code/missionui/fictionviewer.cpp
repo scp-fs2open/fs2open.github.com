@@ -285,7 +285,7 @@ void fiction_viewer_init()
 
 	Fiction_viewer_bitmap = -1;
 
-	if (Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res] != '\0')
+	if (*Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res] != '\0')
 	{
 		Fiction_viewer_bitmap = bm_load(Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res]);
 		if (Fiction_viewer_bitmap < 0)
