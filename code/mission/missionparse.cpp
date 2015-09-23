@@ -1298,7 +1298,7 @@ void parse_fiction(mission *pm)
 			// see if this is the stage we want to display, then display it
 			if (!Fred_running && !fiction_viewer_loaded && is_sexp_true(stage.formula))
 			{
-				fiction_viewer_load(&Fiction_viewer_stages.back());
+				fiction_viewer_load(Fiction_viewer_stages.size() - 1);
 				fiction_viewer_loaded = true;
 			}
 		}

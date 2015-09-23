@@ -154,7 +154,7 @@ int Fiction_viewer_slider_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
 };
 
 SCP_vector<fiction_viewer_stage> Fiction_viewer_stages;
-const fiction_viewer_stage *Fiction_viewer_active_stage = NULL;
+int Fiction_viewer_active_stage = -1;
 
 static int Top_fiction_viewer_text_line = 0;
 static int Fiction_viewer_text_max_lines = 0;
@@ -273,7 +273,7 @@ void fiction_viewer_init()
 		return;
 
 	// no stage loaded?
-	if (Fiction_viewer_active_stage == NULL)
+	if (Fiction_viewer_active_stage < 0)
 		return;
 
 	// no fiction document?
@@ -285,11 +285,11 @@ void fiction_viewer_init()
 
 	Fiction_viewer_bitmap = -1;
 
-	if (*Fiction_viewer_active_stage->background[gr_screen.res] != '\0')
+	if (Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res] != '\0')
 	{
-		Fiction_viewer_bitmap = bm_load(Fiction_viewer_active_stage->background[gr_screen.res]);
+		Fiction_viewer_bitmap = bm_load(Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res]);
 		if (Fiction_viewer_bitmap < 0)
-			mprintf(("Failed to load custom background bitmap %s!\n", Fiction_viewer_active_stage->background[gr_screen.res]));
+			mprintf(("Failed to load custom background bitmap %s!\n", Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res]));
 		else if (Fiction_viewer_ui < 0)
 			Fiction_viewer_ui = 0;
 	}
@@ -513,7 +513,7 @@ void fiction_viewer_reset()
 	Fiction_viewer_text = NULL;
 
 	Fiction_viewer_stages.clear();
-	Fiction_viewer_active_stage = NULL;
+	Fiction_viewer_active_stage = -1;
 
 	Fiction_viewer_ui = -1;
 
@@ -526,8 +526,10 @@ void fiction_viewer_reset()
 	}
 }
 
-void fiction_viewer_load(const fiction_viewer_stage *stagep)
+void fiction_viewer_load(int stage)
 {
+	Assertion(stage >= 0 && static_cast<size_t>(stage) < Fiction_viewer_stages.size(), "stage parameter must be in range of Fiction_viewer_stages!");
+
 	// just to be sure
 	if (Fiction_viewer_text != NULL)
 	{
@@ -535,7 +537,8 @@ void fiction_viewer_load(const fiction_viewer_stage *stagep)
 		return;
 	}
 
-	Fiction_viewer_active_stage = stagep;
+	Fiction_viewer_active_stage = stage;
+	fiction_viewer_stage *stagep = &Fiction_viewer_stages[stage];
 
 	// load the ui index
 	Fiction_viewer_ui = Default_fiction_viewer_ui;

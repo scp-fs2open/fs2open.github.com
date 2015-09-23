@@ -38,7 +38,7 @@ void fiction_viewer_do_frame(float frametime);
 bool mission_has_fiction();
 int fiction_viewer_ui_name_to_index(const char *ui_name);
 void fiction_viewer_reset();
-void fiction_viewer_load(const fiction_viewer_stage *stage);
+void fiction_viewer_load(int stage);
 
 void fiction_viewer_pause();
 void fiction_viewer_unpause();
