@@ -12435,17 +12435,17 @@ ade_lib l_CFile("CFile", NULL, "cf", "CFile FS2 filesystem access");
 
 int l_cf_get_path_id(char* n_path)
 {
-	uint i;
+	int i;
+	int path_len = strlen(n_path);
 
-	size_t path_len = strlen(n_path);
-	char *buf = (char*) vm_malloc((strlen(n_path)+1) * sizeof(char));
+	char *buf = (char*) vm_malloc((path_len+1) * sizeof(char));
 	
 	if (!buf) 
 		return CF_TYPE_INVALID;
 		
 	strcpy(buf, n_path);
 
-	//Remove trailing slashes
+	//Remove trailing slashes; avoid buffer overflow on 1-char strings
 	i = path_len -1;
 	while(i >= 0 && (buf[i] == '\\' || buf[i] == '/'))
 		buf[i--] = '\0';
