@@ -10,9 +10,9 @@
 
 
 #include "gamesequence/gamesequence.h"
-#include "menuui/trainingmenu.h"
 #include "graphics/2d.h"
 #include "menuui/snazzyui.h"
+#include "menuui/trainingmenu.h"
 
 
 

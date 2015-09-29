@@ -11,12 +11,12 @@
 
 
 #include <ctype.h>
+#include "cfile/cfile.h"
 #include "localization/localize.h"
-#include "parse/parselo.h"
 #include "osapi/osregistry.h"
 #include "parse/encrypt.h"
+#include "parse/parselo.h"
 #include "playerman/player.h"
-#include "cfile/cfile.h"
 
 
 
@@ -33,7 +33,6 @@ SCP_vector<lang_info> Lcl_languages;
 
 // These are the original languages supported by FS2. The code expects these languages to be supported even if the tables don't
 
-#define NUM_BUILTIN_LANGUAGES		4
 lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES] = {
 	{ "English",		"",		{127,0,176,0,0},	589986744},				// English
 	{ "German",			"gr",	{164,0,176,0,0},	-1132430286 },			// German

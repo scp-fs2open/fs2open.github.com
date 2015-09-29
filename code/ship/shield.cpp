@@ -15,14 +15,14 @@
 //		3		Shrink-wrapped texture.  Lasts half-time.
 //		4		Shrink-wrapped texture.  Lasts full-time.
 
-#include "render/3d.h"
-#include "model/model.h"
 #include "freespace2/freespace.h"
 #include "mission/missionparse.h"
+#include "model/model.h"
 #include "network/multi.h"
 #include "object/objectshield.h"
-#include "species_defs/species_defs.h"
+#include "render/3d.h"
 #include "ship/ship.h"
+#include "species_defs/species_defs.h"
 
 int	Show_shield_mesh = 0;
 
@@ -626,7 +626,7 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp )
 	Shield_hits[shnum].rgb[0] = 255;
 	Shield_hits[shnum].rgb[1] = 255;
 	Shield_hits[shnum].rgb[2] = 255;
-	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < Num_ship_classes)){
+	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < static_cast<int>(Ship_info.size()))){
 		ship_info *sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 		
 		Shield_hits[shnum].rgb[0] = sip->shield_color[0];
@@ -699,7 +699,7 @@ void create_shield_low_detail(int objnum, int model_num, matrix *orient, vec3d *
 	Shield_hits[shnum].rgb[0] = 255;
 	Shield_hits[shnum].rgb[1] = 255;
 	Shield_hits[shnum].rgb[2] = 255;
-	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < Num_ship_classes)){
+	if((objnum >= 0) && (objnum < MAX_OBJECTS) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0) && (Objects[objnum].instance < MAX_SHIPS) && (Ships[Objects[objnum].instance].ship_info_index >= 0) && (Ships[Objects[objnum].instance].ship_info_index < static_cast<int>(Ship_info.size()))){
 		ship_info *sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 		
 		Shield_hits[shnum].rgb[0] = sip->shield_color[0];

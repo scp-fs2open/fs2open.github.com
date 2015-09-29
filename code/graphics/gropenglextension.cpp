@@ -14,15 +14,12 @@
 #include <windows.h>
 #endif
 
-#include "globalincs/pstypes.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropenglextension.h"
-#include "graphics/gropengltexture.h"
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
-#include "popup/popup.h"
-
+#include "graphics/gropenglextension.h"
+#include "graphics/gropengltexture.h"
 #include "osapi/outwnd.h"
+#include "popup/popup.h"
 
 
 
@@ -437,9 +434,6 @@ void opengl_extensions_init()
 	if ( !(Is_Extension_Enabled(OGL_EXT_GEOMETRY_SHADER4) && Is_Extension_Enabled(OGL_EXT_TEXTURE_ARRAY) && Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX)) ) {
 		Cmdline_shadow_quality = 0;
 		mprintf(("  No hardware support for shadow mapping. Shadows will be disabled. \n"));
-#ifdef NDEBUG
-		popup(0, 1, POPUP_OK, "No hardware support for shadow mapping. Shadows will be disabled.\n");
-#endif
 	}
 
 	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
@@ -466,9 +460,6 @@ void opengl_extensions_init()
 		else if (ver < 110) {
 			Use_GLSL = 0;
 			mprintf(("  OpenGL Shading Language version %s is not sufficient to use GLSL mode in FSO. Defaulting to fixed-function renderer.\n", glGetString(GL_SHADING_LANGUAGE_VERSION_ARB) ));
-#ifdef NDEBUG
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "GLSL support not available on this GPU. Disabling shader support and defaulting to fixed-function rendering.\n");
-#endif
 		}
 	}
 

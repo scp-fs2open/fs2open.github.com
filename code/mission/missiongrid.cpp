@@ -9,11 +9,11 @@
 
 
 
-#include "io/key.h"
-#include "mission/missiongrid.h"
-#include "math/fvi.h"
-#include "render/3d.h"
 #include "graphics/2d.h"
+#include "io/key.h"
+#include "math/fvi.h"
+#include "mission/missiongrid.h"
+#include "render/3d.h"
 
 
 grid	Global_grid;

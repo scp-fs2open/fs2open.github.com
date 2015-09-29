@@ -223,7 +223,7 @@ fi
 
 if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
-	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-write-strings -Wshadow -funroll-loops"
+	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings -Wshadow -funroll-loops"
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
@@ -233,7 +233,11 @@ if test "$fs2_debug" = "yes" ; then
 	fi
 else
 	AC_DEFINE([NDEBUG])
-	D_CFLAGS="$D_CFLAGS -O2 -Wall -Wno-write-strings -funroll-loops"
+	D_CFLAGS="$D_CFLAGS -O2 -Wall -funroll-loops"
+	D_CFLAGS="$D_CLFAGS -Wno-unused-function -Wno-write-strings -Wno-unused-variable"
+	
+	AC_C_COMPILE_FLAGS([-Wno-unused-but-set-variable])
+	
 	D_LDFLAGS="$D_LDFLAGS "
 
 	if test "$fs2_fred" = "yes" ; then
@@ -468,8 +472,8 @@ dnl any extra optimization or warning flags
 if test "$fs2_os_win32" = "yes" ; then
 	D_CFLAGS="$D_CFLAGS -fexceptions"
 elif test "$fs2_os_linux" = "yes" || test "$fs2_os_bsd" = "yes" ; then
-	D_CFLAGS="$D_CFLAGS -fsigned-char -Wno-unknown-pragmas"
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -Wno-deprecated -Wno-char-subscripts"
+	D_CFLAGS="$D_CFLAGS -fsigned-char"
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -Wno-char-subscripts"
 elif test "$fs2_os_osx" = "yes" ; then
 	D_CFLAGS="$D_CFLAGS -fsigned-char -Wno-unknown-pragmas"
 fi

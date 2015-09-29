@@ -11,20 +11,19 @@
 
 #include <stdarg.h>
 
-#include "popup/popup.h"
+#include "anim/animplay.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
 #include "io/key.h"
 #include "io/mouse.h"
-#include "ui/ui.h"
-#include "parse/parselo.h"
-#include "gamesnd/gamesnd.h"
-#include "anim/animplay.h"
-#include "playerman/player.h"
-#include "graphics/font.h"
-#include "globalincs/alphacolors.h"
 #include "osapi/osapi.h"
-
+#include "parse/parselo.h"
+#include "playerman/player.h"
+#include "popup/popup.h"
+#include "ui/ui.h"
 
 
 #define POPUP_MAX_CHOICES			3					// max number of buttons allowed on popup

@@ -10,17 +10,15 @@
 
 
 
-#include "math/vecmat.h"
-#include "graphics/tmapper.h"
-#include "render/3d.h"
-#include "fireball/fireballs.h"
-#include "mission/missionparse.h"
-#include "nebula/neb.h"
-#include "globalincs/pstypes.h"
-#include "model/model.h"
-#include "ship/ship.h"
 #include "cmdline/cmdline.h"
-#include "model/modelrender.h"
+#include "globalincs/pstypes.h"
+#include "graphics/tmapper.h"
+#include "math/vecmat.h"
+#include "mission/missionparse.h"
+#include "model/model.h"
+#include "nebula/neb.h"
+#include "render/3d.h"
+#include "ship/ship.h"
 
 extern int Warp_model;
 extern int Warp_glow_bitmap;

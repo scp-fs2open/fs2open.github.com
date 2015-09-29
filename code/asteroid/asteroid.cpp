@@ -10,39 +10,39 @@
 
 
 #include "asteroid/asteroid.h"
-#include "object/object.h"
-#include "object/objcollide.h"
-#include "freespace2/freespace.h"
-#include "io/timer.h"
-#include "render/3d.h"
+#include "debugconsole/console.h"
 #include "fireball/fireballs.h"
+#include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
-#include "particle/particle.h"
+#include "globalincs/compatibility.h"
 #include "globalincs/linklist.h"
+#include "globalincs/systemvars.h"
 #include "hud/hud.h"
 #include "hud/hudescort.h"
 #include "hud/hudgauges.h"
-#include "ship/shiphit.h"
-#include "math/staticrand.h"
-#include "globalincs/systemvars.h"
-#include "localization/localize.h"
-#include "stats/scoring.h"
 #include "hud/hudtarget.h"
-#include "weapon/weapon.h"
-#include "ship/ship.h"
-#include "parse/parselo.h"
+#include "iff_defs/iff_defs.h"
+#include "io/timer.h"
+#include "localization/localize.h"
+#include "math/staticrand.h"
 #include "math/vecmat.h"
 #include "model/model.h"
-#include "species_defs/species_defs.h"
-#include "iff_defs/iff_defs.h"
-#include "network/multiutil.h"
-#include "network/multimsgs.h"
 #include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+#include "object/objcollide.h"
+#include "object/object.h"
+#include "parse/parselo.h"
 #include "parse/scripting.h"
-#include "debugconsole/console.h"
+#include "particle/particle.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "ship/shiphit.h"
+#include "species_defs/species_defs.h"
+#include "stats/scoring.h"
+#include "weapon/weapon.h"
 
 #include <algorithm>
-#include "globalincs/compatibility.h"
 
 #define			ASTEROID_OBJ_USED	(1<<0)				// flag used in asteroid_obj struct
 #define			MAX_ASTEROID_OBJS	MAX_ASTEROIDS		// max number of asteroids tracked in asteroid list
@@ -1955,7 +1955,7 @@ void asteroid_parse_tbl()
 				SCP_string msg("Ignoring extra asteroid/debris '");
 				msg.append(new_asteroid.name);
 				msg.append("'\n");
-				Warning(LOCATION, msg.c_str());
+				Warning(LOCATION, "%s", msg.c_str());
 				parsed_asteroids.push_back(msg);
 #endif
 			}
@@ -2002,13 +2002,13 @@ void asteroid_parse_tbl()
 				iter != parsed_asteroids.end(); ++iter)
 			{
 				mprintf(("Asteroid.tbl as parsed:\n"));
-				mprintf((iter->c_str()));
+				mprintf(("%s", iter->c_str()));
 			}
 #endif
 			Error(LOCATION,
 				"Found %d asteroids/debris when %d expected\n\n"
 				"<Number expected> = <Number of species> * %d + %d generic asteroids\n"
-				"%d = %d*%d + %d\n\n"
+				"%d = " SIZE_T_ARG "*%d + %d\n\n"
 #ifdef NDEBUG
 				"Run a debug build to see a list of all parsed asteroids\n",
 #else

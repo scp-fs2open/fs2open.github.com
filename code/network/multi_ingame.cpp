@@ -561,17 +561,17 @@ void multi_ingame_load_icons()
 	Multi_ingame_num_ship_icons = 0;
 
 	// traverse through all ship types
-	for(idx=0;idx<Num_ship_classes;idx++){
+	for(auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 		// if there is a valid icon for this ship
-		if((Ship_info[idx].icon_filename[0] != '\0') && (Multi_ingame_num_ship_icons < MULTI_INGAME_MAX_SHIP_ICONS)){
+		if((it->icon_filename[0] != '\0') && (Multi_ingame_num_ship_icons < MULTI_INGAME_MAX_SHIP_ICONS)) {
 			// set the ship class
-			Multi_ingame_ship_icon[Multi_ingame_num_ship_icons].ship_class = idx;
+			Multi_ingame_ship_icon[Multi_ingame_num_ship_icons].ship_class = std::distance(Ship_info.cbegin(), it);
 
-			// load in the animation frames for the icon	
-			first_frame = bm_load_animation(Ship_info[idx].icon_filename, &num_frames);
+			// load in the animation frames for the icon
+			first_frame = bm_load_animation(it->icon_filename, &num_frames);
 			if ( first_frame == -1 ) {
 				Int3();	// Could not load in icon frames.. get Dave
-			}	
+			}
 			for ( s_idx = 0; s_idx < num_frames; s_idx++ ) {
 				Multi_ingame_ship_icon[Multi_ingame_num_ship_icons].bmaps[s_idx] = first_frame+s_idx;
 			}
@@ -1027,7 +1027,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		}
 		if(p_objp == NULL){
 			Int3();
-			nprintf(("Network", "Couldn't find ship %s in either arrival list or in mission"));
+			nprintf(("Network", "Couldn't find ship %s in either arrival list or in mission", ship_name));
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
 			return;
 		}

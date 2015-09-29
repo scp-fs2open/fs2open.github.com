@@ -12,8 +12,8 @@
 #ifndef __SHOCKWAVE_H__
 #define __SHOCKWAVE_H__
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 class object;
 class draw_list;

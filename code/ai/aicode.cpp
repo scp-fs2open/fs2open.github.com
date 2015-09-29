@@ -18,61 +18,63 @@
 
 
 #include "ai/ai.h"
-#include "debugconsole/console.h"
-#include "globalincs/linklist.h"
-#include "object/object.h"
-#include "physics/physics.h"
-#include "ship/ship.h"
-#include "model/model.h"
-#include "render/3d.h"
-#include "playerman/player.h"
-#include "freespace2/freespace.h"
-#include "mission/missiongoals.h"
-#include "mission/missionlog.h"
-#include "io/timer.h"
-#include "ai/aigoals.h"
-#include "gamesnd/gamesnd.h"
-#include "mission/missionmessage.h"
-#include "mission/missionparse.h"
-#include "cmeasure/cmeasure.h"
-#include "math/staticrand.h"
-#include "ship/afterburner.h"
-#include "ship/shipfx.h"
-#include "ship/shiphit.h"
+#include "ai/ai_profiles.h"
 #include "ai/aibig.h"
+#include "ai/aigoals.h"
+#include "ai/aiinternal.h"
+#include "asteroid/asteroid.h"
+#include "autopilot/autopilot.h"
+#include "cmeasure/cmeasure.h"
+#include "debugconsole/console.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
 #include "hud/hud.h"
 #include "hud/hudets.h"
-#include "object/objcollide.h"
-#include "object/objectshield.h"
-#include "asteroid/asteroid.h"
 #include "hud/hudlock.h"
-#include "mission/missiontraining.h"
-#include "gamesequence/gamesequence.h"
-#include "io/joy_ff.h"
-#include "localization/localize.h"
-#include "weapon/weapon.h"
-#include "weapon/flak.h"
-#include "weapon/beam.h"
-#include "weapon/swarm.h"
-#include "ship/awacs.h"
-#include "math/fvi.h"
-#include "parse/parselo.h"
-#include "object/objectdock.h"
-#include "object/deadobjectdock.h"
-#include "object/waypoint.h"
-#include "ai/aiinternal.h"
 #include "iff_defs/iff_defs.h"
+#include "io/joy_ff.h"
+#include "io/timer.h"
+#include "localization/localize.h"
+#include "math/fvi.h"
+#include "math/staticrand.h"
+#include "mission/missiongoals.h"
+#include "mission/missionlog.h"
+#include "mission/missionmessage.h"
+#include "mission/missionparse.h"
+#include "mission/missiontraining.h"
+#include "model/model.h"
+#include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "network/multi.h"
-#include "ai/ai_profiles.h"
-#include "autopilot/autopilot.h"
+#include "object/deadobjectdock.h"
+#include "object/objcollide.h"
+#include "object/object.h"
+#include "object/objectdock.h"
+#include "object/objectshield.h"
+#include "object/waypoint.h"
+#include "parse/parselo.h"
+#include "physics/physics.h"
+#include "playerman/player.h"
+#include "render/3d.h"
+#include "ship/afterburner.h"
+#include "ship/awacs.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
+#include "ship/shiphit.h"
+#include "weapon/beam.h"
+#include "weapon/flak.h"
+#include "weapon/swarm.h"
+#include "weapon/weapon.h"
 #include <map>
 #include <limits.h>
 
 
+#ifdef _MSC_VER
 #pragma optimize("", off)
 #pragma auto_inline(off)
+#endif
 
 #define	UNINITIALIZED_VALUE	-99999.9f
 
@@ -1999,11 +2001,6 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 					}
 
 					if (eno->trial_objp->flags & OF_PLAYER_SHIP){
-						// Goober5000: oh dear, it looks like this was originally meant to scale
-						// the distance according to skill, but as it is, the effect appears negligible.
-						// I could fix it with parentheses, but we all know how quickly AI pilots
-						// die usually, so the overall effect would probably be worse.  So I left
-						// this unchanged.
 						dist *= 1.0f + (NUM_SKILL_LEVELS - Game_skill_level - 1)/NUM_SKILL_LEVELS;	//	Favor attacking non-players based on skill level.
 					}
 
@@ -5236,7 +5233,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
 	ship	*shipp = &Ships[objp->instance];
 	ship_weapon *swp = &shipp->weapons;
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()));
 
 	if (flags & WIF_PUNCTURE) {
 		if (swp->current_primary_bank >= 0) {
@@ -5325,7 +5322,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		return ai_select_primary_weapon_OLD(objp, other_objp, flags);
 	}
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()));
 	
 	//made it so it only selects puncture weapons if the active goal is to disable something -Bobboau
 	if ((flags & WIF_PUNCTURE) && (Ai_info[shipp->ai_index].goals[0].ai_mode & (AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP))) 
@@ -5642,7 +5639,7 @@ int ai_fire_primary_weapon(object *objp)
 	ai_info		*aip;
 	object		*enemy_objp;
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()));
 
 	aip = &Ai_info[shipp->ai_index];
 
@@ -6075,7 +6072,7 @@ int ai_fire_secondary_weapon(object *objp, int priority1, int priority2)
 	shipp = &Ships[objp->instance];
 	swp = &shipp->weapons;
 
-	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < Num_ship_classes);
+	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()));
 
 	//	Select secondary weapon.
 	current_bank = swp->current_secondary_bank; //ai_select_secondary_weapon(objp, swp, priority1, priority2);
@@ -14112,7 +14109,7 @@ void ai_frame(int objnum)
 	}
 
 	if ((En_objp != NULL) && (En_objp->pos.xyz.x == Pl_objp->pos.xyz.x) && (En_objp->pos.xyz.y == Pl_objp->pos.xyz.y) && (En_objp->pos.xyz.z == Pl_objp->pos.xyz.z)) {
-		mprintf(("Warning: Object and its enemy have same position.  Object #%i\n", OBJ_INDEX(Pl_objp)));
+		mprintf(("Warning: Object and its enemy have same position.  Object #" PTRDIFF_T_ARG "\n", OBJ_INDEX(Pl_objp)));
 		En_objp = NULL;
 	}
 

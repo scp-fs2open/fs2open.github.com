@@ -13,8 +13,8 @@
 #define _MISSION_SCREEN_COMMON_HEADER_FILE
 
 #include "globalincs/globals.h"
-#include "ui/ui.h"
 #include "model/model.h"
+#include "ui/ui.h"
 
 #define BACKGROUND_FRAME_TO_START_SHIP_ANIM	87
 #define BUTTON_SLIDE_IN_FRAME						1
@@ -87,6 +87,8 @@ void	common_reset_buttons();
 void	common_redraw_pressed_buttons();
 void  common_maybe_clear_focus();
 void ship_select_common_init();
+
+int mission_ui_background_load(const char *custom_background, const char *single_background, const char *multi_background = NULL);
 
 void common_set_interface_palette(char *filename = NULL);		// set the interface palette
 void common_free_interface_palette();		// restore game palette

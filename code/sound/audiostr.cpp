@@ -10,15 +10,15 @@
 
 #define NEED_STRHDL		// for STRHTL struct in audiostr.h
 
+#include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
-#include "sound/openal.h"
+#include "io/timer.h"
+#include "sound/acm.h"
 #include "sound/audiostr.h"
 #include "sound/ds.h"
-#include "sound/acm.h"
-#include "cfile/cfile.h"
-#include "sound/sound.h"
 #include "sound/ogg/ogg.h"
-#include "io/timer.h"
+#include "sound/openal.h"
+#include "sound/sound.h"
 
 #define THREADED
 #include "osapi/osapi.h"
@@ -1711,7 +1711,7 @@ void audiostream_close()
 //	
 // returns:	success => handle to identify streaming sound
 //				failure => -1
-int audiostream_open( char *filename, int type )
+int audiostream_open( const char *filename, int type )
 {
 	int i, rc;
 	char fname[MAX_FILENAME_LEN];

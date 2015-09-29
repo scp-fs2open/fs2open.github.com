@@ -9,12 +9,12 @@
 
 
 
+#include "globalincs/linklist.h"
+#include "io/timer.h"
+#include "object/object.h"
+#include "ship/ship.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
-#include "ship/ship.h"
-#include "io/timer.h"
-#include "globalincs/linklist.h"
-#include "object/object.h"
 
 
 
@@ -501,14 +501,11 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	tsi->weapon_class = WEAPON_INFO_INDEX(wip);
 	if (wip->wi_flags & WIF_SWARM) {
 		tsi->num_to_launch = wip->swarm_count;
-		if (turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO) {
-			swp->secondary_bank_ammo[bank_fired] -= wip->swarm_count;
-		}
 	} else {
 		tsi->num_to_launch = wip->cs_num_fired;
-		if (turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO) {
-			swp->secondary_bank_ammo[bank_fired] -= wip->cs_num_fired;
-		}
+	}
+	if (turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO) {
+		swp->secondary_bank_ammo[bank_fired] -= tsi->num_to_launch;
 	}
 	tsi->parent_objnum = parent_objnum;
 	tsi->parent_sig    = parent_obj->signature;

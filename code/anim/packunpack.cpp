@@ -9,10 +9,10 @@
 
 
 
+#include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "bmpman/bmpman.h"
 #include "graphics/2d.h"
-#include "anim/animplay.h"
 
 
 const int packer_code = PACKER_CODE;

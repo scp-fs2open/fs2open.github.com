@@ -10,21 +10,21 @@
 
 
 
-#include "hud/hudartillery.h"
-#include "parse/parselo.h"
-#include "weapon/weapon.h"
-#include "weapon/beam.h"
-#include "math/vecmat.h"
-#include "globalincs/linklist.h"
-#include "io/timer.h"
-#include "fireball/fireballs.h"
-#include "object/object.h"
 #include "ai/ai.h"
-#include "globalincs/alphacolors.h"
-#include "network/multi.h"
-#include "hud/hudmessage.h"
-#include "sound/sound.h"
+#include "fireball/fireballs.h"
 #include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
+#include "hud/hudartillery.h"
+#include "hud/hudmessage.h"
+#include "io/timer.h"
+#include "math/vecmat.h"
+#include "network/multi.h"
+#include "object/object.h"
+#include "parse/parselo.h"
+#include "sound/sound.h"
+#include "weapon/beam.h"
+#include "weapon/weapon.h"
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS
@@ -69,19 +69,35 @@ void parse_ssm(const char *filename)
 		while(required_string_either("#end", "$SSM:")) {
 			required_string("$SSM:");
 			ssm_info s;
+			int string_index;
 
 			// name
 			stuff_string(s.name, F_NAME, NAME_LENGTH);
+			if (*s.name == 0) {
+				sprintf(s.name, "SSM " SIZE_T_ARG, Ssm_info.size());
+				mprintf(("Found an SSM entry without a name.  Assigning \"%s\".\n", s.name));
+			}
 
 			// stuff data
 			required_string("+Weapon:");
 			stuff_string(weapon_name, F_NAME, NAME_LENGTH);
-			if (optional_string("+Count:"))
+
+			string_index = optional_string_either("+Count:", "+Min Count:");
+			if (string_index == 0) {
 				stuff_int(&s.count);
-			else
+				s.max_count = -1;
+			} else if (string_index == 1) {
+				stuff_int(&s.count);
+				required_string("+Max Count:");
+				stuff_int(&s.max_count);
+			} else {
 				s.count = 1;
+				s.max_count = -1;
+			}
+
 			required_string("+WarpRadius:");
 			stuff_float(&s.warp_radius);
+
 			if (optional_string("+WarpTime:")) {
 				stuff_float(&s.warp_time);
 				// According to fireballs.cpp, "Warp lifetime must be at least 4 seconds!"
@@ -94,12 +110,32 @@ void parse_ssm(const char *filename)
 			} else {
 				s.warp_time = 4.0f;
 			}
-			required_string("+Radius:");
-			stuff_float(&s.radius);
-			if (optional_string("+Offset:"))
+
+			string_index = required_string_either("+Radius:", "+Min Radius:");
+			if (string_index == 0) {
+				required_string("+Radius:");
+				stuff_float(&s.radius);
+				s.max_radius = -1.0f;
+			} else {
+				required_string("+Min Radius:");
+				stuff_float(&s.radius);
+				required_string("+Max Radius:");
+				stuff_float(&s.max_radius);
+			}
+
+			string_index = optional_string_either("+Offset:", "+Min Offset:");
+			if (string_index == 0) {
 				stuff_float(&s.offset);
-			else
+				s.max_offset = -1.0f;
+			} else if (string_index == 1) {
+				stuff_float(&s.offset);
+				required_string("+Max Offset:");
+				stuff_float(&s.max_offset);
+			} else {
 				s.offset = 0.0f;
+				s.max_offset = -1.0f;
+			}
+			
 			if (optional_string("+Shape:")) {
 				switch(required_string_one_of(3, "Point", "Circle", "Sphere")) {
 				case 0:
@@ -121,14 +157,18 @@ void parse_ssm(const char *filename)
 			} else {
 				s.shape = SSM_SHAPE_CIRCLE;
 			}
+
 			if (optional_string("+HUD Message:"))
 				stuff_boolean(&s.send_message);
 			else
 				s.send_message = true;
+
 			if (optional_string("+Custom Message:")) {
 				stuff_string(s.message, F_NAME, NAME_LENGTH);
 				s.use_custom_message = true;
 			}
+
+			s.sound_index = -1;
 			parse_sound("+Alarm Sound:", &s.sound_index, s.name);
 
 			// see if we have a valid weapon
@@ -168,19 +208,30 @@ void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, int ssm_
 {
 	vec3d temp;
 	ssm_info *s = &Ssm_info[ssm_index];
+	float radius, offset;
+
+	if (s->max_radius == -1.0f)
+		radius = s->radius;
+	else
+		radius = frand_range(s->radius, s->max_radius);
+
+	if (s->max_offset == -1.0f)
+		offset = s->offset;
+	else
+		offset = frand_range(s->offset, s->max_offset);
 
 	switch (s->shape) {
 	case SSM_SHAPE_SPHERE:
 		// get a random vector in a sphere around the target
-		vm_vec_random_in_sphere(&temp, start, orient, s->radius, 1);
+		vm_vec_random_in_sphere(&temp, start, orient, radius, 1);
 		break;
 	case SSM_SHAPE_CIRCLE:
 		// get a random vector in the circle of the firing plane
-		vm_vec_random_in_circle(&temp, start, orient, s->radius, 1);
+		vm_vec_random_in_circle(&temp, start, orient, radius, 1);
 		break;
 	case SSM_SHAPE_POINT:
 		// boooring
-		vm_vec_scale_add(&temp, start, &orient->vec.fvec, s->radius);
+		vm_vec_scale_add(&temp, start, &orient->vec.fvec, radius);
 		break;
 	default:
 		Assertion(false, "Unknown shape '%d' in SSM type #%d ('%s'). This should not be possible; get a coder!\n", s->shape, ssm_index, s->name);
@@ -188,7 +239,7 @@ void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, int ssm_
 	}
 
 	// offset it a bit
-	vm_vec_scale_add(out, &temp, &orient->vec.fvec, s->offset);
+	vm_vec_scale_add(out, &temp, &orient->vec.fvec, offset);
 }
 
 // level init
@@ -219,6 +270,11 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 	// Init the ssm data
 
 	count = Ssm_info[ssm_index].count;
+	if (Ssm_info[ssm_index].max_count != -1) {
+		// To get a range of values between min and max, inclusive:
+		// random value = min + randon number % (max - min + 1)
+		count += rand32() % (Ssm_info[ssm_index].max_count - count + 1);
+	}
 
 	// override in multiplayer
 	if(override != NULL){
@@ -235,6 +291,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 		vm_vector_2_matrix(&dir, &temp, NULL, NULL);
 
 		// stuff info
+		ssm.sinfo.count = count;
 		ssm.sinfo.ssm_index = ssm_index;
 		ssm.sinfo.target = target;
 		ssm.sinfo.ssm_team = team;
@@ -306,7 +363,7 @@ void ssm_process()
 
 		// check all the individual missiles
 		finished = 1;
-		for(idx=0; idx<si->count; idx++){
+		for(idx=0; idx<moveup->sinfo.count; idx++){
 			// if this guy is not marked as done
 			if(!moveup->done_flags[idx]){
 				finished = 0;				

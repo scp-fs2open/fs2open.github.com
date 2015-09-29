@@ -8,11 +8,9 @@
 */ 
 
 #include <stdlib.h>
-#include <math.h>
 
-#include "globalincs/pstypes.h"
-#include "math/floating.h"
 #include "io/timer.h"
+#include "math/floating.h"
 
 
 /**

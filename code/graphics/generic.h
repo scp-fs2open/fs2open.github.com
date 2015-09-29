@@ -3,10 +3,10 @@
 #ifndef _GENERIC_H_
 #define _GENERIC_H_
 
-#include "globalincs/pstypes.h"
+#include "anim/animplay.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
-#include "anim/animplay.h"
+#include "globalincs/pstypes.h"
 
 #define GENERIC_ANIM_DIRECTION_FORWARDS		0
 #define GENERIC_ANIM_DIRECTION_BACKWARDS	1

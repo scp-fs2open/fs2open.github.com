@@ -9,26 +9,23 @@
 
 
 
-#include "render/3d.h"
-#include "sound/sound.h"
-#include "sound/audiostr.h"
-#include "gamesnd/eventmusic.h"
+#include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
-#include "osapi/osapi.h"
-#include "globalincs/vmallocator.h"
 #include "debugconsole/console.h"
-
+#include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
-#include "cfile/cfile.h"
-
+#include "globalincs/pstypes.h"
+#include "globalincs/vmallocator.h"
+#include "osapi/osapi.h"
+#include "render/3d.h"
+#include "sound/acm.h"
+#include "sound/audiostr.h"
 #include "sound/ds.h"
 #include "sound/ds3d.h"
-#include "sound/acm.h"
 #include "sound/dscap.h"
 #include "sound/ogg/ogg.h"
-
-#include "globalincs/pstypes.h"
+#include "sound/sound.h"
 
 #ifdef _WIN32
 #include <windows.h>

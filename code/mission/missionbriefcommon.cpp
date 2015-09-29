@@ -10,29 +10,29 @@
 
 
 
-#include "mission/missionbriefcommon.h"
-#include "mission/missionparse.h"
-#include "parse/parselo.h"
-#include "playerman/player.h"
-#include "ship/ship.h"
-#include "render/3d.h"
-#include "io/timer.h"
-#include "globalincs/linklist.h"
-#include "io/mouse.h"
-#include "missionui/missionbrief.h"
-#include "mission/missiongrid.h"
 #include "anim/animplay.h"
-#include "math/fvi.h"
 #include "gamesnd/gamesnd.h"
-#include "sound/audiostr.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
+#include "iff_defs/iff_defs.h"
+#include "io/mouse.h"
+#include "io/timer.h"
+#include "localization/localize.h"
+#include "math/fvi.h"
+#include "mission/missionbriefcommon.h"
+#include "mission/missiongrid.h"
+#include "mission/missionparse.h"
+#include "missionui/missionbrief.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missiondebrief.h"
-#include "globalincs/alphacolors.h"
-#include "localization/localize.h"
+#include "mod_table/mod_table.h"
+#include "parse/parselo.h"
+#include "playerman/player.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "sound/audiostr.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
-#include "iff_defs/iff_defs.h"
-#include "mod_table/mod_table.h"
 
 
 // --------------------------------------------------------------------------------------
@@ -292,7 +292,7 @@ void brief_parse_icon_tbl()
 		while (required_string_either("#End", "$Name:"))
 		{
 			if (Briefing_icon_info.size() >= max_icons) {
-				Warning(LOCATION, "Too many icons in icons.tbl; only the first %d will be used", max_icons);
+				Warning(LOCATION, "Too many icons in icons.tbl; only the first " SIZE_T_ARG " will be used", max_icons);
 				skip_to_start_of_string("#End");
 				break;
 			}
@@ -340,7 +340,7 @@ void brief_parse_icon_tbl()
 				errormsg += "\n";
 			}
 
-			Error(LOCATION, errormsg.c_str());
+			Error(LOCATION, "%s", errormsg.c_str());
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -710,8 +710,9 @@ void brief_init_map()
 	Num_fade_icons=0;
 }
 
-
+#ifdef _MSC_VER
 #pragma optimize("", off)
+#endif
 
 void brief_render_fade_outs(float frametime)
 {
@@ -1037,7 +1038,9 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 	}  // end if vertex is projected
 }
 
+#ifdef _MSC_VER
 #pragma optimize("", on)
+#endif
 
 // -------------------------------------------------------------------------------------
 // brief_render_icons()

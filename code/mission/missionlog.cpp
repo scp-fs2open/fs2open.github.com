@@ -10,19 +10,19 @@
 
 
 
-#include "mission/missionlog.h"
-#include "playerman/player.h"
-#include "graphics/font.h"
-#include "mission/missiongoals.h"
 #include "globalincs/alphacolors.h"
-#include "localization/localize.h"
-#include "mission/missionparse.h"
-#include "parse/parselo.h"
-#include "ship/ship.h"
+#include "graphics/font.h"
 #include "iff_defs/iff_defs.h"
+#include "localization/localize.h"
+#include "mission/missiongoals.h"
+#include "mission/missionlog.h"
+#include "mission/missionparse.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "parse/parselo.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
 
 
 

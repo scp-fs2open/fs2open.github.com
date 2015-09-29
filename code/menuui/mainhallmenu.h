@@ -5,13 +5,13 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
-
-#include "globalincs/globals.h"
-#include "globalincs/pstypes.h"
+*/
 
 #ifndef _MAIN_HALL_MENU_HEADER_FILE
 #define _MAIN_HALL_MENU_HEADER_FILE
+
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 // CommanderDJ - this is now dynamic
 // #define MAIN_HALLS_MAX			10

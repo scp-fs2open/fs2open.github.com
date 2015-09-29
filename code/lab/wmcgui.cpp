@@ -9,14 +9,13 @@
 
 
 
-#include "lab/wmcgui.h"
+#include "freespace2/freespace.h"
 #include "graphics/2d.h"
 #include "hud/hudbrackets.h"
-#include "parse/parselo.h"
-#include "globalincs/linklist.h"
 #include "io/key.h"
-#include "freespace2/freespace.h"
+#include "lab/wmcgui.h"
 #include "localization/localize.h"
+#include "parse/parselo.h"
 
 //Gobals
 GUISystem GUI_system;
@@ -168,7 +167,7 @@ void GUISystem::ParseClassInfo(char* filename)
 	}
 	catch (const parse::ParseException& e)
 	{
-		mprintf(("WMCGUI: Unable to parse '%s'!  Error code = %s.\n", filename, e.what()));
+		mprintf(("WMCGUI: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
 }

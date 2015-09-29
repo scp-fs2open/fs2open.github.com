@@ -10,33 +10,32 @@
 
 
 
-#include "weapon/beam.h"
-#include "globalincs/linklist.h"
-#include "object/object.h"
-#include "object/objcollide.h"
-#include "object/objectshield.h"
-#include "ship/ship.h"
-#include "freespace2/freespace.h"
-#include "render/3d.h"
-#include "io/timer.h"
-#include "debris/debris.h"
 #include "asteroid/asteroid.h"
+#include "cmdline/cmdline.h"
+#include "debris/debris.h"
+#include "debugconsole/console.h"
+#include "freespace2/freespace.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
+#include "hud/hudmessage.h"
+#include "hud/hudshield.h"
+#include "iff_defs/iff_defs.h"
+#include "io/timer.h"
+#include "lighting/lighting.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-#include "particle/particle.h"
-#include "ship/shiphit.h"
-#include "gamesnd/gamesnd.h"
-#include "hud/hudmessage.h"
-#include "lighting/lighting.h"
-#include "hud/hudshield.h"
-#include "playerman/player.h"
-#include "weapon/weapon.h"
+#include "object/objcollide.h"
+#include "object/object.h"
+#include "object/objectshield.h"
 #include "parse/parselo.h"
-#include "iff_defs/iff_defs.h"
-#include "globalincs/globals.h"
-#include "cmdline/cmdline.h"
 #include "parse/scripting.h"
-#include "debugconsole/console.h"
+#include "particle/particle.h"
+#include "playerman/player.h"
+#include "render/3d.h"
+#include "ship/ship.h"
+#include "ship/shiphit.h"
+#include "weapon/beam.h"
+#include "weapon/weapon.h"
 
 extern int Cmdline_nohtl;
 // ------------------------------------------------------------------------------------------------
@@ -1388,7 +1387,7 @@ void beam_render_muzzle_glow(beam *b)
 {
 	vertex pt;
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
-	beam_weapon_info *bwi = &Weapon_info[b->weapon_info_index].b_info;
+	beam_weapon_info *bwi = &wip->b_info;
 	float rad, pct, rand_val;
 	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
 	pt.flags = 0;    // avoid potential read of uninit var
@@ -2960,6 +2959,10 @@ void beam_handle_collisions(beam *b)
 			}
 		}
 
+		//Don't draw effects if we're in the cockpit of the hit ship
+		if (Viewer_obj == &Objects[target])
+			draw_effects = 0;
+
 		// add lighting
 		if(Use_GLSL < 2)
 			beam_add_light(b, target, 2, &b->f_collisions[idx].cinfo.hit_point_world);
@@ -2991,11 +2994,6 @@ void beam_handle_collisions(beam *b)
             float delay_time = i2fl(BEAM_DAMAGE_TIME) / time_compression;
             do_damage = 1;
             r_coll[r_coll_count].c_stamp = timestamp(fl2i(delay_time));
-		}
-
-		// if no damage - don't even indicate it has been hit
-		if(wi->damage <= 0){
-			do_damage = 0;
 		}
 
 		// increment collision count
@@ -3142,7 +3140,7 @@ void beam_handle_collisions(beam *b)
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
 				// hit the debris - the debris hit code takes care of checking for MULTIPLAYER_CLIENT, etc
-				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, Weapon_info[b->weapon_info_index].damage);
+				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage);
 				break;
 
 			case OBJ_WEAPON:
@@ -3161,7 +3159,7 @@ void beam_handle_collisions(beam *b)
 								}
 							}
 
-							float damage = Weapon_info[b->weapon_info_index].damage * attenuation;
+							float damage = wi->damage * attenuation;
 
 							trgt->hull_strength -= damage;
 
@@ -3189,7 +3187,7 @@ void beam_handle_collisions(beam *b)
 			case OBJ_ASTEROID:
 				// hit the asteroid
 				if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
-					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, Weapon_info[b->weapon_info_index].damage);
+					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage);
 				}
 				break;
 			case OBJ_SHIP:	
@@ -3472,6 +3470,9 @@ float beam_get_ship_damage(beam *b, object *objp)
 
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
 
+	if (wip->damage <= 0)
+		return 0.0f;	// Not much point in calculating the attenuation if the beam doesn't hurt in the first place.
+
 	float attenuation = 1.0f;
 
 	if ((b->damage_threshold >= 0.0f) && (b->damage_threshold < 1.0f)) {
@@ -3490,7 +3491,7 @@ float beam_get_ship_damage(beam *b, object *objp)
 		damage = The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
 	} else {
 		// normal damage
-		damage = Weapon_info[b->weapon_info_index].damage * attenuation;
+		damage = wip->damage * attenuation;
 	}
 
 	return damage;

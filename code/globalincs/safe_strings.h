@@ -37,7 +37,7 @@ typedef int errno_t;
 #ifndef SAFESTRINGS_TEST_APP
 
 #	ifndef __safe_strings_error_handler
-#		define __safe_strings_error_handler( val ) Error(file, line,"%s: String error. Please Report.\nTrying to put into %d byte buffer:\n%s", #val, sizeInBytes,strSource)
+#		define __safe_strings_error_handler( val ) Error(file, line,"%s: String error. Please Report.\nTrying to put into " SIZE_T_ARG " byte buffer:\n%s", #val, sizeInBytes,strSource)
 #	endif
 
 #else

@@ -9,16 +9,16 @@
 
 
 
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "io/key.h"
 #include "menuui/mainhallmenu.h"
 #include "menuui/mainhalltemp.h"
-#include "ui/ui.h"
-#include "io/key.h"
-#include "gamesnd/gamesnd.h"
-#include "gamesequence/gamesequence.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionload.h"
 #include "playerman/player.h"
-#include "freespace2/freespace.h"
+#include "ui/ui.h"
 
 
 // ------------------------------------------------------------------------------------------------------------------------

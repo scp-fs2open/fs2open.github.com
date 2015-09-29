@@ -28,23 +28,25 @@
 #include "grammar.h"
 
 // FreeSpace includes
+#include "cfile/cfile.h"
 #include "hud/hudsquadmsg.h"
 #include "io/keycontrol.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
-#include "cfile/cfile.h"
 
 CComPtr<ISpRecoGrammar>         p_grammarObject; // Pointer to our grammar object
 CComPtr<ISpRecoContext>         p_recogContext;  // Pointer to our recognition context
 CComPtr<ISpRecognizer>			p_recogEngine;   // Pointer to our recognition engine instance
+CComPtr<ISpAudio>				cpAudio;         // Pointer for Audio Input Device
 
 const bool DEBUG_ON = false;
 
 extern int button_function(int n);
 extern void hud_squadmsg_msg_all_fighters();
 extern void hud_squadmsg_shortcut( int command );
+extern bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
+extern int hud_squadmsg_wing_valid(wing *wingp);
 
-//extern void hud_squadmsg_ship_command();
 extern int Msg_instance;;
 extern int Msg_shortcut_command;
 extern int Squad_msg_mode;
@@ -72,18 +74,19 @@ void doVid_Action(int action)
 
 		if(Msg_instance == MESSAGE_ALL_FIGHTERS || Squad_msg_mode == SM_MODE_ALL_FIGHTERS )
 		{
-			//	nprintf(("warning", "VOICER hud_squadmsg_send_to_all_fighters\n"));
 			hud_squadmsg_send_to_all_fighters(Msg_shortcut_command);
 		}
 		else if(Squad_msg_mode == SM_MODE_SHIP_COMMAND)
 		{
-			//	nprintf(("warning", "VOICER msg ship %d\n", Msg_instance));
-			hud_squadmsg_send_ship_command( Msg_instance, Msg_shortcut_command, 1 );
+			// skip if player cannot order this ship
+			if (hud_squadmsg_ship_valid(&Ships[Msg_instance]))
+				hud_squadmsg_send_ship_command( Msg_instance, Msg_shortcut_command, 1 );
 		}
 		else if(Squad_msg_mode == SM_MODE_WING_COMMAND)
 		{
-			//	nprintf(("warning", "VOICER msg wing %d\n", Msg_instance));
-			hud_squadmsg_send_wing_command( Msg_instance, Msg_shortcut_command, 1 );
+			// skip if player cannot order this wing
+			if (hud_squadmsg_wing_valid(&Wings[Msg_instance]))
+				hud_squadmsg_send_wing_command( Msg_instance, Msg_shortcut_command, 1 );
 		}
 		else if(Squad_msg_mode == SM_MODE_REINFORCEMENTS )
 		{
@@ -113,7 +116,6 @@ void doVid_Action(int action)
 bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource)
 {
 	HRESULT hr = S_OK;
-	CComPtr<ISpAudio> cpAudio;
 
 	while (true)
 	{
@@ -171,7 +173,7 @@ bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource
 												SPLO_STATIC);
 			if (FAILED(hr))
 			{
-				MessageBox(hWnd,"Failed to load resource\n","Error",MB_OK);
+				MessageBox(hWnd,"Failed to load resource SRGRAMMAR\n","Error",MB_OK);
 				break;
 			}
 		}
@@ -212,6 +214,10 @@ bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource
 
 void VOICEREC_deinit()
 {
+	if ( cpAudio )
+	{
+		cpAudio.Release();
+	}
 	// Release grammar, if loaded
 	if ( p_grammarObject )
 	{
@@ -289,7 +295,7 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 
 			mprintf(( "recognized speech : %s \n", szText ));
 			mprintf(( "speech Rule.ulId : %d \n", pElements->Rule.ulId ));
-			//MessageBoxW(NULL,pwszText,NULL,MB_OK);
+			mprintf(( "confidence: %f \n", pElements->pProperties->SREngineConfidence));
 
 			::CoTaskMemFree(pwszText);
 		}
@@ -340,7 +346,8 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 						hud_squadmsg_toggle();
 					}
 
-					hud_squadmsg_do_mode(SM_MODE_WING_COMMAND);
+					if (hud_squadmsg_wing_valid(&Wings[Msg_instance]))
+						hud_squadmsg_do_mode(SM_MODE_WING_COMMAND);
 				}
 				else
 				{
@@ -361,7 +368,8 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 						hud_squadmsg_toggle();
 					}
 
-					hud_squadmsg_do_mode(SM_MODE_SHIP_COMMAND);
+					if (hud_squadmsg_ship_valid(&Ships[Msg_instance]))
+						hud_squadmsg_do_mode(SM_MODE_SHIP_COMMAND);
 
 				}
 
@@ -414,17 +422,11 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 
 					case VID_AllFighters:
 					case VID_AllWings:
-					//	Msg_instance = MESSAGE_ALL_FIGHTERS;
-					//	Squad_msg_mode == SM_MODE_ALL_FIGHTERS
 						hud_squadmsg_msg_all_fighters();
+						// can have the action to perform spoken directly afterwards
 						if (pElements->pProperties->pFirstChild) {
 							doVid_Action(pElements->pProperties->pFirstChild->vValue.ulVal);
 						}
-
-					//	if(Msg_shortcut_command == -1)
-					//	{
-					//		hud_squadmsg_do_mode( SM_MODE_ALL_FIGHTERS );
-					//	}
 						break;
 
 					case VID_Reinforcements:
@@ -445,10 +447,10 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 
 				break;
 			}
+			// phrases for transferring shield energy to different locations
 			case VID_shields:
 			{
 				int action = pElements->pProperties->vValue.ulVal;
-				mprintf(("Shield Transfer %d \n", action));
 
 				switch(action)
 				{
@@ -462,27 +464,22 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 
 				break;
 			}
+			// basic cheat, phrase as a value equivalent to the defines in ControlConfig/ControlsConfig.h
+			// it just calls the button_function with this value
 			case VID_speed:
 			case VID_targeting:
 			case VID_other:
 			{
 				int action = pElements->pProperties->vValue.ulVal;
-				mprintf(("Targeting/speed %d \n", action));
 
 				if (action > -1)
 				{
 					button_function( action );
 				}
 				break;
-				/*
-				switch(action)
-				{
-					case 0: button_function( TARGET_NEXT ); break;
-						cas
-				}
-				break;
-				*/
 			}
+			// nearly the same as the previous except it has some extra entries for
+			// maximising/minimising energy
 			case VID_power:
 			{
 				int action = pElements->pProperties->vValue.ulVal;
@@ -492,8 +489,8 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 					button_function( action );
 				}
 				else
-					// this is for the max engines etc.
 				{
+					// this is for the max engines etc.
 					for (int i=1; i<7; i++)
 					{
 						button_function( action - 132 );
@@ -501,17 +498,6 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 				}
 				break;
 			}
-	
-	
-	/*
-
-
-	hud_squadmsg_do_mode( SM_MODE_SHIP_COMMAND );				// and move to a new mode
-	hud_squadmsg_do_mode( SM_MODE_WING_COMMAND );				// and move to a new mode
-hud_squadmsg_do_mode( SM_MODE_SHIP_COMMAND );
-
-*/
-
 		}
 		// Free the pElements memory which was allocated for us
 		::CoTaskMemFree(pElements);

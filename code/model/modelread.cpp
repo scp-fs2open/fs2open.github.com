@@ -19,24 +19,21 @@
 
 #define MODEL_LIB
 
+#include "bmpman/bmpman.h"
+#include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
+#include "freespace2/freespace.h"		// For flFrameTime
+#include "gamesnd/gamesnd.h"
+#include "globalincs/linklist.h"
+#include "io/key.h"
+#include "io/timer.h"
+#include "math/fvi.h"
+#include "math/vecmat.h"
 #include "model/model.h"
 #include "model/modelsinc.h"
-#include "math/vecmat.h"
-#include "object/object.h"
-#include "bmpman/bmpman.h"
-#include "io/key.h"
-#include "render/3dinternal.h"
-#include "globalincs/linklist.h"
-#include "io/timer.h"
-#include "freespace2/freespace.h"		// For flFrameTime
-#include "math/fvi.h"
-#include "ship/ship.h"
-#include "cfile/cfile.h"
 #include "parse/parselo.h"
-#include "cmdline/cmdline.h"
-
-
-#include "gamesnd/gamesnd.h"
+#include "render/3dinternal.h"
+#include "ship/ship.h"
 
 flag_def_list model_render_flags[] =
 {
@@ -271,18 +268,18 @@ void model_unload(int modelnum, int force)
 		pm->detail_buffers[i].clear();
 	}
 
-	// run through Ship_info[] and if the model has been loaded we'll need to reset the modelnum to -1.
-	for (i = 0; i < Num_ship_classes; i++) {
-		if ( pm->id == Ship_info[i].model_num ) {
-			Ship_info[i].model_num = -1;
+	// run through Ship_info and if the model has been loaded we'll need to reset the modelnum to -1.
+	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
+		if ( pm->id == it->model_num ) {
+			it->model_num = -1;
 		}
 
-		if ( pm->id == Ship_info[i].cockpit_model_num ) {
-			Ship_info[i].cockpit_model_num = -1;
+		if ( pm->id == it->cockpit_model_num ) {
+			it->cockpit_model_num = -1;
 		}
 
-		if ( pm->id == Ship_info[i].model_num_hud ) {
-			Ship_info[i].model_num_hud = -1;
+		if ( pm->id == it->model_num_hud ) {
+			it->model_num_hud = -1;
 		}
 	}
 
@@ -653,12 +650,11 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		// Lets still give a comment about it and not just erase it
 		Warning(LOCATION,"Not all subsystems in model \"%s\" have a record in ships.tbl.\nThis can cause game to crash.\n\nList of subsystems not found from table is in log file.\n", model_get(model_num)->filename );
-		mprintf(("Subsystem %s in model was not found in ships.tbl!\n", subobj_name));
-//		Warning(LOCATION, "A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata%stables%s%s.subsystems for inclusion\ninto ships.tbl.", model_filename, DIR_SEPARATOR_STR, DIR_SEPARATOR_STR, bname);
+		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
 		ss_warning_shown = 1;
 	} else
 #endif
-		mprintf(("Subsystem %s in model was not found in ships.tbl!\n", subobj_name));
+		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
 
 #ifndef NDEBUG
 	if ( ss_fp )	{
@@ -5524,7 +5520,7 @@ void parse_glowpoint_table(const char *filename)
 					}
 					else
 					{
-						nprintf(("Model", "Glowpoint preset %s nebula texture num is %d\n", gpo, gpo.glow_neb_bitmap));
+						nprintf(("Model", "Glowpoint preset %s nebula texture num is %d\n", gpo.name, gpo.glow_neb_bitmap));
 					}
 				}
 				else {
@@ -5601,7 +5597,7 @@ void parse_glowpoint_table(const char *filename)
 
 					if (optional_string("$Cone angle:")) {
 						stuff_float(&gpo.cone_angle);
-						gpo.cone_inner_angle = cos((gpo.cone_angle - (gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f) / 180.0f * PI);
+						gpo.cone_inner_angle = cos((gpo.cone_angle - ((gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f)) / 180.0f * PI);
 						gpo.cone_angle = cos(gpo.cone_angle / 180.0f * PI);
 					}
 
@@ -5655,7 +5651,7 @@ void parse_glowpoint_table(const char *filename)
 		}
 		required_string("#End");
 	} catch (const parse::ParseException& e) {
-		mprintf(("Unable to parse '%s'!  Error code = %d.\n", filename, e.what()));
+		mprintf(("Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
 }

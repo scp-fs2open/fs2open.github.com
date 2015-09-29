@@ -18,16 +18,16 @@
 #include <stdarg.h>
 #include <limits.h>
 
-#include "graphics/2d.h"
-#include "cfile/cfile.h"
-#include "graphics/font.h"
-#include "palman/palman.h"
-#include "io/key.h"
 #include "bmpman/bmpman.h"
-#include "localization/localize.h"
-#include "parse/parselo.h"
-#include "globalincs/systemvars.h"
+#include "cfile/cfile.h"
 #include "globalincs/def_files.h"
+#include "globalincs/systemvars.h"
+#include "graphics/2d.h"
+#include "graphics/font.h"
+#include "io/key.h"
+#include "localization/localize.h"
+#include "palman/palman.h"
+#include "parse/parselo.h"
 
 
 
@@ -551,7 +551,7 @@ int gr_get_current_fontnum()
 	}
 }
 
-int gr_get_fontnum(char *filename)
+int gr_get_fontnum(const char *filename)
 {
 	int i;
 	for(i = 0; i < Num_fonts; i++)

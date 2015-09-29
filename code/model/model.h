@@ -12,8 +12,8 @@
 #ifndef _MODEL_H
 #define _MODEL_H
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH
+#include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "object/object.h"
 
@@ -337,7 +337,7 @@ public:
 
 	vec3d	min;						// The min point of this object's geometry
 	vec3d	max;						// The max point of this object's geometry
-	vec3d	bounding_box[8];		// caclulated fron min/max
+	vec3d	bounding_box[8];		// calculated fron min/max
 
 	int		blown_off;				// If set, this subobject is blown off. Stuffed by model_set_instance
 	int		my_replacement;		// If not -1 this subobject is what should get rendered instead of this one

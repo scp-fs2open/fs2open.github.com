@@ -9,8 +9,8 @@
 
 
 
-#include "render/3dinternal.h"
 #include "graphics/tmapper.h"
+#include "render/3dinternal.h"
 
 
 int free_point_num=0;

@@ -410,8 +410,8 @@ int pcx_encode_line(ubyte *inBuff, int inLen, FILE * fp)
 	ubyte this_ptr, last;
 
 	int srcIndex, i;
-	register int total;
-	register ubyte runCount; 	// max single runlength is 63
+	int total;
+	ubyte runCount; 	// max single runlength is 63
 	total = 0;
 	last = *(inBuff);
 	runCount = 1;

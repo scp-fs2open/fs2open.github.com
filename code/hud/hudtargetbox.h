@@ -12,7 +12,7 @@
 #ifndef __FREESPACE_HUDTARGETBOX_H__
 #define __FREESPACE_HUDTARGETBOX_H__
 
-#include "graphics/2d.h"
+#include "hud/hud.h"
 #include "radar/radarsetup.h"
 #include "ship/ship.h"
 

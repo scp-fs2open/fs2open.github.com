@@ -19,15 +19,15 @@
 
 #define REDALERT_INTERNAL
 
-#include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
-#include "stats/scoring.h"
-#include "parse/sexp.h"
-#include "mission/missioncampaign.h"
 #include "controlconfig/controlsconfig.h"
-#include "missionui/redalert.h"
-#include "pilotfile/pilotfile.h"
+#include "globalincs/pstypes.h"
 #include "localization/localize.h"
+#include "mission/missioncampaign.h"
+#include "missionui/redalert.h"
+#include "parse/sexp.h"
+#include "pilotfile/pilotfile.h"
+#include "stats/scoring.h"
 
 
 static const unsigned short MAX_JOY_AXES_CONV = 5;

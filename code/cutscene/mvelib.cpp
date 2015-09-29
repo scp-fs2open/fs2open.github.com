@@ -1,8 +1,8 @@
 
 
-#include "globalincs/pstypes.h"
-#include "cutscene/mvelib.h"
 #include "cfile/cfile.h"
+#include "cutscene/mvelib.h"
+#include "globalincs/pstypes.h"
 
 
 static const char MVE_HEADER[]  = "Interplay MVE File\x1A";

@@ -5,8 +5,8 @@
  */
 
 
-#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 
 extern int Directive_wait_time;
@@ -17,6 +17,7 @@ extern bool Cutscene_camera_displays_hud;
 extern bool Alternate_chaining_behavior;
 extern int Default_ship_select_effect;
 extern int Default_weapon_select_effect;
+extern int Default_fiction_viewer_ui;
 extern bool Enable_external_shaders;
 extern int Default_detail_level;
 extern bool Full_color_head_anis;

@@ -9,15 +9,12 @@
 
 
 #include "debugconsole/console.h"
-#include "debugconsole/consoleparse.h"
 #include "globalincs/alphacolors.h"
-#include "globalincs/pstypes.h"
 #include "globalincs/version.h"
-#include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
-#include "io/timer.h"
 #include "io/key.h"
+#include "io/timer.h"
 #include "osapi/osapi.h"
 
 #include <algorithm>
@@ -104,7 +101,8 @@ void dc_draw(bool show_prompt);
 /**
  * Draws the cursor
  * @param [in] cmd_string	The formatted command string displayed by dc_draw_window
- * @param [in] x y			The x and y screen position of the command string
+ * @param [in] x		The x screen position of the command string
+ * @param [in] y		The y screen position of the command string
  */
 void dc_draw_cursor( SCP_string &cmd_string, int x, int y );
 

@@ -9,21 +9,20 @@
 
 
 
-#include "object/objcollide.h"
-#include "object/object.h"
-#include "weapon/weapon.h"
-#include "ship/ship.h"
-#include "ship/shiphit.h"
-#include "playerman/player.h"
 #include "hud/hudshield.h"
 #include "hud/hudwingmanstatus.h"
 #include "io/timer.h"
 #include "network/multi.h"
-#include "network/multiutil.h"
 #include "network/multimsgs.h"
-#include "parse/lua.h"
+#include "network/multiutil.h"
+#include "object/objcollide.h"
+#include "object/object.h"
 #include "parse/scripting.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
 #include "ship/shipfx.h"
+#include "ship/shiphit.h"
+#include "weapon/weapon.h"
 
 
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
@@ -452,7 +451,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 				if (!(shipp->flags2 & SF2_DONT_COLLIDE_INVIS)) {
 					wp->lifeleft = 0.001f;
 					if (ship_objp == Player_obj)
-						nprintf(("Jim", "Frame %i: Weapon %i set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_objp), dist));
+						nprintf(("Jim", "Frame %i: Weapon " PTRDIFF_T_ARG " set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_objp), dist));
 					valid_hit_occurred = 1;
 				}
 			}
