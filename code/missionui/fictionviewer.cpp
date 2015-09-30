@@ -571,8 +571,8 @@ void fiction_viewer_load(int stage)
 
 		// copy all the text
 		cfread(Fiction_viewer_text, file_length, 1, fp);
-	}
 
-	// we're done, close it out
-	cfclose(fp);
+		// we're done, close it out
+		cfclose(fp);
+	}
 }
