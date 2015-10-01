@@ -330,6 +330,53 @@ bool hud_squadmsg_exist_fighters( )
 	return false;
 }
 
+// Routine to return true if a ship should be put onto the messaging menu. Analagous to hud_squadmsg_wing_valid() below. -MageKing17
+bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
+{
+	Assertion(shipp != nullptr, "hud_squadmsg_ship_valid() was passed a null shipp pointer; get a coder!\n");
+	if (!objp)	// For simplicity's sake, allow it to be called with just the ship pointer
+		objp = &Objects[shipp->objnum];
+
+	// ships must be able to receive a message
+	if ( Ship_info[shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools & STI_AI_ACCEPT_PLAYER_ORDERS) )
+		return false;
+
+	// be sure ship is on correct team
+#ifdef NDEBUG
+	if (shipp->team != Player_ship->team)
+		return false;
+#else
+	if (!Msg_enemies && (shipp->team != Player_ship->team))
+		return false;
+#endif
+
+	// departing or dying ships cannot be on list
+	if ( shipp->flags & (SF_DEPARTING|SF_DYING) )
+		return false;
+
+	// cannot be my ship or an instructor
+	if ((objp == Player_obj) || is_instructor(objp))
+		return false;
+
+	// ship must be accepting ship type orders
+	if ( shipp->orders_accepted == 0)
+		return false;
+
+	// if it is a player ship, we must be in multiplayer
+	if ( (objp->flags & OF_PLAYER_SHIP) && !(Game_mode & GM_MULTIPLAYER) )
+		return false;
+
+	// if a messaging shortcut, be sure this ship can process the order
+	if ( Msg_shortcut_command != -1 ) {
+		if ( !(shipp->orders_accepted & Msg_shortcut_command) )
+			return false;
+		else if ( !hud_squadmsg_ship_order_valid(objp->instance, Msg_shortcut_command) )
+			return false;
+	}
+
+	// If we got to this point, the ship must be valid.
+	return true;
+}
 
 // function which counts the number of ships available for messaging.  Used to determine if
 // we should grey out a menu or allow a shortcut command to apply.  parameter "flag" is used
@@ -347,44 +394,10 @@ int hud_squadmsg_count_ships(int add_to_menu)
 	{	
 		objp = &Objects[so->objnum];
 		shipp = &Ships[objp->instance];
-		Assert ( shipp->objnum != -1 );
+		Assertion(shipp->objnum != -1, "hud_squadmsg_count_ships() discovered that ship #%d ('%s') has an objnum of -1. Since the ship was retrieved from its object number (%d), this should be impossible; get a coder!\n", objp->instance, shipp->ship_name, so->objnum);
 
-		// ships must be able to receive a message
-		if ( Ship_info[shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools & STI_AI_ACCEPT_PLAYER_ORDERS) )
+		if (!hud_squadmsg_ship_valid(shipp, objp))
 			continue;
-
-		// be sure ship is on correct team
-#ifdef NDEBUG
-		if (shipp->team != Player_ship->team)
-			continue;
-#else
-		if (!Msg_enemies && (shipp->team != Player_ship->team))
-			continue;
-#endif
-
-		// departing or dying ships cannot be on list
-		if ( shipp->flags & (SF_DEPARTING|SF_DYING) )
-			continue;
-
-		// cannot be my ship or an instructor
-		if ((objp == Player_obj) || is_instructor(objp))
-			continue;
-
-		// ship must be accepting ship type orders
-		if ( shipp->orders_accepted == 0)
-			continue;
-
-		// if it is a player ship, we must be in multiplayer
-		if ( (objp->flags & OF_PLAYER_SHIP) && !(Game_mode & GM_MULTIPLAYER) )
-			continue;
-
-		// if a messaging shortcut, be sure this ship can process the order
-		if ( Msg_shortcut_command != -1 ) {
-			if ( !(shipp->orders_accepted & Msg_shortcut_command) )
-				continue;
-			else if ( !hud_squadmsg_ship_order_valid(objp->instance, Msg_shortcut_command) )
-				continue;
-		}
 
 		// this ship satisfies everything
 		count++;
@@ -2044,7 +2057,7 @@ void hud_squadmsg_wing_command()
 {
 	int k;
 	wing *wingp;
-	int default_orders, i, orders;
+	int default_orders, i, orders, shipnum;
 
 	// when adding commands for wings, we will look at all of the ships in the wing, and create
 	// the order list from that set of ships.  In the future, we may want to do something else....
@@ -2060,7 +2073,9 @@ void hud_squadmsg_wing_command()
 	default_orders &= ~CAPTURE_TARGET_ITEM;		// we cannot capture any target with a wing.
 
 	Num_menu_items = 0;
-	orders = Ships[wingp->ship_index[0]].orders_accepted;		// get the orders that the first ship in the wing will accept
+	shipnum = wingp->ship_index[wingp->special_ship];
+	Assertion(shipnum >= 0, "Special ship (%d) for wing '%s' has a negative ship_index (%d). This should not happen; get a coder!\n", wingp->special_ship, wingp->name, shipnum);
+	orders = Ships[shipnum].orders_accepted;		// get the orders that the wing leader will accept
 	for ( i = 0; i < NUM_COMM_ORDER_ITEMS; i++ ) {
 		// add the set of default orders to the comm menu.  We will currently allow all messages
 		// to be available in the wing.

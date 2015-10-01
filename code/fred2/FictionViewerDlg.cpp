@@ -59,10 +59,27 @@ BOOL FictionViewerDlg::OnInitDialog()
 		box->AddString(Spooled_music[i].name);		
 	}
 
-	// init variables
-	m_story_file = _T(fiction_file());
-	m_font_file = _T(fiction_font());
-	m_voice_file = _T(fiction_voice());
+	// make sure we have at least one stage
+	if (Fiction_viewer_stages.empty())
+	{
+		fiction_viewer_stage stage;
+		memset(&stage, 0, sizeof(fiction_viewer_stage));
+		stage.formula = Locked_sexp_true;
+
+		Fiction_viewer_stages.push_back(stage);
+	}
+	else if (Fiction_viewer_stages.size() > 1)
+	{
+		MessageBox("You have multiple fiction viewer stages defined for this mission.  At present, FRED will only allow you to edit the first stage.");
+	}
+
+	// init fields based on first fiction viewer stage
+	fiction_viewer_stage *stagep = &Fiction_viewer_stages.at(0);
+	m_story_file = _T(stagep->story_filename);
+	m_font_file = _T(stagep->font_filename);
+	m_voice_file = _T(stagep->voice_filename);
+
+	// music is managed through the mission
 	m_fiction_music = Mission_music[SCORE_FICTION_VIEWER] + 1;
 
 	CDialog::OnInitDialog();
@@ -74,9 +91,15 @@ void FictionViewerDlg::OnOK()
 {
 	UpdateData(TRUE);
 
-	// load it up
-	fiction_viewer_reset();
-	fiction_viewer_load((const char *)(LPCSTR)m_story_file, (const char *)(LPCSTR)m_font_file, (const char *)(LPCSTR)m_voice_file);
+	// store the fields in the data structure
+	fiction_viewer_stage *stagep = &Fiction_viewer_stages.at(0);
+	strcpy_s(stagep->story_filename, (LPCSTR)m_story_file);
+	strcpy_s(stagep->font_filename, (LPCSTR)m_font_file);
+	strcpy_s(stagep->voice_filename, (LPCSTR)m_voice_file);
+
+	// if we don't have a story file, remove this stage (stage 0)
+	if (strlen(stagep->story_filename) == 0)
+		Fiction_viewer_stages.erase(Fiction_viewer_stages.begin());
 
 	// set music
 	Mission_music[SCORE_FICTION_VIEWER] = m_fiction_music - 1;
@@ -114,6 +137,8 @@ void FictionViewerDlg::OnClose()
 
 int FictionViewerDlg::query_modified()
 {
-	return strcmp(m_story_file, fiction_file()) || strcmp(m_font_file, fiction_font()) || 
-		strcmp(m_voice_file, fiction_voice()) || m_fiction_music != (Mission_music[SCORE_FICTION_VIEWER] + 1);
+	fiction_viewer_stage *stagep = &Fiction_viewer_stages.at(0);
+
+	return strcmp(m_story_file, stagep->story_filename) || strcmp(m_font_file, stagep->font_filename) ||
+		strcmp(m_voice_file, stagep->voice_filename) || m_fiction_music != (Mission_music[SCORE_FICTION_VIEWER] + 1);
 }

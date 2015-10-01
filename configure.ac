@@ -472,8 +472,8 @@ dnl any extra optimization or warning flags
 if test "$fs2_os_win32" = "yes" ; then
 	D_CFLAGS="$D_CFLAGS -fexceptions"
 elif test "$fs2_os_linux" = "yes" || test "$fs2_os_bsd" = "yes" ; then
-	D_CFLAGS="$D_CFLAGS -fsigned-char -Wno-unknown-pragmas"
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -Wno-deprecated -Wno-char-subscripts"
+	D_CFLAGS="$D_CFLAGS -fsigned-char"
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -Wno-char-subscripts"
 elif test "$fs2_os_osx" = "yes" ; then
 	D_CFLAGS="$D_CFLAGS -fsigned-char -Wno-unknown-pragmas"
 fi

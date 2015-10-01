@@ -185,6 +185,8 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 
 	if ( !(A->flags&OF_COLLIDES) ) return;		// This object doesn't collide with anything
 	if ( !(B->flags&OF_COLLIDES) ) return;		// This object doesn't collide with anything
+
+	if ((A->flags & OF_IMMOBILE) && (B->flags & OF_IMMOBILE)) return;	// Two immobile objects will never collide with each other
 	
 	// Make sure you're not checking a parent with it's kid or vicy-versy
 //	if ( A->parent_sig == B->signature && !(A->type == OBJ_SHIP && B->type == OBJ_DEBRIS) ) return;
@@ -1385,6 +1387,8 @@ void obj_collide_pair(object *A, object *B)
 	if ( !(A->flags&OF_COLLIDES) ) return;		// This object doesn't collide with anything
 	if ( !(B->flags&OF_COLLIDES) ) return;		// This object doesn't collide with anything
 	
+	if ((A->flags & OF_IMMOBILE) && (B->flags & OF_IMMOBILE)) return;	// Two immobile objects will never collide with each other
+
 	// Make sure you're not checking a parent with it's kid or vicy-versy
 //	if ( A->parent_sig == B->signature && !(A->type == OBJ_SHIP && B->type == OBJ_DEBRIS) ) return;
 //	if ( B->parent_sig == A->signature && !(A->type == OBJ_DEBRIS && B->type == OBJ_SHIP) ) return;

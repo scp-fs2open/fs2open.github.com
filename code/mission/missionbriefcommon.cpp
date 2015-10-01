@@ -710,8 +710,9 @@ void brief_init_map()
 	Num_fade_icons=0;
 }
 
-
+#ifdef _MSC_VER
 #pragma optimize("", off)
+#endif
 
 void brief_render_fade_outs(float frametime)
 {
@@ -1037,7 +1038,9 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 	}  // end if vertex is projected
 }
 
+#ifdef _MSC_VER
 #pragma optimize("", on)
+#endif
 
 // -------------------------------------------------------------------------------------
 // brief_render_icons()

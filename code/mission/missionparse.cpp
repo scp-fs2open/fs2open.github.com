@@ -50,6 +50,7 @@
 #include "missionui/fictionviewer.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
+#include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "network/multi.h"
@@ -399,6 +400,36 @@ MONITOR(NumShipArrivals)
 MONITOR(NumShipDepartures)
 
 
+// Goober5000
+void parse_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, char *string_field_640, char *string_field_1024)
+{
+	int found640 = 0, found1024 = 0;
+	strcpy(string_field_640, "");
+	strcpy(string_field_1024, "");
+
+	// custom mission loading background, or whatever
+	if (optional_string(expected_string_640))
+	{
+		found640 = 1;
+		stuff_string(string_field_640, F_NAME, MAX_FILENAME_LEN);
+	}
+	if (optional_string(expected_string_1024))
+	{
+		found1024 = 1;
+		stuff_string(string_field_1024, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	// error testing
+	if (Fred_running && (found640) && !(found1024))
+	{
+		Warning(LOCATION, "Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_640, expected_string_1024);
+	}
+	if (Fred_running && !(found640) && (found1024))
+	{
+		Warning(LOCATION, "Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_1024, expected_string_640);
+	}
+}
+
 void parse_mission_info(mission *pm, bool basic = false)
 {
 	int i;
@@ -688,30 +719,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 		Num_teams = 2;
 	}
 
-	int found640=0, found1024=0;
-	strcpy_s(pm->loading_screen[GR_640],"");
-	strcpy_s(pm->loading_screen[GR_1024],"");
-	//custom mission loading background
-	if (optional_string("$Load Screen 640:"))
-	{
-		found640=1;
-		stuff_string(pm->loading_screen[GR_640], F_NAME, MAX_FILENAME_LEN);	
-	}
-	if (optional_string("$Load Screen 1024:"))
-	{
-		found1024=1;
-		stuff_string(pm->loading_screen[GR_1024], F_NAME, MAX_FILENAME_LEN);
-	}
-
-	//error testing
-	if (Fred_running && (found640) && !(found1024))
-	{
-		Warning(LOCATION, "Mission: %s\nhas a 640x480 loading screen but no 1024x768 loading screen!",pm->name);
-	}
-	if (Fred_running && !(found640) && (found1024))
-	{
-		Warning(LOCATION, "Mission: %s\nhas a 1024x768 loading screen but no 640x480 loading screen!",pm->name);
-	}
+	// Goober5000 - made this into a function since we use much the same technique for the briefing background
+	parse_custom_bitmap("$Load Screen 640:", "$Load Screen 1024:", pm->loading_screen[GR_640], pm->loading_screen[GR_1024]);
 
 	strcpy_s(pm->skybox_model, "");
 	if (optional_string("$Skybox Model:"))
@@ -1253,31 +1262,47 @@ done_briefing_music:
  */
 void parse_fiction(mission *pm)
 {
-	char filename[MAX_FILENAME_LEN];
-	char font_filename[MAX_FILENAME_LEN];
-	char voice_filename[MAX_FILENAME_LEN];
-
 	fiction_viewer_reset();
 
-	if (!optional_string("#Fiction Viewer"))
-		return;
+	if (optional_string("#Fiction Viewer"))
+	{
+		bool fiction_viewer_loaded = false;
 
-	required_string("$File:");
-	stuff_string(filename, F_FILESPEC, MAX_FILENAME_LEN);
+		while (check_for_string("$File:"))
+		{
+			fiction_viewer_stage stage;
+			memset(&stage, 0, sizeof(fiction_viewer_stage));
+			stage.formula = Locked_sexp_true;
 
-	if (optional_string("$Font:")) {
-		stuff_string(font_filename, F_FILESPEC, MAX_FILENAME_LEN);
-	} else {
-		strcpy_s(font_filename, "");
+			required_string("$File:");
+			stuff_string(stage.story_filename, F_FILESPEC, MAX_FILENAME_LEN);
+
+			if (optional_string("$Font:"))
+				stuff_string(stage.font_filename, F_FILESPEC, MAX_FILENAME_LEN);
+
+			if (optional_string("$Voice:"))
+				stuff_string(stage.voice_filename, F_FILESPEC, MAX_FILENAME_LEN);
+
+			if (optional_string("$UI:"))
+				stuff_string(stage.ui_name, F_NAME, NAME_LENGTH);
+
+			parse_custom_bitmap("$Background 640:", "$Background 1024:", stage.background[GR_640], stage.background[GR_1024]);
+
+			// get the sexp if we have one
+			if (optional_string("$Formula:"))
+				stage.formula = get_sexp_main();
+
+			// now, store this stage
+			Fiction_viewer_stages.push_back(stage);
+
+			// see if this is the stage we want to display, then display it
+			if (!Fred_running && !fiction_viewer_loaded && is_sexp_true(stage.formula))
+			{
+				fiction_viewer_load(Fiction_viewer_stages.size() - 1);
+				fiction_viewer_loaded = true;
+			}
+		}
 	}
-
-	if (optional_string("$Voice:")) {
-		stuff_string(voice_filename, F_FILESPEC, MAX_FILENAME_LEN);
-	} else {
-		strcpy_s(voice_filename, "");
-	}
-
-	fiction_viewer_load(filename, font_filename, voice_filename);
 }
 
 /**
@@ -1291,6 +1316,10 @@ void parse_cmd_brief(mission *pm)
 	stage = 0;
 
 	required_string("#Command Briefing");
+
+	// Yarn - use the same code as for mission loading screens
+	parse_custom_bitmap("$Background 640:", "$Background 1024:", Cur_cmd_brief->background[GR_640], Cur_cmd_brief->background[GR_1024]);
+
 	while (optional_string("$Stage Text:")) {
 		Assert(stage < CMD_BRIEF_STAGES_MAX);
 		stuff_string(Cur_cmd_brief->stage[stage].text, F_MULTITEXT, NULL);
@@ -1345,8 +1374,13 @@ void parse_briefing(mission *pm, int flags)
 			break;
 
 		bp = &Briefings[nt];
-
 		required_string("$start_briefing");
+
+		// Goober5000 - use the same code as for mission loading screens
+		parse_custom_bitmap("$briefing_background_640:", "$briefing_background_1024:", bp->background[GR_640], bp->background[GR_1024]);
+		parse_custom_bitmap("$ship_select_background_640:", "$ship_select_background_1024:", bp->ship_select_background[GR_640], bp->ship_select_background[GR_1024]);
+		parse_custom_bitmap("$weapon_select_background_640:", "$weapon_select_background_1024:", bp->weapon_select_background[GR_640], bp->weapon_select_background[GR_1024]);
+
 		required_string("$num_stages:");
 		stuff_int(&bp->num_stages);
 		Assert(bp->num_stages <= MAX_BRIEF_STAGES);
@@ -1559,6 +1593,9 @@ void parse_debriefing_new(mission *pm)
 
 		db = &Debriefings[nt];
 
+		// Yarn - use the same code as for mission loading screens
+		parse_custom_bitmap("$Background 640:", "$Background 1024:", db->background[GR_640], db->background[GR_1024]);
+
 		required_string("$Num stages:");
 		stuff_int(&db->num_stages);
 		Assert(db->num_stages <= MAX_DEBRIEF_STAGES);
@@ -1769,6 +1806,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum);
 int parse_create_object_sub(p_object *p_objp)
 {
 	int	i, j, k, objnum, shipnum;
+	int anchor_objnum = -1;
 	ai_info *aip;
 	ship_subsys *ptr;
 	ship *shipp;
@@ -2324,7 +2362,7 @@ int parse_create_object_sub(p_object *p_objp)
 				if (MULTIPLAYER_CLIENT)
 					location = ARRIVE_AT_LOCATION;
 
-				mission_set_arrival_location(p_objp->arrival_anchor, location, p_objp->arrival_distance, objnum, p_objp->arrival_path_mask, NULL, NULL);
+				anchor_objnum = mission_set_arrival_location(p_objp->arrival_anchor, location, p_objp->arrival_distance, objnum, p_objp->arrival_path_mask, NULL, NULL);
 
 				// Goober5000 - warpin start moved to parse_create_object
 			}
@@ -2357,6 +2395,16 @@ int parse_create_object_sub(p_object *p_objp)
 			if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
 				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
 		}
+	}
+
+	if (Game_mode & GM_IN_MISSION) {
+		if (anchor_objnum >= 0)
+			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", &Objects[anchor_objnum]);
+		else
+			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
+
+		Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[objnum]);
+		Script_system.RemHookVars(2, "Ship", "Parent");
 	}
 
 	return objnum;
@@ -4207,24 +4255,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// possibly change the location where these ships arrive based on the wings arrival location
 		mission_set_wing_arrival_location( wingp, num_create_save );
 
-		for (it = 0; it < wingp->current_count; it++ ) {
-			int shipobjnum = Ships[wingp->ship_index[it]].objnum;
-			int anchor_objnum = -1;
-
-			if (wingp->arrival_anchor >= 0) {
-				int parentshipnum = ship_name_lookup(Parse_names[wingp->arrival_anchor]);
-				anchor_objnum = Ships[parentshipnum].objnum;
-			}
-
-			if (anchor_objnum >= 0)
-				Script_system.SetHookObjects(2, "Ship", &Objects[shipobjnum], "Parent", &Objects[anchor_objnum]);
-			else
-				Script_system.SetHookObjects(2, "Ship", &Objects[shipobjnum], "Parent", NULL);
-
-			Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[shipobjnum]);
-			Script_system.RemHookVars(2, "Ship", "Parent");
-		}
-
 		// if in multiplayer (and I am the host) and in the mission, send a wing create command to all
 		// other players
 		if ( MULTIPLAYER_MASTER ){
@@ -6011,7 +6041,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 		// or in front of some other ship.
 		index = wingp->current_count - num_to_set;
 		leader_objp = &Objects[Ships[wingp->ship_index[index]].objnum];
-		if (mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(leader_objp), wingp->arrival_path_mask, &pos, &orient)) {
+		if (mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(leader_objp), wingp->arrival_path_mask, &pos, &orient) != -1) {
 			// modify the remaining ships created
 			index++;
 			wing_index = 1;
@@ -6402,7 +6432,7 @@ p_object *mission_parse_get_arrival_ship(ushort net_signature)
 
 /**
  * Sets the arrival location of a parse object according to the arrival location of the object.
- * @return true if object set to new position, false if not.
+ * @return objnum of anchor ship if there is one, -1 otherwise.
  */
 int mission_set_arrival_location(int anchor, int location, int dist, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient)
 {
@@ -6411,7 +6441,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 	matrix orient;
 
 	if ( location == ARRIVE_AT_LOCATION )
-		return 0;
+		return -1;
 
 	Assert(anchor >= 0);
 
@@ -6442,7 +6472,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 	{
 		Assert ( location != ARRIVE_FROM_DOCK_BAY );		// bogus data somewhere!!!  get mwa
 		nprintf (("allender", "couldn't find ship for arrival anchor -- using location ship created at"));
-		return 0;
+		return -1;
 	}
 
 	// take the shipnum and get the position.  once we have positions, we can determine where
@@ -6458,7 +6488,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 		// if we get an error, just let the ship arrive(?)
 		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask, &pos, &fvec) == -1 ) {
 			Int3();			// get MWA or AL -- not sure what to do here when we cannot acquire a path
-			return 0;
+			return -1;
 		}
 		Objects[objnum].pos = pos;
 		vm_vector_2_matrix(&Objects[objnum].orient, &fvec, NULL, NULL);
@@ -6536,7 +6566,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 	if ( new_orient )
 		memcpy( new_orient, &Objects[objnum].orient, sizeof(matrix) );
 
-	return 1;
+	return anchor_objnum;
 }
 
 /**
@@ -6672,24 +6702,6 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 		mission_parse_support_arrived(objnum);
 	else
 		list_remove(&Ship_arrival_list, p_objp);
-
-	int anchor_objnum = -1;
-	if (p_objp->arrival_anchor >= 0) {
-		int shipnum = ship_name_lookup(Parse_names[p_objp->arrival_anchor]);
-
-		// This shouldn't be happening
-		Assertion(shipnum >= 0 && shipnum < MAX_SHIPS, "Arriving ship '%s' does not exist!", Parse_names[p_objp->arrival_anchor]);
-
-		anchor_objnum = Ships[shipnum].objnum;
-	}
-
-	if (anchor_objnum >= 0)
-		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", &Objects[anchor_objnum]);
-	else
-		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
-
-	Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, &Objects[objnum]);
-	Script_system.RemHookVars(2, "Ship", "Parent");
 }
 
 // Goober5000

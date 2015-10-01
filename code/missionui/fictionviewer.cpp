@@ -17,6 +17,7 @@
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/redalert.h"
+#include "mod_table/mod_table.h"
 #include "sound/audiostr.h"
 
 
@@ -25,6 +26,11 @@
 // MISSION FICTION VIEWER DEFINES/VARS
 //
 #define NUM_FVW_SETTINGS	2
+char *Fiction_viewer_ui_names[NUM_FVW_SETTINGS] =
+{
+	"FS2",	// FreeSpace 2
+	"WCS"	// Wing Commander Saga
+};
 
 char *Fiction_viewer_screen_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
 {
@@ -147,8 +153,11 @@ int Fiction_viewer_slider_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
 	}
 };
 
-int Top_fiction_viewer_text_line = 0;
-int Fiction_viewer_text_max_lines = 0;
+SCP_vector<fiction_viewer_stage> Fiction_viewer_stages;
+int Fiction_viewer_active_stage = -1;
+
+static int Top_fiction_viewer_text_line = 0;
+static int Fiction_viewer_text_max_lines = 0;
 
 static UI_WINDOW Fiction_viewer_window;
 static UI_SLIDER2 Fiction_viewer_slider;
@@ -158,10 +167,7 @@ static int Fiction_viewer_inited = 0;
 static int Fiction_viewer_old_fontnum = -1;
 static int Fiction_viewer_fontnum = -1;
 
-static char Fiction_viewer_filename[MAX_FILENAME_LEN];
-static char Fiction_viewer_font_filename[MAX_FILENAME_LEN];
-static char Fiction_viewer_voice_filename[MAX_FILENAME_LEN];
-static char *Fiction_viewer_text = NULL;
+static char *Fiction_viewer_text = nullptr;
 static int Fiction_viewer_voice = -1;
 
 static int Fiction_viewer_ui = -1;
@@ -266,22 +272,46 @@ void fiction_viewer_init()
 	if (Fiction_viewer_inited)
 		return;
 
-	// no fiction viewer?
+	// no stage loaded?
+	if (Fiction_viewer_active_stage < 0)
+		return;
+
+	// no fiction document?
 	if (!mission_has_fiction())
 		return;
 
 	// music
 	common_music_init(SCORE_FICTION_VIEWER);
 
-	// see if we have a background bitmap, and if so, which one
-	// currently, we prioritize the UI that comes latest in the array;
-	// in the future we might specify this in the mission or in a tbl
-	for (Fiction_viewer_ui = NUM_FVW_SETTINGS - 1; Fiction_viewer_ui >= 0; Fiction_viewer_ui--)
+	Fiction_viewer_bitmap = -1;
+
+	if (*Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res] != '\0')
 	{
-		// load the first available background bitmap
-		Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
-		if (Fiction_viewer_bitmap >= 0)
-			break;
+		Fiction_viewer_bitmap = bm_load(Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res]);
+		if (Fiction_viewer_bitmap < 0)
+			mprintf(("Failed to load custom background bitmap %s!\n", Fiction_viewer_stages[Fiction_viewer_active_stage].background[gr_screen.res]));
+		else if (Fiction_viewer_ui < 0)
+			Fiction_viewer_ui = 0;
+	}
+
+	// if special background failed to load, or if no special background was supplied, load the standard bitmap
+	if (Fiction_viewer_bitmap < 0)
+	{
+		if (Fiction_viewer_ui < 0)
+		{
+			// no UI specified; use the last UI in the array that has an available background bitmap
+			for (Fiction_viewer_ui = NUM_FVW_SETTINGS - 1; Fiction_viewer_ui >= 0; Fiction_viewer_ui--)
+			{
+				Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
+				if (Fiction_viewer_bitmap >= 0)
+					break;
+			}
+		}
+		else
+		{
+			// use the specified UI's background bitmap
+			Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
+		}
 	}
 	
 	// no ui is valid?
@@ -454,38 +484,38 @@ void fiction_viewer_unpause()
 	}
 }
 
-int mission_has_fiction()
+bool mission_has_fiction()
 {
 	if (Fred_running)
-		return *Fiction_viewer_filename != 0;
+		return !Fiction_viewer_stages.empty();
 	else
-		return (Fiction_viewer_text != NULL);
+		return (Fiction_viewer_text != nullptr);
 }
 
-const char *fiction_file()
+int fiction_viewer_ui_name_to_index(const char *ui_name)
 {
-	return Fiction_viewer_filename;
-}
+	int i;
+	for (i = 0; i < NUM_FVW_SETTINGS; i++)
+	{
+		if (!stricmp(ui_name, Fiction_viewer_ui_names[i]))
+		{
+			return i;
+		}
+	}
 
-const char *fiction_font()
-{
-	return Fiction_viewer_font_filename;
-}
-
-const char *fiction_voice()
-{
-	return Fiction_viewer_voice_filename;
+	return -1;
 }
 
 void fiction_viewer_reset()
 {
-	if (Fiction_viewer_text != NULL)
+	if (Fiction_viewer_text != nullptr)
 		vm_free(Fiction_viewer_text);
-	Fiction_viewer_text = NULL;
+	Fiction_viewer_text = nullptr;
 
-	*Fiction_viewer_filename = 0;
-	*Fiction_viewer_font_filename = 0;
-	*Fiction_viewer_voice_filename = 0;
+	Fiction_viewer_stages.clear();
+	Fiction_viewer_active_stage = -1;
+
+	Fiction_viewer_ui = -1;
 
 	Top_fiction_viewer_text_line = 0;
 
@@ -496,57 +526,53 @@ void fiction_viewer_reset()
 	}
 }
 
-void fiction_viewer_load(const char *filename, const char *font_filename, const char *voice_filename)
+void fiction_viewer_load(int stage)
 {
-	int file_length;
-	Assertion(filename, "Invalid fictionviewer filename pointer given!");
-	Assertion(font_filename, "Invalid fictionviewer font filename pointer given!");
-	Assertion(voice_filename, "Invalid fictionviewer voice filename pointer given!");
+	Assertion(stage >= 0 && static_cast<size_t>(stage) < Fiction_viewer_stages.size(), "stage parameter must be in range of Fiction_viewer_stages!");
 
 	// just to be sure
-	if (Fiction_viewer_text != NULL)
+	if (Fiction_viewer_text != nullptr)
 	{
-		Int3();
-		fiction_viewer_reset();
+		Assertion(Fiction_viewer_text == nullptr, "Fiction viewer text should be a null pointer, but instead is '%s'. Trace out and fix!\n", Fiction_viewer_text);
+		return;
 	}
 
-	// save our filenames
-	strcpy_s(Fiction_viewer_filename, filename);
-	strcpy_s(Fiction_viewer_font_filename, font_filename);
-	strcpy_s(Fiction_viewer_voice_filename, voice_filename);
+	Fiction_viewer_active_stage = stage;
+	fiction_viewer_stage *stagep = &Fiction_viewer_stages[stage];
+
+	// load the ui index
+	Fiction_viewer_ui = Default_fiction_viewer_ui;
+	if (*stagep->ui_name)
+	{
+		int ui_index = fiction_viewer_ui_name_to_index(stagep->ui_name);
+		if (ui_index >= 0)
+			Fiction_viewer_ui = ui_index;
+		else
+			Warning(LOCATION, "Unrecognized fiction viewer UI: %s", stagep->ui_name);
+	}
 
 	// see if we have a matching font
-	Fiction_viewer_fontnum = gr_get_fontnum(Fiction_viewer_font_filename);
-	if (Fiction_viewer_fontnum < 0 && !Fred_running)
-		strcpy_s(Fiction_viewer_font_filename, "");
+	Fiction_viewer_fontnum = gr_get_fontnum(stagep->font_filename);
 
-	Fiction_viewer_voice = audiostream_open(Fiction_viewer_voice_filename, ASF_VOICE);
-	if (Fiction_viewer_voice < 0 && !Fred_running)
-		strcpy_s(Fiction_viewer_voice_filename, "");
-
-	if (!strlen(filename))
-		return;
+	Fiction_viewer_voice = audiostream_open(stagep->voice_filename, ASF_VOICE);
 
 	// load up the text
-	CFILE *fp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_FICTION);
+	CFILE *fp = cfopen(stagep->story_filename, "rb", CFILE_NORMAL, CF_TYPE_FICTION);
 	if (fp == NULL)
 	{
-		Warning(LOCATION, "Unable to load fiction file '%s'.", filename);
-		return;
+		Warning(LOCATION, "Unable to load story file '%s'.", stagep->story_filename);
 	}
-
-	// we don't need to copy the text in Fred
-	if (!Fred_running)
+	else
 	{
 		// allocate space
-		file_length = cfilelength(fp);
+		int file_length = cfilelength(fp);
 		Fiction_viewer_text = (char *) vm_malloc(file_length + 1);
 		Fiction_viewer_text[file_length] = '\0';
 
 		// copy all the text
 		cfread(Fiction_viewer_text, file_length, 1, fp);
-	}
 
-	// we're done, close it out
-	cfclose(fp);
+		// we're done, close it out
+		cfclose(fp);
+	}
 }

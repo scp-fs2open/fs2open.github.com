@@ -342,6 +342,15 @@ DCF(bmpman, "Shows/changes bitmap caching parameters and usage") {
 	}
 }
 
+DCF(bmpslots, "Writes bitmap slot info to fs2_open.log") {
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: bmpslots\n");
+		dc_printf("\tWrites bitmap slot info to fs2_open.log\n");
+		return;
+	}
+	bm_print_bitmaps();
+}
+
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of all functions, in alphabetical order
 void bm_clean_slot(int n) {
@@ -1024,7 +1033,7 @@ int bm_load(const SCP_string& filename) {
 	return bm_load(filename.c_str());
 }
 
-int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type) {
+bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type) {
 	int frames = 0, fps = 30, keyframe = 0;
 	char ext[8];
 	BM_TYPE c_type = BM_TYPE_NONE;
@@ -1060,7 +1069,7 @@ int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int 
 	{
 		mprintf(("BMPMAN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		unpause_parse();
-		return -1;
+		return false;
 	}
 
 	// done with EFF so unpause parsing so whatever can continue
@@ -1078,13 +1087,13 @@ int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int 
 		c_type = BM_TYPE_PCX;
 	} else {
 		mprintf(("BMPMAN: Unknown file type in EFF parse!\n"));
-		return -1;
+		return false;
 	}
 
 	// did we do anything?
 	if (c_type == BM_TYPE_NONE || frames == 0) {
 		mprintf(("BMPMAN: EFF parse ERROR!\n"));
-		return -1;
+		return false;
 	}
 
 	if (type)
@@ -1099,7 +1108,7 @@ int bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int 
 	if (key)
 		*key = keyframe;
 
-	return 0;
+	return true;
 }
 
 int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type) {
@@ -1195,7 +1204,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 	// it's an effect file, any readable image type with eff being txt
 	if (type == BM_TYPE_EFF) {
-		if (bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &key, &eff_type) != 0) {
+		if (!bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &key, &eff_type)) {
 			mprintf(("BMPMAN: Error reading EFF\n"));
 			return -1;
 		} else {
@@ -1259,7 +1268,6 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 	int first_handle = bm_get_next_handle();
 
-	Assert(strlen(filename) < MAX_FILENAME_LEN);
 	for (i = 0; i < anim_frames; i++) {
 		memset(&bm_bitmaps[n + i], 0, sizeof(bitmap_entry));
 
@@ -2480,7 +2488,7 @@ void bm_set_low_mem(int mode) {
 	Bm_low_mem = mode;
 }
 
-int bm_set_render_target(int handle, int face) {
+bool bm_set_render_target(int handle, int face) {
 	int n = handle % MAX_BITMAPS;
 
 	if (n >= 0) {
@@ -2489,7 +2497,7 @@ int bm_set_render_target(int handle, int face) {
 		if ((bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET_STATIC) && (bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET_DYNAMIC)) {
 			// odds are that someone passed a normal texture created with bm_load()
 			mprintf(("Trying to set invalid bitmap (slot: %i, handle: %i) as render target!\n", n, handle));
-			return 0;
+			return false;
 		}
 	}
 
@@ -2554,10 +2562,10 @@ int bm_set_render_target(int handle, int face) {
 			opengl_setup_viewport();
 		}
 
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 int bm_unload(int handle, int clear_render_targets, bool nodebug) {

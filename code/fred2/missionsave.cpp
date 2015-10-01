@@ -96,30 +96,20 @@ void CFred_mission_save::convert_special_tags_to_retail()
 	}
 }
 
-int CFred_mission_save::save_mission_file(char *pathname)
+void CFred_mission_save::save_mission_internal(const char *pathname)
 {
-	char backup_name[256], savepath[MAX_PATH_LEN], *p;
 	CTime t;
 
 	t = CTime::GetCurrentTime();
 	strcpy_s(The_mission.modified, t.Format("%x at %X"));
 
-	strcpy_s(savepath, "");
-	p = strrchr(pathname, '\\');
-	if ( p ) {
-		*p = '\0';
-		strcpy_s(savepath, pathname);
-		*p = '\\';
-		strcat_s(savepath, "\\");
-	}
-	strcat_s(savepath, "saving.xxx");
-
 	reset_parse();
 	fred_parse_flag = 0;
-	fp = cfopen(savepath, "wt", CFILE_NORMAL);
+	fp = cfopen(pathname, "wt", CFILE_NORMAL, CF_TYPE_MISSIONS);
 	if (!fp)	{
 		nprintf(("Error", "Can't open mission file to save.\n"));
-		return -1;
+		err = -1;
+		return;
 	}	
 
 	// Goober5000
@@ -174,10 +164,27 @@ int CFred_mission_save::save_mission_file(char *pathname)
 	}
 
 	cfclose(fp);
-	if (err) {
+	if (err)
 		mprintf(("Mission saving error code #%d\n", err));
+}
 
-	} else {
+int CFred_mission_save::save_mission_file(char *pathname)
+{
+	char backup_name[256], savepath[MAX_PATH_LEN], *p;
+
+	strcpy_s(savepath, "");
+	p = strrchr(pathname, '\\');
+	if ( p ) {
+		*p = '\0';
+		strcpy_s(savepath, pathname);
+		*p = '\\';
+		strcat_s(savepath, "\\");
+	}
+	strcat_s(savepath, "saving.xxx");
+
+	save_mission_internal(savepath);
+
+	if (!err) {
 		strcpy_s(backup_name, pathname);
 		if (backup_name[strlen(backup_name) - 4] == '.')
 			backup_name[strlen(backup_name) - 4] = 0;
@@ -196,10 +203,6 @@ int CFred_mission_save::autosave_mission_file(char *pathname)
 {
 	char backup_name[256], name2[256];
 	int i, len;
-	CTime t;
-	
-	t = CTime::GetCurrentTime();
-	strcpy_s(The_mission.modified, t.Format("%x at %X"));
 
 	len = strlen(pathname);
 	strcpy_s(backup_name, pathname);
@@ -213,68 +216,8 @@ int CFred_mission_save::autosave_mission_file(char *pathname)
 	}
 	
 	strcpy(backup_name + len, ".001");
-	reset_parse();
-	fred_parse_flag = 0;
-	fp = cfopen(backup_name, "wt", CFILE_NORMAL, CF_TYPE_MISSIONS);
-	if (!fp)	{
-		nprintf(("Error", "Can't open mission file to save.\n"));
-		return -1;
-	}
 
-	// Goober5000
-	convert_special_tags_to_retail();
-
-	if (save_mission_info())
-		err = -2;
-	else if (save_plot_info())
-		err = -3;
-	else if (save_variables())
-		err = -3;
-//	else if (save_briefing_info())
-//		err = -4;
-	else if (save_fiction())
-		err = -3;
-	else if (save_cutscenes())
-		err = -4;
-	else if (save_cmd_briefs())
-		err = -4;
-	else if (save_briefing())
-		err = -4;
-	else if (save_debriefing())
-		err = -5;
-	else if (save_players())
-		err = -6;
-	else if (save_objects())
-		err = -7;
-	else if (save_wings())
-		err = -8;
-	else if (save_events())
-		err = -9;
-	else if (save_goals())
-		err = -10;
-	else if (save_waypoints())
-		err = -11;
-	else if (save_messages())
-		err = -12;
-	else if (save_reinforcements())
-		err = -13;
-	else if (save_bitmaps())
-		err = -14;
-	else if (save_asteroid_fields())
-		err = -15;
-	else if (save_music())
-		err = -16;
-	else {
-		required_string_fred("#End");
-		parse_comments(2);
-		token_found = NULL;
-		parse_comments();
-		fout("\n");
-	}
-
-	cfclose(fp);
-	if (err)
-		mprintf(("Mission saving error code #%d\n", err));
+	save_mission_internal(backup_name);
 
 	return err;
 }
@@ -535,19 +478,7 @@ int CFred_mission_save::save_mission_info()
 		}
 	}
 
-	// Phreak's loading screen stuff
-	if (Format_fs2_open != FSO_FORMAT_RETAIL) //-V581
-	{
-		if (strlen(The_mission.loading_screen[GR_640]) > 0) //-V805
-		{
-			fout("\n\n$Load Screen 640:\t%s",The_mission.loading_screen[GR_640]);
-		}
-
-		if (strlen(The_mission.loading_screen[GR_1024]) > 0) //-V805
-		{
-			fout("\n$Load Screen 1024:\t%s",The_mission.loading_screen[GR_1024]);
-		}
-	}
+	save_custom_bitmap("$Load Screen 640:", "$Load Screen 1024:", The_mission.loading_screen[GR_640], The_mission.loading_screen[GR_1024], 1);
 
 	// Phreak's skybox stuff
 	if (strlen(The_mission.skybox_model) > 0) //-V805
@@ -773,40 +704,74 @@ int CFred_mission_save::save_fiction()
 		if (Format_fs2_open != FSO_FORMAT_RETAIL)
 		{
 			if (optional_string_fred("#Fiction Viewer"))
-				parse_comments();
+				parse_comments(2);
 			else
 				fout("\n\n#Fiction Viewer");
 
-			fout("\n");
-
-			// save file
-			required_string_fred("$File:");
-			parse_comments();
-			fout(" %s", fiction_file());
-
-			// save font
-			if (strlen(fiction_font()) > 0) //-V805
+			// we have multiple stages now, so save them all
+			for (SCP_vector<fiction_viewer_stage>::iterator stage = Fiction_viewer_stages.begin(); stage != Fiction_viewer_stages.end(); ++stage)
 			{
-				if (optional_string_fred("$Font:"))
-					parse_comments();
-				else
-					fout("\n$Font:");
-				fout(" %s", fiction_font());
-			}
-			else
-				optional_string_fred("$Font:");
+				fout("\n");
 
-			// save voice
-			if (strlen(fiction_voice()) > 0) //-V805
-			{
-				if (optional_string_fred("$Voice:"))
-					parse_comments();
+				// save file
+				required_string_fred("$File:");
+				parse_comments();
+				fout(" %s", stage->story_filename);
+
+				// save font
+				if (strlen(stage->font_filename) > 0) //-V805
+				{
+					if (optional_string_fred("$Font:"))
+						parse_comments();
+					else
+						fout("\n$Font:");
+					fout(" %s", stage->font_filename);
+				}
 				else
-					fout("\n$Voice:");
-				fout(" %s", fiction_voice());
+					optional_string_fred("$Font:");
+
+				// save voice
+				if (strlen(stage->voice_filename) > 0) //-V805
+				{
+					if (optional_string_fred("$Voice:"))
+						parse_comments();
+					else
+						fout("\n$Voice:");
+					fout(" %s", stage->voice_filename);
+				}
+				else
+					optional_string_fred("$Voice:");
+
+				// save UI
+				if (strlen(stage->ui_name) > 0)
+				{
+					if (optional_string_fred("$UI:"))
+						parse_comments();
+					else
+						fout("\n$UI:");
+					fout(" %s", stage->ui_name);
+				}
+				else
+					optional_string_fred("$UI:");
+
+				// save background
+				save_custom_bitmap("$Background 640:", "$Background 1024:", stage->background[GR_640], stage->background[GR_1024]);
+
+				// save sexp formula if we have one
+				if (stage->formula >= 0 && stage->formula != Locked_sexp_true)
+				{
+					SCP_string sexp_out;
+					convert_sexp_to_string(sexp_out, stage->formula, SEXP_SAVE_MODE);
+
+					if (optional_string_fred("$Formula:"))
+						parse_comments();
+					else
+						fout("\n$Formula:");
+					fout(" %s", sexp_out.c_str());
+				}
+				else
+					optional_string_fred("$Formula:");
 			}
-			else
-				optional_string_fred("$Voice:");
 		}
 		else
 		{
@@ -829,6 +794,8 @@ int CFred_mission_save::save_cmd_brief()
 
 	if (The_mission.game_type & MISSION_TYPE_MULTI)
 		return err;  // no command briefings allowed in multiplayer missions.
+
+	save_custom_bitmap("$Background 640:", "$Background 1024:", Cur_cmd_brief->background[GR_640], Cur_cmd_brief->background[GR_1024], 1);
 
 	for (stage=0; stage<Cur_cmd_brief->num_stages; stage++) {
 		required_string_fred("$Stage Text:");
@@ -882,6 +849,10 @@ int CFred_mission_save::save_briefing()
 
 		required_string_fred("$start_briefing");
 		parse_comments();
+
+		save_custom_bitmap("$briefing_background_640:", "$briefing_background_1024:", Briefings[nb].background[GR_640], Briefings[nb].background[GR_1024]);
+		save_custom_bitmap("$ship_select_background_640:", "$ship_select_background_1024:", Briefings[nb].ship_select_background[GR_640], Briefings[nb].ship_select_background[GR_1024]);
+		save_custom_bitmap("$weapon_select_background_640:", "$weapon_select_background_1024:", Briefings[nb].weapon_select_background[GR_640], Briefings[nb].weapon_select_background[GR_1024]);
 
 		Assert(Briefings[nb].num_stages <= MAX_BRIEF_STAGES);
 		required_string_fred("$num_stages:");
@@ -1054,6 +1025,8 @@ int CFred_mission_save::save_debriefing()
 
 		required_string_fred("#Debriefing_info");
 		parse_comments(2);
+
+		save_custom_bitmap("$Background 640:", "$Background 1024:", Debriefing->background[GR_640], Debriefing->background[GR_1024], 1);
 
 		required_string_fred("$Num stages:");
 		parse_comments(2);
@@ -3881,6 +3854,28 @@ int CFred_mission_save::save_music()
 	fso_comment_pop(true);
 
 	return err;
+}
+
+void CFred_mission_save::save_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, const char *string_field_640, const char *string_field_1024, int blank_lines)
+{
+	if (Format_fs2_open != FSO_FORMAT_RETAIL)
+	{
+		if ((*string_field_640 != '\0') || (*string_field_1024 != '\0'))
+		{
+			while (blank_lines-- > 0)
+				fout("\n");
+		}
+
+		if (*string_field_640 != '\0')
+		{
+			fout("\n%s %s", expected_string_640, string_field_640);
+		}
+
+		if (*string_field_1024 != '\0')
+		{
+			fout("\n%s %s", expected_string_1024, string_field_1024);
+		}
+	}
 }
 
 void CFred_mission_save::save_turret_info(ship_subsys *ptr, int ship)

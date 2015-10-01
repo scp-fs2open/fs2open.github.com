@@ -71,8 +71,10 @@
 #include <limits.h>
 
 
+#ifdef _MSC_VER
 #pragma optimize("", off)
 #pragma auto_inline(off)
+#endif
 
 #define	UNINITIALIZED_VALUE	-99999.9f
 

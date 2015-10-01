@@ -1999,11 +1999,11 @@ void weapon_select_init()
 	// Goober5000
 	// first determine which layout to use
 	Uses_apply_all_button = 1;	// assume true
-	Weapon_select_background_bitmap = bm_load((Game_mode & GM_MULTIPLAYER) ? Weapon_select_multi_background_fname[Uses_apply_all_button][gr_screen.res] : Weapon_select_background_fname[Uses_apply_all_button][gr_screen.res]);
+	Weapon_select_background_bitmap = mission_ui_background_load(Briefing->weapon_select_background[gr_screen.res], Weapon_select_background_fname[Uses_apply_all_button][gr_screen.res], Weapon_select_multi_background_fname[Uses_apply_all_button][gr_screen.res]);
 	if (Weapon_select_background_bitmap < 0)	// failed to load
 	{
 		Uses_apply_all_button = 0;	// nope, sorry
-		Weapon_select_background_bitmap = bm_load((Game_mode & GM_MULTIPLAYER) ? Weapon_select_multi_background_fname[Uses_apply_all_button][gr_screen.res] : Weapon_select_background_fname[Uses_apply_all_button][gr_screen.res]);
+		Weapon_select_background_bitmap = mission_ui_background_load(NULL, Weapon_select_background_fname[Uses_apply_all_button][gr_screen.res], Weapon_select_multi_background_fname[Uses_apply_all_button][gr_screen.res]);
 	}
 
 
