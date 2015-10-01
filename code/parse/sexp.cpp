@@ -12102,7 +12102,7 @@ void sexp_add_background_bitmap(int n)
 	// sanity checking
 	if (stars_find_bitmap(sle.filename) < 0)
 	{
-		Error(LOCATION, "sexp-add-background-bitmap: Background bitmap %s not found!", sle.filename);
+		Warning(LOCATION, "sexp-add-background-bitmap: Background bitmap %s not found!", sle.filename);
 		return;
 	}
 
@@ -12180,7 +12180,7 @@ void sexp_remove_background_bitmap(int n)
 		if ( instances > slot ) {
 			stars_mark_bitmap_unused( slot );
 		} else {
-			Error(LOCATION, "remove-background-bitmap: slot %d does not exist. Slot must be less than %d.",
+			Warning(LOCATION, "remove-background-bitmap: slot %d does not exist. Slot must be less than %d.",
 				slot, instances);
 		}
 	}
@@ -12200,7 +12200,7 @@ void sexp_add_sun_bitmap(int n)
 	// sanity checking
 	if (stars_find_sun(sle.filename) < 0)
 	{
-		Error(LOCATION, "sexp-add-sun-bitmap: Sun %s not found!", sle.filename);
+		Warning(LOCATION, "sexp-add-sun-bitmap: Sun %s not found!", sle.filename);
 		return;
 	}
 
@@ -12273,7 +12273,7 @@ void sexp_remove_sun_bitmap(int n)
 		if ( instances > slot ) {
 			stars_mark_sun_unused( slot );
 		} else {
-			Error(LOCATION, "remove-sun-bitmap: slot %d does not exist. Slot must be less than %d.",
+			Warning(LOCATION, "remove-sun-bitmap: slot %d does not exist. Slot must be less than %d.",
 				slot, instances);
 		}
 	}
