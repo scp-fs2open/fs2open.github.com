@@ -4154,7 +4154,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 		// keep any player ship on the parse object list -- used for respawns
 		// 5/8/98 -- MWA -- don't remove ships from the list when you are ingame joining
-		if (!(p_objp->flags & P_OF_PLAYER_START))
+		if (!(p_objp->flags & P_OF_PLAYER_START && Game_mode & GM_MULTIPLAYER))
 		{
 			if ((Game_mode & GM_NORMAL) || !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN))
 			{
