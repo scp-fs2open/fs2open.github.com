@@ -6396,7 +6396,10 @@ int mission_parse_get_multi_mission_info( const char *filename )
 }
 
 /**
- * Return the parse object on the ship arrival list associated with the given name
+ * Returns the parse object on the ship arrival list associated with the given name.
+ * Returns NULL if the object is not on the Arrival list, or if the object is a player
+ * ship that is already in game (Player ships never get removed from the arrival list
+ * in order to make respawns in multiplayer work).
  */
 p_object *mission_parse_get_arrival_ship(const char *name)
 {
@@ -6409,6 +6412,7 @@ p_object *mission_parse_get_arrival_ship(const char *name)
 	{
 		if (!stricmp(p_objp->name, name)) 
 		{
+			//If this is a player ship, and the ship is currently in-game, return NULL
 			if (p_objp->flags & P_OF_PLAYER_START && ship_name_lookup(name) != -1)
 				return NULL;
 			return p_objp;	// still on the arrival list
@@ -6419,16 +6423,24 @@ p_object *mission_parse_get_arrival_ship(const char *name)
 }
 
 /**
- * Return the parse object on the ship arrival list associated with the given signature
- */
+* Returns the parse object on the ship arrival list associated with the given net signature.
+* Returns NULL if the object is not on the Arrival list, or if the object is a player
+* ship that is already in game (Player ships never get removed from the arrival list
+* in order to make respawns in multiplayer work).
+*/
 p_object *mission_parse_get_arrival_ship(ushort net_signature)
 {
 	p_object *p_objp;
 
 	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp !=END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
-		if (p_objp->net_signature == net_signature)
+		if (p_objp->net_signature == net_signature) 
+		{
+			//If this is a player ship, and the ship is currently in-game, return NULL
+			if (p_objp->flags & P_OF_PLAYER_START && ship_name_lookup(p_objp->name) != -1)
+				return NULL;
 			return p_objp;	// still on the arrival list
+		}
 	}
 
 	return NULL;
