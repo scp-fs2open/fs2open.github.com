@@ -190,7 +190,7 @@ public:
 	briefing()
 		: num_stages(0)
 	{
-		memset(background, GR_NUM_RESOLUTIONS * MAX_FILENAME_LEN * sizeof(char), 0);
+		memset(background, 0, GR_NUM_RESOLUTIONS * MAX_FILENAME_LEN * sizeof(char));
 	}
 };
 
