@@ -6396,10 +6396,14 @@ int mission_parse_get_multi_mission_info( const char *filename )
 }
 
 /**
- * Returns the parse object on the ship arrival list associated with the given name.
- * Returns NULL if the object is not on the Arrival list, or if the object is a player
- * ship that is already in game (Player ships never get removed from the arrival list
- * in order to make respawns in multiplayer work).
+ * \brief				Returns the parse object on the ship arrival list associated with the given name.
+ * \param[in] name		The name of the object
+ * \returns				The parse object, or NULL if:
+ *						\li No object with the given name is on the arrival list
+ *						\li The object is a player ship and currently in-game
+ * \remarks				This function is used to determine whether a ship has arrived. Ships on the arrival list
+ *						are considered to not be in the game; In order to make respawns work in multiplayer,
+ *						player ships (those marked with the P_OF_PLAYER_START flag) are never removed from it.
  */
 p_object *mission_parse_get_arrival_ship(const char *name)
 {
@@ -6412,7 +6416,7 @@ p_object *mission_parse_get_arrival_ship(const char *name)
 	{
 		if (!stricmp(p_objp->name, name)) 
 		{
-			//If this is a player ship, and the ship is currently in-game, return NULL
+			//If this is a player ship and the ship is currently in-game, return NULL
 			if (p_objp->flags & P_OF_PLAYER_START && ship_name_lookup(name) != -1)
 				return NULL;
 			return p_objp;	// still on the arrival list
@@ -6423,11 +6427,15 @@ p_object *mission_parse_get_arrival_ship(const char *name)
 }
 
 /**
-* Returns the parse object on the ship arrival list associated with the given net signature.
-* Returns NULL if the object is not on the Arrival list, or if the object is a player
-* ship that is already in game (Player ships never get removed from the arrival list
-* in order to make respawns in multiplayer work).
-*/
+ * \brief					Returns the parse object on the ship arrival list associated with the given net signature.
+ * \param[in] net_signature	The net signature of the object
+ * \returns					The parse object, or NULL if:
+ *								\li No object with the given signature is on the arrival list
+ *								\li The object is a player ship and currently in-game
+ * \remarks					This function is used to determine whether a ship has arrived. Ships on the arrival list
+ *							are considered to not be in the game; In order to make respawns work in multiplayer,
+ *							player ships (those marked with the P_OF_PLAYER_START flag) are never removed from it.
+ */
 p_object *mission_parse_get_arrival_ship(ushort net_signature)
 {
 	p_object *p_objp;
@@ -6436,7 +6444,7 @@ p_object *mission_parse_get_arrival_ship(ushort net_signature)
 	{
 		if (p_objp->net_signature == net_signature) 
 		{
-			//If this is a player ship, and the ship is currently in-game, return NULL
+			//If this is a player ship and the ship is currently in-game, return NULL
 			if (p_objp->flags & P_OF_PLAYER_START && ship_name_lookup(p_objp->name) != -1)
 				return NULL;
 			return p_objp;	// still on the arrival list
