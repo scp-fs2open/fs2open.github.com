@@ -9,6 +9,7 @@
 #include "localization/localize.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionmessage.h"
+#include "missionui/fictionviewer.h"
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
@@ -21,6 +22,7 @@ bool Cutscene_camera_displays_hud = false;
 bool Alternate_chaining_behavior = false;
 int Default_ship_select_effect = 2;
 int Default_weapon_select_effect = 2;
+int Default_fiction_viewer_ui = -1;
 bool Enable_external_shaders = false;
 int Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 bool Full_color_head_anis = false;
@@ -283,6 +285,20 @@ void parse_mod_table(const char *filename)
 			}
 			else {
 				mprintf(("Game Settings Table: Beams will ignore Damage Factors (retail behavior)\n"));
+			}
+		}
+
+		if (optional_string("$Default fiction viewer UI:")) {
+			char ui_name[NAME_LENGTH];
+			stuff_string(ui_name, F_NAME, NAME_LENGTH);
+			if (!stricmp(ui_name, "auto"))
+				Default_fiction_viewer_ui = -1;
+			else {
+				int ui_index = fiction_viewer_ui_name_to_index(ui_name);
+				if (ui_index >= 0)
+					Default_fiction_viewer_ui = ui_index;
+				else
+					Warning(LOCATION, "Unrecognized fiction viewer UI: %s", ui_name);
 			}
 		}
 

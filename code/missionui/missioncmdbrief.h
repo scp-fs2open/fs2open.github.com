@@ -31,6 +31,7 @@ struct cmd_brief_stage {
 struct cmd_brief {
 	int num_stages;
 	cmd_brief_stage stage[CMD_BRIEF_STAGES_MAX];
+	char background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 };
 
 extern cmd_brief Cmd_briefs[MAX_TVT_TEAMS];

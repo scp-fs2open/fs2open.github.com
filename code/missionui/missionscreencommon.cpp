@@ -280,6 +280,31 @@ void common_buttons_init(UI_WINDOW *ui_window)
 	}
 }
 
+// Try to load background bitmaps as appropriate
+int mission_ui_background_load(const char *custom_background, const char *single_background, const char *multi_background)
+{
+	int background_bitmap = -1;
+
+	if (custom_background && (*custom_background != '\0'))
+	{
+		background_bitmap = bm_load(custom_background);
+		if (background_bitmap < 0)
+			mprintf(("Failed to load custom background bitmap %s!\n", custom_background));
+	}
+
+	// if special background failed to load, or if no special background was supplied, load the standard bitmap
+	if (background_bitmap < 0)
+	{
+		if (multi_background && (Game_mode & GM_MULTIPLAYER))
+			background_bitmap = bm_load(multi_background);
+		else
+			background_bitmap = bm_load(single_background);
+	}
+
+	// return what we've got
+	return background_bitmap;
+}
+
 void set_active_ui(UI_WINDOW *ui_window)
 {
 	Active_ui_window = ui_window;

@@ -886,7 +886,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->damage = 0.0f;
 	wip->damage_time = 0.0f;
 	wip->min_damage = 0.0f;
-	
+	wip->max_damage = 0.0f;
+
 	wip->damage_type_idx = -1;
 	wip->damage_type_idx_sav = -1;
 
@@ -1424,17 +1425,17 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->damage_time);
 		if(optional_string("+Min Damage:")){
 			stuff_float(&wip->min_damage);
-		}
-		if(wip->min_damage > wip->damage) {
-			Warning(LOCATION, "Min Damage is greater than Damage, resetting to zero.");
-			wip->min_damage = 0.0f;
+			if (wip->min_damage > wip->damage && wip->min_damage != 0.0f) {
+				Warning(LOCATION, "Min Damage is greater than Damage, resetting to zero.");
+				wip->min_damage = 0.0f;
+			}
 		}
 		if(optional_string("+Max Damage:")) {
 			stuff_float(&wip->max_damage);
-		}
-		if(wip->max_damage < wip->damage) {
-			Warning(LOCATION, "Max Damage is less than Damage, resetting to zero.");
-			wip->max_damage = 0.0f;
+			if (wip->max_damage < wip->damage && wip->max_damage != 0.0f) {
+				Warning(LOCATION, "Max Damage is less than Damage, resetting to zero.");
+				wip->max_damage = 0.0f;
+			}
 		}
 		if(wip->min_damage != 0.0f && wip->max_damage != 0.0f) {
 			Warning(LOCATION, "Both Min Damage and Max Damage are set to values greater than zero, resetting both to zero.");

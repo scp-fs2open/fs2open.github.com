@@ -739,11 +739,7 @@ void brief_load_bitmaps()
 //
 void brief_ui_init()
 {
-	if(Game_mode & GM_MULTIPLAYER) {
-		Brief_background_bitmap = bm_load(Brief_multi_filename[gr_screen.res]);
-	} else {
-		Brief_background_bitmap = bm_load(Brief_filename[gr_screen.res]);	
-	}
+	Brief_background_bitmap = mission_ui_background_load(Briefing->background[gr_screen.res], Brief_filename[gr_screen.res], Brief_multi_filename[gr_screen.res]);
 
 	if ( Num_brief_stages <= 0 ){
 		return;

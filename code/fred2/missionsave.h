@@ -56,10 +56,14 @@ private:
 	int save_music();
 	void save_campaign_sexp(int node, int link);
 	void save_single_dock_instance(ship *shipp, dock_instance *dock_ptr);
+	
+	void save_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, const char *string_field_640, const char *string_field_1024, int blank_lines = 0);
 
 	void convert_special_tags_to_retail(char *text, int max_len);
 	void convert_special_tags_to_retail(SCP_string &text);
 	void convert_special_tags_to_retail();
+
+	void save_mission_internal(const char *pathname);
 
 public:
 	void save_turret_info(ship_subsys *ptr, int ship);

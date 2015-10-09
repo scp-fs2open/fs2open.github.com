@@ -20,6 +20,7 @@
 #include "hud/hudgauges.h"
 #include "hud/hudshield.h"
 #include "iff_defs/iff_defs.h"
+#include "io/joy.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
@@ -12434,19 +12435,19 @@ ade_lib l_CFile("CFile", NULL, "cf", "CFile FS2 filesystem access");
 
 int l_cf_get_path_id(char* n_path)
 {
-	uint i;
+	int i;
+	int path_len = strlen(n_path);
 
-	size_t path_len = strlen(n_path);
-	char *buf = (char*) vm_malloc((strlen(n_path)+1) * sizeof(char));
+	char *buf = (char*) vm_malloc((path_len+1) * sizeof(char));
 	
 	if (!buf) 
 		return CF_TYPE_INVALID;
 		
 	strcpy(buf, n_path);
 
-	//Remove trailing slashes
+	//Remove trailing slashes; avoid buffer overflow on 1-char strings
 	i = path_len -1;
-	while(buf[i] == '\\' || buf[i] == '/')
+	while(i >= 0 && (buf[i] == '\\' || buf[i] == '/'))
 		buf[i--] = '\0';
 
 	//Remove leading slashes
@@ -12709,6 +12710,21 @@ ADE_VIRTVAR(MouseControlStatus, l_Mouse, "boolean", "Gets and sets the retail mo
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(getMouseSensitivity, l_Mouse, NULL, "Gets mouse sensitivity setting", "number", "Mouse sensitivity in range of 0-9")
+{
+	return ade_set_args(L, "i", Mouse_sensitivity);
+}
+
+ADE_FUNC(getJoySensitivity, l_Mouse, NULL, "Gets joystick sensitivity setting", "number", "Joystick sensitivity in range of 0-9")
+{
+	return ade_set_args(L, "i", Joy_sensitivity);
+}
+
+ADE_FUNC(getJoyDeadzone, l_Mouse, NULL, "Gets joystick deadzone setting", "number", "Joystick deadzone in range of 0-9")
+{
+	return ade_set_args(L, "i", Dead_zone_size / 5);
 }
 
 //trackir funcs
@@ -13244,9 +13260,7 @@ ADE_FUNC(setTarget, l_Graphics, "[texture Texture]",
 	int idx = -1;
 	ade_get_args(L, "|o", l_Texture.Get(&idx));
 
-	int i = bm_set_render_target(idx, 0);
-
-	return ade_set_args(L, "b", i ? true : false);
+	return ade_set_args(L, "b", bm_set_render_target(idx, 0));
 }
 
 ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, or resets camera if none specified", "boolean", "true if successful, false or nil otherwise")

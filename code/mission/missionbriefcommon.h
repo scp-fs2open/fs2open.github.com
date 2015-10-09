@@ -183,10 +183,15 @@ class briefing
 public:
 	int			num_stages;
 	brief_stage	stages[MAX_BRIEF_STAGES];
+	char		background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
+	char		ship_select_background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
+	char		weapon_select_background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 
 	briefing()
 		: num_stages(0)
-	{}
+	{
+		memset(background, GR_NUM_RESOLUTIONS * MAX_FILENAME_LEN * sizeof(char), 0);
+	}
 };
 
 class debriefing
@@ -194,6 +199,7 @@ class debriefing
 public:
 	int				num_stages;
 	debrief_stage	stages[MAX_DEBRIEF_STAGES];
+	char			background[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 
 	debriefing()
 		: num_stages(0)

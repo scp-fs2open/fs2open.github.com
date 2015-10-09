@@ -739,7 +739,7 @@ void ship_select_init()
 	ship_select_buttons_init();
 
 	// init ship selection background bitmap
-	Ship_select_background_bitmap = bm_load(Ship_select_background_fname[gr_screen.res]);
+	Ship_select_background_bitmap = mission_ui_background_load(Briefing->ship_select_background[gr_screen.res], Ship_select_background_fname[gr_screen.res]);
 
 	// init ship selection ship model rendering window
 	start_ship_animation( Selected_ss_class );
@@ -1218,32 +1218,17 @@ void ship_select_blit_ship_info()
 
 	int n_lines;
 	int n_chars[MAX_BRIEF_LINES];
-	char ship_desc[1000];
 	const char *p_str[MAX_BRIEF_LINES];
-	char *token;
 	char Ship_select_ship_info_text[1500];
 	char Ship_select_ship_info_lines[MAX_NUM_SHIP_DESC_LINES][SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN];
 	int Ship_select_ship_info_line_count;
 
-	// strip out newlines
-	memset(ship_desc,0,1000);
-	memset(Ship_select_ship_info_text,0,1500);
-	strcpy_s(ship_desc, sip->desc);
-	token = strtok(ship_desc,"\n");
-	if(token != NULL){
-		strcpy_s(Ship_select_ship_info_text, token);
-		while(token != NULL){
-			token = strtok(NULL,"\n");
-			if(token != NULL){
-				strcat_s(Ship_select_ship_info_text," ");
-				strcat_s(Ship_select_ship_info_text,token);
-			}
-		}
-	}
+	strcpy_s(Ship_select_ship_info_text, sip->desc);
 	
 	if(Ship_select_ship_info_text[0] != '\0'){
 		// split the string into multiple lines
-		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 128 : 350, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, 0);
+		// MageKing17: Changed to use the widths determined by Yarn here: http://scp.indiegames.us/mantis/view.php?id=3144#c16516
+		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 204 : 328, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, 0);
 
 		// copy the split up lines into the text lines array
 		for (int idx = 0;idx<n_lines;idx++ ) {
