@@ -925,8 +925,9 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 
 		if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
 		{
+			int display = static_cast<int>(os_config_read_uint("Video", "Display", 0));
 			SDL_DisplayMode displayMode;
-			if (SDL_GetDesktopDisplayMode(0, &displayMode) == 0)
+			if (SDL_GetDesktopDisplayMode(display, &displayMode) == 0)
 			{
 				width = displayMode.w;
 				height = displayMode.h;
