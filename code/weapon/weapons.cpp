@@ -4534,7 +4534,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		if ((dist_to_target < flFrametime * obj->phys_info.speed * 4.0f + 10.0f) &&
             (old_dot < wip->fov) &&
             (wp->lifeleft > 0.01f) &&
-            (wp->homing_object) &&
+            (wp->homing_object != &obj_used_list) &&
             (wp->homing_object->type == OBJ_SHIP))
         {
             wp->lifeleft = 0.01f;
@@ -4639,7 +4639,7 @@ void weapon_process_pre( object *obj, float frame_time)
 	//WMC - Maybe detonate weapon anyway!
 	if(wip->det_radius > 0.0f)
 	{
-		if((wp->homing_object != NULL) && (wp->homing_object->type != 0))
+		if((wp->homing_object != &obj_used_list) && (wp->homing_object->type != 0))
 		{
 			if(vm_vec_dist(&wp->homing_pos, &obj->pos) <= wip->det_radius)
 			{
@@ -5064,7 +5064,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 
 	if (parent_objp != NULL && (Ships[parent_objp->instance].flags2 & SF2_NO_SECONDARY_LOCKON)) {
 		wp->weapon_flags |= WF_NO_HOMING;
-		wp->homing_object = NULL;
+		wp->homing_object = &obj_used_list;
 		wp->homing_subsys = NULL;
 		wp->target_num = -1;
 		wp->target_sig = -1;
@@ -6172,7 +6172,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
 			return false;
 		}
 		if(wip->arm_radius && (!hit_target)) {
-			if(wp->homing_object == NULL)
+			if(wp->homing_object == &obj_used_list)
 				return false;
 			if(vm_vec_dist(&wobj->pos, &wp->homing_pos) > wip->arm_radius)
 				return false;
@@ -6219,7 +6219,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	objnum = wp->objnum;
 
 	// check if the weapon actually hit the intended target
-	if (wp->homing_object != NULL)
+	if (wp->homing_object != &obj_used_list)
 		if (wp->homing_object == other_obj)
 			hit_target = true;
 
