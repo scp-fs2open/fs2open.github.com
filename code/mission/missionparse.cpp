@@ -6669,8 +6669,7 @@ int mission_did_ship_arrive(p_object *objp)
 			Assert( objp->arrival_anchor >= 0 );
 			name = Parse_names[objp->arrival_anchor];
 	
-			// see if ship is in mission.  If not, then we can assume it was destroyed or departed since
-			// it is not on the arrival list (as shown by above if statement).
+			// see if ship is in mission.
 			shipnum = ship_name_lookup( name );
 			if ( shipnum == -1 ) {
 				// see if ship is yet to arrive.  If so, then return -1 so we can evaluate again later.
