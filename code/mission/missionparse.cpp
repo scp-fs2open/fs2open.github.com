@@ -3911,13 +3911,13 @@ int find_wing_name(char *name)
 }
 
 /**
-* \brief						Tries to create a wing of ships
-* \param[inout]	wingp			Pointer to the wing structure of the wing to be created
-* \param[in] num_to_create		Number of ships to create
-* \param[in] force				If set to 1, the wing will be created regardless of whether or not the arrival conditions
+* @brief						Tries to create a wing of ships
+* @param[inout]	wingp			Pointer to the wing structure of the wing to be created
+* @param[in] num_to_create		Number of ships to create
+* @param[in] force				If set to 1, the wing will be created regardless of whether or not the arrival conditions
 *								have been met yet.
-* \param[in] specific_instance	Set this to create a specific ship from this wing
-* \returns						Number of ships created
+* @param[in] specific_instance	Set this to create a specific ship from this wing
+* @returns						Number of ships created
 */
 int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int specific_instance )
 {
@@ -6405,10 +6405,10 @@ int mission_parse_get_multi_mission_info( const char *filename )
 }
 
 /**
- * \brief				Returns the parse object on the ship arrival list associated with the given name.
- * \param[in] name		The name of the object
- * \returns				The parse object, or NULL if no object with the given name is on the arrival list
- * \remarks				This function is used to determine whether a ship has arrived. Ships on the arrival list
+ * @brief				Returns the parse object on the ship arrival list associated with the given name.
+ * @param[in] name		The name of the object
+ * @returns				The parse object, or NULL if no object with the given name is on the arrival list
+ * @remarks				This function is used to determine whether a ship has arrived. Ships on the arrival list
  *						are considered to not be in the game; In order to make respawns work in multiplayer,
  *						player ships (those marked with the P_OF_PLAYER_START flag) are never removed from it.
  */
@@ -6431,10 +6431,10 @@ p_object *mission_parse_get_arrival_ship(const char *name)
 }
 
 /**
- * \brief					Returns the parse object on the ship arrival list associated with the given net signature.
- * \param[in] net_signature	The net signature of the object
- * \returns					The parse object, or NULL if no object with the given signature is on the arrival list
- * \remarks					This function is used to determine whether a ship has arrived. Ships on the arrival list
+ * @brief					Returns the parse object on the ship arrival list associated with the given net signature.
+ * @param[in] net_signature	The net signature of the object
+ * @returns					The parse object, or NULL if no object with the given signature is on the arrival list
+ * @remarks					This function is used to determine whether a ship has arrived. Ships on the arrival list
  *							are considered to not be in the game; In order to make respawns work in multiplayer,
  *							player ships (those marked with the P_OF_PLAYER_START flag) are never removed from it.
  */
