@@ -4641,7 +4641,7 @@ void weapon_process_pre( object *obj, float frame_time)
 	{
 		if((wp->homing_object != &obj_used_list) && (wp->homing_object->type != 0))
 		{
-			if(vm_vec_dist(&wp->homing_pos, &obj->pos) <= wip->det_radius)
+			if(!IS_VEC_NULL(&wp->homing_pos) && vm_vec_dist(&wp->homing_pos, &obj->pos) <= wip->det_radius)
 			{
 				weapon_detonate(obj);
 			}
@@ -6174,7 +6174,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
 		if(wip->arm_radius && (!hit_target)) {
 			if(wp->homing_object == &obj_used_list)
 				return false;
-			if(vm_vec_dist(&wobj->pos, &wp->homing_pos) > wip->arm_radius)
+			if(IS_VEC_NULL(&wp->homing_pos) || vm_vec_dist(&wobj->pos, &wp->homing_pos) > wip->arm_radius)
 				return false;
 		}
 	}
