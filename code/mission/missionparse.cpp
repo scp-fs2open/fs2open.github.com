@@ -3959,8 +3959,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			Assert( wingp->arrival_anchor >= 0 );
 			name = Parse_names[wingp->arrival_anchor];
 
-			// see if ship is in mission.  If not, then we can assume it was destroyed or departed since
-			// it is not on the arrival list (as shown by above if statement).
+			// see if ship is in mission.
 			shipnum = ship_name_lookup( name );
 			if ( shipnum == -1 ) {
 				int num_remaining;
