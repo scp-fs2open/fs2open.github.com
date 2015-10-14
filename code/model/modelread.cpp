@@ -2469,10 +2469,11 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	pm->n_paths = 0;
 	pm->paths = NULL;
 
-	int org_sig = Model_signature;
-	Model_signature+=MAX_POLYGON_MODELS;
-	if ( Model_signature < org_sig )	{
-		Model_signature = 0;
+	uint org_sig = static_cast<uint>(Model_signature);
+	if ( org_sig + MAX_POLYGON_MODELS > INT_MAX || org_sig + MAX_POLYGON_MODELS < org_sig )	{
+		Model_signature = 0; // Overflow
+	} else {
+		Model_signature+=MAX_POLYGON_MODELS; // No overflow
 	}
 	Assert( (Model_signature % MAX_POLYGON_MODELS) == 0 );
 	pm->id = Model_signature + num;
