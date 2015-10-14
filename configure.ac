@@ -81,6 +81,13 @@ AC_ARG_ENABLE(gprof,
 		[fs2_gprof=no],
 )
 
+AC_ARG_ENABLE(fatal-warnings,
+	AC_HELP_STRING([--enable-fatal-warnings],
+		[Make warnings fatal]),
+		[fs2_fatal_warnings=$enableval],
+		[fs2_fatal_warnings=no],
+)
+
 AC_ARG_WITH(static-ogg,
 	AC_HELP_STRING([--with-static-ogg=DIR],
 		[Link staticly with OGG, Vorbis and Theora libs from this directory]),
@@ -245,6 +252,10 @@ else
 	else
 		AC_SUBST(FS2_BINARY, ["fs2_open_${PACKAGE_VERSION}"])
 	fi
+fi
+
+if test "$fs2_fatal_warnings" = "yes" ; then
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -Werror"
 fi
 
 if test "$fs2_gprof" = "yes" ; then
@@ -516,4 +527,5 @@ echo Text-to-speech enabled . : $fs2_speech
 echo NoWarn Allowed ......... : $fs2_nowarn
 echo Debug build ............ : $fs2_debug
 echo GProf support .......... : $fs2_gprof
+echo Fatal warnings ......... : $fs2_fatal_warnings
 echo
