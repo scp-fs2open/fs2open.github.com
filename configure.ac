@@ -128,14 +128,14 @@ case "$target" in
 		# linux
 		echo "Using 64-bit Unix defines (for $host_os)"
 		fs2_os_linux="yes"
-		D_CFLAGS="$D_CFLAGS -m64 -mtune=generic -msse -msse2 -ansi -pipe"
+		D_CFLAGS="$D_CFLAGS -m64 -mtune=generic -msse -msse2 -pipe"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		;;
 	*-*-linux*)
 		# linux
 		echo "Using Unix defines (for $host_os)"
 		fs2_os_linux="yes"
-		D_CFLAGS="$D_CFLAGS -mtune=generic -mfpmath=sse -msse -msse2 -ansi -pipe"
+		D_CFLAGS="$D_CFLAGS -mtune=generic -mfpmath=sse -msse -msse2 -pipe"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		;;
 	*-*-darwin*)
