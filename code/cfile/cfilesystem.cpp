@@ -669,7 +669,7 @@ void cf_search_root_pack(int root_index)
 
 	Assert( sizeof(VP_header) == 16 );
 	if (fread(&VP_header, sizeof(VP_header), 1, fp) != 1) {
-		mprintf(("Skipping VP file ('%s') because the header could not be read...\n"))
+		mprintf(("Skipping VP file ('%s') because the header could not be read...\n", root->path));
 		fclose(fp);
 		return;
 	}
