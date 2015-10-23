@@ -1241,6 +1241,9 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			}
 			//some retail anis have their keyframes reversed
 			key = MAX(the_anim.keys[0].frame_num, the_anim.keys[1].frame_num);
+			
+			vm_free(the_anim.keys);
+			the_anim.keys = nullptr;
 		}
 	} else {
 		return -1;
