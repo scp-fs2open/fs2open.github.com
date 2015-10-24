@@ -1040,7 +1040,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 		mc.model_instance_num = -1;
 		mc.model_num = db->model_num;	// Fill in the model to check
 		mc.submodel_num = db->submodel_num;
-		model_clear_instance(mc.model_num);
+		model_clear_instance( mc.model_num );
 		mc.orient = &objp->orient;					// The object's orient
 		mc.pos = &objp->pos;							// The object's position
 		mc.p0 = &rp0;				// Point 1 of ray to check
