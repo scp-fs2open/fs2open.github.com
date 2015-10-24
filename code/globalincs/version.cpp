@@ -55,8 +55,10 @@ int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, in
 	char verbuffer[MAX_LINE_LENGTH+1] = {0};
 
 	while ( !feof(f) ) {
-		// Read the line into a temporary buffer
-		fgets(buffer, MAX_LINE_LENGTH, f);
+		// Read the line into a temporary buffer or break if there is nothing
+		if (fgets(buffer, MAX_LINE_LENGTH, f) == nullptr) {
+			break;
+		}
 
 		// take the \n off the end of it
 		if (buffer[0] != '\0' && buffer[strlen(buffer) - 1] == '\n')

@@ -668,7 +668,11 @@ void cf_search_root_pack(int root_index)
 	VP_FILE_HEADER VP_header;
 
 	Assert( sizeof(VP_header) == 16 );
-	fread(&VP_header, 1, sizeof(VP_header), fp);
+	if (fread(&VP_header, sizeof(VP_header), 1, fp) != 1) {
+		mprintf(("Skipping VP file ('%s') because the header could not be read...\n", root->path));
+		fclose(fp);
+		return;
+	}
 
 	VP_header.version = INTEL_INT( VP_header.version ); //-V570
 	VP_header.index_offset = INTEL_INT( VP_header.index_offset ); //-V570
@@ -688,7 +692,10 @@ void cf_search_root_pack(int root_index)
 	for (i=0; i<VP_header.num_files; i++ )	{
 		VP_FILE find;
 
-		fread( &find, sizeof(VP_FILE), 1, fp );
+		if (fread( &find, sizeof(VP_FILE), 1, fp ) != 1) {
+			mprintf(("Failed to read file entry (currently in directory %s)!\n", search_path));
+			break;
+		}
 
 		find.offset = INTEL_INT( find.offset ); //-V570
 		find.size = INTEL_INT( find.size ); //-V570

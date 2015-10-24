@@ -849,20 +849,21 @@ void os_init_cmdline(char *cmdline)
 			size_t len = filelength( fileno(fp) ) + 2;
 			buf = new char [len];
 
-			fgets(buf, len-1, fp);
-
-			// replace the newline character with a NULL
-			if ( (p = strrchr(buf, '\n')) != NULL ) {
-				*p = '\0';
-			}
+			if (fgets(buf, len-1, fp) != nullptr)
+			{
+				// replace the newline character with a NULL
+				if ( (p = strrchr(buf, '\n')) != NULL ) {
+					*p = '\0';
+				}
 
 #ifdef SCP_UNIX
-			// append a space for the os_parse_parms() check
-			strcat_s(buf, len, " ");
+				// append a space for the os_parse_parms() check
+				strcat_s(buf, len, " ");
 #endif
 
-			os_parse_parms(buf);
-			os_validate_parms(buf);
+				os_parse_parms(buf);
+				os_validate_parms(buf);
+			}
 			delete [] buf;
 			fclose(fp);
 		}
@@ -887,18 +888,20 @@ void os_init_cmdline(char *cmdline)
 			size_t len = filelength( fileno(fp) ) + 2;
 			buf = new char [len];
 
-			fgets(buf, len-1, fp);
+			if (fgets(buf, len-1, fp) != nullptr)
+			{
+				// replace the newline character with a NULL
+				if ( (p = strrchr(buf, '\n')) != NULL ) {
+					*p = '\0';
+				}
 
-			// replace the newline character with a NULL
-			if ( (p = strrchr(buf, '\n')) != NULL ) {
-				*p = '\0';
+				// append a space for the os_parse_parms() check
+				strcat_s(buf, len, " ");
+
+				os_parse_parms(buf);
+				os_validate_parms(buf);
 			}
 
-			// append a space for the os_parse_parms() check
-			strcat_s(buf, len, " ");
-
-			os_parse_parms(buf);
-			os_validate_parms(buf);
 			delete [] buf;
 			fclose(fp);
 		}
