@@ -1881,7 +1881,6 @@ void draw_asteroid_field()
 int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos)
 {
 	mc_info mc;
-	mc_info_init(&mc);
 
 	if ((objp->type == OBJ_NONE) || (objp->type == OBJ_POINT))
 		return 0;

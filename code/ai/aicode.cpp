@@ -6803,7 +6803,6 @@ int avoid_player(object *objp, vec3d *goal_pos)
 int will_collide_pp(vec3d *p0, vec3d *p1, float radius, object *big_objp, vec3d *collision_point)
 {
 	mc_info	mc;
-	mc_info_init(&mc);
 
 	polymodel *pm = model_get(Ship_info[Ships[big_objp->instance].ship_info_index].model_num);
 

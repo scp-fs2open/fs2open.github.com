@@ -1131,12 +1131,34 @@ typedef struct mc_info {
 	bsp_collision_leaf *bsp_leaf;
 
 										// flags can be changed for the case of sphere check finds an edge hit
-} mc_info;
 
-inline void mc_info_init(mc_info *mc)
-{
-	memset(mc, -1, sizeof(mc_info));
-}
+	mc_info() {
+		model_instance_num = -1;
+		model_num = -1;
+		submodel_num = -1;
+		orient = nullptr;
+		pos = nullptr;
+		p0 = nullptr;
+		p1 = nullptr;
+		flags = 0;
+		radius = 0;
+		lod = -1;
+		num_hits = 0;
+		hit_dist = 0;
+		hit_point = ZERO_VECTOR;
+		hit_point_world = ZERO_VECTOR;
+		hit_submodel = -1;
+		hit_bitmap = -1;
+		hit_u = 0;
+		hit_v = 0;
+		shield_hit_tri = -1;
+		hit_normal = ZERO_VECTOR;
+		edge_hit = 0;
+		f_poly = nullptr;
+		t_poly = nullptr;
+		bsp_leaf = nullptr;
+	}
+} mc_info;
 
 
 //======== MODEL_COLLIDE ============

@@ -167,7 +167,6 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 
 	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
-	mc_info_init(&mc);
 
 	// set up collision structs
 	mc.model_instance_num = shipp->model_instance_num;

@@ -807,7 +807,6 @@ void debris_hit(object *debris_obj, object *other_obj, vec3d *hitpos, float dama
 int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, collision_info_struct *debris_hit_info)
 {
 	mc_info	mc;
-	mc_info_init(&mc);
 	int		num;
 
 	Assert( pdebris->type == OBJ_DEBRIS );
