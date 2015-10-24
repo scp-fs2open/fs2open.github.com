@@ -194,8 +194,12 @@ int generic_anim_stream(generic_anim *ga)
 		bpp = ANI_BPP_CHECK;
 		if(ga->use_hud_color)
 			bpp = 8;
-		ga->ani.animation = anim_load(ga->filename, CF_TYPE_ANY, 0);
-		ga->ani.instance = init_anim_instance(ga->ani.animation, bpp);
+		if (ga->ani.animation == nullptr) {
+			ga->ani.animation = anim_load(ga->filename, CF_TYPE_ANY, 0);
+		}
+		if (ga->ani.instance == nullptr) {
+			ga->ani.instance = init_anim_instance(ga->ani.animation, bpp);
+		}
 
 	#ifndef NDEBUG
 		// for debug of ANI sizes
