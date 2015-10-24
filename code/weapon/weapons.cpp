@@ -4976,20 +4976,21 @@ void weapon_process_post(object * obj, float frame_time)
 
 			//create a warpin effect
 			wp->lssm_warp_idx=fireball_create(&warpin, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,0,&vmd_zero_vector,wp->lssm_warp_time,0,&orient);
+			
+			if (wp->lssm_warp_idx < 0) {
+				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
+			}
 
 			obj->orient=orient;
 			obj->pos=warpin;
 			obj->phys_info.speed=0;
 			obj->phys_info.desired_vel = vmd_zero_vector;
 			obj->phys_info.vel = obj->phys_info.desired_vel;
-		
-			wp->lssm_stage=4;
-
 		}
-	
 
 		//done warping in.  render and collide it. let the fun begin
-		if ((wp->lssm_stage==4) && (fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <=0.5f))
+		// If the previous fireball creation failed just put it into normal space now
+		if ((wp->lssm_stage==4) && (wp->lssm_warp_idx < 0 || fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <=0.5f))
 		{
 			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, wip->lssm_stage5_vel );
 			obj->phys_info.vel = obj->phys_info.desired_vel;
