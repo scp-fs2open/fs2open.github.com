@@ -1098,12 +1098,10 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 		target_shipname = NULL;
 		target_team = -1;
-		if ( ainfo->target_objnum != -1) {
-			if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
-				if ( ainfo->target_objnum != Ships[shipnum].objnum ) {
-					target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
-					target_team = Ships[Objects[ainfo->target_objnum].instance].team;
-				}
+		if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
+			if ( ainfo->target_objnum != Ships[shipnum].objnum ) {
+				target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
+				target_team = Ships[Objects[ainfo->target_objnum].instance].team;
 			}
 		}
 
