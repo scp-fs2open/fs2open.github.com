@@ -157,22 +157,17 @@ int OO_update_index = -1;							// index into OO_update_records for displaying u
 object *OO_player_obj;
 int OO_sort = 1;
 
-int multi_oo_sort_func(const void *ship1, const void *ship2)
+bool multi_oo_sort_func(const short &index1, const short &index2)
 {
 	object *obj1, *obj2;
-	short index1, index2;
 	float dist1, dist2;
 	float dot1, dot2;
 	vec3d v1, v2;
 	vec3d vn1, vn2;
 
-	// get the 2 indices
-	memcpy(&index1, ship1, sizeof(short));
-	memcpy(&index2, ship2, sizeof(short));
-
 	// if the indices are bogus, or the objnums are bogus, return ">"
 	if((index1 < 0) || (index2 < 0) || (Ships[index1].objnum < 0) || (Ships[index2].objnum < 0)){
-		return 1;
+		return false;
 	}
 
 	// get the 2 objects
@@ -189,13 +184,13 @@ int multi_oo_sort_func(const void *ship1, const void *ship2)
 
 	// objects in front take precedence
 	if((dot1 < 0.0f) && (dot2 >= 0.0f)){
-		return 1;
+		return false;
 	} else if((dot2 < 0.0f) && (dot1 >= 0.0f)){
-		return -1;
+		return true;
 	}
 
 	// otherwise go by distance
-	return (dist1 <= dist2) ? -1 : 1;
+	return (dist1 < dist2);
 }
 
 // build the list of ship indices to use when updating for this player
@@ -261,10 +256,10 @@ void multi_oo_build_ship_list(net_player *pl)
 		}
 	}
 
-	// maybe qsort the thing here
+	// maybe sort the thing here
 	OO_player_obj = player_obj;
-	if(OO_sort){
-		qsort(OO_ship_index, ship_index, sizeof(short), multi_oo_sort_func);
+	if (OO_sort) {
+		std::sort(OO_ship_index, OO_ship_index + ship_index, multi_oo_sort_func);
 	}
 }
 
