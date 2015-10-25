@@ -2748,7 +2748,7 @@ void weapon_select_do(float frametime)
 				if(icon->model_index != -1)
 				{
 					//Draw the model
-					draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, wip->closeup_zoom / 2.5f, sx, sy, w, h, NULL, GR_RESIZE_MENU, wip->closeup_pos);
+					draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, wip->closeup_zoom / 2.5f, sx, sy, w, h, NULL, GR_RESIZE_MENU, &wip->closeup_pos);
 				}
 				else if(icon->laser_bmap != -1)
 				{
