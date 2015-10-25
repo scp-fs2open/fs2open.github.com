@@ -2627,8 +2627,8 @@
 								<option>0</option>
 								<flag>wxALL</flag>
 								<border>3</border>
-								<object class="wxCheckBox" name="cboCurrObjNoCompletionSound">
-									<label>Don&apos;t Play Completion Sound</label>
+								<object class="wxCheckBox" name="cboCurrObjNoCompletionMusic">
+									<label>Don&apos;t Play Completion Music</label>
 									<checked>0</checked>
 								</object>
 							</object>
