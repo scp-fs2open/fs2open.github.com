@@ -2692,15 +2692,13 @@ void weapon_select_do(float frametime)
 			gr_screen.res == 0 ? 202 : 332,
 			gr_screen.res == 0 ? 185 : 260,
 			&WeapSelectScreenWeapRot,
-			&Weapon_info->closeup_pos,
-			Weapon_info->closeup_zoom * 0.65f,
+			&wip->closeup_pos,
+			wip->closeup_zoom * 0.65f,
 			REVOLUTION_RATE,
 			MR_IS_MISSILE | MR_AUTOCENTER | MR_NO_FOGGING,
 			GR_RESIZE_MENU,
 			wip->selection_effect);
-	}
-
-	else if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
+	} else if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
 		Assert(Selected_wl_class >= 0 && Selected_wl_class < MAX_WEAPON_TYPES );
 		if ( Weapon_anim_class != Selected_wl_class )
 			start_weapon_animation(Selected_wl_class);
@@ -2736,14 +2734,13 @@ void weapon_select_do(float frametime)
 		if ( Wl_icons[Carried_wl_icon.weapon_class].can_use > 0)
 		{
 			wl_icon_info *icon = &Wl_icons[Carried_wl_icon.weapon_class];
+			weapon_info *wip = &Weapon_info[Carried_wl_icon.weapon_class];
 			if(icon->icon_bmaps[WEAPON_ICON_FRAME_SELECTED] != -1)
 			{
 				gr_set_color_fast(&Color_blue);
 				gr_set_bitmap(icon->icon_bmaps[WEAPON_ICON_FRAME_SELECTED]);
 				gr_bitmap(sx, sy, GR_RESIZE_MENU);
-			}
-			else
-			{
+			} else {
 				gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
 				int w = 56;
 				int h = 24;
@@ -2751,7 +2748,7 @@ void weapon_select_do(float frametime)
 				if(icon->model_index != -1)
 				{
 					//Draw the model
-					draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, Weapon_info->closeup_zoom / 2.5f, sx, sy, w, h, NULL, GR_RESIZE_MENU);
+					draw_model_icon(icon->model_index, MR_NO_FOGGING | MR_NO_LIGHTING, wip->closeup_zoom / 2.5f, sx, sy, w, h, NULL, GR_RESIZE_MENU, wip->closeup_pos);
 				}
 				else if(icon->laser_bmap != -1)
 				{
@@ -2760,9 +2757,7 @@ void weapon_select_do(float frametime)
 					gr_set_bitmap(icon->laser_bmap);
 					gr_bitmap(0, 0, GR_RESIZE_MENU);
 					gr_reset_clip();
-				}
-				else
-				{
+				} else {
 					//Draw the weapon name, crappy last-ditch effort to not crash.
 					int half_x, half_y;
 					char *print_name = (Weapon_info[Carried_wl_icon.weapon_class].alt_name[0]) ? Weapon_info[Carried_wl_icon.weapon_class].alt_name : Weapon_info[Carried_wl_icon.weapon_class].name;
