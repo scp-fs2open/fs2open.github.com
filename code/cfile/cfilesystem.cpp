@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sstream>
+#include <algorithm>
 
 #ifdef _WIN32
 #include <io.h>
