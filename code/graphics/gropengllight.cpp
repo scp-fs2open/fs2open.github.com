@@ -14,6 +14,8 @@
 #include <windows.h>
 #endif
 
+#include <algorithm>
+
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include <globalincs/systemvars.h>
