@@ -8,6 +8,8 @@
 */
 
 
+#include <algortihm>
+
 #include "network/multi_obj.h"
 #include "globalincs/globals.h"
 #include "freespace2/freespace.h"
