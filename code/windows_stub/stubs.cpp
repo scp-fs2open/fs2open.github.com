@@ -222,7 +222,8 @@ void Warning( char * filename, int line, const char * format, ... )
 #endif
 }
 
-void WarningNondebug( char * filename, int line, const char * format, ... )
+//Display warning even in non-devug builds
+void ReleaseWarning( char * filename, int line, const char * format, ... )
 {
 	Global_warning_count++;
 

@@ -1403,7 +1403,7 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 }
 
 //Display warning even in non-devug builds
-void _cdecl WarningNondebug(char *filename, int line, const char *format, ...)
+void _cdecl ReleaseWarning(char *filename, int line, const char *format, ...)
 {
 	Global_warning_count++;
 
