@@ -8,7 +8,7 @@
 */
 
 
-#include <algortihm>
+#include <algorithm>
 
 #include "network/multi_obj.h"
 #include "globalincs/globals.h"
