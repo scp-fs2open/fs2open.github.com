@@ -312,9 +312,8 @@ int add_avi( char *avi_name )
 	}
 
 	// would have returned if a slot existed.
-	generic_anim_init( &extra.anim_data );
+	generic_anim_init( &extra.anim_data, avi_name );
 	strcpy_s( extra.name, avi_name );
-	strcpy_s( extra.anim_data.filename, avi_name);
 	extra.num = -1;
 	generic_anim_load(&extra.anim_data);   // load only to validate the anim
 	generic_anim_unload(&extra.anim_data); // unload to not waste bmpman slots
@@ -1234,10 +1233,12 @@ void message_play_anim( message_q *q )
 
 	// if there is something already here that's not this same file then go ahead a let go of it - taylor
 	if ( !strstr(anim_info->anim_data.filename, ani_name) ) {
+		nprintf(("Messaging", "clearing headani data due to name mismatch: (%s) (%s)\n",
+					anim_info->anim_data.filename, ani_name));
 		message_mission_free_avi( m->avi_info.index );
 	}
 
-	generic_anim_init(&anim_info->anim_data, ani_name);
+	strcpy_s( anim_info->anim_data.filename, ani_name );
 	if(!Full_color_head_anis)
 			anim_info->anim_data.use_hud_color = true;
 

@@ -3910,7 +3910,15 @@ int find_wing_name(char *name)
 	return -1;
 }
 
-// function to create ships in the wing that need to be created
+/**
+* @brief						Tries to create a wing of ships
+* @param[inout]	wingp			Pointer to the wing structure of the wing to be created
+* @param[in] num_to_create		Number of ships to create
+* @param[in] force				If set to 1, the wing will be created regardless of whether or not the arrival conditions
+*								have been met yet.
+* @param[in] specific_instance	Set this to create a specific ship from this wing
+* @returns						Number of ships created
+*/
 int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int specific_instance )
 {
 	int wingnum, objnum, num_create_save;
@@ -3951,15 +3959,15 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			Assert( wingp->arrival_anchor >= 0 );
 			name = Parse_names[wingp->arrival_anchor];
 
-			// see if ship is yet to arrive.  If so, then return -1 so we can evaluate again later.
-			if ( mission_parse_get_arrival_ship( name ) )
-				return 0;
-
-			// see if ship is in mission.  If not, then we can assume it was destroyed or departed since
-			// it is not on the arrival list (as shown by above if statement).
+			// see if ship is in mission.
 			shipnum = ship_name_lookup( name );
 			if ( shipnum == -1 ) {
 				int num_remaining;
+
+				// see if ship is yet to arrive.  If so, then return 0 so we can evaluate again later.
+				if (mission_parse_get_arrival_ship(name))
+					return 0;
+
 				// since this wing cannot arrive from this place, we need to mark the wing as destroyed and
 				// set the wing variables appropriately.  Good for directives.
 
@@ -6393,7 +6401,12 @@ int mission_parse_get_multi_mission_info( const char *filename )
 }
 
 /**
- * Return the parse object on the ship arrival list associated with the given name
+ * @brief				Returns the parse object on the ship arrival list associated with the given name.
+ * @param[in] name		The name of the object
+ * @returns				The parse object, or NULL if no object with the given name is on the arrival list
+ * @remarks				This function is used to determine whether a ship has arrived. Ships on the arrival list
+ *						are considered to not be in the game; In order to make respawns work in multiplayer,
+ *						player ships (those marked with the P_OF_PLAYER_START flag) are never removed from it.
  */
 p_object *mission_parse_get_arrival_ship(const char *name)
 {
@@ -6405,14 +6418,21 @@ p_object *mission_parse_get_arrival_ship(const char *name)
 	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
 		if (!stricmp(p_objp->name, name)) 
+		{
 			return p_objp;	// still on the arrival list
+		}
 	}
 
 	return NULL;
 }
 
 /**
- * Return the parse object on the ship arrival list associated with the given signature
+ * @brief					Returns the parse object on the ship arrival list associated with the given net signature.
+ * @param[in] net_signature	The net signature of the object
+ * @returns					The parse object, or NULL if no object with the given signature is on the arrival list
+ * @remarks					This function is used to determine whether a ship has arrived. Ships on the arrival list
+ *							are considered to not be in the game; In order to make respawns work in multiplayer,
+ *							player ships (those marked with the P_OF_PLAYER_START flag) are never removed from it.
  */
 p_object *mission_parse_get_arrival_ship(ushort net_signature)
 {
@@ -6420,8 +6440,10 @@ p_object *mission_parse_get_arrival_ship(ushort net_signature)
 
 	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp !=END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
-		if (p_objp->net_signature == net_signature)
+		if (p_objp->net_signature == net_signature) 
+		{
 			return p_objp;	// still on the arrival list
+		}
 	}
 
 	return NULL;
@@ -6642,14 +6664,13 @@ int mission_did_ship_arrive(p_object *objp)
 			Assert( objp->arrival_anchor >= 0 );
 			name = Parse_names[objp->arrival_anchor];
 	
-			// see if ship is yet to arrive.  If so, then return -1 so we can evaluate again later.
-			if ( mission_parse_get_arrival_ship( name ) )
-				return -1;
-
-			// see if ship is in mission.  If not, then we can assume it was destroyed or departed since
-			// it is not on the arrival list (as shown by above if statement).
+			// see if ship is in mission.
 			shipnum = ship_name_lookup( name );
 			if ( shipnum == -1 ) {
+				// see if ship is yet to arrive.  If so, then return -1 so we can evaluate again later.
+				if (mission_parse_get_arrival_ship(name))
+					return -1;
+
 				mission_parse_mark_non_arrival(objp);	// Goober5000
 				WarningEx(LOCATION, "Warning: Ship %s cannot arrive from docking bay of destroyed or departed %s.\n", objp->name, name);
 				return -1;
