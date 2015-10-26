@@ -10,6 +10,8 @@
 
 
 
+#include <algorithm>
+
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
 #include "fireball/fireballs.h"

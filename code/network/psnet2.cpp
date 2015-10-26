@@ -32,6 +32,7 @@
 #endif
 #include <stdio.h>
 #include <limits.h>
+#include <algorithm>
 
 #include "globalincs/pstypes.h"
 #include "network/psnet2.h"

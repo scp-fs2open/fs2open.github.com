@@ -10,6 +10,8 @@
 
 
 
+#include <algorithm>
+
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
