@@ -629,9 +629,20 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 				cm->num_variables = 0;
 			}
 
-			cm->goals = NULL;
-			cm->events = NULL;
-			cm->variables = NULL;
+			// it's possible to have data already loaded from the pilotfile
+			// if so free it to avoid memory leaks
+			if (cm->goals != nullptr) {
+				vm_free(cm->goals);
+				cm->goals = nullptr;
+			}
+			if (cm->events != nullptr) {
+				vm_free(cm->events);
+				cm->events = nullptr;
+			}
+			if (cm->variables != nullptr) {
+				vm_free(cm->variables);
+				cm->variables = nullptr;
+			}
 
 			Campaign.num_missions++;
 		}
