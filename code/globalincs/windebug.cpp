@@ -1402,6 +1402,124 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 #endif // !NDEBUG
 }
 
+//Display warning even in non-devug builds
+void _cdecl WarningNondebug(char *filename, int line, const char *format, ...)
+{
+	Global_warning_count++;
+
+	va_list args;
+	int result;
+	int i;
+	int slen = 0;
+
+	// output to the debug log before anything else (so that we have a complete record)
+
+	memset(AssertText1, 0, sizeof(AssertText1));
+	memset(AssertText2, 0, sizeof(AssertText2));
+
+	va_start(args, format);
+	vsnprintf(AssertText1, sizeof(AssertText1) - 1, format, args);
+	va_end(args);
+
+	slen = strlen(AssertText1);
+
+	// strip out the newline char so the output looks better
+	for (i = 0; i < slen; i++) {
+		if (AssertText1[i] == (char)0x0a) {
+			AssertText2[i] = ' ';
+		}
+		else {
+			AssertText2[i] = AssertText1[i];
+		}
+	}
+
+	// kill off extra white space at end
+	if (AssertText2[slen - 1] == (char)0x20) {
+		AssertText2[slen - 1] = '\0';
+	}
+	else {
+		// just being careful
+		AssertText2[slen] = '\0';
+	}
+
+	mprintf(("WARNING: \"%s\" at %s:%d\n", AssertText2, strrchr(filename, '\\') + 1, line));
+
+	// now go for the additional popup window, if we want it ...
+#ifdef Allow_NoWarn
+	if (Cmdline_nowarn) {
+		return;
+	}
+#endif
+
+	filename = strrchr(filename, '\\') + 1;
+	sprintf(AssertText2, "Warning: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line);
+
+	Messagebox_active = true;
+
+	gr_activate(0);
+
+#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
+	/* Dump the callstack */
+	SCP_DebugCallStack callStack;
+	SCP_DumpStack(dynamic_cast< SCP_IDumpHandler* >(&callStack));
+
+	/* Format the string */
+	SCP_string assertString(AssertText1);
+	assertString += "\n";
+	assertString += callStack.DumpToString();
+
+	/* Copy to the clipboard */
+	dump_text_to_clipboard(assertString.c_str());
+
+	// truncate text
+	truncate_message_lines(assertString, Messagebox_lines);
+
+	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
+	assertString += "\n\nUse Yes to break into Debugger, No to continue.\nand Cancel to Quit\n";
+	result = MessageBox(NULL, assertString.c_str(), "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags);
+
+#elif defined ( SHOW_CALL_STACK	)
+	//we don't want to dump the call stack for every single warning
+	Dump_to_log = false;
+
+	dumpBuffer.Clear();
+	dumpBuffer.Printf(AssertText2);
+	dumpBuffer.Printf("\r\n");
+	DumpCallsStack(dumpBuffer);
+	dump_text_to_clipboard(dumpBuffer.buffer);
+
+	// truncate text
+	dumpBuffer.TruncateLines(Messagebox_lines);
+
+	dumpBuffer.Printf("\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n");
+	dumpBuffer.Printf("\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
+
+	result = MessageBox((HWND)os_get_window(), dumpBuffer.buffer, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags);
+
+	Dump_to_log = true;
+
+#else
+	strcat_s(AssertText2, "\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
+	result = MessageBox((HWND)os_get_window(), AssertText2, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags);
+#endif
+
+	switch (result)
+	{
+	case IDYES:
+		Int3();
+		break;
+
+	case IDNO:
+		break;
+
+	case IDCANCEL:
+		exit(1);
+	}
+
+	gr_activate(1);
+
+	Messagebox_active = false;
+}
 
 
 //================= memory stuff
