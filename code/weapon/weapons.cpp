@@ -4986,6 +4986,8 @@ void weapon_process_post(object * obj, float frame_time)
 			obj->phys_info.speed=0;
 			obj->phys_info.desired_vel = vmd_zero_vector;
 			obj->phys_info.vel = obj->phys_info.desired_vel;
+
+			wp->lssm_stage = 4;
 		}
 
 		//done warping in.  render and collide it. let the fun begin
