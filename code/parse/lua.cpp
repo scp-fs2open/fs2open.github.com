@@ -5037,6 +5037,7 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	}
 
 	mc_info hull_check;
+	mc_info_init(&hull_check);
 
 	hull_check.model_num = model_num;
 	hull_check.model_instance_num = model_instance_num;

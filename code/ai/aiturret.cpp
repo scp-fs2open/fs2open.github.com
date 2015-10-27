@@ -2676,6 +2676,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				vm_vec_scale_add(&end, &gpos, &gvec, model_get_radius(model_num));
 
 				mc_info hull_check;
+				mc_info_init(&hull_check);
 				hull_check.model_instance_num = shipp->model_instance_num;
 				hull_check.model_num = model_num;
 				hull_check.orient = &objp->orient;

@@ -925,6 +925,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius)
 {
 	mc_info mc;
+	mc_info_init(&mc);
 
 	Assert(goalobjp->type == OBJ_SHIP);
 
