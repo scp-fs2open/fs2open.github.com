@@ -1133,7 +1133,7 @@ typedef struct mc_info {
 										// flags can be changed for the case of sphere check finds an edge hit
 } mc_info;
 
-void mc_info_init(mc_info *mc)
+inline void mc_info_init(mc_info *mc)
 {
 	mc->model_instance_num = -1;
 	mc->model_num = -1;
