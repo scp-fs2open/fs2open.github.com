@@ -871,6 +871,9 @@ void cam_close()
 {
 	//Set Current_camera to nothing
 	Current_camera = camid();
+	for (auto ii = Cameras.begin(); ii < Cameras.end(); ++ii) {
+		delete * ii;
+	}
 	Cameras.clear();
 }
 
