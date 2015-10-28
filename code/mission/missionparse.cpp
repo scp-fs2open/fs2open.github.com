@@ -3974,9 +3974,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 				// set the gone flag
 				wingp->flags |= WF_WING_GONE;
 
-				// Let's mark this wing as never having existed too, for good measure
-				wingp->flags |= WF_NEVER_EXISTED;
-
 				// mark the number of waves and number of ships destroyed equal to the last wave and the number
 				// of ships yet to arrive
 				num_remaining = ( (wingp->num_waves - wingp->current_wave) * wingp->wave_count);
