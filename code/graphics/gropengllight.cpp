@@ -14,8 +14,11 @@
 #include <windows.h>
 #endif
 
+#include <algorithm>
+
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
+#include <globalincs/systemvars.h>
 #include "graphics/2d.h"
 #include "graphics/gropenglextension.h"
 #include "graphics/gropengllight.h"
@@ -180,51 +183,45 @@ void opengl_set_light(int light_num, opengl_light *ltp)
 	glLightf(GL_LIGHT0+light_num, GL_SPOT_CUTOFF, ltp->SpotCutOff);
 }
 
-#include <globalincs/systemvars.h>
-int opengl_sort_active_lights(const void *a, const void *b)
+bool opengl_sort_active_lights(const opengl_light &la, const opengl_light &lb)
 {
-	opengl_light *la, *lb;
-
-	la = (opengl_light *) a;
-	lb = (opengl_light *) b;
-
 	// directional lights always go first
-	if ( (la->type != LT_DIRECTIONAL) && (lb->type == LT_DIRECTIONAL) )
-		return 1;
-	else if ( (la->type == LT_DIRECTIONAL) && (lb->type != LT_DIRECTIONAL) )
-		return -1;
+	if ( (la.type != LT_DIRECTIONAL) && (lb.type == LT_DIRECTIONAL) )
+		return false;
+	else if ( (la.type == LT_DIRECTIONAL) && (lb.type != LT_DIRECTIONAL) )
+		return true;
 
 	// tube lights go next, they are generally large and intense
-	if ( (la->type != LT_TUBE) && (lb->type == LT_TUBE) )
-		return 1;
-	else if ( (la->type == LT_TUBE) && (lb->type != LT_TUBE) )
-		return -1;
+	if ( (la.type != LT_TUBE) && (lb.type == LT_TUBE) )
+		return false;
+	else if ( (la.type == LT_TUBE) && (lb.type != LT_TUBE) )
+		return true;
 
 	// everything else is sorted by linear atten (light size)
 	// NOTE: smaller atten is larger light radius!
-	if ( la->LinearAtten > lb->LinearAtten )
-		return 1;
-	else if ( la->LinearAtten < lb->LinearAtten )
-		return -1;
+	if ( la.LinearAtten > lb.LinearAtten )
+		return false;
+	else if ( la.LinearAtten < lb.LinearAtten )
+		return true;
 
 	// as one extra check, if we're still here, go with overall brightness of light
 
-	float la_value = la->Diffuse[0] + la->Diffuse[1] + la->Diffuse[2];
-	float lb_value = lb->Diffuse[0] + lb->Diffuse[1] + lb->Diffuse[2];
+	float la_value = la.Diffuse[0] + la.Diffuse[1] + la.Diffuse[2];
+	float lb_value = lb.Diffuse[0] + lb.Diffuse[1] + lb.Diffuse[2];
 
 	if ( la_value < lb_value )
-		return 1;
+		return false;
 	else if ( la_value > lb_value )
-		return -1;
+		return true;
 
 	// the two are equal
-	return 0;
+	return false;
 }
 
 void opengl_pre_render_init_lights()
 {
 	// sort the lights to try and get the most visible lights on the first pass
-	qsort(opengl_lights, Num_active_gl_lights, sizeof(opengl_light), opengl_sort_active_lights);
+	std::sort(opengl_lights, opengl_lights + Num_active_gl_lights, opengl_sort_active_lights);
 }
 
 static GLdouble eyex, eyey, eyez;
