@@ -1037,11 +1037,33 @@ char *cmdline_parm::str()
 }
 
 #ifdef SCP_UNIX
-// for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
-static void unix_handle_modlist(char **modlist, int *len)
+// Return the name of the directory "parent/dir" as seen by the filesystem.
+// Assumes dir contains no slashes.
+static char *unix_get_single_dir_name(const char *dir, const char *parent)
 {
 	DIR *dp;
 	dirent *dirp;
+	char *ret = NULL;
+
+	if ((dp = opendir(parent)) == NULL) {
+		Error(LOCATION, "Can't open directory '%s' -- %d", parent, errno);
+	}
+
+	while ((dirp = readdir(dp)) != NULL) {
+		if (!stricmp(dirp->d_name, dir)) {
+			ret = strdup(dirp->d_name);
+			break;
+		}
+	}
+
+	(void)closedir(dp);
+	return ret;
+}
+
+
+// for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
+static void unix_handle_modlist(char **modlist, int *len)
+{
 	char *cur_pos;
 	char cur_dir[CF_MAX_PATHNAME_LENGTH];
 	SCP_vector<SCP_string> temp_modlist;
@@ -1053,17 +1075,13 @@ static void unix_handle_modlist(char **modlist, int *len)
 
 	for (cur_pos = strtok(*modlist, ","); cur_pos != NULL; cur_pos = strtok(NULL, ","))
 	{
-		if ((dp = opendir(cur_dir)) == NULL) {
-			Error(LOCATION, "Can't open directory '%s' -- %d", cur_dir, errno );
+		char * mod_path;
+		if ((mod_path = unix_get_single_dir_name(cur_pos, cur_dir)) == NULL) {
+			Error(LOCATION, "Mod directory '%s' does not exist", cur_pos);
 		}
-
-		while ((dirp = readdir(dp)) != NULL) {
-			if (!stricmp(dirp->d_name, cur_pos)) {
-				temp_modlist.push_back(dirp->d_name);
-				total_len += (strlen(dirp->d_name) + 1);
-			}
-		}
-		(void)closedir(dp);
+		temp_modlist.push_back(mod_path);
+		total_len += strlen(mod_path) + 1;
+		free(mod_path);
 	}
 
 	// create new char[] to replace modlist
