@@ -718,7 +718,7 @@ int VoiceActingManager::fout(char *format, ...)
 	vsprintf(str, format, args);
 	va_end(args);
 
-	cfputs(const_cast<char*>(str.c_str()), fp);
+	cfputs(str.c_str(), fp);
 	return 0;
 }
 
