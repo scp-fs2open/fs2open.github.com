@@ -1062,11 +1062,13 @@ static char *unix_get_single_dir_name(const char *dir, const char *parent)
 
 // Returns the name of the directory "parent/dir" as seen by the filesystem.
 // Recurses when dir contains a slash.
+// Backslashes are treated as slashes for compatibility with mod.inis that
+// are written for Windows.
 static char *unix_get_dir_name(const char *dir, const char *parent)
 {
 	// find end of first directory name
 	const char *pos = dir;
-	for ( ; *pos != '\0' && *pos != '/'; pos++)
+	for ( ; *pos != '\0' && *pos != '/' && *pos != '\\'; pos++)
 		;
 
 	if (*pos == '\0') {
