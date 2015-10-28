@@ -831,7 +831,7 @@ bool gamesnd_parse_line(game_snd *gs, const char *tag, SCP_vector<game_snd> *loo
 {
 	Assertion(gs != NULL, "Invalid game_snd pointer passed to gamesnd_parse_line!");
 
-	required_string(const_cast<char*>(tag));
+	required_string(tag);
 
 	bool no_create = false;
 

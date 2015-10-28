@@ -10,6 +10,8 @@
 
 
 
+#include <algorithm>
+
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
@@ -215,9 +217,6 @@ void beam_start_warmdown(beam *b);
 
 // add a collision to the beam for this frame (to be evaluated later)
 void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad = -1, int exit_flag = 0);
-
-// sort collisions for the frame
-int beam_sort_collisions_func(const void *e1, const void *e2);
 
 // get the width of the widest section of the beam
 float beam_get_widest(beam *b);
@@ -2896,12 +2895,9 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quadran
 }
 
 // sort collisions for the frame
-int beam_sort_collisions_func(const void *e1, const void *e2)
+bool beam_sort_collisions_func(const beam_collision &b1, const beam_collision &b2)
 {
-	beam_collision *b1 = (beam_collision*)e1;
-	beam_collision *b2 = (beam_collision*)e2;
-
-	return b1->cinfo.hit_dist < b2->cinfo.hit_dist ? -1 : 1;
+	return (b1.cinfo.hit_dist < b2.cinfo.hit_dist);
 }
 
 // handle a hit on a specific object
@@ -2929,7 +2925,7 @@ void beam_handle_collisions(beam *b)
 	widest = beam_get_widest(b);
 
 	// the first thing we need to do is sort the collisions, from closest to farthest
-	qsort(b->f_collisions, b->f_collision_count, sizeof(beam_collision), beam_sort_collisions_func);
+	std::sort(b->f_collisions, b->f_collisions + b->f_collision_count, beam_sort_collisions_func);
 
 	// now apply all collisions until we reach a ship which "stops" the beam or we reach the end of the list
 	for(idx=0; idx<b->f_collision_count; idx++){	

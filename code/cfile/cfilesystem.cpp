@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sstream>
+#include <algorithm>
 
 #ifdef _WIN32
 #include <io.h>
@@ -218,19 +219,15 @@ int cf_get_packfile_count(cf_root *root)
 }
 
 // packfile sort function
-int cf_packfile_sort_func(const void *elem1, const void *elem2)
+bool cf_packfile_sort_func(const cf_root_sort &r1, const cf_root_sort &r2)
 {
-	cf_root_sort *r1, *r2;
-	r1 = (cf_root_sort*)elem1;
-	r2 = (cf_root_sort*)elem2;
-
 	// if the 2 directory types are the same, do a string compare
-	if(r1->cf_type == r2->cf_type){
-		return stricmp(r1->path, r2->path);
+	if (r1.cf_type == r2.cf_type) {
+		return (stricmp(r1.path, r2.path) < 0);
 	}
 
 	// otherwise return them in order of CF_TYPE_* precedence
-	return (r1->cf_type < r2->cf_type) ? -1 : 1;
+	return (r1.cf_type < r2.cf_type);
 }
 
 // Go through a root and look for pack files
@@ -339,7 +336,7 @@ void cf_build_pack_list( cf_root *root )
 	Assert(root_index == temp_root_count);
 
 	// sort the roots
-	qsort(temp_roots_sort, temp_root_count, sizeof(cf_root_sort), cf_packfile_sort_func);
+	std::sort(temp_roots_sort, temp_roots_sort + temp_root_count, cf_packfile_sort_func);
 
 	// now insert them all into the real root list properly
 	cf_root *new_root;
