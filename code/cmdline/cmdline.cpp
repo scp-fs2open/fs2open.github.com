@@ -1060,6 +1060,65 @@ static char *unix_get_single_dir_name(const char *dir, const char *parent)
 	return ret;
 }
 
+// Returns the name of the directory "parent/dir" as seen by the filesystem.
+// Recurses when dir contains a slash.
+static char *unix_get_dir_name(const char *dir, const char *parent)
+{
+	// find end of first directory name
+	const char *pos = dir;
+	for ( ; *pos != '\0' && *pos != '/'; pos++)
+		;
+
+	if (*pos == '\0') {
+		// no subdirectories, no need to recurse
+		return unix_get_single_dir_name(dir, parent);
+	}
+
+	char *raw_base = (char*) malloc(pos - dir + 1);
+	memcpy(raw_base, dir, pos - dir);
+	raw_base[pos - dir] = '\0';
+
+	pos++;
+
+	// raw_base now contains only the first directory
+	// the rest is in pos
+
+	char *base = unix_get_single_dir_name(raw_base, parent);
+	free(raw_base);
+	if (base == NULL) {
+		return NULL;
+	}
+
+	// construct new parent for recursion
+	char new_parent[CF_MAX_PATHNAME_LENGTH];
+	memset(new_parent, 0, sizeof(new_parent));
+	strcat_s(new_parent, sizeof(new_parent), parent);
+	strcat_s(new_parent, sizeof(new_parent), "/");
+	strcat_s(new_parent, sizeof(new_parent), base);
+
+	char *rest = unix_get_dir_name(pos, new_parent);
+	if (rest == NULL) {
+		free(base);
+		return NULL;
+	}
+
+	// ret = base + '/' + rest + '\0'
+	int base_len = strlen(base);
+	int rest_len = strlen(rest);
+	int ret_len = base_len + 1 + rest_len;
+
+	char *ret = (char*) malloc(ret_len + 1);
+	strncpy(ret, base, base_len);
+	ret[base_len] = '/';
+	strncpy(ret + base_len + 1, rest, rest_len);
+	ret[ret_len] = '\0';
+
+	free(base);
+	free(rest);
+
+	return ret;
+}
+
 
 // for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
 static void unix_handle_modlist(char **modlist, int *len)
@@ -1076,7 +1135,7 @@ static void unix_handle_modlist(char **modlist, int *len)
 	for (cur_pos = strtok(*modlist, ","); cur_pos != NULL; cur_pos = strtok(NULL, ","))
 	{
 		char * mod_path;
-		if ((mod_path = unix_get_single_dir_name(cur_pos, cur_dir)) == NULL) {
+		if ((mod_path = unix_get_dir_name(cur_pos, cur_dir)) == NULL) {
 			Error(LOCATION, "Mod directory '%s' does not exist", cur_pos);
 		}
 		temp_modlist.push_back(mod_path);
