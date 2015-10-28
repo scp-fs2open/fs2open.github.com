@@ -880,7 +880,7 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
 	// be.  I have to save any file filters
 	filter_save = Get_file_list_filter;
 	Get_file_list_filter = NULL;
-	num_files = cf_get_file_list(names, dir_type, const_cast<char *>(file_spec));
+	num_files = cf_get_file_list(names, dir_type, file_spec);
 	Get_file_list_filter = filter_save;
 
 	for (i=0; i<num_files; i++) {

@@ -135,7 +135,7 @@ void convert_pilot_files()
 				Get_file_list_child = "inferno";
 			}
 
-			cf_get_file_list(savefiles, CF_TYPE_SINGLE_PLAYERS, const_cast<char*>(wildcard.c_str()));
+			cf_get_file_list(savefiles, CF_TYPE_SINGLE_PLAYERS, wildcard.c_str());
 
 			for (j = 0; j < savefiles.size(); j++) {
 				pcon->csg_convert(savefiles[j].c_str(), inferno);
