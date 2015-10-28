@@ -21,7 +21,7 @@
 int Lasers = 1;
 DCF_BOOL( lasers, Lasers )
 
-float g3_draw_laser_htl(vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b, uint tmap_flags)
+float g3_draw_laser_htl(const vec3d *p0, float width1, const vec3d *p1, float width2, int r, int g, int b, uint tmap_flags)
 {
 	width1 *= 0.5f;
 	width2 *= 0.5f;
@@ -113,7 +113,7 @@ float g3_draw_laser_htl(vec3d *p0,float width1,vec3d *p1,float width2, int r, in
 // and a bitmap with gr_set_bitmap.  If it is very far away, it draws the laser
 // as flat-shaded using current color, else textured using current texture.
 // If max_len is > 1.0, then this caps the length to be no longer than max_len pixels.
-float g3_draw_laser(vec3d *headp, float head_width, vec3d *tailp, float tail_width, uint tmap_flags, float max_len )
+float g3_draw_laser(const vec3d *headp, float head_width, const vec3d *tailp, float tail_width, uint tmap_flags, float max_len )
 {
 	if (!Lasers) {
 		return 0.0f;
@@ -264,13 +264,13 @@ float g3_draw_laser(vec3d *headp, float head_width, vec3d *tailp, float tail_wid
 
 // Draw a laser shaped 3d looking thing using vertex coloring (useful for things like colored laser glows)
 // If max_len is > 1.0, then this caps the length to be no longer than max_len pixels
-float g3_draw_laser_rgb(vec3d *headp, float head_width, vec3d *tailp, float tail_width, int r, int g, int b, uint tmap_flags, float max_len )
+float g3_draw_laser_rgb(const vec3d *headp, float head_width, const vec3d *tailp, float tail_width, int r, int g, int b, uint tmap_flags, float max_len )
 {
 	if (!Lasers){
 		return 0.0f;
 	}
 	if((!Cmdline_nohtl)  && tmap_flags & TMAP_HTL_3D_UNLIT){
-		return g3_draw_laser_htl(headp,head_width,tailp,tail_width,r,g,b,tmap_flags | TMAP_HTL_3D_UNLIT);
+		return g3_draw_laser_htl(headp, head_width, tailp, tail_width, r, g, b, tmap_flags | TMAP_HTL_3D_UNLIT);
 	}
 	float headx, heady, headr, tailx, taily, tailr;
 	vertex pt1, pt2;
