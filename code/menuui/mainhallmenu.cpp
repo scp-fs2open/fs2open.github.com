@@ -534,11 +534,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 
 	// get the default value for tooltip padding if necessary
 	if (Main_hall->tooltip_padding == -1) {
-		if (Main_hall_bitmap_w >= GR_1024_THRESHOLD_WIDTH && Main_hall_bitmap_h >= GR_1024_THRESHOLD_HEIGHT) {
-			Main_hall->tooltip_padding = Main_hall_default_tooltip_padding[GR_1024];
-		} else {
-			Main_hall->tooltip_padding = Main_hall_default_tooltip_padding[GR_640];
-		}
+		Main_hall->tooltip_padding = Main_hall_default_tooltip_padding[gr_get_resolution_class(Main_hall_bitmap_w, Main_hall_bitmap_h)];
 	}
 
 	// In case we're re-entering the mainhall
