@@ -304,7 +304,7 @@ void g3_start_instance_matrix(const vec3d *pos, const matrix *orient, bool set_a
 	vm_matrix_x_matrix(&Light_matrix,&saved_orient, orient);
 
 	if(!Cmdline_nohtl && set_api)
-		gr_start_instance_matrix(const_cast<vec3d*>(pos), const_cast<matrix*>(orient));
+		gr_start_instance_matrix(pos, orient);
 
 }
 
@@ -330,7 +330,7 @@ void g3_start_instance_angles(const vec3d *pos, const angles *orient)
 	g3_start_instance_matrix(pos,&tm, false);
 
 	if(!Cmdline_nohtl)
-		gr_start_angles_instance_matrix(const_cast<vec3d*>(pos), const_cast<angles*>(orient));
+		gr_start_angles_instance_matrix(pos, orient);
 
 }
 

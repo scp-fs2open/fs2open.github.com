@@ -1978,7 +1978,7 @@ void g3_draw_htl_line(const vec3d *start, const vec3d *end)
 		return;
 	}
 
-	gr_line_htl(const_cast<vec3d*>(start), const_cast<vec3d*>(end));
+	gr_line_htl(start, end);
 }
 
 void g3_draw_htl_sphere(const vec3d* position, float radius)
