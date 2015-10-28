@@ -2160,9 +2160,11 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
 				}
-				else if (Weapon_info[wp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC)
+				else if (wp->primary_bank_weapons[j] >= 0 && Weapon_info[wp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC)
 				{
-					Assert(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f);
+					Assertion(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f,
+							"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
+							shipp->ship_name, sssp->name, j, Weapon_info[wp->primary_bank_weapons[j]].name);
 
 					int capacity = fl2i(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j] + 0.5f);
 					wp->primary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size + 0.5f);
@@ -2175,9 +2177,11 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					wp->secondary_bank_ammo[j] = sssp->secondary_ammo[j];
 				}
-				else
+				else if (wp->secondary_bank_weapons[j] >= 0)
 				{
-					Assert(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f);
+					Assertion(Weapon_info[wp->secondary_bank_weapons[j]].cargo_size > 0.0f,
+							"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
+							shipp->ship_name, sssp->name, j, Weapon_info[wp->secondary_bank_weapons[j]].name);
 
 					int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j] + 0.5f);
 					wp->secondary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size + 0.5f);
@@ -2250,8 +2254,10 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					if (Fred_running) {
 						ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
-					} else if (Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC) {
-						Assert(Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size > 0.0f);
+					} else if (ptr->weapons.primary_bank_weapons[j] >= 0 && Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC) {
+						Assertion(Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size > 0.0f,
+								"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
+								shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.primary_bank_weapons[j]].name);
 
 						int capacity = fl2i(sssp->primary_ammo[j]/100.0f * ptr->weapons.primary_bank_capacity[j] + 0.5f);
 						ptr->weapons.primary_bank_ammo[j] = fl2i(capacity / Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size + 0.5f);
@@ -2262,8 +2268,10 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					if (Fred_running) {
 						ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];
-					} else {
-						Assert(Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size > 0.0f);
+					} else if (ptr->weapons.secondary_bank_weapons[j] >= 0) {
+						Assertion(Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size > 0.0f,
+								"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
+								shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.secondary_bank_weapons[j]].name);
 
 						int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * ptr->weapons.secondary_bank_capacity[j] + 0.5f);
 						ptr->weapons.secondary_bank_ammo[j] = fl2i(capacity / Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size + 0.5f);
