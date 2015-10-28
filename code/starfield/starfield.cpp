@@ -296,10 +296,9 @@ static void starfield_create_bitmap_buffer(const int si_idx)
 	vm_angles_2_matrix(&m_bank, &bank_first);
 
 	// convert angles to matrix
-	float b_save = a->b;
-	a->b = 0.0f;
-	vm_angles_2_matrix(&m, a);
-	a->b = b_save;
+	angles a_temp = *a;
+	a_temp.b = 0.0f;
+	vm_angles_2_matrix(&m, &a_temp);
 
 	// generate the bitmap points
 	for(idx=0; idx<=div_x; idx++) {
