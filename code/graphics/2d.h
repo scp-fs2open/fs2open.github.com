@@ -686,6 +686,7 @@ extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 
 extern bool gr_init(int d_mode = GR_DEFAULT, int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
 extern void gr_screen_resize(int width, int height);
+extern int gr_get_resolution_class(int width, int height);
 
 // Call this when your app ends.
 extern void gr_close();
