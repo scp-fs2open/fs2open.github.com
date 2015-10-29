@@ -3776,6 +3776,10 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, bool scale_ga
 		stuff_int_list(Anim_offsets, 2);
 	}
 	if(optional_string("Animation Background Size:")) {
+		mprintf(("Animation Background Size in hud_gauges.tbl and -hdg.tbms is deprecated. Use \"Animation Size\" instead.\n"));
+		stuff_int_list(Anim_size, 2);
+	}
+	if(optional_string("Animation Size:")) {
 		stuff_int_list(Anim_size, 2);
 	}
 
