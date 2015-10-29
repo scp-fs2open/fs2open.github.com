@@ -416,7 +416,7 @@ typedef struct screen {
 	void (*gf_flip)();
 
 	// Sets the current palette
-	void (*gf_set_palette)(ubyte * new_pal, int restrict_alphacolor);
+	void (*gf_set_palette)(const ubyte *new_pal, int restrict_alphacolor);
 
 	// Fade the screen in/out
 	void (*gf_fade_in)(int instantaneous);
@@ -565,7 +565,7 @@ typedef struct screen {
 	int (*gf_bm_make_render_target)(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags );
 	int (*gf_bm_set_render_target)(int n, int face);
 
-	void (*gf_translate_texture_matrix)(int unit, vec3d *shift);
+	void (*gf_translate_texture_matrix)(int unit, const vec3d *shift);
 	void (*gf_push_texture_matrix)(int unit);
 	void (*gf_pop_texture_matrix)(int unit);
 
@@ -593,14 +593,14 @@ typedef struct screen {
  	void (*gf_set_proj_matrix)(float, float, float, float);
   	void (*gf_end_proj_matrix)();
 	//the view matrix
- 	void (*gf_set_view_matrix)(vec3d *, matrix*);
+ 	void (*gf_set_view_matrix)(const vec3d*, const matrix*);
   	void (*gf_end_view_matrix)();
 	//object scaleing
-	void (*gf_push_scale_matrix)(vec3d *);
+	void (*gf_push_scale_matrix)(const vec3d*);
  	void (*gf_pop_scale_matrix)();
 	//object position and orientation
-	void (*gf_start_instance_matrix)(vec3d *, matrix*);
-	void (*gf_start_angles_instance_matrix)(vec3d *, angles*);
+	void (*gf_start_instance_matrix)(const vec3d*, const matrix*);
+	void (*gf_start_angles_instance_matrix)(const vec3d*, const angles*);
 	void (*gf_end_instance_matrix)();
 
 	int	 (*gf_make_light)(light*, int, int );
@@ -640,11 +640,11 @@ typedef struct screen {
 	void (*gf_set_fill_mode)(int);
 	void (*gf_set_texture_panning)(float u, float v, bool enable);
 
-	void (*gf_draw_line_list)(colored_vector*lines, int num);
+	void (*gf_draw_line_list)(const colored_vector *lines, int num);
 
 	void (*gf_set_line_width)(float width);
 
-	void (*gf_line_htl)(vec3d *start, vec3d* end);
+	void (*gf_line_htl)(const vec3d *start, const vec3d *end);
 	void (*gf_sphere_htl)(float rad);
 
 	int (*gf_maybe_create_shader)(shader_type type, unsigned int flags);
@@ -653,12 +653,12 @@ typedef struct screen {
 
 	void (*gf_clear_states)();
 
-	void (*gf_set_team_color)(team_color *colors);
+	void (*gf_set_team_color)(const team_color *colors);
 
-	void (*gf_update_texture)(int bitmap_handle, int bpp, ubyte* data, int width, int height);
+	void (*gf_update_texture)(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 	void (*gf_get_bitmap_from_texture)(void* data_out, int bitmap_num);
 
-	void (*gf_shadow_map_start)(matrix4 *shadow_view_matrix, matrix *light_matrix);
+	void (*gf_shadow_map_start)(const matrix4 *shadow_view_matrix, const matrix *light_matrix);
 	void (*gf_shadow_map_end)();
 } screen;
 
@@ -1034,7 +1034,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode);
 
 // texture update functions
 ubyte* gr_opengl_get_texture_update_pointer(int bitmap_handle);
-void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data, int width, int height);
+void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 
 // special function for drawing polylines. this function is specifically intended for
 // polylines where each section is no more than 90 degrees away from a previous section.
