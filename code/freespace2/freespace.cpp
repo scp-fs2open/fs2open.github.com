@@ -7437,6 +7437,7 @@ void game_shutdown(void)
 	// free left over memory from table parsing
 	player_tips_close();
 
+	control_config_common_close();
 	joy_close();
 
 	audiostream_close();
