@@ -6,6 +6,16 @@
 // This should get them treated as killpaths in release as well
 // (just a copy of the DEBUG version of the macros)
 
+void WinAssert(char * text, char *filename, int line)
+{
+	__coverity_panic__();
+}
+
+void WinAssert(char * text, char *filename, int line, const char * format, ... )
+{
+	__coverity_panic__();
+}
+
 #	define Assert(expr) do {\
 		if (!(expr)) {\
 			WinAssert(#expr,__FILE__,__LINE__);\
