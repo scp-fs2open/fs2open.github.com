@@ -135,7 +135,7 @@ int Tech_slider_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
-#define MAX_TEXT_LINES		100
+#define MAX_TEXT_LINES		150
 #define MAX_TEXT_LINE_LEN	256
 
 struct techroom_buttons {

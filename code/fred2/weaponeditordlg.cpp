@@ -468,7 +468,7 @@ void WeaponEditorDlg::change_selection()
 			if (m_cur_item == 0) {
 				m_ammo_max3 = get_max_ammo_count_for_bank(m_ship_class, 2, m_missile3 - 1);
 			} else {
-				m_ammo_max3 = get_max_ammo_count_for_turret_bank(cur_weapon, 2, m_missile2 - 1);
+				m_ammo_max3 = get_max_ammo_count_for_turret_bank(cur_weapon, 2, m_missile3 - 1);
 			}
 			if (cur_weapon->secondary_bank_ammo[2] != BLANK_FIELD)
 				m_ammo3 = cur_weapon->secondary_bank_ammo[2] * m_ammo_max3 / 100;

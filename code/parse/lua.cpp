@@ -10536,7 +10536,7 @@ ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in o
 		}
 	}
 
-	if(wp->homing_object == NULL)
+	if(wp->homing_object == &obj_used_list)
 		return ade_set_args(L, "o", l_Object.Set(object_h()));
 	else
 		return ade_set_object_with_breed(L, OBJ_INDEX(wp->homing_object));
@@ -10603,7 +10603,7 @@ ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will 
 		}
 		else
 		{
-			wp->homing_object = NULL;
+			wp->homing_object = &obj_used_list;
 			wp->homing_pos = vmd_zero_vector;
 			wp->homing_subsys = NULL;
 		}

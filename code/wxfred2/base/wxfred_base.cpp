@@ -1728,8 +1728,8 @@ dlgMissionObjectivesEditor::dlgMissionObjectivesEditor( wxWindow* parent, wxWind
 	cboCurrObjInvalid = new wxCheckBox( this, wxID_ANY, wxT("Objective Invalid"), wxDefaultPosition, wxDefaultSize, 0 );
 	sbSizer33->Add( cboCurrObjInvalid, 0, wxALL, 3 );
 	
-	cboCurrObjNoCompletionSound = new wxCheckBox( this, wxID_ANY, wxT("Don't Play Completion Sound"), wxDefaultPosition, wxDefaultSize, 0 );
-	sbSizer33->Add( cboCurrObjNoCompletionSound, 0, wxALL, 3 );
+	cboCurrObjNoCompletionMusic = new wxCheckBox( this, wxID_ANY, wxT("Don't Play Completion Music"), wxDefaultPosition, wxDefaultSize, 0 );
+	sbSizer33->Add( cboCurrObjNoCompletionMusic, 0, wxALL, 3 );
 	
 	
 	bSizer65->Add( sbSizer33, 1, wxALL|wxEXPAND, 3 );

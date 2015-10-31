@@ -297,6 +297,7 @@ extern char **Scan_code_text;
 extern char **Joy_button_text;
 
 void control_config_common_init();			//!< initialize common control config stuff - call at game startup after localization has been initialized
+void control_config_common_close();			//!< close common control config stuff - call at game shutdown
 
 void control_config_init();
 void control_config_do_frame(float frametime);

@@ -334,12 +334,11 @@ namespace os
 			}
 			gr_activate(1);
 		}
-
-		void Warning(const char* filename, int line, const char* format, ...)
+		
+		void ReleaseWarning(const char* filename, int line, const char* format, ...)
 		{
 			Global_warning_count++;
 
-#ifndef NDEBUG
 			filename = clean_filename(filename);
 
 			// output to the debug log before anything else (so that we have a complete record)
@@ -417,7 +416,20 @@ namespace os
 			}
 
 			gr_activate(1);
-#endif // !NDEBUG
+		}
+		
+		void Warning(const char* filename, int line, const char* format, ...)
+		{
+#ifndef NDEBUG
+			SCP_string msg;
+			va_list args;
+
+			va_start(args, format);
+			vsprintf(msg, format, args);
+			va_end(args);
+
+			ReleaseWarning(filename, line, "%s", msg.c_str());
+#endif
 		}
 
 		void WarningEx(const char* filename, int line, const char* format, ...)
