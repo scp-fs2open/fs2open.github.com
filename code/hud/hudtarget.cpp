@@ -1390,7 +1390,7 @@ static object* select_next_target_by_distance( const bool targeting_from_closest
 			if ( diff > 0.0f ) {
 				if ( diff < ( current_distance - nearest_distance ) ) {
 					nearest_distance = new_distance;
-					nearest_object_ptr = const_cast<object *>(prospective_victim_ptr);
+					nearest_object_ptr = prospective_victim_ptr;
 				}
 			}
 		}

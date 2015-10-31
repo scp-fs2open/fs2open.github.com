@@ -349,7 +349,7 @@ void parse_helptbl(const char *filename)
 
 			if (overlay_id < 0) {
 				if (num_help_overlays >= MAX_HELP_OVERLAYS) {
-					Warning(LOCATION, "Could not load help overlay after '%s' as maximum number of help overlays was reached (Max is %d)", help_overlaylist[overlay_id - 1].name, MAX_HELP_OVERLAYS);
+					Warning(LOCATION, "Could not load help overlay '%s' as maximum number of help overlays was reached (Max is %d)", name, MAX_HELP_OVERLAYS);
 
 					if (!skip_to_string("$end")) {
 						Error(LOCATION, "Couldn't find $end. Help.tbl or -hlp.tbm is invalid.\n");

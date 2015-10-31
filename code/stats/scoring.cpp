@@ -295,14 +295,14 @@ void scoring_eval_rank( scoring_struct *sc )
 // which medal is awarded.
 void scoring_eval_badges(scoring_struct *sc)
 {
-	int i, total_kills;
+	int total_kills;
 
 	// to determine badges, we count kills based on fighter/bomber types.  We must count kills in
 	// all time stats + current mission stats.  And, only for enemy fighters/bombers
 	total_kills = 0;
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
 		if ( (it->flags & SIF_FIGHTER) || (it->flags & SIF_BOMBER) ) {
-			i = std::distance(Ship_info.cbegin(), it);
+			auto i = std::distance(Ship_info.cbegin(), it);
 			total_kills += sc->m_okKills[i];
 			total_kills += sc->kills[i];
 		}
@@ -311,7 +311,7 @@ void scoring_eval_badges(scoring_struct *sc)
 	// total_kills should now reflect the number of kills on hostile fighters/bombers.  Check this number
 	// against badge kill numbers, and award the appropriate badges as neccessary.
 	int last_badge_kills = 0;
-	for (i = 0; i < Num_medals; i++ ) {
+	for (auto i = 0; i < Num_medals; i++ ) {
 		if ( total_kills >= Medals[i].kills_needed
 			&& Medals[i].kills_needed > last_badge_kills
 			&& Medals[i].kills_needed > 0 )

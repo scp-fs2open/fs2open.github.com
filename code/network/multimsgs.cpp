@@ -7330,7 +7330,7 @@ void send_homing_weapon_info( int weapon_num )
 	// homing signature.
 	homing_signature = 0;
 	homing_object = wp->homing_object;
-	if ( homing_object != NULL ) {
+	if ( homing_object != &obj_used_list ) {
 		homing_signature = homing_object->net_signature;
 
 		// get the subsystem index.

@@ -629,9 +629,20 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 				cm->num_variables = 0;
 			}
 
-			cm->goals = NULL;
-			cm->events = NULL;
-			cm->variables = NULL;
+			// it's possible to have data already loaded from the pilotfile
+			// if so free it to avoid memory leaks
+			if (cm->goals != nullptr) {
+				vm_free(cm->goals);
+				cm->goals = nullptr;
+			}
+			if (cm->events != nullptr) {
+				vm_free(cm->events);
+				cm->events = nullptr;
+			}
+			if (cm->variables != nullptr) {
+				vm_free(cm->variables);
+				cm->variables = nullptr;
+			}
 
 			Campaign.num_missions++;
 		}
@@ -869,7 +880,7 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
 	// be.  I have to save any file filters
 	filter_save = Get_file_list_filter;
 	Get_file_list_filter = NULL;
-	num_files = cf_get_file_list(names, dir_type, const_cast<char *>(file_spec));
+	num_files = cf_get_file_list(names, dir_type, file_spec);
 	Get_file_list_filter = filter_save;
 
 	for (i=0; i<num_files; i++) {

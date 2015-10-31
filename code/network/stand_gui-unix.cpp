@@ -259,7 +259,7 @@ public:
     }
 
     virtual void execute() {
-        size_t foundPlayerIndex;
+        size_t foundPlayerIndex = MAX_PLAYERS;
         for (size_t idx = 0; idx < MAX_PLAYERS; idx++) {
             if (MULTI_CONNECTED(Net_players[idx])) {
                 if (Net_players[idx].player_id == mPlayerId) {
@@ -267,7 +267,10 @@ public:
                 }
             }
         }
-        multi_kick_player(foundPlayerIndex, 0);
+        
+        if (foundPlayerIndex < MAX_PLAYERS) {
+            multi_kick_player(foundPlayerIndex, 0);
+        }
     }
 private:
     int mPlayerId;
