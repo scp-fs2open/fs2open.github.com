@@ -25,15 +25,15 @@
 #define MAX_LIGHT_LEVELS 16
 
 
-int cell_shaded_lightmap = -1;
+static int cell_shaded_lightmap = -1;
 
 light Lights[MAX_LIGHTS];
 int Num_lights=0;
 extern int Cmdline_nohtl;
 
-light *Relevent_lights[MAX_LIGHTS][MAX_LIGHT_LEVELS];
-int Num_relevent_lights[MAX_LIGHT_LEVELS];
-int Num_light_levels = 0;
+static light *Relevent_lights[MAX_LIGHTS][MAX_LIGHT_LEVELS];
+static int Num_relevent_lights[MAX_LIGHT_LEVELS];
+static int Num_light_levels = 0;
 
 SCP_vector<light*> Static_light;
 
@@ -45,24 +45,26 @@ static int Light_in_shadow = 0;	// If true, this means we're in a shadow
 #define MIN_LIGHT 0.03f	// When light drops below this level, ignore it.  Must be non-zero! (1/32)
 
 
-int Lighting_off = 0;
+static int Lighting_off = 0;
 
 // For lighting values, 0.75 is full intensity
 
 #if 1		// ADAM'S new stuff
-	int Lighting_mode = LM_BRIGHTEN;
+	static int Lighting_mode = LM_BRIGHTEN;
 	#define AMBIENT_LIGHT_DEFAULT		0.15f		//0.10f
 	#define REFLECTIVE_LIGHT_DEFAULT 0.75f		//0.90f
 #else
-	int Lighting_mode = LM_DARKEN;
+	static int Lighting_mode = LM_DARKEN;
 	#define AMBIENT_LIGHT_DEFAULT		0.75f		//0.10f
 	#define REFLECTIVE_LIGHT_DEFAULT 0.50f		//0.90f
 #endif
 
-float Ambient_light = AMBIENT_LIGHT_DEFAULT;
-float Reflective_light = REFLECTIVE_LIGHT_DEFAULT;
+static float Ambient_light = AMBIENT_LIGHT_DEFAULT;
+static float Reflective_light = REFLECTIVE_LIGHT_DEFAULT;
 
 int Lighting_flag = 1;
+
+static void light_filter_reset(void);
 
 DCF(light,"Changes lighting parameters")
 {
@@ -147,7 +149,7 @@ DCF(light,"Changes lighting parameters")
 	}
 }
 
-void light_reset()
+void light_reset(void)
 {
 	Static_light.clear();
 
@@ -161,7 +163,7 @@ extern vec3d Object_position;
  *
  * @param l Light to rotate
  */
-void light_rotate(light * l)
+static void light_rotate(light * l)
 {
 	switch( l->type )	{
 	case LT_DIRECTIONAL:
@@ -206,7 +208,7 @@ void light_set_ambient(float ambient_light)
 {
 }
 
-void light_add_directional( vec3d *dir, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular )
+void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
 {
 	if(!specular){
 		spec_r = r;
@@ -250,7 +252,7 @@ void light_add_directional( vec3d *dir, float intensity, float r, float g, float
 }
 
 
-void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular  )
+void light_add_point(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular)
 {
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
@@ -297,7 +299,7 @@ void light_add_point( vec3d * pos, float r1, float r2, float intensity, float r,
 	Assert( Num_light_levels <= 1 );
 }
 
-void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
+void light_add_point_unique(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular)
 {
 	Assert(r1 >0);
 	Assert(r2 >0);
@@ -341,7 +343,7 @@ void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, f
 
 // beams affect every ship except the firing ship
 extern int Use_GLSL;
-void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular )
+void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular)
 {
 	Assert(r1 >0);
 	Assert(r2 >0);
@@ -387,7 +389,7 @@ void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, f
 /**
  * Reset the list of lights to point to all lights.
  */
-void light_filter_reset()
+static void light_filter_reset(void)
 {
 	int i;
 	light *l;
@@ -414,7 +416,7 @@ void light_filter_reset()
  * @param pos       World position
  * @param rad       Radius
  */
-int light_filter_push( int objnum, vec3d *pos, float rad )
+int light_filter_push( int objnum, const vec3d *pos, float rad )
 {
 	int i;
 	light *l;
@@ -506,11 +508,11 @@ int light_filter_push( int objnum, vec3d *pos, float rad )
 	return Num_relevent_lights[n2];
 }
 
-int is_inside( vec3d *min, vec3d *max, vec3d * p0, float rad )
+static int is_inside(const vec3d *min, const vec3d *max, const vec3d * p0, float rad)
 {
-	float *origin = (float *)&p0->xyz.x;
-	float *minB = (float *)min;
-	float *maxB = (float *)max;
+	const float *origin = (float *)&p0->xyz.x;
+	const float *minB = (float *)min;
+	const float *maxB = (float *)max;
 	int i;
 
 	for (i=0; i<3; i++ )	{
@@ -524,7 +526,7 @@ int is_inside( vec3d *min, vec3d *max, vec3d * p0, float rad )
 }
 
 
-int light_filter_push_box( vec3d *min, vec3d *max )
+int light_filter_push_box(const vec3d *min, const vec3d *max)
 {
 	int i;
 	light *l;
@@ -572,7 +574,7 @@ int light_filter_push_box( vec3d *min, vec3d *max )
 	return Num_relevent_lights[n2];
 }
 
-void light_filter_pop()
+void light_filter_pop(void)
 {
 	if ( Lighting_off ) return;
 
@@ -580,10 +582,10 @@ void light_filter_pop()
 	Assert( Num_light_levels > 0 );
 }
 
-int l_num_points=0, l_num_lights=0;
+static int l_num_points=0, l_num_lights=0;
 
 
-void light_rotate_all()
+void light_rotate_all(void)
 {
 	int i;
 	light *l;
@@ -606,7 +608,7 @@ void light_rotate_all()
 /**
  * Return the # of global light sources
  */
-int light_get_global_count()
+int light_get_global_count(void)
 {
 	return (int)Static_light.size();
 }
@@ -642,7 +644,7 @@ void light_set_shadow( int state )
 }
 
 
-void light_set_all_relevent()
+void light_set_all_relevent(void)
 {
 	int idx;
 
@@ -664,7 +666,7 @@ void light_set_all_relevent()
 }
 
 
-ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_level )
+ubyte light_apply(const vec3d *pos, const vec3d *norm, float static_light_level)
 {
 	int i, idx;
 	float lval;
@@ -742,13 +744,13 @@ ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_level )
 	return ubyte(fl2i(lval*255.0f));
 }
 
-int spec = 0;
+static int spec = 0;
 float static_light_factor = 1.0f;
 float static_tube_factor = 1.0f;
 float static_point_factor = 1.0f;
 double specular_exponent_value = 16.0;
 
-void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos, vec3d * norm, vec3d * cam){
+void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3d *pos, const vec3d *norm, const vec3d *cam){
 
 	light *l;
 	float rval = 0, gval = 0, bval = 0;
@@ -898,7 +900,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 	*param_b = ubyte(fl2i(bval*254.0f));
 }
 
-void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos, vec3d * norm, float static_light_level )
+void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3d *pos, const vec3d *norm, float static_light_level )
 {
 	int idx;
 	float rval, gval, bval;
@@ -1049,7 +1051,7 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 	*param_b = ubyte(fl2i(bval*255.0f));
 }
 
-void light_add_cone( vec3d * pos, vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular )
+void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r, float spec_g, float spec_b, bool specular)
 {
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
@@ -1105,7 +1107,7 @@ bool light_compare_by_type(const light &a, const light &b)
 	return a.type < b.type;
 }
 
-void scene_lights::addLight(light *light_ptr)
+void scene_lights::addLight(const light *light_ptr)
 {
 	Assert(light_ptr != NULL);
 
@@ -1116,7 +1118,7 @@ void scene_lights::addLight(light *light_ptr)
 	}
 }
 
-void scene_lights::setLightFilter(int objnum, vec3d *pos, float rad)
+void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
 {
 	size_t i;
 
@@ -1192,7 +1194,7 @@ void scene_lights::setLightFilter(int objnum, vec3d *pos, float rad)
 	}
 }
 
-light_indexing_info scene_lights::bufferLights()
+light_indexing_info scene_lights::bufferLights(void)
 {
 	size_t i;
 
@@ -1217,18 +1219,18 @@ light_indexing_info scene_lights::bufferLights()
 	return light_info;
 }
 
-int scene_lights::getNumStaticLights()
+int scene_lights::getNumStaticLights(void)
 {
 	return StaticLightIndices.size();
 }
 
-void scene_lights::resetLightState()
+void scene_lights::resetLightState(void)
 {
 	current_light_index = -1;
 	current_num_lights = -1;
 }
 
-bool scene_lights::setLights(light_indexing_info *info)
+bool scene_lights::setLights(const light_indexing_info *info)
 {
 	if ( info->index_start == current_light_index && info->num_lights == current_num_lights ) {
 		// don't need to set new lights since the ones requested to be set are currently set
