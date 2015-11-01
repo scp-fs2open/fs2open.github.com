@@ -1036,6 +1036,70 @@ char *cmdline_parm::str()
 	return args;
 }
 
+#ifdef SCP_UNIX
+// for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
+static void handle_unix_modlist(char **modlist, int *len)
+{
+	char cur_dir[CF_MAX_PATHNAME_LENGTH];
+	SCP_vector<SCP_string> temp_modlist;
+	size_t total_len = 0;
+
+	if ( !_getcwd(cur_dir, CF_MAX_PATHNAME_LENGTH ) ) {
+		Error(LOCATION, "Can't get current working directory -- %d", errno );
+	}
+
+	// translate char[] to vector of SCP_strings
+	for (char *cur_mod = strtok(*modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ","))
+	{
+		temp_modlist.push_back(cur_mod);
+	}
+
+	// search filesystem for given paths
+	SCP_vector<SCP_string>::iterator ii, end = temp_modlist.end();
+	for (ii = temp_modlist.begin(); ii != end; ++ii)
+	{
+		DIR *dp;
+		if ((dp = opendir(cur_dir)) == NULL) {
+			Error(LOCATION, "Can't open directory '%s' -- %d", cur_dir, errno );
+		}
+
+		// First path found is assigned to given path in temp_modlist.
+		// The rest are inserted at that position.
+		dirent *dirp;
+		bool found = false;
+		while ((dirp = readdir(dp)) != NULL) {
+			if (!stricmp(dirp->d_name, ii->c_str())) {
+				if (!found) {
+					*ii = dirp->d_name;
+					found = true;
+				} else {
+					temp_modlist.insert(ii, dirp->d_name);
+				}
+				total_len += strlen(dirp->d_name) + 1;
+			}
+		}
+		if (!found) {
+			ReleaseWarning(LOCATION, "Can't find mod '%s'", ii->c_str());
+		}
+		(void)closedir(dp);
+	}
+
+	// create new char[] to replace modlist
+	char *new_modlist = new char[total_len+1];
+	memset( new_modlist, 0, total_len + 1 );
+	end = temp_modlist.end();
+	for (ii = temp_modlist.begin(); ii != end; ++ii) {
+		strcat_s(new_modlist, total_len+1, ii->c_str());
+		strcat_s(new_modlist, total_len+1, ","); // replace later with NUL
+	}
+
+	// make the rest of the function unaware that anything happened here
+	delete [] *modlist;
+	*modlist = new_modlist;
+	*len = total_len;
+}
+#endif /* SCP_UNIX */
+
 // external entry point into this modules
 
 bool SetCmdlineParams()
@@ -1318,64 +1382,7 @@ bool SetCmdlineParams()
 		strcpy_s(modlist, len+2, Cmdline_mod);
 
 #ifdef SCP_UNIX
-		// for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
-		char cur_dir[CF_MAX_PATHNAME_LENGTH];
-		SCP_vector<SCP_string> temp_modlist;
-		size_t total_len = 0;
-
-		if ( !_getcwd(cur_dir, CF_MAX_PATHNAME_LENGTH ) ) {
-			Error(LOCATION, "Can't get current working directory -- %d", errno );
-		}
-
-		// translate char[] to vector of SCP_strings
-		for (char *cur_mod = strtok(modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ","))
-		{
-			temp_modlist.push_back(cur_mod);
-		}
-
-		// search filesystem for given paths
-		SCP_vector<SCP_string>::iterator ii, end = temp_modlist.end();
-		for (ii = temp_modlist.begin(); ii != end; ++ii)
-		{
-			DIR *dp;
-			if ((dp = opendir(cur_dir)) == NULL) {
-				Error(LOCATION, "Can't open directory '%s' -- %d", cur_dir, errno );
-			}
-
-			// First path found is assigned to given path in temp_modlist.
-			// The rest are inserted at that position.
-			dirent *dirp;
-			bool found = false;
-			while ((dirp = readdir(dp)) != NULL) {
-				if (!stricmp(dirp->d_name, ii->c_str())) {
-					if (!found) {
-						*ii = dirp->d_name;
-						found = true;
-					} else {
-						temp_modlist.insert(ii+1, dirp->d_name);
-					}
-					total_len += strlen(dirp->d_name) + 1;
-				}
-			}
-			if (!found) {
-				ReleaseWarning(LOCATION, "Can't find mod '%s'", ii->c_str());
-			}
-			(void)closedir(dp);
-		}
-
-		// create new char[] to replace modlist
-		char *new_modlist = new char[total_len+1];
-		memset( new_modlist, 0, total_len + 1 );
-		end = temp_modlist.end();
-		for (ii = temp_modlist.begin(); ii != end; ++ii) {
-			strcat_s(new_modlist, total_len+1, ii->c_str());
-			strcat_s(new_modlist, total_len+1, ","); // replace later with NUL
-		}
-
-		// make the rest of the function unaware that anything happened here
-		delete [] modlist;
-		modlist = new_modlist;
-		len = total_len;
+		handle_unix_modlist(&modlist, &len);
 #endif
 
 		// null terminate each individual
