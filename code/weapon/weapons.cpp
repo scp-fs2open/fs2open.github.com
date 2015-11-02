@@ -3859,6 +3859,11 @@ void weapon_delete(object *obj)
 		snd_stop(wp->hud_in_flight_snd_sig);
 	}
 
+	if (wp->cmeasure_ignore_list != nullptr) {
+		delete wp->cmeasure_ignore_list;
+		wp->cmeasure_ignore_list = nullptr;
+	}
+
 	wp->objnum = -1;
 	Num_weapons--;
 	Assert(Num_weapons >= 0);
@@ -4090,6 +4095,28 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 				if (dist < cm_wip->cm_effective_rad)
 				{
 					float	chance;
+					bool cmeasure_once = The_mission.ai_profile->flags2 & AIPF2_COUNTERMEASURES_DECOY_ONCE;
+					if (cmeasure_once) {
+						if (wp->cmeasure_ignore_list == nullptr) {
+							wp->cmeasure_ignore_list = new SCP_vector<int>;
+							wp->cmeasure_ignore_list->reserve(cm_wip->shots * 2); // guesstimate the number of CMs this weapon will see
+						}
+						else {
+							bool found = false;
+							for (auto ii = wp->cmeasure_ignore_list->cbegin(); ii != wp->cmeasure_ignore_list->cend(); ++ii) {
+								if (objp->signature == *ii) {
+									nprintf(("CounterMeasures", "Weapon (%s-%04i) already seen CounterMeasure (%s-%04i) Frame: %i\n",
+												wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
+									found = true;
+									break;
+								}
+							}
+							if (found) {
+								continue;
+							}
+						}
+					}
+
 					if (wip->wi_flags & WIF_HOMING_ASPECT) {
 						// aspect seeker this likely to chase a countermeasure
 						chance = cm_wip->cm_aspect_effectiveness/wip->seeker_strength;
@@ -4097,12 +4124,32 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 						// heat seeker and javelin HS this likely to chase a countermeasure
 						chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;
 					}
-					if ((objp->signature != wp->cmeasure_ignore_objnum) && (objp->signature != wp->cmeasure_chase_objnum))
-					{
+
+					if (cmeasure_once) {
+						wp->cmeasure_ignore_list->push_back(objp->signature); // this CM has had its chance; ignore in future
 						if (frand() >= chance) {
-							wp->cmeasure_ignore_objnum = objp->signature;	//	Don't process this countermeasure again.
-						} else  {
-							wp->cmeasure_chase_objnum = objp->signature;	//	Don't process this countermeasure again.
+							nprintf(("CounterMeasures", "Weapon (%s-%04i) ignoring CounterMeasure (%s-%04i) Frame: %i\n",
+										wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
+							continue; // no decoy, no need to adjust homing object below
+						}
+						else {
+							// since we don't set cmeasure_ignore_objnum, it'll be -1 and thus not trigger the comparison below
+							nprintf(("CounterMeasures", "Weapon (%s-%04i) chasing CounterMeasure (%s-%04i) Frame: %i\n",
+										wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
+						}
+					}
+					else {
+						if ((objp->signature != wp->cmeasure_ignore_objnum) && (objp->signature != wp->cmeasure_chase_objnum))
+						{
+							if (frand() >= chance) {
+								wp->cmeasure_ignore_objnum = objp->signature;	//	Don't process this countermeasure again.
+								nprintf(("CounterMeasures", "Weapon (%s-%04i) ignoring CounterMeasure (%s-%04i) Frame: %i\n",
+											wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
+							} else  {
+								wp->cmeasure_chase_objnum = objp->signature;	//	Don't process this countermeasure again.
+								nprintf(("CounterMeasures", "Weapon (%s-%04i) chasing CounterMeasure (%s-%04i) Frame: %i\n",
+											wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
+							}
 						}
 					}
 				
@@ -5349,6 +5396,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->target_sig = -1;
 	wp->cmeasure_ignore_objnum = -1;
 	wp->cmeasure_chase_objnum = -1;
+	wp->cmeasure_ignore_list = nullptr;
 	wp->det_range = wip->det_range;
 
 	// Init the thruster info
