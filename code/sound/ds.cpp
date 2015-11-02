@@ -708,6 +708,8 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 	int rc;
 	WAVEFORMATEX *pwfx = (WAVEFORMATEX *)header;
 
+	// this is only used if converting a stereo sound to mono for 3D playback
+	ubyte *mono_buffer = nullptr;
 
 	switch (si->format) {
 		case WAVE_FORMAT_PCM: {
@@ -905,8 +907,6 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 
 	// if this is supposed to play in 3D then make sure it's mono
 	if ( (flags & DS_3D) && (n_channels > 1) ) {
-		ubyte *mono_buffer = NULL;
-
 		mono_buffer = (ubyte*)vm_malloc_q(size >> 1);
 
 		if (mono_buffer == NULL) {
@@ -998,6 +998,9 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 
 	if ( convert_buffer ) {
 		vm_free( convert_buffer );
+	}
+	if ( mono_buffer != nullptr ) {
+		vm_free( mono_buffer );
 	}
 	return 0;
 }
