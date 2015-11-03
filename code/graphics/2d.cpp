@@ -770,6 +770,15 @@ void gr_screen_resize(int width, int height)
 	}
 }
 
+int gr_get_resolution_class(int width, int height)
+{
+	if ((width >= GR_1024_THRESHOLD_WIDTH) && (height >= GR_1024_THRESHOLD_HEIGHT)) {
+		return GR_1024;
+	} else {
+		return GR_640;
+	}
+}
+
 static bool gr_init_sub(int mode, int width, int height, int depth, float center_aspect_ratio)
 {
 	int res = GR_1024;
@@ -800,11 +809,7 @@ static bool gr_init_sub(int mode, int width, int height, int depth, float center
 	gr_screen.save_center_offset_x = gr_screen.center_offset_x = (width - gr_screen.center_w) / 2;
 	gr_screen.save_center_offset_y = gr_screen.center_offset_y = (height - gr_screen.center_h) / 2;
 
-	if ( (gr_screen.center_w >= GR_1024_THRESHOLD_WIDTH) && (gr_screen.center_h >= GR_1024_THRESHOLD_HEIGHT) ) {
-		res = GR_1024;
-	} else {
-		res = GR_640;
-	}
+	res = gr_get_resolution_class(gr_screen.center_w, gr_screen.center_h);
 
 	if (Fred_running) {
 		gr_screen.custom_size = false;
@@ -979,19 +984,21 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 		depth = d_depth;
 	}
 
-	// check for hi-res interface files so that we can verify our width/height is correct
-	bool has_sparky_hi = (cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("2_TechShipData-m.pcx", CF_TYPE_ANY));
+	if (gr_get_resolution_class(width, height) != GR_640) {
+		// check for hi-res interface files so that we can verify our width/height is correct
+		bool has_sparky_hi = (cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("2_TechShipData-m.pcx", CF_TYPE_ANY));
 
-	// if we don't have it then fall back to 640x480 mode instead
-	if ( !has_sparky_hi ) {
-		if ( (width == 1024) && (height == 768) ) {
-			width = 640;
-			height = 480;
-			center_aspect_ratio = -1.0f;
-		} else {
-			width = 800;
-			height = 600;
-			center_aspect_ratio = -1.0f;
+		// if we don't have it then fall back to 640x480 mode instead
+		if ( !has_sparky_hi ) {
+			if ( (width == 1024) && (height == 768) ) {
+				width = 640;
+				height = 480;
+				center_aspect_ratio = -1.0f;
+			} else {
+				width = 800;
+				height = 600;
+				center_aspect_ratio = -1.0f;
+			}
 		}
 	}
 

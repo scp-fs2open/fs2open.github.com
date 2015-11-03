@@ -1506,8 +1506,7 @@ extern SCP_vector<engine_wash_info> Engine_wash_info;
 #define WF_NO_DEPARTURE_WARP		(1<<9)		// don't play warp effect for any departing ships in this wing.
 #define WF_NO_DYNAMIC				(1<<10)		// members of this wing relentlessly pursue their ai goals
 #define WF_DEPARTURE_ORDERED		(1<<11)		// departure of this wing was ordered by player
-#define WF_NEVER_EXISTED			(1<<12)		// this wing never existed because something prevented it from being created (like its mother ship being destroyed)
-#define WF_NAV_CARRY				(1<<13)		// Kazan - Wing has nav-carry-status
+#define WF_NAV_CARRY				(1<<12)		// Kazan - Wing has nav-carry-status
 
 //	Defines a wing of ships.
 typedef struct wing {

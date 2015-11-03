@@ -886,7 +886,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->damage = 0.0f;
 	wip->damage_time = 0.0f;
 	wip->min_damage = 0.0f;
-	
+	wip->max_damage = 0.0f;
+
 	wip->damage_type_idx = -1;
 	wip->damage_type_idx_sav = -1;
 
@@ -1424,17 +1425,17 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->damage_time);
 		if(optional_string("+Min Damage:")){
 			stuff_float(&wip->min_damage);
-		}
-		if(wip->min_damage > wip->damage) {
-			Warning(LOCATION, "Min Damage is greater than Damage, resetting to zero.");
-			wip->min_damage = 0.0f;
+			if (wip->min_damage > wip->damage && wip->min_damage != 0.0f) {
+				Warning(LOCATION, "Min Damage is greater than Damage, resetting to zero.");
+				wip->min_damage = 0.0f;
+			}
 		}
 		if(optional_string("+Max Damage:")) {
 			stuff_float(&wip->max_damage);
-		}
-		if(wip->max_damage < wip->damage) {
-			Warning(LOCATION, "Max Damage is less than Damage, resetting to zero.");
-			wip->max_damage = 0.0f;
+			if (wip->max_damage < wip->damage && wip->max_damage != 0.0f) {
+				Warning(LOCATION, "Max Damage is less than Damage, resetting to zero.");
+				wip->max_damage = 0.0f;
+			}
 		}
 		if(wip->min_damage != 0.0f && wip->max_damage != 0.0f) {
 			Warning(LOCATION, "Both Min Damage and Max Damage are set to values greater than zero, resetting both to zero.");
@@ -4533,7 +4534,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		if ((dist_to_target < flFrametime * obj->phys_info.speed * 4.0f + 10.0f) &&
             (old_dot < wip->fov) &&
             (wp->lifeleft > 0.01f) &&
-            (wp->homing_object) &&
+            (wp->homing_object != &obj_used_list) &&
             (wp->homing_object->type == OBJ_SHIP))
         {
             wp->lifeleft = 0.01f;
@@ -4638,9 +4639,9 @@ void weapon_process_pre( object *obj, float frame_time)
 	//WMC - Maybe detonate weapon anyway!
 	if(wip->det_radius > 0.0f)
 	{
-		if((wp->homing_object != NULL) && (wp->homing_object->type != 0))
+		if((wp->homing_object != &obj_used_list) && (wp->homing_object->type != 0))
 		{
-			if(vm_vec_dist(&wp->homing_pos, &obj->pos) <= wip->det_radius)
+			if(!IS_VEC_NULL(&wp->homing_pos) && vm_vec_dist(&wp->homing_pos, &obj->pos) <= wip->det_radius)
 			{
 				weapon_detonate(obj);
 			}
@@ -4975,20 +4976,23 @@ void weapon_process_post(object * obj, float frame_time)
 
 			//create a warpin effect
 			wp->lssm_warp_idx=fireball_create(&warpin, FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1,obj->radius*1.5f,0,&vmd_zero_vector,wp->lssm_warp_time,0,&orient);
+			
+			if (wp->lssm_warp_idx < 0) {
+				mprintf(("LSSM: Failed to create warp effect! Please report if this happens frequently.\n"));
+			}
 
 			obj->orient=orient;
 			obj->pos=warpin;
 			obj->phys_info.speed=0;
 			obj->phys_info.desired_vel = vmd_zero_vector;
 			obj->phys_info.vel = obj->phys_info.desired_vel;
-		
-			wp->lssm_stage=4;
 
+			wp->lssm_stage = 4;
 		}
-	
 
 		//done warping in.  render and collide it. let the fun begin
-		if ((wp->lssm_stage==4) && (fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <=0.5f))
+		// If the previous fireball creation failed just put it into normal space now
+		if ((wp->lssm_stage==4) && (wp->lssm_warp_idx < 0 || fireball_lifeleft_percent(&Objects[wp->lssm_warp_idx]) <=0.5f))
 		{
 			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, wip->lssm_stage5_vel );
 			obj->phys_info.vel = obj->phys_info.desired_vel;
@@ -5063,7 +5067,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 
 	if (parent_objp != NULL && (Ships[parent_objp->instance].flags2 & SF2_NO_SECONDARY_LOCKON)) {
 		wp->weapon_flags |= WF_NO_HOMING;
-		wp->homing_object = NULL;
+		wp->homing_object = &obj_used_list;
 		wp->homing_subsys = NULL;
 		wp->target_num = -1;
 		wp->target_sig = -1;
@@ -6066,10 +6070,12 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 			continue;
 		}
 	
-		if ( objp->type == OBJ_WEAPON ) {
+		if (objp->type == OBJ_WEAPON) {
 			// only apply to missiles with hitpoints
 			weapon_info* wip2 = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-			if (wip2->weapon_hitpoints <= 0 || !(wip2->wi_flags2 & WIF2_TAKES_BLAST_DAMAGE) || (wip->wi_flags2 & WIF2_CIWS))
+			if (wip2->weapon_hitpoints <= 0)
+				continue;
+			if (!((wip2->wi_flags2 & WIF2_TAKES_BLAST_DAMAGE) || (wip->wi_flags2 & WIF2_CIWS)))
 				continue;
 		}
 
@@ -6169,9 +6175,9 @@ bool weapon_armed(weapon *wp, bool hit_target)
 			return false;
 		}
 		if(wip->arm_radius && (!hit_target)) {
-			if(wp->homing_object == NULL)
+			if(wp->homing_object == &obj_used_list)
 				return false;
-			if(vm_vec_dist(&wobj->pos, &wp->homing_pos) > wip->arm_radius)
+			if(IS_VEC_NULL(&wp->homing_pos) || vm_vec_dist(&wobj->pos, &wp->homing_pos) > wip->arm_radius)
 				return false;
 		}
 	}
@@ -6216,7 +6222,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	objnum = wp->objnum;
 
 	// check if the weapon actually hit the intended target
-	if (wp->homing_object != NULL)
+	if (wp->homing_object != &obj_used_list)
 		if (wp->homing_object == other_obj)
 			hit_target = true;
 

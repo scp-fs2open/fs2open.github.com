@@ -752,7 +752,9 @@ void game_sunspot_process(float frametime)
 
 			// check
 			for(idx=0; idx<n_lights; idx++)	{
-				if ( (ls_on && !ls_force_off) || !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
+				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, idx);
+
+				if ( (ls_on && !ls_force_off) || !in_shadow )	{
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
@@ -762,10 +764,10 @@ void game_sunspot_process(float frametime)
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
 				}
-			if (!shipfx_eye_in_shadow( &Eye_position, Viewer_obj, idx ) )	{
-			// draw the glow for this sun
-			stars_draw_sun_glow(idx);				
-			}
+				if ( !in_shadow )	{
+					// draw the glow for this sun
+					stars_draw_sun_glow(idx);				
+				}
 			}
 
 			Sun_drew = 0;
@@ -7435,6 +7437,7 @@ void game_shutdown(void)
 	// free left over memory from table parsing
 	player_tips_close();
 
+	control_config_common_close();
 	joy_close();
 
 	audiostream_close();

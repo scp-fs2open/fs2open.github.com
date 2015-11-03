@@ -610,6 +610,16 @@ void control_config_common_init()
 	}
 }
 
+/*
+ * @brief close any common control config stuff, called at game_shutdown()
+ */
+void control_config_common_close()
+{
+	// only need to worry control presets for now
+	for (auto ii = Control_config_presets.cbegin(); ii != Control_config_presets.cend(); ++ii) {
+		delete * ii;
+	}
+}
 
 
 #include <map>

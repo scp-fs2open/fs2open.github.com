@@ -187,7 +187,7 @@ void hud_ship_icon_page_in(ship_info *sip)
 	sgp = &Shield_gauges.at(sip->shield_icon_index);
 
 	if ( sgp->first_frame == -1 ) {
-		sgp->first_frame = bm_load_animation(const_cast<char*>(Hud_shield_filenames.at(sip->shield_icon_index).c_str()), &sgp->num_frames);
+		sgp->first_frame = bm_load_animation(Hud_shield_filenames.at(sip->shield_icon_index).c_str(), &sgp->num_frames);
 		if ( sgp->first_frame == -1 ) {
 			Warning(LOCATION, "Could not load in the HUD shield ani: %s\n", Hud_shield_filenames.at(sip->shield_icon_index).c_str());
 			return;
@@ -625,7 +625,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 		sgp = &Shield_gauges.at(sip->shield_icon_index);
 
 		if ( (sgp->first_frame == -1) && (sip->shield_icon_index < Hud_shield_filenames.size()) ) {
-			sgp->first_frame = bm_load_animation(const_cast<char*>(Hud_shield_filenames.at(sip->shield_icon_index).c_str()), &sgp->num_frames);
+			sgp->first_frame = bm_load_animation(Hud_shield_filenames.at(sip->shield_icon_index).c_str(), &sgp->num_frames);
 			if (sgp->first_frame == -1) {
 				if (!shield_ani_warning_displayed_already) {
 					shield_ani_warning_displayed_already = true;

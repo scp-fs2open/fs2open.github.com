@@ -743,7 +743,7 @@ namespace fredBase
 			wxStaticText* lblObjTeam;
 			wxChoice* cboObjTeam;
 			wxCheckBox* cboCurrObjInvalid;
-			wxCheckBox* cboCurrObjNoCompletionSound;
+			wxCheckBox* cboCurrObjNoCompletionMusic;
 			wxButton* btnNewObjective;
 			wxButton* btnConfirm;
 			wxButton* btnCancel;
