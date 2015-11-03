@@ -1028,6 +1028,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->b_info.beam_warmup_sound = -1;
 	wip->b_info.beam_warmdown_sound = -1;
 	wip->b_info.beam_num_sections = 0;
+	wip->b_info.glow_length = 0;
+	wip->b_info.directional_glow = false;
 	wip->b_info.beam_shots = 1;
 	wip->b_info.beam_shrink_factor = 0.0f;
 	wip->b_info.beam_shrink_pct = 0.0f;
@@ -2281,6 +2283,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Muzzleglow:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 			generic_anim_init(&wip->b_info.beam_glow, fname);
+		}
+
+		if (optional_string("+Directional Glow:")) {
+			stuff_float(&wip->b_info.glow_length);
+			wip->b_info.directional_glow = true;
 		}
 
 		// # of shots (only used for type D beams)
