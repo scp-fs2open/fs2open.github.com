@@ -304,11 +304,11 @@ void opengl_shader_shutdown()
 static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
 {
 	SCP_string sflags;
+	char version_string[15];
 
-#ifdef __APPLE__
-    sflags += "#version 120\n";
-#endif
-    
+	sprintf(version_string, "#version %d \n", GLSL_version);
+	sflags += version_string;
+
 	if (GLSL_version >= 330) {
 		sflags += "#define GLSL_VERSION 330\n";
 	}
