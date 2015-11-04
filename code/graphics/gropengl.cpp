@@ -2015,7 +2015,7 @@ bool gr_opengl_init()
 	GLint max_texture_units = GL_supported_texture_units;
 	GLint max_texture_coords = GL_supported_texture_units;
 
-	if (Use_GLSL) {
+	if (is_minimum_GLSL_version()) {
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
 	}
 
@@ -2095,7 +2095,7 @@ bool gr_opengl_init()
 	mprintf(( "  Post-processing enabled: %s\n", (Cmdline_postprocess) ? "YES" : "NO"));
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
-	if (Use_GLSL) {
+	if (is_minimum_GLSL_version()) {
 		mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
 	}
 

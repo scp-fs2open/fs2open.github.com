@@ -970,7 +970,7 @@ void opengl_post_process_init()
 		return;
 	}
 
-	if ( !Use_GLSL || Cmdline_no_fbo || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
+	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
 		Cmdline_postprocess = 0;
 		return;
 	}

@@ -340,7 +340,6 @@ void light_add_point_unique(const vec3d *pos, float r1, float r2, float intensit
 }
 
 // beams affect every ship except the firing ship
-extern int Use_GLSL;
 void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r, float spec_g, float spec_b, bool specular)
 {
 	Assert(r1 >0);
@@ -377,8 +376,8 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	l->radb = r2;
 	l->rada_squared = l->rada*l->rada;
 	l->radb_squared = l->radb*l->radb;
-	l->light_ignore_objnum = Use_GLSL>1 ?affected_objnum : -1;
-	l->affected_objnum = Use_GLSL>1 ? -1 : affected_objnum;
+	l->light_ignore_objnum = is_minimum_GLSL_version() ? affected_objnum : -1;
+	l->affected_objnum = is_minimum_GLSL_version() ? -1 : affected_objnum;
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
@@ -475,7 +474,7 @@ int light_filter_push( int objnum, const vec3d *pos, float rad )
 
 		// hmm. this could probably be more optimal
 		case LT_TUBE:
-			if(Use_GLSL > 1) {
+			if(is_minimum_GLSL_version()) {
 				if(l->light_ignore_objnum != objnum){
 					vec3d nearest;
 					float dist_squared, max_dist_squared;
@@ -1160,7 +1159,7 @@ void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
 			}
 			break;
 			case LT_TUBE: {
-				if ( Use_GLSL > 1 ) {
+				if ( is_minimum_GLSL_version() ) {
 					if ( l.light_ignore_objnum != objnum ) {
 						vec3d nearest;
 						float dist_squared, max_dist_squared;

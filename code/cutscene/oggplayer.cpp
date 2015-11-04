@@ -345,7 +345,7 @@ static void OGG_video_init(theora_info *tinfo)
 		opengl_set_texture_target(GL_TEXTURE_2D);
 		opengl_tcache_get_adjusted_texture_size(g_screenWidth, g_screenHeight, &wp2, &hp2);
 
-		if(!Use_GLSL)
+		if(!is_minimum_GLSL_version())
 			use_shaders = false;
 
 		if(use_shaders) {

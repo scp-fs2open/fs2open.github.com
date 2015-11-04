@@ -118,7 +118,7 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 			GLLight->Position[2] = FSLight->vec2.xyz.z;
 			GLLight->Position[3] = 1.0f;
 
-			if ( Use_GLSL > 1 ) {
+			if ( is_minimum_GLSL_version() ) {
 				// Valathil: When using shaders pass the beam direction (not normalized IMPORTANT for calculation of tube)
 				vec3d a;
 				vm_vec_sub(&a, &FSLight->vec2, &FSLight->vec);
@@ -164,7 +164,7 @@ void opengl_set_light(int light_num, opengl_light *ltp)
 	GLfloat diffuse[4];
 	memcpy(diffuse, ltp->Diffuse, sizeof(GLfloat) * 4);
 
-	if ( !Use_GLSL && (ltp->type == LT_DIRECTIONAL) && (GL_light_factor < 1.0f) ) {
+	if ( !is_minimum_GLSL_version() && (ltp->type == LT_DIRECTIONAL) && (GL_light_factor < 1.0f) ) {
 		// if we're not using shaders, manually adjust the diffuse light factor.
 		diffuse[0] *= GL_light_factor;
 		diffuse[1] *= GL_light_factor;

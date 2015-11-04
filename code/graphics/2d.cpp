@@ -2147,7 +2147,7 @@ uint gr_determine_model_shader_flags(
 ) {
 	uint shader_flags = 0;
 
-	if ( Use_GLSL > 1 ) {
+	if ( Use_GLSL >= 2 ) {
 		shader_flags |= SDR_FLAG_MODEL_CLIP;
 	}
 

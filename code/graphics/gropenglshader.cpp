@@ -226,7 +226,7 @@ void opengl_shader_set_current(int handle)
  */
 int gr_opengl_maybe_create_shader(shader_type shader_t, unsigned int flags)
 {
-	if (Use_GLSL < 2)
+	if (!is_minimum_GLSL_version())
 		return -1;
 
 	size_t idx;
@@ -268,7 +268,7 @@ void opengl_shader_shutdown()
 {
 	size_t i;
 
-	if ( !Use_GLSL ) {
+	if ( !is_minimum_GLSL_version() ) {
 		return;
 	}
 
@@ -519,7 +519,7 @@ Done:
  */
 void opengl_shader_init()
 {
-	if ( !Use_GLSL ) {
+	if ( !is_minimum_GLSL_version() ) {
 		return;
 	}
 

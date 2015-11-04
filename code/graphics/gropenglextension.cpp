@@ -466,7 +466,7 @@ void opengl_extensions_init()
 	}
 
 	// can't have this stuff without GLSL support
-	if ( !Use_GLSL ) {
+	if ( !is_minimum_GLSL_version() ) {
 		Cmdline_normal = 0;
 		Cmdline_height = 0;
 		Cmdline_postprocess = 0;
@@ -480,7 +480,7 @@ void opengl_extensions_init()
 		Cmdline_no_batching = true;
 	}
 
-	if (Use_GLSL) {
+	if (is_minimum_GLSL_version()) {
 		GLint max_texture_units;
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
 
@@ -495,7 +495,7 @@ void opengl_extensions_init()
 			Cmdline_height = 0;
 		} else if (max_texture_units < 4) {
 			mprintf(( "Not enough texture units found for GLSL support. We need at least 4, we found %d.\n", max_texture_units ));
-			Use_GLSL = 0;
+			GLSL_version = 0;
 		}
 	}
 }

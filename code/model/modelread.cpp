@@ -2395,13 +2395,13 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	
 	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
 
-	if(Use_GLSL > 1)
+	if(is_minimum_GLSL_version())
 		shader_flags |= SDR_FLAG_MODEL_CLIP;
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
 	
-	if(Use_GLSL > 1)
+	if(is_minimum_GLSL_version())
 		shader_flags |= SDR_FLAG_MODEL_DEFERRED;
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
