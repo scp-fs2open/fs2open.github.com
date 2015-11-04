@@ -309,10 +309,10 @@ static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
     sflags += "#version 120\n";
 #endif
     
-	if (Use_GLSL >= 4) {
+	if (GLSL_version >= 330) {
 		sflags += "#define GLSL_VERSION 330\n";
 	}
-	else if (Use_GLSL == 3) {
+	else if (GLSL_version == 130) {
 		sflags += "#define GLSL_VERSION 130\n";
 	}
 	else {

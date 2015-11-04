@@ -668,6 +668,5 @@ extern int GLSL_version;
 
 extern int Use_VBOs;
 extern int Use_PBOs;
-extern int Use_GLSL;
 
 #endif

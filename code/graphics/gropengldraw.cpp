@@ -3067,7 +3067,7 @@ void opengl_clear_deferred_buffers()
 
 void gr_opengl_deferred_lighting_begin()
 {
-	if (Use_GLSL < 2 || Cmdline_no_deferred_lighting)
+	if (GLSL_version < 120 || Cmdline_no_deferred_lighting)
 		return;
 
 	Deferred_lighting = true;
@@ -3093,7 +3093,7 @@ extern float static_tube_factor;
 
 void gr_opengl_deferred_lighting_finish()
 {
-	if ( Use_GLSL < 2 || Cmdline_no_deferred_lighting ) {
+	if ( GLSL_version < 120 || Cmdline_no_deferred_lighting ) {
 		return;
 	}
 

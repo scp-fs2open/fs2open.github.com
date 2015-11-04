@@ -75,7 +75,6 @@ static ushort *GL_original_gamma_ramp = NULL;
 
 int Use_VBOs = 0;
 int Use_PBOs = 0;
-int Use_GLSL = 0;
 
 static int GL_dump_frames = 0;
 static ubyte *GL_dump_buffer = NULL;

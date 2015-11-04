@@ -226,7 +226,7 @@ int gr_opengl_create_stream_buffer_object()
 
 int opengl_create_texture_buffer_object()
 {
-	if ( Use_GLSL < 3 || !Is_Extension_Enabled(OGL_ARB_TEXTURE_BUFFER) || !Is_Extension_Enabled(OGL_ARB_FLOATING_POINT_TEXTURES) ) {
+	if ( GLSL_version < 130 || !Is_Extension_Enabled(OGL_ARB_TEXTURE_BUFFER) || !Is_Extension_Enabled(OGL_ARB_FLOATING_POINT_TEXTURES) ) {
 		return -1;
 	}
 
@@ -406,7 +406,7 @@ bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb, bool update
 	}
 
 	if (vb->flags & VB_FLAG_MODEL_ID) {
-		Assert( Use_GLSL >= 3 );
+		Assert( GLSL_version >= 130 );
 
 		Verify( update_ibuffer_only || vb->model_list->submodels != NULL );
 		vb->stride += (1 * sizeof(GLfloat));
