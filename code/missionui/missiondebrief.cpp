@@ -1938,12 +1938,10 @@ void debrief_init()
 		Debriefing = &Debriefings[0];			
 	}
 
-	// Goober5000 - replace any variables/containers with their values
+	// Goober5000 - replace any variables with their values
 	for (i = 0; i < Debriefing->num_stages; i++) {
 		sexp_replace_variable_names_with_values(Debriefing->stages[i].text);
 		sexp_replace_variable_names_with_values(Debriefing->stages[i].recommendation_text);
-		sexp_replace_container_with_values(Debriefing->stages[i].text);
-		sexp_replace_container_with_values(Debriefing->stages[i].recommendation_text);
 	}
 
 	// no longer is mission

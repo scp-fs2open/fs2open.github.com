@@ -204,12 +204,6 @@
     <ClCompile Include="..\..\code\fred2\wing_editor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\code\fred2\editcontaineraddnewdlg.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\code\fred2\editcontainerdlg.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\code\fred2\fred.rc">
@@ -407,12 +401,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\code\fred2\wing_editor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\fred2\editcontaineraddnewdlg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\code\fred2\editcontainerdlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -34,7 +34,6 @@ private:
 	int save_mission_info();
 	int save_plot_info();
 	int save_variables();
-	int save_containers();
 //	int save_briefing_info();
 	int save_cutscenes();
 	int save_fiction();

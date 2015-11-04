@@ -27,15 +27,13 @@
 #define SEXPT_UNKNOWN	0x0002
 
 #define SEXPT_VALID		0x1000
-#define SEXPT_TYPE_MASK	0x0fff
+#define SEXPT_TYPE_MASK	0x00ff
 #define SEXPT_TYPE(X)	(SEXPT_TYPE_MASK & X)
 
 #define SEXPT_OPERATOR	0x0010
 #define SEXPT_NUMBER	0x0020
 #define SEXPT_STRING	0x0040
 #define SEXPT_VARIABLE	0x0080
-#define SEXPT_CONTAINER	0x0100
-#define SEXPT_MODIFIER	0x0200
 
 // tree_node flag
 #define NOT_EDITABLE	0x00
@@ -57,7 +55,6 @@
 #define BITMAP_RED_DOT			BITMAP_ROOT_DIRECTIVE
 #define BITMAP_NUMBERED_DATA		9
 //Therefore NEXT DEFINE should be 9+12 or 21
-#define BITMAP_CONTAINER		29
 
 
 
@@ -186,7 +183,6 @@ public:
 	int get_modify_variable_type(int parent);
 	int get_variable_count(const char *var_name);
 	int get_loadout_variable_count(int var_index);
-	int get_container_count(const char *container_name);
 
 	// Goober5000
 	int find_argument_number(int parent_node, int child_node);
@@ -197,14 +193,8 @@ public:
 	int get_sibling_place(int node);
 	int get_data_image(int node);
 
-	// Karajorma - SEXP Container functions
-	void add_default_modifier(int container_index);
-	void replace_container_data(int container_idx, int type, bool test_child_nodes = true, bool delete_child_nodes = true, bool set_default_modifier = true );
-	int add_container_data(const char *data, bool add_default = true);
 
-	sexp_list_item *modifier_get_listing_opf(int parent_node, int arg_index, int type = OPF_NULL);
-
-	sexp_list_item *get_listing_opf(int opf, int parent_node, int arg_index, bool modfier = false);
+	sexp_list_item *get_listing_opf(int opf, int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_null();
 	sexp_list_item *get_listing_opf_bool(int parent_node = -1);
 	sexp_list_item *get_listing_opf_positive();
@@ -287,9 +277,6 @@ public:
 	sexp_list_item *get_listing_opf_team_colors();
 	sexp_list_item *get_listing_opf_nebula_patterns();
 	sexp_list_item *get_listing_opf_game_snds();
-	sexp_list_item *get_listing_opf_sexp_containers(int type);
-	sexp_list_item *get_listing_opf_list_modifiers(bool modifier);
-	sexp_list_item *get_listing_opf_map_keys(int parent_node, bool modifier);
 
 	int m_mode;
 	int item_index;
