@@ -424,7 +424,6 @@ cmdline_parm noglsl_arg("-no_glsl", NULL, AT_NONE);			// Cmdline_noglsl  -- disa
 cmdline_parm mipmap_arg("-mipmap", NULL, AT_NONE);			// Cmdline_mipmap
 cmdline_parm atiswap_arg("-ati_swap", NULL, AT_NONE);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
 cmdline_parm no3dsound_arg("-no_3d_sound", NULL, AT_NONE);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
-cmdline_parm no_glsl_models_arg("-disable_glsl_model", NULL, AT_NONE); // Cmdline_no_glsl_model_rendering -- switches model rendering to fixed pipeline
 cmdline_parm no_di_mouse_arg("-disable_di_mouse", "Disable DirectInput mouse code (Windows only)", AT_NONE); // Cmdline_no_di_mouse -- Disables directinput use for mouse control
 cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL, AT_NONE); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
 cmdline_parm keyboard_layout("-keyboard_layout", "Specify keyboard layout (qwertz or azerty)", AT_STRING);
@@ -443,7 +442,6 @@ int Cmdline_no_pbo = 0;
 int Cmdline_noglsl = 0;
 int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
-int Cmdline_no_glsl_model_rendering = 0;
 int Cmdline_no_di_mouse = 0;
 int Cmdline_drawelements = 0;
 char* Cmdline_keyboard_layout = NULL;
@@ -1540,10 +1538,6 @@ bool SetCmdlineParams()
 
 	if ( noglsl_arg.found() ) {
 		Cmdline_noglsl = 1;
-	}
-
-	if (no_glsl_models_arg.found() ) {
-		Cmdline_no_glsl_model_rendering = 1;
 	}
 
 	if (fxaa_arg.found() ) {

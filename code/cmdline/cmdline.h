@@ -130,7 +130,6 @@ extern int Cmdline_noglsl;
 extern int Cmdline_mipmap;
 extern int Cmdline_ati_color_swap;
 extern int Cmdline_no_3d_sound;
-extern int Cmdline_no_glsl_model_rendering;
 extern int Cmdline_no_di_mouse;
 extern int Cmdline_drawelements;
 extern char* Cmdline_keyboard_layout;

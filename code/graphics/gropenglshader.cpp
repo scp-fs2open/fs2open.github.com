@@ -536,10 +536,6 @@ void opengl_shader_init()
 	GLuint pixels[4] = {0,0,0,0};
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels);
 
-	if (Cmdline_no_glsl_model_rendering) {
-		Use_GLSL = 1;
-	}
-
 	GL_shader.clear();
 	
 	// Reserve 32 shader slots. This should cover most use cases in real life.
