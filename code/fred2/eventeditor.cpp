@@ -672,6 +672,10 @@ void event_editor::OnButtonNewEvent()
 		return;
 	}
 
+	// before we do anything, we must check and save off any data from the current event (e.g
+	// the repeat count and interval count)
+	save();
+
 	reset_event(m_num_events++, TVI_LAST);
 }
 
@@ -684,6 +688,10 @@ void event_editor::OnInsert()
 			"Can't add any more.");
 		return;
 	}
+
+	// before we do anything, we must check and save off any data from the current event (e.g
+	// the repeat count and interval count)
+	save();
 
 	if(cur_event < 0 || m_num_events == 0)
 	{
@@ -749,6 +757,8 @@ void event_editor::reset_event(int num, HTREEITEM after)
 	m_event_tree.add_operator("true");
 	m_event_tree.item_index = index;
 	m_event_tree.add_operator("do-nothing");
+
+	update_cur_event();
 
 	m_event_tree.SelectItem(h);
 //	GetDlgItem(IDC_CHAIN_DELAY) -> EnableWindow(FALSE);
