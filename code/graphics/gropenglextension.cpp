@@ -444,6 +444,8 @@ void opengl_extensions_init()
 		sscanf(glsl_ver, "%d.%d", &major, &minor);
 		ver = (major * 100) + minor;
 
+		GLSL_version = ver;
+
 		// SM 4.0 compatible or better
 		if (ver >= 330) {
 			Use_GLSL = 4;

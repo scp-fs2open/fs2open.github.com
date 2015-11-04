@@ -51,7 +51,11 @@ typedef int ( * PFNGLXSWAPINTERVALSGIPROC) (int interval);
 // minimum GL version we can reliably support is 1.2
 static const int MIN_REQUIRED_GL_VERSION = 12;
 
+// minimum GLSL version we can reliably support is 110
+static const int MIN_REQUIRED_GLSL_VERSION = 110;
+
 int GL_version = 0;
+int GLSL_version = 0;
 
 bool GL_initted = 0;
 
@@ -2165,4 +2169,16 @@ DCF(ogl_anisotropy, "toggles anisotropic filtering")
 		GL_anisotropy = (GLfloat)value;
 		//	opengl_set_anisotropy( (float)Dc_arg_float );
 	}
+}
+
+/**
+ * Helper function to enquire whether minimum GLSL version present.
+ *
+ * Compares global variable set by glGetString(GL_SHADING_LANGUAGE_VERSION_ARB)
+ * against compile time MIN_REQUIRED_GLSL_VERSION.
+ *
+ * @return true if GLSL support present is above the minimum version.
+ */
+bool is_minimum_GLSL_version() {
+	return GLSL_version >= MIN_REQUIRED_GLSL_VERSION ? true : false;
 }

@@ -655,6 +655,7 @@ const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
 bool gr_opengl_init();
 void gr_opengl_cleanup(int minimize=1);
 int opengl_check_for_errors(char *err_at = NULL);
+bool is_minimum_GLSL_version();
 
 #ifndef NDEBUG
 #define GL_CHECK_FOR_ERRORS(s)	opengl_check_for_errors((s))
@@ -663,6 +664,7 @@ int opengl_check_for_errors(char *err_at = NULL);
 #endif
 
 extern int GL_version;
+extern int GLSL_version;
 
 extern int Use_VBOs;
 extern int Use_PBOs;
