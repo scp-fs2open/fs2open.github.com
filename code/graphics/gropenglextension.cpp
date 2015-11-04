@@ -445,7 +445,7 @@ void opengl_extensions_init()
 		ver = (major * 100) + minor;
 
 		// SM 4.0 compatible or better
-		if (ver >= 400) {
+		if (ver >= 330) {
 			Use_GLSL = 4;
 		}
 		// SM 3.0 compatible
