@@ -310,13 +310,13 @@ static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
 #endif
     
 	if (Use_GLSL >= 4) {
-		sflags += "#define SHADER_MODEL 4\n";
+		sflags += "#define GLSL_VERSION 330\n";
 	}
 	else if (Use_GLSL == 3) {
-		sflags += "#define SHADER_MODEL 3\n";
+		sflags += "#define GLSL_VERSION 130\n";
 	}
 	else {
-		sflags += "#define SHADER_MODEL 2\n";
+		sflags += "#define GLSL_VERSION 120\n";
 	}
 
 #ifdef __APPLE__
