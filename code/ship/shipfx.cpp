@@ -878,7 +878,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 /**
  * Given point p0, in object's frame of reference, find if it can see the sun.
  */
-int shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float radius )
+bool shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float radius )
 {
 	mc_info mc;
 	object *objp;
@@ -917,20 +917,20 @@ int shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float
 			mc.flags = MC_CHECK_MODEL;	
 
 			if ( model_collide(&mc) ){
-				return 1;
+				return true;
 			}
 		}
 	}
 
 	// not in shadow
-	return 0;
+	return false;
 }
 
 
 /**
  * Given an ship see if it is in a shadow.
  */
-int shipfx_in_shadow( object * src_obj )
+bool shipfx_in_shadow( object * src_obj )
 {
 	mc_info mc;
 	object *objp;
@@ -967,21 +967,21 @@ int shipfx_in_shadow( object * src_obj )
 				mc.flags = MC_CHECK_MODEL;	
 
 				if ( model_collide(&mc) )	{
-					return 1;
+					return true;
 				}
 			}
 		}
 	}
 
 	// not in shadow
-	return 0;
+	return false;
 }
 
 #define w(p)	(*((int *) (p)))
 /**
  * Given world point see if it is in a shadow.
  */
-int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
+bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 {
 	mc_info mc;
 	object *objp;
@@ -1000,7 +1000,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 	
 	// get the light dir
 	if(!light_get_global_dir(&light_dir, sun_n)){
-		return 0;
+		return false;
 	}
 
 	// Find rp1
@@ -1019,7 +1019,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 			mc.flags = MC_CHECK_MODEL;	
 
 			if (model_collide(&mc)) {
-				return 1;
+				return true;
 			}
 		}
 	}
@@ -1048,7 +1048,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 		mc.flags = (MC_CHECK_MODEL | MC_SUBMODEL);
 
 		if (model_collide(&mc))	{
-			return 1;
+			return true;
 		}
 	}
 
@@ -1086,12 +1086,12 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 						Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
 						if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
 						if( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") ) {
-							return 1;
+							return true;
 						}
 					}
 
 					if ( mc.f_poly ) {
-						 return 1;
+						 return true;
 					}
 
 					if ( mc.bsp_leaf ) {
@@ -1102,10 +1102,10 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 							Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
 							if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
 							if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") ) {
-								return 1;
+								return true;
 							}
 						} else {
-							return 1;
+							return true;
 						}
 					}
 				}
@@ -1131,12 +1131,12 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 						Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
 						if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
 						if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap),"glass.dds") ) {
-							return 1;
+							return true;
 						}
 					}
 
 					if ( mc.f_poly ) {
-						 return 1;
+						 return true;
 					}
 
 					if ( mc.bsp_leaf ) {
@@ -1147,10 +1147,10 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 							Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
 							if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
 							if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") ) {
-								return 1;
+								return true;
 							}
 						} else {
-							return 1;
+							return true;
 						}
 					}
 				}
@@ -1163,7 +1163,7 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 
     if (Asteroid_field.num_initial_asteroids <= 0 )
     {
-        return 0;
+        return false;
     }
 
     for (i = 0 ; i < MAX_ASTEROIDS; i++, ast++)
@@ -1188,12 +1188,12 @@ int shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 		mc.flags = MC_CHECK_MODEL;
 
 		if (model_collide(&mc))	{
-			return 1;
+			return true;
 		}
     }
 
 	// not in shadow
-	return 0;
+	return false;
 }
 
 //=====================================================================================
