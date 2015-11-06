@@ -1472,7 +1472,7 @@ static const int MAX_ARC_SEGMENT_POINTS = 50;
 int Num_arc_segment_points = 0;
 vec3d Arc_segment_points[MAX_ARC_SEGMENT_POINTS];
 
-extern int g3_draw_rod(int num_points, vec3d *vecs, float width, uint tmap_flags);
+extern int g3_draw_rod(int num_points, const vec3d *vecs, float width, uint tmap_flags);
 
 void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth )
 {

@@ -41,13 +41,13 @@
 /**
  * Use the g3_start_frame macro instead of calling this directly.
  */
-extern void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno);
+extern void g3_start_frame_func(int zbuffer_flag, const char *filename, int lineno);
 
 /**
  * End the frame
  */
 #define g3_end_frame() g3_end_frame_func( __FILE__, __LINE__ )
-extern void g3_end_frame_func(char *filename, int lineno);
+extern void g3_end_frame_func(const char *filename, int lineno);
 
 /**
  * Currently in frame?
@@ -57,7 +57,7 @@ extern int g3_in_frame();
 /**
  * Set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
  */
-void g3_set_view_angles(vec3d *view_pos,angles *view_orient,float zoom);
+void g3_set_view_angles(const vec3d *view_pos, const angles *view_orient, float zoom);
 
 /**
  * Set view from camera
@@ -67,7 +67,7 @@ void g3_set_view(camera *cam);
 /**
  * Set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
  */
-void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom);
+void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float zoom);
 
 // Never set these!
 extern matrix		View_matrix;		// The matrix to convert local coordinates to screen
@@ -103,12 +103,12 @@ int g3_compute_sky_polygon(float *points_2d,vec3d *vecs);
 /**
  * Instance at specified point with specified orientation
  */
-void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api = true);
+void g3_start_instance_matrix(const vec3d *pos, const matrix *orient, bool set_api = true);
 
 /**
  * Instance at specified point with specified orientation
  */
-void g3_start_instance_angles(vec3d *pos,angles *orient);
+void g3_start_instance_angles(const vec3d *pos, const angles *orient);
 
 /**
  * Pops the old context
@@ -138,27 +138,27 @@ void g3_get_view_vectors(vec3d *forward,vec3d *up,vec3d *right);
  *
  * Takes the unrotated surface normal of the plane, and a point on it.  The normal need not be normalized
  */
-int g3_check_normal_facing(vec3d *v,vec3d *norm);
+int g3_check_normal_facing(const vec3d *v, const vec3d *norm);
 
 /**
  * Returns codes_and & codes_or of a list of points numbers
  */
-ccodes g3_check_codes(int nv,vertex **pointlist);
+ccodes g3_check_codes(int nv, vertex **pointlist);
 
 /**
  * Rotates a point. returns codes.  does not check if already rotated
  */
-ubyte g3_rotate_vertex(vertex *dest,vec3d *src);
+ubyte g3_rotate_vertex(vertex *dest, const vec3d *src);
 
 /**
  * Same as above, only ignores the current instancing
  */
-ubyte g3_rotate_vertex_popped(vertex *dest,vec3d *src);
+ubyte g3_rotate_vertex_popped(vertex *dest, const vec3d *src);
 
 /**
  * Use this for stars, etc
  */
-ubyte g3_rotate_faraway_vertex(vertex *dest,vec3d *src);
+ubyte g3_rotate_faraway_vertex(vertex *dest, const vec3d *src);
 
 /**
  * Projects a point
@@ -168,24 +168,24 @@ int g3_project_vertex(vertex *point);
 /**
  * Projects a vector
  */
-ubyte g3_project_vector(vec3d *p, float *sx, float *sy );
+ubyte g3_project_vector(const vec3d *p, float *sx, float *sy );
 
 /**
  * Rotates a point.  
  * @return Returns codes.
  */
-ubyte g3_rotate_vector(vec3d *dest,vec3d *src);
+ubyte g3_rotate_vector(vec3d *dest, const vec3d *src);
 
 /**
  * Codes a vector.  
  * @return Returns the codes of a point.
  */
-ubyte g3_code_vector(vec3d * p);
+ubyte g3_code_vector(const vec3d * p);
 
 /**
  * Calculate the depth of a point - returns the z coord of the rotated point
  */
-float g3_calc_point_depth(vec3d *pnt);
+float g3_calc_point_depth(const vec3d *pnt);
 
 /**
  * From a 2d point, compute the vector through that point
@@ -217,10 +217,10 @@ ubyte g3_add_delta_vec(vertex *dest,vertex *src,vec3d *deltav);
  * Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
  * @return Returns 1 if off screen, 0 if drawn
  */
-int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags);
+int g3_draw_poly(int nv, vertex **pointlist,uint tmap_flags);
 
-int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap_flags = TMAP_FLAG_TEXTURED);
-int g3_draw_polygon(vec3d *pos, vec3d *norm, float width, float height, int tmap_flags = TMAP_FLAG_TEXTURED);
+int g3_draw_polygon(const vec3d *pos, const matrix *ori, float width, float height, int tmap_flags = TMAP_FLAG_TEXTURED);
+int g3_draw_polygon(const vec3d *pos, const vec3d *norm, float width, float height, int tmap_flags = TMAP_FLAG_TEXTURED);
 
 /**
  * Draw a polygon.  
@@ -231,7 +231,7 @@ int g3_draw_polygon(vec3d *pos, vec3d *norm, float width, float height, int tmap
  * Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
  * @return Returns 1 if off screen, 0 if drawn
  */
-int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float constant_sw);
+int g3_draw_poly_constant_sw(int nv, vertex **pointlist, uint tmap_flags, float constant_sw);
 
 /**
  * Like g3_draw_poly(), but checks to see if facing.  
@@ -243,7 +243,7 @@ int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float co
  * Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
  * @return Returns -1 if not facing, 1 if off screen, 0 if drawn
  */
-int g3_draw_poly_if_facing(int nv,vertex **pointlist,uint tmap_flags,vec3d *norm,vec3d *pnt);
+int g3_draw_poly_if_facing(int nv, vertex **pointlist, uint tmap_flags, const vec3d *norm, const vec3d *pnt);
 
 /**
  * Draws a line.
@@ -251,14 +251,14 @@ int g3_draw_poly_if_facing(int nv,vertex **pointlist,uint tmap_flags,vec3d *norm
  * @param p0 First point
  * @param p1 Second point
  */
-int g3_draw_line(vertex *p0,vertex *p1);
+int g3_draw_line(vertex *p0, vertex *p1);
 
 /**
  * Draws a polygon always facing the viewer.
  * Compute the corners of a rod.  fills in vertbuf.
  * Verts has any needs uv's or l's or can be NULL if none needed.
  */
-int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, uint tmap_flags);
+int g3_draw_rod(const vec3d *p0, float width1, const vec3d *p1, float width2, vertex *verts, uint tmap_flags);
 
 /**
  * Draws a bitmap with the specified 3d width & height
@@ -270,7 +270,7 @@ int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, u
  * orient flips the bitmap in some way.  Pass 0 for normal or else pass a 
  * random nuber between 0 and 7, inclusive.
  */
-int g3_draw_bitmap(vertex *pos,int orient, float radius, uint tmap_flags, float depth = 0.0f);
+int g3_draw_bitmap(vertex *pos, int orient, float radius, uint tmap_flags, float depth = 0.0f);
 
 /**
  * Get bitmap dims onscreen as if g3_draw_bitmap() had been called
@@ -281,39 +281,39 @@ int g3_get_bitmap_dims(int bitmap, vertex *pos, float radius, int *x, int *y, in
  * Draw a sortof sphere - i.e., the 2d radius is proportional to the 3d
  * radius, but not to the distance from the eye.  Uses the current 2d color.
  */
-int g3_draw_sphere(vertex *pnt,float rad);
+int g3_draw_sphere(vertex *pnt, float rad);
 
 /**
  * Same as g3_draw_sphere, but you pass a vector and this rotates
  * and projects it and then call g3_draw_sphere.
  */
-int g3_draw_sphere_ez(vec3d *pnt,float rad);
+int g3_draw_sphere_ez(const vec3d *pnt, float rad);
 
 /**
  * Draw a laser shaped 3d looking thing.
  *
  * If max_len is > 1.0, then this caps the length to be no longer than max_len pixels
  */
-float g3_draw_laser(vec3d *headp, float head_width, vec3d *tailp, float tail_width, uint tmap_flags = TMAP_FLAG_TEXTURED, float max_len = 0.0f );
+float g3_draw_laser(const vec3d *headp, float head_width, const vec3d *tailp, float tail_width, uint tmap_flags = TMAP_FLAG_TEXTURED, float max_len = 0.0f );
 
 /**
  * Draw a laser shaped 3d looking thing using vertex coloring (useful for things like colored laser glows)
  *
  * If max_len is > 1.0, then this caps the length to be no longer than max_len pixels
  */
-float g3_draw_laser_rgb(vec3d *headp, float head_width, vec3d *tailp, float tail_width, int r, int g, int b, uint tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB, float max_len = 0.0f );
+float g3_draw_laser_rgb(const vec3d *headp, float head_width, const vec3d *tailp, float tail_width, int r, int g, int b, uint tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB, float max_len = 0.0f );
 
 /**
  * Draw a bitmap that is always facing, but rotates.
  *
  * If bitmap is not square, rad will be the 3d size of the smallest dimension.
  */
-int g3_draw_rotated_bitmap(vertex *pnt,float angle, float radius, uint tmap_flags, float depth = 0.0f);
+int g3_draw_rotated_bitmap(vertex *pnt, float angle, float radius, uint tmap_flags, float depth = 0.0f);
 
 /**
  * Draw a perspective bitmap based on angles and radius
  */
-int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags);
+int g3_draw_perspective_bitmap(const angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags);
 
 /**
  * Draw a 2D shield icon w/ 6 points
@@ -347,14 +347,14 @@ int g3_draw_2d_poly_bitmap(float x, float y, float w, float h, uint additional_t
  * clipped on or off by the plane, and will slow each clipped polygon by
  * not much more than any other clipping we do.
  */
-void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal );
+void g3_start_user_clip_plane(const vec3d *plane_point, const vec3d *plane_normal);
 
 /**
  * Stops arbritary plane clipping
  */
 void g3_stop_user_clip_plane();
 
-ubyte g3_transfer_vertex(vertex *dest, vec3d *src);
+ubyte g3_transfer_vertex(vertex *dest, const vec3d *src);
 
 int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additional_tmap_flags);
 int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint additional_tmap_flags);
@@ -362,12 +362,12 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 /**
  * Draw a line in HTL mode without having to go through the rotate/project stuff
  */
-void g3_draw_htl_line(vec3d *start, vec3d *end);
+void g3_draw_htl_line(const vec3d *start, const vec3d *end);
 
 /**
  * Draw a sphere mode without having to go through the rotate/project stuff
  */
-void g3_draw_htl_sphere(vec3d *position, float radius);
+void g3_draw_htl_sphere(const vec3d *position, float radius);
 
 /**
  * Flash ball
@@ -389,13 +389,20 @@ class flash_ball{
 	void defpoint(int off, ubyte *bsp_data);
 
 public:
-	flash_ball(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255)
+	flash_ball(int number, float min_ray_width, float max_ray_width = 0, const vec3d* dir = &vmd_zero_vector, const vec3d* pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255)
 		:ray(NULL),n_rays(0)
-		{initialize(number, min_ray_width, max_ray_width , dir , pcenter , outer , inner , max_r , max_g , max_b , min_r , min_g ,min_b);}
-	~flash_ball(){if(ray)vm_free(ray);}
+	{
+			initialize(number, min_ray_width, max_ray_width, dir, pcenter, outer, inner, max_r, max_g, max_b, min_r, min_g, min_b);
+	}
 
-	void initialize(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
-	void initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
+	~flash_ball()
+	{
+		if (ray)
+			vm_free(ray);
+	}
+
+	void initialize(int number, float min_ray_width, float max_ray_width = 0, const vec3d* dir = &vmd_zero_vector, const vec3d* pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
+	void initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width = 0, const vec3d* dir = &vmd_zero_vector, const vec3d* pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
 	void render(float rad, float intinsity, float life);
 	void render(int texture, float rad, float intinsity, float life);
 };

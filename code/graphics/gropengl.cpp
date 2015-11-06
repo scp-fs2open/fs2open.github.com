@@ -477,7 +477,7 @@ void gr_opengl_reset_clip()
 	GL_state.ScissorTest(GL_FALSE);
 }
 
-void gr_opengl_set_palette(ubyte *new_palette, int is_alphacolor)
+void gr_opengl_set_palette(const ubyte *new_palette, int is_alphacolor)
 {
 }
 
@@ -1304,7 +1304,7 @@ void gr_opengl_pop_texture_matrix(int unit)
 	glMatrixMode(current_matrix);
 }
 
-void gr_opengl_translate_texture_matrix(int unit, vec3d *shift)
+void gr_opengl_translate_texture_matrix(int unit, const vec3d *shift)
 {
 	GLint current_matrix;
 
