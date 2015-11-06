@@ -88,6 +88,13 @@ AC_ARG_ENABLE(fatal-warnings,
 		[fs2_fatal_warnings=no],
 )
 
+AC_ARG_ENABLE(generic-architecture,
+	AC_HELP_STRING([--enable-generic-architecture],
+		[Only use generic architecture optimizations]),
+		[fs2_generic_architecture=$enableval],
+		[fs2_generic_architecture=no],
+)
+
 AC_ARG_WITH(static-ogg,
 	AC_HELP_STRING([--with-static-ogg=DIR],
 		[Link staticly with OGG, Vorbis and Theora libs from this directory]),
@@ -128,14 +135,28 @@ case "$target" in
 		# linux
 		echo "Using 64-bit Unix defines (for $host_os)"
 		fs2_os_linux="yes"
-		D_CFLAGS="$D_CFLAGS -m64 -mtune=generic -msse -msse2 -pipe"
+
+		if test "$fs2_generic_architecture" = "yes" ; then
+			D_CFLAGS="$D_CFLAGS -m64 -mtune=generic -mfpmath=sse -msse -msse2"
+		else
+			D_CFLAGS="$D_CFLAGS -march=native"
+		fi
+
+		D_CFLAGS="$D_CFLAGS -pipe"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		;;
 	*-*-linux*)
 		# linux
 		echo "Using Unix defines (for $host_os)"
 		fs2_os_linux="yes"
-		D_CFLAGS="$D_CFLAGS -mtune=generic -mfpmath=sse -msse -msse2 -pipe"
+
+		if test "$fs2_generic_architecture" = "yes" ; then
+			D_CFLAGS="$D_CFLAGS -mtune=generic -mfpmath=sse -msse -msse2"
+		else
+			D_CFLAGS="$D_CFLAGS -march=native"
+		fi
+
+		D_CFLAGS="$D_CFLAGS -pipe"
 		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		;;
 	*-*-darwin*)
