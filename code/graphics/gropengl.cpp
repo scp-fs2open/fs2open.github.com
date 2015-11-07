@@ -2017,7 +2017,6 @@ bool gr_opengl_init()
 	// ready the texture system
 	opengl_tcache_init();
 
-	extern void opengl_tnl_init();
 	opengl_tnl_init();
 
 	// setup default shaders, and shader related items

@@ -70,6 +70,7 @@ void gr_opengl_set_state_block(int);
 void gr_opengl_set_thrust_scale(float scale = -1.0f);
 void gr_opengl_set_team_color(const team_color *colors);
 
+void opengl_tnl_init();
 void opengl_tnl_shutdown();
 
 void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type);
