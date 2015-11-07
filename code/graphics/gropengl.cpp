@@ -1956,7 +1956,10 @@ bool gr_opengl_init()
 		GL_initted = false;
 	}
 
-	mprintf(( "Initializing OpenGL graphics device at %ix%i with %i-bit color...\n", gr_screen.max_w, gr_screen.max_h, gr_screen.bits_per_pixel ));
+	mprintf(( "Initializing OpenGL graphics device at %ix%i with %i-bit color...\n",
+		  gr_screen.max_w,
+		  gr_screen.max_h,
+		  gr_screen.bits_per_pixel ));
 
 	if ( opengl_init_display_device() ) {
 		Error(LOCATION, "Unable to initialize display device!\n");
@@ -1969,12 +1972,19 @@ bool gr_opengl_init()
 	GL_version = (major * 10) + minor;
 
 	if (GL_version < MIN_REQUIRED_GL_VERSION) {
-		Error(LOCATION, "Current GL Version of %d.%d is less than the required version of %d.%d.\nSwitch video modes or update your drivers.", major, minor, (MIN_REQUIRED_GL_VERSION / 10), (MIN_REQUIRED_GL_VERSION % 10));
+		Error(LOCATION, "Current GL Version of %d.%d is less than the "
+				"required version of %d.%d.\n"
+				"Switch video modes or update your drivers.",
+				major,
+				minor,
+				(MIN_REQUIRED_GL_VERSION / 10),
+				(MIN_REQUIRED_GL_VERSION % 10));
 	}
 
 	GL_initted = true;
 
-	// this MUST be done before any other gr_opengl_* or opengl_* funcion calls!!
+	// this MUST be done before any other gr_opengl_* or
+	// opengl_* function calls!!
 	opengl_setup_function_pointers();
 
 	mprintf(( "  OpenGL Vendor    : %s\n", glGetString(GL_VENDOR) ));
@@ -1988,7 +1998,8 @@ bool gr_opengl_init()
 		opengl_go_fullscreen();
 	}
 
-	// initialize the extensions and make sure we aren't missing something that we need
+	// initialize the extensions and make sure we aren't missing something
+	// that we need
 	opengl_extensions_init();
 
 	// setup the lighting stuff that will get used later
@@ -2070,7 +2081,9 @@ bool gr_opengl_init()
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
 
 	if ( Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
-		mprintf(( "  Max render buffer size: %ix%i\n", GL_max_renderbuffer_size, GL_max_renderbuffer_size ));
+		mprintf(( "  Max render buffer size: %ix%i\n",
+			  GL_max_renderbuffer_size,
+			  GL_max_renderbuffer_size ));
 	}
 
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
