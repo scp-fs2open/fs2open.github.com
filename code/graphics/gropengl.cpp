@@ -2029,7 +2029,6 @@ bool gr_opengl_init()
 	// must be called after extensions are setup
 	opengl_set_vsync( !Cmdline_no_vsync );
 
-
 	opengl_setup_viewport();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
@@ -2061,7 +2060,6 @@ bool gr_opengl_init()
 	gr_opengl_clear();
 	Mouse_hidden--;
 
-
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &GL_max_elements_indices);
 
@@ -2084,15 +2082,13 @@ bool gr_opengl_init()
 		mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
 	}
 
-
-
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
 
 	mprintf(("... OpenGL init is complete!\n"));
 
-    if (Cmdline_ati_color_swap)
-        GL_read_format = GL_RGBA;
+	if (Cmdline_ati_color_swap)
+		GL_read_format = GL_RGBA;
 
 	return true;
 }
