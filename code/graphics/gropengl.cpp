@@ -2001,7 +2001,7 @@ bool gr_opengl_init()
 	GLint max_texture_coords = GL_supported_texture_units;
 
 	if (Use_GLSL) {
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
 	}
 
 	glGetIntegerv(GL_MAX_TEXTURE_COORDS, &max_texture_coords);
