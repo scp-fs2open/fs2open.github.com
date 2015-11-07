@@ -1945,7 +1945,7 @@ void opengl_setup_function_pointers()
 
 bool gr_opengl_init()
 {
-	char *ver;
+	const char *ver;
 	int major = 0, minor = 0;
 
 	if ( !GL_initted )
@@ -1963,7 +1963,7 @@ bool gr_opengl_init()
 	}
 
 	// version check
-	ver = (char *)glGetString(GL_VERSION);
+	ver = (const char *)glGetString(GL_VERSION);
 	sscanf(ver, "%d.%d", &major, &minor);
 
 	GL_version = (major * 10) + minor;
