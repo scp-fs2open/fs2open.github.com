@@ -1908,7 +1908,7 @@ char* Default_fxaa_fragment_shader =
 "	#define FXAA_GLSL_120 1\n"
 "	#define FXAA_GLSL_130 0\n"
 "#endif\n"
-"#if _VERSION__ > 120\n"
+"#if __VERSION__ > 120\n"
 "	#define FXAA_GLSL_120 0\n"
 "	#define FXAA_GLSL_130 1\n"
 "#endif\n"
