@@ -2777,7 +2777,9 @@ void model_maybe_fixup_subsys_path(polymodel *pm, int path_num)
 	mp = &pm->paths[path_num];
 
 	Assert(mp != NULL);
-	Assert(mp->nverts > 1);
+	if (mp->nverts <= 1 ) {
+		Error(LOCATION, "Subsystem Path (%s) Parent (%s) in model (%s) has less than 2 vertices/points!", mp->name, mp->parent_name, pm->filename);
+	}
 	
 	index_1 = 1;
 	index_2 = 0;
