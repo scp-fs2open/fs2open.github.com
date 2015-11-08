@@ -3925,10 +3925,10 @@ void detonate_nearby_missiles(object* killer_objp, object* missile_objp)
 
 		if (iff_x_attacks_y(Weapons[killer_objp->instance].team, wp->team)) {
 			if ( Missiontime - wp->creation_time > F1_0/2) {
-				if (vm_vec_dist_quick(&killer_objp->pos, &objp->pos) < Weapon_info[Weapons[killer_objp->instance].weapon_info_index].cm_detonation_rad) {
+				if (vm_vec_dist_quick(&killer_objp->pos, &objp->pos) < killer_infop->cm_detonation_rad) {
 					if (wp->lifeleft > 0.2f) { 
 						nprintf(("Countermeasures", "Countermeasure (%s-%i) detonated missile (%s-%i) Frame: %i\n",
-									Weapon_info[Weapons[killer_objp->instance].weapon_info_index].name, killer_objp->signature,
+									killer_infop->name, killer_objp->signature,
 									Weapon_info[Weapons[objp->instance].weapon_info_index].name, objp->signature, Framecount));
 						wp->lifeleft = 0.2f;
 					}
