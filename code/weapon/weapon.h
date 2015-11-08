@@ -502,6 +502,7 @@ typedef struct weapon_info {
 	float cm_heat_effectiveness;
 	float cm_effective_rad;
 	float cm_detonation_rad;
+	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
 
     // *
                
