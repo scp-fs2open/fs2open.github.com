@@ -501,6 +501,7 @@ typedef struct weapon_info {
 	float cm_aspect_effectiveness;
 	float cm_heat_effectiveness;
 	float cm_effective_rad;
+	float cm_detonation_rad;
 
     // *
                
