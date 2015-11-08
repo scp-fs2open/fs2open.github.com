@@ -309,16 +309,6 @@ static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
 	sprintf(version_string, "#version %d \n", GLSL_version);
 	sflags += version_string;
 
-	if (GLSL_version >= 330) {
-		sflags += "#define GLSL_VERSION 330\n";
-	}
-	else if (GLSL_version == 130) {
-		sflags += "#define GLSL_VERSION 130\n";
-	}
-	else {
-		sflags += "#define GLSL_VERSION 120\n";
-	}
-
 #ifdef __APPLE__
 	sflags += "#define APPLE\n";
 #endif
