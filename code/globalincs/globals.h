@@ -12,13 +12,13 @@
 
 // from parselo.h
 #define	PATHNAME_LENGTH			192
-#define	NAME_LENGTH				32
+#define	NAME_LENGTH				128		// Bumped from 32 to 128 - Bryan See
 #define	SEXP_LENGTH				128
 #define	DATE_LENGTH				32
 #define	TIME_LENGTH				16
 #define	DATE_TIME_LENGTH		48
 #define	NOTES_LENGTH			1024
-#define	MULTITEXT_LENGTH		4096
+#define	MULTITEXT_LENGTH		16384	// Bumped from 4096 to 16384
 #define	FILESPEC_LENGTH			64
 #define	MESSAGE_LENGTH			512
 #define TRAINING_MESSAGE_LENGTH	512
@@ -28,26 +28,26 @@
 #define MISSION_DESC_LENGTH		512
 
 // from player.h
-#define CALLSIGN_LEN					28		//	shortened from 32 to allow .plr to be attached without exceeding MAX_FILENAME_LEN
+#define CALLSIGN_LEN					124		//	shortened from 32 to allow .plr to be attached without exceeding MAX_FILENAME_LEN; bumped from 28 to 124
 #define SHORT_CALLSIGN_PIXEL_W	80		// max width of short_callsign[] in pixels
 
-#define MAX_IFFS		10
+#define MAX_IFFS		100					// Bryan See: bumped to 100
 
 // from ship.h
-#define MAX_SHIPS					400			// max number of ship instances there can be.DTP; bumped from 200 to 400
-#define SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400
+#define MAX_SHIPS					3200			// max number of ship instances there can be.DTP; bumped from 200 to 400; Bryan See: bumped to 3200
+#define SHIPS_LIMIT					3200			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400; Bryan See: bumped to 3200
 
 // from missionparse.h and then redefined to the same value in sexp.h
-#define TOKEN_LENGTH	32
+#define TOKEN_LENGTH	128						// Bryan See: bumped to 128
 // ****************************************************************
 // DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
 // TALK TO DAVE B FIRST
 // ****************************************************************
 #define MAX_SHIP_CLASSES_MULTI	130
 
-#define MAX_SHIP_CLASSES		250
+#define MAX_SHIP_CLASSES		500				// Bumped from 250 to 500 - Bryan See
 
-#define MAX_WINGS				75
+#define MAX_WINGS				300				// Bumped from 75 to 300 - Bryan See
 
 #define MAX_SHIPS_PER_WING			6
 
@@ -80,10 +80,10 @@
 #define MAX_POLYGON_MODELS  300
 
 // object.h
-#define MAX_OBJECTS			3500		
+#define MAX_OBJECTS			28000		// bumped from 3500 to 28000 - Bryan See
 
 // from lighting.cpp
-#define MAX_LIGHTS 256
+#define MAX_LIGHTS 1024			// bumped from 256 to 1024 - Bryan See
 
 // from weapon.h (and beam.h)
 #define MAX_BEAM_SECTIONS				5

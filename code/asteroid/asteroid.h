@@ -21,7 +21,7 @@ class polymodel;
 struct collision_info_struct;
 class draw_list;
 
-#define	MAX_ASTEROIDS			512
+#define	MAX_ASTEROIDS			4096				// Bryan See: Bumped from 512 to 4096
 
 #define NUM_DEBRIS_SIZES		3
 #define	NUM_DEBRIS_POFS			3				// Number of POFs per debris size
