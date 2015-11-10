@@ -45,7 +45,7 @@
 // ****************************************************************
 #define MAX_SHIP_CLASSES_MULTI	130
 
-#define MAX_SHIP_CLASSES		250
+#define MAX_SHIP_CLASSES		500
 
 #define MAX_WINGS				75
 
