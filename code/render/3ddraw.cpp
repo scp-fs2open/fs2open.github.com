@@ -68,11 +68,11 @@ static void g3_allocate_vbufs(int nv)
 /**
  * Deal with a clipped line
  */
-int must_clip_line(vertex *p0,vertex *p1,ubyte codes_or, uint flags)
+int must_clip_line(vertex *p0, vertex *p1, ubyte codes_or, uint flags)
 {
 	int ret = 0;
 	
-	clip_line(&p0,&p1,codes_or, flags);
+	clip_line(&p0, &p1, codes_or, flags);
 	
 	if (p0->codes & p1->codes) goto free_points;
 
@@ -109,7 +109,7 @@ free_points:
 /**
  * Draws a line. takes two points.  returns true if drew
  */
-int g3_draw_line(vertex *p0,vertex *p1)
+int g3_draw_line(vertex *p0, vertex *p1)
 {
 #ifdef FRED_OGL_COMMENT_OUT_FOR_NOW
 	if(Fred_running && !Cmdline_nohtl)
@@ -152,7 +152,7 @@ int g3_draw_line(vertex *p0,vertex *p1)
 
 //returns true if a plane is facing the viewer. takes the unrotated surface
 //normal of the plane, and a point on it.  The normal need not be normalized
-int g3_check_normal_facing(vec3d *v,vec3d *norm)
+int g3_check_normal_facing(const vec3d *v, const vec3d *norm)
 {
 	vec3d tempv;
 
@@ -163,7 +163,7 @@ int g3_check_normal_facing(vec3d *v,vec3d *norm)
 	return (vm_vec_dot(&tempv,norm) > 0.0f);
 }
 
-int do_facing_check(vec3d *norm,vertex **vertlist,vec3d *p)
+int do_facing_check(const vec3d *norm, vertex **vertlist, const vec3d *p)
 {
 	Assert( G3_count == 1 );
 
@@ -191,7 +191,7 @@ int do_facing_check(vec3d *norm,vertex **vertlist,vec3d *p)
 //is passed, this function works like g3_check_normal_facing() plus
 //g3_draw_poly().
 //returns -1 if not facing, 1 if off screen, 0 if drew
-int g3_draw_poly_if_facing(int nv,vertex **pointlist,uint tmap_flags,vec3d *norm,vec3d *pnt)
+int g3_draw_poly_if_facing(int nv, vertex **pointlist, uint tmap_flags, const vec3d *norm, const vec3d *pnt)
 {
 	Assert( G3_count == 1 );
 
@@ -204,7 +204,7 @@ int g3_draw_poly_if_facing(int nv,vertex **pointlist,uint tmap_flags,vec3d *norm
 //draw a polygon.
 //Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
 //returns 1 if off screen, 0 if drew
-int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
+int g3_draw_poly(int nv, vertex **pointlist, uint tmap_flags)
 {
 	int i;
 	vertex **bufptr;
@@ -307,7 +307,7 @@ free_points:
 	return 0;	//say it drew
 }
 
-int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap_flags)
+int g3_draw_polygon(const vec3d *pos, const matrix *ori, float width, float height, int tmap_flags)
 {
 	//idiot-proof
 	if(width == 0 || height == 0)
@@ -366,7 +366,7 @@ int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap
 	return 0;
 }
 
-int g3_draw_polygon(vec3d *pos, vec3d *norm, float width, float height, int tmap_flags)
+int g3_draw_polygon(const vec3d *pos, const vec3d *norm, float width, float height, int tmap_flags)
 {
 	matrix m;
 	vm_vector_2_matrix(&m, norm, NULL, NULL);
@@ -378,7 +378,7 @@ int g3_draw_polygon(vec3d *pos, vec3d *norm, float width, float height, int tmap
 // for all vertexes.  Needs to be done after clipping to get them all.
 //Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
 //returns 1 if off screen, 0 if drew
-int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float constant_sw)
+int g3_draw_poly_constant_sw(int nv, vertex **pointlist, uint tmap_flags, float constant_sw)
 {
 	int i;
 	vertex **bufptr;
@@ -472,7 +472,7 @@ free_points:
 
 //draw a sortof sphere - i.e., the 2d radius is proportional to the 3d
 //radius, but not to the distance from the eye
-int g3_draw_sphere(vertex *pnt,float rad)
+int g3_draw_sphere(vertex *pnt, float rad)
 {
 	Assert( G3_count == 1 );
 
@@ -495,14 +495,14 @@ int g3_draw_sphere(vertex *pnt,float rad)
 	return 0;
 }
 
-int g3_draw_sphere_ez(vec3d *pnt,float rad)
+int g3_draw_sphere_ez(const vec3d *pnt, float rad)
 {
 	vertex pt;
 	ubyte flags;
 
 	Assert( G3_count == 1 );
 
-	flags = g3_rotate_vertex(&pt,pnt);
+	flags = g3_rotate_vertex(&pt, pnt);
 
 	if (flags == 0) {
 
@@ -1259,7 +1259,7 @@ void g3_draw_horizon_line()
 // Draws a polygon always facing the viewer.
 // compute the corners of a rod.  fills in vertbuf.
 // Verts has any needs uv's or l's or can be NULL if none needed.
-int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, uint tmap_flags)
+int g3_draw_rod(const vec3d *p0, float width1, const vec3d *p1, float width2, vertex *verts, uint tmap_flags)
 {
 	vec3d uvec, fvec, rvec, center;
 
@@ -1332,7 +1332,7 @@ int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, u
 }
 
 #define MAX_ROD_VECS	100
-int g3_draw_rod(int num_points, vec3d *pvecs, float width, uint tmap_flags)
+int g3_draw_rod(int num_points, const vec3d *pvecs, float width, uint tmap_flags)
 {
 	vec3d uvec, fvec, rvec;
 	vec3d vecs[2];
@@ -1431,7 +1431,7 @@ void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta
 // draw a perspective bitmap based on angles and radius
 float p_phi = 10.0f;
 float p_theta = 10.0f;
-int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags)
+int g3_draw_perspective_bitmap(const angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags)
 {
 	vec3d s_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
 	vec3d t_points[MAX_PERSPECTIVE_DIVISIONS+1][MAX_PERSPECTIVE_DIVISIONS+1];
@@ -1467,10 +1467,9 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	vm_angles_2_matrix(&m_bank, &bank_first);
 
 	// convert angles to matrix
-	float b_save = a->b;
-	a->b = 0.0f;
-	vm_angles_2_matrix(&m, a);
-	a->b = b_save;	
+	angles a_temp = *a;
+	a_temp.b = 0.0f;
+	vm_angles_2_matrix(&m, &a_temp);
 
 	// generate the bitmap points	
 	for(idx=0; idx<=div_x; idx++){
@@ -1973,16 +1972,16 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 	return ret;
 }
 
-void g3_draw_htl_line(vec3d *start, vec3d *end)
+void g3_draw_htl_line(const vec3d *start, const vec3d *end)
 {
 	if (Cmdline_nohtl) {
 		return;
 	}
 
-	gr_line_htl(start,end);
+	gr_line_htl(start, end);
 }
 
-void g3_draw_htl_sphere(vec3d* position, float radius)
+void g3_draw_htl_sphere(const vec3d* position, float radius)
 {
 	if (Cmdline_nohtl) {
 		return;
@@ -1998,7 +1997,7 @@ void g3_draw_htl_sphere(vec3d* position, float radius)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //flash ball stuff
 
-void flash_ball::initialize(int number, float min_ray_width, float max_ray_width, vec3d* dir, vec3d*pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
+void flash_ball::initialize(int number, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
 {
 	if(number < 1)
 		return;
@@ -2134,7 +2133,7 @@ void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
 }
 
 
-void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width, vec3d* dir , vec3d*pcenter , float outer , float inner , ubyte max_r , ubyte max_g , ubyte max_b , ubyte min_r , ubyte min_g , ubyte min_b )
+void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
 {
 	center = *pcenter;
 	vm_vec_negate(&center);

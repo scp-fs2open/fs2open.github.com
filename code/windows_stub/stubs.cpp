@@ -222,6 +222,47 @@ void Warning( char * filename, int line, const char * format, ... )
 #endif
 }
 
+//Display warning even in non-devug builds
+void ReleaseWarning( char * filename, int line, const char * format, ... )
+{
+	Global_warning_count++;
+
+	va_list args;
+	int i;
+	int slen = 0;
+
+	memset( buffer, 0, sizeof(buffer) );
+	memset( buffer_tmp, 0, sizeof(buffer_tmp) );
+
+	va_start(args, format);
+	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
+	va_end(args);
+
+	slen = strlen(buffer_tmp);
+
+	// strip out the newline char so the output looks better
+	for (i = 0; i < slen; i++){
+		if (buffer_tmp[i] == (char)0x0a) {
+			buffer[i] = ' ';
+		} else {
+			buffer[i] = buffer_tmp[i];
+		}
+	}
+
+	// kill off extra white space at end
+	if (buffer[slen-1] == (char)0x20) {
+		buffer[slen-1] = '\0';
+	} else {
+		// just being careful
+		buffer[slen] = '\0';
+	}
+
+	mprintf(("WARNING: \"%s\" at %s:%d\n", buffer, strrchr(filename, '/')+1, line));
+
+	// Order UP!!
+	fprintf(stderr, "WARNING: \"%s\" at %s:%d\n", buffer, filename, line);
+}
+
 // fatal error message
 void Error( const char * filename, int line, const char * format, ... )
 {

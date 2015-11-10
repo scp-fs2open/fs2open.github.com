@@ -65,13 +65,13 @@ extern void shipfx_warpout_frame( object *objp, float frametime );
 
 // Given point p0, in object's frame of reference, find if 
 // it can see the sun.
-int shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float radius );
+bool shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float radius );
 
 // Given an ship see if it is in a shadow.
-int shipfx_in_shadow( object * src_obj );
+bool shipfx_in_shadow( object * src_obj );
 
 // Given world point see if it is in a shadow.
-int shipfx_eye_in_shadow( vec3d *eye_pos, object *src_obj, int sun_n);
+bool shipfx_eye_in_shadow( vec3d *eye_pos, object *src_obj, int sun_n);
 
 
 // =================================================

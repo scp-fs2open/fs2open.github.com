@@ -18,7 +18,7 @@
 /**
  * Codes a vector.  Returns the codes of a point.
  */
-ubyte g3_code_vector(vec3d * p)
+ubyte g3_code_vector(const vec3d *p)
 {
 	ubyte cc=0;
 
@@ -81,7 +81,7 @@ ubyte g3_code_vertex(vertex *p)
 
 }
 
-ubyte g3_transfer_vertex(vertex *dest,vec3d *src)
+ubyte g3_transfer_vertex(vertex *dest, const vec3d *src)
 {
 	dest->world = *src;
 
@@ -94,7 +94,7 @@ ubyte g3_transfer_vertex(vertex *dest,vec3d *src)
 
 MONITOR( NumRotations )
 
-ubyte g3_rotate_vertex(vertex *dest,vec3d *src)
+ubyte g3_rotate_vertex(vertex *dest, const vec3d *src)
 {
 #if 0
 	vec3d tempv;
@@ -153,7 +153,7 @@ ubyte g3_rotate_vertex(vertex *dest,vec3d *src)
 }	
 
 
-ubyte g3_rotate_faraway_vertex(vertex *dest,vec3d *src)
+ubyte g3_rotate_faraway_vertex(vertex *dest, const vec3d *src)
 {	
 	Assert( G3_count == 1 );
 
@@ -168,7 +168,7 @@ ubyte g3_rotate_faraway_vertex(vertex *dest,vec3d *src)
 /**
  * Rotates a point. returns codes.  does not check if already rotated
  */
-ubyte g3_rotate_vector(vec3d *dest,vec3d *src)
+ubyte g3_rotate_vector(vec3d *dest, const vec3d *src)
 {
 	vec3d tempv;
 
@@ -181,7 +181,7 @@ ubyte g3_rotate_vector(vec3d *dest,vec3d *src)
 	return g3_code_vector(dest);
 }	
 		
-ubyte g3_project_vector(vec3d *p, float *sx, float *sy )
+ubyte g3_project_vector(const vec3d *p, float *sx, float *sy )
 {
 	float w;
 
@@ -228,7 +228,7 @@ int g3_project_vertex(vertex *p)
 /**
  * From a 2d point, compute the vector through that point
  */
-void g3_point_to_vec(vec3d *v,int sx,int sy)
+void g3_point_to_vec(vec3d *v, int sx, int sy)
 {
 	vec3d	tempv;
 
@@ -251,7 +251,7 @@ void g3_point_to_vec(vec3d *v,int sx,int sy)
  * This can be called outside of a g3_start_frame/g3_end_frame
  * pair as long g3_start_frame was previously called.
  */
-void g3_point_to_vec_delayed(vec3d *v,int sx,int sy)
+void g3_point_to_vec_delayed(vec3d *v, int sx, int sy)
 {
 	vec3d	tempv;
 
@@ -266,7 +266,7 @@ void g3_point_to_vec_delayed(vec3d *v,int sx,int sy)
 	vm_vec_unrotate(v, &tempv, &Unscaled_matrix);
 }
 
-vec3d *g3_rotate_delta_vec(vec3d *dest,vec3d *src)
+vec3d *g3_rotate_delta_vec(vec3d *dest, const vec3d *src)
 {
 	Assert( G3_count == 1 );
 	return vm_vec_rotate(dest,src,&View_matrix);
@@ -275,7 +275,7 @@ vec3d *g3_rotate_delta_vec(vec3d *dest,vec3d *src)
 /**
  * Calculate the depth of a point - returns the z coord of the rotated point
  */
-float g3_calc_point_depth(vec3d *pnt)
+float g3_calc_point_depth(const vec3d *pnt)
 {
 	float q;
 

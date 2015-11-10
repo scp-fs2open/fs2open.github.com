@@ -10,6 +10,8 @@
 
 
 
+#include <algorithm>
+
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
 #include "fireball/fireballs.h"
@@ -1079,20 +1081,13 @@ int get_max_sparks(object* ship_objp)
 }
 
 
-// helper function to qsort, sorting spark pairs by distance
-int spark_compare( const void *elem1, const void *elem2 )
+// helper function to std::sort, sorting spark pairs by distance
+int spark_compare(const spark_pair &pair1, const spark_pair &pair2)
 {
-	spark_pair *pair1 = (spark_pair *) elem1;
-	spark_pair *pair2 = (spark_pair *) elem2;
+	Assert(pair1.dist >= 0);
+	Assert(pair2.dist >= 0);
 
-	Assert(pair1->dist >= 0);
-	Assert(pair2->dist >= 0);
-
-	if ( pair1->dist <  pair2->dist ) {
-		return -1;
-	} else {
-		return 1;
-	}
+	return (pair1.dist < pair2.dist);
 }
 
 // for big ships, when all spark slots are filled, make intelligent choice of one to be recycled
@@ -1166,7 +1161,7 @@ int choose_next_spark(object *ship_objp, vec3d *hitpos)
 	Assert(count == num_spark_pairs);
 
 	// sort pairs
-	qsort(spark_pairs, count, sizeof(spark_pair), spark_compare);
+	std::sort(spark_pairs, spark_pairs + count, spark_compare);
 	//mprintf(("Min spark pair dist %.1f\n", spark_pairs[0].dist));
 
 	// look through the first few sorted pairs, counting number of indices of closest pair

@@ -477,7 +477,7 @@ void gr_opengl_reset_clip()
 	GL_state.ScissorTest(GL_FALSE);
 }
 
-void gr_opengl_set_palette(ubyte *new_palette, int is_alphacolor)
+void gr_opengl_set_palette(const ubyte *new_palette, int is_alphacolor)
 {
 }
 
@@ -1304,7 +1304,7 @@ void gr_opengl_pop_texture_matrix(int unit)
 	glMatrixMode(current_matrix);
 }
 
-void gr_opengl_translate_texture_matrix(int unit, vec3d *shift)
+void gr_opengl_translate_texture_matrix(int unit, const vec3d *shift)
 {
 	GLint current_matrix;
 
@@ -1945,7 +1945,7 @@ void opengl_setup_function_pointers()
 
 bool gr_opengl_init()
 {
-	char *ver;
+	const char *ver;
 	int major = 0, minor = 0;
 
 	if ( !GL_initted )
@@ -1956,25 +1956,35 @@ bool gr_opengl_init()
 		GL_initted = false;
 	}
 
-	mprintf(( "Initializing OpenGL graphics device at %ix%i with %i-bit color...\n", gr_screen.max_w, gr_screen.max_h, gr_screen.bits_per_pixel ));
+	mprintf(( "Initializing OpenGL graphics device at %ix%i with %i-bit color...\n",
+		  gr_screen.max_w,
+		  gr_screen.max_h,
+		  gr_screen.bits_per_pixel ));
 
 	if ( opengl_init_display_device() ) {
 		Error(LOCATION, "Unable to initialize display device!\n");
 	}
 
 	// version check
-	ver = (char *)glGetString(GL_VERSION);
+	ver = (const char *)glGetString(GL_VERSION);
 	sscanf(ver, "%d.%d", &major, &minor);
 
 	GL_version = (major * 10) + minor;
 
 	if (GL_version < MIN_REQUIRED_GL_VERSION) {
-		Error(LOCATION, "Current GL Version of %d.%d is less than the required version of %d.%d.\nSwitch video modes or update your drivers.", major, minor, (MIN_REQUIRED_GL_VERSION / 10), (MIN_REQUIRED_GL_VERSION % 10));
+		Error(LOCATION, "Current GL Version of %d.%d is less than the "
+				"required version of %d.%d.\n"
+				"Switch video modes or update your drivers.",
+				major,
+				minor,
+				(MIN_REQUIRED_GL_VERSION / 10),
+				(MIN_REQUIRED_GL_VERSION % 10));
 	}
 
 	GL_initted = true;
 
-	// this MUST be done before any other gr_opengl_* or opengl_* funcion calls!!
+	// this MUST be done before any other gr_opengl_* or
+	// opengl_* function calls!!
 	opengl_setup_function_pointers();
 
 	mprintf(( "  OpenGL Vendor    : %s\n", glGetString(GL_VENDOR) ));
@@ -1988,7 +1998,8 @@ bool gr_opengl_init()
 		opengl_go_fullscreen();
 	}
 
-	// initialize the extensions and make sure we aren't missing something that we need
+	// initialize the extensions and make sure we aren't missing something
+	// that we need
 	opengl_extensions_init();
 
 	// setup the lighting stuff that will get used later
@@ -2001,7 +2012,7 @@ bool gr_opengl_init()
 	GLint max_texture_coords = GL_supported_texture_units;
 
 	if (Use_GLSL) {
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
 	}
 
 	glGetIntegerv(GL_MAX_TEXTURE_COORDS, &max_texture_coords);
@@ -2017,7 +2028,6 @@ bool gr_opengl_init()
 	// ready the texture system
 	opengl_tcache_init();
 
-	extern void opengl_tnl_init();
 	opengl_tnl_init();
 
 	// setup default shaders, and shader related items
@@ -2029,7 +2039,6 @@ bool gr_opengl_init()
 
 	// must be called after extensions are setup
 	opengl_set_vsync( !Cmdline_no_vsync );
-
 
 	opengl_setup_viewport();
 
@@ -2062,7 +2071,6 @@ bool gr_opengl_init()
 	gr_opengl_clear();
 	Mouse_hidden--;
 
-
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &GL_max_elements_indices);
 
@@ -2073,7 +2081,9 @@ bool gr_opengl_init()
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
 
 	if ( Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
-		mprintf(( "  Max render buffer size: %ix%i\n", GL_max_renderbuffer_size, GL_max_renderbuffer_size ));
+		mprintf(( "  Max render buffer size: %ix%i\n",
+			  GL_max_renderbuffer_size,
+			  GL_max_renderbuffer_size ));
 	}
 
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
@@ -2082,18 +2092,16 @@ bool gr_opengl_init()
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
 	if (Use_GLSL) {
-		mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION_ARB) ));
+		mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
 	}
-
-
 
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
 
 	mprintf(("... OpenGL init is complete!\n"));
 
-    if (Cmdline_ati_color_swap)
-        GL_read_format = GL_RGBA;
+	if (Cmdline_ati_color_swap)
+		GL_read_format = GL_RGBA;
 
 	return true;
 }

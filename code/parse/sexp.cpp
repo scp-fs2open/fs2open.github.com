@@ -3995,11 +3995,6 @@ int sexp_query_has_yet_to_arrive(char *name)
 
 	i = wing_name_lookup(name, 1);
 
-	// has not arrived yet, and never will arrive
-	if ((i >= 0) && (Wings[i].num_waves >= 0) && (Wings[i].flags & WF_NEVER_EXISTED)){
-		return 1;
-	}
-
 	// has not arrived yet
 	if ((i >= 0) && (Wings[i].num_waves >= 0) && !Wings[i].total_arrived_count){
 		return 1;
@@ -20593,7 +20588,7 @@ void sexp_debug(int node)
 		Warning(LOCATION, "%s", temp_buf);
     #else	
 	if (!no_release_message) {	
-		Warning(LOCATION, "%s", temp_buf);
+		ReleaseWarning(LOCATION, "%s", temp_buf);
 	}
 	#endif
 }

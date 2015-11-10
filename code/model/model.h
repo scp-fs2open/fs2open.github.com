@@ -1135,7 +1135,29 @@ typedef struct mc_info {
 
 inline void mc_info_init(mc_info *mc)
 {
-	memset(mc, -1, sizeof(mc_info));
+	mc->model_instance_num = -1;
+	mc->model_num = -1;
+	mc->submodel_num = -1;
+	mc->orient = nullptr;
+	mc->pos = nullptr;
+	mc->p0 = nullptr;
+	mc->p1 = nullptr;
+	mc->flags = 0;
+	mc->lod = 0;
+	mc->radius = 0;
+	mc->num_hits = 0; 
+	mc->hit_dist = 0;
+	mc->hit_point = vmd_zero_vector;
+	mc->hit_point_world = vmd_zero_vector;
+	mc->hit_submodel = -1;
+	mc->hit_bitmap = -1;
+	mc->hit_u = 0; mc->hit_v = 0;
+	mc->shield_hit_tri = -1;
+	mc->hit_normal = vmd_zero_vector;
+	mc->edge_hit = 0;
+	mc->f_poly = nullptr;
+	mc->t_poly = nullptr;
+	mc->bsp_leaf = nullptr;
 }
 
 

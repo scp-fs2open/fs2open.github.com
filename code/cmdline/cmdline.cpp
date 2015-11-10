@@ -145,7 +145,7 @@ Flag exe_params[] =
 	{ "-nolightshafts",		"Disable lightshafts",						true,	EASY_DEFAULT,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-flightshaftsoff"},
 	{ "-fb_explosions",		"Enable Framebuffer Shockwaves",			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_explosions", },
 	{ "-no_deferred",		"Disable Deferred Lighting",				true,	EASY_DEFAULT_MEM,	EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_deferred"},
-	{ "-disable_shadows",	"Disable Shadows",							true,	EASY_DEFAULT_MEM,	EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_shadows"},
+	{ "-enable_shadows",	"Enable Shadows",							true,	EASY_MEM_ALL_ON,	EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_shadows"},
 	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-img2dds", },
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
 	{ "-no_fps_capping",	"Don't limit frames-per-second",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_fps_capping", },
@@ -311,8 +311,8 @@ cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
 cmdline_parm brieflighting_arg("-brief_lighting", NULL, AT_NONE);
 cmdline_parm no_batching("-no_batching", NULL, AT_NONE);
-cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_NONE);
-cmdline_parm disable_shadows_arg("-disable_shadows", NULL, AT_NONE);
+cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
+cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
 
 float Cmdline_clip_dist = Default_min_draw_distance;
@@ -340,7 +340,7 @@ bool Cmdline_fb_explosions = 0;
 bool Cmdline_no_batching = false;
 extern bool ls_force_off;
 bool Cmdline_brief_lighting = 0;
-int Cmdline_shadow_quality = 2;
+int Cmdline_shadow_quality = 0;
 int Cmdline_no_deferred_lighting = 0;
 
 // Game Speed related
@@ -1680,14 +1680,13 @@ bool SetCmdlineParams()
 		Cmdline_reparse_mainhall = 1;
 	}
 
-	if( shadow_quality_arg.found() )
+	if( enable_shadows_arg.found() )
 	{
-		Cmdline_shadow_quality = shadow_quality_arg.get_int();
-	}
-
-	if( disable_shadows_arg.found() )
-	{
-		Cmdline_shadow_quality = 0;
+		Cmdline_shadow_quality = 2;
+		if( shadow_quality_arg.found() )
+		{
+			Cmdline_shadow_quality = shadow_quality_arg.get_int();
+		}
 	}
 
 	if( no_deferred_lighting_arg.found() )
