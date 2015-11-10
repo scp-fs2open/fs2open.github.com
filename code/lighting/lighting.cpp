@@ -25,8 +25,6 @@
 #define MAX_LIGHT_LEVELS 16
 
 
-int cell_shaded_lightmap = -1;
-
 light Lights[MAX_LIGHTS];
 int Num_lights=0;
 extern int Cmdline_nohtl;
@@ -742,7 +740,6 @@ ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_level )
 	return ubyte(fl2i(lval*255.0f));
 }
 
-int spec = 0;
 float static_light_factor = 1.0f;
 float static_tube_factor = 1.0f;
 float static_point_factor = 1.0f;
