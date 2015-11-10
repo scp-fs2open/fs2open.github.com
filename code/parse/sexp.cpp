@@ -17982,6 +17982,11 @@ void sexp_ship_turret_target_order(int node)
 		return;
 	}
 	
+	//Reset order
+	for(i = 0; i < NUM_TURRET_ORDER_TYPES; i++) {
+		new_target_order[i] = -1;
+	}
+
 	oindex = 0;
 	node = CDR(node);
 	while(node != -1)
@@ -18003,11 +18008,6 @@ void sexp_ship_turret_target_order(int node)
 	turret = GET_FIRST(&Ships[sindex].subsys_list);
 	while(turret != END_OF_LIST(&Ships[sindex].subsys_list))
 	{
-		//Reset order
-		for(i = 0; i < NUM_TURRET_ORDER_TYPES; i++) {
-			turret->turret_targeting_order[i] = -1;
-		}
-
 		memcpy(turret->turret_targeting_order, new_target_order, NUM_TURRET_ORDER_TYPES*sizeof(int));
 
 		// next item
