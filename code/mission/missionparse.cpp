@@ -5336,7 +5336,7 @@ void parse_bitmaps(mission *pm)
 	}
 
 	// Goober5000
-	stars_load_first_valid_background();
+	stars_load_first_valid_or_last_background();
 
 	if (optional_string("$Environment Map:")) {
 		stuff_string(pm->envmap_name, F_NAME, MAX_FILENAME_LEN);

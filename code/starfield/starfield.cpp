@@ -2622,68 +2622,57 @@ void stars_delete_entry_FRED(int index, bool is_a_sun)
 }
 
 // Goober5000
-void stars_load_first_valid_background()
+void stars_load_first_valid_or_last_background()
 {
-	int background_idx = stars_get_first_valid_background();
-
-#ifndef NDEBUG
-	if (background_idx < 0 && !Fred_running)
-	{
-		int i;
-		bool at_least_one_bitmap = false;
-		for (i = 0; i < Num_backgrounds; i++)
-		{
-			if (Backgrounds[i].bitmaps.size() > 0)
-				at_least_one_bitmap = true;
-		}
-
-		if (at_least_one_bitmap)
-		{
-			if (Num_backgrounds == 1)
-				Warning(LOCATION, "Unable to find a sufficient number of bitmaps for this mission's background.  The background will not be displayed.");	
-			else if (Num_backgrounds > 1)
-				Warning(LOCATION, "Unable to find a sufficient number of bitmaps for any background listed in this mission.  No background will be displayed.");
-		}
-	}
-#endif
-
+	int background_idx = stars_get_first_valid_or_last_background();
 	stars_load_background(background_idx);
 }
 
 // Goober5000
-int stars_get_first_valid_background()
+int stars_get_first_valid_or_last_background()
 {
 	uint i, j;
 
 	if (Num_backgrounds == 0)
 		return -1;
 
-	// get the first background with > 50% of its suns and > 50% of its bitmaps present
-	for (i = 0; i < (uint)Num_backgrounds; i++)
+	// scan every background except the last and return the first one that has all its suns and bitmaps present
+	for (i = 0; i < (uint)Num_backgrounds - 1; i++)
 	{
-		uint total_suns = 0;
-		uint total_bitmaps = 0;
+		bool valid = true;
 		background_t *background = &Backgrounds[i];
 
 		for (j = 0; j < background->suns.size(); j++)
 		{
-			if (stars_find_sun(background->suns[j].filename) >= 0)
-				total_suns++;
+			if (stars_find_sun(background->suns[j].filename) < 0)
+			{
+				mprintf(("Failed to load sun %s for background %d, falling back to background %d\n",
+					background->suns[j].filename, i + 1, i + 2));
+				valid = false;
+				break;
+			}
 		}
 
-		for (j = 0; j < background->bitmaps.size(); j++)
+		if (valid)
 		{
-			if (stars_find_bitmap(background->bitmaps[j].filename) >= 0)
-				total_bitmaps++;
+			for (j = 0; j < background->bitmaps.size(); j++)
+			{
+				if (stars_find_bitmap(background->bitmaps[j].filename) < 0)
+				{
+					mprintf(("Failed to load bitmap %s for background %d, falling back to background %d\n",
+						background->suns[j].filename, i + 1, i + 2));
+					valid = false;
+					break;
+				}
+			}
 		}
 
-		// add 1 so rounding will work properly
-		if ((total_suns >= (background->suns.size() + 1) / 2) && (total_bitmaps >= (background->bitmaps.size() + 1) / 2))
+		if (valid)
 			return i;
 	}
 
-	// didn't find a valid entry
-	return -1;
+	// didn't find a valid background yet, so return the last one
+	return Num_backgrounds - 1;
 }
 
 // Goober5000
