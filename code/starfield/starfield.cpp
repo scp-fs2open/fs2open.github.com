@@ -2622,14 +2622,14 @@ void stars_delete_entry_FRED(int index, bool is_a_sun)
 }
 
 // Goober5000
-void stars_load_first_valid_or_last_background()
+void stars_load_first_valid_background()
 {
-	int background_idx = stars_get_first_valid_or_last_background();
+	int background_idx = stars_get_first_valid_background();
 	stars_load_background(background_idx);
 }
 
 // Goober5000
-int stars_get_first_valid_or_last_background()
+int stars_get_first_valid_background()
 {
 	uint i, j;
 

@@ -141,8 +141,8 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 
 
 // Goober5000
-void stars_load_first_valid_or_last_background();
-int stars_get_first_valid_or_last_background();
+void stars_load_first_valid_background();
+int stars_get_first_valid_background();
 void stars_load_background(int background_idx);
 
 #endif

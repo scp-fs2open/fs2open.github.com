@@ -471,7 +471,7 @@ void bg_bitmap_dlg::OnClose()
 
 	// reset the background
 	stars_pack_backgrounds();
-	stars_load_first_valid_or_last_background();
+	stars_load_first_valid_background();
 	
 	// close window stuff
 	theApp.record_window_data(&Bg_wnd_data, this);
