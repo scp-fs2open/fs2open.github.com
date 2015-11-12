@@ -35,6 +35,7 @@ bool Red_alert_applies_to_delayed_ships = false;
 bool Beams_use_damage_factors = false;
 float Generic_pain_flash_factor = 1.0f;
 float Shield_pain_flash_factor = 0.0f;
+int Countermeasure_processing_interval = 0;
 
 
 void parse_mod_table(const char *filename)
@@ -299,6 +300,16 @@ void parse_mod_table(const char *filename)
 					Default_fiction_viewer_ui = ui_index;
 				else
 					Warning(LOCATION, "Unrecognized fiction viewer UI: %s", ui_name);
+			}
+		}
+
+		if (optional_string("$Countermeasure Processing Interval:")) {
+			stuff_int(&Countermeasure_processing_interval);
+			if (Countermeasure_processing_interval != 0) {
+				mprintf(("Game Settings Table: Countermeasures will attempt to decoy missiles every %i milliseconds\n", Countermeasure_processing_interval));
+			}
+			else {
+				mprintf(("Game Settings Table: Countermeasures will attempt to decoy missiles for 2 frames after any countermeasure is launched (retail behavior)\n"));
 			}
 		}
 
