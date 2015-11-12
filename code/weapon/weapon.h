@@ -264,6 +264,8 @@ typedef struct beam_weapon_info {
 	int beam_warmdown_sound;			// warmdown sound
 	int beam_num_sections;				// the # of visible "sections" on the beam
 	generic_anim beam_glow;				// muzzle glow bitmap
+	float glow_length;					// (DahBlount) determines the length the muzzle glow when using a directional glow
+	bool directional_glow;				// (DahBlount) makes the muzzle glow render to a poly that is oriented along the direction of fire
 	int beam_shots;						// # of shots the beam takes
 	float beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
