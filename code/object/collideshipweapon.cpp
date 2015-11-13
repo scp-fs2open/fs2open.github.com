@@ -74,11 +74,9 @@ void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *worl
 	// Apply hit & damage & stuff to weapon
 	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num);
 
-	if (wip->damage_time != 0.0f && wp->lifeleft <= wip->damage_time) {
-		if (wip->min_damage != 0.0f) {
-			damage = (((wip->damage - wip->min_damage) * (wp->lifeleft / wip->damage_time)) + wip->min_damage);
-		} else if (wip->max_damage != 0.0f) {
-			damage = (((wip->damage - wip->max_damage) * (wp->lifeleft / wip->damage_time)) + wip->max_damage);
+	if (wip->damage_time >= 0.0f && wp->lifeleft <= wip->damage_time) {
+		if (wip->atten_damage >= 0.0f) {
+			damage = (((wip->damage - wip->atten_damage) * (wp->lifeleft / wip->damage_time)) + wip->atten_damage);
 		} else {
 			damage = wip->damage * (wp->lifeleft / wip->damage_time);
 		}
