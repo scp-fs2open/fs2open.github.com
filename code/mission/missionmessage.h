@@ -180,6 +180,7 @@ typedef struct persona_s {
 	char	name[NAME_LENGTH];
 	int	flags;
 	int species;
+	bool substitute_missing_messages;
 } Persona;
 
 extern Persona *Personas;
