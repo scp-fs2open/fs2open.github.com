@@ -295,12 +295,7 @@ void persona_parse()
 	}
 
 	if (optional_string("$Allow substitution of missing messages:")) {
-		bool Allow_substitution;
-		stuff_boolean(&Allow_substitution);
-
-		if (Allow_substitution) {
-			Personas[Num_personas].substitute_missing_messages = Allow_substitution;
-		}
+		stuff_boolean(&Personas[Num_personas].substitute_missing_messages);
 	}
 	else 
 	{
@@ -2076,8 +2071,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			break;
 		case -1:
 		default:
-			nprintf(("MESSAGING", "Couldn't find any builtin message of type %d\n", type));
-			Int3();
+			Error(LOCATION, "Couldn't find any builtin message of type %d\n", type);
 			return;
 	}
 
