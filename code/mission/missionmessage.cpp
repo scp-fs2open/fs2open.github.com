@@ -2070,7 +2070,6 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 				nprintf(("MESSAGING", "looking for message for any persona of any species\n"));
 			break;
 		case -1:
-		default:
 			Error(LOCATION, "Couldn't find any builtin message of type %d\n", type);
 			return;
 	}
