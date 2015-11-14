@@ -76,12 +76,12 @@ public:
 	void addLight(const light *light_ptr);
 	void setLightFilter(int objnum, const vec3d *pos, float rad);
 	bool setLights(const light_indexing_info *info);
-	void resetLightState(void);
-	int getNumStaticLights(void);
-	light_indexing_info bufferLights(void);
+	void resetLightState();
+	int getNumStaticLights();
+	light_indexing_info bufferLights();
 };
 
-extern void light_reset(void);
+extern void light_reset();
 extern void light_set_ambient(float ambient_light);
 
 // Intensity - how strong the light is.  1.0 will cast light around 5meters or so.
@@ -91,14 +91,14 @@ extern void light_add_point(const vec3d * pos, float r1, float r2, float intensi
 extern void light_add_point_unique(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, int affected_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
 extern void light_add_cone(const vec3d * pos, const vec3d * dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, int light_ignore_objnum, float spec_r = 0.0f, float spec_g = 0.0f, float spec_b = 0.0f, bool specular = false);
-extern void light_rotate_all(void);
+extern void light_rotate_all();
 
 // Makes a list of only the lights that will affect
 // the sphere specified by 'pos' and 'rad' and 'objnum'.
 // Returns number of lights active.
 extern int light_filter_push( int objnum, const vec3d *pos, float rad );
 extern int light_filter_push_box(const vec3d *min, const vec3d *max);
-extern void light_filter_pop(void);
+extern void light_filter_pop();
 
 // Applies light to a vertex.   In order for this to work, 
 // it assumes that one of light_filter have been called.
@@ -112,7 +112,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, const 
 void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3d *pos, const vec3d *norm, float static_light_val );
 
 // return the # of global light sources
-extern int light_get_global_count(void);
+extern int light_get_global_count();
 
 // Fills direction of global light source N in pos.
 // Returns 0 if there is no global light.

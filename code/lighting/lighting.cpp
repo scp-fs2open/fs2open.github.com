@@ -62,7 +62,7 @@ static float Reflective_light = REFLECTIVE_LIGHT_DEFAULT;
 
 int Lighting_flag = 1;
 
-static void light_filter_reset(void);
+static void light_filter_reset();
 
 DCF(light,"Changes lighting parameters")
 {
@@ -147,7 +147,7 @@ DCF(light,"Changes lighting parameters")
 	}
 }
 
-void light_reset(void)
+void light_reset()
 {
 	Static_light.clear();
 
@@ -387,7 +387,7 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 /**
  * Reset the list of lights to point to all lights.
  */
-static void light_filter_reset(void)
+static void light_filter_reset()
 {
 	int i;
 	light *l;
@@ -572,7 +572,7 @@ int light_filter_push_box(const vec3d *min, const vec3d *max)
 	return Num_relevent_lights[n2];
 }
 
-void light_filter_pop(void)
+void light_filter_pop()
 {
 	if ( Lighting_off ) return;
 
@@ -583,7 +583,7 @@ void light_filter_pop(void)
 static int l_num_points=0, l_num_lights=0;
 
 
-void light_rotate_all(void)
+void light_rotate_all()
 {
 	int i;
 	light *l;
@@ -606,7 +606,7 @@ void light_rotate_all(void)
 /**
  * Return the # of global light sources
  */
-int light_get_global_count(void)
+int light_get_global_count()
 {
 	return (int)Static_light.size();
 }
@@ -642,7 +642,7 @@ void light_set_shadow( int state )
 }
 
 
-void light_set_all_relevent(void)
+void light_set_all_relevent()
 {
 	int idx;
 
@@ -1191,7 +1191,7 @@ void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
 	}
 }
 
-light_indexing_info scene_lights::bufferLights(void)
+light_indexing_info scene_lights::bufferLights()
 {
 	size_t i;
 
@@ -1216,12 +1216,12 @@ light_indexing_info scene_lights::bufferLights(void)
 	return light_info;
 }
 
-int scene_lights::getNumStaticLights(void)
+int scene_lights::getNumStaticLights()
 {
 	return StaticLightIndices.size();
 }
 
-void scene_lights::resetLightState(void)
+void scene_lights::resetLightState()
 {
 	current_light_index = -1;
 	current_num_lights = -1;
