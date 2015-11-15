@@ -22,13 +22,13 @@ namespace io
 		class Cursor
 		{
 		private:
-			SCP_vector<SDL_Cursor*> mAnimationFrames; //! The individual frames
+			SCP_vector<SDL_Cursor*> mAnimationFrames; //!< The individual frames
 
-			float mFps; //! The FPS of the animation, unused if only one frame
+			float mFps; //!< The FPS of the animation, unused if only one frame
 
-			int mBeginTimeStamp; //! The timestamp when the animation was started, unused when not animated
-			float mAnimationLength; //! The length (in seconds) of the animation
-			size_t mLastFrame; //! The last frame which was set
+			int mBeginTimeStamp; //!< The timestamp when the animation was started, unused when not animated
+			float mAnimationLength; //!< The length (in seconds) of the animation
+			size_t mLastFrame; //!< The last frame which was set
 			
 			Cursor(const Cursor&); // Not implemented
 			Cursor& operator=(const Cursor&); // Not implemented
@@ -38,10 +38,25 @@ namespace io
 			 */
 			Cursor() : mFps(-1.0f), mBeginTimeStamp(-1), mAnimationLength(-1.f), mLastFrame(static_cast<size_t>(-1)) {}
 
+			/**
+			 * @brief Move constructor
+			 *
+			 * Transfers SDL resources to this newly constructed object
+			 */
 			Cursor(Cursor&& other);
 			
+			/**
+			 * @brief Move operator
+			 *
+			 * Transfers SDL resources to this object
+			 */
 			Cursor& operator=(Cursor&& other);
 
+			/**
+			 * @brief Cursor destructor
+			 *
+			 * Frees the allocated SDL cursors
+			 */
 			~Cursor();
 			
 			/**
@@ -77,24 +92,23 @@ namespace io
 		class CursorManager
 		{
 		private:
-			static CursorManager* mSingleton; //! The singleton manager
+			static CursorManager* mSingleton; //!< The singleton manager
 
-			SCP_vector<std::unique_ptr<Cursor>> mLoadedCursors; //! A list of loaded cursors
+			SCP_vector<std::unique_ptr<Cursor>> mLoadedCursors; //!< A list of loaded cursors
 
-			Cursor* mCurrentCursor; //! The current cursor
+			Cursor* mCurrentCursor; //!< The current cursor
 
-			SCP_vector<std::tuple<bool, bool>> mStatusStack;
+			SCP_vector<std::tuple<bool, bool>> mStatusStack; //!< Contains the stack of saved mouse statuses
 
 			/**
 			 * @brief Default constructor
 			 *
-			 * This class should not be instantiated outside from this module
+			 * @note This class should not be instantiated outside from this module
 			 */
 			CursorManager();
 		public:
-
 			/**
-			 * Releases the cursor resources
+			 * @brief Releases the cursor resources
 			 */
 			~CursorManager();
 
@@ -145,8 +159,15 @@ namespace io
 			 */
 			Cursor* getCurrentCursor() { return mCurrentCursor; }
 			
+			/**
+			 * @brief Pushes the current status onto the stack as a new entry
+			 */
 			void pushStatus();
 			
+			/**
+			 * @brief Removes the top status from the stack and restores the previous
+			 * @returns The removed state
+			 */
 			std::tuple<bool, bool> popStatus();
 
 		public:
