@@ -1,6 +1,6 @@
 
 
-
+#include <iterator>
 
 
 #include "bmpman/bmpman.h"
@@ -110,6 +110,16 @@ static int GL_minimized = 0;
 
 static GLenum GL_read_format = GL_BGRA;
 
+struct ogl_workaround_status
+{
+	bool enabled;
+	const char* name;
+	const char* description;
+};
+
+static ogl_workaround_status GL_enabled_workarounds[OGL_MAX_WORKAROUNDS] = {
+		{ false, "No #version", "Don't add #version to OpenGL shaders" },
+};
 
 void opengl_go_fullscreen()
 {
@@ -1942,6 +1952,72 @@ void opengl_setup_function_pointers()
 	// *****************************************************************************
 }
 
+static void gr_opengl_initialize_workarounds()
+{
+	auto vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+	if (!stricmp(vendor, "ATI Technologies Inc."))
+	{
+		GL_enabled_workarounds[OGL_NO_SHADER_VERSION].enabled = true;
+	}
+	
+	if (!stricmp(vendor, "NVIDIA Corporation"))
+	{
+		GL_enabled_workarounds[OGL_NO_SHADER_VERSION].enabled = true;
+	}
+
+	if (Cmdline_opengl_workaround_override != nullptr)
+	{
+		const char* name_begin = Cmdline_opengl_workaround_override;
+		mprintf(("  Using workaround overrides:\n"));
+
+		const char* name_end;
+		do
+		{
+			name_end = strchr(name_begin, ';');
+
+			size_t subsLen = name_end == nullptr ? strlen(name_begin) : static_cast<size_t>(std::distance(name_begin, name_end));
+
+			SCP_string overrideName(name_begin, subsLen);
+
+			if (!overrideName.empty())
+			{
+				auto endIter = std::end(GL_enabled_workarounds);
+				for (auto iter = std::begin(GL_enabled_workarounds); iter != endIter; iter = std::next(iter))
+				{
+					if (overrideName == iter->name)
+					{
+						// Flip the enabled state
+						iter->enabled = !iter->enabled;
+						mprintf(("    \"%s\" is now %s\n", iter->name, iter->enabled ? "enabled" : "disabled"));
+						break;
+					}
+				}
+			}
+
+			name_begin = name_end;
+			// Skip the ;
+			std::advance(name_begin, 1);
+		} while(name_end != nullptr);
+	}
+
+#ifndef NDEBUG
+	// Dump a statistic to the log
+	mprintf(("  Using OpenGL driver workarounds:\n"));
+	bool have_workaround = false;
+	for (int i = 0; i < OGL_MAX_WORKAROUNDS; ++i)
+	{
+		if (GL_enabled_workarounds[i].enabled)
+		{
+			mprintf(("    %s: %s\n", GL_enabled_workarounds[i].name, GL_enabled_workarounds[i].description));
+		}
+	}
+
+	if (!have_workaround)
+	{
+		mprintf(("    <none>\n"));
+	}
+#endif
+}
 
 bool gr_opengl_init()
 {
@@ -2001,6 +2077,8 @@ bool gr_opengl_init()
 	// initialize the extensions and make sure we aren't missing something
 	// that we need
 	opengl_extensions_init();
+
+	gr_opengl_initialize_workarounds();
 
 	// setup the lighting stuff that will get used later
 	opengl_light_init();
@@ -2104,6 +2182,15 @@ bool gr_opengl_init()
 		GL_read_format = GL_RGBA;
 
 	return true;
+}
+
+bool opengl_use_workaround(ogl_driver_workaround workaround)
+{
+	int index = static_cast<int>(workaround);
+
+	Assertion(index >= 0 && index < static_cast<int>(OGL_MAX_WORKAROUNDS), "Invalid OpenGL driver workaround index!");
+
+	return GL_enabled_workarounds[index].enabled;
 }
 
 DCF(ogl_minimize, "Minimizes opengl")

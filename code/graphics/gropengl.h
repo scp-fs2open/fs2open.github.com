@@ -656,6 +656,15 @@ bool gr_opengl_init();
 void gr_opengl_cleanup(int minimize=1);
 int opengl_check_for_errors(char *err_at = NULL);
 
+enum ogl_driver_workaround
+{
+	OGL_NO_SHADER_VERSION = 0,
+
+	OGL_MAX_WORKAROUNDS
+};
+
+bool opengl_use_workaround(ogl_driver_workaround workaround);
+
 #ifndef NDEBUG
 #define GL_CHECK_FOR_ERRORS(s)	opengl_check_for_errors((s))
 #else
