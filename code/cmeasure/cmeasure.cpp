@@ -21,6 +21,7 @@
 
 int	Cmeasures_homing_check = 0;
 int	Countermeasures_enabled = 1;			//	Debug, set to 0 means no one can fire countermeasures.
+const int CMEASURE_DETONATE_DISTANCE = 40.0f;
 
 //Used to set a countermeasure velocity after being launched from a ship as a countermeasure
 //ie not as a primary or secondary.

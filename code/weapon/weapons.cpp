@@ -1014,6 +1014,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->cm_aspect_effectiveness = 1.0f;
 	wip->cm_heat_effectiveness = 1.0f;
 	wip->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
+	wip->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
+	wip->cm_kill_single = false;
 
 	wip->b_info.beam_type = -1;
 	wip->b_info.beam_life = -1.0f;
@@ -2179,6 +2181,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (optional_string("+Effective Radius:"))
 			stuff_float(&wip->cm_effective_rad);
+
+		if (optional_string("+Missile Detonation Radius:"))
+			stuff_float(&wip->cm_detonation_rad);
+
+		if (optional_string("+Single Missile Kill:"))
+			stuff_boolean(&wip->cm_kill_single);
 	}
 
 	// beam weapon optional stuff
@@ -3878,32 +3886,43 @@ void weapon_maybe_play_warning(weapon *wp)
 	}
 }
 
-#define	CMEASURE_DETONATE_DISTANCE		40.0f
 
 /**
  * Detonate all missiles near this countermeasure.
  */
-void detonate_nearby_missiles(object *killer_objp)
+void detonate_nearby_missiles(object* killer_objp, object* missile_objp)
 {
-	if(killer_objp->type != OBJ_WEAPON) {
+	if(killer_objp->type != OBJ_WEAPON || missile_objp->type != OBJ_WEAPON) {
 		Int3();
 		return;
 	}
 
-	missile_obj	*mop;
+	weapon_info* killer_infop = &Weapon_info[Weapons[killer_objp->instance].weapon_info_index];
 
-	mop = GET_FIRST(&Missile_obj_list);
+	if (killer_infop->cm_kill_single) {
+		weapon* wp = &Weapons[missile_objp->instance];
+		if (wp->lifeleft > 0.2f) {
+			nprintf(("Countermeasures", "Countermeasure (%s-%i) detonated missile (%s-%i) Frame: %i\n",
+						killer_infop->name, killer_objp->signature,
+						Weapon_info[Weapons[missile_objp->instance].weapon_info_index].name, missile_objp->signature, Framecount));
+			wp->lifeleft = 0.2f;
+		}
+		return;
+	}
+
+	missile_obj* mop = GET_FIRST(&Missile_obj_list);
+
 	while(mop != END_OF_LIST(&Missile_obj_list)) {
-		object	*objp;
-		weapon	*wp;
-
-		objp = &Objects[mop->objnum];
-		wp = &Weapons[objp->instance];
+		object* objp = &Objects[mop->objnum];
+		weapon* wp = &Weapons[objp->instance];
 
 		if (iff_x_attacks_y(Weapons[killer_objp->instance].team, wp->team)) {
 			if ( Missiontime - wp->creation_time > F1_0/2) {
-				if (vm_vec_dist_quick(&killer_objp->pos, &objp->pos) < CMEASURE_DETONATE_DISTANCE) {
+				if (vm_vec_dist_quick(&killer_objp->pos, &objp->pos) < killer_infop->cm_detonation_rad) {
 					if (wp->lifeleft > 0.2f) { 
+						nprintf(("Countermeasures", "Countermeasure (%s-%i) detonated missile (%s-%i) Frame: %i\n",
+									killer_infop->name, killer_objp->signature,
+									Weapon_info[Weapons[objp->instance].weapon_info_index].name, objp->signature, Framecount));
 						wp->lifeleft = 0.2f;
 					}
 				}
@@ -4273,6 +4292,9 @@ void weapon_home(object *obj, int num, float frame_time)
 		return;
 	}
 
+	// if we've got this far, this should be valid
+	weapon_info* hobj_infop = &Weapon_info[Weapons[hobjp->instance].weapon_info_index];
+
 	if (wip->acceleration_time > 0.0f) {
 		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
 			float t;
@@ -4362,14 +4384,14 @@ void weapon_home(object *obj, int num, float frame_time)
 	case OBJ_WEAPON:
 	{
 		bool home_on_cmeasure = The_mission.ai_profile->flags2 & AIPF2_ASPECT_LOCK_COUNTERMEASURE
-			|| Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags3 & WIF3_CMEASURE_ASPECT_HOME_ON;
+			|| hobj_infop->wi_flags3 & WIF3_CMEASURE_ASPECT_HOME_ON;
 
 		// don't home on countermeasures or non-bombs, that's handled elsewhere
-		if (((Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE) && !home_on_cmeasure))
+		if (((hobj_infop->wi_flags & WIF_CMEASURE) && !home_on_cmeasure))
 		{
 			break;
 		}
-		else if (!(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB))
+		else if (!(hobj_infop->wi_flags & WIF_BOMB))
 		{
 			break;
 		}
@@ -4426,13 +4448,13 @@ void weapon_home(object *obj, int num, float frame_time)
 			float	dist;
 
 			dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
-			if (hobjp->type == OBJ_WEAPON && (Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE))
+			if (hobjp->type == OBJ_WEAPON && (hobj_infop->wi_flags & WIF_CMEASURE))
 			{
-				if (dist < CMEASURE_DETONATE_DISTANCE)
+				if (dist < hobj_infop->cm_detonation_rad)
 				{
 					//	Make this missile detonate soon.  Not right away, not sure why.  Seems better.
 					if (iff_x_attacks_y(Weapons[hobjp->instance].team, wp->team)) {
-						detonate_nearby_missiles(hobjp);
+						detonate_nearby_missiles(hobjp, obj);
 						return;
 					}
 				}
