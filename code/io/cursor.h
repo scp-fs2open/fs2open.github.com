@@ -8,6 +8,8 @@
 #include "globalincs/pstypes.h"
 #include "cmdline/cmdline.h"
 
+#include <memory>
+
 namespace io
 {
 	namespace mouse
@@ -27,12 +29,21 @@ namespace io
 			int mBeginTimeStamp; //! The timestamp when the animation was started, unused when not animated
 			float mAnimationLength; //! The length (in seconds) of the animation
 			size_t mLastFrame; //! The last frame which was set
+			
+			Cursor(const Cursor&); // Not implemented
+			Cursor& operator=(const Cursor&); // Not implemented
 		public:
 			/**
 			 * @brief Default constructor
 			 */
-			Cursor() : mFps(-1.0f), mBeginTimeStamp(-1), mLastFrame(static_cast<size_t>(-1)) {}
+			Cursor() : mFps(-1.0f), mBeginTimeStamp(-1), mAnimationLength(-1.f), mLastFrame(static_cast<size_t>(-1)) {}
 
+			Cursor(Cursor&& other);
+			
+			Cursor& operator=(Cursor&& other);
+
+			~Cursor();
+			
 			/**
 			 * @brief Adds an animation frame
 			 *
@@ -58,11 +69,6 @@ namespace io
 			 * @brief Called to set the correct frame
 			 */
 			void setCurrentFrame();
-
-			/**
-			 * Releases all SDL handles
-			 */
-			void releaseResources();
 		};
 
 		/**
@@ -73,7 +79,7 @@ namespace io
 		private:
 			static CursorManager* mSingleton; //! The singleton manager
 
-			SCP_vector<Cursor*> mLoadedCursors; //! A list of loaded cursors
+			SCP_vector<std::unique_ptr<Cursor>> mLoadedCursors; //! A list of loaded cursors
 
 			Cursor* mCurrentCursor; //! The current cursor
 
