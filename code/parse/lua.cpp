@@ -12660,15 +12660,17 @@ ADE_FUNC(setCursorImage, l_Mouse, "Image filename", "Sets mouse cursor image, an
 	return ade_set_args(L, "b", true);
 }
 
-ADE_FUNC(setCursorHidden, l_Mouse, "True to hide mouse, false to show it", "Shows or hides mouse cursor", NULL, NULL)
+ADE_FUNC(setCursorHidden, l_Mouse, "boolean hide[, boolean grab]", "Hides the cursor when <i>hide</i> is true, otherwise shows it. <i>grab</i> determines if "
+				"the mouse will be restricted to the window. Set this to true when hiding the cursor while in game.", NULL, NULL)
 {
 	if(!mouse_inited)
 		return ADE_RETURN_NIL;
 
 	bool b = false;
-	ade_get_args(L, "b", &b);
+	bool grab = false;
+	ade_get_args(L, "b|b", &b, &grab);
 
-	io::mouse::CursorManager::get()->showCursor(!b);
+	io::mouse::CursorManager::get()->showCursor(!b, grab);
 
 	return ADE_RETURN_NIL;
 }
