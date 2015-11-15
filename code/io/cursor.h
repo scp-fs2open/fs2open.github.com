@@ -98,7 +98,7 @@ namespace io
 
 			Cursor* mCurrentCursor; //!< The current cursor
 
-			SCP_vector<std::tuple<bool, bool>> mStatusStack; //!< Contains the stack of saved mouse statuses
+			SCP_vector<std::pair<bool, bool>> mStatusStack; //!< Contains the stack of saved mouse statuses
 
 			/**
 			 * @brief Default constructor
@@ -151,7 +151,7 @@ namespace io
 			 * @brief Specifies if the cursor is shown
 			 * @return @c true if shown ,@c false otherwise
 			 */
-			bool isCursorShown() { return std::get<0>(mStatusStack.back()); }
+			bool isCursorShown() { return mStatusStack.back().first; }
 
 			/**
 			 * @brief Gets the current cursor
@@ -168,7 +168,7 @@ namespace io
 			 * @brief Removes the top status from the stack and restores the previous
 			 * @returns The removed state
 			 */
-			std::tuple<bool, bool> popStatus();
+			std::pair<bool, bool> popStatus();
 
 		public:
 			/**

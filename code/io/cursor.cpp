@@ -168,7 +168,7 @@ namespace io
 
 		CursorManager::CursorManager() : mCurrentCursor(nullptr)
 		{
-			mStatusStack.push_back(std::make_tuple(true, false));
+			mStatusStack.push_back(std::make_pair(true, false));
 		}
 
 		CursorManager::~CursorManager()
@@ -236,7 +236,7 @@ namespace io
 		void CursorManager::showCursor(bool show, bool grab)
 		{
 			auto current = mStatusStack.back();
-			if (show == std::get<0>(current) && grab == std::get<1>(current))
+			if (show == current.first && grab == current.second)
 			{
 				// Don't bother calling anithing if it's not going to change anything
 				return;
@@ -244,7 +244,7 @@ namespace io
 
 			changeMouseStatus(show, grab);
 
-			mStatusStack.back() = std::make_tuple(show, grab);
+			mStatusStack.back() = std::make_pair(show, grab);
 		}
 			
 		void CursorManager::pushStatus()
@@ -253,7 +253,7 @@ namespace io
 			mStatusStack.push_back(mStatusStack.back());
 		}
 		
-		std::tuple<bool, bool> CursorManager::popStatus()
+		std::pair<bool, bool> CursorManager::popStatus()
 		{
 			Assertion(mStatusStack.size() > 1, "Can't pop the last status!");
 			
@@ -262,7 +262,7 @@ namespace io
 			mStatusStack.pop_back();
 			
 			auto newState = mStatusStack.back();
-			changeMouseStatus(std::get<0>(newState), std::get<1>(newState));
+			changeMouseStatus(newState.first, newState.second);
 			
 			return current;
 		}
