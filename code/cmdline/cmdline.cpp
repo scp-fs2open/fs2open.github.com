@@ -1771,7 +1771,7 @@ bool SetCmdlineParams()
 	
 	if (benchmark_mode_arg.found())
 	{
-		Cmdline_benchmark_mode = 1;
+		Cmdline_benchmark_mode = true;
 	}
 
 	//Deprecated flags - CommanderDJ
