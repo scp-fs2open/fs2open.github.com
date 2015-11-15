@@ -12636,29 +12636,28 @@ ADE_FUNC(isMouseButtonDown, l_Mouse, "{MOUSE_*_BUTTON enumeration}, [..., ...]",
 	return ade_set_args(L, "b", rtn);
 }
 
-ADE_FUNC(setCursorImage, l_Mouse, "Image filename, [LOCK or UNLOCK]", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", NULL, NULL)
+ADE_FUNC(setCursorImage, l_Mouse, "Image filename, [LOCK or UNLOCK]", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")
 {
 	using namespace io::mouse;
 
 	if(!mouse_inited || !Gr_inited)
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "b", false);
 
 	char *s = NULL;
 	enum_h *u = NULL; // This isn't used anymore
 
 	if(!ade_get_args(L, "s|o", &s, l_Enum.GetPtr(&u)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "b", false);
 
 	Cursor* cursor = CursorManager::get()->loadCursor(s);
 
 	if (cursor == NULL)
 	{
-		LuaError(L, "Failed to load cursor %s!", s);
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "b", false);
 	}
 
 	CursorManager::get()->setCurrentCursor(cursor);
-	return ADE_RETURN_NIL;
+	return ade_set_args(L, "b", true);
 }
 
 ADE_FUNC(setCursorHidden, l_Mouse, "True to hide mouse, false to show it", "Shows or hides mouse cursor", NULL, NULL)
