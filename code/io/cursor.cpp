@@ -52,6 +52,29 @@ namespace
 
 		return cursorHandle;
 	}
+	
+	void changeMouseStatus(bool show, bool grab)
+	{
+		if (show)
+		{
+			// If shown don't grab the mouse
+			SDL_SetRelativeMouseMode(SDL_FALSE);
+			SDL_ShowCursor(1);
+		}
+		else
+		{
+			if (grab)
+			{
+				SDL_SetRelativeMouseMode(SDL_TRUE);
+			}
+			else
+			{
+				SDL_SetRelativeMouseMode(SDL_FALSE);
+			}
+
+			SDL_ShowCursor(0);
+		}
+	}
 }
 
 namespace io
@@ -143,8 +166,9 @@ namespace io
 
 		CursorManager* CursorManager::mSingleton = nullptr;
 
-		CursorManager::CursorManager() : mCurrentCursor(nullptr), mCursorShown(true), mMouseGrabbed(false)
+		CursorManager::CursorManager() : mCurrentCursor(nullptr)
 		{
+			mStatusStack.push_back(std::make_tuple(true, false));
 		}
 
 		CursorManager::~CursorManager()
@@ -198,7 +222,7 @@ namespace io
 
 			mLoadedCursors.push_back(std::move(cursor));
 
-			return cursor.get();
+			return mLoadedCursors.back().get();
 		}
 
 		void CursorManager::setCurrentCursor(Cursor* cursor)
@@ -211,34 +235,36 @@ namespace io
 
 		void CursorManager::showCursor(bool show, bool grab)
 		{
-			if (show == mCursorShown && grab == mMouseGrabbed)
+			auto current = mStatusStack.back();
+			if (show == std::get<0>(current) && grab == std::get<1>(current))
 			{
 				// Don't bother calling anithing if it's not going to change anything
 				return;
 			}
 
-			if (show)
-			{
-				// If shown don't grab the mouse
-				SDL_SetRelativeMouseMode(SDL_FALSE);
-				SDL_ShowCursor(1);
-			}
-			else
-			{
-				if (grab)
-				{
-					SDL_SetRelativeMouseMode(SDL_TRUE);
-				}
-				else
-				{
-					SDL_SetRelativeMouseMode(SDL_FALSE);
-				}
+			changeMouseStatus(show, grab);
 
-				SDL_ShowCursor(0);
-			}
-
-			mCursorShown = show;
-			mMouseGrabbed = grab;
+			mStatusStack.back() = std::make_tuple(show, grab);
+		}
+			
+		void CursorManager::pushStatus()
+		{
+			// Copy the last status into the top
+			mStatusStack.push_back(mStatusStack.back());
+		}
+		
+		std::tuple<bool, bool> CursorManager::popStatus()
+		{
+			Assertion(mStatusStack.size() > 1, "Can't pop the last status!");
+			
+			auto current = mStatusStack.back();
+			
+			mStatusStack.pop_back();
+			
+			auto newState = mStatusStack.back();
+			changeMouseStatus(std::get<0>(newState), std::get<1>(newState));
+			
+			return current;
 		}
 
 		void CursorManager::init()
@@ -253,34 +279,7 @@ namespace io
 		{
 			CursorManager* manager = get();
 
-			int game_state = gameseq_get_state();
-
-			switch (game_state) {
-			case GS_STATE_GAME_PAUSED:
-				// case GS_STATE_MULTI_PAUSED:
-				// Don't grab the mouse when we are pausing, helps with debugging
-				manager->showCursor(false);
-				break;
-			case GS_STATE_GAME_PLAY:
-			case GS_STATE_DEATH_DIED:
-			case GS_STATE_DEATH_BLEW_UP:
-				if (popup_active() || popupdead_is_active())
-				{
-					manager->showCursor(true);
-				}
-				else
-				{
-					// Always grab the mouse when in gameplay
-					manager->showCursor(false, true);
-				}
-				break;
-
-			default:
-				manager->showCursor(true);
-				break;
-			}	// end switch
-
-			if (manager->mCurrentCursor != nullptr && manager->mCursorShown)
+			if (manager->mCurrentCursor != nullptr && manager->isCursorShown())
 			{
 				manager->mCurrentCursor->setCurrentFrame();
 			}

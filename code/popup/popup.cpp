@@ -1023,10 +1023,14 @@ int popup(int flags, int nchoices, ... )
 	
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
+	io::mouse::CursorManager::get()->pushStatus();
 	io::mouse::CursorManager::get()->showCursor(true);
 	Popup_is_active = 1;
 
 	choice = popup_do( &Popup_info, flags );
+	
+	io::mouse::CursorManager::get()->popStatus();
+	
 	switch(choice) {
 	case POPUP_ABORT:
 		return -1;
@@ -1076,10 +1080,14 @@ int popup_till_condition(int (*condition)(), ...)
 
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
+	io::mouse::CursorManager::get()->pushStatus();
 	io::mouse::CursorManager::get()->showCursor(true);
 	Popup_is_active = 1;
 
 	choice = popup_do_with_condition( &Popup_info, flags, condition );
+	
+	io::mouse::CursorManager::get()->popStatus();
+	
 	switch(choice) {
 	case POPUP_ABORT:
 		return 0;

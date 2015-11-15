@@ -83,8 +83,7 @@ namespace io
 
 			Cursor* mCurrentCursor; //! The current cursor
 
-			bool mCursorShown; //! @c true of cursor is shown or @c false if not
-			bool mMouseGrabbed; //! @c true if the mouse is grabbed, @c false if not
+			SCP_vector<std::tuple<bool, bool>> mStatusStack;
 
 			/**
 			 * @brief Default constructor
@@ -138,13 +137,17 @@ namespace io
 			 * @brief Specifies if the cursor is shown
 			 * @return @c true if shown ,@c false otherwise
 			 */
-			bool isCursorShown() { return mCursorShown; }
+			bool isCursorShown() { return std::get<0>(mStatusStack.back()); }
 
 			/**
 			 * @brief Gets the current cursor
 			 * @return The current cursor instance
 			 */
 			Cursor* getCurrentCursor() { return mCurrentCursor; }
+			
+			void pushStatus();
+			
+			std::tuple<bool, bool> popStatus();
 
 		public:
 			/**
