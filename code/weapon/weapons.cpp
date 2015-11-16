@@ -687,6 +687,14 @@ void parse_wi_flags(weapon_info *weaponp, int wi_flags, int wi_flags2, int wi_fl
 			weaponp->wi_flags3 |= WIF3_APPLY_RECOIL;
 		else if (!stricmp(NOX("don't spawn if shot"), weapon_strings[i]))
 			weaponp->wi_flags3 |= WIF3_DONT_SPAWN_IF_SHOT;
+		else if (!stricmp(NOX("die on lost lock"), weapon_strings[i])) {
+			if (!(weaponp->wi_flags & WIF_LOCKED_HOMING)) {
+				Warning(LOCATION, "\"die on lost lock\" may only be used for Homing Type ASPECT/JAVELIN!");
+			}
+			else {
+				weaponp->wi_flags3 |= WIF3_DIE_ON_LOST_LOCK;
+			}
+		}
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}
@@ -4253,13 +4261,20 @@ void weapon_home(object *obj, int num, float frame_time)
 	// Goober5000 - this has been fixed back to more closely follow the original logic.  Remember, the retail code
 	// had 0.5 second of free flight time, the first half of which was spent ramping up to full speed.
 	if ((hobjp == &obj_used_list) || ( f2fl(Missiontime - wp->creation_time) < (wip->free_flight_time / 2) )) {
-		//	If this is a heat seeking homing missile and [free-flight-time] has elapsed since firing
-		//	and we don't have a target (else we wouldn't be inside the IF), find a new target.
-        if ((wip->wi_flags & WIF_HOMING_HEAT) &&
-            (f2fl(Missiontime - wp->creation_time) > wip->free_flight_time))
-        {
-            find_homing_object(obj, num);
-        }
+		if (f2fl(Missiontime - wp->creation_time) > wip->free_flight_time) {
+			// If this is a heat seeking homing missile and [free-flight-time] has elapsed since firing
+			// and we don't have a target (else we wouldn't be inside the IF), find a new target.
+			if (wip->wi_flags & WIF_HOMING_HEAT) {
+				find_homing_object(obj, num);
+			}
+			// modders may want aspect homing missiles to die if they lose their target
+			else if (wip->wi_flags & WIF_LOCKED_HOMING && wip->wi_flags3 & WIF3_DIE_ON_LOST_LOCK) {
+				if (wp->lifeleft > 0.5f) {
+					wp->lifeleft = frand_range(0.1f, 0.5f); // randomise a bit to avoid multiple missiles detonating in one frame
+				}
+				return;
+			}
+		}
 		else if (MULTIPLAYER_MASTER && (wip->wi_flags & WIF_LOCKED_HOMING) && (wp->weapon_flags & WF_HOMING_UPDATE_NEEDED)) {
 			wp->weapon_flags &= ~WF_HOMING_UPDATE_NEEDED; 
 			send_homing_weapon_info(num);
@@ -4359,6 +4374,8 @@ void weapon_home(object *obj, int num, float frame_time)
 			wp->homing_object = &obj_used_list;
 			return;
 	}
+
+	// TODO maybe add flag to allow WF_LOCKED_HOMING to lose target when target is dead
 
 	switch (hobjp->type) {
 	case OBJ_NONE:
