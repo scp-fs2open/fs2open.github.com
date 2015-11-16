@@ -13529,7 +13529,7 @@ float ship_calculate_rearm_duration( object *objp )
 	while (ssp != END_OF_LIST(&sp->subsys_list))
 	{
 		max_subsys_repair = ssp->max_hits * (The_mission.support_ships.max_subsys_repair_val * 0.01f);
-		if ((max_subsys_repair > ssp->current_hits) && (sip->sup_hull_repair_rate > 0.0f))
+		if ((max_subsys_repair > ssp->current_hits) && (sip->sup_subsys_repair_rate > 0.0f))
 		{
 			subsys_rep_time += (max_subsys_repair - ssp->current_hits) / (ssp->max_hits * sip->sup_subsys_repair_rate);
 		}
