@@ -1866,7 +1866,7 @@ void mission_campaign_exit_loop()
  * all previous missions marked skipped
  * this relies on correct mission ordering in the campaign file
  */
-void mission_campaign_jump_to_mission(char *name)
+void mission_campaign_jump_to_mission(char *name, bool no_skip)
 {
 	int i = 0, mission_num = -1;
 	char dest_name[64], *p;
@@ -1886,10 +1886,10 @@ void mission_campaign_jump_to_mission(char *name)
 		if ((Campaign.missions[i].name != NULL) && !stricmp(Campaign.missions[i].name, dest_name)) {
 			mission_num = i;
 			break;
-		} else {
+		} else if (!no_skip) {
 			Campaign.missions[i].flags |= CMISSION_FLAG_SKIPPED;
 			Campaign.num_missions_completed = i;
-		}
+		}	
 	}
 
 	if (mission_num < 0) {
@@ -1898,10 +1898,11 @@ void mission_campaign_jump_to_mission(char *name)
 		mission_campaign_savefile_delete(Campaign.filename);
 		mission_campaign_load(Campaign.filename);
 	} else {
-		for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+		for (SCP_vector<ship_info>::iterator it = Ship_info.begin(); it != Ship_info.end(); it++) {
+			i = static_cast<int>(std::distance(Ship_info.begin(), it));
 			Campaign.ships_allowed[i] = 1;
 		}
-		for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+		for (i = 0; i < Num_weapon_types; i++) {
 			Campaign.weapons_allowed[i] = 1;
 		}
 
