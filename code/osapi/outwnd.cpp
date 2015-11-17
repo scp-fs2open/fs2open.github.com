@@ -17,7 +17,6 @@
 
 #include "osapi/osapi.h"
 #include "osapi/outwnd.h"
-#include "osapi/monopub.h"
 #include "graphics/2d.h"
 #include "freespace2/freespaceresource.h"
 #include "globalincs/systemvars.h"
