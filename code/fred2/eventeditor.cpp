@@ -1299,7 +1299,7 @@ void event_editor::OnDeleteMsg()
 	char buf[256];
 
 	// handle this case somewhat gracefully
-	Assert((m_cur_msg >= 0) && (m_cur_msg < m_num_messages));
+	Assertion((m_cur_msg >= -1) && (m_cur_msg < m_num_messages), "Unexpected m_cur_msg value (%d); expected either -1, or between 0-%d. Get a coder!\n", m_cur_msg, m_num_messages - 1);
 	if((m_cur_msg < 0) || (m_cur_msg >= m_num_messages)){
 		return;
 	}

@@ -124,6 +124,7 @@ extern int Num_weapon_subtypes;
 #define WIF3_AOE_ELECTRONICS			(1 << 7)	// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
 #define WIF3_APPLY_RECOIL				(1 << 8)	// Apply recoil using weapon and ship info
 #define WIF3_DONT_SPAWN_IF_SHOT			(1 << 9)	// Prevent shot down parent weapons from spawning children (DahBlount)
+#define WIF3_DIE_ON_LOST_LOCK			(1 << 10)	// WIF_LOCKED_HOMING missiles will die if they lose their lock
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
@@ -264,6 +265,8 @@ typedef struct beam_weapon_info {
 	int beam_warmdown_sound;			// warmdown sound
 	int beam_num_sections;				// the # of visible "sections" on the beam
 	generic_anim beam_glow;				// muzzle glow bitmap
+	float glow_length;					// (DahBlount) determines the length the muzzle glow when using a directional glow
+	bool directional_glow;				// (DahBlount) makes the muzzle glow render to a poly that is oriented along the direction of fire
 	int beam_shots;						// # of shots the beam takes
 	float beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
@@ -359,8 +362,7 @@ typedef struct weapon_info {
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
-	float	min_damage;							// lowest damage the weapon can deal. (DahBlount)
-	float	max_damage;							// highest damage the weapon can deal. (DahBlount)
+	float	atten_damage;							// The damage to attenuate to. (DahBlount)
 
 	shockwave_create_info shockwave;
 	shockwave_create_info dinky_shockwave;
@@ -501,6 +503,8 @@ typedef struct weapon_info {
 	float cm_aspect_effectiveness;
 	float cm_heat_effectiveness;
 	float cm_effective_rad;
+	float cm_detonation_rad;
+	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
 
     // *
                

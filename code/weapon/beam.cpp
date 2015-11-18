@@ -1424,46 +1424,136 @@ void beam_render_muzzle_glow(beam *b)
 	if (alpha <= 0.0f)
 		return;
 
-	// draw the bitmap
-	if (Cmdline_nohtl)
-		g3_rotate_vertex(&pt, &b->last_start);
-	else
-		g3_transfer_vertex(&pt, &b->last_start);
+	if (bwi->directional_glow == true){
+		vertex h1[4];
+		vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };
+		vec3d fvec, top1, top2, bottom1, bottom2, sub1, sub2, start, end;
+
+		vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
+		vm_vec_normalize_quick(&fvec);
+
+		vm_vec_copy_scale(&sub1, &fvec, rad);
+		vm_vec_sub(&start, &b->last_start, &sub1);
+		vm_vec_copy_scale(&sub2, &fvec, bwi->glow_length);
+		vm_vec_add(&end, &start, &sub2);
+
+		int cull = gr_set_cull(0);
+
+		beam_calc_facing_pts(&top1, &bottom1, &fvec, &start, rad, 1.0f);
+		beam_calc_facing_pts(&top2, &bottom2, &fvec, &end, rad, 1.0f);
+
+		if (Cmdline_nohtl) {
+			g3_rotate_vertex(verts[0], &bottom1);
+			g3_rotate_vertex(verts[1], &bottom2);
+			g3_rotate_vertex(verts[2], &top2);
+			g3_rotate_vertex(verts[3], &top1);
+		}
+		else {
+			g3_transfer_vertex(verts[0], &bottom1);
+			g3_transfer_vertex(verts[1], &bottom2);
+			g3_transfer_vertex(verts[2], &top2);
+			g3_transfer_vertex(verts[3], &top1);
+		}
+
+		for (int idx = 0; idx < 4; idx++) {
+			g3_project_vertex(verts[idx]);
+		}
+
+		verts[0]->texture_position.u = 1.0f;
+		verts[0]->texture_position.v = 0.0f;
+		verts[1]->texture_position.u = 0.0f;
+		verts[1]->texture_position.v = 0.0f;
+		verts[2]->texture_position.u = 0.0f;
+		verts[2]->texture_position.v = 1.0f;
+		verts[3]->texture_position.u = 1.0f;
+		verts[3]->texture_position.v = 1.0f;
+
+		verts[0]->r = 255;
+		verts[1]->r = 255;
+		verts[2]->r = 255;
+		verts[3]->r = 255;
+		verts[0]->g = 255;
+		verts[1]->g = 255;
+		verts[2]->g = 255;
+		verts[3]->g = 255;
+		verts[0]->b = 255;
+		verts[1]->b = 255;
+		verts[2]->b = 255;
+		verts[3]->b = 255;
+		verts[0]->a = 255;
+		verts[1]->a = 255;
+		verts[2]->a = 255;
+		verts[3]->a = 255;
+
+		int framenum = 0;
+
+		if (bwi->beam_glow.num_frames > 1) {
+			b->beam_glow_frame += flFrametime;
+
+			// Sanity checks
+			if (b->beam_glow_frame < 0.0f)
+				b->beam_glow_frame = 0.0f;
+			else if (b->beam_glow_frame > 100.0f)
+				b->beam_glow_frame = 0.0f;
+
+			while (b->beam_glow_frame > bwi->beam_glow.total_time)
+				b->beam_glow_frame -= bwi->beam_glow.total_time;
+
+			framenum = fl2i((b->beam_glow_frame * bwi->beam_glow.num_frames) / bwi->beam_glow.total_time);
+
+			CLAMP(framenum, 0, bwi->beam_glow.num_frames - 1);
+		}
+
+		gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
+
+		// draw a poly
+		g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+
+		gr_set_cull(cull);
+
+	} else {
+
+		// draw the bitmap
+		if (Cmdline_nohtl)
+			g3_rotate_vertex(&pt, &b->last_start);
+		else
+			g3_transfer_vertex(&pt, &b->last_start);
 
 
-	int framenum = 0;
+		int framenum = 0;
 
-	if (bwi->beam_glow.num_frames > 1) {
-		b->beam_glow_frame += flFrametime;
+		if (bwi->beam_glow.num_frames > 1) {
+			b->beam_glow_frame += flFrametime;
 
-		// Sanity checks
-		if (b->beam_glow_frame < 0.0f)
-			b->beam_glow_frame = 0.0f;
-		else if (b->beam_glow_frame > 100.0f)
-			b->beam_glow_frame = 0.0f;
+			// Sanity checks
+			if (b->beam_glow_frame < 0.0f)
+				b->beam_glow_frame = 0.0f;
+			else if (b->beam_glow_frame > 100.0f)
+				b->beam_glow_frame = 0.0f;
 
-		while (b->beam_glow_frame > bwi->beam_glow.total_time)
-			b->beam_glow_frame -= bwi->beam_glow.total_time;
+			while (b->beam_glow_frame > bwi->beam_glow.total_time)
+				b->beam_glow_frame -= bwi->beam_glow.total_time;
 
-		framenum = fl2i( (b->beam_glow_frame * bwi->beam_glow.num_frames) / bwi->beam_glow.total_time );
+			framenum = fl2i((b->beam_glow_frame * bwi->beam_glow.num_frames) / bwi->beam_glow.total_time);
 
-		CLAMP(framenum, 0, bwi->beam_glow.num_frames-1);
+			CLAMP(framenum, 0, bwi->beam_glow.num_frames - 1);
+		}
+
+		gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
+
+		// draw 1 bitmap
+		g3_draw_bitmap(&pt, 0, rad, tmap_flags);
+
+		// maybe draw more
+		if (pct > 0.3f)
+			g3_draw_bitmap(&pt, 0, rad * 0.75f, tmap_flags, rad * 0.25f);
+
+		if (pct > 0.5f)
+			g3_draw_bitmap(&pt, 0, rad * 0.45f, tmap_flags, rad * 0.55f);
+
+		if (pct > 0.7f)
+			g3_draw_bitmap(&pt, 0, rad * 0.25f, tmap_flags, rad * 0.75f);
 	}
-
-	gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
-
-	// draw 1 bitmap
-	g3_draw_bitmap(&pt, 0, rad, tmap_flags);
-	
-	// maybe draw more
-	if (pct > 0.3f)
-		g3_draw_bitmap(&pt, 0, rad * 0.75f, tmap_flags, rad * 0.25f);
-
-	if (pct > 0.5f)
-		g3_draw_bitmap(&pt, 0, rad * 0.45f, tmap_flags, rad * 0.55f);
-
-	if (pct > 0.7f)
-		g3_draw_bitmap(&pt, 0, rad * 0.25f, tmap_flags, rad * 0.75f);
 }
 
 // render all beam weapons
