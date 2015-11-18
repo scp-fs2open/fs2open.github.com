@@ -396,7 +396,7 @@ extern int Fred_running;  // Is Fred running, or FreeSpace?
 #include "math/floating.h"
 
 // Some constants for stuff
-#define MAX_FILENAME_LEN	32		// Length for filenames, ie "title.pcx"
+#define MAX_FILENAME_LEN	256		// Length for filenames, ie "title.pcx"; bumped from 32 to 256
 #define MAX_PATH_LEN		256		// Length for pathnames, ie "c:\bitmaps\title.pcx"
 
 // contants and defined for byteswapping routines (useful for mac)

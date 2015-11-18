@@ -12,7 +12,7 @@
 
 // from parselo.h
 #define	PATHNAME_LENGTH			192
-#define	NAME_LENGTH				32
+#define	NAME_LENGTH				128			// bumped from 32 to 128
 #define	SEXP_LENGTH				128
 #define	DATE_LENGTH				32
 #define	TIME_LENGTH				16
@@ -28,14 +28,14 @@
 #define MISSION_DESC_LENGTH		512
 
 // from player.h
-#define CALLSIGN_LEN					28		//	shortened from 32 to allow .plr to be attached without exceeding MAX_FILENAME_LEN
+#define CALLSIGN_LEN					252		//	shortened from 32 to allow .plr to be attached without exceeding MAX_FILENAME_LEN; bumped to 252
 #define SHORT_CALLSIGN_PIXEL_W	80		// max width of short_callsign[] in pixels
 
 #define MAX_IFFS		10
 
 // from ship.h
-#define MAX_SHIPS					400			// max number of ship instances there can be.DTP; bumped from 200 to 400
-#define SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400
+#define MAX_SHIPS					8000			// max number of ship instances there can be.DTP; bumped from 200 to 400; bumped to 8000
+#define SHIPS_LIMIT					8000			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400; bumped to 8000
 
 // from missionparse.h and then redefined to the same value in sexp.h
 #define TOKEN_LENGTH	32
@@ -45,9 +45,9 @@
 // ****************************************************************
 #define MAX_SHIP_CLASSES_MULTI	130
 
-#define MAX_SHIP_CLASSES		500
+#define MAX_SHIP_CLASSES		1000
 
-#define MAX_WINGS				75
+#define MAX_WINGS				1500			// max number of ship instances there can be.DTP; bumped from 75 to 1500
 
 #define MAX_SHIPS_PER_WING			6
 
@@ -80,7 +80,7 @@
 #define MAX_POLYGON_MODELS  300
 
 // object.h
-#define MAX_OBJECTS			3500		
+#define MAX_OBJECTS			70000				// bumped from 3500 to 70000	
 
 // from lighting.cpp
 #define MAX_LIGHTS 256
