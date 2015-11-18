@@ -4670,9 +4670,10 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 
 	pmi = model_get_instance(model_instance_num);
 	pm = model_get(pmi->model_num);
-
-	Assert( sub_model_num >= 0 );
-	Assert( sub_model_num < pm->n_models );
+	
+	Assertion(sub_model_num >= 0 && sub_model_num < pm->n_models,
+		"Sub model number (%d) which should be updated is out of range! Must be between 0 and %d. This happend on model %s.",
+		sub_model_num, pm->n_models - 1, pm->filename);
 
 	if ( sub_model_num < 0 ) return;
 	if ( sub_model_num >= pm->n_models ) return;
