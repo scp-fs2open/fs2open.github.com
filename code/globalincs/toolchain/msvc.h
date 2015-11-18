@@ -23,6 +23,7 @@
 #define SCP_FORMAT_STRING_ARGS(x,y)
 
 #define __attribute__(x)
+#define __UNUSED
 
 #ifdef NO_RESTRICT_USE
 #   define RESTRICT

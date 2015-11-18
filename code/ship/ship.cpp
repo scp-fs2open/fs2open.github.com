@@ -7547,7 +7547,7 @@ void ship_subsystems_delete(ship *shipp)
 void ship_delete( object * obj )
 {
 	ship	*shipp;
-	int	num, objnum __attribute__((__unused__));
+	int	num, objnum __UNUSED;
 
 	num = obj->instance;
 	Assert( num >= 0);
@@ -16377,7 +16377,7 @@ void ship_page_in()
 
 	// Page in all the ship classes that are used on this level
 	int num_ship_types_used = 0;
-	int test_id __attribute__((__unused__)) = -1;
+	int test_id __UNUSED = -1;
 
 	memset( fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
 

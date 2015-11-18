@@ -20,6 +20,8 @@
 #define SCP_FORMAT_STRING
 #define SCP_FORMAT_STRING_ARGS(x,y)  __attribute__((format(printf, x, y)))
 
+#define __UNUSED __attribute__((__unused__))
+
 #ifdef NO_RESTRICT_USE
 #	define RESTRICT
 #else
