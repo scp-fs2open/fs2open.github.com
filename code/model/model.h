@@ -998,7 +998,8 @@ extern void model_make_turret_matrix(int model_num, model_subsystem * turret );
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
-extern void submodel_rotate(model_subsystem *psub, submodel_instance_info * sii);
+extern void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii);
+extern void submodel_rotate(bsp_info *sm, submodel_instance_info *sii);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.  Does this for stepped rotations

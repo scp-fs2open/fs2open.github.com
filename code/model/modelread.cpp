@@ -3569,6 +3569,11 @@ void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii)
 
 	if ( sm->movement_type != MOVEMENT_TYPE_ROT ) return;
 
+	submodel_rotate(sm, sii);
+}
+
+void submodel_rotate(bsp_info *sm, submodel_instance_info *sii)
+{
 	// save last angles
 	sii->prev_angs = sii->angs;
 

@@ -1454,6 +1454,31 @@ void obj_move_all(float frametime)
 		Script_system.RemHookVars(2, "User", "Target");
 	}
 
+	// Now that we've moved all the objects, move all the models that use dumb-rotate.  We do that here because we already handled the
+	// ship models in obj_move_all_post, and this is more or less conceptually close enough to move the rest.  (Originally all models
+	// were dumb-rotated here, but there are collision-related reasons for rotations to happen where they do, even dumb ones.)
+	for (auto dumb_it = Dumb_rotations.begin(); dumb_it != Dumb_rotations.end(); ++dumb_it) {
+		// Skip ships because we handled them earlier
+		if (!dumb_it->is_ship) {
+			// Just as in ship_model_update_instance: first clear all the angles in the model to zero
+			model_clear_submodel_instances(dumb_it->model_instance_num);
+
+			polymodel_instance *pmi = model_get_instance(dumb_it->model_instance_num);
+
+			// Handle all submodels which have $dumb_rotate
+			for (auto sub_it = dumb_it->list.begin(); sub_it != dumb_it->list.end(); ++sub_it) {
+				polymodel *pm = model_get(pmi->model_num);
+				bsp_info *sm = &pm->submodel[sub_it->submodel_num];
+
+				// First, calculate the angles for the rotation
+				submodel_rotate(sm, sub_it->submodel_info_1);
+
+				// Now actually rotate the submodel instance
+				model_update_instance(dumb_it->model_instance_num, sub_it->submodel_num, sub_it->submodel_info_1);
+			}
+		}
+	}
+
 	//	After all objects have been moved, move all docked objects.
 	objp = GET_FIRST(&obj_used_list);
 	while( objp !=END_OF_LIST(&obj_used_list) )	{

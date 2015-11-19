@@ -13045,7 +13045,6 @@ void ship_model_start(object *objp)
 			model_set_instance(model_num, psub->turret_gun_sobj, &pss->submodel_info_2, pss->flags );
 		}
 	}
-	model_do_dumb_rotation(model_num);
 }
 
 /**
@@ -13109,8 +13108,27 @@ void ship_model_update_instance(object *objp)
 		}
 	}
 
-	model_instance_dumb_rotation(model_instance_num);
+	// Handle dumb_rotate for this ship
+	for (auto dumb_it = Dumb_rotations.begin(); dumb_it != Dumb_rotations.end(); ++dumb_it) {
+		if (dumb_it->model_instance_num == model_instance_num) {
+			polymodel_instance *pmi = model_get_instance(dumb_it->model_instance_num);
 
+			// Handle all submodels which have $dumb_rotate
+			for (auto sub_it = dumb_it->list.begin(); sub_it != dumb_it->list.end(); ++sub_it) {
+				polymodel *pm = model_get(pmi->model_num);
+				bsp_info *sm = &pm->submodel[sub_it->submodel_num];
+
+				// First, calculate the rotation
+				submodel_rotate(sm, sub_it->submodel_info_1);
+
+				// Now actually rotate the submodel
+				model_update_instance(dumb_it->model_instance_num, sub_it->submodel_num, sub_it->submodel_info_1);
+			}
+
+			// once we've handled this one ship, we're done
+			break;
+		}
+	}
 
 	// preprocess subobject orientations for collision detection
 	model_collide_preprocess(&objp->orient, model_instance_num);
