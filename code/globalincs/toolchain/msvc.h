@@ -79,3 +79,6 @@
 #else
 #	define NOEXCEPT  noexcept
 #endif
+
+#define likely(x)
+#define unlikely(x)
