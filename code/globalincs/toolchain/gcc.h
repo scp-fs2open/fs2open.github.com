@@ -21,6 +21,7 @@
 #define SCP_FORMAT_STRING_ARGS(x,y)  __attribute__((format(printf, x, y)))
 
 #define __UNUSED __attribute__((__unused__))
+#define __ALIGNED(x)  __attribute__((__aligned__(x)))
 
 #ifdef NO_RESTRICT_USE
 #   define RESTRICT

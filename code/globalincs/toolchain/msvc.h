@@ -24,6 +24,7 @@
 
 #define __attribute__(x)
 #define __UNUSED
+#define __ALIGNED(x)  __declspec(align(x))
 
 #ifdef NO_RESTRICT_USE
 #   define RESTRICT
