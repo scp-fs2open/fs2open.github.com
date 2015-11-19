@@ -402,8 +402,6 @@ static int Ship_cargo_check_timer;
 
 static int Thrust_anim_inited = 0;
 
-bool warning_too_many_ship_classes = false;
-
 int ship_get_subobj_model_num(ship_info* sip, char* subobj_name);
 
 SCP_vector<ship_effect> Ship_effects;
@@ -1743,15 +1741,7 @@ int parse_ship(const char *filename, bool replace)
 		
 		//Check if there are too many ship classes
 		if(Ship_info.size() >= MAX_SHIP_CLASSES) {
-			if (!warning_too_many_ship_classes) {
-				Warning(LOCATION, "Too many ship classes before '%s'; maximum is %d, so only the first " SIZE_T_ARG " will be used\nPlease check also the debug log as it may contain other ship classes which are over the limit", buf, MAX_SHIP_CLASSES, Ship_info.size());
-				warning_too_many_ship_classes = true;
-			} else {
-				mprintf(("Warning: Too many ship classes before '%s'\n", buf));
-			}
-			
-			skip_to_start_of_string_either("$Name:", "#End");
-			return -1;
+			Error(LOCATION, "Too many ship classes before '%s'; maximum is %d.\n", buf, MAX_SHIP_CLASSES);
 		}
 
 		//Init vars
