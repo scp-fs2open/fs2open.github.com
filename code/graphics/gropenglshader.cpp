@@ -306,6 +306,7 @@ static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
 	SCP_string sflags;
 
 #ifdef __APPLE__
+	sflags += "#version 120\n";
 	sflags += "#define APPLE\n";
 #endif
 
