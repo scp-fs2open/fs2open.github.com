@@ -13686,14 +13686,12 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	}
 
 	// figure out repairs for subsystems
-	if(repair_allocated > 0) {
-		if(sip->sup_subsys_repair_rate == 0.0f)
-			repair_allocated = 0.0f;
-		else if(sip->sup_hull_repair_rate == 0.0f)
-			repair_allocated = shipp->ship_max_hull_strength * frametime * sip->sup_subsys_repair_rate;
-		else if(!(sip->sup_hull_repair_rate == sip->sup_subsys_repair_rate))
-			repair_allocated = repair_allocated * sip->sup_subsys_repair_rate / sip->sup_hull_repair_rate;
-	}
+	if(sip->sup_subsys_repair_rate == 0.0f)
+		repair_allocated = 0.0f;
+	else if(sip->sup_hull_repair_rate == 0.0f)
+		repair_allocated = shipp->ship_max_hull_strength * frametime * sip->sup_subsys_repair_rate;
+	else if(!(sip->sup_hull_repair_rate == sip->sup_subsys_repair_rate))
+		repair_allocated = repair_allocated * sip->sup_subsys_repair_rate / sip->sup_hull_repair_rate;
 
 	// check the subsystems of the ship.
 	subsys_all_ok = 1;
