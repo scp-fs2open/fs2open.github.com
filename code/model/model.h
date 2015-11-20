@@ -1371,7 +1371,7 @@ void model_finish_cloak(int full_cloak);
 
 void model_do_look_at(int model_num); //Bobboau
 
-void model_do_dumb_rotation(int modelnum); //Bobboau
+void model_do_dumb_rotations(int model_instance_num = -1);
 
 int model_should_render_engine_glow(int objnum, int bank_obj);
 

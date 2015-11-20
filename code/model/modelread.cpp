@@ -4592,8 +4592,6 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 	sii->step_zero_timestamp = timestamp();
 }
 
-
-
 // Sets the submodel instance data in a submodel (for all detail levels)
 void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags)
 {
@@ -4718,93 +4716,70 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	}
 }
 
-void model_instance_dumb_rotation_sub(polymodel_instance * pmi, polymodel *pm, int mn)
+void model_do_dumb_rotations_sub(const dumb_rotation *dr)
 {
-	while ( mn >= 0 )	{
+	polymodel_instance *pmi = model_get_instance(dr->model_instance_num);
+	Assert(pmi != nullptr);
 
-		bsp_info * sm = &pm->submodel[mn];
-		submodel_instance *smi = &pmi->submodel[mn];
+	// Handle all submodels which have $dumb_rotate
+	for (auto sub_it = dr->list.begin(); sub_it != dr->list.end(); ++sub_it)
+	{
+		polymodel *pm = model_get(pmi->model_num);
+		bsp_info *sm = &pm->submodel[sub_it->submodel_num];
+		Assert(pm != nullptr && sm != nullptr);
 
-		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ){
-			float *ang;
-			int axis = sm->movement_axis;
-			switch ( axis ) {
-			case MOVEMENT_AXIS_X:
-				ang = &smi->angs.p;
-					break;
-			case MOVEMENT_AXIS_Z:
-				ang = &smi->angs.b;
-					break;
-			default:
-			case MOVEMENT_AXIS_Y:
-				ang = &smi->angs.h;
-					break;
-			}
-			*ang = sm->dumb_turn_rate * float(timestamp())/1000.0f;
-			*ang = ((*ang/(PI*2.0f))-float(int(*ang/(PI*2.0f))))*(PI*2.0f);
-			//this keeps ang from getting bigger than 2PI
-		}
+		// First, calculate the angles for the rotation
+		submodel_rotate(sm, sub_it->submodel_info_1);
 
-		if ( pm->submodel[mn].first_child > -1 )
-			model_instance_dumb_rotation_sub(pmi, pm, pm->submodel[mn].first_child);
-
-		mn = pm->submodel[mn].next_sibling;
+		// Now actually rotate the submodel instance
+		model_update_instance(dr->model_instance_num, sub_it->submodel_num, sub_it->submodel_info_1);
 	}
 }
 
-void model_instance_dumb_rotation(int model_instance_num)
+// Handle the $dumb_rotate rotations for either a) a single ship model; or b) all non-ship models.  The reason for the two cases is that ship_model_update_instance will
+// be called for each ship via obj_move_all_post, but we also need to handle non-ship models once obj_move_all_post exits.  Since the two processes are almost identical,
+// they are both handled here.
+//
+// This function is quite a bit different than Bobboau's old model_do_dumb_rotation function.  Whereas Bobboau used the brute-force technique of navigating through
+// each model hierarchy as it was rendered, this function should be seen as a version of obj_move_all_post, but for models rather than objects.  In fact, the only reason
+// for the special ship case is that the ship dumb rotations kind of need to be handled where all the other ship rotations are.  (Unless you want inconsistent collisions
+// or damage sparks that aren't attached to models.)
+//
+// -- Goober5000
+void model_do_dumb_rotations(int model_instance_num)
 {
-	polymodel *pm;
-	polymodel_instance *pmi;
+	// we are handling a specific ship
+	if (model_instance_num >= 0)
+	{
+		for (auto dumb_it = Dumb_rotations.begin(); dumb_it != Dumb_rotations.end(); ++dumb_it)
+		{
+			if (dumb_it->model_instance_num == model_instance_num)
+			{
+				// we're just doing one ship, and in ship_model_update_instance, that ship's angles were already set to zero
 
-	pmi = model_get_instance(model_instance_num);
-	pm = model_get(pmi->model_num);
-	int mn = pm->detail[0];
+				// Now update the angles in the submodels
+				model_do_dumb_rotations_sub(dumb_it);
 
-	model_instance_dumb_rotation_sub(pmi, pm, mn);
-}
-
-void model_do_children_dumb_rotation(polymodel * pm, int mn)
-{
-	while ( mn >= 0 ) {
-
-		bsp_info * sm = &pm->submodel[mn];
-
-		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ) {
-			float *ang;
-			int axis = sm->movement_axis;
-			switch(axis) {
-			case MOVEMENT_AXIS_X:
-				ang = &sm->angs.p;
-					break;
-			case MOVEMENT_AXIS_Z:
-				ang = &sm->angs.b;
-					break;
-			default:
-			case MOVEMENT_AXIS_Y:
-				ang = &sm->angs.h;
-					break;
+				// once we've handled this one ship, we're done
+				break;
 			}
-
-			*ang = sm->dumb_turn_rate * float(timestamp())/1000.0f;
-			*ang = ((*ang/(PI*2.0f))-float(int(*ang/(PI*2.0f))))*(PI*2.0f);
-			//this keeps ang from getting bigger than 2PI
 		}
-
-		if (pm->submodel[mn].first_child >-1) { 
-			model_do_children_dumb_rotation(pm, pm->submodel[mn].first_child);
-		}
-
-		mn = pm->submodel[mn].next_sibling;
 	}
-}
-void model_do_dumb_rotation(int pn){
-	polymodel * pm;
+	// we are handling all non-ships
+	else
+	{
+		for (auto dumb_it = Dumb_rotations.begin(); dumb_it != Dumb_rotations.end(); ++dumb_it)
+		{
+			if (!dumb_it->is_ship)
+			{
+				// Just as in ship_model_update_instance: first clear all the angles in the model to zero
+				model_clear_submodel_instances(dumb_it->model_instance_num);
 
-	pm = model_get(pn);
-	int mn = pm->detail[0];
-
-	model_do_children_dumb_rotation(pm,mn);
+				// Now update the angles in the submodels
+				model_do_dumb_rotations_sub(dumb_it);
+			}
+		}
+	}
 }
 
 void model_do_children_look_at(polymodel * pm, int mn)

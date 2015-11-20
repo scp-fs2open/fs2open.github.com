@@ -13080,6 +13080,7 @@ void ship_model_update_instance(object *objp)
 	// Then, clear all the angles in the model to zero
 	model_clear_submodel_instances(model_instance_num);
 
+	// Handle subsystem rotations for this ship
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 		switch (psub->type) {
@@ -13108,27 +13109,8 @@ void ship_model_update_instance(object *objp)
 		}
 	}
 
-	// Handle dumb_rotate for this ship
-	for (auto dumb_it = Dumb_rotations.begin(); dumb_it != Dumb_rotations.end(); ++dumb_it) {
-		if (dumb_it->model_instance_num == model_instance_num) {
-			polymodel_instance *pmi = model_get_instance(dumb_it->model_instance_num);
-
-			// Handle all submodels which have $dumb_rotate
-			for (auto sub_it = dumb_it->list.begin(); sub_it != dumb_it->list.end(); ++sub_it) {
-				polymodel *pm = model_get(pmi->model_num);
-				bsp_info *sm = &pm->submodel[sub_it->submodel_num];
-
-				// First, calculate the rotation
-				submodel_rotate(sm, sub_it->submodel_info_1);
-
-				// Now actually rotate the submodel
-				model_update_instance(dumb_it->model_instance_num, sub_it->submodel_num, sub_it->submodel_info_1);
-			}
-
-			// once we've handled this one ship, we're done
-			break;
-		}
-	}
+	// Handle dumb rotations for this ship
+	model_do_dumb_rotations(model_instance_num);
 
 	// preprocess subobject orientations for collision detection
 	model_collide_preprocess(&objp->orient, model_instance_num);

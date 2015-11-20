@@ -2011,8 +2011,6 @@ void model_render_DEPRECATED(int model_num, matrix *orient, vec3d * pos, uint fl
 
 	polymodel *pm = model_get(model_num);
 
-	model_do_dumb_rotation(model_num);
-
 	if (flags & MR_FORCE_CLAMP)
 		gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
 
