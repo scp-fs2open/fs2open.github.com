@@ -14895,7 +14895,8 @@ ADE_INDEXER(l_Mission_Wings, "number Index/string WingName", "Wings in the missi
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Wing.Set(-1));
 
-	int idx = wing_name_lookup(name);
+	//MageKing17 - Make the count-ignoring version of the lookup and leave checking if the wing has any ships to the scripter
+	int idx = wing_lookup(name);
 	
 	if(idx < 0)
 	{
