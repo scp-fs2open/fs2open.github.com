@@ -8842,6 +8842,18 @@ ADE_VIRTVAR(Name, l_Wing, "string", "Name of Wing", "string", "Wing name, or emp
 	return ade_set_args(L, "s", Wings[wdx].name);
 }
 
+ADE_FUNC(isValid, l_Wing, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Wing.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= Num_wings)
+		return ADE_RETURN_FALSE;
+
+	return ADE_RETURN_TRUE;
+}
+
 //**********HANDLE: Ship
 ade_obj<object_h> l_Ship("ship", "Ship handle", &l_Object);
 
