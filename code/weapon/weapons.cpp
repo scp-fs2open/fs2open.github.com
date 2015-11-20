@@ -1183,15 +1183,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		if(Num_weapon_types >= MAX_WEAPON_TYPES) {
-			Warning(LOCATION, "Too many weapon classes before '%s'; maximum is %d, so only the first %d will be used", fname, MAX_WEAPON_TYPES, Num_weapon_types);
-			
-			//Skip the rest of the ships in non-modular tables, since we can't add them.
-			if(!replace) {
-				if ( !skip_to_start_of_string_either("$Name:", "#End")) {
-					Int3();
-				}
-			}
-			return -1;
+			Error(LOCATION, "Too many weapon classes before '%s'; maximum is %d.\n", fname, MAX_WEAPON_TYPES);
 		}
 
 		wip = &Weapon_info[Num_weapon_types];
