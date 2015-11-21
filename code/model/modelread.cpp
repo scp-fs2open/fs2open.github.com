@@ -2803,6 +2803,14 @@ void model_delete_instance(int model_instance_num)
 	vm_free(pmi);
 
 	Polygon_model_instances[model_instance_num] = NULL;
+
+	// delete dumb rotations associated with this instance
+	for (auto dumb_it = Dumb_rotations.cbegin(); dumb_it != Dumb_rotations.cend(); ++dumb_it) {
+		if (dumb_it->model_instance_num == model_instance_num) {
+			Dumb_rotations.erase(dumb_it);
+			break;
+		}
+	}
 }
 
 // ensure that the subsys path is at least SUBSYS_PATH_DIST from the 
