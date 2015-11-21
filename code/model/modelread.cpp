@@ -1247,14 +1247,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 				}
 
-				// Sets can_move on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
-				if ( (pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
-					|| strstr(props, "$triggered:") || strstr(props, "$rotate") || strstr(props, "$dumb_rotate:") || strstr(props, "$gun_rotation:") || strstr(props, "$gun_rotation") ) {
-					pm->submodel[n].can_move = true;
-				} else if (pm->submodel[n].parent > -1 && pm->submodel[pm->submodel[n].parent].can_move) {
-					pm->submodel[n].can_move = true;
-				}
-
 				if ( ( p = strstr(props, "$look_at:")) != NULL ) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_LOOK_AT;
 					get_user_prop_value(p+9, pm->submodel[n].look_at);
@@ -1267,8 +1259,18 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				if ( ( p = strstr(props, "$dumb_rotate:") ) != NULL ) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_DUMB_ROTATE;
 					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
+
+					pm->flags |= PM_FLAG_HAS_DUMB_ROTATE;
 				} else {
 					pm->submodel[n].dumb_turn_rate = 0.0f;
+				}
+
+				// Sets can_move on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
+				if ((pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
+					|| strstr(props, "$triggered:") || strstr(props, "$rotate") || strstr(props, "$gun_rotation:") || strstr(props, "$gun_rotation")) {
+					pm->submodel[n].can_move = true;
+				} else if (pm->submodel[n].parent > -1 && pm->submodel[pm->submodel[n].parent].can_move) {
+					pm->submodel[n].can_move = true;
 				}
 
 				if ( pm->submodel[n].name[0] == '\0' ) {
@@ -2765,24 +2767,29 @@ int model_create_instance(int model_num)
 		Polygon_model_instances[open_slot] = pmi;
 	}
 
-	// optimistically create a dumb_rotation for this instance...
-	dumb_rotation dumb_rot(true, open_slot);
-
 	polymodel *pm = model_get(model_num);
 
 	pmi->submodel = (submodel_instance*)vm_malloc( sizeof(submodel_instance)*pm->n_models );
 
 	for ( i = 0; i < pm->n_models; i++ ) {
 		model_clear_submodel_instance( &pmi->submodel[i], &pm->submodel[i] );
-
-		if (pm->submodel[i].movement_type == MOVEMENT_TYPE_DUMB_ROTATE) {
-			dumb_rot.list.push_back(submodel_dumb_rotation(i));
-		}
 	}
 
-	// ...but only store the dumb_rotation if it exists
-	if (!dumb_rot.list.empty()) {
-		Dumb_rotations.push_back(dumb_rot);
+	// add dumb_rotate instances if this model is dumb-rotating
+	if (pm->flags & PM_FLAG_HAS_DUMB_ROTATE) {
+		dumb_rotation dumb_rot(true, open_slot);
+
+		for (i = 0; i < pm->n_models; i++) {
+			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_DUMB_ROTATE) {
+				dumb_rot.list.push_back(submodel_dumb_rotation(i));
+			}
+		}
+
+		if (dumb_rot.list.empty()) {
+			Assertion(!dumb_rot.list.empty(), "This model has the HAS_DUMB_ROTATE flag; why doesn't it have a dumb-rotating submodel?");
+		} else {
+			Dumb_rotations.push_back(dumb_rot);
+		}
 	}
 
 	return open_slot;
