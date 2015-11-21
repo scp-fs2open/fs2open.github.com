@@ -256,7 +256,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "no disappear",			MSS_FLAG2_NO_DISAPPEAR, 1},
 	{ "collide submodel",		MSS_FLAG2_COLLIDE_SUBMODEL, 1},
 	{ "allow destroyed rotation",	MSS_FLAG2_DESTROYED_ROTATION, 1},
-	{ "turret use ammo",		MSS_FLAG2_TURRET_USE_AMMO, 1}
+	{ "turret use ammo",		MSS_FLAG2_TURRET_USE_AMMO, 1},
+	{ "autorepair if disabled",	MSS_FLAG2_AUTOREPAIR_IF_DISABLED, 1},
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -310,6 +311,7 @@ flag_def_list Ship_flags[] = {
 	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
 	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
 	{ "model point shields",		SIF2_MODEL_POINT_SHIELDS,	1 },
+	{ "repair disabled subsystems", SIF2_SUBSYS_REPAIR_WHEN_DISABLED, 1},
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -6307,6 +6309,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags |= SSF_PLAY_SOUND_FOR_PLAYER;
 		if (model_system->flags2 & MSS_FLAG2_NO_DISAPPEAR)
 			ship_system->flags |= SSF_NO_DISAPPEAR;
+		if (model_system->flags2 & MSS_FLAG2_AUTOREPAIR_IF_DISABLED)
+			ship_system->flags |= SSF_AUTOREPAIR_IF_DISABLED;
 
 		ship_system->turn_rate = model_system->turn_rate;
 
@@ -8774,7 +8778,7 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 		if ( ssp->current_hits < ssp->max_hits ) {
 
 			// only repair those subsystems which are not destroyed
-			if ( ssp->max_hits <= 0 || ssp->current_hits <= 0 )
+			if ( (ssp->max_hits <= 0) || ((ssp->current_hits <= 0) && !((sip->flags2 & SIF2_SUBSYS_REPAIR_WHEN_DISABLED) || (ssp->flags & SSF_AUTOREPAIR_IF_DISABLED))) )
 				continue;
 
 			// do incremental repair on the subsystem
@@ -8790,7 +8794,14 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 				if ( ssip->aggregate_current_hits > ssip->aggregate_max_hits ) {
 					ssip->aggregate_current_hits = ssip->aggregate_max_hits;
 				}
-			}		
+			}
+
+			// check to see if this subsystem was totally non functional before -- if so, then
+			// reset the flags
+			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (sp->flags & SF_DISABLED) ) {
+				sp->flags &= ~SF_DISABLED;
+				ship_reset_disabled_physics(objp, sp->ship_info_index);
+			}
 		}
 	}	// end for
 }

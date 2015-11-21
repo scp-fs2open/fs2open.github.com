@@ -294,6 +294,7 @@ typedef struct cockpit_display_info {
 #define SSF_NO_AGGREGATE		(1 << 12)		// exclude this subsystem from the aggregate subsystem-info tracking - Goober5000
 #define SSF_PLAY_SOUND_FOR_PLAYER	( 1 << 13)	// If this subsystem is a turret on a player ship, play firing sounds - The E 
 #define SSF_NO_DISAPPEAR		( 1 << 14)		// prevents submodel from disappearing when subsys destroyed
+#define SSF_AUTOREPAIR_IF_DISABLED	(1 << 15)	// Allows the subsystem to repair itself even when disabled - MageKing17
 
 
 // Wanderer 
@@ -931,6 +932,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_AUTO_SPREAD_SHIELDS			(1 << 16)	// zookeeper - auto spread shields
 #define SIF2_DRAW_WEAPON_MODELS				(1 << 17)	// the ship draws weapon models of any sort (used to be a boolean)
 #define SIF2_MODEL_POINT_SHIELDS			(1 << 18)	// zookeeper - uses model-defined shield points instead of quadrants
+#define SIF2_SUBSYS_REPAIR_WHEN_DISABLED	(1 << 19)	// MageKing17 - Subsystems auto-repair themselves even when disabled.
 
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
