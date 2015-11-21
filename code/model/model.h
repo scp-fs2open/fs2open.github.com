@@ -35,6 +35,7 @@ extern int model_render_flags_size;
 #define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
 #define MOVEMENT_TYPE_TRIGGERED			3	//triggered rotation
 #define MOVEMENT_TYPE_LOOK_AT			4	// the subobject is always looking at a 'look at' subobject, as best it can - Bobboau
+#define MOVEMENT_TYPE_DUMB_ROTATE		5
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
@@ -121,19 +122,18 @@ typedef struct polymodel_instance {
 #define MSS_FLAG_NO_SS_TARGETING	(1 << 16)		// toggles the subsystem targeting for the turret
 #define MSS_FLAG_TURRET_RESET_IDLE	(1 << 17)		// makes turret reset to their initial position if the target is out of field of view
 #define MSS_FLAG_TURRET_ALT_MATH	(1 << 18)		// tells the game to use additional calculations should turret have a defined y fov
-#define MSS_FLAG_DUM_ROTATES		(1 << 19)		// Bobboau
-#define MSS_FLAG_CARRY_SHOCKWAVE	(1 << 20)		// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
-#define MSS_FLAG_ALLOW_LANDING		(1 << 21)		// This subsystem can be landed on
-#define MSS_FLAG_FOV_EDGE_CHECK		(1 << 22)		// Tells the game to use better FOV edge checking with this turret
-#define MSS_FLAG_FOV_REQUIRED		(1 << 23)		// Tells game not to allow this turret to attempt targeting objects out of FOV
-#define MSS_FLAG_NO_REPLACE			(1 << 24)		// set the subsys not to draw replacement ('destroyed') model
-#define MSS_FLAG_NO_LIVE_DEBRIS		(1 << 25)		// sets the subsys not to release live debris
-#define MSS_FLAG_IGNORE_IF_DEAD		(1 << 26)		// tells homing missiles to ignore the subsys if its dead and home on to hull instead of earlier subsys pos
-#define MSS_FLAG_ALLOW_VANISHING	(1 << 27)		// allows subsystem to vanish (prevents explosions & sounds effects from being played)
-#define MSS_FLAG_DAMAGE_AS_HULL		(1 << 28)		// applies armor damage to subsystem instead of subsystem damage - FUBAR
-#define MSS_FLAG_TURRET_LOCKED      (1 << 29)       // Turret starts locked by default - Sushi
-#define MSS_FLAG_NO_AGGREGATE		(1 << 30)		// Don't include with aggregate subsystem types - Goober5000
-#define MSS_FLAG_TURRET_ANIM_WAIT   (1 << 31)		// Turret won't fire until animation is complete - Sushi
+#define MSS_FLAG_CARRY_SHOCKWAVE	(1 << 19)		// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
+#define MSS_FLAG_ALLOW_LANDING		(1 << 20)		// This subsystem can be landed on
+#define MSS_FLAG_FOV_EDGE_CHECK		(1 << 21)		// Tells the game to use better FOV edge checking with this turret
+#define MSS_FLAG_FOV_REQUIRED		(1 << 22)		// Tells game not to allow this turret to attempt targeting objects out of FOV
+#define MSS_FLAG_NO_REPLACE			(1 << 23)		// set the subsys not to draw replacement ('destroyed') model
+#define MSS_FLAG_NO_LIVE_DEBRIS		(1 << 24)		// sets the subsys not to release live debris
+#define MSS_FLAG_IGNORE_IF_DEAD		(1 << 25)		// tells homing missiles to ignore the subsys if its dead and home on to hull instead of earlier subsys pos
+#define MSS_FLAG_ALLOW_VANISHING	(1 << 26)		// allows subsystem to vanish (prevents explosions & sounds effects from being played)
+#define MSS_FLAG_DAMAGE_AS_HULL		(1 << 27)		// applies armor damage to subsystem instead of subsystem damage - FUBAR
+#define MSS_FLAG_TURRET_LOCKED      (1 << 28)       // Turret starts locked by default - Sushi
+#define MSS_FLAG_NO_AGGREGATE		(1 << 29)		// Don't include with aggregate subsystem types - Goober5000
+#define MSS_FLAG_TURRET_ANIM_WAIT   (1 << 30)		// Turret won't fire until animation is complete - Sushi
 
 #define MSS_FLAG2_PLAYER_TURRET_SOUND			 (1 << 0)
 #define MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE (1 << 1)	// Turrets only target things they're allowed to shoot at (e.g. if check-hull fails, won't keep targeting)
@@ -1055,10 +1055,10 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
-extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags = 0 );
-extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2 );
+extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, int flags = 0);
+extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2);
 
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, int flags);
+void model_update_instance(int model_instance_num, int sub_model_num, const submodel_instance_info *sii, int flags);
 void model_instance_dumb_rotation(int model_instance_num);
 
 // Adds an electrical arcing effect to a submodel

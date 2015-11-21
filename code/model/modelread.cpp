@@ -122,6 +122,38 @@ int Num_dock_type_names = sizeof(Dock_type_names) / sizeof(flag_def_list);
 
 SCP_vector<glow_point_bank_override> glowpoint_bank_overrides;
 
+
+// Goober5000 - reimplementation of Bobboau's $dumb_rotation feature in a way that works with the rest of the model instance system
+// note: since these data types are only ever used in this file, they don't need to be in model.h
+
+class submodel_dumb_rotation
+{
+public:
+	int submodel_num;
+	submodel_instance_info submodel_info_1;
+
+	submodel_dumb_rotation(int submodel_num)
+		: submodel_num(submodel_num)
+	{
+		memset(&submodel_info_1, 0, sizeof(submodel_info_1));
+	}
+};
+
+class dumb_rotation
+{
+public:
+	bool is_ship;
+	int model_instance_num;
+	SCP_vector<submodel_dumb_rotation> list;
+
+	dumb_rotation(bool is_ship, int model_instance_num)
+		: is_ship(is_ship), model_instance_num(model_instance_num), list()
+	{}
+};
+
+SCP_vector<dumb_rotation> Dumb_rotations;
+
+
 // Free up a model, getting rid of all its memory
 // With the basic page in system this can be called from outside of modelread.cpp
 void model_unload(int modelnum, int force)
@@ -1233,7 +1265,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 
 				if ( ( p = strstr(props, "$dumb_rotate:") ) != NULL ) {
-					pm->submodel[n].movement_type = MSS_FLAG_DUM_ROTATES;
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_DUMB_ROTATE;
 					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
 				} else {
 					pm->submodel[n].dumb_turn_rate = 0.0f;
@@ -2723,6 +2755,7 @@ int model_create_instance(int model_num)
 
 	polymodel_instance *pmi = (polymodel_instance*)vm_malloc(sizeof(polymodel_instance));
 	memset(pmi, 0, sizeof(polymodel_instance));
+	pmi->model_num = model_num;
 
 	// if not found, create a slot
 	if ( open_slot < 0 ) {
@@ -2732,15 +2765,25 @@ int model_create_instance(int model_num)
 		Polygon_model_instances[open_slot] = pmi;
 	}
 
+	// optimistically create a dumb_rotation for this instance...
+	dumb_rotation dumb_rot(true, open_slot);
+
 	polymodel *pm = model_get(model_num);
 
 	pmi->submodel = (submodel_instance*)vm_malloc( sizeof(submodel_instance)*pm->n_models );
 
 	for ( i = 0; i < pm->n_models; i++ ) {
 		model_clear_submodel_instance( &pmi->submodel[i], &pm->submodel[i] );
+
+		if (pm->submodel[i].movement_type == MOVEMENT_TYPE_DUMB_ROTATE) {
+			dumb_rot.list.push_back(submodel_dumb_rotation(i));
+		}
 	}
 
-	pmi->model_num = model_num;
+	// ...but only store the dumb_rotation if it exists
+	if (!dumb_rot.list.empty()) {
+		Dumb_rotations.push_back(dumb_rot);
+	}
 
 	return open_slot;
 }
@@ -4593,7 +4636,7 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 }
 
 // Sets the submodel instance data in a submodel (for all detail levels)
-void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags)
+void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, int flags)
 {
 	int i;
 	polymodel * pm;
@@ -4665,7 +4708,7 @@ void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1
 	sm->angs.h = angle_2;
 }
 
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, int flags)
+void model_update_instance(int model_instance_num, int sub_model_num, const submodel_instance_info *sii, int flags)
 {
 	int i;
 	polymodel *pm;
@@ -4716,7 +4759,7 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	}
 }
 
-void model_do_dumb_rotations_sub(const dumb_rotation *dr)
+void model_do_dumb_rotations_sub(dumb_rotation *dr)
 {
 	polymodel_instance *pmi = model_get_instance(dr->model_instance_num);
 	Assert(pmi != nullptr);
@@ -4729,10 +4772,10 @@ void model_do_dumb_rotations_sub(const dumb_rotation *dr)
 		Assert(pm != nullptr && sm != nullptr);
 
 		// First, calculate the angles for the rotation
-		submodel_rotate(sm, sub_it->submodel_info_1);
+		submodel_rotate(sm, &sub_it->submodel_info_1);
 
 		// Now actually rotate the submodel instance
-		model_update_instance(dr->model_instance_num, sub_it->submodel_num, sub_it->submodel_info_1);
+		model_update_instance(dr->model_instance_num, sub_it->submodel_num, &sub_it->submodel_info_1);
 	}
 }
 
@@ -4758,7 +4801,7 @@ void model_do_dumb_rotations(int model_instance_num)
 				// we're just doing one ship, and in ship_model_update_instance, that ship's angles were already set to zero
 
 				// Now update the angles in the submodels
-				model_do_dumb_rotations_sub(dumb_it);
+				model_do_dumb_rotations_sub(&(*dumb_it));
 
 				// once we've handled this one ship, we're done
 				break;
@@ -4776,7 +4819,7 @@ void model_do_dumb_rotations(int model_instance_num)
 				model_clear_submodel_instances(dumb_it->model_instance_num);
 
 				// Now update the angles in the submodels
-				model_do_dumb_rotations_sub(dumb_it);
+				model_do_dumb_rotations_sub(&(*dumb_it));
 			}
 		}
 	}
