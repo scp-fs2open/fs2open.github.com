@@ -132,10 +132,12 @@ public:
 	int submodel_num;
 	submodel_instance_info submodel_info_1;
 
-	submodel_dumb_rotation(int submodel_num)
+	submodel_dumb_rotation(int submodel_num, float turn_rate)
 		: submodel_num(submodel_num)
 	{
 		memset(&submodel_info_1, 0, sizeof(submodel_info_1));
+		submodel_info_1.cur_turn_rate = turn_rate;
+		submodel_info_1.desired_turn_rate = turn_rate;
 	}
 };
 
@@ -2743,7 +2745,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	return pm->id;
 }
 
-int model_create_instance(int model_num)
+int model_create_instance(bool is_ship, int model_num)
 {
 	int i = 0;
 	int open_slot = -1;
@@ -2781,7 +2783,7 @@ int model_create_instance(int model_num)
 
 		for (i = 0; i < pm->n_models; i++) {
 			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_DUMB_ROTATE) {
-				dumb_rot.list.push_back(submodel_dumb_rotation(i));
+				dumb_rot.list.push_back(submodel_dumb_rotation(i, pm->submodel[i].dumb_turn_rate));
 			}
 		}
 

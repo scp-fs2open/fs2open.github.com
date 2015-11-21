@@ -832,7 +832,7 @@ void model_instance_free_all();
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
-int model_create_instance(int model_num);
+int model_create_instance(bool is_ship, int model_num);
 void model_delete_instance(int model_instance_num);
 
 // Goober5000

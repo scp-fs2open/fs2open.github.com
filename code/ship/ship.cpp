@@ -9867,7 +9867,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	model_anim_set_initial_states(shipp);
 
-	shipp->model_instance_num = model_create_instance(sip->model_num);
+	shipp->model_instance_num = model_create_instance(true, sip->model_num);
 
 	shipp->time_created = Missiontime;
 
@@ -10297,7 +10297,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_assign_sound(sp);
 	
 	// create new model instance data
-	sp->model_instance_num = model_create_instance(sip->model_num);
+	sp->model_instance_num = model_create_instance(true, sip->model_num);
 
 	// Valathil - Reinitialize collision checks
 	if ( Cmdline_old_collision_sys ) {
