@@ -40,27 +40,7 @@ char Multi_update_error_string[512];
 // initialize the http xfer of the version info file, return 1 on success
 int multi_update_http_init()
 {
-	char url_file[512] = "";
-	char local_file[512] = "";
-
-	// url
-	strcpy_s(url_file, VERSION_URL);
-
-	// local file
-	strcpy_s(local_file, Cfile_root_dir);
-	strcat_s(local_file, DIR_SEPARATOR_STR);
-	strcat_s(local_file, VERSION_LOC_FNAME);
-
-	// new file	
-	Multi_update_get = new InetGetFile(url_file, local_file);
-	if(Multi_update_get == NULL){
-		// error string
-		strcpy_s(Multi_update_error_string, XSTR("Could not get data from website", 977));
-
-		return 0;
-	}
-
-	return 1;
+	return 0;
 }
 
 // do frame for the popup. returns 0 if not done yet, 1 if succeeded, 2 on error

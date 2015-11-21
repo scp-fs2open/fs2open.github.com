@@ -12,6 +12,8 @@
 #ifndef __FS2_VERSIONING_HEADER_FILE
 #define __FS2_VERSIONING_HEADER_FILE
 
+#include "globalincs/vmallocator.h"
+
 // ----------------------------------------------------------------------------------------------------------------
 // VERSION DEFINES/VARS
 //
@@ -38,25 +40,29 @@
 #define FS_VERSION_REVIS 000000				// SVN revision
 //#define FS_VERSION_IDENT NOX("custom")	// special build release identifier, must be a string (don't define unless it's supposed to be used!!)
 
-#define VERSION_LOC_FNAME			"version.nfo"
-#define MOTD_LOC_FNAME				"motd.txt"
-
-#define MOTD_URL						"http://www.pxo.net/files/fs2/motd.txt"
-#define VERSION_URL					"http://www.pxo.net/files/fs2/version.nfo"
-
-#define VERSION_FILE_COMMENT_CHAR ';'
-#define NO_VERSION_IN_REGISTRY		-2
-
-// ----------------------------------------------------------------------------------------------------------------
-// VERSION FUNCTIONS
-//
-
-// compare version against the passed version file
-// returns -1 on error 
-// 0 if we are an earlier version
-// 1 if same version
-// 2 if higher version
-// fills in user version and latest version values if non-NULL
-int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, int *l_major, int *l_minor, int *l_build);
+namespace version
+{
+	/**
+	 * @brief Checks if the current version is at least the given version
+	 * 
+	 * @param major The major version to check
+	 * @param minor The minor version to check
+	 * @param build The build version to check
+	 * @param revision The revision version to check
+	 *
+	 * @returns @c true when we are at least the given version, @c false otherwise
+	 */
+	bool check_at_least(int major, int minor, int build, int revision);
+	
+	/**
+	 * @brief Returns the string representation of the passed version
+	 * @param major The major version to format
+	 * @param minor The minor version to format
+	 * @param build The build version to format
+	 * @param revision The revision version to format
+	 * @returns A string representation of the version number
+	 */
+	SCP_string format_version(int major, int minor, int build, int revision);
+}
 
 #endif

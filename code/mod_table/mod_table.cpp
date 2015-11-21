@@ -6,6 +6,7 @@
 
 #include "gamesnd/eventmusic.h"
 #include "globalincs/def_files.h"
+#include "globalincs/version.h"
 #include "localization/localize.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionmessage.h"
@@ -51,6 +52,36 @@ void parse_mod_table(const char *filename)
 		reset_parse();
 
 		// start parsing
+		optional_string("#GAME SETTINGS");
+		
+		if (optional_string("$Minimum version:")) {
+			int major = 0;
+			int minor = 0;
+			int build = 0;
+			int revision = 0;
+			
+			required_string("+Major:");
+			stuff_int(&major);
+			
+			required_string("+Minor:");
+			stuff_int(&minor);
+			
+			required_string("+Build:");
+			stuff_int(&build);
+			
+			if (optional_string("+Revision:")) {
+				stuff_int(&revision);
+			}
+			
+			mprintf(("Game Settings Table: Parsed minimum version of %s\n", version::format_version(major, minor, build, revision).c_str()));
+			
+			if (!version::check_at_least(major, minor, build, revision)) {
+				Error(LOCATION, "This modification needs at least version %s of FreeSpace Open. However, the current is only %s!",
+					  version::format_version(major, minor, build, revision).c_str(),
+					  version::format_version(FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS).c_str());
+			}
+		}
+		
 		optional_string("#CAMPAIGN SETTINGS");
 
 		if (optional_string("$Default Campaign File Name:")) {
