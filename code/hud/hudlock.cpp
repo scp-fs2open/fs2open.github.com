@@ -35,7 +35,6 @@
 vec3d lock_world_pos;
 
 static float Lock_start_dist;
-static int Rotate_time_id = 1;	// timer id for controlling how often to rotate triangles around lock indicator
 
 int Missile_track_loop = -1;
 int Missile_lock_loop = -1;
@@ -68,9 +67,6 @@ int Lock_gauge_half_h[GR_NUM_RESOLUTIONS] = {
 	25
 };
 
-int Lock_gauge_loaded = 0;
-int Lock_gauge_draw = 0;
-int Lock_gauge_draw_stamp = -1;
 #define LOCK_GAUGE_BLINK_RATE			5			// blinks/sec
 
 int Lockspin_half_w[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS] = {
@@ -107,17 +103,11 @@ void hud_init_missile_lock()
 
 	Player_ai->last_secondary_index = -1;
 
-	Rotate_time_id = 1;
+	HudGaugeLock *gauge = static_cast<HudGaugeLock*>(hud_get_gauge("Lock indicator"));
 
-	// Load in the frames need for the lead indicator
-	//if (!Lock_gauge_loaded) {
-	//Commented out due to changes in HUD loading behaviour. These checks are no longer needed at this point.
-
-		Lock_gauge_loaded = 1;
-		
-		Lock_gauge_draw_stamp = -1;
-		Lock_gauge_draw = 0;
-	//}
+	gauge->Rotate_time_id = 1;
+	gauge->Lock_gauge_draw_stamp = -1;
+	gauge->Lock_gauge_draw = 0;
 }
 
 void hud_draw_diamond(int x, int y, int width, int height)
@@ -321,11 +311,12 @@ void hud_lock_reset(float lock_time_scale)
 	Player->locking_subsys_parent=-1;
 	hud_stop_looped_locking_sounds();
 
-	Lock_gauge_draw_stamp = -1;
-	Lock_gauge_draw = 0;
+	HudGaugeLock *gauge = static_cast<HudGaugeLock*>(hud_get_gauge("Lock indicator"));
+
+	gauge->Lock_gauge_draw_stamp = -1;
+	gauge->Lock_gauge_draw = 0;
 
 	// reset the lock anim time elapsed
-	HudGaugeLock *gauge = static_cast<HudGaugeLock*>(hud_get_gauge("Lock indicator"));
 	gauge->Lock_anim.time_elapsed = 0.0f;
 }
 
