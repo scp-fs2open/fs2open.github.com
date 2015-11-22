@@ -1450,7 +1450,7 @@ void model_render_children_buffers(draw_list* scene, model_render_params* interp
 	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
 
 	matrix inv_orientation;
-	vm_copy_transpose_matrix(&inv_orientation, &model->orientation);
+	vm_copy_transpose(&inv_orientation, &model->orientation);
 
 	matrix submodel_matrix;
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
@@ -2530,7 +2530,7 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint d
 	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
 
 	matrix inv_orientation;
-	vm_copy_transpose_matrix(&inv_orientation, &model->orientation);
+	vm_copy_transpose(&inv_orientation, &model->orientation);
 
 	matrix submodel_matrix;
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);

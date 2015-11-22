@@ -9261,7 +9261,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			vec3d origin_docker_point, adjusted_docker_point, v_offset;
 
 			// find out the rotation matrix that will get us from the old to the new rotation
-			vm_copy_transpose_matrix(&temp, &docker_objp->orient);
+			vm_copy_transpose(&temp, &docker_objp->orient);
 			vm_matrix_x_matrix(&m_offset, &temp, &dom);
 
 			// now find out the new docker point after being adjusted for the new orientation

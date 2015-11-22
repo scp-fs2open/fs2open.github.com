@@ -967,7 +967,7 @@ vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m)
 //returns ptr to dest vector
 //dest CANNOT equal source
 // This is a faster replacement for this common code sequence:
-//    vm_copy_transpose_matrix(&tempm,src_matrix);
+//    vm_copy_transpose(&tempm,src_matrix);
 //    vm_vec_rotate(dst_vec,src_vect,&tempm);
 // Replace with:
 //    vm_vec_unrotate(dst_vec,src_vect, src_matrix)
@@ -1003,7 +1003,7 @@ matrix *vm_transpose(matrix *m)
 
 //copy and transpose a matrix. returns ptr to matrix
 //dest CANNOT equal source. use vm_transpose() if this is the case
-matrix *vm_copy_transpose_matrix(matrix *dest, const matrix *src)
+matrix *vm_copy_transpose(matrix *dest, const matrix *src)
 {
 	Assert(dest != src);
 
@@ -1890,7 +1890,7 @@ void vm_matrix_interpolate(const matrix *goal_orient, const matrix *curr_orient,
 
 	//	FIND ROTATION NEEDED FOR GOAL
 	// goal_orient = R curr_orient,  so R = goal_orient curr_orient^-1
-	vm_copy_transpose_matrix(&Mtemp1, curr_orient);				// Mtemp1 = curr ^-1
+	vm_copy_transpose(&Mtemp1, curr_orient);				// Mtemp1 = curr ^-1
 	vm_matrix_x_matrix(&rot_matrix, &Mtemp1, goal_orient);	// R = goal * Mtemp1
 	vm_orthogonalize_matrix(&rot_matrix);
 	vm_matrix_to_rot_axis_and_angle(&rot_matrix, &theta, &rot_axis);		// determines angle and rotation axis from curr to goal
@@ -2032,7 +2032,7 @@ void get_camera_limits(const matrix *start_camera, const matrix *end_camera, flo
 	vec3d angle;
 
 	// determine the necessary rotation matrix
-	vm_copy_transpose_matrix(&temp, start_camera);
+	vm_copy_transpose(&temp, start_camera);
 	vm_matrix_x_matrix(&rot_matrix, &temp, end_camera);
 	vm_orthogonalize_matrix(&rot_matrix);
 
@@ -2402,7 +2402,7 @@ void vm_estimate_next_orientation(const matrix *last_orient, const matrix *curre
 
 	matrix Mtemp;
 	matrix Rot_matrix;
-	vm_copy_transpose_matrix(&Mtemp, last_orient);				// Mtemp = (L)^-1
+	vm_copy_transpose(&Mtemp, last_orient);				// Mtemp = (L)^-1
 	vm_matrix_x_matrix(&Rot_matrix, &Mtemp, current_orient);	// R = C Mtemp1
 	vm_matrix_x_matrix(next_orient, current_orient, &Rot_matrix);
 }
