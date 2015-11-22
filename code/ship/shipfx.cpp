@@ -157,7 +157,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 			// get radial velocity of debris
 			vec3d delta_x, radial_vel;
 			vm_vec_sub(&delta_x, &end_world_pos, &world_axis_pt);
-			vm_vec_crossprod(&radial_vel, &rotvel, &delta_x);
+			vm_vec_cross(&radial_vel, &rotvel, &delta_x);
 
 			if (Ship_info[ship_p->ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
 				// set velocity to cross center of knossos device
@@ -1803,8 +1803,8 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 	vec3d temp_rotvel = parent_ship_obj->phys_info.rotvel;
 	temp_rotvel.xyz.z = 0.0f;
 	vec3d vel_from_rotvel;
-	vm_vec_crossprod(&vel_from_rotvel, &temp_rotvel, &split_shipp->front_ship.local_pivot);
-	vm_vec_crossprod(&vel_from_rotvel, &temp_rotvel, &split_shipp->back_ship.local_pivot);
+	vm_vec_cross(&vel_from_rotvel, &temp_rotvel, &split_shipp->front_ship.local_pivot);
+	vm_vec_cross(&vel_from_rotvel, &temp_rotvel, &split_shipp->back_ship.local_pivot);
 
 	// set up velocity and make initial fireballs and particles
 	split_shipp->front_ship.phys_info.vel = parent_ship_obj->phys_info.vel;
@@ -1888,7 +1888,7 @@ static void half_ship_render_ship_and_debris(clip_ship* half_ship,ship *shipp)
 						debris_obj->orient = half_ship->orient;
 						
 						vm_vec_sub(&center_to_debris, &tmp, &half_ship->local_pivot);
-						vm_vec_crossprod(&debris_vel, &center_to_debris, &half_ship->phys_info.rotvel);
+						vm_vec_cross(&debris_vel, &center_to_debris, &half_ship->phys_info.rotvel);
 						vm_vec_add2(&debris_vel, &half_ship->phys_info.vel);
 						vm_vec_copy_normalize(&radial_vel, &center_to_debris);
 						float radial_mag = 10.0f + 30.0f*frand();
@@ -1988,7 +1988,7 @@ void shipfx_queue_render_ship_halves_and_debris(draw_list *scene, clip_ship* hal
 						debris_obj->orient = half_ship->orient;
 
 						vm_vec_sub(&center_to_debris, &tmp, &half_ship->local_pivot);
-						vm_vec_crossprod(&debris_vel, &center_to_debris, &half_ship->phys_info.rotvel);
+						vm_vec_cross(&debris_vel, &center_to_debris, &half_ship->phys_info.rotvel);
 						vm_vec_add2(&debris_vel, &half_ship->phys_info.vel);
 						vm_vec_copy_normalize(&radial_vel, &center_to_debris);
 						float radial_mag = 10.0f + 30.0f*frand();
@@ -3035,7 +3035,7 @@ void engine_wash_ship_process(ship *shipp)
 
 						// check if inside the sphere
 						if ( dist_sqr < ((radius_mult * radius_mult) * (bank->points[j].radius * bank->points[j].radius)) ) {
-							vm_vec_crossprod(&temp, &world_thruster_norm, &thruster_to_ship);
+							vm_vec_cross(&temp, &world_thruster_norm, &thruster_to_ship);
 							vm_vec_scale_add2(&shipp->wash_rot_axis, &temp, dot_to_ship / dist_sqr);
 							ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist));
 							if (!do_damage) {
@@ -3052,7 +3052,7 @@ void engine_wash_ship_process(ship *shipp)
 
 							// check if inside cone angle
 							if (vm_vec_dot(&apex_to_ship, &world_thruster_norm) > cos(half_angle)) {
-								vm_vec_crossprod(&temp, &world_thruster_norm, &thruster_to_ship);
+								vm_vec_cross(&temp, &world_thruster_norm, &thruster_to_ship);
 								vm_vec_scale_add2(&shipp->wash_rot_axis, &temp, dot_to_ship / dist_sqr);
 								ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist));
 								if (!do_damage) {

@@ -1472,8 +1472,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						vm_vec_normalize(&orient->vec.uvec);
 						vm_vec_normalize(&orient->vec.fvec);
 
-						vm_vec_crossprod(&orient->vec.rvec, &orient->vec.uvec, &orient->vec.fvec);
-						vm_vec_crossprod(&orient->vec.fvec, &orient->vec.rvec, &orient->vec.uvec);
+						vm_vec_cross(&orient->vec.rvec, &orient->vec.uvec, &orient->vec.fvec);
+						vm_vec_cross(&orient->vec.fvec, &orient->vec.rvec, &orient->vec.uvec);
 
 						vm_vec_normalize(&orient->vec.fvec);
 						vm_vec_normalize(&orient->vec.rvec);
@@ -3537,7 +3537,7 @@ void submodel_look_at(polymodel *pm, int mn)
 	vm_vec_normalize(&l);
 
 	vec3d c;
-	vm_vec_crossprod(&c, &l, &mp);
+	vm_vec_cross(&c, &l, &mp);
 	float dot=vm_vec_dot(&l,&mp);
 	if (dot>=0.0f) {
 		*a = asin(c.a1d[axis]);

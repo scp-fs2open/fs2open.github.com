@@ -89,7 +89,7 @@ void trail_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, flo
 	if (!IS_VEC_NULL(&rvec))
 		vm_vec_normalize( &rvec );
 
-	vm_vec_crossprod(&uvec,fvec,&rvec);
+	vm_vec_cross(&uvec,fvec,&rvec);
 	if (!IS_VEC_NULL(&uvec))
 		vm_vec_normalize(&uvec);
 

@@ -3729,7 +3729,7 @@ ADE_FUNC(getCrossProduct, l_Vector, "vector OtherVector", "Returns cross product
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	vec3d v3r;
-	vm_vec_crossprod(&v3r, v3a, v3b);
+	vm_vec_cross(&v3r, v3a, v3b);
 
 	return ade_set_args(L, "o",l_Vector.Set(v3r));
 }

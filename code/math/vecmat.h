@@ -295,8 +295,7 @@ float vm_vec_dot3(float x, float y, float z, vec3d *v);
 
 //computes cross product of two vectors. returns ptr to dest
 //dest CANNOT equal either source
-vec3d *vm_vec_crossprod(vec3d *dest, const vec3d *src0, const vec3d *src1);
-#define vm_vec_cross vm_vec_crossprod
+vec3d *vm_vec_cross(vec3d *dest, const vec3d *src0, const vec3d *src1);
 
 // test if 2 vectors are parallel or not.
 int vm_test_parallel(const vec3d *src0, const vec3d *src1);
