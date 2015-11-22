@@ -365,7 +365,6 @@ matrix *vm_transpose(matrix *m);
 //copy and transpose a matrix. returns ptr to matrix
 //dest CANNOT equal source. use vm_transpose() if this is the case
 matrix *vm_copy_transpose(matrix *dest, const matrix *src);
-#define vm_copy_transpose(dest,src) vm_copy_transpose((dest),(src))
 
 //mulitply 2 matrices, fill in dest.  returns ptr to dest
 //dest CANNOT equal either source
