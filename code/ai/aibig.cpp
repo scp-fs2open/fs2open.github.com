@@ -1239,7 +1239,7 @@ int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos)
 	float dist_to_target, dist_normal_to_target, time_to_target;
 	dist_to_target = vm_vec_mag_quick(&vec_to_target);
 	if (vm_vec_mag_quick(&aip->big_attack_surface_normal) > 0.9) {
-		dist_normal_to_target = -vm_vec_dotprod(&vec_to_target, &aip->big_attack_surface_normal);
+		dist_normal_to_target = -vm_vec_dot(&vec_to_target, &aip->big_attack_surface_normal);
 	} else {
 		dist_normal_to_target = 0.2f * vm_vec_mag_quick(&vec_to_target);
 	}

@@ -181,8 +181,8 @@ bool multi_oo_sort_func(const short &index1, const short &index2)
 	dist1 = vm_vec_copy_normalize(&vn1, &v1);
 	vm_vec_sub(&v2, &OO_player_obj->pos, &obj2->pos);
 	dist2 = vm_vec_copy_normalize(&vn2, &v2);
-	dot1 = vm_vec_dotprod(&OO_player_obj->orient.vec.fvec, &vn1);
-	dot2 = vm_vec_dotprod(&OO_player_obj->orient.vec.fvec, &vn2);
+	dot1 = vm_vec_dot(&OO_player_obj->orient.vec.fvec, &vn1);
+	dot2 = vm_vec_dot(&OO_player_obj->orient.vec.fvec, &vn2);
 
 	// objects in front take precedence
 	if((dot1 < 0.0f) && (dot2 >= 0.0f)){
@@ -1984,7 +1984,7 @@ void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_or
 	if(!IS_VEC_NULL_SQ_SAFE(&v_norm) && !IS_VEC_NULL_SQ_SAFE(&v_dir)){
 		vm_vec_normalize(&v_dir);
 		vm_vec_normalize(&v_norm);	
-		if(vm_vec_dotprod(&v_dir, &v_norm) < 0.0f){
+		if(vm_vec_dot(&v_dir, &v_norm) < 0.0f){
 			*new_pos = *cur_pos;
 		}
 	}

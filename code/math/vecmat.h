@@ -281,11 +281,10 @@ float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *st
 
 ////returns dot product of two vectors
 #ifdef _INLINE_VECMAT
-#define vm_vec_dotprod( v0, v1 ) (((v1)->xyz.x*(v0)->xyz.x)+((v1)->xyz.y*(v0)->xyz.y)+((v1)->xyz.z*(v0)->xyz.z))
+#define vm_vec_dot( v0, v1 ) (((v1)->xyz.x*(v0)->xyz.x)+((v1)->xyz.y*(v0)->xyz.y)+((v1)->xyz.z*(v0)->xyz.z))
 #define vm_vec_dot( v0, v1 ) (((v1)->xyz.x*(v0)->xyz.x)+((v1)->xyz.y*(v0)->xyz.y)+((v1)->xyz.z*(v0)->xyz.z))
 #else
-float vm_vec_dotprod(const vec3d *v0, const vec3d *v1);
-#define vm_vec_dot vm_vec_dotprod
+float vm_vec_dot(const vec3d *v0, const vec3d *v1);
 #endif
 
 #ifdef _INLINE_VECMAT

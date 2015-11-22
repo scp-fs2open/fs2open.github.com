@@ -8158,7 +8158,7 @@ void ship_dying_frame(object *objp, int ship_num)
 			if ( timestamp_elapsed(shipp->next_fireball)) {
 				vec3d rand_vec, outpnt; // [0-.7 rad] in plane
 				vm_vec_rand_vec_quick(&rand_vec);
-				float scale = -vm_vec_dotprod(&objp->orient.vec.fvec, &rand_vec) * (0.9f + 0.2f * frand());
+				float scale = -vm_vec_dot(&objp->orient.vec.fvec, &rand_vec) * (0.9f + 0.2f * frand());
 				vm_vec_scale_add2(&rand_vec, &objp->orient.vec.fvec, scale);
 				vm_vec_normalize_quick(&rand_vec);
 				scale = objp->radius * frand() * 0.717f;

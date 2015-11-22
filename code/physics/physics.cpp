@@ -922,9 +922,9 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 	area.xyz.y = (max->xyz.x - min->xyz.x) * (max->xyz.z - min->xyz.z);
 	area.xyz.z = (max->xyz.x - min->xyz.x) * (max->xyz.y - min->xyz.y);
 
-	normal.xyz.x = vm_vec_dotprod( direction_vec, &orient->vec.rvec );
-	normal.xyz.y = vm_vec_dotprod( direction_vec, &orient->vec.uvec );
-	normal.xyz.z = vm_vec_dotprod( direction_vec, &orient->vec.fvec );
+	normal.xyz.x = vm_vec_dot( direction_vec, &orient->vec.rvec );
+	normal.xyz.y = vm_vec_dot( direction_vec, &orient->vec.uvec );
+	normal.xyz.z = vm_vec_dot( direction_vec, &orient->vec.fvec );
 
 	sin.xyz.x = fl_sqrt( fl_abs(1.0f - normal.xyz.x*normal.xyz.x) );
 	sin.xyz.y = fl_sqrt( fl_abs(1.0f - normal.xyz.y*normal.xyz.y) );

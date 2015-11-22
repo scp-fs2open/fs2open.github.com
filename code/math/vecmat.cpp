@@ -97,7 +97,7 @@ float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d
 	float mag;
 	Assert( vm_vec_mag(unit_vec) > 0.999f  &&  vm_vec_mag(unit_vec) < 1.001f );
 
-	mag = vm_vec_dotprod(src, unit_vec);
+	mag = vm_vec_dot(src, unit_vec);
 	vm_vec_copy_scale(component, unit_vec, mag);
 	return mag;
 }
@@ -112,7 +112,7 @@ void vm_vec_projection_onto_plane(vec3d *projection, const vec3d *src, const vec
 	float mag;
 	Assert( vm_vec_mag(unit_normal) > 0.999f  &&  vm_vec_mag(unit_normal) < 1.001f );
 
-	mag = vm_vec_dotprod(src, unit_normal);
+	mag = vm_vec_dot(src, unit_normal);
 	*projection = *src;
 	vm_vec_scale_add2(projection, unit_normal, -mag);
 }
@@ -129,8 +129,8 @@ void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec
 	float dist;
 	Assert( vm_vec_mag(plane_normal) > 0.999f  &&  vm_vec_mag(plane_normal) < 1.001f );
 
-	D = -vm_vec_dotprod(plane_point, plane_normal);
-	dist = vm_vec_dotprod(point, plane_normal) + D;
+	D = -vm_vec_dot(plane_point, plane_normal);
+	dist = vm_vec_dot(point, plane_normal) + D;
 
 	*new_point = *point;
 	vm_vec_scale_add2(new_point, plane_normal, -dist);
@@ -328,7 +328,7 @@ void vm_vec_scale2(vec3d *dest, float n, float d)
 
 //returns dot product of 2 vectors
 #ifndef _INLINE_VECMAT
-float vm_vec_dotprod(const vec3d *v0, const vec3d *v1)
+float vm_vec_dot(const vec3d *v0, const vec3d *v1)
 {
 	return (v1->xyz.x*v0->xyz.x)+(v1->xyz.y*v0->xyz.y)+(v1->xyz.z*v0->xyz.z);
 }
@@ -734,7 +734,7 @@ float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 
 	if (fvec) {
 		vm_vec_cross(&t,v0,v1);
-		if ( vm_vec_dotprod(&t,fvec) < 0.0 )	{
+		if ( vm_vec_dot(&t,fvec) < 0.0 )	{
 			a = -a;
 		}
 	}
@@ -2103,7 +2103,7 @@ void vm_forward_interpolate(const vec3d *goal_f, const matrix *orient, const vec
 	if (t > 1.0f)
 		t = 1.0f;
 
-	z_dotprod = vm_vec_dotprod( &orient->vec.fvec, goal_f );
+	z_dotprod = vm_vec_dot( &orient->vec.fvec, goal_f );
 
 	if ( t < SMALLER_NUM )  {
 		if ( z_dotprod > 0.0f )
@@ -2540,7 +2540,7 @@ int vm_vec_dist_to_line(const vec3d *p, const vec3d *l0, const vec3d *l1, vec3d 
 	b_mag = vm_vec_copy_normalize(&c, &b);	
 
 	// calculate component
-	comp = vm_vec_dotprod(&a, &b) / b_mag;
+	comp = vm_vec_dot(&a, &b) / b_mag;
 
 	// stuff nearest
 	vm_vec_scale_add(nearest, l0, &c, comp);
@@ -2580,7 +2580,7 @@ void vm_vec_dist_squared_to_line(const vec3d *p, const vec3d *l0, const vec3d *l
 	b_mag = vm_vec_copy_normalize(&c, &b);	
 
 	// calculate component
-	comp = vm_vec_dotprod(&a, &b) / b_mag;
+	comp = vm_vec_dot(&a, &b) / b_mag;
 
 	// stuff nearest
 	vm_vec_scale_add(nearest, l0, &c, comp);

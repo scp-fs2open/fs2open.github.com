@@ -672,7 +672,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 	// get facing normal from knossos
 	vm_vec_sub(&vec_to_knossos, &sp_objp->pos, &center_pos);
 	facing_normal = sp_objp->orient.vec.fvec;
-	if (vm_vec_dotprod(&vec_to_knossos, &sp_objp->orient.vec.fvec) > 0) {
+	if (vm_vec_dot(&vec_to_knossos, &sp_objp->orient.vec.fvec) > 0) {
 		vm_vec_negate(&facing_normal);
 	}
 
@@ -694,7 +694,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 		max_warpout_angle = 0.866f;	// 30 degree half-angle cone for BIG or HUGE
 	}
 
-	if (-vm_vec_dotprod(&objp->orient.vec.fvec, &facing_normal) < max_warpout_angle) {	// within allowed angle
+	if (-vm_vec_dot(&objp->orient.vec.fvec, &facing_normal) < max_warpout_angle) {	// within allowed angle
 		Int3();
 		mprintf(("special warpout angle exceeded\n"));
 		return -1;
@@ -3023,7 +3023,7 @@ void engine_wash_ship_process(ship *shipp)
 				vm_vec_sub(&thruster_to_ship, &objp->pos, &world_thruster_pos);
 
 				// check if on back side of thruster
-				dot_to_ship = vm_vec_dotprod(&thruster_to_ship, &world_thruster_norm);
+				dot_to_ship = vm_vec_dot(&thruster_to_ship, &world_thruster_norm);
 				if (dot_to_ship > 0) {
 
 					// get max wash distance
@@ -3051,7 +3051,7 @@ void engine_wash_ship_process(ship *shipp)
 							vm_vec_normalize(&apex_to_ship);
 
 							// check if inside cone angle
-							if (vm_vec_dotprod(&apex_to_ship, &world_thruster_norm) > cos(half_angle)) {
+							if (vm_vec_dot(&apex_to_ship, &world_thruster_norm) > cos(half_angle)) {
 								vm_vec_crossprod(&temp, &world_thruster_norm, &thruster_to_ship);
 								vm_vec_scale_add2(&shipp->wash_rot_axis, &temp, dot_to_ship / dist_sqr);
 								ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist));
