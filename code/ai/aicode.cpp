@@ -8996,7 +8996,7 @@ void set_goal_dock_orient(matrix *dom, vec3d *docker_p0, vec3d *docker_p1, vec3d
 
 	//	Pre-multiply the orientation of the source object (docker_orient) by the transpose
 	//	of the docking bay's orientation, ie unrotate the source object's matrix.
-	vm_transpose_matrix(&m2);
+	vm_transpose(&m2);
 	vm_matrix_x_matrix(dom, &m3, &m2);
 }
 

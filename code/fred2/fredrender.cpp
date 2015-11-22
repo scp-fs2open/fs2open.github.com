@@ -1374,11 +1374,11 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 
 		vm_angles_2_matrix(&rotmat, &rotangs);
 		if (rotangs.h && Universal_heading)
-			vm_transpose_matrix(orient);
+			vm_transpose(orient);
 		vm_matrix_x_matrix(&newmat, orient, &rotmat);
 		*orient = newmat;
 		if (rotangs.h && Universal_heading)
-			vm_transpose_matrix(orient);
+			vm_transpose(orient);
 	}
 }
 

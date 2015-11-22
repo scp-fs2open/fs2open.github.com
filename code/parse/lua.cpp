@@ -461,7 +461,7 @@ ADE_FUNC(getTranspose, l_Matrix, NULL, "Returns a transpose version of the speci
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	matrix final = *mh->GetMatrix();
-	vm_transpose_matrix(&final);
+	vm_transpose(&final);
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&final)));
 }
