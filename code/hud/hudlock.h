@@ -25,6 +25,8 @@ void hud_lock_reset(float lock_time_scale=1.0f);
 
 class HudGaugeLock: public HudGauge
 {
+	friend void hud_lock_reset(float lock_time_scale);
+
 protected:
 	hud_anim Lock_gauge;
 	hud_anim Lock_anim;

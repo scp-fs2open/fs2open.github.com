@@ -325,7 +325,8 @@ void hud_lock_reset(float lock_time_scale)
 	Lock_gauge_draw = 0;
 
 	// reset the lock anim time elapsed
-//	Lock_anim.time_elapsed = 0.0f;
+	HudGaugeLock *gauge = static_cast<HudGaugeLock*>(hud_get_gauge("Lock indicator"));
+	gauge->Lock_anim.time_elapsed = 0.0f;
 }
 
 // Determine if the locking code has a point to track
