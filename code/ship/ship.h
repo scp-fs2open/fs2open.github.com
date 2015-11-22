@@ -295,6 +295,7 @@ typedef struct cockpit_display_info {
 #define SSF_PLAY_SOUND_FOR_PLAYER	( 1 << 13)	// If this subsystem is a turret on a player ship, play firing sounds - The E 
 #define SSF_NO_DISAPPEAR		( 1 << 14)		// prevents submodel from disappearing when subsys destroyed
 #define SSF_AUTOREPAIR_IF_DISABLED	(1 << 15)	// Allows the subsystem to repair itself even when disabled - MageKing17
+#define SSF_NO_AUTOREPAIR_IF_DISABLED (1 << 16) // Inversion of the above; allow a specific subsystem not to repair itself after being disabled if the ship has the "repair disabled subsystems" flag - MageKing17
 
 
 // Wanderer 
