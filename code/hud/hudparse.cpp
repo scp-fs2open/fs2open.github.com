@@ -3986,6 +3986,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, bool scale_
 	float origin[2] = {1.0, 0.0};
 	int offset[2];
 	int header_offsets[2];
+	bool fixed_header_position;
 	int left_frame_end_x;
 	
 	int single_wing_offsets[2];
@@ -4011,6 +4012,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, bool scale_
 
 	header_offsets[0] = 2;
 	header_offsets[1] = 2;
+	fixed_header_position = false;
 	left_frame_end_x = 71;
 	
 	single_wing_offsets[0] = 28;
@@ -4053,6 +4055,9 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, bool scale_
 	}
 	if(optional_string("Header Offsets:")) {
 		stuff_int_list(header_offsets, 2);
+	}
+	if(optional_string("Fixed Header Position:")) {
+		stuff_boolean(&fixed_header_position);
 	}
 	if(optional_string("Left Background Width:")) {
 		stuff_int(&left_frame_end_x);
@@ -4098,6 +4103,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, bool scale_
 
 	hud_gauge->initBitmaps(fname_left, fname_middle, fname_right, fname_dots);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
+	hud_gauge->initFixedHeaderPosition(fixed_header_position);
 	hud_gauge->initLeftFrameEndX(left_frame_end_x);
 	hud_gauge->initMultipleWingOffsets(multiple_wing_offsets[0], multiple_wing_offsets[1]);
 	hud_gauge->initSingleWingOffsets(single_wing_offsets[0], single_wing_offsets[1]);
