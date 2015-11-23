@@ -41,15 +41,15 @@
 #	define Assertion(expr, msg, ...)                                      \
 		do {                                                              \
 			if (!(expr)) {                                                \
-				WinAssert(#espr, __FILE__, __LINE__, msg, ##_VA_ARGS__);  \
+				WinAssert(#expr, __FILE__, __LINE__, msg, ##__VA_ARGS__); \
 			}                                                             \
 		} while (0)
 #endif
 
 /* C++11 Standard Detection */
-#if !defined(HAVE_CX11)
+#if !defined(HAVE_CXX11)
 	/*
-	 * For GCC with autotools, see AX_CXX_comPiLE_STDCXX_11 macro in the
+	 * For GCC with autotools, see AX_CXX_COMPiLE_STDCXX_11 macro in the
 	 * file "configure.ac". This sets HAVE_CXX11 & -std=c++0x or -std=c++11
 	 * as appropriate.
 	 *

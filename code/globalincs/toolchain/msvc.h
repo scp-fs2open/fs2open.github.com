@@ -51,7 +51,7 @@
 #		define Assertion(expr, msg, ...)                                    \
 			do {                                                            \
 				if (!(expr)) {                                              \
-					WinAssert(#expr, __FILE__, __LINE__, msg, _VA_ARGS__);  \
+					WinAssert(#expr, __FILE__, __LINE__, msg, __VA_ARGS__); \
 				}                                                           \
 			} while (0)
 #	else                 /* Older MSVC compilers */
@@ -64,7 +64,7 @@
 #endif
 
 /* C++11 Standard Detection */
-#if !defined(HAVE_CX11)
+#if !defined(HAVE_CXX11)
 	/* Use the Visual Studio version to detect C++11 support */
 #	if _MSC_VER >= 1600
 #		define HAVE_CXX11

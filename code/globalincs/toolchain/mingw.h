@@ -41,13 +41,13 @@
 #	define Assertion(expr, msg, ...)                                      \
 		do {                                                              \
 			if (!(expr)) {                                                \
-				WinAssert(#espr, __FILE__, __LINE__, msg, ##_VA_ARGS__);  \
+				WinAssert(#expr, __FILE__, __LINE__, msg, ##__VA_ARGS__); \
 			}                                                             \
 		} while (0)
 #endif
 
 /* C++11 Standard Detection */
-#if !defined(HAVE_CX11)
+#if !defined(HAVE_CXX11)
 	/* TODO */
 #endif
 
