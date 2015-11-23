@@ -2611,9 +2611,11 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool sca
 	float origin[2] = {0.0, 1.0};
 	int offset[2];
 	int dock_offsets[2];
+	int dock_max_w;
 	int time_offsets[2];
 	int bracket_offsets[2];
 	int order_offsets[2];
+	int order_max_w;
 	char fname[MAX_FILENAME_LEN] = "targetview3";
 
 	if(gr_screen.res == GR_640) {
@@ -2642,6 +2644,9 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool sca
 	order_offsets[0] = 8;
 	order_offsets[1] = 0;
 
+	dock_max_w = 173;
+	order_max_w = 162;
+
 	HudGaugeExtraTargetData* hud_gauge = gauge_load_common<HudGaugeExtraTargetData>(base_w, base_h, hud_font, scale_gauge, ship_idx, use_clr, origin[0], origin[1], offset[0], offset[1]);
 
 	if(optional_string("Filename:")) {
@@ -2653,8 +2658,14 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool sca
 	if(optional_string("Dock Offsets:")) {
 		stuff_int_list(dock_offsets, 2);
 	}
+	if(optional_string("Dock Max Width:")) {
+		stuff_int(&dock_max_w);
+	}
 	if(optional_string("Order Offsets:")) {
 		stuff_int_list(order_offsets, 2);
+	}
+	if(optional_string("Order Max Width:")) {
+		stuff_int(&order_max_w);
 	}
 	if(optional_string("Time Offsets:")) {
 		stuff_int_list(time_offsets, 2);
@@ -2663,7 +2674,9 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool sca
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initBracketOffsets(bracket_offsets[0], bracket_offsets[1]);
 	hud_gauge->initDockOffsets(dock_offsets[0], dock_offsets[1]);
+	hud_gauge->initDockMaxWidth(dock_max_w);
 	hud_gauge->initOrderOffsets(order_offsets[0], order_offsets[1]);
+	hud_gauge->initOrderMaxWidth(order_max_w);
 	hud_gauge->initTimeOffsets(time_offsets[0], time_offsets[1]);
 
 	if(ship_idx->at(0) >= 0) {
