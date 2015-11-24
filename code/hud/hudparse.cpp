@@ -2755,6 +2755,12 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, bool scale_gauge
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
+	if(optional_string("Radar Center Offsets:")) {
+		stuff_float_list(Radar_center_offsets, 2);
+	}
+	if(optional_string("Radar Size:")) {
+		stuff_int_list(Radar_radius, 2);
+	}
 	if(optional_string("Infinity Distance Offsets:")) {
 		stuff_int_list(Radar_dist_offsets[2], 2);
 	}
@@ -2857,6 +2863,12 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, bool scale_gauge
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if(optional_string("Radar Center Offsets:")) {
+		stuff_float_list(Radar_center_offsets, 2);
+	}
+	if(optional_string("Radar Size:")) {
+		stuff_int_list(Radar_radius, 2);
 	}
 	if(optional_string("Infinity Distance Offsets:")) {
 		stuff_int_list(Radar_dist_offsets[2], 2);
