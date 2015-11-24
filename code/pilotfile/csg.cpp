@@ -1111,7 +1111,7 @@ void pilotfile::csg_read_settings()
 
 	if (csg_ver < 3) {
 		// detail
-		int dummy  __attribute__((__unused__)) = cfread_int(cfp);
+		int dummy  __UNUSED = cfread_int(cfp);
 		dummy = cfread_int(cfp);
 		dummy = cfread_int(cfp);
 		dummy = cfread_int(cfp);
@@ -1152,7 +1152,7 @@ void pilotfile::csg_write_settings()
 void pilotfile::csg_read_controls()
 {
 	int idx, list_size;
-	short id1, id2, id3 __attribute__((__unused__));
+	short id1, id2, id3 __UNUSED;
 
 	list_size = (int)cfread_ushort(cfp);
 

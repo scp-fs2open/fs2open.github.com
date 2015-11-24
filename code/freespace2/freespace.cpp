@@ -1265,7 +1265,7 @@ void game_loading_callback_close()
 	// Make sure bar shows all the way over.
 	game_loading_callback(COUNT_ESTIMATE);
 	
-	int real_count __attribute__((__unused__)) = game_busy_callback( NULL );
+	int real_count __UNUSED = game_busy_callback( NULL );
  	Mouse_hidden = 0;
 
 	Game_loading_callback_inited = 0;
@@ -1429,7 +1429,7 @@ int game_start_mission()
 {
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
-	int s1 __attribute__((__unused__)) = timer_get_milliseconds();
+	int s1 __UNUSED = timer_get_milliseconds();
 
 	// clear post processing settings
 	gr_post_process_set_defaults();
@@ -1486,7 +1486,7 @@ int game_start_mission()
 
 	bm_print_bitmaps();
 
-	int e1 __attribute__((__unused__)) = timer_get_milliseconds();
+	int e1 __UNUSED = timer_get_milliseconds();
 
 	mprintf(("Level load took %f seconds.\n", (e1 - s1) / 1000.0f ));
 
@@ -1745,7 +1745,7 @@ char full_path[1024];
  */
 void game_init()
 {
-	int s1 __attribute__((__unused__)), e1 __attribute__((__unused__));
+	int s1 __UNUSED, e1 __UNUSED;
 	const char *ptr;
 	char whee[MAX_PATH_LEN];
 
