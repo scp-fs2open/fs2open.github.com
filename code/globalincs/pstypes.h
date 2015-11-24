@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
+#include "globalincs/toolchain.h"
 
 #if defined( __x86_64__ ) || defined( _WIN64 )
 #define IAM_64BIT 1
@@ -62,39 +63,6 @@ typedef unsigned char ubyte;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
-
-// Format specifier macros
-#ifdef DOXYGEN
-// Documentation macros, only used by DOXYGEN
-/**
- * @brief Identifies a printf-style format string
- */
-#define SCP_FORMAT_STRING
-
-/**
- * @brief Specifies which arguments are involved in printf-style string formatting
- *
- * @details Expands to a compiler specific attribute which specify where the
- *          format arguments are located. Parameters are 1-based which also includes
- *          the 'this' parameter at position 1 for class methods.
- *
- * @param formatArg The location of the format string argument in the argument list
- * @param varArgs The location where the variable arguments begin
- */
-#define SCP_FORMAT_STRING_ARGS(formatArg, varArgs)
-#elif defined(_MSC_VER)
-#include <sal.h>
-
-#define SCP_FORMAT_STRING _Printf_format_string_
-#define SCP_FORMAT_STRING_ARGS(x, y)
-#elif defined(__GNUC__) || defined(__clang__)
-// GCC and clang use function attributes
-#define SCP_FORMAT_STRING
-#define SCP_FORMAT_STRING_ARGS(x, y) __attribute__ ((format (printf, x, y)))
-#else
-#define SCP_FORMAT_STRING
-#define SCP_FORMAT_STRING_ARGS(x, y)
-#endif
 
 #define HARDWARE_ONLY
 
@@ -264,11 +232,6 @@ extern int Global_error_count;
 
 #include "osapi/outwnd.h"
 
-// remove __attribute__ on non-GCC compilers
-#ifndef __GNUC__
-#	define  __attribute__(x)  /*NOTHING*/
-#endif
-
 // To debug printf do this:
 // mprintf(( "Error opening %s\n", filename ));
 #ifndef NDEBUG
@@ -290,22 +253,10 @@ extern int Global_error_count;
 // Please never uncomment the functionality of Assert in debug
 // The code, as with all development like this is littered with Asserts which are designed to throw
 // up an error message if variables are out of range.
-
-#define ASSUME(x)
-
 // Disabling this functionality is dangerous, crazy values can run rampent unchecked and the longer its disabled
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
 #	define Assert(expr) do { ASSUME(expr); } while (0)
-#	ifndef _MSC_VER   // non MS compilers
-#		define Assertion(expr, msg, ...) do {} while (0)
-#	else
-#		if _MSC_VER >= 1400	// VC 2005 or greater
-#			define Assertion(expr, msg, ...) do { ASSUME(expr); } while (0)
-#		else
-#			define Assertion(expr, msg) do {} while (0)
-#		endif
-#	endif
 #else
 	void gr_activate(int);
 #	define Assert(expr) do {\
@@ -314,30 +265,6 @@ extern int Global_error_count;
 		}\
 		ASSUME( expr );\
 	} while (0)
-
-	// Assertion can only use its proper fuctionality in compilers that support variadic macro
-#	ifndef _MSC_VER   // non MS compilers
-#		define Assertion(expr, msg, ...) do {\
-			if (!(expr)) {\
-				WinAssert(#expr,__FILE__,__LINE__, msg , ##__VA_ARGS__ );\
-			}\
-		} while (0)
-#	else
-#		if _MSC_VER >= 1400	// VC 2005 or greater
-#			define Assertion(expr, msg, ...) do {\
-				if (!(expr)) {\
-					WinAssert(#expr,__FILE__,__LINE__, msg, __VA_ARGS__ );\
-				}\
-				ASSUME(expr);\
-			} while (0)
-#		else // older MSVC compilers
-#			define Assertion(expr, msg) do {\
-				if (!(expr)) {\
-					WinAssert(#expr,__FILE__,__LINE__);\
-				}\
-			} while (0)
-#		endif
-#	endif
 #endif
 /*******************NEVER COMMENT Assert ************************************************/
 
@@ -693,78 +620,8 @@ public:
 	bool isValid();
 };
 
-/* Restrict keyword semantics are different under VC and GCC */
-
-#ifndef NO_RESTRICT_USE
-#	ifdef _MSC_VER
-#		if _MSC_VER >= 1400
-#			define RESTRICT __restrict
-#		else
-#			define RESTRICT
-#		endif
-#	else
-#		define RESTRICT restrict
-#	endif
-#else
-#	define RESTRICT
-#endif
-
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
-
-// Macros for portable printf argument specification
-#ifdef DOXYGEN
-// Special section for doxygen
-/**
- * @brief Format specifier for a @c size_t argument
- * Due to different runtimes using different format specifier for these types
- * it's necessary to hide these changes behind a macro. Use this in place of %zu
- */
-#define SIZE_T_ARG
-/**
- * @brief Format specifier for a @c ptrdiff_t argument
- * Due to different runtimes using different format specifier for these types
- * it's necessary to hide these changes behind a macro. Use this in place of %zd
- */
-#define PTRDIFF_T_ARG
-#elif defined(_MSC_VER)
-#define SIZE_T_ARG "%Iu"
-#define PTRDIFF_T_ARG "%Id"
-#else
-	// Asume C99 compatibility for everyone else
-#define SIZE_T_ARG "%zu"
-#define PTRDIFF_T_ARG "%zd"
-#endif
-
-// c++11 standard detection
-// for GCC with autotools, see AX_CXX_COMPILE_STDCXX_11 macro in configure.ac
-// this sets HAVE_CXX11 & -std=c++0x or -std=c++11 appropriately
-
-#ifndef HAVE_CXX11
-	// Use the visual studio version to detect C++11 support
-	#if _MSC_VER >= 1600
-	#	define HAVE_CXX11
-	#endif
-	// clang doesn't seem to have a feature check for is_trivial
-	// oh well, assume it'll be covered by one of the other two checks...
-	// http://clang.llvm.org/docs/LanguageExtensions.html#feature_check
-	#if defined(__clang__)
-		#if __has_feature(cxx_static_assert)
-			#if __has_feature(cxx_auto_type)
-				#define HAVE_CXX11
-			#endif // __has_feature(cxx_auto_type)
-		#endif // __has_feature(cxx_static_assert)
-	#endif // defined(__clang__)
-	// TODO: sort out cmake/gcc
-#endif // HAVE_CXX11
-
-//	In compilers before VS 2015, the noexcept keyword isn't defined. Nonetheless, we need to define it in VS 2015 and non-MS compilers.
-#if defined(_MSC_VER) && _MSC_VER < 1900
-#	define NOEXCEPT
-#else
-#	define NOEXCEPT noexcept
-#endif
-
 
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // would prefer std::is_trivially_copyable but it's not supported by gcc yet
