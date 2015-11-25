@@ -1472,8 +1472,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						vm_vec_normalize(&orient->vec.uvec);
 						vm_vec_normalize(&orient->vec.fvec);
 
-						vm_vec_crossprod(&orient->vec.rvec, &orient->vec.uvec, &orient->vec.fvec);
-						vm_vec_crossprod(&orient->vec.fvec, &orient->vec.rvec, &orient->vec.uvec);
+						vm_vec_cross(&orient->vec.rvec, &orient->vec.uvec, &orient->vec.fvec);
+						vm_vec_cross(&orient->vec.fvec, &orient->vec.rvec, &orient->vec.uvec);
 
 						vm_vec_normalize(&orient->vec.fvec);
 						vm_vec_normalize(&orient->vec.rvec);
@@ -1725,7 +1725,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 						vec3d diff;
 						vm_vec_normalized_dir(&diff, &bay->pnt[0], &bay->pnt[1]);
-						float dot = vm_vec_dotprod(&diff, &bay->norm[0]);
+						float dot = vm_vec_dot(&diff, &bay->norm[0]);
 						if(fl_abs(dot) > 0.99f) {
 							Warning(LOCATION, "Model '%s', docking port '%s' has docking slot positions that lie on the same axis as the docking normal.  This will cause a NULL VEC crash when docked to another ship.  A new docking normal will be generated.", filename, bay->name);
 
@@ -3235,7 +3235,7 @@ void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *pship_obj, int sub_m
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
 
 		matrix inv_orientation;
-		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
 
 		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 
@@ -3271,7 +3271,7 @@ void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *pship_obj, 
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
 
 		matrix inv_orientation;
-		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
 
 		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 
@@ -3307,7 +3307,7 @@ void model_rot_sub_into_obj(vec3d * outpnt, vec3d *mpnt,polymodel *pm, int sub_m
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
  
 		matrix inv_orientation;
-		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
 
 		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 
@@ -3537,8 +3537,8 @@ void submodel_look_at(polymodel *pm, int mn)
 	vm_vec_normalize(&l);
 
 	vec3d c;
-	vm_vec_crossprod(&c, &l, &mp);
-	float dot=vm_vec_dotprod(&l,&mp);
+	vm_vec_cross(&c, &l, &mp);
+	float dot=vm_vec_dot(&l,&mp);
 	if (dot>=0.0f) {
 		*a = asin(c.a1d[axis]);
 	} else {
@@ -3933,7 +3933,7 @@ void make_submodel_world_matrix(polymodel *pm, int sn, vec3d*v){
 	vm_angles_2_matrix(&a, &pm->submodel[sn].angs);
 	if (!IS_MAT_NULL(&pm->submodel[sn].orientation)) {
 		matrix inv, f;
-		vm_copy_transpose_matrix(&inv, &pm->submodel[sn].orientation);
+		vm_copy_transpose(&inv, &pm->submodel[sn].orientation);
 		vm_matrix_x_matrix(&f, &a, &inv);
 		vm_matrix_x_matrix(&a, &pm->submodel[sn].orientation, &f);
 	}
@@ -3983,7 +3983,7 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
 
 		matrix inv_orientation;
-		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
 
 		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 
@@ -4020,7 +4020,7 @@ void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num,
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
 
 		matrix inv_orientation;
-		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
 
 		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 
@@ -4072,7 +4072,7 @@ void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int subm
 	vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[submodel_num].angs);
 
 	matrix inv_orientation;
-	vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[submodel_num].orientation);
+	vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
 
 	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 
@@ -4105,7 +4105,7 @@ void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm,
 	vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
 
 	matrix inv_orientation;
-	vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[submodel_num].orientation);
+	vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
 
 	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 
@@ -4140,7 +4140,7 @@ void find_submodel_instance_point(vec3d *outpnt, object *pship_obj, int submodel
 			rotation_matrix = pm->submodel[parent_mn].orientation;
 			vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[parent_mn].angs);
 
-			vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[parent_mn].orientation);
+			vm_copy_transpose(&inv_orientation, &pm->submodel[parent_mn].orientation);
 
 			vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
 
@@ -4187,7 +4187,7 @@ void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *
 			rotation_matrix = pm->submodel[submodel_num].orientation;
 			vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
 
-			vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[submodel_num].orientation);
+			vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
 
 			vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
 
@@ -4205,7 +4205,7 @@ void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *
 		rotation_matrix = pm->submodel[parent_model_num].orientation;
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[parent_model_num].angs);
 
-		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[parent_model_num].orientation);
+		vm_copy_transpose(&inv_orientation, &pm->submodel[parent_model_num].orientation);
 
 		vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
 
@@ -4257,7 +4257,7 @@ void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, objec
 			rotation_matrix = pm->submodel[submodel_num].orientation;
 			vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[submodel_num].angs);
 
-			vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[submodel_num].orientation);
+			vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
 
 			vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
 
@@ -4275,7 +4275,7 @@ void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, objec
 		rotation_matrix = pm->submodel[parent_model_num].orientation;
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[parent_model_num].angs);
 
-		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[parent_model_num].orientation);
+		vm_copy_transpose(&inv_orientation, &pm->submodel[parent_model_num].orientation);
 
 		vm_matrix_x_matrix(&submodel_instance_matrix, &rotation_matrix, &inv_orientation);
 
@@ -4431,7 +4431,7 @@ void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
 
 		matrix inv_orientation;
-		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
 
 		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 
@@ -4468,7 +4468,7 @@ void model_instance_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num,
 		vm_rotate_matrix_by_angles(&rotation_matrix, &pmi->submodel[mn].angs);
 
 		matrix inv_orientation;
-		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
 
 		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 

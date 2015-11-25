@@ -806,7 +806,7 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &View_matrix.vec.fvec);
 	vm_vec_normalize(&uvec);
 
-	vm_vec_crossprod(&rvec, &View_matrix.vec.fvec, &uvec);
+	vm_vec_cross(&rvec, &View_matrix.vec.fvec, &uvec);
 	vm_vec_normalize(&rvec);
 
 	vertex *ptlist[4] = { &P[3], &P[2], &P[1], &P[0] };	
@@ -946,7 +946,7 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, f
 	b.xyz.y = _r->world.xyz.y - _p->world.xyz.y;\
 	b.xyz.z = 0.0f;\
 	\
-	vm_vec_crossprod(&cross, &a, &b);\
+	vm_vec_cross(&cross, &a, &b);\
 	total_area += vm_vec_mag(&cross) * 0.5f;\
 } while(0);
 
@@ -1270,13 +1270,13 @@ int g3_draw_rod(const vec3d *p0, float width1, const vec3d *p1, float width2, ve
 	vm_vec_sub( &rvec, &Eye_position, &center );
 	vm_vec_normalize( &rvec );
 
-	vm_vec_crossprod(&uvec,&fvec,&rvec);
+	vm_vec_cross(&uvec,&fvec,&rvec);
 			
 	//normalize new perpendicular vector
 	vm_vec_normalize(&uvec);
 	 
 	//now recompute right vector, in case it wasn't entirely perpendiclar
-	vm_vec_crossprod(&rvec,&uvec,&fvec);
+	vm_vec_cross(&rvec,&uvec,&fvec);
 
 	// Now have uvec, which is up vector and rvec which is the normal
 	// of the face.
@@ -1360,7 +1360,7 @@ int g3_draw_rod(int num_points, const vec3d *pvecs, float width, uint tmap_flags
 		vm_vec_sub(&rvec, &pvecs[first], &pvecs[second]);
 		vm_vec_normalize_safe(&rvec);
 
-		vm_vec_crossprod(&uvec, &rvec, &fvec);
+		vm_vec_cross(&uvec, &rvec, &fvec);
 
 		vm_vec_scale_add(&vecs[0], &pvecs[i], &uvec, width * 0.5f);
 		vm_vec_scale_add(&vecs[1], &pvecs[i], &uvec, -width * 0.5f);

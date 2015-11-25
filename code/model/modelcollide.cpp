@@ -277,7 +277,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 				//mprintf(("Estimated radius error: Estimate %f, actual %f Mc->radius\n", temp_dist, Mc->radius));
 			}
 			vm_vec_sub( &temp_dir, &hit_point, &temp_sphere );
-			// Assert( vm_vec_dotprod( &temp_dir, &Mc_direction ) > 0 );
+			// Assert( vm_vec_dot( &temp_dir, &Mc_direction ) > 0 );
 			*/
 		}
 	}
@@ -305,7 +305,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 				//mprintf(("Estimated radius error: Estimate %f, actual %f Mc->radius\n", temp_dist, Mc->radius));
 			}
 			vm_vec_sub( &temp_dir, &hit_point, &temp_sphere );
-//			Assert( vm_vec_dotprod( &temp_dir, &Mc_direction ) > 0 );
+//			Assert( vm_vec_dot( &temp_dir, &Mc_direction ) > 0 );
 			*/
 
 			if ( (Mc->num_hits==0) || (sphere_time < Mc->hit_dist) ) {
@@ -1206,7 +1206,7 @@ NoHit:
 					vm_rotate_matrix_by_angles(&rotation_matrix, &angs);
 
 					matrix inv_orientation;
-					vm_copy_transpose_matrix(&inv_orientation, &csm->orientation);
+					vm_copy_transpose(&inv_orientation, &csm->orientation);
 
 					vm_matrix_x_matrix(&tm, &rotation_matrix, &inv_orientation);
 				}
@@ -1376,7 +1376,7 @@ void model_collide_preprocess_subobj(vec3d *pos, matrix *orient, polymodel *pm, 
 			vm_rotate_matrix_by_angles(&rotation_matrix, &angs);
 
 			matrix inv_orientation;
-			vm_copy_transpose_matrix(&inv_orientation, &csm->orientation);
+			vm_copy_transpose(&inv_orientation, &csm->orientation);
 
 			vm_matrix_x_matrix(&tm, &rotation_matrix, &inv_orientation);
 		}

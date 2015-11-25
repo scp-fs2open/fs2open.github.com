@@ -283,7 +283,7 @@ void g3_start_instance_matrix(const vec3d *pos, const matrix *orient, bool set_a
 	}
 
 	//step 3: rotate object matrix through view_matrix (vm = ob * vm)
-	vm_copy_transpose_matrix(&tempm2,orient);
+	vm_copy_transpose(&tempm2,orient);
 
 	vm_matrix_x_matrix(&tempm,&tempm2,&View_matrix);
 	View_matrix = tempm;

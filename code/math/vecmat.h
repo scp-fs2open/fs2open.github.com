@@ -281,11 +281,10 @@ float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *st
 
 ////returns dot product of two vectors
 #ifdef _INLINE_VECMAT
-#define vm_vec_dotprod( v0, v1 ) (((v1)->xyz.x*(v0)->xyz.x)+((v1)->xyz.y*(v0)->xyz.y)+((v1)->xyz.z*(v0)->xyz.z))
+#define vm_vec_dot( v0, v1 ) (((v1)->xyz.x*(v0)->xyz.x)+((v1)->xyz.y*(v0)->xyz.y)+((v1)->xyz.z*(v0)->xyz.z))
 #define vm_vec_dot( v0, v1 ) (((v1)->xyz.x*(v0)->xyz.x)+((v1)->xyz.y*(v0)->xyz.y)+((v1)->xyz.z*(v0)->xyz.z))
 #else
-float vm_vec_dotprod(const vec3d *v0, const vec3d *v1);
-#define vm_vec_dot vm_vec_dotprod
+float vm_vec_dot(const vec3d *v0, const vec3d *v1);
 #endif
 
 #ifdef _INLINE_VECMAT
@@ -296,8 +295,7 @@ float vm_vec_dot3(float x, float y, float z, vec3d *v);
 
 //computes cross product of two vectors. returns ptr to dest
 //dest CANNOT equal either source
-vec3d *vm_vec_crossprod(vec3d *dest, const vec3d *src0, const vec3d *src1);
-#define vm_vec_cross vm_vec_crossprod
+vec3d *vm_vec_cross(vec3d *dest, const vec3d *src0, const vec3d *src1);
 
 // test if 2 vectors are parallel or not.
 int vm_test_parallel(const vec3d *src0, const vec3d *src1);
@@ -351,7 +349,7 @@ vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m);
 //returns ptr to dest vector
 //dest CANNOT equal source
 // This is a faster replacement for this common code sequence:
-//    vm_copy_transpose_matrix(&tempm,src_matrix);
+//    vm_copy_transpose(&tempm,src_matrix);
 //    vm_vec_rotate(dst_vec,src_vect,&tempm);
 // Replace with:
 //    vm_vec_unrotate(dst_vec,src_vect, src_matrix)
@@ -362,13 +360,11 @@ vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m);
 vec3d *vm_vec_unrotate(vec3d *dest, const vec3d *src, const matrix *m);
 
 //transpose a matrix in place. returns ptr to matrix
-matrix *vm_transpose_matrix(matrix *m);
-#define vm_transpose(m) vm_transpose_matrix(m)
+matrix *vm_transpose(matrix *m);
 
 //copy and transpose a matrix. returns ptr to matrix
-//dest CANNOT equal source. use vm_transpose_matrix() if this is the case
-matrix *vm_copy_transpose_matrix(matrix *dest, const matrix *src);
-#define vm_copy_transpose(dest,src) vm_copy_transpose_matrix((dest),(src))
+//dest CANNOT equal source. use vm_transpose() if this is the case
+matrix *vm_copy_transpose(matrix *dest, const matrix *src);
 
 //mulitply 2 matrices, fill in dest.  returns ptr to dest
 //dest CANNOT equal either source

@@ -1628,7 +1628,7 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 	vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
 
 	matrix inv_orientation;
-	vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+	vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
 
 	matrix submodel_matrix;
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
@@ -2239,7 +2239,7 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 	vm_vec_sub( &rvec, Eyeposition, &temp );
 	vm_vec_normalize( &rvec );	
 
-	vm_vec_crossprod(&uvec,fvec,&rvec);
+	vm_vec_cross(&uvec,fvec,&rvec);
 	vm_vec_normalize(&uvec);
 
 	vm_vec_scale_add( top, &temp, &uvec, w/2.0f );
@@ -4771,7 +4771,7 @@ void model_render_children_buffers_DEPRECATED(polymodel *pm, int mn, int detail_
 	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
 
 	matrix inv_orientation;
-	vm_copy_transpose_matrix(&inv_orientation, &model->orientation);
+	vm_copy_transpose(&inv_orientation, &model->orientation);
 
 	matrix submodel_matrix;
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);

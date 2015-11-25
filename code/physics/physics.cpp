@@ -500,7 +500,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 		ship_get_eye(&tmp_vec, &eyemat, Player_obj, false);
 
-		vm_copy_transpose_matrix(&tmp_mat, &Player_obj->orient);
+		vm_copy_transpose(&tmp_mat, &Player_obj->orient);
 		vm_matrix_x_matrix(&rotvelmat, &tmp_mat, &eyemat);
 
 		vm_vec_rotate(&new_rotvel, &pi->max_rotvel, &rotvelmat);
@@ -786,7 +786,7 @@ void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *o
 	// calculate the torque on the body based on the point on the
 	// object that was hit and the momentum being applied to the object
 
-	vm_vec_crossprod(&torque, pos, impulse);
+	vm_vec_cross(&torque, pos, impulse);
 	vm_vec_rotate ( &local_torque, &torque, orient );
 
 	vec3d delta_rotvel;
@@ -922,9 +922,9 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 	area.xyz.y = (max->xyz.x - min->xyz.x) * (max->xyz.z - min->xyz.z);
 	area.xyz.z = (max->xyz.x - min->xyz.x) * (max->xyz.y - min->xyz.y);
 
-	normal.xyz.x = vm_vec_dotprod( direction_vec, &orient->vec.rvec );
-	normal.xyz.y = vm_vec_dotprod( direction_vec, &orient->vec.uvec );
-	normal.xyz.z = vm_vec_dotprod( direction_vec, &orient->vec.fvec );
+	normal.xyz.x = vm_vec_dot( direction_vec, &orient->vec.rvec );
+	normal.xyz.y = vm_vec_dot( direction_vec, &orient->vec.uvec );
+	normal.xyz.z = vm_vec_dot( direction_vec, &orient->vec.fvec );
 
 	sin.xyz.x = fl_sqrt( fl_abs(1.0f - normal.xyz.x*normal.xyz.x) );
 	sin.xyz.y = fl_sqrt( fl_abs(1.0f - normal.xyz.y*normal.xyz.y) );
@@ -947,7 +947,7 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 	else								// normal > 0, hits the left face
 		vm_vec_copy_scale( &impact_vec, &orient->vec.rvec, min->xyz.x * pressure * area.xyz.x * -normal.xyz.x * sin.xyz.x / pi->mass );
 
-	vm_vec_crossprod( &temp_torque, &impact_vec, direction_vec );
+	vm_vec_cross( &temp_torque, &impact_vec, direction_vec );
 	vm_vec_add2( &torque, &temp_torque );
 
 	// find torque due to forces on the up/down face
@@ -956,7 +956,7 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 	else
 		vm_vec_copy_scale( &impact_vec, &orient->vec.uvec, min->xyz.y * pressure * area.xyz.y * -normal.xyz.y * sin.xyz.y / pi->mass );
 
-	vm_vec_crossprod( &temp_torque, &impact_vec, direction_vec );
+	vm_vec_cross( &temp_torque, &impact_vec, direction_vec );
 	vm_vec_add2( &torque, &temp_torque );
 
 	// find torque due to forces on the forward/backward face
@@ -965,7 +965,7 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 	else
 		vm_vec_copy_scale( &impact_vec, &orient->vec.fvec, min->xyz.z * pressure * area.xyz.z * -normal.xyz.z * sin.xyz.z / pi->mass );
 
-	vm_vec_crossprod( &temp_torque, &impact_vec, direction_vec );
+	vm_vec_cross( &temp_torque, &impact_vec, direction_vec );
 	vm_vec_add2( &torque, &temp_torque );
 
 	// compute delta rotvel, scale according to blast and radius

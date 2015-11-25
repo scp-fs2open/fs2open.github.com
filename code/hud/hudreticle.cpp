@@ -328,7 +328,7 @@ void HudGaugeReticle::getFirepointStatus() {
 
 						matrix eye_orient, player_transpose;
 
-						vm_copy_transpose_matrix(&player_transpose, &Objects[Player->objnum].orient);
+						vm_copy_transpose(&player_transpose, &Objects[Player->objnum].orient);
 						vm_matrix_x_matrix(&eye_orient, &player_transpose, &Eye_matrix);
 						vm_vec_rotate(&fpfromeye, &pm->gun_banks[i].pnt[j], &eye_orient);
 

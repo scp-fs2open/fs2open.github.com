@@ -321,8 +321,8 @@ int obj_snd_get_freq(int source_freq, object* source, object* observor, vec3d *s
 	vm_vec_normalized_dir(&v_os, source_pos, &observor->pos);
 	vm_vec_normalized_dir(&v_so, &observor->pos, source_pos);
 	
-	vo = vm_vec_dotprod(&v_os, &observor->phys_info.vel);
-	vs = vm_vec_dotprod(&v_so, &source->phys_info.vel);
+	vo = vm_vec_dot(&v_os, &observor->phys_info.vel);
+	vs = vm_vec_dot(&v_so, &source->phys_info.vel);
 
 	freq = source_freq * ( (SPEED_SOUND + vo) / (SPEED_SOUND - vs) );
 	return fl2i(freq);
