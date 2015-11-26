@@ -4110,7 +4110,6 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 
 					if (wp->cmeasure_ignore_list == nullptr) {
 						wp->cmeasure_ignore_list = new SCP_vector<int>;
-						wp->cmeasure_ignore_list->reserve(cm_wip->shots * 2); // guesstimate the number of CMs this weapon will see
 					}
 					else {
 						bool found = false;
@@ -4135,18 +4134,8 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 						chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;
 					}
 
-					if (The_mission.ai_profile->flags2 & AIPF2_COUNTERMEASURES_DECOY_ONCE) {
-						wp->cmeasure_ignore_list->push_back(objp->signature);
-					}
-					else {
-						// emulate retail by only "remembering" one seen CM
-						if (wp->cmeasure_ignore_list->size() == 0) {
-							wp->cmeasure_ignore_list->push_back(objp->signature);
-						}
-						else {
-							(*wp->cmeasure_ignore_list)[0] = objp->signature;
-						}
-					}
+					// remember this cmeasure so it can be ignored in future
+					wp->cmeasure_ignore_list->push_back(objp->signature);
 
 					if (frand() >= chance) {
 						// failed to decoy
