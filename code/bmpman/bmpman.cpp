@@ -2101,8 +2101,8 @@ void bm_page_in_stop() {
 				} else {
 					bm_lock(bm_bitmaps[i].handle, (bm_bitmaps[i].used_flags == BMP_AABITMAP) ? 8 : 16, bm_bitmaps[i].used_flags);
 					if (bm_bitmaps[i].ref_count >= 1) {
-+						bm_unlock( bm_bitmaps[i].handle );
-+					}
+						bm_unlock( bm_bitmaps[i].handle );
+					}
 				}
 
 				n++;
