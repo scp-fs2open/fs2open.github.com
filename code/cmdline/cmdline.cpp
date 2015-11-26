@@ -1037,63 +1037,98 @@ char *cmdline_parm::str()
 }
 
 #ifdef SCP_UNIX
-// for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
+// Return a vector with all filesystem names of "parent/dir" relative to parent.
+// dir must not contain a slash.
+static SCP_vector<SCP_string> unix_get_single_dir_names(SCP_string dir, SCP_string parent)
+{
+	DIR *dp;
+	if ((dp = opendir(parent.c_str())) == NULL) {
+		Error(LOCATION, "Can't open directory '%s' -- %d", parent.c_str(), errno);
+	}
+
+	SCP_vector<SCP_string> ret;
+
+	dirent *dirp;
+	while ((dirp = readdir(dp)) != NULL) {
+		if (!stricmp(dirp->d_name, dir.c_str())) {
+			ret.push_back(dirp->d_name);
+		}
+	}
+	(void)closedir(dp);
+
+	return ret;
+}
+
+// Return a vector with all filesystem names of "parent/dir" relative to parent.
+// Recurses to deal with slashes in dir.
+static SCP_vector<SCP_string> unix_get_dir_names(SCP_string dir, SCP_string parent)
+{
+	size_t slash = dir.find_first_of('/');
+
+	// no subdirectories, no need to recurse
+	if (slash == std::string::npos) {
+		return unix_get_single_dir_names(dir, parent);
+	}
+
+	// get the names of the first component of dir
+	SCP_vector<SCP_string> this_dir_names = unix_get_single_dir_names(dir.substr(0, slash), parent);
+
+	SCP_string rest = dir.substr(slash + 1);
+
+	SCP_vector<SCP_string> ret;
+
+	// search for the rest of dir in each of these
+	SCP_vector<SCP_string>::iterator ii, end = this_dir_names.end();
+	for (ii = this_dir_names.begin(); ii != end; ++ii) {
+		SCP_string this_dir_path = parent + "/" + *ii;
+		SCP_vector<SCP_string> mod_path = unix_get_dir_names(rest, this_dir_path);
+
+		// add all found paths relative to parent
+		SCP_vector<SCP_string>::iterator ii2, end2 = mod_path.end();
+		for (ii2 = mod_path.begin(); ii2 != end2; ++ii2) {
+			ret.push_back(*ii + "/" + *ii2);
+		}
+	}
+
+	return ret;
+}
+
+// For case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches.
 static void handle_unix_modlist(char **modlist, int *len)
 {
 	char cur_dir[CF_MAX_PATHNAME_LENGTH];
-	SCP_vector<SCP_string> temp_modlist;
-	size_t total_len = 0;
 
 	if ( !_getcwd(cur_dir, CF_MAX_PATHNAME_LENGTH ) ) {
 		Error(LOCATION, "Can't get current working directory -- %d", errno );
 	}
 
-	// translate char[] to vector of SCP_strings
+	// search filesystem for given paths
+	SCP_vector<SCP_string> mod_paths;
 	for (char *cur_mod = strtok(*modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ","))
 	{
-		temp_modlist.push_back(cur_mod);
-	}
-
-	// search filesystem for given paths
-	SCP_vector<SCP_string>::iterator ii, end = temp_modlist.end();
-	for (ii = temp_modlist.begin(); ii != end; ++ii)
-	{
-		DIR *dp;
-		if ((dp = opendir(cur_dir)) == NULL) {
-			Error(LOCATION, "Can't open directory '%s' -- %d", cur_dir, errno );
+		SCP_vector<SCP_string> this_mod_paths = unix_get_dir_names(cur_mod, cur_dir);
+		if (this_mod_paths.empty()) {
+			ReleaseWarning(LOCATION, "Can't find mod '%s'", cur_mod);
 		}
-
-		// First path found is assigned to given path in temp_modlist.
-		// The rest are inserted at that position.
-		dirent *dirp;
-		bool found = false;
-		while ((dirp = readdir(dp)) != NULL) {
-			if (!stricmp(dirp->d_name, ii->c_str())) {
-				if (!found) {
-					*ii = dirp->d_name;
-					found = true;
-				} else {
-					temp_modlist.insert(ii, dirp->d_name);
-				}
-				total_len += strlen(dirp->d_name) + 1;
-			}
-		}
-		if (!found) {
-			ReleaseWarning(LOCATION, "Can't find mod '%s'", ii->c_str());
-		}
-		(void)closedir(dp);
+		mod_paths.insert(mod_paths.end(), this_mod_paths.begin(), this_mod_paths.end());
 	}
 
 	// create new char[] to replace modlist
-	char *new_modlist = new char[total_len+1];
-	memset( new_modlist, 0, total_len + 1 );
-	end = temp_modlist.end();
-	for (ii = temp_modlist.begin(); ii != end; ++ii) {
-		strcat_s(new_modlist, total_len+1, ii->c_str());
-		strcat_s(new_modlist, total_len+1, ","); // replace later with NUL
+	size_t total_len = 0;
+	SCP_vector<SCP_string>::iterator ii, end = mod_paths.end();
+	for (ii = mod_paths.begin(); ii != end; ++ii) {
+		total_len += (*ii).length() + 1;
 	}
 
-	// make the rest of the function unaware that anything happened here
+	char *new_modlist = new char[total_len + 1];
+	memset(new_modlist, 0, total_len + 1);
+	end = mod_paths.end();
+	for (ii = mod_paths.begin(); ii != end; ++ii) {
+		strcat_s(new_modlist, total_len + 1, ii->c_str());
+		strcat_s(new_modlist, total_len + 1, ","); // replace later with NUL
+	}
+
+	// make the rest of the modlist manipulation unaware that anything happened here
 	delete [] *modlist;
 	*modlist = new_modlist;
 	*len = total_len;
@@ -1382,6 +1417,7 @@ bool SetCmdlineParams()
 		strcpy_s(modlist, len+2, Cmdline_mod);
 
 #ifdef SCP_UNIX
+		// handle case-insensitive searching
 		handle_unix_modlist(&modlist, &len);
 #endif
 
