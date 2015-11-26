@@ -1979,7 +1979,7 @@ void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_st
 	}
 }
 
-void parse_allowed_weapons(ship_info *sip, bool is_primary, bool is_dogfight)
+void parse_allowed_weapons(ship_info *sip, const bool is_primary, const bool is_dogfight, const bool first_time)
 {
 	int i, num_allowed;
 	int allowed_weapons[MAX_WEAPON_TYPES];
@@ -1996,6 +1996,17 @@ void parse_allowed_weapons(ship_info *sip, bool is_primary, bool is_dogfight)
 	// Set the weapons filter used in weapons loadout (for primary weapons)
 	if (optional_string(allowed_banks_str))
 	{
+		// MageKing17 - We need to make modular tables replace bank restrictions by default, instead of adding to them.
+		if (!first_time && !(optional_string("+noreplace"))) {	// Only makes sense for modular tables.
+			// clear allowed weapons so the modular table can define new ones
+			for (bank = 0; bank < max_banks; bank++) {
+				for (i = 0; i < Num_weapon_types; i++) {
+					sip->allowed_bank_restricted_weapons[offset+bank][i] &= ~weapon_type;
+				}
+				sip->restricted_loadout_flag[offset+bank] &= ~weapon_type;
+			}
+		}
+
 		bank = -1;
 
 		while (check_for_string("("))
@@ -3015,8 +3026,8 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	}
 
 	// Set the weapons filter used in weapons loadout (for primary weapons)
-	parse_allowed_weapons(sip, true, false);
-	parse_allowed_weapons(sip, true, true);
+	parse_allowed_weapons(sip, true, false, first_time);
+	parse_allowed_weapons(sip, true, true, first_time);
 
 	// Get primary bank weapons
 	parse_weapon_bank(sip, true, &sip->num_primary_banks, sip->primary_bank_weapons, sip->primary_bank_ammo_capacity);
@@ -3028,8 +3039,8 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	}
 
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
-	parse_allowed_weapons(sip, false, false);
-	parse_allowed_weapons(sip, false, true);
+	parse_allowed_weapons(sip, false, false, first_time);
+	parse_allowed_weapons(sip, false, true, first_time);
 
 	// Get secondary bank weapons
 	parse_weapon_bank(sip, false, &sip->num_secondary_banks, sip->secondary_bank_weapons, sip->secondary_bank_ammo_capacity);
@@ -3291,10 +3302,12 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		Error(LOCATION, "%s '%s' has too many primary banks (%d).  Maximum for ships is currently %d.\n", info_type_name, sip->name, sip->num_primary_banks, MAX_SHIP_PRIMARY_BANKS);
 	}
 
+	memset(sip->allowed_weapons, 0, sizeof(int) * MAX_WEAPON_TYPES);
+
 	// copy to regular allowed_weapons array
-	for (i=0; i<MAX_SHIP_WEAPONS; i++)
+	for (i = 0; i < MAX_SHIP_WEAPONS; i++)
 	{
-		for (j=0; j<MAX_WEAPON_TYPES; j++)
+		for (j = 0; j < Num_weapon_types; j++)
 		{
 			if (sip->allowed_bank_restricted_weapons[i][j] & REGULAR_WEAPON)
 				sip->allowed_weapons[j] |= REGULAR_WEAPON;
@@ -3304,10 +3317,12 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		}
 	}
 
+	sip->flags &= ~SIF_BALLISTIC_PRIMARIES;
+
 	//Set ship ballistic flag if necessary
-	for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++)
+	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		for (j=0; j<MAX_WEAPON_TYPES; j++)
+		for (j = 0; j < Num_weapon_types; j++)
 		{
 			if(sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags2 & WIF2_BALLISTIC))
 			{
