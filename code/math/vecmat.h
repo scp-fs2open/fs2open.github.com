@@ -15,7 +15,6 @@
 #include "globalincs/pstypes.h"
 #include "math/floating.h"
 
-//#define _INLINE_VECMAT
 
 #define vm_is_vec_nan(v) (_isnan((v)->xyz.x) || _isnan((v)->xyz.y) || _isnan((v)->xyz.z))
 
@@ -78,65 +77,24 @@ typedef struct plane {
 
 //adds two vectors, fills in dest, returns ptr to dest
 //ok for dest to equal either source, but should use vm_vec_add2() if so
-#ifdef _INLINE_VECMAT
-#define vm_vec_add( dst, src0, src1 ) do {	\
-	(dst)->xyz.x = (src0)->xyz.x + (src1)->xyz.x;					\
-	(dst)->xyz.y = (src0)->xyz.y + (src1)->xyz.y;					\
-	(dst)->xyz.z = (src0)->xyz.z + (src1)->xyz.z;					\
-} while(0) 
-#else
 void vm_vec_add(vec3d *dest, const vec3d *src0, const vec3d *src1);
-#endif
 
 //adds src onto dest vector, returns ptr to dest
-#ifdef _INLINE_VECMAT
-#define vm_vec_add2( dst, src ) do {	\
-	(dst)->xyz.x += (src)->xyz.x;					\
-	(dst)->xyz.y += (src)->xyz.y;					\
-	(dst)->xyz.z += (src)->xyz.z;					\
-} while(0) 
-#else
 void vm_vec_add2(vec3d *dest, const vec3d *src);
-#endif
 
 
 //scales a vector and subs from to another
 //dest -= k * src
-#ifdef _INLINE_VECMAT
-#define vm_vec_scale_sub2( dst, src, k ) do {	\
-	float tmp_k = (k);								\
-	(dst)->xyz.x -= (src)->xyz.x*tmp_k;					\
-	(dst)->xyz.y -= (src)->xyz.y*tmp_k;					\
-	(dst)->xyz.z -= (src)->xyz.z*tmp_k;					\
-} while(0) 
-#else
 void vm_vec_scale_sub2(vec3d *dest, const vec3d *src, float k);
-#endif
 
 //subs two vectors, fills in dest, returns ptr to dest
 //ok for dest to equal either source, but should use vm_vec_sub2() if so
-#ifdef _INLINE_VECMAT
-#define vm_vec_sub( dst, src0, src1 ) do {	\
-	(dst)->xyz.x = (src0)->xyz.x - (src1)->xyz.x;					\
-	(dst)->xyz.y = (src0)->xyz.y - (src1)->xyz.y;					\
-	(dst)->xyz.z = (src0)->xyz.z - (src1)->xyz.z;					\
-} while(0) 
-#else
 void vm_vec_sub(vec3d *dest, const vec3d *src0, const vec3d *src1);
-#endif
 
 
 //subs one vector from another, returns ptr to dest
 //dest can equal source
-#ifdef _INLINE_VECMAT
-#define vm_vec_sub2( dst, src ) do {	\
-	(dst)->xyz.x -= (src)->xyz.x;					\
-	(dst)->xyz.y -= (src)->xyz.y;					\
-	(dst)->xyz.z -= (src)->xyz.z;					\
-} while(0) 
-#else
 void vm_vec_sub2(vec3d *dest, const vec3d *src);
-#endif
 
 //averages n vectors
 vec3d *vm_vec_avg_n(vec3d *dest, int n, const vec3d src[]);
@@ -153,69 +111,24 @@ vec3d *vm_vec_avg3(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3
 vec3d *vm_vec_avg4(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3d *src2, const vec3d *src3);
 
 //scales a vector in place.  returns ptr to vector
-#ifdef _INLINE_VECMAT
-#define vm_vec_scale( dst, k ) do {	\
-	float tmp_k = (k);								\
-	(dst)->xyz.x *= tmp_k;					\
-	(dst)->xyz.y *= tmp_k;					\
-	(dst)->xyz.z *= tmp_k;					\
-} while(0) 
-#else
 void vm_vec_scale(vec3d *dest, float s);
-#endif
 
 //scales and copies a vector.  returns ptr to dest
-#ifdef _INLINE_VECMAT
-#define vm_vec_copy_scale( dst, src, k ) do {	\
-	float tmp_k = (k);								\
-	(dst)->xyz.x = (src)->xyz.x * tmp_k;					\
-	(dst)->xyz.y = (src)->xyz.y * tmp_k;					\
-	(dst)->xyz.z = (src)->xyz.z * tmp_k;					\
-} while(0) 
-#else
 void vm_vec_copy_scale(vec3d *dest, const vec3d *src, float s);
-#endif
 
 //scales a vector, adds it to another, and stores in a 3rd vector
 //dest = src1 + k * src2
-#ifdef _INLINE_VECMAT
-#define vm_vec_scale_add( dst, src1, src2, k ) do {	\
-	float tmp_k = (k);								\
-	(dst)->xyz.x = (src1)->xyz.x + (src2)->xyz.x * tmp_k;					\
-	(dst)->xyz.y = (src1)->xyz.y + (src2)->xyz.y * tmp_k;					\
-	(dst)->xyz.z = (src1)->xyz.z + (src2)->xyz.z * tmp_k;					\
-} while(0) 
-#else
 void vm_vec_scale_add(vec3d *dest, const vec3d *src1, const vec3d *src2, float k);
-#endif
 
 void vm_vec_scale_sub(vec3d *dest, const vec3d *src1, const vec3d *src2, float k);
 
 //scales a vector and adds it to another
 //dest += k * src
-#ifdef _INLINE_VECMAT
-#define vm_vec_scale_add2( dst, src, k ) do {	\
-	float tmp_k = (k);								\
-	(dst)->xyz.x += (src)->xyz.x * tmp_k;					\
-	(dst)->xyz.y += (src)->xyz.y * tmp_k;					\
-	(dst)->xyz.z += (src)->xyz.z * tmp_k;					\
-} while(0) 
-#else
 void vm_vec_scale_add2(vec3d *dest, const vec3d *src, float k);
-#endif
 
 //scales a vector in place, taking n/d for scale.  returns ptr to vector
 //dest *= n/d
-#ifdef _INLINE_VECMAT
-#define vm_vec_scale2( dst, n, d ) do {	\
-	float tmp_k = (n)/(d);								\
-	(dst)->xyz.x *= tmp_k;					\
-	(dst)->xyz.y *= tmp_k;					\
-	(dst)->xyz.z *= tmp_k;					\
-} while(0) 
-#else
 void vm_vec_scale2(vec3d *dest, float n, float d);
-#endif
 
 bool vm_vec_equal(const vec2d &self, const vec2d &other);
 
@@ -280,19 +193,10 @@ float vm_vec_normalized_dir_quick_mag(vec3d *dest, const vec3d *end, const vec3d
 float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *start);
 
 ////returns dot product of two vectors
-#ifdef _INLINE_VECMAT
-#define vm_vec_dotprod( v0, v1 ) (((v1)->xyz.x*(v0)->xyz.x)+((v1)->xyz.y*(v0)->xyz.y)+((v1)->xyz.z*(v0)->xyz.z))
-#define vm_vec_dot( v0, v1 ) (((v1)->xyz.x*(v0)->xyz.x)+((v1)->xyz.y*(v0)->xyz.y)+((v1)->xyz.z*(v0)->xyz.z))
-#else
 float vm_vec_dotprod(const vec3d *v0, const vec3d *v1);
 #define vm_vec_dot vm_vec_dotprod
-#endif
 
-#ifdef _INLINE_VECMAT
-#define vm_vec_dot3( x1, y1, z1, v ) (((x1)*(v)->xyz.x)+((y1)*(v)->xyz.y)+((z1)*(v)->xyz.z))
-#else
 float vm_vec_dot3(float x, float y, float z, vec3d *v);
-#endif
 
 //computes cross product of two vectors. returns ptr to dest
 //dest CANNOT equal either source
