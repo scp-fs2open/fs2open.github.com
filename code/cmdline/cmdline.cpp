@@ -1063,7 +1063,7 @@ static SCP_vector<SCP_string> unix_get_single_dir_names(SCP_string dir, SCP_stri
 // Recurses to deal with slashes in dir.
 static SCP_vector<SCP_string> unix_get_dir_names(SCP_string dir, SCP_string parent)
 {
-	size_t slash = dir.find_first_of('/');
+	size_t slash = dir.find_first_of("/\\");
 
 	// no subdirectories, no need to recurse
 	if (slash == std::string::npos) {
