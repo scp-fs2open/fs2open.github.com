@@ -1036,6 +1036,130 @@ char *cmdline_parm::str()
 	return args;
 }
 
+#ifdef SCP_UNIX
+// Return the name of the directory "parent/dir" as seen by the filesystem.
+// Assumes dir contains no slashes.
+static char *unix_get_single_dir_name(const char *dir, const char *parent)
+{
+	DIR *dp;
+	dirent *dirp;
+	char *ret = NULL;
+
+	if ((dp = opendir(parent)) == NULL) {
+		Error(LOCATION, "Can't open directory '%s' -- %d", parent, errno);
+	}
+
+	while ((dirp = readdir(dp)) != NULL) {
+		if (!stricmp(dirp->d_name, dir)) {
+			ret = strdup(dirp->d_name);
+			break;
+		}
+	}
+
+	(void)closedir(dp);
+	return ret;
+}
+
+// Returns the name of the directory "parent/dir" as seen by the filesystem.
+// Recurses when dir contains a slash.
+// Backslashes are treated as slashes for compatibility with mod.inis that
+// are written for Windows.
+static char *unix_get_dir_name(const char *dir, const char *parent)
+{
+	// find end of first directory name
+	const char *pos = dir;
+	for ( ; *pos != '\0' && *pos != '/' && *pos != '\\'; pos++)
+		;
+
+	if (*pos == '\0') {
+		// no subdirectories, no need to recurse
+		return unix_get_single_dir_name(dir, parent);
+	}
+
+	char *raw_base = (char*) malloc(pos - dir + 1);
+	memcpy(raw_base, dir, pos - dir);
+	raw_base[pos - dir] = '\0';
+
+	pos++;
+
+	// raw_base now contains only the first directory
+	// the rest is in pos
+
+	char *base = unix_get_single_dir_name(raw_base, parent);
+	free(raw_base);
+	if (base == NULL) {
+		return NULL;
+	}
+
+	// construct new parent for recursion
+	char new_parent[CF_MAX_PATHNAME_LENGTH];
+	memset(new_parent, 0, sizeof(new_parent));
+	strcat_s(new_parent, sizeof(new_parent), parent);
+	strcat_s(new_parent, sizeof(new_parent), "/");
+	strcat_s(new_parent, sizeof(new_parent), base);
+
+	char *rest = unix_get_dir_name(pos, new_parent);
+	if (rest == NULL) {
+		free(base);
+		return NULL;
+	}
+
+	// ret = base + '/' + rest + '\0'
+	int base_len = strlen(base);
+	int rest_len = strlen(rest);
+	int ret_len = base_len + 1 + rest_len;
+
+	char *ret = (char*) malloc(ret_len + 1);
+	strncpy(ret, base, base_len);
+	ret[base_len] = '/';
+	strncpy(ret + base_len + 1, rest, rest_len);
+	ret[ret_len] = '\0';
+
+	free(base);
+	free(rest);
+
+	return ret;
+}
+
+
+// for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
+static void unix_handle_modlist(char **modlist, int *len)
+{
+	char *cur_pos;
+	char cur_dir[CF_MAX_PATHNAME_LENGTH];
+	SCP_vector<SCP_string> temp_modlist;
+	size_t total_len = 0;
+
+	if ( !_getcwd(cur_dir, CF_MAX_PATHNAME_LENGTH ) ) {
+		Error(LOCATION, "Can't get current working directory -- %d", errno );
+	}
+
+	for (cur_pos = strtok(*modlist, ","); cur_pos != NULL; cur_pos = strtok(NULL, ","))
+	{
+		char * mod_path;
+		if ((mod_path = unix_get_dir_name(cur_pos, cur_dir)) == NULL) {
+			Error(LOCATION, "Mod directory '%s' does not exist", cur_pos);
+		}
+		temp_modlist.push_back(mod_path);
+		total_len += strlen(mod_path) + 1;
+		free(mod_path);
+	}
+
+	// create new char[] to replace modlist
+	char *new_modlist = new char[total_len+1];
+	memset( new_modlist, 0, total_len + 1 );
+	SCP_vector<SCP_string>::iterator ii, end = temp_modlist.end();
+	for (ii = temp_modlist.begin(); ii != end; ++ii) {
+		strcat_s(new_modlist, total_len+1, ii->c_str());
+		strcat_s(new_modlist, total_len+1, ",");
+	}
+
+	delete [] (*modlist);
+	*modlist = new_modlist;
+	*len = total_len;
+}
+#endif /* SCP_UNIX */
+
 // external entry point into this modules
 
 bool SetCmdlineParams()
@@ -1318,47 +1442,7 @@ bool SetCmdlineParams()
 		strcpy_s(modlist, len+2, Cmdline_mod);
 
 #ifdef SCP_UNIX
-		// for case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches
-		DIR *dp;
-		dirent *dirp;
-		char *cur_pos, *temp;
-		char cur_dir[CF_MAX_PATHNAME_LENGTH], delim[] = ",";
-		SCP_vector<SCP_string> temp_modlist;
-		size_t total_len = 0;
-
-		if ( !_getcwd(cur_dir, CF_MAX_PATHNAME_LENGTH ) ) {
-			Error(LOCATION, "Can't get current working directory -- %d", errno );
-		}
-
-		for (cur_pos = strtok(modlist, delim); cur_pos != NULL; cur_pos = strtok(NULL, delim))
-		{
-			if ((dp = opendir(cur_dir)) == NULL) {
-				Error(LOCATION, "Can't open directory '%s' -- %d", cur_dir, errno );
-			}
-
-			while ((dirp = readdir(dp)) != NULL) {
-				if (!stricmp(dirp->d_name, cur_pos)) {
-					temp_modlist.push_back(dirp->d_name);
-					total_len += (strlen(dirp->d_name) + 1);
-				}
-			}
-			(void)closedir(dp);
-		}
-
-		// create new char[] to replace modlist
-		char *new_modlist = new char[total_len+1];
-		memset( new_modlist, 0, total_len + 1 );
-		SCP_vector<SCP_string>::iterator ii, end = temp_modlist.end();
-		for (ii = temp_modlist.begin(); ii != end; ++ii) {
-			strcat_s(new_modlist, total_len+1, ii->c_str());
-			strcat_s(new_modlist, total_len+1, ","); // replace later with NUL
-		}
-
-		// make the rest of the function unaware that anything happened here
-		temp = modlist;
-		modlist = new_modlist;
-		delete [] temp;
-		len = total_len;
+		unix_handle_modlist(&modlist, &len);
 #endif
 
 		// null terminate each individual
