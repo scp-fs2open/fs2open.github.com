@@ -1094,17 +1094,11 @@ static SCP_vector<SCP_string> unix_get_dir_names(SCP_string parent, SCP_string d
 // For case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches.
 static void handle_unix_modlist(char **modlist, int *len)
 {
-	char cur_dir[CF_MAX_PATHNAME_LENGTH];
-
-	if ( !_getcwd(cur_dir, CF_MAX_PATHNAME_LENGTH ) ) {
-		Error(LOCATION, "Can't get current working directory -- %d", errno );
-	}
-
 	// search filesystem for given paths
 	SCP_vector<SCP_string> mod_paths;
 	for (char *cur_mod = strtok(*modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ","))
 	{
-		SCP_vector<SCP_string> this_mod_paths = unix_get_dir_names(cur_dir, cur_mod);
+		SCP_vector<SCP_string> this_mod_paths = unix_get_dir_names(".", cur_mod);
 		if (this_mod_paths.empty()) {
 			ReleaseWarning(LOCATION, "Can't find mod '%s'", cur_mod);
 		}
