@@ -1041,9 +1041,12 @@ char *cmdline_parm::str()
 // dir must not contain a slash.
 static SCP_vector<SCP_string> unix_get_single_dir_names(SCP_string parent, SCP_string dir)
 {
+	SCP_vector<SCP_string> ret;
+
 	DIR *dp;
 	if ((dp = opendir(parent.c_str())) == NULL) {
-		Error(LOCATION, "Can't open directory '%s' -- %d", parent.c_str(), errno);
+		Warning(LOCATION, "Can't open directory '%s' when searching mod paths. Ignoring. errno=%d", parent.c_str(), errno);
+		return ret;
 	}
 
 	dirent *dirp;
@@ -1100,7 +1103,7 @@ static void handle_unix_modlist(char **modlist, int *len)
 	{
 		SCP_vector<SCP_string> this_mod_paths = unix_get_dir_names(".", cur_mod);
 		if (this_mod_paths.empty()) {
-			ReleaseWarning(LOCATION, "Can't find mod '%s'", cur_mod);
+			ReleaseWarning(LOCATION, "Can't find mod '%s'. Ignoring.", cur_mod);
 		}
 		mod_paths.insert(mod_paths.end(), this_mod_paths.begin(), this_mod_paths.end());
 	}
@@ -1109,7 +1112,7 @@ static void handle_unix_modlist(char **modlist, int *len)
 	size_t total_len = 0;
 	SCP_vector<SCP_string>::iterator ii, end = mod_paths.end();
 	for (ii = mod_paths.begin(); ii != end; ++ii) {
-		total_len += (*ii).length() + 1;
+		total_len += ii->length() + 1;
 	}
 
 	char *new_modlist = new char[total_len + 1];
