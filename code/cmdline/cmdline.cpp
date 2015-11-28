@@ -1039,14 +1039,12 @@ char *cmdline_parm::str()
 #ifdef SCP_UNIX
 // Return a vector with all filesystem names of "parent/dir" relative to parent.
 // dir must not contain a slash.
-static SCP_vector<SCP_string> unix_get_single_dir_names(SCP_string dir, SCP_string parent)
+static SCP_vector<SCP_string> unix_get_single_dir_names(SCP_string parent, SCP_string dir)
 {
 	DIR *dp;
 	if ((dp = opendir(parent.c_str())) == NULL) {
 		Error(LOCATION, "Can't open directory '%s' -- %d", parent.c_str(), errno);
 	}
-
-	SCP_vector<SCP_string> ret;
 
 	dirent *dirp;
 	while ((dirp = readdir(dp)) != NULL) {
@@ -1061,17 +1059,17 @@ static SCP_vector<SCP_string> unix_get_single_dir_names(SCP_string dir, SCP_stri
 
 // Return a vector with all filesystem names of "parent/dir" relative to parent.
 // Recurses to deal with slashes in dir.
-static SCP_vector<SCP_string> unix_get_dir_names(SCP_string dir, SCP_string parent)
+static SCP_vector<SCP_string> unix_get_dir_names(SCP_string parent, SCP_string dir)
 {
 	size_t slash = dir.find_first_of("/\\");
 
 	// no subdirectories, no need to recurse
 	if (slash == std::string::npos) {
-		return unix_get_single_dir_names(dir, parent);
+		return unix_get_single_dir_names(parent, dir);
 	}
 
 	// get the names of the first component of dir
-	SCP_vector<SCP_string> this_dir_names = unix_get_single_dir_names(dir.substr(0, slash), parent);
+	SCP_vector<SCP_string> this_dir_names = unix_get_single_dir_names(parent, dir.substr(0, slash));
 
 	SCP_string rest = dir.substr(slash + 1);
 
@@ -1081,7 +1079,7 @@ static SCP_vector<SCP_string> unix_get_dir_names(SCP_string dir, SCP_string pare
 	SCP_vector<SCP_string>::iterator ii, end = this_dir_names.end();
 	for (ii = this_dir_names.begin(); ii != end; ++ii) {
 		SCP_string this_dir_path = parent + "/" + *ii;
-		SCP_vector<SCP_string> mod_path = unix_get_dir_names(rest, this_dir_path);
+		SCP_vector<SCP_string> mod_path = unix_get_dir_names(this_dir_path, rest);
 
 		// add all found paths relative to parent
 		SCP_vector<SCP_string>::iterator ii2, end2 = mod_path.end();
@@ -1106,7 +1104,7 @@ static void handle_unix_modlist(char **modlist, int *len)
 	SCP_vector<SCP_string> mod_paths;
 	for (char *cur_mod = strtok(*modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ","))
 	{
-		SCP_vector<SCP_string> this_mod_paths = unix_get_dir_names(cur_mod, cur_dir);
+		SCP_vector<SCP_string> this_mod_paths = unix_get_dir_names(cur_dir, cur_mod);
 		if (this_mod_paths.empty()) {
 			ReleaseWarning(LOCATION, "Can't find mod '%s'", cur_mod);
 		}
