@@ -693,6 +693,18 @@ void opengl_post_load_shader(SCP_string &sflags, shader_type shader_t, int flags
 		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_samplenum);
 		sflags += temp;
 	} else if ( shader_t == SDR_TYPE_POST_PROCESS_FXAA ) {
+		/* GLSL version < 120 are guarded against reaching this code
+		   path via testing is_minimum_GLSL_version().
+		   Accordingly do not test for them again here. */
+		if (GLSL_version == 120) {
+			sflags += "#define FXAA_GLSL_120 1\n";
+			sflags += "#define FXAA_GLSL_130 0\n";
+		}
+		if (GLSL_version > 120) {
+			sflags += "#define FXAA_GLSL_120 0\n";
+			sflags += "#define FXAA_GLSL_130 1\n";
+		}
+
 		switch (Cmdline_fxaa_preset) {
 		case 0:
 			sflags += "#define FXAA_QUALITY_PRESET 10\n";
