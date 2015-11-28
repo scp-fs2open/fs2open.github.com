@@ -1702,6 +1702,7 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 	int ship_name_max_w = 100;
 	int ship_integrity_offsets[2];
 	int ship_status_offsets[2];
+	bool right_align_names = false;
 	char header_text[MAX_FILENAME_LEN] = "";
 	char fname_top[MAX_FILENAME_LEN] = "escort1";
 	char fname_middle[MAX_FILENAME_LEN] = "escort2";
@@ -1784,6 +1785,10 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 		stuff_int(&ship_name_max_w);
 	}
 
+	if ( optional_string("Right-Align Ship Names:") ) {
+		stuff_boolean(&right_align_names);
+	}
+
 	if (header_text[0] == '\0') {
 		strcpy_s(header_text, XSTR("monitoring", 285));
 	}
@@ -1799,6 +1804,7 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 	hud_gauge->initShipNameOffsets(ship_name_offsets[0], ship_name_offsets[1]);
 	hud_gauge->initShipStatusOffsets(ship_status_offsets[0], ship_status_offsets[1]);
 	hud_gauge->initShipNameMaxWidth(ship_name_max_w);
+	hud_gauge->initRightAlignNames(right_align_names);
 
 	if(ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
