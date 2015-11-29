@@ -135,15 +135,19 @@ class HudGaugeExtraTargetData: public HudGauge // HUD_TARGET_MONITOR_EXTRA_DATA
 
 	int bracket_offsets[2]; // Targetbox_coords[gr_screen.res][TBOX_EXTRA]
 	int dock_offsets[2]; // Targetbox_coords[gr_screen.res][TBOX_EXTRA_DOCK]
+	int dock_max_w;
 	int time_offsets[2]; // Targetbox_coords[gr_screen.res][TBOX_EXTRA_TIME]
 	int order_offsets[2]; // Targetbox_coords[gr_screen.res][TBOX_EXTRA_ORDERS]
+	int order_max_w;
 public:
 	HudGaugeExtraTargetData();
 	void initBitmaps(char *fname);
 	void initBracketOffsets(int x, int y);
 	void initDockOffsets(int x, int y);
+	void initDockMaxWidth(int width);
 	void initTimeOffsets(int x, int y);
 	void initOrderOffsets(int x, int y);
+	void initOrderMaxWidth(int width);
 	void updateFrame();
 	void render(float frametime);
 	void initialize();

@@ -435,7 +435,7 @@ void opengl_extensions_init()
 	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
 			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) ) {
 		int ver = 0, major = 0, minor = 0;
-		const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION_ARB);
+		const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
 		sscanf(glsl_ver, "%d.%d", &major, &minor);
 		ver = (major * 100) + minor;
@@ -455,7 +455,7 @@ void opengl_extensions_init()
 		// we require GLSL 1.20 or higher
 		else if (ver < 110) {
 			Use_GLSL = 0;
-			mprintf(("  OpenGL Shading Language version %s is not sufficient to use GLSL mode in FSO. Defaulting to fixed-function renderer.\n", glGetString(GL_SHADING_LANGUAGE_VERSION_ARB) ));
+			mprintf(("  OpenGL Shading Language version %s is not sufficient to use GLSL mode in FSO. Defaulting to fixed-function renderer.\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
 		}
 	}
 

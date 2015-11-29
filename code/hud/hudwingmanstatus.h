@@ -39,6 +39,7 @@ protected:
 	hud_frames Wingman_status_dots;
 
 	int header_offsets[2];
+	bool fixed_header_position;
 	int left_frame_end_x;
 	int right_frame_start_offset;
 	
@@ -59,6 +60,7 @@ public:
 	HudGaugeWingmanStatus();
 	void initBitmaps(char *fname_left, char *fname_middle, char *fname_right, char *fname_dots);
 	void initHeaderOffsets(int x, int y);
+	void initFixedHeaderPosition(bool fixed);
 	void initLeftFrameEndX(int x);
 	void initSingleWingOffsets(int x, int y);
 	void initMultipleWingOffsets(int x, int y);

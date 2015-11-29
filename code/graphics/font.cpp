@@ -43,9 +43,9 @@ font *Current_font = NULL;
  * @param str		string to crop.  Modifies this string directly
  * @param max_str	max characters allowed in str
  * @param max_width number of pixels to limit string to (less than or equal to).
- * @return			Returns same pointer passed in for str.
+ * @return			Returns the width of the string as given by gr_get_string_size().
  */
-char *gr_force_fit_string(char *str, int max_str, int max_width)
+int gr_force_fit_string(char *str, int max_str, int max_width)
 {
 	int w;
 
@@ -65,7 +65,7 @@ char *gr_force_fit_string(char *str, int max_str, int max_width)
 		}
 	}
 
-	return str;
+	return w;
 }
 
 /**

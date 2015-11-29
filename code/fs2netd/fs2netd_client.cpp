@@ -738,7 +738,7 @@ static void fs2netd_handle_messages()
 
 			case PCKT_SLIST_REPLY: {
 				int numServers = 0;
-				int svr_flags __attribute__((__unused__)); // gcc [-Wunused-but-set-variable] doesn't like MACROs
+				int svr_flags __UNUSED; // gcc [-Wunused-but-set-variable] doesn't like MACROs
 				ushort svr_port;
 				char svr_ip[16];
 				active_game ag;

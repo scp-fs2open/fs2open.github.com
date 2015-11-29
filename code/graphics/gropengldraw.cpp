@@ -751,7 +751,7 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, int resize_mode)
 	gr_opengl_end_2d_matrix();
 }
 
-void gr_opengl_line_htl(vec3d *start, vec3d *end)
+void gr_opengl_line_htl(const vec3d *start, const vec3d *end)
 {
 	if (Cmdline_nohtl) {
 		return;
@@ -2535,7 +2535,7 @@ void gr_opengl_draw_deferred_light_cylinder(vec3d *position,matrix *orient, floa
 	g3_done_instance(true);
 }
 
-void gr_opengl_draw_line_list(colored_vector *lines, int num)
+void gr_opengl_draw_line_list(const colored_vector *lines, int num)
 {
 	if (Cmdline_nohtl) {
 		return;

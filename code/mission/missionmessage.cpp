@@ -294,6 +294,14 @@ void persona_parse()
 			WarningEx(LOCATION, "Unknown species in messages.tbl -- %s\n", cstrtemp );
 	}
 
+	if (optional_string("$Allow substitution of missing messages:")) {
+		stuff_boolean(&Personas[Num_personas].substitute_missing_messages);
+	}
+	else 
+	{
+		Personas[Num_personas].substitute_missing_messages = true;
+	}
+
 	Num_personas++;
 }
 
@@ -2033,20 +2041,39 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		}
 	}
 
-	if (best_match == BUILTIN_MATCHES_PERSONA_EXCLUDED) {
-		nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index ));
-		nprintf(("MESSAGING", "using an excluded message for this persona\n"));
-	}else if (best_match == BUILTIN_MATCHES_SPECIES) {
-		nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
-		nprintf(("MESSAGING", "using a message for any persona of that species\n"));
-	} else if (best_match == BUILTIN_MATCHES_TYPE) {
-		nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
-		nprintf(("MESSAGING", "looking for message for any persona of any species\n"));
-	} else if (best_match < 0) {
-		nprintf(("MESSAGING", "Couldn't find any builtin message of type %d\n", type ));
-		Int3();
-		return; 
+	switch (best_match) {
+		case BUILTIN_MATCHES_PERSONA_EXCLUDED:
+			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index));
+			if (!Personas[persona_index].substitute_missing_messages) {
+				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message."));
+				return;
+			}
+			else
+				nprintf(("MESSAGING", "using an excluded message for this persona\n"));
+			break;
+		case BUILTIN_MATCHES_SPECIES:
+			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
+			if (!Personas[persona_index].substitute_missing_messages) {
+				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message."));
+				return;
+			}
+			else
+				nprintf(("MESSAGING", "using a message for any persona of that species\n"));
+			break;
+		case BUILTIN_MATCHES_TYPE:
+			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
+			if (!Personas[persona_index].substitute_missing_messages) {
+				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message."));
+				return;
+			}
+			else
+				nprintf(("MESSAGING", "looking for message for any persona of any species\n"));
+			break;
+		case -1:
+			Error(LOCATION, "Couldn't find any builtin message of type %d\n", type);
+			return;
 	}
+
 	
 	// since we may have multiple builtins we need to pick one at random
 	random_selection = (int)(rand32() % num_matching_builtins) + 1; 

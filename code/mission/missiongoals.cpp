@@ -1044,7 +1044,7 @@ void mission_eval_goals()
 			}
 
 			// if we get here, then the timestamp on the event has popped -- we should reevaluate
-			mission_process_event(i);
+			PROFILE("Repeating events", mission_process_event(i));
 		}
 	}
 	
@@ -1078,7 +1078,7 @@ void mission_eval_goals()
 			// we will evaluate repeatable events at the top of the file so we can get
 			// the exact interval that the designer asked for.
 			if ( !timestamp_valid( Mission_events[i].timestamp) ){
-				mission_process_event( i );
+				PROFILE("Nonrepeating events", mission_process_event( i ));
 			}
 		}
 	}

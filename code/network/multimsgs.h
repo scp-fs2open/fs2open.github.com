@@ -15,6 +15,8 @@
 
 #include "globalincs/pstypes.h"
 
+#include <cstdint>
+
 struct net_player;
 struct net_addr;
 class object;
@@ -33,10 +35,10 @@ class ship_subsys;
 
 #define BUILD_HEADER(t) do { data[0]=t; packet_size = HEADER_LENGTH; } while(0)
 #define ADD_DATA(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); memcpy(data+packet_size, &d, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_SHORT(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); short swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_USHORT(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); ushort swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_INT(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); int swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
-#define ADD_UINT(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); uint swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
+#define ADD_SHORT(d) do { static_assert(sizeof(d) == sizeof(std::int16_t), "Size of short is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); short swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
+#define ADD_USHORT(d) do { static_assert(sizeof(d) == sizeof(std::uint16_t), "Size of unsigned short is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); ushort swap = INTEL_SHORT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
+#define ADD_INT(d) do { static_assert(sizeof(d) == sizeof(std::int32_t), "Size of int is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); int swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
+#define ADD_UINT(d) do { static_assert(sizeof(d) == sizeof(std::uint32_t), "Size of unsigned int is not right!"); Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); uint swap = INTEL_INT(d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
 #define ADD_FLOAT(d) do { Assert((packet_size + sizeof(d)) < MAX_PACKET_SIZE); float swap = INTEL_FLOAT(&d); memcpy(data+packet_size, &swap, sizeof(d) ); packet_size += sizeof(d); } while (0)
 #define ADD_STRING(s) do { Assert((packet_size + strlen(s) + 4) < MAX_PACKET_SIZE);int len = strlen(s); int len_tmp = INTEL_INT(len); ADD_DATA(len_tmp); memcpy(data+packet_size, s, len ); packet_size += len; } while(0)
 #define ADD_ORIENT(d) { Assert((packet_size + 17) < MAX_PACKET_SIZE); ubyte dt[17]; multi_pack_orient_matrix(dt,&d); memcpy(data+packet_size,dt,17); packet_size += 17; }

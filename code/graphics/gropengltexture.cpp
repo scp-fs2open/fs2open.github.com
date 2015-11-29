@@ -1429,7 +1429,7 @@ size_t opengl_export_render_target( int slot, int width, int height, int alpha, 
 	return (size_t)m_offset;
 }
 
-void gr_opengl_update_texture(int bitmap_handle, int bpp, ubyte* data, int width, int height)
+void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height)
 {
 	GLenum texFormat, glFormat;
 	int n = bm_get_cache_slot (bitmap_handle, 1);

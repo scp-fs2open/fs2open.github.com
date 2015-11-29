@@ -219,6 +219,11 @@ void HudGaugeWingmanStatus::initHeaderOffsets(int x, int y)
 	header_offsets[1] = y;
 }
 
+void HudGaugeWingmanStatus::initFixedHeaderPosition(bool fixed)
+{
+	fixed_header_position = fixed;
+}
+
 void HudGaugeWingmanStatus::initLeftFrameEndX(int x)
 {
 	left_frame_end_x = x;
@@ -317,7 +322,7 @@ void HudGaugeWingmanStatus::initGrowMode(int mode) {
 
 void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 {
-	int sx, sy, bitmap;
+	int sx, sy, header_x, header_y, bitmap;
 
 	if((num_wings_to_draw < 1) || (num_wings_to_draw > 5)){
 		Int3();
@@ -343,7 +348,14 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 	actual_origin[1] = sy;
 
 	// write "wingmen" on gauge
-	renderString(sx+header_offsets[0], sy+header_offsets[1], XSTR( "wingmen", 352));
+	if (fixed_header_position) {
+		header_x = position[0] + header_offsets[0];
+		header_y = position[1] + header_offsets[1];
+	} else {
+		header_x = sx + header_offsets[0];
+		header_y = sy + header_offsets[1];
+	}
+	renderString(header_x, header_y, XSTR( "wingmen", 352));
 
 	// bring us to the end of the left portion so we can draw the last or middle bits depending on how many wings we have to draw
 	if ( grow_mode == GROW_DOWN ) {

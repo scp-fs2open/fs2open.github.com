@@ -1790,31 +1790,30 @@ bool matches_version_specific_tag(const char *line_start, bool &compatible_versi
 {
 	// special version-specific comment
 	// formatted like e.g. ;;FSO 3.7.0;;
+	// Should now support anything from ;;FSO 3;; to ;;FSO 3.7.3.20151106;; -MageKing17
 	if (strnicmp(line_start, ";;FSO ", 6))
 		return false;
 
-	int major, minor, build, num_len;
-	const char *ch;
+	int major, minor, build, revis;
+	int s_num = scan_fso_version_string(line_start, &major, &minor, &build, &revis);
 
-	ch = line_start + 6;
-	if (!get_number_before_separator(major, num_len, ch, '.'))
+	if (s_num == 0)
 		return false;
 
-	ch += (num_len + 1);
-	if (!get_number_before_separator(minor, num_len, ch, '.'))
-		return false;
+	// hack for releases
+	if (s_num == 4 && FS_VERSION_REVIS < 1000) {
+		s_num = 3;
+	}
 
-	ch += (num_len + 1);
-	if (!get_number_before_separator(build, num_len, ch, ';'))
-		return false;
-
-	ch += (num_len + 1);
-	if (*ch != ';')
-		return false;
-
+	const char *ch = line_start + 6;
+	while ((*ch) != ';') {
+		Assertion((*ch) != '\0', "String that was already guaranteed to end with semicolons did not end with semicolons; it's possible we have fallen into an alternate universe. Failing string: [%s]\n", line_start);
+		ch++;
+	}
+	ch++;
+	Assertion((*ch) == ';', "String that was guaranteed to have double semicolons did not; it's possible we have fallen into an alternate universe. Failing string: [%s]\n", line_start);
 	ch++;
 
-	// tag is a match!
 	tag_len = ch - line_start;
 	compatible_version = true;
 
@@ -1823,17 +1822,24 @@ bool matches_version_specific_tag(const char *line_start, bool &compatible_versi
 	{
 		compatible_version = false;
 	}
-	else if (major == FS_VERSION_MAJOR)
+	else if (major == FS_VERSION_MAJOR && s_num > 1)
 	{
 		if (minor > FS_VERSION_MINOR)
 		{
 			compatible_version = false;
 		}
-		else if (minor == FS_VERSION_MINOR)
+		else if (minor == FS_VERSION_MINOR && s_num > 2)
 		{
 			if (build > FS_VERSION_BUILD)
 			{
 				compatible_version = false;
+			}
+			else if (build == FS_VERSION_BUILD && s_num > 3)
+			{
+				if (revis > FS_VERSION_REVIS)
+				{
+					compatible_version = false;
+				}
 			}
 		}
 	}

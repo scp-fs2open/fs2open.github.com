@@ -229,17 +229,17 @@ void bg_bitmap_dlg::create()
 
 	angles skybox_angles;
 	vm_extract_angles_matrix(&skybox_angles, &The_mission.skybox_orientation);
-	m_skybox_pitch = (int) fl_degrees(skybox_angles.p);
-	m_skybox_bank = (int) fl_degrees(skybox_angles.b);
-	m_skybox_heading = (int) fl_degrees(skybox_angles.h);
+	m_skybox_pitch = fl2ir(fl_degrees(skybox_angles.p));
+	m_skybox_bank = fl2ir(fl_degrees(skybox_angles.b));
+	m_skybox_heading = fl2ir(fl_degrees(skybox_angles.h));
 
 	//make sure angle values are in the 0-359 degree range
 	if (m_skybox_pitch < 0)
-		m_skybox_pitch = m_skybox_pitch + 359;
+		m_skybox_pitch = m_skybox_pitch + 360;
 	if (m_skybox_bank < 0)
-		m_skybox_bank = m_skybox_bank + 359;
+		m_skybox_bank = m_skybox_bank + 360;
 	if (m_skybox_heading < 0)
-		m_skybox_heading = m_skybox_heading + 359;
+		m_skybox_heading = m_skybox_heading + 360;
 
 
 	for(i=0; i<MAX_NEB2_BITMAPS; i++){
@@ -730,9 +730,9 @@ void bg_bitmap_dlg::OnSunChange()
 		starfield_list_entry *sle = &background->suns[s_index];
 
 		s_name = CString(sle->filename);
-		s_pitch = (int) (fl_degrees(sle->ang.p) + delta);
-		s_bank = (int) (fl_degrees(sle->ang.b) + delta);
-		s_heading = (int) (fl_degrees(sle->ang.h) + delta);
+		s_pitch = fl2ir(fl_degrees(sle->ang.p) + delta);
+		s_bank = fl2ir(fl_degrees(sle->ang.b) + delta);
+		s_heading = fl2ir(fl_degrees(sle->ang.h) + delta);
 		s_scale = sle->scale_x;
 
 		// stuff back into the controls
@@ -894,9 +894,9 @@ void bg_bitmap_dlg::OnBitmapChange()
 		starfield_list_entry *sle = &background->bitmaps[b_index];
 
 		b_name = CString(sle->filename);
-		b_pitch = (int) (fl_degrees(sle->ang.p) + delta);
-		b_bank = (int) (fl_degrees(sle->ang.b) + delta);
-		b_heading = (int) (fl_degrees(sle->ang.h) + delta);
+		b_pitch = fl2ir(fl_degrees(sle->ang.p) + delta);
+		b_bank = fl2ir(fl_degrees(sle->ang.b) + delta);
+		b_heading = fl2ir(fl_degrees(sle->ang.h) + delta);
 		b_scale_x = sle->scale_x;
 		b_scale_y = sle->scale_y;
 		b_div_x = sle->div_x;

@@ -221,7 +221,7 @@ int FS2NetD_GetPlayerData(const char *player_name, player *pl, bool can_create, 
 		uint rc_total = 0;
 		ubyte reply_type = 0;
 		int si_index = 0;
-		ushort bogus __attribute__((unused));
+		ushort bogus __UNUSED;
 		ushort num_type_kills = 0, num_medals = 0;
 		char ship_name[NAME_LENGTH];
 		int idx;
@@ -492,8 +492,8 @@ int FS2NetD_Login(const char *username, const char *password, bool do_send)
 		int rc;
 		uint rc_total = 0;
 		ubyte login_status = 0;
-		int sid __attribute__((unused));
-		short pilots __attribute__((unused));
+		int sid __UNUSED;
+		short pilots __UNUSED;
 
 		do {
 			rc = FS2NetD_GetData(buffer+rc_total, sizeof(buffer)-rc_total);

@@ -951,7 +951,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 		}
 
 		if (num_attacking > k) {
-			int	i, num_blips;
+			int	i, w, h, num_blips;
 			
 			num_blips = num_attacking-k;
 			if (num_blips > 4) {
@@ -960,18 +960,20 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 
 			//int bitmap = get_blip_bitmap();
 
+			bm_get_info(attacking_dot, &w, &h);
+
 			if (attacking_dot >= 0) {
 				if (num_blips > 3)
 					y1 -= 3;
 
 				for (i=0; i<num_blips; i++) {
-					GR_AABITMAP(attacking_dot, x2+3, y1+i*7);
+					GR_AABITMAP(attacking_dot, x2+3, y1+i*(h+2));
 				}
 			}
 
 			// Increment for the position of ship name/class.
 			// DEPENDANT ON ATTACKER SIZE (X)
-			x2 += 7;
+			x2 += w + 2;
 		}
 	}
 
@@ -1037,7 +1039,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 			gr_string(x2+3, y1, tinfo_name);
 		} 
 		if(tinfo_class && (flags & TARGET_DISPLAY_CLASS)) {
-			gr_string(x2+3, y1+9, tinfo_class);
+			gr_string(x2+3, y1+gr_get_font_height(), tinfo_class);
 		}
 	}
 

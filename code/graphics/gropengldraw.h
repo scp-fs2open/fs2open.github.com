@@ -42,16 +42,16 @@ void gr_opengl_update_distortion();
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0);
 void opengl_reset_spec_mapping();
 
-void gr_opengl_line_htl(vec3d *start, vec3d *end);
+void gr_opengl_line_htl(const vec3d *start, const vec3d *end);
 void gr_opengl_sphere_htl(float rad);
 void gr_opengl_deferred_light_sphere_init(int rings, int segments);
-void gr_opengl_draw_deferred_light_sphere(vec3d *position, float rad, bool clearStencil);
+void gr_opengl_draw_deferred_light_sphere(const vec3d *position, float rad, bool clearStencil);
 void gr_opengl_deferred_light_cylinder_init(int segments);
-void gr_opengl_draw_deferred_light_cylinder(vec3d *position,matrix *orient, float rad, float length, bool clearStencil);
+void gr_opengl_draw_deferred_light_cylinder(const vec3d *position, const matrix *orient, float rad, float length, bool clearStencil);
 
-void gr_opengl_draw_line_list(colored_vector *lines, int num);
+void gr_opengl_draw_line_list(const colored_vector *lines, int num);
 
-void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, matrix *light_orient);
+void gr_opengl_shadow_map_start(const matrix4 *shadow_view_matrix, const matrix *light_orient);
 void gr_opengl_shadow_map_end();
 
 void opengl_setup_scene_textures();

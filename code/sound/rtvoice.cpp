@@ -277,7 +277,7 @@ int rtvoice_start_recording( void (*user_callback)(), int callback_time )
 // NOTE: function converts voice data into compressed format
 void rtvoice_get_data(unsigned char **outbuf, int *size, double *gain)
 {
-	int max_size __attribute__((__unused__)), raw_size;
+	int max_size __UNUSED, raw_size;
 	max_size = dscap_max_buffersize();
 
 	*outbuf=NULL;
