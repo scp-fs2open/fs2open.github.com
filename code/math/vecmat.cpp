@@ -2573,3 +2573,135 @@ void vm_vec_boxscale(vec2d *vec, float scale)
 	vec->x *= ratio;
 	vec->y *= ratio;
 }
+
+//(DahBlount) invert a 4x4 matrix
+bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut)
+{
+	matrix4 inv;
+	float det;
+	int i;
+
+	inv.a1d[0] = m->a1d[5] * m->a1d[10] * m->a1d[15] -
+		m->a1d[5] * m->a1d[11] * m->a1d[14] -
+		m->a1d[9] * m->a1d[6] * m->a1d[15] +
+		m->a1d[9] * m->a1d[7] * m->a1d[14] +
+		m->a1d[13] * m->a1d[6] * m->a1d[11] -
+		m->a1d[13] * m->a1d[7] * m->a1d[10];
+
+	inv.a1d[4] = -m->a1d[4] * m->a1d[10] * m->a1d[15] +
+		m->a1d[4] * m->a1d[11] * m->a1d[14] +
+		m->a1d[8] * m->a1d[6] * m->a1d[15] -
+		m->a1d[8] * m->a1d[7] * m->a1d[14] -
+		m->a1d[12] * m->a1d[6] * m->a1d[11] +
+		m->a1d[12] * m->a1d[7] * m->a1d[10];
+
+	inv.a1d[8] = m->a1d[4] * m->a1d[9] * m->a1d[15] -
+		m->a1d[4] * m->a1d[11] * m->a1d[13] -
+		m->a1d[8] * m->a1d[5] * m->a1d[15] +
+		m->a1d[8] * m->a1d[7] * m->a1d[13] +
+		m->a1d[12] * m->a1d[5] * m->a1d[11] -
+		m->a1d[12] * m->a1d[7] * m->a1d[9];
+
+	inv.a1d[12] = -m->a1d[4] * m->a1d[9] * m->a1d[14] +
+		m->a1d[4] * m->a1d[10] * m->a1d[13] +
+		m->a1d[8] * m->a1d[5] * m->a1d[14] -
+		m->a1d[8] * m->a1d[6] * m->a1d[13] -
+		m->a1d[12] * m->a1d[5] * m->a1d[10] +
+		m->a1d[12] * m->a1d[6] * m->a1d[9];
+
+	inv.a1d[1] = -m->a1d[1] * m->a1d[10] * m->a1d[15] +
+		m->a1d[1] * m->a1d[11] * m->a1d[14] +
+		m->a1d[9] * m->a1d[2] * m->a1d[15] -
+		m->a1d[9] * m->a1d[3] * m->a1d[14] -
+		m->a1d[13] * m->a1d[2] * m->a1d[11] +
+		m->a1d[13] * m->a1d[3] * m->a1d[10];
+
+	inv.a1d[5] = m->a1d[0] * m->a1d[10] * m->a1d[15] -
+		m->a1d[0] * m->a1d[11] * m->a1d[14] -
+		m->a1d[8] * m->a1d[2] * m->a1d[15] +
+		m->a1d[8] * m->a1d[3] * m->a1d[14] +
+		m->a1d[12] * m->a1d[2] * m->a1d[11] -
+		m->a1d[12] * m->a1d[3] * m->a1d[10];
+
+	inv.a1d[9] = -m->a1d[0] * m->a1d[9] * m->a1d[15] +
+		m->a1d[0] * m->a1d[11] * m->a1d[13] +
+		m->a1d[8] * m->a1d[1] * m->a1d[15] -
+		m->a1d[8] * m->a1d[3] * m->a1d[13] -
+		m->a1d[12] * m->a1d[1] * m->a1d[11] +
+		m->a1d[12] * m->a1d[3] * m->a1d[9];
+
+	inv.a1d[13] = m->a1d[0] * m->a1d[9] * m->a1d[14] -
+		m->a1d[0] * m->a1d[10] * m->a1d[13] -
+		m->a1d[8] * m->a1d[1] * m->a1d[14] +
+		m->a1d[8] * m->a1d[2] * m->a1d[13] +
+		m->a1d[12] * m->a1d[1] * m->a1d[10] -
+		m->a1d[12] * m->a1d[2] * m->a1d[9];
+
+	inv.a1d[2] = m->a1d[1] * m->a1d[6] * m->a1d[15] -
+		m->a1d[1] * m->a1d[7] * m->a1d[14] -
+		m->a1d[5] * m->a1d[2] * m->a1d[15] +
+		m->a1d[5] * m->a1d[3] * m->a1d[14] +
+		m->a1d[13] * m->a1d[2] * m->a1d[7] -
+		m->a1d[13] * m->a1d[3] * m->a1d[6];
+
+	inv.a1d[6] = -m->a1d[0] * m->a1d[6] * m->a1d[15] +
+		m->a1d[0] * m->a1d[7] * m->a1d[14] +
+		m->a1d[4] * m->a1d[2] * m->a1d[15] -
+		m->a1d[4] * m->a1d[3] * m->a1d[14] -
+		m->a1d[12] * m->a1d[2] * m->a1d[7] +
+		m->a1d[12] * m->a1d[3] * m->a1d[6];
+
+	inv.a1d[10] = m->a1d[0] * m->a1d[5] * m->a1d[15] -
+		m->a1d[0] * m->a1d[7] * m->a1d[13] -
+		m->a1d[4] * m->a1d[1] * m->a1d[15] +
+		m->a1d[4] * m->a1d[3] * m->a1d[13] +
+		m->a1d[12] * m->a1d[1] * m->a1d[7] -
+		m->a1d[12] * m->a1d[3] * m->a1d[5];
+
+	inv.a1d[14] = -m->a1d[0] * m->a1d[5] * m->a1d[14] +
+		m->a1d[0] * m->a1d[6] * m->a1d[13] +
+		m->a1d[4] * m->a1d[1] * m->a1d[14] -
+		m->a1d[4] * m->a1d[2] * m->a1d[13] -
+		m->a1d[12] * m->a1d[1] * m->a1d[6] +
+		m->a1d[12] * m->a1d[2] * m->a1d[5];
+
+	inv.a1d[3] = -m->a1d[1] * m->a1d[6] * m->a1d[11] +
+		m->a1d[1] * m->a1d[7] * m->a1d[10] +
+		m->a1d[5] * m->a1d[2] * m->a1d[11] -
+		m->a1d[5] * m->a1d[3] * m->a1d[10] -
+		m->a1d[9] * m->a1d[2] * m->a1d[7] +
+		m->a1d[9] * m->a1d[3] * m->a1d[6];
+
+	inv.a1d[7] = m->a1d[0] * m->a1d[6] * m->a1d[11] -
+		m->a1d[0] * m->a1d[7] * m->a1d[10] -
+		m->a1d[4] * m->a1d[2] * m->a1d[11] +
+		m->a1d[4] * m->a1d[3] * m->a1d[10] +
+		m->a1d[8] * m->a1d[2] * m->a1d[7] -
+		m->a1d[8] * m->a1d[3] * m->a1d[6];
+
+	inv.a1d[11] = -m->a1d[0] * m->a1d[5] * m->a1d[11] +
+		m->a1d[0] * m->a1d[7] * m->a1d[9] +
+		m->a1d[4] * m->a1d[1] * m->a1d[11] -
+		m->a1d[4] * m->a1d[3] * m->a1d[9] -
+		m->a1d[8] * m->a1d[1] * m->a1d[7] +
+		m->a1d[8] * m->a1d[3] * m->a1d[5];
+
+	inv.a1d[15] = m->a1d[0] * m->a1d[5] * m->a1d[10] -
+		m->a1d[0] * m->a1d[6] * m->a1d[9] -
+		m->a1d[4] * m->a1d[1] * m->a1d[10] +
+		m->a1d[4] * m->a1d[2] * m->a1d[9] +
+		m->a1d[8] * m->a1d[1] * m->a1d[6] -
+		m->a1d[8] * m->a1d[2] * m->a1d[5];
+
+	det = m->a1d[0] * inv.a1d[0] + m->a1d[1] * inv.a1d[4] + m->a1d[2] * inv.a1d[8] + m->a1d[3] * inv.a1d[12];
+
+	if (det == 0)
+		return false;
+
+	det = 1.0f / det;
+
+	for (i = 0; i < 16; i++)
+		invOut->a1d[i] = inv.a1d[i] * det;
+
+	return true;
+}
