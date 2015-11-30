@@ -36,6 +36,6 @@ extern vec3d G3_user_clip_normal;
 extern vec3d G3_user_clip_point;
 
 // Returns TRUE if point is behind user plane
-extern int g3_point_behind_user_plane( vec3d *pnt );
+extern int g3_point_behind_user_plane( const vec3d *pnt );
 
 #endif

@@ -716,7 +716,7 @@ void mix_two_team_colors(team_color* dest, team_color* a, team_color* b, float m
 	dest->stripe.b = a->stripe.b * (1.0f - mix_factor) + b->stripe.b * mix_factor;
 }
 
-void gr_opengl_set_team_color(team_color *colors)
+void gr_opengl_set_team_color(const team_color *colors)
 {
 	if ( colors == NULL ) {
 		Using_Team_Color = false;
@@ -1479,7 +1479,7 @@ void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, 
 	GL_CHECK_FOR_ERRORS("end of render3d()");
 }
 
-void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
+void gr_opengl_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 {
 	if (Cmdline_nohtl) {
 		return;
@@ -1514,7 +1514,7 @@ void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
 	GL_modelview_matrix_depth++;
 }
 
-void gr_opengl_start_instance_angles(vec3d *pos, angles *rotation)
+void gr_opengl_start_instance_angles(const vec3d *pos, const angles *rotation)
 {
 	if (Cmdline_nohtl)
 		return;
@@ -1605,7 +1605,7 @@ void gr_opengl_end_projection_matrix()
 	GL_htl_projection_matrix_set = 0;
 }
 
-void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
+void gr_opengl_set_view_matrix(const vec3d *pos, const matrix *orient)
 {
 	if (Cmdline_nohtl)
 		return;
@@ -1807,7 +1807,7 @@ void gr_opengl_end_2d_matrix()
 
 static bool GL_scale_matrix_set = false;
 
-void gr_opengl_push_scale_matrix(vec3d *scale_factor)
+void gr_opengl_push_scale_matrix(const vec3d *scale_factor)
 {
 	if ( (scale_factor->xyz.x == 1) && (scale_factor->xyz.y == 1) && (scale_factor->xyz.z == 1) )
 		return;
@@ -1938,7 +1938,7 @@ void gr_opengl_set_state_block(int handle)
 extern bool Glowpoint_override;
 bool Glowpoint_override_save;
 
-void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, matrix *light_orient)
+void gr_opengl_shadow_map_start(const matrix4 *shadow_view_matrix, const matrix *light_orient)
 {
 	if(!Cmdline_shadow_quality)
 		return;

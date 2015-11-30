@@ -2777,7 +2777,9 @@ void model_maybe_fixup_subsys_path(polymodel *pm, int path_num)
 	mp = &pm->paths[path_num];
 
 	Assert(mp != NULL);
-	Assert(mp->nverts > 1);
+	if (mp->nverts <= 1 ) {
+		Error(LOCATION, "Subsystem Path (%s) Parent (%s) in model (%s) has less than 2 vertices/points!", mp->name, mp->parent_name, pm->filename);
+	}
 	
 	index_1 = 1;
 	index_2 = 0;
@@ -4668,9 +4670,10 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 
 	pmi = model_get_instance(model_instance_num);
 	pm = model_get(pmi->model_num);
-
-	Assert( sub_model_num >= 0 );
-	Assert( sub_model_num < pm->n_models );
+	
+	Assertion(sub_model_num >= 0 && sub_model_num < pm->n_models,
+		"Sub model number (%d) which should be updated is out of range! Must be between 0 and %d. This happend on model %s.",
+		sub_model_num, pm->n_models - 1, pm->filename);
 
 	if ( sub_model_num < 0 ) return;
 	if ( sub_model_num >= pm->n_models ) return;

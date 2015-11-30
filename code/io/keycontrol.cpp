@@ -623,7 +623,7 @@ extern void snd_stop_any_sound();
 
 extern vec3d Eye_position;
 extern matrix Eye_matrix;
-extern void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom);
+extern void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float zoom);
 
 extern int Show_cpu;
 

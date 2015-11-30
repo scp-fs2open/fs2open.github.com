@@ -22,6 +22,7 @@ class object;
 //	Maximum distance at which a countermeasure can be tracked
 //	If this value is too large, missiles will always be tracking countermeasures.
 #define	MAX_CMEASURE_TRACK_DIST	300.0f
+extern const float CMEASURE_DETONATE_DISTANCE;
 
 extern int Cmeasures_homing_check;
 extern int Countermeasures_enabled;

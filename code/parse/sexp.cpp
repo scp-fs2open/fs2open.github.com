@@ -17985,6 +17985,11 @@ void sexp_ship_turret_target_order(int node)
 		return;
 	}
 	
+	//Reset order
+	for(i = 0; i < NUM_TURRET_ORDER_TYPES; i++) {
+		new_target_order[i] = -1;
+	}
+
 	oindex = 0;
 	node = CDR(node);
 	while(node != -1)
@@ -18006,11 +18011,6 @@ void sexp_ship_turret_target_order(int node)
 	turret = GET_FIRST(&Ships[sindex].subsys_list);
 	while(turret != END_OF_LIST(&Ships[sindex].subsys_list))
 	{
-		//Reset order
-		for(i = 0; i < NUM_TURRET_ORDER_TYPES; i++) {
-			turret->turret_targeting_order[i] = -1;
-		}
-
 		memcpy(turret->turret_targeting_order, new_target_order, NUM_TURRET_ORDER_TYPES*sizeof(int));
 
 		// next item
@@ -32872,7 +32872,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship or wing name\r\n"
 		"\t2: Arrival location\r\n"
 		"\t3: Arrival anchor (optional; only required for certain locations)\r\n"
-		"\t4: Arrival path mask (optional; defaults to 0; note that this is a bitfield)\r\n"
+		"\t4: Arrival path mask (optional; this is a bitfield where the bits set to 1 correspond to the paths to use; defaults to 0 which is a special case that means all paths can be used)\r\n"
 		"\t5: Arrival distance (optional; defaults to 0)\r\n"
 		"\t6: Arrival delay (optional; defaults to 0)\r\n"
 		"\t7: Whether to show a jump effect if arriving from subspace (optional; defaults to true)\r\n"
@@ -32884,7 +32884,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: Ship or wing name\r\n"
 		"\t2: Departure location\r\n"
 		"\t3: Departure anchor (optional; only required for certain locations)\r\n"
-		"\t4: Departure path mask (optional; defaults to 0; note that this is a bitfield)\r\n"
+		"\t4: Departure path mask (optional; this is a bitfield where the bits set to 1 correspond to the paths to use; defaults to 0 which is a special case that means all paths can be used)\r\n"
 		"\t5: Departure delay (optional; defaults to 0)\r\n"
 		"\t6: Whether to show a jump effect if departing to subspace (optional; defaults to true)\r\n"
 	},

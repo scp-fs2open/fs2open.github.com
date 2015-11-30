@@ -52,6 +52,7 @@ protected:
 	int ship_integrity_offsets[2];			// Offset of the Ship Hull column
 	int ship_status_offsets[2];				// Offset of the Ship Status column
 	int ship_name_max_width;			// max width of ship name entries
+	bool right_align_names;				// whether or not to right-align ship names
 public:
 	HudGaugeEscort();
 	void initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom);
@@ -65,6 +66,7 @@ public:
 	void initShipIntegrityOffsets(int x, int y);
 	void initShipStatusOffsets(int x, int y);
 	void initShipNameMaxWidth(int w);
+	void initRightAlignNames(bool align);
 	int setGaugeColorEscort(int index, int team);
 	virtual void render(float frametime);
 	void pageIn();

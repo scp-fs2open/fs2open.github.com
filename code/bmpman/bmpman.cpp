@@ -1506,8 +1506,8 @@ bitmap * bm_lock(int handle, ubyte bpp, ubyte flags, bool nodebug) {
 	// read the file data
 	if (gr_bm_lock(be->filename, handle, bitmapnum, bpp, flags, nodebug) == -1) {
 		// oops, this isn't good - reset and return NULL
-		bm_unlock(bitmapnum);
-		bm_unload(bitmapnum);
+		bm_unlock( handle );
+		bm_unload( handle );
 
 		return NULL;
 	}
@@ -2100,7 +2100,9 @@ void bm_page_in_stop() {
 					}
 				} else {
 					bm_lock(bm_bitmaps[i].handle, (bm_bitmaps[i].used_flags == BMP_AABITMAP) ? 8 : 16, bm_bitmaps[i].used_flags);
-					bm_unlock(bm_bitmaps[i].handle);
+					if (bm_bitmaps[i].ref_count >= 1) {
+						bm_unlock( bm_bitmaps[i].handle );
+					}
 				}
 
 				n++;
