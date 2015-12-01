@@ -1581,6 +1581,8 @@ void vm_quaternion_rotate(matrix *M, float theta, const vec3d *u)
 //		inputs:	m			=>		point to resultant rotation matrix
 //				angle		=>		rotation angle about z axis (in radians)
 //
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 static void rotate_z ( matrix *m, float theta )
 {
 	m->vec.rvec.xyz.x = cosf (theta);
@@ -1595,6 +1597,7 @@ static void rotate_z ( matrix *m, float theta )
 	m->vec.fvec.xyz.y = 0.0f;
 	m->vec.fvec.xyz.z = 1.0f;
 }
+#pragma GCC diagnostic pop
 
 
 // --------------------------------------------------------------------------------------

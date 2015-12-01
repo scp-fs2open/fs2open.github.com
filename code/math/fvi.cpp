@@ -1079,6 +1079,8 @@ void fvi_closest_line_line(const vec3d *x0, const vec3d *vx, const vec3d *y0, co
 }
 
 // --------------------------------------------------------------------------------------------------------------------
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 static void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 )
 {
 	float root = fl_sqrt(discriminant);
@@ -1091,6 +1093,7 @@ static void accurate_square_root( float A, float B, float C, float discriminant,
 		*root2 = 2.0f*C / (-B + root);
 	}
 }
+#pragma GCC diagnostic pop
 
 /**
  * Project point on bounding box
