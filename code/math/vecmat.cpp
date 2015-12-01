@@ -2574,12 +2574,12 @@ void vm_vec_boxscale(vec2d *vec, float scale)
 	vec->y *= ratio;
 }
 
-/**(DahBlount)
+/**
  * @brief							Attempts to invert a 4x4 matrix
  * @param[in]			m			Pointer to the matrix we want to invert
- * @param[inout]		invOut		The return matrix
+ * @param[inout]		invOut		The inverted matrix, or nullptr if inversion is impossible
  *
- * @returns							The inverse of matrix4 m
+ * @returns							Whether or not the matrix is invertible
  */
 bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut)
 {

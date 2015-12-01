@@ -2086,7 +2086,10 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 			for ( int i = 0; i < 16; ++i ) {
 				texture_mat.a1d[i] = GL_env_texture_matrix[i];
 			}
-			vm_inverse_matrix4(&texture_mat, &envMatrix);
+
+			if (!vm_inverse_matrix4(&texture_mat, &envMatrix)) {
+				Error(LOCATION, "Unable to invert environment mapping matrix.\n");
+			}
 
 			GL_state.Uniform.setUniformi("alpha_spec", alpha_spec);
 			GL_state.Uniform.setUniformMatrix4fv("envMatrix", 1, &envMatrix);
