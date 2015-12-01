@@ -62,6 +62,7 @@ extern matrix vmd_identity_matrix;
 // first set of inside braces is for union, second set is for inside union, then for a2d[3][3] (some compiler warning messages just suck)
 //#define IDENTITY_MATRIX { { { {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f} } } }
 #define IDENTITY_MATRIX { { { { { { 1.0f, 0.0f, 0.0f } } }, { { { 0.0f, 1.0f, 0.0f } } }, { { { 0.0f, 0.0f, 1.0f } } } } } }
+#define IDENTITY_MATRIX_4 { { { { { { 1.0f, 0.0f, 0.0f, 0.0f } } }, { { { 0.0f, 1.0f, 0.0f, 0.0f } } }, { { { 0.0f, 0.0f, 1.0f, 0.0f } } }, { { { 0.0f, 0.0f, 0.0f, 1.0f } } } } } }
 
 //fills in fields of an angle vector
 #define vm_angvec_make(v,_p,_b,_h) (((v)->p=(_p), (v)->b=(_b), (v)->h=(_h)), (v))
@@ -434,7 +435,13 @@ void vm_vec_dist_squared_to_line(const vec3d *p, const vec3d *l0, const vec3d *l
 //SUSHI: 2D vector "box" scaling
 void vm_vec_boxscale(vec2d *vec, float scale);
 
-//(DahBlount) invert a 4x4 matrix
+/**
+* @brief							Attempts to invert a 4x4 matrix
+* @param[in]			m			Pointer to the matrix we want to invert
+* @param[inout]		invOut		The inverted matrix, or nullptr if inversion is impossible
+*
+* @returns							Whether or not the matrix is invertible
+*/
 bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut);
 
 #endif
