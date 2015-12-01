@@ -271,7 +271,7 @@ void HudGaugeLock::render(float frametime)
 	Lock_gauge.sx = sx - Lock_gauge_half_w;
 	Lock_gauge.sy = sy - Lock_gauge_half_h;
 	if(Player_ai->current_target_is_locked){
-		Lock_gauge.time_elapsed = 0.0f;	
+		Lock_gauge.time_elapsed = 0.0f;
 		hud_anim_render(&Lock_gauge, 0.0f, 1);
 	} else {
 		hud_anim_render(&Lock_gauge, frametime, 1);
