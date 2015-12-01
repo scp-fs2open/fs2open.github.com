@@ -1659,7 +1659,7 @@ void game_do_frame()
 					leader = &Objects[cur_object_index];
 					leader_old_pos = leader->pos;  // save original position
 					leader_orient = leader->orient;			// save original orientation
-					vm_copy_transpose_matrix(&leader_transpose, &leader_orient);
+					vm_copy_transpose(&leader_transpose, &leader_orient);
 
 					process_controls(&leader->pos, &leader->orient, f2fl(Frametime), key);
 					vm_vec_sub(&delta_pos, &leader->pos, &leader_old_pos);  // get position change
@@ -1676,7 +1676,7 @@ void game_do_frame()
 
 								// change rotation matrix to rotate in opposite direction.  This rotation
 								// matrix is what the leader ship has rotated by.
-								vm_copy_transpose_matrix(&rot_trans, &view_physics.last_rotmat);
+								vm_copy_transpose(&rot_trans, &view_physics.last_rotmat);
 
 								// get point relative to our point of rotation (make POR the origin).  Since
 								// only the leader has been moved yet, and not the objects, we have to use

@@ -773,7 +773,7 @@ int drag_rotate_objects()
 
 	leader = &Objects[cur_object_index];
 	leader_orient = leader->orient;			// save original orientation
-	vm_copy_transpose_matrix(&leader_transpose, &leader_orient);
+	vm_copy_transpose(&leader_transpose, &leader_orient);
 
 	vm_angles_2_matrix(&rotmat, &a);
 	vm_matrix_x_matrix(&newmat, &leader->orient, &rotmat);
@@ -789,7 +789,7 @@ int drag_rotate_objects()
 
 				// change rotation matrix to rotate in opposite direction.  This rotation
 				// matrix is what the leader ship has rotated by.
-				vm_copy_transpose_matrix(&rot_trans, &rotmat);
+				vm_copy_transpose(&rot_trans, &rotmat);
 
 				// get point relative to our point of rotation (make POR the origin).
 				vm_vec_sub(&tmpv1, &objp->pos, &leader->pos);

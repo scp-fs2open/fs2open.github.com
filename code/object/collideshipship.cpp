@@ -859,7 +859,7 @@ void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient)
 	// which is equivalent to rotating in the opposite direction (or transpose)
 
 	vm_matrix_x_matrix(&Mtemp1, I_inv_body, orient);
-	vm_copy_transpose_matrix(&Mtemp2, orient);
+	vm_copy_transpose(&Mtemp2, orient);
 	vm_matrix_x_matrix(I_inv, &Mtemp2, &Mtemp1);
 }
 

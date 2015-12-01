@@ -500,7 +500,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 		ship_get_eye(&tmp_vec, &eyemat, Player_obj, false);
 
-		vm_copy_transpose_matrix(&tmp_mat, &Player_obj->orient);
+		vm_copy_transpose(&tmp_mat, &Player_obj->orient);
 		vm_matrix_x_matrix(&rotvelmat, &tmp_mat, &eyemat);
 
 		vm_vec_rotate(&new_rotvel, &pi->max_rotvel, &rotvelmat);

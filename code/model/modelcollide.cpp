@@ -1206,7 +1206,7 @@ NoHit:
 					vm_rotate_matrix_by_angles(&rotation_matrix, &angs);
 
 					matrix inv_orientation;
-					vm_copy_transpose_matrix(&inv_orientation, &csm->orientation);
+					vm_copy_transpose(&inv_orientation, &csm->orientation);
 
 					vm_matrix_x_matrix(&tm, &rotation_matrix, &inv_orientation);
 				}
@@ -1376,7 +1376,7 @@ void model_collide_preprocess_subobj(vec3d *pos, matrix *orient, polymodel *pm, 
 			vm_rotate_matrix_by_angles(&rotation_matrix, &angs);
 
 			matrix inv_orientation;
-			vm_copy_transpose_matrix(&inv_orientation, &csm->orientation);
+			vm_copy_transpose(&inv_orientation, &csm->orientation);
 
 			vm_matrix_x_matrix(&tm, &rotation_matrix, &inv_orientation);
 		}
