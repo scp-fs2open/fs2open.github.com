@@ -966,7 +966,7 @@ vec3d *vm_vec_unrotate(vec3d *dest, const vec3d *src, const matrix *m)
 }
 
 //transpose a matrix in place. returns ptr to matrix
-matrix *vm_transpose_matrix(matrix *m)
+matrix *vm_transpose(matrix *m)
 {
 	float t;
 
@@ -978,7 +978,7 @@ matrix *vm_transpose_matrix(matrix *m)
 }
 
 //copy and transpose a matrix. returns ptr to matrix
-//dest CANNOT equal source. use vm_transpose_matrix() if this is the case
+//dest CANNOT equal source. use vm_transpose() if this is the case
 matrix *vm_copy_transpose_matrix(matrix *dest, const matrix *src)
 {
 	Assert(dest != src);
