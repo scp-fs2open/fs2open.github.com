@@ -3719,7 +3719,7 @@ ADE_FUNC(getDotProduct, l_Vector, "vector OtherVector", "Returns dot product of 
 	if(!ade_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b)))
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", vm_vec_dotprod(v3a, v3b));
+	return ade_set_args(L, "f", vm_vec_dot(v3a, v3b));
 }
 
 ADE_FUNC(getCrossProduct, l_Vector, "vector OtherVector", "Returns cross product of vector object with vector argument", "vector", "Cross product, or null vector if a handle is invalid")

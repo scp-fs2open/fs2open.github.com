@@ -2939,7 +2939,7 @@ int beam_collide_early_out(object *a, object *b)
 	vm_vec_normalize_quick(&dot_test);
 	vm_vec_normalize_quick(&dot_test2);
 	// cull_dist == DIST SQUARED FOO!
-	if((vm_vec_dotprod(&dot_test, &dot_test2) < cull_dot) && (vm_vec_mag_squared(&dist_test) > cull_dist)){
+	if((vm_vec_dot(&dot_test, &dot_test2) < cull_dot) && (vm_vec_mag_squared(&dist_test) > cull_dist)){
 		return 1;
 	}
 	
@@ -3366,7 +3366,7 @@ float beam_get_cone_dot(beam *b)
 		return (float)cos(fl_radians(50.5f));
 		
 	case BEAM_TYPE_B:
-		return vm_vec_dotprod(&b->binfo.dir_a, &b->binfo.dir_b);
+		return vm_vec_dot(&b->binfo.dir_a, &b->binfo.dir_b);
 
 	default:
 		Int3();
@@ -3449,7 +3449,7 @@ int beam_ok_to_fire(beam *b)
 		} else {
 			vec3d turret_dir, turret_pos, temp;
 			beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, &turret_dir, 1, &temp, (b->flags & BF_IS_FIGHTER_BEAM) > 0);
-			if (vm_vec_dotprod(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov) {
+			if (vm_vec_dot(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov) {
 				nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
 				return 0;
 			}

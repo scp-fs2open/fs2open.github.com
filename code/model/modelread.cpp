@@ -1725,7 +1725,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 						vec3d diff;
 						vm_vec_normalized_dir(&diff, &bay->pnt[0], &bay->pnt[1]);
-						float dot = vm_vec_dotprod(&diff, &bay->norm[0]);
+						float dot = vm_vec_dot(&diff, &bay->norm[0]);
 						if(fl_abs(dot) > 0.99f) {
 							Warning(LOCATION, "Model '%s', docking port '%s' has docking slot positions that lie on the same axis as the docking normal.  This will cause a NULL VEC crash when docked to another ship.  A new docking normal will be generated.", filename, bay->name);
 
@@ -3538,7 +3538,7 @@ void submodel_look_at(polymodel *pm, int mn)
 
 	vec3d c;
 	vm_vec_crossprod(&c, &l, &mp);
-	float dot=vm_vec_dotprod(&l,&mp);
+	float dot=vm_vec_dot(&l,&mp);
 	if (dot>=0.0f) {
 		*a = asin(c.a1d[axis]);
 	} else {

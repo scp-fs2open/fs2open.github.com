@@ -193,8 +193,7 @@ float vm_vec_normalized_dir_quick_mag(vec3d *dest, const vec3d *end, const vec3d
 float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *start);
 
 ////returns dot product of two vectors
-float vm_vec_dotprod(const vec3d *v0, const vec3d *v1);
-#define vm_vec_dot vm_vec_dotprod
+float vm_vec_dot(const vec3d *v0, const vec3d *v1);
 
 float vm_vec_dot3(float x, float y, float z, vec3d *v);
 

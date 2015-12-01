@@ -1140,7 +1140,7 @@ void draw_orient_sphere(object *obj, int r, int g, int b)
 
 	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT))
 	{
-		flag = (vm_vec_dotprod(&eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
+		flag = (vm_vec_dot(&eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
 		v1 = v2 = obj->pos;
 		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
 		vm_vec_scale_add2(&v2, &obj->orient.vec.fvec, size * 1.5f);
@@ -1176,7 +1176,7 @@ void draw_orient_sphere2(int col, object *obj, int r, int g, int b)
 
 	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT))
 	{
-		flag = (vm_vec_dotprod(&eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
+		flag = (vm_vec_dot(&eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
 
 		v1 = v2 = obj->pos;
 		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
@@ -2027,7 +2027,7 @@ void render_compass(void)
 
 	v.xyz.x = 1.0f;
 	v.xyz.y = v.xyz.z = 0.0f;
-	if (vm_vec_dotprod(&eye, &v) < 0.0f)
+	if (vm_vec_dot(&eye, &v) < 0.0f)
 		gr_set_color(159, 20, 20);
 	else
 		gr_set_color(255, 32, 32);
@@ -2035,7 +2035,7 @@ void render_compass(void)
 
 	v.xyz.y = 1.0f;
 	v.xyz.x = v.xyz.z = 0.0f;
-	if (vm_vec_dotprod(&eye, &v) < 0.0f)
+	if (vm_vec_dot(&eye, &v) < 0.0f)
 		gr_set_color(20, 159, 20);
 	else
 		gr_set_color(32, 255, 32);
@@ -2043,7 +2043,7 @@ void render_compass(void)
 
 	v.xyz.z = 1.0f;
 	v.xyz.x = v.xyz.y = 0.0f;
-	if (vm_vec_dotprod(&eye, &v) < 0.0f)
+	if (vm_vec_dot(&eye, &v) < 0.0f)
 		gr_set_color(20, 20, 159);
 	else
 		gr_set_color(32, 32, 255);

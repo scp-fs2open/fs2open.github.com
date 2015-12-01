@@ -419,7 +419,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 					float mass_sum = light_obj->phys_info.mass + heavy_obj->phys_info.mass;
 
 					// get comp of rel_vel perp to h_to_l_vec;
-					float mag = vm_vec_dotprod(&h_to_l_vec, &rel_vel_h) / vm_vec_mag_squared(&h_to_l_vec);
+					float mag = vm_vec_dot(&h_to_l_vec, &rel_vel_h) / vm_vec_mag_squared(&h_to_l_vec);
 					vm_vec_scale_add(&perp_rel_vel, &rel_vel_h, &h_to_l_vec, -mag);
 					vm_vec_normalize(&perp_rel_vel);
 
@@ -656,7 +656,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// Add in effect of rotating submodel
 	vm_vec_sub2(&v_rel_m, &local_vel_from_submodel);
 
-	v_rel_normal_m = vm_vec_dotprod(&v_rel_m, &ship_ship_hit_info->collision_normal);// if less than zero, colliding contact taking place
+	v_rel_normal_m = vm_vec_dot(&v_rel_m, &ship_ship_hit_info->collision_normal);// if less than zero, colliding contact taking place
 																									// (v_slow - v_fast) dot (n_fast)
 
 	if (v_rel_normal_m > 0) {
@@ -728,7 +728,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		float rotation_factor = (heavy->type == OBJ_SHIP) ? heavy_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
 		vm_vec_scale(&delta_rotvel_heavy, rotation_factor);		// hack decrease rotation (delta_rotvel)
 		vm_vec_crossprod(&delta_vel_from_delta_rotvel_heavy, &delta_rotvel_heavy , &ship_ship_hit_info->r_heavy);
-		heavy_denom = vm_vec_dotprod(&delta_vel_from_delta_rotvel_heavy, &ship_ship_hit_info->collision_normal);
+		heavy_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_heavy, &ship_ship_hit_info->collision_normal);
 		if (heavy_denom < 0) {
 			// sanity check
 			heavy_denom = 0.0f;
@@ -752,7 +752,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		float rotation_factor = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
 		vm_vec_scale(&delta_rotvel_light, rotation_factor);		// hack decrease rotation (delta_rotvel)
 		vm_vec_crossprod(&delta_vel_from_delta_rotvel_light, &delta_rotvel_light, &ship_ship_hit_info->r_light);
-		light_denom = vm_vec_dotprod(&delta_vel_from_delta_rotvel_light, &ship_ship_hit_info->collision_normal);
+		light_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_light, &ship_ship_hit_info->collision_normal);
 		if (light_denom < 0) {
 			// sanity check
 			light_denom = 0.0f;
@@ -1038,11 +1038,11 @@ void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_ob
 				// get perp vec
 				vec3d temp, perp;
 				vm_vec_sub(&temp, &small_obj->pos, &big_obj->pos);
-				vm_vec_scale_add(&perp, &temp, &big_obj->orient.vec.fvec, -vm_vec_dotprod(&temp, &big_obj->orient.vec.fvec));
+				vm_vec_scale_add(&perp, &temp, &big_obj->orient.vec.fvec, -vm_vec_dot(&temp, &big_obj->orient.vec.fvec));
 				vm_vec_normalize_quick(&perp);
 
 				// don't drive into sfc we just collided with
-				if (vm_vec_dotprod(&perp, normal) < 0) {
+				if (vm_vec_dot(&perp, normal) < 0) {
 					vm_vec_negate(&perp);
 				}
 
@@ -1357,7 +1357,7 @@ void collect_ship_ship_physics_info(object *heavier_obj, object *lighter_obj, mc
 	}
 
 	// r dot n may not be negative if hit by moving model parts.
-	float dot = vm_vec_dotprod( r_light, &ship_ship_hit_info->collision_normal );
+	float dot = vm_vec_dot( r_light, &ship_ship_hit_info->collision_normal );
 	if ( dot > 0 )
 	{
 		nprintf(("Physics", "Framecount: %i r dot normal %f > 0\n", Framecount, dot));

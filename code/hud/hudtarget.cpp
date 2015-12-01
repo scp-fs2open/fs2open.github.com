@@ -1792,7 +1792,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 					
 					if (!auto_advance && get_closest_turret && !only_player_target) {
 						// if within 3 degrees and not previous subsys, use subsys in front
-						dot = vm_vec_dotprod(&vec_to_subsys, &Player_obj->orient.vec.fvec);
+						dot = vm_vec_dot(&vec_to_subsys, &Player_obj->orient.vec.fvec);
 						if ((dot > 0.9986) && facing) {
 							use_straight_ahead_turret = TRUE;
 							break;
@@ -2760,9 +2760,9 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 	// 0 - vectors are perpendicular
 	// 1 - vectors are collinear and in the same direction (target is facing player)
 	// -1 - vectors are collinear and in the opposite direction (target is facing away from player)
-	dot_product = vm_vec_dotprod(&from_orientp->vec.fvec, &target_to_obj);
+	dot_product = vm_vec_dot(&from_orientp->vec.fvec, &target_to_obj);
 
-	if (vm_vec_dotprod(&from_orientp->vec.rvec, &target_to_obj) >= 0) {
+	if (vm_vec_dot(&from_orientp->vec.rvec, &target_to_obj) >= 0) {
 		if (dot_product >= 0){
 			dot_product = -PI_2*dot_product + PI;
 		} else {
