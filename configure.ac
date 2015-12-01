@@ -95,6 +95,13 @@ AC_ARG_ENABLE(generic-architecture,
 		[fs2_generic_architecture=no],
 )
 
+AC_ARG_ENABLE(asan,
+	AC_HELP_STRING([--enable-asan],
+		[Attempt to link against AddressSanitizer library (https://github.com/google/sanitizers/wiki/AddressSanitizer)]),
+		[fs2_asan=$enableval],
+		[fs2_asan=no],
+)
+
 AC_ARG_WITH(static-ogg,
 	AC_HELP_STRING([--with-static-ogg=DIR],
 		[Link staticly with OGG, Vorbis and Theora libs from this directory]),
@@ -247,6 +254,11 @@ if test "$fs2_fred" = "yes" ; then
 
 	D_CFLAGS="$D_CFLAGS $WX_CFLAGS -Iwxfred2"
 	FS2_LIBS="$FS2_LIBS $WX_LIBS"
+fi
+
+if test "$fs2_asan" = "yes" ; then
+	D_CFLAGS="$D_CFLAGS -fsanitize=address -fno-omit-frame-pointer"
+	D_LDFLAGS="$D_LDFLAGS -fsanitize=address"
 fi
 
 if test "$fs2_debug" = "yes" ; then
@@ -549,4 +561,7 @@ echo NoWarn Allowed ......... : $fs2_nowarn
 echo Debug build ............ : $fs2_debug
 echo GProf support .......... : $fs2_gprof
 echo Fatal warnings ......... : $fs2_fatal_warnings
+echo Generic build .......... : $fs2_generic_architecture
+echo ASan enabled ........... : $fs2_asan
+echo Building wxFred2 ....... : $fs2_fred
 echo
