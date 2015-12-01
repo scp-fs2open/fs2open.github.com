@@ -583,7 +583,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	} else {
 		// take account the effective velocity from rotation
 		vm_vec_unrotate(&world_rotvel_heavy_m, &heavy->phys_info.rotvel, &heavy->orient);	// heavy's world rotvel before collision
-		vm_vec_crossprod(&vel_from_rotvel_heavy_m, &world_rotvel_heavy_m, &ship_ship_hit_info->r_heavy);	// heavy's velocity from rotvel before collision
+		vm_vec_cross(&vel_from_rotvel_heavy_m, &world_rotvel_heavy_m, &ship_ship_hit_info->r_heavy);	// heavy's velocity from rotvel before collision
 		vel_heavy_m = vel_from_rotvel_heavy_m;
 	}
 
@@ -638,7 +638,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		vm_vec_unrotate(&temp, &pm->submodel[ship_ship_hit_info->submodel_num].sii->pt_on_axis, &heavy->orient);
 		vm_vec_sub(&r_rot, &ship_ship_hit_info->hit_pos, &temp);
 
-		vm_vec_crossprod(&local_vel_from_submodel, &omega, &r_rot);
+		vm_vec_cross(&local_vel_from_submodel, &omega, &r_rot);
 
 		if (set_model) {
 			ship_model_stop(heavy);
@@ -649,7 +649,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	}
 
 	vm_vec_unrotate(&world_rotvel_light_m, &lighter->phys_info.rotvel, &lighter->orient);		// light's world rotvel before collision
-	vm_vec_crossprod(&vel_from_rotvel_light_m, &world_rotvel_light_m, &ship_ship_hit_info->r_light);	// light's velocity from rotvel before collision
+	vm_vec_cross(&vel_from_rotvel_light_m, &world_rotvel_light_m, &ship_ship_hit_info->r_light);	// light's velocity from rotvel before collision
 	vm_vec_add(&vel_light_m, &vel_from_rotvel_light_m, &ship_ship_hit_info->light_rel_vel);
 	vm_vec_sub(&v_rel_m, &vel_light_m, &vel_heavy_m);
 
@@ -722,12 +722,12 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		vm_vec_zero( &delta_rotvel_heavy );
 		heavy_denom = 1.0f / heavy->phys_info.mass;
 	} else {
-		vm_vec_crossprod(&rotational_impulse_heavy, &ship_ship_hit_info->r_heavy, &impulse);
+		vm_vec_cross(&rotational_impulse_heavy, &ship_ship_hit_info->r_heavy, &impulse);
 		get_I_inv(&heavy_I_inv, &heavy->phys_info.I_body_inv, &heavy->orient);
 		vm_vec_rotate(&delta_rotvel_heavy, &rotational_impulse_heavy, &heavy_I_inv);
 		float rotation_factor = (heavy->type == OBJ_SHIP) ? heavy_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
 		vm_vec_scale(&delta_rotvel_heavy, rotation_factor);		// hack decrease rotation (delta_rotvel)
-		vm_vec_crossprod(&delta_vel_from_delta_rotvel_heavy, &delta_rotvel_heavy , &ship_ship_hit_info->r_heavy);
+		vm_vec_cross(&delta_vel_from_delta_rotvel_heavy, &delta_rotvel_heavy , &ship_ship_hit_info->r_heavy);
 		heavy_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_heavy, &ship_ship_hit_info->collision_normal);
 		if (heavy_denom < 0) {
 			// sanity check
@@ -746,12 +746,12 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		vm_vec_zero( &delta_rotvel_light );
 		light_denom = 1.0f / lighter->phys_info.mass;
 	} else {
-		vm_vec_crossprod(&rotational_impulse_light, &ship_ship_hit_info->r_light, &impulse);
+		vm_vec_cross(&rotational_impulse_light, &ship_ship_hit_info->r_light, &impulse);
 		get_I_inv(&light_I_inv, &lighter->phys_info.I_body_inv, &lighter->orient);
 		vm_vec_rotate(&delta_rotvel_light, &rotational_impulse_light, &light_I_inv);
 		float rotation_factor = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
 		vm_vec_scale(&delta_rotvel_light, rotation_factor);		// hack decrease rotation (delta_rotvel)
-		vm_vec_crossprod(&delta_vel_from_delta_rotvel_light, &delta_rotvel_light, &ship_ship_hit_info->r_light);
+		vm_vec_cross(&delta_vel_from_delta_rotvel_light, &delta_rotvel_light, &ship_ship_hit_info->r_light);
 		light_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_light, &ship_ship_hit_info->collision_normal);
 		if (light_denom < 0) {
 			// sanity check

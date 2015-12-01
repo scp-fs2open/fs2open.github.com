@@ -158,7 +158,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				}
 
 				vec3d fb_vel;
-				vm_vec_crossprod(&fb_vel, &objp->phys_info.rotvel, &center_to_subsys);
+				vm_vec_cross(&fb_vel, &objp->phys_info.rotvel, &center_to_subsys);
 				vm_vec_add2(&fb_vel, &objp->phys_info.vel);
 
 				int fireball_type = fireball_ship_explosion_type(sip);

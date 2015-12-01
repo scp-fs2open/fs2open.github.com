@@ -1539,8 +1539,8 @@ float turn_towards_tangent(object *objp, vec3d *point, float radius)
 	vec3d	v2g;
 
 	vm_vec_normalized_dir(&vec_to_point, point, &objp->pos);
-	vm_vec_crossprod(&up_vec, &vec_to_point, &objp->orient.vec.fvec);
-	vm_vec_crossprod(&perp_vec, &vec_to_point, &up_vec);
+	vm_vec_cross(&up_vec, &vec_to_point, &objp->orient.vec.fvec);
+	vm_vec_cross(&perp_vec, &vec_to_point, &up_vec);
 
 	vm_vec_scale_add(&perp_point, point, &vec_to_point, -radius);
 	if (vm_vec_dot(&objp->orient.vec.fvec, &perp_vec) > 0.0f) {
@@ -1574,7 +1574,7 @@ float turn_toward_tangent_with_axis(object *objp, object *center_objp, float rad
 	Assert( (vm_vec_dot(&r_vec, &center_objp->orient.vec.fvec) < 0.0001));
 
 	// get theta vec - perp to r_vec and z_vec
-	vm_vec_crossprod(&theta_vec, &center_objp->orient.vec.fvec, &r_vec);
+	vm_vec_cross(&theta_vec, &center_objp->orient.vec.fvec, &r_vec);
 
 #ifndef NDEBUG
 	float mag;
@@ -1583,7 +1583,7 @@ float turn_toward_tangent_with_axis(object *objp, object *center_objp, float rad
 #endif
 
 	vec3d temp;
-	vm_vec_crossprod(&temp, &r_vec, &theta_vec);
+	vm_vec_cross(&temp, &r_vec, &theta_vec);
 
 #ifndef NDEBUG
 	float dot;
@@ -1613,17 +1613,17 @@ void get_tangent_point(vec3d *goal_point, object *objp, vec3d *point, float radi
 	vec3d	up_vec, perp_vec;
 
 	vm_vec_normalized_dir(&vec_to_point, point, &objp->pos);
-	vm_vec_crossprod(&up_vec, &vec_to_point, &objp->orient.vec.fvec);
+	vm_vec_cross(&up_vec, &vec_to_point, &objp->orient.vec.fvec);
 	
 	while (IS_VEC_NULL(&up_vec)) {
 		vec3d	rnd_vec;
 
 		vm_vec_rand_vec_quick(&rnd_vec);
 		vm_vec_add2(&rnd_vec, &objp->orient.vec.fvec);
-		vm_vec_crossprod(&up_vec, &vec_to_point, &rnd_vec);
+		vm_vec_cross(&up_vec, &vec_to_point, &rnd_vec);
 	}
 
-	vm_vec_crossprod(&perp_vec, &vec_to_point, &up_vec);
+	vm_vec_cross(&perp_vec, &vec_to_point, &up_vec);
 	vm_vec_normalize(&perp_vec);
 
 	vm_vec_scale_add(&perp_point, point, &vec_to_point, -radius);
@@ -2966,8 +2966,8 @@ int maybe_avoid_player(object *objp, vec3d *goal_pos)
 		} else {
 			vec3d	tvec1;
 			vm_vec_normalize(&avoid_vec);
-			vm_vec_crossprod(&tvec1, &n_vec_to_goal, &avoid_vec);
-			vm_vec_crossprod(&avoid_vec, &tvec1, &n_vec_to_player);
+			vm_vec_cross(&tvec1, &n_vec_to_goal, &avoid_vec);
+			vm_vec_cross(&avoid_vec, &tvec1, &n_vec_to_player);
 		}
 
 		//	Now, avoid_vec is a vector perpendicular to the vector to the player and the direction *objp
@@ -7144,10 +7144,10 @@ void ai_stealth_sweep()
 	}
 
 	// get "right" vector for box
-	vm_vec_crossprod(&right, &aip->stealth_velocity, &vmd_y_vector);
+	vm_vec_cross(&right, &aip->stealth_velocity, &vmd_y_vector);
 
 	if ( vm_vec_mag_quick(&right) < 0.01 ) {
-		vm_vec_crossprod(&right, &aip->stealth_velocity, &vmd_z_vector);
+		vm_vec_cross(&right, &aip->stealth_velocity, &vmd_z_vector);
 	}
 
 	vm_vec_normalize_quick(&right);
@@ -7156,7 +7156,7 @@ void ai_stealth_sweep()
 	vm_vec_copy_normalize_quick(&forward, &aip->stealth_velocity);
 
 	// get "up" for box
-	vm_vec_crossprod(&up, &forward, &right);
+	vm_vec_cross(&up, &forward, &right);
 	
 	// lost far away ahead (do box)
 	switch(aip->submode_parm0) {
@@ -9837,7 +9837,7 @@ void ai_big_guard()
 
 		// get position relative to cylinder of guard_objp		
 		extended_z = get_cylinder_points(Pl_objp, guard_objp, &axis_pt, &r_vec, &radius);
-		vm_vec_crossprod(&theta_vec, &guard_objp->orient.vec.fvec, &r_vec);
+		vm_vec_cross(&theta_vec, &guard_objp->orient.vec.fvec, &r_vec);
 
 		// half ships circle each way
 		if (objval > 0.5f) {

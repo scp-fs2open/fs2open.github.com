@@ -42,7 +42,7 @@ static float matrix_determinant_from_vectors(const vec3d *v1, const vec3d *v2, c
 void fvi_two_lines_in_3space(const vec3d *p1, const vec3d *v1, const vec3d *p2, const vec3d *v2, float *s, float *t)
 {
 	vec3d cross,delta;
-	vm_vec_crossprod(&cross, v1, v2);
+	vm_vec_cross(&cross, v1, v2);
 	vm_vec_sub(&delta, p2, p1);
 
 	float denominator = vm_vec_mag_squared(&cross);
@@ -589,7 +589,7 @@ int fvi_sphere_perp_edge(vec3d *intersect_point, const vec3d *sphere_center_star
 
 	vm_vec_copy_normalize( &x_hat, &edge_velocity );
 	vm_vec_copy_normalize( &y_hat, sphere_velocity );
-	vm_vec_crossprod( &z_hat, &x_hat, &y_hat );
+	vm_vec_cross( &z_hat, &x_hat, &y_hat );
 	max_edge_parameter = vm_vec_mag( &edge_velocity );
 
 	vec3d temp;
@@ -1068,9 +1068,9 @@ void fvi_closest_line_line(const vec3d *x0, const vec3d *vx, const vec3d *y0, co
 
 	vm_vec_sub(&delta_l, y0, x0);
 
-	vm_vec_crossprod(&vx_cross_vy, vx, vy);
-	vm_vec_crossprod(&delta_l_cross_vx, &delta_l, vx);
-	vm_vec_crossprod(&delta_l_cross_vy, &delta_l, vy);
+	vm_vec_cross(&vx_cross_vy, vx, vy);
+	vm_vec_cross(&delta_l_cross_vx, &delta_l, vx);
+	vm_vec_cross(&delta_l_cross_vy, &delta_l, vy);
 
 	denominator = vm_vec_mag_squared(&vx_cross_vy);
 

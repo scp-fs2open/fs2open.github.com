@@ -1612,7 +1612,7 @@ void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, floa
 	vm_vec_sub( &rvec, &Eye_position, &temp );
 	vm_vec_normalize( &rvec );	
 
-	vm_vec_crossprod(&uvec,fvec,&rvec);
+	vm_vec_cross(&uvec,fvec,&rvec);
 	// VECMAT-ERROR: NULL VEC3D (value of, fvec == rvec)
 	vm_vec_normalize_safe(&uvec);
 
