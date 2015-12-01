@@ -2574,13 +2574,20 @@ void vm_vec_boxscale(vec2d *vec, float scale)
 	vec->y *= ratio;
 }
 
-//(DahBlount) invert a 4x4 matrix
+/**(DahBlount)
+ * @brief							Attempts to invert a 4x4 matrix
+ * @param[in]			m			Pointer to the matrix we want to invert
+ * @param[inout]		invOut		The return matrix
+ *
+ * @returns							The inverse of matrix4 m
+ */
 bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut)
 {
-	matrix4 inv;
+	matrix4 inv;	// create a temp matrix so we can avoid getting a determinant that is 0
 	float det;
 	int i,j;
 
+	// Use a2d so it's easier for people to read
 	inv.a2d[0][0] = m->a2d[1][1] * m->a2d[2][2] * m->a2d[3][3] -
 		m->a2d[1][1] * m->a2d[2][3] * m->a2d[3][2] -
 		m->a2d[2][1] * m->a2d[1][2] * m->a2d[3][3] +
@@ -2695,8 +2702,10 @@ bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut)
 
 	det = m->a2d[0][0] * inv.a2d[0][0] + m->a2d[0][1] * inv.a2d[1][0] + m->a2d[0][2] * inv.a2d[2][0] + m->a2d[0][3] * inv.a2d[3][0];
 
-	if (det == 0)
+	if (det == 0) {
+		invOut = nullptr;
 		return false;
+	}
 
 	det = 1.0f / det;
 
