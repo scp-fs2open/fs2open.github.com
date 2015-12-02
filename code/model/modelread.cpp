@@ -1216,19 +1216,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 				}
 
-				// Sets can_move on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
-				if ( (pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
-					|| strstr(props, "$triggered:") || strstr(props, "$rotate") || strstr(props, "$dumb_rotate:") || strstr(props, "$gun_rotation:") || strstr(props, "$gun_rotation") ) {
-					pm->submodel[n].can_move = true;
-				} else if (pm->submodel[n].parent > -1 && pm->submodel[pm->submodel[n].parent].can_move) {
-					pm->submodel[n].can_move = true;
-				}
-
 				if ( ( p = strstr(props, "$look_at:")) != NULL ) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_LOOK_AT;
 					get_user_prop_value(p+9, pm->submodel[n].look_at);
 					pm->submodel[n].look_at_num = -2; // Set this to -2 to mark it as something we need to work out the correct subobject number for later, after all subobjects have been processed
 					
+					pm->flags |= PM_FLAGS_HAS_LOOK_AT;
 				} else {
 					pm->submodel[n].look_at_num = -1; // No look_at
 				}
@@ -1238,6 +1231,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
 				} else {
 					pm->submodel[n].dumb_turn_rate = 0.0f;
+				}
+
+				// Sets can_move on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
+				if ( (pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
+					|| strstr(props, "$triggered:") || strstr(props, "$rotate") || strstr(props, "$gun_rotation:") || strstr(props, "$gun_rotation") ) {
+					pm->submodel[n].can_move = true;
+				} else if (pm->submodel[n].parent > -1 && pm->submodel[pm->submodel[n].parent].can_move) {
+					pm->submodel[n].can_move = true;
 				}
 
 				if ( pm->submodel[n].name[0] == '\0' ) {
@@ -3481,7 +3482,7 @@ void submodel_look_at(polymodel *pm, int mn)
 		}
 
 		if (sm->look_at_num == -2) {
-			Warning( LOCATION, "Invalid submodel name given in $look_at: property in model file <%s>. (%s looking for %s)\n", pm->filename, pm->submodel->name, sm->look_at );
+			Warning( LOCATION, "Invalid submodel name given in $look_at: property in model file <%s>. (%s looking for %s)\n", pm->filename, sm->name, sm->look_at );
 			sm->look_at_num = -1; // Set to -1 to not break stuff
 		}
 	}

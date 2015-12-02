@@ -2670,6 +2670,10 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 	const int model_flags = interp->get_model_flags();
 
 	polymodel *pm = model_get(model_num);
+	
+	if (pm->flags & PM_FLAGS_HAS_LOOK_AT) {
+		model_do_look_at(model_num);
+	}
 		
 	model_do_dumb_rotation(model_num);
 
