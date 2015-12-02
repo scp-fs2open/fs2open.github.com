@@ -2710,7 +2710,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	return pm->id;
 }
 
-int model_create_instance(int model_num, int submodel_num)
+int model_create_instance(int model_num)
 {
 	int i = 0;
 	int open_slot = -1;
@@ -2738,7 +2738,7 @@ int model_create_instance(int model_num, int submodel_num)
 	pmi->submodel = (submodel_instance*)vm_malloc( sizeof(submodel_instance)*pm->n_models );
 
 	for ( i = 0; i < pm->n_models; i++ ) {
-		model_clear_submodel_instance( &pmi->submodel[i] );
+		model_clear_submodel_instance( &pmi->submodel[i], &pm->submodel[i] );
 	}
 
 	pmi->model_num = model_num;
@@ -4547,11 +4547,14 @@ void model_clear_instance_info( submodel_instance_info * sii )
 	sii->turn_accel = 0.0f;
 }
 
-void model_clear_submodel_instance( submodel_instance *sm_instance )
+void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm )
 {
 	sm_instance->angs.p = 0.0f;
 	sm_instance->angs.b = 0.0f;
 	sm_instance->angs.h = 0.0f;
+
+	sm_instance->blown_off = sm->is_damaged ? true : false;
+
 	sm_instance->blown_off = false;
 	sm_instance->collision_checked = false;
 }
@@ -4563,7 +4566,7 @@ void model_clear_submodel_instances( int model_instance_num )
 	polymodel *pm = model_get(pmi->model_num);
 
 	for ( i = 0; i < pm->n_models; i++ ) {
-		model_clear_submodel_instance(&pmi->submodel[i]);
+		model_clear_submodel_instance(&pmi->submodel[i], &pm->submodel[i]);
 	}
 }
 
@@ -4662,7 +4665,7 @@ void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1
 	sm->angs.h = angle_2;
 }
 
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii)
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, int flags)
 {
 	int i;
 	polymodel *pm;
@@ -4680,11 +4683,15 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 
 	submodel_instance *smi = &pmi->submodel[sub_model_num];
 	bsp_info *sm = &pm->submodel[sub_model_num];
+	
+	// Set the "blown out" flags
+	if ( flags & SSF_NO_DISAPPEAR ) {
+		smi->blown_off = false;
+	} else {
+		smi->blown_off = sii->blown_off ? true : false;
+	}
 
-	// Set the "blown out" flags	
-	smi->blown_off = sii->blown_off ? true : false;
-
-	if ( smi->blown_off )	{
+	if ( smi->blown_off && !(flags & SSF_NO_REPLACE) )	{
 		if ( sm->my_replacement > -1 )	{
 			pmi->submodel[sm->my_replacement].blown_off = false;
 			pmi->submodel[sm->my_replacement].angs = sii->angs;
@@ -4704,7 +4711,7 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{
-		model_update_instance(model_instance_num, sm->details[i], sii );
+		model_update_instance(model_instance_num, sm->details[i], sii, flags );
 	}
 }
 
