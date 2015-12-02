@@ -140,6 +140,8 @@ typedef struct polymodel_instance {
 #define MSS_FLAG2_COLLIDE_SUBMODEL				 (1 << 3)	// subsystem takes damage only from hits which impact the associated submodel
 #define MSS_FLAG2_DESTROYED_ROTATION			 (1 << 4)   // allows subobjects to continue to rotate even if they have been destroyed
 #define MSS_FLAG2_TURRET_USE_AMMO				 (1 << 5)	// enables ammo consumption for turrets (DahBlount)
+#define MSS_FLAG2_AUTOREPAIR_IF_DISABLED		 (1 << 6)	// Allows the subsystem to repair itself even if disabled (MageKing17)
+#define MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED		 (1 << 7)	// Inversion of the previous; disallows this particular subsystem if the ship-wide flag is set (MageKing17)
 
 #define NUM_SUBSYSTEM_FLAGS			33
 
