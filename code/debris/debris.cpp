@@ -703,7 +703,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	// displacement fromt the center of the parent object to the center of the debris piece
 	vec3d world_rotvel, vel_from_rotvel;
 	vm_vec_unrotate ( &world_rotvel, &source_obj->phys_info.rotvel, &source_obj->orient );
-	vm_vec_crossprod ( &vel_from_rotvel, &world_rotvel, &to_center );
+	vm_vec_cross ( &vel_from_rotvel, &world_rotvel, &to_center );
 	vm_vec_scale ( &vel_from_rotvel, DEBRIS_ROTVEL_SCALE);
 
 	vm_vec_add (&obj->phys_info.vel, &radial_vel, &source_obj->phys_info.vel);

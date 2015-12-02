@@ -49,13 +49,13 @@ float g3_draw_laser_htl(const vec3d *p0, float width1, const vec3d *p1, float wi
 	}
 	// code intended to prevent possible null vector normalize issue - end
 
-	vm_vec_crossprod(&uvec,&fvec,&reye);
+	vm_vec_cross(&uvec,&fvec,&reye);
 	vm_vec_normalize(&uvec);
-	vm_vec_crossprod(&fvec,&uvec,&reye);
+	vm_vec_cross(&fvec,&uvec,&reye);
 	vm_vec_normalize(&fvec);
 	 
 	//now recompute right vector, in case it wasn't entirely perpendiclar
-	vm_vec_crossprod(&rvec,&uvec,&fvec);
+	vm_vec_cross(&rvec,&uvec,&fvec);
 
 	// Now have uvec, which is up vector and rvec which is the normal
 	// of the face.
