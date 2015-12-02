@@ -8790,8 +8790,18 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 		if ( ssp->current_hits < ssp->max_hits ) {
 
 			// only repair those subsystems which are not destroyed
-			if ( (ssp->max_hits <= 0) || ((ssp->current_hits <= 0) && !(((sip->flags2 & SIF2_SUBSYS_REPAIR_WHEN_DISABLED) && !(ssp->flags & SSF_NO_AUTOREPAIR_IF_DISABLED)) || (ssp->flags & SSF_AUTOREPAIR_IF_DISABLED))) )
+			if ( ssp->max_hits <= 0 )
 				continue;
+
+			if ( ssp->current_hits <= 0 ) {
+				if (sip->flags2 & SIF2_SUBSYS_REPAIR_WHEN_DISABLED) {
+					if (ssp->flags & SSF_NO_AUTOREPAIR_IF_DISABLED) {
+						continue;
+					}
+				} else if (!(ssp->flags & SSF_AUTOREPAIR_IF_DISABLED)) {
+					continue;
+				}
+			}
 
 			// do incremental repair on the subsystem
 			// check for overflow of current_hits
