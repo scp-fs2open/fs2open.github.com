@@ -829,7 +829,7 @@ void model_instance_free_all();
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
-int model_create_instance(int model_num, int submodel_num = -1);
+int model_create_instance(int model_num);
 void model_delete_instance(int model_instance_num);
 
 // Goober5000
@@ -1042,7 +1042,7 @@ extern void model_instance_find_world_dir(vec3d * out_dir, vec3d *in_dir,int mod
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
 
-void model_clear_submodel_instance( submodel_instance *sm_instance );
+void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm );
 void model_clear_submodel_instances( int model_instance_num );
 
 // Sets rotating submodel turn info to that stored in model
@@ -1055,7 +1055,7 @@ extern void model_clear_instance_info(submodel_instance_info * sii);
 extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags = 0 );
 extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2 );
 
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii);
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, int flags);
 void model_instance_dumb_rotation(int model_instance_num);
 
 // Adds an electrical arcing effect to a submodel

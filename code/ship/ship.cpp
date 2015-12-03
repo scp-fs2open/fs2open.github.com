@@ -13084,11 +13084,11 @@ void ship_model_update_instance(object *objp)
 		}
 
 		if ( psub->subobj_num >= 0 )	{
-			model_update_instance(model_instance_num, psub->subobj_num, &pss->submodel_info_1 );
+			model_update_instance(model_instance_num, psub->subobj_num, &pss->submodel_info_1, pss->flags );
 		}
 
 		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
-			model_update_instance(model_instance_num, psub->turret_gun_sobj, &pss->submodel_info_2 );
+			model_update_instance(model_instance_num, psub->turret_gun_sobj, &pss->submodel_info_2, pss->flags );
 		}
 	}
 
@@ -19026,8 +19026,6 @@ void ship_render(object* obj, draw_list* scene)
 		}
 	}
 
-	ship_model_start(obj);
-
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
@@ -19051,8 +19049,6 @@ void ship_render(object* obj, draw_list* scene)
 		} else if(shipp->flags & SF_DEPART_WARP) {
 			shipp->warpout_effect->warpShipRender();
 		}
-
-		ship_model_stop(obj);
 
 		return;
 	}
@@ -19125,8 +19121,6 @@ void ship_render(object* obj, draw_list* scene)
 
 		model_render_queue(&render_info, scene, sip->model_num, &obj->orient, &obj->pos);
 	}
-
-	ship_model_stop(obj);
 
 	if (shipp->shield_hits && !Rendering_to_shadow_map) {
 		create_shield_explosion_all(obj);
