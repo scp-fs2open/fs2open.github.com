@@ -4555,7 +4555,6 @@ void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm
 
 	sm_instance->blown_off = sm->is_damaged ? true : false;
 
-	sm_instance->blown_off = false;
 	sm_instance->collision_checked = false;
 }
 
