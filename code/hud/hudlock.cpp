@@ -719,7 +719,11 @@ void HudGaugeLock::renderLockTriangles(int center_x, int center_y, float frameti
 			// maybe draw the anim
 			Lock_gauge.time_elapsed = 0.0f;			
 			if(Lock_gauge_draw){
-				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+				if ( loop_locked_anim ) {
+					hud_anim_render(&Lock_anim, frametime, 1, 1, 0);
+				} else {
+					hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+				}
 			}
 		}
 	}
