@@ -2173,7 +2173,7 @@ DCF(ogl_anisotropy, "toggles anisotropic filtering")
 /**
  * Helper function to enquire whether minimum GLSL version present.
  *
- * Compares global variable set by glGetString(GL_SHADING_LANGUAGE_VERSION_ARB)
+ * Compares global variable set by glGetString(GL_SHADING_LANGUAGE_VERSION)
  * against compile time MIN_REQUIRED_GLSL_VERSION.
  *
  * @return true if GLSL support present is above the minimum version.
