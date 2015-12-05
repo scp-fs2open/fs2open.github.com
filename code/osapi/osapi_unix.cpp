@@ -192,9 +192,12 @@ DWORD unix_process(DWORD lparam)
 					Gr_screen_mode_switch = 0;
 					break;
 				}*/
-
 				if (SDLtoFS2[event.key.keysym.sym]) {
-					key_mark( SDLtoFS2[event.key.keysym.sym], 0, 0 );
+					if (SDLtoFS2[event.key.keysym.sym] == KEY_CAPSLOCK) {
+						key_mark( SDLtoFS2[event.key.keysym.sym], 1, 0 );
+					} else {
+						key_mark( SDLtoFS2[event.key.keysym.sym], 0, 0 );
+					}
 				}
 				break;
 
