@@ -259,6 +259,7 @@ flag_def_list Subsystem_flags[] = {
 	{ "turret use ammo",		MSS_FLAG2_TURRET_USE_AMMO, 1},
 	{ "autorepair if disabled",	MSS_FLAG2_AUTOREPAIR_IF_DISABLED, 1},
 	{ "don't autorepair if disabled", MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED, 1},
+	{ "share fire direction", MSS_FLAG2_SHARE_FIRE_DIRECTION, 1 }
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
