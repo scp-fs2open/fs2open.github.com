@@ -29,6 +29,8 @@ matrix vmd_identity_matrix = IDENTITY_MATRIX;
 
 #define	UNINITIALIZED_VALUE	-12345678.9f
 
+static void rotate_z ( matrix *m, float theta ) __UNUSED;
+
 bool vm_vec_equal(const vec4 &self, const vec4 &other)
 {
 	return fl_equal(self.a1d[0], other.a1d[0]) && fl_equal(self.a1d[1], other.a1d[1]) && fl_equal(self.a1d[2], other.a1d[2]) && fl_equal(self.a1d[3], other.a1d[3]);

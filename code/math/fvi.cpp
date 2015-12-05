@@ -18,7 +18,7 @@
 #define	UNINITIALIZED_VALUE	-1234567.8f
 #define WARN_DIST	1.0
 
-static void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 );
+static void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 ) __UNUSED;
 
 static float matrix_determinant_from_vectors(const vec3d *v1, const vec3d *v2, const vec3d *v3)
 {
