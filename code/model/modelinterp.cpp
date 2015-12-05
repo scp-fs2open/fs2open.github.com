@@ -3610,13 +3610,12 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 		if (!submodel_get_two_random_points_warned)
 		{
 			polymodel *pm = model_get(model_num);
-			Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!", RAND_MAX, submodel_num, pm->filename, nv);
+			Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!\n", RAND_MAX, submodel_num, pm->filename, nv);
 			submodel_get_two_random_points_warned = true;
 		}
 	}
 #endif
 
-	Assert(nv > 0);	// Goober5000 - to avoid div-0 error
 	int vn1 = myrand() % nv;
 	int vn2 = myrand() % nv;
 
@@ -3661,14 +3660,12 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 			static int submodel_get_two_random_points_warned = false;
 			if (!submodel_get_two_random_points_warned)
 			{
-				polymodel *pm = model_get(model_num);
-				Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!", RAND_MAX, submodel_num, pm->filename, nv);
+				Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!\n", RAND_MAX, submodel_num, pm->filename, nv);
 				submodel_get_two_random_points_warned = true;
 			}
 		}
 #endif
 
-		Assert(nv > 0);	// Goober5000 - to avoid div-0 error
 		int vn1 = myrand() % nv;
 		int vn2 = myrand() % nv;
 
