@@ -1411,7 +1411,11 @@ void model_render_children_buffers(draw_list* scene, model_render_params* interp
 		smi = &pmi->submodel[mn];
 	}
 
-	if ( (smi != NULL && smi->blown_off) || model->blown_off ) {
+	if ( smi != NULL ) {
+		if ( smi->blown_off ) {
+			return;
+		}
+	} else if ( model->blown_off ) {
 		return;
 	}
 
