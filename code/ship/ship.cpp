@@ -19093,6 +19093,10 @@ void ship_render(object* obj, draw_list* scene)
 		}
 	}
 
+	if ( sip->flags2 & SIF2_NO_LIGHTING ) {
+		render_flags |= MR_NO_LIGHTING;
+	}
+
 	if ( Rendering_to_shadow_map ) {
 		render_flags = MR_NO_TEXTURING | MR_NO_LIGHTING;
 	}
