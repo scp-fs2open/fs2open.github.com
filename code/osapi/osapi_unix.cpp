@@ -158,6 +158,7 @@ DWORD unix_process(DWORD lparam)
 	SDL_Event event;
 
 	while( SDL_PollEvent(&event) ) {
+		int pressedKey = 0;
 		switch(event.type) {
 			case SDL_ACTIVEEVENT:
 				if( (event.active.state & SDL_APPACTIVE) || (event.active.state & SDL_APPINPUTFOCUS) ) {
@@ -182,8 +183,10 @@ DWORD unix_process(DWORD lparam)
 					break;
 				}*/
 
-				if( SDLtoFS2[event.key.keysym.sym] ) {
-					key_mark( SDLtoFS2[event.key.keysym.sym], 1, 0 );
+				pressedKey = SDLtoFS2[event.key.keysym.sym];
+
+				if( pressedKey ) {
+					key_mark( pressedKey, 1, 0 );
 				}
 				break;
 
@@ -193,8 +196,14 @@ DWORD unix_process(DWORD lparam)
 					break;
 				}*/
 
-				if (SDLtoFS2[event.key.keysym.sym]) {
-					key_mark( SDLtoFS2[event.key.keysym.sym], 0, 0 );
+				pressedKey = SDLtoFS2[event.key.keysym.sym];
+
+				if (pressedKey) {
+					if (pressedKey == KEY_CAPSLOCK) {
+						key_mark( pressedKey, 1, 0 );
+					} else {
+						key_mark( pressedKey, 0, 0 );
+					}
 				}
 				break;
 
