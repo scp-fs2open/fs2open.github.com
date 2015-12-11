@@ -4792,7 +4792,8 @@ void model_do_dumb_rotations_sub(dumb_rotation *dr)
 		submodel_rotate(sm, &sub_it->submodel_info_1);
 
 		// Now actually rotate the submodel instance
-		model_update_instance(dr->model_instance_num, sub_it->submodel_num, &sub_it->submodel_info_1);
+		// (Since this is a dumb rotation, we have no associated subsystem, so pass 0 for subsystem flags.)
+		model_update_instance(dr->model_instance_num, sub_it->submodel_num, &sub_it->submodel_info_1, 0);
 	}
 }
 
