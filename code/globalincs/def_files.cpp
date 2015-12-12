@@ -1448,7 +1448,7 @@ char* Default_main_vertex_shader =
 " #endif\n"
 " #ifdef FLAG_ENV_MAP\n"
 " // Environment mapping reflection vector.\n"
-"	envReflect = reflect(position.xyz, normal);\n"
+"	envReflect = reflect(normalize(position.xyz), normal);\n"
 "	envReflect = vec3(envMatrix * vec4(envReflect, 0.0));\n"
 "	envReflect = normalize(envReflect);\n"
 " #endif\n"
