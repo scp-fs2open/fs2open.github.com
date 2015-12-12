@@ -824,7 +824,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			laser_vel = obj_weapon->phys_info.vel;
 			// vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
 			delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
-			delta_x_dot_vl = vm_vec_dotprod( &delta_x, &laser_vel );
+			delta_x_dot_vl = vm_vec_dot( &delta_x, &laser_vel );
 
 			a = max_vel_weapon*max_vel_weapon - max_vel_other*max_vel_other;
 			b = 2.0f * (delta_x_dot_vl - max_vel_other*max_vel_other*delta_t);

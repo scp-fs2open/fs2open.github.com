@@ -18,7 +18,7 @@
 #define	UNINITIALIZED_VALUE	-1234567.8f
 #define WARN_DIST	1.0
 
-static void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 );
+static void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 ) __UNUSED;
 
 static float matrix_determinant_from_vectors(const vec3d *v1, const vec3d *v2, const vec3d *v3)
 {
@@ -42,7 +42,7 @@ static float matrix_determinant_from_vectors(const vec3d *v1, const vec3d *v2, c
 void fvi_two_lines_in_3space(const vec3d *p1, const vec3d *v1, const vec3d *p2, const vec3d *v2, float *s, float *t)
 {
 	vec3d cross,delta;
-	vm_vec_crossprod(&cross, v1, v2);
+	vm_vec_cross(&cross, v1, v2);
 	vm_vec_sub(&delta, p2, p1);
 
 	float denominator = vm_vec_mag_squared(&cross);
@@ -520,9 +520,9 @@ int fvi_sphere_plane(vec3d *intersect_point, const vec3d *sphere_center_start, c
 	float t1, t2;
 
 	// find the time and position of the ray-plane intersection
-	D = -vm_vec_dotprod( plane_normal, plane_point );
-	xs0_dot_norm = vm_vec_dotprod( plane_normal, sphere_center_start );
-	vs_dot_norm  = vm_vec_dotprod( plane_normal, sphere_velocity);
+	D = -vm_vec_dot( plane_normal, plane_point );
+	xs0_dot_norm = vm_vec_dot( plane_normal, sphere_center_start );
+	vs_dot_norm  = vm_vec_dot( plane_normal, sphere_velocity);
 
 	// protect against divide by zero
 	if (fl_abs(vs_dot_norm) > 1e-30) {
@@ -589,7 +589,7 @@ int fvi_sphere_perp_edge(vec3d *intersect_point, const vec3d *sphere_center_star
 
 	vm_vec_copy_normalize( &x_hat, &edge_velocity );
 	vm_vec_copy_normalize( &y_hat, sphere_velocity );
-	vm_vec_crossprod( &z_hat, &x_hat, &y_hat );
+	vm_vec_cross( &z_hat, &x_hat, &y_hat );
 	max_edge_parameter = vm_vec_mag( &edge_velocity );
 
 	vec3d temp;
@@ -606,9 +606,9 @@ int fvi_sphere_perp_edge(vec3d *intersect_point, const vec3d *sphere_center_star
 	vm_project_point_onto_plane(&Xs_proj, sphere_center_start, &z_hat, &V0);
 
 	vec3d plane_coord;
-	plane_coord.xyz.x = vm_vec_dotprod(&Xs_proj, &x_hat);
-	plane_coord.xyz.y = vm_vec_dotprod(&Xe_proj, &y_hat);
-	plane_coord.xyz.z = vm_vec_dotprod(&Xe_proj, &z_hat);
+	plane_coord.xyz.x = vm_vec_dot(&Xs_proj, &x_hat);
+	plane_coord.xyz.y = vm_vec_dot(&Xe_proj, &y_hat);
+	plane_coord.xyz.z = vm_vec_dot(&Xe_proj, &z_hat);
 
 	// determime the position on the edge line
 	vm_vec_copy_scale( intersect_point, &x_hat, plane_coord.xyz.x );
@@ -620,7 +620,7 @@ int fvi_sphere_perp_edge(vec3d *intersect_point, const vec3d *sphere_center_star
 	vec3d temp_vec;
 
 	vm_vec_sub( &temp_vec, intersect_point, &V0 );
-	edge_parameter = vm_vec_dotprod( &temp_vec, &x_hat );
+	edge_parameter = vm_vec_dot( &temp_vec, &x_hat );
 
 	if ( edge_parameter < 0 || edge_parameter > max_edge_parameter ) {
 		return 0;
@@ -647,7 +647,7 @@ static int check_sphere_point(const vec3d *point, const vec3d *sphere_start, con
 	vm_vec_sub( &delta_x, sphere_start, point );
 	delta_x_sqr = vm_vec_mag_squared( &delta_x );
 	vs_sqr = vm_vec_mag_squared( sphere_vel );
-	delta_x_dot_vs = vm_vec_dotprod( &delta_x, sphere_vel );
+	delta_x_dot_vs = vm_vec_dot( &delta_x, sphere_vel );
 
 	float discriminant = delta_x_dot_vs*delta_x_dot_vs - vs_sqr*(delta_x_sqr - radius*radius);
 	if (discriminant < 0) {
@@ -726,10 +726,10 @@ int fvi_polyedge_sphereline(vec3d *hit_point, const vec3d *xs0, const vec3d *vs,
 		// First find the closest intersection between the edge_line and the sphere_line.
 		vm_vec_sub(&delta_x, xs0, &v0);
 
-		delta_x_dot_ve = vm_vec_dotprod(&delta_x, &ve);
-		delta_x_dot_vs = vm_vec_dotprod(&delta_x, vs);
+		delta_x_dot_ve = vm_vec_dot(&delta_x, &ve);
+		delta_x_dot_vs = vm_vec_dot(&delta_x, vs);
 		delta_x_sqr = vm_vec_mag_squared(&delta_x);
-		ve_dot_vs = vm_vec_dotprod(&ve, vs);
+		ve_dot_vs = vm_vec_dot(&ve, vs);
 		ve_sqr = vm_vec_mag_squared(&ve);
 
 		/*
@@ -858,7 +858,7 @@ TryVertex:
 		// try V1 
 		vm_vec_sub( &delta_x, xs0, &v1 );
 		delta_x_sqr = vm_vec_mag_squared( &delta_x );
-		delta_x_dot_vs = vm_vec_dotprod( &delta_x, vs );
+		delta_x_dot_vs = vm_vec_dot( &delta_x, vs );
 		int v1_hit;
 
 		B = delta_x_dot_vs;
@@ -939,7 +939,7 @@ void fvi_closest_point_on_line_segment(vec3d *closest_point, const vec3d *fixed_
 
 	vm_vec_sub(&line_velocity, line_point2, line_point1);
 	vm_vec_sub(&delta_x, line_point1, fixed_point);
-	t = -vm_vec_dotprod(&delta_x, &line_velocity) / vm_vec_mag_squared(&line_velocity);
+	t = -vm_vec_dot(&delta_x, &line_velocity) / vm_vec_mag_squared(&line_velocity);
 
 	// Constrain t to be in range [0,1]
 	if (t < 0) {
@@ -992,7 +992,7 @@ int fvi_check_sphere_sphere(const vec3d *x_p0, const vec3d *x_p1, const vec3d *x
 	vm_vec_add2(&delta_v, x_p0);
 	vm_vec_sub2(&delta_v, x_p1);
 
-	delta_x_dot_delta_v = vm_vec_dotprod(&delta_x, &delta_v);
+	delta_x_dot_delta_v = vm_vec_dot(&delta_x, &delta_v);
 	delta_v_sqr = vm_vec_mag_squared(&delta_v);
 
 	discriminant = delta_x_dot_delta_v*delta_x_dot_delta_v - delta_v_sqr*(delta_x_sqr - separation*separation);
@@ -1068,14 +1068,14 @@ void fvi_closest_line_line(const vec3d *x0, const vec3d *vx, const vec3d *y0, co
 
 	vm_vec_sub(&delta_l, y0, x0);
 
-	vm_vec_crossprod(&vx_cross_vy, vx, vy);
-	vm_vec_crossprod(&delta_l_cross_vx, &delta_l, vx);
-	vm_vec_crossprod(&delta_l_cross_vy, &delta_l, vy);
+	vm_vec_cross(&vx_cross_vy, vx, vy);
+	vm_vec_cross(&delta_l_cross_vx, &delta_l, vx);
+	vm_vec_cross(&delta_l_cross_vy, &delta_l, vy);
 
 	denominator = vm_vec_mag_squared(&vx_cross_vy);
 
-	*x_time = vm_vec_dotprod(&delta_l_cross_vy, &vx_cross_vy) / denominator; 
-	*y_time = vm_vec_dotprod(&delta_l_cross_vx, &vx_cross_vy) / denominator; 
+	*x_time = vm_vec_dot(&delta_l_cross_vy, &vx_cross_vy) / denominator; 
+	*y_time = vm_vec_dot(&delta_l_cross_vx, &vx_cross_vy) / denominator; 
 }
 
 // --------------------------------------------------------------------------------------------------------------------

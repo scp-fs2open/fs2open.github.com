@@ -461,7 +461,7 @@ ADE_FUNC(getTranspose, l_Matrix, NULL, "Returns a transpose version of the speci
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	matrix final = *mh->GetMatrix();
-	vm_transpose_matrix(&final);
+	vm_transpose(&final);
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&final)));
 }
@@ -3719,7 +3719,7 @@ ADE_FUNC(getDotProduct, l_Vector, "vector OtherVector", "Returns dot product of 
 	if(!ade_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b)))
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", vm_vec_dotprod(v3a, v3b));
+	return ade_set_args(L, "f", vm_vec_dot(v3a, v3b));
 }
 
 ADE_FUNC(getCrossProduct, l_Vector, "vector OtherVector", "Returns cross product of vector object with vector argument", "vector", "Cross product, or null vector if a handle is invalid")
@@ -3729,7 +3729,7 @@ ADE_FUNC(getCrossProduct, l_Vector, "vector OtherVector", "Returns cross product
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	vec3d v3r;
-	vm_vec_crossprod(&v3r, v3a, v3b);
+	vm_vec_cross(&v3r, v3a, v3b);
 
 	return ade_set_args(L, "o",l_Vector.Set(v3r));
 }

@@ -29,6 +29,8 @@ matrix vmd_identity_matrix = IDENTITY_MATRIX;
 
 #define	UNINITIALIZED_VALUE	-12345678.9f
 
+static void rotate_z ( matrix *m, float theta ) __UNUSED;
+
 bool vm_vec_equal(const vec4 &self, const vec4 &other)
 {
 	return fl_equal(self.a1d[0], other.a1d[0]) && fl_equal(self.a1d[1], other.a1d[1]) && fl_equal(self.a1d[2], other.a1d[2]) && fl_equal(self.a1d[3], other.a1d[3]);
@@ -97,7 +99,7 @@ float vm_vec_projection_parallel(vec3d *component, const vec3d *src, const vec3d
 	float mag;
 	Assert( vm_vec_mag(unit_vec) > 0.999f  &&  vm_vec_mag(unit_vec) < 1.001f );
 
-	mag = vm_vec_dotprod(src, unit_vec);
+	mag = vm_vec_dot(src, unit_vec);
 	vm_vec_copy_scale(component, unit_vec, mag);
 	return mag;
 }
@@ -112,7 +114,7 @@ void vm_vec_projection_onto_plane(vec3d *projection, const vec3d *src, const vec
 	float mag;
 	Assert( vm_vec_mag(unit_normal) > 0.999f  &&  vm_vec_mag(unit_normal) < 1.001f );
 
-	mag = vm_vec_dotprod(src, unit_normal);
+	mag = vm_vec_dot(src, unit_normal);
 	*projection = *src;
 	vm_vec_scale_add2(projection, unit_normal, -mag);
 }
@@ -129,8 +131,8 @@ void vm_project_point_onto_plane(vec3d *new_point, const vec3d *point, const vec
 	float dist;
 	Assert( vm_vec_mag(plane_normal) > 0.999f  &&  vm_vec_mag(plane_normal) < 1.001f );
 
-	D = -vm_vec_dotprod(plane_point, plane_normal);
-	dist = vm_vec_dotprod(point, plane_normal) + D;
+	D = -vm_vec_dot(plane_point, plane_normal);
+	dist = vm_vec_dot(point, plane_normal) + D;
 
 	*new_point = *point;
 	vm_vec_scale_add2(new_point, plane_normal, -dist);
@@ -307,7 +309,7 @@ void vm_vec_scale2(vec3d *dest, float n, float d)
 }
 
 //returns dot product of 2 vectors
-float vm_vec_dotprod(const vec3d *v0, const vec3d *v1)
+float vm_vec_dot(const vec3d *v0, const vec3d *v1)
 {
 	return (v1->xyz.x*v0->xyz.x)+(v1->xyz.y*v0->xyz.y)+(v1->xyz.z*v0->xyz.z);
 }
@@ -640,7 +642,7 @@ vec3d *vm_vec_normal(vec3d *dest, const vec3d *p0, const vec3d *p1, const vec3d 
 //product of the magnitudes of the two source vectors.  This means it is
 //quite easy for this routine to overflow and underflow.  Be careful that
 //your inputs are ok.
-vec3d *vm_vec_crossprod(vec3d *dest, const vec3d *src0, const vec3d *src1)
+vec3d *vm_vec_cross(vec3d *dest, const vec3d *src0, const vec3d *src1)
 {
 	dest->xyz.x = (src0->xyz.y * src1->xyz.z) - (src0->xyz.z * src1->xyz.y);
 	dest->xyz.y = (src0->xyz.z * src1->xyz.x) - (src0->xyz.x * src1->xyz.z);
@@ -673,7 +675,7 @@ vec3d *vm_vec_perp(vec3d *dest, const vec3d *p0, const vec3d *p1,const vec3d *p2
 	vm_vec_sub(&t0,p1,p0);
 	vm_vec_sub(&t1,p2,p1);
 
-	return vm_vec_crossprod(dest,&t0,&t1);
+	return vm_vec_cross(dest,&t0,&t1);
 }
 
 
@@ -710,7 +712,7 @@ float vm_vec_delta_ang_norm(const vec3d *v0, const vec3d *v1, const vec3d *fvec)
 
 	if (fvec) {
 		vm_vec_cross(&t,v0,v1);
-		if ( vm_vec_dotprod(&t,fvec) < 0.0 )	{
+		if ( vm_vec_dot(&t,fvec) < 0.0 )	{
 			a = -a;
 		}
 	}
@@ -835,7 +837,7 @@ void vm_vector_2_matrix_gen_vectors(matrix *m)
 
 		vm_vec_normalize(xvec);
 
-		vm_vec_crossprod(yvec,zvec,xvec);
+		vm_vec_cross(yvec,zvec,xvec);
 
 	}
 }
@@ -862,25 +864,25 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 		else {                      //use right vec
 			vm_vec_copy_normalize(xvec,rvec);
 
-			vm_vec_crossprod(yvec,zvec,xvec);
+			vm_vec_cross(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
 			vm_vec_normalize(yvec);
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
-			vm_vec_crossprod(xvec,yvec,zvec);
+			vm_vec_cross(xvec,yvec,zvec);
 		}
 	}
 	else {      //use up vec
 		vm_vec_copy_normalize(yvec,uvec);
 
-		vm_vec_crossprod(xvec,yvec,zvec);
+		vm_vec_cross(xvec,yvec,zvec);
 
 		//normalize new perpendicular vector
 		vm_vec_normalize(xvec);
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
-		vm_vec_crossprod(yvec,zvec,xvec);
+		vm_vec_cross(yvec,zvec,xvec);
 	}
 	return m;
 }
@@ -901,23 +903,23 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 			vm_vector_2_matrix_gen_vectors(m);
 		}
 		else {                      //use right vec
-			vm_vec_crossprod(yvec,zvec,xvec);
+			vm_vec_cross(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
 			vm_vec_normalize(yvec);
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
-			vm_vec_crossprod(xvec,yvec,zvec);
+			vm_vec_cross(xvec,yvec,zvec);
 		}
 	}
 	else {      //use up vec
-		vm_vec_crossprod(xvec,yvec,zvec);
+		vm_vec_cross(xvec,yvec,zvec);
 
 		//normalize new perpendicular vector
 		vm_vec_normalize(xvec);
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
-		vm_vec_crossprod(yvec,zvec,xvec);
+		vm_vec_cross(yvec,zvec,xvec);
 	}
 	return m;
 }
@@ -943,7 +945,7 @@ vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m)
 //returns ptr to dest vector
 //dest CANNOT equal source
 // This is a faster replacement for this common code sequence:
-//    vm_copy_transpose_matrix(&tempm,src_matrix);
+//    vm_copy_transpose(&tempm,src_matrix);
 //    vm_vec_rotate(dst_vec,src_vect,&tempm);
 // Replace with:
 //    vm_vec_unrotate(dst_vec,src_vect, src_matrix)
@@ -966,7 +968,7 @@ vec3d *vm_vec_unrotate(vec3d *dest, const vec3d *src, const matrix *m)
 }
 
 //transpose a matrix in place. returns ptr to matrix
-matrix *vm_transpose_matrix(matrix *m)
+matrix *vm_transpose(matrix *m)
 {
 	float t;
 
@@ -978,8 +980,8 @@ matrix *vm_transpose_matrix(matrix *m)
 }
 
 //copy and transpose a matrix. returns ptr to matrix
-//dest CANNOT equal source. use vm_transpose_matrix() if this is the case
-matrix *vm_copy_transpose_matrix(matrix *dest, const matrix *src)
+//dest CANNOT equal source. use vm_transpose() if this is the case
+matrix *vm_copy_transpose(matrix *dest, const matrix *src)
 {
 	Assert(dest != src);
 
@@ -1260,7 +1262,7 @@ void vm_orthogonalize_matrix(matrix *m_src)
 				vm_vec_make(&m->vec.uvec, 0.0f, 1.0f, 0.0f);
 
 		} else {  // use the right vector to figure up vector
-			vm_vec_crossprod(&m->vec.uvec, &m->vec.fvec, &m_src->vec.rvec);
+			vm_vec_cross(&m->vec.uvec, &m->vec.fvec, &m_src->vec.rvec);
 			vm_vec_normalize(&m->vec.uvec);
 		}
 
@@ -1269,13 +1271,13 @@ void vm_orthogonalize_matrix(matrix *m_src)
 	}
 
 	// use forward and up vectors as good vectors to calculate right vector
-	vm_vec_crossprod(&m->vec.rvec, &m->vec.uvec, &m->vec.fvec);
+	vm_vec_cross(&m->vec.rvec, &m->vec.uvec, &m->vec.fvec);
 		
 	//normalize new perpendicular vector
 	vm_vec_normalize(&m->vec.rvec);
 
 	//now recompute up vector, in case it wasn't entirely perpendicular
-	vm_vec_crossprod(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
+	vm_vec_cross(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
 	*m_src = tempm;
 }
 
@@ -1290,7 +1292,7 @@ void vm_fix_matrix(matrix *m)
 	rmag = vm_vec_mag(&m->vec.rvec);
 	if (fmag <= 0.0f) {
 		if ((umag > 0.0f) && (rmag > 0.0f) && !vm_test_parallel(&m->vec.uvec, &m->vec.rvec)) {
-			vm_vec_crossprod(&m->vec.fvec, &m->vec.uvec, &m->vec.rvec);
+			vm_vec_cross(&m->vec.fvec, &m->vec.uvec, &m->vec.rvec);
 			vm_vec_normalize(&m->vec.fvec);
 
 		} else if (umag > 0.0f) {
@@ -1313,7 +1315,7 @@ void vm_fix_matrix(matrix *m)
 				vm_vec_make(&m->vec.uvec, 0.0f, 1.0f, 0.0f);
 
 		} else {  // use the right vector to figure up vector
-			vm_vec_crossprod(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
+			vm_vec_cross(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
 			vm_vec_normalize(&m->vec.uvec);
 		}
 
@@ -1322,13 +1324,13 @@ void vm_fix_matrix(matrix *m)
 
 	// we now have both valid and normalized forward and up vectors
 
-	vm_vec_crossprod(&m->vec.rvec, &m->vec.uvec, &m->vec.fvec);
+	vm_vec_cross(&m->vec.rvec, &m->vec.uvec, &m->vec.fvec);
 		
 	//normalize new perpendicular vector
 	vm_vec_normalize(&m->vec.rvec);
 
 	//now recompute up vector, in case it wasn't entirely perpendiclar
-	vm_vec_crossprod(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
+	vm_vec_cross(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
 }
 
 //Rotates the orient matrix by the angles in tangles and then
@@ -1866,7 +1868,7 @@ void vm_matrix_interpolate(const matrix *goal_orient, const matrix *curr_orient,
 
 	//	FIND ROTATION NEEDED FOR GOAL
 	// goal_orient = R curr_orient,  so R = goal_orient curr_orient^-1
-	vm_copy_transpose_matrix(&Mtemp1, curr_orient);				// Mtemp1 = curr ^-1
+	vm_copy_transpose(&Mtemp1, curr_orient);				// Mtemp1 = curr ^-1
 	vm_matrix_x_matrix(&rot_matrix, &Mtemp1, goal_orient);	// R = goal * Mtemp1
 	vm_orthogonalize_matrix(&rot_matrix);
 	vm_matrix_to_rot_axis_and_angle(&rot_matrix, &theta, &rot_axis);		// determines angle and rotation axis from curr to goal
@@ -2008,7 +2010,7 @@ void get_camera_limits(const matrix *start_camera, const matrix *end_camera, flo
 	vec3d angle;
 
 	// determine the necessary rotation matrix
-	vm_copy_transpose_matrix(&temp, start_camera);
+	vm_copy_transpose(&temp, start_camera);
 	vm_matrix_x_matrix(&rot_matrix, &temp, end_camera);
 	vm_orthogonalize_matrix(&rot_matrix);
 
@@ -2073,13 +2075,13 @@ void vm_forward_interpolate(const vec3d *goal_f, const matrix *orient, const vec
 	// FIND ROTATION NEEDED FOR GOAL
 	// rotation vector is (current fvec)  orient->vec.fvec x goal_f
 	// magnitude = asin ( magnitude of crossprod )
-	vm_vec_crossprod( &rot_axis, &orient->vec.fvec, goal_f );
+	vm_vec_cross( &rot_axis, &orient->vec.fvec, goal_f );
 
 	float t = vm_vec_mag(&rot_axis);
 	if (t > 1.0f)
 		t = 1.0f;
 
-	z_dotprod = vm_vec_dotprod( &orient->vec.fvec, goal_f );
+	z_dotprod = vm_vec_dot( &orient->vec.fvec, goal_f );
 
 	if ( t < SMALLER_NUM )  {
 		if ( z_dotprod > 0.0f )
@@ -2378,7 +2380,7 @@ void vm_estimate_next_orientation(const matrix *last_orient, const matrix *curre
 
 	matrix Mtemp;
 	matrix Rot_matrix;
-	vm_copy_transpose_matrix(&Mtemp, last_orient);				// Mtemp = (L)^-1
+	vm_copy_transpose(&Mtemp, last_orient);				// Mtemp = (L)^-1
 	vm_matrix_x_matrix(&Rot_matrix, &Mtemp, current_orient);	// R = C Mtemp1
 	vm_matrix_x_matrix(next_orient, current_orient, &Rot_matrix);
 }
@@ -2402,7 +2404,7 @@ void vm_vec_interp_constant(vec3d *out, const vec3d *v0, const vec3d *v1, float 
 	float total_ang;
 
 	// get the cross-product of the 2 vectors
-	vm_vec_crossprod(&cross, v0, v1);
+	vm_vec_cross(&cross, v0, v1);
 	vm_vec_normalize(&cross);
 
 	// get the total angle between the 2 vectors
@@ -2516,7 +2518,7 @@ int vm_vec_dist_to_line(const vec3d *p, const vec3d *l0, const vec3d *l1, vec3d 
 	b_mag = vm_vec_copy_normalize(&c, &b);	
 
 	// calculate component
-	comp = vm_vec_dotprod(&a, &b) / b_mag;
+	comp = vm_vec_dot(&a, &b) / b_mag;
 
 	// stuff nearest
 	vm_vec_scale_add(nearest, l0, &c, comp);
@@ -2556,7 +2558,7 @@ void vm_vec_dist_squared_to_line(const vec3d *p, const vec3d *l0, const vec3d *l
 	b_mag = vm_vec_copy_normalize(&c, &b);	
 
 	// calculate component
-	comp = vm_vec_dotprod(&a, &b) / b_mag;
+	comp = vm_vec_dot(&a, &b) / b_mag;
 
 	// stuff nearest
 	vm_vec_scale_add(nearest, l0, &c, comp);
@@ -2572,4 +2574,148 @@ void vm_vec_boxscale(vec2d *vec, float scale)
 	float ratio = 1.0f / MAX(fl_abs(vec->x), fl_abs(vec->y));
 	vec->x *= ratio;
 	vec->y *= ratio;
+}
+
+/**
+ * @brief							Attempts to invert a 4x4 matrix
+ * @param[in]			m			Pointer to the matrix we want to invert
+ * @param[inout]		invOut		The inverted matrix, or nullptr if inversion is impossible
+ *
+ * @returns							Whether or not the matrix is invertible
+ */
+bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut)
+{
+	matrix4 inv;	// create a temp matrix so we can avoid getting a determinant that is 0
+	float det;
+	int i,j;
+
+	// Use a2d so it's easier for people to read
+	inv.a2d[0][0] = m->a2d[1][1] * m->a2d[2][2] * m->a2d[3][3] -
+		m->a2d[1][1] * m->a2d[2][3] * m->a2d[3][2] -
+		m->a2d[2][1] * m->a2d[1][2] * m->a2d[3][3] +
+		m->a2d[2][1] * m->a2d[1][3] * m->a2d[3][2] +
+		m->a2d[3][1] * m->a2d[1][2] * m->a2d[2][3] -
+		m->a2d[3][1] * m->a2d[1][3] * m->a2d[2][2];
+
+	inv.a2d[1][0] = -m->a2d[1][0] * m->a2d[2][2] * m->a2d[3][3] +
+		m->a2d[1][0] * m->a2d[2][3] * m->a2d[3][2] +
+		m->a2d[2][0] * m->a2d[1][2] * m->a2d[3][3] -
+		m->a2d[2][0] * m->a2d[1][3] * m->a2d[3][2] -
+		m->a2d[3][0] * m->a2d[1][2] * m->a2d[2][3] +
+		m->a2d[3][0] * m->a2d[1][3] * m->a2d[2][2];
+
+	inv.a2d[2][0] = m->a2d[1][0] * m->a2d[2][1] * m->a2d[3][3] -
+		m->a2d[1][0] * m->a2d[2][3] * m->a2d[3][1] -
+		m->a2d[2][0] * m->a2d[1][1] * m->a2d[3][3] +
+		m->a2d[2][0] * m->a2d[1][3] * m->a2d[3][1] +
+		m->a2d[3][0] * m->a2d[1][1] * m->a2d[2][3] -
+		m->a2d[3][0] * m->a2d[1][3] * m->a2d[2][1];
+
+	inv.a2d[3][0] = -m->a2d[1][0] * m->a2d[2][1] * m->a2d[3][2] +
+		m->a2d[1][0] * m->a2d[2][2] * m->a2d[3][1] +
+		m->a2d[2][0] * m->a2d[1][1] * m->a2d[3][2] -
+		m->a2d[2][0] * m->a2d[1][2] * m->a2d[3][1] -
+		m->a2d[3][0] * m->a2d[1][1] * m->a2d[2][2] +
+		m->a2d[3][0] * m->a2d[1][2] * m->a2d[2][1];
+
+	inv.a2d[0][1] = -m->a2d[0][1] * m->a2d[2][2] * m->a2d[3][3] +
+		m->a2d[0][1] * m->a2d[2][3] * m->a2d[3][2] +
+		m->a2d[2][1] * m->a2d[0][2] * m->a2d[3][3] -
+		m->a2d[2][1] * m->a2d[0][3] * m->a2d[3][2] -
+		m->a2d[3][1] * m->a2d[0][2] * m->a2d[2][3] +
+		m->a2d[3][1] * m->a2d[0][3] * m->a2d[2][2];
+
+	inv.a2d[1][1] = m->a2d[0][0] * m->a2d[2][2] * m->a2d[3][3] -
+		m->a2d[0][0] * m->a2d[2][3] * m->a2d[3][2] -
+		m->a2d[2][0] * m->a2d[0][2] * m->a2d[3][3] +
+		m->a2d[2][0] * m->a2d[0][3] * m->a2d[3][2] +
+		m->a2d[3][0] * m->a2d[0][2] * m->a2d[2][3] -
+		m->a2d[3][0] * m->a2d[0][3] * m->a2d[2][2];
+
+	inv.a2d[2][1] = -m->a2d[0][0] * m->a2d[2][1] * m->a2d[3][3] +
+		m->a2d[0][0] * m->a2d[2][3] * m->a2d[3][1] +
+		m->a2d[2][0] * m->a2d[0][1] * m->a2d[3][3] -
+		m->a2d[2][0] * m->a2d[0][3] * m->a2d[3][1] -
+		m->a2d[3][0] * m->a2d[0][1] * m->a2d[2][3] +
+		m->a2d[3][0] * m->a2d[0][3] * m->a2d[2][1];
+
+	inv.a2d[3][1] = m->a2d[0][0] * m->a2d[2][1] * m->a2d[3][2] -
+		m->a2d[0][0] * m->a2d[2][2] * m->a2d[3][1] -
+		m->a2d[2][0] * m->a2d[0][1] * m->a2d[3][2] +
+		m->a2d[2][0] * m->a2d[0][2] * m->a2d[3][1] +
+		m->a2d[3][0] * m->a2d[0][1] * m->a2d[2][2] -
+		m->a2d[3][0] * m->a2d[0][2] * m->a2d[2][1];
+
+	inv.a2d[0][2] = m->a2d[0][1] * m->a2d[1][2] * m->a2d[3][3] -
+		m->a2d[0][1] * m->a2d[1][3] * m->a2d[3][2] -
+		m->a2d[1][1] * m->a2d[0][2] * m->a2d[3][3] +
+		m->a2d[1][1] * m->a2d[0][3] * m->a2d[3][2] +
+		m->a2d[3][1] * m->a2d[0][2] * m->a2d[1][3] -
+		m->a2d[3][1] * m->a2d[0][3] * m->a2d[1][2];
+
+	inv.a2d[1][2] = -m->a2d[0][0] * m->a2d[1][2] * m->a2d[3][3] +
+		m->a2d[0][0] * m->a2d[1][3] * m->a2d[3][2] +
+		m->a2d[1][0] * m->a2d[0][2] * m->a2d[3][3] -
+		m->a2d[1][0] * m->a2d[0][3] * m->a2d[3][2] -
+		m->a2d[3][0] * m->a2d[0][2] * m->a2d[1][3] +
+		m->a2d[3][0] * m->a2d[0][3] * m->a2d[1][2];
+
+	inv.a2d[2][2] = m->a2d[0][0] * m->a2d[1][1] * m->a2d[3][3] -
+		m->a2d[0][0] * m->a2d[1][3] * m->a2d[3][1] -
+		m->a2d[1][0] * m->a2d[0][1] * m->a2d[3][3] +
+		m->a2d[1][0] * m->a2d[0][3] * m->a2d[3][1] +
+		m->a2d[3][0] * m->a2d[0][1] * m->a2d[1][3] -
+		m->a2d[3][0] * m->a2d[0][3] * m->a2d[1][1];
+
+	inv.a2d[3][2] = -m->a2d[0][0] * m->a2d[1][1] * m->a2d[3][2] +
+		m->a2d[0][0] * m->a2d[1][2] * m->a2d[3][1] +
+		m->a2d[1][0] * m->a2d[0][1] * m->a2d[3][2] -
+		m->a2d[1][0] * m->a2d[0][2] * m->a2d[3][1] -
+		m->a2d[3][0] * m->a2d[0][1] * m->a2d[1][2] +
+		m->a2d[3][0] * m->a2d[0][2] * m->a2d[1][1];
+
+	inv.a2d[0][3] = -m->a2d[0][1] * m->a2d[1][2] * m->a2d[2][3] +
+		m->a2d[0][1] * m->a2d[1][3] * m->a2d[2][2] +
+		m->a2d[1][1] * m->a2d[0][2] * m->a2d[2][3] -
+		m->a2d[1][1] * m->a2d[0][3] * m->a2d[2][2] -
+		m->a2d[2][1] * m->a2d[0][2] * m->a2d[1][3] +
+		m->a2d[2][1] * m->a2d[0][3] * m->a2d[1][2];
+
+	inv.a2d[1][3] = m->a2d[0][0] * m->a2d[1][2] * m->a2d[2][3] -
+		m->a2d[0][0] * m->a2d[1][3] * m->a2d[2][2] -
+		m->a2d[1][0] * m->a2d[0][2] * m->a2d[2][3] +
+		m->a2d[1][0] * m->a2d[0][3] * m->a2d[2][2] +
+		m->a2d[2][0] * m->a2d[0][2] * m->a2d[1][3] -
+		m->a2d[2][0] * m->a2d[0][3] * m->a2d[1][2];
+
+	inv.a2d[2][3] = -m->a2d[0][0] * m->a2d[1][1] * m->a2d[2][3] +
+		m->a2d[0][0] * m->a2d[1][3] * m->a2d[2][1] +
+		m->a2d[1][0] * m->a2d[0][1] * m->a2d[2][3] -
+		m->a2d[1][0] * m->a2d[0][3] * m->a2d[2][1] -
+		m->a2d[2][0] * m->a2d[0][1] * m->a2d[1][3] +
+		m->a2d[2][0] * m->a2d[0][3] * m->a2d[1][1];
+
+	inv.a2d[3][3] = m->a2d[0][0] * m->a2d[1][1] * m->a2d[2][2] -
+		m->a2d[0][0] * m->a2d[1][2] * m->a2d[2][1] -
+		m->a2d[1][0] * m->a2d[0][1] * m->a2d[2][2] +
+		m->a2d[1][0] * m->a2d[0][2] * m->a2d[2][1] +
+		m->a2d[2][0] * m->a2d[0][1] * m->a2d[1][2] -
+		m->a2d[2][0] * m->a2d[0][2] * m->a2d[1][1];
+
+	det = m->a2d[0][0] * inv.a2d[0][0] + m->a2d[0][1] * inv.a2d[1][0] + m->a2d[0][2] * inv.a2d[2][0] + m->a2d[0][3] * inv.a2d[3][0];
+
+	if (det == 0) {
+		invOut = nullptr;
+		return false;
+	}
+
+	det = 1.0f / det;
+
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			invOut->a2d[i][j] = inv.a2d[i][j] * det;
+		}
+	}
+
+	return true;
 }

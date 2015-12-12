@@ -980,7 +980,7 @@ int ai_is_stealth_visible(object *viewer_objp, object *stealth_objp)
 	if ( !ship_is_visible_by_team(stealth_objp, &Ships[viewer_objp->instance]) ) {
 		vm_vec_sub(&vec_to_stealth, &stealth_objp->pos, &viewer_objp->pos);
 		dist_to_stealth = vm_vec_mag_quick(&vec_to_stealth);
-		dot_to_stealth = vm_vec_dotprod(&viewer_objp->orient.vec.fvec, &vec_to_stealth) / dist_to_stealth;
+		dot_to_stealth = vm_vec_dot(&viewer_objp->orient.vec.fvec, &vec_to_stealth) / dist_to_stealth;
 
 		// get max dist at which stealth is visible
 		max_stealth_dist = get_skill_stealth_dist_scaler() * STEALTH_MAX_VIEW_DIST;
@@ -1539,8 +1539,8 @@ float turn_towards_tangent(object *objp, vec3d *point, float radius)
 	vec3d	v2g;
 
 	vm_vec_normalized_dir(&vec_to_point, point, &objp->pos);
-	vm_vec_crossprod(&up_vec, &vec_to_point, &objp->orient.vec.fvec);
-	vm_vec_crossprod(&perp_vec, &vec_to_point, &up_vec);
+	vm_vec_cross(&up_vec, &vec_to_point, &objp->orient.vec.fvec);
+	vm_vec_cross(&perp_vec, &vec_to_point, &up_vec);
 
 	vm_vec_scale_add(&perp_point, point, &vec_to_point, -radius);
 	if (vm_vec_dot(&objp->orient.vec.fvec, &perp_vec) > 0.0f) {
@@ -1563,7 +1563,7 @@ float turn_toward_tangent_with_axis(object *objp, object *center_objp, float rad
 
 	// find closest z of center objp
 	vm_vec_sub(&sph_r_vec, &objp->pos, &center_objp->pos);
-	center_obj_z = vm_vec_dotprod(&sph_r_vec, &center_objp->orient.vec.fvec);
+	center_obj_z = vm_vec_dot(&sph_r_vec, &center_objp->orient.vec.fvec);
 
 	// find pt on axis with closest z
 	vm_vec_scale_add(&center_vec, &center_objp->pos, &center_objp->orient.vec.fvec, center_obj_z);
@@ -1571,10 +1571,10 @@ float turn_toward_tangent_with_axis(object *objp, object *center_objp, float rad
 	// get r_vec
 	vm_vec_sub(&r_vec, &objp->pos, &center_vec);
 
-	Assert( (vm_vec_dotprod(&r_vec, &center_objp->orient.vec.fvec) < 0.0001));
+	Assert( (vm_vec_dot(&r_vec, &center_objp->orient.vec.fvec) < 0.0001));
 
 	// get theta vec - perp to r_vec and z_vec
-	vm_vec_crossprod(&theta_vec, &center_objp->orient.vec.fvec, &r_vec);
+	vm_vec_cross(&theta_vec, &center_objp->orient.vec.fvec, &r_vec);
 
 #ifndef NDEBUG
 	float mag;
@@ -1583,11 +1583,11 @@ float turn_toward_tangent_with_axis(object *objp, object *center_objp, float rad
 #endif
 
 	vec3d temp;
-	vm_vec_crossprod(&temp, &r_vec, &theta_vec);
+	vm_vec_cross(&temp, &r_vec, &theta_vec);
 
 #ifndef NDEBUG
 	float dot;
-	dot = vm_vec_dotprod(&temp, &center_objp->orient.vec.fvec);
+	dot = vm_vec_dot(&temp, &center_objp->orient.vec.fvec);
 	Assert( dot >0.9999 && dot < 1.0001);
 #endif
 
@@ -1613,17 +1613,17 @@ void get_tangent_point(vec3d *goal_point, object *objp, vec3d *point, float radi
 	vec3d	up_vec, perp_vec;
 
 	vm_vec_normalized_dir(&vec_to_point, point, &objp->pos);
-	vm_vec_crossprod(&up_vec, &vec_to_point, &objp->orient.vec.fvec);
+	vm_vec_cross(&up_vec, &vec_to_point, &objp->orient.vec.fvec);
 	
 	while (IS_VEC_NULL(&up_vec)) {
 		vec3d	rnd_vec;
 
 		vm_vec_rand_vec_quick(&rnd_vec);
 		vm_vec_add2(&rnd_vec, &objp->orient.vec.fvec);
-		vm_vec_crossprod(&up_vec, &vec_to_point, &rnd_vec);
+		vm_vec_cross(&up_vec, &vec_to_point, &rnd_vec);
 	}
 
-	vm_vec_crossprod(&perp_vec, &vec_to_point, &up_vec);
+	vm_vec_cross(&perp_vec, &vec_to_point, &up_vec);
 	vm_vec_normalize(&perp_vec);
 
 	vm_vec_scale_add(&perp_point, point, &vec_to_point, -radius);
@@ -2966,8 +2966,8 @@ int maybe_avoid_player(object *objp, vec3d *goal_pos)
 		} else {
 			vec3d	tvec1;
 			vm_vec_normalize(&avoid_vec);
-			vm_vec_crossprod(&tvec1, &n_vec_to_goal, &avoid_vec);
-			vm_vec_crossprod(&avoid_vec, &tvec1, &n_vec_to_player);
+			vm_vec_cross(&tvec1, &n_vec_to_goal, &avoid_vec);
+			vm_vec_cross(&avoid_vec, &tvec1, &n_vec_to_player);
 		}
 
 		//	Now, avoid_vec is a vector perpendicular to the vector to the player and the direction *objp
@@ -6496,7 +6496,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 		vec3d temp;
 		vm_vec_sub(&temp, enemy_pos, &pobjp->pos);
 		vm_vec_normalize_quick(&temp);
-		float dot = vm_vec_dotprod(&temp, &pobjp->orient.vec.fvec);
+		float dot = vm_vec_dot(&temp, &pobjp->orient.vec.fvec);
 		float st_err = 3.0f * (1.4f - dot) * (1.0f + dist / (get_skill_stealth_dist_scaler() * STEALTH_MAX_VIEW_DIST)) * (1 - aip->ai_accuracy);
 		scale += st_err;
 	}
@@ -7056,7 +7056,7 @@ void ai_stealth_find()
 	// if dist is near max and dot is close to 1, accel, afterburn
 	vm_vec_sub(&vec_to_enemy, &new_pos, &Pl_objp->pos);
 	dist_to_enemy = vm_vec_normalize_quick(&vec_to_enemy);
-	dot_to_enemy = vm_vec_dotprod(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
+	dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 
 	// if i think i should see him ahead and i don't, set goal pos and turn around, but only if I haven't seen him for a while
 	if ( (delta_time > 800) && (aip->submode_parm0 == SM_SF_AHEAD) && (dot_to_enemy > .94) && (dist_to_enemy < get_skill_stealth_dist_scaler()*STEALTH_MAX_VIEW_DIST + 50) ) {
@@ -7065,7 +7065,7 @@ void ai_stealth_find()
 		aip->submode_parm0 = SM_SF_BEHIND;
 		vm_vec_sub(&vec_to_enemy, &new_pos, &Pl_objp->pos);
 		dist_to_enemy = vm_vec_normalize_quick(&vec_to_enemy);
-		dot_to_enemy = vm_vec_dotprod(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
+		dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 	}
 
 	if ( (dist_to_enemy > get_skill_stealth_dist_scaler()*STEALTH_MAX_VIEW_DIST) && (dot_to_enemy > 0.94f) ) {		// 20 degree half angle
@@ -7095,7 +7095,7 @@ void ai_stealth_find()
 		ai_turn_towards_vector(&new_pos, Pl_objp, flFrametime, sip->srotation_time, NULL, NULL, 0.0f, 0);
 	}
 
-	dot_from_enemy = -vm_vec_dotprod(&vec_to_enemy, &En_objp->orient.vec.fvec);
+	dot_from_enemy = -vm_vec_dot(&vec_to_enemy, &En_objp->orient.vec.fvec);
 
 	attack_set_accel(aip, sip, dist_to_enemy, dot_to_enemy, dot_from_enemy);
 }
@@ -7144,10 +7144,10 @@ void ai_stealth_sweep()
 	}
 
 	// get "right" vector for box
-	vm_vec_crossprod(&right, &aip->stealth_velocity, &vmd_y_vector);
+	vm_vec_cross(&right, &aip->stealth_velocity, &vmd_y_vector);
 
 	if ( vm_vec_mag_quick(&right) < 0.01 ) {
-		vm_vec_crossprod(&right, &aip->stealth_velocity, &vmd_z_vector);
+		vm_vec_cross(&right, &aip->stealth_velocity, &vmd_z_vector);
 	}
 
 	vm_vec_normalize_quick(&right);
@@ -7156,7 +7156,7 @@ void ai_stealth_sweep()
 	vm_vec_copy_normalize_quick(&forward, &aip->stealth_velocity);
 
 	// get "up" for box
-	vm_vec_crossprod(&up, &forward, &right);
+	vm_vec_cross(&up, &forward, &right);
 	
 	// lost far away ahead (do box)
 	switch(aip->submode_parm0) {
@@ -7226,7 +7226,7 @@ void ai_stealth_sweep()
 	if (dist_to_goal < 100) {
 		vec3d vec_to_goal;
 		vm_vec_normalized_dir(&vec_to_goal, &goal_pt, &Pl_objp->pos);
-		dot = vm_vec_dotprod(&vec_to_goal, &Pl_objp->orient.vec.fvec);
+		dot = vm_vec_dot(&vec_to_goal, &Pl_objp->orient.vec.fvec);
 	}
 
 	accelerate_ship(aip, 0.8f*dot);
@@ -7872,7 +7872,7 @@ void ai_chase_big_get_separations(object *attack_objp, object *target_objp, vec3
 	vm_vec_sub(&vec_to_target, &attack_objp->pos, &target_objp->pos);
 
 	// find the distance between centers along forward direction of ships
-	perp_dist = vm_vec_dotprod(&vec_to_target, &target_objp->orient.vec.fvec);
+	perp_dist = vm_vec_dot(&vec_to_target, &target_objp->orient.vec.fvec);
 
 	// subtract off perp component to get "horizontal" separation vector between cylinders [ASSUMING parallel]
 	vm_vec_scale_add(horz_vec_to_target, &vec_to_target, &target_objp->orient.vec.fvec, -perp_dist);
@@ -7903,7 +7903,7 @@ void ai_chase_big_parallel_set_goal(vec3d *goal_pos, object *attack_objp, object
 	r_target = MAX(temp, r_target);
 
 	// are we opposing (only when other ship is not moving)
-	opposing = ( vm_vec_dotprod(&attack_objp->orient.vec.fvec, &target_objp->orient.vec.fvec) < 0 );
+	opposing = ( vm_vec_dot(&attack_objp->orient.vec.fvec, &target_objp->orient.vec.fvec) < 0 );
 
 	ai_chase_big_get_separations(attack_objp, target_objp, &horz_vec_to_target, &optimal_separation, &separation);
 
@@ -7921,7 +7921,7 @@ void ai_chase_big_parallel_set_goal(vec3d *goal_pos, object *attack_objp, object
 	// find the distance between centers along forward direction of ships
 	vec3d vec_to_target;
 	vm_vec_sub(&vec_to_target, &target_objp->pos, &attack_objp->pos);
-	float perp_dist = vm_vec_dotprod(&vec_to_target, &target_objp->orient.vec.fvec);
+	float perp_dist = vm_vec_dot(&vec_to_target, &target_objp->orient.vec.fvec);
 
 	float match_accel = 0.0f;
 	float length_scale = attack_objp->radius;
@@ -8071,7 +8071,7 @@ void ai_cruiser_chase()
 				// moving
 				if (moving) {
 					// if within 90 degrees of en forward, go into parallel, otherwise circle
-					if ( vm_vec_dotprod(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) > 0 ) {
+					if ( vm_vec_dot(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) > 0 ) {
 						aip->submode = SM_BIG_PARALLEL;
 						aip->submode_start_time = Missiontime;
 					}
@@ -8091,9 +8091,9 @@ void ai_cruiser_chase()
 				vec3d temp;
 				float desired_sep, cur_sep;
 				// we're behind the enemy ship
-				if (vm_vec_dotprod(&vec_to_enemy, &En_objp->orient.vec.fvec) > 0) {
+				if (vm_vec_dot(&vec_to_enemy, &En_objp->orient.vec.fvec) > 0) {
 					// and we're turning toward the enemy
-					if (vm_vec_dotprod(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) > 0) {
+					if (vm_vec_dot(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) > 0) {
 						// get separation
 						ai_chase_big_get_separations(Pl_objp, En_objp, &temp, &desired_sep, &cur_sep);
 						// and the separation is > 0.9 desired
@@ -8108,9 +8108,9 @@ void ai_cruiser_chase()
 				vec3d temp;
 				float desired_sep, cur_sep;
 				// we're behind the enemy ship
-				if (vm_vec_dotprod(&vec_to_enemy, &En_objp->orient.vec.fvec) > 0) {
+				if (vm_vec_dot(&vec_to_enemy, &En_objp->orient.vec.fvec) > 0) {
 					// and we're turning toward the enemy
-					if (vm_vec_dotprod(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) > 0) {
+					if (vm_vec_dot(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) > 0) {
 						// get separation
 						ai_chase_big_get_separations(Pl_objp, En_objp, &temp, &desired_sep, &cur_sep);
 						// and the separation is > 0.9 desired
@@ -8123,7 +8123,7 @@ void ai_cruiser_chase()
 				// in front of ship
 				else {
 					// and we're turning toward the enemy
-					if (vm_vec_dotprod(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) < 0) {
+					if (vm_vec_dot(&En_objp->orient.vec.fvec, &Pl_objp->orient.vec.fvec) < 0) {
 						// get separation
 						ai_chase_big_get_separations(Pl_objp, En_objp, &temp, &desired_sep, &cur_sep);
 						// and the separation is > 0.9 desired
@@ -8138,7 +8138,7 @@ void ai_cruiser_chase()
 
 		case SM_BIG_PARALLEL:
 			// we're opposing
-			if ( vm_vec_dotprod(&Pl_objp->orient.vec.fvec, &En_objp->orient.vec.fvec) < 0 ) {
+			if ( vm_vec_dot(&Pl_objp->orient.vec.fvec, &En_objp->orient.vec.fvec) < 0 ) {
 				// and the other ship is moving
 				if (moving) {
 					// and we no longer overlap
@@ -8996,7 +8996,7 @@ void set_goal_dock_orient(matrix *dom, vec3d *docker_p0, vec3d *docker_p1, vec3d
 
 	//	Pre-multiply the orientation of the source object (docker_orient) by the transpose
 	//	of the docking bay's orientation, ie unrotate the source object's matrix.
-	vm_transpose_matrix(&m2);
+	vm_transpose(&m2);
 	vm_matrix_x_matrix(dom, &m3, &m2);
 }
 
@@ -9261,7 +9261,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 			vec3d origin_docker_point, adjusted_docker_point, v_offset;
 
 			// find out the rotation matrix that will get us from the old to the new rotation
-			vm_copy_transpose_matrix(&temp, &docker_objp->orient);
+			vm_copy_transpose(&temp, &docker_objp->orient);
 			vm_matrix_x_matrix(&m_offset, &temp, &dom);
 
 			// now find out the new docker point after being adjusted for the new orientation
@@ -9801,7 +9801,7 @@ float get_cylinder_points(object *other_objp, object *cyl_objp, vec3d *axis_pt, 
 	// get point on axis and on cylinder
 	// extended_cylinder_z is along extended cylinder
 	// cylinder_z is capped within cylinder
-	float extended_cylinder_z = vm_vec_dotprod(&r_sph, &cyl_objp->orient.vec.fvec);
+	float extended_cylinder_z = vm_vec_dot(&r_sph, &cyl_objp->orient.vec.fvec);
 
 	// get pt on axis of extended cylinder
 	vm_vec_scale_add(axis_pt, &cyl_objp->pos, &cyl_objp->orient.vec.fvec, extended_cylinder_z);
@@ -9837,7 +9837,7 @@ void ai_big_guard()
 
 		// get position relative to cylinder of guard_objp		
 		extended_z = get_cylinder_points(Pl_objp, guard_objp, &axis_pt, &r_vec, &radius);
-		vm_vec_crossprod(&theta_vec, &guard_objp->orient.vec.fvec, &r_vec);
+		vm_vec_cross(&theta_vec, &guard_objp->orient.vec.fvec, &r_vec);
 
 		// half ships circle each way
 		if (objval > 0.5f) {
@@ -13662,7 +13662,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 			vec3d vec_from_exp;
 			float dir = 1.0f;
 			vm_vec_sub(&vec_from_exp, &objp->pos, &expected_pos);
-			float dot = vm_vec_dotprod(&vec_from_exp, &weapon_objp->orient.vec.fvec);
+			float dot = vm_vec_dot(&vec_from_exp, &weapon_objp->orient.vec.fvec);
 			if (dot > -30) {
 				// if we're already on the other side of the explosion, don't try to fly behind it
 				dir = -1.0f;

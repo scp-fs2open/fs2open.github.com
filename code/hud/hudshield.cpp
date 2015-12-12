@@ -743,7 +743,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 				continue;
 		}
 
-		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
+		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + objp->n_quadrants);
 
 		if ( !(sip->flags2 & SIF2_MODEL_POINT_SHIELDS) )
 			hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);

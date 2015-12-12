@@ -1628,7 +1628,7 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 	vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
 
 	matrix inv_orientation;
-	vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+	vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
 
 	matrix submodel_matrix;
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
@@ -2239,7 +2239,7 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 	vm_vec_sub( &rvec, Eyeposition, &temp );
 	vm_vec_normalize( &rvec );	
 
-	vm_vec_crossprod(&uvec,fvec,&rvec);
+	vm_vec_cross(&uvec,fvec,&rvec);
 	vm_vec_normalize(&uvec);
 
 	vm_vec_scale_add( top, &temp, &uvec, w/2.0f );
@@ -3603,8 +3603,21 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 		return;
 	}
 
-	int vn1 = (myrand()>>5) % nv;
-	int vn2 = (myrand()>>5) % nv;
+#ifndef NDEBUG
+	if (RAND_MAX < nv)
+	{
+		static int submodel_get_two_random_points_warned = false;
+		if (!submodel_get_two_random_points_warned)
+		{
+			polymodel *pm = model_get(model_num);
+			Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!\n", RAND_MAX, submodel_num, pm->filename, nv);
+			submodel_get_two_random_points_warned = true;
+		}
+	}
+#endif
+
+	int vn1 = myrand() % nv;
+	int vn2 = myrand() % nv;
 
 	*v1 = *Interp_verts[vn1];
 	*v2 = *Interp_verts[vn2];
@@ -3641,9 +3654,20 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 			return;
 		}
 
-		Assert(nv > 0);	// Goober5000 - to avoid div-0 error
-		int vn1 = (myrand()>>5) % nv;
-		int vn2 = (myrand()>>5) % nv;
+#ifndef NDEBUG
+		if (RAND_MAX < nv)
+		{
+			static int submodel_get_two_random_points_warned = false;
+			if (!submodel_get_two_random_points_warned)
+			{
+				Warning(LOCATION, "RAND_MAX is only %d, but submodel %d for model %s has %d vertices!  Explosions will not propagate through the entire model!\n", RAND_MAX, submodel_num, pm->filename, nv);
+				submodel_get_two_random_points_warned = true;
+			}
+		}
+#endif
+
+		int vn1 = myrand() % nv;
+		int vn2 = myrand() % nv;
 
 		*v1 = tree->point_list[vn1];
 		*v2 = tree->point_list[vn2];
@@ -4771,7 +4795,7 @@ void model_render_children_buffers_DEPRECATED(polymodel *pm, int mn, int detail_
 	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
 
 	matrix inv_orientation;
-	vm_copy_transpose_matrix(&inv_orientation, &model->orientation);
+	vm_copy_transpose(&inv_orientation, &model->orientation);
 
 	matrix submodel_matrix;
 	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
