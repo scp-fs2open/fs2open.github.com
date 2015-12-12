@@ -146,7 +146,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				} else {
 					// make other fireballs at random positions, but try to keep on the surface
 					vm_vec_rand_vec_quick(&rand_vec);
-					float dot = vm_vec_dotprod(&center_to_subsys, &rand_vec);
+					float dot = vm_vec_dot(&center_to_subsys, &rand_vec);
 					vm_vec_scale_add2(&rand_vec, &center_to_subsys, -dot/vm_vec_mag_squared(&center_to_subsys));
 					vm_vec_scale_add(&temp_vec, &g_subobj_pos, &rand_vec, 0.5f*psub->radius);
 				}
@@ -158,7 +158,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				}
 
 				vec3d fb_vel;
-				vm_vec_crossprod(&fb_vel, &objp->phys_info.rotvel, &center_to_subsys);
+				vm_vec_cross(&fb_vel, &objp->phys_info.rotvel, &center_to_subsys);
 				vm_vec_add2(&fb_vel, &objp->phys_info.vel);
 
 				int fireball_type = fireball_ship_explosion_type(sip);
@@ -1249,9 +1249,9 @@ void ship_hit_create_sparks(object *ship_objp, vec3d *hitpos, int submodel_num)
 		vm_vec_sub(&diff, hitpos, &temp_zero);
 
 		// find displacement from submodel origin in submodel RF
-		shipp->sparks[n].pos.xyz.x = vm_vec_dotprod(&diff, &temp_x);
-		shipp->sparks[n].pos.xyz.y = vm_vec_dotprod(&diff, &temp_y);
-		shipp->sparks[n].pos.xyz.z = vm_vec_dotprod(&diff, &temp_z);
+		shipp->sparks[n].pos.xyz.x = vm_vec_dot(&diff, &temp_x);
+		shipp->sparks[n].pos.xyz.y = vm_vec_dot(&diff, &temp_y);
+		shipp->sparks[n].pos.xyz.z = vm_vec_dot(&diff, &temp_z);
 		shipp->sparks[n].submodel_num = submodel_num;
 		shipp->sparks[n].end_time = timestamp(-1);
 	} else {

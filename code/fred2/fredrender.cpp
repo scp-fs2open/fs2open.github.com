@@ -140,8 +140,7 @@ color colour_yellow;
 
 void fred_enable_htl()
 {
-	if (!Briefing_dialog) gr_set_proj_matrix( (4.0f/9.0f) * PI * FRED_DEFAULT_HTL_FOV,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
-	if (Briefing_dialog) gr_set_proj_matrix( Briefing_window_FOV,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
+	gr_set_proj_matrix((4.0f/9.0f) * PI * (Briefing_dialog ? Briefing_window_FOV : FRED_DEFAULT_HTL_FOV),  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
 
@@ -1141,7 +1140,7 @@ void draw_orient_sphere(object *obj, int r, int g, int b)
 
 	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT))
 	{
-		flag = (vm_vec_dotprod(&eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
+		flag = (vm_vec_dot(&eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
 		v1 = v2 = obj->pos;
 		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
 		vm_vec_scale_add2(&v2, &obj->orient.vec.fvec, size * 1.5f);
@@ -1177,7 +1176,7 @@ void draw_orient_sphere2(int col, object *obj, int r, int g, int b)
 
 	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT))
 	{
-		flag = (vm_vec_dotprod(&eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
+		flag = (vm_vec_dot(&eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
 
 		v1 = v2 = obj->pos;
 		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
@@ -1374,11 +1373,11 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 
 		vm_angles_2_matrix(&rotmat, &rotangs);
 		if (rotangs.h && Universal_heading)
-			vm_transpose_matrix(orient);
+			vm_transpose(orient);
 		vm_matrix_x_matrix(&newmat, orient, &rotmat);
 		*orient = newmat;
 		if (rotangs.h && Universal_heading)
-			vm_transpose_matrix(orient);
+			vm_transpose(orient);
 	}
 }
 
@@ -1504,11 +1503,7 @@ void render_frame()
 	gr_set_font(FONT1);
 	light_reset();
 
-	if (Briefing_dialog) {
-		g3_set_view_matrix(&eye_pos, &eye_orient, Briefing_window_FOV);
-	} else {
-		g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
-	}
+	g3_set_view_matrix(&eye_pos, &eye_orient, (Briefing_dialog ? Briefing_window_FOV : FRED_DEFAULT_HTL_FOV));
 	Viewer_pos = eye_pos;  // for starfield code
 	
 	fred_enable_htl();
@@ -1613,11 +1608,7 @@ void render_frame()
 		gr_set_clip(0, 0, True_rw, True_rh);
 
 	g3_start_frame(0);	 // ** Accounted for
-	if (Briefing_dialog) {
-		g3_set_view_matrix(&eye_pos, &eye_orient, Briefing_window_FOV);
-	} else {
-		g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
-	}
+	g3_set_view_matrix(&eye_pos, &eye_orient, (Briefing_dialog ? Briefing_window_FOV : FRED_DEFAULT_HTL_FOV));
 }
 
 void game_do_frame()
@@ -1668,7 +1659,7 @@ void game_do_frame()
 					leader = &Objects[cur_object_index];
 					leader_old_pos = leader->pos;  // save original position
 					leader_orient = leader->orient;			// save original orientation
-					vm_copy_transpose_matrix(&leader_transpose, &leader_orient);
+					vm_copy_transpose(&leader_transpose, &leader_orient);
 
 					process_controls(&leader->pos, &leader->orient, f2fl(Frametime), key);
 					vm_vec_sub(&delta_pos, &leader->pos, &leader_old_pos);  // get position change
@@ -1685,7 +1676,7 @@ void game_do_frame()
 
 								// change rotation matrix to rotate in opposite direction.  This rotation
 								// matrix is what the leader ship has rotated by.
-								vm_copy_transpose_matrix(&rot_trans, &view_physics.last_rotmat);
+								vm_copy_transpose(&rot_trans, &view_physics.last_rotmat);
 
 								// get point relative to our point of rotation (make POR the origin).  Since
 								// only the leader has been moved yet, and not the objects, we have to use
@@ -2036,7 +2027,7 @@ void render_compass(void)
 
 	v.xyz.x = 1.0f;
 	v.xyz.y = v.xyz.z = 0.0f;
-	if (vm_vec_dotprod(&eye, &v) < 0.0f)
+	if (vm_vec_dot(&eye, &v) < 0.0f)
 		gr_set_color(159, 20, 20);
 	else
 		gr_set_color(255, 32, 32);
@@ -2044,7 +2035,7 @@ void render_compass(void)
 
 	v.xyz.y = 1.0f;
 	v.xyz.x = v.xyz.z = 0.0f;
-	if (vm_vec_dotprod(&eye, &v) < 0.0f)
+	if (vm_vec_dot(&eye, &v) < 0.0f)
 		gr_set_color(20, 159, 20);
 	else
 		gr_set_color(32, 255, 32);
@@ -2052,7 +2043,7 @@ void render_compass(void)
 
 	v.xyz.z = 1.0f;
 	v.xyz.x = v.xyz.y = 0.0f;
-	if (vm_vec_dotprod(&eye, &v) < 0.0f)
+	if (vm_vec_dot(&eye, &v) < 0.0f)
 		gr_set_color(20, 20, 159);
 	else
 		gr_set_color(32, 32, 255);

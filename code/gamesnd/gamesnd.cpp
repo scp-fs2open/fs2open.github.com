@@ -621,20 +621,29 @@ void parse_gamesnd_old(game_snd* gs)
 	}
 	else
 	{
+		gs->min = 0;
+		gs->max = 0;
+
 		// silly retail, not abiding by its own format...
 		if (!stricmp(gs->filename, "l_hit.wav") || !stricmp(gs->filename, "m_hit.wav"))
 		{
+			int temp_min, temp_max;
+
 			ignore_gray_space();
-			if (stuff_int_optional(&temp, true) == 2)
+			if (stuff_int_optional(&temp_min, true) == 2)
 			{
-				mprintf(("Dutifully ignoring the extra sound values for retail sound %s, '%s'...\n", gs->name.c_str(), gs->filename));
 				ignore_gray_space();
-				stuff_int_optional(&temp, true);
+				if (stuff_int_optional(&temp_max, true) == 2)
+				{
+					mprintf(("Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), gs->filename));
+					is_3d = 1;
+
+					gs->flags |= GAME_SND_USE_DS3D;
+					gs->min = temp_min;
+					gs->max = temp_max;
+				}
 			}
 		}
-
-		gs->min = 0;
-		gs->max = 0;
 	}
 
 	// check for extra values per Mantis #2408

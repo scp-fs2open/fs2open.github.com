@@ -335,7 +335,8 @@ void player_select_init()
 		player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 	}
 
-	if ( (Player_select_num_pilots == 1) && Player_select_input_mode ) {
+	if (Cmdline_benchmark_mode || ((Player_select_num_pilots == 1) && Player_select_input_mode)) {
+		// When benchmarking, just accept automatically
 		Player_select_autoaccept = 1;
 	}
 }

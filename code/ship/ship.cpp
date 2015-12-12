@@ -261,7 +261,9 @@ flag_def_list Subsystem_flags[] = {
 	{ "no disappear",			MSS_FLAG2_NO_DISAPPEAR, 1},
 	{ "collide submodel",		MSS_FLAG2_COLLIDE_SUBMODEL, 1},
 	{ "allow destroyed rotation",	MSS_FLAG2_DESTROYED_ROTATION, 1},
-	{ "turret use ammo",		MSS_FLAG2_TURRET_USE_AMMO, 1}
+	{ "turret use ammo",		MSS_FLAG2_TURRET_USE_AMMO, 1},
+	{ "autorepair if disabled",	MSS_FLAG2_AUTOREPAIR_IF_DISABLED, 1},
+	{ "don't autorepair if disabled", MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED, 1},
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -315,6 +317,7 @@ flag_def_list Ship_flags[] = {
 	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
 	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
 	{ "model point shields",		SIF2_MODEL_POINT_SHIELDS,	1 },
+	{ "repair disabled subsystems", SIF2_SUBSYS_REPAIR_WHEN_DISABLED, 1},
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -4339,6 +4342,15 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				sp->flags |= MSS_FLAG_USE_MULTIPLE_GUNS;
 			}
 
+			if ((sp->flags2 & MSS_FLAG2_AUTOREPAIR_IF_DISABLED) && (sp->flags2 & MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED)) {
+				Warning(LOCATION, "\"autorepair if disabled\" flag used with \"don't autorepair if disabled\" flag on a subsystem on %s '%s'.\nWhichever flag would be default behavior anyway for this ship has been removed.\n", info_type_name, sip->name);
+				if (sip->flags2 & SIF2_SUBSYS_REPAIR_WHEN_DISABLED){
+					sp->flags2 &= ~MSS_FLAG2_AUTOREPAIR_IF_DISABLED;
+				} else {
+					sp->flags2 &= ~MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED;
+				}
+			}
+
 			if (old_flags) {
 				mprintf(("Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
 				"At least one of the following tags was used on %s '%s', subsystem %s:\n" \
@@ -6312,6 +6324,10 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags |= SSF_PLAY_SOUND_FOR_PLAYER;
 		if (model_system->flags2 & MSS_FLAG2_NO_DISAPPEAR)
 			ship_system->flags |= SSF_NO_DISAPPEAR;
+		if (model_system->flags2 & MSS_FLAG2_AUTOREPAIR_IF_DISABLED)
+			ship_system->flags |= SSF_AUTOREPAIR_IF_DISABLED;
+		if (model_system->flags2 & MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED)
+			ship_system->flags |= SSF_NO_AUTOREPAIR_IF_DISABLED;
 
 		ship_system->turn_rate = model_system->turn_rate;
 
@@ -8163,7 +8179,7 @@ void ship_dying_frame(object *objp, int ship_num)
 			if ( timestamp_elapsed(shipp->next_fireball)) {
 				vec3d rand_vec, outpnt; // [0-.7 rad] in plane
 				vm_vec_rand_vec_quick(&rand_vec);
-				float scale = -vm_vec_dotprod(&objp->orient.vec.fvec, &rand_vec) * (0.9f + 0.2f * frand());
+				float scale = -vm_vec_dot(&objp->orient.vec.fvec, &rand_vec) * (0.9f + 0.2f * frand());
 				vm_vec_scale_add2(&rand_vec, &objp->orient.vec.fvec, scale);
 				vm_vec_normalize_quick(&rand_vec);
 				scale = objp->radius * frand() * 0.717f;
@@ -8779,8 +8795,18 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 		if ( ssp->current_hits < ssp->max_hits ) {
 
 			// only repair those subsystems which are not destroyed
-			if ( ssp->max_hits <= 0 || ssp->current_hits <= 0 )
+			if ( ssp->max_hits <= 0 )
 				continue;
+
+			if ( ssp->current_hits <= 0 ) {
+				if (sip->flags2 & SIF2_SUBSYS_REPAIR_WHEN_DISABLED) {
+					if (ssp->flags & SSF_NO_AUTOREPAIR_IF_DISABLED) {
+						continue;
+					}
+				} else if (!(ssp->flags & SSF_AUTOREPAIR_IF_DISABLED)) {
+					continue;
+				}
+			}
 
 			// do incremental repair on the subsystem
 			// check for overflow of current_hits
@@ -8795,7 +8821,14 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 				if ( ssip->aggregate_current_hits > ssip->aggregate_max_hits ) {
 					ssip->aggregate_current_hits = ssip->aggregate_max_hits;
 				}
-			}		
+			}
+
+			// check to see if this subsystem was totally non functional before -- if so, then
+			// reset the flags
+			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (sp->flags & SF_DISABLED) ) {
+				sp->flags &= ~SF_DISABLED;
+				ship_reset_disabled_physics(objp, sp->ship_info_index);
+			}
 		}
 	}	// end for
 }
@@ -13056,11 +13089,11 @@ void ship_model_update_instance(object *objp)
 		}
 
 		if ( psub->subobj_num >= 0 )	{
-			model_update_instance(model_instance_num, psub->subobj_num, &pss->submodel_info_1 );
+			model_update_instance(model_instance_num, psub->subobj_num, &pss->submodel_info_1, pss->flags );
 		}
 
 		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
-			model_update_instance(model_instance_num, psub->turret_gun_sobj, &pss->submodel_info_2 );
+			model_update_instance(model_instance_num, psub->turret_gun_sobj, &pss->submodel_info_2, pss->flags );
 		}
 	}
 
@@ -18998,8 +19031,6 @@ void ship_render(object* obj, draw_list* scene)
 		}
 	}
 
-	ship_model_start(obj);
-
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
@@ -19023,8 +19054,6 @@ void ship_render(object* obj, draw_list* scene)
 		} else if(shipp->flags & SF_DEPART_WARP) {
 			shipp->warpout_effect->warpShipRender();
 		}
-
-		ship_model_stop(obj);
 
 		return;
 	}
@@ -19069,6 +19098,10 @@ void ship_render(object* obj, draw_list* scene)
 		}
 	}
 
+	if ( sip->flags2 & SIF2_NO_LIGHTING ) {
+		render_flags |= MR_NO_LIGHTING;
+	}
+
 	if ( Rendering_to_shadow_map ) {
 		render_flags = MR_NO_TEXTURING | MR_NO_LIGHTING;
 	}
@@ -19097,8 +19130,6 @@ void ship_render(object* obj, draw_list* scene)
 
 		model_render_queue(&render_info, scene, sip->model_num, &obj->orient, &obj->pos);
 	}
-
-	ship_model_stop(obj);
 
 	if (shipp->shield_hits && !Rendering_to_shadow_map) {
 		create_shield_explosion_all(obj);

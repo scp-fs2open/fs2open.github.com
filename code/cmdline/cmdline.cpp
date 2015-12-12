@@ -235,6 +235,7 @@ Flag exe_params[] =
 	{ "-profile_frame_time","Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
+	{ "-benchmark_mode",	"Puts the game into benchmark mode",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-benchmark_mode", },
 };
 
 // forward declaration
@@ -477,6 +478,8 @@ cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
+cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
+
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_old_collision_sys = 0;
@@ -500,6 +503,7 @@ int Cmdline_reparse_mainhall = 0;
 bool Cmdline_frame_profile = false;
 bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
+bool Cmdline_benchmark_mode = false;
 
 // Other
 cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_NONE);
@@ -1820,6 +1824,11 @@ bool SetCmdlineParams()
 	if (no_unfocused_pause_arg.found())
 	{
 		Cmdline_no_unfocus_pause = true;
+	}
+	
+	if (benchmark_mode_arg.found())
+	{
+		Cmdline_benchmark_mode = true;
 	}
 
 	//Deprecated flags - CommanderDJ

@@ -1791,15 +1791,15 @@ void poly_list::calculate_tangent()
 		vm_vec_normalize_safe(t2);
 
 		// compute handedness (for all 3 verts)
-		vm_vec_crossprod(&cross, &norm[i], &tangent);
+		vm_vec_cross(&cross, &norm[i], &tangent);
 		scale = vm_vec_dot(&cross, &binormal);
 		tsb[i].scaler = (scale < 0.0f) ? -1.0f : 1.0f;
 
-		vm_vec_crossprod(&cross, &norm[i+1], &tangent);
+		vm_vec_cross(&cross, &norm[i+1], &tangent);
 		scale = vm_vec_dot(&cross, &binormal);
 		tsb[i+1].scaler = (scale < 0.0f) ? -1.0f : 1.0f;
 
-		vm_vec_crossprod(&cross, &norm[i+2], &tangent);
+		vm_vec_cross(&cross, &norm[i+2], &tangent);
 		scale = vm_vec_dot(&cross, &binormal);
 		tsb[i+2].scaler = (scale < 0.0f) ? -1.0f : 1.0f;
 	}

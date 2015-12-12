@@ -5637,7 +5637,7 @@ int sexp_special_warp_dist( int n)
 	}
 
 	// check if within 45 degree half-angle cone of facing 
-	float dot = fl_abs(vm_vec_dotprod(&warp_objp->orient.vec.fvec, &ship_objp->orient.vec.fvec));
+	float dot = fl_abs(vm_vec_dot(&warp_objp->orient.vec.fvec, &ship_objp->orient.vec.fvec));
 	if (dot < 0.707f) {
 		return SEXP_NAN;
 	}
@@ -15353,7 +15353,7 @@ int sexp_facing(int node)
 	vm_vec_sub(&v2, &Objects[target_shipp->objnum].pos, &Player_obj->pos);
 	vm_vec_normalize(&v2);
 
-	a1 = vm_vec_dotprod(&v1, &v2);
+	a1 = vm_vec_dot(&v1, &v2);
 	a2 = (float) cos(ANG_TO_RAD(angle));
 	if (a1 >= a2){
 		return SEXP_TRUE;
@@ -15413,7 +15413,7 @@ int sexp_is_facing(int node)
 	vm_vec_sub(&v2, &target_objp->pos, &origin_objp->pos);
 	vm_vec_normalize(&v2);
 
-	a1 = vm_vec_dotprod(&v1, &v2);
+	a1 = vm_vec_dot(&v1, &v2);
 	a2 = (float) cos(ANG_TO_RAD(angle));
 	if (a1 >= a2){
 		return SEXP_TRUE;
@@ -15449,7 +15449,7 @@ int sexp_facing2(int node)
 
 	vm_vec_sub(&v2, wp_list->get_waypoints().front().get_pos(), &Player_obj->pos);
 	vm_vec_normalize(&v2);
-	a1 = vm_vec_dotprod(&v1, &v2);
+	a1 = vm_vec_dot(&v1, &v2);
 	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(node)))));
 	if (a1 >= a2){
 		return SEXP_TRUE;
