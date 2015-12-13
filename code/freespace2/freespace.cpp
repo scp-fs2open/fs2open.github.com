@@ -8738,8 +8738,6 @@ int actual_main(int argc, char *argv[])
 
 	SCP_mspdbcs_Initialise();
 #else
-	char userdir[MAX_PATH];
-
 #ifdef APPLE_APP
 	// Finder sets the working directory to the root of the drive so we have to get a little creative
 	// to find out where on the disk we should be running from for CFILE's sake.
@@ -8749,8 +8747,7 @@ int actual_main(int argc, char *argv[])
 #endif
 
 	// create user's directory	
-	snprintf(userdir, MAX_PATH - 1, "%s/%s/", detect_home(), Osreg_user_dir);
-	_mkdir(userdir);
+	_mkdir(os_get_config_path().c_str());
 #endif
 
 #if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
