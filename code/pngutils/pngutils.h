@@ -39,11 +39,13 @@ public:
 
 	apng_ani(const char* filename);
 	~apng_ani();
-	int  load_header();
-	void next_frame();
-	void prev_frame(); // TODO create this
-	void info_callback();
-	void row_callback(png_bytep new_row, png_uint_32 row_num);
+
+	int    load_header();
+	void   next_frame();
+	void   prev_frame();
+	void   info_callback();
+	void   row_callback(png_bytep new_row, png_uint_32 row_num);
+	size_t imgsize();
 
 private:
 	struct _chunk_s {

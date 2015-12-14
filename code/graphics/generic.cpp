@@ -148,6 +148,7 @@ int generic_anim_load(generic_anim *ga)
 	if (ga->first_frame < 0)
 		return -1;
 
+	// TODO handle APNGs having a different total_time calc
 	Assert(fps != 0);
 	ga->total_time = ga->num_frames / (float)fps;
 	ga->done_playing = 0;

@@ -671,4 +671,16 @@ bool bm_set_render_target(int handle, int face = -1);
  */
 bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type);
 
+/**
+ * @brief Calculates & returns the current frame of an animation
+ *
+ * @param[in] frame1_handle  Handle of the animation
+ * @param[in] elapsed_time   Time in seconds since the animation started playing
+ * @param[in] loop           (optional) specifies if the animation should loop, default is false which causes animation to hold on the last frame
+ * @param[in] divisor        (optional) if greater than zero, elapsed time will be divided by this value i.e. allows a ratio of percentage complete to be used to determine the frame
+ *
+ * @returns current frame of the animation (range is zero to the number of frames minus one)
+ */
+int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const bool loop = false, const float divisor = 0.0f);
+
 #endif

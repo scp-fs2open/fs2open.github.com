@@ -3526,6 +3526,33 @@ ADE_FUNC(getFramesLeft, l_Texture, NULL, "Gets number of frames left, from handl
 	return ade_set_args(L, "i", num);
 }
 
+ADE_FUNC(getFrame, l_Texture, "number Elapsed time (secs), [boolean Loop]",
+		 "Get the frame number from the elapsed time of the animation"
+		 "The 1st argument is the time that has elapsed since the animation started"
+		 "If 2nd argument is set to true, the animation is expected to loop when the elapsed time exceeds the duration of a single playback",
+		 "integer",
+		 "Frame number")
+{
+	int idx, frame = 0;
+	float elapsed_time;
+	bool loop = false;
+
+	if (!ade_get_args(L, "of|b", l_Texture.Get(&idx), &elapsed_time, &loop))
+		return ADE_RETURN_NIL;
+
+	if (!bm_is_valid(idx))
+		return ADE_RETURN_NIL;
+
+	bitmap_entry *be = &bm_bitmaps[idx];
+	if (be->info.ani.num_frames < 2)
+		return ADE_RETURN_NIL;
+
+	frame = bm_get_anim_frame(idx, elapsed_time, loop);
+	frame++;  // C++ -> LUA
+
+	return ade_set_args(L, "i", frame);
+}
+
 //**********OBJECT: vector
 //WMC - see matrix for ade_obj def
 

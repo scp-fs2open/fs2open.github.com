@@ -465,7 +465,9 @@ void apng_ani::_process_chunk()
 		_dispose_op = _chunk.data[32];
 		_blend_op = _chunk.data[33];
 
-		//Warning(LOCATION, "dop: %u bop: %u", _dispose_op, _blend_op);
+		// TODO if the caller wants to know; warn if the delay is not the same for all frames
+		// e.g. for stuff which doesn't exactly play like an animation; like loading screens
+		// (and possibly other stuff I haven't checked out yet)
 
 		if (_reading &&
 				(_framew > cMaxPNGSize || _frameh > cMaxPNGSize
@@ -599,6 +601,15 @@ void apng_ani::next_frame()
 		frame = _frames.at(current_frame++);
 	}
 }
+
+/*
+ * @brief return image size in bytes
+ */
+size_t apng_ani::imgsize()
+{
+	return _image_size;
+}
+
 
 /*
  * @brief Get info about the apng
