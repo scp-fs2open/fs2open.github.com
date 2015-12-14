@@ -594,7 +594,6 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		polymodel *pm;
 		polymodel_instance *pmi = NULL;
 		int model_instance_num = -1;
-		submodel_instance_info *sii;
 
 		if (heavy->type == OBJ_SHIP) {
 			pm = model_get(heavy_sip->model_num);
