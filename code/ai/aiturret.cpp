@@ -1342,7 +1342,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
 		model_instance_find_world_point(&tmp_pos, &avg, tp->model_num, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
 
-		if (targetp == NULL) {
+		if (targetp == nullptr) {
 			object *lep = &Objects[ssp->turret_enemy_objnum];
 
 			int best_weapon_tidx = turret_select_best_weapon(ssp, lep);
@@ -1355,7 +1355,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
 			float weapon_system_strength = ship_get_subsystem_strength(&Ships[ssp->parent_objnum], SUBSYSTEM_WEAPONS);
 
-			if ((ssp->targeted_subsys != NULL) && !(ssp->flags & SSF_NO_SS_TARGETING)) {
+			if ((ssp->targeted_subsys != nullptr) && !(ssp->flags & SSF_NO_SS_TARGETING)) {
 				if (ssp->turret_enemy_objnum != -1) {
 					vm_vec_unrotate(&enemy_point, &ssp->targeted_subsys->system_info->pnt, &Objects[ssp->turret_enemy_objnum].orient);
 					vm_vec_add2(&enemy_point, &ssp->last_aim_enemy_pos);
