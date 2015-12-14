@@ -1110,23 +1110,14 @@ int choose_next_spark(object *ship_objp, vec3d *hitpos)
 	num_spark_pairs = (num_sparks * num_sparks - num_sparks) / 2;
 
 	// get the world hitpos for all sparks
-	bool model_started = false;
 	for (spark_num=0; spark_num<num_sparks; spark_num++) {
 		if (shipp->sparks[spark_num].submodel_num != -1) {
-			if ( !model_started) {
-				model_started = true;
-				ship_model_start(ship_objp);
-			}
-			model_find_world_point(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, sip->model_num, shipp->sparks[spark_num].submodel_num, &ship_objp->orient, &ship_objp->pos);
+			model_instance_find_world_point(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, sip->model_num, shipp->model_instance_num, shipp->sparks[spark_num].submodel_num, &ship_objp->orient, &ship_objp->pos);
 		} else {
 			// rotate sparks correctly with current ship orient
 			vm_vec_unrotate(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, &ship_objp->orient);
 			vm_vec_add2(&world_hitpos[spark_num], &ship_objp->pos);
 		}
-	}
-
-	if (model_started) {
-		ship_model_stop(ship_objp);
 	}
 
 	// check we're not making a spark in the same location as a current one
@@ -1231,13 +1222,11 @@ void ship_hit_create_sparks(object *ship_objp, vec3d *hitpos, int submodel_num)
 
 	if (instancing) {
 		// get the hit position in the subobject RF
-		ship_model_start(ship_objp);
 		vec3d temp_zero, temp_x, temp_y, temp_z;
-		model_find_world_point(&temp_zero, &vmd_zero_vector, sip->model_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
-		model_find_world_point(&temp_x, &vmd_x_vector, sip->model_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
-		model_find_world_point(&temp_y, &vmd_y_vector, sip->model_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
-		model_find_world_point(&temp_z, &vmd_z_vector, sip->model_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
-		ship_model_stop(ship_objp);
+		model_instance_find_world_point(&temp_zero, &vmd_zero_vector, sip->model_num, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&temp_x, &vmd_x_vector, sip->model_num, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&temp_y, &vmd_y_vector, sip->model_num, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&temp_z, &vmd_z_vector, sip->model_num, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// find submodel x,y,z axes
 		vm_vec_sub2(&temp_x, &temp_zero);

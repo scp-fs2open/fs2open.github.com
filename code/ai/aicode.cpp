@@ -2621,7 +2621,7 @@ void create_path_to_point(vec3d *curpos, vec3d *goalpos, object *curobjp, object
 void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int count, int path_num, pnode *pnp, int randomize_pnt)
 {
 	polymodel *pm;
-	int		i, modelnum;
+	int		i, modelnum, model_instance_num;
 	vec3d	v1;
 	int		pp_index;		//	index in Path_points at which to store point, if this is a modify-in-place (pnp ! NULL)
 	int		start_index, finish_index;
@@ -2646,13 +2646,11 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 
 	// Goober5000 - check for rotating submodels
 	modelnum = Ship_info[Ships[objp->instance].ship_info_index].model_num;
+	model_instance_num = Ships[objp->instance].model_instance_num;
 	pm = model_get(modelnum);
 	if ((mp->parent_submodel >= 0) && (pm->submodel[mp->parent_submodel].movement_type >= 0))
 	{
 		rotating_submodel = true;
-
-		// start submodel calculation
-		ship_model_start(objp);
 
 		model_find_submodel_offset(&submodel_offset, modelnum, mp->parent_submodel);
 	}
@@ -2670,7 +2668,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 		{
 			// movement... find location of point like with docking code and spark generation
 			vm_vec_sub(&local_vert, &mp->verts[i].pos, &submodel_offset);
-			model_find_world_point(&v1, &local_vert, modelnum, mp->parent_submodel, &objp->orient, &objp->pos);			
+			model_instance_find_world_point(&v1, &local_vert, modelnum, model_instance_num, mp->parent_submodel, &objp->orient, &objp->pos);
 		}
 		else
 		{
@@ -2691,12 +2689,6 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 
 		add_path_point(&v1, path_num, i, pp_index);
 		offset++;
-	}
-
-	// stop submodel calculation
-	if (!rotating_submodel)
-	{
-		ship_model_stop(objp);
 	}
 }
 
@@ -6253,10 +6245,9 @@ void render_path_points(object *objp)
 	vec3d	dock_point, global_dock_point;
 	vertex	v;
 
-	ship_model_start(&Objects[aip->goal_objnum]);
 	if (pm->n_docks) {
 		dock_point = pm->docking_bays[0].pnt[0];
-		model_find_world_point(&global_dock_point, &dock_point, pm->id, 0, &dobjp->orient, &dobjp->pos );
+		model_instance_find_world_point(&global_dock_point, &dock_point, pm->id, shipp->model_instance_num, 0, &dobjp->orient, &dobjp->pos );
 		g3_rotate_vertex(&v, &global_dock_point);
 		gr_set_color(255, 255, 255);
 		g3_draw_sphere( &v, 1.5f);
@@ -6289,8 +6280,6 @@ void render_path_points(object *objp)
 			pp++;
 		}
 	}
-
-	ship_model_stop(&Objects[aip->goal_objnum]);
 }
 
 /**
@@ -9040,8 +9029,9 @@ void find_adjusted_dockpoint_info(vec3d *global_p0, vec3d *global_p1, vec3d *glo
 	{
 		vec3d submodel_offset;
 		vec3d local_p0, local_p1;
+		ship		*shipp;
 
-		ship_model_start(objp);
+		shipp = &Ships[objp->instance];
 
 		// calculate the dockpoint locations relative to the unrotated submodel
 		model_find_submodel_offset(&submodel_offset, modelnum, submodel);
@@ -9049,13 +9039,11 @@ void find_adjusted_dockpoint_info(vec3d *global_p0, vec3d *global_p1, vec3d *glo
 		vm_vec_sub(&local_p1, &pm->docking_bays[dock_index].pnt[1], &submodel_offset);
 
 		// find the dynamic positions of the dockpoints
-		model_find_world_point(global_p0, &local_p0, modelnum, submodel, &objp->orient, &objp->pos);
-		model_find_world_point(global_p1, &local_p1, modelnum, submodel, &objp->orient, &objp->pos);
+		model_instance_find_world_point(global_p0, &local_p0, modelnum, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
+		model_instance_find_world_point(global_p1, &local_p1, modelnum, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
 
 		// find the normal of the first dockpoint
-		model_find_world_dir(global_p0_norm, &pm->docking_bays[dock_index].norm[0], modelnum, submodel, &objp->orient, &objp->pos);
-
-		ship_model_stop(objp);
+		model_instance_find_world_dir(global_p0_norm, &pm->docking_bays[dock_index].norm[0], modelnum, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
 	}
 	// use the static dockpoints
 	else
@@ -9137,23 +9125,21 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		vec3d submodel_offset;
 		vec3d dockpoint_temp;
 
-		ship_model_start(dockee_objp);
-
 		// get submodel center
 		model_find_submodel_offset(&submodel_offset, sip1->model_num, dockee_rotating_submodel);
 		vm_vec_add(&submodel_pos, &dockee_objp->pos, &submodel_offset);
 
+		polymodel_instance *pmi1 = model_get_instance(Ships[dockee_objp->instance].model_instance_num);
+
 		// get angular velocity of dockpoint
 		//WMC - hack(?) to fix bug where sii might not exist
-		if(pm1->submodel[dockee_rotating_submodel].sii != NULL) {
-			submodel_omega = pm1->submodel[dockee_rotating_submodel].sii->cur_turn_rate;
+		if ( pmi1->submodel[dockee_rotating_submodel].sii != NULL ) {
+			submodel_omega = pmi1->submodel[dockee_rotating_submodel].sii->cur_turn_rate;
 		}
 
 		// get radius to dockpoint
 		vm_vec_avg(&dockpoint_temp, &dockee_p0, &dockee_p1);
 		submodel_radius = vm_vec_dist(&submodel_pos, &dockpoint_temp);
-
-		ship_model_stop(dockee_objp);
 	}
 
 	// Goober5000

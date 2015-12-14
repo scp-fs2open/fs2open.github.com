@@ -900,8 +900,6 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		polymodel *pm;
 		polymodel_instance *pmi;
 
-		ship_model_start(pship_obj);
-
 		if (model_collide(&mc)) {
 
 			// Set earliest hit time

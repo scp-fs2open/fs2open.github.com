@@ -90,6 +90,7 @@ typedef struct submodel_instance {
 	matrix mc_orient;
 	bool collision_checked;
 	bool blown_off;
+	submodel_instance_info *sii;
 } submodel_instance;
 
 // Data specific to a particular instance of a model.
