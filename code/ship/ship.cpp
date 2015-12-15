@@ -19026,6 +19026,8 @@ void ship_render(object* obj, draw_list* scene)
 		}
 	}
 
+	model_clear_instance(sip->model_num);
+
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
