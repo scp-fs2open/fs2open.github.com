@@ -181,6 +181,10 @@ void HudGaugeLock::initialize()
 	Lock_gauge_draw_stamp = -1;
 	Lock_gauge_draw = 0;
 	Rotate_time_id = 1;
+	Last_lock_status = false;
+
+	Lock_anim.time_elapsed = 0.0f;
+	Lock_gauge.time_elapsed = 0.0f;
 
 	HudGauge::initialize();
 }
@@ -194,6 +198,16 @@ void HudGaugeLock::render(float frametime)
 	int			target_objnum, sx, sy;
 	object		*targetp;
 	vertex lock_point;
+
+	bool locked = Player_ai->current_target_is_locked ? true : false;
+	bool reset_timers = false;
+
+	if ( locked != Last_lock_status ) {
+		// check if player lock status has changed since the last frame.
+		reset_timers = true;
+	}
+
+	Last_lock_status = locked;
 
 	if (Player_ai->target_objnum == -1) {
 		return;
@@ -248,15 +262,21 @@ void HudGaugeLock::render(float frametime)
 
 		// show the rotating triangles if target is locked
 		renderLockTriangles(sx, sy, frametime);
+
+		if ( reset_timers ) {
+			Lock_gauge.time_elapsed = 0.0f;
+		}
 	} else {
 		const float scaling_factor = (gr_screen.clip_center_x < gr_screen.clip_center_y) ? (gr_screen.clip_center_x / VIRTUAL_FRAME_HALF_WIDTH) : (gr_screen.clip_center_y / VIRTUAL_FRAME_HALF_HEIGHT);
 		sx = fl2i(lock_point.screen.xyw.x) - fl2i(i2fl(Player->current_target_sx - Players[Player_num].lock_indicator_x) * scaling_factor);
 		sy = fl2i(lock_point.screen.xyw.y) - fl2i(i2fl(Player->current_target_sy - Players[Player_num].lock_indicator_y) * scaling_factor);
 		gr_unsize_screen_pos(&sx, &sy);
 
-		Lock_gauge_draw_stamp = -1;
-		Lock_gauge_draw = 0;
-		Lock_anim.time_elapsed = 0.0f;
+		if ( reset_timers ) {
+			Lock_gauge_draw_stamp = -1;
+			Lock_gauge_draw = 0;
+			Lock_anim.time_elapsed = 0.0f;
+		}
 	}
 
 	// show locked indicator
@@ -270,8 +290,7 @@ void HudGaugeLock::render(float frametime)
 	*/
 	Lock_gauge.sx = sx - Lock_gauge_half_w;
 	Lock_gauge.sy = sy - Lock_gauge_half_h;
-	if(Player_ai->current_target_is_locked){
-		Lock_gauge.time_elapsed = 0.0f;
+	if (Player_ai->current_target_is_locked) {
 		hud_anim_render(&Lock_gauge, 0.0f, 1);
 	} else {
 		hud_anim_render(&Lock_gauge, frametime, 1);
