@@ -1793,7 +1793,7 @@ char *Default_main_fragment_shader =
 " #ifdef FLAG_MISC_MAP\n"
 "  #ifdef FLAG_TEAMCOLOR\n"
 "	float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));\n"
-"	glowColor = mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, glowColorLuminance);\n"
+"	glowColor = mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0));\n"
 "  #endif\n"
 " #endif\n"
 "   baseColor.rgb += glowColor * GLOW_MAP_INTENSITY;\n"
