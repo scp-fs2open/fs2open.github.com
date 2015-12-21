@@ -312,6 +312,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"weapons-locked",
 	"scramble-messages",
 	"no-collide",
+	"no-disabled-self-destruct",
 };
 
 char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
@@ -2646,6 +2647,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_SF2_SCRAMBLE_MESSAGES)
 		shipp->flags2 |= SF2_SCRAMBLE_MESSAGES;
+
+	if (parse_flags2 & P2_SF2_NO_DISABLED_SELF_DESTRUCT)
+		shipp->flags2 |= SF2_NO_DISABLED_SELF_DESTRUCT;
 
 	// don't remove no-collide if not set in the mission
 	if (parse_flags2 & P2_OF_NO_COLLIDE)
