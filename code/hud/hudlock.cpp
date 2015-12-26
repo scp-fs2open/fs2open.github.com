@@ -104,31 +104,6 @@ void hud_init_missile_lock()
 	Player_ai->last_secondary_index = -1;
 }
 
-void hud_draw_diamond(int x, int y, int width, int height)
-{
-	Assert(height>0);
-	Assert(width>0);
-
-	int x1,x2,x3,x4,y1,y2,y3,y4;
-
-	x1=x;
-	y1=y-height/2;
-
-	x2=x+width/2;
-	y2=y;
-
-	x3=x;
-	y3=y+height/2;
-
-	x4=x-width/2;
-	y4=y;
-
-	gr_line(x1,y1,x2,y2);
-	gr_line(x2,y2,x3,y3);
-	gr_line(x3,y3,x4,y4);
-	gr_line(x4,y4,x1,y1);
-}
-
 HudGaugeLock::HudGaugeLock():
 HudGauge(HUD_OBJECT_LOCK, HUD_LEAD_INDICATOR, false, false, VM_DEAD_VIEW, 255, 255, 255)
 {
@@ -205,9 +180,8 @@ void HudGaugeLock::render(float frametime)
 	if ( locked != Last_lock_status ) {
 		// check if player lock status has changed since the last frame.
 		reset_timers = true;
+		Last_lock_status = locked;
 	}
-
-	Last_lock_status = locked;
 
 	if (Player_ai->target_objnum == -1) {
 		return;
@@ -279,17 +253,9 @@ void HudGaugeLock::render(float frametime)
 		}
 	}
 
-	// show locked indicator
-	/*
-	if ( Lock_gauge.first_frame >= 0 ) {
-		gr_set_bitmap(Lock_gauge.first_frame);
-		gr_aabitmap(sx - Lock_gauge_half_w[gr_screen.res], sy - Lock_gauge_half_h[gr_screen.res]);
-	} else {
-		hud_draw_diamond(sx, sy, Lock_target_box_width[gr_screen.res], Lock_target_box_height[gr_screen.res]);
-	}
-	*/
 	Lock_gauge.sx = sx - Lock_gauge_half_w;
 	Lock_gauge.sy = sy - Lock_gauge_half_h;
+
 	if (Player_ai->current_target_is_locked) {
 		hud_anim_render(&Lock_gauge, 0.0f, 1);
 	} else {
