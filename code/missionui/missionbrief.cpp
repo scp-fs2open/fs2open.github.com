@@ -858,9 +858,11 @@ void brief_init()
 		Briefing = &Briefings[0];			
 	}
 
-	// Goober5000 - replace any variables (probably persistent variables) with their values
-	for (i = 0; i < Briefing->num_stages; i++)
+	// Goober5000 - replace any variables (probably persistent variables) with their values. Also any containers
+	for (i = 0; i < Briefing->num_stages; i++) {
 		sexp_replace_variable_names_with_values(Briefing->stages[i].text);
+		sexp_replace_container_with_values(Briefing->stages[i].text);
+	}
 
 	Brief_last_auto_advance = 0;
 
