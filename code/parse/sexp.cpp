@@ -303,6 +303,9 @@ sexp_oper Operators[] = {
 	{ "string-to-int",					OP_STRING_TO_INT,						1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "string-get-length",				OP_STRING_GET_LENGTH,					1,	1,			SEXP_INTEGER_OPERATOR,	}, // Goober5000
 
+	//Containers Sub-Category
+	{ "is-container-empty",				OP_IS_CONTAINER_EMPTY,					1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
+
 	//Other Sub-Category
 	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	1,			SEXP_INTEGER_OPERATOR,	},
 	{ "script-eval-string",				OP_SCRIPT_EVAL_STRING,					2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -681,6 +684,12 @@ sexp_oper Operators[] = {
 	{ "string-get-substring",			OP_STRING_GET_SUBSTRING,				4,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "string-set-substring",			OP_STRING_SET_SUBSTRING,				5,	5,			SEXP_ACTION_OPERATOR,	},	// Goober5000  
 
+	//Variable Category
+	{ "add-to-list",					OP_CONTAINER_ADD_TO_LIST,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "add-to-map",						OP_CONTAINER_ADD_TO_MAP,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "clear-container",				OP_CLEAR_CONTAINER,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "get-map-keys",					OP_GET_MAP_KEYS,						2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
+
 	//Other Sub-Category
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
 	{ "damaged-escort-priority-all",	OP_DAMAGED_ESCORT_LIST_ALL,				1,	MAX_COMPLETE_ESCORT_LIST,	SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -846,6 +855,11 @@ sexp_node *Sexp_nodes = NULL;
 sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 sexp_variable Block_variables[MAX_SEXP_VARIABLES];			// used for compatibility with retail. 
 
+SCP_vector<sexp_container> Sexp_containers;
+#define NUM_CTEXT_RETURN_STRINGS				100			// Karajorma - Probably way too many now. I suspect someone will want to bump this later. Go ahead if you do, the choice was fairly arbitrary.
+char Ctext_strings[NUM_CTEXT_RETURN_STRINGS][TOKEN_LENGTH];
+int Ctext_strings_last_index = 0; 
+
 int Num_special_expl_blocks;
 
 SCP_vector<int> Current_sexp_operator;
@@ -892,6 +906,7 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 int sexp_determine_team(char *subj);
 int extract_sexp_variable_index(int node);
 void init_sexp_vars();
+void init_sexp_containers();
 int eval_num(int node);
 
 // for handling variables
@@ -901,6 +916,10 @@ int sexp_get_variable_by_index(int node);
 void sexp_set_variable_by_index(int node);
 void sexp_copy_variable_from_index(int node);
 void sexp_copy_variable_between_indexes(int node);
+
+// for handling containers
+void sexp_add_to_list (int node);
+void sexp_add_to_map (int node);
 
 SCP_vector<char*> Sexp_replacement_arguments;
 int Sexp_current_argument_nesting_level;
@@ -934,6 +953,7 @@ ship * sexp_get_ship_from_node(int node);
 SCP_vector<SCP_string> *Current_event_log_buffer;
 SCP_vector<SCP_string> *Current_event_log_variable_buffer;
 SCP_vector<SCP_string> *Current_event_log_argument_buffer;
+SCP_vector<SCP_string> *Current_event_log_container_buffer;
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
 void arg_item::add_data(char *str)
 {
@@ -1104,6 +1124,7 @@ void init_sexp()
 
 	sexp_nodes_init();
 	init_sexp_vars();
+	init_sexp_containers();
 	Locked_sexp_false = Locked_sexp_true = -1;
 
 	Locked_sexp_false = alloc_sexp("false", SEXP_LIST, SEXP_ATOM_OPERATOR, -1, -1);
@@ -1722,6 +1743,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 		if (bad_node)
 			*bad_node = node;
 
+		// for now we'll completely ignore SEXP containters
+		if (Sexp_nodes[node].subtype & SEXP_ATOM_CONTAINER)  {
+			node = Sexp_nodes[node].rest;
+			argnum++;
+			continue; 
+		}
+
 		if (Sexp_nodes[node].subtype == SEXP_ATOM_LIST) {
 			i = Sexp_nodes[node].first;
 			if (bad_node)
@@ -1984,15 +2012,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				if ((type == OPF_SHIP_WING_SHIPONTEAM_POINT) && sexp_determine_team(CTEXT(node)) >= 0)	{
 					break;
-						}
+				}
 
 				// only other possibility is waypoints
 				if (type == OPF_SHIP_WING_SHIPONTEAM_POINT || type == OPF_SHIP_WING_POINT || type == OPF_SHIP_WING_POINT_OR_NONE) {
-						if (find_matching_waypoint(CTEXT(node)) == NULL){
-							if (verify_vector(CTEXT(node))){  // non-zero on verify vector mean invalid!
-									return SEXP_CHECK_INVALID_POINT;
-								}
-							}
+					if (find_matching_waypoint(CTEXT(node)) == NULL){
+						if (verify_vector(CTEXT(node))){  // non-zero on verify vector mean invalid!
+							return SEXP_CHECK_INVALID_POINT;
+						}
+					}
 					break;
 				}
 
@@ -3179,6 +3207,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 
+			case OPF_CONTAINER_NAME:
+			case OPF_LIST_CONTAINER_NAME:
+			case OPF_MAP_CONTAINER_NAME:
+			case OPF_LIST_MODIFIER:
+			case OPF_MAP_KEY:
+				// TO DO : Add error code here!
+				{int todo = 0;}
+				break;
+				
+
 			default:
 				Error(LOCATION, "Unhandled argument format");
 		}
@@ -3365,6 +3403,40 @@ int get_sexp()
 			Mp += (len + 2);
 
 		}
+
+		// container
+		else if (*Mp == SEXP_CONTAINER_CHAR) {
+			Mp++;
+
+			char container[TOKEN_LENGTH];
+			stuff_string(container, F_NAME, TOKEN_LENGTH, "&"); 
+
+			// bump past closing '&'
+			Mp += 2;
+
+			// what kind of container?
+			int container_index = get_index_sexp_container_name(container);
+
+			if (container_index == -1) {
+				Error(LOCATION, "Unknown container type detected in mission");
+			}
+
+			// advance to the control options since we'll read them in using get_sexp() below
+			while ( *Mp != '(' ) {
+				Mp++;
+			}
+			Mp++ ;
+
+			if (Sexp_containers[container_index].type & SEXP_CONTAINER_MAP) {
+				node = alloc_sexp(container, (SEXP_ATOM | SEXP_FLAG_MAP_CONTAINER), SEXP_ATOM_CONTAINER, get_sexp(), -1);
+			}
+			else if ( Sexp_containers[container_index].type & SEXP_CONTAINER_LIST) {
+				node = alloc_sexp(container, (SEXP_ATOM | SEXP_FLAG_LIST_CONTAINER), SEXP_ATOM_CONTAINER, get_sexp(), -1);
+			}
+
+			ignore_white_space();
+		}
+
 
 		// Sexp operator or number
 		else {
@@ -3584,6 +3656,120 @@ int get_sexp()
 }
 
 
+bool stuff_one_generic_sexp_container(SCP_string &name, int &type, int &opf_type, SCP_vector<SCP_string> &data)
+{
+	SCP_string temp_type_string;
+	data.clear();
+ 
+	required_string("$Name:");
+	stuff_string(name, F_NAME); 
+
+	required_string("$Data Type:");
+	stuff_string(temp_type_string, F_NAME);
+	if (!strcmp(temp_type_string.c_str(), "Number")) {
+		type |= SEXP_CONTAINER_NUMBER_DATA; 
+		opf_type = OPF_NUMBER; 
+	}
+	else if (!strcmp(temp_type_string.c_str(), "String")) {
+		type |= SEXP_CONTAINER_STRING_DATA; 
+		opf_type = OPF_ANYTHING; 
+	}
+	else {
+		Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str()); 
+		log_printf(LOGFILE_EVENT_LOG, "Unknown SEXP Container type %s found", temp_type_string.c_str()); 
+		return false;
+	}
+
+	if (optional_string("$Key Type:")) {
+		Assertion ((type & SEXP_CONTAINER_MAP), "$Key Type: found for container which doesn't use keys!");  
+
+		stuff_string(temp_type_string, F_NAME);
+		if (!strcmp(temp_type_string.c_str(), "Number")) {
+			type |= SEXP_CONTAINER_NUMBER_KEYS; 
+		}
+		else if (!strcmp(temp_type_string.c_str(), "String")) {
+			type |= SEXP_CONTAINER_STRING_KEYS; 
+		}
+		else {
+			Warning(LOCATION, "Unknown SEXP Container type %s found", temp_type_string.c_str()); 
+			log_printf(LOGFILE_EVENT_LOG, "Unknown SEXP Container type %s found", temp_type_string.c_str()); 
+			return false;
+		}
+	}
+
+	if (optional_string("+Strongly Typed Keys")) {
+		Assertion ((type & SEXP_CONTAINER_MAP), "+Strongly Typed Keys found for container which doesn't use keys!");  
+		type |= SEXP_CONTAINER_STRONGLY_TYPED_KEYS;
+	}
+
+	if (optional_string("+Strongly Typed Data")) {
+		type |= SEXP_CONTAINER_STRONGLY_TYPED_DATA;
+	}
+
+	required_string("$Data:"); 
+	stuff_string_list(data); 
+
+	return true;
+}
+
+/**
+ * Stuffs a sexp list type container
+ */
+
+void stuff_sexp_list_container()
+{	
+	sexp_container temp_list; 
+	SCP_vector<SCP_string>	parsed_data;
+
+	
+	while (required_string_either("$End Lists", "$Name:")) {
+		temp_list.type = SEXP_CONTAINER_LIST; 
+		if (stuff_one_generic_sexp_container(temp_list.container_name, temp_list.type, temp_list.opf_type, parsed_data)){
+			temp_list.list_data.clear();
+			for (int i = 0; i < (int)parsed_data.size(); i++) {
+				temp_list.list_data.push_back(parsed_data[i]);
+			}
+		}
+
+		Sexp_containers.push_back(temp_list);
+	}
+}
+
+
+/**
+ * Stuffs a sexp map type container
+ */
+void stuff_sexp_map_container()
+{		
+	sexp_container temp_map; 	
+	SCP_vector<SCP_string>	parsed_data;
+
+	
+	while (required_string_either("$End Maps", "$Name:")) {
+		temp_map.type = SEXP_CONTAINER_MAP; 
+		if (stuff_one_generic_sexp_container(temp_map.container_name, temp_map.type, temp_map.opf_type, parsed_data)){
+
+			// if the data is corrupt, discard it
+			if (parsed_data.size() % 2 != 0) {
+				Warning(LOCATION, "Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d", parsed_data.size() );
+				log_printf(LOGFILE_EVENT_LOG, "Data in the SEXP Map container is corrupt. Must be an even number of entries. Instead have %d", parsed_data.size() ); 
+				continue;
+			}
+
+			// move the data into the new entry
+			temp_map.map_data.clear();
+			for (int i = 0; i < (int)parsed_data.size(); i = i+2) {
+				temp_map.map_data.insert(std::pair<SCP_string, SCP_string>(parsed_data[i], parsed_data[i+1]));
+			}
+		}
+
+
+		Sexp_containers.push_back(temp_map);
+	}
+}
+
+
+
 /**
  * Stuffs a list of sexp variables
  */
@@ -3786,7 +3972,13 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 {
 	Assert( (node >= 0) && (node < Num_sexp_nodes) );
 
-	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) {
+	if (Sexp_nodes[node].type & SEXP_FLAG_CONTAINER) {
+		int container_index = get_index_sexp_container_name(Sexp_nodes[node].text);
+		Assertion(container_index != -1, "Couldn't find container: %s\n", Sexp_nodes[node].text);
+
+		sprintf(dest, "&%s& ", Sexp_nodes[node].text);
+	}
+	else if	(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) {
 
 		int sexp_variables_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
 		Assertion(sexp_variables_index != -1, "Couldn't find variable: %s\n", Sexp_nodes[node].text);
@@ -3850,6 +4042,13 @@ int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
+		} else if (Sexp_nodes[node].type & SEXP_FLAG_CONTAINER) {
+			// build text to string
+			stuff_sexp_text_string(buf, node, mode);
+			accumulator += buf;
+
+			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
+		
 		} else {
 			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		}
@@ -3887,7 +4086,14 @@ void build_extended_sexp_string(SCP_string &accumulator, int cur_node, int level
 			stuff_sexp_text_string(buf, node, mode);
 			accumulator += buf;
 
-		} else {
+		} else if (Sexp_nodes[node].type & SEXP_FLAG_CONTAINER) {
+			// build text to string
+			stuff_sexp_text_string(buf, node, mode);
+			accumulator += buf;
+
+			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
+		}
+		else {
 			build_sexp_string(accumulator, Sexp_nodes[node].first, level + 1, mode);
 		}
 
@@ -4831,8 +5037,8 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	if (team >= 0)
 	{
 		oswpt->type = OSWPT_TYPE_SHIP_ON_TEAM;
-				oswpt->team = team;
-		}
+		oswpt->team = team;
+	}
 
 
 	// check if we have a whole-team type
@@ -4871,12 +5077,12 @@ int sexp_num_ships_in_battle(int n)
 
 	    switch (oswpt1.type){
  		    case OSWPT_TYPE_WHOLE_TEAM:
-				  for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-					  shipp=&Ships[Objects[so->objnum].instance];
+			  for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+				  shipp=&Ships[Objects[so->objnum].instance];
 				  if (shipp->team == oswpt1.team) {
-						 count++;
-					  }
+					 count++;
 				  }
+			  }
 			  break;
 
   		    case OSWPT_TYPE_SHIP:
@@ -5410,9 +5616,9 @@ int sexp_has_docked_or_undocked(int n, int op_num)
 
 		if ( mission_log_get_time_indexed(op_num == OP_HAS_DOCKED_DELAY ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, &time) )
 		{
-	if ( (Missiontime - time) >= delay )
-		return SEXP_KNOWN_TRUE;
-}
+			if ( (Missiontime - time) >= delay )
+				return SEXP_KNOWN_TRUE;
+		}
 	}
 	else
 	{
@@ -5420,14 +5626,14 @@ int sexp_has_docked_or_undocked(int n, int op_num)
 			return SEXP_KNOWN_TRUE;
 	}
 
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
-			return SEXP_KNOWN_FALSE;
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
+		return SEXP_KNOWN_FALSE;
 
-		if ( mission_log_get_time(LOG_SELF_DESTRUCTED, docker, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, dockee, NULL, NULL) )
-			return SEXP_KNOWN_FALSE;
+	if ( mission_log_get_time(LOG_SELF_DESTRUCTED, docker, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, dockee, NULL, NULL) )
+		return SEXP_KNOWN_FALSE;
 
-		return SEXP_FALSE;
-	}
+	return SEXP_FALSE;
+}
 
 int sexp_has_arrived_delay(int n)
 {
@@ -5654,8 +5860,10 @@ int sexp_time_destroyed(int n)
 {
 	fix time;
 
-	if ( !mission_log_get_time( LOG_SHIP_DESTROYED, CTEXT(n), NULL, &time)
-		&& !mission_log_get_time( LOG_SELF_DESTRUCTED, CTEXT(n), NULL, &time) ) {		// returns 0 when not found
+	char *ship_name = CTEXT(n);
+
+	if ( !mission_log_get_time( LOG_SHIP_DESTROYED, ship_name, NULL, &time)
+		&& !mission_log_get_time( LOG_SELF_DESTRUCTED, ship_name, NULL, &time) ) {		// returns 0 when not found
 		return SEXP_NAN;
 	}
 	
@@ -7509,7 +7717,7 @@ float get_damage_caused(int damaged_ship, int attacker )
 }
 
 // Karajorma
-int sexp_get_damage_caused(int node) 
+int sexp_get_damage_caused(int node)
 {
 	int sindex, damaged_sig, attacker_sig; 
 	float damage_caused = 0.0f;
@@ -7548,8 +7756,8 @@ int sexp_get_damage_caused(int node)
 			if (sindex < 0) {
 				continue;
 			} else {
-			attacker_sig = Ships_exited[sindex].obj_signature; 
-		}
+				attacker_sig = Ships_exited[sindex].obj_signature;
+			}
 		}
 		else {
 			attacker_sig = Objects[Ships[sindex].objnum].signature ;
@@ -9842,6 +10050,7 @@ void sexp_hud_set_message(int n)
 			message = Messages[i].message;
 
 			sexp_replace_variable_names_with_values(message);
+			sexp_replace_container_with_values(message);
 
 			HudGauge* cg = hud_get_gauge(gaugename);
 			if(cg) {
@@ -9946,7 +10155,7 @@ void sexp_hud_set_max_targeting_range(int n)
 
 	if (Hud_max_targeting_range < 0) {
 		Hud_max_targeting_range = 0;
-}
+	}
 
 	multi_start_callback();
 	multi_send_int(Hud_max_targeting_range);
@@ -15075,6 +15284,7 @@ void sexp_set_death_message(int n)
 	lcl_replace_stuff(Player->death_message);
 
 	sexp_replace_variable_names_with_values(Player->death_message);
+	sexp_replace_container_with_values(Player->death_message);
 }
 
 int sexp_key_pressed(int node)
@@ -22367,7 +22577,7 @@ int sexp_is_in_box(int n)
 	box_corner_2.xyz.z = MAX(z1, z2);
 
 	// Ship to define reference frame is optional
-	object* reference_ship_obj = NULL;
+	object *reference_ship_obj = NULL;
 	if (n != -1)
 	{
 		int sindex = ship_name_lookup(CTEXT(n));
@@ -22387,7 +22597,7 @@ int sexp_is_in_box(int n)
 		case OSWPT_TYPE_WING:
 			for (i = 0; i < oswpt.wingp->current_count; i++)
 				if (!test_point_within_box(&Objects[Ships[oswpt.wingp->ship_index[i]].objnum].pos, &box_corner_1, &box_corner_2, reference_ship_obj))
-		return SEXP_FALSE;
+					return SEXP_FALSE;
 			return SEXP_TRUE;
 
 		case OSWPT_TYPE_SHIP:
@@ -22395,7 +22605,7 @@ int sexp_is_in_box(int n)
 			return test_point_within_box(&oswpt.objp->pos, &box_corner_1, &box_corner_2, reference_ship_obj);
 
 		default:
-		return SEXP_FALSE;
+			return SEXP_FALSE;
 	}
 }
 
@@ -22631,6 +22841,433 @@ void sexp_set_motion_debris(int node) {
 }
 
 /**
+ * Helper function to get the index of a container from a function.
+ */
+int get_container_index_from_node (int node, int type)
+{
+	char *container_name = CTEXT(node); 
+	int index = get_index_sexp_container_name(container_name);
+
+	if (index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", container_name); 
+		return -1;
+	}
+
+	if (!(Sexp_containers[index].type & type)) {
+		Warning(LOCATION, "Container %s is not a list container. Can not use the add-to-list SEXP with it", container_name);
+		log_string(LOGFILE_EVENT_LOG, "This container is not a list container. Can not use the add-to-list SEXP with it");
+		return -1;
+	}
+
+	return index;
+}
+
+/**
+ * Add an entry to a SEXP list container.
+ */
+void sexp_add_to_list (int node)
+{
+	int index = get_container_index_from_node(node, SEXP_CONTAINER_LIST);
+	int push_back;
+
+	if (index < 0) {
+		return;
+	}
+
+	node = CDR(node);
+	push_back = is_sexp_true(node); 
+
+	node = CDR(node); 
+
+	int type = Sexp_containers[index].type; 
+	// TO DO - ADD TYPE CHECKING CODE HERE!
+
+	while (node != -1) {
+		if (push_back) {
+			Sexp_containers[index].list_data.push_back(CTEXT(node));
+		}
+		else {
+			Sexp_containers[index].list_data.push_front(CTEXT(node));
+		}
+
+		node = CDR(node); 
+	}
+}
+
+/**
+ * Add an entry to a SEXP map container.
+ */
+void sexp_add_to_map (int node)
+{	
+	int index = get_container_index_from_node(node, SEXP_CONTAINER_MAP);
+
+	if (index < 0) {
+		return;
+	}
+
+	node = CDR(node);
+
+	// TO DO - ADD TYPE CHECKING CODE HERE!
+
+	while (node != -1) {
+		// key but no value
+		if (CDR(node) == -1) {
+			char tempbuffer[TOKEN_LENGTH + 256]; 
+			sprintf(tempbuffer, "Add-to-map requires an even number of entries. The %s key is the last entry. Since there is no value associated with this entry, it will be ignored", CTEXT(node)); 
+			log_string(LOGFILE_EVENT_LOG, tempbuffer);
+			return;
+		}
+
+		std::pair<SCP_string, SCP_string> new_entry(SCP_string(CTEXT(node)),  SCP_string(CTEXT(CDR(node)))); 
+		Sexp_containers[index].map_data.insert(new_entry); 
+
+		// skip the value and move onto the next key
+		node = CDDR(node);
+	} 
+}
+
+int sexp_is_container_empty (int node)
+{
+	char *container_name = CTEXT(node);
+	int index = get_index_sexp_container_name(container_name);
+
+	if (index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", container_name); 
+		return -1;
+	}
+
+	if (Sexp_containers[index].type & SEXP_CONTAINER_MAP) {
+		if (Sexp_containers[index].map_data.empty()) {
+			return SEXP_TRUE;
+		}
+	}
+	else if (Sexp_containers[index].type & SEXP_CONTAINER_LIST) {
+		if (Sexp_containers[index].list_data.empty()) {
+			return SEXP_TRUE;
+		}
+	}
+	else {
+		Error(LOCATION, "Unknown container type. Container %s is of type %d and this is not a valid type", Sexp_containers[index].container_name, Sexp_containers[index].type); 
+	}
+
+	return SEXP_FALSE;
+}
+
+void sexp_clear_container (int node)
+{
+	char *container_name = CTEXT(node);
+	int index = get_index_sexp_container_name(container_name);
+
+	if (index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", container_name); 
+		return;
+	}
+
+	if (Sexp_containers[index].type & SEXP_CONTAINER_MAP) {
+		Sexp_containers[index].map_data.clear();
+	}
+	else if (Sexp_containers[index].type & SEXP_CONTAINER_LIST) {
+		Sexp_containers[index].list_data.clear();
+	}
+	else {
+		Error(LOCATION, "Unknown container type. Container %s is of type %d and this is not a valid type", Sexp_containers[index].container_name, Sexp_containers[index].type); 
+	}
+}
+
+void sexp_get_map_keys(int node)
+{
+	int replace_contents = 1; 
+
+	char *map_container_name = CTEXT(node);
+	int map_index = get_index_sexp_container_name(map_container_name);
+
+	if (map_index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", map_container_name); 
+		return;
+	}
+
+	node = CDR(node); 
+	char *list_container_name = CTEXT(node);
+
+	int list_index = get_index_sexp_container_name(list_container_name);
+
+	if (list_index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", list_container_name); 
+		return;
+	}
+
+	// both containers must be of the correct type. 
+	if (!(Sexp_containers[map_index].type & SEXP_CONTAINER_MAP) || !(Sexp_containers[list_index].type & SEXP_CONTAINER_LIST)) {
+		Warning(LOCATION, "Containers must be of the correct types to be used in get-map-keys SEXP."); 
+		return;
+	}
+
+	node = CDR(node); 
+	if (node != -1) {
+		replace_contents = is_sexp_true(node); 
+	}
+
+	if (replace_contents) {
+		Sexp_containers[list_index].list_data.clear(); 
+	}
+
+	SCP_unordered_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[map_index].map_data.begin();
+
+	for (; iter != Sexp_containers[map_index].map_data.end(); ++iter) {
+		Sexp_containers[list_index].list_data.push_back(iter->first);
+	}
+}
+
+/**
+ * Return index of a map type sexp_container by its name, -1 if not found
+ */
+int get_index_sexp_container_name(const char *text)
+{
+	for (int i = 0; i < (int)Sexp_containers.size() ; i++) {
+		if ( !stricmp(Sexp_containers[i].container_name.c_str(), text) ) {
+			return i;
+		}
+	}
+
+	// not found
+	return -1;
+}
+
+
+// Karajorma - Based on the same function by Goober for variables.
+/** 
+* Tests whether this position in a character array is the start of a container name
+* return index in Sexp_containers or -1 if not found
+**/
+int get_index_sexp_container_name_special(SCP_string &text, size_t startpos)
+{
+	for (int i = 0; i < (int)Sexp_containers.size() ; i++) {
+		size_t pos = text.find(Sexp_containers[i].container_name, startpos); 
+		if (pos != SCP_string::npos && pos == startpos) {
+			return i;
+		}
+	}
+
+	// not found
+	return -1;
+}
+
+/**
+* Helper function for sexp_replace_container_with_values(). Given a SEXP Container it works out what modifer was used and what the replacement string should be. 
+**/
+bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &lookHere, SCP_string &replacement_text, SCP_string &replace_this)
+{
+	// for map containers, check if this matches a map key
+	if (Sexp_containers[con_index].type & SEXP_CONTAINER_MAP) {
+		// ignore if the container is empty
+		if (Sexp_containers[con_index].map_data.empty()) {
+			return false;
+		}
+
+		size_t key_ends_here;
+		key_ends_here = text.find('&', lookHere);
+
+		SCP_string key = text.substr(lookHere, key_ends_here - lookHere); 
+		SCP_unordered_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[con_index].map_data.find(key);
+
+		if (iter == Sexp_containers[con_index].map_data.end()) {
+			Warning(LOCATION, "sexp_replace_container_with_values() found a container called %s to replace but the modifer is not recognised", Sexp_containers[con_index].container_name.c_str());
+			return false;
+		}
+
+		replacement_text = iter->second; 
+		replace_this.append(iter->first); 
+		replace_this.append("&");				
+		lookHere = key_ends_here + 1; 
+	}
+	// for list containers, check if this matches a list modifier
+	else {
+		int modifier_index; 
+		SCP_string modifier_name;
+
+		// ignore if the container is empty
+		if (Sexp_containers[con_index].list_data.empty()) {
+			return false;
+		}
+
+		for (modifier_index = 0; modifier_index < MAX_CONTAINER_MODIFIERS; modifier_index++) {
+			modifier_name.assign(Container_modifiers[modifier_index].name);
+			int result = text.compare(lookHere, modifier_name.length(), modifier_name);
+			if (!result) {
+				break;
+			}
+		}
+
+		int data_index; 
+		int number_of_elements; 
+		int number_length = 0;
+		SCP_string number_string;
+
+		switch (modifier_index) {
+
+			case SNF_CONTAINER_GET_FIRST:
+				replacement_text.assign(Sexp_containers[con_index].list_data.front());
+				break;
+
+			case SNF_CONTAINER_GET_LAST:
+				replacement_text.assign(Sexp_containers[con_index].list_data.back());
+				break;
+
+			case SNF_CONTAINER_REMOVE_FIRST:
+				replacement_text.assign(Sexp_containers[con_index].list_data.front());
+				Sexp_containers[con_index].list_data.pop_front();
+				break;
+
+			case SNF_CONTAINER_REMOVE_LAST:
+				replacement_text.assign(Sexp_containers[con_index].list_data.back());	
+				Sexp_containers[con_index].list_data.pop_back();
+				break;
+
+			case SNF_CONTAINER_GET_RANDOM:
+				number_of_elements = (int)Sexp_containers[con_index].list_data.size();
+				data_index = rand_internal(0, number_of_elements); 
+				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));
+				break;
+
+			case SNF_CONTAINER_REMOVE_RANDOM:
+				number_of_elements = (int)Sexp_containers[con_index].list_data.size();
+				data_index = rand_internal(0, number_of_elements); 
+				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));	
+				Sexp_containers[con_index].list_data.erase(Sexp_containers[con_index].list_data.begin() + data_index);
+				break;
+
+			case SNF_CONTAINER_AT_INDEX:
+				number_string = text.substr(lookHere + 2);
+				data_index = atoi(number_string.c_str());
+				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));
+
+				//we'll need this later, so we might as well grab it now
+				number_length = strspn(number_string.c_str(), "0123456789");	
+				break;
+
+			default:
+				Warning(LOCATION, "sexp_replace_container_with_values() found a container called %s to replace but the modifer is not recognised", Sexp_containers[con_index].container_name.c_str());
+				return false;
+		}
+
+		replace_this.append(Container_modifiers[modifier_index].name); 
+		lookHere += strlen(Container_modifiers[modifier_index].name);
+
+		// for the at modifier we also need to add the number to the text we are going to replace. 
+		if (modifier_index == SNF_CONTAINER_AT_INDEX) {
+			replace_this.append(text.substr(lookHere + 2, number_length ));						
+			lookHere += number_length; 
+		}
+
+		//advance past the final '&'
+		replace_this.append("&");				
+		lookHere++;
+	}
+
+	return true; 
+}
+
+
+// Karajorma - Based on the same function by Goober for variables.
+/**
+* Replaces instances of a container in a text string with a value
+**/
+bool sexp_replace_container_with_values(SCP_string &text)
+{
+	bool replaced_anything = false;
+
+	size_t lookHere = 0;
+	size_t foundHere;
+
+	do {
+		// look for the meta-character
+		foundHere = text.find('&', lookHere);
+
+		// found?
+		if (foundHere != SCP_string::npos) {
+			// see if a container starts at the next char
+			int con_index = get_index_sexp_container_name_special(text, foundHere+1);
+			if (con_index >= 0)	{				
+				// we have to replace &container&modifier/key& with the value but since we don't know the length of the modifier yet, this is going to get complicated. 
+				SCP_string replace_this = "&"; 
+				replace_this.append(Sexp_containers[con_index].container_name); 
+				replace_this.append("&");
+
+				// no modifier/key - skip past this container as it's malformed
+				if (text.compare((foundHere + 1 + Sexp_containers[con_index].container_name.length()), 1, "&")) {
+					lookHere = foundHere + 1; 
+					Warning(LOCATION, "sexp_replace_container_with_values() found a container called %s to replace but there is no modifer in the string. This format is expected for lists &Container_Name&Modifier&. This format is expected for maps &Container_Name&Key&", Sexp_containers[con_index].container_name.c_str());
+					continue; 
+				}
+
+				lookHere = foundHere + 2 + strlen(Sexp_containers[con_index].container_name.c_str()); 
+
+
+				SCP_string replacement_text; // this is what the &Container_Name&Modifier/Key& combo will be replaced with
+				bool result_found = false; 
+				bool error_found = false; 
+
+				do {
+					if (get_replace_text_for_modifier(text, con_index, lookHere, replacement_text, replace_this)) {
+						// in the case of multidimentional containers the inner containers name will be in this format &Container_Name&
+						if (replacement_text.find('&') == 0) {
+							con_index = get_index_sexp_container_name(replacement_text.substr(1, replacement_text.length() - 2).c_str());
+
+							// not entirely sure why the FREDder has decided to start the value with an & if this is not a multidimentional container, but since it's legal to do so.....
+							if (con_index == -1) {
+								result_found = true; 
+							}
+						}
+						// this isn't a container - so it's data
+						else {
+							result_found = true;
+						}
+					}
+					// modifier wasn't found
+					else {
+						error_found = true;
+						break;
+					}
+				} while (!result_found);
+
+				if (error_found) {					
+					lookHere = foundHere + replacement_text.length();
+					continue; 
+				}
+				
+
+				// both maps and strings need to do this bit
+				text.replace(foundHere, replace_this.length(), replacement_text);
+				replaced_anything = true;
+
+				lookHere = foundHere + replacement_text.length();
+			}
+			else {
+				lookHere = foundHere + 1;
+			}
+		}
+	}while (foundHere != SCP_string::npos);
+
+	return replaced_anything;
+}
+
+bool sexp_replace_container_with_values(char *text, int max_len)
+{
+	Assert(text != NULL);
+	Assert(max_len >= 0);
+
+	SCP_string call_string_function = text; 
+
+	bool replaced_anything = sexp_replace_container_with_values(call_string_function);
+
+	if (replaced_anything) {
+		strncpy_s(text, max_len, call_string_function.c_str(), max_len); 
+	}
+
+	return replaced_anything;
+}
+
+/**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  */
 int get_generic_subsys(char *subsys_name) 
@@ -22838,8 +23475,9 @@ char *sexp_get_result_as_text(int result)
 void add_to_event_log_buffer(int op_num, int result)
 {
 	Assertion ((Current_event_log_buffer != NULL) &&
-				(Current_event_log_variable_buffer != NULL)&& 
-				(Current_event_log_argument_buffer != NULL), "Attempting to write to a non-existent log buffer");
+				(Current_event_log_variable_buffer != NULL) && 
+				(Current_event_log_argument_buffer != NULL) &&
+				(Current_event_log_container_buffer != NULL), "Attempting to write to a non-existent log buffer");
 
 	if (op_num == -1) {
 		nprintf(("SEXP", "ERROR: op_num function returned %i, this should not happen. Contact a coder.\n", op_num));
@@ -22882,6 +23520,14 @@ void add_to_event_log_buffer(int op_num, int result)
 			tmp.append(Current_event_log_variable_buffer->back().c_str()); 
 			Current_event_log_variable_buffer->pop_back();
 			tmp.append("]");
+		}
+	}
+
+	if (!Current_event_log_container_buffer->empty()) {
+		tmp.append("\nContainers:\n");
+		while (!Current_event_log_container_buffer->empty()) {
+			tmp.append(Current_event_log_container_buffer->back().c_str()); 
+			Current_event_log_container_buffer->pop_back();
 		}
 	}
 
@@ -23222,6 +23868,26 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_CONTAINER_ADD_TO_LIST:
+				sexp_add_to_list(node);
+				sexp_val = SEXP_TRUE;
+				break;	
+
+			case OP_CONTAINER_ADD_TO_MAP:
+				sexp_add_to_map(node);
+				sexp_val = SEXP_TRUE;
+				break;		
+
+			case OP_CLEAR_CONTAINER:
+				sexp_clear_container(node);
+				sexp_val = SEXP_TRUE;
+				break;		
+
+			case OP_GET_MAP_KEYS:
+				sexp_get_map_keys(node);
+				sexp_val = SEXP_TRUE;
+				break;					
+				
 			case OP_TIME_SHIP_DESTROYED:
 				sexp_val = sexp_time_destroyed(node);
 				break;
@@ -24306,6 +24972,10 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Goober5000
 			case OP_STRING_GET_LENGTH:
 				sexp_val = sexp_string_get_length(node);
+				break;
+
+			case OP_IS_CONTAINER_EMPTY:
+				sexp_val = sexp_is_container_empty(node);
 				break;
 
 			// Karajorma
@@ -25705,6 +26375,7 @@ int query_operator_return_type(int op)
 		case OP_IS_IN_MISSION:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
+		case OP_IS_CONTAINER_EMPTY:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -26118,6 +26789,10 @@ int query_operator_return_type(int op)
 		case OP_SET_MOTION_DEBRIS:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
+		case OP_CONTAINER_ADD_TO_LIST:
+		case OP_CONTAINER_ADD_TO_MAP:
+		case OP_CLEAR_CONTAINER:
+		case OP_GET_MAP_KEYS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -26648,6 +27323,39 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			} else {
 				return OPF_AMBIGUOUS;
+			}
+			
+		case OP_CONTAINER_ADD_TO_LIST:
+			if (argnum == 0) {
+				return OPF_LIST_CONTAINER_NAME;			
+			}
+			else if ( argnum == 1) {
+				return OPF_BOOL;
+			}
+			else {
+				return OPF_STRING;
+			}
+
+		case OP_CONTAINER_ADD_TO_MAP:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;			
+			}
+			else {
+				return OPF_STRING;
+			}
+
+		case OP_CLEAR_CONTAINER:
+			return OPF_CONTAINER_NAME;
+
+		case OP_GET_MAP_KEYS:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			}
+			else if (argnum == 1) {
+				return OPF_LIST_CONTAINER_NAME;
+			}
+			else {
+				return OPF_BOOL;
 			}
 
 		case OP_HAS_DOCKED:
@@ -27276,6 +27984,9 @@ int query_operator_argument_type(int op, int argnum)
 			} else {
 				return OPF_SHIP_FLAG;
 			}
+
+		case OP_IS_CONTAINER_EMPTY:
+			return OPF_CONTAINER_NAME;
 
 		case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 			if ( argnum == 0 ) {
@@ -28365,7 +29076,7 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 		}
 		else
 		{
-			Assert((SEXP_NODE_TYPE(n) == SEXP_ATOM) && ((Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER) || (Sexp_nodes[n].subtype == SEXP_ATOM_STRING)));
+			Assert((SEXP_NODE_TYPE(n) == SEXP_ATOM) && ((Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER) || (Sexp_nodes[n].subtype == SEXP_ATOM_STRING) || (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER)));
 
 			if (query_operator_argument_type(op, i) == format)
 			{
@@ -28814,6 +29525,180 @@ int extract_sexp_variable_index(int node)
 	return variable_index;
 }
 
+ container_modifier Container_modifiers[] = {
+	{ "Get_First",			SNF_CONTAINER_GET_FIRST,		},
+	{ "Get_Last",			SNF_CONTAINER_GET_LAST,			},
+	{ "Remove_First",		SNF_CONTAINER_REMOVE_FIRST,		},
+	{ "Remove_Last",		SNF_CONTAINER_REMOVE_LAST,		},
+	{ "Get_Random",			SNF_CONTAINER_GET_RANDOM,		},
+	{ "Remove_Random",		SNF_CONTAINER_REMOVE_RANDOM,	},
+	{ "At",					SNF_CONTAINER_AT_INDEX,			},
+};
+
+// update MAX_CONTAINER_MODIFIERS if adding to the above array
+
+
+bool deal_with_container_sub(int &node, int container_index, SCP_string &result) 
+{ 	
+	if (Sexp_containers[container_index].type & SEXP_CONTAINER_MAP) {
+		char *buffer = CTEXT(node);
+		SCP_unordered_map<SCP_string, SCP_string>::iterator value = Sexp_containers[container_index].map_data.find(buffer);
+
+		// not found
+		if (value == Sexp_containers[container_index].map_data.end()) {
+			if (Log_event) {
+				SCP_string log_string = log_string.assign(Sexp_containers[container_index].container_name); 
+				log_string.append(" map container returned nothing when searched for key ");
+				log_string.append(buffer);
+				Current_event_log_container_buffer->push_back(log_string); 
+			}
+			return false;
+ 		}	
+
+		result.assign(value->second);
+		return true; 
+	}
+	else if (Sexp_containers[container_index].type & SEXP_CONTAINER_LIST) {
+
+		// if the container is empty, we might as well quit now
+		if (Sexp_containers[container_index].list_data.empty()) {
+			return false;
+		}
+
+		char *modifier = CTEXT(node); 
+
+		int modifier_index;
+		bool found = false; 
+		for (modifier_index = 0; modifier_index < NUM_CONTAINER_MODIFIERS; modifier_index++) {
+			if (!stricmp(modifier, Container_modifiers[modifier_index].name)) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			Warning(LOCATION, "Illegal operation attempted on %s container. There is no modifier called %s.", Sexp_containers[container_index].container_name, modifier );	
+			log_printf(LOGFILE_EVENT_LOG, "Illegal operation attempted on %s container. There is no modifier called %s.", Sexp_containers[container_index].container_name, modifier );	
+			return false;
+		}
+
+		int number_of_elements; 
+		int data_index;
+
+		switch (modifier_index) {
+			case SNF_CONTAINER_GET_FIRST:
+				result.assign(Sexp_containers[container_index].list_data.front());
+				return true;
+	
+			case SNF_CONTAINER_GET_LAST:
+				result.assign(Sexp_containers[container_index].list_data.back());
+				return true;
+	
+			case SNF_CONTAINER_REMOVE_FIRST:
+				result.assign(Sexp_containers[container_index].list_data.front());
+				if (Game_mode & GM_IN_MISSION) {
+					Sexp_containers[container_index].list_data.pop_front();
+				}
+				return true;
+	
+			case SNF_CONTAINER_REMOVE_LAST:
+				result.assign(Sexp_containers[container_index].list_data.back());				
+				if (Game_mode & GM_IN_MISSION) {
+					Sexp_containers[container_index].list_data.pop_back();
+				}
+				return true;
+	
+			case SNF_CONTAINER_GET_RANDOM:
+				number_of_elements = (int)Sexp_containers[container_index].list_data.size();
+				data_index = rand_internal(0, number_of_elements); 
+				result.assign(Sexp_containers[container_index].list_data.at(data_index));
+				return true;
+
+			case SNF_CONTAINER_REMOVE_RANDOM:
+				number_of_elements = (int)Sexp_containers[container_index].list_data.size();
+				data_index = rand_internal(0, number_of_elements); 
+				result.assign(Sexp_containers[container_index].list_data.at(data_index));				
+				if (Game_mode & GM_IN_MISSION) {
+					Sexp_containers[container_index].list_data.erase(Sexp_containers[container_index].list_data.begin() + data_index);
+				}
+				return true;
+
+			case SNF_CONTAINER_AT_INDEX:
+				node = CDR(node);
+				if (node == -1) {
+					return false;
+				}
+				data_index = eval_num(node); 
+				result.assign(Sexp_containers[container_index].list_data.at(data_index));
+				return true;
+
+			default:
+				Error(LOCATION, "Unknown modifier type found in collection");
+		}
+	}
+
+	return false;
+}
+
+int container_push_return_string(SCP_string &result) 
+{
+	// maybe reset if we've already used all the slots
+	if (( Ctext_strings_last_index >= NUM_CTEXT_RETURN_STRINGS ) || ( Ctext_strings_last_index < 0 )) {
+		Ctext_strings_last_index = 0;
+	}
+
+	strcpy_s(Ctext_strings[Ctext_strings_last_index], result.c_str());
+
+	// remember to increment the index so that next time the function is called it uses an empty slot. 
+	return Ctext_strings_last_index++; 
+}
+
+char* deal_with_container(int node, int container_index)  
+{
+	bool success = true;
+	int sanity = 0; 
+	SCP_string result;
+
+	Assertion (((container_index > -1) && (container_index < (int)Sexp_containers.size())), "deal_with_container() called for index %d when there are only %d containers", container_index, Sexp_containers.size());
+
+	do {
+		sanity++;
+		success = deal_with_container_sub(node, container_index, result);
+
+		if (Log_event) {
+			SCP_string log_string = log_string.assign(Sexp_containers[container_index].container_name); 
+			log_string.append(" container returned ");
+			if (success) {
+				log_string.append(result);
+			}
+			Current_event_log_container_buffer->push_back(log_string); 
+		}
+
+		// if this isn't an array or is empty we exit
+		if (!success) {
+			return "";
+		}
+
+		if ( result.at(0) != SEXP_CONTAINER_CHAR ) {
+			int result_index = container_push_return_string(result);
+			return Ctext_strings[result_index];
+		}
+
+		// we're dealing with a multidimentional array
+		node = CDR(node);
+
+		container_index = get_index_sexp_container_name(result.substr(1, (result.length() - 2)).c_str());
+
+		// if it's still nonsense, warn then bail
+		if ( container_index == -1 ) {
+			Warning(LOCATION, "There is no container called %s in this mission.", result.c_str());
+			return "";
+		}
+
+	} while (sanity++ < 20);
+
+	return "";
+}
 
 /**
  * Wrapper around Sexp_node[xx].text for normal and variable
@@ -28889,6 +29774,22 @@ char *CTEXT(int n)
 
 		return Sexp_variables[sexp_variable_index].text;
 	}
+	// Karajorma - check we're not dealing with a container
+	else if (Sexp_nodes[n].type & SEXP_FLAG_CONTAINER) {
+		Assertion((Sexp_nodes[n].type & SEXP_FLAG_CONTAINER), "deal_with_container() called for an unknown type of container"); 
+ 
+		int container_index = get_index_sexp_container_name(Sexp_nodes[n].text);
+
+		if (container_index < 0)  {
+			Warning(LOCATION, "Deal_with_container called for %s, a container which does not exist!", Sexp_nodes[n].text); 
+			log_printf(LOGFILE_EVENT_LOG, "Deal_with_container called for %s, a container which does not exist!", Sexp_nodes[n].text); 
+			return "";
+		}
+
+		n = CAR(n);
+
+		return deal_with_container(n, container_index);
+	}
 	else
 	{
 		return Sexp_nodes[n].text;
@@ -28906,6 +29807,16 @@ void init_sexp_vars()
 		Block_variables[i].type = SEXP_VARIABLE_NOT_USED;
 	}
 }
+
+/**
+ * Clear the SEXP Collectors vector
+ */
+void init_sexp_containers()
+{
+	Sexp_containers.clear();
+}
+
+
 
 /**
  * Add a variable to the block variable array rather than the Sexp_variables array
@@ -29590,7 +30501,9 @@ int eval_num(int n)
 		return 0;
 	}
 
-	if (CAR(n) != -1)				// if argument is a sexp
+	if (Sexp_nodes[n].type & SEXP_FLAG_CONTAINER) // if argument is a container
+		return atoi(CTEXT(n));
+	else if (CAR(n) != -1)				// if argument is a sexp
 		return eval_sexp(CAR(n));
 	else
 		return atoi(CTEXT(n));		// otherwise, just get the number
@@ -29967,6 +30880,12 @@ int get_subcategory(int sexp_id)
 		case OP_STRING_SET_SUBSTRING:
 			return CHANGE_SUBCATEGORY_VARIABLES;
 
+		case OP_CONTAINER_ADD_TO_LIST:
+		case OP_CONTAINER_ADD_TO_MAP:
+		case OP_CLEAR_CONTAINER:
+		case OP_GET_MAP_KEYS:
+			return CHANGE_SUBCATEGORY_CONTAINERS;
+
 		case OP_DAMAGED_ESCORT_LIST:
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
@@ -30071,6 +30990,10 @@ int get_subcategory(int sexp_id)
 		case OP_STRING_TO_INT:
 		case OP_STRING_GET_LENGTH:
 			return STATUS_SUBCATEGORY_VARIABLES;
+
+		case OP_IS_CONTAINER_EMPTY:
+			return STATUS_SUBCATEGORY_CONTAINERS;
+
 
 		case OP_SCRIPT_EVAL_NUM:
 			return STATUS_SUBCATEGORY_OTHER;
@@ -31057,6 +31980,32 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tIndex of source variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
 		"\t2:\tIndex of destination variable, from 0 to MAX_SEXP_VARIABLES - 1.  The types of both variables must match." },
 
+	{ OP_CONTAINER_ADD_TO_LIST, "add-to-list\r\n"
+		"\tAdds a new entry to a SEXP container.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of the list.\r\n"
+		"\t2:\tThe position to add the data at. True means at the end, false means at the start.\r\n" 
+		"\tRest:\tThe data to be added. In strongly typed containers, this type must match the type of data of the container" },
+
+	{ OP_CONTAINER_ADD_TO_MAP, "add-to-map\r\n"
+		"\tAdds a new entry to a SEXP container.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tName of the list.\r\n"
+		"\t2:\tThe key that will be used to retrieve the data stored in the map. In strongly typed containers, this type of key must match the type of data of the container.\r\n" 
+		"\tRest:\tThe value to be added. In strongly typed containers, this type must match the type of data of the class" },
+
+	{ OP_CLEAR_CONTAINER, "add-to-map\r\n"
+		"\tDeletes the current contents of a SEXP container.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the container.\r\n" },
+
+	{ OP_GET_MAP_KEYS, "get-map-keys\r\n"
+		"\tTakes the keys of a SEXP map container and puts them into a SEXP list container.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the map container.\r\n"
+		"\t2:\tName of the list container.\r\n" 
+		"\t3:\t(Optional) When true the current contents of the list will be wiped. When false the keys will be appended to the end of the list.\r\n" },
+
 	{ OP_PROTECT_SHIP, "Protect ship (Action operator)\r\n"
 		"\tProtects a ship from being attacked by any enemy ship.  Any ship "
 		"that is protected will not come under enemy fire.\r\n\r\n"
@@ -31707,6 +32656,12 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_STRING_GET_LENGTH, "string-get-length\r\n"
 		"\tReturns the length of the specified string.  Takes 1 argument." },
+
+	// Karajorma
+	{ OP_IS_CONTAINER_EMPTY, "Is Container Empty (Boolean operator)\r\n"
+		"\tReturns true if the specified container has no elements in it.\r\n\r\n"
+		"Takes 1 argument1...\r\n"
+		"\t1:\tName of the container." },
 
 	// Goober5000
 	{ OP_INT_TO_STRING, "int-to-string\r\n"
@@ -33833,6 +34788,7 @@ op_menu_struct op_submenu[] =
 	{	"Jump Nodes",					CHANGE_SUBCATEGORY_JUMP_NODES						},
 	{	"Special Effects",				CHANGE_SUBCATEGORY_SPECIAL_EFFECTS					},
 	{	"Variables",					CHANGE_SUBCATEGORY_VARIABLES						},
+	{	"Containers",					CHANGE_SUBCATEGORY_CONTAINERS						},
 	{	"Other",						CHANGE_SUBCATEGORY_OTHER							},
 	{	"Mission",						STATUS_SUBCATEGORY_MISSION							},
 	{	"Player",						STATUS_SUBCATEGORY_PLAYER							},
@@ -33843,6 +34799,7 @@ op_menu_struct op_submenu[] =
 	{	"Damage",						STATUS_SUBCATEGORY_DAMAGE							},
 	{	"Distance and Coordinates",		STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			},
 	{	"Variables",					STATUS_SUBCATEGORY_VARIABLES						},
+	{	"Containers",					STATUS_SUBCATEGORY_CONTAINERS						},
 	{	"Other",						STATUS_SUBCATEGORY_OTHER							},
 
 
