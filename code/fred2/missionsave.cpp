@@ -1319,62 +1319,6 @@ int CFred_mission_save::save_containers()
 		required_string_fred("$End Maps");
 		parse_comments(1);
 	}
-	
-/*
-
-	if (total_variables > 0) {
-
-		// write 'em out
-		required_string_fred("#Sexp_variables");
-		parse_comments(2);
-
-		required_string_fred("$Variables:");
-		parse_comments(2);
-
-		fout("\n(");
-//		parse_comments();
-
-		for (i=0; i<num_variables; i++) {
-			if (Sexp_variables[i].type & SEXP_VARIABLE_NUMBER) {
-				type = number;
-			} else {
-				type = string;
-			}
-			// index "var name" "default" "type"
-			fout("\n\t\t%d\t\t\"%s\"\t\t\"%s\"\t\t\"%s\"", i, Sexp_variables[i].variable_name, Sexp_variables[i].text, type);
-
-			// persistent and network variables
-			if (Format_fs2_open != FSO_FORMAT_RETAIL)
-			{
-				// Network variable - Karajorma
-				if (Sexp_variables[i].type & SEXP_VARIABLE_NETWORK) {
-					fout("\t\t\"%s\"", "network-variable");
-				}
-
-				// player-persistent - Goober5000
-				if (Sexp_variables[i].type & SEXP_VARIABLE_PLAYER_PERSISTENT) {
-					fout("\t\t\"%s\"", "player-persistent");
-				// campaign-persistent - Goober5000
-				} else if (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) {
-					fout("\t\t\"%s\"", "campaign-persistent");
-				}
-			}
-
-//			parse_comments();
-		}
-
-		for (i=MAX_SEXP_VARIABLES-num_block_vars; i<MAX_SEXP_VARIABLES; i++) {
-			type = block;
-			fout("\n\t\t%d\t\t\"%s\"\t\t\"%s\"\t\t\"%s\"", i, Block_variables[i].variable_name, Block_variables[i].text, type);
-		}
-
-		fout("\n)");
-
-		fso_comment_pop();
-	}
-
-	fso_comment_pop(true);
-*/
 
 	return err;
 }
