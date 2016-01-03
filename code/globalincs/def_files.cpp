@@ -1467,7 +1467,7 @@ char* Default_main_vertex_shader =
 "	gl_ClipVertex = (gl_ModelViewMatrix * orient * vertex);\n"
 "}";
 
-char *Default_main_fragment_shader = 
+char *Default_main_fragment_shader =
 "#extension GL_EXT_texture_array : enable\n"
 "#ifdef FLAG_LIGHT\n"
 "uniform int n_lights;\n"
@@ -1510,6 +1510,7 @@ char *Default_main_fragment_shader =
 "#ifdef FLAG_TEAMCOLOR\n"
 "uniform vec3 base_color;\n"
 "uniform vec3 stripe_color;\n"
+"uniform bool team_glow_enabled;\n"
 "vec2 teamMask = vec2(0.0, 0.0);\n"
 "#endif\n"
 "#ifdef FLAG_MISC_MAP\n"
@@ -1793,7 +1794,7 @@ char *Default_main_fragment_shader =
 " #ifdef FLAG_MISC_MAP\n"
 "  #ifdef FLAG_TEAMCOLOR\n"
 "	float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));\n"
-"	glowColor = mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0));\n"
+"	glowColor = team_glow_enabled ? mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;\n"
 "  #endif\n"
 " #endif\n"
 "   baseColor.rgb += glowColor * GLOW_MAP_INTENSITY;\n"
