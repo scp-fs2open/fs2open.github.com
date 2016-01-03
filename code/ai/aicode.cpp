@@ -13812,18 +13812,22 @@ int ai_await_repair_frame(object *objp, ai_info *aip)
 //	Maybe should only do this if they are preventing their wing from re-entering.
 void ai_maybe_self_destruct(object *objp, ai_info *aip)
 {
+	Assertion(objp->type == OBJ_SHIP, "ai_maybe_self_destruct() can only be called with objects that are ships!");
+	ship *shipp = &Ships[objp->instance];
+
 	//	Some IFFs can be repaired, so no self-destruct.
 	//	In multiplayer, just don't self-destruct.  I figured there would be a problem. -- MK, 3/19/98.
-	if ((Iff_info[Ships[objp->instance].team].flags & IFFF_SUPPORT_ALLOWED) || (Game_mode & GM_MULTIPLAYER))
+	if ((Iff_info[shipp->team].flags & IFFF_SUPPORT_ALLOWED) || (Game_mode & GM_MULTIPLAYER))
 		return;
 
 	//	Small ships in a wing blow themselves up after awhile if engine or weapons system has been destroyed.
 	//	Reason: Don't want them to prevent a re-emergence of the wing.
 	//	Note: Don't blow up if not in a wing for two reasons: One, won't affect re-emergence of waves and (1) disable the Dragon
 	//	mission would be broken.
-	if ((Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_SMALL_SHIP) && (Ships[objp->instance].wingnum != -1)) {
-		if ((ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f) ||
-			(ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_WEAPONS) <= 0.0f)) {
+	//	Also, don't blow up the ship if it has a ship flag preventing this - Goober5000
+	if ((Ship_info[shipp->ship_info_index].flags & SIF_SMALL_SHIP) && (shipp->wingnum >= 0) && !(shipp->flags2 & SF2_NO_DISABLED_SELF_DESTRUCT)) {
+		if ((ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) <= 0.0f) ||
+			(ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS) <= 0.0f)) {
 			if (aip->self_destruct_timestamp < 0)
 				aip->self_destruct_timestamp = timestamp(90 * 1000);	//	seconds until self-destruct
 		} else {

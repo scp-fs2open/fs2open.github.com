@@ -43,6 +43,8 @@ protected:
 	int Rotate_time_id;
 	int Lock_gauge_draw_stamp;
 	int Lock_gauge_draw;
+
+	bool Last_lock_status;
 public:
 	HudGaugeLock();
 	void initBitmaps(char *lock_gauge_fname, char *lock_anim_fname);

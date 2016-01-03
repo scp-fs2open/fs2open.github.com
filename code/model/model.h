@@ -143,6 +143,7 @@ typedef struct polymodel_instance {
 #define MSS_FLAG2_TURRET_USE_AMMO				 (1 << 5)	// enables ammo consumption for turrets (DahBlount)
 #define MSS_FLAG2_AUTOREPAIR_IF_DISABLED		 (1 << 6)	// Allows the subsystem to repair itself even if disabled (MageKing17)
 #define MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED		 (1 << 7)	// Inversion of the previous; disallows this particular subsystem if the ship-wide flag is set (MageKing17)
+#define MSS_FLAG2_SHARE_FIRE_DIRECTION			 (1 << 8)	// (DahBlount) Whenever the turret fires, make all firing points fire in the same direction.
 
 #define NUM_SUBSYSTEM_FLAGS			33
 

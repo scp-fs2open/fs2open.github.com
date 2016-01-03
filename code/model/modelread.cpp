@@ -4606,13 +4606,11 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	bsp_info *sm = &pm->submodel[sub_model_num];
 
 	if (flags & SSF_NO_DISAPPEAR) {
-		// If the submodel is to not disappear when the subsystem is destroyed, we simply
-		// make the submodel act as its own replacement as well
-		sm->my_replacement = sub_model_num;
+		sm->blown_off = 0;
+	} else {
+		// Set the "blown out" flags
+		sm->blown_off = sii->blown_off;
 	}
-
-	// Set the "blown out" flags	
-	sm->blown_off = sii->blown_off;
 
 	if ( (sm->blown_off) && (!(flags & SSF_NO_REPLACE)) )	{
 		if ( sm->my_replacement > -1 )	{
