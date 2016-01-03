@@ -2183,7 +2183,7 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 	// Team colors are passed to the shader here, but the shader needs to handle their application.
 	// By default, this is handled through the r and g channels of the misc map, but this can be changed
 	// in the shader; test versions of this used the normal map r and b channels
-	if ( shader_flags & SDR_FLAG_MODEL_TEAMCOLOR ) {
+	if ( (shader_flags & SDR_FLAG_MODEL_TEAMCOLOR) && (shader_flags & SDR_FLAG_MODEL_MISC_MAP) ) {
 		vec3d stripe_color;
 		vec3d base_color;
 
@@ -2197,6 +2197,12 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 
 		GL_state.Uniform.setUniform3f("stripe_color", stripe_color);
 		GL_state.Uniform.setUniform3f("base_color", base_color);
+
+		if ( bm_has_alpha_channel(MISCMAP) ) {
+			GL_state.Uniform.setUniformi("team_glow_enabled", 1);
+		} else {
+			GL_state.Uniform.setUniformi("team_glow_enabled", 0);
+		}
 	}
 
 	if ( shader_flags & SDR_FLAG_MODEL_THRUSTER ) {
