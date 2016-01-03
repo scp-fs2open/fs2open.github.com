@@ -151,6 +151,10 @@ flag_def_list Hud_gauge_types[] = {
 
 int Num_hud_gauge_types = sizeof(Hud_gauge_types)/sizeof(flag_def_list);
 
+gauge_settings get_default_gauge_settings() {
+	return {{-1, -1}, Hud_font, Scale_retail_gauges, {Force_scaling_above_res_global[0], Force_scaling_above_res_global[1]}, NULL, NULL, {0.0f, 0.0f}, {0, 0}, false, {0, 0}, true, true, false};
+}
+
 int parse_ship_start()
 {
 	char shipname[NAME_LENGTH];
@@ -445,14 +449,23 @@ void parse_hud_gauges_tbl(const char *filename)
 				// find out what type of gauge we're parsing.
 				gauge_type = parse_gauge_type();
 
+				// change some of the default gauge settings to the appropriate values.
+				gauge_settings settings = get_default_gauge_settings();
+				settings.font_num = use_font;
+				settings.scale_gauge = scale_gauge;
+				settings.ship_idx = &ship_classes;
+				settings.use_clr = use_clr_p;
+
+				// if "default" is specified, then the base resolution is {-1, -1},
+				// indicating GR_640 or GR_1024 to the handlers. otherwise, change it
+				// to the given base resolution.
+				if (!optional_string("default")) {
+					settings.base_res[0] = base_res[0];
+					settings.base_res[1] = base_res[1];
+				}
+
 				// then call the specific gauge load handler function for this gauge type.
-				if (optional_string("default")) {
-					// sending -1 base width and height will indicate GR_640 or GR_1024 to the handlers
-					load_gauge(gauge_type, -1, -1, use_font, scale_gauge, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1], &ship_classes, use_clr_p);
-				}
-				else {
-					load_gauge(gauge_type, base_res[0], base_res[1], use_font, scale_gauge, force_scaling_above_res[0], force_scaling_above_res[1], &ship_classes, use_clr_p);
-				}
+				load_gauge(gauge_type, &settings);
 
 				if (saved_Mp && (saved_Mp == Mp)) {
 					Mp++;
@@ -515,7 +528,7 @@ void load_missing_retail_gauges()
 			}
 
 			if(!retail_gauge_loaded) {
-				load_gauge(retail_gauges[i], -1, -1, Hud_font, Scale_retail_gauges, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1]);
+				load_gauge(retail_gauges[i], &get_default_gauge_settings());
 			}
 		}
 
@@ -531,11 +544,7 @@ void load_missing_retail_gauges()
 
 		// load radar gauge if not loaded.
 		if(!retail_gauge_loaded) {
-			if(Cmdline_orb_radar) {
-				load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, Scale_retail_gauges, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1]);
-			} else {
-				load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, Scale_retail_gauges, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1]);
-			}
+			load_gauge((Cmdline_orb_radar ? HUD_OBJECT_RADAR_ORB : HUD_OBJECT_RADAR_STD), &get_default_gauge_settings());
 		}
 
 		// Throw in the weapon linking reticle gauge if using FS1 defaults
@@ -548,7 +557,7 @@ void load_missing_retail_gauges()
 			}
 
 			if(!retail_gauge_loaded) {
-				load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, Scale_retail_gauges, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1]);
+				load_gauge(HUD_OBJECT_WEAPON_LINKING, &get_default_gauge_settings());
 			}
 		}
 	}
@@ -569,7 +578,9 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					load_gauge(retail_gauges[i], -1, -1, Hud_font, Scale_retail_gauges, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1], &sindex);
+					gauge_settings settings = get_default_gauge_settings();
+					settings.ship_idx = &sindex;
+					load_gauge(retail_gauges[i], &settings);
 				}
 			}
 
@@ -585,11 +596,9 @@ void load_missing_retail_gauges()
 
 			// load radar gauge if not loaded.
 			if(!retail_gauge_loaded) {
-				if(Cmdline_orb_radar) {
-					load_gauge(HUD_OBJECT_RADAR_ORB, -1, -1, Hud_font, Scale_retail_gauges, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1], &sindex);
-				} else {
-					load_gauge(HUD_OBJECT_RADAR_STD, -1, -1, Hud_font, Scale_retail_gauges, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1], &sindex);
-				}
+				gauge_settings settings = get_default_gauge_settings();
+				settings.ship_idx = &sindex;
+				load_gauge((Cmdline_orb_radar ? HUD_OBJECT_RADAR_ORB : HUD_OBJECT_RADAR_STD), &settings);
 			}
 
 			// Throw in the weapon linking reticle gauge if using FS1 defaults
@@ -602,7 +611,9 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					load_gauge(HUD_OBJECT_WEAPON_LINKING, -1, -1, Hud_font, Scale_retail_gauges, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1], &sindex);
+					gauge_settings settings = get_default_gauge_settings();
+					settings.ship_idx = &sindex;
+					load_gauge(HUD_OBJECT_WEAPON_LINKING, &settings);
 				}
 			}
 		}
@@ -890,181 +901,181 @@ int parse_gauge_type()
 	return -1;
 }
 
-void load_gauge(int gauge, int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge(int gauge, gauge_settings* settings)
 {
 	SCP_vector<int> ship_index;
 	ship_index.push_back(-1);
-	if (ship_idx == NULL) {
-		ship_idx = &ship_index;
+	if (settings->ship_idx == NULL) {
+		settings->ship_idx = &ship_index;
 	}
 	switch(gauge) {
 	case HUD_OBJECT_CUSTOM:
-		load_gauge_custom(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_custom(settings);
 		break;
 	case HUD_OBJECT_MESSAGES:
-		load_gauge_messages(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_messages(settings);
 		break;
 	case HUD_OBJECT_TRAINING_MESSAGES:
-		load_gauge_training_messages(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_training_messages(settings);
 		break;
 	case HUD_OBJECT_SUPPORT:
-		load_gauge_support(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_support(settings);
 		break;
 	case HUD_OBJECT_DAMAGE:
-		load_gauge_damage(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_damage(settings);
 		break;
 	case HUD_OBJECT_WINGMAN_STATUS:
-		load_gauge_wingman_status(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_wingman_status(settings);
 		break;
 	case HUD_OBJECT_AUTO_SPEED:
-		load_gauge_auto_speed(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_auto_speed(settings);
 		break;
 	case HUD_OBJECT_AUTO_TARGET:
-		load_gauge_auto_target(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_auto_target(settings);
 		break;
 	case HUD_OBJECT_CMEASURES:
-		load_gauge_countermeasures(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_countermeasures(settings);
 		break;
 	case HUD_OBJECT_TALKING_HEAD:
-		load_gauge_talking_head(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_talking_head(settings);
 		break;
 	case HUD_OBJECT_DIRECTIVES:
-		load_gauge_directives(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_directives(settings);
 		break;
 	case HUD_OBJECT_WEAPONS:
-		load_gauge_weapons(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_weapons(settings);
 		break;
 	case HUD_OBJECT_OBJ_NOTIFY:
-		load_gauge_objective_notify(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_objective_notify(settings);
 		break;
 	case HUD_OBJECT_SQUAD_MSG:
-		load_gauge_squad_message(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_squad_message(settings);
 		break;
 	case HUD_OBJECT_LAG:
-		load_gauge_lag(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_lag(settings);
 		break;
 	case HUD_OBJECT_MINI_SHIELD:
-		load_gauge_mini_shields(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_mini_shields(settings);
 		break;
 	case HUD_OBJECT_PLAYER_SHIELD:
-		load_gauge_player_shields(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_player_shields(settings);
 		break;
 	case HUD_OBJECT_TARGET_SHIELD:
-		load_gauge_target_shields(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_target_shields(settings);
 		break;
 	case HUD_OBJECT_ESCORT:
-		load_gauge_escort_view(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_escort_view(settings);
 		break;
 	case HUD_OBJECT_MISSION_TIME:
-		load_gauge_mission_time(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_mission_time(settings);
 		break;
 	case HUD_OBJECT_ETS_WEAPONS:
-		load_gauge_ets_weapons(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_ets_weapons(settings);
 		break;
 	case HUD_OBJECT_ETS_SHIELDS:
-		load_gauge_ets_shields(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_ets_shields(settings);
 		break;
 	case HUD_OBJECT_ETS_ENGINES:
-		load_gauge_ets_engines(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_ets_engines(settings);
 		break;
 	case HUD_OBJECT_ETS_RETAIL:
-		load_gauge_ets_retail(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_ets_retail(settings);
 		break;
 	case HUD_OBJECT_TARGET_MONITOR:
-		load_gauge_target_monitor(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_target_monitor(settings);
 		break;
 	case HUD_OBJECT_EXTRA_TARGET_DATA:
-		load_gauge_extra_target_data(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_extra_target_data(settings);
 		break;
 	case HUD_OBJECT_RADAR_STD:
-		load_gauge_radar_std(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_radar_std(settings);
 		break;
 	case HUD_OBJECT_RADAR_ORB:
-		load_gauge_radar_orb(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_radar_orb(settings);
 		break;
 	case HUD_OBJECT_RADAR_BSG:
-		load_gauge_radar_dradis(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_radar_dradis(settings);
 		break;
 	case HUD_OBJECT_AFTERBURNER:
-		load_gauge_afterburner(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_afterburner(settings);
 		break;
 	case HUD_OBJECT_WEAPON_ENERGY:
-		load_gauge_weapon_energy(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_weapon_energy(settings);
 		break;
 	case HUD_OBJECT_TEXT_WARNINGS:
-		load_gauge_text_warnings(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_text_warnings(settings);
 		break;
 	case HUD_OBJECT_CENTER_RETICLE:
-		load_gauge_center_reticle(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_center_reticle(settings);
 		break;
 	case HUD_OBJECT_THROTTLE:
-		load_gauge_throttle(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_throttle(settings);
 		break;
 	case HUD_OBJECT_THREAT:
-		load_gauge_threat_indicator(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_threat_indicator(settings);
 		break;
 	case HUD_OBJECT_LEAD:
-		load_gauge_lead(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_lead(settings);
 		break;
 	case HUD_OBJECT_LEAD_SIGHT:
-		load_gauge_lead_sight(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_lead_sight(settings);
 		break;
 	case HUD_OBJECT_LOCK:
-		load_gauge_lock(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_lock(settings);
 		break;
 	case HUD_OBJECT_WEAPON_LINKING:
-		load_gauge_weapon_linking(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_weapon_linking(settings);
 		break;
 	case HUD_OBJECT_MULTI_MSG:
-		load_gauge_multi_msg(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_multi_msg(settings);
 		break;
 	case HUD_OBJECT_VOICE_STATUS:
-		load_gauge_voice_status(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_voice_status(settings);
 		break;
 	case HUD_OBJECT_PING:
-		load_gauge_ping(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_ping(settings);
 		break;
 	case HUD_OBJECT_SUPERNOVA:
-		load_gauge_supernova(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_supernova(settings);
 		break;
 	case HUD_OBJECT_OFFSCREEN:
-		load_gauge_offscreen(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_offscreen(settings);
 		break;
 	case HUD_OBJECT_BRACKETS:
-		load_gauge_brackets(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_brackets(settings);
 		break;
 	case HUD_OBJECT_ORIENTATION_TEE:
-		load_gauge_orientation_tee(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_orientation_tee(settings);
 		break;
 	case HUD_OBJECT_HOSTILE_TRI:
-		load_gauge_hostile_tri(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_hostile_tri(settings);
 		break;
 	case HUD_OBJECT_TARGET_TRI:
-		load_gauge_target_tri(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_target_tri(settings);
 		break;
 	case HUD_OBJECT_MISSILE_TRI:
-		load_gauge_missile_tri(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_missile_tri(settings);
 		break;
 	case HUD_OBJECT_KILLS:
-		load_gauge_kills(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_kills(settings);
 		break;
 	case HUD_OBJECT_FIXED_MESSAGES:
-		load_gauge_fixed_messages(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_fixed_messages(settings);
 		break;
 	case HUD_OBJECT_FLIGHT_PATH:
-		load_gauge_flight_path(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_flight_path(settings);
 		break;
 	case HUD_OBJECT_WARHEAD_COUNT:
-		load_gauge_warhead_count(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_warhead_count(settings);
 		break;
 	case HUD_OBJECT_HARDPOINTS:
-		load_gauge_hardpoints(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_hardpoints(settings);
 		break;
 	case HUD_OBJECT_PRIMARY_WEAPONS:
-		load_gauge_primary_weapons(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_primary_weapons(settings);
 		break;
 	case HUD_OBJECT_SECONDARY_WEAPONS:
-		load_gauge_secondary_weapons(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr);
+		load_gauge_secondary_weapons(settings);
 		break;
 	default:
 		// It's either -1, indicating we're ignoring a parse error, or it's a coding error.
@@ -1073,9 +1084,9 @@ void load_gauge(int gauge, int base_w, int base_h, int hud_font, bool scale_gaug
 	}
 }
 
-inline bool check_base_res(int w, int h)
+inline bool check_base_res(int *res)
 {
-	return (w >= 640) && (h >= 480);
+	return (res[0] >= 640) && (res[1] >= 480);
 }
 
 void check_color(int *colorp)
@@ -1134,18 +1145,8 @@ void adjust_for_multimonitor(int *base_res, bool set_position, int *coords)
 }
 
 template<class T>
-T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h,
-					 SCP_vector<int>* ship_idx, color *use_clr, float default_origin_x, float default_origin_y,
-					 int default_offset_x, int default_offset_y, bool default_position = false,
-					 int default_position_x = 0, int default_position_y = 0, bool set_position = true,
-					 bool set_colour = true, bool slew = false, T* preAllocated = NULL)
+T* gauge_load_common(gauge_settings* settings, T* preAllocated = NULL)
 {
-	int coords[2] = {default_position_x, default_position_y};
-	float origin[2] = {default_origin_x, default_origin_y};
-	int offset[2] = {default_offset_x, default_offset_y};
-	int base_res[2];
-	int force_scaling_above_res[2] = {force_scaling_above_w, force_scaling_above_h};
-	int font_num = FONT1;
 	int colors[3] = {255, 255, 255};
 	bool lock_color = false;
 
@@ -1155,73 +1156,73 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, int
 	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
-	if(gr_screen.res == GR_640) {
-		base_res[0] = 640;
-		base_res[1] = 480;
-	} else {
-		base_res[0] = 1024;
-		base_res[1] = 768;
+	if(settings->force_scaling_above_res[0] <= 0) {
+		settings->force_scaling_above_res[0] = INT_MAX;
+	}
+	if(settings->force_scaling_above_res[1] <= 0) {
+		settings->force_scaling_above_res[1] = INT_MAX;
 	}
 
-	if(force_scaling_above_res[0] <= 0) {
-		force_scaling_above_res[0] = INT_MAX;
-	}
-	if(force_scaling_above_res[1] <= 0) {
-		force_scaling_above_res[1] = INT_MAX;
-	}
-
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
-		if (set_position) {
+	if(check_base_res(settings->base_res)) {
+		if (settings->set_position) {
 			if(optional_string("Position:")) {
-				stuff_int_list(coords, 2);
+				stuff_int_list(settings->coords, 2);
+				settings->use_coords = true;
 			} else {
 				if(optional_string("Scale Gauge:")) {
-					stuff_boolean(&scale_gauge);;
+					stuff_boolean(&settings->scale_gauge);;
 				}
 
 				if(optional_string("Force Scaling Above:")) {
-					stuff_int_list(force_scaling_above_res, 2);
+					stuff_int_list(settings->force_scaling_above_res, 2);
 				}
 
-				adjust_base_res(base_res, force_scaling_above_res, scale_gauge);
+				adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
 
 				// If no positioning information is specified, use the default position
 				bool use_default_pos = true;
 
 				if(optional_string("Origin:")) {
-					stuff_float_list(origin, 2);
+					stuff_float_list(settings->origin, 2);
 					use_default_pos = false;
 
 					required_string("Offset:");
-					stuff_int_list(offset, 2);
+					stuff_int_list(settings->offset, 2);
 				}
 
 				if(optional_string("Offset:")) {
 					Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
 				}
 
-				if ( !(default_position && use_default_pos) ) {
-					coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
-					coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+				if ( !(settings->use_coords && use_default_pos) ) {
+					settings->coords[0] = (int)(settings->base_res[0] * settings->origin[0]) + settings->offset[0];
+					settings->coords[1] = (int)(settings->base_res[1] * settings->origin[1]) + settings->offset[1];
+					settings->use_coords = true;
 				}
 			}
 		} else {
-			adjust_base_res(base_res, force_scaling_above_res, scale_gauge);
+			adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
 		}
 	} else {
-		adjust_base_res(base_res, force_scaling_above_res, scale_gauge);
+		if(gr_screen.res == GR_640) {
+			settings->base_res[0] = 640;
+			settings->base_res[1] = 480;
+		} else {
+			settings->base_res[0] = 1024;
+			settings->base_res[1] = 768;
+		}
 
-		if (set_position && !default_position) {
-			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
-			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+		adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
+
+		if (settings->set_position && !settings->use_coords) {
+			settings->coords[0] = (int)(settings->base_res[0] * settings->origin[0]) + settings->offset[0];
+			settings->coords[1] = (int)(settings->base_res[1] * settings->origin[1]) + settings->offset[1];
+			settings->use_coords = true;
 		}
 	}
 
-	if (set_position) {
-		if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
+	if (settings->set_position) {
+		if ( optional_string("Cockpit Target:") && settings->ship_idx->at(0) >= 0 ) {
 			stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
 
 			if ( optional_string("Canvas Size:") ) {
@@ -1236,17 +1237,17 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, int
 			stuff_int_list(display_size, 2);
 		} else {
 			// adjust for multimonitor setups ONLY if not rendering gauge to a texture
-			adjust_for_multimonitor(base_res, true, coords);
+			adjust_for_multimonitor(settings->base_res, true, settings->coords);
 		}
 	} else {
-		adjust_for_multimonitor(base_res, true, coords);
+		adjust_for_multimonitor(settings->base_res, true, settings->coords);
 	}
 
-	if (set_colour) {
-		if ( use_clr != NULL ) {
-			colors[0] = use_clr->red;
-			colors[1] = use_clr->green;
-			colors[2] = use_clr->blue;
+	if (settings->set_colour) {
+		if ( settings->use_clr != NULL ) {
+			colors[0] = settings->use_clr->red;
+			colors[1] = settings->use_clr->green;
+			colors[2] = settings->use_clr->blue;
 
 			lock_color = true;
 		} else if ( optional_string("Color:") ) {
@@ -1259,16 +1260,16 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, int
 	}
 
 	if(optional_string("Font:")) {
-		stuff_int(&font_num);
+		stuff_int(&settings->font_num);
 	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
+		if ( settings->font_num < 0 ) {
+			settings->font_num = FONT1;
 		}
 	}
 
-	if (set_position) {
+	if (settings->set_position) {
 		if(optional_string("Slew:")) {
-			stuff_boolean(&slew);
+			stuff_boolean(&settings->slew);
 		}
 	}
 
@@ -1279,14 +1280,14 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, int
 		instance = new T();
 	}
 
-	instance->initBaseResolution(base_res[0], base_res[1]);
-	instance->initFont(font_num);
-	if (set_position) {
-		instance->initPosition(coords[0], coords[1]);
-		instance->initSlew(slew);
+	instance->initBaseResolution(settings->base_res[0], settings->base_res[1]);
+	instance->initFont(settings->font_num);
+	if (settings->set_position) {
+		instance->initPosition(settings->coords[0], settings->coords[1]);
+		instance->initSlew(settings->slew);
 		instance->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	}
-	if (set_colour) {
+	if (settings->set_colour) {
 		instance->updateColor(colors[0], colors[1], colors[2]);
 		instance->lockConfigColor(lock_color);
 	}
@@ -1294,23 +1295,15 @@ T* gauge_load_common(int base_w, int base_h, int hud_font, bool scale_gauge, int
 	return instance;
 }
 
-void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_custom(gauge_settings* settings)
 {
 	int i;
-	float origin[2] = {0.0, 0.0};
-	int offset[2] = {0, 0};
-	int coords[2] = {0, 0};
-
-	int base_res[2] = {640, 480};
-	int force_scaling_above_res[2] = {force_scaling_above_w, force_scaling_above_h};
 	char gauge_string[MAX_FILENAME_LEN];
 	char name[MAX_FILENAME_LEN];
 	char text[MAX_FILENAME_LEN];
 	char filename[MAX_FILENAME_LEN];
 	int gauge_type = HUD_CENTER_RETICLE;
-	bool slew = false;
 	bool active_by_default = true;
-	int font_num = FONT1;
 	int txtoffset_x = 0, txtoffset_y = 0;
 	ubyte r = 255, g = 255, b = 255;
 	int colors[3] = {255, 255, 255};
@@ -1322,32 +1315,30 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, i
 	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-		
+	if(check_base_res(settings->base_res)) {
 		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
+			stuff_int_list(settings->coords, 2);
+			settings->use_coords = true;
 		} else {
 			if(optional_string("Scale Gauge:")) {
-				stuff_boolean(&scale_gauge);;
+				stuff_boolean(&settings->scale_gauge);;
 			}
 
 			if(optional_string("Force Scaling Above:")) {
-				stuff_int_list(force_scaling_above_res, 2);
+				stuff_int_list(settings->force_scaling_above_res, 2);
 			}
 
-			adjust_base_res(base_res, force_scaling_above_res, scale_gauge);
+			adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
 
 			// If no positioning information is specified, use the default position
 			bool use_default_pos = true;
 
 			if(optional_string("Origin:")) {
-				stuff_float_list(origin, 2);
+				stuff_float_list(settings->origin, 2);
 				use_default_pos = false;
 
 				required_string("Offset:");
-				stuff_int_list(offset, 2);
+				stuff_int_list(settings->offset, 2);
 			}
 
 			if(optional_string("Offset:")) {
@@ -1355,12 +1346,13 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, i
 			}
 
 			if (!use_default_pos) {
-				coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
-				coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+				settings->coords[0] = (int)(settings->base_res[0] * settings->origin[0]) + settings->offset[0];
+				settings->coords[1] = (int)(settings->base_res[1] * settings->origin[1]) + settings->offset[1];
+				settings->use_coords = true;
 			}
 		}
 
-		if ( optional_string("Cockpit Target:") && ship_idx->at(0) >= 0 ) {
+		if ( optional_string("Cockpit Target:") && settings->ship_idx->at(0) >= 0 ) {
 			stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
 
 			if ( optional_string("Canvas Size:") ) {
@@ -1375,13 +1367,13 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, i
 			stuff_int_list(display_size, 2);
 		} else {
 			// adjust for multimonitor setups ONLY if not rendering gauge to a texture
-			adjust_for_multimonitor(base_res, true, coords);
+			adjust_for_multimonitor(settings->base_res, true, settings->coords);
 		}
 
-		if ( use_clr != NULL ) {
-			colors[0] = use_clr->red;
-			colors[1] = use_clr->green;
-			colors[2] = use_clr->blue;
+		if ( settings->use_clr != NULL ) {
+			colors[0] = settings->use_clr->red;
+			colors[1] = settings->use_clr->green;
+			colors[2] = settings->use_clr->blue;
 
 			lock_color = true;
 		} else if ( optional_string("Color:") ) {
@@ -1393,10 +1385,10 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, i
 		}
 
 		if ( optional_string("Font:") ) {
-			stuff_int(&font_num);
+			stuff_int(&settings->font_num);
 		} else {
-			if ( hud_font >=0 ) {
-				font_num = hud_font;
+			if ( settings->font_num < 0 ) {
+				settings->font_num = FONT1;
 			}
 		}
 
@@ -1425,7 +1417,7 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, i
 		}
 
 		if(optional_string("Slew:")) {
-			stuff_boolean(&slew);
+			stuff_boolean(&settings->slew);
 		}
 
 		if(optional_string("Active by default:")) {
@@ -1434,19 +1426,26 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, i
 
 		required_string("Filename:");
 		stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+	} else {
+		settings->base_res[0] = 640;
+		settings->base_res[1] = 480;
+
+		if ( settings->font_num < 0 ) {
+			settings->font_num = FONT1;
+		}
 	}
 
-	HudGauge* hud_gauge = new HudGauge(gauge_type, slew, r, g, b, name, text, filename, txtoffset_x, txtoffset_y);
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
-	hud_gauge->initFont(font_num);
+	HudGauge* hud_gauge = new HudGauge(gauge_type, settings->slew, r, g, b, name, text, filename, txtoffset_x, txtoffset_y);
+	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1]);
+	hud_gauge->initPosition(settings->coords[0], settings->coords[1]);
+	hud_gauge->initFont(settings->font_num);
 	hud_gauge->initRenderStatus(active_by_default);
 	hud_gauge->updateColor(colors[0], colors[1], colors[2]);
 	hud_gauge->lockConfigColor(lock_color);
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGauge* instance = new HudGauge();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -1457,24 +1456,22 @@ void load_gauge_custom(int base_w, int base_h, int hud_font, bool scale_gauge, i
 	}
 }
 
-void load_gauge_lag(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_lag(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	char fname[MAX_FILENAME_LEN] = "netlag1";
-
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 66;
-		offset[1] = 91;
+		settings->offset[0] = 66;
+		settings->offset[1] = 91;
 	} else {
-		offset[0] = 115;
-		offset[1] = 145;
+		settings->offset[0] = 115;
+		settings->offset[1] = 145;
 	}
 
-	HudGaugeLag* hud_gauge = gauge_load_common<HudGaugeLag>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeLag* hud_gauge = gauge_load_common<HudGaugeLag>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1482,8 +1479,8 @@ void load_gauge_lag(int base_w, int base_h, int hud_font, bool scale_gauge, int 
 
 	hud_gauge->initBitmaps(fname);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeLag* instance = new HudGaugeLag();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -1494,18 +1491,20 @@ void load_gauge_lag(int base_w, int base_h, int hud_font, bool scale_gauge, int 
 	}
 }
 
-void load_gauge_mini_shields(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_mini_shields(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int Mini_3digit_offsets[2];
 	int Mini_1digit_offsets[2];
 	int Mini_2digit_offsets[2];
 	char fname[MAX_FILENAME_LEN] = "targhit1";
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -15;
-		offset[1] = 51;
+		settings->offset[0] = -15;
+		settings->offset[1] = 51;
 
 		Mini_3digit_offsets[0] = 5;
 		Mini_3digit_offsets[1] = 7;
@@ -1514,8 +1513,8 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, bool scale_ga
 		Mini_2digit_offsets[0] = 8;
 		Mini_2digit_offsets[1] = 7;
 	} else {
-		offset[0] = -15;
-		offset[1] = 86;
+		settings->offset[0] = -15;
+		settings->offset[1] = 86;
 
 		Mini_3digit_offsets[0] = 5;
 		Mini_3digit_offsets[1] = 7;
@@ -1525,11 +1524,7 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, bool scale_ga
 		Mini_2digit_offsets[1] = 7;
 	}
 
-	HudGaugeShieldMini* hud_gauge = gauge_load_common<HudGaugeShieldMini>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeShieldMini* hud_gauge = gauge_load_common<HudGaugeShieldMini>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1549,8 +1544,8 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, bool scale_ga
 	hud_gauge->init3DigitOffsets(Mini_3digit_offsets[0], Mini_3digit_offsets[1]);
 	hud_gauge->initBitmaps(fname);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeShieldMini* instance = new HudGaugeShieldMini();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -1561,10 +1556,8 @@ void load_gauge_mini_shields(int base_w, int base_h, int hud_font, bool scale_ga
 	}
 }
 
-void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_weapon_energy(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int Wenergy_text_offsets[2];
 	int Wenergy_h;
 	int text_alignment = 0;
@@ -1576,6 +1569,10 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, bool scale_g
 	int weapon_alignment = 0;
 	bool show_weapons = false;
 	char fname[MAX_FILENAME_LEN];
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
@@ -1592,16 +1589,16 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, bool scale_g
 	}
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 96;
-		offset[1] = 25;
+		settings->offset[0] = 96;
+		settings->offset[1] = 25;
 
 		Wenergy_text_offsets[0] = 23;
 		Wenergy_text_offsets[1] = 53;
 
 		Wenergy_h = 60;
 	} else {
-		offset[0] = 154;
-		offset[1] = 40;
+		settings->offset[0] = 154;
+		settings->offset[1] = 40;
 
 		Wenergy_text_offsets[0] = 43;
 		Wenergy_text_offsets[1] = 85;
@@ -1609,11 +1606,7 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, bool scale_g
 		Wenergy_h = 96;
 	}
 
-	HudGaugeWeaponEnergy* hud_gauge = gauge_load_common<HudGaugeWeaponEnergy>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeWeaponEnergy* hud_gauge = gauge_load_common<HudGaugeWeaponEnergy>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1663,8 +1656,8 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, bool scale_g
 	hud_gauge->initShowBallistics(show_ballistic);
 	hud_gauge->initArmedOffsets(armed_weapon_offsets[0], armed_weapon_offsets[1], armed_weapon_h, show_weapons);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeWeaponEnergy* instance = new HudGaugeWeaponEnergy();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -1675,25 +1668,23 @@ void load_gauge_weapon_energy(int base_w, int base_h, int hud_font, bool scale_g
 	}
 }
 
-void load_gauge_target_shields(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_target_shields(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 1.0};
-	int offset[2];
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -178;
-		offset[1] = -101;
+		settings->offset[0] = -178;
+		settings->offset[1] = -101;
 	} else {
-		offset[0] = -220;
-		offset[1] = -98;
+		settings->offset[0] = -220;
+		settings->offset[1] = -98;
 	}
 
-	HudGaugeShieldTarget* hud_gauge = gauge_load_common<HudGaugeShieldTarget>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeShieldTarget* hud_gauge = gauge_load_common<HudGaugeShieldTarget>(settings);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeShieldTarget* instance = new HudGaugeShieldTarget();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -1704,25 +1695,23 @@ void load_gauge_target_shields(int base_w, int base_h, int hud_font, bool scale_
 	}
 }
 
-void load_gauge_player_shields(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_player_shields(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 1.0};
-	int offset[2];
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 76;
-		offset[1] = -101;
+		settings->offset[0] = 76;
+		settings->offset[1] = -101;
 	} else {
-		offset[0] = 122;
-		offset[1] = -98;
+		settings->offset[0] = 122;
+		settings->offset[1] = -98;
 	}
 
-	HudGaugeShieldPlayer* hud_gauge = gauge_load_common<HudGaugeShieldPlayer>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeShieldPlayer* hud_gauge = gauge_load_common<HudGaugeShieldPlayer>(settings);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeShieldPlayer* instance = new HudGaugeShieldPlayer();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -1733,10 +1722,8 @@ void load_gauge_player_shields(int base_w, int base_h, int hud_font, bool scale_
 	}
 }
 
-void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_escort_view(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 0.5};
-	int offset[2];
 	int header_text_offsets[2];
 	int list_start_offsets[2];
 	int entry_h;
@@ -1751,10 +1738,13 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 	char fname_top[MAX_FILENAME_LEN] = "escort1";
 	char fname_middle[MAX_FILENAME_LEN] = "escort2";
 	char fname_bottom[MAX_FILENAME_LEN] = "escort3";
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 0.5f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -154;
-		offset[1] = -40;
+		settings->offset[0] = -154;
+		settings->offset[1] = -40;
 
 		header_text_offsets[0] = 3;
 		header_text_offsets[1] = 2;
@@ -1769,8 +1759,8 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 		ship_status_offsets[0] = -12;
 		ship_status_offsets[1] = 0;
 	} else {
-		offset[0] = -159;
-		offset[1] = -54;
+		settings->offset[0] = -159;
+		settings->offset[1] = -54;
 
 		header_text_offsets[0] = 3;
 		header_text_offsets[1] = 2;
@@ -1786,9 +1776,7 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 		ship_status_offsets[1] = 0;
 	}
 
-	HudGaugeEscort* hud_gauge = gauge_load_common<HudGaugeEscort>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeEscort* hud_gauge = gauge_load_common<HudGaugeEscort>(settings);
 
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
@@ -1852,8 +1840,8 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 	hud_gauge->initShipNameMaxWidth(ship_name_max_w);
 	hud_gauge->initRightAlignNames(right_align_names);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeEscort* instance = new HudGaugeEscort();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -1864,12 +1852,14 @@ void load_gauge_escort_view(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 }
 
-void load_gauge_afterburner(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_afterburner(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int energy_h;
 	char fname[MAX_FILENAME_LEN];
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
@@ -1886,22 +1876,18 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -149;
-		offset[1] = 25;
+		settings->offset[0] = -149;
+		settings->offset[1] = 25;
 
 		energy_h = 60;
 	} else {
-		offset[0] = -238;
-		offset[1] = 40;
+		settings->offset[0] = -238;
+		settings->offset[1] = 40;
 
 		energy_h = 96;
 	}
 
-	HudGaugeAfterburner *hud_gauge = gauge_load_common<HudGaugeAfterburner>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeAfterburner *hud_gauge = gauge_load_common<HudGaugeAfterburner>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1913,8 +1899,8 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, bool scale_gau
 	hud_gauge->initEnergyHeight(energy_h);
 	hud_gauge->initBitmaps(fname);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeAfterburner* instance = new HudGaugeAfterburner();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -1926,20 +1912,21 @@ void load_gauge_afterburner(int base_w, int base_h, int hud_font, bool scale_gau
 }
 
 
-void load_gauge_mission_time(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_mission_time(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
 	int time_text_offsets[2];
 	int time_val_offsets[2];
 	char fname[MAX_FILENAME_LEN] = "time1";
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -53;
-		offset[1] = -32;
+		settings->offset[0] = -53;
+		settings->offset[1] = -32;
 	} else {
-		offset[0] = -55;
-		offset[1] = -52;
+		settings->offset[0] = -55;
+		settings->offset[1] = -52;
 	}
 	time_text_offsets[0] = 4;
 	time_text_offsets[1] = 4;
@@ -1947,9 +1934,7 @@ void load_gauge_mission_time(int base_w, int base_h, int hud_font, bool scale_ga
 	time_val_offsets[0] = 26;
 	time_val_offsets[1] = 12;
 
-	HudGaugeMissionTime* hud_gauge = gauge_load_common<HudGaugeMissionTime>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeMissionTime* hud_gauge = gauge_load_common<HudGaugeMissionTime>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -1965,8 +1950,8 @@ void load_gauge_mission_time(int base_w, int base_h, int hud_font, bool scale_ga
 	hud_gauge->initValueOffsets(time_val_offsets[0], time_val_offsets[1]);
 	hud_gauge->initBitmaps(fname);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeMissionTime* instance = new HudGaugeMissionTime();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -1977,7 +1962,7 @@ void load_gauge_mission_time(int base_w, int base_h, int hud_font, bool scale_ga
 	}
 }
 
-void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_threat_indicator(gauge_settings* settings)
 {
 	int Laser_warn_offsets[2];
 	int Lock_warn_offsets[2];
@@ -1985,13 +1970,14 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, bool scal
 	char fname_laser[MAX_FILENAME_LEN];
 	char fname_lock[MAX_FILENAME_LEN];
 
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			offset[0] = -79;
-			offset[1] = -103;
+			settings->offset[0] = -79;
+			settings->offset[1] = -103;
 
 			Laser_warn_offsets[0] = 59;
 			Laser_warn_offsets[1] = 0;
@@ -2003,8 +1989,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, bool scal
 			strcpy_s(fname_laser, "toparc2_fs1");
 			strcpy_s(fname_lock, "toparc3_fs1");
 		} else {
-			offset[0] = -126;
-			offset[1] = -165;
+			settings->offset[0] = -126;
+			settings->offset[1] = -165;
 
 			Laser_warn_offsets[0] = 94;
 			Laser_warn_offsets[1] = 0;
@@ -2018,8 +2004,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, bool scal
 		}
 	} else {
 		if(gr_screen.res == GR_640) {
-			offset[0] = 39;
-			offset[1] = -72;
+			settings->offset[0] = 39;
+			settings->offset[1] = -72;
 
 			Laser_warn_offsets[0] = 41;
 			Laser_warn_offsets[1] = 77;
@@ -2031,8 +2017,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, bool scal
 			strcpy_s(fname_laser, "toparc2");
 			strcpy_s(fname_lock, "toparc3");
 		} else {
-			offset[0] = 62;
-			offset[1] = -115;
+			settings->offset[0] = 62;
+			settings->offset[1] = -115;
 
 			Laser_warn_offsets[0] = 66;
 			Laser_warn_offsets[1] = 124;
@@ -2046,11 +2032,7 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, bool scal
 		}
 	}
 
-	HudGaugeThreatIndicator* hud_gauge = gauge_load_common<HudGaugeThreatIndicator>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeThreatIndicator* hud_gauge = gauge_load_common<HudGaugeThreatIndicator>(settings);
 
 	if(optional_string("Arc Filename:")) {
 		stuff_string(fname_arc, F_NAME, MAX_FILENAME_LEN);
@@ -2072,8 +2054,8 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, bool scal
 	hud_gauge->initLaserWarnOffsets(Laser_warn_offsets[0], Laser_warn_offsets[1]);
 	hud_gauge->initLockWarnOffsets(Lock_warn_offsets[0], Lock_warn_offsets[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeThreatIndicator* instance = new HudGaugeThreatIndicator();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -2084,47 +2066,45 @@ void load_gauge_threat_indicator(int base_w, int base_h, int hud_font, bool scal
 	}
 }
 
-void load_gauge_center_reticle(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_center_reticle(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	char fname[MAX_FILENAME_LEN];
 	bool firepoints = false;
 	int scaleX = 15;
 	int scaleY = 10;
 	int size = 5;
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			offset[0] = -12;
-			offset[1] = -5;
+			settings->offset[0] = -12;
+			settings->offset[1] = -5;
 
 			strcpy_s(fname, "reticle1_fs1");
 		} else {
-			offset[0] = -19;
-			offset[1] = -8;
+			settings->offset[0] = -19;
+			settings->offset[1] = -8;
 
 			strcpy_s(fname, "2_reticle1_fs1");
 		}
 	} else {
 		if(gr_screen.res == GR_640) {
-			offset[0] = -12;
-			offset[1] = -5;
+			settings->offset[0] = -12;
+			settings->offset[1] = -5;
 
 			strcpy_s(fname, "reticle1");
 		} else {
-			offset[0] = -19;
-			offset[1] = -14;
+			settings->offset[0] = -19;
+			settings->offset[1] = -14;
 
 			strcpy_s(fname, "2_reticle1");
 		}
 	}
 
-	HudGaugeReticle* hud_gauge = gauge_load_common<HudGaugeReticle>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeReticle* hud_gauge = gauge_load_common<HudGaugeReticle>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2145,8 +2125,8 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, bool scale_
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeReticle* instance = new HudGaugeReticle();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -2157,10 +2137,8 @@ void load_gauge_center_reticle(int base_w, int base_h, int hud_font, bool scale_
 	}
 }
 
-void load_gauge_throttle(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_throttle(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int bottom_offset_y;
 	int throttle_h, throttle_w;
 	int throttle_aburn_h;
@@ -2180,12 +2158,16 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, bool scale_gauge,
 	bool custom_match = false;
 	char fname[MAX_FILENAME_LEN];
 	bool show_background = false;
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	// default values for the throttle
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
-			offset[0] = -103;
-			offset[1] = 4;
+			settings->offset[0] = -103;
+			settings->offset[1] = 4;
 
 			bottom_offset_y = 65;
 			throttle_h = 50;
@@ -2200,8 +2182,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, bool scale_gauge,
 			orbit_radius = 104;
 			strcpy_s(fname, "leftarc_fs1");
 		} else {
-			offset[0] = -165;
-			offset[1] = 6;
+			settings->offset[0] = -165;
+			settings->offset[1] = 6;
 
 			bottom_offset_y = 104;
 			throttle_h = 80;
@@ -2219,8 +2201,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, bool scale_gauge,
 		show_background = true;
 	} else {
 		if(gr_screen.res == GR_640) {
-			offset[0] = -104;
-			offset[1] = -72;
+			settings->offset[0] = -104;
+			settings->offset[1] = -72;
 
 			bottom_offset_y = 139;
 			throttle_h = 50;
@@ -2235,8 +2217,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, bool scale_gauge,
 			orbit_radius = 104;
 			strcpy_s(fname, "leftarc");
 		} else {
-			offset[0] = -166;
-			offset[1] = -115;
+			settings->offset[0] = -166;
+			settings->offset[1] = -115;
 
 			bottom_offset_y = 222;
 			throttle_h = 80;
@@ -2253,11 +2235,7 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, bool scale_gauge,
 		}
 	}
 
-	HudGaugeThrottle* hud_gauge = gauge_load_common<HudGaugeThrottle>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeThrottle* hud_gauge = gauge_load_common<HudGaugeThrottle>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2328,8 +2306,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, bool scale_gauge,
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->showBackground(show_background);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeThrottle* instance = new HudGaugeThrottle();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -2344,11 +2322,8 @@ void load_gauge_throttle(int base_w, int base_h, int hud_font, bool scale_gauge,
  * Load retail style ETS gauge
  * i.e. treats weapons, shields & engines gauges as a single gauge
  */
-void load_gauge_ets_retail(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_ets_retail(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
-	int coords[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
@@ -2358,6 +2333,9 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, bool scale_gaug
 	int gauge_offset; // distance between micro gauges
 	int i;
 	int gauge_positions[num_retail_ets_gauges];
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if (Lcl_gr) {
 		ets_letters[0] = 'G'; ets_letters[1] = 'S'; ets_letters[2] = 'A'; // German
@@ -2369,13 +2347,13 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, bool scale_gaug
 
 	// default values which may be overwritten by .tbl
 	if(gr_screen.res == GR_640) {
-		offset[0] = -117;
-		offset[1] = -100;
+		settings->offset[0] = -117;
+		settings->offset[1] = -100;
 
 		gauge_offset = 17;
 	} else {
-		offset[0] = -144;
-		offset[1] = -120;
+		settings->offset[0] = -144;
+		settings->offset[1] = -120;
 
 		gauge_offset = 18;
 	}
@@ -2387,9 +2365,7 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, bool scale_gaug
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	HudGaugeEtsRetail* hud_gauge = gauge_load_common<HudGaugeEtsRetail>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeEtsRetail* hud_gauge = gauge_load_common<HudGaugeEtsRetail>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2410,11 +2386,9 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, bool scale_gaug
 		stuff_int(&gauge_offset);
 	}
 
-	// calculate offsets for the three gauges
-	// re-use coords[2] since it's not needed after calling gauge_load_common
-	hud_gauge->getPosition(&coords[0], &coords[1]);
+	// calculate offsets for the three gauges from settings->coords[0], which was set by gauge_load_common
 	for (i = 0; i < num_retail_ets_gauges; ++i) {
-		gauge_positions[i] = coords[0] + gauge_offset * i;
+		gauge_positions[i] = settings->coords[0] + gauge_offset * i;
 	}
 
 	hud_gauge->initLetters(ets_letters);
@@ -2425,8 +2399,8 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, bool scale_gaug
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initGaugePositions(gauge_positions);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeEtsRetail* instance = new HudGaugeEtsRetail();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -2437,16 +2411,17 @@ void load_gauge_ets_retail(int base_w, int base_h, int hud_font, bool scale_gaug
 	}
 }
 
-void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_ets_weapons(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
 	int bottom_offsets[2];
 	char letter;
 	char fname[MAX_FILENAME_LEN] = "energy1";
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if(Lcl_gr) {
 		// German
@@ -2460,11 +2435,11 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -117;
-		offset[1] = -100;
+		settings->offset[0] = -117;
+		settings->offset[1] = -100;
 	} else {
-		offset[0] = -144;
-		offset[1] = -120;
+		settings->offset[0] = -144;
+		settings->offset[1] = -120;
 	}
 	bar_h = 41;
 	letter_offsets[0] = 2;
@@ -2474,9 +2449,7 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, bool scale_gau
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	HudGaugeEtsWeapons* hud_gauge = gauge_load_common<HudGaugeEtsWeapons>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeEtsWeapons* hud_gauge = gauge_load_common<HudGaugeEtsWeapons>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2501,8 +2474,8 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, bool scale_gau
 	hud_gauge->initBarHeight(bar_h);
 	hud_gauge->initBitmaps(fname);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeEtsWeapons* instance = new HudGaugeEtsWeapons();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -2513,16 +2486,17 @@ void load_gauge_ets_weapons(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 }
 
-void load_gauge_ets_shields(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_ets_shields(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
 	int bottom_offsets[2];
 	char letter;
 	char fname[MAX_FILENAME_LEN] = "energy1";
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if(Lcl_gr){
 		// German
@@ -2536,11 +2510,11 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -100;
-		offset[1] = -100;
+		settings->offset[0] = -100;
+		settings->offset[1] = -100;
 	} else {
-		offset[0] = -126;
-		offset[1] = -120;
+		settings->offset[0] = -126;
+		settings->offset[1] = -120;
 	}
 	bar_h = 41;
 
@@ -2551,9 +2525,7 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, bool scale_gau
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	HudGaugeEtsShields* hud_gauge = gauge_load_common<HudGaugeEtsShields>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeEtsShields* hud_gauge = gauge_load_common<HudGaugeEtsShields>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2578,8 +2550,8 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, bool scale_gau
 	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
 	hud_gauge->initTopOffsets(top_offsets[0], top_offsets[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeEtsShields* instance = new HudGaugeEtsShields();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -2590,16 +2562,17 @@ void load_gauge_ets_shields(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 }
 
-void load_gauge_ets_engines(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_ets_engines(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
 	int bar_h;
 	int letter_offsets[2];
 	int top_offsets[2];
 	int bottom_offsets[2];
 	char letter;
 	char fname[MAX_FILENAME_LEN] = "energy1";
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if(Lcl_gr){
 		// German
@@ -2613,11 +2586,11 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -83;
-		offset[1] = -100;
+		settings->offset[0] = -83;
+		settings->offset[1] = -100;
 	} else {
-		offset[0] = -108;
-		offset[1] = -120;
+		settings->offset[0] = -108;
+		settings->offset[1] = -120;
 	}
 
 	bar_h = 41;
@@ -2629,9 +2602,7 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, bool scale_gau
 	bottom_offsets[0] = 0;
 	bottom_offsets[1] = 50;
 
-	HudGaugeEtsEngines* hud_gauge = gauge_load_common<HudGaugeEtsEngines>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeEtsEngines* hud_gauge = gauge_load_common<HudGaugeEtsEngines>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2656,8 +2627,8 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, bool scale_gau
 	hud_gauge->initLetterOffsets(letter_offsets[0], letter_offsets[1]);
 	hud_gauge->initTopOffsets(top_offsets[0], top_offsets[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeEtsEngines* instance = new HudGaugeEtsEngines();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -2668,10 +2639,8 @@ void load_gauge_ets_engines(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 }
 
-void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_extra_target_data(gauge_settings* settings)
 {
-	float origin[2] = {0.0, 1.0};
-	int offset[2];
 	int dock_offsets[2];
 	int dock_max_w;
 	int time_offsets[2];
@@ -2679,10 +2648,13 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool sca
 	int order_offsets[2];
 	int order_max_w;
 	char fname[MAX_FILENAME_LEN] = "targetview3";
+	
+	settings->origin[0] = 0.0f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 5;
-		offset[1] = -200;
+		settings->offset[0] = 5;
+		settings->offset[1] = -200;
 
 		dock_offsets[0] = 8;
 		dock_offsets[1] = 19;
@@ -2690,8 +2662,8 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool sca
 		time_offsets[0] = 8;
 		time_offsets[1] = 10;
 	} else {
-		offset[0] = 5;
-		offset[1] = -216;
+		settings->offset[0] = 5;
+		settings->offset[1] = -216;
 
 		dock_offsets[0] = 8;
 		dock_offsets[1] = 18;
@@ -2709,9 +2681,7 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool sca
 	dock_max_w = 173;
 	order_max_w = 162;
 
-	HudGaugeExtraTargetData* hud_gauge = gauge_load_common<HudGaugeExtraTargetData>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeExtraTargetData* hud_gauge = gauge_load_common<HudGaugeExtraTargetData>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2743,8 +2713,8 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool sca
 	hud_gauge->initOrderMaxWidth(order_max_w);
 	hud_gauge->initTimeOffsets(time_offsets[0], time_offsets[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeExtraTargetData* instance = new HudGaugeExtraTargetData();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -2755,20 +2725,21 @@ void load_gauge_extra_target_data(int base_w, int base_h, int hud_font, bool sca
 	}
 }
 
-void load_gauge_radar_std(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_radar_std(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 1.0};
-	int offset[2];
 	int Radar_blip_radius_normal;
 	int Radar_blip_radius_target;
 	int Radar_radius[2];
 	int Radar_dist_offsets[RR_MAX_RANGES][2];
 	float Radar_center_offsets[2];
 	char fname[MAX_FILENAME_LEN];
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -63;
-		offset[1] = -111;
+		settings->offset[0] = -63;
+		settings->offset[1] = -111;
 
 		Radar_blip_radius_normal = 2;
 		Radar_blip_radius_target = 5;
@@ -2790,8 +2761,8 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, bool scale_gauge
 
 		strcpy_s(fname, "radar1");
 	} else {
-		offset[0] = -101;
-		offset[1] = -178;
+		settings->offset[0] = -101;
+		settings->offset[1] = -178;
 
 		Radar_blip_radius_normal = 4;
 		Radar_blip_radius_target = 8;
@@ -2814,9 +2785,7 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, bool scale_gauge
 		strcpy_s(fname, "2_radar1");
 	}
 
-	HudGaugeRadarStd* hud_gauge = gauge_load_common<HudGaugeRadarStd>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeRadarStd* hud_gauge = gauge_load_common<HudGaugeRadarStd>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2848,8 +2817,8 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, bool scale_gauge
 		hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
 		hud_gauge->initInfinityIcon();
 
-		if(ship_idx->at(0) >= 0) {
-			for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+		if(settings->ship_idx->at(0) >= 0) {
+			for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 				HudGaugeRadarStd* instance = new HudGaugeRadarStd();
 				*instance = *hud_gauge;
 				Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -2866,20 +2835,21 @@ void load_gauge_radar_std(int base_w, int base_h, int hud_font, bool scale_gauge
 	}
 }
 
-void load_gauge_radar_orb(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_radar_orb(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 1.0};
-	int offset[2];
 	int Radar_blip_radius_normal;
 	int Radar_blip_radius_target;
 	int Radar_radius[2];
 	int Radar_dist_offsets[RR_MAX_RANGES][2];
 	float Radar_center_offsets[2];
 	char fname[MAX_FILENAME_LEN];
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -63;
-		offset[1] = -111;
+		settings->offset[0] = -63;
+		settings->offset[1] = -111;
 
 		Radar_blip_radius_normal = 2;
 		Radar_blip_radius_target = 5;
@@ -2901,8 +2871,8 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, bool scale_gauge
 
 		strcpy_s(fname, "radar1");
 	} else {
-		offset[0] = -101;
-		offset[1] = -178;
+		settings->offset[0] = -101;
+		settings->offset[1] = -178;
 
 		Radar_blip_radius_normal = 4;
 		Radar_blip_radius_target = 8;
@@ -2925,9 +2895,7 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, bool scale_gauge
 		strcpy_s(fname, "2_radar1");
 	}
 
-	HudGaugeRadarOrb* hud_gauge = gauge_load_common<HudGaugeRadarOrb>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeRadarOrb* hud_gauge = gauge_load_common<HudGaugeRadarOrb>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2959,8 +2927,8 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, bool scale_gauge
 		hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
 		hud_gauge->initInfinityIcon();
 
-		if(ship_idx->at(0) >= 0) {
-			for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+		if(settings->ship_idx->at(0) >= 0) {
+			for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 				HudGaugeRadarOrb* instance = new HudGaugeRadarOrb();
 				*instance = *hud_gauge;
 				Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -2981,14 +2949,9 @@ void load_gauge_radar_orb(int base_w, int base_h, int hud_font, bool scale_gauge
  * BSG style DRADIS as used by Diaspora
  * Unfortunately, I can't see how to make this fit the gauge_load_common function
  */
-void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_radar_dradis(gauge_settings* settings)
 {
 	// basic radar gauge info
-	float origin[2] = {0.5, 1.0};
-	int offset[2];
-	int coords[2] = {0, 0};
-	int base_res[2];
-	int force_scaling_above_res[2] = {force_scaling_above_w, force_scaling_above_h};
 	int Radar_radius[2];
 
 	// bitmap filenames for the effect
@@ -3004,8 +2967,6 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 	int display_size[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
-	int font_num = FONT1;
-
 	int loop_snd = -1;
 	float loop_snd_volume = 1.0f;
 
@@ -3017,67 +2978,72 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 
 	float arrival_beep_delay = 0.0f;
 	float departure_beep_delay = 0.0f;
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		base_res[0] = 640;
-		base_res[1] = 480;
-
-		offset[0] = -89;
-		offset[1] = -148;
+		settings->offset[0] = -89;
+		settings->offset[1] = -148;
 	} else {
-		base_res[0] = 1024;
-		base_res[1] = 768;
-
-		offset[0] = -143;
-		offset[1] = -237;
+		settings->offset[0] = -143;
+		settings->offset[1] = -237;
 	}
 
 	Radar_radius[0] = 281;
 	Radar_radius[1] = 233;
 
-	if(check_base_res(base_w, base_h)) {
-		base_res[0] = base_w;
-		base_res[1] = base_h;
-
+	if(check_base_res(settings->base_res)) {
 		if(optional_string("Position:")) {
-			stuff_int_list(coords, 2);
+			stuff_int_list(settings->coords, 2);
+			settings->use_coords = true;
 		} else {
 			if (optional_string("Scale Gauge:")) {
-				stuff_boolean(&scale_gauge);
+				stuff_boolean(&settings->scale_gauge);
 			}
 
 			if (optional_string("Force Scaling Above:")) {
-				stuff_int_list(force_scaling_above_res, 2);
+				stuff_int_list(settings->force_scaling_above_res, 2);
 			}
 
-			adjust_base_res(base_res, force_scaling_above_res, scale_gauge);
+			adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
 
 			if(optional_string("Origin:")) {
-				stuff_float_list(origin, 2);
+				stuff_float_list(settings->origin, 2);
 
 				required_string("Offset:");
-				stuff_int_list(offset, 2);
+				stuff_int_list(settings->offset, 2);
 			}
 
 			if(optional_string("Offset:")) {
 				Error(LOCATION, "HUD gauges table: Offset must also have Origin defined");
 			}
 
-			coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
-			coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+			settings->coords[0] = (int)(settings->base_res[0] * settings->origin[0]) + settings->offset[0];
+			settings->coords[1] = (int)(settings->base_res[1] * settings->origin[1]) + settings->offset[1];
+			settings->use_coords = true;
 		}
 	} else {
-		adjust_base_res(base_res, force_scaling_above_res, scale_gauge);
+		if(gr_screen.res == GR_640) {
+			settings->base_res[0] = 640;
+			settings->base_res[1] = 480;
+		} else {
+			settings->base_res[0] = 1024;
+			settings->base_res[1] = 768;
+		}
 
-		coords[0] = (int)(base_res[0] * origin[0]) + offset[0];
-		coords[1] = (int)(base_res[1] * origin[1]) + offset[1];
+		adjust_base_res(settings->base_res, settings->force_scaling_above_res, settings->scale_gauge);
+
+		settings->coords[0] = (int)(settings->base_res[0] * settings->origin[0]) + settings->offset[0];
+		settings->coords[1] = (int)(settings->base_res[1] * settings->origin[1]) + settings->offset[1];
+		settings->use_coords = true;
 	}
 
 	if(optional_string("Font:")) {
-		stuff_int(&font_num);
+		stuff_int(&settings->font_num);
 	} else {
-		if ( hud_font >=0 ) {
-			font_num = hud_font;
+		if ( settings->font_num < 0 ) {
+			settings->font_num = FONT1;
 		}
 	}
 
@@ -3099,7 +3065,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 	if(optional_string("Unknown Contact Filename:")) {
 		stuff_string(unknown_fname, F_NAME, MAX_FILENAME_LEN);
 	}
-	if(optional_string("Cockpit Target:") && ship_idx->at(0) >= 0) {
+	if(optional_string("Cockpit Target:") && settings->ship_idx->at(0) >= 0) {
 		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
 
 		if(optional_string("Canvas Size:")) {
@@ -3114,7 +3080,7 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 		stuff_int_list(display_size, 2);
 	} else {
 		// adjust for multimonitor setups ONLY if not rendering gauge to a texture
-		adjust_for_multimonitor(base_res, true, coords);
+		adjust_for_multimonitor(settings->base_res, true, settings->coords);
 	}
 
 	parse_sound("Loop Sound:", &loop_snd, "DRADIS HudGauge");
@@ -3159,16 +3125,16 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 	}
 
 	HudGaugeRadarDradis* hud_gauge = new HudGaugeRadarDradis();
-	hud_gauge->initBaseResolution(base_res[0], base_res[1]);
-	hud_gauge->initPosition(coords[0], coords[1]);
+	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1]);
+	hud_gauge->initPosition(settings->coords[0], settings->coords[1]);
 	hud_gauge->initRadius(Radar_radius[0], Radar_radius[1]);
 	hud_gauge->initBitmaps(xy_fname, xz_yz_fname, sweep_fname, target_fname, unknown_fname);
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
-	hud_gauge->initFont(font_num);
+	hud_gauge->initFont(settings->font_num);
 	hud_gauge->initSound(loop_snd, loop_snd_volume, arrival_beep_snd, departure_beep_snd, stealth_arrival_snd, stealth_departure_snd, arrival_beep_delay, departure_beep_delay);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeRadarDradis* instance = new HudGaugeRadarDradis();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -3179,27 +3145,24 @@ void load_gauge_radar_dradis(int base_w, int base_h, int hud_font, bool scale_ga
 	}
 }
 
-void load_gauge_text_warnings(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_text_warnings(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 0;
-		offset[1] = -68;
+		settings->offset[0] = 0;
+		settings->offset[1] = -68;
 	} else {
-		offset[0] = 0;
-		offset[1] = -109;
+		settings->offset[0] = 0;
+		settings->offset[1] = -109;
 	}
 
-	HudGaugeTextWarnings* hud_gauge = gauge_load_common<HudGaugeTextWarnings>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeTextWarnings* hud_gauge = gauge_load_common<HudGaugeTextWarnings>(settings);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeTextWarnings* instance = new HudGaugeTextWarnings();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -3210,10 +3173,8 @@ void load_gauge_text_warnings(int base_w, int base_h, int hud_font, bool scale_g
 	}
 }
 
-void load_gauge_target_monitor(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_target_monitor(gauge_settings* settings)
 {
-	float origin[2] = {0.0, 1.0};
-	int offset[2];
 	int Viewport_size[2];
 	int Viewport_offsets[2];
 	int Integrity_bar_offsets[2];
@@ -3243,13 +3204,16 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, bool scale_
 	char fname_integrity[MAX_FILENAME_LEN] = "targetview2";
 	char fname_static[MAX_FILENAME_LEN] = "TargetStatic";
 	char fname_monitor_mask[MAX_FILENAME_LEN] = "";
+	
+	settings->origin[0] = 0.0f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 5;
-		offset[1] = -161;
+		settings->offset[0] = 5;
+		settings->offset[1] = -161;
 	} else {
-		offset[0] = 5;
-		offset[1] = -178;
+		settings->offset[0] = 5;
+		settings->offset[1] = -178;
 	}
 
 	Viewport_size[0] = 131;
@@ -3283,9 +3247,7 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, bool scale_
 	Cargo_scan_size[0] = 130;
 	Cargo_scan_size[1] = 109;
 
-	HudGaugeTargetBox* hud_gauge = gauge_load_common<HudGaugeTargetBox>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeTargetBox* hud_gauge = gauge_load_common<HudGaugeTargetBox>(settings);
 
 	if(optional_string("Monitor Filename:")) {
 		stuff_string(fname_monitor, F_NAME, MAX_FILENAME_LEN);
@@ -3370,8 +3332,8 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, bool scale_
 	hud_gauge->initDesaturate(desaturate);
 	hud_gauge->initBitmaps(fname_monitor, fname_monitor_mask, fname_integrity, fname_static);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeTargetBox* instance = new HudGaugeTargetBox();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -3382,10 +3344,8 @@ void load_gauge_target_monitor(int base_w, int base_h, int hud_font, bool scale_
 	}
 }
 
-void load_gauge_squad_message(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_squad_message(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 0.0};
-	int offset[2];
 	int Pgup_offsets[2];
 	int Pgdn_offsets[2];
 	int Header_offsets[2];
@@ -3397,18 +3357,21 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, bool scale_g
 	char fname_top[MAX_FILENAME_LEN] = "message1";
 	char fname_middle[MAX_FILENAME_LEN] = "message2";
 	char fname_bottom[MAX_FILENAME_LEN] = "message3";
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 0.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -195;
-		offset[1] = 5;
+		settings->offset[0] = -195;
+		settings->offset[1] = 5;
 
 		Pgup_offsets[0] = 145;
 		Pgup_offsets[1] = 4;
 		Pgdn_offsets[0] = 145;
 		Pgdn_offsets[1] = 115;
 	} else {
-		offset[0] = -197;
-		offset[1] = 5;
+		settings->offset[0] = -197;
+		settings->offset[1] = 5;
 
 		Pgup_offsets[0] = 110;
 		Pgup_offsets[1] = 5;
@@ -3424,9 +3387,7 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, bool scale_g
 	Item_h = 10;
 	Item_offset_x = 17;
 
-	HudGaugeSquadMessage* hud_gauge = gauge_load_common<HudGaugeSquadMessage>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeSquadMessage* hud_gauge = gauge_load_common<HudGaugeSquadMessage>(settings);
 
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
@@ -3472,8 +3433,8 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, bool scale_g
 	hud_gauge->initPgUpOffsets(Pgup_offsets[0], Pgup_offsets[1]);
 	hud_gauge->initPgDnOffsets(Pgdn_offsets[0], Pgdn_offsets[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeSquadMessage* instance = new HudGaugeSquadMessage();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -3484,10 +3445,8 @@ void load_gauge_squad_message(int base_w, int base_h, int hud_font, bool scale_g
 	}
 }
 
-void load_gauge_objective_notify(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_objective_notify(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int Objective_text_offset_y;
 	int Objective_text_val_offset_y;
 	int Subspace_text_offset_y;
@@ -3495,10 +3454,13 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, bool scal
 	int Red_text_offset_y;
 	int Red_text_val_offset_y;
 	char fname[MAX_FILENAME_LEN] = "objective1";
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -75;
-		offset[1] = -126;
+		settings->offset[0] = -75;
+		settings->offset[1] = -126;
 
 		Objective_text_offset_y = 2;
 		Objective_text_val_offset_y = 11;
@@ -3507,8 +3469,8 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, bool scal
 		Red_text_offset_y = 2;
 		Red_text_val_offset_y = 10;
 	} else {
-		offset[0] = -76;
-		offset[1] = -200;
+		settings->offset[0] = -76;
+		settings->offset[1] = -200;
 
 		Objective_text_offset_y = 2;
 		Objective_text_val_offset_y = 11;
@@ -3518,9 +3480,7 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, bool scal
 		Red_text_val_offset_y = 10;
 	}
 
-	HudGaugeObjectiveNotify* hud_gauge = gauge_load_common<HudGaugeObjectiveNotify>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeObjectiveNotify* hud_gauge = gauge_load_common<HudGaugeObjectiveNotify>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -3552,8 +3512,8 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, bool scal
 	hud_gauge->initRedAlertTextOffsetY(Red_text_offset_y);
 	hud_gauge->initRedAlertValueOffsetY(Red_text_val_offset_y);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeObjectiveNotify* instance = new HudGaugeObjectiveNotify();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -3564,10 +3524,8 @@ void load_gauge_objective_notify(int base_w, int base_h, int hud_font, bool scal
 	}
 }
 
-void load_gauge_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_weapons(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
 	int top_offset_x[NUM_HUD_SETTINGS];
 	int Weapon_header_offsets[NUM_HUD_SETTINGS][2];
 	int frame_offset_x[NUM_HUD_SETTINGS];
@@ -3600,13 +3558,16 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, 
 	char fname_s_middle_b[MAX_FILENAME_LEN] = "weapons4_b";
 	char fname_s_bottom[MAX_FILENAME_LEN] = "weapons5";
 	char fname_s_bottom_b[MAX_FILENAME_LEN] = "weapons5_b";
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -143;
-		offset[1] = -228;
+		settings->offset[0] = -143;
+		settings->offset[1] = -228;
 	} else {
-		offset[0] = -144;
-		offset[1] = -257;
+		settings->offset[0] = -144;
+		settings->offset[1] = -257;
 	}
 
 	top_offset_x[0] = 12;
@@ -3637,9 +3598,7 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, 
 	primary_text_h = 12;
 	secondary_text_h = 9;
 
-	HudGaugeWeapons* hud_gauge = gauge_load_common<HudGaugeWeapons>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeWeapons* hud_gauge = gauge_load_common<HudGaugeWeapons>(settings);
 
 	if(optional_string("Primary List Top Background Filename:")) {
 		stuff_string(fname_p_top, F_NAME, MAX_FILENAME_LEN);
@@ -3755,8 +3714,8 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, 
 	hud_gauge->initSecondaryHeights(top_secondary_h, secondary_text_h);
 	hud_gauge->initLinkIcon();
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeWeapons* instance = new HudGaugeWeapons();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -3767,10 +3726,8 @@ void load_gauge_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, 
 	}
 }
 
-void load_gauge_directives(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_directives(gauge_settings* settings)
 {
-	float origin[2] = {0.0, 0.5};
-	int offset[2];
 	int header_offsets[2];
 	int middle_frame_offset_y;
 	int text_start_offsets[2];
@@ -3780,13 +3737,16 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, bool scale_gaug
 	char fname_middle[MAX_FILENAME_LEN] = "directives2";
 	char fname_bottom[MAX_FILENAME_LEN] = "directives3";
 	int bottom_bg_offset = 0;
+	
+	settings->origin[0] = 0.0f;
+	settings->origin[1] = 0.5f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 5;
-		offset[1] = -62;
+		settings->offset[0] = 5;
+		settings->offset[1] = -62;
 	} else {
-		offset[0] = 5;
-		offset[1] = -106;
+		settings->offset[0] = 5;
+		settings->offset[1] = -106;
 	}
 
 	header_offsets[0] = 2;
@@ -3796,9 +3756,7 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, bool scale_gaug
 	text_start_offsets[1] = 14;
 	text_h = 9;
 
-	HudGaugeDirectives* hud_gauge = gauge_load_common<HudGaugeDirectives>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeDirectives* hud_gauge = gauge_load_common<HudGaugeDirectives>(settings);
 
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
@@ -3836,8 +3794,8 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, bool scale_gaug
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initMaxLineWidth(max_line_width);
 	
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeDirectives* instance = new HudGaugeDirectives();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -3848,21 +3806,22 @@ void load_gauge_directives(int base_w, int base_h, int hud_font, bool scale_gaug
 	}
 }
 
-void load_gauge_talking_head(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_talking_head(gauge_settings* settings)
 {
-	float origin[2] = {0.0, 0.0};
-	int offset[2];
 	int Header_offsets[2];
 	int Anim_offsets[2];
 	int Anim_size[2];
 	char fname[MAX_FILENAME_LEN] = "head1";
+	
+	settings->origin[0] = 0.0f;
+	settings->origin[1] = 0.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 5;
-		offset[1] = 35;
+		settings->offset[0] = 5;
+		settings->offset[1] = 35;
 	} else {
-		offset[0] = 5;
-		offset[1] = 56;
+		settings->offset[0] = 5;
+		settings->offset[1] = 56;
 	}
 
 	Header_offsets[0] = 2;
@@ -3872,9 +3831,7 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, bool scale_ga
 	Anim_size[0] = 160;
 	Anim_size[1] = 120;
 
-	HudGaugeTalkingHead* hud_gauge = gauge_load_common<HudGaugeTalkingHead>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeTalkingHead* hud_gauge = gauge_load_common<HudGaugeTalkingHead>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -3898,8 +3855,8 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, bool scale_ga
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initHeaderOffsets(Header_offsets[0], Header_offsets[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeTalkingHead* instance = new HudGaugeTalkingHead();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -3910,29 +3867,28 @@ void load_gauge_talking_head(int base_w, int base_h, int hud_font, bool scale_ga
 	}
 }
 
-void load_gauge_countermeasures(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_countermeasures(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
 	int cm_text_offset[2];
 	int cm_text_val_offset[2];
 	char fname[MAX_FILENAME_LEN] = "countermeasure1";
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -143;
-		offset[1] = -137;
+		settings->offset[0] = -143;
+		settings->offset[1] = -137;
 	} else {
-		offset[0] = -144;
-		offset[1] = -166;
+		settings->offset[0] = -144;
+		settings->offset[1] = -166;
 	}
 	cm_text_offset[0] = 36;
 	cm_text_offset[1] = 4;
 	cm_text_val_offset[0] = 9;
 	cm_text_val_offset[1] = 4;
 
-	HudGaugeCmeasures* hud_gauge = gauge_load_common<HudGaugeCmeasures>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeCmeasures* hud_gauge = gauge_load_common<HudGaugeCmeasures>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -3948,8 +3904,8 @@ void load_gauge_countermeasures(int base_w, int base_h, int hud_font, bool scale
 	hud_gauge->initCountTextOffsets(cm_text_offset[0], cm_text_offset[1]);
 	hud_gauge->initCountValueOffsets(cm_text_val_offset[0], cm_text_val_offset[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeCmeasures* instance = new HudGaugeCmeasures();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -3960,23 +3916,24 @@ void load_gauge_countermeasures(int base_w, int base_h, int hud_font, bool scale
 	}
 }
 
-void load_gauge_auto_target(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_auto_target(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
 	int auto_text_offset[2];
 	int target_text_offset[2];
 	char fname[MAX_FILENAME_LEN] = "toggle1";
 
 	int on_color[4] = {0, 0, 0, 255};
 	int off_color[4] = {-1, -1, -1, -1};
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -63;
-		offset[1] = -100;
+		settings->offset[0] = -63;
+		settings->offset[1] = -100;
 	} else {
-		offset[0] = -64;
-		offset[1] = -120;
+		settings->offset[0] = -64;
+		settings->offset[1] = -120;
 	}
 
 	auto_text_offset[0] = 13;
@@ -3989,9 +3946,7 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, bool scale_gau
 		target_text_offset[1] = 10;
 	}
 	
-	HudGaugeAutoTarget* hud_gauge = gauge_load_common<HudGaugeAutoTarget>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeAutoTarget* hud_gauge = gauge_load_common<HudGaugeAutoTarget>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -4017,8 +3972,8 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, bool scale_gau
 	hud_gauge->initOnColor(on_color[0], on_color[1], on_color[2], on_color[3]);
 	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeAutoTarget* instance = new HudGaugeAutoTarget();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4029,22 +3984,23 @@ void load_gauge_auto_target(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 }
 
-void load_gauge_auto_speed(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_auto_speed(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
 	int auto_text_offset[2];
 	int speed_text_offset[2];
 	char fname[MAX_FILENAME_LEN] = "toggle1";
 	int on_color[4] = {0, 0, 0, 255};
 	int off_color[4] = {-1, -1, -1, -1};
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -63;
-		offset[1] = -76;
+		settings->offset[0] = -63;
+		settings->offset[1] = -76;
 	} else {
-		offset[0] = -64;
-		offset[1] = -96;
+		settings->offset[0] = -64;
+		settings->offset[1] = -96;
 	}
 
 	auto_text_offset[0] = 13;
@@ -4057,9 +4013,7 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, bool scale_gaug
 		speed_text_offset[1] = 10;
 	}
 	
-	HudGaugeAutoSpeed* hud_gauge = gauge_load_common<HudGaugeAutoSpeed>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeAutoSpeed* hud_gauge = gauge_load_common<HudGaugeAutoSpeed>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -4085,8 +4039,8 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, bool scale_gaug
 	hud_gauge->initOnColor(on_color[0], on_color[1], on_color[2], on_color[3]);
 	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeAutoSpeed* instance = new HudGaugeAutoSpeed();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4097,10 +4051,8 @@ void load_gauge_auto_speed(int base_w, int base_h, int hud_font, bool scale_gaug
 	}
 }
 
-void load_gauge_wingman_status(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_wingman_status(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 0.0};
-	int offset[2];
 	int header_offsets[2];
 	bool fixed_header_position;
 	int left_frame_end_x;
@@ -4117,13 +4069,16 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, bool scale_
 	char fname_right[MAX_FILENAME_LEN] = "wingman3";
 	char fname_dots[MAX_FILENAME_LEN] = "wingman4";
 	// "wingman5" isn't used anymore since Goober implemented string based wing names
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 0.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -90;
-		offset[1] = 144;
+		settings->offset[0] = -90;
+		settings->offset[1] = 144;
 	} else {
-		offset[0] = -92;
-		offset[1] = 144;
+		settings->offset[0] = -92;
+		settings->offset[1] = 144;
 	}
 
 	header_offsets[0] = 2;
@@ -4152,9 +4107,7 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, bool scale_
 	wingmate_offsets[5][0] = 22;
 	wingmate_offsets[5][1] = 16;
 
-	HudGaugeWingmanStatus* hud_gauge = gauge_load_common<HudGaugeWingmanStatus>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeWingmanStatus* hud_gauge = gauge_load_common<HudGaugeWingmanStatus>(settings);
 
 	if(optional_string("Left Background Filename:")) {
 		stuff_string(fname_left, F_NAME, MAX_FILENAME_LEN);
@@ -4236,8 +4189,8 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, bool scale_
 	hud_gauge->initRightBgOffset(right_bg_offset);
 	hud_gauge->initGrowMode(grow_mode);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeWingmanStatus* instance = new HudGaugeWingmanStatus();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4248,10 +4201,8 @@ void load_gauge_wingman_status(int base_w, int base_h, int hud_font, bool scale_
 	}
 }
 
-void load_gauge_damage(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_damage(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.0};
-	int offset[2];
 	int header_offsets[2];
 	int hull_integ_offsets[2];
 	int hull_integ_val_offset_x;
@@ -4263,13 +4214,16 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, bool scale_gauge, i
 	char fname_top[MAX_FILENAME_LEN] = "damage1";
 	char fname_middle[MAX_FILENAME_LEN] = "damage2";
 	char fname_bottom[MAX_FILENAME_LEN] = "damage3";
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -75;
-		offset[1] = 38;
+		settings->offset[0] = -75;
+		settings->offset[1] = 38;
 	} else {
-		offset[0] = -72;
-		offset[1] = 61;
+		settings->offset[0] = -72;
+		settings->offset[1] = 61;
 	}
 	header_offsets[0] = 3;
 	header_offsets[1] = 2;
@@ -4282,9 +4236,7 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, bool scale_gauge, i
 	subsys_integ_val_offset_x = 142;
 	line_h = 9;
 
-	HudGaugeDamage* hud_gauge = gauge_load_common<HudGaugeDamage>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeDamage* hud_gauge = gauge_load_common<HudGaugeDamage>(settings);
 
 	if(optional_string("Top Background Filename:")) {
 		stuff_string(fname_top, F_NAME, MAX_FILENAME_LEN);
@@ -4330,8 +4282,8 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, bool scale_gauge, i
 	hud_gauge->initBottomBgOffset(bottom_bg_offset);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeDamage* instance = new HudGaugeDamage();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4342,19 +4294,20 @@ void load_gauge_damage(int base_w, int base_h, int hud_font, bool scale_gauge, i
 	}
 }
 
-void load_gauge_support(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_support(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int header_offsets[2];
 	int text_val_offset_y;
 	int text_dock_offset_x;
 	int text_dock_val_offset_x;
 	char fname[MAX_FILENAME_LEN] = "support1";
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -55;
-		offset[1] = 94;
+		settings->offset[0] = -55;
+		settings->offset[1] = 94;
 
 		header_offsets[0] = 2;
 		header_offsets[1] = 1;
@@ -4362,8 +4315,8 @@ void load_gauge_support(int base_w, int base_h, int hud_font, bool scale_gauge, 
 		text_dock_offset_x = 5;
 		text_dock_val_offset_x = 63;
 	} else {
-		offset[0] = -53;
-		offset[1] = 150;
+		settings->offset[0] = -53;
+		settings->offset[1] = 150;
 
 		header_offsets[0] = 3;
 		header_offsets[1] = 2;
@@ -4372,9 +4325,7 @@ void load_gauge_support(int base_w, int base_h, int hud_font, bool scale_gauge, 
 		text_dock_val_offset_x = 65;
 	}
 
-	HudGaugeSupport* hud_gauge = gauge_load_common<HudGaugeSupport>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeSupport* hud_gauge = gauge_load_common<HudGaugeSupport>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -4398,8 +4349,8 @@ void load_gauge_support(int base_w, int base_h, int hud_font, bool scale_gauge, 
 	hud_gauge->initTextDockValueOffsetX(text_dock_val_offset_x);
 	hud_gauge->initTextValueOffsetY(text_val_offset_y);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeSupport* instance = new HudGaugeSupport();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4410,25 +4361,23 @@ void load_gauge_support(int base_w, int base_h, int hud_font, bool scale_gauge, 
 	}
 }
 
-void load_gauge_training_messages(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_training_messages(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -146;
-		offset[1] = -200;
+		settings->offset[0] = -146;
+		settings->offset[1] = -200;
 	} else {
-		offset[0] = -133;
-		offset[1] = -259;
+		settings->offset[0] = -133;
+		settings->offset[1] = -259;
 	}
 
-	HudGaugeTrainingMessages* hud_gauge = gauge_load_common<HudGaugeTrainingMessages>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeTrainingMessages* hud_gauge = gauge_load_common<HudGaugeTrainingMessages>(settings);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeTrainingMessages* instance = new HudGaugeTrainingMessages();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4439,11 +4388,8 @@ void load_gauge_training_messages(int base_w, int base_h, int hud_font, bool sca
 	}
 }
 
-void load_gauge_messages(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_messages(gauge_settings* settings)
 {
-	float origin[2] = {0.0, 0.0};
-	int offset[2];
-
 	int max_lines = 3;
 	int max_width;
 	int scroll_time = 30;
@@ -4452,8 +4398,10 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, bool scale_gauge,
 	int line_height = 9;
 	bool hidden_by_comms_menu = true;
 
-	offset[0] = 8;
-	offset[1] = 5;
+	settings->origin[0] = 0.0f;
+	settings->origin[1] = 0.0f;
+	settings->offset[0] = 8;
+	settings->offset[1] = 5;
 
 	if(gr_screen.res == GR_640) {
 		max_width = 620;
@@ -4461,9 +4409,7 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, bool scale_gauge,
 		max_width = 1004;
 	}
 
-	HudGaugeMessages* hud_gauge = gauge_load_common<HudGaugeMessages>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeMessages* hud_gauge = gauge_load_common<HudGaugeMessages>(settings);
 
 	if ( optional_string("Max Lines:") ) {
 		stuff_int(&max_lines);
@@ -4495,8 +4441,8 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, bool scale_gauge,
 	hud_gauge->initLineHeight(line_height);
 	hud_gauge->initHiddenByCommsMenu(hidden_by_comms_menu);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeMessages* instance = new HudGaugeMessages();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4507,25 +4453,19 @@ void load_gauge_messages(int base_w, int base_h, int hud_font, bool scale_gauge,
 	}
 }
 
-void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_fixed_messages(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.0};
-	int offset[2] = {0, 0};
-	int coords[2];
-
 	gr_set_font(FONT1);
 	int h = gr_get_font_height();
 
-	coords[0] = 0x8000; //Magic number, means "Center on X"
-	coords[1] = 5 + (h * 3);
+	settings->use_coords = true;
+	settings->coords[0] = 0x8000; //Magic number, means "Center on X"
+	settings->coords[1] = 5 + (h * 3);
 
-	HudGaugeFixedMessages* hud_gauge = gauge_load_common<HudGaugeFixedMessages>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		true, coords[0], coords[1]);
+	HudGaugeFixedMessages* hud_gauge = gauge_load_common<HudGaugeFixedMessages>(settings);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeFixedMessages* instance = new HudGaugeFixedMessages();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4536,10 +4476,8 @@ void load_gauge_fixed_messages(int base_w, int base_h, int hud_font, bool scale_
 	}
 }
 
-void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_weapon_linking(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int Weapon_link_offsets[NUM_WEAPON_LINK_MODES][2];
 	char fname_arc[MAX_FILENAME_LEN];
 	char fname_primary_link_1[MAX_FILENAME_LEN];
@@ -4547,10 +4485,14 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, bool scale_
 	char fname_secondary_link_1[MAX_FILENAME_LEN];
 	char fname_secondary_link_2[MAX_FILENAME_LEN];
 	char fname_secondary_link_3[MAX_FILENAME_LEN];
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 54;
-		offset[1] = 2;
+		settings->offset[0] = 54;
+		settings->offset[1] = 2;
 
 		Weapon_link_offsets[LINK_ONE_PRIMARY][0] = 32;
 		Weapon_link_offsets[LINK_ONE_PRIMARY][1] = 11;
@@ -4570,8 +4512,8 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, bool scale_
 		strcpy_s(fname_secondary_link_2, "rightarc5_fs1");
 		strcpy_s(fname_secondary_link_3, "rightarc6_fs1");
 	} else {
-		offset[0] = 86;
-		offset[1] = 3;
+		settings->offset[0] = 86;
+		settings->offset[1] = 3;
 
 		Weapon_link_offsets[LINK_ONE_PRIMARY][0] = 52;
 		Weapon_link_offsets[LINK_ONE_PRIMARY][1] = 18;
@@ -4592,11 +4534,7 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, bool scale_
 		strcpy_s(fname_secondary_link_3, "2_rightarc6_fs1");
 	}
 
-	HudGaugeWeaponLinking* hud_gauge = gauge_load_common<HudGaugeWeaponLinking>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeWeaponLinking* hud_gauge = gauge_load_common<HudGaugeWeaponLinking>(settings);
 
 	if(optional_string("Arc Filename:")) {
 		stuff_string(fname_arc, F_NAME, MAX_FILENAME_LEN);
@@ -4639,8 +4577,8 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, bool scale_
 	hud_gauge->init3SecondaryOffsets(Weapon_link_offsets[LINK_THREE_SECONDARY][0], Weapon_link_offsets[LINK_THREE_SECONDARY][1]);
 	hud_gauge->initBitmaps(fname_arc, fname_primary_link_1, fname_primary_link_2, fname_secondary_link_1, fname_secondary_link_2, fname_secondary_link_3);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeWeaponLinking* instance = new HudGaugeWeaponLinking();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4651,25 +4589,23 @@ void load_gauge_weapon_linking(int base_w, int base_h, int hud_font, bool scale_
 	}
 }
 
-void load_gauge_multi_msg(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_multi_msg(gauge_settings* settings)
 {
-	float origin[2] = {0.0, 0.5};
-	int offset[2];
+	settings->origin[0] = 0.0f;
+	settings->origin[1] = 0.5f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 5;
-		offset[1] = -90;
+		settings->offset[0] = 5;
+		settings->offset[1] = -90;
 	} else {
-		offset[0] = 8;
-		offset[1] = -144;
+		settings->offset[0] = 8;
+		settings->offset[1] = -144;
 	}
 
-	HudGaugeMultiMsg* hud_gauge = gauge_load_common<HudGaugeMultiMsg>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeMultiMsg* hud_gauge = gauge_load_common<HudGaugeMultiMsg>(settings);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeMultiMsg* instance = new HudGaugeMultiMsg();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4680,25 +4616,23 @@ void load_gauge_multi_msg(int base_w, int base_h, int hud_font, bool scale_gauge
 	}
 }
 
-void load_gauge_voice_status(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_voice_status(gauge_settings* settings)
 {
-	float origin[2] = {0.0, 0.5};
-	int offset[2];
+	settings->origin[0] = 0.0f;
+	settings->origin[1] = 0.5f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 5;
-		offset[1] = -75;
+		settings->offset[0] = 5;
+		settings->offset[1] = -75;
 	} else {
-		offset[0] = 8;
-		offset[1] = -129;
+		settings->offset[0] = 8;
+		settings->offset[1] = -129;
 	}
 
-	HudGaugeVoiceStatus* hud_gauge = gauge_load_common<HudGaugeVoiceStatus>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeVoiceStatus* hud_gauge = gauge_load_common<HudGaugeVoiceStatus>(settings);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeVoiceStatus* instance = new HudGaugeVoiceStatus();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4709,25 +4643,23 @@ void load_gauge_voice_status(int base_w, int base_h, int hud_font, bool scale_ga
 	}
 }
 
-void load_gauge_ping(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_ping(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 0.0};
-	int offset[2];
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 0.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -80;
-		offset[1] = 3;
+		settings->offset[0] = -80;
+		settings->offset[1] = 3;
 	} else {
-		offset[0] = -128;
-		offset[1] = 5;
+		settings->offset[0] = -128;
+		settings->offset[1] = 5;
 	}
 
-	HudGaugePing* hud_gauge = gauge_load_common<HudGaugePing>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugePing* hud_gauge = gauge_load_common<HudGaugePing>(settings);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugePing* instance = new HudGaugePing();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4738,25 +4670,23 @@ void load_gauge_ping(int base_w, int base_h, int hud_font, bool scale_gauge, int
 	}
 }
 
-void load_gauge_supernova(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_supernova(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -220;
-		offset[1] = -140;
+		settings->offset[0] = -220;
+		settings->offset[1] = -140;
 	} else {
-		offset[0] = -342;
-		offset[1] = -214;
+		settings->offset[0] = -342;
+		settings->offset[1] = -214;
 	}
 
-	HudGaugeSupernova* hud_gauge = gauge_load_common<HudGaugeSupernova>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeSupernova* hud_gauge = gauge_load_common<HudGaugeSupernova>(settings);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeSupernova* instance = new HudGaugeSupernova();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4767,7 +4697,7 @@ void load_gauge_supernova(int base_w, int base_h, int hud_font, bool scale_gauge
 	}
 }
 
-void load_gauge_lock(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_lock(gauge_settings* settings)
 {
 	int Lock_gauge_half_w;
 	int Lock_gauge_half_h;
@@ -4780,6 +4710,9 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, bool scale_gauge, int
 	bool loop_locked_anim;
 	char fname_lock[MAX_FILENAME_LEN];
 	char fname_spin[MAX_FILENAME_LEN];
+
+	settings->set_position = false;
+	settings->set_colour = false;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
@@ -4839,11 +4772,7 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, bool scale_gauge, int
 		}
 	}
 
-	HudGaugeLock* hud_gauge = gauge_load_common<HudGaugeLock>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		0, 0, 0, 0,
-		false, 0, 0,
-		false, false);
+	HudGaugeLock* hud_gauge = gauge_load_common<HudGaugeLock>(settings);
 
 	if(optional_string("Lock Filename:")) {
 		stuff_string(fname_lock, F_NAME, MAX_FILENAME_LEN);
@@ -4876,8 +4805,8 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, bool scale_gauge, int
 	hud_gauge->initTriBase(Lock_triangle_base);
 	hud_gauge->initTargetBoxSize(Lock_target_box_width,	Lock_target_box_height);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeLock* instance = new HudGaugeLock();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4888,12 +4817,15 @@ void load_gauge_lock(int base_w, int base_h, int hud_font, bool scale_gauge, int
 	}
 }
 
-void load_gauge_offscreen(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_offscreen(gauge_settings* settings)
 {
 	float Max_offscreen_tri_seperation;
 	float Max_front_seperation;
 	float Offscreen_tri_base;
 	float Offscreen_tri_height;
+
+	settings->set_position = false;
+	settings->set_colour = false;
 
 	if(gr_screen.res == GR_640) {
 		Max_offscreen_tri_seperation = 10.0f;
@@ -4907,19 +4839,15 @@ void load_gauge_offscreen(int base_w, int base_h, int hud_font, bool scale_gauge
 		Offscreen_tri_height = 11.0f;
 	}
 
-	HudGaugeOffscreen* hud_gauge = gauge_load_common<HudGaugeOffscreen>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		0, 0, 0, 0,
-		false, 0, 0,
-		false, false);
+	HudGaugeOffscreen* hud_gauge = gauge_load_common<HudGaugeOffscreen>(settings);
 
 	hud_gauge->initMaxTriSeperation(Max_offscreen_tri_seperation);
 	hud_gauge->initMaxFrontSeperation(Max_front_seperation);
 	hud_gauge->initTriBase(Offscreen_tri_base);
 	hud_gauge->initTriHeight(Offscreen_tri_height);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeOffscreen* instance = new HudGaugeOffscreen();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4930,11 +4858,14 @@ void load_gauge_offscreen(int base_w, int base_h, int hud_font, bool scale_gauge
 	}
 }
 
-void load_gauge_brackets(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_brackets(gauge_settings* settings)
 {
 	int min_target_box[2];
 	int min_subtarget_box[2];
 	char fname[MAX_FILENAME_LEN] = "attacker";
+
+	settings->set_position = false;
+	settings->set_colour = false;
 
 	if(gr_screen.res == GR_640) {
 		min_target_box[0] = 20;
@@ -4948,11 +4879,7 @@ void load_gauge_brackets(int base_w, int base_h, int hud_font, bool scale_gauge,
 		min_subtarget_box[1] = 24;
 	}
 
-	HudGaugeBrackets* hud_gauge = gauge_load_common<HudGaugeBrackets>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		0, 0, 0, 0,
-		false, 0, 0,
-		false, false);
+	HudGaugeBrackets* hud_gauge = gauge_load_common<HudGaugeBrackets>(settings);
 
 	if(optional_string("Dot Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -4962,8 +4889,8 @@ void load_gauge_brackets(int base_w, int base_h, int hud_font, bool scale_gauge,
 	hud_gauge->initMinSubTargetBoxSizes(min_subtarget_box[0], min_subtarget_box[1]);
 	hud_gauge->initMinTargetBoxSizes(min_target_box[0], min_target_box[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeBrackets* instance = new HudGaugeBrackets();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -4974,35 +4901,33 @@ void load_gauge_brackets(int base_w, int base_h, int hud_font, bool scale_gauge,
 	}
 }
 
-void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_hostile_tri(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 0;
-		offset[1] = 2;
+		settings->offset[0] = 0;
+		settings->offset[1] = 2;
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
 		Radius = 104;
 	} else {
-		offset[0] = 0;
-		offset[1] = 3;
+		settings->offset[0] = 0;
+		settings->offset[1] = 3;
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
 		Radius = 166;
 	}
 
-	HudGaugeHostileTriangle* hud_gauge = gauge_load_common<HudGaugeHostileTriangle>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeHostileTriangle* hud_gauge = gauge_load_common<HudGaugeHostileTriangle>(settings);
 
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
@@ -5018,8 +4943,8 @@ void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, bool scale_gau
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeHostileTriangle* instance = new HudGaugeHostileTriangle();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5030,35 +4955,33 @@ void load_gauge_hostile_tri(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 }
 
-void load_gauge_target_tri(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_target_tri(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 0;
-		offset[1] = 2;
+		settings->offset[0] = 0;
+		settings->offset[1] = 2;
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
 		Radius = 104;
 	} else {
-		offset[0] = 0;
-		offset[1] = 3;
+		settings->offset[0] = 0;
+		settings->offset[1] = 3;
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
 		Radius = 166;
 	}
 
-	HudGaugeTargetTriangle* hud_gauge = gauge_load_common<HudGaugeTargetTriangle>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeTargetTriangle* hud_gauge = gauge_load_common<HudGaugeTargetTriangle>(settings);
 
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
@@ -5074,8 +4997,8 @@ void load_gauge_target_tri(int base_w, int base_h, int hud_font, bool scale_gaug
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeTargetTriangle* instance = new HudGaugeTargetTriangle();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5086,35 +5009,33 @@ void load_gauge_target_tri(int base_w, int base_h, int hud_font, bool scale_gaug
 	}
 }
 
-void load_gauge_missile_tri(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_missile_tri(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int Radius; 
 	float Target_triangle_base;
 	float Target_triangle_height;
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 0;
-		offset[1] = 2;
+		settings->offset[0] = 0;
+		settings->offset[1] = 2;
 
 		Target_triangle_base = 6.0f;
 		Target_triangle_height = 7.0f;
 		Radius = 104;
 	} else {
-		offset[0] = 0;
-		offset[1] = 3;
+		settings->offset[0] = 0;
+		settings->offset[1] = 3;
 
 		Target_triangle_base = 9.5f;
 		Target_triangle_height = 11.0f;
 		Radius = 166;
 	}
 
-	HudGaugeMissileTriangles* hud_gauge = gauge_load_common<HudGaugeMissileTriangles>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeMissileTriangles* hud_gauge = gauge_load_common<HudGaugeMissileTriangles>(settings);
 
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
@@ -5130,8 +5051,8 @@ void load_gauge_missile_tri(int base_w, int base_h, int hud_font, bool scale_gau
 	hud_gauge->initTriBase(Target_triangle_base);
 	hud_gauge->initTriHeight(Target_triangle_height);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeMissileTriangles* instance = new HudGaugeMissileTriangles();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5142,10 +5063,13 @@ void load_gauge_missile_tri(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 }
 
-void load_gauge_lead(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_lead(gauge_settings* settings)
 {
 	float Lead_indicator_half[2];
 	char fname[MAX_FILENAME_LEN];
+
+	settings->set_position = false;
+	settings->set_colour = false;
 
 	if(Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
 		if(gr_screen.res == GR_640) {
@@ -5173,11 +5097,7 @@ void load_gauge_lead(int base_w, int base_h, int hud_font, bool scale_gauge, int
 		}
 	}
 
-	HudGaugeLeadIndicator* hud_gauge = gauge_load_common<HudGaugeLeadIndicator>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		0, 0, 0, 0,
-		false, 0, 0,
-		false, false);
+	HudGaugeLeadIndicator* hud_gauge = gauge_load_common<HudGaugeLeadIndicator>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -5194,8 +5114,8 @@ void load_gauge_lead(int base_w, int base_h, int hud_font, bool scale_gauge, int
 	hud_gauge->initHalfSize(Lead_indicator_half[0], Lead_indicator_half[1]);
 	hud_gauge->initBitmaps(fname);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeLeadIndicator* instance = new HudGaugeLeadIndicator();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5206,29 +5126,27 @@ void load_gauge_lead(int base_w, int base_h, int hud_font, bool scale_gauge, int
 	}
 }
 
-void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_orientation_tee(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	int Radius;
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 0;
-		offset[1] = 2;
+		settings->offset[0] = 0;
+		settings->offset[1] = 2;
 
 		Radius = 104;
 	} else {
-		offset[0] = 0;
-		offset[1] = 3;
+		settings->offset[0] = 0;
+		settings->offset[1] = 3;
 
 		Radius = 166;
 	}
 
-	HudGaugeOrientationTee* hud_gauge = gauge_load_common<HudGaugeOrientationTee>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeOrientationTee* hud_gauge = gauge_load_common<HudGaugeOrientationTee>(settings);
 
 	if(optional_string("Radius:")) {
 		stuff_int(&Radius);
@@ -5236,8 +5154,8 @@ void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, bool scale
 
 	hud_gauge->initRadius(Radius);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeOrientationTee* instance = new HudGaugeOrientationTee();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5248,25 +5166,23 @@ void load_gauge_orientation_tee(int base_w, int base_h, int hud_font, bool scale
 	}
 }
 
-void load_gauge_lead_sight(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_lead_sight(gauge_settings* settings)
 {
-	float origin[2] = {0.5, 0.5};
-	int offset[2];
 	char fname[MAX_FILENAME_LEN] = "leadsight";
+	
+	settings->origin[0] = 0.5f;
+	settings->origin[1] = 0.5f;
+	settings->slew = true;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = 0;
-		offset[1] = 2;
+		settings->offset[0] = 0;
+		settings->offset[1] = 2;
 	} else {
-		offset[0] = 0;
-		offset[1] = 3;
+		settings->offset[0] = 0;
+		settings->offset[1] = 3;
 	}
 
-	HudGaugeLeadSight* hud_gauge = gauge_load_common<HudGaugeLeadSight>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeLeadSight* hud_gauge = gauge_load_common<HudGaugeLeadSight>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -5274,8 +5190,8 @@ void load_gauge_lead_sight(int base_w, int base_h, int hud_font, bool scale_gaug
 
 	hud_gauge->initBitmaps(fname);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeLeadSight* instance = new HudGaugeLeadSight();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5286,25 +5202,26 @@ void load_gauge_lead_sight(int base_w, int base_h, int hud_font, bool scale_gaug
 	}
 }
 
-void load_gauge_kills(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_kills(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
 	int text_offsets[2] = {6, 4};
 	int text_value_offsets[2] = {74, 4};
 	char fname[MAX_FILENAME_LEN] = "kills1";
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -143;
-		offset[1] = -119;
+		settings->offset[0] = -143;
+		settings->offset[1] = -119;
 		
 		if(Lcl_gr) {
 			text_value_offsets[0] = 118;
 			text_value_offsets[1] = 4;
 		}
 	} else {
-		offset[0] = -144;
-		offset[1] = -144;
+		settings->offset[0] = -144;
+		settings->offset[1] = -144;
 
 		if(Lcl_gr) {
 			text_value_offsets[0] = 104;
@@ -5312,9 +5229,7 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, bool scale_gauge, in
 		}
 	}
 
-	HudGaugeKills* hud_gauge = gauge_load_common<HudGaugeKills>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeKills* hud_gauge = gauge_load_common<HudGaugeKills>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -5330,8 +5245,8 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, bool scale_gauge, in
 	hud_gauge->initTextOffsets(text_offsets[0], text_offsets[1]);
 	hud_gauge->initTextValueOffsets(text_value_offsets[0], text_value_offsets[1]);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeKills* instance = new HudGaugeKills();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5342,7 +5257,7 @@ void load_gauge_kills(int base_w, int base_h, int hud_font, bool scale_gauge, in
 	}
 }
 
-void load_gauge_flight_path(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_flight_path(gauge_settings* settings)
 {
 	int Marker_half[2];
 	char fname[MAX_FILENAME_LEN] = "flight_path";
@@ -5350,11 +5265,9 @@ void load_gauge_flight_path(int base_w, int base_h, int hud_font, bool scale_gau
 	Marker_half[0] = 21;
 	Marker_half[1] = 21;
 
-	HudGaugeFlightPath* hud_gauge = gauge_load_common<HudGaugeFlightPath>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		0, 0, 0, 0,
-		false, 0, 0,
-		false, true);
+	settings->set_position = false;
+
+	HudGaugeFlightPath* hud_gauge = gauge_load_common<HudGaugeFlightPath>(settings);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -5366,8 +5279,8 @@ void load_gauge_flight_path(int base_w, int base_h, int hud_font, bool scale_gau
 	hud_gauge->initHalfSize(Marker_half[0], Marker_half[1]);
 	hud_gauge->initBitmap(fname);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeFlightPath* instance = new HudGaugeFlightPath();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5378,10 +5291,8 @@ void load_gauge_flight_path(int base_w, int base_h, int hud_font, bool scale_gau
 	}
 }
 
-void load_gauge_warhead_count(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_warhead_count(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
 	int warhead_name_offsets[2] = {6, 4};
 	int warhead_count_offsets[2] = {74, 4};
 	int icon_width = 0;
@@ -5390,20 +5301,20 @@ void load_gauge_warhead_count(int base_w, int base_h, int hud_font, bool scale_g
 	int max_columns = 0;
 	int alignment = 0;
 	char fname[MAX_FILENAME_LEN] = "warhead_icon";
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
+	settings->slew = true;
 
 	if ( gr_screen.res == GR_640 ) {
-		offset[0] = -143;
-		offset[1] = -119;
+		settings->offset[0] = -143;
+		settings->offset[1] = -119;
 	} else {
-		offset[0] = -144;
-		offset[1] = -144;
+		settings->offset[0] = -144;
+		settings->offset[1] = -144;
 	}
 
-	HudGaugeWarheadCount* hud_gauge = gauge_load_common<HudGaugeWarheadCount>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1],
-		false, 0, 0,
-		true, true, true);
+	HudGaugeWarheadCount* hud_gauge = gauge_load_common<HudGaugeWarheadCount>(settings);
 
 	if ( optional_string("Filename:") ) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -5449,8 +5360,8 @@ void load_gauge_warhead_count(int base_w, int base_h, int hud_font, bool scale_g
 	hud_gauge->initMaxColumns(max_columns);
 	hud_gauge->initTextAlign(alignment);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeWarheadCount* instance = new HudGaugeWarheadCount();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5461,28 +5372,26 @@ void load_gauge_warhead_count(int base_w, int base_h, int hud_font, bool scale_g
 	}
 }
 
-void load_gauge_hardpoints(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_hardpoints(gauge_settings* settings)
 {
-	float origin[2] = {1.0, 1.0};
-	int offset[2];
-
 	int sizes[2] = {150, 150};
 	float line_width = 1.0f;
 	int view_dir = HudGaugeHardpoints::TOP;
 	bool show_primary = false;
 	bool show_secondary = true;
+	
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
 
 	if(gr_screen.res == GR_640) {
-		offset[0] = -244;
-		offset[1] = -101;
+		settings->offset[0] = -244;
+		settings->offset[1] = -101;
 	} else {
-		offset[0] = -390;
-		offset[1] = -98;
+		settings->offset[0] = -390;
+		settings->offset[1] = -98;
 	}
 
-	HudGaugeHardpoints* hud_gauge = gauge_load_common<HudGaugeHardpoints>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeHardpoints* hud_gauge = gauge_load_common<HudGaugeHardpoints>(settings);
 
 	if ( optional_string("Size:") ) {
 		stuff_int_list(sizes, 2);
@@ -5513,8 +5422,8 @@ void load_gauge_hardpoints(int base_w, int base_h, int hud_font, bool scale_gaug
 	hud_gauge->initViewDir(view_dir);
 	hud_gauge->initDrawOptions(show_primary, show_secondary);
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeHardpoints* instance = new HudGaugeHardpoints();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5525,11 +5434,8 @@ void load_gauge_hardpoints(int base_w, int base_h, int hud_font, bool scale_gaug
 	}
 }
 
-void load_gauge_primary_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_primary_weapons(gauge_settings* settings)
 {
-	float origin[2] = {0.0, 0.0};
-	int offset[2] = {0, 0};
-
 	char fname_first[MAX_FILENAME_LEN] = "weapon_list1";
 	char fname_entry[MAX_FILENAME_LEN] = "weapon_list2";
 	char fname_last[MAX_FILENAME_LEN] = "weapon_list3";
@@ -5547,9 +5453,7 @@ void load_gauge_primary_weapons(int base_w, int base_h, int hud_font, bool scale
 	int link_x = 33;
 	int name_x = 35;
 
-	HudGaugePrimaryWeapons* hud_gauge = gauge_load_common<HudGaugePrimaryWeapons>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugePrimaryWeapons* hud_gauge = gauge_load_common<HudGaugePrimaryWeapons>(settings);
 
 	if ( optional_string("Header Offsets:") ) {
 		stuff_int_list(header_offsets, 2);
@@ -5631,8 +5535,8 @@ void load_gauge_primary_weapons(int base_w, int base_h, int hud_font, bool scale
 	hud_gauge->initPrimaryNameOffsetX(name_x);
 	hud_gauge->initLinkIcon();
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugePrimaryWeapons* instance = new HudGaugePrimaryWeapons();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
@@ -5643,11 +5547,8 @@ void load_gauge_primary_weapons(int base_w, int base_h, int hud_font, bool scale
 	}
 }
 
-void load_gauge_secondary_weapons(int base_w, int base_h, int hud_font, bool scale_gauge, int force_scaling_above_w, int force_scaling_above_h, SCP_vector<int>* ship_idx, color *use_clr)
+void load_gauge_secondary_weapons(gauge_settings* settings)
 {
-	float origin[2] = {0.0, 0.0};
-	int offset[2] = {0, 0};
-
 	char fname_first[MAX_FILENAME_LEN] = "weapon_list1";
 	char fname_entry[MAX_FILENAME_LEN] = "weapon_list2";
 	char fname_last[MAX_FILENAME_LEN] = "weapon_list3";
@@ -5667,9 +5568,7 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int hud_font, bool sca
 	int reload_x = 118;
 	int unlink_x = 33;
 
-	HudGaugeSecondaryWeapons* hud_gauge = gauge_load_common<HudGaugeSecondaryWeapons>
-		(base_w, base_h, hud_font, scale_gauge, force_scaling_above_w, force_scaling_above_h, ship_idx, use_clr,
-		origin[0], origin[1], offset[0], offset[1]);
+	HudGaugeSecondaryWeapons* hud_gauge = gauge_load_common<HudGaugeSecondaryWeapons>(settings);
 
 	if ( optional_string("Header Offsets:") ) {
 		stuff_int_list(header_offsets, 2);
@@ -5761,8 +5660,8 @@ void load_gauge_secondary_weapons(int base_w, int base_h, int hud_font, bool sca
 	hud_gauge->initSecondaryUnlinkedOffsetX(unlink_x);
 	hud_gauge->initLinkIcon();
 
-	if(ship_idx->at(0) >= 0) {
-		for (SCP_vector<int>::iterator ship_index = ship_idx->begin(); ship_index != ship_idx->end(); ++ship_index) {
+	if(settings->ship_idx->at(0) >= 0) {
+		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			HudGaugeSecondaryWeapons* instance = new HudGaugeSecondaryWeapons();
 			*instance = *hud_gauge;
 			Ship_info[*ship_index].hud_gauges.push_back(instance);
