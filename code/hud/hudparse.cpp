@@ -152,7 +152,7 @@ flag_def_list Hud_gauge_types[] = {
 int Num_hud_gauge_types = sizeof(Hud_gauge_types)/sizeof(flag_def_list);
 
 gauge_settings get_default_gauge_settings() {
-	return {{-1, -1}, Hud_font, Scale_retail_gauges, {Force_scaling_above_res_global[0], Force_scaling_above_res_global[1]}, NULL, NULL, {0.0f, 0.0f}, {0, 0}, false, {0, 0}, true, true, false};
+	return {-1, -1, Hud_font, Scale_retail_gauges, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1], NULL, NULL, 0.0f, 0.0f, 0, 0, false, 0, 0, true, true, false};
 }
 
 int parse_ship_start()
@@ -528,7 +528,8 @@ void load_missing_retail_gauges()
 			}
 
 			if(!retail_gauge_loaded) {
-				load_gauge(retail_gauges[i], &get_default_gauge_settings());
+				gauge_settings settings = get_default_gauge_settings();
+				load_gauge(retail_gauges[i], &settings);
 			}
 		}
 
@@ -544,7 +545,8 @@ void load_missing_retail_gauges()
 
 		// load radar gauge if not loaded.
 		if(!retail_gauge_loaded) {
-			load_gauge((Cmdline_orb_radar ? HUD_OBJECT_RADAR_ORB : HUD_OBJECT_RADAR_STD), &get_default_gauge_settings());
+			gauge_settings settings = get_default_gauge_settings();
+			load_gauge((Cmdline_orb_radar ? HUD_OBJECT_RADAR_ORB : HUD_OBJECT_RADAR_STD), &settings);
 		}
 
 		// Throw in the weapon linking reticle gauge if using FS1 defaults
@@ -557,7 +559,8 @@ void load_missing_retail_gauges()
 			}
 
 			if(!retail_gauge_loaded) {
-				load_gauge(HUD_OBJECT_WEAPON_LINKING, &get_default_gauge_settings());
+				gauge_settings settings = get_default_gauge_settings();
+				load_gauge(HUD_OBJECT_WEAPON_LINKING, &settings);
 			}
 		}
 	}
