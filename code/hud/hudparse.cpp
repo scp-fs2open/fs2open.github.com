@@ -152,7 +152,8 @@ flag_def_list Hud_gauge_types[] = {
 int Num_hud_gauge_types = sizeof(Hud_gauge_types)/sizeof(flag_def_list);
 
 gauge_settings get_default_gauge_settings() {
-	return {-1, -1, Hud_font, Scale_retail_gauges, Force_scaling_above_res_global[0], Force_scaling_above_res_global[1], NULL, NULL, 0.0f, 0.0f, 0, 0, false, 0, 0, true, true, false};
+	gauge_settings default_settings = {{-1, -1}, Hud_font, Scale_retail_gauges, {Force_scaling_above_res_global[0], Force_scaling_above_res_global[1]}, NULL, NULL, {0.0f, 0.0f}, {0, 0}, false, {0, 0}, true, true, false};
+	return default_settings;
 }
 
 int parse_ship_start()
