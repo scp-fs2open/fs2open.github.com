@@ -226,7 +226,7 @@ int gr_opengl_create_stream_buffer_object()
 
 int opengl_create_texture_buffer_object()
 {
-	if ( Use_GLSL < 3 || !Is_Extension_Enabled(OGL_ARB_TEXTURE_BUFFER) || !Is_Extension_Enabled(OGL_ARB_FLOATING_POINT_TEXTURES) ) {
+	if ( GLSL_version < 130 || !Is_Extension_Enabled(OGL_ARB_TEXTURE_BUFFER) || !Is_Extension_Enabled(OGL_ARB_FLOATING_POINT_TEXTURES) ) {
 		return -1;
 	}
 
@@ -406,7 +406,7 @@ bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb, bool update
 	}
 
 	if (vb->flags & VB_FLAG_MODEL_ID) {
-		Assert( Use_GLSL >= 3 );
+		Assert( GLSL_version >= 130 );
 
 		Verify( update_ibuffer_only || vb->model_list->submodels != NULL );
 		vb->stride += (1 * sizeof(GLfloat));
@@ -563,7 +563,7 @@ void gr_opengl_set_buffer(int idx)
 			GL_state.Array.BindElementBuffer(0);
 		}
 
-		if ( (Use_GLSL > 1) && !GLSL_override ) {
+		if ( is_minimum_GLSL_version() && !GLSL_override ) {
 			opengl_shader_set_current();
 		}
 
@@ -1342,7 +1342,7 @@ void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, int texi, 
 
 	const buffer_data *datap = &bufferp->tex_buf[texi];
 
-	if ( (Use_GLSL > 1) && !GLSL_override ) {
+	if ( is_minimum_GLSL_version() && !GLSL_override ) {
 		opengl_render_pipeline_program(start, bufferp, datap, flags);
 	} else {
 		opengl_render_pipeline_fixed(start, bufferp, datap, flags);
@@ -1837,7 +1837,7 @@ void gr_opengl_end_clip_plane()
 		return;
 	}
 
-	if ( Use_GLSL > 1 ) {
+	if ( is_minimum_GLSL_version() ) {
 		return;
 	}
 
@@ -1850,7 +1850,7 @@ void gr_opengl_start_clip_plane()
 		return;
 	}
 
-	if ( Use_GLSL > 1 ) {
+	if ( is_minimum_GLSL_version() ) {
 		// bail since we're gonna clip in the shader
 		return;
 	}

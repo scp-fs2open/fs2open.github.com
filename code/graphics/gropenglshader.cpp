@@ -226,7 +226,7 @@ void opengl_shader_set_current(int handle)
  */
 int gr_opengl_maybe_create_shader(shader_type shader_t, unsigned int flags)
 {
-	if (Use_GLSL < 2)
+	if (!is_minimum_GLSL_version())
 		return -1;
 
 	size_t idx;
@@ -268,7 +268,7 @@ void opengl_shader_shutdown()
 {
 	size_t i;
 
-	if ( !Use_GLSL ) {
+	if ( !is_minimum_GLSL_version() ) {
 		return;
 	}
 
@@ -306,20 +306,7 @@ static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
 	SCP_string sflags;
 
 #ifdef __APPLE__
-    sflags += "#version 120\n";
-#endif
-    
-	if (Use_GLSL >= 4) {
-		sflags += "#define SHADER_MODEL 4\n";
-	}
-	else if (Use_GLSL == 3) {
-		sflags += "#define SHADER_MODEL 3\n";
-	}
-	else {
-		sflags += "#define SHADER_MODEL 2\n";
-	}
-
-#ifdef __APPLE__
+	sflags += "#version 120\n";
 	sflags += "#define APPLE\n";
 #endif
 
@@ -519,7 +506,7 @@ Done:
  */
 void opengl_shader_init()
 {
-	if ( !Use_GLSL ) {
+	if ( !is_minimum_GLSL_version() ) {
 		return;
 	}
 
@@ -535,10 +522,6 @@ void opengl_shader_init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	GLuint pixels[4] = {0,0,0,0};
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels);
-
-	if (Cmdline_no_glsl_model_rendering) {
-		Use_GLSL = 1;
-	}
 
 	GL_shader.clear();
 	

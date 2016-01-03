@@ -239,8 +239,6 @@ float beam_get_ship_damage(beam *b, object *objp);
 // if the beam is likely to tool a given target before its lifetime expires
 int beam_will_tool_target(beam *b, object *objp);
 
-extern int Use_GLSL;
-
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON FUNCTIONS
 //
@@ -1075,7 +1073,7 @@ void beam_move_all_post()
 		}		
 
 		// add tube light for the beam
-		if(Use_GLSL > 1 && moveup->objp != NULL)
+		if(is_minimum_GLSL_version() && moveup->objp != NULL)
 			beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, NULL);
 
 		// stop shooting?
@@ -1733,7 +1731,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	float fg = (float)wip->laser_color_1.green / 255.0f;
 	float fb = (float)wip->laser_color_1.blue / 255.0f;
 
-	if ( Use_GLSL > 1 )
+	if ( is_minimum_GLSL_version() )
 		light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp)); 
 	else {
 		vec3d near_pt, a;
@@ -1819,7 +1817,7 @@ void beam_apply_lighting()
 		// from a collision
 		case 2:
 			// Valathil: Dont render impact lights for shaders, handled by tube lighting
-			if ( Use_GLSL > 1 ) {
+			if ( is_minimum_GLSL_version() ) {
 				break;
 			}
 			// a few meters from the collision point			
@@ -2613,7 +2611,7 @@ int beam_collide_ship(obj_pair *pair)
 	}
 
 	// add this guy to the lighting list
-	if(Use_GLSL < 2)
+	if(!is_minimum_GLSL_version())
 		beam_add_light(b, OBJ_INDEX(ship_objp), 1, NULL);
 
 	// reset timestamp to timeout immediately
@@ -2710,7 +2708,7 @@ int beam_collide_asteroid(obj_pair *pair)
 	}
 
 	// add this guy to the lighting list
-	if(Use_GLSL < 2)
+	if(!is_minimum_GLSL_version())
 		beam_add_light(b, OBJ_INDEX(pair->b), 1, NULL);
 
 	// reset timestamp to timeout immediately
@@ -2895,7 +2893,7 @@ int beam_collide_debris(obj_pair *pair)
 	}
 
 	// add this guy to the lighting list
-	if(Use_GLSL < 2)
+	if(!is_minimum_GLSL_version())
 		beam_add_light(b, OBJ_INDEX(pair->b), 1, NULL);
 
 	// reset timestamp to timeout immediately
@@ -3100,7 +3098,7 @@ void beam_handle_collisions(beam *b)
 			draw_effects = 0;
 
 		// add lighting
-		if(Use_GLSL < 2)
+		if(!is_minimum_GLSL_version())
 			beam_add_light(b, target, 2, &b->f_collisions[idx].cinfo.hit_point_world);
 
 		// add to the recent collision list
