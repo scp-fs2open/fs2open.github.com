@@ -2081,18 +2081,14 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 			// 0 == env with non-alpha specmap, 1 == env with alpha specmap
 			int alpha_spec = bm_has_alpha_channel(SPECMAP) ? 1 : 0;
 
-			matrix4 texture_mat, envMatrix;
+			matrix4 texture_mat;
 
 			for ( int i = 0; i < 16; ++i ) {
 				texture_mat.a1d[i] = GL_env_texture_matrix[i];
 			}
 
-			if (!vm_inverse_matrix4(&texture_mat, &envMatrix)) {
-				Error(LOCATION, "Unable to invert environment mapping matrix.\n");
-			}
-
 			GL_state.Uniform.setUniformi("alpha_spec", alpha_spec);
-			GL_state.Uniform.setUniformMatrix4fv("envMatrix", 1, &envMatrix);
+			GL_state.Uniform.setUniformMatrix4fv("envMatrix", 1, &texture_mat);
 			GL_state.Uniform.setUniformi("sEnvmap", render_pass);
 
 			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, render_pass);
