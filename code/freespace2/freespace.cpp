@@ -1233,6 +1233,8 @@ void game_loading_callback(int count)
 	}
 #endif	// !NDEBUG
 
+	os_poll();
+
 	if (do_flip)
 		gr_flip();
 }
