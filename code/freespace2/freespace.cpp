@@ -1232,6 +1232,8 @@ void game_loading_callback(int count)
 	}
 #endif	// !NDEBUG
 
+	os_ignore_events();
+
 	if (do_flip)
 		gr_flip();
 }
