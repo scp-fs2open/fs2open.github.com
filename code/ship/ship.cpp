@@ -7079,7 +7079,7 @@ void ship_render_DEPRECATED(object * obj)
 				}
 
 				// Valathil - maybe do a scripting hook here to do some scriptable effects?
-				if(shipp->shader_effect_active && Use_GLSL > 1)
+				if(shipp->shader_effect_active && is_minimum_GLSL_version())
 				{
 					float timer;
 					render_flags |= (MR_DEPRECATED_ANIMATED_SHADER);
@@ -18964,7 +18964,7 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 
 void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint *render_flags)
 {
-	if ( !shipp->shader_effect_active || Use_GLSL <= 1 || Rendering_to_shadow_map ) {
+	if ( !shipp->shader_effect_active || !is_minimum_GLSL_version() || Rendering_to_shadow_map ) {
 		return;
 	}
 

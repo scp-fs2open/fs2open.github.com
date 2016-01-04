@@ -94,8 +94,6 @@ char *Object_type_names[MAX_OBJECT_TYPES] = {
 //XSTR:ON
 };
 
-extern int Use_GLSL;
-
 obj_flag_name Object_flag_names[] = {
 	{OF_INVULNERABLE,			"invulnerable",				1,	},
 	{OF_PROTECTED,				"protect-ship",				1,	},
@@ -1205,7 +1203,7 @@ void obj_move_all_post(object *objp, float frametime)
 						b = i2fl(c.blue)/255.0f;
 
 						//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
-						light_add_point( &objp->pos, 10.0f, Use_GLSL>1?100.0f:20.0f, 1.0f, r, g, b, objp->parent );
+						light_add_point( &objp->pos, 10.0f, is_minimum_GLSL_version()?100.0f:20.0f, 1.0f, r, g, b, objp->parent );
 					} else {
 						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
 					} 

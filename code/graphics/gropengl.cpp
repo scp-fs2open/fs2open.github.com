@@ -51,7 +51,11 @@ typedef int ( * PFNGLXSWAPINTERVALSGIPROC) (int interval);
 // minimum GL version we can reliably support is 1.2
 static const int MIN_REQUIRED_GL_VERSION = 12;
 
+// minimum GLSL version we can reliably support is 110
+static const int MIN_REQUIRED_GLSL_VERSION = 110;
+
 int GL_version = 0;
+int GLSL_version = 0;
 
 bool GL_initted = 0;
 
@@ -71,7 +75,6 @@ static ushort *GL_original_gamma_ramp = NULL;
 
 int Use_VBOs = 0;
 int Use_PBOs = 0;
-int Use_GLSL = 0;
 
 static int GL_dump_frames = 0;
 static ubyte *GL_dump_buffer = NULL;
@@ -2011,7 +2014,7 @@ bool gr_opengl_init()
 	GLint max_texture_units = GL_supported_texture_units;
 	GLint max_texture_coords = GL_supported_texture_units;
 
-	if (Use_GLSL) {
+	if (is_minimum_GLSL_version()) {
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
 	}
 
@@ -2091,7 +2094,7 @@ bool gr_opengl_init()
 	mprintf(( "  Post-processing enabled: %s\n", (Cmdline_postprocess) ? "YES" : "NO"));
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
-	if (Use_GLSL) {
+	if (is_minimum_GLSL_version()) {
 		mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
 	}
 
@@ -2165,4 +2168,16 @@ DCF(ogl_anisotropy, "toggles anisotropic filtering")
 		GL_anisotropy = (GLfloat)value;
 		//	opengl_set_anisotropy( (float)Dc_arg_float );
 	}
+}
+
+/**
+ * Helper function to enquire whether minimum GLSL version present.
+ *
+ * Compares global variable set by glGetString(GL_SHADING_LANGUAGE_VERSION)
+ * against compile time MIN_REQUIRED_GLSL_VERSION.
+ *
+ * @return true if GLSL support present is above the minimum version.
+ */
+bool is_minimum_GLSL_version() {
+	return GLSL_version >= MIN_REQUIRED_GLSL_VERSION ? true : false;
 }
