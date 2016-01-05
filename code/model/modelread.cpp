@@ -4725,7 +4725,7 @@ void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1
 	sm->angs.h = angle_2;
 }
 
-void model_update_instance(int model_instance_num, int sub_model_num, const submodel_instance_info *sii, int flags)
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, int flags)
 {
 	int i;
 	polymodel *pm;

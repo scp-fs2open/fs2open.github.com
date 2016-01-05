@@ -1059,7 +1059,7 @@ extern void model_clear_instance_info(submodel_instance_info * sii);
 extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, int flags = 0);
 extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2);
 
-void model_update_instance(int model_instance_num, int sub_model_num, const submodel_instance_info *sii, int flags);
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, int flags);
 void model_instance_dumb_rotation(int model_instance_num);
 
 // Adds an electrical arcing effect to a submodel
