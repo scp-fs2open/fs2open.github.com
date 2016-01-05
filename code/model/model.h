@@ -300,7 +300,7 @@ class bsp_info
 public:
 	bsp_info()
 		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(NULL), collision_tree_index(-1),
-		rad(0.0f), blown_off(0), my_replacement(-1), i_replace(-1), is_live_debris(0), num_live_debris(0), sii(NULL),
+		rad(0.0f), blown_off(0), my_replacement(-1), i_replace(-1), is_live_debris(0), num_live_debris(0),
 		is_thruster(0), is_damaged(0), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
 		num_arcs(0), outline_buffer(NULL), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
 		use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
@@ -351,8 +351,6 @@ public:
 	int		is_live_debris;		// whether current submodel is a live debris model
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
 	int		live_debris[MAX_LIVE_DEBRIS];	// array of live debris submodels for a submodel
-
-	submodel_instance_info	*sii;	// stuff needed for collision from rotations
 
 	int		is_thruster;
 	int		is_damaged;

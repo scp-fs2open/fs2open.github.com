@@ -4573,9 +4573,6 @@ void model_clear_instance(int model_num)
 		sm->angs.b = 0.0f;
 		sm->angs.h = 0.0f;
 
-		// set pointer to other ship subsystem info [turn rate, accel, moment, axis, ...]
-		sm->sii = NULL;
-
 		sm->num_arcs = 0;		// Turn off any electric arcing effects
 	}
 
@@ -4678,7 +4675,6 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 		if ( sm->my_replacement > -1 )	{
 			pm->submodel[sm->my_replacement].blown_off = 0;
 			pm->submodel[sm->my_replacement].angs = sii->angs;
-			pm->submodel[sm->my_replacement].sii = sii;
 		}
 	} else {
 		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
@@ -4690,7 +4686,6 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 
 	// Set the angles
 	sm->angs = sii->angs;
-	sm->sii = sii;
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{
