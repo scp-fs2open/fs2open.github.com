@@ -591,11 +591,14 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	vec3d local_vel_from_submodel;
 
 	if (ship_ship_hit_info->submodel_rot_hit == 1) {
-		bool set_model = false;
-
 		polymodel *pm;
+		polymodel_instance *pmi = NULL;
+		int model_instance_num = -1;
+
 		if (heavy->type == OBJ_SHIP) {
 			pm = model_get(heavy_sip->model_num);
+			model_instance_num = Ships[heavy->instance].model_instance_num;
+			pmi = model_get_instance(model_instance_num);
 		} else if (heavy->type == OBJ_ASTEROID) {
 			pm = Asteroid_info[Asteroids[heavy->instance].asteroid_type].modelp[Asteroids[heavy->instance].asteroid_subtype];
 		} else if (heavy->type == OBJ_DEBRIS) {
@@ -605,43 +608,38 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			Int3();
 			pm = NULL;
 		}
+		
+		if ( pmi != NULL && pmi->submodel[ship_ship_hit_info->submodel_num].sii != NULL ) {
+			// set point on axis of rotating submodel if not already set.
+			if ( !pmi->submodel[ship_ship_hit_info->submodel_num].sii->axis_set ) {
+				model_init_submodel_axis_pt(pmi->submodel[ship_ship_hit_info->submodel_num].sii, pm->id, ship_ship_hit_info->submodel_num);
+			}
 
-		// be sure model is set
-		if (pm->submodel[ship_ship_hit_info->submodel_num].sii == NULL) {
-			set_model = true;
-			ship_model_start(heavy);
-		}
+			vec3d omega, axis, r_rot;
+			if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_X ) {
+				axis = vmd_x_vector;
+			} else if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Y ) {
+				axis = vmd_y_vector;
+			} else if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Z ) {
+				axis = vmd_z_vector;
+			} else {
+				// must be one of these axes or submodel_rot_hit is incorrectly set
+				Int3();
+			}
 
-		// set point on axis of rotating submodel if not already set.
-		if (!pm->submodel[ship_ship_hit_info->submodel_num].sii->axis_set) {
-			model_init_submodel_axis_pt(pm->submodel[ship_ship_hit_info->submodel_num].sii, pm->id, ship_ship_hit_info->submodel_num);
-		}
+			// get world rotational velocity of rotating submodel
+			model_instance_find_obj_dir(&omega, &axis, heavy, ship_ship_hit_info->submodel_num);
 
-		vec3d omega, axis, r_rot;
-		if (pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_X) {
-			axis = vmd_x_vector;
-		} else if (pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Y) {
-			axis = vmd_y_vector;
-		} else if (pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Z) {
-			axis = vmd_z_vector;
+			vm_vec_scale(&omega, pmi->submodel[ship_ship_hit_info->submodel_num].sii->cur_turn_rate);
+
+			// world coords for r_rot
+			vec3d temp;
+			vm_vec_unrotate(&temp, &pmi->submodel[ship_ship_hit_info->submodel_num].sii->pt_on_axis, &heavy->orient);
+			vm_vec_sub(&r_rot, &ship_ship_hit_info->hit_pos, &temp);
+
+			vm_vec_cross(&local_vel_from_submodel, &omega, &r_rot);
 		} else {
-			// must be one of these axes or submodel_rot_hit is incorrectly set
-			Int3();
-		}
-
-		// get world rotational velocity of rotating submodel
-		model_find_obj_dir(&omega, &axis, heavy, ship_ship_hit_info->submodel_num);
-		vm_vec_scale(&omega, pm->submodel[ship_ship_hit_info->submodel_num].sii->cur_turn_rate);
-
-		// world coords for r_rot
-		vec3d temp;
-		vm_vec_unrotate(&temp, &pm->submodel[ship_ship_hit_info->submodel_num].sii->pt_on_axis, &heavy->orient);
-		vm_vec_sub(&r_rot, &ship_ship_hit_info->hit_pos, &temp);
-
-		vm_vec_cross(&local_vel_from_submodel, &omega, &r_rot);
-
-		if (set_model) {
-			ship_model_stop(heavy);
+			vm_vec_zero(&local_vel_from_submodel);
 		}
 	} else {
 		// didn't collide with submodel

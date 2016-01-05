@@ -80,7 +80,9 @@ void shipfx_remove_submodel_ship_sparks(ship *shipp, int submodel_num)
 void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, float exp_mag)
 {
 	// initializations
+	ship *shipp = &Ships[ship_objp->instance];
 	polymodel *pm = model_get(Ship_info[ship_p->ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 	int submodel_num = subsys->system_info->subobj_num;
 	submodel_instance_info *sii = &subsys->submodel_info_1;
 
@@ -92,8 +94,6 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 	if ((num_live_debris <= 0) || (subsys->flags & SSF_NO_LIVE_DEBRIS)) {
 		return;
 	}
-
-	ship_model_start(ship_objp);
 
 	// copy angles
 	angles copy_angs = pm->submodel[submodel_num].angs;
@@ -113,7 +113,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 		model_get_rotating_submodel_axis(&model_axis, &world_axis, pm->id, submodel_num, ship_objp);
 		vm_vec_copy_scale(&rotvel, &world_axis, sii->cur_turn_rate);
 
-		model_find_world_point(&world_axis_pt, &sii->pt_on_axis, pm->id, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&world_axis_pt, &sii->pt_on_axis, pm->id, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		vm_quaternion_rotate(&m_rot, vm_vec_mag((vec3d*)&sii->angs), &model_axis);
 	} else {
@@ -130,17 +130,17 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 
 		// get start world pos
 		vm_vec_zero(&start_world_pos);
-		model_find_world_point(&start_world_pos, &pm->submodel[live_debris_submodel].offset, pm->id, live_debris_submodel, &ship_objp->orient, &ship_objp->pos );
+		model_instance_find_world_point(&start_world_pos, &pm->submodel[live_debris_submodel].offset, pm->id, shipp->model_instance_num, live_debris_submodel, &ship_objp->orient, &ship_objp->pos );
 
 		// convert to model coord of underlying submodel
 		// set angle to zero
 		pm->submodel[submodel_num].angs = zero_angs;
-		world_find_model_point(&start_model_pos, &start_world_pos, pm, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		world_find_model_instance_point(&start_model_pos, &start_world_pos, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		// rotate from submodel coord to world coords
 		// reset angle to current angle
 		pm->submodel[submodel_num].angs = copy_angs;
-		model_find_world_point(&end_world_pos, &start_model_pos, pm->id, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_find_world_point(&end_world_pos, &start_model_pos, pm->id, shipp->model_instance_num, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
 		if(fireball_type < 0) {
@@ -209,8 +209,6 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 			shipfx_debris_limit_speed(&Debris[live_debris_obj->instance], ship_p);
 		}
 	}
-
-	ship_model_stop(ship_objp);
 }
 
 void set_ship_submodel_as_blown_off(ship *shipp, char *name)
@@ -245,6 +243,7 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 
 	ship *shipp = &Ships[ship_objp->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 
 	// no subsystems -> no live debris.
 	if (Ship_info[shipp->ship_info_index].n_subsystems == 0) {
@@ -261,11 +260,8 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 			int parent = model_get_parent_submodel_for_live_debris(pm->id, live_debris_submodel);
 			Assert(parent != -1);
 
-			// set model values only once (esp blown off)
-			ship_model_start(ship_objp);
-
 			// check if already blown off  (ship model set)
-			if ( !pm->submodel[parent].blown_off ) {
+			if ( !pmi->submodel[parent].blown_off ) {
 		
 				// get ship_subsys for live_debris
 				// Go through all subsystems and look for submodel the subsystems with "parent" submodel.
@@ -280,7 +276,7 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 				if (pss != NULL) {
 					if (pss->system_info != NULL) {
 						vec3d exp_center, tmp = ZERO_VECTOR;
-						model_find_world_point(&exp_center, &tmp, pm->id, parent, &ship_objp->orient, &ship_objp->pos );
+						model_instance_find_world_point(&exp_center, &tmp, pm->id, shipp->model_instance_num, parent, &ship_objp->orient, &ship_objp->pos );
 
 						// if not blown off, blow it off
 						shipfx_subsystem_maybe_create_live_debris(ship_objp, shipp, pss, &exp_center, 3.0f);
@@ -293,10 +289,6 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 			}
 		}
 	}
-
-	// clean up
-	ship_model_stop(ship_objp);
-
 }
 
 void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p,ship_subsys *subsys, vec3d *exp_center, bool no_explosion)
@@ -1481,9 +1473,7 @@ void shipfx_emit_spark( int n, int sn )
 
 	// get spark position
 	if (shipp->sparks[spark_num].submodel_num != -1) {
-		ship_model_start(obj);
-		model_find_world_point(&outpnt, &shipp->sparks[spark_num].pos, sip->model_num, shipp->sparks[spark_num].submodel_num, &obj->orient, &obj->pos);
-		ship_model_stop(obj);
+		model_instance_find_world_point(&outpnt, &shipp->sparks[spark_num].pos, sip->model_num, shipp->model_instance_num, shipp->sparks[spark_num].submodel_num, &obj->orient, &obj->pos);
 	} else {
 		// rotate sparks correctly with current ship orient
 		vm_vec_unrotate(&outpnt, &shipp->sparks[spark_num].pos, &obj->orient);

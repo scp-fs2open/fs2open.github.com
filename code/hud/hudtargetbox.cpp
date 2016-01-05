@@ -568,8 +568,8 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		// IMPORTANT NOTE! Code handling the case 'missile_view == TRUE' in rendering section of renderTargetWeapon()
 		//                 is largely copied over from renderTargetShip(). To keep the codes similar please update
 		//                 both if and when needed
-		ship_model_start( target_objp );
 		model_render_params render_info;
+		render_info.set_object_number(OBJ_INDEX(target_objp));
 
 		switch (Targetbox_wire) {
 			case 0:
@@ -642,8 +642,6 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 
 		Interp_desaturate = false;
 		Glowpoint_override = false;
-
-		ship_model_stop( target_objp );
 
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
@@ -918,7 +916,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 					break;
 			}
 		} else {
-			ship_model_start( viewed_obj );
+			render_info.set_object_number(OBJ_INDEX(viewed_obj));
 
 			switch (Targetbox_wire) {
 				case 0:
@@ -1003,8 +1001,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 
 		if (missile_view == TRUE) {
 			Glowpoint_override = false;
-
-			ship_model_stop( viewed_obj );
 		}
 
 		if ( Monitor_mask >= 0 ) {

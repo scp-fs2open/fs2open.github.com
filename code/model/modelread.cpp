@@ -3338,7 +3338,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 		vm_vec_make(model_axis, 0.0f, 0.0f, 1.0f);
 	}
 
-	model_find_obj_dir(world_axis, model_axis, obj, submodel_num);
+	model_instance_find_obj_dir(world_axis, model_axis, obj, submodel_num);
 }
 
 
@@ -4555,6 +4555,7 @@ void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm
 	sm_instance->blown_off = sm->is_damaged ? true : false;
 
 	sm_instance->collision_checked = false;
+	sm_instance->sii = NULL;
 }
 
 void model_clear_submodel_instances( int model_instance_num )
@@ -4704,6 +4705,7 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	// Set the angles
 	smi->angs = sii->angs;
 	smi->prev_angs = sii->prev_angs;
+	smi->sii = sii;
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{
