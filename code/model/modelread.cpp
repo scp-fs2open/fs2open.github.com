@@ -132,12 +132,12 @@ public:
 	int submodel_num;
 	submodel_instance_info submodel_info_1;
 
-	submodel_dumb_rotation(int submodel_num, float turn_rate)
-		: submodel_num(submodel_num)
+	submodel_dumb_rotation(int _submodel_num, float _turn_rate)
+		: submodel_num(_submodel_num)
 	{
 		memset(&submodel_info_1, 0, sizeof(submodel_info_1));
-		submodel_info_1.cur_turn_rate = turn_rate;
-		submodel_info_1.desired_turn_rate = turn_rate;
+		submodel_info_1.cur_turn_rate = _turn_rate;
+		submodel_info_1.desired_turn_rate = _turn_rate;
 	}
 };
 
@@ -148,8 +148,8 @@ public:
 	int model_instance_num;
 	SCP_vector<submodel_dumb_rotation> list;
 
-	dumb_rotation(bool is_ship, int model_instance_num)
-		: is_ship(is_ship), model_instance_num(model_instance_num), list()
+	dumb_rotation(bool _is_ship, int _model_instance_num)
+		: is_ship(_is_ship), model_instance_num(_model_instance_num), list()
 	{}
 };
 
@@ -2814,7 +2814,7 @@ void model_delete_instance(int model_instance_num)
 	Polygon_model_instances[model_instance_num] = NULL;
 
 	// delete dumb rotations associated with this instance
-	for (auto dumb_it = Dumb_rotations.cbegin(); dumb_it != Dumb_rotations.cend(); ++dumb_it) {
+	for (auto dumb_it = Dumb_rotations.begin(); dumb_it != Dumb_rotations.end(); ++dumb_it) {
 		if (dumb_it->model_instance_num == model_instance_num) {
 			Dumb_rotations.erase(dumb_it);
 			break;
