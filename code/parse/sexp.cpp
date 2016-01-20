@@ -33907,7 +33907,7 @@ bool output_sexps(char *filepath)
 
 	if(fp == NULL)
 	{
-		os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_ERROR, "Error creating SEXP operator list");
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error creating SEXP operator list");
 		return false; 
 	}
 

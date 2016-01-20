@@ -1864,14 +1864,14 @@ void game_init()
 		if(Cmdline_query_speech)
 		{
 			if (!fsspeech_was_compiled())
-				os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_WARNING, "Speech is not compiled in this build in code.lib");
+				os::dialogs::Message(os::dialogs::MESSAGEBOX_WARNING, "Speech is not compiled in this build in code.lib");
 			else
-				os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_WARNING, "Speech is compiled, but failed to init");
+				os::dialogs::Message(os::dialogs::MESSAGEBOX_WARNING, "Speech is compiled, but failed to init");
 		}
 	} else if(Cmdline_query_speech) {
 		// Its bad practice to use a negative type, this is an exceptional case
 		fsspeech_play(-1,"Welcome to FS2 open");
-		os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_INFORMATION, "Speech is compiled and initialised and should be working");
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_INFORMATION, "Speech is compiled and initialised and should be working");
 	}
 
 /////////////////////////////
@@ -1879,7 +1879,7 @@ void game_init()
 /////////////////////////////
 
 	if ( gr_init() == false ) {
-		os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
 		exit(1);
 		return;
 	}
@@ -1902,7 +1902,7 @@ void game_init()
 	
 		if(voiceRectOn == false)
 		{
-			os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_ERROR, "Failed to init voice rec!");
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Failed to init voice rec!");
 		}
 	}
 
@@ -6858,11 +6858,11 @@ int game_do_ram_check(uint ram_in_bytes)
 
 			sprintf( tmp, XSTR( "FreeSpace has detected that you only have %dMB of free memory.\n\nFreeSpace requires at least 32MB of memory to run.  If you think you have more than %dMB of physical memory, ensure that you aren't running SmartDrive (SMARTDRV.EXE).  Any memory allocated to SmartDrive is not usable by applications\n\nPress 'OK' to continue running with less than the minimum required memory\n", 193), FreeSpace_total_ram_MB, FreeSpace_total_ram_MB);
 
-			os::dialogs::MessageBox( os::dialogs::MESSAGEBOX_ERROR, tmp, XSTR( "Not Enough RAM", 194));
+			os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, tmp, XSTR( "Not Enough RAM", 194));
 
 		} else {
 			sprintf( tmp, XSTR( "FreeSpace has detected that you only have %dMB of free memory.\n\nFreeSpace requires at least 32MB of memory to run.  If you think you have more than %dMB of physical memory, ensure that you aren't running SmartDrive (SMARTDRV.EXE).  Any memory allocated to SmartDrive is not usable by applications\n", 195), FreeSpace_total_ram_MB, FreeSpace_total_ram_MB);
-			os::dialogs::MessageBox( os::dialogs::MESSAGEBOX_ERROR, tmp, XSTR( "Not Enough RAM", 194) );
+			os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, tmp, XSTR( "Not Enough RAM", 194) );
 			return -1;
 		}
 	}
@@ -7069,18 +7069,18 @@ int game_main(int argc, char *argv[])
 	}
 
 	if ( ms.dwTotalVirtual < 1024 )	{
-		os::dialogs::MessageBox( os::dialogs::MESSAGEBOX_ERROR, XSTR( "FreeSpace requires virtual memory to run.\r\n", 196), XSTR( "No Virtual Memory", 197) );
+		os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, XSTR( "FreeSpace requires virtual memory to run.\r\n", 196), XSTR( "No Virtual Memory", 197) );
 		return 1;
 	}
 
 	if (!vm_init(24*1024*1024)) {
-		os::dialogs::MessageBox( os::dialogs::MESSAGEBOX_ERROR, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199));
+		os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199));
 		return 1;
 	}
 		
 	char *tmp_mem = (char *) vm_malloc(16 * 1024 * 1024);
 	if (!tmp_mem) {
-		os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_ERROR, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199));
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199));
 		return 1;
 	}
 

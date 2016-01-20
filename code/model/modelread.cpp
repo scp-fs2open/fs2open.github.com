@@ -2510,7 +2510,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		char buffer[100];
 		sprintf(buffer,"Serious problem loading model %s, %d normals capped to zero",
 			filename, Parse_normal_problem_count);
-		os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_ERROR, buffer);
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, buffer);
 	}
 #endif
 

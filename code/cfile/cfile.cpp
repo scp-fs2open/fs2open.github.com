@@ -188,7 +188,7 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 
 		// are we in a root directory?		
 		if(cfile_in_root_dir(buf)){
-			os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_ERROR, "FreeSpace2/Fred2 cannot be run from a drive root directory!");
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "FreeSpace2/Fred2 cannot be run from a drive root directory!");
 			return 1;
 		}		
 
@@ -202,7 +202,7 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 			buf[i] = 0;						
 			cfile_chdir(buf);
 		} else {
-			os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_ERROR, "Error trying to determine executable root directory!");
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error trying to determine executable root directory!");
 			return 1;
 		}
 
