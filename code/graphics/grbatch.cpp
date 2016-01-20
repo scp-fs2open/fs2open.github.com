@@ -728,12 +728,12 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 		return 1;
 	}
 
-	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && ( !Cmdline_softparticles || Use_GLSL <= 2 ) ) {
+	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && ( !Cmdline_softparticles || GLSL_version <= 120 ) ) {
 		// don't render this as a soft particle if we don't support soft particles
 		tmap_flags &= ~(TMAP_FLAG_SOFT_QUAD);
 	}
 
-	if ( Use_GLSL > 2 && Cmdline_softparticles && !Cmdline_no_geo_sdr_effects && Is_Extension_Enabled(OGL_EXT_GEOMETRY_SHADER4) && (tmap_flags & TMAP_FLAG_VERTEX_GEN) ) {
+	if ( GLSL_version > 120 && Cmdline_softparticles && !Cmdline_no_geo_sdr_effects && Is_Extension_Enabled(OGL_EXT_GEOMETRY_SHADER4) && (tmap_flags & TMAP_FLAG_VERTEX_GEN) ) {
 		geometry_batch_add_bitmap(texture, tmap_flags, pnt, orient, rad, alpha, depth);
 		return 0;
 	} else if ( tmap_flags & TMAP_FLAG_VERTEX_GEN ) {
@@ -797,7 +797,7 @@ int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float ang
 		return 1;
 	}
 
-	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && ( !Cmdline_softparticles || Use_GLSL <= 2 ) ) {
+	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && ( !Cmdline_softparticles || GLSL_version <= 120 ) ) {
 		// don't render this as a soft particle if we don't support soft particles
 		tmap_flags &= ~(TMAP_FLAG_SOFT_QUAD);
 	}
@@ -1179,7 +1179,7 @@ int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, floa
 		return 1;
 	}
 
-	if ( Use_GLSL < 2 || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
+	if ( GLSL_version < 120 || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
 		// don't render distortions if we can't support them.
 		return 0;
 	}
@@ -1214,7 +1214,7 @@ int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, f
 		return 1;
 	}
 
-	if ( Use_GLSL < 2 || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
+	if ( GLSL_version < 120 || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
 		// don't render distortions if we can't support them.
 		return 0;
 	}

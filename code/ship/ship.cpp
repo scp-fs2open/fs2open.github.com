@@ -264,6 +264,7 @@ flag_def_list Subsystem_flags[] = {
 	{ "turret use ammo",		MSS_FLAG2_TURRET_USE_AMMO, 1},
 	{ "autorepair if disabled",	MSS_FLAG2_AUTOREPAIR_IF_DISABLED, 1},
 	{ "don't autorepair if disabled", MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED, 1},
+	{ "share fire direction", MSS_FLAG2_SHARE_FIRE_DIRECTION, 1 }
 };
 
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -392,6 +393,7 @@ ship_flag_name Ship_flag_names[] = {
 	{SF2_NO_ETS,					"no-ets",						2,	},
 	{SF2_TOGGLE_SUBSYSTEM_SCANNING,	"toggle-subsystem-scanning",	2,	},
 	{SF2_NO_SECONDARY_LOCKON,		"no-secondary-lock-on",			2,	},
+	{SF2_NO_DISABLED_SELF_DESTRUCT,	"no-disabled-self-destruct",	2,	},
 };
 
 const int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
@@ -1987,7 +1989,7 @@ void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_st
 	}
 }
 
-void parse_allowed_weapons(ship_info *sip, bool is_primary, bool is_dogfight)
+void parse_allowed_weapons(ship_info *sip, const bool is_primary, const bool is_dogfight, const bool first_time)
 {
 	int i, num_allowed;
 	int allowed_weapons[MAX_WEAPON_TYPES];
@@ -2004,6 +2006,17 @@ void parse_allowed_weapons(ship_info *sip, bool is_primary, bool is_dogfight)
 	// Set the weapons filter used in weapons loadout (for primary weapons)
 	if (optional_string(allowed_banks_str))
 	{
+		// MageKing17 - We need to make modular tables replace bank restrictions by default, instead of adding to them.
+		if (!first_time && !(optional_string("+noreplace"))) {	// Only makes sense for modular tables.
+			// clear allowed weapons so the modular table can define new ones
+			for (bank = 0; bank < max_banks; bank++) {
+				for (i = 0; i < Num_weapon_types; i++) {
+					sip->allowed_bank_restricted_weapons[offset+bank][i] &= ~weapon_type;
+				}
+				sip->restricted_loadout_flag[offset+bank] &= ~weapon_type;
+			}
+		}
+
 		bank = -1;
 
 		while (check_for_string("("))
@@ -3023,8 +3036,8 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	}
 
 	// Set the weapons filter used in weapons loadout (for primary weapons)
-	parse_allowed_weapons(sip, true, false);
-	parse_allowed_weapons(sip, true, true);
+	parse_allowed_weapons(sip, true, false, first_time);
+	parse_allowed_weapons(sip, true, true, first_time);
 
 	// Get primary bank weapons
 	parse_weapon_bank(sip, true, &sip->num_primary_banks, sip->primary_bank_weapons, sip->primary_bank_ammo_capacity);
@@ -3036,8 +3049,8 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	}
 
 	// Set the weapons filter used in weapons loadout (for secondary weapons)
-	parse_allowed_weapons(sip, false, false);
-	parse_allowed_weapons(sip, false, true);
+	parse_allowed_weapons(sip, false, false, first_time);
+	parse_allowed_weapons(sip, false, true, first_time);
 
 	// Get secondary bank weapons
 	parse_weapon_bank(sip, false, &sip->num_secondary_banks, sip->secondary_bank_weapons, sip->secondary_bank_ammo_capacity);
@@ -3299,10 +3312,12 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		Error(LOCATION, "%s '%s' has too many primary banks (%d).  Maximum for ships is currently %d.\n", info_type_name, sip->name, sip->num_primary_banks, MAX_SHIP_PRIMARY_BANKS);
 	}
 
+	memset(sip->allowed_weapons, 0, sizeof(int) * MAX_WEAPON_TYPES);
+
 	// copy to regular allowed_weapons array
-	for (i=0; i<MAX_SHIP_WEAPONS; i++)
+	for (i = 0; i < MAX_SHIP_WEAPONS; i++)
 	{
-		for (j=0; j<MAX_WEAPON_TYPES; j++)
+		for (j = 0; j < Num_weapon_types; j++)
 		{
 			if (sip->allowed_bank_restricted_weapons[i][j] & REGULAR_WEAPON)
 				sip->allowed_weapons[j] |= REGULAR_WEAPON;
@@ -3312,10 +3327,12 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		}
 	}
 
+	sip->flags &= ~SIF_BALLISTIC_PRIMARIES;
+
 	//Set ship ballistic flag if necessary
-	for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++)
+	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		for (j=0; j<MAX_WEAPON_TYPES; j++)
+		for (j = 0; j < Num_weapon_types; j++)
 		{
 			if(sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags2 & WIF2_BALLISTIC))
 			{
@@ -7067,7 +7084,7 @@ void ship_render_DEPRECATED(object * obj)
 				}
 
 				// Valathil - maybe do a scripting hook here to do some scriptable effects?
-				if(shipp->shader_effect_active && Use_GLSL > 1)
+				if(shipp->shader_effect_active && is_minimum_GLSL_version())
 				{
 					float timer;
 					render_flags |= (MR_DEPRECATED_ANIMATED_SHADER);
@@ -18952,7 +18969,7 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 
 void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint *render_flags)
 {
-	if ( !shipp->shader_effect_active || Use_GLSL <= 1 || Rendering_to_shadow_map ) {
+	if ( !shipp->shader_effect_active || !is_minimum_GLSL_version() || Rendering_to_shadow_map ) {
 		return;
 	}
 
@@ -19030,6 +19047,8 @@ void ship_render(object* obj, draw_list* scene)
 			return;
 		}
 	}
+
+	model_clear_instance(sip->model_num);
 
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {

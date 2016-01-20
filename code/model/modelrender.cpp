@@ -1194,7 +1194,7 @@ void model_render_buffers(draw_list* scene, model_render_params* interp, vertex_
 		scale.xyz.x = 1.0f;
 		scale.xyz.y = 1.0f;
 
-		if ( Use_GLSL > 1 ) {
+		if ( is_minimum_GLSL_version() ) {
 			scale.xyz.z = 1.0f;
 			scene->set_thrust_scale(interp->get_thruster_info().length.xyz.z);
 		} else {

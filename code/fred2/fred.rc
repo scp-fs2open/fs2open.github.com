@@ -18,13 +18,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -116,7 +114,7 @@ IDB_DATA_95             BITMAP                  "res\\data95.bmp"
 // Toolbar
 //
 
-IDR_MAINFRAME TOOLBAR  23, 23
+IDR_MAINFRAME TOOLBAR 23, 23
 BEGIN
     BUTTON      ID_SELECT
     BUTTON      ID_SELECT_AND_MOVE
@@ -152,7 +150,7 @@ END
 // Menu
 //
 
-IDR_MAINMENU MENU 
+IDR_MAINMENU MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -334,7 +332,7 @@ BEGIN
     END
 END
 
-IDR_MENU_SHIP_POPUP MENU 
+IDR_MENU_SHIP_POPUP MENU
 BEGIN
     POPUP "Properties"
     BEGIN
@@ -344,7 +342,7 @@ BEGIN
     END
 END
 
-IDR_MENU_EDIT_POPUP MENU 
+IDR_MENU_EDIT_POPUP MENU
 BEGIN
     POPUP "EDIT"
     BEGIN
@@ -369,7 +367,7 @@ BEGIN
     END
 END
 
-IDR_MENU_CAMPAIGN MENU 
+IDR_MENU_CAMPAIGN MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -391,7 +389,7 @@ BEGIN
     END
 END
 
-IDR_MENU_EDIT_SEXP_TREE MENU 
+IDR_MENU_EDIT_SEXP_TREE MENU
 BEGIN
     POPUP "Edit sexp tree"
     BEGIN
@@ -441,7 +439,7 @@ BEGIN
     END
 END
 
-IDR_WING_EDIT_MENU MENU 
+IDR_WING_EDIT_MENU MENU
 BEGIN
     POPUP "&Select Wing"
     BEGIN
@@ -449,7 +447,7 @@ BEGIN
     END
 END
 
-IDR_SHIP_EDIT_MENU MENU 
+IDR_SHIP_EDIT_MENU MENU
 BEGIN
     POPUP "&Select Ship"
     BEGIN
@@ -457,7 +455,7 @@ BEGIN
     END
 END
 
-IDR_PLAYER_EDIT_MENU MENU 
+IDR_PLAYER_EDIT_MENU MENU
 BEGIN
     POPUP "Select Team"
     BEGIN
@@ -470,7 +468,7 @@ BEGIN
     END
 END
 
-IDR_WAYPOINT_PATH_EDIT_MENU MENU 
+IDR_WAYPOINT_PATH_EDIT_MENU MENU
 BEGIN
     POPUP "&Select Waypoint Path"
     BEGIN
@@ -478,7 +476,7 @@ BEGIN
     END
 END
 
-IDR_ASTEROID_FIELD_MENU MENU 
+IDR_ASTEROID_FIELD_MENU MENU
 BEGIN
     POPUP "Select Field"
     BEGIN
@@ -486,7 +484,7 @@ BEGIN
     END
 END
 
-IDR_CPGN_VIEW_OFF MENU 
+IDR_CPGN_VIEW_OFF MENU
 BEGIN
     POPUP "Blah"
     BEGIN
@@ -495,7 +493,7 @@ BEGIN
     END
 END
 
-IDR_CPGN_VIEW_ON MENU 
+IDR_CPGN_VIEW_ON MENU
 BEGIN
     POPUP "Blah"
     BEGIN
@@ -511,7 +509,7 @@ END
 // Accelerator
 //
 
-IDR_MAINFRAME ACCELERATORS 
+IDR_MAINFRAME ACCELERATORS
 BEGIN
     "1",            ID_SPEED1,              VIRTKEY, NOINVERT
     "1",            ID_GROUP1,              VIRTKEY, CONTROL, NOINVERT
@@ -602,7 +600,7 @@ BEGIN
     "Z",            ID_ZOOM_EXTENTS,        VIRTKEY, SHIFT, NOINVERT
 END
 
-IDR_ACC_CAMPAIGN ACCELERATORS 
+IDR_ACC_CAMPAIGN ACCELERATORS
 BEGIN
     "H",            ID_ERROR_CHECKER,       VIRTKEY, ALT, NOINVERT
     "N",            ID_CPGN_FILE_NEW,       VIRTKEY, CONTROL, NOINVERT
@@ -617,7 +615,7 @@ END
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOG  0, 0, 284, 89
+IDD_ABOUTBOX DIALOG 0, 0, 284, 89
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About FRED2"
 FONT 8, "MS Sans Serif"
@@ -698,7 +696,7 @@ BEGIN
     GROUPBOX        "Message Properties",IDC_STATIC,7,184,184,60
 END
 
-IDD_SHIP_GOALS_EDITOR DIALOG  0, 0, 412, 221
+IDD_SHIP_GOALS_EDITOR DIALOG 0, 0, 412, 221
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Initial Orders"
 FONT 8, "MS Sans Serif"
@@ -882,7 +880,7 @@ BEGIN
     CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,190,142,10
 END
 
-IDD_PREFERENCES DIALOG  0, 0, 333, 81
+IDD_PREFERENCES DIALOG 0, 0, 333, 81
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Preferences"
 FONT 8, "MS Sans Serif"
@@ -1017,7 +1015,7 @@ BEGIN
     LTEXT           "Missile bank 4",IDC_STATIC,232,64,46,8
 END
 
-IDD_SHIP_MARKINGS DIALOG  0, 0, 252, 140
+IDD_SHIP_MARKINGS DIALOG 0, 0, 252, 140
 STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_CAPTION
 CAPTION "Ship Markings"
 FONT 8, "MS Sans Serif"
@@ -1150,7 +1148,7 @@ BEGIN
     PUSHBUTTON      "Restrict Departure Paths",IDC_RESTRICT_DEPARTURE,160,223,121,14,0,WS_EX_STATICEDGE
 END
 
-IDD_OPERATOR_ARGUMENT_TYPES DIALOG  0, 0, 235, 50
+IDD_OPERATOR_ARGUMENT_TYPES DIALOG 0, 0, 235, 50
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Select Argument Types"
 FONT 8, "MS Sans Serif"
@@ -1199,7 +1197,7 @@ BEGIN
     LTEXT           "Set Amount From Variable",IDC_STATIC,179,234,93,10
 END
 
-IDD_ORIENT_EDITOR DIALOG  0, 0, 229, 119
+IDD_ORIENT_EDITOR DIALOG 0, 0, 229, 119
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Object Orientation Editor"
 FONT 8, "MS Sans Serif"
@@ -1421,7 +1419,7 @@ BEGIN
     LTEXT           "Delay After Arrival",IDC_STATIC,7,99,57,8
 END
 
-IDD_REINFORCEMENT_SELECT DIALOG  0, 0, 156, 132
+IDD_REINFORCEMENT_SELECT DIALOG 0, 0, 156, 132
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Select Reinforcement Unit"
 FONT 8, "MS Sans Serif"
@@ -1431,7 +1429,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,99,111,50,14
 END
 
-IDD_WAYPOINT_PATH_EDITOR DIALOG  0, 0, 145, 29
+IDD_WAYPOINT_PATH_EDITOR DIALOG 0, 0, 145, 29
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Waypoint Path/Jump Node Editor"
 MENU IDR_WAYPOINT_PATH_EDIT_MENU
@@ -1441,7 +1439,7 @@ BEGIN
     EDITTEXT        IDC_NAME,32,7,106,14,ES_AUTOHSCROLL
 END
 
-IDD_WING_CREATE DIALOG  0, 0, 119, 68
+IDD_WING_CREATE DIALOG 0, 0, 119, 68
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Create Wing"
 FONT 8, "MS Sans Serif"
@@ -1492,7 +1490,7 @@ BEGIN
     LTEXT           "Team Color Setting:",IDC_STATIC,16,308,66,8
 END
 
-IDD_ASTEROID_EDITOR DIALOG  0, 0, 376, 210
+IDD_ASTEROID_EDITOR DIALOG 0, 0, 376, 210
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Debris Field Editor"
 FONT 8, "MS Sans Serif"
@@ -1590,7 +1588,7 @@ BEGIN
     LTEXT           "Debriefing persona index",IDC_STATIC,148,176,79,8
 END
 
-IDD_TEXT_VIEW DIALOG  0, 0, 324, 285
+IDD_TEXT_VIEW DIALOG 0, 0, 324, 285
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Ship TBL Data"
 FONT 8, "MS Sans Serif"
@@ -1655,7 +1653,7 @@ BEGIN
     CONTROL         "Use Cargo Icon",IDC_USE_CARGO_ICON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,233,394,65,10
 END
 
-IDD_IGNORE_ORDERS DIALOG  0, 0, 120, 217
+IDD_IGNORE_ORDERS DIALOG 0, 0, 120, 217
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Ignore Orders"
 FONT 8, "MS Sans Serif"
@@ -1705,7 +1703,7 @@ BEGIN
     COMBOBOX        IDC_FAILED_MISSION_TRACK,445,294,80,180,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_ADJUST_GRID DIALOG  0, 0, 153, 94
+IDD_ADJUST_GRID DIALOG 0, 0, 153, 94
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Adjust Grid"
 FONT 8, "MS Sans Serif"
@@ -1727,7 +1725,7 @@ BEGIN
     LTEXT           "X Level",IDC_STATIC,69,50,25,8
 END
 
-IDD_SHIELD_SYS DIALOG  0, 0, 192, 106
+IDD_SHIELD_SYS DIALOG 0, 0, 192, 106
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Shield System Editor"
 FONT 8, "MS Sans Serif"
@@ -1744,7 +1742,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,134,86,50,14
 END
 
-IDD_INITIAL_SHIPS DIALOG  0, 0, 127, 210
+IDD_INITIAL_SHIPS DIALOG 0, 0, 127, 210
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Initial Ships Allowed"
 FONT 8, "MS Sans Serif"
@@ -1838,9 +1836,11 @@ BEGIN
     CONTROL         "Cloaked",IDC_CLOAKED,"Button",BS_3STATE | WS_TABSTOP,165,167,42,10
     CONTROL         "Scramble Messages",IDC_SCRAMBLE_MESSAGES,"Button",BS_3STATE | WS_TABSTOP,165,177,79,10
     CONTROL         "No Collisions",IDC_NO_COLLIDE,"Button",BS_3STATE | WS_TABSTOP,165,188,66,10
+    CONTROL         "No Disabled Self-Destruct",IDC_NO_DISABLED_SELF_DESTRUCT,
+                    "Button",BS_3STATE | WS_TABSTOP,165,199,114,10
 END
 
-IDD_ADD_VARIABLE DIALOG  0, 0, 422, 102
+IDD_ADD_VARIABLE DIALOG 0, 0, 422, 102
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Add Variable"
 FONT 8, "MS Sans Serif"
@@ -1860,7 +1860,7 @@ BEGIN
     CONTROL         "Network-Variable",IDC_TYPE_NETWORK_VARIABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,137,71,84,11
 END
 
-IDD_MODIFY_VARIABLE DIALOG  0, 0, 422, 102
+IDD_MODIFY_VARIABLE DIALOG 0, 0, 422, 102
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Modify Variable"
 FONT 8, "MS Sans Serif"
@@ -1882,7 +1882,7 @@ BEGIN
     CONTROL         "Network-Variable",IDC_TYPE_NETWORK_VARIABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,138,72,84,11
 END
 
-IDD_SPECIAL_DAMAGE DIALOG  0, 0, 234, 129
+IDD_SPECIAL_DAMAGE DIALOG 0, 0, 234, 129
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Special Explosion"
 FONT 8, "MS Sans Serif"
@@ -1908,7 +1908,7 @@ BEGIN
     LTEXT           "Duration (msecs):",IDC_STATIC,30,111,56,8
 END
 
-IDD_DUMP_STATS DIALOG  0, 0, 577, 375
+IDD_DUMP_STATS DIALOG 0, 0, 577, 375
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Mission Stats"
 FONT 8, "MS Sans Serif"
@@ -1918,7 +1918,7 @@ BEGIN
     EDITTEXT        IDC_STATS_TEXT,7,7,563,333,ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | ES_WANTRETURN | ES_NUMBER | WS_VSCROLL
 END
 
-IDD_SHIP_TEXTURES DIALOG  0, 0, 296, 56
+IDD_SHIP_TEXTURES DIALOG 0, 0, 296, 56
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Ship Texture Replace"
 FONT 8, "MS Sans Serif"
@@ -1931,7 +1931,7 @@ BEGIN
     COMBOBOX        IDC_OLD_TEXTURE_LIST,7,16,137,85,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 END
 
-IDD_SPECIAL_HITPOINTS DIALOG  0, 0, 234, 85
+IDD_SPECIAL_HITPOINTS DIALOG 0, 0, 234, 85
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Special Hitpoints"
 FONT 8, "MS Sans Serif"
@@ -1948,7 +1948,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,106,10
 END
 
-IDD_SET_GLOBAL_SHIP_FLAGS DIALOG  0, 0, 114, 79
+IDD_SET_GLOBAL_SHIP_FLAGS DIALOG 0, 0, 114, 79
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Set Global Ship Flags"
 FONT 8, "MS Sans Serif"
@@ -1959,7 +1959,7 @@ BEGIN
     PUSHBUTTON      "Global Affected-By-Gravity",IDC_AFFECTED_BY_GRAVITY,7,58,100,14
 END
 
-IDD_VOICE_MANAGER DIALOG  0, 0, 407, 218
+IDD_VOICE_MANAGER DIALOG 0, 0, 407, 218
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Voice Acting Manager"
 FONT 8, "MS Sans Serif"
@@ -2004,7 +2004,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,166,159,100,19
 END
 
-IDD_BRIEFING_PERSONAS DIALOG  0, 0, 320, 201
+IDD_BRIEFING_PERSONAS DIALOG 0, 0, 320, 201
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Dialog"
 FONT 8, "MS Sans Serif"
@@ -2013,7 +2013,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,263,24,50,14
 END
 
-IDD_CUSTOM_WING_NAMES DIALOG  0, 0, 390, 54
+IDD_CUSTOM_WING_NAMES DIALOG 0, 0, 390, 54
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Custom Wing Names"
 FONT 8, "MS Sans Serif"
@@ -2035,7 +2035,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,333,24,50,14
 END
 
-IDD_RESTRICT_PATHS DIALOG  0, 0, 241, 87
+IDD_RESTRICT_PATHS DIALOG 0, 0, 241, 87
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Restrict Paths"
 FONT 8, "MS Sans Serif"
@@ -2046,7 +2046,7 @@ BEGIN
     LTEXT           "Restrict departure paths to the following:",IDC_RESTRICT_PATHS_LABEL,7,7,127,11
 END
 
-IDD_BACKGROUND_CHOOSER DIALOG  0, 0, 152, 45
+IDD_BACKGROUND_CHOOSER DIALOG 0, 0, 152, 45
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Choose a background"
 FONT 8, "MS Sans Serif"
@@ -2103,8 +2103,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,7,1,000000
- PRODUCTVERSION 3,7,1,000000
+ FILEVERSION 3,7,1,0
+ PRODUCTVERSION 3,7,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -2142,7 +2142,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_ABOUTBOX, DIALOG
     BEGIN
@@ -2708,7 +2708,7 @@ BEGIN
     AFX_IDS_HELPMODEMESSAGE "Select an object on which to get Help"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_FILE_NEW             "Create a new campaign\nNew"
     ID_FILE_OPEN            "Open an existing campaign\nOpen"
@@ -2721,7 +2721,7 @@ BEGIN
     ID_FILE_PRINT_PREVIEW   "Display full pages\nPrint Preview"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_APP_ABOUT            "Display program information, version number and copyright\nAbout"
     ID_APP_EXIT             "Exit the campaign editor\nExit"
@@ -2732,7 +2732,7 @@ BEGIN
     ID_HELP                 "Display help for current task or command\nHelp"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_FILE_MRU_FILE1       "Open this document"
     ID_FILE_MRU_FILE2       "Open this document"
@@ -2752,18 +2752,18 @@ BEGIN
     ID_FILE_MRU_FILE16      "Open this document"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_NEXT_PANE            "Switch to the next window pane\nNext Pane"
     ID_PREV_PANE            "Switch back to the previous window pane\nPrevious Pane"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_WINDOW_SPLIT         "Split the active window into panes\nSplit"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_EDIT_CLEAR           "Erase the selection\nErase"
     ID_EDIT_CLEAR_ALL       "Erase everything\nErase All"
@@ -2778,13 +2778,13 @@ BEGIN
     ID_EDIT_REDO            "Redo the previously undone action\nRedo"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_VIEW_TOOLBAR         "Show or hide the toolbar\nToggle ToolBar"
     ID_VIEW_STATUS_BAR      "Show or hide the status bar\nToggle StatusBar"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     AFX_IDS_SCSIZE          "Change the window size"
     AFX_IDS_SCMOVE          "Change the window position"
@@ -2795,24 +2795,24 @@ BEGIN
     AFX_IDS_SCCLOSE         "Close the active window and prompts to save the documents"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     AFX_IDS_SCRESTORE       "Restore the window to normal size"
     AFX_IDS_SCTASKLIST      "Activate Task List"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     AFX_IDS_PREVIEW_CLOSE   "Close print preview mode\nCancel Preview"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_FILE_MISSIONNOTES    "Displays designer notes and mission properties\nMission Specs"
     ID_SELECT               "Select objects mode\nSelect (S)"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_VIEW_FIGHTERS        "Show/Hide Fighter objects"
     ID_VIEW_CAPITALSHIPS    "Show/Hide Capital Ship objects"
@@ -2830,7 +2830,7 @@ BEGIN
     ID_EDITORS_SHIPS        "Open ship editor dialog window to edit ship"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_EDITORS_GOALS        "Activates Mission Goal Editor\nMission Goal Editor"
     ID_EDITORS_WAYPOINTS    "Activates Waypoint Editor\nWaypoint Editor"
@@ -2841,7 +2841,7 @@ BEGIN
     ID_PROPERTIES_ONE       "This is Mike's prompt!"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_INDICATOR_EXT        "EXT"
     ID_INDICATOR_CAPS       "CAP"
@@ -2855,7 +2855,7 @@ BEGIN
     ID_INDICATOR_MODIFIED   "MODIFIED"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_MISCSTUFF_SHOWSHIPSASICONS "This is the (help?) prompt!"
     ID_EDIT_POPUP_SHOW_SHIP_MODELS 
@@ -2864,7 +2864,7 @@ BEGIN
                             "Display ship names and ship types for visible ships"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_ADD_MISSION_TIME     "Evaluates to elapsed time into mission in seconds"
     ID_ADD_EQUALS           "Evaluates to true if numbers or objects are the same"
@@ -2879,7 +2879,7 @@ BEGIN
     ID_ADD_FALSE            "Evaluates to a boolean value of false"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_EDIT_POPUP_SHOW_COMPASS 
                             "Display a 3 dimentional compass in the upper right corner of window"
@@ -2893,7 +2893,7 @@ BEGIN
     ID_ADD_MINUS            "Evaluates to difference between first subexpression and remaining subexpressions"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_SHOW_GRID_POSITIONS  "Show position on grid for all visible objects"
     ID_SHOW_COORDINATES     "Display the coordinates of objects/waypoints."
@@ -2908,7 +2908,7 @@ BEGIN
     ID_DISSOLVE_WING        "Remove selected ships from Wing(s)\nRemove from Wing"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_SELECT_AND_MOVE      "Select and Move objects\nSelect and Move (M)"
     ID_SELECT_AND_ROTATE    "Select and Rotate objects\nSelect and Rotate (R)"
@@ -2923,7 +2923,7 @@ BEGIN
     ID_FIND_DISTANCE        "Find Distance between two objects\nFind Distance"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_BUTTON32944          "Constrain to YZ axis\nYZ Constraint"
     ID_BUTTON32945          "Constrain to XY axis\nXY Constraint"
@@ -2938,27 +2938,27 @@ BEGIN
     ID_SHOW_HORIZON         "Show the horizon line"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_EDITORS_PLAYER       "Edit loadout information for all teams"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_REVERT               "Revert changes by reloading mission from last save\nRevert"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_ERROR_CHECKER        "Checks campaign for errors"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_LOOKAT_OBJ           "Rotate camera around selected object\nRotate around object (Ctrl+V)"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_EDITORS_ADJUST_GRID  "Adjust the orientation and level of the grid."
     ID_EDITORS_SHIELD_SYS   "Editor for availability of shield system for ships."
@@ -2966,7 +2966,7 @@ BEGIN
     ID_MARK_WING            "Mark entire wing selected object is a member of."
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_CONTROL_OBJ          "Movement keys control marked objects instead of camera."
     ID_CHECKOUT             "Checks out the mission from Source Safe"
@@ -2974,37 +2974,35 @@ BEGIN
     ID_AA_GRIDLINES         "Toggle Gridlines being drawn anti-aliased or not."
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_FORMAT_FS2_OPEN      "Save missions with SCP features"
     ID_FORMAT_FS2_RETAIL    "Save missions compatible with FS2 retail"
     ID_FORMAT_FS1           "Save missions compatible with FS1 retail"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     ID_FORMAT_FS1_RETAIL    "Save missions compatible with FS1 retail"
 END
 
-#endif    // English (U.S.) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.K.) resources
+// English (United Kingdom) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 #pragma code_page(1252)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Dialog
 //
 
-IDD_ALT_SHIP_CLASS DIALOG  0, 0, 312, 212
+IDD_ALT_SHIP_CLASS DIALOG 0, 0, 312, 212
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Alternate Ship Class Editor"
 FONT 8, "MS Sans Serif"
@@ -3031,7 +3029,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_ALT_SHIP_CLASS, DIALOG
     BEGIN
@@ -3043,7 +3041,7 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
-#endif    // English (U.K.) resources
+#endif    // English (United Kingdom) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

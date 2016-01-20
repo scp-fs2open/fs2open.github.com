@@ -74,9 +74,10 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HIDE_SHIP_NAME, m_hide_ship_name);
 	DDX_Control(pDX, IDC_DISABLE_ETS, m_disable_ets);
 	DDX_Control(pDX, IDC_CLOAKED, m_cloaked);
-	DDX_Control(pDX, IDC_NO_COLLIDE, m_no_collide);
 	DDX_Control(pDX, IDC_SET_CLASS_DYNAMICALLY, m_set_class_dynamically);
 	DDX_Control(pDX, IDC_SCRAMBLE_MESSAGES, m_scramble_messages);
+	DDX_Control(pDX, IDC_NO_COLLIDE, m_no_collide);
+	DDX_Control(pDX, IDC_NO_DISABLED_SELF_DESTRUCT, m_no_disabled_self_destruct);
 	//}}AFX_DATA_MAP
 
 	if (pDX->m_bSaveAndValidate) {  // get dialog control values
@@ -142,6 +143,7 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_CLOAKED, OnCloaked)
 	ON_BN_CLICKED(IDC_SCRAMBLE_MESSAGES, OnScrambleMessages)
 	ON_BN_CLICKED(IDC_NO_COLLIDE, OnNoCollide)
+	ON_BN_CLICKED(IDC_NO_DISABLED_SELF_DESTRUCT, OnNoDisabledSelfDestruct)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -162,7 +164,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
 	int special_warpin = 0, disable_messages = 0, guardian = 0, vaporize = 0, stealth = 0, friendly_stealth_invisible = 0;
-	int no_death_scream = 0, always_death_scream = 0, scramble_messages = 0;
+	int no_death_scream = 0, always_death_scream = 0, scramble_messages = 0, no_disabled_self_destruct = 0;
 	int nav_carry = 0, nav_needslink = 0, hide_ship_name = 0, set_class_dynamically = 0, no_ets = 0, cloaked = 0, no_collide = 0;
 
 	object *objp;
@@ -213,6 +215,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					cloaked = (shipp->flags2 & SF2_CLOAKED) ? 1 : 0;
 					scramble_messages = (shipp->flags2 & SF2_SCRAMBLE_MESSAGES) ? 1 : 0;
 					no_collide = (objp->flags & OF_COLLIDES) ? 0 : 1;
+					no_disabled_self_destruct = (shipp->flags2 & SF2_NO_DISABLED_SELF_DESTRUCT) ? 1 : 0;
 
 					destroy_before_mission = (shipp->flags & SF_KILL_BEFORE_MISSION) ? 1 : 0;
 					m_destroy_value.init(shipp->final_death_time);
@@ -274,6 +277,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					cloaked = tristate_set(shipp->flags2 & SF2_CLOAKED, cloaked);
 					scramble_messages = tristate_set(shipp->flags2 & SF2_SCRAMBLE_MESSAGES, scramble_messages);
 					no_collide = tristate_set(!(objp->flags & OF_COLLIDES), no_collide);
+					no_disabled_self_destruct = tristate_set(shipp->flags2 & SF2_NO_DISABLED_SELF_DESTRUCT, no_disabled_self_destruct);
 
 					// check the final death time and set the internal variable according to whether or not
 					// the final_death_time is set.  Also, the value in the edit box must be set if all the
@@ -349,6 +353,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_cloaked.SetCheck(cloaked);
 	m_scramble_messages.SetCheck(scramble_messages);
 	m_no_collide.SetCheck(no_collide);
+	m_no_disabled_self_destruct.SetCheck(no_disabled_self_destruct);
 		
 	m_kdamage.setup(IDC_KDAMAGE, this);
 	m_destroy_value.setup(IDC_DESTROY_VALUE, this);
@@ -966,22 +971,6 @@ void ship_flags_dlg::update_ship(int shipnum)
 			break;
 	}
 
-	switch (m_no_collide.GetCheck()) {
-		case 1:
-			if ( objp->flags & OF_COLLIDES )
-				set_modified();
-
-			objp->flags &= ~OF_COLLIDES;
-			break;
-
-		case 0:
-			if (!(objp->flags & OF_COLLIDES))
-				set_modified();
-
-			objp->flags |= OF_COLLIDES;
-			break;
-	}
-
 	switch (m_guardian.GetCheck()) {
 		case 1:
 			if ( !(shipp->ship_guardian_threshold) )
@@ -1059,6 +1048,38 @@ void ship_flags_dlg::update_ship(int shipnum)
 				set_modified();
 
 			shipp->flags2 &= ~SF2_SCRAMBLE_MESSAGES;
+			break;
+	}
+
+	switch (m_no_collide.GetCheck()) {
+		case 1:
+			if (objp->flags & OF_COLLIDES)
+				set_modified();
+
+			objp->flags &= ~OF_COLLIDES;
+			break;
+
+		case 0:
+			if (!(objp->flags & OF_COLLIDES))
+				set_modified();
+
+			objp->flags |= OF_COLLIDES;
+			break;
+	}
+
+	switch (m_no_disabled_self_destruct.GetCheck()) {
+		case 1:
+			if (!(shipp->flags2 & SF2_NO_DISABLED_SELF_DESTRUCT))
+				set_modified();
+
+			shipp->flags2 |= SF2_NO_DISABLED_SELF_DESTRUCT;
+			break;
+
+		case 0:
+			if (shipp->flags2 & SF2_NO_DISABLED_SELF_DESTRUCT)
+				set_modified();
+
+			shipp->flags2 &= ~SF2_NO_DISABLED_SELF_DESTRUCT;
 			break;
 	}
 
@@ -1438,5 +1459,14 @@ void ship_flags_dlg::OnNoCollide()
 		m_no_collide.SetCheck(0);
 	} else {
 		m_no_collide.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnNoDisabledSelfDestruct()
+{
+	if (m_no_disabled_self_destruct.GetCheck() == 1) {
+		m_no_disabled_self_destruct.SetCheck(0);
+	} else {
+		m_no_disabled_self_destruct.SetCheck(1);
 	}
 }

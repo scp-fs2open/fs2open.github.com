@@ -7146,8 +7146,8 @@ void HudGaugeHardpoints::render(float frametime)
 	render_info.set_color(gauge_color);
 	render_info.set_detail_level_lock(detail_level_lock);
 	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_CULL);
+	render_info.set_object_number(OBJ_INDEX(objp));
 
-	ship_model_start(objp);
 	model_render_immediate( &render_info, sip->model_num, &object_orient, &vmd_zero_vector);
 
 	gr_set_color_buffer(1);
@@ -7165,7 +7165,6 @@ void HudGaugeHardpoints::render(float frametime)
 		&object_orient, 
 		&vmd_zero_vector
 	);
-	ship_model_stop( objp );
 
 	gr_stencil_set(GR_STENCIL_NONE);
 	gr_zbuffer_set(zbuffer);

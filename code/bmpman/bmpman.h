@@ -175,7 +175,7 @@ void *bm_malloc(int handle, int size);
 void bm_update_memory_used(int n, int size);
 
 class bitmap_lookup {
-	float *Bitmap_data;
+	ubyte *Bitmap_data;
 
 	int Width;
 	int Height;

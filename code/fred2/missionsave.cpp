@@ -1724,6 +1724,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"scramble-messages\"");
 			if (!(objp->flags & OF_COLLIDES))
 				fout(" \"no-collide\"");
+			if (shipp->flags2 & SF2_NO_DISABLED_SELF_DESTRUCT)
+				fout(" \"no-disabled-self-destruct\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

@@ -1334,9 +1334,56 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 	//model_find_world_point(gpos, gun_pos, tp->model_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
 	model_instance_find_world_point(gpos, gun_pos, tp->model_num, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
 
-	if (use_angles)
-		model_instance_find_world_dir(gvec, &tp->turret_norm, tp->model_num, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
-	else {
+	if (use_angles) {
+		model_instance_find_world_dir(gvec, &tp->turret_norm, tp->model_num, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+	} else if (tp->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION) {
+		vec3d shared_dir, avg, tmp_pos, tmp_target, enemy_point;
+		vm_vec_avg_n(&avg, tp->turret_num_firing_points, tp->turret_firing_point);
+
+		model_instance_find_world_point(&tmp_pos, &avg, tp->model_num, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+
+		if (targetp == nullptr) {
+			Assertion(ssp->turret_enemy_objnum >= 0, "The turret enemy object number %d for %s on ship number %d is invalid.", ssp->turret_enemy_objnum, ssp->sub_name, ssp->parent_objnum);
+			object *lep = &Objects[ssp->turret_enemy_objnum];
+
+			int best_weapon_tidx = turret_select_best_weapon(ssp, lep);
+
+			//This turret doesn't have any good weapons
+			if (best_weapon_tidx < 0)
+				return;
+
+			weapon_info *wip = get_turret_weapon_wip(&ssp->weapons, best_weapon_tidx);
+
+			float weapon_system_strength = ship_get_subsystem_strength(&Ships[ssp->parent_objnum], SUBSYSTEM_WEAPONS);
+
+			if ((ssp->targeted_subsys != nullptr) && !(ssp->flags & SSF_NO_SS_TARGETING)) {
+				vm_vec_unrotate(&enemy_point, &ssp->targeted_subsys->system_info->pnt, &Objects[ssp->turret_enemy_objnum].orient);
+				vm_vec_add2(&enemy_point, &ssp->last_aim_enemy_pos);
+			} else {
+				if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
+					ai_big_pick_attack_point_turret(lep, ssp, &tmp_pos, &tp->turret_norm, &enemy_point, tp->turret_fov, MIN(wip->max_speed * wip->lifetime, wip->weapon_range));
+				}
+				else {
+					enemy_point = ssp->last_aim_enemy_pos;
+				}
+			}
+
+			vec3d target_moving_direction = ssp->last_aim_enemy_vel;
+
+			//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
+			if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
+				vm_vec_scale_sub2(&target_moving_direction, &objp->phys_info.vel, wip->vel_inherit_amount);
+			}
+
+			set_predicted_enemy_pos_turret(&tmp_target, &tmp_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ssp->turret_time_enemy_in_range * (weapon_system_strength + 1.0f) / 2.0f);
+		} else {
+			tmp_target = *targetp;
+		}
+
+		vm_vec_normalized_dir(&shared_dir, &tmp_target, &tmp_pos);
+
+		model_instance_find_world_dir(gvec, &shared_dir, tp->model_num, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+	} else {
 		//vector	gun_pos2;
 		//vm_vec_add(&gun_pos2, gpos, gun_pos);
 		vm_vec_normalized_dir(gvec, targetp, gpos);

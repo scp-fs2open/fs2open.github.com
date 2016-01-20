@@ -1907,8 +1907,6 @@ void labviewer_close_render_options_window(GUIObject *caller)
 	y += cbp->GetHeight() + 1;	\
 }
 
-extern int Use_GLSL;
-
 void labviewer_make_render_options_window(Button *caller)
 {
 	Checkbox *cbp;
@@ -1930,7 +1928,7 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Show Insignia", Lab_viewer_flags, LAB_FLAG_SHOW_INSIGNIA);
 	ADD_RENDER_FLAG("Show Damage Lightning", Lab_viewer_flags, LAB_FLAG_LIGHTNING_ARCS);
 	ADD_RENDER_FLAG("Rotate Subsystems", Lab_viewer_flags, LAB_FLAG_SUBMODEL_ROTATE);
-	if (Use_GLSL) {
+	if (is_minimum_GLSL_version()) {
 		ADD_RENDER_BOOL("Fixed Render Pipeline", GLSL_override);
 		if (Cmdline_postprocess) {
 			ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);

@@ -226,7 +226,7 @@ int gr_opengl_create_stream_buffer_object()
 
 int opengl_create_texture_buffer_object()
 {
-	if ( Use_GLSL < 3 || !Is_Extension_Enabled(OGL_ARB_TEXTURE_BUFFER) || !Is_Extension_Enabled(OGL_ARB_FLOATING_POINT_TEXTURES) ) {
+	if ( GLSL_version < 130 || !Is_Extension_Enabled(OGL_ARB_TEXTURE_BUFFER) || !Is_Extension_Enabled(OGL_ARB_FLOATING_POINT_TEXTURES) ) {
 		return -1;
 	}
 
@@ -406,7 +406,7 @@ bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb, bool update
 	}
 
 	if (vb->flags & VB_FLAG_MODEL_ID) {
-		Assert( Use_GLSL >= 3 );
+		Assert( GLSL_version >= 130 );
 
 		Verify( update_ibuffer_only || vb->model_list->submodels != NULL );
 		vb->stride += (1 * sizeof(GLfloat));
@@ -563,7 +563,7 @@ void gr_opengl_set_buffer(int idx)
 			GL_state.Array.BindElementBuffer(0);
 		}
 
-		if ( (Use_GLSL > 1) && !GLSL_override ) {
+		if ( is_minimum_GLSL_version() && !GLSL_override ) {
 			opengl_shader_set_current();
 		}
 
@@ -1342,7 +1342,7 @@ void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, int texi, 
 
 	const buffer_data *datap = &bufferp->tex_buf[texi];
 
-	if ( (Use_GLSL > 1) && !GLSL_override ) {
+	if ( is_minimum_GLSL_version() && !GLSL_override ) {
 		opengl_render_pipeline_program(start, bufferp, datap, flags);
 	} else {
 		opengl_render_pipeline_fixed(start, bufferp, datap, flags);
@@ -1837,7 +1837,7 @@ void gr_opengl_end_clip_plane()
 		return;
 	}
 
-	if ( Use_GLSL > 1 ) {
+	if ( is_minimum_GLSL_version() ) {
 		return;
 	}
 
@@ -1850,7 +1850,7 @@ void gr_opengl_start_clip_plane()
 		return;
 	}
 
-	if ( Use_GLSL > 1 ) {
+	if ( is_minimum_GLSL_version() ) {
 		// bail since we're gonna clip in the shader
 		return;
 	}
@@ -2081,18 +2081,14 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 			// 0 == env with non-alpha specmap, 1 == env with alpha specmap
 			int alpha_spec = bm_has_alpha_channel(SPECMAP) ? 1 : 0;
 
-			matrix4 texture_mat, envMatrix;
+			matrix4 texture_mat;
 
 			for ( int i = 0; i < 16; ++i ) {
 				texture_mat.a1d[i] = GL_env_texture_matrix[i];
 			}
 
-			if (!vm_inverse_matrix4(&texture_mat, &envMatrix)) {
-				Error(LOCATION, "Unable to invert environment mapping matrix.\n");
-			}
-
 			GL_state.Uniform.setUniformi("alpha_spec", alpha_spec);
-			GL_state.Uniform.setUniformMatrix4fv("envMatrix", 1, &envMatrix);
+			GL_state.Uniform.setUniformMatrix4fv("envMatrix", 1, &texture_mat);
 			GL_state.Uniform.setUniformi("sEnvmap", render_pass);
 
 			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, render_pass);
@@ -2187,7 +2183,7 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 	// Team colors are passed to the shader here, but the shader needs to handle their application.
 	// By default, this is handled through the r and g channels of the misc map, but this can be changed
 	// in the shader; test versions of this used the normal map r and b channels
-	if ( shader_flags & SDR_FLAG_MODEL_TEAMCOLOR ) {
+	if ( (shader_flags & SDR_FLAG_MODEL_TEAMCOLOR) && (shader_flags & SDR_FLAG_MODEL_MISC_MAP) ) {
 		vec3d stripe_color;
 		vec3d base_color;
 
@@ -2201,6 +2197,12 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 
 		GL_state.Uniform.setUniform3f("stripe_color", stripe_color);
 		GL_state.Uniform.setUniform3f("base_color", base_color);
+
+		if ( bm_has_alpha_channel(MISCMAP) ) {
+			GL_state.Uniform.setUniformi("team_glow_enabled", 1);
+		} else {
+			GL_state.Uniform.setUniformi("team_glow_enabled", 0);
+		}
 	}
 
 	if ( shader_flags & SDR_FLAG_MODEL_THRUSTER ) {
