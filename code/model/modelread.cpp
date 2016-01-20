@@ -2779,7 +2779,7 @@ int model_create_instance(bool is_ship, int model_num)
 
 	// add dumb_rotate instances if this model is dumb-rotating
 	if (pm->flags & PM_FLAG_HAS_DUMB_ROTATE) {
-		dumb_rotation dumb_rot(true, open_slot);
+		dumb_rotation dumb_rot(is_ship, open_slot);
 
 		for (i = 0; i < pm->n_models; i++) {
 			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_DUMB_ROTATE) {
@@ -4811,6 +4811,8 @@ void model_do_dumb_rotations(int model_instance_num)
 		{
 			if (dumb_it->model_instance_num == model_instance_num)
 			{
+				Assertion(dumb_it->is_ship, "This code path is only for ship dumb_rotations!  See the comments associated with the model_do_dumb_rotations function!");
+
 				// we're just doing one ship, and in ship_model_update_instance, that ship's angles were already set to zero
 
 				// Now update the angles in the submodels

@@ -1456,7 +1456,7 @@ void obj_move_all(float frametime)
 
 	// Now that we've moved all the objects, move all the models that use dumb-rotate.  We do that here because we already handled the
 	// ship models in obj_move_all_post, and this is more or less conceptually close enough to move the rest.  (Originally all models
-	// were dumb-rotated here, but there are collision-related reasons for rotations to happen where they do, even dumb ones.)
+	// were dumb-rotated here, but there are collision-related reasons for ship rotations to happen where they do, even dumb ones.)
 	model_do_dumb_rotations();
 
 	//	After all objects have been moved, move all docked objects.
