@@ -440,27 +440,16 @@ void opengl_extensions_init()
 		sscanf(glsl_ver, "%d.%d", &major, &minor);
 		ver = (major * 100) + minor;
 
-		// SM 4.0 compatible or better
-		if (ver >= 400) {
-			Use_GLSL = 4;
-		}
-		// SM 3.0 compatible
-		else if ( ver >= 130 ) {
-			Use_GLSL = 3;
-		}
-		// SM 2.0 compatible
-		else if (ver >= 120) {
-			Use_GLSL = 2;
-		}
-		// we require GLSL 1.20 or higher
-		else if (ver < 110) {
-			Use_GLSL = 0;
+		GLSL_version = ver;
+
+		// we require a minimum GLSL version
+		if (!is_minimum_GLSL_version()) {
 			mprintf(("  OpenGL Shading Language version %s is not sufficient to use GLSL mode in FSO. Defaulting to fixed-function renderer.\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
 		}
 	}
 
 	// can't have this stuff without GLSL support
-	if ( !Use_GLSL ) {
+	if ( !is_minimum_GLSL_version() ) {
 		Cmdline_normal = 0;
 		Cmdline_height = 0;
 		Cmdline_postprocess = 0;
@@ -468,13 +457,13 @@ void opengl_extensions_init()
 		Cmdline_no_deferred_lighting = 1;
 	}
 
-	if ( Use_GLSL < 2 || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || !Is_Extension_Enabled(OGL_ARB_FLOATING_POINT_TEXTURES) ) {
+	if ( GLSL_version < 120 || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || !Is_Extension_Enabled(OGL_ARB_FLOATING_POINT_TEXTURES) ) {
         mprintf(("  No hardware support for deferred lighting. Deferred lighting will be disabled. \n"));
 		Cmdline_no_deferred_lighting = 1;
 		Cmdline_no_batching = true;
 	}
 
-	if (Use_GLSL) {
+	if (is_minimum_GLSL_version()) {
 		GLint max_texture_units;
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
 
@@ -489,7 +478,7 @@ void opengl_extensions_init()
 			Cmdline_height = 0;
 		} else if (max_texture_units < 4) {
 			mprintf(( "Not enough texture units found for GLSL support. We need at least 4, we found %d.\n", max_texture_units ));
-			Use_GLSL = 0;
+			GLSL_version = 0;
 		}
 	}
 }

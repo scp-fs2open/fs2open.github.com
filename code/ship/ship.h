@@ -426,7 +426,7 @@ typedef struct ship_flag_name {
 	int flag_list;						// is this flag in the 1st or 2nd ship flags list?
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					18
+#define MAX_SHIP_FLAG_NAMES					19
 extern ship_flag_name Ship_flag_names[];
 
 // states for the flags variable within the ship structure
@@ -508,6 +508,7 @@ extern ship_flag_name Ship_flag_names[];
 #define SF2_SHIP_SELECTIVE_LINKING			(1<<26)		// RSAXVC - Allow pilot to pick firing configuration
 #define SF2_SCRAMBLE_MESSAGES				(1<<27)		// Goober5000 - all messages sent from this ship appear scrambled
 #define SF2_NO_SECONDARY_LOCKON				(1<<28)		// zookeeper - secondary lock-on disabled
+#define SF2_NO_DISABLED_SELF_DESTRUCT		(1<<29)		// Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
 
 // If any of these bits in the ship->flags are set, ignore this ship when targeting
 extern int TARGET_SHIP_IGNORE_FLAGS;

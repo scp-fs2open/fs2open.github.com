@@ -58,7 +58,6 @@ SCP_vector<bsp_collision_tree> Bsp_collision_tree_list;
 
 static int model_initted = 0;
 extern int Cmdline_nohtl;
-extern int Use_GLSL;
 
 #ifndef NDEBUG
 CFILE *ss_fp = NULL;			// file pointer used to dump subsystem information
@@ -754,7 +753,7 @@ void create_vertex_buffer(polymodel *pm)
 
 	bool use_batched_rendering = true;
 
-	if ( Use_GLSL >= 3 && !Cmdline_no_batching ) {
+	if ( GLSL_version >= 130 && !Cmdline_no_batching ) {
 		uint stride = 0;
 
 		// figure out if the vertex stride of this entire model matches. if not, turn off batched rendering for this model
@@ -2395,19 +2394,19 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	
 	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
 
-	if(Use_GLSL > 1)
+	if(is_minimum_GLSL_version())
 		shader_flags |= SDR_FLAG_MODEL_CLIP;
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
 	
-	if(Use_GLSL > 1)
+	if(is_minimum_GLSL_version())
 		shader_flags |= SDR_FLAG_MODEL_DEFERRED;
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
 	
-	if( !Cmdline_no_batching && Use_GLSL >= 3 ) {
+	if( !Cmdline_no_batching && GLSL_version >= 130 ) {
 		shader_flags &= ~SDR_FLAG_MODEL_DEFERRED;
 		shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
 
@@ -3339,7 +3338,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 		vm_vec_make(model_axis, 0.0f, 0.0f, 1.0f);
 	}
 
-	model_find_obj_dir(world_axis, model_axis, obj, submodel_num);
+	model_instance_find_obj_dir(world_axis, model_axis, obj, submodel_num);
 }
 
 
@@ -4556,6 +4555,7 @@ void model_clear_submodel_instance( submodel_instance *sm_instance, bsp_info *sm
 	sm_instance->blown_off = sm->is_damaged ? true : false;
 
 	sm_instance->collision_checked = false;
+	sm_instance->sii = NULL;
 }
 
 void model_clear_submodel_instances( int model_instance_num )
@@ -4705,6 +4705,7 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	// Set the angles
 	smi->angs = sii->angs;
 	smi->prev_angs = sii->prev_angs;
+	smi->sii = sii;
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{

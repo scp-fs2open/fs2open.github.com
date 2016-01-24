@@ -447,7 +447,7 @@ void render_shield(int shield_num)
 	// don't try to draw if we don't have an ani
 	if ( sa->first_frame >= 0 )
 	{
-		frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) * sa->num_frames );
+		frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) / f2fl(SHIELD_HIT_DURATION) * sa->num_frames );
 		if ( frame_num >= sa->num_frames )	{
 			frame_num = sa->num_frames - 1;
 		} else if ( frame_num < 0 )	{

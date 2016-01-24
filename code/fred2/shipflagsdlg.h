@@ -65,9 +65,10 @@ public:
 	CButton m_hide_ship_name;
 	CButton m_disable_ets;
 	CButton m_cloaked;
-	CButton m_no_collide;
 	CButton	m_set_class_dynamically;
 	CButton	m_scramble_messages;
+	CButton m_no_collide;
+	CButton m_no_disabled_self_destruct;
 
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
@@ -128,6 +129,7 @@ protected:
 	afx_msg void OnCloaked();
 	afx_msg void OnScrambleMessages();
 	afx_msg void OnNoCollide();
+	afx_msg void OnNoDisabledSelfDestruct();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
