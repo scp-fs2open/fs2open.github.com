@@ -538,8 +538,15 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		subsystemp->flags |= MSS_FLAG_TRIGGERED;
 	}
 
+	// Dumb-Rotating subsystem
+	if ((p = strstr(props, "$dumb_rotate")) != NULL) {
+		// no special subsystem handling needed here, but make sure we didn't specify both methods
+		if (strstr(props, "$rotate") != NULL) {
+			Warning(LOCATION, "A subsystem (believed to be in ship %s) cannot have both rotation and dumb-rotation!", Global_filename);
+		}
+	}
 	// Rotating subsystem
-	if ( (p = strstr(props, "$rotate")) != NULL)	{
+	else if ((p = strstr(props, "$rotate")) != NULL) {
 		subsystemp->flags |= MSS_FLAG_ROTATES;
 
 		// get time for (a) complete rotation (b) step (c) activation
@@ -1258,7 +1265,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->submodel[n].look_at_num = -1; // No look_at
 				}
 
-				if ( ( p = strstr(props, "$dumb_rotate:") ) != NULL ) {
+				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
+				if ( ( p = strstr(props, "$dumb_rotate") ) != NULL ) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_DUMB_ROTATE;
 					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
 
@@ -1271,7 +1279,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				if ((pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
 					|| strstr(props, "$triggered:") || strstr(props, "$rotate") || strstr(props, "$gun_rotation:") || strstr(props, "$gun_rotation")) {
 					pm->submodel[n].can_move = true;
-				} else if (pm->submodel[n].parent > -1 && pm->submodel[pm->submodel[n].parent].can_move) {
+				} else if (pm->submodel[n].parent >= 0 && pm->submodel[pm->submodel[n].parent].can_move) {
 					pm->submodel[n].can_move = true;
 				}
 
