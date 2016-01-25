@@ -1301,8 +1301,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 
 				// adding a warning if rotation is specified without movement axis.
-				if ((pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) && (pm->submodel[n].movement_axis == MOVEMENT_AXIS_NONE)){
-					Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+				if (pm->submodel[n].movement_axis == MOVEMENT_AXIS_NONE) {
+					if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
+						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+					}
+					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_DUMB_ROTATE) {
+						Warning(LOCATION, "Dumb rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+					}
 				}
 
 /*				if ( strstr(props, "$nontargetable")!= NULL ) {
