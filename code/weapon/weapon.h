@@ -197,8 +197,7 @@ typedef struct weapon {
 	int		pick_big_attack_point_timestamp;	//	Timestamp at which to pick a new point to attack.
 	vec3d	big_attack_point;				//	Target-relative location of attack point.
 
-	int		cmeasure_ignore_objnum;		//	Ignoring this countermeasure.  It's failed to attract this weapon.
-	int		cmeasure_chase_objnum;		//	Chasing this countermeasure.  Don't maybe ignore in future.
+	SCP_vector<int>* cmeasure_ignore_list;
 
 	// corkscrew info (taken out for now)
 	short	cscrew_index;						// corkscrew info index
