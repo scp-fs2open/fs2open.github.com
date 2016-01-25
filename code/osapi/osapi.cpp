@@ -390,7 +390,7 @@ namespace os
 			SCP_unordered_map<SDL_EventType, SCP_vector<EventListenerData>, enum_hash<SDL_EventType>> eventListeners;
 		}
 
-		ListenerIdentifier addEventListener(SDL_EventType type, int weigth, const Listener& listener)
+		ListenerIdentifier addEventListener(SDL_EventType type, int weight, const Listener& listener)
 		{
 			Assertion(listener, "Invalid event handler passed!");
 
@@ -404,7 +404,7 @@ namespace os
 			EventListenerData data;
 			data.identifier = ++nextListenerIdentifier;
 			data.listener = listener;
-			data.weight = weigth;
+			data.weight = weight;
 
 			iter->second.push_back(data);
 
