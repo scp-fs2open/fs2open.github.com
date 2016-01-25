@@ -541,9 +541,12 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 	// Dumb-Rotating subsystem
 	if ((p = strstr(props, "$dumb_rotate")) != NULL) {
 		// no special subsystem handling needed here, but make sure we didn't specify both methods
+// this stupid #ifndef is needed because of Global_filename
+#ifndef NDEBUG
 		if (strstr(props, "$rotate") != NULL) {
 			Warning(LOCATION, "A subsystem (believed to be in ship %s) cannot have both rotation and dumb-rotation!", Global_filename);
 		}
+#endif
 	}
 	// Rotating subsystem
 	else if ((p = strstr(props, "$rotate")) != NULL) {
