@@ -5034,6 +5034,10 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 
 	if (obj->type == OBJ_SHIP) {
 		model_instance_num = Ships[obj->instance].model_instance_num;
+	} else if (obj->type == OBJ_WEAPON) {
+		model_instance_num = Weapons[obj->instance].model_instance_num;
+	} else if (obj->type == OBJ_ASTEROID) {
+		model_instance_num = Asteroids[obj->instance].model_instance_num;
 	}
 
 	mc_info hull_check;

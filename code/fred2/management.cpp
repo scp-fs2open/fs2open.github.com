@@ -135,6 +135,7 @@ int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
 extern int Nmodel_num;
+extern int Nmodel_instance_num;
 extern matrix Nmodel_orient;
 extern int Nmodel_bitmap;
 
@@ -955,6 +956,7 @@ void clear_mission()
 
 	Nmodel_flags = DEFAULT_NMODEL_FLAGS;
 	Nmodel_num = -1;
+	Nmodel_instance_num = -1;
 	vm_set_identity(&Nmodel_orient);
 	Nmodel_bitmap = -1;
 

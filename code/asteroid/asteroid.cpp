@@ -329,6 +329,11 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	}
 
 	asp->objnum = objnum;
+	asp->model_instance_num = -1;
+
+	if (model_get(asip->model_num[asteroid_subtype])->flags & PM_FLAG_HAS_DUMB_ROTATE) {
+		asp->model_instance_num = model_create_instance(false, asip->model_num[asteroid_subtype]);
+	}
 
 	// Add to Asteroid_used_list
 	asteroid_obj_list_add(objnum);
@@ -828,10 +833,12 @@ void asteroid_delete( object * obj )
 
 	asp = &Asteroids[num];
 
-	Assert( Num_asteroids >= 0 );
+	if (asp->model_instance_num >= 0)
+		model_delete_instance(asp->model_instance_num);
 
 	asp->flags = 0;
 	Num_asteroids--;
+	Assert(Num_asteroids >= 0);
 
 	asteroid_obj_list_remove( obj );
 }
@@ -930,7 +937,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	if ( asteroid_hit_info == NULL ) {
 		// asteroid weapon collision
 		Assert( other_obj->type == OBJ_WEAPON );
-		mc.model_instance_num = -1;
+		mc.model_instance_num = Asteroids[num].model_instance_num;
 		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];	// Fill in the model to check
 		model_clear_instance( mc.model_num );
 		mc.orient = &pasteroid->orient;					// The object's orient
@@ -1107,7 +1114,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 	} else {
 		// Asteroid is heavier obj
-		mc.model_instance_num = -1;
+		mc.model_instance_num = Asteroids[num].model_instance_num;
 		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];		// Fill in the model to check
 		model_clear_instance( mc.model_num );
 		mc.orient = &pasteroid->orient;				// The object's orient
