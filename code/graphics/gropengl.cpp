@@ -1309,6 +1309,11 @@ int opengl_init_display_device()
 
 	mprintf(("  Initializing SDL video...\n"));
 
+#ifdef SCP_UNIX
+	// Slight hack to make Mesa advertise S3TC support without libtxc_dxtn
+	setenv("force_s3tc_enable", "true", 1);
+#endif
+
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "Couldn't init SDL video: %s", SDL_GetError());
 		return 1;
@@ -1325,11 +1330,6 @@ int opengl_init_display_device()
 
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (fsaa_samples == 0) ? 0 : 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, fsaa_samples);
-
-#ifdef SCP_UNIX
-	// Slight hack to make Mesa advertise S3TC support without libtxc_dxtn
-	setenv("force_s3tc_enable", "true", 1);
-#endif
 
 	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, (bpp == 32) ? 8 : 1, db, fsaa_samples));
 
