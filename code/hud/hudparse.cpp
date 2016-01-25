@@ -49,8 +49,6 @@ int Force_scaling_above_res_global[2] = {-1, -1};
 
 int Hud_font = -1;
 
-#define DEFAULT_GAUGE_SETTINGS	{{-1, -1}, Hud_font, Scale_retail_gauges, {Force_scaling_above_res_global[0], Force_scaling_above_res_global[1]}, NULL, NULL, {0.0f, 0.0f}, {0, 0}, false, {0, 0}, true, true, false};
-
 //WARNING: If you add gauges to this array, make sure to bump num_default_gauges!
 int num_default_gauges = 42;
 static int retail_gauges[] = {
@@ -448,11 +446,7 @@ void parse_hud_gauges_tbl(const char *filename)
 				gauge_type = parse_gauge_type();
 
 				// change some of the default gauge settings to the appropriate values.
-				gauge_settings settings = DEFAULT_GAUGE_SETTINGS;
-				settings.font_num = use_font;
-				settings.scale_gauge = scale_gauge;
-				settings.ship_idx = &ship_classes;
-				settings.use_clr = use_clr_p;
+				gauge_settings settings(&ship_classes, use_font, scale_gauge, force_scaling_above_res, use_clr_p);
 
 				// if "default" is specified, then the base resolution is {-1, -1},
 				// indicating GR_640 or GR_1024 to the handlers. otherwise, change it
@@ -526,7 +520,7 @@ void load_missing_retail_gauges()
 			}
 
 			if(!retail_gauge_loaded) {
-				gauge_settings settings = DEFAULT_GAUGE_SETTINGS;
+				gauge_settings settings;
 				load_gauge(retail_gauges[i], &settings);
 			}
 		}
@@ -543,7 +537,7 @@ void load_missing_retail_gauges()
 
 		// load radar gauge if not loaded.
 		if(!retail_gauge_loaded) {
-			gauge_settings settings = DEFAULT_GAUGE_SETTINGS;
+			gauge_settings settings;
 			load_gauge((Cmdline_orb_radar ? HUD_OBJECT_RADAR_ORB : HUD_OBJECT_RADAR_STD), &settings);
 		}
 
@@ -557,7 +551,7 @@ void load_missing_retail_gauges()
 			}
 
 			if(!retail_gauge_loaded) {
-				gauge_settings settings = DEFAULT_GAUGE_SETTINGS;
+				gauge_settings settings;
 				load_gauge(HUD_OBJECT_WEAPON_LINKING, &settings);
 			}
 		}
@@ -579,8 +573,7 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					gauge_settings settings = DEFAULT_GAUGE_SETTINGS;
-					settings.ship_idx = &sindex;
+					gauge_settings settings(&sindex);
 					load_gauge(retail_gauges[i], &settings);
 				}
 			}
@@ -597,8 +590,7 @@ void load_missing_retail_gauges()
 
 			// load radar gauge if not loaded.
 			if(!retail_gauge_loaded) {
-				gauge_settings settings = DEFAULT_GAUGE_SETTINGS;
-				settings.ship_idx = &sindex;
+				gauge_settings settings(&sindex);
 				load_gauge((Cmdline_orb_radar ? HUD_OBJECT_RADAR_ORB : HUD_OBJECT_RADAR_STD), &settings);
 			}
 
@@ -612,8 +604,7 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					gauge_settings settings = DEFAULT_GAUGE_SETTINGS;
-					settings.ship_idx = &sindex;
+					gauge_settings settings(&sindex);
 					load_gauge(HUD_OBJECT_WEAPON_LINKING, &settings);
 				}
 			}
