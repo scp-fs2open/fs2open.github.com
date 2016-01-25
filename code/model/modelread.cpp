@@ -19,6 +19,7 @@
 
 #define MODEL_LIB
 
+#include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
@@ -34,6 +35,7 @@
 #include "parse/parselo.h"
 #include "render/3dinternal.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 
 flag_def_list model_render_flags[] =
 {
@@ -3395,7 +3397,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 	polymodel *pm = model_get(modelnum);
 
 	bsp_info *sm = &pm->submodel[submodel_num];
-	Assert(sm->movement_type == MOVEMENT_TYPE_ROT);
+	Assert(sm->movement_type == MOVEMENT_TYPE_ROT || sm->movement_type == MOVEMENT_TYPE_DUMB_ROTATE);
 
 	if (sm->movement_axis == MOVEMENT_AXIS_X) {
 		vm_vec_make(model_axis, 1.0f, 0.0f, 0.0f);
@@ -4403,20 +4405,48 @@ int rotating_submodel_has_ship_subsys(int submodel, ship *shipp)
 	return found;
 }
 
+/*
+ * Get all submodel indexes that satisfy the following:
+ * 1) Have the rotating or dumb-rotating movement type
+ * 2) Are currently rotating (i.e. actually moving and not part of the superstructure due to being destroyed or replaced)
+ * 3) Are not rotating too far for collision detection (c.f. MAX_SUBMODEL_COLLISION_ROT_ANGLE)
+ */
 void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp)
 {
-	Assert(objp->type == OBJ_SHIP);
+	Assert(objp->type == OBJ_SHIP || objp->type == OBJ_WEAPON || objp->type == OBJ_ASTEROID);
 	
-	// Check if not currently rotating - then treat as part of superstructure.
-	int modelnum = Ship_info[Ships[objp->instance].ship_info_index].model_num;
-	polymodel *pm = model_get(modelnum);
-	bsp_info *child_submodel;
-	
-	child_submodel = &pm->submodel[pm->detail[0]];
+	int model_instance_num;
+	int model_num;
+	if (objp->type == OBJ_SHIP) {
+		model_instance_num = Ships[objp->instance].model_instance_num;
+		model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
+	}
+	else if (objp->type == OBJ_WEAPON) {
+		model_instance_num = Weapons[objp->instance].model_instance_num;
+		if (model_instance_num < 0) {
+			return;
+		}
+		model_num = Weapon_info[Weapons[objp->instance].weapon_info_index].model_num;
+	}
+	else if (objp->type == OBJ_ASTEROID) {
+		model_instance_num = Asteroids[objp->instance].model_instance_num;
+		if (model_instance_num < 0) {
+			return;
+		}
+		model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+	}
+	else {
+		return;
+	}
+
+	polymodel *pm = model_get(model_num);
+	bsp_info *child_submodel = &pm->submodel[pm->detail[0]];
 	
 	if(child_submodel->no_collisions) { // if detail0 has $no_collision set dont check childs
 		return;
 	}
+
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
 
 	int i = child_submodel->first_child;
 	while ( i >= 0 )	{
@@ -4425,45 +4455,21 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
 		if ( !child_submodel->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
 
-			// Only look for submodels that rotate
-			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT) {
+			// Only look for submodels that rotate or dumb-rotate
+			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_DUMB_ROTATE) {
 
-				// find ship subsys and check submodel rotation is less than max allowed.
-				ship *pship = &Ships[objp->instance];
-				ship_subsys *subsys;
+				// check submodel rotation is less than max allowed.
+				submodel_instance_info *sii = pmi->submodel[i].sii;
 
-				for ( subsys = GET_FIRST(&pship->subsys_list); subsys !=END_OF_LIST(&pship->subsys_list); subsys = GET_NEXT(subsys) ) {
-					Assert(subsys->system_info->model_num == modelnum);
-					if (i == subsys->system_info->subobj_num) {
-						// found the correct subsystem - now check delta rotation angle not too large
-						float delta_angle = get_submodel_delta_angle(&subsys->submodel_info_1);
-						if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
-							submodel_vector->push_back(i);
-						}
-						break;
-					}
+				// found the correct submodel instance - now check delta rotation angle not too large
+				float delta_angle = get_submodel_delta_angle(sii);
+				if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
+					submodel_vector->push_back(i);
 				}
 			}
 		}
 		i = child_submodel->next_sibling;
 	}
-
-	// error checking
-//#define MODEL_CHECK
-#ifdef MODEL_CHECK
-	ship *pship = &Ships[objp->instance];
-	for (size_t idx=0; idx<submodel_vector->size(); idx++) {
-		int valid = rotating_submodel_has_ship_subsys(submodel_vector[idx], pship);
-//		Assert( valid );
-		if ( !valid ) {
-
-			Warning( LOCATION, "Ship %s has rotating submodel [%s] without ship subsystem\n", pship->ship_name, pm->submodel[submodel_vector[idx]].name );
-			pm->submodel[submodel_vector[idx]].movement_type &= ~MOVEMENT_TYPE_ROT;
-			submodel_vector->erase(submodel_vector->begin()+i);
-		}
-	}
-#endif
-
 }
 
 void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* pm, int mn)
@@ -4876,7 +4882,7 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 	vec3d p1, v1, p2, v2, int1;
 
 	polymodel *pm = model_get(model_num);
-	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT);
+	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_DUMB_ROTATE);
 	Assert(sii);
 
 	mpoint1 = NULL;
