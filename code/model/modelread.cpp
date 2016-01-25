@@ -3624,8 +3624,7 @@ void submodel_look_at(polymodel *pm, int mn)
 
 }
 
-// Rotates the angle of a submodel.  Use this so the right unlocked axis
-// gets stuffed.
+// Rotates the angle of a submodel, when the submodel has a subsystem (which is almost always the case)
 void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii)
 {
 	bsp_info * sm;
@@ -3640,6 +3639,8 @@ void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	submodel_rotate(sm, sii);
 }
 
+// Rotates the angle of a submodel.  If the submodel has a subsystem, the execution flow should first go through the other
+// submodel_rotate function before this one.  (This function is called directly in the case of dumb_rotation.)
 void submodel_rotate(bsp_info *sm, submodel_instance_info *sii)
 {
 	// save last angles
