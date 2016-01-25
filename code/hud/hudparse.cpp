@@ -446,14 +446,18 @@ void parse_hud_gauges_tbl(const char *filename)
 				gauge_type = parse_gauge_type();
 
 				// change some of the default gauge settings to the appropriate values.
-				gauge_settings settings(&ship_classes, use_font, scale_gauge, force_scaling_above_res, use_clr_p);
+				gauge_settings settings;
+				settings.font_num = use_font;
+				settings.scale_gauge = scale_gauge;
+				memcpy(settings.force_scaling_above_res, force_scaling_above_res, sizeof(settings.force_scaling_above_res));
+				settings.ship_idx = &ship_classes;
+				settings.use_clr = use_clr_p;
 
 				// if "default" is specified, then the base resolution is {-1, -1},
 				// indicating GR_640 or GR_1024 to the handlers. otherwise, change it
 				// to the given base resolution.
 				if (!optional_string("default")) {
-					settings.base_res[0] = base_res[0];
-					settings.base_res[1] = base_res[1];
+					memcpy(settings.base_res, base_res, sizeof(settings.base_res));
 				}
 
 				// then call the specific gauge load handler function for this gauge type.
@@ -573,7 +577,8 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					gauge_settings settings(&sindex);
+					gauge_settings settings;
+					settings.ship_idx = &sindex;
 					load_gauge(retail_gauges[i], &settings);
 				}
 			}
@@ -590,7 +595,8 @@ void load_missing_retail_gauges()
 
 			// load radar gauge if not loaded.
 			if(!retail_gauge_loaded) {
-				gauge_settings settings(&sindex);
+				gauge_settings settings;
+				settings.ship_idx = &sindex;
 				load_gauge((Cmdline_orb_radar ? HUD_OBJECT_RADAR_ORB : HUD_OBJECT_RADAR_STD), &settings);
 			}
 
@@ -604,7 +610,8 @@ void load_missing_retail_gauges()
 				}
 
 				if(!retail_gauge_loaded) {
-					gauge_settings settings(&sindex);
+					gauge_settings settings;
+					settings.ship_idx = &sindex;
 					load_gauge(HUD_OBJECT_WEAPON_LINKING, &settings);
 				}
 			}

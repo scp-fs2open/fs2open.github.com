@@ -25,11 +25,11 @@ extern int Force_scaling_above_res_global[2];
 extern int Hud_font;
 
 typedef struct gauge_settings {
-	SCP_vector<int>* ship_idx;
 	int base_res[2];
 	int font_num;
 	bool scale_gauge;
 	int force_scaling_above_res[2];
+	SCP_vector<int>* ship_idx;
 	color *use_clr;
 	float origin[2];
 	int offset[2];
@@ -39,11 +39,10 @@ typedef struct gauge_settings {
 	bool set_colour;
 	bool slew;
 
-	gauge_settings(SCP_vector<int>* _ship_idx = NULL, int _font_num = Hud_font, bool _scale_gauge = Scale_retail_gauges, int _force_scaling_above_res[2] = Force_scaling_above_res_global, color *_use_clr = NULL)
-			: ship_idx(_ship_idx), font_num(_font_num), scale_gauge(_scale_gauge), use_clr(_use_clr), use_coords(false), set_position(true), set_colour(true)/*, slew(false)*/ {
+	gauge_settings() : font_num(Hud_font), scale_gauge(Scale_retail_gauges), ship_idx(nullptr), use_clr(nullptr), use_coords(false), set_position(true), set_colour(true), slew(false) {
 		base_res[0] = -1;
 		base_res[1] = -1;
-		memcpy(force_scaling_above_res, _force_scaling_above_res, sizeof(force_scaling_above_res));
+		memcpy(force_scaling_above_res, Force_scaling_above_res_global, sizeof(force_scaling_above_res));
 		origin[0] = 0.0f;
 		origin[1] = 0.0f;
 		offset[0] = 0;
