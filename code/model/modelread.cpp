@@ -64,7 +64,6 @@ CFILE *ss_fp = NULL;			// file pointer used to dump subsystem information
 char  model_filename[_MAX_PATH];		// temp used to store filename
 char	debug_name[_MAX_PATH];
 int ss_warning_shown = 0;		// have we shown the warning dialog concerning the subsystems?
-char	Global_filename[256];
 int Model_ram = 0;			// How much RAM the models use total
 #endif
 
@@ -478,7 +477,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 }
 
 // routine to get/set subsystem information
-static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *dname )
+static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props, char *dname)
 {
 	char *p;
 	char buf[64];
@@ -530,7 +529,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		subsystemp->type = SUBSYSTEM_ACTIVATION;
 	}  else { // If unrecognized type, set to unknown so artist can continue working...
 		subsystemp->type = SUBSYSTEM_UNKNOWN;
-		mprintf(("Potential problem found: Unrecognized subsystem type '%s', believed to be in ship %s\n", dname, Global_filename));
+		mprintf(("Subsystem '%s' on ship %s is not recognized as a common subsystem type\n", dname, model_get(model_num)->filename));
 	}
 
 	if ( (strstr(props, "$triggered:")) != NULL ) {
@@ -541,12 +540,9 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 	// Dumb-Rotating subsystem
 	if ((p = strstr(props, "$dumb_rotate")) != NULL) {
 		// no special subsystem handling needed here, but make sure we didn't specify both methods
-// this stupid #ifndef is needed because of Global_filename
-#ifndef NDEBUG
 		if (strstr(props, "$rotate") != NULL) {
-			Warning(LOCATION, "A subsystem (believed to be in ship %s) cannot have both rotation and dumb-rotation!", Global_filename);
+			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and dumb-rotation!", dname, model_get(model_num)->filename);
 		}
-#endif
 	}
 	// Rotating subsystem
 	else if ((p = strstr(props, "$rotate")) != NULL) {
@@ -681,7 +677,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 			subsystemp->model_num = model_num;
 			subsystemp->pnt = *pnt;				// use the offset to get the center point of the subsystem
 			subsystemp->radius = rad;
-			set_subsystem_info( subsystemp, props, subobj_name);
+			set_subsystem_info(model_num, subsystemp, props, subobj_name);
 			strcpy_s(subsystemp->subobj_name, subobj_name);						// copy the object name
 			return;
 		}
@@ -952,10 +948,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	int id, len, next_chunk;
 	int i,j;
 	vec3d temp_vec;
-
-#ifndef NDEBUG
-	strcpy_s(Global_filename, filename);
-#endif
 
 	// little test code i used in fred2
 	//char pwd[128];
