@@ -448,7 +448,7 @@ namespace os
 #endif
 		}
 
-		void MessageBox(MessageBoxType type, const char* message, const char* title) 
+		void Message(MessageType type, const char* message, const char* title)
 		{
 			int flags = 1;
 

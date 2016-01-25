@@ -369,7 +369,7 @@ bool openal_init_device(SCP_string *playback, SCP_string *capture)
 	alcGetIntegerv(NULL, ALC_MINOR_VERSION, sizeof(ALCint), &AL_minor_version);
 
 	if (AL_minor_version < 1) {
-		os::dialogs::MessageBox(os::dialogs::MESSAGEBOX_ERROR,
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR,
 			"OpenAL 1.1 or newer is required for proper operation. On Linux and Windows OpenAL Soft is recommended. If you are on Mac OS X you need to upgrade your OS.");
 
 		alcMakeContextCurrent(NULL);
