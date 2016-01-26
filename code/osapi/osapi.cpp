@@ -23,8 +23,6 @@
 #include <SDL_assert.h>
 
 #include <algorithm>
-#include <utility>
-#include <type_traits>
 
 namespace
 {
@@ -426,52 +424,52 @@ namespace os
 		{
 			ListenerIdentifier nextListenerIdentifier;
 
-			template<class E>
-			struct enum_hash
-			{
-				static_assert(std::is_enum<E>::value, "Type is not an enum!");
-
-			public:
-				size_t operator()(const E&e) const {
-					return std::hash<size_t>()(static_cast<size_t>(e));
-				}
-			};
-
 			struct EventListenerData
 			{
 				ListenerIdentifier identifier;
 				Listener listener;
+				
+				uint32_t type;
 				int weight;
 
 				bool operator<(const EventListenerData& other) const
 				{
+					if (type < other.type)
+					{
+						return true;
+					}
+					if (type > other.type)
+					{
+						return false;
+					}
+					
+					// Type is the same
 					return weight < other.weight;
 				}
 			};
-
-			SCP_unordered_map<SDL_EventType, SCP_vector<EventListenerData>, enum_hash<SDL_EventType>> eventListeners;
+			
+			bool compare_type(const EventListenerData& left, const EventListenerData& right)
+			{
+				return left.type < right.type;
+			}
+			
+			SCP_vector<EventListenerData> eventListeners;
 		}
 
 		ListenerIdentifier addEventListener(SDL_EventType type, int weight, const Listener& listener)
 		{
 			Assertion(listener, "Invalid event handler passed!");
 
-			auto iter = eventListeners.find(type);
-
-			if (iter == eventListeners.end())
-			{
-				iter = eventListeners.insert(std::make_pair(type, SCP_vector<EventListenerData>())).first;
-			}
-
 			EventListenerData data;
 			data.identifier = ++nextListenerIdentifier;
 			data.listener = listener;
+			
 			data.weight = weight;
+			data.type = static_cast<uint32_t>(type);
 
-			iter->second.push_back(data);
-
+			eventListeners.push_back(data);
 			// This is suboptimal for runtime but we will iterate that vector often so cache hits are more important
-			std::sort(iter->second.begin(), iter->second.end());
+			std::sort(eventListeners.begin(), eventListeners.end());
 
 			return data.identifier;
 		}
@@ -481,13 +479,10 @@ namespace os
 			auto endIter = end(eventListeners);
 			for (auto iter = begin(eventListeners); iter != endIter; ++iter)
 			{
-				for (auto vectorIt = iter->second.begin(); vectorIt != iter->second.end(); ++vectorIt)
+				if (iter->identifier == identifier)
 				{
-					if (vectorIt->identifier == identifier)
-					{
-						iter->second.erase(vectorIt);
-						return true; // Identifiers are unique
-					}
+					eventListeners.erase(iter);
+					return true; // Identifiers are unique
 				}
 			}
 
@@ -537,14 +532,19 @@ void os_poll()
 	SDL_Event event;
 
 	while (SDL_PollEvent(&event)) {
-		auto iter = eventListeners.find(static_cast<SDL_EventType>(event.type));
+		EventListenerData data;
+		data.type = event.type;
+			
+		auto iter = std::lower_bound(eventListeners.begin(), eventListeners.end(), data, compare_type);
 
 		if (iter != eventListeners.end())
 		{
-			auto endIter = end(iter->second);
-			for (auto listenerIter = begin(iter->second); listenerIter != endIter; ++listenerIter)
+			// The vector contains all event listeners, the listeners are sorted for type and weight
+			// -> iterating through all listeners will yield them in increasing weight order
+			// but we can only do this until we have reached the end of the vector or the type has changed
+			for(; iter != eventListeners.end() && iter->type == event.type; ++iter)
 			{
-				if (listenerIter->listener(event))
+				if (iter->listener(event))
 				{
 					// Listener has handled the event
 					break;
