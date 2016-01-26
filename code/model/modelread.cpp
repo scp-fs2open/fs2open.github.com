@@ -534,7 +534,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		mprintf(("Subsystem '%s' on ship %s is not recognized as a common subsystem type\n", dname, model_get(model_num)->filename));
 	}
 
-	if ( (strstr(props, "$triggered:")) != NULL ) {
+	if ( (strstr(props, "$triggered")) != NULL ) {
 		subsystemp->flags |= MSS_FLAG_ROTATES;
 		subsystemp->flags |= MSS_FLAG_TRIGGERED;
 	}
@@ -1248,12 +1248,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					if (strstr(pm->submodel[n].name, "thruster")) {
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
 						pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
-					}else if(strstr(props, "$triggered:")){
+					} else if(strstr(props, "$triggered")) {
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_TRIGGERED;
 					}
 				}
 
-				if ( ( p = strstr(props, "$look_at:")) != NULL ) {
+				if ( ( p = strstr(props, "$look_at")) != NULL ) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_LOOK_AT;
 					get_user_prop_value(p+9, pm->submodel[n].look_at);
 					pm->submodel[n].look_at_num = -2; // Set this to -2 to mark it as something we need to work out the correct subobject number for later, after all subobjects have been processed
@@ -1274,7 +1274,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				// Sets can_move on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
 				if ((pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
-					|| strstr(props, "$triggered:") || strstr(props, "$rotate") || strstr(props, "$gun_rotation:") || strstr(props, "$gun_rotation")) {
+					|| strstr(props, "$triggered") || strstr(props, "$rotate") || strstr(props, "$gun_rotation")) {
 					pm->submodel[n].can_move = true;
 				} else if (pm->submodel[n].parent >= 0 && pm->submodel[pm->submodel[n].parent].can_move) {
 					pm->submodel[n].can_move = true;
