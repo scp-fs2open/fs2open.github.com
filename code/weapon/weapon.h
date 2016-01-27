@@ -163,6 +163,7 @@ extern int Num_weapon_subtypes;
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
+	int		model_instance_num;				// model instance number, if we have any dumb-rotating submodels
 	int		team;								// The team of the ship that fired this
 	int		species;							// The species of the ship that fired thisz
 	float		lifeleft;						// life left on this weapon	

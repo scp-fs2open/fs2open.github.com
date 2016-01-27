@@ -164,6 +164,7 @@ int stars_debris_loaded = 0;	// 0 = not loaded, 1 = normal vclips, 2 = nebula vc
 // background data
 int Stars_background_inited = 0;			// if we're inited
 int Nmodel_num = -1;							// model num
+int Nmodel_instance_num = -1;					// model instance num
 matrix Nmodel_orient = IDENTITY_MATRIX;			// model orientation
 int Nmodel_flags = DEFAULT_NMODEL_FLAGS;		// model flags
 int Nmodel_bitmap = -1;						// model texture
@@ -2180,6 +2181,11 @@ void stars_set_background_model(char *model_name, char *texture_name, int flags)
 		Nmodel_num = -1;
 	}
 
+	if (Nmodel_instance_num >= 0) {
+		model_delete_instance(Nmodel_instance_num);
+		Nmodel_instance_num = -1;
+	}
+
 	Nmodel_flags = flags;
 
 	if ( (model_name == NULL) || (*model_name == '\0') )
@@ -2188,8 +2194,13 @@ void stars_set_background_model(char *model_name, char *texture_name, int flags)
 	Nmodel_num = model_load(model_name, 0, NULL, -1);
 	Nmodel_bitmap = bm_load(texture_name);
 
-	if (Nmodel_num >= 0)
+	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
+
+		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_DUMB_ROTATE) {
+			Nmodel_instance_num = model_create_instance(false, Nmodel_num);
+		}
+	}
 }
 
 // call this to set a specific orientation for the background

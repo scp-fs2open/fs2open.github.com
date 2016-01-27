@@ -9867,7 +9867,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	model_anim_set_initial_states(shipp);
 
-	shipp->model_instance_num = model_create_instance(sip->model_num);
+	shipp->model_instance_num = model_create_instance(true, sip->model_num);
 
 	shipp->time_created = Missiontime;
 
@@ -10297,7 +10297,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_assign_sound(sp);
 	
 	// create new model instance data
-	sp->model_instance_num = model_create_instance(sip->model_num);
+	sp->model_instance_num = model_create_instance(true, sip->model_num);
 
 	// Valathil - Reinitialize collision checks
 	if ( Cmdline_old_collision_sys ) {
@@ -13045,7 +13045,6 @@ void ship_model_start(object *objp)
 			model_set_instance(model_num, psub->turret_gun_sobj, &pss->submodel_info_2, pss->flags );
 		}
 	}
-	model_do_dumb_rotation(model_num);
 }
 
 /**
@@ -13081,6 +13080,7 @@ void ship_model_update_instance(object *objp)
 	// Then, clear all the angles in the model to zero
 	model_clear_submodel_instances(model_instance_num);
 
+	// Handle subsystem rotations for this ship
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 		switch (psub->type) {
@@ -13109,8 +13109,8 @@ void ship_model_update_instance(object *objp)
 		}
 	}
 
-	model_instance_dumb_rotation(model_instance_num);
-
+	// Handle dumb rotations for this ship
+	model_do_dumb_rotations(model_instance_num);
 
 	// preprocess subobject orientations for collision detection
 	model_collide_preprocess(&objp->orient, model_instance_num);

@@ -98,6 +98,7 @@ public:
 typedef	struct asteroid {
 	int		flags;
 	int		objnum;
+	int		model_instance_num;
 	int		asteroid_type;		// 0..MAX_DEBRIS_TYPES
 	int		asteroid_subtype;	// Index in asteroid_info for modelnum and modelp
 	int		check_for_wrap;		// timestamp to check for asteroid wrapping around field

@@ -3856,9 +3856,10 @@ void weapon_delete(object *obj)
 	}
 
 	if (wp->hud_in_flight_snd_sig >= 0 && snd_is_playing(wp->hud_in_flight_snd_sig))
-	{
 		snd_stop(wp->hud_in_flight_snd_sig);
-	}
+
+	if (wp->model_instance_num >= 0)
+		model_delete_instance(wp->model_instance_num);
 
 	if (wp->cmeasure_ignore_list != nullptr) {
 		delete wp->cmeasure_ignore_list;
@@ -5377,6 +5378,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	wp->start_pos = *pos;
 	wp->objnum = objnum;
+	wp->model_instance_num = -1;
 	wp->homing_object = &obj_used_list;		//	Assume not homing on anything.
 	wp->homing_subsys = NULL;
 	wp->creation_time = Missiontime;
@@ -5490,7 +5492,15 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	if ( wip->render_type == WRT_POF ) {
+		// this should have been checked above, but let's be extra sure
+		Assert(wip->model_num >= 0);
+
 		objp->radius = model_get_radius(wip->model_num);
+
+		// if we dumb-rotate, make sure we have a model instance
+		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_DUMB_ROTATE) {
+			wp->model_instance_num = model_create_instance(false, wip->model_num);
+		}
 	} else if ( wip->render_type == WRT_LASER ) {
 		objp->radius = wip->laser_head_radius;
 	}
