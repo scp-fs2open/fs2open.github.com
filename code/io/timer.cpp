@@ -214,9 +214,10 @@ void timestamp_reset()
 // something like 1 minute (6000).
 #define MAX_TIME (INT_MAX/2)
 
-void timestamp_inc(float frametime)
+void timestamp_inc(fix frametime)
 {
-	timestamp_ticker += (int)(frametime*TIMESTAMP_FREQUENCY);
+	auto frametime_ms = fixmul(frametime, F1_0 * TIMESTAMP_FREQUENCY);
+	timestamp_ticker += f2i(frametime_ms);
 
 	if ( timestamp_ticker > MAX_TIME )	{
 		timestamp_ticker = 2;		// Roll!
