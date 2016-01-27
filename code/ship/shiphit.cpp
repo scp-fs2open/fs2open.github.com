@@ -609,7 +609,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		} else if(other_obj->type == OBJ_ASTEROID) {
 			dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
 		} else if(other_obj->type == OBJ_DEBRIS) {
-			dmg_type_idx = Ships[Objects[Debris[other_obj->instance].source_objnum].instance].debris_damage_type_idx;
+			dmg_type_idx = Debris[other_obj->instance].damage_type_idx;
 		} else if(other_obj->type == OBJ_SHIP) {
 			dmg_type_idx = Ships[other_obj->instance].collision_damage_type_idx;
 		}
@@ -978,6 +978,7 @@ void ship_hit_music(object *ship_objp, object *other_obj)
 	Assert(other_obj);	// Goober5000
 
 	ship* ship_p = &Ships[ship_objp->instance];
+	object *parent;
 
 	// Switch to battle track when a ship is hit by fire 
 	//
@@ -990,6 +991,9 @@ void ship_hit_music(object *ship_objp, object *other_obj)
 	int attackee_team, attacker_team;
 
 	attackee_team = Ships[ship_objp->instance].team;
+
+	// avoid uninitialized value by matching them
+	attacker_team = attackee_team;
 
 	switch ( other_obj->type )
 	{
@@ -1004,7 +1008,9 @@ void ship_hit_music(object *ship_objp, object *other_obj)
 
 		case OBJ_WEAPON:
 			// parent of weapon is object num of ship that fired it
-			attacker_team = Ships[Objects[other_obj->parent].instance].team;	
+			parent = &Objects[other_obj->parent];
+			if (parent->signature == other_obj->parent_sig)
+				attacker_team = Ships[parent->instance].team;
 			break;
 
 		default:
@@ -2058,7 +2064,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			} else if(other_obj_is_asteroid) {
 				dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
 			} else if(other_obj_is_debris) {
-				dmg_type_idx = Ships[Objects[Debris[other_obj->instance].source_objnum].instance].debris_damage_type_idx;
+				dmg_type_idx = Debris[other_obj->instance].damage_type_idx;
 			} else if(other_obj_is_ship) {
 				dmg_type_idx = Ships[other_obj->instance].collision_damage_type_idx;
 			}
@@ -2136,7 +2142,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			} else if(other_obj_is_asteroid) {
 				dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
 			} else if(other_obj_is_debris) {
-				dmg_type_idx = Ships[Objects[Debris[other_obj->instance].source_objnum].instance].debris_damage_type_idx;
+				dmg_type_idx = Debris[other_obj->instance].damage_type_idx;
 			} else if(other_obj_is_ship) {
 				dmg_type_idx = Ships[other_obj->instance].collision_damage_type_idx;
 			}

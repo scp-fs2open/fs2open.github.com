@@ -389,7 +389,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 			}
 
 			// for nonplayer ships, only create collision pair if close enough
-			if ( (B->parent >= 0) && !(Objects[B->parent].flags & OF_PLAYER_SHIP) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) )
+			if ( (B->parent >= 0) && !((Objects[B->parent].signature == B->parent_sig) && (Objects[B->parent].flags & OF_PLAYER_SHIP)) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) )
 				return;
 		}
 	}
@@ -398,6 +398,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	if (check_collision == collide_ship_weapon) {
 		// weapon is B
 		if ( (B->parent >= 0)
+			&& (Objects[B->parent].signature == B->parent_sig)
 			&& !(Objects[B->parent].flags & OF_PLAYER_SHIP)
 			&& (Ships[Objects[B->parent].instance].team == Ships[A->instance].team) 
 			&& (Ship_info[Ships[A->instance].ship_info_index].flags & SIF_SMALL_SHIP) 
@@ -1620,7 +1621,7 @@ void obj_collide_pair(object *A, object *B)
 				}
 
 				// for nonplayer ships, only create collision pair if close enough
-				if ( (B->parent >= 0) && !(Objects[B->parent].flags & OF_PLAYER_SHIP) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) ) {
+				if ( (B->parent >= 0) && !((Objects[B->parent].signature == B->parent_sig) && (Objects[B->parent].flags & OF_PLAYER_SHIP)) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) ) {
 					collision_info->next_check_time = -1;
 					return;
 				}
@@ -1631,6 +1632,7 @@ void obj_collide_pair(object *A, object *B)
 		if (check_collision == collide_ship_weapon) {
 			// weapon is B
 			if ( (B->parent >= 0)
+				&& (Objects[B->parent].signature == B->parent_sig)
 				&& !(Objects[B->parent].flags & OF_PLAYER_SHIP)
 				&& (Ships[Objects[B->parent].instance].team == Ships[A->instance].team) 
 				&& (Ship_info[Ships[A->instance].ship_info_index].flags & SIF_SMALL_SHIP) 

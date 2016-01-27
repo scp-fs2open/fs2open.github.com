@@ -563,6 +563,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->is_hull = hull_flag;
 	db->source_objnum = parent_objnum;
 	db->source_sig = source_obj->signature;
+	db->damage_type_idx = shipp->debris_damage_type_idx;
 	db->ship_info_index = shipp->ship_info_index;
 	db->team = shipp->team;
 	db->fire_timeout = 0;	// if not changed, timestamp_elapsed() will return false
