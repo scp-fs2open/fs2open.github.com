@@ -73,7 +73,7 @@ extern int timestamp_ticker;
 extern void timestamp_reset();
 
 // Call this once every frame with the frametime.
-extern void timestamp_inc(float frametime);
+extern void timestamp_inc(fix frametime);
 
 // To do timing, call this with the interval you
 // want to check.  Then, pass this to timestamp_elapsed
