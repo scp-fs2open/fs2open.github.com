@@ -4871,7 +4871,9 @@ void game_set_frametime(int state)
 	Last_frame_timestamp = timestamp();
 
 	flFrametime = f2fl(Frametime);
-	timestamp_inc(Frametime);
+	
+	auto frametime_ms = f2i(fixmul(Frametime, F1_0 * TIMESTAMP_FREQUENCY));
+	timestamp_inc(frametime_ms);
 
 	// wrap overall frametime if needed
 	if ( FrametimeOverall > (INT_MAX - F1_0) )
