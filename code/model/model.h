@@ -35,7 +35,6 @@ extern int model_render_flags_size;
 #define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
 #define MOVEMENT_TYPE_TRIGGERED			3	// triggered rotation
 #define MOVEMENT_TYPE_INTRINSIC_ROTATE	4	// intrinsic (non-subsystem-based) rotation
-#define MOVEMENT_TYPE_LOOK_AT			5	// the subobject is always looking at a 'look at' subobject, as best it can - Bobboau
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
@@ -305,11 +304,10 @@ public:
 		num_arcs(0), outline_buffer(NULL), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
 		use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
 		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
-		look_at_num(-1)
+		look_at_submodel(-1)
 	{
 		name[0] = 0;
 		lod_name[0] = 0;
-		look_at[0] = 0;
 
 		offset = geometric_center = min = max = render_box_min = render_box_max = render_box_offset = render_sphere_offset = vmd_zero_vector;
 		orientation = vmd_identity_matrix;
@@ -393,10 +391,9 @@ public:
 	bool	force_turret_normal;	//Wanderer: Sets the turret uvec to override any input of for turret normal.
 	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
 	bool	attach_thrusters;		//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
+
 	float	dumb_turn_rate;			//Bobboau
-	//int	look_at;				//Bobboau
-	int		look_at_num;			//VA - number of the submodel to be looked at by this submodel (-1 if none)
-	char	look_at[MAX_NAME_LEN];	//VA - name of submodel to be looked at by this submodel
+	int		look_at_submodel;		//VA - number of the submodel to be looked at by this submodel (-1 if none)
 };
 
 void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
@@ -1365,8 +1362,6 @@ void model_set_replacement_textures(int *replacement_textures);
 
 void model_setup_cloak(vec3d *shift, int full_cloak, int alpha);
 void model_finish_cloak(int full_cloak);
-
-void model_do_look_at(int model_num); //Bobboau
 
 void model_do_intrinsic_rotations(int model_instance_num = -1);
 
