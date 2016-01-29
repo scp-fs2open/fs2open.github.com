@@ -14060,16 +14060,18 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 		 "Texture handle, or invalid texture handle if texture couldn't be loaded")
 {
 	char *s;
-	int idx;
+	int idx=-1;
 	bool b=false;
 	bool d=false;
 
 	if(!ade_get_args(L, "s|bb", &s, &b, &d))
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
-	idx = bm_load(s);
-	if(idx < 0 && b) {
+	if(b == true) {
 		idx = bm_load_animation(s, NULL, NULL, NULL, d ? 1 : 0);
+	}
+	if(idx < 0) {
+		idx = bm_load(s);
 	}
 
 	if(idx < 0)
