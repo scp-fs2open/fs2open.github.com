@@ -1039,7 +1039,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	next_chunk = cftell(fp) + len;
 
 	// keep track of any look_at submodels we might notice
-	SCP_vector<char[MAX_NAME_LEN]> look_at_submodel_names;
+	SCP_vector<SCP_string> look_at_submodel_names;
 
 	while (!cfeof(fp)) {
 
@@ -1329,9 +1329,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				if (pm->submodel[n].movement_axis == MOVEMENT_AXIS_NONE) {
 					if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
 						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+						pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
 					}
 					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
 						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate or look-at) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+						pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
 					}
 				}
 
@@ -2315,7 +2317,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	if (!look_at_submodel_names.empty()) {
 		for (int i = 0; i < pm->n_models; i++) {
 			if (pm->submodel[i].look_at_submodel >= 0) {
-				char *submodel_name = look_at_submodel_names[pm->submodel[i].look_at_submodel];
+				const char *submodel_name = look_at_submodel_names[pm->submodel[i].look_at_submodel].c_str();
 
 				// search for this submodel name among all submodels
 				for (int j = 0; j < pm->n_models; j++) {
@@ -3538,44 +3540,68 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	}
 }
 
-void world_find_real_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos);
-
-void submodel_look_at(bsp_info *sm, submodel_instance_info *sii)
+void submodel_look_at(int model_num, int model_instance_num, int submodel_num, submodel_instance_info *sii)
 {
-	bsp_info * sm;
+	polymodel *pm = model_get(model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	bsp_info *sm = &pm->submodel[submodel_num];
 
-	if ( mn < 0 ) {
-		return;
-	}
+	Assert(sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
+	Assert(sm->look_at_submodel >= 0);
 
-	sm = &pm->submodel[mn];
-	angles *angs = &pm->submodel[mn].angs;
+	vec3d axis, submodel_axis, submodel_pos, target_submodel_pos;
 
-	if ( sm->movement_type != MOVEMENT_TYPE_LOOK_AT ) {
-		return;
-	}
+	// figure out which axis this submodel rotates on, in the model's reference frame
+	model_get_rotating_submodel_axis(&axis, &submodel_axis, NULL, model_num, model_instance_num, submodel_num);
+
+	// find the origin of this submodel and its target
+	find_submodel_instance_point(&submodel_pos, model_num, model_instance_num, submodel_num);
+	find_submodel_instance_point(&target_submodel_pos, model_num, model_instance_num, sm->look_at_submodel);
+
+
+	bool do_g3 = G3_count < 1;
+
+	if (do_g3)
+		g3_start_frame(1);
+
+	// draw points!
+	gr_set_color(128, 128, 128);
+	g3_draw_sphere_ez(&submodel_pos, 25.0f);
+	g3_draw_sphere_ez(&target_submodel_pos, 25.0f);
+
+	if (do_g3)
+		g3_end_frame();
+
+
+
+	/*
+
+
+	// now rotate the submodel along its axis until its orientation is facing that point
+
+
+
+	polymodel *pm, bsp_info *sm, submodel_instance_info *sii
 
 	vec3d other, mp;
 
-	int pmn = pm->id;
 
-
-	model_find_world_point(&mp, &vmd_zero_vector, pmn, sm->look_at_num, &vmd_identity_matrix, &vmd_zero_vector);
+	model_find_world_point(&mp, &vmd_zero_vector, pm->id, sm->look_at_num, &vmd_identity_matrix, &vmd_zero_vector);
 	world_find_real_model_point(&other, &mp, pm, mn, &vmd_identity_matrix, &vmd_zero_vector);
 
-	if (!IS_MAT_NULL(&pm->submodel[mn].orientation)) {
-		vm_vec_rotate(&mp, &other, &pm->submodel[mn].orientation);
+	if (!IS_MAT_NULL(&sm->orientation)) {
+		vm_vec_rotate(&mp, &other, &sm->orientation);
 	} else {
 		mp = other;
 	}
 
 	vec3d	d, l;
-	model_find_submodel_offset(&d, pmn, mn);
-	model_find_submodel_offset(&l, pmn, sm->look_at_num);
+	model_find_submodel_offset(&d, pm->id, mn);
+	model_find_submodel_offset(&l, pm->id, sm->look_at_num);
 	vm_vec_sub(&other, &l, &d);
 
-	if (!IS_MAT_NULL(&pm->submodel[mn].orientation)) {
-		vm_vec_rotate(&l, &other, &pm->submodel[mn].orientation);
+	if (!IS_MAT_NULL(&sm->orientation)) {
+		vm_vec_rotate(&l, &other, &sm->orientation);
 	} else {
 		l = other;
 	}
@@ -3623,12 +3649,7 @@ void submodel_look_at(bsp_info *sm, submodel_instance_info *sii)
 		*a -= PI2;
 	} else { if (*a < 0.0f )
 		*a += PI2;
-	}
-
-	for (int k=0; k<sm->num_details; k++ ) {
-		pm->submodel[sm->details[k]].angs = *angs;
-	}
-
+	}*/
 }
 
 // Rotates the angle of a submodel, when the submodel has a subsystem (which is almost always the case)
@@ -4801,7 +4822,7 @@ void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
 
 		// First, calculate the angles for the rotation
 		if (sm->look_at_submodel >= 0)
-			submodel_look_at(sm, &submodel_it->submodel_info_1);
+			submodel_look_at(pmi->model_num, ir->model_instance_num, submodel_it->submodel_num, &submodel_it->submodel_info_1);
 		else
 			submodel_rotate(sm, &submodel_it->submodel_info_1);
 
