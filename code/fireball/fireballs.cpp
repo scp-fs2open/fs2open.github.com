@@ -507,13 +507,7 @@ void fireball_set_framenum(int num)
 	}
 
 	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
-		float total_time = i2fl(fl->num_frames) / fl->fps;	// in seconds
-
-		framenum = fl2i(fb->time_elapsed * fl->num_frames / total_time + 0.5);
-
-		if ( framenum < 0 ) framenum = 0;
-
-		framenum = framenum % fl->num_frames;
+		framenum = bm_get_anim_frame(fl->bitmap_id, fb->time_elapsed, 0.0f, true);
 
 		if ( fb->orient )	{
 			// warp out effect plays backwards
@@ -523,16 +517,8 @@ void fireball_set_framenum(int num)
 			fb->current_bitmap = fl->bitmap_id + framenum;
 		}
 	} else {
-
-		framenum = fl2i(fb->time_elapsed / fb->total_time * fl->num_frames + 0.5);
-
-		// ensure we don't go past the number of frames of animation
-		if ( framenum > (fl->num_frames-1) ) {
-			framenum = (fl->num_frames-1);
-			Objects[fb->objnum].flags |= OF_SHOULD_BE_DEAD;
-		}
-
-		if ( framenum < 0 ) framenum = 0;
+		framenum = bm_get_anim_frame(fl->bitmap_id, fb->time_elapsed, fb->total_time);
+		// ignore setting of OF_SHOULD_BE_DEAD, see fireball_process_post
 		fb->current_bitmap = fl->bitmap_id + framenum;
 	}
 }

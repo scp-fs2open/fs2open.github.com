@@ -3676,18 +3676,7 @@ void weapon_render_DEPRECATED(object *obj)
 				if (wip->laser_bitmap.num_frames > 1) {
 					wp->laser_bitmap_frame += flFrametime;
 
-					// Sanity checks
-					if (wp->laser_bitmap_frame < 0.0f)
-						wp->laser_bitmap_frame = 0.0f;
-					if (wp->laser_bitmap_frame > 100.0f)
-						wp->laser_bitmap_frame = 0.0f;
-
-					while (wp->laser_bitmap_frame > wip->laser_bitmap.total_time)
-						wp->laser_bitmap_frame -= wip->laser_bitmap.total_time;
-
-					framenum = fl2i( (wp->laser_bitmap_frame * wip->laser_bitmap.num_frames) / wip->laser_bitmap.total_time );
-
-					CLAMP(framenum, 0, wip->laser_bitmap.num_frames-1);
+					framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 				}
 
 				if (wip->wi_flags2 & WIF2_TRANSPARENT)
@@ -7318,18 +7307,7 @@ void weapon_render(object* obj, draw_list *scene)
 				if (wip->laser_bitmap.num_frames > 1) {
 					wp->laser_bitmap_frame += flFrametime;
 
-					// Sanity checks
-					if (wp->laser_bitmap_frame < 0.0f)
-						wp->laser_bitmap_frame = 0.0f;
-					if (wp->laser_bitmap_frame > 100.0f)
-						wp->laser_bitmap_frame = 0.0f;
-
-					while (wp->laser_bitmap_frame > wip->laser_bitmap.total_time)
-						wp->laser_bitmap_frame -= wip->laser_bitmap.total_time;
-
-					framenum = fl2i( (wp->laser_bitmap_frame * wip->laser_bitmap.num_frames) / wip->laser_bitmap.total_time );
-
-					CLAMP(framenum, 0, wip->laser_bitmap.num_frames-1);
+					framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 				}
 
 				if (wip->wi_flags2 & WIF2_TRANSPARENT)

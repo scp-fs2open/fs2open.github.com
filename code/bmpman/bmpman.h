@@ -681,6 +681,6 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
  *
  * @returns current frame of the animation (range is zero to the number of frames minus one)
  */
-int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const bool loop = false, const float divisor = 0.0f);
+int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const float divisor = 0.0f, const bool loop = false);
 
 #endif

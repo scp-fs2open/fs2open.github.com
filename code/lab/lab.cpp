@@ -607,7 +607,7 @@ void labviewer_add_model_thrusters(model_render_params *render_info, ship_info *
 	if (flame_anim->first_frame >= 0) {
 		thruster_frame += flFrametime * rate;
 
-		framenum = bm_get_anim_frame(flame_anim->first_frame, thruster_frame / flame_anim->total_time, true);
+		framenum = bm_get_anim_frame(flame_anim->first_frame, thruster_frame, flame_anim->total_time, true);
 
 		// Get the bitmap for this frame
 		thruster_bitmap = flame_anim->first_frame + framenum;
@@ -621,7 +621,7 @@ void labviewer_add_model_thrusters(model_render_params *render_info, ship_info *
 	if (glow_anim->first_frame >= 0) {
 		thruster_glow_frame += flFrametime * rate;
 
-		framenum = bm_get_anim_frame(glow_anim->first_frame, thruster_glow_frame / glow_anim->total_time);
+		framenum = bm_get_anim_frame(glow_anim->first_frame, thruster_glow_frame, glow_anim->total_time, true);
 
 		// Get the bitmap for this frame
 		thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
@@ -1149,20 +1149,7 @@ void labviewer_render_bitmap(float frametime)
 	if (wip->laser_bitmap.num_frames > 1) {
 		current_frame += frametime;
 
-		// Sanity checks
-		if (current_frame < 0.0f) {
-			current_frame = 0.0f;
-		} else if (current_frame > 100.0f) {
-			current_frame = 0.0f;
-		}
-
-		while (current_frame > wip->laser_bitmap.total_time) {
-			current_frame -= wip->laser_bitmap.total_time;
-		}
-
-		framenum = fl2i( (current_frame * wip->laser_bitmap.num_frames) / wip->laser_bitmap.total_time );
-
-		CLAMP(framenum, 0, wip->laser_bitmap.num_frames-1);
+		framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, current_frame, wip->laser_bitmap.total_time, true);
 	}
 
 	vec3d headp;

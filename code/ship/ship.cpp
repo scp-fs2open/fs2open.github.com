@@ -8611,7 +8611,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	if (flame_anim->first_frame >= 0) {
 		shipp->thruster_frame += frametime * rate;
 
-		framenum = bm_get_anim_frame(flame_anim->first_frame, shipp->thruster_frame / flame_anim->total_time, true);
+		framenum = bm_get_anim_frame(flame_anim->first_frame, shipp->thruster_frame, flame_anim->total_time, true);
 
 		// Get the bitmap for this frame
 		shipp->thruster_bitmap = flame_anim->first_frame + framenum;
@@ -8624,7 +8624,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	if (glow_anim->first_frame >= 0) {
 		shipp->thruster_glow_frame += frametime * rate;
 
-		framenum = bm_get_anim_frame(glow_anim->first_frame, shipp->thruster_glow_frame / glow_anim->total_time);
+		framenum = bm_get_anim_frame(glow_anim->first_frame, shipp->thruster_glow_frame, glow_anim->total_time, true);
 
 		// Get the bitmap for this frame
 		shipp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;

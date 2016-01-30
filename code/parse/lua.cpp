@@ -3543,11 +3543,7 @@ ADE_FUNC(getFrame, l_Texture, "number Elapsed time (secs), [boolean Loop]",
 	if (!bm_is_valid(idx))
 		return ADE_RETURN_NIL;
 
-	bitmap_entry *be = &bm_bitmaps[idx];
-	if (be->info.ani.num_frames < 2)
-		return ADE_RETURN_NIL;
-
-	frame = bm_get_anim_frame(idx, elapsed_time, loop);
+	frame = bm_get_anim_frame(idx, elapsed_time, 0.0f, loop);
 	frame++;  // C++ -> LUA
 
 	return ade_set_args(L, "i", frame);
@@ -14068,7 +14064,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
 	if(b == true) {
-		idx = bm_load_animation(s, NULL, NULL, NULL, d ? 1 : 0);
+		idx = bm_load_animation(s, nullptr, nullptr, nullptr, d ? 1 : 0);
 	}
 	if(idx < 0) {
 		idx = bm_load(s);

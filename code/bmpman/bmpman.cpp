@@ -677,7 +677,7 @@ void bm_free_data_fast(int n)
 	bmp->data = 0;
 }
 
-int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const bool loop, const float divisor)
+int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const float divisor, const bool loop)
 {
 	int n = bm_get_cache_slot(frame1_handle, 1);
 	bitmap_entry *be = &bm_bitmaps[n];
@@ -703,8 +703,10 @@ int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const bool lo
 		}
 
 		if (loop == true) {
-			while (elapsed_time >= last_framep->info.ani.apng.frame_delay) {
-				elapsed_time -= last_framep->info.ani.apng.frame_delay;
+			if (last_framep->info.ani.apng.frame_delay != 0.0f) {    // prevent infinite loops, which can occur if this is called before the anim is locked
+				while (elapsed_time >= last_framep->info.ani.apng.frame_delay) {
+					elapsed_time -= last_framep->info.ani.apng.frame_delay;
+				}
 			}
 		}
 
@@ -726,7 +728,7 @@ int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const bool lo
 			frame = fl2i(elapsed_time / divisor * be->info.ani.num_frames);
 		}
 		else {
-			frame = fl2i(elapsed_time * i2fl(be->info.ani.fps * be->info.ani.num_frames));
+			frame = fl2i(elapsed_time * i2fl(be->info.ani.fps));
 		}
 
 		if (loop == true) {
@@ -1632,11 +1634,11 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		}
 	}
 	else if (type == BM_TYPE_PNG) {
-		nprintf(("apng", "bm_load_animation for apng\n"));
+		nprintf(("apng", "bm_load_animation apng: %s\n", filename));
 		try {
 			apng::apng_ani the_apng = apng::apng_ani(filename);
 			anim_frames = the_apng.nframes;
-			anim_fps = anim_frames / the_apng.anim_time; // TODO figure out what to do with this, apng's don't have fps, just frame delays
+			anim_fps = anim_frames / fl2i(the_apng.anim_time); // approximation; shouldn't be used
 			anim_width = the_apng.w;
 			anim_height = the_apng.h;
 			bpp = the_apng.bpp;
@@ -1757,6 +1759,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 		if (type == BM_TYPE_PNG) {
 			bm_bitmaps[n + i].info.ani.apng.is_apng = true;
+			bm_bitmaps[n + i].info.ani.apng.frame_delay = 0.0f;
 		}
 		else {
 			bm_bitmaps[n + i].info.ani.apng.is_apng = false;

@@ -1138,7 +1138,7 @@ void game_loading_callback(int count)
 	int do_flip = 0;
 
 	mprintf(("bm_get_anim_frameA: count (%i) COUNT_ESTIMATE (%i)\n", count, COUNT_ESTIMATE));
-	int new_framenum = bm_get_anim_frame(Game_loading_ani.first_frame, static_cast<float>(count), false, static_cast<float>(COUNT_ESTIMATE));
+	int new_framenum = bm_get_anim_frame(Game_loading_ani.first_frame, static_cast<float>(count), static_cast<float>(COUNT_ESTIMATE));
 
 	//make sure we always run forwards - graphical hack
 	if(new_framenum > framenum)
@@ -7395,7 +7395,6 @@ typedef struct animating_obj
 	int	first_frame;
 	int	num_frames;
 	int	current_frame;
-	float time;
 	float elapsed_time;
 } animating_obj;
 
@@ -7412,7 +7411,6 @@ void init_animating_pointer()
 	Animating_mouse.first_frame	= -1;
 	Animating_mouse.num_frames		= 0;
 	Animating_mouse.current_frame	= -1;
-	Animating_mouse.time				= 0.0f;
 	Animating_mouse.elapsed_time	= 0.0f;
 }
 
@@ -7437,7 +7435,6 @@ void load_animating_pointer(char *filename)
 	if ( am->first_frame == -1 ) 
 		Error(LOCATION, "Could not load animation %s for the mouse pointer\n", filename);
 	am->current_frame = 0;
-	am->time = am->num_frames / i2fl(fps);
 }
 
 // ----------------------------------------------------------------------------
@@ -7478,11 +7475,7 @@ void game_render_mouse(float frametime)
 	if ( am->first_frame != -1 ) {
 		mouse_get_pos(&mx, &my);
 		am->elapsed_time += frametime;
-		am->current_frame = fl2i( ( am->elapsed_time / am->time ) * (am->num_frames-1) );
-		if ( am->current_frame >= am->num_frames ) {
-			am->current_frame = 0;
-			am->elapsed_time = 0.0f;
-		}
+		am->current_frame = bm_get_anim_frame(am->first_frame, am->elapsed_time, 0.0f, true);
 		gr_set_cursor_bitmap(am->first_frame + am->current_frame);
 	}
 }

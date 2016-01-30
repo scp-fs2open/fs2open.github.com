@@ -332,7 +332,7 @@ void generic_anim_unload(generic_anim *ga)
 			if(ga->type == BM_TYPE_PNG) {
 				if(ga->bitmap_id >= 0)
 					bm_release(ga->bitmap_id);
-				if (ga->png.anim)
+				if (ga->png.anim != nullptr)
 					delete ga->png.anim;
 			}
 		}

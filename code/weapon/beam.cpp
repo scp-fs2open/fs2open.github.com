@@ -1249,18 +1249,7 @@ void beam_render(beam *b, float u_offset)
 		if (bwsi->texture.num_frames > 1) {
 			b->beam_section_frame[s_idx] += flFrametime;
 
-			// Sanity checks
-			if (b->beam_section_frame[s_idx] < 0.0f)
-				b->beam_section_frame[s_idx] = 0.0f;
-			if (b->beam_section_frame[s_idx] > 100.0f)
-				b->beam_section_frame[s_idx] = 0.0f;
-
-			while (b->beam_section_frame[s_idx] > bwsi->texture.total_time)
-				b->beam_section_frame[s_idx] -= bwsi->texture.total_time;
-
-			framenum = fl2i( (b->beam_section_frame[s_idx] * bwsi->texture.num_frames) / bwsi->texture.total_time );
-
-			CLAMP(framenum, 0, bwsi->texture.num_frames-1);
+			framenum = bm_get_anim_frame(bwsi->texture.first_frame, b->beam_section_frame[s_idx], bwsi->texture.total_time, true);
 		}
 
 		gr_set_bitmap(bwsi->texture.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);
@@ -1488,18 +1477,7 @@ void beam_render_muzzle_glow(beam *b)
 		if (bwi->beam_glow.num_frames > 1) {
 			b->beam_glow_frame += flFrametime;
 
-			// Sanity checks
-			if (b->beam_glow_frame < 0.0f)
-				b->beam_glow_frame = 0.0f;
-			else if (b->beam_glow_frame > 100.0f)
-				b->beam_glow_frame = 0.0f;
-
-			while (b->beam_glow_frame > bwi->beam_glow.total_time)
-				b->beam_glow_frame -= bwi->beam_glow.total_time;
-
-			framenum = fl2i((b->beam_glow_frame * bwi->beam_glow.num_frames) / bwi->beam_glow.total_time);
-
-			CLAMP(framenum, 0, bwi->beam_glow.num_frames - 1);
+			framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
 		}
 
 		gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
@@ -1523,18 +1501,7 @@ void beam_render_muzzle_glow(beam *b)
 		if (bwi->beam_glow.num_frames > 1) {
 			b->beam_glow_frame += flFrametime;
 
-			// Sanity checks
-			if (b->beam_glow_frame < 0.0f)
-				b->beam_glow_frame = 0.0f;
-			else if (b->beam_glow_frame > 100.0f)
-				b->beam_glow_frame = 0.0f;
-
-			while (b->beam_glow_frame > bwi->beam_glow.total_time)
-				b->beam_glow_frame -= bwi->beam_glow.total_time;
-
-			framenum = fl2i((b->beam_glow_frame * bwi->beam_glow.num_frames) / bwi->beam_glow.total_time);
-
-			CLAMP(framenum, 0, bwi->beam_glow.num_frames - 1);
+			framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
 		}
 
 		gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
