@@ -28,8 +28,6 @@
 
 extern void timer_init();
 extern void timer_close();
-extern void timer_set_rate(int count_val);
-extern void timer_set_function( void * function );
 
 //==========================================================================
 // These functions return the time since the timer was initialized in
@@ -47,10 +45,6 @@ extern int timer_get_microseconds();
 extern uint timer_get_high_res_microseconds();
 extern int timer_get_seconds();				// seconds since program started... not accurate, but good for long
 											//     runtimes with second-based timeouts
-
-//==========================================================================
-// Use to access the BIOS ticker... ie...   i = TICKER
-void timer_delay(fix seconds);
 
 
 //=================================================================
@@ -119,31 +113,5 @@ int timestamp_has_time_elapsed(int stamp, int time);
 // safer version of timestamp
 #define timestamp_elapsed_safe(_a, _b)		( (_a != 0) ? (((timestamp_ticker >= (_a)) || (timestamp_ticker < (_a - (_b + 100)))) ? 1 : 0) : 1 )
 
-
-// timing functions -------------------------------------------------------------------------------
-
-// start timing frame stuff
-void timing_frame_start();
-
-// done timing the frame
-void timing_frame_stop();
-
-// get the total frame time in microseconds
-int timing_frame_total();
-
-// time an individual event
-void timing_event_start(char *event_name);
-
-// stop timing an event
-void timing_event_stop(char *event_name);
-
-// get the total time for an event in microseconds
-int timing_event_total(char *event_name);
-
-// get the percentage of total frametime for the event (0.0 to 1.0)
-float timing_event_pct(char *event_name);
-
-// display timing 
-void timing_display(int x, int y);
 
 #endif

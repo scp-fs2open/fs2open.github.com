@@ -4448,7 +4448,6 @@ void game_frame(bool paused)
 	}
 #endif
 	// start timing frame
-	timing_frame_start();
 	profile_begin("Main Frame");
 
 	DEBUG_GET_TIME( total_time1 )
@@ -4613,11 +4612,7 @@ void game_frame(bool paused)
 
 			// maybe render and process the dead popup
 			game_maybe_do_dead_popup(flFrametime);
-
-			// start timing frame
-			timing_frame_stop();
-			// timing_display(30, 10);			
-
+			
 			// If a regular popup is active, don't flip (popup code flips)
 			if( !popup_running_state() ){
 				DEBUG_GET_TIME( flip_time1 )
