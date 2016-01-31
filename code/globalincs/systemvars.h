@@ -15,6 +15,8 @@
 #include "globalincs/pstypes.h"
 #include "math.h"
 
+#include <cstdint>
+
 #define	GM_MULTIPLAYER					(1 << 0)
 #define	GM_NORMAL						(1 << 1)
 #define	GM_DEAD_DIED					(1 << 2)				//	Died, waiting to blow up.
@@ -201,9 +203,9 @@ typedef struct profile_sample {
 	int open_profiles;
 	//char name[256];
 	SCP_string name;
-	uint start_time;	// in microseconds
-	uint accumulator;
-	uint children_sample_time;
+	std::uint64_t start_time;	// in microseconds
+	std::uint64_t accumulator;
+	std::uint64_t children_sample_time;
 	uint num_parents;
 	uint num_children;
 	int parent;
@@ -216,9 +218,9 @@ typedef struct profile_sample_history {
 	float avg;
 	float min;
 	float max;
-	uint avg_micro_sec;
-	uint min_micro_sec;
-	uint max_micro_sec;
+	std::uint64_t avg_micro_sec;
+	std::uint64_t min_micro_sec;
+	std::uint64_t max_micro_sec;
 } profile_sample_history;
 
 extern SCP_string profile_output;

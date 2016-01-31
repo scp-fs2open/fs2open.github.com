@@ -103,7 +103,7 @@ int timer_get_microseconds()
 	return timer_get() * 1000;
 }
 
-uint timer_get_high_res_microseconds()
+std::uint64_t timer_get_high_res_microseconds()
 {
 	if ( !Timer_inited ) {
 		Int3();
@@ -112,7 +112,7 @@ uint timer_get_high_res_microseconds()
 
 	Uint64 elapsed = SDL_GetPerformanceCounter();
 
-	return (uint)(elapsed * MICROSECONDS_PER_SECOND / Timer_perf_counter_freq);
+	return elapsed * MICROSECONDS_PER_SECOND / Timer_perf_counter_freq;
 }
 
 // 0 means invalid,
