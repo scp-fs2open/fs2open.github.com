@@ -4941,7 +4941,8 @@ void weapon_process_post(object * obj, float frame_time)
 			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
 			obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
 		} else {
-			obj->phys_info.speed = wip->max_speed;;
+			obj->phys_info.speed = wip->max_speed;
+			obj->phys_info.flags |= PF_CONST_VEL; // Max speed reached, can use simpler physics calculations now
 		}
 
 		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
@@ -5371,7 +5372,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// check if laser or dumbfire missile
 	// set physics flag to allow optimization
-	if ((wip->subtype == WP_LASER) || ((wip->subtype == WP_MISSILE) && !(wip->wi_flags & WIF_HOMING))) {
+	if ((wip->subtype == WP_LASER) || ((wip->subtype == WP_MISSILE) && !(wip->wi_flags & WIF_HOMING) && wip->acceleration_time == 0.0f)) {
 		// set physics flag
 		objp->phys_info.flags |= PF_CONST_VEL;
 	}
