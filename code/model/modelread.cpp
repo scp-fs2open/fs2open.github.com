@@ -3540,44 +3540,122 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	}
 }
 
+void ez_debug(int index, vec3d *v1, vec3d *v2)
+{
+	// waypoints for debugging
+	waypoint *wpt = &Waypoint_lists.rbegin()->get_waypoints()[index];
+	Objects[wpt->get_objnum()].pos = *v1;
+	wpt->set_pos(v1);
+
+	wpt = &Waypoint_lists.begin()->get_waypoints()[index];
+	Objects[wpt->get_objnum()].pos = *v2;
+	wpt->set_pos(v2);
+}
+
 void submodel_look_at(int model_num, int model_instance_num, int submodel_num, submodel_instance_info *sii)
 {
 	polymodel *pm = model_get(model_num);
-	polymodel_instance *pmi = model_get_instance(model_instance_num);
 	bsp_info *sm = &pm->submodel[submodel_num];
 
 	Assert(sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
 	Assert(sm->look_at_submodel >= 0);
 
-	vec3d axis, submodel_axis, submodel_pos, target_submodel_pos;
-
-	// figure out which axis this submodel rotates on, in the model's reference frame
-	model_get_rotating_submodel_axis(&axis, &submodel_axis, NULL, model_num, model_instance_num, submodel_num);
+	matrix submodel_orient;
+	vec3d temp, local_axis_vec, submodel_axis_vec, submodel_pos, target_submodel_pos, nearest_point, target_vec, local_target_vec;
 
 	// find the origin of this submodel and its target
-	find_submodel_instance_point(&submodel_pos, model_num, model_instance_num, submodel_num);
+	find_submodel_instance_point_orient(&submodel_pos, &submodel_orient, model_num, model_instance_num, submodel_num, &vmd_zero_vector, &vmd_identity_matrix);
 	find_submodel_instance_point(&target_submodel_pos, model_num, model_instance_num, sm->look_at_submodel);
 
+	// figure out which axis this submodel rotates on, rotated in the model's reference frame
+	if (sm->movement_axis == MOVEMENT_AXIS_X)
+		vm_vec_make(&local_axis_vec, 1.0f, 0.0f, 0.0f);
+	else if (sm->movement_axis == MOVEMENT_AXIS_Y)
+		vm_vec_make(&local_axis_vec, 0.0f, 1.0f, 0.0f);
+	else if (sm->movement_axis == MOVEMENT_AXIS_Z)
+		vm_vec_make(&local_axis_vec, 0.0f, 0.0f, 1.0f);
+	else
+		return;
+	vm_vec_unrotate(&submodel_axis_vec, &local_axis_vec, &submodel_orient);
 
-	bool do_g3 = G3_count < 1;
+	// find the point along the submodel axis closest to the target point, so that when we compute the angle, we compute it through the proper plane
+	vm_vec_add(&temp, &submodel_pos, &submodel_axis_vec);
+	find_nearest_point_on_line(&nearest_point, &submodel_pos, &temp, &target_submodel_pos);
 
-	if (do_g3)
-		g3_start_frame(1);
+	// get the target direction we need to point, and normalize it (the axis is already normalized)
+	vm_vec_sub(&target_vec, &target_submodel_pos, &nearest_point);
+	vm_vec_normalize(&target_vec);
 
-	// draw points!
-	gr_set_color(128, 128, 128);
-	g3_draw_sphere_ez(&submodel_pos, 25.0f);
-	g3_draw_sphere_ez(&target_submodel_pos, 25.0f);
+	// rotate it back to the submodel's reference frame
+	vm_vec_rotate(&local_target_vec, &target_vec, &submodel_orient);
 
-	if (do_g3)
-		g3_end_frame();
+	// TODO: these angles aren't quite right, plus having three separate calculations is brittle
 
+	// calculate the angle we need to point to
+	float angle;
+	if (sm->movement_axis == MOVEMENT_AXIS_X)
+		angle = atan2(local_target_vec.xyz.z, local_target_vec.xyz.y);
+	else if (sm->movement_axis == MOVEMENT_AXIS_Y)
+		angle = atan2(local_target_vec.xyz.x, local_target_vec.xyz.z);
+	else if (sm->movement_axis == MOVEMENT_AXIS_Z)
+		angle = atan2(local_target_vec.xyz.y, local_target_vec.xyz.x);
+	else
+		return;
+
+
+
+
+	// need to test this whole function with the praetor rotated in various orientations, just to make sure all the rotations came out correct
+
+	// also need to remove ez_debug
+
+
+
+	// ensure the angle is in the proper range (see submodel_rotate)
+	while (angle > PI2)
+		angle -= PI2;
+	while (angle < 0.0f)
+		angle += PI2;
+
+	// save last angles
+	float prev_angle = 0.0f;
+	sii->prev_angs = sii->angs;
+
+	// now set the angle
+	switch (sm->movement_axis)
+	{
+		case MOVEMENT_AXIS_X:
+			prev_angle = sii->angs.p;
+			sii->angs.p = angle;
+			sii->angs.b = 0.0f;
+			sii->angs.h = 0.0f;
+			break;
+
+		case MOVEMENT_AXIS_Y:
+			prev_angle = sii->angs.h;
+			sii->angs.p = 0.0f;
+			sii->angs.b = 0.0f;
+			sii->angs.h = angle;
+			break;
+
+		case MOVEMENT_AXIS_Z:
+			prev_angle = sii->angs.b;
+			sii->angs.p = 0.0f;
+			sii->angs.b = angle;
+			sii->angs.h = 0.0f;
+			break;
+	}
+
+	// calculate turn rate
+	// (try to avoid a one-frame dramatic spike in the turn rate if the angle passes 0.0 or PI2)
+	if (abs(angle - prev_angle) < PI)
+		sii->cur_turn_rate = sii->desired_turn_rate = (angle - prev_angle) / flFrametime;
 
 
 	/*
 
 
-	// now rotate the submodel along its axis until its orientation is facing that point
+
 
 
 
