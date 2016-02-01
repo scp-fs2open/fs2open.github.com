@@ -2315,12 +2315,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 	// Now that we've processed all the chunks, resolve the look_at submodels if we have any
 	if (!look_at_submodel_names.empty()) {
-		for (int i = 0; i < pm->n_models; i++) {
+		for (i = 0; i < pm->n_models; i++) {
 			if (pm->submodel[i].look_at_submodel >= 0) {
 				const char *submodel_name = look_at_submodel_names[pm->submodel[i].look_at_submodel].c_str();
 
 				// search for this submodel name among all submodels
-				for (int j = 0; j < pm->n_models; j++) {
+				for (j = 0; j < pm->n_models; j++) {
 					if (!strcmp(submodel_name, pm->submodel[j].name)) {
 						nprintf(("Model", "NOTE: Matched %s %s $look_at: target %s with subobject id %d\n", pm->filename, pm->submodel[i].name, submodel_name, j));
 
@@ -3592,17 +3592,25 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	// TODO: these angles aren't quite right, plus having three separate calculations is brittle
 
 	// calculate the angle we need to point to
-	float angle;
+	float angle, y, x;
 	if (sm->movement_axis == MOVEMENT_AXIS_X)
-		angle = atan2(local_target_vec.xyz.z, local_target_vec.xyz.y);
+	{
+		y = local_target_vec.xyz.y;
+		x = local_target_vec.xyz.z;
+	}
 	else if (sm->movement_axis == MOVEMENT_AXIS_Y)
-		angle = atan2(local_target_vec.xyz.x, local_target_vec.xyz.z);
+	{
+		y = local_target_vec.xyz.z;
+		x = local_target_vec.xyz.x;
+	}
 	else if (sm->movement_axis == MOVEMENT_AXIS_Z)
-		angle = atan2(local_target_vec.xyz.y, local_target_vec.xyz.x);
+	{
+		y = local_target_vec.xyz.y;
+		x = local_target_vec.xyz.x;
+	}
 	else
 		return;
-
-
+	angle = atan2(y, x);
 
 
 	// need to test this whole function with the praetor rotated in various orientations, just to make sure all the rotations came out correct
