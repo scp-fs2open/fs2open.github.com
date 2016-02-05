@@ -621,11 +621,12 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 				axis = vmd_x_vector;
 			} else if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Y ) {
 				axis = vmd_y_vector;
-			} else if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis == MOVEMENT_AXIS_Z ) {
-				axis = vmd_z_vector;
 			} else {
-				// must be one of these axes or submodel_rot_hit is incorrectly set
-				Int3();
+				if ( pm->submodel[ship_ship_hit_info->submodel_num].movement_axis != MOVEMENT_AXIS_Z ) {
+					// must be one of these axes or submodel_rot_hit is incorrectly set
+					Warning(LOCATION, "Model %s submodel %d has an invalid movement axis!", pm->filename, ship_ship_hit_info->submodel_num);
+				}
+				axis = vmd_z_vector;
 			}
 
 			// get world rotational velocity of rotating submodel

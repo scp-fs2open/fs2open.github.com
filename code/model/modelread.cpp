@@ -553,7 +553,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		}
 	}
 	// Look-At subsystem
-	if ((p = strstr(props, "$look_at")) != NULL) {
+	else if ((p = strstr(props, "$look_at")) != NULL) {
 		// no special subsystem handling needed here, but make sure we didn't specify both methods
 		if (strstr(props, "$rotate") != NULL) {
 			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and look-at!", dname, model_get(model_num)->filename);
@@ -2343,9 +2343,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 			}
 		}
-
-		// done with temporary name vector
-		look_at_submodel_names.clear();
 	}
 
 #ifndef NDEBUG
@@ -3424,11 +3421,12 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 		vm_vec_make(model_axis, 1.0f, 0.0f, 0.0f);
 	} else if (sm->movement_axis == MOVEMENT_AXIS_Y) {
 		vm_vec_make(model_axis, 0.0f, 1.0f, 0.0f);
-	} else if (sm->movement_axis == MOVEMENT_AXIS_Z) {
-		vm_vec_make(model_axis, 0.0f, 0.0f, 1.0f);
 	} else {
-		// must be one of these axes
-		Int3();
+		if (sm->movement_axis != MOVEMENT_AXIS_Z) {
+			// must be one of these axes or submodel_rot_hit is incorrectly set
+			Warning(LOCATION, "Model %s submodel %d has an invalid movement axis!", pm->filename, submodel_num);
+		}
+		vm_vec_make(model_axis, 0.0f, 0.0f, 1.0f);
 	}
 
 	model_instance_find_obj_dir(world_axis, model_axis, model_instance_num, submodel_num, objorient);
@@ -4991,13 +4989,14 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 		mpoint1 = &vmd_x_vector;
 		axis = vmd_z_vector;		// rotation about y is a change in heading (p,b,h), so we need z
 		mpoint2 = &vmd_z_vector;
-	} else if (pm->submodel[submodel_num].movement_axis == MOVEMENT_AXIS_Z) {
+	} else {
+		if (pm->submodel[submodel_num].movement_axis != MOVEMENT_AXIS_Z) {
+			// must be one of these axes or submodel_rot_hit is incorrectly set
+			Warning(LOCATION, "Model %s submodel %d has an invalid movement axis!", pm->filename, submodel_num);
+		}
 		mpoint1 = &vmd_x_vector;
 		mpoint2 = &vmd_y_vector;
 		axis = vmd_y_vector;		// rotation about z is a change in bank (p,b,h), so we need y
-	} else {
-		// must be one of these axes or submodel_rot_hit is incorrectly set
-		Int3();
 	}
 
 	// copy submodel angs
