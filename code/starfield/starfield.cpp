@@ -2197,7 +2197,7 @@ void stars_set_background_model(char *model_name, char *texture_name, int flags)
 	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
 
-		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_DUMB_ROTATE) {
+		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
 			Nmodel_instance_num = model_create_instance(false, Nmodel_num);
 		}
 	}

@@ -13109,8 +13109,8 @@ void ship_model_update_instance(object *objp)
 		}
 	}
 
-	// Handle dumb rotations for this ship
-	model_do_dumb_rotations(model_instance_num);
+	// Handle intrinsic rotations for this ship
+	model_do_intrinsic_rotations(model_instance_num);
 
 	// preprocess subobject orientations for collision detection
 	model_collide_preprocess(&objp->orient, model_instance_num);

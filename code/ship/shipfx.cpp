@@ -72,6 +72,8 @@ void shipfx_remove_submodel_ship_sparks(ship *shipp, int submodel_num)
 	}
 }
 
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int modelnum, int submodel_num, object *obj);
+
 /**
  * Check if subsystem has live debris and create
  *
@@ -103,13 +105,12 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 	vec3d model_axis, world_axis, rotvel, world_axis_pt;
 	matrix m_rot;	// rotation for debris orient about axis
 
-	if(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT) {
+	if (pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
 		if ( !sii->axis_set ) {
 			model_init_submodel_axis_pt(sii, pm->id, submodel_num);
 		}
 
 		// get the rotvel
-		void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int modelnum, int submodel_num, object *obj);
 		model_get_rotating_submodel_axis(&model_axis, &world_axis, pm->id, submodel_num, ship_objp);
 		vm_vec_copy_scale(&rotvel, &world_axis, sii->cur_turn_rate);
 

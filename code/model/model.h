@@ -33,9 +33,9 @@ extern int model_render_flags_size;
 #define MOVEMENT_TYPE_POS				0
 #define MOVEMENT_TYPE_ROT				1
 #define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
-#define MOVEMENT_TYPE_TRIGGERED			3	//triggered rotation
-#define MOVEMENT_TYPE_LOOK_AT			4	// the subobject is always looking at a 'look at' subobject, as best it can - Bobboau
-#define MOVEMENT_TYPE_DUMB_ROTATE		5
+#define MOVEMENT_TYPE_TRIGGERED			3	// triggered rotation
+#define MOVEMENT_TYPE_INTRINSIC_ROTATE	4	// intrinsic (non-subsystem-based) rotation
+#define MOVEMENT_TYPE_LOOK_AT			5	// the subobject is always looking at a 'look at' subobject, as best it can - Bobboau
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
@@ -617,11 +617,11 @@ typedef struct insignia {
 	vec3d norm[MAX_INS_VECS]	;					//normal of the insignia-Bobboau
 } insignia;
 
-#define PM_FLAG_ALLOW_TILING		(1<<0)					// Allow texture tiling
-#define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
-#define PM_FLAG_TRANS_BUFFER		(1<<2)					// render transparency buffer
-#define PM_FLAG_BATCHED				(1<<3)					// this model can be batch rendered
-#define PM_FLAG_HAS_DUMB_ROTATE		(1<<4)					// whether this model has a dumb-rotate submodel somewhere
+#define PM_FLAG_ALLOW_TILING			(1<<0)					// Allow texture tiling
+#define PM_FLAG_AUTOCEN					(1<<1)					// contains autocentering info	
+#define PM_FLAG_TRANS_BUFFER			(1<<2)					// render transparency buffer
+#define PM_FLAG_BATCHED					(1<<3)					// this model can be batch rendered
+#define PM_FLAG_HAS_INTRINSIC_ROTATE	(1<<4)					// whether this model has an intrinsic rotation submodel somewhere
 
 // Goober5000
 class texture_info
@@ -1058,7 +1058,6 @@ extern void model_set_instance(int model_num, int sub_model_num, submodel_instan
 extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2);
 
 void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, int flags);
-void model_instance_dumb_rotation(int model_instance_num);
 
 // Adds an electrical arcing effect to a submodel
 void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
@@ -1370,7 +1369,7 @@ void model_finish_cloak(int full_cloak);
 
 void model_do_look_at(int model_num); //Bobboau
 
-void model_do_dumb_rotations(int model_instance_num = -1);
+void model_do_intrinsic_rotations(int model_instance_num = -1);
 
 int model_should_render_engine_glow(int objnum, int bank_obj);
 

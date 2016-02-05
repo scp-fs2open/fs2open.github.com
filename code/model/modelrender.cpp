@@ -2731,13 +2731,13 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 			shipp = &Ships[objp->instance];
 			pmi = model_get_instance(shipp->model_instance_num);
 		}
-		else if (pm->flags & PM_FLAG_HAS_DUMB_ROTATE) {
+		else if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
 			if (objp->type == OBJ_ASTEROID)
 				pmi = model_get_instance(Asteroids[objp->instance].model_instance_num);
 			else if (objp->type == OBJ_WEAPON)
 				pmi = model_get_instance(Weapons[objp->instance].model_instance_num);
 			else
-				Warning(LOCATION, "Unsupported object type %d for rendering dumb-rotate submodels!", objp->type);
+				Warning(LOCATION, "Unsupported object type %d for rendering intrinsic-rotate submodels!", objp->type);
 		}
 	}
 
