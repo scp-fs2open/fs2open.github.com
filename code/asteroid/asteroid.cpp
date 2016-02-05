@@ -331,7 +331,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	asp->objnum = objnum;
 	asp->model_instance_num = -1;
 
-	if (model_get(asip->model_num[asteroid_subtype])->flags & PM_FLAG_HAS_DUMB_ROTATE) {
+	if (model_get(asip->model_num[asteroid_subtype])->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
 		asp->model_instance_num = model_create_instance(false, asip->model_num[asteroid_subtype]);
 	}
 

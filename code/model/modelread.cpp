@@ -127,13 +127,13 @@ SCP_vector<glow_point_bank_override> glowpoint_bank_overrides;
 // Goober5000 - reimplementation of Bobboau's $dumb_rotation feature in a way that works with the rest of the model instance system
 // note: since these data types are only ever used in this file, they don't need to be in model.h
 
-class submodel_dumb_rotation
+class submodel_intrinsic_rotation
 {
 public:
 	int submodel_num;
 	submodel_instance_info submodel_info_1;
 
-	submodel_dumb_rotation(int _submodel_num, float _turn_rate)
+	submodel_intrinsic_rotation(int _submodel_num, float _turn_rate)
 		: submodel_num(_submodel_num)
 	{
 		memset(&submodel_info_1, 0, sizeof(submodel_info_1));
@@ -142,19 +142,19 @@ public:
 	}
 };
 
-class dumb_rotation
+class intrinsic_rotation
 {
 public:
 	bool is_ship;
 	int model_instance_num;
-	SCP_vector<submodel_dumb_rotation> list;
+	SCP_vector<submodel_intrinsic_rotation> list;
 
-	dumb_rotation(bool _is_ship, int _model_instance_num)
+	intrinsic_rotation(bool _is_ship, int _model_instance_num)
 		: is_ship(_is_ship), model_instance_num(_model_instance_num), list()
 	{}
 };
 
-SCP_vector<dumb_rotation> Dumb_rotations;
+SCP_vector<intrinsic_rotation> Intrinsic_rotations;
 
 
 // Free up a model, getting rid of all its memory
@@ -955,10 +955,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	int i,j;
 	vec3d temp_vec;
 
-	// little test code i used in fred2
-	//char pwd[128];
-	//getcwd(pwd, 128);
-
 	fp = cfopen(filename,"rb");
 
 	if (!fp) {
@@ -1268,10 +1264,10 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
 				if ( ( p = strstr(props, "$dumb_rotate") ) != NULL ) {
-					pm->submodel[n].movement_type = MOVEMENT_TYPE_DUMB_ROTATE;
-					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
+					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
-					pm->flags |= PM_FLAG_HAS_DUMB_ROTATE;
+					pm->submodel[n].dumb_turn_rate = (float)atof(p + 13);
 				} else {
 					pm->submodel[n].dumb_turn_rate = 0.0f;
 				}
@@ -1311,8 +1307,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
 						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
 					}
-					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_DUMB_ROTATE) {
-						Warning(LOCATION, "Dumb rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
 					}
 				}
 
@@ -2791,20 +2787,20 @@ int model_create_instance(bool is_ship, int model_num)
 		model_clear_submodel_instance( &pmi->submodel[i], &pm->submodel[i] );
 	}
 
-	// add dumb_rotate instances if this model is dumb-rotating
-	if (pm->flags & PM_FLAG_HAS_DUMB_ROTATE) {
-		dumb_rotation dumb_rot(is_ship, open_slot);
+	// add intrinsic_rotation instances if this model is intrinsic-rotating
+	if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
+		intrinsic_rotation intrinsic_rotate(is_ship, open_slot);
 
 		for (i = 0; i < pm->n_models; i++) {
-			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_DUMB_ROTATE) {
-				dumb_rot.list.push_back(submodel_dumb_rotation(i, pm->submodel[i].dumb_turn_rate));
+			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+				intrinsic_rotate.list.push_back(submodel_intrinsic_rotation(i, pm->submodel[i].dumb_turn_rate));
 			}
 		}
 
-		if (dumb_rot.list.empty()) {
-			Assertion(!dumb_rot.list.empty(), "This model has the HAS_DUMB_ROTATE flag; why doesn't it have a dumb-rotating submodel?");
+		if (intrinsic_rotate.list.empty()) {
+			Assertion(!intrinsic_rotate.list.empty(), "This model has the PM_FLAG_HAS_INTRINSIC_ROTATE flag; why doesn't it have an intrinsic-rotating submodel?");
 		} else {
-			Dumb_rotations.push_back(dumb_rot);
+			Intrinsic_rotations.push_back(intrinsic_rotate);
 		}
 	}
 
@@ -2827,10 +2823,10 @@ void model_delete_instance(int model_instance_num)
 
 	Polygon_model_instances[model_instance_num] = NULL;
 
-	// delete dumb rotations associated with this instance
-	for (auto dumb_it = Dumb_rotations.begin(); dumb_it != Dumb_rotations.end(); ++dumb_it) {
-		if (dumb_it->model_instance_num == model_instance_num) {
-			Dumb_rotations.erase(dumb_it);
+	// delete intrinsic rotations associated with this instance
+	for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it) {
+		if (intrinsic_it->model_instance_num == model_instance_num) {
+			Intrinsic_rotations.erase(intrinsic_it);
 			break;
 		}
 	}
@@ -3401,7 +3397,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 	polymodel *pm = model_get(modelnum);
 
 	bsp_info *sm = &pm->submodel[submodel_num];
-	Assert(sm->movement_type == MOVEMENT_TYPE_ROT || sm->movement_type == MOVEMENT_TYPE_DUMB_ROTATE);
+	Assert(sm->movement_type == MOVEMENT_TYPE_ROT || sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
 
 	if (sm->movement_axis == MOVEMENT_AXIS_X) {
 		vm_vec_make(model_axis, 1.0f, 0.0f, 0.0f);
@@ -4411,7 +4407,7 @@ int rotating_submodel_has_ship_subsys(int submodel, ship *shipp)
 
 /*
  * Get all submodel indexes that satisfy the following:
- * 1) Have the rotating or dumb-rotating movement type
+ * 1) Have the rotating or intrinsic-rotating movement type
  * 2) Are currently rotating (i.e. actually moving and not part of the superstructure due to being destroyed or replaced)
  * 3) Are not rotating too far for collision detection (c.f. MAX_SUBMODEL_COLLISION_ROT_ANGLE)
  */
@@ -4459,8 +4455,8 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
 		if ( !child_submodel->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
 
-			// Only look for submodels that rotate or dumb-rotate
-			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_DUMB_ROTATE) {
+			// Only look for submodels that rotate or intrinsic-rotate
+			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
 
 				// check submodel rotation is less than max allowed.
 				submodel_instance_info *sii = pmi->submodel[i].sii;
@@ -4790,52 +4786,52 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	}
 }
 
-void model_do_dumb_rotations_sub(dumb_rotation *dr)
+void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
 {
-	polymodel_instance *pmi = model_get_instance(dr->model_instance_num);
+	polymodel_instance *pmi = model_get_instance(ir->model_instance_num);
 	Assert(pmi != nullptr);
 
 	// Handle all submodels which have $dumb_rotate
-	for (auto sub_it = dr->list.begin(); sub_it != dr->list.end(); ++sub_it)
+	for (auto submodel_it = ir->list.begin(); submodel_it != ir->list.end(); ++submodel_it)
 	{
 		polymodel *pm = model_get(pmi->model_num);
-		bsp_info *sm = &pm->submodel[sub_it->submodel_num];
-		Assert(pm != nullptr && sm != nullptr);
+		Assert(pm != nullptr);
+		bsp_info *sm = &pm->submodel[submodel_it->submodel_num];
 
 		// First, calculate the angles for the rotation
-		submodel_rotate(sm, &sub_it->submodel_info_1);
+		submodel_rotate(sm, &submodel_it->submodel_info_1);
 
 		// Now actually rotate the submodel instance
-		// (Since this is a dumb rotation, we have no associated subsystem, so pass 0 for subsystem flags.)
-		model_update_instance(dr->model_instance_num, sub_it->submodel_num, &sub_it->submodel_info_1, 0);
+		// (Since this is an intrinsic rotation, we have no associated subsystem, so pass 0 for subsystem flags.)
+		model_update_instance(ir->model_instance_num, submodel_it->submodel_num, &submodel_it->submodel_info_1, 0);
 	}
 }
 
-// Handle the $dumb_rotate rotations for either a) a single ship model; or b) all non-ship models.  The reason for the two cases is that ship_model_update_instance will
+// Handle the intrinsic rotations for either a) a single ship model; or b) all non-ship models.  The reason for the two cases is that ship_model_update_instance will
 // be called for each ship via obj_move_all_post, but we also need to handle non-ship models once obj_move_all_post exits.  Since the two processes are almost identical,
 // they are both handled here.
 //
 // This function is quite a bit different than Bobboau's old model_do_dumb_rotation function.  Whereas Bobboau used the brute-force technique of navigating through
 // each model hierarchy as it was rendered, this function should be seen as a version of obj_move_all_post, but for models rather than objects.  In fact, the only reason
-// for the special ship case is that the ship dumb rotations kind of need to be handled where all the other ship rotations are.  (Unless you want inconsistent collisions
+// for the special ship case is that the ship intrinsic rotations kind of need to be handled where all the other ship rotations are.  (Unless you want inconsistent collisions
 // or damage sparks that aren't attached to models.)
 //
 // -- Goober5000
-void model_do_dumb_rotations(int model_instance_num)
+void model_do_intrinsic_rotations(int model_instance_num)
 {
 	// we are handling a specific ship
 	if (model_instance_num >= 0)
 	{
-		for (auto dumb_it = Dumb_rotations.begin(); dumb_it != Dumb_rotations.end(); ++dumb_it)
+		for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it)
 		{
-			if (dumb_it->model_instance_num == model_instance_num)
+			if (intrinsic_it->model_instance_num == model_instance_num)
 			{
-				Assertion(dumb_it->is_ship, "This code path is only for ship dumb_rotations!  See the comments associated with the model_do_dumb_rotations function!");
+				Assertion(intrinsic_it->is_ship, "This code path is only for ship rotations!  See the comments associated with the model_do_intrinsic_rotations function!");
 
 				// we're just doing one ship, and in ship_model_update_instance, that ship's angles were already set to zero
 
 				// Now update the angles in the submodels
-				model_do_dumb_rotations_sub(&(*dumb_it));
+				model_do_intrinsic_rotations_sub(&(*intrinsic_it));
 
 				// once we've handled this one ship, we're done
 				break;
@@ -4845,15 +4841,15 @@ void model_do_dumb_rotations(int model_instance_num)
 	// we are handling all non-ships
 	else
 	{
-		for (auto dumb_it = Dumb_rotations.begin(); dumb_it != Dumb_rotations.end(); ++dumb_it)
+		for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it)
 		{
-			if (!dumb_it->is_ship)
+			if (!intrinsic_it->is_ship)
 			{
 				// Just as in ship_model_update_instance: first clear all the angles in the model to zero
-				model_clear_submodel_instances(dumb_it->model_instance_num);
+				model_clear_submodel_instances(intrinsic_it->model_instance_num);
 
 				// Now update the angles in the submodels
-				model_do_dumb_rotations_sub(&(*dumb_it));
+				model_do_intrinsic_rotations_sub(&(*intrinsic_it));
 			}
 		}
 	}
@@ -4886,7 +4882,7 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 	vec3d p1, v1, p2, v2, int1;
 
 	polymodel *pm = model_get(model_num);
-	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_DUMB_ROTATE);
+	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
 	Assert(sii);
 
 	mpoint1 = NULL;
