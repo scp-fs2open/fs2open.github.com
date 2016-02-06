@@ -1107,7 +1107,8 @@ void adjust_base_res(int *base_res, int *force_scaling_above_res, bool scaling =
 	// no scaling is set and current res is between base res and "force scaling above res"
 	// Avoid HUD blurring caused solely by rounding errors
 	if ((!scaling && gr_screen.center_w >= base_res[0] && gr_screen.center_h >= base_res[1] &&
-			(gr_screen.center_w <= force_scaling_above_res[0] || gr_screen.center_h <= force_scaling_above_res[1])) ||
+			(force_scaling_above_res[0] <= 0 || force_scaling_above_res[1] <= 0 ||
+			gr_screen.center_w <= force_scaling_above_res[0] || gr_screen.center_h <= force_scaling_above_res[1])) ||
 			(gr_screen.center_w >= base_res[0] && gr_screen.center_h == base_res[1]) ||
 			(gr_screen.center_w == base_res[0] && gr_screen.center_h >= base_res[1])) {
 		base_res[0] = gr_screen.center_w;
@@ -1117,12 +1118,8 @@ void adjust_base_res(int *base_res, int *force_scaling_above_res, bool scaling =
 
 	if (!scaling && force_scaling_above_res[0] > base_res[0] && force_scaling_above_res[1] > base_res[1] &&
 			gr_screen.center_w > force_scaling_above_res[0] && gr_screen.center_h > force_scaling_above_res[1]) {
-		if (force_scaling_above_res[0] > 0) {
-			base_res[0] = force_scaling_above_res[0];
-		}
-		if (force_scaling_above_res[1] > 0) {
-			base_res[1] = force_scaling_above_res[1];
-		}
+		base_res[0] = force_scaling_above_res[0];
+		base_res[1] = force_scaling_above_res[1];
 	}
 
 	float aspect_quotient = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)base_res[0] / (float)base_res[1]);
