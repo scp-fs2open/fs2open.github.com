@@ -956,7 +956,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 							// set up debris_hit_info common
 							set_hit_struct_info(debris_hit_info, &mc, SUBMODEL_ROT_HIT);
-							model_instance_find_world_point(&debris_hit_info->hit_pos, &mc.hit_point, mc.model_num, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
+							model_instance_find_world_point(&debris_hit_info->hit_pos, &mc.hit_point, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
 
 							// set up debris_hit_info for rotating submodel
 							if (debris_hit_info->edge_hit == 0) {
@@ -967,7 +967,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 							vec3d int_light_pos, diff;
 							vm_vec_sub(&diff, mc.p1, mc.p0);
 							vm_vec_scale_add(&int_light_pos, mc.p0, &diff, mc.hit_dist);
-							model_instance_find_world_point(&debris_hit_info->light_collision_cm_pos, &int_light_pos, mc.model_num, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
+							model_instance_find_world_point(&debris_hit_info->light_collision_cm_pos, &int_light_pos, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
 						}
 					}
 					// Don't look at this submodel again
