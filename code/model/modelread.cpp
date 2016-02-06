@@ -4038,7 +4038,7 @@ void world_find_real_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int
 // Given a point (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submodel_num, matrix *objorient, vec3d *objpos)
 {
 	vec3d pnt;
 	vec3d tpnt;
@@ -4047,7 +4047,7 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 	polymodel *pm = model_get(model_num);
 
 	pnt = *mpnt;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4074,17 +4074,17 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 	vm_vec_add2(outpnt,objpos);
 }
 
-void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_instance_num, int submodel_num, matrix *objorient, vec3d *objpos)
 {
 	vec3d pnt;
 	vec3d tpnt;
 	matrix m;
 	int mn;
-	polymodel *pm = model_get(model_num);
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	pnt = *mpnt;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4490,7 +4490,7 @@ void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* p
 // Given a direction (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_num, int submodel_num, matrix *objorient, vec3d *objpos)
 {
 	vec3d pnt;
 	vec3d tpnt;
@@ -4499,7 +4499,7 @@ void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_
 	polymodel *pm = model_get(model_num);
 
 	pnt = *in_dir;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4526,17 +4526,17 @@ void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_
 
 // the same as above - just taking model instance data into account
 // model_find_world_dir
-void model_instance_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_instance_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_instance_num, int submodel_num, matrix *objorient, vec3d *objpos)
 {
 	vec3d pnt;
 	vec3d tpnt;
 	matrix m;
 	int mn;
-	polymodel *pm = model_get(model_num);
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	pnt = *in_dir;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {

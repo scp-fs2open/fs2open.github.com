@@ -1011,8 +1011,8 @@ extern void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_mod
 // Given a point (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-extern void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos);
-void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos );
+extern void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submodel_num, matrix *objorient, vec3d *objpos);
+extern void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_instance_num, int submodel_num, matrix *objorient, vec3d *objpos);
 
 // Given a point in the world RF, find the corresponding point in the model RF.
 // This is special purpose code, specific for model collision.
@@ -1038,8 +1038,8 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 // Given a direction (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-extern void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos);
-extern void model_instance_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos);
+extern void model_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_num, int submodel_num, matrix *objorient, vec3d *objpos);
+extern void model_instance_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_instance_num, int submodel_num, matrix *objorient, vec3d *objpos);
 
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
