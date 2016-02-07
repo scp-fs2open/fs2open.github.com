@@ -3587,18 +3587,17 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	// rotate it back to the submodel's reference frame
 	vm_vec_rotate(&local_target_vec, &target_vec, &submodel_orient);
 
-	// TODO: these angles aren't quite right, plus having three separate calculations is brittle
-
 	// calculate the angle we need to point to
+	// Since FreeSpace uses pitch/bank/heading (Tait–Bryan angles), we use the left-hand rule.  Positive angles are counter-clockwise when looking in the positive axis direction.
 	float angle, y, x;
 	if (sm->movement_axis == MOVEMENT_AXIS_X)
 	{
 		y = local_target_vec.xyz.y;
-		x = local_target_vec.xyz.z;
+		x = -local_target_vec.xyz.z;
 	}
 	else if (sm->movement_axis == MOVEMENT_AXIS_Y)
 	{
-		y = local_target_vec.xyz.z;
+		y = -local_target_vec.xyz.z;
 		x = local_target_vec.xyz.x;
 	}
 	else if (sm->movement_axis == MOVEMENT_AXIS_Z)
@@ -3611,11 +3610,10 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	angle = atan2(y, x);
 
 
-	// need to test this whole function with the praetor rotated in various orientations, just to make sure all the rotations came out correct
 
+
+	// TODO: these angles aren't quite right, plus having three separate calculations is brittle
 	// also need to remove ez_debug
-
-
 
 	// ensure the angle is in the proper range (see submodel_rotate)
 	while (angle > PI2)
@@ -3656,7 +3654,6 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	// (try to avoid a one-frame dramatic spike in the turn rate if the angle passes 0.0 or PI2)
 	if (abs(angle - prev_angle) < PI)
 		sii->cur_turn_rate = sii->desired_turn_rate = (angle - prev_angle) / flFrametime;
-
 
 	/*
 
