@@ -187,7 +187,6 @@ void shockwave_delete_all()
  */
 void shockwave_set_framenum(int index)
 {
-	int				framenum;
 	shockwave		*sw;
 	shockwave_info	*si;
 
@@ -200,19 +199,7 @@ void shockwave_set_framenum(int index)
 	if (si->bitmap_id < 0)
 		return;
 
-	framenum = fl2i(sw->time_elapsed / sw->total_time * si->num_frames + 0.5);
-
-	// ensure we don't go past the number of frames of animation
-	if ( framenum > (si->num_frames-1) ) {
-		framenum = (si->num_frames-1);
-		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
-	}
-
-	if ( framenum < 0 ) {
-		framenum = 0;
-	}
-
-	sw->current_bitmap = si->bitmap_id + framenum;
+	sw->current_bitmap = si->bitmap_id + shockwave_get_framenum(index, si->num_frames);
 }
 
 /**
