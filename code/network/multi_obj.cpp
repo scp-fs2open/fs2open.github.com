@@ -1442,7 +1442,7 @@ void multi_oo_send_control_info()
 	int packet_size = 0;
 
 	// if I'm dying or my object type is not a ship, bail here
-	if((Player_obj != NULL) && (Player_ship->flags & SF_DYING)){
+	if((Player_obj != NULL) || (Player_ship->flags & SF_DYING)){
 		return;
 	}	
 	
