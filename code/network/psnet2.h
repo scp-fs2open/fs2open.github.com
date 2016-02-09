@@ -27,7 +27,6 @@
 
 #define NET_NONE		0		// if no protocol is active or none are selected
 #define NET_TCP		1
-#define NET_IPX		2
 #define NET_VMT		3
 
 // kazan - I think this should raise the ships limit across the network
@@ -38,8 +37,7 @@
 
 typedef struct net_addr	{
 	uint	type;			// See NET_ defines above
-	ubyte	net_id[4];	// used for IPX only
-	ubyte addr[6];		// address (first 4 used when IP, all 6 used when IPX)
+	ubyte addr[4];		// address
 	short port;			
 } net_addr;
 
@@ -81,10 +79,8 @@ extern int Psnet_my_addr_valid;
 
 extern int Network_status;
 extern int Tcp_failure_code;
-extern int Ipx_failure_code;
 
 extern int Tcp_active;
-extern int Ipx_active;
 
 extern int Socket_type;										// protocol type in use (see NET_* defines above)
 

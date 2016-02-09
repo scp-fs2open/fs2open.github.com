@@ -714,9 +714,12 @@ void options_multi_load_protocol_controls()
 	Om_ip_input.hide();
 	Om_ip_input.disable();
 	
-	// disable IPX button in demo
+	// disable/hide IPX button since IPX is no longer supported
 	Om_pro_buttons[gr_screen.res][OM_PRO_IPX].button.disable();
 	Om_pro_buttons[gr_screen.res][OM_PRO_IPX].button.hide();
+
+	// disable TCP button since it's the only option
+	Om_pro_buttons[gr_screen.res][OM_PRO_TCP].button.disable();
 
 	// bogus control
 	Om_pro_bogus.base_create(Om_window, UI_KIND_ICON, 0, 0, 0, 0);
@@ -772,6 +775,13 @@ void options_multi_enable_protocol_controls()
 		// unhide the button
 		Om_pro_buttons[gr_screen.res][idx].button.unhide();		
 	}
+
+	// disable/hide IPX button since IPX is no longer supported
+	Om_pro_buttons[gr_screen.res][OM_PRO_IPX].button.disable();
+	Om_pro_buttons[gr_screen.res][OM_PRO_IPX].button.hide();
+
+	// disable TCP button since it's the only option
+	Om_pro_buttons[gr_screen.res][OM_PRO_TCP].button.disable();
 
 	// unhide and enable the tracker input boxes
 	if(Om_tracker_flag){
@@ -887,11 +897,7 @@ void options_multi_protocol_do(int key)
 	}
 
 	// force draw the proper protocol
-	if (Om_protocol == NET_IPX) {
-		Om_pro_buttons[gr_screen.res][OM_PRO_IPX].button.draw_forced(2);
-	} else {
-		Om_pro_buttons[gr_screen.res][OM_PRO_TCP].button.draw_forced(2);
-	}
+	Om_pro_buttons[gr_screen.res][OM_PRO_TCP].button.draw_forced(2);
 
 	// force draw the proper tab button
 	switch (Om_mode) {
@@ -1118,10 +1124,9 @@ void options_multi_protocol_button_pressed(int n)
 		gamesnd_play_iface(SND_USER_SELECT);
 		break;
 
-	// ipx mode
+	// ipx mode, no longer supported
 	case OM_PRO_IPX:
-		Om_protocol = NET_IPX;
-		gamesnd_play_iface(SND_USER_SELECT);
+		Assertion(false, "IPX protocol button pressed even though hidden!");
 		break;
 	}
 }

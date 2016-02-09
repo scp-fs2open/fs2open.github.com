@@ -1456,14 +1456,8 @@ int multi_voice_max_chunk_size(int msg_mode)
 		header_size += 2;									// targeted player's object net_signature
 	}
 	
-	// if we're in IPX mode
-	if(Psnet_my_addr.type == NET_IPX){
-		header_size += 10;								// my address (10 bytes in IPX)		
-	}
-	// if we're in TCP mode
-	else {
-		header_size +=	4;									// my address (4 bytes in TCP)
-	}
+	// allocate header space for my address
+	header_size += 4;									// my address (4 bytes in TCP)
 
 	// calculate max chunk size
 	return (MAX_PACKET_SIZE -							// max freespace packet size
