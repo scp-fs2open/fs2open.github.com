@@ -898,7 +898,6 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		mc.flags = MC_ONLY_SPHERE | MC_CHECK_SPHERELINE;
 
 		SCP_vector<int> submodel_vector;
-		polymodel *pm;
 		polymodel_instance *pmi;
 
 		if (model_collide(&mc)) {
@@ -914,7 +913,6 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				model_get_rotating_submodel_list(&submodel_vector, heavy_obj);
 
 				// Get polymodel and turn off all rotating submodels, collide against only 1 at a time.
-				pm = model_get(Ship_info[Ships[heavy_obj->instance].ship_info_index].model_num);
 				pmi = model_get_instance(Ships[heavy_obj->instance].model_instance_num);
 
 				// turn off all rotating submodels and test for collision

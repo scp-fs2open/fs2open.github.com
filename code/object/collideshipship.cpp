@@ -238,7 +238,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 	SCP_vector<int> submodel_vector;
 	int valid_hit_occured = 0;
-	polymodel *pm, *pm_light;
+	polymodel *pm_light;
 	polymodel_instance *pmi;
 		
 	pm_light = model_get(Ship_info[light_shipp->ship_info_index].model_num);
@@ -258,7 +258,6 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 			model_get_rotating_submodel_list(&submodel_vector, heavy_obj);
 
-			pm = model_get(Ship_info[heavy_shipp->ship_info_index].model_num);
 			pmi = model_get_instance(heavy_shipp->model_instance_num);
 
 			// turn off all rotating submodels and test for collision
