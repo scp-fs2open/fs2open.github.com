@@ -1012,7 +1012,6 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		mc.flags = MC_ONLY_SPHERE | MC_CHECK_SPHERELINE;
 
 		SCP_vector<int> submodel_vector;
-		polymodel *pm;
 		polymodel_instance *pmi;
 
 		if (model_collide(&mc)) {
@@ -1027,7 +1026,6 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 				// Get polymodel and turn off all rotating submodels, collide against only 1 at a time.
 				pmi = model_get_instance(Ships[heavy_obj->instance].model_instance_num);
-				pm = model_get(pmi->model_num);
 
 				// turn off all rotating submodels and test for collision
 				for (size_t j=0; j<submodel_vector.size(); j++) {
