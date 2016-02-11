@@ -3283,17 +3283,15 @@ int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int 
 // Given a vector that is in sub_model_num's frame of
 // reference, and given the object's orient and position,
 // return the vector in the model's frame of reference.
-void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *pship_obj, int sub_model_num)
+void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_num, int submodel_num, matrix *objorient)
 {
 	vec3d tvec, vec;
 	matrix m;
 	int mn;
 
-	Assert(pship_obj->type == OBJ_SHIP);
-
-	polymodel *pm = model_get(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
+	polymodel *pm = model_get(model_num);
 	vec = *m_vec;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	// instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -3315,21 +3313,19 @@ void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *pship_obj, int sub_m
 	}
 
 	// now instance for the entire object
-	vm_vec_unrotate(w_vec, &vec, &pship_obj->orient);
+	vm_vec_unrotate(w_vec, &vec, objorient);
 }
 
-void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *pship_obj, int sub_model_num)
+void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient)
 {
 	vec3d tvec, vec;
 	matrix m;
 	int mn;
 
-	Assert(pship_obj->type == OBJ_SHIP);
-
-	polymodel_instance *pmi = model_get_instance(Ships[pship_obj->instance].model_instance_num);
-	polymodel *pm = model_get(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 	vec = *m_vec;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	// instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -3351,50 +3347,15 @@ void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *pship_obj, 
 	}
 
 	// now instance for the entire object
-	vm_vec_unrotate(w_vec, &vec, &pship_obj->orient);
+	vm_vec_unrotate(w_vec, &vec, objorient);
 }
 
 
-// Given a point (pnt) that is in sub_model_num's frame of
-// reference, return the point in in the object's frame of reference
-void model_rot_sub_into_obj(vec3d * outpnt, vec3d *mpnt,polymodel *pm, int sub_model_num)
+// Given a rotating submodel, find the ship and world axes of rotation.
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int model_instance_num, int submodel_num, matrix *objorient)
 {
-	vec3d pnt;
-	vec3d tpnt;
-	matrix m;
-	int mn;
-
-	pnt = *mpnt;
-	mn = sub_model_num;
-
-	//instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
- 
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tpnt, &pnt, &m);
-		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
-
-		mn = pm->submodel[mn].parent;
-	}
-
-	//now instance for the entire object
-	*outpnt = pnt;
-}
-
-
-// Given a rotating submodel, find the ship and world axes or rotatation.
-void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int modelnum, int submodel_num, object *obj)
-{
-	polymodel *pm = model_get(modelnum);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	bsp_info *sm = &pm->submodel[submodel_num];
 	Assert(sm->movement_type == MOVEMENT_TYPE_ROT || sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
@@ -3408,7 +3369,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 		vm_vec_make(model_axis, 0.0f, 0.0f, 1.0f);
 	}
 
-	model_instance_find_obj_dir(world_axis, model_axis, obj, submodel_num);
+	model_instance_find_obj_dir(world_axis, model_axis, model_instance_num, submodel_num, objorient);
 }
 
 
@@ -3806,17 +3767,17 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	model_clear_instance(model_num);
 	base->angs.h = offset_base_h;
 	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
+	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
 
 	base->angs.h = -PI_2 + offset_base_h;
 	gun->angs.p = -PI_2;
 	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
+	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
 
 	base->angs.h = 0.0f + offset_base_h;
 	gun->angs.p = -PI_2;
 	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&uvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
+	model_find_world_dir(&uvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
 									
 	vm_vec_normalize(&fvec);
 	vm_vec_normalize(&rvec);
@@ -4035,10 +3996,10 @@ void world_find_real_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int
 	*out = tempv2;
 }
 
-// Given a point (pnt) that is in sub_model_num's frame of
+// Given a point (pnt) that is in submodel_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt;
 	vec3d tpnt;
@@ -4047,7 +4008,7 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 	polymodel *pm = model_get(model_num);
 
 	pnt = *mpnt;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4074,17 +4035,17 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 	vm_vec_add2(outpnt,objpos);
 }
 
-void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt;
 	vec3d tpnt;
 	matrix m;
 	int mn;
-	polymodel *pm = model_get(model_num);
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	pnt = *mpnt;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4121,7 +4082,7 @@ void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num,
 // submodel_num - submodel in whose RF we're trying to find the corresponding world point
 // orient - orient matrix of ship
 // pos - pos vector of ship
-void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos)
+void world_find_model_point(vec3d *out, vec3d *world_pt, const polymodel *pm, int submodel_num, const matrix *orient, const vec3d *pos)
 {
 	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
 
@@ -4154,8 +4115,10 @@ void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int subm
 	vm_vec_rotate(out, &tempv2, &m);
 }
 
-void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d *pos)
+void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
 {
+	polymodel *pm = model_get(pmi->model_num);
+
 	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
 
 	vec3d tempv1, tempv2;
@@ -4192,18 +4155,16 @@ void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm,
  * taking into account the rotations of any parent submodels it might have.
  *  
  * @param *outpnt Output point
- * @param *pship_obj Ship object
+ * @param model_instance_num Index into Polygon_model_instances
  * @param submodel_num The number of the submodel we're interested in
  */
-void find_submodel_instance_point(vec3d *outpnt, object *pship_obj, int submodel_num)
+void find_submodel_instance_point(vec3d *outpnt, int model_instance_num, int submodel_num)
 {
-	Assert(pship_obj->type == OBJ_SHIP);
-
 	vm_vec_zero(outpnt);
 	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
 
-	polymodel_instance *pmi = model_get_instance(Ships[pship_obj->instance].model_instance_num);
-	polymodel *pm = model_get(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4236,21 +4197,19 @@ void find_submodel_instance_point(vec3d *outpnt, object *pship_obj, int submodel
  *  
  * @param *outpnt Output point
  * @param *outnorm Output normal
- * @param *pship_obj Ship object
+ * @param model_instance_num Index into Polygon_model_instances
  * @param submodel_num The number of the submodel we're interested in
  * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
  * @param *submodel_norm The normal which's current direction we want, in the ship's frame of reference
  */
-void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *pship_obj, int submodel_num, vec3d *submodel_pnt, vec3d *submodel_norm)
+void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const vec3d *submodel_norm)
 {
-	Assert(pship_obj->type == OBJ_SHIP);
-
 	*outnorm = *submodel_norm;
 	vm_vec_zero(outpnt);
 	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
 
-	polymodel_instance *pmi = model_get_instance(Ships[pship_obj->instance].model_instance_num);
-	polymodel *pm = model_get(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4306,21 +4265,19 @@ void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *
  *
  * @param *outpnt Output point
  * @param *outorient Output matrix
- * @param *pship_obj Ship object
+ * @param model_instance_num Index into Polygon_model_instances
  * @param submodel_num The number of the submodel we're interested in
  * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
  * @param *submodel_orient The local matrix which's current orientation in the ship's frame of reference we want
  */
-void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, object *pship_obj, int submodel_num, vec3d *submodel_pnt, matrix *submodel_orient)
+void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const matrix *submodel_orient)
 {
-	Assert(pship_obj->type == OBJ_SHIP);
-
 	*outorient = *submodel_orient;
 	vm_vec_zero(outpnt);
 	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
 
-	polymodel_instance *pmi = model_get_instance(Ships[pship_obj->instance].model_instance_num);
-	polymodel *pm = model_get(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4371,17 +4328,17 @@ void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, objec
  * rotations of any parent submodels it might have.
  *  
  * @param *outpnt Output point
- * @param *pship_obj Ship object
+ * @param model_instance_num Index into Polygon_model_instances
  * @param submodel_num The number of the submodel we're interested in
  */
-void find_submodel_instance_world_point(vec3d *outpnt, object *pship_obj, int submodel_num)
+void find_submodel_instance_world_point(vec3d *outpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d loc_pnt;
 
-	find_submodel_instance_point(&loc_pnt, pship_obj, submodel_num);
+	find_submodel_instance_point(&loc_pnt, model_instance_num, submodel_num);
 
-	vm_vec_unrotate(outpnt, &loc_pnt, &pship_obj->orient);
-	vm_vec_add2(outpnt, &pship_obj->pos);
+	vm_vec_unrotate(outpnt, &loc_pnt, objorient);
+	vm_vec_add2(outpnt, objpos);
 }
 
 // Verify rotating submodel has corresponding ship subsystem -- info in which to store rotation angle
@@ -4487,10 +4444,10 @@ void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* p
 	}
 }
 
-// Given a direction (pnt) that is in sub_model_num's frame of
+// Given a direction (pnt) that is in submodel_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient)
 {
 	vec3d pnt;
 	vec3d tpnt;
@@ -4499,7 +4456,7 @@ void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_
 	polymodel *pm = model_get(model_num);
 
 	pnt = *in_dir;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4526,17 +4483,17 @@ void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_
 
 // the same as above - just taking model instance data into account
 // model_find_world_dir
-void model_instance_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_instance_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient)
 {
 	vec3d pnt;
 	vec3d tpnt;
 	matrix m;
 	int mn;
-	polymodel *pm = model_get(model_num);
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	pnt = *in_dir;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
