@@ -1335,7 +1335,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 	model_instance_find_world_point(gpos, gun_pos, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
 
 	if (use_angles) {
-		model_instance_find_world_dir(gvec, &tp->turret_norm, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+		model_instance_find_world_dir(gvec, &tp->turret_norm, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient);
 	} else if (tp->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION) {
 		vec3d shared_dir, avg, tmp_pos, tmp_target, enemy_point;
 		vm_vec_avg_n(&avg, tp->turret_num_firing_points, tp->turret_firing_point);
@@ -1382,7 +1382,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
 		vm_vec_normalized_dir(&shared_dir, &tmp_target, &tmp_pos);
 
-		model_instance_find_world_dir(gvec, &shared_dir, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+		model_instance_find_world_dir(gvec, &shared_dir, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient);
 	} else {
 		//vector	gun_pos2;
 		//vm_vec_add(&gun_pos2, gpos, gun_pos);

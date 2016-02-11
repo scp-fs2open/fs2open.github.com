@@ -12973,6 +12973,7 @@ int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
 		*pos = objp->pos;
 		return 0;
 	}
+	Assertion(objp->type == OBJ_SHIP, "Only ships can have subsystems!");
 
 	model_subsystem *mss = subsysp->system_info;
 
@@ -12984,7 +12985,7 @@ int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
 	} else {
 		// Submodel subsystems may require a more complicated calculation
 
-		find_submodel_instance_world_point(pos, objp, mss->subobj_num);
+		find_submodel_instance_world_point(pos, Ships[objp->instance].model_instance_num, mss->subobj_num, &objp->orient, &objp->pos);
 	}
 
 	return 1;
@@ -13220,6 +13221,8 @@ void ship_set_eye( object *obj, int eye_index)
 // eyes have no defined up vector)
 void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew , bool from_origin)
 {
+	Assertion(obj->type == OBJ_SHIP, "Only ships can have eye positions!");
+
 	ship *shipp = &Ships[obj->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
@@ -13235,7 +13238,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
 
 	if (ep->parent >= 0 && pm->submodel[ep->parent].can_move) {
-		find_submodel_instance_point_orient(eye_pos, eye_orient, obj, ep->parent, &ep->pnt, &vmd_identity_matrix);
+		find_submodel_instance_point_orient(eye_pos, eye_orient, shipp->model_instance_num, ep->parent, &ep->pnt, &vmd_identity_matrix);
 		vec3d tvec = *eye_pos;
 		vm_vec_unrotate(eye_pos, &tvec, &obj->orient);
 		vm_vec_add2(eye_pos, &obj->pos);
