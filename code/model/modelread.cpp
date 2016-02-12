@@ -3562,8 +3562,8 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	vec3d temp, local_axis_vec, submodel_axis_vec, submodel_pos, target_submodel_pos, nearest_point, target_vec, local_target_vec;
 
 	// find the origin of this submodel and its target
-	find_submodel_instance_point_orient(&submodel_pos, &submodel_orient, model_num, model_instance_num, submodel_num, &vmd_zero_vector, &vmd_identity_matrix);
-	find_submodel_instance_point(&target_submodel_pos, model_num, model_instance_num, sm->look_at_submodel);
+	find_submodel_instance_point_orient(&submodel_pos, &submodel_orient, model_instance_num, submodel_num, &vmd_zero_vector, &vmd_identity_matrix);
+	find_submodel_instance_point(&target_submodel_pos, model_instance_num, sm->look_at_submodel);
 
 	// figure out which axis this submodel rotates on, rotated in the model's reference frame
 	if (sm->movement_axis == MOVEMENT_AXIS_X)
