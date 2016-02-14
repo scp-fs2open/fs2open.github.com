@@ -788,8 +788,8 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		float max_vel_weapon, max_vel_other;
 
 		//SUSHI: Fix bug where additive weapon velocity screws up collisions
-		//Assumes that weapons which don't home don't change speed, which is currently the case.
-		if (!(wip->wi_flags & WIF_TURNS))
+		//If the PF_CONST_VEL flag is set, we can safely assume it doesn't change speed.
+		if (obj_weapon->phys_info.flags & PF_CONST_VEL)
 			max_vel_weapon = obj_weapon->phys_info.speed;
 		else if (wp->lssm_stage==5)
 			max_vel_weapon = wip->lssm_stage5_vel;
