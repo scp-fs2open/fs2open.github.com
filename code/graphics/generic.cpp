@@ -148,9 +148,12 @@ int generic_anim_load(generic_anim *ga)
 	if (ga->first_frame < 0)
 		return -1;
 
-	// TODO handle APNGs having a different total_time calc
 	Assert(fps != 0);
-	ga->total_time = ga->num_frames / (float)fps;
+	ga->total_time = ga->num_frames / (float)fps; // apngs return an averaged fps, so this should give the correct total_time (ignoring rounding/casting errors)
+	// TODO argh, don't be lazy; you have the total time, use it!
+	// TODO go through and replace all calls of bm_load_animation that use NULL with nullptr; I'm pretty sure there's some mistakes been made!
+	// actually, that won't help because... the params are still getting valid input, i.e. 0 is a valid (but bad practise) pointer...
+	// actually x2! making "drop frames" a boolean should pick up some issues
 	ga->done_playing = 0;
 	ga->anim_time = 0.0f;
 
@@ -227,6 +230,8 @@ int generic_anim_stream(generic_anim *ga)
 			}
 			catch (const apng::ApngException& e) {
 				Warning(LOCATION, "Failed to load apng (%s) Message: %s", ga->filename, e.what());
+				if (ga->png.anim != nullptr) delete ga->png.anim;
+				ga->png.anim = nullptr;
 				return -1;
 			}
 			nprintf(("apng", "png read: %i %i %i %f\n", ga->png.anim->w, ga->png.anim->h,

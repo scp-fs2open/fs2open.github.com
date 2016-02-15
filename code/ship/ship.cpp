@@ -6950,7 +6950,7 @@ void ship_render_DEPRECATED(object * obj)
 
 							int bmap_frame = mtp->tex_id;
 							if(mtp->tex_nframes > 0)
-								bmap_frame += (int)(((float)(timestamp() - shipp->thrusters_start[i]) / 1000.0f) * (float)mtp->tex_fps) % mtp->tex_nframes;
+								bmap_frame += bm_get_anim_frame(mtp->tex_id, i2fl(timestamp() - shipp->thrusters_start[i]) / 1000.0f, 0.0f, true);
 
 							man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
 							mtr->man_batcher.add_allocate(1);
@@ -18797,7 +18797,7 @@ void ship_render_batch_thrusters(object *obj)
 
 				int bmap_frame = mtp->tex_id;
 				if(mtp->tex_nframes > 0)
-					bmap_frame += (int)(((float)(timestamp() - shipp->thrusters_start[i]) / 1000.0f) * (float)mtp->tex_fps) % mtp->tex_nframes;
+					bmap_frame += bm_get_anim_frame(mtp->tex_id, i2fl(timestamp() - shipp->thrusters_start[i]) / 1000.0f, 0.0f, true);
 
 				man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
 				mtr->man_batcher.add_allocate(1);

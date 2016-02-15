@@ -1137,8 +1137,11 @@ void game_loading_callback(int count)
 
 	int do_flip = 0;
 
-	mprintf(("bm_get_anim_frameA: count (%i) COUNT_ESTIMATE (%i)\n", count, COUNT_ESTIMATE));
 	int new_framenum = bm_get_anim_frame(Game_loading_ani.first_frame, static_cast<float>(count), static_cast<float>(COUNT_ESTIMATE));
+	// retail incremented the frame number by one, essentially skipping the 1st frame except for single-frame anims
+	if (Game_loading_ani.num_frames > 1 && new_framenum < Game_loading_ani.num_frames-1) {
+		new_framenum++;
+	}
 
 	//make sure we always run forwards - graphical hack
 	if(new_framenum > framenum)

@@ -683,6 +683,11 @@ int apng_ani::load_header()
 		_apng_failed("couldn't seek to 1st fcTL offset");
 	}
 
+	// sanity check
+	if (anim_time <= 0.0f) {
+		_apng_failed("animation duration <= 0.0f, bad data?");
+	}
+
 	return PNG_ERROR_NONE;
 }
 
@@ -696,7 +701,7 @@ void apng_ani::_apng_failed(const char* msg)
 	nframes = 0;
 	current_frame = 0;
 	plays = 0;
-	anim_time = 0.0;
+	anim_time = 0.0f;
 
 	SCP_string error_msg = "(file ";
 	error_msg += _filename;
@@ -707,6 +712,7 @@ void apng_ani::_apng_failed(const char* msg)
 
 /*
  * @brief ctor
+ *
  * @note loads apng header data
  */
 apng_ani::apng_ani(const char* filename)
@@ -716,7 +722,7 @@ apng_ani::apng_ani(const char* filename)
 	, nframes(0)
 	, current_frame(0)
 	, plays(0)
-	, anim_time(0.0)
+	, anim_time(0.0f)
 	, _filename(filename)
 	, _pngp(nullptr)
 	, _infop(nullptr)

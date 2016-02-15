@@ -1294,7 +1294,7 @@ void model_render_buffers(draw_list* scene, model_render_params* interp, vertex_
 				} else if (tglow->GetTexture() >= 0) {
 					// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
 					if ( (obj_num >= 0) && (Objects[obj_num].type == OBJ_SHOCKWAVE) && (tglow->GetNumFrames() > 1) ) {
-						texture_maps[TM_GLOW_TYPE] = tglow->GetTexture() + shockwave_get_framenum(Objects[obj_num].instance, tglow->GetNumFrames());
+						texture_maps[TM_GLOW_TYPE] = tglow->GetTexture() + shockwave_get_framenum(Objects[obj_num].instance, tglow->GetTexture());
 					} else {
 						texture_maps[TM_GLOW_TYPE] = model_interp_get_texture(tglow, base_frametime);
 					}

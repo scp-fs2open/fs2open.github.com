@@ -992,7 +992,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						if ( !(Interp_flags & MR_NO_GLOWMAPS) && (tglow->GetTexture() >= 0) ) {
 							// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
 							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (tglow->GetNumFrames() > 1) ) {
-								GLOWMAP = tglow->GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, tglow->GetNumFrames());
+								GLOWMAP = tglow->GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, tglow->GetTexture());
 							} else {
 								GLOWMAP = model_interp_get_texture(tglow, Interp_base_frametime);
 							}
@@ -4966,7 +4966,7 @@ void model_render_buffers_DEPRECATED(polymodel *pm, int mn, int render, bool is_
 				} else if (tglow->GetTexture() >= 0) {
 					// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
 					if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (tglow->GetNumFrames() > 1) ) {
-						GLOWMAP = tglow->GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, tglow->GetNumFrames());
+						GLOWMAP = tglow->GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, tglow->GetTexture());
 					} else {
 						GLOWMAP = model_interp_get_texture(tglow, Interp_base_frametime);
 					}

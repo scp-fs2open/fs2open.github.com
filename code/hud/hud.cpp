@@ -2238,37 +2238,15 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 	}
 
 	ha->time_elapsed += frametime;
-	if ( ha->time_elapsed > ha->total_time && loop != 0 && hold_last == 0) {
+	if ( ha->time_elapsed > ha->total_time && loop == 0 && hold_last == 0) {
 		return 0;
 	}
 
-	framenum = bm_get_anim_frame(ha->first_frame, ha->time_elapsed, ha->total_time, static_cast<bool>(loop));
+	// Note; total_time for hum_anim is derived only from the fps, no need to pass it here
+	framenum = bm_get_anim_frame(ha->first_frame, ha->time_elapsed, 0.0f, static_cast<bool>(loop));
 	if (reverse) {
 		framenum = (ha->num_frames-1) - framenum;
 	}
-#if 0
-	if ( ha->time_elapsed > ha->total_time ) {
-		if ( loop ) {
-			ha->time_elapsed = 0.0f;
-		} else {
-			if ( !hold_last ) {
-				// anim ended, not looping, not holding last == abort!
-				return 0;
-			}
-		}
-	}
-
-	// Draw the correct frame of animation
-	framenum = fl2i( (ha->time_elapsed * ha->num_frames) / ha->total_time );
-	if (reverse) {
-		framenum = (ha->num_frames-1) - framenum;
-	}
-
-	if ( framenum < 0 )
-		framenum = 0;
-	if ( framenum >= ha->num_frames )
-		framenum = ha->num_frames-1;
-#endif
 
 	// Blit the bitmap for this frame
 	if(emp_should_blit_gauge()){

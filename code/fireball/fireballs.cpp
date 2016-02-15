@@ -517,8 +517,8 @@ void fireball_set_framenum(int num)
 			fb->current_bitmap = fl->bitmap_id + framenum;
 		}
 	} else {
-		framenum = bm_get_anim_frame(fl->bitmap_id, fb->time_elapsed, fb->total_time);
 		// ignore setting of OF_SHOULD_BE_DEAD, see fireball_process_post
+		framenum = bm_get_anim_frame(fl->bitmap_id, fb->time_elapsed, fb->total_time);
 		fb->current_bitmap = fl->bitmap_id + framenum;
 	}
 }

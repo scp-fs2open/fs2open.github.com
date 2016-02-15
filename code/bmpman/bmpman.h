@@ -677,7 +677,7 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
  * @param[in] frame1_handle  Handle of the animation
  * @param[in] elapsed_time   Time in seconds since the animation started playing
  * @param[in] loop           (optional) specifies if the animation should loop, default is false which causes animation to hold on the last frame
- * @param[in] divisor        (optional) if greater than zero, elapsed time will be divided by this value i.e. allows a ratio of percentage complete to be used to determine the frame
+ * @param[in] divisor        (optional) if greater than zero, elapsed time will be divided by this value i.e. allows "percentage complete" to be used to determine the frame instead of the animations total time derived from fps * frames
  *
  * @returns current frame of the animation (range is zero to the number of frames minus one)
  */

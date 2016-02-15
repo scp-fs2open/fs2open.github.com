@@ -698,7 +698,6 @@ int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const float d
 	if (be->info.ani.apng.is_apng == true) {
 		if (divisor > 0.0f) {
 			// scale to get the real elapsed time
-			mprintf(("bm_get_anim_frameZ, pre-change elapsed_time (%f)\n", elapsed_time));
 			elapsed_time = elapsed_time / divisor * last_framep->info.ani.apng.frame_delay;
 		}
 
@@ -711,9 +710,7 @@ int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const float d
 		}
 
 		int i = n;
-		mprintf(("bm_get_anim_frameY, num_frames (%i)\n", be->info.ani.num_frames));
 		for ( ; i < (n + be->info.ani.num_frames); ++i) {
-			mprintf(("bm_get_anim_frameX, elapsed_time (%f) frame_delay (%f)\n", elapsed_time, bm_bitmaps[i].info.ani.apng.frame_delay ));
 			// see bm_lock_apng for precalculated incremental delay for each frame
 			if (elapsed_time <= bm_bitmaps[i].info.ani.apng.frame_delay) {
 				break;
@@ -736,9 +733,7 @@ int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const float d
 		}
 	}
 	// note; this also makes non-looping anims hold on their last frame
-	mprintf(("bm_get_anim_frame, before CLAMP (%i)", frame));
 	CLAMP(frame, 0, last_frame);
-	mprintf((", frame returned (%i) elapsed_time (%f)\n", frame, elapsed_time));
 
 	return frame;
 }
@@ -1634,19 +1629,19 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		}
 	}
 	else if (type == BM_TYPE_PNG) {
-		nprintf(("apng", "bm_load_animation apng: %s\n", filename));
+		nprintf(("apng", "Loading apng: %s\n", filename));
 		try {
 			apng::apng_ani the_apng = apng::apng_ani(filename);
 			anim_frames = the_apng.nframes;
-			anim_fps = anim_frames / fl2i(the_apng.anim_time); // approximation; shouldn't be used
+			anim_fps = fl2i(i2fl(anim_frames) / the_apng.anim_time); // note; apng bails on loading if anim_time is <= 0.0f
 			anim_width = the_apng.w;
 			anim_height = the_apng.h;
 			bpp = the_apng.bpp;
 			img_size = the_apng.imgsize();
 		}
 		catch (const apng::ApngException& e) {
-				Warning(LOCATION, "Failed to load apng (%s) Message: %s", filename, e.what());
-				return -1;
+			Warning(LOCATION, "Failed to load apng (%s) Message: %s", filename, e.what());
+			return -1;
 		}
 		// if this is a non-animated png rather than an apng, don't continue
 		if (anim_frames < 1) {
@@ -1655,7 +1650,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		}
 	}
 	else {
-		Warning(LOCATION, "unsupported image type: %i", type);
+		Warning(LOCATION, "Unsupported image type: %i", type);
 		return -1;
 	}
 
@@ -1757,9 +1752,9 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			}
 		}
 
+		bm_bitmaps[n + i].info.ani.apng.frame_delay = 0.0f;
 		if (type == BM_TYPE_PNG) {
 			bm_bitmaps[n + i].info.ani.apng.is_apng = true;
-			bm_bitmaps[n + i].info.ani.apng.frame_delay = 0.0f;
 		}
 		else {
 			bm_bitmaps[n + i].info.ani.apng.is_apng = false;
@@ -2119,11 +2114,15 @@ void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 		ubyte* data = static_cast<ubyte*>(bm_malloc(first_frame + i, be->mem_taken));
 		try {
+			// this is a reasonably expensive operation
+			// especially when run on all frames at once
+			// i.e. try to preload the apng before using it
 			the_apng->next_frame();
 		}
 		catch (const apng::ApngException& e) {
 			Warning(LOCATION, "Failed to get next apng frame (%s) Message: %s", bm_bitmaps[first_frame].filename, e.what());
 			bm_release(first_frame);
+			if (the_apng != nullptr) delete the_apng;
 			return;
 		}
 		memcpy(data, the_apng->frame.data.data(), be->mem_taken);
@@ -2135,7 +2134,7 @@ void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		cumulative_frame_delay += the_apng->frame.delay;
 		be->info.ani.apng.frame_delay = cumulative_frame_delay;
 
-		nprintf(("apng", "lock apng frame: %s (%i|%i|%i|%i) (%f) %lu\n", be->filename, bpp, bmp->bpp, bm->true_bpp, flags, be->info.ani.apng.frame_delay, be->mem_taken));
+		nprintf(("apng", "locking apng frame: %s (%i|%i|%i) (%f) %lu\n", be->filename, bpp, bmp->bpp, bm->true_bpp, be->info.ani.apng.frame_delay, be->mem_taken));
 	}
 
 	delete the_apng;
