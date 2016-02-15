@@ -465,10 +465,6 @@ void apng_ani::_process_chunk()
 		_dispose_op = _chunk.data[32];
 		_blend_op = _chunk.data[33];
 
-		// TODO if the caller wants to know; warn if the delay is not the same for all frames
-		// e.g. for stuff which doesn't exactly play like an animation; like loading screens
-		// (and possibly other stuff I haven't checked out yet)
-
 		if (_reading &&
 				(_framew > cMaxPNGSize || _frameh > cMaxPNGSize
 				|| _x_offset > cMaxPNGSize || _y_offset > cMaxPNGSize
@@ -677,15 +673,19 @@ int apng_ani::load_header()
 	Assertion(cfeof(_cfp) != 0, "apng not at EOF, get a coder!");
 	_frame_offsets.push_back(cftell(_cfp));
 
+	// sanity checks
+	if (anim_time <= 0.0f) {
+		_apng_failed("animation duration <= 0.0f, bad data?");
+	}
+
+	if (nframes < 1) {
+		_apng_failed("animation didn't have any frames, is this a static png?");
+	}
+
 	// reset _cfp so it can be used for next frame
 	_reading = false;
 	if (cfseek(_cfp, _frame_offsets.at(0), CF_SEEK_SET) != 0) {
 		_apng_failed("couldn't seek to 1st fcTL offset");
-	}
-
-	// sanity check
-	if (anim_time <= 0.0f) {
-		_apng_failed("animation duration <= 0.0f, bad data?");
 	}
 
 	return PNG_ERROR_NONE;

@@ -2214,8 +2214,8 @@ int hud_anim_load(hud_anim *ha)
 }
 
 /**
- * @brief Render out a frame of the targetbox static animation, based on how much time has elapsed 
- * @note targetbox static was not implemented by :v:, but this is also used for briefing icons & hud lock icons
+ * @brief Render out a frame of a hud or briefing animation, based on how much time has elapsed
+ * @note targetbox static was not implemented by :v:, also used for briefing icons & hud lock icons
  *
  * @param ha			Pointer to ::hud_anim info
  * @param frametime		Seconds elapsed since last frame
@@ -2242,7 +2242,7 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 		return 0;
 	}
 
-	// Note; total_time for hum_anim is derived only from the fps, no need to pass it here
+	// Note; total_time for hud_anim is derived only from the fps, no need to pass it in
 	framenum = bm_get_anim_frame(ha->first_frame, ha->time_elapsed, 0.0f, static_cast<bool>(loop));
 	if (reverse) {
 		framenum = (ha->num_frames-1) - framenum;

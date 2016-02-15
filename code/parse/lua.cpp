@@ -3544,7 +3544,7 @@ ADE_FUNC(getFrame, l_Texture, "number Elapsed time (secs), [boolean Loop]",
 		return ADE_RETURN_NIL;
 
 	frame = bm_get_anim_frame(idx, elapsed_time, 0.0f, loop);
-	frame++;  // C++ -> LUA
+	frame++;  // C++ to LUA array idx
 
 	return ade_set_args(L, "i", frame);
 }

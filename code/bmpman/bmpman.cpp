@@ -1499,6 +1499,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	char filename[MAX_FILENAME_LEN];
 	int reduced = 0;
 	int anim_fps = 0, anim_frames = 0, key = 0;
+	float anim_total_time = 0.0f;
 	int anim_width = 0, anim_height = 0;
 	BM_TYPE type = BM_TYPE_NONE, eff_type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
 	int bpp = 0, mm_lvl = 0, img_size = 0;
@@ -1507,15 +1508,18 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	if (!bm_inited)
 		bm_init();
 
-	// set defaults for frame count and fps before going any further
-	if (nframes)
+	// set output param defaults before going any further
+	if (nframes != nullptr)
 		*nframes = 0;
 
-	if (fps)
+	if (fps != nullptr)
 		*fps = 0;
 
-	if (keyframe)
+	if (keyframe != nullptr)
 		*keyframe = 0;
+
+	if (total_time != nullptr)
+		*total_time = 0.0f;
 
 	memset(filename, 0, MAX_FILENAME_LEN);
 	strncpy(filename, real_filename, MAX_FILENAME_LEN - 1);
@@ -1632,6 +1636,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		try {
 			apng::apng_ani the_apng = apng::apng_ani(filename);
 			anim_frames = the_apng.nframes;
+			anim_total_time = the_apng.anim_time;
 			anim_fps = fl2i(i2fl(anim_frames) / the_apng.anim_time); // note; apng bails on loading if anim_time is <= 0.0f
 			anim_width = the_apng.w;
 			anim_height = the_apng.h;
@@ -1639,12 +1644,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			img_size = the_apng.imgsize();
 		}
 		catch (const apng::ApngException& e) {
-			Warning(LOCATION, "Failed to load apng (%s) Message: %s", filename, e.what());
-			return -1;
-		}
-		// if this is a non-animated png rather than an apng, don't continue
-		if (anim_frames < 1) {
-			mprintf(("Attempted to load apng animation (%s) but looks like a normal png instead, ignoring\n", filename));
+			Warning(LOCATION, "Failed to load apng: %s", e.what());
 			return -1;
 		}
 	}
@@ -1761,17 +1761,20 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 	}
 
-	if (nframes)
+	if (nframes != nullptr)
 		*nframes = anim_frames;
 
-	if (fps)
+	if (fps != nullptr)
 		*fps = anim_fps;
 
-	if (img_cfp != NULL)
+	if (img_cfp != nullptr)
 		cfclose(img_cfp);
 
-	if (keyframe)
+	if (keyframe != nullptr)
 		*keyframe = key;
+
+	if (total_time != nullptr)
+		*total_time = anim_total_time;
 
 	return bm_bitmaps[n].handle;
 }
@@ -2099,7 +2102,7 @@ void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		the_apng = new apng::apng_ani(bm_bitmaps[first_frame].filename);
 	}
 	catch (const apng::ApngException& e) {
-		Warning(LOCATION, "Failed to load apng (%s) Message: %s", bm_bitmaps[first_frame].filename, e.what());
+		Warning(LOCATION, "Failed to load apng: %s", e.what());
 		return;
 	}
 
@@ -2119,7 +2122,7 @@ void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 			the_apng->next_frame();
 		}
 		catch (const apng::ApngException& e) {
-			Warning(LOCATION, "Failed to get next apng frame (%s) Message: %s", bm_bitmaps[first_frame].filename, e.what());
+			Warning(LOCATION, "Failed to get next apng frame: %s", e.what());
 			bm_release(first_frame);
 			if (the_apng != nullptr) delete the_apng;
 			return;

@@ -142,18 +142,19 @@ int generic_anim_load(generic_anim *ga)
 	if ( !VALID_FNAME(ga->filename) )
 		return -1;
 
-	ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames, &fps, &ga->keyframe);
+	ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames, &fps, &ga->keyframe, &ga->total_time);
 	//mprintf(("generic_anim_load: %s - keyframe = %d\n", ga->filename, ga->keyframe));
 
 	if (ga->first_frame < 0)
 		return -1;
 
-	Assert(fps != 0);
-	ga->total_time = ga->num_frames / (float)fps; // apngs return an averaged fps, so this should give the correct total_time (ignoring rounding/casting errors)
-	// TODO argh, don't be lazy; you have the total time, use it!
-	// TODO go through and replace all calls of bm_load_animation that use NULL with nullptr; I'm pretty sure there's some mistakes been made!
-	// actually, that won't help because... the params are still getting valid input, i.e. 0 is a valid (but bad practise) pointer...
-	// actually x2! making "drop frames" a boolean should pick up some issues
+	// if total_time wasn't available it should end up as the default 0.0f
+	if (ga->total_time == 0.0f) {
+		if (fps == 0) {
+			Error(LOCATION, "animation (%s) has invalid fps of zero, fix this!", ga->filename);
+		}
+		ga->total_time = ga->num_frames / (float)fps;
+	}
 	ga->done_playing = 0;
 	ga->anim_time = 0.0f;
 
@@ -229,12 +230,12 @@ int generic_anim_stream(generic_anim *ga)
 				ga->png.anim = new apng::apng_ani(ga->filename);
 			}
 			catch (const apng::ApngException& e) {
-				Warning(LOCATION, "Failed to load apng (%s) Message: %s", ga->filename, e.what());
+				Warning(LOCATION, "Failed to load apng: %s", e.what());
 				if (ga->png.anim != nullptr) delete ga->png.anim;
 				ga->png.anim = nullptr;
 				return -1;
 			}
-			nprintf(("apng", "png read: %i %i %i %f\n", ga->png.anim->w, ga->png.anim->h,
+			nprintf(("apng", "apng read OK (%ix%i@%i) duration (%f)\n", ga->png.anim->w, ga->png.anim->h,
 					ga->png.anim->bpp, ga->png.anim->anim_time));
 		}
 		ga->png.anim->current_frame = 0;
@@ -298,7 +299,9 @@ int generic_anim_stream(generic_anim *ga)
 		ga->total_time = ga->png.anim->anim_time;
 	}
 	else {
-		Assert(anim_fps != 0);
+		if (anim_fps == 0) {
+			Error(LOCATION, "animation (%s) has invalid fps of zero, fix this!", ga->filename);
+		}
 		ga->total_time = ga->num_frames / (float) anim_fps;
 	}
 	ga->done_playing = 0;
@@ -495,7 +498,8 @@ void generic_render_png_stream(generic_anim* ga)
 		}
 	}
 	catch (const apng::ApngException& e) {
-		nprintf(("apng", "Unable to get next/prev apng frame (%s) Message: %s\n", ga->filename, e.what()));
+		nprintf(("apng", "Unable to get next/prev apng frame: %s\n", e.what()));
+		return;
 	}
 
 	bm_lock(ga->bitmap_id, ga->png.anim->bpp, BMP_TEX_NONCOMP, true);  // lock in 32 bpp for png
@@ -635,6 +639,9 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime)
 
 	if (ga->num_frames > 0) {
 
+		// just increment or decrement the frame by one
+		// jumping forwards multiple frames will just cause slowdowns as multiple frames
+		// would need to be composed
 		if (ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) {
 			if (ga->anim_time <= ga->png.previous_frame_time - ga->png.anim->frame.delay) {
 				ga->png.previous_frame_time -= ga->png.anim->frame.delay;
@@ -648,7 +655,8 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime)
 			}
 		}
 
-		nprintf(("apng", "apng generic times: %04f %04f %04f %04f %03i %03i %03i\n",
+		// verbose debug; but quite useful
+		nprintf(("apng", "apng generic render timings/frames: %04f %04f %04f %04f | %03i %03i %03i\n",
 				frametime, ga->anim_time, ga->png.anim->frame.delay, ga->png.previous_frame_time,
 				ga->previous_frame, ga->current_frame, ga->png.anim->current_frame));
 
@@ -658,6 +666,8 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime)
 		}
 		else {
 			Error(LOCATION, "non-streaming apngs not implemented yet");
+			// note: generic anims are not currently ever non-streaming in FSO
+			// I'm not even sure that ani/eff's would work as non-streaming generic anims
 		}
 	}
 }

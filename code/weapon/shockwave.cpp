@@ -203,7 +203,7 @@ void shockwave_set_framenum(int index)
 }
 
 /**
- * Given a shockwave index and the animation id/handle return what the current frame # should be
+ * Given a shockwave index and the animation id/handle return what the current frame num should be
  *
  * @note for direct use with 3d shockwaves & indirect use with 2d shockwaves
  */
