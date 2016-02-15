@@ -100,7 +100,7 @@ void load_shield_hit_bitmap()
     {
         if (Species_info[i].shield_anim.filename[0] != '\0')
         {
-		    Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, NULL, 1);
+		    Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, nullptr, nullptr, nullptr, true);
 			// TODO probable asset issue should be an Error, not an Assertion
 		    Assertion((Species_info[i].shield_anim.first_frame >= 0), "Error while loading shield hit ani: %s for species: %s\n", Species_info[i].shield_anim.filename, Species_info[i].species_name);
         }

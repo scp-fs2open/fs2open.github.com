@@ -14064,7 +14064,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
 	if(b == true) {
-		idx = bm_load_animation(s, nullptr, nullptr, nullptr, d ? 1 : 0);
+		idx = bm_load_animation(s, nullptr, nullptr, nullptr, nullptr, d);
 	}
 	if(idx < 0) {
 		idx = bm_load(s);

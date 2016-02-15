@@ -1385,7 +1385,6 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 	return true;
 }
 
-
 /**
 * Lock an image files data into memory
 */
@@ -1493,7 +1492,7 @@ static int bm_load_image_data(const char *filename, int handle, int bitmapnum, u
 	return 0;
 }
 
-int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type) {
+int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, float *total_time, bool can_drop_frames, int dir_type) {
 	int	i, n;
 	anim	the_anim;
 	CFILE	*img_cfp = NULL;
@@ -1654,7 +1653,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		return -1;
 	}
 
-	if ((can_drop_frames) && (type == BM_TYPE_ANI)) {
+	if ((can_drop_frames == true) && (type == BM_TYPE_ANI)) {
 		if (Bm_low_mem == 1) {
 			reduced = 1;
 			anim_frames = (anim_frames + 1) / 2;
@@ -1797,7 +1796,7 @@ int bm_load_either(const char *filename, int *nframes, int *fps, int *keyframe, 
 		*nframes = 0;
 	if (fps != NULL)
 		*fps = 0;
-	int tidx = bm_load_animation(filename, nframes, fps, keyframe, can_drop_frames, dir_type);
+	int tidx = bm_load_animation(filename, nframes, fps, keyframe, nullptr, can_drop_frames, dir_type);
 	if (tidx == -1) {
 		tidx = bm_load(filename);
 		if (tidx != -1 && nframes != NULL)

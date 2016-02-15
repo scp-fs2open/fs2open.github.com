@@ -323,7 +323,7 @@ void fireball_load_data()
 			if ( (i == FIREBALL_WARP) && (idx > MAX_WARP_LOD) )
 				continue;
 
-			fd->lod[idx].bitmap_id	= bm_load_animation( fd->lod[idx].filename, &fd->lod[idx].num_frames, &fd->lod[idx].fps, NULL, 1 );
+			fd->lod[idx].bitmap_id	= bm_load_animation( fd->lod[idx].filename, &fd->lod[idx].num_frames, &fd->lod[idx].fps, nullptr, nullptr, true );
 			if ( fd->lod[idx].bitmap_id < 0 ) {
 				Error(LOCATION, "Could not load %s anim file\n", fd->lod[idx].filename);
 			}

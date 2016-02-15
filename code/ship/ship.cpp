@@ -3817,7 +3817,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		{
 			stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 			int tex_fps=0, tex_nframes=0, tex_id=-1;;
-			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, NULL, 1);
+			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, nullptr, nullptr, true);
 			if(tex_id < 0)
 				tex_id = bm_load(name_tmp);
 			if(tex_id >= 0)

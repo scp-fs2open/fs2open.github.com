@@ -56,17 +56,17 @@ void particle_init()
 
 	// FIRE!!!
 	if ( Anim_bitmap_id_fire == -1 )	{
-		Anim_bitmap_id_fire = bm_load_animation( "particleexp01", &Anim_num_frames_fire, &fps, NULL, 0 );
+		Anim_bitmap_id_fire = bm_load_animation( "particleexp01", &Anim_num_frames_fire, &fps );
 	}
 
 	// Cough, cough
 	if ( Anim_bitmap_id_smoke == -1 )	{
-		Anim_bitmap_id_smoke = bm_load_animation( "particlesmoke01", &Anim_num_frames_smoke, &fps, NULL, 0 );
+		Anim_bitmap_id_smoke = bm_load_animation( "particlesmoke01", &Anim_num_frames_smoke, &fps );
 	}
 
 	// wheeze
 	if ( Anim_bitmap_id_smoke2 == -1 )	{
-		Anim_bitmap_id_smoke2 = bm_load_animation( "particlesmoke02", &Anim_num_frames_smoke2, &fps, NULL, 0 );
+		Anim_bitmap_id_smoke2 = bm_load_animation( "particlesmoke02", &Anim_num_frames_smoke2, &fps );
 	}
 
 	// grab a vertex buffer object
