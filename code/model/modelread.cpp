@@ -2321,7 +2321,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				// search for this submodel name among all submodels
 				for (j = 0; j < pm->n_models; j++) {
-					if (!strcmp(submodel_name, pm->submodel[j].name)) {
+					if (!stricmp(submodel_name, pm->submodel[j].name)) {
 						nprintf(("Model", "NOTE: Matched %s %s $look_at: target %s with subobject id %d\n", pm->filename, pm->submodel[i].name, submodel_name, j));
 
 						// set the correct submodel reference, and set the char* to null as a found-flag
