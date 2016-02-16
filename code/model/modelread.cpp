@@ -3407,8 +3407,7 @@ void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_
 	vm_vec_unrotate(w_vec, &vec, objorient);
 }
 
-
-// Given a rotating submodel, find the ship and world axes of rotation.
+// Given a rotating submodel, find the local and world axes of rotation.
 void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int model_instance_num, int submodel_num, matrix *objorient)
 {
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
@@ -3431,7 +3430,6 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 
 	model_instance_find_obj_dir(world_axis, model_axis, model_instance_num, submodel_num, objorient);
 }
-
 
 // Does stepped rotation of a submodel
 void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
@@ -3538,18 +3536,7 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	}
 }
 
-void ez_debug(int index, vec3d *v1, vec3d *v2)
-{
-	// waypoints for debugging
-	waypoint *wpt = &Waypoint_lists.rbegin()->get_waypoints()[index];
-	Objects[wpt->get_objnum()].pos = *v1;
-	wpt->set_pos(v1);
-
-	wpt = &Waypoint_lists.begin()->get_waypoints()[index];
-	Objects[wpt->get_objnum()].pos = *v2;
-	wpt->set_pos(v2);
-}
-
+// Instantly rotate a submodel (around its axis of rotation) so that it is oriented toward its look_at_submodel
 void submodel_look_at(int model_num, int model_instance_num, int submodel_num, submodel_instance_info *sii)
 {
 	polymodel *pm = model_get(model_num);
@@ -3559,9 +3546,9 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	Assert(sm->look_at_submodel >= 0);
 
 	matrix submodel_orient;
-	vec3d temp, local_axis_vec, local_zero_vec, submodel_axis_vec, submodel_zero_vec, submodel_pos, target_submodel_pos, nearest_point, target_vec, local_target_vec;
+	vec3d temp, local_axis_vec, local_zero_vec, submodel_axis_vec, submodel_pos, target_submodel_pos, nearest_point, target_vec, local_target_vec;
 
-	// find the origin of this submodel and its target
+	// find the origin of this submodel and the target submodel
 	find_submodel_instance_point_orient(&submodel_pos, &submodel_orient, model_instance_num, submodel_num, &vmd_zero_vector, &vmd_identity_matrix);
 	find_submodel_instance_point(&target_submodel_pos, model_instance_num, sm->look_at_submodel);
 
@@ -3603,48 +3590,6 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	float dot = vm_vec_dot(&local_target_vec, &local_zero_vec);
 	float angle = acos(dot);
 
-
-
-	// mmmm... well, use the test model, ensure the submodel orientation is correct, and just verify in-game the vector corresponding to zero angle
-
-
-
-
-	// See if the submodel orientation is generally in the same direction as its axis.  If not, we need to take the complement of the angle.  (Think of two submodels pointing at the same thing, but one is upside-down.)
-
-
-	// but shouldn't the rotation of the submodel orientation have handled this?
-
-	// also, need new testing model because VA's model might not be correct
-
-	/*
-
-	float angle, y, x;
-	if (sm->movement_axis == MOVEMENT_AXIS_X)
-	{
-		y = local_target_vec.xyz.y;
-		x = -local_target_vec.xyz.z;
-	}
-	else if (sm->movement_axis == MOVEMENT_AXIS_Y)
-	{
-		y = -local_target_vec.xyz.z;
-		x = local_target_vec.xyz.x;
-	}
-	else if (sm->movement_axis == MOVEMENT_AXIS_Z)
-	{
-		y = local_target_vec.xyz.y;
-		x = local_target_vec.xyz.x;
-	}
-	else
-		return;
-	angle = atan2(y, x) + PI_2;
-
-	*/
-
-	// TODO: these angles aren't quite right, plus having three separate calculations is brittle
-	// also need to remove ez_debug
-
-
 	// ensure the angle is in the proper range (see submodel_rotate)
 	while (angle > PI2)
 		angle -= PI2;
@@ -3684,83 +3629,6 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	// (try to avoid a one-frame dramatic spike in the turn rate if the angle passes 0.0 or PI2)
 	if (abs(angle - prev_angle) < PI)
 		sii->cur_turn_rate = sii->desired_turn_rate = (angle - prev_angle) / flFrametime;
-
-	/*
-
-
-
-
-
-
-	polymodel *pm, bsp_info *sm, submodel_instance_info *sii
-
-	vec3d other, mp;
-
-
-	model_find_world_point(&mp, &vmd_zero_vector, pm->id, sm->look_at_num, &vmd_identity_matrix, &vmd_zero_vector);
-	world_find_real_model_point(&other, &mp, pm, mn, &vmd_identity_matrix, &vmd_zero_vector);
-
-	if (!IS_MAT_NULL(&sm->orientation)) {
-		vm_vec_rotate(&mp, &other, &sm->orientation);
-	} else {
-		mp = other;
-	}
-
-	vec3d	d, l;
-	model_find_submodel_offset(&d, pm->id, mn);
-	model_find_submodel_offset(&l, pm->id, sm->look_at_num);
-	vm_vec_sub(&other, &l, &d);
-
-	if (!IS_MAT_NULL(&sm->orientation)) {
-		vm_vec_rotate(&l, &other, &sm->orientation);
-	} else {
-		l = other;
-	}
-
-	float *a;
-	int axis;
-
-	switch( sm->movement_axis ) {
-		default:
-		case MOVEMENT_AXIS_X:
-			l.xyz.x = 0;
-			mp.xyz.x = 0;
-			a = &angs->p;
-			axis = 0;
-			break;
-
-		case MOVEMENT_AXIS_Y:
-			l.xyz.y = 0;
-			mp.xyz.y = 0;
-			a = &angs->h;
-			axis = 1;
-			break;
-
-		case MOVEMENT_AXIS_Z:
-			l.xyz.z = 0;
-			mp.xyz.z = 0;
-			a = &angs->b;
-			axis = 2;
-			break;
-	}
-
-	vm_vec_normalize(&mp);
-	vm_vec_normalize(&l);
-
-	vec3d c;
-	vm_vec_cross(&c, &l, &mp);
-	float dot=vm_vec_dot(&l,&mp);
-	if (dot>=0.0f) {
-		*a = asin(c.a1d[axis]);
-	} else {
-		*a = PI-asin(c.a1d[axis]);
-	}
-
-	if (*a > PI2 ) {
-		*a -= PI2;
-	} else { if (*a < 0.0f )
-		*a += PI2;
-	}*/
 }
 
 // Rotates the angle of a submodel, when the submodel has a subsystem (which is almost always the case)
