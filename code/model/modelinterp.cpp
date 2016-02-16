@@ -1509,7 +1509,7 @@ void interp_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, f
 	// this should fill in all of the middle, and the last, points
 	interp_render_arc_segment(v1, v2, 0);
 
-	int tmap_flags = (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP);
+	int tmap_flags = (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP | TMAP_FLAG_EMISSIVE);
 
 	int mode = gr_zbuffer_set(GR_ZBUFF_READ);
 
@@ -2455,7 +2455,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
 				batch_add_bitmap(
 					Interp_thrust_glow_bitmap, 
-					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, 
 					&p,
 					0,
 					(w * 0.5f * Interp_thrust_glow_rad_factor),
@@ -2470,7 +2470,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
 				batch_add_bitmap_rotated(
 					Interp_tertiary_thrust_glow_bitmap,
-					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,
+					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE,
 					&p,
 					(magnitude * 4),
 					(w * 0.6f * Interp_tertiary_thrust_glow_rad_factor),

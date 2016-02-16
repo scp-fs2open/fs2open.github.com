@@ -33,6 +33,7 @@
 extern int GLOWMAP;
 extern int CLOAKMAP;
 extern int SPECMAP;
+extern int SPECGLOSSMAP;
 extern int NORMMAP;
 extern int MISCMAP;
 extern int HEIGHTMAP;
@@ -619,8 +620,8 @@ void opengl_destroy_all_buffers()
 void opengl_tnl_init()
 {
 	GL_vertex_buffers.reserve(MAX_POLYGON_MODELS);
-	gr_opengl_deferred_light_sphere_init(16, 16);
 	gr_opengl_deferred_light_cylinder_init(16);
+	gr_opengl_deferred_light_sphere_init(16, 16);
 
 	Transform_buffer_handle = opengl_create_texture_buffer_object();
 
@@ -824,10 +825,11 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		(flags & TMAP_FLAG_BATCH_TRANSFORMS) && (GL_transform_buffer_offset >= 0) && (bufferp->flags & VB_FLAG_MODEL_ID),
 		Using_Team_Color, 
 		flags, 
-		SPECMAP, 
+		(SPECGLOSSMAP > 0) ? SPECGLOSSMAP : SPECMAP, 
 		GLOWMAP, 
 		NORMMAP, 
 		HEIGHTMAP, 
+		AMBIENTMAP,
 		ENVMAP, 
 		MISCMAP
 	);
@@ -1431,6 +1433,8 @@ void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, 
 					vert_def.add_vertex_component(vertex_format_data::UVEC, stride, ptr + up_offset);
 				}
 			}
+		} else {
+			opengl_shader_set_passthrough(true);
 		}
 
 		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale) ) {
@@ -1440,6 +1444,8 @@ void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, 
 		if ( tex_offset >= 0 ) {
 			vert_def.add_vertex_component(vertex_format_data::TEX_COORD, stride, ptr + tex_offset);
 		}
+	} else {
+		opengl_shader_set_passthrough(false);
 	}
 
 	if (flags & TMAP_FLAG_TRILIST) {
@@ -2006,6 +2012,12 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 	int num_lights = MIN(Num_active_gl_lights, GL_max_lights) - 1;
 	GL_state.Uniform.setUniformi("n_lights", num_lights);
 	GL_state.Uniform.setUniformf( "light_factor", GL_light_factor );
+
+	if ( Gloss_override_set ) {
+		GL_state.Uniform.setUniformf( "defaultGloss", Gloss_override );
+	} else {
+		GL_state.Uniform.setUniformf( "defaultGloss", 0.6f); // add user configurable default gloss in the command line later
+	}
 	
 	if ( shader_flags & SDR_FLAG_MODEL_CLIP ) {
 		GL_state.Uniform.setUniformi("use_clip_plane", G3_user_clip);
@@ -2046,24 +2058,51 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 			GL_state.Uniform.setUniformi("desaturate", 0);
 		}
 
-		if ( flags & TMAP_FLAG_ALPHA ) {
-			if ( bm_has_alpha_channel(gr_screen.current_bitmap) ) {
+		if ( UNLITMAP >= 0 && !lighting_is_enabled ) {
+			// make sure we allow transparent fragments to render since we're not going to have a separate alpha pass for unlit objects
+			if ( bm_has_alpha_channel(UNLITMAP) ) {
 				GL_state.SetAlphaBlendMode(ALPHA_BLEND_PREMULTIPLIED);
 				GL_state.Uniform.setUniformi("blend_alpha", 1);
 			} else {
 				GL_state.Uniform.setUniformi("blend_alpha", 2);
 			}
+
+			gr_opengl_tcache_set(UNLITMAP, tmap_type, &u_scale, &v_scale, render_pass);
 		} else {
-			GL_state.Uniform.setUniformi("blend_alpha", 0);
+			if ( flags & TMAP_FLAG_ALPHA ) {
+				if ( bm_has_alpha_channel(gr_screen.current_bitmap) ) {
+					GL_state.SetAlphaBlendMode(ALPHA_BLEND_PREMULTIPLIED);
+					GL_state.Uniform.setUniformi("blend_alpha", 1);
+				} else {
+					GL_state.Uniform.setUniformi("blend_alpha", 2);
+				}
+			} else {
+				// don't render any transparent pixels if this isn't an alpha pass
+				GL_state.Uniform.setUniformi("blend_alpha", 0);
+			}
+
+			gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
 		}
 
-		gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, render_pass);
+		if ( Basemap_color_override_set ) {
+			GL_state.Uniform.setUniformi("overrideDiffuse", 1);
+			GL_state.Uniform.setUniform3f("diffuseClr", Basemap_color_override[0], Basemap_color_override[1], Basemap_color_override[2]);
+		} else {
+			GL_state.Uniform.setUniformi("overrideDiffuse", 0);
+		}
 
 		++render_pass;
 	}
 
 	if ( shader_flags & SDR_FLAG_MODEL_GLOW_MAP ) {
 		GL_state.Uniform.setUniformi("sGlowmap", render_pass);
+
+		if ( Glowmap_color_override_set ) {
+			GL_state.Uniform.setUniformi("overrideGlow", 1);
+			GL_state.Uniform.setUniform3f("glowClr", Glowmap_color_override[0], Glowmap_color_override[1], Glowmap_color_override[2]);
+		} else {
+			GL_state.Uniform.setUniformi("overrideGlow", 0);
+		}
 
 		gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
@@ -2073,21 +2112,45 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 	if ( shader_flags & SDR_FLAG_MODEL_SPEC_MAP ) {
 		GL_state.Uniform.setUniformi("sSpecmap", render_pass);
 
-		gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
+		if ( Specmap_color_override_set ) {
+			GL_state.Uniform.setUniformi("overrideSpec", 1);
+			GL_state.Uniform.setUniform3f("specClr", Specmap_color_override[0], Specmap_color_override[1], Specmap_color_override[2]);
+		} else {
+			GL_state.Uniform.setUniformi("overrideSpec", 0);
+		}
+
+		if ( SPECGLOSSMAP > 0 ) {
+			gr_opengl_tcache_set(SPECGLOSSMAP, tmap_type, &u_scale, &v_scale, render_pass);
+
+			GL_state.Uniform.setUniformi("gammaSpec", 1);
+
+			if ( Gloss_override_set ) {
+				GL_state.Uniform.setUniformi("alphaGloss", 0);
+			} else {
+				GL_state.Uniform.setUniformi("alphaGloss", 1);
+			}
+		} else {
+			gr_opengl_tcache_set(SPECMAP, tmap_type, &u_scale, &v_scale, render_pass);
+
+			GL_state.Uniform.setUniformi("gammaSpec", 0);
+			GL_state.Uniform.setUniformi("alphaGloss", 0);
+		}
 
 		++render_pass;
 
 		if ( shader_flags & SDR_FLAG_MODEL_ENV_MAP) {
-			// 0 == env with non-alpha specmap, 1 == env with alpha specmap
-			int alpha_spec = bm_has_alpha_channel(SPECMAP) ? 1 : 0;
-
 			matrix4 texture_mat;
 
 			for ( int i = 0; i < 16; ++i ) {
 				texture_mat.a1d[i] = GL_env_texture_matrix[i];
 			}
 
-			GL_state.Uniform.setUniformi("alpha_spec", alpha_spec);
+			if ( SPECGLOSSMAP > 0 || Gloss_override_set) {
+				GL_state.Uniform.setUniformi("envGloss", 1);
+			} else {
+				GL_state.Uniform.setUniformi("envGloss", 0);
+			}
+
 			GL_state.Uniform.setUniformMatrix4fv("envMatrix", 1, &texture_mat);
 			GL_state.Uniform.setUniformi("sEnvmap", render_pass);
 
@@ -2109,6 +2172,14 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 		GL_state.Uniform.setUniformi("sHeightmap", render_pass);
 		
 		gr_opengl_tcache_set(HEIGHTMAP, tmap_type, &u_scale, &v_scale, render_pass);
+
+		++render_pass;
+	}
+
+	if ( shader_flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
+		GL_state.Uniform.setUniformi("sAmbientmap", render_pass);
+
+		gr_opengl_tcache_set(AMBIENTMAP, tmap_type, &u_scale, &v_scale, render_pass);
 
 		++render_pass;
 	}
@@ -2208,6 +2279,11 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 	if ( shader_flags & SDR_FLAG_MODEL_THRUSTER ) {
 		GL_state.Uniform.setUniformf("thruster_scale", GL_thrust_scale);
 	}
+
+	if ( Deferred_lighting ) {
+		// don't blend if we're drawing to the g-buffers
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+	}
 }
 
 void opengl_tnl_set_material_soft_particle(uint flags)
@@ -2228,6 +2304,7 @@ void opengl_tnl_set_material_soft_particle(uint flags)
 	GL_state.Uniform.setUniformf("window_height", (float)gr_screen.max_h);
 	GL_state.Uniform.setUniformf("nearZ", Min_draw_distance);
 	GL_state.Uniform.setUniformf("farZ", Max_draw_distance);
+	GL_state.Uniform.setUniformi("srgb", High_dynamic_range ? 1 : 0);
 
 	if ( Cmdline_no_deferred_lighting ) {
 		GL_state.Uniform.setUniformi("linear_depth", 0);

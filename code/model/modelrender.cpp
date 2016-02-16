@@ -357,10 +357,13 @@ void draw_list::reset()
 	Current_render_state = render_state();
 
 	Current_textures[TM_BASE_TYPE] = -1;
+	Current_textures[TM_UNLIT_TYPE] = -1;
 	Current_textures[TM_GLOW_TYPE] = -1;
 	Current_textures[TM_SPECULAR_TYPE] = -1;
+	Current_textures[TM_SPEC_GLOSS_TYPE] = -1;
 	Current_textures[TM_NORMAL_TYPE] = -1;
 	Current_textures[TM_HEIGHT_TYPE] = -1;
+	Current_textures[TM_AMBIENT_TYPE] = -1;
 	Current_textures[TM_MISC_TYPE] = -1;
 
 	Clip_planes.clear();
@@ -510,10 +513,13 @@ void draw_list::add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags
 	}
 	
 	draw_data.texture_maps[TM_BASE_TYPE] = Current_textures[TM_BASE_TYPE];
+	draw_data.texture_maps[TM_UNLIT_TYPE] = Current_textures[TM_UNLIT_TYPE];
 	draw_data.texture_maps[TM_GLOW_TYPE] = Current_textures[TM_GLOW_TYPE];
 	draw_data.texture_maps[TM_SPECULAR_TYPE] = Current_textures[TM_SPECULAR_TYPE];
+	draw_data.texture_maps[TM_SPEC_GLOSS_TYPE] = Current_textures[TM_SPEC_GLOSS_TYPE];
 	draw_data.texture_maps[TM_NORMAL_TYPE] = Current_textures[TM_NORMAL_TYPE];
 	draw_data.texture_maps[TM_HEIGHT_TYPE] = Current_textures[TM_HEIGHT_TYPE];
+	draw_data.texture_maps[TM_AMBIENT_TYPE] = Current_textures[TM_AMBIENT_TYPE];
 	draw_data.texture_maps[TM_MISC_TYPE] = Current_textures[TM_MISC_TYPE];
 
 	draw_data.sdr_flags = determine_shader_flags(&Current_render_state, &draw_data, buffer, tmap_flags);
@@ -546,10 +552,11 @@ uint draw_list::determine_shader_flags(render_state *state, queued_buffer_draw *
 		tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && draw_info->transform_buffer_offset >= 0 && buffer->flags & VB_FLAG_MODEL_ID,
 		state->using_team_color,
 		tmap_flags, 
-		draw_info->texture_maps[TM_SPECULAR_TYPE],
+		(draw_info->texture_maps[TM_SPEC_GLOSS_TYPE] > 0) ? draw_info->texture_maps[TM_SPEC_GLOSS_TYPE] : draw_info->texture_maps[TM_SPECULAR_TYPE],
 		draw_info->texture_maps[TM_GLOW_TYPE],
 		draw_info->texture_maps[TM_NORMAL_TYPE],
 		draw_info->texture_maps[TM_HEIGHT_TYPE],
+		draw_info->texture_maps[TM_AMBIENT_TYPE],
 		ENVMAP,
 		draw_info->texture_maps[TM_MISC_TYPE]
 	);
@@ -625,18 +632,24 @@ void draw_list::render_buffer(queued_buffer_draw &render_elements)
 
 	gr_set_bitmap(render_elements.texture_maps[TM_BASE_TYPE], render_elements.blend_filter, GR_BITBLT_MODE_NORMAL, render_elements.alpha);
 
+	UNLITMAP = render_elements.texture_maps[TM_UNLIT_TYPE];
 	GLOWMAP = render_elements.texture_maps[TM_GLOW_TYPE];
 	SPECMAP = render_elements.texture_maps[TM_SPECULAR_TYPE];
+	SPECGLOSSMAP = render_elements.texture_maps[TM_SPEC_GLOSS_TYPE];
 	NORMMAP = render_elements.texture_maps[TM_NORMAL_TYPE];
 	HEIGHTMAP = render_elements.texture_maps[TM_HEIGHT_TYPE];
+	AMBIENTMAP = render_elements.texture_maps[TM_AMBIENT_TYPE];
 	MISCMAP = render_elements.texture_maps[TM_MISC_TYPE];
 
 	gr_render_buffer(0, render_elements.buffer, render_elements.texi, render_elements.flags);
 
+	UNLITMAP = -1;
 	GLOWMAP = -1;
 	SPECMAP = -1;
+	SPECGLOSSMAP = -1;
 	NORMMAP = -1;
 	HEIGHTMAP = -1;
+	AMBIENTMAP = -1;
 	MISCMAP = -1;
 
 	gr_pop_scale_matrix();
@@ -1005,6 +1018,10 @@ bool draw_list::sort_draw_pair(const int a, const int b)
 		return draw_call_a->texture_maps[TM_SPECULAR_TYPE] < draw_call_b->texture_maps[TM_SPECULAR_TYPE];
 	}
 
+	if ( draw_call_a->texture_maps[TM_SPEC_GLOSS_TYPE] != draw_call_b->texture_maps[TM_SPEC_GLOSS_TYPE] ) {
+		return draw_call_a->texture_maps[TM_SPEC_GLOSS_TYPE] < draw_call_b->texture_maps[TM_SPEC_GLOSS_TYPE];
+	}
+
 	if ( draw_call_a->texture_maps[TM_GLOW_TYPE] != draw_call_b->texture_maps[TM_GLOW_TYPE] ) {
 		return draw_call_a->texture_maps[TM_GLOW_TYPE] < draw_call_b->texture_maps[TM_GLOW_TYPE];
 	}
@@ -1015,6 +1032,10 @@ bool draw_list::sort_draw_pair(const int a, const int b)
 
 	if ( draw_call_a->texture_maps[TM_HEIGHT_TYPE] != draw_call_b->texture_maps[TM_HEIGHT_TYPE] ) {
 		return draw_call_a->texture_maps[TM_HEIGHT_TYPE] < draw_call_b->texture_maps[TM_HEIGHT_TYPE];
+	}
+
+	if ( draw_call_a->texture_maps[TM_AMBIENT_TYPE] != draw_call_b->texture_maps[TM_AMBIENT_TYPE] ) {
+		return draw_call_a->texture_maps[TM_AMBIENT_TYPE] < draw_call_b->texture_maps[TM_AMBIENT_TYPE];
 	}
 
 	if ( draw_call_a->texture_maps[TM_MISC_TYPE] != draw_call_b->texture_maps[TM_MISC_TYPE] ) {
@@ -1243,7 +1264,7 @@ void model_render_buffers(draw_list* scene, model_render_params* interp, vertex_
 		forced_blend_filter = GR_ALPHABLEND_FILTER;
 	}
 
-	int texture_maps[TM_NUM_TYPES] = {-1, -1, -1, -1, -1, -1};
+	int texture_maps[TM_NUM_TYPES] = { -1 };
 	size_t buffer_size = buffer->tex_buf.size();
 	const int *replacement_textures = interp->get_replacement_textures();
 
@@ -1260,6 +1281,9 @@ void model_render_buffers(draw_list* scene, model_render_params* interp, vertex_
 		texture_maps[TM_NORMAL_TYPE] = -1;
 		texture_maps[TM_HEIGHT_TYPE] = -1;
 		texture_maps[TM_MISC_TYPE] = -1;
+		texture_maps[TM_SPEC_GLOSS_TYPE] = -1;
+		texture_maps[TM_UNLIT_TYPE] = -1;
+		texture_maps[TM_AMBIENT_TYPE] = -1;
 
 		if (forced_texture != -2) {
 			texture_maps[TM_BASE_TYPE] = forced_texture;
@@ -1282,6 +1306,18 @@ void model_render_buffers(draw_list* scene, model_render_params* interp, vertex_
 				continue;
 			}
 
+			if (replacement_textures != NULL && replacement_textures[rt_begin_index + TM_UNLIT_TYPE] >= 0) {
+				tex_replace[TM_UNLIT_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_UNLIT_TYPE]);
+				texture_maps[TM_UNLIT_TYPE] = model_interp_get_texture(&tex_replace[TM_UNLIT_TYPE], base_frametime);
+			} else {
+				texture_maps[TM_UNLIT_TYPE] = model_interp_get_texture(&tmap->textures[TM_UNLIT_TYPE], base_frametime);
+			}
+
+			if ( (texture_maps[TM_UNLIT_TYPE] >= 0) && (model_flags & MR_NO_LIGHTING) && (buffer->flags & VB_FLAG_TRANS) ) {
+				// don't render transparent buffers for unlit textures in no lighting mode.
+				continue;
+			}
+
 			// doing glow maps?
 			if ( !(model_flags & MR_NO_GLOWMAPS) ) {
 				texture_info *tglow = &tmap->textures[TM_GLOW_TYPE];
@@ -1299,19 +1335,28 @@ void model_render_buffers(draw_list* scene, model_render_params* interp, vertex_
 				}
 			}
 
+			if ( replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0 ) {
+				tex_replace[TM_SPECULAR_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
+				texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tex_replace[TM_SPECULAR_TYPE], base_frametime);
+			} else {
+				texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPECULAR_TYPE], base_frametime);
+			}
+
+			if ( replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPEC_GLOSS_TYPE] >= 0 ) {
+				tex_replace[TM_SPEC_GLOSS_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPEC_GLOSS_TYPE]);
+				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tex_replace[TM_SPEC_GLOSS_TYPE], base_frametime);
+			} else {
+				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPEC_GLOSS_TYPE], base_frametime);
+			}
+
 			if ( (Detail.lighting > 2)  && (detail_level < 2) ) {
 				// likewise, etc.
-				texture_info *spec_map = &tmap->textures[TM_SPECULAR_TYPE];
 				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
 				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
+				texture_info *ambient_map = &tmap->textures[TM_AMBIENT_TYPE];
 				texture_info *misc_map = &tmap->textures[TM_MISC_TYPE];
 
 				if (replacement_textures != NULL) {
-					if (replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
-						tex_replace[TM_SPECULAR_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
-						spec_map = &tex_replace[TM_SPECULAR_TYPE];
-					}
-
 					if (replacement_textures[rt_begin_index + TM_NORMAL_TYPE] >= 0) {
 						tex_replace[TM_NORMAL_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_NORMAL_TYPE]);
 						norm_map = &tex_replace[TM_NORMAL_TYPE];
@@ -1322,15 +1367,20 @@ void model_render_buffers(draw_list* scene, model_render_params* interp, vertex_
 						height_map = &tex_replace[TM_HEIGHT_TYPE];
 					}
 
+					if ( replacement_textures[rt_begin_index + TM_AMBIENT_TYPE] >= 0 ) {
+						tex_replace[TM_AMBIENT_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_AMBIENT_TYPE]);
+						ambient_map = &tex_replace[TM_AMBIENT_TYPE];
+					}
+
 					if (replacement_textures[rt_begin_index + TM_MISC_TYPE] >= 0) {
 						tex_replace[TM_MISC_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_MISC_TYPE]);
 						misc_map = &tex_replace[TM_MISC_TYPE];
 					}
 				}
 
-				texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(spec_map, base_frametime);
 				texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
 				texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, base_frametime);
+				texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
 				texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, base_frametime);
 			}
 		} else {
@@ -1385,10 +1435,13 @@ void model_render_buffers(draw_list* scene, model_render_params* interp, vertex_
 		scene->set_blend_filter(blend_filter, alpha);
 
 		scene->set_texture(TM_BASE_TYPE,	texture_maps[TM_BASE_TYPE]);
+		scene->set_texture(TM_UNLIT_TYPE,	texture_maps[TM_UNLIT_TYPE]);
 		scene->set_texture(TM_GLOW_TYPE,	texture_maps[TM_GLOW_TYPE]);
 		scene->set_texture(TM_SPECULAR_TYPE, texture_maps[TM_SPECULAR_TYPE]);
+		scene->set_texture(TM_SPEC_GLOSS_TYPE, texture_maps[TM_SPEC_GLOSS_TYPE]);
 		scene->set_texture(TM_NORMAL_TYPE, texture_maps[TM_NORMAL_TYPE]);
 		scene->set_texture(TM_HEIGHT_TYPE, texture_maps[TM_HEIGHT_TYPE]);
+		scene->set_texture(TM_AMBIENT_TYPE, texture_maps[TM_AMBIENT_TYPE]);
 		scene->set_texture(TM_MISC_TYPE,	texture_maps[TM_MISC_TYPE]);
 
 		scene->add_buffer_draw(buffer, i, tmap_flags | alpha_flag, interp);
@@ -1888,7 +1941,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * MAX(d,0.0f));
 
 				if((gpo && gpo->glow_bitmap_override)?(gpo->glow_bitmap > -1):(bank->glow_bitmap > -1)) {
-					int gpflags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
+					int gpflags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE;
 
 					if (use_depth_buffer)
 						gpflags |= TMAP_FLAG_SOFT_QUAD;
@@ -2035,9 +2088,9 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 			vm_vec_normalize(&tempv);
 
 			if ( The_mission.flags & MISSION_FLAG_FULLNEB ) {
-				batch_add_quad(bank->glow_neb_bitmap, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT, verts);
+				batch_add_quad(bank->glow_neb_bitmap, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, verts);
 			} else {
-				batch_add_quad(bank->glow_bitmap, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT, verts);
+				batch_add_quad(bank->glow_bitmap, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, verts);
 			}
 
 			break;
@@ -2380,7 +2433,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
 				batch_add_bitmap(
 					thruster_info.primary_glow_bitmap, 
-					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, 
 					&p,
 					0,
 					(w * 0.5f * thruster_info.glow_rad_factor),
@@ -2395,7 +2448,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
 				batch_add_bitmap_rotated(
 					thruster_info.tertiary_glow_bitmap,
-					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,
+					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE,
 					&p,
 					(magnitude * 4),
 					(w * 0.6f * thruster_info.tertiary_glow_rad_factor),
@@ -2431,7 +2484,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 					}
 
 					batch_add_beam(thruster_info.secondary_glow_bitmap,
-						TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT,
+						TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE,
 						&pnt, &norm2, wVal*thruster_info.secondary_glow_rad_factor*0.5f, d
 						);
 					if (Scene_framebuffer_in_frame && thruster_info.draw_distortion) {
@@ -2446,7 +2499,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 						float mag = vm_vec_mag(&gpt->pnt); 
 						mag -= (float)((int)mag);//Valathil - Get a fairly random but constant number to offset the distortion texture
 						distortion_add_beam(dist_bitmap,
-							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_DISTORTION_THRUSTER | TMAP_FLAG_SOFT_QUAD,
+							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_DISTORTION_THRUSTER | TMAP_FLAG_SOFT_QUAD  | TMAP_FLAG_EMISSIVE,
 							&pnt, &norm2, wVal*thruster_info.distortion_rad_factor*0.5f, 1.0f, mag
 							);
 					}
