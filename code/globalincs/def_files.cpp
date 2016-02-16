@@ -3016,7 +3016,7 @@ char* Default_passthrough_fragment_shader =
 "{\n"
 "	vec4 baseColor = texture2D(baseMap, gl_TexCoord[0].xy);\n"
 "	baseColor.rgb = (srgb == 1) ? pow(baseColor.rgb, vec3(SRGB_GAMMA)) : baseColor.rgb;\n"
-"	baseColor.rgb *= gl_Color.rgb;\n"
+"	baseColor *= gl_Color;\n"
 "	gl_FragColor = mix(mix(baseColor, vec4(gl_Color.rgb, baseColor.a), float(alphaTexture)), gl_Color, float(noTexturing)) * intensity;\n"
 "}";
 
