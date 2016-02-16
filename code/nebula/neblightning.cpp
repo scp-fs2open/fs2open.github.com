@@ -889,7 +889,7 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 
 		// draw
 		gr_set_bitmap(bi->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Nebl_alpha);
-		g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);		
+		g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE);		
 	}
 
 	// draw
@@ -906,7 +906,7 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 	v[3].texture_position.u = 0.0f; v[3].texture_position.v = 1.0f;
 
 	gr_set_bitmap(bi->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Nebl_alpha);
-	g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);	
+	g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE);	
 
 	// draw the glow beam	
 	verts[0] = &a->glow_vex[0];
@@ -922,7 +922,7 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 	verts[3]->texture_position.v = 0.0f; verts[3]->texture_position.u = 1.0f;
 
 	gr_set_bitmap(bi->glow, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Nebl_glow_alpha);
-	g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);	
+	g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE);	
 }
 
 // generate a section

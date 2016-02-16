@@ -270,7 +270,7 @@ void warpin_queue_render(draw_list *scene, object *obj, matrix *orient, vec3d *p
 
 			float alpha = (The_mission.flags & MISSION_FLAG_FULLNEB) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
 
-			batch_add_bitmap(Warp_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, &verts[4], 0, r, alpha);
+			batch_add_bitmap(Warp_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE , &verts[4], 0, r, alpha);
 		}
 	}
 

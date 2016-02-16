@@ -360,7 +360,7 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 	vm_vec_perp(&norm,&verts[0]->world,&verts[1]->world,&verts[2]->world);
 
 	int flags=TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD;
-	if (!Cmdline_nohtl) flags |= TMAP_HTL_3D_UNLIT;
+	if (!Cmdline_nohtl) flags |= TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE;
 
 	if ( vm_vec_dot(&norm,&verts[1]->world ) >= 0.0 )	{
 		vertex	*vertlist[3];
