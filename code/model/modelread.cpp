@@ -3559,21 +3559,33 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	Assert(sm->look_at_submodel >= 0);
 
 	matrix submodel_orient;
-	vec3d temp, local_axis_vec, submodel_axis_vec, submodel_pos, target_submodel_pos, nearest_point, target_vec, local_target_vec;
+	vec3d temp, local_axis_vec, local_zero_vec, submodel_axis_vec, submodel_zero_vec, submodel_pos, target_submodel_pos, nearest_point, target_vec, local_target_vec;
 
 	// find the origin of this submodel and its target
 	find_submodel_instance_point_orient(&submodel_pos, &submodel_orient, model_instance_num, submodel_num, &vmd_zero_vector, &vmd_identity_matrix);
 	find_submodel_instance_point(&target_submodel_pos, model_instance_num, sm->look_at_submodel);
 
-	// figure out which axis this submodel rotates on, rotated in the model's reference frame
+	// figure out which axis this submodel rotates on, as well as the zero vector for that rotation
+	// Since FreeSpace uses pitch/bank/heading (Tait–Bryan angles), we use the left-hand rule.  Positive angles are counter-clockwise when looking in the positive axis direction.
 	if (sm->movement_axis == MOVEMENT_AXIS_X)
+	{
 		vm_vec_make(&local_axis_vec, 1.0f, 0.0f, 0.0f);
+		vm_vec_make(&local_zero_vec, 0.0f, 0.0f, -1.0f);
+	}
 	else if (sm->movement_axis == MOVEMENT_AXIS_Y)
+	{
 		vm_vec_make(&local_axis_vec, 0.0f, 1.0f, 0.0f);
+		vm_vec_make(&local_zero_vec, 1.0f, 0.0f, 0.0f);
+	}
 	else if (sm->movement_axis == MOVEMENT_AXIS_Z)
+	{
 		vm_vec_make(&local_axis_vec, 0.0f, 0.0f, 1.0f);
+		vm_vec_make(&local_zero_vec, 1.0f, 0.0f, 0.0f);
+	}
 	else
 		return;
+
+	// rotate the axis to the model's reference frame
 	vm_vec_unrotate(&submodel_axis_vec, &local_axis_vec, &submodel_orient);
 
 	// find the point along the submodel axis closest to the target point, so that when we compute the angle, we compute it through the proper plane
@@ -3587,8 +3599,26 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	// rotate it back to the submodel's reference frame
 	vm_vec_rotate(&local_target_vec, &target_vec, &submodel_orient);
 
-	// calculate the angle we need to point to
-	// Since FreeSpace uses pitch/bank/heading (Tait–Bryan angles), we use the left-hand rule.  Positive angles are counter-clockwise when looking in the positive axis direction.
+	// calculate the angle between the zero vector and the target vector
+	float dot = vm_vec_dot(&local_target_vec, &local_zero_vec);
+	float angle = acos(dot);
+
+
+
+	// mmmm... well, use the test model, ensure the submodel orientation is correct, and just verify in-game the vector corresponding to zero angle
+
+
+
+
+	// See if the submodel orientation is generally in the same direction as its axis.  If not, we need to take the complement of the angle.  (Think of two submodels pointing at the same thing, but one is upside-down.)
+
+
+	// but shouldn't the rotation of the submodel orientation have handled this?
+
+	// also, need new testing model because VA's model might not be correct
+
+	/*
+
 	float angle, y, x;
 	if (sm->movement_axis == MOVEMENT_AXIS_X)
 	{
@@ -3607,24 +3637,24 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	}
 	else
 		return;
-	angle = atan2(y, x);
+	angle = atan2(y, x) + PI_2;
 
-
-
+	*/
 
 	// TODO: these angles aren't quite right, plus having three separate calculations is brittle
 	// also need to remove ez_debug
+
 
 	// ensure the angle is in the proper range (see submodel_rotate)
 	while (angle > PI2)
 		angle -= PI2;
 	while (angle < 0.0f)
 		angle += PI2;
-
+		
 	// save last angles
 	float prev_angle = 0.0f;
 	sii->prev_angs = sii->angs;
-
+	
 	// now set the angle
 	switch (sm->movement_axis)
 	{
@@ -3649,7 +3679,7 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 			sii->angs.h = 0.0f;
 			break;
 	}
-
+	
 	// calculate turn rate
 	// (try to avoid a one-frame dramatic spike in the turn rate if the angle passes 0.0 or PI2)
 	if (abs(angle - prev_angle) < PI)
