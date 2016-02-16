@@ -1485,6 +1485,18 @@ void opengl_uniform_state::setUniform3f(const SCP_string &name, const vec3d &val
 	vglUniform3fARB(opengl_shader_get_uniform(name.c_str()), val.a1d[0], val.a1d[1], val.a1d[2]);
 }
 
+void opengl_uniform_state::setUniform4f(const SCP_string &name, const float x, const float y, const float z, const float w)
+{
+	vec4 temp;
+
+	temp.xyzw.x = x;
+	temp.xyzw.y = y;
+	temp.xyzw.z = z;
+	temp.xyzw.w = w;
+
+	setUniform4f(name, temp);
+}
+
 void opengl_uniform_state::setUniform4f(const SCP_string &name, const vec4 &val)
 {
 	int uniform_index = findUniform(name);

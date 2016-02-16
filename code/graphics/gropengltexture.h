@@ -86,5 +86,6 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap);
 void gr_opengl_set_texture_panning(float u, float v, bool enable);
 void gr_opengl_set_texture_addressing(int mode);
 GLuint opengl_get_rtt_framebuffer();
+void gr_opengl_bm_generate_mip_maps(int slot);
 
 #endif	//_GROPENGLTEXTURE_H

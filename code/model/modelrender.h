@@ -254,12 +254,15 @@ struct queued_buffer_draw
 	{
 		depth_mode = GR_ZBUFF_FULL;
 
-		texture_maps[TM_BASE_TYPE]		= -1;
-		texture_maps[TM_GLOW_TYPE]		= -1;
-		texture_maps[TM_HEIGHT_TYPE]	= -1;
-		texture_maps[TM_MISC_TYPE]		= -1;
-		texture_maps[TM_NORMAL_TYPE]	= -1;
-		texture_maps[TM_SPECULAR_TYPE]	= -1;
+		texture_maps[TM_BASE_TYPE]			= -1;
+		texture_maps[TM_UNLIT_TYPE]			= -1;
+		texture_maps[TM_GLOW_TYPE]			= -1;
+		texture_maps[TM_HEIGHT_TYPE]		= -1;
+		texture_maps[TM_MISC_TYPE]			= -1;
+		texture_maps[TM_NORMAL_TYPE]		= -1;
+		texture_maps[TM_SPECULAR_TYPE]		= -1;
+		texture_maps[TM_SPEC_GLOSS_TYPE]	= -1;
+		texture_maps[TM_AMBIENT_TYPE]		= -1;
 	}
 };
 
