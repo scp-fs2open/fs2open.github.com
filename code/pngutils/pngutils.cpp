@@ -246,12 +246,12 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *bpp, in
 
 namespace apng {
 
-const int id_IHDR = 0x52444849; // PNG header
-const int id_acTL = 0x4C546361; // Animation control chunk
-const int id_fcTL = 0x4C546366; // Frame control chunk
-const int id_IDAT = 0x54414449; // first frame and/or default image
-const int id_fdAT = 0x54416466; // Frame data chunk
-const int id_IEND = 0x444E4549; // end/footer chunk
+const uint id_IHDR = 0x52444849; // PNG header
+const uint id_acTL = 0x4C546361; // Animation control chunk
+const uint id_fcTL = 0x4C546366; // Frame control chunk
+const uint id_IDAT = 0x54414449; // first frame and/or default image
+const uint id_fdAT = 0x54416466; // Frame data chunk
+const uint id_IEND = 0x444E4549; // end/footer chunk
 
 // Protect against large PNGs. See Mozilla's bug #251381 for more info.
 const unsigned long cMaxPNGSize = 1000000UL;
