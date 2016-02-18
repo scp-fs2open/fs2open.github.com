@@ -148,13 +148,6 @@ int generic_anim_load(generic_anim *ga)
 	if (ga->first_frame < 0)
 		return -1;
 
-	// if total_time wasn't available it should end up as the default 0.0f
-	if (ga->total_time == 0.0f) {
-		if (fps == 0) {
-			Error(LOCATION, "animation (%s) has invalid fps of zero, fix this!", ga->filename);
-		}
-		ga->total_time = ga->num_frames / (float)fps;
-	}
 	ga->done_playing = 0;
 	ga->anim_time = 0.0f;
 
@@ -231,7 +224,7 @@ int generic_anim_stream(generic_anim *ga)
 			}
 			catch (const apng::ApngException& e) {
 				Warning(LOCATION, "Failed to load apng: %s", e.what());
-				if (ga->png.anim != nullptr) delete ga->png.anim;
+				delete ga->png.anim;
 				ga->png.anim = nullptr;
 				return -1;
 			}
@@ -340,8 +333,10 @@ void generic_anim_unload(generic_anim *ga)
 			if(ga->type == BM_TYPE_PNG) {
 				if(ga->bitmap_id >= 0)
 					bm_release(ga->bitmap_id);
-				if (ga->png.anim != nullptr)
+				if (ga->png.anim != nullptr) {
 					delete ga->png.anim;
+					ga->png.anim = nullptr;
+				}
 			}
 		}
 		else {
@@ -660,15 +655,11 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime)
 				frametime, ga->anim_time, ga->png.anim->frame.delay, ga->png.previous_frame_time,
 				ga->previous_frame, ga->current_frame, ga->png.anim->current_frame));
 
-		if(ga->streaming) {
-			generic_render_png_stream(ga);
-			gr_set_bitmap(ga->bitmap_id);
-		}
-		else {
-			Error(LOCATION, "non-streaming apngs not implemented yet");
-			// note: generic anims are not currently ever non-streaming in FSO
-			// I'm not even sure that ani/eff's would work as non-streaming generic anims
-		}
+		Assertion(ga->streaming != 0, "non-streaming apngs not implemented yet");
+		// note: generic anims are not currently ever non-streaming in FSO
+		// I'm not even sure that the existing ani/eff code would allow non-streaming generic anims
+		generic_render_png_stream(ga);
+		gr_set_bitmap(ga->bitmap_id);
 	}
 }
 

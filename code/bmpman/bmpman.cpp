@@ -39,6 +39,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include <iomanip>
+#include <memory>
 
 // --------------------------------------------------------------------------------------------------------------------
 // Private macros.
@@ -702,11 +703,7 @@ int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const float d
 		}
 
 		if (loop == true) {
-			if (last_framep->info.ani.apng.frame_delay != 0.0f) {    // prevent infinite loops, which can occur if this is called before the anim is locked
-				while (elapsed_time >= last_framep->info.ani.apng.frame_delay) {
-					elapsed_time -= last_framep->info.ani.apng.frame_delay;
-				}
-			}
+			elapsed_time = fmod(elapsed_time, last_framep->info.ani.apng.frame_delay);
 		}
 
 		int i = n;
@@ -1595,6 +1592,10 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		} else {
 			mprintf(("BMPMAN: Found EFF (%s) with %d frames at %d fps.\n", filename, anim_frames, anim_fps));
 		}
+		if (anim_fps == 0) {
+			Error(LOCATION, "animation (%s) has invalid fps of 0, fix this!", filename);
+		}
+		anim_total_time = anim_frames / i2fl(anim_fps);
 	}
 	// regular ani file
 	else if (type == BM_TYPE_ANI) {
@@ -1606,6 +1607,10 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 		anim_frames = the_anim.total_frames;
 		anim_fps = the_anim.fps;
+		if (anim_fps == 0) {
+			Error(LOCATION, "animation (%s) has invalid fps of 0, fix this!", filename);
+		}
+		anim_total_time = anim_frames / i2fl(anim_fps);
 		anim_width = the_anim.width;
 		anim_height = the_anim.height;
 		bpp = 8;
@@ -2097,9 +2102,9 @@ void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	int first_frame = be->info.ani.first_frame;
 	int nframes = bm_bitmaps[first_frame].info.ani.num_frames;
 
-	apng::apng_ani* the_apng;
+	std::unique_ptr<apng::apng_ani> the_apng;
 	try {
-		the_apng = new apng::apng_ani(bm_bitmaps[first_frame].filename);
+		the_apng.reset(new apng::apng_ani(bm_bitmaps[first_frame].filename));
 	}
 	catch (const apng::ApngException& e) {
 		Warning(LOCATION, "Failed to load apng: %s", e.what());
@@ -2124,7 +2129,6 @@ void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		catch (const apng::ApngException& e) {
 			Warning(LOCATION, "Failed to get next apng frame: %s", e.what());
 			bm_release(first_frame);
-			if (the_apng != nullptr) delete the_apng;
 			return;
 		}
 		memcpy(data, the_apng->frame.data.data(), be->mem_taken);
@@ -2138,8 +2142,6 @@ void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 		nprintf(("apng", "locking apng frame: %s (%i|%i|%i) (%f) %lu\n", be->filename, bpp, bmp->bpp, bm->true_bpp, be->info.ani.apng.frame_delay, be->mem_taken));
 	}
-
-	delete the_apng;
 }
 
 

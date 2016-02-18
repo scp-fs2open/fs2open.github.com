@@ -3527,8 +3527,8 @@ ADE_FUNC(getFramesLeft, l_Texture, NULL, "Gets number of frames left, from handl
 }
 
 ADE_FUNC(getFrame, l_Texture, "number Elapsed time (secs), [boolean Loop]",
-		 "Get the frame number from the elapsed time of the animation"
-		 "The 1st argument is the time that has elapsed since the animation started"
+		 "Get the frame number from the elapsed time of the animation<br>"
+		 "The 1st argument is the time that has elapsed since the animation started<br>"
 		 "If 2nd argument is set to true, the animation is expected to loop when the elapsed time exceeds the duration of a single playback",
 		 "integer",
 		 "Frame number")
