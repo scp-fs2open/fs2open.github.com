@@ -45,7 +45,7 @@ static opengl_shader_type_t GL_shader_types[] = {
 		0, {}, 0, {}, "Model Rendering" },
 
 	{ SDR_TYPE_EFFECT_PARTICLE, "effect-v.sdr", "effect-particle-f.sdr", "effect-screen-g.sdr", {GL_POINTS, GL_TRIANGLE_STRIP, 4}, 
-		8, { "baseMap", "depthMap", "window_width", "window_height", "nearZ", "farZ", "linear_depth", "srgb" }, 1, {"radius"}, "Particle Effects" },
+		9, { "baseMap", "depthMap", "window_width", "window_height", "nearZ", "farZ", "linear_depth", "srgb", "blend_alpha" }, 1, {"radius"}, "Particle Effects" },
 
 	{ SDR_TYPE_EFFECT_DISTORTION, "effect-distort-v.sdr", "effect-distort-f.sdr", 0, { 0, 0, 0 }, 
 		6, { "baseMap", "window_width", "window_height", "distMap", "frameBuffer", "use_offset" }, 1, { "radius" }, "Distortion Effects" },

@@ -2787,6 +2787,7 @@ char* Default_effect_particle_fragment_shader =
 "uniform float farZ;\n"
 "uniform int linear_depth;\n"
 "uniform int srgb;"
+"uniform int blend_alpha;\n"
 "varying float radius_p;\n"
 "varying vec4 position_p;\n"
 "#define SRGB_GAMMA 2.2\n"
@@ -2816,9 +2817,9 @@ char* Default_effect_particle_fragment_shader =
 "	float depthOffset = sqrt(pow(radius_p, 2.0) - pow(offset_len, 2.0));\n"
 "	float frontDepth = fragDepthLinear - depthOffset;\n"
 "	float backDepth = fragDepthLinear + depthOffset;\n"
-"	//fragmentColor.rgb = fragmentColor.rgb * smoothstep(fragDepthLinear, fragDepthLinear + radius_p * 2.0f, sceneDepthLinear);\n"
-"	fragmentColor.rgb = fragmentColor.rgb * smoothstep(max(nearZ, frontDepth), backDepth, sceneDepthLinear);\n"
+"	float intensity = smoothstep(max(nearZ, frontDepth), backDepth, sceneDepthLinear);\n"
 "	fragmentColor.rgb *= (srgb == 1) ? 1.5 : 1.0;\n"
+"	fragmentColor = (blend_alpha == 1) ? vec4(fragmentColor.rgb, fragmentColor.a * intensity) : vec4(fragmentColor.rgb * intensity, fragmentColor.a);\n"
 "	gl_FragColor = max(fragmentColor, vec4(0.0));\n"
 "}";
 

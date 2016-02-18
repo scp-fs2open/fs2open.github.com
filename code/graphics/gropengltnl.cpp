@@ -2241,6 +2241,7 @@ void opengl_tnl_set_material_soft_particle(uint flags)
 	GL_state.Uniform.setUniformf("nearZ", Min_draw_distance);
 	GL_state.Uniform.setUniformf("farZ", Max_draw_distance);
 	GL_state.Uniform.setUniformi("srgb", High_dynamic_range ? 1 : 0);
+	GL_state.Uniform.setUniformi("blend_alpha", bm_has_alpha_channel(gr_screen.current_bitmap));
 
 	if ( Cmdline_no_deferred_lighting ) {
 		GL_state.Uniform.setUniformi("linear_depth", 0);
