@@ -314,7 +314,7 @@ int bm_load_animation(const char *filename, int *nframes = nullptr, int *fps = n
  * @returns The bm number of the first bitmap in the sequence if successful, or
  * @returns A negative value if unsuccessful
  */
-int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, int *keyframe = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
+int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, int *keyframe = NULL, bool can_drop_frames = false, int dir_type = CF_TYPE_ANY);
 
 /**
  * @brief Locks down the bitmap indexed by bitmapnum.

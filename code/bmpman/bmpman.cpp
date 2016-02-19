@@ -1799,7 +1799,7 @@ int bm_load_duplicate(const char *filename) {
 	return ret;
 }
 
-int bm_load_either(const char *filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type) {
+int bm_load_either(const char *filename, int *nframes, int *fps, int *keyframe, bool can_drop_frames, int dir_type) {
 	if (nframes != NULL)
 		*nframes = 0;
 	if (fps != NULL)
