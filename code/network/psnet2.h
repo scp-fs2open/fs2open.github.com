@@ -37,7 +37,8 @@
 
 typedef struct net_addr	{
 	uint	type;			// See NET_ defines above
-	ubyte addr[4];		// address
+	ubyte	net_id[4];	// was used for IPX, now unused
+	ubyte addr[6];		// address - IP only uses 4, is 6 because of retail IPX support
 	short port;			
 } net_addr;
 
