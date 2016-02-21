@@ -3897,97 +3897,6 @@ void john_debug_stuff(vec3d *eye_pos, matrix *eye_orient)
 }
 #endif
 
-// following function for dumping frames for purposes of building trailers.
-#ifndef NDEBUG
-
-// function to toggle state of dumping every frame into PCX when playing the game
-DCF(dump_frames, "Toggles On/off frame dumping at 15 hz")
-{
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 15;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Frame dumping at 15 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Frame dumping is now OFF\n" );
-	}
-}
-
-DCF(dump_frames_trigger, "Starts/stop frame dumping at 15 hz")
-{
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 15;
-		Debug_dump_trigger = 1;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Frame dumping at 15 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Frame dumping is now OFF\n" );
-	}
-}
-
-DCF(dump_frames30, "Starts/stop frame dumping at 30 hz")
-{
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 30;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Frame dumping at 30 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Frame dumping is now OFF\n" );
-	}
-}
-
-DCF(dump_frames30_trigger, "Starts/stop frame dumping at 30 hz")
-{
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 30;
-		Debug_dump_trigger = 1;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Triggered frame dumping at 30 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Triggered frame dumping is now OFF\n" );
-	}
-}
-
-void game_maybe_dump_frame()
-{
-	if ( !Debug_dump_frames ){
-		return;
-	}
-
-	if( Debug_dump_trigger && !keyd_pressed[KEY_Q] ){
-		return;
-	}
-
-	game_stop_time();
-
-	gr_dump_frame();
-	Debug_dump_frame_num++;
-
-	game_start_time();
-}
-#endif
-
 extern int Player_dead_state;
 
 //	Flip the page and time how long it took.
@@ -4620,9 +4529,6 @@ void game_frame(bool paused)
 				DEBUG_GET_TIME( flip_time2 )
 			}
 
-#ifndef NDEBUG
-			game_maybe_dump_frame();			// used to dump pcx files for building trailers
-#endif		
 		} else {
 			game_show_standalone_framerate();
 		}
