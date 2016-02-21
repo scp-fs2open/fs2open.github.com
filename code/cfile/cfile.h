@@ -129,11 +129,15 @@ int cf_get_dir_type(CFILE *cfile);
 
 // Opens the file.  If no path is given, use the extension to look into the
 // default path.  If mode is NULL, delete the file.  
-CFILE *cfopen(const char *filename, const char *mode, int type = CFILE_NORMAL, int dir_type = CF_TYPE_ANY, bool localize = false);
+CFILE *_cfopen(const char* source_file, int line, const char *filename, const char *mode,
+	int type = CFILE_NORMAL, int dir_type = CF_TYPE_ANY, bool localize = false);
+#define cfopen(...) _cfopen(LOCATION, __VA_ARGS__) // Pass source location to the function
 
 // like cfopen(), but it accepts a fully qualified path only (ie, the result of a cf_find_file_location() call)
 // NOTE: only supports reading files!!
-CFILE *cfopen_special(const char *file_path, const char *mode, const int size, const int offset, int dir_type = CF_TYPE_ANY);
+CFILE *_cfopen_special(const char* source_file, int line, const char *file_path, const char *mode,
+	const int size, const int offset, int dir_type = CF_TYPE_ANY);
+#define cfopen_special(...) _cfopen_special(LOCATION, __VA_ARGS__) // Pass source location to the function
 
 // Flush the open file buffer
 int cflush(CFILE *cfile);
