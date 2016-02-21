@@ -1009,7 +1009,7 @@ static int bm_load_info(BM_TYPE type, int n, const char *filename, CFILE *img_cf
 		}
 	}
 	else {
-		Assert(0);
+		Assertion(false, "Unknown file type specified! This is probably a coding error.");
 
 		return -1;
 	}
