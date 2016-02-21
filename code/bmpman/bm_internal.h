@@ -29,6 +29,7 @@ union bm_extra_info {
 		int first_frame;    //!< used for animations -- points to index of first frame
 		int num_frames;     //!< used for animations -- number of frames in the animation
 		int keyframe;       //!< used for animations -- keyframe info
+		float total_time;   //!< used for animations -- total animation time (not always derived from num_frames/fps)
 		ubyte fps;          //!< used for animations -- frames per second
 
 		struct {

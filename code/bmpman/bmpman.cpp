@@ -1561,6 +1561,9 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			if (keyframe)
 				*keyframe = bm_bitmaps[n].info.ani.keyframe;
 
+			if (total_time != nullptr)
+				*total_time = bm_bitmaps[n].info.ani.total_time;
+
 			return handle;
 		}
 
@@ -1720,6 +1723,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		bm_bitmaps[n + i].info.ani.num_frames = anim_frames;
 		bm_bitmaps[n + i].info.ani.fps = (ubyte)anim_fps;
 		bm_bitmaps[n + i].info.ani.keyframe = key;
+		bm_bitmaps[n + i].info.ani.total_time = anim_total_time;
 		bm_bitmaps[n + i].bm.w = (short)anim_width;
 		bm_bitmaps[n + i].bm.rowsize = (short)anim_width;
 		bm_bitmaps[n + i].bm.h = (short)anim_height;
