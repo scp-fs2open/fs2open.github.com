@@ -168,6 +168,37 @@ float shield_apply_damage(object *objp, int quadrant_num, float damage) {
 	}
 }
 
+void shield_balance(object *objp, float balance_rate) {
+	float shield_hp;
+	float shield_hp_avg;
+
+	if (objp->flags[Object::Object_Flags::No_shields]) {
+		// No shields, bail
+		return;
+	}
+
+	shield_hp = shield_get_strength(objp);
+	if (shield_hp == 0.0f) {
+		// Shields are down, bail
+		return;
+	}
+
+	Assert(balance_rate > 0.0f);
+	Assert(balance_rate <= 1.0f);
+
+	shield_hp_avg = shield_hp / objp->n_quadrants;
+	for (int i = 0; i < objp->n_quadrants; ++i) {
+		if (abs(objp->shield_quadrant[i] - shield_hp_avg) < 0.01f) {
+			// Very close, so clamp
+			objp->shield_quadrant[i] = shield_hp_avg;
+
+		} else {
+			// Else, smoothly balance towards target
+			objp->shield_quadrant[i] += balance_rate * (shield_hp_avg - objp->shield_quadrant[i]);
+		}
+	}
+}
+
 float shield_get_max_quad(object *objp) {
 	return shield_get_max_strength(objp, true) / objp->n_quadrants;
 }
