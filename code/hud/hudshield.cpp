@@ -263,60 +263,7 @@ void hud_shield_equalize(object *objp, player *pl)
 //
 void hud_augment_shield_quadrant(object *objp, int direction)
 {
-	Assert(objp->type == OBJ_SHIP);
-
-	ship *shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
-	float	xfer_amount, energy_avail, percent_to_take, delta;
-	float	max_quadrant_val;
-	int	i;
-
-	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
-		direction = sip->shield_point_augment_ctrls[direction];
-
-		// The re-mapped direction can be -1 if this direction cannot be augmented
-		if (direction < 0)
-			return;
-	}
-
-	Assert(direction >= 0 && direction < objp->n_quadrants);
-	
-	xfer_amount = shield_get_max_strength(objp, true) * SHIELD_TRANSFER_PERCENT;  // xfer amounts are unaffected by $Max Shield Recharge
-	max_quadrant_val = get_max_shield_quad(objp);
-
-	if ( (objp->shield_quadrant[direction] + xfer_amount) > max_quadrant_val )
-		xfer_amount = max_quadrant_val - objp->shield_quadrant[direction];
-
-	Assert(xfer_amount >= 0);
-	if ( xfer_amount == 0 ) {
-		// TODO: provide a feedback sound
-		return;
-	}
-	else {
-		snd_play( &Snds[SND_SHIELD_XFER_OK] );
-	}
-
-	energy_avail = 0.0f;
-	for ( i = 0; i < objp->n_quadrants; i++ ) {
-		if ( i == direction )
-			continue;
-		energy_avail += objp->shield_quadrant[i];
-	}
-
-	percent_to_take = xfer_amount/energy_avail;
-	if ( percent_to_take > 1.0f )
-		percent_to_take = 1.0f;
-
-	for ( i = 0; i < objp->n_quadrants; i++ ) {
-		if ( i == direction )
-			continue;
-		delta = percent_to_take * objp->shield_quadrant[i];
-		objp->shield_quadrant[i] -= delta;
-		Assert(objp->shield_quadrant[i] >= 0 );
-		objp->shield_quadrant[direction] += delta;
-		if ( objp->shield_quadrant[direction] > max_quadrant_val )
-			objp->shield_quadrant[direction] = max_quadrant_val;
-	}
+	shield_transfer(objp, direction, SHIELD_TRANSFER_PERCENT);
 }
 
 // Try to find a match between filename and the names inside

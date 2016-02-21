@@ -19,18 +19,34 @@
 #define	RIGHT_QUAD	0
 
 /**
-* @brief Balances/Equalizes the shield
-*
-* @param[in] balance_rate The rate to balance the shield (0 < x <= 1)
-* @param[in] penalty      Percent of the shield energy to lose during the balance (0 < x <= 1)
-*
-* @author z64555
-*
-* @details Each quadrant is observed to exponentially approach the average shield HP. We don't have to worry about
-*   the shield gaining energy from somewhere, since: The sum of each shield_hp_avg - shield_quadrant[i] is 0.
-*   Applying a balance rate is legal since it's equivalent to applying the rate to the entire sum, which is still 0.
-*/
-void shield_balance(object *objp, float balance_rate, float penalty);
+ * @brief Balances/Equalizes the shield
+ *
+ * @param[in] balance_rate The rate to balance the shield (0 < x <= 1)
+ * @param[in] penalty      Percent of the shield energy to lose during the balance (0 < x <= 1)
+ *
+ * @author z64555
+ *
+ * @details Each quadrant is observed to exponentially approach the average shield HP, weaker quadrants quickly fill
+ *   up while stronger quadrants fille up slower. We don't have to worry about the shield gaining energy from
+ *   somewhere, since the sum of each (shield_hp_avg - shield_quadrant[i]) is 0.
+ *   Applying a balance rate is legal since it's equivalent to applying the rate to the entire sum, which is still 0.
+ *
+ * @TODO Verify operation with model point shields
+ */
+void shield_balance(object *objp, float rate, float penalty);
+
+/**
+ * @brief Transfers energy to the given quadrant from the other quadrants
+ *
+ * @param[in] quadrant Index of the quadrant to Xfer to
+ * @param[in] rate     Percent rate to increase the target quadrant
+ *
+ * @author z64555, zookeeper
+ *
+ * @details The transfer sips a percentage of each quadrant, taking more energy from stronger quadrants and less from
+ *   weaker ones.
+ */
+void shield_transfer(object *objp, int quadrant, float rate);
 
 /**
  * @brief Gets the shield strength (in HP) of the given object

@@ -168,7 +168,7 @@ float shield_apply_damage(object *objp, int quadrant_num, float damage) {
 	}
 }
 
-void shield_balance(object *objp, float balance_rate, float penalty) {
+void shield_balance(object *objp, float rate, float penalty) {
 	if (objp->flags[Object::Object_Flags::No_shields]) {
 		// No shields, bail
 		return;
@@ -199,10 +199,8 @@ void shield_balance(object *objp, float balance_rate, float penalty) {
 		return;
 	}
 
-	Assert(balance_rate > 0.0f);
-	Assert(balance_rate <= 1.0f);
-	Assert(penalty > 0.0f);
-	Assert(penalty <= 1.0f);
+	Assert((rate > 0.0f) && (rate <= 1.0f));
+	Assert((penalty >= 0.0f) && (penalty <= 1.0f));
 
 	float shield_hp_avg = shield_hp / objp->n_quadrants;
 	shield_hp_avg *= 1 - penalty;
@@ -214,7 +212,7 @@ void shield_balance(object *objp, float balance_rate, float penalty) {
 
 		} else {
 			// Else, smoothly balance towards target
-			objp->shield_quadrant[i] += balance_rate * (shield_hp_avg - objp->shield_quadrant[i]);
+			objp->shield_quadrant[i] += rate * (shield_hp_avg - objp->shield_quadrant[i]);
 		}
 	}
 }
@@ -225,7 +223,7 @@ float shield_get_max_quad(object *objp) {
 
 float shield_get_max_strength(object *objp, bool no_msr) {
 	if (no_msr == true)
-	return Ships[objp->instance].ship_max_shield_strength;
+		return Ships[objp->instance].ship_max_shield_strength;
 	else
 		return Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge;
 }
@@ -349,4 +347,80 @@ void shield_set_strength(object *objp, float strength)
 
 	for (i = 0; i < objp->n_quadrants; i++)
 		shield_set_quad(objp, i, strength / objp->n_quadrants);
+}
+
+void shield_transfer(object *objp, int quadrant, float rate) {
+	Assert(objp->type == OBJ_SHIP);
+
+	ship *shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
+		// Using model point shields, so map to the correct quadrant
+		quadrant = sip->shield_point_augment_ctrls[quadrant];
+
+		if (quadrant < 0) {
+			// This quadrant cannot be augmented, bail
+			return;
+		}
+	}
+
+	Assert(quadrant >= 0 && quadrant < objp->n_quadrants);
+	Assert((0.0f < rate) && (rate <= 1.0f));
+
+	// The energy to Xfer to the quadrant
+	float xfer_amount = shield_get_max_strength(objp) * rate;
+
+	// The max amount of energy a quad can have
+	float max_quadrant_val = shield_get_max_quad(objp);
+
+	if ((objp->shield_quadrant[quadrant] + xfer_amount) > max_quadrant_val) {
+		xfer_amount = max_quadrant_val - objp->shield_quadrant[quadrant];
+	}
+
+	Assert(xfer_amount >= 0);
+	if (xfer_amount == 0) {
+		// TODO: provide a feedback sound
+		return;
+	
+	} else if (objp == Player_obj) {
+		snd_play(&Snds[SND_SHIELD_XFER_OK]);
+	}
+
+	float energy_avail = 0.0f;	// Energy available from the other quadrants that we can transfer
+
+	for (int i = 0; i < objp->n_quadrants; i++) {
+		if (i == quadrant)
+			continue;
+		energy_avail += objp->shield_quadrant[i];
+	}
+
+	// Percent energy to take from each quadrant
+	float percent_to_take = xfer_amount / energy_avail;
+
+	if (percent_to_take > 1.0f) {
+		percent_to_take = 1.0f;
+	}
+
+	for (int i = 0; i < objp->n_quadrants; i++) {
+		float delta;
+
+		if (i == quadrant) {
+			// Don't take energy from our target
+			continue;
+		}
+
+		delta = percent_to_take * objp->shield_quadrant[i];
+		objp->shield_quadrant[i] -= delta;
+
+		Assert(objp->shield_quadrant[i] >= 0);
+
+		objp->shield_quadrant[quadrant] += delta;
+
+		if (objp->shield_quadrant[quadrant] > max_quadrant_val) {
+			// Already reached the max quadrant value. Clamp and bail before losing more any energy.
+			objp->shield_quadrant[quadrant] = max_quadrant_val;
+			break;
+		}
+	}
 }

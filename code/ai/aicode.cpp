@@ -12238,31 +12238,7 @@ void ai_chase_circle(object *objp)
  */
 void ai_transfer_shield(object *objp, int quadrant_num)
 {
-	int	i;
-	float	transfer_amount;
-	float	transfer_delta;
-	float	max_quadrant_strength;
-
-	max_quadrant_strength = get_max_shield_quad(objp);
-
-	transfer_amount = 0.0f;
-	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
-
-	if (objp->shield_quadrant[quadrant_num] + (objp->n_quadrants-1)*transfer_delta > max_quadrant_strength)
-		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(objp->n_quadrants-1);
-
-	for (i=0; i<objp->n_quadrants; i++)
-		if (i != quadrant_num) {
-			if (objp->shield_quadrant[i] >= transfer_delta) {
-				objp->shield_quadrant[i] -= transfer_delta;
-				transfer_amount += transfer_delta;
-			} else {
-				transfer_amount += objp->shield_quadrant[i];
-				objp->shield_quadrant[i] = 0.0f;
-			}
-		}
-
-	objp->shield_quadrant[quadrant_num] += transfer_amount;
+	shield_transfer(objp, quadrant_num, (SHIELD_BALANCE_RATE / 2));
 }
 
 void ai_balance_shield(object *objp)
