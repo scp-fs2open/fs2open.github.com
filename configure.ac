@@ -274,7 +274,7 @@ if test "$fs2_debug" = "yes" ; then
 else
 	AC_DEFINE([NDEBUG])
 	D_CFLAGS="$D_CFLAGS -O2 -Wall -funroll-loops"
-	D_CFLAGS="$D_CFLAGS -Wno-write-strings -Wno-unused-variable"
+	D_CFLAGS="$D_CFLAGS -Wno-write-strings -Wno-unused-variable -Wno-unused-function"
 	
 	AC_C_COMPILE_FLAGS([-Wno-unused-but-set-variable])
 	
