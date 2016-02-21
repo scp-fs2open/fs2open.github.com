@@ -269,7 +269,6 @@ void obj_init_all_ships_physics();
 float get_hull_pct(object *objp);
 float get_sim_hull_pct(object *objp);
 float get_shield_pct(object *objp);
-float shield_get_max_quad(object *objp);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
 void obj_get_average_ship_pos(vec3d *pos);

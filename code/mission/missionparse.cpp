@@ -59,6 +59,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "object/parseobjectdock.h"
+#include "object/objectshield.h"
 #include "object/waypoint.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"

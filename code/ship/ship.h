@@ -1451,7 +1451,6 @@ extern void shield_hit_close();
 
 void ship_draw_shield( object *objp);
 
-float apply_damage_to_shield(object *objp, int quadrant, float damage);
 float compute_shield_strength(object *objp);
 
 // Returns true if the shield presents any opposition to something 

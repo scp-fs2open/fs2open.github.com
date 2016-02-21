@@ -2091,7 +2091,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				damage *= difficulty_scale_factor;
 			}
 
-			damage = apply_damage_to_shield(ship_objp, quadrant, damage);
+			damage = shield_apply_damage(ship_objp, quadrant, damage);
 
 			if (damage > 0.0f) {
 				subsystem_damage *= (damage / pre_shield);

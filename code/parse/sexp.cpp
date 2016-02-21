@@ -20051,7 +20051,7 @@ int process_special_sexps(int index)
 
 	case 3:	//	Player ship suffering shield damage on front.
 		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
-			apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
+			shield_apply_damage(Player_obj, FRONT_QUAD, 10.0f);
 			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 			return SEXP_TRUE;
 		} else {
@@ -20063,7 +20063,7 @@ int process_special_sexps(int index)
 	case 4:	//	Player ship suffering much damage.
 		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
 			nprintf(("AI", "Frame %i\n", Framecount));
-			apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
+			shield_apply_damage(Player_obj, FRONT_QUAD, 10.0f);
 			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 			if (Player_obj->shield_quadrant[FRONT_QUAD] < 2.0f)
 				return SEXP_TRUE;
@@ -20079,7 +20079,7 @@ int process_special_sexps(int index)
 		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
 			nprintf(("AI", "Frame %i, recharged to %7.3f\n", Framecount, Player_obj->shield_quadrant[FRONT_QUAD]));
 
-			apply_damage_to_shield(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
+			shield_apply_damage(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
 
 			if (Player_obj->shield_quadrant[FRONT_QUAD] > shield_get_max_quad(Player_obj))
 			Player_obj->shield_quadrant[FRONT_QUAD] = shield_get_max_quad(Player_obj);
