@@ -208,8 +208,6 @@ void hud_ship_icon_page_in(ship_info *sip)
 void hud_shield_equalize(object *objp, player *pl)
 {
 	float penalty;
-	int idx;
-	int all_equal;
 
 	Assert(objp != NULL);
 	if (objp == NULL)
