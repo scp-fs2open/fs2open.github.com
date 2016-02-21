@@ -12267,41 +12267,7 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 
 void ai_balance_shield(object *objp)
 {
-	int	i;
-	float	shield_strength_avg;
-	float	delta;
-
-	// if we are already at the max shield strength then just bail now
-	if ( shield_get_strength(objp) >= shield_get_max_strength(objp) )
-		return;
-
-
-	shield_strength_avg = shield_get_strength(objp)/objp->n_quadrants;
-
-	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
-
-	for (i=0; i<objp->n_quadrants; i++) {
-		if (objp->shield_quadrant[i] < shield_strength_avg) {
-			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_shield_management])
-				shield_add_strength(objp, delta);
-			else
-				objp->shield_quadrant[i] += delta/objp->n_quadrants;
-
-			if (objp->shield_quadrant[i] > shield_strength_avg)
-				objp->shield_quadrant[i] = shield_strength_avg;
-
-		} else {
-			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_shield_management])
-				shield_add_strength(objp, -delta);
-			else
-				objp->shield_quadrant[i] -= delta/objp->n_quadrants;
-
-			if (objp->shield_quadrant[i] < shield_strength_avg)
-				objp->shield_quadrant[i] = shield_strength_avg;
-		}
-	}
+	shield_balance(objp, SHIELD_BALANCE_RATE, 0.0f);
 }
 
 //	Manage the shield for this ship.

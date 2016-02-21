@@ -21,13 +21,16 @@
 /**
 * @brief Balances/Equalizes the shield
 *
+* @param[in] balance_rate The rate to balance the shield (0 < x <= 1)
+* @param[in] penalty      Percent of the shield energy to lose during the balance (0 < x <= 1)
+*
 * @author z64555
 *
 * @details Each quadrant is observed to exponentially approach the average shield HP. We don't have to worry about
 *   the shield gaining energy from somewhere, since: The sum of each shield_hp_avg - shield_quadrant[i] is 0.
 *   Applying a balance rate is legal since it's equivalent to applying the rate to the entire sum, which is still 0.
 */
-void shield_balance(object *objp, float balance_rate);
+void shield_balance(object *objp, float balance_rate, float penalty);
 
 /**
  * @brief Gets the shield strength (in HP) of the given object

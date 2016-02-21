@@ -168,25 +168,45 @@ float shield_apply_damage(object *objp, int quadrant_num, float damage) {
 	}
 }
 
-void shield_balance(object *objp, float balance_rate) {
-	float shield_hp;
-	float shield_hp_avg;
-
+void shield_balance(object *objp, float balance_rate, float penalty) {
 	if (objp->flags[Object::Object_Flags::No_shields]) {
 		// No shields, bail
 		return;
 	}
 
+	float shield_hp;
 	shield_hp = shield_get_strength(objp);
 	if (shield_hp == 0.0f) {
 		// Shields are down, bail
+		return;
+
+	} else if (shield_hp == Ships[objp->instance].ship_max_shield_strength) {
+		// Shields are maxed, bail
+		return;
+	}
+
+	// Are all quadrants equal?
+	bool all_equal = true;
+	for (int idx = 0; idx < objp->n_quadrants - 1; idx++) {
+		if (objp->shield_quadrant[idx] != objp->shield_quadrant[idx + 1]) {
+			all_equal = false;
+			break;
+		}
+	}
+
+	if (all_equal) {
+		// Quadrants are equal, bail
 		return;
 	}
 
 	Assert(balance_rate > 0.0f);
 	Assert(balance_rate <= 1.0f);
+	Assert(penalty > 0.0f);
+	Assert(penalty <= 1.0f);
 
-	shield_hp_avg = shield_hp / objp->n_quadrants;
+	float shield_hp_avg = shield_hp / objp->n_quadrants;
+	shield_hp_avg *= 1 - penalty;
+
 	for (int i = 0; i < objp->n_quadrants; ++i) {
 		if (abs(objp->shield_quadrant[i] - shield_hp_avg) < 0.01f) {
 			// Very close, so clamp
@@ -205,7 +225,7 @@ float shield_get_max_quad(object *objp) {
 
 float shield_get_max_strength(object *objp, bool no_msr) {
 	if (no_msr == true)
-		return Ships[objp->instance].ship_max_shield_strength;
+	return Ships[objp->instance].ship_max_shield_strength;
 	else
 		return Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge;
 }

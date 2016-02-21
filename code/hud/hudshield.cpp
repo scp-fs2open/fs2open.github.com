@@ -207,7 +207,7 @@ void hud_ship_icon_page_in(ship_info *sip)
 //
 void hud_shield_equalize(object *objp, player *pl)
 {
-	float strength;
+	float penalty;
 	int idx;
 	int all_equal;
 
@@ -227,31 +227,18 @@ void hud_shield_equalize(object *objp, player *pl)
 	if (objp->flags[Object::Object_Flags::No_shields])
 		return;
 
-	// are all quadrants equal?
-	all_equal = 1;
-	for (idx = 0; idx < objp->n_quadrants - 1; idx++) {
-		if (objp->shield_quadrant[idx] != objp->shield_quadrant[idx + 1]) {
-			all_equal = 0;
-			break;
-		}
-	}
-
-	if (all_equal)
-		return;
-
-	strength = shield_get_strength(objp);
-	if (strength == 0.0f)
-		return;
-
 	// maybe impose a 2% penalty - server side and single player only
 	if (!MULTIPLAYER_CLIENT && ((pl->shield_penalty_stamp < 0) || timestamp_elapsed_safe(pl->shield_penalty_stamp, 1000)) ) {
-		strength *= 0.98f;
+		penalty = 0.02f;
 
 		// reset the penalty timestamp
 		pl->shield_penalty_stamp = timestamp(1000);
+
+	} else {
+		penalty = 0.0f;
 	}
-			
-	shield_set_strength(objp, strength);					
+
+	shield_balance(objp, 1, penalty);
 
 	// beep
 	if (objp == Player_obj) {
