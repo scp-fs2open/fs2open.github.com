@@ -913,6 +913,110 @@ int bm_is_valid(int handle) {
 	return (bm_bitmaps[handle % MAX_BITMAPS].handle == handle);
 }
 
+
+// Load an image and validate it while retrieving information for later use
+// Input:	type		= current BM_TYPE_*
+//			n			= location in bm_bitmaps[]
+//			filename	= name of the current file
+//			img_cfp		= already open CFILE handle, if available
+//
+// Output:	w			= bmp width
+//			h			= bmp height
+//			bpp			= bmp bits per pixel
+//			c_type		= output for an updated BM_TYPE_*
+//			mm_lvl		= number of mipmap levels for the image
+//			size		= size of the data contained in the image
+static int bm_load_info(BM_TYPE type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, int *size)
+{
+	int dds_ct;
+
+	if (type == BM_TYPE_DDS) {
+		int dds_error = dds_read_header(filename, img_cfp, w, h, bpp, &dds_ct, mm_lvl, size);
+
+		if (dds_error != DDS_ERROR_NONE) {
+			mprintf(("DDS ERROR: Couldn't open '%s' -- %s\n", filename, dds_error_string(dds_error)));
+			return -1;
+		}
+
+		switch (dds_ct) {
+		case DDS_DXT1:
+			*c_type = BM_TYPE_DXT1;
+			break;
+
+		case DDS_DXT3:
+			*c_type = BM_TYPE_DXT3;
+			break;
+
+		case DDS_DXT5:
+			*c_type = BM_TYPE_DXT5;
+			break;
+
+		case DDS_UNCOMPRESSED:
+			*c_type = BM_TYPE_DDS;
+			break;
+
+		case DDS_CUBEMAP_DXT1:
+			*c_type = BM_TYPE_CUBEMAP_DXT1;
+			break;
+
+		case DDS_CUBEMAP_DXT3:
+			*c_type = BM_TYPE_CUBEMAP_DXT3;
+			break;
+
+		case DDS_CUBEMAP_DXT5:
+			*c_type = BM_TYPE_CUBEMAP_DXT5;
+			break;
+
+		case DDS_CUBEMAP_UNCOMPRESSED:
+			*c_type = BM_TYPE_CUBEMAP_DDS;
+			break;
+
+		default:
+			Error(LOCATION, "Bad DDS file compression! Not using DXT1,3,5: %s", filename);
+			return -1;
+		}
+	}
+	// if its a tga file
+	else if (type == BM_TYPE_TGA) {
+		int tga_error = targa_read_header(filename, img_cfp, w, h, bpp, NULL);
+		if (tga_error != TARGA_ERROR_NONE) {
+			mprintf(("tga: Couldn't open '%s'\n", filename));
+			return -1;
+		}
+	}
+	// if its a png file
+	else if (type == BM_TYPE_PNG) {
+		int png_error = png_read_header(filename, img_cfp, w, h, bpp, NULL);
+		if (png_error != PNG_ERROR_NONE) {
+			mprintf(("png: Couldn't open '%s'\n", filename));
+			return -1;
+		}
+	}
+	// if its a jpg file
+	else if (type == BM_TYPE_JPG) {
+		int jpg_error = jpeg_read_header(filename, img_cfp, w, h, bpp, NULL);
+		if (jpg_error != JPEG_ERROR_NONE) {
+			mprintf(("jpg: Couldn't open '%s'\n", filename));
+			return -1;
+		}
+	}
+	// if its a pcx file
+	else if (type == BM_TYPE_PCX) {
+		int pcx_error = pcx_read_header(filename, img_cfp, w, h, bpp, NULL);
+		if (pcx_error != PCX_ERROR_NONE) {
+			mprintf(("pcx: Couldn't open '%s'\n", filename));
+			return -1;
+		}
+	}
+	else {
+		Assertion(false, "Unknown file type specified! This is probably a coding error.");
+
+		return -1;
+	}
+
+	return 0;
+}
+
 int bm_load(const char *real_filename) {
 	int i, free_slot = -1;
 	int w, h, bpp = 8;
@@ -985,7 +1089,7 @@ int bm_load(const char *real_filename) {
 		goto Done;
 	}
 
-	rc = gr_bm_load(type, free_slot, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size);
+	rc = bm_load_info(type, free_slot, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size);
 
 	if (rc != 0)
 		goto Done;
@@ -1109,6 +1213,109 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 		*key = keyframe;
 
 	return true;
+}
+
+
+/**
+* Lock an image files data into memory
+*/
+static int bm_load_image_data(const char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
+{
+	BM_TYPE c_type = BM_TYPE_NONE;
+	ubyte true_bpp;
+
+	bitmap_entry *be = &bm_bitmaps[bitmapnum];
+	bitmap *bmp = &be->bm;
+
+	Assert(!Is_standalone);
+
+	if (bmp->true_bpp > bpp)
+		true_bpp = bmp->true_bpp;
+	else
+		true_bpp = bpp;
+
+	// don't do a bpp check here since it could be different in OGL - taylor
+	if (bmp->data == 0) {
+		Assert(be->ref_count == 1);
+
+		if (be->type != BM_TYPE_USER && !nodebug) {
+			if (bmp->data == 0)
+				nprintf(("BmpMan", "Loading %s for the first time.\n", be->filename));
+		}
+
+		if (!Bm_paging) {
+			if (be->type != BM_TYPE_USER && !nodebug)
+				nprintf(("Paging", "Loading %s (%dx%dx%d)\n", be->filename, bmp->w, bmp->h, true_bpp));
+		}
+
+		// select proper format
+		if (flags & BMP_AABITMAP)
+			BM_SELECT_ALPHA_TEX_FORMAT();
+		else if (flags & BMP_TEX_ANY)
+			BM_SELECT_TEX_FORMAT();
+		else
+			BM_SELECT_SCREEN_FORMAT();
+
+		// make sure we use the real graphic type for EFFs
+		if (be->type == BM_TYPE_EFF) {
+			c_type = be->info.ani.eff.type;
+		}
+		else {
+			c_type = be->type;
+		}
+
+		switch (c_type)
+		{
+		case BM_TYPE_PCX:
+			bm_lock_pcx(handle, bitmapnum, be, bmp, true_bpp, flags);
+			break;
+
+		case BM_TYPE_ANI:
+			bm_lock_ani(handle, bitmapnum, be, bmp, true_bpp, flags);
+			break;
+
+		case BM_TYPE_TGA:
+			bm_lock_tga(handle, bitmapnum, be, bmp, true_bpp, flags);
+			break;
+
+		case BM_TYPE_PNG:
+			//libpng handles compression with zlib
+			bm_lock_png(handle, bitmapnum, be, bmp, true_bpp, flags);
+			break;
+
+		case BM_TYPE_JPG:
+			bm_lock_jpg(handle, bitmapnum, be, bmp, true_bpp, flags);
+			break;
+
+		case BM_TYPE_DDS:
+		case BM_TYPE_DXT1:
+		case BM_TYPE_DXT3:
+		case BM_TYPE_DXT5:
+		case BM_TYPE_CUBEMAP_DDS:
+		case BM_TYPE_CUBEMAP_DXT1:
+		case BM_TYPE_CUBEMAP_DXT3:
+		case BM_TYPE_CUBEMAP_DXT5:
+			bm_lock_dds(handle, bitmapnum, be, bmp, true_bpp, flags);
+			break;
+
+		case BM_TYPE_USER:
+			bm_lock_user(handle, bitmapnum, be, bmp, true_bpp, flags);
+			break;
+
+		default:
+			Warning(LOCATION, "Unsupported type in bm_lock -- %d\n", c_type);
+			return -1;
+		}
+
+		// always go back to screen format
+		BM_SELECT_SCREEN_FORMAT();
+
+		// make sure we actually did something
+		if (!(bmp->data))
+			return -1;
+	}
+
+	return 0;
 }
 
 int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type) {
@@ -1279,7 +1486,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			sprintf(bm_bitmaps[n + i].info.ani.eff.filename, "%s_%.4d", clean_name, i);
 
 			// gr_bm_load() returns non-0 on failure
-			if (gr_bm_load(eff_type, n + i, bm_bitmaps[n + i].info.ani.eff.filename, NULL, &anim_width, &anim_height, &bpp, &c_type, &mm_lvl, &img_size)) {
+			if (bm_load_info(eff_type, n + i, bm_bitmaps[n + i].info.ani.eff.filename, NULL, &anim_width, &anim_height, &bpp, &c_type, &mm_lvl, &img_size)) {
 				// if we didn't get anything then bail out now
 				if (i == 0) {
 					Warning(LOCATION, "EFF: No frame images were found.  EFF, %s, is invalid.\n", filename);
@@ -1504,8 +1711,16 @@ bitmap * bm_lock(int handle, ubyte bpp, ubyte flags, bool nodebug) {
 #endif
 
 	// read the file data
-	if (gr_bm_lock(be->filename, handle, bitmapnum, bpp, flags, nodebug) == -1) {
+	if (bm_load_image_data(be->filename, handle, bitmapnum, bpp, flags, nodebug) == -1) {
 		// oops, this isn't good - reset and return NULL
+		bm_unlock( handle );
+		bm_unload( handle );
+
+		return NULL;
+	}
+	
+	if (!gr_bm_data(bitmapnum, bmp)) {
+		// graphics subsystem failed, reset and return NULL
 		bm_unlock( handle );
 		bm_unload( handle );
 

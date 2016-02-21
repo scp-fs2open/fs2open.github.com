@@ -1831,9 +1831,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_bm_free_data			= gr_opengl_bm_free_data;
 	gr_screen.gf_bm_create				= gr_opengl_bm_create;
 	gr_screen.gf_bm_init				= gr_opengl_bm_init;
-	gr_screen.gf_bm_load				= gr_opengl_bm_load;
 	gr_screen.gf_bm_page_in_start		= gr_opengl_bm_page_in_start;
-	gr_screen.gf_bm_lock				= gr_opengl_bm_lock;
+	gr_screen.gf_bm_data				= gr_opengl_bm_data;
 	gr_screen.gf_bm_make_render_target	= gr_opengl_bm_make_render_target;
 	gr_screen.gf_bm_set_render_target	= gr_opengl_bm_set_render_target;
 
