@@ -1009,7 +1009,7 @@ int ship_is_shield_up( object *obj, int quadrant )
 {
 	if ( (quadrant >= 0) && (quadrant < obj->n_quadrants))	{
 		// Just check one quadrant
-		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * get_max_shield_quad(obj)))	{
+		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * shield_get_max_quad(obj)))	{
 			return 1;
 		}
 	} else {

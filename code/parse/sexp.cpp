@@ -15597,7 +15597,7 @@ int sexp_shield_quad_low(int node)
 	if(!(sip->is_small_ship())){
 		return SEXP_FALSE;
 	}
-	max_quad = get_max_shield_quad(objp);	
+	max_quad = shield_get_max_quad(objp);	
 
 	// shield pct
 	check = (float)eval_num(CDR(node));
@@ -19999,7 +19999,7 @@ int shield_quad_near_max(int quadnum)
 		remaining += Player_obj->shield_quadrant[i];
 	}
 
-	if ((remaining < 2.0f) || (Player_obj->shield_quadrant[quadnum] > get_max_shield_quad(Player_obj) - 5.0f)) {
+	if ((remaining < 2.0f) || (Player_obj->shield_quadrant[quadnum] > shield_get_max_quad(Player_obj) - 5.0f)) {
 		return SEXP_TRUE;
 	} else {
 		return SEXP_FALSE;
@@ -20081,8 +20081,8 @@ int process_special_sexps(int index)
 
 			apply_damage_to_shield(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
 
-			if (Player_obj->shield_quadrant[FRONT_QUAD] > get_max_shield_quad(Player_obj))
-			Player_obj->shield_quadrant[FRONT_QUAD] = get_max_shield_quad(Player_obj);
+			if (Player_obj->shield_quadrant[FRONT_QUAD] > shield_get_max_quad(Player_obj))
+			Player_obj->shield_quadrant[FRONT_QUAD] = shield_get_max_quad(Player_obj);
 
 			if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%DEFAULT_SHIELD_SECTIONS] - 2.0f)
 				return SEXP_TRUE;

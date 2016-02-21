@@ -7010,7 +7010,7 @@ void send_client_update_packet(net_player *pl)
 		n_quadrants = (ubyte)objp->n_quadrants;
 		ADD_DATA( n_quadrants );
 		for (i = 0; i < n_quadrants; i++ ) {
-			percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
+			percent = (ubyte)(objp->shield_quadrant[i] / shield_get_max_quad(objp) * 100.0f);
 
 			ADD_DATA( percent );
 		}
@@ -7134,7 +7134,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 
 			for ( i = 0; i < n_quadrants; i++ ) {
 				if (i < objp->n_quadrants) {
-					fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
+					fl_val = (shield_percent[i] * shield_get_max_quad(objp) / 100.0f);
 					objp->shield_quadrant[i] = fl_val;
 				}
 			}

@@ -266,17 +266,6 @@ int free_object_slots(int num_used)
 }
 
 // Goober5000
-float get_max_shield_quad(object *objp)
-{
-	Assert(objp);
-	if(objp->type != OBJ_SHIP) {
-		return 0.0f;
-	}
-
-	return Ships[objp->instance].ship_max_shield_strength / objp->n_quadrants; // max segment strength is unaffected by $Max Shield Recharge
-}
-
-// Goober5000
 float get_hull_pct(object *objp)
 {
 	Assert(objp);

@@ -452,7 +452,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 		PACK_PERCENT(temp);				
 		multi_rate_add(NET_PLAYER_NUM(pl), "hul", 1);	
 
-		float quad = get_max_shield_quad(objp);
+		float quad = shield_get_max_quad(objp);
 
 		for (int i = 0; i < objp->n_quadrants; i++) {
 			temp = (objp->shield_quadrant[i] / quad);
@@ -858,7 +858,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		UNPACK_PERCENT(fpct);
 		pobjp->hull_strength = fpct * Ships[pobjp->instance].ship_max_hull_strength;		
 
-		float quad = get_max_shield_quad(pobjp);
+		float quad = shield_get_max_quad(pobjp);
 
 		for (int i = 0; i < pobjp->n_quadrants; i++) {
 			UNPACK_PERCENT(fpct);

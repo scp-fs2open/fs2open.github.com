@@ -354,7 +354,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = get_max_shield_quad(objp);
+	max_shield = shield_get_max_quad(objp);
 
 	for ( i = 0; i < objp->n_quadrants; i++ ) {
 
@@ -650,7 +650,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	// draw the quadrants
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = get_max_shield_quad(objp);
+	max_shield = shield_get_max_quad(objp);
 
 	coord2d shield_icon_coords[6];
 
@@ -939,7 +939,7 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = get_max_shield_quad(objp);
+	max_shield = shield_get_max_quad(objp);
 
 	for ( i = 0; i < objp->n_quadrants; i++ ) {
 
