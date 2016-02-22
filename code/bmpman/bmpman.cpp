@@ -1492,7 +1492,7 @@ static int bm_load_image_data(const char *filename, int handle, int bitmapnum, u
 int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, float *total_time, bool can_drop_frames, int dir_type) {
 	int	i, n;
 	anim	the_anim;
-	CFILE	*img_cfp = NULL;
+	CFILE	*img_cfp = nullptr;
 	char filename[MAX_FILENAME_LEN];
 	int reduced = 0;
 	int anim_fps = 0, anim_frames = 0, key = 0;
@@ -1584,6 +1584,8 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	// we only check for -5 here since the filename should already have the extension on it, and it must have passed the previous check
 	if (strlen(filename) > MAX_FILENAME_LEN - 5) {
 		Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF/APNG, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
+		if (img_cfp != nullptr)
+			cfclose(img_cfp);
 		return -1;
 	}
 
@@ -1591,6 +1593,8 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	if (type == BM_TYPE_EFF) {
 		if (!bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &key, &eff_type)) {
 			mprintf(("BMPMAN: Error reading EFF\n"));
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
 			return -1;
 		} else {
 			mprintf(("BMPMAN: Found EFF (%s) with %d frames at %d fps.\n", filename, anim_frames, anim_fps));
@@ -1653,11 +1657,15 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		}
 		catch (const apng::ApngException& e) {
 			Warning(LOCATION, "Failed to load apng: %s", e.what());
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
 			return -1;
 		}
 	}
 	else {
 		Warning(LOCATION, "Unsupported image type: %i", type);
+		if (img_cfp != nullptr)
+			cfclose(img_cfp);
 		return -1;
 	}
 
@@ -1675,7 +1683,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	n = find_block_of(anim_frames);
 
 	if (n < 0) {
-		if (img_cfp != NULL)
+		if (img_cfp != nullptr)
 			cfclose(img_cfp);
 
 		return -1;
@@ -1696,7 +1704,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 				if (i == 0) {
 					Warning(LOCATION, "EFF: No frame images were found.  EFF, %s, is invalid.\n", filename);
 
-					if (img_cfp != NULL)
+					if (img_cfp != nullptr)
 						cfclose(img_cfp);
 
 					return -1;
