@@ -138,18 +138,6 @@ void gr_stub_destroy_light(int idx)
 {
 }
 
-void gr_stub_dump_frame()
-{
-}
-
-void gr_stub_dump_frame_start(int first_frame, int frames_between_dumps)
-{
-}
-
-void gr_stub_dump_frame_stop()
-{
-}
-
 void gr_stub_end_clip_plane()
 {
 }
@@ -163,14 +151,6 @@ void gr_stub_end_projection_matrix()
 }
 
 void gr_stub_end_view_matrix()
-{
-}
-
-void gr_stub_fade_in(int instantaneous)
-{
-}
-
-void gr_stub_fade_out(int instantaneous)
 {
 }
 
@@ -474,24 +454,6 @@ void gr_stub_set_texture_panning(float u, float v, bool enable)
 {
 }
 
-void gr_stub_setup_background_fog(bool set)
-{
-}
-
-void gr_stub_start_state_block()
-{
-	gr_screen.recording_state_block = false;
-}
-
-int gr_stub_end_state_block()
-{
-	return -1;
-}
-
-void gr_stub_set_state_block(int handle)
-{
-}
-
 void gr_stub_set_line_width(float width)
 {
 }
@@ -629,8 +591,6 @@ bool gr_stub_init()
 	gr_screen.gf_set_palette		= gr_stub_set_palette;
 	gr_screen.gf_print_screen		= gr_stub_print_screen;
 
-	gr_screen.gf_fade_in			= gr_stub_fade_in;
-	gr_screen.gf_fade_out			= gr_stub_fade_out;
 	gr_screen.gf_flash				= gr_stub_flash;
 	gr_screen.gf_flash_alpha		= gr_stub_flash_alpha;
 	
@@ -646,10 +606,6 @@ bool gr_stub_init()
 	gr_screen.gf_save_screen		= gr_stub_save_screen;
 	gr_screen.gf_restore_screen		= gr_stub_restore_screen;
 	gr_screen.gf_free_screen		= gr_stub_free_screen;
-	
-	gr_screen.gf_dump_frame_start	= gr_stub_dump_frame_start;
-	gr_screen.gf_dump_frame_stop	= gr_stub_dump_frame_stop;
-	gr_screen.gf_dump_frame			= gr_stub_dump_frame;
 	
 	gr_screen.gf_set_gamma			= gr_stub_set_gamma;
 
@@ -743,13 +699,7 @@ bool gr_stub_init()
 	gr_screen.gf_pop_scale_matrix	= gr_stub_pop_scale_matrix;
 	gr_screen.gf_center_alpha		= gr_stub_center_alpha;
 	gr_screen.gf_set_thrust_scale	= gr_stub_set_thrust_scale;
-
-	gr_screen.gf_setup_background_fog	= gr_stub_setup_background_fog;
-
-	gr_screen.gf_start_state_block	= gr_stub_start_state_block;
-	gr_screen.gf_end_state_block	= gr_stub_end_state_block;
-	gr_screen.gf_set_state_block	= gr_stub_set_state_block;
-
+	
 	gr_screen.gf_draw_line_list		= gr_stub_draw_line_list;
 
 	gr_screen.gf_set_line_width		= gr_stub_set_line_width;

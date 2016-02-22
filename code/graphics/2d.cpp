@@ -849,7 +849,6 @@ static bool gr_init_sub(int mode, int width, int height, int depth, float center
 	gr_screen.bits_per_pixel = depth;
 	gr_screen.bytes_per_pixel= depth / 8;
 	gr_screen.rendering_to_texture = -1;
-	gr_screen.recording_state_block = false;
 	gr_screen.envmap_render_target = -1;
 	gr_screen.mode = mode;
 	gr_screen.res = res;
