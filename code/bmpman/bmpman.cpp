@@ -1584,7 +1584,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			bm_bitmaps[n + i].info.ani.eff.type = eff_type;
 			sprintf(bm_bitmaps[n + i].info.ani.eff.filename, "%s_%.4d", clean_name, i);
 
-			// gr_bm_load() returns non-0 on failure
+			// bm_load_info() returns non-0 on failure
 			if (bm_load_info(eff_type, n + i, bm_bitmaps[n + i].info.ani.eff.filename, NULL, &anim_width, &anim_height, &bpp, &c_type, &mm_lvl, &img_size)) {
 				// if we didn't get anything then bail out now
 				if (i == 0) {
