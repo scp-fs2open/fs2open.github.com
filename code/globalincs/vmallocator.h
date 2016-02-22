@@ -7,6 +7,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <sstream>
 #include <queue>
 #include <deque>
 #include <unordered_map>

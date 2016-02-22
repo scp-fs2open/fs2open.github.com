@@ -38,6 +38,7 @@
 
 #include <ctype.h>
 #include <limits.h>
+#include <iomanip>
 
 // --------------------------------------------------------------------------------------------------------------------
 // Private macros.
@@ -291,6 +292,104 @@ DCF(bm_frag, "Shows BmpMan fragmentation") {
 	gr_flip();
 	key_getch();
 }
+
+DCF(bm_used, "Shows BmpMan Slot Usage") {
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Displays used bmpman slots usage with a breakdown per filetype\n\n");
+		return;
+	}
+
+	int none = 0, pcx = 0, user = 0, tga = 0, png = 0; int jpg = 0, dds = 0, ani = 0;
+	int eff = 0, eff_dds = 0, eff_tga = 0, eff_png = 0, eff_jpg = 0, eff_pcx = 0;
+	int render_target_dynamic = 0, render_target_static = 0;
+
+	for (int i = 0; i<MAX_BITMAPS; i++) {
+		switch (bm_bitmaps[i].type) {
+		case BM_TYPE_NONE:
+			none++;
+			break;
+		case BM_TYPE_PCX:
+			pcx++;
+			break;
+		case BM_TYPE_USER:
+			user++;
+			break;
+		case BM_TYPE_TGA:
+			tga++;
+			break;
+		case BM_TYPE_PNG:
+			// TODO distinguish png(static) from apng
+			png++;
+			break;
+		case BM_TYPE_JPG:
+			jpg++;
+			break;
+		case BM_TYPE_DDS:
+			dds++;
+			break;
+		case BM_TYPE_ANI:
+			ani++;
+			break;
+		case BM_TYPE_EFF:
+			eff++;
+			switch (bm_bitmaps[i].info.ani.eff.type) {
+			case BM_TYPE_DDS:
+				eff_dds++;
+				break;
+			case BM_TYPE_TGA:
+				eff_tga++;
+				break;
+			case BM_TYPE_PNG:
+				eff_png++;
+				break;
+			case BM_TYPE_JPG:
+				eff_jpg++;
+				break;
+			case BM_TYPE_PCX:
+				eff_pcx++;
+				break;
+			default:
+				Warning(LOCATION, "Unhandled EFF image type (%i), get a coder!", bm_bitmaps[i].info.ani.eff.type);
+				break;
+			}
+			break;
+		case BM_TYPE_RENDER_TARGET_STATIC:
+			render_target_static++;
+			break;
+		case BM_TYPE_RENDER_TARGET_DYNAMIC:
+			render_target_dynamic++;
+			break;
+		default:
+			Warning(LOCATION, "Unhandled image type (%i), get a coder!", bm_bitmaps[i].type);
+			break;
+		}
+	}
+
+	SCP_stringstream text;
+	text << "BmpMan Used Slots\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << pcx  << ", PCX\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << user << ", User\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << tga  << ", TGA\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << png  << ", PNG\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << jpg  << ", JPG\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << dds  << ", DDS\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << ani  << ", ANI\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << eff  << ", EFF\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << eff_dds  << ", EFF/DDS\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << eff_tga  << ", EFF/TGA\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << eff_png  << ", EFF/PNG\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << eff_jpg  << ", EFF/JPG\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << eff_pcx  << ", EFF/PCX\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << render_target_static  << ", Render/Static\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << render_target_dynamic  << ", Render/Dynamic\n";
+	text << "  " << std::dec << std::setw(4) << std::setfill('0') << MAX_BITMAPS-none << "/" << MAX_BITMAPS  << ", Total\n";
+	text << "\n";
+
+	// TODO consider converting 1's to monospace to make debug console output prettier
+	mprintf(("%s", text.str().c_str())); // log for ease for copying data
+	dc_printf("%s", text.str().c_str()); // instant gratification
+}
+
 
 DCF(bmpman, "Shows/changes bitmap caching parameters and usage") {
 	if (dc_optional_string_either("help", "--help")) {
