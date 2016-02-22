@@ -698,7 +698,7 @@ int apng_ani::load_header()
 void apng_ani::_cleanup_resources()
 {
 	png_destroy_read_struct(&_pngp, &_infop, nullptr);
-	cfclose(_cfp);
+	if (_cfp != nullptr) cfclose(_cfp);
 }
 
 /*
