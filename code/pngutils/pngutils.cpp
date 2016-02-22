@@ -692,6 +692,16 @@ int apng_ani::load_header()
 }
 
 /*
+ * @brief cleanup resources
+ *
+ */
+void apng_ani::_cleanup_resources()
+{
+	png_destroy_read_struct(&_pngp, &_infop, nullptr);
+	cfclose(_cfp);
+}
+
+/*
  * @brief something went badly wrong, throw an exception
  *
  * @param [in] msg  text to display about the error
@@ -702,6 +712,7 @@ void apng_ani::_apng_failed(const char* msg)
 	current_frame = 0;
 	plays = 0;
 	anim_time = 0.0f;
+	_cleanup_resources();
 
 	SCP_string error_msg = "(file ";
 	error_msg += _filename;
@@ -749,8 +760,7 @@ apng_ani::apng_ani(const char* filename)
 
 apng_ani::~apng_ani()
 {
-	png_destroy_read_struct(&_pngp, &_infop, nullptr);
-	cfclose(_cfp);
+	_cleanup_resources();
 }
 
 } // end namespace apng

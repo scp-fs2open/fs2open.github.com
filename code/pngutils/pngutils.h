@@ -82,6 +82,7 @@ private:
 	int  _processing_finish();
 	void _apng_failed(const char* msg);
 	void _compose_frame();
+	void _cleanup_resources();
 };
 
 class ApngException : public std::runtime_error
