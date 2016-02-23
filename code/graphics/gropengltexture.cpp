@@ -848,6 +848,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 
 	if ( t->mipmap_levels == 1 && bitmap_type == TCACHE_TYPE_CUBEMAP && Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
 		// generate mip maps for cube maps so we can get glossy reflections; necessary for gloss maps and physically-based lighting
+		// OGL_EXT_FRAMEBUFFER_OBJECT required to use glGenerateMipmapEXT()
 		t->mipmap_levels = get_num_mipmap_levels(t->w, t->h);
 
 		glTexParameteri(t->texture_target, GL_TEXTURE_MAX_LEVEL, t->mipmap_levels - 1);
