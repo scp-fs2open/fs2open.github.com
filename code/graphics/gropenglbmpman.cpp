@@ -39,10 +39,6 @@ int get_num_mipmap_levels(int w, int h)
 {
 	int size, levels = 0;
 
-	// make sure we can and should generate mipmaps before trying to use them
-	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) )
-		return 1;
-
 	size = MAX(w, h);
 
 	while (size > 0) {
