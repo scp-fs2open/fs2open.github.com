@@ -33,10 +33,10 @@ extern int Use_mouse_to_fly;
 // [z64555] These mouse_button defines are a quick check to verify the input button is a mouse button
 // [z64555] Likewise, the mouse_wheel defines quickly check against the mousewheel directions
 #define LOWEST_MOUSE_BUTTON     MOUSE_LEFT_BUTTON
-#define HIGHEST_MOUSE_BUTTON    MOUSE_X2_BUTTON
+#define HIGHEST_MOUSE_BUTTON    (MOUSE_X2_BUTTON << 1) - 1
 
 #define LOWEST_MOUSE_WHEEL      MOUSE_WHEEL_UP
-#define HIGHEST_MOUSE_WHEEL     MOUSE_WHEEL_RIGHT
+#define HIGHEST_MOUSE_WHEEL     (MOUSE_WHEEL_RIGHT << 1) - 1
 
 
 /**
