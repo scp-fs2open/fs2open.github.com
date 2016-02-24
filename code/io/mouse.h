@@ -148,9 +148,8 @@ void mouse_reset_deltas();
  *
  * @param[out] dx If not NULL, The delta x
  * @param[out] dy If not NULL, The delta y
- * @param[out] dz If not NULL, The delta z (usually 0)
  */
-void mouse_get_delta(int *dx = NULL, int *dy = NULL, int *dz = NULL);
+void mouse_get_delta(int *dx = NULL, int *dy = NULL);
 
 /**
  * @brief Handler called when a mouse movement even occurs

@@ -436,17 +436,15 @@ int control_config_detect_axis()
 	}
 
 	if ( (axis == -1) && Use_mouse_to_fly ) {
-		mouse_get_delta( &dx, &dy, &dz );
+		mouse_get_delta( &dx, &dy);
 
 		if ( (dx > fudge) || (dx < -fudge) ) {
 			axis = 0;
 		} else if ( (dy > fudge) || (dy < -fudge) ) {
 			axis = 1;
-		} else if ( (dz > fudge) || (dz < -fudge) ) {
-			axis = 2;
 		}
 	}
-		
+
 	return axis;
 }
 
