@@ -131,20 +131,23 @@ static void mousewheel_decay(int btn);
 
 
 static void mousewheel_decay(int btn) {
-	switch (btn) {
-	case MOUSE_WHEEL_UP:
+	// btn may have multiple flags active, so can't use a simple switch here
+
+	if (btn & MOUSE_WHEEL_UP) {
 		Mouse_wheel_y -= 1;
-		break;
-	case MOUSE_WHEEL_DOWN:
+
+	} else if (btn & MOUSE_WHEEL_DOWN) {
 		Mouse_wheel_y += 1;
-		break;
-	case MOUSE_WHEEL_LEFT:
-		Mouse_wheel_x -= 1;
-		break;
-	case MOUSE_WHEEL_RIGHT:
-		Mouse_wheel_x += 1;
-		break;
 	}
+
+
+	if (btn & MOUSE_WHEEL_LEFT) {
+		Mouse_wheel_x -= 1;
+	
+	} else if (btn & MOUSE_WHEEL_RIGHT) {
+		Mouse_wheel_x += 1;
+	}
+
 
 	if (Mouse_wheel_x == 0) {
 		mouse_flags &= ~(MOUSE_WHEEL_UP | MOUSE_WHEEL_DOWN);
