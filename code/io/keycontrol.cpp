@@ -1,17 +1,20 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
+
+
+
+#include "io/keycontrol.h"
 
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
 #include "freespace2/freespace.h"	//For time compression stuff
-#include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
@@ -56,7 +59,6 @@
 #include "starfield/supernova.h"
 #include "weapon/weapon.h"
 
-#include "io/keycontrol.h"
 
 /**
 * Natural number factor lookup class.
@@ -105,15 +107,13 @@ private:
 	static bool isNaturalNumberFactor(size_t factor, size_t n);
 };
 
-factor_table::factor_table(size_t size)
-{
+factor_table::factor_table(size_t size) {
 	resize(size);
 }
 
 factor_table::~factor_table() {}
 
-size_t factor_table::getNext(size_t n, size_t current)
-{
+size_t factor_table::getNext(size_t n, size_t current) {
 	Assertion(n >= 1, "factor_table::getNext() called with " SIZE_T_ARG ", when only natural numbers make sense; get a coder!\n", n);
 
 	// Resize lookup table if the value is greater than the current size
@@ -121,17 +121,12 @@ size_t factor_table::getNext(size_t n, size_t current)
 		resize(n);
 
 	int index = n - 1;
-	for (size_t i = 0; i < _lookup[index].size(); ++i)
-	{
-		if (_lookup[index][i] == current)
-		{
-			if (_lookup[index].size() == i + 1)
-			{
+	for (size_t i = 0; i < _lookup[index].size(); ++i) {
+		if (_lookup[index][i] == current) {
+			if (_lookup[index].size() == i + 1) {
 				// Overflow back to 1
 				return 1;
-			}
-			else
-			{
+			} else {
 				// Next factor in the table
 				return _lookup[index][i + 1];
 			}
@@ -142,26 +137,21 @@ size_t factor_table::getNext(size_t n, size_t current)
 	return 1;
 }
 
-void factor_table::resize(size_t size)
-{
+void factor_table::resize(size_t size) {
 	size_t oldSize = _lookup.size();
 	_lookup.resize(size);
 
 	// Fill lookup table for the missing values
-	for (size_t i = oldSize; i < size; ++i)
-	{
-		for (size_t j = 1; j <= i + 1; ++j)
-		{
-			if (isNaturalNumberFactor(j, i + 1))
-			{
+	for (size_t i = oldSize; i < size; ++i) {
+		for (size_t j = 1; j <= i + 1; ++j) {
+			if (isNaturalNumberFactor(j, i + 1)) {
 				_lookup[i].push_back(j);
 			}
 		}
 	}
 }
 
-bool factor_table::isNaturalNumberFactor(size_t factor, size_t n)
-{
+bool factor_table::isNaturalNumberFactor(size_t factor, size_t n) {
 	return ((float)n / (float)factor) == n / factor;
 }
 
@@ -178,12 +168,10 @@ factor_table ftables;
 #define MAX_TIME_MULTIPLIER		64
 #define MAX_TIME_DIVIDER		4
 
-// --------------------------------------------------------
-// Cheats!!!!1!1
 #define CHEAT_BUFFER_LEN	17
-char CheatBuffer[CHEAT_BUFFER_LEN+1];
 
-enum cheatCode {
+enum cheatCode
+{
 	CHEAT_CODE_NONE = 0,
 	CHEAT_CODE_FREESPACE,
 	CHEAT_CODE_FISH,
@@ -193,26 +181,100 @@ enum cheatCode {
 	CHEAT_CODE_SKIP
 };
 
-struct Cheat {
+struct Cheat
+{
 	cheatCode code;
 	char* data;
 };
 
-static struct Cheat cheatsTable[] = {
-  { CHEAT_CODE_FREESPACE, "www.freespace2.com" },
-  { CHEAT_CODE_FISH,      "vasudanswuvfishes" },
-  { CHEAT_CODE_HEADZ,     "humanheadsinside." },
-  { CHEAT_CODE_TOOLED,    "tooledworkedowned" },
-  { CHEAT_CODE_PIRATE,    "arrrrwalktheplank" },
-  { CHEAT_CODE_SKIP,      "skipmemymissionyo" }
+
+// --------------------------------------------------------------------------------------------------------------------
+// Inherited members (Protected members defined in .c/.cpp's)
+// --------------------------------------------------------------------------------------------------------------------
+extern int AI_watch_object;
+
+extern int Countermeasures_enabled;
+
+extern int Framerate_delay;
+
+extern vec3d Eye_position;
+extern matrix Eye_matrix;
+
+extern int Show_cpu;
+
+// --------------------------------------------------------------------------------------------------------------------
+// Public members (Declared as extern in .h)
+// --------------------------------------------------------------------------------------------------------------------
+int Dead_key_set[] = {
+	TARGET_NEXT,
+	TARGET_PREV,
+	TARGET_NEXT_CLOSEST_HOSTILE,
+	TARGET_PREV_CLOSEST_HOSTILE,
+	TARGET_NEXT_CLOSEST_FRIENDLY,
+	TARGET_PREV_CLOSEST_FRIENDLY,
+	TARGET_TARGETS_TARGET,
+	TARGET_CLOSEST_SHIP_ATTACKING_TARGET,
+	STOP_TARGETING_SHIP,
+	TOGGLE_AUTO_TARGETING,
+	TARGET_SUBOBJECT_IN_RETICLE,
+	TARGET_PREV_SUBOBJECT,
+	TARGET_NEXT_SUBOBJECT,
+	STOP_TARGETING_SUBSYSTEM,
+	TARGET_NEWEST_SHIP,
+	TARGET_NEXT_LIVE_TURRET,
+	TARGET_PREV_LIVE_TURRET,
+	TARGET_NEXT_BOMB,
+	TARGET_PREV_BOMB,
+
+	VIEW_CHASE,
+	VIEW_OTHER_SHIP,
+	VIEW_TOPDOWN,
+
+	SHOW_GOALS,
+
+	ADD_REMOVE_ESCORT,
+	ESCORT_CLEAR,
+	TARGET_NEXT_ESCORT_SHIP,
+	TARGET_CLOSEST_REPAIR_SHIP,
+
+	MULTI_MESSAGE_ALL,
+	MULTI_MESSAGE_FRIENDLY,
+	MULTI_MESSAGE_HOSTILE,
+	MULTI_MESSAGE_TARGET,
+	MULTI_OBSERVER_ZOOM_TO,
+
+	TIME_SPEED_UP,
+	TIME_SLOW_DOWN
 };
 
+const int Dead_key_set_size = sizeof(Dead_key_set) / sizeof(int);
+
+int Ignored_keys[CCFG_MAX];
+
+bool Perspective_locked = false;
+bool quit_mission_popup_shown = false;
+
+
+// --------------------------------------------------------------------------------------------------------------------
+// Protected members (extern'd in other .c/.cpp files)
+// --------------------------------------------------------------------------------------------------------------------
+int Tool_enabled = 0;
+
+
+// --------------------------------------------------------------------------------------------------------------------
+// Private members (declared as static)
+// --------------------------------------------------------------------------------------------------------------------
+static const struct Cheat cheatsTable[] = {
+	{ CHEAT_CODE_FREESPACE, "www.freespace2.com" },
+	{ CHEAT_CODE_FISH, "vasudanswuvfishes" },
+	{ CHEAT_CODE_HEADZ, "humanheadsinside." },
+	{ CHEAT_CODE_TOOLED, "tooledworkedowned" },
+	{ CHEAT_CODE_PIRATE, "arrrrwalktheplank" },
+	{ CHEAT_CODE_SKIP, "skipmemymissionyo" }
+};
 #define CHEATS_TABLE_LEN	6
 
-// End Cheats
-// --------------------------------------------------------
-
-int Normal_key_set[] = {
+static int Normal_key_set[] = {
 	TARGET_NEXT,
 	TARGET_PREV,
 	TARGET_NEXT_CLOSEST_HOSTILE,
@@ -325,49 +387,7 @@ int Normal_key_set[] = {
 	CYCLE_PRIMARY_WEAPON_SEQUENCE
 };
 
-int Dead_key_set[] = {
-	TARGET_NEXT,
-	TARGET_PREV,
-	TARGET_NEXT_CLOSEST_HOSTILE,
-	TARGET_PREV_CLOSEST_HOSTILE,
-	TARGET_NEXT_CLOSEST_FRIENDLY,
-	TARGET_PREV_CLOSEST_FRIENDLY,
-	TARGET_TARGETS_TARGET,
-	TARGET_CLOSEST_SHIP_ATTACKING_TARGET,
-	STOP_TARGETING_SHIP,
-	TOGGLE_AUTO_TARGETING,
-	TARGET_SUBOBJECT_IN_RETICLE,
-	TARGET_PREV_SUBOBJECT,
-	TARGET_NEXT_SUBOBJECT,
-	STOP_TARGETING_SUBSYSTEM,
-	TARGET_NEWEST_SHIP,
-	TARGET_NEXT_LIVE_TURRET,
-	TARGET_PREV_LIVE_TURRET,
-	TARGET_NEXT_BOMB,
-	TARGET_PREV_BOMB,
-
-	VIEW_CHASE,
-	VIEW_OTHER_SHIP,
-	VIEW_TOPDOWN,
-
-	SHOW_GOALS,
-
-	ADD_REMOVE_ESCORT,
-	ESCORT_CLEAR,
-	TARGET_NEXT_ESCORT_SHIP,
-	TARGET_CLOSEST_REPAIR_SHIP,	
-
-	MULTI_MESSAGE_ALL,
-	MULTI_MESSAGE_FRIENDLY,
-	MULTI_MESSAGE_HOSTILE,
-	MULTI_MESSAGE_TARGET,
-	MULTI_OBSERVER_ZOOM_TO,
-
-	TIME_SPEED_UP,
-	TIME_SLOW_DOWN
-};
-
-int Critical_key_set[] = {
+static int Critical_key_set[] = {
 	CYCLE_NEXT_PRIMARY,
 	CYCLE_PREV_PRIMARY,
 	CYCLE_SECONDARY,
@@ -388,7 +408,7 @@ int Critical_key_set[] = {
 	XFER_LASER,
 };
 
-int Non_critical_key_set[] = {
+static int Non_critical_key_set[] = {
 	MATCH_TARGET_SPEED,
 	TOGGLE_AUTO_MATCH_TARGET_SPEED,
 	TARGET_NEXT,
@@ -460,38 +480,16 @@ int Non_critical_key_set[] = {
 	CYCLE_PRIMARY_WEAPON_SEQUENCE
 };
 
+static const int Normal_key_set_size = sizeof(Normal_key_set) / sizeof(int);
+static const int Critical_key_set_size = sizeof(Critical_key_set) / sizeof(int);
+static const int Non_critical_key_set_size = sizeof(Non_critical_key_set) / sizeof(int);
 
-// Inherited members
-extern int AI_watch_object;
-
-extern int Countermeasures_enabled;
-
-extern int Framerate_delay;
-
-extern vec3d Eye_position;
-extern matrix Eye_matrix;
-
-extern int Show_cpu;
+char CheatBuffer[CHEAT_BUFFER_LEN + 1];
 
 
-// Public members
-int Ignored_keys[CCFG_MAX];
-
-bool Perspective_locked = false;
-bool quit_mission_popup_shown = false;
-
-int Normal_key_set_size = sizeof(Normal_key_set) / sizeof(int);
-int Dead_key_set_size = sizeof(Dead_key_set) / sizeof(int);
-
-
-// Private members
-int Tool_enabled = 0;
-
-int Critical_key_set_size = sizeof(Critical_key_set) / sizeof(int);
-int Non_critical_key_set_size = sizeof(Non_critical_key_set) / sizeof(int);
-
-
-// Inherited/Friended/Referenced methods
+// --------------------------------------------------------------------------------------------------------------------
+// Inherited/Friended methods
+// --------------------------------------------------------------------------------------------------------------------
 extern void hud_target_asteroid();
 
 extern void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float zoom);
@@ -503,13 +501,8 @@ extern float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hit
 extern void mission_goal_mark_all_true(int type);
 
 // --------------------------------------------------------------------------------------------------------------------
-// Declaration of private functions(declared as static type func(type param);)
+// Declaration of protected functions.
 // --------------------------------------------------------------------------------------------------------------------
-/**
- * @brief Handler for when player hits 'ESC' during the game
- */
-void game_do_end_mission_popup();
-
 /**
  * @brief Processes cheat codes
  */
@@ -519,16 +512,6 @@ void game_process_cheats(int k);
  * @brief Processes all keys pressed since last frame
  */
 void game_process_keys();
-
-/**
- * @brief Gets the index of the next weapon type. Loops around
- */
-int get_next_weapon_looped(int current_weapon, int subtype);
-
-/**
- * @brief Gets the index of the previous weapon type. Loops around
- */
-int get_prev_weapon_looped(int current_weapon, int subtype);
 
 /**
  * @brief Execute function corresponding to action n
@@ -563,10 +546,28 @@ int button_function_critical(int n, net_player *p = NULL);
 int button_function_demo_valid(int n);
 
 
+// --------------------------------------------------------------------------------------------------------------------
+// Declaration of private functions(declared as static type func(type param);)
+// --------------------------------------------------------------------------------------------------------------------
+/**
+ * @brief Handler for when player hits 'ESC' during the game
+ */
+static void game_do_end_mission_popup();
+
+/**
+ * @brief Gets the index of the next weapon type. Loops around
+ */
+static int get_next_weapon_looped(int current_weapon, int subtype);
+
+/**
+ * @brief Gets the index of the previous weapon type. Loops around
+ */
+static int get_prev_weapon_looped(int current_weapon, int subtype);
+
 /**
  * @brief Returns true if the given action is a targeting control
  */
-bool key_is_targeting(int n);
+static bool key_is_targeting(int n);
 
 /**
  * @brief If the given key is a hotkey, do the corresponding action
@@ -576,56 +577,56 @@ bool key_is_targeting(int n);
  * @details Pre-Process Special Key? This is called within process_player_ship_keys before it checks the other actions
  *   for a match
  */
-void ppsk_hotkeys(int k);
+static void ppsk_hotkeys(int k);
 
 /**
  * @brief If the given key is tied to a hardcoded debug action, do the corresponding action
  *
  * @param[in] k The key to check
  */
-void process_debug_keys(int k);
+static void process_debug_keys(int k);
 
 /**
  * @brief If the given keys is used for player ship stuff (*not* ship movement), do the corresponding action
  *
  * @param[in] k The key to check
  */
-void process_player_ship_keys(int k);
+static void process_player_ship_keys(int k);
 
 /**
  * @brief DEBUG: Changes the currently playing soundtrack. Maybe.
  *
  * @param[in] delta Not used
  */
-void debug_change_song(int delta);
+static void debug_change_song(int delta);
 
 /**
  * @brief DEBUG: Cycle the player's ship to the next ship in its species
  *
  * @param[in] delta Number of ships to skip. Ex: +1 uses the next ship, -1 uses previous, +2 uses the 2nd next, etc.
  */
-void debug_cycle_player_ship(int delta);
+static void debug_cycle_player_ship(int delta);
 
 /**
  * @brief DEBUG: Cycle the targeted ship to the next ship in its species
  *
  * @param[in] delta Number of ships to skip. Ex: +1 uses the next ship, -1 uses previous, +2 uses the 2nd next, etc.
  */
-void debug_cycle_targeted_ship(int delta);
+static void debug_cycle_targeted_ship(int delta);
 
 /**
  * @brief DEBUG: Refills ammo for ballistic primaries for the given obj
  *
  * @param[in] delta
  */
-void debug_max_primary_weapons(object *objp);
+static void debug_max_primary_weapons(object *objp);
 
 /**
  * @brief DEBUG: Refills secondary ammo for the given obj
  *
  * @param[in] delta
  */
-void debug_max_secondary_weapons(object *objp);
+static void debug_max_secondary_weapons(object *objp);
 
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -1686,26 +1687,25 @@ int button_function_demo_valid(int n) {
 void button_info_clear(button_info *bi) {
 	int i;
 
-	for (i = 0; i<NUM_BUTTON_FIELDS; i++) {
+	for (i = 0; i < NUM_BUTTON_FIELDS; i++) {
 		bi->status[i] = 0;
 	}
 }
 
-void button_info_do(button_info *bi)
-{
+void button_info_do(button_info *bi) {
 	for (int i = 0; i < CCFG_MAX; i++) {
-		if( button_info_query(bi, i) ) {
+		if (button_info_query(bi, i)) {
 			int keyHasBeenUsed = FALSE;
-			
-			if( !keyHasBeenUsed ) {
+
+			if (!keyHasBeenUsed) {
 				keyHasBeenUsed = button_function_demo_valid(i);
 			}
-			
-			if( !keyHasBeenUsed ) {
+
+			if (!keyHasBeenUsed) {
 				keyHasBeenUsed = button_function(i);
 			}
-			
-			if( keyHasBeenUsed ) {
+
+			if (keyHasBeenUsed) {
 				button_info_unset(bi, i);
 			}
 		}
@@ -1716,37 +1716,34 @@ bool button_info_query(button_info *bi, int n) {
 	return bi->status[n / 32] & (1 << (n % 32));
 }
 
-void button_info_set(button_info *bi, int n)
-{
+void button_info_set(button_info *bi, int n) {
 	int field_num, bit_num;
-	
+
 	field_num = n / 32;
 	bit_num = n % 32;
 
-	bi->status[field_num] |= (1 << bit_num);	
+	bi->status[field_num] |= (1 << bit_num);
 }
 
-void button_info_unset(button_info *bi, int n)
-{
+void button_info_unset(button_info *bi, int n) {
 	int field_num, bit_num;
-	
+
 	field_num = n / 32;
 	bit_num = n % 32;
 
-	bi->status[field_num] &= ~(1 << bit_num);	
+	bi->status[field_num] &= ~(1 << bit_num);
 }
 
-void button_strip_noncritical_keys(button_info *bi)
-{
+void button_strip_noncritical_keys(button_info *bi) {
 	int idx;
 
 	// clear out all noncritical keys
-	for(idx=0;idx<Non_critical_key_set_size;idx++){
-		button_info_unset(bi,Non_critical_key_set[idx]);
+	for (idx = 0; idx < Non_critical_key_set_size; idx++) {
+		button_info_unset(bi, Non_critical_key_set[idx]);
 	}
 }
 
-void debug_change_song(int delta) {
+static void debug_change_song(int delta) {
 	char buf[256];
 	if (event_music_next_soundtrack(delta) != -1) {
 		event_music_get_soundtrack_name(buf);
@@ -1757,7 +1754,7 @@ void debug_change_song(int delta) {
 	}
 }
 
-void debug_cycle_player_ship(int delta) {
+static void debug_cycle_player_ship(int delta) {
 	if (Player_obj == NULL)
 		return;
 
@@ -1788,7 +1785,7 @@ void debug_cycle_player_ship(int delta) {
 	HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Player ship changed to %s", 0), Ship_info[si_index].name);
 }
 
-void debug_cycle_targeted_ship(int delta) {
+static void debug_cycle_targeted_ship(int delta) {
 	object		*objp;
 	ship_info	*sip;
 	int			si_index, species;
@@ -1836,7 +1833,7 @@ void debug_cycle_targeted_ship(int delta) {
 	HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Changed player target to %s", 1), Ship_info[si_index].name);
 }
 
-void debug_max_primary_weapons(object *objp)	// Goober5000
+static void debug_max_primary_weapons(object *objp)	// Goober5000
 {
 	Assert(objp);	// Goober5000
 
@@ -1859,7 +1856,7 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 	}
 }
 
-void debug_max_secondary_weapons(object *objp) {
+static void debug_max_secondary_weapons(object *objp) {
 	int index;
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
@@ -1870,7 +1867,7 @@ void debug_max_secondary_weapons(object *objp) {
 	}
 }
 
-void game_do_end_mission_popup() {
+static void game_do_end_mission_popup() {
 	int	pf_flags, choice;
 
 	// do the multiplayer version of this
@@ -2125,7 +2122,7 @@ void game_process_keys() {
 	} else if (lua_game_control & LGC_B_ADDITIVE) {
 		// add the lua commands to current commands 
 		int i;
-		for (i = 0; i<NUM_BUTTON_FIELDS; i++)
+		for (i = 0; i < NUM_BUTTON_FIELDS; i++)
 			Player->bi.status[i] |= Player->lua_bi.status[i];
 		Player->lua_bi = Player->bi;
 	} else {
@@ -2152,7 +2149,7 @@ void game_process_pause_key() {
 	}
 }
 
-int get_next_weapon_looped(int current_weapon, int subtype) {
+static int get_next_weapon_looped(int current_weapon, int subtype) {
 	int i, new_index;
 
 	for (i = 1; i < Num_weapon_types; i++) {
@@ -2166,7 +2163,7 @@ int get_next_weapon_looped(int current_weapon, int subtype) {
 	return current_weapon;
 }
 
-int get_prev_weapon_looped(int current_weapon, int subtype) {
+static int get_prev_weapon_looped(int current_weapon, int subtype) {
 	int i, new_index;
 
 	for (i = 1; i < Num_weapon_types; i++) {
@@ -2180,7 +2177,7 @@ int get_prev_weapon_looped(int current_weapon, int subtype) {
 	return current_weapon;
 }
 
-bool key_is_targeting(int n) {
+static bool key_is_targeting(int n) {
 	switch (n) {
 	case TARGET_NEXT:
 	case TARGET_PREV:
@@ -2203,7 +2200,7 @@ bool key_is_targeting(int n) {
 	}
 }
 
-void ppsk_hotkeys(int k) {
+static void ppsk_hotkeys(int k) {
 	// use k to check for keys that can have Shift,Ctrl,Alt,Del status
 	int hotkey_set;
 
@@ -2275,7 +2272,7 @@ void ppsk_hotkeys(int k) {
 	}	// end switch
 }
 
-void process_debug_keys(int k) {
+static void process_debug_keys(int k) {
 	// Kazan -- NO CHEATS IN MULTI
 	if (Game_mode & GM_MULTIPLAYER) {
 		Cheats_enabled = 0;
@@ -2891,7 +2888,7 @@ void process_debug_keys(int k) {
 	}	// end switch
 }
 
-void process_player_ship_keys(int k) {
+static void process_player_ship_keys(int k) {
 	int masked_k;
 
 	masked_k = k & ~KEY_CTRLED;	// take out CTRL modifier only	
@@ -2939,7 +2936,7 @@ void process_player_ship_keys(int k) {
 void process_set_of_keys(int key, int count, int *list) {
 	int i;
 
-	for (i = 0; i<count; i++)
+	for (i = 0; i < count; i++)
 		if (check_control(list[i], key))
 			button_info_set(&Player->bi, list[i]);
 }

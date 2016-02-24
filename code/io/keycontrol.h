@@ -22,10 +22,10 @@
 #define NUM_BUTTON_FIELDS	((CCFG_MAX + 31) / 32)
 
 extern int Dead_key_set[];      //!< Set of controls available while dead
-extern int Dead_key_set_size;   //!< Dead_key_set.size()
+extern const int Dead_key_set_size;   //!< Dead_key_set.size()
 extern bool Perspective_locked; //!< If true, prevent the player from being able to switch perspectives (such as between 3rd person and cockpit)
 
-extern int Ignored_keys[];      //!< Set of controls that are ignored. Counter based. 0 Means don't ignore this control
+extern int Ignored_keys[CCFG_MAX];      //!< Set of controls that are ignored. Counter based. 0 Means don't ignore this control
 
 extern bool quit_mission_popup_shown;   //!< True if the "Quit Mission" popup is visible/in focus
 
