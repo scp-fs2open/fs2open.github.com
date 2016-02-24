@@ -71,6 +71,9 @@ const char *bm_ext_list[] = { ".dds", ".tga", ".png", ".jpg", ".pcx" };
 const int BM_NUM_TYPES = sizeof(bm_type_list) / sizeof(bm_type_list[0]);
 
 const BM_TYPE bm_ani_type_list[] = { BM_TYPE_EFF, BM_TYPE_ANI, BM_TYPE_PNG };
+// NOTE: it would be better to have apng files use the .apng extension
+// However there's lots of assumptions throughout the codebase that file extensions are only
+// three chars long. If this is ever changed the the .apng extension could be used
 const char *bm_ani_ext_list[] = { ".eff", ".ani", ".png" };
 const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(bm_ani_type_list[0]);
 
