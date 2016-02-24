@@ -27,38 +27,41 @@
 
 int mouse_inited = 0;
 
-static int Mouse_x;
-static int Mouse_y;
-
-static int Mouse_wheel_x;
-static int Mouse_wheel_y;
-
-SDL_mutex* mouse_lock;
-
-int mouse_flags;
-int mouse_left_pressed = 0;
-int mouse_right_pressed = 0;
-int mouse_middle_pressed = 0;
-int mouse_x1_pressed = 0;
-int mouse_x2_pressed = 0;
-int mouse_left_up = 0;
-int mouse_right_up = 0;
-int mouse_middle_up = 0;
-int mouse_x1_up = 0;
-int mouse_x2_up = 0;
-
-static int Mouse_dx = 0;
-static int Mouse_dy = 0;
-static int Mouse_dz = 0;
-
-static int Last_mouse_dx = 0;
-static int Last_mouse_dy = 0;
-static int Last_mouse_dz = 0;
-
 int Mouse_sensitivity = 4;
 int Use_mouse_to_fly = 0;
 
+SDL_mutex* mouse_lock;
+
+
+// Mouse axes
+static int Mouse_x;
+static int Mouse_y;
+
+static int Mouse_dx = 0;
+static int Mouse_dy = 0;
+
+static int Last_mouse_dx = 0;
+static int Last_mouse_dy = 0;
+
+// Mousewheel axes
+static int Mouse_wheel_x;
+static int Mouse_wheel_y;
+
+// Mouse button states
+static int mouse_flags;
+static int mouse_left_pressed = 0;
+static int mouse_right_pressed = 0;
+static int mouse_middle_pressed = 0;
+static int mouse_x1_pressed = 0;
+static int mouse_x2_pressed = 0;
+static int mouse_left_up = 0;
+static int mouse_right_up = 0;
+static int mouse_middle_up = 0;
+static int mouse_x1_up = 0;
+static int mouse_x2_up = 0;
+
 static bool Mouse_in_focus = true;
+
 
 /**
  * @brief Handler called by OS on shutdown
@@ -274,7 +277,7 @@ void mouse_flush() {
 		return;
 
 	mouse_reset_deltas();
-	Mouse_dx = Mouse_dy = Mouse_dz = 0;
+	Mouse_dx = Mouse_dy = 0;
 	Mouse_wheel_x = Mouse_wheel_y = 0;
 	SDL_LockMutex(mouse_lock);
 	mouse_left_pressed = 0;
@@ -292,13 +295,11 @@ void mouse_force_pos(int x, int y) {
 	}
 }
 
-void mouse_get_delta(int *dx, int *dy, int *dz) {
+void mouse_get_delta(int *dx, int *dy) {
 	if (dx)
 		*dx = Mouse_dx;
 	if (dy)
 		*dy = Mouse_dy;
-	if (dz)
-		*dz = Mouse_dz;
 }
 
 int mouse_get_pos(int *xpos, int *ypos) {
@@ -485,9 +486,8 @@ void mouse_mark_button(uint flags, int set) {
 void mouse_reset_deltas() {
 	Last_mouse_dx = Mouse_dx;
 	Last_mouse_dy = Mouse_dy;
-	Last_mouse_dz = Mouse_dz;
 
-	Mouse_dx = Mouse_dy = Mouse_dz = 0;
+	Mouse_dx = Mouse_dy = 0;
 }
 
 void mouse_set_pos(int xpos, int ypos) {
