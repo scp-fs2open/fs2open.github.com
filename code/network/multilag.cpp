@@ -12,7 +12,6 @@
 #ifndef SCP_UNIX
 
 #include <winsock.h>
-#include <wsipx.h>
 
 #include "network/multilag.h"
 #include "io/timer.h"
@@ -59,8 +58,7 @@ typedef struct lag_buf {
 	int data_len;								// length of the data
 	uint socket;								// this can be either a PSNET_SOCKET or a PSNET_SOCKET_RELIABLE
 	int stamp;									// when this expires, make this packet available	
-	SOCKADDR_IN ip_addr;						// ip address when in TCP
-	SOCKADDR_IPX ipx_addr;					// ipx address when in IPX mode
+	SOCKADDR_IN ip_addr;						// ip address
 
 	struct	lag_buf * prev;				// prev in the list
 	struct	lag_buf * next;				// next in the list
@@ -172,7 +170,6 @@ int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except
 	char t_buf[1024];
 	int t_from_len;
 	SOCKADDR_IN ip_addr;
-	SOCKADDR_IPX ipx_addr;
 	int ret_val;
 	lag_buf *moveup, *item;
 
@@ -182,18 +179,13 @@ int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except
 
 	// clear out addresses
 	memset(&ip_addr, 0, sizeof(SOCKADDR_IN));
-	memset(&ipx_addr, 0, sizeof(SOCKADDR_IPX));
 
 	// if there's data on the socket, read it
 	if(select(nfds, readfds, writefds, except_fds, timeout)){		
 		// read the data and stuff it
-		if(Tcp_active){						
-			t_from_len = sizeof(SOCKADDR_IN);
-			ret_val = recvfrom(readfds->fd_array[0], t_buf, 1024, 0, (SOCKADDR*)&ip_addr, &t_from_len);
-		} else {
-			t_from_len = sizeof(SOCKADDR_IPX);
-			ret_val = recvfrom(readfds->fd_array[0], t_buf, 1024, 0, (SOCKADDR*)&ipx_addr, &t_from_len);
-		}
+		Assertion(Tcp_active, "multi_lag_select(): TCP/IP is not active!");
+		t_from_len = sizeof(SOCKADDR_IN);
+		ret_val = recvfrom(readfds->fd_array[0], t_buf, 1024, 0, (SOCKADDR*)&ip_addr, &t_from_len);
 			
 		// wacky socket error
 		if(ret_val == SOCKET_ERROR){
@@ -209,7 +201,6 @@ int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except
 				memcpy(item->data, t_buf, ret_val);			
 				item->data_len = ret_val;
 				item->ip_addr = ip_addr;
-				item->ipx_addr = ipx_addr;
 				item->socket = readfds->fd_array[0];
 				item->stamp = timestamp(multi_lag_get_random_lag());
 			}		
@@ -260,11 +251,8 @@ int multi_lag_recvfrom(uint s, char *buf, int len, int flags, struct sockaddr *f
 	// stuff the data
 	Assert(item->data_len <= len);
 	memcpy(buf, item->data, item->data_len);
-	if(Tcp_active){
-		memcpy(from, &item->ip_addr, sizeof(SOCKADDR_IN));
-	} else {
-		memcpy(from, &item->ipx_addr, sizeof(SOCKADDR_IPX)); //-V512
-	}
+	Assertion(Tcp_active, "multi_lag_recvfrom(): TCP/IP is not active!");
+	memcpy(from, &item->ip_addr, sizeof(SOCKADDR_IN));
 
 	// stick the item back on the free list
 	multi_lag_put_free(item);
