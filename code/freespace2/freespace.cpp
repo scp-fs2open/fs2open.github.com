@@ -311,8 +311,6 @@ int last_single_step=0;
 int game_zbuffer = 1;
 static int Game_paused;
 
-int Game_level_seed;
-
 #define EXPIRE_BAD_CHECKSUM			1
 #define EXPIRE_BAD_TIME					2
 
@@ -949,28 +947,18 @@ uint load_post_level_init;
  *
  * @return 0 on failure, 1 on success
  */
-void game_level_init(int seed)
+void game_level_init()
 {
 	game_busy( NOX("** starting game_level_init() **") );
 	load_gl_init = (uint) time(NULL);
-	// seed the random number generator
-	if ( seed == -1 ) {
-		// if no seed was passed, seed the generator either from the time value, or from the
-		// netgame security flags -- ensures that all players in multiplayer game will have the
-		// same randon number sequence (with static rand functions)
-		if ( Game_mode & GM_NORMAL ) {
-			Game_level_seed = (int) time(NULL);
-		} else {
-			Game_level_seed = Netgame.security;
-		}
-	} else {
-		Assert( !(Game_mode & GM_MULTIPLAYER) );
-		Game_level_seed = seed;
-	}
-	srand( Game_level_seed );
 
-	// semirand function needs to get re-initted every time in multiplayer
-	if ( Game_mode & GM_MULTIPLAYER ){
+	// seed the random number generator in multiplayer
+	if ( Game_mode & GM_MULTIPLAYER ) {
+		// seed the generator from the netgame security flags -- ensures that all players in
+		// multiplayer will have the same random number sequence (with static rand functions)
+		srand( Netgame.security );
+
+		// semirand function needs to get re-initted every time in multiplayer
 		init_semirand();
 	}
 
@@ -1616,8 +1604,6 @@ DCF(show_cpu,"Toggles showing cpu usage")
 
 #endif
 
-			int Game_init_seed;
-
 DCF(use_joy_mouse,"Makes joystick move mouse cursor")
 {
 	bool process = true;
@@ -1754,8 +1740,8 @@ void game_init()
 	// Moved from rand32, if we're gonna break, break immediately.
 	Assert(RAND_MAX == 0x7fff || RAND_MAX >= 0x7ffffffd);
 	// seed the random number generator
-	Game_init_seed = (int) time(NULL);
-	srand( Game_init_seed );
+	int game_init_seed = (int) time(NULL);
+	srand( game_init_seed );
 
 	Framerate_delay = 0;
 
