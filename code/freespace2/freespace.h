@@ -219,7 +219,7 @@ void game_unpause();
 //WMC - Stuff for scripting, these make the game go
 extern camid Main_camera;
 
-extern void game_level_init(int seed = -1);
+extern void game_level_init();
 extern void game_post_level_init();
 extern camid game_render_frame_setup();
 extern void game_render_frame(camid cid);
