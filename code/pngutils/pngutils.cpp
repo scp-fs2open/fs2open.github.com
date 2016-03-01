@@ -544,6 +544,19 @@ unsigned int apng_ani::_read_chunk(_chunk_s& chunk)
 }
 
 /*
+ * @brief preload/cache the anim frames
+ * @note useful for preloading without having to load the apng into bmpman slots
+ */
+void apng_ani::preload()
+{
+	_reading = false;
+	while (current_frame < nframes) {
+		next_frame();
+	}
+	current_frame = 0;
+}
+
+/*
  * @brief get previous apng frame
  * @note due to apng format, this can only play backwards from the furthest forward frame reached
  */
@@ -621,6 +634,15 @@ void apng_ani::next_frame()
 size_t apng_ani::imgsize()
 {
 	return _image_size;
+}
+
+
+/*
+ * @brief send animation to its 1st frame
+ */
+void apng_ani::goto_start()
+{
+	current_frame = 0;
 }
 
 

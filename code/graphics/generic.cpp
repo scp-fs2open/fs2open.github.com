@@ -586,8 +586,9 @@ void generic_anim_render_fixed_frame_delay(generic_anim* ga, float frametime)
  *
  * @param [in] *ga  animation data
  * @param [in] frametime  how long this frame took
+ * @param [in] alpha  transparency to draw frame with (0.0 - 1.0)
  */
-void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime)
+void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime, float alpha)
 {
 	Assertion(ga->type == BM_TYPE_PNG, "only valid for apngs (currently); get a coder!");
 	if (ga->keyframe != 0) {
@@ -659,7 +660,7 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime)
 		// note: generic anims are not currently ever non-streaming in FSO
 		// I'm not even sure that the existing ani/eff code would allow non-streaming generic anims
 		generic_render_png_stream(ga);
-		gr_set_bitmap(ga->bitmap_id);
+		gr_set_bitmap(ga->bitmap_id, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, alpha);
 	}
 }
 
@@ -673,10 +674,19 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime)
  * @param [in] y  2D screen y co-ordinate to render at
  * @param [in] menu select if this is rendered in menu screen, or fullscreen
  */
-void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu)
+void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu, const generic_extras *ge)
 {
+	if ((ge != nullptr) && (ga->use_hud_color == true)) {
+		Warning(LOCATION, "Monochrome generic anims can't use extra info (yet)");
+		return;
+	}
+
+	float a = 1.0f;
+	if (ge != nullptr) {
+		a = ge->alpha;
+	}
 	if (ga->type == BM_TYPE_PNG) {
-		generic_anim_render_variable_frame_delay(ga, frametime);
+		generic_anim_render_variable_frame_delay(ga, frametime, a);
 	}
 	else {
 		generic_anim_render_fixed_frame_delay(ga, frametime);
@@ -684,9 +694,19 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 
 	if(ga->num_frames > 0) {
 		ga->previous_frame = ga->current_frame;
-		if(ga->use_hud_color)
+
+		if(ga->use_hud_color) {
 			gr_aabitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
-		else
-			gr_bitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
+		}
+		else {
+			if (ge == nullptr) {
+				gr_bitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
+			}
+			else if (ge->draw == true) {
+				// currently only for lua streaminganim objects
+				// and don't draw them unless requested...
+				gr_bitmap_uv(x, y, ge->width, ge->height, ge->u0, ge->v0, ge->u1, ge->v1, GR_RESIZE_NONE);
+			}
+		}
 	}
 }

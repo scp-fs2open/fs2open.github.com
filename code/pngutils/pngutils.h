@@ -46,8 +46,10 @@ public:
 	~apng_ani();
 
 	int    load_header();
+	void   goto_start();
 	void   next_frame();
 	void   prev_frame();
+	void   preload();
 	void   info_callback();
 	void   row_callback(png_bytep new_row, png_uint_32 row_num);
 	size_t imgsize();
