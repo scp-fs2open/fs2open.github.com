@@ -268,7 +268,7 @@ static inline bool not_chunk(ubyte c)
 /*
  * @brief shim for libpng info/IHDR chunk callback
  */
-static void info_callback(png_structp png_ptr, png_infop info_ptr)
+static inline void info_callback(png_structp png_ptr, png_infop info_ptr)
 {
 	static_cast<apng_ani*>(png_get_progressive_ptr(png_ptr))->info_callback();
 }
@@ -276,7 +276,7 @@ static void info_callback(png_structp png_ptr, png_infop info_ptr)
 /*
  * @brief shim for libpng row callback
  */
-static void row_callback(png_structp png_ptr, png_bytep new_row, png_uint_32 row_num, int pass)
+static inline void row_callback(png_structp png_ptr, png_bytep new_row, png_uint_32 row_num, int pass)
 {
 	static_cast<apng_ani*>(png_get_progressive_ptr(png_ptr))->row_callback(new_row, row_num);
 }
@@ -317,6 +317,7 @@ void apng_ani::_compose_frame()
 							dp[3] = al / 255;
 						}
 						else {
+							// destination is transparent, overwrite it
 							memcpy(dp, sp, 4);
 						}
 					}
@@ -523,11 +524,14 @@ void apng_ani::_process_chunk()
 
 unsigned int apng_ani::_read_chunk(_chunk_s& chunk)
 {
-	chunk.data.resize(4);
 	_offset = cftell(_cfp);
 	if (cfread(&chunk.data[0], 4, 1, _cfp) == 1) {
 		chunk.size = png_get_uint_32(&chunk.data[0]) + 12;
-		chunk.data.resize(chunk.size);
+		// reduce the amount of vector resizing
+		if (chunk.size > _max_chunk_size) {
+			_max_chunk_size = chunk.size;
+			chunk.data.resize(chunk.size);
+		}
 		if (cfread(&chunk.data[4], chunk.size-4, 1, _cfp) == 1) {
 			return *(uint*)(&chunk.data[4]);
 		}
@@ -544,7 +548,7 @@ void apng_ani::prev_frame()
 	_reading = false;
 	if (current_frame > 0) {
 		frame = _frames.at(--current_frame);
-		nprintf(("apng", "apng prev_frame; (%03lu) (%03i)\n", _frames.size(), current_frame));
+		nprintf(("apng", "apng prev_frame; (%03i/%03lu)\n", current_frame, _frames.size()));
 	}
 }
 
@@ -573,8 +577,8 @@ void apng_ani::next_frame()
 			_process_chunk();
 		}
 
-		nprintf(("apng", "apng next_frame; new (%03lu) (%03i) (%u) (%u) %03u|%03u %03u|%03u (%02lu) (%04f)\n",
-				_frames.size(), current_frame, _dispose_op, _blend_op,
+		nprintf(("apng", "apng next_frame; new (%03i/%03lu) (%u) (%u) %03u|%03u %03u|%03u (%02lu) (%04f)\n",
+				current_frame, _frames.size(), _dispose_op, _blend_op,
 				_framew, _x_offset, _frameh, _y_offset,
 				_frame_offsets.size(), frame.delay));
 
@@ -586,16 +590,17 @@ void apng_ani::next_frame()
 			 // revert to previous; so save for later
 			 _frame_next.data = frame.data;
 		}
+
 		_compose_frame();
 		_frames.push_back(frame);
 	}
 	else {
-		nprintf(("apng", "apng next_frame; used old (%03lu) (%03i)\n", _frames.size(), current_frame));
+		if (current_frame < nframes) {
+			nprintf(("apng", "apng next_frame; used old (%03i/%03lu)\n", current_frame, _frames.size()));
+			frame = _frames.at(current_frame);
+		}
 	}
-
-	if (current_frame < nframes-1) {
-		frame = _frames.at(current_frame++);
-	}
+	++current_frame;
 }
 
 /*
@@ -638,6 +643,10 @@ int apng_ani::load_header()
 		_apng_failed("file has invalid png signature");
 	}
 
+	// setup chunk sizes before use
+	_chunk_IHDR.data.resize(25); // fixed IHDR chunk size
+	_chunk.data.resize(25);      // match the other sizes, maybe waste up to 13 bytes (ooooh)
+
 	_id = _read_chunk(_chunk_IHDR);
 
 	if (_id != id_IHDR || _chunk_IHDR.size != 25) {
@@ -647,7 +656,6 @@ int apng_ani::load_header()
 	w = png_get_uint_32(&_chunk_IHDR.data[8]);
 	h = png_get_uint_32(&_chunk_IHDR.data[12]);
 	_row_len = w * 4;
-	bpp = 32;  // we'll force all our frames to use this
 
 	// setup frames & keep bm_create happy
 	_image_size = _row_len * h;
@@ -659,9 +667,10 @@ int apng_ani::load_header()
 	_frame_next.data.resize(_image_size);
 	_frame_next.rows.resize(h);
 	for (uint i = 0; i < h; ++i) {
-		frame.rows.at(i) =       &frame.data.at(i * _row_len);
-		_frame_raw.rows.at(i) =  &_frame_raw.data.at(i * _row_len);
-		_frame_next.rows.at(i) = &_frame_next.data.at(i * _row_len);
+		// everything is correctly sized above; avoid .at() error checks
+		frame.rows[i]       = &frame.data[i * _row_len];
+		_frame_raw.rows[i]  = &_frame_raw.data[i * _row_len];
+		_frame_next.rows[i] = &_frame_next.data[i * _row_len];
 	}
 
 	// read all data
@@ -729,7 +738,7 @@ void apng_ani::_apng_failed(const char* msg)
 apng_ani::apng_ani(const char* filename)
 	: w(0)
 	, h(0)
-	, bpp(0)
+	, bpp(32)      // force all apngs to use this
 	, nframes(0)
 	, current_frame(0)
 	, plays(0)
@@ -747,6 +756,7 @@ apng_ani::apng_ani(const char* filename)
 	, _frameh(0)
 	, _x_offset(0)
 	, _y_offset(0)
+	, _max_chunk_size(25) // IHDR must be 1st and it must be this big
 	, _delay_num(1)
 	, _delay_den(100)
 	, _dispose_op(0)

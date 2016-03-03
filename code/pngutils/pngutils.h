@@ -71,6 +71,7 @@ private:
 	uint                    _row_len, _image_size;
 	uint                    _framew, _frameh;
 	uint                    _x_offset, _y_offset;
+	uint                    _max_chunk_size;
 	ushort                  _delay_num, _delay_den;
 	ubyte                   _dispose_op, _blend_op;
 	bool                    _reading, _got_acTL, _got_IDAT;
