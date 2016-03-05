@@ -563,14 +563,19 @@ void apng_ani::next_frame()
 	if (_frames.size() <= (current_frame)) {
 		if (current_frame > 0) {
 			if (_dispose_op == 1) {
-				// clear to fully transparent black
-				frame.data.assign(_image_size, 0);
+				// clear previous frame region of output buffer to fully transparent black
+				for (uint row = 0; row < _frameh; ++row) {
+					memset(&frame.data.at((_y_offset+row) * _row_len + _x_offset * 4), 0, _framew * 4);
+				}
 			}
 			else if (_dispose_op == 2) {
-				// revert to previous
-				frame.data = _frame_next.data;
+				// revert previous frames region of output buffer to previous contents
+				for (uint row = 0; row < _frameh; ++row) {
+					uint pos = (_y_offset+row) * _row_len + _x_offset * 4;
+					memcpy(&frame.data.at(pos), &_frame_next.data.at(pos), _framew * 4);
+				}
 			}
-			// default is to leave frame alone
+			// default is to do nothing with output buffer
 		}
 
 		while (cftell(_cfp) < _frame_offsets.at(current_frame+1)) {
@@ -587,8 +592,11 @@ void apng_ani::next_frame()
 		}
 
 		if (_dispose_op == 2) {
-			 // revert to previous; so save for later
-			 _frame_next.data = frame.data;
+			// revert to previous; so save the current frame region for later
+			for (uint row = 0; row < _frameh; ++row) {
+				uint pos = (_y_offset+row) * _row_len + _x_offset * 4;
+				memcpy(&_frame_next.data.at(pos), &frame.data.at(pos), _framew * 4);
+			}
 		}
 
 		_compose_frame();
