@@ -1280,6 +1280,24 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->submodel[n].look_at_submodel = -1; // No look_at
 				}
 
+				// optional extra property for look_at
+				if ((p = strstr(props, "$look_at_offset")) != NULL) {
+					float offset = (float)atof(p + 16);
+
+					// check range
+					if (offset < -PI2 || offset > PI2) {
+						Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -2PI to 2PI!", pm->submodel[n].name, pm->filename);
+						offset = -1.0f;
+					}
+					// make the angle positive, since negative angles will be set at first look_at call
+					else if (offset < 0.0f) {
+						offset += PI2;
+					}
+					pm->submodel[n].look_at_offset = offset;
+				} else {
+					pm->submodel[n].look_at_offset = -1.0f;
+				}
+
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
 				if ( ( p = strstr(props, "$dumb_rotate") ) != NULL ) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
@@ -3586,16 +3604,41 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	// rotate it back to the submodel's reference frame
 	vm_vec_rotate(&local_target_vec, &target_vec, &submodel_orient);
 
-	// calculate the angle between the zero vector and the target vector
+	// calculate the angle between the zero vector and the target vector...
+	// (c.f. http://math.stackexchange.com/questions/878785/how-to-find-an-angle-in-range0-360-between-2-vectors)
+
+	// find the dot product
 	float dot = vm_vec_dot(&local_target_vec, &local_zero_vec);
-	float angle = acos(dot);
+
+	// find the determinant using the triple product
+	vm_vec_cross(&temp, &local_zero_vec, &local_target_vec);
+	float det = vm_vec_dot(&local_axis_vec, &temp);
+
+	// find the angle using the two
+	float angle = atan2(det, dot);
+
+	// apply an offset to the angle, since the direction we look at may be different than the default orientation!
+
+	// if we have not specified an offset in the POF, assume that the very first time we call submodel_look_at, the submodel is pointing in the correct direction
+	if (sm->look_at_offset < 0.0f)
+	{
+		sm->look_at_offset = -angle;
+
+		// ensure the offset is in the proper range (see submodel_rotate)
+		while (sm->look_at_offset > PI2)
+			sm->look_at_offset -= PI2;
+		while (sm->look_at_offset < 0.0f)
+			sm->look_at_offset += PI2;
+	}
+
+	angle += sm->look_at_offset;
 
 	// ensure the angle is in the proper range (see submodel_rotate)
 	while (angle > PI2)
 		angle -= PI2;
 	while (angle < 0.0f)
 		angle += PI2;
-		
+
 	// save last angles
 	float prev_angle = 0.0f;
 	sii->prev_angs = sii->angs;

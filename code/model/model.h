@@ -304,7 +304,7 @@ public:
 		num_arcs(0), outline_buffer(NULL), n_verts_outline(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false),
 		use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
 		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
-		look_at_submodel(-1)
+		look_at_submodel(-1), look_at_offset(-1.0f)
 	{
 		name[0] = 0;
 		lod_name[0] = 0;
@@ -394,6 +394,7 @@ public:
 
 	float	dumb_turn_rate;			//Bobboau
 	int		look_at_submodel;		//VA - number of the submodel to be looked at by this submodel (-1 if none)
+	float	look_at_offset;			//angle in radians that the submodel should be turned from its initial orientation to be considered "looking at" something (-1 if set on first eval)
 };
 
 void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
