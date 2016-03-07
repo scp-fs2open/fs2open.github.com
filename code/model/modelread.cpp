@@ -3618,7 +3618,6 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	float angle = atan2(det, dot);
 
 	// apply an offset to the angle, since the direction we look at may be different than the default orientation!
-
 	// if we have not specified an offset in the POF, assume that the very first time we call submodel_look_at, the submodel is pointing in the correct direction
 	if (sm->look_at_offset < 0.0f)
 	{
@@ -3630,7 +3629,6 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 		while (sm->look_at_offset < 0.0f)
 			sm->look_at_offset += PI2;
 	}
-
 	angle += sm->look_at_offset;
 
 	// ensure the angle is in the proper range (see submodel_rotate)
