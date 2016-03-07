@@ -1659,7 +1659,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			img_size = the_apng.imgsize();
 		}
 		catch (const apng::ApngException& e) {
-			Warning(LOCATION, "Failed to load apng: %s", e.what());
+			mprintf(("Failed to load apng: %s\n", e.what() ));
 			if (img_cfp != nullptr)
 				cfclose(img_cfp);
 			return -1;

@@ -223,7 +223,7 @@ int generic_anim_stream(generic_anim *ga)
 				ga->png.anim = new apng::apng_ani(ga->filename);
 			}
 			catch (const apng::ApngException& e) {
-				Warning(LOCATION, "Failed to load apng: %s", e.what());
+				mprintf(("Failed to load apng: %s\n", e.what() ));
 				delete ga->png.anim;
 				ga->png.anim = nullptr;
 				return -1;
