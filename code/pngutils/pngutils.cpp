@@ -456,7 +456,6 @@ void apng_ani::_process_chunk()
 		}
 
 		// handle frame finish in next_frame
-
 		_framew = png_get_uint_32(&_chunk.data[12]);
 		_frameh = png_get_uint_32(&_chunk.data[16]);
 		_x_offset = png_get_uint_32(&_chunk.data[20]);
@@ -472,6 +471,11 @@ void apng_ani::_process_chunk()
 				|| _x_offset + _framew > w || _y_offset + _frameh > h
 				|| _dispose_op > 2 || _blend_op > 1)) {
 			_apng_failed("invalid apng fcTL data");
+		}
+
+		// according to spec...
+		if (current_frame == 0 && _dispose_op == 2) {
+			_dispose_op = 1;
 		}
 
 		if (_delay_den == 0) _delay_den = 100; // APNG spec
