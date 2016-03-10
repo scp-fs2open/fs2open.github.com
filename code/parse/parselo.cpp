@@ -1241,6 +1241,14 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
 	}
+	
+	if (type == F_FILESPEC) {
+		// Make sure that the passed string looks like a good filename
+		if (strlen(read_str) == 0) {
+			// Empty file name is not valid!
+			error_display(1, "A file name was expected but no name was supplied!\n");
+		}
+	}
 
 	// now we want to do any final localization
 	if(type != F_RAW && type != F_LNAME)
@@ -1314,6 +1322,14 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
+	}
+	
+	if (type == F_FILESPEC) {
+		// Make sure that the passed string looks like a good filename
+		if (read_str.empty()) {
+			// Empty file name is not valid!
+			error_display(1, "A file name was expected but no name was supplied!\n");
+		}
 	}
 
 	// now we want to do any final localization
