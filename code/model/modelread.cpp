@@ -19,6 +19,7 @@
 
 #define MODEL_LIB
 
+#include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
@@ -34,6 +35,7 @@
 #include "parse/parselo.h"
 #include "render/3dinternal.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 
 flag_def_list model_render_flags[] =
 {
@@ -64,7 +66,6 @@ CFILE *ss_fp = NULL;			// file pointer used to dump subsystem information
 char  model_filename[_MAX_PATH];		// temp used to store filename
 char	debug_name[_MAX_PATH];
 int ss_warning_shown = 0;		// have we shown the warning dialog concerning the subsystems?
-char	Global_filename[256];
 int Model_ram = 0;			// How much RAM the models use total
 #endif
 
@@ -121,6 +122,40 @@ flag_def_list Dock_type_names[] =
 int Num_dock_type_names = sizeof(Dock_type_names) / sizeof(flag_def_list);
 
 SCP_vector<glow_point_bank_override> glowpoint_bank_overrides;
+
+
+// Goober5000 - reimplementation of Bobboau's $dumb_rotation feature in a way that works with the rest of the model instance system
+// note: since these data types are only ever used in this file, they don't need to be in model.h
+
+class submodel_intrinsic_rotation
+{
+public:
+	int submodel_num;
+	submodel_instance_info submodel_info_1;
+
+	submodel_intrinsic_rotation(int _submodel_num, float _turn_rate)
+		: submodel_num(_submodel_num)
+	{
+		memset(&submodel_info_1, 0, sizeof(submodel_info_1));
+		submodel_info_1.cur_turn_rate = _turn_rate;
+		submodel_info_1.desired_turn_rate = _turn_rate;
+	}
+};
+
+class intrinsic_rotation
+{
+public:
+	bool is_ship;
+	int model_instance_num;
+	SCP_vector<submodel_intrinsic_rotation> list;
+
+	intrinsic_rotation(bool _is_ship, int _model_instance_num)
+		: is_ship(_is_ship), model_instance_num(_model_instance_num), list()
+	{}
+};
+
+SCP_vector<intrinsic_rotation> Intrinsic_rotations;
+
 
 // Free up a model, getting rid of all its memory
 // With the basic page in system this can be called from outside of modelread.cpp
@@ -317,6 +352,10 @@ void model_instance_free_all()
 		}
 	}
 
+	// clear skybox model instance if we have one; it is not an object and therefore has no <object>_delete function which would remove the instance
+	extern int Nmodel_instance_num;
+	Nmodel_instance_num = -1;
+
 	Polygon_model_instances.clear();
 }
 
@@ -444,7 +483,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 }
 
 // routine to get/set subsystem information
-static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *dname )
+static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props, char *dname)
 {
 	char *p;
 	char buf[64];
@@ -496,16 +535,23 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		subsystemp->type = SUBSYSTEM_ACTIVATION;
 	}  else { // If unrecognized type, set to unknown so artist can continue working...
 		subsystemp->type = SUBSYSTEM_UNKNOWN;
-		mprintf(("Potential problem found: Unrecognized subsystem type '%s', believed to be in ship %s\n", dname, Global_filename));
+		mprintf(("Subsystem '%s' on ship %s is not recognized as a common subsystem type\n", dname, model_get(model_num)->filename));
 	}
 
-	if ( (strstr(props, "$triggered:")) != NULL ) {
+	if ( (strstr(props, "$triggered")) != NULL ) {
 		subsystemp->flags |= MSS_FLAG_ROTATES;
 		subsystemp->flags |= MSS_FLAG_TRIGGERED;
 	}
 
+	// Dumb-Rotating subsystem
+	if ((p = strstr(props, "$dumb_rotate")) != NULL) {
+		// no special subsystem handling needed here, but make sure we didn't specify both methods
+		if (strstr(props, "$rotate") != NULL) {
+			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and dumb-rotation!", dname, model_get(model_num)->filename);
+		}
+	}
 	// Rotating subsystem
-	if ( (p = strstr(props, "$rotate")) != NULL)	{
+	else if ((p = strstr(props, "$rotate")) != NULL) {
 		subsystemp->flags |= MSS_FLAG_ROTATES;
 
 		// get time for (a) complete rotation (b) step (c) activation
@@ -637,7 +683,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 			subsystemp->model_num = model_num;
 			subsystemp->pnt = *pnt;				// use the offset to get the center point of the subsystem
 			subsystemp->radius = rad;
-			set_subsystem_info( subsystemp, props, subobj_name);
+			set_subsystem_info(model_num, subsystemp, props, subobj_name);
 			strcpy_s(subsystemp->subobj_name, subobj_name);						// copy the object name
 			return;
 		}
@@ -908,14 +954,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	int id, len, next_chunk;
 	int i,j;
 	vec3d temp_vec;
-
-#ifndef NDEBUG
-	strcpy_s(Global_filename, filename);
-#endif
-
-	// little test code i used in fred2
-	//char pwd[128];
-	//getcwd(pwd, 128);
 
 	fp = cfopen(filename,"rb");
 
@@ -1210,20 +1248,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					if (strstr(pm->submodel[n].name, "thruster")) {
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_NONE;
 						pm->submodel[n].movement_axis = MOVEMENT_AXIS_NONE;
-					}else if(strstr(props, "$triggered:")){
+					} else if(strstr(props, "$triggered")) {
 						pm->submodel[n].movement_type = MOVEMENT_TYPE_TRIGGERED;
 					}
 				}
 
-				// Sets can_move on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
-				if ( (pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
-					|| strstr(props, "$triggered:") || strstr(props, "$rotate") || strstr(props, "$dumb_rotate:") || strstr(props, "$gun_rotation:") || strstr(props, "$gun_rotation") ) {
-					pm->submodel[n].can_move = true;
-				} else if (pm->submodel[n].parent > -1 && pm->submodel[pm->submodel[n].parent].can_move) {
-					pm->submodel[n].can_move = true;
-				}
-
-				if ( ( p = strstr(props, "$look_at:")) != NULL ) {
+				if ( ( p = strstr(props, "$look_at")) != NULL ) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_LOOK_AT;
 					get_user_prop_value(p+9, pm->submodel[n].look_at);
 					pm->submodel[n].look_at_num = -2; // Set this to -2 to mark it as something we need to work out the correct subobject number for later, after all subobjects have been processed
@@ -1232,11 +1262,22 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->submodel[n].look_at_num = -1; // No look_at
 				}
 
-				if ( ( p = strstr(props, "$dumb_rotate:") ) != NULL ) {
-					pm->submodel[n].movement_type = MSS_FLAG_DUM_ROTATES;
-					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
+				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
+				if ( ( p = strstr(props, "$dumb_rotate") ) != NULL ) {
+					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
+					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
+
+					pm->submodel[n].dumb_turn_rate = (float)atof(p + 13);
 				} else {
 					pm->submodel[n].dumb_turn_rate = 0.0f;
+				}
+
+				// Sets can_move on submodels which are of a rotating type or which have such a parent somewhere down the hierarchy
+				if ((pm->submodel[n].movement_type != MOVEMENT_TYPE_NONE)
+					|| strstr(props, "$triggered") || strstr(props, "$rotate") || strstr(props, "$gun_rotation")) {
+					pm->submodel[n].can_move = true;
+				} else if (pm->submodel[n].parent >= 0 && pm->submodel[pm->submodel[n].parent].can_move) {
+					pm->submodel[n].can_move = true;
 				}
 
 				if ( pm->submodel[n].name[0] == '\0' ) {
@@ -1262,8 +1303,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 
 				// adding a warning if rotation is specified without movement axis.
-				if ((pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) && (pm->submodel[n].movement_axis == MOVEMENT_AXIS_NONE)){
-					Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+				if (pm->submodel[n].movement_axis == MOVEMENT_AXIS_NONE) {
+					if (pm->submodel[n].movement_type == MOVEMENT_TYPE_ROT) {
+						Warning(LOCATION, "Rotation without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+					}
+					else if (pm->submodel[n].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+						Warning(LOCATION, "Intrinsic rotation (e.g. dumb-rotate) without rotation axis defined on submodel '%s' of model '%s'!", pm->submodel[n].name, pm->filename);
+					}
 				}
 
 /*				if ( strstr(props, "$nontargetable")!= NULL ) {
@@ -2709,7 +2755,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	return pm->id;
 }
 
-int model_create_instance(int model_num)
+int model_create_instance(bool is_ship, int model_num)
 {
 	int i = 0;
 	int open_slot = -1;
@@ -2723,6 +2769,7 @@ int model_create_instance(int model_num)
 
 	polymodel_instance *pmi = (polymodel_instance*)vm_malloc(sizeof(polymodel_instance));
 	memset(pmi, 0, sizeof(polymodel_instance));
+	pmi->model_num = model_num;
 
 	// if not found, create a slot
 	if ( open_slot < 0 ) {
@@ -2740,7 +2787,22 @@ int model_create_instance(int model_num)
 		model_clear_submodel_instance( &pmi->submodel[i], &pm->submodel[i] );
 	}
 
-	pmi->model_num = model_num;
+	// add intrinsic_rotation instances if this model is intrinsic-rotating
+	if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
+		intrinsic_rotation intrinsic_rotate(is_ship, open_slot);
+
+		for (i = 0; i < pm->n_models; i++) {
+			if (pm->submodel[i].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
+				intrinsic_rotate.list.push_back(submodel_intrinsic_rotation(i, pm->submodel[i].dumb_turn_rate));
+			}
+		}
+
+		if (intrinsic_rotate.list.empty()) {
+			Assertion(!intrinsic_rotate.list.empty(), "This model has the PM_FLAG_HAS_INTRINSIC_ROTATE flag; why doesn't it have an intrinsic-rotating submodel?");
+		} else {
+			Intrinsic_rotations.push_back(intrinsic_rotate);
+		}
+	}
 
 	return open_slot;
 }
@@ -2760,6 +2822,14 @@ void model_delete_instance(int model_instance_num)
 	vm_free(pmi);
 
 	Polygon_model_instances[model_instance_num] = NULL;
+
+	// delete intrinsic rotations associated with this instance
+	for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it) {
+		if (intrinsic_it->model_instance_num == model_instance_num) {
+			Intrinsic_rotations.erase(intrinsic_it);
+			break;
+		}
+	}
 }
 
 // ensure that the subsys path is at least SUBSYS_PATH_DIST from the 
@@ -3213,17 +3283,15 @@ int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int 
 // Given a vector that is in sub_model_num's frame of
 // reference, and given the object's orient and position,
 // return the vector in the model's frame of reference.
-void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *pship_obj, int sub_model_num)
+void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_num, int submodel_num, matrix *objorient)
 {
 	vec3d tvec, vec;
 	matrix m;
 	int mn;
 
-	Assert(pship_obj->type == OBJ_SHIP);
-
-	polymodel *pm = model_get(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
+	polymodel *pm = model_get(model_num);
 	vec = *m_vec;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	// instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -3245,21 +3313,19 @@ void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *pship_obj, int sub_m
 	}
 
 	// now instance for the entire object
-	vm_vec_unrotate(w_vec, &vec, &pship_obj->orient);
+	vm_vec_unrotate(w_vec, &vec, objorient);
 }
 
-void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *pship_obj, int sub_model_num)
+void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient)
 {
 	vec3d tvec, vec;
 	matrix m;
 	int mn;
 
-	Assert(pship_obj->type == OBJ_SHIP);
-
-	polymodel_instance *pmi = model_get_instance(Ships[pship_obj->instance].model_instance_num);
-	polymodel *pm = model_get(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 	vec = *m_vec;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	// instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -3281,53 +3347,18 @@ void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *pship_obj, 
 	}
 
 	// now instance for the entire object
-	vm_vec_unrotate(w_vec, &vec, &pship_obj->orient);
+	vm_vec_unrotate(w_vec, &vec, objorient);
 }
 
 
-// Given a point (pnt) that is in sub_model_num's frame of
-// reference, return the point in in the object's frame of reference
-void model_rot_sub_into_obj(vec3d * outpnt, vec3d *mpnt,polymodel *pm, int sub_model_num)
+// Given a rotating submodel, find the ship and world axes of rotation.
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int model_instance_num, int submodel_num, matrix *objorient)
 {
-	vec3d pnt;
-	vec3d tpnt;
-	matrix m;
-	int mn;
-
-	pnt = *mpnt;
-	mn = sub_model_num;
-
-	//instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
- 
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tpnt, &pnt, &m);
-		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
-
-		mn = pm->submodel[mn].parent;
-	}
-
-	//now instance for the entire object
-	*outpnt = pnt;
-}
-
-
-// Given a rotating submodel, find the ship and world axes or rotatation.
-void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int modelnum, int submodel_num, object *obj)
-{
-	polymodel *pm = model_get(modelnum);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	bsp_info *sm = &pm->submodel[submodel_num];
-	Assert(sm->movement_type == MOVEMENT_TYPE_ROT);
+	Assert(sm->movement_type == MOVEMENT_TYPE_ROT || sm->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
 
 	if (sm->movement_axis == MOVEMENT_AXIS_X) {
 		vm_vec_make(model_axis, 1.0f, 0.0f, 0.0f);
@@ -3338,7 +3369,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 		vm_vec_make(model_axis, 0.0f, 0.0f, 1.0f);
 	}
 
-	model_instance_find_obj_dir(world_axis, model_axis, obj, submodel_num);
+	model_instance_find_obj_dir(world_axis, model_axis, model_instance_num, submodel_num, objorient);
 }
 
 
@@ -3556,8 +3587,7 @@ void submodel_look_at(polymodel *pm, int mn)
 
 }
 
-// Rotates the angle of a submodel.  Use this so the right unlocked axis
-// gets stuffed.
+// Rotates the angle of a submodel, when the submodel has a subsystem (which is almost always the case)
 void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii)
 {
 	bsp_info * sm;
@@ -3569,6 +3599,13 @@ void submodel_rotate(model_subsystem *psub, submodel_instance_info *sii)
 
 	if ( sm->movement_type != MOVEMENT_TYPE_ROT ) return;
 
+	submodel_rotate(sm, sii);
+}
+
+// Rotates the angle of a submodel.  If the submodel has a subsystem, the execution flow should first go through the other
+// submodel_rotate function before this one.  (This function is called directly in the case of dumb_rotation.)
+void submodel_rotate(bsp_info *sm, submodel_instance_info *sii)
+{
 	// save last angles
 	sii->prev_angs = sii->angs;
 
@@ -3730,17 +3767,17 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	model_clear_instance(model_num);
 	base->angs.h = offset_base_h;
 	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
+	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
 
 	base->angs.h = -PI_2 + offset_base_h;
 	gun->angs.p = -PI_2;
 	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
+	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
 
 	base->angs.h = 0.0f + offset_base_h;
 	gun->angs.p = -PI_2;
 	gun->angs.h = offset_barrel_h;
-	model_find_world_dir(&uvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
+	model_find_world_dir(&uvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix);
 									
 	vm_vec_normalize(&fvec);
 	vm_vec_normalize(&rvec);
@@ -3959,10 +3996,10 @@ void world_find_real_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int
 	*out = tempv2;
 }
 
-// Given a point (pnt) that is in sub_model_num's frame of
+// Given a point (pnt) that is in submodel_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt;
 	vec3d tpnt;
@@ -3971,7 +4008,7 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 	polymodel *pm = model_get(model_num);
 
 	pnt = *mpnt;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -3998,17 +4035,17 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 	vm_vec_add2(outpnt,objpos);
 }
 
-void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d pnt;
 	vec3d tpnt;
 	matrix m;
 	int mn;
-	polymodel *pm = model_get(model_num);
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	pnt = *mpnt;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4045,7 +4082,7 @@ void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num,
 // submodel_num - submodel in whose RF we're trying to find the corresponding world point
 // orient - orient matrix of ship
 // pos - pos vector of ship
-void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos)
+void world_find_model_point(vec3d *out, vec3d *world_pt, const polymodel *pm, int submodel_num, const matrix *orient, const vec3d *pos)
 {
 	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
 
@@ -4078,8 +4115,10 @@ void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int subm
 	vm_vec_rotate(out, &tempv2, &m);
 }
 
-void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d *pos)
+void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
 {
+	polymodel *pm = model_get(pmi->model_num);
+
 	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
 
 	vec3d tempv1, tempv2;
@@ -4116,18 +4155,16 @@ void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm,
  * taking into account the rotations of any parent submodels it might have.
  *  
  * @param *outpnt Output point
- * @param *pship_obj Ship object
+ * @param model_instance_num Index into Polygon_model_instances
  * @param submodel_num The number of the submodel we're interested in
  */
-void find_submodel_instance_point(vec3d *outpnt, object *pship_obj, int submodel_num)
+void find_submodel_instance_point(vec3d *outpnt, int model_instance_num, int submodel_num)
 {
-	Assert(pship_obj->type == OBJ_SHIP);
-
 	vm_vec_zero(outpnt);
 	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
 
-	polymodel_instance *pmi = model_get_instance(Ships[pship_obj->instance].model_instance_num);
-	polymodel *pm = model_get(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4160,21 +4197,19 @@ void find_submodel_instance_point(vec3d *outpnt, object *pship_obj, int submodel
  *  
  * @param *outpnt Output point
  * @param *outnorm Output normal
- * @param *pship_obj Ship object
+ * @param model_instance_num Index into Polygon_model_instances
  * @param submodel_num The number of the submodel we're interested in
  * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
  * @param *submodel_norm The normal which's current direction we want, in the ship's frame of reference
  */
-void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *pship_obj, int submodel_num, vec3d *submodel_pnt, vec3d *submodel_norm)
+void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const vec3d *submodel_norm)
 {
-	Assert(pship_obj->type == OBJ_SHIP);
-
 	*outnorm = *submodel_norm;
 	vm_vec_zero(outpnt);
 	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
 
-	polymodel_instance *pmi = model_get_instance(Ships[pship_obj->instance].model_instance_num);
-	polymodel *pm = model_get(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4230,21 +4265,19 @@ void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *
  *
  * @param *outpnt Output point
  * @param *outorient Output matrix
- * @param *pship_obj Ship object
+ * @param model_instance_num Index into Polygon_model_instances
  * @param submodel_num The number of the submodel we're interested in
  * @param *submodel_pnt The point which's current position we want, in the submodel's frame of reference
  * @param *submodel_orient The local matrix which's current orientation in the ship's frame of reference we want
  */
-void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, object *pship_obj, int submodel_num, vec3d *submodel_pnt, matrix *submodel_orient)
+void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, int model_instance_num, int submodel_num, const vec3d *submodel_pnt, const matrix *submodel_orient)
 {
-	Assert(pship_obj->type == OBJ_SHIP);
-
 	*outorient = *submodel_orient;
 	vm_vec_zero(outpnt);
 	matrix submodel_instance_matrix, rotation_matrix, inv_orientation;
 
-	polymodel_instance *pmi = model_get_instance(Ships[pship_obj->instance].model_instance_num);
-	polymodel *pm = model_get(Ship_info[Ships[pship_obj->instance].ship_info_index].model_num);
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	int mn = submodel_num;
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4295,17 +4328,17 @@ void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, objec
  * rotations of any parent submodels it might have.
  *  
  * @param *outpnt Output point
- * @param *pship_obj Ship object
+ * @param model_instance_num Index into Polygon_model_instances
  * @param submodel_num The number of the submodel we're interested in
  */
-void find_submodel_instance_world_point(vec3d *outpnt, object *pship_obj, int submodel_num)
+void find_submodel_instance_world_point(vec3d *outpnt, int model_instance_num, int submodel_num, const matrix *objorient, const vec3d *objpos)
 {
 	vec3d loc_pnt;
 
-	find_submodel_instance_point(&loc_pnt, pship_obj, submodel_num);
+	find_submodel_instance_point(&loc_pnt, model_instance_num, submodel_num);
 
-	vm_vec_unrotate(outpnt, &loc_pnt, &pship_obj->orient);
-	vm_vec_add2(outpnt, &pship_obj->pos);
+	vm_vec_unrotate(outpnt, &loc_pnt, objorient);
+	vm_vec_add2(outpnt, objpos);
 }
 
 // Verify rotating submodel has corresponding ship subsystem -- info in which to store rotation angle
@@ -4329,20 +4362,48 @@ int rotating_submodel_has_ship_subsys(int submodel, ship *shipp)
 	return found;
 }
 
+/*
+ * Get all submodel indexes that satisfy the following:
+ * 1) Have the rotating or intrinsic-rotating movement type
+ * 2) Are currently rotating (i.e. actually moving and not part of the superstructure due to being destroyed or replaced)
+ * 3) Are not rotating too far for collision detection (c.f. MAX_SUBMODEL_COLLISION_ROT_ANGLE)
+ */
 void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp)
 {
-	Assert(objp->type == OBJ_SHIP);
+	Assert(objp->type == OBJ_SHIP || objp->type == OBJ_WEAPON || objp->type == OBJ_ASTEROID);
 	
-	// Check if not currently rotating - then treat as part of superstructure.
-	int modelnum = Ship_info[Ships[objp->instance].ship_info_index].model_num;
-	polymodel *pm = model_get(modelnum);
-	bsp_info *child_submodel;
-	
-	child_submodel = &pm->submodel[pm->detail[0]];
+	int model_instance_num;
+	int model_num;
+	if (objp->type == OBJ_SHIP) {
+		model_instance_num = Ships[objp->instance].model_instance_num;
+		model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
+	}
+	else if (objp->type == OBJ_WEAPON) {
+		model_instance_num = Weapons[objp->instance].model_instance_num;
+		if (model_instance_num < 0) {
+			return;
+		}
+		model_num = Weapon_info[Weapons[objp->instance].weapon_info_index].model_num;
+	}
+	else if (objp->type == OBJ_ASTEROID) {
+		model_instance_num = Asteroids[objp->instance].model_instance_num;
+		if (model_instance_num < 0) {
+			return;
+		}
+		model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+	}
+	else {
+		return;
+	}
+
+	polymodel *pm = model_get(model_num);
+	bsp_info *child_submodel = &pm->submodel[pm->detail[0]];
 	
 	if(child_submodel->no_collisions) { // if detail0 has $no_collision set dont check childs
 		return;
 	}
+
+	polymodel_instance *pmi = model_get_instance(model_instance_num);
 
 	int i = child_submodel->first_child;
 	while ( i >= 0 )	{
@@ -4351,45 +4412,21 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
 		if ( !child_submodel->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
 
-			// Only look for submodels that rotate
-			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT) {
+			// Only look for submodels that rotate or intrinsic-rotate
+			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
 
-				// find ship subsys and check submodel rotation is less than max allowed.
-				ship *pship = &Ships[objp->instance];
-				ship_subsys *subsys;
+				// check submodel rotation is less than max allowed.
+				submodel_instance_info *sii = pmi->submodel[i].sii;
 
-				for ( subsys = GET_FIRST(&pship->subsys_list); subsys !=END_OF_LIST(&pship->subsys_list); subsys = GET_NEXT(subsys) ) {
-					Assert(subsys->system_info->model_num == modelnum);
-					if (i == subsys->system_info->subobj_num) {
-						// found the correct subsystem - now check delta rotation angle not too large
-						float delta_angle = get_submodel_delta_angle(&subsys->submodel_info_1);
-						if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
-							submodel_vector->push_back(i);
-						}
-						break;
-					}
+				// found the correct submodel instance - now check delta rotation angle not too large
+				float delta_angle = get_submodel_delta_angle(sii);
+				if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
+					submodel_vector->push_back(i);
 				}
 			}
 		}
 		i = child_submodel->next_sibling;
 	}
-
-	// error checking
-//#define MODEL_CHECK
-#ifdef MODEL_CHECK
-	ship *pship = &Ships[objp->instance];
-	for (size_t idx=0; idx<submodel_vector->size(); idx++) {
-		int valid = rotating_submodel_has_ship_subsys(submodel_vector[idx], pship);
-//		Assert( valid );
-		if ( !valid ) {
-
-			Warning( LOCATION, "Ship %s has rotating submodel [%s] without ship subsystem\n", pship->ship_name, pm->submodel[submodel_vector[idx]].name );
-			pm->submodel[submodel_vector[idx]].movement_type &= ~MOVEMENT_TYPE_ROT;
-			submodel_vector->erase(submodel_vector->begin()+i);
-		}
-	}
-#endif
-
 }
 
 void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* pm, int mn)
@@ -4407,10 +4444,10 @@ void model_get_submodel_tree_list(SCP_vector<int> &submodel_vector, polymodel* p
 	}
 }
 
-// Given a direction (pnt) that is in sub_model_num's frame of
+// Given a direction (pnt) that is in submodel_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_num, int submodel_num, const matrix *objorient)
 {
 	vec3d pnt;
 	vec3d tpnt;
@@ -4419,7 +4456,7 @@ void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_
 	polymodel *pm = model_get(model_num);
 
 	pnt = *in_dir;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4446,17 +4483,17 @@ void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_
 
 // the same as above - just taking model instance data into account
 // model_find_world_dir
-void model_instance_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos )
+void model_instance_find_world_dir(vec3d *out_dir, vec3d *in_dir, int model_instance_num, int submodel_num, const matrix *objorient)
 {
 	vec3d pnt;
 	vec3d tpnt;
 	matrix m;
 	int mn;
-	polymodel *pm = model_get(model_num);
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	polymodel *pm = model_get(pmi->model_num);
 
 	pnt = *in_dir;
-	mn = sub_model_num;
+	mn = submodel_num;
 
 	//instance up the tree for this point
 	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
@@ -4507,9 +4544,6 @@ void model_clear_instance(int model_num)
 		sm->angs.p = 0.0f;
 		sm->angs.b = 0.0f;
 		sm->angs.h = 0.0f;
-
-		// set pointer to other ship subsystem info [turn rate, accel, moment, axis, ...]
-		sm->sii = NULL;
 
 		sm->num_arcs = 0;		// Turn off any electric arcing effects
 	}
@@ -4587,10 +4621,8 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 	sii->step_zero_timestamp = timestamp();
 }
 
-
-
 // Sets the submodel instance data in a submodel (for all detail levels)
-void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags)
+void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, int flags)
 {
 	int i;
 	polymodel * pm;
@@ -4615,7 +4647,6 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 		if ( sm->my_replacement > -1 )	{
 			pm->submodel[sm->my_replacement].blown_off = 0;
 			pm->submodel[sm->my_replacement].angs = sii->angs;
-			pm->submodel[sm->my_replacement].sii = sii;
 		}
 	} else {
 		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
@@ -4627,7 +4658,6 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 
 	// Set the angles
 	sm->angs = sii->angs;
-	sm->sii = sii;
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{
@@ -4713,93 +4743,73 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	}
 }
 
-void model_instance_dumb_rotation_sub(polymodel_instance * pmi, polymodel *pm, int mn)
+void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
 {
-	while ( mn >= 0 )	{
+	polymodel_instance *pmi = model_get_instance(ir->model_instance_num);
+	Assert(pmi != nullptr);
 
-		bsp_info * sm = &pm->submodel[mn];
-		submodel_instance *smi = &pmi->submodel[mn];
+	// Handle all submodels which have $dumb_rotate
+	for (auto submodel_it = ir->list.begin(); submodel_it != ir->list.end(); ++submodel_it)
+	{
+		polymodel *pm = model_get(pmi->model_num);
+		Assert(pm != nullptr);
+		bsp_info *sm = &pm->submodel[submodel_it->submodel_num];
 
-		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ){
-			float *ang;
-			int axis = sm->movement_axis;
-			switch ( axis ) {
-			case MOVEMENT_AXIS_X:
-				ang = &smi->angs.p;
-					break;
-			case MOVEMENT_AXIS_Z:
-				ang = &smi->angs.b;
-					break;
-			default:
-			case MOVEMENT_AXIS_Y:
-				ang = &smi->angs.h;
-					break;
-			}
-			*ang = sm->dumb_turn_rate * float(timestamp())/1000.0f;
-			*ang = ((*ang/(PI*2.0f))-float(int(*ang/(PI*2.0f))))*(PI*2.0f);
-			//this keeps ang from getting bigger than 2PI
-		}
+		// First, calculate the angles for the rotation
+		submodel_rotate(sm, &submodel_it->submodel_info_1);
 
-		if ( pm->submodel[mn].first_child > -1 )
-			model_instance_dumb_rotation_sub(pmi, pm, pm->submodel[mn].first_child);
-
-		mn = pm->submodel[mn].next_sibling;
+		// Now actually rotate the submodel instance
+		// (Since this is an intrinsic rotation, we have no associated subsystem, so pass 0 for subsystem flags.)
+		model_update_instance(ir->model_instance_num, submodel_it->submodel_num, &submodel_it->submodel_info_1, 0);
 	}
 }
 
-void model_instance_dumb_rotation(int model_instance_num)
+// Handle the intrinsic rotations for either a) a single ship model; or b) all non-ship models.  The reason for the two cases is that ship_model_update_instance will
+// be called for each ship via obj_move_all_post, but we also need to handle non-ship models once obj_move_all_post exits.  Since the two processes are almost identical,
+// they are both handled here.
+//
+// This function is quite a bit different than Bobboau's old model_do_dumb_rotation function.  Whereas Bobboau used the brute-force technique of navigating through
+// each model hierarchy as it was rendered, this function should be seen as a version of obj_move_all_post, but for models rather than objects.  In fact, the only reason
+// for the special ship case is that the ship intrinsic rotations kind of need to be handled where all the other ship rotations are.  (Unless you want inconsistent collisions
+// or damage sparks that aren't attached to models.)
+//
+// -- Goober5000
+void model_do_intrinsic_rotations(int model_instance_num)
 {
-	polymodel *pm;
-	polymodel_instance *pmi;
+	// we are handling a specific ship
+	if (model_instance_num >= 0)
+	{
+		for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it)
+		{
+			if (intrinsic_it->model_instance_num == model_instance_num)
+			{
+				Assertion(intrinsic_it->is_ship, "This code path is only for ship rotations!  See the comments associated with the model_do_intrinsic_rotations function!");
 
-	pmi = model_get_instance(model_instance_num);
-	pm = model_get(pmi->model_num);
-	int mn = pm->detail[0];
+				// we're just doing one ship, and in ship_model_update_instance, that ship's angles were already set to zero
 
-	model_instance_dumb_rotation_sub(pmi, pm, mn);
-}
+				// Now update the angles in the submodels
+				model_do_intrinsic_rotations_sub(&(*intrinsic_it));
 
-void model_do_children_dumb_rotation(polymodel * pm, int mn)
-{
-	while ( mn >= 0 ) {
-
-		bsp_info * sm = &pm->submodel[mn];
-
-		if ( sm->movement_type == MSS_FLAG_DUM_ROTATES ) {
-			float *ang;
-			int axis = sm->movement_axis;
-			switch(axis) {
-			case MOVEMENT_AXIS_X:
-				ang = &sm->angs.p;
-					break;
-			case MOVEMENT_AXIS_Z:
-				ang = &sm->angs.b;
-					break;
-			default:
-			case MOVEMENT_AXIS_Y:
-				ang = &sm->angs.h;
-					break;
+				// once we've handled this one ship, we're done
+				break;
 			}
-
-			*ang = sm->dumb_turn_rate * float(timestamp())/1000.0f;
-			*ang = ((*ang/(PI*2.0f))-float(int(*ang/(PI*2.0f))))*(PI*2.0f);
-			//this keeps ang from getting bigger than 2PI
 		}
-
-		if (pm->submodel[mn].first_child >-1) { 
-			model_do_children_dumb_rotation(pm, pm->submodel[mn].first_child);
-		}
-
-		mn = pm->submodel[mn].next_sibling;
 	}
-}
-void model_do_dumb_rotation(int pn){
-	polymodel * pm;
+	// we are handling all non-ships
+	else
+	{
+		for (auto intrinsic_it = Intrinsic_rotations.begin(); intrinsic_it != Intrinsic_rotations.end(); ++intrinsic_it)
+		{
+			if (!intrinsic_it->is_ship)
+			{
+				// Just as in ship_model_update_instance: first clear all the angles in the model to zero
+				model_clear_submodel_instances(intrinsic_it->model_instance_num);
 
-	pm = model_get(pn);
-	int mn = pm->detail[0];
-
-	model_do_children_dumb_rotation(pm,mn);
+				// Now update the angles in the submodels
+				model_do_intrinsic_rotations_sub(&(*intrinsic_it));
+			}
+		}
+	}
 }
 
 void model_do_children_look_at(polymodel * pm, int mn)
@@ -4829,7 +4839,7 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 	vec3d p1, v1, p2, v2, int1;
 
 	polymodel *pm = model_get(model_num);
-	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT);
+	Assert(pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_ROT || pm->submodel[submodel_num].movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE);
 	Assert(sii);
 
 	mpoint1 = NULL;

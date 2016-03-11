@@ -2,7 +2,7 @@ dnl configure.ac for fs2_open
 dnl
 dnl $Id: configure.ac,v 1.31.2.4 2007-05-28 19:36:12 taylor Exp $
 
-AC_INIT(fs2_open, 3.7.3)
+AC_INIT(fs2_open, 3.7.5)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
 
 dnl we need at least version 2.54 of autoconf
@@ -274,7 +274,8 @@ if test "$fs2_debug" = "yes" ; then
 else
 	AC_DEFINE([NDEBUG])
 	D_CFLAGS="$D_CFLAGS -O2 -Wall -funroll-loops"
-	D_CFLAGS="$D_CFLAGS -Wno-write-strings -Wno-unused-variable"
+	
+	D_CFLAGS="$D_CFLAGS -Wno-write-strings -Wno-unused-variable -Wno-unused-function"
 
 	AC_C_COMPILE_FLAGS([-Wno-unused-but-set-variable])
 

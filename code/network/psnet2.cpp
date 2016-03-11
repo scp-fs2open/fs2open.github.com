@@ -14,7 +14,6 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <winsock.h>
-#include <wsipx.h>
 #include <process.h>
 #include <ras.h>
 #include <raserror.h>
@@ -56,15 +55,12 @@ ubyte Null_address[6];
 
 int Socket_type;
 int Can_broadcast;			// can we do broadcasting on our socket?
-int Ipx_can_broadcast = 0;
 int Tcp_can_broadcast = 0;
 
 int Tcp_active = 0;
-int Ipx_active = 0;
 
 int Network_status;
 int Tcp_failure_code = 0;
-int Ipx_failure_code = 0;
 int Ras_connected;
 int Psnet_connection;
 
@@ -196,7 +192,7 @@ typedef struct {
 	unsigned short oursequence;								// This is the next sequence number the application is expecting
 	unsigned short theirsequence;								// This is the next sequence number the peer is expecting
 	net_addr	m_net_addr;											// A FS2 network address structure
-	ubyte connection_type;										// IPX, IP, modem, etc.
+	ubyte connection_type;										// IP, modem, etc.
 	float pings[MAX_PING_HISTORY];
 	ubyte ping_pos;
 	unsigned int num_ping_samples;
@@ -205,8 +201,7 @@ typedef struct {
 
 reliable_socket Reliable_sockets[MAXRELIABLESOCKETS];
 
-// sockets for IPX and TCP (unreliable)
-SOCKET IPX_socket;
+// sockets for TCP (unreliable)
 SOCKET TCP_socket;
 
 // the sockets that the game will use when selecting network type
@@ -240,9 +235,6 @@ unsigned int psnet_ras_status();
 // set some options on a socket
 void psnet_socket_options( SOCKET sock );
 
-// initialize ipx socket
-int psnet_init_ipx();
-
 // initialize tcp socket
 int psnet_init_tcp();
 
@@ -255,7 +247,6 @@ int psnet_get_ip();
 
 // initialize reliable sockets
 int psnet_init_rel_tcp(int port, int should_listen);
-int psnet_init_rel_ipx(int port, int should_listen);
 
 // shutdown reliable sockets
 void psnet_rel_close();
@@ -300,16 +291,6 @@ int RECVFROM(SOCKET s, char *buf, int len, int flags, sockaddr *from, int *froml
 
 	// otherwise, stuff the outgoing data
 	switch ( Socket_type ) {
-#ifdef _WIN32
-	case NET_IPX:			
-		((SOCKADDR_IPX*)from)->sa_socket = htons(addr.port);
-		memcpy(((SOCKADDR_IPX*)from)->sa_nodenum, addr.addr, 6);
-		memcpy(((SOCKADDR_IPX*)from)->sa_netnum, addr.net_id, 4);		
-		((SOCKADDR_IPX*)from)->sa_family = AF_IPX;		
-		*fromlen = sizeof(SOCKADDR_IPX);
-		break;
-#endif
-
 	case NET_TCP:			
 		((SOCKADDR_IN*)from)->sin_port = htons(addr.port);
 #ifdef _WIN32
@@ -380,9 +361,6 @@ void PSNET_TOP_LAYER_PROCESS()
 {
 	// read socket stuff
 	SOCKADDR_IN ip_addr;				// UDP/TCP socket structure
-#ifdef _WIN32
-	SOCKADDR_IPX ipx_addr;			// IPX socket structure
-#endif
 	fd_set	rfds;
 	timeval	timeout;
 	int		read_len;
@@ -392,9 +370,6 @@ void PSNET_TOP_LAYER_PROCESS()
 
 	// clear the addresses to remove compiler warnings
 	memset(&ip_addr, 0, sizeof(SOCKADDR_IN));
-#ifdef _WIN32
-	memset(&ipx_addr, 0, sizeof(SOCKADDR_IPX));
-#endif
 
 	if ( Network_status != NETWORK_STATUS_RUNNING ) {
 		ml_string("Network ==> socket not inited in PSNET_TOP_LAYER_PROCESS");
@@ -427,13 +402,6 @@ void PSNET_TOP_LAYER_PROCESS()
 		// get data off the socket and process
 		read_len = SOCKET_ERROR;
 		switch ( Socket_type ) {
-#ifdef _WIN32
-		case NET_IPX:
-			from_len = sizeof(SOCKADDR_IPX);			
-			read_len = recvfrom( Unreliable_socket, (char*)packet_read.data, MAX_TOP_LAYER_PACKET_SIZE, 0,  (SOCKADDR*)&ipx_addr, &from_len);
-			break;
-#endif
-
 		case NET_TCP:
 			from_len = sizeof(SOCKADDR_IN);			
 			read_len = recvfrom( Unreliable_socket, (char*)packet_read.data, MAX_TOP_LAYER_PACKET_SIZE, 0,  (SOCKADDR*)&ip_addr, &from_len);
@@ -448,14 +416,6 @@ void PSNET_TOP_LAYER_PROCESS()
 		from_addr.type = Socket_type;
 
 		switch ( Socket_type ) {
-#ifdef _WIN32
-		case NET_IPX:			
-			from_addr.port = ntohs( ipx_addr.sa_socket );			
-			memcpy(from_addr.addr, ipx_addr.sa_nodenum, 6 );
-			memcpy(from_addr.net_id, ipx_addr.sa_netnum, 4 );
-			break;
-#endif
-
 		case NET_TCP:			
 			from_addr.port = ntohs( ip_addr.sin_port );			
 			memset(from_addr.addr, 0x00, 6);
@@ -502,7 +462,6 @@ void psnet_init( int protocol, int port_num )
 #ifdef _WIN32
 	const char *internet_connection;
 	WSADATA wsa_data; 		
-	Ipx_active = 0;
 #endif
 
 	// GAME PORT INITIALIZATION STUFF
@@ -566,28 +525,8 @@ void psnet_init( int protocol, int port_num )
 		memset(rsocket,0,sizeof(reliable_socket));
 	}
 
-#ifdef _WIN32
-	// initialize IPX not
-	Ipx_active = 1;
-	if(!psnet_init_ipx()){
-		ml_printf("Error on IPX startup %d", Ipx_failure_code);		
-
-		Ipx_active = 0;
-	} else {
-		if(!psnet_init_rel_ipx(Psnet_default_port + 1, 0)){
-			ml_printf("Error on IPX startup %d", Ipx_failure_code);			
-
-			Ipx_active = 0;
-		}
-	}
-#endif
-
 	// determine if we've successfully initialized the protocol we want
-#ifdef _WIN32
-	if(!Tcp_active && !Ipx_active){	
-#else
 	if(!Tcp_active){	
-#endif
 		Network_status = NETWORK_STATUS_NO_PROTOCOL;		
 
 		ml_string("No protocol in psnet_init()!");
@@ -609,11 +548,7 @@ void psnet_init( int protocol, int port_num )
 		Network_status = NETWORK_STATUS_RUNNING;	
 	
 		// determine if our socket can broadcast
-#ifdef _WIN32
-		Can_broadcast = Tcp_can_broadcast || Ipx_can_broadcast;
-#else
 		Can_broadcast = Tcp_can_broadcast;
-#endif
 	
 		// initialize all packet type buffers
 		for(idx=0; idx<PSNET_NUM_TYPES; idx++){
@@ -639,11 +574,6 @@ void psnet_close()
 		closesocket( TCP_socket );
 	}
 
-	if ( IPX_socket != INVALID_SOCKET ) {
-		shutdown( IPX_socket, 1 );
-		closesocket( IPX_socket );
-	}
-
 	if (WSACleanup())	{
 	}
 #else
@@ -666,9 +596,6 @@ void psnet_close()
 int psnet_use_protocol( int protocol )
 {
    socklen_t len;
-#ifdef _WIN32
-	SOCKADDR_IPX	ipx_addr;
-#endif
 	SOCKADDR_IN		ip_addr;
 	const char *custom_ip = NULL;
 
@@ -682,33 +609,6 @@ int psnet_use_protocol( int protocol )
 	ml_string("In psnet_use_protocol()");
 
 	switch ( protocol ) {
-#ifdef _WIN32
-	case NET_IPX:		
-		ml_string("psnet_use_protocol() selecting IPX");
-
-		// assign the IPX_* sockets to the socket values used elsewhere
-		Unreliable_socket = IPX_socket;		
-
-		Can_broadcast = Ipx_can_broadcast;
-		if(Can_broadcast){
-			ml_string("Psnet : IPX broadcast");
-		}
-
-		// get the socket name for the IPX_socket, and put it into My_addr
-		len = sizeof(SOCKADDR_IPX);
-		if ( getsockname(IPX_socket, (SOCKADDR *)&ipx_addr, &len) == SOCKET_ERROR ) {
-			ml_printf("Unable to get sock name for IPX unreliable socket (%d)", WSAGetLastError() );
-			return 0;
-		}
-
-		memcpy(Psnet_my_addr.net_id, ipx_addr.sa_netnum, 4);
-		memcpy(Psnet_my_addr.addr, ipx_addr.sa_nodenum, 6);
-		Psnet_my_addr.port = Psnet_default_port;
-
-		ml_string("Psnet using - NET_IPX");
-		break;
-#endif
-
 	case NET_TCP:
 		if ( Network_status != NETWORK_STATUS_RUNNING ){
 			ml_string("Network_status != NETWORK_STATUS_RUNNING in NET_TCP in psnet_use_protocol()");
@@ -747,7 +647,6 @@ int psnet_use_protocol( int protocol )
 			}
 		}
 
-		memset(Psnet_my_addr.net_id, 0, 4);
 		memcpy(Psnet_my_addr.addr, &ip_addr.sin_addr, sizeof(ip_addr.sin_addr));
 		Psnet_my_addr.port = Psnet_default_port;
 
@@ -814,21 +713,6 @@ char* psnet_addr_to_string( char * text, net_addr * address )
 	in_addr temp_addr;
 
 	switch ( address->type ) {
-#ifdef _WIN32
-		case NET_IPX:
-			sprintf(text, "%x %x %x %x: %x %x %x %x %x %x", address->net_id[0],
-																			address->net_id[1],
-																			address->net_id[2],
-																			address->net_id[3],
-																			address->addr[0],
-																			address->addr[1],
-																			address->addr[2],
-																			address->addr[3],
-																			address->addr[4],
-																			address->addr[5]);
-			break;
-#endif
-
 		case NET_TCP:
 			memcpy(&temp_addr.s_addr, address->addr, 4);
 			strcpy( text, inet_ntoa(temp_addr) );
@@ -867,12 +751,6 @@ void psnet_string_to_addr( net_addr * address, char * text )
 	}
 
 	switch ( address->type ) {
-#ifdef _WIN32
-		case NET_IPX:	      
-			Int3();		// no support for this yet
-			break;
-#endif
-
 		case NET_TCP:
 			addr.s_addr = inet_addr(str);
 			// if we get INADDR_NONE returns, then we need to try and resolve the host
@@ -917,9 +795,6 @@ int psnet_send( net_addr * who_to, void * data, int len, int np_index )
 	// send data unreliably
 	SOCKET send_sock;
 	SOCKADDR_IN sockaddr;				// UDP/TCP socket structure
-#ifdef _WIN32
-	SOCKADDR_IPX ipx_addr;				// IPX socket structure
-#endif
 	int ret, send_len;
 	ubyte iaddr[6], *send_data;
 	short port;
@@ -978,21 +853,6 @@ int psnet_send( net_addr * who_to, void * data, int len, int np_index )
 
 	ret = SOCKET_ERROR;
 	switch ( who_to->type ) {
-#ifdef _WIN32
-		case NET_IPX:
-			ipx_addr.sa_socket = htons(port);
-			ipx_addr.sa_family = AF_IPX;
-			memcpy(ipx_addr.sa_nodenum, iaddr, 6);
-			memcpy(ipx_addr.sa_netnum, who_to->net_id, 4);
-				
-			ret = SENDTO(send_sock, (char *)send_data, send_len, 0, (SOCKADDR*)&ipx_addr, sizeof(ipx_addr), PSNET_TYPE_UNRELIABLE);
-
-			multi_rate_add(np_index, "ipx", send_len);
-			if ( (ret != SOCKET_ERROR) && (ret != send_len) ){
-			}
-			break;
-#endif
-
 		case NET_TCP:
 			sockaddr.sin_family = AF_INET; 
 			memcpy(&sockaddr.sin_addr.s_addr, iaddr, 4);
@@ -1051,7 +911,6 @@ int psnet_broadcast( net_addr * who_to, void * data, int len )
 	// broadcasting works on a local subnet which is all we really want to do for now anyway.
 	// we might keep this in as an option for freespace later.
 	switch ( who_to->type ) {
-		case NET_IPX:
 		case NET_TCP:
 			memcpy(who_to->addr, broadcast, 6);
 			psnet_send(who_to, data, len);
@@ -1124,18 +983,6 @@ void psnet_rel_send_ack(SOCKADDR *raddr, unsigned int sig, ubyte link_type, floa
 	sig_tmp = INTEL_INT(sig);
 	memcpy(&ack_header.data,&sig_tmp,sizeof(unsigned int));
 	switch (link_type) {
-#ifdef _WIN32
-	case NET_IPX:
-		if(!Ipx_active){
-			ml_string("No IPX in rel_send_ack()");
-			return;
-		}		
-		ret = SENDTO(Unreliable_socket, (char *)&ack_header, RELIABLE_PACKET_HEADER_ONLY_SIZE+ack_header.data_len, 0, raddr, sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
-		if (ret == -1) {
-			ml_string("IPX SENDTO failed in rel_send_ack()");
-		}
-		break;
-#endif
 	case NET_TCP:
 		if(!Tcp_active){
 			ml_string("No TCP in rel_send_ack()");
@@ -1200,14 +1047,6 @@ void psnet_rel_close_socket( PSNET_SOCKET_RELIABLE *sockp )
 		Serverconn = 0xffffffff;
 	}
 	switch ( Reliable_sockets[*sockp].connection_type ) {
-#ifdef _WIN32
-		case NET_IPX:
-			if(!Ipx_active){
-				 return;
-			}
-			SENDTO(Unreliable_socket, (char *)&diss_conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&Reliable_sockets[*sockp].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
-			break;
-#endif
 		case NET_TCP:
 			if(!Tcp_active){
 				return;
@@ -1276,14 +1115,6 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 					
 			if (send_this_packet){
 				switch ( rsocket->connection_type ){
-#ifdef _WIN32
-					case NET_IPX:
-						if(!Ipx_active){
-							return 0;
-						}
-						bytesout = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
-						break;
-#endif
 					case NET_TCP:
 						if(!Tcp_active){
 							return 0;
@@ -1382,16 +1213,6 @@ void psnet_rel_work()
 			Last_sent_iamhere = psnet_get_time();
 			int ret = SOCKET_ERROR;
 			switch ( Reliable_sockets[Serverconn].connection_type ) {
-#ifdef _WIN32
-			case NET_IPX:
-				if(!Ipx_active){
-					ml_string("Unable to use this network connection type in nw_WorkReliable()");
-					Int3();
-					return;
-				}
-				ret = SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&Reliable_sockets[Serverconn].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
-				break;
-#endif
 			case NET_TCP:
 				if(!Tcp_active){
 					ml_string("Unable to use this network connection type in nw_WorkReliable()");
@@ -1417,20 +1238,10 @@ void psnet_rel_work()
 	ubyte link_type;
 	net_addr d3_rcv_addr;
 	SOCKADDR_IN *rcvaddr;
-#ifdef _WIN32
-	int ipx_has_data = 0;
-#endif
 	int udp_has_data = 0;
 	do {		
 		rsocket = NULL;
-		//Check IPX and UDP
-#ifdef _WIN32
-		if(Ipx_active && (Socket_type == NET_IPX)){
-			FD_ZERO(&read_fds);
-			FD_SET(Unreliable_socket, &read_fds);    
-			ipx_has_data = SELECT(0,&read_fds,NULL,NULL,&timeout, PSNET_TYPE_RELIABLE);
-		}
-#endif
+		//Check UDP
 		if(Tcp_active && (Socket_type == NET_TCP)){
 			FD_ZERO(&read_fds);
 			FD_SET(Unreliable_socket, &read_fds);    
@@ -1442,18 +1253,7 @@ void psnet_rel_work()
 		}
 		bytesin = 0;
 		addrlen = sizeof(SOCKADDR);
-#ifdef _WIN32
-		if(ipx_has_data){
-			SOCKADDR_IPX *ipx_addr = (SOCKADDR_IPX *)&rcv_addr;
-			memset(&d3_rcv_addr,0,sizeof(net_addr));
-			memset(&rcv_addr,0,sizeof(SOCKADDR));
-			bytesin = RECVFROM(Unreliable_socket, (char *)&rcv_buff,sizeof(reliable_header),0,(SOCKADDR *)&rcv_addr,&addrlen, PSNET_TYPE_RELIABLE);
-			memcpy(d3_rcv_addr.addr, ipx_addr->sa_nodenum, 6);
-			memcpy(d3_rcv_addr.net_id, ipx_addr->sa_netnum, 4);				
-			d3_rcv_addr.type = NET_IPX;
-			link_type = NET_IPX;
-		} else
-#endif
+
       if(udp_has_data){
 			SOCKADDR_IN *tcp_addr = (SOCKADDR_IN *)&rcv_addr;
 			memset(&d3_rcv_addr,0,sizeof(net_addr));
@@ -1655,11 +1455,7 @@ void psnet_rel_work()
 			}
 			
 		}
-#ifdef _WIN32
-	} while((ipx_has_data>0) || (udp_has_data>0));
-#else
 	} while (udp_has_data>0);
-#endif
 	
 	// Go through each reliable socket that is connected and do any needed work.
 	for(j=0; j<MAXRELIABLESOCKETS; j++){
@@ -1702,14 +1498,7 @@ void psnet_rel_work()
 					memcpy(send_header.data,rsocket->sbuffers[i]->buffer,rsocket->send_len[i]);
 					send_header.data_len = INTEL_SHORT( (ushort)rsocket->send_len[i] );
 					send_header.type = RNT_DATA;
-					if(rsocket->connection_type == NET_TCP){
-						rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
-					} 
-#ifdef _WIN32
-                 else if(rsocket->connection_type == NET_IPX){
-						rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
-					}
-#endif
+					rcode = SENDTO(Unreliable_socket, (char *)&send_header, RELIABLE_PACKET_HEADER_ONLY_SIZE + rsocket->send_len[i], 0, &rsocket->addr, sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 
 					if((rcode == SOCKET_ERROR) && (WSAEWOULDBLOCK == WSAGetLastError())){
 						//The packet didn't get sent, flag it to try again next frame
@@ -1730,15 +1519,7 @@ void psnet_rel_work()
 				send_header.data_len = 0;
 				send_header.type = RNT_HEARTBEAT;
 
-				rcode = -1;
-				if(rsocket->connection_type == NET_TCP){
-					rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
-				} 
-#ifdef _WIN32
-            else if(rsocket->connection_type == NET_IPX){
-					rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
-				}
-#endif
+				rcode = SENDTO(Unreliable_socket, (char *)&send_header, RELIABLE_PACKET_HEADER_ONLY_SIZE, 0, &rsocket->addr, sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 
 				if((rcode != SOCKET_ERROR) && (WSAEWOULDBLOCK != WSAGetLastError())){
 					//It must have been sent
@@ -1774,9 +1555,6 @@ int psnet_rel_get_status(PSNET_SOCKET_RELIABLE socketid)
 int psnet_rel_check_for_listen(net_addr *from_addr)
 {	
 	SOCKADDR_IN *ip_addr;				// UDP/TCP socket structure
-#ifdef _WIN32
-	SOCKADDR_IPX *ipx_addr;			// IPX socket structure	
-#endif
 	
 	psnet_rel_work();
 	int i;
@@ -1786,17 +1564,6 @@ int psnet_rel_check_for_listen(net_addr *from_addr)
 			ml_string("New reliable connection in nw_CheckListenSocket().");
 			
 			switch ( Reliable_sockets[i].connection_type ){
-#ifdef _WIN32
-			case NET_IPX:
-				ipx_addr = (SOCKADDR_IPX *)&Reliable_sockets[i].addr;
-				memset(from_addr, 0x00, sizeof(net_addr));
-				from_addr->port = ntohs( ipx_addr->sa_socket );
-				from_addr->type = NET_IPX;
-				memcpy(from_addr->addr, ipx_addr->sa_nodenum, 6 );
-				memcpy(from_addr->net_id, ipx_addr->sa_netnum, 4 );
-				break;
-#endif
-
 			case NET_TCP:
 				ip_addr = (SOCKADDR_IN *)&Reliable_sockets[i].addr;
 				memset(from_addr, 0x00, sizeof(net_addr));
@@ -1827,9 +1594,6 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 {	
 	//Send out a RNT_REQ_CONN packet, and wait for it to be acked.
 	SOCKADDR_IN sockaddr;				// UDP/TCP socket structure
-#ifdef _WIN32
-	SOCKADDR_IPX ipx_addr;				// IPX socket structure
-#endif
 	SOCKADDR *addr;						// pointer to SOCKADDR to make coding easier
 	SOCKADDR rcv_addr;
 	int addrlen;
@@ -1855,11 +1619,6 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 	timeout.tv_sec=0;            
 	timeout.tv_usec=0;
 
-#ifdef _WIN32
-	if((server_addr->type == NET_IPX) && (!Ipx_active)){
-		return;
-	}
-#endif
 	if((server_addr->type == NET_TCP) && (!Tcp_active)){
 		return;
 	}
@@ -1882,24 +1641,6 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 			FD_SET(Unreliable_socket, &read_fds);    
 		}
 	}
-#ifdef _WIN32
-	if(Ipx_active && (Socket_type == NET_IPX)){
-		FD_ZERO(&read_fds);
-		FD_SET(Unreliable_socket, &read_fds);    
-		while(SELECT(0, &read_fds, NULL, NULL, &timeout, PSNET_TYPE_RELIABLE))
-		{
-			addrlen = sizeof(SOCKADDR);
-			bytesin = RECVFROM(Unreliable_socket, (char *)&ack_header,sizeof(reliable_header),0,(SOCKADDR *)&rcv_addr,&addrlen, PSNET_TYPE_RELIABLE);
-			if(bytesin==-1)
-			{
-				ml_printf("IPX recvfrom returned an error! -- %d",WSAGetLastError());
-				break;
-			}
-			FD_ZERO(&read_fds);
-			FD_SET(Unreliable_socket, &read_fds);    
-		}
-	}
-#endif
 	memset(&ack_header,0,sizeof(reliable_header));
 	bytesin = 0;
 	SOCKET typeless_sock;
@@ -1907,24 +1648,6 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 	memset(&d3_rcv_addr,0,sizeof(net_addr));
 
 	switch ( server_addr->type ){
-#ifdef _WIN32
-		case NET_IPX:
-			ipx_addr.sa_family = AF_IPX;
-			memcpy(ipx_addr.sa_nodenum, iaddr, 6);
-			memcpy(ipx_addr.sa_netnum, server_addr->net_id, 4);
-			ipx_addr.sa_socket = htons(port);
-			addr = (SOCKADDR *)&ipx_addr;
-			if( SOCKET_ERROR == SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE) ){
-				ml_printf("Unable to send IPX packet in nw_ConnectToServer()! -- %d",WSAGetLastError());
-				return;
-			}
-			typeless_sock = Unreliable_socket;
-			memcpy(d3_rcv_addr.addr,ipx_addr.sa_nodenum, 6);
-			memcpy(d3_rcv_addr.net_id,ipx_addr.sa_netnum, 4);				
-			d3_rcv_addr.type = NET_IPX;
-			break;
-#endif
-
 		case NET_TCP:
 			sockaddr.sin_family = AF_INET; 
 			memcpy(&sockaddr.sin_addr.s_addr, iaddr, 4);
@@ -2053,15 +1776,6 @@ int psnet_get_ip()
  */
 int psnet_init_rel_tcp(int port, int should_listen)
 {
-	// success
-	return 1;
-}
-
-/**
- * Initialize reliable sockets
- */
-int psnet_init_rel_ipx(int port, int should_listen)
-{	
 	// success
 	return 1;
 }
@@ -2377,8 +2091,9 @@ void psnet_socket_options( SOCKET sock )
 	int cursize, bufsize; 
 	socklen_t cursizesize;
 
-	// Set the mode of the socket to allow broadcasting.  We need to be able to broadcast
-	// when a game is searched for in IPX mode.
+	// Set the mode of the socket to allow broadcasting. 
+	// Broadcasting was needed when searching for a game in IPX mode.
+	// Unclear if still needed.
 	broadcast = 1;
 	if(setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (LPSTR)&broadcast, sizeof(broadcast) )){
 		Can_broadcast = 0;
@@ -2403,42 +2118,6 @@ void psnet_socket_options( SOCKET sock )
 	getsockopt(sock, SOL_SOCKET, SO_SNDBUF, (LPSTR)&cursize, &cursizesize);
 	ml_printf("Send buffer set to %d", cursize);
 }
-
-#ifdef _WIN32
-/**
- * Initialize ipx socket
- */
-int psnet_init_ipx()
-{	
-	SOCKADDR_IPX sockaddr;
-
-	IPX_socket = INVALID_SOCKET;	
-	
-	IPX_socket = socket( AF_IPX, SOCK_DGRAM, NSPROTO_IPX );
-	if ( IPX_socket == INVALID_SOCKET ) {
-		Ipx_failure_code = WSAGetLastError();
-		ml_printf("Error on IPX startup %d", Ipx_failure_code);
-		return 0;
-	}
-
-	// bind the socket
-	memset(&sockaddr,0,sizeof(SOCKADDR_IPX));
-	sockaddr.sa_family = AF_IPX; 	
-	sockaddr.sa_socket = htons( Psnet_default_port );
-	if ( bind(IPX_socket, (SOCKADDR*)&sockaddr, sizeof (SOCKADDR_IPX)) == SOCKET_ERROR) {	
-		Ipx_failure_code = WSAGetLastError();
-		ml_printf("Couldn't bind IPX socket (%d)! Invalidating IPX", Ipx_failure_code ); 
-		return 0;
-	}
-
-	// set socket options
-	psnet_socket_options( IPX_socket );		
-	Ipx_can_broadcast = Can_broadcast;
-
-	// success
-	return 1;
-}
-#endif
 
 /**
  * Initialize tcp socket

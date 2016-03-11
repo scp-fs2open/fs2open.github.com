@@ -406,23 +406,12 @@ typedef struct screen {
 
 	int envmap_render_target;
 
-	bool recording_state_block;
-	int current_state_block;
-
-	void (*gf_start_state_block)();
-	int (*gf_end_state_block)();
-	void (*gf_set_state_block)(int);
-
 	//switch onscreen, offscreen
 	void (*gf_flip)();
 
 	// Sets the current palette
 	void (*gf_set_palette)(const ubyte *new_pal, int restrict_alphacolor);
-
-	// Fade the screen in/out
-	void (*gf_fade_in)(int instantaneous);
-	void (*gf_fade_out)(int instantaneous);
-
+	
 	// Flash the screen
 	void (*gf_flash)( int r, int g, int b );
 	void (*gf_flash_alpha)(int r, int g, int b, int a);
@@ -512,17 +501,7 @@ typedef struct screen {
 
 	// Frees up a saved screen.
 	void (*gf_free_screen)(int id);
-
-	// CODE FOR DUMPING FRAMES TO A FILE
-	// Begin frame dumping
-	void (*gf_dump_frame_start)( int first_frame_number, int nframes_between_dumps );
-
-	// Dump the current frame to file
-	void (*gf_dump_frame)();
-
-	// Dump the current frame to file
-	void (*gf_dump_frame_stop)();
-
+	
 	// Sets the gamma
 	void (*gf_set_gamma)(float gamma);
 
@@ -558,10 +537,9 @@ typedef struct screen {
 	// Here be the bitmap functions
 	void (*gf_bm_free_data)(int n, bool release);
 	void (*gf_bm_create)(int n);
-	int(*gf_bm_load)(BM_TYPE type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, int *size);
 	void (*gf_bm_init)(int n);
 	void (*gf_bm_page_in_start)();
-	int (*gf_bm_lock)(const char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug);
+	bool (*gf_bm_data)(int n, bitmap* bm);
 
 	int (*gf_bm_make_render_target)(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags );
 	int (*gf_bm_set_render_target)(int n, int face);
@@ -585,11 +563,7 @@ typedef struct screen {
 
 	int (*gf_create_stream_buffer)();
 	void (*gf_render_stream_buffer)(int buffer_handle, int offset, int n_verts, int flags);
-
-	int	 (*gf_make_flat_buffer)(poly_list*);
-	int	 (*gf_make_line_buffer)(line_list*);
 	
-
 	//the projection matrix; fov, aspect ratio, near, far
  	void (*gf_set_proj_matrix)(float, float, float, float);
   	void (*gf_end_proj_matrix)();
@@ -636,7 +610,6 @@ typedef struct screen {
 	void (*gf_end_clip_plane)();
 
 	void (*gf_zbias)(int zbias);
-	void (*gf_setup_background_fog)(bool);
 
 	void (*gf_set_fill_mode)(int);
 	void (*gf_set_texture_panning)(float u, float v, bool enable);
@@ -832,8 +805,6 @@ __inline void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode = GR_R
 	(*gr_screen.gf_gradient)(x1, y1, x2, y2, resize_mode);
 }
 
-#define gr_fade_in			GR_CALL(gr_screen.gf_fade_in)
-#define gr_fade_out			GR_CALL(gr_screen.gf_fade_out)
 #define gr_flash			GR_CALL(gr_screen.gf_flash)
 #define gr_flash_alpha		GR_CALL(gr_screen.gf_flash_alpha)
 
@@ -849,10 +820,6 @@ __inline void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode = GR_R
 #define gr_save_screen		GR_CALL(gr_screen.gf_save_screen)
 #define gr_restore_screen	GR_CALL(gr_screen.gf_restore_screen)
 #define gr_free_screen		GR_CALL(gr_screen.gf_free_screen)
-
-#define gr_dump_frame_start	GR_CALL(gr_screen.gf_dump_frame_start)
-#define gr_dump_frame_stop		GR_CALL(gr_screen.gf_dump_frame_stop)
-#define gr_dump_frame			GR_CALL(gr_screen.gf_dump_frame)
 
 #define gr_set_gamma			GR_CALL(gr_screen.gf_set_gamma)
 
@@ -886,12 +853,8 @@ __inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float
 #define gr_bm_free_data				GR_CALL(*gr_screen.gf_bm_free_data)
 #define gr_bm_create				GR_CALL(*gr_screen.gf_bm_create)
 #define gr_bm_init					GR_CALL(*gr_screen.gf_bm_init)
-__inline int gr_bm_load(BM_TYPE type, int n, const char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, BM_TYPE *c_type = 0, int *mm_lvl = 0, int *size = 0)
-{
-	return (*gr_screen.gf_bm_load)(type, n, filename, img_cfp, w, h, bpp, c_type, mm_lvl, size);
-}
 #define gr_bm_page_in_start			GR_CALL(*gr_screen.gf_bm_page_in_start)
-#define gr_bm_lock					GR_CALL(*gr_screen.gf_bm_lock)          
+#define gr_bm_data					GR_CALL(*gr_screen.gf_bm_data)
 
 #define gr_bm_make_render_target					GR_CALL(*gr_screen.gf_bm_make_render_target)          
         
@@ -921,9 +884,6 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 #define gr_render_stream_buffer_end		GR_CALL(*gr_screen.gf_render_stream_buffer_end)
 
 #define gr_set_buffer					GR_CALL(*gr_screen.gf_set_buffer)      
-      
-#define gr_make_flat_buffer				GR_CALL(*gr_screen.gf_make_flat_buffer)            
-#define gr_make_line_buffer				GR_CALL(*gr_screen.gf_make_line_buffer)            
 
 #define gr_set_proj_matrix					GR_CALL(*gr_screen.gf_set_proj_matrix)            
 #define gr_end_proj_matrix					GR_CALL(*gr_screen.gf_end_proj_matrix)            
@@ -967,12 +927,6 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi
 #define	gr_zbias						GR_CALL(*gr_screen.gf_zbias)
 #define	gr_set_fill_mode				GR_CALL(*gr_screen.gf_set_fill_mode)
 #define	gr_set_texture_panning			GR_CALL(*gr_screen.gf_set_texture_panning)
-
-#define	gr_start_state_block			GR_CAL(*gr_screen.gf_start_state_block)
-#define	gr_end_state_block				GR_CALL(*gr_screen.gf_end_state_block)
-#define	gr_set_state_block				GR_CALL(*gr_screen.gf_set_state_block)
-
-#define gr_setup_background_fog			GR_CALL(*gr_screen.gf_setup_background_fog)
 
 #define gr_draw_line_list				GR_CALL(*gr_screen.gf_draw_line_list)
 

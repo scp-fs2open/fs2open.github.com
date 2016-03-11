@@ -9872,7 +9872,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	model_anim_set_initial_states(shipp);
 
-	shipp->model_instance_num = model_create_instance(sip->model_num);
+	shipp->model_instance_num = model_create_instance(true, sip->model_num);
 
 	shipp->time_created = Missiontime;
 
@@ -10302,7 +10302,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_assign_sound(sp);
 	
 	// create new model instance data
-	sp->model_instance_num = model_create_instance(sip->model_num);
+	sp->model_instance_num = model_create_instance(true, sip->model_num);
 
 	// Valathil - Reinitialize collision checks
 	if ( Cmdline_old_collision_sys ) {
@@ -12978,6 +12978,7 @@ int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
 		*pos = objp->pos;
 		return 0;
 	}
+	Assertion(objp->type == OBJ_SHIP, "Only ships can have subsystems!");
 
 	model_subsystem *mss = subsysp->system_info;
 
@@ -12989,7 +12990,7 @@ int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
 	} else {
 		// Submodel subsystems may require a more complicated calculation
 
-		find_submodel_instance_world_point(pos, objp, mss->subobj_num);
+		find_submodel_instance_world_point(pos, Ships[objp->instance].model_instance_num, mss->subobj_num, &objp->orient, &objp->pos);
 	}
 
 	return 1;
@@ -13050,7 +13051,6 @@ void ship_model_start(object *objp)
 			model_set_instance(model_num, psub->turret_gun_sobj, &pss->submodel_info_2, pss->flags );
 		}
 	}
-	model_do_dumb_rotation(model_num);
 }
 
 /**
@@ -13086,6 +13086,7 @@ void ship_model_update_instance(object *objp)
 	// Then, clear all the angles in the model to zero
 	model_clear_submodel_instances(model_instance_num);
 
+	// Handle subsystem rotations for this ship
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 		switch (psub->type) {
@@ -13114,8 +13115,8 @@ void ship_model_update_instance(object *objp)
 		}
 	}
 
-	model_instance_dumb_rotation(model_instance_num);
-
+	// Handle intrinsic rotations for this ship
+	model_do_intrinsic_rotations(model_instance_num);
 
 	// preprocess subobject orientations for collision detection
 	model_collide_preprocess(&objp->orient, model_instance_num);
@@ -13225,6 +13226,8 @@ void ship_set_eye( object *obj, int eye_index)
 // eyes have no defined up vector)
 void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew , bool from_origin)
 {
+	Assertion(obj->type == OBJ_SHIP, "Only ships can have eye positions!");
+
 	ship *shipp = &Ships[obj->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
@@ -13240,7 +13243,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
 
 	if (ep->parent >= 0 && pm->submodel[ep->parent].can_move) {
-		find_submodel_instance_point_orient(eye_pos, eye_orient, obj, ep->parent, &ep->pnt, &vmd_identity_matrix);
+		find_submodel_instance_point_orient(eye_pos, eye_orient, shipp->model_instance_num, ep->parent, &ep->pnt, &vmd_identity_matrix);
 		vec3d tvec = *eye_pos;
 		vm_vec_unrotate(eye_pos, &tvec, &obj->orient);
 		vm_vec_add2(eye_pos, &obj->pos);

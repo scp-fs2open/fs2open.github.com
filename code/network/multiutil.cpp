@@ -448,18 +448,13 @@ int find_player( net_addr* addr )
 int find_player_no_port(net_addr *addr)
 {
 	int i;
-	int len;
 
 	for (i = 0; i < MAX_PLAYERS; i++ ) {
 		if ( !MULTI_CONNECTED(Net_players[i])){
 			continue;
 		}
-		if(addr->type == NET_IPX){
-			len = 6;
-		} else { 
-			len = 4;
-		}
-		if ( memcmp(&addr->addr,&Net_players[i].p_info.addr.addr,len)== 0){
+
+		if ( memcmp(&addr->addr,&Net_players[i].p_info.addr.addr,IP_ADDRESS_LENGTH)== 0){
 			return i;
 		}
 	}
@@ -1051,16 +1046,14 @@ void multi_cull_zombies()
 //
 //
 
-void fill_net_addr(net_addr* addr, ubyte* address, ubyte* net_id, ushort port)
+void fill_net_addr(net_addr* addr, ubyte* address, ushort port)
 {
 	Assert(addr != NULL);
 	Assert(address != NULL);
-	Assert(net_id != NULL);
 
 	addr->type = Multi_options_g.protocol;
 	memset( addr->addr, 0x00, 6);
 	memcpy( addr->addr, address, ADDRESS_LENGTH);
-	memcpy( addr->net_id, net_id, 4);
 	addr->port = port;
 }
 
@@ -1077,17 +1070,6 @@ char* get_text_address( char * text, ubyte * address )
 	in_addr temp_addr;
 
 	switch ( Multi_options_g.protocol ) {
-		case NET_IPX:
-			strcpy( text, XSTR("[ipx address here]",903) );	// TODO: find equiv to inet_ntoa() for IPX
-			sprintf(text, "%x %x %x %x %x %x",	address[0],
-															address[1],
-															address[2],
-															address[3],
-															address[4],
-															address[5]);
-
-			break;
-
 		case NET_TCP:
 			memcpy(&temp_addr.s_addr, address, 4);
 			strcpy( text, inet_ntoa(temp_addr) );

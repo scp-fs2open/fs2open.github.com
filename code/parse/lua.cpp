@@ -5034,6 +5034,10 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 
 	if (obj->type == OBJ_SHIP) {
 		model_instance_num = Ships[obj->instance].model_instance_num;
+	} else if (obj->type == OBJ_WEAPON) {
+		model_instance_num = Weapons[obj->instance].model_instance_num;
+	} else if (obj->type == OBJ_ASTEROID) {
+		model_instance_num = Asteroids[obj->instance].model_instance_num;
 	}
 
 	mc_info hull_check;
@@ -7457,7 +7461,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos[, boolean reset=false", "Rotates
 	vm_vec_add2(&gpos, &sso->objp->pos);
 
 	// Find direction of turret
-	model_instance_find_world_dir(&gvec, &tp->turret_norm, tp->model_num, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
+	model_instance_find_world_dir(&gvec, &tp->turret_norm, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient);
 		
 	int ret_val = model_rotate_gun(Ship_info[(&Ships[sso->objp->instance])->ship_info_index].model_num, tp, &Objects[sso->objp->instance].orient, &sso->ss->submodel_info_1.angs, &sso->ss->submodel_info_2.angs, &Objects[sso->objp->instance].pos, &pos, (&Ships[sso->objp->instance])->objnum, reset);
 
@@ -7479,7 +7483,7 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 	vec3d gvec;
 	object *objp = sso->objp;
 
-	model_instance_find_world_dir(&gvec, &sso->ss->system_info->turret_norm, sso->ss->system_info->model_num, Ships[objp->instance].model_instance_num, sso->ss->system_info->turret_gun_sobj, &objp->orient, &objp->pos );
+	model_instance_find_world_dir(&gvec, &sso->ss->system_info->turret_norm, Ships[objp->instance].model_instance_num, sso->ss->system_info->turret_gun_sobj, &objp->orient);
 
 	vec3d out;
 	vm_vec_rotate(&out, &gvec, &sso->objp->orient);

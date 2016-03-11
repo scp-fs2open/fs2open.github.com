@@ -2036,17 +2036,6 @@ void gr_opengl_flash_alpha(int r, int g, int b, int a)
 	opengl_draw_coloured_quad((GLint)x1, (GLint)y1, (GLint)x2, (GLint)y2);
 }
 
-
-void gr_opengl_fade_in(int instantaneous)
-{
-	// Empty - DDOI
-}
-
-void gr_opengl_fade_out(int instantaneous)
-{
-	// Empty - DDOI
-}
-
 void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int resize_mode)
 {
 	if ( (w < 1) || (h < 1) ) {

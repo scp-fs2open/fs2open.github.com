@@ -824,11 +824,6 @@ void multi_join_game_init()
 	Assert( Net_player != NULL );
 
 	switch (Multi_options_g.protocol) {	
-	case NET_IPX:
-		ADDRESS_LENGTH = IPX_ADDRESS_LENGTH;
-		PORT_LENGTH = IPX_PORT_LENGTH;
-		break;
-
 	case NET_TCP:
 		ADDRESS_LENGTH = IP_ADDRESS_LENGTH;		
 		PORT_LENGTH = IP_PORT_LENGTH;			
@@ -2077,17 +2072,7 @@ int multi_join_warn_pxo()
 void multi_join_blit_protocol()
 {
 	gr_set_color_fast(&Color_bright);
-
-	switch(Socket_type){
-	case NET_TCP:		
-		// straight TCP		
-		gr_string(5, 2, "TCP", GR_RESIZE_MENU);		
-		break;
-
-	case NET_IPX:
-		gr_string(5, 2, "IPX", GR_RESIZE_MENU);
-		break;
-	}
+	gr_string(5, 2, "TCP", GR_RESIZE_MENU);
 }
 
 

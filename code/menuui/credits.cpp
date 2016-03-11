@@ -803,7 +803,7 @@ void credits_do_frame(float frametime)
 
 	Credits_frametime = temp_time - Credits_last_time;
 	Credits_last_time = temp_time;
-	timestamp_inc(Credits_frametime / 1000.0f);
+	timestamp_inc(Credits_frametime);
 
 	float fl_frametime = i2fl(Credits_frametime) / 1000.f;
 	if (keyd_pressed[KEY_LSHIFT]) {

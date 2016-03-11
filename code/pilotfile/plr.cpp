@@ -269,11 +269,9 @@ void pilotfile::plr_read_multiplayer()
 	// netgame protocol
 	Multi_options_g.protocol = cfread_int(cfp);
 
-	if (Multi_options_g.protocol == NET_VMT) {
+	if (Multi_options_g.protocol != NET_TCP) {
 		Multi_options_g.protocol = NET_TCP;
 	}
-
-	Assert( (Multi_options_g.protocol == NET_IPX) || (Multi_options_g.protocol == NET_TCP) );
 }
 
 void pilotfile::plr_write_multiplayer()
