@@ -1338,7 +1338,7 @@ int model_collide(mc_info *mc_info_obj)
 			vm_vec_add2(&Mc->hit_point_world, Mc->pos);
 		} else {
 			if ( Mc_pmi ) {
-				model_instance_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc->model_num, Mc->model_instance_num, Mc->hit_submodel, Mc->orient, Mc->pos);
+				model_instance_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc->model_instance_num, Mc->hit_submodel, Mc->orient, Mc->pos);
 			} else {
 				model_find_world_point(&Mc->hit_point_world, &Mc->hit_point, Mc->model_num, Mc->hit_submodel, Mc->orient, Mc->pos);
 			}

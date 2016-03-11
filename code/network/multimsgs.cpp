@@ -924,7 +924,7 @@ void process_join_packet(ubyte* data, header* hinfo)
 	PACKET_SET_SIZE();	
 
 	// fill in the address information of where this came from
-	fill_net_addr(&addr, hinfo->addr, hinfo->net_id, hinfo->port);
+	fill_net_addr(&addr, hinfo->addr, hinfo->port);
 
 	// determine if we should accept this guy, or return a reason we should reject him
 	// see the DENY_* codes in multi.h
@@ -1104,8 +1104,6 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 		}
 
 		// create the player
-		memcpy(new_addr.net_id, Psnet_my_addr.net_id, 4);
-
 		if(new_flags & NETINFO_FLAG_OBSERVER){
 			multi_obs_create_player(new_player_num,new_player_name,&new_addr,&Players[player_num]);
 			Net_players[new_player_num].flags |= new_flags;
@@ -1349,7 +1347,7 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 
 			// also - always set the server address to be where this data came from, NOT from 
 			// the data in the packet		
-			fill_net_addr(&Net_players[player_num].p_info.addr, hinfo->addr, hinfo->net_id, hinfo->port);
+			fill_net_addr(&Net_players[player_num].p_info.addr, hinfo->addr, hinfo->port);
 		}
 
 		// set the host pointer
@@ -1591,7 +1589,7 @@ void process_accept_packet(ubyte* data, header* hinfo)
 	}
 
 	// fill in the netgame server address
-	fill_net_addr( &Netgame.server_addr, hinfo->addr, hinfo->net_id, hinfo->port );	
+	fill_net_addr( &Netgame.server_addr, hinfo->addr, hinfo->port );	
 
 	// get the skill level setting
 	GET_INT(Game_skill_level);
@@ -1941,7 +1939,7 @@ void process_game_active_packet(ubyte* data, header* hinfo)
 	active_game ag;
 	int modes_compatible = 1;
 	
-	fill_net_addr(&ag.server_addr, hinfo->addr, hinfo->net_id, hinfo->port);
+	fill_net_addr(&ag.server_addr, hinfo->addr, hinfo->port);
 
 	// read this game into a temporary structure
 	offset = HEADER_LENGTH;
@@ -2199,7 +2197,7 @@ void process_netgame_descript_packet( ubyte *data, header *hinfo )
 	char mission_desc[MISSION_DESC_LENGTH+2];
 	net_addr addr;
 
-	fill_net_addr(&addr, hinfo->addr, hinfo->net_id, hinfo->port);
+	fill_net_addr(&addr, hinfo->addr, hinfo->port);
 
 	// read this game into a temporary structure
 	offset = HEADER_LENGTH;
@@ -2232,7 +2230,7 @@ void process_netgame_descript_packet( ubyte *data, header *hinfo )
 	PACKET_SET_SIZE();	
 }
 
-// broadcast a query for active games. IPX will use net broadcast and TCP will either request from the MT or from the specified list
+// broadcast a query for active games. TCP will either request from the MT or from the specified list
 void broadcast_game_query()
 {
 	int packet_size;
@@ -2256,7 +2254,7 @@ void broadcast_game_query()
 		} while(s_moveup != Game_server_head);		
 	}	
 
-	fill_net_addr(&addr, Psnet_my_addr.addr, Psnet_my_addr.net_id, DEFAULT_GAME_PORT);
+	fill_net_addr(&addr, Psnet_my_addr.addr, DEFAULT_GAME_PORT);
 
 	// send out a broadcast if our options allow us
 	if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
@@ -2286,7 +2284,7 @@ void process_game_query(ubyte* data, header* hinfo)
 	PACKET_SET_SIZE();
 
 	// check to be sure that we don't capture our own broadcast message
-	fill_net_addr(&addr, hinfo->addr, hinfo->net_id, hinfo->port);
+	fill_net_addr(&addr, hinfo->addr, hinfo->port);
 	if ( psnet_same( &addr, &Psnet_my_addr) ){
 		return;
 	}
@@ -3474,7 +3472,7 @@ void process_ping_packet(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// get the address to return the pong to
-	fill_net_addr(&addr, hinfo->addr, hinfo->net_id, hinfo->port);	
+	fill_net_addr(&addr, hinfo->addr, hinfo->port);	
 	            
 	// send the pong
 	send_pong(&addr);	
@@ -3490,7 +3488,7 @@ void process_pong_packet(ubyte *data, header *hinfo)
 	
 	offset = HEADER_LENGTH;
 
-	fill_net_addr(&addr, hinfo->addr, hinfo->net_id, hinfo->port);
+	fill_net_addr(&addr, hinfo->addr, hinfo->port);
 		
 	PACKET_SET_SIZE();	
 		

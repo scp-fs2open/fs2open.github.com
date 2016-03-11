@@ -2011,8 +2011,6 @@ void model_render_DEPRECATED(int model_num, matrix *orient, vec3d * pos, uint fl
 
 	polymodel *pm = model_get(model_num);
 
-	model_do_dumb_rotation(model_num);
-
 	if (flags & MR_FORCE_CLAMP)
 		gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
 
@@ -2349,7 +2347,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 				tempv = loc_offset;
-				find_submodel_instance_point_normal(&loc_offset, &loc_norm, &Objects[objnum], bank->submodel_num, &tempv, &loc_norm);
+				find_submodel_instance_point_normal(&loc_offset, &loc_norm, shipp->model_instance_num, bank->submodel_num, &tempv, &loc_norm);
 			}
 
 			vm_vec_unrotate(&world_pnt, &loc_offset, orient);
@@ -2659,7 +2657,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 						vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 						tempv = loc_offset;
-						find_submodel_instance_point_normal(&loc_offset, &loc_norm, &Objects[shipp->objnum], bank->submodel_parent, &tempv, &loc_norm);
+						find_submodel_instance_point_normal(&loc_offset, &loc_norm, shipp->model_instance_num, bank->submodel_parent, &tempv, &loc_norm);
 					}
 
 					vm_vec_unrotate(&world_pnt, &loc_offset, orient);
@@ -2817,7 +2815,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 									} else {
 										cone_dir_rot = gpo->cone_direction; 
 									}
-									find_submodel_instance_point_normal(&unused, &cone_dir_model, &Objects[shipp->objnum], bank->submodel_parent, &unused, &cone_dir_rot);
+									find_submodel_instance_point_normal(&unused, &cone_dir_model, shipp->model_instance_num, bank->submodel_parent, &unused, &cone_dir_rot);
 									vm_vec_unrotate(&cone_dir_world, &cone_dir_model, orient);
 									vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
 									cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;

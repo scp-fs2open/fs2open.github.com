@@ -92,8 +92,6 @@ class player;
 // low level networking defines
 #define IP_ADDRESS_LENGTH					4				// length of the address field for an IP address
 #define IP_PORT_LENGTH						2				// length of the port field for an IP address
-#define IPX_ADDRESS_LENGTH					6				// length of the address field for an IPX address
-#define IPX_PORT_LENGTH						2				// length of the port field for an IPX address
 
 // netgame defines
 #define MP_SINGLE_MISSION					0				// not playing a campaign - single mission
@@ -762,8 +760,8 @@ extern int Multi_button_info_ok;										// flag saying it is ok to apply criti
 extern int Multi_button_info_id;										// identifier of the stored button info to be applying
 
 // low level networking vars
-extern int ADDRESS_LENGTH;												// will be 6 for IPX, 4 for IP
-extern int PORT_LENGTH;													// will be 2 for IPX, 2 for IP
+extern int ADDRESS_LENGTH;												// will be 4 for IP
+extern int PORT_LENGTH;													// will be 2 for IP
 extern int HEADER_LENGTH;												// 1 byte (packet type)
 
 // misc data

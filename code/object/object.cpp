@@ -1454,6 +1454,11 @@ void obj_move_all(float frametime)
 		Script_system.RemHookVars(2, "User", "Target");
 	}
 
+	// Now that we've moved all the objects, move all the models that use intrinsic rotations.  We do that here because we already handled the
+	// ship models in obj_move_all_post, and this is more or less conceptually close enough to move the rest.  (Originally all models
+	// were intrinsic-rotated here, but for sequencing reasons, intrinsic ship rotations must happen along with regular ship rotations.)
+	model_do_intrinsic_rotations();
+
 	//	After all objects have been moved, move all docked objects.
 	objp = GET_FIRST(&obj_used_list);
 	while( objp !=END_OF_LIST(&obj_used_list) )	{

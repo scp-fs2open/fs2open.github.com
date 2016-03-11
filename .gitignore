@@ -24,7 +24,6 @@ install-sh
 missing
 .svn
 *.layout
-projects/Xcode4/Frameworks/
 projects/Xcode/Frameworks/
 
 #========

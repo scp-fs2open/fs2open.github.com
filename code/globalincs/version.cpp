@@ -10,8 +10,6 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/version.h"
 
-#include <sstream>
-
 namespace version
 {
 	bool check_at_least(int major, int minor, int build, int revision)

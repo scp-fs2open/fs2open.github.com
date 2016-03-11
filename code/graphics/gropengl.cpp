@@ -70,13 +70,6 @@ static ushort *GL_original_gamma_ramp = NULL;
 int Use_VBOs = 0;
 int Use_PBOs = 0;
 
-static int GL_dump_frames = 0;
-static ubyte *GL_dump_buffer = NULL;
-static int GL_dump_frame_number = 0;
-static int GL_dump_frame_count = 0;
-static int GL_dump_frame_count_max = 0;
-static int GL_dump_frame_size = 0;
-
 static ubyte *GL_saved_screen = NULL;
 static int GL_saved_screen_id = -1;
 static GLuint GL_screen_pbo = 0;
@@ -907,96 +900,6 @@ void gr_opengl_free_screen(int bmp_id)
 	GL_saved_screen_id = -1;
 }
 
-static void opengl_flush_frame_dump()
-{
-	char filename[MAX_FILENAME_LEN];
-
-	Assert( GL_dump_buffer != NULL);
-
-	for (int i = 0; i < GL_dump_frame_count; i++) {
-		sprintf(filename, NOX("frm%04d.tga"), GL_dump_frame_number );
-		GL_dump_frame_number++;
-
-		CFILE *f = cfopen(filename, "wb", CFILE_NORMAL, CF_TYPE_DATA);
-
-		// Write the TGA header
-		cfwrite_ubyte( 0, f );	//	IDLength;
-		cfwrite_ubyte( 0, f );	//	ColorMapType;
-		cfwrite_ubyte( 2, f );	//	ImageType;		// 2 = 24bpp, uncompressed, 10=24bpp rle compressed
-		cfwrite_ushort( 0, f );	// CMapStart;
-		cfwrite_ushort( 0, f );	//	CMapLength;
-		cfwrite_ubyte( 0, f );	// CMapDepth;
-		cfwrite_ushort( 0, f );	//	XOffset;
-		cfwrite_ushort( 0, f );	//	YOffset;
-		cfwrite_ushort( (ushort)gr_screen.max_w, f );	//	Width;
-		cfwrite_ushort( (ushort)gr_screen.max_h, f );	//	Height;
-		cfwrite_ubyte( 24, f );	//PixelDepth;
-		cfwrite_ubyte( 0, f );	//ImageDesc;
-
-		glReadBuffer(GL_FRONT);
-		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGR_EXT, GL_UNSIGNED_BYTE, GL_dump_buffer);
-
-		// save the data out
-		cfwrite( GL_dump_buffer, GL_dump_frame_size, 1, f );
-
-		cfclose(f);
-
-	}
-
-	GL_dump_frame_count = 0;
-}
-
-void gr_opengl_dump_frame_start(int first_frame, int frames_between_dumps)
-{
-	if ( GL_dump_frames )	{
-		Int3();		//  We're already dumping frames.  See John.
-		return;
-	}
-
-	GL_dump_frames = 1;
-	GL_dump_frame_number = first_frame;
-	GL_dump_frame_count = 0;
-	GL_dump_frame_count_max = frames_between_dumps; // only works if it's 1
-	GL_dump_frame_size = gr_screen.max_w * gr_screen.max_h * 3;
-
-	if ( !GL_dump_buffer ) {
-		int size = GL_dump_frame_count_max * GL_dump_frame_size;
-
-		GL_dump_buffer = (ubyte *)vm_malloc(size);
-
-		if ( !GL_dump_buffer )	{
-			Error(LOCATION, "Unable to malloc %d bytes for dump buffer", size );
-		}
-	}
-}
-
-void gr_opengl_dump_frame_stop()
-{
-	if ( !GL_dump_frames )	{
-		Int3();		//  We're not dumping frames.  See John.
-		return;
-	}
-
-	// dump any remaining frames
-	opengl_flush_frame_dump();
-
-	GL_dump_frames = 0;
-
-	if ( GL_dump_buffer )	{
-		vm_free(GL_dump_buffer);
-		GL_dump_buffer = NULL;
-	}
-}
-
-void gr_opengl_dump_frame()
-{
-	GL_dump_frame_count++;
-
-	if ( GL_dump_frame_count == GL_dump_frame_count_max ) {
-		opengl_flush_frame_dump();
-	}
-}
-
 //fill mode, solid/wire frame
 void gr_opengl_set_fill_mode(int mode)
 {
@@ -1079,13 +982,6 @@ void gr_opengl_translate_texture_matrix(int unit, const vec3d *shift)
 	glMatrixMode(current_matrix);
 
 //	tex_shift=vmd_zero_vector;
-}
-
-void gr_opengl_setup_background_fog(bool set)
-{
-	if (Cmdline_nohtl) {
-		return;
-	}
 }
 
 void gr_opengl_set_line_width(float width)
@@ -1413,8 +1309,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_palette		= gr_opengl_set_palette;
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
 
-	gr_screen.gf_fade_in			= gr_opengl_fade_in;
-	gr_screen.gf_fade_out			= gr_opengl_fade_out;
 	gr_screen.gf_flash				= gr_opengl_flash;
 	gr_screen.gf_flash_alpha		= gr_opengl_flash_alpha;
 
@@ -1431,10 +1325,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_restore_screen		= gr_opengl_restore_screen;
 	gr_screen.gf_free_screen		= gr_opengl_free_screen;
 
-	gr_screen.gf_dump_frame_start	= gr_opengl_dump_frame_start;
-	gr_screen.gf_dump_frame_stop	= gr_opengl_dump_frame_stop;
-	gr_screen.gf_dump_frame			= gr_opengl_dump_frame;
-
 	gr_screen.gf_set_gamma			= gr_opengl_set_gamma;
 
 	gr_screen.gf_fog_set			= gr_opengl_fog_set;
@@ -1446,9 +1336,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_bm_free_data			= gr_opengl_bm_free_data;
 	gr_screen.gf_bm_create				= gr_opengl_bm_create;
 	gr_screen.gf_bm_init				= gr_opengl_bm_init;
-	gr_screen.gf_bm_load				= gr_opengl_bm_load;
 	gr_screen.gf_bm_page_in_start		= gr_opengl_bm_page_in_start;
-	gr_screen.gf_bm_lock				= gr_opengl_bm_lock;
+	gr_screen.gf_bm_data				= gr_opengl_bm_data;
 	gr_screen.gf_bm_make_render_target	= gr_opengl_bm_make_render_target;
 	gr_screen.gf_bm_set_render_target	= gr_opengl_bm_set_render_target;
 
@@ -1528,12 +1417,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_pop_scale_matrix	= gr_opengl_pop_scale_matrix;
 	gr_screen.gf_center_alpha		= gr_opengl_center_alpha;
 	gr_screen.gf_set_thrust_scale	= gr_opengl_set_thrust_scale;
-
-	gr_screen.gf_setup_background_fog	= gr_opengl_setup_background_fog;
-
-	gr_screen.gf_start_state_block	= gr_opengl_start_state_block;
-	gr_screen.gf_end_state_block	= gr_opengl_end_state_block;
-	gr_screen.gf_set_state_block	= gr_opengl_set_state_block;
 
 	gr_screen.gf_draw_line_list		= gr_opengl_draw_line_list;
 

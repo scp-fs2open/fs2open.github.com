@@ -253,9 +253,9 @@ void HudGaugeLock::render(float frametime)
 		}
 	}
 
+	// show locked indicator
 	Lock_gauge.sx = sx - Lock_gauge_half_w;
 	Lock_gauge.sy = sy - Lock_gauge_half_h;
-
 	if (Player_ai->current_target_is_locked) {
 		hud_anim_render(&Lock_gauge, 0.0f, 1);
 	} else {

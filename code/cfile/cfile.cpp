@@ -105,19 +105,32 @@ const char *Cfile_cdrom_dir = NULL;
 // Function prototypes for internally-called functions
 //
 int cfget_cfile_block();
-CFILE *cf_open_fill_cfblock(FILE * fp, int type);
-CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size);
+CFILE *cf_open_fill_cfblock(const char* source, int line, FILE * fp, int type);
+CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size);
 
 #if defined _WIN32
-CFILE *cf_open_mapped_fill_cfblock(HANDLE hFile, int type);
+CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type);
 #elif defined SCP_UNIX
-CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type);
+CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type);
 #endif
 
 void cf_chksum_long_init();
 
+static void dump_opened_files()
+{
+	for (int i = 0; i < MAX_CFILE_BLOCKS; i++) {
+		auto cb = &Cfile_block_list[i];
+		if (cb->type != CFILE_BLOCK_UNUSED) {
+			mprintf(("    %s:%d\n", cb->source_file, cb->line_num));
+		}
+	}
+}
+
 void cfile_close()
 {
+	mprintf(("Still opened files:\n"));
+	dump_opened_files();
+
 	cf_free_secondary_filelist();
 }
 
@@ -631,7 +644,7 @@ extern int game_cd_changed();
 //					error   ==> NULL
 //
 
-CFILE *cfopen(const char *file_path, const char *mode, int type, int dir_type, bool localize)
+CFILE *_cfopen(const char* source, int line, const char *file_path, const char *mode, int type, int dir_type, bool localize)
 {
 	/* Bobboau, what is this doing here? 31 is way too short... - Goober5000
 	if( strlen(file_path) > 31 )
@@ -716,7 +729,7 @@ CFILE *cfopen(const char *file_path, const char *mode, int type, int dir_type, b
 
 		FILE *fp = fopen(longname, happy_mode);
 		if (fp)	{
-			return cf_open_fill_cfblock(fp, dir_type);
+			return cf_open_fill_cfblock(source, line, fp, dir_type);
  		}
 		return NULL;
 	} 
@@ -745,12 +758,12 @@ CFILE *cfopen(const char *file_path, const char *mode, int type, int dir_type, b
 				hFile = CreateFile(longname, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 				if (hFile != INVALID_HANDLE_VALUE)	{
-					return cf_open_mapped_fill_cfblock(hFile, dir_type);
+					return cf_open_mapped_fill_cfblock(source, line, hFile, dir_type);
 				}
 #elif defined SCP_UNIX
 				FILE *fp = fopen( longname, "rb" );
 				if (fp) {
-					return cf_open_mapped_fill_cfblock(fp, dir_type);
+					return cf_open_mapped_fill_cfblock(source, line, fp, dir_type);
 				}
 #endif
 			} 
@@ -762,10 +775,10 @@ CFILE *cfopen(const char *file_path, const char *mode, int type, int dir_type, b
 			if ( fp )	{
 				if ( offset )	{
 					// Found it in a pack file
-					return cf_open_packed_cfblock(fp, dir_type, offset, size );
+					return cf_open_packed_cfblock(source, line, fp, dir_type, offset, size );
 				} else {
 					// Found it in a normal file
-					return cf_open_fill_cfblock(fp, dir_type);
+					return cf_open_fill_cfblock(source, line, fp, dir_type);
 				} 
 			}
 		}
@@ -786,7 +799,7 @@ CFILE *cfopen(const char *file_path, const char *mode, int type, int dir_type, b
 // returns:		success	==> address of CFILE structure
 //				error	==> NULL
 //
-CFILE *cfopen_special(const char *file_path, const char *mode, const int size, const int offset, int dir_type)
+CFILE *_cfopen_special(const char* source, int line, const char *file_path, const char *mode, const int size, const int offset, int dir_type)
 {
 	if ( !cfile_inited) {
 		Int3();
@@ -811,10 +824,10 @@ CFILE *cfopen_special(const char *file_path, const char *mode, const int size, c
 
 	if ( offset ) {
 		// it's in a pack file
-		return cf_open_packed_cfblock(fp, dir_type, offset, size);
+		return cf_open_packed_cfblock(source, line, fp, dir_type, offset, size);
 	} else {
 		// it's a normal file
-		return cf_open_fill_cfblock(fp, dir_type);
+		return cf_open_fill_cfblock(source, line, fp, dir_type);
 	}
 }
 
@@ -833,7 +846,7 @@ CFILE *ctmpfile()
 	FILE	*fp;
 	fp = tmpfile();
 	if ( fp )
-		return cf_open_fill_cfblock(fp, 0);
+		return cf_open_fill_cfblock(LOCATION, fp, 0);
 	else
 		return NULL;
 }
@@ -863,7 +876,13 @@ int cfget_cfile_block()
 
 	// If we've reached this point, a free Cfile_block could not be found
 	nprintf(("Warning","A free Cfile_block could not be found.\n"));
-	Assert(0);	// out of free cfile blocks
+
+	// Dump a list of all opened files
+	mprintf(("Out of cfile blocks! Currently opened files:\n"));
+	dump_opened_files();
+
+	Assertion(false, "There are no more free cfile blocks. This means that there are too many files opened by FSO.\n"
+		"This is probably caused by a programming or scripting error where a file does not get closed."); // out of free cfile blocks
 	return -1;			
 }
 
@@ -941,7 +960,7 @@ int cf_is_valid(CFILE *cfile)
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-CFILE *cf_open_fill_cfblock(FILE *fp, int type)
+CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int type)
 {
 	int cfile_block_index;
 
@@ -960,6 +979,9 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
 		cfbp->max_read_len = 0;
+
+		cfbp->source_file = source;
+		cfbp->line_num = line;
 		
 		int pos = ftell(fp);
 		if(pos == -1L)
@@ -977,7 +999,7 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
+CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size)
 {
 	// Found it in a pack file
 	int cfile_block_index;
@@ -999,6 +1021,9 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 		cfbp->dir_type = type;
 		cfbp->max_read_len = 0;
 
+		cfbp->source_file = source;
+		cfbp->line_num = line;
+
 		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
 
 		return cfp;
@@ -1014,9 +1039,9 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 // returns:   ptr CFILE structure.  
 //
 #if defined _WIN32
-CFILE *cf_open_mapped_fill_cfblock(HANDLE hFile, int type)
+CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type)
 #elif defined SCP_UNIX
-CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
+CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type)
 #endif
 {
 	int cfile_block_index;
@@ -1042,6 +1067,9 @@ CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 		cfbp->hInFile = hFile;
 #endif
 		cfbp->dir_type = type;
+
+		cfbp->source_file = source;
+		cfbp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp, 0, 0, 0 );
 #if defined _WIN32

@@ -314,8 +314,6 @@ int last_single_step=0;
 int game_zbuffer = 1;
 static int Game_paused;
 
-int Game_level_seed;
-
 #define EXPIRE_BAD_CHECKSUM			1
 #define EXPIRE_BAD_TIME					2
 
@@ -948,28 +946,18 @@ uint load_post_level_init;
  *
  * @return 0 on failure, 1 on success
  */
-void game_level_init(int seed)
+void game_level_init()
 {
 	game_busy( NOX("** starting game_level_init() **") );
 	load_gl_init = (uint) time(NULL);
-	// seed the random number generator
-	if ( seed == -1 ) {
-		// if no seed was passed, seed the generator either from the time value, or from the
-		// netgame security flags -- ensures that all players in multiplayer game will have the
-		// same randon number sequence (with static rand functions)
-		if ( Game_mode & GM_NORMAL ) {
-			Game_level_seed = (int) time(NULL);
-		} else {
-			Game_level_seed = Netgame.security;
-		}
-	} else {
-		Assert( !(Game_mode & GM_MULTIPLAYER) );
-		Game_level_seed = seed;
-	}
-	srand( Game_level_seed );
 
-	// semirand function needs to get re-initted every time in multiplayer
-	if ( Game_mode & GM_MULTIPLAYER ){
+	// seed the random number generator in multiplayer
+	if ( Game_mode & GM_MULTIPLAYER ) {
+		// seed the generator from the netgame security flags -- ensures that all players in
+		// multiplayer will have the same random number sequence (with static rand functions)
+		srand( Netgame.security );
+
+		// semirand function needs to get re-initted every time in multiplayer
 		init_semirand();
 	}
 
@@ -1614,8 +1602,6 @@ DCF(show_cpu,"Toggles showing cpu usage")
 
 #endif
 
-			int Game_init_seed;
-
 DCF(use_joy_mouse,"Makes joystick move mouse cursor")
 {
 	bool process = true;
@@ -1753,8 +1739,8 @@ void game_init()
 	// Moved from rand32, if we're gonna break, break immediately.
 	Assert(RAND_MAX == 0x7fff || RAND_MAX >= 0x7ffffffd);
 	// seed the random number generator
-	Game_init_seed = (int) time(NULL);
-	srand( Game_init_seed );
+	int game_init_seed = (int) time(NULL);
+	srand( game_init_seed );
 
 	Framerate_delay = 0;
 
@@ -3892,97 +3878,6 @@ void john_debug_stuff(vec3d *eye_pos, matrix *eye_orient)
 }
 #endif
 
-// following function for dumping frames for purposes of building trailers.
-#ifndef NDEBUG
-
-// function to toggle state of dumping every frame into PCX when playing the game
-DCF(dump_frames, "Toggles On/off frame dumping at 15 hz")
-{
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 15;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Frame dumping at 15 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Frame dumping is now OFF\n" );
-	}
-}
-
-DCF(dump_frames_trigger, "Starts/stop frame dumping at 15 hz")
-{
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 15;
-		Debug_dump_trigger = 1;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Frame dumping at 15 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Frame dumping is now OFF\n" );
-	}
-}
-
-DCF(dump_frames30, "Starts/stop frame dumping at 30 hz")
-{
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 30;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Frame dumping at 30 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Frame dumping is now OFF\n" );
-	}
-}
-
-DCF(dump_frames30_trigger, "Starts/stop frame dumping at 30 hz")
-{
-	if ( Debug_dump_frames == 0 )	{
-		// Turn it on
-		Debug_dump_frames = 30;
-		Debug_dump_trigger = 1;
-		gr_dump_frame_start( Debug_dump_frame_num, DUMP_BUFFER_NUM_FRAMES );
-		dc_printf( "Triggered frame dumping at 30 hz is now ON\n" );
-	} else {
-		// Turn it off
-		Debug_dump_frames = 0;
-		Debug_dump_trigger = 0;
-		gr_dump_frame_stop();
-		dc_printf( "Triggered frame dumping is now OFF\n" );
-	}
-}
-
-void game_maybe_dump_frame()
-{
-	if ( !Debug_dump_frames ){
-		return;
-	}
-
-	if( Debug_dump_trigger && !keyd_pressed[KEY_Q] ){
-		return;
-	}
-
-	game_stop_time();
-
-	gr_dump_frame();
-	Debug_dump_frame_num++;
-
-	game_start_time();
-}
-#endif
-
 extern int Player_dead_state;
 
 //	Flip the page and time how long it took.
@@ -4443,7 +4338,6 @@ void game_frame(bool paused)
 	}
 #endif
 	// start timing frame
-	timing_frame_start();
 	profile_begin("Main Frame");
 
 	DEBUG_GET_TIME( total_time1 )
@@ -4608,11 +4502,7 @@ void game_frame(bool paused)
 
 			// maybe render and process the dead popup
 			game_maybe_do_dead_popup(flFrametime);
-
-			// start timing frame
-			timing_frame_stop();
-			// timing_display(30, 10);			
-
+			
 			// If a regular popup is active, don't flip (popup code flips)
 			if( !popup_running_state() ){
 				DEBUG_GET_TIME( flip_time1 )
@@ -4620,9 +4510,6 @@ void game_frame(bool paused)
 				DEBUG_GET_TIME( flip_time2 )
 			}
 
-#ifndef NDEBUG
-			game_maybe_dump_frame();			// used to dump pcx files for building trailers
-#endif		
 		} else {
 			game_show_standalone_framerate();
 		}
@@ -4866,7 +4753,9 @@ void game_set_frametime(int state)
 	Last_frame_timestamp = timestamp();
 
 	flFrametime = f2fl(Frametime);
-	timestamp_inc(flFrametime);
+	
+	auto frametime_ms = f2i(fixmul(Frametime, F1_0 * TIMESTAMP_FREQUENCY));
+	timestamp_inc(frametime_ms);
 
 	// wrap overall frametime if needed
 	if ( FrametimeOverall > (INT_MAX - F1_0) )

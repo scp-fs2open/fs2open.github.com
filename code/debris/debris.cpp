@@ -563,6 +563,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->is_hull = hull_flag;
 	db->source_objnum = parent_objnum;
 	db->source_sig = source_obj->signature;
+	db->damage_type_idx = shipp->debris_damage_type_idx;
 	db->ship_info_index = shipp->ship_info_index;
 	db->team = shipp->team;
 	db->fire_timeout = 0;	// if not changed, timestamp_elapsed() will return false
@@ -897,7 +898,6 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		mc.flags = MC_ONLY_SPHERE | MC_CHECK_SPHERELINE;
 
 		SCP_vector<int> submodel_vector;
-		polymodel *pm;
 		polymodel_instance *pmi;
 
 		if (model_collide(&mc)) {
@@ -913,7 +913,6 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				model_get_rotating_submodel_list(&submodel_vector, heavy_obj);
 
 				// Get polymodel and turn off all rotating submodels, collide against only 1 at a time.
-				pm = model_get(Ship_info[Ships[heavy_obj->instance].ship_info_index].model_num);
 				pmi = model_get_instance(Ships[heavy_obj->instance].model_instance_num);
 
 				// turn off all rotating submodels and test for collision
@@ -938,10 +937,10 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 					// find the start and end positions of the sphere in submodel RF
 					pmi->submodel[*smv].angs = pmi->submodel[*smv].prev_angs;
-					world_find_model_instance_point(&p0, &light_obj->last_pos, pm, pmi, *smv, &heavy_obj->last_orient, &heavy_obj->last_pos);
+					world_find_model_instance_point(&p0, &light_obj->last_pos, pmi, *smv, &heavy_obj->last_orient, &heavy_obj->last_pos);
 
 					pmi->submodel[*smv].angs = copy_angles;
-					world_find_model_instance_point(&p1, &light_obj->pos, pm, pmi, *smv, &heavy_obj->orient, &heavy_obj->pos);
+					world_find_model_instance_point(&p1, &light_obj->pos, pmi, *smv, &heavy_obj->orient, &heavy_obj->pos);
 
 					mc.p0 = &p0;
 					mc.p1 = &p1;
@@ -955,18 +954,18 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 							// set up debris_hit_info common
 							set_hit_struct_info(debris_hit_info, &mc, SUBMODEL_ROT_HIT);
-							model_instance_find_world_point(&debris_hit_info->hit_pos, &mc.hit_point, mc.model_num, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
+							model_instance_find_world_point(&debris_hit_info->hit_pos, &mc.hit_point, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
 
 							// set up debris_hit_info for rotating submodel
 							if (debris_hit_info->edge_hit == 0) {
-								model_instance_find_obj_dir(&debris_hit_info->collision_normal, &mc.hit_normal, heavy_obj, mc.hit_submodel);
+								model_instance_find_obj_dir(&debris_hit_info->collision_normal, &mc.hit_normal, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient);
 							}
 
 							// find position in submodel RF of light object at collison
 							vec3d int_light_pos, diff;
 							vm_vec_sub(&diff, mc.p1, mc.p0);
 							vm_vec_scale_add(&int_light_pos, mc.p0, &diff, mc.hit_dist);
-							model_instance_find_world_point(&debris_hit_info->light_collision_cm_pos, &int_light_pos, mc.model_num, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
+							model_instance_find_world_point(&debris_hit_info->light_collision_cm_pos, &int_light_pos, mc.model_instance_num, mc.hit_submodel, &heavy_obj->orient, &zero);
 						}
 					}
 					// Don't look at this submodel again
@@ -990,7 +989,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 					// get collision normal if not edge hit
 					if (debris_hit_info->edge_hit == 0) {
-						model_instance_find_obj_dir(&debris_hit_info->collision_normal, &mc.hit_normal, heavy_obj, mc.hit_submodel);
+						model_instance_find_obj_dir(&debris_hit_info->collision_normal, &mc.hit_normal, Ships[heavy_obj->instance].model_instance_num, mc.hit_submodel, &heavy_obj->orient);
 					}
 
 					// find position in submodel RF of light object at collison

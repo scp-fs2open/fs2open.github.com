@@ -300,7 +300,7 @@ void send_mission_log_packet( int entry );
 // send a mission message packet
 void send_mission_message_packet(int id, char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay = 0);
 
-// broadcast a query for active games. IPX will use net broadcast and TCP will either request from the MT or from the specified list
+// broadcast a query for active games. TCP will either request from the MT or from the specified list
 void broadcast_game_query();
 
 // send an individual query to an address to see if there is an active game

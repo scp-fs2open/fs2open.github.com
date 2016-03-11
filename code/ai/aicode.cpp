@@ -2668,7 +2668,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 		{
 			// movement... find location of point like with docking code and spark generation
 			vm_vec_sub(&local_vert, &mp->verts[i].pos, &submodel_offset);
-			model_instance_find_world_point(&v1, &local_vert, modelnum, model_instance_num, mp->parent_submodel, &objp->orient, &objp->pos);
+			model_instance_find_world_point(&v1, &local_vert, model_instance_num, mp->parent_submodel, &objp->orient, &objp->pos);
 		}
 		else
 		{
@@ -6247,7 +6247,7 @@ void render_path_points(object *objp)
 
 	if (pm->n_docks) {
 		dock_point = pm->docking_bays[0].pnt[0];
-		model_instance_find_world_point(&global_dock_point, &dock_point, pm->id, shipp->model_instance_num, 0, &dobjp->orient, &dobjp->pos );
+		model_instance_find_world_point(&global_dock_point, &dock_point, shipp->model_instance_num, 0, &dobjp->orient, &dobjp->pos );
 		g3_rotate_vertex(&v, &global_dock_point);
 		gr_set_color(255, 255, 255);
 		g3_draw_sphere( &v, 1.5f);
@@ -9039,11 +9039,11 @@ void find_adjusted_dockpoint_info(vec3d *global_p0, vec3d *global_p1, vec3d *glo
 		vm_vec_sub(&local_p1, &pm->docking_bays[dock_index].pnt[1], &submodel_offset);
 
 		// find the dynamic positions of the dockpoints
-		model_instance_find_world_point(global_p0, &local_p0, modelnum, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
-		model_instance_find_world_point(global_p1, &local_p1, modelnum, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
+		model_instance_find_world_point(global_p0, &local_p0, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
+		model_instance_find_world_point(global_p1, &local_p1, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
 
 		// find the normal of the first dockpoint
-		model_instance_find_world_dir(global_p0_norm, &pm->docking_bays[dock_index].norm[0], modelnum, shipp->model_instance_num, submodel, &objp->orient, &objp->pos);
+		model_instance_find_world_dir(global_p0_norm, &pm->docking_bays[dock_index].norm[0], shipp->model_instance_num, submodel, &objp->orient);
 	}
 	// use the static dockpoints
 	else
