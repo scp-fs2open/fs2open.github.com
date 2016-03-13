@@ -134,48 +134,45 @@ static void cfile_close()
 	cf_free_secondary_filelist();
 }
 
-// determine if the given path is in a root directory (c:\  or  c:\freespace2.exe  or  c:\fred2.exe   etc)
+#ifdef SCP_UNIX
+	#define MIN_NUM_PATH_COMPONENTS 2     /* Directory + file */
+#else
+	#define MIN_NUM_PATH_COMPONENTS 3     /* Drive + directory + file */
+#endif
+
+/**
+ * @brief Determine if the given path is in the root directory
+ *
+ * @param exe_path Path to executable
+ *
+ * @return 1 if root directory, 0 if not
+ */
 static int cfile_in_root_dir(const char *exe_path)
 {
+	int new_token;
 	int token_count = 0;
-	char path_copy[CFILE_ROOT_DIRECTORY_LEN] = "";
-	char *tok;
+	const char *p = exe_path;
 
-	// bogus
-	if(exe_path == NULL){
-		return 1;
-	}
+	Assert(exe_path != NULL);
 
-	// copy the path
-	memset(path_copy, 0, CFILE_ROOT_DIRECTORY_LEN);
-	strncpy(path_copy, exe_path, CFILE_ROOT_DIRECTORY_LEN - 1);
-
-	// count how many slashes there are in the path
-	tok = strtok(path_copy, DIR_SEPARATOR_STR);
-	if(tok == NULL){
-		return 1;
-	}	
 	do {
-		token_count++;
-		tok = strtok(NULL, DIR_SEPARATOR_STR);
-	} while(tok != NULL);
-	
-#ifdef SCP_UNIX
-	// /freespace works, / does not
-	if(token_count <= 1) {
-#else
-	// C:/freespace works, C:/ does not
-	if(token_count <= 2){
-#endif
-		return 1;
-	}
+		new_token = 0;
+		while (*p == DIR_SEPARATOR_CHAR) {
+			p++;
+		}
 
-	// not-root directory
-	return 0;
+		while ((*p != '\0') && (*p != DIR_SEPARATOR_CHAR)) {
+			new_token = 1;
+			p++;
+		}
+		token_count += new_token;
+	} while (*p != '\0');
+
+	return (token_count < MIN_NUM_PATH_COMPONENTS);
 }
 
 /**
- * Initializes the cfile system. Called once at application start.
+ * @brief Initialize the cfile system. Called once at application start.
  *
  * @param exe_dir Path to a file (not a directory)
  * @param cdrom_dir Path to a CD drive mount point (may be NULL)
@@ -187,56 +184,55 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 {
 	int i;
 
-	// initialize encryption
-	encrypt_init();	
+	encrypt_init();	  /* initialize encryption */
 
-	if ( !cfile_inited ) {
-		char buf[CFILE_ROOT_DIRECTORY_LEN];
+	if (cfile_inited) {
+		return 0;
+	}
 
-		cfile_inited = 1;
+	char buf[CFILE_ROOT_DIRECTORY_LEN];
 
-		memset(buf, 0, CFILE_ROOT_DIRECTORY_LEN);
-		strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
-		i = strlen(buf);
+	cfile_inited = 1;
 
-		// are we in a root directory?		
-		if(cfile_in_root_dir(buf)){
-			MessageBox((HWND)NULL, "FreeSpace2/Fred2 cannot be run from a drive root directory!", "Error", MB_OK);
-			return 1;
-		}		
+	strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
+	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
+	i = strlen(buf);
 
-		while (i--) {
-			if (buf[i] == DIR_SEPARATOR_CHAR){
-				break;
-			}
-		}						
+	/* Determine if we in a root directory? */
+	if (cfile_in_root_dir(buf)) {
+		MessageBox((HWND)NULL,
+		           "FreeSpace2/Fred2 cannot be run from a drive root directory!",
+		           "Error", MB_OK);
+		return 1;
+	}
 
-		if (i >= 2) {					
-			buf[i] = 0;						
-			cfile_chdir(buf);
-		} else {
-			MessageBox((HWND)NULL, "Error trying to determine executable root directory!", "Error", MB_OK);
-			return 1;
-		}
+	/*
+	 * Determine the executable's directory.  Note that DIR_SEPARATOR_CHAR
+	 * is guaranteed to be found in the string else cfile_in_root_dir()
+	 * would have failed.
+	 */
 
-		// set root directory
-		strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN-1);
+	*strrchr(buf, DIR_SEPARATOR_CHAR) = '\0';
+	cfile_chdir(buf);
+
+	// set root directory
+	strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN - 1);
 #ifdef SCP_UNIX
-		snprintf(Cfile_user_dir, CFILE_ROOT_DIRECTORY_LEN-1, "%s/%s/", detect_home(), Osreg_user_dir);
+	snprintf(Cfile_user_dir, CFILE_ROOT_DIRECTORY_LEN - 1, "%s/%s/",
+	         detect_home(), Osreg_user_dir);
 #endif
 
-		for ( i = 0; i < MAX_CFILE_BLOCKS; i++ ) {
-			Cfile_block_list[i].type = CFILE_BLOCK_UNUSED;
-		}
-
-		// 32 bit CRC table init
-		cf_chksum_long_init();
-
-		Cfile_cdrom_dir = cdrom_dir;
-		cf_build_secondary_filelist(Cfile_cdrom_dir);
-
-		atexit( cfile_close );
+	for (i = 0; i < MAX_CFILE_BLOCKS; i++) {
+		Cfile_block_list[i].type = CFILE_BLOCK_UNUSED;
 	}
+
+	// 32 bit CRC table init
+	cf_chksum_long_init();
+
+	Cfile_cdrom_dir = cdrom_dir;
+	cf_build_secondary_filelist(Cfile_cdrom_dir);
+
+	atexit(cfile_close);
 
 	return 0;
 }
