@@ -92,29 +92,29 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 #define CFILE_STACK_MAX	8
 
 int cfile_inited = 0;
-int Cfile_stack_pos = 0;
+static int Cfile_stack_pos = 0;
 
-char Cfile_stack[CFILE_STACK_MAX][CFILE_ROOT_DIRECTORY_LEN];
+static char Cfile_stack[CFILE_STACK_MAX][CFILE_ROOT_DIRECTORY_LEN];
 
 Cfile_block Cfile_block_list[MAX_CFILE_BLOCKS];
-CFILE Cfile_list[MAX_CFILE_BLOCKS];
+static CFILE Cfile_list[MAX_CFILE_BLOCKS];
 
-const char *Cfile_cdrom_dir = NULL;
+static const char *Cfile_cdrom_dir = NULL;
 
 //
 // Function prototypes for internally-called functions
 //
-int cfget_cfile_block();
-CFILE *cf_open_fill_cfblock(const char* source, int line, FILE * fp, int type);
-CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size);
+static int cfget_cfile_block();
+static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE * fp, int type);
+static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size);
 
 #if defined _WIN32
-CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type);
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type);
 #elif defined SCP_UNIX
-CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type);
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type);
 #endif
 
-void cf_chksum_long_init();
+static void cf_chksum_long_init();
 
 static void dump_opened_files()
 {
@@ -126,7 +126,7 @@ static void dump_opened_files()
 	}
 }
 
-void cfile_close()
+static void cfile_close()
 {
 	mprintf(("Still opened files:\n"));
 	dump_opened_files();
@@ -135,7 +135,7 @@ void cfile_close()
 }
 
 // determine if the given path is in a root directory (c:\  or  c:\freespace2.exe  or  c:\fred2.exe   etc)
-int cfile_in_root_dir(const char *exe_path)
+static int cfile_in_root_dir(const char *exe_path)
 {
 	int token_count = 0;
 	char path_copy[CFILE_ROOT_DIRECTORY_LEN] = "";
@@ -859,7 +859,7 @@ CFILE *ctmpfile()
 // returns:   success ==> index in Cfile_block_list[] array
 //            failure ==> -1
 //
-int cfget_cfile_block()
+static int cfget_cfile_block()
 {	
 	int i;
 	Cfile_block *cb;
@@ -960,7 +960,7 @@ int cf_is_valid(CFILE *cfile)
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int type)
+static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int type)
 {
 	int cfile_block_index;
 
@@ -999,7 +999,7 @@ CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int type)
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size)
+static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size)
 {
 	// Found it in a pack file
 	int cfile_block_index;
@@ -1039,9 +1039,9 @@ CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, 
 // returns:   ptr CFILE structure.  
 //
 #if defined _WIN32
-CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type)
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type)
 #elif defined SCP_UNIX
-CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type)
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type)
 #endif
 {
 	int cfile_block_index;
@@ -1606,7 +1606,7 @@ char *cfgets(char *buf, int n, CFILE *cfile)
 // CRC code for mission validation.  given to us by Kevin Bentley on 7/20/98.   Some sort of
 // checksumming code that he wrote a while ago.  
 #define CRC32_POLYNOMIAL					0xEDB88320
-uint CRCTable[256];
+static uint CRCTable[256];
 
 #define CF_CHKSUM_SAMPLE_SIZE				512
 
@@ -1643,7 +1643,7 @@ uint cf_add_chksum_long(uint seed, ubyte *buffer, int size)
 	return crc;
 }
 
-void cf_chksum_long_init()
+static void cf_chksum_long_init()
 {
 	int i, j;
 	uint crc;	
@@ -1664,7 +1664,7 @@ void cf_chksum_long_init()
 
 // single function convenient to use for both short and long checksums
 // NOTE : only one of chk_short or chk_long must be non-NULL (indicating which checksum to perform)
-int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
+static int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
 {
 	ubyte cf_buffer[CF_CHKSUM_SAMPLE_SIZE];
 	int is_long;
