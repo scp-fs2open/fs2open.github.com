@@ -251,13 +251,13 @@ void cfile_refresh()
 
 
 
+#ifdef _WIN32
 // Changes to a drive if valid.. 1=A, 2=B, etc
 // If flag, then changes to it.
 // Returns 0 if not-valid, 1 if valid.
 int cfile_chdrive( int DriveNum, int flag )
 {
 	int Valid = 0;
-#ifdef _WIN32
 	int n, org;
 
 	org = -1;
@@ -273,11 +273,11 @@ int cfile_chdrive( int DriveNum, int flag )
 
 	if ( (!flag) && (n != org) )
 		_chdrive( org );
-#endif // _WIN32
 
 	return Valid;
 
 }
+#endif // _WIN32
 
 // push current directory on a 'stack' (so we can restore it) and change the directory
 int cfile_push_chdir(int type)
