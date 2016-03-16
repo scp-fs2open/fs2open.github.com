@@ -785,9 +785,6 @@ void os_init_registry_stuff(const char *company, const char *app, const char *ve
 static char tmp_string_data[1024];
 const char *os_config_read_string(const char *section, const char *name, const char *default_value)
 {
-	nprintf(("Registry", "os_config_read_string(): section = \"%s\", name = \"%s\", default value: \"%s\"\n",
-		(section) ? section : DEFAULT_SECTION, name, (default_value) ? default_value : NOX("NULL")));
-
 	Profile *p = profile_read(Osreg_config_file_name);
 
 #ifdef WIN32
@@ -796,6 +793,8 @@ const char *os_config_read_string(const char *section, const char *name, const c
 		return registry_read_string(section, name, default_value);
 	}
 #endif
+	nprintf(("Registry", "os_config_read_string(): section = \"%s\", name = \"%s\", default value: \"%s\"\n",
+		(section) ? section : DEFAULT_SECTION, name, (default_value) ? default_value : NOX("NULL")));
 
 	if (section == NULL)
 		section = DEFAULT_SECTION;
@@ -816,15 +815,15 @@ unsigned int os_config_read_uint(const char *section, const char *name, unsigned
 {
 	Profile *p = profile_read(Osreg_config_file_name);
 
-	if (section == NULL)
-		section = DEFAULT_SECTION;
-
 #ifdef WIN32
 	if (p == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_uint(section, name, default_value);
 	}
 #endif
+
+	if (section == NULL)
+		section = DEFAULT_SECTION;
 
 	char *ptr = profile_get_value(p, section, name);
 
