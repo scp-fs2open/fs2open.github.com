@@ -22,6 +22,7 @@
 #include "globalincs/version.h"
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
+#include "cfile/cfilesystem.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -412,6 +413,11 @@ int Cmdline_mpnoreturn = 0;
 char *Cmdline_spew_mission_crcs = NULL;
 char *Cmdline_spew_table_crcs = NULL;
 int Cmdline_objupd = 3;		// client object updates on LAN by default
+
+// Launcher related options
+cmdline_parm portable_mode("-portable_mode", NULL, AT_NONE);
+
+bool Cmdline_portable_mode = false;
 
 // Troubleshooting
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
@@ -899,59 +905,51 @@ void os_init_cmdline(int argc, char *argv[])
 	FILE *fp;
 	
 	if (!has_cmdline_only_flag(argc, argv)) {
-
-		// read the cmdline_fso.cfg file from the data folder, and pass the command line arguments to
-		// the the parse_parms and validate_parms line.  Read these first so anything actually on
-		// the command line will take precedence
+		// Only parse the config file in the current directory if we are in legacy config mode
+		if (os_is_legacy_mode()) {
+			// read the cmdline_fso.cfg file from the data folder, and pass the command line arguments to
+			// the the parse_parms and validate_parms line.  Read these first so anything actually on
+			// the command line will take precedence
 #ifdef _WIN32
-		fp = fopen("data\\cmdline_fso.cfg", "rt");
+			fp = fopen("data\\cmdline_fso.cfg", "rt");
 #elif defined(APPLE_APP)
-		char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
-     
-		GetCurrentDirectory(MAX_PATH_LEN-1, data_path);
-		snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
+			char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
 
-		fp = fopen(resolved_path, "rt");
+			GetCurrentDirectory(MAX_PATH_LEN - 1, data_path);
+			snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
+
+			fp = fopen(resolved_path, "rt");
 #else
-		fp = fopen("data/cmdline_fso.cfg", "rt");
+			fp = fopen("data/cmdline_fso.cfg", "rt");
 #endif
 
-		// if the file exists, get a single line, and deal with it
-		if ( fp ) {
-			char *buf, *p;
+			// if the file exists, get a single line, and deal with it
+			if (fp) {
+				char *buf, *p;
 
-			size_t len = filelength( fileno(fp) ) + 2;
-			buf = new char [len];
+				size_t len = filelength(fileno(fp)) + 2;
+				buf = new char[len];
 
-			if (fgets(buf, len-1, fp) != nullptr)
-			{
-				// replace the newline character with a NULL
-				if ( (p = strrchr(buf, '\n')) != NULL ) {
-					*p = '\0';
+				if (fgets(buf, len - 1, fp) != nullptr)
+				{
+					// replace the newline character with a NULL
+					if ((p = strrchr(buf, '\n')) != NULL) {
+						*p = '\0';
+					}
+
+#ifdef SCP_UNIX
+					// append a space for the os_parse_parms() check
+					strcat_s(buf, len, " ");
+#endif
+					os_process_cmdline(buf);
 				}
-
-#ifdef SCP_UNIX
-				// append a space for the os_parse_parms() check
-				strcat_s(buf, len, " ");
-#endif
-				os_process_cmdline(buf);
+				delete[] buf;
+				fclose(fp);
 			}
-			delete [] buf;
-			fclose(fp);
 		}
 
-#ifdef SCP_UNIX
 		// parse user specific cmdline_fso config file (will supersede options in global file)
-		char cmdname[MAX_PATH];
-
-		snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline_fso.cfg", detect_home(), Osreg_user_dir);
-		fp = fopen(cmdname, "rt");
-
-		if ( !fp ) {
-			// try for non "_fso", for older code versions
-			snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline.cfg", detect_home(), Osreg_user_dir);
-			fp = fopen(cmdname, "rt");
-		}
+		fp = fopen(os_get_config_path("data/cmdline_fso.cfg").c_str(), "rt");
 
 		// if the file exists, get a single line, and deal with it
 		if ( fp ) {
@@ -975,7 +973,6 @@ void os_init_cmdline(int argc, char *argv[])
 			delete [] buf;
 			fclose(fp);
 		}
-#endif
 	} // If cmdline included PARSE_COMMAND_LINE_STRING
     
 	// By parsing cmdline last, anything actually on the command line will take precedence.
@@ -1676,6 +1673,11 @@ bool SetCmdlineParams()
 	if (set_cpu_affinity.found())
 	{
 		Cmdline_set_cpu_affinity = true;
+	}
+
+	if (portable_mode.found())
+	{
+		Cmdline_portable_mode = true;
 	}
 
 	if ( snd_preload_arg.found() )

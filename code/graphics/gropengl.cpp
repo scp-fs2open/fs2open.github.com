@@ -354,19 +354,9 @@ void gr_opengl_print_screen(const char *filename)
 	GLuint pbo = 0;
 
 	// save to a "screenshots" directory and tack on the filename
-#ifdef SCP_UNIX
-	snprintf( tmp, MAX_PATH_LEN-1, "%s/%s/screenshots/%s.tga", detect_home(), Osreg_user_dir, filename);
-	_mkdir( tmp );
-#else
-	_getcwd( tmp, MAX_PATH_LEN-1 );
-	strcat_s( tmp, "\\screenshots\\" );
-	_mkdir( tmp );
+	snprintf(tmp, MAX_PATH_LEN-1, "screenshots/%s.tga", filename);
 
-	strcat_s( tmp, filename );
-	strcat_s( tmp, ".tga" );
-#endif
-
-	FILE *fout = fopen(tmp, "wb");
+	FILE *fout = fopen(os_get_config_path(tmp).c_str(), "wb");
 
 	if (fout == NULL) {
 		return;

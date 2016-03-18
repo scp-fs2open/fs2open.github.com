@@ -36,8 +36,9 @@
 
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
-#ifdef SCP_UNIX
 char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
+#ifdef SCP_UNIX
+char Cfile_user_dir_legacy[CFILE_ROOT_DIRECTORY_LEN] = "";
 #endif
 
 // During cfile_init, verify that Pathtypes[n].index == n for each item
@@ -221,8 +222,12 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 
 		// set root directory
 		strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN-1);
+		strncpy(Cfile_user_dir, os_get_config_path().c_str(), CFILE_ROOT_DIRECTORY_LEN-1);
+		
 #ifdef SCP_UNIX
-		snprintf(Cfile_user_dir, CFILE_ROOT_DIRECTORY_LEN-1, "%s/%s/", detect_home(), Osreg_user_dir);
+		// Initialize path of old pilot files
+		extern const char* Osreg_user_dir_legacy;
+		snprintf(Cfile_user_dir_legacy, CFILE_ROOT_DIRECTORY_LEN-1, "%s/%s/", getenv("HOME"), Osreg_user_dir_legacy);
 #endif
 
 		for ( i = 0; i < MAX_CFILE_BLOCKS; i++ ) {
