@@ -145,6 +145,164 @@ namespace
 			}
 		}
 	}
+
+	void joy_set_button_state(int button, int state)
+	{
+		if (!Joy_inited)
+			return;
+
+		if (state != joy_buttons[button].actual_state) {
+			// Button position physically changed.
+			joy_buttons[button].actual_state = state;
+
+			if ( state )    {
+				// went from up to down
+				joy_buttons[button].down_count++;
+				joy_buttons[button].down_time = 0;
+
+				joy_buttons[button].state = 1;
+			} else {
+				// went from down to up
+				if ( joy_buttons[button].state )
+					joy_buttons[button].up_count++;
+
+				joy_buttons[button].state = 0;
+			}
+		} else {
+			// Didn't move... increment time down if down.
+			if (joy_buttons[button].state)
+				joy_buttons[button].down_time += JOY_POLLRATE;
+		}
+	}
+
+	void joy_set_hat_state(int position)
+	{
+		int state = 0;
+
+		if (!Joy_inited)
+			return;
+
+		for (int i=JOY_NUM_BUTTONS-1; i<JOY_TOTAL_BUTTONS; i++) {
+			switch (i) {
+				case JOY_HATBACK:
+					state = (position == SDL_HAT_DOWN) ? 1 : 0;
+					break;
+				case JOY_HATFORWARD:
+					state = (position == SDL_HAT_UP) ? 1 : 0;
+					break;
+				case JOY_HATLEFT:
+					state = (position == SDL_HAT_LEFT) ? 1 : 0;
+					break;
+				case JOY_HATRIGHT:
+					state = (position == SDL_HAT_RIGHT) ? 1 : 0;
+					break;
+				default:
+					break;
+			}
+
+			if (state != joy_buttons[i].actual_state) {
+				// Button position physically changed.
+				joy_buttons[i].actual_state = state;
+				
+				if ( state )    {
+					// went from up to down
+					joy_buttons[i].down_count++;
+					joy_buttons[i].down_time = 0;
+					
+					joy_buttons[i].state = 1;
+				} else {
+					// went from down to up
+					if ( joy_buttons[i].state )     {
+						joy_buttons[i].up_count++;
+					}
+					
+					joy_buttons[i].state = 0;
+				}
+			} else {
+				// Didn't move... increment time down if down.
+				if (joy_buttons[i].state) {
+					joy_buttons[i].down_time += JOY_POLLRATE;
+				}
+			}
+		} 
+	}
+
+	void joy_device_changed(int state, int device)
+	{
+		if (state == SDL_JOYDEVICEADDED)
+		{
+			if (sdljoy != nullptr)
+			{
+				// We already have a valid joystick device, ignore any further events
+				return;
+			}
+
+			auto added = SDL_JoystickOpen(device);
+			auto guid = getJoystickGUID(added);
+
+			if (guid == getCurrentJoystickGUID())
+			{
+				// found our wanted stick!
+				setJoystickDevice(added);
+			}
+			else
+			{
+				SDL_JoystickClose(added);
+			}
+		}
+		else if (state == SDL_JOYDEVICEREMOVED)
+		{
+			if (device == currentJoystickID)
+			{
+				// We just lost our joystick, reset the data
+				setJoystickDevice(nullptr);
+			}
+		}
+	}
+
+
+	bool joy_hat_event_handler(const SDL_Event& e)
+	{
+		joy_set_hat_state(e.jhat.value);
+		return true;
+	}
+
+	bool joy_button_event_handler(const SDL_Event& e)
+	{
+		if (e.jbutton.button < JOY_NUM_BUTTONS) {
+			joy_set_button_state(e.jbutton.button, e.jbutton.state);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	bool joy_device_handler(const SDL_Event& e)
+	{
+		joy_device_changed(e.jdevice.type, e.jdevice.which);
+
+		return true;
+	}
+	
+	bool joy_axis_event(const SDL_Event& e)
+	{
+		Assertion((e.jaxis.which >= 0), "Invalid joystick id passed during SDL_JOYAXISMOTION event.\n");
+
+		// z64: This'll later be updated to handle multiple controllers. For now, just bail if it isn't our current controller
+		if (e.jaxis.which != currentJoystickID) {
+			return false;
+		}
+
+		if (e.jaxis.axis >= JOY_NUM_AXES) {
+			// whoops, can't support this axis
+			return false;
+		}
+
+		joy_axes[e.jaxis.axis] = e.jaxis.value + JOY_AXIS_CENTER;
+		
+		return true;
+	}
 }
 
 void joy_close()
@@ -372,137 +530,6 @@ int joy_get_pos(int *x, int *y, int *z, int *rx)
 	return 1;
 }
 
-void joy_set_button_state(int button, int state)
-{
-	if (!Joy_inited)
-		return;
-
-	if (state != joy_buttons[button].actual_state) {
-		// Button position physically changed.
-		joy_buttons[button].actual_state = state;
-
-		if ( state )    {
-			// went from up to down
-			joy_buttons[button].down_count++;
-			joy_buttons[button].down_time = 0;
-
-			joy_buttons[button].state = 1;
-		} else {
-			// went from down to up
-			if ( joy_buttons[button].state )
-				joy_buttons[button].up_count++;
-
-			joy_buttons[button].state = 0;
-		}
-	} else {
-		// Didn't move... increment time down if down.
-		if (joy_buttons[button].state)
-			joy_buttons[button].down_time += JOY_POLLRATE;
-	}
-}
-
-void joy_set_hat_state(int position)
-{
-	int state = 0;
-
-	if (!Joy_inited)
-		return;
-
-	for (int i=JOY_NUM_BUTTONS-1; i<JOY_TOTAL_BUTTONS; i++) {
-		switch (i) {
-			case JOY_HATBACK:
-				state = (position == SDL_HAT_DOWN) ? 1 : 0;
-				break;
-			case JOY_HATFORWARD:
-				state = (position == SDL_HAT_UP) ? 1 : 0;
-				break;
-			case JOY_HATLEFT:
-				state = (position == SDL_HAT_LEFT) ? 1 : 0;
-				break;
-			case JOY_HATRIGHT:
-				state = (position == SDL_HAT_RIGHT) ? 1 : 0;
-				break;
-			default:
-				break;
-		}
-
-		if (state != joy_buttons[i].actual_state) {
-			// Button position physically changed.
-			joy_buttons[i].actual_state = state;
-			
-			if ( state )    {
-				// went from up to down
-				joy_buttons[i].down_count++;
-				joy_buttons[i].down_time = 0;
-				
-				joy_buttons[i].state = 1;
-			} else {
-				// went from down to up
-				if ( joy_buttons[i].state )     {
-					joy_buttons[i].up_count++;
-				}
-				
-				joy_buttons[i].state = 0;
-			}
-		} else {
-			// Didn't move... increment time down if down.
-			if (joy_buttons[i].state) {
-				joy_buttons[i].down_time += JOY_POLLRATE;
-			}
-		}
-	} 
-}
-
-void joy_device_changed(int state, int device)
-{
-	if (state == SDL_JOYDEVICEADDED)
-	{
-		if (sdljoy != nullptr)
-		{
-			// We already have a valid joystick device, ignore any further events
-			return;
-		}
-
-		auto added = SDL_JoystickOpen(device);
-		auto guid = getJoystickGUID(added);
-
-		if (guid == getCurrentJoystickGUID())
-		{
-			// found our wanted stick!
-			setJoystickDevice(added);
-		}
-		else
-		{
-			SDL_JoystickClose(added);
-		}
-	}
-	else if (state == SDL_JOYDEVICEREMOVED)
-	{
-		if (device == currentJoystickID)
-		{
-			// We just lost our joystick, reset the data
-			setJoystickDevice(nullptr);
-		}
-	}
-}
-
-void joy_event(SDL_JoystickID id, uint8_t axis_id, int16_t value)
-{
-	Assertion((id >= 0), "Invalid joystick id passed during SDL_JOYAXISMOTION event.\n");
-
-	// z64: This'll later be updated to handle multiple controllers. For now, just bail if it isn't our current controller
-	if (id != currentJoystickID) {
-		return;
-	}
-
-	if (axis_id >= JOY_NUM_AXES) {
-		// whoops, can't support this axis
-		return;
-	}
-
-	joy_axes[axis_id] = value + JOY_AXIS_CENTER;
-}
-
 SDL_Joystick* joy_get_device()
 {
 	return sdljoy;
@@ -606,6 +633,16 @@ int joy_init()
 	Joy_inited = 1;
 
 	joy_ff_init();
+
+	os::events::addEventListener(SDL_JOYHATMOTION, os::events::DEFAULT_LISTENER_WEIGHT, joy_hat_event_handler);
+
+	os::events::addEventListener(SDL_JOYBUTTONDOWN, os::events::DEFAULT_LISTENER_WEIGHT, joy_button_event_handler);
+	os::events::addEventListener(SDL_JOYBUTTONUP, os::events::DEFAULT_LISTENER_WEIGHT, joy_button_event_handler);
+
+	os::events::addEventListener(SDL_JOYDEVICEADDED, os::events::DEFAULT_LISTENER_WEIGHT, joy_device_handler);
+	os::events::addEventListener(SDL_JOYDEVICEREMOVED, os::events::DEFAULT_LISTENER_WEIGHT, joy_device_handler);
+	
+	os::events::addEventListener(SDL_JOYAXISMOTION, os::events::DEFAULT_LISTENER_WEIGHT, joy_axis_event);
 
 	mprintf(("... Joystick successfully initialized!\n"));
 
