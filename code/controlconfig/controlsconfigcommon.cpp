@@ -7,9 +7,6 @@
  *
 */ 
 
-#include <stdio.h>
-#include <stdarg.h>
-
 #include "cfile/cfile.h"
 #include "controlconfig/controlsconfig.h"
 #include "globalincs/def_files.h"
@@ -19,26 +16,28 @@
 #include "localization/localize.h"
 #include "parse/parselo.h"
 
+#include <cstdio>
+#include <cstdarg>
+#include <map>
+#include <string>
+
+
 // z64: These enumerations MUST equal to those in controlsconfig.cpp...
 // z64: Really need a better way than this.
-enum CC_tab {
-	TARGET_TAB			=0,
-	SHIP_TAB			=1,
-	WEAPON_TAB			=2,
-	COMPUTER_TAB		=3
+enum CC_tab
+{
+	TARGET_TAB   = 0,
+	SHIP_TAB     = 1,
+	WEAPON_TAB   = 2,
+	COMPUTER_TAB = 3
 };
 
 int Failed_key_index;
 
-// assume control keys are used as modifiers until we find out 
-int Shift_is_modifier;
-int Ctrl_is_modifier;
-int Alt_is_modifier;
-
-int Axis_enabled[JOY_NUM_AXES] = { 1, 1, 1, 0, 0, 0 };
+int Axis_enabled[JOY_NUM_AXES]          = { 1, 1, 1, 0, 0, 0 };
 int Axis_enabled_defaults[JOY_NUM_AXES] = { 1, 1, 1, 0, 0, 0 };
-int Invert_axis[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
-int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
+int Invert_axis[JOY_NUM_AXES]           = { 0, 0, 0, 0, 0, 0 };
+int Invert_axis_defaults[JOY_NUM_AXES]  = { 0, 0, 0, 0, 0, 0 };
 
 //! arrays which hold the key mappings.  The array index represents a key-independent action.
 //! please use SPACES for aligning the fields of this array
@@ -195,6 +194,8 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           -1,                 -1, -1,           false, "",                                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false }
 };
 
+//!	This is the text that is displayed on the screen for the keys a player selects (second column labels)
+// Just forget about trying to format these arrays to any particular style for the moment. :ugh:
 char *Scan_code_text_german[] = {
 	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab",
@@ -348,7 +349,6 @@ char *Joy_button_text_polish[] = {
 	"Przyc.31",	"Przyc.32",	"Hat Ty\xB3",		"Hat Prz\xF3\x64",	"Hat Lewo",		"Hat Prawo"
 };
 
-//!	This is the text that is displayed on the screen for the keys a player selects
 char *Scan_code_text_english[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
@@ -406,213 +406,53 @@ char **Joy_button_text = Joy_button_text_english;
 SCP_vector<config_item*> Control_config_presets;
 SCP_vector<SCP_string> Control_config_preset_names;
 
-void set_modifier_status()
-{
-	int i;
+SCP_map<SCP_string, int> mKeyNameToVal;
+SCP_map<SCP_string, CC_type> mCCTypeNameToVal;
+SCP_map<SCP_string, char> mCCTabNameToVal;
 
-	Alt_is_modifier = 0;
-	Shift_is_modifier = 0;
-	Ctrl_is_modifier = 0;
+// --------------------------------------------------------------------------------------------------------------------
+// Inherited/Friended methods
+// --------------------------------------------------------------------------------------------------------------------
 
-	for (i=0; i<CCFG_MAX; i++) {
-		if (Control_config[i].key_id < 0)
-			continue;
+// --------------------------------------------------------------------------------------------------------------------
+// Declaration of protected functions.
+// --------------------------------------------------------------------------------------------------------------------
 
-		if (Control_config[i].key_id & KEY_ALTED)
-			Alt_is_modifier = 1;
 
-		if (Control_config[i].key_id & KEY_SHIFTED)
-			Shift_is_modifier = 1;
-
-		if (Control_config[i].key_id & KEY_CTRLED) {
-			Assert(0);  // get Alan
-			Ctrl_is_modifier = 1;
-		}
-	}
-}
-
-// If find_override is set to true, then this returns the index of the action
-// which has been bound to the given key. Otherwise, the index of the action
-// which has the given key as its default key will be returned.
-int translate_key_to_index(const char *key, bool find_override)
-{
-	int i, index = -1, alt = 0, shift = 0, max_scan_codes;
-
-	max_scan_codes = sizeof(Scan_code_text_english) / sizeof(char *);
-
-	// look for modifiers
-	Assert(key);
-	if (!strnicmp(key, "Alt", 3)) {
-		alt = 1;
-		key += 3;
-		if (*key)
-			key++;
-	}
-
-	if (!strnicmp(key, "Shift", 5)) {
-		shift = 1;
-		key += 5;
-		if (*key)
-			key++;
-	}
-
-	// look up index for default key
-	if (*key) {
-		for (i=0; i<max_scan_codes; i++)
-			if (!stricmp(key, Scan_code_text_english[i])) {
-				index = i;
-				break;
-			}
-
-		if (i == max_scan_codes)
-			return -1;
-
-		if (shift)
-			index |= KEY_SHIFTED;
-		if (alt)
-			index |= KEY_ALTED;
-
-		// convert scancode to Control_config index
-		if (find_override) {
-			for (i=0; i<CCFG_MAX; i++) {
-				if (!Control_config[i].disabled && Control_config[i].key_id == index) {
-					index = i;
-					break;
-				}
-			}
-		} else {
-			for (i=0; i<CCFG_MAX; i++) {
-				if (!Control_config[i].disabled && Control_config[i].key_default == index) {
-					index = i;
-					break;
-				}
-			}
-		}
-
-		if (i == CCFG_MAX)
-			return -1;
-
-		return index;
-	}
-
-	return -1;
-}
-
-/*! Given the system default key 'key', return the current key that is bound to that function.
-* Both are 'key' and the return value are descriptive strings that can be displayed
-* directly to the user.  If 'key' isn't a real key, is not normally bound to anything,
-* or there is no key currently bound to the function, NULL is returned.
-*/
-char *translate_key(char *key)
-{
-	int index = -1, key_code = -1, joy_code = -1;
-	char *key_text = NULL;
-	char *joy_text = NULL;
-
-	static char text[40] = {"None"};
-
-	index = translate_key_to_index(key, false);
-	if (index < 0) {
-		return NULL;
-	}
-
-	key_code = Control_config[index].key_id;
-	joy_code = Control_config[index].joy_id;
-
-	Failed_key_index = index;
-
-	if (key_code >= 0) {
-		key_text = textify_scancode(key_code);
-	}
-
-	if (joy_code >= 0) {
-		joy_text = Joy_button_text[joy_code];
-	}
-
-	// both key and joystick button are mapped to this control
-	if ((key_code >= 0 ) && (joy_code >= 0) ) {
-		strcpy_s(text, key_text);
-		strcat_s(text, " or ");
-		strcat_s(text, joy_text);
-	}
-	// if we only have one
-	else if (key_code >= 0 ) {
-		strcpy_s(text, key_text);
-	}
-	else if (joy_code >= 0) {
-		strcpy_s(text, joy_text);
-	}
-	else {
-		strcpy_s(text, "None");
-	}
-
-	return text;
-}
-
-char *textify_scancode(int code)
-{
-	static char text[40];
-
-	if (code < 0)
-		return "None";
-
-	int keycode = code & KEY_MASK;
-
-	*text = 0;
-	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
-		if(Lcl_gr){		
-			strcat_s(text, "Alt-");
-		} else if(Lcl_fr){		
-			strcat_s(text, "Alt-");
-		} else {		
-			strcat_s(text, "Alt-");
-		}		
-	}
-
-	if (code & KEY_SHIFTED && !(keycode == KEY_LSHIFT || keycode == KEY_RSHIFT)) {		
-		if(Lcl_gr){
-			strcat_s(text, "Shift-");
-		} else if(Lcl_fr){		
-			strcat_s(text, "Maj.-");
-		} else {		
-			strcat_s(text, "Shift-");
-		}
-	}
-
-	strcat_s(text, Scan_code_text[keycode]);
-	return text;
-}
-//XSTR:ON
-
-void control_config_common_load_overrides();
-
-// initialize common control config stuff - call at game startup after localization has been initialized
-void control_config_common_init()
-{
-	for (int i=0; i<CCFG_MAX; i++) {
-		Control_config[i].disabled = false;
-		Control_config[i].continuous_ongoing = false;
-	}
-
-	control_config_common_load_overrides();
-	if(Lcl_gr){
-		Scan_code_text = Scan_code_text_german;
-		Joy_button_text = Joy_button_text_german;
-	} else if(Lcl_fr){
-		Scan_code_text = Scan_code_text_french;
-		Joy_button_text = Joy_button_text_french;
-	} else if(Lcl_pl){
-		Scan_code_text = Scan_code_text_polish;
-		Joy_button_text = Joy_button_text_polish;
-	} else {
-		Scan_code_text = Scan_code_text_english;
-		Joy_button_text = Joy_button_text_english;
-	}
-}
-
-/*
- * @brief close any common control config stuff, called at game_shutdown()
+// --------------------------------------------------------------------------------------------------------------------
+// Declaration of private functions(declared as static type func(type param);)
+// --------------------------------------------------------------------------------------------------------------------
+/**
+ * @brief Parses controlconfigdefault.tbl, and overrides the default control configuration for each valid entry in the .tbl
  */
+static void control_config_common_load_overrides();
+
+/**
+ * @brief Helper function to LoadEnumsIntoMaps(), Loads the Keyboard definitions/enumerations into mKeyNameToVal
+ */
+static void LoadEnumsIntoKeyMap();
+
+/**
+ * @brief Helper for LoadEnumsIntoMaps(), loads the CC_TYPE defines's into mCCTabNameToVal
+ */
+static void LoadEnumsIntoCCTypeMap();
+
+/**
+ * @brief Helper for LoadEnumsIntoMaps(), loads the CC_tab enum's into mCCTabNameToVal
+ */
+static void LoadEnumsIntoCCTabMap();
+
+/**
+ * @brief Loads the various control config maps to allow the parsing functions to map string tokens into enum's.
+ *
+ * @details The string tokens in the controlconfigdefaults.tbl match directly to their names in the C++ code, such as
+ *   "KEY_5" in the .tbl mapping to the #define KEY_5 value
+ */
+static void LoadEnumsIntoMaps();
+
+// --------------------------------------------------------------------------------------------------------------------
+// Definition of all functions, in alphabetical order
+// --------------------------------------------------------------------------------------------------------------------
 void control_config_common_close()
 {
 	// only need to worry control presets for now
@@ -621,16 +461,170 @@ void control_config_common_close()
 	}
 }
 
+void control_config_common_init() {
+	for (int i = 0; i<CCFG_MAX; i++) {
+		Control_config[i].disabled = false;
+		Control_config[i].continuous_ongoing = false;
+	}
 
-#include <map>
-#include <string>
-SCP_map<SCP_string, int> mKeyNameToVal;
-SCP_map<SCP_string, CC_type> mCCTypeNameToVal;
-SCP_map<SCP_string, char> mCCTabNameToVal;
+	control_config_common_load_overrides();
+	if (Lcl_gr) {
+		Scan_code_text = Scan_code_text_german;
+		Joy_button_text = Joy_button_text_german;
+	} else if (Lcl_fr) {
+		Scan_code_text = Scan_code_text_french;
+		Joy_button_text = Joy_button_text_french;
+	} else if (Lcl_pl) {
+		Scan_code_text = Scan_code_text_polish;
+		Joy_button_text = Joy_button_text_polish;
+	} else {
+		Scan_code_text = Scan_code_text_english;
+		Joy_button_text = Joy_button_text_english;
+	}
+}
 
-/*! Helper function to LoadEnumsIntoMaps(), Loads the Keyboard definitions/enumerations into mKeyNameToVal
-*/
-void LoadEnumsIntoKeyMap(void) {
+void control_config_common_load_overrides() {
+	LoadEnumsIntoMaps();
+
+	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES)) {
+		read_file_text("controlconfigdefaults.tbl", CF_TYPE_TABLES);
+	} else {
+		read_file_text_from_array(defaults_get_file("controlconfigdefaults.tbl"));
+	}
+
+	reset_parse();
+
+	// start parsing
+	// TODO: Split this out into more helps. Too many tabs!
+	while (optional_string("#ControlConfigOverride")) {
+		config_item *cfg_preset = new config_item[CCFG_MAX + 1];
+		std::copy(Control_config, Control_config + CCFG_MAX + 1, cfg_preset);
+		Control_config_presets.push_back(cfg_preset);
+
+		SCP_string preset_name;
+		if (optional_string("$Name:")) {
+			stuff_string_line(preset_name);
+		} else {
+			preset_name = "<unnamed preset>";
+		}
+		Control_config_preset_names.push_back(preset_name);
+
+		while (required_string_either("#End", "$Bind Name:")) {
+			const int iBufferLength = 64;
+			char szTempBuffer[iBufferLength];
+
+			required_string("$Bind Name:");
+			stuff_string(szTempBuffer, F_NAME, iBufferLength);
+
+			const size_t cCntrlAryLength = sizeof(Control_config) / sizeof(Control_config[0]);
+			for (size_t i = 0; i < cCntrlAryLength; ++i) {
+				config_item& r_ccConfig = cfg_preset[i];
+
+				if (!strcmp(szTempBuffer, r_ccConfig.text)) {
+					/**
+					* short key_default;
+					* short joy_default;
+					* char tab;
+					* bool hasXSTR;
+					* char type;
+					*/
+
+					int iTemp;
+
+					if (optional_string("$Key Default:")) {
+						if (optional_string("NONE")) {
+							r_ccConfig.key_default = (short) -1;
+						} else {
+							stuff_string(szTempBuffer, F_NAME, iBufferLength);
+							r_ccConfig.key_default = (short) mKeyNameToVal[szTempBuffer];
+						}
+					}
+
+					if (optional_string("$Joy Default:")) {
+						stuff_int(&iTemp);
+						r_ccConfig.joy_default = (short) iTemp;
+					}
+
+					if (optional_string("$Key Mod Shift:")) {
+						stuff_int(&iTemp);
+						r_ccConfig.key_default |= (iTemp == 1) ? KEY_SHIFTED : 0;
+					}
+
+					if (optional_string("$Key Mod Alt:")) {
+						stuff_int(&iTemp);
+						r_ccConfig.key_default |= (iTemp == 1) ? KEY_ALTED : 0;
+					}
+
+					if (optional_string("$Key Mod Ctrl:")) {
+						stuff_int(&iTemp);
+						r_ccConfig.key_default |= (iTemp == 1) ? KEY_CTRLED : 0;
+					}
+
+					if (optional_string("$Category:")) {
+						stuff_string(szTempBuffer, F_NAME, iBufferLength);
+						r_ccConfig.tab = (char) mCCTabNameToVal[szTempBuffer];
+					}
+
+					if (optional_string("$Has XStr:")) {
+						stuff_int(&iTemp);
+						r_ccConfig.hasXSTR = (iTemp == 1);
+					}
+
+					if (optional_string("$Type:")) {
+						stuff_string(szTempBuffer, F_NAME, iBufferLength);
+						r_ccConfig.type = (char) mCCTypeNameToVal[szTempBuffer];
+					}
+
+					if (optional_string("+Disable")) {
+						r_ccConfig.disabled = true;
+					}
+					if (optional_string("$Disable:")) {
+						stuff_boolean(&r_ccConfig.disabled);
+					}
+
+					// Nerf the buffer now.
+					szTempBuffer[0] = '\0';
+				} else if ((i + 1) == cCntrlAryLength) {
+					error_display(1, "Bind Name not found: %s\n", szTempBuffer);
+					advance_to_eoln(NULL);
+					ignore_white_space();
+					return;
+				}
+			}
+		}
+
+		required_string("#End");
+	}
+
+	// Overwrite the control config with the first preset that was found
+	if (Control_config_presets.size() > 0) {
+		std::copy(Control_config_presets[0], Control_config_presets[0] + CCFG_MAX + 1, Control_config);
+	}
+}
+
+void LoadEnumsIntoCCTabMap() {
+	// Dirty macro hack :D
+#define ADD_ENUM_TO_CCTAB_MAP(Enum) mCCTabNameToVal[#Enum] = (Enum);
+
+	ADD_ENUM_TO_CCTAB_MAP(TARGET_TAB)
+		ADD_ENUM_TO_CCTAB_MAP(SHIP_TAB)
+		ADD_ENUM_TO_CCTAB_MAP(WEAPON_TAB)
+		ADD_ENUM_TO_CCTAB_MAP(COMPUTER_TAB)
+
+#undef ADD_ENUM_TO_CCTAB_MAP
+}
+
+void LoadEnumsIntoCCTypeMap() {
+	// Dirty macro hack :D
+#define ADD_ENUM_TO_CCTYPE_MAP(Enum) mCCTypeNameToVal[#Enum] = (Enum);
+
+	ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_TRIGGER)
+		ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_CONTINUOUS)
+
+#undef ADD_ENUM_TO_CCTYPE_MAP
+}
+
+void LoadEnumsIntoKeyMap() {
 	// Dirty macro hack :D
 #define ADD_ENUM_TO_KEY_MAP(Enum) mKeyNameToVal[#Enum] = (Enum);
 
@@ -764,161 +758,147 @@ void LoadEnumsIntoKeyMap(void) {
 #undef ADD_ENUM_TO_KEY_MAP
 }
 
-/*! Helper function to LoadEnumsIntoMaps(), Loads the Control Types enumerations into mCCTypeNameToVal
- */
-void LoadEnumsIntoCCTypeMap(void) {
-	// Dirty macro hack :D
-#define ADD_ENUM_TO_CCTYPE_MAP(Enum) mCCTypeNameToVal[#Enum] = (Enum);
-
-	ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_TRIGGER)
-		ADD_ENUM_TO_CCTYPE_MAP(CC_TYPE_CONTINUOUS)
-
-#undef ADD_ENUM_TO_CCTYPE_MAP
-}
-
-/*! Helper function to LoadEnumsIntoMaps(), Loads the Control Tabs enumerations into mCCTabNameToVal
- */
-void LoadEnumsIntoCCTabMap(void) {
-	// Dirty macro hack :D
-#define ADD_ENUM_TO_CCTAB_MAP(Enum) mCCTabNameToVal[#Enum] = (Enum);
-
-	ADD_ENUM_TO_CCTAB_MAP(TARGET_TAB)
-	ADD_ENUM_TO_CCTAB_MAP(SHIP_TAB)
-	ADD_ENUM_TO_CCTAB_MAP(WEAPON_TAB)
-	ADD_ENUM_TO_CCTAB_MAP(COMPUTER_TAB)
-
-#undef ADD_ENUM_TO_CCTAB_MAP
-}
-
-/*! Loads the various control configuration maps to allow the parsing functions to appropriately map string tokns to
-* their associated enumerations. The string tokens in the controlconfigdefaults.tbl match directly to their names in
-* the C++ code, such as "KEY_5" in the .tbl mapping to the #define KEY_5 value
-*/
 void LoadEnumsIntoMaps() {
 	LoadEnumsIntoKeyMap();
 	LoadEnumsIntoCCTypeMap();
 	LoadEnumsIntoCCTabMap();
 }
 
-/**
- * @brief Parses controlconfigdefault.tbl, and overrides the default control configuration for each valid entry in the .tbl
- */
-void control_config_common_load_overrides()
-{
-	LoadEnumsIntoMaps();
+char *textify_scancode(int code) {
+	static char text[40];
 
-	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES)) {
-		read_file_text("controlconfigdefaults.tbl", CF_TYPE_TABLES);
-	} else {
-		read_file_text_from_array(defaults_get_file("controlconfigdefaults.tbl"));
+	if (code < 0)
+		return "None";
+
+	int keycode = code & KEY_MASK;
+
+	*text = 0;
+	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
+		if (Lcl_gr) {
+			strcat_s(text, "Alt-");
+		} else if (Lcl_fr) {
+			strcat_s(text, "Alt-");
+		} else {
+			strcat_s(text, "Alt-");
+		}
 	}
 
-	reset_parse();
-
-	// start parsing
-	// TODO: Split this out into more helps. Too many tabs!
-	while(optional_string("#ControlConfigOverride")) {
-		config_item *cfg_preset = new config_item[CCFG_MAX + 1];
-		std::copy(Control_config, Control_config + CCFG_MAX + 1, cfg_preset);
-		Control_config_presets.push_back(cfg_preset);
-
-		SCP_string preset_name;
-		if (optional_string("$Name:")) {
-			stuff_string_line(preset_name);
+	if (code & KEY_SHIFTED && !(keycode == KEY_LSHIFT || keycode == KEY_RSHIFT)) {
+		if (Lcl_gr) {
+			strcat_s(text, "Shift-");
+		} else if (Lcl_fr) {
+			strcat_s(text, "Maj.-");
 		} else {
-			preset_name = "<unnamed preset>";
+			strcat_s(text, "Shift-");
 		}
-		Control_config_preset_names.push_back(preset_name);
+	}
 
-		while (required_string_either("#End","$Bind Name:")) {
-			const int iBufferLength = 64;
-			char szTempBuffer[iBufferLength];
+	strcat_s(text, Scan_code_text[keycode]);
+	return text;
+}
 
-			required_string("$Bind Name:");
-			stuff_string(szTempBuffer, F_NAME, iBufferLength);
+char *translate_key(char *key) {
+	int index = -1, key_code = -1, joy_code = -1;
+	char *key_text = NULL;
+	char *joy_text = NULL;
 
-			const size_t cCntrlAryLength = sizeof(Control_config) / sizeof(Control_config[0]);
-			for (size_t i = 0; i < cCntrlAryLength; ++i) {
-				config_item& r_ccConfig = cfg_preset[i];
+	static char text[40] = { "None" };
 
-				if (!strcmp(szTempBuffer, r_ccConfig.text)) {
-					/**
-					* short key_default;
-					* short joy_default;
-					* char tab;
-					* bool hasXSTR;
-					* char type;
-					*/
+	index = translate_key_to_index(key, false);
+	if (index < 0) {
+		return NULL;
+	}
 
-					int iTemp;
+	key_code = Control_config[index].key_id;
+	joy_code = Control_config[index].joy_id;
 
-					if (optional_string("$Key Default:")) {
-						if (optional_string("NONE")) {
-							r_ccConfig.key_default = (short)-1;
-						} else {
-							stuff_string(szTempBuffer, F_NAME, iBufferLength);
-							r_ccConfig.key_default = (short)mKeyNameToVal[szTempBuffer];
-						}
-					}
+	Failed_key_index = index;
 
-					if (optional_string("$Joy Default:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.joy_default = (short)iTemp;
-					}
+	if (key_code >= 0) {
+		key_text = textify_scancode(key_code);
+	}
 
-					if (optional_string("$Key Mod Shift:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.key_default |= (iTemp == 1) ? KEY_SHIFTED : 0;
-					}
+	if (joy_code >= 0) {
+		joy_text = Joy_button_text[joy_code];
+	}
 
-					if (optional_string("$Key Mod Alt:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.key_default |= (iTemp == 1) ? KEY_ALTED : 0;
-					}
+	// both key and joystick button are mapped to this control
+	if ((key_code >= 0) && (joy_code >= 0)) {
+		strcpy_s(text, key_text);
+		strcat_s(text, " or ");
+		strcat_s(text, joy_text);
+	}
+	// if we only have one
+	else if (key_code >= 0) {
+		strcpy_s(text, key_text);
+	} else if (joy_code >= 0) {
+		strcpy_s(text, joy_text);
+	} else {
+		strcpy_s(text, "None");
+	}
 
-					if (optional_string("$Key Mod Ctrl:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.key_default |= (iTemp == 1) ? KEY_CTRLED : 0;
-					}
+	return text;
+}
 
-					if (optional_string("$Category:")) {
-						stuff_string(szTempBuffer, F_NAME, iBufferLength);
-						r_ccConfig.tab = (char)mCCTabNameToVal[szTempBuffer];
-					}
+int translate_key_to_index(const char *key, bool find_override) {
+	int i, index = -1, alt = 0, shift = 0, max_scan_codes;
 
-					if (optional_string("$Has XStr:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.hasXSTR = (iTemp == 1);
-					}
+	max_scan_codes = sizeof(Scan_code_text_english) / sizeof(char *);
 
-					if (optional_string("$Type:")) {
-						stuff_string(szTempBuffer, F_NAME, iBufferLength);
-						r_ccConfig.type = (char)mCCTypeNameToVal[szTempBuffer];
-					}
+	// look for modifiers
+	Assert(key);
+	if (!strnicmp(key, "Alt", 3)) {
+		alt = 1;
+		key += 3;
+		if (*key)
+			key++;
+	}
 
-					if (optional_string("+Disable")) {
-						r_ccConfig.disabled = true;
-					}
-					if (optional_string("$Disable:")) {
-						stuff_boolean(&r_ccConfig.disabled);
-					}
-					
-					// Nerf the buffer now.
-					szTempBuffer[0] = '\0';
-				} else if ((i + 1) == cCntrlAryLength) {
-					error_display(1, "Bind Name not found: %s\n", szTempBuffer);
-					advance_to_eoln(NULL);
-					ignore_white_space();
-					return;
+	if (!strnicmp(key, "Shift", 5)) {
+		shift = 1;
+		key += 5;
+		if (*key)
+			key++;
+	}
+
+	// look up index for default key
+	if (*key) {
+		for (i = 0; i<max_scan_codes; i++)
+			if (!stricmp(key, Scan_code_text_english[i])) {
+				index = i;
+				break;
+			}
+
+		if (i == max_scan_codes)
+			return -1;
+
+		if (shift)
+			index |= KEY_SHIFTED;
+		if (alt)
+			index |= KEY_ALTED;
+
+		// convert scancode to Control_config index
+		if (find_override) {
+			for (i = 0; i<CCFG_MAX; i++) {
+				if (!Control_config[i].disabled && Control_config[i].key_id == index) {
+					index = i;
+					break;
+				}
+			}
+		} else {
+			for (i = 0; i<CCFG_MAX; i++) {
+				if (!Control_config[i].disabled && Control_config[i].key_default == index) {
+					index = i;
+					break;
 				}
 			}
 		}
 
-		required_string("#End");
+		if (i == CCFG_MAX)
+			return -1;
+
+		return index;
 	}
-	
-	// Overwrite the control config with the first preset that was found
-	if (Control_config_presets.size() > 0) {
-		std::copy(Control_config_presets[0], Control_config_presets[0] + CCFG_MAX + 1, Control_config);
-	}
+
+	return -1;
 }
