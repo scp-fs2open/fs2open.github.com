@@ -1267,7 +1267,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
 					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
-					pm->submodel[n].dumb_turn_rate = (float)atof(p + 13);
+					// calculate turn rate from turn time, the same way as regular $rotate
+					char buf[64];
+					get_user_prop_value(p + 13, buf);
+					float turn_time = (float)atof(buf);
+
+					pm->submodel[n].dumb_turn_rate = PI2 / turn_time;
 				} else {
 					pm->submodel[n].dumb_turn_rate = 0.0f;
 				}
