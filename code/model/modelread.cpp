@@ -1284,15 +1284,24 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				if ((p = strstr(props, "$look_at_offset")) != NULL) {
 					float offset = (float)atof(p + 16);
 
-					// check range
+					// sanity
+					if (offset >= -PI2 || offset <= PI2) {
+						mprintf(("Submodel '%s' of model '%s' has a very small look_at_offset.  Did you enter radians instead of degrees?", pm->submodel[n].name, pm->filename));
+					}
+
+					// model property is specified in degrees, so convert it
+					offset = fl_radians(offset);
+
+					// check range (the angle is now in radians)
 					if (offset < -PI2 || offset > PI2) {
-						Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -2PI to 2PI!", pm->submodel[n].name, pm->filename);
+						Warning(LOCATION, "Submodel '%s' of model '%s' has a look_at_offset that is outside the range of -360 to 360!", pm->submodel[n].name, pm->filename);
 						offset = -1.0f;
 					}
 					// make the angle positive, since negative angles will be set at first look_at call
 					else if (offset < 0.0f) {
 						offset += PI2;
 					}
+
 					pm->submodel[n].look_at_offset = offset;
 				} else {
 					pm->submodel[n].look_at_offset = -1.0f;
@@ -3575,17 +3584,17 @@ void submodel_look_at(int model_num, int model_instance_num, int submodel_num, s
 	if (sm->movement_axis == MOVEMENT_AXIS_X)
 	{
 		vm_vec_make(&local_axis_vec, 1.0f, 0.0f, 0.0f);
-		vm_vec_make(&local_zero_vec, 0.0f, 0.0f, -1.0f);
+		vm_vec_make(&local_zero_vec, 0.0f, 0.0f, 1.0f);
 	}
 	else if (sm->movement_axis == MOVEMENT_AXIS_Y)
 	{
 		vm_vec_make(&local_axis_vec, 0.0f, 1.0f, 0.0f);
-		vm_vec_make(&local_zero_vec, 1.0f, 0.0f, 0.0f);
+		vm_vec_make(&local_zero_vec, 0.0f, 0.0f, 1.0f);
 	}
 	else if (sm->movement_axis == MOVEMENT_AXIS_Z)
 	{
 		vm_vec_make(&local_axis_vec, 0.0f, 0.0f, 1.0f);
-		vm_vec_make(&local_zero_vec, 1.0f, 0.0f, 0.0f);
+		vm_vec_make(&local_zero_vec, 0.0f, 1.0f, 0.0f);
 	}
 	else
 		return;
