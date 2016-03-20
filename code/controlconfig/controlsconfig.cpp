@@ -1176,7 +1176,7 @@ static void control_config_conflict_check() {
 static int control_config_detect_axis() {
 	int i, d, axis = -1, delta = 16384;
 	int axes_values[JOY_NUM_AXES];
-	int dx, dy, dz, fudge = 7;
+	int dx, dy, fudge = 7;
 
 	joystick_read_raw_axis(JOY_NUM_AXES, axes_values);
 	for (i = 0; i < JOY_NUM_AXES; i++) {
@@ -1237,7 +1237,7 @@ static void control_config_do_bind() {
 	gamesnd_play_iface(SND_USER_SELECT);
 }
 
-static void control_config_do_cancel(int fail = 0) {
+static void control_config_do_cancel(int fail) {
 	int i;
 
 	game_flush();
