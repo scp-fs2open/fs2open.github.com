@@ -275,93 +275,102 @@ int cfile_chdrive( int DriveNum, int flag )
 }
 #endif // _WIN32
 
-// push current directory on a 'stack' (so we can restore it) and change the directory
-int cfile_push_chdir(int type)
+/**
+ * @brief Common code for changing directory
+ *
+ * @param new_dir Directory to which to change
+ * @param cur_dir Current directory (only used on Windows)
+ *
+ * @retval 0 Success
+ * @retval 1 Failed to change to new directory's drive (Windows only)
+ * @retval 2 Failed to change to new directory
+ */
+static int _cfile_chdir(const char *new_dir, const char *cur_dir __UNUSED)
 {
-	int e;
-	char dir[CFILE_ROOT_DIRECTORY_LEN];
-	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
-	char *Path = NULL;
-	char NoDir[] = "\\.";
-
-	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
-
-	Assert(Cfile_stack_pos < CFILE_STACK_MAX);
-
-	if ( Cfile_stack_pos >= CFILE_STACK_MAX )
-		return -1;
-
-	strncpy(Cfile_stack[Cfile_stack_pos++], OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
-
-	cf_create_default_path_string( dir, sizeof(dir)-1, type, NULL );
+	int status;
+	const char *path = NULL;
+	const char no_dir[] = "\\.";
 
 #ifdef _WIN32
-	char *colon_pos = strchr(dir, ':');
+	const char *colon = strchr(new_dir, ':');
 
-	if (colon_pos) {
-		if (!cfile_chdrive( tolower(*(colon_pos - 1)) - 'a' + 1, 1))
+	if (colon) {
+		if (!cfile_chdrive(tolower(*(colon - 1)) - 'a' + 1, 1))
 			return 1;
 
-		Path = colon_pos+1;
+		path = colon + 1;
 	} else
-#endif // _WIN32
+#endif /* _WIN32 */
 	{
-		Path = dir;
+		path = new_dir;
 	}
 
-	if (!(*Path)) {
-		Path = NoDir;
+	if (*path == '\0') {
+		path = no_dir;
 	}
 
-	// This chdir might get a critical error!
-	e = _chdir( Path );
-	if (e) {
+	/* This chdir might get a critical error! */
+	status = _chdir(path);
+	if (status != 0) {
 #ifdef _WIN32
-		cfile_chdrive( tolower(OriginalDirectory[0]) - 'a' + 1, 1 );
-#endif // _WIN32
+		cfile_chdrive(tolower(cur_dir[0]) - 'a' + 1, 1);
+#endif /* _WIN32 */
 		return 2;
 	}
 
 	return 0;
 }
 
+/**
+ * @brief Push current directory onto a 'stack' and change to a new directory
+ *
+ * The current directory is pushed onto a 'stack' so that it can be easily
+ * restored at a later time. The new directory is derived from @a type.
+ *
+ * @param type path type (CF_TYPE_xxx)
+ *
+ * @retval -1 'Stack' is full
+ * @retval  0 Success
+ * @retval  1 Failed to change to new directory's drive (Windows only)
+ * @retval  2 Failed to change to new directory
+ */
+int cfile_push_chdir(int type)
+{
+	char dir[CFILE_ROOT_DIRECTORY_LEN];
+	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
 
+	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN - 1);
+
+	Assert(Cfile_stack_pos < CFILE_STACK_MAX);
+
+	if (Cfile_stack_pos >= CFILE_STACK_MAX) {
+		return -1;
+	}
+
+	strncpy(Cfile_stack[Cfile_stack_pos++], OriginalDirectory,
+	        CFILE_ROOT_DIRECTORY_LEN - 1);
+
+	cf_create_default_path_string(dir, sizeof(dir) - 1, type, NULL);
+
+	return _cfile_chdir(dir, OriginalDirectory);
+}
+
+/**
+ * @brief Change to the specified directory
+ *
+ * @param dir Directory
+ *
+ * @retval  0 Success
+ * @retval  1 Failed to change to new directory's drive (Windows only)
+ * @retval  2 Failed to change to new directory
+ */
 int cfile_chdir(const char *dir)
 {
-	int e;
 	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
-	const char *Path = NULL;
-	char NoDir[] = "\\.";
 
-	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
+	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN - 1);
 
-#ifdef _WIN32
-	const char *colon_pos = strchr(dir, ':');
-	if (colon_pos)	{
-		if (!cfile_chdrive( tolower(*(colon_pos - 1)) - 'a' + 1, 1))
-			return 1;
-
-		Path = colon_pos+1;
-	} else
-#endif // _WIN32
-	{
-		Path = dir;
-	}
-
-	if (!(*Path)) {
-		Path = NoDir;
-	}
-
-	// This chdir might get a critical error!
-	e = _chdir( Path );
-	if (e) {
-#ifdef _WIN32
-		cfile_chdrive( tolower(OriginalDirectory[0]) - 'a' + 1, 1 );
-#endif // _WIN32
-		return 2;
-	}
-
-	return 0;
+	return _cfile_chdir(dir, OriginalDirectory);
 }
 
 int cfile_pop_dir()
