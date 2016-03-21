@@ -519,8 +519,9 @@ static void control_config_do_search();
  * @brief Handles a conflict.
  *
  * @details Actually does nothing at the moment...
+ * @note Commented out for the moment to remove gcc compiler warning about dead code. Might be used later once z64's Controls Code Overhaul (TM) gets done
  */
-static int control_config_handle_conflict();
+//static int control_config_handle_conflict();
 
 /**
  * @brief Sets up the control_config list.
@@ -2072,9 +2073,12 @@ static void control_config_do_search() {
 	gamesnd_play_iface(SND_USER_SELECT);
 }
 
+/**
+ * commented out until this actually does something
 static int control_config_handle_conflict() {
 	return 0;
 }
+*/
 
 void control_config_init() {
 	int i;
