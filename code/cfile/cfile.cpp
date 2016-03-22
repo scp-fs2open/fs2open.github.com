@@ -423,7 +423,7 @@ int cfile_flush_dir(int dir_type)
 		for (unsigned int i = 0;  i < globinfo.gl_pathc;  i++) {
 			// Determine if this is a regular file
 			struct stat statbuf;
-			memset(&statbuf, 0, sizeof(statbuf));
+
 			stat(globinfo.gl_pathv[i], &statbuf);
 			if (S_ISREG(statbuf.st_mode)) {
 				// delete the file
