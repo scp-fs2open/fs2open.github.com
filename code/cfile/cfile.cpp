@@ -467,34 +467,24 @@ char *cf_add_ext(const char *filename, const char *ext)
 	return path;
 }
 
-// Deletes a file. Returns 0 if an error occurs, 1 on success
-int cf_delete(const char *filename, int dir_type)
+/**
+ * @brief Delete the specified file
+ *
+ * @param filename Name of file to delete
+ * @param path_type Path type (CF_TYPE_xxx)
+ *
+ * @return 0 on failure, 1 on success
+ */
+int cf_delete(const char *filename, int path_type)
 {
 	char longname[MAX_PATH_LEN];
 
-	Assert( CF_TYPE_SPECIFIED(dir_type) );
+	Assert(CF_TYPE_SPECIFIED(path_type));
 
-	cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, filename );
+	cf_create_default_path_string(longname, sizeof(longname) - 1,
+	                              path_type, filename);
 
-	FILE *fp = fopen(longname, "rb");
-	if (fp) {
-		// delete the file
-		fclose(fp);
-		if(_unlink(longname) == -1)
-		{
-			//ERROR - file is probably read only
-			return 0;
-		}
-		else
-		{
-			return 1;
-		}
-	}
-	else
-	{
-		//ERROR - file doesn't exist
-		return 0;
-	}
+	return (_unlink(longname) != -1);
 }
 
 
