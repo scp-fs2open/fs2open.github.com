@@ -169,6 +169,8 @@ static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(op
 
 opengl_shader_t *Current_shader = NULL;
 
+// Forward declarations
+GLhandleARB opengl_shader_create(const SCP_vector<SCP_string>& vs, const SCP_vector<SCP_string>& fs, const SCP_vector<SCP_string>& gs);
 void opengl_shader_check_info_log(GLhandleARB shader_object);
 
 /**
@@ -291,6 +293,31 @@ void opengl_shader_shutdown()
 	}
 }
 
+static SCP_string get_shader_header(shader_type type_id, int flags) {
+	SCP_stringstream sflags;
+
+#ifdef __APPLE__
+	sflags += "#version 120\n";
+	sflags += "#define APPLE\n";
+#endif
+
+	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
+		// ignore looking for variants. main post process, lightshafts, and FXAA shaders need special headers to be hacked in
+		opengl_post_shader_header(sflags, type_id, flags);
+	}
+	else {
+		for (int i = 0; i < GL_num_shader_variants; ++i) {
+			opengl_shader_variant_t &variant = GL_shader_variants[i];
+
+			if (type_id == variant.type_id && flags & variant.flag) {
+				sflags << "#define " << variant.flag_text << "\n";
+			}
+		}
+	}
+
+	return sflags.str();
+}
+
 /**
  * Load a shader file from disc or from the builtin defaults in def_files.cpp if none can be found.
  * This function will also create a list of preprocessor defines for the GLSL compiler based on the shader flags
@@ -301,57 +328,38 @@ void opengl_shader_shutdown()
  * @param flags		integer variable holding a combination of SDR_* flags
  * @return			C-string holding the complete shader source code
  */
-static char *opengl_load_shader(shader_type type_id, char *filename, int flags)
+static SCP_string opengl_load_shader(const char *filename)
 {
-	SCP_string sflags;
-
-#ifdef __APPLE__
-	sflags += "#version 120\n";
-	sflags += "#define APPLE\n";
-#endif
-
-	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
-		// ignore looking for variants. main post process, lightshafts, and FXAA shaders need special headers to be hacked in
-		opengl_post_load_shader(sflags, type_id, flags);
-	} else {
-		for (int i = 0; i < GL_num_shader_variants; ++i) {
-			opengl_shader_variant_t &variant = GL_shader_variants[i];
-
-			if (type_id == variant.type_id && flags & variant.flag) {
-				sflags += "#define " + variant.flag_text + "\n";
-			}
-		}
-	}
-	
-	const char *shader_flags = sflags.c_str();
-	int flags_len = strlen(shader_flags);
-
+	SCP_string content;
 	if (Enable_external_shaders) {
 		CFILE *cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
 
 		if (cf_shader != NULL) {
 			int len = cfilelength(cf_shader);
-			char *shader_c = (char*)vm_malloc(len + flags_len + 1);
+			content.resize(len);
 
-			strcpy(shader_c, shader_flags);
-			memset(shader_c + flags_len, 0, len + 1);
-			cfread(shader_c + flags_len, len + 1, 1, cf_shader);
+			cfread(&content[0], len + 1, 1, cf_shader);
 			cfclose(cf_shader);
 
-			return shader_c;
+			return content;
 		}
 	}
 
 	//If we're still here, proceed with internals
 	mprintf(("   Loading built-in default shader for: %s\n", filename));
-	char* def_shader = defaults_get_file(filename);
-	size_t len = strlen(def_shader);
-	char *shader_c = (char*)vm_malloc(len + flags_len + 1);
+	auto def_shader = defaults_get_file(filename);
+	content.assign(def_shader);
 
-	strcpy(shader_c, shader_flags);
-	strcat(shader_c, def_shader);
+	return content;
+}
 
-	return shader_c;
+static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags) {
+	SCP_vector<SCP_string> parts;
+	parts.push_back(get_shader_header(type_id, flags));
+
+	parts.push_back(opengl_load_shader(filename));
+
+	return parts;
 }
 
 /**
@@ -365,7 +373,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 {
 	int sdr_index = -1;
 	int empty_idx;
-	char *vert = NULL, *frag = NULL, *geom = NULL;
 	opengl_shader_t new_shader;
 
 	Assert(sdr < NUM_SHADER_TYPES);
@@ -390,36 +397,25 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		}
 	}
 
-	// read vertex shader
-	if ((vert = opengl_load_shader(sdr_info->type_id, sdr_info->vert, flags)) == NULL) {
-		goto Done;
-	}
-	
-	// read fragment shader
-	if ((frag = opengl_load_shader(sdr_info->type_id, sdr_info->frag, flags)) == NULL) {
-		goto Done;
-	}
+	auto vertex_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->vert, flags);
+	auto fragment_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->frag, flags);
+	SCP_vector<SCP_string> geom_content;
 
 	if ( use_geo_sdr ) {
 		if (!Is_Extension_Enabled(OGL_EXT_GEOMETRY_SHADER4)) {
-			goto Done;
+			return -1;
 		}
 
 		// read geometry shader
-		if ((geom = opengl_load_shader(sdr_info->type_id, sdr_info->geo, flags)) == NULL) {
-			goto Done;
-		}
+		geom_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->geo, flags);
 
 		Current_geo_sdr_params = &sdr_info->geo_sdr_info;
 	}
 
-	Verify(vert != NULL);
-	Verify(frag != NULL);
-
-	new_shader.program_id = opengl_shader_create(vert, frag, geom);
+	new_shader.program_id = opengl_shader_create(vertex_content, fragment_content, geom_content);
 
 	if (!new_shader.program_id) {
-		goto Done;
+		return -1;
 	}
 
 	new_shader.shader = sdr_info->type_id;
@@ -479,22 +475,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	} else {
 		sdr_index = GL_shader.size();
 		GL_shader.push_back(new_shader);
-	}
-
-Done:
-	if (vert != NULL) {
-		vm_free(vert);
-		vert = NULL;
-	}
-
-	if (frag != NULL) {
-		vm_free(frag);
-		frag = NULL;
-	}
-
-	if (geom != NULL ) {
-		vm_free(geom);
-		geom = NULL;
 	}
 
 	return sdr_index;
@@ -563,14 +543,20 @@ void opengl_shader_check_info_log(GLhandleARB shader_object)
  * @param shader_type		OpenGL ID for the type of shader being used, like GL_FRAGMENT_SHADER_ARB, GL_VERTEX_SHADER_ARB
  * @return 					OpenGL handle for the compiled shader object
  */
-GLhandleARB opengl_shader_compile_object(const GLcharARB *shader_source, GLenum shader_type)
+GLhandleARB opengl_shader_compile_object(const SCP_vector<SCP_string>& shader_source, GLenum shader_type)
 {
 	GLhandleARB shader_object = 0;
 	GLint status = 0;
 
+	SCP_vector<const GLcharARB*> sources;
+	sources.reserve(shader_source.size());
+	for (auto it = shader_source.begin(); it != shader_source.end(); ++it) {
+		sources.push_back(it->c_str());
+	}
+
 	shader_object = vglCreateShaderObjectARB(shader_type);
 
-	vglShaderSourceARB(shader_object, 1, &shader_source, NULL);
+	vglShaderSourceARB(shader_object, sources.size(), &sources[0], NULL);
 	vglCompileShaderARB(shader_object);
 
 	// check if the compile was successful
@@ -674,15 +660,15 @@ GLhandleARB opengl_shader_link_object(GLhandleARB vertex_object, GLhandleARB fra
  * @param gs	Geometry shader source code
  * @return 	Internal ID of compiled and linked shader generated by OpenGL
  */
-GLhandleARB opengl_shader_create(const char *vs, const char *fs, const char *gs)
+GLhandleARB opengl_shader_create(const SCP_vector<SCP_string>& vs, const SCP_vector<SCP_string>& fs, const SCP_vector<SCP_string>& gs)
 {
 	GLhandleARB vs_o = 0;
 	GLhandleARB fs_o = 0;
 	GLhandleARB gs_o = 0;
 	GLhandleARB program = 0;
 
-	if (vs) {
-		vs_o = opengl_shader_compile_object( (const GLcharARB*)vs, GL_VERTEX_SHADER_ARB );
+	if (!vs.empty()) {
+		vs_o = opengl_shader_compile_object( vs, GL_VERTEX_SHADER_ARB );
 
 		if ( !vs_o ) {
 			mprintf(("ERROR! Unable to create vertex shader!\n"));
@@ -690,8 +676,8 @@ GLhandleARB opengl_shader_create(const char *vs, const char *fs, const char *gs)
 		}
 	}
 
-	if (fs) {
-		fs_o = opengl_shader_compile_object( (const GLcharARB*)fs, GL_FRAGMENT_SHADER_ARB );
+	if (!fs.empty()) {
+		fs_o = opengl_shader_compile_object( fs, GL_FRAGMENT_SHADER_ARB );
 
 		if ( !fs_o ) {
 			mprintf(("ERROR! Unable to create fragment shader!\n"));
@@ -699,8 +685,8 @@ GLhandleARB opengl_shader_create(const char *vs, const char *fs, const char *gs)
 		}
 	}
 
-	if (gs) {
-		gs_o = opengl_shader_compile_object( (const GLcharARB*)gs, GL_GEOMETRY_SHADER_EXT );
+	if (!gs.empty()) {
+		gs_o = opengl_shader_compile_object( gs, GL_GEOMETRY_SHADER_EXT );
 
 		if ( !gs_o ) {
 			mprintf(("ERROR! Unable to create fragment shader!\n"));

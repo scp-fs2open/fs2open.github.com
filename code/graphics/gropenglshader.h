@@ -137,7 +137,6 @@ void opengl_shader_init();
 void opengl_shader_shutdown();
 
 int opengl_compile_shader(shader_type sdr, uint flags);
-GLhandleARB opengl_shader_create(const char *vs, const char *fs, const char *gs);
 
 void opengl_shader_init_attribute(const char *attribute_text);
 GLint opengl_shader_get_attribute(const char *attribute_text);
