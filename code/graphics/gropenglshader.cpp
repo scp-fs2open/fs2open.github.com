@@ -297,8 +297,8 @@ static SCP_string get_shader_header(shader_type type_id, int flags) {
 	SCP_stringstream sflags;
 
 #ifdef __APPLE__
-	sflags += "#version 120\n";
-	sflags += "#define APPLE\n";
+	sflags << "#version 120\n";
+	sflags << "#define APPLE\n";
 #endif
 
 	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
