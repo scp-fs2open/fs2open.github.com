@@ -18700,7 +18700,7 @@ void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *
 	mst->distortion_bitmap = shipp->thruster_distortion_bitmap;
 
 	mst->use_ab = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
-	mst->glow_noise = shipp->thruster_glow_noise;
+	mst->glow_noise = shipp->thruster_glow_noise * sip->thruster_glow_noise_mult;
 	mst->rotvel = Objects[shipp->objnum].phys_info.rotvel;
 
 	mst->glow_rad_factor = sip->thruster01_glow_rad_factor;
