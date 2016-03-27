@@ -184,6 +184,7 @@ void model_unload(int modelnum, int force)
 	if (!force && (--pm->used_this_mission > 0))
 		return;
 
+	mprintf(("Unloading model '%s' from slot '%i'\n", pm->filename, num));
 
 	// so that the textures can be released
 	pm->used_this_mission = 0;
@@ -314,6 +315,16 @@ void model_unload(int modelnum, int force)
 
 		if ( pm->id == it->model_num_hud ) {
 			it->model_num_hud = -1;
+		}
+	}
+
+	// need to reset weapon models as well
+	for (int k = 0; k < MAX_WEAPON_TYPES; ++k) {
+		if ( pm->id == Weapon_info[k].model_num ) {
+			Weapon_info[k].model_num = -1;
+		}
+		if ( pm->id == Weapon_info[k].external_model_num ) {
+			Weapon_info[k].external_model_num = -1;
 		}
 	}
 
@@ -2511,7 +2522,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		return -1;
 	}	
 
-	mprintf(( "Loading model '%s'\n", filename ));
+	mprintf(( "Loading model '%s' into slot '%i'\n", filename, num ));
 
 	pm = new polymodel;	
 	Polygon_models[num] = pm;
