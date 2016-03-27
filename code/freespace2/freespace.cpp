@@ -3302,7 +3302,7 @@ void setup_environment_mapping(camid cid)
 void game_environment_map_gen()
 {
 	const int size = 512;
-	int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP);
+	int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP | BMP_FLAG_RENDER_TARGET_MIPMAP);
 
 	if ( !Cmdline_env ) {
 		return;

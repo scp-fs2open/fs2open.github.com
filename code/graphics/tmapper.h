@@ -90,6 +90,7 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 #define TMAP_FLAG_LINESTRIP			(1<<25)
 #define TMAP_FLAG_LINES				(1<<26)
 #define TMAP_FLAG_VERTEX_GEN		(1<<27)
+#define TMAP_FLAG_EMISSIVE			(1<<28)
 
 #define TMAP_ADDRESS_WRAP			1
 #define TMAP_ADDRESS_MIRROR			2

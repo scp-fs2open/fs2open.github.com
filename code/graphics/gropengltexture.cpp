@@ -59,6 +59,8 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ubyte *data = NULL, tcache_slot_opengl *t = NULL, int base_level = 0, int resize = 0, int reload = 0);
 int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot = NULL);
 
+extern int get_num_mipmap_levels(int w, int h);
+
 void opengl_set_additive_tex_env()
 {
 	GL_CHECK_FOR_ERRORS("start of set_additive_tex_env()");
@@ -844,6 +846,17 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	t->w = (ushort)tex_w;
 	t->h = (ushort)tex_h;
 
+	if ( t->mipmap_levels == 1 && bitmap_type == TCACHE_TYPE_CUBEMAP && Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
+		// generate mip maps for cube maps so we can get glossy reflections; necessary for gloss maps and physically-based lighting
+		// OGL_EXT_FRAMEBUFFER_OBJECT required to use glGenerateMipmapEXT()
+		t->mipmap_levels = get_num_mipmap_levels(t->w, t->h);
+
+		glTexParameteri(t->texture_target, GL_TEXTURE_MAX_LEVEL, t->mipmap_levels - 1);
+		glTexParameteri(t->texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+		vglGenerateMipmapEXT(t->texture_target);
+	}
+
 	GL_textures_in_frame += t->size;
 
 	if ( !reload ) {
@@ -1548,6 +1561,10 @@ int opengl_set_render_target( int slot, int face, int is_static )
 
 	if (slot < 0) {
 		if ( (render_target != NULL) && (render_target->working_slot >= 0) ) {
+			if (Textures[render_target->working_slot].mipmap_levels > 1) {
+				gr_opengl_bm_generate_mip_maps(render_target->working_slot);
+			}
+
 			if (render_target->is_static) {
 				extern void gr_opengl_bm_save_render_target(int slot);
 				gr_opengl_bm_save_render_target(render_target->working_slot);
@@ -1672,8 +1689,14 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 		GL_state.Texture.SetTarget(GL_texture_target);
 		GL_state.Texture.Enable(ts->texture_id);
 
+		GLint min_filter = GL_LINEAR;
+
+		if ( flags & BMP_FLAG_RENDER_TARGET_MIPMAP ) {
+			min_filter = GL_LINEAR_MIPMAP_LINEAR;
+		}
+
 		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, min_filter);
 		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -1690,15 +1713,16 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 			ts->texture_target = GL_state.Texture.GetTarget();
 		}
 
-	/*	if (Cmdline_mipmap) {
+		if (flags & BMP_FLAG_RENDER_TARGET_MIPMAP) {
 			vglGenerateMipmapEXT(GL_state.Texture.GetTarget());
 
 			extern int get_num_mipmap_levels(int w, int h);
 			ts->mipmap_levels = get_num_mipmap_levels(*w, *h);
-		} else */
-		{
+		} else {
 			ts->mipmap_levels = 1;
 		}
+
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAX_LEVEL, ts->mipmap_levels - 1);
 
 		GL_state.Texture.Disable();
 
@@ -1745,8 +1769,14 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 	GL_state.Texture.SetTarget(GL_texture_target);
 	GL_state.Texture.Enable(ts->texture_id);
 
+	GLint min_filter = GL_LINEAR;
+
+	if (flags & BMP_FLAG_RENDER_TARGET_MIPMAP) {
+		min_filter = GL_LINEAR_MIPMAP_LINEAR;
+	}
+
 	glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, min_filter);
 	glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -1760,15 +1790,16 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGBA, *w, *h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 	}
 
-/*	if (Cmdline_mipmap) {
+	if (flags & BMP_FLAG_RENDER_TARGET_MIPMAP) {
 		vglGenerateMipmapEXT(GL_state.Texture.GetTarget());
 
 		extern int get_num_mipmap_levels(int w, int h);
 		ts->mipmap_levels = get_num_mipmap_levels(*w, *h);
-	} else */
-	{
+	} else {
 		ts->mipmap_levels = 1;
 	}
+
+	glTexParameteri(GL_texture_target, GL_TEXTURE_MAX_LEVEL, ts->mipmap_levels - 1);
 
 	GL_state.Texture.Disable();
 
@@ -1872,6 +1903,30 @@ GLuint opengl_get_rtt_framebuffer()
 		return 0;
 	else
 		return render_target->framebuffer_id;
+}
+
+void gr_opengl_bm_generate_mip_maps(int slot)
+{
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
+		return;
+	}
+
+	if ( slot < 0 ) {
+		Int3();
+		return;
+	}
+
+	tcache_slot_opengl *ts = NULL;
+
+	ts = &Textures[slot];
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(ts->texture_target);
+	GL_state.Texture.Enable(ts->texture_id);
+
+	vglGenerateMipmapEXT(ts->texture_target);
+
+	GL_state.Texture.Disable();
 }
 
 //

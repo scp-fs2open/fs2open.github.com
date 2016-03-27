@@ -2141,6 +2141,7 @@ uint gr_determine_model_shader_flags(
 	int glow_map, 
 	int normal_map, 
 	int height_map,
+	int ambient_map,
 	int env_map,
 	int misc_map
 ) {
@@ -2200,6 +2201,10 @@ uint gr_determine_model_shader_flags(
 				shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
 			}
 
+			if ( ambient_map > 0 ) {
+				shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
+			}
+
 			if ( Cmdline_shadow_quality && !in_shadow_map && !Shadow_override) {
 				shader_flags |= SDR_FLAG_MODEL_SHADOWS;
 			}
@@ -2220,6 +2225,10 @@ uint gr_determine_model_shader_flags(
 
 	if ( thruster_scale ) {
 		shader_flags |= SDR_FLAG_MODEL_THRUSTER;
+	}
+
+	if ( High_dynamic_range ) {
+		shader_flags |= SDR_FLAG_MODEL_HDR;
 	}
 
 	return shader_flags;

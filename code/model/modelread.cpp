@@ -2345,11 +2345,14 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	// base maps ---------------------------------------------------------------
 	texture_info *tbase = &tmap->textures[TM_BASE_TYPE];
+	texture_info *tunlit = &tmap->textures[TM_UNLIT_TYPE];
+
 	if (strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))
 	{
 		// Don't load textures for thruster animations or invisible textures
 		// or warp models!-Bobboau
 		tbase->clear();
+		tunlit->clear();
 	}
 	else
 	{
@@ -2363,8 +2366,17 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		}
 
 		tbase->LoadTexture(tmp_name, pm->filename);
-		if(tbase->GetTexture() < 0)
+		
+		if ( tbase->GetTexture() < 0 ) {
 			Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
+		}
+
+		// look for unlit map as well in case this texture needs a different diffuse response when rendered in no lighting
+		strcpy_s(tmp_name, file);
+		strcat_s(tmp_name, "-unlit");
+		strlwr(tmp_name);
+
+		tunlit->LoadTexture(tmp_name, pm->filename);
 	}
 	// -------------------------------------------------------------------------
 
@@ -2386,12 +2398,22 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	// specular maps -----------------------------------------------------------
 	texture_info *tspec = &tmap->textures[TM_SPECULAR_TYPE];
+	texture_info *tspecgloss = &tmap->textures[TM_SPEC_GLOSS_TYPE];
 	if ( (!Cmdline_spec && !Fred_running) || (tbase->GetTexture() < 0))
 	{
 		tspec->clear();
+		tspecgloss->clear();
 	}
 	else
 	{
+		// look for reflectance map
+		strcpy_s(tmp_name, file);
+		strcat_s(tmp_name, "-reflect");
+		strlwr(tmp_name);
+
+		tspecgloss->LoadTexture(tmp_name, pm->filename);
+
+		// look for a legacy shine map as well
 		strcpy_s(tmp_name, file);
 		strcat_s(tmp_name, "-shine");
 		strlwr(tmp_name);
@@ -2425,6 +2447,15 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		theight->LoadTexture(tmp_name, pm->filename);
 	}
 
+	// ambient occlusion maps
+	texture_info *tambient = &tmap->textures[TM_AMBIENT_TYPE];
+
+	strcpy_s(tmp_name, file);
+	strcat_s(tmp_name, "-ao");
+	strlwr(tmp_name);
+
+	tambient->LoadTexture(tmp_name, pm->filename);
+
 	// Utility map -------------------------------------------------------------
 	texture_info *tmisc = &tmap->textures[TM_MISC_TYPE];
 
@@ -2443,16 +2474,18 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
 	if (tglow->GetTexture() > 0 && Cmdline_glow)
 		shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
-	if (tspec->GetTexture() > 0 && Cmdline_spec)
+	if ((tspec->GetTexture() > 0 || tspecgloss->GetTexture() > 0) && Cmdline_spec)
 		shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
 	if (tnorm->GetTexture() > 0 && Cmdline_normal)
 		shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
 	if (theight->GetTexture() > 0 && Cmdline_height)
 		shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
-	if (tspec->GetTexture() > 0 && Cmdline_env && Cmdline_spec) // No env maps without spec map
+	if ((tspec->GetTexture() > 0 || tspecgloss->GetTexture() > 0) && Cmdline_env && Cmdline_spec) // No env maps without spec map
 		shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
 	if (tmisc->GetTexture() > 0)
 		shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
+	if (tambient->GetTexture() >0)
+		shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
 	
 	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
 
