@@ -765,7 +765,7 @@ void wing_editor::update_data_safe()
 	if (m_threshold + Wings[cur_wing].wave_count > MAX_SHIPS_PER_WING) {
 		m_threshold = MAX_SHIPS_PER_WING - Wings[cur_wing].wave_count;
 		if (!bypass_errors) {
-			sprintf(buf, "Wave threshold is set too high.  Value has been lowered to %d", (int) m_threshold);
+			sprintf(buf, "Wave threshold is set too high (only %d ships can be alive in a wing at any given time).  Value has been lowered to %d", MAX_SHIPS_PER_WING, (int)m_threshold);
 			MessageBox(buf);
 		}
 	}
