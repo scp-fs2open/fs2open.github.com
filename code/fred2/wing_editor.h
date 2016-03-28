@@ -106,4 +106,7 @@ protected:
 	afx_msg void OnRestrictDeparture();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+
+	// Aux functions
+	int calc_max_wave_treshold();
 };
