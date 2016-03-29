@@ -3367,6 +3367,21 @@ public:
 
 ade_obj<streaminganim_h> l_streaminganim("streaminganim", "Streaming Animation handle");
 
+ADE_FUNC(__gc, l_streaminganim, NULL, "Auto-deletes streaming animation", NULL, NULL)
+{
+	// NOTE: very similar to the l_streaminganim ADE_FUNC unload
+	streaminganim_h* sah;
+
+	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	// don't bother to check if valid before unloading
+	// generic_anim_unload has safety checks
+	generic_anim_unload(&sah->ga);
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_VIRTVAR(Loop, l_streaminganim, "[boolean loop]", "Make the streaming animation loop.", "boolean", "Is the animation looping, or nil if anim invalid")
 {
 	streaminganim_h* sah;
