@@ -6460,6 +6460,11 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			Warning (LOCATION, "\"fixed firingpoint\" flag used with turret which has less weapons defined for it than it has firingpoints\nsubsystem '%s' on ship type '%s'.\nsome of the firingpoints will be left unused\n", model_system->subobj_name, sinfo->name );
 		}
 
+        if ((ship_system->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION) && !(ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO))
+        {
+            Warning(LOCATION, "\"share fire direction\" flag used with turret which does not have the \"salvo mode\" flag set\nsubsystem '%s' on ship type '%s'.\nsetting the \"salvo mode\" flag\n", model_system->subobj_name, sinfo->name);
+            ship_system->system_info->flags |= MSS_FLAG_TURRET_SALVO;
+        }
 
 		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
 			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
