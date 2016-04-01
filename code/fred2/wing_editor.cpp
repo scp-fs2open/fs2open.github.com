@@ -405,7 +405,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		for (i=0; i<Wings[cur_wing].wave_count; i++)
 			ptr->AddString(Ships[Wings[cur_wing].ship_index[i]].ship_name);
 
-		m_threshold_spin.SetRange(0, (short) Wings[cur_wing].wave_count - 1);
+		m_threshold_spin.SetRange(0, static_cast<short>(calc_max_wave_treshold()));
 		for (i=0; i<Num_reinforcements; i++)
 			if (!stricmp(Reinforcements[i].name, Wings[cur_wing].name))
 				break;
@@ -754,16 +754,8 @@ void wing_editor::update_data_safe()
 	if (cur_wing < 0)
 		return;
 
-	if (m_threshold >= Wings[cur_wing].wave_count) {
-		m_threshold = Wings[cur_wing].wave_count - 1;
-		if (!bypass_errors) {
-			sprintf(buf, "Wave threshold is set too high.  Value has been lowered to %d", (int) m_threshold);
-			MessageBox(buf);
-		}
-	}
-
-	if (m_threshold + Wings[cur_wing].wave_count > MAX_SHIPS_PER_WING) {
-		m_threshold = MAX_SHIPS_PER_WING - Wings[cur_wing].wave_count;
+	if (m_threshold > calc_max_wave_treshold()) {
+		m_threshold = calc_max_wave_treshold();
 		if (!bypass_errors) {
 			sprintf(buf, "Wave threshold is set too high.  Value has been lowered to %d", (int) m_threshold);
 			MessageBox(buf);
@@ -1359,4 +1351,11 @@ void wing_editor::OnRestrictDeparture()
 	dlg.m_path_mask = &Wings[cur_wing].departure_path_mask;
 
 	dlg.DoModal();
+}
+
+int wing_editor::calc_max_wave_treshold()
+{
+	const int treshold1 = Wings[cur_wing].wave_count - 1; // At least 1 ship must have died before allowing respawn
+	const int treshold2 = MAX_SHIPS_PER_WING - Wings[cur_wing].wave_count; // Maximum MAX_SHIPS_PER_WING ships can be alive at any given time
+	return min(treshold1, treshold2);
 }
