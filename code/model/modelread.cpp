@@ -4434,10 +4434,13 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 				// check submodel rotation is less than max allowed.
 				submodel_instance_info *sii = pmi->submodel[i].sii;
 
-				// found the correct submodel instance - now check delta rotation angle not too large
-				float delta_angle = get_submodel_delta_angle(sii);
-				if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
-					submodel_vector->push_back(i);
+				// If there is no instance info yet then ignore this submodel
+				if (sii != nullptr) {
+					// found the correct submodel instance - now check delta rotation angle not too large
+					float delta_angle = get_submodel_delta_angle(sii);
+					if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
+						submodel_vector->push_back(i);
+					}
 				}
 			}
 		}
