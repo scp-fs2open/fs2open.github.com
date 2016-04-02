@@ -145,9 +145,9 @@ static void cfile_close()
  *
  * @param exe_path Path to executable
  *
- * @return 1 if root directory, 0 if not
+ * @return true if root directory, false if not
  */
-static int cfile_in_root_dir(const char *exe_path)
+static bool cfile_in_root_dir(const char *exe_path)
 {
 	int new_token;
 	int token_count = 0;
@@ -192,8 +192,6 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 
 	char buf[CFILE_ROOT_DIRECTORY_LEN];
 
-	cfile_inited = 1;
-
 	strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
 	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
 	i = strlen(buf);
@@ -212,7 +210,11 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	 * would have failed.
 	 */
 
-	*strrchr(buf, DIR_SEPARATOR_CHAR) = '\0';
+	char *p;
+
+	p = strrchr(buf, DIR_SEPARATOR_CHAR);
+	*p = '\0';
+
 	cfile_chdir(buf);
 
 	// set root directory
@@ -233,6 +235,8 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	cf_build_secondary_filelist(Cfile_cdrom_dir);
 
 	atexit(cfile_close);
+
+	cfile_inited = 1;
 
 	return 0;
 }
