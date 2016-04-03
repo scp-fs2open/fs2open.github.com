@@ -444,6 +444,59 @@ void get_user_prop_value(char *buf, char *value)
 	*p1 = c;
 }
 
+// routine to look for one of the specified user properties
+// if p is not null, sets p to the next character AFTER the string and a space/equals/colon (not the beginning of the string, as strstr would)
+// returns the index of the property found, or -1 if not found
+int prop_string(char *props, char **p, int n_args, ...)
+{
+	char *pos = nullptr;
+	va_list args;
+	int index = -1;
+
+	va_start(args, n_args);
+
+	for (int i = 0; i < n_args; ++i)
+	{
+		const char *option = va_arg(args, const char *);
+
+		// look for our option in the props fields
+		if ((pos = strstr(props, option)) != nullptr)
+		{
+			// we found it
+			index = i;
+
+			// so advance past the string and its following character
+			pos += strlen(option);
+			pos++;
+
+			break;
+		}
+	}
+
+	va_end(args);
+
+	// if we have a p, assign *p
+	// (if nothing was found, *p will be nullptr)
+	if (p != nullptr)
+		*p = pos;
+
+	return index;
+}
+
+// syntactic sugar
+int prop_string(char *props, char **p, const char *option0)
+{
+	return prop_string(props, p, 1, option0);
+}
+int prop_string(char *props, char **p, const char *option0, const char *option1)
+{
+	return prop_string(props, p, 2, option0, option1);
+}
+int prop_string(char *props, char **p, const char *option0, const char *option1, const char *option2)
+{
+	return prop_string(props, p, 3, option0, option1, option2);
+}
+
 // funciton to copy model data from one subsystem set to another subsystem set.  This function
 // is called when two ships use the same model data, but since the model only gets read in one time,
 // the subsystem data is only present in one location.  The ship code will call this routine to fix
@@ -499,6 +552,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	char *p;
 	char buf[64];
 	char	lcdname[256];
+	int		idx;
 
 	if ( (p = strstr(props, "$name")) != NULL)
 		get_user_prop_value(p+5, subsystemp->name);
@@ -555,20 +609,26 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	}
 
 	// Dumb-Rotating subsystem
-	if ((p = strstr(props, "$dumb_rotate")) != NULL) {
+	if (prop_string(props, nullptr, "$dumb_rotate") >= 0) {
 		// no special subsystem handling needed here, but make sure we didn't specify both methods
-		if (strstr(props, "$rotate") != NULL) {
+		if (prop_string(props, nullptr, "$rotate") >= 0) {
 			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and dumb-rotation!", dname, model_get(model_num)->filename);
 		}
 	}
 	// Rotating subsystem
-	else if ((p = strstr(props, "$rotate")) != NULL) {
+	else if ((idx = prop_string(props, &p, "$rotate", "$rotate_time", "$rotate_rate")) >= 0) {
 		subsystemp->flags |= MSS_FLAG_ROTATES;
 
-		// get time for (a) complete rotation (b) step (c) activation
-		float turn_time;
-		get_user_prop_value(p+7, buf);
-		turn_time = (float)atof(buf);
+		// get value for (a) complete rotation (b) step (c) activation
+		get_user_prop_value(p, buf);	// note: p points to the value since we used prop_string
+
+		// for retail compatibility, $rotate means $rotate_time
+		float turn_rate;
+		if (idx == 0 || idx == 1) {
+			turn_rate = PI2 / static_cast<float>(atof(buf));
+		} else {
+			turn_rate = static_cast<float>(atof(buf));
+		}
 
 		// CASE OF WEAPON ROTATION (primary only)
 		if ( (p = strstr(props, "$pbank")) != NULL)	{
@@ -576,7 +636,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 			// get which pbank should trigger rotation
 			get_user_prop_value(p+6, buf);
-			subsystemp->weapon_rotation_pbank = (int)atoi(buf);
+			subsystemp->weapon_rotation_pbank = atoi(buf);
 		} // end of weapon rotation stuff
 
 		
@@ -631,7 +691,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 		// CASE OF NORMAL CONTINUOUS ROTATION
 		else {
-			subsystemp->turn_rate = PI2 / turn_time;
+			subsystemp->turn_rate = turn_rate;
 		}
 	}
 }
@@ -1274,16 +1334,24 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
-				if ( ( p = strstr(props, "$dumb_rotate") ) != NULL ) {
+				int idx = prop_string(props, &p, "$dumb_rotate", "$dumb_rotate_time", "$dumb_rotate_rate");
+				if (idx >= 0) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
 					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
-					// calculate turn rate from turn time, the same way as regular $rotate
+					// do this the same way as regular $rotate
 					char buf[64];
-					get_user_prop_value(p + 13, buf);
-					float turn_time = (float)atof(buf);
+					get_user_prop_value(p, buf);
 
-					pm->submodel[n].dumb_turn_rate = PI2 / turn_time;
+					// for past SCP compatibility, $dumb_rotate means $dumb_rotate_rate
+					float turn_rate;
+					if (idx == 1) {
+						turn_rate = PI2 / static_cast<float>(atof(buf));
+					} else {
+						turn_rate = static_cast<float>(atof(buf));
+					}
+
+					pm->submodel[n].dumb_turn_rate = turn_rate;
 				} else {
 					pm->submodel[n].dumb_turn_rate = 0.0f;
 				}
@@ -4436,6 +4504,7 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 
 				// If there is no instance info yet then ignore this submodel
 				if (sii != nullptr) {
+
 					// found the correct submodel instance - now check delta rotation angle not too large
 					float delta_angle = get_submodel_delta_angle(sii);
 					if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
