@@ -204,6 +204,9 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 		return 1;
 	}
 
+	// This needs to be set here because cf_build_secondary_filelist assumes it to be true
+	cfile_inited = 1;
+
 	/*
 	 * Determine the executable's directory.  Note that DIR_SEPARATOR_CHAR
 	 * is guaranteed to be found in the string else cfile_in_root_dir()
@@ -235,8 +238,6 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	cf_build_secondary_filelist(Cfile_cdrom_dir);
 
 	atexit(cfile_close);
-
-	cfile_inited = 1;
 
 	return 0;
 }
