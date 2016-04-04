@@ -447,6 +447,7 @@ void get_user_prop_value(char *buf, char *value)
 // routine to look for one of the specified user properties
 // if p is not null, sets p to the next character AFTER the string and a space/equals/colon (not the beginning of the string, as strstr would)
 // returns the index of the property found, or -1 if not found
+// NB: the first recognized option is returned, so if one option is a substring of another, put it later in the list!
 int prop_string(char *props, char **p, int n_args, ...)
 {
 	char *pos = nullptr;
@@ -616,7 +617,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		}
 	}
 	// Rotating subsystem
-	else if ((idx = prop_string(props, &p, "$rotate", "$rotate_time", "$rotate_rate")) >= 0) {
+	else if ((idx = prop_string(props, &p, "$rotate_time", "$rotate_rate", "$rotate")) >= 0) {
 		subsystemp->flags |= MSS_FLAG_ROTATES;
 
 		// get value for (a) complete rotation (b) step (c) activation
@@ -624,8 +625,14 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 		// for retail compatibility, $rotate means $rotate_time
 		float turn_rate;
-		if (idx == 0 || idx == 1) {
-			turn_rate = PI2 / static_cast<float>(atof(buf));
+		if (idx == 0 || idx == 2) {
+			float turn_time = static_cast<float>(atof(buf));
+			if (turn_time == 0.0f) {
+				Warning(LOCATION, "Rotation has a turn time of 0 for subsystem '%s' on ship %s!", dname, model_get(model_num)->filename);
+				turn_rate = 1.0f;
+			} else {
+				turn_rate = PI2 / turn_time;
+			}
 		} else {
 			turn_rate = static_cast<float>(atof(buf));
 		}
@@ -1334,7 +1341,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
-				int idx = prop_string(props, &p, "$dumb_rotate", "$dumb_rotate_time", "$dumb_rotate_rate");
+				int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
 				if (idx >= 0) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
 					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
@@ -1345,8 +1352,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 					// for past SCP compatibility, $dumb_rotate means $dumb_rotate_rate
 					float turn_rate;
-					if (idx == 1) {
-						turn_rate = PI2 / static_cast<float>(atof(buf));
+					if (idx == 0) {
+						float turn_time = static_cast<float>(atof(buf));
+						if (turn_time == 0.0f) {
+							Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
+							turn_rate = 1.0f;
+						} else {
+							turn_rate = PI2 / turn_time;
+						}
 					} else {
 						turn_rate = static_cast<float>(atof(buf));
 					}
