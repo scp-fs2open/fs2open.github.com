@@ -2824,6 +2824,11 @@ void CFred_mission_save::parse_comments(int newlines)
 	}
 
 	while (*raw_ptr != EOF_CHAR) {
+		// state values (as far as I could figure out):
+		// 0 - raw_ptr not inside comment
+		// 1 - raw_ptr inside /**/ comment
+		// 2 - raw_ptr inside ; (newline-delimited) comment
+		// 3,4 - raw_ptr inside ;; (FSO version) comment
 		if (!state) {
 			if (token_found && (*raw_ptr == *token_found))
 				if (!strnicmp(raw_ptr, token_found, strlen(token_found))) {
@@ -2878,11 +2883,6 @@ void CFred_mission_save::parse_comments(int newlines)
 				}
 			}
 
-			if ((*raw_ptr == '/') && (raw_ptr[1] == '/')) {
-				comment_start = raw_ptr;
-				state = 2;
-			}
-
 			if (*raw_ptr == '\n')
 				flag = 1;
 
@@ -2926,22 +2926,22 @@ void CFred_mission_save::parse_comments(int newlines)
 				if (first_comment && !flag)
 					fout("\t\t");
 
-				state = raw_ptr[2];
+				const char tmp = raw_ptr[2];
 				raw_ptr[2] = 0;
 				fout("%s", comment_start);
-				raw_ptr[2] = (char)state;
+				raw_ptr[2] = tmp;
 				state = first_comment = flag = 0;
 			}
 
 			if ( (*raw_ptr == ';') && (raw_ptr[1] == ';') && (state == 3) ) {
-				state = raw_ptr[2];
+				const char tmp = raw_ptr[2];
 				raw_ptr[2] = 0;
 				if (version_added)
 					fso_comment_pop();
 				else
 					version_added = true;
 				fso_comment_push(comment_start);
-				raw_ptr[2] = (char)state;
+				raw_ptr[2] = tmp;
 				state = first_comment = flag = 0;
 				raw_ptr++;
 			}
