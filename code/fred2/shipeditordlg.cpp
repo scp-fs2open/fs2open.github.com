@@ -1296,11 +1296,6 @@ int CShipEditorDlg::update_ship(int ship)
 		}
 	}
 
-	if (m_arrival_location != -1)
-		MODIFY(Ships[ship].arrival_location, m_arrival_location);
-	if (m_departure_location != -1)
-		MODIFY(Ships[ship].departure_location, m_departure_location);
-
 	if (m_persona != -1)
 	{
 		// do the persona update
@@ -1315,6 +1310,12 @@ int CShipEditorDlg::update_ship(int ship)
 	}
 
 	if (Ships[ship].wingnum < 0) {
+
+		if (m_arrival_location != -1)
+			MODIFY(Ships[ship].arrival_location, m_arrival_location);
+		if (m_departure_location != -1)
+			MODIFY(Ships[ship].departure_location, m_departure_location);
+
 		if (!multi_edit || m_update_arrival) {  // should we update the arrival cue?
 			if (Ships[ship].arrival_cue >= 0)
 				free_sexp2(Ships[ship].arrival_cue);
