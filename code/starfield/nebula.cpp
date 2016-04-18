@@ -134,9 +134,9 @@ void nebula_init( const char *filename, int pitch, int bank, int heading )
 {
 	angles a;
 
-	a.p = ANG_TO_RAD((float) pitch);
-	a.b = ANG_TO_RAD((float) bank);
-	a.h = ANG_TO_RAD((float) heading);
+	a.p = fl_radians(pitch);
+	a.b = fl_radians(bank);
+	a.h = fl_radians(heading);
 	nebula_init(filename, &a);
 }
 

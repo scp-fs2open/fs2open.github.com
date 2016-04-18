@@ -576,7 +576,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 			get_user_prop_value(p+4, buf);			// get the value of the fov
 		else
 			strcpy_s(buf,"180");
-		angle = ANG_TO_RAD(atoi(buf))/2.0f;
+		angle = fl_radians(atoi(buf))/2.0f;
 		subsystemp->turret_fov = (float)cos(angle);
 		subsystemp->turret_num_firing_points = 0;
 

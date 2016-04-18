@@ -1050,8 +1050,8 @@ void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, 
 	float s = sinf(theta);
 	float t;
 
-	float x1 = cosf(ANG_TO_RAD(angle_start));
-	float y1 = sinf(ANG_TO_RAD(angle_start));
+	float x1 = cosf(fl_radians(angle_start));
+	float y1 = sinf(fl_radians(angle_start));
 	float x2 = x1;
 	float y2 = y1;
 
