@@ -1790,7 +1790,7 @@ int parse_ship_template()
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
 	int rtn = 0;
-	bool first_time = false;
+	bool first_time = true;
 
 	required_string("$Template:");
 	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
