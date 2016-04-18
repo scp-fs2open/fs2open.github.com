@@ -312,10 +312,6 @@ void gr_stub_set_light(light *light)
 {
 }
 
-void gr_stub_set_palette(const ubyte *new_palette, int is_alphacolor)
-{
-}
-
 void gr_stub_set_projection_matrix(float fov, float aspect, float z_near, float z_far)
 {
 }
@@ -588,7 +584,6 @@ bool gr_stub_init()
 
 	gr_screen.gf_gradient			= gr_stub_gradient;
 
-	gr_screen.gf_set_palette		= gr_stub_set_palette;
 	gr_screen.gf_print_screen		= gr_stub_print_screen;
 
 	gr_screen.gf_flash				= gr_stub_flash;

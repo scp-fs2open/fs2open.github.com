@@ -408,9 +408,6 @@ typedef struct screen {
 	//switch onscreen, offscreen
 	void (*gf_flip)();
 
-	// Sets the current palette
-	void (*gf_set_palette)(const ubyte *new_pal, int restrict_alphacolor);
-	
 	// Flash the screen
 	void (*gf_flash)( int r, int g, int b );
 	void (*gf_flash_alpha)(int r, int g, int b, int a);
@@ -503,12 +500,7 @@ typedef struct screen {
 	
 	// Sets the gamma
 	void (*gf_set_gamma)(float gamma);
-
-	// Lock/unlock the screen
-	// Returns non-zero if sucessful (memory pointer)
-	uint (*gf_lock)();
-	void (*gf_unlock)();
-
+	
 	// grab a region of the screen. assumes data is large enough
 	void (*gf_get_region)(int front, int w, int h, ubyte *data);
 
