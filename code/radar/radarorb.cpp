@@ -59,8 +59,8 @@ HudGaugeRadar(HUD_OBJECT_RADAR_ORB, 255, 255, 255)
 	
     for (i=0; i < NUM_ORB_RING_SLICES; i++)
     {
-        s=(float)sin(float(i*PI2)/NUM_ORB_RING_SLICES);
-        c=(float)cos(float(i*PI2)/NUM_ORB_RING_SLICES);
+        s=sinf(float(i*PI2)/NUM_ORB_RING_SLICES);
+        c=cosf(float(i*PI2)/NUM_ORB_RING_SLICES);
 
         orb_ring_xy[i].xyz.x = c;
         orb_ring_xy[i].xyz.y = s;
@@ -412,7 +412,7 @@ int HudGaugeRadarOrb::calcAlpha(vec3d* pt)
     vm_vec_normalize(&new_pt);
 
     float dot = vm_vec_dot(&fvec, &new_pt);
-    float angle = fabs(acos(dot));
+    float angle = fabs(acosf(dot));
     int alpha = int(angle*192.0f/PI);
     
     return alpha;

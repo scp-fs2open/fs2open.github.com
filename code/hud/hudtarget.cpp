@@ -2772,8 +2772,8 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 		dot_product *= PI_2; //(range is now -PI/2 => PI/2)
 	}
 
-	y1 = (float)sin(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE);
-	x1 = (float)cos(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE);
+	y1 = sinf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE);
+	x1 = cosf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE);
 
 	y1 += position[1];
 	x1 += position[0];
@@ -2781,8 +2781,8 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 	x1 += HUD_offset_x;
 	y1 += HUD_offset_y;
 
-	y2 = (float)sin(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
-	x2 = (float)cos(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
+	y2 = sinf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
+	x2 = cosf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
 
 	y2 += position[1];
 	x2 += position[0];
@@ -2790,10 +2790,10 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 	x2 += HUD_offset_x;
 	y2 += HUD_offset_y;
 
-	x3 = x1 - T_BASE_LENGTH * (float)sin(dot_product);
-	y3 = y1 + T_BASE_LENGTH * (float)cos(dot_product);
-	x4 = x1 + T_BASE_LENGTH * (float)sin(dot_product);
-	y4 = y1 - T_BASE_LENGTH * (float)cos(dot_product);
+	x3 = x1 - T_BASE_LENGTH * sinf(dot_product);
+	y3 = y1 + T_BASE_LENGTH * cosf(dot_product);
+	x4 = x1 + T_BASE_LENGTH * sinf(dot_product);
+	y4 = y1 - T_BASE_LENGTH * cosf(dot_product);
 
 	// HACK! Should be antialiased!
 	renderLine(fl2i(x3),fl2i(y3),fl2i(x4),fl2i(y4));	// bottom of T
@@ -2935,8 +2935,8 @@ void HudGaugeReticleTriangle::renderTriangleMissileTail(float ang, float xpos, f
 
 	float max_tail_len=20.0f;
 
-	sin_ang=(float)sin(ang);
-	cos_ang=(float)cos(ang);
+	sin_ang=sinf(ang);
+	cos_ang=cosf(ang);
 
 	if ( cur_dist < Min_warning_missile_dist ) {
 		tail_len = 0.0f;
@@ -3040,8 +3040,8 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 	unsize( &hostile_vertex.world.xyz.x, &hostile_vertex.world.xyz.y );
 
 	ang = atan2_safe(hostile_vertex.world.xyz.y,hostile_vertex.world.xyz.x);
-	sin_ang=(float)sin(ang);
-	cos_ang=(float)cos(ang);
+	sin_ang=sinf(ang);
+	cos_ang=cosf(ang);
 	
 	if ( draw_inside ) {
 		xpos = position[0] + cos_ang*(Radius-7);

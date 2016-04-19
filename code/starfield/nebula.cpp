@@ -60,8 +60,8 @@ void project_2d_onto_sphere( vec3d *pnt, float u, float v )
 	a = PI * (2.0f * u - 1.0f );
 	z = 2.0f * v - 1.0f;	
 	s = scale_factor * fl_sqrt( 1.0f - z*z );
-	x = s * (float)cos(a);
-	y = s * (float)sin(a);
+	x = s * cosf(a);
+	y = s * sinf(a);
 	pnt->xyz.x = x;
 	pnt->xyz.y = y;
 	pnt->xyz.z = z;

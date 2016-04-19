@@ -288,8 +288,8 @@ void gr_opengl_post_process_end()
 			if((dot=vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )) > 0.7f)
 			{
 				
-				x = asin(vm_vec_dot( &light_dir, &Eye_matrix.vec.rvec ))/PI*1.5f+0.5f; //cant get the coordinates right but this works for the limited glare fov
-				y = asin(vm_vec_dot( &light_dir, &Eye_matrix.vec.uvec ))/PI*1.5f*gr_screen.clip_aspect+0.5f;
+				x = asinf(vm_vec_dot( &light_dir, &Eye_matrix.vec.rvec ))/PI*1.5f+0.5f; //cant get the coordinates right but this works for the limited glare fov
+				y = asinf(vm_vec_dot( &light_dir, &Eye_matrix.vec.uvec ))/PI*1.5f*gr_screen.clip_aspect+0.5f;
 				GL_state.Uniform.setUniform2f( "sun_pos", x, y);
 				GL_state.Uniform.setUniformi( "scene", 0);
 				GL_state.Uniform.setUniformi( "cockpit", 1);

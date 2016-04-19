@@ -2524,17 +2524,17 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if(optional_string("+Landing Max Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_max_angle = cos(fl_radians(90.0f - degrees));
+			sip->collision_physics.landing_max_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Landing Min Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_min_angle = cos(fl_radians(90.0f - degrees));
+			sip->collision_physics.landing_min_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Landing Max Rotate Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_max_rot_angle = cos(fl_radians(90.0f - degrees));
+			sip->collision_physics.landing_max_rot_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Max Forward Vel:")) {
 			stuff_float(&sip->collision_physics.reorient_max_z);
@@ -2552,17 +2552,17 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if(optional_string("+Reorient Max Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.reorient_max_angle = cos(fl_radians(90.0f - degrees));
+			sip->collision_physics.reorient_max_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Min Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.reorient_min_angle = cos(fl_radians(90.0f - degrees));
+			sip->collision_physics.reorient_min_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Max Rotate Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.reorient_max_rot_angle = cos(fl_radians(90.0f - degrees));
+			sip->collision_physics.reorient_max_rot_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Speed Mult:")) {
 			stuff_float(&sip->collision_physics.reorient_mult);
@@ -2570,7 +2570,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if(optional_string("+Landing Rest Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_rest_angle = cos(fl_radians(90.0f - degrees));
+			sip->collision_physics.landing_rest_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		parse_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx, sip->name);
 	}
@@ -4202,7 +4202,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				stuff_int(&value);
 				CAP(value, 0, 90);
 				float angle = fl_radians(90 - value);
-				sp->turret_max_fov = (float)cos(angle);
+				sp->turret_max_fov = cosf(angle);
 			}
 
 			if(optional_string("$Turret Base FOV:")) {
@@ -4210,7 +4210,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				stuff_int(&value);
 				CAP(value, 0, 359);
 				float angle = fl_radians(value)/2.0f;
-				sp->turret_y_fov = (float)cos(angle);
+				sp->turret_y_fov = cosf(angle);
 				turret_has_base_fov = true;
 			}
 
@@ -11111,7 +11111,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				shipp->beam_sys_info.model_num = sip->model_num;
 				shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
 				shipp->beam_sys_info.turret_num_firing_points = 1;  // dummy turret info is used per firepoint
-				shipp->beam_sys_info.turret_fov = (float)cos((winfo_p->field_of_fire != 0.0f)?winfo_p->field_of_fire:180);
+				shipp->beam_sys_info.turret_fov = cosf((winfo_p->field_of_fire != 0.0f)?winfo_p->field_of_fire:180);
 
 				shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
 				shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;

@@ -1566,8 +1566,8 @@ void asteroid_maybe_break_up(object *pasteroid_obj)
 						float r = sqrt(1.0f - y*y);
 						float phi = i * inc;
 
-						dir_vec.xyz.x = cos(phi)*r;
-						dir_vec.xyz.y = sin(phi)*r;
+						dir_vec.xyz.x = cosf(phi)*r;
+						dir_vec.xyz.y = sinf(phi)*r;
 						dir_vec.xyz.z = y;
 
 						// Randomize the direction a bit

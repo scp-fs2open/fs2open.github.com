@@ -835,8 +835,8 @@ void labviewer_render_model(float frametime)
 	int mx, my;
 	mouse_get_pos( &mx, &my );
 	light_dir.xyz.y = 0.0000001f;
-	light_dir.xyz.x = sin(my/150.0f);
-	light_dir.xyz.z = cos(my/150.0f);
+	light_dir.xyz.x = sinf(my/150.0f);
+	light_dir.xyz.z = cosf(my/150.0f);
 	vm_vec_normalize(&light_dir);
 	vm_vec_scale(&light_dir, mx*10.1f);
 	light_add_point(&light_dir,1,mx*10.2f+0.1f, 0.5f, 1.0f, 1.0f, 1.0f,-1);

@@ -3041,7 +3041,7 @@ void engine_wash_ship_process(ship *shipp)
 							vm_vec_normalize(&apex_to_ship);
 
 							// check if inside cone angle
-							if (vm_vec_dot(&apex_to_ship, &world_thruster_norm) > cos(half_angle)) {
+							if (vm_vec_dot(&apex_to_ship, &world_thruster_norm) > cosf(half_angle)) {
 								vm_vec_cross(&temp, &world_thruster_norm, &thruster_to_ship);
 								vm_vec_scale_add2(&shipp->wash_rot_axis, &temp, dot_to_ship / dist_sqr);
 								ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist));

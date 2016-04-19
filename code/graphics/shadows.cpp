@@ -61,10 +61,10 @@ void shadows_construct_light_proj(light_frustum_info *shadow_data)
 void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float aspect, float z_near, float z_far)
 {
 	// find the widths and heights of the near plane and far plane to determine the points of this frustum
-	float near_height = (float)tan((double)fov * 0.5) * z_near;
+	float near_height = tanf(fov * 0.5f) * z_near;
 	float near_width = near_height * aspect;
 
-	float far_height = (float)tan((double)fov * 0.5) * z_far;
+	float far_height = tanf(fov * 0.5f) * z_far;
 	float far_width = far_height * aspect;
 
 	vec3d up_scale = ZERO_VECTOR;
@@ -190,10 +190,10 @@ void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float asp
 void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d *pos, float fov, float aspect, float z_near, float z_far)
 {
 	// find the widths and heights of the near plane and far plane to determine the points of this frustum
-	float near_height = (float)tan((double)fov * 0.5) * z_near;
+	float near_height = tanf(fov * 0.5f) * z_near;
 	float near_width = near_height * aspect;
 
-	float far_height = (float)tan((double)fov * 0.5f) * z_far;
+	float far_height = tanf(fov * 0.5f) * z_far;
 	float far_width = far_height * aspect;
 
 	vec3d up_scale = ZERO_VECTOR;

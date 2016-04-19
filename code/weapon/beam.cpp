@@ -3411,7 +3411,7 @@ float beam_get_cone_dot(beam *b)
 	case BEAM_TYPE_D:
 	case BEAM_TYPE_E:
 		// even though these beams don't move, return a _very_ small value
-		return (float)cos(fl_radians(50.5f));
+		return cosf(fl_radians(50.5f));
 		
 	case BEAM_TYPE_B:
 		return vm_vec_dot(&b->binfo.dir_a, &b->binfo.dir_b);

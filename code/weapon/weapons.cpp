@@ -1615,7 +1615,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if(optional_string("+View Cone:")) {
 				stuff_float(&view_cone_angle);
-				wip->fov = (float)cos(fl_radians(view_cone_angle * 0.5f));
+				wip->fov = cosf(fl_radians(view_cone_angle * 0.5f));
 			}
 
 			if (optional_string("+Seeker Strength:"))
