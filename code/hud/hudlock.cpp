@@ -652,10 +652,10 @@ void HudGaugeLock::renderLockTrianglesOld(int center_x, int center_y, int radius
 		xpos = center_x + cosf(ang)*(radius + Lock_triangle_height + 2);
 		ypos = center_y - sinf(ang)*(radius + Lock_triangle_height + 2);
 			
-		x3 = xpos - Lock_triangle_base * sinf(-ang);
-		y3 = ypos + Lock_triangle_base * cosf(-ang);
-		x4 = xpos + Lock_triangle_base * sinf(-ang);
-		y4 = ypos - Lock_triangle_base * cosf(-ang);
+		x3 = xpos + Lock_triangle_base * sinf(ang);
+		y3 = ypos + Lock_triangle_base * cosf(ang);
+		x4 = xpos - Lock_triangle_base * sinf(ang);
+		y4 = ypos - Lock_triangle_base * cosf(ang);
 
 		xpos = xpos - Lock_triangle_base * cosf(ang);
 		ypos = ypos + Lock_triangle_base * sinf(ang);
