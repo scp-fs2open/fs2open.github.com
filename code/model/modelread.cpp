@@ -576,8 +576,8 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 			get_user_prop_value(p+4, buf);			// get the value of the fov
 		else
 			strcpy_s(buf,"180");
-		angle = ANG_TO_RAD(atoi(buf))/2.0f;
-		subsystemp->turret_fov = (float)cos(angle);
+		angle = fl_radians(atoi(buf))/2.0f;
+		subsystemp->turret_fov = cosf(angle);
 		subsystemp->turret_num_firing_points = 0;
 
 		if ( (p = strstr(props, "$crewspot")) != NULL) {
@@ -3667,9 +3667,9 @@ void submodel_look_at(polymodel *pm, int mn)
 	vm_vec_cross(&c, &l, &mp);
 	float dot=vm_vec_dot(&l,&mp);
 	if (dot>=0.0f) {
-		*a = asin(c.a1d[axis]);
+		*a = asinf(c.a1d[axis]);
 	} else {
-		*a = PI-asin(c.a1d[axis]);
+		*a = PI-asinf(c.a1d[axis]);
 	}
 
 	if (*a > PI2 ) {
@@ -3961,7 +3961,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 //	vm_extract_angles_vector(&desired_angles, &of_dst);
 	
 	if (reset == false) {
-		desired_angles.p = (float)acos(of_dst.xyz.z);
+		desired_angles.p = acosf(of_dst.xyz.z);
 		desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
 		desired_angles.b = 0.0f;
 	} else {
@@ -5717,8 +5717,8 @@ void parse_glowpoint_table(const char *filename)
 
 					if (optional_string("$Cone angle:")) {
 						stuff_float(&gpo.cone_angle);
-						gpo.cone_inner_angle = cos((gpo.cone_angle - ((gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f)) / 180.0f * PI);
-						gpo.cone_angle = cos(gpo.cone_angle / 180.0f * PI);
+						gpo.cone_inner_angle = cosf((gpo.cone_angle - ((gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f)) / 180.0f * PI);
+						gpo.cone_angle = cosf(gpo.cone_angle / 180.0f * PI);
 					}
 
 					required_string("$Cone direction:");

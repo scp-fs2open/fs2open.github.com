@@ -6552,7 +6552,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			// cool function by MK to give a reasonable random vector "in front" of a ship
 			// rvec and uvec are the right and up vectors.
 			// If these are not available, this would be an expensive method.
-			x = (float)cos(ANG_TO_RAD(45));
+			x = cosf(fl_radians(45.0f));
 			if ( Game_mode & GM_NORMAL ) {
 				r1 = rand() < RAND_MAX_2 ? -1 : 1;
 				r2 = rand() < RAND_MAX_2 ? -1 : 1;

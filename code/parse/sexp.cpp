@@ -15351,7 +15351,7 @@ int sexp_facing(int node)
 	vm_vec_normalize(&v2);
 
 	a1 = vm_vec_dot(&v1, &v2);
-	a2 = (float) cos(ANG_TO_RAD(angle));
+	a2 = cosf(fl_radians(angle));
 	if (a1 >= a2){
 		return SEXP_TRUE;
 	}
@@ -15411,7 +15411,7 @@ int sexp_is_facing(int node)
 	vm_vec_normalize(&v2);
 
 	a1 = vm_vec_dot(&v1, &v2);
-	a2 = (float) cos(ANG_TO_RAD(angle));
+	a2 = cosf(fl_radians(angle));
 	if (a1 >= a2){
 		return SEXP_TRUE;
 	}
@@ -15447,7 +15447,7 @@ int sexp_facing2(int node)
 	vm_vec_sub(&v2, wp_list->get_waypoints().front().get_pos(), &Player_obj->pos);
 	vm_vec_normalize(&v2);
 	a1 = vm_vec_dot(&v1, &v2);
-	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(node)))));
+	a2 = cosf(fl_radians(atof(CTEXT(CDR(node)))));
 	if (a1 >= a2){
 		return SEXP_TRUE;
 	}

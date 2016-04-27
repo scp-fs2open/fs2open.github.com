@@ -861,8 +861,8 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, f
 	else if ( angle > PI2 )
 		angle -= PI2;
 			
-	sa = (float)sin(angle);
-	ca = (float)cos(angle);
+	sa = sinf(angle);
+	ca = cosf(angle);
 
 	float width, height;
 
@@ -1084,8 +1084,8 @@ float g3_draw_rotated_bitmap_area(vertex *pnt,float angle, float rad,uint tmap_f
 		angle -= PI2;
 	}
 			
-	sa = (float)sin(angle);
-	ca = (float)cos(angle);
+	sa = sinf(angle);
+	ca = cosf(angle);
 
 	float width, height;
 
@@ -1420,12 +1420,12 @@ void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta
 {		
 	float a = PI * phi;
 	float b = PI2 * theta;
-	float sin_a = (float)sin(a);	
+	float sin_a = sinf(a);	
 
 	// coords
-	pnt->xyz.z = rho * sin_a * (float)cos(b);
-	pnt->xyz.y = rho * sin_a * (float)sin(b);
-	pnt->xyz.x = rho * (float)cos(a);
+	pnt->xyz.z = rho * sin_a * cosf(b);
+	pnt->xyz.y = rho * sin_a * sinf(b);
+	pnt->xyz.x = rho * cosf(a);
 }
 
 // draw a perspective bitmap based on angles and radius

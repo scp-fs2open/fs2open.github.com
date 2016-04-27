@@ -1927,8 +1927,8 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 
 	Assert( G3_count == 1 );
 		
-	sa = (float)sin(angle);
-	ca = (float)cos(angle);
+	sa = sinf(angle);
+	ca = cosf(angle);
 
 	float width, height;
 

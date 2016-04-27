@@ -1615,7 +1615,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if(optional_string("+View Cone:")) {
 				stuff_float(&view_cone_angle);
-				wip->fov = (float)cos((float)(ANG_TO_RAD(view_cone_angle/2.0f)));
+				wip->fov = cosf(fl_radians(view_cone_angle * 0.5f));
 			}
 
 			if (optional_string("+Seeker Strength:"))
@@ -1656,7 +1656,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if(optional_string("+View Cone:")) {
 				float	view_cone_angle;
 				stuff_float(&view_cone_angle);
-				wip->fov = (float)cos((float)(ANG_TO_RAD(view_cone_angle/2.0f)));
+				wip->fov = (float)cos(fl_radians(view_cone_angle * 0.5f));
 			}
 
 			if(optional_string("+Min Lock Time:")) {			// minimum time (in seconds) to achieve lock

@@ -18,7 +18,7 @@
 
 
 
-#define SWARM_DIST_OFFSET			2.0		// distance swarm missile should vary from original path
+#define SWARM_DIST_OFFSET			2.0f		// distance swarm missile should vary from original path
 #define SWARM_CONE_LENGTH			10000.0f	// used to pick a target point far in the distance
 #define SWARM_CHANGE_DIR_TIME		400		// time to force change in direction of swarm missile
 #define SWARM_ANGLE_CHANGE			(4*PI/180)			// in rad
@@ -243,9 +243,9 @@ void swarm_update_direction(object *objp, float frametime)
 			missile_speed = pi->speed;
 			missile_dist	= missile_speed * swarmp->change_time/1000.0f;
 			if ( missile_dist < SWARM_DIST_OFFSET ) {
-				missile_dist=i2fl(SWARM_DIST_OFFSET);
+				missile_dist = SWARM_DIST_OFFSET;
 			}
-			swarmp->angle_offset = (float)(asin(SWARM_DIST_OFFSET / missile_dist));
+			swarmp->angle_offset = asinf(SWARM_DIST_OFFSET / missile_dist);
 			Assert(!_isnan(swarmp->angle_offset) );
 		}
 
@@ -264,9 +264,9 @@ void swarm_update_direction(object *objp, float frametime)
 			missile_speed = pi->speed;
 			missile_dist = missile_speed * swarmp->change_time/1000.0f;
 			if ( missile_dist < SWARM_DIST_OFFSET ) {
-				missile_dist = i2fl(SWARM_DIST_OFFSET);
+				missile_dist = SWARM_DIST_OFFSET;
 			}
-			swarmp->angle_offset = (float)(asin(SWARM_DIST_OFFSET / missile_dist));
+			swarmp->angle_offset = asinf(SWARM_DIST_OFFSET / missile_dist);
 			Assert(!_isnan(swarmp->angle_offset) );
 		}
 
@@ -280,7 +280,7 @@ void swarm_update_direction(object *objp, float frametime)
 			goto swarm_new_target_calced;
 		}
 
-		radius = (float)tan(swarmp->angle_offset) * target_dist;
+		radius = tanf(swarmp->angle_offset) * target_dist;
 		vec3d rvec_component, uvec_component;
 
 		swarmp->change_count++;
