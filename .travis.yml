@@ -36,29 +36,10 @@ matrix:
         # note that gcc Debug MUST be 1st for Coverity
         - os: linux
           compiler: gcc
-          env: CONFIGURATION="Debug"
-        - os: linux
-          compiler: clang
-          env: CONFIGURATION="Debug"
+          env: RELEASE_BUILD=true
         - os: osx
           compiler: clang
-          env: CONFIGURATION="Debug" MACOSX_ARCH=i386
-        - os: osx
-          compiler: clang
-          env: CONFIGURATION="Debug" MACOSX_ARCH=x86_64
-
-        - os: linux
-          compiler: gcc
-          env: CONFIGURATION="Release"
-        - os: linux
-          compiler: clang
-          env: CONFIGURATION="Release"
-        - os: osx
-          compiler: clang
-          env: CONFIGURATION="Release" MACOSX_ARCH=i386
-        - os: osx
-          compiler: clang
-          env: CONFIGURATION="Release" MACOSX_ARCH=x86_64
+          env: RELEASE_BUILD=true
 before_install:
     # ugly hack; if running a coverity scan abort all except the 1st build
     # see note re gcc compiler above needing to be 1st
@@ -69,7 +50,5 @@ before_install:
     - ./ci/travis/before_install.sh
 install:
     - ./ci/travis/install.sh
-before_script:
-    - ./ci/travis/before_script.sh
 script:
-    - ./ci/travis/script.sh
+    - ./ci/travis/release.sh
