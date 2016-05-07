@@ -10110,9 +10110,9 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwards]",
+ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwards, boolean Instant]",
 		 "Triggers an animation. Type is the string name of the animation type, "
-		 "Subtype is the subtype number, such as weapon bank #, and Forwards is boolean."
+		 "Subtype is the subtype number, such as weapon bank #, Forwards and Instant are boolean, defaulting to true & false respectively."
 		 "<br><strong>IMPORTANT: Function is in testing and should not be used with official mod releases</strong>",
 		 "boolean",
 		 "True if successful, false or nil otherwise")
@@ -10120,8 +10120,9 @@ ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwar
 	object_h *objh;
 	char *s = NULL;
 	bool b = true;
+	bool instant = false;
 	int subtype=-1;
-	if(!ade_get_args(L, "o|sib", l_Ship.GetPtr(&objh), &s, &subtype, &b))
+	if(!ade_get_args(L, "o|sibb", l_Ship.GetPtr(&objh), &s, &subtype, &b, &instant))
 		return ADE_RETURN_NIL;
 
 	if(!objh->IsValid())
@@ -10135,7 +10136,7 @@ ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwar
 	if(!b)
 		dir = -1;
 
-	model_anim_start_type(&Ships[objh->objp->instance], type, subtype, dir);
+	model_anim_start_type(&Ships[objh->objp->instance], type, subtype, dir, instant);
 
 	return ADE_RETURN_TRUE;
 }
