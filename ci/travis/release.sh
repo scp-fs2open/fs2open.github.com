@@ -23,5 +23,15 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 
     ls -al /tmp/release/bin
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
-    :
+    cd projects/Xcode
+
+    mkdir /tmp/release
+
+    xcodebuild -configuration "Release" clean build | xcpretty -c
+    (cd build/Release && cp *.app /tmp/release)
+
+    xcodebuild -configuration "Debug" clean build | xcpretty -c
+    (cd build/Debug && cp *.app /tmp/release)
+
+    ls -al /tmp/release
 fi
