@@ -21,4 +21,5 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 
     ls -al /tmp/release/bin
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    :
 fi
