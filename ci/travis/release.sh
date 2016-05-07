@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-set -e
+set -ex
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     # Due to a bug in gcc the array bounds check isn't working correctly
@@ -27,10 +27,12 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
 
     mkdir /tmp/release
 
-    xcodebuild -configuration "Release" clean build | xcpretty -c
+    set -o pipefail && xcodebuild -configuration "Release" clean build | xcpretty -f `xcpretty-travis-formatter`
+    ls build/Release
     (cd build/Release && cp *.app /tmp/release)
 
-    xcodebuild -configuration "Debug" clean build | xcpretty -c
+    set -o pipefail && xcodebuild -configuration "Debug" clean build | xcpretty -f `xcpretty-travis-formatter`
+    ls build/Debug
     (cd build/Debug && cp *.app /tmp/release)
 
     ls -al /tmp/release
