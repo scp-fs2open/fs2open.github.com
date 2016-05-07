@@ -11,6 +11,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     ./autogen.sh $AUTOGEN_CONFIG
 
     make -j4
+    make install
 
     make distclean
 
@@ -18,6 +19,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     ./autogen.sh $AUTOGEN_CONFIG --enable-debug
 
     make -j4
+    make install
 
     ls -al /tmp/release/bin
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
