@@ -9574,7 +9574,7 @@ ADE_VIRTVAR(Gliding, l_Ship, "boolean", "Specifies whether this ship is currentl
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(EtsEngineIndex, l_Ship, "number", "(not implemented)", "number", "Ships ETS Engine index value, 0 to MAX_ENERGY_INDEX")
+ADE_VIRTVAR(EtsEngineIndex, l_Ship, "number", "(SET not implemented, see EtsSetIndexes)", "number", "Ships ETS Engine index value, 0 to MAX_ENERGY_INDEX")
 {
 	object_h *objh=NULL;
 	int ets_idx = 0;
@@ -9591,7 +9591,7 @@ ADE_VIRTVAR(EtsEngineIndex, l_Ship, "number", "(not implemented)", "number", "Sh
 	return ade_set_args(L, "i", Ships[objh->objp->instance].engine_recharge_index);
 }
 
-ADE_VIRTVAR(EtsShieldIndex, l_Ship, "number", "(not implemented)", "number", "Ships ETS Shield index value, 0 to MAX_ENERGY_INDEX")
+ADE_VIRTVAR(EtsShieldIndex, l_Ship, "number", "(SET not implemented, see EtsSetIndexes)", "number", "Ships ETS Shield index value, 0 to MAX_ENERGY_INDEX")
 {
 	object_h *objh=NULL;
 	int ets_idx = 0;
@@ -9608,7 +9608,7 @@ ADE_VIRTVAR(EtsShieldIndex, l_Ship, "number", "(not implemented)", "number", "Sh
 	return ade_set_args(L, "i", Ships[objh->objp->instance].shield_recharge_index);
 }
 
-ADE_VIRTVAR(EtsWeaponIndex, l_Ship, "number", "(not implemented)", "number", "Ships ETS Weapon index value, 0 to MAX_ENERGY_INDEX")
+ADE_VIRTVAR(EtsWeaponIndex, l_Ship, "number", "(SET not implemented, see EtsSetIndexes)", "number", "Ships ETS Weapon index value, 0 to MAX_ENERGY_INDEX")
 {
 	object_h *objh=NULL;
 	int ets_idx = 0;
