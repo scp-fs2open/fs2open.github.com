@@ -24,8 +24,8 @@ struct net_player;
 #define MAX_PINGS					10
 
 typedef struct ping_struct {
-	float ping_start;										// time the current ping was sent out, or -1 if none
-	float ping_times[MAX_PINGS];						// ping times for calculating the average
+	fix ping_start;										// time the current ping was sent out, or -1 if none. using fix for higher precision
+	fix ping_times[MAX_PINGS];						// ping times for calculating the average, using precision of timer_get_fixed_seconds()
 	int num_pings;											// # of pings in the ping_times array
 	int ping_add;											// where to add the next ping
 
@@ -47,7 +47,7 @@ void multi_ping_reset(ping_struct *ps);
 void multi_ping_start(ping_struct *ps);
 
 // evaluate a pong return on the given struct
-void multi_ping_eval_pong(ping_struct *ps);
+void multi_ping_eval_pong(ping_struct *ps, fix pong_time);
 
 // send a ping to a specific player
 void multi_ping_send(net_player *p);

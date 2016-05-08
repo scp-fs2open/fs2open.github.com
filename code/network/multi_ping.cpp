@@ -46,7 +46,7 @@ void multi_ping_reset(ping_struct *ps)
 	ps->ping_add = 0;
 
 	// set the ping start to be -1
-	ps->ping_start = -1.0f;
+	ps->ping_start = -1L;
 
 	ps->ping_avg = -1;
 
@@ -54,20 +54,21 @@ void multi_ping_reset(ping_struct *ps)
 }
 
 // evaluate a pong return on the given struct
-void multi_ping_eval_pong(ping_struct *ps)
+void multi_ping_eval_pong(ping_struct *ps, fix pong_time)
 {	
 	int idx;
-	float ping_sum;
+	fix ping_sum;
 	
 	// if the ping technically hasn't started,
-	if(ps->ping_start < 0.0f){
+	if(ps->ping_start < 0L){
 		nprintf(("Network","Processing pong for ping which hasn't started yet!\n"));
 		return;
 	}
 	
 	// if we still have room to add a ping
 	if(ps->num_pings < MAX_PINGS){
-		ps->ping_times[ps->ping_add++] = f2fl(timer_get_fixed_seconds()) - ps->ping_start;		
+		ps->ping_times[ps->ping_add++] = pong_time - ps->ping_start;
+		Assertion(ps->ping_times[ps->ping_add-1] > 0L, "Non-positive ping value!");
 		ps->num_pings++;
 	} 
 	// otherwise if we've wrapped around
@@ -79,21 +80,22 @@ void multi_ping_eval_pong(ping_struct *ps)
 			ps->ping_add++;
 		}
 
-		ps->ping_times[ps->ping_add] = f2fl(timer_get_fixed_seconds()) - ps->ping_start;
+		ps->ping_times[ps->ping_add] = pong_time - ps->ping_start;
+		Assertion(ps->ping_times[ps->ping_add == 0 ? MAX_PINGS - 1 : ps->ping_add - 1] > 0L, "Non-positive ping value!");
 	}
 
 	// calculate the average ping time
-	ping_sum = 0.0f;
+	ping_sum = 0L;
 	for(idx=0;idx<ps->num_pings;idx++){
 		ping_sum += ps->ping_times[idx];
-	}
-	ps->ping_avg = (int)(1000.0f * (ping_sum / (float)ps->num_pings));	
+	}// jg18 - IMO the slight loss of precision from the integer divide is better than the loss from premature double conversion
+	ps->ping_avg = (int)f2fld(1000L * ping_sum / (fix)ps->num_pings);
 }
 
 // start a ping - call this when sending a ping packet
 void multi_ping_start(ping_struct *ps)
 {
-	ps->ping_start = f2fl(timer_get_fixed_seconds());
+	ps->ping_start = timer_get_fixed_seconds();
 }
 
 // send a ping to a specific player

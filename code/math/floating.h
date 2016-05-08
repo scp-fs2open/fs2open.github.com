@@ -35,6 +35,8 @@ float frand_range(float min, float max);
 #define flceil(fl) (int)ceil(fl)
 #define flfloor(fl) (int)floor(fl)
 #define f2fl(fx) ((float)(fx)/65536.0f)
+// more precise version of f2fl(), to double instead of float
+#define f2fld(fx) (((double)(fx))/65536.0)
 #define fl2f(fl) (int)((fl)*65536.0f)
 #define fl_tan(fl) tanf(fl)
 
