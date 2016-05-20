@@ -88,8 +88,8 @@ void multi_ping_eval_pong(ping_struct *ps, fix pong_time)
 	ping_sum = 0L;
 	for(idx=0;idx<ps->num_pings;idx++){
 		ping_sum += ps->ping_times[idx];
-	}// jg18 - IMO the slight loss of precision from the integer divide is better than the loss from premature double conversion
-	ps->ping_avg = (int)f2fld(1000L * ping_sum / (fix)ps->num_pings);
+	}
+	ps->ping_avg = (int)(f2fld(1000L * ping_sum) / (double)ps->num_pings);
 }
 
 // start a ping - call this when sending a ping packet
