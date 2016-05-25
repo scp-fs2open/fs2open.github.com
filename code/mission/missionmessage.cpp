@@ -323,7 +323,7 @@ int add_avi( char *avi_name )
 	generic_anim_init( &extra.anim_data, avi_name );
 	strcpy_s( extra.name, avi_name );
 	extra.num = -1;
-	generic_anim_load(&extra.anim_data);   // load only to validate the anim
+	extra.exists = (generic_anim_load(&extra.anim_data) == 0); // load only to validate the anim
 	generic_anim_unload(&extra.anim_data); // unload to not waste bmpman slots
 	Message_avis.push_back(extra); 
 	Num_message_avis++;
@@ -1180,7 +1180,7 @@ void message_play_anim( message_q *q )
 
 	// support ships use a wingman head.
 	// terran command uses its own set of heads.
-	if ( (anim_info->anim_data.first_frame < 0) &&	// note, first_frame will be >= 0 when ani is an existing file, and will be < 0 when the file does not exist and needs a, b, or c appended
+	if ( (!anim_info->exists) &&	// if the base animation doesn't exist, then a, b, or c needs to be appended
 		((q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1))) ) {
 		int subhead_selected = FALSE;
 		persona_index = m->persona_index;
