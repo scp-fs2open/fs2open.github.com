@@ -1,82 +1,82 @@
 language: cpp
 sudo: false
 addons:
-    apt:
-        packages:
-            - libopenal-dev
-            - libogg-dev
-            - libvorbis-dev
-            - build-essential
-            - automake
-            - autoconf
-            - libsdl1.2-dev
-            - libtheora-dev
-            - libreadline6-dev
-            - libpng12-dev
-            - libjpeg62-dev
-            - liblua5.1-0-dev
-            - libjansson-dev
-            - libtool
-    coverity_scan:
-        project:
-            name: "scp-fs2open/fs2open.github.com"
-            description: "Coverity via Travis CI"
-        notification_email: niffiwan.scp@gmail.com
-        build_command_prepend: "./autogen.sh --enable-debug"
-        build_command:   "make -j2"
-        # must match TRAVIS_BRANCH check below
-        branch_pattern: coverity_scan
-env:
-    global:
-     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
-     #   via the "travis encrypt" command using the project repo's public key
-     - secure: "C3wF967ZeliwwP1vC12EMIBOaC568n26Z/cPnwzn317ve59DWH3YSfPZVgvt08GzmaXITGGsJvPB+qxfGoKvQzYE4O1B73q81RpUe5pB3IhF+ThQ91VfQZIRJR5xEGJaLINUlHTTZGX5jxlkVO9wAcauVj/s3b8sQ3dvUZauPvk="
-matrix:
-    include:
-        # note that gcc Debug MUST be 1st for Coverity
-        - os: linux
-          compiler: gcc
-          env: CONFIGURATION="Debug"
-        - os: linux
-          compiler: clang
-          env: CONFIGURATION="Debug"
-        - os: osx
-          compiler: clang
-          env: CONFIGURATION="Debug" MACOSX_ARCH=i386
-        - os: osx
-          compiler: clang
-          env: CONFIGURATION="Debug" MACOSX_ARCH=x86_64
+  apt:
+    packages:
+    - libopenal-dev
+    - libogg-dev
+    - libvorbis-dev
+    - build-essential
+    - automake
+    - autoconf
+    - libsdl1.2-dev
+    - libtheora-dev
+    - libreadline6-dev
+    - libpng12-dev
+    - libjpeg62-dev
+    - liblua5.1-0-dev
+    - libjansson-dev
+    - libtool
+  coverity_scan:
+    project:
+      name: scp-fs2open/fs2open.github.com
+      description: Coverity via Travis CI
+    notification_email: niffiwan.scp@gmail.com
+    build_command_prepend: "./autogen.sh --enable-debug"
+    build_command: make -j2
+    branch_pattern: coverity_scan
 
-        - os: linux
-          compiler: gcc
-          env: CONFIGURATION="Release"
-        - os: linux
-          compiler: clang
-          env: CONFIGURATION="Release"
-        - os: osx
-          compiler: clang
-          env: CONFIGURATION="Release" MACOSX_ARCH=i386
-        - os: osx
-          compiler: clang
-          env: CONFIGURATION="Release" MACOSX_ARCH=x86_64
+deploy:
+    provider: releases
+    api_key:
+        secure: XVW1oa3ApycgdTLbyLxPRXWCmRSaFhNbk4TP80vdQh7XQu0gZ5Sbm/I/vO65UvGXkEEe7ZhYkT5HC2lbvU7xqsCZNbEy5+m6JdOmm0n25eOj2UbjjVfKVO9AY5RKFlAjYejngE/Q+80d9XL6mJXz15ITvbM36uUCbp67QjEy75s=
+    skip_cleanup: true
+    file_glob: true
+    file: "/tmp/builds/*.tar.gz"
+    on:
+        tags: true
+        condition: "$TRAVIS_TAG" =~ ^release.*
+
+env:
+  global:
+  - secure: C3wF967ZeliwwP1vC12EMIBOaC568n26Z/cPnwzn317ve59DWH3YSfPZVgvt08GzmaXITGGsJvPB+qxfGoKvQzYE4O1B73q81RpUe5pB3IhF+ThQ91VfQZIRJR5xEGJaLINUlHTTZGX5jxlkVO9wAcauVj/s3b8sQ3dvUZauPvk=
+matrix:
+  include:
+  - os: linux
+    compiler: gcc
+    env: CONFIGURATION="Debug"
+  - os: linux
+    compiler: clang
+    env: CONFIGURATION="Debug"
+  - os: osx
+    compiler: clang
+    env: CONFIGURATION="Debug" MACOSX_ARCH=i386
+  - os: osx
+    compiler: clang
+    env: CONFIGURATION="Debug" MACOSX_ARCH=x86_64
+  - os: linux
+    compiler: gcc
+    env: CONFIGURATION="Release"
+  - os: linux
+    compiler: clang
+    env: CONFIGURATION="Release"
+  - os: osx
+    compiler: clang
+    env: CONFIGURATION="Release" MACOSX_ARCH=i386
+  - os: osx
+    compiler: clang
+    env: CONFIGURATION="Release" MACOSX_ARCH=x86_64
 before_install:
-    # ugly hack; if running a coverity scan abort all except the 1st build
-    # see note re gcc compiler above needing to be 1st
-    # also note that branch_pattern & the TRAVIS_BRANCH check must match
-    # unfortunately COVERITY_SCAN_BRANCH isn't defined until later in the
-    # build process
     - if ([[ "${TRAVIS_JOB_NUMBER##*.}" != "1" ]] && [[ "${TRAVIS_BRANCH}" == "coverity_scan" ]]); then false ; fi
-    - export TEST_TAG=release_42
-    - echo "$TEST_TAG"
     - RELEASE_BUILD=false
-    - if [[ "$TEST_TAG" =~ ^release.* ]]; then echo "This is a release tag!" ; RELEASE_BUILD=true ; fi
+    - if [[ "$TRAVIS_TAG" =~ ^release.* ]]; then echo "This is a release tag!" ; RELEASE_BUILD=true ; fi
     - if ([[ "$RELEASE_BUILD" == true ]] && [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ "$CC" == "clang" ]]); then echo "Skipping non-release compiler" ; exit 0 ; fi
     - if ([[ "$RELEASE_BUILD" == true ]] && [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$MACOSX_ARCH" == "i386" ]]); then echo "Skipping non-release architecture" ; exit 0 ; fi
     - if ([[ "$RELEASE_BUILD" == true ]] && [[ "$CONFIGURATION" == "Debug" ]]); then echo "Skipping non-release configuration" ; exit 0 ; fi
-    - ./ci/travis/before_install.sh
+    - "./ci/travis/before_install.sh"
 install:
-    - ./ci/travis/install.sh
+    - "./ci/travis/install.sh"
 before_script:
-    - ./ci/travis/before_script.sh
+    - "./ci/travis/before_script.sh"
 script:
     - if [ "$RELEASE_BUILD" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi

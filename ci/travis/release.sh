@@ -22,6 +22,9 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     make install
 
     ls -al /tmp/release/bin
+
+    mkdir -p /tmp/builds
+    (cd /tmp/release/bin && tar -cvzf /tmp/builds/builds-Linux.tar.gz *)
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     cd projects/Xcode
 
@@ -35,7 +38,7 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     fi
 
     ls build/Release
-    (cd build/Release && cp *.app /tmp/release)
+    (cd build/Release && cp -r *.app /tmp/release)
 
     xcodebuild -project FS2_Open.xcodeproj -configuration "Debug" clean build | tee debug.log | xcpretty -f `xcpretty-travis-formatter`
     XCODE_RET=${PIPESTATUS[0]}
@@ -45,7 +48,10 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     fi
 
     ls build/Debug
-    (cd build/Debug && cp *.app /tmp/release)
+    (cd build/Debug && cp -r *.app /tmp/release)
 
     ls -al /tmp/release
+
+    mkdir -p /tmp/builds
+    (cd /tmp/release && tar -cvzf /tmp/builds/builds-MacOSX.tar.gz *)
 fi
