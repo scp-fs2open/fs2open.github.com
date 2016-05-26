@@ -36,10 +36,29 @@ matrix:
         # note that gcc Debug MUST be 1st for Coverity
         - os: linux
           compiler: gcc
-          env: RELEASE_BUILD=true
+          env: CONFIGURATION="Debug"
+        - os: linux
+          compiler: clang
+          env: CONFIGURATION="Debug"
         - os: osx
           compiler: clang
-          env: RELEASE_BUILD=true
+          env: CONFIGURATION="Debug" MACOSX_ARCH=i386
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Debug" MACOSX_ARCH=x86_64
+
+        - os: linux
+          compiler: gcc
+          env: CONFIGURATION="Release"
+        - os: linux
+          compiler: clang
+          env: CONFIGURATION="Release"
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Release" MACOSX_ARCH=i386
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Release" MACOSX_ARCH=x86_64
 before_install:
     # ugly hack; if running a coverity scan abort all except the 1st build
     # see note re gcc compiler above needing to be 1st
@@ -47,8 +66,15 @@ before_install:
     # unfortunately COVERITY_SCAN_BRANCH isn't defined until later in the
     # build process
     - if ([[ "${TRAVIS_JOB_NUMBER##*.}" != "1" ]] && [[ "${TRAVIS_BRANCH}" == "coverity_scan" ]]); then false ; fi
+    - export TEST_TAG=release_42
+    - echo "$TEST_TAG"
+    - RELEASE_BUILD=false
+    - if [[ "$TEST_TAG" =~ ^release.* ]]; then echo "This is a release tag!" ; RELEASE_BUILD=true ; fi
+    - if ([[ "$RELEASE_BUILD" == true ]] && [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ "$CC" == "clang" ]]); then echo "Skipping non-release compiler" ; exit 0 ; fi
+    - if ([[ "$RELEASE_BUILD" == true ]] && [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$MACOSX_ARCH" == "i386" ]]); then echo "Skipping non-release architecture" ; exit 0 ; fi
+    - if ([[ "$RELEASE_BUILD" == true ]] && [[ "$CONFIGURATION" == "Debug" ]]); then echo "Skipping non-release configuration" ; exit 0 ; fi
     - ./ci/travis/before_install.sh
 install:
     - ./ci/travis/install.sh
 script:
-    - ./ci/travis/release.sh
+    - if [ "$RELEASE_BUILD" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi
