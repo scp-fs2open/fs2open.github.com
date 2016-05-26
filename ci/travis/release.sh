@@ -30,7 +30,7 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
 
     mkdir /tmp/release
 
-    xcodebuild -project FS2_Open.xcodeproj -configuration "Release" clean build | tee release.log | xcpretty -f `xcpretty-travis-formatter`
+    xcodebuild -project FS2_Open.xcodeproj -configuration "Release" clean build | tee release.log | xcpretty
     XCODE_RET=${PIPESTATUS[0]}
     if [ "$XCODE_RET" -ne "0" ]; then
         pastebin -e 1D -f release.log
@@ -40,7 +40,7 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     ls build/Release
     (cd build/Release && cp -r *.app /tmp/release)
 
-    xcodebuild -project FS2_Open.xcodeproj -configuration "Debug" clean build | tee debug.log | xcpretty -f `xcpretty-travis-formatter`
+    xcodebuild -project FS2_Open.xcodeproj -configuration "Debug" clean build | tee debug.log | xcpretty
     XCODE_RET=${PIPESTATUS[0]}
     if [ "$XCODE_RET" -ne "0" ]; then
         pastebin -e 1D -f debug.log
