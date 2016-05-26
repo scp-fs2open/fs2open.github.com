@@ -1,30 +1,31 @@
 language: cpp
 sudo: false
 addons:
-  apt:
-    packages:
-    - libopenal-dev
-    - libogg-dev
-    - libvorbis-dev
-    - build-essential
-    - automake
-    - autoconf
-    - libsdl1.2-dev
-    - libtheora-dev
-    - libreadline6-dev
-    - libpng12-dev
-    - libjpeg62-dev
-    - liblua5.1-0-dev
-    - libjansson-dev
-    - libtool
-  coverity_scan:
-    project:
-      name: scp-fs2open/fs2open.github.com
-      description: Coverity via Travis CI
-    notification_email: niffiwan.scp@gmail.com
-    build_command_prepend: "./autogen.sh --enable-debug"
-    build_command: make -j2
-    branch_pattern: coverity_scan
+    apt:
+        packages:
+            - libopenal-dev
+            - libogg-dev
+            - libvorbis-dev
+            - build-essential
+            - automake
+            - autoconf
+            - libsdl1.2-dev
+            - libtheora-dev
+            - libreadline6-dev
+            - libpng12-dev
+            - libjpeg62-dev
+            - liblua5.1-0-dev
+            - libjansson-dev
+            - libtool
+
+    coverity_scan:
+        project:
+            name: scp-fs2open/fs2open.github.com
+            description: Coverity via Travis CI
+        notification_email: niffiwan.scp@gmail.com
+        build_command_prepend: "./autogen.sh --enable-debug"
+        build_command: make -j2
+        branch_pattern: coverity_scan
 
 deploy:
     provider: releases
@@ -34,38 +35,39 @@ deploy:
     file_glob: true
     file: "/tmp/builds/*.tar.gz"
     on:
+        condition: '"$TRAVIS_TAG" =~ ^release.*'
         tags: true
-        condition: "$TRAVIS_TAG" =~ ^release.*
 
 env:
-  global:
-  - secure: C3wF967ZeliwwP1vC12EMIBOaC568n26Z/cPnwzn317ve59DWH3YSfPZVgvt08GzmaXITGGsJvPB+qxfGoKvQzYE4O1B73q81RpUe5pB3IhF+ThQ91VfQZIRJR5xEGJaLINUlHTTZGX5jxlkVO9wAcauVj/s3b8sQ3dvUZauPvk=
+    global:
+    - secure: C3wF967ZeliwwP1vC12EMIBOaC568n26Z/cPnwzn317ve59DWH3YSfPZVgvt08GzmaXITGGsJvPB+qxfGoKvQzYE4O1B73q81RpUe5pB3IhF+ThQ91VfQZIRJR5xEGJaLINUlHTTZGX5jxlkVO9wAcauVj/s3b8sQ3dvUZauPvk=
 matrix:
-  include:
-  - os: linux
-    compiler: gcc
-    env: CONFIGURATION="Debug"
-  - os: linux
-    compiler: clang
-    env: CONFIGURATION="Debug"
-  - os: osx
-    compiler: clang
-    env: CONFIGURATION="Debug" MACOSX_ARCH=i386
-  - os: osx
-    compiler: clang
-    env: CONFIGURATION="Debug" MACOSX_ARCH=x86_64
-  - os: linux
-    compiler: gcc
-    env: CONFIGURATION="Release"
-  - os: linux
-    compiler: clang
-    env: CONFIGURATION="Release"
-  - os: osx
-    compiler: clang
-    env: CONFIGURATION="Release" MACOSX_ARCH=i386
-  - os: osx
-    compiler: clang
-    env: CONFIGURATION="Release" MACOSX_ARCH=x86_64
+    include:
+        - os: linux
+          compiler: gcc
+          env: CONFIGURATION="Debug"
+        - os: linux
+          compiler: clang
+          env: CONFIGURATION="Debug"
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Debug" MACOSX_ARCH=i386
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Debug" MACOSX_ARCH=x86_64
+        - os: linux
+          compiler: gcc
+          env: CONFIGURATION="Release"
+        - os: linux
+          compiler: clang
+          env: CONFIGURATION="Release"
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Release" MACOSX_ARCH=i386
+        - os: osx
+          compiler: clang
+          env: CONFIGURATION="Release" MACOSX_ARCH=x86_64
+
 before_install:
     - if ([[ "${TRAVIS_JOB_NUMBER##*.}" != "1" ]] && [[ "${TRAVIS_BRANCH}" == "coverity_scan" ]]); then false ; fi
     - RELEASE_BUILD=false
