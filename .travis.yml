@@ -30,7 +30,7 @@ addons:
 deploy:
     provider: releases
     api_key:
-        secure: XVW1oa3ApycgdTLbyLxPRXWCmRSaFhNbk4TP80vdQh7XQu0gZ5Sbm/I/vO65UvGXkEEe7ZhYkT5HC2lbvU7xqsCZNbEy5+m6JdOmm0n25eOj2UbjjVfKVO9AY5RKFlAjYejngE/Q+80d9XL6mJXz15ITvbM36uUCbp67QjEy75s=
+        secure: "bBWEBF+r4p7kea+Lj/vHD0CCW4AsxqlLri8gT3HbsdPuKwdSNU4QLLFk9yAXmmBF2T/fe45Zk+WQrdQJjSydkpG06M7sFD22RKOYv3cLF0Bq0nEG4CpuXoGqo77oFGkA5hdU6D8W2nQTMhPuiqlvhgt3zeD/6fiyfdAztbtKNRs="
     skip_cleanup: true
     file_glob: true
     file: "/tmp/builds/*.tar.gz"
