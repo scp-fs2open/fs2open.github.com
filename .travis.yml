@@ -76,5 +76,7 @@ before_install:
     - ./ci/travis/before_install.sh
 install:
     - ./ci/travis/install.sh
+before_script:
+    - ./ci/travis/before_script.sh
 script:
     - if [ "$RELEASE_BUILD" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi
