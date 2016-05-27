@@ -9,14 +9,14 @@ if ([System.Convert]::ToBoolean($env:ReleaseBuild)) {
         exit 1 # Fail the build
     }
 
-    msbuild "$env:ProjectPath" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="$env:PlatformToolset-xp" /verbosity:minimal
+    msbuild "$env:ProjectPath" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="$($env:PlatformToolset)_xp" /verbosity:minimal
 
     if (! ($?)) {
         Add-AppveyorMessage "A release build failed!"
         exit 1
     }
 
-    msbuild "$env:ProjectPath" /p:Configuration="Release SSE2" /m /p:PlatformToolset="$env:PlatformToolset-xp" /verbosity:minimal
+    msbuild "$env:ProjectPath" /p:Configuration="Release SSE2" /m /p:PlatformToolset="$($env:PlatformToolset)_xp" /verbosity:minimal
 
     if (! ($?)) {
         Add-AppveyorMessage "A release build failed!"
