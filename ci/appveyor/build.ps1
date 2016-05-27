@@ -3,8 +3,6 @@ write "$env:ReleaseBuild"
 write "$env:ReleaseConfig"
 
 if ([System.Convert]::ToBoolean($env:ReleaseBuild)) {
-New-Item c:\scripts\Windows PowerShell -type directory
-
     # Release build
     if (! ([System.Convert]::ToBoolean($env:ReleaseConfig))) {
         Add-AppveyorMessage "This build will fail because we are doing a release build but this is not the right configuration."
