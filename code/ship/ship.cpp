@@ -707,6 +707,7 @@ void ship_info::clone(const ship_info& other)
 	rotdamp = other.rotdamp;
 	delta_bank_const = other.delta_bank_const;
 	max_vel = other.max_vel;
+	min_vel = other.min_vel;
 	max_rotvel = other.max_rotvel;
 	rotation_time = other.rotation_time;
 	srotation_time = other.srotation_time;
@@ -1013,6 +1014,7 @@ void ship_info::move(ship_info&& other)
 	rotdamp = other.rotdamp;
 	delta_bank_const = other.delta_bank_const;
 	std::swap(max_vel, other.max_vel);
+	std::swap(min_vel, other.min_vel);
 	std::swap(max_rotvel, other.max_rotvel);
 	std::swap(rotation_time, other.rotation_time);
 	srotation_time = other.srotation_time;
@@ -1336,6 +1338,7 @@ ship_info::ship_info()
 	rotdamp = 0.0f;
 	delta_bank_const = DEFAULT_DELTA_BANK_CONST;
 	vm_vec_zero(&max_vel);
+	vm_vec_zero(&min_vel);
 	vm_vec_zero(&max_rotvel);
 	vm_vec_zero(&rotation_time);
 	srotation_time = 0.0f;
@@ -2680,6 +2683,9 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 
 	// calculate the max speed from max_velocity
 	sip->max_speed = sip->max_vel.xyz.z;
+
+	if(optional_string("$Player Minimum Velocity:"))
+		stuff_vec3d(&sip->min_vel);
 
 	if(optional_string("$Rotation Time:"))
 	{
@@ -5054,6 +5060,26 @@ void ship_parse_post_cleanup()
 		if (!(sip->flags & SIF_NO_COLLIDE) && (vm_vec_mag_squared( &sip->max_rotvel ) * .04) >= (PI*PI/4))
 		{
 			Warning(LOCATION, "$Rotation time: too low; this will disable rotational collisions. All three variables should be >= 1.39.\nFix this in ship '%s'\n", sip->name);
+		}
+
+		// ensure player min velocity makes sense
+		if (sip->min_vel.xyz.x > sip->max_vel.xyz.x || sip->min_vel.xyz.x < 0.0f)
+		{
+			error_display(0, "$Player Minimum Velocity X-value (%f) is negative or greater than max velocity X-value (%f), setting to zero\nFix for ship '%s'\n",
+					sip->min_vel.xyz.x, sip->max_vel.xyz.x, sip->name);
+			sip->min_vel.xyz.x = 0.0f;
+		}
+		if (sip->min_vel.xyz.y > sip->max_vel.xyz.y || sip->min_vel.xyz.y < 0.0f)
+		{
+			error_display(0, "$Player Minimum Velocity Y-value (%f) is negative or greater than max velocity Y-value (%f), setting to zero\nFix for ship '%s'\n",
+					sip->min_vel.xyz.y, sip->max_vel.xyz.y, sip->name);
+			sip->min_vel.xyz.y = 0.0f;
+		}
+		if (sip->min_vel.xyz.z > sip->max_vel.xyz.z || sip->min_vel.xyz.z < 0.0f)
+		{
+			error_display(0, "$Player Minimum Velocity Z-value (%f) is negative or greater than max velocity Z-value (%f), setting to zero\nFix for ship '%s'\n",
+					sip->min_vel.xyz.z, sip->max_vel.xyz.z, sip->name);
+			sip->min_vel.xyz.z = 0.0f;
 		}
 	}
 
