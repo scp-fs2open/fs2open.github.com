@@ -28,6 +28,7 @@ typedef struct message_extra {
 	char				name[MAX_FILENAME_LEN];
 	int				num;
 	generic_anim		anim_data;
+	bool				exists;
 } message_extra;
 
 extern SCP_vector<message_extra> Message_avis;
