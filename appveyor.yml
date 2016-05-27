@@ -5,13 +5,16 @@ environment:
   - VisualStudioVersion: 10.0
     PlatformToolset: v100
     ProjectPath: projects/MSVC_2010/Freespace2.vcxproj
+    ReleaseConfig: False
   - VisualStudioVersion: 12.0
     PlatformToolset: v120
     ProjectPath: projects/MSVC_2013/Freespace2.vcxproj
+    ReleaseConfig: False
   - VisualStudioVersion: 14.0
     PlatformToolset: v140
     ProjectPath: projects/MSVC_2015/Freespace2.vcxproj
+    ReleaseConfig: True
 build_script:
-    - exit 1
-    - msbuild "%ProjectPath%" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="%PlatformToolset%" /verbosity:minimal
+    - ps: . ./ci/appveyor/check_release.ps1
+    - ps: . ./ci/appveyor/build.ps1
 test: off
