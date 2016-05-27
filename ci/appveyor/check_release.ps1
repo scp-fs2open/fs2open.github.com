@@ -2,7 +2,7 @@
 write "$env:APPVEYOR_REPO_TAG"
 write "$env:APPVEYOR_REPO_TAG_NAME"
 
-if (! ($env:APPVEYOR_REPO_TAG)) {
+if (! ([System.Convert]::ToBoolean($env:APPVEYOR_REPO_TAG))) {
     # Nothing to do here
     Set-AppveyorBuildVariable 'ReleaseBuild' 'False'
     exit 0

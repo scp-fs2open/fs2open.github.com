@@ -1,7 +1,10 @@
 
-if ($env:ReleaseBuild) {
+write "$env:ReleaseBuild"
+write "$env:ReleaseConfig"
+
+if ([System.Convert]::ToBoolean($env:ReleaseBuild)) {
     # Release build
-    if (! ($env:ReleaseConfig)) {
+    if (! ([System.Convert]::ToBoolean($env:ReleaseConfig))) {
         Add-AppveyorMessage "This build will fail because we are doing a release build but this is not the right configuration."
         exit 1 # Fail the build
     }
