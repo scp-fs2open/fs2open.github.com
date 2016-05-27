@@ -12,6 +12,6 @@ environment:
     PlatformToolset: v140
     ProjectPath: projects/MSVC_2015/Freespace2.vcxproj
 build_script:
-    - exit 0
+    - exit 1
     - msbuild "%ProjectPath%" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="%PlatformToolset%" /verbosity:minimal
 test: off
