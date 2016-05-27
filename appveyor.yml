@@ -22,6 +22,5 @@ deploy:
     - provider: GitHub
       auth_token:
           secure: RWe6hwCcgBdklaYvjB62kzhKn7yDBJdqoDDKYViShaEV9HkJ75HbawsBcGBimRUu
-      artifact: builds-Win32.zip
       on:
           appveyor_repo_tag: true        # deploy on tag push only

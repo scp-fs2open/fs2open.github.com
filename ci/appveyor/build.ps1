@@ -22,6 +22,7 @@ if ([System.Convert]::ToBoolean($env:ReleaseBuild)) {
     }
 
     7z a builds-Win32.zip "$env:APPVEYOR_BUILD_FOLDER/$env:ProjectPath/Debug SSE2/*.exe" "$env:APPVEYOR_BUILD_FOLDER/$env:ProjectPath/Release SSE2/*.exe"
+    Push-AppveyorArtifact builds-Win32.zip
 } else {
     # Standard CI build
     msbuild "$env:ProjectPath/Freespace2.vcxproj" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="$env:PlatformToolset" /verbosity:minimal
