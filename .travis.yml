@@ -70,11 +70,7 @@ matrix:
 
 before_install:
     - if ([[ "${TRAVIS_JOB_NUMBER##*.}" != "1" ]] && [[ "${TRAVIS_BRANCH}" == "coverity_scan" ]]); then false ; fi
-    - RELEASE_BUILD=false
-    - if [[ "$TRAVIS_TAG" =~ ^release.* ]]; then echo "This is a release tag!" ; RELEASE_BUILD=true ; fi
-    - if ([[ "$RELEASE_BUILD" == true ]] && [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ "$CC" == "clang" ]]); then echo "Skipping non-release compiler" ; exit 0 ; fi
-    - if ([[ "$RELEASE_BUILD" == true ]] && [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$MACOSX_ARCH" == "i386" ]]); then echo "Skipping non-release architecture" ; exit 0 ; fi
-    - if ([[ "$RELEASE_BUILD" == true ]] && [[ "$CONFIGURATION" == "Debug" ]]); then echo "Skipping non-release configuration" ; exit 0 ; fi
+    - source "./ci/travis/check_release.sh"
     - "./ci/travis/before_install.sh"
 install:
     - "./ci/travis/install.sh"
