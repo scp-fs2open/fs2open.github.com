@@ -89,7 +89,7 @@ void multi_ping_eval_pong(ping_struct *ps, fix pong_time)
 	for(idx=0;idx<ps->num_pings;idx++){
 		ping_sum += ps->ping_times[idx];
 	}
-	ps->ping_avg = (int)(f2fld(1000L * ping_sum) / (double)ps->num_pings);
+	ps->ping_avg = (int)(f2d(1000L * ping_sum) / (double)ps->num_pings);
 }
 
 // start a ping - call this when sending a ping packet
