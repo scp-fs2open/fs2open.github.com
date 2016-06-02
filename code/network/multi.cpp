@@ -842,18 +842,6 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_reinforcement_avail( data, header_info );
 			break;
 
-		case CHANGE_IFF:
-			process_change_iff_packet(data, header_info);
-			break;
-
-		case CHANGE_IFF_COLOR:
-			process_change_iff_color_packet(data, header_info);
-			break;
-
-		case CHANGE_AI_CLASS:
-			process_change_ai_class_packet(data, header_info);
-			break;
-
 		case PRIMARY_FIRED_NEW:
 			process_NEW_primary_fired_packet(data, header_info);
 			break;
@@ -876,10 +864,6 @@ void process_packet_normal(ubyte* data, header *header_info)
 
 		case VARIABLE_UPDATE:
 			process_variable_update_packet(data, header_info);
-			break;
-
-		case WEAPON_OR_AMMO_CHANGED:
-			process_weapon_or_ammo_changed_packet(data, header_info);
 			break;
 
 		case OBJECT_UPDATE_NEW:			

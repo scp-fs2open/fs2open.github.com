@@ -261,18 +261,11 @@ extern int Om_tracker_flag;
 #define COUNTDOWN						0xE9		// countdown timer for starting a game (pretty benign)
 #define DEBRIEF_INFO					0xEA		// end of mission debriefing information
 #define EMP_EFFECT					0xEB		// EMP effect (mission disk only)
-#define CHANGE_IFF					0xEC		// change iff (1.04+ only)
+#define CARGO_HIDDEN				0xEC		// cargo is hidden
+#define SUBSYS_CARGO_HIDDEN			0xED		// Capital ship cargo subsystem is hidden for both ships and subsystems
 
-#define CARGO_HIDDEN				0xED		// cargo is hidden
-#define SUBSYS_CARGO_HIDDEN			0xEE		// Capital ship cargo subsystem is hidden
-
-#define CHANGE_AI_CLASS				0xEF		// change ai class
-#define NO_SUBSYS_STRING			"NO-SUBSYS"	// see change_ai_class - because same routine is used
-												// for both ships and subsystems
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
-#define WEAPON_OR_AMMO_CHANGED		0xF1		// Karajorma - The weapon or ammo of a fighter/bomber has been changed
-#define SEXP						0xF2		// Karajorma - a general packet which can be used to update clients with changes caused by SEXPs
-#define CHANGE_IFF_COLOR			0xF3		// Wanderer - change iff color
+#define SEXP						0xF1		// Karajorma - a general packet which can be used to update clients with changes caused by SEXPs
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 

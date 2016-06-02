@@ -9278,10 +9278,6 @@ void sexp_ingame_ship_change_iff(ship *shipp, int new_team)
 	Assert(shipp != NULL);
 
 	shipp->team = new_team;
-
-	// send a network packet if we need to
-	if( MULTIPLAYER_MASTER && (Net_player != NULL) && (shipp->objnum >= 0))
-		send_change_iff_packet(Objects[shipp->objnum].net_signature, new_team);
 }
 
 // Goober5000
@@ -9292,56 +9288,85 @@ void sexp_parse_ship_change_iff(p_object *parse_obj, int new_team)
 	parse_obj->team = new_team;
 }
 
+void sexp_change_iff_helper(object_ship_wing_point_team oswpt, int new_team)
+{
+	switch (oswpt.type)
+	{
+		// change ingame ship
+		case OSWPT_TYPE_SHIP:
+		{
+			sexp_ingame_ship_change_iff(oswpt.shipp, new_team);
+
+			break;
+		}
+
+		// change ship yet to arrive
+		case OSWPT_TYPE_PARSE_OBJECT:
+		{
+			sexp_parse_ship_change_iff(oswpt.p_objp, new_team);
+
+			break;
+		}
+
+		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			// current ships
+			for (int i = 0; i < oswpt.wingp->current_count; i++)
+				sexp_ingame_ship_change_iff(&Ships[oswpt.wingp->ship_index[i]], new_team);
+
+			// ships yet to arrive
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+					sexp_parse_ship_change_iff(p_objp, new_team);
+			}
+
+			break;
+		}
+	}
+}
+
 // Goober5000 - added wing capability
 void sexp_change_iff(int n)
 {
 	int new_team;
+	char *name;
 
 	new_team = iff_lookup(CTEXT(n));
 	n = CDR(n);
 
+	multi_start_callback();
+	multi_send_int(new_team);
+
 	for ( ; n != -1; n = CDR(n) )
 	{
+		name = CTEXT(n);
 		object_ship_wing_point_team oswpt;
-		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+		sexp_get_object_ship_wing_point_team(&oswpt, name);
 
-		switch (oswpt.type)
-		{
-			// change ingame ship
-			case OSWPT_TYPE_SHIP:
-			{
-				sexp_ingame_ship_change_iff(oswpt.shipp, new_team);
+		multi_send_string(name);
 
-				break;
-			}
-
-			// change ship yet to arrive
-			case OSWPT_TYPE_PARSE_OBJECT:
-			{
-				sexp_parse_ship_change_iff(oswpt.p_objp, new_team);
-
-				break;
-			}
-
-			// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
-			case OSWPT_TYPE_WING:
-			case OSWPT_TYPE_WING_NOT_PRESENT:
-			{
-				// current ships
-				for (int i = 0; i < oswpt.wingp->current_count; i++)
-					sexp_ingame_ship_change_iff(&Ships[oswpt.wingp->ship_index[i]], new_team);
-
-				// ships yet to arrive
-				for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
-				{
-					if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
-						sexp_parse_ship_change_iff(p_objp, new_team);
-				}
-
-				break;
-			}
-		}
+		sexp_change_iff_helper(oswpt, new_team);
 	}
+
+	multi_end_callback();
+}
+
+void multi_sexp_change_iff()
+{
+	int new_team;
+	char *name = nullptr;
+
+	multi_get_int(new_team);
+	while (multi_get_string(name)) {
+
+		object_ship_wing_point_team oswpt;
+		sexp_get_object_ship_wing_point_team(&oswpt, name);
+
+		sexp_change_iff_helper(oswpt, new_team);
+	}	
 }
 
 void sexp_ingame_ship_change_iff_color(ship *shipp, int observer_team, int observed_team, int alternate_iff_color)
@@ -9349,10 +9374,6 @@ void sexp_ingame_ship_change_iff_color(ship *shipp, int observer_team, int obser
 	Assert(shipp != NULL);
 
 	shipp->ship_iff_color[observer_team][observed_team] = alternate_iff_color;
-
-	// Like the rest of the change_iff_color functions copied with minor alterations from earlier change_iff functions.
-	if( MULTIPLAYER_MASTER && (Net_player != NULL) && (shipp->objnum >= 0))
-		send_change_iff_color_packet(Objects[shipp->objnum].net_signature, observer_team, observed_team, alternate_iff_color);
 }
 
 void sexp_parse_ship_change_iff_color(p_object *parse_obj, int observer_team, int observed_team, int alternate_iff_color)
@@ -9362,15 +9383,58 @@ void sexp_parse_ship_change_iff_color(p_object *parse_obj, int observer_team, in
 	parse_obj->alt_iff_color[observer_team][observed_team] = alternate_iff_color;
 }
 
+void sexp_change_iff_color_helper(object_ship_wing_point_team oswpt, int observer_team, int observed_team, int alternate_iff_color)
+{
+	int i;
+
+	switch (oswpt.type)
+	{
+		// change ingame ship
+		case OSWPT_TYPE_SHIP:
+		{
+			sexp_ingame_ship_change_iff_color(oswpt.shipp, observer_team, observed_team, alternate_iff_color);
+
+			break;
+		}
+
+		// change ship yet to arrive
+		case OSWPT_TYPE_PARSE_OBJECT:
+		{
+			sexp_parse_ship_change_iff_color(oswpt.p_objp, observer_team, observed_team, alternate_iff_color);
+
+			break;
+		}
+
+		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			// current ships
+			for (i = 0; i < oswpt.wingp->current_count; i++)
+				sexp_ingame_ship_change_iff_color(&Ships[oswpt.wingp->ship_index[i]], observer_team, observed_team, alternate_iff_color);
+
+			// ships yet to arrive
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+					sexp_parse_ship_change_iff_color(p_objp, observer_team, observed_team, alternate_iff_color);
+			}
+
+			break;
+		}
+	}
+}
+
  // Wanderer
 void sexp_change_iff_color(int n)
 {
 	int observer_team, observed_team, alternate_iff_color;
 	int i;
 	int rgb[3];
+	char *name;
 
 	// First node
-	if(n == -1){
+	if (n == -1) {
 		Warning(LOCATION, "Detected missing observer team parameter in sexp-change_iff_color");
 		return;
 	}
@@ -9378,17 +9442,17 @@ void sexp_change_iff_color(int n)
 
 	// Second node
 	n = CDR(n);
-	if(n == -1){
+	if (n == -1) {
 		Warning(LOCATION, "Detected missing observed team parameter in sexp-change_iff_color");
 		return;
 	}
 	observed_team = iff_lookup(CTEXT(n));
 
 	// Three following nodes
-	for (i=0;i<3;i++)
+	for (i = 0; i < 3; i++)
 	{
 		n = CDR(n);
-		if(n == -1){
+		if (n == -1) {
 			Warning(LOCATION, "Detected incomplete color parameter list in sexp-change_iff_color\n");
 			return;
 		}
@@ -9398,51 +9462,43 @@ void sexp_change_iff_color(int n)
 			rgb[i] = 255;
 		}
 	}
-	alternate_iff_color = iff_init_color(rgb[0],rgb[1],rgb[2]);
+	alternate_iff_color = iff_init_color(rgb[0], rgb[1], rgb[2]);
+
+	multi_start_callback();
+	multi_send_int(observer_team);
+	multi_send_int(observed_team);
+	multi_send_int(alternate_iff_color);
 
 	// Rest of the nodes
 	n = CDR(n);
-	for ( ; n != -1; n = CDR(n) )
+	for (; n != -1; n = CDR(n))
 	{
+		name = CTEXT(n);
 		object_ship_wing_point_team oswpt;
-		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+		sexp_get_object_ship_wing_point_team(&oswpt, name);
 
-		switch (oswpt.type)
-		{
-			// change ingame ship
-			case OSWPT_TYPE_SHIP:
-			{
-				sexp_ingame_ship_change_iff_color(oswpt.shipp, observer_team, observed_team, alternate_iff_color);
+		multi_send_string(name);
 
-				break;
-			}
+		sexp_change_iff_color_helper(oswpt, observer_team, observed_team, alternate_iff_color);
+	}
 
-			// change ship yet to arrive
-			case OSWPT_TYPE_PARSE_OBJECT:
-			{
-				sexp_parse_ship_change_iff_color(oswpt.p_objp, observer_team, observed_team, alternate_iff_color);
+	multi_end_callback(); 
+}
 
-				break;
-			}
+void multi_sexp_change_iff_color()
+{
+	int observer_team, observed_team, alternate_iff_color;
+	char *name = nullptr;
 
-			// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
-			case OSWPT_TYPE_WING:
-			case OSWPT_TYPE_WING_NOT_PRESENT:
-			{
-				// current ships
-				for (i = 0; i < oswpt.wingp->current_count; i++)
-					sexp_ingame_ship_change_iff_color(&Ships[oswpt.wingp->ship_index[i]], observer_team, observed_team, alternate_iff_color);
+	multi_get_int(observer_team);
+	multi_get_int(observed_team);
+	multi_get_int(alternate_iff_color);
 
-				// ships yet to arrive
-				for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
-				{
-					if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
-						sexp_parse_ship_change_iff_color(p_objp, observer_team, observed_team, alternate_iff_color);
-				}
-
-				break;
-			}
-		}
+	while (multi_get_string(name))
+	{ 
+		object_ship_wing_point_team oswpt;
+		sexp_get_object_ship_wing_point_team(&oswpt, name);
+		sexp_change_iff_color_helper(oswpt, observer_team, observed_team, alternate_iff_color);
 	}
 }
 
@@ -9581,6 +9637,7 @@ int sexp_is_ai_class(int n)
 void sexp_change_ai_class(int n)
 {
 	int i, ship_num, new_ai_class;
+	char *subsystem;
 
 	Assert ( n >= 0 );
 
@@ -9603,31 +9660,50 @@ void sexp_change_ai_class(int n)
 	if (ship_num < 0)
 		return;
 
+	multi_start_callback();
+	multi_send_ship(ship_num);
+	multi_send_int(new_ai_class);
+
 	// subsys?
 	if (n != -1)
 	{
 		// loopity-loop
 		for ( ; n != -1; n = CDR(n) )
 		{
-			ship_subsystem_set_new_ai_class(ship_num, CTEXT(n), new_ai_class);
+			subsystem = CTEXT(n);
+			ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
 
-			// send a network packet if we need to
-			if( MULTIPLAYER_MASTER && (Net_player != NULL) && (Ships[ship_num].objnum >= 0))
-			{
-				send_change_ai_class_packet(Objects[Ships[ship_num].objnum].net_signature, CTEXT(n), new_ai_class);
-			}
+			multi_send_string(subsystem);
 		}
 	}
 	// just the one ship
 	else
 	{
 		ship_set_new_ai_class(ship_num, new_ai_class);
+	}
 
-		// send a network packet if we need to
-		if( MULTIPLAYER_MASTER && (Net_player != NULL) && (Ships[ship_num].objnum >= 0))
-		{
-			send_change_ai_class_packet(Objects[Ships[ship_num].objnum].net_signature, NULL, new_ai_class);
-		}
+	multi_end_callback();
+}
+
+void multi_sexp_change_ai_class()
+{
+	int ship_num, new_ai_class;
+	char *subsystem = NULL;
+
+	multi_get_ship(ship_num); 
+	multi_get_int(new_ai_class);
+
+	// subsystem?
+	if (multi_get_string(subsystem)) {
+		ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
+
+		// deal with any other subsystems
+		while (multi_get_string(subsystem)) {
+			ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
+		}		 
+	}
+	else {
+		ship_set_new_ai_class(ship_num, new_ai_class);
 	}
 }
 
@@ -15943,7 +16019,7 @@ void sexp_set_primary_ammo (int node)
 	int sindex;
 	int requested_bank ;
 	int requested_weapons ;
-	int rearm_limit = 0;
+	int rearm_limit = -1;
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -15969,7 +16045,7 @@ void sexp_set_primary_ammo (int node)
 	
 	node = CDDR(node);	
 
-	// If a rearm limit hasn't been specified simply change the ammo.Otherwise read in the rearm limit
+	// If a rearm limit hasn't been specified simply change the ammo. Otherwise read in the rearm limit
 	if (node < 0) {
 		set_primary_ammo (sindex, requested_bank, requested_weapons);
 	}
@@ -15977,10 +16053,33 @@ void sexp_set_primary_ammo (int node)
 		rearm_limit = eval_num(node); 
 		set_primary_ammo (sindex, requested_bank, requested_weapons, rearm_limit);
 	}
+
+	// do the multiplayer callback here
+	multi_start_callback();
+	multi_send_ship(sindex);
+	multi_send_int(requested_bank);
+	multi_send_int(requested_weapons);
+	multi_send_int(rearm_limit);
+	multi_end_callback(); 
+}
+
+void multi_sexp_set_primary_ammo()
+{
+	int sindex;
+	int requested_bank;
+	int requested_weapons;
+	int rearm_limit;
+
+	multi_get_ship(sindex);
+	multi_get_int(requested_bank);
+	multi_get_int(requested_weapons);
+	multi_get_int(rearm_limit);
+
+	set_primary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
 }
 
 //Karajorma - Helper function for the set-primary-ammo and weapon functions
-void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit, bool update)
+void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit)
 {
 	ship *shipp;
 	int maximum_allowed ;
@@ -16031,12 +16130,6 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 		}
 
 		shipp->weapons.primary_bank_start_ammo[requested_bank] = rearm_limit;
-	}
-
-	// The change needs to be passed on if this is a multiplayer game
-	if (MULTIPLAYER_MASTER & update)
-	{
-		send_weapon_or_ammo_changed_packet(ship_index, 0, requested_bank, requested_ammo, rearm_limit, -1);
 	}
 }
 
@@ -16091,7 +16184,7 @@ void sexp_set_secondary_ammo (int node)
 	int sindex;
 	int requested_bank;
 	int requested_weapons;
-	int rearm_limit;
+	int rearm_limit = -1;
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -16118,17 +16211,38 @@ void sexp_set_secondary_ammo (int node)
 	node = CDDR(node);	
 
 	// If a rearm limit hasn't been specified simply change the ammo.Otherwise read in the rearm limit
-	if (node < 0) {
-		set_secondary_ammo(sindex, requested_bank, requested_weapons);
-	}
-	else {
+	if (node >= 0) {
 		rearm_limit = eval_num(node); 
-		set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
 	}
+
+	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
+
+	// do the multiplayer callback here
+	multi_start_callback();
+	multi_send_ship(sindex);
+	multi_send_int(requested_bank);
+	multi_send_int(requested_weapons);
+	multi_send_int(rearm_limit);
+	multi_end_callback();
+}
+
+void multi_sexp_set_secondary_ammo()
+{
+	int sindex;
+	int requested_bank;
+	int requested_weapons;
+	int rearm_limit;
+
+	multi_get_ship(sindex);
+	multi_get_int(requested_bank);
+	multi_get_int(requested_weapons);
+	multi_get_int(rearm_limit);
+
+	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
 }
 
 //Karajorma - Helper function for the set-secondary-ammo and weapon functions
-void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit, bool update)
+void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit)
 {
 	ship *shipp;
 	int maximum_allowed;
@@ -16172,33 +16286,27 @@ void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo,
 
 		shipp->weapons.secondary_bank_start_ammo[requested_bank] = rearm_limit;
 	}
-
-	// The change needs to be passed on if this is a multiplayer game and we're not already updating the weapon
-	if (MULTIPLAYER_MASTER && update)
-	{
-		send_weapon_or_ammo_changed_packet(ship_index, 1, requested_bank, requested_ammo, rearm_limit, -1);
-	}
 }
 
 // Karajorma - Changes the weapon in the requested bank to the one supplied. Optionally sets the ammo and 
-// rearm limit too. 
-void sexp_set_weapon (int node, bool primary)
+// rearm limit too.  
+void sexp_set_weapon(int node, bool primary)
 {
-	ship *shipp;	
-	int sindex, requested_bank, windex, requested_ammo=-1, rearm_limit=-1;
+	ship *shipp;
+	int sindex, requested_bank, windex, requested_ammo = -1, rearm_limit = -1;
 
-	Assert (node != -1);
+	Assert(node != -1);
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) 
+	if (sindex < 0)
 	{
-		return ;
+		return;
 	}
 
 	// Check that it's valid
-	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)){
-		return ;
+	if ((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)) {
+		return;
 	}
 	shipp = &Ships[sindex];
 
@@ -16217,39 +16325,41 @@ void sexp_set_weapon (int node, bool primary)
 	if (primary)
 	{
 		// Change the weapon
-		shipp->weapons.primary_bank_weapons[requested_bank] = windex ; 
+		shipp->weapons.primary_bank_weapons[requested_bank] = windex;
 	}
-	else 
+	else
 	{
 		// Change the weapon
-		shipp->weapons.secondary_bank_weapons[requested_bank] = windex ;
+		shipp->weapons.secondary_bank_weapons[requested_bank] = windex;
 	}
 
-	
+	multi_start_callback();
+	multi_send_ship(sindex);
+	multi_send_bool(primary);
+	multi_send_int(requested_bank);
+	multi_send_int(windex);
+
 	// Check to see if the optional ammo and rearm_limit settings were supplied
 	node = CDR(node);
 	if (node >= 0) {
-		requested_ammo = eval_num(node); 
-		
+		requested_ammo = eval_num(node);
+
 		if (requested_ammo < 0) {
-			requested_ammo = 0; 
+			requested_ammo = 0;
 		}
 		node = CDR(node);
-		
+
 		// If nothing was supplied then set the rearm limit to a negative value so that it is ignored
-		if (node < 0) {
-			rearm_limit = -1;
-		}
-		else {
-			rearm_limit = eval_num(node); 
+		if (node >= 0) {
+			rearm_limit = eval_num(node);
 		}
 
-		// Set the ammo but do not send an ammo changed update packet as we'll do that later from here
+		// Set the ammo
 		if (primary) {
-			set_primary_ammo (sindex, requested_bank, requested_ammo, rearm_limit, false);
+			set_primary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
 		}
 		else {
-			set_secondary_ammo (sindex, requested_bank, requested_ammo, rearm_limit, false);
+			set_secondary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
 		}
 	}
 	else {
@@ -16264,15 +16374,43 @@ void sexp_set_weapon (int node, bool primary)
 		}
 	}
 
-	// Now pass this info on to clients if need be.
-	if (MULTIPLAYER_MASTER)
+	// Now pass this info on to clients.
+	multi_send_int(requested_ammo);
+	multi_send_int(rearm_limit);
+	multi_end_callback();
+}
+
+void multi_sexp_set_weapon()
+{
+	ship *shipp;
+	int sindex;
+	int requested_bank;
+	int windex;
+	int requested_ammo;
+	int rearm_limit;
+	bool primary;
+
+	multi_get_ship(sindex);
+	multi_get_bool(primary);
+	multi_get_int(requested_bank);
+	multi_get_int(windex);
+	multi_get_int(requested_ammo);
+	multi_get_int(rearm_limit);
+
+	shipp = &Ships[sindex];
+
+	if (primary) {
+		// Change the weapon
+		shipp->weapons.primary_bank_weapons[requested_bank] = windex;
+		// Set the ammo
+		set_primary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
+	}
+	else
 	{
-		if (primary) {
-			send_weapon_or_ammo_changed_packet(sindex, 0, requested_bank, requested_ammo, rearm_limit, windex);
-		}
-		else {
-			send_weapon_or_ammo_changed_packet(sindex, 1, requested_bank, requested_ammo, rearm_limit, windex);
-		}
+		// Change the weapon
+		shipp->weapons.secondary_bank_weapons[requested_bank] = windex;
+		// Set the ammo
+		set_secondary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
 	}
 }
 
@@ -18138,7 +18276,7 @@ void multi_sexp_set_turret_primary_ammo()
 }
 
 // DahBlount - Helper function for setting turret primary ammo
-void set_turret_primary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo, bool update)
+void set_turret_primary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo)
 {
 	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
 	// the banks or a non-existant bank
@@ -18287,7 +18425,7 @@ void multi_sexp_set_turret_secondary_ammo()
 }
 
 // DahBlount - Helper function for setting turret secondary ammo
-void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo, bool update)
+void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo)
 {
 	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
 	// the banks or a non-existant bank
@@ -25460,6 +25598,19 @@ void multi_sexp_eval()
 				multi_sexp_script_eval_multi();
 				break;
 
+			case OP_SET_PRIMARY_AMMO:
+				multi_sexp_set_primary_ammo();
+				break;
+
+			case OP_SET_SECONDARY_AMMO:
+				multi_sexp_set_secondary_ammo();
+				break;
+
+			case OP_SET_PRIMARY_WEAPON:
+			case OP_SET_SECONDARY_WEAPON:
+				multi_sexp_set_weapon();
+				break;
+
 			case OP_TURRET_SET_PRIMARY_AMMO:
 				multi_sexp_set_turret_primary_ammo();
 				break;
@@ -25468,6 +25619,18 @@ void multi_sexp_eval()
 				multi_sexp_set_turret_secondary_ammo();
 				break;
 
+			case OP_CHANGE_AI_CLASS:
+				multi_sexp_change_ai_class();
+				break;
+
+			case OP_CHANGE_IFF:
+				multi_sexp_change_iff();
+				break;
+
+			case OP_CHANGE_IFF_COLOR:
+				multi_sexp_change_iff_color();
+				break;
+				
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
