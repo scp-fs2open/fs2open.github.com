@@ -10713,13 +10713,16 @@ int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 	shipp = &Ships[obj->instance];
 	swp = &shipp->weapons;
 	
+	if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
+		shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
+	if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)
+		shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
 	if(Ship_info[shipp->ship_info_index].draw_primary_models[bank_to_stop]){
-		if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
-			shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
-		if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
 		shipp->primary_rotate_ang[bank_to_stop] += shipp->primary_rotate_rate[bank_to_stop]*flFrametime;
-		if(shipp->primary_rotate_ang[bank_to_stop] > PI2)shipp->primary_rotate_ang[bank_to_stop] -= PI2;
-		if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)shipp->primary_rotate_ang[bank_to_stop] += PI2;
+		if(shipp->primary_rotate_ang[bank_to_stop] > PI2)
+			shipp->primary_rotate_ang[bank_to_stop] -= PI2;
+		if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)
+			shipp->primary_rotate_ang[bank_to_stop] += PI2;
 	}
 	
 	if(shipp->was_firing_last_frame[bank_to_stop] == 0)
@@ -10924,15 +10927,20 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
 		}
 
-		if(sip->draw_primary_models[bank_to_fire]){
-			if(shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
+		if (winfo_p->weapon_submodel_rotate_vel > 0.0f) {
+			if (shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
 				shipp->primary_rotate_rate[bank_to_fire] += winfo_p->weapon_submodel_rotate_accell*flFrametime;
-			if(shipp->primary_rotate_rate[bank_to_fire] > winfo_p->weapon_submodel_rotate_vel)shipp->primary_rotate_rate[bank_to_fire] = winfo_p->weapon_submodel_rotate_vel;
-			shipp->primary_rotate_ang[bank_to_fire] += shipp->primary_rotate_rate[bank_to_fire]*flFrametime;
-			if(shipp->primary_rotate_ang[bank_to_fire] > PI2)shipp->primary_rotate_ang[bank_to_fire] -= PI2;
-			if(shipp->primary_rotate_ang[bank_to_fire] < 0.0f)shipp->primary_rotate_ang[bank_to_fire] += PI2;
-
-			if(shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)continue;
+			if (shipp->primary_rotate_rate[bank_to_fire] > winfo_p->weapon_submodel_rotate_vel)
+				shipp->primary_rotate_rate[bank_to_fire] = winfo_p->weapon_submodel_rotate_vel;
+			if (sip->draw_primary_models[bank_to_fire]) {
+				shipp->primary_rotate_ang[bank_to_fire] += shipp->primary_rotate_rate[bank_to_fire]*flFrametime;
+				if (shipp->primary_rotate_ang[bank_to_fire] > PI2)
+					shipp->primary_rotate_ang[bank_to_fire] -= PI2;
+				if (shipp->primary_rotate_ang[bank_to_fire] < 0.0f)
+					shipp->primary_rotate_ang[bank_to_fire] += PI2;
+			}
+			if (shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
+				continue;
 		}
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
 		if((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->tag_level == 3) && (shipp->flags & SF_TRIGGER_DOWN) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
