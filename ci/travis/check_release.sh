@@ -3,6 +3,7 @@
 RELEASE_BUILD=false
 NIGHTLY_BUILD=false
 BUILD_DEPLOYMENT=false
+VERSION_NAME=""
 
 if [[ "$TRAVIS_TAG" =~ ^release.* ]]; then
     echo "This is a release tag!";
@@ -13,6 +14,7 @@ if [[ "$TRAVIS_TAG" =~ ^nightly.* ]]; then
     echo "This is a nightly tag!";
     NIGHTLY_BUILD=true;
     BUILD_DEPLOYMENT=true;
+    VERSION_NAME="$TRAVIS_COMMIT"
 fi
 NIGHTLY_BUILD=true
 BUILD_DEPLOYMENT=true
@@ -37,3 +39,4 @@ fi
 export RELEASE_BUILD
 export NIGHTLY_BUILD
 export BUILD_DEPLOYMENT
+export VERSION_NAME
