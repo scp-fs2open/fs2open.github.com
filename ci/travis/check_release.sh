@@ -33,3 +33,7 @@ if [[ "$BUILD_DEPLOYMENT" == true ]]; then
         exit 0;
     fi
 fi
+
+export RELEASE_BUILD
+export NIGHTLY_BUILD
+export BUILD_DEPLOYMENT
