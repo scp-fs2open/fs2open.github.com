@@ -16,9 +16,6 @@ if [[ "$TRAVIS_TAG" =~ ^nightly.* ]]; then
     BUILD_DEPLOYMENT=true;
     VERSION_NAME="$TRAVIS_COMMIT"
 fi
-VERSION_NAME="$TRAVIS_COMMIT"
-NIGHTLY_BUILD=true
-BUILD_DEPLOYMENT=true
 
 if [[ "$BUILD_DEPLOYMENT" == true ]]; then
     if ([[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ "$CC" == "clang" ]]); then
