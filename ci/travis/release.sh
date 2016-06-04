@@ -2,6 +2,7 @@
 
 set -ex
 
+mkdir -p /tmp/builds
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     touch /tmp/builds/builds-Linux.tar.gz
@@ -27,7 +28,6 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 
     ls -al /tmp/release/bin
 
-    mkdir -p /tmp/builds
     (cd /tmp/release/bin && tar -cvzf /tmp/builds/builds-Linux.tar.gz *)
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     touch /tmp/builds/builds-MacOSX.tar.gz
@@ -59,6 +59,5 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
 
     ls -al /tmp/release
 
-    mkdir -p /tmp/builds
     (cd /tmp/release && tar -cvzf /tmp/builds/builds-MacOSX.tar.gz *)
 fi
