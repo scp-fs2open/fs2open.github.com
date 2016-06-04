@@ -32,7 +32,7 @@ deploy:
       subject: asarium
       repo: FSO
       package: nightly
-      version: $(APPVEYOR_REPO_COMMIT)
+      version: $(VersionName)
       publish: true
       override: true
       on:

@@ -25,7 +25,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 
     ls -al /tmp/release/bin
 
-    (cd /tmp/release/bin && tar -cvzf /tmp/builds/builds-Linux.tar.gz *)
+    (cd /tmp/release/bin && tar -cvzf /tmp/builds/$PACKAGE_NAME-builds-Linux.tar.gz *)
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then    
     cd projects/Xcode
 
@@ -53,5 +53,5 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
 
     ls -al /tmp/release
 
-    (cd /tmp/release && tar -cvzf /tmp/builds/builds-MacOSX.tar.gz *)
+    (cd /tmp/release && tar -cvzf /tmp/builds/$PACKAGE_NAME-builds-MacOSX.tar.gz *)
 fi

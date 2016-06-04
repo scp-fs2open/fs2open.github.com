@@ -4,17 +4,28 @@ RELEASE_BUILD=false
 NIGHTLY_BUILD=false
 BUILD_DEPLOYMENT=false
 VERSION_NAME=""
+PACKAGE_NAME=""
 
-if [[ "$TRAVIS_TAG" =~ ^release.* ]]; then
+RELEASE_PATTERN="^release_(.*)$"
+NIGHTLY_PATTERN="^nightly_(.*)$"
+
+if [[ "$TRAVIS_TAG" =~ $RELEASE_PATTERN ]]; then
     echo "This is a release tag!";
     RELEASE_BUILD=true;
-    BUILD_DEPLOYMENT=true;
+	PACKAGE_NAME="release_${BASH_REMATCH[1]}";
 fi
-if [[ "$TRAVIS_TAG" =~ ^nightly.* ]]; then
+if [[ "$TRAVIS_TAG" =~ $NIGHTLY_PATTERN ]]; then
     echo "This is a nightly tag!";
     NIGHTLY_BUILD=true;
+    VERSION_NAME="${BASH_REMATCH[1]}"
+	PACKAGE_NAME="nightly_${BASH_REMATCH[1]}";
+fi
+NIGHTLY_BUILD=true;
+VERSION_NAME="20160604_441ac5c"
+PACKAGE_NAME="nightly_20160604_441ac5c";
+
+if ([ "$RELEASE_BUILD" = true ] || [ "$NIGHTLY_BUILD" = true ]); then
     BUILD_DEPLOYMENT=true;
-    VERSION_NAME="$TRAVIS_COMMIT"
 fi
 
 if [[ "$BUILD_DEPLOYMENT" == true ]]; then
@@ -38,3 +49,4 @@ export RELEASE_BUILD
 export NIGHTLY_BUILD
 export BUILD_DEPLOYMENT
 export VERSION_NAME
+export PACKAGE_NAME

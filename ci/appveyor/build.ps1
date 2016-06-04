@@ -5,8 +5,8 @@ if ([System.Convert]::ToBoolean($env:DeployBuild)) {
         exit 0 # End the build
     }
     
-    "Test" > builds-Win32.zip
-    Push-AppveyorArtifact builds-Win32.zip
+    "Test" > "$($env:PackageName)-builds-Win32.zip"
+    Push-AppveyorArtifact "$($env:PackageName)-builds-Win32.zip"
     exit 0
 
     msbuild "$env:ProjectPath/Freespace2.sln" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="$($env:PlatformToolset)_xp" /verbosity:minimal
@@ -21,8 +21,8 @@ if ([System.Convert]::ToBoolean($env:DeployBuild)) {
         exit 1
     }
 
-    7z a builds-Win32.zip "$env:APPVEYOR_BUILD_FOLDER/$env:ProjectPath/Debug SSE2/*.exe" "$env:APPVEYOR_BUILD_FOLDER/$env:ProjectPath/Release SSE2/*.exe"
-    Push-AppveyorArtifact builds-Win32.zip
+    7z a "$($env:PackageName)-builds-Win32.zip" "$env:APPVEYOR_BUILD_FOLDER/$env:ProjectPath/Debug SSE2/*.exe" "$env:APPVEYOR_BUILD_FOLDER/$env:ProjectPath/Release SSE2/*.exe"
+    Push-AppveyorArtifact "$($env:PackageName)-builds-Win32.zip"
 } else {
     # Standard CI build
     msbuild "$env:ProjectPath/Freespace2.vcxproj" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="$env:PlatformToolset" /verbosity:minimal
