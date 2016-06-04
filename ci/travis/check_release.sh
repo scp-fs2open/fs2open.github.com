@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
 
-set -ex
-
 RELEASE_BUILD=false
 NIGHTLY_BUILD=false
 BUILD_DEPLOYMENT=false
