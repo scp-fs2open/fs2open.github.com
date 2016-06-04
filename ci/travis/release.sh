@@ -2,7 +2,11 @@
 
 set -ex
 
+
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+    touch /tmp/builds/builds-Linux.tar.gz
+    exit 0
+    
     # Due to a bug in gcc the array bounds check isn't working correctly
     # This can be removed when gcc is updated
     AUTOGEN_CONFIG="--enable-generic-architecture --prefix=/tmp/release"
@@ -26,6 +30,9 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     mkdir -p /tmp/builds
     (cd /tmp/release/bin && tar -cvzf /tmp/builds/builds-Linux.tar.gz *)
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+    touch /tmp/builds/builds-MacOSX.tar.gz
+    exit 0
+    
     cd projects/Xcode
 
     mkdir /tmp/release
