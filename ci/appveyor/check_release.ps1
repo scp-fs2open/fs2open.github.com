@@ -3,9 +3,9 @@ write "$env:APPVEYOR_REPO_TAG"
 write "$env:APPVEYOR_REPO_TAG_NAME"
 
 # Default values
-AppveyorBuildVariable 'ReleaseBuild' 'false'
-AppveyorBuildVariable 'NightlyBuild' 'false'
-AppveyorBuildVariable 'DeployBuild' 'false'
+Set-AppveyorBuildVariable 'ReleaseBuild' 'false'
+Set-AppveyorBuildVariable 'NightlyBuild' 'false'
+Set-AppveyorBuildVariable 'DeployBuild' 'false'
 
 if ([System.Convert]::ToBoolean($env:APPVEYOR_REPO_TAG) -And ("$env:APPVEYOR_REPO_TAG_NAME" -match "^release.*")) {
     # Tag matches
