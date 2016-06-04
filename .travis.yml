@@ -33,7 +33,7 @@ deploy:
           secure: "bBWEBF+r4p7kea+Lj/vHD0CCW4AsxqlLri8gT3HbsdPuKwdSNU4QLLFk9yAXmmBF2T/fe45Zk+WQrdQJjSydkpG06M7sFD22RKOYv3cLF0Bq0nEG4CpuXoGqo77oFGkA5hdU6D8W2nQTMhPuiqlvhgt3zeD/6fiyfdAztbtKNRs="
       skip_cleanup: true 
       file_glob: true
-      file: "/tmp/builds/*.tar.gz"
+      file: "/tmp/builds/*"
       on:
           condition: '"$RELEASE_BUILD" == true'
           tags: true

@@ -11,7 +11,7 @@
 
     "files": [
         {
-            "includePattern": "/tmp/builds/(.*\\.tar.gz)",
+            "includePattern": "/tmp/builds/(.*)",
             "uploadPattern": "$1"
         }
     ],
