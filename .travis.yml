@@ -45,7 +45,6 @@ deploy:
       dry-run: true
       on:
           condition: '"$NIGHTLY_BUILD" == true'
-          tags: true
 
 env:
     global:
