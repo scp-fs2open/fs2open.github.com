@@ -6,7 +6,7 @@
     },
 
     "version": {
-        "name": "${TRAVIS_TAG}",
+        "name": "${TRAVIS_COMMIT}",
     },
 
     "files": [
