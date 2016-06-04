@@ -25,7 +25,7 @@ deploy:
       on:
           ReleaseBuild: true        # deploy on release push only
 
-    - provider: bintray
+    - provider: BinTray
       username: asarium
       api_key:
           secure: 2lHma1ZreuB4CCE5hSdp+gqFjCMzUDj3tVJhP+D6EyF5wIVMLlwXFrISwnYu1kJi
