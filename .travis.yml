@@ -88,3 +88,5 @@ before_script:
     - "./ci/travis/before_script.sh"
 script:
     - if [ "$BUILD_DEPLOYMENT" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi
+before_deploy:
+    - "./ci/travis/before_deploy.sh"
