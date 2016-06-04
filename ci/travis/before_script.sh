@@ -2,7 +2,7 @@
 
 set -e
 
-if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+if ([ "$TRAVIS_OS_NAME" = "linux" ] && [ "$BUILD_DEPLOYMENT" = false ]); then
     # Due to a bug in gcc the array bounds check isn't working correctly
     # This can be removed when gcc is updated
     AUTOGEN_CONFIG="CXXFLAGS=-Wno-array-bounds --enable-fatal-warnings --enable-generic-architecture"
