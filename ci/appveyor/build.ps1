@@ -1,13 +1,13 @@
 
-write "$env:ReleaseBuild"
-write "$env:ReleaseConfig"
-
-if ([System.Convert]::ToBoolean($env:ReleaseBuild)) {
+if ([System.Convert]::ToBoolean($env:DeployBuild)) {
     # Release build
-    if (! ([System.Convert]::ToBoolean($env:ReleaseConfig))) {
-        Add-AppveyorMessage "This build will fail because we are doing a release build but this is not the right configuration."
-        exit 1 # Fail the build
+    if (! ([System.Convert]::ToBoolean($env:DeployConfig))) {
+        exit 0 # End the build
     }
+    
+    "Test" > builds-Win32.zip
+    Push-AppveyorArtifact builds-Win32.zip
+    exit 0
 
     msbuild "$env:ProjectPath/Freespace2.sln" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="$($env:PlatformToolset)_xp" /verbosity:minimal
     if (! ($?)) {

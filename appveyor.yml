@@ -5,15 +5,15 @@ environment:
   - VisualStudioVersion: 10.0
     PlatformToolset: v100
     ProjectPath: projects/MSVC_2010
-    ReleaseConfig: False
+    DeployConfig: False
   - VisualStudioVersion: 12.0
     PlatformToolset: v120
     ProjectPath: projects/MSVC_2013
-    ReleaseConfig: False
+    DeployConfig: False
   - VisualStudioVersion: 14.0
     PlatformToolset: v140
     ProjectPath: projects/MSVC_2015
-    ReleaseConfig: True
+    DeployConfig: True
 build_script:
     - ps: . ./ci/appveyor/check_release.ps1
     - ps: . ./ci/appveyor/build.ps1
@@ -23,4 +23,17 @@ deploy:
       auth_token:
           secure: RWe6hwCcgBdklaYvjB62kzhKn7yDBJdqoDDKYViShaEV9HkJ75HbawsBcGBimRUu
       on:
-          appveyor_repo_tag: true        # deploy on tag push only
+          ReleaseBuild: true        # deploy on release push only
+
+    - provider: bintray
+      username: asarium
+      api_key:
+          secure: 2lHma1ZreuB4CCE5hSdp+gqFjCMzUDj3tVJhP+D6EyF5wIVMLlwXFrISwnYu1kJi
+      subject: asarium
+      repo: FSO
+      package: nightly
+      version: $(TestVariable)
+      publish: true
+      override: true
+      on:
+          NightlyBuild: true        # deploy on nightly push only
