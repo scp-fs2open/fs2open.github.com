@@ -1,0 +1,16 @@
+{
+    "package": {
+        "name": "nightly",
+        "repo": "FSO",
+        "subject": "asarium",
+    },
+
+    "version": {
+        "name": "${TRAVIS_TAG}",
+    },
+
+    "files": [
+        { "includePattern": "/tmp/builds/(.*\\.tar.gz)", "uploadPattern": "$1" },
+    ],
+    "publish": true
+}
