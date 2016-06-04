@@ -40,7 +40,7 @@ deploy:
         
     - provider: bintray
       user: asarium
-      api_key:
+      key:
           secure: "JyJIsJFxCvNjmdyG9eDIvkzXFqsJQVzXKp5BeJcn5WSdMA2Vs7dCvarJXomdwe3F3RCrdmrFYCaimiCDD6LqImrcDLzxlevzGlNUv381iFna612SJj672d8iQCgtMibIJ3HzYmgZlsaJ9YcaOuccRyQIV/TNUcwgzbsW27CPEcM="
       dry-run: true
       on:
