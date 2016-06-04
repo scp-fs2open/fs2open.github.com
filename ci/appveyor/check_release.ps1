@@ -21,5 +21,3 @@ Set-AppveyorBuildVariable 'NightlyBuild' 'true'
 if ([System.Convert]::ToBoolean($env:ReleaseBuild) -Or [System.Convert]::ToBoolean($env:NightlyBuild)) {
     Set-AppveyorBuildVariable 'DeployBuild' 'true'
 }
-
-Set-AppveyorBuildVariable 'TestVariable' 'test'
