@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -ex
+
 RELEASE_BUILD=false
 NIGHTLY_BUILD=false
 BUILD_DEPLOYMENT=false
@@ -16,6 +18,7 @@ if [[ "$TRAVIS_TAG" =~ ^nightly.* ]]; then
     BUILD_DEPLOYMENT=true;
     VERSION_NAME="$TRAVIS_COMMIT"
 fi
+VERSION_NAME="$TRAVIS_COMMIT"
 NIGHTLY_BUILD=true
 BUILD_DEPLOYMENT=true
 

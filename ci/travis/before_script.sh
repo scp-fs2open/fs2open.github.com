@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-set -e
+set -ex
 
 if ([ "$TRAVIS_OS_NAME" = "linux" ] && [ "$BUILD_DEPLOYMENT" = false ]); then
     # Due to a bug in gcc the array bounds check isn't working correctly
