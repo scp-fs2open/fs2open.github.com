@@ -4,10 +4,6 @@ if ([System.Convert]::ToBoolean($env:DeployBuild)) {
     if (! ([System.Convert]::ToBoolean($env:DeployConfig))) {
         exit 0 # End the build
     }
-    
-    "Test" > "$($env:PackageName)-builds-Win32.zip"
-    Push-AppveyorArtifact "$($env:PackageName)-builds-Win32.zip"
-    exit 0
 
     msbuild "$env:ProjectPath/Freespace2.sln" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="$($env:PlatformToolset)_xp" /verbosity:minimal
     if (! ($?)) {

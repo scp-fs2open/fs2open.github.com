@@ -45,7 +45,7 @@ deploy:
       file: ci/bintray.json
       on:
           condition: '"$NIGHTLY_BUILD" == true'
-          all_branches: true
+          tags: true
 
 env:
     global:

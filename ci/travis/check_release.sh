@@ -20,9 +20,6 @@ if [[ "$TRAVIS_TAG" =~ $NIGHTLY_PATTERN ]]; then
     VERSION_NAME="${BASH_REMATCH[1]}"
 	PACKAGE_NAME="nightly_${BASH_REMATCH[1]}";
 fi
-NIGHTLY_BUILD=true;
-VERSION_NAME="20160604_441ac5c"
-PACKAGE_NAME="nightly_20160604_441ac5c";
 
 if ([ "$RELEASE_BUILD" = true ] || [ "$NIGHTLY_BUILD" = true ]); then
     BUILD_DEPLOYMENT=true;
