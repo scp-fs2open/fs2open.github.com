@@ -43,6 +43,7 @@ deploy:
       key:
           secure: "JyJIsJFxCvNjmdyG9eDIvkzXFqsJQVzXKp5BeJcn5WSdMA2Vs7dCvarJXomdwe3F3RCrdmrFYCaimiCDD6LqImrcDLzxlevzGlNUv381iFna612SJj672d8iQCgtMibIJ3HzYmgZlsaJ9YcaOuccRyQIV/TNUcwgzbsW27CPEcM="
       dry-run: true
+      file: ci/bintray.json
       on:
           condition: '"$NIGHTLY_BUILD" == true'
           all_branches: true
