@@ -1568,8 +1568,8 @@ bool SetCmdlineParams()
 	if ( ship_choice_3d_arg.found() )
 		Cmdline_ship_choice_3d = 1;
 
-    if ( weapon_choice_3d_arg.found() )
-        Cmdline_weapon_choice_3d = 1;
+	if ( weapon_choice_3d_arg.found() )
+		Cmdline_weapon_choice_3d = 1;
 
 	if ( show_mem_usage_arg.found() )
 		Cmdline_show_mem_usage = 1;
