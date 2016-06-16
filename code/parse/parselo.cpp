@@ -1245,8 +1245,8 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 	if (type == F_FILESPEC) {
 		// Make sure that the passed string looks like a good filename
 		if (strlen(read_str) == 0) {
-			// Empty file name is not valid!
-			error_display(1, "A file name was expected but no name was supplied!\n");
+			// Empty file name is probably not valid!
+			error_display(0, "A file name was expected but no name was supplied! This is probably a mistake.");
 		}
 	}
 
