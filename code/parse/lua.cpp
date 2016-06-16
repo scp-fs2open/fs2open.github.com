@@ -6220,6 +6220,33 @@ ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the mo
 		return ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(replaceModel, l_Shipclass, "string pof-name [bool unload = false]", "Replaces the model used for this shipclass, only tested in weapon selection screen!", "boolean", "True if the model was replaced successfully")
+{
+	int idx;
+	char* new_pof = nullptr;
+	bool unload = false;
+	if(!ade_get_args(L, "os|b", l_Shipclass.Get(&idx), &new_pof, &unload))
+		return ADE_RETURN_FALSE;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if (sip == nullptr || new_pof == nullptr)
+		return ADE_RETURN_FALSE;
+
+	// note; all models are unloaded at end of a mission
+	// so even if it's not unloaded there shouldn't be a long term resource leak
+	if (unload && sip->model_num >= 0) {
+		model_unload(sip->model_num);
+	}
+	strcpy_s(sip->pof_file, new_pof);
+	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+
+	if (sip->model_num > -1)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(getShipClassIndex, l_Shipclass, NULL, "Gets the index valus of the ship class", "number", "index value of the ship class")
 {
 	int idx;
