@@ -122,20 +122,6 @@ static int key_inkey_time(uint * time);
  */
 static int key_numlock_is_on();
 
-/**
- * @brief Turns off the numlock
- *
- * @note Unimplemented (TODO)
- */
-static void key_turn_off_numlock();
-
-/**
-* @brief Turns on the numlock
-*
-* @note Unimplemented (TODO)
-*/
-static void key_turn_on_numlock();
-
 
 static int add_one(int n) {
 	n++;
@@ -715,14 +701,6 @@ int key_to_ascii(int keycode) {
 		return shifted_ascii_table[keycode];
 	else
 		return ascii_table[keycode];
-}
-
-static void key_turn_off_numlock() {
-
-}
-
-static void key_turn_on_numlock() {
-
 }
 
 int key_up_count(int scancode) {
