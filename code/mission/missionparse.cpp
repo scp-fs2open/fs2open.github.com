@@ -1293,14 +1293,21 @@ void parse_fiction(mission *pm)
 			if (optional_string("$Formula:"))
 				stage.formula = get_sexp_main();
 
-			// now, store this stage
-			Fiction_viewer_stages.push_back(stage);
-
-			// see if this is the stage we want to display, then display it
-			if (!Fred_running && !fiction_viewer_loaded && is_sexp_true(stage.formula))
+			if (strlen(stage.story_filename) > 0)
 			{
-				fiction_viewer_load(Fiction_viewer_stages.size() - 1);
-				fiction_viewer_loaded = true;
+				// now, store this stage
+				Fiction_viewer_stages.push_back(stage);
+
+				// see if this is the stage we want to display, then display it
+				if (!Fred_running && !fiction_viewer_loaded && is_sexp_true(stage.formula))
+				{
+					fiction_viewer_load(Fiction_viewer_stages.size() - 1);
+					fiction_viewer_loaded = true;
+				}
+			}
+			else
+			{
+				error_display(0, "Fiction viewer story filename may not be empty!");
 			}
 		}
 	}
