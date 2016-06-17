@@ -3502,7 +3502,7 @@ void process_pong_packet(ubyte *data, header *hinfo)
 		p = &Net_players[lookup]; 
 
 		// evaluate the ping
-		multi_ping_eval_pong(&Net_players[lookup].s_info.ping);
+		multi_ping_eval_pong(&Net_players[lookup].s_info.ping, timer_get_fixed_seconds());
 			
 		// put in calls to any functions which may want to know about the ping times from 
 		// this guy
