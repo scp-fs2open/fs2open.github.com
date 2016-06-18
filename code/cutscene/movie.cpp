@@ -101,6 +101,7 @@ bool movie_play(char *name)
 	}
 
 	// clear the screen and hide the mouse cursor
+	io::mouse::CursorManager::get()->pushStatus();
 	io::mouse::CursorManager::get()->showCursor(false);
 	gr_reset_clip();
 	gr_set_color(255, 255, 255);
@@ -127,7 +128,7 @@ bool movie_play(char *name)
 		} else {
 			// uh-oh, movie is invalid... Abory, Retry, Fail?
 			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
-			io::mouse::CursorManager::get()->showCursor(true);	// show the mouse cursor!
+			io::mouse::CursorManager::get()->popStatus();
 			return false;
 		}
 	} else if (rc == MOVIE_MVE) {
@@ -144,13 +145,13 @@ bool movie_play(char *name)
 		} else {
 			// uh-oh, movie is invalid... Abory, Retry, Fail?
 			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
-			io::mouse::CursorManager::get()->showCursor(true);	// show the mouse cursor!
+			io::mouse::CursorManager::get()->popStatus();
 			return false;
 		}
 	}
 
 	// show the mouse cursor again
-	io::mouse::CursorManager::get()->showCursor(true);
+	io::mouse::CursorManager::get()->popStatus();
 
 	return true;
 }

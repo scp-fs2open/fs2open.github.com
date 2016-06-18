@@ -10,6 +10,8 @@
 #include "popup/popup.h"
 #include "popup/popupdead.h"
 
+#include <utility>
+
 namespace
 {
 	SDL_Cursor* bitmapToCursor(int bitmapNum)
@@ -19,7 +21,7 @@ namespace
 		int w;
 		int h;
 
-		bm_get_info(bitmapNum, &w, &h, NULL, NULL);
+		bm_get_info(bitmapNum, &w, &h, nullptr, nullptr);
 		Uint32 rmask, gmask, bmask, amask;
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -50,12 +52,70 @@ namespace
 
 		return cursorHandle;
 	}
+	
+	void changeMouseStatus(bool show, bool grab)
+	{
+		if (show)
+		{
+			// If shown don't grab the mouse
+			SDL_SetRelativeMouseMode(SDL_FALSE);
+			SDL_ShowCursor(1);
+		}
+		else
+		{
+			if (grab)
+			{
+				SDL_SetRelativeMouseMode(SDL_TRUE);
+			}
+			else
+			{
+				SDL_SetRelativeMouseMode(SDL_FALSE);
+			}
+
+			SDL_ShowCursor(0);
+		}
+	}
 }
 
 namespace io
 {
 	namespace mouse
 	{
+
+		Cursor::Cursor(Cursor&& other)
+		{
+			*this = std::move(other);
+		}
+		
+		Cursor& Cursor::operator=(Cursor&& other)
+		{
+			std::swap(this->mAnimationFrames, other.mAnimationFrames);
+			
+			this->mFps = other.mFps;
+			this->mBeginTimeStamp = other.mBeginTimeStamp;
+			this->mAnimationLength = other.mAnimationLength;
+			this->mLastFrame = other.mLastFrame;
+			
+			other.mFps = -1.0f;
+			other.mBeginTimeStamp= -1;
+			other.mAnimationLength = -1.f;
+			other.mLastFrame = static_cast<size_t>(-1);
+			
+			return *this;
+		}
+
+		Cursor::~Cursor()
+		{
+			SCP_vector<SDL_Cursor*>::iterator iter;
+
+			for (iter = mAnimationFrames.begin(); iter != mAnimationFrames.end(); ++iter)
+			{
+				SDL_FreeCursor(*iter);
+			}
+
+			mAnimationFrames.clear();
+		}
+			
 		void Cursor::addFrame(SDL_Cursor* frame)
 		{
 			mAnimationFrames.push_back(frame);
@@ -104,35 +164,15 @@ namespace io
 			}
 		}
 
-		void Cursor::releaseResources()
+		CursorManager* CursorManager::mSingleton = nullptr;
+
+		CursorManager::CursorManager() : mCurrentCursor(nullptr)
 		{
-			SCP_vector<SDL_Cursor*>::iterator iter;
-
-			for (iter = mAnimationFrames.begin(); iter != mAnimationFrames.end(); ++iter)
-			{
-				SDL_FreeCursor(*iter);
-			}
-
-			mAnimationFrames.clear();
-		}
-
-		CursorManager* CursorManager::mSingleton = NULL;
-
-		CursorManager::CursorManager() : mCurrentCursor(NULL), mCursorShown(true), mMouseGrabbed(false)
-		{
+			mStatusStack.push_back(std::make_pair(true, false));
 		}
 
 		CursorManager::~CursorManager()
 		{
-			SCP_vector<Cursor*>::iterator iter;
-
-			for (iter = mLoadedCursors.begin(); iter != mLoadedCursors.end(); ++iter)
-			{
-				(*iter)->releaseResources();
-				delete *iter;
-			}
-
-			mLoadedCursors.clear();
 		}
 
 		Cursor* CursorManager::loadCursor(const char* fileName, bool animated)
@@ -153,7 +193,7 @@ namespace io
 			if (handle < 0)
 			{
 				mprintf(("Failed to load cursor bitmap %s!", fileName));
-				return NULL;
+				return nullptr;
 			}
 
 			Cursor* cursor = this->loadFromBitmap(handle);
@@ -170,9 +210,9 @@ namespace io
 			int nframes;
 			int fps;
 
-			bm_get_info(bitmapHandle, NULL, NULL, NULL, &nframes, &fps);
+			bm_get_info(bitmapHandle, nullptr, nullptr, nullptr, &nframes, &fps);
 
-			Cursor* cursor = new Cursor();
+			std::unique_ptr<Cursor> cursor(new Cursor());
 			cursor->setFPS(i2fl(fps));
 
 			for (int i = 0; i < nframes; ++i)
@@ -180,16 +220,14 @@ namespace io
 				cursor->addFrame(bitmapToCursor(bitmapHandle + i));
 			}
 
-			mLoadedCursors.push_back(cursor);
+			mLoadedCursors.push_back(std::move(cursor));
 
-			return cursor;
+			return mLoadedCursors.back().get();
 		}
 
 		void CursorManager::setCurrentCursor(Cursor* cursor)
 		{
-			Assertion(cursor != NULL, "Invalid cursor pointer passed!");
-			Assertion(std::find(mLoadedCursors.begin(), mLoadedCursors.end(), cursor) != mLoadedCursors.end(),
-				"Cursor pointer is not in the loaded cursors vector!");
+			Assertion(cursor, "Invalid cursor pointer passed!");
 
 			mCurrentCursor = cursor;
 			mCurrentCursor->enable();
@@ -197,34 +235,36 @@ namespace io
 
 		void CursorManager::showCursor(bool show, bool grab)
 		{
-			if (show == mCursorShown && grab == mMouseGrabbed)
+			auto current = mStatusStack.back();
+			if (show == current.first && grab == current.second)
 			{
 				// Don't bother calling anithing if it's not going to change anything
 				return;
 			}
 
-			if (show)
-			{
-				// If shown don't grab the mouse
-				SDL_SetRelativeMouseMode(SDL_FALSE);
-				SDL_ShowCursor(1);
-			}
-			else
-			{
-				if (grab)
-				{
-					SDL_SetRelativeMouseMode(SDL_TRUE);
-				}
-				else
-				{
-					SDL_SetRelativeMouseMode(SDL_FALSE);
-				}
+			changeMouseStatus(show, grab);
 
-				SDL_ShowCursor(0);
-			}
-
-			mCursorShown = show;
-			mMouseGrabbed = grab;
+			mStatusStack.back() = std::make_pair(show, grab);
+		}
+			
+		void CursorManager::pushStatus()
+		{
+			// Copy the last status into the top
+			mStatusStack.push_back(mStatusStack.back());
+		}
+		
+		std::pair<bool, bool> CursorManager::popStatus()
+		{
+			Assertion(mStatusStack.size() > 1, "Can't pop the last status!");
+			
+			auto current = mStatusStack.back();
+			
+			mStatusStack.pop_back();
+			
+			auto newState = mStatusStack.back();
+			changeMouseStatus(newState.first, newState.second);
+			
+			return current;
 		}
 
 		void CursorManager::init()
@@ -239,34 +279,7 @@ namespace io
 		{
 			CursorManager* manager = get();
 
-			int game_state = gameseq_get_state();
-
-			switch (game_state) {
-			case GS_STATE_GAME_PAUSED:
-				// case GS_STATE_MULTI_PAUSED:
-				// Don't grab the mouse when we are pausing, helps with debugging
-				manager->showCursor(false);
-				break;
-			case GS_STATE_GAME_PLAY:
-			case GS_STATE_DEATH_DIED:
-			case GS_STATE_DEATH_BLEW_UP:
-				if (popup_active() || popupdead_is_active())
-				{
-					manager->showCursor(true);
-				}
-				else
-				{
-					// Always grab the mouse when in gameplay
-					manager->showCursor(false, true);
-				}
-				break;
-
-			default:
-				manager->showCursor(true);
-				break;
-			}	// end switch
-
-			if (manager->mCurrentCursor != NULL && manager->mCursorShown)
+			if (manager->mCurrentCursor != nullptr && manager->isCursorShown())
 			{
 				manager->mCurrentCursor->setCurrentFrame();
 			}

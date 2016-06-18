@@ -5649,6 +5649,7 @@ void game_leave_state( int old_state, int new_state )
 					gameseq_post_event( GS_EVENT_QUIT_GAME );
 				}
 			}
+			io::mouse::CursorManager::get()->showCursor(true);
 			break;
 
 		case GS_STATE_TECH_MENU:
@@ -6198,6 +6199,8 @@ void mouse_force_pos(int x, int y);
 			// clear multiplayer button info			i
 			extern button_info Multi_ship_status_bi;
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
+			
+			io::mouse::CursorManager::get()->showCursor(false, true);
 			break;
 
 		case GS_STATE_HUD_CONFIG:
