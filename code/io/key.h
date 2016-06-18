@@ -1,3 +1,5 @@
+#ifndef _KEY_H
+#define _KEY_H
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
@@ -9,55 +11,7 @@
 
 
 
-#ifndef _KEY_H
-#define _KEY_H
-
-/*
-#ifdef __cplusplus
-extern "C" {
-#endif
-*/
-
 #include "globalincs/pstypes.h"
-
-#define NUM_KEYS 256
-
-extern int shifted_ascii_table[];
-extern int ascii_table[];
-
-extern ubyte keyd_pressed[NUM_KEYS];
-
-// O/S level hooks...
-void key_init();
-void key_level_init();
-void key_lost_focus();
-void key_got_focus();
-void key_mark( uint code, int state, uint latency );
-int key_getch();
-int key_peekkey();
-void key_flush();
-
-// Routines/data you can access:
-//NOT USED! extern fix key_down_time( uint code );
-float key_down_timef( uint code );
-
-int key_to_ascii(int keycode );
-int key_inkey();
-
-// global flag that will enable/disable the backspace key from stopping execution
-//extern int Backspace_debug;
-
-uint key_get_shift_status();
-int key_down_count(int scancode);
-int key_up_count(int scancode);
-int key_checkch();
-int key_check(int key);
-
-//	Put "key" back in the input buffer.
-void key_outkey(int key);
-
-extern int Cheats_enabled;
-extern int Key_normal_game;
 
 #define KEY_SHIFTED     0x1000
 #define KEY_ALTED       0x2000
@@ -65,8 +19,6 @@ extern int Key_normal_game;
 #define KEY_DEBUGGED    0x8000
 #define KEY_DEBUGGED1   0x0800	// Cheat bit in release version of game.
 #define KEY_MASK        0x00FF
-
-#define KEY_DEBUG_KEY   0x29	// KEY_LAPOSTRO (shifted = tilde, near upper-left of keyboard)
 
 #define KEY_0           0x0B
 #define KEY_1           0x02
@@ -119,7 +71,7 @@ extern int Key_normal_game;
 #define KEY_RBRACKET    0x1B
 
 #define KEY_RAPOSTRO    0x28
-#define KEY_LAPOSTRO    0x29
+#define KEY_LAPOSTRO    0x29	// (shifted = tilde, near upper-left of keyboard)
 
 #define KEY_ESC         0x01
 #define KEY_ENTER       0x1C
@@ -173,7 +125,7 @@ extern int Key_normal_game;
 #define KEY_INSERT      0xD2
 #define KEY_HOME        0xC7
 #define KEY_PAGEUP      0xC9
-#define KEY_DELETE      0xd3
+#define KEY_DELETE      0xD3
 #define KEY_END         0xCF
 #define KEY_PAGEDOWN    0xD1
 #define KEY_UP          0xC8
@@ -183,12 +135,140 @@ extern int Key_normal_game;
 
 #define KEY_PRINT_SCRN  0xB7
 #define KEY_PAUSE       0x45	//DOS: 0x61
-#define KEY_BREAK       0xc6
+#define KEY_BREAK       0xC6
 
-/*
-#ifdef __cplusplus
-}
-#endif
+#define KEY_DEBUG_KEY   KEY_LAPOSTRO
+
+#define NUM_KEYS 256
+
+
+extern int ascii_table[];           //!< Table of printable ascii characters (lowercase)
+extern int shifted_ascii_table[];   //!< Table of printable ascii characters (uppercase)
+
+extern ubyte keyd_pressed[NUM_KEYS];    //!< State of all keys. 1 = closed, 0 = open
+
+extern int Cheats_enabled;      //!< Nonzero if cheats are eneabled
+extern int Key_normal_game;     //!< If this is a normal game, then this is (Game_mode & GM_NORMAL), otherwise is 0
+
+
+// ----------------------------------------------------------------------------
+// O/S level hooks...
+// ----------------------------------------------------------------------------
+/**
+ * @brief Initialize the keyboard
+ */
+void key_init();
+
+/**
+ * @brief Pre-mission key init
+ */
+void key_level_init();
+
+/**
+ * @brief (FRED) Keyboard handler when FRED losses focus
+ */
+void key_lost_focus();
+
+/**
+ * @brief (FRED) Keyboard handler when FRED regains focus
+ */
+void key_got_focus();
+
+/**
+ * @brief Mark a key as down or up.
+ *
+ * @param[in] code    The key to mark.
+ * @param[in] state   State of the key. 1 = down, 0 = up.
+ * @param[in] latency Time, in ms, between when key was actually pressed and now
+ */
+void key_mark( uint code, int state, uint latency );
+
+/**
+ * @brief Get a character, waiting for input.
+ *
+ * @details Yes, this function will wait until eternity or until a key is pressed. Whichever is sooner.
+ */
+int key_getch();
+
+/**
+ * @brief Returns scancode of last key pressed, if any (returns 0 if no key pressed)
+ * but does not update keyhead pointer.
+ */
+int key_peekkey();
+
+/**
+ * @brief Flush the keyboard buffer and clear the keyboard array
+ */
+void key_flush();
+
+
+// ----------------------------------------------------------------------------
+// Routines/data you can access:
+// ----------------------------------------------------------------------------
+/**
+ * @brief Returns amount of time key (specified by "code") has been down since last call.
+ *
+ * @param[in] code The key to check
+ */
+float key_down_timef( uint code );
+
+/**
+ * @brief Converts a BIOS scancode to ASCII.
+ *
+ * @param[in] keycode Key to convert
+ *
+ * @details If scancode >= 127, returns 255, meaning there is no corresponding ASCII code.
+ *  Uses ascii_table and shifted_ascii_table to translate scancode to ASCII.
+ */
+int key_to_ascii(int keycode );
+
+/**
+ * @brief Gets a key from the input queue.
+ *
+ * @returns A keycode of the first key in the queue
+ */
+int key_inkey();
+
+/**
+ * @brief Gets the status of shift keys (Shift, Alt, Ctrl, and the Debug keys)
+ *
+ * @returns bitmask of any active shift keys
+ */
+uint key_get_shift_status();
+
+/**
+ * @brief  Returns number of times key has went from up to down since last call.
+ */
+int key_down_count(int scancode);
+
+/**
+ * @brief Returns number of times key has went from down to up since last call.
+ */
+int key_up_count(int scancode);
+
+/**
+ * @brief Returns 1 if character waiting, 0 otherwise
+ */
+int key_checkch();
+
+/**
+ * @brief Checks if the key has been processed
+ */
+int key_check(int key);
+
+/**
+ * @brief Unget a key.  Puts it back in the input queue.
+ */
+void key_outkey(int key);
+
+/**
+* @brief Checks if the numlock is on
+*
+* @returns nonzero if the numlock is on, or
+* @returns 0 otherwise
+*
+* @note [z64555] Commented out until we have a use for it
 */
+//int key_numlock_is_on();
 
 #endif

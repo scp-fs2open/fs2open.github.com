@@ -6,17 +6,19 @@
  * the source.
  */
 
-#include <algorithm>
+#include "io/joy.h"
 
 #include "globalincs/pstypes.h"
-#include "io/joy.h"
-#include "math/fix.h"
+#include "io/joy_ff.h"
 #include "io/key.h"
 #include "io/timer.h"
-#include "osapi/osregistry.h"
-#include "io/joy_ff.h"
+#include "math/fix.h"
 #include "osapi/osapi.h"
+#include "osapi/osregistry.h"
+
 #include "SDL.h"
+
+#include <algorithm>
 
 // extern variables
 Joy_info joystick;
@@ -36,6 +38,7 @@ namespace
 	int Joy_last_x_reading = 0;
 	int Joy_last_y_reading = 0;
 
+
 	typedef struct joy_button_info {
 		int     actual_state;           // Set if the button is physically down
 		int     state;                          // Set when the button goes from up to down, cleared on down to up.  Different than actual_state after a flush.
@@ -45,12 +48,46 @@ namespace
 		uint    last_down_check;        // timestamp in milliseconds of last 
 	} joy_button_info;
 
+
 	SDL_Joystick *sdljoy;
 	SDL_JoystickID currentJoystickID = -1;
 
 	joy_button_info joy_buttons[JOY_TOTAL_BUTTONS];
 	
 	int joy_axes[JOY_NUM_AXES];
+
+
+	/**
+	 * @brief Returns the JoystickGUID for the given SDL_Joystick
+	 *
+	 * @param[in] stick The SDL_Joystick to get a GUID for
+	 */
+	SCP_string getJoystickGUID(SDL_Joystick* stick);
+	
+	/**
+	 * @brief Returns the CurrentJoystickGUID from the Registry
+	 */
+	SCP_string getCurrentJoystickGUID();
+	
+	/**
+	 * @brief Prints the names of the available joystick axes (up to max) to an outwnd
+	 */
+	void joy_get_caps(int max);
+	
+	/**
+	 * @brief Sets the given SDL_Joystick as the current Joystick used by the engine
+	 */
+	void setJoystickDevice(SDL_Joystick* stick);
+
+
+	SCP_string getCurrentJoystickGUID() {
+		SCP_string guidStr(os_config_read_string(nullptr, "CurrentJoystickGUID", ""));
+
+		// Make sure we get upper case strings
+		transform(begin(guidStr), end(guidStr), begin(guidStr), toupper);
+
+		return guidStr;
+	}
 
 	SCP_string getJoystickGUID(SDL_Joystick* stick)
 	{
@@ -69,16 +106,6 @@ namespace
 		transform(begin(joystickGUID), end(joystickGUID), begin(joystickGUID), toupper);
 
 		return joystickGUID;
-	}
-
-	SCP_string getCurrentJoystickGUID()
-	{
-		SCP_string guidStr(os_config_read_string(nullptr, "CurrentJoystickGUID", ""));
-
-		// Make sure we get upper case strings
-		transform(begin(guidStr), end(guidStr), begin(guidStr), toupper);
-
-		return guidStr;
 	}
 
 	void joy_get_caps(int max)
@@ -147,6 +174,7 @@ namespace
 	}
 }
 
+
 void joy_close()
 {
 	if (!Joy_inited)
@@ -160,6 +188,30 @@ void joy_close()
 	setJoystickDevice(nullptr);
 	
 	SDL_QuitSubSystem (SDL_INIT_JOYSTICK);
+}
+
+void joy_device_changed(int state, int device) {
+	if (state == SDL_JOYDEVICEADDED) {
+		if (sdljoy != nullptr) {
+			// We already have a valid joystick device, ignore any further events
+			return;
+		}
+
+		auto added = SDL_JoystickOpen(device);
+		auto guid = getJoystickGUID(added);
+
+		if (guid == getCurrentJoystickGUID()) {
+			// found our wanted stick!
+			setJoystickDevice(added);
+		} else {
+			SDL_JoystickClose(added);
+		}
+	} else if (state == SDL_JOYDEVICEREMOVED) {
+		if (device == currentJoystickID) {
+			// We just lost our joystick, reset the data
+			setJoystickDevice(nullptr);
+		}
+	}
 }
 
 int joy_down(int btn)
@@ -221,6 +273,22 @@ float joy_down_time(int btn)
 	return rval;
 }
 
+void joy_event(SDL_JoystickID id, uint8_t axis_id, int16_t value) {
+	Assertion((id >= 0), "Invalid joystick id passed during SDL_JOYAXISMOTION event.\n");
+
+	// z64: This'll later be updated to handle multiple controllers. For now, just bail if it isn't our current controller
+	if (id != currentJoystickID) {
+		return;
+	}
+
+	if (axis_id >= JOY_NUM_AXES) {
+		// whoops, can't support this axis
+		return;
+	}
+
+	joy_axes[axis_id] = value + JOY_AXIS_CENTER;
+}
+
 void joy_flush()
 {
 	int                     i;
@@ -244,39 +312,41 @@ void joy_flush()
 	}
 }
 
-int joy_get_unscaled_reading(int raw, int axn)
-{
-	int rng;
-
-	// Make sure it's calibrated properly.
-	if (joystick.axis_center[axn] - joystick.axis_min[axn] < 5)
-		return 0;
-
-	if (joystick.axis_max[axn] - joystick.axis_center[axn] < 5)
-		return 0;
-
-	rng = joystick.axis_max[axn] - joystick.axis_min[axn];
-	raw -= joystick.axis_min[axn];  // adjust for linear range starting at 0
-	
-	// cap at limits
-	if (raw < 0)
-		raw = 0;
-	if (raw > rng)
-		raw = rng;
-
-	return (int) ((uint) raw * (uint) F1_0 / (uint) rng);  // convert to 0 - F1_0 range.
+SDL_Joystick* joy_get_device() {
+	return sdljoy;
 }
 
-// --------------------------------------------------------------
-//	joy_get_scaled_reading()
-//
-//	input:	raw	=>	the raw value for an axis position
-//				axn	=>	axis number, numbered starting at 0
-//
-// return:	joy_get_scaled_reading will return a value that represents
-//				the joystick pos from -1 to +1 for the specified axis number 'axn', and
-//				the raw value 'raw'
-//
+int joy_get_pos(int *x, int *y, int *z, int *rx) {
+	int axis[JOY_NUM_AXES];
+
+	if (x) *x = 0;
+	if (y) *y = 0;
+	if (z) *z = 0;
+	if (rx) *rx = 0;
+
+	if (joy_num_sticks < 1) return 0;
+
+	joystick_read_raw_axis(6, axis);
+
+	//	joy_get_scaled_reading will return a value represents the joystick pos from -1 to +1
+	if (x && joystick.axis_valid[0])
+		*x = joy_get_scaled_reading(axis[0], 0);
+	if (y && joystick.axis_valid[1])
+		*y = joy_get_scaled_reading(axis[1], 1);
+	if (z && joystick.axis_valid[2])
+		*z = joy_get_unscaled_reading(axis[2], 2);
+	if (rx && joystick.axis_valid[3])
+		*rx = joy_get_scaled_reading(axis[3], 3);
+
+	if (x)
+		Joy_last_x_reading = *x;
+
+	if (y)
+		Joy_last_y_reading = *y;
+
+	return 1;
+}
+
 int joy_get_scaled_reading(int raw, int axn)
 {
 	int x, d, dead_zone, rng;
@@ -329,45 +399,143 @@ int joy_get_scaled_reading(int raw, int axn)
 	return x;
 }
 
-// --------------------------------------------------------------
-//	joy_get_pos()
-//
-//	input:	x		=>		OUTPUT PARAMETER: x-axis position of stick (-1 to 1)
-//				y		=>		OUTPUT PARAMETER: y-axis position of stick (-1 to 1)
-//				z		=>		OUTPUT PARAMETER: z-axis (throttle) position of stick (-1 to 1)
-//				r		=>		OUTPUT PARAMETER: rudder position of stick (-1 to 1)
-//
-//	return:	success	=> 1
-//				failure	=> 0
-//
-int joy_get_pos(int *x, int *y, int *z, int *rx)
-{
-	int axis[JOY_NUM_AXES];
+int joy_get_unscaled_reading(int raw, int axn) {
+	int rng;
 
-	if (x) *x = 0;
-	if (y) *y = 0;
-	if (z) *z = 0;
-	if (rx) *rx = 0;
+	// Make sure it's calibrated properly.
+	if (joystick.axis_center[axn] - joystick.axis_min[axn] < 5)
+		return 0;
 
-	if (joy_num_sticks < 1) return 0;
+	if (joystick.axis_max[axn] - joystick.axis_center[axn] < 5)
+		return 0;
 
-	joystick_read_raw_axis( 6, axis );
+	rng = joystick.axis_max[axn] - joystick.axis_min[axn];
+	raw -= joystick.axis_min[axn];  // adjust for linear range starting at 0
 
-	//	joy_get_scaled_reading will return a value represents the joystick pos from -1 to +1
-	if (x && joystick.axis_valid[0])
-		*x = joy_get_scaled_reading(axis[0], 0);
-	if (y && joystick.axis_valid[1]) 
-		*y = joy_get_scaled_reading(axis[1], 1);
-	if (z && joystick.axis_valid[2])
-		*z = joy_get_unscaled_reading(axis[2], 2);
-	if (rx && joystick.axis_valid[3])
-		*rx = joy_get_scaled_reading(axis[3], 3);
+	// cap at limits
+	if (raw < 0)
+		raw = 0;
+	if (raw > rng)
+		raw = rng;
 
-	if (x)
-		Joy_last_x_reading = *x;
+	return (int)((uint)raw * (uint)F1_0 / (uint)rng);  // convert to 0 - F1_0 range.
+}
 
-	if (y)
-		Joy_last_y_reading = *y;
+int joy_init() {
+	int n;
+
+	if (Joy_inited) {
+		return 0;
+	}
+
+	mprintf(("Initializing Joystick...\n"));
+
+	if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0) {
+		mprintf(("  Could not initialize joystick\n"));
+		return 0;
+	}
+
+	// enable event processing of the joystick
+	if ((SDL_JoystickEventState(SDL_ENABLE)) != SDL_ENABLE) {
+		mprintf(("  ERROR: Unable to initialize joystick event processing!\n"));
+		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+		return 0;
+	}
+
+	n = SDL_NumJoysticks();
+
+	if (n < 1) {
+		mprintf(("  No joysticks found\n"));
+		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+		return 0;
+	}
+
+	joy_get_caps(n);
+
+	auto configGUID = getCurrentJoystickGUID();
+	SDL_Joystick* foundStick = nullptr;
+
+	if (!configGUID.empty()) {
+		for (int i = 0; i < n; ++i) {
+			auto currentJoystick = SDL_JoystickOpen(i);
+
+			if (currentJoystick != nullptr) {
+				auto joystickGUID = getJoystickGUID(currentJoystick);
+
+				if (joystickGUID == configGUID) {
+					foundStick = currentJoystick;
+					break;
+				}
+			}
+
+			// If we are here the joystick didn't match
+			SDL_JoystickClose(currentJoystick);
+		}
+
+		if (foundStick == nullptr) {
+			mprintf(("  Couldn't find requested joystick GUID %s!\n", configGUID.c_str()));
+			SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+			return 0;
+		}
+	} else {
+		// Old joystick configuration, this will likely not match the list of joysticks
+		// in the launcher but it's better than nothing...
+
+		auto joystickID = os_config_read_uint(NULL, "CurrentJoystick", 0);
+
+		foundStick = SDL_JoystickOpen(joystickID);
+
+		if (foundStick == NULL) {
+			mprintf(("  Unable to init joystick %d\n", joystickID));
+			SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+			return 0;
+		}
+	}
+
+	joy_flush();
+
+	joy_num_sticks = n;
+
+	setJoystickDevice(foundStick);
+
+	// we poll for axis type motion so be sure to ignore that during normal event state polling
+	SDL_EventState(SDL_JOYAXISMOTION, SDL_IGNORE);
+	SDL_EventState(SDL_JOYBALLMOTION, SDL_IGNORE);
+
+	// we do want to make sure that hat/button presses go through event polling though
+	// (should be on by default already, just here as a reminder)
+	SDL_EventState(SDL_JOYBUTTONDOWN, SDL_ENABLE);
+	SDL_EventState(SDL_JOYBUTTONUP, SDL_ENABLE);
+	SDL_EventState(SDL_JOYHATMOTION, SDL_ENABLE);
+
+	Joy_inited = 1;
+
+	joy_ff_init();
+
+	mprintf(("... Joystick successfully initialized!\n"));
+
+	return joy_num_sticks;
+}
+
+int joystick_read_raw_axis(int num_axes, int *axis) {
+	int i;
+
+	for (i = 0; i < num_axes; i++) {
+		axis[i] = JOY_AXIS_CENTER;
+	}
+
+	if (!Joy_inited || sdljoy == nullptr) {
+		// no stick available, bail
+		return 0;
+	}
+
+	Assert(num_axes <= JOY_NUM_AXES);
+
+	for (i = 0; i < num_axes; i++) {
+		if (i < joy_num_axes) {
+			axis[i] = joy_axes[i];
+		}
+	}
 
 	return 1;
 }
@@ -399,6 +567,10 @@ void joy_set_button_state(int button, int state)
 		if (joy_buttons[button].state)
 			joy_buttons[button].down_time += JOY_POLLRATE;
 	}
+}
+
+void joy_set_cen() {
+	joystick_read_raw_axis(2, joystick.axis_center);
 }
 
 void joy_set_hat_state(int position)
@@ -451,192 +623,4 @@ void joy_set_hat_state(int position)
 			}
 		}
 	} 
-}
-
-void joy_device_changed(int state, int device)
-{
-	if (state == SDL_JOYDEVICEADDED)
-	{
-		if (sdljoy != nullptr)
-		{
-			// We already have a valid joystick device, ignore any further events
-			return;
-		}
-
-		auto added = SDL_JoystickOpen(device);
-		auto guid = getJoystickGUID(added);
-
-		if (guid == getCurrentJoystickGUID())
-		{
-			// found our wanted stick!
-			setJoystickDevice(added);
-		}
-		else
-		{
-			SDL_JoystickClose(added);
-		}
-	}
-	else if (state == SDL_JOYDEVICEREMOVED)
-	{
-		if (device == currentJoystickID)
-		{
-			// We just lost our joystick, reset the data
-			setJoystickDevice(nullptr);
-		}
-	}
-}
-
-void joy_event(SDL_JoystickID id, uint8_t axis_id, int16_t value)
-{
-	Assertion((id >= 0), "Invalid joystick id passed during SDL_JOYAXISMOTION event.\n");
-
-	// z64: This'll later be updated to handle multiple controllers. For now, just bail if it isn't our current controller
-	if (id != currentJoystickID) {
-		return;
-	}
-
-	if (axis_id >= JOY_NUM_AXES) {
-		// whoops, can't support this axis
-		return;
-	}
-
-	joy_axes[axis_id] = value + JOY_AXIS_CENTER;
-}
-
-SDL_Joystick* joy_get_device()
-{
-	return sdljoy;
-}
-
-int joy_init()
-{
-	int n;
-
-	if (Joy_inited) {
-		return 0;
-	}
-
-	mprintf(("Initializing Joystick...\n"));
-
-	if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0) {
-		mprintf(("  Could not initialize joystick\n"));
-		return 0;
-	}
-
-	// enable event processing of the joystick
-	if ( (SDL_JoystickEventState(SDL_ENABLE)) != SDL_ENABLE ) {
-		mprintf(("  ERROR: Unable to initialize joystick event processing!\n"));
-		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-		return 0;
-	}
-
-	n = SDL_NumJoysticks();
-
-	if (n < 1) {
-		mprintf(("  No joysticks found\n"));
-		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-		return 0;
-	}
-
-	joy_get_caps(n);
-
-	auto configGUID = getCurrentJoystickGUID();
-	SDL_Joystick* foundStick = nullptr;
-
-	if (!configGUID.empty())
-	{
-		for (int i = 0; i < n; ++i)
-		{
-			auto currentJoystick = SDL_JoystickOpen(i);
-
-			if (currentJoystick != nullptr)
-			{
-				auto joystickGUID = getJoystickGUID(currentJoystick);
-
-				if (joystickGUID == configGUID)
-				{
-					foundStick = currentJoystick;
-					break;
-				}
-			}
-
-			// If we are here the joystick didn't match
-			SDL_JoystickClose(currentJoystick);
-		}
-
-		if (foundStick == nullptr)
-		{
-			mprintf(("  Couldn't find requested joystick GUID %s!\n", configGUID.c_str()));
-			SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-			return 0;
-		}
-	}
-	else
-	{
-		// Old joystick configuration, this will likely not match the list of joysticks
-		// in the launcher but it's better than nothing...
-
-		auto joystickID = os_config_read_uint(NULL, "CurrentJoystick", 0);
-
-		foundStick = SDL_JoystickOpen(joystickID);
-
-		if (foundStick == NULL) {
-			mprintf(("  Unable to init joystick %d\n", joystickID));
-			SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-			return 0;
-		}
-	}
-
-	joy_flush();
-
-	joy_num_sticks = n;
-
-	setJoystickDevice(foundStick);
-
-	// we poll for axis type motion so be sure to ignore that during normal event state polling
-	SDL_EventState( SDL_JOYAXISMOTION, SDL_IGNORE );
-	SDL_EventState( SDL_JOYBALLMOTION, SDL_IGNORE );
-
-	// we do want to make sure that hat/button presses go through event polling though
-	// (should be on by default already, just here as a reminder)
-	SDL_EventState( SDL_JOYBUTTONDOWN, SDL_ENABLE );
-	SDL_EventState( SDL_JOYBUTTONUP, SDL_ENABLE );
-	SDL_EventState( SDL_JOYHATMOTION, SDL_ENABLE );
-
-	Joy_inited = 1;
-
-	joy_ff_init();
-
-	mprintf(("... Joystick successfully initialized!\n"));
-
-	return joy_num_sticks;
-}
-
-void joy_set_cen()
-{
-	joystick_read_raw_axis( 2, joystick.axis_center );
-}
-
-int joystick_read_raw_axis(int num_axes, int *axis)
-{
-	int i;
-	
-	for (i = 0; i < num_axes; i++) {
-		axis[i] = JOY_AXIS_CENTER;
-	}
-
-	if (!Joy_inited || sdljoy == nullptr) {
-		// no stick available, bail
-		return 0;
-	}
-
-	Assert( num_axes <= JOY_NUM_AXES );
-
-	for (i = 0; i < num_axes; i++) {
-		if (i < joy_num_axes) {
-			axis[i] = joy_axes[i];
-		}
-	}
-	
-	return 1;
 }
