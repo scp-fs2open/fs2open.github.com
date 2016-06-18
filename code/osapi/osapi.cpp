@@ -190,6 +190,8 @@ static int			Os_inited = 0;
 
 static SDL_mutex* Os_lock;
 
+static SCP_vector<SDL_Event> buffered_events;
+
 int Os_debugger_running = 0;
 
 // ----------------------------------------------------------------------------------------------------
@@ -379,119 +381,141 @@ extern SCP_map<int, int> SDLtoFS2;
 extern void joy_set_button_state(int button, int state);
 extern void joy_set_hat_state(int position);
 
-void os_poll()
+void os_ignore_events()
 {
 	SDL_Event event;
 
 	while (SDL_PollEvent(&event)) {
-		switch (event.type) {
-		case SDL_WINDOWEVENT: {
-			if (event.window.windowID == SDL_GetWindowID(os_get_window())) {
-				switch (event.window.event) {
-				case SDL_WINDOWEVENT_MINIMIZED:
-					case SDL_WINDOWEVENT_FOCUS_LOST:
-					{
-						if (fAppActive) {
-							if (!Cmdline_no_unfocus_pause) {
-								game_pause();
-							}
-							
-							fAppActive = false;
-						}
-						break;
+		// Add event to buffer
+		buffered_events.push_back(event);
+	}
+}
+
+static void handle_sdl_event(SDL_Event& event)
+{
+	switch (event.type) {
+	case SDL_WINDOWEVENT: {
+		if (event.window.windowID == SDL_GetWindowID(os_get_window())) {
+			switch (event.window.event) {
+			case SDL_WINDOWEVENT_MINIMIZED:
+			case SDL_WINDOWEVENT_FOCUS_LOST:
+			{
+				if (fAppActive) {
+					if (!Cmdline_no_unfocus_pause) {
+						game_pause();
 					}
-					case SDL_WINDOWEVENT_MAXIMIZED:
-					case SDL_WINDOWEVENT_RESTORED:
-					case SDL_WINDOWEVENT_FOCUS_GAINED:
-					{
-						if (!fAppActive) {
-							if (!Cmdline_no_unfocus_pause) {
-								game_unpause();
-							}
-							
-							fAppActive = true;
-						}
-						break;
-					}
-					case SDL_WINDOWEVENT_CLOSE:
-						gameseq_post_event(GS_EVENT_QUIT_GAME);
-						break;
+
+					fAppActive = false;
 				}
+				break;
 			}
-			
-			gr_activate(fAppActive);
-			
-			break;
+			case SDL_WINDOWEVENT_MAXIMIZED:
+			case SDL_WINDOWEVENT_RESTORED:
+			case SDL_WINDOWEVENT_FOCUS_GAINED:
+			{
+				if (!fAppActive) {
+					if (!Cmdline_no_unfocus_pause) {
+						game_unpause();
+					}
+
+					fAppActive = true;
+				}
+				break;
+			}
+			case SDL_WINDOWEVENT_CLOSE:
+				gameseq_post_event(GS_EVENT_QUIT_GAME);
+				break;
+			}
 		}
 
-		case SDL_SYSWMEVENT:
+		gr_activate(fAppActive);
+
+		break;
+	}
+
+	case SDL_SYSWMEVENT:
 #ifdef WIN32
 #ifdef FS2_VOICER
-			switch(event.syswm.msg->msg.win.msg)
+		switch (event.syswm.msg->msg.win.msg)
+		{
+		case WM_RECOEVENT:
+			if (Game_mode & GM_IN_MISSION && Cmdline_voice_recognition)
 			{
-			case WM_RECOEVENT:
-				if ( Game_mode & GM_IN_MISSION && Cmdline_voice_recognition)
-				{
-					VOICEREC_process_event( event.syswm.msg->msg.win.hwnd );
-				}
-				break;
-			default:
-				break;
-			}
-#endif // FS2_VOICER
-#endif // WIN32
-			break;
-
-		case SDL_KEYDOWN:
-			if (SDLtoFS2[event.key.keysym.scancode]) {
-				key_mark(SDLtoFS2[event.key.keysym.scancode], 1, 0);
+				VOICEREC_process_event(event.syswm.msg->msg.win.hwnd);
 			}
 			break;
-
-		case SDL_KEYUP:
-			if (SDLtoFS2[event.key.keysym.scancode]) {
-				key_mark(SDLtoFS2[event.key.keysym.scancode], 0, 0);
-			}
-			break;
-
-		case SDL_MOUSEBUTTONDOWN:
-		case SDL_MOUSEBUTTONUP:
-			if (event.button.button == SDL_BUTTON_LEFT)
-				mouse_mark_button(MOUSE_LEFT_BUTTON, event.button.state);
-			else if (event.button.button == SDL_BUTTON_MIDDLE)
-				mouse_mark_button(MOUSE_MIDDLE_BUTTON, event.button.state);
-			else if (event.button.button == SDL_BUTTON_RIGHT)
-				mouse_mark_button(MOUSE_RIGHT_BUTTON, event.button.state);
-
-			break;
-
-		case SDL_JOYAXISMOTION:
-			joy_event(event.jaxis.which, event.jaxis.axis, event.jaxis.value);
-			break;
-
-		case SDL_JOYHATMOTION:
-			joy_set_hat_state(event.jhat.value);
-			break;
-
-		case SDL_JOYBUTTONDOWN:
-		case SDL_JOYBUTTONUP:
-			if (event.jbutton.button < JOY_NUM_BUTTONS) {
-				joy_set_button_state(event.jbutton.button, event.jbutton.state);
-			}
-			break;
-		
-		case SDL_JOYDEVICEADDED:
-		case SDL_JOYDEVICEREMOVED:
-			joy_device_changed(event.jdevice.type, event.jdevice.which);
-			break;
-		case SDL_MOUSEMOTION:
-			mouse_event(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
-			break;
-
-		case SDL_MOUSEWHEEL:
-			mousewheel_motion(event.wheel.x, event.wheel.y);
+		default:
 			break;
 		}
+#endif // FS2_VOICER
+#endif // WIN32
+		break;
+
+	case SDL_KEYDOWN:
+		if (SDLtoFS2[event.key.keysym.scancode]) {
+			key_mark(SDLtoFS2[event.key.keysym.scancode], 1, 0);
+		}
+		break;
+
+	case SDL_KEYUP:
+		if (SDLtoFS2[event.key.keysym.scancode]) {
+			key_mark(SDLtoFS2[event.key.keysym.scancode], 0, 0);
+		}
+		break;
+
+	case SDL_MOUSEBUTTONDOWN:
+	case SDL_MOUSEBUTTONUP:
+		if (event.button.button == SDL_BUTTON_LEFT)
+			mouse_mark_button(MOUSE_LEFT_BUTTON, event.button.state);
+		else if (event.button.button == SDL_BUTTON_MIDDLE)
+			mouse_mark_button(MOUSE_MIDDLE_BUTTON, event.button.state);
+		else if (event.button.button == SDL_BUTTON_RIGHT)
+			mouse_mark_button(MOUSE_RIGHT_BUTTON, event.button.state);
+
+		break;
+
+	case SDL_JOYAXISMOTION:
+		joy_event(event.jaxis.which, event.jaxis.axis, event.jaxis.value);
+		break;
+
+	case SDL_JOYHATMOTION:
+		joy_set_hat_state(event.jhat.value);
+		break;
+
+	case SDL_JOYBUTTONDOWN:
+	case SDL_JOYBUTTONUP:
+		if (event.jbutton.button < JOY_NUM_BUTTONS) {
+			joy_set_button_state(event.jbutton.button, event.jbutton.state);
+		}
+		break;
+
+	case SDL_JOYDEVICEADDED:
+	case SDL_JOYDEVICEREMOVED:
+		joy_device_changed(event.jdevice.type, event.jdevice.which);
+		break;
+	case SDL_MOUSEMOTION:
+		mouse_event(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
+		break;
+
+	case SDL_MOUSEWHEEL:
+		mousewheel_motion(event.wheel.x, event.wheel.y);
+		break;
+	}
+}
+
+void os_poll()
+{
+	// Replay the buffered events
+	auto end = buffered_events.end();
+	for (auto it = buffered_events.begin(); it != end; ++it) {
+		handle_sdl_event(*it);
+	}
+	buffered_events.clear();
+
+	SDL_Event event;
+
+	while (SDL_PollEvent(&event)) {
+		handle_sdl_event(event);
 	}
 }
 

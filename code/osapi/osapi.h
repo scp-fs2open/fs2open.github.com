@@ -53,6 +53,11 @@ void os_set_window(SDL_Window* new_handle);
 
 // process management --------------------------------------------------------------
 
+/**
+ * @brief Removes all pending events and ignores them
+ */
+void os_ignore_events();
+
 // call to process windows messages. only does something in non THREADED mode
 void os_poll();
 
