@@ -142,6 +142,7 @@ static void key_close();
  * @brief Returns how long the last key was held down
  *
  * @note [:V:] This is currently (July 17, 1996) bogus because our timing is not accurate.
+ * @note [z64555] May be used in the future
  */
 static int key_inkey_time(uint * time);
 
@@ -150,6 +151,8 @@ static int key_inkey_time(uint * time);
  *
  * @returns nonzero if the numlock is on, or
  * @returns 0 otherwise
+ *
+ * @note [z64555] May be used in the future
  */
 static int key_numlock_is_on();
 
