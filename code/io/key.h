@@ -261,4 +261,14 @@ int key_check(int key);
  */
 void key_outkey(int key);
 
+/**
+* @brief Checks if the numlock is on
+*
+* @returns nonzero if the numlock is on, or
+* @returns 0 otherwise
+*
+* @note [z64555] Commented out until we have a use for it
+*/
+//int key_numlock_is_on();
+
 #endif
