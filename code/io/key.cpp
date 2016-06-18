@@ -78,8 +78,6 @@ SDL_mutex* key_lock;    //!< Mutex used when reading from the keyboard
 
 SCP_map<int, int> SDLtoFS2;     //!< Used by the osapi to map the SDL scancodes into ye olde FS2 scancodes
 
-static int Key_numlock_was_on = 0;  //!< Flag to indicate whether NumLock is on at start
-
 int Cheats_enabled = 0;
 int Key_normal_game = 0;
 
@@ -307,11 +305,6 @@ int key_checkch() {
 static void key_close()
 {
 	if ( !key_inited ) return;
-
-	if ( Key_numlock_was_on ) {
-		key_turn_on_numlock();
-		Key_numlock_was_on = 0;
-	}
 
 	key_inited = 0;
 
