@@ -138,25 +138,6 @@ static void FillSDLArray();
  */
 static void key_close();
 
-/**
- * @brief Returns how long the last key was held down
- *
- * @note [:V:] This is currently (July 17, 1996) bogus because our timing is not accurate.
- * @note [z64555] May be used in the future
- */
-static int key_inkey_time(uint * time);
-
-/**
- * @brief Checks if the numlock is on
- *
- * @returns nonzero if the numlock is on, or
- * @returns 0 otherwise
- *
- * @note [z64555] May be used in the future
- */
-static int key_numlock_is_on();
-
-
 static int add_one(int n) {
 	n++;
 	if (n >= KEY_BUFFER_SIZE) n = 0;
@@ -506,27 +487,6 @@ int key_inkey() {
 	return key;
 }
 
-static int key_inkey_time(uint * time) {
-	int key = 0;
-
-	if (!key_inited) {
-		*time = 0;
-		return 0;
-	}
-
-	SDL_LockMutex(key_lock);
-
-	if (key_data.keytail != key_data.keyhead) {
-		key = key_data.keybuffer[key_data.keyhead];
-		*time = key_data.time_pressed[key_data.keyhead];
-		key_data.keyhead = add_one(key_data.keyhead);
-	}
-
-	SDL_UnlockMutex(key_lock);
-
-	return key;
-}
-
 void key_level_init()
 {
 	int i;
@@ -677,11 +637,14 @@ void key_mark(uint code, int state, uint latency) {
 	SDL_UnlockMutex(key_lock);
 }
 
+// [z64555] Commented out until we have a use for it
+/*
 static int key_numlock_is_on() {
 	const Uint8 *state = SDL_GetKeyboardState(NULL);
 
 	return state[SDL_SCANCODE_NUMLOCKCLEAR];
 }
+*/
 
 void key_outkey(int key) {
 	int	bufp;
