@@ -14,10 +14,13 @@ environment:
     PlatformToolset: v140
     ProjectPath: projects/MSVC_2015
     DeployConfig: True
+    
 build_script:
     - ps: . ./ci/appveyor/check_release.ps1
     - ps: . ./ci/appveyor/build.ps1
+    
 test: off
+
 deploy:
     - provider: GitHub
       auth_token:
