@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 
 
@@ -84,7 +84,7 @@ void mouse_event(int x, int y, int dx, int dy);
 /**
  * Called when there is motion on the mouse wheel(s). Supports 2 axes
  */
-void mousewheel_motion(int x, int y);
+void mousewheel_motion(int x, int y, bool reversed);
 
 extern void mouse_force_pos(int x, int y);
 

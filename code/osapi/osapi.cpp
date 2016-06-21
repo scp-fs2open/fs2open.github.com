@@ -1,8 +1,8 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
@@ -47,7 +47,7 @@ namespace
 {
 	const char* ORGANIZATION_NAME = "HardLightProductions";
 	const char* APPLICATION_NAME = "FreeSpaceOpen";
-	
+
 	char* preferencesPath = nullptr;
 
 	bool checkedLegacyMode = false;
@@ -109,7 +109,7 @@ BOOL __stdcall os_enum_windows( HWND hwnd, char * search_string )
 	int len;
 
 	len = GetWindowText( hwnd, tmp, 127 );
-	 
+
 	if ( len )	{
 		if ( strstr( tmp, search_string ))	{
 			Os_debugger_running = 1;		// found the search string!
@@ -134,9 +134,9 @@ void os_check_debugger()
 	// Find my EXE file name
 	hMod = GetModuleHandle(NULL);
 	if ( !hMod ) return;
-	namelen = GetModuleFileName( hMod, myname, 127 );	
+	namelen = GetModuleFileName( hMod, myname, 127 );
 	if ( namelen < 1 ) return;
-	
+
 	// Strip off the .EXE
 	p = strstr( myname, ".exe" );
 	if (!p) return;
@@ -145,7 +145,7 @@ void os_check_debugger()
 	// Move p to point to first letter of EXE filename
 	while( (*p!='\\') && (*p!='/') && (*p!=':') )
 		p--;
-	p++;	
+	p++;
 	if ( strlen(p) < 1 ) return;
 
 	// Build what the debugger's window title would be if the debugger is running...
@@ -212,7 +212,7 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 	os_init_registry_stuff(Osreg_company_name, title, version_string);
 
 	strcpy_s( szWinTitle, title );
-	strcpy_s( szWinClass, wclass );	
+	strcpy_s( szWinClass, wclass );
 
 	Os_lock = SDL_CreateMutex();
 
@@ -222,7 +222,7 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 	{
 		fprintf(stderr, "Couldn't init SDL: %s", SDL_GetError());
 		mprintf(("Couldn't init SDL: %s", SDL_GetError()));
-		
+
 		exit(1);
 		return;
 	}
@@ -308,13 +308,13 @@ void os_sleep(uint ms)
 // Used to stop message processing
 void os_suspend()
 {
-	SDL_LockMutex( Os_lock );	
+	SDL_LockMutex( Os_lock );
 }
 
 // resume message processing
 void os_resume()
 {
-	SDL_UnlockMutex( Os_lock );	
+	SDL_UnlockMutex( Os_lock );
 }
 
 bool os_is_legacy_mode()
@@ -369,7 +369,7 @@ void os_deinit()
 		SDL_free(preferencesPath);
 		preferencesPath = nullptr;
 	}
-	
+
 	SDL_DestroyMutex(Os_lock);
 
 	SDL_Quit();
@@ -395,7 +395,7 @@ void os_poll()
 							if (!Cmdline_no_unfocus_pause) {
 								game_pause();
 							}
-							
+
 							fAppActive = false;
 						}
 						break;
@@ -408,7 +408,7 @@ void os_poll()
 							if (!Cmdline_no_unfocus_pause) {
 								game_unpause();
 							}
-							
+
 							fAppActive = true;
 						}
 						break;
@@ -418,9 +418,9 @@ void os_poll()
 						break;
 				}
 			}
-			
+
 			gr_activate(fAppActive);
-			
+
 			break;
 		}
 
@@ -479,7 +479,7 @@ void os_poll()
 				joy_set_button_state(event.jbutton.button, event.jbutton.state);
 			}
 			break;
-		
+
 		case SDL_JOYDEVICEADDED:
 		case SDL_JOYDEVICEREMOVED:
 			joy_device_changed(event.jdevice.type, event.jdevice.which);
@@ -489,7 +489,11 @@ void os_poll()
 			break;
 
 		case SDL_MOUSEWHEEL:
-			mousewheel_motion(event.wheel.x, event.wheel.y);
+		#if SDL_VERSION_ATLEAST(2, 0, 4)
+			mousewheel_motion(event.wheel.x, event.wheel.y, event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED);
+		#else
+			mousewheel_motion(event.wheel.x, event.wheel.y, false);
+		#endif
 			break;
 		}
 	}
@@ -523,9 +527,9 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 		ss << DIR_SEPARATOR_CHAR << compatiblePath;
 		return ss.str();
 	}
-	
+
 	ss << getPreferencesPath() << compatiblePath;
-	
+
 	return ss.str();
 }
 

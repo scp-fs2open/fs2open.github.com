@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 
 
@@ -119,7 +119,7 @@ void mouse_init()
 	SDL_EventState( SDL_MOUSEBUTTONUP, SDL_ENABLE );
 	SDL_EventState( SDL_MOUSEWHEEL, SDL_ENABLE );
 
-	SDL_UnlockMutex( mouse_lock );	
+	SDL_UnlockMutex( mouse_lock );
 
 	atexit( mouse_close );
 }
@@ -203,7 +203,7 @@ void mouse_mark_button( uint flags, int set)
 		mouse_flags &= ~flags;
 	}
 
-	SDL_UnlockMutex( mouse_lock );	
+	SDL_UnlockMutex( mouse_lock );
 
 	Script_system.SetHookVar("MouseButton", 'i', &flags);
 
@@ -235,7 +235,7 @@ void mouse_flush()
 	mouse_x1_pressed = 0;
 	mouse_x2_pressed = 0;
 	mouse_flags = 0;
-	SDL_UnlockMutex( mouse_lock );	
+	SDL_UnlockMutex( mouse_lock );
 }
 
 int mouse_down_count(int n, int reset_count)
@@ -284,7 +284,7 @@ int mouse_down_count(int n, int reset_count)
 			break;
 	} // end switch
 
-	SDL_UnlockMutex( mouse_lock );	
+	SDL_UnlockMutex( mouse_lock );
 
 	return tmp;
 }
@@ -334,7 +334,7 @@ int mouse_up_count(int n)
 			break;
 	} // end switch
 
-	SDL_UnlockMutex( mouse_lock );	
+	SDL_UnlockMutex( mouse_lock );
 
 	return tmp;
 }
@@ -362,12 +362,12 @@ int mouse_down(int btn)
 		tmp = 0;
 	}
 
-	SDL_UnlockMutex( mouse_lock );	
+	SDL_UnlockMutex( mouse_lock );
 
 	return tmp;
 }
 
-// returns the fraction of time btn has been down since last call 
+// returns the fraction of time btn has been down since last call
 // (currently returns 1 if buttons is down, 0 otherwise)
 //
 float mouse_down_time(int btn)
@@ -418,7 +418,7 @@ void mouse_reset_deltas()
 	Last_mouse_dx = Mouse_dx;
 	Last_mouse_dy = Mouse_dy;
 	Last_mouse_dz = Mouse_dz;
-	
+
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
 }
 
@@ -475,7 +475,7 @@ int mouse_get_pos(int *xpos, int *ypos)
 	if (Mouse_y >= gr_screen.max_h){
  		Mouse_y = gr_screen.max_h - 1;
 	}
-	
+
 	if (xpos){
 		*xpos = Mouse_x;
 	}
@@ -506,14 +506,11 @@ void mouse_set_pos(int xpos, int ypos)
 	mouse_force_pos(xpos, ypos);
 }
 
-void mousewheel_motion(int x, int y) {
-
-#if SDL_VERSION_ATLEAST(2, 0, 4)
-	if (direction == SDL_MOUSEWHEEL_FLIPPED) {
+void mousewheel_motion(int x, int y, bool reversed) {
+	if (reversed) {
 		x = -x;
 		y = -y;
 	}
-#endif
 
 	Mouse_wheel_x += x;
 	Mouse_wheel_y += y;
