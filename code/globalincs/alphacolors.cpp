@@ -32,6 +32,7 @@ color Color_blue, Color_bright_blue, Color_green, Color_bright_green;
 color Color_black, Color_grey, Color_silver, Color_white, Color_bright_white;
 color Color_violet_gray, Color_violet, Color_pink, Color_light_pink;
 color Color_dim_red, Color_red, Color_bright_red, Color_yellow, Color_bright_yellow;
+color Color_orange;
 color Color_ui_light_green, Color_ui_green;
 color Color_ui_light_pink, Color_ui_pink;
 
@@ -64,6 +65,7 @@ color *COLOR_LIST[TOTAL_COLORS] = {
 	&Color_light_pink,
 	&Color_yellow,
 	&Color_bright_yellow,
+	&Color_orange,
 	&Color_ui_light_green,
 	&Color_ui_green,
 	&Color_ui_light_pink,
@@ -89,6 +91,7 @@ const char *COLOR_NAMES[TOTAL_COLORS] = {
 	"Light Pink",
 	"Yellow",
 	"Bright Yellow",
+	"Orange",
 	"UI Light Green",
 	"UI Green",
 	"UI Light Pink",
@@ -96,28 +99,29 @@ const char *COLOR_NAMES[TOTAL_COLORS] = {
 };
 
 const int rgba_defaults[TOTAL_COLORS][4] = {
-	{93, 93, 128, 255},
-	{185, 185, 255, 255},
-	{0, 120, 0, 255},
-	{50, 190, 50, 255},
-	{0, 0, 0, 255},
-	{65, 65, 65, 255},
-	{160, 160, 160, 255},
-	{105, 105, 105, 255},
-	{255, 255, 255 ,255},
-	{160, 144, 160, 255},
-	{192, 104, 192, 255},
-	{80, 6, 6, 255},
-	{126, 6, 6, 255},
-	{200, 0, 0, 255},
-	{185, 150, 150, 255},
-	{230, 190, 190, 255},
-	{255, 255, 122, 255},
-	{255, 255, 0, 255},
-	{161, 184, 161, 255},
-	{190, 228, 190, 255},
-	{184, 161, 161, 255},
-	{228, 190, 190, 255}
+	{93, 93, 128, 255},		// Blue
+	{185, 185, 255, 255},	// Bright Blue
+	{0, 120, 0, 255},		// Green
+	{50, 190, 50, 255},		// Bright Green
+	{0, 0, 0, 255},			// Black
+	{65, 65, 65, 255},		// Grey
+	{160, 160, 160, 255},	// Silver
+	{105, 105, 105, 255},	// White
+	{255, 255, 255 ,255},	// Bright White
+	{160, 144, 160, 255},	// Violet Gray
+	{192, 104, 192, 255},	// Violet
+	{80, 6, 6, 255},		// Dim Red
+	{126, 6, 6, 255},		// Red
+	{200, 0, 0, 255},		// Bright Red
+	{185, 150, 150, 255},	// Pink
+	{230, 190, 190, 255},	// Light Pink
+	{255, 255, 122, 255},	// Yellow
+	{255, 255, 0, 255},		// Bright Yellow
+	{255, 127, 0, 255},		// Orange
+	{161, 184, 161, 255},	// UI Light Green
+	{190, 228, 190, 255},	// UI Green
+	{184, 161, 161, 255},	// UI Light Pink
+	{228, 190, 190, 255}	// UI Pink
 };
 
 color *interface_colors[INTERFACE_COLORS] = {
@@ -152,12 +156,13 @@ const int interface_defaults[INTERFACE_COLORS] = {
 	5,	//"Grey"
 };
 
-#define DEFAULT_TAGS	20
+#define DEFAULT_TAGS	21
 
 const char DEFAULT_TAG_LIST[DEFAULT_TAGS] = {
 	'w',
 	'W',
 	'r',
+	'o',
 	'g',
 	'y',
 	'b',
@@ -181,6 +186,7 @@ color* DEFAULT_TAG_COLORS[DEFAULT_TAGS] = {
 	&Color_white,
 	&Color_bright_white,
 	&Color_red,
+	&Color_orange,
 	&Color_green,
 	&Color_yellow,
 	&Color_blue,
