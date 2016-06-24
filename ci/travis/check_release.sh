@@ -12,7 +12,7 @@ NIGHTLY_PATTERN="^nightly_(.*)$"
 if [[ "$TRAVIS_TAG" =~ $RELEASE_PATTERN ]]; then
     echo "This is a release tag!";
     RELEASE_BUILD=true;
-	PACKAGE_NAME="release_${BASH_REMATCH[1]}";
+	PACKAGE_NAME="fs2_open_${BASH_REMATCH[1]}";
 fi
 if [[ "$TRAVIS_TAG" =~ $NIGHTLY_PATTERN ]]; then
     echo "This is a nightly tag!";

@@ -13,7 +13,7 @@ Set-AppveyorBuildVariable 'VersionName' ''
 if ([System.Convert]::ToBoolean($env:APPVEYOR_REPO_TAG) -And ("$env:APPVEYOR_REPO_TAG_NAME" -match "^release_(.*)")) {
     # Tag matches
     Set-AppveyorBuildVariable 'ReleaseBuild' 'true'
-    Set-AppveyorBuildVariable 'PackageName' "release_$($matches[1])"
+    Set-AppveyorBuildVariable 'PackageName' "fs2_open_$($matches[1])"
 }
 
 if ([System.Convert]::ToBoolean($env:APPVEYOR_REPO_TAG) -And ("$env:APPVEYOR_REPO_TAG_NAME" -match "^nightly_(.*)")) {
