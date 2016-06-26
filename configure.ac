@@ -563,3 +563,4 @@ echo Generic build .......... : $fs2_generic_architecture
 echo ASan enabled ........... : $fs2_asan
 echo Building wxFred2 ....... : $fs2_fred
 echo
+dnl Test change
