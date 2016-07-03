@@ -311,6 +311,7 @@ void parse_colors(const char *filename)
 				"$Light Pink:",
 				"$Yellow:",
 				"$Bright Yellow:",
+				"$Orange:",
 				"$UI Light Green:",
 				"$UI Green:",
 				"$UI Light Pink:",
