@@ -82,6 +82,11 @@ typedef struct vec4 {
 	};
 } vec4;
 
+// sometimes, you just need some integers
+typedef struct ivec3 {
+	int x, y, z;
+} ivec3;
+
 /** Represents a point in 3d space.
 
 Note: this is a struct, not a class, so no member functions. */
