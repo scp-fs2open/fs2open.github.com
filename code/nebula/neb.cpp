@@ -20,7 +20,6 @@
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
-#include "pngutils/pngutils.h"
 #include "render/3d.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"

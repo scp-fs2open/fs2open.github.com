@@ -2214,7 +2214,8 @@ int hud_anim_load(hud_anim *ha)
 }
 
 /**
- * @brief Render out a frame of the targetbox static animation, based on how much time has elapsed 
+ * @brief Render out a frame of a hud or briefing animation, based on how much time has elapsed
+ * @note targetbox static was not implemented by :v:, also used for briefing icons & hud lock icons
  *
  * @param ha			Pointer to ::hud_anim info
  * @param frametime		Seconds elapsed since last frame
@@ -2224,6 +2225,8 @@ int hud_anim_load(hud_anim *ha)
  * @param reverse		Play animation in reverse (default 0)
  * @param resize_mode		Resize for non-standard resolutions
  * @param mirror		Mirror along y-axis so icon points left instead of right
+ *
+ * @returns  1 on success, 0 on failure
  */
 int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse, int resize_mode, bool mirror)
 {
@@ -2235,26 +2238,15 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 	}
 
 	ha->time_elapsed += frametime;
-	if ( ha->time_elapsed > ha->total_time ) {
-		if ( loop ) {
-			ha->time_elapsed = 0.0f;
-		} else {
-			if ( !hold_last ) {
-				return 0;
-			}
-		}
+	if ( ha->time_elapsed > ha->total_time && loop == 0 && hold_last == 0) {
+		return 0;
 	}
 
-	// Draw the correct frame of animation
-	framenum = fl2i( (ha->time_elapsed * ha->num_frames) / ha->total_time );
+	// Note; total_time for hud_anim is derived only from the fps, no need to pass it in
+	framenum = bm_get_anim_frame(ha->first_frame, ha->time_elapsed, 0.0f, static_cast<bool>(loop));
 	if (reverse) {
 		framenum = (ha->num_frames-1) - framenum;
 	}
-
-	if ( framenum < 0 )
-		framenum = 0;
-	if ( framenum >= ha->num_frames )
-		framenum = ha->num_frames-1;
 
 	// Blit the bitmap for this frame
 	if(emp_should_blit_gauge()){

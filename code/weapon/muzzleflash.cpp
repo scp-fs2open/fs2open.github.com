@@ -189,7 +189,7 @@ void mflash_page_in(bool load_all)
 		int original_idx = 1;
 		for ( idx = 0; idx < Mflash_info[i].blobs.size(); ) {
 			mflash_blob_info* mfbip = &Mflash_info[i].blobs[idx];
-			mfbip->anim_id = bm_load_either(mfbip->name, &num_frames, &fps, NULL, 1);
+			mfbip->anim_id = bm_load_either(mfbip->name, &num_frames, &fps, NULL, true);
 			if ( mfbip->anim_id >= 0 ) {
 				bm_page_in_xparent_texture( mfbip->anim_id );
 				++idx;

@@ -187,7 +187,6 @@ void shockwave_delete_all()
  */
 void shockwave_set_framenum(int index)
 {
-	int				framenum;
 	shockwave		*sw;
 	shockwave_info	*si;
 
@@ -200,50 +199,27 @@ void shockwave_set_framenum(int index)
 	if (si->bitmap_id < 0)
 		return;
 
-	framenum = fl2i(sw->time_elapsed / sw->total_time * si->num_frames + 0.5);
-
-	// ensure we don't go past the number of frames of animation
-	if ( framenum > (si->num_frames-1) ) {
-		framenum = (si->num_frames-1);
-		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
-	}
-
-	if ( framenum < 0 ) {
-		framenum = 0;
-	}
-
-	sw->current_bitmap = si->bitmap_id + framenum;
+	sw->current_bitmap = si->bitmap_id + shockwave_get_framenum(index, si->bitmap_id);
 }
 
 /**
- * Given a shockwave index and the number of frames in an animation return what
- * the current frame # should be  (for use with 3d shockwaves)
+ * Given a shockwave index and the animation id/handle return what the current frame num should be
+ *
+ * @note for direct use with 3d shockwaves & indirect use with 2d shockwaves
  */
-int shockwave_get_framenum(int index, int num_frames)
+int shockwave_get_framenum(const int sw_idx, const int ani_id)
 {
-	int				framenum;
 	shockwave		*sw;
 
-	if ( (index < 0) || (index >= MAX_SHOCKWAVES) ) {
+	if ( (sw_idx < 0) || (sw_idx >= MAX_SHOCKWAVES) ) {
 		Int3();
 		return 0;
 	}
 
-	sw = &Shockwaves[index];
+	sw = &Shockwaves[sw_idx];
 
-	framenum = fl2i(sw->time_elapsed / sw->total_time * num_frames + 0.5);
-
-	// ensure we don't go past the number of frames of animation
-	if ( framenum > (num_frames-1) ) {
-		framenum = (num_frames-1);
-		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
-	}
-
-	if ( framenum < 0 ) {
-		framenum = 0;
-	}
-
-	return framenum;
+	// ignore setting of OF_SHOULD_BE_DEAD, handled by shockwave_move
+	return bm_get_anim_frame(ani_id, sw->time_elapsed, sw->total_time);
 }
 
 /**
@@ -424,7 +400,7 @@ void shockwave_render_DEPRECATED(object *objp)
 			g3_transfer_vertex(&p, &sw->pos);
 				
 			distortion_add_bitmap_rotated(
-				Shockwave_info[1].bitmap_id+shockwave_get_framenum(objp->instance, 94), 
+				Shockwave_info[1].bitmap_id+shockwave_get_framenum(objp->instance, Shockwave_info[1].bitmap_id),
 				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_DISTORTION, 
 				&p, 
 				fl_radians(sw->rot_angles.p), 
@@ -496,7 +472,7 @@ void shockwave_render(object *objp, draw_list *scene)
 			g3_transfer_vertex(&p, &sw->pos);
 
 			distortion_add_bitmap_rotated(
-				Shockwave_info[1].bitmap_id+shockwave_get_framenum(objp->instance, 94), 
+				Shockwave_info[1].bitmap_id+shockwave_get_framenum(objp->instance, Shockwave_info[1].bitmap_id),
 				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_DISTORTION, 
 				&p, 
 				fl_radians(sw->rot_angles.p), 
@@ -578,7 +554,7 @@ int shockwave_load(char *s_name, bool shock_3D)
 			return -1;
 		}
 	} else {
-		si->bitmap_id = bm_load_animation( si->filename, &si->num_frames, &si->fps, NULL, 1 );
+		si->bitmap_id = bm_load_animation( si->filename, &si->num_frames, &si->fps, nullptr, nullptr, true );
 
 		if ( si->bitmap_id < 0 ) {
 			Shockwave_info.pop_back();

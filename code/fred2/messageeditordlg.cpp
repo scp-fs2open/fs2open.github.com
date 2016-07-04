@@ -538,7 +538,7 @@ void CMessageEditorDlg::OnBrowseAvi()
 
 	UpdateData(TRUE);
 	CFileDialog dlg(TRUE, "ani", m_avi_filename, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
-		"Ani Files (*.ani)|*.ani|Avi Files (*.avi)|*.avi|Both (*.ani, *.avi)|*.ani;*.avi||");
+		"Ani Files (*.ani)|*.ani|Eff Files (*.eff)|*.eff|APNG Files (*.png)|*.png|All Anims (*.ani, *.eff, *.png)|*.ani;*.eff;*.png||");
 
 	if (dlg.DoModal() == IDOK)
 	{

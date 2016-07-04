@@ -56,17 +56,17 @@ void particle_init()
 
 	// FIRE!!!
 	if ( Anim_bitmap_id_fire == -1 )	{
-		Anim_bitmap_id_fire = bm_load_animation( "particleexp01", &Anim_num_frames_fire, &fps, NULL, 0 );
+		Anim_bitmap_id_fire = bm_load_animation( "particleexp01", &Anim_num_frames_fire, &fps );
 	}
 
 	// Cough, cough
 	if ( Anim_bitmap_id_smoke == -1 )	{
-		Anim_bitmap_id_smoke = bm_load_animation( "particlesmoke01", &Anim_num_frames_smoke, &fps, NULL, 0 );
+		Anim_bitmap_id_smoke = bm_load_animation( "particlesmoke01", &Anim_num_frames_smoke, &fps );
 	}
 
 	// wheeze
 	if ( Anim_bitmap_id_smoke2 == -1 )	{
-		Anim_bitmap_id_smoke2 = bm_load_animation( "particlesmoke02", &Anim_num_frames_smoke2, &fps, NULL, 0 );
+		Anim_bitmap_id_smoke2 = bm_load_animation( "particlesmoke02", &Anim_num_frames_smoke2, &fps );
 	}
 
 	// grab a vertex buffer object
@@ -346,7 +346,6 @@ static float get_current_alpha(vec3d *pos)
 void particle_render_all()
 {
 	ubyte flags;
-	float pct_complete;
 	float alpha;
 	vertex pos;
 	vec3d ts, te, temp;
@@ -413,14 +412,9 @@ void particle_render_all()
 				g3_transfer_vertex(&pos, &p_pos);
 		}
 
-		// pct complete for the particle
-		pct_complete = part->age / part->max_life;
-
 		// figure out which frame we should be using
 		if (part->nframes > 1) {
-			framenum = fl2i(pct_complete * part->nframes + 0.5);
-			CLAMP(framenum, 0, part->nframes-1);
-
+			framenum = bm_get_anim_frame(part->optional_data, part->age, part->max_life);
 			cur_frame = part->reverse ? (part->nframes - framenum - 1) : framenum;
 		} else {
 			cur_frame = 0;

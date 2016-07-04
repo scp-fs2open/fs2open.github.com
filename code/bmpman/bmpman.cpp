@@ -39,6 +39,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include <iomanip>
+#include <memory>
 
 // --------------------------------------------------------------------------------------------------------------------
 // Private macros.
@@ -69,8 +70,11 @@ const BM_TYPE bm_type_list[] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_PNG, BM_TYPE_
 const char *bm_ext_list[] = { ".dds", ".tga", ".png", ".jpg", ".pcx" };
 const int BM_NUM_TYPES = sizeof(bm_type_list) / sizeof(bm_type_list[0]);
 
-const BM_TYPE bm_ani_type_list[] = { BM_TYPE_EFF, BM_TYPE_ANI };
-const char *bm_ani_ext_list[] = { ".eff", ".ani" };
+const BM_TYPE bm_ani_type_list[] = { BM_TYPE_EFF, BM_TYPE_ANI, BM_TYPE_PNG };
+// NOTE: it would be better to have apng files use the .apng extension
+// However there's lots of assumptions throughout the codebase that file extensions are only
+// three chars long. If this is ever changed the the .apng extension could be used
+const char *bm_ani_ext_list[] = { ".eff", ".ani", ".png" };
 const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(bm_ani_type_list[0]);
 
 void(*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
@@ -236,6 +240,17 @@ static int bm_load_sub_fast(const char *real_filename, int *handle, int dir_type
  * @returns the handle of the block ?
  */
 static int find_block_of(int n);
+
+/**
+ * Finds if a slot contains an animation
+ */
+static bool bm_is_anim(int num)
+{
+	return ((bm_bitmaps[num].type == BM_TYPE_ANI) ||
+			(bm_bitmaps[num].type == BM_TYPE_EFF) ||
+			(bm_bitmaps[num].type == BM_TYPE_PNG && bm_bitmaps[num].info.ani.apng.is_apng == true));
+}
+
 
 // --------------------------------------------------------------------------------------------------------------------
 // Macro-defined functions
@@ -666,6 +681,63 @@ void bm_free_data_fast(int n)
 	bmp->data = 0;
 }
 
+int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const float divisor, const bool loop)
+{
+	int n = bm_get_cache_slot(frame1_handle, 1);
+	bitmap_entry *be = &bm_bitmaps[n];
+
+	if (be->info.ani.num_frames <= 1) {
+		// this is a still image
+		return 0;
+	}
+	int last_frame = be->info.ani.num_frames - 1;
+	bitmap_entry *last_framep = &bm_bitmaps[n + last_frame];
+
+	if (elapsed_time < 0.0f) {
+		elapsed_time = 0.0f;
+	}
+
+	int frame = 0;
+	// variable frame delay animations
+	if (be->info.ani.apng.is_apng == true) {
+		if (divisor > 0.0f) {
+			// scale to get the real elapsed time
+			elapsed_time = elapsed_time / divisor * last_framep->info.ani.apng.frame_delay;
+		}
+
+		if (loop == true) {
+			elapsed_time = fmod(elapsed_time, last_framep->info.ani.apng.frame_delay);
+		}
+
+		int i = n;
+		for ( ; i < (n + be->info.ani.num_frames); ++i) {
+			// see bm_lock_apng for precalculated incremental delay for each frame
+			if (elapsed_time <= bm_bitmaps[i].info.ani.apng.frame_delay) {
+				break;
+			}
+		}
+		frame = i - n;
+	}
+	// fixed frame delay animations; simpler
+	else {
+		if (divisor > 0.0f) {
+			// scale to get the real elapsed time
+			frame = fl2i(elapsed_time / divisor * be->info.ani.num_frames);
+		}
+		else {
+			frame = fl2i(elapsed_time * i2fl(be->info.ani.fps));
+		}
+
+		if (loop == true) {
+			frame %= be->info.ani.num_frames;
+		}
+	}
+	// note; this also makes non-looping anims hold on their last frame
+	CLAMP(frame, 0, last_frame);
+
+	return frame;
+}
+
 int bm_get_cache_slot(int bitmap_id, int separate_ani_frames) {
 	int n = bitmap_id % MAX_BITMAPS;
 
@@ -674,12 +746,11 @@ int bm_get_cache_slot(int bitmap_id, int separate_ani_frames) {
 
 	bitmap_entry	*be = &bm_bitmaps[n];
 
-	if ((!separate_ani_frames) && ((be->type == BM_TYPE_ANI) || (be->type == BM_TYPE_EFF))) {
+	if ((!separate_ani_frames) && (bm_is_anim(n) == true)) {
 		return be->info.ani.first_frame;
 	}
 
 	return n;
-
 }
 
 void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) {
@@ -796,7 +867,7 @@ int bm_get_info(int handle, int *w, int * h, ubyte * flags, int *nframes, int *f
 	if (h) *h = bmp->h;
 	if (flags) *flags = bmp->flags;
 
-	if ((bm_bitmaps[bitmapnum].type == BM_TYPE_ANI) || (bm_bitmaps[bitmapnum].type == BM_TYPE_EFF)) {
+	if (bm_is_anim(bitmapnum) == true) {
 		if (nframes) {
 			*nframes = bm_bitmaps[bitmapnum].info.ani.num_frames;
 		}
@@ -1314,7 +1385,6 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 	return true;
 }
 
-
 /**
 * Lock an image files data into memory
 */
@@ -1379,7 +1449,12 @@ static int bm_load_image_data(const char *filename, int handle, int bitmapnum, u
 
 		case BM_TYPE_PNG:
 			//libpng handles compression with zlib
-			bm_lock_png(handle, bitmapnum, be, bmp, true_bpp, flags);
+			if (be->info.ani.apng.is_apng == true) {
+				bm_lock_apng( handle, bitmapnum, be, bmp, true_bpp, flags );
+			}
+			else {
+				bm_lock_png( handle, bitmapnum, be, bmp, true_bpp, flags );
+			}
 			break;
 
 		case BM_TYPE_JPG:
@@ -1417,13 +1492,14 @@ static int bm_load_image_data(const char *filename, int handle, int bitmapnum, u
 	return 0;
 }
 
-int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type) {
+int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *keyframe, float *total_time, bool can_drop_frames, int dir_type) {
 	int	i, n;
 	anim	the_anim;
-	CFILE	*img_cfp = NULL;
+	CFILE	*img_cfp = nullptr;
 	char filename[MAX_FILENAME_LEN];
 	int reduced = 0;
 	int anim_fps = 0, anim_frames = 0, key = 0;
+	float anim_total_time = 0.0f;
 	int anim_width = 0, anim_height = 0;
 	BM_TYPE type = BM_TYPE_NONE, eff_type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
 	int bpp = 0, mm_lvl = 0, img_size = 0;
@@ -1432,15 +1508,18 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	if (!bm_inited)
 		bm_init();
 
-	// set defaults for frame count and fps before going any further
-	if (nframes)
+	// set output param defaults before going any further
+	if (nframes != nullptr)
 		*nframes = 0;
 
-	if (fps)
+	if (fps != nullptr)
 		*fps = 0;
 
-	if (keyframe)
+	if (keyframe != nullptr)
 		*keyframe = 0;
+
+	if (total_time != nullptr)
+		*total_time = 0.0f;
 
 	memset(filename, 0, MAX_FILENAME_LEN);
 	strncpy(filename, real_filename, MAX_FILENAME_LEN - 1);
@@ -1485,6 +1564,9 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			if (keyframe)
 				*keyframe = bm_bitmaps[n].info.ani.keyframe;
 
+			if (total_time != nullptr)
+				*total_time = bm_bitmaps[n].info.ani.total_time;
+
 			return handle;
 		}
 
@@ -1500,11 +1582,13 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 	// If we found an animation then there is an extra 5 char size limit to adhere to. We don't do this check earlier since it's only needed if we found an anim
 	// an ANI needs about 5 extra characters to have the "[###]" frame designator
-	// an EFF needs 5 extra characters for each frame filename too, which just happens to be the same length as the frame designator needed otherwise
+	// EFF/APNG need 5 extra characters for each frame filename too, which just happens to be the same length as the frame designator needed otherwise
 	// MAX_FILENAME_LEN-10 == 5 character frame designator plus '.' plus 3 letter ext plus NULL terminator
 	// we only check for -5 here since the filename should already have the extension on it, and it must have passed the previous check
 	if (strlen(filename) > MAX_FILENAME_LEN - 5) {
-		Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
+		Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF/APNG, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
+		if (img_cfp != nullptr)
+			cfclose(img_cfp);
 		return -1;
 	}
 
@@ -1512,10 +1596,16 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	if (type == BM_TYPE_EFF) {
 		if (!bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &key, &eff_type)) {
 			mprintf(("BMPMAN: Error reading EFF\n"));
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
 			return -1;
 		} else {
 			mprintf(("BMPMAN: Found EFF (%s) with %d frames at %d fps.\n", filename, anim_frames, anim_fps));
 		}
+		if (anim_fps == 0) {
+			Error(LOCATION, "animation (%s) has invalid fps of 0, fix this!", filename);
+		}
+		anim_total_time = anim_frames / i2fl(anim_fps);
 	}
 	// regular ani file
 	else if (type == BM_TYPE_ANI) {
@@ -1527,6 +1617,10 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 		anim_frames = the_anim.total_frames;
 		anim_fps = the_anim.fps;
+		if (anim_fps == 0) {
+			Error(LOCATION, "animation (%s) has invalid fps of 0, fix this!", filename);
+		}
+		anim_total_time = anim_frames / i2fl(anim_fps);
 		anim_width = the_anim.width;
 		anim_height = the_anim.height;
 		bpp = 8;
@@ -1551,11 +1645,34 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			vm_free(the_anim.keys);
 			the_anim.keys = nullptr;
 		}
-	} else {
+	}
+	else if (type == BM_TYPE_PNG) {
+		nprintf(("apng", "Loading apng: %s\n", filename));
+		try {
+			apng::apng_ani the_apng = apng::apng_ani(filename);
+			anim_frames = the_apng.nframes;
+			anim_total_time = the_apng.anim_time;
+			anim_fps = fl2i(i2fl(anim_frames) / the_apng.anim_time); // note; apng bails on loading if anim_time is <= 0.0f
+			anim_width = the_apng.w;
+			anim_height = the_apng.h;
+			bpp = the_apng.bpp;
+			img_size = the_apng.imgsize();
+		}
+		catch (const apng::ApngException& e) {
+			mprintf(("Failed to load apng: %s\n", e.what() ));
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
+			return -1;
+		}
+	}
+	else {
+		Warning(LOCATION, "Unsupported image type: %i", type);
+		if (img_cfp != nullptr)
+			cfclose(img_cfp);
 		return -1;
 	}
 
-	if ((can_drop_frames) && (type != BM_TYPE_EFF)) {
+	if ((can_drop_frames == true) && (type == BM_TYPE_ANI)) {
 		if (Bm_low_mem == 1) {
 			reduced = 1;
 			anim_frames = (anim_frames + 1) / 2;
@@ -1569,7 +1686,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	n = find_block_of(anim_frames);
 
 	if (n < 0) {
-		if (img_cfp != NULL)
+		if (img_cfp != nullptr)
 			cfclose(img_cfp);
 
 		return -1;
@@ -1590,7 +1707,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 				if (i == 0) {
 					Warning(LOCATION, "EFF: No frame images were found.  EFF, %s, is invalid.\n", filename);
 
-					if (img_cfp != NULL)
+					if (img_cfp != nullptr)
 						cfclose(img_cfp);
 
 					return -1;
@@ -1617,6 +1734,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		bm_bitmaps[n + i].info.ani.num_frames = anim_frames;
 		bm_bitmaps[n + i].info.ani.fps = (ubyte)anim_fps;
 		bm_bitmaps[n + i].info.ani.keyframe = key;
+		bm_bitmaps[n + i].info.ani.total_time = anim_total_time;
 		bm_bitmaps[n + i].bm.w = (short)anim_width;
 		bm_bitmaps[n + i].bm.rowsize = (short)anim_width;
 		bm_bitmaps[n + i].bm.h = (short)anim_height;
@@ -1645,22 +1763,38 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		if (i == 0) {
 			sprintf(bm_bitmaps[n + i].filename, "%s", filename);
 		} else {
-			sprintf(bm_bitmaps[n + i].filename, "%s[%d]", filename, i);
+			if (type == BM_TYPE_PNG) {
+				sprintf(bm_bitmaps[n + i].filename, "%s_%04d", filename, i);
+			}
+			else {
+				sprintf(bm_bitmaps[n + i].filename, "%s[%d]", filename, i);
+			}
+		}
+
+		bm_bitmaps[n + i].info.ani.apng.frame_delay = 0.0f;
+		if (type == BM_TYPE_PNG) {
+			bm_bitmaps[n + i].info.ani.apng.is_apng = true;
+		}
+		else {
+			bm_bitmaps[n + i].info.ani.apng.is_apng = false;
 		}
 
 	}
 
-	if (nframes)
+	if (nframes != nullptr)
 		*nframes = anim_frames;
 
-	if (fps)
+	if (fps != nullptr)
 		*fps = anim_fps;
 
-	if (img_cfp != NULL)
+	if (img_cfp != nullptr)
 		cfclose(img_cfp);
 
-	if (keyframe)
+	if (keyframe != nullptr)
 		*keyframe = key;
+
+	if (total_time != nullptr)
+		*total_time = anim_total_time;
 
 	return bm_bitmaps[n].handle;
 }
@@ -1680,12 +1814,12 @@ int bm_load_duplicate(const char *filename) {
 	return ret;
 }
 
-int bm_load_either(const char *filename, int *nframes, int *fps, int *keyframe, int can_drop_frames, int dir_type) {
+int bm_load_either(const char *filename, int *nframes, int *fps, int *keyframe, bool can_drop_frames, int dir_type) {
 	if (nframes != NULL)
 		*nframes = 0;
 	if (fps != NULL)
 		*fps = 0;
-	int tidx = bm_load_animation(filename, nframes, fps, keyframe, can_drop_frames, dir_type);
+	int tidx = bm_load_animation(filename, nframes, fps, keyframe, nullptr, can_drop_frames, dir_type);
 	if (tidx == -1) {
 		tidx = bm_load(filename);
 		if (tidx != -1 && nframes != NULL)
@@ -1708,7 +1842,7 @@ int bm_load_sub_fast(const char *real_filename, int *handle, int dir_type, bool 
 		if (bm_bitmaps[i].dir_type != dir_type)
 			continue;
 
-		bool animated = ((bm_bitmaps[i].type == BM_TYPE_EFF) || (bm_bitmaps[i].type == BM_TYPE_ANI));
+		bool animated = bm_is_anim(i);
 
 		if (animated_type && !animated)
 			continue;
@@ -1829,7 +1963,7 @@ bitmap * bm_lock(int handle, ubyte bpp, ubyte flags, bool nodebug) {
 	MONITOR_INC(NumBitmapPage, 1);
 	MONITOR_INC(SizeBitmapPage, bmp->w*bmp->h);
 
-	if ((be->type == BM_TYPE_ANI) || (be->type == BM_TYPE_EFF)) {
+	if (bm_is_anim(bitmapnum) == true) {
 		int i, first = bm_bitmaps[bitmapnum].info.ani.first_frame;
 
 		for (i = 0; i< bm_bitmaps[first].info.ani.num_frames; i++) {
@@ -1976,6 +2110,55 @@ void bm_lock_ani(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 	free_anim_instance(the_anim_instance);
 	anim_free(the_anim);
 }
+
+
+void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) {
+
+	int first_frame = be->info.ani.first_frame;
+	int nframes = bm_bitmaps[first_frame].info.ani.num_frames;
+
+	std::unique_ptr<apng::apng_ani> the_apng;
+	try {
+		the_apng.reset(new apng::apng_ani(bm_bitmaps[first_frame].filename));
+	}
+	catch (const apng::ApngException& e) {
+		Warning(LOCATION, "Failed to load apng: %s", e.what());
+		return;
+	}
+
+	float cumulative_frame_delay = 0.0f;
+	for (int i = 0; i<nframes; i++) {
+		be = &bm_bitmaps[first_frame + i];
+		bitmap* bm = &bm_bitmaps[first_frame + i].bm;
+
+		// Unload any existing data
+		bm_free_data(first_frame + i);
+
+		ubyte* data = static_cast<ubyte*>(bm_malloc(first_frame + i, be->mem_taken));
+		try {
+			// this is a reasonably expensive operation
+			// especially when run on all frames at once
+			// i.e. try to preload the apng before using it
+			the_apng->next_frame();
+		}
+		catch (const apng::ApngException& e) {
+			Warning(LOCATION, "Failed to get next apng frame: %s", e.what());
+			bm_release(first_frame);
+			return;
+		}
+		memcpy(data, the_apng->frame.data.data(), be->mem_taken);
+
+		bm->data = reinterpret_cast<ptr_u>(data);
+		bm->palette = nullptr;
+		bm->bpp = bpp;
+		bm->flags = 0;
+		cumulative_frame_delay += the_apng->frame.delay;
+		be->info.ani.apng.frame_delay = cumulative_frame_delay;
+
+		nprintf(("apng", "locking apng frame: %s (%i|%i|%i) (%f) %lu\n", be->filename, bpp, bmp->bpp, bm->true_bpp, be->info.ani.apng.frame_delay, be->mem_taken));
+	}
+}
+
 
 void bm_lock_dds(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) {
 	ubyte *data = NULL;
@@ -2469,7 +2652,7 @@ void bm_page_in_texture(int bitmapnum, int nframes) {
 	Assertion((bm_bitmaps[n].handle == bitmapnum), "bitmapnum = %i, n = %i, bm_bitmaps[n].handle = %i", bitmapnum, n, bm_bitmaps[n].handle);
 
 	if (nframes <= 0) {
-		if ((bm_bitmaps[n].type == BM_TYPE_ANI) || (bm_bitmaps[n].type == BM_TYPE_EFF))
+		if (bm_is_anim(n) == true)
 			nframes = bm_bitmaps[n].info.ani.num_frames;
 		else
 			nframes = 1;
@@ -2643,7 +2826,7 @@ int bm_release(int handle, int clear_render_targets) {
 	}
 
 	// be sure that all frames of an ani are unloaded - taylor
-	if ((be->type == BM_TYPE_ANI) || (be->type == BM_TYPE_EFF)) {
+	if (bm_is_anim(n) == true) {
 		int i, first = be->info.ani.first_frame, total = bm_bitmaps[first].info.ani.num_frames;
 
 		for (i = 0; i < total; i++) {
@@ -2927,7 +3110,7 @@ int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 	}
 
 	// be sure that all frames of an ani are unloaded - taylor
-	if ((be->type == BM_TYPE_ANI) || (be->type == BM_TYPE_EFF)) {
+	if (bm_is_anim(n) == true) {
 		int i, first = be->info.ani.first_frame;
 
 		// for the unload all case, don't try to unload every frame of every frame

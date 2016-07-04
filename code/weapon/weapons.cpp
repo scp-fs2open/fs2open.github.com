@@ -194,7 +194,7 @@ int weapon_explosions::Load(char *filename, int expected_lods)
 	new_wei.lod_count = 1;
 
 	strcpy_s(new_wei.lod[0].filename, filename);
-	new_wei.lod[0].bitmap_id = bm_load_animation(filename, &new_wei.lod[0].num_frames, &new_wei.lod[0].fps, NULL, 1);
+	new_wei.lod[0].bitmap_id = bm_load_animation(filename, &new_wei.lod[0].num_frames, &new_wei.lod[0].fps, nullptr, nullptr, true);
 
 	if (new_wei.lod[0].bitmap_id < 0) {
 		Warning(LOCATION, "Weapon explosion '%s' does not have an LOD0 anim!", filename);
@@ -208,7 +208,7 @@ int weapon_explosions::Load(char *filename, int expected_lods)
 		for (idx = 1; idx < expected_lods; idx++) {
 			sprintf(name_tmp, "%s_%d", filename, idx);
 
-			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, NULL, 1);
+			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, nullptr, nullptr, true);
 
 			if (bitmap_id > 0) {
 				strcpy_s(new_wei.lod[idx].filename, name_tmp);
@@ -3676,18 +3676,7 @@ void weapon_render_DEPRECATED(object *obj)
 				if (wip->laser_bitmap.num_frames > 1) {
 					wp->laser_bitmap_frame += flFrametime;
 
-					// Sanity checks
-					if (wp->laser_bitmap_frame < 0.0f)
-						wp->laser_bitmap_frame = 0.0f;
-					if (wp->laser_bitmap_frame > 100.0f)
-						wp->laser_bitmap_frame = 0.0f;
-
-					while (wp->laser_bitmap_frame > wip->laser_bitmap.total_time)
-						wp->laser_bitmap_frame -= wip->laser_bitmap.total_time;
-
-					framenum = fl2i( (wp->laser_bitmap_frame * wip->laser_bitmap.num_frames) / wip->laser_bitmap.total_time );
-
-					CLAMP(framenum, 0, wip->laser_bitmap.num_frames-1);
+					framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 				}
 
 				if (wip->wi_flags2 & WIF2_TRANSPARENT)
@@ -7318,18 +7307,7 @@ void weapon_render(object* obj, draw_list *scene)
 				if (wip->laser_bitmap.num_frames > 1) {
 					wp->laser_bitmap_frame += flFrametime;
 
-					// Sanity checks
-					if (wp->laser_bitmap_frame < 0.0f)
-						wp->laser_bitmap_frame = 0.0f;
-					if (wp->laser_bitmap_frame > 100.0f)
-						wp->laser_bitmap_frame = 0.0f;
-
-					while (wp->laser_bitmap_frame > wip->laser_bitmap.total_time)
-						wp->laser_bitmap_frame -= wip->laser_bitmap.total_time;
-
-					framenum = fl2i( (wp->laser_bitmap_frame * wip->laser_bitmap.num_frames) / wip->laser_bitmap.total_time );
-
-					CLAMP(framenum, 0, wip->laser_bitmap.num_frames-1);
+					framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 				}
 
 				if (wip->wi_flags2 & WIF2_TRANSPARENT)

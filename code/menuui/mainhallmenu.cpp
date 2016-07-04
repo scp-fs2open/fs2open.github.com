@@ -692,6 +692,8 @@ void main_hall_do(float frametime)
 		for (int c_idx = 0; c_idx < (int) Main_hall->cheat.size(); c_idx++) {
 			cheat_anim_found = false;
 
+			// TODO change way cheat anims are loaded to work with apngs
+			// maybe load both cheat & normal, advance frames in lockstep, display which one you want
 			if(Main_hall_cheat.find(Main_hall->cheat.at(c_idx)) != SCP_string::npos) {
 				cheat_found = true;
 				// switch animations
