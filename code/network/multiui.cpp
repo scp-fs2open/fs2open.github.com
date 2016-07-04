@@ -1566,7 +1566,7 @@ void multi_join_eval_pong(net_addr *addr, fix pong_time)
 	if(moveup != NULL){
 		do {				
 			if(psnet_same(&moveup->server_addr,addr)){
-				multi_ping_eval_pong(&moveup->ping);
+				multi_ping_eval_pong(&moveup->ping, pong_time);
 				
 				break;
 			} else {

@@ -27,11 +27,12 @@ extern color Color_text_error, Color_text_error_hi, Color_text_active, Color_tex
 extern color Color_text_heading, Color_more_indicator, Color_more_bright, Color_bright, Color_normal;
 extern color Color_briefing_grid;
 
-#define TOTAL_COLORS 22
+#define TOTAL_COLORS 23
 extern color Color_blue, Color_bright_blue, Color_green, Color_bright_green;
 extern color Color_black, Color_grey, Color_silver, Color_white, Color_bright_white;
 extern color Color_violet_gray, Color_violet, Color_pink, Color_light_pink;
 extern color Color_dim_red, Color_red, Color_bright_red, Color_yellow, Color_bright_yellow;
+extern color Color_orange;
 
 extern color Color_ui_light_green, Color_ui_green;
 extern color Color_ui_light_pink, Color_ui_pink;

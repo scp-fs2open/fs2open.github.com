@@ -1508,8 +1508,13 @@ void barracks_do_frame(float frametime)
 				}
 
 				if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
+					Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
+					Pilot.save_player(Cur_pilot);
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 				} else {
+					// make sure we don't carry over the multi flag
+					Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
+					Pilot.save_player(Cur_pilot);
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 				}
 

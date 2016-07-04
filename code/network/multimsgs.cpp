@@ -3502,7 +3502,7 @@ void process_pong_packet(ubyte *data, header *hinfo)
 		p = &Net_players[lookup]; 
 
 		// evaluate the ping
-		multi_ping_eval_pong(&Net_players[lookup].s_info.ping);
+		multi_ping_eval_pong(&Net_players[lookup].s_info.ping, timer_get_fixed_seconds());
 			
 		// put in calls to any functions which may want to know about the ping times from 
 		// this guy
@@ -7994,7 +7994,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		shipp->beam_sys_info.model_num = Ship_info[shipp->ship_info_index].model_num;
 		shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
 		shipp->beam_sys_info.turret_num_firing_points = 1;
-		shipp->beam_sys_info.turret_fov = (float)cos((field_of_fire != 0.0f) ? field_of_fire : 180);
+		shipp->beam_sys_info.turret_fov = cosf((field_of_fire != 0.0f) ? field_of_fire : 180);
 		shipp->beam_sys_info.pnt = fire_info.targeting_laser_offset;
 		shipp->beam_sys_info.turret_firing_point[0] = fire_info.targeting_laser_offset;
 

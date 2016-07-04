@@ -60,8 +60,8 @@ void project_2d_onto_sphere( vec3d *pnt, float u, float v )
 	a = PI * (2.0f * u - 1.0f );
 	z = 2.0f * v - 1.0f;	
 	s = scale_factor * fl_sqrt( 1.0f - z*z );
-	x = s * (float)cos(a);
-	y = s * (float)sin(a);
+	x = s * cosf(a);
+	y = s * sinf(a);
 	pnt->xyz.x = x;
 	pnt->xyz.y = y;
 	pnt->xyz.z = z;
@@ -134,9 +134,9 @@ void nebula_init( const char *filename, int pitch, int bank, int heading )
 {
 	angles a;
 
-	a.p = ANG_TO_RAD((float) pitch);
-	a.b = ANG_TO_RAD((float) bank);
-	a.h = ANG_TO_RAD((float) heading);
+	a.p = fl_radians(pitch);
+	a.b = fl_radians(bank);
+	a.h = fl_radians(heading);
 	nebula_init(filename, &a);
 }
 

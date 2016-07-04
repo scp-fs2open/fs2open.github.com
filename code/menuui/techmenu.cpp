@@ -573,7 +573,7 @@ void techroom_ships_render(float frametime)
 		model_render_immediate(&render_info, Techroom_ship_modelnum, &Techroom_ship_orient, &vmd_zero_vector);
         shadows_end_render();
 
-		gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD]);
+		gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD], GR_RESIZE_MENU);
     }
 	
 	if (!Cmdline_nohtl) {

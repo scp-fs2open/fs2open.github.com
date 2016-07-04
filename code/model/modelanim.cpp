@@ -234,7 +234,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 		if (i != n_queue) {
 			// replace if it's not the last item on the list
 			if ( i < (MAX_TRIGGERED_ANIMATIONS-1) )
-				memcpy( &queue_tmp[i], &queue_tmp[i+1], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS-(i+1)) );
+				memmove( &queue_tmp[i], &queue_tmp[i+1], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS-(i+1)) );
 
 			// ok these two animations cancelled each other out, so he doesn't get on the queue
 			n_queue--;

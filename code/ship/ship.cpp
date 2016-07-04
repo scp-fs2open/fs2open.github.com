@@ -712,6 +712,7 @@ void ship_info::clone(const ship_info& other)
 	rotdamp = other.rotdamp;
 	delta_bank_const = other.delta_bank_const;
 	max_vel = other.max_vel;
+	min_vel = other.min_vel;
 	max_rotvel = other.max_rotvel;
 	rotation_time = other.rotation_time;
 	srotation_time = other.srotation_time;
@@ -1018,6 +1019,7 @@ void ship_info::move(ship_info&& other)
 	rotdamp = other.rotdamp;
 	delta_bank_const = other.delta_bank_const;
 	std::swap(max_vel, other.max_vel);
+	std::swap(min_vel, other.min_vel);
 	std::swap(max_rotvel, other.max_rotvel);
 	std::swap(rotation_time, other.rotation_time);
 	srotation_time = other.srotation_time;
@@ -1341,6 +1343,7 @@ ship_info::ship_info()
 	rotdamp = 0.0f;
 	delta_bank_const = DEFAULT_DELTA_BANK_CONST;
 	vm_vec_zero(&max_vel);
+	vm_vec_zero(&min_vel);
 	vm_vec_zero(&max_rotvel);
 	vm_vec_zero(&rotation_time);
 	srotation_time = 0.0f;
@@ -1795,7 +1798,7 @@ int parse_ship_template()
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
 	int rtn = 0;
-	bool first_time = false;
+	bool first_time = true;
 
 	required_string("$Template:");
 	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
@@ -2529,17 +2532,17 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if(optional_string("+Landing Max Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_max_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.landing_max_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Landing Min Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_min_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.landing_min_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Landing Max Rotate Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_max_rot_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.landing_max_rot_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Max Forward Vel:")) {
 			stuff_float(&sip->collision_physics.reorient_max_z);
@@ -2557,17 +2560,17 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if(optional_string("+Reorient Max Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.reorient_max_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.reorient_max_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Min Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.reorient_min_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.reorient_min_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Max Rotate Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.reorient_max_rot_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.reorient_max_rot_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Speed Mult:")) {
 			stuff_float(&sip->collision_physics.reorient_mult);
@@ -2575,7 +2578,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if(optional_string("+Landing Rest Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_rest_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.landing_rest_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		parse_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx, sip->name);
 	}
@@ -2685,6 +2688,9 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 
 	// calculate the max speed from max_velocity
 	sip->max_speed = sip->max_vel.xyz.z;
+
+	if(optional_string("$Player Minimum Velocity:"))
+		stuff_vec3d(&sip->min_vel);
 
 	if(optional_string("$Rotation Time:"))
 	{
@@ -4206,16 +4212,16 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				int value;
 				stuff_int(&value);
 				CAP(value, 0, 90);
-				float angle = ANG_TO_RAD((float) (90 - value));
-				sp->turret_max_fov = (float)cos(angle);
+				float angle = fl_radians(90 - value);
+				sp->turret_max_fov = cosf(angle);
 			}
 
 			if(optional_string("$Turret Base FOV:")) {
 				int value;
 				stuff_int(&value);
 				CAP(value, 0, 359);
-				float angle = ANG_TO_RAD((float) value)/2.0f;
-				sp->turret_y_fov = (float)cos(angle);
+				float angle = fl_radians(value)/2.0f;
+				sp->turret_y_fov = cosf(angle);
 				turret_has_base_fov = true;
 			}
 
@@ -5059,6 +5065,26 @@ void ship_parse_post_cleanup()
 		if (!(sip->flags & SIF_NO_COLLIDE) && (vm_vec_mag_squared( &sip->max_rotvel ) * .04) >= (PI*PI/4))
 		{
 			Warning(LOCATION, "$Rotation time: too low; this will disable rotational collisions. All three variables should be >= 1.39.\nFix this in ship '%s'\n", sip->name);
+		}
+
+		// ensure player min velocity makes sense
+		if (sip->min_vel.xyz.x > sip->max_vel.xyz.x || sip->min_vel.xyz.x < 0.0f)
+		{
+			error_display(0, "$Player Minimum Velocity X-value (%f) is negative or greater than max velocity X-value (%f), setting to zero\nFix for ship '%s'\n",
+					sip->min_vel.xyz.x, sip->max_vel.xyz.x, sip->name);
+			sip->min_vel.xyz.x = 0.0f;
+		}
+		if (sip->min_vel.xyz.y > sip->max_vel.xyz.y || sip->min_vel.xyz.y < 0.0f)
+		{
+			error_display(0, "$Player Minimum Velocity Y-value (%f) is negative or greater than max velocity Y-value (%f), setting to zero\nFix for ship '%s'\n",
+					sip->min_vel.xyz.y, sip->max_vel.xyz.y, sip->name);
+			sip->min_vel.xyz.y = 0.0f;
+		}
+		if (sip->min_vel.xyz.z > sip->max_vel.xyz.z || sip->min_vel.xyz.z < 0.0f)
+		{
+			error_display(0, "$Player Minimum Velocity Z-value (%f) is negative or greater than max velocity Z-value (%f), setting to zero\nFix for ship '%s'\n",
+					sip->min_vel.xyz.z, sip->max_vel.xyz.z, sip->name);
+			sip->min_vel.xyz.z = 0.0f;
 		}
 	}
 
@@ -6465,6 +6491,11 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			Warning (LOCATION, "\"fixed firingpoint\" flag used with turret which has less weapons defined for it than it has firingpoints\nsubsystem '%s' on ship type '%s'.\nsome of the firingpoints will be left unused\n", model_system->subobj_name, sinfo->name );
 		}
 
+        if ((ship_system->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION) && !(ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO))
+        {
+            Warning(LOCATION, "\"share fire direction\" flag used with turret which does not have the \"salvo mode\" flag set\nsubsystem '%s' on ship type '%s'.\nsetting the \"salvo mode\" flag\n", model_system->subobj_name, sinfo->name);
+            ship_system->system_info->flags |= MSS_FLAG_TURRET_SALVO;
+        }
 
 		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
 			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
@@ -10687,13 +10718,16 @@ int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 	shipp = &Ships[obj->instance];
 	swp = &shipp->weapons;
 	
+	if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
+		shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
+	if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)
+		shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
 	if(Ship_info[shipp->ship_info_index].draw_primary_models[bank_to_stop]){
-		if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
-			shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
-		if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
 		shipp->primary_rotate_ang[bank_to_stop] += shipp->primary_rotate_rate[bank_to_stop]*flFrametime;
-		if(shipp->primary_rotate_ang[bank_to_stop] > PI2)shipp->primary_rotate_ang[bank_to_stop] -= PI2;
-		if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)shipp->primary_rotate_ang[bank_to_stop] += PI2;
+		if(shipp->primary_rotate_ang[bank_to_stop] > PI2)
+			shipp->primary_rotate_ang[bank_to_stop] -= PI2;
+		if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)
+			shipp->primary_rotate_ang[bank_to_stop] += PI2;
 	}
 	
 	if(shipp->was_firing_last_frame[bank_to_stop] == 0)
@@ -10898,15 +10932,20 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
 		}
 
-		if(sip->draw_primary_models[bank_to_fire]){
-			if(shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
+		if (winfo_p->weapon_submodel_rotate_vel > 0.0f) {
+			if (shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
 				shipp->primary_rotate_rate[bank_to_fire] += winfo_p->weapon_submodel_rotate_accell*flFrametime;
-			if(shipp->primary_rotate_rate[bank_to_fire] > winfo_p->weapon_submodel_rotate_vel)shipp->primary_rotate_rate[bank_to_fire] = winfo_p->weapon_submodel_rotate_vel;
-			shipp->primary_rotate_ang[bank_to_fire] += shipp->primary_rotate_rate[bank_to_fire]*flFrametime;
-			if(shipp->primary_rotate_ang[bank_to_fire] > PI2)shipp->primary_rotate_ang[bank_to_fire] -= PI2;
-			if(shipp->primary_rotate_ang[bank_to_fire] < 0.0f)shipp->primary_rotate_ang[bank_to_fire] += PI2;
-
-			if(shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)continue;
+			if (shipp->primary_rotate_rate[bank_to_fire] > winfo_p->weapon_submodel_rotate_vel)
+				shipp->primary_rotate_rate[bank_to_fire] = winfo_p->weapon_submodel_rotate_vel;
+			if (sip->draw_primary_models[bank_to_fire]) {
+				shipp->primary_rotate_ang[bank_to_fire] += shipp->primary_rotate_rate[bank_to_fire]*flFrametime;
+				if (shipp->primary_rotate_ang[bank_to_fire] > PI2)
+					shipp->primary_rotate_ang[bank_to_fire] -= PI2;
+				if (shipp->primary_rotate_ang[bank_to_fire] < 0.0f)
+					shipp->primary_rotate_ang[bank_to_fire] += PI2;
+			}
+			if (shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
+				continue;
 		}
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
 		if((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->tag_level == 3) && (shipp->flags & SF_TRIGGER_DOWN) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
@@ -11111,7 +11150,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				shipp->beam_sys_info.model_num = sip->model_num;
 				shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
 				shipp->beam_sys_info.turret_num_firing_points = 1;  // dummy turret info is used per firepoint
-				shipp->beam_sys_info.turret_fov = (float)cos((winfo_p->field_of_fire != 0.0f)?winfo_p->field_of_fire:180);
+				shipp->beam_sys_info.turret_fov = cosf((winfo_p->field_of_fire != 0.0f)?winfo_p->field_of_fire:180);
 
 				shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
 				shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
@@ -18705,7 +18744,7 @@ void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *
 	mst->distortion_bitmap = shipp->thruster_distortion_bitmap;
 
 	mst->use_ab = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
-	mst->glow_noise = shipp->thruster_glow_noise;
+	mst->glow_noise = shipp->thruster_glow_noise * sip->thruster_glow_noise_mult;
 	mst->rotvel = Objects[shipp->objnum].phys_info.rotvel;
 
 	mst->glow_rad_factor = sip->thruster01_glow_rad_factor;

@@ -649,16 +649,16 @@ void HudGaugeLock::renderLockTrianglesOld(int center_x, int center_y, int radius
 		// draw the orbiting triangles
 
 		//ang = atan2(target_point.y,target_point.x);
-		xpos = center_x + (float)cos(ang)*(radius + Lock_triangle_height + 2);
-		ypos = center_y - (float)sin(ang)*(radius + Lock_triangle_height + 2);
+		xpos = center_x + cosf(ang)*(radius + Lock_triangle_height + 2);
+		ypos = center_y - sinf(ang)*(radius + Lock_triangle_height + 2);
 			
-		x3 = xpos - Lock_triangle_base * (float)sin(-ang);
-		y3 = ypos + Lock_triangle_base * (float)cos(-ang);
-		x4 = xpos + Lock_triangle_base * (float)sin(-ang);
-		y4 = ypos - Lock_triangle_base * (float)cos(-ang);
+		x3 = xpos + Lock_triangle_base * sinf(ang);
+		y3 = ypos + Lock_triangle_base * cosf(ang);
+		x4 = xpos - Lock_triangle_base * sinf(ang);
+		y4 = ypos - Lock_triangle_base * cosf(ang);
 
-		xpos = xpos - Lock_triangle_base * (float)cos(ang);
-		ypos = ypos + Lock_triangle_base * (float)sin(ang);
+		xpos = xpos - Lock_triangle_base * cosf(ang);
+		ypos = ypos + Lock_triangle_base * sinf(ang);
 
 		hud_tri(x3, y3, xpos, ypos, x4, y4);
 	} // end for

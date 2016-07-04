@@ -1194,6 +1194,7 @@ public:
 	float		rotdamp;								// rotational drag
 	float		delta_bank_const;
 	vec3d	max_vel;								//	max velocity of the ship in the linear directions -- read from ships.tbl
+	vec3d	min_vel;								//	min velocity of the ship in the linear directions -- read from ships.tbl
 	vec3d	max_rotvel;							// maximum rotational velocity
 	vec3d	rotation_time;						// time to rotate in x/y/z dimension traveling at max rotvel
 	float		srotation_time;					//	scalar, computed at runtime as (rotation_time.x + rotation_time.y)/2

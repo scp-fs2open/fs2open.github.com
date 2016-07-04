@@ -184,6 +184,7 @@ void model_unload(int modelnum, int force)
 	if (!force && (--pm->used_this_mission > 0))
 		return;
 
+	mprintf(("Unloading model '%s' from slot '%i'\n", pm->filename, num));
 
 	// so that the textures can be released
 	pm->used_this_mission = 0;
@@ -317,6 +318,16 @@ void model_unload(int modelnum, int force)
 		}
 	}
 
+	// need to reset weapon models as well
+	for (int k = 0; k < MAX_WEAPON_TYPES; ++k) {
+		if ( pm->id == Weapon_info[k].model_num ) {
+			Weapon_info[k].model_num = -1;
+		}
+		if ( pm->id == Weapon_info[k].external_model_num ) {
+			Weapon_info[k].external_model_num = -1;
+		}
+	}
+
 	pm->id = 0;
 	delete pm;
 
@@ -433,6 +444,60 @@ void get_user_prop_value(char *buf, char *value)
 	*p1 = c;
 }
 
+// routine to look for one of the specified user properties
+// if p is not null, sets p to the next character AFTER the string and a space/equals/colon (not the beginning of the string, as strstr would)
+// returns the index of the property found, or -1 if not found
+// NB: the first recognized option is returned, so if one option is a substring of another, put it later in the list!
+int prop_string(char *props, char **p, int n_args, ...)
+{
+	char *pos = nullptr;
+	va_list args;
+	int index = -1;
+
+	va_start(args, n_args);
+
+	for (int i = 0; i < n_args; ++i)
+	{
+		const char *option = va_arg(args, const char *);
+
+		// look for our option in the props fields
+		if ((pos = strstr(props, option)) != nullptr)
+		{
+			// we found it
+			index = i;
+
+			// so advance past the string and its following character
+			pos += strlen(option);
+			pos++;
+
+			break;
+		}
+	}
+
+	va_end(args);
+
+	// if we have a p, assign *p
+	// (if nothing was found, *p will be nullptr)
+	if (p != nullptr)
+		*p = pos;
+
+	return index;
+}
+
+// syntactic sugar
+int prop_string(char *props, char **p, const char *option0)
+{
+	return prop_string(props, p, 1, option0);
+}
+int prop_string(char *props, char **p, const char *option0, const char *option1)
+{
+	return prop_string(props, p, 2, option0, option1);
+}
+int prop_string(char *props, char **p, const char *option0, const char *option1, const char *option2)
+{
+	return prop_string(props, p, 3, option0, option1, option2);
+}
+
 // funciton to copy model data from one subsystem set to another subsystem set.  This function
 // is called when two ships use the same model data, but since the model only gets read in one time,
 // the subsystem data is only present in one location.  The ship code will call this routine to fix
@@ -488,6 +553,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	char *p;
 	char buf[64];
 	char	lcdname[256];
+	int		idx;
 
 	if ( (p = strstr(props, "$name")) != NULL)
 		get_user_prop_value(p+5, subsystemp->name);
@@ -510,8 +576,8 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 			get_user_prop_value(p+4, buf);			// get the value of the fov
 		else
 			strcpy_s(buf,"180");
-		angle = ANG_TO_RAD(atoi(buf))/2.0f;
-		subsystemp->turret_fov = (float)cos(angle);
+		angle = fl_radians(atoi(buf))/2.0f;
+		subsystemp->turret_fov = cosf(angle);
 		subsystemp->turret_num_firing_points = 0;
 
 		if ( (p = strstr(props, "$crewspot")) != NULL) {
@@ -544,20 +610,32 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	}
 
 	// Dumb-Rotating subsystem
-	if ((p = strstr(props, "$dumb_rotate")) != NULL) {
+	if (prop_string(props, nullptr, "$dumb_rotate") >= 0) {
 		// no special subsystem handling needed here, but make sure we didn't specify both methods
-		if (strstr(props, "$rotate") != NULL) {
+		if (prop_string(props, nullptr, "$rotate") >= 0) {
 			Warning(LOCATION, "Subsystem '%s' on ship %s cannot have both rotation and dumb-rotation!", dname, model_get(model_num)->filename);
 		}
 	}
 	// Rotating subsystem
-	else if ((p = strstr(props, "$rotate")) != NULL) {
+	else if ((idx = prop_string(props, &p, "$rotate_time", "$rotate_rate", "$rotate")) >= 0) {
 		subsystemp->flags |= MSS_FLAG_ROTATES;
 
-		// get time for (a) complete rotation (b) step (c) activation
-		float turn_time;
-		get_user_prop_value(p+7, buf);
-		turn_time = (float)atof(buf);
+		// get value for (a) complete rotation (b) step (c) activation
+		get_user_prop_value(p, buf);	// note: p points to the value since we used prop_string
+
+		// for retail compatibility, $rotate means $rotate_time
+		float turn_rate;
+		if (idx == 0 || idx == 2) {
+			float turn_time = static_cast<float>(atof(buf));
+			if (turn_time == 0.0f) {
+				Warning(LOCATION, "Rotation has a turn time of 0 for subsystem '%s' on ship %s!", dname, model_get(model_num)->filename);
+				turn_rate = 1.0f;
+			} else {
+				turn_rate = PI2 / turn_time;
+			}
+		} else {
+			turn_rate = static_cast<float>(atof(buf));
+		}
 
 		// CASE OF WEAPON ROTATION (primary only)
 		if ( (p = strstr(props, "$pbank")) != NULL)	{
@@ -565,7 +643,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 			// get which pbank should trigger rotation
 			get_user_prop_value(p+6, buf);
-			subsystemp->weapon_rotation_pbank = (int)atoi(buf);
+			subsystemp->weapon_rotation_pbank = atoi(buf);
 		} // end of weapon rotation stuff
 
 		
@@ -620,7 +698,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 		// CASE OF NORMAL CONTINUOUS ROTATION
 		else {
-			subsystemp->turn_rate = PI2 / turn_time;
+			subsystemp->turn_rate = turn_rate;
 		}
 	}
 }
@@ -1263,11 +1341,30 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 
 				// note, this should come BEFORE do_new_subsystem() for proper error handling (to avoid both rotating and dumb-rotating submodel)
-				if ( ( p = strstr(props, "$dumb_rotate") ) != NULL ) {
+				int idx = prop_string(props, &p, "$dumb_rotate_time", "$dumb_rotate_rate", "$dumb_rotate");
+				if (idx >= 0) {
 					pm->submodel[n].movement_type = MOVEMENT_TYPE_INTRINSIC_ROTATE;
 					pm->flags |= PM_FLAG_HAS_INTRINSIC_ROTATE;
 
-					pm->submodel[n].dumb_turn_rate = (float)atof(p + 13);
+					// do this the same way as regular $rotate
+					char buf[64];
+					get_user_prop_value(p, buf);
+
+					// for past SCP compatibility, $dumb_rotate means $dumb_rotate_rate
+					float turn_rate;
+					if (idx == 0) {
+						float turn_time = static_cast<float>(atof(buf));
+						if (turn_time == 0.0f) {
+							Warning(LOCATION, "Dumb-Rotation has a turn time of 0 for subsystem '%s' on ship %s!", pm->submodel[n].name, pm->filename);
+							turn_rate = 1.0f;
+						} else {
+							turn_rate = PI2 / turn_time;
+						}
+					} else {
+						turn_rate = static_cast<float>(atof(buf));
+					}
+
+					pm->submodel[n].dumb_turn_rate = turn_rate;
 				} else {
 					pm->submodel[n].dumb_turn_rate = 0.0f;
 				}
@@ -2506,7 +2603,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		return -1;
 	}	
 
-	mprintf(( "Loading model '%s'\n", filename ));
+	mprintf(( "Loading model '%s' into slot '%i'\n", filename, num ));
 
 	pm = new polymodel;	
 	Polygon_models[num] = pm;
@@ -3570,9 +3667,9 @@ void submodel_look_at(polymodel *pm, int mn)
 	vm_vec_cross(&c, &l, &mp);
 	float dot=vm_vec_dot(&l,&mp);
 	if (dot>=0.0f) {
-		*a = asin(c.a1d[axis]);
+		*a = asinf(c.a1d[axis]);
 	} else {
-		*a = PI-asin(c.a1d[axis]);
+		*a = PI-asinf(c.a1d[axis]);
 	}
 
 	if (*a > PI2 ) {
@@ -3864,7 +3961,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 //	vm_extract_angles_vector(&desired_angles, &of_dst);
 	
 	if (reset == false) {
-		desired_angles.p = (float)acos(of_dst.xyz.z);
+		desired_angles.p = acosf(of_dst.xyz.z);
 		desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
 		desired_angles.b = 0.0f;
 	} else {
@@ -4418,10 +4515,14 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 				// check submodel rotation is less than max allowed.
 				submodel_instance_info *sii = pmi->submodel[i].sii;
 
-				// found the correct submodel instance - now check delta rotation angle not too large
-				float delta_angle = get_submodel_delta_angle(sii);
-				if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
-					submodel_vector->push_back(i);
+				// If there is no instance info yet then ignore this submodel
+				if (sii != nullptr) {
+
+					// found the correct submodel instance - now check delta rotation angle not too large
+					float delta_angle = get_submodel_delta_angle(sii);
+					if (delta_angle < MAX_SUBMODEL_COLLISION_ROT_ANGLE) {
+						submodel_vector->push_back(i);
+					}
 				}
 			}
 		}
@@ -5616,8 +5717,8 @@ void parse_glowpoint_table(const char *filename)
 
 					if (optional_string("$Cone angle:")) {
 						stuff_float(&gpo.cone_angle);
-						gpo.cone_inner_angle = cos((gpo.cone_angle - ((gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f)) / 180.0f * PI);
-						gpo.cone_angle = cos(gpo.cone_angle / 180.0f * PI);
+						gpo.cone_inner_angle = cosf((gpo.cone_angle - ((gpo.cone_angle < 20.0f) ? gpo.cone_angle*0.5f : 20.0f)) / 180.0f * PI);
+						gpo.cone_angle = cosf(gpo.cone_angle / 180.0f * PI);
 					}
 
 					required_string("$Cone direction:");

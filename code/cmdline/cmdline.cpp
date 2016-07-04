@@ -200,7 +200,6 @@ Flag exe_params[] =
 	{ "-no_glsl",			"Disable GLSL (shader) support",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_glsl", },
 	{ "-ati_swap",			"Fix colour issues on some ATI cards",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ati_swap", },
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_3d_sound", },
-	{ "-disable_glsl_model","Don't use shaders for model rendering",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_glsl_model", },
 	{ "-mipmap",			"Enable mipmapping",						true,	0,					EASY_DEFAULT_MEM,	"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
 	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-use_gldrawelements", },
 	{ "-old_collision",		"Use old collision detection system",		true,	EASY_DEFAULT,		EASY_ALL_ON,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-old_collision", },
@@ -208,6 +207,9 @@ Flag exe_params[] =
 	{ "-no_batching",		"Disable batched model rendering",			true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-no_geo_effects",	"Disable geometry shader for effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-set_cpu_affinity",	"Sets processor affinity to config value",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
+#ifdef WIN32
+	{ "-fix_registry",	"Use a different registry path",			true,		0,					EASY_DEFAULT,		"Troubleshoot", "", },
+#endif
 
 	{ "-ingame_join",		"Allow in-game joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Enable voice recognition",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
@@ -437,6 +439,9 @@ cmdline_parm old_collision_system("-old_collision", NULL, AT_NONE); // Cmdline_o
 cmdline_parm gl_finish ("-gl_finish", NULL, AT_NONE);
 cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
 cmdline_parm set_cpu_affinity("-set_cpu_affinity", NULL, AT_NONE);
+#ifdef WIN32
+cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
+#endif
 
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nohtl = 0;
@@ -453,6 +458,9 @@ char* Cmdline_keyboard_layout = NULL;
 bool Cmdline_gl_finish = false;
 bool Cmdline_no_geo_sdr_effects = false;
 bool Cmdline_set_cpu_affinity = false;
+#ifdef WIN32
+bool Cmdline_alternate_registry_path = false;
+#endif
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", "Skip mainhall and run this mission", AT_STRING);	// Cmdline_start_mission
@@ -1617,8 +1625,8 @@ bool SetCmdlineParams()
 	if ( ship_choice_3d_arg.found() )
 		Cmdline_ship_choice_3d = 1;
 
-    if ( weapon_choice_3d_arg.found() )
-        Cmdline_weapon_choice_3d = 1;
+	if ( weapon_choice_3d_arg.found() )
+		Cmdline_weapon_choice_3d = 1;
 
 	if ( show_mem_usage_arg.found() )
 		Cmdline_show_mem_usage = 1;
@@ -1679,6 +1687,12 @@ bool SetCmdlineParams()
 	{
 		Cmdline_portable_mode = true;
 	}
+	
+#ifdef WIN32
+	if (fix_registry.found()) {
+		Cmdline_alternate_registry_path = true;
+	}
+#endif
 
 	if ( snd_preload_arg.found() )
 	{

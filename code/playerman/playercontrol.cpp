@@ -581,6 +581,16 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			override_analog_throttle = 1;
 		}
 
+		// allow a minimum speed to be set for the player ship (only)
+		if ( Player_ship != nullptr && Player_ship->ship_info_index >= 0 ) {
+			float z_min = Ship_info[Player_ship->ship_info_index].min_vel.xyz.z;
+			if (z_min > 0.0f && pi->speed <= z_min) {
+				ci->forward = MAX(ci->forward, 0.0f);
+				ci->forward_cruise_percent = MAX(ci->forward_cruise_percent, z_min / Ship_info[Player_ship->ship_info_index].max_vel.xyz.z * 100.0f);
+				override_analog_throttle = 1;
+			}
+		}
+
 		// AL 12-29-97: If afterburner key is down, player should have full forward thrust (even if afterburners run out)
 		if ( check_control(AFTERBURNER) ) {
 			ci->forward = 1.0f;

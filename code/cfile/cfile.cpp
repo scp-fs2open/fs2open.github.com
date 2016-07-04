@@ -93,29 +93,29 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 #define CFILE_STACK_MAX	8
 
 int cfile_inited = 0;
-int Cfile_stack_pos = 0;
+static int Cfile_stack_pos = 0;
 
-char Cfile_stack[CFILE_STACK_MAX][CFILE_ROOT_DIRECTORY_LEN];
+static char Cfile_stack[CFILE_STACK_MAX][CFILE_ROOT_DIRECTORY_LEN];
 
 Cfile_block Cfile_block_list[MAX_CFILE_BLOCKS];
-CFILE Cfile_list[MAX_CFILE_BLOCKS];
+static CFILE Cfile_list[MAX_CFILE_BLOCKS];
 
-const char *Cfile_cdrom_dir = NULL;
+static const char *Cfile_cdrom_dir = NULL;
 
 //
 // Function prototypes for internally-called functions
 //
-int cfget_cfile_block();
-CFILE *cf_open_fill_cfblock(const char* source, int line, FILE * fp, int type);
-CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size);
+static int cfget_cfile_block();
+static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE * fp, int type);
+static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size);
 
 #if defined _WIN32
-CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type);
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type);
 #elif defined SCP_UNIX
-CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type);
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type);
 #endif
 
-void cf_chksum_long_init();
+static void cf_chksum_long_init();
 
 static void dump_opened_files()
 {
@@ -127,7 +127,7 @@ static void dump_opened_files()
 	}
 }
 
-void cfile_close()
+static void cfile_close()
 {
 	mprintf(("Still opened files:\n"));
 	dump_opened_files();
@@ -135,48 +135,45 @@ void cfile_close()
 	cf_free_secondary_filelist();
 }
 
-// determine if the given path is in a root directory (c:\  or  c:\freespace2.exe  or  c:\fred2.exe   etc)
-int cfile_in_root_dir(const char *exe_path)
-{
-	int token_count = 0;
-	char path_copy[CFILE_ROOT_DIRECTORY_LEN] = "";
-	char *tok;
-
-	// bogus
-	if(exe_path == NULL){
-		return 1;
-	}
-
-	// copy the path
-	memset(path_copy, 0, CFILE_ROOT_DIRECTORY_LEN);
-	strncpy(path_copy, exe_path, CFILE_ROOT_DIRECTORY_LEN - 1);
-
-	// count how many slashes there are in the path
-	tok = strtok(path_copy, DIR_SEPARATOR_STR);
-	if(tok == NULL){
-		return 1;
-	}	
-	do {
-		token_count++;
-		tok = strtok(NULL, DIR_SEPARATOR_STR);
-	} while(tok != NULL);
-	
 #ifdef SCP_UNIX
-	// /freespace works, / does not
-	if(token_count <= 1) {
+	#define MIN_NUM_PATH_COMPONENTS 2     /* Directory + file */
 #else
-	// C:/freespace works, C:/ does not
-	if(token_count <= 2){
+	#define MIN_NUM_PATH_COMPONENTS 3     /* Drive + directory + file */
 #endif
-		return 1;
-	}
 
-	// not-root directory
-	return 0;
+/**
+ * @brief Determine if the given path is in the root directory
+ *
+ * @param exe_path Path to executable
+ *
+ * @return true if root directory, false if not
+ */
+static bool cfile_in_root_dir(const char *exe_path)
+{
+	int new_token;
+	int token_count = 0;
+	const char *p = exe_path;
+
+	Assert(exe_path != NULL);
+
+	do {
+		new_token = 0;
+		while (*p == DIR_SEPARATOR_CHAR) {
+			p++;
+		}
+
+		while ((*p != '\0') && (*p != DIR_SEPARATOR_CHAR)) {
+			new_token = 1;
+			p++;
+		}
+		token_count += new_token;
+	} while (*p != '\0');
+
+	return (token_count < MIN_NUM_PATH_COMPONENTS);
 }
 
 /**
- * Initializes the cfile system. Called once at application start.
+ * @brief Initialize the cfile system. Called once at application start.
  *
  * @param exe_dir Path to a file (not a directory)
  * @param cdrom_dir Path to a CD drive mount point (may be NULL)
@@ -188,60 +185,61 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 {
 	int i;
 
-	// initialize encryption
-	encrypt_init();	
+	encrypt_init();	  /* initialize encryption */
 
-	if ( !cfile_inited ) {
-		char buf[CFILE_ROOT_DIRECTORY_LEN];
+	if (cfile_inited) {
+		return 0;
+	}
 
-		cfile_inited = 1;
+	char buf[CFILE_ROOT_DIRECTORY_LEN];
 
-		memset(buf, 0, CFILE_ROOT_DIRECTORY_LEN);
-		strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
-		i = strlen(buf);
+	strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
+	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
+	i = strlen(buf);
 
-		// are we in a root directory?		
-		if(cfile_in_root_dir(buf)){
-			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "FreeSpace2/Fred2 cannot be run from a drive root directory!");
-			return 1;
-		}		
+	// are we in a root directory?		
+	if(cfile_in_root_dir(buf)){
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "FreeSpace2/Fred2 cannot be run from a drive root directory!");
+		return 1;
+	}		
 
-		while (i--) {
-			if (buf[i] == DIR_SEPARATOR_CHAR){
-				break;
-			}
-		}						
+	// This needs to be set here because cf_build_secondary_filelist assumes it to be true
+	cfile_inited = 1;
+	
+	/*
+	 * Determine the executable's directory.  Note that DIR_SEPARATOR_CHAR
+	 * is guaranteed to be found in the string else cfile_in_root_dir()
+	 * would have failed.
+	 */
 
-		if (i >= 2) {					
-			buf[i] = 0;						
-			cfile_chdir(buf);
-		} else {
-			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error trying to determine executable root directory!");
-			return 1;
-		}
+	char *p;
 
-		// set root directory
-		strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN-1);
-		strncpy(Cfile_user_dir, os_get_config_path().c_str(), CFILE_ROOT_DIRECTORY_LEN-1);
-		
+	p = strrchr(buf, DIR_SEPARATOR_CHAR);
+	*p = '\0';
+
+	cfile_chdir(buf);
+
+	// set root directory
+	strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN-1);
+	strncpy(Cfile_user_dir, os_get_config_path().c_str(), CFILE_ROOT_DIRECTORY_LEN-1);
+	
 #ifdef SCP_UNIX
-		// Initialize path of old pilot files
-		extern const char* Osreg_user_dir_legacy;
-		snprintf(Cfile_user_dir_legacy, CFILE_ROOT_DIRECTORY_LEN-1, "%s/%s/", getenv("HOME"), Osreg_user_dir_legacy);
+	// Initialize path of old pilot files
+	extern const char* Osreg_user_dir_legacy;
+	snprintf(Cfile_user_dir_legacy, CFILE_ROOT_DIRECTORY_LEN-1, "%s/%s/", getenv("HOME"), Osreg_user_dir_legacy);
 #endif
 
-		for ( i = 0; i < MAX_CFILE_BLOCKS; i++ ) {
-			Cfile_block_list[i].type = CFILE_BLOCK_UNUSED;
-		}
-
-		// 32 bit CRC table init
-		cf_chksum_long_init();
-
-		Cfile_cdrom_dir = cdrom_dir;
-		cf_build_secondary_filelist(Cfile_cdrom_dir);
-
-		atexit( cfile_close );
+	for (i = 0; i < MAX_CFILE_BLOCKS; i++) {
+		Cfile_block_list[i].type = CFILE_BLOCK_UNUSED;
 	}
+
+	// 32 bit CRC table init
+	cf_chksum_long_init();
+
+	Cfile_cdrom_dir = cdrom_dir;
+	cf_build_secondary_filelist(Cfile_cdrom_dir);
+
+	atexit(cfile_close);
 
 	return 0;
 }
@@ -256,13 +254,13 @@ void cfile_refresh()
 
 
 
+#ifdef _WIN32
 // Changes to a drive if valid.. 1=A, 2=B, etc
 // If flag, then changes to it.
 // Returns 0 if not-valid, 1 if valid.
 int cfile_chdrive( int DriveNum, int flag )
 {
 	int Valid = 0;
-#ifdef _WIN32
 	int n, org;
 
 	org = -1;
@@ -278,99 +276,108 @@ int cfile_chdrive( int DriveNum, int flag )
 
 	if ( (!flag) && (n != org) )
 		_chdrive( org );
-#endif // _WIN32
 
 	return Valid;
 
 }
+#endif // _WIN32
 
-// push current directory on a 'stack' (so we can restore it) and change the directory
-int cfile_push_chdir(int type)
+/**
+ * @brief Common code for changing directory
+ *
+ * @param new_dir Directory to which to change
+ * @param cur_dir Current directory (only used on Windows)
+ *
+ * @retval 0 Success
+ * @retval 1 Failed to change to new directory's drive (Windows only)
+ * @retval 2 Failed to change to new directory
+ */
+static int _cfile_chdir(const char *new_dir, const char *cur_dir __UNUSED)
 {
-	int e;
-	char dir[CFILE_ROOT_DIRECTORY_LEN];
-	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
-	char *Path = NULL;
-	char NoDir[] = "\\.";
-
-	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
-
-	Assert(Cfile_stack_pos < CFILE_STACK_MAX);
-
-	if ( Cfile_stack_pos >= CFILE_STACK_MAX )
-		return -1;
-
-	strncpy(Cfile_stack[Cfile_stack_pos++], OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
-
-	cf_create_default_path_string( dir, sizeof(dir)-1, type, NULL );
+	int status;
+	const char *path = NULL;
+	const char no_dir[] = "\\.";
 
 #ifdef _WIN32
-	char *colon_pos = strchr(dir, ':');
+	const char *colon = strchr(new_dir, ':');
 
-	if (colon_pos) {
-		if (!cfile_chdrive( tolower(*(colon_pos - 1)) - 'a' + 1, 1))
+	if (colon) {
+		if (!cfile_chdrive(tolower(*(colon - 1)) - 'a' + 1, 1))
 			return 1;
 
-		Path = colon_pos+1;
+		path = colon + 1;
 	} else
-#endif // _WIN32
+#endif /* _WIN32 */
 	{
-		Path = dir;
+		path = new_dir;
 	}
 
-	if (!(*Path)) {
-		Path = NoDir;
+	if (*path == '\0') {
+		path = no_dir;
 	}
 
-	// This chdir might get a critical error!
-	e = _chdir( Path );
-	if (e) {
+	/* This chdir might get a critical error! */
+	status = _chdir(path);
+	if (status != 0) {
 #ifdef _WIN32
-		cfile_chdrive( tolower(OriginalDirectory[0]) - 'a' + 1, 1 );
-#endif // _WIN32
+		cfile_chdrive(tolower(cur_dir[0]) - 'a' + 1, 1);
+#endif /* _WIN32 */
 		return 2;
 	}
 
 	return 0;
 }
 
+/**
+ * @brief Push current directory onto a 'stack' and change to a new directory
+ *
+ * The current directory is pushed onto a 'stack' so that it can be easily
+ * restored at a later time. The new directory is derived from @a type.
+ *
+ * @param type path type (CF_TYPE_xxx)
+ *
+ * @retval -1 'Stack' is full
+ * @retval  0 Success
+ * @retval  1 Failed to change to new directory's drive (Windows only)
+ * @retval  2 Failed to change to new directory
+ */
+int cfile_push_chdir(int type)
+{
+	char dir[CFILE_ROOT_DIRECTORY_LEN];
+	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
 
+	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN - 1);
+
+	Assert(Cfile_stack_pos < CFILE_STACK_MAX);
+
+	if (Cfile_stack_pos >= CFILE_STACK_MAX) {
+		return -1;
+	}
+
+	strncpy(Cfile_stack[Cfile_stack_pos++], OriginalDirectory,
+	        CFILE_ROOT_DIRECTORY_LEN - 1);
+
+	cf_create_default_path_string(dir, sizeof(dir) - 1, type, NULL);
+
+	return _cfile_chdir(dir, OriginalDirectory);
+}
+
+/**
+ * @brief Change to the specified directory
+ *
+ * @param dir Directory
+ *
+ * @retval  0 Success
+ * @retval  1 Failed to change to new directory's drive (Windows only)
+ * @retval  2 Failed to change to new directory
+ */
 int cfile_chdir(const char *dir)
 {
-	int e;
 	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
-	const char *Path = NULL;
-	char NoDir[] = "\\.";
 
-	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
+	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN - 1);
 
-#ifdef _WIN32
-	const char *colon_pos = strchr(dir, ':');
-	if (colon_pos)	{
-		if (!cfile_chdrive( tolower(*(colon_pos - 1)) - 'a' + 1, 1))
-			return 1;
-
-		Path = colon_pos+1;
-	} else
-#endif // _WIN32
-	{
-		Path = dir;
-	}
-
-	if (!(*Path)) {
-		Path = NoDir;
-	}
-
-	// This chdir might get a critical error!
-	e = _chdir( Path );
-	if (e) {
-#ifdef _WIN32
-		cfile_chdrive( tolower(OriginalDirectory[0]) - 'a' + 1, 1 );
-#endif // _WIN32
-		return 2;
-	}
-
-	return 0;
+	return _cfile_chdir(dir, OriginalDirectory);
 }
 
 int cfile_pop_dir()
@@ -423,7 +430,7 @@ int cfile_flush_dir(int dir_type)
 		for (unsigned int i = 0;  i < globinfo.gl_pathc;  i++) {
 			// Determine if this is a regular file
 			struct stat statbuf;
-			memset(&statbuf, 0, sizeof(statbuf));
+
 			stat(globinfo.gl_pathv[i], &statbuf);
 			if (S_ISREG(statbuf.st_mode)) {
 				// delete the file
@@ -467,34 +474,24 @@ char *cf_add_ext(const char *filename, const char *ext)
 	return path;
 }
 
-// Deletes a file. Returns 0 if an error occurs, 1 on success
-int cf_delete(const char *filename, int dir_type)
+/**
+ * @brief Delete the specified file
+ *
+ * @param filename Name of file to delete
+ * @param path_type Path type (CF_TYPE_xxx)
+ *
+ * @return 0 on failure, 1 on success
+ */
+int cf_delete(const char *filename, int path_type)
 {
 	char longname[MAX_PATH_LEN];
 
-	Assert( CF_TYPE_SPECIFIED(dir_type) );
+	Assert(CF_TYPE_SPECIFIED(path_type));
 
-	cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, filename );
+	cf_create_default_path_string(longname, sizeof(longname) - 1,
+	                              path_type, filename);
 
-	FILE *fp = fopen(longname, "rb");
-	if (fp) {
-		// delete the file
-		fclose(fp);
-		if(_unlink(longname) == -1)
-		{
-			//ERROR - file is probably read only
-			return 0;
-		}
-		else
-		{
-			return 1;
-		}
-	}
-	else
-	{
-		//ERROR - file doesn't exist
-		return 0;
-	}
+	return (_unlink(longname) != -1);
 }
 
 
@@ -864,7 +861,7 @@ CFILE *ctmpfile()
 // returns:   success ==> index in Cfile_block_list[] array
 //            failure ==> -1
 //
-int cfget_cfile_block()
+static int cfget_cfile_block()
 {	
 	int i;
 	Cfile_block *cb;
@@ -965,7 +962,7 @@ int cf_is_valid(CFILE *cfile)
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int type)
+static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int type)
 {
 	int cfile_block_index;
 
@@ -1004,7 +1001,7 @@ CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int type)
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size)
+static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size)
 {
 	// Found it in a pack file
 	int cfile_block_index;
@@ -1044,9 +1041,9 @@ CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, 
 // returns:   ptr CFILE structure.  
 //
 #if defined _WIN32
-CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type)
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type)
 #elif defined SCP_UNIX
-CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type)
+static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp, int type)
 #endif
 {
 	int cfile_block_index;
@@ -1611,7 +1608,7 @@ char *cfgets(char *buf, int n, CFILE *cfile)
 // CRC code for mission validation.  given to us by Kevin Bentley on 7/20/98.   Some sort of
 // checksumming code that he wrote a while ago.  
 #define CRC32_POLYNOMIAL					0xEDB88320
-uint CRCTable[256];
+static uint CRCTable[256];
 
 #define CF_CHKSUM_SAMPLE_SIZE				512
 
@@ -1648,7 +1645,7 @@ uint cf_add_chksum_long(uint seed, ubyte *buffer, int size)
 	return crc;
 }
 
-void cf_chksum_long_init()
+static void cf_chksum_long_init()
 {
 	int i, j;
 	uint crc;	
@@ -1669,7 +1666,7 @@ void cf_chksum_long_init()
 
 // single function convenient to use for both short and long checksums
 // NOTE : only one of chk_short or chk_long must be non-NULL (indicating which checksum to perform)
-int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
+static int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
 {
 	ubyte cf_buffer[CF_CHKSUM_SAMPLE_SIZE];
 	int is_long;
