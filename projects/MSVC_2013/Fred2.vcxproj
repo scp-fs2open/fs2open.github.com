@@ -170,14 +170,14 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fred2_open_3_7_4_RC3-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fred2_open_3_7_4_RC3_SSE-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">fred2_open_3_7_4_RC3_SSE2-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">fred2_open_3_7_4_RC3_AVX-DEBUG</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fred2_open_3_7_4_RC3</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fred2_open_3_7_4_RC3_SSE</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">fred2_open_3_7_4_RC3_SSE2</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">fred2_open_3_7_4_RC3_AVX</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fred2_open_3_7_4-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">fred2_open_3_7_4_SSE-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">fred2_open_3_7_4_SSE2-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">fred2_open_3_7_4_AVX-DEBUG</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fred2_open_3_7_4</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">fred2_open_3_7_4_SSE</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">fred2_open_3_7_4_SSE2</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">fred2_open_3_7_4_AVX</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <CustomBuildStep />
