@@ -14,5 +14,5 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     ./autogen.sh $AUTOGEN_CONFIG
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     cd projects/Xcode
-    unzip Frameworks.zip
+    tar -xvzf Frameworks.tgz
 fi
