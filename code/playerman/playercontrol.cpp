@@ -857,7 +857,6 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci)
 void read_player_controls(object *objp, float frametime)
 {
 	float diff;
-	int can_warp = 0, warp_failed = 0;
 	float target_warpout_speed;
 
 	joy_ff_adjust_handling((int) objp->phys_info.speed);
@@ -898,42 +897,24 @@ void read_player_controls(object *objp, float frametime)
 
 				target_warpout_speed = ship_get_warpout_speed(objp);
 
-				if ( Warpout_forced ) {
-					Ships[objp->instance].current_max_speed = target_warpout_speed * 2.0f;
-
-					diff = target_warpout_speed-objp->phys_info.fspeed;
-
-					if ( diff < 0.0f )
-						diff = 0.0f;
-
-					Player->ci.forward = ((target_warpout_speed+diff) / Ships[objp->instance].current_max_speed);
+				// check if warp ability has been disabled
+				if (!(Warpout_forced) && Ships[objp->instance].flags & ( SF_WARP_BROKEN|SF_WARP_NEVER ) ) {
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot warp out at this time.", 81));
+					snd_play(&Snds[SND_PLAYER_WARP_FAIL]);
+					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
 				} else {
-					// check if warp ability has been disabled
-					if ( Ships[objp->instance].flags & ( SF_WARP_BROKEN|SF_WARP_NEVER ) ) {
-						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot warp out at this time.", 81));
-						warp_failed = 1;
-					} else {
-						if ( (!warp_failed) && (Ships[objp->instance].current_max_speed >= target_warpout_speed) ) {
-							can_warp = 1;
-						} else {
-							Ships[objp->instance].current_max_speed = target_warpout_speed + 5.0f;
-							can_warp = 1;
-						}
-
-						if (can_warp) {
-							diff = target_warpout_speed - objp->phys_info.fspeed;
-
-							if ( diff < 0.0f ) 
-								diff = 0.0f;
-						
-							Player->ci.forward = ((target_warpout_speed + diff) / Ships[objp->instance].current_max_speed);
-						}
+					if ( Warpout_forced ) {
+						Ships[objp->instance].current_max_speed = target_warpout_speed * 2.0f;
+					} else if (Ships[objp->instance].current_max_speed < target_warpout_speed) {
+						Ships[objp->instance].current_max_speed = target_warpout_speed + 5.0f;
 					}
 
-					if ( warp_failed ) {
-						snd_play(&Snds[SND_PLAYER_WARP_FAIL]);
-						gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
-					}
+					diff = target_warpout_speed - objp->phys_info.fspeed;
+
+					if ( diff < 0.0f ) 
+						diff = 0.0f;
+					
+					Player->ci.forward = ((target_warpout_speed + diff) / Ships[objp->instance].current_max_speed);
 				}
 			
 				if ( Player->control_mode == PCM_WARPOUT_STAGE1 )
