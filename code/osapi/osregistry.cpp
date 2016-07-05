@@ -10,6 +10,7 @@
 #include "globalincs/pstypes.h"
 #include "osapi/osregistry.h"
 #include "osapi/osapi.h"
+#include "cmdline/cmdline.h"
 
 #include <stdio.h>
 #include <stdlib.h>
