@@ -103,7 +103,7 @@ float shockwave_get_min_radius(int index);
 float shockwave_get_max_radius(int index);
 float shockwave_get_damage(int index);
 int   shockwave_get_damage_type_idx(int index);
-int   shockwave_get_framenum(int index, int num_frames);
+int   shockwave_get_framenum(const int index, const int ani_id);
 int   shockwave_get_flags(int index);
 
 #endif /* __SHOCKWAVE_H__ */

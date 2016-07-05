@@ -100,7 +100,7 @@ void load_shield_hit_bitmap()
     {
         if (Species_info[i].shield_anim.filename[0] != '\0')
         {
-		    Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, NULL, 1);
+		    Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, nullptr, nullptr, nullptr, true);
 		    Assertion((Species_info[i].shield_anim.first_frame >= 0), "Error while loading shield hit ani: %s for species: %s\n", Species_info[i].shield_anim.filename, Species_info[i].species_name);
         }
 	}
@@ -447,13 +447,7 @@ void render_shield(int shield_num)
 	// don't try to draw if we don't have an ani
 	if ( sa->first_frame >= 0 )
 	{
-		frame_num = fl2i( f2fl(Missiontime - Shield_hits[shield_num].start_time) / f2fl(SHIELD_HIT_DURATION) * sa->num_frames );
-		if ( frame_num >= sa->num_frames )	{
-			frame_num = sa->num_frames - 1;
-		} else if ( frame_num < 0 )	{
-			mprintf(( "HEY! Missiontime went backwards! (Shield.cpp)\n" ));
-			frame_num = 0;
-		}
+		frame_num = bm_get_anim_frame(sa->first_frame, f2fl(Missiontime - Shield_hits[shield_num].start_time), f2fl(SHIELD_HIT_DURATION));
 		bitmap_id = sa->first_frame + frame_num;
 
 		float alpha = 0.9999f;

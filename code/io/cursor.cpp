@@ -91,14 +91,12 @@ namespace io
 		{
 			std::swap(this->mAnimationFrames, other.mAnimationFrames);
 			
-			this->mFps = other.mFps;
+			this->mBitmapHandle = other.mBitmapHandle;
 			this->mBeginTimeStamp = other.mBeginTimeStamp;
-			this->mAnimationLength = other.mAnimationLength;
 			this->mLastFrame = other.mLastFrame;
 			
-			other.mFps = -1.0f;
+			other.mBitmapHandle = -1;
 			other.mBeginTimeStamp= -1;
-			other.mAnimationLength = -1.f;
 			other.mLastFrame = static_cast<size_t>(-1);
 			
 			return *this;
@@ -114,16 +112,15 @@ namespace io
 			}
 
 			mAnimationFrames.clear();
+			
+			// Free cursor
+			bm_release(mBitmapHandle);
+			mBitmapHandle = -1;
 		}
 			
 		void Cursor::addFrame(SDL_Cursor* frame)
 		{
 			mAnimationFrames.push_back(frame);
-		}
-
-		void Cursor::setFPS(float fps)
-		{
-			this->mFps = fps;
 		}
 
 		void Cursor::enable()
@@ -132,7 +129,6 @@ namespace io
 			{
 				// Animated, set the begin and do everything else in setCurrentFrame()
 				mBeginTimeStamp = timestamp();
-				mAnimationLength = static_cast<float>(mAnimationFrames.size()) / mFps;
 				mLastFrame = static_cast<size_t>(-1);
 			}
 			else
@@ -149,10 +145,8 @@ namespace io
 				// We are animated, compute the current frame
 				float diffSeconds = i2fl(timestamp() - mBeginTimeStamp) / TIMESTAMP_FREQUENCY;
 
-				float progress = std::fmod(diffSeconds, mAnimationLength) / mAnimationLength;
-
-				// This should round towards zero
-				size_t frameIndex = static_cast<size_t>(mAnimationFrames.size() * progress);
+				// Use the bmpman function for this. That also ensures that APNG cursors work correctly 
+				auto frameIndex = static_cast<size_t>(bm_get_anim_frame(mBitmapHandle, diffSeconds, 0.0f, true));
 
 				Assert(frameIndex < mAnimationFrames.size());
 
@@ -178,12 +172,10 @@ namespace io
 		Cursor* CursorManager::loadCursor(const char* fileName, bool animated)
 		{
 			int handle;
-			int frameNum = 1;
-			int fps = 0;
 
 			if (animated)
 			{
-				handle = bm_load_animation(fileName, &frameNum, &fps);
+				handle = bm_load_animation(fileName, nullptr, nullptr);
 			}
 			else
 			{
@@ -198,8 +190,6 @@ namespace io
 
 			Cursor* cursor = this->loadFromBitmap(handle);
 
-			bm_release(handle);
-
 			return cursor;
 		}
 
@@ -212,8 +202,7 @@ namespace io
 
 			bm_get_info(bitmapHandle, nullptr, nullptr, nullptr, &nframes, &fps);
 
-			std::unique_ptr<Cursor> cursor(new Cursor());
-			cursor->setFPS(i2fl(fps));
+			std::unique_ptr<Cursor> cursor(new Cursor(bitmapHandle));
 
 			for (int i = 0; i < nframes; ++i)
 			{

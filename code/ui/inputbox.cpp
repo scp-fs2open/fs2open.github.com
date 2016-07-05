@@ -250,16 +250,9 @@ void UI_INPUTBOX::draw()
 				ui_vline(1, h1, text_x + tw + 5);
 			} else {
 				// draw animating cursor
-				int time_delta = timer_get_milliseconds() - cursor_elapsed_time;
-
-				if ( (time_delta / 1000.0f) > (1.0f / cursor_fps) ) {
-					// advance frame
-					cursor_elapsed_time += time_delta;
-					cursor_current_frame++;
-					if (cursor_current_frame >= cursor_nframes) {
-						cursor_current_frame = 0;
-					}
-				}
+				// new method is simpler and should give the same results unless the target device is super slow
+				// i.e. can't render an interface frame in less than the anim frame delays (retail 15 fps == 66.67 msec)
+				cursor_current_frame = bm_get_anim_frame(cursor_first_frame, i2fl(timer_get_milliseconds()) / 1000.0f, 0.0f, true);
 
 				// draw current frame
 				gr_set_bitmap(cursor_first_frame + cursor_current_frame);

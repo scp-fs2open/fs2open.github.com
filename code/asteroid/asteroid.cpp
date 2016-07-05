@@ -2031,7 +2031,7 @@ void asteroid_parse_tbl()
 
 		if (VALID_FNAME(impact_ani_file)) {
 			int num_frames;
-			Asteroid_impact_explosion_ani = bm_load_animation(impact_ani_file, &num_frames, NULL, NULL, 1);
+			Asteroid_impact_explosion_ani = bm_load_animation(impact_ani_file, &num_frames, nullptr, nullptr, nullptr, true);
 		}
 
 		required_string("$Impact Explosion Radius:");

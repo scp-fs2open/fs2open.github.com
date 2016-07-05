@@ -98,6 +98,7 @@ extern void bm_clean_slot(int n);
 
 extern bool opengl_texture_slot_valid(int n, int handle);
 
+
 void gr_opengl_bm_save_render_target(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
