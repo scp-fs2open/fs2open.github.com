@@ -1063,7 +1063,7 @@ void fireball_render(object* obj, draw_list *scene)
 		case FIREBALL_MEDIUM_EXPLOSION: {
 			batch_add_bitmap (
 				Fireballs[num].current_bitmap, 
-				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, 
 				&p, 
 				fb->orient, 
 				obj->radius
@@ -1075,7 +1075,7 @@ void fireball_render(object* obj, draw_list *scene)
 			// Make the big explosions rotate with the viewer.
 			batch_add_bitmap_rotated ( 
 				Fireballs[num].current_bitmap, 
-				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, 
 				&p, 
 				(i2fl(fb->orient)*PI)/180.0f,
 				obj->radius

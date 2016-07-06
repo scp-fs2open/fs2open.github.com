@@ -500,7 +500,7 @@ void shockwave_render(object *objp, draw_list *scene)
 
 		batch_add_bitmap_rotated(
 			sw->current_bitmap, 
-			TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,
+			TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE,
 			&p, 
 			fl_radians(sw->rot_angles.p), 
 			sw->radius

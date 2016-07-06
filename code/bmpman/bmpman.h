@@ -156,6 +156,11 @@ int bm_get_cache_slot(int bitmap_id, int separate_ani_frames);
  */
 int bm_get_next_handle();
 
+#define BMP_FLAG_RENDER_TARGET_STATIC		(1<<0)
+#define BMP_FLAG_RENDER_TARGET_DYNAMIC		(1<<1)
+#define BMP_FLAG_CUBEMAP					(1<<2)
+#define BMP_FLAG_RENDER_TARGET_MIPMAP		(1<<3)
+
 /**
  * @brief Allocates memory for the given handle.
  *
@@ -597,6 +602,16 @@ void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, u
  * @see BM_SELECT_SCREEN_FORMAT() BM_SELECT_TEX_FORMAT() BM_SELECT_ALPHA_TEX_FORMAT()
  */
 void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
+
+extern int UNLITMAP; //this holds a reference to a map that is optional used instead of the base map for unlit rendering
+extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of its index -Bobboau
+extern int SPECMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
+extern int SPECGLOSSMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
+extern int ENVMAP;	//this holds a reference to a map that is for environment mapping -Bobboau
+extern int NORMMAP;	// normal mapping
+extern int HEIGHTMAP;	// height map for normal mapping
+extern int AMBIENTMAP; // ambient occluion map. red channel affects ambient lighting, green channel affects diffuse and specular
+extern int MISCMAP; // Utility map, to be utilized for various things shader authors can come up with
 
 /**
  * @brief Returns the compression type of the bitmap indexed by handle

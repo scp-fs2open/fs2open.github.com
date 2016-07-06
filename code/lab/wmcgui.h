@@ -179,7 +179,8 @@ public:
 #define	GT_CHECKBOX				5
 #define GT_IMAGEANIM			6
 #define GT_HUDGAUGE				7
-#define GT_NUM_TYPES			8	//Total number of types
+#define GT_SLIDER				8
+#define GT_NUM_TYPES			9	//Total number of types
 
 //States of being for GUIObjects
 #define	GST_NORMAL				0
@@ -210,6 +211,7 @@ public:
 
 class GUIObject : public LinkedList
 {
+	friend class Slider;
 	friend class Window;			//Hack, because I can't figure out how to let it access protected
 	friend class Menu;				//This too
 	friend class Text;				//And this
@@ -337,6 +339,8 @@ private:
 	int GraspingButton;	//Button flag for button used to grasp the object
 	int GraspedDiff[2];	//Diff between initial mouse position and object corner
 
+	GUIObject* FocusGuiObject;
+
 	//Linked list of screen class info
 	bool ClassInfoParsed;
 	ScreenClassInfoEntry ScreenClassInfo;
@@ -363,6 +367,7 @@ public:
 	void ParseClassInfo(char* section);
 	void SetActiveObject(GUIObject *cgp);
 	void SetGraspedObject(GUIObject *cgp, int button);
+	void SetFocusObject(GUIObject *cgp);
 
 	//Get stuff
 	int GetMouseX(){return MouseX;}
@@ -371,6 +376,7 @@ public:
 	//int *GetLimits(){return Guiobjects.ChildCoords;}
 	GUIObject* GetActiveObject(){return ActiveObject;}
 	GUIObject* GetGraspedObject(){return GraspedGuiobject;}
+	GUIObject* GetFocusObject(){return FocusGuiObject;}
 	int GetKeyPressed(){return KeyPressed;}
 
 	int OnFrame(float frametime, bool doevents, bool clearandflip);
@@ -703,6 +709,42 @@ public:
 	void Play(bool in_isreversed);
 	void Pause();
 	void Stop();
+};
+
+//*****************************Slider*******************************
+
+class Slider : public GUIObject
+{
+	SCP_string Label;
+	void(*function)(Slider *caller);
+
+	int BarCoords[4];
+	float SliderScale;	// goes from 0.0 to 1.0f
+	int SliderWidth;
+
+	int BarWidth;
+	int BarHeight;
+
+	shader SliderShade;
+
+	bool SliderGrabbed;
+
+	float Min, Max;
+
+	int GetSliderOffset();
+	float GetSliderPos(int x);
+	void UpdateSlider(int x);
+protected:
+	void DoDraw(float frametime);
+	void DoMove(int dx, int dy);
+	int DoRefreshSize();
+	int DoMouseDown(float frametime);
+	int DoMouseUp(float frametime);
+
+public:
+	Slider(const SCP_string &in_label, float min, float max, int x_coord, int y_coord, void(*in_function)(Slider *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
+
+	float GetSliderValue();
 };
 
 //*****************************GLOBALS*******************************
