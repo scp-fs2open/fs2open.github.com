@@ -395,11 +395,7 @@ void fireball_render_DEPRECATED(object * obj)
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
-	if(Cmdline_nohtl) {
-		g3_rotate_vertex(&p, &obj->pos );
-	}else{
-		g3_transfer_vertex(&p, &obj->pos);
-	}
+	g3_transfer_vertex(&p, &obj->pos);
 
 	switch( fb->fireball_render_type )	{
 
@@ -1052,11 +1048,7 @@ void fireball_render(object* obj, draw_list *scene)
 	if ( Fireballs[num].current_bitmap < 0 )
 		return;
 	
-	if ( Cmdline_nohtl ) {
-		g3_rotate_vertex(&p, &obj->pos );
-	} else {
-		g3_transfer_vertex(&p, &obj->pos);
-	}
+	g3_transfer_vertex(&p, &obj->pos);
 
 	switch ( fb->fireball_render_type )	{
 

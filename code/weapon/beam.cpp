@@ -39,7 +39,6 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 
-extern int Cmdline_nohtl;
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON DEFINES/VARS
 //
@@ -1191,17 +1190,10 @@ void beam_render(beam *b, float u_offset)
 		beam_calc_facing_pts(&top1, &bottom1, &fvec, &b->last_start, bwsi->width * scale * b->shrink, bwsi->z_add);	
 		beam_calc_facing_pts(&top2, &bottom2, &fvec, &b->last_shot, bwsi->width * scale * scale * b->shrink, bwsi->z_add);
 
-		if (Cmdline_nohtl) {
-			g3_rotate_vertex(verts[0], &bottom1); 
-			g3_rotate_vertex(verts[1], &bottom2);	
-			g3_rotate_vertex(verts[2], &top2); 
-			g3_rotate_vertex(verts[3], &top1);
-		} else {
-			g3_transfer_vertex(verts[0], &bottom1); 
-			g3_transfer_vertex(verts[1], &bottom2);	
-			g3_transfer_vertex(verts[2], &top2); 
-			g3_transfer_vertex(verts[3], &top1);
-		}
+		g3_transfer_vertex(verts[0], &bottom1); 
+		g3_transfer_vertex(verts[1], &bottom2);	
+		g3_transfer_vertex(verts[2], &top2); 
+		g3_transfer_vertex(verts[3], &top1);
 
 		P_VERTICES();						
 		STUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
@@ -1429,18 +1421,10 @@ void beam_render_muzzle_glow(beam *b)
 		beam_calc_facing_pts(&top1, &bottom1, &fvec, &start, rad, 1.0f);
 		beam_calc_facing_pts(&top2, &bottom2, &fvec, &end, rad, 1.0f);
 
-		if (Cmdline_nohtl) {
-			g3_rotate_vertex(verts[0], &bottom1);
-			g3_rotate_vertex(verts[1], &bottom2);
-			g3_rotate_vertex(verts[2], &top2);
-			g3_rotate_vertex(verts[3], &top1);
-		}
-		else {
-			g3_transfer_vertex(verts[0], &bottom1);
-			g3_transfer_vertex(verts[1], &bottom2);
-			g3_transfer_vertex(verts[2], &top2);
-			g3_transfer_vertex(verts[3], &top1);
-		}
+		g3_transfer_vertex(verts[0], &bottom1);
+		g3_transfer_vertex(verts[1], &bottom2);
+		g3_transfer_vertex(verts[2], &top2);
+		g3_transfer_vertex(verts[3], &top1);
 
 		for (int idx = 0; idx < 4; idx++) {
 			g3_project_vertex(verts[idx]);
@@ -1490,10 +1474,7 @@ void beam_render_muzzle_glow(beam *b)
 	} else {
 
 		// draw the bitmap
-		if (Cmdline_nohtl)
-			g3_rotate_vertex(&pt, &b->last_start);
-		else
-			g3_transfer_vertex(&pt, &b->last_start);
+		g3_transfer_vertex(&pt, &b->last_start);
 
 
 		int framenum = 0;

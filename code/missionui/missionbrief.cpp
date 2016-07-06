@@ -300,11 +300,6 @@ int Brief_max_line_width[GR_NUM_RESOLUTIONS] = {
 	MAX_BRIEF_LINE_W_640, MAX_BRIEF_LINE_W_1024
 };
 
-//stuff for ht&l. vars and such
-extern int Cmdline_nohtl;
-extern bool Cmdline_brief_lighting;
-
-
 // --------------------------------------------------------------------------------------
 // Forward declarations
 // --------------------------------------------------------------------------------------
@@ -1048,22 +1043,18 @@ void brief_render_closeup(int ship_class, float frametime)
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
 
 
-	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	
-	if (Cmdline_brief_lighting) {
-		// the following is copied from menuui/techmenu.cpp ... it works heehee :D  - delt.
-		// lighting for techroom
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.xyz.y = 1.0f;
-		light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
-		light_rotate_all();
-		// lighting for techroom
-		Glowpoint_use_depth_buffer = false;
-	}
+	// the following is copied from menuui/techmenu.cpp ... it works heehee :D  - delt.
+	// lighting for techroom
+	light_reset();
+	vec3d light_dir = vmd_zero_vector;
+	light_dir.xyz.y = 1.0f;
+	light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
+	light_rotate_all();
+	// lighting for techroom
+	Glowpoint_use_depth_buffer = false;
 
 	model_clear_instance( Closeup_icon->modelnum );
 
@@ -1080,10 +1071,8 @@ void brief_render_closeup(int ship_class, float frametime)
 	if ( Closeup_icon->type == ICON_JUMP_NODE) {
 		render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING);
-	} else if (Cmdline_brief_lighting) {
-		render_info.set_flags(MR_AUTOCENTER);
 	} else {
-		render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER);
+		render_info.set_flags(MR_AUTOCENTER);
 	}
 
 	model_render_immediate( &render_info, Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos );
@@ -1092,11 +1081,8 @@ void brief_render_closeup(int ship_class, float frametime)
 		The_mission.flags |= MISSION_FLAG_FULLNEB;
 	}
 
-	if (!Cmdline_nohtl)
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	g3_end_frame();
 

@@ -1236,9 +1236,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 	if ( !Detail.planets_suns )
 		return;
 
-	if ( !Cmdline_nohtl ) {
-		gr_start_instance_matrix(&Eye_position, &vmd_identity_matrix);
-	}
+	gr_start_instance_matrix(&Eye_position, &vmd_identity_matrix);
 
 	// turn off culling
 	int cull = gr_set_cull(0);
@@ -1289,8 +1287,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 	// restore zbuffer
 	gr_zbuffer_set(saved_zbuffer_mode);
 
-	if ( !Cmdline_nohtl )
-		gr_end_instance_matrix();
+	gr_end_instance_matrix();
 }
 
 extern int Interp_subspace;
@@ -1435,13 +1432,11 @@ void subspace_render()
 	render_info.set_alpha(1.0f);
 	render_info.set_flags(render_flags);
 
-	if (!Cmdline_nohtl)
-		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
+	gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 
 	model_render_immediate( &render_info, Subspace_model_outer, &tmp, &Eye_position);	//MR_NO_CORRECT|MR_SHOW_OUTLINE
 
-	if (!Cmdline_nohtl)
-		gr_set_texture_panning(0, 0, false);
+	gr_set_texture_panning(0, 0, false);
 
 	Interp_subspace = 1;
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u_inner;
@@ -1455,13 +1450,11 @@ void subspace_render()
 	render_info.set_alpha(1.0f);
 	render_info.set_flags(render_flags);
 
-	if (!Cmdline_nohtl)
-		gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
+	gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 
 	model_render_immediate( &render_info, Subspace_model_inner, &tmp, &Eye_position );	//MR_NO_CORRECT|MR_SHOW_OUTLINE
 
-	if (!Cmdline_nohtl)
-		gr_set_texture_panning(0, 0, false);
+	gr_set_texture_panning(0, 0, false);
 
 	//Render subspace glows here and not as thrusters - Valathil 
 	vec3d glow_pos;
@@ -2518,7 +2511,7 @@ void stars_set_nebula(bool activate)
 		The_mission.flags |= MISSION_FLAG_FULLNEB;
 		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
 		HUD_contrast = 1;
-		if(Cmdline_nohtl || Fred_running) {
+		if(Fred_running) {
 			Neb2_render_mode = NEB2_RENDER_POF;
 			stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
 			stars_set_background_orientation();

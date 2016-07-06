@@ -169,7 +169,6 @@ int hud_shield_maybe_flash(int gauge, int target_index, int shield_offset)
 	return flashed;
 }
 
-extern int Cmdline_nohtl;
 bool shield_ani_warning_displayed_already = false;
 
 // called at beginning of level to page in all ship icons
@@ -674,10 +673,8 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			g3_set_view_matrix( &finger_vec, &vmd_identity_matrix, 1.0f);
 		}*/
 
-		if (!Cmdline_nohtl) {
-			gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-			gr_set_view_matrix(&Eye_position, &Eye_matrix);
-		}
+		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		//We're ready to show stuff
 		//if(!digitus_improbus)
@@ -706,11 +703,8 @@ void HudGaugeShield::showShields(object *objp, int mode)
 		}*/
 
 		//We're done
-		if(!Cmdline_nohtl)
-		{
-			gr_end_view_matrix();
-			gr_end_proj_matrix();
-		}
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
 		if(g3_yourself)
 			g3_end_frame();
 		hud_save_restore_camera_data(0);

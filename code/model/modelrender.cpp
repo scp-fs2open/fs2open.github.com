@@ -1760,7 +1760,7 @@ void submodel_render_queue(model_render_params *render_info, draw_list *scene, i
 		scene->set_animated_timer(render_info->get_animated_effect_timer());
 	}
 
-	bool is_outlines_only_htl = !Cmdline_nohtl && (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
+	bool is_outlines_only_htl = (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
 
 	//set to true since D3d and OGL need the api matrices set
 	scene->push_transform(pos, orient);
@@ -1934,11 +1934,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 					w *= 1.5;	//make it bigger in a nebula
 				}
 				
-				if (!Cmdline_nohtl) {
-					g3_transfer_vertex(&p, &world_pnt);
-				} else {
-					g3_rotate_vertex(&p, &world_pnt);
-				}
+				g3_transfer_vertex(&p, &world_pnt);
 
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * MAX(d,0.0f));
 
@@ -2056,23 +2052,10 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 			moldel_calc_facing_pts(&top1, &bottom1, &fvec, &loc_offset, gpt->radius, 1.0f, &View_position);
 			moldel_calc_facing_pts(&top2, &bottom2, &fvec, &loc_norm, gpt->radius, 1.0f, &View_position);
 
-			int idx = 0;
-
-			if ( Cmdline_nohtl ) {
-				g3_rotate_vertex(&verts[0], &bottom1);
-				g3_rotate_vertex(&verts[1], &bottom2);
-				g3_rotate_vertex(&verts[2], &top2);
-				g3_rotate_vertex(&verts[3], &top1);
-
-				for ( idx = 0; idx < 4; idx++ ) {
-					g3_project_vertex(&verts[idx]);
-				}
-			} else {
-				g3_transfer_vertex(&verts[0], &bottom1);
-				g3_transfer_vertex(&verts[1], &bottom2);
-				g3_transfer_vertex(&verts[2], &top2);
-				g3_transfer_vertex(&verts[3], &top1);
-			}
+			g3_transfer_vertex(&verts[0], &bottom1);
+			g3_transfer_vertex(&verts[1], &bottom2);
+			g3_transfer_vertex(&verts[2], &top2);
+			g3_transfer_vertex(&verts[3], &top1);
 
 			verts[0].texture_position.u = 0.0f;
 			verts[0].texture_position.v = 0.0f;
@@ -2424,11 +2407,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			float w = gpt->radius * (scale + thruster_info.glow_noise * NOISE_SCALE);
 
 			// these lines are used by the tertiary glows, thus we will need to project this all of the time
-			if (Cmdline_nohtl) {
-				g3_rotate_vertex( &p, &world_pnt );
-			} else {
-				g3_transfer_vertex( &p, &world_pnt );
-			}
+			g3_transfer_vertex( &p, &world_pnt );
 
 			// start primary thruster glows
 			if ( (thruster_info.primary_glow_bitmap >= 0) && (d > 0.0f) ) {
@@ -2668,13 +2647,11 @@ void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, 
 	}	
 
 	if ( debug_flags & MR_DEBUG_PATHS ) {
-		if ( Cmdline_nohtl ) model_draw_paths(model_num, flags);
-		else model_draw_paths_htl(model_num, flags);
+		model_draw_paths_htl(model_num, flags);
 	}
 
 	if ( debug_flags & MR_DEBUG_BAY_PATHS ) {
-		if ( Cmdline_nohtl ) model_draw_bay_paths(model_num);
-		else model_draw_bay_paths_htl(model_num);
+		model_draw_bay_paths_htl(model_num);
 	}
 
 	if ( (flags & MR_AUTOCENTER) && (set_autocen) ) {
@@ -2829,7 +2806,7 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 	}
 
 	bool is_outlines_only = (model_flags & MR_NO_POLYS) && ((model_flags & MR_SHOW_OUTLINE_PRESET) || (model_flags & MR_SHOW_OUTLINE));
-	bool is_outlines_only_htl = !Cmdline_nohtl && (model_flags & MR_NO_POLYS) && (model_flags & MR_SHOW_OUTLINE_HTL);
+	bool is_outlines_only_htl = (model_flags & MR_NO_POLYS) && (model_flags & MR_SHOW_OUTLINE_HTL);
 
 	scene->push_transform(pos, orient);
 
@@ -2903,7 +2880,7 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 		scene->set_lighting(false);
 	}
 	
-	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+	if (is_outlines_only_htl || (!is_outlines_only)) {
 		scene->set_buffer(pm->vertex_buffer_id);
 	}
 

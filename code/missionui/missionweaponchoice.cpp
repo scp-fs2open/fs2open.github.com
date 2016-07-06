@@ -905,10 +905,8 @@ void wl_render_overhead_view(float frametime)
 				gr_set_clip(Wl_overhead_coords[gr_screen.res][0], Wl_overhead_coords[gr_screen.res][1], gr_screen.res == 0 ? 291 : 467, gr_screen.res == 0 ? 226 : 362, GR_RESIZE_MENU);
 			}
 			
-			if (!Cmdline_nohtl) {
-				gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-				gr_set_view_matrix(&Eye_position, &Eye_matrix);
-			}
+			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+			gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 			render_info.set_flags(MR_AUTOCENTER | MR_NO_FOGGING);
 
@@ -1051,11 +1049,8 @@ void wl_render_overhead_view(float frametime)
 			}
 
 			//Cleanup
-			if (!Cmdline_nohtl) 
-			{
-				gr_end_view_matrix();
-				gr_end_proj_matrix();
-			}
+			gr_end_view_matrix();
+			gr_end_proj_matrix();
 
 			g3_end_frame();
 			

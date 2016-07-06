@@ -634,24 +634,17 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 
 		for (n=0; n<nverts; n++ )	{	
 
-			if(!Cmdline_nohtl) {
-				if(GEOMETRY_NOISE!=0.0f){
-					GEOMETRY_NOISE = model_radius / 50;
+			if(GEOMETRY_NOISE!=0.0f){
+				GEOMETRY_NOISE = model_radius / 50;
 
-					Interp_verts[n] = src;	
-					point.xyz.x = src->xyz.x + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
-					point.xyz.y = src->xyz.y + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
-					point.xyz.z = src->xyz.z + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
-							
-					g3_rotate_vertex(dest, &point);
-				}else{
-					Interp_verts[n] = src;	
-					g3_rotate_vertex(dest, src);
-				}
-			}
-			else {
-				Interp_verts[n] = src; 	 	 
-
+				Interp_verts[n] = src;	
+				point.xyz.x = src->xyz.x + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
+				point.xyz.y = src->xyz.y + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
+				point.xyz.z = src->xyz.z + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
+						
+				g3_rotate_vertex(dest, &point);
+			}else{
+				Interp_verts[n] = src;	
 				g3_rotate_vertex(dest, src);
 			}
 
@@ -852,30 +845,28 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	model_allocate_interp_data(max_n_verts, max_n_norms, nv);
 
-	if ( !Cmdline_nohtl ) {
-		if (Interp_warp_bitmap < 0) {
-			if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)){
-				if(!splodeing) return;
-			}
+	if (Interp_warp_bitmap < 0) {
+		if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)){
+			if(!splodeing) return;
 		}
+	}
 
-		if(splodeing){
-			float salpha = 1.0f - splode_level;
-			for (i=0;i<nv;i++){
-				Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
-				Interp_list[i]->texture_position.u = verts[i].u*2;
-				Interp_list[i]->texture_position.v = verts[i].v*2;
-				Interp_list[i]->r = (unsigned char)(255*salpha);
-				Interp_list[i]->g = (unsigned char)(250*salpha);
-				Interp_list[i]->b = (unsigned char)(200*salpha);
-				model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], salpha, false);
-			}
-			cull = gr_set_cull(0);
-			gr_set_bitmap( splodeingtexture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, salpha );
-			g3_draw_poly( nv, Interp_list,  TMAP_FLAG_TEXTURED|TMAP_FLAG_GOURAUD);
-			gr_set_cull(cull);
-			return;
+	if(splodeing){
+		float salpha = 1.0f - splode_level;
+		for (i=0;i<nv;i++){
+			Interp_list[i] = &Interp_splode_points[verts[i].vertnum];
+			Interp_list[i]->texture_position.u = verts[i].u*2;
+			Interp_list[i]->texture_position.v = verts[i].v*2;
+			Interp_list[i]->r = (unsigned char)(255*salpha);
+			Interp_list[i]->g = (unsigned char)(250*salpha);
+			Interp_list[i]->b = (unsigned char)(200*salpha);
+			model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], salpha, false);
 		}
+		cull = gr_set_cull(0);
+		gr_set_bitmap( splodeingtexture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, salpha );
+		g3_draw_poly( nv, Interp_list,  TMAP_FLAG_TEXTURED|TMAP_FLAG_GOURAUD);
+		gr_set_cull(cull);
+		return;
 	}
 
 	for (i=0;i<nv;i++)	{
@@ -1872,15 +1863,9 @@ void model_render_insignias(polymodel *pm, int detail_level, int bitmap_num)
 			vm_vec_add(&t2, &pm->ins[idx].vecs[i2], &pm->ins[idx].offset);
 			vm_vec_add(&t3, &pm->ins[idx].vecs[i3], &pm->ins[idx].offset);
 
-			if(Cmdline_nohtl){
-				g3_rotate_vertex(&vecs[0], &t1);
-				g3_rotate_vertex(&vecs[1], &t2);
-				g3_rotate_vertex(&vecs[2], &t3);
-			}else{
-				g3_transfer_vertex(&vecs[0], &t1);
-				g3_transfer_vertex(&vecs[1], &t2);
-				g3_transfer_vertex(&vecs[2], &t3);
-			}
+			g3_transfer_vertex(&vecs[0], &t1);
+			g3_transfer_vertex(&vecs[1], &t2);
+			g3_transfer_vertex(&vecs[2], &t3);
 
 			// setup texture coords
 			vecs[0].texture_position.u = pm->ins[idx].u[s_idx][0];
@@ -1892,12 +1877,10 @@ void model_render_insignias(polymodel *pm, int detail_level, int bitmap_num)
 			vecs[2].texture_position.u = pm->ins[idx].u[s_idx][2];
 			vecs[2].texture_position.v = pm->ins[idx].v[s_idx][2];
 
-			if (!Cmdline_nohtl) {
-				light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
-				light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[i2], 1.5f );
-				light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[i3], 1.5f );
-				tmap_flags |= (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
-			}
+			light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
+			light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[i2], 1.5f );
+			light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[i3], 1.5f );
+			tmap_flags |= (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
 
 			// draw the polygon
 			g3_draw_poly(3, vlist, tmap_flags);
@@ -2442,11 +2425,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			float w = gpt->radius * (scale + Interp_thrust_glow_noise * NOISE_SCALE);
 
 			// these lines are used by the tertiary glows, thus we will need to project this all of the time
-			if (Cmdline_nohtl) {
-				g3_rotate_vertex( &p, &world_pnt );
-			} else {
-				g3_transfer_vertex( &p, &world_pnt );
-			}
+			g3_transfer_vertex( &p, &world_pnt );
 
 			// start primary thruster glows
 			if ( (Interp_thrust_glow_bitmap >= 0) && (d > 0.0f) ) {
@@ -2732,11 +2711,7 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 								if (Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
 									gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	
-								if (!Cmdline_nohtl) {
-									g3_transfer_vertex(&p, &world_pnt);
-								} else {
-									g3_rotate_vertex(&p, &world_pnt);
-								}
+								g3_transfer_vertex(&p, &world_pnt);
 
 								p.r = p.g = p.b = p.a = (ubyte)(255.0f * MAX(d,0.0f));
 								
@@ -2845,23 +2820,10 @@ void model_render_glow_points_DEPRECATED(polymodel *pm, ship *shipp, matrix *ori
 							moldel_calc_facing_pts(&top1, &bottom1, &fvec, &loc_offset, gpt->radius, 1.0f, &View_position);
 							moldel_calc_facing_pts(&top2, &bottom2, &fvec, &loc_norm, gpt->radius, 1.0f, &View_position);
 
-							int idx = 0;
-
-							if (Cmdline_nohtl) {
-								g3_rotate_vertex(&verts[0], &bottom1);
-								g3_rotate_vertex(&verts[1], &bottom2);
-								g3_rotate_vertex(&verts[2], &top2);
-								g3_rotate_vertex(&verts[3], &top1);
-
-								for (idx = 0; idx < 4; idx++) {
-									g3_project_vertex(&verts[idx]);
-								}
-							} else {
-								g3_transfer_vertex(&verts[0], &bottom1);
-								g3_transfer_vertex(&verts[1], &bottom2);
-								g3_transfer_vertex(&verts[2], &top2);
-								g3_transfer_vertex(&verts[3], &top1);
-							}
+							g3_transfer_vertex(&verts[0], &bottom1);
+							g3_transfer_vertex(&verts[1], &bottom2);
+							g3_transfer_vertex(&verts[2], &top2);
+							g3_transfer_vertex(&verts[3], &top1);
 
 							verts[0].texture_position.u = 0.0f;
 							verts[0].texture_position.v = 0.0f;
@@ -2991,7 +2953,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	}
 
 	bool is_outlines_only = (flags & MR_DEPRECATED_NO_POLYS) && ((flags & MR_DEPRECATED_SHOW_OUTLINE_PRESET) || (flags & MR_DEPRECATED_SHOW_OUTLINE));
-	bool is_outlines_only_htl = !Cmdline_nohtl && (flags & MR_DEPRECATED_NO_POLYS) && (flags & MR_DEPRECATED_SHOW_OUTLINE_HTL);
+	bool is_outlines_only_htl = (flags & MR_DEPRECATED_NO_POLYS) && (flags & MR_DEPRECATED_SHOW_OUTLINE_HTL);
 	bool use_api = !is_outlines_only_htl || (gr_screen.mode == GR_OPENGL);
 
 	g3_start_instance_matrix(pos, orient, use_api);
@@ -3186,15 +3148,13 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if ( !(Interp_flags & MR_DEPRECATED_NO_LIGHTING) )	{
 		light_rotate_all();
  
-		if ( !Cmdline_nohtl ) {
-			light_set_all_relevent();
-		}
+		light_set_all_relevent();
 	}
-	if ( !(Interp_flags & MR_DEPRECATED_NO_LIGHTING) && (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) ) {
+	if ( !(Interp_flags & MR_DEPRECATED_NO_LIGHTING) && (is_outlines_only_htl || (!is_outlines_only)) ) {
 		opengl_change_active_lights(0); // Set up OpenGl lighting;
 	}
 
-	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+	if (is_outlines_only_htl || (!is_outlines_only)) {
 		gr_set_buffer(pm->vertex_buffer_id);
 	}
 
@@ -3207,7 +3167,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	while( i >= 0 )	{
 		if ( !pm->submodel[i].is_thruster ) {
 			// When in htl mode render with htl method unless its a jump node
-			if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+			if (is_outlines_only_htl || (!is_outlines_only)) {
 				model_render_children_buffers_DEPRECATED( pm, i, Interp_detail_level, render );
 			} else {
 				model_interp_subcall( pm, i, Interp_detail_level );
@@ -3226,7 +3186,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	//*************************** draw the hull of the ship *********************************************
 
 	// When in htl mode render with htl method unless its a jump node
-	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+	if (is_outlines_only_htl || (!is_outlines_only)) {
 		model_render_buffers_DEPRECATED(pm, pm->detail[Interp_detail_level], render);
 	} else {
 		model_interp_subcall(pm, pm->detail[Interp_detail_level], Interp_detail_level);
@@ -3239,7 +3199,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		while( i >= 0 ) {
 			if (pm->submodel[i].is_thruster) {
 				// When in htl mode render with htl method unless its a jump node
-				if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+				if (is_outlines_only_htl || (!is_outlines_only)) {
 					model_render_children_buffers_DEPRECATED( pm, i, Interp_detail_level, render );
 				} else {
 					model_interp_subcall( pm, i, Interp_detail_level );
@@ -3252,7 +3212,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if ( !Interp_no_flush ) {
 		gr_clear_states();
 
-		if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
+		if (is_outlines_only_htl || (!is_outlines_only)) {
 			gr_set_buffer(-1);
 		}
 	}
@@ -3281,7 +3241,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	// render model insignias
 	gr_zbias(1);
 
-	if (!Cmdline_nohtl)	gr_set_texture_panning(0.0, 0.0, false);
+	gr_set_texture_panning(0.0, 0.0, false);
 
 	gr_zbuffer_set(GR_ZBUFF_READ);
 	if(!(Interp_flags & MR_DEPRECATED_NO_TEXTURING))
@@ -3300,13 +3260,11 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
  	}	
 
  	if ( Interp_flags & MR_DEPRECATED_SHOW_PATHS ){
- 		if (Cmdline_nohtl) model_draw_paths(model_num, Interp_flags);
- 		else model_draw_paths_htl(model_num, Interp_flags);
+ 		model_draw_paths_htl(model_num, Interp_flags);
  	}
 
  	if (Interp_flags & MR_DEPRECATED_BAY_PATHS ){
- 		if (Cmdline_nohtl) model_draw_bay_paths(model_num);
- 		else model_draw_bay_paths_htl(model_num);
+ 		model_draw_bay_paths_htl(model_num);
  	}
 
 	if ( (Interp_flags & MR_DEPRECATED_AUTOCENTER) && (set_autocen) ) {
@@ -3384,7 +3342,7 @@ void submodel_render_DEPRECATED(int model_num, int submodel_num, matrix *orient,
 // 	if ( Interp_flags & MR_ANIMATED_SHADER )
 // 		Interp_tmap_flags |= TMAP_ANIMATED_SHADER;
 
-	bool is_outlines_only_htl = !Cmdline_nohtl && (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
+	bool is_outlines_only_htl = (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
 
 	//set to true since D3d and OGL need the api matrices set
 	g3_start_instance_matrix(pos, orient, true);
@@ -3431,9 +3389,7 @@ void submodel_render_DEPRECATED(int model_num, int submodel_num, matrix *orient,
 
 		light_rotate_all();
 
-		if (!Cmdline_nohtl) {
-			light_set_all_relevent();
-		}
+		light_set_all_relevent();
 
 		gr_set_lighting(true, true);
 	}
@@ -3451,34 +3407,29 @@ void submodel_render_DEPRECATED(int model_num, int submodel_num, matrix *orient,
 	// fixes disappearing HUD in OGL - taylor
 	int cull = gr_set_cull(1);
 
-	if (!Cmdline_nohtl) {
+	// RT - Put this here to fog debris
+	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
+	{
+		float fog_near, fog_far;
+		object *obj = NULL;
+		
+		if (objnum >= 0)
+			obj = &Objects[objnum];
 
-		// RT - Put this here to fog debris
-		if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
-		{
-			float fog_near, fog_far;
-			object *obj = NULL;
-			
-			if (objnum >= 0)
-				obj = &Objects[objnum];
-
-			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
-			unsigned char r, g, b;
-			neb2_get_fog_color(&r, &g, &b);
-			gr_fog_set(GR_FOGMODE_FOG, r, g, b, fog_near, fog_far);
-		}
-		if(Rendering_to_shadow_map)
-			gr_zbias(-1024);
-		else
-			gr_zbias(0);
-		gr_set_buffer(pm->vertex_buffer_id);
-
-		model_render_buffers_DEPRECATED(pm, submodel_num, render);
-
-		gr_set_buffer(-1);
-	} else {
-		model_interp_sub( pm->submodel[submodel_num].bsp_data, pm, &pm->submodel[submodel_num], 0 );
+		neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
+		unsigned char r, g, b;
+		neb2_get_fog_color(&r, &g, &b);
+		gr_fog_set(GR_FOGMODE_FOG, r, g, b, fog_near, fog_far);
 	}
+	if(Rendering_to_shadow_map)
+		gr_zbias(-1024);
+	else
+		gr_zbias(0);
+	gr_set_buffer(pm->vertex_buffer_id);
+
+	model_render_buffers_DEPRECATED(pm, submodel_num, render);
+
+	gr_set_buffer(-1);
 
 	if ( !(Interp_flags & MR_NO_LIGHTING) ) {
 		gr_set_lighting(false, false);

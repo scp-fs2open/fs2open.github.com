@@ -1565,9 +1565,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	{
 		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
 
-		if (!Cmdline_nohtl) {
-			gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		}
+		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	}
 	else
 	{
@@ -1608,17 +1606,13 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		}
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, tm_zoom);
 
-		if (!Cmdline_nohtl) {
-			gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, 0.05f, 1000.0f);
-		}
+		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, 0.05f, 1000.0f);
 	}
 
 	model_render_params render_info;
 	render_info.set_detail_level_lock(0);
 
-	if (!Cmdline_nohtl)	{
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	if(!(flags & MR_NO_LIGHTING))
 	{
@@ -1638,12 +1632,8 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	model_render_immediate(&render_info, model_id, &object_orient, &vmd_zero_vector);
 	Glowpoint_override = false;
 
-	if (!Cmdline_nohtl) 
-	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
-
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	g3_end_frame();
 	gr_reset_clip();

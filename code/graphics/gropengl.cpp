@@ -662,12 +662,6 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
   	if (OGL_fogmode == 3) {
 		glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
 		glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
-	}
-	// Um.. this is not the correct way to fog in software, probably doesn't matter though
-	else if ( (OGL_fogmode == 2) && Cmdline_nohtl ) {
-		glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT);
-		fog_near *= fog_near;		// it's faster this way
-		fog_far *= fog_far;
 	} else {
 		glFogf(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
 	}
@@ -1670,10 +1664,6 @@ int opengl_init_display_device()
 
 void opengl_setup_function_pointers()
 {
-	// *****************************************************************************
-	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
-	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
-
 	gr_screen.gf_flip				= gr_opengl_flip;
 	gr_screen.gf_set_clip			= gr_opengl_set_clip;
 	gr_screen.gf_reset_clip			= gr_opengl_reset_clip;
@@ -1833,10 +1823,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_clear_states	= gr_opengl_clear_states;
 
 	gr_screen.gf_set_team_color		= gr_opengl_set_team_color;
-
-	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
-	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
-	// *****************************************************************************
 }
 
 

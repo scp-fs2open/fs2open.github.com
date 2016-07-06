@@ -4127,15 +4127,10 @@ int WE_BSG::warpShipRender()
 		if(shockwave_frame < shockwave_nframes)
 		{
 			vertex p;
-			extern int Cmdline_nohtl;
             
             memset(&p, 0, sizeof(p));
             
-			if(Cmdline_nohtl) {
-				g3_rotate_vertex(&p, &pos );
-			}else{
-				g3_transfer_vertex(&p, &pos);
-			}
+			g3_transfer_vertex(&p, &pos);
 
 			batch_add_bitmap(shockwave + shockwave_frame, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, &p, 0, shockwave_radius, 1.0f);
 		}
