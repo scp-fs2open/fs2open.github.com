@@ -1256,7 +1256,7 @@ void beam_render(beam *b, float u_offset)
 
 		// added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			
 		// added TMAP_FLAG_RGB and TMAP_FLAG_GOURAUD so the beam would apear to fade along it's length-Bobboau
-		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT ); 
+		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE ); 
 	}		
 	
 	// turn backface culling back on
@@ -1375,7 +1375,7 @@ void beam_render_muzzle_glow(beam *b)
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
 	beam_weapon_info *bwi = &wip->b_info;
 	float rad, pct, rand_val;
-	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
+	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE;
 	pt.flags = 0;    // avoid potential read of uninit var
 
 	// if we don't have a glow bitmap

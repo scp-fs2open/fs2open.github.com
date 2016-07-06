@@ -70,6 +70,8 @@ extern int Multi_common_icon_dims[MULTI_NUM_COMMON_ICONS][2];
 void multi_load_common_icons();
 void multi_unload_common_icons();
 
+extern const int MULTI_PING_MIN_RED; // for MULTI_LAG_VAL in multiutil.cpp
+
 // initialize/display all bitmaps, etc related to displaying the voice system status
 void multi_common_voice_display_status();
 
