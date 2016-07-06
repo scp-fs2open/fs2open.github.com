@@ -2388,7 +2388,7 @@ void multi_file_xfer_notify(int handle)
 }
 
 // return the lag/disconnected status of the game
-#define MULTI_LAG_VAL		400
+const int MULTI_LAG_VAL = MULTI_PING_MIN_RED;
 int multi_query_lag_status()
 {
 	// -1 == not lagged, 0 == lagged, 1 == disconnected
