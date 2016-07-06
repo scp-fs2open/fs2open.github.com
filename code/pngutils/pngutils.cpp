@@ -550,10 +550,11 @@ unsigned int apng_ani::_read_chunk(_chunk_s& chunk)
 void apng_ani::preload()
 {
 	_reading = false;
+	_cache = true;  // implied, otherwise preload is almost pointless
 	while (current_frame < nframes) {
 		next_frame();
 	}
-	current_frame = 0;
+	goto_start();
 }
 
 /*
@@ -562,6 +563,9 @@ void apng_ani::preload()
  */
 void apng_ani::prev_frame()
 {
+	if (_cache != true) {
+		_apng_failed("no caching, therefore can't retrieve previous frame");
+	}
 	_reading = false;
 	if (current_frame > 0) {
 		frame = _frames.at(--current_frame);
@@ -577,7 +581,9 @@ void apng_ani::next_frame()
 {
 	_reading = false;
 	// setup new frame (if frame doesn't already exist)
-	if (_frames.size() <= (current_frame)) {
+	// always do if not caching
+	// don't do if caching & already have frame
+	if (_cache == false || (_frames.size() <= current_frame)) {
 		if (current_frame > 0) {
 			if (_dispose_op == 1) {
 				// clear previous frame region of output buffer to fully transparent black
@@ -599,8 +605,8 @@ void apng_ani::next_frame()
 			_process_chunk();
 		}
 
-		nprintf(("apng", "apng next_frame; new (%03i/%03lu) (%u) (%u) %03u|%03u %03u|%03u (%02lu) (%04f)\n",
-				current_frame, _frames.size(), _dispose_op, _blend_op,
+		nprintf(("apng", "apng next_frame; new (%03i/%03lu/%03i) (%u) (%u) %03u|%03u %03u|%03u (%02lu) (%04f)\n",
+				current_frame, _frames.size(), nframes, _dispose_op, _blend_op,
 				_framew, _x_offset, _frameh, _y_offset,
 				_frame_offsets.size(), frame.delay));
 
@@ -617,7 +623,7 @@ void apng_ani::next_frame()
 		}
 
 		_compose_frame();
-		_frames.push_back(frame);
+		if (_cache == true) _frames.push_back(frame);
 	}
 	else {
 		if (current_frame < nframes) {
@@ -639,10 +645,17 @@ size_t apng_ani::imgsize()
 
 /*
  * @brief send animation to its 1st frame
+ *
+ * @note headers must be read before this function can be called
  */
 void apng_ani::goto_start()
 {
 	current_frame = 0;
+	if (_cache == false ) {  // only required if not caching frames
+		if (cfseek(_cfp, _frame_offsets.at(0), CF_SEEK_SET) != 0) {
+			_apng_failed("couldn't seek to 1st fcTL offset");
+		}
+	}
 }
 
 
@@ -725,7 +738,7 @@ int apng_ani::load_header()
 		_apng_failed("animation didn't have any frames, is this a static png?");
 	}
 
-	// reset _cfp so it can be used for next frame
+	// back to start, including reset of _cfp so it can be used for the 1st frame
 	_reading = false;
 	if (cfseek(_cfp, _frame_offsets.at(0), CF_SEEK_SET) != 0) {
 		_apng_failed("couldn't seek to 1st fcTL offset");
@@ -769,7 +782,7 @@ void apng_ani::_apng_failed(const char* msg)
  *
  * @note loads apng header data
  */
-apng_ani::apng_ani(const char* filename)
+apng_ani::apng_ani(const char* filename, bool cache)
 	: w(0)
 	, h(0)
 	, bpp(32)      // force all apngs to use this
@@ -798,6 +811,7 @@ apng_ani::apng_ani(const char* filename)
 	, _reading(true)
 	, _got_acTL(false)
 	, _got_IDAT(false)
+	, _cache(cache)
 {
 	load_header();
 }
