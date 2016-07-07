@@ -313,6 +313,7 @@ static SCP_string get_shader_header(shader_type type_id, int flags) {
 
 #ifdef __APPLE__
 	sflags << "#version 120\n";
+    sflags << "#extension GL_ARB_shader_texture_lod : enable\n";
 	sflags << "#define APPLE\n";
 #endif
 
