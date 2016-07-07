@@ -515,8 +515,8 @@ void warp_camera::do_frame(float in_frametime)
 
 		float tmp_angle = frand()*PI2;
 	
-		tmp.xyz.x = 22.0f * (float)sin(tmp_angle);
-		tmp.xyz.y = -22.0f * (float)cos(tmp_angle);
+		tmp.xyz.x = 22.0f * sinf(tmp_angle);
+		tmp.xyz.y = -22.0f * cosf(tmp_angle);
 
 		this->set_velocity( &tmp, 0 );
 	}

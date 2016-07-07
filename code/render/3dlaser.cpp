@@ -215,8 +215,8 @@ float g3_draw_laser(const vec3d *headp, float head_width, const vec3d *tailp, fl
 
 	float sa, ca;
 
-	sa = (float)sin(a);
-	ca = (float)cos(a);
+	sa = sinf(a);
+	ca = cosf(a);
 
 	vertex v[4];
 	vertex *vertlist[4] = { &v[3], &v[2], &v[1], &v[0] };
@@ -364,8 +364,8 @@ float g3_draw_laser_rgb(const vec3d *headp, float head_width, const vec3d *tailp
 
 	float sa, ca;
 
-	sa = (float)sin(a);
-	ca = (float)cos(a);
+	sa = sinf(a);
+	ca = cosf(a);
 
 	vertex v[4];
 	vertex *vertlist[4] = { &v[3], &v[2], &v[1], &v[0] };

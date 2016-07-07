@@ -39,10 +39,6 @@ int get_num_mipmap_levels(int w, int h)
 {
 	int size, levels = 0;
 
-	// make sure we can and should generate mipmaps before trying to use them
-	if ( !Cmdline_mipmap || !Is_Extension_Enabled(OGL_SGIS_GENERATE_MIPMAP) )
-		return 1;
-
 	size = MAX(w, h);
 
 	while (size > 0) {
@@ -97,6 +93,7 @@ void gr_opengl_bm_page_in_start()
 extern void bm_clean_slot(int n);
 
 extern bool opengl_texture_slot_valid(int n, int handle);
+
 
 void gr_opengl_bm_save_render_target(int n)
 {

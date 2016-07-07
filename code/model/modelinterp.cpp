@@ -992,7 +992,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						if ( !(Interp_flags & MR_NO_GLOWMAPS) && (tglow->GetTexture() >= 0) ) {
 							// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
 							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (tglow->GetNumFrames() > 1) ) {
-								GLOWMAP = tglow->GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, tglow->GetNumFrames());
+								GLOWMAP = tglow->GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, tglow->GetTexture());
 							} else {
 								GLOWMAP = model_interp_get_texture(tglow, Interp_base_frametime);
 							}
@@ -1509,7 +1509,7 @@ void interp_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, f
 	// this should fill in all of the middle, and the last, points
 	interp_render_arc_segment(v1, v2, 0);
 
-	int tmap_flags = (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP);
+	int tmap_flags = (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP | TMAP_FLAG_EMISSIVE);
 
 	int mode = gr_zbuffer_set(GR_ZBUFF_READ);
 
@@ -1927,8 +1927,8 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 
 	Assert( G3_count == 1 );
 		
-	sa = (float)sin(angle);
-	ca = (float)cos(angle);
+	sa = sinf(angle);
+	ca = cosf(angle);
 
 	float width, height;
 
@@ -2453,7 +2453,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
 				batch_add_bitmap(
 					Interp_thrust_glow_bitmap, 
-					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, 
 					&p,
 					0,
 					(w * 0.5f * Interp_thrust_glow_rad_factor),
@@ -2468,7 +2468,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
 				batch_add_bitmap_rotated(
 					Interp_tertiary_thrust_glow_bitmap,
-					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,
+					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE,
 					&p,
 					(magnitude * 4),
 					(w * 0.6f * Interp_tertiary_thrust_glow_rad_factor),
@@ -4966,7 +4966,7 @@ void model_render_buffers_DEPRECATED(polymodel *pm, int mn, int render, bool is_
 				} else if (tglow->GetTexture() >= 0) {
 					// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
 					if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (tglow->GetNumFrames() > 1) ) {
-						GLOWMAP = tglow->GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, tglow->GetNumFrames());
+						GLOWMAP = tglow->GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, tglow->GetTexture());
 					} else {
 						GLOWMAP = model_interp_get_texture(tglow, Interp_base_frametime);
 					}
@@ -5288,7 +5288,7 @@ int texture_info::LoadTexture(char *filename, char *dbg_name = "<UNKNOWN>")
 		mprintf(("Generated texture name %s is too long. Skipping...\n", filename));
 		return -1;
 	}
-	this->original_texture = bm_load_either(filename, NULL, NULL, NULL, 1, CF_TYPE_MAPS);
+	this->original_texture = bm_load_either(filename, NULL, NULL, NULL, true, CF_TYPE_MAPS);
 	if(this->original_texture < 0)
 		nprintf(("Maps", "For \"%s\" I couldn't find %s.ani\n", dbg_name, filename));
 	this->ResetTexture();

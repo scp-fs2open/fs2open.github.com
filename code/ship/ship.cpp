@@ -712,6 +712,7 @@ void ship_info::clone(const ship_info& other)
 	rotdamp = other.rotdamp;
 	delta_bank_const = other.delta_bank_const;
 	max_vel = other.max_vel;
+	min_vel = other.min_vel;
 	max_rotvel = other.max_rotvel;
 	rotation_time = other.rotation_time;
 	srotation_time = other.srotation_time;
@@ -1018,6 +1019,7 @@ void ship_info::move(ship_info&& other)
 	rotdamp = other.rotdamp;
 	delta_bank_const = other.delta_bank_const;
 	std::swap(max_vel, other.max_vel);
+	std::swap(min_vel, other.min_vel);
 	std::swap(max_rotvel, other.max_rotvel);
 	std::swap(rotation_time, other.rotation_time);
 	srotation_time = other.srotation_time;
@@ -1341,6 +1343,7 @@ ship_info::ship_info()
 	rotdamp = 0.0f;
 	delta_bank_const = DEFAULT_DELTA_BANK_CONST;
 	vm_vec_zero(&max_vel);
+	vm_vec_zero(&min_vel);
 	vm_vec_zero(&max_rotvel);
 	vm_vec_zero(&rotation_time);
 	srotation_time = 0.0f;
@@ -1795,7 +1798,7 @@ int parse_ship_template()
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
 	int rtn = 0;
-	bool first_time = false;
+	bool first_time = true;
 
 	required_string("$Template:");
 	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
@@ -2529,17 +2532,17 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if(optional_string("+Landing Max Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_max_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.landing_max_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Landing Min Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_min_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.landing_min_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Landing Max Rotate Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_max_rot_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.landing_max_rot_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Max Forward Vel:")) {
 			stuff_float(&sip->collision_physics.reorient_max_z);
@@ -2557,17 +2560,17 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if(optional_string("+Reorient Max Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.reorient_max_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.reorient_max_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Min Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.reorient_min_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.reorient_min_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Max Rotate Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.reorient_max_rot_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.reorient_max_rot_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		if(optional_string("+Reorient Speed Mult:")) {
 			stuff_float(&sip->collision_physics.reorient_mult);
@@ -2575,7 +2578,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if(optional_string("+Landing Rest Angle:")) {
 			float degrees;
 			stuff_float(&degrees);
-			sip->collision_physics.landing_rest_angle = cos(ANG_TO_RAD(90 - degrees));
+			sip->collision_physics.landing_rest_angle = cosf(fl_radians(90.0f - degrees));
 		}
 		parse_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx, sip->name);
 	}
@@ -2685,6 +2688,9 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 
 	// calculate the max speed from max_velocity
 	sip->max_speed = sip->max_vel.xyz.z;
+
+	if(optional_string("$Player Minimum Velocity:"))
+		stuff_vec3d(&sip->min_vel);
 
 	if(optional_string("$Rotation Time:"))
 	{
@@ -3822,7 +3828,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		{
 			stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 			int tex_fps=0, tex_nframes=0, tex_id=-1;;
-			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, NULL, 1);
+			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, nullptr, nullptr, true);
 			if(tex_id < 0)
 				tex_id = bm_load(name_tmp);
 			if(tex_id >= 0)
@@ -4206,16 +4212,16 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				int value;
 				stuff_int(&value);
 				CAP(value, 0, 90);
-				float angle = ANG_TO_RAD((float) (90 - value));
-				sp->turret_max_fov = (float)cos(angle);
+				float angle = fl_radians(90 - value);
+				sp->turret_max_fov = cosf(angle);
 			}
 
 			if(optional_string("$Turret Base FOV:")) {
 				int value;
 				stuff_int(&value);
 				CAP(value, 0, 359);
-				float angle = ANG_TO_RAD((float) value)/2.0f;
-				sp->turret_y_fov = (float)cos(angle);
+				float angle = fl_radians(value)/2.0f;
+				sp->turret_y_fov = cosf(angle);
 				turret_has_base_fov = true;
 			}
 
@@ -5059,6 +5065,26 @@ void ship_parse_post_cleanup()
 		if (!(sip->flags & SIF_NO_COLLIDE) && (vm_vec_mag_squared( &sip->max_rotvel ) * .04) >= (PI*PI/4))
 		{
 			Warning(LOCATION, "$Rotation time: too low; this will disable rotational collisions. All three variables should be >= 1.39.\nFix this in ship '%s'\n", sip->name);
+		}
+
+		// ensure player min velocity makes sense
+		if (sip->min_vel.xyz.x > sip->max_vel.xyz.x || sip->min_vel.xyz.x < 0.0f)
+		{
+			error_display(0, "$Player Minimum Velocity X-value (%f) is negative or greater than max velocity X-value (%f), setting to zero\nFix for ship '%s'\n",
+					sip->min_vel.xyz.x, sip->max_vel.xyz.x, sip->name);
+			sip->min_vel.xyz.x = 0.0f;
+		}
+		if (sip->min_vel.xyz.y > sip->max_vel.xyz.y || sip->min_vel.xyz.y < 0.0f)
+		{
+			error_display(0, "$Player Minimum Velocity Y-value (%f) is negative or greater than max velocity Y-value (%f), setting to zero\nFix for ship '%s'\n",
+					sip->min_vel.xyz.y, sip->max_vel.xyz.y, sip->name);
+			sip->min_vel.xyz.y = 0.0f;
+		}
+		if (sip->min_vel.xyz.z > sip->max_vel.xyz.z || sip->min_vel.xyz.z < 0.0f)
+		{
+			error_display(0, "$Player Minimum Velocity Z-value (%f) is negative or greater than max velocity Z-value (%f), setting to zero\nFix for ship '%s'\n",
+					sip->min_vel.xyz.z, sip->max_vel.xyz.z, sip->name);
+			sip->min_vel.xyz.z = 0.0f;
 		}
 	}
 
@@ -6465,6 +6491,11 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			Warning (LOCATION, "\"fixed firingpoint\" flag used with turret which has less weapons defined for it than it has firingpoints\nsubsystem '%s' on ship type '%s'.\nsome of the firingpoints will be left unused\n", model_system->subobj_name, sinfo->name );
 		}
 
+        if ((ship_system->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION) && !(ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO))
+        {
+            Warning(LOCATION, "\"share fire direction\" flag used with turret which does not have the \"salvo mode\" flag set\nsubsystem '%s' on ship type '%s'.\nsetting the \"salvo mode\" flag\n", model_system->subobj_name, sinfo->name);
+            ship_system->system_info->flags |= MSS_FLAG_TURRET_SALVO;
+        }
 
 		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
 			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
@@ -6950,7 +6981,7 @@ void ship_render_DEPRECATED(object * obj)
 
 							int bmap_frame = mtp->tex_id;
 							if(mtp->tex_nframes > 0)
-								bmap_frame += (int)(((float)(timestamp() - shipp->thrusters_start[i]) / 1000.0f) * (float)mtp->tex_fps) % mtp->tex_nframes;
+								bmap_frame += bm_get_anim_frame(mtp->tex_id, i2fl(timestamp() - shipp->thrusters_start[i]) / 1000.0f, 0.0f, true);
 
 							man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
 							mtr->man_batcher.add_allocate(1);
@@ -8611,19 +8642,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	if (flame_anim->first_frame >= 0) {
 		shipp->thruster_frame += frametime * rate;
 
-		// Sanity checks
-		if (shipp->thruster_frame < 0.0f) {
-			shipp->thruster_frame = 0.0f;
-		} else if (shipp->thruster_frame > 100.0f) {
-			shipp->thruster_frame = 0.0f;
-		}
-
-		while (shipp->thruster_frame > flame_anim->total_time) {
-			shipp->thruster_frame -= flame_anim->total_time;
-		}
-
-		framenum = fl2i( (shipp->thruster_frame * flame_anim->num_frames) / flame_anim->total_time );
-		CLAMP(framenum, 0, (flame_anim->num_frames - 1));
+		framenum = bm_get_anim_frame(flame_anim->first_frame, shipp->thruster_frame, flame_anim->total_time, true);
 
 		// Get the bitmap for this frame
 		shipp->thruster_bitmap = flame_anim->first_frame + framenum;
@@ -8636,19 +8655,7 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	if (glow_anim->first_frame >= 0) {
 		shipp->thruster_glow_frame += frametime * rate;
 
-		// Sanity checks
-		if (shipp->thruster_glow_frame < 0.0f) {
-			shipp->thruster_glow_frame = 0.0f;
-		} else if (shipp->thruster_glow_frame > 100.0f) {
-			shipp->thruster_glow_frame = 0.0f;
-		}
-
-		while (shipp->thruster_glow_frame > glow_anim->total_time) {
-			shipp->thruster_glow_frame -= glow_anim->total_time;
-		}
-
-		framenum = fl2i( (shipp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->total_time );
-		CLAMP(framenum, 0, (glow_anim->num_frames - 1));
+		framenum = bm_get_anim_frame(glow_anim->first_frame, shipp->thruster_glow_frame, glow_anim->total_time, true);
 
 		// Get the bitmap for this frame
 		shipp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
@@ -8708,16 +8715,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 	if (flame_anim->first_frame >= 0) {
 		weaponp->thruster_frame += frametime * rate;
 
-		// Sanity checks
-		if ( weaponp->thruster_frame < 0.0f )	weaponp->thruster_frame = 0.0f;
-		if ( weaponp->thruster_frame > 100.0f ) weaponp->thruster_frame = 0.0f;
-
-		while ( weaponp->thruster_frame > flame_anim->total_time )	{
-			weaponp->thruster_frame -= flame_anim->total_time;
-		}
-		framenum = fl2i( (weaponp->thruster_frame*flame_anim->num_frames) / flame_anim->total_time );
-		if ( framenum < 0 ) framenum = 0;
-		if ( framenum >= flame_anim->num_frames ) framenum = flame_anim->num_frames-1;
+		framenum = bm_get_anim_frame(flame_anim->first_frame, weaponp->thruster_frame, flame_anim->total_time, true);
 	
 		// Get the bitmap for this frame
 		weaponp->thruster_bitmap = flame_anim->first_frame + framenum;
@@ -8730,16 +8728,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 	if (glow_anim->first_frame >= 0) {
 		weaponp->thruster_glow_frame += frametime * rate;
 
-		// Sanity checks
-		if ( weaponp->thruster_glow_frame < 0.0f )	weaponp->thruster_glow_frame = 0.0f;
-		if ( weaponp->thruster_glow_frame > 100.0f ) weaponp->thruster_glow_frame = 0.0f;
-
-		while ( weaponp->thruster_glow_frame > glow_anim->total_time )	{
-			weaponp->thruster_glow_frame -= glow_anim->total_time;
-		}
-		framenum = fl2i( (weaponp->thruster_glow_frame*glow_anim->num_frames) / glow_anim->total_time );
-		if ( framenum < 0 ) framenum = 0;
-		if ( framenum >= glow_anim->num_frames ) framenum = glow_anim->num_frames-1;
+		framenum = bm_get_anim_frame(glow_anim->first_frame, weaponp->thruster_glow_frame, glow_anim->total_time, true);
 	
 		// Get the bitmap for this frame
 		weaponp->thruster_glow_bitmap = glow_anim->first_frame;	// + framenum;
@@ -10000,13 +9989,82 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (sp->ship_info_index == ship_type)
 		return;
 
+	int objnum = sp->objnum;
+
 	swp = &sp->weapons;
 	sip = &(Ship_info[ship_type]);
 	sip_orig = &Ship_info[sp->ship_info_index];
-	objp = &Objects[sp->objnum];
+	objp = &Objects[objnum];
 	p_objp = mission_parse_get_parse_object(sp->ship_name);
 	ph_inf = objp->phys_info;
 
+	// MageKing17 - See if any AIs are doing anything with subsystems of this ship (targeting, goal to destroy)
+	// keep track of those subsystems and transfer the target/goal if the subsystem still exists, delete otherwise
+
+	SCP_list<int> target_matches;	// tells us to check this Ai_info index during subsystem traversal
+
+	SCP_list<ivec3> subsystem_matches;	// Ai_info index, goal index (or -1 for targeted), subsystem index
+	// not having a subsystem index at first is why we have the target_matches list:
+	// while traversing the subsystem list, a match can be compared directly to the
+	// subsystem object, and its index added to subsystem_matches.
+
+	SCP_list<weapon*> homing_matches;	// any missiles locked on to a subsystem from this ship
+
+	SCP_list<std::pair<weapon*, int>> homing_subsystem_matches;	// When homing_matches find matches, they put them here
+
+	SCP_list<weapon*> weapon_turret_matches;	// projectiles that were fired from turrets on this ship
+
+	SCP_list<std::pair<weapon*, int>> weapon_turret_subsystem_matches;
+
+	SCP_list<int> last_targeted_matches;
+
+	SCP_list<std::pair<int, int>> last_targeted_subsystem_matches;
+
+	if (!(Fred_running) && (Game_mode & GM_IN_MISSION)) {	// Doing this effort only makes sense in the middle of a mission.
+		// Delete ship sparks if the model changed
+		if (sip_orig->model_num != sip->model_num) {
+			memset(sp->sparks, 0, MAX_SHIP_HITS * sizeof(ship_spark));
+			sp->num_hits = 0;
+		}
+
+		for (i = 0; i < MAX_AI_INFO; i++) {
+			if (Ai_info[i].shipnum > -1) {
+				if (Ai_info[i].targeted_subsys && Ai_info[i].targeted_subsys->parent_objnum == objnum) {
+					target_matches.push_back(i);
+				}
+				ai_goal* goals = Ai_info[i].goals;
+				for (int j = 0; j < MAX_AI_GOALS; j++) {
+					// POSSIBLE OPTIMIZATION: goals[0] should be the active goal, so we might be able to reuse target_subsys_parent for that instead of doing ship_name_lookup()
+					if (goals[j].ai_mode == AI_GOAL_DESTROY_SUBSYSTEM && !(goals[j].flags & AIGF_SUBSYS_NEEDS_FIXUP)) {	// If the subsystem name hasn't been parsed yet, we're fine.
+						int sindex = ship_name_lookup(goals[j].target_name);
+						if (sindex > -1 && Ships[sindex].objnum == objnum) {
+							ivec3 temp = {i, j, goals[j].ai_submode};
+							subsystem_matches.push_back(std::move(temp));
+						}
+					}
+				}
+			}
+		}
+
+		for (i = 0; i < MAX_WEAPONS; i++) {
+			if (Weapons[i].objnum == -1) {
+				continue;
+			}
+			weapon* wp = &Weapons[i];
+			if (wp->homing_subsys && wp->homing_subsys->parent_objnum == objnum) {
+				homing_matches.push_back(wp);
+			}
+			if (wp->turret_subsys && wp->turret_subsys->parent_objnum == objnum) {
+				weapon_turret_matches.push_back(wp);
+			}
+		}
+
+		for (i = 0; i < MAX_PLAYERS; i++) {
+			if (sp->last_targeted_subobject[i]) {
+				last_targeted_matches.push_back(i);
+			}
+		}
+	}
 
 	// Goober5000 - we can't copy the ship object because the tree of structs contains at least
 	// one class without a copy constructor.  So let's just save the information we need.
@@ -10063,6 +10121,74 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			break;
 		}
 
+		// MageKing17 - Update subsystem pointers if changing classes mid-mission
+		if (!(Fred_running) && (Game_mode & GM_IN_MISSION)) {
+			// If any of our AI info objects targeting a subsystem on this ship are targeting this specific
+			// subsystem, add them to the subsystem_matches vector and remove them from our "to be checked" list.
+			{
+				auto it = target_matches.begin();
+				while (it != target_matches.end()) {
+					ai_info* aip = &Ai_info[*it];
+					if (aip->targeted_subsys == ss) {
+						ivec3 temp = {*it, -1, num_saved_subsystems};	// -1 for the "goal" index means targeted, not actually a goal
+						subsystem_matches.push_back(std::move(temp));
+						aip->targeted_subsys = NULL;	// Clear this so that aip->last_subsys_target won't point to a subsystem from the old list later
+						aip->targeted_subsys_parent = -1;
+						auto erasor = it;
+						++it;
+						target_matches.erase(erasor);
+					} else {
+						++it;
+					}
+				}
+			}
+
+			// Fix any weapons homing in on this subsystem.
+			{
+				auto it = homing_matches.begin();
+				while (it != homing_matches.end()) {
+					if ((*it)->homing_subsys == ss) {
+						homing_subsystem_matches.push_back(std::make_pair(*it, num_saved_subsystems));
+						auto erasor = it;
+						++it;
+						homing_matches.erase(erasor);
+					} else {
+						++it;
+					}
+				}
+			}
+
+			// Fix any projectiles fired from this subsystem.
+			{
+				auto it = weapon_turret_matches.begin();
+				while (it != weapon_turret_matches.end()) {
+					if ((*it)->turret_subsys == ss) {
+						weapon_turret_subsystem_matches.push_back(std::make_pair(*it, num_saved_subsystems));
+						auto erasor = it;
+						++it;
+						weapon_turret_matches.erase(erasor);
+					} else {
+						++it;
+					}
+				}
+			}
+
+			// Fix any subsystems in last_targeted_matches[].
+			{
+				auto it = last_targeted_matches.begin();
+				while (it != last_targeted_matches.end()) {
+					if (sp->last_targeted_subobject[*it] == ss) {
+						last_targeted_subsystem_matches.push_back(std::make_pair(*it, num_saved_subsystems));
+						auto erasor = it;
+						++it;
+						last_targeted_matches.erase(erasor);
+					} else {
+						++it;
+					}
+				}
+			}
+		}
+
 		// save subsys information
 		subsys_names[num_saved_subsystems] = new char[NAME_LENGTH];
 		strcpy(subsys_names[num_saved_subsystems], ss->system_info->subobj_name);
@@ -10079,6 +10205,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		num_saved_subsystems++;
 		ss = GET_NEXT(ss);
 	}
+	Assertion(target_matches.empty(), "Failed to find matches for every currently-targeted subsystem on ship %s in change_ship_type(); get a coder!\n", sp->ship_name);
+	Assertion(homing_matches.empty(), "Failed to find matches for every subsystem being homed in on ship %s in change_ship_type(); get a coder!\n", sp->ship_name);
+	Assertion(weapon_turret_matches.empty(), "Failed to find matches for every turret a projectile was fired from on ship %s in change_ship_type(); get a coder!\n", sp->ship_name);
+	Assertion(last_targeted_matches.empty(), "Somehow failed to find every subsystem a player was previously targeting on ship %s in change_ship_type(); get a coder!\n", sp->ship_name);
 
 	// point to new ship data
 	ship_model_change(n, ship_type);
@@ -10154,6 +10284,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// Goober5000 - restore the subsystem percentages
 	ss = GET_FIRST(&sp->subsys_list);
+	int ss_index = 0;
 	while ( ss != END_OF_LIST(&sp->subsys_list) )
 	{
 		for (i = 0; i < num_saved_subsystems; i++)
@@ -10161,13 +10292,115 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_names[i]))
 			{
 				ss->current_hits = ss->max_hits * subsys_pcts[i];
+
+				// MageKing17 - Every AI doing something with this subsystem must transfer to the new one.
+				{
+					auto it = subsystem_matches.begin();
+					while (it != subsystem_matches.end()) {
+						if (it->z == i) {	// the subsystem is a match
+							int goalnum = it->y;
+							ai_info* aip = &Ai_info[it->x];
+							if (goalnum == -1) {
+								set_targeted_subsys(aip, ss, n);
+							} else {
+								aip->goals[goalnum].ai_submode = ss_index;
+							}
+							auto erasor = it;
+							++it;
+							subsystem_matches.erase(erasor);
+						} else {
+							++it;
+						}
+					}
+				}
+
+				// also weapons homing in on this subsystem
+				{
+					auto it = homing_subsystem_matches.begin();
+					while (it != homing_subsystem_matches.end()) {
+						if (it->second == i) {	// the subsystem is a match
+							it->first->homing_subsys = ss;
+							auto erasor = it;
+							++it;
+							homing_subsystem_matches.erase(erasor);
+						} else {
+							++it;
+						}
+					}
+				}
+
+				// also weapons fired from this subsystem
+				{
+					auto it = weapon_turret_subsystem_matches.begin();
+					while (it != weapon_turret_subsystem_matches.end()) {
+						if (it->second == i) {
+							it->first->turret_subsys = ss;
+							auto erasor = it;
+							++it;
+							weapon_turret_subsystem_matches.erase(erasor);
+						} else {
+							++it;
+						}
+					}
+				}
+
+				// and finally, fix previously-targeted subsystems
+				{
+					auto it = last_targeted_subsystem_matches.begin();
+					while (it != last_targeted_subsystem_matches.end()) {
+						if (it->second == i) {	// the subsystem is a match
+							sp->last_targeted_subobject[it->first] = ss;
+							auto erasor = it;
+							++it;
+							last_targeted_subsystem_matches.erase(erasor);
+						} else {
+							++it;
+						}
+					}
+				}
+
 				break;
 			}
 		}
 
+		ss_index++;
 		ss = GET_NEXT(ss);
 	}
 	ship_recalc_subsys_strength(sp);
+
+	for (auto cit = subsystem_matches.cbegin(); cit != subsystem_matches.cend(); ++cit) {
+		int goalnum = cit->y;
+		ai_info* aip = &Ai_info[cit->x];
+		if (goalnum == -1) {
+			if (aip == Player_ai) {
+				hud_cease_subsystem_targeting(0);
+			} else {
+				set_targeted_subsys(aip, nullptr, -1);
+			}
+		} else {
+			ai_remove_ship_goal(aip, goalnum);
+		}
+	}
+
+	subsystem_matches.clear();	// We don't need these anymore, so may as well clear them now.
+
+	for (auto cit = homing_subsystem_matches.cbegin(); cit != homing_subsystem_matches.cend(); ++cit) {
+		cit->first->homing_subsys = nullptr;
+	}
+
+	homing_subsystem_matches.clear();
+
+	for (auto cit = weapon_turret_subsystem_matches.cbegin(); cit != weapon_turret_subsystem_matches.cend(); ++cit) {
+		cit->first->turret_subsys = nullptr;
+	}
+
+	weapon_turret_subsystem_matches.clear();
+
+	for (auto cit = last_targeted_subsystem_matches.cbegin(); cit != last_targeted_subsystem_matches.cend(); ++cit) {
+		sp->last_targeted_subobject[cit->first] = nullptr;
+	}
+
+	last_targeted_subsystem_matches.clear();
 
 	// now free the memory
 	for (i = 0; i < sip_orig->n_subsystems; i++)
@@ -10687,13 +10920,16 @@ int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 	shipp = &Ships[obj->instance];
 	swp = &shipp->weapons;
 	
+	if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
+		shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
+	if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)
+		shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
 	if(Ship_info[shipp->ship_info_index].draw_primary_models[bank_to_stop]){
-		if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
-			shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
-		if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
 		shipp->primary_rotate_ang[bank_to_stop] += shipp->primary_rotate_rate[bank_to_stop]*flFrametime;
-		if(shipp->primary_rotate_ang[bank_to_stop] > PI2)shipp->primary_rotate_ang[bank_to_stop] -= PI2;
-		if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)shipp->primary_rotate_ang[bank_to_stop] += PI2;
+		if(shipp->primary_rotate_ang[bank_to_stop] > PI2)
+			shipp->primary_rotate_ang[bank_to_stop] -= PI2;
+		if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)
+			shipp->primary_rotate_ang[bank_to_stop] += PI2;
 	}
 	
 	if(shipp->was_firing_last_frame[bank_to_stop] == 0)
@@ -10898,15 +11134,20 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
 		}
 
-		if(sip->draw_primary_models[bank_to_fire]){
-			if(shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
+		if (winfo_p->weapon_submodel_rotate_vel > 0.0f) {
+			if (shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
 				shipp->primary_rotate_rate[bank_to_fire] += winfo_p->weapon_submodel_rotate_accell*flFrametime;
-			if(shipp->primary_rotate_rate[bank_to_fire] > winfo_p->weapon_submodel_rotate_vel)shipp->primary_rotate_rate[bank_to_fire] = winfo_p->weapon_submodel_rotate_vel;
-			shipp->primary_rotate_ang[bank_to_fire] += shipp->primary_rotate_rate[bank_to_fire]*flFrametime;
-			if(shipp->primary_rotate_ang[bank_to_fire] > PI2)shipp->primary_rotate_ang[bank_to_fire] -= PI2;
-			if(shipp->primary_rotate_ang[bank_to_fire] < 0.0f)shipp->primary_rotate_ang[bank_to_fire] += PI2;
-
-			if(shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)continue;
+			if (shipp->primary_rotate_rate[bank_to_fire] > winfo_p->weapon_submodel_rotate_vel)
+				shipp->primary_rotate_rate[bank_to_fire] = winfo_p->weapon_submodel_rotate_vel;
+			if (sip->draw_primary_models[bank_to_fire]) {
+				shipp->primary_rotate_ang[bank_to_fire] += shipp->primary_rotate_rate[bank_to_fire]*flFrametime;
+				if (shipp->primary_rotate_ang[bank_to_fire] > PI2)
+					shipp->primary_rotate_ang[bank_to_fire] -= PI2;
+				if (shipp->primary_rotate_ang[bank_to_fire] < 0.0f)
+					shipp->primary_rotate_ang[bank_to_fire] += PI2;
+			}
+			if (shipp->primary_rotate_rate[bank_to_fire] < winfo_p->weapon_submodel_rotate_vel)
+				continue;
 		}
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
 		if((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->tag_level == 3) && (shipp->flags & SF_TRIGGER_DOWN) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
@@ -11111,7 +11352,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				shipp->beam_sys_info.model_num = sip->model_num;
 				shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
 				shipp->beam_sys_info.turret_num_firing_points = 1;  // dummy turret info is used per firepoint
-				shipp->beam_sys_info.turret_fov = (float)cos((winfo_p->field_of_fire != 0.0f)?winfo_p->field_of_fire:180);
+				shipp->beam_sys_info.turret_fov = cosf((winfo_p->field_of_fire != 0.0f)?winfo_p->field_of_fire:180);
 
 				shipp->fighter_beam_turret_data.disruption_timestamp = timestamp(0);
 				shipp->fighter_beam_turret_data.turret_next_fire_pos = 0;
@@ -18705,7 +18946,7 @@ void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *
 	mst->distortion_bitmap = shipp->thruster_distortion_bitmap;
 
 	mst->use_ab = (obj->phys_info.flags & PF_AFTERBURNER_ON) || (obj->phys_info.flags & PF_BOOSTER_ON);
-	mst->glow_noise = shipp->thruster_glow_noise;
+	mst->glow_noise = shipp->thruster_glow_noise * sip->thruster_glow_noise_mult;
 	mst->rotvel = Objects[shipp->objnum].phys_info.rotvel;
 
 	mst->glow_rad_factor = sip->thruster01_glow_rad_factor;
@@ -18821,7 +19062,7 @@ void ship_render_batch_thrusters(object *obj)
 
 				int bmap_frame = mtp->tex_id;
 				if(mtp->tex_nframes > 0)
-					bmap_frame += (int)(((float)(timestamp() - shipp->thrusters_start[i]) / 1000.0f) * (float)mtp->tex_fps) % mtp->tex_nframes;
+					bmap_frame += bm_get_anim_frame(mtp->tex_id, i2fl(timestamp() - shipp->thrusters_start[i]) / 1000.0f, 0.0f, true);
 
 				man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
 				mtr->man_batcher.add_allocate(1);

@@ -10,6 +10,7 @@
 #include "globalincs/pstypes.h"
 #include "osapi/osregistry.h"
 #include "osapi/osapi.h"
+#include "cmdline/cmdline.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,6 +106,17 @@ namespace
 
 	HKEY get_registry_keyname(char* out_keyname, const char* section)
 	{
+		if (!Cmdline_alternate_registry_path) {
+			// Use the original registry path, sometimes breaks for no reason which can be fixed by the code below
+			if (section) {
+				sprintf(out_keyname, "Software\\%s\\%s\\%s", szCompanyName, szAppName, section);
+			}
+			else {
+				sprintf(out_keyname, "Software\\%s\\%s", szCompanyName, szAppName);
+			}
+			return HKEY_LOCAL_MACHINE;
+		}
+		
 		// Every compiler from Visual Studio 2008 onward should have support for UAC
 #if _MSC_VER >= 1400
 		if (userSIDValid)

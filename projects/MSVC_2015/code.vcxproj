@@ -159,7 +159,7 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../libsdl/include;$(IntDir)voicer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>FS2_SPEECH;FS2_VOICER;_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -201,7 +201,7 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../libsdl/include;$(IntDir)voicer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>FS2_SPEECH;FS2_VOICER;_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -245,7 +245,7 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../libsdl/include;$(IntDir)voicer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>FS2_SPEECH;FS2_VOICER;_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -289,7 +289,7 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../code;../../libjpeg;../../libpng;../../lua;../../oggvorbis/include;../../openal/include;../../zlib;../../libsdl/include;$(IntDir)voicer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>FS2_SPEECH;FS2_VOICER;_WINDOWS;WIN32;_DEBUG;PDB_DEBUGGING;_CRT_SECURE_NO_DEPRECATE;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -1073,21 +1073,21 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\code\sound\phrases.xml">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">gc /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"%(RootDir)%(Directory)gc" /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)voicer\%(Filename).cfg;$(IntDir)voicer\grammar.h;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">gc /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">"%(RootDir)%(Directory)gc" /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug AVX|Win32'">$(IntDir)voicer\%(Filename).cfg;$(IntDir)voicer\grammar.h;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">gc /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">"%(RootDir)%(Directory)gc" /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug SSE|Win32'">$(IntDir)voicer\%(Filename).cfg;$(IntDir)voicer\grammar.h;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">gc /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">"%(RootDir)%(Directory)gc" /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug SSE2|Win32'">$(IntDir)voicer\%(Filename).cfg;$(IntDir)voicer\grammar.h;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">gc /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"%(RootDir)%(Directory)gc" /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)voicer\%(Filename).cfg;$(IntDir)voicer\grammar.h;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">gc /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">"%(RootDir)%(Directory)gc" /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release AVX|Win32'">$(IntDir)voicer\%(Filename).cfg;$(IntDir)voicer\grammar.h;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">gc /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">"%(RootDir)%(Directory)gc" /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release SSE|Win32'">$(IntDir)voicer\%(Filename).cfg;$(IntDir)voicer\grammar.h;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">gc /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">"%(RootDir)%(Directory)gc" /O "$(IntDir)voicer\%(Filename).cfg" /H "$(IntDir)voicer\grammar.h" "%(RootDir)%(Directory)%(Filename)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release SSE2|Win32'">$(IntDir)voicer\%(Filename).cfg;$(IntDir)voicer\grammar.h;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>

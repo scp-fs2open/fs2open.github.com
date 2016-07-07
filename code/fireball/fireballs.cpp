@@ -323,7 +323,7 @@ void fireball_load_data()
 			if ( (i == FIREBALL_WARP) && (idx > MAX_WARP_LOD) )
 				continue;
 
-			fd->lod[idx].bitmap_id	= bm_load_animation( fd->lod[idx].filename, &fd->lod[idx].num_frames, &fd->lod[idx].fps, NULL, 1 );
+			fd->lod[idx].bitmap_id	= bm_load_animation( fd->lod[idx].filename, &fd->lod[idx].num_frames, &fd->lod[idx].fps, nullptr, nullptr, true );
 			if ( fd->lod[idx].bitmap_id < 0 ) {
 				Error(LOCATION, "Could not load %s anim file\n", fd->lod[idx].filename);
 			}
@@ -507,13 +507,7 @@ void fireball_set_framenum(int num)
 	}
 
 	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
-		float total_time = i2fl(fl->num_frames) / fl->fps;	// in seconds
-
-		framenum = fl2i(fb->time_elapsed * fl->num_frames / total_time + 0.5);
-
-		if ( framenum < 0 ) framenum = 0;
-
-		framenum = framenum % fl->num_frames;
+		framenum = bm_get_anim_frame(fl->bitmap_id, fb->time_elapsed, 0.0f, true);
 
 		if ( fb->orient )	{
 			// warp out effect plays backwards
@@ -523,16 +517,8 @@ void fireball_set_framenum(int num)
 			fb->current_bitmap = fl->bitmap_id + framenum;
 		}
 	} else {
-
-		framenum = fl2i(fb->time_elapsed / fb->total_time * fl->num_frames + 0.5);
-
-		// ensure we don't go past the number of frames of animation
-		if ( framenum > (fl->num_frames-1) ) {
-			framenum = (fl->num_frames-1);
-			Objects[fb->objnum].flags |= OF_SHOULD_BE_DEAD;
-		}
-
-		if ( framenum < 0 ) framenum = 0;
+		// ignore setting of OF_SHOULD_BE_DEAD, see fireball_process_post
+		framenum = bm_get_anim_frame(fl->bitmap_id, fb->time_elapsed, fb->total_time);
 		fb->current_bitmap = fl->bitmap_id + framenum;
 	}
 }
@@ -1077,7 +1063,7 @@ void fireball_render(object* obj, draw_list *scene)
 		case FIREBALL_MEDIUM_EXPLOSION: {
 			batch_add_bitmap (
 				Fireballs[num].current_bitmap, 
-				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, 
 				&p, 
 				fb->orient, 
 				obj->radius
@@ -1089,7 +1075,7 @@ void fireball_render(object* obj, draw_list *scene)
 			// Make the big explosions rotate with the viewer.
 			batch_add_bitmap_rotated ( 
 				Fireballs[num].current_bitmap, 
-				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, 
+				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, 
 				&p, 
 				(i2fl(fb->orient)*PI)/180.0f,
 				obj->radius

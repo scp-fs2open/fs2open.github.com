@@ -2257,7 +2257,8 @@ int check_control_used(int id, int key)
 		return 0;
 	}
 
-	if ((Control_config[id].key_id == key) || joy_down_count(Control_config[id].joy_id, 1) || mouse_down_count(1 << Control_config[id].joy_id)) {
+	if ((Control_config[id].key_id == key) || joy_down_count(Control_config[id].joy_id, 1) ||
+			((Control_config[id].joy_id >= 0) && (Control_config[id].joy_id < MOUSE_NUM_BUTTONS) && mouse_down_count(1 << Control_config[id].joy_id))) {
 		//mprintf(("Key used %d", key));
 		control_used(id);
 		return 1;

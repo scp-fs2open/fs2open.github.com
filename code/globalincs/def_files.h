@@ -12,7 +12,7 @@
 #define __DEF_FILES_H_
 
 //Used to retrieve pointer to file data from def_files.cpp
-char *defaults_get_file(char *filename);
+const char *defaults_get_file(const char *filename);
 
 //WMC - 
 //There are three parts to adding a file

@@ -1308,6 +1308,8 @@ void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos,
 	vm_vec_unrotate(gvec, &tp->turret_norm, &objp->orient);	
 }
 
+void turret_ai_update_aim(ai_info *aip, object *En_Objp, ship_subsys *ss);
+
 /**
  * Given an object and a turret on that object, return the actual firing point of the gun and its normal.
  *
@@ -1337,14 +1339,14 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 	if (use_angles) {
 		model_instance_find_world_dir(gvec, &tp->turret_norm, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient);
 	} else if (tp->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION) {
-		vec3d shared_dir, avg, tmp_pos, tmp_target, enemy_point;
+		vec3d avg, tmp_pos, tmp_target, enemy_point, turret_norm;
 		vm_vec_avg_n(&avg, tp->turret_num_firing_points, tp->turret_firing_point);
 
 		model_instance_find_world_point(&tmp_pos, &avg, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
 
 		if (targetp == nullptr) {
-			Assertion(ssp->turret_enemy_objnum >= 0, "The turret enemy object number %d for %s on ship number %d is invalid.", ssp->turret_enemy_objnum, ssp->sub_name, ssp->parent_objnum);
-			object *lep = &Objects[ssp->turret_enemy_objnum];
+            Assertion(ssp->turret_enemy_objnum >= 0, "The turret enemy object number %d for %s on ship number %d is invalid.", ssp->turret_enemy_objnum, ssp->sub_name, ssp->parent_objnum);
+            object *lep = &Objects[ssp->turret_enemy_objnum];
 
 			int best_weapon_tidx = turret_select_best_weapon(ssp, lep);
 
@@ -1356,12 +1358,15 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
 			float weapon_system_strength = ship_get_subsystem_strength(&Ships[ssp->parent_objnum], SUBSYSTEM_WEAPONS);
 
+            turret_ai_update_aim(&Ai_info[Ships[ssp->parent_objnum].ai_index], &Objects[ssp->turret_enemy_objnum], ssp);
+
 			if ((ssp->targeted_subsys != nullptr) && !(ssp->flags & SSF_NO_SS_TARGETING)) {
 				vm_vec_unrotate(&enemy_point, &ssp->targeted_subsys->system_info->pnt, &Objects[ssp->turret_enemy_objnum].orient);
 				vm_vec_add2(&enemy_point, &ssp->last_aim_enemy_pos);
 			} else {
 				if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
-					ai_big_pick_attack_point_turret(lep, ssp, &tmp_pos, &tp->turret_norm, &enemy_point, tp->turret_fov, MIN(wip->max_speed * wip->lifetime, wip->weapon_range));
+                    vm_vec_unrotate(&turret_norm, &tp->turret_norm, &objp->orient);
+					ai_big_pick_attack_point_turret(lep, ssp, &tmp_pos, &turret_norm, &enemy_point, MIN(wip->max_speed * wip->lifetime, wip->weapon_range), tp->turret_fov);
 				}
 				else {
 					enemy_point = ssp->last_aim_enemy_pos;
@@ -1380,9 +1385,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 			tmp_target = *targetp;
 		}
 
-		vm_vec_normalized_dir(&shared_dir, &tmp_target, &tmp_pos);
-
-		model_instance_find_world_dir(gvec, &shared_dir, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient);
+		vm_vec_normalized_dir(gvec, &tmp_target, &tmp_pos);
 	} else {
 		//vector	gun_pos2;
 		//vm_vec_add(&gun_pos2, gpos, gun_pos);
@@ -2626,7 +2629,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 				ss->turret_next_fire_pos = ffp_pos;
 			}
 
-			ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
+            ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
 
 			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
 			vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);

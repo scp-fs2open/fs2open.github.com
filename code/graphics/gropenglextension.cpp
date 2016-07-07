@@ -165,7 +165,11 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 
 	{ false, false, 1, { "GL_ARB_draw_instanced" }, 2, { "glDrawArraysInstancedARB", "glDrawElementsInstancedARB" } },
 
-	{ false, false, 1, { "GL_ARB_texture_buffer_object" }, 1, { "glTexBufferARB" } }
+	{ false, false, 1, { "GL_ARB_texture_buffer_object" }, 1, { "glTexBufferARB" } },
+
+	{ false, false, 1, { "GL_ARB_color_buffer_float" }, 0, { NULL } },
+
+	{ false, false, 1, { "GL_ARB_seamless_cube_map" }, 0, { NULL } }
 };
 
 // ogl_funcion is:

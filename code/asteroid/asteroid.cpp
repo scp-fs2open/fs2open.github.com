@@ -1566,8 +1566,8 @@ void asteroid_maybe_break_up(object *pasteroid_obj)
 						float r = sqrt(1.0f - y*y);
 						float phi = i * inc;
 
-						dir_vec.xyz.x = cos(phi)*r;
-						dir_vec.xyz.y = sin(phi)*r;
+						dir_vec.xyz.x = cosf(phi)*r;
+						dir_vec.xyz.y = sinf(phi)*r;
 						dir_vec.xyz.z = y;
 
 						// Randomize the direction a bit
@@ -2031,7 +2031,7 @@ void asteroid_parse_tbl()
 
 		if (VALID_FNAME(impact_ani_file)) {
 			int num_frames;
-			Asteroid_impact_explosion_ani = bm_load_animation(impact_ani_file, &num_frames, NULL, NULL, 1);
+			Asteroid_impact_explosion_ani = bm_load_animation(impact_ani_file, &num_frames, nullptr, nullptr, nullptr, true);
 		}
 
 		required_string("$Impact Explosion Radius:");

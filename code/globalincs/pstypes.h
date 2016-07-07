@@ -84,6 +84,11 @@ typedef struct vec4 {
 	};
 } vec4;
 
+// sometimes, you just need some integers
+typedef struct ivec3 {
+	int x, y, z;
+} ivec3;
+
 /** Represents a point in 3d space.
 
 Note: this is a struct, not a class, so no member functions. */
@@ -301,8 +306,6 @@ const float PI2			= (PI*2.0f);
 const float PI_2		= (PI/2.0f);
 const int RAND_MAX_2	= (RAND_MAX/2);
 const float RAND_MAX_1f	= (1.0f / RAND_MAX);
-
-#define ANG_TO_RAD(x)	((x)*PI/180)
 
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?

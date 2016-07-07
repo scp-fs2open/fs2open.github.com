@@ -29,6 +29,7 @@ union bm_extra_info {
 		int first_frame;    //!< used for animations -- points to index of first frame
 		int num_frames;     //!< used for animations -- number of frames in the animation
 		int keyframe;       //!< used for animations -- keyframe info
+		float total_time;   //!< used for animations -- total animation time (not always derived from num_frames/fps)
 		ubyte fps;          //!< used for animations -- frames per second
 
 		struct {
@@ -36,6 +37,10 @@ union bm_extra_info {
 			BM_TYPE type;                         //!< type for individual images
 			char  filename[MAX_FILENAME_LEN];   //!< filename for individual images
 		} eff;
+		struct {
+			bool  is_apng;      //!< Is this animation an APNG?
+			float frame_delay;  //!< cumulative frame delay
+		} apng;
 	} ani;
 
 	struct {
@@ -90,6 +95,7 @@ extern bitmap_entry bm_bitmaps[MAX_BITMAPS];
 void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
 void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
 void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
+void bm_lock_apng( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
 void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
 void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
 void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );

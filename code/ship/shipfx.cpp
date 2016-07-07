@@ -3041,7 +3041,7 @@ void engine_wash_ship_process(ship *shipp)
 							vm_vec_normalize(&apex_to_ship);
 
 							// check if inside cone angle
-							if (vm_vec_dot(&apex_to_ship, &world_thruster_norm) > cos(half_angle)) {
+							if (vm_vec_dot(&apex_to_ship, &world_thruster_norm) > cosf(half_angle)) {
 								vm_vec_cross(&temp, &world_thruster_norm, &thruster_to_ship);
 								vm_vec_scale_add2(&shipp->wash_rot_axis, &temp, dot_to_ship / dist_sqr);
 								ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist));
@@ -3834,7 +3834,7 @@ WE_BSG::WE_BSG(object *n_objp, int n_direction)
 	if(strlen(tmp_name))
 	{
 		//Load anim
-		anim = bm_load_either(tmp_name, &anim_nframes, &anim_fps, NULL, 1);
+		anim = bm_load_either(tmp_name, &anim_nframes, &anim_fps, NULL, true);
 		if(anim > -1)
 		{
 			anim_total_time = fl2i(((float)anim_nframes / (float)anim_fps) * 1000.0f);
@@ -3844,7 +3844,7 @@ WE_BSG::WE_BSG(object *n_objp, int n_direction)
 		strncat(tmp_name, "-shockwave", MAX_FILENAME_LEN-1);
 
 		//Load shockwave
-		shockwave = bm_load_either(tmp_name, &shockwave_nframes, &shockwave_fps, NULL, 1);
+		shockwave = bm_load_either(tmp_name, &shockwave_nframes, &shockwave_fps, NULL, true);
 		if(shockwave > -1)
 		{
 			shockwave_total_time = fl2i(((float)shockwave_nframes / (float)shockwave_fps) * 1000.0f);
@@ -4116,7 +4116,7 @@ int WE_BSG::warpShipRender()
 			vm_vec_scale_add(&end, &pos, &objp->orient.vec.fvec, z_offset_max);
 
 			//Render the warpout effect
-			batch_add_beam(anim + anim_frame, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT, &start, &end, tube_radius*2.0f, 1.0f);
+			batch_add_beam(anim + anim_frame, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, &start, &end, tube_radius*2.0f, 1.0f);
 		}
 	}
 
@@ -4137,7 +4137,7 @@ int WE_BSG::warpShipRender()
 				g3_transfer_vertex(&p, &pos);
 			}
 
-			batch_add_bitmap(shockwave + shockwave_frame, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD, &p, 0, shockwave_radius, 1.0f);
+			batch_add_bitmap(shockwave + shockwave_frame, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, &p, 0, shockwave_radius, 1.0f);
 		}
 	}
 
@@ -4210,9 +4210,9 @@ WE_Homeworld::WE_Homeworld(object *n_objp, int n_direction)
 
 	//Anim
 	if(direction == WD_WARP_IN)
-		anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, NULL, 1);
+		anim = bm_load_either(sip->warpin_anim, &anim_nframes, &anim_fps, NULL, true);
 	else if(direction == WD_WARP_OUT)
-		anim = bm_load_either(sip->warpout_anim, &anim_nframes, &anim_fps, NULL, 1);
+		anim = bm_load_either(sip->warpout_anim, &anim_nframes, &anim_fps, NULL, true);
 	else
 		anim = -1;
 
@@ -4415,7 +4415,7 @@ int WE_Homeworld::warpShipRender()
 	//Set the correct frame
 // 	gr_set_bitmap(anim + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);	
 // 	g3_draw_polygon(&pos, &objp->orient, width, height, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-	batch_add_polygon(anim + frame, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, &pos, &objp->orient, width, height);
+	batch_add_polygon(anim + frame, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, &pos, &objp->orient, width, height);
 
 	return 1;
 }

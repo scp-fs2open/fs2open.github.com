@@ -85,7 +85,7 @@ void CShipTexturesDlg::OnOK()
 				// if PCX not found, look for ANI
 				if (temp_bmp < 0)
 				{					
-					temp_bmp = bm_load_animation(new_texture_name[i],  &temp_frames, &temp_fps, NULL, 1);
+					temp_bmp = bm_load_animation(new_texture_name[i],  &temp_frames, &temp_fps, nullptr, nullptr, nullptr, true);
 				}
 
 				// check if loaded

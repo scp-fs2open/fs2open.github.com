@@ -62,7 +62,7 @@ bool vm_matrix_equal(const matrix4 &self, const matrix4 &other)
 // -----------------------------------------------------------
 // atan2_safe()
 //
-// Wrapper around atan2() that used atan() to calculate angle.  Safe
+// Wrapper around atan2() that used atanf() to calculate angle.  Safe
 // for optimized builds.  Handles special cases when x == 0.
 //
 float atan2_safe(float y, float x)
@@ -81,7 +81,7 @@ float atan2_safe(float y, float x)
 		return ang;
 	}
 	
-	ang = (float)atan(y/x);
+	ang = atanf(y/x);
 	if ( x < 0.0f ){
 		ang += PI;
 	}
@@ -1075,7 +1075,7 @@ angles *vm_extract_angles_matrix_alternate(angles *a, const matrix *m)
 	} else if (sp >= 1.0f) {
 		a->p = PI_2;	// pi/2
 	} else {
-		a->p = asin(sp);
+		a->p = asinf(sp);
 	}
 
 	// Check for the Gimbal lock case, giving a slight tolerance

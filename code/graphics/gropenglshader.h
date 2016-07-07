@@ -133,11 +133,12 @@ void opengl_delete_shader(int sdr_handle);
 void opengl_shader_set_current(opengl_shader_t *shader_obj = NULL);
 void opengl_shader_set_current(int handle);
 
+void opengl_shader_set_passthrough(bool textured = true, bool alpha = false, float color_scale = 1.0f);
+
 void opengl_shader_init();
 void opengl_shader_shutdown();
 
 int opengl_compile_shader(shader_type sdr, uint flags);
-GLhandleARB opengl_shader_create(const char *vs, const char *fs, const char *gs);
 
 void opengl_shader_init_attribute(const char *attribute_text);
 GLint opengl_shader_get_attribute(const char *attribute_text);
@@ -155,6 +156,8 @@ float opengl_shader_get_animated_timer();
 
 void opengl_shader_compile_deferred_light_shader();
 void opengl_shader_compile_deferred_light_clear_shader();
+
+void opengl_shader_compile_passthrough_shader();
 
 #define ANIMATED_SHADER_LOADOUTSELECT_FS1	0
 #define ANIMATED_SHADER_LOADOUTSELECT_FS2	1

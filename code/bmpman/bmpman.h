@@ -156,6 +156,11 @@ int bm_get_cache_slot(int bitmap_id, int separate_ani_frames);
  */
 int bm_get_next_handle();
 
+#define BMP_FLAG_RENDER_TARGET_STATIC		(1<<0)
+#define BMP_FLAG_RENDER_TARGET_DYNAMIC		(1<<1)
+#define BMP_FLAG_CUBEMAP					(1<<2)
+#define BMP_FLAG_RENDER_TARGET_MIPMAP		(1<<3)
+
 /**
  * @brief Allocates memory for the given handle.
  *
@@ -299,7 +304,7 @@ int bm_release(int handle, int clear_render_targets = 0);
  * @returns The bm number of the first bitmap in the sequence if successful, or
  * @returns A negative value if unsuccessful
  */
-int bm_load_animation(const char *filename, int *nframes = NULL, int *fps = NULL, int *keyframe = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
+int bm_load_animation(const char *filename, int *nframes = nullptr, int *fps = nullptr, int *keyframe = nullptr, float *total_time = nullptr, bool can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
 
 /**
  * @brief Loads either animation (bm_load_animation) or still image (bm_load)
@@ -314,7 +319,7 @@ int bm_load_animation(const char *filename, int *nframes = NULL, int *fps = NULL
  * @returns The bm number of the first bitmap in the sequence if successful, or
  * @returns A negative value if unsuccessful
  */
-int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, int *keyframe = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
+int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, int *keyframe = NULL, bool can_drop_frames = false, int dir_type = CF_TYPE_ANY);
 
 /**
  * @brief Locks down the bitmap indexed by bitmapnum.
@@ -598,6 +603,16 @@ void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, u
  */
 void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
+extern int UNLITMAP; //this holds a reference to a map that is optional used instead of the base map for unlit rendering
+extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of its index -Bobboau
+extern int SPECMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
+extern int SPECGLOSSMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
+extern int ENVMAP;	//this holds a reference to a map that is for environment mapping -Bobboau
+extern int NORMMAP;	// normal mapping
+extern int HEIGHTMAP;	// height map for normal mapping
+extern int AMBIENTMAP; // ambient occluion map. red channel affects ambient lighting, green channel affects diffuse and specular
+extern int MISCMAP; // Utility map, to be utilized for various things shader authors can come up with
+
 /**
  * @brief Returns the compression type of the bitmap indexed by handle
  */
@@ -670,5 +685,17 @@ bool bm_set_render_target(int handle, int face = -1);
  * @returns false If not successful
  */
 bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type);
+
+/**
+ * @brief Calculates & returns the current frame of an animation
+ *
+ * @param[in] frame1_handle  Handle of the animation
+ * @param[in] elapsed_time   Time in seconds since the animation started playing
+ * @param[in] loop           (optional) specifies if the animation should loop, default is false which causes animation to hold on the last frame
+ * @param[in] divisor        (optional) if greater than zero, elapsed time will be divided by this value i.e. allows "percentage complete" to be used to determine the frame instead of the animations total time derived from fps * frames
+ *
+ * @returns current frame of the animation (range is zero to the number of frames minus one)
+ */
+int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const float divisor = 0.0f, const bool loop = false);
 
 #endif

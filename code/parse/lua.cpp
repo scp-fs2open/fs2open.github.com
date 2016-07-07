@@ -12,6 +12,7 @@
 #include "globalincs/linklist.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
+#include "graphics/generic.h"
 #include "graphics/gropenglpostprocessing.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudconfig.h"
@@ -3349,6 +3350,271 @@ ADE_FUNC(isValid, l_Team, NULL, "Detects whether handle is valid", "boolean", "t
 	return ADE_RETURN_TRUE;
 }
 
+//**********HANDLE: streamingAnimation
+
+class streaminganim_h {
+public:
+	generic_anim ga;
+
+	bool IsValid() {
+		return (ga.num_frames > 0);
+	}
+	streaminganim_h (const char* filename)
+	{
+		generic_anim_init(&ga, filename);
+	}
+};
+
+ade_obj<streaminganim_h> l_streaminganim("streaminganim", "Streaming Animation handle");
+
+ADE_FUNC(__gc, l_streaminganim, NULL, "Auto-deletes streaming animation", NULL, NULL)
+{
+	// NOTE: very similar to the l_streaminganim ADE_FUNC unload
+	streaminganim_h* sah;
+
+	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	// don't bother to check if valid before unloading
+	// generic_anim_unload has safety checks
+	generic_anim_unload(&sah->ga);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_VIRTVAR(Loop, l_streaminganim, "[boolean loop]", "Make the streaming animation loop.", "boolean", "Is the animation looping, or nil if anim invalid")
+{
+	streaminganim_h* sah;
+	bool loop = false;
+
+	if(!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &loop))
+		return ADE_RETURN_NIL;
+
+	if(!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		if (loop == false)
+			sah->ga.direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
+		else
+			sah->ga.direction &= ~GENERIC_ANIM_DIRECTION_NOLOOP;
+	}
+
+	return ((sah->ga.direction & GENERIC_ANIM_DIRECTION_NOLOOP) == false ? ADE_RETURN_TRUE : ADE_RETURN_FALSE);
+}
+
+ADE_VIRTVAR(Pause, l_streaminganim, "[boolean pause]", "Pause the streaming animation.", "boolean", "Is the animation paused, or nil if anim invalid")
+{
+	streaminganim_h* sah;
+	bool pause = false;
+
+	if(!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &pause))
+		return ADE_RETURN_NIL;
+
+	if(!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		if (pause == true)
+			sah->ga.direction |= GENERIC_ANIM_DIRECTION_PAUSED;
+		else
+			sah->ga.direction &= ~GENERIC_ANIM_DIRECTION_PAUSED;
+	}
+
+	return ((sah->ga.direction & GENERIC_ANIM_DIRECTION_PAUSED) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE);
+}
+
+ADE_VIRTVAR(Reverse, l_streaminganim, "[boolean reverse]", "Make the streaming animation play in reverse.", "boolean", "Is the animation playing in reverse, or nil if anim invalid")
+{
+	streaminganim_h* sah;
+	bool reverse = false;
+
+	if(!ade_get_args(L, "o|b", l_streaminganim.GetPtr(&sah), &reverse))
+		return ADE_RETURN_NIL;
+
+	if(!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		if (reverse == true)
+			sah->ga.direction |= GENERIC_ANIM_DIRECTION_BACKWARDS;
+		else
+			sah->ga.direction &= ~GENERIC_ANIM_DIRECTION_BACKWARDS;
+	}
+
+	return ((sah->ga.direction & GENERIC_ANIM_DIRECTION_BACKWARDS) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE);
+}
+
+ADE_FUNC(getFilename, l_streaminganim, NULL, "Get the filename of the animation", "string", "Filename or nil if invalid")
+{
+	streaminganim_h* sah;
+
+	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	if(!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "s", sah->ga.filename);
+}
+
+ADE_FUNC(getFrameCount, l_streaminganim, NULL, "Get the number of frames in the animation.", "integer", "Total number of frames")
+{
+	streaminganim_h* sah;
+
+	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	if(!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "i", sah->ga.num_frames);
+}
+
+ADE_FUNC(getFrameIndex, l_streaminganim, NULL, "Get the current frame index of the animation", "integer", "Current frame index")
+{
+	streaminganim_h* sah;
+
+	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	if(!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	int cframe = sah->ga.current_frame;
+	if (cframe < 0 || cframe >= sah->ga.num_frames) {
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "i", ++cframe); // C++ to LUA array index
+}
+
+ADE_FUNC(getHeight, l_streaminganim, NULL, "Get the height of the animation in pixels", "integer", "Height or nil if invalid")
+{
+	streaminganim_h* sah;
+
+	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	if(!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "i", sah->ga.height);
+}
+
+ADE_FUNC(getWidth, l_streaminganim, NULL, "Get the width of the animation in pixels", "integer", "Width or nil if invalid")
+{
+	streaminganim_h* sah;
+
+	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	if(!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "i", sah->ga.width);
+}
+
+ADE_FUNC(isValid, l_streaminganim, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	streaminganim_h* sah;
+	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	return sah->IsValid();
+}
+
+ADE_FUNC(preload, l_streaminganim, NULL, "Load all apng animations into memory", "boolean", "true if preload was successful, nil if a syntax/type error occurs")
+{
+	streaminganim_h* sah;
+	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	if (sah->ga.type != BM_TYPE_PNG)
+		return ADE_RETURN_NIL;
+
+	sah->ga.png.anim->preload();
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(process, l_streaminganim, "[int x1, int y1, int x2, int y2, float u0, float v0, float u1, float v1, float alpha, boolean draw]",
+		"Processes a streaming animation, including selecting the correct frame & drawing it.",
+		"boolean", "True if processing was successful, otherwise nil")
+{
+	streaminganim_h* sah;
+	generic_extras ge;
+	int x1 = 0, y1 = 0;
+	int x2 = INT_MAX, y2 = INT_MAX;
+
+	if(!ade_get_args(L, "o|iiiifffffb", l_streaminganim.GetPtr(&sah),
+				&x1, &y1, &x2, &y2,
+				&ge.u0, &ge.v0, &ge.u1, &ge.v1, &ge.alpha,
+				&ge.draw))
+		return ADE_RETURN_NIL;
+
+	if(!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	ge.width = sah->ga.width;
+	ge.height = sah->ga.height;
+	if (x2 != INT_MAX) ge.width = x2-x1;
+	if (y2 != INT_MAX) ge.height = y2-y1;
+
+	// note; generic_anim_render will default to GR_RESIZE_NONE when ge is provided
+	generic_anim_render(&sah->ga, flFrametime, x1, y1, false, &ge);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(reset, l_streaminganim, "[none]", "Reset a streaming animation back to its 1st frame", "boolean", "True if successful, otherwise nil")
+{
+	streaminganim_h* sah;
+
+	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	sah->ga.png.anim->goto_start();
+	sah->ga.current_frame = 0;
+	sah->ga.anim_time = 0.0f;
+	sah->ga.png.previous_frame_time = 0.0f;
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(timeLeft, l_streaminganim, NULL, "Get the amount of time left in the animation, in seconds", "float", "Time left in secs or nil if invalid")
+{
+	streaminganim_h* sah;
+
+	if (!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	if(!sah->IsValid())
+		return ADE_RETURN_NIL;
+
+	float timeLeft = 0.0f;
+	if ((sah->ga.direction & GENERIC_ANIM_DIRECTION_BACKWARDS) == true)
+		timeLeft = sah->ga.anim_time;
+	else
+		timeLeft = sah->ga.total_time - sah->ga.anim_time;
+
+	return ade_set_args(L, "f", timeLeft);
+}
+
+ADE_FUNC(unload, l_streaminganim, NULL, "Unloads a streaming animation from memory", NULL, NULL)
+{
+	streaminganim_h* sah;
+
+	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
+		return ADE_RETURN_NIL;
+
+	// don't bother to check if valid before unloading
+	// generic_anim_unload has safety checks
+	generic_anim_unload(&sah->ga);
+
+	return ADE_RETURN_TRUE;
+}
+
 //**********HANDLE: Texture
 ade_obj<int> l_Texture("texture", "Texture handle");
 //WMC - int should NEVER EVER be an invalid handle. Return Nil instead. Nil FTW.
@@ -3524,6 +3790,29 @@ ADE_FUNC(getFramesLeft, l_Texture, NULL, "Gets number of frames left, from handl
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", num);
+}
+
+ADE_FUNC(getFrame, l_Texture, "number Elapsed time (secs), [boolean Loop]",
+		 "Get the frame number from the elapsed time of the animation<br>"
+		 "The 1st argument is the time that has elapsed since the animation started<br>"
+		 "If 2nd argument is set to true, the animation is expected to loop when the elapsed time exceeds the duration of a single playback",
+		 "integer",
+		 "Frame number")
+{
+	int idx, frame = 0;
+	float elapsed_time;
+	bool loop = false;
+
+	if (!ade_get_args(L, "of|b", l_Texture.Get(&idx), &elapsed_time, &loop))
+		return ADE_RETURN_NIL;
+
+	if (!bm_is_valid(idx))
+		return ADE_RETURN_NIL;
+
+	frame = bm_get_anim_frame(idx, elapsed_time, 0.0f, loop);
+	frame++;  // C++ to LUA array idx
+
+	return ade_set_args(L, "i", frame);
 }
 
 //**********OBJECT: vector
@@ -9574,7 +9863,7 @@ ADE_VIRTVAR(Gliding, l_Ship, "boolean", "Specifies whether this ship is currentl
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(EtsEngineIndex, l_Ship, "number", "(not implemented)", "number", "Ships ETS Engine index value, 0 to MAX_ENERGY_INDEX")
+ADE_VIRTVAR(EtsEngineIndex, l_Ship, "number", "(SET not implemented, see EtsSetIndexes)", "number", "Ships ETS Engine index value, 0 to MAX_ENERGY_INDEX")
 {
 	object_h *objh=NULL;
 	int ets_idx = 0;
@@ -9591,7 +9880,7 @@ ADE_VIRTVAR(EtsEngineIndex, l_Ship, "number", "(not implemented)", "number", "Sh
 	return ade_set_args(L, "i", Ships[objh->objp->instance].engine_recharge_index);
 }
 
-ADE_VIRTVAR(EtsShieldIndex, l_Ship, "number", "(not implemented)", "number", "Ships ETS Shield index value, 0 to MAX_ENERGY_INDEX")
+ADE_VIRTVAR(EtsShieldIndex, l_Ship, "number", "(SET not implemented, see EtsSetIndexes)", "number", "Ships ETS Shield index value, 0 to MAX_ENERGY_INDEX")
 {
 	object_h *objh=NULL;
 	int ets_idx = 0;
@@ -9608,7 +9897,7 @@ ADE_VIRTVAR(EtsShieldIndex, l_Ship, "number", "(not implemented)", "number", "Sh
 	return ade_set_args(L, "i", Ships[objh->objp->instance].shield_recharge_index);
 }
 
-ADE_VIRTVAR(EtsWeaponIndex, l_Ship, "number", "(not implemented)", "number", "Ships ETS Weapon index value, 0 to MAX_ENERGY_INDEX")
+ADE_VIRTVAR(EtsWeaponIndex, l_Ship, "number", "(SET not implemented, see EtsSetIndexes)", "number", "Ships ETS Weapon index value, 0 to MAX_ENERGY_INDEX")
 {
 	object_h *objh=NULL;
 	int ets_idx = 0;
@@ -10110,9 +10399,9 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwards]",
+ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwards, boolean Instant]",
 		 "Triggers an animation. Type is the string name of the animation type, "
-		 "Subtype is the subtype number, such as weapon bank #, and Forwards is boolean."
+		 "Subtype is the subtype number, such as weapon bank #, Forwards and Instant are boolean, defaulting to true & false respectively."
 		 "<br><strong>IMPORTANT: Function is in testing and should not be used with official mod releases</strong>",
 		 "boolean",
 		 "True if successful, false or nil otherwise")
@@ -10120,8 +10409,9 @@ ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwar
 	object_h *objh;
 	char *s = NULL;
 	bool b = true;
+	bool instant = false;
 	int subtype=-1;
-	if(!ade_get_args(L, "o|sib", l_Ship.GetPtr(&objh), &s, &subtype, &b))
+	if(!ade_get_args(L, "o|sibb", l_Ship.GetPtr(&objh), &s, &subtype, &b, &instant))
 		return ADE_RETURN_NIL;
 
 	if(!objh->IsValid())
@@ -10135,7 +10425,7 @@ ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwar
 	if(!b)
 		dir = -1;
 
-	model_anim_start_type(&Ships[objh->objp->instance], type, subtype, dir);
+	model_anim_start_type(&Ships[objh->objp->instance], type, subtype, dir, instant);
 
 	return ADE_RETURN_TRUE;
 }
@@ -13992,6 +14282,37 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 	return ade_set_args(L, "i", w);
 }
 
+ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean reverse, boolean pause]",
+		 "Plays a streaming animation, returning its handle. The optional booleans can also be set via the handles virtvars<br>"
+		 "Remember to call the unload() function when you're finished using the animation to free up memory.",
+		 "streaminganim",
+		 "Streaming animation handle, or invalid handle if animation couldn't be loaded")
+{
+	char *s;
+	int rc = -1;
+	bool loop = false, reverse = false, pause = false;
+
+	if(!ade_get_args(L, "s|bbb", &s, &loop, &reverse, &pause))
+		return ADE_RETURN_NIL;
+
+	streaminganim_h sah(s);
+	if (loop == false) {
+		sah.ga.direction |= GENERIC_ANIM_DIRECTION_NOLOOP;
+	}
+	if (reverse == true) {
+		sah.ga.direction |= GENERIC_ANIM_DIRECTION_BACKWARDS;
+	}
+	if (pause == true) {
+		sah.ga.direction |= GENERIC_ANIM_DIRECTION_PAUSED;
+	}
+	rc = generic_anim_stream(&sah.ga);
+
+	if(rc < 0)
+		return ade_set_args(L, "o", l_streaminganim.Set(sah)); // this object should be "invalid", matches loadTexture behaviour
+
+	return ade_set_args(L, "o", l_streaminganim.Set(sah));
+}
+
 ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enumeration Type=TEXTURE_DYNAMIC]",
 		 "Creates a texture for rendering to."
 		 "Types are TEXTURE_STATIC - for infrequent rendering - and TEXTURE_DYNAMIC - for frequent rendering.",
@@ -14031,16 +14352,18 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 		 "Texture handle, or invalid texture handle if texture couldn't be loaded")
 {
 	char *s;
-	int idx;
+	int idx=-1;
 	bool b=false;
 	bool d=false;
 
 	if(!ade_get_args(L, "s|bb", &s, &b, &d))
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
-	idx = bm_load(s);
-	if(idx < 0 && b) {
-		idx = bm_load_animation(s, NULL, NULL, NULL, d ? 1 : 0);
+	if(b == true) {
+		idx = bm_load_animation(s, nullptr, nullptr, nullptr, nullptr, d);
+	}
+	if(idx < 0) {
+		idx = bm_load(s);
 	}
 
 	if(idx < 0)

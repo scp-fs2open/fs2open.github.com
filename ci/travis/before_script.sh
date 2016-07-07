@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -e
+
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     # Due to a bug in gcc the array bounds check isn't working correctly
     # This can be removed when gcc is updated

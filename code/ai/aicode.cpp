@@ -13410,7 +13410,7 @@ void ai_warp_out(object *objp)
 			aip->submode_start_time = Missiontime;
 
 			// maybe recalculate collision pairs.
-			if (ship_get_warpout_speed(objp) > ship_get_max_speed(shipp)) {
+			if ((objp->flags & OF_COLLIDES) && (ship_get_warpout_speed(objp) > ship_get_max_speed(shipp))) {
 				// recalculate collision pairs
 				OBJ_RECALC_PAIRS(objp);	
 			}

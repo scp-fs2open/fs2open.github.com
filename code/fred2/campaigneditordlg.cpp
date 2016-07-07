@@ -817,7 +817,8 @@ void campaign_editor::OnBrowseLoopAni()
 
 	// switch directories
 	pushed_dir = cfile_push_chdir(CF_TYPE_INTERFACE);
-	CFileDialog dlg(TRUE, "ani", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Ani Files (*.ani)|*.ani");
+	CFileDialog dlg(TRUE, "ani", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
+		"Ani Files (*.ani)|*.ani|Eff File (*.eff)|*.eff|APNG Files (*.png)|*.png|All Anims (*.ani, *.eff, *.png)|*.ani;*.eff;*.png");
 
 	if (dlg.DoModal() == IDOK) {
 		m_branch_brief_anim = dlg.GetFileName();

@@ -1129,7 +1129,6 @@ static int framenum;
  */
 void game_loading_callback(int count)
 {	
-	int new_framenum;
 	game_do_networking();
 
 	Assert( Game_loading_callback_inited==1 );
@@ -1137,12 +1136,12 @@ void game_loading_callback(int count)
 
 	int do_flip = 0;
 
-	new_framenum = ((Game_loading_ani.num_frames*count) / COUNT_ESTIMATE)+1;
-	if ( new_framenum > Game_loading_ani.num_frames-1 )	{
-		new_framenum = Game_loading_ani.num_frames-1;
-	} else if ( new_framenum < 0 )	{
-		new_framenum = 0;
+	int new_framenum = bm_get_anim_frame(Game_loading_ani.first_frame, static_cast<float>(count), static_cast<float>(COUNT_ESTIMATE));
+	// retail incremented the frame number by one, essentially skipping the 1st frame except for single-frame anims
+	if (Game_loading_ani.num_frames > 1 && new_framenum < Game_loading_ani.num_frames-1) {
+		new_framenum++;
 	}
+
 	//make sure we always run forwards - graphical hack
 	if(new_framenum > framenum)
 		framenum = new_framenum;
@@ -3297,7 +3296,7 @@ void setup_environment_mapping(camid cid)
 void game_environment_map_gen()
 {
 	const int size = 512;
-	int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP);
+	int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP | BMP_FLAG_RENDER_TARGET_MIPMAP);
 
 	if ( !Cmdline_env ) {
 		return;

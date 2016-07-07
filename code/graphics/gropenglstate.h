@@ -328,6 +328,7 @@ public:
 	void setUniform2f(const SCP_string &name, const vec2d &val);
 	void setUniform3f(const SCP_string &name, const float x, const float y, const float z);
 	void setUniform3f(const SCP_string &name, const vec3d &value);
+	void setUniform4f(const SCP_string &name, const float x, const float y, const float z, const float w);
 	void setUniform4f(const SCP_string &name, const vec4 &val);
 	void setUniformMatrix4fv(const SCP_string &name, const int count, const matrix4 *value);
 	void setUniformMatrix4f(const SCP_string &name, const matrix4 &val);

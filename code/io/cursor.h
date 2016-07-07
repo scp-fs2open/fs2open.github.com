@@ -24,10 +24,9 @@ namespace io
 		private:
 			SCP_vector<SDL_Cursor*> mAnimationFrames; //!< The individual frames
 
-			float mFps; //!< The FPS of the animation, unused if only one frame
+			int mBitmapHandle; //!< The bitmap of this cursor
 
 			int mBeginTimeStamp; //!< The timestamp when the animation was started, unused when not animated
-			float mAnimationLength; //!< The length (in seconds) of the animation
 			size_t mLastFrame; //!< The last frame which was set
 			
 			Cursor(const Cursor&); // Not implemented
@@ -35,8 +34,9 @@ namespace io
 		public:
 			/**
 			 * @brief Default constructor
+			 * @param bitmap The bitmap handle of the cursor. The cursor takes ownership over this handle
 			 */
-			Cursor() : mFps(-1.0f), mBeginTimeStamp(-1), mAnimationLength(-1.f), mLastFrame(static_cast<size_t>(-1)) {}
+			explicit Cursor(int bitmap) : mBitmapHandle(bitmap), mBeginTimeStamp(-1), mLastFrame(static_cast<size_t>(-1)) {}
 
 			/**
 			 * @brief Move constructor
@@ -65,14 +65,6 @@ namespace io
 			 * @param frame The cursor frame to add
 			 */
 			void addFrame(SDL_Cursor* frame);
-
-			/**
-			 * @brief Sets the FPS of the animation
-			 * Make sure you set this before enabling the cursor so the values are correctly initialized
-			 *
-			 * @param fps The frames per second
-			 */
-			void setFPS(float fps);
 
 			/**
 			 * @brief Called to enable the cursor
@@ -125,6 +117,7 @@ namespace io
 
 			/**
 			 * @brief Loads a cursor from a bitmap handle
+			 * The returned cursor takes ownership over the passed handle.
 			 *
 			 * @param bitmapHandle The bitmap handle, must be a valid handle
 			 * @return The new cursor
