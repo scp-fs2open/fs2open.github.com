@@ -484,10 +484,6 @@ void gr_opengl_reset_clip()
 	GL_state.ScissorTest(GL_FALSE);
 }
 
-void gr_opengl_set_palette(const ubyte *new_palette, int is_alphacolor)
-{
-}
-
 void gr_opengl_print_screen(const char *filename)
 {
 	char tmp[MAX_PATH_LEN];
@@ -1692,7 +1688,6 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_gradient			= gr_opengl_gradient;
 
-	gr_screen.gf_set_palette		= gr_opengl_set_palette;
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
 
 	gr_screen.gf_flash				= gr_opengl_flash;
