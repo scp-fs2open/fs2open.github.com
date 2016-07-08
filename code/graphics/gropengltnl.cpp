@@ -343,10 +343,6 @@ static void opengl_gen_buffer(opengl_vertex_buffer *vbp)
 
 int gr_opengl_create_buffer()
 {
-	if (Cmdline_nohtl) {
-		return -1;
-	}
-
 	opengl_vertex_buffer vbuffer;
 
 	GL_vertex_buffers.push_back( vbuffer );
@@ -357,10 +353,6 @@ int gr_opengl_create_buffer()
 
 bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb, bool update_ibuffer_only)
 {
-	if (Cmdline_nohtl) {
-		return false;
-	}
-
 	if (buffer_id < 0) {
 		return false;
 	}
@@ -434,10 +426,6 @@ bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb, bool update
 
 bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
 {
-	if (Cmdline_nohtl) {
-		return false;
-	}
-
 	if (buffer_id < 0) {
 		return false;
 	}
@@ -552,10 +540,6 @@ bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
 
 void gr_opengl_set_buffer(int idx)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	g_vbp = NULL;
 
 	if (idx < 0) {
@@ -578,10 +562,6 @@ void gr_opengl_set_buffer(int idx)
 
 void gr_opengl_destroy_buffer(int idx)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	if (idx < 0) {
 		return;
 	}
@@ -1487,10 +1467,6 @@ void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, 
 
 void gr_opengl_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	Assert( GL_htl_projection_matrix_set );
 	Assert( GL_htl_view_matrix_set );
 
@@ -1522,9 +1498,6 @@ void gr_opengl_start_instance_matrix(const vec3d *offset, const matrix *rotation
 
 void gr_opengl_start_instance_angles(const vec3d *pos, const angles *rotation)
 {
-	if (Cmdline_nohtl)
-		return;
-
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
 
@@ -1536,9 +1509,6 @@ void gr_opengl_start_instance_angles(const vec3d *pos, const angles *rotation)
 
 void gr_opengl_end_instance_matrix()
 {
-	if (Cmdline_nohtl)
-		return;
-
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
 
@@ -1550,10 +1520,6 @@ void gr_opengl_end_instance_matrix()
 // the projection matrix; fov, aspect ratio, near, far
 void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, float z_far)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	GL_CHECK_FOR_ERRORS("start of set_projection_matrix()()");
 	
 	if (GL_rendering_to_texture) {
@@ -1586,10 +1552,6 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 
 void gr_opengl_end_projection_matrix()
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	GL_CHECK_FOR_ERRORS("start of end_projection_matrix()");
 
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
@@ -1613,9 +1575,6 @@ void gr_opengl_end_projection_matrix()
 
 void gr_opengl_set_view_matrix(const vec3d *pos, const matrix *orient)
 {
-	if (Cmdline_nohtl)
-		return;
-
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_modelview_matrix_depth == 1);
 
@@ -1726,9 +1685,6 @@ void gr_opengl_set_view_matrix(const vec3d *pos, const matrix *orient)
 
 void gr_opengl_end_view_matrix()
 {
-	if (Cmdline_nohtl)
-		return;
-
 	Assert(GL_modelview_matrix_depth == 2);
 
 	glPopMatrix();
@@ -1743,10 +1699,6 @@ void gr_opengl_end_view_matrix()
 // TODO: this probably needs to accept values
 void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	// don't bother with this if we aren't even going to need it
 	if ( !GL_htl_projection_matrix_set ) {
 		return;
@@ -1789,9 +1741,6 @@ void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 // ends a previously set 2d view and projection matrix
 void gr_opengl_end_2d_matrix()
 {
-	if (Cmdline_nohtl)
-		return;
-
 	if (!GL_htl_2d_matrix_set)
 		return;
 
@@ -1839,10 +1788,6 @@ void gr_opengl_pop_scale_matrix()
 
 void gr_opengl_end_clip_plane()
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	if ( is_minimum_GLSL_version() ) {
 		return;
 	}
@@ -1852,10 +1797,6 @@ void gr_opengl_end_clip_plane()
 
 void gr_opengl_start_clip_plane()
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	if ( is_minimum_GLSL_version() ) {
 		// bail since we're gonna clip in the shader
 		return;

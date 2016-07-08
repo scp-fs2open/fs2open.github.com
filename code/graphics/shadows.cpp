@@ -396,7 +396,7 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 
 	light *lp = *(Static_light.begin());
 
-	if( Cmdline_nohtl || !Cmdline_shadow_quality || !lp ) {
+	if( !Cmdline_shadow_quality || !lp ) {
 		return;
 	}
 

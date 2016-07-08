@@ -354,9 +354,6 @@ void gr_opengl_destroy_light(int idx)
 
 void gr_opengl_set_light(light *fs_light)
 {
-	if (Cmdline_nohtl)
-		return;
-
 	if (Num_active_gl_lights >= MAX_LIGHTS)
 		return;
 
@@ -383,7 +380,7 @@ void gr_opengl_center_alpha(int type)
 
 void gr_opengl_set_center_alpha(int type)
 {
-	if (!type || Cmdline_nohtl)
+	if (!type)
 		return;
 
 	if(Num_active_gl_lights == MAX_LIGHTS)
@@ -459,9 +456,6 @@ void gr_opengl_set_light_factor(float factor)
 void gr_opengl_reset_lighting()
 {
 	int i;
-
-	if (Cmdline_nohtl)
-		return;
 
 //	memset( opengl_lights, 0, sizeof(opengl_light) * MAX_LIGHTS );
 
@@ -583,10 +577,6 @@ void opengl_default_light_settings(int ambient, int emission, int specular)
 
 void gr_opengl_set_lighting(bool set, bool state)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	lighting_is_enabled = set;
 
 	opengl_default_light_settings();

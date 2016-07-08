@@ -175,7 +175,6 @@ Flag exe_params[] =
 	{ "-clientdamage",		"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
 	{ "-mpnoreturn",		"Disable flight deck option",				true,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
 
-	{ "-nohtl",				"Software mode (very slow)",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nohtl", },
 	{ "-no_set_gamma",		"Disable setting of gamma",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_set_gamma", },
 	{ "-nomovies",			"Disable video playback",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomovies", },
 	{ "-noparseerrors",		"Disable parsing errors",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noparseerrors", },
@@ -203,7 +202,6 @@ Flag exe_params[] =
 
 	{ "-ingame_join",		"Allow in-game joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Enable voice recognition",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
-	{ "-brief_lighting",	"Enable lighting on briefing models",		true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-brief_lighting", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
@@ -310,7 +308,6 @@ cmdline_parm fxaa_arg("-fxaa", NULL, AT_NONE);
 cmdline_parm fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-9), requires -post_process and -fxaa", AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
-cmdline_parm brieflighting_arg("-brief_lighting", NULL, AT_NONE);
 cmdline_parm no_batching("-no_batching", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
@@ -340,7 +337,6 @@ extern int Fxaa_preset_last_frame;
 bool Cmdline_fb_explosions = 0;
 bool Cmdline_no_batching = false;
 extern bool ls_force_off;
-bool Cmdline_brief_lighting = 0;
 int Cmdline_shadow_quality = 0;
 int Cmdline_no_deferred_lighting = 0;
 
@@ -413,7 +409,6 @@ int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Troubleshooting
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
-cmdline_parm htl_arg("-nohtl", NULL, AT_NONE);				// Cmdline_nohtl  -- don't use HT&L
 cmdline_parm nomovies_arg("-nomovies", NULL, AT_NONE);		// Cmdline_nomovies  -- Allows video streaming
 cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL, AT_NONE);	// Cmdline_no_set_gamma
 cmdline_parm no_vbo_arg("-novbo", NULL, AT_NONE);			// Cmdline_novbo
@@ -435,7 +430,6 @@ cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
 
 int Cmdline_load_all_weapons = 0;
-int Cmdline_nohtl = 0;
 int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
@@ -525,6 +519,8 @@ cmdline_parm deprecated_normal_arg("-normal", "Deprecated", AT_NONE);
 cmdline_parm deprecated_env_arg("-env", "Deprecated", AT_NONE);
 cmdline_parm deprecated_tbp_arg("-tbp", "Deprecated", AT_NONE);
 cmdline_parm deprecated_jpgtga_arg("-jpgtga", "Deprecated", AT_NONE);
+cmdline_parm deprecated_htl_arg("-nohtl", "Deprecated", AT_NONE);
+cmdline_parm deprecated_brieflighting_arg("-brief_lighting", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -532,6 +528,8 @@ int Cmdline_deprecated_normal = 0;
 int Cmdline_deprecated_env = 0;
 int Cmdline_deprecated_tbp = 0;
 int Cmdline_deprecated_jpgtga = 0;
+int Cmdline_deprecated_nohtl = 0;
+bool Cmdline_deprecated_brief_lighting = 0;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -586,6 +584,16 @@ void cmdline_debug_print_cmdline()
 	if(Cmdline_deprecated_jpgtga == 1)
 	{
 		mprintf(("Deprecated flag '-jpgtga' found. Please remove from your cmdline.\n"));
+	}
+
+	if(Cmdline_deprecated_nohtl == 1)
+	{
+		mprintf(("Deprecated flag '-nohtl' found. Please remove from your cmdline.\n"));
+	}
+
+	if(Cmdline_deprecated_brief_lighting == 1)
+	{
+		mprintf(("Deprecated flag '-brief_lighting' found. Please remove from your cmdline.\n"));
 	}
 }
 #endif
@@ -1511,11 +1519,6 @@ bool SetCmdlineParams()
 		Cmdline_spec = 0;
 	}
 
-	if ( htl_arg.found() ) 
-	{
-		Cmdline_nohtl = 1;
-	}
-
 	if( no_set_gamma_arg.found() )
 	{
 		Cmdline_no_set_gamma = 1;
@@ -1715,11 +1718,6 @@ bool SetCmdlineParams()
 		Cmdline_no_batching = true;
 	}
 
-	if ( brieflighting_arg.found() )
-	{
-		Cmdline_brief_lighting = 1;
-	}
-
 	if ( postprocess_arg.found() )
 	{
 		Cmdline_postprocess = 1;
@@ -1804,6 +1802,16 @@ bool SetCmdlineParams()
 	if( deprecated_jpgtga_arg.found() )
 	{
 		Cmdline_deprecated_jpgtga = 1;
+	}
+
+	if ( deprecated_htl_arg.found() ) 
+	{
+		Cmdline_deprecated_nohtl = 1;
+	}
+
+	if ( deprecated_brieflighting_arg.found() )
+	{
+		Cmdline_deprecated_brief_lighting = 1;
 	}
 
 	return true; 

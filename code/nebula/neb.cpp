@@ -351,7 +351,7 @@ void neb2_post_level_init()
 		return;
 	}
 
-	if ( (Cmdline_nohtl) && (The_mission.flags & MISSION_FLAG_FULLNEB) ) {
+	if (The_mission.flags & MISSION_FLAG_FULLNEB) {
 		// by default we'll use pof rendering
 		Neb2_render_mode = NEB2_RENDER_POF;
 		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
@@ -1082,10 +1082,9 @@ void neb2_render_player()
 				// set the bitmap and render
 				gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
 
-				if (!Cmdline_nohtl) gr_set_lighting(false, false); {
-					gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-					g3_draw_rotated_bitmap(&p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
-				}
+				gr_set_lighting(false, false);
+				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+				g3_draw_rotated_bitmap(&p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 			} 
 		}
 	}
@@ -1590,9 +1589,7 @@ DCF(neb2_mode, "Switches nebula render modes")
 		break;
 
 		case NEB2_RENDER_HTL:
-			if (!Cmdline_nohtl) {
-				Neb2_render_mode = NEB2_RENDER_HTL;
-			}
+			Neb2_render_mode = NEB2_RENDER_HTL;
 		break;
 	}
 }
