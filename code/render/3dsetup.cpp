@@ -97,15 +97,8 @@ void g3_start_frame_func(int zbuffer_flag, const char *filename, int lineno)
 	//compute aspect ratio for this canvas
 	s = aspect*(float)Canvas_height/(float)Canvas_width;
 
-	if (s <= 0.0f) {		//scale x
-		Window_scale.xyz.x = s;
-		Window_scale.xyz.y = 1.0f;
-	}
-	else {
-		Window_scale.xyz.y = 1.0f / s;
-		Window_scale.xyz.x = 1.0f;
-	}
-	
+	Window_scale.xyz.x = s;
+	Window_scale.xyz.y = 1.0f;
 	Window_scale.xyz.z = 1.0f;		//always 1
 
 	init_free_points();
