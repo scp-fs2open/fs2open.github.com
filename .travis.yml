@@ -41,9 +41,6 @@ matrix:
           env: CONFIGURATION="Debug"
         - os: osx
           compiler: clang
-          env: CONFIGURATION="Debug" MACOSX_ARCH=i386
-        - os: osx
-          compiler: clang
           env: CONFIGURATION="Debug" MACOSX_ARCH=x86_64
 
         - os: linux
@@ -52,9 +49,6 @@ matrix:
         - os: linux
           compiler: clang
           env: CONFIGURATION="Release"
-        - os: osx
-          compiler: clang
-          env: CONFIGURATION="Release" MACOSX_ARCH=i386
         - os: osx
           compiler: clang
           env: CONFIGURATION="Release" MACOSX_ARCH=x86_64
