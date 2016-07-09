@@ -42,7 +42,7 @@ public:
 	uint       plays;
 	float      anim_time;
 
-	apng_ani(const char* filename);
+	apng_ani(const char* filenamen, bool cache = true);
 	~apng_ani();
 
 	int    load_header();
@@ -76,7 +76,7 @@ private:
 	uint                    _max_chunk_size;
 	ushort                  _delay_num, _delay_den;
 	ubyte                   _dispose_op, _blend_op;
-	bool                    _reading, _got_acTL, _got_IDAT;
+	bool                    _reading, _got_acTL, _got_IDAT, _cache;
 
 	uint _read_chunk(_chunk_s& chunk);
 	void _process_chunk();

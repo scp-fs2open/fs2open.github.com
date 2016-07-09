@@ -154,7 +154,7 @@ int generic_anim_load(generic_anim *ga)
 	return 0;
 }
 
-int generic_anim_stream(generic_anim *ga)
+int generic_anim_stream(generic_anim *ga, const bool cache)
 {
 	CFILE *img_cfp = NULL;
 	int anim_fps = 0;
@@ -220,7 +220,7 @@ int generic_anim_stream(generic_anim *ga)
 	else if (ga->type == BM_TYPE_PNG) {
 		if (ga->png.anim == nullptr) {
 			try {
-				ga->png.anim = new apng::apng_ani(ga->filename);
+				ga->png.anim = new apng::apng_ani(ga->filename, cache);
 			}
 			catch (const apng::ApngException& e) {
 				mprintf(("Failed to load apng: %s\n", e.what() ));
@@ -231,7 +231,8 @@ int generic_anim_stream(generic_anim *ga)
 			nprintf(("apng", "apng read OK (%ix%i@%i) duration (%f)\n", ga->png.anim->w, ga->png.anim->h,
 					ga->png.anim->bpp, ga->png.anim->anim_time));
 		}
-		ga->png.anim->current_frame = 0;
+		ga->png.anim->goto_start();
+		ga->current_frame = 0;
 		ga->png.previous_frame_time = 0.0f;
 		ga->num_frames = ga->png.anim->nframes;
 		ga->height = ga->png.anim->h;
@@ -624,8 +625,8 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
 				else {
 					// loop back to start
 					ga->png.previous_frame_time = 0.0f;
-					ga->png.anim->current_frame = 0;
 					ga->current_frame = 0;
+					ga->png.anim->goto_start();
 				}
 				ga->done_playing = 1;
 			}

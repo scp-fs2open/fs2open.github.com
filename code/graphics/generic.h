@@ -85,7 +85,7 @@ void generic_anim_init(generic_anim *ga, const char *filename);
 void generic_anim_init(generic_anim *ga, const SCP_string& filename);
 void generic_bitmap_init(generic_bitmap *gb, const char *filename = NULL);
 int generic_anim_load(generic_anim *ga);
-int generic_anim_stream(generic_anim *ga);
+int generic_anim_stream(generic_anim *ga, const bool cache = true);
 int generic_bitmap_load(generic_bitmap *gb);
 void generic_anim_unload(generic_anim *ga);
 void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu = false, const generic_extras *ge = nullptr);
