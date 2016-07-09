@@ -84,9 +84,6 @@
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
 
-#define NUM_SHIP_SUBSYSTEM_SETS			20		// number of subobject sets to use (because of the fact that it's a linked list,
-												//     we can't easily go fully dynamic)
-
 #define NUM_SHIP_SUBSYSTEMS_PER_SET		200 	// Reduced from 1000 to 400 by MK on 4/1/98.  DTP; bumped from 700 to 2100
 												// Reduced to 200 by taylor on 3/13/07  --  it's managed in dynamically allocated sets now
 												//    Highest I saw was 164 in sm2-03a which Sandeep says has a lot of ships.
@@ -97,7 +94,7 @@
 static int Num_ship_subsystems = 0;
 static int Num_ship_subsystems_allocated = 0;
 
-static ship_subsys *Ship_subsystems[NUM_SHIP_SUBSYSTEM_SETS] = { NULL };
+static SCP_vector<ship_subsys*> Ship_subsystems;
 ship_subsys ship_subsys_free_list;
 
 extern bool splodeing;
@@ -5165,9 +5162,8 @@ void ship_init()
 			ships_inited = 1;
 		}
 
-		// NULL out "dynamic" subsystem ptr's
-		for (i = 0; i < NUM_SHIP_SUBSYSTEM_SETS; i++)
-			Ship_subsystems[i] = NULL;
+		// We shouldn't already have any subsystem pointers at this point.
+		Assertion(Ship_subsystems.empty(), "Some pre-allocated subsystems didn't get cleared out: " SIZE_T_ARG " batches present during ship_init(); get a coder!\n", Ship_subsystems.size());
 	}
 
 	ship_level_init();	// needed for FRED
@@ -5177,14 +5173,10 @@ int Man_thruster_reset_timestamp = 0;
 
 static void ship_clear_subsystems()
 {
-	int i;
-
-	for (i = 0; i < NUM_SHIP_SUBSYSTEM_SETS; i++) {
-		if (Ship_subsystems[i] != NULL) {
-			delete[] Ship_subsystems[i];
-			Ship_subsystems[i] = NULL;
-		}
+	for (auto it = Ship_subsystems.begin(); it != Ship_subsystems.end(); ++it) {
+		delete[] *it;
 	}
+	Ship_subsystems.clear();
 
 	Num_ship_subsystems = 0;
 	Num_ship_subsystems_allocated = 0;
@@ -5194,7 +5186,7 @@ static void ship_clear_subsystems()
 
 static int ship_allocate_subsystems(int num_so, bool page_in = false)
 {
-	int idx, i;
+	int i;
 	int num_subsystems_save = 0;
 
 	// "0" itself is safe
@@ -5218,21 +5210,12 @@ static int ship_allocate_subsystems(int num_so, bool page_in = false)
 
 	// we might need more than one set worth of new subsystems, so make as many as required
 	do {
-		for (idx = 0; idx < NUM_SHIP_SUBSYSTEM_SETS; idx++) {
-			if (Ship_subsystems[idx] == NULL)
-				break;
-		}
-
-		// safety check, but even if we have this here it will fubar something else later, so we're screwed either way
-		if (idx == NUM_SHIP_SUBSYSTEM_SETS) {
-			return 0;
-		}
-
-		Ship_subsystems[idx] = new ship_subsys[NUM_SHIP_SUBSYSTEMS_PER_SET];
+		ship_subsys* new_batch = new ship_subsys[NUM_SHIP_SUBSYSTEMS_PER_SET];
+		Ship_subsystems.push_back(new_batch);
 
 		// append the new set to our free list
 		for (i = 0; i < NUM_SHIP_SUBSYSTEMS_PER_SET; i++)
-			list_append( &ship_subsys_free_list, &Ship_subsystems[idx][i] );
+			list_append( &ship_subsys_free_list, &new_batch[i] );
 
 		Num_ship_subsystems_allocated += NUM_SHIP_SUBSYSTEMS_PER_SET;
 	} while ( (Num_ship_subsystems - Num_ship_subsystems_allocated) > 0 );
@@ -5944,7 +5927,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	if (!subsys_set(objnum))
 	{
 		char err_msg[512]; 
-		sprintf (err_msg, "Unable to allocate ship subsystems. Maximum is %d. No subsystems have been assigned to %s.", (NUM_SHIP_SUBSYSTEM_SETS* NUM_SHIP_SUBSYSTEMS_PER_SET), shipp->ship_name);
+		sprintf (err_msg, "Unable to allocate ship subsystems, which shouldn't be possible anymore. Current allocation is %d (%d in use). No subsystems have been assigned to %s.", Num_ship_subsystems_allocated, Num_ship_subsystems, shipp->ship_name);
 
 		if (Fred_running) 
 			MessageBox(NULL, err_msg, "Error", MB_OK);
@@ -16656,7 +16639,7 @@ void ship_page_in()
 	// pre-allocate the subsystems, this really only needs to happen for ships
 	// which don't exist yet (ie, ships NOT in Ships[])
 	if (!ship_allocate_subsystems(num_subsystems_needed, true)) {
-		Error(LOCATION, "Attempt to page in new subsystems subsystems failed because mission file contains more than %d subsystems", (NUM_SHIP_SUBSYSTEM_SETS* NUM_SHIP_SUBSYSTEMS_PER_SET)); 
+		Error(LOCATION, "Attempt to page in new subsystems subsystems failed, which shouldn't be possible anymore. Currently allocated %d subsystems (%d in use)", Num_ship_subsystems_allocated, Num_ship_subsystems); 
 	}
 
 	mprintf(("About to page in ships!\n"));
