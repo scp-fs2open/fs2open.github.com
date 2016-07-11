@@ -153,6 +153,7 @@ static float Interp_fog_level = 0.0f;
 static color Interp_outline_color;
 static int Interp_detail_level_locked = -1;
 static uint Interp_flags = 0;
+static uint Interp_tmap_flags = 0;
 bool Interp_desaturate = false;
 
 // If non-zero, then the subobject gets scaled by Interp_thrust_scale.
@@ -186,12 +187,16 @@ static float Interp_warp_scale_z = 1.0f;
 static int Interp_warp_bitmap = -1;
 static float Interp_warp_alpha = -1.0f;
 
+static int Interp_objnum = -1;
+
 // if != -1, use this bitmap when rendering ship insignias
 static int Interp_insignia_bitmap = -1;
 
 // replacement - Goober5000
 // updated - WMC
 static int *Interp_new_replacement_textures = NULL;
+
+static fix Interp_base_frametime = 0;
 
 // if != -1, use this bitmap when rendering with a forced texture
 static int Interp_forced_bitmap = -1;
@@ -206,6 +211,8 @@ int Interp_cloakmap_alpha = 255;
 
 // our current level of detail (LOD)
 int Interp_detail_level = 0;
+
+static int FULLCLOAK = -1;
 
 // clip planes
 bool Interp_clip_plane;
@@ -726,6 +733,17 @@ void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, ve
 	else
 		*param_r = *param_g = *param_b = ubyte( fl2i(d * 254.0f * alpha) );
 }
+
+// Textured Poly
+// +0      int         id
+// +4      int         size 
+// +8      vec3d      normal
+// +20     vec3d      center
+// +32     float       radius
+// +36     int         nverts
+// +40     int         tmap_num
+// +44     nverts*(model_tmap_vert) vertlist (n,u,v)
+extern int Tmap_show_layers;
 
 int Interp_subspace = 0;
 float Interp_subspace_offset_u = 0.0f;
@@ -1488,6 +1506,340 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 
 	vm_vec_scale_add( top, &temp, &uvec, w/2.0f );
 	vm_vec_scale_add( bot, &temp, &uvec, -w/2.0f );	
+}
+
+extern bool Scene_framebuffer_in_frame;
+
+/**
+ * Maybe draw mode thruster glows
+ */
+void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orient, vec3d *pos)
+{
+	int i, j;
+	int n_q = 0;
+	size_t 	k;
+	vec3d norm, norm2, fvec, pnt, npnt;
+	thruster_bank *bank = NULL;
+	vertex p;
+	bool do_render = false;
+
+	if ( pm == NULL ) {
+		Int3();
+		return;
+	}
+
+	if ( !(Interp_flags & MR_SHOW_THRUSTERS) ) {
+		return;
+	}
+
+	// get an initial count to figure out how man geo batchers we need allocated
+	for (i = 0; i < pm->n_thrusters; i++ ) {
+		bank = &pm->thrusters[i];
+		n_q += bank->num_points;
+	}
+
+	if (n_q <= 0) {
+		return;
+	}
+
+	// primary_thruster_batcher
+	if (Interp_thrust_glow_bitmap >= 0) {
+		do_render = true;
+	}
+
+	// secondary_thruster_batcher
+	if (Interp_secondary_thrust_glow_bitmap >= 0) {
+		do_render = true;
+	}
+
+	// tertiary_thruster_batcher
+	if (Interp_tertiary_thrust_glow_bitmap >= 0) {
+		do_render = true;
+	}
+
+	if (do_render == false) {
+		return;
+	}
+
+	// this is used for the secondary thruster glows 
+	// it only needs to be calculated once so I'm doing it here -Bobboau
+	norm.xyz.z = -1.0f;
+	norm.xyz.x = 1.0f;
+	norm.xyz.y = -1.0f;
+	norm.xyz.x *= Interp_thrust_rotvel.xyz.y/2;
+	norm.xyz.y *= Interp_thrust_rotvel.xyz.x/2;
+	vm_vec_normalize(&norm);
+
+	// we need to disable fogging
+	if (The_mission.flags & MISSION_FLAG_FULLNEB)
+		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+
+	for (i = 0; i < pm->n_thrusters; i++ ) {
+		vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
+		bool submodel_rotation = false;
+
+		bank = &pm->thrusters[i];
+
+		// don't draw this thruster if the engine is destroyed or just not on
+		if ( !model_should_render_engine_glow(objnum, bank->obj_num) )
+			continue;
+
+		// If bank is attached to a submodel, prepare to account for rotations
+		//
+		// TODO: This won't work in the ship lab, because the lab code doesn't
+		// set the the necessary submodel instance info needed here. The second
+		// condition is thus a hack to disable the feature while in the lab, and
+		// can be removed if the lab is re-structured accordingly. -zookeeper
+		if ( shipp && bank->submodel_num > -1 && pm->submodel[bank->submodel_num].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) ) {
+			model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_num);
+
+			submodel_rotation = true;
+		}
+
+		for (j = 0; j < bank->num_points; j++) {
+			Assert( bank->points != NULL );
+
+			float d, D;
+			vec3d tempv;
+			glow_point *gpt = &bank->points[j];
+			vec3d loc_offset = gpt->pnt;
+			vec3d loc_norm = gpt->norm;
+			vec3d world_pnt;
+			vec3d world_norm;
+
+			if ( submodel_rotation ) {
+				vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
+
+				tempv = loc_offset;
+				find_submodel_instance_point_normal(&loc_offset, &loc_norm, shipp->model_instance_num, bank->submodel_num, &tempv, &loc_norm);
+			}
+
+			vm_vec_unrotate(&world_pnt, &loc_offset, orient);
+			vm_vec_add2(&world_pnt, pos);
+
+			if (shipp) {
+				// if ship is warping out, check position of the engine glow to the warp plane
+				if ( (shipp->flags & (SF_ARRIVING) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+					vec3d warp_pnt, tmp;
+					matrix warp_orient;
+
+					shipp->warpin_effect->getWarpPosition(&warp_pnt);
+					shipp->warpin_effect->getWarpOrientation(&warp_orient);
+					vm_vec_sub( &tmp, &world_pnt, &warp_pnt );
+
+					if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f ) {
+						break;
+					}
+				}
+
+				if ( (shipp->flags & (SF_DEPART_WARP) ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
+					vec3d warp_pnt, tmp;
+					matrix warp_orient;
+
+					shipp->warpout_effect->getWarpPosition(&warp_pnt);
+					shipp->warpout_effect->getWarpOrientation(&warp_orient);
+					vm_vec_sub( &tmp, &world_pnt, &warp_pnt );
+
+					if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) > 0.0f ) {
+						break;
+					}
+				}
+			}
+
+			vm_vec_sub(&tempv, &View_position, &world_pnt);
+			vm_vec_normalize(&tempv);
+			vm_vec_unrotate(&world_norm, &loc_norm, orient);
+			D = d = vm_vec_dot(&tempv, &world_norm);
+
+			// ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
+			#define NOISE_SCALE 0.5f
+			#define MIN_SCALE 3.4f
+			#define MAX_SCALE 4.7f
+
+			float magnitude;
+			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
+
+			// normalize banks, in case of incredibly big normals
+			if ( !IS_VEC_NULL_SQ_SAFE(&world_norm) )
+				vm_vec_copy_normalize(&scale_vec, &world_norm);
+
+			// adjust for thrust
+			(scale_vec.xyz.x *= Interp_thrust_scale_x) -= 0.1f;
+			(scale_vec.xyz.y *= Interp_thrust_scale_y) -= 0.1f;
+			(scale_vec.xyz.z *= Interp_thrust_scale)   -= 0.1f;
+
+			// get magnitude, which we will use as the scaling reference
+			magnitude = vm_vec_normalize(&scale_vec);
+
+			// get absolute value
+			if (magnitude < 0.0f)
+				magnitude *= -1.0f;
+
+			float scale = magnitude * (MAX_SCALE - MIN_SCALE) + MIN_SCALE;
+
+			if (d > 0.0f){
+				// Make glow bitmap fade in/out quicker from sides.
+				d *= 3.0f;
+
+				if (d > 1.0f)
+					d = 1.0f;
+			}
+
+			float fog_int = 1.0f;
+
+			// fade them in the nebula as well
+			if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+				vm_vec_unrotate(&npnt, &gpt->pnt, orient);
+				vm_vec_add2(&npnt, pos);
+
+				fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
+
+				if (fog_int > 1.0f)
+					fog_int = 1.0f;
+
+				d *= fog_int;
+
+				if (d > 1.0f)
+					d = 1.0f;
+			}
+
+			float w = gpt->radius * (scale + Interp_thrust_glow_noise * NOISE_SCALE);
+
+			// these lines are used by the tertiary glows, thus we will need to project this all of the time
+			g3_transfer_vertex( &p, &world_pnt );
+
+			// start primary thruster glows
+			if ( (Interp_thrust_glow_bitmap >= 0) && (d > 0.0f) ) {
+				p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
+				batch_add_bitmap(
+					Interp_thrust_glow_bitmap, 
+					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, 
+					&p,
+					0,
+					(w * 0.5f * Interp_thrust_glow_rad_factor),
+					1.0f,
+					(w * 0.325f)
+				);
+			}
+
+			// start tertiary thruster glows
+			if (Interp_tertiary_thrust_glow_bitmap >= 0) {
+				p.screen.xyw.w -= w;
+				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
+				batch_add_bitmap_rotated(
+					Interp_tertiary_thrust_glow_bitmap,
+					TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE,
+					&p,
+					(magnitude * 4),
+					(w * 0.6f * Interp_tertiary_thrust_glow_rad_factor),
+					1.0f,
+					(-(D > 0) ? D : -D)
+				);
+			}
+
+			// begin secondary glows
+			if (Interp_secondary_thrust_glow_bitmap >= 0) {
+				pnt = world_pnt;
+				scale = magnitude * (MAX_SCALE - (MIN_SCALE / 2)) + (MIN_SCALE / 2);
+				vm_vec_unrotate(&world_norm, &norm, orient);
+				d = vm_vec_dot(&tempv, &world_norm);
+				d += 0.75f;
+				d *= 3.0f;
+
+				if (d > 1.0f)
+					d = 1.0f;
+
+				if (d > 0.0f) {
+					vm_vec_add(&norm2, &world_norm, &pnt);
+					vm_vec_sub(&fvec, &norm2, &pnt);
+					vm_vec_normalize(&fvec);
+
+					float wVal = gpt->radius * scale * 2;
+
+					vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 2 * Interp_thrust_glow_len_factor);
+
+					if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+						vm_vec_add(&npnt, &pnt, pos);
+						d *= fog_int;
+					}
+
+					batch_add_beam(Interp_secondary_thrust_glow_bitmap,
+							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT,
+							&pnt, &norm2, wVal*Interp_secondary_thrust_glow_rad_factor*0.5f, d
+					);
+					if (Scene_framebuffer_in_frame && Interp_draw_distortion) {
+						vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 2 * Interp_distortion_thrust_length_factor);
+						int dist_bitmap;
+						if (Interp_distortion_thrust_bitmap > 0) {
+							dist_bitmap = Interp_distortion_thrust_bitmap;
+						}
+						else {
+							dist_bitmap = Interp_secondary_thrust_glow_bitmap;
+						}
+						float mag = vm_vec_mag(&gpt->pnt); 
+						mag -= (float)((int)mag);//Valathil - Get a fairly random but constant number to offset the distortion texture
+						distortion_add_beam(dist_bitmap,
+							TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_DISTORTION_THRUSTER | TMAP_FLAG_SOFT_QUAD,
+							&pnt, &norm2, wVal*Interp_distortion_thrust_rad_factor*0.5f, 1.0f, mag
+						);
+					}
+				}
+			}
+
+			// begin particles
+			if (shipp) {
+				ship_info *sip = &Ship_info[shipp->ship_info_index];
+				particle_emitter pe;
+				thruster_particles *tp;
+				size_t num_particles = 0;
+
+				if (Interp_afterburner)
+					num_particles = sip->afterburner_thruster_particles.size();
+				else
+					num_particles = sip->normal_thruster_particles.size();
+
+				for (k = 0; k < num_particles; k++) {
+					if (Interp_afterburner)
+						tp = &sip->afterburner_thruster_particles[k];
+					else
+						tp = &sip->normal_thruster_particles[k];
+
+					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
+
+					vm_vec_unrotate(&npnt, &gpt->pnt, orient);
+					vm_vec_add2(&npnt, pos);
+
+					// Where the particles emit from
+					pe.pos = npnt;
+					// Initial velocity of all the particles
+					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;
+					pe.min_vel = v * 0.75f;
+					pe.max_vel =  v * 1.25f;
+					// What normal the particle emit around
+					pe.normal = orient->vec.fvec;
+					vm_vec_negate(&pe.normal);
+
+					// Lowest number of particles to create
+					pe.num_low = tp->n_low;
+					// Highest number of particles to create
+					pe.num_high = tp->n_high;
+					pe.min_rad = gpt->radius * tp->min_rad;
+					pe.max_rad = gpt->radius * tp->max_rad;
+					// How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+					pe.normal_variance = tp->variance;
+					pe.min_life = 0.0f;
+					pe.max_life = 1.0f;
+
+					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
+				}
+			}
+		}
+	}
+
+	// save current zbuffer, and set the correct mode for us
+	int zbuff_save = gr_zbuffering_mode;
+	gr_zbuffer_set(GR_ZBUFF_READ);
+	gr_zbuffer_set(zbuff_save);
 }
 
 // Fills in an array with points from a model.
