@@ -74,7 +74,6 @@ public:
     bool IsSpecialModel();
 
     //Rendering
-    void RenderDEPRECATED(vec3d *pos, vec3d *view_pos = NULL);
 	void Render(vec3d *pos, vec3d *view_pos = NULL);
 	void Render(draw_list *scene, vec3d *pos, vec3d *view_pos = NULL);
 };

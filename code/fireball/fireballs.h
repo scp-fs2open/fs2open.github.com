@@ -77,7 +77,6 @@ typedef struct fireball {
 // end move
 
 void fireball_init();
-void fireball_render_DEPRECATED(object * obj);
 void fireball_render(object* obj, draw_list *scene);
 void fireball_delete( object * obj );
 void fireball_process_post(object * obj, float frame_time);
