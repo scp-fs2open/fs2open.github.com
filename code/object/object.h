@@ -248,9 +248,6 @@ void obj_init();
 //You can pass null for orient and/or pos if you don't care.
 int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, uint flags );
 
-//Render an object.  Calls one of several routines based on type
-void obj_render_DEPRECATED(object *obj);
-
 void obj_render(object* obj);
 
 void obj_queue_render(object* obj, draw_list* scene);

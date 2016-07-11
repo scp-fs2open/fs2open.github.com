@@ -152,7 +152,6 @@ void	asteroid_init();
 void	asteroid_level_init();
 void	asteroid_level_close();
 void	asteroid_create_all();
-void	asteroid_render_DEPRECATED( object *asteroid_objp );
 void	asteroid_render(object * obj, draw_list *scene);
 void	asteroid_delete( object *asteroid_objp );
 void	asteroid_process_pre( object *asteroid_objp );
