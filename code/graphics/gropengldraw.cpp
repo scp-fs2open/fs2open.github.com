@@ -1408,7 +1408,7 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 	float color_scale = 1.0f;
 
 	if ( High_dynamic_range && flags & TMAP_FLAG_EMISSIVE ) {
-		color_scale = 1.5f;
+		color_scale = 2.0f;
 	}
 
 	opengl_shader_set_passthrough(textured, false, color_scale);
@@ -1567,7 +1567,7 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 
 	float color_scale = 1.0f;
 	if ( High_dynamic_range && flags & TMAP_FLAG_EMISSIVE ) {
-		color_scale = 1.5f;
+		color_scale = 2.0f;
 	}
 
 	GL_state.Array.BindArrayBuffer(0);
@@ -1740,7 +1740,7 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 
 	float color_scale = 1.0f;
 	if ( High_dynamic_range && flags & TMAP_FLAG_EMISSIVE ) {
-		color_scale = 1.5f;
+		color_scale = 2.0f;
 	}
 
 	vert_def.add_vertex_component(vertex_format_data::POSITION3, sizeof(vertex), &verts[0].world.xyz.x);

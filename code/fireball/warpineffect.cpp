@@ -61,7 +61,7 @@ void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 		vertlist[2] = *v3;
 	}
 
-	batch_add_tri(texture, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, vertlist, 1.0f);
+	batch_add_tri(texture, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, vertlist, 1.0f);
 }
 
 void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
