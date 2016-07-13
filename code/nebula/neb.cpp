@@ -351,52 +351,45 @@ void neb2_post_level_init()
 		return;
 	}
 
-	if (The_mission.flags & MISSION_FLAG_FULLNEB) {
-		// by default we'll use pof rendering
-		Neb2_render_mode = NEB2_RENDER_POF;
-		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
-		stars_set_background_orientation();
-	} else {
-		// Set a default colour just in case something goes wrong
-		Neb2_fog_color_r =  30;
-		Neb2_fog_color_g =  52;
-		Neb2_fog_color_b = 157;
+	// Set a default colour just in case something goes wrong
+	Neb2_fog_color_r =  30;
+	Neb2_fog_color_g =  52;
+	Neb2_fog_color_b = 157;
 
-		// OK, lets try something a bit more interesting
-		if (strlen(Neb2_texture_name)) {
-			Neb2_htl_fog_data = new ubyte[768];
+	// OK, lets try something a bit more interesting
+	if (strlen(Neb2_texture_name)) {
+		Neb2_htl_fog_data = new ubyte[768];
 
-			if ((Neb2_htl_fog_data != NULL) && (pcx_read_header(Neb2_texture_name, NULL, NULL, NULL, NULL, Neb2_htl_fog_data) == PCX_ERROR_NONE)) {
-				// based on the palette, get an average color value (this doesn't really account for actual pixel usage though)
-				ushort r = 0, g = 0, b = 0, pcount = 0;
-				for (idx = 0; idx < 768; idx += 3) {
-					if (Neb2_htl_fog_data[idx] || Neb2_htl_fog_data[idx+1] || Neb2_htl_fog_data[idx+2]) {
-						r = r + Neb2_htl_fog_data[idx];
-						g = g + Neb2_htl_fog_data[idx+1];
-						b = b + Neb2_htl_fog_data[idx+2];
-						pcount++;
-					}
-				}
-
-				if (pcount > 0) {
-					Neb2_fog_color_r = (ubyte)(r / pcount);
-					Neb2_fog_color_g = (ubyte)(g / pcount);
-					Neb2_fog_color_b = (ubyte)(b / pcount);
-				} else {
-					// it's just black
-					Neb2_fog_color_r = Neb2_fog_color_g = Neb2_fog_color_b = 0;
-				}
-
-				// done, now free up the palette data
-				if ( Neb2_htl_fog_data != NULL ) {
-					delete[] Neb2_htl_fog_data;
-					Neb2_htl_fog_data = NULL;
+		if ((Neb2_htl_fog_data != NULL) && (pcx_read_header(Neb2_texture_name, NULL, NULL, NULL, NULL, Neb2_htl_fog_data) == PCX_ERROR_NONE)) {
+			// based on the palette, get an average color value (this doesn't really account for actual pixel usage though)
+			ushort r = 0, g = 0, b = 0, pcount = 0;
+			for (idx = 0; idx < 768; idx += 3) {
+				if (Neb2_htl_fog_data[idx] || Neb2_htl_fog_data[idx+1] || Neb2_htl_fog_data[idx+2]) {
+					r = r + Neb2_htl_fog_data[idx];
+					g = g + Neb2_htl_fog_data[idx+1];
+					b = b + Neb2_htl_fog_data[idx+2];
+					pcount++;
 				}
 			}
-		}
 
-		Neb2_render_mode = NEB2_RENDER_HTL;
+			if (pcount > 0) {
+				Neb2_fog_color_r = (ubyte)(r / pcount);
+				Neb2_fog_color_g = (ubyte)(g / pcount);
+				Neb2_fog_color_b = (ubyte)(b / pcount);
+			} else {
+				// it's just black
+				Neb2_fog_color_r = Neb2_fog_color_g = Neb2_fog_color_b = 0;
+			}
+
+			// done, now free up the palette data
+			if ( Neb2_htl_fog_data != NULL ) {
+				delete[] Neb2_htl_fog_data;
+				Neb2_htl_fog_data = NULL;
+			}
+		}
 	}
+
+	Neb2_render_mode = NEB2_RENDER_HTL;
 
 	// load in all nebula bitmaps
 	for (idx=0; idx<Neb2_poof_count; idx++) {
