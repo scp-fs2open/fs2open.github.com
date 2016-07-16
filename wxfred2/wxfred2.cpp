@@ -386,7 +386,7 @@ OIN_t wxFRED2::Copy_object(OIN_t oin) {
 		}
 
 		// Reinforcements
-		for (int i = 0, int j = 0; i < Num_reinforcements; i++)
+		for (int i = 0, j = 0; i < Num_reinforcements; i++)
 			if (!stricmp(Reinforcements[i].name, Ships[inst].ship_name)) {
 				// object has reinforcements, so object's copy will have reinforcements, too
 				if (Num_reinforcements < MAX_REINFORCEMENTS) {

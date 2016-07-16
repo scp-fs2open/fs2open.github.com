@@ -221,6 +221,7 @@ fix game_get_overall_frametime() { return 0; }
 
 //WMC
 void game_level_init(int seed){}
+void game_level_init() {}
 void game_post_level_init(){}
 camid game_render_frame_setup(){return camid();}
 void game_render_frame(camid cid){}

@@ -45,7 +45,9 @@ class Fred_exception : std::exception
 {
 public:
 	Fred_exception(const char* msg) : msg(msg) {};
-	const char* what() const;
+	const char* what() const {
+		return msg;
+	};
 
 private:
 	const char* msg;
