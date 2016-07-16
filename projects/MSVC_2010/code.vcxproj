@@ -815,7 +815,6 @@
     <ClInclude Include="..\..\code\object\waypoint.h" />
     <ClInclude Include="..\..\code\Observer\observer.h" />
     <ClInclude Include="..\..\code\osapi\dialogs.h" />
-    <ClInclude Include="..\..\code\osapi\monopub.h" />
     <ClInclude Include="..\..\code\osapi\osapi.h" />
     <ClInclude Include="..\..\code\osapi\osregistry.h" />
     <ClInclude Include="..\..\code\osapi\outwnd.h" />
