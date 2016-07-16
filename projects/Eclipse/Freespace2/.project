@@ -2982,11 +2982,6 @@
 			<locationURI>PARENT-3-PROJECT_LOC/code/observer/observer.h</locationURI>
 		</link>
 		<link>
-			<name>code/osapi/monopub.h</name>
-			<type>1</type>
-			<locationURI>PARENT-3-PROJECT_LOC/code/osapi/monopub.h</locationURI>
-		</link>
-		<link>
 			<name>code/osapi/osapi.h</name>
 			<type>1</type>
 			<locationURI>PARENT-3-PROJECT_LOC/code/osapi/osapi.h</locationURI>

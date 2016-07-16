@@ -1211,9 +1211,6 @@
 		<Unit filename="../../../code/observer/observer.h">
 			<Option virtualFolder="observer/" />
 		</Unit>
-		<Unit filename="../../../code/osapi/monopub.h">
-			<Option virtualFolder="osapi/" />
-		</Unit>
 		<Unit filename="../../../code/osapi/osapi.h">
 			<Option virtualFolder="osapi/" />
 		</Unit>
