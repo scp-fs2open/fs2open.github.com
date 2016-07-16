@@ -57,6 +57,38 @@ int Last_mouse_dz = 0;
 int Mouse_sensitivity = 4;
 int Use_mouse_to_fly = 0;
 
+namespace
+{
+	bool mouse_key_event_handler(const SDL_Event& e)
+	{
+		if (e.button.button == SDL_BUTTON_LEFT)
+			mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.state);
+		else if (e.button.button == SDL_BUTTON_MIDDLE)
+			mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.state);
+		else if (e.button.button == SDL_BUTTON_RIGHT)
+			mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.state);
+
+		return true;
+	}
+
+	bool mouse_motion_event_handler(const SDL_Event& e)
+	{
+		mouse_event(e.motion.x, e.motion.y, e.motion.xrel, e.motion.yrel);
+
+		return true;
+	}
+
+	bool mouse_wheel_event_handler(const SDL_Event& e)
+	{
+#if SDL_VERSION_ATLEAST(2, 0, 4)
+		mousewheel_motion(e.wheel.x, e.wheel.y, e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED);
+#else
+		mousewheel_motion(e.wheel.x, e.wheel.y, false);
+#endif
+
+		return true;
+	}
+}
 
 void mouse_force_pos(int x, int y);
 
@@ -120,6 +152,13 @@ void mouse_init()
 	SDL_EventState( SDL_MOUSEWHEEL, SDL_ENABLE );
 
 	SDL_UnlockMutex( mouse_lock );
+
+	os::events::addEventListener(SDL_MOUSEBUTTONDOWN, os::events::DEFAULT_LISTENER_WEIGHT, mouse_key_event_handler);
+	os::events::addEventListener(SDL_MOUSEBUTTONUP, os::events::DEFAULT_LISTENER_WEIGHT, mouse_key_event_handler);
+
+	os::events::addEventListener(SDL_MOUSEMOTION, os::events::DEFAULT_LISTENER_WEIGHT, mouse_motion_event_handler);
+
+	os::events::addEventListener(SDL_MOUSEWHEEL, os::events::DEFAULT_LISTENER_WEIGHT, mouse_wheel_event_handler);
 
 	atexit( mouse_close );
 }

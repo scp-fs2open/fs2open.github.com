@@ -31,8 +31,11 @@
 #include "cfile/cfile.h"
 #include "hud/hudsquadmsg.h"
 #include "io/keycontrol.h"
+#include "osapi/osapi.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
+
+#include <SDL_syswm.h>
 
 CComPtr<ISpRecoGrammar>         p_grammarObject; // Pointer to our grammar object
 CComPtr<ISpRecoContext>         p_recogContext;  // Pointer to our recognition context
@@ -50,6 +53,27 @@ extern int hud_squadmsg_wing_valid(wing *wingp);
 extern int Msg_instance;;
 extern int Msg_shortcut_command;
 extern int Squad_msg_mode;
+
+namespace
+{
+	bool system_event_handler(const SDL_Event& e)
+	{
+		switch (e.syswm.msg->msg.win.msg)
+		{
+		case WM_RECOEVENT:
+			if (Game_mode & GM_IN_MISSION && Cmdline_voice_recognition)
+			{
+				VOICEREC_process_event(e.syswm.msg->msg.win.hwnd);
+				return true;
+			}
+			break;
+		default:
+			break;
+		}
+
+		return false;
+	}
+}
 
 void doVid_Action(int action)
 {
@@ -111,7 +135,6 @@ void doVid_Action(int action)
 		}
 	}
 }
-
 
 bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource)
 {
@@ -208,6 +231,8 @@ bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource
 	{
 		VOICEREC_deinit();
 	}
+
+	os::events::addEventListener(SDL_SYSWMEVENT, os::events::DEFAULT_LISTENER_WEIGHT, system_event_handler);
 
 	return ( hr == S_OK);
 }
