@@ -209,6 +209,8 @@ static int			Os_inited = 0;
 
 static SDL_mutex* Os_lock;
 
+static SCP_vector<SDL_Event> buffered_events;
+
 int Os_debugger_running = 0;
 
 // ----------------------------------------------------------------------------------------------------
@@ -490,6 +492,54 @@ namespace os
 		}
 	}
 }
+	
+void os_ignore_events() {
+	SDL_Event event;
+	while (SDL_PollEvent(&event)) {
+		// Add event to buffer
+		buffered_events.push_back(event);
+	}
+}
+
+static void handle_sdl_event(const SDL_Event& event) {
+	using namespace os::events;
+	
+	EventListenerData data;
+	data.type = event.type;
+		
+	auto iter = std::lower_bound(eventListeners.begin(), eventListeners.end(), data, compare_type);
+
+	if (iter != eventListeners.end())
+	{
+		// The vector contains all event listeners, the listeners are sorted for type and weight
+		// -> iterating through all listeners will yield them in increasing weight order
+		// but we can only do this until we have reached the end of the vector or the type has changed
+		for(; iter != eventListeners.end() && iter->type == event.type; ++iter)
+		{
+			if (iter->listener(event))
+			{
+				// Listener has handled the event
+				break;
+			}
+		}
+	}
+}
+
+void os_poll()
+{
+	// Replay the buffered events
+	auto end = buffered_events.end();
+	for (auto it = buffered_events.begin(); it != end; ++it) {
+		handle_sdl_event(*it);
+	}
+	buffered_events.clear();
+
+	SDL_Event event;
+
+	while (SDL_PollEvent(&event)) {
+		handle_sdl_event(event);
+	}
+}
 
 SCP_string os_get_config_path(const SCP_string& subpath)
 {
@@ -525,31 +575,3 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 	return ss.str();
 }
 
-void os_poll()
-{
-	using namespace os::events;
-
-	SDL_Event event;
-
-	while (SDL_PollEvent(&event)) {
-		EventListenerData data;
-		data.type = event.type;
-			
-		auto iter = std::lower_bound(eventListeners.begin(), eventListeners.end(), data, compare_type);
-
-		if (iter != eventListeners.end())
-		{
-			// The vector contains all event listeners, the listeners are sorted for type and weight
-			// -> iterating through all listeners will yield them in increasing weight order
-			// but we can only do this until we have reached the end of the vector or the type has changed
-			for(; iter != eventListeners.end() && iter->type == event.type; ++iter)
-			{
-				if (iter->listener(event))
-				{
-					// Listener has handled the event
-					break;
-				}
-			}
-		}
-	}
-}
