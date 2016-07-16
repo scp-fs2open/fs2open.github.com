@@ -36,12 +36,10 @@
 					<object class="wxMenuItem" name="mnuFileSaveFormatFs2Open">
 						<label>FS2 open</label>
 						<help></help>
-						<radio>1</radio>
 					</object>
 					<object class="wxMenuItem" name="mnuFileSaveFormatFs2Retail">
 						<label>FS2 retail</label>
 						<help></help>
-						<radio>1</radio>
 					</object>
 				</object>
 				<object class="wxMenu" name="mnuFileImport">
@@ -64,7 +62,6 @@
 				<object class="wxMenuItem" name="mnuFileRecentFiles">
 					<label>Recent File List</label>
 					<help></help>
-					<enabled>0</enabled>
 				</object>
 				<object class="separator" />
 				<object class="wxMenuItem" name="mnuFileExit">
@@ -97,14 +94,10 @@
 				<object class="wxMenuItem" name="mnuViewToolbar">
 					<label>Toolbar</label>
 					<help></help>
-					<checked>1</checked>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewStatusBar">
 					<label>Status Bar</label>
 					<help></help>
-					<checked>1</checked>
-					<checkable>1</checkable>
 				</object>
 				<object class="separator" />
 				<object class="wxMenu" name="mnuViewDisplayFiter">
@@ -112,28 +105,23 @@
 					<object class="wxMenuItem" name="mnuViewDisplayFilterShowShips">
 						<label>Show Ships</label>
 						<help></help>
-						<checkable>1</checkable>
 					</object>
 					<object class="wxMenuItem" name="mnuViewDisplayFilterShowPlayerStarts">
 						<label>Show Player Starts</label>
 						<help></help>
-						<checkable>1</checkable>
 					</object>
 					<object class="wxMenuItem" name="mnuViewDisplayFilterShowWaypoints">
 						<label>Show Waypoints</label>
 						<help></help>
-						<checkable>1</checkable>
 					</object>
 					<object class="separator" />
 					<object class="wxMenuItem" name="mnuViewDisplayFilterShowFriendly">
 						<label>Show Friendly</label>
 						<help></help>
-						<checkable>1</checkable>
 					</object>
 					<object class="wxMenuItem" name="mnuViewDisplayFilterShowHostile">
 						<label>Show Hostile</label>
 						<help></help>
-						<checkable>1</checkable>
 					</object>
 				</object>
 				<object class="separator" />
@@ -149,73 +137,59 @@
 				<object class="wxMenuItem" name="mnuViewShowShipModels">
 					<label>Show Ship Models\tShift+Alt+M</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewShowOutlines">
 					<label>Show Outlines\tShift+Alt+O</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewShowShipInfo">
 					<label>Show Ship Info\tShift+Alt+I</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewShowCoordinates">
 					<label>Show Coordinates\tShift+Alt+C</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewShowGridPositions">
 					<label>Show Grid Positions\tShift+Alt+P</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewShowDistances">
 					<label>Show Distances\tD</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewShowModelPaths">
 					<label>Show Model Paths</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewShowModelDockPoints">
 					<label>Show Model Dock Points</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="separator" />
 				<object class="wxMenuItem" name="mnuViewShowGrid">
 					<label>Show Grid\tShift+Alt+G</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewShowHorizon">
 					<label>Show Horizon\tShift+Alt+H</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewDoubleFineGridlines">
 					<label>Double Fine Gridlines</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewAntiAliasedGridlines">
 					<label>Anti-Aliased Gridlines</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewShow3DCompass">
 					<label>Show 3-D Compass\tShift+Alt+3</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="wxMenuItem" name="mnuViewShowBackground">
 					<label>Show Background\tShift+Alt+B</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 				<object class="separator" />
 				<object class="wxMenu" name="mnuViewViewpoint">
@@ -241,7 +215,6 @@
 				<object class="wxMenuItem" name="mnuViewLightingFromSuns">
 					<label>Lighting From Suns</label>
 					<help></help>
-					<checkable>1</checkable>
 				</object>
 			</object>
 			<object class="wxMenu" name="mnuSpeed">
@@ -542,21 +515,21 @@
 				<label></label>
 				<tooltip>Select (S)</tooltip>
 				<longhelp>Select objects only.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\select.png</bitmap>
+				<bitmap>../res/select.png</bitmap>
 				<radio>1</radio>
 			</object>
 			<object class="tool" name="optSelectMove">
 				<label></label>
 				<tooltip>Select and Move (M)</tooltip>
 				<longhelp>Select and move selected objects.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\selectmove.png</bitmap>
+				<bitmap>..\res\selectmove.png</bitmap>
 				<radio>1</radio>
 			</object>
 			<object class="tool" name="optSelectRotate">
 				<label>Select and Rotate</label>
 				<tooltip>Select and Rotate (R)</tooltip>
 				<longhelp>Select and rotate selected objects.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\selectrot.png</bitmap>
+				<bitmap>..\res\selectrot.png</bitmap>
 				<radio>1</radio>
 			</object>
 			<object class="separator" />
@@ -564,7 +537,7 @@
 				<label></label>
 				<tooltip>Rotate Locally (X)</tooltip>
 				<longhelp>Enable/disable local rotation for the selected group.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\rotlocal.png</bitmap>
+				<bitmap>..\res\rotlocal.png</bitmap>
 				<toggle>1</toggle>
 			</object>
 			<object class="separator" />
@@ -572,42 +545,42 @@
 				<label></label>
 				<tooltip>X Constraint (`)</tooltip>
 				<longhelp>Constrain actions to the global X axis.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\constx.png</bitmap>
+				<bitmap>..\res\constx.png</bitmap>
 				<radio>1</radio>
 			</object>
 			<object class="tool" name="optConstraintY">
 				<label></label>
 				<tooltip>Y Constraint (`)</tooltip>
 				<longhelp>Constrain actions to the global Y axis.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\consty.png</bitmap>
+				<bitmap>..\res\consty.png</bitmap>
 				<radio>1</radio>
 			</object>
 			<object class="tool" name="optConstraintZ">
 				<label></label>
 				<tooltip>Z Constraint (`)</tooltip>
 				<longhelp>Constrain actions to the global Z axis.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\constz.png</bitmap>
+				<bitmap>..\res\constz.png</bitmap>
 				<radio>1</radio>
 			</object>
 			<object class="tool" name="optConstraintXZ">
 				<label></label>
 				<tooltip>XZ Constraint (`)</tooltip>
 				<longhelp>Constrain actions to the global XZ plane.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\constxz.png</bitmap>
+				<bitmap>..\res\constxz.png</bitmap>
 				<radio>1</radio>
 			</object>
 			<object class="tool" name="optConstraintYZ">
 				<label></label>
 				<tooltip>YZ Constraint (`)</tooltip>
 				<longhelp>Constrain actions to the global YZ plane.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\constyz.png</bitmap>
+				<bitmap>..\res\constyz.png</bitmap>
 				<radio>1</radio>
 			</object>
 			<object class="tool" name="optConstraintXY">
 				<label></label>
 				<tooltip>XY Constraint (`)</tooltip>
 				<longhelp>Constrain actions to the global XY plane.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\constxy.png</bitmap>
+				<bitmap>..\res\constxy.png</bitmap>
 				<radio>1</radio>
 			</object>
 			<object class="separator" />
@@ -615,13 +588,13 @@
 				<label></label>
 				<tooltip>Selection List (H)</tooltip>
 				<longhelp>Select object(s) from a list.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\selectlist.png</bitmap>
+				<bitmap>..\res\selectlist.png</bitmap>
 			</object>
 			<object class="tool" name="chkSelectionLock">
 				<label></label>
 				<tooltip>Selection Lock (L)</tooltip>
 				<longhelp>Lock the current selection from changes.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\selectlock.png</bitmap>
+				<bitmap>..\res\selectlock.png</bitmap>
 				<toggle>1</toggle>
 			</object>
 			<object class="separator" />
@@ -629,40 +602,40 @@
 				<label></label>
 				<tooltip>Form Wing (Ctrl+W)</tooltip>
 				<longhelp>Adds the current selection to a wing.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\wingform.png</bitmap>
+				<bitmap>..\res\wingform.png</bitmap>
 			</object>
 			<object class="tool" name="btnWingDisband">
 				<label></label>
 				<tooltip>Disband Wing (Ctrl+D)</tooltip>
 				<longhelp>Removes the current selection from (any) wing.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\wingdisband.png</bitmap>
+				<bitmap>..\res\wingdisband.png</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="btnZoomSelected">
 				<label>tool</label>
 				<tooltip>Zoom Selected (Alt+Z)</tooltip>
 				<longhelp>Zoom to view current selection.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\zoomsel.png</bitmap>
+				<bitmap>..\res\zoomsel.png</bitmap>
 			</object>
 			<object class="tool" name="btnZoomExtents">
 				<label>tool</label>
 				<tooltip>Zoom Extents (Shift+Z)</tooltip>
 				<longhelp>Zoom to view all objects in the mission.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\zoomext.png</bitmap>
+				<bitmap>..\res\zoomext.png</bitmap>
 			</object>
 			<object class="separator" />
 			<object class="tool" name="chkShowDistances">
 				<label></label>
 				<tooltip>Show Distances (D)</tooltip>
 				<longhelp>Show the distances between all selected objects.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\showdist.png</bitmap>
+				<bitmap>..\res\showdist.png</bitmap>
 				<toggle>1</toggle>
 			</object>
 			<object class="tool" name="chkOrbitSelected">
 				<label>tool</label>
 				<tooltip>Rotate about Selection (Ctrl+V)</tooltip>
 				<longhelp>Rotate the vieport camera about the current selection.</longhelp>
-				<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\orbitsel.png</bitmap>
+				<bitmap>..\res\orbitsel.png</bitmap>
 				<toggle>1</toggle>
 			</object>
 			<object class="separator" />
@@ -729,6 +702,7 @@
 						<object class="wxTextCtrl" name="txtWing">
 							<enabled>0</enabled>
 							<value>None</value>
+							<maxlength>0</maxlength>
 						</object>
 					</object>
 					<object class="sizeritem">
@@ -2627,8 +2601,8 @@
 								<option>0</option>
 								<flag>wxALL</flag>
 								<border>3</border>
-								<object class="wxCheckBox" name="cboCurrObjNoCompletionMusic">
-									<label>Don&apos;t Play Completion Music</label>
+								<object class="wxCheckBox" name="cboCurrObjNoCompletionSound">
+									<label>Don&apos;t Play Completion Sound</label>
 									<checked>0</checked>
 								</object>
 							</object>
@@ -3323,14 +3297,10 @@
 				<object class="wxMenuItem" name="mnuTeam1">
 					<label>Team 1</label>
 					<help></help>
-					<checked>1</checked>
-					<radio>1</radio>
 				</object>
 				<object class="wxMenuItem" name="mnuTeam2">
 					<label>Team 2</label>
 					<help></help>
-					<enabled>0</enabled>
-					<radio>1</radio>
 				</object>
 			</object>
 			<object class="wxMenu" name="m_menu16">
@@ -3338,7 +3308,6 @@
 				<object class="wxMenuItem" name="meuBalanceTeams">
 					<label>Balance Teams</label>
 					<help></help>
-					<enabled>0</enabled>
 				</object>
 			</object>
 		</object>
@@ -3469,6 +3438,7 @@
 										<object class="wxTextCtrl" name="txtAmountOfShipsInWings">
 											<style>wxTE_READONLY</style>
 											<value></value>
+											<maxlength>0</maxlength>
 										</object>
 									</object>
 								</object>
@@ -3477,7 +3447,7 @@
 					</object>
 					<object class="sizeritem">
 						<option>0</option>
-						<flag>wxEXPAND | wxALL</flag>
+						<flag>wxEXPAND|wxALL</flag>
 						<border>5</border>
 						<object class="wxStaticLine" name="m_staticline2">
 							<style>wxLI_VERTICAL</style>
@@ -3602,6 +3572,7 @@
 										<object class="wxTextCtrl" name="txtAmountOfWeaponsInWings">
 											<style>wxTE_READONLY</style>
 											<value></value>
+											<maxlength>0</maxlength>
 										</object>
 									</object>
 								</object>
@@ -4033,10 +4004,10 @@
 													<selection>0</selection>
 													<content>
 														<item>none</item>
-														<item>s_standard</item>
-														<item>s_active</item>
-														<item>s_emp</item>
-														<item>s_medium</item>
+														<item>s&amp;standard</item>
+														<item>s&amp;active</item>
+														<item>s&amp;emp</item>
+														<item>s&amp;medium</item>
 													</content>
 												</object>
 											</object>
@@ -4668,6 +4639,7 @@
 										<object class="wxTextCtrl" name="m_textCtrl73">
 											<enabled>0</enabled>
 											<value>Coming Soon!</value>
+											<maxlength>0</maxlength>
 										</object>
 									</object>
 								</object>
@@ -4979,7 +4951,7 @@
 					</object>
 					<object class="sizeritem">
 						<option>0</option>
-						<flag>wxEXPAND | wxALL</flag>
+						<flag>wxEXPAND|wxALL</flag>
 						<border>3</border>
 						<object class="wxStaticLine" name="m_staticline3">
 							<style>wxLI_HORIZONTAL</style>
@@ -5136,7 +5108,7 @@
 					<orient>wxHORIZONTAL</orient>
 					<object class="sizeritem">
 						<option>1</option>
-						<flag>wxEXPAND | wxALL</flag>
+						<flag>wxEXPAND|wxALL</flag>
 						<border>3</border>
 						<object class="wxPanel" name="pFieldProperties">
 							<style>wxTAB_TRAVERSAL</style>
@@ -5271,7 +5243,7 @@
 												<object class="sizeritem">
 													<cellpos>4,0</cellpos>
 													<cellspan>1,2</cellspan>
-													<flag>wxEXPAND | wxALL</flag>
+													<flag>wxEXPAND|wxALL</flag>
 													<border>5</border>
 													<object class="wxStaticLine" name="m_staticline1">
 														<style>wxLI_HORIZONTAL</style>
@@ -5328,7 +5300,7 @@
 					</object>
 					<object class="sizeritem">
 						<option>1</option>
-						<flag>wxEXPAND | wxALL</flag>
+						<flag>wxEXPAND|wxALL</flag>
 						<border>3</border>
 						<object class="wxPanel" name="pBoundingBoxes">
 							<style>wxTAB_TRAVERSAL</style>
@@ -5391,6 +5363,7 @@
 													<border>3</border>
 													<object class="wxTextCtrl" name="txtOuterMinimumX">
 														<value></value>
+														<maxlength>0</maxlength>
 													</object>
 												</object>
 												<object class="sizeritem">
@@ -5399,6 +5372,7 @@
 													<border>3</border>
 													<object class="wxTextCtrl" name="txtOuterMaximumX">
 														<value></value>
+														<maxlength>0</maxlength>
 													</object>
 												</object>
 												<object class="sizeritem">
@@ -5416,6 +5390,7 @@
 													<border>3</border>
 													<object class="wxTextCtrl" name="txtOuterMinimumY">
 														<value></value>
+														<maxlength>0</maxlength>
 													</object>
 												</object>
 												<object class="sizeritem">
@@ -5424,6 +5399,7 @@
 													<border>3</border>
 													<object class="wxTextCtrl" name="txtOuterMaximumY">
 														<value></value>
+														<maxlength>0</maxlength>
 													</object>
 												</object>
 												<object class="sizeritem">
@@ -5441,6 +5417,7 @@
 													<border>3</border>
 													<object class="wxTextCtrl" name="txtOuterMinimumZ">
 														<value></value>
+														<maxlength>0</maxlength>
 													</object>
 												</object>
 												<object class="sizeritem">
@@ -5449,6 +5426,7 @@
 													<border>3</border>
 													<object class="wxTextCtrl" name="txtOuterMaximumZ">
 														<value></value>
+														<maxlength>0</maxlength>
 													</object>
 												</object>
 											</object>
@@ -5791,7 +5769,7 @@
 											</object>
 											<object class="sizeritem">
 												<option>1</option>
-												<flag>wxEXPAND | wxALL</flag>
+												<flag>wxEXPAND|wxALL</flag>
 												<border>5</border>
 												<object class="wxPanel" name="pnlMultiplayer">
 													<style>wxTAB_TRAVERSAL</style>
@@ -6003,7 +5981,7 @@
 									</object>
 									<object class="sizeritem">
 										<option>1</option>
-										<flag>wxEXPAND | wxALL</flag>
+										<flag>wxEXPAND|wxALL</flag>
 										<border>5</border>
 										<object class="wxPanel" name="pnlRepairHull">
 											<style>wxTAB_TRAVERSAL</style>
@@ -6680,7 +6658,7 @@
 								<object class="wxBitmapButton" name="m_bpButton7">
 									<style>wxBU_AUTODRAW</style>
 									<size>24,24</size>
-									<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
+									<bitmap>..\res\play.xpm</bitmap>
 									<default>0</default>
 								</object>
 							</object>
@@ -6689,7 +6667,7 @@
 								<flag>wxALIGN_CENTER|wxALL</flag>
 								<border>3</border>
 								<object class="wxFilePickerCtrl" name="m_filePicker2">
-									<value></value>
+									<value>,90,90,-1,70,0</value>
 									<message>Select a file</message>
 									<wildcard>*.*</wildcard>
 									<style>wxFLP_FILE_MUST_EXIST|wxFLP_OPEN</style>
@@ -6714,12 +6692,10 @@
 				<object class="wxMenuItem" name="mnuTeam1">
 					<label>Team 1</label>
 					<help></help>
-					<radio>1</radio>
 				</object>
 				<object class="wxMenuItem" name="mnuTeam2">
 					<label>Team 2</label>
 					<help></help>
-					<radio>1</radio>
 				</object>
 			</object>
 			<object class="wxMenu" name="mnuOptions">
@@ -6836,6 +6812,7 @@
 								<style>wxTE_MULTILINE</style>
 								<size>-1,60</size>
 								<value></value>
+								<maxlength>0</maxlength>
 							</object>
 						</object>
 						<object class="sizeritem">
@@ -6976,7 +6953,7 @@
 							<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 							<border>3</border>
 							<object class="wxFilePickerCtrl" name="m_filePicker1">
-								<value></value>
+								<value>,90,90,-1,70,0</value>
 								<message>Select a file</message>
 								<wildcard>*.*</wildcard>
 								<style>wxFLP_DEFAULT_STYLE</style>
@@ -6989,7 +6966,7 @@
 							<object class="wxBitmapButton" name="btnPlayVoice">
 								<style>wxBU_AUTODRAW</style>
 								<size>23,23</size>
-								<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
+								<bitmap>..\res\play.xpm</bitmap>
 								<default>0</default>
 							</object>
 						</object>
@@ -7041,7 +7018,7 @@
 									<object class="wxBitmapButton" name="btnPlayMusic">
 										<style>wxBU_AUTODRAW</style>
 										<size>23,23</size>
-										<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
+										<bitmap>..\res\play.xpm</bitmap>
 										<default>0</default>
 									</object>
 								</object>
@@ -7073,7 +7050,7 @@
 									<object class="wxBitmapButton" name="btnPlayMusicFromPack">
 										<style>wxBU_AUTODRAW</style>
 										<size>23,23</size>
-										<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
+										<bitmap>..\res\play.xpm</bitmap>
 										<default>0</default>
 									</object>
 								</object>
@@ -7150,6 +7127,7 @@
 									<object class="wxTextCtrl" name="txtIconLabel">
 										<size>100,-1</size>
 										<value></value>
+										<maxlength>0</maxlength>
 									</object>
 								</object>
 								<object class="sizeritem">
@@ -7232,6 +7210,7 @@
 									<border>3</border>
 									<object class="wxTextCtrl" name="txtIconID">
 										<value>0</value>
+										<maxlength>0</maxlength>
 									</object>
 								</object>
 								<object class="sizeritem">
@@ -7327,6 +7306,7 @@
 								<style>wxTE_MULTILINE|wxTE_WORDWRAP</style>
 								<size>-1,60</size>
 								<value>1\n2\n3</value>
+								<maxlength>0</maxlength>
 							</object>
 						</object>
 					</object>
@@ -7534,7 +7514,7 @@
 									<flag>wxALL|wxEXPAND</flag>
 									<border>3</border>
 									<object class="wxTextCtrl" name="txtRecommendationText">
-										<style>wxTE_MULTILINE|wxTE_LINEWRAP</style>
+										<style>wxTE_MULTILINE</style>
 										<size>320,100</size>
 										<value></value>
 										<maxlength>0</maxlength>
@@ -7625,7 +7605,7 @@
 											<object class="wxBitmapButton" name="btnPlayNuetral">
 												<style>wxBU_AUTODRAW|wxBU_EXACTFIT</style>
 												<size>23,23</size>
-												<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\play.xpm</bitmap>
+												<bitmap>..\res\play.xpm</bitmap>
 												<default>0</default>
 											</object>
 										</object>
@@ -7882,7 +7862,7 @@
 							<flag>wxALL|wxEXPAND</flag>
 							<border>3</border>
 							<object class="wxFilePickerCtrl" name="fpAniFile">
-								<value></value>
+								<value>,90,90,-1,70,0</value>
 								<message>Select a file</message>
 								<wildcard>*.*</wildcard>
 								<style>wxFLP_DEFAULT_STYLE</style>
@@ -7908,7 +7888,7 @@
 							<flag>wxALL|wxEXPAND</flag>
 							<border>3</border>
 							<object class="wxFilePickerCtrl" name="fpVoiceWave">
-								<value></value>
+								<value>,90,90,-1,70,0</value>
 								<message>Select a file</message>
 								<wildcard>*.*</wildcard>
 								<style>wxFLP_DEFAULT_STYLE</style>
@@ -7962,7 +7942,7 @@
 						<flag>wxALL</flag>
 						<border>3</border>
 						<object class="wxFilePickerCtrl" name="fpStoryFile">
-							<value></value>
+							<value>,90,90,-1,70,0</value>
 							<message>Select a story file</message>
 							<wildcard>*.*</wildcard>
 							<style>wxFLP_DEFAULT_STYLE</style>
@@ -7982,7 +7962,7 @@
 						<flag>wxALL</flag>
 						<border>3</border>
 						<object class="wxFilePickerCtrl" name="fpFontFile">
-							<value></value>
+							<value>,90,90,-1,70,0</value>
 							<message>Select a font file</message>
 							<wildcard>*.*</wildcard>
 							<style>wxFLP_DEFAULT_STYLE</style>
@@ -8590,129 +8570,160 @@
 		<title>Campaign Editor</title>
 		<centered>1</centered>
 		<aui_managed>0</aui_managed>
-		<object class="wxBoxSizer">
-			<orient>wxHORIZONTAL</orient>
-			<object class="sizeritem">
-				<option>1</option>
-				<flag>wxEXPAND</flag>
-				<border>5</border>
-				<object class="wxSplitterWindow" name="m_splitter1">
-					<style>wxSP_3D</style>
-					<sashpos>0</sashpos>
-					<gravity>0</gravity>
-					<minsize>0</minsize>
-					<orientation>vertical</orientation>
-					<object class="wxScrolledWindow" name="pnlCampaign">
-						<style>wxHSCROLL|wxSUNKEN_BORDER|wxVSCROLL</style>
-						<size>400,-1</size>
-						<scrollrate>5,5</scrollrate>
+		<object class="wxSplitterWindow" name="m_splitter1">
+			<style>wxSP_3D</style>
+			<sashpos>0</sashpos>
+			<gravity>0</gravity>
+			<minsize>0</minsize>
+			<orientation>vertical</orientation>
+			<object class="wxScrolledWindow" name="pnlCampaign">
+				<style>wxHSCROLL|wxSUNKEN_BORDER|wxVSCROLL</style>
+				<size>400,-1</size>
+				<scrollrate>5,5</scrollrate>
+				<object class="wxBoxSizer">
+					<orient>wxVERTICAL</orient>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_LEFT|wxALL|wxTOP</flag>
+						<border>3</border>
+						<object class="wxStaticText" name="lblAvailableMissions">
+							<label>Available missions:</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>3</border>
+						<object class="wxListCtrl" name="lstAvailableMissions">
+							<style>wxLC_LIST|wxLC_SINGLE_SEL|wxLC_SORT_ASCENDING</style>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>3</border>
 						<object class="wxBoxSizer">
-							<orient>wxVERTICAL</orient>
+							<orient>wxHORIZONTAL</orient>
 							<object class="sizeritem">
 								<option>0</option>
-								<flag>wxALIGN_LEFT|wxALL|wxTOP</flag>
+								<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
 								<border>3</border>
-								<object class="wxStaticText" name="lblAvailableMissions">
-									<label>Available missions:</label>
+								<object class="wxStaticText" name="lblCampaignName">
+									<label>Campaign Name:</label>
 									<wrap>-1</wrap>
 								</object>
 							</object>
 							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL|wxEXPAND</flag>
+								<option>1</option>
+								<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 								<border>3</border>
-								<object class="wxListCtrl" name="lstAvailableMissions">
-									<style>wxLC_LIST|wxLC_SINGLE_SEL|wxLC_SORT_ASCENDING</style>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL|wxEXPAND</flag>
-								<border>3</border>
-								<object class="wxBoxSizer">
-									<orient>wxHORIZONTAL</orient>
-									<object class="sizeritem">
-										<option>0</option>
-										<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
-										<border>3</border>
-										<object class="wxStaticText" name="lblCampaignName">
-											<label>Campaign Name:</label>
-											<wrap>-1</wrap>
-										</object>
-									</object>
-									<object class="sizeritem">
-										<option>1</option>
-										<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-										<border>3</border>
-										<object class="wxTextCtrl" name="txtCampaignName">
-											<value></value>
-											<maxlength>0</maxlength>
-										</object>
-									</object>
-									<object class="sizeritem">
-										<option>0</option>
-										<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
-										<border>3</border>
-										<object class="wxStaticText" name="lblCampaignType">
-											<label>Type:</label>
-											<wrap>0</wrap>
-										</object>
-									</object>
-									<object class="sizeritem">
-										<option>0</option>
-										<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-										<border>3</border>
-										<object class="wxChoice" name="cbCampaignType">
-											<selection>0</selection>
-											<content>
-												<item>single</item>
-												<item>multi coop</item>
-												<item>multi teams</item>
-											</content>
-										</object>
-									</object>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALIGN_LEFT|wxALL</flag>
-								<border>3</border>
-								<object class="wxStaticText" name="lblCampaignDescription">
-									<label>Campaign Description:</label>
-									<wrap>-1</wrap>
-								</object>
-							</object>
-							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALL|wxEXPAND</flag>
-								<border>3</border>
-								<object class="wxTextCtrl" name="txtCampaignDescription">
-									<style>wxTE_MULTILINE</style>
-									<size>-1,55</size>
+								<object class="wxTextCtrl" name="txtCampaignName">
 									<value></value>
 									<maxlength>0</maxlength>
 								</object>
 							</object>
 							<object class="sizeritem">
 								<option>0</option>
-								<flag>wxALIGN_RIGHT|wxALL</flag>
+								<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
 								<border>3</border>
-								<object class="wxCheckBox" name="chkUsesCustomTechDatabase">
-									<style>wxCHK_2STATE</style>
-									<label>Uses custom tech database</label>
-									<checked>0</checked>
+								<object class="wxStaticText" name="lblCampaignType">
+									<label>Type:</label>
+									<wrap>0</wrap>
 								</object>
 							</object>
 							<object class="sizeritem">
 								<option>0</option>
-								<flag>wxALIGN_CENTER|wxALL</flag>
+								<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 								<border>3</border>
-								<object class="wxStaticBoxSizer">
-									<orient>wxHORIZONTAL</orient>
-									<label>Mission options</label>
+								<object class="wxChoice" name="cbCampaignType">
+									<selection>0</selection>
+									<content>
+										<item>single</item>
+										<item>multi coop</item>
+										<item>multi teams</item>
+									</content>
+								</object>
+							</object>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_LEFT|wxALL</flag>
+						<border>3</border>
+						<object class="wxStaticText" name="lblCampaignDescription">
+							<label>Campaign Description:</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>3</border>
+						<object class="wxTextCtrl" name="txtCampaignDescription">
+							<style>wxTE_MULTILINE</style>
+							<size>-1,55</size>
+							<value></value>
+							<maxlength>0</maxlength>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_RIGHT|wxALL</flag>
+						<border>3</border>
+						<object class="wxCheckBox" name="chkUsesCustomTechDatabase">
+							<style>wxCHK_2STATE</style>
+							<label>Uses custom tech database</label>
+							<checked>0</checked>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER|wxALL</flag>
+						<border>3</border>
+						<object class="wxStaticBoxSizer">
+							<orient>wxHORIZONTAL</orient>
+							<label>Mission options</label>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag></flag>
+								<border>5</border>
+								<object class="wxFlexGridSizer">
+									<rows>0</rows>
+									<cols>2</cols>
+									<vgap>0</vgap>
+									<hgap>0</hgap>
+									<growablecols></growablecols>
+									<growablerows></growablerows>
 									<object class="sizeritem">
 										<option>0</option>
-										<flag></flag>
+										<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
+										<border>3</border>
+										<object class="wxStaticText" name="lblBriefingCutscene">
+											<label>Briefing Cutscene:</label>
+											<wrap>-1</wrap>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL|wxEXPAND</flag>
+										<border>3</border>
+										<object class="wxFilePickerCtrl" name="fpBriefingCutscene">
+											<value>,90,90,-1,70,0</value>
+											<message>Select a file</message>
+											<wildcard>*.*</wildcard>
+											<style>wxFLP_DEFAULT_STYLE</style>
+										</object>
+									</object>
+									<object class="spacer">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
+										<border>5</border>
+										<size>0,0</size>
+									</object>
+									<object class="sizeritem">
+										<option>1</option>
+										<flag>wxEXPAND</flag>
 										<border>5</border>
 										<object class="wxFlexGridSizer">
 											<rows>0</rows>
@@ -8725,213 +8736,203 @@
 												<option>0</option>
 												<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
 												<border>3</border>
-												<object class="wxStaticText" name="lblBriefingCutscene">
-													<label>Briefing Cutscene:</label>
+												<object class="wxStaticText" name="lblMainhallIndex">
+													<label>Mainhall Index:</label>
 													<wrap>-1</wrap>
 												</object>
 											</object>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALL|wxEXPAND</flag>
+												<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 												<border>3</border>
-												<object class="wxFilePickerCtrl" name="fpBriefingCutscene">
-													<value></value>
-													<message>Select a file</message>
-													<wildcard>*.*</wildcard>
-													<style>wxFLP_DEFAULT_STYLE</style>
+												<object class="wxSpinCtrl" name="spnMainHallIndex">
+													<style>wxSP_ARROW_KEYS</style>
+													<size>50,-1</size>
+													<value>0</value>
+													<min>0</min>
+													<max>9</max>
 												</object>
 											</object>
-											<object class="spacer">
-												<option>1</option>
-												<flag>wxEXPAND</flag>
-												<border>5</border>
-												<size>0,0</size>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+												<border>3</border>
+												<object class="wxStaticText" name="lblDebriefingPersonaIndex">
+													<label>Debriefing Persona Index:</label>
+													<wrap>-1</wrap>
+												</object>
 											</object>
 											<object class="sizeritem">
-												<option>1</option>
-												<flag>wxEXPAND</flag>
-												<border>5</border>
-												<object class="wxFlexGridSizer">
-													<rows>0</rows>
-													<cols>2</cols>
-													<vgap>0</vgap>
-													<hgap>0</hgap>
-													<growablecols></growablecols>
-													<growablerows></growablerows>
-													<object class="sizeritem">
-														<option>0</option>
-														<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
-														<border>3</border>
-														<object class="wxStaticText" name="lblMainhallIndex">
-															<label>Mainhall Index:</label>
-															<wrap>-1</wrap>
-														</object>
-													</object>
-													<object class="sizeritem">
-														<option>0</option>
-														<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-														<border>3</border>
-														<object class="wxSpinCtrl" name="spnMainHallIndex">
-															<style>wxSP_ARROW_KEYS</style>
-															<size>50,-1</size>
-															<value>0</value>
-															<min>0</min>
-															<max>9</max>
-														</object>
-													</object>
-													<object class="sizeritem">
-														<option>0</option>
-														<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-														<border>3</border>
-														<object class="wxStaticText" name="lblDebriefingPersonaIndex">
-															<label>Debriefing Persona Index:</label>
-															<wrap>-1</wrap>
-														</object>
-													</object>
-													<object class="sizeritem">
-														<option>0</option>
-														<flag>wxALL</flag>
-														<border>3</border>
-														<object class="wxSpinCtrl" name="spnDebriefingPersonaIndex">
-															<style>wxSP_ARROW_KEYS</style>
-															<size>50,-1</size>
-															<value>0</value>
-															<min>0</min>
-															<max>9</max>
-														</object>
-													</object>
+												<option>0</option>
+												<flag>wxALL</flag>
+												<border>3</border>
+												<object class="wxSpinCtrl" name="spnDebriefingPersonaIndex">
+													<style>wxSP_ARROW_KEYS</style>
+													<size>50,-1</size>
+													<value>0</value>
+													<min>0</min>
+													<max>9</max>
 												</object>
 											</object>
 										</object>
 									</object>
 								</object>
 							</object>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALL|wxEXPAND</flag>
+						<border>3</border>
+						<object class="wxBoxSizer">
+							<orient>wxHORIZONTAL</orient>
 							<object class="sizeritem">
-								<option>0</option>
-								<flag>wxALIGN_CENTER_HORIZONTAL|wxALL|wxEXPAND</flag>
+								<option>1</option>
+								<flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM</flag>
 								<border>3</border>
 								<object class="wxBoxSizer">
-									<orient>wxHORIZONTAL</orient>
+									<orient>wxVERTICAL</orient>
 									<object class="sizeritem">
-										<option>1</option>
-										<flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM</flag>
+										<option>0</option>
+										<flag>wxALIGN_LEFT|wxALL|wxLEFT|wxRIGHT|wxTOP</flag>
 										<border>3</border>
-										<object class="wxBoxSizer">
+										<object class="wxStaticText" name="lblBranches">
+											<label>Branches:</label>
+											<wrap>0</wrap>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL|wxBOTTOM|wxEXPAND|wxLEFT|wxRIGHT</flag>
+										<border>3</border>
+										<object class="wxTreeCtrl" name="treeBranches">
+											<style>wxTR_EDIT_LABELS|wxTR_HAS_BUTTONS|wxTR_LINES_AT_ROOT|wxTR_SINGLE|wxSUNKEN_BORDER</style>
+											<size>200,200</size>
+										</object>
+									</object>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALIGN_TOP|wxALL|wxEXPAND</flag>
+								<border>3</border>
+								<object class="wxBoxSizer">
+									<orient>wxVERTICAL</orient>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALIGN_RIGHT|wxALL</flag>
+										<border>3</border>
+										<object class="wxStaticBoxSizer">
 											<orient>wxVERTICAL</orient>
+											<label>Branch Options</label>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALIGN_LEFT|wxALL|wxLEFT|wxRIGHT|wxTOP</flag>
+												<flag>wxALL</flag>
 												<border>3</border>
-												<object class="wxStaticText" name="lblBranches">
-													<label>Branches:</label>
-													<wrap>0</wrap>
+												<object class="wxButton" name="btnMoveUp">
+													<size>80,-1</size>
+													<label>Move Up</label>
+													<default>0</default>
 												</object>
 											</object>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag>wxALL|wxBOTTOM|wxEXPAND|wxLEFT|wxRIGHT</flag>
+												<flag>wxALL</flag>
 												<border>3</border>
-												<object class="wxTreeCtrl" name="treeBranches">
-													<style>wxTR_EDIT_LABELS|wxTR_HAS_BUTTONS|wxTR_LINES_AT_ROOT|wxTR_SINGLE|wxSUNKEN_BORDER</style>
-													<size>200,200</size>
+												<object class="wxButton" name="btnMoveDown">
+													<size>80,-1</size>
+													<label>Move Down</label>
+													<default>0</default>
+												</object>
+											</object>
+											<object class="sizeritem">
+												<option>0</option>
+												<flag>wxALL</flag>
+												<border>3</border>
+												<object class="wxButton" name="btnToggleLoop">
+													<size>80,-1</size>
+													<label>Toggle Loop</label>
+													<default>0</default>
 												</object>
 											</object>
 										</object>
 									</object>
 									<object class="sizeritem">
 										<option>0</option>
-										<flag>wxALIGN_TOP|wxALL|wxEXPAND</flag>
+										<flag>wxALIGN_RIGHT|wxALL</flag>
 										<border>3</border>
-										<object class="wxBoxSizer">
-											<orient>wxVERTICAL</orient>
-											<object class="sizeritem">
-												<option>0</option>
-												<flag>wxALIGN_RIGHT|wxALL</flag>
-												<border>3</border>
-												<object class="wxStaticBoxSizer">
-													<orient>wxVERTICAL</orient>
-													<label>Branch Options</label>
-													<object class="sizeritem">
-														<option>0</option>
-														<flag>wxALL</flag>
-														<border>3</border>
-														<object class="wxButton" name="btnMoveUp">
-															<size>80,-1</size>
-															<label>Move Up</label>
-															<default>0</default>
-														</object>
-													</object>
-													<object class="sizeritem">
-														<option>0</option>
-														<flag>wxALL</flag>
-														<border>3</border>
-														<object class="wxButton" name="btnMoveDown">
-															<size>80,-1</size>
-															<label>Move Down</label>
-															<default>0</default>
-														</object>
-													</object>
-													<object class="sizeritem">
-														<option>0</option>
-														<flag>wxALL</flag>
-														<border>3</border>
-														<object class="wxButton" name="btnToggleLoop">
-															<size>80,-1</size>
-															<label>Toggle Loop</label>
-															<default>0</default>
-														</object>
-													</object>
-												</object>
-											</object>
-											<object class="sizeritem">
-												<option>0</option>
-												<flag>wxALIGN_RIGHT|wxALL</flag>
-												<border>3</border>
-												<object class="wxButton" name="btnRealignTree">
-													<size>80,-1</size>
-													<label>Realign Tree</label>
-													<default>0</default>
-												</object>
-											</object>
-											<object class="sizeritem">
-												<option>0</option>
-												<flag>wxALIGN_RIGHT|wxLEFT|wxRIGHT</flag>
-												<border>3</border>
-												<object class="wxButton" name="btnLoadMission">
-													<size>80,-1</size>
-													<label>Load Mission</label>
-													<default>0</default>
-												</object>
-											</object>
-											<object class="sizeritem">
-												<option>0</option>
-												<flag>wxALIGN_RIGHT|wxALL</flag>
-												<border>3</border>
-												<object class="wxButton" name="btnClose">
-													<size>80,-1</size>
-													<label>Close</label>
-													<default>0</default>
-												</object>
-											</object>
+										<object class="wxButton" name="btnRealignTree">
+											<size>80,-1</size>
+											<label>Realign Tree</label>
+											<default>0</default>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALIGN_RIGHT|wxLEFT|wxRIGHT</flag>
+										<border>3</border>
+										<object class="wxButton" name="btnLoadMission">
+											<size>80,-1</size>
+											<label>Load Mission</label>
+											<default>0</default>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALIGN_RIGHT|wxALL</flag>
+										<border>3</border>
+										<object class="wxButton" name="btnClose">
+											<size>80,-1</size>
+											<label>Close</label>
+											<default>0</default>
 										</object>
 									</object>
 								</object>
 							</object>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALL</flag>
+						<border>3</border>
+						<object class="wxStaticText" name="lblDesignerNotes">
+							<label>Designer Notes:</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxEXPAND|wxALL</flag>
+						<border>3</border>
+						<object class="wxTextCtrl" name="txtDesignerNotes">
+							<style>wxTE_MULTILINE|wxTE_READONLY</style>
+							<size>-1,50</size>
+							<value></value>
+							<maxlength>0</maxlength>
+						</object>
+					</object>
+					<object class="sizeritem">
+						<option>1</option>
+						<flag>wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxStaticBoxSizer">
+							<orient>wxVERTICAL</orient>
+							<label>Mission Loop Options</label>
 							<object class="sizeritem">
 								<option>0</option>
-								<flag>wxALL</flag>
+								<flag>wxALIGN_LEFT|wxALL</flag>
 								<border>3</border>
-								<object class="wxStaticText" name="lblDesignerNotes">
-									<label>Designer Notes:</label>
+								<object class="wxStaticText" name="lblMissionLoopDiscription">
+									<label>Discription:</label>
 									<wrap>-1</wrap>
 								</object>
 							</object>
 							<object class="sizeritem">
 								<option>0</option>
-								<flag>wxEXPAND|wxALL</flag>
+								<flag>wxALL|wxEXPAND</flag>
 								<border>3</border>
-								<object class="wxTextCtrl" name="txtDesignerNotes">
-									<style>wxTE_MULTILINE|wxTE_READONLY</style>
+								<object class="wxTextCtrl" name="txtMissionLoopDescription">
+									<style>wxTE_MULTILINE</style>
 									<size>-1,50</size>
 									<value></value>
 									<maxlength>0</maxlength>
@@ -8941,90 +8942,61 @@
 								<option>1</option>
 								<flag>wxEXPAND</flag>
 								<border>5</border>
-								<object class="wxStaticBoxSizer">
-									<orient>wxVERTICAL</orient>
-									<label>Mission Loop Options</label>
+								<object class="wxFlexGridSizer">
+									<rows>0</rows>
+									<cols>2</cols>
+									<vgap>0</vgap>
+									<hgap>0</hgap>
+									<growablecols>1</growablecols>
+									<growablerows></growablerows>
 									<object class="sizeritem">
 										<option>0</option>
-										<flag>wxALIGN_LEFT|wxALL</flag>
+										<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
 										<border>3</border>
-										<object class="wxStaticText" name="lblMissionLoopDiscription">
-											<label>Discription:</label>
+										<object class="wxStaticText" name="lblLoopBriefAni">
+											<label>Briefing Animation:</label>
 											<wrap>-1</wrap>
 										</object>
 									</object>
 									<object class="sizeritem">
-										<option>0</option>
+										<option>1</option>
 										<flag>wxALL|wxEXPAND</flag>
 										<border>3</border>
-										<object class="wxTextCtrl" name="txtMissionLoopDescription">
-											<style>wxTE_MULTILINE</style>
-											<size>-1,50</size>
-											<value></value>
-											<maxlength>0</maxlength>
+										<object class="wxFilePickerCtrl" name="fpLoopBriefAni">
+											<value>,90,90,-1,70,0</value>
+											<message>Select an animation file</message>
+											<wildcard>*.*</wildcard>
+											<style>wxFLP_DEFAULT_STYLE</style>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
+										<border>3</border>
+										<object class="wxStaticText" name="lblBriefVoice">
+											<label>Briefing Voice:</label>
+											<wrap>-1</wrap>
 										</object>
 									</object>
 									<object class="sizeritem">
 										<option>1</option>
-										<flag>wxEXPAND</flag>
-										<border>5</border>
-										<object class="wxFlexGridSizer">
-											<rows>0</rows>
-											<cols>2</cols>
-											<vgap>0</vgap>
-											<hgap>0</hgap>
-											<growablecols>1</growablecols>
-											<growablerows></growablerows>
-											<object class="sizeritem">
-												<option>0</option>
-												<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
-												<border>3</border>
-												<object class="wxStaticText" name="lblLoopBriefAni">
-													<label>Briefing Animation:</label>
-													<wrap>-1</wrap>
-												</object>
-											</object>
-											<object class="sizeritem">
-												<option>1</option>
-												<flag>wxALL|wxEXPAND</flag>
-												<border>3</border>
-												<object class="wxFilePickerCtrl" name="fpLoopBriefAni">
-													<value></value>
-													<message>Select an animation file</message>
-													<wildcard>*.*</wildcard>
-													<style>wxFLP_DEFAULT_STYLE</style>
-												</object>
-											</object>
-											<object class="sizeritem">
-												<option>0</option>
-												<flag>wxALIGN_CENTER_VERTICAL|wxALL|wxADJUST_MINSIZE</flag>
-												<border>3</border>
-												<object class="wxStaticText" name="lblBriefVoice">
-													<label>Briefing Voice:</label>
-													<wrap>-1</wrap>
-												</object>
-											</object>
-											<object class="sizeritem">
-												<option>1</option>
-												<flag>wxALL|wxEXPAND</flag>
-												<border>3</border>
-												<object class="wxFilePickerCtrl" name="fpLoopBriefVoice">
-													<value></value>
-													<message>Selec a voice file</message>
-													<wildcard>*.*</wildcard>
-													<style>wxFLP_DEFAULT_STYLE</style>
-												</object>
-											</object>
+										<flag>wxALL|wxEXPAND</flag>
+										<border>3</border>
+										<object class="wxFilePickerCtrl" name="fpLoopBriefVoice">
+											<value>,90,90,-1,70,0</value>
+											<message>Selec a voice file</message>
+											<wildcard>*.*</wildcard>
+											<style>wxFLP_DEFAULT_STYLE</style>
 										</object>
 									</object>
 								</object>
 							</object>
 						</object>
 					</object>
-					<object class="wxPanel" name="pnlCampaignGraph">
-						<style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
-					</object>
 				</object>
+			</object>
+			<object class="wxPanel" name="pnlCampaignGraph">
+				<style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
 			</object>
 		</object>
 		<object class="wxMenuBar" name="m_menubar2">
@@ -9089,6 +9061,7 @@
 					<style>wxTE_MULTILINE|wxTE_READONLY</style>
 					<enabled>0</enabled>
 					<value></value>
+					<maxlength>0</maxlength>
 				</object>
 			</object>
 			<object class="sizeritem">
@@ -9135,7 +9108,7 @@
 				<object class="wxStaticBitmap" name="bmpLogo">
 					<style>wxSUNKEN_BORDER</style>
 					<bg>#ffffff</bg>
-					<bitmap>C:\Code\FreespaceOpen\fs2_open\code\wxfred2\res\fred_splash.xpm</bitmap>
+					<bitmap>..\res\fred_splash.xpm</bitmap>
 				</object>
 			</object>
 			<object class="sizeritem">
@@ -9286,6 +9259,7 @@
 							<object class="wxTextCtrl" name="txtArgInfo">
 								<style>wxTE_READONLY</style>
 								<value></value>
+								<maxlength>0</maxlength>
 							</object>
 						</object>
 						<object class="sizeritem">
@@ -9304,6 +9278,7 @@
 							<object class="wxTextCtrl" name="txtSexpInfo">
 								<style>wxTE_MULTILINE|wxTE_READONLY</style>
 								<value></value>
+								<maxlength>0</maxlength>
 							</object>
 						</object>
 					</object>
@@ -9331,6 +9306,7 @@
 				<object class="wxTextCtrl" name="txtArgInfo">
 					<style>wxTE_READONLY</style>
 					<value></value>
+					<maxlength>0</maxlength>
 				</object>
 			</object>
 			<object class="sizeritem">
@@ -9349,6 +9325,7 @@
 				<object class="wxTextCtrl" name="txtSexpInfo">
 					<style>wxTE_MULTILINE|wxTE_READONLY</style>
 					<value></value>
+					<maxlength>0</maxlength>
 				</object>
 			</object>
 		</object>

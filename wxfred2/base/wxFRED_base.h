@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Oct  8 2012)
+// C++ code generated with wxFormBuilder (version Jun 17 2015)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -51,250 +51,15 @@
 
 namespace fredBase
 {
+	
 	///////////////////////////////////////////////////////////////////////////////
 	/// Class frmFRED
 	///////////////////////////////////////////////////////////////////////////////
 	class frmFRED : public wxFrame 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			void _wxFB_OnFileNew( wxCommandEvent& event ){ OnFileNew( event ); }
-			void _wxFB_OnFileOpen( wxCommandEvent& event ){ OnFileOpen( event ); }
-			void _wxFB_OnFileSave( wxCommandEvent& event ){ OnFileSave( event ); }
-			void _wxFB_OnFileSaveAs( wxCommandEvent& event ){ OnFileSaveAs( event ); }
-			void _wxFB_OnFileRevert( wxCommandEvent& event ){ OnFileRevert( event ); }
-			void _wxFB_OnFileSaveFormatFs2Open( wxCommandEvent& event ){ OnFileSaveFormatFs2Open( event ); }
-			void _wxFB_OnFileSaveFormatFs2Retail( wxCommandEvent& event ){ OnFileSaveFormatFs2Retail( event ); }
-			void _wxFB_OnFileImportFs1Mission( wxCommandEvent& event ){ OnFileImportFs1Mission( event ); }
-			void _wxFB_OnFileImportWeaponLoadouts( wxCommandEvent& event ){ OnFileImportWeaponLoadouts( event ); }
-			void _wxFB_OnFileRunFreespace( wxCommandEvent& event ){ OnFileRunFreespace( event ); }
-			void _wxFB_OnFileRecentFiles( wxCommandEvent& event ){ OnFileRecentFiles( event ); }
-			void _wxFB_OnFileExit( wxCommandEvent& event ){ OnFileExit( event ); }
-			void _wxFB_OnEditUndo( wxCommandEvent& event ){ OnEditUndo( event ); }
-			void _wxFB_OnEditDelete( wxCommandEvent& event ){ OnEditDelete( event ); }
-			void _wxFB_OnEditDeleteWing( wxCommandEvent& event ){ OnEditDeleteWing( event ); }
-			void _wxFB_OnEditDisableUndo( wxCommandEvent& event ){ OnEditDisableUndo( event ); }
-			void _wxFB_OnViewToolbar( wxCommandEvent& event ){ OnViewToolbar( event ); }
-			void _wxFB_OnViewStatusBar( wxCommandEvent& event ){ OnViewStatusBar( event ); }
-			void _wxFB_OnViewDisplayFilterShowShips( wxCommandEvent& event ){ OnViewDisplayFilterShowShips( event ); }
-			void _wxFB_OnViewDisplayFilterShowPlayerStarts( wxCommandEvent& event ){ OnViewDisplayFilterShowPlayerStarts( event ); }
-			void _wxFB_OnViewDisplayFilterShowWaypoints( wxCommandEvent& event ){ OnViewDisplayFilterShowWaypoints( event ); }
-			void _wxFB_OnViewDisplayFilterShowFriendly( wxCommandEvent& event ){ OnViewDisplayFilterShowFriendly( event ); }
-			void _wxFB_OnViewDisplayFilterShowHostile( wxCommandEvent& event ){ OnViewDisplayFilterShowHostile( event ); }
-			void _wxFB_OnViewHideMarkedObjects( wxCommandEvent& event ){ OnViewHideMarkedObjects( event ); }
-			void _wxFB_OnViewShowHiddenObjects( wxCommandEvent& event ){ OnViewShowHiddenObjects( event ); }
-			void _wxFB_OnViewShowShipModels( wxCommandEvent& event ){ OnViewShowShipModels( event ); }
-			void _wxFB_OnViewShowOutlines( wxCommandEvent& event ){ OnViewShowOutlines( event ); }
-			void _wxFB_OnViewShowShipInfo( wxCommandEvent& event ){ OnViewShowShipInfo( event ); }
-			void _wxFB_OnViewShowCoordinates( wxCommandEvent& event ){ OnViewShowCoordinates( event ); }
-			void _wxFB_OnViewShowGridPositions( wxCommandEvent& event ){ OnViewShowGridPositions( event ); }
-			void _wxFB_OnViewShowDistances( wxCommandEvent& event ){ OnViewShowDistances( event ); }
-			void _wxFB_OnViewShowModelPaths( wxCommandEvent& event ){ OnViewShowModelPaths( event ); }
-			void _wxFB_OnViewShowModelDockPoints( wxCommandEvent& event ){ OnViewShowModelDockPoints( event ); }
-			void _wxFB_OnViewShowGrid( wxCommandEvent& event ){ OnViewShowGrid( event ); }
-			void _wxFB_OnViewShowHorizon( wxCommandEvent& event ){ OnViewShowHorizon( event ); }
-			void _wxFB_OnViewDoubleFineGridlines( wxCommandEvent& event ){ OnViewDoubleFineGridlines( event ); }
-			void _wxFB_OnViewAntiAliasedGridlines( wxCommandEvent& event ){ OnViewAntiAliasedGridlines( event ); }
-			void _wxFB_OnViewShow3DCompass( wxCommandEvent& event ){ OnViewShow3DCompass( event ); }
-			void _wxFB_OnViewShowBackground( wxCommandEvent& event ){ OnViewShowBackground( event ); }
-			void _wxFB_OnViewViewpointCamera( wxCommandEvent& event ){ OnViewViewpointCamera( event ); }
-			void _wxFB_OnViewViewpointCurrentShip( wxCommandEvent& event ){ OnViewViewpointCurrentShip( event ); }
-			void _wxFB_OnViewSaveCameraPos( wxCommandEvent& event ){ OnViewSaveCameraPos( event ); }
-			void _wxFB_OnViewRestoreCameraPos( wxCommandEvent& event ){ OnViewRestoreCameraPos( event ); }
-			void _wxFB_OnViewLightingFromSuns( wxCommandEvent& event ){ OnViewLightingFromSuns( event ); }
-			void _wxFB_OnSpeedMovement( wxCommandEvent& event ){ OnSpeedMovement( event ); }
-			void _wxFB_OnSpeedRotation( wxCommandEvent& event ){ OnSpeedRotation( event ); }
-			void _wxFB_OnEditorsShips( wxCommandEvent& event ){ OnEditorsShips( event ); }
-			void _wxFB_OnEditorsWings( wxCommandEvent& event ){ OnEditorsWings( event ); }
-			void _wxFB_OnEditorsObjects( wxCommandEvent& event ){ OnEditorsObjects( event ); }
-			void _wxFB_OnEditorsWaypointPaths( wxCommandEvent& event ){ OnEditorsWaypointPaths( event ); }
-			void _wxFB_OnEditorsMissionObjectives( wxCommandEvent& event ){ OnEditorsMissionObjectives( event ); }
-			void _wxFB_OnEditorsEvents( wxCommandEvent& event ){ OnEditorsEvents( event ); }
-			void _wxFB_OnEditorsTeamLoadout( wxCommandEvent& event ){ OnEditorsTeamLoadout( event ); }
-			void _wxFB_OnEditorsBackground( wxCommandEvent& event ){ OnEditorsBackground( event ); }
-			void _wxFB_OnEditorsReinforcements( wxCommandEvent& event ){ OnEditorsReinforcements( event ); }
-			void _wxFB_OnEditorsAsteroidField( wxCommandEvent& event ){ OnEditorsAsteroidField( event ); }
-			void _wxFB_OnEditorsMissionSpecs( wxCommandEvent& event ){ OnEditorsMissionSpecs( event ); }
-			void _wxFB_OnEditorsBriefing( wxCommandEvent& event ){ OnEditorsBriefing( event ); }
-			void _wxFB_OnEditorsDebriefing( wxCommandEvent& event ){ OnEditorsDebriefing( event ); }
-			void _wxFB_OnEditorsCommandBriefing( wxCommandEvent& event ){ OnEditorsCommandBriefing( event ); }
-			void _wxFB_OnEditorsFictionViewer( wxCommandEvent& event ){ OnEditorsFictionViewer( event ); }
-			void _wxFB_OnEditorsShieldSystem( wxCommandEvent& event ){ OnEditorsShieldSystem( event ); }
-			void _wxFB_OnEditorsSetGlobalShipFlags( wxCommandEvent& event ){ OnEditorsSetGlobalShipFlags( event ); }
-			void _wxFB_OnEditorsVoiceActingManager( wxCommandEvent& event ){ OnEditorsVoiceActingManager( event ); }
-			void _wxFB_OnEditorsCampaign( wxCommandEvent& event ){ OnEditorsCampaign( event ); }
-			void _wxFB_OnGroupsGroup( wxCommandEvent& event ){ OnGroupsGroup( event ); }
-			void _wxFB_OnGroupsSetGroup( wxCommandEvent& event ){ OnGroupsSetGroup( event ); }
-			void _wxFB_OnMiscLevelObject( wxCommandEvent& event ){ OnMiscLevelObject( event ); }
-			void _wxFB_OnMiscAlignObject( wxCommandEvent& event ){ OnMiscAlignObject( event ); }
-			void _wxFB_OnMiscMarkWing( wxCommandEvent& event ){ OnMiscMarkWing( event ); }
-			void _wxFB_OnMiscControlObject( wxCommandEvent& event ){ OnMiscControlObject( event ); }
-			void _wxFB_OnMiscNextObject( wxCommandEvent& event ){ OnMiscNextObject( event ); }
-			void _wxFB_OnMiscPreviousObject( wxCommandEvent& event ){ OnMiscPreviousObject( event ); }
-			void _wxFB_OnMiscAdjustGrid( wxCommandEvent& event ){ OnMiscAdjustGrid( event ); }
-			void _wxFB_OnMiscNextSubsystem( wxCommandEvent& event ){ OnMiscNextSubsystem( event ); }
-			void _wxFB_OnMiscPrevSubsystem( wxCommandEvent& event ){ OnMiscPrevSubsystem( event ); }
-			void _wxFB_OnMiscCancelSubsystem( wxCommandEvent& event ){ OnMiscCancelSubsystem( event ); }
-			void _wxFB_OnMiscMissionStatistics( wxCommandEvent& event ){ OnMiscMissionStatistics( event ); }
-			void _wxFB_OnMiscErrorChecker( wxCommandEvent& event ){ OnMiscErrorChecker( event ); }
-			void _wxFB_OnHelpHelpTopics( wxCommandEvent& event ){ OnHelpHelpTopics( event ); }
-			void _wxFB_OnHelpShowSexpHelp( wxCommandEvent& event ){ OnHelpShowSexpHelp( event ); }
-			void _wxFB_OnHelpAbout( wxCommandEvent& event ){ OnHelpAbout( event ); }
-			void _wxFB_OnSelect( wxCommandEvent& event ){ OnSelect( event ); }
-			void _wxFB_OnSelectMove( wxCommandEvent& event ){ OnSelectMove( event ); }
-			void _wxFB_OnSelectRotate( wxCommandEvent& event ){ OnSelectRotate( event ); }
-			void _wxFB_OnRotateLocally( wxCommandEvent& event ){ OnRotateLocally( event ); }
-			void _wxFB_OnConstraintX( wxCommandEvent& event ){ OnConstraintX( event ); }
-			void _wxFB_OnConstraintY( wxCommandEvent& event ){ OnConstraintY( event ); }
-			void _wxFB_OnConstraintZ( wxCommandEvent& event ){ OnConstraintZ( event ); }
-			void _wxFB_OnConstraintXZ( wxCommandEvent& event ){ OnConstraintXZ( event ); }
-			void _wxFB_OnConstraintYZ( wxCommandEvent& event ){ OnConstraintYZ( event ); }
-			void _wxFB_OnConstraintXY( wxCommandEvent& event ){ OnConstraintXY( event ); }
-			void _wxFB_OnSelectionList( wxCommandEvent& event ){ OnSelectionList( event ); }
-			void _wxFB_OnSelectionLock( wxCommandEvent& event ){ OnSelectionLock( event ); }
-			void _wxFB_OnWingForm( wxCommandEvent& event ){ OnWingForm( event ); }
-			void _wxFB_OnWingDisband( wxCommandEvent& event ){ OnWingDisband( event ); }
-			void _wxFB_OnZoomSelected( wxCommandEvent& event ){ OnZoomSelected( event ); }
-			void _wxFB_OnZoomExtents( wxCommandEvent& event ){ OnZoomExtents( event ); }
-			void _wxFB_OnShowDistances( wxCommandEvent& event ){ OnShowDistances( event ); }
-			void _wxFB_OnOrbitSelected( wxCommandEvent& event ){ OnOrbitSelected( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_frmFRED = 1000,
-				ID_mnuFileNew,
-				ID_mnuFileOpen,
-				ID_mnuFileSave,
-				ID_mnuFileSaveAs,
-				ID_mnuFileRevert,
-				ID_mnuFileSaveFormatFs2Open,
-				ID_mnuFileSaveFormatFs2Retail,
-				ID_mnuFileImportFs1Mission,
-				ID_mnuFileImportWeaponLoadouts,
-				ID_mnuFileRunFreespace,
-				ID_mnuFileRecentFiles,
-				ID_mnuFileExit,
-				ID_mnuEditUndo,
-				ID_mnuEditDelete,
-				ID_mnuEditDeleteWing,
-				ID_mnuEditDisableUndo,
-				ID_mnuViewToolbar,
-				ID_mnuViewStatusBar,
-				ID_mnuViewDispayFilterShowShips,
-				ID_mnuViewDisplayFilterShowPlayerStarts,
-				ID_mnuViewDisplayFilterShowWaypoints,
-				ID_mnuViewDisplayFilterShowFriendly,
-				ID_mnuViewDisplayFilterShowHostile,
-				ID_mnuViewHideMarkedObjects,
-				ID_mnuViewShowHiddenObjects,
-				ID_mnuViewShowShipModels,
-				ID_mnuViewShowOutlines,
-				ID_mnuViewShowShipInfo,
-				ID_mnuViewShowCoordinates,
-				ID_mnuViewShowGridPositions,
-				ID_ViewShowDistances,
-				ID_mnuViewShowModelPaths,
-				ID_mnuViewShowModelDockPoints,
-				ID_mnuViewShowGrid,
-				ID_mnuViewShowHorizon,
-				ID_mnuViewDoubleFineGridlines,
-				ID_mnuViewAntiAliasedGridlines,
-				ID_mnuViewShow3DCompass,
-				ID_mnuViewShowBackground,
-				ID_ViewViewpointCamera,
-				ID_mnuViewViewpointCurrentShip,
-				ID_mnuViewSaveCameraPos,
-				ID_mnuViewRestoreCameraPos,
-				ID_mnuViewLightingFromSuns,
-				ID_mnuSpeedMovementX1,
-				ID_mnuSpeedMovementX2,
-				ID_mnuSpeedMovementX3,
-				ID_mnuSpeedMovementX5,
-				ID_mnuSpeedMovementX8,
-				ID_mnuSpeedMovementX10,
-				ID_mnuSpeedMovementX50,
-				ID_mnuSpeedMovementX100,
-				ID_mnuSpeedRotationX1,
-				ID_mnuSpeedRotationX5,
-				ID_mnuSpeedRotationX12,
-				ID_mnuSpeedRotationX25,
-				ID_mnuSpeedRotationX50,
-				ID_mnuEditorsShips,
-				ID_mnuEditorsWings,
-				ID_mnuEditorsObjects,
-				ID_mnuEditorsWaypointPaths,
-				ID_mnuEditorsMissionObjectives,
-				ID_mnuEditorsEvents,
-				ID_mnuEditorsTeamLoadout,
-				ID_mnuEditorsBackground,
-				ID_mnuEditorsReinforcements,
-				ID_mnuEditorsAsteroidField,
-				ID_mnuEditorsMissionSpecs,
-				ID_mnuEditorsBriefing,
-				ID_mnuEditorsDebriefing,
-				ID_mnuEditorsCommandBriefing,
-				ID_mnuEditorsFictionViewer,
-				ID_mnuEditorsShieldSystem,
-				ID_mnuEditorsSetGlobalShipFlags,
-				ID_mnuEditorsVoiceActingManager,
-				ID_mnuEditorsCampaign,
-				ID_mnuGroupsGroup1,
-				ID_mnuGroupsGroup2,
-				ID_mnuGroupsGroup3,
-				ID_mnuGroupsGroup4,
-				ID_mnuGroupsGroup5,
-				ID_mnuGroupsGroup6,
-				ID_mnuGroupsGroup7,
-				ID_mnuGroupsGroup8,
-				ID_mnuGroupsGroup9,
-				ID_mnuGroupsSetGroupGroup1,
-				ID_mnuGroupsSetGroupGroup2,
-				ID_mnuGroupsSetGroupGroup3,
-				ID_mnuGroupsSetGroupGroup4,
-				ID_mnuGroupsSetGroupGroup5,
-				ID_mnuGroupsSetGroupGroup6,
-				ID_mnuGroupsSetGroupGroup7,
-				ID_mnuGroupsSetGroupGroup8,
-				ID_mnuGroupsSetGroupGroup9,
-				ID_mnuMiscLevelObject,
-				ID_mnuMiscAlignObject,
-				ID_mnuMiscMarkWing,
-				ID_mnuMiscControlObject,
-				ID_mnuMiscNextObject,
-				ID_mnuMiscPreviousObject,
-				ID_mnuMiscAdjustGrid,
-				ID_mnuMiscNextSubsystem,
-				ID_mnuMiscPrevSubsystem,
-				ID_mnuMiscCancelSubsystem,
-				ID_mnuMiscMissionStatistics,
-				ID_mnuMiscErrorChecker,
-				ID_mnuHelpHelpTopics,
-				ID_mnuHelpShowSexpHelp,
-				ID_mnuHelpAbout,
-				ID_optSelect,
-				ID_optSelectMove,
-				ID_optSelectRotate,
-				ID_chkRotateLocally,
-				ID_optConstraintX,
-				ID_optConstraintY,
-				ID_optConstraintZ,
-				ID_optConstraintXZ,
-				ID_optConstraintYZ,
-				ID_optConstraintXY,
-				ID_btnSelectionList,
-				ID_chkSelectionLock,
-				ID_btnWingForm,
-				ID_btnZoomSelected,
-				ID_btnZoomExtents,
-				ID_chkShowDistances,
-				ID_chkOrbitSelected
-			};
-			
 			wxMenuBar* mbrFRED;
 			wxMenu* mnuFile;
 			wxMenu* mnuFileSaveFormat;
@@ -312,114 +77,28 @@ namespace fredBase
 			wxMenu* mnuMisc;
 			wxMenu* mnuHelp;
 			wxToolBar* tbrFRED;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			virtual void OnFileNew( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileOpen( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileSave( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileSaveAs( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileRevert( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileSaveFormatFs2Open( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileSaveFormatFs2Retail( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileImportFs1Mission( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileImportWeaponLoadouts( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileRunFreespace( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileRecentFiles( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnFileExit( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditUndo( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditDelete( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditDeleteWing( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditDisableUndo( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewToolbar( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewStatusBar( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewDisplayFilterShowShips( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewDisplayFilterShowPlayerStarts( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewDisplayFilterShowWaypoints( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewDisplayFilterShowFriendly( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewDisplayFilterShowHostile( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewHideMarkedObjects( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowHiddenObjects( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowShipModels( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowOutlines( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowShipInfo( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowCoordinates( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowGridPositions( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowDistances( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowModelPaths( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowModelDockPoints( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowGrid( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowHorizon( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewDoubleFineGridlines( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewAntiAliasedGridlines( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShow3DCompass( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewShowBackground( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewViewpointCamera( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewViewpointCurrentShip( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewSaveCameraPos( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewRestoreCameraPos( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnViewLightingFromSuns( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnSpeedMovement( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnSpeedRotation( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsShips( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsWings( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsObjects( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsWaypointPaths( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsMissionObjectives( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsEvents( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsTeamLoadout( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsBackground( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsReinforcements( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsAsteroidField( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsMissionSpecs( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsBriefing( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsDebriefing( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsCommandBriefing( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsFictionViewer( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsShieldSystem( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsSetGlobalShipFlags( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsVoiceActingManager( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnEditorsCampaign( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnGroupsGroup( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnGroupsSetGroup( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscLevelObject( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscAlignObject( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscMarkWing( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscControlObject( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscNextObject( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscPreviousObject( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscAdjustGrid( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscNextSubsystem( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscPrevSubsystem( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscCancelSubsystem( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscMissionStatistics( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnMiscErrorChecker( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnHelpHelpTopics( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnHelpShowSexpHelp( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnHelpAbout( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnSelect( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnSelectMove( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnSelectRotate( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnRotateLocally( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnConstraintX( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnConstraintY( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnConstraintZ( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnConstraintXZ( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnConstraintYZ( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnConstraintXY( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnSelectionList( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnSelectionLock( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnWingForm( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnWingDisband( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnZoomSelected( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnZoomExtents( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnShowDistances( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnOrbitSelected( wxCommandEvent& event ) { event.Skip(); }
-			
+			wxToolBarToolBase* optSelect; 
+			wxToolBarToolBase* optSelectMove; 
+			wxToolBarToolBase* optSelectRotate; 
+			wxToolBarToolBase* chkRotateLocally; 
+			wxToolBarToolBase* optConstraintX; 
+			wxToolBarToolBase* optConstraintY; 
+			wxToolBarToolBase* optConstraintZ; 
+			wxToolBarToolBase* optConstraintXZ; 
+			wxToolBarToolBase* optConstraintYZ; 
+			wxToolBarToolBase* optConstraintXY; 
+			wxToolBarToolBase* btnSelectionList; 
+			wxToolBarToolBase* chkSelectionLock; 
+			wxToolBarToolBase* btnWingForm; 
+			wxToolBarToolBase* btnWingDisband; 
+			wxToolBarToolBase* btnZoomSelected; 
+			wxToolBarToolBase* btnZoomExtents; 
+			wxToolBarToolBase* chkShowDistances; 
+			wxToolBarToolBase* chkOrbitSelected; 
 		
 		public:
 			
-			frmFRED( wxWindow* parent, wxWindowID id = ID_frmFRED, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,300 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+			frmFRED( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,300 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 			
 			~frmFRED();
 		
@@ -430,19 +109,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class frmShipsEditor : public wxFrame 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_frmShipsEditor = 1000
-			};
-			
 			wxMenuBar* mbrShipsEditor;
 			wxMenu* selectShip;
 			wxStaticText* lblShipName;
@@ -510,14 +179,10 @@ namespace fredBase
 			wxStaticText* lblDepartureCue;
 			wxTreeCtrl* tctDepartureCues;
 			wxCheckBox* chkNoDepartureWarp;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			frmShipsEditor( wxWindow* parent, wxWindowID id = ID_frmShipsEditor, const wxString& title = wxT("Edit Ship"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxFRAME_NO_TASKBAR|wxSYSTEM_MENU|wxTAB_TRAVERSAL );
+			frmShipsEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Edit Ship"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxCAPTION|wxCLOSE_BOX|wxFRAME_NO_TASKBAR|wxSYSTEM_MENU|wxTAB_TRAVERSAL );
 			
 			~frmShipsEditor();
 		
@@ -528,21 +193,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class frmWingEditor : public wxFrame 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_frmWingEditor = 1000,
-				ID_btnInitialOrders,
-				ID_btnHideCues
-			};
-			
 			wxPanel* pnlProperties;
 			wxStaticText* lblWingName;
 			wxTextCtrl* txtWingName;
@@ -598,14 +251,10 @@ namespace fredBase
 			wxCheckBox* chkNoDepartureWarp;
 			wxMenuBar* mbrWingEditor;
 			wxMenu* mnuSelectWing;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			frmWingEditor( wxWindow* parent, wxWindowID id = ID_frmWingEditor, const wxString& title = wxT("Wing Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxSYSTEM_MENU|wxTAB_TRAVERSAL );
+			frmWingEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Wing Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxCAPTION|wxCLOSE_BOX|wxSYSTEM_MENU|wxTAB_TRAVERSAL );
 			
 			~frmWingEditor();
 		
@@ -616,23 +265,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgObjectEditor : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			void _wxFB_OnFace( wxCommandEvent& event ){ OnFace( event ); }
-			void _wxFB_OnOrientationOpt( wxCommandEvent& event ){ OnOrientationOpt( event ); }
-			void _wxFB_OnCancel( wxCommandEvent& event ){ OnCancel( event ); }
-			void _wxFB_OnOK( wxCommandEvent& event ){ OnOK( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgObjectEditor = 1000
-			};
-			
 			wxStaticText* m_staticText217;
 			wxSpinCtrl* spnPositionX;
 			wxStaticText* m_staticText218;
@@ -657,21 +292,13 @@ namespace fredBase
 			wxSpinCtrl* spnBank;
 			wxStaticText* lblHeading;
 			wxSpinCtrl* spnHeading;
-			wxStdDialogButtonSizer* sdbObjectEditor;
-			wxButton* sdbObjectEditorOK;
-			wxButton* sdbObjectEditorCancel;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			virtual void OnFace( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnOrientationOpt( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnCancel( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnOK( wxCommandEvent& event ) { event.Skip(); }
-			
+			wxStdDialogButtonSizer* m_sdbSizer6;
+			wxButton* m_sdbSizer6OK;
+			wxButton* m_sdbSizer6Cancel;
 		
 		public:
 			
-			dlgObjectEditor( wxWindow* parent, wxWindowID id = ID_dlgObjectEditor, const wxString& title = wxT("Object Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE ); 
+			dlgObjectEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Object Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE ); 
 			~dlgObjectEditor();
 		
 	};
@@ -681,31 +308,17 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class frmWaypointEditor : public wxFrame 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_frmWaypointEditor = 1000
-			};
-			
 			wxMenuBar* menuWaypoint;
 			wxMenu* menuPaths;
 			wxStaticText* lblWaypointName;
 			wxTextCtrl* txtWaypointName;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			frmWaypointEditor( wxWindow* parent, wxWindowID id = ID_frmWaypointEditor, const wxString& title = wxT("Waypoint Path/Jump Node"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 300,80 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+			frmWaypointEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Waypoint Path/Jump Node"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 300,80 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 			
 			~frmWaypointEditor();
 		
@@ -716,19 +329,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgMissionObjectivesEditor : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgMissionsObjectivesEditor = 1000
-			};
-			
 			wxTreeCtrl* tctObjectives;
 			wxStaticText* m_staticText117;
 			wxChoice* m_choice27;
@@ -743,18 +346,14 @@ namespace fredBase
 			wxStaticText* lblObjTeam;
 			wxChoice* cboObjTeam;
 			wxCheckBox* cboCurrObjInvalid;
-			wxCheckBox* cboCurrObjNoCompletionMusic;
+			wxCheckBox* cboCurrObjNoCompletionSound;
 			wxButton* btnNewObjective;
 			wxButton* btnConfirm;
 			wxButton* btnCancel;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgMissionObjectivesEditor( wxWindow* parent, wxWindowID id = ID_dlgMissionsObjectivesEditor, const wxString& title = wxT("Mission Objectives"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE ); 
+			dlgMissionObjectivesEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Mission Objectives"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE ); 
 			~dlgMissionObjectivesEditor();
 		
 	};
@@ -764,19 +363,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgEventsEditor : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgEventsEditor = 1000
-			};
-			
 			wxPanel* pnlEvents;
 			wxTreeCtrl* trbSexp;
 			wxButton* btnNewEvent;
@@ -829,17 +418,13 @@ namespace fredBase
 			wxStaticText* lblMessageTeam;
 			wxChoice* cboTeamMessage;
 			wxStaticText* m_staticText139;
-			wxStdDialogButtonSizer* m_sdbSizer6;
-			wxButton* m_sdbSizer6OK;
-			wxButton* m_sdbSizer6Cancel;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
+			wxStdDialogButtonSizer* m_sdbSizer7;
+			wxButton* m_sdbSizer7OK;
+			wxButton* m_sdbSizer7Cancel;
 		
 		public:
 			
-			dlgEventsEditor( wxWindow* parent, wxWindowID id = ID_dlgEventsEditor, const wxString& title = wxT("Events Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxMINIMIZE_BOX ); 
+			dlgEventsEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Events Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE|wxMINIMIZE_BOX ); 
 			~dlgEventsEditor();
 		
 	};
@@ -849,26 +434,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class frmTeamLoadoutEditor : public wxFrame 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			void _wxFB_OnCancel( wxCommandEvent& event ){ OnCancel( event ); }
-			void _wxFB_OnOK( wxCommandEvent& event ){ OnOK( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_frmTeamLoadoutEditor = 1000,
-				ID_mnuTeam1,
-				ID_mnuTeam2,
-				ID_lbxStartShipsVariable,
-				ID_cboSetShipAmountFromVariable,
-				ID_StartWeaponsVariable
-			};
-			
 			wxMenuBar* mnbDialogMenu;
 			wxMenu* mnuSelectTeam;
 			wxMenu* m_menu16;
@@ -895,19 +463,13 @@ namespace fredBase
 			wxChoice* cboSetWeaponAmountFromVariable;
 			wxStaticText* lblAmountOfWeaponsInWings;
 			wxTextCtrl* txtAmountOfWeaponsInWings;
-			wxStdDialogButtonSizer* sdbDialogButtons;
-			wxButton* sdbDialogButtonsOK;
-			wxButton* sdbDialogButtonsCancel;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			virtual void OnCancel( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnOK( wxCommandEvent& event ) { event.Skip(); }
-			
+			wxStdDialogButtonSizer* m_sdbSizer8;
+			wxButton* m_sdbSizer8OK;
+			wxButton* m_sdbSizer8Cancel;
 		
 		public:
 			
-			frmTeamLoadoutEditor( wxWindow* parent, wxWindowID id = ID_frmTeamLoadoutEditor, const wxString& title = wxT("Team Loadout Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,500 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+			frmTeamLoadoutEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Team Loadout Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,500 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 			
 			~frmTeamLoadoutEditor();
 		
@@ -918,19 +480,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgBackgroundEditor : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_BackgroundEditor = 1000
-			};
-			
 			wxChoice* cboBackgroundPreset;
 			wxButton* btnImportBackground;
 			wxListCtrl* lclBGBitmaps;
@@ -1020,14 +572,10 @@ namespace fredBase
 			wxCheckBox* m_checkBox48;
 			wxButton* btnEnvMap;
 			wxTextCtrl* txtEnvMap;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgBackgroundEditor( wxWindow* parent, wxWindowID id = ID_BackgroundEditor, const wxString& title = wxT("Background Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE ); 
+			dlgBackgroundEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Background Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE ); 
 			~dlgBackgroundEditor();
 		
 	};
@@ -1037,19 +585,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgReinforcementsEditor : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_ReinforcementsEditor = 1000
-			};
-			
 			wxStaticText* lblReinforcements;
 			wxListBox* lstReinforcements;
 			wxButton* btnAdd;
@@ -1061,14 +599,10 @@ namespace fredBase
 			wxSpinCtrl* spnUses;
 			wxStaticText* lblDelayAfterArrival;
 			wxSpinCtrl* spnDelayAfterArrival;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgReinforcementsEditor( wxWindow* parent, wxWindowID id = ID_ReinforcementsEditor, const wxString& title = wxT("Reinforcements Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE ); 
+			dlgReinforcementsEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Reinforcements Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE ); 
 			~dlgReinforcementsEditor();
 		
 	};
@@ -1081,18 +615,13 @@ namespace fredBase
 		private:
 		
 		protected:
-			enum
-			{
-				ID_ReinforcementsPicker = 1000
-			};
-			
 			wxListCtrl* lstReincforcements;
 			wxButton* btnOK;
 			wxButton* btnCancel;
 		
 		public:
 			
-			dlgReinforcementsPicker( wxWindow* parent, wxWindowID id = ID_ReinforcementsPicker, const wxString& title = wxT("Select Reinforcement Unit"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE ); 
+			dlgReinforcementsPicker( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Select Reinforcement Unit"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE ); 
 			~dlgReinforcementsPicker();
 		
 	};
@@ -1102,19 +631,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgAsteroidFieldEditor : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgAsteroidFieldEditor = 1000
-			};
-			
 			wxCheckBox* chkAsteroidsEnabled;
 			wxPanel* pFieldProperties;
 			wxRadioButton* optFieldActive;
@@ -1156,17 +675,13 @@ namespace fredBase
 			wxStaticText* lblInnerZ;
 			wxTextCtrl* numInnerBoxMinZ;
 			wxTextCtrl* numInnerBoxMaxZ;
-			wxStdDialogButtonSizer* grpButtons;
-			wxButton* grpButtonsOK;
-			wxButton* grpButtonsCancel;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
+			wxStdDialogButtonSizer* m_sdbSizer9;
+			wxButton* m_sdbSizer9OK;
+			wxButton* m_sdbSizer9Cancel;
 		
 		public:
 			
-			dlgAsteroidFieldEditor( wxWindow* parent, wxWindowID id = ID_dlgAsteroidFieldEditor, const wxString& title = wxT("Asteroid Field Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxRESIZE_BORDER ); 
+			dlgAsteroidFieldEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Asteroid Field Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxCAPTION|wxCLOSE_BOX|wxRESIZE_BORDER ); 
 			~dlgAsteroidFieldEditor();
 		
 	};
@@ -1176,19 +691,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgMissionSpecsEditor : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgMissionSpecsEditor = 1000
-			};
-			
 			wxStaticText* lblTitle;
 			wxTextCtrl* txtTitle;
 			wxStaticText* lblDesigner;
@@ -1248,14 +753,10 @@ namespace fredBase
 			wxTextCtrl* txtMissionDescription;
 			wxStaticText* lblDesignerNotes;
 			wxTextCtrl* txtDesignerNotes;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgMissionSpecsEditor( wxWindow* parent, wxWindowID id = ID_dlgMissionSpecsEditor, const wxString& title = wxT("Mission Specs"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,590 ), long style = wxCAPTION|wxCLOSE_BOX|wxSYSTEM_MENU ); 
+			dlgMissionSpecsEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Mission Specs"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,590 ), long style = wxCAPTION|wxCLOSE_BOX|wxSYSTEM_MENU ); 
 			~dlgMissionSpecsEditor();
 		
 	};
@@ -1265,20 +766,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgSoundEnvironment : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnOK( wxCommandEvent& event ){ OnOK( event ); }
-			void _wxFB_OnCancel( wxCommandEvent& event ){ OnCancel( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgSoundEnvironment = 1000
-			};
-			
 			wxStaticText* lblEnvironment;
 			wxComboBox* cboEnvironment;
 			wxStaticText* lblVolume;
@@ -1292,15 +782,10 @@ namespace fredBase
 			wxButton* btnCancel;
 			wxBitmapButton* m_bpButton7;
 			wxFilePickerCtrl* m_filePicker2;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnOK( wxCommandEvent& event ) { event.Skip(); }
-			virtual void OnCancel( wxCommandEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgSoundEnvironment( wxWindow* parent, wxWindowID id = ID_dlgSoundEnvironment, const wxString& title = wxT("Sound Environment"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE ); 
+			dlgSoundEnvironment( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Sound Environment"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE ); 
 			~dlgSoundEnvironment();
 		
 	};
@@ -1310,19 +795,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class frmBriefingEditor : public wxFrame 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_frmBriefingEditor = 1000
-			};
-			
 			wxMenuBar* m_menubar8;
 			wxMenu* mnuSelectTeam;
 			wxMenu* mnuOptions;
@@ -1374,14 +849,10 @@ namespace fredBase
 			wxButton* btnPropagate;
 			wxStaticText* lblIconText;
 			wxTextCtrl* txtIconText;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			frmBriefingEditor( wxWindow* parent, wxWindowID id = ID_frmBriefingEditor, const wxString& title = wxT("Briefing Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+			frmBriefingEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Briefing Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 			
 			~frmBriefingEditor();
 		
@@ -1392,19 +863,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class frmDebriefingEditor : public wxFrame 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_frmDebriefingEditor = 1000
-			};
-			
 			wxPanel* pnlMain;
 			wxStaticText* txtStages;
 			wxButton* btnPrev;
@@ -1435,14 +896,10 @@ namespace fredBase
 			wxMenuBar* mnbDebriefingEditor;
 			wxMenu* mnuSelectTeam;
 			wxMenu* mnuOptions;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			frmDebriefingEditor( wxWindow* parent, wxWindowID id = ID_frmDebriefingEditor, const wxString& title = wxT("Debriefing Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+			frmDebriefingEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Debriefing Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 			
 			~frmDebriefingEditor();
 		
@@ -1453,21 +910,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class frmCommandBriefingEditor : public wxFrame 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_frmCommandBriefingEditor = 1000,
-				ID_btnOK,
-				ID_btnCancel
-			};
-			
 			wxMenuBar* m_menubar6;
 			wxMenu* mnuSelectTeam;
 			wxMenu* mnuOptions;
@@ -1487,14 +932,10 @@ namespace fredBase
 			wxStaticText* lblVoiceWaveFile;
 			wxFilePickerCtrl* fpVoiceWave;
 			wxBitmapButton* btnVoicePlay;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			frmCommandBriefingEditor( wxWindow* parent, wxWindowID id = ID_frmCommandBriefingEditor, const wxString& title = wxT("Command Briefing Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+			frmCommandBriefingEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Command Briefing Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 			
 			~frmCommandBriefingEditor();
 		
@@ -1505,20 +946,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgFictionViewer : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgFictionViewerEditor = 1000,
-				ID_btnCancel
-			};
-			
 			wxStaticText* lblStoryFile;
 			wxFilePickerCtrl* fpStoryFile;
 			wxStaticText* lblFontFile;
@@ -1528,14 +958,10 @@ namespace fredBase
 			wxBitmapButton* btnPlayMusic;
 			wxButton* btnOK;
 			wxButton* btnCancel;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgFictionViewer( wxWindow* parent, wxWindowID id = ID_dlgFictionViewerEditor, const wxString& title = wxT("Fiction Viewer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE ); 
+			dlgFictionViewer( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Fiction Viewer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE ); 
 			~dlgFictionViewer();
 		
 	};
@@ -1545,36 +971,22 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgShieldSystemEditor : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgShieldSystemEditor = 1000
-			};
-			
 			wxChoice* cboShipType;
 			wxRadioButton* optShipTypeHasShieldSystem;
 			wxRadioButton* optShipTypeNoShieldSystem;
 			wxChoice* cboShipTeam;
 			wxRadioButton* optShipTeamHasShieldSystem;
 			wxRadioButton* optShipTeamNoShieldSystem;
-			wxStdDialogButtonSizer* dlgShieldConfirm;
-			wxButton* dlgShieldConfirmOK;
-			wxButton* dlgShieldConfirmCancel;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
+			wxStdDialogButtonSizer* m_sdbSizer10;
+			wxButton* m_sdbSizer10OK;
+			wxButton* m_sdbSizer10Cancel;
 		
 		public:
 			
-			dlgShieldSystemEditor( wxWindow* parent, wxWindowID id = ID_dlgShieldSystemEditor, const wxString& title = wxT("Shield System Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 350,153 ), long style = wxDEFAULT_DIALOG_STYLE ); 
+			dlgShieldSystemEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Shield System Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 350,153 ), long style = wxDEFAULT_DIALOG_STYLE ); 
 			~dlgShieldSystemEditor();
 		
 	};
@@ -1584,31 +996,17 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgSetGlobalShipFlagsEditor : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgSetGlobalShipFlagsEditor = 1000
-			};
-			
 			wxButton* btnGlobalNoShields;
 			wxButton* btnGlobalNoSubspaceDrive;
 			wxButton* btnGlobalPrimitiveSensors;
 			wxButton* btnGlobalAffectedByGravity;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgSetGlobalShipFlagsEditor( wxWindow* parent, wxWindowID id = ID_dlgSetGlobalShipFlagsEditor, const wxString& title = wxT("Set Global Ship Flags"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 206,162 ), long style = wxCAPTION|wxCLOSE_BOX|wxSTAY_ON_TOP|wxSYSTEM_MENU ); 
+			dlgSetGlobalShipFlagsEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Set Global Ship Flags"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 206,162 ), long style = wxCAPTION|wxCLOSE_BOX|wxSTAY_ON_TOP|wxSYSTEM_MENU ); 
 			~dlgSetGlobalShipFlagsEditor();
 		
 	};
@@ -1618,19 +1016,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgVoiceActingManager : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgVoiceActingManager = 1000
-			};
-			
 			wxStaticText* lblCampaign;
 			wxTextCtrl* txtAbbrevCampaign;
 			wxStaticText* lblMission;
@@ -1658,14 +1046,10 @@ namespace fredBase
 			wxRadioButton* optJustMessages;
 			wxCheckBox* chkGroupMessageList;
 			wxButton* btnGenerateScript;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgVoiceActingManager( wxWindow* parent, wxWindowID id = ID_dlgVoiceActingManager, const wxString& title = wxT("Voice Acting Manager"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxSTAY_ON_TOP|wxSYSTEM_MENU ); 
+			dlgVoiceActingManager( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Voice Acting Manager"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxCAPTION|wxCLOSE_BOX|wxSTAY_ON_TOP|wxSYSTEM_MENU ); 
 			~dlgVoiceActingManager();
 		
 	};
@@ -1675,28 +1059,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class frmCampaignEditor : public wxFrame 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_frmCampaignEditor = 1000,
-				ID_lstAvailableMissions,
-				ID_NEW,
-				ID_OPEN,
-				ID_SAVE,
-				ID_SAVE_AS,
-				ID_EXIT,
-				ID_ERROR_CHECKER,
-				ID_SHIPS,
-				ID_WEAPONS
-			};
-			
 			wxSplitterWindow* m_splitter1;
 			wxScrolledWindow* pnlCampaign;
 			wxStaticText* lblAvailableMissions;
@@ -1735,14 +1100,10 @@ namespace fredBase
 			wxMenu* mnuFile;
 			wxMenu* other;
 			wxMenu* initialStatus;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			frmCampaignEditor( wxWindow* parent, wxWindowID id = ID_frmCampaignEditor, const wxString& title = wxT("Campaign Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 862,705 ), long style = wxDEFAULT_FRAME_STYLE|wxFRAME_FLOAT_ON_PARENT|wxTAB_TRAVERSAL );
+			frmCampaignEditor( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Campaign Editor"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 862,705 ), long style = wxDEFAULT_FRAME_STYLE|wxFRAME_FLOAT_ON_PARENT|wxTAB_TRAVERSAL );
 			
 			~frmCampaignEditor();
 			
@@ -1759,30 +1120,16 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgMissionStats : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgMissionStats = 1000
-			};
-			
 			wxTextCtrl* txtMissionStats;
 			wxButton* btnDumpToFile;
 			wxButton* btnCancel;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgMissionStats( wxWindow* parent, wxWindowID id = ID_dlgMissionStats, const wxString& title = wxT("Mission Statistics"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 400,300 ), long style = wxDEFAULT_DIALOG_STYLE ); 
+			dlgMissionStats( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Mission Statistics"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 400,300 ), long style = wxDEFAULT_DIALOG_STYLE ); 
 			~dlgMissionStats();
 		
 	};
@@ -1792,19 +1139,9 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgAboutBox : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgAboutBox = 1000
-			};
-			
 			wxStaticBitmap* bmpLogo;
 			wxStaticText* lblAppTitle;
 			wxStaticText* lblCopywrite;
@@ -1813,14 +1150,10 @@ namespace fredBase
 			wxButton* btnOK;
 			wxButton* btnReportBug;
 			wxButton* btnVisitForums;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgAboutBox( wxWindow* parent, wxWindowID id = ID_dlgAboutBox, const wxString& title = wxT("About FRED2"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxSTAY_ON_TOP|wxSYSTEM_MENU ); 
+			dlgAboutBox( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("About FRED2"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxCAPTION|wxCLOSE_BOX|wxSTAY_ON_TOP|wxSYSTEM_MENU ); 
 			~dlgAboutBox();
 		
 	};
@@ -1830,32 +1163,18 @@ namespace fredBase
 	///////////////////////////////////////////////////////////////////////////////
 	class dlgSexpHelp : public wxDialog 
 	{
-		DECLARE_EVENT_TABLE()
 		private:
-			
-			// Private event handlers
-			void _wxFB_OnClose( wxCloseEvent& event ){ OnClose( event ); }
-			
 		
 		protected:
-			enum
-			{
-				ID_dlgSexpHelp = 1000
-			};
-			
 			wxPanel* pnlSexpHelp;
 			wxStaticText* lblArgInfo;
 			wxTextCtrl* txtArgInfo;
 			wxStaticText* lblSexpInfo;
 			wxTextCtrl* txtSexpInfo;
-			
-			// Virtual event handlers, overide them in your derived class
-			virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-			
 		
 		public:
 			
-			dlgSexpHelp( wxWindow* parent, wxWindowID id = ID_dlgSexpHelp, const wxString& title = wxT("Sexp Help"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 406,347 ), long style = wxCAPTION|wxCLOSE_BOX|wxMAXIMIZE_BOX|wxMINIMIZE_BOX|wxRESIZE_BORDER|wxSYSTEM_MENU ); 
+			dlgSexpHelp( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Sexp Help"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 406,347 ), long style = wxCAPTION|wxCLOSE_BOX|wxMAXIMIZE_BOX|wxMINIMIZE_BOX|wxRESIZE_BORDER|wxSYSTEM_MENU ); 
 			~dlgSexpHelp();
 		
 	};
@@ -1868,11 +1187,6 @@ namespace fredBase
 		private:
 		
 		protected:
-			enum
-			{
-				ID_pnlSexpHelp = 1000
-			};
-			
 			wxStaticText* lblArgInfo;
 			wxTextCtrl* txtArgInfo;
 			wxStaticText* lblSexpInfo;
@@ -1880,7 +1194,7 @@ namespace fredBase
 		
 		public:
 			
-			pnlSexpHelp( wxWindow* parent, wxWindowID id = ID_pnlSexpHelp, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxTAB_TRAVERSAL ); 
+			pnlSexpHelp( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxTAB_TRAVERSAL ); 
 			~pnlSexpHelp();
 		
 	};
