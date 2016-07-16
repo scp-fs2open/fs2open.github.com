@@ -283,67 +283,11 @@ bool CJumpNode::IsSpecialModel()
 }
 
 /**
- * Render jump node
- *
- * @param pos		World position
- * @param view_pos	Viewer's world position, can be NULL
- */
-void CJumpNode::RenderDEPRECATED(vec3d *pos, vec3d *view_pos)
-{
-	Assert(pos != NULL);
-    // Assert(view_pos != NULL); - view_pos can be NULL
-	
-	if(m_flags & JN_HIDE)
-		return;
-	
-	if(m_modelnum < 0)
-		return;
-	
-	matrix node_orient = IDENTITY_MATRIX;
-	
-	int mr_flags = MR_NO_LIGHTING;
-	if(!(m_flags & JN_SHOW_POLYS)) {
-		mr_flags |= MR_NO_CULL | MR_NO_POLYS | MR_SHOW_OUTLINE_PRESET;
-	}
-	
-	if ( Fred_running ) {
-		gr_set_color_fast(&m_display_color);		
-		model_render_DEPRECATED(m_modelnum, &node_orient, pos, mr_flags );
-	} else {
-		if (m_flags & JN_USE_DISPLAY_COLOR) {
-			gr_set_color_fast(&m_display_color);
-		}
-		else if ( view_pos != NULL) {
-			int alpha_index = HUD_color_alpha;
-			
-			// generate alpha index based on distance to jump this
-			float dist;
-			
-			dist = vm_vec_dist_quick(view_pos, pos);
-			
-			// linearly interpolate alpha.  At 1000m or less, full intensity.  At 10000m or more 1/2 intensity.
-			if ( dist < 1000 ) {
-				alpha_index = HUD_COLOR_ALPHA_USER_MAX - 2;
-			} else if ( dist > 10000 ) {
-				alpha_index = HUD_COLOR_ALPHA_USER_MIN;
-			} else {
-				alpha_index = fl2i( HUD_COLOR_ALPHA_USER_MAX - 2 + (dist-1000) * (HUD_COLOR_ALPHA_USER_MIN-HUD_COLOR_ALPHA_USER_MAX-2) / (9000) + 0.5f);
-				if ( alpha_index < HUD_COLOR_ALPHA_USER_MIN ) {
-					alpha_index = HUD_COLOR_ALPHA_USER_MIN;
-				}
-			}
-			
-			gr_set_color_fast(&HUD_color_defaults[alpha_index]);
-			
-		} else {
-			gr_set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
-		}
-		
-		model_render_DEPRECATED(m_modelnum, &node_orient, pos, mr_flags );
-	}
-	
-}
-
+* Render jump node. Creates its own draw list to render
+*
+* @param pos		World position
+* @param view_pos	Viewer's world position, can be NULL
+*/
 void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 {
 	draw_list scene;
@@ -358,6 +302,13 @@ void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 	gr_set_buffer(-1);
 }
 
+/**
+* Render jump node
+*
+* @param scene		A scene's draw list
+* @param pos		World position
+* @param view_pos	Viewer's world position, can be NULL
+*/
 void CJumpNode::Render(draw_list* scene, vec3d *pos, vec3d *view_pos)
 {
 	Assert(pos != NULL);

@@ -1250,7 +1250,7 @@ void message_play_anim( message_q *q )
 	if(!Full_color_head_anis)
 			anim_info->anim_data.use_hud_color = true;
 
-	if ( generic_anim_stream(&anim_info->anim_data) < 0 ) {
+	if ( generic_anim_stream(&anim_info->anim_data, false) < 0 ) {
 		nprintf (("messaging", "Cannot load message avi %s.  Will not play.\n", ani_name));
 		m->avi_info.index = -1;			// if cannot load the avi -- set this index to -1 to avoid trying to load multiple times
 	}

@@ -44,7 +44,6 @@ int Shockwave_inited = 0;
 // Externals
 // -----------------------------------------------------------
 extern int Show_area_effect;
-extern int Cmdline_nohtl;
 extern int Cmdline_enable_3d_shockwave;
 extern bool Cmdline_fb_explosions;
 
@@ -357,84 +356,11 @@ void shockwave_move(object *shockwave_objp, float frametime)
 }
 
 /**
- * Draw the shockwave identified by handle
- *
- * @param objp	pointer to shockwave object
- */
-void shockwave_render_DEPRECATED(object *objp)
-{
-	shockwave		*sw;
-	vertex			p;
-
-	Assert(objp->type == OBJ_SHOCKWAVE);
-	Assert(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES);
-
-    memset(&p, 0, sizeof(p));
-	sw = &Shockwaves[objp->instance];
-
-	if( (sw->delay_stamp != -1) && !timestamp_elapsed(sw->delay_stamp)){
-		return;
-	}
-
-	if ( (sw->current_bitmap < 0) && (sw->model_id < 0) )
-		return;
-
-	// turn off fogging
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
-		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-	}
-
-	if (sw->model_id > -1) {
-		float model_Interp_scale_xyz = sw->radius / 50.0f;
-
-		model_set_warp_globals( model_Interp_scale_xyz, model_Interp_scale_xyz, model_Interp_scale_xyz, -1, 1.0f - (sw->radius/sw->outer_radius) );
-		
-		float dist = vm_vec_dist_quick( &sw->pos, &Eye_position );
-
-		model_set_detail_level((int)(dist / (sw->radius * 10.0f)));
-		model_render_DEPRECATED( sw->model_id, &Objects[sw->objnum].orient, &sw->pos, MR_DEPRECATED_NO_LIGHTING | MR_DEPRECATED_NO_FOGGING | MR_DEPRECATED_NORMAL | MR_DEPRECATED_CENTER_ALPHA | MR_DEPRECATED_NO_CULL, sw->objnum);
-
-		model_set_warp_globals();
-		if(Cmdline_fb_explosions)
-		{
-			g3_transfer_vertex(&p, &sw->pos);
-				
-			distortion_add_bitmap_rotated(
-				Shockwave_info[1].bitmap_id+shockwave_get_framenum(objp->instance, Shockwave_info[1].bitmap_id),
-				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_DISTORTION, 
-				&p, 
-				fl_radians(sw->rot_angles.p), 
-				sw->radius,
-				((sw->time_elapsed/sw->total_time)>0.9f)?(1.0f-(sw->time_elapsed/sw->total_time))*10.0f:1.0f
-			);
-		}
-	}else{
-		if (!Cmdline_nohtl) {
-			g3_transfer_vertex(&p, &sw->pos);
-		} else {
-			g3_rotate_vertex(&p, &sw->pos);
-		}
-		if(Cmdline_fb_explosions)
-		{
-			distortion_add_bitmap_rotated(
-				sw->current_bitmap, 
-				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_DISTORTION, 
-				&p, 
-				fl_radians(sw->rot_angles.p), 
-				sw->radius,
-				((sw->time_elapsed/sw->total_time)>0.9f)?(1.0f-(sw->time_elapsed/sw->total_time))*10.0f:1.0f
-			);
-		}
-		batch_add_bitmap_rotated(
-			sw->current_bitmap, 
-			TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD,
-			&p, 
-			fl_radians(sw->rot_angles.p), 
-			sw->radius
-		);
-	}
-}
-
+* Draw the shockwave identified by handle
+*
+* @param objp	pointer to shockwave object
+* @param scene	the scene's draw list we're adding this to
+*/
 void shockwave_render(object *objp, draw_list *scene)
 {
 	shockwave		*sw;
@@ -481,11 +407,7 @@ void shockwave_render(object *objp, draw_list *scene)
 				);
 		}
 	} else {
-		if (!Cmdline_nohtl) {
-			g3_transfer_vertex(&p, &sw->pos);
-		} else {
-			g3_rotate_vertex(&p, &sw->pos);
-		}
+		g3_transfer_vertex(&p, &sw->pos);
 
 		if ( Cmdline_fb_explosions ) {
 			distortion_add_bitmap_rotated(
@@ -691,22 +613,6 @@ void shockwave_move_all(float frametime)
 		next = sw->next;
 		Assert(sw->objnum != -1);
 		shockwave_move(&Objects[sw->objnum], frametime);
-		sw = next;
-	}
-}
-
-/**
- * Render all shockwaves
- */
-void shockwave_render_all()
-{
-	shockwave	*sw, *next;
-
-	sw = GET_FIRST(&Shockwave_list);
-	while ( sw != &Shockwave_list ) {
-		next = sw->next;
-		Assert(sw->objnum != -1);
-		shockwave_render_DEPRECATED(&Objects[sw->objnum]);
 		sw = next;
 	}
 }

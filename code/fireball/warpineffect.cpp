@@ -61,7 +61,7 @@ void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 		vertlist[2] = *v3;
 	}
 
-	batch_add_tri(texture, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, vertlist, 1.0f);
+	batch_add_tri(texture, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, vertlist, 1.0f);
 }
 
 void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
@@ -112,11 +112,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 			vecs[4] = center;
 			verts[4].texture_position.u = 0.5f; verts[4].texture_position.v = 0.5f; 
 
-			if (Cmdline_nohtl) {
-				g3_rotate_vertex( &verts[4], &vecs[4] );
-			} else {
-				g3_transfer_vertex( &verts[4], &vecs[4] );
-			}
+			g3_transfer_vertex( &verts[4], &vecs[4] );
 
 			float alpha = (The_mission.flags & MISSION_FLAG_FULLNEB) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
 			gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
@@ -177,19 +173,11 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 		verts[4].texture_position.u = 0.5f;
 		verts[4].texture_position.v = 0.5f; 
 
-		if (Cmdline_nohtl) {
-			g3_rotate_vertex( &verts[0], &vecs[0] );
-			g3_rotate_vertex( &verts[1], &vecs[1] );
-			g3_rotate_vertex( &verts[2], &vecs[2] );
-			g3_rotate_vertex( &verts[3], &vecs[3] );
-			g3_rotate_vertex( &verts[4], &vecs[4] );
-		} else {
-			g3_transfer_vertex( &verts[0], &vecs[0] );
-			g3_transfer_vertex( &verts[1], &vecs[1] );
-			g3_transfer_vertex( &verts[2], &vecs[2] );
-			g3_transfer_vertex( &verts[3], &vecs[3] );
-			g3_transfer_vertex( &verts[4], &vecs[4] );
-		}
+		g3_transfer_vertex( &verts[0], &vecs[0] );
+		g3_transfer_vertex( &verts[1], &vecs[1] );
+		g3_transfer_vertex( &verts[2], &vecs[2] );
+		g3_transfer_vertex( &verts[3], &vecs[3] );
+		g3_transfer_vertex( &verts[4], &vecs[4] );
 
 		int cull = gr_set_cull(0); // fixes rendering problem in D3D - taylor
 		draw_face( &verts[0], &verts[4], &verts[1] );
@@ -262,11 +250,7 @@ void warpin_queue_render(draw_list *scene, object *obj, matrix *orient, vec3d *p
 			vecs[4] = center;
 			verts[4].texture_position.u = 0.5f; verts[4].texture_position.v = 0.5f; 
 
-			if (Cmdline_nohtl) {
-				g3_rotate_vertex( &verts[4], &vecs[4] );
-			} else {
-				g3_transfer_vertex( &verts[4], &vecs[4] );
-			}
+			g3_transfer_vertex( &verts[4], &vecs[4] );
 
 			float alpha = (The_mission.flags & MISSION_FLAG_FULLNEB) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
 
@@ -329,19 +313,11 @@ void warpin_queue_render(draw_list *scene, object *obj, matrix *orient, vec3d *p
 		verts[4].texture_position.u = 0.5f;
 		verts[4].texture_position.v = 0.5f; 
 
-		if (Cmdline_nohtl) {
-			g3_rotate_vertex( &verts[0], &vecs[0] );
-			g3_rotate_vertex( &verts[1], &vecs[1] );
-			g3_rotate_vertex( &verts[2], &vecs[2] );
-			g3_rotate_vertex( &verts[3], &vecs[3] );
-			g3_rotate_vertex( &verts[4], &vecs[4] );
-		} else {
-			g3_transfer_vertex( &verts[0], &vecs[0] );
-			g3_transfer_vertex( &verts[1], &vecs[1] );
-			g3_transfer_vertex( &verts[2], &vecs[2] );
-			g3_transfer_vertex( &verts[3], &vecs[3] );
-			g3_transfer_vertex( &verts[4], &vecs[4] );
-		}
+		g3_transfer_vertex( &verts[0], &vecs[0] );
+		g3_transfer_vertex( &verts[1], &vecs[1] );
+		g3_transfer_vertex( &verts[2], &vecs[2] );
+		g3_transfer_vertex( &verts[3], &vecs[3] );
+		g3_transfer_vertex( &verts[4], &vecs[4] );
 
 		warpin_batch_draw_face( texture_bitmap_num, &verts[0], &verts[4], &verts[1] );
 		warpin_batch_draw_face( texture_bitmap_num, &verts[1], &verts[4], &verts[2] );
