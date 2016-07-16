@@ -29,20 +29,15 @@
 #define WSAGetLastError()  (errno)
 #endif
 
+#include "osapi/osapi.h"
 #include "inetfile/cftp.h"
 
 
-#ifdef WIN32
-void FTPObjThread( void * obj )
-#else
 int FTPObjThread( void *obj )
-#endif
 {
 	((CFtpGet *)obj)->WorkerThread();
 
-#ifdef SCP_UNIX
 	return 0;
-#endif
 }
 
 void CFtpGet::AbortGet()
@@ -66,9 +61,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	m_iBytesTotal = 0;
 	m_Aborting = false;
 	m_Aborted = false;
-#ifdef SCP_UNIX
 	thread_id = NULL;
-#endif
 
 	LOCALFILE = fopen(localfile, "wb");
 
@@ -96,7 +89,6 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	m_ListenSock = socket(AF_INET, SOCK_STREAM, 0);
 	if(INVALID_SOCKET == m_ListenSock)
 	{
-		// vint iWinsockErr = WSAGetLastError();
 		m_State = FTP_STATE_SOCKET_ERROR;
 		return;
 	}
@@ -111,7 +103,6 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 		if (bind(m_ListenSock, (SOCKADDR *)&listensockaddr, sizeof(SOCKADDR)))
 		{
 			//Couldn't bind the socket
-			// int iWinsockErr = WSAGetLastError();
 			m_State = FTP_STATE_SOCKET_ERROR;
 			return;
 		}
@@ -120,7 +111,6 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 		if (listen(m_ListenSock, 1))	
 		{
 			//Couldn't listen on the socket
-			// int iWinsockErr = WSAGetLastError();
 			m_State = FTP_STATE_SOCKET_ERROR;
 			return;
 		}
@@ -183,12 +173,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	}
 	//At this point we should have a nice host,dir and filename
 	
-	//if(NULL==CreateThread(NULL,0,ObjThread,this,0,&m_dwThreadId))
-#ifdef WIN32
-	if ( _beginthread(FTPObjThread,0,this) == NULL )
-#else
-	if ( (thread_id = SDL_CreateThread(FTPObjThread, this)) == NULL )
-#endif
+	if ( (thread_id = SDL_CreateThread(FTPObjThread, "FTP", this)) == NULL )
 	{
 		m_State = FTP_STATE_INTERNAL_ERROR;
 		return;
@@ -201,12 +186,10 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 
 CFtpGet::~CFtpGet()
 {
-#ifdef WIN32
-	_endthread();
-#else
 	if (thread_id)
 		SDL_WaitThread(thread_id, NULL);
-#endif
+    
+	fclose(LOCALFILE);
     
 	fclose(LOCALFILE);
 
@@ -265,8 +248,6 @@ void CFtpGet::WorkerThread()
 
 	//We are all done now, and state has the current state.
 	m_Aborted = true;
-	
-
 }
 
 uint CFtpGet::GetFile()
@@ -325,12 +306,11 @@ uint CFtpGet::GetFile()
 	if(m_Aborting)
 		return 0;
 
-	m_DataSock = accept(m_ListenSock, NULL,NULL);//(SOCKADDR *)&sockaddr,&iAddrLength); 
+	m_DataSock = accept(m_ListenSock, NULL,NULL);
 	// Close the listen socket
 	closesocket(m_ListenSock);
 	if (m_DataSock == INVALID_SOCKET)
 	{
-		// int iWinsockErr = WSAGetLastError();
 		m_State = FTP_STATE_SOCKET_ERROR;
 		return 0;
 	}
@@ -360,7 +340,6 @@ uint CFtpGet::IssuePort()
 	iLength = sizeof(listenaddr);
 	if (getsockname(m_ListenSock, (LPSOCKADDR)&listenaddr,&iLength) == SOCKET_ERROR)
 	{
-		// int iWinsockErr = WSAGetLastError();
 		m_State = FTP_STATE_SOCKET_ERROR;
 		return 0;
 	}
@@ -372,7 +351,6 @@ uint CFtpGet::IssuePort()
 	// get the IP address from the control socket.
 	if (getsockname(m_ControlSock, (LPSOCKADDR)&listenaddr,&iLength) == SOCKET_ERROR)
 	{
-		// int iWinsockErr = WSAGetLastError();
 		m_State = FTP_STATE_SOCKET_ERROR;
 		return 0;
 	}
@@ -400,7 +378,6 @@ uint CFtpGet::IssuePort()
 	nReplyCode = SendFTPCommand(szCommandString);
 	if (nReplyCode != 200)
 	{
-		// int iWinsockErr = WSAGetLastError();
 		m_State = FTP_STATE_SOCKET_ERROR;
 		return 0;
 	}
@@ -441,7 +418,6 @@ int CFtpGet::ConnectControlSocket()
 	//Now we will connect to the host					
 	if(connect(m_ControlSock, (SOCKADDR *)&hostaddr, sizeof(SOCKADDR)))
 	{
-		// int iWinsockErr = WSAGetLastError();
 		m_State = FTP_STATE_CANT_CONNECT;
 		return 0;
 	}
@@ -482,7 +458,6 @@ uint CFtpGet::SendFTPCommand(char *command)
 	// Send the FTP command
 	if (SOCKET_ERROR ==(send(m_ControlSock,command,strlen(command), 0)))
 		{
-			// int iWinsockErr = WSAGetLastError();
 		  // Return 999 to indicate an error has occurred
 			return(999);
 		} 
@@ -508,7 +483,6 @@ uint CFtpGet::ReadFTPServerReply()
 
 		if (iBytesRead == SOCKET_ERROR)
 		{
-			// int iWinsockErr = WSAGetLastError();
 		  // Return 999 to indicate an error has occurred
 			return(999);
 		}
@@ -525,7 +499,7 @@ uint CFtpGet::ReadFTPServerReply()
 			strcat_s(recv_buffer,chunk);
 		}
 		
-		Sleep(1);	
+		os_sleep(1);	
 	}while(igotcrlf==0);
 					
 	if(recv_buffer[3] == '-')
@@ -563,10 +537,9 @@ uint CFtpGet::ReadDataChannel()
 		if (nBytesRecv > 0 )
 		{
 			fwrite(sDataBuffer,nBytesRecv,1,LOCALFILE);
-			//Write sDataBuffer, nBytesRecv
     	}
 
-		Sleep(1);
+		os_sleep(1);
 	}while (nBytesRecv > 0);
 	fclose(LOCALFILE);							
 	// Close the file and check for error returns.
@@ -588,7 +561,7 @@ uint CFtpGet::ReadDataChannel()
 void CFtpGet::FlushControlChannel()
 {
 	fd_set read_fds;	           
-	TIMEVAL timeout;   	
+	struct timeval timeout;   	
 	char flushbuff[3];
 
 	timeout.tv_sec = 0;            
@@ -605,6 +578,6 @@ void CFtpGet::FlushControlChannel()
 	{
 		recv(m_ControlSock,flushbuff,1,0);
 
-		Sleep(1);
+		os_sleep(1);
 	}
 }

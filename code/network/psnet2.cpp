@@ -1190,7 +1190,7 @@ void psnet_rel_work()
 	int rcode = -1;
 	int max_len = NETBUFFERSIZE;
 	fd_set read_fds;	           
-	TIMEVAL timeout; 
+	struct timeval timeout; 
 	static reliable_header rcv_buff;
 	static SOCKADDR rcv_addr;
 	int bytesin = 0;

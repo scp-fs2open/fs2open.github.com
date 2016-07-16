@@ -19,6 +19,10 @@
 #include "network/multi.h"
 #include "parse/scripting.h"
 #include "parse/sexp.h"
+#include "globalincs/version.h"
+#include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
+#include "cfile/cfilesystem.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -34,6 +38,11 @@
 
 #include <string.h>
 #include <stdlib.h>
+
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
 
 enum cmdline_arg_type
 {
@@ -92,9 +101,13 @@ enum
 	EASY_DEFAULT_MEM = EASY_DEFAULT | EASY_MEM_OFF
 };
 
-#define BUILD_CAP_OPENAL	(1<<0)
-#define BUILD_CAP_NO_D3D	(1<<1)
-#define BUILD_CAP_NEW_SND	(1<<2)
+enum BuildCaps
+{
+	BUILD_CAPS_OPENAL = (1<<0),
+	BUILD_CAPS_NO_D3D = (1<<1),
+	BUILD_CAPS_NEW_SND = (1<<2),
+	BUILD_CAPS_SDL = (1<<3)
+};
 
 #define PARSE_COMMAND_LINE_STRING	"-parse_cmdline_only"
 
@@ -187,9 +200,6 @@ Flag exe_params[] =
 	{ "-ati_swap",			"Fix colour issues on some ATI cards",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ati_swap", },
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_3d_sound", },
 	{ "-mipmap",			"Enable mipmapping",						true,	0,					EASY_DEFAULT_MEM,	"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
- #ifndef SCP_UNIX
-	{ "-disable_di_mouse",	"Don't use DirectInput for mouse control",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_di_mouse", },
- #endif
 	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-use_gldrawelements", },
 	{ "-old_collision",		"Use old collision detection system",		true,	EASY_DEFAULT,		EASY_ALL_ON,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-old_collision", },
 	{ "-gl_finish",			"Fix input lag on some ATI+Linux systems",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gl_finish", },
@@ -206,9 +216,7 @@ Flag exe_params[] =
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
 	{ "-window",			"Run in window",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-window", },
- #ifndef SCP_UNIX
 	{ "-fullscreen_window",	"Run in fullscreen window",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fullscreen_window", },
- #endif
 	{ "-stats",				"Show statistics",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stats", },
 	{ "-coords",			"Show coordinates",							false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-coords", },
 	{ "-show_mem_usage",	"Show memory usage",						true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-show_mem_usage", },
@@ -222,11 +230,8 @@ Flag exe_params[] =
 	{ "-save_render_target",	"Save render targets to file",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-save_render_target", },
 	{ "-debug_window",		"Display debug window",						true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-debug_window", },
 	{ "-verify_vps",		"Spew VP CRCs to vp_crcs.txt",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-verify_vps", },
- #ifdef SCP_UNIX
-	{ "-nograb",			"Don't grab mouse/keyboard in a window",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
- #endif
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
-	{ "-profile_frame_time", "Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
+	{ "-profile_frame_time","Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 	{ "-benchmark_mode",	"Puts the game into benchmark mode",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-benchmark_mode", },
@@ -407,6 +412,11 @@ char *Cmdline_spew_mission_crcs = NULL;
 char *Cmdline_spew_table_crcs = NULL;
 int Cmdline_objupd = 3;		// client object updates on LAN by default
 
+// Launcher related options
+cmdline_parm portable_mode("-portable_mode", NULL, AT_NONE);
+
+bool Cmdline_portable_mode = false;
+
 // Troubleshooting
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
 cmdline_parm nomovies_arg("-nomovies", NULL, AT_NONE);		// Cmdline_nomovies  -- Allows video streaming
@@ -418,7 +428,6 @@ cmdline_parm noglsl_arg("-no_glsl", NULL, AT_NONE);			// Cmdline_noglsl  -- disa
 cmdline_parm mipmap_arg("-mipmap", NULL, AT_NONE);			// Cmdline_mipmap
 cmdline_parm atiswap_arg("-ati_swap", NULL, AT_NONE);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
 cmdline_parm no3dsound_arg("-no_3d_sound", NULL, AT_NONE);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
-cmdline_parm no_di_mouse_arg("-disable_di_mouse", "Disable DirectInput mouse code (Windows only)", AT_NONE); // Cmdline_no_di_mouse -- Disables directinput use for mouse control
 cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL, AT_NONE); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
 cmdline_parm keyboard_layout("-keyboard_layout", "Specify keyboard layout (qwertz or azerty)", AT_STRING);
 cmdline_parm old_collision_system("-old_collision", NULL, AT_NONE); // Cmdline_old_collision_sys
@@ -438,7 +447,6 @@ int Cmdline_no_pbo = 0;
 int Cmdline_noglsl = 0;
 int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
-int Cmdline_no_di_mouse = 0;
 int Cmdline_drawelements = 0;
 char* Cmdline_keyboard_layout = NULL;
 bool Cmdline_gl_finish = false;
@@ -462,16 +470,12 @@ cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL, AT_NONE);	// Cmdline_sh
 cmdline_parm pos_arg("-pos", NULL, AT_NONE);					// Cmdline_show_pos
 cmdline_parm stats_arg("-stats", NULL, AT_NONE);				// Cmdline_show_stats
 cmdline_parm save_render_targets_arg("-save_render_target", NULL, AT_NONE);	// Cmdline_save_render_targets
-cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 cmdline_parm window_arg("-window", NULL, AT_NONE);				// Cmdline_window
 cmdline_parm fullscreen_window_arg("-fullscreen_window", "Fullscreen/borderless window (Windows only)", AT_NONE);
 cmdline_parm res_arg("-res", "Resolution, formatted like 1600x900", AT_STRING);
 cmdline_parm center_res_arg("-center_res", "Resolution of center monitor, formatted like 1600x900", AT_STRING);
 cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
-#ifdef SCP_UNIX
-cmdline_parm no_grab("-nograb", NULL, AT_NONE);				// Cmdline_no_grab
-#endif
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
@@ -492,15 +496,11 @@ int Cmdline_show_mem_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
-int Cmdline_debug_window = 0;
 int Cmdline_window = 0;
 int Cmdline_fullscreen_window = 0;
 char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
 int Cmdline_verify_vps = 0;
-#ifdef SCP_UNIX
-int Cmdline_no_grab = 0;
-#endif
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_frame_profile = false;
 bool Cmdline_profile_write_file = false;
@@ -637,125 +637,132 @@ char *drop_extra_chars(char *str)
 }
 
 
-// internal function - copy the value for a parameter agruement into the cmdline_parm arg field
-void parm_stuff_args(cmdline_parm *parm, char *cmdline)
+/*
+ * @brief Processes one argument for the given parameter
+ *
+ * @param param The parameter to check
+ * @param argc The argument count
+ * @param argc The argument values
+ * @param argc The current index
+ * @return @c true when an extra parameter was found, @c false otherwise
+ */
+bool parm_stuff_args(cmdline_parm *parm, int argc, char *argv[], int index)
 {
-	char buffer[1024];
-	memset( buffer, 0, sizeof( buffer ) );
-	char *dest = buffer;
-	char *saved_args = NULL;
+	Assert(index < argc);
 
-	cmdline += strlen(parm->name);
+	if (index + 1 < argc)
+	{
+		char* value = argv[index + 1];
+		if (value[0] == '-')
+		{
+			// Found another argument, just return
+			return false;
+		}
+		else
+		{
+			char* saved_args = NULL;
 
-	while ((*cmdline != '\0') && strncmp(cmdline, " -", 2) && ((size_t)(dest-buffer) < sizeof(buffer))) {
-		*dest++ = *cmdline++;
+			if (parm->args != NULL) {
+				if (parm->stacks) {
+					saved_args = parm->args;
+				}
+				else {
+					delete[] parm->args;
+				}
+
+				parm->args = NULL;
+			}
+
+			int argsize = strlen(argv[index + 1]);
+			int buffersize = argsize;
+
+			if (saved_args != NULL)
+			{
+				// Add one for the , separating args
+				buffersize += strlen(saved_args) + 1;
+			}
+
+			buffersize += 1; // Null-terminator
+
+			parm->args = new char[buffersize];
+			memset(parm->args, 0, buffersize);
+
+			if (saved_args != NULL)
+			{
+				// saved args go first, then new arg
+				strcpy_s(parm->args, buffersize, saved_args);
+				// add a separator too, so that we can tell the args apart
+				strcat_s(parm->args, buffersize, ",");
+				// now the new arg
+				strcat_s(parm->args, buffersize, argv[index + 1]);
+
+				delete[] saved_args;
+			}
+			else
+			{
+				strcpy_s(parm->args, buffersize, argv[index + 1]);
+			}
+
+			return true;
+		}
 	}
-
-	drop_extra_chars(buffer);
-
-	// mwa 9/14/98 -- made it so that newer command line arguments found will overwrite the old arguments
-	// taylor 7/25/06 -- made it so that you can stack newer arguments if that option should support stacking
-
-	if ( parm->args != NULL ) {
-		if (parm->stacks) {
-			saved_args = parm->args;
-		} else {
-			delete[] parm->args;
-		}
-
-		parm->args = NULL;
-	}
-
-	int size = strlen(buffer);
-
-	if (size > 0) {
-		size++;	// nul char
-
-		if (saved_args != NULL) {
-			size += (strlen(saved_args) + 1);	// an ',' is used as a separator when combining, so be sure to account for it
-		}
-
-		parm->args = new char[size];
-		memset(parm->args, 0, size);
-
-		if (saved_args != NULL) {
-			// saved args go first, then new arg
-			strcpy_s(parm->args, size, saved_args);
-			// add a separator too, so that we can tell the args apart
-			strcat_s(parm->args, size, ",");
-			// now the new arg
-			strcat_s(parm->args, size, buffer);
-
-			delete [] saved_args;
-		} else {
-			strcpy_s(parm->args, size, buffer);
-		}
-	} else {
-		parm->args = saved_args;
+	else
+	{
+		// Last argument, can't have any values
+		return false;
 	}
 }
 
 
 // internal function - parse the command line, extracting parameter arguments if they exist
 // cmdline - command line string passed to the application
-void os_parse_parms(char *cmdline)
+void os_parse_parms(int argc, char *argv[])
 {
 	// locate command line parameters
 	cmdline_parm *parmp;
-	char *cmdline_offset = NULL;
-	size_t get_new_offset = 0;
 
-	for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
-		// continue processing every option on the line to make sure that we account for every listing of each option
-		do {
-			// while going through the cmdline make sure to grab only the option that we are
-			// looking for, but if one similar then keep searching for the exact match
-			while (true) {
-				cmdline_offset = strstr(cmdline + get_new_offset, parmp->name);
+	for (int i = 0; i < argc; i++)
+	{
+		// On OS X this gets passed if the application was launched by double-clicking in the Finder
+		if (i == 1 && strncmp(argv[i], "-psn", 4) == 0)
+		{
+			continue;
+		}
 
-				if ( !cmdline_offset )
-					break;
-
-				int parmp_len = strlen(parmp->name);
-
-				// the new offset should be our currently location + the length of the current option
-				get_new_offset = (strlen(cmdline) - strlen(cmdline_offset) + parmp_len);
-
-				if ( (*(cmdline_offset + parmp_len)) && !is_extra_space(*(cmdline_offset + parmp_len)) ) {
-					// we found a similar, but not exact, match for this option, continue checking for the correct one
-				} else {
-					// we found what we were looking for so break out and process it
-					break;
+		for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
+			if (!stricmp(parmp->name, argv[i]))
+			{
+				parmp->name_found = 1;
+				if (parm_stuff_args(parmp, argc, argv, i))
+				{
+					i++;
 				}
 			}
-
-			if (cmdline_offset) {
-				parmp->name_found = 1;
-				parm_stuff_args(parmp, cmdline_offset);
-			}
-		} while (cmdline_offset);
-
-		// reset the offset for the next param that we will look for
-		get_new_offset = 0;
-		cmdline_offset = NULL;
+		}
 	}
 }
 
 
 // validate the command line parameters.  Display an error if an unrecognized parameter is located.
-void os_validate_parms(char *cmdline)
+void os_validate_parms(int argc, char *argv[])
 {
 	cmdline_parm *parmp;
-	char seps[] = " ,\t\n";
 	char *token;
 	int parm_found;
 
-	token = strtok(cmdline, seps);
-	while(token != NULL) {
-	
+	for (int i = 0; i < argc; i++)
+	{
+		token = argv[i];
+
+		// On OS X this gets passed if the application was launched by double-clicking in the Finder
+		if (i == 1 && strncmp(token, "-psn", 4) == 0) {
+			continue;
+		}
+
 		if (token[0] == '-') {
 			parm_found = 0;
-			for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
+
+			for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
 				if (!stricmp(parmp->name, token)) {
 					parm_found = 1;
 					break;
@@ -763,37 +770,12 @@ void os_validate_parms(char *cmdline)
 			}
 
 			if (parm_found == 0) {
-#ifdef _WIN32
-				// Changed this to MessageBox, this is a user error not a developer
-				char buffer[128];
-				sprintf(buffer,"Unrecognized command line parameter %s, continue?",token);
-				if( MessageBox(NULL, buffer, "Warning", MB_OKCANCEL | MB_ICONQUESTION) == IDCANCEL)
-					exit(0);
-#elif defined(APPLE_APP)
-				CFStringRef message;
-				char buffer[128];
-				CFOptionFlags result;
-
-				snprintf(buffer, 128, "Unrecognized command line parameter, \"%s\", continue?", token);
-				message = CFStringCreateWithCString(NULL, buffer, kCFStringEncodingASCII);
-
-				if ( CFUserNotificationDisplayAlert(0, kCFUserNotificationPlainAlertLevel, NULL, NULL, NULL, CFSTR("Unknown Command"), message, NULL, CFSTR("Quit"), NULL, &result) ) {
-                    CFRelease(message);
-					exit(0);
-				}
-
-				if (result != kCFUserNotificationDefaultResponse) {
-                    CFRelease(message);
-					exit(0);
-				}
-
-                CFRelease(message);
-#else
 				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
-				if ( !stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?") ) {
+				if (!stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?")) {
 					if (FS_VERSION_REVIS == 0) {
 						printf("FreeSpace 2 Open, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
-					} else {
+					}
+					else {
 						printf("FreeSpace 2 Open, version %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
 					}
 					printf("Website: http://scp.indiegames.us\n");
@@ -819,81 +801,171 @@ void os_validate_parms(char *cmdline)
 
 					printf("\n");
 					exit(0);
-				} else {
-					printf("Unrecognized command line parameter \"%s\".  Ignoring...\n", token);
 				}
-#endif
+				else {
+					char buffer[128];
+					sprintf(buffer, "Unrecognized command line parameter %s.", token);
+
+					os::dialogs::Message(os::dialogs::MESSAGEBOX_INFORMATION, buffer);
+				}
 			}
 		}
-
-		token = strtok(NULL, seps);
 	}
 }
 
+int parse_cmdline_string(char* cmdline, char** argv)
+{
+	int length = strlen(cmdline);
+
+	bool start_found = false;
+	bool quoted = false;
+
+	int argc = 0;
+	char* current_argv = NULL;
+	for (int i = 0; i < length; i++)
+	{
+		if (!start_found && !isspace(cmdline[i]))
+		{
+			start_found = true;
+			current_argv = (cmdline + i);
+		}
+		else if (start_found)
+		{
+			if (cmdline[i] == '"')
+			{
+				quoted = !quoted;
+
+				if (!quoted && current_argv != NULL)
+				{
+					if (argv != NULL)
+					{
+						// Terminate string at quote
+						cmdline[i] = '\0';
+						argv[argc] = current_argv;
+						current_argv = NULL;
+					}
+
+					argc++;
+				}
+			}
+			else if (isspace(cmdline[i]) && !quoted)
+			{
+				// Parameter terminated by space
+				if (current_argv != NULL) // == NULL means that we currently don't have a parameter
+				{
+					if (argv != NULL)
+					{
+						// Terminate string at quote
+						cmdline[i] = '\0';
+						argv[argc] = current_argv;
+						current_argv = NULL;
+					}
+
+					argc++;
+				}
+			}
+			else if (current_argv == NULL)
+			{
+				current_argv = cmdline + i;
+			}
+		}
+	}
+
+	if (current_argv != NULL)
+	{
+		if (argv != NULL)
+		{
+			// Terminate string at quote
+			argv[argc] = current_argv;
+			current_argv = NULL;
+		}
+
+		argc++;
+	}
+
+	return argc;
+}
+
+void os_process_cmdline(char* cmdline)
+{
+	int argc = parse_cmdline_string(cmdline, NULL);
+
+	char** argv = new char*[argc];
+
+	argc = parse_cmdline_string(cmdline, argv);
+
+	os_parse_parms(argc, argv);
+	os_validate_parms(argc, argv);
+
+	delete[] argv;
+}
+
+bool has_cmdline_only_flag(int argc, char *argv[])
+{
+	for (int i = 0; i < argc; ++i)
+	{
+		if (!strcmp(argv[i], PARSE_COMMAND_LINE_STRING))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
 
 // Call once to initialize the command line system
 //
 // cmdline - command line string passed to the application
-void os_init_cmdline(char *cmdline)
+void os_init_cmdline(int argc, char *argv[])
 {
 	FILE *fp;
 	
-	if (strstr(cmdline, PARSE_COMMAND_LINE_STRING) == NULL) {
-
-		// read the cmdline_fso.cfg file from the data folder, and pass the command line arguments to
-		// the the parse_parms and validate_parms line.  Read these first so anything actually on
-		// the command line will take precedence
+	if (!has_cmdline_only_flag(argc, argv)) {
+		// Only parse the config file in the current directory if we are in legacy config mode
+		if (os_is_legacy_mode()) {
+			// read the cmdline_fso.cfg file from the data folder, and pass the command line arguments to
+			// the the parse_parms and validate_parms line.  Read these first so anything actually on
+			// the command line will take precedence
 #ifdef _WIN32
-		fp = fopen("data\\cmdline_fso.cfg", "rt");
+			fp = fopen("data\\cmdline_fso.cfg", "rt");
 #elif defined(APPLE_APP)
-		char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
-     
-		GetCurrentDirectory(MAX_PATH_LEN-1, data_path);
-		snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
+			char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
 
-		fp = fopen(resolved_path, "rt");
+			GetCurrentDirectory(MAX_PATH_LEN - 1, data_path);
+			snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
+
+			fp = fopen(resolved_path, "rt");
 #else
-		fp = fopen("data/cmdline_fso.cfg", "rt");
+			fp = fopen("data/cmdline_fso.cfg", "rt");
 #endif
 
-		// if the file exists, get a single line, and deal with it
-		if ( fp ) {
-			char *buf, *p;
+			// if the file exists, get a single line, and deal with it
+			if (fp) {
+				char *buf, *p;
 
-			size_t len = filelength( fileno(fp) ) + 2;
-			buf = new char [len];
+				size_t len = filelength(fileno(fp)) + 2;
+				buf = new char[len];
 
-			if (fgets(buf, len-1, fp) != nullptr)
-			{
-				// replace the newline character with a NULL
-				if ( (p = strrchr(buf, '\n')) != NULL ) {
-					*p = '\0';
-				}
+				if (fgets(buf, len - 1, fp) != nullptr)
+				{
+					// replace the newline character with a NULL
+					if ((p = strrchr(buf, '\n')) != NULL) {
+						*p = '\0';
+					}
 
 #ifdef SCP_UNIX
-				// append a space for the os_parse_parms() check
-				strcat_s(buf, len, " ");
+					// append a space for the os_parse_parms() check
+					strcat_s(buf, len, " ");
 #endif
-
-				os_parse_parms(buf);
-				os_validate_parms(buf);
+					os_process_cmdline(buf);
+				}
+				delete[] buf;
+				fclose(fp);
 			}
-			delete [] buf;
-			fclose(fp);
 		}
 
-#ifdef SCP_UNIX
 		// parse user specific cmdline_fso config file (will supersede options in global file)
-		char cmdname[MAX_PATH];
-
-		snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline_fso.cfg", detect_home(), Osreg_user_dir);
-		fp = fopen(cmdname, "rt");
-
-		if ( !fp ) {
-			// try for non "_fso", for older code versions
-			snprintf(cmdname, MAX_PATH, "%s/%s/data/cmdline.cfg", detect_home(), Osreg_user_dir);
-			fp = fopen(cmdname, "rt");
-		}
+		fp = fopen(os_get_config_path("data/cmdline_fso.cfg").c_str(), "rt");
 
 		// if the file exists, get a single line, and deal with it
 		if ( fp ) {
@@ -911,20 +983,17 @@ void os_init_cmdline(char *cmdline)
 
 				// append a space for the os_parse_parms() check
 				strcat_s(buf, len, " ");
-
-				os_parse_parms(buf);
-				os_validate_parms(buf);
+			
+				os_process_cmdline(buf);
 			}
-
 			delete [] buf;
 			fclose(fp);
 		}
-#endif
 	} // If cmdline included PARSE_COMMAND_LINE_STRING
     
 	// By parsing cmdline last, anything actually on the command line will take precedence.
-	os_parse_parms(cmdline);
-	os_validate_parms(cmdline);
+	os_parse_parms(argc, argv);
+	os_validate_parms(argc, argv);
 }
 
 
@@ -1156,7 +1225,7 @@ bool SetCmdlineParams()
 		FILE *fp = fopen("flags.lch","w");
 		
 		if (fp == NULL) {
-			MessageBox(NULL,"Error creating flag list for launcher", "Error", MB_OK);
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error creating flag list for launcher");
 			return false; 
 		}
 		
@@ -1183,9 +1252,10 @@ bool SetCmdlineParams()
 			ubyte build_caps = 0;
 			
 			/* portej05 defined this always */
-			build_caps |= BUILD_CAP_OPENAL;
-			build_caps |= BUILD_CAP_NO_D3D;
-			build_caps |= BUILD_CAP_NEW_SND;
+			build_caps |= BUILD_CAPS_OPENAL;
+			build_caps |= BUILD_CAPS_NO_D3D;
+			build_caps |= BUILD_CAPS_NEW_SND;
+			build_caps |= BUILD_CAPS_SDL;
 			
 			
 			fwrite(&build_caps, 1, 1, fp);
@@ -1371,10 +1441,8 @@ bool SetCmdlineParams()
 
 	if ( fullscreen_window_arg.found( ) )
 	{
-#ifdef WIN32
 		Cmdline_fullscreen_window = 1;
 		Cmdline_window = 0; /* Make sure no-one sets both */
-#endif
 	}
 
 	if(res_arg.found()){
@@ -1529,13 +1597,6 @@ bool SetCmdlineParams()
 		Cmdline_no_vsync = 1;
 	}
 
-#ifdef SCP_UNIX
-	// no key/mouse grab
-	if(no_grab.found()){
-		Cmdline_no_grab = 1;
-	}
-#endif
-
 	if ( normal_arg.found() ) {
 		Cmdline_normal = 0;
 	}
@@ -1556,10 +1617,6 @@ bool SetCmdlineParams()
 		}
 
 		Fxaa_preset_last_frame = Cmdline_fxaa_preset;
-	}
-
-	if (no_di_mouse_arg.found() ) {
-		Cmdline_no_di_mouse = 1;
 	}
 
 	if ( glow_arg.found() )
@@ -1629,6 +1686,11 @@ bool SetCmdlineParams()
 		Cmdline_set_cpu_affinity = true;
 	}
 
+	if (portable_mode.found())
+	{
+		Cmdline_portable_mode = true;
+	}
+	
 #ifdef WIN32
 	if (fix_registry.found()) {
 		Cmdline_alternate_registry_path = true;
@@ -1683,10 +1745,7 @@ bool SetCmdlineParams()
 
 	if ( save_render_targets_arg.found() )
 		Cmdline_save_render_targets = 1;
-
-	if ( debug_window_arg.found() )
-		Cmdline_debug_window = 1;
-
+	
 	if ( verify_vps_arg.found() )
 		Cmdline_verify_vps = 1;
 
@@ -1817,43 +1876,11 @@ bool SetCmdlineParams()
 	return true; 
 }
 
-
-int fred2_parse_cmdline(int argc, char *argv[])
-{
-	if (argc > 1) {
-		// kind of silly -- combine arg list into single string for parsing,
-		// but it fits with the win32-centric existing code.
-		char *cmdline = NULL;
-		unsigned int arglen = 0;
-		int i;
-		for (i = 1;  i < argc;  i++)
-			arglen += strlen(argv[i]);
-		if (argc > 2)
-			arglen += argc + 2; // leave room for the separators
-		cmdline = new char [arglen+1];
-		i = 1;
-
-		strcpy_s(cmdline, arglen+1, argv[i]);
-		for (i=2; i < argc;  i++) {
-			strcat_s(cmdline, arglen+1, " ");
-			strcat_s(cmdline, arglen+1, argv[i]);
-		}
-		os_init_cmdline(cmdline);
-		delete [] cmdline;
-	} else {
-		// no cmdline args
-		os_init_cmdline("");
-	}
-
-	return SetCmdlineParams();
-}
-
-
-int parse_cmdline(char *cmdline)
+int parse_cmdline(int argc, char *argv[])
 {
 //	mprintf(("I got to parse_cmdline()!!\n"));
 
-	os_init_cmdline(cmdline);
+	os_init_cmdline(argc, argv);
 
 	// --------------- Kazan -------------
 	// If you're looking for the list of if (someparam.found()) { cmdline_someparam = something; } look above at this function

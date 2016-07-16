@@ -26,6 +26,8 @@
 
 #include "windows_stub/config.h"
 
+#include "SDL.h"
+
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
 
@@ -223,14 +225,7 @@ typedef struct coord2d {
 	int x,y;
 } coord2d;
 
-//This are defined in MainWin.c
-extern void _cdecl WinAssert(char * text,char *filename, int line);
-void _cdecl WinAssert(char * text, char * filename, int linenum, SCP_FORMAT_STRING const char * format, ... ) SCP_FORMAT_STRING_ARGS(4, 5);
-extern void LuaError(struct lua_State *L, SCP_FORMAT_STRING const char *format=NULL, ...) SCP_FORMAT_STRING_ARGS(2, 3);
-extern void _cdecl Error( const char * filename, int line, SCP_FORMAT_STRING const char * format, ... ) SCP_FORMAT_STRING_ARGS(3, 4);
-extern void _cdecl Warning( char * filename, int line, SCP_FORMAT_STRING const char * format, ... ) SCP_FORMAT_STRING_ARGS(3, 4);
-extern void _cdecl WarningEx( char *filename, int line, SCP_FORMAT_STRING const char *format, ... ) SCP_FORMAT_STRING_ARGS(3, 4);
-extern void _cdecl ReleaseWarning(char *filename, int line, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
+#include "osapi/dialogs.h"
 
 extern int Global_warning_count;
 extern int Global_error_count;
@@ -263,10 +258,9 @@ extern int Global_error_count;
 #if defined(NDEBUG)
 #	define Assert(expr) do { ASSUME(expr); } while (0)
 #else
-	void gr_activate(int);
 #	define Assert(expr) do {\
 		if (!(expr)) {\
-			WinAssert(#expr,__FILE__,__LINE__);\
+			os::dialogs::AssertMessage(#expr,__FILE__,__LINE__);\
 		}\
 		ASSUME( expr );\
 	} while (0)
@@ -331,28 +325,6 @@ extern int Fred_running;  // Is Fred running, or FreeSpace?
 
 // contants and defined for byteswapping routines (useful for mac)
 
-#define SWAPSHORT(x)	(							\
-						((ubyte)x << 8) |			\
-						(((ushort)x) >> 8)			\
-						)
-
-#define SWAPINT(x)		(							\
-						(x << 24) |					\
-						(((ulong)x) >> 24) |		\
-						((x & 0x0000ff00) << 8) |	\
-						((x & 0x00ff0000) >> 8)		\
-						)
-
-#ifdef SCP_UNIX
-#include "SDL_endian.h"
-#endif
-
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-#ifndef BYTE_ORDER
-#define BYTE_ORDER	BIG_ENDIAN
-#endif // !BYTE_ORDER
-#endif // SDL_BYTEORDER
-
 #ifdef SCP_SOLARIS // Solaris
 #define INTEL_INT(x)	x
 #define INTEL_SHORT(x)	x
@@ -361,39 +333,9 @@ extern int Fred_running;  // Is Fred running, or FreeSpace?
 // turn off inline asm
 #undef USE_INLINE_ASM
 
-// tigital -
-inline float SWAPFLOAT(float *x)
-{
-#if !defined(__MWERKS__)
-	// Usage:  void __stwbrx( unsigned int, unsigned int *address, int byteOffsetFromAddress );
-#define __stwbrx(value, base, index) \
-	__asm__ ( "stwbrx %0, %1, %2" :  : "r" (value), "b%" (index), "r" (base) : "memory" )
-#endif
-
-	union
-	{
-		int		i;
-		float	f;
-	} buf;
-
-	// load the float into the integer unit
-	register int a = ((int*) x)[0];
-
-	// store it to the transfer union, with byteswapping
-	__stwbrx(a, 0, &buf.i);
-
-	// load it into the FPU and return it
-	return buf.f;
-}
-
-#ifdef SCP_UNIX
 #define INTEL_INT(x)	SDL_Swap32(x)
 #define INTEL_SHORT(x)	SDL_Swap16(x)
-#else
-#define INTEL_INT(x)	SWAPINT(x)
-#define INTEL_SHORT(x)	SWAPSHORT(x)
-#endif // (unix)
-#define INTEL_FLOAT(x)	SWAPFLOAT(x)
+#define INTEL_FLOAT(x)	SDL_SwapFloat((*x))
 
 #else // Little Endian -
 #define INTEL_INT(x)	x
@@ -625,6 +567,9 @@ public:
 
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
+
+// Function to generate a stacktrace
+SCP_string dump_stacktrace();
 
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // would prefer std::is_trivially_copyable but it's not supported by gcc yet

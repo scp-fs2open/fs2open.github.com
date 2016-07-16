@@ -9,35 +9,20 @@
 
 
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <SDL_timer.h>
-#include <sys/time.h>
-#endif
-
-#include <limits.h>
-
 #include "globalincs/pstypes.h"
 #include "io/timer.h"
 #include "graphics/2d.h"
 #include "globalincs/alphacolors.h"
 
-#define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"	// for multi-thread macros
 
+#include <SDL_timer.h>
+#include <limits.h>
 
-#ifdef _WIN32
-static longlong Timer_last_value = 0, Timer_base = 0, Timer_freq = 0;
-static const int precision = 1;
-#endif
-
-static longlong Timer_perf_counter_base = 0;	// perf counter start time
-static longlong Timer_perf_counter_freq = 0;	// perf counter frequency - number of ticks per second
+static Uint64 Timer_perf_counter_freq = 0;	// perf counter frequency - number of ticks per second
 
 static int Timer_inited = 0;
 
-static CRITICAL_SECTION Timer_lock;
 
 #define MICROSECONDS_PER_SECOND 1000000
 
@@ -45,42 +30,13 @@ void timer_close()
 {
 	if ( Timer_inited )	{
 		Timer_inited = 0;
-#ifdef _WIN32
-		timeEndPeriod(precision); 
-#endif
-		DELETE_CRITICAL_SECTION( Timer_lock );
 	}
 }
 
 void timer_init()
 {
 	if ( !Timer_inited )	{
-		INITIALIZE_CRITICAL_SECTION( Timer_lock );
-
-#ifdef _WIN32
-		timeBeginPeriod(precision);
-		Timer_base = Timer_last_value = timeGetTime();
-
-		// get the performance counter start time
-		LARGE_INTEGER perf_start_time;
-		QueryPerformanceCounter(&perf_start_time);
-		Timer_perf_counter_base = perf_start_time.QuadPart;
-
-		// get the performance counter's ticks per second frequency
-		LARGE_INTEGER perf_frequency;
-		QueryPerformanceFrequency(&perf_frequency);
-		Timer_perf_counter_freq = perf_frequency.QuadPart;
-#else
-		timeval time_value;
-
-		// get the performance counter start time
-		gettimeofday(&time_value, NULL);
-
-		Timer_perf_counter_base = time_value.tv_sec * MICROSECONDS_PER_SECOND + time_value.tv_usec;
-
-		// get the performance counter's ticks per second frequency
-		Timer_perf_counter_freq = 1;
-#endif
+		Timer_perf_counter_freq = SDL_GetPerformanceFrequency();
 
 		Timer_inited = 1;
 
@@ -90,27 +46,7 @@ void timer_init()
 
 static uint timer_get()
 {
-#ifdef _WIN32
-	ENTER_CRITICAL_SECTION( Timer_lock );
-
-	longlong time_now;
-
-	time_now = timeGetTime();
-
-	if ( time_now < Timer_last_value ) {
-		// the clock has rolled!
-		Timer_base = time_now;
-		mprintf(("TIMER ROLLED!\n"));
-	}
-
-	Timer_last_value = time_now;
-
-	LEAVE_CRITICAL_SECTION( Timer_lock );
-
-	return (uint)(time_now - Timer_base);
-#else
 	return SDL_GetTicks();
-#endif
 }
 
 fix timer_get_fixed_seconds()
@@ -167,30 +103,16 @@ int timer_get_microseconds()
 	return timer_get() * 1000;
 }
 
-uint timer_get_high_res_microseconds()
+std::uint64_t timer_get_high_res_microseconds()
 {
 	if ( !Timer_inited ) {
 		Int3();
 		return 0;
 	}
 
-#ifdef _WIN32
-	ENTER_CRITICAL_SECTION( Timer_lock);
+	Uint64 elapsed = SDL_GetPerformanceCounter();
 
-	LARGE_INTEGER time;
-	QueryPerformanceCounter(&time);
-	longlong elapsed = time.QuadPart;// - Timer_perf_counter_base;
-
-	LEAVE_CRITICAL_SECTION( Timer_lock);
-
-	return (uint)(elapsed * MICROSECONDS_PER_SECOND / Timer_perf_counter_freq);
-#else
-	timeval time_value;
-
-	gettimeofday(&time_value, NULL);
-
-	return time_value.tv_sec * MICROSECONDS_PER_SECOND + time_value.tv_usec;// - Timer_perf_counter_base);
-#endif
+	return elapsed * MICROSECONDS_PER_SECOND / Timer_perf_counter_freq;
 }
 
 // 0 means invalid,

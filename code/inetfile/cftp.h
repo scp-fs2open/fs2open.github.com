@@ -39,11 +39,7 @@
 #define FTP_STATE_STARTUP				16
 
 
-#ifdef WIN32
-extern void FTPObjThread( void *obj );
-#else
 extern int FTPObjThread( void *obj );
-#endif
 
 class CFtpGet
 {
@@ -90,9 +86,7 @@ protected:
 
 	FILE *LOCALFILE;
 
-#ifdef SCP_UNIX
 	SDL_Thread *thread_id;
-#endif
 };
 
 

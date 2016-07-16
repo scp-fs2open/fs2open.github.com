@@ -1,5 +1,5 @@
 language: cpp
-sudo: false
+sudo: true
 addons:
     apt:
         packages:
@@ -9,7 +9,6 @@ addons:
             - build-essential
             - automake
             - autoconf
-            - libsdl1.2-dev
             - libtheora-dev
             - libreadline6-dev
             - libpng12-dev
@@ -42,9 +41,6 @@ matrix:
           env: CONFIGURATION="Debug"
         - os: osx
           compiler: clang
-          env: CONFIGURATION="Debug" MACOSX_ARCH=i386
-        - os: osx
-          compiler: clang
           env: CONFIGURATION="Debug" MACOSX_ARCH=x86_64
 
         - os: linux
@@ -53,9 +49,6 @@ matrix:
         - os: linux
           compiler: clang
           env: CONFIGURATION="Release"
-        - os: osx
-          compiler: clang
-          env: CONFIGURATION="Release" MACOSX_ARCH=i386
         - os: osx
           compiler: clang
           env: CONFIGURATION="Release" MACOSX_ARCH=x86_64

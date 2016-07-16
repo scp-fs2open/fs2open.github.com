@@ -51,6 +51,11 @@
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
 
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
 
 
 // ----------------------------------------------------------------------------------------
@@ -1440,10 +1445,10 @@ void standalone_main_init()
 	// if we failed to startup on our desired protocol, fail
 	if ((Multi_options_g.protocol == NET_TCP) && !Tcp_active){
 		if (Tcp_failure_code == WSAEADDRINUSE) {
-			MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", 1620), "Error", MB_OK);
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", 1620));
 		}
 		else {
-			MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362), "Error", MB_OK);
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362));
 		}
 
 		exit(1);
@@ -1590,7 +1595,7 @@ void standalone_main_init()
 void standalone_main_do()
 {
  
-   Sleep(10);  // since nothing will really be going on here, we can afford to give some time
+   os_sleep(10);  // since nothing will really be going on here, we can afford to give some time
                // back to the operating system.
 
 	// kind of a do-nothing spin state.

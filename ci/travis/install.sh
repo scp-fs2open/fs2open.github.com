@@ -3,8 +3,7 @@
 set -e
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    # Nothing to do here
-    :
+    sudo apt-get install libsdl2-dev
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     gem install xcpretty thefox-pastebin
 fi

@@ -14,6 +14,8 @@
 
 #include "globalincs/pstypes.h"
 
+#include <cstdint>
+
 //==========================================================================
 // This installs the timer services and interrupts at the rate specified by
 // count_val.  If 'function' isn't 0, the function pointed to by function will
@@ -42,7 +44,7 @@ extern fix timer_get_fixed_secondsX();		// Assume interrupts already disabled
 extern fix timer_get_approx_seconds();		// Returns time since program started... accurate to 1/120th of a second
 extern int timer_get_milliseconds();		//
 extern int timer_get_microseconds();
-extern uint timer_get_high_res_microseconds();
+extern std::uint64_t timer_get_high_res_microseconds();
 extern int timer_get_seconds();				// seconds since program started... not accurate, but good for long
 											//     runtimes with second-based timeouts
 

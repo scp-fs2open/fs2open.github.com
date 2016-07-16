@@ -107,7 +107,10 @@
 #include "hud/hudmessage.h"
 #endif
 
-
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
 
 
 
@@ -33904,7 +33907,7 @@ bool output_sexps(char *filepath)
 
 	if(fp == NULL)
 	{
-		MessageBox(NULL,"Error creating SEXP operator list", "Error", MB_OK);
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error creating SEXP operator list");
 		return false; 
 	}
 

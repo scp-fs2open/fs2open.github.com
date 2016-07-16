@@ -3,65 +3,52 @@
 
 #include "globalincs/pstypes.h"
 
-/* We must have windows.h anywhere SCP_ExternalCode is used under windows */
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include "SDL_loadso.h"
 
 /* This class loads external libraries for FSO use.
- * Different platforms have different ways of doing this, so use your ifdefs!
- */
+* Uses SDL to do the actual loading so this should be supported on most platforms
+*/
 class SCP_ExternalCode
 {
 public:
-	SCP_ExternalCode( )
-#ifdef _WIN32
-		: m_dll( NULL )
-#endif
+	SCP_ExternalCode() : m_dll(NULL)
 	{
 	}
 
-	virtual ~SCP_ExternalCode( )
+	virtual ~SCP_ExternalCode()
 	{
-#ifdef _WIN32
-		if ( m_dll )
-			::FreeLibrary( m_dll );
-#endif
+		if (m_dll)
+			SDL_UnloadObject(m_dll);
 	}
 
 protected:
-	BOOL LoadExternal( const char* externlib )
+	bool LoadExternal(const char* externlib)
 	{
-		if ( !externlib )
-			return FALSE;
-		
-#ifdef _WIN32
-		m_dll = ::LoadLibrary( externlib );
-		
-		if ( m_dll )
-			return TRUE;
-#endif
+		if (!externlib)
+			return false;
 
-		return FALSE;
+		m_dll = SDL_LoadObject(externlib);
+
+		if (m_dll)
+			return true;
+
+		return false;
 	}
 
-	void* LoadFunction( const char* functionname )
+	void* LoadFunction(const char* functionname)
 	{
-#ifdef _WIN32
-		if ( m_dll != NULL && functionname != NULL )
-			return ::GetProcAddress( m_dll, functionname );
-#endif
+		if (m_dll != NULL && functionname != NULL)
+			return SDL_LoadFunction(m_dll, functionname);
+
 		return NULL;
 	}
 private:
-#ifdef _WIN32
-	HMODULE m_dll;
-#endif
+	void* m_dll;
 };
 
 /* These are available if you're compiling an external DLL
- * So far we have trackir, and speech is on the way
- */
+* So far we have trackir, and speech is on the way
+*/
 #ifdef _WIN32
 #	define SCP_EXT_CALLCONV __cdecl
 #	ifdef SCPDLL_EXTERNAL_LIB
@@ -70,8 +57,8 @@ private:
 #		define SCPDLL_EXTERNAL __declspec( dllimport )
 #	endif
 /* Must be in a CPP file in your DLL code
- * If you want to write your own, you shouldn't.
- */
+* If you want to write your own, you shouldn't.
+*/
 #	define SCPDLL_DLLMAIN( ) \
 		SCP_EXTERN_C BOOL APIENTRY DllMain( HANDLE, DWORD, LPVOID ) { return TRUE; }
 #else
@@ -94,7 +81,7 @@ typedef struct _SCPDLL_Version
 	int patch;
 } SCPDLL_Version;
 
-typedef int ( SCP_EXT_CALLCONV *SCPDLL_PFVERSION )( SCPDLL_Version* );
+typedef int (SCP_EXT_CALLCONV *SCPDLL_PFVERSION)(SCPDLL_Version*);
 
 /* Must be in a CPP file in your DLL code */
 #define SCPDLL_VERSION_FUNCTION( Major, Minor, Patch ) \

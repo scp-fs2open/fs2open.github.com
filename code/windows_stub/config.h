@@ -6,6 +6,23 @@
 #define _CONFIG_H
 
 
+#ifndef BYTE_ORDER
+#include "SDL_endian.h"
+#endif
+
+#ifndef BYTE_ORDER
+#define LITTLE_ENDIAN 1234
+#define BIG_ENDIAN    4321
+
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+#define BYTE_ORDER   LITTLE_ENDIAN
+#elif SDL_BYTEORDER == SDL_BIG_ENDIAN
+#define BYTE_ORDER   BIG_ENDIAN
+#else
+#error unknown byte order
+#endif
+#endif  // BYTE_ORDER
+
 #if defined _WIN32
 
 // Goober5000 - now these warnings will only be disabled when compiling with MSVC :)
@@ -20,7 +37,7 @@
 // 4410 illegal size for operand... ie... 	fxch st(1)
 // 4511 copy constructor could not be generated (happens a lot in Windows include headers)
 // 4512 assignment operator could not be generated (happens a lot in Windows include headers)
-// 4514 unreferenced inline function removed, 
+// 4514 unreferenced inline function removed,
 // 4611 _setjmp warning.  Since we use setjmp alot, and we don't really use constructors or destructors, this warning doesn't really apply to us.
 // 4663 C++ language change (template specification)
 // 4710 is inline function not expanded (who cares?)
@@ -40,20 +57,11 @@
 
 #endif
 
-#if !defined BYTE_ORDER
- #define LITTLE_ENDIAN 1234
- #define BIG_ENDIAN    4321
-
- #if defined _M_IX86 || defined _X86_
-  #define BYTE_ORDER   LITTLE_ENDIAN
- #else
-  #error unknown byte order
- #endif
-#endif  // BYTE_ORDER
-
 #ifndef snprintf
 #define snprintf _snprintf
 #endif
+
+#define STUB_FUNCTION nprintf(( "Warning", "STUB: %s in "__FILE__" at line %d\n", __FUNCTION__, __LINE__))
 
 #else  // ! Win32
 
@@ -90,8 +98,6 @@ typedef unsigned int *PDWORD, *LPDWORD;
 typedef unsigned long FOURCC;
 typedef unsigned long DWORD, *PDWORD, *LPDWORD;
 #endif
-//typedef void *HMMIO;
-typedef SDL_RWops *HMMIO;
 typedef void *HACMSTREAM;
 typedef long LONG;
 typedef long HRESULT;
@@ -173,49 +179,11 @@ typedef struct {
 } WAVEFORMATEX;
 #pragma pack()
 
-// MessageBox-Codes and stuff
-#define MB_ABORTRETRYIGNORE 0
-#define MB_CANCELTRYCONTINUE 0
-#define MB_HELP 0
-#define MB_OK 0
-#define MB_OKCANCEL 0
-#define MB_RETRYCANCEL 0
-#define MB_YESNO 0
-#define MB_YESNOCANCEL 0
-#define MB_ICONEXCLAMATION 0
-#define MB_ICONWARNING 0
-#define MB_ICONINFORMATION 0
-#define MB_ICONASTERISK 0
-#define MB_ICONQUESTION 0
-#define MB_ICONSTOP 0
-#define MB_ICONERROR 0
-#define MB_ICONHAND 0
-#define MB_DEFBUTTON1 0
-#define MB_DEFBUTTON2 0
-#define MB_DEFBUTTON3 0
-#define MB_DEFBUTTON4 0
-#define MB_APPLMODAL 0
-#define MB_SYSTEMMODAL 0
-#define MB_TASKMODAL 0
-#define MB_DEFAULT_DESKTOP_ONLY 0
-#define MB_RIGHT 0
-#define MB_RTLREADING 0
-#define MB_SETFOREGROUND 0
-#define MB_TOPMOST 0
-#define MB_SERVICE_NOTIFICATION 0
-#define MB_SERVICE_NOTIFICATION_NT3X 0
-
-int MessageBox(HWND h, const char *s1, const char *s2, int i);
-
 // thread/process related stuff
 #define _beginthread(x, y, z)
 #define _endthread()
 
 typedef SDL_mutex* CRITICAL_SECTION;
-
-// timer stuff
-typedef timeval TIMEVAL;
-bool QueryPerformanceCounter(LARGE_INTEGER *pcount);
 
 // file related items
 #define _MAX_FNAME					255
@@ -224,43 +192,6 @@ bool QueryPerformanceCounter(LARGE_INTEGER *pcount);
 #define SetCurrentDirectory(s)		_chdir(s)
 #define GetCurrentDirectory(i, s)	_getcwd((s), (i))
 #define _unlink(s)					unlink(s)
-
-// mmio stuff
-typedef struct { 
-	DWORD		dwFlags; 
-	FOURCC		fccIOProc; 
-	LPMMIOPROC	pIOProc; 
-	UINT		wErrorRet; 
-	HTASK		hTask; 
-	LONG		cchBuffer; 
-	HPSTR		pchBuffer; 
-	HPSTR		pchNext; 
-	HPSTR		pchEndRead; 
-	HPSTR		pchEndWrite; 
-	LONG		lBufOffset; 
-	LONG		lDiskOffset; 
-	DWORD		adwInfo[4]; 
-	DWORD		dwReserved1; 
-	DWORD		dwReserved2; 
-	HMMIO		hmmio; 
-} MMIOINFO;
-
-typedef MMIOINFO *LPMMIOINFO;
-
-#define FOURCC_MEM	0
-
-#define MMIO_READ		(1<<0)
-#define MMIO_READWRITE	(1<<1)
-#define MMIO_WRITE		(1<<2)
-#define MMIO_ALLOCBUF	(1<<3)
-
-#define MMIOERR_CANNOTWRITE		1
-
-HMMIO mmioOpen(LPSTR szFilename, LPMMIOINFO lpmmioinfo, DWORD dwOpenFlags);
-long mmioSeek(HMMIO hmmio, long lOffset, int iOrigin);
-long mmioRead(HMMIO hmmio, HPSTR pch, long cch);
-MMRESULT mmioClose(HMMIO hmmio, uint wFlags);
-
 
 int filelength(int fd);
 int _chdir(const char *path);
@@ -282,7 +213,6 @@ char *strnset( char *string, int fill, size_t count);
 #define _hypot(x, y)  hypot(x, y)
 
 int MulDiv(int number, int numerator, int denominator);
-void Sleep(int mili);
 
 struct POINT {
 	int x, y;

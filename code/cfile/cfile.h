@@ -109,8 +109,9 @@ extern const char *Get_file_list_child;
 // cfile directory. valid after cfile_init() returns successfully
 #define CFILE_ROOT_DIRECTORY_LEN			256
 extern char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN];
-#ifdef SCP_UNIX
 extern char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN];
+#ifdef SCP_UNIX
+extern char Cfile_user_dir_legacy[CFILE_ROOT_DIRECTORY_LEN];
 #endif
 
 //================= LOW-LEVEL FUNCTIONS ==================

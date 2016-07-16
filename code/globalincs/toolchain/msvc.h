@@ -51,14 +51,14 @@
 #		define Assertion(expr, msg, ...)                                    \
 			do {                                                            \
 				if (!(expr)) {                                              \
-					WinAssert(#expr, __FILE__, __LINE__, msg, __VA_ARGS__); \
+					os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, __VA_ARGS__); \
 				}                                                           \
 			} while (0)
 #	else                 /* Older MSVC compilers */
 #		define Assertion(expr, msg)                        \
 			do {                                           \
 				if (!(expr)) {                             \
-					WinAssert(#expr, __FILE__, __LINE__);  \
+					os::dialogs::AssertMessage(#expr, __FILE__, __LINE__);  \
 			} while (0)
 #	endif
 #endif

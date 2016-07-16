@@ -175,6 +175,7 @@ std::string base64_decode(std::string const& encoded_string) {
 #include "playerman/player.h"
 #include "mission/missiongoals.h"
 #include "ship/ship.h"
+#include "osapi/osapi.h"
 
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -235,7 +236,7 @@ public:
 			// update fs2netd with the info
 			if (MULTI_IS_TRACKER_GAME) {
 				fs2netd_gameserver_disconnect();
-				Sleep(50);
+				os_sleep(50);
 				fs2netd_gameserver_start();
 			}
 		}
@@ -691,7 +692,7 @@ json_t* chatPost(ResourceContext *context) {
         send_game_chat_packet(Net_player, const_cast<char*>(message), MULTI_MSG_ALL, NULL);
         std_add_chat_text(const_cast<char*>(message), 0 /*MY_NET_PLAYER_NUM*/, 1);
     }
-    
+
     return emptyResource(context);
 }
 
@@ -752,13 +753,13 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
             if (pathMatch && r->method == method) {
 
                 std::string userNameAndPassword;
-                
+
                 userNameAndPassword += Multi_options_g.webapiUsername.c_str();
                 userNameAndPassword += ":";
                 userNameAndPassword += Multi_options_g.webapiPassword.c_str();
-                
+
                 std::string basicAuthValue = "Basic ";
-                
+
                 basicAuthValue += base64_encode(reinterpret_cast<const unsigned char*>(userNameAndPassword.c_str()), userNameAndPassword.length());
 
                 const char* authValue = mg_get_header(conn, "Authorization");
@@ -786,7 +787,7 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
 
                 char entityBuffer[1024];
                 memset(entityBuffer, 0, sizeof(entityBuffer));
-                
+
                 /*int readBytes = */mg_read(conn, &entityBuffer, sizeof(entityBuffer));
 
                 json_error_t parseError;
@@ -946,11 +947,11 @@ void std_connect_set_gamename(char *name)
 		}
 	} else {
 		strcpy_s(Netgame.name,name);
-        
+
 		// update fs2netd
 		if (MULTI_IS_TRACKER_GAME) {
 			fs2netd_gameserver_disconnect();
-			Sleep(50);
+			os_sleep(50);
 			fs2netd_gameserver_start();
 		}
 	}

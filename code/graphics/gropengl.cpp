@@ -65,30 +65,14 @@ bool GL_initted = 0;
 //3==NV Radial
 int OGL_fogmode = 0;
 
-#ifdef _WIN32
-static HDC GL_device_context = NULL;
-static HGLRC GL_render_context = NULL;
-static PIXELFORMATDESCRIPTOR GL_pfd;
-#endif
-
 static ushort *GL_original_gamma_ramp = NULL;
 
 int Use_VBOs = 0;
 int Use_PBOs = 0;
 
 static ubyte *GL_saved_screen = NULL;
-static ubyte *GL_saved_mouse_data = NULL;
 static int GL_saved_screen_id = -1;
-static GLuint GL_cursor_pbo = 0;
 static GLuint GL_screen_pbo = 0;
-
-static int GL_mouse_saved = 0;
-static int GL_mouse_saved_x1 = 0;
-static int GL_mouse_saved_y1 = 0;
-static int GL_mouse_saved_x2 = 0;
-static int GL_mouse_saved_y2 = 0;
-
-void opengl_save_mouse_area(int x, int y, int w, int h);
 
 extern const char *Osreg_title;
 
@@ -106,73 +90,37 @@ static int GL_minimized = 0;
 
 static GLenum GL_read_format = GL_BGRA;
 
+SDL_GLContext GL_context = NULL;
 
 void opengl_go_fullscreen()
 {
 	if (Cmdline_fullscreen_window || Cmdline_window || GL_fullscreen || Fred_running)
 		return;
 
-#ifdef _WIN32
-	DEVMODE dm;
-	RECT cursor_clip;
-	HWND wnd = (HWND)os_get_window();
-
-	Assert( wnd );
-
-	os_suspend();
-
-	memset((void*)&dm, 0, sizeof(DEVMODE));
-
-	dm.dmSize = sizeof(DEVMODE);
-	dm.dmPelsHeight = gr_screen.max_h;
-	dm.dmPelsWidth = gr_screen.max_w;
-	dm.dmBitsPerPel = gr_screen.bits_per_pixel;
-	dm.dmDisplayFrequency = os_config_read_uint( NULL, NOX("OGL_RefreshRate"), 0 );
-	dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-
-	if (dm.dmDisplayFrequency)
-		dm.dmFields |= DM_DISPLAYFREQUENCY;
-
-	if ( (ChangeDisplaySettings(&dm, CDS_FULLSCREEN)) != DISP_CHANGE_SUCCESSFUL ) {
-		if (dm.dmDisplayFrequency) {
-			// failed to switch with freq change so try without it just in case
-			dm.dmDisplayFrequency = 0;
-			dm.dmFields &= ~DM_DISPLAYFREQUENCY;
-
-			if ( (ChangeDisplaySettings(&dm, CDS_FULLSCREEN)) != DISP_CHANGE_SUCCESSFUL ) {
-				Warning( LOCATION, "Unable to go fullscreen on second attempt!" );
-			}
-		} else {
-			Warning( LOCATION, "Unable to go fullscreen!" );
-		}
-	}
-
-	ShowWindow( wnd, SW_SHOWNORMAL );
-	UpdateWindow( wnd );
-
-	SetForegroundWindow( wnd );
-	SetActiveWindow( wnd );
-	SetFocus( wnd );
-
-	GetWindowRect((HWND)os_get_window(), &cursor_clip);
-	ClipCursor(&cursor_clip);
-	ShowCursor(FALSE);
-
-	os_resume();
-#else
-	if ( (os_config_read_uint(NULL, NOX("Fullscreen"), 1) == 1) && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) ) {
+	if ( (os_config_read_uint(NULL, NOX("Fullscreen"), 1) == 1) && (!os_get_window() || !(SDL_GetWindowFlags(os_get_window()) & SDL_WINDOW_FULLSCREEN)) ) {
 		os_suspend();
-	//	SDL_WM_ToggleFullScreen( SDL_GetVideoSurface() );
-		if ( (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, 0, SDL_OPENGL | SDL_FULLSCREEN)) == NULL ) {
-			mprintf(("Couldn't go fullscreen!\n"));
-			if ( (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, 0, SDL_OPENGL)) == NULL ) {
-				mprintf(("Couldn't drop back to windowed mode either!\n"));
-				exit(1);
+		if(os_get_window())
+		{
+			SDL_SetWindowFullscreen(os_get_window(), SDL_WINDOW_FULLSCREEN);
+		}
+		else
+		{
+			uint display = os_config_read_uint("Video", "Display", 0);
+			SDL_Window* window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+				gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL);
+			if (window == NULL) {
+				mprintf(("Couldn't go fullscreen!\n"));
+				if ((window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+					gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_OPENGL)) == NULL) {
+					mprintf(("Couldn't drop back to windowed mode either!\n"));
+					exit(1);
+				}
 			}
+
+			os_set_window(window);
 		}
 		os_resume();
 	}
-#endif
 
 	gr_opengl_set_gamma(FreeSpace_gamma);
 
@@ -186,47 +134,25 @@ void opengl_go_windowed()
 	if ( ( !Cmdline_fullscreen_window && !Cmdline_window ) /*|| GL_windowed*/ || Fred_running )
 		return;
 
-#ifdef _WIN32
-	HWND wnd = (HWND)os_get_window();
-	Assert( wnd );
-
-	// if we are already in a windowed state, then just make sure that we are sane and bail
-	if (GL_windowed) {
-		SetForegroundWindow( wnd );
-		SetActiveWindow( wnd );
-		SetFocus( wnd );
-
-		ClipCursor(NULL);
-		ShowCursor(FALSE);
-		return;
-	}
-
-	os_suspend();
-
-	ShowWindow( wnd, SW_SHOWNORMAL );
-	UpdateWindow( wnd );
-
-	SetForegroundWindow( wnd );
-	SetActiveWindow( wnd );
-	SetFocus( wnd );
-
-	ClipCursor(NULL);
-	ShowCursor(FALSE);
-
-	os_resume();
-
-#else
-	if (SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) {
+	if (!os_get_window() || SDL_GetWindowFlags(os_get_window()) & SDL_WINDOW_FULLSCREEN) {
 		os_suspend();
-
-	//	SDL_WM_ToggleFullScreen( SDL_GetVideoSurface() );
-		if ( (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, 0, SDL_OPENGL)) == NULL ) {
-			Warning( LOCATION, "Unable to enter windowed mode!" );
+		if(os_get_window())
+		{
+			SDL_SetWindowFullscreen(os_get_window(), Cmdline_fullscreen_window ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0 );
+		}
+		else
+		{
+			uint display = os_config_read_uint("Video", "Display", 0);
+			SDL_Window* new_window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+				gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_OPENGL);
+			if (new_window == NULL) {
+				Warning( LOCATION, "Unable to enter windowed mode: %s!", SDL_GetError() );
+			}
+			os_set_window(new_window);
 		}
 
 		os_resume();
 	}
-#endif
 
 	GL_windowed = 1;
 	GL_minimized = 0;
@@ -239,45 +165,18 @@ void opengl_minimize()
 	if (GL_minimized /*|| GL_windowed || Cmdline_window*/ || Fred_running)
 		return;
 
-#ifdef _WIN32
-	HWND wnd = (HWND)os_get_window();
-	Assert( wnd );
-
-	// if we are a window then just show the cursor and bail
-	if ( Cmdline_fullscreen_window || Cmdline_window || GL_windowed) {
-		ClipCursor(NULL);
-		ShowCursor(TRUE);
-		return;
-	}
-
-	os_suspend();
-
-	// restore original gamma settings
-	if (GL_original_gamma_ramp != NULL) {
-		SetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
-	}
-
-	ShowWindow(wnd, SW_MINIMIZE);
-	ChangeDisplaySettings(NULL, 0);
-
-	ClipCursor(NULL);
-	ShowCursor(TRUE);
-
-	os_resume();
-#else
 	// lets not minimize if we are in windowed mode
-	if ( !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) )
+	if ( !(SDL_GetWindowFlags(os_get_window()) & SDL_WINDOW_FULLSCREEN) )
 		return;
 
 	os_suspend();
 
 	if (GL_original_gamma_ramp != NULL) {
-		SDL_SetGammaRamp( GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
+		SDL_SetWindowGammaRamp( os_get_window(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
 	}
 
-	SDL_WM_IconifyWindow();
+	SDL_MinimizeWindow(os_get_window());
 	os_resume();
-#endif
 
 	GL_minimized = 1;
 	GL_windowed = 0;
@@ -291,21 +190,8 @@ void gr_opengl_activate(int active)
 			opengl_go_windowed();
 		else
 			opengl_go_fullscreen();
-
-#ifdef SCP_UNIX
-		// Check again and if we didn't go fullscreen turn on grabbing if possible
-		if(!Cmdline_no_grab && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN)) {
-			SDL_WM_GrabInput(SDL_GRAB_ON);
-		}
-#endif
 	} else {
 		opengl_minimize();
-
-#ifdef SCP_UNIX
-		// let go of mouse/keyboard
-		if (SDL_WM_GrabInput(SDL_GRAB_QUERY) == SDL_GRAB_ON)
-			SDL_WM_GrabInput(SDL_GRAB_OFF);
-#endif
 	}
 }
 
@@ -336,31 +222,12 @@ void gr_opengl_flip()
 
 	gr_reset_clip();
 
-	mouse_eval_deltas();
+	mouse_reset_deltas();
 
-	GL_mouse_saved = 0;
-
-	if ( mouse_is_visible() ) {
-		int mx, my;
-
-		gr_reset_clip();
-		mouse_get_pos( &mx, &my );
-
-	//	opengl_save_mouse_area(mx, my, Gr_cursor_size, Gr_cursor_size);
-
-		if (Gr_cursor != -1 && bm_is_valid(Gr_cursor)) {
-			gr_set_bitmap(Gr_cursor);
-			gr_bitmap( mx, my, GR_RESIZE_NONE);
-		}
-	}
-
-#ifdef _WIN32
-	SwapBuffers(GL_device_context);
-#else
 	if (Cmdline_gl_finish)
-		glFinish ();
-	SDL_GL_SwapBuffers();
-#endif
+		glFinish();
+
+	SDL_GL_SwapWindow(os_get_window());
 
 	opengl_tcache_frame();
 
@@ -494,19 +361,9 @@ void gr_opengl_print_screen(const char *filename)
 	GLuint pbo = 0;
 
 	// save to a "screenshots" directory and tack on the filename
-#ifdef SCP_UNIX
-	snprintf( tmp, MAX_PATH_LEN-1, "%s/%s/screenshots/%s.tga", detect_home(), Osreg_user_dir, filename);
-	_mkdir( tmp );
-#else
-	_getcwd( tmp, MAX_PATH_LEN-1 );
-	strcat_s( tmp, "\\screenshots\\" );
-	_mkdir( tmp );
+	snprintf(tmp, MAX_PATH_LEN-1, "screenshots/%s.tga", filename);
 
-	strcat_s( tmp, filename );
-	strcat_s( tmp, ".tga" );
-#endif
-
-	FILE *fout = fopen(tmp, "wb");
+	FILE *fout = fopen(os_get_config_path(tmp).c_str(), "wb");
 
 	if (fout == NULL) {
 		return;
@@ -591,13 +448,13 @@ void gr_opengl_print_screen(const char *filename)
 	}
 }
 
-void gr_opengl_cleanup(int minimize)
+void gr_opengl_cleanup(bool closing, int minimize)
 {
 	if ( !GL_initted ) {
 		return;
 	}
 
-	if ( !Fred_running ) {
+	if ( !closing && !Fred_running ) {
 		gr_reset_clip();
 		gr_clear();
 		gr_flip();
@@ -610,30 +467,10 @@ void gr_opengl_cleanup(int minimize)
 
 	opengl_tcache_flush();
 
-#ifdef _WIN32
-	HWND wnd = (HWND)os_get_window();
-
-	if (GL_render_context) {
-		if ( !wglMakeCurrent(NULL, NULL) ) {
-			MessageBox(wnd, "SHUTDOWN ERROR", "error", MB_OK);
-		}
-
-		if ( !wglDeleteContext(GL_render_context) ) {
-			MessageBox(wnd, "Unable to delete rendering context", "error", MB_OK);
-		}
-
-		GL_render_context = NULL;
-	}
-#endif
-
 	opengl_minimize();
 
 	if (minimize) {
-#ifdef _WIN32
-		if ( !Cmdline_fullscreen_window && !Cmdline_window ) {
-			ChangeDisplaySettings(NULL, 0);
-		}
-#endif
+
 	}
 }
 
@@ -891,11 +728,7 @@ void gr_opengl_set_gamma(float gamma)
 		// Create the Gamma lookup table
 		opengl_make_gamma_ramp(gamma, gamma_ramp);
 
-#ifdef _WIN32
-		SetDeviceGammaRamp( GL_device_context, gamma_ramp );
-#else
-		SDL_SetGammaRamp( gamma_ramp, (gamma_ramp+256), (gamma_ramp+512) );
-#endif
+		SDL_SetWindowGammaRamp( os_get_window(), gamma_ramp, (gamma_ramp+256), (gamma_ramp+512) );
 
 		vm_free(gamma_ramp);
 	}
@@ -923,70 +756,12 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 
 }
 
-void opengl_save_mouse_area(int x, int y, int w, int h)
-{
-	int cursor_size;
-
-	GL_CHECK_FOR_ERRORS("start of save_mouse_area()");
-
-	// lazy - taylor
-	cursor_size = (Gr_cursor_size * Gr_cursor_size);
-
-	// no reason to be bigger than the cursor, should never be smaller
-	if (w != Gr_cursor_size)
-		w = Gr_cursor_size;
-	if (h != Gr_cursor_size)
-		h = Gr_cursor_size;
-
-	GL_mouse_saved_x1 = x;
-	GL_mouse_saved_y1 = y;
-	GL_mouse_saved_x2 = x+w-1;
-	GL_mouse_saved_y2 = y+h-1;
-
-	CLAMP(GL_mouse_saved_x1, gr_screen.clip_left, gr_screen.clip_right );
-	CLAMP(GL_mouse_saved_x2, gr_screen.clip_left, gr_screen.clip_right );
-	CLAMP(GL_mouse_saved_y1, gr_screen.clip_top, gr_screen.clip_bottom );
-	CLAMP(GL_mouse_saved_y2, gr_screen.clip_top, gr_screen.clip_bottom );
-
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
-	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-
-	if ( Use_PBOs ) {
-		// since this is used a lot, and is pretty small in size, we just create it once and leave it until exit
-		if (!GL_cursor_pbo) {
-			vglGenBuffersARB(1, &GL_cursor_pbo);
-			vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_cursor_pbo);
-			vglBufferDataARB(GL_PIXEL_PACK_BUFFER_ARB, cursor_size * 4, NULL, GL_STATIC_READ);
-		}
-
-		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_cursor_pbo);
-		glReadBuffer(GL_BACK);
-		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
-	} else {
-		// this should really only have to be malloc'd once
-		if (GL_saved_mouse_data == NULL)
-			GL_saved_mouse_data = (ubyte*)vm_malloc_q(cursor_size * 4);
-
-		if (GL_saved_mouse_data == NULL)
-			return;
-
-		glReadBuffer(GL_BACK);
-		glReadPixels(x, gr_screen.max_h-y-1-h, w, h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, GL_saved_mouse_data);
-	}
-
-	GL_CHECK_FOR_ERRORS("end of save_mouse_area()");
-
-	GL_mouse_saved = 1;
-}
-
 int gr_opengl_save_screen()
 {
 	int i;
 	ubyte *sptr = NULL, *dptr = NULL;
 	ubyte *opengl_screen_tmp = NULL;
-	int width_times_pixel, mouse_times_pixel;
+	int width_times_pixel;
 
 	gr_opengl_reset_clip();
 
@@ -1027,7 +802,6 @@ int gr_opengl_save_screen()
 		pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 
 		width_times_pixel = (gr_screen.max_w * 4);
-		mouse_times_pixel = (Gr_cursor_size * 4);
 
 		sptr = (ubyte *)pixels;
 		dptr = (ubyte *)&GL_saved_screen[gr_screen.max_w * gr_screen.max_h * 4];
@@ -1040,24 +814,6 @@ int gr_opengl_save_screen()
 
 		vglUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
 		vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
-
-		if (GL_mouse_saved && GL_cursor_pbo) {
-			vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_cursor_pbo);
-
-			pixels = (GLubyte*)vglMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
-
-			sptr = (ubyte *)pixels;
-			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
-
-			for (i = 0; i < Gr_cursor_size; i++) {
-				memcpy(dptr, sptr, mouse_times_pixel);
-				sptr += mouse_times_pixel;
-				dptr -= width_times_pixel;
-			}
-
-			vglUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
-			vglBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, 0);
-		}
 
 		vglDeleteBuffersARB(1, &GL_screen_pbo);
 		GL_screen_pbo = 0;
@@ -1083,7 +839,6 @@ int gr_opengl_save_screen()
 		dptr = (ubyte *)GL_saved_screen;
 
 		width_times_pixel = (gr_screen.max_w * 4);
-		mouse_times_pixel = (Gr_cursor_size * 4);
 
 		for (i = 0; i < gr_screen.max_h; i++) {
 			sptr -= width_times_pixel;
@@ -1092,17 +847,6 @@ int gr_opengl_save_screen()
 		}
 
 		vm_free(opengl_screen_tmp);
-
-		if (GL_mouse_saved && GL_saved_mouse_data) {
-			sptr = (ubyte *)GL_saved_mouse_data;
-			dptr = (ubyte *)&GL_saved_screen[(GL_mouse_saved_x1 + GL_mouse_saved_y2 * gr_screen.max_w) * 4];
-
-			for (i = 0; i < Gr_cursor_size; i++) {
-				memcpy(dptr, sptr, mouse_times_pixel);
-				sptr += mouse_times_pixel;
-				dptr -= width_times_pixel;
-			}
-		}
 
 		GL_saved_screen_id = bm_create(32, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
 	}
@@ -1280,17 +1024,7 @@ void opengl_set_vsync(int status)
 		return;
 	}
 
-#if defined(__APPLE__)
-	// GLInt on 10.6 is an actual int now, instead of a long
-	// This will need further testing once Snow Leopard 10.6 goes RTM
-	CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, (GLint*)&status);
-#elif defined(_WIN32)
-	vwglSwapIntervalEXT(status);
-#else
-	// NOTE: this may not work well with the closed NVIDIA drivers since those use the
-	//       special "__GL_SYNC_TO_VBLANK" environment variable to manage sync
-	vglXSwapIntervalSGI(status);
-#endif
+	SDL_GL_SetSwapInterval(status);
 
 	GL_CHECK_FOR_ERRORS("end of set_vsync()");
 }
@@ -1316,16 +1050,6 @@ void opengl_setup_viewport()
 // NOTE: This should only ever be called through os_cleanup(), or when switching video APIs
 void gr_opengl_shutdown()
 {
-	if (GL_cursor_pbo) {
-		vglDeleteBuffersARB(1, &GL_cursor_pbo);
-		GL_cursor_pbo = 0;
-	}
-
-	if (GL_saved_mouse_data != NULL) {
-		vm_free(GL_saved_mouse_data);
-		GL_saved_mouse_data = NULL;
-	}
-
 	opengl_tcache_shutdown();
 	opengl_light_shutdown();
 	opengl_tnl_shutdown();
@@ -1335,37 +1059,17 @@ void gr_opengl_shutdown()
 
 	GL_initted = false;
 
-#ifdef _WIN32
-	// restore original gamma settings
 	if (GL_original_gamma_ramp != NULL) {
-		SetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
+		SDL_SetWindowGammaRamp( os_get_window(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
 	}
-
-	// swap out our window mode and un-jail the cursor
-	ShowWindow((HWND)os_get_window(), SW_HIDE);
-	ClipCursor(NULL);
-	ChangeDisplaySettings( NULL, 0 );
-#else
-	if (GL_original_gamma_ramp != NULL) {
-		SDL_SetGammaRamp( GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
-	}
-#endif
 
 	if (GL_original_gamma_ramp != NULL) {
 		vm_free(GL_original_gamma_ramp);
 		GL_original_gamma_ramp = NULL;
 	}
 
-#ifdef _WIN32
-	wglMakeCurrent(NULL, NULL);
-
-	if (GL_render_context) {
-		wglDeleteContext(GL_render_context);
-		GL_render_context = NULL;
-	}
-
-	GL_device_context = NULL;
-#endif
+	SDL_GL_DeleteContext(GL_context);
+	GL_context = NULL;
 }
 
 // NOTE: This should only ever be called through atexit()!!!
@@ -1379,7 +1083,7 @@ int opengl_init_display_device()
 {
 	int bpp = gr_screen.bits_per_pixel;
 
-	if ( (bpp != 16) && (bpp != 32) ) {
+	if ((bpp != 16) && (bpp != 32)) {
 		Int3();
 		return 1;
 	}
@@ -1488,128 +1192,18 @@ int opengl_init_display_device()
 		}
 	}
 
-
-	// now init the display device
-#ifdef _WIN32
-	int PixelFormat;
-	HWND wnd = 0;
-	PIXELFORMATDESCRIPTOR pfd_test;
-
-	mprintf(("  Initializing WGL...\n"));
-
-	memset(&GL_pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
-	memset(&pfd_test, 0, sizeof(PIXELFORMATDESCRIPTOR));
-
-	GL_pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-	GL_pfd.nVersion = 1;
-	GL_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	GL_pfd.iPixelType = PFD_TYPE_RGBA;
-	GL_pfd.cColorBits = (ubyte)bpp;
-	GL_pfd.cRedBits = (ubyte)Gr_red.bits;
-	GL_pfd.cGreenBits = (ubyte)Gr_green.bits;
-	GL_pfd.cBlueBits = (ubyte)Gr_blue.bits;
-	GL_pfd.cAlphaBits = (bpp == 32) ? (ubyte)Gr_alpha.bits : 0;
-	GL_pfd.cDepthBits = (bpp == 32) ? 24 : 16;
-	GL_pfd.cStencilBits = (bpp == 32) ? 8 : 1;
-
-	wnd = (HWND)os_get_window();
-
-	Assert( wnd != NULL );
-
-	extern uint os_get_dc();
-	GL_device_context = (HDC)os_get_dc();
-
-	if ( !GL_device_context ) {
-		MessageBox(wnd, "Unable to get device context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
-		return 1;
-	}
-
-	PixelFormat = ChoosePixelFormat(GL_device_context, &GL_pfd);
-
-	if ( !PixelFormat ) {
-		MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
-		return 1;
-	} else {
-		DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
-
-		// make sure that we are hardware accelerated and not using the generic implementation
-		if ( !Fred_running && (pfd_test.dwFlags & PFD_GENERIC_FORMAT) && !(pfd_test.dwFlags & PFD_GENERIC_ACCELERATED) ) {
-			Assert( bpp == 32 );
-
-			// if we failed at 32-bit then we are probably a 16-bit desktop, so try and init a 16-bit visual instead
-			GL_pfd.cAlphaBits = 0;
-			GL_pfd.cDepthBits = 16;
-			GL_pfd.cStencilBits = 1;
-			// NOTE: the bit values for colors should get updated automatically by ChoosePixelFormat()
-
-			PixelFormat = ChoosePixelFormat(GL_device_context, &GL_pfd);
-
-			if (!PixelFormat) {
-				MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
-				return 1;
-			}
-
-			// double-check that we are correct now
-			DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
-
-			if ( (pfd_test.dwFlags & PFD_GENERIC_FORMAT) && !(pfd_test.dwFlags & PFD_GENERIC_ACCELERATED) ) {
-				MessageBox(wnd, "Unable to get proper pixel format for OpenGL W32!", "Error", MB_ICONERROR | MB_OK);
-				return 1;
-			}
-		}
-	}
-
-	if ( !SetPixelFormat(GL_device_context, PixelFormat, &GL_pfd) ) {
-		MessageBox(wnd, "Unable to set pixel format for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
-		return 1;
-	}
-
-	GL_render_context = wglCreateContext(GL_device_context);
-	if ( !GL_render_context ) {
-		MessageBox(wnd, "Unable to create rendering context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
-		return 1;
-	}
-
-	if ( !wglMakeCurrent(GL_device_context, GL_render_context) ) {
-		MessageBox(wnd, "Unable to make current thread for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
-		return 1;
-	}
-
-	mprintf(("  Requested WGL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, GL_pfd.cDepthBits, GL_pfd.cStencilBits, (GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0));
-
-	// now report back as to what we ended up getting
-
-	DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &GL_pfd);
-
-	int r = GL_pfd.cRedBits;
-	int g = GL_pfd.cGreenBits;
-	int b = GL_pfd.cBlueBits;
-	int depth = GL_pfd.cDepthBits;
-	int stencil = GL_pfd.cStencilBits;
-	int db = ((GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0);
-
-	mprintf(("  Actual WGL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d\n", r, g, b, depth, stencil, db));
-
-	// get the default gamma ramp so that we can restore it on close
-	if (GL_original_gamma_ramp != NULL) {
-		GetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
-	}
-
-#else
-
-	int flags = SDL_OPENGL;
 	int r = 0, g = 0, b = 0, depth = 0, stencil = 1, db = 1;
 
-	mprintf(("  Initializing SDL...\n"));
+	mprintf(("  Initializing SDL video...\n"));
+
+#ifdef SCP_UNIX
+	// Slight hack to make Mesa advertise S3TC support without libtxc_dxtn
+	setenv("force_s3tc_enable", "true", 1);
+#endif
 
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
-		fprintf (stderr, "Couldn't init SDL: %s", SDL_GetError());
+		fprintf(stderr, "Couldn't init SDL video: %s", SDL_GetError());
 		return 1;
-	}
-
-	// grab mouse/key unless told otherwise, ignore when we are going fullscreen
-	if ( (Cmdline_fullscreen_window|| Cmdline_window || os_config_read_uint(NULL, "Fullscreen", 1) == 0) && !Cmdline_no_grab ) {
-		SDL_WM_GrabInput(SDL_GRAB_ON);
 	}
 
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, Gr_red.bits);
@@ -1624,15 +1218,32 @@ int opengl_init_display_device()
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (fsaa_samples == 0) ? 0 : 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, fsaa_samples);
 
-	// Slight hack to make Mesa advertise S3TC support without libtxc_dxtn
-	setenv("force_s3tc_enable", "true", 1);
-
 	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, (bpp == 32) ? 8 : 1, db, fsaa_samples));
 
-	if (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, bpp, flags) == NULL) {
-		fprintf (stderr, "Couldn't set video mode: %s", SDL_GetError());
-		return 1;
+	int windowflags = SDL_WINDOW_OPENGL;
+	if (Cmdline_fullscreen_window)
+		windowflags |= SDL_WINDOW_BORDERLESS;
+
+	// This code also gets called in the FRED initialization, that means we possibly already have a window!
+
+	if (os_get_window() == NULL)
+	{
+		uint display = os_config_read_uint("Video", "Display", 0);
+		SDL_Window* window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+			gr_screen.max_w, gr_screen.max_h, windowflags);
+		if (window == NULL)
+		{
+			mprintf(("Could not create window: %s", SDL_GetError()));
+			return 1;
+		}
+
+		os_set_window(window);
 	}
+
+	GL_context = SDL_GL_CreateContext(os_get_window());
+
+	SDL_GL_MakeCurrent(os_get_window(), GL_context);
+	//TODO: set up bpp settings
 
 	SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &r);
 	SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &g);
@@ -1644,15 +1255,9 @@ int opengl_init_display_device()
 
 	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n", r, g, b, depth, stencil, db, fsaa_samples));
 
-	SDL_ShowCursor(0);
-
-	/* might as well put this here */
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-
 	if (GL_original_gamma_ramp != NULL) {
-		SDL_GetGammaRamp( GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
+		SDL_GetWindowGammaRamp( os_get_window(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
 	}
-#endif
 
 	return 0;
 }
@@ -1830,7 +1435,7 @@ bool gr_opengl_init()
 		atexit(opengl_close);
 
 	if (GL_initted) {
-		gr_opengl_cleanup();
+		gr_opengl_cleanup(false);
 		GL_initted = false;
 	}
 
@@ -1944,14 +1549,12 @@ bool gr_opengl_init()
 	Gr_current_green = &Gr_green;
 	Gr_current_alpha = &Gr_alpha;
 
-	Mouse_hidden++;
 	gr_opengl_reset_clip();
 	gr_opengl_clear();
 	gr_opengl_flip();
 	gr_opengl_clear();
 	gr_opengl_flip();
 	gr_opengl_clear();
-	Mouse_hidden--;
 
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &GL_max_elements_vertices);
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &GL_max_elements_indices);

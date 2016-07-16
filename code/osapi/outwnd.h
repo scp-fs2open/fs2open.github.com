@@ -14,19 +14,12 @@
 
 #ifndef NDEBUG
 void load_filter_info(void);
-void outwnd_init(int display_under_freespace_window = 0);
+void outwnd_init();
 void outwnd_close();
 void outwnd_printf(const char *id, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 void outwnd_printf2(SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(1, 2);
 
 extern int Log_debug_output_to_file;
-
-void safe_point(const char *file, int line, const char *format, ...);
-#define SAFEPOINT(s) safe_point(__FILE__,__LINE__,(s))
-
-#else
-
-#define SAFEPOINT(s)
 
 #endif	// NDEBUG
 

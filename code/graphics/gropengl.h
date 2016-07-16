@@ -22,8 +22,6 @@
 	#include "graphics/gl/glu.h"
 	#include "graphics/gl/glext.h"
  	#include "graphics/gl/wglext.h"
-
-	#define STUB_FUNCTION 0
 #elif defined(SCP_UNIX)
 #ifdef __APPLE__
 	#define GL_GLEXT_LEGACY // I'd like to punch the idiot that made this needed
@@ -653,7 +651,7 @@ typedef void (APIENTRYP PFNGLMULTIDRAWELEMENTSBASEVERTEXPROC) (GLenum mode, cons
 const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
 
 bool gr_opengl_init();
-void gr_opengl_cleanup(int minimize=1);
+void gr_opengl_cleanup(bool closing, int minimize=1);
 int opengl_check_for_errors(char *err_at = NULL);
 bool is_minimum_GLSL_version();
 

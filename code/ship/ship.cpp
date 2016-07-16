@@ -84,6 +84,10 @@
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
 
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
 #define NUM_SHIP_SUBSYSTEMS_PER_SET		200 	// Reduced from 1000 to 400 by MK on 4/1/98.  DTP; bumped from 700 to 2100
 												// Reduced to 200 by taylor on 3/13/07  --  it's managed in dynamically allocated sets now
 												//    Highest I saw was 164 in sm2-03a which Sandeep says has a lot of ships.
@@ -5930,7 +5934,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		sprintf (err_msg, "Unable to allocate ship subsystems, which shouldn't be possible anymore. Current allocation is %d (%d in use). No subsystems have been assigned to %s.", Num_ship_subsystems_allocated, Num_ship_subsystems, shipp->ship_name);
 
 		if (Fred_running) 
-			MessageBox(NULL, err_msg, "Error", MB_OK);
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, err_msg);
 		else
 			Error(LOCATION, "%s", err_msg);
 	}

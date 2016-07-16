@@ -385,6 +385,8 @@ FS2_SOURCES =	\
 	inetfile/chttpget.h	\
 	inetfile/inetgetfile.cpp	\
 	inetfile/inetgetfile.h	\
+	io/cursor.cpp	\
+	io/cursor.h	\
 	io/key.cpp	\
 	io/key.h	\
 	io/keycontrol.cpp	\
@@ -586,6 +588,14 @@ FS2_SOURCES =	\
 	object/waypoint.h	\
 	observer/observer.cpp	\
 	observer/observer.h	\
+	osapi/dialogs.cpp	\
+	osapi/dialogs.h	\
+	osapi/osapi.cpp	\
+	osapi/osapi.h	\
+	osapi/osregistry.cpp	\
+	osapi/osregistry.h  \
+	osapi/outwnd.cpp	\
+	osapi/outwnd.h \
 	palman/palman.cpp	\
 	palman/palman.h	\
 	parse/encrypt.cpp	\
@@ -747,7 +757,8 @@ if FS2_OS_UNIX
 JOY_SOURCES =	\
 	io/joy.h	\
 	io/joy_ff.h	\
-	io/joy-unix.cpp
+	io/joy_ff-sdl.cpp	\
+	io/joy-sdl.cpp
 endif
 
 ## Win32-specific sources
@@ -767,24 +778,12 @@ WIN32_SOURCES =	\
 	graphics/gl/Gl.h	\
 	graphics/gl/Glext.h	\
 	graphics/gl/wglext.h	\
-	osapi/monopub.h	\
-	osapi/osapi.cpp	\
-	osapi/osapi.h	\
-	osapi/osregistry.cpp	\
-	osapi/osregistry.h	\
-	osapi/outwnd.cpp	\
-	osapi/outwnd.h
+	osapi/monopub.h
 endif
 
 ## Unix-specific sources
 if FS2_OS_UNIX
 UNIX_SOURCES =	\
-	osapi/osapi_unix.cpp	\
-	osapi/osapi.h	\
-	osapi/osregistry_unix.cpp	\
-	osapi/osregistry.h	\
-	osapi/outwnd_unix.cpp	\
-	osapi/outwnd.h	\
 	windows_stub/stubs.cpp	\
 	windows_stub/config.h
 endif

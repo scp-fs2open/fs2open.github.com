@@ -237,6 +237,9 @@ void popupdead_start()
 		b->hide();
 	}
 	
+	io::mouse::CursorManager::get()->pushStatus();
+	io::mouse::CursorManager::get()->showCursor(true);
+	
 	Popupdead_default_choice = 0;
 	Popupdead_choice = -1;
 	Popupdead_active = 1;
@@ -528,6 +531,8 @@ void popupdead_close()
 	gamesnd_play_iface(SND_POPUP_DISAPPEAR);
 	Popupdead_window.destroy();
 	game_flush();
+	
+	io::mouse::CursorManager::get()->popStatus();
 
 	Popupdead_active = 0;
 	Popupdead_skip_active = 0;

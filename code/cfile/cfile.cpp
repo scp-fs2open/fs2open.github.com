@@ -36,8 +36,9 @@
 
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
-#ifdef SCP_UNIX
 char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
+#ifdef SCP_UNIX
+char Cfile_user_dir_legacy[CFILE_ROOT_DIRECTORY_LEN] = "";
 #endif
 
 // During cfile_init, verify that Pathtypes[n].index == n for each item
@@ -196,17 +197,15 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
 	i = strlen(buf);
 
-	/* Determine if we in a root directory? */
-	if (cfile_in_root_dir(buf)) {
-		MessageBox((HWND)NULL,
-		           "FreeSpace2/Fred2 cannot be run from a drive root directory!",
-		           "Error", MB_OK);
+	// are we in a root directory?		
+	if(cfile_in_root_dir(buf)){
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "FreeSpace2/Fred2 cannot be run from a drive root directory!");
 		return 1;
-	}
+	}		
 
 	// This needs to be set here because cf_build_secondary_filelist assumes it to be true
 	cfile_inited = 1;
-
+	
 	/*
 	 * Determine the executable's directory.  Note that DIR_SEPARATOR_CHAR
 	 * is guaranteed to be found in the string else cfile_in_root_dir()
@@ -221,10 +220,13 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	cfile_chdir(buf);
 
 	// set root directory
-	strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN - 1);
+	strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN-1);
+	strncpy(Cfile_user_dir, os_get_config_path().c_str(), CFILE_ROOT_DIRECTORY_LEN-1);
+	
 #ifdef SCP_UNIX
-	snprintf(Cfile_user_dir, CFILE_ROOT_DIRECTORY_LEN - 1, "%s/%s/",
-	         detect_home(), Osreg_user_dir);
+	// Initialize path of old pilot files
+	extern const char* Osreg_user_dir_legacy;
+	snprintf(Cfile_user_dir_legacy, CFILE_ROOT_DIRECTORY_LEN-1, "%s/%s/", getenv("HOME"), Osreg_user_dir_legacy);
 #endif
 
 	for (i = 0; i < MAX_CFILE_BLOCKS; i++) {

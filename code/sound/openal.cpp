@@ -11,6 +11,11 @@
 #include <windows.h>
 #endif
 
+// Stupid windows workaround...
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
 
 static SCP_string Playback_device;
 static SCP_string Capture_device;
@@ -364,13 +369,8 @@ bool openal_init_device(SCP_string *playback, SCP_string *capture)
 	alcGetIntegerv(NULL, ALC_MINOR_VERSION, sizeof(ALCint), &AL_minor_version);
 
 	if (AL_minor_version < 1) {
-#ifdef _WIN32
-		MessageBox(NULL, "OpenAL 1.1 or newer is required for proper operation.  Please upgrade your OpenAL drivers, which\nare available at http://www.openal.org/downloads.html, and try running the game again.", NULL, MB_OK);
-#else
-		printf("OpenAL 1.1 or newer is required for proper operation.\n");
-		printf("Please upgrade to a newer version if on OS X or switch\n");
-		printf("to OpenAL-Soft on Linux.\n");
-#endif
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR,
+			"OpenAL 1.1 or newer is required for proper operation. On Linux and Windows OpenAL Soft is recommended. If you are on Mac OS X you need to upgrade your OS.");
 
 		alcMakeContextCurrent(NULL);
 		alcDestroyContext(context);
@@ -452,4 +452,3 @@ bool openal_init_device(SCP_string *playback, SCP_string *capture)
 
 	return true;
 }
-

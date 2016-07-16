@@ -22,10 +22,8 @@ extern const char *Osreg_company_name;
 extern const char *Osreg_class_name;
 extern const char *Osreg_app_name;
 extern const char *Osreg_title;
-#ifdef SCP_UNIX
-extern const char *Osreg_user_dir;
-#endif
 
+extern const char *Osreg_config_file_name;
 
 // ------------------------------------------------------------------------------------------------------------
 // REGISTRY FUNCTIONS
@@ -53,4 +51,3 @@ const char * os_config_read_string( const char *section, const char *name, const
 unsigned int  os_config_read_uint( const char *section, const char *name, unsigned int default_value );
 
 #endif
-

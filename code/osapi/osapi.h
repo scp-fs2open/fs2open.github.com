@@ -13,6 +13,7 @@
 
 #include "globalincs/pstypes.h"
 #include "osapi/osregistry.h"
+#include "osapi/dialogs.h"
 
 // --------------------------------------------------------------------------------------------------
 // OSAPI DEFINES/VARS
@@ -21,36 +22,11 @@
 // set if running under MsDev - done after os_init(...) has returned
 extern int Os_debugger_running;
 
-// game-wide
-//#define THREADED
-
-#ifdef THREADED
-#ifdef _WIN32
-	#define INITIALIZE_CRITICAL_SECTION(csc)	do { InitializeCriticalSection(&csc); } while(0)
-	#define DELETE_CRITICAL_SECTION(csc)		do { DeleteCriticalSection(&csc); } while(0)
-	#define ENTER_CRITICAL_SECTION(csc)			do { EnterCriticalSection(&csc); } while(0)
-	#define LEAVE_CRITICAL_SECTION(csc)			do { LeaveCriticalSection(&csc); } while(0)
-#else
-	#define INITIALIZE_CRITICAL_SECTION(csc)	do { csc = SDL_CreateMutex(); } while(0)
-	#define DELETE_CRITICAL_SECTION(csc)		do { SDL_DestroyMutex(csc); } while(0)
-	#define ENTER_CRITICAL_SECTION(csc)			do { SDL_LockMutex(csc); } while(0)
-	#define LEAVE_CRITICAL_SECTION(csc)			do { SDL_UnlockMutex(csc); } while(0)
-#endif // _WIN32
-#else
-	#define INITIALIZE_CRITICAL_SECTION(csc)	do { } while(0)
-	#define DELETE_CRITICAL_SECTION(csc)		do { } while(0)
-	#define ENTER_CRITICAL_SECTION(csc)			do { } while(0)
-	#define LEAVE_CRITICAL_SECTION(csc)			do { } while(0)
-#endif
-
 // --------------------------------------------------------------------------------------------------
 // OSAPI FUNCTIONS
 //
 
 // initialization/shutdown functions -----------------------------------------------
-
-// detect the home/base/writable directory to use
-extern const char *detect_home(void);
 
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.
@@ -62,7 +38,6 @@ void os_set_title( const char * title );
 // call at program end
 void os_cleanup();
 
-
 // window management ---------------------------------------------------------------
 
 // toggle window size between full screen and windowed
@@ -72,14 +47,9 @@ void os_toggle_fullscreen();
 int os_foreground();
 
 // Returns the handle to the main window
-#ifdef _WIN32
-uint os_get_window(); 
-#else
-#define os_get_window() NULL
-#endif // _WIN32
+SDL_Window* os_get_window();
 
-void os_set_window(uint new_handle);	 
-
+void os_set_window(SDL_Window* new_handle);	 
 
 // process management --------------------------------------------------------------
 
@@ -87,20 +57,26 @@ void os_set_window(uint new_handle);
 void os_poll();
 
 // Sleeps for n milliseconds or until app becomes active.
-void os_sleep(int ms);
+void os_sleep(uint ms);
 
 // Used to stop message processing
 void os_suspend();
 
 // resume message processing
-void os_resume();
+void os_resume(); 
+
+/**
+ * @brief Determines if FSO is running in legacy config mode
+ */
+bool os_is_legacy_mode();
+
+/**
+ * @brief Gets a path to a configuration file
+ * A relative path to the wanted file or directory. Directories should be separated with '/'
+ * @param subpath The path of the wanted file or directory, may be emtpy to get the config directory
+ * 
+ * @returns The path to the specified config path
+ */
+SCP_string os_get_config_path(const SCP_string& subpath = "");
 
 #endif // _OSAPI_H
-
-
-// Goober5000
-
-#ifdef _WIN32
-void disableWindowsKey();
-void enableWindowsKey();
-#endif // _WIN32

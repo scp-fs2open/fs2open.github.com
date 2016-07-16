@@ -671,7 +671,7 @@ static void OGG_video_draw(theora_state *tstate)
 
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
-	Mouse_hidden = 1;
+	io::mouse::CursorManager::get()->showCursor(false);
 	gr_flip();
 	os_poll();
 

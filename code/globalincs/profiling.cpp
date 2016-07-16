@@ -36,8 +36,8 @@
 SCP_vector<profile_sample> samples;
 SCP_vector<profile_sample_history> history;
 
-uint start_profile_time = 0;
-uint end_profile_time = 0;
+std::uint64_t start_profile_time = 0;
+std::uint64_t end_profile_time = 0;
 
 SCP_string profile_output;
 std::ofstream profiling_file;
@@ -145,7 +145,7 @@ void profile_end(const char* name)
 			if ( !strcmp(samples[i].name.c_str(), name) && samples[i].parent == child_of ) {
 				int inner = 0;
 				int parent = -1;
-				uint end_time = timer_get_high_res_microseconds();
+				std::uint64_t end_time = timer_get_high_res_microseconds();
 				samples[i].open_profiles--;
 
 				// count all parents and find the immediate parent

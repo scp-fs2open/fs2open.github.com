@@ -94,7 +94,7 @@ Uint32 CALLBACK TimeProc(Uint32 interval, void *param)
 {
 	if ( !Rtv_callback ) {
 		SDL_RemoveTimer(Rtv_record_timer_id);
-		Rtv_record_timer_id = NULL;
+		Rtv_record_timer_id = 0;
 
 		return 0;
 	}
@@ -106,7 +106,7 @@ Uint32 CALLBACK TimeProc(Uint32 interval, void *param)
 		return interval;
 	} else {
 		SDL_RemoveTimer(Rtv_record_timer_id);
-		Rtv_record_timer_id = NULL;
+		Rtv_record_timer_id = 0;
 
 		return 0;
 	}
@@ -195,11 +195,10 @@ void rtvoice_stop_recording()
 	if ( Rtv_record_timer_id ) {
 #ifndef _WIN32
 		SDL_RemoveTimer(Rtv_record_timer_id);
-		Rtv_record_timer_id = NULL;
 #else
 		timeKillEvent(Rtv_record_timer_id);
-		Rtv_record_timer_id = 0;
 #endif
+		Rtv_record_timer_id = 0;
 	}
 
 	Rtv_recording=0;

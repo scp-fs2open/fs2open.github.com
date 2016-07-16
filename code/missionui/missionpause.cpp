@@ -117,6 +117,9 @@ void pause_init()
 	Pause_win.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);	
 
 	Pause_background_bitmap = bm_load(Pause_bmp_name[gr_screen.res]);
+	
+	io::mouse::CursorManager::get()->pushStatus();
+	io::mouse::CursorManager::get()->showCursor(true);
 
 	Paused = 1;
 }
@@ -260,6 +263,8 @@ void pause_close()
 
 	Pause_win.destroy();		
 	game_flush();
+	
+	io::mouse::CursorManager::get()->popStatus();
 
 	// unpause all the music
 	audiostream_unpause_all();		

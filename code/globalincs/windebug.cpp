@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 // Nothing in this module should be externalized!!!
 //XSTR:OFF
@@ -16,6 +16,7 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <stdio.h>
+#include <iomanip>
 
 #ifdef _MSC_VER
 #	include <crtdbg.h>
@@ -41,13 +42,6 @@
 
 extern void gr_activate(int active);
 
-bool Messagebox_active = false;
-
-int Global_warning_count = 0;
-int Global_error_count = 0;
-
-const int Messagebox_lines = 30;
-
 #ifndef _ASSERT
   #ifndef _DEBUG
     #define _ASSERT(expr) ((void)0)
@@ -63,124 +57,11 @@ const char *clean_filename( const char *name)
 	// Move p to point to first letter of EXE filename
 	while( (*p!='\\') && (*p!='/') && (*p!=':') && (p>= name) )
 		p--;
-	p++;	
+	p++;
 
-	return p;	
-}		   
-
-#if defined( SHOW_CALL_STACK )
-static bool Dump_to_log = true; 
-
-class DumpBuffer
-{
-public :
-	enum { BUFFER_SIZE = 32000 } ;
-	DumpBuffer() ;
-	void Clear() ;
-	void Printf( const char* format, ... ) ;
-	void SetWindowText( HWND hWnd ) const ;
-	char buffer[ BUFFER_SIZE ] ;
-
-	void Append(const char* text);
-	void Truncate(size_t size);
-	void TruncateLines(int num_allowed_lines);
-	size_t Size() const;
-private :
-	char* current ;
-} ;
-
-
-
-DumpBuffer :: DumpBuffer()
-{
-	Clear() ;
+	return p;
 }
 
-
-void DumpBuffer :: Clear()
-{
-	current = buffer ;
-}
-
-
-void DumpBuffer :: Append(const char* text)
-{
-	strcat_s(buffer, text);
-}
-
-
-void DumpBuffer :: Truncate(size_t size)
-{
-	if (size >= strlen(buffer))
-		return;
-
-	buffer[size] = 0;
-}
-
-
-// adapted from parselo
-void DumpBuffer :: TruncateLines(int num_allowed_lines)
-{
-	Assert(num_allowed_lines > 0);
-	char *find_from = buffer;
-	char *lastch = find_from + strlen(buffer) - 6;
-
-	while (find_from < lastch)
-	{
-		if (num_allowed_lines <= 0)
-		{
-			*find_from = 0;
-			strcat_s(buffer, "[...]");
-			break;
-		}
-
-		char *p = strchr(find_from, '\n');
-		if (p == NULL)
-			break;
-
-		num_allowed_lines--;
-		find_from = p + 1;
-	}
-}
-
-
-size_t DumpBuffer :: Size() const
-{
-	return strlen(buffer);
-}
-
-
-void DumpBuffer :: Printf( const char* format, ... )
-{
-	va_list argPtr ;
-	int pos = current - buffer;
-	int max = BUFFER_SIZE - pos;
-
-	// protect against obvious buffer overflow
-	if (pos >= BUFFER_SIZE)
-		return;
-
-	va_start( argPtr, format ) ;
-	vsnprintf( current, max-1, format, argPtr ) ;
-	va_end( argPtr ) ;
-
-	current[max-1] = '\0';
-	current += strlen(current);
-}
-
-
-void DumpBuffer :: SetWindowText( HWND hWnd ) const
-{
-	SendMessage( hWnd, WM_SETTEXT, 0, (LPARAM)buffer ) ;
-}
-
-/* Needed by LUA printf */
-// This ought to be local to VerboseAssert, but it
-// causes problems in Visual C++ (in the CRTL init phase)
-static DumpBuffer dumpBuffer;
-const char* Separator = "------------------------------------------------------------------\n" ;
-
-#endif
 
 /* MSVC2005+ callstack support
  */
@@ -211,7 +92,7 @@ public:
 		entry.symbol = symbol;
 		m_stackFrames.push_back( entry );
 	}
-	
+
 	virtual void OnError( const char* error )
 	{
 		/* No error handling here! */
@@ -246,8 +127,7 @@ class PE_Debug
     PE_Debug() ;
     ~PE_Debug() ;
     void ClearReport() ;
-    int DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTANCE hInstance ) ;
-    void Display() ;
+    int DumpDebugInfo( std::ostream& dumpBuffer, const BYTE* caller, HINSTANCE hInstance ) ;
   private :
     // Report data
     enum { MAX_MODULENAME_LEN = 512, VA_MAX_FILENAME_LEN = 256 } ;
@@ -268,8 +148,8 @@ class PE_Debug
     void ClearDebugPtrs() ;
     void MapFileInMemory( const char* module ) ;
     void FindDebugInfo() ;
-    void DumpSymbolInfo( DumpBuffer& dumpBuffer, DWORD relativeAddress ) ;
-    void DumpLineNumber( DumpBuffer& dumpBuffer, DWORD relativeAddress ) ;
+    void DumpSymbolInfo( std::ostream& dumpBuffer, DWORD relativeAddress ) ;
+    void DumpLineNumber(std::ostream& dumpBuffer, DWORD relativeAddress ) ;
     PIMAGE_COFF_SYMBOLS_HEADER GetDebugHeader() ;
     PIMAGE_SECTION_HEADER SectionHeaderFromName( const char* name ) ;
     const char* GetSymbolName( PIMAGE_SYMBOL sym ) ;
@@ -335,7 +215,7 @@ void PE_Debug :: ClearFileCache()
   }
 
 
-void PE_Debug :: DumpLineNumber( DumpBuffer& dumpBuffer, DWORD relativeAddress )
+void PE_Debug :: DumpLineNumber(std::ostream& dumpBuffer, DWORD relativeAddress )
   {
   PIMAGE_LINENUMBER line = BasedPtr( PIMAGE_LINENUMBER, COFFDebugInfo,
                                      COFFDebugInfo->LvaToFirstLinenumber ) ;
@@ -358,13 +238,8 @@ void PE_Debug :: DumpLineNumber( DumpBuffer& dumpBuffer, DWORD relativeAddress )
     line++ ;
     }
   if( lineNum != none ) {
-    dumpBuffer.Printf( "  line %d\r\n", lineNum ) ;
-	if (Dump_to_log) {
-		mprintf(( "  line %d\r\n", lineNum )) ;
-	}
-  }	
-//  else
-//  dumpBuffer.Printf( "  line <unknown>\r\n" ) ;
+	  dumpBuffer << "  line " << lineNum << "\n";
+  }
   }
 
 
@@ -427,15 +302,15 @@ void Add_Symbol( int section, int offset, const char *name, char *module )
 	}
 
 	MemSymbol * sym = &Symbols[Num_symbols++];
-	
+
 	sym->section = section;
 	sym->offset = offset;
 	sym->size = -1;
-	
-	strcpy_s( sym->name, name );	
-	strcat_s( sym->name, "(" );	
-	strcat_s( sym->name, module );	
-	strcat_s( sym->name, ")" );	
+
+	strcpy_s( sym->name, name );
+	strcat_s( sym->name, "(" );
+	strcat_s( sym->name, module );
+	strcat_s( sym->name, ")" );
 
 }
 
@@ -476,7 +351,7 @@ void DumpSymbols()
 	int i;
 
 	insertion_sort( Symbols, Num_symbols, sizeof(MemSymbol), Sym_compare );
-	
+
 	for (i=0;i<Num_symbols; i++ )	{
 		MemSymbol * sym1 = &Symbols[i];
 		MemSymbol * sym2 = &Symbols[i+1];
@@ -503,14 +378,14 @@ void DumpSymbols()
 	}
 
 	fclose(fp);
-	
+
 	vm_free( Symbols );
 	Symbols = NULL;
 	_asm int 3
 }
 #endif
 
-void PE_Debug::DumpSymbolInfo( DumpBuffer& dumpBuffer, DWORD relativeAddress )
+void PE_Debug::DumpSymbolInfo(std::ostream& dumpBuffer, DWORD relativeAddress )
 {
 	// Variables to keep track of function symbols
 	PIMAGE_SYMBOL currentSym = COFFSymbolTable ;
@@ -571,7 +446,7 @@ void PE_Debug::DumpSymbolInfo( DumpBuffer& dumpBuffer, DWORD relativeAddress )
 					// Move p to point to first letter of EXE filename
 					while( (*p!='\\') && (*p!='/') && (*p!=':') )
 						p--;
-					p++;	
+					p++;
 					if ( strlen(p) < 1 ) {
 						strcpy_s( pretty_module, "<unknown>" );
 					} else {
@@ -595,32 +470,26 @@ void PE_Debug::DumpSymbolInfo( DumpBuffer& dumpBuffer, DWORD relativeAddress )
 	#ifdef DUMPRAM
 	DumpSymbols();
 	#endif
-	
+
 	// dump symbolic info if found
 	if ( fileSymbol )	{
 		const char* auxSym = (const char*)(fileSymbol + 1) ;
 
 		if( strcmpi( latestFile, auxSym ) )	{
 			strcpy_s( latestFile, auxSym ) ;
-			//JAS      dumpBuffer.Printf( "  file: %s\r\n", auxSym ) ;    
+			//JAS      dumpBuffer.Printf( "  file: %s\r\n", auxSym ) ;
 		}
 	} else {
 		latestFile[ 0 ] = 0 ;
-		//JAS    dumpBuffer.Printf( "  file: unknown\r\n" ) ;    
+		//JAS    dumpBuffer.Printf( "  file: unknown\r\n" ) ;
 	}
-	
+
 	if ( fnSymbol )	{
 		char tmp_name[1024];
 		unmangle(tmp_name, GetSymbolName( fnSymbol ) );
-		dumpBuffer.Printf( "    %s()", tmp_name ) ;
-		if (Dump_to_log) {
-			mprintf(("    %s()", tmp_name )) ;
-		}
+		dumpBuffer << "    " << tmp_name << "()";
 	} else {
-		dumpBuffer.Printf( "    <unknown>" ) ;
-		if (Dump_to_log) {		
-			mprintf(("    <unknown>" )) ;
-		}
+		dumpBuffer << "    <unknown>";
 	}
 }
 
@@ -708,11 +577,11 @@ void PE_Debug :: FindDebugInfo()
         COFFDebugInfo = GetDebugHeader() ;
         // Get a pointer to the symbol table and retrieve the number of symbols
         if( NT_Header->FileHeader.PointerToSymbolTable )
-          COFFSymbolTable = 
+          COFFSymbolTable =
             BasedPtr( PIMAGE_SYMBOL, fileBase, NT_Header->FileHeader.PointerToSymbolTable ) ;
         COFFSymbolCount = NT_Header->FileHeader.NumberOfSymbols ;
         // The string table starts right after the symbol table
-        stringTable = (const char*)(COFFSymbolTable + COFFSymbolCount) ; 
+        stringTable = (const char*)(COFFSymbolTable + COFFSymbolCount) ;
         }
       }
     }
@@ -738,7 +607,7 @@ void PE_Debug :: MapFileInMemory( const char* module )
   }
 
 
-int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTANCE hInstance )
+int PE_Debug::DumpDebugInfo(std::ostream& dumpBuffer, const BYTE* caller, HINSTANCE hInstance )
 {
 	// Avoid to open, map and looking for debug header/symbol table
 	// by caching the latest and comparing the actual module with
@@ -761,7 +630,7 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 	// Move p to point to first letter of EXE filename
 	while( (*p!='\\') && (*p!='/') && (*p!=':') )
 		p--;
-	p++;	
+	p++;
 	if ( strlen(p) < 1 ) {
 		strcpy_s( pretty_module, "<unknown>" );
 	} else {
@@ -781,10 +650,8 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 			} else {
 				//dumpBuffer.Printf( "Call stack is unavailable, because there is\r\nno COFF debugging info in this module.\r\n" ) ;
 				//JAS dumpBuffer.Printf( "  no debug information\r\n" ) ;
-				dumpBuffer.Printf( "    %s %08x()\r\n", pretty_module, caller ) ;
-				if (Dump_to_log) {
-					mprintf(("    %s %08x()\r\n", pretty_module, caller )) ;
-				}
+				dumpBuffer << "    " << pretty_module << " " << std::setprecision(8)
+					<< std::hex << (void*)caller << std::resetiosflags(std::ios::showbase) << "()\n";
 				return 0;
 			}
 		} catch( ... )	{
@@ -792,25 +659,19 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 			return 0;
       }
 	} else	{
-		dumpBuffer.Printf( "    %s %08x()\r\n", pretty_module, caller ) ;
-		if (Dump_to_log) {
-			mprintf(( "    %s %08x()\r\n", pretty_module, caller )) ;
-		}
+		dumpBuffer << "    " << pretty_module << " " << std::setprecision(8) <<
+			std::hex << (void*)caller << std::resetiosflags(std::ios::showbase) << "()\n";
 		//JAS dumpBuffer.Printf( "  module not accessible\r\n" ) ;
 		//JAS dumpBuffer.Printf( "    address: %8X\r\n", caller ) ;
 		return 0;
 	}
 
 	Int3();
-
 }
 
-void DumpCallsStack( DumpBuffer& dumpBuffer )
+void DumpCallsStack( std::ostream& dumpBuffer )
 {
 	static PE_Debug PE_debug ;
-
-	dumpBuffer.Printf( "\r\nCall stack:\r\n" ) ;
-	dumpBuffer.Printf( Separator ) ;
 
 	// The structure of the stack frames is the following:
 	// EBP -> parent stack frame EBP
@@ -827,7 +688,7 @@ void DumpCallsStack( DumpBuffer& dumpBuffer )
 
 	do	{
 		depth++;
-		if ( depth > 16 ) 
+		if ( depth > 16 )
 			break;
 
 		if ( (parentEBP & 3) || IsBadReadPtr((DWORD*)parentEBP, sizeof(DWORD)) )	{
@@ -864,663 +725,30 @@ void DumpCallsStack( DumpBuffer& dumpBuffer )
 		}
 	}  while( TRUE ) ;
 
-
-	dumpBuffer.Printf( Separator ) ;
 	PE_debug.ClearReport() ;  // Prepare for future calls
 }
 
 #endif	//SHOW_CALL_STACK
 
-
-char AssertText1[2048];
-char AssertText2[1024];
-
-uint flags = MB_SYSTEMMODAL|MB_SETFOREGROUND;
-//uint flags = MB_SYSTEMMODAL;
-
-extern void gr_force_windowed();
-
-void dump_text_to_clipboard( const char *text )
+SCP_string dump_stacktrace()
 {
-	int len = strlen(text)+1024;
-
-	HGLOBAL h_text = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, len );
-	if ( !h_text ) return;
-	char *ptr = (char *)GlobalLock(h_text);
-	if ( !ptr ) return;
-
-	// copy then, if you find any \n's without \r's, then add in the \r.
-	char last_char = 0;
-	while( *text )	{
-		if ( (*text == '\n') && (last_char != '\r') )	{
-			*ptr++ = '\r';
-		}
-		last_char = *text;
-		*ptr++ = last_char;
-		text++;
-	}
-	*ptr++ = 0;
-	GlobalUnlock(h_text);
-	OpenClipboard(NULL);
-	EmptyClipboard();
-	SetClipboardData(CF_TEXT, h_text);
-	CloseClipboard();
-}
-
-
-void _cdecl WinAssert(char * text, char * filename, int linenum )
-{
-	int val;
-
-	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
-	mprintf(("ASSERTION: \"%s\" at %s:%d\n", text, strrchr(filename, '\\')+1, linenum ));
-
-#ifdef Allow_NoWarn
-	if (Cmdline_nowarn) {
-		return;
-	}
-#endif
-
-	Messagebox_active = true;
-
-	gr_activate(0);
-
-	filename = strrchr(filename, '\\')+1;
-	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum );
-
-#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
-	/* Dump the callstack */
-	SCP_DebugCallStack callStack;
-	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
-	
-	/* Format the string */
-	SCP_string assertString( AssertText1 );
-	assertString += "\n";
-	assertString += callStack.DumpToString( );
-	
-	/* Copy to the clipboard */
-	dump_text_to_clipboard( assertString.c_str( ) );
-
-	// truncate text
-	truncate_message_lines(assertString, Messagebox_lines);
-
-	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
-	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
-	val = MessageBox( NULL, assertString.c_str( ), "Assertion Failed!", MB_OKCANCEL | flags );
-
-#elif defined( SHOW_CALL_STACK )
-	dumpBuffer.Clear();
-	dumpBuffer.Printf( AssertText1 );
-	dumpBuffer.Printf( "\r\n" );
-	DumpCallsStack( dumpBuffer ) ;  
-	dump_text_to_clipboard(dumpBuffer.buffer);
-
-	// truncate text
-	dumpBuffer.TruncateLines(Messagebox_lines);
-
-	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
-	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
-
-	val = MessageBox(NULL, dumpBuffer.buffer, "Assertion Failed!", MB_OKCANCEL|flags );
-#else
-	val = MessageBox(NULL, AssertText1, "Assertion Failed!", MB_OKCANCEL|flags );
-#endif
-
-	if (val == IDCANCEL)
-		exit(1);
-
-	Int3();
-
-	gr_activate(1);
-
-	Messagebox_active = false;
-}
-
-void _cdecl WinAssert(char * text, char * filename, int linenum, const char * format, ... )
-{
-	int val;
-	va_list args;
-
-	memset( AssertText1, 0, sizeof(AssertText1) );
-	memset( AssertText2, 0, sizeof(AssertText2) );
-
-	va_start(args, format);
-	vsnprintf(AssertText2, sizeof(AssertText2)-1, format, args);
-	va_end(args);
-
-	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
-	mprintf(("ASSERTION: \"%s\" at %s:%d\n %s\n", text, strrchr(filename, '\\')+1, linenum, AssertText2 ));
-
-#ifdef Allow_NoWarn
-	if (Cmdline_nowarn) {
-		return;
-	}
-#endif
-
-	Messagebox_active = true;
-
-	gr_activate(0);
-
-	filename = strrchr(filename, '\\')+1;
-	snprintf( AssertText1, sizeof(AssertText1)-1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n%s\r\n", text, filename, linenum, AssertText2 );
-
-#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
-	/* Dump the callstack */
-	SCP_DebugCallStack callStack;
-	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
-	
-	/* Format the string */
-	SCP_string assertString( AssertText1 );
-	assertString += "\n";
-	assertString += callStack.DumpToString( );
-	
-	/* Copy to the clipboard */
-	dump_text_to_clipboard( assertString.c_str( ) );
-
-	// truncate text
-	truncate_message_lines(assertString, Messagebox_lines);
-
-	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
-	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
-	val = MessageBox( NULL, assertString.c_str( ), "Assertion Failed!", MB_OKCANCEL | flags );
-
-#elif defined ( SHOW_CALL_STACK	)
-	dumpBuffer.Clear();
-	dumpBuffer.Printf( AssertText1 );
-	dumpBuffer.Printf( "\r\n" );
-	DumpCallsStack( dumpBuffer ) ;  
-	dump_text_to_clipboard(dumpBuffer.buffer);
-
-	// truncate text
-	dumpBuffer.TruncateLines(Messagebox_lines);
-
-	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
-	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
-
-	val = MessageBox(NULL, dumpBuffer.buffer, "Assertion Failed!", MB_OKCANCEL|flags );
-#else
-	val = MessageBox(NULL, AssertText1, "Assertion Failed!", MB_OKCANCEL|flags );
-#endif
-
-	if (val == IDCANCEL)
-		exit(1);
-
-	Int3();
-
-	gr_activate(1);
-
-	Messagebox_active = false;
-}
-
-void LuaDebugPrint(lua_Debug &ar)
-{
-	dumpBuffer.Printf( "Name:\t\t%s\r\n",  ar.name);
-	dumpBuffer.Printf( "Name of:\t%s\r\n",  ar.namewhat);
-	dumpBuffer.Printf( "Function type:\t%s\r\n",  ar.what);
-	dumpBuffer.Printf( "Defined on:\t%d\r\n",  ar.linedefined);
-	dumpBuffer.Printf( "Upvalues:\t%d\r\n",  ar.nups);
-	dumpBuffer.Printf( "\r\n" );
-	dumpBuffer.Printf( "Source:\t\t%s\r\n",  ar.source);
-	dumpBuffer.Printf( "Short source:\t%s\r\n",  ar.short_src);
-	dumpBuffer.Printf( "Current line:\t%d\r\n",  ar.currentline);
-	dumpBuffer.Printf( "- Function line:\t%d\r\n", (ar.linedefined ? (1 + ar.currentline - ar.linedefined) : 0));
-}
-
-extern lua_Debug Ade_debug_info;
-extern char debug_stack[4][32];
-void LuaError(struct lua_State *L, const char *format, ...)
-{
-	int val;
-
-	Messagebox_active = true;
-
-	gr_activate(0);
-
-	dumpBuffer.Clear();
-	//WMC - if format is set to NULL, assume this is acting as an
-	//error handler for Lua.
-	if(format == NULL)
-	{
-		dumpBuffer.Printf("LUA ERROR: %s", lua_tostring(L, -1));
-		lua_pop(L, -1);
-	}
-	else
-	{
-		va_list args;
-
-		memset(AssertText1, 0, sizeof(AssertText1));
-		memset(AssertText2, 0, sizeof(AssertText2));
-
-		va_start(args, format);
-		vsnprintf(AssertText1, sizeof(AssertText1)-1, format,args);
-		va_end(args);
-
-		dumpBuffer.Printf(AssertText1);
-	}
-
-	dumpBuffer.Printf( "\r\n" );
-	dumpBuffer.Printf( "\r\n" );
-
-	//WMC - This is virtually worthless.
-/*
-	dumpBuffer.Printf(Separator);
-	dumpBuffer.Printf( "LUA Debug:" );
-	dumpBuffer.Printf( "\r\n" );
-	dumpBuffer.Printf(Separator);
-
-	lua_Debug ar;
-	if(lua_getstack(L, 0, &ar))
-	{
-		lua_getinfo(L, "nSlu", &ar);
-		LuaDebugPrint(ar);
-	}
-	else
-	{
-		dumpBuffer.Printf("(No stack debug info)\r\n");
-	}
-*/
-//	TEST CODE
-
-	dumpBuffer.Printf(Separator);
-	dumpBuffer.Printf( "ADE Debug:" );
-	dumpBuffer.Printf( "\r\n" );
-	dumpBuffer.Printf(Separator);
-	LuaDebugPrint(Ade_debug_info);
-	dumpBuffer.Printf(Separator);
-
-	dumpBuffer.Printf( "\r\n" );
-	dumpBuffer.Printf( "\r\n" );
-
-	AssertText2[0] = '\0';
-	dumpBuffer.Printf(Separator);
-	
-	// Get the stack via the debug.traceback() function
-	lua_getglobal(L, LUA_DBLIBNAME);
-
-	if (!lua_isnil(L, -1))
-	{
-		dumpBuffer.Printf( "\r\n" );
-		lua_getfield(L, -1, "traceback");
-		lua_remove(L, -2);
-
-		if (lua_pcall(L, 0, 1, 0) != 0)
-			dumpBuffer.Printf("Error while retrieving stack: %s", lua_tostring(L, -1));
-		else
-			dumpBuffer.Printf(lua_tostring(L, -1));
-
-		lua_pop(L, 1);
-	}
-	else
-	{
-		// If the debug library is nil then fall back to the default debug stack
-		dumpBuffer.Printf("LUA Stack:\r\n");
-		int i;
-		for (i = 0; i < 4; i++) {
-			if (debug_stack[i][0] != '\0')
-				dumpBuffer.Printf("\t%s\r\n", debug_stack[i]);
-		}
-	}
-	dumpBuffer.Printf( "\r\n" );
-
-	dumpBuffer.Printf(Separator);
-	ade_stackdump(L, AssertText2);
-	dumpBuffer.Printf( AssertText2 );
-	dumpBuffer.Printf( "\r\n" );
-	dumpBuffer.Printf(Separator);
-
-	dump_text_to_clipboard(dumpBuffer.buffer);
-
-	// truncate text
-	dumpBuffer.TruncateLines(Messagebox_lines);
-
-	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
-	dumpBuffer.Printf( "\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
-
-	val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags|MB_YESNOCANCEL );
-
-	if (val == IDCANCEL ) {
-		exit(1);
-	} else if(val == IDYES) {
-		Int3();
-	}
-
-	gr_activate(1);
-
-	Messagebox_active = false;
-}
-
-void _cdecl Error( const char * filename, int line, const char * format, ... )
-{
-	Global_error_count++;
-
-	int val;
-	va_list args;
-
-	memset( AssertText1, 0, sizeof(AssertText1) );
-	memset( AssertText2, 0, sizeof(AssertText2) );
-
-	va_start(args, format);
-	vsnprintf(AssertText1, sizeof(AssertText1)-1, format, args);
-	va_end(args);
-
-	filename = strrchr(filename, '\\')+1;
-	snprintf(AssertText2, sizeof(AssertText2)-1, "Error: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line);
-	mprintf(("ERROR: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line));
-
-	Messagebox_active = true;
-
-	gr_activate(0);
-
-#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
-	/* Dump the callstack */
-	SCP_DebugCallStack callStack;
-	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
-	
-	/* Format the string */
-	SCP_string assertString( AssertText1 );
-	assertString += "\n";
-	assertString += callStack.DumpToString( );
-	
-	/* Copy to the clipboard */
-	dump_text_to_clipboard( assertString.c_str( ) );
-
-	// truncate text
-	truncate_message_lines(assertString, Messagebox_lines);
-
-	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
-	assertString += "\n\nUse Ok to break into Debugger, Cancel to exit.\n";
-	val = MessageBox( NULL, assertString.c_str( ), "Error!", flags | MB_DEFBUTTON2 | MB_OKCANCEL );
-
-#elif defined( SHOW_CALL_STACK )
-	dumpBuffer.Clear();
-	dumpBuffer.Printf( AssertText2 );
-	dumpBuffer.Printf( "\r\n" );
-	DumpCallsStack( dumpBuffer ) ;  
-	dump_text_to_clipboard(dumpBuffer.buffer);
-
-	// truncate text
-	dumpBuffer.TruncateLines(Messagebox_lines);
-
-	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
-	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
-
-	val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags | MB_DEFBUTTON2 | MB_OKCANCEL );
-#else
-	strcat_s(AssertText2,"\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
-
-	val = MessageBox(NULL, AssertText2, "Error!", flags | MB_DEFBUTTON2 | MB_OKCANCEL );
-#endif
-
-	switch (val)
-	{
-		case IDCANCEL:
-			exit(1);
-
-		default:
-			Int3();
-			break;
-	}
-
-	gr_activate(1);
-
-	Messagebox_active = false;
-}
-
-void _cdecl WarningEx( char *filename, int line, const char *format, ... )
-{
-#ifndef NDEBUG
-	if (Cmdline_extra_warn) {
-		char msg[sizeof(AssertText1)];
-		va_list args;
-
-		memset(msg, 0, sizeof(msg));
-
-		va_start(args, format);
-		vsnprintf(msg, sizeof(msg)-1, format, args);
-		va_end(args);
-
-		Warning(filename, line, msg);
-	}
-#endif
-}
-
-void _cdecl Warning( char *filename, int line, const char *format, ... )
-{
-	Global_warning_count++;
-
-#ifndef NDEBUG
-	va_list args;
-	int result;
-	int i;
-	int slen = 0;
-
-	// output to the debug log before anything else (so that we have a complete record)
-
-	memset( AssertText1, 0, sizeof(AssertText1) );
-	memset( AssertText2, 0, sizeof(AssertText2) );
-
-	va_start(args, format);
-	vsnprintf(AssertText1, sizeof(AssertText1) - 1, format, args);
-	va_end(args);
-
-	slen = strlen(AssertText1);
-
-	// strip out the newline char so the output looks better
-	for (i = 0; i < slen; i++){
-		if (AssertText1[i] == (char)0x0a) {
-			AssertText2[i] = ' ';
-		} else {
-			AssertText2[i] = AssertText1[i];
-		}
-	}
-
-	// kill off extra white space at end
-	if (AssertText2[slen-1] == (char)0x20) {
-		AssertText2[slen-1] = '\0';
-	} else {
-		// just being careful
-		AssertText2[slen] = '\0';
-	}
-
-	mprintf(("WARNING: \"%s\" at %s:%d\n", AssertText2, strrchr(filename, '\\')+1, line));
-
-	// now go for the additional popup window, if we want it ...
-#ifdef Allow_NoWarn
-	if (Cmdline_nowarn) {
-		return;
-	}
-#endif
-
-	filename = strrchr(filename, '\\')+1;
-	sprintf(AssertText2, "Warning: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line );
-
-	Messagebox_active = true;
-
-	gr_activate(0);
-
-#if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
-	/* Dump the callstack */
-	SCP_DebugCallStack callStack;
-	SCP_DumpStack( dynamic_cast< SCP_IDumpHandler* >( &callStack ) );
-	
-	/* Format the string */
-	SCP_string assertString( AssertText1 );
-	assertString += "\n";
-	assertString += callStack.DumpToString( );
-	
-	/* Copy to the clipboard */
-	dump_text_to_clipboard( assertString.c_str( ) );
-
-	// truncate text
-	truncate_message_lines(assertString, Messagebox_lines);
-
-	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
-	assertString += "\n\nUse Yes to break into Debugger, No to continue.\nand Cancel to Quit\n";
-	result = MessageBox( NULL, assertString.c_str( ), "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
-
-#elif defined ( SHOW_CALL_STACK	)
-	//we don't want to dump the call stack for every single warning
-	Dump_to_log = false; 
-
-	dumpBuffer.Clear();
-	dumpBuffer.Printf( AssertText2 );
-	dumpBuffer.Printf( "\r\n" );
-	DumpCallsStack( dumpBuffer ) ;  
-	dump_text_to_clipboard(dumpBuffer.buffer);
-
-	// truncate text
-	dumpBuffer.TruncateLines(Messagebox_lines);
-
-	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
-	dumpBuffer.Printf("\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
-
-	result = MessageBox((HWND)os_get_window(), dumpBuffer.buffer, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
-
-	Dump_to_log = true; 
-
-#else
-	strcat_s(AssertText2,"\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
-	result = MessageBox((HWND)os_get_window(), AssertText2, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
-#endif
-
-	switch (result)
-	{
-		case IDYES:
-			Int3();
-			break;
-
-		case IDNO:
-			break;
-
-		case IDCANCEL:
-			exit(1);
-	}
-
-	gr_activate(1);
-
-	Messagebox_active = false;
-#endif // !NDEBUG
-}
-
-//Display warning even in non-devug builds
-void _cdecl ReleaseWarning(char *filename, int line, const char *format, ...)
-{
-	Global_warning_count++;
-
-	va_list args;
-	int result;
-	int i;
-	int slen = 0;
-
-	// output to the debug log before anything else (so that we have a complete record)
-
-	memset(AssertText1, 0, sizeof(AssertText1));
-	memset(AssertText2, 0, sizeof(AssertText2));
-
-	va_start(args, format);
-	vsnprintf(AssertText1, sizeof(AssertText1) - 1, format, args);
-	va_end(args);
-
-	slen = strlen(AssertText1);
-
-	// strip out the newline char so the output looks better
-	for (i = 0; i < slen; i++) {
-		if (AssertText1[i] == (char)0x0a) {
-			AssertText2[i] = ' ';
-		}
-		else {
-			AssertText2[i] = AssertText1[i];
-		}
-	}
-
-	// kill off extra white space at end
-	if (AssertText2[slen - 1] == (char)0x20) {
-		AssertText2[slen - 1] = '\0';
-	}
-	else {
-		// just being careful
-		AssertText2[slen] = '\0';
-	}
-
-	mprintf(("WARNING: \"%s\" at %s:%d\n", AssertText2, strrchr(filename, '\\') + 1, line));
-
-	// now go for the additional popup window, if we want it ...
-#ifdef Allow_NoWarn
-	if (Cmdline_nowarn) {
-		return;
-	}
-#endif
-
-	filename = strrchr(filename, '\\') + 1;
-	sprintf(AssertText2, "Warning: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line);
-
-	Messagebox_active = true;
-
-	gr_activate(0);
 
 #if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
 	/* Dump the callstack */
 	SCP_DebugCallStack callStack;
 	SCP_DumpStack(dynamic_cast< SCP_IDumpHandler* >(&callStack));
 
-	/* Format the string */
-	SCP_string assertString(AssertText1);
-	assertString += "\n";
-	assertString += callStack.DumpToString();
+	return callStack.DumpToString();
+#elif defined( SHOW_CALL_STACK )
+	SCP_stringstream stream;
 
-	/* Copy to the clipboard */
-	dump_text_to_clipboard(assertString.c_str());
+	DumpCallsStack(stream);
 
-	// truncate text
-	truncate_message_lines(assertString, Messagebox_lines);
-
-	assertString += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
-	assertString += "\n\nUse Yes to break into Debugger, No to continue.\nand Cancel to Quit\n";
-	result = MessageBox(NULL, assertString.c_str(), "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags);
-
-#elif defined ( SHOW_CALL_STACK	)
-	//we don't want to dump the call stack for every single warning
-	Dump_to_log = false;
-
-	dumpBuffer.Clear();
-	dumpBuffer.Printf(AssertText2);
-	dumpBuffer.Printf("\r\n");
-	DumpCallsStack(dumpBuffer);
-	dump_text_to_clipboard(dumpBuffer.buffer);
-
-	// truncate text
-	dumpBuffer.TruncateLines(Messagebox_lines);
-
-	dumpBuffer.Printf("\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n");
-	dumpBuffer.Printf("\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
-
-	result = MessageBox((HWND)os_get_window(), dumpBuffer.buffer, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags);
-
-	Dump_to_log = true;
-
+	return stream.str();
 #else
-	strcat_s(AssertText2, "\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
-	result = MessageBox((HWND)os_get_window(), AssertText2, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags);
+	return "No stacktrace available!";
 #endif
-
-	switch (result)
-	{
-	case IDYES:
-		Int3();
-		break;
-
-	case IDNO:
-		break;
-
-	case IDCANCEL:
-		exit(1);
-	}
-
-	gr_activate(1);
-
-	Messagebox_active = false;
 }
-
 
 //================= memory stuff
 /*
@@ -1533,7 +761,7 @@ char *format_mem( DWORD num )
 	} else 	{
 		sprintf( tmp_mem, "%.3f MB", (float)(num/1024)/(1024.0f)  );
 	}
-	return tmp_mem;	
+	return tmp_mem;
 }
 */
 
@@ -1548,14 +776,14 @@ void getmem()
 
 	ms.dwLength = sizeof(MEMORYSTATUS);
 	GlobalMemoryStatus(&ms);
-	
+
 	printf( "Percent of memory in use: %d%%\n", ms.dwMemoryLoad );
-	printf( "Bytes of physical memory:	%s\n", format_mem(ms.dwTotalPhys) );     
-	printf( "Free physical memory bytes:	%s\n", format_mem(ms.dwAvailPhys) );     //  
-	printf( "Bytes of paging file:	%s\n", format_mem(ms.dwTotalPageFile) ); // bytes of paging file 
-	printf( "Free bytes of paging file:	%s\n", format_mem(ms.dwAvailPageFile) ); // free bytes of paging file 
-	printf( "User bytes of address space:	%s\n", format_mem(ms.dwTotalVirtual) );  //  
-	printf( "Free user bytes:	%s\n", format_mem(ms.dwAvailVirtual) );  // free user bytes 
+	printf( "Bytes of physical memory:	%s\n", format_mem(ms.dwTotalPhys) );
+	printf( "Free physical memory bytes:	%s\n", format_mem(ms.dwAvailPhys) );     //
+	printf( "Bytes of paging file:	%s\n", format_mem(ms.dwTotalPageFile) ); // bytes of paging file
+	printf( "Free bytes of paging file:	%s\n", format_mem(ms.dwAvailPageFile) ); // free bytes of paging file
+	printf( "User bytes of address space:	%s\n", format_mem(ms.dwTotalVirtual) );  //
+	printf( "Free user bytes:	%s\n", format_mem(ms.dwAvailVirtual) );  // free user bytes
 
 
 	// Get the instance handle of the module where caller belongs to
@@ -1623,12 +851,12 @@ int __cdecl MyAllocHook(
 	if ( nAllocType == 3 )	{
 		_CrtMemBlockHeader *phd = pHdr(pvData);
 		nSize = phd->nDataSize;
-	} 
+	}
 
 //	mprintf(( "Total RAM = %d\n", TotalRam ));
 
    mprintf(( "Memory operation in %s, line %d: %s a %d-byte '%s' block (# %ld)\n",
-            szFileName, nLine, operation[nAllocType], nSize, 
+            szFileName, nLine, operation[nAllocType], nSize,
             blockType[nBlockUse], lRequest ));
    if ( pvData != NULL )
       mprintf(( " at %X", pvData ));
@@ -1641,7 +869,7 @@ int __cdecl MyAllocHook(
 #endif  // #if 0
 
 
- 
+
 void windebug_memwatch_init()
 {
 	//_CrtSetAllocHook(MyAllocHook);
@@ -1669,7 +897,7 @@ int vm_init(int min_heap_size)
 #ifdef _REPORT_MEM_LEAKS
 const int MAX_MEM_POINTERS = 50000;
 
-typedef struct 
+typedef struct
 {
 	char  filename[33];
 	int   size;
@@ -1702,11 +930,11 @@ int memblockinfo_sort_compare( const void *arg1, const void *arg2 )
 
 	if (mbi1->size > mbi2->size)
 		return -1;
-		
+
 	if (mbi1->size < mbi2->size)
 		return 1;
-		
-	return 0; 
+
+	return 0;
 }
 
 void memblockinfo_sort()
@@ -1733,15 +961,15 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 
 		// Get current flag
 		int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
-		
+
 		// Turn on leak-checking bit
 		tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
-		
+
 		// Set flag to the new value
 		_CrtSetDbgFlag( tmpFlag );
 
 #ifdef _REPORT_MEM_LEAKS
-		ZeroMemory(mem_ptr_list, MAX_MEM_POINTERS * sizeof(MemPtrInfo)); 
+		ZeroMemory(mem_ptr_list, MAX_MEM_POINTERS * sizeof(MemPtrInfo));
 #endif
 	}
 
@@ -1810,7 +1038,7 @@ void memblockinfo_output_memleak()
 {
 	if(!Cmdline_show_mem_usage)	return;
 
-	if(TotalRam == 0) 
+	if(TotalRam == 0)
 		return;
 
 	if(TotalRam < 0) {
@@ -1854,7 +1082,7 @@ void unregister_malloc(char *filename, int size, void *ptr)
 {
 	// calculate magic numbers
 	int magic1, magic2, len;
-	
+
 	char *temp = strrchr(filename, '\\');
 	if(temp)
 		filename = temp + 1;
@@ -2032,7 +1260,7 @@ void *_vm_realloc( void *ptr, int size, int quiet )
 		Error(LOCATION, "Out of memory.  Try closing down other applications, increasing your\n"
 			"virtual memory size, or installing more physical RAM.\n");
 	}
-#ifndef	NDEBUG 
+#ifndef	NDEBUG
 	TotalRam += size;
 
 	// register this allocation
