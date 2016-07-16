@@ -111,8 +111,6 @@ void shipfx_large_blowup_init(ship *shipp);
 // Returns 1 when explosion is done
 int shipfx_large_blowup_do_frame(ship *shipp, float frametime);
 
-void shipfx_large_blowup_render(ship *shipp);
-
 void shipfx_large_blowup_queue_render(draw_list *scene, ship* shipp);
 
 void shipfx_debris_limit_speed(struct debris *db, ship *shipp);

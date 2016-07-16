@@ -167,7 +167,6 @@ inline bool obj_render_is_model(object *obj)
 
 // Sorts all the objects by Z and renders them
 extern int Fred_active;
-extern int Cmdline_nohtl;
 extern int Interp_no_flush;
 void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_last )
 {
@@ -228,16 +227,13 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	std::sort(Sorted_objects.begin(), Sorted_objects.end());
 
 #ifdef DYN_CLIP_DIST
-	if (!Cmdline_nohtl)
-	{
-		if(closest_obj < Min_draw_distance)
-			closest_obj = Min_draw_distance;
-		if(farthest_obj > Max_draw_distance)
-			farthest_obj = Max_draw_distance;
+	if(closest_obj < Min_draw_distance)
+		closest_obj = Min_draw_distance;
+	if(farthest_obj > Max_draw_distance)
+		farthest_obj = Max_draw_distance;
 
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, closest_obj, farthest_obj);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, closest_obj, farthest_obj);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 #endif
 
 	gr_zbuffer_set( GR_ZBUFF_FULL );	

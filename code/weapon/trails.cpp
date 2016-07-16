@@ -115,8 +115,6 @@ int trail_is_on_ship(trail *trailp, ship *shipp)
 
 // Render the trail behind a missile.
 // Basically a queue of points that face the viewer
-extern int Cmdline_nohtl;
-
 static vertex *Trail_v_list = NULL;
 static int Trail_verts_allocated = 0;
 
@@ -244,14 +242,8 @@ void trail_add_batch(trail * trailp)
 
 		trail_calc_facing_pts(&topv, &botv, fvec, &trailp->pos[n], w);
 
-		if (!Cmdline_nohtl) {
-			g3_transfer_vertex(&top, &topv);
-			g3_transfer_vertex(&bot, &botv);
-		}
-		else {
-			g3_rotate_vertex(&top, &topv);
-			g3_rotate_vertex(&bot, &botv);
-		}
+		g3_transfer_vertex(&top, &topv);
+		g3_transfer_vertex(&bot, &botv);
 
 		top.r = top.g = top.b = l;
 		bot.r = bot.g = bot.b = l;
@@ -272,10 +264,7 @@ void trail_add_batch(trail * trailp)
 
 				vertex center_vert = vertex();
 
-				if (!Cmdline_nohtl)
-					g3_transfer_vertex(&center_vert, &centerv);
-				else
-					g3_rotate_vertex(&center_vert, &centerv);
+				g3_transfer_vertex(&center_vert, &centerv);
 
 				center_vert.texture_position.u = U + 1.0f;
 				center_vert.texture_position.v = 0.5f;
@@ -403,13 +392,8 @@ void trail_render( trail * trailp )
 
 		trail_calc_facing_pts( &topv, &botv, fvec, &trailp->pos[n], w );
 
-		if ( !Cmdline_nohtl ) {
-			g3_transfer_vertex( &top, &topv );
-			g3_transfer_vertex( &bot, &botv );
-		} else {
-			g3_rotate_vertex( &top, &topv );
-			g3_rotate_vertex( &bot, &botv );
-		}
+		g3_transfer_vertex( &top, &topv );
+		g3_transfer_vertex( &bot, &botv );
 
 		top.a = bot.a = l;	
 
@@ -420,10 +404,7 @@ void trail_render( trail * trailp )
 				// Last one...
 				vm_vec_avg( &centerv, &topv, &botv );
 
-				if ( !Cmdline_nohtl )
-					g3_transfer_vertex( &Trail_v_list[nv+2], &centerv );
-				else
-					g3_rotate_vertex( &Trail_v_list[nv+2], &centerv );
+				g3_transfer_vertex( &Trail_v_list[nv+2], &centerv );
 
 				Trail_v_list[nv].a = l;	
 

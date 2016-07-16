@@ -761,10 +761,6 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, int resize_mode)
 
 void gr_opengl_line_htl(const vec3d *start, const vec3d *end)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	gr_zbuffer_type zbuffer_state = (gr_zbuffering) ? ZBUFFER_TYPE_FULL : ZBUFFER_TYPE_NONE;
 	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 	GL_state.SetZbufferType(zbuffer_state);
@@ -1412,7 +1408,7 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 	float color_scale = 1.0f;
 
 	if ( High_dynamic_range && flags & TMAP_FLAG_EMISSIVE ) {
-		color_scale = 1.5f;
+		color_scale = 2.0f;
 	}
 
 	opengl_shader_set_passthrough(textured, false, color_scale);
@@ -1571,7 +1567,7 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 
 	float color_scale = 1.0f;
 	if ( High_dynamic_range && flags & TMAP_FLAG_EMISSIVE ) {
-		color_scale = 1.5f;
+		color_scale = 2.0f;
 	}
 
 	GL_state.Array.BindArrayBuffer(0);
@@ -1597,7 +1593,7 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 
 void gr_opengl_tmapper(int nverts, vertex **verts, uint flags)
 {
-	if ( !Cmdline_nohtl && (flags & TMAP_HTL_3D_UNLIT) ) {
+	if ( flags & TMAP_HTL_3D_UNLIT) {
 		opengl_tmapper_internal3d(nverts, verts, flags);
 	} else {
 		opengl_tmapper_internal(nverts, verts, flags);
@@ -1744,7 +1740,7 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 
 	float color_scale = 1.0f;
 	if ( High_dynamic_range && flags & TMAP_FLAG_EMISSIVE ) {
-		color_scale = 1.5f;
+		color_scale = 2.0f;
 	}
 
 	vert_def.add_vertex_component(vertex_format_data::POSITION3, sizeof(vertex), &verts[0].world.xyz.x);
@@ -1849,7 +1845,7 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 
 void gr_opengl_render(int nverts, vertex *verts, uint flags)
 {
-	if ( !Cmdline_nohtl && (flags & TMAP_HTL_3D_UNLIT) ) {
+	if ( flags & TMAP_HTL_3D_UNLIT) {
 		opengl_render_internal3d(nverts, verts, flags);
 	} else {
 		opengl_render_internal(nverts, verts, flags);
@@ -2294,10 +2290,6 @@ void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_
 
 void gr_opengl_sphere_htl(float rad)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	GLUquadricObj *quad = NULL;
 
 	// FIXME: before this is used in anything other than FRED2 we need to make this creation/deletion
@@ -2422,10 +2414,6 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 
 void gr_opengl_draw_deferred_light_sphere(vec3d *position, float rad, bool clearStencil = true)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
 
 	GL_state.Uniform.setUniform3f("scale", rad, rad, rad);
@@ -2554,10 +2542,6 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 
 void gr_opengl_draw_deferred_light_cylinder(vec3d *position,matrix *orient, float rad, float length, bool clearStencil = true)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
-
 	g3_start_instance_matrix(position, orient, true);
 
 	GL_state.Uniform.setUniform3f("scale", rad, rad, length);
@@ -2578,9 +2562,6 @@ void gr_opengl_draw_deferred_light_cylinder(vec3d *position,matrix *orient, floa
 
 void gr_opengl_draw_line_list(const colored_vector *lines, int num)
 {
-	if (Cmdline_nohtl) {
-		return;
-	}
 }
 extern int opengl_check_framebuffer();
 void opengl_setup_scene_textures()

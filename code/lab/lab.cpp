@@ -833,10 +833,8 @@ void labviewer_render_model(float frametime)
 	if (Lab_viewer_flags & LAB_FLAG_SHOW_DEBRIS) {
 		polymodel *pm = model_get(Lab_model_num);
 
-		if (!Cmdline_nohtl) {
-			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-			gr_set_view_matrix(&Eye_position, &Eye_matrix);
-		}
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		for (i = 0; i < pm->num_debris_objects; i++) {
 			vec3d world_point = ZERO_VECTOR;
@@ -966,10 +964,8 @@ void labviewer_render_model(float frametime)
 			shadows_end_render();
 		}
 
-		if (!Cmdline_nohtl) {
-			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-			gr_set_view_matrix(&Eye_position, &Eye_matrix);
-		}
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		gr_opengl_deferred_lighting_begin();
 
@@ -1051,10 +1047,8 @@ void labviewer_render_model(float frametime)
 	batch_render_all();
 	gr_copy_effect_texture();
 	batch_render_distortion_map_bitmaps();
-	if ( !Cmdline_nohtl ) {
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	g3_end_frame();
 }
@@ -1138,10 +1132,8 @@ void labviewer_render_bitmap(float frametime)
 
 	g3_set_view_matrix(&Lab_viewer_pos, &vmd_identity_matrix, Lab_viewer_zoom * 1.3f);
 
-	if ( !Cmdline_nohtl ) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 
 	// draw the primary laser bitmap
@@ -1215,10 +1207,8 @@ void labviewer_render_bitmap(float frametime)
 
 	// clean up and move on ...
 
-	if ( !Cmdline_nohtl ) {
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-	}
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	g3_end_frame();
 }
@@ -1917,7 +1907,7 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_BOOL("No Team Colors", Teamcolor_override);
 	ADD_RENDER_BOOL("No Glow Points", Glowpoint_override);
 	// model flags
-	ADD_RENDER_FLAG("Wireframe", Lab_model_flags, ((Cmdline_nohtl) ? MR_SHOW_OUTLINE | MR_NO_POLYS | MR_NO_TEXTURING : MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING) );
+	ADD_RENDER_FLAG("Wireframe", Lab_model_flags, MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING);
 	ADD_RENDER_FLAG("Transparent", Lab_model_flags, MR_ALL_XPARENT);
 	ADD_RENDER_FLAG("No Lighting", Lab_model_flags, MR_NO_LIGHTING);
 	ADD_RENDER_FLAG("No Z-Buffer", Lab_model_flags, MR_NO_ZBUFFER);

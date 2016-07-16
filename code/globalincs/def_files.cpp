@@ -1765,6 +1765,9 @@ char *Default_main_fragment_shader =
 "   vec4 lightSpecular = vec4(0.0, 0.0, 0.0, 1.0);\n"
 "	vec2 texCoord = gl_TexCoord[0].xy;\n"
 "	vec4 baseColor = gl_Color;\n"
+"#ifdef FLAG_HDR\n"
+"	baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));\n"
+"#endif\n"
 "	vec4 posData = vec4(position.xyz,1.0);\n"
 "	vec4 normData = vec4(0.0, 0.0, 0.0, 1.0);\n"
 "	vec4 specData = vec4(0.0, 0.0, 0.0, 1.0);\n"
@@ -2795,7 +2798,7 @@ char* Default_effect_particle_fragment_shader =
 "{\n"
 "	vec4 fragmentColor = texture2D(baseMap, gl_TexCoord[0].xy);\n"
 "	fragmentColor.rgb = mix(fragmentColor.rgb, pow(fragmentColor.rgb, vec3(SRGB_GAMMA)), float(srgb));\n"
-"	fragmentColor *= gl_Color;\n"
+"	fragmentColor *= mix(gl_Color, vec4(pow(gl_Color.rgb, vec3(SRGB_GAMMA)), gl_Color.a), float(srgb));\n"
 "	vec2 offset = vec2(radius_p * abs(0.5 - gl_TexCoord[0].x) * 2.0, radius_p * abs(0.5 - gl_TexCoord[0].y) * 2.0);\n"
 "	float offset_len = length(offset);\n"
 "	if ( offset_len > radius_p ) {\n"
@@ -3017,8 +3020,9 @@ char* Default_passthrough_fragment_shader =
 "{\n"
 "	vec4 baseColor = texture2D(baseMap, gl_TexCoord[0].xy);\n"
 "	baseColor.rgb = (srgb == 1) ? pow(baseColor.rgb, vec3(SRGB_GAMMA)) : baseColor.rgb;\n"
-"	baseColor *= gl_Color;\n"
-"	gl_FragColor = mix(mix(baseColor, vec4(gl_Color.rgb, baseColor.a), float(alphaTexture)), gl_Color, float(noTexturing)) * intensity;\n"
+"	vec4 blendColor = (srgb == 1) ? vec4(pow(gl_Color.rgb, vec3(SRGB_GAMMA)), gl_Color.a) : gl_Color ;\n"
+"	baseColor *= blendColor;\n"
+"	gl_FragColor = mix(mix(baseColor, vec4(blendColor.rgb, baseColor.a), float(alphaTexture)), blendColor, float(noTexturing)) * intensity;\n"
 "}";
 
 char *Default_deferred_vertex_shader =

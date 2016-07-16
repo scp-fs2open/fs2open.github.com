@@ -63,7 +63,6 @@ extern int Num_debris_pieces;
 struct collision_info_struct;
 
 void debris_init();
-void debris_render_DEPRECATED( object * obj );
 void debris_render(object * obj, draw_list *scene);
 void debris_delete( object * obj );
 void debris_process_post( object * obj, float frame_time);

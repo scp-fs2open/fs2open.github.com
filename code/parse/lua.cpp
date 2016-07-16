@@ -3524,7 +3524,7 @@ ADE_FUNC(isValid, l_streaminganim, NULL, "Detects whether handle is valid", "boo
 	return sah->IsValid();
 }
 
-ADE_FUNC(preload, l_streaminganim, NULL, "Load all apng animations into memory", "boolean", "true if preload was successful, nil if a syntax/type error occurs")
+ADE_FUNC(preload, l_streaminganim, NULL, "Load all apng animations into memory, enabling apng frame cache if not already enabled", "boolean", "true if preload was successful, nil if a syntax/type error occurs")
 {
 	streaminganim_h* sah;
 	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
@@ -14282,17 +14282,18 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 	return ade_set_args(L, "i", w);
 }
 
-ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean reverse, boolean pause]",
-		 "Plays a streaming animation, returning its handle. The optional booleans can also be set via the handles virtvars<br>"
+ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean reverse, boolean pause, boolean cache]",
+		 "Plays a streaming animation, returning its handle. The optional booleans (except cache) can also be set via the handles virtvars<br>"
+		 "cache is best set to false when loading animations that are only intended to play once, e.g. headz<br>"
 		 "Remember to call the unload() function when you're finished using the animation to free up memory.",
 		 "streaminganim",
 		 "Streaming animation handle, or invalid handle if animation couldn't be loaded")
 {
 	char *s;
 	int rc = -1;
-	bool loop = false, reverse = false, pause = false;
+	bool loop = false, reverse = false, pause = false, cache = true;
 
-	if(!ade_get_args(L, "s|bbb", &s, &loop, &reverse, &pause))
+	if(!ade_get_args(L, "s|bbbb", &s, &loop, &reverse, &pause, &cache))
 		return ADE_RETURN_NIL;
 
 	streaminganim_h sah(s);
@@ -14305,7 +14306,7 @@ ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean
 	if (pause == true) {
 		sah.ga.direction |= GENERIC_ANIM_DIRECTION_PAUSED;
 	}
-	rc = generic_anim_stream(&sah.ga);
+	rc = generic_anim_stream(&sah.ga, cache);
 
 	if(rc < 0)
 		return ade_set_args(L, "o", l_streaminganim.Set(sah)); // this object should be "invalid", matches loadTexture behaviour

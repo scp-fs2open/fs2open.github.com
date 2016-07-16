@@ -121,7 +121,6 @@ extern bool Cmdline_portable_mode;
 
 // Troubleshooting
 extern int Cmdline_load_all_weapons;
-extern int Cmdline_nohtl;
 extern int Cmdline_nomovies;	// WMC Toggles movie playing support
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_novbo;

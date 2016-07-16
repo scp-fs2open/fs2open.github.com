@@ -699,14 +699,10 @@ void gr_set_palette_internal( const char *name, ubyte * palette, int restrict_fo
 	}
 
 	if ( Gr_inited ) {
-		if (gr_screen.gf_set_palette) {
-			(*gr_screen.gf_set_palette)(Gr_current_palette, restrict_font_to_128 );
-
-			// Since the palette set code might shuffle the palette,
-			// reload it into the source palette
-			if ( palette ) {
-				memmove( palette, Gr_current_palette, 768 );
-			}
+		// Since the palette set code might shuffle the palette,		
+		// reload it into the source palette		
+		if (palette) {
+			memmove(palette, Gr_current_palette, 768);
 		}
 
 		// Update Palette Manager tables
