@@ -96,6 +96,11 @@ namespace
 
 		return false;
 	}
+	
+	bool quit_handler(const SDL_Event& e) {
+		gameseq_post_event(GS_EVENT_QUIT_GAME);
+		return true;
+	}
 }
 
 
@@ -265,6 +270,7 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 #endif // WIN32
 
 	os::events::addEventListener(SDL_WINDOWEVENT, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
+	os::events::addEventListener(SDL_QUIT, os::events::DEFAULT_LISTENER_WEIGHT, quit_handler);
 
 	atexit(os_deinit);
 }
