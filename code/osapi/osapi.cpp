@@ -57,7 +57,7 @@ namespace
 	bool fAppActive = false;
 	bool window_event_handler(const SDL_Event& e)
 	{
-		if (e.window.windowID == SDL_GetWindowID(os_get_window())) {
+		if (os::events::isWindowEvent(e, os_get_window())) {
 			switch (e.window.event) {
 			case SDL_WINDOWEVENT_MINIMIZED:
 			case SDL_WINDOWEVENT_FOCUS_LOST:
@@ -495,6 +495,33 @@ namespace os
 			}
 
 			return false;
+		}
+
+		bool isWindowEvent(const SDL_Event& e, SDL_Window* window)
+		{
+			auto mainId = SDL_GetWindowID(window);
+			switch(e.type)
+			{
+			case SDL_WINDOWEVENT:
+				return mainId == e.window.windowID;
+			case SDL_KEYDOWN:
+			case SDL_KEYUP:
+				return mainId == e.key.windowID;
+			case SDL_TEXTEDITING:
+				return mainId == e.edit.windowID;
+			case SDL_TEXTINPUT:
+				return mainId == e.text.windowID;
+			case SDL_MOUSEMOTION:
+				return mainId == e.motion.windowID;
+			case SDL_MOUSEBUTTONDOWN:
+			case SDL_MOUSEBUTTONUP:
+				return mainId == e.button.windowID;
+			case SDL_MOUSEWHEEL:
+				return mainId == e.wheel.windowID;
+			default:
+				// Event doesn't have a window ID
+				return true;
+			}
 		}
 	}
 }

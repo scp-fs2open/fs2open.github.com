@@ -139,6 +139,8 @@ namespace os
 		 * @return @c true if the event handler was removed, @c false otherwise
 		 */
 		bool removeEventListener(ListenerIdentifier identifier);
+
+		bool isWindowEvent(const SDL_Event& e, SDL_Window* window);
 	}
 }
 

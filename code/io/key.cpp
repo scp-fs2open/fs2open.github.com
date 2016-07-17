@@ -91,6 +91,10 @@ namespace
 {
 	bool key_down_event_handler(const SDL_Event& e)
 	{
+		if (!os::events::isWindowEvent(e, os_get_window())) {
+			return false;
+		}
+
 		if (SDLtoFS2[e.key.keysym.scancode]) {
 			key_mark(SDLtoFS2[e.key.keysym.scancode], 1, 0);
 
@@ -102,6 +106,10 @@ namespace
 
 	bool key_up_event_handler(const SDL_Event& e)
 	{
+		if (!os::events::isWindowEvent(e, os_get_window())) {
+			return false;
+		}
+
 		if (SDLtoFS2[e.key.keysym.scancode]) {
 			key_mark(SDLtoFS2[e.key.keysym.scancode], 0, 0);
 
