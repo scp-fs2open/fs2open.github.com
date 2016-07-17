@@ -588,6 +588,11 @@ void generic_anim_render_fixed_frame_delay(generic_anim* ga, float frametime)
  * @param [in] *ga  animation data
  * @param [in] frametime  how long this frame took
  * @param [in] alpha  transparency to draw frame with (0.0 - 1.0)
+ *
+ * @note
+ * uses both time & frame counts to determine end state; so that if the anims playing
+ * can't be processed fast enough, all frames will still play, rather than the end
+ * frames being skipped
  */
 void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime, float alpha)
 {
@@ -602,13 +607,13 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
 		if(ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) {
 			// playing backwards
 			ga->anim_time -= frametime;
-			if((ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) && ga->anim_time <= 0.0) {
-				ga->anim_time = 0;  //stop on first frame when playing in reverse
-			}
-			else {
-				if (ga->anim_time <= 0.0) {
+			if (ga->anim_time <= 0.0 && ga->png.anim->current_frame <= 0) {
+				if(ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) {
+					ga->anim_time = 0;  //stop on first frame when playing in reverse
+				}
+				else {
 					// loop back to end
-					ga->anim_time = ga->total_time - 0.001f;
+					ga->anim_time = ga->total_time;
 					ga->png.previous_frame_time = ga->total_time;
 					ga->png.anim->current_frame = ga->num_frames-1;
 					ga->current_frame = ga->num_frames-1;
@@ -618,12 +623,13 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
 		else {
 			// playing forwards
 			ga->anim_time += frametime;
-			if(ga->anim_time >= ga->total_time) {
+			if(ga->anim_time >= ga->total_time && ga->png.anim->current_frame >= ga->png.anim->nframes-1) {
 				if(ga->direction & GENERIC_ANIM_DIRECTION_NOLOOP) {
-					ga->anim_time = ga->total_time - 0.001f;  // stop on last frame when playing - if it's equal fmod sets back to 0.0f
+					ga->anim_time = ga->total_time;  // stop on last frame when playing
 				}
 				else {
 					// loop back to start
+					ga->anim_time = 0.0f;
 					ga->png.previous_frame_time = 0.0f;
 					ga->current_frame = 0;
 					ga->png.anim->goto_start();
@@ -631,22 +637,23 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
 				ga->done_playing = 1;
 			}
 		}
-		ga->anim_time = fmod(ga->anim_time, ga->total_time);
 	}
 
 	if (ga->num_frames > 0) {
 
 		// just increment or decrement the frame by one
-		// jumping forwards multiple frames will just cause slowdowns as multiple frames
+		// jumping forwards multiple frames will just exacerbate slowdowns as multiple frames
 		// would need to be composed
 		if (ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) {
-			if (ga->anim_time <= ga->png.previous_frame_time - ga->png.anim->frame.delay) {
+			if (ga->anim_time <= ga->png.previous_frame_time - ga->png.anim->frame.delay &&
+					ga->png.anim->current_frame > 0) {
 				ga->png.previous_frame_time -= ga->png.anim->frame.delay;
 				ga->current_frame--;
 			}
 		}
 		else {
-			if (ga->anim_time >= ga->png.previous_frame_time + ga->png.anim->frame.delay) {
+			if (ga->anim_time >= ga->png.previous_frame_time + ga->png.anim->frame.delay &&
+					ga->png.anim->current_frame < ga->png.anim->nframes-1) {
 				ga->png.previous_frame_time += ga->png.anim->frame.delay;
 				ga->current_frame++;
 			}
