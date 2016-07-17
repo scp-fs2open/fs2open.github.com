@@ -61,6 +61,10 @@ namespace
 {
 	bool mouse_key_event_handler(const SDL_Event& e)
 	{
+		if (!os::events::isWindowEvent(e, os_get_window())) {
+			return false;
+		}
+
 		if (e.button.button == SDL_BUTTON_LEFT)
 			mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.state);
 		else if (e.button.button == SDL_BUTTON_MIDDLE)
@@ -73,6 +77,10 @@ namespace
 
 	bool mouse_motion_event_handler(const SDL_Event& e)
 	{
+		if (!os::events::isWindowEvent(e, os_get_window())) {
+			return false;
+		}
+
 		mouse_event(e.motion.x, e.motion.y, e.motion.xrel, e.motion.yrel);
 
 		return true;
@@ -80,6 +88,10 @@ namespace
 
 	bool mouse_wheel_event_handler(const SDL_Event& e)
 	{
+		if (!os::events::isWindowEvent(e, os_get_window())) {
+			return false;
+		}
+
 #if SDL_VERSION_ATLEAST(2, 0, 4)
 		mousewheel_motion(e.wheel.x, e.wheel.y, e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED);
 #else
