@@ -140,6 +140,15 @@ namespace os
 		 */
 		bool removeEventListener(ListenerIdentifier identifier);
 
+		/**
+		* @brief Checks if the event belongs to a window
+		* This can be used to handle multiple windows correctly and only handle the events
+		* that belong to a specific window.
+		*
+		* @param e The event that should be checked
+		* @param window The window the event should belong to
+		* @return @c true if the event belongs to the window, @c false otherwise
+		*/
 		bool isWindowEvent(const SDL_Event& e, SDL_Window* window);
 	}
 }
