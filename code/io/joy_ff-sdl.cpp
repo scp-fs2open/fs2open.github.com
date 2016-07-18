@@ -323,7 +323,7 @@ static int joy_ff_create_effects()
 	// pDock
 	memset(&pDock, 0, sizeof(haptic_effect_t));
 
-	pDock.eff.type = SDL_HAPTIC_LEFTRIGHT; //SDL_HAPTIC_SQUARE;
+	pDock.eff.type = SDL_HAPTIC_SINE; //SDL_HAPTIC_SQUARE;
 	pDock.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
 	pDock.eff.periodic.direction.dir[0] = 9000;
 	pDock.eff.periodic.length = 125;
