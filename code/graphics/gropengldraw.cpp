@@ -241,7 +241,7 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int
 
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
 
-	opengl_shader_set_passthrough(true, bm_has_alpha_channel(gr_screen.current_bitmap) ? false : true);
+	opengl_shader_set_passthrough(true, true);
 
 	opengl_draw_textured_quad(x1,y1,u0,v0, x2,y2,u1,v1);
 
