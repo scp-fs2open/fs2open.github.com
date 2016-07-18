@@ -1988,7 +1988,7 @@ void game_init()
 
 	// standalone's don't use the joystick and it seems to sometimes cause them to not get shutdown properly
 	if(!Is_standalone){
-		joy_init();
+		io::joystick::init();
 	}
 
 	player_controls_init();
@@ -4807,7 +4807,6 @@ void game_flush()
 {
 	key_flush();
 	mouse_flush();
-	joy_flush();
 	snazzy_flush();
 
 	Joymouse_button_status = 0;
@@ -4868,9 +4867,14 @@ int game_poll()
 	if (os_foreground() && !io::mouse::CursorManager::get()->isCursorShown() && (Use_joy_mouse))	{
 		// Move the mouse cursor with the joystick
 		int mx, my, dx, dy;
-		int jx, jy, jz, jr;
+		int jx, jy;
 
-		joy_get_pos( &jx, &jy, &jz, &jr );
+		int raw_axis[2];
+
+		joystick_read_raw_axis(2, raw_axis);
+
+		jx = joy_get_scaled_reading(raw_axis[0]);
+		jy = joy_get_scaled_reading(raw_axis[1]);
 
 		dx = fl2i(f2fl(jx)*flFrametime*500.0f);
 		dy = fl2i(f2fl(jy)*flFrametime*500.0f);
@@ -7138,7 +7142,7 @@ void game_shutdown(void)
 	player_tips_close();
 
 	control_config_common_close();
-	joy_close();
+	io::joystick::shutdown();
 
 	audiostream_close();
 	snd_close();

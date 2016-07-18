@@ -100,7 +100,7 @@ void init_new_pilot(player *p, int reset)
 		Use_mouse_to_fly = 1;
 		Mouse_sensitivity = 4;
 		Joy_sensitivity = 9;
-		Dead_zone_size = 10;
+		Joy_dead_zone_size = 10;
 	}
 
 	// unassigned squadron

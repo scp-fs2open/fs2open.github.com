@@ -288,6 +288,9 @@ extern int Axis_map_to[];
 extern int Invert_axis[];
 extern int Invert_axis_defaults[];
 
+extern int Joy_dead_zone_size;
+extern int Joy_sensitivity;
+
 extern int Control_config_overlay_id;
 
 extern config_item Control_config[];		//!< Stores the keyboard configuration
@@ -317,5 +320,7 @@ void control_config_clear();
 void clear_key_binding(short key);
 void control_check_indicate();
 void control_config_clear_used_status();
+
+int joy_get_scaled_reading(int raw);
 
 #endif

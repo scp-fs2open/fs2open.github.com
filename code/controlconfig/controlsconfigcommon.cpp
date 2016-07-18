@@ -30,6 +30,10 @@ enum CC_tab {
 
 int Failed_key_index;
 
+// Joystick configuration
+int Joy_dead_zone_size = 10;
+int Joy_sensitivity = 9;
+
 // assume control keys are used as modifiers until we find out 
 int Shift_is_modifier;
 int Ctrl_is_modifier;

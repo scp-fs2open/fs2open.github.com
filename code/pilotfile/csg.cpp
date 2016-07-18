@@ -1107,7 +1107,7 @@ void pilotfile::csg_read_settings()
 	Use_mouse_to_fly = cfread_int(cfp);
 	Mouse_sensitivity = cfread_int(cfp);
 	Joy_sensitivity = cfread_int(cfp);
-	Dead_zone_size = cfread_int(cfp);
+	Joy_dead_zone_size = cfread_int(cfp);
 
 	if (csg_ver < 3) {
 		// detail
@@ -1144,7 +1144,7 @@ void pilotfile::csg_write_settings()
 	cfwrite_int(Use_mouse_to_fly, cfp);
 	cfwrite_int(Mouse_sensitivity, cfp);
 	cfwrite_int(Joy_sensitivity, cfp);
-	cfwrite_int(Dead_zone_size, cfp);
+	cfwrite_int(Joy_dead_zone_size, cfp);
 
 	endSection();
 }
