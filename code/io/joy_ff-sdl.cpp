@@ -87,7 +87,10 @@ int joy_ff_init()
 	}
 #endif
 	
-	haptic = SDL_HapticOpenFromJoystick(joy_get_device());
+	// This should be how we do it, but it's currently bugged in SDL so it fails to re-enumerate haptic axes.
+	//haptic = SDL_HapticOpenFromJoystick(joy_get_device());
+
+	haptic = SDL_HapticOpen(0);
 
 	if (haptic == NULL) {
 		mprintf(("    ERROR: Unable to open haptic joystick: %s\n", SDL_GetError()));
