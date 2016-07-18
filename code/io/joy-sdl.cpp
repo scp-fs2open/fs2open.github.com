@@ -263,12 +263,22 @@ namespace
 
 	bool joy_hat_event_handler(const SDL_Event& e)
 	{
+		// z64: This'll later be updated to handle multiple controllers. For now, just bail if it isn't our current controller
+		if (e.jhat.which != currentJoystickID) {
+			return false;
+		}
+
 		joy_set_hat_state(e.jhat.value);
 		return true;
 	}
 
 	bool joy_button_event_handler(const SDL_Event& e)
 	{
+		// z64: This'll later be updated to handle multiple controllers. For now, just bail if it isn't our current controller
+		if (e.jbutton.which != currentJoystickID) {
+			return false;
+		}
+
 		if (e.jbutton.button < JOY_NUM_BUTTONS) {
 			joy_set_button_state(e.jbutton.button, e.jbutton.state);
 
