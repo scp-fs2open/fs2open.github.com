@@ -87,7 +87,10 @@ int joy_ff_init()
 	}
 #endif
 	
-	haptic = SDL_HapticOpenFromJoystick(joy_get_device());
+	// This should be how we do it, but it's currently bugged in SDL so it fails to re-enumerate haptic axes.
+	//haptic = SDL_HapticOpenFromJoystick(joy_get_device());
+
+	haptic = SDL_HapticOpen(0);
 
 	if (haptic == NULL) {
 		mprintf(("    ERROR: Unable to open haptic joystick: %s\n", SDL_GetError()));
@@ -320,7 +323,7 @@ static int joy_ff_create_effects()
 	// pDock
 	memset(&pDock, 0, sizeof(haptic_effect_t));
 
-	pDock.eff.type = SDL_HAPTIC_LEFTRIGHT; //SDL_HAPTIC_SQUARE;
+	pDock.eff.type = SDL_HAPTIC_SINE; //SDL_HAPTIC_SQUARE;
 	pDock.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
 	pDock.eff.periodic.direction.dir[0] = 9000;
 	pDock.eff.periodic.length = 125;
