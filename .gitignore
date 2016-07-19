@@ -60,6 +60,8 @@ ipch/
 [Dd]ebug*/
 [Rr]elease*/
 Ankh.NoLoad
+*.VC.db
+*.VC.VC.opendb
 
 #MonoDevelop
 *.pidb
