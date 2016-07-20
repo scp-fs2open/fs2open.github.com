@@ -21,7 +21,6 @@
 #include "graphics/2d.h"
 #include "io/key.h"
 #include "object/object.h"
-#include "editor.h"
 #include "CampaignTreeWnd.h"
 #include "CampaignTreeView.h"
 #include "CampaignEditorDlg.h"

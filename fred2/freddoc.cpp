@@ -23,7 +23,6 @@
 
 #include "render/3d.h"
 #include "object/object.h"
-#include "editor.h"
 #include "ai/ai.h"
 #include "cfile/cfile.h"
 

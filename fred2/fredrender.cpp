@@ -33,7 +33,6 @@
 #include "object/object.h"
 #include "model/model.h"
 #include "palman/palman.h"
-#include "editor.h"
 #include "ship/ship.h"
 #include "cfile/cfile.h"
 #include "mission/missionparse.h"

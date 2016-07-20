@@ -18,7 +18,6 @@
 #include "cfile/cfile.h"
 #include "Grid.h"
 #include "MainFrm.h"
-#include "editor.h"
 #include "Management.h"
 #include "graphics/2d.h"
 #include "render/3d.h"

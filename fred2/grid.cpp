@@ -12,10 +12,10 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include "Grid.h"
+#include "mission/missiongrid.h"
 
 #include "render/3d.h"
 #include "object/object.h"
-#include "editor.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
