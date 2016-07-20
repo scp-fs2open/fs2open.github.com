@@ -1233,7 +1233,7 @@ int opengl_init_display_device()
 			gr_screen.max_w, gr_screen.max_h, windowflags);
 		if (window == NULL)
 		{
-			mprintf(("Could not create window: %s", SDL_GetError()));
+			mprintf(("Could not create window: %s\n", SDL_GetError()));
 			return 1;
 		}
 
@@ -1241,6 +1241,11 @@ int opengl_init_display_device()
 	}
 
 	GL_context = SDL_GL_CreateContext(os_get_window());
+
+	if (GL_context == nullptr) {
+		mprintf(("Error creating GL_context: %s\n", SDL_GetError()));
+		return 1;
+	}
 
 	SDL_GL_MakeCurrent(os_get_window(), GL_context);
 	//TODO: set up bpp settings
@@ -1449,7 +1454,10 @@ bool gr_opengl_init()
 	}
 
 	// version check
+	opengl_check_for_errors("before glGetString(GL_VERSION) call");
 	ver = (const char *)glGetString(GL_VERSION);
+	opengl_check_for_errors("after glGetString(GL_VERSION) call");
+	Assertion(ver, "Failed to get glGetString(GL_VERSION)\n");
 	sscanf(ver, "%d.%d", &major, &minor);
 
 	GL_version = (major * 10) + minor;
