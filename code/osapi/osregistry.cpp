@@ -19,7 +19,11 @@
 
 #ifdef WIN32
 #include <Windows.h>
+// Stupid Microsoft is not able to fix a simple compile warning: https://connect.microsoft.com/VisualStudio/feedback/details/1342304/level-1-compiler-warnings-in-windows-sdk-shipped-with-visual-studio
+#pragma warning(push)
+#pragma warning(disable: 4091) // ignored on left of '' when no variable is declared
 #include <Shlobj.h>
+#pragma warning(pop)
 #include <Sddl.h>
 #endif
 

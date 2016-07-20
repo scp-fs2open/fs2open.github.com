@@ -243,8 +243,8 @@ void profile_begin(const char* name);
 void profile_begin(SCP_string &output_handle, const char* name);
 void profile_end(const char* name);
 void profile_dump_output();
-void store_profile_in_history(SCP_string &name, float percent, uint time);
-void get_profile_from_history(SCP_string &name, float* avg, float* min, float* max, uint *avg_micro_sec, uint *min_micro_sec, uint *max_micro_sec);
+void store_profile_in_history(SCP_string &name, float percent, uint64_t time);
+void get_profile_from_history(SCP_string &name, float* avg, float* min, float* max, uint64_t *avg_micro_sec, uint64_t *min_micro_sec, uint64_t *max_micro_sec);
 
 class profile_auto
 {

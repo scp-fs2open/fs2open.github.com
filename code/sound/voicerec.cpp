@@ -19,6 +19,13 @@
 #include "stdafx.h"
 #endif	//LAUNCHER
 
+#pragma warning(push)
+#pragma warning(disable: 4995)
+// Visual Studio complains that some functions are deprecated so this fixes that
+#include <cstring>
+#include <cwchar>
+#include <cstdio>
+#pragma warning(pop)
 
 
 #include <sphelper.h>                           // Contains definitions of SAPI functions

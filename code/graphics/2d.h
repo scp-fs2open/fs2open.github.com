@@ -538,7 +538,7 @@ typedef struct screen {
 	void (*gf_bm_page_in_start)();
 	bool (*gf_bm_data)(int n, bitmap* bm);
 
-	int (*gf_bm_make_render_target)(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags );
+	int (*gf_bm_make_render_target)(int n, int *width, int *height, int *bpp, int *mm_lvl, int flags );
 	int (*gf_bm_set_render_target)(int n, int face);
 
 	void (*gf_translate_texture_matrix)(int unit, const vec3d *shift);

@@ -372,7 +372,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	GLenum texFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 	GLenum glFormat = GL_BGRA;
 	GLint intFormat = GL_RGBA;
-	ubyte saved_bpp = 0;
+	int saved_bpp = 0;
 	int mipmap_w = 0, mipmap_h = 0;
 	int dsize = 0, doffset = 0, block_size = 0;
 	int i,j,k;
@@ -1639,7 +1639,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	return 1;
 }
 
-int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp, int *mm_lvl, int flags )
+int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, int *mm_lvl, int flags )
 {
 	Assert( !GL_rendering_to_texture );
 

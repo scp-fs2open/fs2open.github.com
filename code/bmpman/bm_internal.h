@@ -92,14 +92,14 @@ struct bitmap_entry {
 extern bitmap_entry bm_bitmaps[MAX_BITMAPS];
 
 // image specific lock functions
-void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
-void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
-void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
-void bm_lock_apng( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
-void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
-void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
-void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
-void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags );
+void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_apng( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
 
 
 #endif // __BM_INTERNAL_H__

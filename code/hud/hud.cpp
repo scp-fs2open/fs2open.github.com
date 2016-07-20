@@ -2243,7 +2243,7 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 	}
 
 	// Note; total_time for hud_anim is derived only from the fps, no need to pass it in
-	framenum = bm_get_anim_frame(ha->first_frame, ha->time_elapsed, 0.0f, static_cast<bool>(loop));
+	framenum = bm_get_anim_frame(ha->first_frame, ha->time_elapsed, 0.0f, loop != 0);
 	if (reverse) {
 		framenum = (ha->num_frames-1) - framenum;
 	}

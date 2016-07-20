@@ -479,7 +479,7 @@ void gr_stub_get_bitmap_from_texture(void* data_out, int bitmap_num)
 
 }
 
-int gr_stub_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags)
+int gr_stub_bm_make_render_target(int n, int *width, int *height, int *bpp, int *mm_lvl, int flags)
 {
 	return 0;
 }

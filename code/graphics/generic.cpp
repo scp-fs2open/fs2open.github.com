@@ -499,7 +499,7 @@ void generic_render_png_stream(generic_anim* ga)
 	}
 
 	bm_lock(ga->bitmap_id, ga->png.anim->bpp, BMP_TEX_NONCOMP, true);  // lock in 32 bpp for png
-	ubyte bpp = ga->png.anim->bpp;
+	int bpp = ga->png.anim->bpp;
 	if (ga->use_hud_color) {
 		bpp = 8;
 	}

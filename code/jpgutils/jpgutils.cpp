@@ -16,6 +16,7 @@
 #include "jpeglib.h"
 
 #undef LOCAL // fix from a jpeg header, pstypes.h will define it again
+#undef HAVE_STDDEF_H // fix a warning where jpeg and SDL headers collide
 
 #include "globalincs/pstypes.h"
 #include "jpgutils/jpgutils.h"

@@ -39,6 +39,14 @@
 	#pragma error( "ERROR: Unknown platform, speech (FS2_SPEECH) is not supported" )
 #endif	//_WIN32
 
+#pragma warning(push)
+#pragma warning(disable: 4995)
+// Visual Studio complains that some functions are deprecated so this fixes that
+#include <cstring>
+#include <cwchar>
+#include <cstdio>
+#pragma warning(pop)
+
 #include "globalincs/pstypes.h"
 #include "speech.h"
 

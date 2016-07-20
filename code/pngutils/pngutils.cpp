@@ -134,7 +134,7 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
  *
  * @retval true if succesful, false otherwise
  */
-int png_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *bpp, int dest_size, int cf_type)
+int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int dest_size, int cf_type)
 {
 	char filename[MAX_FILENAME_LEN];
 	png_infop info_ptr;
@@ -311,10 +311,10 @@ void apng_ani::_compose_frame()
 							u = sp[3] * 255;
 							v = (255 - sp[3]) * dp[3];
 							al = u + v;
-							dp[0] = (sp[0] * u + dp[0] * v) / al;
-							dp[1] = (sp[1] * u + dp[1] * v) / al;
-							dp[2] = (sp[2] * u + dp[2] * v) / al;
-							dp[3] = al / 255;
+							dp[0] = static_cast<ubyte>((sp[0] * u + dp[0] * v) / al);
+							dp[1] = static_cast<ubyte>((sp[1] * u + dp[1] * v) / al);
+							dp[2] = static_cast<ubyte>((sp[2] * u + dp[2] * v) / al);
+							dp[3] = static_cast<ubyte>(al / 255);
 						}
 						else {
 							// destination is transparent, overwrite it

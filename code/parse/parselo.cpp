@@ -694,7 +694,6 @@ int required_string_either(char *str1, char *str2)
 	nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
 	Warning(LOCATION, "Error: Unable to find either required token [%s] or [%s]\n", str1, str2);
 	throw parse::ParseException("Required string not found");
-	return -1;	// Dead code, but some compilers still complain about it
 }
 
 /**
