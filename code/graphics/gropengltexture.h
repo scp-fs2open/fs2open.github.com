@@ -24,8 +24,8 @@ typedef struct tcache_slot_opengl {
 	int	bitmap_handle;
 	int	size;
 	ushort w, h;
-	ubyte bpp;
-	ubyte mipmap_levels;
+	int bpp;
+	int mipmap_levels;
 
 	tcache_slot_opengl() :
 		texture_id(0), texture_target(GL_TEXTURE_2D), wrap_mode(GL_REPEAT),
@@ -73,7 +73,7 @@ void opengl_set_modulate_tex_env();
 void opengl_preload_init();
 GLfloat opengl_get_max_anisotropy();
 void opengl_kill_render_target(int slot);
-int opengl_make_render_target(int handle, int slot, int *w, int *h, ubyte *bpp, int *mm_lvl, int flags);
+int opengl_make_render_target(int handle, int slot, int *w, int *h, int *bpp, int *mm_lvl, int flags);
 int opengl_set_render_target(int slot, int face = -1, int is_static = 0);
 void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num);
 int opengl_get_texture(GLenum target, GLenum pixel_format, GLenum data_format, int num_mipmaps, int width, int height, int bytes_per_pixel, void* image_data, int offset);

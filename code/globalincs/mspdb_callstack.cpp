@@ -10,7 +10,12 @@
 
 /* Windows */
 #include <windows.h>
+
+// Stupid Microsoft is not able to fix a simple compile warning: https://connect.microsoft.com/VisualStudio/feedback/details/888527/warnings-on-dbghelp-h
+#pragma warning(push)
+#pragma warning(disable: 4091) // ignored on left of '' when no variable is declared
 #include <dbghelp.h>
+#pragma warning(pop)
 
 /* SCP */
 #include "globalincs/pstypes.h"
@@ -100,7 +105,7 @@ BOOL SCP_mspdbcs_ResolveSymbol( HANDLE hProcess, UINT_PTR dwAddress, SCP_mspdbcs
 
 			if ( siSymbol.dwOffset != 0 )
 			{
-				sprintf_s( szWithOffset, SCP_MSPDBCS_MAX_SYMBOL_LENGTH, "%s + %d bytes", pszSymbol, siSymbol.dwOffset );
+				sprintf_s( szWithOffset, SCP_MSPDBCS_MAX_SYMBOL_LENGTH, "%s + %lld bytes", pszSymbol, siSymbol.dwOffset );
 				szWithOffset[ SCP_MSPDBCS_MAX_SYMBOL_LENGTH - 1 ] = '\0'; /* Because sprintf doesn't guarantee NULL terminating */
 				pszSymbol = szWithOffset;
 			}

@@ -103,8 +103,8 @@ struct bitmap
 	short	w;          //!< Width, in number of pixels
 	short	h;          //!< Height, in number of pixels
 	short	rowsize;    //!< What you need to add to go to next row
-	ubyte	bpp;        //!< Requested bitdepth of each pixel. ( 7, 8, 15, 16, 24, 32)
-	ubyte	true_bpp;   //!< The image's actual bitdepth
+	int	bpp;        //!< Requested bitdepth of each pixel. ( 7, 8, 15, 16, 24, 32)
+	int	true_bpp;   //!< The image's actual bitdepth
 	ubyte	flags;      //!< Various texture type flags. @see BMPMAN_CONSTANTS
 	ptr_u	data;       //!< Pointer to data, or maybe offset into VRAM.
 	ubyte *palette;     /**< @brief   Pointer to this bitmap's palette (if it has one).
@@ -335,7 +335,7 @@ int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, i
  * @returns A pointer to the bitmap that's valid until bm_unlock is called if successful, or
  * @returns NULL if unsuccessful
  */
-bitmap* bm_lock(int handle, ubyte bpp, ubyte flags, bool nodebug = false);
+bitmap* bm_lock(int handle, int bpp, ubyte flags, bool nodebug = false);
 
 /**
  * @brief Returns a unique signiature for the bitmap indexed by handle

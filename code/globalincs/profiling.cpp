@@ -208,9 +208,9 @@ void profile_dump_output()
 		profile_output += "----------------------------------------\n";
 
 		for(int i = 0; i < (int)samples.size(); i++) {
-			uint sample_time;
+			uint64_t sample_time;
 			float percent_time, avg_time, min_time, max_time;
-			uint avg_micro_seconds, min_micro_seconds, max_micro_seconds; 
+			uint64_t avg_micro_seconds, min_micro_seconds, max_micro_seconds; 
 
 			Assert(samples[i].open_profiles == 0);
 
@@ -260,7 +260,7 @@ void profile_dump_output()
  * @param name The globally unique name for this profile (see profile_begin()/profile_end())
  * @param percent How much time the profiled section took to execute (as a percentage of overall frametime)
  */
-void store_profile_in_history(SCP_string &name, float percent, uint time)
+void store_profile_in_history(SCP_string &name, float percent, uint64_t time)
 {
 	float old_ratio;
 	float new_ratio = 0.8f * f2fl(Frametime);
@@ -323,7 +323,7 @@ void store_profile_in_history(SCP_string &name, float percent, uint time)
  * @param min Pointer to a float in which the minimum value will be stored (or 0.0 if no value has been saved)
  * @param max Pointer to a float in which the maximum value will be stored (or 0.0 if no value has been saved)
  */
-void get_profile_from_history(SCP_string &name, float* avg, float* min, float* max, uint *avg_micro_sec, uint *min_micro_sec, uint *max_micro_sec)
+void get_profile_from_history(SCP_string &name, float* avg, float* min, float* max, uint64_t *avg_micro_sec, uint64_t *min_micro_sec, uint64_t *max_micro_sec)
 {
 	for ( int i = 0; i < (int)history.size(); i++ ) {
 		if ( history[i].name == name ) {

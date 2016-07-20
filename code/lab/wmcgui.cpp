@@ -2668,7 +2668,7 @@ int Slider::DoRefreshSize()
 
 int Slider::GetSliderOffset()
 {
-	return SliderScale * (BarCoords[2] - BarCoords[0] - SliderWidth) + BarCoords[0];
+	return fl2i(SliderScale * (BarCoords[2] - BarCoords[0] - SliderWidth) + BarCoords[0]);
 }
 
 float Slider::GetSliderPos(int x)
@@ -2714,7 +2714,7 @@ void Slider::DoDraw(float frametime)
 
 	draw_open_rect(BarCoords[0], BarCoords[1], BarCoords[2], BarCoords[3], false);
 
-	float sliderX = GetSliderOffset();
+	auto sliderX = GetSliderOffset();
 
 	gr_set_shader(&SliderShade);
 	gr_opengl_shade(sliderX, BarCoords[1], sliderX + SliderWidth, BarCoords[3], false);

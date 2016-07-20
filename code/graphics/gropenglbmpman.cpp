@@ -118,7 +118,7 @@ void gr_opengl_bm_save_render_target(int n)
 	}
 }
 
-int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags)
+int gr_opengl_bm_make_render_target(int n, int *width, int *height, int *bpp, int *mm_lvl, int flags)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 

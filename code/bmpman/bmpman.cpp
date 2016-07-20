@@ -1391,10 +1391,10 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 /**
 * Lock an image files data into memory
 */
-static int bm_load_image_data(const char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
+static int bm_load_image_data(const char *filename, int handle, int bitmapnum, int bpp, ubyte flags, bool nodebug)
 {
 	BM_TYPE c_type = BM_TYPE_NONE;
-	ubyte true_bpp;
+	int true_bpp;
 
 	bitmap_entry *be = &bm_bitmaps[bitmapnum];
 	bitmap *bmp = &be->bm;
@@ -1888,7 +1888,7 @@ int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **
 	return -1;
 }
 
-bitmap * bm_lock(int handle, ubyte bpp, ubyte flags, bool nodebug) {
+bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
 	bitmap			*bmp;
 	bitmap_entry	*be;
 
@@ -1994,7 +1994,7 @@ bitmap * bm_lock(int handle, ubyte bpp, ubyte flags, bool nodebug) {
 	return bmp;
 }
 
-void bm_lock_ani(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) {
+void bm_lock_ani(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 	anim				*the_anim;
 	anim_instance	*the_anim_instance;
 	bitmap			*bm;
@@ -2115,7 +2115,7 @@ void bm_lock_ani(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 }
 
 
-void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) {
+void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 
 	int first_frame = be->info.ani.first_frame;
 	int nframes = bm_bitmaps[first_frame].info.ani.num_frames;
@@ -2163,7 +2163,7 @@ void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 }
 
 
-void bm_lock_dds(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) {
+void bm_lock_dds(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 	ubyte *data = NULL;
 	int error;
 	ubyte dds_bpp = 0;
@@ -2225,7 +2225,7 @@ void bm_lock_dds(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 #endif
 }
 
-void bm_lock_jpg(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) {
+void bm_lock_jpg(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 	ubyte *data = NULL;
 	int d_size = 0;
 	int jpg_error = JPEG_ERROR_INVALID;
@@ -2267,7 +2267,7 @@ void bm_lock_jpg(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 #endif
 }
 
-void bm_lock_pcx(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) {
+void bm_lock_pcx(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 	ubyte *data;
 	int pcx_error;
 	char filename[MAX_FILENAME_LEN];
@@ -2310,7 +2310,7 @@ void bm_lock_pcx(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 	bm_convert_format(bmp, flags);
 }
 
-void bm_lock_png(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) {
+void bm_lock_png(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 	ubyte *data = NULL;
 	//assume 32 bit - libpng should expand everything
 	int d_size;
@@ -2353,7 +2353,7 @@ void bm_lock_png(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 #endif
 }
 
-void bm_lock_tga(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) {
+void bm_lock_tga(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 	ubyte *data = NULL;
 	int d_size, byte_size;
 	char filename[MAX_FILENAME_LEN];
@@ -2409,7 +2409,7 @@ void bm_lock_tga(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte
 	bm_convert_format(bmp, flags);
 }
 
-void bm_lock_user(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags) {
+void bm_lock_user(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 	// Unload any existing data
 	bm_free_data(bitmapnum);
 
@@ -2455,7 +2455,7 @@ int bm_make_render_target(int width, int height, int flags) {
 	int mm_lvl = 0;
 	// final w and h may be different from passed width and height
 	int w = width, h = height;
-	ubyte bpp = 32;
+	int bpp = 32;
 	int size = 0;
 
 	if (!bm_inited)
@@ -2502,8 +2502,8 @@ int bm_make_render_target(int width, int height, int flags) {
 	bm_bitmaps[n].bm.w = (short)w;
 	bm_bitmaps[n].bm.h = (short)h;
 	bm_bitmaps[n].bm.rowsize = (short)w;
-	bm_bitmaps[n].bm.bpp = (ubyte)bpp;
-	bm_bitmaps[n].bm.true_bpp = (ubyte)bpp;
+	bm_bitmaps[n].bm.bpp = bpp;
+	bm_bitmaps[n].bm.true_bpp = bpp;
 	bm_bitmaps[n].bm.flags = (ubyte)flags;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
