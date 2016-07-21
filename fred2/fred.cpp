@@ -1,30 +1,31 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/
+ */
 
 
 
 #include "stdafx.h"
 #include "FRED.h"
 
-#include "MainFrm.h"
 #include "FREDDoc.h"
-#include "FREDView.h"
 #include "FredRender.h"
+#include "FREDView.h"
+#include "MainFrm.h"
 #include "Management.h"
 
+#include "CampaignEditorDlg.h"
+#include "CampaignTreeView.h"
+#include "CampaignTreeWnd.h"
+
+#include "globalincs/mspdb_callstack.h"
 #include "graphics/2d.h"
 #include "io/key.h"
 #include "object/object.h"
-#include "CampaignTreeWnd.h"
-#include "CampaignTreeView.h"
-#include "CampaignEditorDlg.h"
-#include "globalincs/mspdb_callstack.h"
 
 #include "AFXADV.H"
 
@@ -47,23 +48,77 @@ extern "C" {
 static char THIS_FILE[] = __FILE__;
 #endif
 
+#define MAX_PENDING_MESSAGES 16
 
-int	Fred_running = 1;
-int	User_interface = HOFFOSS_INTERFACE;
-int	FrameCount = 0;
-int	Fred_active = 1;
-int	Update_window = 1;
+/**
+* @brief Our flavor of the About dialog
+*
+* @TODO Move this and its implementation to their own files
+*/
+class CAboutDlg : public CDialog
+{
+public:
+	CAboutDlg();
+
+	// Dialog Data
+	//{{AFX_DATA(CAboutDlg)
+	enum
+	{
+		IDD = IDD_ABOUTBOX
+	};
+	//}}AFX_DATA
+
+	// ClassWizard generated virtual function overrides
+	//{{AFX_VIRTUAL(CAboutDlg)
+protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	//}}AFX_VIRTUAL
+
+	// Implementation
+protected:
+	//{{AFX_MSG(CAboutDlg)
+
+	/**
+	* @brief Handler for the Bug Report button
+	*/
+	afx_msg void OnBug();
+
+	/**
+	* @brief Handler for the Forums button
+	*/
+	afx_msg void OnForums();
+	//}}AFX_MSG
+	DECLARE_MESSAGE_MAP()
+};
+
+typedef struct
+{
+	int frame_to_process;
+	int hwnd;
+	int id;
+	int wparam;
+	int lparam;
+} pending_message;
+
+pending_message Pending_messages[MAX_PENDING_MESSAGES];
+
+CFREDApp theApp;
+
+int Fred_running = 1;
+int FrameCount = 0;
+bool Fred_active = true;
+int Update_window = 1;
 HCURSOR h_cursor_move, h_cursor_rotate;
 
 // Goober5000 - needed to restore compatibility with the changes in fs2_open
 int Show_cpu = 0;
 
-CWnd *Prev_window;
-CShipEditorDlg	Ship_editor_dialog;
-wing_editor		Wing_editor_dialog;
-waypoint_path_dlg	Waypoint_editor_dialog;
-bg_bitmap_dlg	*Bg_bitmap_dialog = NULL;
-briefing_editor_dlg	*Briefing_dialog = NULL;
+CWnd*                Prev_window;
+CShipEditorDlg       Ship_editor_dialog;
+wing_editor          Wing_editor_dialog;
+waypoint_path_dlg    Waypoint_editor_dialog;
+bg_bitmap_dlg*       Bg_bitmap_dialog = NULL;
+briefing_editor_dlg* Briefing_dialog = NULL;
 
 window_data Main_wnd_data;
 window_data Ship_wnd_data;
@@ -81,56 +136,63 @@ window_data Starfield_wnd_data;
 window_data Asteroid_wnd_data;
 window_data Mission_notes_wnd_data;
 
-/////////////////////////////////////////////////////////////////////////////
-// CFREDApp
+float Sun_spot = 0.0f;	//!< Used to help link FRED with the codebase
+
+char *edit_mode_text[] = {
+	"Ships",
+	"Waypoints",
+};
+/*	"Grid",
+"Wing",
+"Object Relative"
+};
+*/
+
+char *control_mode_text[] = {
+	"Camera",
+	"Object"
+};
+
+
+// Process messages that needed to wait until a frame had gone by.
+void process_pending_messages(void);
+void show_control_mode(void);
+
 
 BEGIN_MESSAGE_MAP(CFREDApp, CWinApp)
 	//{{AFX_MSG_MAP(CFREDApp)
 	ON_COMMAND(ID_APP_ABOUT, OnAppAbout)
 	ON_COMMAND(ID_FILE_OPEN, OnFileOpen)
-		// NOTE - the ClassWizard will add and remove mapping macros here.
-		//    DO NOT EDIT what you see in these blocks of generated code!
 	//}}AFX_MSG_MAP
-	// Standard file based document commands
 	ON_COMMAND(ID_FILE_NEW, CWinApp::OnFileNew)
-	// Standard print setup command
 	ON_COMMAND(ID_FILE_PRINT_SETUP, CWinApp::OnFilePrintSetup)
 END_MESSAGE_MAP()
 
-/////////////////////////////////////////////////////////////////////////////
-// CFREDApp construction
 
-CFREDApp::CFREDApp()
-{
+CFREDApp::CFREDApp() {
 	app_init = 0;
 
-	SCP_mspdbcs_Initialise( );
+	SCP_mspdbcs_Initialise();
 
 #ifndef NDEBUG
 	outwnd_init();
 #endif
 }
 
-CFREDApp::~CFREDApp()
-{
-	SCP_mspdbcs_Cleanup( );
+CFREDApp::~CFREDApp() {
+	SCP_mspdbcs_Cleanup();
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// The one and only CFREDApp object
+int CFREDApp::ExitInstance() {
+	return CWinApp::ExitInstance();
+}
 
-CFREDApp theApp;
-
-/////////////////////////////////////////////////////////////////////////////
-// CFREDApp initialization
-char *c;
-char *tok = "whee";
-BOOL CFREDApp::InitInstance()
-{	
-
+BOOL CFREDApp::InitInstance() {
+	static char *c;
+	static char *tok = "whee";
 
 	// disable the debug memory stuff
-//	_CrtSetDbgFlag(~(_CRTDBG_ALLOC_MEM_DF) & _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG));
+	//	_CrtSetDbgFlag(~(_CRTDBG_ALLOC_MEM_DF) & _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG));
 
 	// Standard initialization
 	// If you are not using these features and wish to reduce the size
@@ -144,7 +206,6 @@ BOOL CFREDApp::InitInstance()
 #endif
 
 	LoadStdProfileSettings(9);  // Load standard INI file options (including MRU)
-	User_interface = GetProfileInt("Preferences", "User interface", User_interface);
 	Show_stars = GetProfileInt("Preferences", "Show stars", Show_stars);
 	Show_grid_positions = GetProfileInt("Preferences", "Show grid positions", Show_grid_positions);
 	Show_coordinates = GetProfileInt("Preferences", "Show coordinates", Show_coordinates);
@@ -208,24 +269,24 @@ BOOL CFREDApp::InitInstance()
 	c = GetCommandLine();
 	Assert(c != NULL);
 	if(c == NULL){
-		return FALSE;
-	} 
+	return FALSE;
+	}
 	tok = strtok(c, " \n");
 	Assert(tok != NULL);
 	if(tok == NULL){
-		return FALSE;		
+	return FALSE;
 	}
-	// Fred_exe_dir = strdup(c);		
+	// Fred_exe_dir = strdup(c);
 	strcpy_s(Fred_exe_dir, tok);
 	*/
 
 	// we need a full path, and if run from a shell that may not happen, so work that case out...
 
-	Assert( strlen(__argv[0]) > 2 );
+	Assert(strlen(__argv[0]) > 2);
 
 	// see if we have a ':', and if not then assume that we don't have a full path
 	if (__argv[0][1] != ':') {
-		GetCurrentDirectory( sizeof(Fred_exe_dir)-1, Fred_exe_dir );
+		GetCurrentDirectory(sizeof(Fred_exe_dir) - 1, Fred_exe_dir);
 		strcat_s(Fred_exe_dir, "\\");
 		strcat_s(Fred_exe_dir, __argv[0]);
 	} else {
@@ -242,13 +303,10 @@ BOOL CFREDApp::InitInstance()
 
 
 	// Goober5000 - figure out where the FRED file dialog should go
-	if ((m_pRecentFileList != NULL) && (m_pRecentFileList->GetSize() > 0))
-	{
+	if ((m_pRecentFileList != NULL) && (m_pRecentFileList->GetSize() > 0)) {
 		// use the most recently opened file to supply the default folder
 		m_sInitialDir = m_pRecentFileList->operator[](0);	// lol syntax
-	}
-	else
-	{
+	} else {
 		// use FRED's own directory to search for missions
 		m_sInitialDir = Fred_base_dir;
 		m_sInitialDir += "\\data\\missions";
@@ -263,7 +321,7 @@ BOOL CFREDApp::InitInstance()
 
 	OnFileNew();
 
-	if(m_pMainWnd == NULL) return FALSE;
+	if (m_pMainWnd == NULL) return FALSE;
 
 	// Enable drag/drop open
 	m_pMainWnd->DragAcceptFiles();
@@ -273,208 +331,42 @@ BOOL CFREDApp::InitInstance()
 	return TRUE;
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// CAboutDlg dialog used for App About
+int CFREDApp::init_window(window_data *wndd, CWnd *wnd, int adjust, int pre) {
+	int width, height;
+	WINDOWPLACEMENT p;
 
-class CAboutDlg : public CDialog
-{
-public:
-	CAboutDlg();
+	if (pre && !wndd->visible)
+		return -1;
 
-// Dialog Data
-	//{{AFX_DATA(CAboutDlg)
-	enum { IDD = IDD_ABOUTBOX };
-	//}}AFX_DATA
+	if (wndd->processed)
+		return -2;
 
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CAboutDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
+	Assert(wnd->GetSafeHwnd());
+	wnd->GetWindowPlacement(&p);
+	width = p.rcNormalPosition.right - p.rcNormalPosition.left;
+	height = p.rcNormalPosition.bottom - p.rcNormalPosition.top + adjust;
+	wndd->p.rcNormalPosition.right = wndd->p.rcNormalPosition.left + width;
+	wndd->p.rcNormalPosition.bottom = wndd->p.rcNormalPosition.top + height;
 
-// Implementation
-protected:
-	//{{AFX_MSG(CAboutDlg)
-	afx_msg void OnBug();
-	afx_msg void OnForums();
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
-};
+	if (wndd->valid) {
+		wnd->SetWindowPlacement(&wndd->p);
+		//		if (!wndd->visible)
+		//			wnd->ShowWindow(SW_SHOW);
+		//		else
+		//			wnd->ShowWindow(SW_HIDE);
+	}
 
-CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
-{
-	//{{AFX_DATA_INIT(CAboutDlg)
-	//}}AFX_DATA_INIT
+	record_window_data(wndd, wnd);
+	wndd->processed = 1;
+	return 0;
 }
 
-void CAboutDlg::DoDataExchange(CDataExchange* pDX)
-{
-	CDialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CAboutDlg)
-	//}}AFX_DATA_MAP
-}
-
-BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
-	//{{AFX_MSG_MAP(CAboutDlg)
-	ON_BN_CLICKED(IDC_BUG, OnBug)
-	ON_BN_CLICKED(IDC_FORUMS, OnForums)
-	//}}AFX_MSG_MAP
-END_MESSAGE_MAP()
-
-// App command to run the dialog
-void CFREDApp::OnAppAbout()
-{
+void CFREDApp::OnAppAbout() {
 	CAboutDlg aboutDlg;
 	aboutDlg.DoModal();
 }
 
-// G5K - from http://www.experts-exchange.com/Programming/System/Windows__Programming/MFC/Q_20155824.html
-void CFREDApp::OnFileOpen()
-{
-    // use the initial dir the first time we prompt for a file
-    // name. after a successful open, the file name will be
-    // changed to be the empty string and the default dir
-    // will be supplied by the CFileDialog internal memory
-    if(!DoPromptFileName(m_sInitialDir, AFX_IDS_OPENFILE, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST, TRUE, NULL))
-	{
-        // open cancelled
-        return;
-    }
-    AfxGetApp()->OpenDocumentFile(m_sInitialDir);
-    // if returns NULL, the user has already been alerted
-
-    // now erase the initial dir since we only want to use it once
-    m_sInitialDir.Empty();
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// CFREDApp commands
-
-char *edit_mode_text[] = {
-	"Ships",
-	"Waypoints",
-};
-/*	"Grid",
-	"Wing",
-	"Object Relative"
-};
-*/
-
-char *control_mode_text[] = {
-	"Camera",
-	"Object"
-};
-
-void show_control_mode(void)
-{
-	CString	str;
-
-	CMainFrame* pFrame = (CMainFrame*) AfxGetApp()->m_pMainWnd;
-	CStatusBar* pStatus = &pFrame->m_wndStatusBar;
-	//CStatusBarCtrl pStatusBarCtrl;
-
-	if (pStatus) {
-//		pStatus->GetStatusBarCtrl().SetParts(NUM_STATUS_PARTS, parts);
-
-		if (Marked)
-			str.Format("Marked: %d", Marked);
-		else
-			str = _T("");
-		pStatus->SetPaneText(1, str);
-
-		if (viewpoint)
-			str.Format("Viewpoint: %s", object_name(view_obj));
-		else
-			str.Format("Viewpoint: Camera");
-
-		pStatus->SetPaneText(2, str);
-		
-		if (FREDDoc_ptr->IsModified())
-			pStatus->SetPaneText(3, "MODIFIED");
-		else
-			pStatus->SetPaneText(3, "");
-
-		str.Format("Units = %.1f Meters", The_grid->square_size);
-		pStatus->SetPaneText(4, str);
-
-//		pStatus->SetPaneText(4, "abcdefg");
-//		pStatus->SetPaneText(4, "1234567890!");
-	}
-	
-}
-
-#define	MAX_PENDING_MESSAGES	16
-
-typedef struct {
-	int	frame_to_process, hwnd, id, wparam, lparam;
-} pending_message;
-
-pending_message Pending_messages[MAX_PENDING_MESSAGES];
-
-//	Process messages that needed to wait until a frame had gone by.
-void process_pending_messages(void)
-{
-	int	i;
-
-	for (i=0; i<MAX_PENDING_MESSAGES; i++)
-		if (Pending_messages[i].frame_to_process != -1)
-			if (Pending_messages[i].frame_to_process <= FrameCount) {
-				pending_message	*pmp = &Pending_messages[i];
-				PostMessage((HWND) pmp->hwnd, pmp->id, pmp->wparam, pmp->lparam);
-				Pending_messages[i].frame_to_process = -1;
-			}
-}
-
-//	Add a message to be processed to a buffer.
-//	Wait skip_count frames before processing.
-void add_pending_message(HWND hwnd, int id, int wparam, int lparam, int skip_count)
-{
-	int	i;
-
-	for (i=0; i<MAX_PENDING_MESSAGES; i++)
-		if (Pending_messages[i].frame_to_process == -1) {
-			Pending_messages[i].hwnd = (int) hwnd;
-			Pending_messages[i].id = id;
-			Pending_messages[i].wparam = wparam;
-			Pending_messages[i].lparam = lparam;
-			Pending_messages[i].frame_to_process = FrameCount + skip_count;
-		}
-}
-
-void init_pending_messages(void)
-{
-	int	i;
-
-	for (i=0; i<MAX_PENDING_MESSAGES; i++)
-		Pending_messages[i].frame_to_process = -1;
-}
-
-// void win32_blit(HDC hSrcDC, HPALETTE hPalette, int x, int y, int w, int h )
-#if 0
-void win32_blit(void *xx, void *yy, int x, int y, int w, int h )
-{
-	HPALETTE hOldPalette = NULL;
-	HDC hdc = GetDC(hwndApp);
-
-	if ( !hdc )	return;
-	if ( !fAppActive ) return;
-
-	if (hPalette)	{
-		hOldPalette = SelectPalette(hdc, hPalette, FALSE);
-		RealizePalette( hdc );
-	}
-
-	BitBlt(hdc, 0, 0, w, h, hSrcDC, x, y, SRCCOPY);
-	
-	if ( hOldPalette )	
-		SelectPalette(hdc, hOldPalette, FALSE);
-
-	ReleaseDC( hwndApp, hdc );
-}
-#endif
-
-BOOL CFREDApp::OnIdle(LONG lCount)
-{
+BOOL CFREDApp::OnIdle(LONG lCount) {
 	int adjust = 0;
 	CWnd *top, *wnd;
 
@@ -494,7 +386,7 @@ BOOL CFREDApp::OnIdle(LONG lCount)
 	}
 
 	CWinApp::OnIdle(lCount);
-//	internal_integrity_check();
+	//	internal_integrity_check();
 	if (Update_ship) {
 		Ship_editor_dialog.initialize_data(1);
 		Update_ship = 0;
@@ -516,9 +408,9 @@ BOOL CFREDApp::OnIdle(LONG lCount)
 
 	// See if the active window is a child of Fred
 	if (Prev_window)
-		Fred_active = ( (top == Fred_main_wnd) || (top == Campaign_wnd) );
+		Fred_active = ((top == Fred_main_wnd) || (top == Campaign_wnd));
 	else
-		Fred_active = 0;
+		Fred_active = false;
 
 	if (!Fred_active)
 		return FALSE;  // if fred isn't active, don't waste any time with it.
@@ -526,8 +418,8 @@ BOOL CFREDApp::OnIdle(LONG lCount)
 	game_do_frame();  // do stuff that needs doing, whether we render or not.
 	show_control_mode();
 
-  	if (!Update_window)
-  		return FALSE;
+	if (!Update_window)
+		return FALSE;
 
 	render_frame();	// "do the rendering!"  Renders image to offscreen buffer
 	process_pending_messages();
@@ -536,29 +428,47 @@ BOOL CFREDApp::OnIdle(LONG lCount)
 	return TRUE;
 }
 
-void update_map_window()
-{
-	if (Fred_active) {
-		Update_window++;  // on idle will handle the drawing already.
+// G5K - from http://www.experts-exchange.com/Programming/System/Windows__Programming/MFC/Q_20155824.html
+void CFREDApp::OnFileOpen() {
+	// use the initial dir the first time we prompt for a file
+	// name. after a successful open, the file name will be
+	// changed to be the empty string and the default dir
+	// will be supplied by the CFileDialog internal memory
+	if (!DoPromptFileName(m_sInitialDir, AFX_IDS_OPENFILE, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST, TRUE, NULL)) {
+		// open cancelled
 		return;
 	}
+	AfxGetApp()->OpenDocumentFile(m_sInitialDir);
+	// if returns NULL, the user has already been alerted
 
-	if (!Fred_main_wnd)
-		return;
-
-	render_frame();	// "do the rendering!"
-
-  	gr_flip();
-
-	show_control_mode();
-	process_pending_messages();
-
-	FrameCount++;
+	// now erase the initial dir since we only want to use it once
+	m_sInitialDir.Empty();
 }
 
-void CFREDApp::write_ini_file(int degree)
-{
-	WriteProfileInt("Preferences", "User interface", User_interface);
+void CFREDApp::read_window(char *name, window_data *wndd) {
+	wndd->processed = 0;
+	wndd->valid = GetProfileInt(name, "valid", FALSE);
+	wndd->p.length = GetProfileInt(name, "length", 0);
+	wndd->p.flags = GetProfileInt(name, "flags", 0);
+	wndd->p.showCmd = GetProfileInt(name, "showCmd", SW_SHOWMAXIMIZED);
+	wndd->p.ptMinPosition.x = GetProfileInt(name, "ptMinPosition.x", 0);
+	wndd->p.ptMinPosition.y = GetProfileInt(name, "ptMinPosition.y", 0);
+	wndd->p.ptMaxPosition.x = GetProfileInt(name, "ptMaxPosition.x", 0);
+	wndd->p.ptMaxPosition.y = GetProfileInt(name, "ptMaxPosition.y", 0);
+	wndd->p.rcNormalPosition.left = GetProfileInt(name, "rcNormalPosition.left", 0);
+	wndd->p.rcNormalPosition.top = GetProfileInt(name, "rcNormalPosition.top", 0);
+	wndd->p.rcNormalPosition.right = GetProfileInt(name, "rcNormalPosition.right", 0);
+	wndd->p.rcNormalPosition.bottom = GetProfileInt(name, "rcNormalPosition.bottom", 0);
+	wndd->visible = GetProfileInt(name, "Visible", 1);
+}
+
+void CFREDApp::record_window_data(window_data *wndd, CWnd *wnd) {
+	wnd->GetWindowPlacement(&wndd->p);
+	wndd->visible = wnd->IsWindowVisible();
+	wndd->valid = TRUE;
+}
+
+void CFREDApp::write_ini_file(int degree) {
 	WriteProfileInt("Preferences", "Show stars", Show_stars);
 	WriteProfileInt("Preferences", "Show grid positions", Show_grid_positions);
 	WriteProfileInt("Preferences", "Show coordinates", Show_coordinates);
@@ -575,9 +485,9 @@ void CFREDApp::write_ini_file(int degree)
 	WriteProfileInt("Preferences", "Autosave disabled", Autosave_disabled);
 	WriteProfileInt("Preferences", "Double fine gridlines", double_fine_gridlines);
 	WriteProfileInt("Preferences", "Anti aliased gridlines", Aa_gridlines);
-	WriteProfileInt("Preferences", "Show dock points",	Show_dock_points);
-	WriteProfileInt("Preferences", "Show paths",	Show_paths_fred);
-	WriteProfileInt("Preferences", "Lighting On",	Lighting_on);
+	WriteProfileInt("Preferences", "Show dock points", Show_dock_points);
+	WriteProfileInt("Preferences", "Show paths", Show_paths_fred);
+	WriteProfileInt("Preferences", "Lighting On", Lighting_on);
 
 	// Goober5000
 	WriteProfileInt("Preferences", "FS2 open format", Format_fs2_open);
@@ -608,8 +518,7 @@ void CFREDApp::write_ini_file(int degree)
 	}
 }
 
-void CFREDApp::write_window(char *name, window_data *wndd)
-{
+void CFREDApp::write_window(char *name, window_data *wndd) {
 	WriteProfileInt(name, "valid", wndd->valid);
 	WriteProfileInt(name, "length", wndd->p.length);
 	WriteProfileInt(name, "flags", wndd->p.flags);
@@ -625,91 +534,157 @@ void CFREDApp::write_window(char *name, window_data *wndd)
 	WriteProfileInt(name, "Visible", wndd->visible);
 }
 
-void CFREDApp::read_window(char *name, window_data *wndd)
-{
-	wndd->processed = 0;
-	wndd->valid = GetProfileInt(name, "valid", FALSE);
-	wndd->p.length = GetProfileInt(name, "length", 0);
-	wndd->p.flags = GetProfileInt(name, "flags", 0);
-	wndd->p.showCmd = GetProfileInt(name, "showCmd", SW_SHOWMAXIMIZED);
-	wndd->p.ptMinPosition.x = GetProfileInt(name, "ptMinPosition.x", 0);
-	wndd->p.ptMinPosition.y = GetProfileInt(name, "ptMinPosition.y", 0);
-	wndd->p.ptMaxPosition.x = GetProfileInt(name, "ptMaxPosition.x", 0);
-	wndd->p.ptMaxPosition.y = GetProfileInt(name, "ptMaxPosition.y", 0);
-	wndd->p.rcNormalPosition.left = GetProfileInt(name, "rcNormalPosition.left", 0);
-	wndd->p.rcNormalPosition.top = GetProfileInt(name, "rcNormalPosition.top", 0);
-	wndd->p.rcNormalPosition.right = GetProfileInt(name, "rcNormalPosition.right", 0);
-	wndd->p.rcNormalPosition.bottom = GetProfileInt(name, "rcNormalPosition.bottom", 0);
-	wndd->visible = GetProfileInt(name, "Visible", 1);
+void add_pending_message(HWND hwnd, int id, int wparam, int lparam, int skip_count) {
+	// Add a message to be processed to a buffer.
+	// Wait skip_count frames before processing.
+	for (int i = 0; i < MAX_PENDING_MESSAGES; i++) {
+		if (Pending_messages[i].frame_to_process == -1) {
+			Pending_messages[i].hwnd = (int) hwnd;
+			Pending_messages[i].id = id;
+			Pending_messages[i].wparam = wparam;
+			Pending_messages[i].lparam = lparam;
+			Pending_messages[i].frame_to_process = FrameCount + skip_count;
+		}
+	}
 }
 
-int CFREDApp::init_window(window_data *wndd, CWnd *wnd, int adjust, int pre)
-{
-	int width, height;
-	WINDOWPLACEMENT p;
+void init_pending_messages(void) {
+	int	i;
 
-	if (pre && !wndd->visible)
-		return -1;
+	for (i = 0; i < MAX_PENDING_MESSAGES; i++)
+		Pending_messages[i].frame_to_process = -1;
+}
 
-	if (wndd->processed)
-		return -2;
+void process_pending_messages(void) {
+	int	i;
 
-	Assert(wnd->GetSafeHwnd());
-	wnd->GetWindowPlacement(&p);
-	width = p.rcNormalPosition.right - p.rcNormalPosition.left;
-	height = p.rcNormalPosition.bottom - p.rcNormalPosition.top + adjust;
-	wndd->p.rcNormalPosition.right = wndd->p.rcNormalPosition.left + width;
-	wndd->p.rcNormalPosition.bottom = wndd->p.rcNormalPosition.top + height;
+	for (i = 0; i < MAX_PENDING_MESSAGES; i++)
+		if (Pending_messages[i].frame_to_process != -1)
+			if (Pending_messages[i].frame_to_process <= FrameCount) {
+				pending_message	*pmp = &Pending_messages[i];
+				PostMessage((HWND) pmp->hwnd, pmp->id, pmp->wparam, pmp->lparam);
+				Pending_messages[i].frame_to_process = -1;
+			}
+}
 
-	if (wndd->valid) {
-		wnd->SetWindowPlacement(&wndd->p);
-//		if (!wndd->visible)
-//			wnd->ShowWindow(SW_SHOW);
-//		else
-//			wnd->ShowWindow(SW_HIDE);
+void show_control_mode(void) {
+	CString	str;
+
+	CMainFrame* pFrame = (CMainFrame*) AfxGetApp()->m_pMainWnd;
+	CStatusBar* pStatus = &pFrame->m_wndStatusBar;
+	//CStatusBarCtrl pStatusBarCtrl;
+
+	if (pStatus) {
+		//		pStatus->GetStatusBarCtrl().SetParts(NUM_STATUS_PARTS, parts);
+
+		if (Marked) {
+			str.Format("Marked: %d", Marked);
+		} else {
+			str = _T("");
+		}
+		pStatus->SetPaneText(1, str);
+
+		if (viewpoint) {
+			str.Format("Viewpoint: %s", object_name(view_obj));
+		} else {
+			str.Format("Viewpoint: Camera");
+		}
+		pStatus->SetPaneText(2, str);
+
+		if (FREDDoc_ptr->IsModified()) {
+			pStatus->SetPaneText(3, "MODIFIED");
+		} else {
+			pStatus->SetPaneText(3, "");
+		}
+
+		str.Format("Units = %.1f Meters", The_grid->square_size);
+		pStatus->SetPaneText(4, str);
+
+		//		pStatus->SetPaneText(4, "abcdefg");
+		//		pStatus->SetPaneText(4, "1234567890!");
 	}
 
-	record_window_data(wndd, wnd);
-	wndd->processed = 1;
-	return 0;
 }
 
-void CFREDApp::record_window_data(window_data *wndd, CWnd *wnd)
-{
-	wnd->GetWindowPlacement(&wndd->p);
-	wndd->visible = wnd->IsWindowVisible();
-	wndd->valid = TRUE;
+// void win32_blit(HDC hSrcDC, HPALETTE hPalette, int x, int y, int w, int h )
+#if 0
+void win32_blit(void *xx, void *yy, int x, int y, int w, int h) {
+	HPALETTE hOldPalette = NULL;
+	HDC hdc = GetDC(hwndApp);
+
+	if (!hdc)	return;
+	if (!fAppActive) return;
+
+	if (hPalette) {
+		hOldPalette = SelectPalette(hdc, hPalette, FALSE);
+		RealizePalette(hdc);
+	}
+
+	BitBlt(hdc, 0, 0, w, h, hSrcDC, x, y, SRCCOPY);
+
+	if (hOldPalette)
+		SelectPalette(hdc, hOldPalette, FALSE);
+
+	ReleaseDC(hwndApp, hdc);
 }
+#endif
 
-void CAboutDlg::OnBug() 
-{
-	char *path = "http://scp.indiegames.us/mantis/";
+void update_map_window() {
+	if (Fred_active) {
+		Update_window++;  // on idle will handle the drawing already.
+		return;
+	}
 
-	char buffer[MAX_PATH];
-	sprintf(buffer,"explorer.exe \"%s\"", path);
+	if (!Fred_main_wnd)
+		return;
 
-	WinExec(buffer,SW_SHOW);
-}
+	render_frame();	// "do the rendering!"
 
-void CAboutDlg::OnForums() 
-{
-	char *path = "http://www.hard-light.net/forums/";
+	gr_flip();
 
-	char buffer[MAX_PATH];
-	sprintf(buffer,"explorer.exe \"%s\"", path);
+	show_control_mode();
+	process_pending_messages();
 
-	WinExec(buffer,SW_SHOW);	
-}
-
-int CFREDApp::ExitInstance() 
-{
-
-	return CWinApp::ExitInstance();
+	FrameCount++;
 }
 
 // Empty functions to make fred link with the sexp_mission_set_subspace
 void game_start_subspace_ambient_sound() {}
-void game_stop_subspace_ambient_sound() {} 
+void game_stop_subspace_ambient_sound() {}
 
-// Variables to make fred.ccp more like freespace2.cpp so fred will link
-float Sun_spot = 0.0f;
+
+CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD) {
+	//{{AFX_DATA_INIT(CAboutDlg)
+	//}}AFX_DATA_INIT
+}
+
+void CAboutDlg::DoDataExchange(CDataExchange* pDX) {
+	CDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CAboutDlg)
+	//}}AFX_DATA_MAP
+}
+
+void CAboutDlg::OnBug() {
+	char *path = "http://scp.indiegames.us/mantis/";
+
+	char buffer[MAX_PATH];
+	sprintf(buffer, "explorer.exe \"%s\"", path);
+
+	WinExec(buffer, SW_SHOW);
+}
+
+void CAboutDlg::OnForums() {
+	char *path = "http://www.hard-light.net/forums/";
+
+	char buffer[MAX_PATH];
+	sprintf(buffer, "explorer.exe \"%s\"", path);
+
+	WinExec(buffer, SW_SHOW);
+}
+
+BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
+	//{{AFX_MSG_MAP(CAboutDlg)
+	ON_BN_CLICKED(IDC_BUG, OnBug)
+	ON_BN_CLICKED(IDC_FORUMS, OnForums)
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()

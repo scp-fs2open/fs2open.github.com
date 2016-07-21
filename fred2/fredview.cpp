@@ -1208,7 +1208,7 @@ void CFREDView::OnSetFocus(CWnd* pOldWnd)
 		Local_modified = 0;
 	}
 
-	Fred_active = 1;
+	Fred_active = true;
 	CView::OnSetFocus(pOldWnd);
 	nprintf(("Fred routing", "Main window focus accepted\n"));
 	key_got_focus();
@@ -1229,7 +1229,7 @@ void CFREDView::OnSetFocus(CWnd* pOldWnd)
 void CFREDView::OnKillFocus(CWnd* pNewWnd) 
 {
 	nprintf(("Fred routing", "OnKillFocus() called\n"));
-	Fred_active = 0;
+	Fred_active = false;
 	Local_modified = 0;
 	CView::OnKillFocus(pNewWnd);
 	key_lost_focus();
