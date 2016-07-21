@@ -3432,7 +3432,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		} else {
 			sip->cmeasure_type = res;
 		}
-	} else if (Species_info[sip->species].cmeasure_index >= 0) {
+	} else if (first_time && Species_info[sip->species].cmeasure_index >= 0) {
 		sip->cmeasure_type = Species_info[sip->species].cmeasure_index;
 	}
 
