@@ -29,6 +29,14 @@
 
 #include "AFXADV.H"
 
+#ifdef WIN32
+// According to AMD and NV, these _should_ force their drivers into high-performance mode
+extern "C" {
+	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
 #ifdef NDEBUG
 #ifndef FRED
 #error macro FRED is not defined when trying to build release Fred.  Please define FRED macro in build settings in all Fred projects
