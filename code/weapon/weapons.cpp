@@ -15,7 +15,7 @@
 #include "cmeasure/cmeasure.h"
 #include "debugconsole/console.h"
 #include "fireball/fireballs.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "graphics/grbatch.h"

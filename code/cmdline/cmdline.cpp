@@ -772,7 +772,7 @@ void os_validate_parms(int argc, char *argv[])
 			if (parm_found == 0) {
 				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
 				if (!stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?")) {
-					if (FS_VERSION_REVIS == 0) {
+					if (FS_VERSION_HAS_REVIS == 0) {
 						printf("FreeSpace 2 Open, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 					}
 					else {

@@ -55,6 +55,9 @@
 #pragma warning(disable: 4101)
 #endif
 
+#elif defined(__MINGW32__) || defined(__GNUC__)
+// We're using mingw or we're crosscompiling
+#define _cdecl __cdecl
 #endif
 
 #ifndef snprintf

@@ -13,6 +13,7 @@
 #include "cfile/cfile.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "def_files/def_files.h"
 
 #include <exception>
 
@@ -183,7 +184,7 @@ extern void mark_int_list(int *ilp, int max_ints, int lookup_type);
 extern void compact_multitext_string(char *str);
 extern void compact_multitext_string(SCP_string &str);
 extern void read_file_text(const char *filename, int mode = CF_TYPE_ANY, char *processed_text = NULL, char *raw_text = NULL);
-extern void read_file_text_from_array(const char *array, char *processed_text = NULL, char *raw_text = NULL);
+extern void read_file_text_from_default(const default_file& file, char *processed_text = NULL, char *raw_text = NULL);
 extern void read_raw_file_text(const char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
 extern void process_raw_file_text(char *processed_text = NULL, char *raw_text = NULL);
 extern void debug_show_mission_text();

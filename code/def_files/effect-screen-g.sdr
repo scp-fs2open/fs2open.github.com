@@ -1,0 +1,46 @@
+#extension GL_EXT_geometry_shader4 : enable
+varying in vec3 up_g[];
+varying in float radius_g[];
+varying out float radius_p;
+varying out vec4 position_p;
+void main(void)
+{
+	vec3 forward_vec = vec3(0.0, 0.0, 1.0);
+	vec3 up_vec = normalize(up_g[0]);
+	vec3 right_vec = cross(forward_vec, up_vec);
+	vec4 pos = vec4(0.0, 0.0, 0.0, 0.0);
+	right_vec = normalize(right_vec);
+	pos = (gl_PositionIn[0] - vec4(radius_g[0] * up_vec, 0.0) - vec4(radius_g[0] * right_vec, 0.0));
+	gl_Position = gl_ProjectionMatrix * pos;
+	position_p = pos;
+	gl_TexCoord[0] = vec4(0.0, 0.0, 0.0, 0.0);
+	radius_p = radius_g[0];
+	gl_FrontColor = gl_FrontColorIn[0];
+	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);
+	EmitVertex();
+	pos = (gl_PositionIn[0] - vec4(radius_g[0] * up_vec, 0.0) + vec4(radius_g[0] * right_vec, 0.0));
+	gl_Position = gl_ProjectionMatrix * pos;
+	position_p = pos;
+	gl_TexCoord[0] = vec4(0.0, 1.0, 0.0, 0.0);
+	radius_p = radius_g[0];
+	gl_FrontColor = gl_FrontColorIn[0];
+	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);
+	EmitVertex();
+	pos = (gl_PositionIn[0] + vec4(radius_g[0] * up_vec, 0.0) - vec4(radius_g[0] * right_vec, 0.0));
+	gl_Position = gl_ProjectionMatrix * pos;
+	position_p = pos;
+	gl_TexCoord[0] = vec4(1.0, 0.0, 0.0, 0.0);
+	radius_p = radius_g[0];
+	gl_FrontColor = gl_FrontColorIn[0];
+	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);
+	EmitVertex();
+	pos = (gl_PositionIn[0] + vec4(radius_g[0] * up_vec, 0.0) + vec4(radius_g[0] * right_vec, 0.0));
+	gl_Position = gl_ProjectionMatrix * pos;
+	position_p = pos;
+	gl_TexCoord[0] = vec4(1.0, 1.0, 0.0, 0.0);
+	radius_p = radius_g[0];
+	gl_FrontColor = gl_FrontColorIn[0];
+	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);
+	EmitVertex();
+	EndPrimitive();
+}

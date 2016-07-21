@@ -16,7 +16,7 @@
 #include "network/multi_log.h"
 #include "object/object.h"
 #include "ship/ship.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "io/key.h"
 #include "missionui/missionscreencommon.h"
 #include "gamesnd/eventmusic.h"

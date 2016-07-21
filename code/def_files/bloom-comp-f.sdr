@@ -1,0 +1,19 @@
+uniform sampler2D bloomed;
+uniform float bloom_intensity;
+uniform int levels;
+void main() { // Global constant
+	vec4 color_out = vec4(0.0, 0.0, 0.0, 1.0);
+ // Bloom
+	if (bloom_intensity > 0.0) {
+		vec3 bloom = vec3(0.0, 0.0, 0.0);
+		float factor = 0.0;
+		for (int mipmap = 0; mipmap < levels; ++mipmap) {
+			float scale = 1.0/exp2(float(mipmap));
+			factor += scale;
+			bloom += texture2DLod(bloomed, gl_TexCoord[0].xy, float(mipmap)).rgb * scale;
+		}
+		bloom /= factor;
+		color_out.rgb += bloom * bloom_intensity;
+	}
+	gl_FragColor = color_out;
+}

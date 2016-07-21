@@ -19,7 +19,7 @@
 #include "mission/missionparse.h"
 #include "mission/missioncampaign.h"
 #include "gamesequence/gamesequence.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "osapi/osapi.h"
 #include "network/stand_gui.h"
 #include "network/multi_xfer.h"

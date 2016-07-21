@@ -1,0 +1,7 @@
+
+@INCLUDE_LIST@
+
+def_file Default_files[] =
+{
+@ARRAY_ELEMENTS@
+};

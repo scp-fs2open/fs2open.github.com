@@ -15,7 +15,7 @@
 //		3		Shrink-wrapped texture.  Lasts half-time.
 //		4		Shrink-wrapped texture.  Lasts full-time.
 
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "mission/missionparse.h"
 #include "model/model.h"
 #include "network/multi.h"

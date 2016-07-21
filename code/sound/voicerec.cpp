@@ -32,7 +32,7 @@
 #include <stdio.h>
 
 #include "voicerec.h"
-#include "grammar.h"
+#include "sound/grammar.h"
 
 // FreeSpace includes
 #include "cfile/cfile.h"

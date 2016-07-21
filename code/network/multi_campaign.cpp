@@ -16,7 +16,7 @@
 #include "gamesequence/gamesequence.h"
 #include "network/multi.h"
 #include "network/multiui.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "popup/popup.h"

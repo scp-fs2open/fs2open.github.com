@@ -13,7 +13,7 @@
 
 
 #include "cfile/cfile.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"

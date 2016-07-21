@@ -1,0 +1,11 @@
+uniform sampler2D ytex;
+uniform sampler2D utex;
+uniform sampler2D vtex;
+void main()
+{
+	vec3 val = vec3(texture2D(ytex, gl_TexCoord[0].st).r - 0.0625, texture2D(utex, gl_TexCoord[0].st).r - 0.5, texture2D(vtex, gl_TexCoord[0].st).r - 0.5);
+	gl_FragColor.r = dot(val, vec3(1.1640625, 0.0, 1.59765625));
+	gl_FragColor.g = dot(val, vec3(1.1640625, -0.390625, -0.8125));
+	gl_FragColor.b = dot(val, vec3(1.1640625, 2.015625, 0.0));
+	gl_FragColor.a = 1.0;
+}

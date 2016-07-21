@@ -23,7 +23,7 @@
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
-#include "freespace2/freespace.h"		// For flFrameTime
+#include "freespace.h"		// For flFrameTime
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "io/key.h"

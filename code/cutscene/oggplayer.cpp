@@ -12,7 +12,8 @@
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "cutscene/oggplayer.h"
-#include "globalincs/def_files.h"
+#include "def_files/def_files.h"
+#include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "graphics/gropengl.h"
@@ -649,7 +650,6 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 	}
 }
 
-extern int Mouse_hidden;
 static void OGG_video_draw(theora_state *tstate)
 {
 	yuv_buffer yuv;

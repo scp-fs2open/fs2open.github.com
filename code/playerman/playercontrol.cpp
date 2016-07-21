@@ -12,7 +12,7 @@
 #include "camera/camera.h"
 #include "debugconsole/console.h"
 #include "external_dll/trackirpublic.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"

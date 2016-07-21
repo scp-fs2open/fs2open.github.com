@@ -15,7 +15,7 @@
 #include "anim/packunpack.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"

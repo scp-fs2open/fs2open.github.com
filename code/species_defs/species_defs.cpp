@@ -9,7 +9,7 @@
 
 
 #include "cfile/cfile.h"
-#include "globalincs/def_files.h"
+#include "def_files/def_files.h"
 #include "iff_defs/iff_defs.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
@@ -157,7 +157,7 @@ void parse_species_tbl(const char *filename)
 	try
 	{
 		if (filename == NULL)
-			read_file_text_from_array(defaults_get_file("species_defs.tbl"));
+			read_file_text_from_default(defaults_get_file("species_defs.tbl"));
 		else
 			read_file_text(filename, CF_TYPE_TABLES);
 

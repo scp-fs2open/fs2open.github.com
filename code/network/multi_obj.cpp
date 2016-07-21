@@ -12,7 +12,7 @@
 
 #include "network/multi_obj.h"
 #include "globalincs/globals.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "io/timer.h"
 #include "io/key.h"
 #include "globalincs/linklist.h"

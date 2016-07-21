@@ -5,7 +5,7 @@
  */
 
 #include "gamesnd/eventmusic.h"
-#include "globalincs/def_files.h"
+#include "def_files/def_files.h"
 #include "globalincs/version.h"
 #include "localization/localize.h"
 #include "mission/missioncampaign.h"
@@ -45,7 +45,7 @@ void parse_mod_table(const char *filename)
 	try
 	{
 		if (filename == NULL)
-			read_file_text_from_array(defaults_get_file("game_settings.tbl"));
+			read_file_text_from_default(defaults_get_file("game_settings.tbl"));
 		else
 			read_file_text(filename, CF_TYPE_TABLES);
 

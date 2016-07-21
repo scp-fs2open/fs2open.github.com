@@ -1,0 +1,93 @@
+uniform sampler2D ColorBuffer;
+uniform sampler2D NormalBuffer;
+uniform sampler2D PositionBuffer;
+uniform sampler2D SpecBuffer;
+uniform float specFactor;
+uniform float invScreenWidth;
+uniform float invScreenHeight;
+uniform int lightType;
+varying vec3 lightPosition;
+uniform float lightRadius;
+varying vec3 beamVec;
+uniform vec3 diffuseLightColor;
+uniform vec3 specLightColor;
+uniform float coneAngle;
+uniform float coneInnerAngle;
+uniform bool dualCone;
+uniform vec3 coneDir;
+
+#define SPEC_INTENSITY_POINT			5.3 // Point light
+#define SPEC_INTENSITY_DIRECTIONAL		3.0 // Directional light
+#define SPECULAR_FACTOR				1.75
+#define SPECULAR_ALPHA					0.1
+#define SPEC_FACTOR_NO_SPEC_MAP		0.6
+#define ENV_ALPHA_FACTOR				0.3
+#define GLOW_MAP_INTENSITY				1.5
+#define AMBIENT_LIGHT_BOOST			1.0
+vec3 FresnelSchlick(vec3 specColor, vec3 light, vec3 halfVec)
+{
+	return specColor + (vec3(1.0) - specColor) * pow(1.0 - clamp(dot(light, halfVec), 0.0, 1.0), 5.0);
+}
+vec3 SpecularBlinnPhong(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, float specPower, float dotNL)
+{
+	return FresnelSchlick(max(specColor, vec3(0.04)), light, halfVec) * ((specPower + 2) / 8 ) * pow(clamp(dot(normal, halfVec), 0.0, 1.0), specPower) * dotNL;
+}
+vec4 SpecularLegacy(vec4 specColor, vec3 normal, vec3 halfVec, float specPower)
+{
+	return specColor * pow(clamp(dot(normal, halfVec), 0.0, 1.0), specPower);
+}
+void main()
+{
+	vec2 screenPos = gl_FragCoord.xy * vec2(invScreenWidth, invScreenHeight);
+	vec3 position = texture2D(PositionBuffer, screenPos).xyz;
+
+	if(abs(dot(position, position)) < 0.1)
+		discard;
+	vec3 lightDir = lightPosition - position.xyz;
+	float dist = length(lightDir);
+	float attenuation = (1.0 - dist/lightRadius);
+	if(lightType == 2)
+	{
+		float coneDot = dot(normalize(-lightDir), coneDir);
+		if(dualCone) {
+			if(abs(coneDot) < coneAngle)
+				discard;
+			else
+				attenuation *= smoothstep(coneAngle, coneInnerAngle, abs(coneDot));
+		} else {
+			if(coneDot < coneAngle)
+				discard;
+			else
+				attenuation *= smoothstep(coneAngle, coneInnerAngle, coneDot);
+		}
+	}
+	if(dist > lightRadius && lightType != 1)
+		discard;
+	vec3 color = texture2D(ColorBuffer, screenPos).rgb;
+	vec4 normal = texture2D(NormalBuffer, screenPos);
+	vec4 specColor = texture2D(SpecBuffer, screenPos);
+	float gloss = specColor.a;
+	vec3 eyeDir = normalize(-position);
+
+	if(lightType == 1)
+	{
+		float beamLength = length(beamVec);
+		vec3 beamDir = beamVec / beamLength;
+		// Get nearest point on line
+		float neardist = clamp(dot(lightDir, beamDir), 0.0, beamLength);
+		// Move back from the endpoint of the beam along the beam by the distance we calculated
+		vec3 nearest = lightPosition - beamDir * neardist;
+		lightDir = nearest - position.xyz;
+		dist = length(lightDir);
+		if(dist > lightRadius)
+			discard;
+	}
+	lightDir /= dist;
+	vec3 halfVec = normalize(lightDir + eyeDir);
+	float NdotHV = clamp(dot(normal.xyz, halfVec), 0.0, 1.0);
+	float NdotL = clamp(dot(normal.xyz, lightDir), 0.0, 1.0);
+	gl_FragData[0].rgb = color * (diffuseLightColor * NdotL * attenuation);
+	gl_FragData[0].rgb += SpecularBlinnPhong(specLightColor, lightDir, normal.xyz, halfVec, exp2(10.0 * gloss + 1.0), NdotL).rgb * specColor.rgb * attenuation;
+	gl_FragData[0].a = 1.0;
+	gl_FragData[0] = max(gl_FragData[0], vec4(0.0));
+}

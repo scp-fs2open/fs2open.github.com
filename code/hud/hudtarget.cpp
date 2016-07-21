@@ -13,7 +13,7 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "freespace2/freespace.h"	// for flFrametime
+#include "freespace.h"	// for flFrametime
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"

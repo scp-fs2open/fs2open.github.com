@@ -12,7 +12,7 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "graphics/gropenglshader.h"
 #include "hud/hudbrackets.h"

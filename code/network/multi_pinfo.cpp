@@ -13,7 +13,7 @@
 #include "network/multi_pinfo.h"
 #include "ui/ui.h"
 #include "gamesnd/gamesnd.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "io/key.h"
 #include "stats/medals.h"

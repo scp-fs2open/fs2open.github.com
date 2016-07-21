@@ -1,0 +1,33 @@
+#extension GL_EXT_geometry_shader4 : enable
+uniform mat4 shadow_proj_matrix[4];
+varying in float Instance[3];
+varying out vec4 position;
+#ifdef FLAG_TRANSFORM
+varying in float not_visible_g[];
+varying out float not_visible;
+#endif
+#ifdef FLAG_CLIP
+varying in float clip_distance_g[];
+varying out float clip_distance;
+#endif
+void main(void)
+{
+	int instanceID = int(Instance[0]);
+   for(int vert = 0; vert < gl_VerticesIn; vert++)
+	{
+		gl_Position = shadow_proj_matrix[instanceID] * gl_PositionIn[vert];
+		if(gl_Position.z < -1.0)
+			gl_Position.z = -1.0;
+       position = gl_PositionIn[vert];
+		gl_ClipVertex = gl_ClipVertexIn[vert];
+		gl_Layer = instanceID;
+#ifdef FLAG_TRANSFORM
+		not_visible = not_visible_g[0];
+#endif
+#ifdef FLAG_CLIP
+		clip_distance = clip_distance_g[0];
+#endif
+		EmitVertex();
+	}
+	EndPrimitive();
+}

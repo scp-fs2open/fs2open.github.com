@@ -1,16 +1,40 @@
 version: 1.0.0.{build}
-shallow_clone: true
+configuration:
+  - Debug
+  - Release
+clone_depth: 10
 environment:
   matrix:
-  - VisualStudioVersion: 10.0
-    PlatformToolset: v100
-    ProjectPath: projects/MSVC_2010/Freespace2.vcxproj
-  - VisualStudioVersion: 12.0
-    PlatformToolset: v120
-    ProjectPath: projects/MSVC_2013/Freespace2.vcxproj
-  - VisualStudioVersion: 14.0
-    PlatformToolset: v140
-    ProjectPath: projects/MSVC_2015/Freespace2.vcxproj
+    - VS_VERSION: 10
+      CMAKE_GENERATOR: Visual Studio 10 2010
+      PlatformToolset: v100
+    - VS_VERSION: 14
+      CMAKE_GENERATOR: Visual Studio 14 2015
+      PlatformToolset: v140_xp
+before_build:
+  - git submodule update --init --recursive
+  - ps: . $Env:APPVEYOR_BUILD_FOLDER/ci/appveyor/check_release.ps1
+  - ps: . $Env:APPVEYOR_BUILD_FOLDER/ci/appveyor/before_build.ps1
 build_script:
-- msbuild "%ProjectPath%" /p:Configuration="Debug SSE2" /m /p:PlatformToolset="%PlatformToolset%" /verbosity:minimal
-test: off
+  - ps: . $Env:APPVEYOR_BUILD_FOLDER/ci/appveyor/build.ps1
+
+
+deploy:
+    - provider: GitHub
+      auth_token:
+          secure: RWe6hwCcgBdklaYvjB62kzhKn7yDBJdqoDDKYViShaEV9HkJ75HbawsBcGBimRUu
+      on:
+          ReleaseBuild: true        # deploy on release push only
+
+    - provider: BinTray
+      username: asarium
+      api_key:
+          secure: 2lHma1ZreuB4CCE5hSdp+gqFjCMzUDj3tVJhP+D6EyF5wIVMLlwXFrISwnYu1kJi
+      subject: scp-fs2open
+      repo: FSO
+      package: nightly
+      version: $(VersionName)
+      publish: true
+      override: true
+      on:
+          NightlyBuild: true        # deploy on nightly push only

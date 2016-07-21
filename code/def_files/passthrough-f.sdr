@@ -1,0 +1,14 @@
+uniform sampler2D baseMap;
+uniform int alphaTexture;
+uniform int noTexturing;
+uniform int srgb;
+uniform float intensity;
+#define SRGB_GAMMA 2.2
+void main()
+{
+	vec4 baseColor = texture2D(baseMap, gl_TexCoord[0].xy);
+	baseColor.rgb = (srgb == 1) ? pow(baseColor.rgb, vec3(SRGB_GAMMA)) : baseColor.rgb;
+	vec4 blendColor = (srgb == 1) ? vec4(pow(gl_Color.rgb, vec3(SRGB_GAMMA)), gl_Color.a) : gl_Color ;
+	baseColor *= blendColor;
+	gl_FragColor = mix(mix(baseColor, vec4(blendColor.rgb, baseColor.a), float(alphaTexture)), blendColor, float(noTexturing)) * intensity;
+}

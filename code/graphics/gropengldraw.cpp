@@ -10,7 +10,7 @@
 #include <algorithm>
 #include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "graphics/grinternal.h"

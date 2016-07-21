@@ -1,0 +1,7 @@
+uniform sampler2D baseMap;
+uniform int textured;
+void main()
+{
+	vec4 fragmentColor = mix(gl_Color, texture2D(baseMap, gl_TexCoord[0].xy)*gl_Color.a, (float)textured);
+	gl_FragColor = fragmentColor;
+}

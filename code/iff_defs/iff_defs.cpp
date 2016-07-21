@@ -6,7 +6,7 @@
 
 
 
-#include "globalincs/def_files.h"
+#include "def_files/def_files.h"
 #include "hud/hud.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
@@ -134,7 +134,7 @@ void iff_init()
 		if (cf_exists_full("iff_defs.tbl", CF_TYPE_TABLES))
 			read_file_text("iff_defs.tbl", CF_TYPE_TABLES);
 		else
-			read_file_text_from_array(defaults_get_file("iff_defs.tbl"));
+			read_file_text_from_default(defaults_get_file("iff_defs.tbl"));
 
 		reset_parse();
 

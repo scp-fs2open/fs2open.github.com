@@ -1,0 +1,6 @@
+
+#ifndef __PLATFORM_CHECKS_H__
+#define __PLATFORM_CHECKS_H__
+#pragma once
+
+#endif // __PLATFORM_CHECKS_H__
