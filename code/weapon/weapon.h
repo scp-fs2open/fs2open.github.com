@@ -227,8 +227,7 @@ typedef struct weapon {
 	float launch_speed;			// the initial forward speed (can vary due to additive velocity or acceleration)
 								// currently only gets set when weapon_info->acceleration_time is used
 
-	bool collisionOccured;
-	mc_info collisionInfo; // The last collision of this weapon or NULL if it had none
+	mc_info* collisionInfo; // The last collision of this weapon or NULL if it had none
 	//Scoring stuff
 	float total_damage_received;        // total damage received (for scoring purposes)
 	float damage_ship[MAX_WEP_DAMAGE_SLOTS];    // damage applied from each player

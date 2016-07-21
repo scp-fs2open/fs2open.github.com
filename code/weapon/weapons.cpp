@@ -3669,6 +3669,11 @@ void weapon_delete(object *obj)
 		wp->cmeasure_ignore_list = nullptr;
 	}
 
+	if (wp->collisionInfo != nullptr) {
+		delete wp->collisionInfo;
+		wp->collisionInfo = nullptr;
+	}
+
 	wp->objnum = -1;
 	Num_weapons--;
 	Assert(Num_weapons >= 0);
@@ -5453,7 +5458,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->alpha_current = -1.0f;
 	wp->alpha_backward = 0;
 
-	wp->collisionOccured = false;
+	wp->collisionInfo = nullptr;
 	wp->hud_in_flight_snd_sig = -1;
 
 	Num_weapons++;
