@@ -24,7 +24,7 @@
 #include "cfile/cfile.h"
 #include "network/chat_api.h"
 #include "popup/popup.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "graphics/font.h"
 #include "network/multi.h"
 #include "network/multiui.h"

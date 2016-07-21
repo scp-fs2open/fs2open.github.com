@@ -12,7 +12,7 @@
 
 #include "ai/ai_profiles.h"
 #include "debugconsole/console.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "hud/hud.h"
 #include "hud/hudmessage.h"
 #include "iff_defs/iff_defs.h"

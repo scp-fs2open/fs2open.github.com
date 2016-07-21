@@ -10,7 +10,7 @@
 
 
 #include "cmdline/cmdline.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "graphics/gropengldraw.h"
 #include "graphics/gropengllight.h"

@@ -1,0 +1,10 @@
+#extension GL_EXT_texture_array : enable
+uniform sampler2DArray shadow_map;
+//uniform sampler2D shadow_map;
+uniform int index;
+void main()
+{
+	vec3 texcoord = vec3(gl_TexCoord[0].xy, float(index));
+	gl_FragColor = vec4(texture2DArray(shadow_map, texcoord).rgb,1.0);
+	//gl_FragColor = vec4(texture2D(shadow_map, gl_TexCoord[0].xy).rgb,1.0);
+}

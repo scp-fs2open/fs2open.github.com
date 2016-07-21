@@ -15,7 +15,7 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multi_obj.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "network/stand_gui.h"
 #include "network/multiutil.h"
 #include "network/multi_voice.h"

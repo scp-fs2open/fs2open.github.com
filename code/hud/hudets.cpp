@@ -10,7 +10,7 @@
 
 
 
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/systemvars.h"
 #include "hud/hudets.h"

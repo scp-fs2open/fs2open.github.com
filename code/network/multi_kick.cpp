@@ -15,7 +15,7 @@
 #include "network/multi_kick.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "playerman/player.h"
 #include "io/timer.h"
 #include "debugconsole/console.h"

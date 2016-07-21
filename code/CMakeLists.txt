@@ -1,0 +1,56 @@
+
+INCLUDE(source_groups.cmake)
+
+INCLUDE(voice_rec.cmake)
+
+ADD_LIBRARY(code STATIC ${file_root} ${VOICE_REC_FILES})
+
+target_compile_features(code PUBLIC ${REQUIRED_CXX_FEATURES})
+
+INCLUDE(default_files.cmake)
+
+if (MSVC)
+	target_compile_definitions(code PUBLIC "PDB_DEBUGGING=1")
+endif(MSVC)
+
+TARGET_INCLUDE_DIRECTORIES(code PUBLIC ${CODE_HEADERS})
+TARGET_INCLUDE_DIRECTORIES(code PUBLIC ${FREESPACE_HEADERS})
+
+TARGET_INCLUDE_DIRECTORIES(code PUBLIC ${GENERATED_SOURCE_DIR})
+TARGET_INCLUDE_DIRECTORIES(code PUBLIC ${GENERATED_SOURCE_DIR}/code)
+
+target_link_libraries(code PUBLIC OpenGL)
+
+TARGET_LINK_LIBRARIES(code PUBLIC ${OPENAL_LIBS})
+TARGET_LINK_LIBRARIES(code PUBLIC ${LUA_LIBS})
+TARGET_LINK_LIBRARIES(code PUBLIC ${PNG_LIBS})
+TARGET_LINK_LIBRARIES(code PUBLIC ${JPEG_LIBS})
+
+TARGET_LINK_LIBRARIES(code PUBLIC oggvorbis)
+
+TARGET_LINK_LIBRARIES(code PUBLIC ${SDL_LIBS})
+
+TARGET_LINK_LIBRARIES(code PUBLIC platform)
+TARGET_LINK_LIBRARIES(code PUBLIC compiler)
+
+IF (FSO_USE_SPEECH)
+	find_package(Speech REQUIRED)
+	target_link_libraries(code PUBLIC speech)
+ENDIF(FSO_USE_SPEECH)
+
+# Headers for standalone "gui" on UNIX
+IF(UNIX)
+	TARGET_LINK_LIBRARIES(code PUBLIC jansson)
+	TARGET_LINK_LIBRARIES(code PUBLIC ${MONGOOSE_LIBS})
+ENDIF(UNIX)
+
+IF(FSO_BUILD_TOOLS)
+	ADD_SUBDIRECTORY(cfilearchiver)
+
+	ADD_SUBDIRECTORY(cfileextractor)
+ENDIF(FSO_BUILD_TOOLS)
+
+include(util)
+configure_cotire(code)
+
+include(../cmake/Cxx11.cmake)

@@ -11,9 +11,9 @@
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
 #include "cfile/cfile.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesnd/eventmusic.h"
-#include "globalincs/def_files.h"
+#include "def_files/def_files.h"
 #include "globalincs/linklist.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
@@ -1276,7 +1276,7 @@ void parse_autopilot_table(char *filename)
 	try
 	{
 		if (filename == NULL)
-			read_file_text_from_array(defaults_get_file("autopilot.tbl"));
+			read_file_text_from_default(defaults_get_file("autopilot.tbl"));
 		else
 			read_file_text(filename, CF_TYPE_TABLES);
 

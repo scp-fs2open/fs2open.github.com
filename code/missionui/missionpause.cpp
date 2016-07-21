@@ -11,7 +11,7 @@
 
 
 #include "controlconfig/controlsconfig.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/alphacolors.h"
 #include "graphics/font.h"

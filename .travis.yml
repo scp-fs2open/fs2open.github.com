@@ -1,21 +1,23 @@
-language: cpp
-sudo: true
+language: generic
+sudo: required
+dist: trusty
+cache:
+    directories:
+    - $HOME/cmake
 addons:
     apt:
         packages:
+            - ninja-build
             - libopenal-dev
             - libogg-dev
             - libvorbis-dev
-            - build-essential
-            - automake
-            - autoconf
             - libtheora-dev
             - libreadline6-dev
             - libpng12-dev
             - libjpeg62-dev
             - liblua5.1-0-dev
             - libjansson-dev
-            - libtool
+            - libsdl2-dev
     coverity_scan:
         project:
             name: "scp-fs2open/fs2open.github.com"
@@ -25,6 +27,25 @@ addons:
         build_command:   "make -j2"
         # must match TRAVIS_BRANCH check below
         branch_pattern: coverity_scan
+deploy:
+    - provider: releases
+      api_key:
+          secure: "bBWEBF+r4p7kea+Lj/vHD0CCW4AsxqlLri8gT3HbsdPuKwdSNU4QLLFk9yAXmmBF2T/fe45Zk+WQrdQJjSydkpG06M7sFD22RKOYv3cLF0Bq0nEG4CpuXoGqo77oFGkA5hdU6D8W2nQTMhPuiqlvhgt3zeD/6fiyfdAztbtKNRs="
+      skip_cleanup: true 
+      file_glob: true
+      file: "/tmp/builds/*"
+      on:
+          condition: '"$RELEASE_BUILD" == true'
+          tags: true
+        
+    - provider: bintray
+      user: asarium
+      key:
+          secure: "JyJIsJFxCvNjmdyG9eDIvkzXFqsJQVzXKp5BeJcn5WSdMA2Vs7dCvarJXomdwe3F3RCrdmrFYCaimiCDD6LqImrcDLzxlevzGlNUv381iFna612SJj672d8iQCgtMibIJ3HzYmgZlsaJ9YcaOuccRyQIV/TNUcwgzbsW27CPEcM="
+      file: ci/bintray.json
+      on:
+          condition: '"$NIGHTLY_BUILD" == true'
+          tags: true
 env:
     global:
      # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
@@ -38,20 +59,20 @@ matrix:
           env: CONFIGURATION="Debug"
         - os: linux
           compiler: clang
-          env: CONFIGURATION="Debug"
+          env: CONFIGURATION="Debug" CC=clang CXX=clang++
         - os: osx
           compiler: clang
-          env: CONFIGURATION="Debug" MACOSX_ARCH=x86_64
+          env: CONFIGURATION="Debug"
 
         - os: linux
           compiler: gcc
           env: CONFIGURATION="Release"
         - os: linux
           compiler: clang
-          env: CONFIGURATION="Release"
+          env: CONFIGURATION="Release" CC=clang CXX=clang++
         - os: osx
           compiler: clang
-          env: CONFIGURATION="Release" MACOSX_ARCH=x86_64
+          env: CONFIGURATION="Release"
 before_install:
     # ugly hack; if running a coverity scan abort all except the 1st build
     # see note re gcc compiler above needing to be 1st
@@ -59,10 +80,14 @@ before_install:
     # unfortunately COVERITY_SCAN_BRANCH isn't defined until later in the
     # build process
     - if ([[ "${TRAVIS_JOB_NUMBER##*.}" != "1" ]] && [[ "${TRAVIS_BRANCH}" == "coverity_scan" ]]); then false ; fi
-    - ./ci/travis/before_install.sh
+    - source "./ci/travis/check_release.sh"
+    - "./ci/travis/before_install.sh"
 install:
-    - ./ci/travis/install.sh
+    - "./ci/travis/install.sh"
+    - export PATH=$HOME/cmake/bin:$PATH
 before_script:
-    - ./ci/travis/before_script.sh
+    - "./ci/travis/before_script.sh"
 script:
-    - ./ci/travis/script.sh
+    - if [ "$BUILD_DEPLOYMENT" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi
+before_deploy:
+    - "./ci/travis/before_deploy.sh"

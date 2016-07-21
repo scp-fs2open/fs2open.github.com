@@ -11,7 +11,7 @@
 
 
 #include "debugconsole/console.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
@@ -1365,8 +1365,6 @@ DCF(change_mission_goal, "Changes the mission goal status")
 //XSTR:ON
 
 // debug functions to mark all primary/secondary/bonus goals as true
-#ifndef DEBUG
-
 void mission_goal_mark_all_true(int type)
 {
 	int i;
@@ -1378,8 +1376,6 @@ void mission_goal_mark_all_true(int type)
 
 	HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("All %s goals marked true"), Goal_type_text(type) );
 }
-
-#endif
 
 void goal_screen_button_pressed(int num)
 {

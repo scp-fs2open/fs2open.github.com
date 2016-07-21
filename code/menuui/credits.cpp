@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 #include "cfile/cfile.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"	/* for Master_event_music_volume */
 #include "gamesnd/gamesnd.h"

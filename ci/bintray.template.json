@@ -1,0 +1,19 @@
+{
+    "package": {
+        "subject": "scp-fs2open",
+        "repo": "FSO",
+        "name": "nightly"
+    },
+
+    "version": {
+        "name": "$VERSION_NAME"
+    },
+
+    "files": [
+        {
+            "includePattern": "/tmp/builds/(.*)",
+            "uploadPattern": "$1"
+        }
+    ],
+    "publish": true
+}

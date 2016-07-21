@@ -11,7 +11,7 @@
 
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "io/timer.h"

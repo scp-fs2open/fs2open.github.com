@@ -27,7 +27,7 @@
 #include "globalincs/linklist.h"
 #include "gamesequence/gamesequence.h"
 #include "hud/hudmessage.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "ship/ship.h"

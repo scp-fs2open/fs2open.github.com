@@ -12,7 +12,7 @@
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"

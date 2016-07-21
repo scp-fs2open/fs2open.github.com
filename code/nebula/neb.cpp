@@ -13,7 +13,7 @@
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "jpgutils/jpgutils.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"

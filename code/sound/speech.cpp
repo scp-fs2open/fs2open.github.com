@@ -26,6 +26,7 @@
 #ifdef _WIN32
 	#include <windows.h>
 	#include <sapi.h>
+
 	#include <sphelper.h>
 
 	ISpVoice *Voice_device;

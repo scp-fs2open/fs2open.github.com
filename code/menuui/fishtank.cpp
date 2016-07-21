@@ -11,7 +11,7 @@
 
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "menuui/fishtank.h"
 
@@ -251,4 +251,3 @@ void fishtank_process()
 		}
 	}
 }
-

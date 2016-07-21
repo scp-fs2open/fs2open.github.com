@@ -1,0 +1,21 @@
+uniform sampler2D tex;
+const float Luminance = 0.08;
+const float fMiddleGray = 0.2;
+const float fWhiteCutoff = 0.4;
+const float threshold = 1.0;
+// High-pass filter
+float luminance(vec3 color)
+{
+	return dot(color, vec3(0.299, 0.587, 0.114));
+}
+void main() {
+	vec4 ColorOut = texture2D(tex, gl_TexCoord[0].xy);
+	//ColorOut *= fMiddleGray / (Luminance + 0.001);
+	//ColorOut *= (1.0 + (ColorOut / (fWhiteCutoff * fWhiteCutoff)));
+	//ColorOut -= 6.0;
+	//ColorOut /= (10.0 + ColorOut);
+	gl_FragColor.rgb = max(vec3(0.0, 0.0, 0.0), ColorOut.rgb - vec3(1.0, 1.0, 1.0));
+	gl_FragColor.a = 1.0;
+	//float luminance = luminance(ColorOut.rgb);
+	//gl_FragColor.rgb = luminance > threshold ? ColorOut.rgb : vec3(0.0);
+}

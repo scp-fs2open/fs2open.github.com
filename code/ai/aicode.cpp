@@ -26,7 +26,7 @@
 #include "autopilot/autopilot.h"
 #include "cmeasure/cmeasure.h"
 #include "debugconsole/console.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"

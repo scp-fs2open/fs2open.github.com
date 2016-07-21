@@ -12,7 +12,7 @@
 
 #include "network/multi.h"
 #include "object/object.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"

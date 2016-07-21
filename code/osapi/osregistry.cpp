@@ -1,10 +1,10 @@
 /*
- * Copyright (C) Volition, Inc. 1999.  All rights reserved.
- *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
- * source.
- *
+* Copyright (C) Volition, Inc. 1999.  All rights reserved.
+*
+* All source code herein is the property of Volition, Inc. You may not sell
+* or otherwise commercially exploit the source or things you created based on the
+* source.
+*
 */
 
 #include "globalincs/pstypes.h"
@@ -416,10 +416,10 @@ typedef struct Profile
 	struct Section *sections;
 } Profile;
 
+// For string config functions
+static char tmp_string_data[1024];
 
-// ------------------------------------------------------------------------------------------------------------
-// REGISTRY FUNCTIONS
-//
+// This code is needed for compatibility with the old windows registry
 
 static char *read_line_from_file(FILE *fp)
 {
@@ -798,7 +798,6 @@ void os_init_registry_stuff(const char *company, const char *app, const char *ve
 	Os_reg_inited = 1;
 }
 
-static char tmp_string_data[1024];
 const char *os_config_read_string(const char *section, const char *name, const char *default_value)
 {
 	Profile *p = profile_read(Osreg_config_file_name);

@@ -1,0 +1,10 @@
+#extension GL_EXT_gpu_shader4 : enable
+uniform float rt_w;
+uniform float rt_h;
+varying vec2 v_rcpFrame;
+noperspective varying vec2 v_pos;
+void main() {
+	gl_Position = gl_Vertex;
+	v_rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);
+	v_pos = gl_Vertex.xy*0.5 + 0.5;
+}

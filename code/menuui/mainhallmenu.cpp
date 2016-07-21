@@ -13,7 +13,7 @@
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "cmdline/cmdline.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"

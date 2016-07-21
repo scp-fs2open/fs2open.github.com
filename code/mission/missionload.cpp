@@ -10,7 +10,7 @@
 
 
 #include "cfile/cfilesystem.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/alphacolors.h"
 #include "hud/hudparse.h"
@@ -373,4 +373,3 @@ void mission_load_menu_close()
 	mlm_window.destroy();
 
 }
-
