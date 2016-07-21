@@ -150,16 +150,20 @@ int collide_weapon_weapon( obj_pair * pair )
 			// single player and multiplayer masters evaluate the scoring and kill stuff
 			if (!MULTIPLAYER_CLIENT) {
 
-				//Save damage for bomb so we can do scoring once it's destroyed. -Halleck
+				// If bomb was destroyed, do scoring
 				if (wipA->wi_flags & WIF_BOMB) {
-					scoring_add_damage_to_weapon(A, B, wipB->damage);
 					//Update stats. -Halleck
 					scoring_eval_hit(A, B, 0);
+					if (wpA->weapon_flags & WF_DESTROYED_BY_WEAPON) {
+						scoring_eval_kill_on_weapon(A, B);
+					}
 				}
 				if (wipB->wi_flags & WIF_BOMB) {
-					scoring_add_damage_to_weapon(B, A, wipA->damage);
 					//Update stats. -Halleck
 					scoring_eval_hit(B, A, 0);
+					if (wpB->weapon_flags & WF_DESTROYED_BY_WEAPON) {
+						scoring_eval_kill_on_weapon(B, A);
+					}
 				}
 			}
 		}
