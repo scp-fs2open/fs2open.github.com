@@ -11019,25 +11019,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 								// set orientation
 								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-							} else if (sip->aiming_flags & AIM_FLAG_STD_CONVERGENCE) {
-								// fixed distance convergence
-								vec3d target_vec, firing_vec, convergence_offset;
-																
-								// make sure vector is of the set length
-								vm_vec_copy_normalize(&target_vec, &player_forward_vec);
-								vm_vec_scale(&target_vec, sip->convergence_distance);
-								
-								// if there is convergence offset then make use of it)
-								if (sip->aiming_flags & AIM_FLAG_CONVERGENCE_OFFSET) {
-									vm_vec_unrotate(&convergence_offset, &sip->convergence_offset, &obj->orient);
-									vm_vec_add2(&target_vec, &convergence_offset);
-								}
-
-								vm_vec_add2(&target_vec, &obj->pos);
-								vm_vec_sub(&firing_vec, &target_vec, &firing_pos);
-
-								// set orientation
-								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
 							} else if (sip->flags2 & SIF2_GUN_CONVERGENCE) {
 								// model file defined convergence
 								vec3d firing_vec;
