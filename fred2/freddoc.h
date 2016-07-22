@@ -62,16 +62,6 @@ public:
 	 */
 	int autosave(char *desc);
 
-	BOOL confirm_deleting;      //!< Unused. If true, confirm on delete operations.
-	BOOL show_capital_ships;	//!< Unused. If true, show capital ships
-	BOOL show_elevations;       //!< Unused. If true, show the Y coordinate on each object and draw lines to the XZ plane
-	BOOL show_fighters;         //!< Unused. If true, show fighters
-	BOOL show_grid;             //!< Unused. If true, show the grid
-	BOOL show_misc_objects;     //!< Unused. If true, show misc. objects
-	BOOL show_planets;          //!< Unused. If true, show planets (skybox)
-	BOOL show_waypoints;        //!< Unused. If true, show waypoints
-	BOOL show_starfield;        //!< Unused. If true, show the starfield
-
 	//{{AFX_VIRTUAL(CFREDDoc)
 	/**
 	 * @brief Handler for New File operations
@@ -223,11 +213,6 @@ protected:
 	 * @TODO Remove.
 	 */
 	afx_msg void OnEditUndo();
-
-	/**
-	 * @brief Unused? Handler for File->Preferences. Invokes CPrefsDlg
-	 */
-	afx_msg void OnFilePreferences();
 
 	/**
 	 * @brief Initialize (and also clear out) the mission.

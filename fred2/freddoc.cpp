@@ -21,7 +21,6 @@
 
 #include "FREDDoc.h"
 #include "FREDView.h"
-#include "PrefsDlg.h"
 #include "EventEditor.h"
 #include "FredRender.h"
 #include "MainFrm.h"
@@ -69,7 +68,6 @@ BEGIN_MESSAGE_MAP(CFREDDoc, CDocument)
 	ON_COMMAND(ID_EDIT_FETCH, OnEditFetch)
 	ON_COMMAND(ID_EDIT_PASTE, OnEditPaste)
 	ON_COMMAND(ID_EDIT_UNDO, OnEditUndo)
-	ON_COMMAND(ID_FILE_PREFERENCES, OnFilePreferences)
 	ON_COMMAND(ID_FILE_IMPORT_FSM, OnFileImportFSM)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -90,15 +88,6 @@ CFREDDoc::CFREDDoc() {
 	int i;
 
 	FREDDoc_ptr = this;
-	confirm_deleting = TRUE;
-	show_capital_ships = TRUE;
-	show_elevations = TRUE;
-	show_fighters = TRUE;
-	show_grid = TRUE;
-	show_misc_objects = TRUE;
-	show_planets = TRUE;
-	show_waypoints = TRUE;
-	show_starfield = TRUE;
 
 	for (i = 0; i < BACKUP_DEPTH; i++)
 		undo_desc[i].Empty();
@@ -586,49 +575,11 @@ void CFREDDoc::OnFileImportFSM() {
 	recreate_dialogs();
 }
 
-void CFREDDoc::OnFilePreferences() {
-	CPrefsDlg dlg;
-	// Initialize dialog data
-	dlg.m_ConfirmDeleting = confirm_deleting;
-	dlg.m_ShowCapitalShips = show_capital_ships;
-	dlg.m_ShowElevations = show_elevations;
-	dlg.m_ShowFighters = show_fighters;
-	dlg.m_ShowGrid = show_grid;
-	dlg.m_ShowMiscObjects = show_misc_objects;
-	dlg.m_ShowPlanets = show_planets;
-	dlg.m_ShowWaypoints = show_waypoints;
-	dlg.m_ShowStarfield = show_starfield;
-
-	// Invoke the dialog box
-	if (dlg.DoModal() == IDOK) {
-		// retrieve the dialog data
-		confirm_deleting = dlg.m_ConfirmDeleting;
-		show_capital_ships = dlg.m_ShowCapitalShips;
-		show_elevations = dlg.m_ShowElevations;
-		show_fighters = dlg.m_ShowFighters;
-		show_grid = dlg.m_ShowGrid;
-		show_misc_objects = dlg.m_ShowMiscObjects;
-		show_planets = dlg.m_ShowPlanets;
-		show_waypoints = dlg.m_ShowWaypoints;
-		show_starfield = dlg.m_ShowStarfield;
-	}
-
-}
-
 BOOL CFREDDoc::OnNewDocument() {
 	if (!CDocument::OnNewDocument())
 		return FALSE;
 
 	// TODO: add reinitialization code here
-	confirm_deleting = TRUE;
-	show_capital_ships = FALSE;
-	show_elevations = TRUE;
-	show_fighters = TRUE;
-	show_grid = FALSE;
-	show_misc_objects = TRUE;
-	show_planets = FALSE;
-	show_waypoints = TRUE;
-	show_starfield = FALSE;
 	// (SDI documents will reuse this document)
 
 	return TRUE;
