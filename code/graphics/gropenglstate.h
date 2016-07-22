@@ -13,8 +13,9 @@
 
 #include "globalincs/pstypes.h"
 #include "graphics/gropengl.h"
-#include "graphics/gropenglextension.h"
 #include "graphics/gropengltexture.h"
+
+#include <glad/glad.h>
 
 #define MAX_UNIFORM_BUFFERS 6
 

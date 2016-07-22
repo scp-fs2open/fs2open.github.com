@@ -293,7 +293,6 @@ set (file_root_graphics_openglgr_opengl_cpps
 	graphics/gropengl.cpp
 	graphics/gropenglbmpman.cpp
 	graphics/gropengldraw.cpp
-	graphics/gropenglextension.cpp
 	graphics/gropengllight.cpp
 	graphics/gropenglpostprocessing.cpp
 	graphics/gropenglshader.cpp
@@ -307,7 +306,6 @@ set (file_root_graphics_openglgr_opengl_headers
 	graphics/gropengl.h
 	graphics/gropenglbmpman.h
 	graphics/gropengldraw.h
-	graphics/gropenglextension.h
 	graphics/gropengllight.h
 	graphics/gropenglpostprocessing.h
 	graphics/gropenglshader.h
@@ -316,15 +314,54 @@ set (file_root_graphics_openglgr_opengl_headers
 	graphics/gropengltnl.h
 )
 
+# Graphics -> OpenGLGr -> GL files
+set (file_root_graphics_openglgr_gl
+	graphics/gl/glu.h
+)
+
+# Graphics -> Paths
+set (file_root_graphics_paths
+	graphics/paths/NVGRenderer.cpp
+	graphics/paths/NVGRenderer.h
+	graphics/paths/PathRenderer.cpp
+	graphics/paths/PathRenderer.h
+	graphics/paths/StubRenderer.h
+)
+
+# Graphics -> Paths
+set (file_root_graphics_paths_nanovg
+	graphics/paths/nanovg/fontstash.h
+	graphics/paths/nanovg/nanovg.c
+	graphics/paths/nanovg/nanovg.h
+	graphics/paths/nanovg/nanovg_gl.h
+	graphics/paths/nanovg/nanovg_gl_utils.h
+	graphics/paths/nanovg/stb_image.h
+	graphics/paths/nanovg/stb_truetype.h
+)
+
 # Graphics -> SoftwareGr files
 set (file_root_graphics_softwaregr
-	graphics/font.cpp
-	graphics/font.h
 	graphics/generic.cpp
 	graphics/generic.h
 	graphics/grstub.cpp
 	graphics/grstub.h
 	graphics/line.h
+	graphics/font.h
+)
+
+
+set (file_root_graphics_softwaregr_font
+	graphics/software/font.h
+	graphics/software/font.cpp
+	graphics/software/font_internal.h
+	graphics/software/FontManager.h
+	graphics/software/FontManager.cpp
+	graphics/software/FSFont.h
+	graphics/software/FSFont.cpp
+	graphics/software/NVGFont.h
+	graphics/software/NVGFont.cpp
+	graphics/software/VFNTFont.h
+	graphics/software/VFNTFont.cpp
 )
 
 # Hud files
@@ -946,7 +983,11 @@ source_group("Graphics"                           FILES ${file_root_graphics})
 source_group("Graphics\\OpenGLGr"                 FILES ${file_root_graphics_openglgr})
 source_group("Graphics\\OpenGLGr\\OpenGL CPPs"    FILES ${file_root_graphics_openglgr_opengl_cpps})
 source_group("Graphics\\OpenGLGr\\OpenGL Headers" FILES ${file_root_graphics_openglgr_opengl_headers})
+source_group("Graphics\\OpenGLGr\\GL"             FILES ${file_root_graphics_openglgr_gl})
+source_group("Graphics\\Paths"                    FILES ${file_root_graphics_paths})
+source_group("Graphics\\Paths\\nanovg"            FILES ${file_root_graphics_paths_nanovg})
 source_group("Graphics\\SoftwareGr"               FILES ${file_root_graphics_softwaregr})
+source_group("Graphics\\SoftwareGr\\Font"         FILES ${file_root_graphics_softwaregr_font})
 source_group("Hud"                                FILES ${file_root_hud})
 source_group("iff_defs"                           FILES ${file_root_iff_defs})
 source_group("InetFile"                           FILES ${file_root_inetfile})
@@ -1022,7 +1063,11 @@ set (file_root
 	${file_root_graphics_openglgr}
 	${file_root_graphics_openglgr_opengl_cpps}
 	${file_root_graphics_openglgr_opengl_headers}
+	${file_root_graphics_openglgr_gl}
+	${file_root_graphics_paths}
+	${file_root_graphics_paths_nanovg}
 	${file_root_graphics_softwaregr}
+	${file_root_graphics_softwaregr_font}
 	${file_root_hud}
 	${file_root_iff_defs}
 	${file_root_inetfile}

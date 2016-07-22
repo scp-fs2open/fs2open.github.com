@@ -396,7 +396,7 @@ void parse_helptbl(const char *filename)
 			}
 			else {
 				for (i = 0; i < help_overlaylist[overlay_id].num_resolutions; i++) {
-					help_overlaylist[overlay_id].fontlist.push_back(FONT1);
+					help_overlaylist[overlay_id].fontlist.push_back(font::FONT1);
 				}
 			}
 
@@ -511,7 +511,7 @@ void help_overlay_blit(int overlay_id, int resolution_index)
 	Assert(overlay_id >= 0 && overlay_id < MAX_HELP_OVERLAYS);
 
 	// this draws each line of help text with white on black text (use the first resolution index for the string)
-	gr_set_font(help_overlaylist[overlay_id].fontlist.at(resolution_index));
+	font::set_font(help_overlaylist[overlay_id].fontlist.at(resolution_index));
 	for (idx = 0; idx < textcount; idx++) {
 		gr_set_color_fast(&Color_black);
 		gr_get_string_size(&width, &height, help_overlaylist[overlay_id].textlist.at(0).at(idx).string, strlen(help_overlaylist[overlay_id].textlist.at(0).at(idx).string));
@@ -519,7 +519,7 @@ void help_overlay_blit(int overlay_id, int resolution_index)
 		gr_set_color_fast(&Color_bright_white);
 		gr_printf_menu(help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).x_coord, help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).y_coord, help_overlaylist[overlay_id].textlist.at(0).at(idx).string);
 	}
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 
 	// this draws each right bracket
 	for (idx = 0; idx < rbracketcount; idx++) {

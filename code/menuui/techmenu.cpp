@@ -434,7 +434,7 @@ void tech_common_render()
 		if (Lcl_gr)
 			lcl_translate_ship_name_gr(buf);
 
-		gr_force_fit_string(buf, 255, Tech_list_coords[gr_screen.res][SHIP_W_COORD]);
+		font::force_fit_string(buf, 255, Tech_list_coords[gr_screen.res][SHIP_W_COORD]);
 		gr_string(Tech_list_coords[gr_screen.res][SHIP_X_COORD], Tech_list_coords[gr_screen.res][SHIP_Y_COORD] + y, buf, GR_RESIZE_MENU);
 
 		List_buttons[z - List_offset].update_dimensions(Tech_list_coords[gr_screen.res][SHIP_X_COORD], Tech_list_coords[gr_screen.res][SHIP_Y_COORD] + y, Tech_list_coords[gr_screen.res][SHIP_W_COORD], font_height);

@@ -177,8 +177,8 @@ static void use_fv_font()
 	// save old font and set new one
 	if (Fiction_viewer_fontnum >= 0)
 	{
-		Fiction_viewer_old_fontnum = gr_get_current_fontnum();
-		gr_set_font(Fiction_viewer_fontnum);
+		Fiction_viewer_old_fontnum = font::get_current_fontnum();
+		font::set_font(Fiction_viewer_fontnum);
 	}
 	else
 	{
@@ -190,7 +190,7 @@ static void use_std_font()
 {
 	// restore the old font
 	if (Fiction_viewer_old_fontnum >= 0)
-		gr_set_font(Fiction_viewer_old_fontnum);
+		font::set_font(Fiction_viewer_old_fontnum);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
@@ -552,7 +552,7 @@ void fiction_viewer_load(int stage)
 	}
 
 	// see if we have a matching font
-	Fiction_viewer_fontnum = gr_get_fontnum(stagep->font_filename);
+	Fiction_viewer_fontnum = font::FontManager::getFontIndex(stagep->font_filename);
 
 	Fiction_viewer_voice = audiostream_open(stagep->voice_filename, ASF_VOICE);
 

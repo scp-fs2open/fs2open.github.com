@@ -2078,7 +2078,7 @@ void options_multi_vox_process_player_list()
 
 			// force fit his callsign
 			strcpy_s(str,Om_vox_players[idx]->m_player->callsign);
-			gr_force_fit_string(str, CALLSIGN_LEN+1, Om_vox_plist_coords[gr_screen.res][2]);
+			font::force_fit_string(str, CALLSIGN_LEN+1, Om_vox_plist_coords[gr_screen.res][2]);
 
 			// blit the callsign
 			gr_string(Om_vox_plist_coords[gr_screen.res][0], y_start, str, GR_RESIZE_MENU);

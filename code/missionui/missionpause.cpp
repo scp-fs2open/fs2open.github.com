@@ -160,10 +160,10 @@ void pause_do()
 			
 			// draw "Paused" on it
 			gr_set_color_fast(&Color_normal);
-			gr_set_font(FONT2);
+			font::set_font(font::FONT2);
 			gr_get_string_size(&str_w, &str_h, pause_str);
 			gr_string((gr_screen.max_w_unscaled - str_w) / 2, (gr_screen.max_h_unscaled - str_h) / 2, pause_str, GR_RESIZE_MENU);
-			gr_set_font(FONT1);
+			font::set_font(font::FONT1);
 		}
 	}
 

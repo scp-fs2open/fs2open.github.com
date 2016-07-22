@@ -1438,7 +1438,7 @@ void HudGaugeExtraTargetData::render(float frametime)
 		if ( ((Player_ship->team == target_shipp->team) || ((Iff_info[target_shipp->team].flags & IFFF_ORDERS_SHOWN) && !(Iff_info[target_shipp->team].flags & IFFF_ORDERS_HIDDEN)) ) && !(ship_get_SIF(target_shipp) & SIF_NOT_FLYABLE) ) {
 			extra_data_shown=1;
 			if ( ship_return_orders(outstr, target_shipp) ) {
-				gr_force_fit_string(outstr, 255, order_max_w);
+				font::force_fit_string(outstr, 255, order_max_w);
 				has_orders = 1;
 			} else {
 				strcpy_s(outstr, XSTR( "no orders", 337));
@@ -1480,7 +1480,7 @@ void HudGaugeExtraTargetData::render(float frametime)
 			sprintf(outstr, XSTR("Docked: %d objects", 1623), dock_count);
 		}
 
-		gr_force_fit_string(outstr, 255, dock_max_w);
+		font::force_fit_string(outstr, 255, dock_max_w);
 		maybeFlashDock();
 			
 		renderString(position[0] + dock_offsets[0], position[1] + dock_offsets[1], EG_TBOX_EXTRA3, outstr);			

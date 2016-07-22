@@ -373,8 +373,10 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 
 	// print out ship name
 	strcpy_s(buf, sp->ship_name);
+	font::force_fit_string(buf, 255, ship_name_max_width);
+	
     end_string_at_first_hash_symbol(buf);
-	const int w = gr_force_fit_string(buf, 255, ship_name_max_width);
+	const int w = font::force_fit_string(buf, 255, ship_name_max_width);
 
 	if (right_align_names) {
 		renderString( x + ship_name_offsets[0] + ship_name_max_width - w, y + ship_name_offsets[1], EG_ESCORT1 + index, buf);
@@ -421,7 +423,7 @@ void HudGaugeEscort::renderIconDogfight(int x, int y, int index)
 	
 	// print out player name
 	strcpy_s(buf, Net_players[np_index].m_player->callsign);
-	gr_force_fit_string(buf, 255, 100 - stat_shift);
+	font::force_fit_string(buf, 255, 100 - stat_shift);
 	renderString( x + ship_name_offsets[0], y + ship_name_offsets[1], EG_ESCORT1 + index, buf);	
 
 	// can we get the player object?

@@ -1470,7 +1470,7 @@ void control_config_do_frame(float frametime)
 					if (Axis_override >= 0) {
 						control_config_bind_axis(z, Axis_override);
 						strcpy_s(bound_string, Joy_axis_text[Axis_override]);
-						gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+						font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 						bound_timestamp = timestamp(2500);
 						control_config_conflict_check();
 						control_config_list_prepare();
@@ -1538,7 +1538,7 @@ void control_config_do_frame(float frametime)
 					control_config_bind_key(z, k);
 
 					strcpy_s(bound_string, textify_scancode(k));
-					gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+					font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 					bound_timestamp = timestamp(2500);
 					control_config_conflict_check();
 					control_config_list_prepare();
@@ -1552,7 +1552,7 @@ void control_config_do_frame(float frametime)
 						control_config_bind_joy(z, i);
 
 						strcpy_s(bound_string, Joy_button_text[i]);
-						gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+						font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 						bound_timestamp = timestamp(2500);
 						control_config_conflict_check();
 						control_config_list_prepare();
@@ -1576,7 +1576,7 @@ void control_config_do_frame(float frametime)
 								control_config_bind_joy(z, i);
 
 								strcpy_s(bound_string, Joy_button_text[i]);
-								gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+								font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 								bound_timestamp = timestamp(2500);
 								control_config_conflict_check();
 								control_config_list_prepare();
@@ -1847,7 +1847,7 @@ void control_config_do_frame(float frametime)
 		}
 
 		// set color and font
-		gr_set_font(FONT2);
+		font::set_font(font::FONT2);
 		if(Conflict_bright){
 			gr_set_color_fast(&Color_bright_red);
 		} else {
@@ -1862,7 +1862,7 @@ void control_config_do_frame(float frametime)
 
 		gr_string((gr_screen.max_w / 2) - (sw / 2), Conflict_warning_coords[gr_screen.res][1], conflict_str, GR_RESIZE_MENU);
 
-		gr_set_font(FONT1);
+		font::set_font(font::FONT1);
 	} else {
 		// might as well always reset the conflict stamp
 		Conflict_stamp = -1;
@@ -1936,7 +1936,7 @@ void control_config_do_frame(float frametime)
 			strcpy_s(buf, Control_config[i].text);
 		}
 
-		gr_force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+		font::force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 		gr_get_string_size(&w, NULL, buf);
 		gr_printf_menu(x - w / 2, y, buf);
 
@@ -1976,7 +1976,7 @@ void control_config_do_frame(float frametime)
 		gr_set_color_fast(c);
 		if (Cc_lines[line].label) {
 			strcpy_s(buf, Cc_lines[line].label);
-			gr_force_fit_string(buf, 255, Control_list_ctrl_w[gr_screen.res]);
+			font::force_fit_string(buf, 255, Control_list_ctrl_w[gr_screen.res]);
 			gr_printf_menu(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, buf);
 		}
 
@@ -2040,7 +2040,7 @@ void control_config_do_frame(float frametime)
 						gr_set_color_fast(c);
 					}
 
-					gr_force_fit_string(buf, 255, Control_list_key_w[gr_screen.res] + Control_list_key_x[gr_screen.res] - x);
+					font::force_fit_string(buf, 255, Control_list_key_w[gr_screen.res] + Control_list_key_x[gr_screen.res] - x);
 					gr_printf_menu(x, y, buf);
 
 					Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];

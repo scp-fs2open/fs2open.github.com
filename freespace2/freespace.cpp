@@ -1273,7 +1273,7 @@ void game_loading_callback_close()
 	common_free_interface_palette();		// restore game palette
 	Game_loading_background = -1;
 
-	gr_set_font( FONT1 );
+	font::set_font(font::FONT1);
 }
 
 /**
@@ -1901,7 +1901,7 @@ void game_init()
 
 	script_init();			//WMC
 
-	gr_font_init();					// loads up all fonts
+	font::init();					// loads up all fonts
 	
 	// add title screen
 	if(!Is_standalone){
@@ -7352,11 +7352,13 @@ void game_show_event_debug(float frametime)
 
 	gr_clear();
 	gr_set_color_fast(&Color_bright);
-	gr_set_font(FONT1);
-	gr_printf_no_resize(0x8000, gr_screen.center_offset_y + 15, NOX("EVENT DEBUG VIEW"));
+	font::set_font(font::FONT1);
+	gr_get_string_size(&font_width, NULL, NOX("EVENT DEBUG VIEW"));
+	
+	gr_string((gr_screen.clip_width_unscaled - font_width) / 2, gr_screen.center_offset_y + 15, NOX("EVENT DEBUG VIEW"));
 
 	gr_set_color_fast(&Color_normal);
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 	gr_get_string_size(&font_width, &font_height, NOX("test"));
 	y_max = gr_screen.center_offset_y + gr_screen.center_h - font_height - 5;
 	y_index = gr_screen.center_offset_y + 45;
@@ -8111,15 +8113,15 @@ int detect_lang()
 {
 	uint file_checksum;
 	int idx;
-	char first_font[MAX_FILENAME_LEN];
+	SCP_string first_font;
 
 	// if the reg is set then let lcl_init() figure out what to do
 	if (os_config_read_string( NULL, NOX("Language"), NULL ) != NULL)
 		return -1;
 
 	// try and open the file to verify
-	gr_stuff_first_font(first_font, sizeof(first_font));
-	CFILE *detect = cfopen(first_font, "rb");
+	font::stuff_first(first_font);
+	CFILE *detect = cfopen(const_cast<char*>(first_font.c_str()), "rb");
 
 	// will use default setting if something went wrong
 	if (!detect)

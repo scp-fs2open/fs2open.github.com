@@ -343,7 +343,7 @@ bool fred_init()
 
 	io::mouse::CursorManager::get()->showCursor(false);
 
-	gr_font_init();					// loads up all fonts  
+	font::init();					// loads up all fonts  
 
 	gr_set_gamma(3.0f);
 

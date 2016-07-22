@@ -375,11 +375,11 @@ void main_hall_blit_table_status()
 {
 	// blit ship table status
 	gr_set_color_fast(Game_ships_tbl_valid ? &Color_bright_green : &Color_bright_red);
-	gr_line(1, gr_screen.max_h_unscaled_zoomed - 1, 1, gr_screen.max_h_unscaled_zoomed - 1, GR_RESIZE_MENU_ZOOMED);
+	gr_rect(1, gr_screen.max_h_unscaled_zoomed - 1, 2, 2, GR_RESIZE_MENU_ZOOMED);
 
 	// blit weapon table status
 	gr_set_color_fast(Game_weapons_tbl_valid ? &Color_bright_green : &Color_bright_red);
-	gr_line(3, gr_screen.max_h_unscaled_zoomed - 1, 3, gr_screen.max_h_unscaled_zoomed - 1, GR_RESIZE_MENU_ZOOMED);
+    gr_rect(3, gr_screen.max_h_unscaled_zoomed - 1, 2, 2, GR_RESIZE_MENU_ZOOMED);
 }
 
 /**
@@ -1617,15 +1617,15 @@ void main_hall_notify_do()
 		} else {
 			int w,h;
 
-			int old_font = gr_get_current_fontnum();
+			int old_font = font::get_current_fontnum();
 
 			gr_set_color_fast(&Color_bright);
-			gr_set_font(Main_hall->font);
+			font::set_font(Main_hall->font);
 
 			gr_get_string_size(&w,&h,Main_hall_notify_text);
 			gr_printf_menu_zoomed((gr_screen.max_w_unscaled_zoomed - w)/2, gr_screen.max_h_unscaled_zoomed - (h * 4 + 4), Main_hall_notify_text);
 
-			gr_set_font(old_font);
+			font::set_font(old_font);
 		}
 	}
 }
@@ -1688,8 +1688,8 @@ void main_hall_blit_version()
 	// format the version string
 	get_version_string(version_string, sizeof(version_string));
 
-	int old_font = gr_get_current_fontnum();
-	gr_set_font(Main_hall->font);
+	int old_font = font::get_current_fontnum();
+	font::set_font(Main_hall->font);
 
 	// get the length of the string
 	gr_get_string_size(&w,&h,version_string);
@@ -1698,7 +1698,7 @@ void main_hall_blit_version()
 	gr_set_color_fast(&Color_bright_white);
 	gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 2 + 6), version_string, GR_RESIZE_MENU_ZOOMED);
 
-	gr_set_font(old_font);
+	font::set_font(old_font);
 }
 
 /**
@@ -1721,8 +1721,8 @@ void main_hall_maybe_blit_tooltips()
 	if (!help_overlay_active(Main_hall_overlay_id)) {
 		const char* desc = Main_hall->regions[Main_hall_mouse_region].description.c_str();
 		
-		int old_font = gr_get_current_fontnum();
-		gr_set_font(Main_hall->font);
+		int old_font = font::get_current_fontnum();
+		font::set_font(Main_hall->font);
 		// get the width of the string
 		gr_get_string_size(&w, &h, desc);
 		int text_y;
@@ -1739,7 +1739,7 @@ void main_hall_maybe_blit_tooltips()
 		gr_set_color_fast(&Color_bright_white);
 		gr_string((gr_screen.max_w_unscaled - w)/2, text_y, desc, GR_RESIZE_MENU);
 
-		gr_set_font(old_font);
+		font::set_font(old_font);
 	}
 }
 
@@ -1761,8 +1761,8 @@ void main_hall_process_help_stuff()
 		Main_hall_f1_text_frame++;
 	}
 
-	int old_font = gr_get_current_fontnum();
-	gr_set_font(Main_hall->font);
+	int old_font = font::get_current_fontnum();
+	font::set_font(Main_hall->font);
 
 	// otherwise print out the message
 	strcpy_s(str, XSTR( "Press F1 for help", 371));
@@ -1784,7 +1784,7 @@ void main_hall_process_help_stuff()
 	gr_shade(0, 0, gr_screen.max_w_unscaled_zoomed, (2*Main_hall->tooltip_padding) + h - y_anim_offset, GR_RESIZE_MENU_ZOOMED);
 	gr_string((gr_screen.max_w_unscaled_zoomed - w)/2, Main_hall->tooltip_padding - y_anim_offset, str, GR_RESIZE_MENU_ZOOMED);
 
-	gr_set_font(old_font);
+	font::set_font(old_font);
 }
 
 /**
@@ -2461,10 +2461,9 @@ void parse_main_hall_table(const char* filename)
 
 				// font for tooltips and other text
 				if (optional_string("+Font:")) {
-					stuff_int(&m->font);
-				}
-				else {
-					m->font = FONT1;
+					m->font = font::parse_font();
+				} else {
+					m->font = font::FONT1;
 				}
 
 				// tooltip padding

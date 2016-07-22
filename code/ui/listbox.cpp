@@ -54,7 +54,7 @@ void UI_LISTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _num
 	int tw, th, nrows;
 	int real_h;
 
-	gr_set_font(wnd->f_id);
+	font::set_font(wnd->f_id);
 	gr_get_string_size(&tw, &th, "*");
 
 	nrows = _h / th;
@@ -103,7 +103,7 @@ void UI_LISTBOX::draw()
 	int w1, h1;
 
 	UI_GADGET::draw();
-	gr_set_font(my_wnd->f_id);
+	font::set_font(my_wnd->f_id);
 
 	if (uses_bmaps) {
 		if (disabled_flag) {

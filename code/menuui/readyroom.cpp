@@ -1286,16 +1286,16 @@ void sim_room_do_frame(float frametime)
 		}
 	}
 
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 	if (Player->readyroom_listing_mode == MODE_CAMPAIGNS) {
 		gr_set_color_fast(&Color_text_heading);
 		strcpy_s(buf, Campaign.name);
-		gr_force_fit_string(buf, 255, list_w1);
+		font::force_fit_string(buf, 255, list_w1);
 		gr_printf_menu(list_x1, Mission_list_coords[gr_screen.res][1], buf);
 
 		if (Campaign.filename[0] != '\0') {			
 			sprintf(buf, NOX("%s%s"), Campaign.filename, FS_CAMPAIGN_FILE_EXT);
-			gr_force_fit_string(buf, 255, list_w2);
+			font::force_fit_string(buf, 255, list_w2);
 			gr_printf_menu(list_x2, Mission_list_coords[gr_screen.res][1], buf);		
 
 			// blit the proper icons if necessary
@@ -1328,12 +1328,12 @@ void sim_room_do_frame(float frametime)
 			gr_set_color_fast(&Color_text_normal);
 
 		strcpy_s(buf, sim_room_lines[line].name);
-		gr_force_fit_string(buf, 255, list_x1 + list_w1 - sim_room_lines[line].x);
+		font::force_fit_string(buf, 255, list_x1 + list_w1 - sim_room_lines[line].x);
 		gr_printf_menu(sim_room_lines[line].x, y, buf);
 
 		if (sim_room_lines[line].filename) {
 			strcpy_s(buf, sim_room_lines[line].filename);
-			gr_force_fit_string(buf, 255, list_w2);
+			font::force_fit_string(buf, 255, list_w2);
 			gr_printf_menu(list_x2, y, buf);
 		}
 
@@ -1804,7 +1804,7 @@ void campaign_room_do_frame(float frametime)
 
 	Ui_window.draw();
 
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 	line = Scroll_offset;
 	while (sim_room_line_query_visible(line)) {
 		y = Cr_list_coords[gr_screen.res][1] + sim_room_lines[line].y - sim_room_lines[Scroll_offset].y;
@@ -1832,7 +1832,7 @@ void campaign_room_do_frame(float frametime)
 			gr_set_color_fast(&Color_text_normal);
 
 		strcpy_s(buf, sim_room_lines[line].name);
-		gr_force_fit_string(buf, 255, Cr_list_coords[gr_screen.res][0] + Cr_list_coords[gr_screen.res][2] - sim_room_lines[line].x);
+		font::force_fit_string(buf, 255, Cr_list_coords[gr_screen.res][0] + Cr_list_coords[gr_screen.res][2] - sim_room_lines[line].x);
 		gr_printf_menu(sim_room_lines[line].x, y, buf);
 		line++;
 	}

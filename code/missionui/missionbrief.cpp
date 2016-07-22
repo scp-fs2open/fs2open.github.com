@@ -1088,7 +1088,9 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	gr_set_color_fast(&Color_bright_white);
 
-	gr_string(0x8000,2,Closeup_icon->closeup_label,GR_RESIZE_MENU);
+	gr_get_string_size(&w, NULL, Closeup_icon->closeup_label);
+
+	gr_string((gr_screen.clip_width_unscaled - w) / 2,2,Closeup_icon->closeup_label,GR_RESIZE_MENU);
 //	brief_render_closeup_text();
 
 	Closeup_close_button.enable();
@@ -1108,12 +1110,18 @@ void brief_render(float frametime)
 	if ( Num_brief_stages <= 0 ) {
 		gr_set_color_fast(&Color_white);
 		Assert( Game_current_mission_filename != NULL );
-		gr_printf_menu(0x8000,200,XSTR( "No Briefing exists for mission: %s", 430), Game_current_mission_filename);
+
+		gr_get_string_size(&w, NULL, XSTR("No Briefing exists for mission: %s", 430));
+		gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2,200,XSTR( "No Briefing exists for mission: %s", 430), Game_current_mission_filename);
 
 		#ifndef NDEBUG
 		gr_get_string_size(&w, &h, The_mission.name);
 		gr_set_color_fast(&Color_normal);
-		gr_printf_menu(0x8000, 230, NOX("[filename: %s, last mod: %s]"), Mission_filename, The_mission.modified);
+		SCP_string debugText;
+		sprintf(debugText, NOX("[filename: %s, last mod: %s]"), Mission_filename, The_mission.modified);
+
+		gr_get_string_size(&w, NULL, debugText.c_str());
+		gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2, 230, "%s", debugText.c_str());
 		#endif
 
 		return;
@@ -1166,7 +1174,7 @@ void brief_render(float frametime)
 	if (Game_mode & GM_MULTIPLAYER) {
 		char buf[256];
 		strncpy(buf, The_mission.name, 256);
-		gr_force_fit_string(buf, 255, Title_coords_multi[gr_screen.res][2]);
+		font::force_fit_string(buf, 255, Title_coords_multi[gr_screen.res][2]);
 		gr_string(Title_coords_multi[gr_screen.res][0], Title_coords_multi[gr_screen.res][1], buf, GR_RESIZE_MENU);
 	} else {
 		gr_get_string_size(&w, NULL, The_mission.name);

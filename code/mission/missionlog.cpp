@@ -890,9 +890,9 @@ void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int li
 
 			strcpy_s(buf, seg->text);
 			if (seg->x < ACTION_X)
-				gr_force_fit_string(buf, 256, ACTION_X - OBJECT_X - 8);
+				font::force_fit_string(buf, 256, ACTION_X - OBJECT_X - 8);
 			else
-				gr_force_fit_string(buf, 256, list_w - seg->x);
+				font::force_fit_string(buf, 256, list_w - seg->x);
 
 			end_string_at_first_hash_symbol(buf);
 			gr_string(list_x + seg->x, list_y + y, buf, GR_RESIZE_MENU);

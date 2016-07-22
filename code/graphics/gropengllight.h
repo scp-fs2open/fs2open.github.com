@@ -15,6 +15,7 @@
 
 #include "graphics/gropengl.h"
 
+#include <glad/glad.h>
 
 struct ogl_light_color {
 	float r,g,b,a;

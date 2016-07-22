@@ -254,7 +254,7 @@ void HudGaugeRadarDradis::drawBlips(int blip_type, int bright, int distort)
 	
 	//long frametime = timer_get_approx_seconds();
 	// Need to set font.
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 
 	if(bright) {
 		blip_head = &Blip_bright_list[blip_type];

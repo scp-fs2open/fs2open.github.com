@@ -244,7 +244,7 @@ static int Damage_flash_bright;
 static int Damage_flash_timer;
 
 HudGauge::HudGauge():
-base_w(0), base_h(0), gauge_config(-1), font_num(FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false), 
+base_w(0), base_h(0), gauge_config(-1), font_num(font::FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false),
 active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), custom_gauge(false),
 texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
@@ -268,7 +268,7 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 }
 
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
-base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(_gauge_object), font_num(FONT1), lock_color(false), sexp_lock_color(false),
+base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(_gauge_object), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
 disabled_views(_disabled_views), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
 canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
@@ -304,7 +304,7 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 
 // constructor for custom gauges
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
-base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(FONT1), lock_color(false), sexp_lock_color(false), 
+base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
 disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), custom_gauge(true), textoffset_x(txtoffset_x),
  textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
@@ -381,7 +381,7 @@ void HudGauge::initSlew(bool slew)
 
 void HudGauge::initFont(int input_font_num)
 {
-	if ( input_font_num >= 0 && input_font_num < Num_fonts) {
+	if (input_font_num >= 0 && input_font_num < font::FontManager::numberOfFonts()) {
 		font_num = input_font_num;
 	}
 }
@@ -439,7 +439,7 @@ void HudGauge::updateCustomGaugeText(const SCP_string& txt)
 
 void HudGauge::setFont()
 {
-	gr_set_font(font_num);
+	font::set_font(font_num);
 }
 
 void HudGauge::setGaugeColor(int bright_index)
@@ -1727,7 +1727,7 @@ void hud_render_all()
 	hud_clear_msg_buffer();
 
 	// set font back the way it was
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 }
 
 void hud_render_gauges(int cockpit_display_num)
@@ -2266,6 +2266,14 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
  */
 void hud_num_make_mono(char *num_str, int font_num)
 {
+	font::FSFont* fsFont = font::get_font(font_num);
+
+	if (fsFont->getType() != font::VFNT_FONT)
+	{
+		// Only old volition fonts need this
+		return;
+	}
+
 	int len, i;
 	ubyte sc;
 

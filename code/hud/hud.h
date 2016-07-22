@@ -134,7 +134,7 @@ void HUD_set_clip(int x, int y, int w, int h);
 void hud_start_text_flash(const char *txt, int t, int interval = 200);
 
 // convert a string to use mono spaced numbers
-void hud_num_make_mono(char *num_str, int font_num = FONT1);
+void hud_num_make_mono(char *num_str, int font_num = font::FONT1);
 
 // functions for handling hud animations
 void hud_anim_init(hud_anim *ha, int sx, int sy, const char *filename);

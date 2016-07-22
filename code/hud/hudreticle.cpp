@@ -20,6 +20,7 @@
 #include "ship/ship.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
+#include "globalincs/alphacolors.h"
 
 #define NUM_RETICLE_ANIS			11		// keep up to date when modifying the number of reticle ani files
 
@@ -419,15 +420,35 @@ void HudGaugeThrottle::initMatchSpeedOffsets(int x, int y, bool custom)
 	Match_speed_offsets[1] = y;
 	Use_custom_match_speed = custom;
 
-	ubyte sc = lcl_get_font_index(font_num);
-	// NOTE: default to normal m because either
-	// a) the german font has no special m (its an a)
-	// b) the font has no special characters
-	if (sc == 0 || Lcl_gr) {
-		Match_speed_icon = ubyte ('m');
-	} else {
-		Match_speed_icon = sc + 3;
+	font::FSFont* fsFont = font::get_font(font_num);
+
+	if (fsFont->getType() == font::VFNT_FONT)
+	{
+		ubyte sc = lcl_get_font_index(font_num);
+		// NOTE: default to normal m because either
+		// a) the german font has no special m (its an a)
+		// b) the font has no special characters
+		if (sc == 0 || Lcl_gr) {
+			Match_speed_icon = 'm';
+		}
+		else {
+			Match_speed_icon = sc + 3;
+		}
+		Match_speed_draw_background = false;
 	}
+	else
+	{
+		// Default version for other fonts, draw a black character on a rectangle
+		Match_speed_icon = 'm';
+		Match_speed_draw_background = true;
+	}
+	SCP_stringstream stream;
+
+	stream << static_cast<char>(Match_speed_icon);
+	
+	const SCP_string& iconStr = stream.str();
+
+	gr_get_string_size(&Match_speed_icon_width, nullptr, iconStr.c_str());
 }
 
 void HudGaugeThrottle::initBitmaps(char *fname)
@@ -597,7 +618,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 		}
 	} else if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
 		if ( Use_custom_match_speed ) {
-			renderPrintf(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1], "%c", Match_speed_icon);
+			renderMatchSpeedIcon(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1]);
 		} else {
 			int offset;
 			if ( current_speed <= 9.5 ) {
@@ -606,7 +627,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 				offset = 3;
 			}
 
-			renderPrintf(sx+offset, sy + h, "%c", Match_speed_icon);
+			renderMatchSpeedIcon(sx+offset, sy + h);
 		}
 	}
 }
@@ -646,6 +667,24 @@ void HudGaugeThrottle::renderThrottleBackground(int y_end)
 
 	if ( y_end > position[1] ) {
 		renderBitmapEx(throttle_frames.first_frame+1, position[0], position[1], w, y_end-position[1]+1, 0, 0);		
+	}
+}
+
+void HudGaugeThrottle::renderMatchSpeedIcon(int x, int y)
+{
+	if (Match_speed_draw_background)
+	{
+		// One pixel boundary
+		renderRect(x, y, Match_speed_icon_width + 2, gr_get_font_height() + 2);
+		
+		gr_set_color_fast(&Color_black);
+		renderPrintf(x + 1, y + 1, "%c", Match_speed_icon);
+
+		setGaugeColor();
+	}
+	else
+	{
+		renderPrintf(x, y, "%c", Match_speed_icon);
 	}
 }
 

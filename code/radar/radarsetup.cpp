@@ -443,8 +443,8 @@ void HudGaugeRadar::initialize()
 	}
 
 	int w,h;
-	gr_set_font(FONT1);
-	ubyte sc = lcl_get_font_index(FONT1);
+	font::set_font(font::FONT1);
+	ubyte sc = lcl_get_font_index(font::FONT1);
 	if (sc == 0) {
 		Warning(LOCATION, "1st font doesn't have a special characters index, radar may not work");
 	}

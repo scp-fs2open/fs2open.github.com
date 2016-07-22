@@ -136,7 +136,7 @@ void UI_SCROLLBAR::draw()
 		ui_draw_box_out( 0, bar_position, w - 1, bar_position + bar_size - 1 );
 
 	} else {
-		gr_set_font(my_wnd->f_id);
+		font::set_font(my_wnd->f_id);
 		gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 
 		if (my_wnd->selected_gadget == this)

@@ -5596,7 +5596,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				setGaugeColor(HUD_C_NORMAL);
 			}
 			if(gr_screen.max_w_unscaled == 640) {
-				gr_force_fit_string(shortened_name, NAME_LENGTH, 55);
+				font::force_fit_string(shortened_name, NAME_LENGTH, 55);
 				renderString(currentx, currenty, shortened_name);
 			} else {
 				renderString(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);

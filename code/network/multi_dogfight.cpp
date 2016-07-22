@@ -284,7 +284,7 @@ void multi_df_debrief_do()
 
 	// draw the mission title
 	strcpy_s(buf, The_mission.name);
-	gr_force_fit_string(buf, 255, Kill_matrix_title_coords[gr_screen.res][2]);
+	font::force_fit_string(buf, 255, Kill_matrix_title_coords[gr_screen.res][2]);
 	gr_set_color_fast(&Color_bright_white);
 	gr_string(Kill_matrix_title_coords[gr_screen.res][0], Kill_matrix_title_coords[gr_screen.res][1], buf, GR_RESIZE_MENU);
 
@@ -407,7 +407,7 @@ void multi_df_blit_kill_matrix()
 	for(idx=0; idx<Multi_df_score_count; idx++){		
 		// force the string to fit nicely
 		strcpy_s(squashed_string, Multi_df_score[idx].callsign);
-		gr_force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
+		font::force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
 		gr_get_string_size(&str_len, NULL, squashed_string);
 
 		// set color and blit the string		
@@ -437,7 +437,7 @@ void multi_df_blit_kill_matrix()
 		// draw the name
 		cx = Multi_df_display_coords[gr_screen.res][0];
 		strcpy_s(squashed_string, Multi_df_score[idx].callsign);
-		gr_force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
+		font::force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
 		gr_get_string_size(&str_len, NULL, squashed_string);		
 		Assert(Multi_df_score[idx].np_index >= 0);
 		if(Multi_df_score[idx].np_index >= 0){
@@ -461,7 +461,7 @@ void multi_df_blit_kill_matrix()
 			}						
 
 			// draw the string
-			gr_force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
+			font::force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
 			gr_get_string_size(&str_len, NULL, squashed_string);
 			gr_string(cx + (int)((max_item_width - (float)str_len)/2.0f), cy, squashed_string, GR_RESIZE_MENU);
 

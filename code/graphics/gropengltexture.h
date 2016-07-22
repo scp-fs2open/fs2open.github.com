@@ -13,8 +13,8 @@
 
 #include "globalincs/pstypes.h"
 #include "graphics/gropengl.h"
-#include "graphics/gropenglextension.h"
 
+#include <glad/glad.h>
 
 typedef struct tcache_slot_opengl {
 	GLuint texture_id;

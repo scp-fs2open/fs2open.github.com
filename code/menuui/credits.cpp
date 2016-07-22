@@ -778,24 +778,37 @@ void credits_do_frame(float frametime)
 	}
 
 	gr_set_clip(Credits_text_coords[gr_screen.res][CREDITS_X_COORD], Credits_text_coords[gr_screen.res][CREDITS_Y_COORD], Credits_text_coords[gr_screen.res][CREDITS_W_COORD], Credits_text_coords[gr_screen.res][CREDITS_H_COORD], GR_RESIZE_MENU);
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 	gr_set_color_fast(&Color_normal);
 	
 	int y_offset = 0;
 	for (SCP_vector<SCP_string>::iterator iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
 	{
-		int height;
-
-		gr_get_string_size(NULL, &height, iter->c_str(), iter->length());
-
-		// Check if the text part is actually visible
-		if (Credit_position + y_offset + height > 0.0f)
+		size_t currentPos = 0;
+		size_t lineEnd;
+		do
 		{
-			extern void gr_opengl_string(float sx, float sy, const char *s, int resize_mode);
-			gr_opengl_string((float)0x8000, Credit_position + y_offset, iter->c_str(), GR_RESIZE_MENU);
-		}
+			int height;
+			int width;
+			lineEnd = iter->find('\n', currentPos);
 
-		y_offset += height;
+			int length = lineEnd - currentPos;
+			if (lineEnd == SCP_string::npos)
+			{
+				length = -1;
+			}
+
+			gr_get_string_size(&width, &height, iter->c_str() + currentPos, length);
+			// Check if the text part is actually visible
+			if (Credit_position + y_offset + height > 0.0f)
+			{
+				float x = static_cast<float>((gr_screen.clip_width_unscaled - width) / 2);
+				gr_string(x, Credit_position + y_offset, iter->c_str() + currentPos, GR_RESIZE_MENU, length);
+			}
+
+			y_offset += height;
+			currentPos = lineEnd + 1;
+		} while (lineEnd < iter->length() && lineEnd != SCP_string::npos);
 	}
 
 	int temp_time;

@@ -130,10 +130,13 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 	}	// end for
 
 	gr_set_color_fast(&Color_white);
-	gr_set_font( FONT1 );
+	font::set_font(font::FONT1);
 
 	if ((mouse_on_choice >= 0) && (mouse_on_choice <= (num_regions)) && (i >=0)) {
-		gr_printf_menu( 0x8000, 450, regions[i].text );
+		int w;
+		gr_get_string_size(&w, NULL, regions[i].text);
+
+		gr_printf_menu( (gr_screen.clip_width_unscaled - w) / 2, 450, regions[i].text );
 	}
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ){

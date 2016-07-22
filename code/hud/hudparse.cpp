@@ -192,10 +192,10 @@ void parse_hud_gauges_tbl(const char *filename)
 		}
 
 		if (optional_string("$Font:")) {
-			stuff_int(&Hud_font);
+			Hud_font = font::parse_font();
 		}
-
-		if (optional_string("$Max Directives:")) {
+	
+		if(optional_string("$Max Directives:")) {
 			stuff_int(&Max_directives);
 		}
 
@@ -307,7 +307,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					}
 
 					if (optional_string("$Font:")) {
-						stuff_int(&ship_font);
+						ship_font = font::parse_font();
 					}
 				}
 				else {
@@ -342,7 +342,7 @@ void parse_hud_gauges_tbl(const char *filename)
 				}
 
 				if (optional_string("$Font:")) {
-					stuff_int(&ship_font);
+					ship_font = font::parse_font();
 				}
 				break;
 			default:
@@ -1252,11 +1252,11 @@ T* gauge_load_common(gauge_settings* settings, T* preAllocated = NULL)
 		}
 	}
 
-	if(optional_string("Font:")) {
-		stuff_int(&settings->font_num);
+	if (optional_string("$Font:")) {
+		settings->font_num = font::parse_font();
 	} else {
 		if ( settings->font_num < 0 ) {
-			settings->font_num = FONT1;
+			settings->font_num = font::FONT1;
 		}
 	}
 
@@ -1377,11 +1377,11 @@ void load_gauge_custom(gauge_settings* settings)
 			lock_color = true;
 		}
 
-		if ( optional_string("Font:") ) {
-			stuff_int(&settings->font_num);
+		if (optional_string("Font:")) {
+			settings->font_num = font::parse_font();
 		} else {
 			if ( settings->font_num < 0 ) {
-				settings->font_num = FONT1;
+				settings->font_num = font::FONT1;
 			}
 		}
 
@@ -1424,7 +1424,7 @@ void load_gauge_custom(gauge_settings* settings)
 		settings->base_res[1] = 480;
 
 		if ( settings->font_num < 0 ) {
-			settings->font_num = FONT1;
+			settings->font_num = font::FONT1;
 		}
 	}
 
@@ -3032,11 +3032,11 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 		settings->use_coords = true;
 	}
 
-	if(optional_string("Font:")) {
-		stuff_int(&settings->font_num);
+	if (optional_string("$Font:")) {
+		settings->font_num = font::parse_font();
 	} else {
 		if ( settings->font_num < 0 ) {
-			settings->font_num = FONT1;
+			settings->font_num = font::FONT1;
 		}
 	}
 
@@ -4448,7 +4448,8 @@ void load_gauge_messages(gauge_settings* settings)
 
 void load_gauge_fixed_messages(gauge_settings* settings)
 {
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
+	
 	int h = gr_get_font_height();
 
 	settings->use_coords = true;
