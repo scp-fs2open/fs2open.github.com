@@ -145,7 +145,6 @@ void scoring_do_accept( scoring_struct *score );
 void scoring_check_medal(scoring_struct *sc);
 
 void scoring_add_damage(object *ship_obj,object *other_obj,float damage);
-void scoring_add_damage_to_weapon(object *weapon_obj,object *other_obj,float damage);
 int scoring_eval_kill(object *ship_obj);
 int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj);
 void scoring_eval_assists(ship *sp,int killer_sig, bool enemy_player = false);

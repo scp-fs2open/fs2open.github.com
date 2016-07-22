@@ -102,10 +102,10 @@ int collide_weapon_weapon( obj_pair * pair )
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
 					if ((wipA->wi_flags & WIF_BOMB) && (wipB->wi_flags & WIF_BOMB)) {
-						Weapons[A->instance].lifeleft = 0.01f;
-						Weapons[B->instance].lifeleft = 0.01f;
-						Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
-						Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+						wpA->lifeleft = 0.01f;
+						wpB->lifeleft = 0.01f;
+						wpA->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+						wpB->weapon_flags |= WF_DESTROYED_BY_WEAPON;
 					} else {
 						A->hull_strength -= bDamage;
 						B->hull_strength -= aDamage;
@@ -120,46 +120,50 @@ int collide_weapon_weapon( obj_pair * pair )
 						}
 						
 						if (A->hull_strength < 0.0f) {
-							Weapons[A->instance].lifeleft = 0.01f;
-							Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+							wpA->lifeleft = 0.01f;
+							wpA->weapon_flags |= WF_DESTROYED_BY_WEAPON;
 						}
 						if (B->hull_strength < 0.0f) {
-							Weapons[B->instance].lifeleft = 0.01f;
-							Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+							wpB->lifeleft = 0.01f;
+							wpB->weapon_flags |= WF_DESTROYED_BY_WEAPON;
 						}
 					}
 				} else {
 					A->hull_strength -= bDamage;
-					Weapons[B->instance].lifeleft = 0.01f;
-					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+					wpB->lifeleft = 0.01f;
+					wpB->weapon_flags |= WF_DESTROYED_BY_WEAPON;
 					if (A->hull_strength < 0.0f) {
-						Weapons[A->instance].lifeleft = 0.01f;
-						Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+						wpA->lifeleft = 0.01f;
+						wpA->weapon_flags |= WF_DESTROYED_BY_WEAPON;
 					}
 				}
 			} else if (wipB->weapon_hitpoints > 0) {
 				B->hull_strength -= aDamage;
-				Weapons[A->instance].lifeleft = 0.01f;
-				Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+				wpA->lifeleft = 0.01f;
+				wpA->weapon_flags |= WF_DESTROYED_BY_WEAPON;
 				if (B->hull_strength < 0.0f) {
-					Weapons[B->instance].lifeleft = 0.01f;
-					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+					wpB->lifeleft = 0.01f;
+					wpB->weapon_flags |= WF_DESTROYED_BY_WEAPON;
 				}
 			}
 
 			// single player and multiplayer masters evaluate the scoring and kill stuff
 			if (!MULTIPLAYER_CLIENT) {
 
-				//Save damage for bomb so we can do scoring once it's destroyed. -Halleck
+				// If bomb was destroyed, do scoring
 				if (wipA->wi_flags & WIF_BOMB) {
-					scoring_add_damage_to_weapon(A, B, wipB->damage);
 					//Update stats. -Halleck
 					scoring_eval_hit(A, B, 0);
+					if (wpA->weapon_flags & WF_DESTROYED_BY_WEAPON) {
+						scoring_eval_kill_on_weapon(A, B);
+					}
 				}
 				if (wipB->wi_flags & WIF_BOMB) {
-					scoring_add_damage_to_weapon(B, A, wipA->damage);
 					//Update stats. -Halleck
 					scoring_eval_hit(B, A, 0);
+					if (wpB->weapon_flags & WF_DESTROYED_BY_WEAPON) {
+						scoring_eval_kill_on_weapon(B, A);
+					}
 				}
 			}
 		}
@@ -169,7 +173,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			Script_system.SetHookObjects(4, "Weapon", A, "WeaponB", B, "Self",A, "Object", B);
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, A, wpA->weapon_info_index);
 		}
-		if((b_override && !a_override) || (!b_override && !a_override))
+		else
 		{
 			//Should be reversed
 			Script_system.SetHookObjects(4, "Weapon", B, "WeaponB", A, "Self",B, "Object", A);
