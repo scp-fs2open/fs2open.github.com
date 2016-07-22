@@ -13,6 +13,8 @@
 
 #include "SDL.h"
 
+#include "platformChecks.h"
+
 #if defined(APPLE_APP)
 #include <CoreFoundation/CoreFoundation.h>
 #endif
@@ -21,9 +23,11 @@
 #include <malloc.h>
 #endif
 
-#ifdef __linux__
-// Hopefully both these headers are available...
+#ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
+#endif
+
+#ifdef HAVE_CXXAPI_H
 #include <cxxabi.h>
 #endif
 
@@ -79,7 +83,7 @@ int filelength(int fd)
 
 SCP_string dump_stacktrace()
 {
-#ifdef __linux__
+#ifdef HAVE_EXECINFO_H
 	// The following is adapted from here: https://panthema.net/2008/0901-stacktrace-demangled/
 	const int ADDR_SIZE = 64;
 	void *addresses[ADDR_SIZE];
@@ -101,7 +105,7 @@ SCP_string dump_stacktrace()
 	// Demangle c++ function names to a more readable format using the ABI functions
 	// TODO: Maybe add configure time checks to check if the required features are available
 	SCP_stringstream stackstream;
-	
+#ifdef HAVE_CXXAPI_H
 	size_t funcnamesize = 256;
 	char* funcname = reinterpret_cast<char*>(malloc(funcnamesize));
 	
@@ -154,8 +158,13 @@ SCP_string dump_stacktrace()
 			stackstream << "  " << symbollist[i] << "\n";
 		}
 	}
-
 	free(funcname);
+#else
+	for (auto i = 0; i < numstrings; ++i) {
+		stackstream << symbollist[i] << "\n";
+	}
+#endif
+
 	free(symbollist);
 
 	return stackstream.str();
