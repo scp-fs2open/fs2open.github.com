@@ -25,6 +25,7 @@
 #include "globalincs/mspdb_callstack.h"
 #include "graphics/2d.h"
 #include "io/key.h"
+#include "mission/missiongrid.h"
 #include "object/object.h"
 
 #include "AFXADV.H"

@@ -55,6 +55,7 @@
 #include "object/objectdock.h"
 #include "species_defs/species_defs.h"
 #include "sound/audiostr.h"
+#include "mission/missiongrid.h"
 
 #include "osapi/osapi.h"
 

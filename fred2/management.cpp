@@ -20,6 +20,7 @@
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
 #include "globalincs/alphacolors.h"
+#include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
