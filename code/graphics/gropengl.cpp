@@ -362,6 +362,8 @@ void gr_opengl_print_screen(const char *filename)
 
 	// save to a "screenshots" directory and tack on the filename
 	snprintf(tmp, MAX_PATH_LEN-1, "screenshots/%s.tga", filename);
+    
+    _mkdir(os_get_config_path("screenshots").c_str());
 
 	FILE *fout = fopen(os_get_config_path(tmp).c_str(), "wb");
 
