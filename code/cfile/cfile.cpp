@@ -87,6 +87,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc",							CF_TYPE_DATA	},
 	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	},
+    { CF_TYPE_SCREENSHOTS,          "screenshots",                                                              ".tga",                             CF_TYPE_ROOT    },     
 };
 
 
@@ -593,22 +594,24 @@ int cf_rename(const char *old_name, const char *name, int dir_type)
 
 }
 
-static void mkdir_recursive(const char *dir) {
-    char tmp[256];
-    char *p = NULL;
-    size_t len;
+static void mkdir_recursive(const char *path) {
+    size_t pre = 0, pos;
+    SCP_string tmp(path);
+    SCP_string dir;
+    int mdret;
 
-    snprintf(tmp, sizeof(tmp), "%s", dir);
-    len = strlen(tmp);
-    if (tmp[len - 1] == DIR_SEPARATOR_CHAR)
-        tmp[len - 1] = 0;
-    for (p = tmp + 1; *p; p++)
-        if (*p == DIR_SEPARATOR_CHAR) {
-            *p = 0;
-            _mkdir(tmp);
-            *p = DIR_SEPARATOR_CHAR;
-        }
-    _mkdir(tmp);
+    if (tmp[tmp.size() - 1] != DIR_SEPARATOR_CHAR) {
+        // force trailing / so we can handle everything in loop
+        tmp += DIR_SEPARATOR_CHAR;
+    }
+
+    while ((pos = tmp.find_first_of(DIR_SEPARATOR_CHAR, pre)) != std::string::npos) {
+        dir = tmp.substr(0, pos++);
+        pre = pos;
+        if (dir.size() == 0) continue; // if leading / first time is 0 length
+        
+        _mkdir(dir.c_str());
+    }
 }
 
 // Creates the directory path if it doesn't exist. Even creates all its
