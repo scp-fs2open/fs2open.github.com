@@ -128,9 +128,6 @@ char *cf_add_ext(const char *filename, const char *ext);
 // return CF_TYPE (directory location type) of a CFILE you called cfopen() successfully on.
 int cf_get_dir_type(CFILE *cfile);
 
-// Creates a directory path on the filesystem, recursively if necessary.
-// dir_type must be one of CF_TYPE_*, EXCEPT CF_TYPE_ANY
-void cf_create_directory(int dir_type);
 
 // Opens the file.  If no path is given, use the extension to look into the
 // default path.  If mode is NULL, delete the file.  
