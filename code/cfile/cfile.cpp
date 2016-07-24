@@ -593,6 +593,9 @@ int cf_rename(const char *old_name, const char *name, int dir_type)
 
 }
 
+
+// This takes a path (e.g. "C:\Games\FreeSpace2\Lots\More\Directories") and creates it in its entirety.
+// Do note that this requires the path to have normalized directory separators as defined by DIR_SEPARATOR_CHAR
 static void mkdir_recursive(const char *path) {
     size_t pre = 0, pos;
     SCP_string tmp(path);
