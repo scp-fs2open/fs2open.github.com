@@ -86,7 +86,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_CBANIMS,				"data" DIR_SEPARATOR_STR "cbanims",											".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc",							CF_TYPE_DATA	},
-	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	},
+	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	}, 
 };
 
 
@@ -593,6 +593,28 @@ int cf_rename(const char *old_name, const char *name, int dir_type)
 
 }
 
+
+// This takes a path (e.g. "C:\Games\FreeSpace2\Lots\More\Directories") and creates it in its entirety.
+// Do note that this requires the path to have normalized directory separators as defined by DIR_SEPARATOR_CHAR
+static void mkdir_recursive(const char *path) {
+    size_t pre = 0, pos;
+    SCP_string tmp(path);
+    SCP_string dir;
+
+    if (tmp[tmp.size() - 1] != DIR_SEPARATOR_CHAR) {
+        // force trailing / so we can handle everything in loop
+        tmp += DIR_SEPARATOR_CHAR;
+    }
+
+    while ((pos = tmp.find_first_of(DIR_SEPARATOR_CHAR, pre)) != std::string::npos) {
+        dir = tmp.substr(0, pos++);
+        pre = pos;
+        if (dir.size() == 0) continue; // if leading / first time is 0 length
+        
+        _mkdir(dir.c_str());
+    }
+}
+
 // Creates the directory path if it doesn't exist. Even creates all its
 // parent paths.
 void cf_create_directory( int dir_type )
@@ -601,7 +623,7 @@ void cf_create_directory( int dir_type )
 	int dir_tree[CF_MAX_PATH_TYPES];
 	char longname[MAX_PATH_LEN];
 
-	Assert( CF_TYPE_SPECIFIED(dir_type) );
+	Assertion( CF_TYPE_SPECIFIED(dir_type), "Invalid dir_type passed to cf_create_directory." );
 
 	int current_dir = dir_type;
 
@@ -618,13 +640,9 @@ void cf_create_directory( int dir_type )
 
 	for (i=num_dirs-1; i>=0; i-- )	{
 		cf_create_default_path_string( longname, sizeof(longname)-1, dir_tree[i], NULL );
-
-		if ( _mkdir(longname)==0 )	{
-			mprintf(( "CFILE: Created new directory '%s'\n", longname ));
-		}
+		mprintf(( "CFILE: Creating new directory '%s'\n", longname ));
+        mkdir_recursive(longname);
 	}
-
-
 }
 
 

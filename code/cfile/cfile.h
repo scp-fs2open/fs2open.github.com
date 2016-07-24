@@ -128,6 +128,7 @@ char *cf_add_ext(const char *filename, const char *ext);
 // return CF_TYPE (directory location type) of a CFILE you called cfopen() successfully on.
 int cf_get_dir_type(CFILE *cfile);
 
+
 // Opens the file.  If no path is given, use the extension to look into the
 // default path.  If mode is NULL, delete the file.  
 CFILE *_cfopen(const char* source_file, int line, const char *filename, const char *mode,
