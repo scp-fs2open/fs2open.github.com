@@ -86,8 +86,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_CBANIMS,				"data" DIR_SEPARATOR_STR "cbanims",											".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc",							CF_TYPE_DATA	},
-	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	},
-    { CF_TYPE_SCREENSHOTS,          "screenshots",                                                              ".tga",                             CF_TYPE_ROOT    },     
+	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	}, 
 };
 
 
@@ -598,7 +597,6 @@ static void mkdir_recursive(const char *path) {
     size_t pre = 0, pos;
     SCP_string tmp(path);
     SCP_string dir;
-    int mdret;
 
     if (tmp[tmp.size() - 1] != DIR_SEPARATOR_CHAR) {
         // force trailing / so we can handle everything in loop
