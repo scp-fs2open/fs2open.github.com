@@ -593,6 +593,24 @@ int cf_rename(const char *old_name, const char *name, int dir_type)
 
 }
 
+static void mkdir_recursive(const char *dir) {
+    char tmp[256];
+    char *p = NULL;
+    size_t len;
+
+    snprintf(tmp, sizeof(tmp), "%s", dir);
+    len = strlen(tmp);
+    if (tmp[len - 1] == DIR_SEPARATOR_CHAR)
+        tmp[len - 1] = 0;
+    for (p = tmp + 1; *p; p++)
+        if (*p == DIR_SEPARATOR_CHAR) {
+            *p = 0;
+            _mkdir(tmp);
+            *p = DIR_SEPARATOR_CHAR;
+        }
+    _mkdir(tmp);
+}
+
 // Creates the directory path if it doesn't exist. Even creates all its
 // parent paths.
 void cf_create_directory( int dir_type )
@@ -601,7 +619,7 @@ void cf_create_directory( int dir_type )
 	int dir_tree[CF_MAX_PATH_TYPES];
 	char longname[MAX_PATH_LEN];
 
-	Assert( CF_TYPE_SPECIFIED(dir_type) );
+	Assertion( CF_TYPE_SPECIFIED(dir_type), "Invalid dir_type passed to cf_create_directory." );
 
 	int current_dir = dir_type;
 
@@ -618,13 +636,9 @@ void cf_create_directory( int dir_type )
 
 	for (i=num_dirs-1; i>=0; i-- )	{
 		cf_create_default_path_string( longname, sizeof(longname)-1, dir_tree[i], NULL );
-
-		if ( _mkdir(longname)==0 )	{
-			mprintf(( "CFILE: Created new directory '%s'\n", longname ));
-		}
+		mprintf(( "CFILE: Creating new directory '%s'\n", longname ));
+        mkdir_recursive(longname);
 	}
-
-
 }
 
 

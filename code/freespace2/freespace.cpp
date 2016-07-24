@@ -8624,7 +8624,7 @@ int actual_main(int argc, char *argv[])
 #endif
 
 	// create user's directory	
-	_mkdir(os_get_config_path().c_str());
+	cf_create_directory(os_get_config_path().c_str());
 #endif
 
 #if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
