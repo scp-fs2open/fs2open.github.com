@@ -1,5 +1,10 @@
 
-FIND_PACKAGE(MFC REQUIRED)
+FIND_PACKAGE(MFC)
+
+if (NOT MFC_FOUND)
+	message("MFC could not be found, not building FRED")
+	return()
+endif()
 
 set(FRED2_SOURCES
 	altshipclassdlg.cpp

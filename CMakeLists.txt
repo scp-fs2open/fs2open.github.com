@@ -63,7 +63,7 @@ IF (WIN32)
 
 	OPTION(FSO_USE_VOICEREC "Enable voice recognition support" ON)
 
-	OPTION(FSO_BUILD_FRED2 "Build FRED2 binary" OFF)
+	OPTION(FSO_BUILD_FRED2 "Build FRED2 binary" ON)
 ENDIF(WIN32)
 
 OPTION(FSO_BUILD_TOOLS "Build tools related to FSO" OFF)
