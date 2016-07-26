@@ -25,7 +25,6 @@ if (WIN32)
 	
 	get_windowssdk_include_dirs("${SDK_DIR}" INCLUDE_DIRS)
 	
-	target_link_libraries(speech INTERFACE ${SPEECH_LIBRARY})
 	target_include_directories(speech INTERFACE ${INCLUDE_DIRS})
 else()
 	message(SEND_ERROR "Text to Speech is not supported on this platform!")
