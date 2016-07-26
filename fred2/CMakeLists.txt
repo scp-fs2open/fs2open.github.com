@@ -2,7 +2,7 @@
 FIND_PACKAGE(MFC)
 
 if (NOT MFC_FOUND)
-	message("MFC could not be found, not building FRED")
+	message(STATUS "MFC could not be found, not building FRED")
 	return()
 endif()
 
