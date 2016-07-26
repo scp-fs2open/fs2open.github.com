@@ -13,7 +13,9 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
         do
             mkdir -p $config
             cd $config
-            eval $CMAKE -DFSO_INSTALL_DEBUG_FILES=ON -DCMAKE_BUILD_TYPE=$config -DCMAKE_INSTALL_PREFIX="/tmp/release" ../..
+            eval $CMAKE -DFSO_INSTALL_DEBUG_FILES=ON -DCMAKE_BUILD_TYPE=$config -DCMAKE_INSTALL_PREFIX="/tmp/release" \
+                -DFSO_BUILD_APPIMAGE=ON -DAPPIMAGE_ASSISTANT="$HOME/AppImageAssistant" \
+                -DFSO_BUILD_INCLUDED_LIBS=ON ../..
             cd ..
         done
     else

@@ -8,12 +8,12 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     for config in $BUILD_CONFIGS
     do
         cd "$config"
-        ninja install
+        ninja install appimage
         cd ..
     done
 
     ls -al /tmp/release
-    (cd /tmp/release && tar -cvzf /tmp/builds/$PACKAGE_NAME-builds-Linux.tar.gz *)
+    (cd /tmp/release && tar -cvzf /tmp/builds/$PACKAGE_NAME-builds-Linux.tar.gz *.AppImage)
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     cd build
     
