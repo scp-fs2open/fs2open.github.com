@@ -27,7 +27,7 @@ deploy:
           ReleaseBuild: true        # deploy on release push only
 
     - provider: BinTray
-      username: asarium
+      username: sirknightly
       api_key:
           secure: pYWqfiZhIWvFYdjVWPXNaHobmnkXIWa4+LwoiyMTEiu4Z0CiCAW0ZrMfTKVkORKz
       subject: scp-fs2open
