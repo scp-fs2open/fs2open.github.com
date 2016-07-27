@@ -30,7 +30,7 @@ addons:
 deploy:
     - provider: releases
       api_key:
-          secure: "bBWEBF+r4p7kea+Lj/vHD0CCW4AsxqlLri8gT3HbsdPuKwdSNU4QLLFk9yAXmmBF2T/fe45Zk+WQrdQJjSydkpG06M7sFD22RKOYv3cLF0Bq0nEG4CpuXoGqo77oFGkA5hdU6D8W2nQTMhPuiqlvhgt3zeD/6fiyfdAztbtKNRs="
+          secure: "Wdt4Ccefo7a0ZDjEJQJgpghh7n72FtNJuKSAPUvoz4gtEX6Ct9J8yJI1t9V3jE3CTbbLJ21/Q6eZRDfT7UfNJe5DdepoJsP9DeFhKMWqQCq+AChqQWlm0KeZAffJoJreL8vXYhnRYcLT9ceZHEH6AqwN9TPV+xJziGPISAkYNZ8="
       skip_cleanup: true 
       file_glob: true
       file: "/tmp/builds/*"
@@ -41,7 +41,7 @@ deploy:
     - provider: bintray
       user: asarium
       key:
-          secure: "JyJIsJFxCvNjmdyG9eDIvkzXFqsJQVzXKp5BeJcn5WSdMA2Vs7dCvarJXomdwe3F3RCrdmrFYCaimiCDD6LqImrcDLzxlevzGlNUv381iFna612SJj672d8iQCgtMibIJ3HzYmgZlsaJ9YcaOuccRyQIV/TNUcwgzbsW27CPEcM="
+          secure: "CZtvDW/zPf1Nxru21i8Wd+9hgiBRA8VowWBX0gmCOGgRq9WHISttKQQmBWGHuyVZ3rYvtE4Va2bR+2qRN+TFNkUUuOCOQkdBJTCal9nS3G/LprEmsOashG0Q5PTfMMBnlKzKxaxGJW6UhFj2GySmHEAjsFLVpuNWGJeeZgZQ3UE="
       file: ci/bintray.json
       on:
           condition: '"$NIGHTLY_BUILD" == true'
