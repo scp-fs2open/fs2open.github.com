@@ -39,7 +39,7 @@ deploy:
           tags: true
         
     - provider: bintray
-      user: asarium
+      user: sirknightly
       key:
           secure: "JyJIsJFxCvNjmdyG9eDIvkzXFqsJQVzXKp5BeJcn5WSdMA2Vs7dCvarJXomdwe3F3RCrdmrFYCaimiCDD6LqImrcDLzxlevzGlNUv381iFna612SJj672d8iQCgtMibIJ3HzYmgZlsaJ9YcaOuccRyQIV/TNUcwgzbsW27CPEcM="
       file: ci/bintray.json
