@@ -27,7 +27,7 @@
 #include "cfile/cfile.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "localization/localize.h"
@@ -1977,4 +1977,3 @@ void mission_campaign_load_failure_popup()
 
 	Campaign_load_failure = 0;
 }
-

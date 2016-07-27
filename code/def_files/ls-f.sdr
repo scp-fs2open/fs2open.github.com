@@ -1,0 +1,30 @@
+uniform sampler2D scene;
+uniform sampler2D cockpit;
+uniform vec2 sun_pos;
+uniform float density;
+uniform float weight;
+uniform float falloff;
+uniform float intensity;
+uniform float cp_intensity;
+void main()
+{
+	vec2 step = vec2( gl_TexCoord[0].st - sun_pos.xy );
+	vec2 pos = gl_TexCoord[0].st;
+	step *= 1.0 / float(SAMPLE_NUM) * density;
+	float decay = 1.0;
+	vec4 sum = vec4(0.0);
+	vec4 mask = texture2D(cockpit, gl_TexCoord[0].st);
+	if (mask.r < 1.0) {
+		gl_FragColor = vec4(cp_intensity);
+		return;
+	}
+	for(int i=0; i < SAMPLE_NUM ; i++) {
+		pos.st -= step;
+		vec4 tex_sample = texture2D(scene, pos);
+		if (tex_sample.r == 1.0)
+			sum += decay * weight;
+		decay *= falloff;
+	}
+	gl_FragColor = sum * intensity;
+	gl_FragColor.a = 1.0;
+}

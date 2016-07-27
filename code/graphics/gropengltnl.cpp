@@ -13,8 +13,8 @@
 #endif
 
 #include "cmdline/cmdline.h"
+#include "def_files/def_files.h"
 #include "globalincs/alphacolors.h"
-#include "globalincs/def_files.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"

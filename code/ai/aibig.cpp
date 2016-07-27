@@ -11,7 +11,7 @@
 
 #include "ai/aibig.h"
 #include "ai/aigoals.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "globalincs/linklist.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"

@@ -21,7 +21,7 @@
 #include "gamesequence/gamesequence.h"
 #include "hud/hudmessage.h"
 #include "hud/hudsquadmsg.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "io/timer.h"
 #include "mission/missiongoals.h"
 #include "mission/missionlog.h"

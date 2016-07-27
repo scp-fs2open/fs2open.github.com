@@ -18,7 +18,7 @@
 #endif
 
 #include "network/multiui.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"

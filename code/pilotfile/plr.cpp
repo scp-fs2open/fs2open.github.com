@@ -1,5 +1,5 @@
 
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "hud/hudconfig.h"
 #include "hud/hudsquadmsg.h"

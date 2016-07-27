@@ -9,7 +9,7 @@
 
 
 
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "network/multi.h"
 #include "object/objcollide.h"
 #include "object/object.h"
@@ -186,4 +186,3 @@ int collide_weapon_weapon( obj_pair * pair )
 
 	return 0;
 }
-

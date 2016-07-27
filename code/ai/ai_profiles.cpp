@@ -7,8 +7,10 @@
 
 
 
+#include "globalincs/pstypes.h"
+#include "def_files/def_files.h"
 #include "ai/ai_profiles.h"
-#include "globalincs/def_files.h"
+#include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
@@ -78,7 +80,7 @@ void parse_ai_profiles_tbl(const char *filename)
 	try
 	{
 		if (filename == NULL)
-			read_file_text_from_array(defaults_get_file("ai_profiles.tbl"));
+			read_file_text_from_default(defaults_get_file("ai_profiles.tbl"));
 		else
 			read_file_text(filename, CF_TYPE_TABLES);
 

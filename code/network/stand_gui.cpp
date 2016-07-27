@@ -17,8 +17,8 @@
 #endif
 
 #include "network/stand_gui.h"
-#include "freespace2/freespace.h"
-#include "freespace2/freespaceresource.h"
+#include "freespace.h"
+#include "freespaceresource.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -2042,9 +2042,9 @@ void std_build_title_string(char *str)
 	// build the version #
 	memset(ver_str, 0, sizeof(ver_str));
 
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) { //-V547
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_HAS_REVIS == 0) { //-V547
 		snprintf(ver_str, sizeof(ver_str)-1, "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
-	} else if (FS_VERSION_REVIS == 0) {
+	} else if (FS_VERSION_HAS_REVIS == 0) {
 		snprintf(ver_str, sizeof(ver_str)-1, "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 	} else {
 		snprintf(ver_str, sizeof(ver_str)-1, "%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);

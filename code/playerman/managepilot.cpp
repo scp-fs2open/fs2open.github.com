@@ -9,7 +9,7 @@
 
 #include "cfile/cfile.h"
 #include "cutscene/cutscenes.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "graphics/font.h"
 #include "hud/hudconfig.h"

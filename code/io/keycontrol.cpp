@@ -26,7 +26,7 @@
 #include "gamesnd/gamesnd.h"
 #include "hud/hudsquadmsg.h"
 #include "gamesnd/eventmusic.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "mission/missionhotkey.h"
 #include "hud/hudescort.h"
 #include "hud/hudshield.h"
@@ -46,7 +46,7 @@
 #include "menuui/mainhallmenu.h"
 #include "missionui/missionpause.h"
 #include "hud/hudgauges.h"
-#include "freespace2/freespace.h"	//For time compression stuff
+#include "freespace.h"	//For time compression stuff
 #include "species_defs/species_defs.h"
 #include "asteroid/asteroid.h"
 #include "iff_defs/iff_defs.h"

@@ -1,0 +1,6 @@
+[submodule "cmake/external/cotire"]
+	path = cmake/external/cotire
+	url = https://github.com/sakra/cotire.git
+[submodule "cmake/external/rpavlik-cmake-modules"]
+	path = cmake/external/rpavlik-cmake-modules
+	url = https://github.com/asarium/cmake-modules.git

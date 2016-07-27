@@ -1,0 +1,462 @@
+																		
+#Ship types																
+$Name:					Navbuoy											
+$Max Debris Speed:		200												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		10.0											
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			500.0										
+$AI:																	
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Turrets attack this:	YES											
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Sentry Gun										
+$Counts for Alone:		YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Max Debris Speed:		200												
+$FF Multiplier:			0.10											
+$EMP Multiplier:		10.0											
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			500.0										
+$AI:																	
+	+Accept Player Orders:	NO											
+	+Auto attacks:			YES											
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Escape Pod										
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Warp Pushable:			YES												
+$Turrets prioritize ship target: YES									
+$Max Debris Speed:		200												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		10.0											
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			600.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Turrets attack this:	YES											
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Cargo											
+$Scannable:				YES												
+$Max Debris Speed:		200												
+$FF Multiplier:			0.10											
+$EMP Multiplier:		10.0											
+$Beams Easily Hit:		YES												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			500.0										
+$AI:																	
+	+Passive docks:			( "cargo" )								
+$Vaporize Percent Chance: 0.0											
+$Name:					Support											
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Warp Pushable:			YES												
+$Turrets prioritize ship target: YES									
+$Max Debris Speed:		200												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		3.5												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			500.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "dock" "undock" "waypoints" "waypoints once" "stay near ship" "keep safe dist" "stay still" "play dead" )							
+	+Accept Player Orders:	YES											
+	+Player orders:			( "rearm me" "abort rearm" "depart" )																	
+	+Auto attacks:			YES											
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Active docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+;;WMC - Stealth ships always have another type, so this isn't used		
+$Name:					Stealth											
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Max Debris Speed:		200												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		4.0												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			500.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "stay near ship" "keep safe dist" )	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "disable ship" "disarm ship" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "depart" "disable subsys" )		
+	+Auto attacks:			YES											
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Fighter											
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Warp Pushable:			YES												
+$Turrets prioritize ship target: YES									
+$Max Debris Speed:		200												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		4.0												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			500.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "stay near ship" "keep safe dist" "form on wing")	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "disable ship" "disarm ship" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "depart" "disable subsys" )		
+	+Auto attacks:			YES											
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Bomber											
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Warp Pushable:			YES												
+$Turrets prioritize ship target: YES									
+$Max Debris Speed:		200												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		4.0												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			500.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "stay near ship" "keep safe dist" "form on wing" )	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "disable ship" "disarm ship" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "depart" "disable subsys" )		
+	+Auto attacks:			YES											
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+;;WMC - This fighter/bomber type doesn't seem to be used anywhere, because no ship is set as both fighter and bomber																																																								
+$Name:					Fighter/bomber									
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Warp Pushable:			YES												
+$Max Debris Speed:		200												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		4.0												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			500.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "stay near ship" "keep safe dist" "form on wing" )	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "disable ship" "disarm ship" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "depart" "disable subsys" )		
+	+Auto attacks:			YES											
+	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Transport										
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Max Debris Speed:		150												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		2.0												
+$Beams Easily Hit:		YES												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			500.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "dock" "depart" )		
+	+Auto attacks:			YES											
+	+Attempt Broadside:		YES											
+	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Freighter										
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Scannable:				YES												
+$Max Debris Speed:		150												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		1.75											
+$Beams Easily Hit:		YES												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			600.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "dock" "depart" )		
+	+Auto attacks:			YES											
+	+Attempt Broadside:		YES											
+	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Active docks:			( "cargo" )								
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					AWACS											
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Max Debris Speed:		150												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		0.8												
+$Beams Easily Hit:		YES												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			600.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "depart" )				
+	+Auto attacks:			YES											
+	+Attempt Broadside:		YES											
+	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Gas Miner										
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Max Debris Speed:		150												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		1.0												
+$Beams Easily Hit:		YES												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			600.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "depart" )				
+	+Auto attacks:			YES											
+	+Attempt Broadside:		YES											
+	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Cruiser											
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Max Debris Speed:		150												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		0.9												
+$Beams Easily Hit:		YES												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			600.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "depart" )				
+	+Auto attacks:			YES											
+	+Attempt Broadside:		YES											
+	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Corvette										
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Max Debris Speed:		150												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		0.3333											
+$Beams Easily Hit:		YES												
+$Protected on cripple:	YES												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			600.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "attack ship" "depart" )				
+	+Auto attacks:			YES											
+	+Attempt Broadside:		YES											
+	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Capital											
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Warp Pushes:			YES												
+$Max Debris Speed:		100												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		0.2												
+$Beams Easily Hit:		YES												
+$Protected on cripple:	NO												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			750.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "waypoints" "waypoints once" "depart" "stay still" "play dead" "stay near ship" )						
+	+Accept Player Orders:	YES											
+	+Player Orders:			( "depart" )								
+	+Auto attacks:			YES											
+	+Attempt Broadside:		YES											
+	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Super Cap										
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Warp Pushes:			YES												
+$Max Debris Speed:		100												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		0.075											
+$Beams Easily Hit:		YES												
+$Protected on cripple:	NO												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			1000.0										
+$AI:																	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "waypoints" "waypoints once" "depart" "stay still" "play dead" "stay near ship" )						
+	+Auto attacks:			YES											
+	+Attempt Broadside:		YES											
+	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Can Form Wing:			YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Drydock											
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Max Debris Speed:		100												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		0.5												
+$Beams Easily Hit:		YES												
+$Protected on cripple:	NO												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			750.0										
+$AI:																	
+	+Accept Player Orders:	YES											
+	+Auto attacks:			YES											
+	+Attempt Broadside:		YES											
+	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+$Name:					Knossos Device									
+$Counts for Alone:		YES												
+$Praise Destruction:	YES												
+$On Hotkey List:		YES												
+$Target as Threat:		YES												
+$Show Attack Direction:	YES												
+$Max Debris Speed:		100												
+$FF Multiplier:			1.0												
+$EMP Multiplier:		0.10											
+$Protected on cripple:	NO												
+$Fog:																	
+	+Start dist:			10.0										
+	+Compl dist:			1000.0										
+$AI:																	
+	+Auto attacks:			YES											
+	+Attempt Broadside:		YES											
+	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
+	+Guards attack this:	YES											
+	+Turrets attack this:	YES											
+	+Passive docks:			( "support" )								
+	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
+$Vaporize Percent Chance: 0.0											
+#End																	

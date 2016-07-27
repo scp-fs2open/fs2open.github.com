@@ -10,7 +10,7 @@
 
 
 #include "debugconsole/console.h"
-#include "freespace2/freespace.h"	// for Missiontime
+#include "freespace.h"	// for Missiontime
 #include "io/timer.h"
 #include "object/object.h"
 #include "ship/ship.h"

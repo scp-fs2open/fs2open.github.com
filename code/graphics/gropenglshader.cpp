@@ -9,7 +9,7 @@
 
 
 #include "cmdline/cmdline.h"
-#include "globalincs/def_files.h"
+#include "def_files/def_files.h"
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 #include "graphics/gropengldraw.h"
@@ -364,7 +364,7 @@ static SCP_string opengl_load_shader(const char *filename)
 	//If we're still here, proceed with internals
 	mprintf(("   Loading built-in default shader for: %s\n", filename));
 	auto def_shader = defaults_get_file(filename);
-	content.assign(def_shader);
+	content.assign(reinterpret_cast<const char*>(def_shader.data), def_shader.size);
 
 	return content;
 }

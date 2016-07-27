@@ -1,0 +1,32 @@
+uniform float texSize;
+uniform float tapSize;
+uniform int level;
+uniform sampler2D tex;
+// Gaussian Blur
+// 2 passes required
+void main()
+{
+	// Echelon9 - Due to Apple not implementing array constructors in OS X's
+	// GLSL implementation we need to setup the arrays this way as a workaround
+	float BlurWeights[6];
+	BlurWeights[5] = 0.0402;
+	BlurWeights[4] = 0.0623;
+	BlurWeights[3] = 0.0877;
+	BlurWeights[2] = 0.1120;
+	BlurWeights[1] = 0.1297;
+	BlurWeights[0] = 0.1362;
+	vec4 sum = texture2DLod(tex, gl_TexCoord[0].xy, float(level)) * BlurWeights[0];
+#ifdef PASS_0
+	for (int i = 1; i < 6; i++) {
+		sum += texture2DLod(tex, vec2(clamp(gl_TexCoord[0].x - float(i) * (texSize) * tapSize, 0.0, 1.0), gl_TexCoord[0].y), float(level)) * BlurWeights[i];
+		sum += texture2DLod(tex, vec2(clamp(gl_TexCoord[0].x + float(i) * (texSize) * tapSize, 0.0, 1.0), gl_TexCoord[0].y), float(level)) * BlurWeights[i];
+	}
+#endif
+#ifdef PASS_1
+	for (int i = 1; i < 6; i++) {
+		sum += texture2DLod(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y - float(i) * (texSize) * tapSize, 0.0, 1.0)), float(level)) * BlurWeights[i];
+		sum += texture2DLod(tex, vec2(gl_TexCoord[0].x, clamp(gl_TexCoord[0].y + float(i) * (texSize) * tapSize, 0.0, 1.0)), float(level)) * BlurWeights[i];
+	}
+#endif
+	gl_FragColor = vec4(sum.rgb, 1.0);
+}

@@ -18,7 +18,7 @@
 #include "osapi/osapi.h"
 #include "osapi/outwnd.h"
 #include "graphics/2d.h"
-#include "freespace2/freespaceresource.h"
+#include "freespaceresource.h"
 #include "globalincs/systemvars.h"
 #include "cfile/cfilesystem.h"
 #include "globalincs/globals.h"

@@ -3,11 +3,7 @@
 
 
 // throw
-#ifdef HAVE_CXX11
 void * operator new (size_t size)
-#else
-void * operator new (size_t size) throw (std::bad_alloc)
-#endif // CPP11_STD
 {
 	void *p = vm_malloc_q(size);
 
@@ -23,11 +19,7 @@ void operator delete (void *p) throw()
 	vm_free(p);
 }
 
-#ifdef HAVE_CXX11
 void * operator new [] (size_t size)
-#else
-void * operator new [] (size_t size) throw (std::bad_alloc)
-#endif // CPP11_STD
 {
 	void *p = vm_malloc_q(size);
 

@@ -15,7 +15,7 @@
 #include <math.h>
 
 #include "ai/ai_profiles.h"  // for the damping issue
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "io/timer.h"
 #include "mission/missionparse.h"
 #include "mod_table/mod_table.h"

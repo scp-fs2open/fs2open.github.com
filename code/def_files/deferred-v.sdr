@@ -1,0 +1,13 @@
+uniform vec3 scale;
+uniform int lightType;
+
+varying vec3 lightPosition;
+varying vec3 beamVec;
+
+void main()
+{
+	gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * vec4(gl_Vertex.xyz * scale,1.0);
+	lightPosition = gl_ModelViewMatrix[3].xyz;
+	if(lightType == 1)
+		beamVec = vec3(gl_ModelViewMatrix * vec4(0.0, 0.0, -scale.z, 0.0));
+}

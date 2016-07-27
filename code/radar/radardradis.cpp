@@ -6,7 +6,7 @@
  */
 
 #include "bmpman/bmpman.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"

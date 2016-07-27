@@ -269,7 +269,15 @@ xcuserdata
 *.xccheckout
 
 ####
+# Visual Studio Code
+.vscode
+
+####
 # Documentation
 #
 documentation/doxygen/*
 !documentation/doxygen/.gitkeep
+
+
+.idea/*
+projects/*

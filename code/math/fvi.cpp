@@ -221,12 +221,12 @@ int fvi_segment_sphere(vec3d *intp, const vec3d *p0, const vec3d *p1, const vec3
 	dist = vm_vec_dist(&closest_point,sphere_pos);
 
 	if (dist < sphere_rad) {
-		float dist2,rad2,shorten;
+		float dist2,radius2,shorten;
 
 		dist2 = dist*dist;
-		rad2 = sphere_rad*sphere_rad;
+		radius2 = sphere_rad*sphere_rad;
 
-		shorten = fl_sqrt(rad2 - dist2);
+		shorten = fl_sqrt(radius2 - dist2);
 
 		int_dist = w_dist-shorten;
 
@@ -285,12 +285,12 @@ int fvi_ray_sphere(vec3d *intp, const vec3d *p0, const vec3d *p1, const vec3d *s
 	dist = vm_vec_dist(&closest_point,sphere_pos);
 
 	if (dist < sphere_rad) {
-		float dist2,rad2,shorten;
+		float dist2, radius2, shorten;
 
 		dist2 = dist*dist;
-		rad2 = sphere_rad*sphere_rad;
+		radius2 = sphere_rad*sphere_rad;
 
-		shorten = fl_sqrt(rad2 - dist2);
+		shorten = fl_sqrt(radius2 - dist2);
 
 		int_dist = w_dist-shorten;
 

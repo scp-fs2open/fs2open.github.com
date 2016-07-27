@@ -21,7 +21,7 @@
 #include "network/multimsgs.h"
 #include "network/multiui.h"
 #include "mission/missionparse.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "io/key.h"
 #include "gamesnd/gamesnd.h"

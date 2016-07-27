@@ -1,0 +1,149 @@
+#ifdef APPLE
+ #extension GL_ARB_draw_instanced : enable
+#else
+ #ifdef __GLSL_CG_DATA_TYPES
+  #extension GL_EXT_draw_instanced : enable
+ #else
+  #extension GL_ARB_draw_instanced : enable
+ #endif
+#endif
+#ifdef FLAG_ENV_MAP
+uniform mat4 envMatrix;
+varying vec3 envReflect;
+#endif
+#ifdef FLAG_NORMAL_MAP
+varying mat3 tbnMatrix;
+#endif
+#ifdef FLAG_FOG
+varying float fogDist;
+#endif
+#ifdef FLAG_TRANSFORM
+#extension GL_ARB_texture_buffer_object : enable
+attribute float model_id;
+uniform samplerBuffer transform_tex;
+uniform int buffer_matrix_offset;
+#ifdef FLAG_SHADOW_MAP
+varying float not_visible_g;
+#else
+varying float not_visible;
+#endif
+#endif
+#ifdef FLAG_SHADOW_MAP
+varying float Instance;
+uniform mat4 shadow_proj_matrix[4];
+#endif
+#ifdef FLAG_SHADOWS
+uniform mat4 shadow_mv_matrix;
+uniform mat4 shadow_proj_matrix[4];
+uniform mat4 model_matrix;
+varying vec4 shadow_vec[4];
+varying vec4 pos_shadow;
+#endif
+#ifdef FLAG_THRUSTER
+uniform float thruster_scale;
+#endif
+#ifdef FLAG_CLIP
+uniform int use_clip_plane;
+uniform vec3 clip_normal;
+uniform vec3 clip_position;
+//uniform vec4 clip_plane;
+uniform mat4 world_matrix;
+#ifdef FLAG_SHADOW_MAP
+varying float clip_distance_g;
+#else
+varying float clip_distance;
+#endif
+#endif
+varying vec4 position;
+varying vec3 lNormal;
+#ifdef FLAG_TRANSFORM
+#define TEXELS_PER_MATRIX 4
+void getModelTransform(inout mat4 transform, inout float invisible, int id, int matrix_offset)
+{
+	transform[0] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX);
+	transform[1] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX + 1);
+	transform[2] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX + 2);
+	transform[3] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX + 3);
+	invisible = transform[3].w;
+	transform[3].w = 1.0;
+}
+#endif
+#ifdef FLAG_SHADOWS
+vec4 transformToShadowMap(int i, vec4 pos)
+{
+	vec4 shadow_proj;
+	shadow_proj = shadow_proj_matrix[i] * pos;
+	shadow_proj += 1.0;
+	shadow_proj *= 0.5;
+	shadow_proj.w = shadow_proj.z;
+	shadow_proj.z = float(i);
+	return shadow_proj;
+}
+#endif
+void main()
+{
+	mat4 orient = mat4(1.0);
+	mat4 scale = mat4(1.0);
+ #ifdef FLAG_TRANSFORM
+	float invisible;	getModelTransform(orient, invisible, int(model_id), buffer_matrix_offset);
+  #ifdef FLAG_SHADOW_MAP
+	not_visible_g = invisible;
+  #else
+	not_visible = invisible;
+  #endif
+ #endif
+	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
+	vec4 vertex = gl_Vertex;
+ #ifdef FLAG_THRUSTER
+	if(vertex.z < -1.5) {
+		vertex.z *= thruster_scale;
+	}
+ #endif
+	position = gl_ModelViewMatrix * orient * vertex;
+ #ifdef FLAG_SHADOW_MAP
+	gl_Position = position;
+  #ifdef APPLE
+	 Instance = float(gl_InstanceIDARB);
+  #else
+	 Instance = float(gl_InstanceID);
+  #endif
+ #else
+	gl_Position = gl_ProjectionMatrix * position;
+ #endif
+	gl_FrontColor = gl_Color;
+	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);
+ // Transform the normal into eye space and normalize the result.
+	vec3 normal = normalize(gl_NormalMatrix * mat3(orient) * gl_Normal);
+	lNormal = normal;
+ #ifdef FLAG_SHADOWS
+		pos_shadow = shadow_mv_matrix * model_matrix * orient * gl_Vertex;
+		shadow_vec[0] = transformToShadowMap(0, pos_shadow);
+		shadow_vec[1] = transformToShadowMap(1, pos_shadow);
+		shadow_vec[2] = transformToShadowMap(2, pos_shadow);
+		shadow_vec[3] = transformToShadowMap(3, pos_shadow);
+ #endif
+ #ifdef FLAG_NORMAL_MAP
+ // Setup stuff for normal maps
+	vec3 t = normalize(gl_NormalMatrix * mat3(orient) * gl_MultiTexCoord1.xyz);
+	vec3 b = cross(normal, t) * gl_MultiTexCoord1.w;
+	tbnMatrix = mat3(t, b, normal);
+ #endif
+ #ifdef FLAG_ENV_MAP
+ // Environment mapping reflection vector.
+	envReflect = reflect(normalize(position.xyz), normal);
+	envReflect = vec3(envMatrix * vec4(envReflect, 0.0));
+ #endif
+ #ifdef FLAG_FOG
+	fogDist = clamp((gl_Position.z - gl_Fog.start) * 0.75 * gl_Fog.scale, 0.0, 1.0);
+ #endif
+ #ifdef FLAG_CLIP
+   float clip_dist = 0.0;
+	if(use_clip_plane == 1) clip_dist = dot(normalize((world_matrix*orient*vertex).xyz - clip_position), clip_normal);
+  #ifdef FLAG_SHADOW_MAP
+   clip_distance_g = clip_dist;
+  #else
+   clip_distance = clip_dist;
+  #endif
+ #endif
+	gl_ClipVertex = (gl_ModelViewMatrix * orient * vertex);
+}

@@ -26,6 +26,8 @@
 
 #include "windows_stub/config.h"
 
+#include "globalincs/scp_defines.h"
+
 #include "SDL.h"
 
 // value to represent an uninitialized state in any int or uint
@@ -34,7 +36,11 @@
 #define MAX_PLAYERS	12
 
 #define USE_INLINE_ASM 1		// Define this to use inline assembly
-#define STRUCT_CMP(a, b) memcmp((void *) &a, (void *) &b, sizeof(a))
+#define STRUCT_CMP(a, b) memcmp((void *)&a, (void *)&b, sizeof(a))
+
+#ifdef LOCAL
+#undef LOCAL
+#endif
 
 #define LOCAL static			// make module local varilable static.
 
@@ -575,7 +581,7 @@ SCP_string dump_stacktrace();
 // would prefer std::is_trivially_copyable but it's not supported by gcc yet
 // ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
 #ifndef NDEBUG
-	#if defined(HAVE_CXX11)
+	#if SCP_COMPILER_CXX_STATIC_ASSERT && SCP_COMPILER_CXX_AUTO_TYPE
 	// feature support seems to be: gcc   clang   msvc
 	// auto                         4.4   2.9     2010
 	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)

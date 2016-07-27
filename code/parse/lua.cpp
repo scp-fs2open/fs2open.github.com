@@ -7,7 +7,7 @@
 #include "cutscene/movie.h"
 #include "debris/debris.h"
 #include "external_dll/trackirpublic.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/linklist.h"
 #include "graphics/2d.h"
@@ -17148,7 +17148,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 
 		//***Create ID entries
 		lua_pushstring(L, "__adeid");
-		lua_pushnumber(L, ADE_INDEX(this));
+		lua_pushnumber(L, static_cast<lua_Number>(ADE_INDEX(this)));
 		lua_rawset(L, mtb_ldx);
 
 		if(DerivatorIdx != UINT_MAX)

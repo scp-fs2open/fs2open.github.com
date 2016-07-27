@@ -1,0 +1,12 @@
+
+SET(FSO_MAC_FRAMEWORKS "${CMAKE_CURRENT_BINARY_DIR}/Frameworks" CACHE INTERNAL "")
+
+IF(NOT EXISTS ${FSO_MAC_FRAMEWORKS})
+	MESSAGE(STATUS "Extracting Mac OSX framework files")
+	execute_process(COMMAND ${CMAKE_COMMAND} -E tar xfz "${CMAKE_CURRENT_SOURCE_DIR}/Frameworks.tgz"
+					WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} RESULT_VARIABLE rv)
+
+	IF(NOT ${rv} EQUAL 0)
+		MESSAGE(SEND_ERROR "Failed to extract frameworks (${CMAKE_CURRENT_SOURCE_DIR}/Frameworks.tgz), you will have to manually unpack them into '${CMAKE_CURRENT_BINARY_DIR}'.")
+	ENDIF(NOT ${rv} EQUAL 0)
+ENDIF(NOT EXISTS ${FSO_MAC_FRAMEWORKS})

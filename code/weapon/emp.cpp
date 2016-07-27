@@ -13,7 +13,7 @@
 
 
 #include "debugconsole/console.h"
-#include "freespace2/freespace.h"
+#include "freespace.h"
 #include "globalincs/linklist.h"
 #include "hud/hud.h"
 #include "hud/hudlock.h"

@@ -1,7 +1,7 @@
 
 #include "cmdline/cmdline.h"
-#include "freespace2/freespace.h"
-#include "globalincs/def_files.h"
+#include "freespace.h"
+#include "def_files/def_files.h"
 #include "graphics/gropengl.h"
 #include "graphics/gropengldraw.h"
 #include "graphics/gropenglextension.h"
@@ -623,7 +623,7 @@ static bool opengl_post_init_table()
 		if (cf_exists_full("post_processing.tbl", CF_TYPE_TABLES))
 			read_file_text("post_processing.tbl", CF_TYPE_TABLES);
 		else
-			read_file_text_from_array(defaults_get_file("post_processing.tbl"));
+			read_file_text_from_default(defaults_get_file("post_processing.tbl"));
 
 		reset_parse();
 
