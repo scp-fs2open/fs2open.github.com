@@ -69,6 +69,9 @@ IF (WIN32)
 	OPTION(FSO_USE_VOICEREC "Enable voice recognition support" ON)
 
 	OPTION(FSO_BUILD_FRED2 "Build FRED2 binary" ON)
+elseif(UNIX)
+	option(FSO_BUILD_APPIMAGE "Build an AppImage package" OFF)
+	set(APPIMAGE_ASSISTANT "" CACHE STRING "The root directory of an AppImage clone.")
 ENDIF(WIN32)
 
 OPTION(FSO_BUILD_TOOLS "Build tools related to FSO" OFF)
@@ -125,6 +128,10 @@ SET(GENERATED_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated_source)
 
 include(generateHeaders)
 
+if(FSO_BUILD_APPIMAGE)
+	include(appimage)
+endif()
+
 # This includes source code for some tools, either used in the build or also for something else
 ADD_SUBDIRECTORY(tools)
 
@@ -166,7 +173,9 @@ IF (WIN32)
 	message(STATUS "Building FRED2: ${FSO_BUILD_FRED2}")
 	message(STATUS "Using text to speech: ${FSO_USE_SPEECH}")
 	message(STATUS "Using voice recogition: ${FSO_USE_VOICEREC}")
-ENDIF(WIN32)
+elseif(UNIX)
+	message(STATUS "Building AppImage: ${FSO_BUILD_APPIMAGE}")
+ENDIF()
 message(STATUS "Building FSO tools: ${FSO_BUILD_TOOLS}")
 message(STATUS "Building wxFRED: ${FSO_BUILD_WXFRED2}")
 message(STATUS "Fatal warnings: ${FSO_FATAL_WARNINGS}")

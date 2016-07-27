@@ -14,6 +14,13 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     	tar -xzf /tmp/cmake.tar.gz -C $HOME/cmake/ --strip-components=1
     fi
 	export PATH=$HOME/cmake/bin:$PATH
+    
+    cd $HOME
+    
+    if [ "${BUILD_DEPLOYMENT}" = true ]; then
+        wget -c "https://github.com/probonopd/AppImageKit/releases/download/5/AppImageAssistant" # (64-bit)
+        chmod a+x ./AppImageAssistant
+    fi
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     gem install xcpretty xcpretty-travis-formatter thefox-pastebin
     

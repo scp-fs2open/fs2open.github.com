@@ -1,0 +1,4 @@
+[Desktop Entry]
+Name=FreeSpace Open
+Exec=$<TARGET_FILE_NAME:Freespace2>
+Icon=app_icon.png
