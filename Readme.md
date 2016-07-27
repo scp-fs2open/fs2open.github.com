@@ -2,7 +2,7 @@ FreeSpace2 *S*ource *C*ode *P*roject
 ==
 Building
 --
-For building you will need [CMake](http://www.cmake.org/cmake/resources/software.html). Only version 2.8.12 has been tested extensively but older version may still work. Once you have installed CMake you should create a build directory where the project/make files should be created, **do not create them inside the source tree!**<br>
+For building you will need [CMake](http://www.cmake.org/cmake/resources/software.html). Version 3.4 is required. Once you have installed CMake you should create a build directory where the project/make files should be created, **do not create them inside the source tree!**<br>
 <br>
 On Windows you can use the `cmake-gui` executable to get a nice GUI, on Unix just use `cmake`. Use the newly created directory as build directory (change to this directory on Unix) and run cmake. On Windows this can be done by clicking the `Configure` button. Choose your compiler version and hit `Generate` when configuring is done. <br>
 Depending on the makefile generator used build the `all` or `ALL_BUILD` target to compile the project.<br>
