@@ -237,7 +237,6 @@ set(file_root_generated
 set (file_root_globalincs
 	globalincs/alphacolors.cpp
 	globalincs/alphacolors.h
-	globalincs/fsmemory.cpp
 	globalincs/fsmemory.h
 	globalincs/globals.h
 	globalincs/linklist.h
@@ -263,6 +262,30 @@ IF (WIN32)
 		globalincs/windebug.cpp
 	)
 ENDIF(WIN32)
+
+set(file_root_globalincs_memory
+	globalincs/memory/memory.h
+	globalincs/memory/memory.cpp
+	globalincs/memory/newdelete.cpp
+	globalincs/memory/debug.h
+	globalincs/memory/debug.cpp
+	globalincs/memory/release.h
+	globalincs/memory/utils.h
+)
+
+# Add conditions for compiler specialization
+if (MSVC)
+set(file_root_globalincs_memory
+	${file_root_globalincs_memory}
+	globalincs/memory/debug_msvc.cpp
+)
+else()
+	# If no compiler matches, use the default version
+	set(file_root_globalincs_memory
+		${file_root_globalincs_memory}
+		globalincs/memory/debug_generic.cpp
+	)
+endif()
 
 set(file_root_globalincs_toolchain
 	globalincs/toolchain/clang.h
@@ -941,6 +964,7 @@ source_group("GameSequence"                       FILES ${file_root_gamesequence
 source_group("GameSnd"                            FILES ${file_root_gamesnd})
 source_group("Generated Files"                    FILES ${file_root_generated})
 source_group("GlobalIncs"                         FILES ${file_root_globalincs})
+source_group("GlobalIncs\\Memory"                 FILES ${file_root_globalincs_memory})
 source_group("GlobalIncs\\Toolchain"              FILES ${file_root_globalincs_toolchain})
 source_group("Graphics"                           FILES ${file_root_graphics})
 source_group("Graphics\\OpenGLGr"                 FILES ${file_root_graphics_openglgr})
@@ -1017,6 +1041,7 @@ set (file_root
 	${file_root_gamesnd}
 	${file_root_generated}
 	${file_root_globalincs}
+	${file_root_globalincs_memory}
 	${file_root_globalincs_toolchain}
 	${file_root_graphics}
 	${file_root_graphics_openglgr}

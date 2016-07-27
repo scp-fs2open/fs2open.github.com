@@ -447,7 +447,7 @@ bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
 
 
 	if (m_vbp->array_list == NULL) {
-		m_vbp->array_list = (GLfloat*)vm_malloc_q(m_vbp->vbo_size);
+		m_vbp->array_list = (GLfloat*)vm_malloc(m_vbp->vbo_size, memory::quiet_alloc);
 
 		// return invalid if we don't have the memory
 		if (m_vbp->array_list == NULL) {
@@ -458,7 +458,7 @@ bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
 	}
 
 	if (m_vbp->index_list == NULL) {
-		m_vbp->index_list = (GLubyte*)vm_malloc_q(m_vbp->ibo_size);
+		m_vbp->index_list = (GLubyte*)vm_malloc(m_vbp->ibo_size, memory::quiet_alloc);
 
 		// return invalid if we don't have the memory
 		if (m_vbp->index_list == NULL) {

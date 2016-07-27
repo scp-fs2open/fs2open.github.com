@@ -1184,38 +1184,36 @@ void game_loading_callback(int count)
 #ifndef NDEBUG
 	if(Cmdline_show_mem_usage)
 	{
-#ifdef _WIN32
-		void memblockinfo_sort();
-		void memblockinfo_sort_get_entry(int index, char *filename, int *size);
-
-		char mem_buffer[1000];
-		char filename[35];
-		int size;
-		int i;
 		int line_height = gr_get_font_height() + 1;
+		size_t i;
+		char mem_buffer[1000];
 
-	  	memblockinfo_sort();
+		memory::sort_memory_blocks();
 		for(i = 0; i < 30; i++)
 		{
-			memblockinfo_sort_get_entry(i, filename, &size);
+			const char* full_name;
+			size_t size;
+			if (!memory::get_memory_block(i, full_name, size))
+			{
+				break;
+			}
 
 			size /= 1024;
 
 			if(size == 0)
 				break;
 
-			char *short_name = strrchr(filename, '\\');
+			const char *short_name = strrchr(full_name, DIR_SEPARATOR_CHAR);
 			if(short_name == NULL)
-				short_name = filename;
+				short_name = full_name;
 			else
 				short_name++;
 
-			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
+			sprintf(mem_buffer,"%s:\t" SIZE_T_ARG " K", short_name, size);
 			gr_string( 20, 220 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
 		}
-		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
+		sprintf(mem_buffer,"Total RAM:\t" SIZE_T_ARG " K", memory::get_used_memory() / 1024);
 		gr_string( 20, 230 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
-#endif	// _WIN32
 	}
 #endif	// !NDEBUG
 
@@ -2281,8 +2279,7 @@ void game_show_framerate()
 		gr_set_color_fast(&HUD_color_debug);
 
 		{
-			extern int TotalRam;
-			gr_printf_no_resize( sx, sy, NOX("DYN: %d KB\n"), TotalRam/1024 );
+			gr_printf_no_resize( sx, sy, NOX("DYN: %d KB\n"), memory::get_used_memory()/1024 );
 			sy += line_height;
 		}	
 
@@ -2314,41 +2311,39 @@ void game_show_framerate()
 		gr_printf_no_resize(sx, sy, NOX("Player Pos: (%d,%d,%d)"), fl2i(Player_obj->pos.xyz.x), fl2i(Player_obj->pos.xyz.y), fl2i(Player_obj->pos.xyz.z));
 	}
 
-#ifdef _WIN32
-	if (Cmdline_show_mem_usage) {
-		void memblockinfo_sort();
-		void memblockinfo_sort_get_entry(int index, char *filename, int *size);
 
+	if(Cmdline_show_mem_usage)
+	{
+		size_t i;
 		char mem_buffer[1000];
-		char filename[MAX_PATH];
-		int size;
 
-	  	memblockinfo_sort();
-
-		int mi = 0;
-		for( ; mi < 30; mi++) {
-			memblockinfo_sort_get_entry(mi, filename, &size);
+		memory::sort_memory_blocks();
+		for(i = 0; i < 30; i++)
+		{
+			const char* full_name;
+			size_t size;
+			if (!memory::get_memory_block(i, full_name, size))
+			{
+				break;
+			}
 
 			size /= 1024;
 
-			if (size == 0)
+			if(size == 0)
 				break;
 
-			char *short_name = strrchr(filename, '\\');
-
-			if (short_name == NULL)
-				short_name = filename;
+			const char *short_name = strrchr(full_name, DIR_SEPARATOR_CHAR);
+			if(short_name == NULL)
+				short_name = full_name;
 			else
 				short_name++;
 
-			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
-			gr_string( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + (line_height * 12) + (mi*line_height), mem_buffer, GR_RESIZE_NONE);
+			sprintf(mem_buffer,"%s:\t" SIZE_T_ARG " K", short_name, size);
+			gr_string( 20, 220 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
 		}
-
-		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
-		gr_string( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + (line_height * 13) + (mi*line_height), mem_buffer, GR_RESIZE_NONE);
+		sprintf(mem_buffer,"Total RAM:\t" SIZE_T_ARG " K", memory::get_used_memory() / 1024);
+		gr_string( 20, 230 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
 	}
-#endif
 
 	MONITOR_INC(NumPolys, modelstats_num_polys);
 	MONITOR_INC(NumPolysDrawn, modelstats_num_polys_drawn );
@@ -6928,11 +6923,6 @@ int game_main(int argc, char *argv[])
 		Networking_disabled = 1;
 	}
 
-#ifndef NDEBUG
-	extern void windebug_memwatch_init();
-	windebug_memwatch_init();
-#endif
-
 #ifdef _WIN32
 	// Find out how much RAM is on this machine
 	MEMORYSTATUS ms;
@@ -6952,11 +6942,6 @@ int game_main(int argc, char *argv[])
 		os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, XSTR( "FreeSpace requires virtual memory to run.\r\n", 196), XSTR( "No Virtual Memory", 197) );
 		return 1;
 	}
-
-	if (!vm_init(24*1024*1024)) {
-		os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199));
-		return 1;
-	}
 		
 	char *tmp_mem = (char *) vm_malloc(16 * 1024 * 1024);
 	if (!tmp_mem) {
@@ -6966,10 +6951,6 @@ int game_main(int argc, char *argv[])
 
 	vm_free(tmp_mem);
 	tmp_mem = NULL;
-
-#else
-	vm_init(0);
-
 #endif // _WIN32
 
 
@@ -8574,6 +8555,8 @@ int actual_main(int argc, char *argv[])
 {
 	int result = -1;
 	Assert(argc > 0);
+
+	memory::init();
 
 #ifdef WIN32
 	// Don't let more than one instance of FreeSpace run.

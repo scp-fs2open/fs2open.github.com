@@ -2116,8 +2116,8 @@ void allocate_mission_text(int size)
 		Mission_text_raw = NULL;
 	}
 
-	Mission_text = (char *) vm_malloc_q(sizeof(char) * size);
-	Mission_text_raw = (char *) vm_malloc_q(sizeof(char) * size);
+	Mission_text = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
+	Mission_text_raw = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
 
 	if ( (Mission_text == NULL) || (Mission_text_raw == NULL) ) {
 		Error(LOCATION, "Unable to allocate enough memory for Mission_text!  Aborting...\n");

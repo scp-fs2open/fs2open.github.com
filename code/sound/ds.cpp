@@ -784,7 +784,7 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 				bps = si->avg_bytes_per_sec >> 1;
 				size = si->size >> 1;
 
-				convert_buffer = (ubyte*)vm_malloc_q(size);
+				convert_buffer = (ubyte*)vm_malloc(size, memory::quiet_alloc);
 
 				if (convert_buffer == NULL) {
 					return -1;
@@ -807,7 +807,7 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 				bps = si->avg_bytes_per_sec >> 2;
 				size = si->size >> 2;
 
-				convert_buffer = (ubyte*)vm_malloc_q(size);
+				convert_buffer = (ubyte*)vm_malloc(size, memory::quiet_alloc);
 
 				if (convert_buffer == NULL) {
 					return -1;
@@ -838,7 +838,7 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 #endif
 			src_bytes_used = 0;
 
-			convert_buffer = (ubyte*)vm_malloc_q(si->size);
+			convert_buffer = (ubyte*)vm_malloc(si->size, memory::quiet_alloc);
 
 			if (convert_buffer == NULL) {
 				return -1;
@@ -907,7 +907,7 @@ int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int 
 
 	// if this is supposed to play in 3D then make sure it's mono
 	if ( (flags & DS_3D) && (n_channels > 1) ) {
-		mono_buffer = (ubyte*)vm_malloc_q(size >> 1);
+		mono_buffer = (ubyte*)vm_malloc(size >> 1, memory::quiet_alloc);
 
 		if (mono_buffer == NULL) {
 			if (convert_buffer) {

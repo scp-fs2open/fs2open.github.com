@@ -130,11 +130,11 @@ void opengl_tcache_init()
 	}
 
 	if (Textures == NULL) {
-		Textures = (tcache_slot_opengl *) vm_malloc_q(MAX_BITMAPS * sizeof(tcache_slot_opengl));
+		Textures = (tcache_slot_opengl *) vm_malloc(MAX_BITMAPS * sizeof(tcache_slot_opengl), memory::quiet_alloc);
 	}
 
 	if (Tex_used_this_frame == NULL) {
-		Tex_used_this_frame = (int *) vm_malloc_q(MAX_BITMAPS * sizeof(int));
+		Tex_used_this_frame = (int *) vm_malloc(MAX_BITMAPS * sizeof(int), memory::quiet_alloc);
 	}
 
 	if ( !Textures || !Tex_used_this_frame )

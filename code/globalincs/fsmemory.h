@@ -2,24 +2,13 @@
 #ifndef _FSMEMORY_H
 #define _FSMEMORY_H
 
-#include <new>
+#ifndef NDEBUG
+	#include "globalincs/memory/debug.h"
+#else
+	#include "globalincs/memory/release.h"
+#endif
 
-// throw
-extern void * operator new (size_t size);
-
-extern void operator delete (void *p) throw();
-
-extern void * operator new [] (size_t size);
-
-extern void operator delete [] (void *p) throw();
-
-// no-throw
-extern void * operator new (size_t size, const std::nothrow_t&) throw();
-
-extern void operator delete (void *p, const std::nothrow_t&) throw();
-
-extern void * operator new [] (size_t size, const std::nothrow_t&) throw();
-
-extern void operator delete [] (void *p, const std::nothrow_t&) throw();
+#include "globalincs/memory/memory.h"
+#include "globalincs/memory/utils.h"
 
 #endif	// _FSMEMORY_H
