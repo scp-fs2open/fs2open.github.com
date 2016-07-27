@@ -22,14 +22,14 @@ build_script:
 deploy:
     - provider: GitHub
       auth_token:
-          secure: RWe6hwCcgBdklaYvjB62kzhKn7yDBJdqoDDKYViShaEV9HkJ75HbawsBcGBimRUu
+          secure: 3kV4efHXwRnfXzmJPRAOs8D7+MhwXUXYeayI/P5y114L09kJa6b6L70beXdW7yYr
       on:
           ReleaseBuild: true        # deploy on release push only
 
     - provider: BinTray
       username: asarium
       api_key:
-          secure: 2lHma1ZreuB4CCE5hSdp+gqFjCMzUDj3tVJhP+D6EyF5wIVMLlwXFrISwnYu1kJi
+          secure: pYWqfiZhIWvFYdjVWPXNaHobmnkXIWa4+LwoiyMTEiu4Z0CiCAW0ZrMfTKVkORKz
       subject: scp-fs2open
       repo: FSO
       package: nightly
