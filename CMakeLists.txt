@@ -2,6 +2,11 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.4)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# Make sure the source and binary directory are not the sample
+if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+	message(FATAL_ERROR "Binary and source directory can not be the same! Choose another build directory.")
+endif()
+
 include(cmake/util.cmake)
 
 # Set a few policies
