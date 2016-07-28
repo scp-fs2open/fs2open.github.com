@@ -5,9 +5,9 @@ configuration:
 clone_depth: 10
 environment:
   matrix:
-    - VS_VERSION: 10
-      CMAKE_GENERATOR: Visual Studio 10 2010
-      PlatformToolset: v100
+    - VS_VERSION: 12
+      CMAKE_GENERATOR: Visual Studio 12 2013
+      PlatformToolset: v120_xp
     - VS_VERSION: 14
       CMAKE_GENERATOR: Visual Studio 14 2015
       PlatformToolset: v140_xp
