@@ -663,10 +663,10 @@ void labviewer_add_model_thrusters(model_render_params *render_info, ship_info *
 	mst.distortion_bitmap = thruster_distortion_bitmap;
 
 	mst.use_ab = Lab_thrust_afterburn;
-	mst.glow_noise = thruster_glow_noise * sip->thruster_glow_noise_mult;
 	mst.rotvel = vmd_zero_vector;
 
 	if (Lab_mode == LAB_MODE_SHIP) {
+	    mst.glow_noise = thruster_glow_noise * sip->thruster_glow_noise_mult;
 		mst.glow_rad_factor = sip->thruster01_glow_rad_factor;
 		mst.secondary_glow_rad_factor = sip->thruster02_glow_rad_factor;
 		mst.tertiary_glow_rad_factor = sip->thruster03_glow_rad_factor;
@@ -677,6 +677,7 @@ void labviewer_add_model_thrusters(model_render_params *render_info, ship_info *
 	}
 
 	if (Lab_mode == LAB_MODE_WEAPON) {
+        mst.glow_noise = thruster_glow_noise;
 		mst.glow_rad_factor = wip->thruster_glow_factor;
 	}
 
