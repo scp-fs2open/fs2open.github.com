@@ -51,7 +51,7 @@ int ssm_info_lookup(const char *name)
 
 	for (auto it = Ssm_info.cbegin(); it != Ssm_info.cend(); ++it)
 		if (!stricmp(name, it->name))
-			return std::distance(Ssm_info.cbegin(), it);
+			return (int)std::distance(Ssm_info.cbegin(), it);
 
 	return -1;
 }
@@ -204,7 +204,7 @@ void ssm_init()
 	validate_SSM_entries();
 }
 
-void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, int ssm_index)
+void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, size_t ssm_index)
 {
 	vec3d temp;
 	ssm_info *s = &Ssm_info[ssm_index];
@@ -234,7 +234,7 @@ void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, int ssm_
 		vm_vec_scale_add(&temp, start, &orient->vec.fvec, radius);
 		break;
 	default:
-		Assertion(false, "Unknown shape '%d' in SSM type #%d ('%s'). This should not be possible; get a coder!\n", s->shape, ssm_index, s->name);
+		Assertion(false, "Unknown shape '%d' in SSM type #" SIZE_T_ARG " ('%s'). This should not be possible; get a coder!\n", s->shape, ssm_index, s->name);
 		break;
 	}
 

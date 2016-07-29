@@ -34,9 +34,9 @@ typedef struct Cfile_block {
 //	int		fd;				// file descriptor
 	size_t	data_length;	// length of data for mmap
 #endif
-	int		lib_offset;
-	int		raw_position;
-	int		size;				// for packed files
+	size_t	lib_offset;
+	size_t	raw_position;
+	size_t	size;				// for packed files
 
 	size_t	max_read_len;	// max read offset, for special error handling
 	
@@ -48,6 +48,6 @@ typedef struct Cfile_block {
 extern Cfile_block Cfile_block_list[MAX_CFILE_BLOCKS];
 
 // Called once to setup the low-level reading code.
-void cf_init_lowlevel_read_code( CFILE * cfile, int lib_offset, int size, int pos );
+void cf_init_lowlevel_read_code( CFILE * cfile, size_t lib_offset, size_t size, size_t pos );
 
 #endif

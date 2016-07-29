@@ -1404,10 +1404,10 @@ void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode)
 	vec3d last_e1, last_e2;
 	vertex v[4];
 	vertex *verts[4] = {&v[0], &v[1], &v[2], &v[3]};
-	int saved_zbuffer_mode, idx;
+	int saved_zbuffer_mode;
 	int started_frame = 0;
 
-	int num_pts = pts->size();
+	size_t num_pts = pts->size();
 
 	// if we have less than 2 pts, bail
 	if(num_pts < 2) {
@@ -1431,7 +1431,7 @@ void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode)
 	last_e1 = vmd_zero_vector;
 	last_e2 = vmd_zero_vector;
 	int j;
-	for(idx=0; idx<num_pts-1; idx++) {
+	for(size_t idx=0; idx<num_pts-1; idx++) {
 		// get the start and endpoints
 		s1 = pts->at(idx);													// start 1 (on the line)
 		e1 = pts->at(idx+1);												// end 1 (on the line)

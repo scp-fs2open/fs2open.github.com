@@ -36,7 +36,7 @@ uint lastline = 0;  // Number of lines written to the console since the last com
 // Text Buffer
 uint DBROWS = 80;   // # of buffer rows
 uint DBCOLS = 80;   // # of buffer columns
-uint lastwhite = 0; // Last whitespace character encountered, used by putc for 'true' word wrapping
+size_t lastwhite = 0; // Last whitespace character encountered, used by putc for 'true' word wrapping
 ubyte DTABS = 4;    //!< Tab size in spaces
 
 /**
@@ -217,10 +217,10 @@ void dc_draw_cursor( SCP_string &cmd_string, int x, int y )
 
 void dc_draw_window(bool show_prompt)
 {
-	uint cmd_lines;                 // Number of lines for the command string
-	uint buffer_lines;              // Number of lines from the buffer to draw
-	uint i;                         // The current row we're drawing
-	uint j;                         // The current row of the command string we're drawing
+	size_t cmd_lines;               // Number of lines for the command string
+	size_t buffer_lines;            // Number of lines from the buffer to draw
+	size_t i;                       // The current row we're drawing
+	size_t j;                       // The current row of the command string we're drawing
 	SCP_string out_str;             // The command string + prompt character
 	SCP_string::iterator str_it;    // Iterator to out_str
 
@@ -239,7 +239,7 @@ void dc_draw_window(bool show_prompt)
 	// Ensure we don't scroll too far
 	dc_scroll_x = MIN(dc_scroll_x, (DBCOLS - DCOLS));
 	if (dc_buffer.size() >= buffer_lines) {
-		dc_scroll_y = MIN(dc_scroll_y, (dc_buffer.size() - buffer_lines));
+		dc_scroll_y = MIN(dc_scroll_y, (int)(dc_buffer.size() - buffer_lines));
 	} else {
 		dc_scroll_y = 0;	// Disallow vscroll until the buffer is larger than the window
 	}
@@ -247,7 +247,7 @@ void dc_draw_window(bool show_prompt)
 	// Draw the buffer strings
 	for (i = 0; i < buffer_lines; ++i) {
 		if ((i + dc_scroll_y) < dc_buffer.size()) {
-			gr_string(gr_screen.center_offset_x, gr_screen.center_offset_y + ((i * row_height) + row_height), dc_buffer[i + dc_scroll_y].substr(dc_scroll_x).c_str(), GR_RESIZE_NONE);
+			gr_string(gr_screen.center_offset_x, gr_screen.center_offset_y + (((int)i * row_height) + row_height), dc_buffer[i + dc_scroll_y].substr(dc_scroll_x).c_str(), GR_RESIZE_NONE);
 		}
 	}
 
@@ -265,9 +265,9 @@ void dc_draw_window(bool show_prompt)
 				++j;
 			}
 		}
-		gr_string(gr_screen.center_offset_x, gr_screen.center_offset_y + ((i * row_height) + row_height), out_str.c_str(), GR_RESIZE_NONE);
+		gr_string(gr_screen.center_offset_x, gr_screen.center_offset_y + (((int)i * row_height) + row_height), out_str.c_str(), GR_RESIZE_NONE);
 
-		dc_draw_cursor(out_str, 0, ((i * row_height)));
+		dc_draw_cursor(out_str, 0, (((int)i * row_height)));
 		gr_set_color_fast(&Color_normal);
 	}
 }

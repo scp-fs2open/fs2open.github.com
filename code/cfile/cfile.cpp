@@ -107,7 +107,7 @@ static const char *Cfile_cdrom_dir = NULL;
 //
 static int cfget_cfile_block();
 static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE * fp, int type);
-static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size);
+static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, size_t offset, size_t size);
 
 #if defined _WIN32
 static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type);
@@ -183,9 +183,8 @@ static bool cfile_in_root_dir(const char *exe_path)
  */
 int cfile_init(const char *exe_dir, const char *cdrom_dir)
 {
-	int i;
-
-	encrypt_init();	  /* initialize encryption */
+	// initialize encryption
+	encrypt_init();	
 
 	if (cfile_inited) {
 		return 0;
@@ -195,7 +194,7 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 
 	strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
 	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
-	i = strlen(buf);
+	size_t i = strlen(buf);
 
 	// are we in a root directory?		
 	if(cfile_in_root_dir(buf)){
@@ -407,7 +406,7 @@ int cfile_flush_dir(int dir_type)
 	// proceed to delete the files
 	del_count = 0;
 #if defined _WIN32
-	int find_handle;
+	intptr_t find_handle;
 	_finddata_t find;
 	find_handle = _findfirst( "*", &find );
 	if (find_handle != -1) {
@@ -459,11 +458,10 @@ int cfile_flush_dir(int dir_type)
 //    Returns: new filename or filepath with extension.
 char *cf_add_ext(const char *filename, const char *ext)
 {
-	int flen, elen;
 	static char path[MAX_PATH_LEN];
 
-	flen = strlen(filename);
-	elen = strlen(ext);
+	size_t flen = strlen(filename);
+	size_t elen = strlen(ext);
 	Assert(flen < MAX_PATH_LEN);
 	strcpy_s(path, filename);
 	if ((flen < 4) || stricmp(path + flen - elen, ext)) {
@@ -515,7 +513,7 @@ int cf_access(const char *filename, int dir_type, int mode)
 // If offset equates to boolean true, it was found in a VP and the logic will negate the function return
 int cf_exists(const char *filename, int dir_type)
 {
-	int offset = 1;
+	size_t offset = 1;
 
 	if ( (filename == NULL) || !strlen(filename) )
 		return 0;
@@ -758,7 +756,7 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 	//================================================
 	// Search for file on disk, on cdrom, or in a packfile
 
-	int offset, size;
+	size_t offset, size;
 	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
 	strcpy_s(copy_file_path, file_path);
 
@@ -819,7 +817,7 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 // returns:		success	==> address of CFILE structure
 //				error	==> NULL
 //
-CFILE *_cfopen_special(const char* source, int line, const char *file_path, const char *mode, const int size, const int offset, int dir_type)
+CFILE *_cfopen_special(const char* source, int line, const char *file_path, const char *mode, const size_t size, const size_t offset, int dir_type)
 {
 	if ( !cfile_inited) {
 		Int3();
@@ -1019,7 +1017,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int t
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, int offset, int size)
+static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, size_t offset, size_t size)
 {
 	// Found it in a pack file
 	int cfile_block_index;
@@ -1388,7 +1386,7 @@ int cfwrite_string(const char *buf, CFILE *file)
 	if ( (!buf) || (buf && !buf[0]) ) {
 		return cfwrite_char(0, file);
 	} 
-	int len = strlen(buf);
+	int len = (int)strlen(buf);
 	if(!cfwrite(buf, len, 1, file)){
 		return 0;
 	}
@@ -1397,7 +1395,7 @@ int cfwrite_string(const char *buf, CFILE *file)
 
 int cfwrite_string_len(const char *buf, CFILE *file)
 {
-	int len = strlen(buf);
+	int len = (int)strlen(buf);
 
 	if(!cfwrite_int(len, file)){
 		return 0;
@@ -1423,7 +1421,10 @@ int cfilelength( CFILE * cfile )
 	Assert(cb->fp != NULL);
 
 	// cb->size gets set at cfopen
-	return cb->size;
+	
+	// The rest of the code still uses ints, do an overflow check to detect cases where this fails
+	Assertion(cb->size <= std::numeric_limits<size_t>::max(), "Integer overflow in cfilelength! A file is too large (but I don't know which...).");
+	return (int) cb->size;
 }
 
 // cfwrite() writes to the file
@@ -1468,7 +1469,7 @@ int cfwrite(const void *buf, int elsize, int nelem, CFILE *cfile)
 	Assert( cb->size == filelength(fileno(cb->fp)) );
 #endif
 
-	return ((int)bytes_written / elsize);
+	return (int)(bytes_written / elsize);
 }
 
 
@@ -1649,7 +1650,7 @@ ushort cf_add_chksum_short(ushort seed, ubyte *buffer, int size)
 }
 
 // update cur_chksum with the chksum of the new_data of size new_data_size
-uint cf_add_chksum_long(uint seed, ubyte *buffer, int size)
+uint cf_add_chksum_long(uint seed, ubyte *buffer, size_t size)
 {
 	uint crc;
 	ubyte *p;
@@ -1741,14 +1742,12 @@ static int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max
 // get the chksum of a pack file (VP)
 int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 {
-	const int safe_size = 2097152; // 2 Meg
+	const long safe_size = 2097152; // 2 Meg
 	const int header_offset = 32;  // skip 32bytes for header (header is currently smaller than this though)
 
 	ubyte cf_buffer[CF_CHKSUM_SAMPLE_SIZE];
-	int cf_len = 0;
-	int cf_total;
-	int read_size;
-	int max_size;
+	size_t read_size;
+	size_t max_size;
 
 	if (chk_long == NULL) {
 		Int3();
@@ -1766,7 +1765,7 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 
 	// get the max size
 	fseek(fp, 0, SEEK_END);
-	max_size = ftell(fp);
+	max_size = (size_t)ftell(fp);
 
 	// maybe do a chksum of the entire file
 	if (full) {
@@ -1777,14 +1776,14 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 		CLAMP(max_size, 0, safe_size);
 
 		Assertion(max_size > header_offset,
-			"max_size (%d) > header_offset in packfile %s", max_size, filename);
+			"max_size (" SIZE_T_ARG ") > header_offset in packfile %s", max_size, filename);
 		max_size -= header_offset;
 
-		fseek(fp, -(max_size), SEEK_END);
+		fseek(fp, -((long)max_size), SEEK_END);
 	}
 
-	cf_total = 0;
-
+	size_t cf_total = 0;
+	size_t cf_len = 0;
 	do {
 		// determine how much we want to read
 		if ( (max_size - cf_total) >= CF_CHKSUM_SAMPLE_SIZE )

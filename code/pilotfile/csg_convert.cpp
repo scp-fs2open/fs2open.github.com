@@ -541,8 +541,6 @@ void pilotfile_convert::csg_import_techroom()
 
 void pilotfile_convert::csg_import_loadout()
 {
-	int idx, j;
-	int list_size = 0, count;
 	char t_string[50] = { '\0' };
 
 	// mission name/status
@@ -553,11 +551,11 @@ void pilotfile_convert::csg_import_loadout()
 	csg->loadout.last_modified = t_string;
 
 	// ship pool
-	list_size = csg->ship_list.size();
+	size_t list_size = csg->ship_list.size();
 	csg->loadout.ship_pool.reserve(list_size);
 
-	for (idx = 0; idx < list_size; idx++) {
-		count = cfread_int(cfp);
+	for (size_t idx = 0; idx < list_size; idx++) {
+		int count = cfread_int(cfp);
 		csg->loadout.ship_pool.push_back( count );
 	}
 
@@ -565,16 +563,16 @@ void pilotfile_convert::csg_import_loadout()
 	list_size = csg->weapon_list.size();
 	csg->loadout.weapon_pool.reserve(list_size);
 
-	for (idx = 0; idx < list_size; idx++) {
-		count = cfread_int(cfp);
+	for (size_t idx = 0; idx < list_size; idx++) {
+		int count = cfread_int(cfp);
 		csg->loadout.weapon_pool.push_back( count );
 	}
 
 	// loadout info
-	for (idx = 0; idx < MAX_WSS_SLOTS_CONV; idx++) {
+	for (size_t idx = 0; idx < MAX_WSS_SLOTS_CONV; idx++) {
 		csg->loadout.slot[idx].ship_index = cfread_int(cfp);
 
-		for (j = 0; j < MAX_SHIP_WEAPONS_CONV; j++) {
+		for (size_t j = 0; j < MAX_SHIP_WEAPONS_CONV; j++) {
 			csg->loadout.slot[idx].wep[j] = cfread_int(cfp);
 			csg->loadout.slot[idx].wep_count[j] = cfread_int(cfp);
 		}
@@ -777,43 +775,39 @@ void pilotfile_convert::csg_export_info()
 
 void pilotfile_convert::csg_export_missions()
 {
-	int idx, j;
-	int list_size = 0;
-	int count = 0;
-
 	startSection(Section::Missions);
 
-	list_size = csg->missions.size();
+	size_t list_size = csg->missions.size();
 
-	for (idx = 0; idx < list_size; idx++) {
+	for (size_t idx = 0; idx < list_size; idx++) {
 		cfwrite_int(csg->missions[idx].index, cfp);
 
 		// flags
 		cfwrite_int(csg->missions[idx].flags, cfp);
 
 		// goals
-		count = (int)csg->missions[idx].goals.size();
+		size_t count = csg->missions[idx].goals.size();
 		cfwrite_int(count, cfp);
 
-		for (j = 0; j < count; j++) {
+		for (size_t j = 0; j < count; j++) {
 			cfwrite_string_len(csg->missions[idx].goals[j].name, cfp);
 			cfwrite_char(csg->missions[idx].goals[j].status, cfp);
 		}
 
 		// events
-		count = (int)csg->missions[idx].events.size();
+		count = csg->missions[idx].events.size();
 		cfwrite_int(count, cfp);
 
-		for (j = 0; j < count; j++) {
+		for (size_t j = 0; j < count; j++) {
 			cfwrite_string_len(csg->missions[idx].events[j].name, cfp);
 			cfwrite_char(csg->missions[idx].events[j].status, cfp);
 		}
 
 		// variables
-		count = (int)csg->missions[idx].variables.size();
+		count = csg->missions[idx].variables.size();
 		cfwrite_int(count, cfp);
 
-		for (j = 0; j < count; j++) {
+		for (size_t j = 0; j < count; j++) {
 			cfwrite_int(csg->missions[idx].variables[j].type, cfp);
 			cfwrite_string_len(csg->missions[idx].variables[j].text, cfp);
 			cfwrite_string_len(csg->missions[idx].variables[j].variable_name, cfp);
@@ -836,16 +830,16 @@ void pilotfile_convert::csg_export_missions()
 		cfwrite_uint(csg->missions[idx].stats.s_bonehead_hits, cfp);
 
 		// ship kills (scoring)
-		count = (int)csg->missions[idx].stats.ship_kills.size();
+		count = csg->missions[idx].stats.ship_kills.size();
 
-		for (j = 0; j < count; j++) {
+		for (size_t j = 0; j < count; j++) {
 			cfwrite_int(csg->missions[idx].stats.ship_kills[j].val, cfp);
 		}
 
 		// medals earned (scoring)
-		count = (int)csg->missions[idx].stats.medals_earned.size();
+		count = csg->missions[idx].stats.medals_earned.size();
 
-		for (j = 0; j < count; j++) {
+		for (size_t j = 0; j < count; j++) {
 			cfwrite_int(csg->missions[idx].stats.medals_earned[j].val, cfp);
 		}
 	}
@@ -890,9 +884,6 @@ void pilotfile_convert::csg_export_techroom()
 
 void pilotfile_convert::csg_export_loadout()
 {
-	int idx, j;
-	int list_size = 0;
-
 	startSection(Section::Loadout);
 
 	// base info
@@ -900,30 +891,30 @@ void pilotfile_convert::csg_export_loadout()
 	cfwrite_string_len(csg->loadout.last_modified.c_str(), cfp);
 
 	// ship pool
-	list_size = csg->loadout.ship_pool.size();
+	size_t list_size = csg->loadout.ship_pool.size();
 
-	for (idx = 0; idx < list_size; idx++) {
+	for (size_t idx = 0; idx < list_size; idx++) {
 		cfwrite_int(csg->loadout.ship_pool[idx], cfp);
 	}
 
 	// weapon pool
 	list_size = csg->loadout.weapon_pool.size();
 
-	for (idx = 0; idx < list_size; idx++) {
+	for (size_t idx = 0; idx < list_size; idx++) {
 		cfwrite_int(csg->loadout.weapon_pool[idx], cfp);
 	}
 
 	// play ship loadout
 	cfwrite_ushort(12, cfp);
 
-	for (idx = 0; idx < 12; idx++) {
+	for (size_t idx = 0; idx < 12; idx++) {
 		// ship
 		cfwrite_int(csg->loadout.slot[idx].ship_index, cfp);
 
 		// primary weapons
 		cfwrite_int(3, cfp);
 
-		for (j = 0; j < 3; j++) {
+		for (size_t j = 0; j < 3; j++) {
 			cfwrite_int(csg->loadout.slot[idx].wep[j], cfp);
 			cfwrite_int(csg->loadout.slot[idx].wep_count[j], cfp);
 		}
@@ -931,7 +922,7 @@ void pilotfile_convert::csg_export_loadout()
 		// secondary weapons
 		cfwrite_int(4, cfp);
 
-		for (j = 0; j < 4; j++) {
+		for (size_t j = 0; j < 4; j++) {
 			cfwrite_int(csg->loadout.slot[idx].wep[j+3], cfp);
 			cfwrite_int(csg->loadout.slot[idx].wep_count[j+3], cfp);
 		}
@@ -942,9 +933,6 @@ void pilotfile_convert::csg_export_loadout()
 
 void pilotfile_convert::csg_export_stats()
 {
-	int idx;
-	int list_size = 0;
-
 	startSection(Section::Scoring);
 
 	// scoring stats
@@ -969,14 +957,14 @@ void pilotfile_convert::csg_export_stats()
 	cfwrite_int((int)csg->stats.last_backup, cfp);
 
 	// ship kills (scoring)
-	list_size = csg->stats.ship_kills.size();
-	for (idx = 0; idx < list_size; idx++) {
+	size_t list_size = csg->stats.ship_kills.size();
+	for (size_t idx = 0; idx < list_size; idx++) {
 		cfwrite_int(csg->stats.ship_kills[idx].val, cfp);
 	}
 
 	// medals earned (scoring)
 	list_size = csg->stats.medals_earned.size();
-	for (idx = 0; idx < list_size; idx++) {
+	for (size_t idx = 0; idx < list_size; idx++) {
 		cfwrite_int(csg->stats.medals_earned[idx].val, cfp);
 	}
 
@@ -1120,8 +1108,11 @@ void pilotfile_convert::csg_export_cutscenes() {
 		}
 	}
 
+	// Check for possible overflow because we can only write 32 bit integers
+	Assertion(viewableScenes <= std::numeric_limits<uint>::max(), "Too many viewable cutscenes! Maximum is %ud!", std::numeric_limits<uint>::max());
+
 	// output cutscene data in new format
-	cfwrite_uint(viewableScenes, cfp);
+	cfwrite_uint((uint)viewableScenes, cfp);
 
 	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		if(cut->viewable)

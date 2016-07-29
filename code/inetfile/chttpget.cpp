@@ -131,7 +131,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	//when you found it, you have the host and dir
 	char *filestart = NULL;
 	char *dirstart = NULL;
-	for(int i = strlen(pURL);i>=0;i--)
+	for(size_t i = strlen(pURL);i>=0;i--)
 	{
 		if(pURL[i]== '/')
 		{

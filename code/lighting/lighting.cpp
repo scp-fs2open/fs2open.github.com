@@ -1214,15 +1214,15 @@ light_indexing_info scene_lights::bufferLights()
 	return light_info;
 }
 
-int scene_lights::getNumStaticLights()
+size_t scene_lights::getNumStaticLights()
 {
 	return StaticLightIndices.size();
 }
 
 void scene_lights::resetLightState()
 {
-	current_light_index = -1;
-	current_num_lights = -1;
+	current_light_index = static_cast<size_t>(-1);
+	current_num_lights = static_cast<size_t>(-1);
 }
 
 bool scene_lights::setLights(const light_indexing_info *info)
@@ -1240,7 +1240,7 @@ bool scene_lights::setLights(const light_indexing_info *info)
 	gr_set_lighting(true, true);
 
 	for ( size_t i = 0; i < StaticLightIndices.size(); ++i) {
-		int light_index = StaticLightIndices[i];
+		auto light_index = StaticLightIndices[i];
 		
 		gr_set_light( &AllLights[light_index] );
 	}

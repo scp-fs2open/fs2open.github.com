@@ -84,7 +84,7 @@ struct bitmap_entry {
 	// bookeeping
 	ubyte used_last_frame;  // If set, then it was used last frame
 	ubyte used_this_frame;  // If set, then it was used this frame
-	int   data_size;        // How much data this bitmap uses
+	size_t data_size;        // How much data this bitmap uses
 	int   used_count;       // How many times it was accessed
 #endif
 };

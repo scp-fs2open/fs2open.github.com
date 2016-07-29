@@ -318,7 +318,7 @@ void HudGaugeMessages::processMessageBuffer()
 		ptr = strstr(msg, NOX(": ")) + 2;
 
 		if ( ptr ) {
-			gr_get_string_size(&sw, NULL, msg, ptr - msg);
+			gr_get_string_size(&sw, NULL, msg, (int)(ptr - msg));
 			offset = sw;
 		}
 
@@ -479,7 +479,7 @@ void HUD_fixed_printf(float duration, color col, const char *format, ...)
 {
 	va_list	args;
 	char		tmp[HUD_MSG_LENGTH_MAX];
-	int		msg_length;
+	size_t		msg_length;
 
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state != NETGAME_STATE_IN_MISSION)){
@@ -556,7 +556,7 @@ void HUD_ship_sent_printf(int sh, const char *format, ...)
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
 	tmp[sizeof(tmp)-1] = '\0';
-	int len;
+	size_t len;
 
 	snprintf(tmp, sizeof(tmp)-1, NOX("%s: "), Ships[sh].ship_name);
 	len = strlen(tmp);
@@ -691,7 +691,8 @@ void hud_add_line_to_scrollback(char *text, int source, int t, int x, int y, int
 void hud_add_msg_to_scrollback(const char *text, int source, int t)
 {
 	char buf[HUD_MSG_LENGTH_MAX], *ptr, *str;
-	int msg_len, w, max_width, x, offset = 0;
+	int w, max_width, x, offset = 0;
+	size_t msg_len;
 
 	max_width = Hud_mission_log_list2_coords[gr_screen.res][2];
 	msg_len = strlen(text);
@@ -703,7 +704,7 @@ void hud_add_msg_to_scrollback(const char *text, int source, int t)
 	strcpy_s(buf, text);
 	ptr = strstr(buf, NOX(": "));
 	if (ptr) {
-		gr_get_string_size(&w, NULL, buf, ptr - buf);
+		gr_get_string_size(&w, NULL, buf, (int)(ptr - buf));
 	}
 
 //	if (ptr) {

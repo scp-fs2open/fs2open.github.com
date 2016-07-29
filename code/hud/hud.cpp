@@ -1715,12 +1715,12 @@ void hud_maybe_display_supernova()
  */
 void hud_render_all()
 {
-	size_t i;
+	int i;
 
 	hud_render_gauges();
 
 	// start rendering cockpit dependent gauges if possible
-	for ( i = 0; i < Player_displays.size(); ++i ) {
+	for ( i = 0; i < (int)Player_displays.size(); ++i ) {
 		hud_render_gauges(i);
 	}
 
@@ -2274,7 +2274,7 @@ void hud_num_make_mono(char *num_str, int font_num)
 		return;
 	}
 
-	int len, i;
+	int i;
 	ubyte sc;
 
 	sc = lcl_get_font_index(font_num);
@@ -2283,8 +2283,8 @@ void hud_num_make_mono(char *num_str, int font_num)
 		return;
 	}
 
-	len = strlen(num_str);
-	for ( i = 0; i < len; i++ ) {
+	size_t len = strlen(num_str);
+	for (size_t i = 0; i < len; i++ ) {
 		if ( num_str[i] == '1' ) {
 			num_str[i] = (char)(sc + 1);
 		}

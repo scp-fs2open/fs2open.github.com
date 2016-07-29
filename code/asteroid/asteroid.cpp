@@ -107,7 +107,7 @@ int asteroid_obj_list_add(int objnum)
 	int index;
 
 	asteroid *cur_asteroid = &Asteroids[Objects[objnum].instance];
-	index = cur_asteroid - Asteroids;
+	index = (int)(cur_asteroid - Asteroids);
 
 	Assert(index >= 0 && index < MAX_ASTEROID_OBJS);
 	Assert(!(Asteroid_objs[index].flags & ASTEROID_OBJ_USED));
@@ -1541,8 +1541,8 @@ void asteroid_maybe_break_up(object *pasteroid_obj)
 
 					random_shuffle(roids_to_create.begin(), roids_to_create.end());
 
-					int total_roids = roids_to_create.size();
-					for (int i = 0; i < total_roids; i++) {
+					size_t total_roids = roids_to_create.size();
+					for (size_t i = 0; i < total_roids; i++) {
 						vec3d dir_vec,final_vec;
 						vec3d parent_vel,hit_rel_vec;
 
@@ -1925,8 +1925,8 @@ void asteroid_parse_tbl()
 
 		required_string("#Asteroid Types");
 
-		int tally = 0;
-		int max_asteroids =
+		size_t tally = 0;
+		size_t max_asteroids =
 			NUM_DEBRIS_SIZES + Species_info.size() * NUM_DEBRIS_SIZES;
 
 #ifndef NDEBUG
@@ -1940,7 +1940,7 @@ void asteroid_parse_tbl()
 
 			asteroid_parse_section(&new_asteroid);
 
-			int species = tally / NUM_DEBRIS_SIZES;
+			size_t species = tally / NUM_DEBRIS_SIZES;
 			if (tally >= max_asteroids)
 			{
 #ifdef NDEBUG
@@ -2002,9 +2002,9 @@ void asteroid_parse_tbl()
 			}
 #endif
 			Error(LOCATION,
-				"Found %d asteroids/debris when %d expected\n\n"
+				"Found " SIZE_T_ARG " asteroids/debris when " SIZE_T_ARG " expected\n\n"
 				"<Number expected> = <Number of species> * %d + %d generic asteroids\n"
-				"%d = " SIZE_T_ARG "*%d + %d\n\n"
+				SIZE_T_ARG " = " SIZE_T_ARG "*%d + %d\n\n"
 #ifdef NDEBUG
 				"Run a debug build to see a list of all parsed asteroids\n",
 #else

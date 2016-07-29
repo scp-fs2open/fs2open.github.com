@@ -627,8 +627,8 @@ extern int Default_cmeasure_index;
 extern int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
 extern int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection
 
-#define WEAPON_INDEX(wp)				(wp-Weapons)
-#define WEAPON_INFO_INDEX(wip)		(wip-Weapon_info)
+#define WEAPON_INDEX(wp)			(int)(wp-Weapons)
+#define WEAPON_INFO_INDEX(wip)		(int)(wip-Weapon_info)
 
 
 int weapon_info_lookup(const char *name = NULL);

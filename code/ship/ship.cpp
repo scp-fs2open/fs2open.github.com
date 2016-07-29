@@ -6958,7 +6958,7 @@ void ship_set_hud_cockpit_targets()
 	}
 }
 
-int ship_start_render_cockpit_display(int cockpit_display_num)
+int ship_start_render_cockpit_display(size_t cockpit_display_num)
 {
 	// make sure this thing even has a cockpit
 	if ( Ship_info[Player_ship->ship_info_index].cockpit_model_num < 0 ) {
@@ -6970,7 +6970,7 @@ int ship_start_render_cockpit_display(int cockpit_display_num)
 	}
 
 	// check sanity of the cockpit display handle
-	if ( cockpit_display_num >= (int)Player_displays.size() || cockpit_display_num < 0 ) {
+	if ( cockpit_display_num >= Player_displays.size() || cockpit_display_num < 0 ) {
 		return -1;
 	}
 
@@ -7003,7 +7003,7 @@ int ship_start_render_cockpit_display(int cockpit_display_num)
 	return display->target;
 }
 
-void ship_end_render_cockpit_display(int cockpit_display_num)
+void ship_end_render_cockpit_display(size_t cockpit_display_num)
 {
 	// make sure this thing even has a cockpit
 	if ( Ship_info[Player_ship->ship_info_index].cockpit_model_num < 0 ) {
@@ -7015,7 +7015,7 @@ void ship_end_render_cockpit_display(int cockpit_display_num)
 	}
 
 	// check sanity of the cockpit display handle
-	if ( cockpit_display_num >= (int)Player_displays.size() || cockpit_display_num < 0 ) {
+	if ( cockpit_display_num >= Player_displays.size() || cockpit_display_num < 0 ) {
 		return;
 	}
 

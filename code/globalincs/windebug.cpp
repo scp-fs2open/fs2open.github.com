@@ -908,7 +908,7 @@ const int MAX_MEM_MODULES  = 600;
 typedef struct
 {
 	char filename[33];
-	int  size;
+	size_t  size;
 	int  magic_num1;
 	int  magic_num2;
 	bool in_use;
@@ -936,7 +936,7 @@ void memblockinfo_sort()
 	insertion_sort(mem_block_list, MAX_MEM_MODULES, sizeof(MemBlockInfo), memblockinfo_sort_compare );
 }
 
-void memblockinfo_sort_get_entry(int index, char *filename, int *size)
+void memblockinfo_sort_get_entry(int index, char *filename, size_t *size)
 {
 	Assert(index < MAX_MEM_MODULES);
 
@@ -946,7 +946,7 @@ void memblockinfo_sort_get_entry(int index, char *filename, int *size)
 
 static bool first_time = true;
 
-void register_malloc( int size, char *filename, int line, void *ptr)
+void register_malloc(size_t size, char *filename, int line, void *ptr)
 {
 	if(first_time == true)
 	{
@@ -972,11 +972,12 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 		filename = temp + 1;
 
 	// calculate magic numbers
-	int magic1, magic2, len = strlen(filename);
+	int magic1, magic2;
+	size_t len = strlen(filename);
 
 	magic1 = magic2 = 0;
 
-	for(int c = 0; c < len; c++)
+	for(size_t c = 0; c < len; c++)
 	{
 		magic1 += filename[c];
 
@@ -1062,20 +1063,20 @@ void memblockinfo_output_memleak()
 #endif
 }
 
-void unregister_malloc(char *filename, int size, void *ptr)
+void unregister_malloc(char *filename, size_t size, void *ptr)
 {
 	// calculate magic numbers
-	int magic1, magic2, len;
+	int magic1, magic2;
 
 	char *temp = strrchr(filename, '\\');
 	if(temp)
 		filename = temp + 1;
 
-	len = strlen(filename);
+	size_t len = strlen(filename);
 
 	magic1 = magic2 = 0;
 
-	for(int c = 0; c < len; c++)
+	for(size_t c = 0; c < len; c++)
 	{
 		magic1 += filename[c];
 
@@ -1116,9 +1117,9 @@ void unregister_malloc(char *filename, int size, void *ptr)
 
 /*
 #ifndef NDEBUG
-void *_vm_malloc( int size, char *filename, int line, int quiet )
+void *_vm_malloc(size_t size, char *filename, int line, int quiet )
 #else
-void *_vm_malloc( int size, int quiet )
+void *_vm_malloc(size_t size, int quiet )
 #endif
 {
 	void *ptr = NULL;
@@ -1151,7 +1152,7 @@ char *_vm_strdup( const char *ptr )
 #endif
 {
 	char *dst;
-	int len = strlen(ptr);
+	size_t len = strlen(ptr);
 
 	dst = (char *)vm_malloc( len+1 );
 
@@ -1196,7 +1197,7 @@ void _vm_free( void *ptr )
 
 #ifndef NDEBUG
 	_CrtMemBlockHeader *phd = pHdr(ptr);
-	int nSize = phd->nDataSize;
+	size_t nSize = phd->nDataSize;
 
 	TotalRam -= nSize;
 	if(Cmdline_show_mem_usage)
@@ -1211,9 +1212,9 @@ void vm_free_all()
 }
 
 #ifndef NDEBUG
-void *_vm_realloc( void *ptr, int size, char *filename, int line, int quiet )
+void *_vm_realloc( void *ptr, size_t size, char *filename, int line, int quiet )
 #else
-void *_vm_realloc( void *ptr, int size, int quiet )
+void *_vm_realloc( void *ptr, size_t size, int quiet )
 #endif
 {
 	// if this is the first time it's used then we need to malloc it first
@@ -1225,7 +1226,7 @@ void *_vm_realloc( void *ptr, int size, int quiet )
 #ifndef NDEBUG
 	// Unregistered the previous allocation
 	_CrtMemBlockHeader *phd = pHdr(ptr);
-	int nSize = phd->nDataSize;
+	size_t nSize = phd->nDataSize;
 
 	TotalRam -= nSize;
 	if(Cmdline_show_mem_usage)

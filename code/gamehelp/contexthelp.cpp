@@ -514,7 +514,7 @@ void help_overlay_blit(int overlay_id, int resolution_index)
 	font::set_font(help_overlaylist[overlay_id].fontlist.at(resolution_index));
 	for (idx = 0; idx < textcount; idx++) {
 		gr_set_color_fast(&Color_black);
-		gr_get_string_size(&width, &height, help_overlaylist[overlay_id].textlist.at(0).at(idx).string, strlen(help_overlaylist[overlay_id].textlist.at(0).at(idx).string));
+		gr_get_string_size(&width, &height, help_overlaylist[overlay_id].textlist.at(0).at(idx).string, (int)strlen(help_overlaylist[overlay_id].textlist.at(0).at(idx).string));
 		gr_rect(help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).x_coord-2*HELP_PADDING, help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).y_coord-3*HELP_PADDING, width+4*HELP_PADDING, height+4*HELP_PADDING, GR_RESIZE_MENU);
 		gr_set_color_fast(&Color_bright_white);
 		gr_printf_menu(help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).x_coord, help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).y_coord, help_overlaylist[overlay_id].textlist.at(0).at(idx).string);

@@ -555,12 +555,12 @@ typedef struct screen {
 	void (*gf_set_buffer)(int);
 	void (*gf_render_buffer)(int, const vertex_buffer*, int, int);
 
-	void (*gf_update_buffer_object)(int handle, uint size, void* data);
+	void (*gf_update_buffer_object)(int handle, size_t size, void* data);
 	void (*gf_update_transform_buffer)(void* data, uint size);
 	void (*gf_set_transform_buffer_offset)(int offset);
 
 	int (*gf_create_stream_buffer)();
-	void (*gf_render_stream_buffer)(int buffer_handle, int offset, int n_verts, int flags);
+	void (*gf_render_stream_buffer)(int buffer_handle, size_t offset, size_t n_verts, int flags);
 	
 	//the projection matrix; fov, aspect ratio, near, far
  	void (*gf_set_proj_matrix)(float, float, float, float);
@@ -1041,9 +1041,9 @@ class vertex_layout
 public:
 	vertex_layout(): Vertex_mask(0) {}
 
-	uint get_num_vertex_components() { return Vertex_components.size(); }
+	size_t get_num_vertex_components() { return Vertex_components.size(); }
 
-	vertex_format_data* get_vertex_component(uint index) { return &Vertex_components[index]; }
+	vertex_format_data* get_vertex_component(size_t index) { return &Vertex_components[index]; }
 
 	bool resident_vertex_format(vertex_format_data::vertex_format format_type) { return Vertex_mask & (1 << format_type) ? true : false; } 
 

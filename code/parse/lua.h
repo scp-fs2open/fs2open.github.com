@@ -38,10 +38,10 @@ variable args.
 struct ade_odata
 {
 	//ade_id aid;
-	uint idx;
+	size_t idx;
 	ODATA_SIG_TYPE *sig;
 	void *buf;
-	int size;
+	size_t size;
 	//ade_odata(){idx=UINT_MAX;sig=NULL;buf=NULL;size=0;}
 /*
 	ade_odata &operator =(const ade_odata &slo) {
@@ -69,7 +69,7 @@ struct ade_odata
 //
 //u - oh wait...
 
-#define ADE_INDEX(ate) (ate - &Ade_table_entries[0])
+#define ADE_INDEX(ate) static_cast<size_t>((ate - &Ade_table_entries[0]))
 
 extern SCP_vector<class ade_table_entry> Ade_table_entries;
 
@@ -80,8 +80,8 @@ public:
 	const char *ShortName;
 
 	//Important stuff
-	uint ParentIdx;
-	uint DerivatorIdx;
+	size_t ParentIdx;
+	size_t DerivatorIdx;
 	//ade_id AdeID;
 	//ade_id DerivatorID;			//Who do we derive from
 
@@ -113,8 +113,8 @@ public:
 	//Subentries, of course
 	//WMC - I have HAD it with these motherfriendly vectors
 	//on this motherfriendly class.
-	uint Num_subentries;
-	uint Subentries[256];
+	size_t Num_subentries;
+	size_t Subentries[256];
 	
 private:
 	//*****Internal functions
@@ -133,17 +133,17 @@ public:
 	//ade_table_entry &operator = (const ade_table_entry &ate);
 
 	//*****Functions
-	uint AddSubentry(ade_table_entry &n_ate)
+	size_t AddSubentry(ade_table_entry &n_ate)
 	{
 		ade_table_entry ate = n_ate;
 		ate.ParentIdx = ADE_INDEX(this);
 		Ade_table_entries.push_back(ate);
-		uint new_idx = Ade_table_entries.size()-1;
+		size_t new_idx = Ade_table_entries.size()-1;
 
 		//WMC - Oi. Moving the Ade_table_entries vector
 		//invalidates the "this" pointer. Workaround time.
 		ade_table_entry *new_this = &Ade_table_entries[ate.ParentIdx];
-		uint idx = new_this->Num_subentries++;
+		size_t idx = new_this->Num_subentries++;
 		new_this->Subentries[idx] = new_idx;
 
 		return new_idx;
@@ -159,7 +159,7 @@ class ade_lib_handle
 {
 protected:
 	//ade_id LibAID;
-	uint LibIdx;
+	size_t LibIdx;
 public:
 	ade_lib_handle(){}
 /*
@@ -167,7 +167,7 @@ public:
 		Ade_table_entries[LibIdx].AddSubentry(in_ate);
 	}
 */
-	uint GetIdx() {
+	size_t GetIdx() {
 		return LibIdx;
 	}
 };
@@ -224,7 +224,7 @@ public:
 		od.idx = LibIdx;
 		od.sig = NULL;
 		od.buf = (void**)ptr;
-		od.size = -1;
+		od.size = 0;
 		return od;
 	}
 };

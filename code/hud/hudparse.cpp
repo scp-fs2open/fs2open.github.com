@@ -621,7 +621,8 @@ void load_missing_retail_gauges()
 
 // Called once after mission load is complete. Sets initial gauge activity states.
 void init_hud() {
-	int i, num_gauges, config_type;
+	int config_type;
+	size_t i, num_gauges;
 
 	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
 		num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
@@ -668,7 +669,8 @@ extern void hud_init_ballistic_index();
 
 void set_current_hud()
 {
-	int i, num_gauges, config_type;
+	int config_type;
+	size_t i, num_gauges;
 
 	// before we load any hud gauges, see whether we're carring a ballistic weapon (Mantis #2962)
 	hud_init_ballistic_index();

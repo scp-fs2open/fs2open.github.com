@@ -2287,7 +2287,7 @@ void game_show_framerate()
 		gr_set_color_fast(&HUD_color_debug);
 
 		{
-			gr_printf_no_resize( sx, sy, NOX("DYN: %d KB\n"), memory::get_used_memory()/1024 );
+			gr_printf_no_resize( sx, sy, NOX("DYN: " SIZE_T_ARG " KB\n"), memory::get_used_memory()/1024 );
 			sy += line_height;
 		}	
 
@@ -2305,8 +2305,8 @@ void game_show_framerate()
 
 		{
 			extern int GL_textures_in;
-			extern int GL_vertex_data_in;
-			gr_printf_no_resize( sx, sy, NOX("VRAM: %d KB\n"), (GL_textures_in + GL_vertex_data_in)/1024 );
+			extern size_t GL_vertex_data_in;
+			gr_printf_no_resize( sx, sy, NOX("VRAM: " SIZE_T_ARG " KB\n"), (GL_textures_in + GL_vertex_data_in)/1024 );
 			sy += line_height;
 		}
 	}

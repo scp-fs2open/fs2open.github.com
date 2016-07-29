@@ -56,14 +56,14 @@ void gr_opengl_set_buffer(int idx);
 void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags);
 void gr_opengl_render_to_env(int FACE);
 
-void gr_opengl_update_buffer_object(int handle, uint size, void* data);
+void gr_opengl_update_buffer_object(int handle, size_t size, void* data);
 void opengl_delete_buffer_object(int handle);
 
 void gr_opengl_update_transform_buffer(void* data, uint size);
 void gr_opengl_set_transform_buffer_offset(int offset);
 
 int gr_opengl_create_stream_buffer_object();
-void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, int flags);
+void gr_opengl_render_stream_buffer(int buffer_handle, size_t offset, size_t n_verts, int flags);
 
 void gr_opengl_set_thrust_scale(float scale = -1.0f);
 void gr_opengl_set_team_color(const team_color *colors);

@@ -122,7 +122,7 @@ size_t factor_table::getNext(size_t n, size_t current)
 	if (n > _lookup.size())
 		resize(n);
 
-	int index = n - 1;
+	size_t index = n - 1;
 	for (size_t i = 0; i < _lookup[index].size(); ++i)
 	{
 		if (_lookup[index][i] == current)
@@ -1770,7 +1770,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
 				if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
 					polymodel *pm = model_get( sip->model_num );
-					count = ftables.getNext( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
+					count = (int)ftables.getNext( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
 					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
 					shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
 					shipp->last_fired_point[ swp->current_primary_bank ] -= 1;

@@ -411,7 +411,7 @@ bool WaveFile::Open(char *pszFilename, bool keep_ext)
 	WORD cbExtra = 0;
 	bool fRtn = true;    // assume success
 	PCMWAVEFORMAT pcmwf;
-	int FileSize, FileOffset;
+	size_t FileSize, FileOffset;
 	char fullpath[MAX_PATH];
 	char filename[MAX_FILENAME_LEN];
 

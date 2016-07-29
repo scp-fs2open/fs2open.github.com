@@ -284,7 +284,8 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	sound_info		*si;
 	sound			*snd;
 	WAVEFORMATEX	*header = NULL;
-	int				rc, FileSize, FileOffset;
+	int				rc;
+	size_t			FileSize, FileOffset;
 	char			fullpath[MAX_PATH];
 	char			filename[MAX_FILENAME_LEN];
 	size_t			n;

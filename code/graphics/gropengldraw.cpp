@@ -246,9 +246,9 @@ void opengl_bind_vertex_layout(vertex_layout &layout)
 {
 	GL_state.Array.BindPointersBegin();
 
-	uint num_vertex_bindings = layout.get_num_vertex_components();
+	size_t num_vertex_bindings = layout.get_num_vertex_components();
 
-	for ( uint i = 0; i < num_vertex_bindings; ++i ) {
+	for (size_t i = 0; i < num_vertex_bindings; ++i ) {
 		opengl_bind_vertex_component(*layout.get_vertex_component(i));
 	}
 
