@@ -271,6 +271,11 @@ void model_unload(int modelnum, int force)
 			if ( pm->submodel[i].collision_tree_index >= 0 ) {
 				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
 			}
+
+			if ( pm->submodel[i].outline_buffer != nullptr ) {
+				vm_free(pm->submodel[i].outline_buffer);
+				pm->submodel[i].outline_buffer = nullptr;
+			}
 		}
 
 		delete[] pm->submodel;
