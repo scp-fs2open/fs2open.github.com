@@ -27,6 +27,7 @@
 #include "luaconf.h"
 
 #include <sstream>
+#include <limits>
 
 
 #define CHECK_POSITION
