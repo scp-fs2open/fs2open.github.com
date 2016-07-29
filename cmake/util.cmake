@@ -1,4 +1,6 @@
 
+include(CheckCCompilerFlag)
+
 FUNCTION(MAKE_CACHE_INTERNAL VARIABLE)
 	SET(${VARIABLE} ${${VARIABLE}} CACHE INTERNAL "Internal cache variable")
 ENDFUNCTION(MAKE_CACHE_INTERNAL)
@@ -128,3 +130,8 @@ function(detect_simd_instructions _out_var)
 		ENDIF(COMPILE_RESULT)
 	endif()
 endfunction()
+
+function (check_linker_flag _flag _out_var)
+	SET(CMAKE_REQUIRED_FLAGS "${_flag}")
+	CHECK_C_COMPILER_FLAG("" ${_out_var})
+endfunction(check_linker_flag)
