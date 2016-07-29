@@ -126,7 +126,7 @@ static void mve_timer_start(void)
 		timer_expire.tv_usec -= nsec * 1000000;
 	}
 #else
-	timer_expire = timer_get_microseconds();
+	timer_expire = static_cast<int>(timer_get_high_res_microseconds());
 	timer_expire += micro_frame_delay;
 #endif
 
@@ -181,7 +181,7 @@ end:
 #else
 	int tv, ts, ts2;
 
-	tv = timer_get_microseconds();
+	tv = static_cast<int>(timer_get_high_res_microseconds());
 
 	if (tv > timer_expire) {
 		goto end;

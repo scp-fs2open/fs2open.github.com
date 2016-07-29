@@ -142,7 +142,7 @@ static void OGG_timer_init()
 		timer_expire.tv_usec -= nsec * 1000000;
 	}
 #else
-	timer_expire = timer_get_microseconds();
+	timer_expire = static_cast<int>(timer_get_high_res_microseconds());
 	timer_expire += (int)((videobuf_time - OGG_get_time()) * 1000000.0);
 #endif
 
@@ -194,7 +194,7 @@ end:
 #else
 	int tv, ts, ts2;
 
-	tv = timer_get_microseconds();
+	tv = static_cast<int>(timer_get_high_res_microseconds());
 
 	if (tv > timer_expire)
 		goto end;
