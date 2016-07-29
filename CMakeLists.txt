@@ -28,6 +28,13 @@ ENDIF(NOT DEFINED CMAKE_INSTALL_PREFIX)
 SET(TARGET_COPY_FILES "" CACHE INTERNAL "" FORCE)
 SET(TARGET_COPY_DIRS "" CACHE INTERNAL "" FORCE)
 
+### Define options and editable variables in the section below:
+# This is only needed for single configuration generators so don't annoy others
+if(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
+	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build configuration used." FORCE)
+	message(WARNING "CMAKE_BUILD_TYPE was not specified, defaulting to Release configuration.")
+endif(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
+
 # Override standard CMake configurations
 set(CMAKE_CONFIGURATION_TYPES Debug Release FastDebug CACHE STRING "Available configurations" FORCE)
 
@@ -60,13 +67,6 @@ IF(RESET_INSTALL_PREFIX)
 		MESSAGE(STATUS "NO FS2PATH environment variable found, you can define this to point to your freespace install but it is not required.")
 	ENDIF(NOT $ENV{FS2PATH} STREQUAL "")
 ENDIF(RESET_INSTALL_PREFIX)
-
-### Define options and editable variables in the section below:
-# This is only needed for single configuration generators so don't annoy others
-if(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
-	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build configuration used." FORCE)
-	message(WARNING "CMAKE_BUILD_TYPE was not specified, defaulting to Release configuration.")
-endif(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
 
 IF (WIN32)
 	OPTION(FSO_USE_SPEECH "Use Windows specific text-to-speach libraries" ON)
