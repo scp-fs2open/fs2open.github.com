@@ -22,6 +22,7 @@
 static Uint64 Timer_perf_counter_freq = 0;	// perf counter frequency - number of ticks per second
 
 static int Timer_inited = 0;
+static std::uint64_t high_res_begin = 0;
 
 
 #define MICROSECONDS_PER_SECOND 1000000
@@ -41,12 +42,9 @@ void timer_init()
 		Timer_inited = 1;
 
 		atexit(timer_close);
-	}
-}
 
-static uint timer_get()
-{
-	return SDL_GetTicks();
+		high_res_begin = timer_get_high_res_microseconds();
+	}
 }
 
 fix timer_get_fixed_seconds()
@@ -56,11 +54,10 @@ fix timer_get_fixed_seconds()
 		return 0;
 	}
 
-	longlong a = timer_get();
+	auto time = timer_get_high_res_microseconds() - high_res_begin;
+	time *= 65536;
 
-	a *= 65536;
-
-	return (fix)(a / 1000);
+	return (fix)(time / MICROSECONDS_PER_SECOND);
 }
 
 fix timer_get_fixed_secondsX()
@@ -80,7 +77,7 @@ int timer_get_seconds()
 		return 0;
 	}
 
-	return (timer_get() / 1000);
+	return (int) (timer_get_high_res_microseconds() / MICROSECONDS_PER_SECOND);
 }
 
 int timer_get_milliseconds()
@@ -90,7 +87,7 @@ int timer_get_milliseconds()
 		return 0;
 	}
 
-	return timer_get();
+	return (int) (timer_get_high_res_microseconds() / 1000);
 }
 
 int timer_get_microseconds()
@@ -100,7 +97,7 @@ int timer_get_microseconds()
 		return 0;
 	}
 
-	return timer_get() * 1000;
+	return (int) timer_get_high_res_microseconds();
 }
 
 std::uint64_t timer_get_high_res_microseconds()
@@ -111,8 +108,9 @@ std::uint64_t timer_get_high_res_microseconds()
 	}
 
 	Uint64 elapsed = SDL_GetPerformanceCounter();
+	auto microseconds = elapsed * MICROSECONDS_PER_SECOND / Timer_perf_counter_freq;
 
-	return elapsed * MICROSECONDS_PER_SECOND / Timer_perf_counter_freq;
+	return microseconds - high_res_begin;
 }
 
 // 0 means invalid,
