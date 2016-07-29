@@ -3,4 +3,7 @@
 #define __PLATFORM_CHECKS_H__
 #pragma once
 
+#cmakedefine HAVE_EXECINFO_H
+#cmakedefine HAVE_CXXAPI_H
+
 #endif // __PLATFORM_CHECKS_H__
