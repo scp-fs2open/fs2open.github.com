@@ -1185,7 +1185,7 @@ static SCP_vector<SCP_string> unix_get_dir_names(SCP_string parent, SCP_string d
 }
 
 // For case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches.
-static void handle_unix_modlist(char **modlist, int *len)
+static void handle_unix_modlist(char **modlist, size_t *len)
 {
 	// search filesystem for given paths
 	SCP_vector<SCP_string> mod_paths;
