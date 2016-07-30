@@ -359,6 +359,16 @@ void cf_build_pack_list( cf_root *root )
 	vm_free(temp_roots_sort);
 }
 
+static char normalize_directory_separator(char in)
+{
+	if (in == '/')
+	{
+		return DIR_SEPARATOR_CHAR;
+	}
+
+	return in;
+}
+
 static void cf_add_mod_roots(const char* rootDirectory)
 {
 	if (Cmdline_mod)
@@ -379,6 +389,9 @@ static void cf_add_mod_roots(const char* rootDirectory)
 			if (rootPath.size() + 1 >= CF_MAX_PATHNAME_LENGTH) {
 				Error(LOCATION, "The length of mod directory path '%s' exceeds the maximum of %d!\n", rootPath.c_str(), CF_MAX_PATHNAME_LENGTH);
 			}
+
+			// normalize the path to the native path format
+			std::transform(rootPath.begin(), rootPath.end(), rootPath.begin(), normalize_directory_separator);
 
 			cf_root* root = cf_create_root();
 
