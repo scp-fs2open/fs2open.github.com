@@ -439,7 +439,7 @@ void message_parse(bool importing_from_fsm)
 		stuff_string(buf, F_NAME); 
 		for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
 			if (iter->compare(buf) == 0) {
-				msg.mood = iter - Builtin_moods.begin();
+				msg.mood = (int)std::distance(Builtin_moods.begin(), iter);
 				found = true;
 				break;
 			}
@@ -462,7 +462,7 @@ void message_parse(bool importing_from_fsm)
 		for (SCP_vector<SCP_string>::iterator parsed_moods = buff.begin(); parsed_moods != buff.end(); ++parsed_moods) {
 			for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
 				if (!stricmp(iter->c_str(), parsed_moods->c_str())) {
-					msg.excluded_moods.push_back(iter - Builtin_moods.begin());
+					msg.excluded_moods.push_back((int)std::distance(Builtin_moods.begin(), iter));
 					found = true;
 					break;
 				}
@@ -1532,7 +1532,7 @@ void message_queue_process()
 	else
 		message_translate_tokens(buf, q->special_message);
 
-	Message_expire = timestamp(42 * strlen(buf));
+	Message_expire = timestamp(static_cast<int>(42 * strlen(buf)));
 	// AL: added 07/14/97.. only play avi/sound if in gameplay
 	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
 		goto all_done;
@@ -2216,21 +2216,21 @@ void message_maybe_distort()
 //
 void message_maybe_distort_text(char *text, int shipnum)
 {
-	int i, j, len, run, curr_offset, voice_duration, next_distort;
+	int voice_duration;
 
 	if ( comm_between_player_and_ship(shipnum) == COMM_OK ) { 
 		return;
 	}
 
-	len = strlen(text);
+	auto len = strlen(text);
 	if ( Message_wave_duration == 0 ) {
-		next_distort = 5+myrand()%5;
-		for ( i = 0; i < len; i++ ) {
+		size_t next_distort = 5+myrand()%5;
+		for ( size_t i = 0; i < len; i++ ) {
 			if ( i == next_distort ) {
-				run = 3+myrand()%5;
+				size_t run = 3+myrand()%5;
 				if ( i+run > len )
 					run = len-i;
-				for ( j = 0; j < run; j++) {
+				for ( size_t j = 0; j < run; j++) {
 					text[i++] = '-';
 					if ( i >= len )
 						break;
@@ -2246,10 +2246,11 @@ void message_maybe_distort_text(char *text, int shipnum)
 	// distort text
 	Distort_num = myrand()%MAX_DISTORT_PATTERNS;
 	Distort_next = 0;
-	curr_offset = 0;
+	size_t curr_offset = 0;
 	while (voice_duration > 0) {
-		run = fl2i(Distort_patterns[Distort_num][Distort_next] * len);
+		size_t run = fl2i(Distort_patterns[Distort_num][Distort_next] * len);
 		if (Distort_next & 1) {
+			size_t i;
 			for ( i = curr_offset; i < MIN(len, curr_offset+run); i++ ) {
 				if ( text[i] != ' ' ) 
 					text[i] = '-';

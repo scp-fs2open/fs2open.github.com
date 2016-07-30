@@ -190,7 +190,7 @@ int FS2NetD_ConnectToServer(const char *host, const char *port)
 		FD_SET(mySocket, &write_fds);   
 
 		// if it's writeable then we are fully connected
-		if ( select(mySocket+1, NULL, &write_fds, NULL, &timeout) > 0 ) {
+		if ( select(static_cast<int>(mySocket + 1), NULL, &write_fds, NULL, &timeout) > 0 ) {
 			// make sure that we don't have any connect() errors (since it's non-blocking)
 			int err_val = 0;
 			size_t err_val_size = sizeof(err_val);
@@ -213,7 +213,7 @@ int FS2NetD_ConnectToServer(const char *host, const char *port)
 		FD_SET(mySocket, &error_fds);
 
 		// if it's in error then it has failed to connect
-		if ( select(mySocket+1, NULL, NULL, &error_fds, &timeout) )
+		if ( select(static_cast<int>(mySocket + 1), NULL, NULL, &error_fds, &timeout) )
 			return -1;
 
 		// not connected, and haven't failed to connect, so keep in the loop

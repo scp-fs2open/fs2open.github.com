@@ -591,7 +591,7 @@ GLuint opengl_shader_compile_object(const SCP_vector<SCP_string>& shader_source,
 
 	shader_object = glCreateShader(shader_type);
 
-	glShaderSource(shader_object, sources.size(), &sources[0], NULL);
+	glShaderSource(shader_object, static_cast<GLsizei>(sources.size()), &sources[0], NULL);
 	glCompileShader(shader_object);
 
 	// check if the compile was successful
