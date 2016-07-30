@@ -1,7 +1,10 @@
 
 include(EnableExtraCompilerWarnings)
+include(util)
 
 MESSAGE(STATUS "Doing configuration specific to gcc...")
+
+option(GCC_ENABLE_LEAK_CHECK "Enable the -fsanitize=leak" OFF)
 
 unset(CMAKE_CXX_FLAGS)
 if(DEFINED ENV{CXXFLAGS})
@@ -35,6 +38,15 @@ if (FSO_FATAL_WARNINGS)
 endif()
 
 set(CMAKE_EXE_LINKER_FLAGS "")
+
+if (GCC_ENABLE_LEAK_CHECK)
+	check_linker_flag("-fsanitize=leak" SUPPORTS_FSANITIZE_LEAK)
+		message("Checking leak flag")
+
+	if (SUPPORTS_FSANITIZE_LEAK)
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=leak")
+	endif()
+endif()
 
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-g -rdynamic")
