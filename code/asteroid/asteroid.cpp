@@ -1977,7 +1977,7 @@ void asteroid_parse_tbl()
 				default:
 					Error(LOCATION, "Get a coder! Math has broken!\n"
 						"Important numbers:\n"
-						"\ttally: %d\n"
+						"\ttally: " SIZE_T_ARG "\n"
 						"\tNUM_DEBRIS_SIZES: %d\n",
 						tally, NUM_DEBRIS_SIZES
 						);

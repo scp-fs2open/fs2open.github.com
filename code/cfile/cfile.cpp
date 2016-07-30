@@ -34,6 +34,7 @@
 #include "osapi/osapi.h"
 #include "parse/encrypt.h"
 
+#include <limits>
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
@@ -826,7 +827,6 @@ CFILE *_cfopen_special(const char* source, int line, const char *file_path, cons
 
 	Assert( file_path && strlen(file_path) );
 	Assert( mode != NULL );
-	Assert( offset >= 0 );
 
 	// cfopen_special() only supports reading files, not creating them
 	if ( strchr(mode, 'w') ) {
@@ -1742,7 +1742,7 @@ static int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max
 // get the chksum of a pack file (VP)
 int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 {
-	const long safe_size = 2097152; // 2 Meg
+	const size_t safe_size = 2097152; // 2 Meg
 	const int header_offset = 32;  // skip 32bytes for header (header is currently smaller than this though)
 
 	ubyte cf_buffer[CF_CHKSUM_SAMPLE_SIZE];
@@ -1773,7 +1773,9 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 	}
 	// othewise it's only a partial check
 	else {
-		CLAMP(max_size, 0, safe_size);
+		if (max_size > safe_size) {
+			max_size = safe_size;
+		}
 
 		Assertion(max_size > header_offset,
 			"max_size (" SIZE_T_ARG ") > header_offset in packfile %s", max_size, filename);

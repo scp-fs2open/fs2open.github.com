@@ -356,9 +356,7 @@ void ssm_process()
 	moveup = Ssm_strikes.begin();
 	while ( moveup != Ssm_strikes.end() ) {
 		// get the type
-		if(moveup->sinfo.ssm_index < 0){
-			continue;
-		}
+		Assertion(moveup->sinfo.ssm_index < Ssm_info.size(), "Invalid SSM index detected!");
 		si = &Ssm_info[moveup->sinfo.ssm_index];
 
 		// check all the individual missiles

@@ -6970,7 +6970,7 @@ int ship_start_render_cockpit_display(size_t cockpit_display_num)
 	}
 
 	// check sanity of the cockpit display handle
-	if ( cockpit_display_num >= Player_displays.size() || cockpit_display_num < 0 ) {
+	if ( cockpit_display_num >= Player_displays.size()) {
 		return -1;
 	}
 
@@ -7015,7 +7015,7 @@ void ship_end_render_cockpit_display(size_t cockpit_display_num)
 	}
 
 	// check sanity of the cockpit display handle
-	if ( cockpit_display_num >= Player_displays.size() || cockpit_display_num < 0 ) {
+	if ( cockpit_display_num >= Player_displays.size()) {
 		return;
 	}
 

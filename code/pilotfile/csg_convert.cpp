@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <limits>
 
 // copy of old scoring struct  * NORMAL PILOTS *
 typedef struct scoring_conv_t {

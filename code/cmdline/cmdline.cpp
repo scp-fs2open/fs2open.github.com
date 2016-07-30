@@ -620,11 +620,13 @@ char *drop_extra_chars(char *str)
 	while (str[s] && is_extra_space(str[s]))
 		s++;
 
-	e = strlen(str) - 1;	// we already account for NULL later on, so the -1 is here to make
-							// sure we do our math without taking it into consideration
+	e = strlen(str);
 
-	if (e < 0)
-		e = 0;
+	if (e > 0) {
+		// we already account for NULL later on, so the -1 is here to make
+		// sure we do our math without taking it into consideration
+		e -= 1;
+	}
 
 	while (e > s) {
 		if (!is_extra_space(str[e])){

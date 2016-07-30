@@ -22,7 +22,7 @@
 
 #include <iostream>
 #include <sstream>
-
+#include <limits>
 
 
 void pilotfile::csg_read_flags()

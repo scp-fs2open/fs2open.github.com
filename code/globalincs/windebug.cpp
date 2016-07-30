@@ -1164,9 +1164,9 @@ char *_vm_strdup( const char *ptr )
 }
 
 #ifndef NDEBUG
-char *_vm_strndup( const char *ptr, int size, char *filename, int line )
+char *_vm_strndup( const char *ptr, size_t size, char *filename, int line )
 #else
-char *_vm_strndup( const char *ptr, int size )
+char *_vm_strndup( const char *ptr, size_t size )
 #endif
 {
 	char *dst;

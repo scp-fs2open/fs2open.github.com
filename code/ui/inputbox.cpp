@@ -53,8 +53,8 @@ int keypad_to_ascii(int c)
 // insert character c into string s at position p.
 void strcins(char *s, int p, char c)
 {
-	size_t n;
-	for (n=strlen(s)-p; n>=0; n-- )
+	int n;
+	for (n=(int)strlen(s)-p; n>=0; n-- )
 		*(s+p+n+1) = *(s+p+n);   // Move everything over	
 	*(s+p) = c;         // then insert the character
 }

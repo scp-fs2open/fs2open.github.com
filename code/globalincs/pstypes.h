@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
+#include <algorithm>
 #include "globalincs/toolchain.h"
 
 #if defined( __x86_64__ ) || defined( _WIN64 )
@@ -445,7 +446,7 @@ template <class T> void CAP( T& v, T mn, T mx )
 // ========================================================
 
 // here is the define for the stamp for this set of code
-#define STAMP_STRING "\001\001\001\001\002\002\002\002Read the Foundation Novels from Asimov.  I liked them."
+#define STAMP_STRING "\001\001\001\001\002\002\002\002Read the Foundation Novels from Afsimov.  I liked them."
 #define STAMP_STRING_LENGTH			80
 #define DEFAULT_CHECKSUM_STRING		"\001\001\001\001"
 #define DEFAULT_TIME_STRING			"\002\002\002\002"

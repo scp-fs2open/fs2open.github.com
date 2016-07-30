@@ -158,8 +158,8 @@ float bitmap_lookup::get_channel_red(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
 
-	CLAMP(u, 0.0, 1.0f);
-	CLAMP(v, 0.0, 1.0f);
+	CLAMP(u, 0.0f, 1.0f);
+	CLAMP(v, 0.0f, 1.0f);
 
 	int x = fl2i(map_texture_address(u) * (Width-1));
 	int y = fl2i(map_texture_address(v) * (Height-1));
@@ -3212,7 +3212,6 @@ void bm_unlock(int handle) {
 void bm_update_memory_used(int n, size_t size)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
-	Assert( size >= 0 );
 
 #ifdef BMPMAN_NDEBUG
 	Assert( bm_bitmaps[n].data_size == 0 );

@@ -120,7 +120,7 @@ int cftell( CFILE * cfile )
 	#endif
 
 	// The rest of the code still uses ints, do an overflow check to detect cases where this fails
-	Assertion(cb->raw_position <= std::numeric_limits<size_t>::max(), "Integer overflow in cftell, a file is probably too large (but I don't know which one).");
+	Assertion(cb->raw_position <= std::numeric_limits<int>::max(), "Integer overflow in cftell, a file is probably too large (but I don't know which one).");
 	return (int) cb->raw_position;
 }
 
