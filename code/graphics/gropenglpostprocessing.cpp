@@ -253,6 +253,7 @@ void opengl_post_pass_fxaa() {
 
 	// We only want to draw to ATTACHMENT0
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 	// Do a prepass to convert the main shaders' RGBA output into RGBL
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA_PREPASS, 0) );
