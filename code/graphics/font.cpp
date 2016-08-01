@@ -28,7 +28,6 @@
 #include "localization/localize.h"
 #include "palman/palman.h"
 #include "parse/parselo.h"
-#include "def_files/def_files.h"
 
 
 

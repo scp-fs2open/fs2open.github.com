@@ -13,7 +13,6 @@
 #include "cfile/cfile.h"
 #include "cutscene/oggplayer.h"
 #include "def_files/def_files.h"
-#include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "graphics/gropengl.h"
