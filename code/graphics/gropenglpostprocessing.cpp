@@ -253,7 +253,7 @@ void opengl_post_pass_fxaa() {
 
 	// We only want to draw to ATTACHMENT0
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 	// Do a prepass to convert the main shaders' RGBA output into RGBL
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA_PREPASS, 0) );
@@ -265,7 +265,7 @@ void opengl_post_pass_fxaa() {
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_ldr_texture);
+	GL_state.Texture.Enable(Scene_color_texture);
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
@@ -274,7 +274,7 @@ void opengl_post_pass_fxaa() {
 	// set and configure post shader ..
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) );
 
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_ldr_texture, 0);
+	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
 
 	// basic/default uniforms
 	GL_state.Uniform.setUniformi( "tex0", 0 );
@@ -310,6 +310,11 @@ void gr_opengl_post_process_end()
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
+
+	// Do FXAA
+	if (Cmdline_fxaa && !fxaa_unavailable && !GL_rendering_to_texture) {
+		opengl_post_pass_fxaa();
+	}
 	
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, 0) );
 	float x,y;
@@ -372,12 +377,6 @@ void gr_opengl_post_process_end()
 	
 	// do tone mapping
 	opengl_post_pass_tonemap();
-
-
-    // Do FXAA
-    if (Cmdline_fxaa && !fxaa_unavailable && !GL_rendering_to_texture) {
-        opengl_post_pass_fxaa();
-    }
 
 	// now write to the on-screen buffer
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());
