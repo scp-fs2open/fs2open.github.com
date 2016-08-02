@@ -15,6 +15,7 @@
 #include "graphics/gropengl.h"
 
 #include <string>
+#include <glad/glad.h>
 
 #define MAX_SHADER_UNIFORMS		20
 
@@ -106,7 +107,7 @@ typedef struct opengl_shader_uniform_t {
 } opengl_shader_uniform_t;
 
 typedef struct opengl_shader_t {
-	GLhandleARB program_id;
+	GLuint program_id;
 
 	shader_type shader;
 	unsigned int flags;

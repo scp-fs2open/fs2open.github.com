@@ -664,7 +664,15 @@ void blit_callsign()
 
 	// nothing special, just do it.
 	// Goober5000 - from previous code revisions, I assume 0x8000 means center it on-screen...
-	gr_string((x < 0) ? 0x8000 : x, y, Medals_player->callsign, GR_RESIZE_MENU);
+	// m!m - 0x8000 was removed so we need to calculate it ourself
+	if (x < 0)
+	{
+		int w;
+		gr_get_string_size(&w, NULL, Medals_player->callsign);
+
+		x = (gr_screen.clip_width_unscaled - w) / 2;
+	}
+	gr_string(x, y, Medals_player->callsign, GR_RESIZE_MENU);
 }
 
 int medal_main_do()

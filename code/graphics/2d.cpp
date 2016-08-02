@@ -651,7 +651,7 @@ void gr_close()
 			Int3();		// Invalid graphics mode
 	}
 
-	gr_font_close();
+	font::close();
 
 	Gr_inited = 0;
 }
@@ -2167,4 +2167,15 @@ uint gr_determine_model_shader_flags(
 	}
 
 	return shader_flags;
+}
+
+void gr_print_timestamp(int x, int y, int timestamp, int resize_mode)
+{
+	char time[8];
+
+	// format the time information into strings
+	sprintf(time, "%.1d:%.2d:%.2d", (timestamp / 3600000) % 10, (timestamp / 60000) % 60, (timestamp / 1000) % 60);
+	time[7] = '\0';
+
+	gr_string(x, y, time, resize_mode);
 }

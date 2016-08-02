@@ -1,6 +1,4 @@
 
-include(opengl.cmake)
-
 IF(APPLE)
 	ADD_SUBDIRECTORY(mac)
 ENDIF(APPLE)
@@ -16,6 +14,8 @@ ADD_SUBDIRECTORY(lua)
 ADD_SUBDIRECTORY(oggvorbis)
 
 ADD_SUBDIRECTORY(openal)
+
+add_subdirectory(opengl)
 
 ADD_SUBDIRECTORY(libsdl)
 

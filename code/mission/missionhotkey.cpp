@@ -1154,13 +1154,13 @@ void mission_hotkey_do_frame(float frametime)
 	gr_init_color(&circle_color, 160, 160, 0);
 
 	// draw the big "F10" in the little box	
-	gr_set_font(FONT2);
+	font::set_font(font::FONT2);
 	gr_set_color_fast(&Color_text_normal);
 	strcpy_s(buf, Scan_code_text[Key_sets[Cur_hotkey]]);
 	gr_get_string_size(&w, &h, buf);
 	gr_printf_menu(Hotkey_function_name_coords[gr_screen.res][0] + (Hotkey_function_name_coords[gr_screen.res][2] - w) / 2, Hotkey_function_name_coords[gr_screen.res][1], buf);
 
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 	line = Scroll_offset;
 	while (hotkey_line_query_visible(line)) {
 		z = Hotkey_lines[line].index;
@@ -1244,7 +1244,7 @@ void mission_hotkey_do_frame(float frametime)
 			Assert(strlen(buf) > 1);
 			buf[strlen(buf) - 2] = 0;  // lose the ", " on the end
 
-			gr_force_fit_string(buf, 255, GROUP_LIST_W);
+			font::force_fit_string(buf, 255, GROUP_LIST_W);
 			gr_printf_menu(GROUP_LIST_X, y, buf);*/
 		}
 	
@@ -1253,10 +1253,10 @@ void mission_hotkey_do_frame(float frametime)
 		end_string_at_first_hash_symbol(buf);
 		if (Hotkey_lines[line].type == HOTKEY_LINE_SUBSHIP) {
 			// indent
-			gr_force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - (Hotkey_ship_x[gr_screen.res]+20));
+			font::force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - (Hotkey_ship_x[gr_screen.res]+20));
 			gr_printf_menu(Hotkey_ship_x[gr_screen.res]+20, y, buf);
 		} else {
-			gr_force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - Hotkey_ship_x[gr_screen.res]);
+			font::force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - Hotkey_ship_x[gr_screen.res]);
 			gr_printf_menu(Hotkey_ship_x[gr_screen.res], y, buf);
 		}
 

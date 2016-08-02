@@ -586,7 +586,7 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render * s2r)
 	g3_rotate_vertex(&text_center, &center_pt);
 	g3_project_vertex(&text_center);
 	gr_set_color_fast(&colour_white);
-	gr_string_win( (int)text_center.screen.xyw.x,  (int)text_center.screen.xyw.y, buf);
+	gr_string( (int)text_center.screen.xyw.x,  (int)text_center.screen.xyw.y, buf);
 }
 
 void display_active_ship_subsystem()
@@ -989,7 +989,7 @@ void display_distances()
 						if (!(g3_project_vertex(&v) & PF_OVERFLOW))	{
 							sprintf(buf, "%.1f", vm_vec_dist(&objp->pos, &o2->pos));
 							gr_set_color_fast(&colour_white);
-							gr_string_win((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
+							gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
 						}
 				}
 
@@ -1088,7 +1088,7 @@ void display_ship_info()
 					else
 						gr_set_color_fast(&colour_white);
 
-					gr_string_win((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
+					gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
 				}
 			}
 
@@ -1459,7 +1459,7 @@ void render_frame()
 	g3_start_frame(1);  // ** Accounted for
 	// 1 means use zbuffering
 
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 	light_reset();
 
 	g3_set_view_matrix(&eye_pos, &eye_orient, (Briefing_dialog ? Briefing_window_FOV : FRED_DEFAULT_HTL_FOV));
@@ -1542,7 +1542,7 @@ void render_frame()
 				gr_rect(x-5, y-5, w+5, h+5);
 
 				gr_set_color_fast(&colour_white);
-				gr_string_win(x, y, buf);
+				gr_string(x, y, buf);
 			}
 	}
 
@@ -1555,7 +1555,7 @@ void render_frame()
 	sprintf(buf, "(%.1f,%.1f,%.1f)", eye_pos.xyz.x, eye_pos.xyz.y, eye_pos.xyz.z);
 	gr_get_string_size(&w, &h, buf);
 	gr_set_color_fast(&colour_white);
-	gr_string_win(gr_screen.max_w - w - 2, 2, buf);
+	gr_string(gr_screen.max_w - w - 2, 2, buf);
 
 	g3_end_frame();	 // ** Accounted for
 	render_compass();

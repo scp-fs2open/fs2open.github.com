@@ -19,6 +19,8 @@
 #include "graphics/shadows.h"
 #include "model/model.h"
 
+#include <glad/glad.h>
+
 extern GLint GL_max_elements_vertices;
 extern GLint GL_max_elements_indices;
 

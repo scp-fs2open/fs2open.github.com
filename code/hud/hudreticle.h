@@ -80,7 +80,10 @@ protected:
 
 	int Match_speed_offsets[2];
 	bool Use_custom_match_speed;
-	ubyte Match_speed_icon;
+	
+	int Match_speed_icon_width;
+	uint Match_speed_icon;
+	bool Match_speed_draw_background; // When true draw the match icon onto a rectangle
 
 	bool Show_background;
 public:
@@ -103,6 +106,7 @@ public:
 	void renderThrottleLine(int y);
 	void renderThrottleForeground(int y_end);
 	void renderThrottleBackground(int y_end);
+	void renderMatchSpeedIcon(int x, int y);
 
 	void pageIn();
 };

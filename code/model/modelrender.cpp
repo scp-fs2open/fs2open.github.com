@@ -13,7 +13,6 @@
 #include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
 #include "graphics/gropengldraw.h"
-#include "graphics/gropenglextension.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/tmapper.h"
 #include "io/timer.h"

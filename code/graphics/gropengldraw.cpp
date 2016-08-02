@@ -17,12 +17,16 @@
 #include "graphics/gropengl.h"
 #include "graphics/gropenglbmpman.h"
 #include "graphics/gropengldraw.h"
-#include "graphics/gropenglextension.h"
 #include "graphics/gropengllight.h"
 #include "graphics/gropenglpostprocessing.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropengltexture.h"
 #include "graphics/gropengltnl.h"
+#include "graphics/paths/PathRenderer.h"
+#include "graphics/software/font_internal.h"
+#include "graphics/software/FSFont.h"
+#include "graphics/software/NVGFont.h"
+#include "graphics/software/VFNTFont.h"
 #include "graphics/line.h"
 #include "lighting/lighting.h"
 #include "math/floating.h"
@@ -30,6 +34,80 @@
 #include "osapi/osapi.h"
 #include "palman/palman.h"
 #include "render/3d.h"
+#include "localization/localize.h"
+
+namespace
+{
+    void setupDrawingState(graphics::paths::PathRenderer* path)
+    {
+        path->resetState();
+    }
+
+    void setupTransforms(graphics::paths::PathRenderer* path, int resize_mode)
+    {
+        float x = 0.0f;
+        float y = 0.0f;
+        float w = 1.0f;
+        float h = 1.0f;
+        bool do_resize = gr_resize_screen_posf(&x, &y, &w, &h, resize_mode);
+
+        path->translate(x, y);
+        path->scale(w, h);
+
+        int clip_width = ((do_resize) ? gr_screen.clip_width_unscaled : gr_screen.clip_width);
+        int clip_height = ((do_resize) ? gr_screen.clip_height_unscaled : gr_screen.clip_height);
+
+        int offset_x = ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
+        int offset_y = ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
+
+        path->translate(i2fl(offset_x), i2fl(offset_y));
+
+        path->scissor(0.0f, 0.0f, i2fl(clip_width), i2fl(clip_height));
+    }
+
+    graphics::paths::PathRenderer* beginDrawing(int resize_mode)
+    {
+        auto path = graphics::paths::PathRenderer::instance();
+
+        path->saveState();
+        setupDrawingState(path);
+
+        path->beginFrame();
+        setupTransforms(path, resize_mode);
+
+        path->beginPath();
+
+        return path;
+    }
+
+    void endDrawing(graphics::paths::PathRenderer* path)
+    {
+        path->endFrame();
+        path->restoreState();
+    }
+}
+
+
+#ifdef _WIN32
+	#include "graphics/gl/glu.h"
+#elif defined(SCP_UNIX)
+#ifdef __APPLE__
+	#include <OpenGL/glu.h>
+#else
+#include <GL/glu.h>
+#endif // __APPLE__
+#endif
+
+
+#ifdef _WIN32
+	#include "graphics/gl/glu.h"
+#elif defined(SCP_UNIX)
+#ifdef __APPLE__
+	#include <OpenGL/glu.h>
+#else
+#include <GL/glu.h>
+#endif // __APPLE__
+#endif
 
 GLuint Scene_framebuffer;
 GLuint Scene_ldr_texture;
@@ -433,7 +511,12 @@ void gr_opengl_aabitmap(int x, int y, int resize_mode, bool mirror)
 struct v4 { GLfloat x,y,u,v; };
 static v4 GL_string_render_buff[MAX_VERTS_PER_DRAW];
 
-void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
+namespace font
+{
+	extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int *width, int* spacing);
+}
+
+void gr_opengl_string_old(float sx, float sy, const char* s, const char* end, font::font* fontData, float top, float height, int resize_mode)
 {
 	int width, spacing, letter;
 	float x, y;
@@ -442,20 +525,16 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
 	float u_scale, v_scale;
-
-	if ( !Current_font || (*s == 0) ) {
-		return;
-	}
-
+		
 	GL_CHECK_FOR_ERRORS("start of string()");
 
-	gr_set_bitmap(Current_font->bitmap_id);
+	gr_set_bitmap(fontData->bitmap_id);
 
 	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
-	if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale) ) {
+	if (!gr_opengl_tcache_set(gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale)) {
 		return;
 	}
 
@@ -471,14 +550,16 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 	// set color!
 	if (gr_screen.current_color.is_alphacolor) {
 		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-	} else {
+	}
+	else {
 		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
 	}
 
-//	if ( (gr_screen.custom_size && resize) || (gr_screen.rendering_to_texture != -1) ) {
-	if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+	//	if ( (gr_screen.custom_size && resize) || (gr_screen.rendering_to_texture != -1) ) {
+	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = true;
-	} else {
+	}
+	else {
 		do_resize = false;
 	}
 
@@ -489,17 +570,8 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 
 	x = sx;
 	y = sy;
-
-	if (sx == (float)0x8000) {
-		// centered
-		x = (float)get_centered_x(s, !do_resize);
-	} else {
-		x = sx;
-	}
-
+	
 	spacing = 0;
-
-	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
 
 	GL_state.Array.BindArrayBuffer(0);
 
@@ -513,26 +585,20 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 	opengl_shader_set_passthrough(true, true);
 
 	// pick out letter coords, draw it, goto next letter and do the same
-	while (*s)	{
+	while (s < end) {
 		x += spacing;
 
 		while (*s == '\n')	{
 			s++;
-			y += Current_font->h;
-
-			if (sx == (float)0x8000) {
-				// centered
-				x = (float)get_centered_x(s, !do_resize);
-			} else {
-				x = sx;
-			}
+			y += height;
+			x = sx;
 		}
 
 		if (*s == 0) {
 			break;
 		}
 
-		letter = get_char_width(s[0], s[1], &width, &spacing);
+		letter = font::get_char_width_old(fontData, s[0], s[1], &width, &spacing);
 		s++;
 
 		// not in font, draw as space
@@ -544,11 +610,11 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 		float wc, hc;
 
 		// Check if this character is totally clipped
-		if ( (x + width) < clip_left ) {
+		if ((x + width) < clip_left) {
 			continue;
 		}
 
-		if ( (y + Current_font->h) < clip_top ) {
+		if ((y + height) < clip_top) {
 			continue;
 		}
 
@@ -574,22 +640,22 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 		yc = y + yd;
 
 		wc = width - xd;
-		hc = Current_font->h - yd;
+		hc = height - yd;
 
-		if ( (xc + wc) > clip_right ) {
+		if ((xc + wc) > clip_right) {
 			wc = clip_right - xc;
 		}
 
-		if ( (yc + hc) > clip_bottom ) {
+		if ((yc + hc) > clip_bottom) {
 			hc = clip_bottom - yc;
 		}
 
-		if ( (wc < 1) || (hc < 1) ) {
+		if ((wc < 1) || (hc < 1)) {
 			continue;
 		}
 
-		int u = Current_font->bm_u[letter];
-		int v = Current_font->bm_v[letter];
+		int u = fontData->bm_u[letter];
+		int v = fontData->bm_v[letter];
 
 		x1 = xc + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
 		y1 = yc + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
@@ -597,12 +663,12 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 		y2 = y1 + hc;
 
 		if (do_resize) {
-			gr_resize_screen_posf( &x1, &y1, NULL, NULL, resize_mode );
-			gr_resize_screen_posf( &x2, &y2, NULL, NULL, resize_mode );
+			gr_resize_screen_posf(&x1, &y1, NULL, NULL, resize_mode);
+			gr_resize_screen_posf(&x2, &y2, NULL, NULL, resize_mode);
 		}
 
-		u0 = u_scale * (i2fl(u+xd) / bw);
-		v0 = v_scale * (i2fl(v+yd) / bh);
+		u0 = u_scale * (i2fl(u + xd) / bw);
+		v0 = v_scale * (i2fl(v + yd) / bh);
 
 		u1 = u_scale * (i2fl((u+xd)+wc) / bw);
 		v1 = v_scale * (i2fl((v+yd)+hc) / bh);
@@ -649,114 +715,189 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 		buffer_offset++;
 	}
 
-	if ( buffer_offset ) {
+	if (buffer_offset) {
 		glDrawArrays(GL_TRIANGLES, 0, buffer_offset);
 	}
-
-	GL_state.CullFace(cull_face);
 
 	GL_CHECK_FOR_ERRORS("end of string()");
 }
 
-void gr_opengl_string(int sx, int sy, const char *s, int resize_mode)
-{
-	gr_opengl_string(i2fl(sx), i2fl(sy), s, resize_mode);
-}
+void gr_opengl_string(float sx, float sy, const char *s, int resize_mode, int in_length) {
+	using namespace font;
+	using namespace graphics::paths;
+	namespace fo = font;
 
-void gr_opengl_line(int x1,int y1,int x2,int y2, int resize_mode)
-{
-	int do_resize;
-	float sx1, sy1;
-	float sx2, sy2;
+	GL_CHECK_FOR_ERRORS("start of string()");
 
-	if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-		do_resize = 1;
-	} else {
-		do_resize = 0;
-	}
+	Assertion(s != NULL, "NULL pointer passed to gr_string!");
 
-	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
-	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
-	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
-	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
-	int offset_x = ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
-	int offset_y = ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
-
-
-	INT_CLIPLINE(x1, y1, x2, y2, clip_left, clip_top, clip_right, clip_bottom, return, ;, ;);
-
-	sx1 = i2fl(x1 + offset_x);
-	sy1 = i2fl(y1 + offset_y);
-	sx2 = i2fl(x2 + offset_x);
-	sy2 = i2fl(y2 + offset_y);
-
-
-	if (do_resize) {
-		gr_resize_screen_posf(&sx1, &sy1, NULL, NULL, resize_mode);
-		gr_resize_screen_posf(&sx2, &sy2, NULL, NULL, resize_mode);
-	}
-
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-
-	if ( (x1 == x2) && (y1 == y2) ) {
-		gr_opengl_set_2d_matrix();
-
-		GLfloat vert[3]= {sx1, sy1, -0.99f};
-		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-		vertex_layout vert_def;
-
-		vert_def.add_vertex_component(vertex_format_data::POSITION3, 0, vert);
-
-		opengl_bind_vertex_layout(vert_def);
-		opengl_shader_set_passthrough(false);
-
-		glDrawArrays(GL_POINTS, 0, 1);
-
-		GL_CHECK_FOR_ERRORS("end of opengl_line()");
-
-		gr_opengl_end_2d_matrix();
-
+	if (!FontManager::isReady() || (*s == '\0')) {
 		return;
 	}
 
-	if (x1 == x2) {
-		if (sy1 < sy2) {
-			sy2 += 0.5f;
-		} else {
-			sy1 += 0.5f;
-		}
-	} else if (y1 == y2) {
-		if (sx1 < sx2) {
-			sx2 += 0.5f;
-		} else {
-			sx1 += 0.5f;
-		}
+	size_t length;
+	if (in_length < 0) {
+		length = strlen(s);
+	} else {
+		length = (size_t) in_length;
 	}
 
-	gr_opengl_set_2d_matrix();
+	FSFont* currentFont = FontManager::getCurrentFont();
 
-	GLfloat line[6] = {
-		sx2, sy2, -0.99f,
-		sx1, sy1, -0.99f
-	};
+	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
+	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 
-	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	if (currentFont->getType() == VFNT_FONT) {
+		VFNTFont* fnt = static_cast<VFNTFont*>(currentFont);
+		fo::font* fontData = fnt->getFontData();
 
-	vertex_layout vert_def;
+		gr_opengl_string_old(sx, sy, s, s + length, fontData, fnt->getTopOffset(),
+							 fnt->getHeight(), resize_mode);
+	}
+	else if (currentFont->getType() == NVG_FONT) {
+		auto path = beginDrawing(resize_mode);
+		path->translate(sx, sy);
 
-	vert_def.add_vertex_component(vertex_format_data::POSITION3, 0, line);
+		auto nvgFont = static_cast<NVGFont*>(currentFont);
 
-	opengl_bind_vertex_layout(vert_def);
-	opengl_shader_set_passthrough(false);
+		path->fontFaceId(nvgFont->getHandle());
+		path->fontSize(nvgFont->getSize());
+		path->textLetterSpacing(nvgFont->getLetterSpacing());
+		path->textAlign(static_cast<TextAlign>(ALIGN_TOP | ALIGN_LEFT));
 
-	glDrawArrays(GL_LINES, 0, 2);
+		float scaleX = 1.0f;
+		float scaleY = 1.0f;
+		gr_resize_screen_posf(nullptr, nullptr, &scaleX, &scaleY, resize_mode);
 
-	GL_CHECK_FOR_ERRORS("end of opengl_line()");
+		float invscaleX = 1.f / scaleX;
 
-	gr_opengl_end_2d_matrix();
+		bool twoPassRequired = false;
+
+		path->setFillColor(&gr_screen.current_color);
+
+		// Do a two pass algorithm, first render text using NanoVG, then render old characters
+		for (int pass = 0; pass < 2; ++pass) {
+			const char* text = s;
+			size_t textLen = length;
+			float x = 0.0f;
+			float y = 0.0f;
+
+			size_t tokenLength;
+			while ((tokenLength = NVGFont::getTokenLength(text, textLen)) > 0) {
+				textLen -= tokenLength;
+
+				bool doRender = true;
+				bool specialChar = false;
+				if (tokenLength == 1) {
+					// We may have encoutered a special character
+					switch (*text) {
+						case '\n':
+							doRender = false;
+
+							y += nvgFont->getHeight();
+							x = 0;
+							break;
+						case '\t':
+							doRender = false;
+
+							x += nvgFont->getTabWidth();
+							break;
+						default:
+							if (*text >= Lcl_special_chars || *text < 0) {
+								specialChar = true;
+								twoPassRequired = true;
+							}
+							else {
+								doRender = true;
+							}
+
+							break;
+					}
+				}
+
+				if (specialChar) {
+					if (pass == 1) {
+						gr_opengl_string_old(sx + x * scaleX,
+											 sy + (y + nvgFont->getTopOffset()) * scaleY,
+											 text,
+											 text + 1,
+											 nvgFont->getSpecialCharacterFont(),
+											 nvgFont->getTopOffset(),
+											 nvgFont->getHeight(),
+											 resize_mode);
+					}
+
+					int width;
+					int spacing;
+					get_char_width_old(nvgFont->getSpecialCharacterFont(), *text, '\0', &width, &spacing);
+
+					x += spacing;
+				}
+				else if (doRender) {
+					if (doRender && tokenLength > 0) {
+						float advance;
+						float currentX = x;
+						float currentY = y + nvgFont->getTopOffset();
+
+						if (pass == 0) {
+							advance = path->text(currentX, currentY, text, text + tokenLength) - currentX;
+						}
+						else {
+							advance =
+								path->textBounds(currentX, currentY, text, text + tokenLength, nullptr) - currentX;
+						}
+
+						x += advance * invscaleX;
+					}
+				}
+
+				text = text + tokenLength;
+			}
+
+			if (pass == 0) {
+				endDrawing(path);
+			}
+
+			if (!twoPassRequired) {
+				break;
+			}
+		}
+	}
+	else {
+		Error(LOCATION, "Invalid type enumeration for font \"%s\". Get a coder!", currentFont->getName().c_str());
+	}
+
+	GL_state.CullFace(cull_face);
+	GL_state.DepthTest(depth);
+}
+
+void gr_opengl_line(float x1, float y1, float x2, float y2, int resize_mode)
+{
+    auto path = beginDrawing(resize_mode);
+
+    if ((x1 == x2) && (y1 == y2))
+    {
+        path->circle(x1, y1, 1.5);
+
+        path->setFillColor(&gr_screen.current_color);
+        path->fill();
+    }
+    else
+    {
+        path->moveTo(x1, y1);
+        path->lineTo(x2, y2);
+
+        path->setStrokeColor(&gr_screen.current_color);
+        path->setStrokeWidth(1.0f);
+        path->stroke();
+    }
+
+    endDrawing(path);
+}
+
+void gr_opengl_line(int x1, int y1, int x2, int y2, int resize_mode)
+{
+    gr_opengl_line(i2fl(x1), i2fl(y1), i2fl(x2), i2fl(y2), resize_mode);
 }
 
 void gr_opengl_line_htl(const vec3d *start, const vec3d *end)
@@ -796,249 +937,60 @@ void gr_opengl_line_htl(const vec3d *start, const vec3d *end)
 
 void gr_opengl_aaline(vertex *v1, vertex *v2)
 {
-// -- AA OpenGL lines.  Looks good but they are kinda slow so this is disabled until an option is implemented - taylor
-//	gr_opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-//	glEnable( GL_LINE_SMOOTH );
-//	glHint( GL_LINE_SMOOTH_HINT, GL_FASTEST );
-//	glLineWidth( 1.0 );
-
 	float x1 = v1->screen.xyw.x;
 	float y1 = v1->screen.xyw.y;
 	float x2 = v2->screen.xyw.x;
 	float y2 = v2->screen.xyw.y;
-	float sx1, sy1;
-	float sx2, sy2;
 
-
-	FL_CLIPLINE(x1, y1, x2, y2, (float)gr_screen.clip_left, (float)gr_screen.clip_top, (float)gr_screen.clip_right, (float)gr_screen.clip_bottom, return, ;, ;);
-
-	sx1 = x1 + (float)gr_screen.offset_x;
-	sy1 = y1 + (float)gr_screen.offset_y;
-	sx2 = x2 + (float)gr_screen.offset_x;
-	sy2 = y2 + (float)gr_screen.offset_y;
-
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-
-	if ( (x1 == x2) && (y1 == y2) ) {
-		gr_opengl_set_2d_matrix();
-
-		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-		GLfloat vert[3]= {sx1, sy1, -0.99f};
-
-		vertex_layout vert_def;
-
-		vert_def.add_vertex_component(vertex_format_data::POSITION3, 0, vert);
-
-		opengl_bind_vertex_layout(vert_def);
-		opengl_shader_set_passthrough(false);
-
-		glDrawArrays(GL_POINTS, 0, 1);
-
-		GL_CHECK_FOR_ERRORS("end of opengl_aaline()");
-
-		gr_opengl_end_2d_matrix();
-
-		return;
-	}
-
-	if (x1 == x2) {
-		if (sy1 < sy2) {
-			sy2 += 0.5f;
-		} else {
-			sy1 += 0.5f;
-		}
-	} else if (y1 == y2) {
-		if (sx1 < sx2) {
-			sx2 += 0.5f;
-		} else {
-			sx1 += 0.5f;
-		}
-	}
-
-	gr_opengl_set_2d_matrix();
-
-	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-	GLfloat line[6] = {
-		sx2, sy2, -0.99f,
-		sx1, sy1, -0.99f
-	};
-
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION3, 0, line);
-
-	opengl_bind_vertex_layout(vert_def);
-	opengl_shader_set_passthrough(false);
-
-	glDrawArrays(GL_LINES, 0, 2);
-
-	GL_CHECK_FOR_ERRORS("end of opengl_aaline()");
-
-	gr_opengl_end_2d_matrix();
-
-//	glDisable( GL_LINE_SMOOTH );
+    // AA is now standard
+    gr_opengl_line(x1, y1, x2, y2, GR_RESIZE_NONE);
 }
 
 void gr_opengl_gradient(int x1, int y1, int x2, int y2, int resize_mode)
 {
-	int swapped = 0;
-
 	if ( !gr_screen.current_color.is_alphacolor ) {
 		gr_opengl_line(x1, y1, x2, y2, resize_mode);
 		return;
 	}
 
-	if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-		gr_resize_screen_pos(&x1, &y1, NULL, NULL, resize_mode);
-		gr_resize_screen_pos(&x2, &y2, NULL, NULL, resize_mode);
-	}
+    auto path = beginDrawing(resize_mode);
 
-	INT_CLIPLINE(x1, y1, x2, y2, gr_screen.clip_left, gr_screen.clip_top, gr_screen.clip_right, gr_screen.clip_bottom, return, ;, swapped = 1);
+    color endColor = gr_screen.current_color;
+    endColor.alpha = 0;
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+    auto gradientPaint = path->createLinearGradient(i2fl(x1), i2fl(y1),
+        i2fl(x2), i2fl(y2), &gr_screen.current_color, &endColor);
 
-	ubyte aa = swapped ? 0 : gr_screen.current_color.alpha;
-	ubyte ba = swapped ? gr_screen.current_color.alpha : 0;
+    path->moveTo(i2fl(x1), i2fl(y1));
+    path->lineTo(i2fl(x2), i2fl(y2));
 
-	float sx1, sy1, sx2, sy2;
+    path->setStrokePaint(gradientPaint);
+    path->setStrokeWidth(1.0f);
+    path->stroke();
 
-	sx1 = i2fl(x1 + gr_screen.offset_x);
-	sy1 = i2fl(y1 + gr_screen.offset_y);
-	sx2 = i2fl(x2 + gr_screen.offset_x);
-	sy2 = i2fl(y2 + gr_screen.offset_y);
-
-	if (x1 == x2) {
-		if (sy1 < sy2) {
-			sy2 += 0.5f;
-		} else {
-			sy1 += 0.5f;
-		}
-	} else if (y1 == y2) {
-		if (sx1 < sx2) {
-			sx2 += 0.5f;
-		} else {
-			sx1 += 0.5f;
-		}
-	}
-
-	GLubyte colour[8] = {
-		gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, ba,
-		gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, aa
-	};
-
-	GLfloat verts[4] = {
-		sx2, sy2,
-		sx1, sy1
-	};
-
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION2, 0, verts);
-	vert_def.add_vertex_component(vertex_format_data::COLOR4, 0, colour);
-
-	opengl_bind_vertex_layout(vert_def);
-	opengl_shader_set_passthrough(false);
-
-	glDrawArrays(GL_LINES, 0, 2);
+    endDrawing(path);
 }
 
 void gr_opengl_circle(int xc, int yc, int d, int resize_mode)
 {
-	gr_opengl_arc(xc, yc, d / 2.0f, 0.0f, 360.0f, true, resize_mode);
+    auto path = beginDrawing(resize_mode);
+
+    path->circle(i2fl(xc), i2fl(yc), d / 2.0f);
+    path->setFillColor(&gr_screen.current_color);
+    path->fill();
+
+    endDrawing(path);
 }
 
 void gr_opengl_unfilled_circle(int xc, int yc, int d, int resize_mode)
 {
-	int r = d / 2;
-	int segments = 4 + (int)(r); // seems like a good approximation
-	float theta = 2 * PI / float(segments - 1);
-	float c = cosf(theta);
-	float s = sinf(theta);
-	float t;
+    auto path = beginDrawing(resize_mode);
 
-	float x1 = 1.0f;
-	float y1 = 0.0f;
-	float x2 = x1;
-	float y2 = y1;
+    path->circle(i2fl(xc), i2fl(yc), d / 2.0f);
+    path->setStrokeColor(&gr_screen.current_color);
+    path->stroke();
 
-	float linewidth;
-	glGetFloatv(GL_LINE_WIDTH, &linewidth);
-
-	float halflinewidth = linewidth / 2.0f;
-	float inner_rad = r - halflinewidth;
-	float outer_rad = r + halflinewidth;
-
-	int do_resize = 0;
-
-	if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-		gr_resize_screen_pos(&xc, &yc, NULL, NULL, resize_mode);
-		do_resize = 1;
-	}
-
-	// Big clip
-	if ( (xc+outer_rad) < gr_screen.clip_left ) {
-		return;
-	}
-
-	if ( (xc-outer_rad) > gr_screen.clip_right ) {
-		return;
-	}
-
-	if ( (yc+outer_rad) < gr_screen.clip_top ) {
-		return;
-	}
-
-	if ( (yc-outer_rad) > gr_screen.clip_bottom ) {
-		return;
-	}
-
-	int offset_x = ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
-	int offset_y = ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
-
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-
-	GLfloat *circle = new GLfloat[segments * 4];
-
-	for (int i=0; i < segments * 4; i+=4) {
-		circle[i] = i2fl(xc + (x2 * outer_rad) + offset_x);
-		circle[i+1] = i2fl(yc + (y2 * outer_rad) + offset_y);
-
-		circle[i+2] = i2fl(xc + (x2 * inner_rad) + offset_x);
-		circle[i+3] = i2fl(yc + (y2 * inner_rad) + offset_y);
-
-		t = x2;
-		x2 = c * x1 - s * y1;
-		y2 = s * t + c * y1;
-
-		x1 = x2;
-		y1 = y2;
-	}
-
-	gr_opengl_set_2d_matrix();
-
-	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION2, 0, circle);
-
-	opengl_bind_vertex_layout(vert_def);
-	opengl_shader_set_passthrough(false);
-
-	glDrawArrays(GL_QUAD_STRIP, 0, segments * 2);
-
-	GL_CHECK_FOR_ERRORS("end of opengl_unfilled_circle()");
-
-	gr_opengl_end_2d_matrix();
-
-	delete [] circle;
+    endDrawing(path);
 }
 
 void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode)
@@ -1050,234 +1002,79 @@ void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, 
 		angle_end = temp;
 	}
 
-	float arc_length_ratio;
-	arc_length_ratio = MIN(angle_end - angle_start, 360.0f) / 360.0f;
+    using namespace graphics::paths;
 
-	int segments = 4 + (int)(r * arc_length_ratio); // seems like a good approximation
-	float theta = 2 * PI / float(segments - 1) * arc_length_ratio;
-	float c = cosf(theta);
-	float s = sinf(theta);
-	float t;
+    auto path = beginDrawing(resize_mode);
 
-	float x1 = cosf(fl_radians(angle_start));
-	float y1 = sinf(fl_radians(angle_start));
-	float x2 = x1;
-	float y2 = y1;
+    if (fill)
+    {
+        path->arc(i2fl(xc), i2fl(yc), r, fl_radians(angle_start), fl_radians(angle_end), DIR_CW);
+        path->lineTo(i2fl(xc), i2fl(yc));
 
-	float halflinewidth = 0.0f;
-	float inner_rad = 0.0f; // only used if fill==false
-	float outer_rad = r;
+        path->setFillColor(&gr_screen.current_color);
+        path->fill();
+    }
+    else
+    {
+        path->arc(i2fl(xc), i2fl(yc), r, fl_radians(angle_start), fl_radians(angle_end), DIR_CW);
+        path->setStrokeColor(&gr_screen.current_color);
+        path->stroke();
+    }
 
-	if (!fill) {
-		float linewidth;
-		glGetFloatv(GL_LINE_WIDTH, &linewidth);
-
-		halflinewidth = linewidth / 2.0f;
-		inner_rad = r - halflinewidth;
-		outer_rad = r + halflinewidth;
-	}
-
-	int do_resize = 0;
-
-	if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-		gr_resize_screen_pos(&xc, &yc, NULL, NULL, resize_mode);
-		do_resize = 1;
-	}
-
-	// Big clip
-	if ( (xc+outer_rad) < gr_screen.clip_left ) {
-		return;
-	}
-
-	if ( (xc-outer_rad) > gr_screen.clip_right ) {
-		return;
-	}
-
-	if ( (yc+outer_rad) < gr_screen.clip_top ) {
-		return;
-	}
-
-	if ( (yc-outer_rad) > gr_screen.clip_bottom ) {
-		return;
-	}
-
-	int offset_x = ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
-	int offset_y = ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
-
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-
-	GLfloat *arc;
-
-	gr_opengl_set_2d_matrix();
-	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-
-	if (fill) {
-		arc = new GLfloat[segments * 2 + 2];
-
-		arc[0] = i2fl(xc);
-		arc[1] = i2fl(yc);
-
-		for (int i=2; i < segments * 2 + 2; i+=2) {
-			arc[i] = i2fl(xc + (x2 * outer_rad) + offset_x);
-			arc[i+1] = i2fl(yc + (y2 * outer_rad) + offset_y);
-
-			t = x2;
-			x2 = c * x1 - s * y1;
-			y2 = s * t + c * y1;
-
-			x1 = x2;
-			y1 = y2;
-		}
-
-		vertex_layout vert_def;
-		vert_def.add_vertex_component(vertex_format_data::POSITION2, 0, arc);
-		opengl_bind_vertex_layout(vert_def);
-		opengl_shader_set_passthrough(false);
-
-		glDrawArrays(GL_TRIANGLE_FAN, 0, segments + 1);
-	} else {
-		arc = new GLfloat[segments * 4];
-
-		for (int i=0; i < segments * 4; i+=4) {
-			arc[i] = i2fl(xc + (x2 * outer_rad) + offset_x);
-			arc[i+1] = i2fl(yc + (y2 * outer_rad) + offset_y);
-
-			arc[i+2] = i2fl(xc + (x2 * inner_rad) + offset_x);
-			arc[i+3] = i2fl(yc + (y2 * inner_rad) + offset_y);
-
-			t = x2;
-			x2 = c * x1 - s * y1;
-			y2 = s * t + c * y1;
-
-			x1 = x2;
-			y1 = y2;
-		}
-
-		vertex_layout vert_def;
-		vert_def.add_vertex_component(vertex_format_data::POSITION2, 0, arc);
-		opengl_bind_vertex_layout(vert_def);
-		opengl_shader_set_passthrough(false);
-
-		glDrawArrays(GL_QUAD_STRIP, 0, segments * 2);
-	}
-
-	GL_CHECK_FOR_ERRORS("end of opengl_arc()");
-
-	gr_opengl_end_2d_matrix();
-
-	delete [] arc;
+    endDrawing(path);
 }
 
 void gr_opengl_curve(int xc, int yc, int r, int direction, int resize_mode)
 {
-	int a, b, p;
+    using namespace graphics::paths;
 
-	if (resize_mode != GR_RESIZE_NONE) {
-		gr_resize_screen_pos(&xc, &yc, NULL, NULL, resize_mode);
-	}
+    auto path = beginDrawing(resize_mode);
+    float centerX, centerY;
+    float beginAngle, endAngle;
 
-	if ( (xc + r) < gr_screen.clip_left ) {
-		return;
-	}
+    switch (direction)
+    {
+    case 0:
+    {
+        centerX = i2fl(xc + r);
+        centerY = i2fl(yc + r);
+        beginAngle = fl_radians(180.f);
+        endAngle = fl_radians(270.f);
+        break;
+    }
+    case 1:
+    {
+        centerX = i2fl(xc);
+        centerY = i2fl(yc + r);
+        beginAngle = fl_radians(270.f);
+        endAngle = fl_radians(360.f);
+        break;
+    }
+    case 2:
+    {
+        centerX = i2fl(xc + r);
+        centerY = i2fl(yc);
+        beginAngle = fl_radians(90.f);
+        endAngle = fl_radians(180.f);
+        break;
+    }
+    case 3:
+    {
+        centerX = i2fl(xc);
+        centerY = i2fl(yc);
+        beginAngle = fl_radians(0.f);
+        endAngle = fl_radians(90.f);
+        break;
+    }
+    default:
+        return;
+    }
 
-	if ( (yc + r) < gr_screen.clip_top ) {
-		return;
-	}
+    path->arc(centerX, centerY, i2fl(r), beginAngle, endAngle, DIR_CW);
+    path->setStrokeColor(&gr_screen.current_color);
+    path->stroke();
 
-	p = 3 - (2 * r);
-	a = 0;
-	b = r;
-
-	switch (direction) {
-		case 0: {
-			yc += r;
-			xc += r;
-
-			while (a < b) {
-				// Draw the first octant
-				gr_opengl_line(xc - b + 1, yc - a, xc - b, yc - a, GR_RESIZE_NONE);
-
-				if (p < 0) {
-					p += (a << 2) + 6;
-				} else {
-					// Draw the second octant
-					gr_opengl_line(xc - a + 1, yc - b, xc - a, yc - b, GR_RESIZE_NONE);
-					p += ((a - b) << 2) + 10;
-					b--;
-				}
-
-				a++;
-			}
-
-			break;
-		}
-
-		case 1: {
-			yc += r;
-
-			while (a < b) {
-				// Draw the first octant
-				gr_opengl_line(xc + b - 1, yc - a, xc + b, yc - a, GR_RESIZE_NONE);
-
-				if (p < 0) {
-					p += (a << 2) + 6;
-				} else {
-					// Draw the second octant
-					gr_opengl_line(xc + a - 1, yc - b, xc + a, yc - b, GR_RESIZE_NONE);
-					p += ((a - b) << 2) + 10;
-					b--;
-				}
-
-				a++;
-			}
-
-			break;
-		}
-
-		case 2: {
-			xc += r;
-
-			while (a < b) {
-				// Draw the first octant
-				gr_opengl_line(xc - b + 1, yc + a, xc - b, yc + a, GR_RESIZE_NONE);
-
-				if (p < 0) {
-					p += (a << 2) + 6;
-				} else {
-					// Draw the second octant
-					gr_opengl_line(xc - a + 1, yc + b, xc - a, yc + b, GR_RESIZE_NONE);
-					p += ((a - b) << 2) + 10;
-					b--;
-				}
-
-				a++;
-			}
-
-			break;
-		}
-
-		case 3: {
-			while (a < b) {
-				// Draw the first octant
-				gr_opengl_line(xc + b - 1, yc + a, xc + b, yc + a, GR_RESIZE_NONE);
-
-				if (p < 0) {
-					p += (a << 2) + 6;
-				} else {
-					// Draw the second octant
-					gr_opengl_line(xc + a - 1, yc + b, xc + a, yc + b, GR_RESIZE_NONE);
-					p += ((a - b) << 2) + 10;
-					b--;
-				}
-
-				a++;
-			}
-
-			break;
-		}
-	}
+    endDrawing(path);
 }
 
 struct v6 { GLfloat x,y,z,w,u,v; };
@@ -2370,41 +2167,41 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 
 	glGetError();
 
-	vglGenBuffersARB(1, &deferred_light_sphere_vbo);
+	glGenBuffers(1, &deferred_light_sphere_vbo);
 
 	// make sure we have one
 	if (deferred_light_sphere_vbo) {
-		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, deferred_light_sphere_vbo);
-		vglBufferDataARB(GL_ARRAY_BUFFER_ARB, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW_ARB);
+		glBindBuffer(GL_ARRAY_BUFFER, deferred_light_sphere_vbo);
+		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW);
 
 		// just in case
 		if ( opengl_check_for_errors() ) {
-			vglDeleteBuffersARB(1, &deferred_light_sphere_vbo);
+			glDeleteBuffers(1, &deferred_light_sphere_vbo);
 			deferred_light_sphere_vbo = 0;
 			return;
 		}
 
-		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 		vm_free(Vertices);
 		Vertices = NULL;
 	}
 
-	vglGenBuffersARB(1, &deferred_light_sphere_ibo);
+	glGenBuffers(1, &deferred_light_sphere_ibo);
 
 	// make sure we have one
 	if (deferred_light_sphere_ibo) {
-		vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, deferred_light_sphere_ibo);
-		vglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW_ARB);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, deferred_light_sphere_ibo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW);
 
 		// just in case
 		if ( opengl_check_for_errors() ) {
-			vglDeleteBuffersARB(1, &deferred_light_sphere_ibo);
+			glDeleteBuffers(1, &deferred_light_sphere_ibo);
 			deferred_light_sphere_ibo = 0;
 			return;
 		}
 
-		vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 		vm_free(Indices);
 		Indices = NULL;
@@ -2427,7 +2224,7 @@ void gr_opengl_draw_deferred_light_sphere(vec3d *position, float rad, bool clear
 
 	opengl_bind_vertex_layout(vertex_declare);
 
-	vglDrawRangeElements(GL_TRIANGLES, 0, deferred_light_sphere_vcount, deferred_light_sphere_icount, GL_UNSIGNED_SHORT, 0);
+	glDrawRangeElements(GL_TRIANGLES, 0, deferred_light_sphere_vcount, deferred_light_sphere_icount, GL_UNSIGNED_SHORT, 0);
 
 	g3_done_instance(true);
 }
@@ -2498,41 +2295,41 @@ void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a
 
 	glGetError();
 
-	vglGenBuffersARB(1, &deferred_light_cylinder_vbo);
+	glGenBuffers(1, &deferred_light_cylinder_vbo);
 
 	// make sure we have one
 	if (deferred_light_cylinder_vbo) {
-		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, deferred_light_cylinder_vbo);
-		vglBufferDataARB(GL_ARRAY_BUFFER_ARB, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW_ARB);
+		glBindBuffer(GL_ARRAY_BUFFER, deferred_light_cylinder_vbo);
+		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW);
 
 		// just in case
 		if ( opengl_check_for_errors() ) {
-			vglDeleteBuffersARB(1, &deferred_light_cylinder_vbo);
+			glDeleteBuffers(1, &deferred_light_cylinder_vbo);
 			deferred_light_cylinder_vbo = 0;
 			return;
 		}
 
-		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 		vm_free(Vertices);
 		Vertices = NULL;
 	}
 
-	vglGenBuffersARB(1, &deferred_light_cylinder_ibo);
+	glGenBuffers(1, &deferred_light_cylinder_ibo);
 
 	// make sure we have one
 	if (deferred_light_cylinder_ibo) {
-		vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, deferred_light_cylinder_ibo);
-		vglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW_ARB);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, deferred_light_cylinder_ibo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW);
 
 		// just in case
 		if ( opengl_check_for_errors() ) {
-			vglDeleteBuffersARB(1, &deferred_light_cylinder_ibo);
+			glDeleteBuffers(1, &deferred_light_cylinder_ibo);
 			deferred_light_cylinder_ibo = 0;
 			return;
 		}
 
-		vglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 		vm_free(Indices);
 		Indices = NULL;
@@ -2555,7 +2352,7 @@ void gr_opengl_draw_deferred_light_cylinder(vec3d *position,matrix *orient, floa
 
 	opengl_bind_vertex_layout(vertex_declare);
 
-	vglDrawRangeElements(GL_TRIANGLES, 0, deferred_light_cylinder_vcount, deferred_light_cylinder_icount, GL_UNSIGNED_SHORT, 0);
+	glDrawRangeElements(GL_TRIANGLES, 0, deferred_light_cylinder_vcount, deferred_light_cylinder_icount, GL_UNSIGNED_SHORT, 0);
 
 	g3_done_instance(true);
 }
@@ -2568,25 +2365,10 @@ void opengl_setup_scene_textures()
 {
 	Scene_texture_initialized = 0;
 
-	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo || !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) ) {
+	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo || !GLAD_GL_EXT_framebuffer_object ) {
 		Cmdline_postprocess = 0;
 		Cmdline_softparticles = 0;
 		Cmdline_fb_explosions = 0;
-
-		Scene_ldr_texture = 0;
-		Scene_color_texture = 0;
-		Scene_effect_texture = 0;
-		Scene_depth_texture = 0;
-		return;
-	}
-
-	// for ease of use we require support for non-power-of-2 textures in one
-	// form or another:
-	//    - the NPOT extension
-	//    - GL version 2.0+ (which should work for non-reporting ATI cards since we don't use mipmaps)
-	if ( !(Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO) || (GL_version >= 20)) ) {
-		Cmdline_postprocess = 0;
-		Cmdline_softparticles = 0;
 
 		Scene_ldr_texture = 0;
 		Scene_color_texture = 0;
@@ -2608,8 +2390,8 @@ void opengl_setup_scene_textures()
 	}
 
 	// create framebuffer
-	vglGenFramebuffersEXT(1, &Scene_framebuffer);
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
+	glGenFramebuffersEXT(1, &Scene_framebuffer);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
 
 	// setup main render texture
 
@@ -2628,7 +2410,7 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_ARB, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
 
 	// setup low dynamic range color texture
 	glGenTextures(1, &Scene_ldr_texture);
@@ -2660,7 +2442,7 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_ARB, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, Scene_position_texture, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, Scene_position_texture, 0);
 
 	// setup normal render texture
 	glGenTextures(1, &Scene_normal_texture);
@@ -2677,7 +2459,7 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_ARB, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_TEXTURE_2D, Scene_normal_texture, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_TEXTURE_2D, Scene_normal_texture, 0);
 
 	// setup specular render texture
 	glGenTextures(1, &Scene_specular_texture);
@@ -2694,7 +2476,7 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT3_EXT, GL_TEXTURE_2D, Scene_specular_texture, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT3_EXT, GL_TEXTURE_2D, Scene_specular_texture, 0);
 
 	//Set up luminance texture (used as input for FXAA)
 	// also used as a light accumulation buffer during the deferred pass
@@ -2728,7 +2510,7 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_ARB, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT4_EXT, GL_TEXTURE_2D, Scene_effect_texture, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT4_EXT, GL_TEXTURE_2D, Scene_effect_texture, 0);
 
 	// setup cockpit depth texture
 	glGenTextures(1, &Cockpit_depth_texture);
@@ -2745,7 +2527,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, Scene_texture_width, Scene_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
 	gr_zbuffer_set(GR_ZBUFF_FULL);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -2765,19 +2547,19 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, Scene_texture_width, Scene_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
 	//setup main stencil buffer
-	vglGenRenderbuffersEXT(1, &Scene_stencil_buffer);
-    vglBindRenderbufferEXT(GL_RENDERBUFFER, Scene_stencil_buffer);
-    vglRenderbufferStorageEXT(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_EXT, Scene_texture_width, Scene_texture_height);
-	//vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
+	glGenRenderbuffersEXT(1, &Scene_stencil_buffer);
+    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, Scene_stencil_buffer);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH24_STENCIL8_EXT, Scene_texture_width, Scene_texture_height);
+	//glFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
 
 	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
 	if ( opengl_check_framebuffer() ) {
-		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-		vglDeleteFramebuffersEXT(1, &Scene_framebuffer);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glDeleteFramebuffersEXT(1, &Scene_framebuffer);
 		Scene_framebuffer = 0;
 
 		GL_state.Texture.Disable();
@@ -2814,8 +2596,8 @@ void opengl_setup_scene_textures()
 	//Setup thruster distortion framebuffer
     if (Cmdline_fb_thrusters) 
     {
-        vglGenFramebuffersEXT(1, &Distortion_framebuffer);
-        vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Distortion_framebuffer);
+        glGenFramebuffersEXT(1, &Distortion_framebuffer);
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Distortion_framebuffer);
 
         glGenTextures(2, Distortion_texture);
 
@@ -2841,13 +2623,13 @@ void opengl_setup_scene_textures()
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 32, 32, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-        vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Distortion_texture[0], 0);
+        glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Distortion_texture[0], 0);
     }
 
 
 	if ( opengl_check_framebuffer() ) {
-		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-		vglDeleteFramebuffersEXT(1, &Distortion_framebuffer);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glDeleteFramebuffersEXT(1, &Distortion_framebuffer);
 		Distortion_framebuffer = 0;
 
 		GL_state.Texture.Disable();
@@ -2867,7 +2649,7 @@ void opengl_setup_scene_textures()
 		return;
 	}
 
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
 	Scene_texture_initialized = 1;
 	Scene_framebuffer_in_frame = false;
@@ -2911,7 +2693,7 @@ void opengl_scene_texture_shutdown()
 	}
 
 	if ( Scene_framebuffer ) {
-		vglDeleteFramebuffersEXT(1, &Scene_framebuffer);
+		glDeleteFramebuffersEXT(1, &Scene_framebuffer);
 		Scene_framebuffer = 0;
 	}
 
@@ -2920,7 +2702,7 @@ void opengl_scene_texture_shutdown()
 	Distortion_texture[1] = 0;
 
 	if ( Distortion_framebuffer ) {
-		vglDeleteFramebuffersEXT(1, &Distortion_framebuffer);
+		glDeleteFramebuffersEXT(1, &Distortion_framebuffer);
 		Distortion_framebuffer = 0;
 	}
 
@@ -2938,7 +2720,7 @@ void gr_opengl_scene_texture_begin()
 		return;
 	}
 
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
 
 	if (GL_rendering_to_texture)
 	{
@@ -2959,14 +2741,14 @@ void gr_opengl_scene_texture_begin()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	} else {
 		GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_COLOR_ATTACHMENT3_EXT };
-		vglDrawBuffers(4, buffers);
+		glDrawBuffers(4, buffers);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		opengl_clear_deferred_buffers();
 
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 	}
 
 	Scene_framebuffer_in_frame = true;
@@ -2999,7 +2781,7 @@ void gr_opengl_scene_texture_end()
 		GLboolean blend = GL_state.Blend(GL_FALSE);
 		GLboolean cull = GL_state.CullFace(GL_FALSE);
 
-		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());
 
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -3091,7 +2873,7 @@ void gr_opengl_copy_effect_texture()
 	}
 
 	glDrawBuffer(GL_COLOR_ATTACHMENT4_EXT);
-	vglBlitFramebufferEXT(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebufferEXT(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 }
 
@@ -3129,7 +2911,7 @@ void gr_opengl_deferred_lighting_begin()
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 	GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_COLOR_ATTACHMENT3_EXT };
-	vglDrawBuffers(4, buffers);
+	glDrawBuffers(4, buffers);
 }
 
 void gr_opengl_deferred_lighting_end()
@@ -3137,7 +2919,7 @@ void gr_opengl_deferred_lighting_end()
 	if(!Deferred_lighting)
 		return;
 	Deferred_lighting = false;
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
 }
@@ -3163,9 +2945,9 @@ void gr_opengl_deferred_lighting_finish()
 
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0) );
 
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_luminance_texture, 0);
-	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
-	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_luminance_texture, 0);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, Scene_stencil_buffer);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, Scene_stencil_buffer);
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
@@ -3262,9 +3044,9 @@ void gr_opengl_deferred_lighting_finish()
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
-	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, 0);
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
@@ -3344,8 +3126,8 @@ void gr_opengl_update_distortion()
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
 	opengl_shader_set_current();
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Distortion_framebuffer);
-	vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Distortion_texture[!Distortion_switch], 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Distortion_framebuffer);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Distortion_texture[!Distortion_switch], 0);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
 	glViewport(0,0,32,32);
@@ -3412,7 +3194,7 @@ void gr_opengl_update_distortion()
 	Distortion_switch = !Distortion_switch;
 
 	// reset state
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
 
 	glViewport(0,0,gr_screen.max_w,gr_screen.max_h);
 

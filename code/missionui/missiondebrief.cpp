@@ -61,7 +61,7 @@
 #define DEBRIEF_ALLTIME_STATS		2
 #define DEBRIEF_ALLTIME_KILLS		3
 
-#define DEBRIEFING_FONT	FONT1
+const int DEBRIEFING_FONT = font::FONT1;
 
 extern float Brief_text_wipe_time_elapsed;
 
@@ -1929,7 +1929,7 @@ void debrief_init()
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
 
 	// MageKing17 - Set the font so that wordwrapping in brief_color_text_init() calculates based on the same font as the debriefing itself.
-	gr_set_font(DEBRIEFING_FONT);
+	font::set_font(DEBRIEFING_FONT);
 
 	// set up the right briefing for this guy
 	if(MULTI_TEAM){
@@ -2317,10 +2317,10 @@ void debrief_do_frame(float frametime)
 
 		// draw "Please Wait"		
 		gr_set_color_fast(&Color_normal);
-		gr_set_font(FONT2);
+		font::set_font(font::FONT2);
 		gr_get_string_size(&str_w, &str_h, please_wait_str);
 		gr_string((gr_screen.max_w_unscaled - str_w) / 2, (gr_screen.max_h_unscaled - str_h) / 2, please_wait_str, GR_RESIZE_MENU);
-		gr_set_font(FONT1);
+		font::set_font(font::FONT1);
 
 		gr_flip();
 
@@ -2464,7 +2464,7 @@ void debrief_do_frame(float frametime)
 	// draw the title of the mission
 	gr_set_color_fast(&Color_bright_white);
 	strcpy_s(buf, The_mission.name);
-	gr_force_fit_string(buf, 255, Debrief_title_coords[gr_screen.res][2]);
+	font::force_fit_string(buf, 255, Debrief_title_coords[gr_screen.res][2]);
 	gr_string(Debrief_title_coords[gr_screen.res][0], Debrief_title_coords[gr_screen.res][1], buf, GR_RESIZE_MENU);	
 
 #if !defined(NDEBUG)
@@ -2473,7 +2473,7 @@ void debrief_do_frame(float frametime)
 #endif
 
 	// Set the font for the debriefing instead of relying on the implicit font-setting of Debrief_ui_window.draw() -MageKing17
-	gr_set_font(DEBRIEFING_FONT);
+	font::set_font(DEBRIEFING_FONT);
 
 	// draw the screen-specific text
 	switch (Current_mode) {
@@ -2581,7 +2581,7 @@ void debrief_rebuild_player_list()
 			strcpy_s(list->callsign, np->m_player->callsign);
 			
 			// make sure to leave some room to blit the team indicator
-			gr_force_fit_string(list->callsign, CALLSIGN_LEN - 1, Debrief_list_coords[gr_screen.res][2] - MULTI_LIST_TEAM_OFFSET);
+			font::force_fit_string(list->callsign, CALLSIGN_LEN - 1, Debrief_list_coords[gr_screen.res][2] - MULTI_LIST_TEAM_OFFSET);
 		}
 	} // end for
 }

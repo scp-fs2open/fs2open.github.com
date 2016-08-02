@@ -1356,65 +1356,141 @@ ADE_FUNC(write, l_File, "string or number, ...",
 	return ade_set_args(L, "i", num_successful);
 }
 
-//**********HANDLE: Font
-ade_obj<int> l_Font("font", "font handle");
-
-ADE_FUNC(__tostring, l_Font, NULL, "Filename of font", "string", "Font filename, or an empty string if the handle is invalid")
+class font_h
 {
-	int font_num = -1;
-	if(!ade_get_args(L, "o", l_Font.Get(&font_num)))
-		return ade_set_error(L, "s", "");
+private:
+	font::FSFont *font;
 
-	if(font_num < 0 || font_num >= Num_fonts)
-		return ade_set_error(L, "s", "");
+public:
+	font_h(font::FSFont *fontIn) : font(fontIn) {}
+	font_h() : font( NULL ) {}
 
-	return ade_set_args(L, "s", Fonts[font_num].filename);
-}
+	font::FSFont *Get()
+	{
+		if (!isValid())
+			return NULL;
 
-ADE_VIRTVAR(Filename, l_Font, "string", "Filename of font (including extension)", "string", NULL)
-{
-	int font_num = -1;
-	char *newname = NULL;
-	if(!ade_get_args(L, "o|s", l_Font.Get(&font_num), &newname))
-		return ade_set_error(L, "s", "");
-
-	if(font_num < 0 || font_num >= Num_fonts)
-		return ade_set_error(L, "s", "");
-
-	if(ADE_SETTING_VAR) {
-		strncpy(Fonts[font_num].filename, newname, sizeof(Fonts[font_num].filename)-1);
+		return font;
 	}
 
-	return ade_set_args(L, "s", Fonts[font_num].filename);
+	bool isValid()
+	{
+		return font != NULL;
+	}
+};
+
+//**********HANDLE: Font
+ade_obj<font_h> l_Font("font", "font handle");
+
+ADE_FUNC(__tostring, l_Font, NULL, "Name of font", "string", "Font filename, or an empty string if the handle is invalid")
+{
+	font_h *fh = NULL;
+	if(!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
+		return ade_set_error(L, "s", "");
+
+	if (!fh->isValid())
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", fh->Get()->getName().c_str());
+}
+
+ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><b>Important:</b>This variable is deprecated. Use <i>Name</i> instead.", "string", NULL)
+{
+	font_h *fh = NULL;
+	char *newname = NULL;
+	if(!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
+		return ade_set_error(L, "s", "");
+
+	if (!fh->isValid())
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR)
+	{
+		fh->Get()->setName(newname);
+	}
+
+	return ade_set_args(L, "s", fh->Get()->getName().c_str());
+}
+
+ADE_VIRTVAR(Name, l_Font, "string", "Name of font (including extension)", "string", NULL)
+{
+	font_h *fh = NULL;
+	char *newname = NULL;
+	if(!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
+		return ade_set_error(L, "s", "");
+
+	if (!fh->isValid())
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR)
+	{
+		fh->Get()->setName(newname);
+	}
+
+	return ade_set_args(L, "s", fh->Get()->getName().c_str());
 }
 
 ADE_VIRTVAR(Height, l_Font, "number", "Height of font (in pixels)", "number", "Font height, or 0 if the handle is invalid")
 {
-	int font_num = -1;
+	font_h *fh = NULL;
 	int newheight = -1;
-	if(!ade_get_args(L, "o|i", l_Font.Get(&font_num), &newheight))
+	if(!ade_get_args(L, "o|i", l_Font.GetPtr(&fh), &newheight))
+		return ade_set_error(L, "i", 0);
+	
+	if (!fh->isValid())
 		return ade_set_error(L, "i", 0);
 
-	if(font_num < 0 || font_num >= Num_fonts)
-		return ade_set_error(L, "i", 0);
-
-	if(ADE_SETTING_VAR && newheight > 0) {
-		Fonts[font_num].h = newheight;
+	if(ADE_SETTING_VAR && newheight > 0)
+	{
+		LuaError(L, "Height setting isn't available anymore!");
 	}
 
-	return ade_set_args(L, "i", Fonts[font_num].h);
+	return ade_set_args(L, "f", fh->Get()->getHeight());
+}
+
+ADE_VIRTVAR(TopOffset, l_Font, "number", "The offset this font has from the baseline of textdrawing downwards. (in pixels)", "number", "Font top offset, or 0 if the handle is invalid")
+{
+	font_h *fh = NULL;
+	float newOffset = -1;
+	if(!ade_get_args(L, "o|f", l_Font.GetPtr(&fh), &newOffset))
+		return ade_set_error(L, "f", 0.0f);
+	
+	if (!fh->isValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR && newOffset > 0)
+	{
+		fh->Get()->setTopOffset(newOffset);	
+	}
+
+	return ade_set_args(L, "f", fh->Get()->getTopOffset());
+}
+
+ADE_VIRTVAR(BottomOffset, l_Font, "number", "The space (in pixels) this font skips downwards after drawing a line of text", "number", "Font bottom offset, or 0 if the handle is invalid")
+{
+	font_h *fh = NULL;
+	float newOffset = -1;
+	if(!ade_get_args(L, "o|f", l_Font.GetPtr(&fh), &newOffset))
+		return ade_set_error(L, "f", 0.0f);
+	
+	if (!fh->isValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR && newOffset > 0)
+	{
+		fh->Get()->setBottomOffset(newOffset);	
+	}
+
+	return ade_set_args(L, "f", fh->Get()->getBottomOffset());
 }
 
 ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
 {
-	int font_num;
-	if(!ade_get_args(L, "o", l_Font.Get(&font_num)))
+	font_h *fh;
+	if(!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
 		return ADE_RETURN_NIL;
 
-	if(font_num < 0 || font_num >= Num_fonts)
-		return ADE_RETURN_FALSE;
-	else
-		return ADE_RETURN_TRUE;
+	return ade_set_args(L, "b", fh->isValid());
 }
 
 //**********HANDLE: gameevent
@@ -13222,47 +13298,43 @@ ade_lib l_Graphics_Fonts("Fonts", &l_Graphics, NULL, "Font library");
 
 ADE_FUNC(__len, l_Graphics_Fonts, NULL, "Number of loaded fonts", "number", "Number of loaded fonts")
 {
-	return ade_set_args(L, "i", Num_fonts);
+	return ade_set_args(L, "i", font::FontManager::numberOfFonts());
 }
 
 ADE_INDEXER(l_Graphics_Fonts, "number Index/string Filename", "Array of loaded fonts", "font", "Font handle, or invalid font handle if index is invalid")
 {
-	char *s = NULL;
-
-	if(!ade_get_args(L, "*s", &s))
-		return ade_set_error(L, "o", l_Font.Set(-1));
-
-	int fn = gr_get_fontnum(s);
-	if(fn < 0)
+	if (lua_isnumber(L, 2))
 	{
-		fn = atoi(s);
-		if(fn < 1 || fn > Num_fonts)
-			return ade_set_error(L, "o", l_Font.Set(-1));
+		int index = -1;
 
-		//Lua->FS2
-		fn--;
+		if (!ade_get_args(L, "*i", &index))
+			return ade_set_error(L, "o", l_Font.Set(font_h()));
+
+		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(index))));
 	}
+	else
+	{
+		char *s = NULL;
 
-	return ade_set_args(L, "o", l_Font.Set(fn));
+		if(!ade_get_args(L, "*s", &s))
+			return ade_set_error(L, "o", l_Font.Set(font_h()));
+
+		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(s))));
+	}
 }
 
 ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", NULL)
 {
-	int newfn = -1;
+	font_h *newFh = NULL;
 
-	if(!ade_get_args(L, "*|o", l_Font.Get(&newfn)))
-		return ade_set_error(L, "o", l_Font.Set(-1));
+	if(!ade_get_args(L, "*|o", l_Font.GetPtr(&newFh)))
+		return ade_set_error(L, "o", l_Font.Set(font_h()));
 
-	if(ADE_SETTING_VAR && newfn < Num_fonts) {
-		gr_set_font(newfn);
+	if(ADE_SETTING_VAR && newFh->isValid()) {
+		font::FontManager::setCurrentFont(newFh->Get());
 	}
-
-	int fn = gr_get_current_fontnum();
-
-	if(fn < 0 || fn > Num_fonts)
-		return ade_set_error(L, "o", l_Font.Set(-1));
-
-	return ade_set_args(L, "o", l_Font.Set(fn));
+	
+	return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getCurrentFont())));
 }
 
 //****SUBLIBRARY: Graphics/PostEffects
@@ -13667,14 +13739,14 @@ ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a cu
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int x,y,ra;
+	int x,y,ra,dir = 0;
 
-	if(!ade_get_args(L, "iii", &x,&y,&ra))
+	if(!ade_get_args(L, "iii|i", &x,&y,&ra, &dir))
 		return ADE_RETURN_NIL;
 
 	//WMC - direction should be settable at a certain point via enumerations.
 	//Not gonna deal with it now.
-	gr_curve(x,y,ra,0,GR_RESIZE_FULL);
+    gr_curve(x, y, ra, dir, GR_RESIZE_NONE);
 
 	return ADE_RETURN_NIL;
 }

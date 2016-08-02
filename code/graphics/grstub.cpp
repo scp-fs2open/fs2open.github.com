@@ -340,7 +340,7 @@ void gr_stub_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 {
 }
 
-void gr_stub_string(int sx, int sy, const char *s, int resize_mode = GR_RESIZE_NONE)
+void gr_stub_string( float sx, float sy, const char *s, int resize_mode = GR_RESIZE_NONE, int length = -1)
 {
 }
 

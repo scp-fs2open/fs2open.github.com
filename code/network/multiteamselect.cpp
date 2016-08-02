@@ -1272,7 +1272,7 @@ void multi_ts_blit_wing_callsigns()
 			}
 		}
 			
-		gr_force_fit_string(callsign, CALLSIGN_LEN, Multi_ts_slot_text_coords[idx][gr_screen.res][MULTI_TS_W_COORD]);
+		font::force_fit_string(callsign, CALLSIGN_LEN, Multi_ts_slot_text_coords[idx][gr_screen.res][MULTI_TS_W_COORD]);
 
 		// get the final length
 		gr_get_string_size(&callsign_w, NULL, callsign);
@@ -2464,7 +2464,7 @@ void multi_ts_blit_carried_icon()
 	case MULTI_TS_PLAYER_LIST:
 		// get the final length of the string so we can calculate a valid offset
 		strcpy_s(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->m_player->callsign);
-		gr_force_fit_string(callsign,CALLSIGN_LEN,Multi_ts_slot_text_coords[Multi_ts_carried_from_index][gr_screen.res][MULTI_TS_W_COORD]);						
+		font::force_fit_string(callsign,CALLSIGN_LEN,Multi_ts_slot_text_coords[Multi_ts_carried_from_index][gr_screen.res][MULTI_TS_W_COORD]);						
 		gr_get_string_size(&callsign_w,NULL,callsign);
 
 		// calculate the offsets

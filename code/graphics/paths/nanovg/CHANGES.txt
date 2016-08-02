@@ -1,0 +1,7 @@
+The original source code of nanovg.c was changed slightly:
+  - nvgText was changed to round vertex positions to reduce text blurring
+
+Changes to fontstash.h
+  - Increased memory size for newer stb_truetype version
+  - Removed pixel snapping from fons__getQuad
+  - Include <malloc.h> as malloc and free weren't found for some reason

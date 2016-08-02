@@ -16,9 +16,11 @@
 #include "graphics/gropenglshader.h"
 #include "graphics/shadows.h"
 
+#include <glad/glad.h>
+
 void gr_opengl_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror);
 void gr_opengl_aabitmap(int x, int y, int resize_mode, bool mirror);
-void gr_opengl_string(int sx, int sy, const char *s, int resize_mode = GR_RESIZE_FULL);
+void gr_opengl_string(float sx, float sy, const char *s, int resize_mode, int length);
 void gr_opengl_line(int x1,int y1,int x2,int y2, int resize_mode);
 void gr_opengl_aaline(vertex *v1, vertex *v2);
 void gr_opengl_pixel(int x, int y, int resize_mode);
@@ -88,7 +90,7 @@ inline void opengl_draw_textured_quad_instanced(
 	opengl_bind_vertex_layout(vert_def);
 
 	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	vglDrawArraysInstancedARB(GL_TRIANGLE_STRIP, 0, 4, count);
+	glDrawArraysInstancedARB(GL_TRIANGLE_STRIP, 0, 4, count);
 }
 
 inline void opengl_draw_textured_quad(
