@@ -1269,7 +1269,7 @@ void beam_generate_muzzle_particles(beam *b)
 	weapon_info *wip;
 	vec3d turret_norm, turret_pos, particle_pos, particle_dir;
 	matrix m;
-	particle_info pinfo;
+	particle::particle_info pinfo;
 
 	// if our hack stamp has expired
 	if(!((b->Beam_muzzle_stamp == -1) || timestamp_elapsed(b->Beam_muzzle_stamp))){
@@ -1319,7 +1319,7 @@ void beam_generate_muzzle_particles(beam *b)
 			vm_vec_add2(&particle_dir, &b->objp->phys_info.vel);	//move along with our parent
 		}
 
-		memset(&pinfo, 0, sizeof(particle_info));
+		memset(&pinfo, 0, sizeof(particle::particle_info));
 		pinfo.pos = particle_pos;
 		pinfo.vel = particle_dir;
 		pinfo.lifetime = p_life;
@@ -1327,10 +1327,9 @@ void beam_generate_muzzle_particles(beam *b)
 		pinfo.attached_sig = 0;
 		pinfo.rad = wip->b_info.beam_particle_radius;
 		pinfo.reverse = 1;
-		pinfo.type = PARTICLE_BITMAP;
+		pinfo.type = particle::PARTICLE_BITMAP;
 		pinfo.optional_data = wip->b_info.beam_particle_ani.first_frame;
-		pinfo.tracer_length = -1.0f;		
-		particle_create(&pinfo);
+		particle::create(&pinfo);
 	}
 }
 
@@ -3089,35 +3088,32 @@ void beam_handle_collisions(beam *b)
 		// KOMET_EXT -->
 
 		// draw flash, explosion
-		if (draw_effects && ((wi->piercing_impact_explosion_radius > 0) || (wi->flash_impact_explosion_radius > 0))) {
-			float flash_rad = (1.2f + 0.007f * (float)(rand()%100));
+		if (draw_effects && ((wi->piercing_impact_effect >= 0) || (wi->flash_impact_weapon_expl_effect >= 0))) {
 			float rnd = frand();
 			int do_expl = 0;
-			if((rnd < 0.2f || do_damage) && wi->impact_weapon_expl_index >= 0){
+			if((rnd < 0.2f || do_damage) && wi->impact_weapon_expl_effect >= 0){
 				do_expl = 1;
 			}
-			float ani_radius;
 			vec3d temp_pos, temp_local_pos;
 				
 			vm_vec_sub(&temp_pos, &b->f_collisions[idx].cinfo.hit_point_world, &Objects[target].pos);
 			vm_vec_rotate(&temp_local_pos, &temp_pos, &Objects[target].orient);
 						
-			if (wi->flash_impact_explosion_radius > 0) {
-				ani_radius = wi->flash_impact_explosion_radius * flash_rad;	
-				if (wi->flash_impact_weapon_expl_index > -1) {
-					int ani_handle = Weapon_explosions.GetAnim(wi->flash_impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
-					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
-				} else {
-					particle_create( &temp_local_pos, &vmd_zero_vector, 0.005f * ani_radius, ani_radius, PARTICLE_SMOKE, 0, -1, &Objects[target] );
-				}
+			if (wi->flash_impact_weapon_expl_effect >= 0) {
+				auto particleSource = particle::ParticleManager::get()->createSource(wi->flash_impact_weapon_expl_effect);
+				particleSource.moveToObject(&Objects[target], &temp_local_pos);
+
+				particleSource.finish();
 			}
+
 			if(do_expl){
-				ani_radius = 0.7f * wi->impact_explosion_radius * flash_rad;
-				int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, ani_radius);
-				particle_create( &temp_local_pos, &vmd_zero_vector, 0.0f, ani_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle, -1, &Objects[target] );
+				auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
+				particleSource.moveToObject(&Objects[target], &temp_local_pos);
+
+				particleSource.finish();
 			}
 			
-			if (wi->piercing_impact_explosion_radius > 0) {
+			if (wi->piercing_impact_effect > 0) {
 				vec3d fvec;
 				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 
@@ -3170,38 +3166,11 @@ void beam_handle_collisions(beam *b)
 						
 						// stream of fire for big ships
 						if (widest <= Objects[target].radius * BEAM_AREA_PERCENT) {
+							auto particleSource = particle::ParticleManager::get()->createSource(wi->piercing_impact_effect);
+							particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
+							particleSource.setOrientationFromNormalizedVec(&fvec);
 
-							vec3d expl_vel, expl_splash_vel;
-
-							float flame_size = wi->piercing_impact_explosion_radius * frand_range(0.5f,2.0f);
-							float base_v, back_v;
-							vec3d rnd_vec;
-
-							vm_vec_rand_vec_quick(&rnd_vec);
-
-							if (wi->piercing_impact_particle_velocity != 0.0f)
-								base_v = wi->piercing_impact_particle_velocity;
-							else
-								base_v = wi->piercing_impact_explosion_radius;
-
-							if (wi->piercing_impact_particle_back_velocity != 0.0f)
-								back_v = wi->piercing_impact_particle_back_velocity;
-							else
-								back_v = base_v * (-0.2f);
-
-							vm_vec_copy_scale( &expl_vel, &fvec, base_v * frand_range(1.0f, 2.0f));
-							vm_vec_copy_scale( &expl_splash_vel, &fvec, back_v * frand_range(1.0f, 2.0f));
-							vm_vec_scale_add2( &expl_vel, &rnd_vec, base_v * wi->piercing_impact_particle_variance);
-							vm_vec_scale_add2( &expl_splash_vel, &rnd_vec, back_v * wi->piercing_impact_particle_variance);
-
-							if (wi->piercing_impact_weapon_expl_index > -1) {
-								int ani_handle = Weapon_explosions.GetAnim(wi->piercing_impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, flame_size);
-								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
-								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_splash_vel, 0.0f, flame_size, PARTICLE_BITMAP_PERSISTENT, ani_handle );
-							} else {
-								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_vel, 0.3f, flame_size, PARTICLE_SMOKE );
-								particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &expl_splash_vel, 0.6f, flame_size, PARTICLE_SMOKE );
-							}
+							particleSource.finish();
 						}
 					}
 				}
@@ -3210,9 +3179,11 @@ void beam_handle_collisions(beam *b)
 		} else {
 			if(draw_effects && do_damage && !physics_paused){
 				// maybe draw an explosion, if we aren't hitting shields
-				if ( (wi->impact_weapon_expl_index >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
-					int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
-					particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &vmd_zero_vector, 0.0f, wi->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle );
+				if ( (wi->impact_weapon_expl_effect >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
+					auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
+					particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
+
+					particleSource.finish();
 				}
 			}
 		}

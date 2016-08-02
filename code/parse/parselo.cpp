@@ -305,7 +305,7 @@ int get_line_num()
 //	!0 means it's an error message.
 //	Prints line number and other useful information.
 extern int Cmdline_noparseerrors;
-void error_display(int error_level, char *format, ...)
+void error_display(int error_level, const char *format, ...)
 {
 	char type[8];
 	SCP_string error_text;
@@ -2991,9 +2991,9 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 }
 
 //Stuffs an integer list like stuff_int_list.
-int stuff_float_list(float* flp, int max_floats)
+size_t stuff_float_list(float* flp, size_t max_floats)
 {
-	int count = 0;
+	size_t count = 0;
 	ignore_white_space();
 
 	if (*Mp != '(') {

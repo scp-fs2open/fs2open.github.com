@@ -696,7 +696,7 @@ void debris_hit(object *debris_obj, object *other_obj, vec3d *hitpos, float dama
 
 	// Do a little particle spark shower to show we hit
 	{
-		particle_emitter	pe;
+		particle::particle_emitter pe;
 
 		pe.pos = *hitpos;								// Where the particles emit from
 		pe.vel = debris_obj->phys_info.vel;		// Initial velocity of all the particles
@@ -718,7 +718,7 @@ void debris_hit(object *debris_obj, object *other_obj, vec3d *hitpos, float dama
 		pe.max_vel = 10.0f;				// How fast the fastest particle can move
 		pe.min_life = 0.25f;			// How long the particles live
 		pe.max_life = 0.75f;			// How long the particles live
-		particle_emit( &pe, PARTICLE_FIRE, 0 );
+		particle::emit( &pe, particle::PARTICLE_FIRE, 0 );
 	}
 
 	// multiplayer clients bail here
@@ -747,7 +747,7 @@ void debris_hit(object *debris_obj, object *other_obj, vec3d *hitpos, float dama
  * NOTE: debris_hit_info pointer NULL for debris:weapon collision, otherwise debris:ship collision.
  * @return true if hit, else return false.
  */
-int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, collision_info_struct *debris_hit_info)
+int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, collision_info_struct *debris_hit_info, vec3d* hitNormal)
 {
 	mc_info	mc;
 	mc_info_init(&mc);
@@ -776,6 +776,14 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 		if (model_collide(&mc)) {
 			*hitpos = mc.hit_point_world;
+
+			if (hitNormal)
+			{
+				vec3d normal;
+				model_find_world_dir(&normal, &mc.hit_normal, mc.model_num, mc.hit_submodel, mc.orient);
+
+				*hitNormal = normal;
+			}
 		}
 
 		weapon *wp = &Weapons[other_obj->instance];
