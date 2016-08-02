@@ -1,6 +1,7 @@
 #ifndef NDEBUG
 
 #include <cstdlib>
+#include <stdlib.h>
 
 // Include this first!
 #include "globalincs/memory/debug.h"
@@ -88,6 +89,9 @@ void *_vm_realloc(void *ptr, size_t size, const memory::quiet_alloc_t &, const c
 	auto memoryHeader = reinterpret_cast<MemoryHeader *>(ptr);
 
 	auto oldSize = memoryHeader->size;
+	auto oldFilename = memoryHeader->filename;
+	auto oldLine = memoryHeader->line;
+
 	auto ret_ptr = std::realloc(ptr, sizeof(MemoryHeader) + size);
 
 	if (ret_ptr == nullptr)
@@ -96,7 +100,7 @@ void *_vm_realloc(void *ptr, size_t size, const memory::quiet_alloc_t &, const c
 		return nullptr;
 	}
 
-	memory::unregister_malloc(oldSize, memoryHeader->filename, memoryHeader->line);
+	memory::unregister_malloc(oldSize, oldFilename, oldLine);
 
 	auto header = reinterpret_cast<MemoryHeader *>(ret_ptr);
 
