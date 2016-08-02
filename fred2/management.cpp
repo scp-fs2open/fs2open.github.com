@@ -275,10 +275,7 @@ bool fred_init(HWND windowHandle)
 	int i;
 	char palette_filename[1024];
 
-	if (!vm_init(24*1024*1024)) {
-		MessageBox( NULL, "Not enough memory to run Fred.\r\nTry closing down some other applications.\r\n", "Not Enough Memory", MB_OK );
-		return false;
-	}
+	memory::init();
 
 	srand( (unsigned) time(NULL) );
 	init_pending_messages();

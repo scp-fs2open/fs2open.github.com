@@ -652,7 +652,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		// CASE OF STEPPED ROTATION
 		if ( (strstr(props, "$stepped")) != NULL) {
 
-			subsystemp->stepped_rotation = new(stepped_rotation);
+			subsystemp->stepped_rotation = new stepped_rotation;
 			subsystemp->flags |= MSS_FLAG_STEPPED_ROTATE;
 
 			// get number of steps
@@ -2612,7 +2612,7 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		model_init();
 
 #ifndef NDEBUG
-	int ram_before = TotalRam;
+	size_t ram_before = memory::get_used_memory();
 #endif
 
 	num = -1;
@@ -2872,9 +2872,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	}
 
 #ifndef NDEBUG
-	int ram_after = TotalRam;
+	size_t ram_after = memory::get_used_memory();
 
-	pm->ram_used = ram_after - ram_before;
+	pm->ram_used = static_cast<int>(ram_after - ram_before);
 	Model_ram += pm->ram_used;
 #endif
 

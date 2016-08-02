@@ -1295,7 +1295,7 @@ int fs2netd_get_valid_missions_do()
 
 		if (file_names == NULL) {
 			// allocate filename space	
-			file_names = (char**) vm_malloc_q( sizeof(char*) * 1024 ); // 1024 files should be safe!
+			file_names = (char**) vm_malloc( sizeof(char*) * 1024, memory::quiet_alloc); // 1024 files should be safe!
 
 			if (file_names == NULL) {
 				Local_timeout = -1;

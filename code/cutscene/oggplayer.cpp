@@ -452,7 +452,7 @@ static void OGG_video_init(theora_info *tinfo)
 	}
 
 	if(!use_shaders) {
-		pixelbuf = (ubyte *) vm_malloc_q(g_screenWidth * g_screenHeight * 3);
+		pixelbuf = (ubyte *) vm_malloc(g_screenWidth * g_screenHeight * 3, memory::quiet_alloc);
 
 		if (pixelbuf == NULL) {
 			nprintf(("MOVIE", "ERROR: Can't allocate memory for pixelbuf"));
@@ -737,7 +737,7 @@ THEORAFILE *theora_open(char *filename)
 
 	
 	// create the file
-	movie = (THEORAFILE *) vm_malloc_q( sizeof(THEORAFILE) );
+	movie = (THEORAFILE *) vm_malloc( sizeof(THEORAFILE), memory::quiet_alloc);
 
 	if (movie == NULL)
 		return NULL;

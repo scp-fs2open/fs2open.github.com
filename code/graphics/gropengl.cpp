@@ -388,7 +388,7 @@ void gr_opengl_print_screen(const char *filename)
 		// map the image data so that we can save it to file
 		pixels = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
 	} else {
-		pixels = (GLubyte*) vm_malloc_q(gr_screen.max_w * gr_screen.max_h * 4);
+		pixels = (GLubyte*) vm_malloc(gr_screen.max_w * gr_screen.max_h * 4, memory::quiet_alloc);
 
 		if (pixels == NULL) {
 			if (fout != NULL) {
@@ -712,7 +712,7 @@ void gr_opengl_set_gamma(float gamma)
 
 	// new way - but not while running FRED
 	if (!Fred_running && !Cmdline_no_set_gamma) {
-		gamma_ramp = (ushort*) vm_malloc_q( 3 * 256 * sizeof(ushort) );
+		gamma_ramp = (ushort*) vm_malloc( 3 * 256 * sizeof(ushort), memory::quiet_alloc);
 
 		if (gamma_ramp == NULL) {
 			Int3();
@@ -766,7 +766,7 @@ int gr_opengl_save_screen()
 		return -1;
 	}
 
-	GL_saved_screen = (ubyte*)vm_malloc_q( gr_screen.max_w * gr_screen.max_h * 4 );
+	GL_saved_screen = (ubyte*)vm_malloc( gr_screen.max_w * gr_screen.max_h * 4, memory::quiet_alloc);
 
 	if (!GL_saved_screen) {
 		mprintf(( "Couldn't get memory for saved screen!\n" ));
@@ -816,7 +816,7 @@ int gr_opengl_save_screen()
 
 		GL_saved_screen_id = bm_create(32, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
 	} else {
-		opengl_screen_tmp = (ubyte*)vm_malloc_q( gr_screen.max_w * gr_screen.max_h * 4 );
+		opengl_screen_tmp = (ubyte*)vm_malloc( gr_screen.max_w * gr_screen.max_h * 4, memory::quiet_alloc);
 
 		if (!opengl_screen_tmp) {
 			if (GL_saved_screen) {
@@ -1177,7 +1177,7 @@ int opengl_init_display_device()
 
 	// allocate storage for original gamma settings
 	if ( !Cmdline_no_set_gamma && (GL_original_gamma_ramp == NULL) ) {
-		GL_original_gamma_ramp = (ushort*) vm_malloc_q( 3 * 256 * sizeof(ushort) );
+		GL_original_gamma_ramp = (ushort*) vm_malloc( 3 * 256 * sizeof(ushort), memory::quiet_alloc);
 
 		if (GL_original_gamma_ramp == NULL) {
 			mprintf(("  Unable to allocate memory for gamma ramp!  Disabling...\n"));

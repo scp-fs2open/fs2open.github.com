@@ -805,7 +805,6 @@ void getmem()
 
 #ifndef NDEBUG
 
-int TotalRam = 0;
 #define nNoMansLandSize 4
 
 typedef struct _CrtMemBlockHeader
@@ -873,7 +872,6 @@ int __cdecl MyAllocHook(
 void windebug_memwatch_init()
 {
 	//_CrtSetAllocHook(MyAllocHook);
-	TotalRam = 0;
 }
 
 #endif
@@ -884,10 +882,6 @@ DCF_BOOL(watch_malloc, Watch_malloc );
 // Returns 0 if not enough RAM.
 int vm_init(int min_heap_size)
 {
-	#ifndef NDEBUG
-	TotalRam = 0;
-	#endif
-
 	return 1;
 }
 
@@ -1037,17 +1031,7 @@ void register_malloc( int size, char *filename, int line, void *ptr)
 void memblockinfo_output_memleak()
 {
 	if(!Cmdline_show_mem_usage)	return;
-
-	if(TotalRam == 0)
-		return;
-
-	if(TotalRam < 0) {
-		 _RPT1(_CRT_WARN, "TotalRam bad value!",TotalRam);
-		return;
-	}
-
-	_RPT1(_CRT_WARN, "malloc memory leak of %d\n",TotalRam);
-
+	
 // Now if system is compiled register it with the fuller system
 #ifdef _REPORT_MEM_LEAKS
 
@@ -1130,6 +1114,7 @@ void unregister_malloc(char *filename, int size, void *ptr)
 
 #endif
 
+/*
 #ifndef NDEBUG
 void *_vm_malloc( int size, char *filename, int line, int quiet )
 #else
@@ -1269,3 +1254,4 @@ void *_vm_realloc( void *ptr, int size, int quiet )
 #endif
 	return ret_ptr;
 }
+*/
