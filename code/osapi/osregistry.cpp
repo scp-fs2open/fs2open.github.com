@@ -711,7 +711,7 @@ static char *profile_get_value(Profile *profile, const char *section, const char
 	Section *sp = profile->sections;
 
 	while (sp != NULL) {
-		if (strcmp(section, sp->name) == 0) {
+		if (stricmp(section, sp->name) == 0) {
 			KeyValue *kvp = sp->pairs;
 
 			while (kvp != NULL) {
