@@ -13310,7 +13310,7 @@ ADE_INDEXER(l_Graphics_Fonts, "number Index/string Filename", "Array of loaded f
 		if (!ade_get_args(L, "*i", &index))
 			return ade_set_error(L, "o", l_Font.Set(font_h()));
 
-		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(index))));
+		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(index - 1))));
 	}
 	else
 	{
