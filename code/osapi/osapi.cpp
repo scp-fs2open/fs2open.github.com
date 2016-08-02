@@ -117,7 +117,9 @@ namespace
 // For FRED
 void os_set_window_from_hwnd(HWND handle)
 {
-	SDL_InitSubSystem(SDL_INIT_VIDEO);
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+		Error(LOCATION, "Couldn't init SDL video: %s", SDL_GetError());
+	}
 
 	if (SDL_GL_LoadLibrary(NULL) < 0)
 		Error(LOCATION, "Failed to load OpenGL library: %s!", SDL_GetError());
