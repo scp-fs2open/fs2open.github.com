@@ -1399,8 +1399,6 @@ static int bm_load_image_data(const char *filename, int handle, int bitmapnum, i
 	bitmap_entry *be = &bm_bitmaps[bitmapnum];
 	bitmap *bmp = &be->bm;
 
-	Assert(!Is_standalone);
-
 	if (bmp->true_bpp > bpp)
 		true_bpp = bmp->true_bpp;
 	else
