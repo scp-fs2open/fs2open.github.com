@@ -43,7 +43,7 @@
 #include <glad/glad.h>
 
 // minimum GL version we can reliably support is 2.0
-static const int MIN_REQUIRED_GL_VERSION = 12;
+static const int MIN_REQUIRED_GL_VERSION = 20;
 
 // minimum GLSL version we can reliably support is 110
 static const int MIN_REQUIRED_GLSL_VERSION = 110;
