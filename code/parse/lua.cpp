@@ -13310,6 +13310,13 @@ ADE_INDEXER(l_Graphics_Fonts, "number Index/string Filename", "Array of loaded f
 		if (!ade_get_args(L, "*i", &index))
 			return ade_set_error(L, "o", l_Font.Set(font_h()));
 
+		auto realIdx = index - 1;
+
+		if (realIdx < 0 || realIdx >= font::FontManager::numberOfFonts())
+		{
+			LuaError(L, "Invalid font index %d specified, must be between 1 and %d!", index, font::FontManager::numberOfFonts());
+		}
+
 		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(index - 1))));
 	}
 	else
