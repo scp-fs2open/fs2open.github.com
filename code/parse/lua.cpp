@@ -3429,6 +3429,16 @@ ADE_FUNC(isValid, l_Team, NULL, "Detects whether handle is valid", "boolean", "t
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(attacks, l_Team, "team", "Checks the IFF status of another team", "boolean", "True if this team attacks the specified team")
+{
+	int x, y;
+	ade_get_args(L, "oo", l_Team.Get(&x), l_Team.Get(&y));
+	if (iff_x_attacks_y(x, y) > 0)
+		return ADE_RETURN_TRUE;
+	
+	return ADE_RETURN_FALSE;
+}
+
 //**********HANDLE: streamingAnimation
 
 class streaminganim_h {
