@@ -9149,6 +9149,7 @@ ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text o
 		strcpy_s(temp_buf, Messages[idx].message);
 
 		sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH);
+		sexp_replace_container_with_values(temp_buf, MESSAGE_LENGTH);
 
 		return ade_set_args(L, "s", temp_buf);
 	}

@@ -1675,7 +1675,9 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 
 	// Goober5000 - replace variables if necessary
 	strcpy_s(temp_buf, Messages[message_num].message);
-	if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
+	bool replace_var = sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH); 
+	bool replace_con = sexp_replace_container_with_values(temp_buf, MESSAGE_LENGTH); 
+	if ( replace_var || replace_con)
 		MessageQ[i].special_message = vm_strdup(temp_buf);
 
 	// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
