@@ -67,7 +67,7 @@ SCP_vector<ade_table_entry> Ade_table_entries;
 //This is what you define a variable of to make new libraries
 class ade_lib : public ade_lib_handle {
 public:
-	ade_lib(char *in_name, ade_lib_handle *parent=NULL, char *in_shortname=NULL, char *in_desc=NULL) {
+	ade_lib(char *in_name, ade_lib_handle *parent=NULL, const char *in_shortname=NULL, const char *in_desc=NULL) {
 		ade_table_entry ate;
 
 		ate.Name = in_name;
@@ -94,10 +94,10 @@ public:
 		LibIdx = Ade_table_entries.size()-1;
 	}
 
-	char *GetName();
+	const char *GetName();
 };
 
-char *ade_lib::GetName()
+const char *ade_lib::GetName()
 {
 	if(GetIdx() == UINT_MAX)
 		return "<Invalid>";
@@ -109,7 +109,8 @@ char *ade_lib::GetName()
 //Lets us add functions via its constructor
 class ade_func : public ade_lib_handle {
 public:
-	ade_func(char *name, lua_CFunction func, ade_lib_handle &parent, char *args=NULL, char *desc=NULL, char *ret_type=NULL, char*ret_desc=NULL) {
+	ade_func(const char *name, lua_CFunction func, ade_lib_handle &parent, const char *args=NULL, const char *desc=NULL,
+			 const char *ret_type=NULL, const char*ret_desc=NULL) {
 		ade_table_entry ate;
 
 		ate.Name = name;
@@ -128,7 +129,8 @@ public:
 
 class ade_virtvar : public ade_lib_handle {
 public:
-	ade_virtvar(char *name, lua_CFunction func, ade_lib_handle &parent, char *args=NULL, char *desc=NULL, char *ret_type=NULL, char*ret_desc=NULL) {
+	ade_virtvar(const char *name, lua_CFunction func, ade_lib_handle &parent, const char *args=NULL, const char *desc=NULL,
+				const char *ret_type=NULL, const char*ret_desc=NULL) {
 		ade_table_entry ate;
 
 		ate.Name = name;
@@ -147,7 +149,8 @@ public:
 
 class ade_indexer : public ade_lib_handle {
 public:
-	ade_indexer(lua_CFunction func, ade_lib_handle &parent, char *args=NULL, char *desc=NULL, char *ret_type=NULL, char*ret_desc=NULL) {
+	ade_indexer(lua_CFunction func, ade_lib_handle &parent, const char *args=NULL, const char *desc=NULL,
+				const char *ret_type=NULL, const char*ret_desc=NULL) {
 		//Add function for meta
 		ade_table_entry ate;
 
@@ -202,7 +205,7 @@ string_conv ade_Operators[] = {
 
 int ade_Num_operators = sizeof(ade_Operators)/sizeof(string_conv);
 
-int ade_get_operator(char *tablename)
+int ade_get_operator(const char *tablename)
 {
 	for(int i = 0; i < ade_Num_operators; i++)
 	{
@@ -16866,7 +16869,7 @@ static int ade_index_handler(lua_State *L)
 	const int key_ldx = 2;
 	const int arg_ldx = 3;
 	int last_arg_ldx = lua_gettop(L);
-	char *type_name = NULL;
+	const char *type_name = NULL;
 	uint ade_id = UINT_MAX;
 	int mtb_ldx = INT_MAX;
 	ade_table_entry* entry = 0;
@@ -17266,7 +17269,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 	return 1;
 }
 
-void ade_output_type_link(FILE *fp, char *typestr)
+void ade_output_type_link(FILE *fp, const char *typestr)
 {
 	for(int i = 0; i < Lua_type_names_num; i++)
 	{
