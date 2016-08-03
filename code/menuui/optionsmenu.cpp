@@ -12,6 +12,7 @@
 
 #include "bmpman/bmpman.h"
 #include "freespace.h"
+#include "controlconfig/controlsconfig.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
@@ -872,8 +873,8 @@ void options_sliders_update()
 		gamesnd_play_iface(SND_USER_SELECT);
 	}
 
-	if (Dead_zone_size != Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5) {
-		Dead_zone_size = Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5;
+	if (Joy_dead_zone_size != Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5) {
+		Joy_dead_zone_size = Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5;
 		gamesnd_play_iface(SND_USER_SELECT);
 	}
 
@@ -1015,7 +1016,7 @@ void options_menu_init()
 	Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos = (int) (Master_voice_volume * 9.0f + 0.5f);
 
 	Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos = Joy_sensitivity;	
-	Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos = Dead_zone_size / 5;	
+	Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos = Joy_dead_zone_size / 5;
 	Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos = Mouse_sensitivity;
 	Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos = Game_skill_level;
 

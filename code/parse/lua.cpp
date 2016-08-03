@@ -13107,7 +13107,7 @@ ADE_FUNC(getJoySensitivity, l_Mouse, NULL, "Gets joystick sensitivity setting", 
 
 ADE_FUNC(getJoyDeadzone, l_Mouse, NULL, "Gets joystick deadzone setting", "number", "Joystick deadzone in range of 0-9")
 {
-	return ade_set_args(L, "i", Dead_zone_size / 5);
+	return ade_set_args(L, "i", Joy_dead_zone_size / 5);
 }
 
 //trackir funcs

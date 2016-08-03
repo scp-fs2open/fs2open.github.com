@@ -1667,11 +1667,6 @@ void game_process_keys()
 				break;
 
 			case KEY_N:
-				break;			
-
-			case KEY_ALTED + KEY_SHIFTED+KEY_J:
-				// treat the current joystick position as the center position
-				joy_set_cen();
 				break;
 
 			case KEY_DEBUGGED | KEY_PAUSE:
