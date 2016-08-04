@@ -11,7 +11,6 @@
 
 #include "controlconfig/controlsconfig.h"
 #include "debugconsole/console.h"
-#include "freespace2/freespace.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
@@ -30,6 +29,7 @@
 #include "ui/ui.h"
 #include "ui/uidefs.h"
 
+#include <freespace.h>
 
 #ifndef NDEBUG
 #include "hud/hud.h"

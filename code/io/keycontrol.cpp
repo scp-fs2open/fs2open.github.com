@@ -14,7 +14,6 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
-#include "freespace2/freespace.h"	//For time compression stuff
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
@@ -59,6 +58,7 @@
 #include "starfield/supernova.h"
 #include "weapon/weapon.h"
 
+#include <freespace.h>
 
 /**
 * Natural number factor lookup class.
