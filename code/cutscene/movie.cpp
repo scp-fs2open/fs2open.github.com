@@ -13,64 +13,23 @@
 #include <windows.h>
 #endif
 
+#include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
+#include "io/cursor.h"
+#include "graphics/2d.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"	
 #include "cutscene/cutscenes.h" // cutscene_mark_viewable()
-#include "cutscene/movie.h"
-#include "cutscene/mvelib.h"
-#include "cutscene/oggplayer.h"
-#include "globalincs/systemvars.h"
-#include "graphics/2d.h"
-#include "osapi/osapi.h"
+#include "cutscene/player.h" // cutscene_mark_viewable()
+
+#include "cutscene/mve/mvelib.h"
 
 extern int Game_mode;
+extern int Is_standalone;
 
-const char *movie_ext_list[] = { ".ogg", ".mve" };
-const int NUM_MOVIE_EXT = sizeof(movie_ext_list) / sizeof(char*);
-
-
-#define MOVIE_NONE	-1
-#define MOVIE_OGG	0
-#define MOVIE_MVE	1
-
-// This module links freespace movie calls to the actual API calls the play the movie.
-// This module handles all the different requires of OS and gfx API and finding the file to play
-
-
-// filename		- file to search for
-// out_name		- output, full path to file
-// returns non-zero if file is found
-int movie_find(char *filename, char *out_name)
-{
-	char full_path[MAX_PATH];
-	char tmp_name[MAX_PATH];
-	size_t size, offset = 0;
-
-	if (out_name == NULL)
-		return MOVIE_NONE;
-
-
-	memset( full_path, 0, sizeof(full_path) );
-	memset( tmp_name, 0, sizeof(tmp_name) );
-
-	// remove extension
-	strcpy_s( tmp_name, filename );
-	char *p = strrchr(tmp_name, '.');
-	if ( p ) *p = 0;
-
-    int rc = cf_find_file_location_ext(tmp_name, NUM_MOVIE_EXT, movie_ext_list, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0);
-
-	if (rc == MOVIE_NONE)
-		return MOVIE_NONE;
-
-	strcpy( out_name, full_path );
-
-	return rc;
-}
-
+namespace movie {
 // Play one movie
-bool movie_play(char *name)
-{
+bool play(const char* name) {
 	// mark the movie as viewable to the player when in a campaign
 	// do this before anything else so that we're sure the movie is available
 	// to the player even if it's not going to play right now
@@ -78,25 +37,7 @@ bool movie_play(char *name)
 		cutscene_mark_viewable(name);
 	}
 
-	extern int Is_standalone;
-
-	if (Cmdline_nomovies || Is_standalone)
-		return false;
-
-
-	char full_name[MAX_PATH];
-	int rc = 0;
-
-	memset(full_name, 0, sizeof(full_name));
-
-	rc = movie_find(name, full_name);
-
-	if (rc == MOVIE_NONE) {
-		strcpy_s(full_name, name);
-		char *p = strrchr(full_name, '.');
-		if ( p ) *p = 0;
-
-		mprintf(("Movie Error:  Unable to open '%s' movie in any supported format.\n", full_name));
+	if (Cmdline_nomovies || Is_standalone) {
 		return false;
 	}
 
@@ -116,23 +57,12 @@ bool movie_play(char *name)
 	// clear third buffer (may not be one, but that's ok)
 	gr_clear();
 
-	if (rc == MOVIE_OGG) {
-		THEORAFILE *movie_ogg = theora_open(name);
-
-		if (movie_ogg) {
-			// start playing ...
-			theora_play(movie_ogg);
-
-			// ... done playing, close the movie
-			theora_close(movie_ogg);
-		} else {
-			// uh-oh, movie is invalid... Abory, Retry, Fail?
-			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
-			io::mouse::CursorManager::get()->popStatus();
-			return false;
-		}
-	} else if (rc == MOVIE_MVE) {
-		MVESTREAM *movie_mve = mve_open(name);
+	auto player = cutscene::Player::newPlayer(name);
+	if (player) {
+		player->startPlayback();
+	} else {
+		// *sigh* don't bother using MVE with the new system, it's not worth the effort...
+		MVESTREAM* movie_mve = mve_open(name);
 
 		if (movie_mve) {
 			// start playing ...
@@ -145,8 +75,6 @@ bool movie_play(char *name)
 		} else {
 			// uh-oh, movie is invalid... Abory, Retry, Fail?
 			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
-			io::mouse::CursorManager::get()->popStatus();
-			return false;
 		}
 	}
 
@@ -156,8 +84,9 @@ bool movie_play(char *name)
 	return true;
 }
 
-void movie_play_two(char *name1, char *name2)
-{
-	if ( movie_play(name1) )
-		movie_play(name2);
+void play_two(const char* name1, const char* name2) {
+	if (play(name1)) {
+		play(name2);
+	}
+}
 }

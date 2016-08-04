@@ -8,7 +8,7 @@
 
 #include "bmpman/bmpman.h"
 #include "cutscene/movie.h"
-#include "cutscene/mvelib.h"
+#include "cutscene/mve/mvelib.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "graphics/opengl/gropengl.h"

@@ -12,10 +12,12 @@
 #ifndef _MOVIE_HEADER_FILE
 #define _MOVIE_HEADER_FILE
 
-extern const char *movie_ext_list[];
-extern const int NUM_MOVIE_EXT;
+namespace movie {
 
-bool movie_play(char *name);
-void movie_play_two(char *name1, char *name2);
+bool play(const char* name);
+
+void play_two(const char* name1, const char* name2);
+
+}
 
 #endif

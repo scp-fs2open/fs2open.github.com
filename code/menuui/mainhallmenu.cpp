@@ -778,11 +778,11 @@ void main_hall_do(float frametime)
 	#ifndef NDEBUG
 		case KEY_1:
 			// no soup for you!
-			movie_play("endprt2b.mve");
+			movie::play("endprt2b.mve");
 			break;
 		case KEY_2:
 			// no soup for you!
-			movie_play_two("endprt2a.mve", "endprt2b.mve");
+			movie::play_two("endprt2a.mve", "endprt2b.mve");
 			break;
 		case KEY_3:
 			main_hall_campaign_cheat();

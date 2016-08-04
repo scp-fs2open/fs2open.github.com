@@ -483,6 +483,7 @@ public:
 // Function to generate a stacktrace
 SCP_string dump_stacktrace();
 
+#if 0
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // would prefer std::is_trivially_copyable but it's not supported by gcc yet
 // ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
@@ -580,5 +581,6 @@ using std::memset_if_trivial_else_error;
 
 	#endif // HAVE_CXX11
 #endif // NDEBUG
+#endif
 
 #endif		// PS_TYPES_H

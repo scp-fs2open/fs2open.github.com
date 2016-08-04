@@ -1,7 +1,9 @@
 
 
+#include "globalincs/pstypes.h"
+#include "cutscene/mve/mvelib.h"
 #include "cfile/cfile.h"
-#include "cutscene/mvelib.h"
+#include "cutscene/mve/mvelib.h"
 #include "globalincs/pstypes.h"
 
 
@@ -38,7 +40,7 @@ int mve_get_int(ubyte *data)
 }
 
 // open an MVE file
-MVEFILE *mvefile_open(char *filename)
+MVEFILE *mvefile_open(const char *filename)
 {
 	int cf_opened = 0;
 	int mve_valid = 1;
@@ -262,7 +264,7 @@ int mvefile_fetch_next_chunk(MVEFILE *file)
 // -----------------------------------------------------------
 
 // open an MVE stream
-MVESTREAM *mve_open(char *filename)
+MVESTREAM *mve_open(const char *filename)
 {
 	MVESTREAM *stream;
 

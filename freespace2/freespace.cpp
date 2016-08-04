@@ -31,6 +31,7 @@
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "cutscene/cutscenes.h"
+#include "cutscene/player.h"
 #include "cutscene/movie.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
@@ -68,6 +69,7 @@
 #include "io/cursor.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
+#include "libs/ffmpeg/FFmpeg.h"
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
 #include "lighting/lighting.h"
@@ -1336,7 +1338,7 @@ void game_post_level_init()
 	extern void game_environment_map_gen();
 	game_environment_map_gen();
 
- 	HUD_init();
+	HUD_init();
 	hud_setup_escort_list();
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
 
@@ -1688,7 +1690,7 @@ void game_init()
 
 	// Initialize the timer before the os
 	timer_init();
-    
+	
 #ifndef NDEBUG
 	outwnd_init();
 #endif
@@ -2003,6 +2005,8 @@ void game_init()
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
 	
+	libs::ffmpeg::initialize();
+
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
 
@@ -3205,7 +3209,7 @@ extern vec3d Dead_camera_pos;
 //	Set eye_pos and eye_orient based on view mode.
 camid game_render_frame_setup()
 {
-    bool fov_changed;
+	bool fov_changed;
 
 	if(!Main_camera.isValid())
 	{
@@ -3227,7 +3231,7 @@ camid game_render_frame_setup()
 	static int last_Viewer_objnum = -1;
 	static float last_FOV = Sexp_fov;
 
-    fov_changed = ((last_FOV != Sexp_fov) && (Sexp_fov > 0.0f));
+	fov_changed = ((last_FOV != Sexp_fov) && (Sexp_fov > 0.0f));
 
 	//First, make sure we take into account 2D Missions.
 	//These replace the normal player in-cockpit view with a topdown view.
@@ -4605,12 +4609,12 @@ void game_set_frametime(int state)
 
 	Frametime = fixmul(Frametime, Game_time_compression);
 
-    if (Frametime <= 0)
-    {
-        // If the Frametime is zero or below due to Game_time_compression, set
-        // the Frametime to 1 (1/65536 of a second).
-        Frametime = 1;
-    }
+	if (Frametime <= 0)
+	{
+		// If the Frametime is zero or below due to Game_time_compression, set
+		// the Frametime to 1 (1/65536 of a second).
+		Frametime = 1;
+	}
 
 	Last_time = thistime;
 	//mprintf(("Frame %i, Last_time = %7.3f\n", Framecount, f2fl(Last_time)));
@@ -4663,7 +4667,7 @@ void game_do_frame()
 		while( key_checkch() == 0 )
 			os_sleep(10);
 		os_set_title( XSTR( "FreeSpace", 171) );
-  		Last_time = timer_get_fixed_seconds();
+		Last_time = timer_get_fixed_seconds();
 	}
 
 	last_single_step = game_single_step;
@@ -5162,7 +5166,7 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state( GS_STATE_MULTI_CLIENT_SETUP );
 			break;
 
-  		case GS_EVENT_GOTO_VIEW_CUTSCENES_SCREEN:
+		case GS_EVENT_GOTO_VIEW_CUTSCENES_SCREEN:
 			gameseq_set_state(GS_STATE_VIEW_CUTSCENES);
 			break;
 
@@ -5675,7 +5679,7 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_close();
-	  		break;
+			break;
 
 		case GS_STATE_STANDALONE_MAIN:			
 			standalone_main_close();
@@ -5803,7 +5807,7 @@ void game_enter_state( int old_state, int new_state )
 			if(Cmdline_start_mission) {
 				strcpy_s(Game_current_mission_filename, Cmdline_start_mission);
 				mprintf(( "Straight to mission '%s'\n", Game_current_mission_filename ));
- 				gameseq_post_event(GS_EVENT_START_GAME);
+				gameseq_post_event(GS_EVENT_START_GAME);
 				// This stops the mission from loading again when you go back to the hall
 				Cmdline_start_mission = NULL;
 			}
@@ -6127,7 +6131,7 @@ void mouse_force_pos(int x, int y);
 			break;
 
 		case GS_STATE_DEATH_DIED:
- 			Player_died_time = timestamp(10);
+			Player_died_time = timestamp(10);
 
 			if(!(Game_mode & GM_MULTIPLAYER)){
 				player_show_death_message();
@@ -6890,7 +6894,7 @@ int game_main(int argc, char *argv[])
 	}
 
 	if (!Is_standalone) {
-		movie_play( NOX("intro.mve") );
+		movie::play("intro.mve");
 	}
 
 	if (Is_standalone) {
@@ -7840,7 +7844,7 @@ int game_cd_changed()
 		} else {
 			mprintf(( "CD '%s' was removed\n", Last_cd_label ));
 		}
-        changed = 1;
+		changed = 1;
 	} else {
 		if ( Last_cd_label_found )	{
 			if ( !stricmp( Last_cd_label, label ))	{

@@ -1070,7 +1070,7 @@ void mission_campaign_store_goals_and_events()
 
 	// copy the needed info from the Mission_goal struct to our internal structure
 	for (i = 0; i < Num_mission_events; i++ ) {
- 		if (Mission_events[i].name[0] == '\0') {
+		if (Mission_events[i].name[0] == '\0') {
 			char event_name[NAME_LENGTH];
 
 			sprintf(event_name, NOX("Event #%d"), i);
@@ -1346,7 +1346,7 @@ void mission_campaign_clear()
 		if (Campaign.missions[i].mission_branch_brief_sound != NULL) {
 			vm_free(Campaign.missions[i].mission_branch_brief_sound);
 			Campaign.missions[i].mission_branch_brief_sound = NULL;
- 		}
+		}
 
 		if ( !Fred_running ){
 			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.
@@ -1619,7 +1619,7 @@ void mission_campaign_maybe_play_movie(int type)
 	if ( !filename )
 		return;
 
-	movie_play( filename );	//Play the movie!
+	movie::play(filename);	//Play the movie!
 	cutscene_mark_viewable( filename );
 }
 
@@ -1782,9 +1782,9 @@ void mission_campaign_end_do()
 	if (!stricmp(Campaign.filename, "freespace2")) {
 		// did the supernova blow?
 		if (Supernova_status == SUPERNOVA_HIT) {
-			movie_play_two("endpart1.mve", "endprt2b.mve");			// bad ending
+			movie::play_two("endpart1.mve", "endprt2b.mve");			// bad ending
 		} else {
-			movie_play_two("endpart1.mve", "endprt2a.mve");			// good ending
+			movie::play_two("endpart1.mve", "endprt2a.mve");			// good ending
 		}
 	} else {
 		common_maybe_play_cutscene(MOVIE_END_CAMPAIGN);

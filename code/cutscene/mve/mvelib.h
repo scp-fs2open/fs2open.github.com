@@ -49,7 +49,7 @@ typedef struct MVESTREAM
 } MVESTREAM;
 
 // open an MVE stream
-MVESTREAM *mve_open(char *filename);
+MVESTREAM *mve_open(const char *filename);
 
 // close an MVE stream
 void mve_close(MVESTREAM *movie);
