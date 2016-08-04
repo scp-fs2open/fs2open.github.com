@@ -50,6 +50,9 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
+#include "particle/effects/SingleParticleEffect.h"
+#include "particle/effects/BeamPiercingEffect.h"
+#include "particle/effects/ParticleEmitterEffect.h"
 
 // Since SSMs are parsed after weapons, if we want to allow SSM strikes to be specified by name, we need to store those names until after SSMs are parsed.
 typedef struct delayed_ssm_data {
@@ -830,297 +833,6 @@ void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 	}
 }
 
-void init_weapon_entry(int weap_info_index)
-{
-	Assert(weap_info_index > -1 && weap_info_index < MAX_WEAPON_TYPES);
-	weapon_info *wip = &Weapon_info[weap_info_index];
-	int i, j;
-
-	wip->wi_flags = WIF_DEFAULT_VALUE;
-	wip->wi_flags2 = WIF2_DEFAULT_VALUE;
-
-	wip->subtype = WP_UNUSED;
-	wip->render_type = WRT_NONE;
-
-	memset(wip->name, 0, sizeof(wip->name));
-	memset(wip->title, 0, sizeof(wip->title));
-	wip->desc = NULL;
-
-	memset(wip->tech_title, 0, sizeof(wip->tech_title));
-	memset(wip->tech_anim_filename, 0, sizeof(wip->tech_anim_filename));
-	wip->tech_desc = NULL;
-	memset(wip->tech_model, 0, sizeof(wip->tech_model));
-	
-	memset(wip->hud_filename, 0, sizeof(wip->hud_filename));
-	wip->hud_image_index = -1;
-
-	memset(wip->pofbitmap_name, 0, sizeof(wip->pofbitmap_name));
-
-	wip->model_num = -1;
-	wip->hud_target_lod = -1;
-	wip->num_detail_levels = -1;
-	for ( i = 0; i < MAX_MODEL_DETAIL_LEVELS; i++ )
-	{
-		wip->detail_distance[i] = -1;
-	}
-
-	vm_vec_zero(&wip->closeup_pos);
-	wip->closeup_zoom = 1.0f;
-
-	generic_anim_init(&wip->laser_bitmap);
-	generic_anim_init(&wip->laser_glow_bitmap);
-
-	gr_init_color(&wip->laser_color_1, 255, 255, 255);
-	gr_init_color(&wip->laser_color_2, 255, 255, 255);
-	
-	wip->laser_length = 10.0f;
-	wip->laser_head_radius = 1.0f;
-	wip->laser_tail_radius = 1.0f;
-	
-	memset(wip->external_model_name, 0, sizeof(wip->external_model_name));
-	wip->external_model_num = -1;
-	
-	wip->weapon_submodel_rotate_accell = 10.0f;
-	wip->weapon_submodel_rotate_vel = 0.0f;
-	
-	wip->mass = 1.0f;
-	wip->max_speed = 10.0f;
-	wip->acceleration_time = 0.0f;
-	wip->vel_inherit_amount = 1.0f;
-	wip->free_flight_time = 0.0f;
-	wip->fire_wait = 1.0f;
-	wip->max_delay = 0.0f;
-	wip->min_delay = 0.0f;
-	wip->damage = 0.0f;
-	wip->damage_time = -1.0f;
-	wip->atten_damage = -1.0f;
-
-	wip->damage_type_idx = -1;
-	wip->damage_type_idx_sav = -1;
-
-	wip->armor_type_idx = -1;
-
-	wip->arm_time = 0;
-	wip->arm_dist = 0.0f;
-	wip->arm_radius = 0.0f;
-	wip->det_range = 0.0f;
-	wip->det_radius = 0.0f;
-	wip->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp
-	wip->flak_detonation_accuracy = 65.0f;
-	wip->untargeted_flak_range_penalty = 20.0f;
-	
-	wip->armor_factor = 1.0f;
-	wip->shield_factor = 1.0f;
-	wip->subsystem_factor = 1.0f;
-	
-	wip->life_min = -1.0f;
-	wip->life_max = -1.0f;
-	wip->lifetime = 1.0f;
-	wip->energy_consumed = 0.0f;
-
-	wip->cargo_size = 1.0f;
-	
-	wip->turn_time = 1.0f;
-	wip->fov = 0;				//should be cos(pi), not pi
-	
-	wip->min_lock_time = 0.0f;
-	wip->lock_pixels_per_sec = 50;
-	wip->catchup_pixels_per_sec = 50;
-	wip->catchup_pixel_penalty = 50;
-	wip->seeker_strength = 1.0f;
-
-	wip->swarm_count = -1;
-	// *Default is 150  -Et1
-	wip->SwarmWait = SWARM_MISSILE_DELAY;
-	
-	wip->pre_launch_snd = -1;
-	wip->pre_launch_snd_min_interval = 0;
-
-	wip->launch_snd = -1;
-	wip->impact_snd = -1;
-	wip->disarmed_impact_snd = -1;
-	wip->flyby_snd = -1;
-	
-	wip->rearm_rate = 1.0f;
-	
-	wip->weapon_range = 999999999.9f;
-	// *Minimum weapon range, default is 0 -Et1
-	wip->WeaponMinRange = 0.0f;
-
-    wip->num_spawn_weapons_defined = 0;
-
-    for (i = 0; i < MAX_SPAWN_TYPES_PER_WEAPON; i++)
-    {
-	    wip->spawn_info[i].spawn_type  = -1;
-	    wip->spawn_info[i].spawn_angle = 180;
-        wip->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
-    }
-	
-	// Trails
-	wip->tr_info.pt = vmd_zero_vector;
-	wip->tr_info.w_start = 1.0f;
-	wip->tr_info.w_end = 1.0f;
-	wip->tr_info.a_start = 1.0f;
-	wip->tr_info.a_end = 1.0f;
-	wip->tr_info.max_life = 1.0f;
-	wip->tr_info.stamp = 0;
-	generic_bitmap_init(&wip->tr_info.texture, NULL);
-	wip->tr_info.n_fade_out_sections = 0;
-
-	memset(wip->icon_filename, 0, sizeof(wip->icon_filename));
-
-	memset(wip->anim_filename, 0, sizeof(wip->anim_filename));
-
-	wip->impact_explosion_radius = 1.0f;
-	wip->impact_weapon_expl_index = -1;
-
-	wip->shield_impact_explosion_radius = 1.0f;
-
-	wip->dinky_impact_explosion_radius = 1.0f;
-	wip->dinky_impact_weapon_expl_index = -1;
-
-	wip->flash_impact_weapon_expl_index = -1;
-	wip->flash_impact_explosion_radius = 0.0f;
-
-	wip->piercing_impact_explosion_radius = 0.0f;
-	wip->piercing_impact_particle_count = 0;
-	wip->piercing_impact_particle_life = 0.0f;
-	wip->piercing_impact_particle_velocity = 0.0f;
-	wip->piercing_impact_weapon_expl_index = -1;
-	wip->piercing_impact_particle_back_velocity = 0.0f;
-	wip->piercing_impact_particle_variance = 0.0f;
-
-	wip->muzzle_flash = -1;
-
-	wip->emp_intensity = EMP_DEFAULT_INTENSITY;
-	wip->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
-	wip->recoil_modifier = 1.0f;
-	wip->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
-	wip->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
-
-	//customizeable corkscrew stuff
-	wip->cs_num_fired=4;
-	wip->cs_radius=1.25f;
-	wip->cs_delay=30;
-	wip->cs_crotate=1;
-	wip->cs_twist=5.0f;
-	
-	wip->elec_time=8000;
-	wip->elec_eng_mult=1.0f;
-	wip->elec_weap_mult=1.0f;
-	wip->elec_beam_mult=1.0f;
-	wip->elec_sensors_mult=1.0f;
-	wip->elec_randomness=2000;
-	wip->elec_use_new_style=0;
-
-	wip->lssm_warpout_delay=0;			//delay between launch and warpout (ms)
-	wip->lssm_warpin_delay=0;			//delay between warpout and warpin (ms)
-	wip->lssm_stage5_vel=0;		//velocity during final stage
-	wip->lssm_warpin_radius=0;
-	wip->lssm_lock_range=1000000.0f;	//local ssm lock range (optional)
-
-	wip->cm_aspect_effectiveness = 1.0f;
-	wip->cm_heat_effectiveness = 1.0f;
-	wip->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
-	wip->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
-	wip->cm_kill_single = false;
-
-	wip->b_info.beam_type = -1;
-	wip->b_info.beam_life = -1.0f;
-	wip->b_info.beam_warmup = -1;
-	wip->b_info.beam_warmdown = -1;
-	wip->b_info.beam_muzzle_radius = 0.0f;
-	wip->b_info.beam_particle_count = -1;
-	wip->b_info.beam_particle_radius = 0.0f;
-	wip->b_info.beam_particle_angle = 0.0f;
-	wip->b_info.beam_loop_sound = -1;
-	wip->b_info.beam_warmup_sound = -1;
-	wip->b_info.beam_warmdown_sound = -1;
-	wip->b_info.beam_num_sections = 0;
-	wip->b_info.glow_length = 0;
-	wip->b_info.directional_glow = false;
-	wip->b_info.beam_shots = 1;
-	wip->b_info.beam_shrink_factor = 0.0f;
-	wip->b_info.beam_shrink_pct = 0.0f;
-	wip->b_info.range = BEAM_FAR_LENGTH;
-	wip->b_info.damage_threshold = 1.0f;
-	wip->b_info.beam_width = -1.0f;
-
-	generic_anim_init(&wip->b_info.beam_glow, NULL);
-	generic_anim_init(&wip->b_info.beam_particle_ani, NULL);
-
-	for (i = 0; i < MAX_IFFS; i++)
-		for (j = 0; j < NUM_SKILL_LEVELS; j++)
-			wip->b_info.beam_iff_miss_factor[i][j] = 0.00001f;
-	
-	//WMC - Okay, so this is needed now
-	beam_weapon_section_info *bsip;
-	for (i = 0; i < MAX_BEAM_SECTIONS; i++) {
-		bsip = &wip->b_info.sections[i];
-
-		generic_anim_init(&bsip->texture, NULL);
-
-		bsip->width = 1.0f;
-		bsip->flicker = 0.1f;
-		bsip->z_add = i2fl(MAX_BEAM_SECTIONS - i - 1);
-		bsip->tile_type = 0;
-		bsip->tile_factor = 1.0f;
-		bsip->translation = 0.0f;
-	}
-
-	for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {						// default values for everything -nuke
-		wip->particle_spewers[s].particle_spew_type = PSPEW_NONE;				// added by nuke
-		wip->particle_spewers[s].particle_spew_count = 1;
-		wip->particle_spewers[s].particle_spew_time = 25;
-		wip->particle_spewers[s].particle_spew_vel = 0.4f;
-		wip->particle_spewers[s].particle_spew_radius = 2.0f;
-		wip->particle_spewers[s].particle_spew_lifetime = 0.15f;
-		wip->particle_spewers[s].particle_spew_scale = 0.8f;
-		wip->particle_spewers[s].particle_spew_z_scale = 1.0f;			// added by nuke
-		wip->particle_spewers[s].particle_spew_rotation_rate = 10.0f;
-		wip->particle_spewers[s].particle_spew_offset = vmd_zero_vector;
-		wip->particle_spewers[s].particle_spew_velocity = vmd_zero_vector;
-		generic_anim_init(&wip->particle_spewers[s].particle_spew_anim, NULL);
-	}
-	
-	wip->tag_level = -1;
-	wip->tag_time = -1.0f;
-	
-	wip->SSM_index =-1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
-	
-	wip->field_of_fire = 0.0f;
-	wip->fof_spread_rate = 0.0f;
-	wip->fof_reset_rate = 0.0f;
-	wip->max_fof_spread = 0.0f;
-	
-	wip->shots = 1;
-
-	wip->alpha_max = 1.0f;
-	wip->alpha_min = 0.0f;
-	wip->alpha_cycle = 0.0f;
-
-	shockwave_create_info_init(&wip->shockwave);
-	shockwave_create_info_init(&wip->dinky_shockwave);
-
-	wip->weapon_hitpoints = 0;
-
-	wip->burst_delay = 1.0f; // 1 second, just incase its not defined
-	wip->burst_shots = 0;
-	wip->burst_flags = 0;
-
-	generic_anim_init( &wip->thruster_flame );
-	generic_anim_init( &wip->thruster_glow );
-	
-	wip->thruster_glow_factor = 1.0f;
-	wip->target_lead_scaler = 0.0f;
-
-	wip->selection_effect = Default_weapon_select_effect;
-
-	wip->hud_locked_snd = -1;
-	wip->hud_tracking_snd = -1;
-	wip->hud_in_flight_snd = -1;
-}
-
 // function to parse the information for a specific weapon type.	
 // return 0 if successful, otherwise return -1
 #define WEAPONS_MULTITEXT_LENGTH 2048
@@ -1187,7 +899,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		wip = &Weapon_info[Num_weapon_types];
-		init_weapon_entry(Num_weapon_types);
+		wip->reset();
 		first_time = true;
 		
 		strcpy_s(wip->name, fname);
@@ -1958,60 +1670,241 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_string(wip->anim_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
-	if ( optional_string("$Impact Explosion:") ) {
-		stuff_string(fname, F_NAME, NAME_LENGTH);
+	if (optional_string("$Impact Effect:")) {
+		wip->impact_weapon_expl_effect = particle::util::parseEffect(wip->name);
+	} else {
+		// This is for compatibility with old tables
+		// Do not add features here!
 
-		if ( VALID_FNAME(fname) )
-			wip->impact_weapon_expl_index = Weapon_explosions.Load(fname);
+		float size = 1.0f;
+		int bitmapIndex = -1;
+
+		// $Impact Effect was not found, parse the old values
+		if (optional_string("$Impact Explosion:")) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+
+			if (VALID_FNAME(fname))
+			{
+				bitmapIndex = bm_load_animation(fname);
+				
+				if (bitmapIndex < 0)
+				{
+					Warning(LOCATION, "Couldn't load effect '%s' for weapon '%s'.", fname, wip->name);
+				}
+			}
+		}
+
+		if (optional_string("$Impact Explosion Radius:"))
+			stuff_float(&size);
+
+		if (bitmapIndex >= 0 && size > 0.0f)
+		{
+			using namespace particle;
+
+			// Only beams do this randomization
+			if (subtype == WP_BEAM)
+			{
+				// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
+				auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size * 1.2f, size * 1.9f);
+				wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
+			}
+			else
+			{
+				auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size, size);
+				wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
+			}
+		}
 	}
-	
-	if ( optional_string("$Impact Explosion Radius:") )
-		stuff_float(&wip->impact_explosion_radius);
 
 	if ( optional_string("$Shield Impact Explosion Radius:") ) {
 		stuff_float(&wip->shield_impact_explosion_radius);
 	} else if (first_time) {
-		wip->shield_impact_explosion_radius = wip->impact_explosion_radius;
+		using namespace particle;
+
+		// Default value
+		wip->shield_impact_explosion_radius = 1.0f;
+		if (wip->impact_weapon_expl_effect >= 0)
+		{
+			auto singleEffect = dynamic_cast<effects::SingleParticleEffect*>(ParticleManager::get()->getEffect(wip->impact_weapon_expl_effect));
+
+			if (singleEffect)
+			{
+				// Initialize with value of the previously created single particle effect
+				wip->shield_impact_explosion_radius = singleEffect->getProperties().m_radius.next();
+			}
+		}
 	}
 
-	if ( optional_string("$Dinky Impact Explosion:") ) {
-		stuff_string(fname, F_NAME, NAME_LENGTH);
+	if (optional_string("$Dinky Impact Effect:")) {
+		wip->dinky_impact_weapon_expl_effect = particle::util::parseEffect(wip->name);
+	} else {
+		// This is for compatibility with old tables
+		// Do not add features here!
 
-		if ( VALID_FNAME(fname) )
-			wip->dinky_impact_weapon_expl_index = Weapon_explosions.Load(fname);
-	} else if (first_time) {
-		wip->dinky_impact_weapon_expl_index = wip->impact_weapon_expl_index;
+		if (optional_string("$Dinky Impact Explosion:")) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+
+			int bitmapID = -1;
+			float size = 1.0f;
+
+			if (VALID_FNAME(fname))
+			{
+				bitmapID = bm_load_animation(fname);
+
+				if (bitmapID < 0)
+				{
+					Warning(LOCATION, "Couldn't load effect '%s' for weapon '%s'.", fname, wip->name);
+				}
+			}
+
+			if (optional_string("$Dinky Impact Explosion Radius:"))
+			{
+				stuff_float(&size);
+			}
+
+			if (bitmapID >= 0 && size > 0.0f)
+			{
+				using namespace particle;
+
+				// Only beams do this randomization
+				if (subtype == WP_BEAM)
+				{
+					// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
+					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapID, size * 1.2f, size * 1.9f);
+					wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
+				}
+				else
+				{
+					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapID, size, size);
+					wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
+				}
+			}
+		}
+		else if (first_time) {
+			wip->dinky_impact_weapon_expl_effect = wip->impact_weapon_expl_effect;
+		}
+
+		// Slight variation from original, as the original size is not known anymore the whole effect is copied
+		// If the radius was stull specified it needs to be parsed to not mess up something else
+		if (optional_string("$Dinky Impact Explosion Radius:"))
+		{
+			float temp;
+			stuff_float(&temp);
+		}
 	}
 
-	if ( optional_string("$Dinky Impact Explosion Radius:") )
-		stuff_float(&wip->dinky_impact_explosion_radius);
-	else if (first_time)
-		wip->dinky_impact_explosion_radius = wip->impact_explosion_radius;
+	if (optional_string("$Piercing Impact Effect:")) {
+		wip->piercing_impact_effect = particle::util::parseEffect(wip->name);
+		if (first_time)
+		{
+			// The secondary effect is only needed if the old effect got parsed
+			wip->piercing_impact_secondary_effect = -1;
+		}
+	}
+	else
+	{
+		// This is for compatibility with old tables
+		// Do not add features here!
 
-	if ( optional_string("$Piercing Impact Explosion:") ) {
-		stuff_string(fname, F_NAME, NAME_LENGTH);
+		using namespace particle;
+		using namespace effects;
 
-		if ( VALID_FNAME(fname) )
-			wip->piercing_impact_weapon_expl_index = Weapon_explosions.Load(fname);
+		int effectIndex = -1;
+		float radius = 0.0f;
+		int count = 0;
+		float life = 0.0f;
+		float velocity = 0.0f;
+		float back_velocity = 0.0f;
+		float variance = 0.0f;
+
+		particle_emitter emitter;
+		memset(&emitter, 0, sizeof(emitter));
+
+		if (optional_string("$Piercing Impact Explosion:"))
+		{
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+
+			effectIndex = bm_load_animation(fname);
+
+			if (effectIndex < 0)
+			{
+				Warning(LOCATION, "Failed to load effect '%s' for weapon %s!", fname, wip->name);
+			}
+		}
+
+		if (optional_string("$Piercing Impact Radius:"))
+			stuff_float(&radius);
+
+		if (optional_string("$Piercing Impact Velocity:"))
+			stuff_float(&velocity);
+
+		if (optional_string("$Piercing Impact Splash Velocity:"))
+			stuff_float(&back_velocity);
+
+		if (optional_string("$Piercing Impact Variance:"))
+			stuff_float(&variance);
+
+		if (optional_string("$Piercing Impact Life:"))
+			stuff_float(&life);
+
+		if (optional_string("$Piercing Impact Particles:"))
+			stuff_int(&count);
+
+		if (effectIndex >= 0 && radius != 0.0f)
+		{
+			emitter.max_vel = 2.0f * velocity;
+			emitter.min_vel = 0.5f * velocity;
+			emitter.max_life = 2.0f * life;
+			emitter.min_life = 0.25f * life;
+			emitter.num_high = 2 * count;
+			emitter.num_low = count / 2;
+			emitter.normal_variance = variance;
+			emitter.max_rad = 2.0f * radius;
+			emitter.min_rad = 0.5f * radius;
+			emitter.vel = vmd_zero_vector;
+
+			auto emitterEffect = new ParticleEmitterEffect();
+			emitterEffect->setValues(emitter, effectIndex, 10.0f);
+			wip->piercing_impact_effect = ParticleManager::get()->addEffect(emitterEffect);
+
+			if (back_velocity != 0.0f)
+			{
+				emitter.max_vel = 2.0f * back_velocity;
+				emitter.min_vel = 0.5f * back_velocity;
+				emitter.num_high /= 2;
+				emitter.num_low /= 2;
+
+				auto secondaryEffect = new ParticleEmitterEffect();
+				secondaryEffect->setValues(emitter, effectIndex, 10.0f);
+				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(secondaryEffect);
+			}
+		}
 	}
 
-	if ( optional_string("$Piercing Impact Radius:") )
-		stuff_float(&wip->piercing_impact_explosion_radius);
+	if (optional_string("$Inflight Effect:")) {
+		auto effetIdx = particle::util::parseEffect(wip->name);
+		wip->state_effects.insert(std::make_pair(WeaponState::NORMAL, effetIdx));
+	}
 
-	if ( optional_string("$Piercing Impact Velocity:") )
-		stuff_float(&wip->piercing_impact_particle_velocity);
-
-	if ( optional_string("$Piercing Impact Splash Velocity:") )
-		stuff_float(&wip->piercing_impact_particle_back_velocity);
-
-	if ( optional_string("$Piercing Impact Variance:") )
-		stuff_float(&wip->piercing_impact_particle_variance);
-
-	if ( optional_string("$Piercing Impact Life:") )
-		stuff_float(&wip->piercing_impact_particle_life);
-
-	if ( optional_string("$Piercing Impact Particles:") )
-		stuff_int(&wip->piercing_impact_particle_count);
+	if (wip->subtype == WP_MISSILE)
+	{
+		if (optional_string("$Freeflight Effect:")) {
+			auto effetIdx = particle::util::parseEffect(wip->name);
+			wip->state_effects.insert(std::make_pair(WeaponState::FREEFLIGHT, effetIdx));
+		}
+		if (optional_string("$Ignition Effect:")) {
+			auto effetIdx = particle::util::parseEffect(wip->name);
+			wip->state_effects.insert(std::make_pair(WeaponState::IGNITION, effetIdx));
+		}
+		if (optional_string("$Homed Flight Effect:")) {
+			auto effetIdx = particle::util::parseEffect(wip->name);
+			wip->state_effects.insert(std::make_pair(WeaponState::HOMED_FLIGHT, effetIdx));
+		}
+		if (optional_string("$Unhomed Flight Effect:")) {
+			auto effetIdx = particle::util::parseEffect(wip->name);
+			wip->state_effects.insert(std::make_pair(WeaponState::UNHOMED_FLIGHT, effetIdx));
+		}
+	}
 
 	// muzzle flash
 	if ( optional_string("$Muzzleflash:") ) {
@@ -2314,34 +2207,113 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if ( optional_string("+BeamWidth:") )
 			stuff_float(&wip->b_info.beam_width);
 
-		if ( optional_string("+Beam Flash Effect:") ) {
-			stuff_string(fname, F_NAME, NAME_LENGTH);
+		if (optional_string("+Beam Flash Particle Effect:")) {
+			wip->flash_impact_weapon_expl_effect = particle::util::parseEffect(wip->name);
+		} else {
+			// This is for compatibility with old tables
+			// Do not add features here!
 
-			if ( VALID_FNAME(fname) )
-				wip->flash_impact_weapon_expl_index = Weapon_explosions.Load(fname);
+			int bitmapIndex = -1;
+			float size = 0.0f;
+			bool defaultEffect = false;
+
+			if (optional_string("+Beam Flash Effect:")) {
+				stuff_string(fname, F_NAME, NAME_LENGTH);
+
+				if (VALID_FNAME(fname))
+				{
+					bitmapIndex = bm_load_animation(fname);
+
+					if (bitmapIndex < 0)
+					{
+						Warning(LOCATION, "Failed to load effect '%s' for weapon '%s'!", fname, wip->name);
+					}
+				}
+			}
+
+			if (bitmapIndex < 0)
+			{
+				// Default to the smoke particle effect
+				bitmapIndex = bm_load_animation("particlesmoke01");
+				defaultEffect = true;
+			}
+
+			if (optional_string("+Beam Flash Radius:"))
+				stuff_float(&size);
+
+			if (bitmapIndex >= 0 && size > 0.0f)
+			{
+				using namespace particle;
+
+				if (defaultEffect)
+				{
+					// 'size * 1.5f * 0.005f' is another weird thing, the original code scales the lifetime of the flash particles based on size
+					// so the new effects have to simulate that, but that onyl applies to the default effect, not a custom effect
+					// seriously, who though that would be a good idea?
+					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size * 1.2f, size * 1.9f, size * 1.5f * 0.005f);
+					wip->flash_impact_weapon_expl_effect = ParticleManager::get()->
+						addEffect(singleEffect);
+				}
+				else
+				{
+					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size * 1.2f, size * 1.9f);
+					wip->flash_impact_weapon_expl_effect = ParticleManager::get()->
+						addEffect(singleEffect);
+				}
+			}
 		}
-		
-		if ( optional_string("+Beam Flash Radius:") )
-			stuff_float(&wip->flash_impact_explosion_radius);
 
-		if ( optional_string("+Beam Piercing Effect:") ) {
-			stuff_string(fname, F_NAME, NAME_LENGTH);
+		if (optional_string("+Beam Piercing Particle Effect:")) {
+			wip->flash_impact_weapon_expl_effect = particle::util::parseEffect(wip->name);
+		} else {
+			// This is for compatibility with old tables
+			// Do not add features here!
 
-			if ( VALID_FNAME(fname) )
-				wip->piercing_impact_weapon_expl_index = Weapon_explosions.Load(fname);
+			int bitmapIndex = -1;
+			float radius = 0.0f;
+			float velocity = 0.0f;
+			float back_velocity = 0.0f;
+			float variance = 0.0f;
+
+			if (optional_string("+Beam Piercing Effect:"))
+			{
+				stuff_string(fname, F_NAME, NAME_LENGTH);
+
+				if (VALID_FNAME(fname))
+				{
+					bitmapIndex = bm_load_animation(fname);
+
+					if (bitmapIndex < 0)
+					{
+						Warning(LOCATION, "Failed to load effect '%s' for weapon %s!", fname, wip->name);
+					}
+				}
+			}
+
+			if (optional_string("+Beam Piercing Radius:"))
+				stuff_float(&radius);
+
+			if (optional_string("+Beam Piercing Effect Velocity:"))
+				stuff_float(&velocity);
+
+			if (optional_string("+Beam Piercing Splash Effect Velocity:"))
+				stuff_float(&back_velocity);
+
+			if (optional_string("+Beam Piercing Effect Variance:"))
+				stuff_float(&variance);
+
+			if (bitmapIndex >= 0 && radius > 0.0f)
+			{
+				using namespace particle;
+				using namespace effects;
+
+				auto piercingEffect = new BeamPiercingEffect();
+				piercingEffect->setValues(bitmapIndex, radius, velocity, back_velocity, variance);
+
+				wip->piercing_impact_effect = ParticleManager::get()->
+					addEffect(piercingEffect);
+			}
 		}
-		
-		if ( optional_string("+Beam Piercing Radius:") )
-			stuff_float(&wip->piercing_impact_explosion_radius);
-
-		if ( optional_string("+Beam Piercing Effect Velocity:") )
-			stuff_float(&wip->piercing_impact_particle_velocity);
-
-		if ( optional_string("+Beam Piercing Splash Effect Velocity:") )
-			stuff_float(&wip->piercing_impact_particle_back_velocity);
-
-		if ( optional_string("+Beam Piercing Effect Variance:") )
-			stuff_float(&wip->piercing_impact_particle_variance);
 
 		// beam sections
 		while ( optional_string("$Section:") ) {
@@ -3504,10 +3476,9 @@ void weapon_expl_info_init()
 
 void weapon_reset_info()
 {
-	memset( Weapon_info, 0, sizeof(weapon_info) * MAX_WEAPON_TYPES );
-
-	for (int i = 0; i < MAX_WEAPON_TYPES; i++)
-		init_weapon_entry(i);
+	for (auto& wi : Weapon_info) {
+		wi.reset();
+	}
 }
 
 /**
@@ -4574,6 +4545,85 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 	}
 }
 
+static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
+{
+	if (wp->weapon_state == state)
+	{
+		// No change
+		return;
+	}
+
+	if (wp->weapon_state == WeaponState::INVALID)
+	{
+		// First weapon state, create the in-flight effect
+		auto map_entry = wip->state_effects.find(WeaponState::NORMAL);
+
+		if (map_entry != wip->state_effects.end())
+		{
+			auto source = particle::ParticleManager::get()->createSource(map_entry->second);
+
+			source.moveToObject(&Objects[wp->objnum], &vmd_zero_vector);
+			source.setWeaponState(WeaponState::NORMAL);
+
+			source.finish();
+		}
+	}
+
+	wp->weapon_state = state;
+
+	auto map_entry = wip->state_effects.find(wp->weapon_state);
+
+	if (map_entry != wip->state_effects.end())
+	{
+		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
+
+		source.moveToObject(&Objects[wp->objnum], &vmd_zero_vector);
+		source.setWeaponState(wp->weapon_state);
+
+		source.finish();
+	}
+}
+
+static void weapon_update_state(weapon* wp)
+{
+	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+
+	if (wip->subtype == WP_LASER)
+	{
+		weapon_set_state(wip, wp, WeaponState::NORMAL);
+		return;
+	}
+
+	auto infree_flight = false;
+	if (wip->free_flight_time)
+	{
+		fix lifetime = Missiontime - wp->creation_time;
+		if (lifetime < fl2f(wip->free_flight_time))
+		{
+			weapon_set_state(wip, wp, WeaponState::FREEFLIGHT);
+			infree_flight = true;
+		}
+		else if (lifetime >= fl2f(wip->free_flight_time) &&
+			(lifetime - Frametime) <= fl2f(wip->free_flight_time) && wp->homing_object != nullptr)
+		{
+			weapon_set_state(wip, wp, WeaponState::IGNITION);
+			infree_flight = true;
+		}
+	}
+
+	if (!infree_flight)
+	{
+		if (wp->homing_object == nullptr)
+		{
+			weapon_set_state(wip, wp, WeaponState::UNHOMED_FLIGHT);
+		}
+		else
+		{
+			weapon_set_state(wip, wp, WeaponState::HOMED_FLIGHT);
+		}
+	}
+}
+
 // process a weapon after physics movement.  MWA reorders some of the code on 8/13 for multiplayer.  When
 // adding something to this function, decide whether or not a client in a multiplayer game needs to do
 // what is normally done in a single player game.  Things like plotting an object on a radar, effect
@@ -4893,6 +4943,8 @@ void weapon_process_post(object * obj, float frame_time)
 			}
 		}
 	}
+
+	weapon_update_state(wp);
 }
 
 /**
@@ -5222,6 +5274,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->laser_bitmap_frame = 0.0f;
 	wp->laser_glow_bitmap_frame = 0.0f;
 
+	// init the weapon state
+	wp->weapon_state = WeaponState::INVALID;
+
 	if ( wip->wi_flags & WIF_SWARM ) {
 		wp->swarm_index = (short)swarm_create();
 	} else {
@@ -5466,6 +5521,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	if (Weapons_inherit_parent_collision_group) {
 		Objects[objnum].collision_group_id = Objects[parent_objnum].collision_group_id;
 	}
+
+	weapon_update_state(wp);
 
 	return objnum;
 }
@@ -6050,7 +6107,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
  * Called when a weapon hits something (or, in the case of
  * missiles explodes for any particular reason)
  */
-void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant )
+void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant, vec3d* hitnormal )
 {
 	Assert(weapon_obj != NULL);
 	if(weapon_obj == NULL){
@@ -6063,7 +6120,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	int			num = weapon_obj->instance;
 	int			weapon_type = Weapons[num].weapon_info_index;
-	int			expl_ani_handle;
 	weapon_info	*wip;
 	weapon *wp;
 	bool		hit_target = false;
@@ -6094,18 +6150,34 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon);
 	}
 
-	if ( wip->impact_weapon_expl_index > -1 && armed_weapon)
+	if ( wip->impact_weapon_expl_effect >= 0 && armed_weapon)
 	{
-		expl_ani_handle = Weapon_explosions.GetAnim(wip->impact_weapon_expl_index, hitpos, wip->impact_explosion_radius);
-		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
+		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
+		particleSource.moveTo(hitpos);
+		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+
+		if (hitnormal)
+		{
+			particleSource.setOrientationNormal(hitnormal);
+		}
+
+		particleSource.finish();
 	}
-	else if(wip->dinky_impact_weapon_expl_index > -1 && !armed_weapon)
+	else if(wip->dinky_impact_weapon_expl_effect >= 0 && !armed_weapon)
 	{
-		expl_ani_handle = Weapon_explosions.GetAnim(wip->dinky_impact_weapon_expl_index, hitpos, wip->dinky_impact_explosion_radius);
-		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
+		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
+		particleSource.moveTo(hitpos);
+		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+
+		if (hitnormal)
+		{
+			particleSource.setOrientationNormal(hitnormal);
+		}
+
+		particleSource.finish();
 	}
 
-	if((other_obj != NULL) && (quadrant == -1) && (wip->piercing_impact_weapon_expl_index > -1 && armed_weapon)) {
+	if((other_obj != NULL) && (quadrant == -1) && (wip->piercing_impact_effect > -1 && armed_weapon)) {
 		if ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
@@ -6134,35 +6206,31 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 			}
 
 			if (ok_to_draw) {
-				particle_emitter pe;
-				vec3d null_v;
+				using namespace particle;
 
-				vm_vec_zero(&null_v);
-				expl_ani_handle = Weapon_explosions.GetAnim(wip->piercing_impact_weapon_expl_index, hitpos, wip->piercing_impact_explosion_radius);
+				auto primarySource = ParticleManager::get()->createSource(wip->piercing_impact_effect);
+				primarySource.moveTo(&weapon_obj->pos);
+				primarySource.setOrientationMatrix(&weapon_obj->last_orient);
 
-				pe.max_vel = 2.0f * wip->piercing_impact_particle_velocity;
-				pe.min_vel = 0.5f * wip->piercing_impact_particle_velocity;
-				pe.max_life = 2.0f * wip->piercing_impact_particle_life;
-				pe.min_life = 0.25f * wip->piercing_impact_particle_life;
-				pe.num_high = 2 * wip->piercing_impact_particle_count;
-				pe.num_low =  wip->piercing_impact_particle_count / 2;
-				pe.pos = weapon_obj->pos;
-				pe.normal = weapon_obj->last_orient.vec.fvec;
-				pe.normal_variance = wip->piercing_impact_particle_variance;
-				pe.max_rad = 2.0f * wip->piercing_impact_explosion_radius;
-				pe.min_rad = 0.5f * wip->piercing_impact_explosion_radius;
-				pe.vel = null_v;
+				if (hitnormal)
+				{
+					primarySource.setOrientationNormal(hitnormal);
+				}
 
-				particle_emit(&pe, PARTICLE_BITMAP, expl_ani_handle, 10.0f);
+				primarySource.finish();
 
-				if (wip->piercing_impact_particle_back_velocity != 0.0f) {
+				if (wip->piercing_impact_secondary_effect >= 0)
+				{
+					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
+					secondarySource.moveTo(&weapon_obj->pos);
+					secondarySource.setOrientationMatrix(&weapon_obj->last_orient);
 
-					pe.max_vel = 2.0f * wip->piercing_impact_particle_back_velocity;
-					pe.min_vel = 0.5f * wip->piercing_impact_particle_back_velocity;
-					pe.num_high /= 2;
-					pe.num_low /= 2;
+					if (hitnormal)
+					{
+						secondarySource.setOrientationNormal(hitnormal);
+					}
 
-					particle_emit(&pe, PARTICLE_BITMAP, expl_ani_handle, 10.0f);
+					secondarySource.finish();
 				}
 			}
 		}
@@ -6391,12 +6459,6 @@ void weapons_page_in()
 		//Load shockwaves
 		shockwave_create_info_load(&wip->shockwave);
 		shockwave_create_info_load(&wip->dinky_shockwave);
-
-		//Explosions
-		Weapon_explosions.PageIn(wip->impact_weapon_expl_index);
-		Weapon_explosions.PageIn(wip->dinky_impact_weapon_expl_index);
-		Weapon_explosions.PageIn(wip->flash_impact_weapon_expl_index);
-		Weapon_explosions.PageIn(wip->piercing_impact_weapon_expl_index);
 
 		// trail bitmaps
 		if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.texture.bitmap_id > -1) )
@@ -6645,9 +6707,9 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit the particle
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle_create(&particle_pos, &vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, PARTICLE_SMOKE);
+							particle::create(&particle_pos, &vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_SMOKE);
 						} else {
-							particle_create(&particle_pos, &vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
+							particle::create(&particle_pos, &vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
 				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_HELIX) { // helix
@@ -6680,9 +6742,9 @@ void weapon_maybe_spew_particle(object *obj)
 
 						//emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle_create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, PARTICLE_SMOKE);
+							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_SMOKE);
 						} else {
-							particle_create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
+							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
 				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_SPARKLER) { // sparkler
@@ -6714,9 +6776,9 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle_create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, PARTICLE_SMOKE);
+							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_SMOKE);
 						} else {
-							particle_create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
+							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
 				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_RING) {
@@ -6740,9 +6802,9 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle_create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, PARTICLE_SMOKE);
+							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_SMOKE);
 						} else {
-							particle_create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
+							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
 				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_PLUME) {
@@ -6776,9 +6838,9 @@ void weapon_maybe_spew_particle(object *obj)
 
 						//emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle_create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, PARTICLE_SMOKE);
+							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_SMOKE);
 						} else {
-							particle_create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
+							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
 				}
@@ -7054,7 +7116,7 @@ void weapon_unpause_sounds()
 
 void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx) {
 	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
-	particle_create( hitpos, &vmd_zero_vector, 0.0f, radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, -1.0f, objp );
+	particle::create( hitpos, &vmd_zero_vector, 0.0f, radius, particle::PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, objp );
 }
 
 void weapon_render(object* obj, draw_list *scene)
@@ -7274,4 +7336,292 @@ void validate_SSM_entries()
 		}
 		nprintf(("parse", "Validation complete, SSM-index is %d.\n", wip->SSM_index));
 	}
+}
+
+weapon_info::weapon_info()
+{
+	this->reset();
+}
+
+void weapon_info::reset()
+{
+	// INITIALIZE NEW FIELDS HERE
+	// The order should match the order in the struct!
+	int i, j;
+
+	this->wi_flags = WIF_DEFAULT_VALUE;
+	this->wi_flags2 = WIF2_DEFAULT_VALUE;
+
+	this->subtype = WP_UNUSED;
+	this->render_type = WRT_NONE;
+
+	memset(this->name, 0, sizeof(this->name));
+	memset(this->title, 0, sizeof(this->title));
+	this->desc = NULL;
+
+	memset(this->tech_title, 0, sizeof(this->tech_title));
+	memset(this->tech_anim_filename, 0, sizeof(this->tech_anim_filename));
+	this->tech_desc = NULL;
+	memset(this->tech_model, 0, sizeof(this->tech_model));
+
+	memset(this->hud_filename, 0, sizeof(this->hud_filename));
+	this->hud_image_index = -1;
+
+	memset(this->pofbitmap_name, 0, sizeof(this->pofbitmap_name));
+
+	this->model_num = -1;
+	this->hud_target_lod = -1;
+	this->num_detail_levels = -1;
+	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; i++)
+	{
+		this->detail_distance[i] = -1;
+	}
+
+	vm_vec_zero(&this->closeup_pos);
+	this->closeup_zoom = 1.0f;
+
+	generic_anim_init(&this->laser_bitmap);
+	generic_anim_init(&this->laser_glow_bitmap);
+
+	gr_init_color(&this->laser_color_1, 255, 255, 255);
+	gr_init_color(&this->laser_color_2, 255, 255, 255);
+
+	this->laser_length = 10.0f;
+	this->laser_head_radius = 1.0f;
+	this->laser_tail_radius = 1.0f;
+
+	memset(this->external_model_name, 0, sizeof(this->external_model_name));
+	this->external_model_num = -1;
+
+	this->weapon_submodel_rotate_accell = 10.0f;
+	this->weapon_submodel_rotate_vel = 0.0f;
+
+	this->mass = 1.0f;
+	this->max_speed = 10.0f;
+	this->acceleration_time = 0.0f;
+	this->vel_inherit_amount = 1.0f;
+	this->free_flight_time = 0.0f;
+	this->fire_wait = 1.0f;
+	this->max_delay = 0.0f;
+	this->min_delay = 0.0f;
+	this->damage = 0.0f;
+	this->damage_time = -1.0f;
+	this->atten_damage = -1.0f;
+
+	this->damage_type_idx = -1;
+	this->damage_type_idx_sav = -1;
+
+	this->armor_type_idx = -1;
+
+	this->arm_time = 0;
+	this->arm_dist = 0.0f;
+	this->arm_radius = 0.0f;
+	this->det_range = 0.0f;
+	this->det_radius = 0.0f;
+	this->flak_targeting_accuracy = 60.0f; // Standard value as defined in flak.cpp
+	this->flak_detonation_accuracy = 65.0f;
+	this->untargeted_flak_range_penalty = 20.0f;
+
+	this->armor_factor = 1.0f;
+	this->shield_factor = 1.0f;
+	this->subsystem_factor = 1.0f;
+
+	this->life_min = -1.0f;
+	this->life_max = -1.0f;
+	this->lifetime = 1.0f;
+	this->energy_consumed = 0.0f;
+
+	this->cargo_size = 1.0f;
+
+	this->turn_time = 1.0f;
+	this->fov = 0;				//should be cos(pi), not pi
+
+	this->min_lock_time = 0.0f;
+	this->lock_pixels_per_sec = 50;
+	this->catchup_pixels_per_sec = 50;
+	this->catchup_pixel_penalty = 50;
+	this->seeker_strength = 1.0f;
+
+	this->swarm_count = -1;
+	// *Default is 150  -Et1
+	this->SwarmWait = SWARM_MISSILE_DELAY;
+
+	this->pre_launch_snd = -1;
+	this->pre_launch_snd_min_interval = 0;
+
+	this->launch_snd = -1;
+	this->impact_snd = -1;
+	this->disarmed_impact_snd = -1;
+	this->flyby_snd = -1;
+
+	this->rearm_rate = 1.0f;
+
+	this->weapon_range = 999999999.9f;
+	// *Minimum weapon range, default is 0 -Et1
+	this->WeaponMinRange = 0.0f;
+
+	this->num_spawn_weapons_defined = 0;
+
+	for (i = 0; i < MAX_SPAWN_TYPES_PER_WEAPON; i++)
+	{
+		this->spawn_info[i].spawn_type = -1;
+		this->spawn_info[i].spawn_angle = 180;
+		this->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
+	}
+
+	// Trails
+	this->tr_info.pt = vmd_zero_vector;
+	this->tr_info.w_start = 1.0f;
+	this->tr_info.w_end = 1.0f;
+	this->tr_info.a_start = 1.0f;
+	this->tr_info.a_end = 1.0f;
+	this->tr_info.max_life = 1.0f;
+	this->tr_info.stamp = 0;
+	generic_bitmap_init(&this->tr_info.texture, NULL);
+	this->tr_info.n_fade_out_sections = 0;
+
+	memset(this->icon_filename, 0, sizeof(this->icon_filename));
+
+	memset(this->anim_filename, 0, sizeof(this->anim_filename));
+
+	this->shield_impact_explosion_radius = 1.0f;
+
+	this->impact_weapon_expl_effect = -1;
+
+	this->dinky_impact_weapon_expl_effect = -1;
+
+	this->flash_impact_weapon_expl_effect = -1;
+
+	this->piercing_impact_effect = -1;
+	this->piercing_impact_secondary_effect = -1;
+
+	this->muzzle_flash = -1;
+
+	this->emp_intensity = EMP_DEFAULT_INTENSITY;
+	this->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
+	this->recoil_modifier = 1.0f;
+	this->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
+	this->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
+
+	//customizeable corkscrew stuff
+	this->cs_num_fired = 4;
+	this->cs_radius = 1.25f;
+	this->cs_delay = 30;
+	this->cs_crotate = 1;
+	this->cs_twist = 5.0f;
+
+	this->elec_time = 8000;
+	this->elec_eng_mult = 1.0f;
+	this->elec_weap_mult = 1.0f;
+	this->elec_beam_mult = 1.0f;
+	this->elec_sensors_mult = 1.0f;
+	this->elec_randomness = 2000;
+	this->elec_use_new_style = 0;
+
+	this->lssm_warpout_delay = 0;			//delay between launch and warpout (ms)
+	this->lssm_warpin_delay = 0;			//delay between warpout and warpin (ms)
+	this->lssm_stage5_vel = 0;		//velocity during final stage
+	this->lssm_warpin_radius = 0;
+	this->lssm_lock_range = 1000000.0f;	//local ssm lock range (optional)
+
+	this->cm_aspect_effectiveness = 1.0f;
+	this->cm_heat_effectiveness = 1.0f;
+	this->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
+	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
+	this->cm_kill_single = false;
+
+	this->b_info.beam_type = -1;
+	this->b_info.beam_life = -1.0f;
+	this->b_info.beam_warmup = -1;
+	this->b_info.beam_warmdown = -1;
+	this->b_info.beam_muzzle_radius = 0.0f;
+	this->b_info.beam_particle_count = -1;
+	this->b_info.beam_particle_radius = 0.0f;
+	this->b_info.beam_particle_angle = 0.0f;
+	this->b_info.beam_loop_sound = -1;
+	this->b_info.beam_warmup_sound = -1;
+	this->b_info.beam_warmdown_sound = -1;
+	this->b_info.beam_num_sections = 0;
+	this->b_info.glow_length = 0;
+	this->b_info.directional_glow = false;
+	this->b_info.beam_shots = 1;
+	this->b_info.beam_shrink_factor = 0.0f;
+	this->b_info.beam_shrink_pct = 0.0f;
+	this->b_info.range = BEAM_FAR_LENGTH;
+	this->b_info.damage_threshold = 1.0f;
+	this->b_info.beam_width = -1.0f;
+
+	generic_anim_init(&this->b_info.beam_glow, NULL);
+	generic_anim_init(&this->b_info.beam_particle_ani, NULL);
+
+	for (i = 0; i < MAX_IFFS; i++)
+		for (j = 0; j < NUM_SKILL_LEVELS; j++)
+			this->b_info.beam_iff_miss_factor[i][j] = 0.00001f;
+
+	//WMC - Okay, so this is needed now
+	beam_weapon_section_info *bsip;
+	for (i = 0; i < MAX_BEAM_SECTIONS; i++) {
+		bsip = &this->b_info.sections[i];
+
+		generic_anim_init(&bsip->texture, NULL);
+
+		bsip->width = 1.0f;
+		bsip->flicker = 0.1f;
+		bsip->z_add = i2fl(MAX_BEAM_SECTIONS - i - 1);
+		bsip->tile_type = 0;
+		bsip->tile_factor = 1.0f;
+		bsip->translation = 0.0f;
+	}
+
+	for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {						// default values for everything -nuke
+		this->particle_spewers[s].particle_spew_type = PSPEW_NONE;				// added by nuke
+		this->particle_spewers[s].particle_spew_count = 1;
+		this->particle_spewers[s].particle_spew_time = 25;
+		this->particle_spewers[s].particle_spew_vel = 0.4f;
+		this->particle_spewers[s].particle_spew_radius = 2.0f;
+		this->particle_spewers[s].particle_spew_lifetime = 0.15f;
+		this->particle_spewers[s].particle_spew_scale = 0.8f;
+		this->particle_spewers[s].particle_spew_z_scale = 1.0f;			// added by nuke
+		this->particle_spewers[s].particle_spew_rotation_rate = 10.0f;
+		this->particle_spewers[s].particle_spew_offset = vmd_zero_vector;
+		this->particle_spewers[s].particle_spew_velocity = vmd_zero_vector;
+		generic_anim_init(&this->particle_spewers[s].particle_spew_anim, NULL);
+	}
+
+	this->tag_level = -1;
+	this->tag_time = -1.0f;
+
+	this->SSM_index = -1;				// tag C SSM index, wich entry in the SSM table this weapon calls -Bobboau
+
+	this->field_of_fire = 0.0f;
+	this->fof_spread_rate = 0.0f;
+	this->fof_reset_rate = 0.0f;
+	this->max_fof_spread = 0.0f;
+
+	this->shots = 1;
+
+	this->alpha_max = 1.0f;
+	this->alpha_min = 0.0f;
+	this->alpha_cycle = 0.0f;
+
+	shockwave_create_info_init(&this->shockwave);
+	shockwave_create_info_init(&this->dinky_shockwave);
+
+	this->weapon_hitpoints = 0;
+
+	this->burst_delay = 1.0f; // 1 second, just incase its not defined
+	this->burst_shots = 0;
+	this->burst_flags = 0;
+
+	generic_anim_init(&this->thruster_flame);
+	generic_anim_init(&this->thruster_glow);
+
+	this->thruster_glow_factor = 1.0f;
+	this->target_lead_scaler = 0.0f;
+
+	this->selection_effect = Default_weapon_select_effect;
+
+	this->hud_locked_snd = -1;
+	this->hud_tracking_snd = -1;
+	this->hud_in_flight_snd = -1;
 }

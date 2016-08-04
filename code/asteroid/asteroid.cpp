@@ -915,7 +915,7 @@ void asteroid_process_pre( object *objp )
 	}
 }
 
-int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos, collision_info_struct *asteroid_hit_info)
+int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos, collision_info_struct *asteroid_hit_info, vec3d* hitnormal)
 {
 	if (!Asteroids_enabled) {
 		return 0;
@@ -947,7 +947,17 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		mc.flags = (MC_CHECK_MODEL);
 
 		if (model_collide(&mc))
+		{
 			*hitpos = mc.hit_point_world;
+
+			if (hitnormal)
+			{
+				vec3d normal;
+				model_find_world_dir(&normal, &mc.hit_normal, mc.model_num, mc.hit_submodel, mc.orient);
+
+				*hitnormal = normal;
+			}
+		}
 
 		return mc.num_hits;
 	}
@@ -1388,8 +1398,8 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 			weapon_info *wip;
 			wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 			// If the weapon didn't play any impact animation, play custom asteroid impact animation
-			if ( wip->impact_weapon_expl_index < 0 ) {
-				particle_create( hitpos, &vmd_zero_vector, 0.0f, Asteroid_impact_explosion_radius, PARTICLE_BITMAP, Asteroid_impact_explosion_ani );
+			if ( wip->impact_weapon_expl_effect < 0 ) {
+				particle::create( hitpos, &vmd_zero_vector, 0.0f, Asteroid_impact_explosion_radius, particle::PARTICLE_BITMAP, Asteroid_impact_explosion_ani );
 			}
 		}
 	}

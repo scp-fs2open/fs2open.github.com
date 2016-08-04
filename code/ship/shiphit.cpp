@@ -1515,7 +1515,6 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	vm_vec_zero(&objp->phys_info.max_vel);		// make so he can't turn on his own VOLITION anymore.
 
 	vm_vec_zero(&objp->phys_info.max_rotvel);	// make so he can't change speed on his own VOLITION anymore.
-
 }
 
 // called from ship_hit_kill if the ship is vaporized

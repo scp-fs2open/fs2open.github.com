@@ -1510,7 +1510,7 @@ void shipfx_emit_spark( int n, int sn )
 
 	if ( create_spark )	{
 
-		particle_emitter	pe;
+		particle::particle_emitter pe;
 		particle_effect		pef;
 
 		pe.pos = outpnt;				// Where the particles emit from
@@ -1574,7 +1574,7 @@ void shipfx_emit_spark( int n, int sn )
 			pe.min_life = pef.min_life;				// How long the particles live
 			pe.max_life = pef.max_life;				// How long the particles live
 
-			particle_emit( &pe, PARTICLE_FIRE, 0 );
+			particle::emit( &pe, particle::PARTICLE_FIRE, 0 );
 		} else {
 			if (pef.n_high > 1) {
 				pe.num_low = pef.n_low;
@@ -1598,7 +1598,7 @@ void shipfx_emit_spark( int n, int sn )
 				pe.max_life = 1.5f * spark_time_scale;
 			}
 			
-			particle_emit( &pe, PARTICLE_SMOKE, 0 );
+			particle::emit( &pe, particle::PARTICLE_SMOKE, 0 );
 		}
 	}
 
@@ -2177,7 +2177,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 			do_sub_expl_sound(half_ship->parent_obj->radius, &model_clip_plane_pt, sound_handle);
 
 			// do particles
-			particle_emitter	pe;
+			particle::particle_emitter	pe;
 			particle_effect		pef = sip->split_particles;
 
 			pe.num_low = pef.n_low;					// Lowest number of particles to create
@@ -2215,7 +2215,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 			}
 
 			if (pe.num_high > 0) {
-				particle_emit( &pe, PARTICLE_SMOKE2, 0, range );
+				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, range );
 			}
 
 		} else {

@@ -69,10 +69,13 @@ void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *worl
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 	ship *shipp = &Ships[pship_obj->instance];
 	float damage;
-	vec3d force;		
+	vec3d force;
+
+	vec3d worldNormal;
+	model_instance_find_world_dir(&worldNormal, &hit_dir, shipp->model_instance_num, submodel_num, &pship_obj->orient);
 
 	// Apply hit & damage & stuff to weapon
-	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num);
+	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num, &worldNormal);
 
 	if (wip->damage_time >= 0.0f && wp->lifeleft <= wip->damage_time) {
 		if (wip->atten_damage >= 0.0f) {

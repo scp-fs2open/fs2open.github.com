@@ -353,6 +353,8 @@ bool fred_init(HWND windowHandle)
 	key_init();
 	mouse_init();
 
+	particle::ParticleManager::init();
+
 	iff_init();			// Goober5000
 	species_init();		// Kazan
 

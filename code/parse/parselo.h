@@ -91,7 +91,7 @@ extern void ignore_gray_space();
 extern int get_line_num();
 extern char *next_tokens();
 extern void diag_printf(char *format, ...);
-extern void error_display(int error_level, char *format, ...);
+extern void error_display(int error_level, const char *format, ...);
 
 // skip
 extern int skip_to_string(char *pstr, char *end = NULL);
@@ -143,7 +143,7 @@ extern int stuff_string_list(SCP_vector<SCP_string>& slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
-extern int stuff_float_list(float* flp, int max_floats);
+extern size_t stuff_float_list(float* flp, size_t max_floats);
 extern int stuff_vec3d_list(vec3d *vlp, int max_vecs);
 extern int stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern int stuff_bool_list(bool *blp, int max_bools);

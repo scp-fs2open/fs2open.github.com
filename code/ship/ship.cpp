@@ -7681,7 +7681,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				shipp->next_fireball = timestamp_rand(333,500);
 
 				// emit particles
-				particle_emitter	pe;
+				particle::particle_emitter	pe;
 				particle_effect		pef = sip->knossos_end_particles;
 				
 				pe.num_low = pef.n_low;					// Lowest number of particles to create
@@ -7698,7 +7698,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				pe.max_rad = pef.max_rad; // * objp->radius;
 
 				if (pe.num_high > 0) {
-					particle_emit( &pe, PARTICLE_SMOKE2, 0, 50 );
+					particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, 50 );
 				}
 
 				// do sound - maybe start a random sound, if it has played far enough.
@@ -7795,10 +7795,10 @@ void ship_dying_frame(object *objp, int ship_num)
 			// if dying ship is docked, do damage to docked and physics
 			if (object_is_dead_docked(objp))  {
 				do_dying_undock_physics(objp, shipp);
-			}			
+			}
 
 			// play a random explosion
-			particle_emitter	pe;
+			particle::particle_emitter	pe;
 			particle_effect		pef = sip->regular_end_particles;
 
 			pe.num_low = pef.n_low;					// Lowest number of particles to create
@@ -7815,7 +7815,7 @@ void ship_dying_frame(object *objp, int ship_num)
 			pe.max_rad = pef.max_rad;				// Max radius
 
 			if ((!knossos_ship) && (pe.num_high > 0)) {
-				particle_emit( &pe, PARTICLE_SMOKE2, 0 );
+				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
 			}
 
 			// If this is a large ship with a propagating explosion, set it to blow up.
@@ -10313,29 +10313,6 @@ DCF(t_max, "")
 	dc_stuff_float(&t_max);
 }
 */
-void ship_fire_tracer(int weapon_objnum)
-{
-	particle_info pinfo;
-	object *objp = &Objects[weapon_objnum];
-	weapon_info *wip = &Weapon_info[Weapons[Objects[weapon_objnum].instance].weapon_info_index];
-
-	// setup particle info
-	memset(&pinfo, 0, sizeof(particle_info));
-	pinfo.pos = objp->pos;
-	pinfo.vel = objp->phys_info.vel;
-	vm_vec_scale(&pinfo.vel, t_vel);
-	pinfo.lifetime = wip->lifetime;
-	pinfo.rad = t_rad;
-	pinfo.type = PARTICLE_BITMAP;
-	pinfo.optional_data = wip->laser_bitmap.first_frame;
-	pinfo.tracer_length = t_len;
-	pinfo.reverse = 0;
-	pinfo.attached_objnum = -1;
-	pinfo.attached_sig = 0;
-
-	// create the particle
-	particle_create(&pinfo);
-}
 
 /**
  * Stops a single primary bank
