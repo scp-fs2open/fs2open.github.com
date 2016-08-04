@@ -79,6 +79,8 @@ namespace Weapon {
 		Fighter_Interceptable,				// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
 		Aoe_Electronics,					// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
 		Apply_Recoil,						// Apply Recoil
+        Dont_spawn_if_shot,                 // Prevent shot down parent weapons from spawning children (DahBlount)
+        Die_on_lost_lock,                   // WIF_LOCKED_HOMING missiles will die if they lose their lock
 
 		NUM_VALUES
 	};
@@ -92,7 +94,8 @@ namespace Weapon {
 		Locked_when_fired,			// fired with a lock
 		Destroyed_by_weapon,		// destroyed by damage from other weapon
 		Spawned,					//Spawned from a spawning type weapon
-		Homing_update_needed,
+		Homing_update_needed,       // this is a newly spawned homing weapon which needs to update client machines
+        No_homing,                  // this weapon should ignore any homing behavior it'd usually have
 
 		NUM_VALUES
 	};

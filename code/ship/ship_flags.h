@@ -29,6 +29,8 @@ namespace Ship {
 		No_aggregate,				// exclude this subsystem from the aggregate subsystem-info tracking - Goober5000
 		Play_sound_for_player,		// If this subsystem is a turret on a player ship, play firing sounds - The E 
 		No_disappear,				// prevents submodel from disappearing when subsys destroyed
+        Autorepair_if_disabled,     // Allows the subsystem to repair itself even when disabled - MageKing17
+        No_autorepair_if_disabled,  // Inversion of the above; allow a specific subsystem not to repair itself after being disabled if the ship has the "repair disabled subsystems" flag - MageKing17
 
 		NUM_VALUES
 	};
@@ -101,6 +103,8 @@ namespace Ship {
 		Weapons_locked,				// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
 		Ship_selective_linking,		// RSAXVC - Allow pilot to pick firing configuration
 		Scramble_messages,			// Goober5000 - all messages sent from this ship appear scrambled
+        No_secondary_lockon,        // zookeeper - secondary lock-on disabled
+        No_disabled_self_destruct,  // Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
 
 		NUM_VALUES
 
@@ -169,6 +173,7 @@ namespace Ship {
 		Auto_spread_shields,			// zookeeper - auto spread shields
 		Draw_weapon_models,				// the ship draws weapon models of any sort (used to be a boolean)
 		Model_point_shields,			// zookeeper - uses model-defined shield points instead of quadrants
+        Subsys_repair_when_disabled,    // MageKing17 - Subsystems auto-repair themselves even when disabled.
 
 		NUM_VALUES
 	};
