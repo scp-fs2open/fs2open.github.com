@@ -610,4 +610,64 @@ using std::memset_if_trivial_else_error;
 	#endif // HAVE_CXX11
 #endif // NDEBUG
 
+/*Flagset*/
+#include <bitset>
+
+template <class T, size_t size = static_cast < size_t >(T::NUM_VALUES)>
+class flagset {
+protected:
+    std::bitset<size> values;
+public:
+    bool operator[](T idx) { return values[(static_cast < size_t >(idx))]; };
+    flagset<T> operator&(flagset<T>& other) {
+        flagset<T> result;
+        result.values = this->values & other.values;
+        return result;
+    }
+
+    flagset<T> operator |(flagset<T>& other) {
+        flagset<T> result;
+        result.values = this->values | other.values;
+        return result;
+    }
+
+    void operator |=(const flagset<T>& other) {
+        this->values |= other.values;
+    }
+
+    bool operator==(flagset<T> other) { return this->values == other.values; }
+    bool operator!=(flagset<T> other) { return this->values != other.values; }
+
+    void reset() { values.reset(); }
+    void set(T idx, bool value = true) {
+        values.set(static_cast < size_t >(idx), value);
+    }
+    void set_multiple(T idx[], size_t arg_length) {
+        for (size_t i = 0; i < arg_length; ++i) {
+            values.set(static_cast < size_t >(idx[i]));
+        }
+    }
+
+    void unset(T idx) {
+        values.set(static_cast < size_t >(idx), false);
+    }
+    void unset_multiple(T idx[], size_t arg_length) {
+        for (size_t i = 0; i < arg_length; ++i) {
+            values.set(static_cast < size_t >(idx[i]), false);
+        }
+    }
+
+    void toggle(T idx) {
+        values[static_cast < size_t >(idx)] = !values[static_cast < size_t >(idx)];
+    }
+
+    bool any_set() { return values.any(); }
+    bool none_set() { return values.none(); }
+
+    void from_long(ulong num) { values = num; }
+    ulong to_long() { return values.to_ulong(); }
+};
+
+#define FLAG_LIST(Type) enum class Type : size_t
+
 #endif		// PS_TYPES_H
