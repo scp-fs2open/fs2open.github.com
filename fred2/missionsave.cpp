@@ -23,7 +23,6 @@
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"
 #include "cfile/cfile.h"
-#include "freespace2/freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
@@ -50,6 +49,7 @@
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
 
+#include <freespace.h>
 
 int CFred_mission_save::autosave_mission_file(char *pathname) {
 	char backup_name[256], name2[256];
