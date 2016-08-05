@@ -598,7 +598,9 @@ void FS2NetD_SendServerUpdate()
 
 	DONE_PACKET();
 
-	FS2NetD_SendData(buffer, buffer_size);
+	if (FS2NetD_SendData(buffer, buffer_size) < 0) {
+		ml_printf("FS2NetD WARNING: Failed to send server update packet!");
+	}
 }
 
 void FS2NetD_SendServerDisconnect()
