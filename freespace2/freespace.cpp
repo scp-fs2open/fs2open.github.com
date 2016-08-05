@@ -6919,9 +6919,12 @@ DCF(pofspew, "Spews POF info without shutting down the game")
 	game_spew_pof_info();
 }
 
-// returns:
-// 1 on an error
-// 0 on a clean exit
+/**
+* Does some preliminary checks and then enters main event loop.
+*
+* @returns 0 on a clean exit, or
+* @returns 1 on an error
+*/
 int game_main(int argc, char *argv[])
 {
 	int state;
