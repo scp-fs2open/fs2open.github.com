@@ -4,6 +4,8 @@ IF(NOT CMAKE_CROSSCOMPILING)
 
 	ADD_EXECUTABLE(embedfile EXCLUDE_FROM_ALL ${EMBEDFILE_SOURCES})
 
+	target_compile_features(embedfile PUBLIC cxx_auto_type)
+
 	set_target_properties(embedfile
 		PROPERTIES
 			FOLDER "Tools"
