@@ -8,6 +8,9 @@ set_target_properties(cfilearchiver
 	PROPERTIES
 		FOLDER "FSOTools"
 )
+TARGET_LINK_LIBRARIES(cfilearchiver PUBLIC ${SDL_LIBS})
+TARGET_INCLUDE_DIRECTORIES(cfilearchiver PUBLIC ${GENERATED_SOURCE_DIR})
+TARGET_INCLUDE_DIRECTORIES(cfilearchiver PUBLIC ${GENERATED_SOURCE_DIR}/code)
 
 IF(MSVC)
 	set_target_properties(cfilearchiver PROPERTIES
