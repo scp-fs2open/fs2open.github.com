@@ -4667,13 +4667,15 @@ void CFREDView::OnDestroy()
 	CView::OnDestroy();
 }
 
+extern void os_set_window_from_hwnd(HWND handle);
 int CFREDView::OnCreate(LPCREATESTRUCT lpCreateStruct) 
 {
 	if (CView::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	
 	MoveWindow(0,0,200,300,1);
-   	if(fred_init(this->GetSafeHwnd()) == false)
+	os_set_window_from_hwnd(this->GetSafeHwnd());
+   	if(fred_init() == false)
 		return -1;
 
 	return 0;

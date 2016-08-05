@@ -114,19 +114,12 @@ namespace
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+static HWND window_override;
+
 // For FRED
 void os_set_window_from_hwnd(HWND handle)
 {
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
-		Error(LOCATION, "Couldn't init SDL video: %s", SDL_GetError());
-	}
-
-	if (SDL_GL_LoadLibrary(NULL) < 0)
-		Error(LOCATION, "Failed to load OpenGL library: %s!", SDL_GetError());
-
-	SDL_Window* window = SDL_CreateWindowFrom((void*) handle);
-
-	os_set_window(window);
+	window_override = handle;
 }
 
 // go through all windows and try and find the one that matches the search string
@@ -318,6 +311,15 @@ void os_set_window(SDL_Window* new_handle)
 {
 	main_window = new_handle;
 	fAppActive = true;
+}
+
+void* os_get_window_override()
+{
+#ifdef WIN32
+	return window_override;
+#else
+	return nullptr;
+#endif
 }
 
 // process management -----------------------------------------------------------------

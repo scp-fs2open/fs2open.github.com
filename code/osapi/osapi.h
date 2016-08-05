@@ -61,7 +61,9 @@ int os_foreground();
 // Returns the handle to the main window
 SDL_Window* os_get_window();
 
-void os_set_window(SDL_Window* new_handle);	 
+void os_set_window(SDL_Window* new_handle);
+
+void* os_get_window_override();
 
 // process management --------------------------------------------------------------
 
