@@ -273,8 +273,7 @@ void fred_preload_all_briefing_icons()
 	}
 }
 
-extern void os_set_window_from_hwnd(HWND handle);
-bool fred_init(HWND windowHandle)
+bool fred_init()
 {
 	int i;
 	char palette_filename[1024];
@@ -286,8 +285,6 @@ bool fred_init(HWND windowHandle)
 	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
-
-	os_set_window_from_hwnd(windowHandle);
 
 	timer_init();
 

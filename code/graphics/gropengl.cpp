@@ -1077,15 +1077,10 @@ void opengl_close()
 //		return;
 }
 
-int opengl_init_display_device()
-{
+bool opengl_setup_sdl_attributes() {
 	int bpp = gr_screen.bits_per_pixel;
 
-	if ((bpp != 16) && (bpp != 32)) {
-		Int3();
-		return 1;
-	}
-
+	Assertion((bpp == 16) || (bpp == 32), "Invalid bits-per-pixel value %d!", bpp);
 
 	// screen format
 	switch (bpp) {
@@ -1175,6 +1170,42 @@ int opengl_init_display_device()
 	Gr_ta_alpha.shift = 12;
 	Gr_ta_alpha.scale = 17;
 
+	mprintf(("  Initializing SDL video...\n"));
+
+#ifdef SCP_UNIX
+	// Slight hack to make Mesa advertise S3TC support without libtxc_dxtn
+	setenv("force_s3tc_enable", "true", 1);
+#endif
+
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+		mprintf(("Couldn't init SDL video: %s", SDL_GetError()));
+		Error(LOCATION, "Couldn't init SDL video: %s", SDL_GetError());
+		return false;
+	}
+
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, Gr_red.bits);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, Gr_green.bits);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, Gr_blue.bits);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, (bpp == 32) ? 24 : 16);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, (bpp == 32) ? 8 : 1);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+	int fsaa_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
+
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (fsaa_samples == 0) ? 0 : 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, fsaa_samples);
+
+	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, (bpp == 32) ? 8 : 1, 1, fsaa_samples));
+
+	return true;
+}
+
+int opengl_init_display_device()
+{
+	if (!opengl_setup_sdl_attributes()) {
+		return 1;
+	}
+
 	// allocate storage for original gamma settings
 	if ( !Cmdline_no_set_gamma && (GL_original_gamma_ramp == NULL) ) {
 		GL_original_gamma_ramp = (ushort*) vm_malloc( 3 * 256 * sizeof(ushort), memory::quiet_alloc);
@@ -1190,42 +1221,27 @@ int opengl_init_display_device()
 		}
 	}
 
-	int r = 0, g = 0, b = 0, depth = 0, stencil = 1, db = 1;
-
-	mprintf(("  Initializing SDL video...\n"));
-
-#ifdef SCP_UNIX
-	// Slight hack to make Mesa advertise S3TC support without libtxc_dxtn
-	setenv("force_s3tc_enable", "true", 1);
-#endif
-
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
-		fprintf(stderr, "Couldn't init SDL video: %s", SDL_GetError());
-		return 1;
-	}
-
-	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, Gr_red.bits);
-	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, Gr_green.bits);
-	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, Gr_blue.bits);
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, (bpp == 32) ? 24 : 16);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, (bpp == 32) ? 8 : 1);
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, db);
-
-	int fsaa_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
-
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (fsaa_samples == 0) ? 0 : 1);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, fsaa_samples);
-
-	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n", Gr_red.bits, Gr_green.bits, Gr_blue.bits, (bpp == 32) ? 24 : 16, (bpp == 32) ? 8 : 1, db, fsaa_samples));
-
-	int windowflags = SDL_WINDOW_OPENGL;
-	if (Cmdline_fullscreen_window)
-		windowflags |= SDL_WINDOW_BORDERLESS;
-
-	// This code also gets called in the FRED initialization, that means we possibly already have a window!
-
-	if (os_get_window() == NULL)
+	// This code also gets called in the FRED initialization, that means we may need to use the override window.
+	if (os_get_window_override() != nullptr)
 	{
+		if (SDL_GL_LoadLibrary(nullptr) < 0)
+			 Error(LOCATION, "Failed to load OpenGL library: %s!", SDL_GetError());
+
+		auto window = SDL_CreateWindowFrom(os_get_window_override());
+		if (window == nullptr)
+		{
+			mprintf(("Could not create window: %s\n", SDL_GetError()));
+			Error(LOCATION, "Could not create window: %s\n", SDL_GetError());
+			return 1;
+		}
+		os_set_window(window);
+	}
+	else
+	{
+		int windowflags = SDL_WINDOW_OPENGL;
+		if (Cmdline_fullscreen_window)
+			windowflags |= SDL_WINDOW_BORDERLESS;
+
 		uint display = os_config_read_uint("Video", "Display", 0);
 		SDL_Window* window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
 			gr_screen.max_w, gr_screen.max_h, windowflags);
@@ -1248,6 +1264,7 @@ int opengl_init_display_device()
 	SDL_GL_MakeCurrent(os_get_window(), GL_context);
 	//TODO: set up bpp settings
 
+	int r, g, b, depth, stencil, db, fsaa_samples;
 	SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &r);
 	SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &g);
 	SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, &b);
