@@ -254,14 +254,16 @@ void multi_respawn_handle_invul_players()
 	int idx;
 	object *objp;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].flags & OF_INVULNERABLE)){	
+		if(MULTI_CONNECTED(Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].flags[Object::Object_Flags::Invulnerable])){	
 			// make him normal (_non_ invulnerable) on either of 2 conditions :
 			// 1.) More than 5 seconds have passed
 			// 2.) He's fired either a primary or a secondary weapon
 			if( ((Net_players[idx].s_info.invul_timestamp != -1) && (timestamp_elapsed(Net_players[idx].s_info.invul_timestamp))) ||
 				 ((Net_players[idx].m_player->ci.fire_primary_count > 0) || (Net_players[idx].m_player->ci.fire_secondary_count > 0)) ) {
 				objp = &Objects[Net_players[idx].m_player->objnum];
-				obj_set_flags(objp,objp->flags & ~(OF_INVULNERABLE));
+                auto tmp_flags = objp->flags;
+                tmp_flags.remove(Object::Object_Flags::Invulnerable);
+				obj_set_flags(objp, tmp_flags);
 			}
 		}
 	}
@@ -279,7 +281,7 @@ void multi_respawn_build_points()
 	moveup = GET_FIRST(&Ship_obj_list);
 	while(moveup != END_OF_LIST(&Ship_obj_list)){
 		// player ships
-		if(Objects[moveup->objnum].flags & (OF_PLAYER_SHIP | OF_COULD_BE_PLAYER)){			
+		if(Objects[moveup->objnum].flags[Object::Object_Flags::Player_ship] || Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]){
 			r = &Multi_respawn_points[Multi_respawn_point_count++];
 			
 			r->pos = Objects[moveup->objnum].pos;
@@ -386,12 +388,12 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	shipp = &Ships[objp->instance];	
 
 	// this is a player, so mark him as a player,
-	objp->flags |= OF_PLAYER_SHIP;
-	objp->flags &= ~OF_COULD_BE_PLAYER;
+    objp->flags.set(Object::Object_Flags::Player_ship);
+    objp->flags.remove(Object::Object_Flags::Could_be_player);
 
 	// server should mark this player as invulerable for a short time
 	if ( MULTIPLAYER_MASTER ) {
-		objp->flags |= OF_INVULNERABLE;
+        objp->flags.set(Object::Object_Flags::Invulnerable);
 		pl->s_info.invul_timestamp = timestamp(RESPAWN_INVUL_TIMESTAMP); 					
 		multi_respawn_place( objp, shipp->team );
 	}
@@ -410,7 +412,7 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 		Player_ai = &Ai_info[Player_ship->ai_index];
 
 		// this is a hack to ensure that old (dead) player ships are destroyed, since at this point he's actually an OBJ_GHOST
-		oldplr->flags |= OF_SHOULD_BE_DEAD;						
+        oldplr->flags.set(Object::Object_Flags::Should_be_dead);
 		obj_delete(OBJ_INDEX(oldplr));	
 
 		//	get rid of the annoying HUD dead message text.
@@ -494,8 +496,10 @@ void multi_respawn_ai( p_object *pobjp )
 	objp = &Objects[objnum];
 
 	// be sure the the OF_PLAYER_SHIP flag is unset, and the could be player flag is set
-	obj_set_flags( objp, objp->flags | OF_COULD_BE_PLAYER );
-	objp->flags &= ~OF_PLAYER_SHIP;
+    auto tmp_flags = objp->flags;
+    tmp_flags.set(Object::Object_Flags::Could_be_player);
+	obj_set_flags( objp, tmp_flags );
+    objp->flags.remove(Object::Object_Flags::Player_ship);
 }
 
 // <server> make the given player an observer
@@ -525,7 +529,7 @@ void multi_respawn_as_observer()
 	hud_config_as_observer(Player_ship,Player_ai);	
 
 	// blow away my old player object
-	Player_obj->flags |= OF_SHOULD_BE_DEAD;
+    Player_obj->flags.set(Object::Object_Flags::Should_be_dead);
 	obj_delete(OBJ_INDEX(Player_obj));
 
 	// create a new shiny observer object for me

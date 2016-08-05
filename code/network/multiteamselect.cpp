@@ -731,7 +731,7 @@ int multi_ts_disabled_slot(int slot_num, int player_index)
 		if(Netgame.type_flags & NG_TYPE_TEAM){
 			// if i'm the team captain I can mess with my own ships as well as those of the ai ships on my team
 			if(pl->flags & NETINFO_FLAG_TEAM_CAPTAIN){
-				if((Multi_ts_team[pl->p_info.team].multi_ts_player[slot_num] != NULL) && (Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[slot_num]].flags & OF_PLAYER_SHIP) && (slot_num != pl->p_info.ship_index)){
+				if((Multi_ts_team[pl->p_info.team].multi_ts_player[slot_num] != NULL) && (Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[slot_num]].flags[Object::Object_Flags::Player_ship]) && (slot_num != pl->p_info.ship_index)){
 					return 1;
 				}
 
@@ -743,7 +743,7 @@ int multi_ts_disabled_slot(int slot_num, int player_index)
 			// if we're the host, we can our own ship and ai ships
 			if(pl->flags & NETINFO_FLAG_GAME_HOST){
 				// can't grab player ships
-				if((Multi_ts_team[pl->p_info.team].multi_ts_player[slot_num] != NULL) && (Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[slot_num]].flags & OF_PLAYER_SHIP) && (slot_num != pl->p_info.ship_index)){
+				if((Multi_ts_team[pl->p_info.team].multi_ts_player[slot_num] != NULL) && (Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[slot_num]].flags[Object::Object_Flags::Player_ship]) && (slot_num != pl->p_info.ship_index)){
 					return 1;
 				}
 
@@ -870,7 +870,7 @@ void multi_ts_assign_players_all()
 	objp = GET_FIRST(&obj_used_list);
 	while(objp != END_OF_LIST(&obj_used_list)){
 		// find a valid player ship - ignoring the ship which was assigned to the host
-		if((objp->flags & OF_PLAYER_SHIP) && stricmp(Ships[objp->instance].ship_name,name_lookup)){
+		if((objp->flags[Object::Object_Flags::Player_ship]) && stricmp(Ships[objp->instance].ship_name,name_lookup)){
 			// determine what team and slot this ship is				
 			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index, true);
 			Assert((team_index != -1) && (slot_index != -1));
@@ -909,8 +909,10 @@ void multi_ts_assign_players_all()
 				// decrement the player count
 				player_count--;
 			} else {
-				objp->flags &= ~OF_PLAYER_SHIP;
-				obj_set_flags( objp, objp->flags | OF_COULD_BE_PLAYER );
+                objp->flags.remove(Object::Object_Flags::Player_ship);
+                auto tmp_flags = objp->flags;
+                tmp_flags.set(Object::Object_Flags::Could_be_player);
+				obj_set_flags( objp, tmp_flags );
 			}
 
 			// if we've assigned all players, we're done
@@ -926,9 +928,11 @@ void multi_ts_assign_players_all()
 	// go through and change any ships marked as player ships to be COULD_BE_PLAYER
 	if ( objp != END_OF_LIST(&obj_used_list) ) {
 		for ( objp = GET_NEXT(objp); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-			if ( objp->flags & OF_PLAYER_SHIP ){
-				objp->flags &= ~OF_PLAYER_SHIP;
-				obj_set_flags( objp, objp->flags | OF_COULD_BE_PLAYER );
+			if ( objp->flags[Object::Object_Flags::Player_ship] ){
+                objp->flags.remove(Object::Object_Flags::Player_ship);
+                auto tmp_flags = objp->flags;
+                tmp_flags.set(Object::Object_Flags::Could_be_player);
+				obj_set_flags( objp, tmp_flags );
 			}
 		}
 	}	
@@ -1010,8 +1014,10 @@ void multi_ts_handle_player_drop()
 			if((Multi_ts_team[idx].multi_ts_player[s_idx] != NULL) && !MULTI_CONNECTED((*Multi_ts_team[idx].multi_ts_player[s_idx]))){
 				Assert(Multi_ts_team[idx].multi_ts_objnum[s_idx] != -1);
 				Multi_ts_team[idx].multi_ts_player[s_idx] = NULL;
-				Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]].flags &= ~(OF_PLAYER_SHIP);
-				obj_set_flags( &Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]], Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]].flags | OF_COULD_BE_PLAYER);
+                Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]].flags.remove(Object::Object_Flags::Player_ship);
+                auto tmp_flags = Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]].flags;
+                tmp_flags.set(Object::Object_Flags::Could_be_player);
+				obj_set_flags( &Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]], tmp_flags);
 			}
 		}
 	}
@@ -1263,7 +1269,7 @@ void multi_ts_blit_wing_callsigns()
 		} else {
 			// determine if this is a locked AI ship
 			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].instance].ship_name);			
-			if((pobj == NULL) || !(pobj->flags & OF_PLAYER_SHIP)){
+			if((pobj == NULL) || !(pobj->flags & P_OF_PLAYER_START)){
 				strcpy_s(callsign, NOX("<"));
 				strcat_s(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
 				strcat_s(callsign, NOX(">"));
@@ -2075,7 +2081,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 		// if this is not a player ship type object
 		if(Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index] != -1){
 			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].instance].ship_name);
-			if((pobj == NULL) || !(pobj->flags & OF_PLAYER_SHIP)){
+			if((pobj == NULL) || !(pobj->flags & P_OF_PLAYER_START)){
 				return 0;
 			}
 		}		
@@ -2112,7 +2118,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 		// if this is not a player ship type object
 		if(Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index] != -1){
 			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].instance].ship_name);
-			if((pobj == NULL) || !(pobj->flags & OF_PLAYER_SHIP)){
+			if((pobj == NULL) || !(pobj->flags & P_OF_PLAYER_START)){
 				return 0;
 			}
 		}
@@ -2325,15 +2331,15 @@ int multi_ts_swap_player_player(int from_index,int to_index,int *sound,int playe
 	}
 
 	// update ship flags
-	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags &= ~(OF_COULD_BE_PLAYER);
-	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags &= ~(OF_PLAYER_SHIP);
+    Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags.remove(Object::Object_Flags::Could_be_player);
+    Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags.remove(Object::Object_Flags::Player_ship);
 	if(Multi_ts_team[pl->p_info.team].multi_ts_player[to_index] != NULL){		
-		Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags |= OF_PLAYER_SHIP;
+        Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags.set(Object::Object_Flags::Player_ship);
 	}		
-	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags &= ~(OF_COULD_BE_PLAYER);
-	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags &= ~(OF_PLAYER_SHIP);
+	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags.remove(Object::Object_Flags::Could_be_player);
+    Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags.remove(Object::Object_Flags::Player_ship);
 	if(Multi_ts_team[pl->p_info.team].multi_ts_player[from_index] != NULL){		
-		Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags |= OF_PLAYER_SHIP;
+		Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags.set(Object::Object_Flags::Player_ship);
 	}		
 
 	// recalcalate which slots are locked/unlocked, etc
@@ -2381,15 +2387,15 @@ int multi_ts_move_player(int from_index,int to_index,int *sound,int player_index
 	}
 
 	// update ship flags
-	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags &= ~(OF_COULD_BE_PLAYER);
-	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags &= ~(OF_PLAYER_SHIP);
+	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags.remove(Object::Object_Flags::Could_be_player);
+    Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags.remove(Object::Object_Flags::Player_ship);
 	if(Multi_ts_team[pl->p_info.team].multi_ts_player[to_index] != NULL){		
-		Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags |= OF_PLAYER_SHIP;
+        Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[to_index]].flags.set(Object::Object_Flags::Player_ship);
 	}		
-	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags &= ~(OF_COULD_BE_PLAYER);
-	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags &= ~(OF_PLAYER_SHIP);
+	Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags.remove(Object::Object_Flags::Could_be_player);
+    Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags.remove(Object::Object_Flags::Player_ship);
 	if(Multi_ts_team[pl->p_info.team].multi_ts_player[from_index] != NULL){		
-		Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags |= OF_PLAYER_SHIP;
+		Objects[Multi_ts_team[pl->p_info.team].multi_ts_objnum[from_index]].flags.set(Object::Object_Flags::Player_ship);
 	}		
 
 	// recalcalate which slots are locked/unlocked, etc
@@ -2723,8 +2729,8 @@ int multi_ts_ok_to_commit()
 
 		// if the ship in this slot has a ship which can be a player but has 0 primary or secondary weapons, then he cannot continue
 		if( (Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx] != -1) && 
-			((Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].flags & OF_COULD_BE_PLAYER) ||
-			 (Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].flags & OF_PLAYER_SHIP)) &&
+			((Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].flags[Object::Object_Flags::Could_be_player]) ||
+			 (Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].flags[Object::Object_Flags::Player_ship])) &&
 			 !multi_ts_disabled_slot(idx)){
 			
 			primary_ok = 0;
@@ -2861,9 +2867,9 @@ void send_pslot_update_packet(int team,int code,int sound)
 				}
 				
 				// add a byte indicating what object flag should be set (0 == ~(OF_COULD_BE_PLAYER | OF_PLAYER_SHIP), 1 == player ship, 2 == could be player ship)				
-				if(Objects[Multi_ts_team[team].multi_ts_objnum[idx]].flags & OF_COULD_BE_PLAYER){
+				if(Objects[Multi_ts_team[team].multi_ts_objnum[idx]].flags[Object::Object_Flags::Could_be_player]){
 					val = 2;
-				} else if(Objects[Multi_ts_team[team].multi_ts_objnum[idx]].flags & OF_PLAYER_SHIP){
+				} else if(Objects[Multi_ts_team[team].multi_ts_objnum[idx]].flags[Object::Object_Flags::Player_ship]){
 					val = 1;
 				} else {
 					val = 0;
@@ -2998,13 +3004,16 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 
 			// get the ship flag byte
 			GET_DATA(val);
-			Objects[objnum].flags &= ~(OF_PLAYER_SHIP | OF_COULD_BE_PLAYER);
+            Objects[objnum].flags.remove(Object::Object_Flags::Player_ship); 
+            Objects[objnum].flags.remove(Object::Object_Flags::Could_be_player);
 			switch(val){
 			case 1 :
-				Objects[objnum].flags |= OF_PLAYER_SHIP;
+                Objects[objnum].flags.set(Object::Object_Flags::Player_ship);
 				break;
 			case 2 :
-				obj_set_flags( &Objects[objnum], Objects[objnum].flags | OF_COULD_BE_PLAYER );
+                auto tmp_flags = Objects[objnum].flags;
+                tmp_flags.set(Object::Object_Flags::Could_be_player);
+				obj_set_flags( &Objects[objnum], tmp_flags );
 				break;
 			}
 

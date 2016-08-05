@@ -9193,7 +9193,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
     flagset<Object::Object_Flags> default_ship_object_flags;
     default_ship_object_flags.set(Object::Object_Flags::Renders);
     default_ship_object_flags.set(Object::Object_Flags::Physics);
-    default_ship_object_flags.set(Object::Object_Flags::Collides);
+    default_ship_object_flags.set(Object::Object_Flags::Collides)
 	// JAS: Nav buoys don't need to do collisions!
 	// G5K: Corrected to apply specifically for ships with the no-collide flag.  (In retail, navbuoys already have this flag, so this doesn't break anything.)
 	if ( sip->flags & SIF_NO_COLLIDE )	{

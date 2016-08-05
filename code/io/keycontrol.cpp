@@ -709,11 +709,14 @@ void process_debug_keys(int k)
 
 		case KEY_DEBUGGED + KEY_C:
 		case KEY_DEBUGGED1 + KEY_C:
-			if(Player_obj->flags & OF_COLLIDES){
-				obj_set_flags(Player_obj, Player_obj->flags & ~(OF_COLLIDES));
+            auto tmp_flags = Player_obj->flags;
+			if(Player_obj->flags[Object::Object_Flags::Collides]){
+                tmp_flags.remove(Object::Object_Flags::Collides);
+				obj_set_flags(Player_obj, tmp_flags);
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Player no longer collides");
 			} else {
-				obj_set_flags(Player_obj, Player_obj->flags | OF_COLLIDES);
+                tmp_flags.set(Object::Object_Flags::Collides);
+				obj_set_flags(Player_obj, tmp_flags);
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Player collides");
 			}
 			break;
