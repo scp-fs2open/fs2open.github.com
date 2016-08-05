@@ -9,6 +9,9 @@ endif()
 
 include(cmake/util.cmake)
 
+# Update git submodules
+include(cmake/git-submodules.cmake)
+
 # Set a few policies
 set_policy(CMP0051 OLD)
 set_policy(CMP0053 NEW)
