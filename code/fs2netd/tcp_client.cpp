@@ -649,7 +649,9 @@ void FS2NetD_Ping()
 
 	DONE_PACKET();
 
-	FS2NetD_SendData(buffer, buffer_size);
+	if (FS2NetD_SendData(buffer, buffer_size) < 0) {
+		ml_printf("Failed to send PING packet!");
+	}
 }
 
 void FS2NetD_Pong(int tstamp)
