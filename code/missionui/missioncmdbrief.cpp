@@ -717,7 +717,7 @@ void cmd_brief_do_frame(float frametime)
 		Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_PAUSE].button.draw_forced(2);
 	}
 
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 	gr_set_color_fast(&Color_text_heading);
 
 	sprintf(buf, XSTR( "Stage %d of %d", 464), Cur_stage + 1, Cur_cmd_brief->num_stages);

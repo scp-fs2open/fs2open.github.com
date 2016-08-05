@@ -276,10 +276,7 @@ bool fred_init(HWND windowHandle)
 	int i;
 	char palette_filename[1024];
 
-	if (!vm_init(24*1024*1024)) {
-		MessageBox( NULL, "Not enough memory to run Fred.\r\nTry closing down some other applications.\r\n", "Not Enough Memory", MB_OK );
-		return false;
-	}
+	memory::init();
 
 	srand( (unsigned) time(NULL) );
 	init_pending_messages();
@@ -346,7 +343,7 @@ bool fred_init(HWND windowHandle)
 
 	io::mouse::CursorManager::get()->showCursor(false);
 
-	gr_font_init();					// loads up all fonts  
+	font::init();					// loads up all fonts  
 
 	gr_set_gamma(3.0f);
 
@@ -356,6 +353,8 @@ bool fred_init(HWND windowHandle)
 
 	key_init();
 	mouse_init();
+
+	particle::ParticleManager::init();
 
 	iff_init();			// Goober5000
 	species_init();		// Kazan

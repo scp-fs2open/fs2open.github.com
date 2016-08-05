@@ -19,7 +19,7 @@ Abstract:
 #define __glu_h__
 #define __GLU_H__
 
-#include <GL/gl.h>
+#include <glad/glad.h>
 
 #ifdef __cplusplus
 extern "C" {

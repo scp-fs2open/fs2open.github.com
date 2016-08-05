@@ -241,7 +241,7 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 	// mflash *mflashp;
 	mflash_info *mi;
 	mflash_blob_info *mbi;
-	particle_info p;
+	particle::particle_info p;
 	uint idx;
 
 	// standalone server should never create trails
@@ -265,16 +265,16 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 				continue;
 
 			// fire it up
-			memset(&p, 0, sizeof(particle_info));
+			memset(&p, 0, sizeof(particle::particle_info));
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_zero(&p.vel);
 			//vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
 			p.rad = mbi->radius;
-			p.type = PARTICLE_BITMAP;
+			p.type = particle::PARTICLE_BITMAP;
 			p.optional_data = mbi->anim_id;
 			p.attached_objnum = OBJ_INDEX(local);
 			p.attached_sig = local->signature;
-			particle_create(&p);
+			particle::create(&p);
 		}
 	} else {
 		for (idx = 0; idx < mi->blobs.size(); idx++) {
@@ -285,15 +285,15 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 				continue;
 
 			// fire it up
-			memset(&p, 0, sizeof(particle_info));
+			memset(&p, 0, sizeof(particle::particle_info));
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
 			p.rad = mbi->radius;
-			p.type = PARTICLE_BITMAP;
+			p.type = particle::PARTICLE_BITMAP;
 			p.optional_data = mbi->anim_id;
 			p.attached_objnum = -1;
 			p.attached_sig = 0;
-			particle_create(&p);
+			particle::create(&p);
 		}
 	}		
 }

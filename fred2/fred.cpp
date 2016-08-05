@@ -286,13 +286,12 @@ BOOL CFREDApp::InitInstance() {
 	Assert(strlen(__argv[0]) > 2);
 
 	// see if we have a ':', and if not then assume that we don't have a full path
-	if (__argv[0][1] != ':') {
-		GetCurrentDirectory(sizeof(Fred_exe_dir) - 1, Fred_exe_dir);
-		strcat_s(Fred_exe_dir, "\\");
-		strcat_s(Fred_exe_dir, __argv[0]);
-	} else {
-		strcpy_s(Fred_exe_dir, __argv[0]);
-	}
+	memset(Fred_exe_dir, 0, sizeof(Fred_exe_dir));
+
+	GetCurrentDirectory(MAX_PATH_LEN - 1, Fred_exe_dir);
+
+	strcat_s(Fred_exe_dir, DIR_SEPARATOR_STR);
+	strcat_s(Fred_exe_dir, "fred2.exe");
 
 	strcpy_s(Fred_base_dir, Fred_exe_dir);
 

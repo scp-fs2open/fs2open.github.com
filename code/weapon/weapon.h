@@ -19,6 +19,7 @@
 #include "model/model.h"
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
+#include "particle/ParticleManager.h"
 
 class object;
 class ship_subsys;
@@ -160,6 +161,25 @@ extern int Num_weapon_subtypes;
 #define MAX_PARTICLE_SPEWERS	4	//i figure 4 spewers should be enough for now -nuke
 #define MAX_WEP_DAMAGE_SLOTS	32		//Maximum number of ships which can be counted as killer or assits on destroying this weapon
 
+enum class WeaponState : uint32_t
+{
+	INVALID,
+
+	// States for laser weapons
+	NORMAL, //!< For laser weapons that have only one state
+
+	// Missile states following
+	FREEFLIGHT, //!< The initial flight state where the missile is "unpowered"
+	IGNITION, //!< The moment when the missile comes out of free flight
+	HOMED_FLIGHT, //!< The missile is homing in on its target
+	UNHOMED_FLIGHT, //!< The missile does not currently target an object
+};
+struct WeaponStateHash {
+	size_t operator()(const WeaponState& state) const {
+		return static_cast<size_t>(state);
+	}
+};
+
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
@@ -230,6 +250,8 @@ typedef struct weapon {
 	mc_info* collisionInfo; // The last collision of this weapon or NULL if it had none
 
 	int hud_in_flight_snd_sig;					// Signature of the sound played while the weapon is in flight
+
+	WeaponState weapon_state; // The current state of the weapon
 } weapon;
 
 
@@ -418,23 +440,19 @@ typedef struct weapon_info {
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in weapon selection
 	int 	selection_effect;
 
-	int	impact_weapon_expl_index;		// Index into Weapon_expl_info of which ANI should play when this thing impacts something
-	float	impact_explosion_radius;		// How big the explosion should be
-	float	shield_impact_explosion_radius;	// How big the shield hit explosion should be
+	float shield_impact_explosion_radius;
 
-	int dinky_impact_weapon_expl_index;
-	float dinky_impact_explosion_radius;
+	particle::ParticleEffectIndex impact_weapon_expl_effect; // Impact particle effect
+	
+	particle::ParticleEffectIndex dinky_impact_weapon_expl_effect; // Dinky impact particle effect
 
-	int flash_impact_weapon_expl_index;
-	float flash_impact_explosion_radius;
+	particle::ParticleEffectIndex flash_impact_weapon_expl_effect;
 
-	int piercing_impact_weapon_expl_index;
-	float piercing_impact_explosion_radius;
-	int piercing_impact_particle_count;
-	float piercing_impact_particle_life;
-	float piercing_impact_particle_velocity;
-	float piercing_impact_particle_back_velocity;
-	float piercing_impact_particle_variance;
+	particle::ParticleEffectIndex piercing_impact_effect;
+	particle::ParticleEffectIndex piercing_impact_secondary_effect;
+
+	// Particle effect for the various states, WeaponState::NORMAL is the state for the whole lifetime, even for missiles
+	SCP_unordered_map<WeaponState, particle::ParticleEffectIndex, WeaponStateHash> state_effects;
 
 	// EMP effect
 	float emp_intensity;					// intensity of the EMP effect
@@ -548,6 +566,11 @@ typedef struct weapon_info {
 	int hud_locked_snd; // Sound played when this weapon locked onto a target
 	int hud_in_flight_snd; // Sound played while the weapon is in flight
 	InFlightSoundType in_flight_play_type; // The status when the sound should be played
+
+public:
+	weapon_info();
+
+	void reset();
 } weapon_info;
 
 // Data structure to track the active missiles
@@ -639,7 +662,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
-void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1 );
+void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1, vec3d* hitnormal = NULL );
 int cmeasure_name_lookup(char *name);
 void spawn_child_weapons( object *objp );
 

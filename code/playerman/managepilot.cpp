@@ -100,7 +100,7 @@ void init_new_pilot(player *p, int reset)
 		Use_mouse_to_fly = 1;
 		Mouse_sensitivity = 4;
 		Joy_sensitivity = 9;
-		Dead_zone_size = 10;
+		Joy_dead_zone_size = 10;
 	}
 
 	// unassigned squadron
@@ -251,8 +251,8 @@ void pilot_set_start_campaign(player* p)
 void pilot_set_short_callsign(player *p, int max_width)
 {
 	strcpy_s(p->short_callsign, p->callsign);
-	gr_set_font(FONT1);
-	gr_force_fit_string(p->short_callsign, CALLSIGN_LEN - 1, max_width);
+	font::set_font(font::FONT1);
+	font::force_fit_string(p->short_callsign, CALLSIGN_LEN - 1, max_width);
 	gr_get_string_size( &(p->short_callsign_width), NULL, p->short_callsign );
 }
 

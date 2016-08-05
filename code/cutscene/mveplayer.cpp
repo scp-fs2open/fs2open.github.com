@@ -13,7 +13,6 @@
 #include "graphics/2d.h"
 #include "graphics/gropengl.h"
 #include "graphics/gropengldraw.h"
-#include "graphics/gropenglextension.h"
 #include "graphics/gropenglstate.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/gropengltexture.h"
@@ -70,8 +69,6 @@ ushort *pixelbuf = NULL;
 static GLuint GLtex = 0;
 static GLfloat gl_screenYH = 0;
 static GLfloat gl_screenXW = 0;
-static GLfloat gl_screenU = 0;
-static GLfloat gl_screenV = 0;
 static GLfloat glVertices[4][4] = {{0}};
 static int g_screenWidth, g_screenHeight;
 static float g_screenX, g_screenY;
@@ -80,12 +77,10 @@ static ubyte g_palette[768];
 static ubyte *g_pCurMap = NULL;
 static int g_nMapLength = 0;
 static int videobuf_created, video_inited;
-static int hp2, wp2;
 static uint mve_video_skiptimer = 0;
 static int mve_scale_video = 0;
 
 // video externs from API graphics functions
-extern void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out);
 extern GLenum GL_previous_texture_target;
 
 // the decoders
@@ -486,9 +481,6 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		if (gr_screen.mode == GR_OPENGL) {
 			gl_screenYH = g_screenY + g_height;
 			gl_screenXW = g_screenX + g_width;
-
-			gl_screenU = i2fl(g_width) / i2fl(wp2);
-			gl_screenV = i2fl(g_height) / i2fl(hp2);
 		}
 
 		glVertices[0][0] = g_screenX;
@@ -499,17 +491,17 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		glVertices[1][0] = g_screenX;
 		glVertices[1][1] = gl_screenYH;
 		glVertices[1][2] = 0;
-		glVertices[1][3] = gl_screenV;
+		glVertices[1][3] = 1.f;
 
 		glVertices[2][0] = gl_screenXW;
 		glVertices[2][1] = g_screenY;
-		glVertices[2][2] = gl_screenU;
+		glVertices[2][2] = 1.f;
 		glVertices[2][3] = 0;
 
 		glVertices[3][0] = gl_screenXW;
 		glVertices[3][1] = gl_screenYH;
-		glVertices[3][2] = gl_screenU;
-		glVertices[3][3] = gl_screenV;
+		glVertices[3][2] = 1.f;
+		glVertices[3][3] = 1.f;
 
 		GL_state.Array.BindArrayBuffer(0);
 
@@ -602,6 +594,7 @@ void mve_video_display()
 	}
 
 	if (gr_screen.mode == GR_OPENGL) {
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, g_width, g_height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelbuf);
 
 		opengl_shader_set_passthrough(true);
@@ -665,7 +658,6 @@ int mve_video_init(ubyte *data)
 
 	if (gr_screen.mode == GR_OPENGL) {
 		opengl_set_texture_target(GL_TEXTURE_2D);
-		opengl_tcache_get_adjusted_texture_size(g_screenWidth, g_screenHeight, &wp2, &hp2);
 
 		glGenTextures(1, &GLtex);
 
@@ -694,7 +686,7 @@ int mve_video_init(ubyte *data)
 		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB5_A1, wp2, hp2, 0, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB5_A1, g_screenWidth, g_screenHeight, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
 
 		// set our color so that we can make sure that it's correct
 		GL_state.Color(255, 255, 255, 255);

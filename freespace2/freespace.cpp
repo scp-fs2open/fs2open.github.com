@@ -131,6 +131,7 @@
 #include "parse/scripting.h"
 #include "parse/sexp.h"
 #include "particle/particle.h"
+#include "particle/ParticleManager.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
@@ -905,7 +906,8 @@ void game_level_close()
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
 		cam_close();
 		subtitles_close();
-		particle_close();
+		particle::ParticleManager::get()->clearSources();
+		particle::close();
 		trail_level_close();
 		ship_clear_cockpit_displays();
 		hud_level_close();
@@ -1000,7 +1002,7 @@ void game_level_init()
 	player_level_init();
 	shipfx_flash_init();			// Init the ship gun flash system.
 	game_flash_reset();			// Reset the flash effect
-	particle_init();				// Reset the particle system
+	particle::init();				// Reset the particle system
 	fireball_init();
 	debris_init();
 	shield_hit_init();				//	Initialize system for showing shield hits
@@ -1184,38 +1186,36 @@ void game_loading_callback(int count)
 #ifndef NDEBUG
 	if(Cmdline_show_mem_usage)
 	{
-#ifdef _WIN32
-		void memblockinfo_sort();
-		void memblockinfo_sort_get_entry(int index, char *filename, int *size);
-
-		char mem_buffer[1000];
-		char filename[35];
-		int size;
-		int i;
 		int line_height = gr_get_font_height() + 1;
+		size_t i;
+		char mem_buffer[1000];
 
-	  	memblockinfo_sort();
+		memory::sort_memory_blocks();
 		for(i = 0; i < 30; i++)
 		{
-			memblockinfo_sort_get_entry(i, filename, &size);
+			const char* full_name;
+			size_t size;
+			if (!memory::get_memory_block(i, full_name, size))
+			{
+				break;
+			}
 
 			size /= 1024;
 
 			if(size == 0)
 				break;
 
-			char *short_name = strrchr(filename, '\\');
+			const char *short_name = strrchr(full_name, DIR_SEPARATOR_CHAR);
 			if(short_name == NULL)
-				short_name = filename;
+				short_name = full_name;
 			else
 				short_name++;
 
-			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
+			sprintf(mem_buffer,"%s:\t" SIZE_T_ARG " K", short_name, size);
 			gr_string( 20, 220 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
 		}
-		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
+		sprintf(mem_buffer,"Total RAM:\t" SIZE_T_ARG " K", memory::get_used_memory() / 1024);
 		gr_string( 20, 230 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
-#endif	// _WIN32
 	}
 #endif	// !NDEBUG
 
@@ -1273,7 +1273,7 @@ void game_loading_callback_close()
 	common_free_interface_palette();		// restore game palette
 	Game_loading_background = -1;
 
-	gr_set_font( FONT1 );
+	font::set_font(font::FONT1);
 }
 
 /**
@@ -1901,7 +1901,7 @@ void game_init()
 
 	script_init();			//WMC
 
-	gr_font_init();					// loads up all fonts
+	font::init();					// loads up all fonts
 	
 	// add title screen
 	if(!Is_standalone){
@@ -1963,6 +1963,8 @@ void game_init()
 	// load non-darkening pixel defs
 	palman_load_pixels();
 
+	particle::ParticleManager::init();
+
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
 
@@ -1990,7 +1992,7 @@ void game_init()
 
 	// standalone's don't use the joystick and it seems to sometimes cause them to not get shutdown properly
 	if(!Is_standalone){
-		joy_init();
+		io::joystick::init();
 	}
 
 	player_controls_init();
@@ -2281,8 +2283,7 @@ void game_show_framerate()
 		gr_set_color_fast(&HUD_color_debug);
 
 		{
-			extern int TotalRam;
-			gr_printf_no_resize( sx, sy, NOX("DYN: %d KB\n"), TotalRam/1024 );
+			gr_printf_no_resize( sx, sy, NOX("DYN: %d KB\n"), memory::get_used_memory()/1024 );
 			sy += line_height;
 		}	
 
@@ -2314,41 +2315,39 @@ void game_show_framerate()
 		gr_printf_no_resize(sx, sy, NOX("Player Pos: (%d,%d,%d)"), fl2i(Player_obj->pos.xyz.x), fl2i(Player_obj->pos.xyz.y), fl2i(Player_obj->pos.xyz.z));
 	}
 
-#ifdef _WIN32
-	if (Cmdline_show_mem_usage) {
-		void memblockinfo_sort();
-		void memblockinfo_sort_get_entry(int index, char *filename, int *size);
 
+	if(Cmdline_show_mem_usage)
+	{
+		size_t i;
 		char mem_buffer[1000];
-		char filename[MAX_PATH];
-		int size;
 
-	  	memblockinfo_sort();
-
-		int mi = 0;
-		for( ; mi < 30; mi++) {
-			memblockinfo_sort_get_entry(mi, filename, &size);
+		memory::sort_memory_blocks();
+		for(i = 0; i < 30; i++)
+		{
+			const char* full_name;
+			size_t size;
+			if (!memory::get_memory_block(i, full_name, size))
+			{
+				break;
+			}
 
 			size /= 1024;
 
-			if (size == 0)
+			if(size == 0)
 				break;
 
-			char *short_name = strrchr(filename, '\\');
-
-			if (short_name == NULL)
-				short_name = filename;
+			const char *short_name = strrchr(full_name, DIR_SEPARATOR_CHAR);
+			if(short_name == NULL)
+				short_name = full_name;
 			else
 				short_name++;
 
-			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
-			gr_string( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + (line_height * 12) + (mi*line_height), mem_buffer, GR_RESIZE_NONE);
+			sprintf(mem_buffer,"%s:\t" SIZE_T_ARG " K", short_name, size);
+			gr_string( 20, 220 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
 		}
-
-		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
-		gr_string( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + (line_height * 13) + (mi*line_height), mem_buffer, GR_RESIZE_NONE);
+		sprintf(mem_buffer,"Total RAM:\t" SIZE_T_ARG " K", memory::get_used_memory() / 1024);
+		gr_string( 20, 230 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
 	}
-#endif
 
 	MONITOR_INC(NumPolys, modelstats_num_polys);
 	MONITOR_INC(NumPolysDrawn, modelstats_num_polys_drawn );
@@ -3739,7 +3738,7 @@ void game_render_frame( camid cid )
 	render_shields();
 
 	PROFILE("Trails", trail_render_all());						// render missilie trails after everything else.
-	PROFILE("Particles", particle_render_all());					// render particles after everything else.	
+	PROFILE("Particles", particle::render_all());					// render particles after everything else.	
 	
 #ifdef DYN_CLIP_DIST
 	gr_end_proj_matrix();
@@ -4035,7 +4034,8 @@ void game_simulation_frame()
 
 		if (!physics_paused)	{
 			// Move particle system
-			PROFILE("Move Particles", particle_move_all(flFrametime));	
+			PROFILE("Move Particles", particle::move_all(flFrametime));
+			PROFILE("Process Particle Effects", particle::ParticleManager::get()->doFrame(flFrametime));
 
 			// Move missile trails
 			PROFILE("Move Trails", trail_move_all(flFrametime));		
@@ -4812,7 +4812,6 @@ void game_flush()
 {
 	key_flush();
 	mouse_flush();
-	joy_flush();
 	snazzy_flush();
 
 	Joymouse_button_status = 0;
@@ -4873,9 +4872,14 @@ int game_poll()
 	if (os_foreground() && !io::mouse::CursorManager::get()->isCursorShown() && (Use_joy_mouse))	{
 		// Move the mouse cursor with the joystick
 		int mx, my, dx, dy;
-		int jx, jy, jz, jr;
+		int jx, jy;
 
-		joy_get_pos( &jx, &jy, &jz, &jr );
+		int raw_axis[2];
+
+		joystick_read_raw_axis(2, raw_axis);
+
+		jx = joy_get_scaled_reading(raw_axis[0]);
+		jy = joy_get_scaled_reading(raw_axis[1]);
 
 		dx = fl2i(f2fl(jx)*flFrametime*500.0f);
 		dy = fl2i(f2fl(jy)*flFrametime*500.0f);
@@ -6928,11 +6932,6 @@ int game_main(int argc, char *argv[])
 		Networking_disabled = 1;
 	}
 
-#ifndef NDEBUG
-	extern void windebug_memwatch_init();
-	windebug_memwatch_init();
-#endif
-
 #ifdef _WIN32
 	// Find out how much RAM is on this machine
 	MEMORYSTATUS ms;
@@ -6952,11 +6951,6 @@ int game_main(int argc, char *argv[])
 		os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, XSTR( "FreeSpace requires virtual memory to run.\r\n", 196), XSTR( "No Virtual Memory", 197) );
 		return 1;
 	}
-
-	if (!vm_init(24*1024*1024)) {
-		os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199));
-		return 1;
-	}
 		
 	char *tmp_mem = (char *) vm_malloc(16 * 1024 * 1024);
 	if (!tmp_mem) {
@@ -6966,10 +6960,6 @@ int game_main(int argc, char *argv[])
 
 	vm_free(tmp_mem);
 	tmp_mem = NULL;
-
-#else
-	vm_init(0);
-
 #endif // _WIN32
 
 
@@ -7119,11 +7109,13 @@ void game_shutdown(void)
 		Pilot.save_savefile();
 	}
 
+	particle::ParticleManager::shutdown();
+
 	// load up common multiplayer icons
 	multi_unload_common_icons();
 	hud_close();	
 	fireball_close();				// free fireball system
-	particle_close();			// close out the particle system
+	particle::close();			// close out the particle system
 	weapon_close();					// free any memory that was allocated for the weapons
 	ship_close();					// free any memory that was allocated for the ships
 	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback
@@ -7157,7 +7149,7 @@ void game_shutdown(void)
 	player_tips_close();
 
 	control_config_common_close();
-	joy_close();
+	io::joystick::shutdown();
 
 	audiostream_close();
 	snd_close();
@@ -7352,11 +7344,13 @@ void game_show_event_debug(float frametime)
 
 	gr_clear();
 	gr_set_color_fast(&Color_bright);
-	gr_set_font(FONT1);
-	gr_printf_no_resize(0x8000, gr_screen.center_offset_y + 15, NOX("EVENT DEBUG VIEW"));
+	font::set_font(font::FONT1);
+	gr_get_string_size(&font_width, NULL, NOX("EVENT DEBUG VIEW"));
+	
+	gr_string((gr_screen.clip_width_unscaled - font_width) / 2, gr_screen.center_offset_y + 15, NOX("EVENT DEBUG VIEW"));
 
 	gr_set_color_fast(&Color_normal);
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 	gr_get_string_size(&font_width, &font_height, NOX("test"));
 	y_max = gr_screen.center_offset_y + gr_screen.center_h - font_height - 5;
 	y_index = gr_screen.center_offset_y + 45;
@@ -8111,15 +8105,15 @@ int detect_lang()
 {
 	uint file_checksum;
 	int idx;
-	char first_font[MAX_FILENAME_LEN];
+	SCP_string first_font;
 
 	// if the reg is set then let lcl_init() figure out what to do
 	if (os_config_read_string( NULL, NOX("Language"), NULL ) != NULL)
 		return -1;
 
 	// try and open the file to verify
-	gr_stuff_first_font(first_font, sizeof(first_font));
-	CFILE *detect = cfopen(first_font, "rb");
+	font::stuff_first(first_font);
+	CFILE *detect = cfopen(const_cast<char*>(first_font.c_str()), "rb");
 
 	// will use default setting if something went wrong
 	if (!detect)
@@ -8574,6 +8568,8 @@ int actual_main(int argc, char *argv[])
 {
 	int result = -1;
 	Assert(argc > 0);
+
+	memory::init();
 
 #ifdef WIN32
 	// Don't let more than one instance of FreeSpace run.

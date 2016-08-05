@@ -15,6 +15,7 @@
 #include "bmpman/bmpman.h"
 #include "globalincs/pstypes.h"
 
+#include <glad/glad.h>
 
 // anything API specific to freeing bm data
 void gr_opengl_bm_free_data(int n, bool release);

@@ -415,7 +415,15 @@ void HudGaugeMessages::scrollMessages()
 			*m = active_messages.back();
 			active_messages.pop_back();
 
-			continue;
+			if (active_messages.empty())
+			{
+				// We may not use the iterator any longer
+				break;
+			}
+			else
+			{
+				continue;
+			}
 		}
 
 		++m;

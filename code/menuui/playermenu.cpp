@@ -33,6 +33,7 @@
 #include "popup/popup.h"
 #include "ui/ui.h"
 
+#include "graphics/paths/PathRenderer.h"
 
 // --------------------------------------------------------------------------------------------------------
 // PLAYER SELECT defines

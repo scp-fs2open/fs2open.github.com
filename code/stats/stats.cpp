@@ -221,7 +221,7 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 
          // mission kills stats
 			sprintf(text,"%d",Active_player->stats.kill_count_ok + add.kill_count_ok);
-			hud_num_make_mono(text, gr_get_current_fontnum());
+			hud_num_make_mono(text, font::get_current_fontnum());
 			gr_printf_menu(sx,sy,text);
 			sy += 2*dy;
          // alltime primary weapon stats

@@ -237,7 +237,6 @@ set(file_root_generated
 set (file_root_globalincs
 	globalincs/alphacolors.cpp
 	globalincs/alphacolors.h
-	globalincs/fsmemory.cpp
 	globalincs/fsmemory.h
 	globalincs/globals.h
 	globalincs/linklist.h
@@ -263,6 +262,30 @@ IF (WIN32)
 		globalincs/windebug.cpp
 	)
 ENDIF(WIN32)
+
+set(file_root_globalincs_memory
+	globalincs/memory/memory.h
+	globalincs/memory/memory.cpp
+	globalincs/memory/newdelete.cpp
+	globalincs/memory/debug.h
+	globalincs/memory/debug.cpp
+	globalincs/memory/release.h
+	globalincs/memory/utils.h
+)
+
+# Add conditions for compiler specialization
+if (MSVC)
+set(file_root_globalincs_memory
+	${file_root_globalincs_memory}
+	globalincs/memory/debug_msvc.cpp
+)
+else()
+	# If no compiler matches, use the default version
+	set(file_root_globalincs_memory
+		${file_root_globalincs_memory}
+		globalincs/memory/debug_generic.cpp
+	)
+endif()
 
 set(file_root_globalincs_toolchain
 	globalincs/toolchain/clang.h
@@ -293,7 +316,6 @@ set (file_root_graphics_openglgr_opengl_cpps
 	graphics/gropengl.cpp
 	graphics/gropenglbmpman.cpp
 	graphics/gropengldraw.cpp
-	graphics/gropenglextension.cpp
 	graphics/gropengllight.cpp
 	graphics/gropenglpostprocessing.cpp
 	graphics/gropenglshader.cpp
@@ -307,7 +329,6 @@ set (file_root_graphics_openglgr_opengl_headers
 	graphics/gropengl.h
 	graphics/gropenglbmpman.h
 	graphics/gropengldraw.h
-	graphics/gropenglextension.h
 	graphics/gropengllight.h
 	graphics/gropenglpostprocessing.h
 	graphics/gropenglshader.h
@@ -316,15 +337,54 @@ set (file_root_graphics_openglgr_opengl_headers
 	graphics/gropengltnl.h
 )
 
+# Graphics -> OpenGLGr -> GL files
+set (file_root_graphics_openglgr_gl
+	graphics/gl/glu.h
+)
+
+# Graphics -> Paths
+set (file_root_graphics_paths
+	graphics/paths/NVGRenderer.cpp
+	graphics/paths/NVGRenderer.h
+	graphics/paths/PathRenderer.cpp
+	graphics/paths/PathRenderer.h
+	graphics/paths/StubRenderer.h
+)
+
+# Graphics -> Paths
+set (file_root_graphics_paths_nanovg
+	graphics/paths/nanovg/fontstash.h
+	graphics/paths/nanovg/nanovg.c
+	graphics/paths/nanovg/nanovg.h
+	graphics/paths/nanovg/nanovg_gl.h
+	graphics/paths/nanovg/nanovg_gl_utils.h
+	graphics/paths/nanovg/stb_image.h
+	graphics/paths/nanovg/stb_truetype.h
+)
+
 # Graphics -> SoftwareGr files
 set (file_root_graphics_softwaregr
-	graphics/font.cpp
-	graphics/font.h
 	graphics/generic.cpp
 	graphics/generic.h
 	graphics/grstub.cpp
 	graphics/grstub.h
 	graphics/line.h
+	graphics/font.h
+)
+
+
+set (file_root_graphics_softwaregr_font
+	graphics/software/font.h
+	graphics/software/font.cpp
+	graphics/software/font_internal.h
+	graphics/software/FontManager.h
+	graphics/software/FontManager.cpp
+	graphics/software/FSFont.h
+	graphics/software/FSFont.cpp
+	graphics/software/NVGFont.h
+	graphics/software/NVGFont.cpp
+	graphics/software/VFNTFont.h
+	graphics/software/VFNTFont.cpp
 )
 
 # Hud files
@@ -705,6 +765,34 @@ set (file_root_parse
 set (file_root_particle
 	particle/particle.cpp
 	particle/particle.h
+	particle/ParticleEffect.h
+	particle/ParticleManager.cpp
+	particle/ParticleManager.h
+	particle/ParticleSource.cpp
+	particle/ParticleSource.h
+	particle/ParticleSourceWrapper.cpp
+	particle/ParticleSourceWrapper.h
+)
+
+set(file_root_particle_effects
+	particle/effects/SingleParticleEffect.cpp
+	particle/effects/SingleParticleEffect.h
+	particle/effects/BeamPiercingEffect.cpp
+	particle/effects/BeamPiercingEffect.h
+	particle/effects/ParticleEmitterEffect.cpp
+	particle/effects/ParticleEmitterEffect.h
+	particle/effects/CompositeEffect.cpp
+	particle/effects/CompositeEffect.h
+	particle/effects/ConeGeneratorEffect.cpp
+	particle/effects/ConeGeneratorEffect.h
+)
+
+set(file_root_particle_util
+	particle/util/EffectTiming.cpp
+	particle/util/EffectTiming.h
+	particle/util/RandomRange.h
+	particle/util/ParticleProperties.cpp
+	particle/util/ParticleProperties.h
 )
 
 # PcxUtils files
@@ -941,12 +1029,17 @@ source_group("GameSequence"                       FILES ${file_root_gamesequence
 source_group("GameSnd"                            FILES ${file_root_gamesnd})
 source_group("Generated Files"                    FILES ${file_root_generated})
 source_group("GlobalIncs"                         FILES ${file_root_globalincs})
+source_group("GlobalIncs\\Memory"                 FILES ${file_root_globalincs_memory})
 source_group("GlobalIncs\\Toolchain"              FILES ${file_root_globalincs_toolchain})
 source_group("Graphics"                           FILES ${file_root_graphics})
 source_group("Graphics\\OpenGLGr"                 FILES ${file_root_graphics_openglgr})
 source_group("Graphics\\OpenGLGr\\OpenGL CPPs"    FILES ${file_root_graphics_openglgr_opengl_cpps})
 source_group("Graphics\\OpenGLGr\\OpenGL Headers" FILES ${file_root_graphics_openglgr_opengl_headers})
+source_group("Graphics\\OpenGLGr\\GL"             FILES ${file_root_graphics_openglgr_gl})
+source_group("Graphics\\Paths"                    FILES ${file_root_graphics_paths})
+source_group("Graphics\\Paths\\nanovg"            FILES ${file_root_graphics_paths_nanovg})
 source_group("Graphics\\SoftwareGr"               FILES ${file_root_graphics_softwaregr})
+source_group("Graphics\\SoftwareGr\\Font"         FILES ${file_root_graphics_softwaregr_font})
 source_group("Hud"                                FILES ${file_root_hud})
 source_group("iff_defs"                           FILES ${file_root_iff_defs})
 source_group("InetFile"                           FILES ${file_root_inetfile})
@@ -970,6 +1063,8 @@ source_group("OsApi"                              FILES ${file_root_osapi})
 source_group("Palman"                             FILES ${file_root_palman})
 source_group("Parse"                              FILES ${file_root_parse})
 source_group("Particle"                           FILES ${file_root_particle})
+source_group("Particle\\Effects"                  FILES ${file_root_particle_effects})
+source_group("Particle\\Util"                     FILES ${file_root_particle_util})
 source_group("PcxUtils"                           FILES ${file_root_pcxutils})
 source_group("Physics"                            FILES ${file_root_physics})
 source_group("PilotFile"                          FILES ${file_root_pilotfile})
@@ -1017,12 +1112,17 @@ set (file_root
 	${file_root_gamesnd}
 	${file_root_generated}
 	${file_root_globalincs}
+	${file_root_globalincs_memory}
 	${file_root_globalincs_toolchain}
 	${file_root_graphics}
 	${file_root_graphics_openglgr}
 	${file_root_graphics_openglgr_opengl_cpps}
 	${file_root_graphics_openglgr_opengl_headers}
+	${file_root_graphics_openglgr_gl}
+	${file_root_graphics_paths}
+	${file_root_graphics_paths_nanovg}
 	${file_root_graphics_softwaregr}
+	${file_root_graphics_softwaregr_font}
 	${file_root_hud}
 	${file_root_iff_defs}
 	${file_root_inetfile}
@@ -1046,6 +1146,8 @@ set (file_root
 	${file_root_palman}
 	${file_root_parse}
 	${file_root_particle}
+	${file_root_particle_effects}
+	${file_root_particle_util}
 	${file_root_pcxutils}
 	${file_root_physics}
 	${file_root_pilotfile}

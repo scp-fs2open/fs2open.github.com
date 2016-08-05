@@ -433,7 +433,7 @@ typedef struct screen {
 	void (*gf_aabitmap)(int x, int y, int resize_mode, bool mirror);
 	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror);
 
-	void (*gf_string)(int x, int y, const char * text,int resize_mode);
+	void(*gf_string)(float x, float y, const char * text, int resize_mode, int length);
 
 	// Draw a gradient line... x1,y1 is bright, x2,y2 is transparent.
 	void (*gf_gradient)(int x1, int y1, int x2, int y2, int resize_mode);
@@ -709,11 +709,6 @@ extern int gr_get_font_height();
 
 extern void gr_set_palette(const char *name, ubyte *palette, int restrict_to_128 = 0);
 
-// These two functions use a Windows mono font.  Only for use
-// in the editor, please.
-void gr_get_string_size_win(int *w, int *h, const char *text);
-void gr_string_win(int x, int y, const char *s );
-
 extern io::mouse::Cursor* Web_cursor;
 
 // Called by OS when application gets/looses focus
@@ -758,9 +753,14 @@ void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
 void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
 void gr_shade(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
 
-__inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL)
+__inline void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1)
 {
-	(*gr_screen.gf_string)(x,y,string,resize_mode);
+	(*gr_screen.gf_string)(x, y, string, resize_mode, length);
+}
+
+__inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1)
+{
+	gr_string(i2fl(x), i2fl(y), string, resize_mode, length);
 }
 
 __inline void gr_circle(int xc, int yc, int d, int resize_mode = GR_RESIZE_FULL)
@@ -1057,5 +1057,17 @@ public:
 };
 
 
+
+/**
+* @brief Prints the current time
+*
+* Draws the timestamp of the current #Missiontime in the format @c h:mm:ss at the specified coordinates
+*
+* @param x The x position where the timestamp should be draw
+* @param y The y position where the timestamp should be draw
+* @param timestamp The timespamp in milliseconds to be printed
+* @param resize_mode The resize mode to use
+*/
+void gr_print_timestamp(int x, int y, int timestamp, int resize_mode);
 
 #endif

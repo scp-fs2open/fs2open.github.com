@@ -20,7 +20,6 @@
 #include "globalincs/pstypes.h"
 #include <globalincs/systemvars.h>
 #include "graphics/2d.h"
-#include "graphics/gropenglextension.h"
 #include "graphics/gropengllight.h"
 #include "graphics/gropenglstate.h"
 #include "lighting/lighting.h"
@@ -515,7 +514,7 @@ void opengl_light_init()
 	Verify(GL_max_lights > 0);
 
 	if ( opengl_lights == NULL )
-		opengl_lights = (opengl_light *) vm_malloc_q(MAX_LIGHTS * sizeof(opengl_light));
+		opengl_lights = (opengl_light *) vm_malloc(MAX_LIGHTS * sizeof(opengl_light), memory::quiet_alloc);
 
 	if (opengl_lights == NULL)
 		Error( LOCATION, "Unable to allocate memory for lights!\n");

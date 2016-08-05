@@ -72,7 +72,7 @@ void UI_ICON::draw()
 		}
 
 	} else {
-		gr_set_font(my_wnd->f_id);
+		font::set_font(my_wnd->f_id);
 		gr_set_clip(x, y, w, h, GR_RESIZE_MENU);
 
 		ui_draw_box_out(0, 0, w-1, h-1);

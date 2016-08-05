@@ -112,7 +112,7 @@ void obj_reset_pairs()
 		Obj_pairs = NULL;
 	}
 
-	Obj_pairs = (obj_pair*) vm_malloc_q( sizeof(obj_pair) * MIN_PAIRS );
+	Obj_pairs = (obj_pair*) vm_malloc( sizeof(obj_pair) * MIN_PAIRS );
 
 	if ( Obj_pairs == NULL ) {
 		mprintf(("Unable to create space for collision pairs!!\n"));
@@ -439,7 +439,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		int prev_free_mark = (pair_free_list.next - old_pairs_ptr);
 		int prev_used_mark = (pair_used_list.next - old_pairs_ptr);
 
-		Obj_pairs = (obj_pair*) vm_realloc_q( Obj_pairs, sizeof(obj_pair) * (Num_pairs_allocated + PAIRS_BUMP) );
+		Obj_pairs = (obj_pair*) vm_realloc( Obj_pairs, sizeof(obj_pair) * (Num_pairs_allocated + PAIRS_BUMP) );
 
 		// allow us to fail here and only if we don't do we setup the new pairs
 

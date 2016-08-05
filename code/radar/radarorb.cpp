@@ -241,7 +241,7 @@ void HudGaugeRadarOrb::drawBlips(int blip_type, int bright, int distort)
 
 
 	// Need to set font.
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 
 
 	// get the appropriate blip list

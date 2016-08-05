@@ -189,9 +189,14 @@ void gameplay_help_set_title(const char *title)
 	char buf[128];
 
 	gr_set_color_fast(&Color_bright);
-	gr_printf_menu(0x8000,sy,title);
-	sprintf(buf, XSTR( "Page %d of %d", 132),  Current_help_page+1, Gp_last_screen+1);
-	gr_printf_menu(0x8000,sy+gr_get_font_height()+2,buf);
+	int w;
+	gr_get_string_size(&w, NULL, title);
+
+	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2,sy,title);
+
+	sprintf(buf, XSTR("Page %d of %d", 132), Current_help_page + 1, Gp_last_screen + 1);
+	gr_get_string_size(&w, NULL, buf);
+	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2, sy + gr_get_font_height() + 2, buf);
 	gr_set_color_fast(&Color_normal);
 }
 
@@ -335,60 +340,63 @@ void gameplay_help_draw_text()
 	switch ( Current_help_page ) {
 
 		case GP_HELP_BASIC_KEYS:
-			gameplay_help_set_title(XSTR( "Basic Keys", 133));
-			x_offset=X_OFFSET_1;
-			y_offset=Y_START;
+		{
+			gameplay_help_set_title(XSTR("Basic Keys", 133));
+			x_offset = X_OFFSET_1;
+			y_offset = Y_START;
 
 			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,END_MISSION);
+			gameplay_help_blit_control_line(x_offset, y_offset, END_MISSION);
 
 			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,FIRE_PRIMARY);
+			gameplay_help_blit_control_line(x_offset, y_offset, FIRE_PRIMARY);
 
 			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,MAX_THROTTLE);
+			gameplay_help_blit_control_line(x_offset, y_offset, MAX_THROTTLE);
 
 			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,ZERO_THROTTLE);
+			gameplay_help_blit_control_line(x_offset, y_offset, ZERO_THROTTLE);
 
 			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,TARGET_NEXT);
+			gameplay_help_blit_control_line(x_offset, y_offset, TARGET_NEXT);
 
 			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,TARGET_PREV);
+			gameplay_help_blit_control_line(x_offset, y_offset, TARGET_PREV);
 
 			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,TOGGLE_AUTO_TARGETING);
+			gameplay_help_blit_control_line(x_offset, y_offset, TOGGLE_AUTO_TARGETING);
 
 			y_offset += separation;
 			y_offset += separation;
 
 			gr_set_color_fast(&Color_bright);
-			gr_printf_menu(0x8000,y_offset,XSTR( "Function Keys", 134));
+			int w;
+			gr_get_string_size(&w, NULL, XSTR("Function Keys", 134));
+			gr_printf_menu((gr_screen.clip_width - w) / 2, y_offset, XSTR("Function Keys", 134));
 			gr_set_color_fast(&Color_normal);
 
 			y_offset += separation;
 			y_offset += separation;
 
-			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "F1", 135), XSTR( "context-sensitive help", 136));
+			gameplay_help_blit_control_line_raw(x_offset, y_offset, XSTR("F1", 135), XSTR("context-sensitive help", 136));
 
 			y_offset += separation;
-			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "F2", 137), XSTR( "options screen (available anywhere in game)", 138));
+			gameplay_help_blit_control_line_raw(x_offset, y_offset, XSTR("F2", 137), XSTR("options screen (available anywhere in game)", 138));
 
 			y_offset += separation;
-			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "F3", 139), XSTR( "hotkey assignment", 140));
+			gameplay_help_blit_control_line_raw(x_offset, y_offset, XSTR("F3", 139), XSTR("hotkey assignment", 140));
 
 			y_offset += separation;
-			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "F4", 141), XSTR( "HUD message scroll-back", 142));
+			gameplay_help_blit_control_line_raw(x_offset, y_offset, XSTR("F4", 141), XSTR("HUD message scroll-back", 142));
 
 			y_offset += separation;
-			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "F5...F12", 143), XSTR( "hotkeys", 144));
+			gameplay_help_blit_control_line_raw(x_offset, y_offset, XSTR("F5...F12", 143), XSTR("hotkeys", 144));
 
 			y_offset += separation;
-			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "Shift-Esc", 145), XSTR( "quit FreeSpace 2 immediately", 146));
+			gameplay_help_blit_control_line_raw(x_offset, y_offset, XSTR("Shift-Esc", 145), XSTR("quit FreeSpace 2 immediately", 146));
 
 			break;
-
+		}
 		case GP_HELP_MOVEMENT_KEYS:
 			gameplay_help_set_title(XSTR( "Movement Keys", 147));
 			x_offset=X_OFFSET_1;
@@ -749,30 +757,34 @@ void gameplay_help_draw_text()
 			break;
 
 		case GP_HELP_MULTI_KEYS:
-			gameplay_help_set_title(XSTR( "Multiplayer Keys", 167));
-			x_offset=X_OFFSET_1;
-			y_offset=Y_START;
+		{
+			gameplay_help_set_title(XSTR("Multiplayer Keys", 167));
+			x_offset = X_OFFSET_1;
+			y_offset = Y_START;
 
 			// ingame messaging
 			gr_set_color_fast(&Color_bright);
-			gr_printf_menu(0x8000,y_offset,XSTR( "Ingame messaging keys (tap for text, hold for voice)", 168));
+			int w;
+			gr_get_string_size(&w, NULL, XSTR("Ingame messaging keys (tap for text, hold for voice)", 168));
+			gr_printf_menu((gr_screen.clip_width - w) / 2, y_offset, XSTR("Ingame messaging keys (tap for text, hold for voice)", 168));
 			gr_set_color_fast(&Color_normal);
-			
-			y_offset += separation;
-			
-			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,MULTI_MESSAGE_ALL);
 
 			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,MULTI_MESSAGE_FRIENDLY);
 
 			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,MULTI_MESSAGE_HOSTILE);
+			gameplay_help_blit_control_line(x_offset, y_offset, MULTI_MESSAGE_ALL);
 
 			y_offset += separation;
-			gameplay_help_blit_control_line(x_offset, y_offset,MULTI_MESSAGE_TARGET);
+			gameplay_help_blit_control_line(x_offset, y_offset, MULTI_MESSAGE_FRIENDLY);
+
+			y_offset += separation;
+			gameplay_help_blit_control_line(x_offset, y_offset, MULTI_MESSAGE_HOSTILE);
+
+			y_offset += separation;
+			gameplay_help_blit_control_line(x_offset, y_offset, MULTI_MESSAGE_TARGET);
 
 			break;
+		}
 
 	} //	end switch		
 }

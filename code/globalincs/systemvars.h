@@ -265,9 +265,6 @@ public:
 #define PROFILE(name, function) { profile_begin(name); function; profile_end(name); }
 
 //====================================================================================
-// Memory stuff from WinDebug.cpp
-extern int TotalRam;
-void windebug_memwatch_init();
 
 #define MAX_LIGHTS 256
 #define MAX_LIGHT_LEVELS 16

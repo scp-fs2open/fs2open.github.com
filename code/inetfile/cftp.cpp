@@ -190,8 +190,6 @@ CFtpGet::~CFtpGet()
 		SDL_WaitThread(thread_id, NULL);
     
 	fclose(LOCALFILE);
-    
-	fclose(LOCALFILE);
 
 	if(m_ListenSock != INVALID_SOCKET)
 	{

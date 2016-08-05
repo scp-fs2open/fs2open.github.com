@@ -356,6 +356,65 @@ DCF_BOOL(show_controls_info, Show_controls_info);
 
 static int Axes_origin[JOY_NUM_AXES];
 
+static int joy_get_unscaled_reading(int raw, int axn)
+{
+	int rng;
+
+	rng = JOY_AXIS_MAX - JOY_AXIS_MIN;
+	raw -= JOY_AXIS_MIN;  // adjust for linear range starting at 0
+
+	// cap at limits
+	if (raw < 0)
+		raw = 0;
+	if (raw > rng)
+		raw = rng;
+
+	return (int) ((uint) raw * (uint) F1_0 / (uint) rng);  // convert to 0 - F1_0 range.
+}
+
+int joy_get_scaled_reading(int raw)
+{
+	int x, d, dead_zone, rng;
+	float percent, sensitivity_percent, non_sensitivity_percent;
+
+	raw -= JOY_AXIS_CENTER;
+
+	dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Joy_dead_zone_size / 100;
+
+	if (raw < -dead_zone) {
+		rng = JOY_AXIS_CENTER - JOY_AXIS_MIN - dead_zone;
+		d = -raw - dead_zone;
+	} else if (raw > dead_zone) {
+		rng = JOY_AXIS_MAX - JOY_AXIS_CENTER - dead_zone;
+		d = raw - dead_zone;
+	} else
+		return 0;
+
+	if (d > rng)
+		d = rng;
+
+	Assert(Joy_sensitivity >= 0 && Joy_sensitivity <= 9);
+
+	// compute percentages as a range between 0 and 1
+	sensitivity_percent = (float) Joy_sensitivity / 9.0f;
+	non_sensitivity_percent = (float) (9 - Joy_sensitivity) / 9.0f;
+
+	// find percent of max axis is at
+	percent = (float) d / (float) rng;
+
+	// work sensitivity on axis value
+	percent = (percent * sensitivity_percent + percent * percent * percent * percent * percent * non_sensitivity_percent);
+
+	x = (int) ((float) F1_0 * percent);
+
+	//nprintf(("AI", "d=%6i, sens=%3i, percent=%6.3f, val=%6i, ratio=%6.3f\n", d, Joy_sensitivity, percent, (raw<0) ? -x : x, (float) d/x));
+
+	if (raw < 0)
+		return -x;
+
+	return x;
+}
+
 void control_config_detect_axis_reset()
 {
 	joystick_read_raw_axis(JOY_NUM_AXES, Axes_origin);
@@ -833,8 +892,6 @@ int control_config_clear_all()
 	return 0;
 }
 
-extern Joy_info joystick;
-
 int control_config_axis_default(int axis)
 {
 	Assert(axis >= 0);
@@ -844,7 +901,8 @@ int control_config_axis_default(int axis)
 			return -1;
 		}
 
-		if (!joystick.axis_valid[Axis_map_to_defaults[axis]]) {
+		auto joystick = io::joystick::getCurrentJoystick();
+		if (Axis_map_to_defaults[axis] >= 0 && Axis_map_to_defaults[axis] < joystick->numAxes()) {
 			return -1;
 		}
 	}
@@ -1470,7 +1528,7 @@ void control_config_do_frame(float frametime)
 					if (Axis_override >= 0) {
 						control_config_bind_axis(z, Axis_override);
 						strcpy_s(bound_string, Joy_axis_text[Axis_override]);
-						gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+						font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 						bound_timestamp = timestamp(2500);
 						control_config_conflict_check();
 						control_config_list_prepare();
@@ -1538,7 +1596,7 @@ void control_config_do_frame(float frametime)
 					control_config_bind_key(z, k);
 
 					strcpy_s(bound_string, textify_scancode(k));
-					gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+					font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 					bound_timestamp = timestamp(2500);
 					control_config_conflict_check();
 					control_config_list_prepare();
@@ -1552,7 +1610,7 @@ void control_config_do_frame(float frametime)
 						control_config_bind_joy(z, i);
 
 						strcpy_s(bound_string, Joy_button_text[i]);
-						gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+						font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 						bound_timestamp = timestamp(2500);
 						control_config_conflict_check();
 						control_config_list_prepare();
@@ -1576,7 +1634,7 @@ void control_config_do_frame(float frametime)
 								control_config_bind_joy(z, i);
 
 								strcpy_s(bound_string, Joy_button_text[i]);
-								gr_force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+								font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 								bound_timestamp = timestamp(2500);
 								control_config_conflict_check();
 								control_config_list_prepare();
@@ -1847,7 +1905,7 @@ void control_config_do_frame(float frametime)
 		}
 
 		// set color and font
-		gr_set_font(FONT2);
+		font::set_font(font::FONT2);
 		if(Conflict_bright){
 			gr_set_color_fast(&Color_bright_red);
 		} else {
@@ -1862,7 +1920,7 @@ void control_config_do_frame(float frametime)
 
 		gr_string((gr_screen.max_w / 2) - (sw / 2), Conflict_warning_coords[gr_screen.res][1], conflict_str, GR_RESIZE_MENU);
 
-		gr_set_font(FONT1);
+		font::set_font(font::FONT1);
 	} else {
 		// might as well always reset the conflict stamp
 		Conflict_stamp = -1;
@@ -1936,7 +1994,7 @@ void control_config_do_frame(float frametime)
 			strcpy_s(buf, Control_config[i].text);
 		}
 
-		gr_force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+		font::force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 		gr_get_string_size(&w, NULL, buf);
 		gr_printf_menu(x - w / 2, y, buf);
 
@@ -1976,7 +2034,7 @@ void control_config_do_frame(float frametime)
 		gr_set_color_fast(c);
 		if (Cc_lines[line].label) {
 			strcpy_s(buf, Cc_lines[line].label);
-			gr_force_fit_string(buf, 255, Control_list_ctrl_w[gr_screen.res]);
+			font::force_fit_string(buf, 255, Control_list_ctrl_w[gr_screen.res]);
 			gr_printf_menu(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, buf);
 		}
 
@@ -2040,7 +2098,7 @@ void control_config_do_frame(float frametime)
 						gr_set_color_fast(c);
 					}
 
-					gr_force_fit_string(buf, 255, Control_list_key_w[gr_screen.res] + Control_list_key_x[gr_screen.res] - x);
+					font::force_fit_string(buf, 255, Control_list_key_w[gr_screen.res] + Control_list_key_x[gr_screen.res] - x);
 					gr_printf_menu(x, y, buf);
 
 					Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
@@ -2306,17 +2364,17 @@ void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
 	//	joy_get_scaled_reading will return a value represents the joystick pos from -1 to +1 (fixed point)
 	*h = 0;
 	if (Axis_map_to[0] >= 0) {
-		*h = joy_get_scaled_reading(axes_values[Axis_map_to[0]], Axis_map_to[0]);
+		*h = joy_get_scaled_reading(axes_values[Axis_map_to[0]]);
 	}
 
 	*p = 0;
 	if (Axis_map_to[1] >= 0) {
-		*p = joy_get_scaled_reading(axes_values[Axis_map_to[1]], Axis_map_to[1]);
+		*p = joy_get_scaled_reading(axes_values[Axis_map_to[1]]);
 	}
 
 	*b = 0;
 	if (Axis_map_to[2] >= 0) {
-		*b = joy_get_scaled_reading(axes_values[Axis_map_to[2]], Axis_map_to[2]);
+		*b = joy_get_scaled_reading(axes_values[Axis_map_to[2]]);
 	}
 
 	*ta = 0;
@@ -2326,7 +2384,7 @@ void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
 
 	*tr = 0;
 	if (Axis_map_to[4] >= 0) {
-		*tr = joy_get_scaled_reading(axes_values[Axis_map_to[4]], Axis_map_to[4]);
+		*tr = joy_get_scaled_reading(axes_values[Axis_map_to[4]]);
 	}
 
 	if (Invert_axis[0]) {

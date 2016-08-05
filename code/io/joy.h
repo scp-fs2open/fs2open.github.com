@@ -5,74 +5,272 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
-
-
+ */
 
 #ifndef __JOY_H__
 #define __JOY_H__
 
 #include "globalincs/pstypes.h"
+
 #include "SDL_joystick.h"
 
-#include <climits>
+namespace io
+{
+	/**
+	 * @brief Namespace containing all joystick API functions
+	 */
+	namespace joystick
+	{
+		/**
+		 * @brief A hat position
+		 */
+		enum HatPosition
+		{
+			HAT_CENTERED,
+			HAT_UP,
+			HAT_RIGHT,
+			HAT_DOWN,
+			HAT_LEFT,
+			HAT_RIGHTUP,
+			HAT_RIGHTDOWN,
+			HAT_LEFTUP,
+			HAT_LEFTDOWN,
+		};
 
-#define JOY_NUM_BUTTONS		32
-#define JOY_NUM_HAT_POS		4
-#define JOY_TOTAL_BUTTONS	(JOY_NUM_BUTTONS + JOY_NUM_HAT_POS)
-#define JOY_NUM_AXES			6
+		/**
+		 * @brief Represents a SDL joystick
+		 *
+		 * @details The implementation is event based so repeatedly polling the values will
+		 * not cause a performance penalty as the joystick values will be cached.
+		 */
+		class Joystick
+		{
+		public:
+			/**
+			 * @brief Constructs a new joystick instance from a SDL handle
+			 *
+			 * This object will take ownership of the passed SDL handle and it will be freed when this
+			 * object is deleted.
+			 *
+			 * @param joystick The Joystick handle
+			 */
+			explicit Joystick(SDL_Joystick *joystick);
 
-#define JOY_HATBACK			(JOY_NUM_BUTTONS)
-#define JOY_HATFORWARD		(JOY_NUM_BUTTONS+1)
-#define JOY_HATLEFT			(JOY_NUM_BUTTONS+2)
-#define JOY_HATRIGHT			(JOY_NUM_BUTTONS+3)
+			/**
+			 * @brief Moves the resources of the other object into @c this
+			 *
+			 * @param other A rvalue reference
+			 */
+			Joystick(Joystick &&other);
 
-#define JOY_AXIS_UNDEFINED		-10000
+			/**
+			 * @brief Frees the owned SDL handle
+			 */
+			~Joystick();
+
+			/**
+			 * @brief Moves the resources of the other object into @c this
+			 *
+			 * @param other A rvalue reference to the other object
+			 */
+			Joystick &operator=(Joystick &&other);
+
+			/**
+			 * @brief Determines if this joystick is still connected to the computer
+			 *
+			 * @return @c true if the joystick is attached, @c false otherwise
+			 */
+			bool isAttached() const;
+
+			/**
+			 * @brief Gets the value of the specified axis
+			 *
+			 * @param index The index of the axis, must be in [0, numAxes())
+			 * @return The axis value, in range [-2^16, 2^16-1]
+			 */
+			Sint16 getAxis(int index) const;
+
+			/**
+			 * @brief Determines if this button is currently pressed
+			 *
+			 * @param index The index of the button, must be in [0, numButtons())
+			 *
+			 * @return @c true if the button is currently pressed
+			 */
+			bool isButtonDown(int index) const;
+
+			/**
+			 * @brief Gets the time the button has been pressed
+			 *
+			 * @param index The index of the button, must be in [0, numButtons())
+			 *
+			 * @return How long (in seconds) the button has been pressed.
+			 */
+			float getButtonDownTime(int index) const;
+
+			/**
+			 * @brief Times the specified button has been pressed since the last reset
+			 * @param index The index of the button, must be in [0, numButtons())
+			 * @param reset @c true to reset the count
+			 * @return The number of times the button has been pressed
+			 *
+			 * @warning This function may be removed in the future, it's only here for compatibility with the
+			 * current code base.
+			 */
+			int getButtonDownCount(int index, bool reset);
+
+			/**
+			 * @brief Gets the relative ball movement
+			 * @param index The index of the ball, must be in [0, numBalls())
+			 * @return The @c x and @c y movement of the ball
+			 */
+			coord2d getBall(int index) const;
+
+			/**
+			 * @brief Gets the current position of the hat.
+			 * @param index The index of the hat to query, must be in [0, numHats())
+			 * @return The hat position
+			 */
+			HatPosition getHatPosition(int index) const;
+
+			/**
+			 * @brief Gets the number of axes on this joystick
+			 * @return The number of axes
+			 */
+			int numAxes() const;
+
+			/**
+			 * @brief Gets the number of balls on this joystick
+			 * @return The number of balls
+			 */
+			int numBalls() const;
+
+			/**
+			 * @brief Gets the number of buttons on this joystick
+			 * @return The number of buttons
+			 */
+			int numButtons() const;
+
+			/**
+			 * @brief Gets the number of hats on this joystick
+			 * @return The number of hats
+			 */
+			int numHats() const;
+
+			/**
+			 * @brief Gets a globally unique identifier of this joystick
+			 * This is useful for identifying a joystick if it has been disconnected at some point
+			 * @return The string representation of the GUID
+			 */
+			SCP_string getGUID() const;
+
+			/**
+			 * @brief Gets the name of the joystick
+			 * @return The name
+			 */
+			SCP_string getName() const;
+
+			/**
+			 * @brief Gets the unique instance ID of the joystick
+			 * @return The instance ID
+			 */
+			SDL_JoystickID getID() const;
+
+			/**
+			 * @brief The SDL joystick handle
+			 * @return The handle
+			 */
+			SDL_Joystick* getDevice();
+
+			/**
+			 * @brief Handles a SDL joystick event
+			 * @param evt The event to handle
+			 *
+			 * @note Only for internal use, don't call externally
+			 */
+			void handleJoyEvent(const SDL_Event &evt);
+		private:
+			Joystick(const Joystick &);
+			Joystick &operator=(const Joystick &);
+
+			/**
+			 * @brief Fills internal array
+			 */
+			void fillValues();
+
+			void handleAxisEvent(const SDL_JoyAxisEvent& evt);
+			void handleBallEvent(const SDL_JoyBallEvent& evt);
+			void handleButtonEvent(const SDL_JoyButtonEvent& evt);
+			void handleHatEvent(const SDL_JoyHatEvent& evt);
+
+			SDL_Joystick *_joystick; //!< The SDL joystick handle
+
+			SCP_string _guidStr; //!< The GUID string
+			SCP_string _name; //!< The joystick name
+
+			SDL_JoystickID _id; //!< The instance ID
+
+			SCP_vector<Sint16> _axisValues; //!< The current axes values
+			SCP_vector<coord2d> _ballValues; //!< The ball values
+			SCP_vector<HatPosition> _hatValues; //!< The current hat values
+
+			SCP_vector<int> _buttonDownTimestamp; //!< The timestamp since when the button is pressed, -1 if not pressed
+			SCP_vector<int> _buttonDownCount; //!< The number of times the button was pressed
+		};
+
+		/**
+		 * @brief Initializes the joystick subsystem
+		 * @return @c true when successfully initialized
+		 */
+		bool init();
+
+		/**
+		 * @brief Gets number of connected joysticks
+		 * This value can change if new devices are connected to the system
+		 * @return The number of joysticks
+		 */
+		size_t getJoystickCount();
+
+		/**
+		 * @brief Gets the joystick with the specified index
+		 * The returned pointer stays valid even if a device is disconnected in case it is reconnected at a later time.
+		 * @param index The index, must be in range [0, getJoystickCount())
+		 * @return The Joystick pointer, the pointer is owned by the joystick subsystem
+		 */
+		Joystick *getJoystick(size_t index);
+
+		/**
+		 * @brief Gets the primary joystick
+		 * @return The joystick pointer, may be @c nullptr of no primary joystick
+		 *
+		 * @warning This function may be removed in the future when multi-joystick support is implemented
+		 */
+		Joystick *getCurrentJoystick();
+
+		/**
+		 * @brief Frees resources of the joystick subsystem
+		 */
+		void shutdown();
+	}
+}
+
+// For now this is a constant for the rest of the engine
+const int JOY_NUM_BUTTONS = 32;
+const int JOY_NUM_HAT_POS = 4;
+const int JOY_TOTAL_BUTTONS = (JOY_NUM_BUTTONS + JOY_NUM_HAT_POS);
+const int JOY_NUM_AXES = 6;
 
 const int JOY_AXIS_MIN = 0;
-const int JOY_AXIS_CENTER = -SHRT_MIN;
-const int JOY_AXIS_MAX = USHRT_MAX + 1; // 1 since this is always checked to be less. ex: if (x < JOY_AXIS_MAX) {du_stoof();}
+const int JOY_AXIS_CENTER = 32768;
+const int JOY_AXIS_MAX = 65536;
 
-typedef struct Joy_info {
-	int axis_valid[JOY_NUM_AXES];   // (bool) 0 if invalid axis, 1 if valid
-	int axis_min[JOY_NUM_AXES];     // minimum value of each axis (default is JOY_AXIS_MIN)
-	int axis_center[JOY_NUM_AXES];  // center value of each axis (default is JOY_AXIS_CENTER)
-	int axis_max[JOY_NUM_AXES];     // maximum value of each axis (default is JOY_AXIS_MAX)
-} Joy_info;
+int joystick_read_raw_axis(int num_axes, int *axis);
 
-extern int Joy_sensitivity;
-extern int Dead_zone_size;  // percentage of range that is dead zone
+float joy_down_time(int btn);
 
-int	joy_init();
-void	joy_flush();
-int	joy_get_pos(int * x, int * y, int *z, int *r);
-int	joy_down_count(int btn, int reset_count = 1);
-int	joy_down(int btn);
-int	joy_up_count(int btn);
-float	joy_down_time(int btn);
-void	joy_get_cal_vals(int *axis_min, int *axis_center, int *axis_max);
-void	joy_set_cal_vals(int *axis_min, int *axis_center, int *axis_max);
-void	joy_set_ul();
-void	joy_set_lr();
-void	joy_set_cen(); 
-void	joy_cheap_cal();
-int	joystick_read_raw_axis( int num_axes, int * axis );
-void joy_get_delta(int *dx, int *dy);
-int joy_get_scaled_reading(int raw, int axn);
-int joy_get_unscaled_reading(int raw, int axn);
-void joy_close();
-void joy_device_changed(int state, int device);
-SDL_Joystick* joy_get_device();
+int joy_down_count(int btn, int reset_count);
 
-/**
- * @brief Called asychronously when the OS detects a change on any monitored joystick axis
- *
- * @param[in] id      The joystick instance index
- * @param[in] axis_id The id of the axis that changed
- * @param[in] value   The new value of the axis
- */
-void joy_event(SDL_JoystickID id, uint8_t axis_id, int16_t value);
-
+int joy_down(int btn);
 
 
 #endif	/* __JOY_H__ */

@@ -305,7 +305,7 @@ int get_line_num()
 //	!0 means it's an error message.
 //	Prints line number and other useful information.
 extern int Cmdline_noparseerrors;
-void error_display(int error_level, char *format, ...)
+void error_display(int error_level, const char *format, ...)
 {
 	char type[8];
 	SCP_string error_text;
@@ -2116,8 +2116,8 @@ void allocate_mission_text(int size)
 		Mission_text_raw = NULL;
 	}
 
-	Mission_text = (char *) vm_malloc_q(sizeof(char) * size);
-	Mission_text_raw = (char *) vm_malloc_q(sizeof(char) * size);
+	Mission_text = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
+	Mission_text_raw = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
 
 	if ( (Mission_text == NULL) || (Mission_text_raw == NULL) ) {
 		Error(LOCATION, "Unable to allocate enough memory for Mission_text!  Aborting...\n");
@@ -2991,9 +2991,9 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 }
 
 //Stuffs an integer list like stuff_int_list.
-int stuff_float_list(float* flp, int max_floats)
+size_t stuff_float_list(float* flp, size_t max_floats)
 {
-	int count = 0;
+	size_t count = 0;
 	ignore_white_space();
 
 	if (*Mp != '(') {

@@ -472,71 +472,6 @@ template <class T> void CAP( T& v, T mn, T mx )
 // Memory management functions
 //=========================================================
 
-// Returns 0 if not enough RAM.
-int vm_init(int min_heap_size);
-
-// Frees all RAM.
-void vm_free_all();
-
-#ifndef NDEBUG
-	// Debug versions
-
-	// Allocates some RAM.
-	void *_vm_malloc( int size, char *filename = NULL, int line = -1, int quiet = 0 );
-
-	// allocates some RAM for a string
-	char *_vm_strdup( const char *ptr, char *filename, int line );
-
-	// allocates some RAM for a string of a certain length
-	char *_vm_strndup( const char *ptr, int size, char *filename, int line );
-
-	// Frees some RAM.
-	void _vm_free( void *ptr, char *filename = NULL, int line= -1 );
-
-	// reallocates some RAM
-	void *_vm_realloc( void *ptr, int size, char *filename = NULL, int line= -1, int quiet = 0 );
-
-	// Easy to use macros
-	#define vm_malloc(size) _vm_malloc((size),__FILE__,__LINE__,0)
-	#define vm_free(ptr) _vm_free((ptr),__FILE__,__LINE__)
-	#define vm_strdup(ptr) _vm_strdup((ptr),__FILE__,__LINE__)
-	#define vm_strndup(ptr, size) _vm_strndup((ptr),(size),__FILE__,__LINE__)
-	#define vm_realloc(ptr, size) _vm_realloc((ptr),(size),__FILE__,__LINE__,0)
-
-	// quiet macro versions which don't report errors
-	#define vm_malloc_q(size) _vm_malloc((size),__FILE__,__LINE__,1)
-	#define vm_realloc_q(ptr, size) _vm_realloc((ptr),(size),__FILE__,__LINE__,1)
-#else
-	// Release versions
-
-	// Allocates some RAM.
-	void *_vm_malloc( int size, int quiet = 0 );
-
-	// allocates some RAM for a string
-	char *_vm_strdup( const char *ptr );
-
-	// allocates some RAM for a strings of a certain length
-	char *_vm_strndup( const char *ptr, int size );
-
-	// Frees some RAM.
-	void _vm_free( void *ptr );
-
-	// reallocates some RAM
-	void *_vm_realloc( void *ptr, int size, int quiet = 0 );
-
-	// Easy to use macros
-	#define vm_malloc(size) _vm_malloc((size),0)
-	#define vm_free(ptr) _vm_free(ptr)
-	#define vm_strdup(ptr) _vm_strdup(ptr)
-	#define vm_strndup(ptr, size) _vm_strndup((ptr),(size))
-	#define vm_realloc(ptr, size) _vm_realloc((ptr),(size),0)
-
-	// quiet macro versions which don't report errors
-	#define vm_malloc_q(size) _vm_malloc((size),1)
-	#define vm_realloc_q(ptr, size) _vm_realloc((ptr),(size),1)
-
-#endif
-
 #include "globalincs/fsmemory.h"
 
 //=========================================================
@@ -593,6 +528,9 @@ SCP_string dump_stacktrace();
 	const auto ptr_memset = std::memset;
 	#define memset memset_if_trivial_else_error
 
+// Put into std to be compatible with code that uses std::mem*
+namespace std
+{
 	template<typename T>
 	void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
 	{
@@ -663,6 +601,12 @@ SCP_string dump_stacktrace();
 		static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
 		return ptr_memmove(memmove_dest, memmove_src, count);
 	}
+}
+// Put into global namespace
+using std::memcpy_if_trivial_else_error;
+using std::memmove_if_trivial_else_error;
+using std::memset_if_trivial_else_error;
+
 	#endif // HAVE_CXX11
 #endif // NDEBUG
 

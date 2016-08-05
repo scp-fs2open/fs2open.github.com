@@ -356,7 +356,7 @@ void popup_split_lines(popup_info *pi, int flags)
 	int	n_chars[POPUP_MAX_LINES];
 	const char	*p_str[POPUP_MAX_LINES];
 
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 	n_chars[0]=0;
 
 	nlines = split_str(pi->raw_text, 1000, n_chars, p_str, POPUP_MAX_LINES);
@@ -370,7 +370,7 @@ void popup_split_lines(popup_info *pi, int flags)
 	}
 
 	if ( flags & PF_BODY_BIG ) {
-		gr_set_font(FONT2);
+		font::set_font(font::FONT2);
 	}
 
 	nlines = split_str(pi->raw_text, Popup_text_coords[gr_screen.res][2], n_chars, p_str, POPUP_MAX_LINES);
@@ -384,7 +384,7 @@ void popup_split_lines(popup_info *pi, int flags)
 		pi->msg_lines[i][n_chars[i+body_offset]] = 0;
 	}
 
-	gr_set_font(FONT1);
+	font::set_font(font::FONT1);
 }
 
 // figure out what filename to use for the button icon
@@ -631,9 +631,9 @@ void popup_draw_title(int sy, char *line, int flags)
 	int w, h, sx;
 
 	if ( flags & PF_TITLE_BIG ) {
-		gr_set_font(FONT2);
+		font::set_font(font::FONT2);
 	} else {
-		gr_set_font(FONT1);
+		font::set_font(font::FONT1);
 	}
 
 	gr_get_string_size(&w, &h, line);
@@ -664,17 +664,17 @@ int popup_calc_starting_y(popup_info *pi, int flags)
 
 	if ( flags & (PF_TITLE | PF_TITLE_BIG) ) {
 		if ( flags & PF_TITLE_BIG ) {
-			gr_set_font(FONT2);
+			font::set_font(font::FONT2);
 		} else {
-			gr_set_font(FONT1);
+			font::set_font(font::FONT1);
 		}
 		total_h += gr_get_font_height();
 	}
 
 	if ( flags & PF_BODY_BIG ) {
-		gr_set_font(FONT2);
+		font::set_font(font::FONT2);
 	} else {
-		gr_set_font(FONT1);
+		font::set_font(font::FONT1);
 	}
 
 	total_h += num_lines * gr_get_font_height();
@@ -709,9 +709,9 @@ void popup_draw_msg_text(popup_info *pi, int flags)
 
 	// draw body 
 	if ( flags & PF_BODY_BIG ) {
-		gr_set_font(FONT2);
+		font::set_font(font::FONT2);
 	} else {
-		gr_set_font(FONT1);
+		font::set_font(font::FONT1);
 	}
 
 	popup_set_text_color(flags);
@@ -734,7 +734,7 @@ void popup_draw_msg_text(popup_info *pi, int flags)
 		gr_string(Title_coords[gr_screen.res][4], sy + (Popup_max_display[gr_screen.res]) * h, XSTR("More", 459), GR_RESIZE_MENU);
 	}
 
-	gr_set_font(FONT1);	// reset back to regular font size
+	font::set_font(font::FONT1);	// reset back to regular font size
 }
 
 // Draw the button text nicely formatted in the popup
@@ -862,6 +862,7 @@ int popup_do(popup_info *pi, int flags)
 
 		// don't draw anything 
 		if(!(flags & PF_RUN_STATE)){
+			//gr_clear();
 			gr_restore_screen(screen_id);
 		}
 

@@ -13,7 +13,6 @@
 #include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
 #include "graphics/gropengldraw.h"
-#include "graphics/gropenglextension.h"
 #include "graphics/gropenglshader.h"
 #include "graphics/tmapper.h"
 #include "io/timer.h"
@@ -2495,7 +2494,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			// begin particles
 			if (shipp) {
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
-				particle_emitter pe;
+				particle::particle_emitter pe;
 				thruster_particles *tp;
 				size_t num_particles = 0;
 
@@ -2536,7 +2535,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 					pe.min_life = 0.0f;
 					pe.max_life = 1.0f;
 
-					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
+					particle::emit( &pe, particle::PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
 				}
 			}
 		}
