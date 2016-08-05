@@ -220,7 +220,7 @@ void level_controlled()
 		case 1:  //	Control the current object's location and orientation
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->flags & OF_MARKED)
+				if (objp->flags[Object::Object_Flags::Marked])
 					level_object(&objp->orient);
 				
 				objp = GET_NEXT(objp);
@@ -228,7 +228,7 @@ void level_controlled()
 
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->flags & OF_MARKED) {
+				if (objp->flags[Object::Object_Flags::Marked]) {
 					object_moved(objp);
 					count++;
 				}
@@ -319,7 +319,7 @@ void verticalize_controlled()
 		case 1:  //	Control the current object's location and orientation
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->flags & OF_MARKED)
+				if (objp->flags[Object::Object_Flags::Marked])
 					verticalize_object(&objp->orient);
 				
 				objp = GET_NEXT(objp);
@@ -327,7 +327,7 @@ void verticalize_controlled()
 
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->flags & OF_MARKED) {
+				if (objp->flags[Object::Object_Flags::Marked]) {
 					object_moved(objp);
 					count++;
 				}
@@ -420,7 +420,7 @@ void render_waypoints(void)
 				{
 					if (cur_waypoint_list == &(*ii) && cur_waypoint == &(*jj))
 						gr_set_color(255, 255, 255);
-					else if (Objects[jj->get_objnum()].flags & OF_MARKED)
+					else if (Objects[jj->get_objnum()].flags[Object::Object_Flags::Marked])
 						gr_set_color(160, 255, 0);
 					else
 						gr_set_color(160, 96, 0);
@@ -692,7 +692,7 @@ void render_one_model_nohtl(object *objp)
 			return;
 	}
 
-	if (objp->flags & OF_HIDDEN)
+	if (objp->flags[Object::Object_Flags::Hidden])
 		return;
 
 	rendering_order[render_count] = OBJ_INDEX(objp);
@@ -700,7 +700,7 @@ void render_one_model_nohtl(object *objp)
 	if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
 		Fred_outline = FRED_COLOUR_WHITE;
 
-	else if ((objp->flags & OF_MARKED) && !Bg_bitmap_dialog)  // is it a marked object?
+	else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog)  // is it a marked object?
 		Fred_outline = FRED_COLOUR_YELLOW;
 
 	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
@@ -829,7 +829,7 @@ void render_one_model_htl(object *objp)
 			return;
 	}
 
-	if (objp->flags & OF_HIDDEN)
+	if (objp->flags[Object::Object_Flags::Hidden])
 		return;
 
 	rendering_order[render_count] = OBJ_INDEX(objp);
@@ -837,7 +837,7 @@ void render_one_model_htl(object *objp)
 	if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
 		Fred_outline = FRED_COLOUR_WHITE;
 
-	else if ((objp->flags & OF_MARKED) && !Bg_bitmap_dialog)  // is it a marked object?
+	else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog)  // is it a marked object?
 		Fred_outline = FRED_COLOUR_YELLOW;
 
 	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
@@ -975,12 +975,12 @@ void display_distances()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list))
 	{
-		if (objp->flags & OF_MARKED)
+		if (objp->flags[Object::Object_Flags::Marked])
 		{
 			o2 = GET_NEXT(objp);
 			while (o2 != END_OF_LIST(&obj_used_list))
 			{
-				if (o2->flags & OF_MARKED)
+				if (o2->flags[Object::Object_Flags::Marked])
 				{
 					rpd_line(&objp->pos, &o2->pos);
 					vm_vec_avg(&pos, &objp->pos, &o2->pos);
@@ -1015,7 +1015,7 @@ void display_ship_info()
 		render = 1;
 		if (OBJ_INDEX(objp) == cur_object_index)
 			Fred_outline = FRED_COLOUR_WHITE;
-		else if (objp->flags & OF_MARKED)  // is it a marked object?
+		else if (objp->flags[Object::Object_Flags::Marked])  // is it a marked object?
 			Fred_outline = FRED_COLOUR_YELLOW;
 		else
 			Fred_outline = 0;
@@ -1034,7 +1034,7 @@ void display_ship_info()
 				render = 0;
 		}
 
-		if (objp->flags & OF_HIDDEN)
+		if (objp->flags[Object::Object_Flags::Hidden])
 			render = 0;
 		
 		g3_rotate_vertex(&v, &objp->pos);
@@ -1628,7 +1628,7 @@ void game_do_frame()
 					objp = GET_FIRST(&obj_used_list);
 					while (objp != END_OF_LIST(&obj_used_list))			{
 						Assert(objp->type != OBJ_NONE);
-						if ((objp->flags & OF_MARKED) && (cur_object_index != OBJ_INDEX(objp)))	{
+						if ((objp->flags[Object::Object_Flags::Marked]) && (cur_object_index != OBJ_INDEX(objp)))	{
 							if (Group_rotate) {
 								matrix rot_trans;
 								vec3d tmpv1, tmpv2;
@@ -1673,7 +1673,7 @@ void game_do_frame()
 
 					objp = GET_FIRST(&obj_used_list);
 					while (objp != END_OF_LIST(&obj_used_list)) {
-						if (objp->flags & OF_MARKED)
+						if (objp->flags[Object::Object_Flags::Marked])
 							object_moved(objp);
 						
 						objp = GET_NEXT(objp);
@@ -1850,7 +1850,7 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos)
 			return 0;
 	}
 
-	if (objp->flags & OF_HIDDEN)
+	if (objp->flags[Object::Object_Flags::Hidden])
 		return 0;
 
 	if ((Show_ship_models || Show_outlines) && (objp->type == OBJ_SHIP))	{
@@ -1898,7 +1898,7 @@ int select_object(int cx, int cy)
 		best = Briefing_dialog->check_mouse_hit(cx, cy);
 		if (best >= 0)
 		{
-			if(Selection_lock && !(Objects[best].flags & OF_MARKED))
+			if(Selection_lock && !(Objects[best].flags[Object::Object_Flags::Marked]))
 			{
 				return -1;
 			}
@@ -1939,7 +1939,7 @@ int select_object(int cx, int cy)
 
 	if (best >= 0)
 	{
-		if(Selection_lock && !(Objects[best].flags & OF_MARKED))
+		if(Selection_lock && !(Objects[best].flags[Object::Object_Flags::Marked]))
 		{
 			return -1;
 		}
@@ -1963,7 +1963,7 @@ int select_object(int cx, int cy)
 		ptr = GET_NEXT(ptr);
 	}
 
-	if(Selection_lock && !(Objects[best].flags & OF_MARKED))
+	if(Selection_lock && !(Objects[best].flags[Object::Object_Flags::Marked]))
 	{
 		return -1;
 	}

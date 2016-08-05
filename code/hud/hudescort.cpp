@@ -627,7 +627,7 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 			}
 
 			// don't process objects that should be dead
-			if ( objp->flags & OF_SHOULD_BE_DEAD ) {
+			if ( objp->flags[Object::Object_Flags::Should_be_dead] ) {
 				continue;
 			}
 
@@ -816,7 +816,7 @@ void hud_escort_cull_list()
 			int objnum = Escort_ships[i].objnum;
 			Assert( objnum >=0 && objnum < MAX_OBJECTS );
 
-			if ( Objects[objnum].flags & OF_SHOULD_BE_DEAD ) {
+			if ( Objects[objnum].flags[Object::Object_Flags::Should_be_dead] ) {
 				hud_setup_escort_list(0);
 				break;
 			} else if ( Objects[objnum].type == OBJ_SHIP ) {

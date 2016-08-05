@@ -669,7 +669,7 @@ void process_debug_keys(int k)
 		Cheats_enabled = 0;
 		return;
 	}
-
+    auto tmp_flags = Player_obj->flags;
 	switch (k) {
 		case KEY_DEBUGGED + KEY_Q:
 		case KEY_DEBUGGED1 + KEY_Q:
@@ -709,7 +709,7 @@ void process_debug_keys(int k)
 
 		case KEY_DEBUGGED + KEY_C:
 		case KEY_DEBUGGED1 + KEY_C:
-            auto tmp_flags = Player_obj->flags;
+            
 			if(Player_obj->flags[Object::Object_Flags::Collides]){
                 tmp_flags.remove(Object::Object_Flags::Collides);
 				obj_set_flags(Player_obj, tmp_flags);
@@ -894,7 +894,7 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_I:
 		case KEY_DEBUGGED1 + KEY_I:
 			Player_obj->flags ^= OF_INVULNERABLE;
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You are %s", 10), Player_obj->flags & OF_INVULNERABLE ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You are %s", 10), Player_obj->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
 			break;
 
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_I:
@@ -903,7 +903,7 @@ void process_debug_keys(int k)
 				object	*objp = &Objects[Player_ai->target_objnum];
 
 				objp->flags ^= OF_INVULNERABLE;
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].ship_name, objp->flags & OF_INVULNERABLE ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].ship_name, objp->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
 			}
 			break;
 

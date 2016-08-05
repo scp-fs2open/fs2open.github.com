@@ -363,7 +363,7 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
 		return false;
 
 	// if it is a player ship, we must be in multiplayer
-	if ( (objp->flags & OF_PLAYER_SHIP) && !(Game_mode & GM_MULTIPLAYER) )
+	if ( (objp->flags[Object::Object_Flags::Player_ship]) && !(Game_mode & GM_MULTIPLAYER) )
 		return false;
 
 	// if a messaging shortcut, be sure this ship can process the order

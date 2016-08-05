@@ -1280,7 +1280,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 
 					// Be sure to mark this ship as as a could_be_player
 					obj_set_flags( objp, objp->flags | OF_COULD_BE_PLAYER );
-					objp->flags &= ~OF_PLAYER_SHIP;
+					objp->flags .remove(Object::Object_flags::Player_ship);
 				}
 
 				// if this is a player ship, make sure we find out who's it is and set their objnum accordingly
@@ -1289,7 +1289,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 						Assert( team != -1 );		// to help trap errors!!!
 						nprintf(("Network", "Making %s ship for %s\n", Ships[shipnum].ship_name, Net_players[j].player->callsign));
 						multi_assign_player_ship( j, objp, Ships[shipnum].ship_info_index );
-						objp->flags |= OF_PLAYER_SHIP;
+						objp->flags .set(Object::Object_Flags::Player_ship);
 						objp->flags &= ~OF_COULD_BE_PLAYER;
 						break;
 					}

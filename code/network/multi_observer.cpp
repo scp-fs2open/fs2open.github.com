@@ -106,7 +106,7 @@ void multi_obs_create_observer(net_player *pl)
 	// create the basic observer object
 	objnum = observer_create( &vmd_identity_matrix, &vmd_zero_vector);	
 	Assert(objnum != -1);
-	Objects[objnum].flags |= OF_PLAYER_SHIP;	
+	Objects[objnum].flags.set(Object::Object_Flags::Player_ship);	
 	Objects[objnum].net_signature = 0;
 
 	// put it a 1,1,1

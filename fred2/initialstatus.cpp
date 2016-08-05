@@ -180,7 +180,7 @@ BOOL initial_status::OnInitDialog()
 	m_velocity = (int) Objects[cur_object_index].phys_info.speed;
 	m_shields = (int) Objects[cur_object_index].shield_quadrant[0];
 	m_hull = (int) Objects[cur_object_index].hull_strength;
-	if (Objects[cur_object_index].flags & OF_NO_SHIELDS)
+	if (Objects[cur_object_index].flags[Object::Object_Flags::No_shields])
 		m_has_shields = 0;
 	else
 		m_has_shields = 1;
@@ -236,14 +236,14 @@ BOOL initial_status::OnInitDialog()
 	if (m_multi_edit) {
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags & OF_MARKED)) {
+			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
 				if (objp->phys_info.speed != m_velocity)
 					vflag = 1;
 				if ((int) objp->shield_quadrant[0] != m_shields)
 					sflag = 1;
 				if ((int) objp->hull_strength != m_hull)
 					hflag = 1;
-				if (objp->flags & OF_NO_SHIELDS) {
+				if (objp->flags[Object::Object_Flags::No_shields]) {
 					if (m_has_shields)
 						m_has_shields = 2;
 
@@ -428,7 +428,7 @@ void initial_status::OnOK()
 	if (m_multi_edit) {
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags & OF_MARKED)) {
+			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
 				if (vflag)
 					MODIFY(objp->phys_info.speed, (float) m_velocity);
 

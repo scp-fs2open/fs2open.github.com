@@ -224,7 +224,7 @@ void hud_shield_equalize(object *objp, player *pl)
 		return;
 
 	// Goober5000 - quick out if we have no shields
-	if (objp->flags & OF_NO_SHIELDS)
+	if (objp->flags[Object::Object_Flags::No_shields])
 		return;
 
 	// are all quadrants equal?
@@ -426,7 +426,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 
 	for ( i = 0; i < objp->n_quadrants; i++ ) {
 
-		if ( objp->flags & OF_NO_SHIELDS || i >= DEFAULT_SHIELD_SECTIONS) {
+		if ( objp->flags[Object::Object_Flags::No_shields] || i >= DEFAULT_SHIELD_SECTIONS) {
 			break;
 		}
 
@@ -724,7 +724,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 
 	for ( i = 0; i < objp->n_quadrants; i++ ) {
 
-		if ( objp->flags & OF_NO_SHIELDS ) {
+		if ( objp->flags[Object::Object_Flags::No_shields] ) {
 			break;
 		}
 
@@ -1010,7 +1010,7 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 
 	for ( i = 0; i < objp->n_quadrants; i++ ) {
 
-		if ( objp->flags & OF_NO_SHIELDS ) {
+		if ( objp->flags[Object::Object_Flags::No_shields] ) {
 			break;
 		}
 

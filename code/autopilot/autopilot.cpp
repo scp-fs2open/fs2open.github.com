@@ -233,7 +233,7 @@ bool StartAutopilot()
 	// If the support ship is doing something then tell the user such.
 	for ( object *objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 	{
-		if ((objp->type == OBJ_SHIP) && !(objp->flags & OF_SHOULD_BE_DEAD))
+		if ((objp->type == OBJ_SHIP) && !(objp->flags[Object::Object_Flags::Should_be_dead]))
 		{
 			Assertion((objp->instance >= 0) && (objp->instance < MAX_SHIPS),
 				"objp does not have a valid pointer to a ship. Pointer is %d, which is smaller than 0 or bigger than %d",

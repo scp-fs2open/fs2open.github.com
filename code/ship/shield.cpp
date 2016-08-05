@@ -390,12 +390,12 @@ void render_shield(int shield_num)
 
 	objp = &Objects[Shield_hits[shield_num].objnum];
 
-	if (objp->flags & OF_NO_SHIELDS)	{
+	if (objp->flags[Object::Object_Flags::No_shields])	{
 		return;
 	}
 
 	//	If this object didn't get rendered, don't render its shields.  In fact, make the shield hit go away.
-	if (!(objp->flags & OF_WAS_RENDERED)) {
+	if (!(objp->flags[Object::Object_Flags::Was_rendered])) {
 		Shield_hits[shield_num].type = SH_UNUSED;
 		return;
 	}
@@ -724,7 +724,7 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	polymodel	*pm;
 	int		i;
 
-	if (Objects[objnum].flags & OF_NO_SHIELDS)
+	if (Objects[objnum].flags[Object::Object_Flags::No_shields])
 		return;
 
 	pm = model_get(model_num);
@@ -872,7 +872,7 @@ void ship_draw_shield( object *objp)
 	vec3d	pnt;
 	polymodel * pm; 
 
-	if (objp->flags & OF_NO_SHIELDS)
+	if (objp->flags[Object::Object_Flags::No_shields])
 		return;
 
 	Assert(objp->instance >= 0);

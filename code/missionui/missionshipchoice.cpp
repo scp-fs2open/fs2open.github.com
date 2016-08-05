@@ -3042,7 +3042,7 @@ void ss_init_units()
 				}
 
 				objnum = Ships[wp->ship_index[j]].objnum;
-				if ( Objects[objnum].flags & OF_PLAYER_SHIP ) {
+				if ( Objects[objnum].flags[Object::Object_Flags::Player_ship] ) {
 					if ( ss_slot->status & WING_SLOT_LOCKED ) {
 						// Int3();	// Get Alan
 						

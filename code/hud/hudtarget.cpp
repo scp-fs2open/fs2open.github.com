@@ -544,7 +544,7 @@ void	hud_check_reticle_list()
 	rl = GET_FIRST(&Reticle_cur_list);
 	while( rl !=END_OF_LIST(&Reticle_cur_list) )	{
 		temp = GET_NEXT(rl);
-		if ( rl->objp->flags & OF_SHOULD_BE_DEAD ) {
+		if ( rl->objp->flags[Object::Object_Flags::Should_be_dead] ) {
 			list_remove( &Reticle_cur_list, rl );
 			rl->flags = 0;
 		}
@@ -1494,7 +1494,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 		if ( (aip->target_objnum != -1)
 			&& (Objects[aip->target_objnum].type == OBJ_SHIP)
 			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & SIF_BOMBER)
-				|| (Objects[aip->target_objnum].flags & OF_TARGETABLE_AS_BOMB))) {
+				|| (Objects[aip->target_objnum].flags[Object::Object_Flags::Targetable_as_bomb]))) {
 			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
 			startShip = get_ship_obj_ptr_from_index(index);
 		} else {
@@ -1519,7 +1519,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			}
 
 			// check if ship type is bomber
-			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags & SIF_BOMBER) && !(A->flags & OF_TARGETABLE_AS_BOMB) ) {
+			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags & SIF_BOMBER) && !(A->flags[Object::Object_Flags::Targetable_as_bomb]) ) {
 				continue;
 			}
 
@@ -3299,7 +3299,7 @@ void hud_show_message_sender()
 	Assert ( targetp->instance >=0 && targetp->instance < MAX_SHIPS );
 
 	// check the object flags to see if this ship is gone.  If so, then don't do this stuff anymore
-	if ( targetp->flags & OF_SHOULD_BE_DEAD ) {
+	if ( targetp->flags[Object::Object_Flags::Should_be_dead] ) {
 		Message_shipnum = -1;
 		return;
 	}
@@ -3358,7 +3358,7 @@ void hud_prune_hotkeys()
 
 			// check to see if the object is dying -- if so, remove it from the list
 			// check to see if the ship is departing -- if so, remove it from the list
-			if ( remove_item || (objp->flags & OF_SHOULD_BE_DEAD) || (sp->flags & (SF_DEPARTING|SF_DYING)) ) {
+			if ( remove_item || (objp->flags[Object::Object_Flags::Should_be_dead]) || (sp->flags & (SF_DEPARTING|SF_DYING)) ) {
 				if ( sp != NULL ) {
 					nprintf(("Network", "Hotkey: Pruning %s\n", sp->ship_name));
 				}

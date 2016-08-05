@@ -688,7 +688,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		if ( (damage_to_apply > 0.1f) && !(MULTIPLAYER_CLIENT) )
 		{
 			//	Decrease damage to subsystems to player ships.
-			if (ship_objp->flags & OF_PLAYER_SHIP){
+			if (ship_objp->flags[Object::Object_Flags::Player_ship]){
 				ss_dif_scale = The_mission.ai_profile->subsys_damage_scale[Game_skill_level];
 			}
 		
@@ -796,7 +796,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 		}
 
 		// in multiplayer, record callsign of killer if killed by another player
-		if ( (Game_mode & GM_MULTIPLAYER) && ( Objects[killer_objp->parent].flags & OF_PLAYER_SHIP) ) {
+		if ( (Game_mode & GM_MULTIPLAYER) && ( Objects[killer_objp->parent].flags[Object::Object_Flags::Player_ship]) ) {
 			int pnum;
 
 			pnum = multi_find_player_by_object( &Objects[killer_objp->parent] );
@@ -820,7 +820,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			p->flags |= PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE;
 		}
 
-		if ( (Game_mode & GM_MULTIPLAYER) && ( Objects[killer_objp->parent].flags & OF_PLAYER_SHIP) ) {
+		if ( (Game_mode & GM_MULTIPLAYER) && ( Objects[killer_objp->parent].flags[Object::Object_Flags::Player_ship]) ) {
 			int pnum;
 
 			pnum = multi_find_player_by_object( &Objects[killer_objp->parent] );
@@ -849,7 +849,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 		}
 
 		// in multiplayer, record callsign of killer if killed by another player
-		if ( (Game_mode & GM_MULTIPLAYER) && (killer_objp->flags & OF_PLAYER_SHIP) ) {
+		if ( (Game_mode & GM_MULTIPLAYER) && (killer_objp->flags[Object::Object_Flags::Player_ship]) ) {
 			int pnum;
 
 			pnum = multi_find_player_by_object( killer_objp );
@@ -914,7 +914,7 @@ void show_dead_message(object *ship_objp, object *other_obj)
 	player *player_p;
 
 	// not doing anything when a non player dies.
-	if ( !(ship_objp->flags & OF_PLAYER_SHIP) ){
+	if ( !(ship_objp->flags[Object::Object_Flags::Player_ship]) ){
 		return;
 	}
 
@@ -1403,7 +1403,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	if (delta_time < 2)
 		delta_time = 2;
 	
-	if (objp->flags & OF_PLAYER_SHIP) {
+	if (objp->flags[Object::Object_Flags::Player_ship]) {
 		//	Note: Kamikaze ships have no minimum death time.
 		if (!(Ai_info[Ships[objp->instance].ai_index].ai_flags & AIF_KAMIKAZE) && (delta_time < MIN_PLAYER_DEATHROLL_TIME))
 			delta_time = MIN_PLAYER_DEATHROLL_TIME;
@@ -1679,7 +1679,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, i
 	}
 
 	// if a non-player is dying, play a scream
-	if ( !(ship_objp->flags & OF_PLAYER_SHIP) ) {
+	if ( !(ship_objp->flags[Object::Object_Flags::Player_ship]) ) {
 		ship_maybe_scream(sp);
 	}
 
@@ -1815,14 +1815,14 @@ void shiphit_hit_after_death(object *ship_objp, float damage)
 	time_remaining = timestamp_until(shipp->final_death_time);
 
 	//nprintf(("AI", "Gametime = %7.3f, Time until %s dies = %7.3f, delta = %7.3f\n", f2fl(Missiontime), Ships[ship_objp->instance].ship_name, (float)time_remaining/1000.0f, delta_time));
-	if (ship_objp->flags & OF_PLAYER_SHIP)
+	if (ship_objp->flags[Object::Object_Flags::Player_ship])
 		if (time_remaining < MIN_PLAYER_DEATHROLL_TIME)
 			return;
 
 	// nprintf(("AI", "Subtracting off %7.3f seconds from deathroll, reducing to %7.3f\n", (float) delta_time/1000.0f, (float) (time_remaining - delta_time)/1000.0f));
 
 	delta_time = time_remaining - delta_time;
-	if (ship_objp->flags & OF_PLAYER_SHIP)
+	if (ship_objp->flags[Object::Object_Flags::Player_ship])
 		if (delta_time < MIN_PLAYER_DEATHROLL_TIME)
 			delta_time = MIN_PLAYER_DEATHROLL_TIME;
 
@@ -1982,7 +1982,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		} 
 		else {
 			// Do a little "skill" balancing for the player in single player and coop multiplayer
-			if (ship_objp->flags & OF_PLAYER_SHIP)	{
+			if (ship_objp->flags[Object::Object_Flags::Player_ship])	{
 				// Nuke - store it in a couple factor and we will apply it where needed
 				difficulty_scale_factor *= The_mission.ai_profile->player_damage_scale[Game_skill_level];
 			}		
@@ -2020,7 +2020,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 
 
 	// If the ship is invulnerable, do nothing
-	if (ship_objp->flags & OF_INVULNERABLE)	{
+	if (ship_objp->flags[Object::Object_Flags::Invulnerable])	{
 		return;
 	}
 
@@ -2032,7 +2032,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.
-	if ( quadrant >= 0 && !(ship_objp->flags & OF_NO_SHIELDS) )	{
+	if ( quadrant >= 0 && !(ship_objp->flags[Object::Object_Flags::No_shields]) )	{
 //		mprintf(("applying damage ge to shield\n"));
 		float shield_factor = -1.0f;
 		int	weapon_info_index;
@@ -2232,7 +2232,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 						{
 							if ( !(The_mission.ai_profile->flags & AIPF_INCLUDE_BEAMS_IN_STAT_CALCS) && 
 								 !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) && 
-								 !(Objects[bobjn].flags & OF_PLAYER_SHIP) ) {
+								 !(Objects[bobjn].flags[Object::Object_Flags::Player_ship]) ) {
 								bobjn = -1;
 							}
 						}
@@ -2371,7 +2371,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 		//	don't do damage.
 		//	Ie, player can always do damage.  AI can only damage team if that ship is targeted.
 		if (wp->target_num != OBJ_INDEX(ship_objp)) {
-			if ((ship_p->team == wp->team) && !(Objects[other_obj->parent].flags & OF_PLAYER_SHIP) ) {
+			if ((ship_p->team == wp->team) && !(Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship]) ) {
 				return;
 			}
 		}
@@ -2555,7 +2555,7 @@ void ship_hit_pain(float damage, int quadrant)
 	ship *shipp = &Ships[Player_obj->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-    if (!(Player_obj->flags & OF_INVULNERABLE))
+    if (!(Player_obj->flags[Object::Object_Flags::Invulnerable]))
     {
 		if (Shield_pain_flash_factor != 0.0f && quadrant >= 0)
 			 {

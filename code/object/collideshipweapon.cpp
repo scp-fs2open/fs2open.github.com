@@ -206,7 +206,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	int hull_collision = 0;
 
 	// check shields for impact
-	if (!(ship_objp->flags & OF_NO_SHIELDS)) {
+	if (!(ship_objp->flags[Object::Object_Flags::No_shields])) {
 		if (sip->flags2 & SIF2_AUTO_SPREAD_SHIELDS) {
 			// The weapon is not allowed to impact the shield before it reaches this point
 			vec3d shield_ignored_until = weapon_objp->last_pos;

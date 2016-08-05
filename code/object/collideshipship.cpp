@@ -150,7 +150,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	//	Also, this is the only clean way I could figure to get ships to not do damage to each other for one frame
 	//	when they are docked and departing.  Due to sequencing, they would not show up as docked, yet they
 	//	would still come through here, so they would harm each other, if on opposing teams. -- MK, 2/2/98
-	if ((heavy_obj->flags & OF_SHOULD_BE_DEAD) || (light_obj->flags & OF_SHOULD_BE_DEAD)) {
+	if ((heavy_obj->flags[Object::Object_Flags::Should_be_dead]) || (light_obj->flags[Object::Object_Flags::Should_be_dead])) {
 		return 0;
 	}
 
@@ -167,7 +167,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	//	Apparently we're doing same team collisions.
 	//	But, if both are offscreen, ignore the collision
 	if (heavy_shipp->team == light_shipp->team) {
-		if ( (!(heavy_obj->flags & OF_WAS_RENDERED) && !(light_obj->flags & OF_WAS_RENDERED)) ) {
+		if ( (!(heavy_obj->flags[Object::Object_Flags::Was_rendered]) && !(light_obj->flags[Object::Object_Flags::Was_rendered])) ) {
 			return 0;
 		}
 	}
@@ -222,7 +222,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 	//	Only check invisible face polygons for ship:ship of different teams.
 	if ( !(heavy_shipp->flags2 & SF2_DONT_COLLIDE_INVIS) ) {
-		if ((heavy_obj->flags & OF_PLAYER_SHIP) || (light_obj->flags & OF_PLAYER_SHIP) || (heavy_shipp->team != light_shipp->team) ) {
+		if ((heavy_obj->flags[Object::Object_Flags::Player_ship]) || (light_obj->flags[Object::Object_Flags::Player_ship]) || (heavy_shipp->team != light_shipp->team) ) {
 			mc.flags |= MC_CHECK_INVISIBLE_FACES;
 		}
 	}
@@ -408,7 +408,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 			//	If a couple of small ships, just move them apart.
 
 			if ((heavy_sip->flags & SIF_SMALL_SHIP) && (light_sip->flags & SIF_SMALL_SHIP)) {
-				if ((heavy_obj->flags & OF_PLAYER_SHIP) || (light_obj->flags & OF_PLAYER_SHIP)) {
+				if ((heavy_obj->flags[Object::Object_Flags::Player_ship]) || (light_obj->flags[Object::Object_Flags::Player_ship])) {
 					vec3d h_to_l_vec;
 					vec3d rel_vel_h;
 					vec3d perp_rel_vel;
@@ -1215,7 +1215,7 @@ int collide_ship_ship( obj_pair * pair )
 				//Only do damage if not a landing
 				if (!ship_ship_hit_info.is_landing) {
 					//	Scale damage based on skill level for player.
-					if ((LightOne->flags & OF_PLAYER_SHIP) || (HeavyOne->flags & OF_PLAYER_SHIP)) {
+					if ((LightOne->flags[Object::Object_Flags::Player_ship]) || (HeavyOne->flags[Object::Object_Flags::Player_ship])) {
 						damage *= (float) (Game_skill_level*Game_skill_level+1)/(NUM_SKILL_LEVELS+1);
 					} else if (Ships[LightOne->instance].team == Ships[HeavyOne->instance].team) {
 						//	Decrease damage if non-player ships and not large.
@@ -1228,7 +1228,7 @@ int collide_ship_ship( obj_pair * pair )
 					float dam2 = (100.0f * damage/LightOne->phys_info.mass);
 
 					int	quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
-					if ((ship_ship_hit_info.heavy->flags & OF_NO_SHIELDS) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
+					if ((ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
 						quadrant_num = -1;
 					}
 

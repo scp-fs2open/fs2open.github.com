@@ -175,22 +175,22 @@ BOOL ship_flags_dlg::OnInitDialog()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
-			if (objp->flags & OF_MARKED) {
+			if (objp->flags[Object::Object_Flags::Marked]) {
 				shipp = &Ships[objp->instance];
 
 				if (first) {
 					first = 0;
 					scannable = (shipp->flags & SF_SCANNABLE) ? 1 : 0;
 					red_alert_carry = (shipp->flags & SF_RED_ALERT_STORE_STATUS) ? 1 : 0;
-					special_warpin = (objp->flags & OF_SPECIAL_WARPIN) ? 1 : 0;
-					protect_ship = (objp->flags & OF_PROTECTED) ? 1 : 0;
-					beam_protect_ship = (objp->flags & OF_BEAM_PROTECTED) ? 1 : 0;
-					flak_protect_ship = (objp->flags & OF_FLAK_PROTECTED) ? 1 : 0;
-					laser_protect_ship = (objp->flags & OF_LASER_PROTECTED) ? 1 : 0;
-					missile_protect_ship = (objp->flags & OF_MISSILE_PROTECTED) ? 1 : 0;
-					invulnerable = (objp->flags & OF_INVULNERABLE) ? 1 : 0;
-					targetable_as_bomb = (objp->flags & OF_TARGETABLE_AS_BOMB) ? 1 : 0;
-					immobile = (objp->flags & OF_IMMOBILE) ? 1 : 0;
+					special_warpin = (objp->flags[Object::Object_Flags::Special_warpin]) ? 1 : 0;
+					protect_ship = (objp->flags[Object::Object_Flags::Protected]) ? 1 : 0;
+					beam_protect_ship = (objp->flags[Object::Object_Flags::Beam_protected]) ? 1 : 0;
+					flak_protect_ship = (objp->flags[Object::Object_Flags::Flak_protected]) ? 1 : 0;
+					laser_protect_ship = (objp->flags[Object::Object_Flags::Laser_protected]) ? 1 : 0;
+					missile_protect_ship = (objp->flags[Object::Object_Flags::Missile_protected]) ? 1 : 0;
+					invulnerable = (objp->flags[Object::Object_Flags::Invulnerable]) ? 1 : 0;
+					targetable_as_bomb = (objp->flags[Object::Object_Flags::Targetable_as_bomb]) ? 1 : 0;
+					immobile = (objp->flags[Object::Object_Flags::Immobile]) ? 1 : 0;
 					hidden_from_sensors = (shipp->flags & SF_HIDDEN_FROM_SENSORS) ? 1 : 0;
 					primitive_sensors = (shipp->flags2 & SF2_PRIMITIVE_SENSORS) ? 1 : 0;
 					no_subspace_drive = (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) ? 1 : 0;
@@ -214,7 +214,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					no_ets = (shipp->flags2 & SF2_NO_ETS) ? 1 : 0;
 					cloaked = (shipp->flags2 & SF2_CLOAKED) ? 1 : 0;
 					scramble_messages = (shipp->flags2 & SF2_SCRAMBLE_MESSAGES) ? 1 : 0;
-					no_collide = (objp->flags & OF_COLLIDES) ? 0 : 1;
+					no_collide = (objp->flags[Object::Object_Flags::Collides]) ? 0 : 1;
 					no_disabled_self_destruct = (shipp->flags2 & SF2_NO_DISABLED_SELF_DESTRUCT) ? 1 : 0;
 
 					destroy_before_mission = (shipp->flags & SF_KILL_BEFORE_MISSION) ? 1 : 0;
@@ -244,15 +244,15 @@ BOOL ship_flags_dlg::OnInitDialog()
 
 					scannable = tristate_set( shipp->flags & SF_SCANNABLE, scannable );
 					red_alert_carry = tristate_set( shipp->flags & SF_RED_ALERT_STORE_STATUS, red_alert_carry );
-					special_warpin = tristate_set( objp->flags & OF_SPECIAL_WARPIN, special_warpin );
-					protect_ship = tristate_set(objp->flags & OF_PROTECTED, protect_ship);
-					beam_protect_ship = tristate_set(objp->flags & OF_BEAM_PROTECTED, beam_protect_ship);
-					flak_protect_ship = tristate_set(objp->flags & OF_FLAK_PROTECTED, flak_protect_ship);
-					laser_protect_ship = tristate_set(objp->flags & OF_LASER_PROTECTED, laser_protect_ship);
-					missile_protect_ship = tristate_set(objp->flags & OF_MISSILE_PROTECTED, missile_protect_ship);
-					invulnerable = tristate_set(objp->flags & OF_INVULNERABLE, invulnerable);
-					targetable_as_bomb = tristate_set(objp->flags & OF_TARGETABLE_AS_BOMB, targetable_as_bomb);
-					immobile = tristate_set(objp->flags & OF_IMMOBILE, immobile);
+					special_warpin = tristate_set( objp->flags[Object::Object_Flags::Special_warpin], special_warpin );
+					protect_ship = tristate_set(objp->flags[Object::Object_Flags::Protected], protect_ship);
+					beam_protect_ship = tristate_set(objp->flags[Object::Object_Flags::Beam_protected], beam_protect_ship);
+					flak_protect_ship = tristate_set(objp->flags[Object::Object_Flags::Flak_protected], flak_protect_ship);
+					laser_protect_ship = tristate_set(objp->flags[Object::Object_Flags::Laser_protected], laser_protect_ship);
+					missile_protect_ship = tristate_set(objp->flags[Object::Object_Flags::Missile_protected], missile_protect_ship);
+					invulnerable = tristate_set(objp->flags[Object::Object_Flags::Invulnerable], invulnerable);
+					targetable_as_bomb = tristate_set(objp->flags[Object::Object_Flags::Targetable_as_bomb], targetable_as_bomb);
+					immobile = tristate_set(objp->flags[Object::Object_Flags::Immobile], immobile);
 					hidden_from_sensors = tristate_set(shipp->flags & SF_HIDDEN_FROM_SENSORS, hidden_from_sensors);
 					primitive_sensors = tristate_set(shipp->flags2 & SF2_PRIMITIVE_SENSORS, primitive_sensors);
 					no_subspace_drive = tristate_set(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE, no_subspace_drive);
@@ -276,7 +276,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					no_ets = tristate_set(shipp->flags2 & SF2_NO_ETS, no_ets);
 					cloaked = tristate_set(shipp->flags2 & SF2_CLOAKED, cloaked);
 					scramble_messages = tristate_set(shipp->flags2 & SF2_SCRAMBLE_MESSAGES, scramble_messages);
-					no_collide = tristate_set(!(objp->flags & OF_COLLIDES), no_collide);
+					no_collide = tristate_set(!(objp->flags[Object::Object_Flags::Collides]), no_collide);
 					no_disabled_self_destruct = tristate_set(shipp->flags2 & SF2_NO_DISABLED_SELF_DESTRUCT, no_disabled_self_destruct);
 
 					// check the final death time and set the internal variable according to whether or not
@@ -418,7 +418,7 @@ void ship_flags_dlg::OnOK()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
-			if (objp->flags & OF_MARKED)
+			if (objp->flags[Object::Object_Flags::Marked])
 				update_ship(objp->instance);
 		}
 
@@ -468,14 +468,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 	// update the flags for IGNORE_COUNT and PROTECT_SHIP
 	switch (m_protect_ship.GetCheck()) {
 		case 1:
-			if (!(objp->flags & OF_PROTECTED) )
+			if (!(objp->flags[Object::Object_Flags::Protected]) )
 				set_modified();
 
 			objp->flags |= OF_PROTECTED;
 			break;
 
 		case 0:
-			if ( objp->flags & OF_PROTECTED )
+			if ( objp->flags[Object::Object_Flags::Protected] )
 				set_modified();
 
 			objp->flags &= ~OF_PROTECTED;
@@ -484,14 +484,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_beam_protect_ship.GetCheck()) {
 		case 1:
-			if (!(objp->flags & OF_BEAM_PROTECTED) )
+			if (!(objp->flags[Object::Object_Flags::Beam_protected]) )
 				set_modified();
 
 			objp->flags |= OF_BEAM_PROTECTED;
 			break;
 
 		case 0:
-			if ( objp->flags & OF_BEAM_PROTECTED )
+			if ( objp->flags[Object::Object_Flags::Beam_protected] )
 				set_modified();
 
 			objp->flags &= ~OF_BEAM_PROTECTED;
@@ -500,14 +500,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_flak_protect_ship.GetCheck()) {
 		case 1:
-			if (!(objp->flags & OF_FLAK_PROTECTED) )
+			if (!(objp->flags[Object::Object_Flags::Flak_protected]) )
 				set_modified();
 
 			objp->flags |= OF_FLAK_PROTECTED;
 			break;
 
 		case 0:
-			if ( objp->flags & OF_FLAK_PROTECTED )
+			if ( objp->flags[Object::Object_Flags::Flak_protected] )
 				set_modified();
 
 			objp->flags &= ~OF_FLAK_PROTECTED;
@@ -516,14 +516,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_laser_protect_ship.GetCheck()) {
 		case 1:
-			if (!(objp->flags & OF_LASER_PROTECTED) )
+			if (!(objp->flags[Object::Object_Flags::Laser_protected]) )
 				set_modified();
 
 			objp->flags |= OF_LASER_PROTECTED;
 			break;
 
 		case 0:
-			if ( objp->flags & OF_LASER_PROTECTED )
+			if ( objp->flags[Object::Object_Flags::Laser_protected] )
 				set_modified();
 
 			objp->flags &= ~OF_LASER_PROTECTED;
@@ -532,14 +532,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_missile_protect_ship.GetCheck()) {
 		case 1:
-			if (!(objp->flags & OF_MISSILE_PROTECTED) )
+			if (!(objp->flags[Object::Object_Flags::Missile_protected]) )
 				set_modified();
 
 			objp->flags |= OF_MISSILE_PROTECTED;
 			break;
 
 		case 0:
-			if ( objp->flags & OF_MISSILE_PROTECTED )
+			if ( objp->flags[Object::Object_Flags::Missile_protected] )
 				set_modified();
 
 			objp->flags &= ~OF_MISSILE_PROTECTED;
@@ -548,14 +548,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_invulnerable.GetCheck()) {
 		case 1:
-			if ( !(objp->flags & OF_INVULNERABLE) )
+			if ( !(objp->flags[Object::Object_Flags::Invulnerable]) )
 				set_modified();
 
 			objp->flags |= OF_INVULNERABLE;
 			break;
 
 		case 0:
-			if ( objp->flags & OF_INVULNERABLE )
+			if ( objp->flags[Object::Object_Flags::Invulnerable] )
 				set_modified();
 
 			objp->flags &= ~OF_INVULNERABLE;
@@ -564,14 +564,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_targetable_as_bomb.GetCheck()) {
 		case 1:
-			if ( !(objp->flags & OF_TARGETABLE_AS_BOMB) )
+			if ( !(objp->flags[Object::Object_Flags::Targetable_as_bomb]) )
 				set_modified();
 
 			objp->flags |= OF_TARGETABLE_AS_BOMB;
 			break;
 
 		case 0:
-			if ( objp->flags & OF_TARGETABLE_AS_BOMB )
+			if ( objp->flags[Object::Object_Flags::Targetable_as_bomb] )
 				set_modified();
 
 			objp->flags &= ~OF_TARGETABLE_AS_BOMB;
@@ -580,14 +580,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_immobile.GetCheck()) {
 		case 1:
-			if ( !(objp->flags & OF_IMMOBILE) )
+			if ( !(objp->flags[Object::Object_Flags::Immobile]) )
 				set_modified();
 
 			objp->flags |= OF_IMMOBILE;
 			break;
 
 		case 0:
-			if ( objp->flags & OF_IMMOBILE )
+			if ( objp->flags[Object::Object_Flags::Immobile] )
 				set_modified();
 
 			objp->flags &= ~OF_IMMOBILE;
@@ -775,14 +775,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_special_warpin.GetCheck()) {
 		case 1:
-			if ( !(objp->flags & OF_SPECIAL_WARPIN) )
+			if ( !(objp->flags[Object::Object_Flags::Special_warpin]) )
 				set_modified();
 
 			objp->flags |= OF_SPECIAL_WARPIN;
 			break;
 
 		case 0:
-			if ( (objp->flags & OF_SPECIAL_WARPIN) )
+			if ( (objp->flags[Object::Object_Flags::Special_warpin]) )
 				set_modified();
 
 			objp->flags &= (~OF_SPECIAL_WARPIN);
@@ -1053,14 +1053,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_no_collide.GetCheck()) {
 		case 1:
-			if (objp->flags & OF_COLLIDES)
+			if (objp->flags[Object::Object_Flags::Collides])
 				set_modified();
 
 			objp->flags &= ~OF_COLLIDES;
 			break;
 
 		case 0:
-			if (!(objp->flags & OF_COLLIDES))
+			if (!(objp->flags[Object::Object_Flags::Collides]))
 				set_modified();
 
 			objp->flags |= OF_COLLIDES;

@@ -1930,7 +1930,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 
 	attacking_subsystem = aip->targeted_subsys;
 
-	if ((attacking_subsystem != NULL) || !(eno->trial_objp->flags & OF_PROTECTED)) {
+	if ((attacking_subsystem != NULL) || !(eno->trial_objp->flags[Object::Object_Flags::Protected])) {
 		if ( OBJ_INDEX(eno->trial_objp) != eno->objnum ) {
 #ifndef NDEBUG
 			if (!Player_attacking_enabled && (eno->trial_objp == Player_obj))
@@ -1947,7 +1947,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 			if (is_ignore_object(aip, OBJ_INDEX(eno->trial_objp)))
 				return;
 
-			if (eno->trial_objp->flags & OF_PROTECTED)
+			if (eno->trial_objp->flags[Object::Object_Flags::Protected])
 				return;
 
 			if (shipp->flags & SF_ARRIVING)
@@ -2000,7 +2000,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 						dist *= (float) (num_attacking+2)/2.0f;				//	prevents lots of ships from attacking same target
 					}
 
-					if (eno->trial_objp->flags & OF_PLAYER_SHIP){
+					if (eno->trial_objp->flags[Object::Object_Flags::Player_ship]){
 						dist *= 1.0f + (NUM_SKILL_LEVELS - Game_skill_level - 1)/NUM_SKILL_LEVELS;	//	Favor attacking non-players based on skill level.
 					}
 
@@ -2203,7 +2203,7 @@ int find_enemy(int objnum, float range, int max_attackers)
 			// This could cause attack on ship on fringe on nebula to stop if attackee moves our of nebula range.  (BAD)
 			if ( Objects[target_objnum].signature == aip->target_signature ) {
 				if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
-					if (!(Objects[target_objnum].flags & OF_PROTECTED)) {
+					if (!(Objects[target_objnum].flags[Object::Object_Flags::Protected])) {
 						return target_objnum;
 					}
 				}
@@ -5711,7 +5711,7 @@ int ai_fire_primary_weapon(object *objp)
 	//	by multiple banks it can fire from.
 	if (aip->target_objnum != -1) {
 		object	*tobjp = &Objects[aip->target_objnum];
-		if (tobjp->flags & OF_PROTECTED) {
+		if (tobjp->flags[Object::Object_Flags::Protected]) {
 			if (aip->targeted_subsys != NULL) {
 				int	type;
 
@@ -5728,7 +5728,7 @@ int ai_fire_primary_weapon(object *objp)
 	}
 
 	//	If enemy is protected, not firing a puncture weapon and enemy's hull is low, don't fire.
-	if ((enemy_objp != NULL) && (enemy_objp->flags & OF_PROTECTED)) {
+	if ((enemy_objp != NULL) && (enemy_objp->flags[Object::Object_Flags::Protected])) {
 		// AL: 3-6-98: Check if current_primary_bank is valid
 		if ((enemy_objp->hull_strength < 750.0f) && 
 			((aip->targeted_subsys == NULL) || (enemy_objp->hull_strength < aip->targeted_subsys->current_hits + 50.0f)) &&
@@ -6007,7 +6007,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 		//	If player, maybe fire based on Skill_level and number of incoming weapons.
 		//	If non-player, maybe fire based on payload of incoming weapons.
 		if (wip->wi_flags & WIF_HOMING) {
-			if ((target_objnum > -1) && (tobjp->flags & OF_PLAYER_SHIP)) {
+			if ((target_objnum > -1) && (tobjp->flags[Object::Object_Flags::Player_ship])) {
 				if (Ai_info[Ships[tobjp->instance].ai_index].target_objnum != objnum) {
 					//	Don't allow AI ships to fire at player for fixed periods of time based on skill level.
 					//	With 5 skill levels, at Very Easy, they fire in 1/7 of every 10 second interval.
@@ -8780,7 +8780,7 @@ void ai_chase()
 				if ( tswp->num_secondary_banks > 0) {
 
 					//	Don't fire secondaries at a protected ship.
-					if (!(En_objp->flags & OF_PROTECTED)) {
+					if (!(En_objp->flags[Object::Object_Flags::Protected])) {
 						ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 						int current_bank = tswp->current_secondary_bank;
 
@@ -9367,7 +9367,7 @@ int num_ships_attacking(int target_objnum)
 		{
 			if (attacking_aip->target_objnum == target_objnum)
 			{
-				if ( ((Game_mode & GM_MULTIPLAYER) && (attacking_objp->flags & OF_PLAYER_SHIP))
+				if ( ((Game_mode & GM_MULTIPLAYER) && (attacking_objp->flags[Object::Object_Flags::Player_ship]))
 					|| (attacking_aip->mode == AIM_CHASE) )
 				{
 					count++;
@@ -9394,7 +9394,7 @@ void remove_farthest_attacker(int objnum)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
-		if ( !(objp->flags & OF_PLAYER_SHIP)) {
+		if ( !(objp->flags[Object::Object_Flags::Player_ship])) {
 			if (objp->instance != -1) {
 				ai_info	*aip2;
 
@@ -9450,7 +9450,7 @@ int ai_maybe_limit_attackers(int attacked_objnum)
 {
 	int rval=-1;
 
-	if ( Objects[attacked_objnum].flags & OF_PLAYER_SHIP) {
+	if ( Objects[attacked_objnum].flags[Object::Object_Flags::Player_ship]) {
 		int num_attacking;
 		num_attacking = num_ships_attacking(attacked_objnum);
 
@@ -10218,7 +10218,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		stamp = timestamp(-1);
 
 		// if this is a player ship, then subtract the repair penalty from this player's score
-		if ( repaired_objp->flags & OF_PLAYER_SHIP ) {
+		if ( repaired_objp->flags[Object::Object_Flags::Player_ship] ) {
 			if ( !(Game_mode & GM_MULTIPLAYER) ) {
 				Player->stats.m_score -= The_mission.ai_profile->repair_penalty[Game_skill_level];			// subtract the penalty
 			}
@@ -10282,7 +10282,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 		}
 
 		// add log entry if this is a player
-		if ( repaired_objp->flags & OF_PLAYER_SHIP ){
+		if ( repaired_objp->flags[Object::Object_Flags::Player_ship] ){
 			mission_log_add_entry(LOG_PLAYER_ABORTED_REARM, Ships[repaired_objp->instance].ship_name, NULL);
 		}
 
@@ -10748,7 +10748,7 @@ void ai_dock()
 			Assert(dist != UNINITIALIZED_VALUE);
 
 			float	tolerance;
-			if (goal_objp->flags & OF_PLAYER_SHIP)
+			if (goal_objp->flags[Object::Object_Flags::Player_ship])
 				tolerance = 6*flFrametime + 1.0f;
 			else
 				tolerance = 4*flFrametime + 0.5f;
@@ -11206,7 +11206,7 @@ void process_subobjects(int objnum)
 	if (ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) == 0.0f) {
 		// Karajorma - if Player_use_ai is ever fixed to work on multiplayer it should be checked that any player ships 
 		// aren't under AI control here
-		if ( (!(objp->flags & OF_PLAYER_SHIP) ) && (sip->flags & (SIF_FIGHTER | SIF_BOMBER)) && !(shipp->flags & SF_DYING) ) {
+		if ( (!(objp->flags[Object::Object_Flags::Player_ship]) ) && (sip->flags & (SIF_FIGHTER | SIF_BOMBER)) && !(shipp->flags & SF_DYING) ) {
 			// Goober5000 - don't do anything if docked
 			if (!object_is_docked(objp)) {
 				// AL: Only attack forever if not trying to depart to a docking bay.  Need to have this in, since
@@ -11416,7 +11416,7 @@ void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wing_inde
 	wing_spread_size = MAX(50.0f, 3.0f * get_wing_largest_radius(leader_objp, formation_object_flag) + 15.0f);
 
 	// for player obj (1) move ships up 20% (2) scale formation up 20%
-	if (leader_objp->flags & OF_PLAYER_SHIP) {
+	if (leader_objp->flags[Object::Object_Flags::Player_ship]) {
 		wing_delta.xyz.y *= Wing_y_scale;
 		wing_spread_size *= Wing_scale;
 	}
@@ -13410,7 +13410,7 @@ void ai_warp_out(object *objp)
 			aip->submode_start_time = Missiontime;
 
 			// maybe recalculate collision pairs.
-			if ((objp->flags & OF_COLLIDES) && (ship_get_warpout_speed(objp) > ship_get_max_speed(shipp))) {
+			if ((objp->flags[Object::Object_Flags::Collides]) && (ship_get_warpout_speed(objp) > ship_get_max_speed(shipp))) {
 				// recalculate collision pairs
 				OBJ_RECALC_PAIRS(objp);	
 			}
@@ -14231,7 +14231,7 @@ int Last_ai_obj = -1;
 
 void ai_process( object * obj, int ai_index, float frametime )
 {
-	if (obj->flags & OF_SHOULD_BE_DEAD)
+	if (obj->flags[Object::Object_Flags::Should_be_dead])
 		return;
 
 	// return if ship is dead, unless it's a big ship...then its turrets still fire, like I was quoted in a magazine.  -- MK, 5/15/98.
@@ -14615,7 +14615,7 @@ void process_friendly_hit_message( int message, object *objp )
 	}
 
 	// don't send this message if a player ship was hit.
-	if ( objp->flags & OF_PLAYER_SHIP ){
+	if ( objp->flags[Object::Object_Flags::Player_ship] ){
 		return;
 	}
 
@@ -14941,7 +14941,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 	shipp = &Ships[objp_ship->instance];
 	aip = &Ai_info[shipp->ai_index];
 
-	if (objp_ship->flags & OF_PLAYER_SHIP) {
+	if (objp_ship->flags[Object::Object_Flags::Player_ship]) {
 		//SUSHI: So that hitting a player ship actually resets the last_hit_target_time counter for whoever hit the player.
 		//This is all copypasted from code below
 		// Added OBJ_BEAM for traitor detection - FUBAR
@@ -14996,7 +14996,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 			return;
 		
 		//	Hit by a protected ship, don't attack it.
-		if (objp_hitter->flags & OF_PROTECTED) {
+		if (objp_hitter->flags[Object::Object_Flags::Protected]) {
 			if (!object_is_docked(objp_ship)) {
 				if ((Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) && (aip->target_objnum == -1)) {
 					if (aip->mode == AIM_CHASE) {
@@ -15034,11 +15034,11 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 
 	// traitor detection was the only reason for OBJ_BEAM to make it this far.
 	// so bail if it wasn't fired by a player.  
-	if ((hit_objp->type == OBJ_BEAM) && (!(objp_hitter->flags & OF_PLAYER_SHIP))) 
+	if ((hit_objp->type == OBJ_BEAM) && (!(objp_hitter->flags[Object::Object_Flags::Player_ship]))) 
 		return;						
 
 	//	Collided into a protected ship, don't attack it.
-	if (hit_objp->flags & OF_PROTECTED)
+	if (hit_objp->flags[Object::Object_Flags::Protected])
 		return;
 
 	Assert(objp_hitter != NULL);
@@ -15058,7 +15058,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		if (get_hull_pct(objp_ship) < 0.3f) {
 			//	Note, only abort if hull below a certain level.
 			aip->next_rearm_request_timestamp = timestamp(NEXT_REARM_TIMESTAMP/2);	//	Might request again after 15 seconds.
-			if ( !(objp_ship->flags & OF_PLAYER_SHIP) )						// mwa -- don't abort rearm for a player
+			if ( !(objp_ship->flags[Object::Object_Flags::Player_ship]) )						// mwa -- don't abort rearm for a player
 				ai_abort_rearm_request(objp_ship);
 		}
 	}
@@ -15433,7 +15433,7 @@ void ai_add_rearm_goal( object *requester_objp, object *support_objp )
 	// if the requester is a player object, issue the order as the squadmate messaging code does.  Doing so
 	// ensures that the player get a higher priority!
 	requester_aip->ai_flags |= AIF_AWAITING_REPAIR;	//	Tell that I'm awaiting repair.
-	if ( requester_objp->flags & OF_PLAYER_SHIP )
+	if ( requester_objp->flags[Object::Object_Flags::Player_ship] )
 		ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_REARM_REPAIR, -1, requester_shipp->ship_name, support_aip );
 	else
 		ai_add_goal_ship_internal( support_aip, AI_GOAL_REARM_REPAIR, requester_shipp->ship_name, -1, -1 );

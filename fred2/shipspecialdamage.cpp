@@ -111,7 +111,7 @@ BOOL ShipSpecialDamage::OnInitDialog()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
-			if (objp->flags & OF_MARKED) {
+			if (objp->flags[Object::Object_Flags::Marked]) {
 				m_selected_ships[num_selected_ships] = objp->instance;
 				num_selected_ships++;
 			}
@@ -119,7 +119,7 @@ BOOL ShipSpecialDamage::OnInitDialog()
 		objp = GET_NEXT(objp);
 	}
 
-	Assert (Objects[cur_object_index].flags & OF_MARKED);
+	Assert (Objects[cur_object_index].flags[Object::Object_Flags::Marked]);
 	m_ship_num = Objects[cur_object_index].instance;
 
 	if (!(Ships[m_ship_num].use_special_explosion)) {

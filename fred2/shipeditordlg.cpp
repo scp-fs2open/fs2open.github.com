@@ -426,7 +426,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 			pship_count++;  // count all player starts in mission
 		}
 
-		if (objp->flags & OF_MARKED) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
 			type = objp->type;
 			if ((type == OBJ_START) && !mission_type){  // in multiplayer missions, starts act like ships
 				type = OBJ_SHIP;
@@ -493,7 +493,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
 			if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
-				if (objp->flags & OF_MARKED) {
+				if (objp->flags[Object::Object_Flags::Marked]) {
 					// do processing for both ships and players
 					i = get_ship_from_obj(objp);
 					if (base_player >= 0) {
@@ -694,7 +694,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 			m_player_ship.SetCheck(TRUE);
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list)) {
-				if ((objp->type == OBJ_START) && (objp->flags & OF_MARKED)) {
+				if ((objp->type == OBJ_START) && (objp->flags[Object::Object_Flags::Marked])) {
 					i = objp->instance;
 					if (base_player >= 0) {
 						m_ship_class = Ships[i].ship_info_index;
@@ -1030,7 +1030,7 @@ int CShipEditorDlg::update_data(int redraw)
 	if (multi_edit) {  // editing multiple ships (ships and/or players)
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_START) || (ptr->type == OBJ_SHIP)) && (ptr->flags & OF_MARKED))
+			if (((ptr->type == OBJ_START) || (ptr->type == OBJ_SHIP)) && (ptr->flags[Object::Object_Flags::Marked]))
 				update_ship(get_ship_from_obj(ptr));
 
 			ptr = GET_NEXT(ptr);
@@ -1560,7 +1560,7 @@ void CShipEditorDlg::OnSelchangeShipClass()
 	UpdateData(TRUE);
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED))
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked]))
 			if (Ships[ptr->instance].ship_info_index != m_ship_class) {
 				change_ship_type(ptr->instance, m_ship_class);
 				set_modified();
@@ -1593,7 +1593,7 @@ void CShipEditorDlg::OnWeapons()
 	if (multi_edit) {
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags & OF_MARKED)
+			if (objp->flags[Object::Object_Flags::Marked])
 				if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 					i = objp->instance;
 					if (ship) {
@@ -1639,7 +1639,7 @@ void CShipEditorDlg::OnShipReset()
 
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (((objp->type == OBJ_SHIP) || ((objp->type == OBJ_START) && !mission_type)) && (objp->flags & OF_MARKED)) {
+		if (((objp->type == OBJ_SHIP) || ((objp->type == OBJ_START) && !mission_type)) && (objp->flags[Object::Object_Flags::Marked])) {
 			ship = objp->instance;
 
 			// reset ship goals
@@ -2284,17 +2284,17 @@ void CShipEditorDlg::OnSetAsPlayerShip()
 	{
 		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))
 		{
-			if (objp->flags & OF_MARKED)	// there should only be one selected ship
+			if (objp->flags[Object::Object_Flags::Marked])	// there should only be one selected ship
 			{
 				// set as player ship
 				objp->type = OBJ_START;
-				objp->flags |= OF_PLAYER_SHIP;
+				objp->flags.set(Object::Object_Flags::Player_ship);
 			}
 			else
 			{
 				// set as regular ship
 				objp->type = OBJ_SHIP;
-				objp->flags &= ~OF_PLAYER_SHIP;
+				objp->flags.remove(Object::Object_Flags::Player_ship);
 			}
 		}
 		objp = GET_NEXT(objp);

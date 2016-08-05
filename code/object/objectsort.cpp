@@ -353,7 +353,7 @@ void obj_render_queue_all()
 	scene.init();
 
 	for ( i = 0; i <= Highest_object_index; i++,objp++ ) {
-		if ( (objp->type != OBJ_NONE) && ( objp->flags & OF_RENDERS ) )	{
+		if ( (objp->type != OBJ_NONE) && ( objp->flags [Object::Object_Flags::Renders] ) )	{
 			objp->flags &= ~OF_WAS_RENDERED;
 
 			if ( !obj_in_view_cone(objp) ) {

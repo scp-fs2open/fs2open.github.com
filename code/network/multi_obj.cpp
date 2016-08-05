@@ -228,7 +228,7 @@ void multi_oo_build_ship_list(net_player *pl)
 		}		
 			
 		// must be a ship, a weapon, and _not_ an observer
-		if (Objects[moveup->objnum].flags & OF_SHOULD_BE_DEAD){
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead]){
 			continue;
 		}
 
@@ -1345,7 +1345,7 @@ void multi_oo_process()
 
 			// do firing stuff for this player
 			if((Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && !(Net_players[idx].flags & NETINFO_FLAG_LIMBO) && !(Net_players[idx].flags & NETINFO_FLAG_RESPAWNING)){
-				if((Objects[Net_players[idx].m_player->objnum].flags & OF_PLAYER_SHIP) && !(Objects[Net_players[idx].m_player->objnum].flags & OF_SHOULD_BE_DEAD)){
+				if((Objects[Net_players[idx].m_player->objnum].flags[Object::Object_Flags::Player_ship]) && !(Objects[Net_players[idx].m_player->objnum].flags[Object::Object_Flags::Should_be_dead])){
 					obj_player_fire_stuff( &Objects[Net_players[idx].m_player->objnum], Net_players[idx].m_player->ci );
 				}
 			}
@@ -1849,7 +1849,7 @@ int multi_oo_is_interp_object(object *objp)
 	}
 
 	// servers only interpolate other player ships
-	if(!(objp->flags & OF_PLAYER_SHIP)){
+	if(!(objp->flags[Object::Object_Flags::Player_ship])){
 		return 0;
 	}
 

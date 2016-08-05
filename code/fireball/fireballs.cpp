@@ -462,7 +462,7 @@ int fireball_is_perishable(object * obj)
 		return 1;
 
 	if ( !(fb->fireball_render_type == FIREBALL_WARP_EFFECT) )	{
-		if ( !(obj->flags & OF_WAS_RENDERED))	{
+		if ( !(obj->flags[Object::Object_Flags::Was_rendered]))	{
 			return 1;
 		}
 	}

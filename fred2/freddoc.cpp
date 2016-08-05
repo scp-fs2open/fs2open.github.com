@@ -382,7 +382,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 	obj_merge_created_list();
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_PLAYER_SHIP) {
+		if (objp->flags[Object::Object_Flags::Player_ship]) {
 			Assert(objp->type == OBJ_SHIP);
 			objp->type = OBJ_START;
 //			Player_starts++;

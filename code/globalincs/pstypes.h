@@ -661,7 +661,7 @@ public:
             values.set(static_cast < size_t >(idx[i]));
         }
 
-        return this;
+        return *this;
     }
 
     flagset<T>  remove(T idx) {
@@ -672,7 +672,7 @@ public:
         for (size_t i = 0; i < arg_length; ++i) {
             values.set(static_cast < size_t >(idx[i]), false);
         }
-        return this;
+        return *this;
     }
 
     flagset<T>  toggle(T idx) {

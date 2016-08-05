@@ -611,7 +611,7 @@ void briefing_editor_dlg::update_data(int update)
 	valid = invalid = 0;
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_MARKED) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
 			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START) || (objp->type == OBJ_WAYPOINT) || (objp->type == OBJ_JUMP_NODE))
 				valid = 1;
 			else
@@ -636,7 +636,7 @@ void briefing_editor_dlg::update_data(int update)
 	valid = invalid = 0;
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_MARKED) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
 			if (objp->type == OBJ_POINT) {
 				valid++;
 				icon_marked[objp->instance] = 1;
@@ -831,7 +831,7 @@ void briefing_editor_dlg::draw_icon(object *objp)
 	if (m_cur_stage < 0)
 		return;
 
-	brief_render_icon(m_cur_stage, objp->instance, 1.0f/30.0f, objp->flags & OF_MARKED,
+	brief_render_icon(m_cur_stage, objp->instance, 1.0f/30.0f, objp->flags[Object::Object_Flags::Marked],
 		(float) True_rw / BRIEF_GRID_W, (float) True_rh / BRIEF_GRID_H);
 }
 
@@ -955,7 +955,7 @@ void briefing_editor_dlg::OnMakeIcon()
 	vm_vec_make(&max, -9e19f, -9e19f, -9e19f);
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
 			if (ptr->pos.xyz.x < min.xyz.x)
 				min.xyz.x = ptr->pos.xyz.x;
 			if (ptr->pos.xyz.x > max.xyz.x)
@@ -1002,7 +1002,7 @@ void briefing_editor_dlg::OnMakeIcon()
 					// direct docked with any marked cargo?
 					for (dock_instance *dock_ptr = ptr->dock_list; dock_ptr != NULL; dock_ptr = dock_ptr->next)
 					{
-						if (dock_ptr->docked_objp->flags & OF_MARKED)
+						if (dock_ptr->docked_objp->flags[Object::Object_Flags::Marked])
 						{
 							if (Ship_info[Ships[dock_ptr->docked_objp->instance].ship_info_index].flags & SIF_CARGO)
 								freighter_count++;
@@ -1263,7 +1263,7 @@ void briefing_editor_dlg::OnPropagateIcons()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if ((ptr->type == OBJ_POINT) && (ptr->flags & OF_MARKED)) {
+		if ((ptr->type == OBJ_POINT) && (ptr->flags[Object::Object_Flags::Marked])) {
 			propagate_icon(ptr->instance);
 		}
 

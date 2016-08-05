@@ -499,7 +499,7 @@ RadarVisibility radar_is_visible( object *objp )
 {
 	Assert( objp != NULL );
 
-	if (objp->flags & OF_SHOULD_BE_DEAD)
+	if (objp->flags[Object::Object_Flags::Should_be_dead])
 	{
 		return NOT_VISIBLE;
 	}

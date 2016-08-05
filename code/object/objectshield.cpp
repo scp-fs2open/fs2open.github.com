@@ -21,7 +21,7 @@
 float shield_get_strength(object *objp)
 {
 	// no shield system, no strength!
-	if (objp->flags & OF_NO_SHIELDS)
+	if (objp->flags[Object::Object_Flags::No_shields])
 		return 0.0f;
 
 	int	i;
@@ -135,7 +135,7 @@ float scale_quad(float generator_fraction, float quad_strength)
 float shield_get_quad(object *objp, int quadrant_num)
 {
 	// no shield system, no strength!
-	if (objp->flags & OF_NO_SHIELDS)
+	if (objp->flags[Object::Object_Flags::No_shields])
 		return 0.0f;
 
 	// check array bounds

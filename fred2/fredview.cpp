@@ -552,7 +552,7 @@ int drag_objects()
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list))	{
 			Assert(objp->type != OBJ_NONE);
-			if (objp->flags & OF_MARKED) {
+			if (objp->flags[Object::Object_Flags::Marked]) {
 				if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 					z = Ships[objp->instance].wingnum;
 					if (!flag)
@@ -582,7 +582,7 @@ int drag_objects()
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list))	{
 				ptr = GET_NEXT(objp);
-				if (objp->flags & OF_TEMP_MARKED)
+				if (objp->flags [Object::Object_Flags::Temp_marked])
 					delete_object(objp);
 
 				objp = ptr;
@@ -596,7 +596,7 @@ int drag_objects()
 
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list))	{
-			if (objp->flags & OF_TEMP_MARKED) {
+			if (objp->flags [Object::Object_Flags::Temp_marked]) {
 				objp->flags &= ~OF_TEMP_MARKED;
 				mark_object(OBJ_INDEX(objp));
 			}
@@ -671,7 +671,7 @@ int drag_objects()
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list))	{
 			Assert(objp->type != OBJ_NONE);
-			if (objp->flags & OF_MARKED) {
+			if (objp->flags[Object::Object_Flags::Marked]) {
 				vm_vec_add(&objp->pos, &objp->pos, &movement_vector);
 				if (objp->type == OBJ_WAYPOINT) {
 					waypoint *wpt = find_waypoint_with_instance(objp->instance);
@@ -685,7 +685,7 @@ int drag_objects()
 
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags & OF_MARKED)
+			if (objp->flags[Object::Object_Flags::Marked])
 				object_moved(objp);
 
 			objp = GET_NEXT(objp);
@@ -711,7 +711,7 @@ void drag_rotate_save_backup()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list))			{
 		Assert(objp->type != OBJ_NONE);
-		if (objp->flags & OF_MARKED)	{
+		if (objp->flags[Object::Object_Flags::Marked])	{
 			rotation_backup[OBJ_INDEX(objp)].pos = objp->pos;
 			rotation_backup[OBJ_INDEX(objp)].orient = objp->orient;
 		}
@@ -782,7 +782,7 @@ int drag_rotate_objects()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list))			{
 		Assert(objp->type != OBJ_NONE);
-		if ((objp->flags & OF_MARKED) && (cur_object_index != OBJ_INDEX(objp) )) {
+		if ((objp->flags[Object::Object_Flags::Marked]) && (cur_object_index != OBJ_INDEX(objp) )) {
 			if (Group_rotate) {
 				matrix rot_trans;
 				vec3d tmpv1, tmpv2;
@@ -824,7 +824,7 @@ int drag_rotate_objects()
 
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_MARKED)
+		if (objp->flags[Object::Object_Flags::Marked])
 			object_moved(objp);
 
 		objp = GET_NEXT(objp);
@@ -862,7 +862,7 @@ void cancel_drag()
 				objp = GET_FIRST(&obj_used_list);
 				while (objp != END_OF_LIST(&obj_used_list))	{
 					Assert(objp->type != OBJ_NONE);
-					if (objp->flags & OF_MARKED)
+					if (objp->flags[Object::Object_Flags::Marked])
 						vm_vec_add(&objp->pos, &objp->pos, &movement_vector);
 
 					objp = GET_NEXT(objp);
@@ -875,7 +875,7 @@ void cancel_drag()
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list))	{
 				Assert(objp->type != OBJ_NONE);
-				if (objp->flags & OF_MARKED) {
+				if (objp->flags[Object::Object_Flags::Marked]) {
 					int obj_index = OBJ_INDEX(objp);
 
 					if(!IS_VEC_NULL(&rotation_backup[obj_index].orient.vec.rvec) && 
@@ -948,12 +948,12 @@ void CFREDView::OnLButtonDown(UINT nFlags, CPoint point)
 			Cur_bitmap = on_object;
 			Bg_bitmap_dialog -> update_data();
 
-		} else if ((nFlags & MK_SHIFT) || (on_object == -1) || !(Objects[on_object].flags & OF_MARKED)) {
+		} else if ((nFlags & MK_SHIFT) || (on_object == -1) || !(Objects[on_object].flags[Object::Object_Flags::Marked])) {
 			if (!(nFlags & MK_SHIFT))
 				unmark_all();
 
 			if (on_object != -1) {
-				if (Objects[on_object].flags & OF_MARKED)
+				if (Objects[on_object].flags[Object::Object_Flags::Marked])
 					unmark_object(on_object);
 				else
 					mark_object(on_object);
@@ -1083,7 +1083,7 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 			if (MessageBox(msg, "Query", MB_YESNO) == IDYES) {
 				objp = GET_FIRST(&obj_used_list);
 				while (objp != END_OF_LIST(&obj_used_list))	{
-					if (objp->flags & OF_MARKED) {
+					if (objp->flags[Object::Object_Flags::Marked]) {
 						if (Wings[Duped_wing].wave_count >= MAX_SHIPS_PER_WING) {
 							MessageBox("Max ships per wing limit reached");
 							break;
@@ -1283,7 +1283,7 @@ void select_objects()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
-		if (ptr->flags & OF_HIDDEN)
+		if (ptr->flags[Object::Object_Flags::Hidden])
 			valid = 0;
 
 		Assert(ptr->type != OBJ_NONE);
@@ -1315,7 +1315,7 @@ void select_objects()
 				y = (int) v.screen.xyw.y;
 
 				if (x >= marking_box.x1 && x <= marking_box.x2 && y >= marking_box.y1 && y <= marking_box.y2) {
-					if (ptr->flags & OF_MARKED)
+					if (ptr->flags[Object::Object_Flags::Marked])
 						unmark_object(OBJ_INDEX(ptr));
 					else
 						mark_object(OBJ_INDEX(ptr));
@@ -1331,7 +1331,7 @@ void select_objects()
 	if (icon_mode) {
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->flags & OF_MARKED) && (ptr->type != OBJ_POINT))
+			if ((ptr->flags[Object::Object_Flags::Marked]) && (ptr->type != OBJ_POINT))
 				unmark_object(OBJ_INDEX(ptr));
 
 			ptr = GET_NEXT(ptr);
@@ -2084,7 +2084,7 @@ void view_universe(int just_marked)
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (!just_marked || (ptr->flags & OF_MARKED)) {
+		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
 			center = ptr->pos;
 			if (center.xyz.x < p1.xyz.x)
 				p1.xyz.x = center.xyz.x;
@@ -2106,7 +2106,7 @@ void view_universe(int just_marked)
 	vm_vec_avg(&center, &p1, &p2);
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (!just_marked || (ptr->flags & OF_MARKED)) {
+		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
 			dist = vm_vec_dist_squared(&center, &ptr->pos);
 			if (dist > largest)
 				largest = dist;
@@ -2125,7 +2125,7 @@ void view_universe(int just_marked)
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (!just_marked || (ptr->flags & OF_MARKED)) {
+		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
 			g3_rotate_vertex(&v, &ptr->pos);
 			Assert(!(v.codes & CC_BEHIND));
 			if (g3_project_vertex(&v) & PF_OVERFLOW)
@@ -2197,7 +2197,7 @@ void CFREDView::OnFormWing()
 	object *ptr = GET_FIRST(&obj_used_list);
 	bool found = false;
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags & OF_MARKED)) {
+		if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags[Object::Object_Flags::Marked])) {
 			if(Ships[ptr->instance].flags & SF_REINFORCEMENT) {
 				found = true;
 				break;
@@ -2212,7 +2212,7 @@ void CFREDView::OnFormWing()
 		if(ok == IDOK) {
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
-				if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags & OF_MARKED)) {
+				if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags[Object::Object_Flags::Marked])) {
 					set_reinforcement(Ships[ptr->instance].ship_name, 0);
 				}
 
@@ -2235,7 +2235,7 @@ void CFREDView::OnUpdateFormWing(CCmdUI* pCmdUI)
 	if (query_valid_object()) {
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (ptr->flags & OF_MARKED) {
+			if (ptr->flags[Object::Object_Flags::Marked]) {
 				if (ptr->type == OBJ_SHIP)
 				{
 					int ship_type = ship_query_general_type(ptr->instance);
@@ -2278,7 +2278,7 @@ int query_single_wing_marked()
 //		if (Ships[Objects[obj].instance].wingnum != cur_wing)
 //			return 0;
 		Assert(Ships[Objects[obj].instance].wingnum == cur_wing);
-		if (!(Objects[obj].flags & OF_MARKED))  // ensure all ships in wing.are marked
+		if (!(Objects[obj].flags[Object::Object_Flags::Marked]))  // ensure all ships in wing.are marked
 			return 0;
 	}
 
@@ -3951,7 +3951,7 @@ void CFREDView::OnHideObjects()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
 			ptr->flags |= OF_HIDDEN;
 			unmark_object(OBJ_INDEX(ptr));
 		}
@@ -4104,7 +4104,7 @@ void CFREDView::OnSetGroup(UINT nID)
 
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_MARKED) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
 			if (objp->type == OBJ_SHIP) {
 				Ships[objp->instance].group |= n;
 
@@ -4238,7 +4238,7 @@ void CFREDView::OnNextObj()
 		ptr = GET_FIRST(&obj_used_list);
 
 	if (Marked > 1) {  // cycle through marked list
-		while (!(ptr->flags & OF_MARKED))
+		while (!(ptr->flags[Object::Object_Flags::Marked]))
 		{
 			ptr = GET_NEXT(ptr);
 			if (ptr == END_OF_LIST(&obj_used_list))
@@ -4302,7 +4302,7 @@ void CFREDView::OnPrevObj()
 		i = n - 1;
 
 	if (Marked > 1) {  // cycle through marked list
-		while (!(Objects[i].flags & OF_MARKED))
+		while (!(Objects[i].flags[Object::Object_Flags::Marked]))
 		{
 			i--;
 			if (i < 0)

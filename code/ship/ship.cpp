@@ -5087,7 +5087,7 @@ void ship_parse_post_cleanup()
 
 	if (n_tgt_groups > 0) {
 		for(i = 0; i < n_tgt_groups; i++) {
-			if (!(Ai_tp_list[i].obj_flags || Ai_tp_list[i].sif_flags || Ai_tp_list[i].sif2_flags || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif_flags)) {
+			if (!(Ai_tp_list[i].obj_flags.any_set() || Ai_tp_list[i].sif_flags || Ai_tp_list[i].sif2_flags || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif_flags)) {
 				//had none of these, check next
 				if (Ai_tp_list[i].obj_type == -1) {
 					//didn't have this one
@@ -7255,7 +7255,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
 	Assert(cleanup_mode == SHIP_DESTROYED || cleanup_mode == SHIP_DEPARTED || cleanup_mode == SHIP_VANISHED);
 	Assert(Objects[Ships[shipnum].objnum].type == OBJ_SHIP);
-	Assert(Objects[Ships[shipnum].objnum].flags & OF_SHOULD_BE_DEAD);
+	Assert(Objects[Ships[shipnum].objnum].flags[Object::Object_Flags::Should_be_dead]);
 
 	ship *shipp = &Ships[shipnum];
 	object *objp = &Objects[shipp->objnum];
@@ -8535,7 +8535,7 @@ void lethality_decay(ai_info *aip)
 	aip->lethality = MAX(-10.0f, aip->lethality);
 
 #ifndef NDEBUG
-	if (Objects[Ships[aip->shipnum].objnum].flags & OF_PLAYER_SHIP) {
+	if (Objects[Ships[aip->shipnum].objnum].flags[Object::Object_Flags::Player_ship]) {
 		if (Framecount % 10 == 0) {
 			int num_turrets = 0;
 			if ((aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP)) {
@@ -8768,7 +8768,7 @@ void ship_process_post(object * obj, float frametime)
 		//rotate player subobjects since its processed by the ai functions
 		// AL 2-19-98: Fire turret for player if it exists
 		//WMC - changed this to call process_subobjects
-		if ( (obj->flags & OF_PLAYER_SHIP) && !Player_use_ai )
+		if ( (obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai )
 		{
 			ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
 			if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED))
@@ -8799,7 +8799,7 @@ void ship_process_post(object * obj, float frametime)
 		}
 
 		// Goober5000 - player may want to use AI
-		if ( (Ships[num].ai_index >= 0) && (!(obj->flags & OF_PLAYER_SHIP) || Player_use_ai) ){
+		if ( (Ships[num].ai_index >= 0) && (!(obj->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) ){
 			if (!physics_paused && !ai_paused){
 				ai_process( obj, Ships[num].ai_index, frametime );
 			}
@@ -9193,7 +9193,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
     flagset<Object::Object_Flags> default_ship_object_flags;
     default_ship_object_flags.set(Object::Object_Flags::Renders);
     default_ship_object_flags.set(Object::Object_Flags::Physics);
-    default_ship_object_flags.set(Object::Object_Flags::Collides)
+    default_ship_object_flags.set(Object::Object_Flags::Collides);
 	// JAS: Nav buoys don't need to do collisions!
 	// G5K: Corrected to apply specifically for ships with the no-collide flag.  (In retail, navbuoys already have this flag, so this doesn't break anything.)
 	if ( sip->flags & SIF_NO_COLLIDE )	{
@@ -10153,7 +10153,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		// if we have a player ship, then send the fired packet anyway so that the player
 		// who fired will get his 'out of countermeasures' sound
 		cmeasure_count = 0;
-		if (objp->flags & OF_PLAYER_SHIP){
+		if (objp->flags[Object::Object_Flags::Player_ship]){
 			// the new way of doing things
 			if (Game_mode & GM_MULTIPLAYER){
 				send_NEW_countermeasure_fired_packet(objp, cmeasure_count, -1);
@@ -10604,7 +10604,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			next_fire_delay = winfo_p->fire_wait * 1000.0f;
 			swp->burst_counter[bank_to_fire] = 0;
 		}
-		if (!((obj->flags & OF_PLAYER_SHIP) || (fast_firing))) {
+		if (!((obj->flags[Object::Object_Flags::Player_ship]) || (fast_firing))) {
 			if (shipp->team == Ships[Player_obj->instance].team){
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
 			} else {
@@ -10641,7 +10641,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		//	Note, unless we track whether the fire button has been held down, and not tapped, it's hard to
 		//	know how much time to subtract off.  It could be this fire is "late" because the user didn't want to fire.
 		if ((next_fire_delay > 0.0f)) {
-			if (obj->flags & OF_PLAYER_SHIP) {
+			if (obj->flags[Object::Object_Flags::Player_ship]) {
 				int	t = timestamp_until(swp->next_primary_fire_stamp[bank_to_fire]);
 				if (t < 0) {
 					float	tx;
@@ -11165,7 +11165,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	}
 
    // STATS
-   if (obj->flags & OF_PLAYER_SHIP) {
+   if (obj->flags[Object::Object_Flags::Player_ship]) {
 		// in multiplayer -- only the server needs to keep track of the stats.  Call the cool
 		// function to find the player given the object *.  It had better return a valid player
 		// or our internal structure as messed up.
@@ -11837,7 +11837,7 @@ done_secondary:
 		}
 
 		// STATS
-		if (obj->flags & OF_PLAYER_SHIP) {
+		if (obj->flags[Object::Object_Flags::Player_ship]) {
 			// in multiplayer -- only the server needs to keep track of the stats.  Call the cool
 			// function to find the player given the object *.  It had better return a valid player
 			// or our internal structure as messed up.
@@ -11891,7 +11891,7 @@ done_secondary:
 	//the next valid bank. the delay is there to prevent things like Trible/Quad Fire Trebuchets.
 	//
 	// niffiwan: only try to switch banks if object has multiple banks, and firing bank is the current bank
-	if ( (obj->flags & OF_PLAYER_SHIP) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
+	if ( (obj->flags[Object::Object_Flags::Player_ship]) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
 		// niffiwan: call ship_select_next_secondary instead of ship_select_next_valid_secondary_bank
 		// ensures all "extras" are dealt with, like animations, scripting hooks, etc
 		if (ship_select_next_secondary(obj) ) {			//DTP here we switch to the next valid bank, but we can't call weapon_info on next fire_wait
@@ -13335,7 +13335,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	shipp->cmeasure_count = sip->cmeasure_max;
 
 	// Do shield repair here
-	if ( !(objp->flags & OF_NO_SHIELDS) )
+	if ( !(objp->flags[Object::Object_Flags::No_shields]) )
 	{
 		shield_str = shield_get_strength(objp);
 		if ( shield_str < (shipp->ship_max_shield_strength * shipp->max_shield_recharge) ) {
@@ -13590,7 +13590,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	}
 
 	int shields_full = 0;
-	if ( (objp->flags & OF_NO_SHIELDS) ) {
+	if ( (objp->flags[Object::Object_Flags::No_shields]) ) {
 		shields_full = 1;
 	} else {
 		if ( shield_get_strength(objp) >= shipp->ship_max_shield_strength ) 
@@ -13660,7 +13660,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 	ship *requester_ship = &Ships[requester_obj->instance];
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 	{
-		if ((objp->type == OBJ_SHIP) && !(objp->flags & OF_SHOULD_BE_DEAD))
+		if ((objp->type == OBJ_SHIP) && !(objp->flags[Object::Object_Flags::Should_be_dead]))
 		{
 			ship *shipp;
 			ship_info *sip;
@@ -14201,7 +14201,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 				continue;
 			}
 			// see if ship meets our criterea
-			if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags & OF_PLAYER_SHIP) ){
+			if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags[Object::Object_Flags::Player_ship]) ){
 				continue;
 			}
 			
@@ -14272,7 +14272,7 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 		}
 
 		// see if ship meets our criterea
-		if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags & OF_PLAYER_SHIP) )
+		if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags[Object::Object_Flags::Player_ship]) )
 			continue;
 
 		if ( (flags == SHIP_GET_UNSILENCED) && (Ships[ship_index].flags2 & SF2_NO_BUILTIN_MESSAGES) )
@@ -14336,9 +14336,9 @@ int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 			continue;
 		else if ( Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_NOT_FLYABLE )
 			continue;
-		else if ( (flags == SHIP_GET_NO_PLAYERS) && (objp->flags & OF_PLAYER_SHIP) )
+		else if ( (flags == SHIP_GET_NO_PLAYERS) && (objp->flags[Object::Object_Flags::Player_ship]) )
 			continue;
-		else if ( (flags == SHIP_GET_ONLY_PLAYERS) && !(objp->flags & OF_PLAYER_SHIP) )
+		else if ( (flags == SHIP_GET_ONLY_PLAYERS) && !(objp->flags[Object::Object_Flags::Player_ship]) )
 			continue;
 
 		if ( Ships[objp->instance].flags & SF_DYING ) {
@@ -14672,7 +14672,7 @@ float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 	vec3d		tmpv1, tmpv2;
 
 	// If ship doesn't have shield mesh, then return
-	if ( hit_objp->flags & OF_NO_SHIELDS ) {
+	if ( hit_objp->flags[Object::Object_Flags::No_shields] ) {
 		return 0.0f;
 	}
 
@@ -15323,7 +15323,7 @@ void ship_maybe_ask_for_help(ship *sp)
 	objp = &Objects[sp->objnum];
 
 	// don't let the player ask for help!
-	if (objp->flags & OF_PLAYER_SHIP)
+	if (objp->flags[Object::Object_Flags::Player_ship])
 		return;
 
 	// determine team filter if TvT
@@ -15346,7 +15346,7 @@ void ship_maybe_ask_for_help(ship *sp)
 		goto play_ask_help;
 
 	// check if shields are near critical level
-	if (objp->flags & OF_NO_SHIELDS)
+	if (objp->flags[Object::Object_Flags::No_shields])
 		return;	// no shields on ship, no don't check shield levels
 
 	if (shield_get_strength(objp) > (ASK_HELP_SHIELD_PERCENT * sp->ship_max_shield_strength))
@@ -18168,7 +18168,7 @@ ai_target_priority init_ai_target_priorities()
 	ai_target_priority temp_priority;
 
 	//initialize the entries
-	temp_priority.obj_flags = 0;
+    temp_priority.obj_flags.reset();
 	temp_priority.obj_type = -1;
 	temp_priority.ship_class.clear();
 	temp_priority.ship_type.clear();
