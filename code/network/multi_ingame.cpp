@@ -971,7 +971,8 @@ void multi_ingame_handle_timeout()
 
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
-	int offset, sflags, sflags2, oflags, team, j;
+	int offset, sflags, sflags2, team, j;
+    uint64_t oflags;
 	ubyte p_type;
 	ushort net_signature;	
 	short wing_data;	
@@ -1010,7 +1011,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		GET_USHORT( net_signature );
 		GET_INT( sflags );
 		GET_INT( sflags2 );
-		GET_INT( oflags );
+		GET_ULONG( oflags );
 		GET_INT( team );		
 		GET_SHORT( wing_data );
 		net_sig_modify = 0;
@@ -1039,7 +1040,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
-        Objects[objnum].flags.from_long((ulong)oflags);
+        Objects[objnum].flags.from_long(oflags);
 		Objects[objnum].net_signature = net_signature;
 
 		// assign any common data
@@ -1084,7 +1085,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 				for( j = 0; j < MAX_PLAYERS; j++){
 					if(MULTI_CONNECTED(Net_players[j]) && (Net_players[j].m_player->objnum == Objects[Ships[idx].objnum].net_signature)) {
 						multi_assign_player_ship( j, objp, Ships[idx].ship_info_index );
-                        objp->flags.add(Object::Object_Flags::Player_ship);
+                        objp->flags.set(Object::Object_Flags::Player_ship);
 						objp->flags.remove(Object::Object_Flags::Could_be_player);
 						break;
 					}
@@ -1606,7 +1607,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		multi_server_update_player_weapons(&Net_players[player_num],&Ships[objp->instance]);
 
         objp->flags.remove(Object::Object_Flags::Could_be_player);
-		objp->flags.add(Object::Object_Flags::Player_ship);
+		objp->flags.set(Object::Object_Flags::Player_ship);
 
 		// send a player settings packet to update all other players of this guy's final choices
 		send_player_settings_packet();
@@ -1663,7 +1664,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		Net_player->m_player->objnum = OBJ_INDEX(objp);			
 		Player_obj = objp;
 		Player_obj->flags.remove(Object::Object_Flags::Could_be_player);
-        Player_obj->flags.add(Object::Object_Flags::Player_ship);
+        Player_obj->flags.set(Object::Object_Flags::Player_ship);
 		multi_assign_player_ship( MY_NET_PLAYER_NUM, objp, Ships[objp->instance].ship_info_index );
 
 		// must change the ship type and weapons.  An ingame joiner know about the default class
@@ -1770,7 +1771,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 			nprintf(("Network", "Couldn't find ship for ingame joiner %s\n", Net_players[player_num].m_player->callsign));
 			break;
 		}
-		objp->flags.add(Object::Object_Flags::Player_ship);
+		objp->flags.set(Object::Object_Flags::Player_ship);
 		objp->flags.remove(Object::Object_Flags::Could_be_player);
 
 		multi_assign_player_ship( player_num, objp, Ships[objp->instance].ship_info_index );

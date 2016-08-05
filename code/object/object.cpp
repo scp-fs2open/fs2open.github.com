@@ -216,7 +216,7 @@ int free_object_slots(int num_used)
 		if ( (Objects[obj_list[i]].type == OBJ_DEBRIS) && (Debris[Objects[obj_list[i]].instance].flags & DEBRIS_EXPIRE) ) {
 			num_to_free--;
 			nprintf(("allender", "Freeing   DEBRIS object %3i\n", obj_list[i]));
-			Objects[obj_list[i]].flags.add(Object::Object_Flags::Should_be_dead);
+			Objects[obj_list[i]].flags.set(Object::Object_Flags::Should_be_dead);
 		}
 
 	if (!num_to_free)
@@ -227,7 +227,7 @@ int free_object_slots(int num_used)
 		if ( (tmp_obj->type == OBJ_FIREBALL) && (fireball_is_perishable(tmp_obj)) ) {
 			num_to_free--;
 			nprintf(("allender", "Freeing FIREBALL object %3i\n", obj_list[i]));
-			tmp_obj->flags.add(Object::Object_Flags::Should_be_dead);
+			tmp_obj->flags.set(Object::Object_Flags::Should_be_dead);
 		}
 	}
 
@@ -245,7 +245,7 @@ int free_object_slots(int num_used)
 	for (i=0; i<num_to_free; i++){
 		if ( Objects[obj_list[i]].type == OBJ_WEAPON ) {
 			num_to_free--;
-			Objects[obj_list[i]].flags.add(Object::Object_Flags::Should_be_dead);
+			Objects[obj_list[i]].flags.set(Object::Object_Flags::Should_be_dead);
 		}
 	}
 
@@ -497,7 +497,7 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	}
 
 	obj->flags 					= flags;
-    obj->flags.add(Object::Object_Flags::Not_in_coll);
+    obj->flags.set(Object::Object_Flags::Not_in_coll);
 	if (pos)	{
 		obj->pos 				= *pos;
 		obj->last_pos			= *pos;
@@ -1013,10 +1013,10 @@ void obj_set_flags( object *obj, flagset<Object::Object_Flags> new_flags )
 
 		// update object flags properly		
 		obj->flags = new_flags;
-        obj->flags.add(Object::Object_Flags::Not_in_coll);
+        obj->flags.set(Object::Object_Flags::Not_in_coll);
 #ifdef OBJECT_CHECK
 		CheckObjects[objnum].flags = new_flags;
-        CheckObjects[objnum].flags.add(Object::Object_Flags::Not_in_coll);
+        CheckObjects[objnum].flags.set(Object::Object_Flags::Not_in_coll);
 #endif		
 		return;
 	}
@@ -1032,7 +1032,7 @@ void obj_set_flags( object *obj, flagset<Object::Object_Flags> new_flags )
 			Int3();
 		}
 
-		obj->flags.add(Object::Object_Flags::Collides);
+		obj->flags.set(Object::Object_Flags::Collides);
 
 		// Turn on collision detection
 		if ( Cmdline_old_collision_sys ) {
@@ -1875,9 +1875,9 @@ void obj_remove_pairs( object * a )
 {
 	obj_pair *parent, *tmp;
 
-	a->flags.add(Object::Object_Flags::Not_in_coll);	
+	a->flags.set(Object::Object_Flags::Not_in_coll);	
 #ifdef OBJECT_CHECK 
-	CheckObjects[OBJ_INDEX(a)].flags.add(Object::Object_Flags::Not_in_coll);
+	CheckObjects[OBJ_INDEX(a)].flags.set(Object::Object_Flags::Not_in_coll);
 #endif	
 
 	if ( a->num_pairs < 1 )	{
@@ -1937,7 +1937,7 @@ void obj_reset_all_collisions()
 	moveup = GET_FIRST(&obj_used_list);
 	while(moveup != END_OF_LIST(&obj_used_list)){
 		// he's not in the collision list
-		moveup->flags.add(Object::Object_Flags::Not_in_coll);
+		moveup->flags.set(Object::Object_Flags::Not_in_coll);
 
 		// recalc pairs for this guy
 		if ( Cmdline_old_collision_sys ) {

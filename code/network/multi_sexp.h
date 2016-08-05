@@ -17,6 +17,8 @@ void multi_sexp_flush_packet();
 
 // server side packet fillers
 void multi_send_int(int value);
+template <typename T>
+void multi_send_flag(T &value);
 void multi_send_ship(ship *shipp);
 void multi_send_ship(int shipnum);
 void multi_send_object(object *objp);
@@ -38,6 +40,8 @@ void multi_discard_remaining_callback_data();
 
 // client side packet emptiers
 bool multi_get_int(int &value);
+template <typename T>
+bool multi_get_flag(T &value);
 bool multi_get_ship(int &value);
 bool multi_get_ship(ship*& shipp);
 bool multi_get_object(object*& value);

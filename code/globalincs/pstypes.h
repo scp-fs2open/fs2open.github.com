@@ -629,7 +629,7 @@ public:
 
     flagset<T> operator|(T flag) {
         flagset<T> result = *this;
-        result.add(flag);
+        result.set(flag);
         return result;
     }
 
@@ -644,16 +644,16 @@ public:
     }
 
     void operator |=(const T flag) {
-        add(flag);
+        set(flag);
     }
 
     bool operator==(flagset<T> other) { return this->values == other.values; }
     bool operator!=(flagset<T> other) { return this->values != other.values; }
 
     void reset() { values.reset(); }
-    flagset<T>  add(T idx, bool value = true) {
+    flagset<T>  set(T idx, bool value = true) {
         values.set(static_cast < size_t >(idx), value);
-        return this;
+        return *this;
     }
     flagset<T>  add_multiple(T idx[], size_t arg_length) {
         for (size_t i = 0; i < arg_length; ++i) {
@@ -665,7 +665,7 @@ public:
 
     flagset<T>  remove(T idx) {
         values.set(static_cast < size_t >(idx), false);
-        return this;
+        return *this;
     }
     flagset<T>  remove_multiple(T idx[], size_t arg_length) {
         for (size_t i = 0; i < arg_length; ++i) {
@@ -677,7 +677,7 @@ public:
     flagset<T>  toggle(T idx) {
         values[static_cast < size_t >(idx)] = !values[static_cast < size_t >(idx)];
 
-        return this;
+        return *this;
     }
 
     bool any_set() { return values.any(); }
