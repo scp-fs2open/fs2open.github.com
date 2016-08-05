@@ -639,26 +639,33 @@ public:
     bool operator!=(flagset<T> other) { return this->values != other.values; }
 
     void reset() { values.reset(); }
-    void set(T idx, bool value = true) {
+    flagset<T>  add(T idx, bool value = true) {
         values.set(static_cast < size_t >(idx), value);
+        return this;
     }
-    void set_multiple(T idx[], size_t arg_length) {
+    flagset<T>  add_multiple(T idx[], size_t arg_length) {
         for (size_t i = 0; i < arg_length; ++i) {
             values.set(static_cast < size_t >(idx[i]));
         }
+
+        return this;
     }
 
-    void unset(T idx) {
+    flagset<T>  remove(T idx) {
         values.set(static_cast < size_t >(idx), false);
+        return this;
     }
-    void unset_multiple(T idx[], size_t arg_length) {
+    flagset<T>  remove_multiple(T idx[], size_t arg_length) {
         for (size_t i = 0; i < arg_length; ++i) {
             values.set(static_cast < size_t >(idx[i]), false);
         }
+        return this;
     }
 
-    void toggle(T idx) {
+    flagset<T>  toggle(T idx) {
         values[static_cast < size_t >(idx)] = !values[static_cast < size_t >(idx)];
+
+        return this;
     }
 
     bool any_set() { return values.any(); }

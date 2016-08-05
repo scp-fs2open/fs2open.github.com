@@ -1039,7 +1039,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
-		Objects[objnum].flags = oflags;
+        Objects[objnum].flags.from_long((ulong)oflags);
 		Objects[objnum].net_signature = net_signature;
 
 		// assign any common data
@@ -1863,7 +1863,7 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 		return;
 	}
 	// otherwise read in the ship values
-	lookup->flags = flags;
+	lookup->flags.from_long(flags);
 	lookup->n_quadrants = n_quadrants;
  	GET_FLOAT(lookup->hull_strength);
 	for(idx=0;idx<n_quadrants;idx++){

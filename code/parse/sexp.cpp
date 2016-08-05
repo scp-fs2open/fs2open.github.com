@@ -12915,9 +12915,10 @@ void multi_sexp_deal_with_ship_flag()
  *
  * @note this function has a similar purpose to sexp_deal_with_ship_flag; make sure you check/update both
  */
-void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int parse_obj_flag, int parse_obj_flag2, int ai_flag, int ai_flag2, bool set_flag)
+void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, int ship_flag, int ship_flag2, int parse_obj_flag, int parse_obj_flag2, int ai_flag, int ai_flag2, bool set_flag)
 {
-	int i, object_flag_orig;
+    int i;
+    flagset<Object::Object_Flags> object_flag_orig;
 	ship_obj	*so;
 	object_ship_wing_point_team oswpt2;
 	p_object *p_objp;
@@ -12936,7 +12937,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 					object_ship_wing_point_team_set_ship(&oswpt2, so, future_ships); 
 
 					// recurse
-					sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+					sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 				}
 			}
 
@@ -12945,7 +12946,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 					if (p_objp->team == oswpt.team) {
 						oswpt2.p_objp = p_objp;
 						oswpt2.type = OSWPT_TYPE_PARSE_OBJECT;
-						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 					}
 				}
 			}
@@ -12964,14 +12965,14 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 					if (p_objp->wingnum == WING_INDEX(oswpt.wingp)) {
 						oswpt2.p_objp = p_objp;
 						oswpt2.type = OSWPT_TYPE_PARSE_OBJECT;
-						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 					}
 				}
 			}
 
 			for (i = 0; i < oswpt.wingp->current_count; i++) {
 				object_ship_wing_point_team_set_ship(&oswpt2, &Ships[oswpt.wingp->ship_index[i]], future_ships); 
-				sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+				sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 			}
 
 			break;
@@ -12982,28 +12983,25 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			object_flag_orig = oswpt.objp->flags;
 
 			// see if we have an object flag to set
-			if (object_flag)
+			if (object_flag != Object::Object_Flags::NUM_VALUES)
 			{
+                auto tmp_flagset = oswpt.objp->flags;
 				// set or clear?
-				if (set_flag)
-					obj_set_flags(oswpt.objp, oswpt.objp->flags | object_flag);
-				else
-					obj_set_flags(oswpt.objp, oswpt.objp->flags & ~object_flag);
+                if (set_flag)
+                    tmp_flagset.add(object_flag);
+                else
+                    tmp_flagset.remove(object_flag);
+					
+                obj_set_flags(oswpt.objp, tmp_flagset);
 			}
 
 			// handle ETS when modifying shields
-			if (object_flag == OF_NO_SHIELDS) {
+			if (object_flag == Object::Object_Flags::No_shields) {
 				if (set_flag) {
 					zero_one_ets(&oswpt.shipp->shield_recharge_index, &oswpt.shipp->weapon_recharge_index, &oswpt.shipp->engine_recharge_index);
-				} else if (object_flag_orig & OF_NO_SHIELDS) {
+				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
 					set_default_recharge_rates(oswpt.objp);
 				}
-			}
-
-			// see if we have an object flag2 to set
-			if (object_flag2)
-			{
-				// Add code here when have flag2 settings
 			}
 
 			// see if we have a ship flag to set
@@ -13082,7 +13080,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 
 }
 
-void alter_flag_for_all_ships(bool future_ships, int object_flag, int object_flag2, int ship_flag, int ship_flag2, int parse_obj_flag, int parse_obj_flag2, int ai_flag, int ai_flag2, bool set_flag)
+void alter_flag_for_all_ships(bool future_ships, Object::Object_Flags object_flag, int ship_flag, int ship_flag2, int parse_obj_flag, int parse_obj_flag2, int ai_flag, int ai_flag2, bool set_flag)
 {
 	ship_obj	*so;
 	p_object	*p_objp;
@@ -13092,7 +13090,7 @@ void alter_flag_for_all_ships(bool future_ships, int object_flag, int object_fla
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		object_ship_wing_point_team_set_ship(&oswpt, so, future_ships); 
 
-		sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+		sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 	}
 
 	// set up all the ships which have yet to arrive
@@ -13102,7 +13100,7 @@ void alter_flag_for_all_ships(bool future_ships, int object_flag, int object_fla
 		{
 			oswpt.p_objp = p_objp; 
 			oswpt.type = OSWPT_TYPE_PARSE_OBJECT;
-			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, object_flag2, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
 		}
 	}
 }
