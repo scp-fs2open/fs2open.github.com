@@ -340,11 +340,13 @@ extern int Fred_running;  // Is Fred running, or FreeSpace?
 #undef USE_INLINE_ASM
 
 #define INTEL_INT(x)	SDL_Swap32(x)
+#define INTEL_LONG(x)   SDL_Swap64(x)
 #define INTEL_SHORT(x)	SDL_Swap16(x)
 #define INTEL_FLOAT(x)	SDL_SwapFloat((*x))
 
 #else // Little Endian -
 #define INTEL_INT(x)	x
+#define INTEL_LONG(x)   x
 #define INTEL_SHORT(x)	x
 #define INTEL_FLOAT(x)	(*x)
 #endif // BYTE_ORDER
@@ -625,6 +627,12 @@ public:
         return result;
     }
 
+    flagset<T> operator|(T flag) {
+        flagset<T> result = *this;
+        result.add(flag);
+        return result;
+    }
+
     flagset<T> operator |(flagset<T>& other) {
         flagset<T> result;
         result.values = this->values | other.values;
@@ -633,6 +641,10 @@ public:
 
     void operator |=(const flagset<T>& other) {
         this->values |= other.values;
+    }
+
+    void operator |=(const T flag) {
+        add(flag);
     }
 
     bool operator==(flagset<T> other) { return this->values == other.values; }
@@ -671,8 +683,8 @@ public:
     bool any_set() { return values.any(); }
     bool none_set() { return values.none(); }
 
-    void from_long(ulong num) { values = num; }
-    ulong to_long() { return values.to_ulong(); }
+    void from_long(std::uint64_t num) { values = num; }
+    std::uint64_t to_long() { return values.to_ulong(); }
 };
 
 #define FLAG_LIST(Type) enum class Type : size_t
