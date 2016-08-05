@@ -68,6 +68,9 @@
 #include <direct.h>
 #include "cmdline/cmdline.h"
 
+#define SDL_MAIN_HANDLED
+#include <SDL_main.h>
+
 #define MAX_DOCKS 1000
 
 #define UNKNOWN_USER		"Unknown"
@@ -275,6 +278,7 @@ bool fred_init(HWND windowHandle)
 	int i;
 	char palette_filename[1024];
 
+	SDL_SetMainReady();
 	memory::init();
 
 	srand( (unsigned) time(NULL) );
