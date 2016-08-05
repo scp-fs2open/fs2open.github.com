@@ -1342,10 +1342,10 @@ void options_detail_init()
 	// create detail level sliders	
 	for ( i = 0; i < NUM_DETAIL_SLIDERS; i++ ) {
 		Detail_sliders[gr_screen.res][i].slider.create(&Ui_window, Detail_sliders[gr_screen.res][i].x, Detail_sliders[gr_screen.res][i].y,
-																		Detail_sliders[gr_screen.res][i].dots, Detail_sliders[gr_screen.res][i].filename,
-																		Detail_sliders[gr_screen.res][i].hotspot, Detail_sliders[gr_screen.res][i].right_filename, Detail_sliders[gr_screen.res][i].right_mask, Detail_sliders[gr_screen.res][i].right_x, Detail_sliders[gr_screen.res][i].right_y,
-																		Detail_sliders[gr_screen.res][i].left_filename, Detail_sliders[gr_screen.res][i].left_mask, Detail_sliders[gr_screen.res][i].left_x, Detail_sliders[gr_screen.res][i].left_y,
-																		Detail_sliders[gr_screen.res][i].dot_w);
+														Detail_sliders[gr_screen.res][i].dots, Detail_sliders[gr_screen.res][i].filename,
+														Detail_sliders[gr_screen.res][i].hotspot, Detail_sliders[gr_screen.res][i].left_filename, Detail_sliders[gr_screen.res][i].left_mask, Detail_sliders[gr_screen.res][i].left_x, Detail_sliders[gr_screen.res][i].left_y,
+														Detail_sliders[gr_screen.res][i].right_filename, Detail_sliders[gr_screen.res][i].right_mask, Detail_sliders[gr_screen.res][i].right_x, Detail_sliders[gr_screen.res][i].right_y,
+														Detail_sliders[gr_screen.res][i].dot_w);
 	}
 
 	// init the actual slider positions and our internal positions
