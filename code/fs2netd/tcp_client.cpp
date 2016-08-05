@@ -832,7 +832,9 @@ void FS2NetD_CheckDuplicateLogin()
 
 	DONE_PACKET();
 
-	FS2NetD_SendData(buffer, buffer_size);
+	if (FS2NetD_SendData(buffer, buffer_size) < 0) {
+		ml_printf("FS2NetD WARNING: Failed to send data packet to server!");
+	}
 
 	delete [] ids;
 }
