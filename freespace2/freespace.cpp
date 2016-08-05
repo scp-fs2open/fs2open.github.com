@@ -6920,8 +6920,8 @@ DCF(pofspew, "Spews POF info without shutting down the game")
 }
 
 // returns:
-// 0 on an error
-// 1 on a clean exit
+// 1 on an error
+// 0 on a clean exit
 int game_main(int argc, char *argv[])
 {
 	int state;
@@ -8605,7 +8605,7 @@ int actual_main(int argc, char *argv[])
 #else
 	try {
 #endif
-		result = !game_main(argc, argv);
+		result = game_main(argc, argv);
 #if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
 	}
 	__except (RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread")) {

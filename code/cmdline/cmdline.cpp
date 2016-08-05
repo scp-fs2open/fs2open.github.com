@@ -1807,7 +1807,7 @@ bool SetCmdlineParams()
 		Cmdline_reparse_mainhall = 1;
 	}
 
-	if( enable_shadows_arg.found() )
+	if( enable_shadows_arg.found() || shadow_quality_arg.found() )
 	{
 		Cmdline_shadow_quality = 2;
 		if( shadow_quality_arg.found() )
