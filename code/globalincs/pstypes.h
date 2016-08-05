@@ -620,6 +620,12 @@ class flagset {
 protected:
     std::bitset<size> values;
 public:
+    flagset<T>() { values.reset(); }
+    flagset<T>(T idx[], size_t arg_length) {
+        add_multiple(idx, arg_length);
+    }
+
+
     bool operator[](T idx) { return values[(static_cast < size_t >(idx))]; };
     flagset<T> operator&(flagset<T>& other) {
         flagset<T> result;

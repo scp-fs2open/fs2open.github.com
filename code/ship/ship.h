@@ -828,7 +828,7 @@ struct ai_target_priority {
 	SCP_vector <int> ship_class;
 	SCP_vector <int> weapon_class;
 
-	unsigned int obj_flags;
+	flagset<Object::Object_Flags> obj_flags;
 	int sif_flags;
 	int sif2_flags;
 	int wif_flags;

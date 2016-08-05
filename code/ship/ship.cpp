@@ -9190,13 +9190,16 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	for ( i=0; i<pm->n_detail_levels; i++ )
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
+    flagset<Object::Object_Flags> default_ship_object_flags;
+    default_ship_object_flags.set(Object::Object_Flags::Renders);
+    default_ship_object_flags.set(Object::Object_Flags::Physics);
+    default_ship_object_flags.set(Object::Object_Flags::Collides);
 	// JAS: Nav buoys don't need to do collisions!
 	// G5K: Corrected to apply specifically for ships with the no-collide flag.  (In retail, navbuoys already have this flag, so this doesn't break anything.)
 	if ( sip->flags & SIF_NO_COLLIDE )	{
-		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), OF_RENDERS | OF_PHYSICS );
-	} else {
-		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), OF_RENDERS | OF_COLLIDES | OF_PHYSICS );
-	}
+        default_ship_object_flags.remove(Object::Object_Flags::Collides);
+	} 
+    objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), default_ship_object_flags);
 	Assert( objnum >= 0 );
 
 	shipp->ai_index = ai_get_slot(n);
