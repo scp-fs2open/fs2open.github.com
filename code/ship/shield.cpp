@@ -412,7 +412,7 @@ void render_shield(int shield_num)
 	// objp, shipp, and si are now setup correctly
 
 	//	If this ship is in its deathroll, make the shield hit effects go away faster.
-	if (shipp->flags & SF_DYING)	{
+	if (shipp->flags[Ship::Ship_Flags::Dying])	{
 		Shield_hits[shield_num].start_time -= fl2f(2*flFrametime);
 	}
 

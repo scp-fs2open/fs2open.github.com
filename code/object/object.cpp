@@ -744,7 +744,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		if ( ci.fire_primary_count ) {
 			// flag the ship as having the trigger down
 			if(shipp != NULL){
-				shipp->flags |= SF_TRIGGER_DOWN;
+				shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 			}
 
 			// fire non-streaming primaries here
@@ -792,7 +792,7 @@ void obj_move_call_physics(object *objp, float frametime)
 	//	Do physics for objects with OF_PHYSICS flag set and with some engine strength remaining.
 	if ( objp->flags[Object::Object_Flags::Physics] ) {
 		// only set phys info if ship is not dead
-		if ((objp->type == OBJ_SHIP) && !(Ships[objp->instance].flags & SF_DYING)) {
+		if ((objp->type == OBJ_SHIP) && !(Ships[objp->instance].flags[Ship::Ship_Flags::Dying])) {
 			ship *shipp = &Ships[objp->instance];
 			float	engine_strength;
 

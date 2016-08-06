@@ -1336,7 +1336,7 @@ void message_queue_process()
 
 			// see if the ship sending this message is dying.  If do, kill wave and anim
 			if ( Playing_messages[i].shipnum != -1 ) {
-				if ( (Ships[Playing_messages[i].shipnum].flags & SF_DYING) && (Playing_messages[i].builtin_type != MESSAGE_WINGMAN_SCREAM) ) {
+				if ( (Ships[Playing_messages[i].shipnum].flags[Ship::Ship_Flags::Dying]) && (Playing_messages[i].builtin_type != MESSAGE_WINGMAN_SCREAM) ) {
 					int shipnum;
 
 					shipnum = Playing_messages[i].shipnum;
@@ -1347,7 +1347,7 @@ void message_queue_process()
 					// MWA 3/24/98 -- save shipnum before killing message
 					// 
 					Assert( shipnum >= 0 );
-					if ( !(Ships[shipnum].flags & SF_SHIP_HAS_SCREAMED) && !(Ships[shipnum].flags2 & SF2_NO_DEATH_SCREAM) ) {
+					if ( !(Ships[shipnum].flags[Ship::Ship_Flags::Ship_has_screamed]) && !(Ships[shipnum].flags[Ship::Ship_Flags::No_death_scream]) ) {
 						ship_scream( &Ships[shipnum] );
 					}
 					continue;							// this should keep us in the while() loop with same value of i.														
@@ -1547,7 +1547,7 @@ void message_queue_process()
 		if (Message_shipnum < 0) {
 			goto all_done;
 		}
-		if (!((Ship_info[Ships[Message_shipnum].ship_info_index].flags & SIF_SMALL_SHIP) || (Ships[Message_shipnum].flags2 & SF2_ALWAYS_DEATH_SCREAM)) ) {
+		if (!((Ship_info[Ships[Message_shipnum].ship_info_index].flags & SIF_SMALL_SHIP) || (Ships[Message_shipnum].flags[Ship::Ship_Flags::Always_death_scream])) ) {
 			goto all_done;
 		}
 	}
@@ -1578,7 +1578,7 @@ void message_queue_process()
 		ship *shipp = &Ships[Message_shipnum];
 		if ( shipp->callsign_index >= 0 ) {
 			hud_stuff_ship_callsign( who_from, shipp );
-		} else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) ) {
+		} else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) ) {
 			hud_stuff_ship_class( who_from, shipp );
 		} else {
 			end_string_at_first_hash_symbol(who_from);
@@ -1964,7 +1964,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 	if ( shipp ) {
 		// Karajorma - the game should assert if a silenced ship gets this far
-		Assert( !(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES) );
+		Assert( !(shipp->flags[Ship::Ship_Flags::No_builtin_messages]) );
 
 		if ( shipp->persona_index == -1 )
 			shipp->persona_index = message_get_persona( shipp );

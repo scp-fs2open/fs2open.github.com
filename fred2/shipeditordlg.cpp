@@ -417,7 +417,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	enable = p_enable = 1;
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if ((objp->type == OBJ_SHIP) && (Ships[objp->instance].flags & SF_ESCORT)){
+		if ((objp->type == OBJ_SHIP) && (Ships[objp->instance].flags[Ship::Ship_Flags::Escort])){
 			escort_count++;  // get a total count of escort ships
 		}
 
@@ -518,7 +518,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 						ship_orders = -1;
 					}
 
-					if (Ships[i].flags & SF_ESCORT){
+					if (Ships[i].flags[Ship::Ship_Flags::Escort]){
 						escort_count--;  // remove marked escorts from count
 					}
 

@@ -1387,7 +1387,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		ship *shipp = &Ships[objp->instance];
 
 		// always valid if has subspace drive
-		if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
+		if (!(shipp->flags[Ship::Ship_Flags::No_subspace_drive]))
 			return AI_GOAL_ACHIEVABLE;
 
 		// if no subspace drive, only valid if our mothership is present
@@ -1661,7 +1661,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		// if ship is disabled, don't know if it can dock or not
-		if ( Ships[objp->instance].flags & SF_DISABLED )
+		if ( Ships[objp->instance].flags[Ship::Ship_Flags::Disabled] )
 			return AI_GOAL_NOT_KNOWN;
 
 		// we must also determine if we're prevented from docking for any reason
@@ -1807,7 +1807,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 			// if the destination ship is dying or departing (but not completed yet), the mark goal as
 			// not achievable.
-			if ( Ships[sindex].flags & (SF_DYING | SF_DEPARTING) )
+			if ( is_dying_departing(&Ships[sindex]) )
 				return AI_GOAL_NOT_ACHIEVABLE;
 
 			// if the destination object is no longer awaiting repair, then remove the item

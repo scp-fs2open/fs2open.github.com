@@ -391,7 +391,7 @@ int hud_abort_lock()
 		return 1;
 	}
 
-	if ( Player_ship->flags2 & SF2_NO_SECONDARY_LOCKON ) {
+	if ( Player_ship->flags[Ship::Ship_Flags::No_secondary_lockon] ) {
 		return 1;
 	}
 

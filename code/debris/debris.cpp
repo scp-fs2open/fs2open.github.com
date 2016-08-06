@@ -418,7 +418,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	Assert( source_obj->instance >= 0 && source_obj->instance < MAX_SHIPS );	
 	shipp = &Ships[source_obj->instance];
 	sip = &Ship_info[shipp->ship_info_index];
-	vaporize = (shipp->flags &SF_VAPORIZE);
+	vaporize = (shipp->flags[Ship::Ship_Flags::Vaporize]);
 
 	if ( !hull_flag )	{
 		// Make vaporize debris seen from farther away

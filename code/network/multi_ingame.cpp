@@ -1477,10 +1477,10 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		// add the link status of weapons
 		// primary link status	
 		val = 0;
-		if(shipp->flags & SF_PRIMARY_LINKED){
+		if(shipp->flags[Ship::Ship_Flags::Primary_linked]){
 			val |= (1<<0);
 		}
-		if(shipp->flags & SF_SECONDARY_DUAL_FIRE){
+		if(shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]){
 			val |= (1<<1);
 		}
 		ADD_DATA(val);		
@@ -1720,7 +1720,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// get the link status of weapons
 		GET_DATA(val);
 		if(val & (1<<0)){
-			Player_ship->flags |= SF_PRIMARY_LINKED;
+			Player_ship->flags.set(Ship::Ship_Flags::Primary_linked);
 		}
 		if(val & (1<<1)){
 			Player_ship->flags |= SF_SECONDARY_DUAL_FIRE;

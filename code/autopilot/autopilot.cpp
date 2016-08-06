@@ -252,7 +252,7 @@ bool StartAutopilot()
 				continue;
 
 			// don't deal with dying or departing support ships
-			if ( shipp->flags & (SF_DYING | SF_DEPARTING) )
+			if ( is_dying_departing(shipp) )
 				continue;
 
 			Assert(shipp->ai_index != -1);
@@ -334,7 +334,7 @@ bool StartAutopilot()
 	for (i = 0; i < MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum != -1 && 
-				(Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+				(Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
 					(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)
 				)
 			)
@@ -367,7 +367,7 @@ bool StartAutopilot()
 	for (i = 0; i < MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum != -1 && 
-				(Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+				(Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
 					(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)
 				)
 			)
@@ -470,8 +470,10 @@ bool StartAutopilot()
 				}
 			}
 			// lock primary and secondary weapons
-			if ( LockWeaponsDuringAutopilot )
-				Ships[i].flags2 |= (SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
+            if (LockWeaponsDuringAutopilot) { 
+                Ships[i].flags.set(Ship::Ship_Flags::Primaries_locked);
+                Ships[i].flags.set(Ship::Ship_Flags::Secondaries_locked);
+            }
 
 			// clear the ship goals and cap the waypoint speed
 			ai_clear_ship_goals(&Ai_info[Ships[i].ai_index]);
@@ -538,7 +540,7 @@ bool StartAutopilot()
 	{
 		if (Ships[i].objnum != -1)
 		{
-			if (Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+			if (Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
 				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY))
 				for (j = 0; j < MAX_AI_GOALS; j++)
 				{
@@ -913,14 +915,16 @@ void EndAutoPilot()
 	{
 		if (Ships[i].objnum != -1 && 
 			(
-				Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+				Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
 				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY )
 			 )
 		   )
 		{
 			//unlock their weaponry
-			if ( LockWeaponsDuringAutopilot )
-				Ships[i].flags2 &= ~(SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
+            if (LockWeaponsDuringAutopilot) {
+                Ships[i].flags.remove(Ship::Ship_Flags::Primaries_locked);
+                Ships[i].flags.remove(Ship::Ship_Flags::Secondaries_locked);
+            }
 			Ai_info[Ships[i].ai_index].waypoint_speed_cap = -1; // uncap their speed
 			Ai_info[Ships[i].ai_index].mode = AIM_NONE; // make AI re-evaluate current ship mode
 
@@ -1041,7 +1045,7 @@ void nav_warp(bool prewarp=false)
 	for (int i = 0; i < MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum != -1
-			&& (Ships[i].flags2 & SF2_NAVPOINT_CARRY 
+			&& (Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] 
 				|| (Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)))
 		{
 				vm_vec_add(&Objects[Ships[i].objnum].pos, &Objects[Ships[i].objnum].pos, &targetPos);
@@ -1193,14 +1197,14 @@ void NavSystem_Do()
 	*/
 	for (int i = 0; i < MAX_SHIPS; i++)
 	{
-		if (Ships[i].objnum != -1 && Ships[i].flags2 & SF2_NAVPOINT_NEEDSLINK)
+		if (Ships[i].objnum != -1 && Ships[i].flags[Ship::Ship_Flags::Navpoint_needslink])
 		{
 			object *other_objp = &Objects[Ships[i].objnum];
 
 			if (vm_vec_dist_quick(&Player_obj->pos, &other_objp->pos) < (NavLinkDistance + other_objp->radius))
 			{
-				Ships[i].flags2 &= ~SF2_NAVPOINT_NEEDSLINK;
-				Ships[i].flags2 |= SF2_NAVPOINT_CARRY;
+                Ships[i].flags.remove(Ship::Ship_Flags::Navpoint_needslink);
+                Ships[i].flags.set(Ship::Ship_Flags::Navpoint_carry);
 				
 				send_autopilot_msgID(NP_MSG_MISC_LINKED);
 			}

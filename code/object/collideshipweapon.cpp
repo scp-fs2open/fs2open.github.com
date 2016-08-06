@@ -92,7 +92,7 @@ void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *worl
 	vm_vec_copy_scale(&force, &weapon_obj->phys_info.vel, blast );	
 
 	// send player pain packet
-	if ( (MULTIPLAYER_MASTER) && !(shipp->flags & SF_DYING) ){
+	if ( (MULTIPLAYER_MASTER) && !(shipp->flags[Ship::Ship_Flags::Dying]) ){
 		int np_index = multi_find_player_by_object(pship_obj);
 
 		// if this is a player ship
@@ -149,7 +149,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	Assert( shipp->objnum == OBJ_INDEX(ship_objp));
 
 	// Make ships that are warping in not get collision detection done
-	if ( shipp->flags & SF_ARRIVING ) return 0;
+	if ( is_ship_arriving(shipp) ) return 0;
 	
 	//	Return information for AI to detect incoming fire.
 	//	Could perhaps be done elsewhere at lower cost --MK, 11/7/97
@@ -352,7 +352,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
 
 		// make sure that the shield is active in that quadrant
-		if (shipp->flags & SF_DYING || !ship_is_shield_up(ship_objp, quadrant_num))
+		if (shipp->flags[Ship::Ship_Flags::Dying] || !ship_is_shield_up(ship_objp, quadrant_num))
 			quadrant_num = -1;
 
 		// see if we hit the shield
@@ -384,7 +384,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	}
 
     // check if the hit point is beyond the clip plane when warping out.
-    if ((shipp->flags & SF_DEPART_WARP) &&
+    if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) &&
         (shipp->warpout_effect) &&
         (valid_hit_occurred))
     {
@@ -449,7 +449,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 			if (vm_vec_dot(&vec_to_ship, &weapon_objp->orient.vec.fvec) < 0.0f) {
 				// check if we're colliding against "invisible" ship
-				if (!(shipp->flags2 & SF2_DONT_COLLIDE_INVIS)) {
+				if (!(shipp->flags[Ship::Ship_Flags::Dont_collide_invis])) {
 					wp->lifeleft = 0.001f;
 					if (ship_objp == Player_obj)
 						nprintf(("Jim", "Frame %i: Weapon " PTRDIFF_T_ARG " set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_objp), dist));

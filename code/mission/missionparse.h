@@ -475,7 +475,7 @@ p_object *mission_parse_get_arrival_ship(const char *name);
 p_object *mission_parse_get_parse_object(ushort net_signature);
 p_object *mission_parse_get_parse_object(const char *name);
 int parse_create_object(p_object *objp);
-void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags)
+void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
 
 void mission_parse_close();
 

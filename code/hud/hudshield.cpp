@@ -606,7 +606,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 		return;
 
 	// Goober5000 - don't show if primitive sensors
-	if ( Ships[Player_obj->instance].flags2 & SF2_PRIMITIVE_SENSORS )
+	if ( Ships[Player_obj->instance].flags[Ship::Ship_Flags::Primitive_sensors] )
 		return;
 
 	sp = &Ships[objp->instance];

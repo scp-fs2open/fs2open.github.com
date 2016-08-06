@@ -1705,7 +1705,7 @@ int set_reinforcement(char *name, int state)
 		// clear the ship/wing flag for this reinforcement
 		index = ship_name_lookup(name);
 		if ( index != -1 ){
-			Ships[index].flags &= ~SF_REINFORCEMENT;
+            Ships[index].flags.remove(Ship::Ship_Flags::Reinforcement);
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
@@ -1732,7 +1732,7 @@ int set_reinforcement(char *name, int state)
 		// set the reinforcement flag on the ship or wing
 		index = ship_name_lookup(name);
 		if ( index != -1 ){
-			Ships[index].flags |= SF_REINFORCEMENT;
+			Ships[index].flags.set(Ship::Ship_Flags::Reinforcement);
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
@@ -1752,7 +1752,7 @@ int set_reinforcement(char *name, int state)
 		// set the reinforcement flag on the ship or wing
 		index = ship_name_lookup(name);
 		if ( index != -1 ){
-			Ships[index].flags |= SF_REINFORCEMENT;
+			Ships[index].flags.set(Ship::Ship_Flags::Reinforcement);
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){

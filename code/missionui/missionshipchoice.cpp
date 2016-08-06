@@ -3029,10 +3029,10 @@ void ss_init_units()
 			// going to be able to modify that ship.
 			if ( ss_slot->sa_index == -1 ) {
 				int objnum;
-				if ( Ships[wp->ship_index[j]].flags2 & SF2_SHIP_LOCKED ) {
+				if ( Ships[wp->ship_index[j]].flags[Ship::Ship_Flags::Ship_locked] ) {
 					ss_slot->status |= WING_SLOT_SHIPS_DISABLED;
 				} 
-				if ( Ships[wp->ship_index[j]].flags2 & SF2_WEAPONS_LOCKED ) {
+				if ( Ships[wp->ship_index[j]].flags[Ship::Ship_Flags::Weapons_locked] ) {
 					ss_slot->status |= WING_SLOT_WEAPONS_DISABLED;
 				}  
 

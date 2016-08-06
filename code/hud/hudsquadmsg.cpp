@@ -351,7 +351,7 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
 #endif
 
 	// departing or dying ships cannot be on list
-	if ( shipp->flags & (SF_DEPARTING|SF_DYING) )
+	if ( is_dying_departing(shipp) )
 		return false;
 
 	// cannot be my ship or an instructor
@@ -777,11 +777,11 @@ int hud_squadmsg_ship_order_valid( int shipnum, int order )
 	{
 		case DEPART_ITEM:
 			// disabled ships can't depart.
-			if (shipp->flags & SF_DISABLED)
+			if (shipp->flags[Ship::Ship_Flags::Disabled])
 				return 0;
 
 			// Goober5000: also can't depart if no subspace drives and no valid mothership
-			if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
+			if (shipp->flags[Ship::Ship_Flags::No_subspace_drive])
 			{
 				// check that we have a mothership and that we can depart to it
 				if (shipp->departure_location == DEPART_AT_DOCK_BAY)
@@ -873,7 +873,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	}
 
 	// if the order is a disable order or depart, and the ship is disabled, order isn't active
-	if ( (Comm_orders[order].item == DISABLE_TARGET_ITEM) && (shipp->flags & SF_DISABLED) ){
+	if ( (Comm_orders[order].item == DISABLE_TARGET_ITEM) && (shipp->flags[Ship::Ship_Flags::Disabled]) ){
 		return 0;
 	}
 
@@ -999,7 +999,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// skip departing/dying ships
-		if ( shipp->flags & (SF_DEPARTING|SF_DYING) )
+		if ( is_dying_departing(shipp) )
 			continue;
 
 		// don't send command if ship won't accept if
@@ -1243,7 +1243,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			ai_mode = AI_GOAL_WARP;
 			ai_submode = -1;
 			message = MESSAGE_WARP_OUT;
-			Ships[shipnum].flags |= SF_DEPARTURE_ORDERED;
+            Ships[shipnum].flags.set(Ship::Ship_Flags::Departure_ordered);
 			break;
 		
 		// the following are support ship options!!!
@@ -1319,7 +1319,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	}
 	
 	// this is the _response_
-	if ( send_message && (!(Ships[shipnum].flags2 & SF2_NO_BUILTIN_MESSAGES)))
+	if ( send_message && (!(Ships[shipnum].flags[Ship::Ship_Flags::No_builtin_messages])))
 	{
 		message_send_builtin_to_player( message, &Ships[shipnum], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_ANYTIME, 0, 0, player_num, message_team_filter );	
 	}

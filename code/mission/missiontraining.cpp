@@ -207,7 +207,7 @@ bool HudGaugeDirectives::canRender()
 	}
 
 	if (gauge_config == HUD_ETS_GAUGE) {
-		if (Ships[Player_obj->instance].flags2 & SF2_NO_ETS) {
+		if (Ships[Player_obj->instance].flags[Ship::Ship_Flags::No_ets]) {
 			return false;
 		}
 	}

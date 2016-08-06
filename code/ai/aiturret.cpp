@@ -532,7 +532,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		}
 
 		// don't shoot at arriving ships
-		if (shipp->flags & SF_ARRIVING) {
+		if (is_ship_arriving(shipp)) {
 			return 0;
 		}
 

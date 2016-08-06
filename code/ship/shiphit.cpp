@@ -263,7 +263,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 		if ( ship_p->subsys_info[type].aggregate_current_hits <= 0.0f ) {
 			mission_log_add_entry(LOG_SHIP_DISABLED, ship_p->ship_name, NULL );
-			ship_p->flags |= SF_DISABLED;				// add the disabled flag
+			ship_p->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
 		}
 	}
 
@@ -1446,7 +1446,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	if (sip->vaporize_chance > 0.0f)
 		vapChance = sip->vaporize_chance;
 
-	if (sp->flags & SF_VAPORIZE || frand() < vapChance) {
+	if (sp->flags[Ship::Ship_Flags::Vaporize] || frand() < vapChance) {
 		// Assert(Ship_info[sp->ship_info_index].flags & SIF_SMALL_SHIP);
 
 		// LIVE FOR 100 MS
@@ -1570,7 +1570,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, i
 	}
 
 	// maybe vaporize him
-	if(sp->flags & SF_VAPORIZE){
+	if(sp->flags[Ship::Ship_Flags::Vaporize]){
 		ship_vaporize(sp);
 	}
 
@@ -1799,7 +1799,7 @@ void shiphit_hit_after_death(object *ship_objp, float damage)
 	}
 
 	// Don't adjust vaporized ship
-	if (shipp->flags & SF_VAPORIZE) {
+	if (shipp->flags[Ship::Ship_Flags::Vaporize]) {
 		return;
 	}
 
@@ -2025,7 +2025,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	}
 
 	//	if ship is already dying, shorten deathroll.
-	if (shipp->flags & SF_DYING) {
+	if (shipp->flags[Ship::Ship_Flags::Dying]) {
 		shiphit_hit_after_death(ship_objp, (damage * difficulty_scale_factor));
 		return;
 	}
@@ -2258,7 +2258,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				// Only vaporize once
 				// multiplayer clients should skip this
 				if(!MULTIPLAYER_CLIENT) {
-					if ( !(shipp->flags & SF_VAPORIZE) ) {
+					if ( !(shipp->flags[Ship::Ship_Flags::Vaporize]) ) {
 						// Only small ships can be vaporized
 						if (sip->flags & (SIF_SMALL_SHIP)) {
 							if (other_obj) {	// Goober5000 check for NULL
@@ -2285,7 +2285,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 					percent_killed = 1.0f;
 				}
 
-				if ( !(shipp->flags & SF_DYING) && !MULTIPLAYER_CLIENT) {  // if not killed, then kill
+				if ( !(shipp->flags[Ship::Ship_Flags::Dying]) && !MULTIPLAYER_CLIENT) {  // if not killed, then kill
 					ship_hit_kill(ship_objp, other_obj, percent_killed, 0);
 				}
 			}

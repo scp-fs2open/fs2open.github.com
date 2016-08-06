@@ -2747,7 +2747,7 @@ void multi_player_ships_available(int *team_0,int *team_1)
 void multi_server_update_player_weapons(net_player *pl,ship *shipp)
 {
 	// don't process when the ship is dying.
-	if ( (shipp->flags & SF_DYING) || NETPLAYER_IS_DEAD(pl) )
+	if ( (shipp->flags[Ship::Ship_Flags::Dying]) || NETPLAYER_IS_DEAD(pl) )
 		return;
 
 	// primary bank status
@@ -2755,7 +2755,7 @@ void multi_server_update_player_weapons(net_player *pl,ship *shipp)
 
 	// primary link status
 	pl->s_info.cur_link_status &= ~(1<<0);
-	if(shipp->flags & SF_PRIMARY_LINKED){
+	if(shipp->flags[Ship::Ship_Flags::Primary_linked]){
 		pl->s_info.cur_link_status |= (1<<0);
 	}
 
@@ -2768,7 +2768,7 @@ void multi_server_update_player_weapons(net_player *pl,ship *shipp)
 
 	// secondary link status
 	pl->s_info.cur_link_status &= ~(1<<1);
-	if(shipp->flags & SF_SECONDARY_DUAL_FIRE){
+	if(shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]){
 		pl->s_info.cur_link_status |= (1<<1);
 	}
 

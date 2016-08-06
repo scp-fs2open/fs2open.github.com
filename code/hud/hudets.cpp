@@ -44,7 +44,7 @@ void ets_init_ship(object* obj)
 	sp = &Ships[obj->instance];
 	
 	sp->weapon_energy = Ship_info[sp->ship_info_index].max_weapon_reserve;
-	if ((sp->flags2 & SF2_NO_ETS) == 0) {
+	if ((sp->flags[Ship::Ship_Flags::No_ets]) == 0) {
 		sp->next_manage_ets = timestamp(AI_MODIFY_ETS_INTERVAL);
 	} else {
 		sp->next_manage_ets = -1;
@@ -73,7 +73,7 @@ void update_ets(object* objp, float fl_frametime)
 	float max_g=sinfo_p->max_weapon_reserve,
 		  max_s=ship_p->ship_max_shield_strength;
 
-	if ( ship_p->flags & SF_DYING ){
+	if ( ship_p->flags[Ship::Ship_Flags::Dying] ){
 		return;
 	}
 
@@ -205,7 +205,7 @@ void ai_manage_ets(object* obj)
 	if ( ship_info_p->power_output == 0 )
 		return;
 
-	if (ship_p->flags & SF_DYING)
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
 	// check if any of the three systems are not being used.  If so, don't allow energy management.
@@ -352,7 +352,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	int	count=0;
 	ship	*ship_p = &Ships[obj->instance];
 
-	if (ship_p->flags2 & SF2_NO_ETS)
+	if (ship_p->flags[Ship::Ship_Flags::No_ets])
 		return;
 
 	switch ( ship_system ) {
@@ -476,7 +476,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	int	count;
 	ship	*ship_p = &Ships[obj->instance];
 
-	if (ship_p->flags2 & SF2_NO_ETS)
+	if (ship_p->flags[Ship::Ship_Flags::No_ets])
 		return;
 
 	switch ( ship_system ) {
@@ -615,7 +615,7 @@ void transfer_energy_to_shields(object* obj)
 {
 	ship*			ship_p = &Ships[obj->instance];
 
-	if (ship_p->flags & SF_DYING)
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
 	if ( !ship_has_energy_weapons(ship_p) || obj->flags[Object::Object_Flags::No_shields] )
@@ -634,7 +634,7 @@ void transfer_energy_to_weapons(object* obj)
 	ship*			ship_p = &Ships[obj->instance];
 	ship_info*	sinfo_p = &Ship_info[ship_p->ship_info_index];
 
-	if (ship_p->flags & SF_DYING)
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
 	if ( !ship_has_energy_weapons(ship_p) || obj->flags[Object::Object_Flags::No_shields] )
@@ -729,7 +729,7 @@ bool validate_ship_ets_indxes(const int &ship_idx, int (&ets_indexes)[num_retail
 	}
 	ship *ship_p = &Ships[ship_idx];
 
-	if (ship_p->flags2 & SF2_NO_ETS)
+	if (ship_p->flags[Ship::Ship_Flags::No_ets])
 		return false;
 
 	// handle ships that are missing parts of the ETS

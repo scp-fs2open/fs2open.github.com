@@ -725,11 +725,11 @@ void red_alert_store_wingman_status()
 		Assert(ship_objp->type == OBJ_SHIP);
 		shipp = &Ships[ship_objp->instance];
 
-		if ( shipp->flags & SF_DYING ) {
+		if ( shipp->flags[Ship::Ship_Flags::Dying] ) {
 			continue;
 		}
 
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
 			continue;
 		}
 
@@ -842,7 +842,7 @@ void red_alert_bash_wingman_status()
 		Assert(ship_objp->type == OBJ_SHIP);
 		ship *shipp = &Ships[ship_objp->instance];
 
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
 			so = GET_NEXT(so);
 			continue;
 		}

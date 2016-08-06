@@ -4733,9 +4733,9 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 			}
 			else if (op == OP_CAP_SUBSYS_CARGO_KNOWN_DELAY) {
 				if ( ((Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP) &&	// big ship
-					!(Ships[ptr->instance].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) )||				// which is not flagged OR
+					!(Ships[ptr->instance].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) )||				// which is not flagged OR
 					((!(Ship_info[Ships[ptr->instance].ship_info_index].flags & SIF_HUGE_SHIP)) &&  // small ship
-					(Ships[ptr->instance].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) ) ) {				// which is flagged
+					(Ships[ptr->instance].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) ) ) {				// which is flagged
 
 						head.add_data(Ships[ptr->instance].ship_name);
 				}

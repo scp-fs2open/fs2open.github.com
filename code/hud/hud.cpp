@@ -1088,7 +1088,7 @@ bool HudGauge::canRender()
 	}
 
 	if (gauge_config == HUD_ETS_GAUGE) {
-		if (Ships[Player_obj->instance].flags2 & SF2_NO_ETS) {
+		if (Ships[Player_obj->instance].flags[Ship::Ship_Flags::No_ets]) {
 			return false;
 		}
 	}
@@ -1384,7 +1384,7 @@ void hud_update_frame(float frametime)
 	if (Player_ai->target_objnum == -1){
 		retarget = 1;
 	} else if (Objects[Player_ai->target_objnum].type == OBJ_SHIP) {
-		if (Ships[Objects[Player_ai->target_objnum].instance].flags & SF_DYING){
+		if (Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Dying]){
 			if (timestamp_elapsed(Ships[Objects[Player_ai->target_objnum].instance].final_death_time)) {
 				retarget = 1;
 			}
@@ -1395,7 +1395,7 @@ void hud_update_frame(float frametime)
 	// only do this is not retargeting
 	if ((!retarget) && (Player_ai->target_objnum != -1)) {
 		if (Objects[Player_ai->target_objnum].type == OBJ_SHIP) {
-			if ( !(Ships[Objects[Player_ai->target_objnum].instance].flags & SF_DYING) ) {
+			if ( !(Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Dying]) ) {
 				if ( Ship_info[Ships[Objects[Player_ai->target_objnum].instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) ) {
 					ship_subsys *ss = Player_ai->targeted_subsys;
 					if (ss != NULL) {
@@ -1486,10 +1486,10 @@ void hud_update_frame(float frametime)
 	if ( targetp->type == OBJ_SHIP ) {
 		Assert ( targetp->instance >=0 && targetp->instance < MAX_SHIPS );
 		target_shipp = &Ships[targetp->instance];
-		Player->target_is_dying = target_shipp->flags & SF_DYING;
+		Player->target_is_dying = target_shipp->flags[Ship::Ship_Flags::Dying];
 
 		// If it is warping out (or exploded), turn off targeting
-		if ( target_shipp->flags & (SF_DEPART_WARP|SF_EXPLODED) ) {
+		if ( target_shipp->flags[Ship::Ship_Flags::Depart_warp] || target_shipp->flags[Ship::Ship_Flags::Exploded] ) {
 			stop_targetting_this_thing = 1;
 		}
 	}
@@ -2667,7 +2667,9 @@ int hud_support_find_closest( int objnum )
 			int pship_index, sindex;
 
 			// make sure support ship is not dying
-			if ( !(Ships[Objects[sop->objnum].instance].flags & (SF_DYING|SF_EXPLODED)) ) {
+            auto shipp = &Ships[Objects[sop->objnum].instance];
+            
+			if ( !(shipp->flags[Ship::Ship_Flags::Depart_warp] || shipp->flags[Ship::Ship_Flags::Exploded]) ) {
 
 				Assert( objp->type == OBJ_SHIP );
 				aip = &Ai_info[Ships[Objects[sop->objnum].instance].ai_index];

@@ -84,6 +84,8 @@
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
 
+using namespace Ship;
+
 #ifdef MessageBox
 #undef MessageBox
 #endif
@@ -370,25 +372,22 @@ flag_def_list ai_tgt_weapon_flags[] = {
 //	Constant for flag,				Name of flag,				In flags or flags2
 //  When adding new flags remember to bump MAX_SHIP_FLAG_NAMES in ship.h
 ship_flag_name Ship_flag_names[] = {
-	{SF_VAPORIZE,					"vaporize",						1,	},
-	{SF_WARP_BROKEN,				"break-warp",					1,	},
-	{SF_WARP_NEVER,					"never-warp",					1,	},
-	{SF_SCANNABLE,					"scannable",					1,	},
-	{SF_CARGO_REVEALED,				"cargo-known",					1,	},
-	{SF_HIDDEN_FROM_SENSORS,		"hidden-from-sensors",			1,	},
-	{SF2_STEALTH,					"stealth",						2,	},
-	{SF2_FRIENDLY_STEALTH_INVIS,	"friendly-stealth-invisible",	2,	},
-	{SF2_HIDE_SHIP_NAME,			"hide-ship-name",				2,	},
-	{SF2_PRIMITIVE_SENSORS,			"primitive-sensors",			2,	},
-	{SF2_AFTERBURNER_LOCKED,		"afterburners-locked",			2,	},
-	{SF2_PRIMARIES_LOCKED,			"primaries-locked",				2,	},
-	{SF2_SECONDARIES_LOCKED,		"secondaries-locked",			2,	},
-	{SF2_NO_SUBSPACE_DRIVE,			"no-subspace-drive",			2,	},
-	{SF2_DONT_COLLIDE_INVIS,		"don't-collide-invisible",		2,	},
-	{SF2_NO_ETS,					"no-ets",						2,	},
-	{SF2_TOGGLE_SUBSYSTEM_SCANNING,	"toggle-subsystem-scanning",	2,	},
-	{SF2_NO_SECONDARY_LOCKON,		"no-secondary-lock-on",			2,	},
-	{SF2_NO_DISABLED_SELF_DESTRUCT,	"no-disabled-self-destruct",	2,	},
+    { Ship_Flags::Vaporize,						"vaporize" },
+    { Ship_Flags::Warp_broken,					"break-warp" },
+    { Ship_Flags::Warp_never,					"never-warp" },
+    { Ship_Flags::Scannable,					"scannable" },
+    { Ship_Flags::Cargo_revealed,				"cargo-known" },
+    { Ship_Flags::Hidden_from_sensors,			"hidden-from-sensors" },
+    { Ship_Flags::Stealth,						"stealth" },
+    { Ship_Flags::Friendly_stealth_invis,		"friendly-stealth-invisible" },
+    { Ship_Flags::Hide_ship_name,				"hide-ship-name" },
+    { Ship_Flags::Afterburner_locked,			"afterburners-locked" },
+    { Ship_Flags::Primaries_locked,				"primaries-locked" },
+    { Ship_Flags::Secondaries_locked,			"secondaries-locked" },
+    { Ship_Flags::No_subspace_drive,			"no-subspace-drive" },
+    { Ship_Flags::Dont_collide_invis,			"don't-collide-invisible" },
+    { Ship_Flags::No_ets,						"no-ets" },
+    { Ship_Flags::Toggle_subsystem_scanning,	"toggle-subsystem-scanning" },
 };
 
 const int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
@@ -5317,7 +5316,7 @@ void ship_add_exited_ship( ship *sp, int reason )
 	entry.team = sp->team;
 	entry.flags = reason;
 	// if ship is red alert, flag as such
-	if (sp->flags & SF_RED_ALERT_STORE_STATUS) {
+	if (sp->flags[Ship_Flags::Red_alert_store_status]) {
 		entry.flags |= SEF_RED_ALERT_CARRY;
 	}
 	entry.time = Missiontime;
@@ -5326,7 +5325,7 @@ void ship_add_exited_ship( ship *sp, int reason )
 	entry.cargo1 = sp->cargo1;
 
 	entry.time_cargo_revealed = (fix)0;
-	if ( sp->flags & SF_CARGO_REVEALED )
+	if ( sp->flags[Ship_Flags::Cargo_revealed] )
 	{
 		entry.flags |= SEF_CARGO_KNOWN;
 		entry.time_cargo_revealed = sp->time_cargo_revealed;
@@ -5667,8 +5666,7 @@ void ship::clear()
 	current_max_speed = 0.0f;
 	next_manage_ets = timestamp(0);
 
-	flags = 0;
-	flags2 = 0;
+    flags.reset();
 	reinforcement_index = -1;
 	
 	afterburner_fuel = 0.0f;
@@ -5944,13 +5942,13 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->current_max_speed = Ship_info[ship_type].max_speed;
 
-	shipp->flags |= SF_ENGINES_ON;
+    shipp->flags.set(Ship_Flags::Engines_on);
 
 	// set certain flags that used to be in ship_info - Goober5000
 	if (sip->flags & SIF_STEALTH)
-		shipp->flags2 |= SF2_STEALTH;
+		shipp->flags.set(Ship_Flags::Stealth);
 	if (sip->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
-		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+		shipp->flags.set(Ship_Flags::Dont_collide_invis);
     
     auto obj_flags = objp->flags;
     if (sip->flags & SIF_NO_COLLIDE)
@@ -5961,7 +5959,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
     obj_set_flags(objp, obj_flags);
 
 	if (sip->flags2 & SIF2_NO_ETS)
-		shipp->flags2 |= SF2_NO_ETS;
+		shipp->flags.set(Ship_Flags::No_ets);
 
 	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
@@ -6122,9 +6120,9 @@ void ship_recalc_subsys_strength( ship *shipp )
 	// set any ship flags which should be set.  unset the flags since we might be repairing a subsystem
 	// through sexpressions.
 	if ( (shipp->subsys_info[SUBSYSTEM_ENGINE].type_count > 0) && (shipp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f) ) {
-		shipp->flags |= SF_DISABLED;
-	} else {
-		shipp->flags &= ~SF_DISABLED;
+		shipp->flags.set(Ship_Flags::Disabled);
+    } else {
+        shipp->flags.remove(Ship_Flags::Disabled);
 		ship_reset_disabled_physics( &Objects[shipp->objnum], shipp->ship_info_index );
 	}
 }
@@ -6651,7 +6649,7 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 		return;
 
 	// am I arriving or departing by warp?
-	if ( Ships[objp->instance].flags & (SF_ARRIVING|SF_DEPART_WARP) )
+    if (is_ship_arriving(&Ships[objp->instance]) || Ships[objp->instance].flags[Ship_Flags::Depart_warp])
 	{
 #ifndef NDEBUG
 		// in debug builds, make sure only one of the docked objects has these flags set
@@ -7184,7 +7182,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 					if ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN))
 						continue;
 	
-					if ((Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(Ships[Objects[so->objnum].instance].flags & (SF_DEPARTING|SF_DYING)))
+					if ((Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(is_dying_departing(&Ships[Objects[so->objnum].instance])))
 					{
 						// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
 						// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
@@ -7276,7 +7274,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		// determine if we need to count this ship as a kill in counting number of kills per ship type
 		// look at the ignore flag for the ship (if not in a wing), or the ignore flag for the wing
 		// (if the ship is in a wing), and add to the kill count if the flags are not set
-		if ( !(shipp->flags & SF_IGNORE_COUNT) || ((shipp->wingnum != -1) && !(Wings[shipp->wingnum].flags & WF_IGNORE_COUNT)) )
+		if ( !(shipp->flags[Ship_Flags::Ignore_count]) || ((shipp->wingnum != -1) && !(Wings[shipp->wingnum].flags & WF_IGNORE_COUNT)) )
 			ship_add_ship_type_kill_count( shipp->ship_info_index );
 
 		// let the event music system know an enemy was destroyed (important for deciding when to transition from battle to normal music)
@@ -7573,7 +7571,7 @@ void ship_dying_frame(object *objp, int ship_num)
 {
 	ship *shipp = &Ships[ship_num];
 
-	if ( shipp->flags & SF_DYING )	{
+	if ( shipp->flags[Ship_Flags::Dying] )	{
 		ship_info *sip = &Ship_info[shipp->ship_info_index];
 		int knossos_ship = (sip->flags & SIF_KNOSSOS_DEVICE);
 
@@ -7586,7 +7584,7 @@ void ship_dying_frame(object *objp, int ship_num)
 		}
 
 		// special case of VAPORIZE
-		if (shipp->flags & SF_VAPORIZE) {
+		if (shipp->flags[Ship_Flags::Vaporize]) {
 			if (timestamp_elapsed(shipp->final_death_time)) {
 				// play death sound
 				snd_play_3d( &Snds[SND_VAPORIZED], &objp->pos, &View_position, objp->radius, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
@@ -7869,7 +7867,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				shipp->end_death_time = shipp->really_final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the ship up.
 			}
 
-			shipp->flags |= SF_EXPLODED;
+			shipp->flags.set(Ship_Flags::Exploded);
 
 			if ( !(ship_get_exp_propagates(shipp)) ) {
 				// apply area of effect blast damage from ship explosion
@@ -7922,7 +7920,7 @@ void ship_dying_frame(object *objp, int ship_num)
 		// If a ship is dying (and not a capital or big ship) then stutter the engine sound
 		if ( timestamp_elapsed(shipp->next_engine_stutter) ) {
 			if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
-				shipp->flags ^= SF_ENGINES_ON;			// toggle state of engines
+				shipp->flags.toggle(Ship_Flags::Engines_on);			// toggle state of engines
 				shipp->next_engine_stutter = timestamp_rand(50, 250);
 			}
 		}
@@ -7934,7 +7932,7 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 	float delta;
 	ship_info *sip;
 
-	if (shipp->flags & SF_DYING)
+	if (shipp->flags[Ship_Flags::Dying])
 		return;
 
 	sip = &Ship_info[shipp->ship_info_index];
@@ -8271,8 +8269,8 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 
 			// check to see if this subsystem was totally non functional before -- if so, then
 			// reset the flags
-			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (sp->flags & SF_DISABLED) ) {
-				sp->flags &= ~SF_DISABLED;
+			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (sp->flags[Ship_Flags::Disabled]) ) {
+                sp->flags.remove(Ship_Flags::Disabled);
 				ship_reset_disabled_physics(objp, sp->ship_info_index);
 			}
 		}
@@ -8435,7 +8433,7 @@ void ship_subsys_disrupted_check(ship *sp)
 
 	if ( engines_disabled ) {
 		if ( !(sp->subsys_disrupted_flags & (1<<SUBSYSTEM_ENGINE)) ) {
-			if ( !(sp->flags & SF_DISABLED) ) {
+			if ( !(sp->flags[Ship_Flags::Disabled]) ) {
 				ship_reset_disabled_physics(&Objects[sp->objnum], sp->ship_info_index);
 			}
 		}
@@ -8642,7 +8640,7 @@ void ship_process_post(object * obj, float frametime)
 
 	// AL 1-6-98: record the initial ammo counts for ships, which is used as the max limit for rearming
 	// Goober5000 - added ballistics support
-	if ( !(shipp->flags & SF_AMMO_COUNT_RECORDED) )
+	if ( !(shipp->flags[Ship_Flags::Ammo_count_recorded]) )
 	{
 		int max_missiles;
 		for ( int i=0; i<MAX_SHIP_SECONDARY_BANKS; i++ ) {
@@ -8673,7 +8671,7 @@ void ship_process_post(object * obj, float frametime)
 			}
 		}
 		
-		shipp->flags |= SF_AMMO_COUNT_RECORDED;
+		shipp->flags.set(Ship_Flags::Ammo_count_recorded);
 	}
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)) {
@@ -8732,11 +8730,11 @@ void ship_process_post(object * obj, float frametime)
 		}
 	}
 	
-	if ( shipp->flags & SF_ARRIVING && Ai_info[shipp->ai_index].mode != AIM_BAY_EMERGE )	{
+	if ( is_ship_arriving(shipp) && Ai_info[shipp->ai_index].mode != AIM_BAY_EMERGE )	{
 		// JAS -- if the ship is warping in, just move it forward at a speed
 		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpin_frame( obj, frametime );
-	} else if ( shipp->flags & SF_DEPART_WARP ) {
+	} else if ( shipp->flags[Ship_Flags::Depart_warp] ) {
 		// JAS -- if the ship is warping out, just move it forward at a speed
 		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpout_frame( obj, frametime );
@@ -8745,9 +8743,9 @@ void ship_process_post(object * obj, float frametime)
 	// update radar status of the ship
 	ship_radar_process(obj, shipp, sip);
 
-	if ( (!(shipp->flags & SF_ARRIVING) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
-		|| ((sip->warpin_type == WT_IN_PLACE_ANIM) && (shipp->flags & SF_ARRIVING_STAGE_2)) )
-		&&	!(shipp->flags & SF_DEPART_WARP))
+	if ( (!(is_ship_arriving(shipp)) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
+		|| ((sip->warpin_type == WT_IN_PLACE_ANIM) && (shipp->flags[Ship_Flags::Arriving_stage_2])) )
+		&&	!(shipp->flags[Ship_Flags::Depart_warp]))
 	{
 		//	Do AI.
 
@@ -9938,15 +9936,15 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// Goober5000 - check other class-specific flags too
 
-	if (sip->flags & SIF_STEALTH)			// changing TO a stealthy ship class
-		sp->flags2 |= SF2_STEALTH;
+    if (sip->flags & SIF_STEALTH)			// changing TO a stealthy ship class
+        sp->flags.set(Ship_Flags::Stealth);
 	else if (sip_orig->flags & SIF_STEALTH)	// changing FROM a stealthy ship class
-		sp->flags2 &= ~SF2_STEALTH;
+		sp->flags.remove(Ship_Flags::Stealth);
 
 	if (sip->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)				// changing TO a don't-collide-invisible ship class
-		sp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+		sp->flags.set(Ship_Flags::Dont_collide_invis);
 	else if (sip_orig->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)	// changing FROM a don't-collide-invisible ship class
-		sp->flags2 &= ~SF2_DONT_COLLIDE_INVIS;
+		sp->flags.remove(Ship_Flags::Dont_collide_invis);
 
     auto obj_flags = objp->flags;
     if (sip->flags & SIF_NO_COLLIDE)								// changing TO a no-collision ship class
@@ -9957,9 +9955,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	obj_set_flags(objp, obj_flags);
 
 	if (sip->flags2 & SIF2_NO_ETS)
-		sp->flags2 |= SF2_NO_ETS;
+		sp->flags.set(Ship_Flags::No_ets);
 	else if (sip_orig->flags2 & SIF2_NO_ETS)
-		sp->flags2 &= ~SF2_NO_ETS;
+		sp->flags.remove(Ship_Flags::No_ets);
 
 
 	// Chief1983: Make sure that when changing to a new ship with secondaries, you switch to bank 0.  They still won't 
@@ -10386,7 +10384,7 @@ int ship_stop_fire_primary(object * obj)
 
 	bank_to_stop = swp->current_primary_bank;
 
-	if ( shipp->flags & SF_PRIMARY_LINKED ) {
+	if ( shipp->flags[Ship_Flags::Primary_linked] ) {
 		num_primary_banks = swp->num_primary_banks;
 	} else {
 		num_primary_banks = MIN(1, swp->num_primary_banks);
@@ -10475,7 +10473,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	}	
 
 	// If the primaries have been locked, bail
-	if (shipp->flags2 & SF2_PRIMARIES_LOCKED)
+	if (shipp->flags[Ship_Flags::Primaries_locked])
 	{
 		return 0;
 	}
@@ -10486,7 +10484,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	// both primary banks.
 	int	num_primary_banks;
 
-	if ( shipp->flags & SF_PRIMARY_LINKED ) {
+	if ( shipp->flags[Ship_Flags::Primary_linked] ) {
 		num_primary_banks = swp->num_primary_banks;
 	} else {
 		num_primary_banks = MIN(1, swp->num_primary_banks);
@@ -10498,7 +10496,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	}
 
 	// if we're firing stream weapons, but the trigger is not down, do nothing
-	if(stream_weapons && !(shipp->flags & SF_TRIGGER_DOWN)){
+	if(stream_weapons && !(shipp->flags[Ship_Flags::Trigger_down])){
 		return 0;
 	}
 
@@ -10573,7 +10571,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				continue;
 		}
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
-		if((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->tag_level == 3) && (shipp->flags & SF_TRIGGER_DOWN) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
+		if((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->tag_level == 3) && (shipp->flags[Ship_Flags::Trigger_down]) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
 			ship_start_targeting_laser(shipp);
 			continue;
 		}
@@ -10593,7 +10591,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}
 
 		// if weapons are linked and this is a nolink weapon, skip it
-		if (shipp->flags & SF_PRIMARY_LINKED && winfo_p->wi_flags3 & WIF3_NOLINK) {
+		if (shipp->flags[Ship_Flags::Primary_linked] && winfo_p->wi_flags3 & WIF3_NOLINK) {
 			continue;
 		}
 
@@ -11224,7 +11222,7 @@ void ship_start_targeting_laser(ship *shipp)
 	}
 
 	// if primary banks are linked
-	if(shipp->flags & SF_PRIMARY_LINKED){
+	if(shipp->flags[Ship_Flags::Primary_linked]){
 		if(bank0_laser){
 			shipp->targeting_laser_bank = 0;
 			return;
@@ -11275,7 +11273,7 @@ void ship_process_targeting_lasers()
 		shipp = &Ships[Objects[so->objnum].instance];
 
 		// if our trigger is no longer down, switch it off
-		if(!(shipp->flags & SF_TRIGGER_DOWN)){
+		if(!(shipp->flags[Ship_Flags::Trigger_down])){
 			ship_stop_targeting_laser(shipp);
 			continue;
 		}		
@@ -11491,7 +11489,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	// If the secondaries have been locked, bail
-	if (shipp->flags2 & SF2_SECONDARIES_LOCKED)
+	if (shipp->flags[Ship_Flags::Secondaries_locked])
 	{
 		return 0;
 	}
@@ -11710,7 +11708,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 		int start_slot, end_slot;
 
-		if ( shipp->flags & SF_SECONDARY_DUAL_FIRE && num_slots > 1) {
+		if ( shipp->flags[Ship_Flags::Secondary_dual_fire] && num_slots > 1) {
 			start_slot = swp->secondary_next_slot[bank];
 			// AL 11-19-97: Ensure enough ammo remains when firing linked secondary weapons
 			if ( check_ammo && (swp->secondary_bank_ammo[bank] < 2) ) {
@@ -11721,7 +11719,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		} else {
 			// de-set the flag just in case dual-fire was set but couldn't be used
 			// because there's less than two firepoints
-			shipp->flags &= ~SF_SECONDARY_DUAL_FIRE;
+            shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
 			start_slot = swp->secondary_next_slot[bank];
 			end_slot = start_slot;
 		}
@@ -11818,7 +11816,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			swp = &Player_ship->weapons;
 			if (bank >= 0) {
 				wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
-				if (Player_ship->flags & SF_SECONDARY_DUAL_FIRE){
+				if (Player_ship->flags[Ship_Flags::Secondary_dual_fire]){
 					joy_ff_play_secondary_shoot((int) (wip->cargo_size * 2.0f));
 				} else {
 					joy_ff_play_secondary_shoot((int) wip->cargo_size);
@@ -11980,7 +11978,7 @@ int ship_select_next_primary(object *objp, int direction)
 	Assert(direction == CYCLE_PRIMARY_NEXT || direction == CYCLE_PRIMARY_PREV);
 
 	original_bank = swp->current_primary_bank;
-	original_link_flag = shipp->flags & SF_PRIMARY_LINKED;
+	original_link_flag = shipp->flags[Ship_Flags::Primary_linked];
 
 	// redid case structure to possibly add more primaries in the future - Goober5000
 	if ( swp->num_primary_banks == 0 )
@@ -12011,15 +12009,15 @@ int ship_select_next_primary(object *objp, int direction)
 		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank < swp->num_primary_banks));
 
 		// first check if linked
-		if ( shipp->flags2 & SF2_SHIP_SELECTIVE_LINKING )
+		if ( shipp->flags[Ship_Flags::Ship_selective_linking] )
 		{
 			printf("npb:%i\n", swp->num_primary_banks );
 		}
 
-		if ( shipp->flags & SF_PRIMARY_LINKED )
+		if ( shipp->flags[Ship_Flags::Primary_linked] )
 		{
-			shipp->flags &= ~SF_PRIMARY_LINKED;
-			if ( direction == CYCLE_PRIMARY_NEXT )
+            shipp->flags.remove(Ship_Flags::Primary_linked);
+            if ( direction == CYCLE_PRIMARY_NEXT )
 			{
 				swp->current_primary_bank = 0;
 			}
@@ -12043,7 +12041,7 @@ int ship_select_next_primary(object *objp, int direction)
 				}
 				else
 				{
-					shipp->flags |= SF_PRIMARY_LINKED;
+                    shipp->flags.set(Ship_Flags::Primary_linked);
 				}
 			}
 			else
@@ -12058,7 +12056,7 @@ int ship_select_next_primary(object *objp, int direction)
 				}
 				else
 				{
-					shipp->flags |= SF_PRIMARY_LINKED;
+                    shipp->flags.set(Ship_Flags::Primary_linked);
 				}
 			}
 		}
@@ -12068,13 +12066,13 @@ int ship_select_next_primary(object *objp, int direction)
 	if ( sip->flags & SIF_BALLISTIC_PRIMARIES )
 	{
 		// if we can't link, disengage primary linking and change to next available bank
-		if (shipp->flags & SF_PRIMARY_LINKED)
+		if (shipp->flags[Ship_Flags::Primary_linked])
 		{
 			for (i = 0; i < swp->num_primary_banks; i++)
 			{
 				if (primary_out_of_ammo(swp, i))
 				{
-					shipp->flags &= ~SF_PRIMARY_LINKED;
+                    shipp->flags.remove(Ship_Flags::Primary_linked);
 					
 					if (direction == CYCLE_PRIMARY_NEXT)
 					{
@@ -12129,7 +12127,7 @@ int ship_select_next_primary(object *objp, int direction)
 
 		// if this ship is ballistics-equipped, and we cycled, then we had to verify some stuff,
 		// so we should check if we actually changed banks
-		if ( (swp->current_primary_bank != original_bank) || ((shipp->flags & SF_PRIMARY_LINKED) != original_link_flag) )
+		if ( (swp->current_primary_bank != original_bank) || ((shipp->flags[Ship_Flags::Primary_linked]) != original_link_flag) )
 		{
 			if ( objp == Player_obj )
 			{
@@ -13331,11 +13329,11 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		swp->num_primary_banks = sip->num_primary_banks;
 	}
 	// AL 12-30-97: Repair broken warp drive
-	if ( shipp->flags & SF_WARP_BROKEN ) {
+	if ( shipp->flags[Ship_Flags::Warp_broken] ) {
 		// TODO: maybe do something here like informing player warp is fixed?
 		// like this? -- Goober5000
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Subspace drive repaired.", 1635));
-		shipp->flags &= ~SF_WARP_BROKEN;
+        shipp->flags.remove(Ship_Flags::Warp_broken);
 	}
 
 	// AL 1-16-97: Replenish countermeasures
@@ -13433,8 +13431,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 			// check to see if this subsystem was totally non functional before -- if so, then
 			// reset the flags
-			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (shipp->flags & SF_DISABLED) ) {
-				shipp->flags &= ~SF_DISABLED;
+			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (shipp->flags[Ship_Flags::Disabled]) ) {
+                shipp->flags.remove(Ship_Flags::Disabled);
 				ship_reset_disabled_physics(objp, shipp->ship_info_index);
 			}
 			break;
@@ -13697,7 +13695,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 			num_support_ships++;
 
 			// don't deal with dying or departing support ships
-			if ( shipp->flags & (SF_DYING | SF_DEPARTING) ) {
+			if ( is_dying_departing(shipp) ) {
 				continue;
 			}
 
@@ -14054,7 +14052,7 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 		
 		if (subsystem == SUBSYSTEM_ENGINE) {
 			// If subsystem is an engine, set/clear the disabled flag
-			(val_f < ENGINE_MIN_STR) ? (Player_ship->flags |= SF_DISABLED) : (Player_ship->flags &= (~SF_DISABLED));
+            Player_ship->flags.set(Ship_Flags::Disabled, (val_f < ENGINE_MIN_STR));
 		}
 	}
 }
@@ -14204,7 +14202,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 			ship_index = Wings[wingnum].ship_index[j];
 			Assert( ship_index != -1 );
 
-			if ( Ships[ship_index].flags & SF_DYING ) {
+			if ( Ships[ship_index].flags[Ship_Flags::Dying] ) {
 				continue;
 			}
 			// see if ship meets our criterea
@@ -14212,7 +14210,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 				continue;
 			}
 			
-			if ( (flags == SHIP_GET_UNSILENCED) && (Ships[ship_index].flags2 & SF2_NO_BUILTIN_MESSAGES) )
+			if ( (flags == SHIP_GET_UNSILENCED) && (Ships[ship_index].flags[Ship_Flags::No_builtin_messages]) )
 			{
 				continue;
 			}
@@ -14274,7 +14272,7 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 		ship_index = Wings[wingnum].ship_index[i];
 		Assert( ship_index != -1 );
 
-		if ( Ships[ship_index].flags & SF_DYING ) {
+		if ( Ships[ship_index].flags[Ship_Flags::Dying] ) {
 			continue;
 		}
 
@@ -14282,7 +14280,7 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 		if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags[Object::Object_Flags::Player_ship]) )
 			continue;
 
-		if ( (flags == SHIP_GET_UNSILENCED) && (Ships[ship_index].flags2 & SF2_NO_BUILTIN_MESSAGES) )
+		if ( (flags == SHIP_GET_UNSILENCED) && (Ships[ship_index].flags[Ship_Flags::No_builtin_messages]) )
 		{
 			continue;
 		}
@@ -14348,7 +14346,7 @@ int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 		else if ( (flags == SHIP_GET_ONLY_PLAYERS) && !(objp->flags[Object::Object_Flags::Player_ship]) )
 			continue;
 
-		if ( Ships[objp->instance].flags & SF_DYING ) {
+		if ( Ships[objp->instance].flags[Ship_Flags::Dying] ) {
 			continue;
 		}
 
@@ -14428,10 +14426,10 @@ int ship_primary_bank_has_ammo(int shipnum)
 int ship_engine_ok_to_warp(ship *sp)
 {
 	// disabled ships can't warp
-	if (sp->flags & SF_DISABLED)
+	if (sp->flags[Ship_Flags::Disabled])
 		return 0;
 
-	if (sp->flags & SF_WARP_BROKEN || sp->flags & SF_WARP_NEVER)
+	if (sp->flags[Ship_Flags::Warp_broken] || sp->flags[Ship_Flags::Warp_never])
 		return 0;
 
 	float engine_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_ENGINE);
@@ -15047,7 +15045,7 @@ void ship_check_cargo_all()
 		if ( (Ship_info[cargo_sp->ship_info_index].flags & SIF_CARGO) && (cargo_sp->team != Player_ship->team) ) {
 			
 			// If the cargo is revealed, continue on to next hostile cargo
-			if ( cargo_sp->flags & SF_CARGO_REVEALED ) {
+			if ( cargo_sp->flags[Ship::Ship_Flags::Cargo_revealed] ) {
 				goto next_cargo;
 			}
 
@@ -15262,7 +15260,7 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	}
 
 	// ensure the ship isn't silenced
-	if ( killer_sp->flags2 & SF2_NO_BUILTIN_MESSAGES ) {
+	if ( killer_sp->flags[Ship_Flags::No_builtin_messages] ) {
 		return; 
 	}
 
@@ -15345,7 +15343,7 @@ void ship_maybe_ask_for_help(ship *sp)
 	}
 
 	// for now, only have wingman ships request help
-	if (!(sp->flags & SF_FROM_PLAYER_WING))
+	if (!(sp->flags[Ship_Flags::From_player_wing]))
 		return;
 
 	// first check if hull is at a critical level
@@ -15364,7 +15362,7 @@ play_ask_help:
 	if (!(Ship_info[sp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER))) //If we're still here, only continue if we're a fighter or bomber.
 		return;
 
-	if (!(sp->flags2 & SF2_NO_BUILTIN_MESSAGES)) // Karajorma - Only unsilenced ships should ask for help
+	if (!(sp->flags[Ship_Flags::No_builtin_messages])) // Karajorma - Only unsilenced ships should ask for help
 	{
 	message_send_builtin_to_player(MESSAGE_HELP, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_ask_help_timestamp = timestamp(Builtin_messages[MESSAGE_HELP].min_delay);
@@ -15412,7 +15410,7 @@ void ship_scream(ship *sp)
 		multi_team_filter = sp->team;
 
 	// Bail if the ship is silenced
-	if (sp->flags2 & SF2_NO_BUILTIN_MESSAGES)
+	if (sp->flags[Ship_Flags::No_builtin_messages])
 	{
 		return;
 	}
@@ -15421,7 +15419,7 @@ void ship_scream(ship *sp)
 	Player->allow_scream_timestamp = timestamp(Builtin_messages[MESSAGE_WINGMAN_SCREAM].min_delay);
 	Player->scream_count++;
 
-	sp->flags |= SF_SHIP_HAS_SCREAMED;
+    sp->flags.set(Ship_Flags::Ship_has_screamed);
 
 	// prevent overlap with help messages
 	if (timestamp_until(Player->allow_ask_help_timestamp) < 15000)
@@ -15434,11 +15432,11 @@ void ship_scream(ship *sp)
 void ship_maybe_scream(ship *sp)
 {
 	// bail if screaming is disabled
-	if (sp->flags2 & SF2_NO_DEATH_SCREAM)
+	if (sp->flags[Ship_Flags::No_death_scream])
 		return;
 
 	// if screaming is enabled, skip all checks
-	if (!(sp->flags2 & SF2_ALWAYS_DEATH_SCREAM))
+	if (!(sp->flags[Ship_Flags::Always_death_scream]))
 	{
 		// only scream x% of the time 
 		if ( (int)(frand()*100) > Builtin_messages[MESSAGE_WINGMAN_SCREAM].occurrence_chance ) {
@@ -15453,7 +15451,7 @@ void ship_maybe_scream(ship *sp)
 		if (!(The_mission.ai_profile->flags2 & AIPF2_PERFORM_FEWER_SCREAM_CHECKS))
 		{
 			// bail if this ship isn't from the player wing
-			if (!(sp->flags & SF_FROM_PLAYER_WING))
+			if (!(sp->flags[Ship_Flags::From_player_wing]))
 				return;
 
 			// first check if the player has reached the maximum number of screams for a mission
@@ -15497,7 +15495,7 @@ void ship_maybe_tell_about_low_ammo(ship *sp)
 		return;
 
 	// Silent ships should remain just that
-	if (sp->flags2 & SF2_NO_BUILTIN_MESSAGES) {
+	if (sp->flags[Ship_Flags::No_builtin_messages]) {
 		return;
 	}
 
@@ -15566,7 +15564,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		return;
 
 	// Silent ships should remain just that
-	if (sp->flags2 & SF2_NO_BUILTIN_MESSAGES)
+	if (sp->flags[Ship_Flags::No_builtin_messages])
 		return;
 
 	// AL 1-4-98:	If ship integrity is low, tell player you want to get repaired.  Otherwise, tell
@@ -15575,7 +15573,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 	int message_type = -1;
 	int heavily_damaged = (get_hull_pct(&Objects[sp->objnum]) < 0.4);
 
-	if (heavily_damaged || (sp->flags & SF_DISABLED))
+	if (heavily_damaged || (sp->flags[Ship_Flags::Disabled]))
 	{
 		message_type = MESSAGE_REPAIR_REQUEST;
 	}
@@ -15645,7 +15643,7 @@ void ship_primary_changed(ship *sp)
 	swp = &sp->weapons;
 
 
-	if (sp->flags & SF_PRIMARY_LINKED) {
+	if (sp->flags[Ship_Flags::Primary_linked]) {
 		// if we are linked now find any body who is down and flip them up
 		for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 			if (swp->primary_animation_position[i] == MA_POS_NOT_SET) {
@@ -15688,7 +15686,7 @@ void ship_primary_changed(ship *sp)
 	Assert(sp);
 
 	if ( MULTIPLAYER_MASTER )
-		send_ship_weapon_change( sp, MULTI_PRIMARY_CHANGED, swp->current_primary_bank, (sp->flags & SF_PRIMARY_LINKED)?1:0 );
+		send_ship_weapon_change( sp, MULTI_PRIMARY_CHANGED, swp->current_primary_bank, (sp->flags[Ship::Ship_Flags::Primary_linked])?1:0 );
 #endif
 }
 
@@ -15734,7 +15732,7 @@ void ship_secondary_changed(ship *sp)
 	Assert(sp);
 
 	if ( MULTIPLAYER_MASTER )
-		send_ship_weapon_change( sp, MULTI_SECONDARY_CHANGED, swp->current_secondary_bank, (sp->flags & SF_SECONDARY_DUAL_FIRE)?1:0 );
+		send_ship_weapon_change( sp, MULTI_SECONDARY_CHANGED, swp->current_secondary_bank, (sp->flags[Ship::Ship_Flags::Secondary_dual_fire])?1:0 );
 #endif
 }
 
@@ -15783,7 +15781,7 @@ ship_type_info *ship_get_type_info(object *objp)
 void ship_do_cargo_revealed( ship *shipp, int from_network )
 {
 	// don't do anything if we already know the cargo
-	if ( shipp->flags & SF_CARGO_REVEALED ){
+	if ( shipp->flags[Ship_Flags::Cargo_revealed] ){
 		return;
 	}
 	
@@ -15794,7 +15792,7 @@ void ship_do_cargo_revealed( ship *shipp, int from_network )
 		send_cargo_revealed_packet( shipp );		
 	}
 
-	shipp->flags |= SF_CARGO_REVEALED;
+    shipp->flags.set(Ship_Flags::Cargo_revealed);
 	shipp->time_cargo_revealed = Missiontime;	
 
 	// if the cargo is something other than "nothing", then make a log entry
@@ -15835,7 +15833,7 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 void ship_do_cargo_hidden( ship *shipp, int from_network )
 {
 	// don't do anything if the cargo is already hidden
-	if ( !(shipp->flags & SF_CARGO_REVEALED) )
+	if ( !(shipp->flags[Ship_Flags::Cargo_revealed]) )
 	{
 		return;
 	}
@@ -15847,7 +15845,7 @@ void ship_do_cargo_hidden( ship *shipp, int from_network )
 		send_cargo_hidden_packet( shipp );		
 	}
 
-	shipp->flags &= ~SF_CARGO_REVEALED;
+    shipp->flags.remove(Ship_Flags::Cargo_revealed);
 
 	// don't log that the cargo was hidden and don't reset the time cargo revealed
 }
@@ -16448,7 +16446,7 @@ int is_support_allowed(object *objp, bool do_simple_check)
 			}
 
 			// make sure it's not leaving or blowing up
-			if (Ships[temp].flags & (SF_DYING | SF_DEPARTING))
+			if (is_dying_departing(&Ships[temp]))
 			{
 				return 0;
 			}
@@ -16530,7 +16528,7 @@ int ship_get_random_targetable_ship()
 			continue;
 
 		// skip if we aren't supposed to target it
-		if ( Ships[Objects[so->objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS )
+        if (should_be_ignored(&Ships[Objects[so->objnum].instance]))
 			continue;
 
 		if (idx >= MAX_SHIPS) {
@@ -16938,7 +16936,7 @@ float ship_get_max_speed(ship *shipp)
 	max_speed = MAX(max_speed, sip->max_vel.xyz.z);
 
 	// afterburn if not locked
-	if (!(shipp->flags2 & SF2_AFTERBURNER_LOCKED)) {
+	if (!(shipp->flags[Ship_Flags::Always_death_scream])) {
 		max_speed = MAX(max_speed, sip->afterburner_max_vel.xyz.z);
 	}
 
@@ -17095,7 +17093,7 @@ bool ship_useful_for_departure(int shipnum, int path_mask)
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
 
 	// not valid if dying or departing
-	if (Ships[shipnum].flags & (SF_DYING | SF_DEPARTING))
+	if (is_dying_departing(&Ships[shipnum]))
 		return false;
 
 	// no dockbay, can't depart to it
@@ -17219,11 +17217,11 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 		ship_weapon *swp = &shipp->weapons;
 
 		// rotate only if trigger is down
-		if ( !(shipp->flags & SF_TRIGGER_DOWN) )
+		if ( !(shipp->flags[Ship_Flags::Trigger_down]) )
 			return;
 
 		// check linked
-		if ( shipp->flags & SF_PRIMARY_LINKED )
+		if ( shipp->flags[Ship_Flags::Primary_linked] )
 		{
 			int i, ammo_tally = 0;
 
@@ -18500,7 +18498,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, draw_list 
 	ship *shipp = &Ships[num];
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 
-	if ( !(sip->flags2 & SIF2_DRAW_WEAPON_MODELS) || (shipp->flags2 & SF2_CLOAKED) ) {
+	if ( !(sip->flags2 & SIF2_DRAW_WEAPON_MODELS) || (shipp->flags[Ship_Flags::Cloaked]) ) {
 		return;
 	}
 
@@ -18635,11 +18633,11 @@ void ship_render_set_animated_effect(model_render_params *render_info, ship *shi
 	render_info->set_animated_effect(sep->shader_effect, timer);
 
 	if ( sep->disables_rendering && (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) ) {
-		shipp->flags2 |= SF2_CLOAKED;
+        shipp->flags.set(Ship_Flags::Cloaked);
 		shipp->shader_effect_active = false;
 	} else {
-		shipp->flags2 &= ~SF2_CLOAKED;
-		if (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) {
+        shipp->flags.remove(Ship_Flags::Cloaked);
+        if (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) {
 			shipp->shader_effect_active = false;
 		}
 	}
@@ -18652,7 +18650,7 @@ void ship_render(object* obj, draw_list* scene)
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 	ship *warp_shipp = NULL;
 	bool is_first_stage_arrival = false;
-	bool show_thrusters = ((shipp->flags2 & SF2_NO_THRUSTERS) == 0) && !Rendering_to_shadow_map;
+	bool show_thrusters = (!shipp->flags[Ship_Flags::No_thrusters]) && !Rendering_to_shadow_map;
 	dock_function_info dfi;
 
 	MONITOR_INC( NumShipsRend, 1 );
@@ -18664,7 +18662,7 @@ void ship_render(object* obj, draw_list* scene)
 	if ( dfi.maintained_variables.bool_value ) {
 		warp_shipp = &Ships[dfi.maintained_variables.objp_value->instance];
 
-		is_first_stage_arrival = ((warp_shipp->flags & SF_ARRIVING_STAGE_1) > 0);
+		is_first_stage_arrival = warp_shipp->flags[Ship_Flags::Arriving_stage_1];
 
 		// This is a hack to make ships using the hyperspace warpin type to
 		// render even in stage 1, which is used for collision detection
@@ -18680,9 +18678,9 @@ void ship_render(object* obj, draw_list* scene)
 		//WMC - based on Bobb's secondary thruster stuff
 		//which was in turn based on the beam code.
 		//I'm gonna need some serious acid to neutralize this base.
-		if(shipp->flags & SF_ARRIVING) {
+		if(is_ship_arriving(shipp)) {
 			shipp->warpin_effect->warpShipRender();
-		} else if(shipp->flags & SF_DEPART_WARP) {
+		} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 			shipp->warpout_effect->warpShipRender();
 		}
 
@@ -18716,9 +18714,9 @@ void ship_render(object* obj, draw_list* scene)
 		//WMC - based on Bobb's secondary thruster stuff
 		//which was in turn based on the beam code.
 		//I'm gonna need some serious acid to neutralize this base.
-		if(shipp->flags & SF_ARRIVING) {
+		if(is_ship_arriving(shipp)) {
 			shipp->warpin_effect->warpShipRender();
-		} else if(shipp->flags & SF_DEPART_WARP) {
+		} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 			shipp->warpout_effect->warpShipRender();
 		}
 
@@ -18729,7 +18727,7 @@ void ship_render(object* obj, draw_list* scene)
 
 	model_render_params render_info;
 	
-	if ( !(shipp->flags & SF_DISABLED) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
+	if ( !(shipp->flags[Ship_Flags::Disabled]) && !ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) && show_thrusters) {
 		mst_info mst;
 
 		ship_set_thruster_info(&mst, obj, shipp, sip);
@@ -18742,9 +18740,9 @@ void ship_render(object* obj, draw_list* scene)
 	// Warp_shipp points to the ship that is going through a
 	// warp... either this ship or the ship it is docked with.
 	if ( warp_shipp != NULL ) {
-		if ( warp_shipp->flags & SF_ARRIVING ) {
+		if ( is_ship_arriving(warp_shipp) ) {
 			warp_shipp->warpin_effect->warpShipClip(&render_info);
-		} else if ( warp_shipp->flags & SF_DEPART_WARP ) {
+		} else if ( warp_shipp->flags[Ship_Flags::Depart_warp] ) {
 			warp_shipp->warpout_effect->warpShipClip(&render_info);
 		}
 	}
@@ -18773,7 +18771,7 @@ void ship_render(object* obj, draw_list* scene)
 		render_flags = MR_NO_TEXTURING | MR_NO_LIGHTING;
 	}
 
-	if (shipp->flags2 & SF2_GLOWMAPS_DISABLED) {
+	if (shipp->flags[Ship_Flags::Glowmaps_disabled]) {
 		render_flags |= MR_NO_GLOWMAPS;
 	}
 
@@ -18786,7 +18784,7 @@ void ship_render(object* obj, draw_list* scene)
 	render_info.set_replacement_textures(shipp->ship_replacement_textures);
 
 	// small ships
-	if ( !( shipp->flags2 & SF2_CLOAKED ) ) {
+	if ( !( shipp->flags[Ship_Flags::Cloaked] ) ) {
 		if ( ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) && ( sip->flags & SIF_SMALL_SHIP ) ) {			
 			// force detail levels
 			float fog_val = neb2_get_fog_intensity(obj);
@@ -18807,9 +18805,26 @@ void ship_render(object* obj, draw_list* scene)
 	//WMC - based on Bobb's secondary thruster stuff
 	//which was in turn based on the beam code.
 	//I'm gonna need some serious acid to neutralize this base.
-	if(shipp->flags & SF_ARRIVING) {
+	if(is_ship_arriving(shipp)) {
 		shipp->warpin_effect->warpShipRender();
-	} else if(shipp->flags & SF_DEPART_WARP) {
+	} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 		shipp->warpout_effect->warpShipRender();
 	}
+}
+
+flagset<Ship::Ship_Flags> Ignore_List;
+void set_default_ignore_list() {
+    Ignore_List.reset();
+    Ignore_List.set(Ship::Ship_Flags::Exploded);
+    Ignore_List.set(Ship::Ship_Flags::Depart_warp);
+    Ignore_List.set(Ship::Ship_Flags::Dying);
+    Ignore_List.set(Ship::Ship_Flags::Arriving_stage_1);
+    Ignore_List.set(Ship::Ship_Flags::Hidden_from_sensors);
+}
+
+void toggle_ignore_list_flag(Ship::Ship_Flags flag) {
+    if (Ignore_List[flag])
+        Ignore_List.remove(flag);
+    else
+        Ignore_List.set(flag);
 }

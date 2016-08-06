@@ -84,7 +84,7 @@ void afterburners_start(object *objp)
 	sip = &Ship_info[shipp->ship_info_index];
 	
 	// bail if afterburners are locked
-	if (shipp->flags2 & SF2_AFTERBURNER_LOCKED)	{
+	if (shipp->flags[Ship::Ship_Flags::Afterburner_locked])	{
 		return;
 	}
 

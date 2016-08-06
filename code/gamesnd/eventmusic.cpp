@@ -1619,7 +1619,7 @@ int hostile_ships_present()
 			continue;
 
 		// check if ship is threatening
-		if ( (shipp->flags & (SF_DISABLED|SF_DYING|SF_DEPARTING)) || (ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) ) 
+		if ( is_dying_departing(shipp) || shipp->flags[Ship::Ship_Flags::Disabled] || (ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) ) 
 			continue;
 	
 		// check if ship is flyable

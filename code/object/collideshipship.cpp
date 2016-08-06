@@ -132,7 +132,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	// Make ships that are warping in not get collision detection done
-	if ( heavy_shipp->flags & SF_ARRIVING_STAGE_1 ) { 
+	if ( heavy_shipp->flags[Ship::Ship_Flags::Arriving_stage_1] ) { 
 		return 0;
 	}
 
@@ -221,7 +221,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);			// flags
 
 	//	Only check invisible face polygons for ship:ship of different teams.
-	if ( !(heavy_shipp->flags2 & SF2_DONT_COLLIDE_INVIS) ) {
+	if ( !(heavy_shipp->flags[Ship::Ship_Flags::Dont_collide_invis]) ) {
 		if ((heavy_obj->flags[Object::Object_Flags::Player_ship]) || (light_obj->flags[Object::Object_Flags::Player_ship]) || (heavy_shipp->team != light_shipp->team) ) {
 			mc.flags |= MC_CHECK_INVISIBLE_FACES;
 		}
@@ -1268,8 +1268,8 @@ int collide_ship_ship( obj_pair * pair )
 		sif_b_flags = Ship_info[Ships[B->instance].ship_info_index].flags;
 
 		// if ship is huge and warping in or out
-		if ( ((Ships[A->instance].flags & SF_ARRIVING_STAGE_1) && (sif_a_flags & (SIF_HUGE_SHIP)))
-			|| ((Ships[B->instance].flags & SF_ARRIVING_STAGE_1) && (sif_b_flags & (SIF_HUGE_SHIP))) ) {
+		if ( ((Ships[A->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (sif_a_flags & (SIF_HUGE_SHIP)))
+			|| ((Ships[B->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (sif_b_flags & (SIF_HUGE_SHIP))) ) {
 			pair->next_check_time = timestamp(0);	// check next time
 			return 0;
 		}

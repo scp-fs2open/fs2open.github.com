@@ -428,7 +428,7 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	shipp->weapons.current_primary_bank = (int)cur_primary_bank;
 	shipp->weapons.current_secondary_bank = (int)cur_secondary_bank;
 	if(cur_link_status & (1<<0)){
-		shipp->flags |= SF_PRIMARY_LINKED;
+		shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 	} else {
 		shipp->flags &= ~(SF_PRIMARY_LINKED);
 	}			

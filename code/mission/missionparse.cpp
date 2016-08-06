@@ -2036,7 +2036,7 @@ int parse_create_object_sub(p_object *p_objp)
 	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status])
 	{
 		if (!(Game_mode & GM_MULTIPLAYER)) {
-			shipp->flags |= SF_RED_ALERT_STORE_STATUS;
+			shipp->flags.set(Ship::Ship_Flags::Red_alert_store_status);
 		}
 	}
 
@@ -2071,27 +2071,27 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader])
-		shipp->flags |= SF_DOCK_LEADER;
+		shipp->flags.set(Ship::Ship_Flags::Dock_leader);
 
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_broken])
-		shipp->flags |= SF_WARP_BROKEN;
+    if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_broken])
+        shipp->flags.set(Ship::Ship_Flags::Warp_broken);
 
-	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_never])
-		shipp->flags |= SF_WARP_NEVER;
+    if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_never])
+        shipp->flags.set(Ship::Ship_Flags::Warp_never);
 ////////////////////////
 
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
-	if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NO_ARRIVAL_WARP))
-		shipp->flags |= SF_NO_ARRIVAL_WARP;
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::No_arrival_warp]))
+        shipp->flags.set(Ship::Ship_Flags::No_arrival_warp);
 
-	if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NO_DEPARTURE_WARP))
-		shipp->flags |= SF_NO_DEPARTURE_WARP;
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::No_departure_warp]))
+        shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
 
-	// ditto for Kazan
-	if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY))
-		shipp->flags2 |= SF2_NAVPOINT_CARRY;
+    // ditto for Kazan
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry]))
+        shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
 	// is useful in multiplayer when ships respawn
@@ -2205,7 +2205,7 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 			}
 
-			if (shipp->flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY || ptr->system_info->flags & MSS_FLAG_TURRET_LOCKED)
+			if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags & MSS_FLAG_TURRET_LOCKED)
 			{
 				// mark all turrets as locked
 				if(ptr->system_info->type == SUBSYSTEM_TURRET)
@@ -2384,7 +2384,7 @@ int parse_create_object_sub(p_object *p_objp)
 			mission_hotkey_mf_add(Wings[shipp->wingnum].hotkey, shipp->objnum, HOTKEY_MISSION_FILE_ADDED);
 
 		// possibly add this ship to the hud escort list
-		if (shipp->flags & SF_ESCORT)
+		if (shipp->flags[Ship::Ship_Flags::Escort])
 			hud_add_remove_ship_escort(objnum, 1);
 	}
 
@@ -2468,7 +2468,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	for (j = 0; j < MAX_STARTING_WINGS; j++)
 	{
 		if (!stricmp(Starting_wing_names[j], wingp->name))
-			Ships[shipnum].flags |= SF_FROM_PLAYER_WING;
+			Ships[shipnum].flags[Ship::Ship_Flags::From_player_wing];
 	}
 
 	// handle AI
@@ -3488,7 +3488,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			{
 				// be sure to set the variable in the ships structure for the final death time!!!
 				Ships[objp->instance].final_death_time = pobjp->destroy_before_mission_time;
-				Ships[objp->instance].flags |= SF_KILL_BEFORE_MISSION;
+				Ships[objp->instance].flags[Ship::Ship_Flags::Kill_before_mission];
 			}
 		}
 	}
@@ -4175,7 +4175,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			for (j = 0; j < MAX_TVT_WINGS; j++)
 			{
 				if (!stricmp(TVT_wing_names[j], wingp->name))
-					Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
+					Ships[Objects[objnum].instance].flags.set(Ship::Ship_Flags::From_player_wing);
 			}
 		}
 		else
@@ -4183,7 +4183,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			for (j = 0; j < MAX_STARTING_WINGS; j++)
 			{
 				if (!stricmp(Starting_wing_names[j], wingp->name))
-					Ships[Objects[objnum].instance].flags |= SF_FROM_PLAYER_WING;
+					Ships[Objects[objnum].instance].flags.set(Ship::Ship_Flags::From_player_wing);
 			}
 		}
 
@@ -4242,7 +4242,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		mission_log_add_entry( LOG_WING_ARRIVED, wingp->name, NULL, wingp->current_wave );
 		ship_num = wingp->ship_index[0];
 
-		if ( !(Ships[ship_num].flags & SF_NO_ARRIVAL_MUSIC) && !(wingp->flags & WF_NO_ARRIVAL_MUSIC) ) {
+		if ( !(Ships[ship_num].flags[Ship::Ship_Flags::No_arrival_music]) && !(wingp->flags & WF_NO_ARRIVAL_MUSIC) ) {
 			if ( timestamp_elapsed(Allow_arrival_music_timestamp) ) {
 				Allow_arrival_music_timestamp = timestamp(ARRIVAL_MUSIC_MIN_SEPARATION);
 				event_music_arrival(Ships[ship_num].team);	
@@ -5775,7 +5775,7 @@ void post_process_mission()
 		// pass over non-ship objects and player ship objects
 		if ( Ships[shipnum].objnum == -1 || (Objects[Ships[shipnum].objnum].flags[Object::Object_Flags::Player_ship]) )
 			continue;
-		if ( Ships[shipnum].flags & SF_IGNORE_COUNT )
+		if ( Ships[shipnum].flags[Ship::Ship_Flags::Ignore_count] )
 			continue;
 		if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_IGNORE_COUNT) )
 			continue;
@@ -5815,7 +5815,7 @@ void post_process_mission()
 		ship *shipp = &Ships[Objects[so->objnum].instance];
 
 		// don't process non player wing ships
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING ) )
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing] ) )
 			continue;			
 
 		swp = &shipp->weapons;
@@ -6688,7 +6688,7 @@ int mission_did_ship_arrive(p_object *objp)
 		Assert(object_num >= 0 && object_num < MAX_OBJECTS);
 		
 		// Play the music track for an arrival
-		if ( !(Ships[Objects[object_num].instance].flags & SF_NO_ARRIVAL_MUSIC) )
+		if ( !(Ships[Objects[object_num].instance].flags[Ship::Ship_Flags::No_arrival_music]) )
 			if ( timestamp_elapsed(Allow_arrival_music_timestamp) ) {
 				Allow_arrival_music_timestamp = timestamp(ARRIVAL_MUSIC_MIN_SEPARATION);
 				event_music_arrival(Ships[Objects[object_num].instance].team);
@@ -6782,7 +6782,7 @@ void mission_parse_support_arrived( int objnum )
 		}
 	}
 
-	Ships[Objects[objnum].instance].flags |= SF_WARPED_SUPPORT;
+	Ships[Objects[objnum].instance].flags.set(Ship::Ship_Flags::Warped_support);
 
 	Arriving_support_ship = NULL;
 	Num_arriving_repair_targets = 0;
@@ -6976,7 +6976,7 @@ void mission_eval_arrivals()
 int ship_can_use_warp_drive(ship *shipp)
 {
 	// must *have* a subspace drive
-	if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
+	if (shipp->flags[Ship::Ship_Flags::No_subspace_drive])
 		return 0;
 
 	// navigation must work
@@ -7007,7 +7007,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	if (goal_is_to_warp)
 	{
 		// aha, but not if we were ORDERED to depart, because the comms menu ALSO uses the goal code, and yet the comms menu means any departure method!
-		if ((shipp->flags & SF_DEPARTURE_ORDERED) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_DEPARTURE_ORDERED)))
+		if ((shipp->flags[Ship::Ship_Flags::Departure_ordered]) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_DEPARTURE_ORDERED)))
 		{
 			mprintf(("Looks like we were ordered to depart; initiating the standard departure logic\n"));
 		}
@@ -7103,7 +7103,8 @@ try_to_warp:
 		// 4) An instructor in a training mission has been fired upon
 		mprintf(("Can't warp!  Doing something else instead.\n"));
 
-		shipp->flags &= ~SF_DEPARTING;
+        shipp->flags.remove(Ship::Ship_Flags::Depart_dockbay);
+        shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
 		ai_do_default_behavior(objp);
 
 		return 0;
@@ -7134,7 +7135,7 @@ void mission_eval_departures()
 			// don't process a ship that is already departing or dying or disabled
 			// AL 12-30-97: Added SF_CANNOT_WARP to check
 			// Goober5000 - fixed so that it WILL eval when SF_CANNOT_WARP if departing to dockbay
-			if ( (shipp->flags & (SF_DEPARTING | SF_DYING)) || ((shipp->flags & SF_CANNOT_WARP) && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+			if ( (is_dying_departing(shipp)) || (ship_cannot_warp(shipp) && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
 				continue;
 			}
 
@@ -7184,7 +7185,7 @@ void mission_eval_departures()
 				ship *shipp;
 
 				shipp = &Ships[wingp->ship_index[j]];
-				if ( (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_DYING) )
+				if ( (is_ship_departing(shipp)) || (shipp->flags[Ship::Ship_Flags::Dying]) )
 					continue;
 
 				Assert ( shipp->objnum != -1 );

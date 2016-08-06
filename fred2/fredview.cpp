@@ -2198,7 +2198,7 @@ void CFREDView::OnFormWing()
 	bool found = false;
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags[Object::Object_Flags::Marked])) {
-			if(Ships[ptr->instance].flags & SF_REINFORCEMENT) {
+			if(Ships[ptr->instance].flags[Ship::Ship_Flags::Reinforcement]) {
 				found = true;
 				break;
 			}
@@ -2540,13 +2540,13 @@ int CFREDView::global_error_check()
 				}
 			}
 
-			if ( (Ships[i].flags & SF_KILL_BEFORE_MISSION) && (Ships[i].hotkey >= 0) ){
+			if ( (Ships[i].flags[Ship::Ship_Flags::Kill_before_mission]) && (Ships[i].hotkey >= 0) ){
 				if (error("Ship flagged as \"destroy before mission start\" has a hotkey assignment")){
 					return 1;
 				}
 			}
 
-			if ( (Ships[i].flags & SF_KILL_BEFORE_MISSION) && (ptr->type == OBJ_START) ){
+			if ( (Ships[i].flags[Ship::Ship_Flags::Kill_before_mission]) && (ptr->type == OBJ_START) ){
 				if (error("Player start flagged as \"destroy before mission start\"")){
 					return 1;
 				}

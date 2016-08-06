@@ -2837,14 +2837,14 @@ void player_repair_frame(float frametime)
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != NULL) && (Net_player->player_id != Net_players[idx].player_id) && (Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS)){
 
 				// don't rearm/repair if the player is dead or dying/departing
-				if ( !NETPLAYER_IS_DEAD(np) && !(Ships[Objects[np->m_player->objnum].instance].flags & (SF_DYING|SF_DEPARTING)) ) {
+				if ( !NETPLAYER_IS_DEAD(np) && !(is_dying_departing(&Ships[Objects[np->m_player->objnum].instance])) ) {
 					ai_do_repair_frame(&Objects[Net_players[idx].m_player->objnum],&Ai_info[Ships[Objects[Net_players[idx].m_player->objnum].instance].ai_index],frametime);
 				}
 			}
 		}
 	}	
 
-	if ( (Player_obj != NULL) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER) && (Player_ship != NULL) && !(Player_ship->flags & SF_DYING) ) {
+	if ( (Player_obj != NULL) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER) && (Player_ship != NULL) && !(Player_ship->flags[Ship::Ship_Flags::Dying]) ) {
 		ai_do_repair_frame(Player_obj, &Ai_info[Ships[Player_obj->instance].ai_index], frametime);
 	}
 }
@@ -2997,7 +2997,7 @@ void say_view_target()
 			char view_target_name[128] = "";
 			switch(Objects[Player_ai->target_objnum].type) {
 			case OBJ_SHIP:
-				if (Ships[Objects[Player_ai->target_objnum].instance].flags2 & SF2_HIDE_SHIP_NAME) {
+				if (Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Hide_ship_name]) {
 					strcpy_s(view_target_name, "targeted ship");
 				} else {
 					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
@@ -4776,7 +4776,7 @@ void game_do_frame()
 	game_set_frametime(GS_STATE_GAME_PLAY);
 	game_update_missiontime();
 
-//	if (Player_ship->flags & SF_DYING)
+//	if (Player_ship->flags[Ship::Ship_Flags::Dying])
 //		flFrametime /= 15.0;
 
 	if (Game_mode & GM_STANDALONE_SERVER) {

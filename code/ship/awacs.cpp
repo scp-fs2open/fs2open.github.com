@@ -118,7 +118,7 @@ void awacs_update_all_levels()
 		shipp = &Ships[Objects[moveup->objnum].instance];
 
 		// ignore dying, departing, or arriving ships
-		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING))
+		if ((is_dying_departing(shipp) || is_ship_arriving(shipp)))
 			continue;
 
 		// only look at ships that have awacs subsystems
@@ -178,7 +178,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	ship *shipp = NULL;
 	ship_info *sip = NULL;
 
-	int viewer_has_primitive_sensors = (viewer->flags2 & SF2_PRIMITIVE_SENSORS);
+	int viewer_has_primitive_sensors = (viewer->flags[Ship::Ship_Flags::Primitive_sensors]);
 
 	// calc distance from viewer to target
 	vm_vec_sub(&dist_vec, &target->pos, &Objects[viewer->objnum].pos);
@@ -207,8 +207,8 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		// Goober5000
 		shipp = &Ships[target->instance];
 		sip = &Ship_info[shipp->ship_info_index];
-		stealth_ship = (shipp->flags2 & SF2_STEALTH);
-		friendly_stealth_invisible = (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS);
+		stealth_ship = (shipp->flags[Ship::Ship_Flags::Stealth]);
+		friendly_stealth_invisible = (shipp->flags[Ship::Ship_Flags::Friendly_stealth_invis]);
 
 		check_huge_ship = (sip->flags & SIF_HUGE_SHIP);
 	}
@@ -370,15 +370,15 @@ void team_visibility_update()
 		shipp = &Ships[ship_num];
 
 		// ignore dying, departing, or arriving ships
-		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING))
+		if (is_dying_departing(shipp) || is_ship_arriving(shipp))
 			continue;
 
 		// check if ship is flagged as invisible
-		if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
+		if (shipp->flags[Ship::Ship_Flags::Hidden_from_sensors])
 			continue;
 
 		// check if ship is stealthed and friendly-invisible
-		if ((shipp->flags2 & SF2_STEALTH) && (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS))
+		if ((shipp->flags[Ship::Ship_Flags::Stealth]) && (shipp->flags[Ship::Ship_Flags::Friendly_stealth_invis]))
 			continue;
 
 		Ship_visibility_by_team[shipp->team][ship_num] = 1;
@@ -446,7 +446,7 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 	Assert(target->type == OBJ_SHIP);
 
 	// not visible if viewer has primitive sensors
-	if (viewer->flags2 & SF2_PRIMITIVE_SENSORS)
+	if (viewer->flags[Ship::Ship_Flags::Primitive_sensors])
 		return 0;
 
 	// not visible if out of range

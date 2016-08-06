@@ -575,7 +575,7 @@ void shipfx_warpin_start( object *objp )
 
 	// docked ships who are not dock leaders don't use the warp effect code
 	// (the dock leader takes care of the whole group)
-	if (object_is_docked(objp) && !(shipp->flags & SF_DOCK_LEADER))
+	if (object_is_docked(objp) && !(shipp->flags[Ship::Ship_Flags::Dock_leader]))
 	{
 		return;
 	}
@@ -608,7 +608,7 @@ void shipfx_warpin_frame( object *objp, float frametime )
 
 	shipp = &Ships[objp->instance];
 
-	if ( shipp->flags & SF_DYING ) return;
+	if ( shipp->flags[Ship::Ship_Flags::Dying] ) return;
 
 	shipp->warpin_effect->warpFrame(frametime);
 }
@@ -796,7 +796,7 @@ void shipfx_warpout_start( object *objp )
 	ship *shipp;
 	shipp = &Ships[objp->instance];
 
-	if ( 	shipp->flags & SF_DEPART_WARP )	{
+	if ( 	shipp->flags[Ship::Ship_Flags::Depart_warp] )	{
 		mprintf(( "Ship is already departing!\n" ));
 		return;
 	}
@@ -810,12 +810,12 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	// if we're dying return
-	if ( shipp->flags & SF_DYING ) {
+	if ( shipp->flags[Ship::Ship_Flags::Dying] ) {
 		return;
 	}
 
 	//return if disabled
-	if ( shipp->flags & SF_DISABLED ){
+	if ( shipp->flags[Ship::Ship_Flags::Disabled] ){
 		return;
 	}
 
@@ -850,11 +850,11 @@ void shipfx_warpout_frame( object *objp, float frametime )
 	ship *shipp;
 	shipp = &Ships[objp->instance];
 
-	if ( shipp->flags & SF_DYING ) return;
+	if ( shipp->flags[Ship::Ship_Flags::Dying] ) return;
 
 	//disabled ships should stay on the battlefield if they were disabled during warpout
 	//phreak 5/22/03
-	if (shipp->flags & SF_DISABLED){
+	if (shipp->flags[Ship::Ship_Flags::Disabled]){
 		shipp->flags &= ~(SF_DEPARTING);
 		return;
 	}
@@ -1503,7 +1503,7 @@ void shipfx_emit_spark( int n, int sn )
 			if (shipp->flags & SF_ARRIVING)// if in front of warp plane, don't create.
 				create_spark = 0;
 		} else {
-			if (shipp->flags & SF_DEPART_WARP)
+			if (shipp->flags[Ship::Ship_Flags::Depart_warp])
 				create_spark = 0;
 		}
 	}
@@ -3567,7 +3567,7 @@ int WE_Default::warpFrame(float frametime)
 {
 	if(direction == WD_WARP_IN)
 	{
-		if ((shipp->flags & SF_ARRIVING_STAGE_1) && timestamp_elapsed(stage_time_end))
+		if ((shipp->flags[Ship::Ship_Flags::Arriving_stage_1]) && timestamp_elapsed(stage_time_end))
 		{
 			// let physics know the ship is going to warp in.
 			objp->phys_info.flags |= PF_WARP_IN;

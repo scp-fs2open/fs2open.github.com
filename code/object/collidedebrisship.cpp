@@ -44,7 +44,7 @@ int collide_debris_ship( obj_pair * pair )
 	Assert( pship->type == OBJ_SHIP );
 
 	// don't check collision if it's our own debris and we are dying
-	if ( (pdebris->parent == OBJ_INDEX(pship)) && (Ships[pship->instance].flags & SF_DYING) )
+	if ( (pdebris->parent == OBJ_INDEX(pship)) && (Ships[pship->instance].flags[Ship::Ship_Flags::Dying]) )
 		return 0;
 
 	dist = vm_vec_dist( &pdebris->pos, &pship->pos );

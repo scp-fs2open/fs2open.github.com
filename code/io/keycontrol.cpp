@@ -865,7 +865,7 @@ void process_debug_keys(int k)
 
 					if ( sp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
-						sp->flags |= SF_DISABLED;				// add the disabled flag
+						sp->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
 					}
 
 					if ( sp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
@@ -1590,7 +1590,7 @@ void game_process_cheats(int k)
 			ship_idx++;
 		} while(1);
 
-		shipp->flags |= SF_ESCORT;
+		shipp->flags.set(Ship::Ship_Flags::Escort);
 		shipp->escort_priority = 1000 - ship_idx;
 
 		// now make sure we're not colliding with anyone
@@ -1759,7 +1759,7 @@ int button_function_critical(int n, net_player *p = NULL)
 		npl = p;
 		at_self = 0;
 
-		if ( NETPLAYER_IS_DEAD(npl) || (Ships[Objects[pl->objnum].instance].flags & SF_DYING) )
+		if ( NETPLAYER_IS_DEAD(npl) || (Ships[Objects[pl->objnum].instance].flags[Ship::Ship_Flags::Dying]) )
 			return 0;
 	}
 	
@@ -1861,15 +1861,15 @@ int button_function_critical(int n, net_player *p = NULL)
 
 			int firepoints = pm->missile_banks[Ships[objp->instance].weapons.current_secondary_bank].num_slots;
 
-			if ( Ships[objp->instance].flags & SF_SECONDARY_DUAL_FIRE || firepoints < 2) {		
-				Ships[objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
+            if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] || firepoints < 2) {
+                Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to normal fire mode", 34));
 					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			} else {
-				Ships[objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
+                Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to dual fire mode", 35));
 					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
@@ -2234,7 +2234,7 @@ int button_function(int n)
 	}
 
 	// Goober5000 - if the ship doesn't have subspace drive, jump key doesn't work: so test and exit early
-	if (Player_ship->flags2 & SF2_NO_SUBSPACE_DRIVE)
+	if (Player_ship->flags[Ship::Ship_Flags::No_subspace_drive])
 	{
 		switch(n)
 		{
@@ -2245,7 +2245,7 @@ int button_function(int n)
 	}
 
 	// Goober5000 - if we have primitive sensors, some keys don't work: so test and exit early
-	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
+	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 	{
 		switch (n)
 		{
@@ -2326,7 +2326,7 @@ int button_function(int n)
 		case INCREASE_ENGINE:		// increase energy to engines
 		case DECREASE_ENGINE:		// decrease energy to engines
 		case ETS_EQUALIZE:
-			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+			if ((Player_ship->flags[Ship::Ship_Flags::No_ets]) == 0) {
 				hud_gauge_popup_start(HUD_ETS_GAUGE);
 				return button_function_critical(n);
 			}

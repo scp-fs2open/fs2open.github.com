@@ -6045,7 +6045,7 @@ int sexp_is_ship_stealthy(int n)
 		return SEXP_NAN;
 	}
 
-	if (Ships[shipnum].flags2 & SF2_STEALTH)
+	if (Ships[shipnum].flags[Ship::Ship_Flags::Stealth])
 		return SEXP_TRUE;
 	else
 		return SEXP_FALSE;
@@ -6071,7 +6071,7 @@ int sexp_is_friendly_stealth_visible(int n)
 		return SEXP_NAN;
 	}
 
-	if (Ships[shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS)
+	if (Ships[shipnum].flags[Ship::Ship_Flags::Friendly_stealth_invis])
 		return SEXP_FALSE;
 	else
 		return SEXP_TRUE;
@@ -7836,7 +7836,7 @@ int sexp_is_cargo_known( int n, int check_delay )
 				// and we've already checked exited
 				if ( ship_num != -1 )
 				{
-					if ( Ships[ship_num].flags & SF_CARGO_REVEALED )
+					if ( Ships[ship_num].flags[Ship::Ship_Flags::Cargo_revealed] )
 					{
 						time_known = Missiontime - Ships[ship_num].time_cargo_revealed;
 						if ( f2i(time_known) >= delay )
@@ -10627,7 +10627,7 @@ void sexp_set_explosion_option(int node)
 			shipp->special_exp_deathroll_time = val;
 
 			// hmm, it would be cool to modify the explosion in progress
-			if (shipp->flags & SF_DYING && val >= 2) {
+			if (shipp->flags[Ship::Ship_Flags::Dying] && val >= 2) {
 				shipp->final_death_time = timestamp(val);
 			}
 		}
@@ -11186,7 +11186,7 @@ void sexp_end_campaign(int n)
 	}
 
 	// if the player is dead we may want to let the death screen handle things
-	if (!ignore_player_mortality && (Player_ship->flags & SF_DYING)) {
+	if (!ignore_player_mortality && (Player_ship->flags[Ship::Ship_Flags::Dying])) {
 		return;
 	}
 
@@ -12330,7 +12330,7 @@ void sexp_end_mission(int n)
 	}
 
 	// if the player is dead we may want to let the death screen handle things
-	if (!ignore_player_mortality && (Player_ship->flags & SF_DYING)) {
+	if (!ignore_player_mortality && (Player_ship->flags[Ship::Ship_Flags::Dying])) {
 		return;
 	}
 
@@ -12825,12 +12825,12 @@ void multi_sexp_deal_with_ship_flag()
 			}
 
 			if ((ship_flag2 == SF2_STEALTH) && !set_it) {
-				if (shipp->flags & SF_ESCORT) {
+				if (shipp->flags[Ship::Ship_Flags::Escort]) {
 					hud_add_ship_to_escort(shipp->objnum, 1);
 				}			
 			}
-			if ((ship_flag2 == SF2_FRIENDLY_STEALTH_INVIS) && !set_it && (shipp->flags2 & SF2_STEALTH) && (shipp->team == Player_ship->team)) {
-				if (shipp->flags & SF_ESCORT) {
+			if ((ship_flag2 == SF2_FRIENDLY_STEALTH_INVIS) && !set_it && (shipp->flags[Ship::Ship_Flags::Stealth]) && (shipp->team == Player_ship->team)) {
+				if (shipp->flags[Ship::Ship_Flags::Escort]) {
 					hud_add_ship_to_escort(shipp->objnum, 1);
 				}			
 			}
@@ -12841,7 +12841,7 @@ void multi_sexp_deal_with_ship_flag()
 					}
 				}
 				else {
-					if (shipp->flags & SF_ESCORT) {
+					if (shipp->flags[Ship::Ship_Flags::Escort]) {
 						hud_add_ship_to_escort(shipp->objnum, 1);
 					}		
 				}
@@ -14082,7 +14082,7 @@ void sexp_ships_visible(int n, bool visible)
 		if (!visible && Player_ai->target_objnum == Ships[shipnum].objnum) {
 			hud_cease_targeting(); 
 		}
-		else if (visible && (Ships[shipnum].flags & SF_ESCORT)) {
+		else if (visible && (Ships[shipnum].flags[Ship::Ship_Flags::Escort])) {
 			hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
 		}		
 	}
@@ -14102,7 +14102,7 @@ void sexp_ships_stealthy(int n, bool stealthy)
 			if (shipnum < 0)
 				continue;
 
-			if (Ships[shipnum].flags & SF_ESCORT)
+			if (Ships[shipnum].flags[Ship::Ship_Flags::Escort])
 				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
 		}
 	}
@@ -14122,9 +14122,9 @@ void sexp_friendly_stealth_invisible(int n, bool invisible)
 			if (shipnum < 0)
 				continue;
 
-			if (Ships[shipnum].flags2 & SF2_STEALTH && Player_ship->team == Ships[shipnum].team)
+			if (Ships[shipnum].flags[Ship::Ship_Flags::Stealth] && Player_ship->team == Ships[shipnum].team)
 			{
-				if (Ships[shipnum].flags & SF_ESCORT)
+				if (Ships[shipnum].flags[Ship::Ship_Flags::Escort])
 					hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
 			}
 		}
@@ -18905,7 +18905,7 @@ void sexp_damage_escort_list_all(int n)
 			continue;
 
 		// make sure it's on the escort list
-		if ( !(shipp->flags & SF_ESCORT) )
+		if ( !(shipp->flags[Ship::Ship_Flags::Escort]) )
 			continue;
 
 		// set index
@@ -19379,7 +19379,7 @@ int is_nav_linked(int node)
 	{
 		if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, ship_name))
 		{
-			return (Ships[i].flags2 & SF2_NAVPOINT_CARRY) != 0;
+			return (Ships[i].flags[Ship::Ship_Flags::Navpoint_carry]) != 0;
 		}
 	}
 	return 0;
@@ -19971,7 +19971,7 @@ int sexp_is_primary_selected(int node)
 	}
 
 	// is this the bank currently selected
-	if( (bank == shipp->weapons.current_primary_bank) || (shipp->flags & SF_PRIMARY_LINKED) ){
+	if( (bank == shipp->weapons.current_primary_bank) || (shipp->flags[Ship::Ship_Flags::Primary_linked]) ){
 		return SEXP_TRUE;
 	}
 

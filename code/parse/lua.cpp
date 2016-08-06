@@ -7173,13 +7173,10 @@ ADE_VIRTVAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or u
 	{
 		case SWH_PRIMARY:
 			if(ADE_SETTING_VAR && numargs > 1) {
-				if(newlink)
-					Ships[bh->objp->instance].flags |= SF_PRIMARY_LINKED;
-				else
-					Ships[bh->objp->instance].flags &= ~SF_PRIMARY_LINKED;
+				Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Primary_linked, newlink);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags & SF_PRIMARY_LINKED) > 0);
+			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags[Ship::Ship_Flags::Primary_linked]));
 
 		case SWH_SECONDARY:
 		case SWH_TERTIARY:
@@ -7205,13 +7202,10 @@ ADE_VIRTVAR(DualFire, l_WeaponBankType, "boolean", "Whether bank is in dual fire
 	{
 		case SWH_SECONDARY:
 			if(ADE_SETTING_VAR && numargs > 1) {
-				if(newfire)
-					Ships[bh->objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
-				else
-					Ships[bh->objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
+                Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire, newfire);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags & SF_SECONDARY_DUAL_FIRE) > 0);
+			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire]) > 0);
 
 		case SWH_PRIMARY:
 		case SWH_TERTIARY:
@@ -9564,12 +9558,12 @@ ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigge
 	if(ADE_SETTING_VAR)
     {
 		if(trig)
-			shipp->flags |= SF_TRIGGER_DOWN;
+			shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 		else
-			shipp->flags &= ~SF_TRIGGER_DOWN;
+			shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
     }
 
-	if (shipp->flags & SF_TRIGGER_DOWN)
+	if (shipp->flags[Ship::Ship_Flags::Trigger_down])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9817,13 +9811,10 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 
 	if(ADE_SETTING_VAR)
     {
-		if(set)
-			shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
-		else
-			shipp->flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
+		shipp->flags.set(Ship::Ship_Flags::Affected_by_gravity, set);
     }
 
-	if (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY)
+	if (shipp->flags[Ship::Ship_Flags::Affected_by_gravity])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9845,19 +9836,18 @@ ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boo
 
 	if(ADE_SETTING_VAR)
 	{
+		shipp->flags.set(Ship::Ship_Flags::Disabled, set);
 		if(set)
 		{
 			mission_log_add_entry(LOG_SHIP_DISABLED, shipp->ship_name, NULL );
-			shipp->flags |= SF_DISABLED;
 		}
 		else
 		{
-			shipp->flags &= ~SF_DISABLED;
 			ship_reset_disabled_physics( &Objects[shipp->objnum], shipp->ship_info_index );
 		}
 	}
 
-	if (shipp->flags & SF_DISABLED)
+	if (shipp->flags[Ship::Ship_Flags::Disabled])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9878,17 +9868,10 @@ ADE_VIRTVAR(Stealthed, l_Ship, "boolean", "Stealth status of this ship", "boolea
 
 	if(ADE_SETTING_VAR)
 	{
-		if(stealthed)
-		{
-			shipp->flags2 &= ~SF2_STEALTH;
-		}
-		else
-		{
-			shipp->flags2 |= SF2_STEALTH;
-		}
+        shipp->flags.set(Ship::Ship_Flags::Stealth, stealthed);
 	}
 
-	if (shipp->flags2 & SF2_STEALTH)
+	if (shipp->flags[Ship::Ship_Flags::Stealth])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9909,17 +9892,10 @@ ADE_VIRTVAR(HiddenFromSensors, l_Ship, "boolean", "Hidden from sensors status of
 
 	if(ADE_SETTING_VAR)
 	{
-		if(hidden)
-		{
-			shipp->flags &= ~SF_HIDDEN_FROM_SENSORS;
-		}
-		else
-		{
-			shipp->flags |= SF_HIDDEN_FROM_SENSORS;
-		}
+        shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors, hidden);
 	}
 
-	if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
+	if (shipp->flags[Ship::Ship_Flags::Hidden_from_sensors])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -10081,7 +10057,7 @@ ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has 
 
 	ship *shipp = &Ships[shiph->objp->instance];
 
-	if (shipp->flags & SF_DYING) {
+	if (shipp->flags[Ship::Ship_Flags::Dying]) {
 		if (shipp->final_death_time == 0) {
 			return ade_set_args(L, "i", 2);
 		}		
@@ -10557,7 +10533,7 @@ ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace driv
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags & SF2_NO_SUBSPACE_DRIVE){
+	if(shipp->flags[Ship::Ship_Flags::No_subspace_drive]){
 		return ADE_RETURN_FALSE;
 	}
 
@@ -10575,7 +10551,7 @@ ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags & SF_ARRIVING_STAGE_1){
+	if(shipp->flags[Ship::Ship_Flags::Arriving_stage_1]){
 		return ADE_RETURN_TRUE;
 	}
 

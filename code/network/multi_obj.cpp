@@ -233,7 +233,7 @@ void multi_oo_build_ship_list(net_player *pl)
 		}
 
 		// don't send info for dying ships
-		if (Ships[Objects[moveup->objnum].instance].flags & SF_DYING){
+		if (Ships[Objects[moveup->objnum].instance].flags[Ship::Ship_Flags::Dying]){
 			continue;
 		}		
 
@@ -289,7 +289,7 @@ int multi_oo_pack_client_data(ubyte *data)
 	if ( Player->locking_on_center ){
 		out_flags |= OOC_LOCKING_ON_CENTER;
 	}
-	if ( (Player_ship != NULL) && (Player_ship->flags & SF_TRIGGER_DOWN) ){
+	if ( (Player_ship != NULL) && (Player_ship->flags[Ship::Ship_Flags::Trigger_down]) ){
 		out_flags |= OOC_TRIGGER_DOWN;
 	}
 
@@ -304,7 +304,7 @@ int multi_oo_pack_client_data(ubyte *data)
 		}
 
 		// linked or not
-		if(Player_ship->flags & SF_PRIMARY_LINKED){
+		if(Player_ship->flags[Ship::Ship_Flags::Primary_linked]){
 			out_flags |= OOC_PRIMARY_LINKED;
 		}
 	}
@@ -617,9 +617,9 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 		// trigger down, bank info
 		if(shipp != NULL){
 			if(in_flags & OOC_TRIGGER_DOWN){
-				shipp->flags |= SF_TRIGGER_DOWN;
+				shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 			} else {
-				shipp->flags &= ~SF_TRIGGER_DOWN;
+				shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
 			}
 			
 			if(in_flags & OOC_PRIMARY_BANK){		
@@ -631,7 +631,7 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 			// linked or not								
 			shipp->flags &= ~SF_PRIMARY_LINKED;
 			if(in_flags & OOC_PRIMARY_LINKED){				
-				shipp->flags |= SF_PRIMARY_LINKED;
+				shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 			}
 		}
 
@@ -990,13 +990,13 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		// linked or not
 		shipp->flags &= ~SF_PRIMARY_LINKED;
 		if(oo_flags & OO_PRIMARY_LINKED){
-			shipp->flags |= SF_PRIMARY_LINKED;
+			shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 		}
 
 		// trigger down or not - server doesn't care about this. he'll get it from clients anyway		
-		shipp->flags &= ~SF_TRIGGER_DOWN;
+		shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
 		if(oo_flags & OO_TRIGGER_DOWN){
-			shipp->flags |= SF_TRIGGER_DOWN;
+			shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 		}		
 	}
 	
@@ -1156,12 +1156,12 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 		}
 
 		// linked or not
-		if(shipp->flags & SF_PRIMARY_LINKED){
+		if(shipp->flags[Ship::Ship_Flags::Primary_linked]){
 			oo_flags |= OO_PRIMARY_LINKED;
 		}
 
 		// trigger down or not
-		if(shipp->flags & SF_TRIGGER_DOWN){
+		if(shipp->flags[Ship::Ship_Flags::Trigger_down]){
 			oo_flags |= OO_TRIGGER_DOWN;
 		}
 	}	
@@ -1442,7 +1442,7 @@ void multi_oo_send_control_info()
 	int packet_size = 0;
 
 	// if I'm dying or my object type is not a ship, bail here
-	if((Player_obj != NULL) && (Player_ship->flags & SF_DYING)){
+	if((Player_obj != NULL) && (Player_ship->flags[Ship::Ship_Flags::Dying])){
 		return;
 	}	
 	

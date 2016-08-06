@@ -3778,13 +3778,13 @@ void find_homing_object(object *weapon_objp, int num)
                     }
 
 					// AL 2-17-98: If ship is immune to sensors, can't home on it (Sandeep says so)!
-					if ( sp->flags & SF_HIDDEN_FROM_SENSORS ) {
+					if ( sp->flags[Ship::Ship_Flags::Hidden_from_sensors] ) {
 						continue;
 					}
 
 					// Goober5000: if missiles can't home on sensor-ghosted ships,
 					// they definitely shouldn't home on stealth ships
-					if ( sp->flags2 & SF2_STEALTH && (The_mission.ai_profile->flags & AIPF_FIX_HEAT_SEEKER_STEALTH_BUG) ) {
+					if ( sp->flags[Ship::Ship_Flags::Stealth] && (The_mission.ai_profile->flags & AIPF_FIX_HEAT_SEEKER_STEALTH_BUG) ) {
 						continue;
 					}
 
@@ -4981,7 +4981,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		parent_objp = NULL;
 	}
 
-	if (parent_objp != NULL && (Ships[parent_objp->instance].flags2 & SF2_NO_SECONDARY_LOCKON)) {
+	if (parent_objp != NULL && (Ships[parent_objp->instance].flags[Ship::Ship_Flags::No_secondary_lockon])) {
 		wp->weapon_flags |= WF_NO_HOMING;
 		wp->homing_object = &obj_used_list;
 		wp->homing_subsys = NULL;

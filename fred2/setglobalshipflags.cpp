@@ -101,7 +101,7 @@ void SetGlobalShipFlags::OnAffectedByGravity()
 		{
 			// only for fighters and bombers
 			if (Ship_info[Ships[i].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))
-				Ships[i].flags2 |= SF2_AFFECTED_BY_GRAVITY;
+				Ships[i].flags.set(Ship::Ship_Flags::Affected_by_gravity);
 			else
 				Ships[i].flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
 		}

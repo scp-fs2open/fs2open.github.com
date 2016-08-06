@@ -190,7 +190,7 @@ void hud_wingman_status_update()
 			if ( (wing_index >= 0) && (wing_pos >= 0) && !(ship_objp->flags[Object::Object_Flags::Should_be_dead]) ) {
 
 				HUD_wingman_status[wing_index].used = 1;
-				if (!(shipp->flags & SF_DEPARTING) ) {
+				if (!(is_ship_departing(shipp)) ) {
 					HUD_wingman_status[wing_index].status[wing_pos] = HUD_WINGMAN_STATUS_ALIVE;	
 				}
 				HUD_wingman_status[wing_index].hull[wing_pos] = get_hull_pct(ship_objp);

@@ -1676,7 +1676,7 @@ int asteroid_valid_ship_to_warn_collide(ship *shipp)
 		return 0;
 	}
 
-	if ( shipp->flags & (SF_DYING|SF_DEPART_WARP) ) {
+	if ( shipp->flags[Ship::Ship_Flags::Dying] || shipp->flags[Ship::Ship_Flags::Depart_warp] ) {
 		return 0;
 	}
 

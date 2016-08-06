@@ -432,7 +432,7 @@ void DumpStats::get_object_stats(CString &buffer)
 	buffer += "\r\nESCORT\r\n";
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ( (objp->type == OBJ_SHIP) || (objp->type == OBJ_START) ) {
-			if (Ships[objp->instance].flags & SF_ESCORT) {
+			if (Ships[objp->instance].flags[Ship::Ship_Flags::Escort]) {
 				temp.Format("\tShip name: %s, priority: %d\r\n", Ships[objp->instance].ship_name, Ships[objp->instance].escort_priority);
 				buffer += temp;
 			}
