@@ -433,7 +433,7 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 		shipp->flags &= ~(SF_PRIMARY_LINKED);
 	}			
 	if(cur_link_status & (1<<1)){
-		shipp->flags |= SF_SECONDARY_DUAL_FIRE;
+		shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 	} else {
 		shipp->flags &= ~(SF_SECONDARY_DUAL_FIRE);
 	}

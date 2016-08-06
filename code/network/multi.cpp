@@ -1242,7 +1242,7 @@ void multi_do_frame()
 					// send my observer position/object update
 					send_observer_update_packet();
 				}
-			} else if ( !(Player_ship->flags & SF_DEPARTING ) ){				
+			} else if ( !(is_ship_departing(Player_ship) ) ){				
 				// if the rate limiting system says its ok
 				if(multi_oo_cirate_can_send()){
 					// use the new method

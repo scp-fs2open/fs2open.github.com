@@ -2897,9 +2897,9 @@ int CFred_mission_save::save_objects() {
 			fout(" \"player-start\"");
 		if (shipp->flags[Ship::Ship_Flags::No_arrival_music])
 			fout(" \"no-arrival-music\"");
-		if (shipp->flags & SF_NO_ARRIVAL_WARP)
+		if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
 			fout(" \"no-arrival-warp\"");
-		if (shipp->flags & SF_NO_DEPARTURE_WARP)
+		if (shipp->flags[Ship::Ship_Flags::No_departure_warp])
 			fout(" \"no-departure-warp\"");
 		if (Objects[shipp->objnum].flags[Object::Object_Flags::Invulnerable])
 			fout(" \"invulnerable\"");
@@ -2911,7 +2911,7 @@ int CFred_mission_save::save_objects() {
 			fout(" \"kamikaze\"");
 		if (Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC)
 			fout(" \"no-dynamic\"");
-		if (shipp->flags & SF_RED_ALERT_STORE_STATUS)
+		if (shipp->flags[Ship::Ship_Flags::Red_alert_store_status])
 			fout(" \"red-alert-carry\"");
 		if (objp->flags[Object::Object_Flags::Beam_protected])
 			fout(" \"beam-protect-ship\"");
@@ -2972,7 +2972,7 @@ int CFred_mission_save::save_objects() {
 				fout(" \"nav-needslink\"");
 			if (shipp->flags[Ship::Ship_Flags::Hide_ship_name])
 				fout(" \"hide-ship-name\"");
-			if (shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY)
+			if (shipp->flags[Ship::Ship_Flags::Set_class_dynamically])
 				fout(" \"set-class-dynamically\"");
 			if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
 				fout(" \"lock-all-turrets\"");
@@ -2984,7 +2984,7 @@ int CFred_mission_save::save_objects() {
 				fout(" \"immobile\"");
 			if (shipp->flags[Ship::Ship_Flags::No_ets])
 				fout(" \"no-ets\"");
-			if (shipp->flags2 & SF2_CLOAKED)
+			if (shipp->flags[Ship::Ship_Flags::Cloaked])
 				fout(" \"cloaked\"");
 			if (shipp->flags[Ship::Ship_Flags::Ship_locked])
 				fout(" \"ship-locked\"");

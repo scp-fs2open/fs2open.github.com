@@ -1723,7 +1723,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 			Player_ship->flags.set(Ship::Ship_Flags::Primary_linked);
 		}
 		if(val & (1<<1)){
-			Player_ship->flags |= SF_SECONDARY_DUAL_FIRE;
+			Player_ship->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 		}		
 		PACKET_SET_SIZE();					
 

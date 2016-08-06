@@ -181,7 +181,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 				if (first) {
 					first = 0;
 					scannable = (shipp->flags[Ship::Ship_Flags::Scannable]) ? 1 : 0;
-					red_alert_carry = (shipp->flags & SF_RED_ALERT_STORE_STATUS) ? 1 : 0;
+					red_alert_carry = (shipp->flags[Ship::Ship_Flags::Red_alert_store_status]) ? 1 : 0;
 					special_warpin = (objp->flags[Object::Object_Flags::Special_warpin]) ? 1 : 0;
 					protect_ship = (objp->flags[Object::Object_Flags::Protected]) ? 1 : 0;
 					beam_protect_ship = (objp->flags[Object::Object_Flags::Beam_protected]) ? 1 : 0;
@@ -201,7 +201,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					cargo_known = (shipp->flags[Ship::Ship_Flags::Cargo_revealed]) ? 1 : 0;
 					no_dynamic = (Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC) ? 1 : 0;
 					disable_messages = (shipp->flags[Ship::Ship_Flags::No_builtin_messages]) ? 1 : 0;
-					set_class_dynamically = (shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY) ? 1 : 0;
+					set_class_dynamically = (shipp->flags[Ship::Ship_Flags::Set_class_dynamically]) ? 1 : 0;
 					no_death_scream = (shipp->flags[Ship::Ship_Flags::No_death_scream]) ? 1 : 0;
 					always_death_scream = (shipp->flags[Ship::Ship_Flags::Always_death_scream]) ? 1 : 0;
 					guardian = (shipp->ship_guardian_threshold) ? 1 : 0;
@@ -212,7 +212,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					nav_needslink = (shipp->flags[Ship::Ship_Flags::Navpoint_needslink]) ? 1 : 0;
 					hide_ship_name = (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) ? 1 : 0;
 					no_ets = (shipp->flags[Ship::Ship_Flags::No_ets]) ? 1 : 0;
-					cloaked = (shipp->flags2 & SF2_CLOAKED) ? 1 : 0;
+					cloaked = (shipp->flags[Ship::Ship_Flags::Cloaked]) ? 1 : 0;
 					scramble_messages = (shipp->flags[Ship::Ship_Flags::Scramble_messages]) ? 1 : 0;
 					no_collide = (objp->flags[Object::Object_Flags::Collides]) ? 0 : 1;
 					no_disabled_self_destruct = (shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct]) ? 1 : 0;
@@ -243,7 +243,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 				} else {
 
 					scannable = tristate_set( shipp->flags[Ship::Ship_Flags::Scannable], scannable );
-					red_alert_carry = tristate_set( shipp->flags & SF_RED_ALERT_STORE_STATUS, red_alert_carry );
+					red_alert_carry = tristate_set( shipp->flags[Ship::Ship_Flags::Red_alert_store_status], red_alert_carry );
 					special_warpin = tristate_set( objp->flags[Object::Object_Flags::Special_warpin], special_warpin );
 					protect_ship = tristate_set(objp->flags[Object::Object_Flags::Protected], protect_ship);
 					beam_protect_ship = tristate_set(objp->flags[Object::Object_Flags::Beam_protected], beam_protect_ship);
@@ -263,7 +263,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					cargo_known = tristate_set(shipp->flags[Ship::Ship_Flags::Cargo_revealed], cargo_known);
 					no_dynamic = tristate_set( Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC, no_dynamic );
 					disable_messages = tristate_set(shipp->flags[Ship::Ship_Flags::No_builtin_messages], disable_messages);
-					set_class_dynamically = tristate_set(shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY, set_class_dynamically);
+					set_class_dynamically = tristate_set(shipp->flags[Ship::Ship_Flags::Set_class_dynamically], set_class_dynamically);
 					no_death_scream = tristate_set(shipp->flags[Ship::Ship_Flags::No_death_scream], no_death_scream);
 					always_death_scream = tristate_set(shipp->flags[Ship::Ship_Flags::Always_death_scream], always_death_scream);
 					guardian = tristate_set(shipp->ship_guardian_threshold, guardian);
@@ -274,7 +274,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					nav_needslink = tristate_set(shipp->flags[Ship::Ship_Flags::Navpoint_needslink], nav_needslink);
 					hide_ship_name = tristate_set(shipp->flags[Ship::Ship_Flags::Hide_ship_name], hide_ship_name);
 					no_ets = tristate_set(shipp->flags[Ship::Ship_Flags::No_ets], no_ets);
-					cloaked = tristate_set(shipp->flags2 & SF2_CLOAKED, cloaked);
+					cloaked = tristate_set(shipp->flags[Ship::Ship_Flags::Cloaked], cloaked);
 					scramble_messages = tristate_set(shipp->flags[Ship::Ship_Flags::Scramble_messages], scramble_messages);
 					no_collide = tristate_set(!(objp->flags[Object::Object_Flags::Collides]), no_collide);
 					no_disabled_self_destruct = tristate_set(shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct], no_disabled_self_destruct);
@@ -759,14 +759,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_red_alert_carry.GetCheck()) {
 		case 1:
-			if ( !(shipp->flags & SF_RED_ALERT_STORE_STATUS) )
+			if ( !(shipp->flags[Ship::Ship_Flags::Red_alert_store_status]) )
 				set_modified();
 
 			shipp->flags.set(Ship::Ship_Flags::Red_alert_store_status);
 			break;
 
 		case 0:
-			if ( shipp->flags & SF_RED_ALERT_STORE_STATUS )
+			if ( shipp->flags[Ship::Ship_Flags::Red_alert_store_status] )
 				set_modified();
 
 			shipp->flags &= ~SF_RED_ALERT_STORE_STATUS;
@@ -845,14 +845,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_set_class_dynamically.GetCheck()) {
 		case 1:
-			if ( !(shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY) )
+			if ( !(shipp->flags[Ship::Ship_Flags::Set_class_dynamically]) )
 				set_modified();
 
 			shipp->flags2 |= SF2_SET_CLASS_DYNAMICALLY;
 			break;
 
 		case 0:
-			if ( shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY )
+			if ( shipp->flags[Ship::Ship_Flags::Set_class_dynamically] )
 				set_modified();
 
 			shipp->flags2 &= ~SF2_SET_CLASS_DYNAMICALLY;
@@ -957,14 +957,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_cloaked.GetCheck()) {
 		case 1:
-			if ( !(shipp->flags2 & SF2_CLOAKED) )
+			if ( !(shipp->flags[Ship::Ship_Flags::Cloaked]) )
 				set_modified();
 
 			shipp->flags2 |= SF2_CLOAKED;
 			break;
 
 		case 0:
-			if ( shipp->flags2 & SF2_CLOAKED )
+			if ( shipp->flags[Ship::Ship_Flags::Cloaked] )
 				set_modified();
 
 			shipp->flags2 &= ~SF2_CLOAKED;
@@ -992,7 +992,7 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(shipp->flags[Ship::Ship_Flags::Vaporize]) )
 				set_modified();
 
-			shipp->flags |= SF_VAPORIZE;
+			shipp->flags.set(Ship::Ship_Flags::Vaporize);
 			break;
 
 		case 0:

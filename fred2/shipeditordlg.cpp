@@ -600,8 +600,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 							}
 
 							// set routine local varaiables for ship/object flags
-							no_arrival_warp = (Ships[i].flags & SF_NO_ARRIVAL_WARP) ? 1 : 0;
-							no_departure_warp = (Ships[i].flags & SF_NO_DEPARTURE_WARP) ? 1 : 0;
+							no_arrival_warp = (Ships[i].flags[Ship::Ship_Flags::No_arrival_warp]) ? 1 : 0;
+							no_departure_warp = (Ships[i].flags[Ship::Ship_Flags::No_departure_warp]) ? 1 : 0;
 
 							base_ship = -1;
 							if (!multi_edit)
@@ -631,8 +631,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 								GetDlgItem(IDC_WING) -> SetWindowText("");
 							}
 
-							no_arrival_warp = tristate_set(Ships[i].flags & SF_NO_ARRIVAL_WARP, no_arrival_warp);
-							no_departure_warp = tristate_set(Ships[i].flags & SF_NO_DEPARTURE_WARP, no_departure_warp);
+							no_arrival_warp = tristate_set(Ships[i].flags[Ship::Ship_Flags::No_arrival_warp], no_arrival_warp);
+							no_departure_warp = tristate_set(Ships[i].flags[Ship::Ship_Flags::No_departure_warp], no_departure_warp);
 						}
 					}
 				}
@@ -1365,14 +1365,14 @@ int CShipEditorDlg::update_ship(int ship)
 
 	switch( m_no_arrival_warp.GetCheck() ) {
 		case 0:
-			if (Ships[ship].flags & SF_NO_ARRIVAL_WARP)
+			if (Ships[ship].flags[Ship::Ship_Flags::No_arrival_warp])
 				set_modified();
 
 			Ships[ship].flags &= ~SF_NO_ARRIVAL_WARP;
 			break;
 
 		case 1:
-			if (!(Ships[ship].flags & SF_NO_ARRIVAL_WARP))
+			if (!(Ships[ship].flags[Ship::Ship_Flags::No_arrival_warp]))
 				set_modified();
 
 			Ships[ship].flags |= SF_NO_ARRIVAL_WARP;
@@ -1381,14 +1381,14 @@ int CShipEditorDlg::update_ship(int ship)
 
 	switch( m_no_departure_warp.GetCheck() ) {
 		case 0:
-			if (Ships[ship].flags & SF_NO_DEPARTURE_WARP)
+			if (Ships[ship].flags[Ship::Ship_Flags::No_departure_warp])
 				set_modified();
 
 			Ships[ship].flags &= ~SF_NO_DEPARTURE_WARP;
 			break;
 
 		case 1:
-			if (!(Ships[ship].flags & SF_NO_DEPARTURE_WARP))
+			if (!(Ships[ship].flags[Ship::Ship_Flags::No_departure_warp]))
 				set_modified();
 
 			Ships[ship].flags |= SF_NO_DEPARTURE_WARP;

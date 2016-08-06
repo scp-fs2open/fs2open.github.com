@@ -729,7 +729,7 @@ void red_alert_store_wingman_status()
 			continue;
 		}
 
-		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags[Ship::Ship_Flags::Red_alert_store_status]) ) {
 			continue;
 		}
 
@@ -842,7 +842,7 @@ void red_alert_bash_wingman_status()
 		Assert(ship_objp->type == OBJ_SHIP);
 		ship *shipp = &Ships[ship_objp->instance];
 
-		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags[Ship::Ship_Flags::Red_alert_store_status]) ) {
 			so = GET_NEXT(so);
 			continue;
 		}

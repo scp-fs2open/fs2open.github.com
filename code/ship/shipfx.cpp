@@ -590,7 +590,7 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	// if there is no arrival warp, then skip the whole thing
-	if (shipp->flags & SF_NO_ARRIVAL_WARP)
+	if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
 	{
 		shipfx_actually_warpin(shipp,objp);
 		return;
@@ -830,7 +830,7 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	// don't do departure wormhole if ship flag is set which indicates no effect
-	if ( shipp->flags & SF_NO_DEPARTURE_WARP ) {
+	if ( shipp->flags[Ship::Ship_Flags::No_departure_warp] ) {
 		// DKA 5/25/99 If he's going to warpout, set it.  
 		// Next line fixes assert in wing cleanup code when no warp effect.
 		shipp->flags |= SF_DEPART_WARP;
@@ -3646,9 +3646,9 @@ int WE_Default::warpFrame(float frametime)
 				}
 			}
 
-			// MWA 10/21/97 -- added shipp->flags & SF_NO_DEPARTURE_WARP part of next if statement.  For ships
+			// MWA 10/21/97 -- added shipp->flags[Ship::Ship_Flags::No_departure_warp] part of next if statement.  For ships
 			// that don't get a wormhole effect, I wanted to drop into this code immediately.
-			if ( (warp_pos > objp->radius)  || (shipp->flags & SF_NO_DEPARTURE_WARP) || timed_out )	{
+			if ( (warp_pos > objp->radius)  || (shipp->flags[Ship::Ship_Flags::No_departure_warp]) || timed_out )	{
 				this->warpEnd();
 			} 
 		}

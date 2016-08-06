@@ -1181,7 +1181,7 @@ void player_restore_target_and_weapon_link_prefs()
 	}
 
 	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY && (pm->n_missiles > 0 && pm->missile_banks[0].num_slots > 1) ) {
-		Player_ship->flags |= SF_SECONDARY_DUAL_FIRE;
+		Player_ship->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 	}
 }
 

@@ -2267,7 +2267,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 									int beam_weapon_info_index = beam_get_weapon_info_index(other_obj);
 									if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_HUGE)) ) {
 										// Flag as vaporized
-										shipp->flags |= SF_VAPORIZE;
+										shipp->flags.set(Ship::Ship_Flags::Vaporize);
 									}
 								}
 							}
