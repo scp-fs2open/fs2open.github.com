@@ -6919,9 +6919,12 @@ DCF(pofspew, "Spews POF info without shutting down the game")
 	game_spew_pof_info();
 }
 
-// returns:
-// 0 on an error
-// 1 on a clean exit
+/**
+* Does some preliminary checks and then enters main event loop.
+*
+* @returns 0 on a clean exit, or
+* @returns 1 on an error
+*/
 int game_main(int argc, char *argv[])
 {
 	int state;
@@ -8605,7 +8608,7 @@ int actual_main(int argc, char *argv[])
 #else
 	try {
 #endif
-		result = !game_main(argc, argv);
+		result = game_main(argc, argv);
 #if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
 	}
 	__except (RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread")) {
