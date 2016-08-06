@@ -132,6 +132,195 @@ void view_universe(int just_marked = 0);
 void select_objects();
 void drag_rotate_save_backup();
 
+class MFCOpenGLContext : public os::OpenGLContext
+{
+	// HACK: Since OpenGL apparently likes global state we also have to make this global...
+	static void* _oglDllHandle;
+	static size_t _oglDllReferenceCount;
+
+	HWND _windowHandle = nullptr;
+	HDC _device_context = nullptr;
+	HGLRC _render_context = nullptr;
+
+	BOOL(WINAPI * wglSwapIntervalEXT)(int interval) = nullptr;
+public:
+
+	MFCOpenGLContext(HWND hwnd, HDC hdc, HGLRC hglrc)
+		: _windowHandle(hwnd),
+		  _device_context(hdc),
+		  _render_context(hglrc)
+	{
+		_oglDllHandle = SDL_LoadObject("OPENGL32.DLL");
+	}
+
+	~MFCOpenGLContext() override
+	{
+		if (!wglDeleteContext(_render_context)) {
+			mprintf(("Failed to delete render context!"));
+		}
+
+		ReleaseDC(_windowHandle, _device_context);
+	}
+
+	static void* wglLoader(const char* name)
+	{
+		auto wglAddr = reinterpret_cast<void*>(wglGetProcAddress(name));
+		if (wglAddr == nullptr && _oglDllHandle != nullptr)
+		{
+			wglAddr = SDL_LoadFunction(_oglDllHandle, name);
+		}
+
+		return wglAddr;
+	}
+
+	os::OpenGLLoadProc getLoaderFunction() override
+	{
+		return wglLoader;
+	}
+
+	void makeCurrent()
+	{
+		if (!wglMakeCurrent(_device_context, _render_context))
+		{
+			mprintf(("Failed to make OpenGL context current!\n"));
+		}
+	}
+
+	void swapBuffers() override
+	{
+		SwapBuffers(_device_context);
+	}
+
+	void setSwapInterval(int status) override
+	{
+		if (wglSwapIntervalEXT != nullptr)
+		{
+			wglSwapIntervalEXT(status);
+		}
+	}
+};
+
+class MFCGraphicsOperations : public os::GraphicsOperations
+{
+	HWND _windowHandle = nullptr;
+public:
+
+	explicit MFCGraphicsOperations(HWND hwnd)
+		: _windowHandle(hwnd)
+	{}
+
+	~MFCGraphicsOperations() override
+	{}
+
+	std::unique_ptr<os::OpenGLContext> createOpenGLContext(const os::OpenGLContextAttributes& attrs, uint32_t, uint32_t) override
+	{
+		int PixelFormat;
+		PIXELFORMATDESCRIPTOR pfd_test;
+		PIXELFORMATDESCRIPTOR GL_pfd;
+
+		mprintf(("  Initializing WGL...\n"));
+
+		memset(&GL_pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
+		memset(&pfd_test, 0, sizeof(PIXELFORMATDESCRIPTOR));
+
+		GL_pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+		GL_pfd.nVersion = 1;
+		GL_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+		GL_pfd.iPixelType = PFD_TYPE_RGBA;
+		GL_pfd.cColorBits = attrs.red_size + attrs.green_size + attrs.blue_size + attrs.alpha_size;
+		GL_pfd.cRedBits = attrs.red_size;
+		GL_pfd.cGreenBits = attrs.green_size;
+		GL_pfd.cBlueBits = attrs.blue_size;
+		GL_pfd.cAlphaBits = attrs.alpha_size;
+		GL_pfd.cDepthBits = attrs.depth_size;
+		GL_pfd.cStencilBits = attrs.stencil_size;
+
+		Assert(_windowHandle != NULL);
+
+		auto device_context = GetDC(_windowHandle);
+
+		if (!device_context) {
+			Error(LOCATION, "Unable to get device context for OpenGL W32!");
+			return nullptr;
+		}
+
+		PixelFormat = ChoosePixelFormat(device_context, &GL_pfd);
+
+		if (!PixelFormat) {
+			Error(LOCATION, "Unable to choose pixel format for OpenGL W32!");
+			ReleaseDC(_windowHandle, device_context);
+			return nullptr;
+		}
+		else {
+			DescribePixelFormat(device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
+		}
+
+		if (!SetPixelFormat(device_context, PixelFormat, &GL_pfd)) {
+			Error(LOCATION, "Unable to set pixel format for OpenGL W32!");
+			ReleaseDC(_windowHandle, device_context);
+			return nullptr;
+		}
+
+		auto render_context = wglCreateContext(device_context);
+		if (!render_context) {
+			Error(LOCATION, "Unable to create rendering context for OpenGL W32!");
+			ReleaseDC(_windowHandle, device_context);
+			return nullptr;
+		}
+
+		if (!wglMakeCurrent(device_context, render_context)) {
+			Error(LOCATION, "Unable to make current thread for OpenGL W32!");
+			
+			if (!wglDeleteContext(render_context)) {
+				mprintf(("Failed to delete render context!"));
+			}
+
+			ReleaseDC(_windowHandle, device_context);
+			return nullptr;
+		}
+
+		mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d\n",
+			attrs.red_size, attrs.green_size, attrs.blue_size, attrs.depth_size, attrs.stencil_size));
+
+		// now report back as to what we ended up getting
+
+		DescribePixelFormat(device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &GL_pfd);
+
+		int r = GL_pfd.cRedBits;
+		int g = GL_pfd.cGreenBits;
+		int b = GL_pfd.cBlueBits;
+		int depth = GL_pfd.cDepthBits;
+		int stencil = GL_pfd.cStencilBits;
+		int db = ((GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0);
+
+		mprintf(("  Actual WGL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d\n", r, g, b, depth, stencil, db));
+		
+		// Load the OpenGL DLL so we can use it to look up function pointers
+		// The name is from the SDL sources so it should be the right one
+		
+		return std::unique_ptr<os::OpenGLContext>(new MFCOpenGLContext(_windowHandle, device_context, render_context));
+	}
+
+	void makeOpenGLContextCurrent(os::OpenGLContext* ctx) override
+	{
+		if (ctx == nullptr)
+		{
+			if (!wglMakeCurrent(nullptr, nullptr))
+			{
+				mprintf(("Failed to make OpenGL context current!\n"));
+			}
+		}
+		else
+		{
+			reinterpret_cast<MFCOpenGLContext*>(ctx)->makeCurrent();
+		}
+	}
+};
+static std::unique_ptr<MFCGraphicsOperations> graphicsOperations;
+
+void* MFCOpenGLContext::_oglDllHandle = nullptr;
+size_t MFCOpenGLContext::_oglDllReferenceCount = 0;
+
 /////////////////////////////////////////////////////////////////////////////
 // CFREDView
 
@@ -4661,21 +4850,20 @@ void CFREDView::OnDestroy()
 {
 	audiostream_close();
 	snd_close();
- 	gr_close();
-   	os_set_window(NULL);	 
+ 	gr_close(graphicsOperations.get());
+	graphicsOperations.reset();
 
 	CView::OnDestroy();
 }
 
-extern void os_set_window_from_hwnd(HWND handle);
 int CFREDView::OnCreate(LPCREATESTRUCT lpCreateStruct) 
 {
 	if (CView::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	
 	MoveWindow(0,0,200,300,1);
-	os_set_window_from_hwnd(this->GetSafeHwnd());
-   	if(fred_init() == false)
+	graphicsOperations.reset(new MFCGraphicsOperations(this->GetSafeHwnd()));
+   	if(fred_init(graphicsOperations.get()) == false)
 		return -1;
 
 	return 0;

@@ -17,8 +17,8 @@
 
 const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
 
-bool gr_opengl_init();
-void gr_opengl_cleanup(bool closing, int minimize=1);
+bool gr_opengl_init(os::GraphicsOperations* graphicsOps);
+void gr_opengl_cleanup(os::GraphicsOperations* graphicsOps, bool closing, int minimize=1);
 int opengl_check_for_errors(char *err_at = NULL);
 bool is_minimum_GLSL_version();
 
