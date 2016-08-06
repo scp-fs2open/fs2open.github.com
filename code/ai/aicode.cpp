@@ -767,6 +767,8 @@ void parse_ai_class()
 	set_aic_flag(aicp, "$no extra collision avoidance vs player:", AIPF2_NO_SPECIAL_PLAYER_AVOID, AIP_FLAG2);
 
 	set_aic_flag(aicp, "$all ships manage shields:", AIPF2_ALL_SHIPS_MANAGE_SHIELDS, AIP_FLAG2);
+
+	set_aic_flag(aicp, "$ai can slow down when attacking big ships:", AIPF2_AI_CAN_SLOW_DOWN_ATTACKING_BIG_SHIPS, AIP_FLAG2);
 }
 
 void reset_ai_class_names()
