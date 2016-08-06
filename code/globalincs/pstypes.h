@@ -221,6 +221,14 @@ typedef struct flag_def_list {
 	ubyte var;
 } def_list;
 
+template<class T>
+struct flag_def_list_new {
+    char* name;			// The parseable representation of this flag
+    T def;				// The flag definition for this flag
+    bool in_use;		// Whether or not this flag is currently in use or obsolete
+    bool is_special;	// Whether this flag requires special processing. See parse_string_flag_list<T, T> for details
+};
+
 // weapon count list (mainly for pilot files)
 typedef struct wep_t {
 	int index;

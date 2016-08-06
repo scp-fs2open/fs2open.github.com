@@ -335,12 +335,13 @@ flag_def_list ai_tgt_objects[] = {
 
 const int num_ai_tgt_objects = sizeof(ai_tgt_objects) / sizeof(flag_def_list);
 
-flag_def_list ai_tgt_obj_flags[] = {
-	{ "no shields",			OF_NO_SHIELDS,			0 },
-	{ "targetable as bomb",	OF_TARGETABLE_AS_BOMB,	0 }
+flag_def_list_new<Object::Object_Flags> ai_tgt_obj_flags[] = {
+    { "no shields",         Object::Object_Flags::No_shields,         true, false },
+    { "targetable as bomb",	Object::Object_Flags::Targetable_as_bomb, true, false }
 };
 
-const int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list);
+const int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list_new<Object::Object_Flags>);
+
 
 flag_def_list ai_tgt_ship_flags[] = {
 	{ "afterburners",	SIF_AFTERBURNER,	0 },

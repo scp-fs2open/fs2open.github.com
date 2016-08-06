@@ -2329,6 +2329,25 @@ int atoi2()
 
 }
 
+long atol2()
+{
+    char	ch;
+
+    my_errno = 0;
+
+    ignore_white_space();
+
+    ch = *Mp;
+
+    if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
+        error_display(1, "Expecting long, found [%.32s].\n", next_tokens());
+        my_errno = 1;
+        return 0;
+    }
+    else
+        return atol(Mp);
+}
+
 //	Stuff a floating point value pointed at by Mp.
 //	Advances past float characters.
 void stuff_float(float *f)
