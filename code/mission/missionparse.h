@@ -20,6 +20,7 @@
 #include "object/object.h"
 #include "parse/sexp.h"
 #include "sound/sound.h"
+#include "mission/mission_flags.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -64,32 +65,6 @@ struct p_dock_instance;
 #define MISSION_TYPE_MULTI_COOP		(1<<3)
 #define MISSION_TYPE_MULTI_TEAMS		(1<<4)
 #define MISSION_TYPE_MULTI_DOGFIGHT	(1<<5)
-
-#define MISSION_FLAG_SUBSPACE					(1<<0)	// mission takes place in subspace
-#define MISSION_FLAG_NO_PROMOTION				(1<<1)	// cannot get promoted or badges in this mission
-#define MISSION_FLAG_FULLNEB					(1<<2)	// mission is a full nebula mission
-#define MISSION_FLAG_NO_BUILTIN_MSGS			(1<<3)	// disables builtin msgs
-#define MISSION_FLAG_NO_TRAITOR					(1<<4)	// player cannot become a traitor
-#define MISSION_FLAG_TOGGLE_SHIP_TRAILS			(1<<5)	// toggles ship trails (off in nebula, on outside nebula)
-#define MISSION_FLAG_SUPPORT_REPAIRS_HULL		(1<<6)	// Toggles support ship repair of ship hulls
-#define MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT	(1<<7)	// Beam-free-all by default - Goober5000
-#define MISSION_FLAG_CURRENTLY_UNUSED_1			(1<<8)
-#define MISSION_FLAG_CURRENTLY_UNUSED_2			(1<<9)
-#define MISSION_FLAG_NO_BRIEFING				(1<<10)	// no briefing, jump right into mission - Goober5000
-#define MISSION_FLAG_TOGGLE_DEBRIEFING			(1<<11)	// Turn on debriefing for dogfight. Off for everything else - Goober5000
-#define MISSION_FLAG_CURRENTLY_UNUSED_3			(1<<12)
-#define MISSION_FLAG_ALLOW_DOCK_TREES			(1<<13)	// toggle between hub and tree model for ship docking (see objectdock.cpp) - Gooober5000
-#define MISSION_FLAG_2D_MISSION					(1<<14) // Mission is meant to be played top-down style; 2D physics and movement.
-#define MISSION_FLAG_CURRENTLY_UNUSED_4			(1<<15)
-#define MISSION_FLAG_RED_ALERT					(1<<16)	// a red-alert mission - Goober5000
-#define MISSION_FLAG_SCRAMBLE					(1<<17)	// a scramble mission - Goober5000
-#define MISSION_FLAG_NO_BUILTIN_COMMAND			(1<<18)	// turns off Command without turning off pilots - Karajorma
-#define MISSION_FLAG_PLAYER_START_AI			(1<<19) // Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
-#define MISSION_FLAG_ALL_ATTACK					(1<<20)	// all teams at war - Goober5000
-#define MISSION_FLAG_USE_AP_CINEMATICS			(1<<21) // Kazan - use autopilot cinematics
-#define MISSION_FLAG_DEACTIVATE_AP         	    (1<<22) // KeldorKatarn - deactivate autopilot (patch approved by Kazan)
-#define MISSION_FLAG_ALWAYS_SHOW_GOALS     	    (1<<23) // Karajorma - Show the mission goals, even for training missions
-#define MISSION_FLAG_END_TO_MAINHALL			(1<<24) // niffiwan - Return to the mainhall after debrief
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
@@ -136,7 +111,7 @@ typedef struct mission {
 	char	notes[NOTES_LENGTH];
 	char	mission_desc[MISSION_DESC_LENGTH];
 	int	game_type;
-	int	flags;
+    flagset<Mission::Mission_Flags> flags;
 	int	num_players;									// valid in multiplayer missions -- number of players supported
 	uint	num_respawns;									// valid in multiplayer missions -- number of respawns allowed
 	int		max_respawn_delay;									// valid in multiplayer missions -- number of respawns allowed
@@ -180,7 +155,7 @@ typedef struct mission {
 		notes[ 0 ] = '\0';
 		mission_desc[ 0 ] = '\0';
 		game_type = 0;
-		flags = 0;
+		flags.reset();
 		num_players = 0;
 		num_respawns = 0;
 		max_respawn_delay = 0;

@@ -925,7 +925,7 @@ obj_maybe_fire:
 	//2D MODE
 	//THIS IS A FREAKIN' HACK
 	//Do not let ship change position on Y axis
-	if(The_mission.flags & MISSION_FLAG_2D_MISSION)
+	if(The_mission.flags[Mission::Mission_Flags::Mission_2d])
 	{
 		angles old_angles, new_angles;
 		objp->pos.xyz.y = objp->last_pos.xyz.y;

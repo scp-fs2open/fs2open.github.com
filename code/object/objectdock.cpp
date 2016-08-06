@@ -646,7 +646,7 @@ bool dock_check_assume_hub()
 	// evaluation fail.
 
 	// Assume level 2 optimization unless the mission specifies level 3.
-	return !(The_mission.flags & MISSION_FLAG_ALLOW_DOCK_TREES);
+	return !(The_mission.flags[Mission::Mission_Flags::Allow_dock_trees]);
 }
 
 object *dock_get_hub(object *objp)

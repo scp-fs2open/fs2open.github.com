@@ -6956,7 +6956,7 @@ void sexp_set_object_position(int n)
 	extern neb2_detail *Nd;
 
 	if ( (oswpt.objp == Player_obj) 
-		&& (The_mission.flags & MISSION_FLAG_FULLNEB) 
+		&& (The_mission.flags[Mission::Mission_Flags::Fullneb]) 
 		&& (vm_vec_dist(&oswpt.objp->pos, &target_vec) >= Nd->cube_inner) )
 	{
 		neb2_eye_changed();
@@ -10084,12 +10084,7 @@ void sexp_allow_treason (int n)
 {
 	n = CDR(n);
 	if (n != -1) {
-		if ( is_sexp_true(n) ) {
-			The_mission.flags |= MISSION_FLAG_NO_TRAITOR;
-		} 
-		else {
-			The_mission.flags &= ~MISSION_FLAG_NO_TRAITOR;
-		}
+        The_mission.flags.set(Mission::Mission_Flags::No_traitor, is_sexp_true(n));
 	}
 }
 
@@ -12070,15 +12065,15 @@ extern void game_stop_subspace_ambient_sound();
 
 void sexp_mission_set_subspace(int n)
 {
-	if (eval_num(n) > 0) {
-		The_mission.flags |= MISSION_FLAG_SUBSPACE;
+    if (eval_num(n) > 0) {
 		Game_subspace_effect = 1;
 		game_start_subspace_ambient_sound();
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_SUBSPACE;
-		Game_subspace_effect = 0;
+        Game_subspace_effect = 0;
 		game_stop_subspace_ambient_sound();
 	}
+    
+    The_mission.flags.set(Mission::Mission_Flags::Subspace, Game_subspace_effect);
 }
 
 void sexp_add_background_bitmap(int n)
@@ -12274,7 +12269,7 @@ void sexp_remove_sun_bitmap(int n)
 
 void sexp_nebula_change_storm(int n)
 {
-	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) return;
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
 	
 	nebl_set_storm(CTEXT(n));
 }
@@ -12303,7 +12298,7 @@ void sexp_nebula_toggle_poof(int n)
 
 void sexp_nebula_change_pattern(int n)
 {
-	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) return;
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) return;
 	
 	strcpy_s(Neb2_texture_name,(CTEXT(n)));
 
@@ -12340,12 +12335,8 @@ void sexp_end_mission(int n)
 	}
 
 	// ending via debrief and then going to mainhall could maybe work with multiplayer?
-	if (from_debrief_to_main_hall) {
-		The_mission.flags |= MISSION_FLAG_END_TO_MAINHALL;
-	} else {
-		The_mission.flags &= ~MISSION_FLAG_END_TO_MAINHALL;
-	}
-
+    The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall, from_debrief_to_main_hall);
+	
 	// if we go straight to the main hall we have to clean up the mission without entering the debriefing
 	if (boot_to_main_hall && !(Game_mode & GM_MULTIPLAYER)) {
 		gameseq_post_event(GS_EVENT_END_GAME);
@@ -12364,10 +12355,7 @@ void sexp_end_mission(int n)
 // Goober5000
 void sexp_set_debriefing_toggled(int node)
 {
-	if (is_sexp_true(node))
-		The_mission.flags |= MISSION_FLAG_TOGGLE_DEBRIEFING;
-	else
-		The_mission.flags &= ~MISSION_FLAG_TOGGLE_DEBRIEFING;
+    The_mission.flags.set(Mission::Mission_Flags::Toggle_debriefing, is_sexp_true(node));
 }
 
 /**
@@ -13456,16 +13444,8 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 	// If no arguments were supplied then turn off all messages then bail
 	if (node < 0)
 	{
-		if (enable_messages) 
-		{
-			The_mission.flags &= ~MISSION_FLAG_NO_BUILTIN_MSGS;	
-			return;
-		}
-		else 
-		{
-			The_mission.flags |= MISSION_FLAG_NO_BUILTIN_MSGS;
-			return;
-		}
+        The_mission.flags.set(Mission::Mission_Flags::No_builtin_msgs, !enable_messages);
+        return;
 	}
 
 	// iterate through all the nodes supplied
@@ -13477,14 +13457,7 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		if ((*ship_name == '#') && !stricmp(&ship_name[1], The_mission.command_sender)) 
 		{
 			// Either disable or enable messages from command
-			if (enable_messages) 
-			{
-				The_mission.flags &= ~MISSION_FLAG_NO_BUILTIN_COMMAND;	
-			}
-			else 
-			{
-				The_mission.flags |= MISSION_FLAG_NO_BUILTIN_COMMAND;
-			}
+            The_mission.flags.set(Mission::Mission_Flags::No_builtin_command, !enable_messages);
 		}
 		else if (!stricmp(ship_name, "<Any Wingman>"))
 		{
@@ -19383,28 +19356,14 @@ void multi_del_nav()
 //args: 1, boolean enable/disable
 void set_use_ap_cinematics(int node)
 {
-	if (is_sexp_true(node))
-	{
-		The_mission.flags |= MISSION_FLAG_USE_AP_CINEMATICS;
-	}
-	else
-	{
-		The_mission.flags &= ~MISSION_FLAG_USE_AP_CINEMATICS;
-	}
+    The_mission.flags.set(Mission::Mission_Flags::Use_ap_cinematics, is_sexp_true(node));
 }
 
 //text: use-autopilot
 //args: 1, boolean enable/disable
 void set_use_ap(int node)
 {
-	if (is_sexp_true(node))
-	{
-		The_mission.flags &= ~MISSION_FLAG_DEACTIVATE_AP;
-	}
-	else
-	{
-		The_mission.flags |= MISSION_FLAG_DEACTIVATE_AP;
-	}
+    The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, !is_sexp_true(node));
 }
 
 //text: hide-nav

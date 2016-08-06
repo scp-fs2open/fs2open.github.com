@@ -345,7 +345,7 @@ void neb2_post_level_init()
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) ) {
+	if ( !((The_mission.flags[Mission::Mission_Flags::Fullneb]) || Nebula_sexp_used) ) {
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		Neb2_awacs = -1.0f;
 		return;
@@ -414,7 +414,7 @@ void neb2_post_level_init()
 	neb2_eye_changed();
 
 	// if we are going to use fullneb, but aren't fullneb yet, then be sure to reset our mode
-	if ( !(The_mission.flags & MISSION_FLAG_FULLNEB) ) {
+	if ( !(The_mission.flags[Mission::Mission_Flags::Fullneb]) ) {
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		Neb2_awacs = -1.0f;
 	}
@@ -431,7 +431,7 @@ void neb2_level_close()
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) ) {
+	if ( !((The_mission.flags[Mission::Mission_Flags::Fullneb]) || Nebula_sexp_used) ) {
 		return;
 	}
 
@@ -444,7 +444,7 @@ void neb2_level_close()
 	}
 
 	// unflag the mission as being fullneb so stuff doesn't fog in the techdata room :D
-	The_mission.flags &= ~MISSION_FLAG_FULLNEB;
+    The_mission.flags.remove(Mission::Mission_Flags::Fullneb);
 
 	if (Neb2_htl_fog_data) {
 		delete[] Neb2_htl_fog_data;
@@ -461,7 +461,7 @@ void neb2_render_setup(camid cid)
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if ( !(The_mission.flags & MISSION_FLAG_FULLNEB) ) {
+	if ( !(The_mission.flags[Mission::Mission_Flags::Fullneb]) ) {
 		return;
 	}
 
@@ -496,7 +496,7 @@ void neb2_page_in()
 	int idx;
 
 	// load in all nebula bitmaps
-	if ( (The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used ) {
+	if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) || Nebula_sexp_used ) {
 		for (idx = 0; idx < Neb2_poof_count; idx++) {
 			if ( (Neb2_poofs[idx] >= 0) && (Neb2_poof_flags & (1<<idx)) ) {
 				bm_page_in_texture(Neb2_poofs[idx]);
@@ -929,7 +929,7 @@ void neb2_render_player()
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) {
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) {
 		return;
 	}
 
@@ -1221,7 +1221,7 @@ int tbmap = -1;
 void neb2_pre_render(camid cid)
 {
 	// if the mission is not a fullneb mission, skip
-	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) {
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) {
 		return;
 	}
 

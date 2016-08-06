@@ -1649,7 +1649,7 @@ void game_process_keys()
 					}
 
 					//If topdown view in non-2D mission, go back to cockpit view.
-					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags & MISSION_FLAG_2D_MISSION) && !(Perspective_locked) ) {
+					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags[Mission::Mission_Flags::Mission_2d]) && !(Perspective_locked) ) {
 						Viewer_mode &= ~VM_TOPDOWN;
 						break;
 					}
@@ -2504,7 +2504,7 @@ int button_function(int n)
 
 		// Autopilot key control
 		case AUTO_PILOT_TOGGLE:
-			if (!(The_mission.flags & MISSION_FLAG_DEACTIVATE_AP)) {
+			if (!(The_mission.flags[Mission::Mission_Flags::Deactivate_ap])) {
 				if (AutoPilotEngaged) {
 					if (Cmdline_autopilot_interruptable == 1) //allow WCS to disable autopilot interrupt via commandline
 						EndAutoPilot();

@@ -1065,7 +1065,7 @@ void hud_init_targeting()
 	Target_newest_ship_timestamp = timestamp(0);
 	Target_next_turret_timestamp = timestamp(0);
 
-	if(The_mission.flags & MISSION_FLAG_FULLNEB) {
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA; 
 	} else {
 		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;

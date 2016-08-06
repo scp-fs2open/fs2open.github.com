@@ -446,7 +446,7 @@ void render_shield(int shield_num)
 		bitmap_id = sa->first_frame + frame_num;
 
 		float alpha = 0.9999f;
-		if(The_mission.flags & MISSION_FLAG_FULLNEB){
+		if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 			alpha *= 0.85f;
 		}
 

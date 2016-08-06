@@ -1192,7 +1192,7 @@ void HUD_init()
 	HUD_draw     = 1;
 	HUD_disable_except_messages = 0;
 
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		HUD_contrast = 1;
 	}
 

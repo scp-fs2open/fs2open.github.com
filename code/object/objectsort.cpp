@@ -240,7 +240,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 	Interp_no_flush = 1;
 
-	bool full_neb = ((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running);
+	bool full_neb = ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running);
 	bool c_viewer = (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK));
 
 	// now draw them
@@ -307,7 +307,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 			continue;
 
 		// if we're fullneb, fire up the fog - this also generates a fog table
-		if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
+		if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running){
 			// get the fog values
 			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
 
@@ -333,7 +333,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	batch_render_man_thrusters();
 
 	// if we're fullneb, switch off the fog effet
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
@@ -360,7 +360,7 @@ void obj_render_queue_all()
 				continue;
 			}
 
-			if ( (The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running ) {
+			if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running ) {
 				vec3d to_obj;
 				vm_vec_sub( &to_obj, &objp->pos, &Eye_position );
 				float z = vm_vec_dot( &Eye_matrix.vec.fvec, &to_obj );
@@ -427,7 +427,7 @@ void obj_render_queue_all()
  	batch_render_man_thrusters();
 
 	// if we're fullneb, switch off the fog effet
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 

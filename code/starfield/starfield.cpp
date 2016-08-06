@@ -790,7 +790,7 @@ void stars_post_level_init()
 	stars_set_background_model(The_mission.skybox_model, NULL, The_mission.skybox_flags);
 	stars_set_background_orientation(&The_mission.skybox_orientation);
 
-	stars_load_debris( ((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) );
+	stars_load_debris( ((The_mission.flags[Mission::Mission_Flags::Fullneb]) || Nebula_sexp_used) );
 
 // following code randomly distributes star points within a sphere volume, which
 // avoids there being denser areas along the edges and in corners that we had in the
@@ -1229,7 +1229,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 		return;
 
 	// if we're in the nebula, don't render any backgrounds
-	if (The_mission.flags & MISSION_FLAG_FULLNEB)
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb])
 		return;
 
 	// detail settings
@@ -1743,7 +1743,7 @@ void stars_draw_debris()
 	gr_set_color( 0, 0, 0 );
 
 	// turn off fogging
-	if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
@@ -1763,7 +1763,7 @@ void stars_draw_debris()
 			d->vclip = i % MAX_DEBRIS_VCLIPS;	//rand()
 
 			// if we're in full neb mode
-			if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)) {
+			if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)) {
 				d->size = i2fl(myrand() % 4)*BASE_SIZE_NEB;
 			} else {
 				d->size = i2fl(myrand() % 4)*BASE_SIZE;
@@ -1782,7 +1782,7 @@ void stars_draw_debris()
 			int frame = Missiontime / (DEBRIS_ROT_MIN + (i % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
 			frame %= Debris_vclips[d->vclip].nframes;
 
-			if ( (The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) ) {
+			if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) ) {
 				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.3f);
 			} else {
 				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
@@ -1838,7 +1838,7 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 		stars_draw_background();
 	}
 
-	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags & MISSION_FLAG_FULLNEB) && (supernova_active() < 3) ) {
+	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) && (supernova_active() < 3) ) {
 		stars_draw_stars();
 	}
 
@@ -2506,9 +2506,10 @@ const char *stars_get_name_from_instance(int index, bool is_a_sun)
 // WMC/Goober5000
 void stars_set_nebula(bool activate)
 {
-	if (activate)
+    The_mission.flags.set(Mission::Mission_Flags::Fullneb, activate);
+	
+    if (activate)
 	{
-		The_mission.flags |= MISSION_FLAG_FULLNEB;
 		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
 		HUD_contrast = 1;
 		if(Fred_running) {
@@ -2523,7 +2524,6 @@ void stars_set_nebula(bool activate)
 	}
 	else
 	{
-		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
 		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		Debris_vclips = Debris_vclips_normal;

@@ -566,7 +566,7 @@ void game_framerate_check_init()
 	Gf_critical_time = 0.0f;
 		
 	// nebula missions
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		Gf_critical = 15.0f;			
 	} else {
 		Gf_critical = 25.0f;
@@ -3307,7 +3307,7 @@ void game_environment_map_gen()
 		gr_screen.envmap_render_target = -1;
 	}
 
-	if ( Dynamic_environment || (The_mission.flags & MISSION_FLAG_SUBSPACE) ) {
+	if ( Dynamic_environment || (The_mission.flags[Mission::Mission_Flags::Subspace]) ) {
 		Dynamic_environment = true;
 		gen_flags &= ~BMP_FLAG_RENDER_TARGET_STATIC;
 		gen_flags |= BMP_FLAG_RENDER_TARGET_DYNAMIC;
@@ -3364,7 +3364,7 @@ camid game_render_frame_setup()
 
 	//First, make sure we take into account 2D Missions.
 	//These replace the normal player in-cockpit view with a topdown view.
-	if(The_mission.flags & MISSION_FLAG_2D_MISSION)
+	if(The_mission.flags[Mission::Mission_Flags::Mission_2d])
 	{
 		if(!Viewer_mode)
 		{
@@ -4088,7 +4088,7 @@ void game_maybe_do_dead_popup(float frametime)
 
 			// this should only happen during a red alert mission
 			case 3:				
-				if (The_mission.flags & MISSION_FLAG_RED_ALERT)
+				if (The_mission.flags[Mission::Mission_Flags::Red_alert])
 				{
 					// choose the previous mission
 					mission_campaign_previous_mission();
@@ -6178,7 +6178,7 @@ void mouse_force_pos(int x, int y);
 			}
 
 			Game_subspace_effect = 0;
-			if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
+			if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
 				Game_subspace_effect = 1;
 				if( !(Game_mode & GM_STANDALONE_SERVER) ){	
 					game_start_subspace_ambient_sound();

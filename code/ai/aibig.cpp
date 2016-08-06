@@ -771,7 +771,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 										firing_range = MIN((swip->max_speed * swip->lifetime), swip->weapon_range);
 									// reduce firing range of secondaries in nebula
 									extern int Nebula_sec_range;
-									if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
+									if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
 										firing_range *= 0.8f;
 									}
 

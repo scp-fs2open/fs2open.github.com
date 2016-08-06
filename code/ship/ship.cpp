@@ -13212,7 +13212,7 @@ float ship_calculate_rearm_duration( object *objp )
 		shield_rep_time = ((sp->ship_max_shield_strength * sp->max_shield_recharge) - shield_get_strength(objp)) / (sp->max_shield_recharge * sp->ship_max_shield_strength * sip->sup_shield_repair_rate);
 	
 	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
-	if ((The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && (max_hull_repair > objp->hull_strength) && (sip->sup_hull_repair_rate > 0.0f))
+	if ((The_mission.flags[Mission::Mission_Flags::Support_repairs_hull]) && (max_hull_repair > objp->hull_strength) && (sip->sup_hull_repair_rate > 0.0f))
 	{
 		hull_rep_time = (max_hull_repair - objp->hull_strength) / (sp->ship_max_hull_strength * sip->sup_hull_repair_rate);
 	}
@@ -13374,7 +13374,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		max_hull_repair = objp->hull_strength;
 	}
 	
-	if(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
+	if(The_mission.flags[Mission::Mission_Flags::Support_repairs_hull])
 	{
 		objp->hull_strength += repair_allocated;
 		if ( objp->hull_strength > max_hull_repair ) {
@@ -13616,7 +13616,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	}
 
 	// return 1 if at end of subsystem list, hull damage at 0, and shields full and all secondary banks full.
-	if ( (subsys_all_ok && shields_full && (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) && hull_ok ) || (subsys_all_ok && shields_full && !(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL) ) )
+	if ( (subsys_all_ok && shields_full && (The_mission.flags[Mission::Mission_Flags::Support_repairs_hull]) && hull_ok ) || (subsys_all_ok && shields_full && !(The_mission.flags[Mission::Mission_Flags::Support_repairs_hull]) ) )
 	{
 		if ( objp == Player_obj ) {
 			player_stop_repair_sound();
@@ -18787,7 +18787,7 @@ void ship_render(object* obj, draw_list* scene)
 
 	// small ships
 	if ( !( shipp->flags2 & SF2_CLOAKED ) ) {
-		if ( ( The_mission.flags & MISSION_FLAG_FULLNEB ) && ( sip->flags & SIF_SMALL_SHIP ) ) {			
+		if ( ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) && ( sip->flags & SIF_SMALL_SHIP ) ) {			
 			// force detail levels
 			float fog_val = neb2_get_fog_intensity(obj);
 			if ( fog_val >= 0.6f ) {

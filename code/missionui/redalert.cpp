@@ -390,7 +390,7 @@ void red_alert_do_frame(float frametime)
 
 	// commit if skipping briefing, but not in multi - Goober5000
 	if (!(Game_mode & GM_MULTIPLAYER)) {
-		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
+		if (The_mission.flags[Mission::Mission_Flags::No_briefing])
 		{
 			red_alert_button_pressed(RA_CONTINUE);
 			return;
@@ -1030,7 +1030,7 @@ void red_alert_bash_wingman_status()
 // return !0 if this is a red alert mission, otherwise return 0
 int red_alert_mission()
 {
-	return (The_mission.flags & MISSION_FLAG_RED_ALERT);
+	return (The_mission.flags[Mission::Mission_Flags::Red_alert]);
 }
 
 // called from sexpression code to start a red alert mission

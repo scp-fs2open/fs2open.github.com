@@ -332,7 +332,7 @@ int hud_lock_world_pos_in_range(vec3d *target_world_pos, vec3d *vec_to_target)
 	
 
 	// reduce firing range in nebula
-	if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
+	if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
 		weapon_range *= 0.8f;
 	}
 

@@ -213,7 +213,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		check_huge_ship = (sip->flags & SIF_HUGE_SHIP);
 	}
 	
-	int nebula_enabled = (The_mission.flags & MISSION_FLAG_FULLNEB);
+	int nebula_enabled = (The_mission.flags[Mission::Mission_Flags::Fullneb]);
 
 	// ships on the same team are always viewable
 	if ((target->type == OBJ_SHIP) && (shipp->team == viewer->team))

@@ -455,7 +455,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 	// RT, don't need this anymore
 #if 0
 
-	if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
+	if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
 		strcpy_s(name, NOX("gamepalette-subspace"));
 	} else {
 		strcpy_s(name, "gamepalette1-01");

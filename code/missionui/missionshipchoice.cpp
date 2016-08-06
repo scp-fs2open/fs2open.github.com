@@ -1906,7 +1906,7 @@ void commit_pressed()
 	mission_hotkey_validate();
 
 	// Goober5000 - no sound when skipping briefing
-	if (!(The_mission.flags & MISSION_FLAG_NO_BRIEFING))
+	if (!(The_mission.flags[Mission::Mission_Flags::No_briefing]))
 		gamesnd_play_iface(SND_COMMIT_PRESSED);
 
 	// save the player loadout

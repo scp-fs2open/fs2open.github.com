@@ -948,7 +948,7 @@ void clear_mission()
 	strcpy_s(The_mission.command_sender, DEFAULT_COMMAND); 
 
 	// Goober5000: reset ALL mission flags, not just nebula!
-	The_mission.flags = 0;
+	The_mission.flags.reset();
 	The_mission.support_ships.max_support_ships = -1;	// negative means infinite
 	The_mission.support_ships.max_hull_repair_val = 0.0f;
 	The_mission.support_ships.max_subsys_repair_val = 100.0f;

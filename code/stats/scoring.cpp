@@ -467,7 +467,7 @@ void scoring_level_close(int accepted)
 		// If this mission doesn't allow promotion or badges
 		// then be sure that these don't get done.  Don't allow promotions or badges when
 		// playing normally and not in a campaign.
-		if ( (The_mission.flags & MISSION_FLAG_NO_PROMOTION) || ((Game_mode & GM_NORMAL) && !(Game_mode & GM_CAMPAIGN_MODE)) ) {
+		if ( (The_mission.flags[Mission::Mission_Flags::No_promotion]) || ((Game_mode & GM_NORMAL) && !(Game_mode & GM_CAMPAIGN_MODE)) ) {
 			if ( Player->stats.m_promotion_earned != -1) {
 				Player->stats.rank--;
 				Player->stats.m_promotion_earned = -1;
@@ -720,7 +720,7 @@ int scoring_eval_kill(object *ship_objp)
 
 			// if he killed a guy on his own team increment his bonehead kills
 			if((Ships[Objects[plr->objnum].instance].team == dead_ship->team) && !MULTI_DOGFIGHT ){
-				if (!(The_mission.flags & MISSION_FLAG_NO_TRAITOR)) {
+				if (!(The_mission.flags[Mission::Mission_Flags::No_traitor])) {
 					plr->stats.m_bonehead_kills++;
 					kill_score = -(int)(dead_ship->score * scoring_get_scale_factor());
 					plr->stats.m_score += kill_score;
@@ -916,7 +916,7 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 
 			// if he killed a bomb on his own team increment his bonehead kills
 			if((Ships[Objects[plr->objnum].instance].team == dead_wp->team) && !MULTI_DOGFIGHT ){
-				if (!(The_mission.flags & MISSION_FLAG_NO_TRAITOR)) {
+				if (!(The_mission.flags[Mission::Mission_Flags::No_traitor])) {
 					plr->stats.m_bonehead_kills++;
 					kill_score = -(int)(dead_wip->score * scoring_get_scale_factor());
 					plr->stats.m_score += kill_score;

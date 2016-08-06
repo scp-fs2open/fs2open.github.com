@@ -1935,11 +1935,11 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 
 	// if we aren't showing builtin msgs, bail
-	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS)
+	if (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs])
 		return;
 
 	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
-	if ( (shipp == NULL) && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ) 
+	if ( (shipp == NULL) && (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ) 
 		return;
 
 	// builtin type isn't supported by this version of the table

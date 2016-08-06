@@ -3189,7 +3189,7 @@ void ai_start_fly_to_ship(object *objp, int shipnum)
 
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS && AutoPilotEngaged)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics] && AutoPilotEngaged)
 	{
 		aip->ai_flags &= ~AIF_FORMATION_WING;
 		aip->ai_flags &= ~AIF_FORMATION_OBJECT;
@@ -3229,7 +3229,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 		return;
 	}
 
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS && AutoPilotEngaged)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics] && AutoPilotEngaged)
 	{
 		aip->ai_flags &= ~AIF_FORMATION_WING;
 		aip->ai_flags &= ~AIF_FORMATION_OBJECT;
@@ -4328,11 +4328,11 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 	if (AutoPilotEngaged
 		&& timestamp_elapsed(LockAPConv)
 		&& carry_flag
-		&& ((The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) || (Pl_objp != Autopilot_flight_leader)) )
+		&& ((The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) || (Pl_objp != Autopilot_flight_leader)) )
 	{
 		Assertion( Autopilot_flight_leader != NULL, "When under autopilot there must be a flight leader" );
 		// snap wings into formation them into formation
-		if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) {
+		if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) {
 			if (aip->wing != -1) {
 				int wing_index = get_wing_index(Pl_objp, aip->wing);
 				object *wing_leader = get_wing_leader(aip->wing);
@@ -8812,7 +8812,7 @@ void ai_chase()
 									
 									// reduce firing range in nebula
 									extern int Nebula_sec_range;
-									if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
+									if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
 										firing_range *= 0.8f;
 									}
 
@@ -13223,7 +13223,7 @@ int maybe_request_support(object *objp)
 	//	Set desire based on hull strength.
 	//	Note: We no longer repair hull, so this would cause repeated repair requests.
 	// Added back in upon mission flag condition - Goober5000
-	if (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
+	if (The_mission.flags[Mission::Mission_Flags::Support_repairs_hull])
 	{
 		desire += 6 - (int) (get_hull_pct(objp) * 6.0f);
 	}
@@ -14631,7 +14631,7 @@ void process_friendly_hit_message( int message, object *objp )
 	}
 
 	// Karajorma - pick a random ship to send Command messages if command is silenced. 
-	if (index < 0 && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ) {
+	if (index < 0 && (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ) {
 		index = ship_get_random_player_wing_ship( SHIP_GET_UNSILENCED );
 	}
 
@@ -14656,7 +14656,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 	}
 
 	// ditto if mission says no traitors allowed
-	if (The_mission.flags & MISSION_FLAG_NO_TRAITOR) {
+	if (The_mission.flags[Mission::Mission_Flags::No_traitor]) {
 		return;
 	}
 
@@ -15575,7 +15575,7 @@ void cheat_fire_synaptic(object *objp, ship *shipp, ai_info *aip)
 void maybe_cheat_fire_synaptic(object *objp, ai_info *aip)
 {
 	//	Only do in subspace missions.
-	if (!(The_mission.flags & MISSION_FLAG_SUBSPACE))
+	if (!(The_mission.flags[Mission::Mission_Flags::Subspace]))
 		return;
 
 	//	Only do in sm3-09a

@@ -2562,7 +2562,7 @@ void shipfx_do_lightning_frame( ship *shipp )
 	objp = &Objects[shipp->objnum];	
 
 	// if this is not a nebula mission, don't do anything
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB)){
+	if(!(The_mission.flags[Mission::Mission_Flags::Fullneb])){
 		shipp->lightning_stamp = -1;
 		return;
 	}
