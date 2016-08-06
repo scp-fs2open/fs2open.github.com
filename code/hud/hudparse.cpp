@@ -441,10 +441,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			// let's start parsing for gauges.
 			required_string("$Gauges:");
 
-			while (!check_for_string("$Gauges:") && !check_for_string("$End Gauges")) {
-				// find out what type of gauge we're parsing.
-				gauge_type = parse_gauge_type();
-
+			while ((gauge_type = parse_gauge_type()) >= 0) {
 				// change some of the default gauge settings to the appropriate values.
 				gauge_settings settings;
 				settings.font_num = use_font;
@@ -467,10 +464,15 @@ void parse_hud_gauges_tbl(const char *filename)
 					Mp++;
 				}
 
-				skip_to_start_of_string_either("$", "+");
+				// HACK: The previous code simply skipped invalid entries but now we try to generate a warning for that.
+				// If we don't see either $ or + then it means that there was an invalid token somewhere in between
+				if (!check_for_string("$") && !check_for_string("+")) {
+					error_display(0, "Detected invalid tokens while parsing HUD gauges: [%.32s]", next_tokens());
+					skip_to_start_of_string_either("$", "+");
+				}
+
 				// stolened from AI_profiles
 				// if we've been through once already and are at the same place, force a move
-
 				saved_Mp = Mp;
 			}
 
@@ -894,8 +896,6 @@ int parse_gauge_type()
 
 	if ( optional_string("+Secondary Weapons:") )
 		return HUD_OBJECT_SECONDARY_WEAPONS;
-
-	error_display(1, "Invalid gauge type [%.32s]", next_tokens());
 	
 	return -1;
 }
