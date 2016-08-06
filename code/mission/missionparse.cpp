@@ -556,7 +556,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		int temp;
 		stuff_int(&temp);
 
-        pm->flags.set(Mission::Mission_Flags::Red_alert, temp);    
+        pm->flags.set(Mission::Mission_Flags::Red_alert, temp != 0);    
     } 
 	red_alert_invalidate_timestamp();
 
@@ -564,7 +564,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		int temp;
 		stuff_int(&temp);
 
-        pm->flags.set(Mission::Mission_Flags::Scramble, temp);
+        pm->flags.set(Mission::Mission_Flags::Scramble, temp != 0);
 	}
 
 	// if we are just requesting basic info then skip everything else.  the reason
