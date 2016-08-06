@@ -12650,7 +12650,7 @@ void sexp_allow_weapon(int n)
  *
  * @note this function has a similar purpose to sexp_alter_ship_flag_helper; make sure you check/update both
  */
-void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int object_flag, int ship_flag, int ship_flag2, int p_object_flag, int p_object_flag2, bool set_it, bool send_multiplayer = false, bool include_players_in_ship_lookup = false)
+void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int object_flag, int ship_flag, int ship_flag2, int p_object_flag, bool set_it, bool send_multiplayer = false, bool include_players_in_ship_lookup = false)
 {
 	char *ship_name;
 	int ship_index;
@@ -12662,7 +12662,6 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 		multi_send_int(ship_flag); 
 		multi_send_int(ship_flag2); 
 		multi_send_int(p_object_flag); 
-		multi_send_int(p_object_flag2); 
 		multi_send_bool(set_it); 
 	}
 
@@ -12753,20 +12752,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, int objec
 			if (p_object_flag)
 			{
 				// set or clear?
-				if (set_it)
-					p_objp->flags |= p_object_flag;
-				else
-					p_objp->flags &= ~p_object_flag;
-			}
-
-			// see if we have a p_object flag2 to set
-			if (p_object_flag2)
-			{
-				// set or clear?
-				if (set_it)
-					p_objp->flags2 |= p_object_flag2;
-				else
-					p_objp->flags2 &= ~p_object_flag2;
+    			p_objp->flags.set((Mission::Parse_Object_Flags)p_object_flag, set_it);
 			}
 
 			if (send_multiplayer && MULTIPLAYER_MASTER) {
@@ -12787,7 +12773,6 @@ void multi_sexp_deal_with_ship_flag()
 	int ship_flag = 0; 
 	int ship_flag2 = 0;
 	int p_object_flag = 0;
-	int p_object_flag2 = 0;
 	bool set_it = false;
 	bool ship_arrived = true; 
 	ship *shipp = NULL;
@@ -12797,7 +12782,6 @@ void multi_sexp_deal_with_ship_flag()
 	multi_get_int(ship_flag); 
 	multi_get_int(ship_flag2); 
 	multi_get_int(p_object_flag); 
-	multi_get_int(p_object_flag2); 
 	multi_get_bool(set_it);
 
 	// if any of the above failed so will this loop
@@ -12866,14 +12850,7 @@ void multi_sexp_deal_with_ship_flag()
 		else {
 			multi_get_parse_object(pobjp); 
 			if (pobjp != NULL) {
-				if (set_it) {
-					pobjp->flags |= p_object_flag;
-					pobjp->flags2 |= p_object_flag2;
-				}
-				else {
-					pobjp->flags &= ~p_object_flag;
-					pobjp->flags2 &= ~p_object_flag2;
-				}
+                pobjp->flags.set((Mission::Parse_Object_Flags)p_object_flag, set_it);
 			}
 		}
 	}
@@ -12884,7 +12861,7 @@ void multi_sexp_deal_with_ship_flag()
  *
  * @note this function has a similar purpose to sexp_deal_with_ship_flag; make sure you check/update both
  */
-void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, int object_flag, int ship_flag, int ship_flag2, int parse_obj_flag, int parse_obj_flag2, int ai_flag, int ai_flag2, bool set_flag)
+void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, int object_flag, int ship_flag, int ship_flag2, int parse_obj_flag, int ai_flag, int ai_flag2, bool set_flag)
 {
     int i;
     flagset<Object::Object_Flags> object_flag_orig;
@@ -12906,7 +12883,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 					object_ship_wing_point_team_set_ship(&oswpt2, so, future_ships); 
 
 					// recurse
-					sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+					sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, ai_flag, ai_flag2, set_flag);
 				}
 			}
 
@@ -12915,7 +12892,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 					if (p_objp->team == oswpt.team) {
 						oswpt2.p_objp = p_objp;
 						oswpt2.type = OSWPT_TYPE_PARSE_OBJECT;
-						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, ai_flag, ai_flag2, set_flag);
 					}
 				}
 			}
@@ -12934,14 +12911,14 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 					if (p_objp->wingnum == WING_INDEX(oswpt.wingp)) {
 						oswpt2.p_objp = p_objp;
 						oswpt2.type = OSWPT_TYPE_PARSE_OBJECT;
-						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+						sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, ai_flag, ai_flag2, set_flag);
 					}
 				}
 			}
 
 			for (i = 0; i < oswpt.wingp->current_count; i++) {
 				object_ship_wing_point_team_set_ship(&oswpt2, &Ships[oswpt.wingp->ship_index[i]], future_ships); 
-				sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+				sexp_alter_ship_flag_helper(oswpt2, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, ai_flag, ai_flag2, set_flag);
 			}
 
 			break;
@@ -13026,30 +13003,14 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			// see if we have a p_object flag to set
 			if (parse_obj_flag && oswpt.p_objp != NULL)
 			{
-				// set or clear?
-				if (set_flag)
-					oswpt.p_objp->flags |= parse_obj_flag;
-				else
-					oswpt.p_objp->flags &= ~parse_obj_flag;
-			}
-
-			// see if we have a p_object flag2 to set
-			if (parse_obj_flag2 && oswpt.p_objp != NULL)
-			{
-				// set or clear?
-				if (set_flag)
-					oswpt.p_objp->flags2 |= parse_obj_flag2;
-				else
-					oswpt.p_objp->flags2 &= ~parse_obj_flag2;
+                oswpt.p_objp->flags.set((Mission::Parse_Object_Flags)parse_obj_flag, set_flag);
 			}
 			break;
-
-
 	}
 
 }
 
-void alter_flag_for_all_ships(bool future_ships, int object_flag, int ship_flag, int ship_flag2, int parse_obj_flag, int parse_obj_flag2, int ai_flag, int ai_flag2, bool set_flag)
+void alter_flag_for_all_ships(bool future_ships, int object_flag, int ship_flag, int ship_flag2, int parse_obj_flag, int ai_flag, int ai_flag2, bool set_flag)
 {
 	ship_obj	*so;
 	p_object	*p_objp;
@@ -13059,7 +13020,7 @@ void alter_flag_for_all_ships(bool future_ships, int object_flag, int ship_flag,
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		object_ship_wing_point_team_set_ship(&oswpt, so, future_ships); 
 
-		sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+		sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, ai_flag, ai_flag2, set_flag);
 	}
 
 	// set up all the ships which have yet to arrive
@@ -13069,12 +13030,12 @@ void alter_flag_for_all_ships(bool future_ships, int object_flag, int ship_flag,
 		{
 			oswpt.p_objp = p_objp; 
 			oswpt.type = OSWPT_TYPE_PARSE_OBJECT;
-			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, ai_flag, ai_flag2, set_flag);
 		}
 	}
 }
 
-bool sexp_check_flag_arrays(char *flag_name, Object::Object_Flags &object_flag, int &ship_flags, int &ship_flags2, int &parse_obj_flag, int &parse_obj_flag2, int &ai_flag, int &ai_flag2)
+bool sexp_check_flag_arrays(char *flag_name, Object::Object_Flags &object_flag, int &ship_flags, int &ship_flags2, Mission::Parse_Object_Flags &parse_obj_flag, int &ai_flag, int &ai_flag2)
 {
 	int i;
 	bool send_multi = false;
@@ -13104,20 +13065,13 @@ bool sexp_check_flag_arrays(char *flag_name, Object::Object_Flags &object_flag, 
 		}
 	}
 
-	// parse files already have a list of names in the same order as the flags, so we can do something slightly different here. 
-	for ( i = 0; i < MAX_PARSE_OBJECT_FLAGS; i++) {
-		if (!stricmp(Parse_object_flags[i], flag_name)) {
-			parse_obj_flag = (1 << i);
-			break;
-		}
-	}
-
-	for ( i = 0; i < MAX_PARSE_OBJECT_FLAGS_2; i++) {
-		if (!stricmp(Parse_object_flags_2[i], flag_name)) {
-			parse_obj_flag2 = (1 << i);
-			break;
-		}
-	}
+    // parse files already have a list of names in the same order as the flags, so we can do something slightly different here. 
+    for (i = 0; i < (int)num_parse_object_flags; i++) {
+        if (!stricmp(Parse_object_flags[i].name, flag_name)) {
+            parse_obj_flag = Parse_object_flags[i].def;
+            break;
+        }
+    }
 
 	for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
 		if (!stricmp(Ai_flag_names[i].flag_name, flag_name)) {
@@ -13142,8 +13096,7 @@ int sexp_are_ship_flags_set(int node)
 	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
 	int ship_flags = 0;
 	int ship_flags2 = 0;
-	int parse_obj_flag = 0;
-	int parse_obj_flag2 = 0;
+	Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
 	int ai_flag = 0;
 	int ai_flag2 = 0;
 
@@ -13158,7 +13111,7 @@ int sexp_are_ship_flags_set(int node)
 
 	while (node != -1) {
 		flag_name = CTEXT(node); 
-		sexp_check_flag_arrays(flag_name, object_flag, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2);
+		sexp_check_flag_arrays(flag_name, object_flag, ship_flags, ship_flags2, parse_obj_flag, ai_flag, ai_flag2);
 
 		// now check the flags
 		if (object_flag != Object::Object_Flags::NUM_VALUES) {
@@ -13197,8 +13150,7 @@ void sexp_alter_ship_flag(int node)
 	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
 	int ship_flags = 0;
 	int ship_flags2 = 0;
-	int parse_obj_flag = 0;
-	int parse_obj_flag2 = 0;
+	Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
 	int ai_flag = 0;
 	int ai_flag2 = 0;
 	bool set_flag = false; 
@@ -13207,7 +13159,7 @@ void sexp_alter_ship_flag(int node)
 
 	flag_name = CTEXT(node); 
 
-	sexp_check_flag_arrays(flag_name, object_flag, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2);
+	sexp_check_flag_arrays(flag_name, object_flag, ship_flags, ship_flags2, parse_obj_flag, ai_flag, ai_flag2);
 
 	node = CDR(node); 
 	if (is_sexp_true(node)) {
@@ -13225,8 +13177,7 @@ void sexp_alter_ship_flag(int node)
 	multi_send_int((int)object_flag);
 	multi_send_int(ship_flags);
 	multi_send_int(ship_flags2);
-	multi_send_int(parse_obj_flag);
-	multi_send_int(parse_obj_flag2);
+	multi_send_int((int)parse_obj_flag);
 	multi_send_int(ai_flag);
 	multi_send_bool(set_flag);
 	multi_send_bool(future_ships);
@@ -13238,7 +13189,7 @@ void sexp_alter_ship_flag(int node)
 		// send a message to the clients saying there were no more arguments
 		multi_send_bool(false);
 
-		alter_flag_for_all_ships(future_ships, (int)object_flag, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+		alter_flag_for_all_ships(future_ships, (int)object_flag, ship_flags, ship_flags2, (int)parse_obj_flag, ai_flag, ai_flag2, set_flag);
 	}
 
 
@@ -13255,7 +13206,7 @@ void sexp_alter_ship_flag(int node)
 				continue; 
 			}
 
-			sexp_alter_ship_flag_helper(oswpt, future_ships, (int)object_flag, ship_flags, ship_flags2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+			sexp_alter_ship_flag_helper(oswpt, future_ships, (int)object_flag, ship_flags, ship_flags2, (int)parse_obj_flag, ai_flag, ai_flag2, set_flag);
 			node = CDR(node);
 
 			multi_send_int(oswpt.type);
@@ -13292,7 +13243,6 @@ void multi_sexp_alter_ship_flag()
 	int ship_flag = 0; 
 	int ship_flag2 = 0;
 	int parse_obj_flag = 0;
-	int parse_obj_flag2 = 0;
 	bool set_flag = false;
 	bool future_ships = true; 
 	bool process_data = false;
@@ -13306,7 +13256,6 @@ void multi_sexp_alter_ship_flag()
 	multi_get_int(ship_flag); 
 	multi_get_int(ship_flag2); 
 	multi_get_int(parse_obj_flag); 
-	multi_get_int(parse_obj_flag2); 
 	multi_get_int(ai_flag); 
 	multi_get_bool(set_flag);
 	multi_get_bool(future_ships);
@@ -13319,7 +13268,7 @@ void multi_sexp_alter_ship_flag()
 
 	// no more data means do this to every ship in the mission
 	if (!process_data) {
-		alter_flag_for_all_ships(future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+		alter_flag_for_all_ships(future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, ai_flag, ai_flag2, set_flag);
 	}
 	else {
 		while (multi_get_int(type)) {
@@ -13369,7 +13318,7 @@ void multi_sexp_alter_ship_flag()
 					multi_get_int(oswpt.team);
 					break;
 			}
-			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, parse_obj_flag2, ai_flag, ai_flag2, set_flag);
+			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, ship_flag2, parse_obj_flag, ai_flag, ai_flag2, set_flag);
 		}
 	}
 }
@@ -13379,22 +13328,23 @@ void multi_sexp_alter_ship_flag()
 // function to deal with breaking/fixing the warp engines on ships/wings.
 // --repairable is true when we are breaking the warp drive (can be repaired)
 // --damage_it is true when we are sabotaging it, one way or the other; false when fixing it
-void sexp_deal_with_warp( int n, bool repairable, bool damage_it )
+void sexp_deal_with_warp(int n, bool repairable, bool damage_it)
 {
-	int ship_flag, p_object_flag;
+    int ship_flag;
+    int p_object_flag;
 
-	if (repairable)
-	{
-		ship_flag = SF_WARP_BROKEN;
-		p_object_flag = P_SF_WARP_BROKEN;
-	}
-	else
-	{
-		ship_flag = SF_WARP_NEVER;
-		p_object_flag = P_SF_WARP_NEVER;
-	}
+    if (repairable)
+    {
+        ship_flag = (int)Ship::Ship_Flags::Warp_broken;
+        p_object_flag = (int)Mission::Parse_Object_Flags::SF_Warp_broken;
+    }
+    else
+    {
+        ship_flag = (int)Ship::Ship_Flags::Warp_never;
+        p_object_flag = (int)Mission::Parse_Object_Flags::SF_Warp_never;;
+    }
 
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, ship_flag, 0, p_object_flag, 0, damage_it);
+    sexp_deal_with_ship_flag(n, true, 0, ship_flag, 0, p_object_flag, damage_it);
 }
 
 // Goober5000
@@ -13480,7 +13430,7 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		// If it isn't command then assume that we're dealing with a ship 
 		else 
 		{
-			sexp_deal_with_ship_flag(node, false, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_NO_BUILTIN_MESSAGES, 0, P2_SF2_NO_BUILTIN_MESSAGES, !enable_messages);
+			sexp_deal_with_ship_flag(node, false, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_NO_BUILTIN_MESSAGES, (int)Mission::Parse_Object_Flags::SF_No_builtin_messages, !enable_messages);
 		}
 
 		node = CDR(node);
@@ -14051,7 +14001,7 @@ int sexp_goal_incomplete(int n)
  */
 void sexp_protect_ships(int n, bool flag)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Protected, 0, 0, 0, P_OF_PROTECTED, 0, flag);
+	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Protected, 0, 0, (int)Mission::Parse_Object_Flags::OF_Protected, 0, flag);
 }
 
 /**
@@ -14062,7 +14012,7 @@ void sexp_protect_ships(int n, bool flag)
  */
 void sexp_beam_protect_ships(int n, bool flag)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Beam_protected, 0, 0, 0, P_OF_BEAM_PROTECTED, 0, flag);
+	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Beam_protected, 0, 0, (int)Mission::Parse_Object_Flags::OF_Beam_protected, 0, flag);
 }
 
 /**
@@ -14077,13 +14027,13 @@ void sexp_turret_protect_ships(int n, bool flag)
 	n = CDR(n);
 
 	if (!stricmp(turret_type, "beam"))
-		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Beam_protected, 0, 0, 0, P_OF_BEAM_PROTECTED, 0, flag);
+		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Beam_protected, 0, 0, (int)Mission::Parse_Object_Flags::OF_Beam_protected, 0, flag);
 	else if (!stricmp(turret_type, "flak"))
-		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Flak_protected, 0, 0, 0, P_OF_FLAK_PROTECTED, 0, flag);
+		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Flak_protected, 0, 0, (int)Mission::Parse_Object_Flags::OF_Flak_protected, 0, flag);
 	else if (!stricmp(turret_type, "laser"))
-		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Laser_protected, 0, 0, 0, P_OF_LASER_PROTECTED, 0, flag);
+		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Laser_protected, 0, 0, (int)Mission::Parse_Object_Flags::OF_Laser_protected, 0, flag);
 	else if (!stricmp(turret_type, "missile"))
-		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Missile_protected, 0, 0, 0, P_OF_MISSILE_PROTECTED, 0, flag);
+		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Missile_protected, 0, 0, (int)Mission::Parse_Object_Flags::OF_Missile_protected, 0, flag);
 	else
 		Warning(LOCATION, "Invalid turret type '%s'!", turret_type);
 }
@@ -14091,25 +14041,25 @@ void sexp_turret_protect_ships(int n, bool flag)
 // Goober5000 - sets the "don't collide invisible" flag on a list of ships
 void sexp_dont_collide_invisible(int n, bool dont_collide)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_DONT_COLLIDE_INVIS, 0, P_SF2_DONT_COLLIDE_INVIS, dont_collide);
+	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_DONT_COLLIDE_INVIS, (int)Mission::Parse_Object_Flags::SF_Dont_collide_invis, dont_collide);
 }
 
 // Goober5000 - sets the "immobile" flag on a list of ships
 void sexp_set_immobile(int n, bool immobile)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Immobile, 0, 0, 0, P2_OF_IMMOBILE, immobile);
+	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Immobile, 0, 0, (int)Mission::Parse_Object_Flags::OF_Immobile, immobile);
 }
 
 // Goober5000 - sets the "no-ets" flag on a list of ships
 void sexp_disable_ets(int n, bool disable)
 {
-	sexp_deal_with_ship_flag(n, true, 0, 0, SF2_NO_ETS, 0, P2_SF2_NO_ETS, disable);
+	sexp_deal_with_ship_flag(n, true, 0, 0, SF2_NO_ETS, (int)Mission::Parse_Object_Flags::SF_No_ets, disable);
 }
 
 // Goober5000 - sets the vaporize flag on a list of ships
 void sexp_ships_vaporize(int n, bool vaporize)
 {
-	sexp_deal_with_ship_flag(n, true, 0, SF_VAPORIZE, 0, P_SF_VAPORIZE, 0, vaporize);
+	sexp_deal_with_ship_flag(n, true, 0, SF_VAPORIZE, 0, (int)Mission::Parse_Object_Flags::SF_Vaporize, vaporize);
 }
 
 /**
@@ -14120,7 +14070,7 @@ void sexp_ships_vaporize(int n, bool vaporize)
  */
 void sexp_ships_visible(int n, bool visible)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, SF_HIDDEN_FROM_SENSORS, 0, P_SF_HIDDEN_FROM_SENSORS, 0, !visible, true);
+	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, SF_HIDDEN_FROM_SENSORS, 0, (int)Mission::Parse_Object_Flags::SF_Hidden_from_sensors, !visible, true);
 
 	// we also have to add any escort ships that were made visible
 	for (; n >= 0; n = CDR(n))
@@ -14141,7 +14091,7 @@ void sexp_ships_visible(int n, bool visible)
 // Goober5000
 void sexp_ships_stealthy(int n, bool stealthy)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_STEALTH, 0, P_SF2_STEALTH, stealthy, true);
+	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_STEALTH, (int)Mission::Parse_Object_Flags::SF_Stealth, stealthy, true);
 
 	// we also have to add any escort ships that were made visible
 	if (!stealthy)
@@ -14161,7 +14111,7 @@ void sexp_ships_stealthy(int n, bool stealthy)
 // Goober5000
 void sexp_friendly_stealth_invisible(int n, bool invisible)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_FRIENDLY_STEALTH_INVIS, 0, P_SF2_FRIENDLY_STEALTH_INVIS, invisible, true);
+	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_FRIENDLY_STEALTH_INVIS, (int)Mission::Parse_Object_Flags::SF_Friendly_stealth_invis, invisible, true);
 
 	// we also have to add any escort ships that were made visible
 	if (!invisible)
@@ -14368,12 +14318,12 @@ void sexp_ship_tag( int n, int tag )
 // sexpression to toggle invulnerability flag of ships.
 void sexp_ships_invulnerable( int n, bool invulnerable )
 {
-    sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Invulnerable, 0, 0, P_OF_INVULNERABLE, 0, invulnerable);
+    sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Invulnerable, 0, 0, (int)Mission::Parse_Object_Flags::OF_Invulnerable, invulnerable);
 }
 
 void sexp_ships_bomb_targetable(int n, bool targetable)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Targetable_as_bomb, 0, 0, 0, P2_OF_TARGETABLE_AS_BOMB, targetable, true);
+	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Targetable_as_bomb, 0, 0, (int)Mission::Parse_Object_Flags::OF_Targetable_as_bomb, targetable, true);
 }
 
 // Goober5000
@@ -14489,10 +14439,7 @@ void sexp_ships_guardian( int n, int guardian )
 			p_object *p_objp = mission_parse_get_arrival_ship(ship_name);
 			if (p_objp)
 			{
-				if ( guardian )
-					p_objp->flags |= P_SF_GUARDIAN;
-				else
-					p_objp->flags &= ~P_SF_GUARDIAN;
+                p_objp->flags.set(Mission::Parse_Object_Flags::SF_Guardian, guardian != 0);
 			}
 		}
 	}
@@ -14716,7 +14663,7 @@ void sexp_destroy_instantly(int n)
 
 void sexp_shields_off(int n, bool shields_off ) //-Sesquipedalian
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::No_shields, 0, 0, P_OF_NO_SHIELDS, 0, shields_off, true);
+	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::No_shields, 0, 0, (int)Mission::Parse_Object_Flags::OF_No_shields, shields_off, true);
 }
 
 // Goober5000
@@ -14743,14 +14690,13 @@ void sexp_parse_ship_kamikaze(p_object *parse_obj, int kdamage)
 {
 	Assert(parse_obj);
 
+    parse_obj->flags.set(Mission::Parse_Object_Flags::AIF_Kamikaze, kdamage > 0);
 	if (kdamage > 0)
 	{
-		parse_obj->flags |= P_AIF_KAMIKAZE;
 		parse_obj->kamikaze_damage = kdamage;
 	}
 	else
 	{
-		parse_obj->flags &= ~P_AIF_KAMIKAZE;
 		parse_obj->kamikaze_damage = 0;
 	}
 }
@@ -16276,14 +16222,14 @@ void sexp_deal_with_afterburner_lock (int node, bool lock)
 void sexp_deal_with_primary_lock (int node, bool lock)
 {
 	Assert (node != -1);	
-	sexp_deal_with_ship_flag(node, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_PRIMARIES_LOCKED, 0, P2_SF2_PRIMARIES_LOCKED, (lock ? 1:0), true);
+	sexp_deal_with_ship_flag(node, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_PRIMARIES_LOCKED, (int)Mission::Parse_Object_Flags::SF_Primaries_locked, (lock ? 1:0), true);
 
 }
 
 void sexp_deal_with_secondary_lock (int node, bool lock)
 {
 	Assert (node != -1);	
-	sexp_deal_with_ship_flag(node, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_SECONDARIES_LOCKED, 0, P2_SF2_SECONDARIES_LOCKED, (lock ? 1:0), true);
+	sexp_deal_with_ship_flag(node, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_SECONDARIES_LOCKED, (int)Mission::Parse_Object_Flags::SF_Secondaries_locked, (lock ? 1:0), true);
 
 }
 
@@ -18810,10 +18756,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.p_objp->arrival_distance = arrival_distance;
 		oswpt.p_objp->arrival_delay = arrival_delay;
 
-		if (show_warp)
-			oswpt.p_objp->flags &= ~P_SF_NO_ARRIVAL_WARP;
-		else
-			oswpt.p_objp->flags |= P_SF_NO_ARRIVAL_WARP;
+        oswpt.p_objp->flags.set(Mission::Parse_Object_Flags::SF_No_arrival_warp, show_warp);
 	}
 }
 
@@ -19776,7 +19719,7 @@ int sexp_return_player_data(int node, int type)
 			return 0;
 		}
 
-		if (p_objp->flags & P_OF_PLAYER_START) { 
+		if (p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) { 
 			switch (type) {				
 				case OP_SHIP_DEATHS: 
 					// when an AI ship is finally killed its respawn count won't be updated so get the number of deaths 
@@ -20590,7 +20533,7 @@ void sexp_scramble_messages(int node, bool scramble)
 		return;
 	}
 
-	sexp_deal_with_ship_flag(node, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_SCRAMBLE_MESSAGES, 0, P2_SF2_SCRAMBLE_MESSAGES, scramble, false, true);
+	sexp_deal_with_ship_flag(node, true, (int)Object::Object_Flags::NUM_VALUES, 0, SF2_SCRAMBLE_MESSAGES, (int)Mission::Parse_Object_Flags::SF_Scramble_messages, scramble, false, true);
 }
 
 void toggle_cutscene_bars(float delta_speed, int set) 

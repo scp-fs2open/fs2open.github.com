@@ -1833,7 +1833,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num)
 		if ( p_objp ) {
 			// by resetting the reinforcement flag, we will allow code which normally handles arrivals
 			// to make this reinforcement arrive.  Doing so keeps the data structures clean.
-			p_objp->flags &= ~P_SF_REINFORCEMENT;
+            p_objp->flags.remove(Mission::Parse_Object_Flags::SF_Reinforcement);
 
 			// set up the arrival delay
 			delay = rp->arrival_delay;

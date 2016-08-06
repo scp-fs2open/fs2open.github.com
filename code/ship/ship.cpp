@@ -9700,9 +9700,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// Mantis 2763: moved down to have access to the right ship_max_shield_strength value
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
 	if (!Fred_running) {
-		if ((p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON) && (sp->ship_max_shield_strength > 0.0f)) {
+		if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on]) && (sp->ship_max_shield_strength > 0.0f)) {
             objp->flags.remove(Object::Object_Flags::No_shields);
-		} else if ((p_objp->flags & P_OF_NO_SHIELDS) || (sp->ship_max_shield_strength == 0.0f)) {
+		} else if ((p_objp->flags[Mission::Parse_Object_Flags::OF_No_shields]) || (sp->ship_max_shield_strength == 0.0f)) {
 			objp->flags.set(Object::Object_Flags::No_shields);
 		// Since there's not a mission flag set to be adjusting this, see if there was a change from a ship that normally has shields to one that doesn't, and vice versa
 		} else if (!(sip_orig->flags2 & SIF2_INTRINSIC_NO_SHIELDS) && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS)) {

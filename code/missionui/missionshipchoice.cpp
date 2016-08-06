@@ -3055,10 +3055,10 @@ void ss_init_units()
 					}
 				}
 			} else {
-				if ( Parse_objects[ss_slot->sa_index].flags2 & P2_SF2_SHIP_LOCKED ) {
+                if (Parse_objects[ss_slot->sa_index].flags[Mission::Parse_Object_Flags::SF_Ship_locked]) {
 					ss_slot->status |= WING_SLOT_SHIPS_DISABLED;
 				} 
-				if ( Parse_objects[ss_slot->sa_index].flags2 & P2_SF2_WEAPONS_LOCKED ) {
+				if ( Parse_objects[ss_slot->sa_index].flags[Mission::Parse_Object_Flags::SF_Weapons_locked] ) {
 					ss_slot->status |= WING_SLOT_WEAPONS_DISABLED;
 				} 
 				
@@ -3066,7 +3066,7 @@ void ss_init_units()
 				if (!(ss_slot->status & WING_SLOT_DISABLED)) {
 					ss_slot->status = WING_SLOT_FILLED;
 				}
-				if ( Parse_objects[ss_slot->sa_index].flags & P_OF_PLAYER_START ) {
+				if ( Parse_objects[ss_slot->sa_index].flags[Mission::Parse_Object_Flags::OF_Player_start] ) {
 					if ( ss_slot->status & WING_SLOT_LOCKED ) {
 						// Int3();	// Get Alan
 

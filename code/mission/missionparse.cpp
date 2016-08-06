@@ -257,63 +257,61 @@ char *Old_game_types[OLD_MAX_GAME_TYPES] = {
 	"Training mission"
 };
 
-char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
-	"cargo-known",
-	"ignore-count",
-	"protect-ship",
-	"reinforcement",
-	"no-shields",
-	"escort",
-	"player-start",
-	"no-arrival-music",
-	"no-arrival-warp",
-	"no-departure-warp",
-	"locked",
-	"invulnerable",
-	"hidden-from-sensors",
-	"scannable",
-	"kamikaze",
-	"no-dynamic",
-	"red-alert-carry",
-	"beam-protect-ship",
-	"flak-protect-ship",
-	"laser-protect-ship",
-	"missile-protect-ship",
-	"guardian",
-	"special-warp",
-	"vaporize",
-	"stealth",
-	"friendly-stealth-invisible",
-	"don't-collide-invisible",
+flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
+    { "cargo-known",					Mission::Parse_Object_Flags::SF_Cargo_known,			true, false },
+    { "ignore-count",					Mission::Parse_Object_Flags::SF_Ignore_count,			true, false },
+    { "protect-ship",					Mission::Parse_Object_Flags::OF_Protected,				true, false },
+    { "reinforcement",					Mission::Parse_Object_Flags::SF_Reinforcement,			true, false },
+    { "no-shields",						Mission::Parse_Object_Flags::OF_No_shields,				true, false },
+    { "escort",							Mission::Parse_Object_Flags::SF_Escort,					true, false },
+    { "player-start",					Mission::Parse_Object_Flags::OF_Player_start,			true, false },
+    { "no-arrival-music",				Mission::Parse_Object_Flags::SF_No_arrival_music,		true, false },
+    { "no-arrival-warp",				Mission::Parse_Object_Flags::SF_No_arrival_warp,		true, false },
+    { "no-departure-warp",				Mission::Parse_Object_Flags::SF_No_departure_warp,		true, false },
+    { "locked",							Mission::Parse_Object_Flags::SF_Locked,					true, false },
+    { "invulnerable",					Mission::Parse_Object_Flags::OF_Invulnerable,			true, false },
+    { "hidden-from-sensors",			Mission::Parse_Object_Flags::SF_Hidden_from_sensors,	true, false },
+    { "scannable",						Mission::Parse_Object_Flags::SF_Scannable,				true, false },
+    { "kamikaze",						Mission::Parse_Object_Flags::AIF_Kamikaze,				true, false },
+    { "no-dynamic",						Mission::Parse_Object_Flags::AIF_No_dynamic,			true, false },
+    { "red-alert-carry",				Mission::Parse_Object_Flags::SF_Red_alert_store_status, true, false },
+    { "beam-protect-ship",				Mission::Parse_Object_Flags::OF_Beam_protected,			true, false },
+    { "flak-protect-ship",				Mission::Parse_Object_Flags::OF_Flak_protected,			true, false },
+    { "laser-protect-ship",				Mission::Parse_Object_Flags::OF_Laser_protected,		true, false },
+    { "missile-protect-ship",			Mission::Parse_Object_Flags::OF_Missile_protected,		true, false },
+    { "guardian",						Mission::Parse_Object_Flags::SF_Guardian,				true, false },
+    { "special-warp",					Mission::Parse_Object_Flags::Knossos_warp_in,			true, false },
+    { "vaporize",						Mission::Parse_Object_Flags::SF_Vaporize,				true, false },
+    { "stealth",						Mission::Parse_Object_Flags::SF_Stealth,				true, false },
+    { "friendly-stealth-invisible",		Mission::Parse_Object_Flags::SF_Friendly_stealth_invis, true, false },
+    { "don't-collide-invisible",		Mission::Parse_Object_Flags::SF_Dont_collide_invis,		true, false },
+    { "primitive-sensors",				Mission::Parse_Object_Flags::SF_Primitive_sensors,		true, false },
+    { "no-subspace-drive",				Mission::Parse_Object_Flags::SF_No_subspace_drive,		true, false },
+    { "nav-carry-status",				Mission::Parse_Object_Flags::SF_Nav_carry_status,		true, false },
+    { "affected-by-gravity",			Mission::Parse_Object_Flags::SF_Affected_by_gravity,	true, false },
+    { "toggle-subsystem-scanning",		Mission::Parse_Object_Flags::SF_Toggle_subsystem_scanning, true, false },
+    { "targetable-as-bomb",				Mission::Parse_Object_Flags::OF_Targetable_as_bomb,		true, false },
+    { "no-builtin-messages",			Mission::Parse_Object_Flags::SF_No_builtin_messages,	true, false },
+    { "primaries-locked",				Mission::Parse_Object_Flags::SF_Primaries_locked,		true, false },
+    { "secondaries-locked",				Mission::Parse_Object_Flags::SF_Secondaries_locked,		true, false },
+    { "no-death-scream",				Mission::Parse_Object_Flags::SF_No_death_scream,		true, false },
+    { "always-death-scream",			Mission::Parse_Object_Flags::SF_Always_death_scream,	true, false },
+    { "nav-needslink",					Mission::Parse_Object_Flags::SF_Nav_needslink,			true, false },
+    { "hide-ship-name",					Mission::Parse_Object_Flags::SF_Hide_ship_name,			true, false },
+    { "set-class-dynamically",			Mission::Parse_Object_Flags::SF_Set_class_dynamically,	true, false },
+    { "lock-all-turrets",				Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially, true, false },
+    { "afterburners-locked",			Mission::Parse_Object_Flags::SF_Afterburner_locked,		true, false },
+    { "force-shields-on",				Mission::Parse_Object_Flags::OF_Force_shields_on,		true, false },
+    { "immobile",						Mission::Parse_Object_Flags::OF_Immobile,				true, false },
+    { "no-ets",							Mission::Parse_Object_Flags::SF_No_ets,					true, false },
+    { "cloaked",						Mission::Parse_Object_Flags::SF_Cloaked,				true, false },
+    { "ship-locked",					Mission::Parse_Object_Flags::SF_Ship_locked,			true, false },
+    { "weapons-locked",					Mission::Parse_Object_Flags::SF_Weapons_locked,			true, false },
+    { "scramble-messages",				Mission::Parse_Object_Flags::SF_Scramble_messages,		true, false },
+    { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
 };
 
-char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
-	"primitive-sensors",
-	"no-subspace-drive",
-	"nav-carry-status",
-	"affected-by-gravity",
-	"toggle-subsystem-scanning",
-	"targetable-as-bomb",
-	"no-builtin-messages",
-	"primaries-locked", 
-	"secondaries-locked",
-	"no-death-scream",
-	"always-death-scream",
-	"nav-needslink",
-	"hide-ship-name",
-	"set-class-dynamically",
-	"lock-all-turrets",
-	"afterburners-locked",
-	"force-shields-on",
-	"immobile",
-	"no-ets",
-	"cloaked",
-	"ship-locked",
-	"weapons-locked",
-	"scramble-messages",
-	"no-collide",
-	"no-disabled-self-destruct",
-};
+const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 
 char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
 	"true",
@@ -1755,7 +1753,7 @@ int parse_create_object(p_object *pobjp)
 
 		// we should only be calling this for dock leaders, because the dock leader
 		// governs the creation of his entire group
-		Assert((pobjp->flags & P_SF_DOCK_LEADER));
+		Assert((pobjp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]));
 
 		// if the leader will be destroyed before the mission starts, then *only* create the leader;
 		// don't create the rest of the group (this is what retail did)
@@ -1834,7 +1832,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// Goober5000 - if this object is being created because he's docked to something,
 	// and he's in a wing, then mark the wing as having arrived
-	if (object_is_docked(p_objp) && !(p_objp->flags & P_SF_DOCK_LEADER) && (p_objp->wingnum >= 0))
+	if (object_is_docked(p_objp) && !(p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]) && (p_objp->wingnum >= 0))
 	{
 		if (!Fred_running)
 			parse_bring_in_docked_wing(p_objp, p_objp->wingnum, shipnum);
@@ -1842,7 +1840,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// if arriving through knossos, adjust objpj->pos to plane of knossos and set flag
 	// special warp is single player only
-	if ((p_objp->flags & P_KNOSSOS_WARP_IN) && !(Game_mode & GM_MULTIPLAYER))
+	if ((p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in]) && !(Game_mode & GM_MULTIPLAYER))
 	{
 		if (!Fred_running)
 			position_ship_for_knossos_warpin(p_objp);
@@ -1999,7 +1997,7 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// check the parse object's flags for possible things to set on this newly created ship
-	resolve_parse_flags(&Objects[objnum], p_objp->flags, p_objp->flags2);
+	resolve_parse_flags(&Objects[objnum], p_objp->flags);
 
 
 	// other flag checks
@@ -2011,7 +2009,7 @@ int parse_create_object_sub(p_object *p_objp)
     if (p_objp->ship_max_shield_strength == 0.0f)
         Objects[objnum].flags.set(Object::Object_Flags::No_shields);
     // force shields on means we have them regardless of other flags; per r5332 this ranks above the next check
-    else if (p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON)
+    else if (p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on])
         Objects[objnum].flags.remove(Object::Object_Flags::No_shields);
     // intrinsic no-shields means we have them off in-game
     else if (!Fred_running && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS))
@@ -2021,28 +2019,28 @@ int parse_create_object_sub(p_object *p_objp)
 	// game only before the game or during respawning.
 	// MWA -- changed the next line to remove the !(Game_mode & GM_MULTIPLAYER).  We shouldn't be setting
 	// this flag in single player mode -- it gets set in post process mission.
-    if ((p_objp->flags & P_OF_PLAYER_START) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION))))
+    if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION))))
         Objects[objnum].flags.set(Object::Object_Flags::Player_ship);
 
 	// a couple of ai_info flags.  Also, do a reasonable default for the kamikaze damage regardless of
 	// whether this flag is set or not
-	if (p_objp->flags & P_AIF_KAMIKAZE)
+	if (p_objp->flags[Mission::Parse_Object_Flags::AIF_Kamikaze])
 	{
 		Ai_info[shipp->ai_index].ai_flags |= AIF_KAMIKAZE;
 		Ai_info[shipp->ai_index].kamikaze_damage = p_objp->kamikaze_damage;
 	}
 
-	if (p_objp->flags & P_AIF_NO_DYNAMIC)
+    if (p_objp->flags[Mission::Parse_Object_Flags::AIF_No_dynamic])
 		Ai_info[shipp->ai_index].ai_flags |= AIF_NO_DYNAMIC;
 
-	if (p_objp->flags & P_SF_RED_ALERT_STORE_STATUS)
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status])
 	{
 		if (!(Game_mode & GM_MULTIPLAYER)) {
 			shipp->flags |= SF_RED_ALERT_STORE_STATUS;
 		}
 	}
 
-	if (p_objp->flags & P_KNOSSOS_WARP_IN)
+	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
 	{
         Objects[objnum].flags.set(Object::Object_Flags::Special_warpin);
 		Knossos_warp_ani_used = 1;
@@ -2050,7 +2048,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// set the orders that this ship will accept.  It will have already been set to default from the
 	// ship create code, so only set them if the parse object flags say they are unique
-	if (p_objp->flags & P_SF_USE_UNIQUE_ORDERS)
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Use_unique_orders])
 	{
 		shipp->orders_accepted = p_objp->orders_accepted;
 
@@ -2072,13 +2070,13 @@ int parse_create_object_sub(p_object *p_objp)
 #endif
 	}
 
-	if (p_objp->flags & P_SF_DOCK_LEADER)
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader])
 		shipp->flags |= SF_DOCK_LEADER;
 
-	if (p_objp->flags & P_SF_WARP_BROKEN)
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_broken])
 		shipp->flags |= SF_WARP_BROKEN;
 
-	if (p_objp->flags & P_SF_WARP_NEVER)
+	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Warp_never])
 		shipp->flags |= SF_WARP_NEVER;
 ////////////////////////
 
@@ -2400,7 +2398,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 		// Goober5000 - for an initially docked group, only send the packet for the dock leader... this is necessary so that the
 		// docked hierarchy of objects can be created in the right order on the client side
-		if (!object_is_docked(p_objp) || (p_objp->flags & P_SF_DOCK_LEADER))
+		if (!object_is_docked(p_objp) || (p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]))
 		{
 			if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
 				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
@@ -2489,21 +2487,21 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 }
 
 // Goober5000
-void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
+void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags)
 {
     Assert(objp != NULL);
     ship *shipp = &Ships[objp->instance];
 
-    if (parse_flags & P_SF_CARGO_KNOWN)
-        shipp->flags |= SF_CARGO_REVEALED;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Cargo_known])
+        shipp->flags.set(Ship::Ship_Flags::Cargo_revealed);
 
-    if (parse_flags & P_SF_IGNORE_COUNT)
-        shipp->flags |= SF_IGNORE_COUNT;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Ignore_count])
+        shipp->flags.set(Ship::Ship_Flags::Ignore_count);
 
-    if (parse_flags & P_OF_PROTECTED)
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Protected])
         objp->flags.set(Object::Object_Flags::Protected);
 
-    if (parse_flags & P_SF_REINFORCEMENT)
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Reinforcement])
     {
         //Individual ships in wings can't be reinforcements - FUBAR
         if (shipp->wingnum >= 0)
@@ -2512,152 +2510,145 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
         }
         else
         {
-            shipp->flags |= SF_REINFORCEMENT;
+            shipp->flags.set(Ship::Ship_Flags::Reinforcement);
         }
     }
 
-    if ((parse_flags & P_OF_NO_SHIELDS) && (parse_flags2 & P2_OF_FORCE_SHIELDS_ON))
+    if ((parse_flags[Mission::Parse_Object_Flags::OF_No_shields]) && (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on]))
     {
         Warning(LOCATION, "The parser found a ship with both the \"force-shields-on\" and \"no-shields\" flags; this is inconsistent!");
     }
-    if (parse_flags & P_OF_NO_SHIELDS)
+    if (parse_flags[Mission::Parse_Object_Flags::OF_No_shields])
         objp->flags.set(Object::Object_Flags::No_shields);
 
-    if (parse_flags & P_SF_ESCORT)
-        shipp->flags |= SF_ESCORT;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Escort])
+        shipp->flags.set(Ship::Ship_Flags::Escort);
 
     // P_OF_PLAYER_START is handled in parse_create_object_sub
 
-    if (parse_flags & P_SF_NO_ARRIVAL_MUSIC)
-        shipp->flags |= SF_NO_ARRIVAL_MUSIC;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_No_arrival_music])
+        shipp->flags.set(Ship::Ship_Flags::No_arrival_music);
 
-    if (parse_flags & P_SF_NO_ARRIVAL_WARP)
-        shipp->flags |= SF_NO_ARRIVAL_WARP;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_No_arrival_warp])
+        shipp->flags.set(Ship::Ship_Flags::No_arrival_warp);
 
-    if (parse_flags & P_SF_NO_DEPARTURE_WARP)
-        shipp->flags |= SF_NO_DEPARTURE_WARP;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_No_departure_warp])
+        shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
 
-    if (parse_flags & P_SF_LOCKED) {
-        shipp->flags2 |= SF2_SHIP_LOCKED;
-        shipp->flags2 |= SF2_WEAPONS_LOCKED;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Locked]) {
+        shipp->flags.set(Ship::Ship_Flags::Ship_locked);
+        shipp->flags.set(Ship::Ship_Flags::Weapons_locked);
     }
 
-    if (parse_flags & P_OF_INVULNERABLE)
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Invulnerable])
         objp->flags.set(Object::Object_Flags::Invulnerable);
-    
-    if (parse_flags & P_SF_HIDDEN_FROM_SENSORS)
-        shipp->flags |= SF_HIDDEN_FROM_SENSORS;
 
-    if (parse_flags & P_SF_SCANNABLE)
-        shipp->flags |= SF_SCANNABLE;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Hidden_from_sensors])
+        shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Scannable])
+        shipp->flags.set(Ship::Ship_Flags::Scannable);
 
     // P_AIF_KAMIKAZE, P_AIF_NO_DYNAMIC, and P_SF_RED_ALERT_CARRY are handled in parse_create_object_sub
 
-    if (parse_flags & P_OF_BEAM_PROTECTED)
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Beam_protected])
         objp->flags.set(Object::Object_Flags::Beam_protected);
 
-    if (parse_flags & P_OF_FLAK_PROTECTED)
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Flak_protected])
         objp->flags.set(Object::Object_Flags::Flak_protected);
 
-    if (parse_flags & P_OF_LASER_PROTECTED)
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Laser_protected])
         objp->flags.set(Object::Object_Flags::Laser_protected);
 
-    if (parse_flags & P_OF_MISSILE_PROTECTED)
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Missile_protected])
         objp->flags.set(Object::Object_Flags::Missile_protected);
 
-    if (parse_flags & P_SF_GUARDIAN)
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Guardian])
         shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 
-    if (parse_flags & P_SF_VAPORIZE)
-        shipp->flags |= SF_VAPORIZE;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Vaporize])
+        shipp->flags.set(Ship::Ship_Flags::Vaporize);
 
-    if (parse_flags & P_SF2_STEALTH)
-        shipp->flags2 |= SF2_STEALTH;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Stealth])
+        shipp->flags.set(Ship::Ship_Flags::Stealth);
 
-    if (parse_flags & P_SF2_FRIENDLY_STEALTH_INVIS)
-        shipp->flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Friendly_stealth_invis])
+        shipp->flags.set(Ship::Ship_Flags::Friendly_stealth_invis);
 
-    if (parse_flags & P_SF2_DONT_COLLIDE_INVIS)
-        shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Dont_collide_invis])
+        shipp->flags.set(Ship::Ship_Flags::Dont_collide_invis);
 
-    if (parse_flags2 & P2_SF2_PRIMITIVE_SENSORS)
-        shipp->flags2 |= SF2_PRIMITIVE_SENSORS;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Primitive_sensors])
+        shipp->flags.set(Ship::Ship_Flags::Primitive_sensors);
 
-    if (parse_flags2 & P2_SF2_NO_SUBSPACE_DRIVE)
-        shipp->flags2 |= SF2_NO_SUBSPACE_DRIVE;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_No_subspace_drive])
+        shipp->flags.set(Ship::Ship_Flags::No_subspace_drive);
 
-    if (parse_flags2 & P2_SF2_NAV_CARRY_STATUS)
-        shipp->flags2 |= SF2_NAVPOINT_CARRY;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Nav_carry_status])
+        shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
 
-    if (parse_flags2 & P2_SF2_AFFECTED_BY_GRAVITY)
-        shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Affected_by_gravity])
+        shipp->flags.set(Ship::Ship_Flags::Affected_by_gravity);
 
-    if (parse_flags2 & P2_SF2_TOGGLE_SUBSYSTEM_SCANNING)
-        shipp->flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Toggle_subsystem_scanning])
+        shipp->flags.set(Ship::Ship_Flags::Toggle_subsystem_scanning);
 
-    if (parse_flags2 & P2_OF_TARGETABLE_AS_BOMB)
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Targetable_as_bomb])
         objp->flags.set(Object::Object_Flags::Targetable_as_bomb);
 
-    if (parse_flags2 & P2_SF2_NO_BUILTIN_MESSAGES)
-        shipp->flags2 |= SF2_NO_BUILTIN_MESSAGES;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_No_builtin_messages])
+        shipp->flags.set(Ship::Ship_Flags::No_builtin_messages);
 
-    if (parse_flags2 & P2_SF2_PRIMARIES_LOCKED)
-        shipp->flags2 |= SF2_PRIMARIES_LOCKED;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Primaries_locked])
+        shipp->flags.set(Ship::Ship_Flags::Primaries_locked);
 
-    if (parse_flags2 & P2_SF2_SECONDARIES_LOCKED)
-        shipp->flags2 |= SF2_SECONDARIES_LOCKED;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Secondaries_locked])
+        shipp->flags.set(Ship::Ship_Flags::Secondaries_locked);
 
-    if (parse_flags2 & P2_SF2_SET_CLASS_DYNAMICALLY)
-        shipp->flags2 |= SF2_SET_CLASS_DYNAMICALLY;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Set_class_dynamically])
+        shipp->flags.set(Ship::Ship_Flags::Set_class_dynamically);
 
-    if (parse_flags2 & P2_SF2_NO_DEATH_SCREAM)
-        shipp->flags2 |= SF2_NO_DEATH_SCREAM;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_No_death_scream])
+        shipp->flags.set(Ship::Ship_Flags::No_death_scream);
 
-    if (parse_flags2 & P2_SF2_ALWAYS_DEATH_SCREAM)
-        shipp->flags2 |= SF2_ALWAYS_DEATH_SCREAM;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Always_death_scream])
+        shipp->flags.set(Ship::Ship_Flags::Always_death_scream);
 
-    if (parse_flags2 & P2_SF2_NAV_NEEDSLINK)
-        shipp->flags2 |= SF2_NAVPOINT_NEEDSLINK;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Nav_needslink])
+        shipp->flags.set(Ship::Ship_Flags::Navpoint_needslink);
 
-    if (parse_flags2 & P2_SF2_HIDE_SHIP_NAME)
-        shipp->flags2 |= SF2_HIDE_SHIP_NAME;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Hide_ship_name])
+        shipp->flags.set(Ship::Ship_Flags::Hide_ship_name);
 
-    if (parse_flags2 & P2_SF2_LOCK_ALL_TURRETS_INITIALLY)
-        shipp->flags2 |= SF2_LOCK_ALL_TURRETS_INITIALLY;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially])
+        shipp->flags.set(Ship::Ship_Flags::Lock_all_turrets_initially);
 
-    if (parse_flags2 & P2_SF2_AFTERBURNER_LOCKED)
-        shipp->flags2 |= SF2_AFTERBURNER_LOCKED;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Afterburner_locked])
+        shipp->flags.set(Ship::Ship_Flags::Afterburner_locked);
 
-    if (parse_flags2 & P2_OF_FORCE_SHIELDS_ON)
-        shipp->flags2 |= SF2_FORCE_SHIELDS_ON;
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on])
+        shipp->flags.set(Ship::Ship_Flags::Force_shields_on);
 
-    if (parse_flags2 & P2_OF_IMMOBILE)
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Immobile])
         objp->flags.set(Object::Object_Flags::Immobile);
 
-    if (parse_flags2 & P2_SF2_NO_ETS)
-        shipp->flags2 |= SF2_NO_ETS;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_No_ets])
+        shipp->flags.set(Ship::Ship_Flags::No_ets);
 
-    if (parse_flags2 & P2_SF2_CLOAKED)
-        shipp->flags2 |= SF2_CLOAKED;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Cloaked])
+        shipp->flags.set(Ship::Ship_Flags::Cloaked);
 
-    if (parse_flags2 & P2_SF2_SHIP_LOCKED)
-        shipp->flags2 |= SF2_SHIP_LOCKED;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Ship_locked])
+        shipp->flags.set(Ship::Ship_Flags::Ship_locked);
 
-    if (parse_flags2 & P2_SF2_WEAPONS_LOCKED)
-        shipp->flags2 |= SF2_WEAPONS_LOCKED;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Weapons_locked])
+        shipp->flags.set(Ship::Ship_Flags::Weapons_locked);
 
-    if (parse_flags2 & P2_SF2_SCRAMBLE_MESSAGES)
-        shipp->flags2 |= SF2_SCRAMBLE_MESSAGES;
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Scramble_messages])
+        shipp->flags.set(Ship::Ship_Flags::Scramble_messages);
 
-    if (parse_flags2 & P2_SF2_NO_DISABLED_SELF_DESTRUCT)
-        shipp->flags2 |= SF2_NO_DISABLED_SELF_DESTRUCT;
-
-    // don't remove no-collide if not set in the mission
-    if (parse_flags2 & P2_OF_NO_COLLIDE) {
-        auto tmp_flags = objp->flags;
-        tmp_flags.remove(Object::Object_Flags::Collides);
-        obj_set_flags(objp, tmp_flags);
-    }
+    if (parse_flags[Mission::Parse_Object_Flags::OF_No_collide])
+        objp->flags.remove(Object::Object_Flags::Collides);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
@@ -2725,8 +2716,7 @@ p_object::~p_object()
 int parse_object(mission *pm, int flag, p_object *p_objp)
 {
 	int	i, j, count, delay;
-	char name[NAME_LENGTH], flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
-	char flag_strings_2[MAX_PARSE_OBJECT_FLAGS_2][NAME_LENGTH];
+    char name[NAME_LENGTH];
 
 	Assert(pm != NULL);
 
@@ -3018,47 +3008,30 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	int dummy; 
 	stuff_int(&dummy);
 
-	// set flags
-	p_objp->flags = 0;
-	if (optional_string("+Flags:"))
-	{
-		count = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS);
-		for (i=0; i<count; i++)
-		{
-			for (j=0; j<MAX_PARSE_OBJECT_FLAGS; j++)
-			{
-				if (!stricmp(flag_strings[i], Parse_object_flags[j]))
-				{
-					p_objp->flags |= (1 << j);
-					break;
-				}
-			}
+    // set flags
+    p_objp->flags.reset();
+    if (optional_string("+Flags:"))
+    {
+        SCP_vector<SCP_string> unparsed;
+        parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
+        if (unparsed.size() > 0) {
+            for (int i = 0; i < unparsed.size(); ++i) {
+                WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[i].c_str());
+            }
+        }
+    }
 
-			if (j == MAX_PARSE_OBJECT_FLAGS)
-				Warning(LOCATION, "Unknown flag in mission file: %s\n", flag_strings[i]);
-		}
-	}
-
-	// second set - Goober5000
-	p_objp->flags2 = 0;
-	if (optional_string("+Flags2:"))
-	{
-		count = stuff_string_list(flag_strings_2, MAX_PARSE_OBJECT_FLAGS_2);
-		for (i=0; i<count; i++)
-		{
-			for (j=0; j<MAX_PARSE_OBJECT_FLAGS_2; j++)
-			{
-				if (!stricmp(flag_strings_2[i], Parse_object_flags_2[j]))
-				{
-					p_objp->flags2 |= (1 << j);
-					break;
-				}
-			}
-
-			if (j == MAX_PARSE_OBJECT_FLAGS_2)
-				Warning(LOCATION, "Unknown flag2 in mission file: %s\n", flag_strings_2[i]);
-		}
-	}
+    // second set - Goober5000
+    if (optional_string("+Flags2:"))
+    {
+        SCP_vector<SCP_string> unparsed;
+        parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
+        if (unparsed.size() > 0) {
+            for (int i = 0; i < unparsed.size(); ++i) {
+                WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[i].c_str());
+            }
+        }
+    }
 
 
 	// always store respawn priority, just for ease of implementation
@@ -3067,17 +3040,17 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		stuff_int(&p_objp->respawn_priority);	
 
 	p_objp->escort_priority = 0;
-	if (optional_string("+Escort Priority:"))
-	{
-		Assert(p_objp->flags & P_SF_ESCORT);
-		stuff_int(&p_objp->escort_priority);
-	}	
+    if (optional_string("+Escort Priority:"))
+    {
+        Assert(p_objp->flags[Mission::Parse_Object_Flags::SF_Escort]);
+        stuff_int(&p_objp->escort_priority);
+    }
 
-	if (p_objp->flags & P_OF_PLAYER_START)
-	{
-		p_objp->flags |= P_SF_CARGO_KNOWN;				// make cargo known for players
-		Player_starts++;
-	}
+    if (p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start])
+    {
+        p_objp->flags.set(Mission::Parse_Object_Flags::SF_Cargo_known);	// make cargo known for players
+        Player_starts++;
+    }
 
 	p_objp->use_special_explosion = false;
 	p_objp->special_exp_damage = -1;
@@ -3252,13 +3225,13 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// check for the optional "orders accepted" string which contains the orders from the default
-	// set that this ship will actually listen to
-	if (optional_string("+Orders Accepted:"))
-	{
-		stuff_int(&p_objp->orders_accepted);
-		if (p_objp->orders_accepted != -1)
-			p_objp->flags |= P_SF_USE_UNIQUE_ORDERS;
-	}
+    // set that this ship will actually listen to
+    if (optional_string("+Orders Accepted:"))
+    {
+        stuff_int(&p_objp->orders_accepted);
+        if (p_objp->orders_accepted != -1)
+            p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
+    }
 
 	p_objp->group = 0;
 	if (optional_string("+Group:"))
@@ -3398,7 +3371,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	// Goober5000 - preload stuff for certain object flags
 	// (done after parsing object, but before creating it)
-	if (p_objp->flags & P_KNOSSOS_WARP_IN)
+	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
 		Knossos_warp_ani_used = 1;
 
 	// this is a valid/legal ship to create
@@ -3453,7 +3426,10 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 	//    a) he's not cued to arrive yet
 	//    b) his arrival delay hasn't elapsed
 	//    c) he's reinforcement
-	if ( (object_is_docked(pobjp) && !(pobjp->flags & P_SF_DOCK_LEADER)) || (!Fred_running && (!eval_sexp(pobjp->arrival_cue) || !timestamp_elapsed(pobjp->arrival_delay) || (pobjp->flags & P_SF_REINFORCEMENT))) )
+    if ((object_is_docked(pobjp) && !(pobjp->flags[Mission::Parse_Object_Flags::SF_Dock_leader])) || 
+        (!Fred_running && (!eval_sexp(pobjp->arrival_cue) || 
+            !timestamp_elapsed(pobjp->arrival_delay) || 
+            (pobjp->flags[Mission::Parse_Object_Flags::SF_Reinforcement]))))
 	{
 		// we can't add ships getting destroyed to the arrival list!!!
 		Assert (pobjp->destroy_before_mission_time < 0);
@@ -3702,7 +3678,7 @@ void process_loadout_objects()
 	for (size_t i=0; i < Parse_objects.size(); i++)
 	{
 		p_object *p_objp = &Parse_objects[i];
-		if (p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY)
+        if (p_objp->flags[Mission::Parse_Object_Flags::SF_Set_class_dynamically])
 		{
 			if (!(is_ship_assignable(p_objp)))
 			{
@@ -3719,7 +3695,7 @@ void process_loadout_objects()
 		p_object *p_objp = &Parse_objects[reassignments[m]];
 		team_data *current_team = &Team_data[p_objp->team];
 		bool loadout_assigned = false;
-		Assert (p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY);
+        Assert(p_objp->flags[Mission::Parse_Object_Flags::SF_Set_class_dynamically]);
 
 		// First thing to check is whether we actually have any ships left to assign
 		if (current_team->loadout_total == 0)
@@ -4100,7 +4076,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			continue;
 		}
 		// when not creating a specific ship, we should skip over any ships that weren't carried along in the red-alert
-		else if (p_objp->flags2 & P2_RED_ALERT_DELETED)
+        else if (p_objp->flags[Mission::Parse_Object_Flags::Red_alert_deleted])
 		{
 			num_to_create--;
 			num_create_save--;
@@ -4108,7 +4084,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			wingp->red_alert_skipped_ships++;
 
 			// clear the flag so that this parse object can be used for the next wave
-			p_objp->flags2 &= ~P2_RED_ALERT_DELETED;
+            p_objp->flags.remove(Mission::Parse_Object_Flags::Red_alert_deleted);
 
 			// skip over this parse object
 			if (num_to_create == 0)
@@ -4117,7 +4093,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 				continue;
 		}
 
-		Assert (!(p_objp->flags & P_SF_CANNOT_ARRIVE));		// get allender
+        Assert(!(p_objp->flags[Mission::Parse_Object_Flags::SF_Cannot_arrive]));		// get allender
 
 		// if we have the maximum number of ships in the wing, we must bail as well
 		if (wingp->current_count >= MAX_SHIPS_PER_WING)
@@ -4175,7 +4151,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 		// keep any player ship on the parse object list -- used for respawns
 		// 5/8/98 -- MWA -- don't remove ships from the list when you are ingame joining
-		if (!(p_objp->flags & P_OF_PLAYER_START))
+		if (!(p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]))
 		{
 			if ((Game_mode & GM_NORMAL) || !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN))
 			{
@@ -4606,7 +4582,7 @@ void parse_wing(mission *pm)
 				assigned++;
 
 				// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
-				if ((p_objp->flags & P_OF_PLAYER_START) && (saved_arrival_delay != 0)) {
+				if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (saved_arrival_delay != 0)) {
 					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, saved_arrival_delay);
 					if (!Fred_running && wingp->arrival_delay > 0) {
 						// timestamp has been set, so set it again
@@ -5815,7 +5791,7 @@ void post_process_mission()
 		int num;
 
 		// go through similar motions as above
-		if ( p_objp->flags & P_SF_IGNORE_COUNT )
+		if ( p_objp->flags[Mission::Parse_Object_Flags::SF_Ignore_count] )
 			continue;
 		if ( (p_objp->wingnum != -1) && (Wings[p_objp->wingnum].flags & WF_IGNORE_COUNT) )
 			continue;
@@ -6207,12 +6183,12 @@ void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info 
 			}
 
 			// otherwise, unmark the existing leader and set his arrival cue to false
-			existing_leader->flags &= ~P_SF_DOCK_LEADER;
+            existing_leader->flags.remove(Mission::Parse_Object_Flags::SF_Dock_leader);
 			reset_arrival_to_false(existing_leader, true);
 		}
 
 		// mark and save me as the leader
-		pobjp->flags |= P_SF_DOCK_LEADER;
+        pobjp->flags.set(Mission::Parse_Object_Flags::SF_Dock_leader);
 		infop->maintained_variables.objp_value = pobjp;
 	}
 }
@@ -6220,13 +6196,13 @@ void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info 
 // Goober5000
 void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop)
 {
-	pobjp->flags2 |= P2_ALREADY_HANDLED;
+    pobjp->flags.set(Mission::Parse_Object_Flags::Already_handled);
 }
 
 // Goober5000
 void parse_object_clear_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop)
 {
-	pobjp->flags2 &= ~P2_ALREADY_HANDLED;
+    pobjp->flags.remove(Mission::Parse_Object_Flags::Already_handled);
 }
 
 // Goober5000
@@ -6243,7 +6219,7 @@ void parse_object_clear_all_handled_flags()
 			continue;
 
 		// has this object (by extension, this group of docked objects) been cleared already?
-		if (!(pobjp->flags2 & P2_ALREADY_HANDLED))
+		if (!(pobjp->flags[Mission::Parse_Object_Flags::Already_handled]))
 			continue;
 
 		// clear the handled flag for this group
@@ -6316,7 +6292,7 @@ void mission_parse_set_up_initial_docks()
 			continue;
 
 		// has this object (by extension, this group of docked objects) been handled already?
-		if (pobjp->flags2 & P2_ALREADY_HANDLED)
+		if (pobjp->flags[Mission::Parse_Object_Flags::Already_handled])
 			continue;
 
 		// find the dock leader(s)
@@ -6645,7 +6621,7 @@ int mission_did_ship_arrive(p_object *objp)
 
 	// we must first check to see if this ship is a reinforcement or not.  If so, then don't
 	// process
-	if ( objp->flags & P_SF_REINFORCEMENT ) {
+	if ( objp->flags[Mission::Parse_Object_Flags::SF_Reinforcement] ) {
 
 		// if this ship did arrive, mark the reinforcement as available, and tell clients if in multiplayer
 		// mode
@@ -6699,7 +6675,7 @@ int mission_did_ship_arrive(p_object *objp)
 			}
 		}
 
-		if ( objp->flags & P_SF_CANNOT_ARRIVE ) {
+		if ( objp->flags[Mission::Parse_Object_Flags::SF_Cannot_arrive] ) {
 			WarningEx(LOCATION, "Warning: Ship %s cannot arrive. Ship not created.\n", objp->name);
 			return -1;
 		}
@@ -6742,7 +6718,7 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 void mission_parse_mark_non_arrival(p_object *p_objp)
 {
 	// mark the flag
-	p_objp->flags |= P_SF_CANNOT_ARRIVE;
+    p_objp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
 }
 
 // Goober5000
@@ -6754,8 +6730,8 @@ void mission_parse_mark_non_arrival(wing *wingp)
 	for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
 		// ...and mark the ones in this wing
-		if (p_objp->wingnum == wingnum)
-			p_objp->flags |= P_SF_CANNOT_ARRIVE;
+        if (p_objp->wingnum == wingnum)
+            p_objp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
 	}	
 }
 
@@ -6769,12 +6745,12 @@ void mission_parse_mark_non_arrivals()
 		if (p_objp->wingnum != -1)
 		{
 			if (!object_is_docked(p_objp) && (Sexp_nodes[Wings[p_objp->wingnum].arrival_cue].value == SEXP_KNOWN_FALSE))
-				p_objp->flags |= P_SF_CANNOT_ARRIVE;
+				p_objp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
 		}
 		else
 		{
 			if (Sexp_nodes[p_objp->arrival_cue].value == SEXP_KNOWN_FALSE)
-				p_objp->flags |= P_SF_CANNOT_ARRIVE;
+				p_objp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
 		}
 	}
 }
@@ -7679,11 +7655,10 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	pobj->wingnum = -1;
 
-	pobj->flags = 0;
-	pobj->flags2 = 0;
+    pobj->flags.reset();
 
-	if ( Player_obj->flags[Object::Object_Flags::No_shields] )
-		pobj->flags |= P_OF_NO_SHIELDS;	// support ships have no shields when player has not shields
+    if (Player_obj->flags[Object::Object_Flags::No_shields])
+        pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
 
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;

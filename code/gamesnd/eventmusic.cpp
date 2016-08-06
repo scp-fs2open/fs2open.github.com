@@ -1652,7 +1652,7 @@ int hostile_ships_to_arrive()
 	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
 		// check if ship can arrive
-		if (p_objp->flags & P_SF_CANNOT_ARRIVE)
+		if (p_objp->flags[Mission::Parse_Object_Flags::SF_Cannot_arrive])
 			continue;
 
 		// check if ship is enemy ship (we attack it)
