@@ -1167,7 +1167,7 @@ void obj_add_collider(int obj_index)
 #ifdef OBJECT_CHECK 
 	CheckObjects[obj_index].type = objp->type;
 	CheckObjects[obj_index].signature = objp->signature;
-	CheckObjects[obj_index].flags = objp->flags & ~(OF_NOT_IN_COLL);
+    CheckObjects[obj_index].flags = objp->flags.remove(Object::Object_Flags::Not_in_coll);
 	CheckObjects[obj_index].parent_sig = objp->parent_sig;
 	CheckObjects[obj_index].parent_type = objp->parent_type;
 #endif
@@ -1178,13 +1178,13 @@ void obj_add_collider(int obj_index)
 
 	Collision_sort_list.push_back(obj_index);
 
-	objp->flags &= ~OF_NOT_IN_COLL;	
+	objp->flags.remove(Object::Object_Flags::Not_in_coll);
 }
 
 void obj_remove_collider(int obj_index)
 {
 #ifdef OBJECT_CHECK 
-	CheckObjects[obj_index].flags |= OF_NOT_IN_COLL;
+    CheckObjects[obj_index].flags.set(Object::Object_Flags::Not_in_coll);
 #endif	
 
 	size_t i;
@@ -1197,7 +1197,7 @@ void obj_remove_collider(int obj_index)
 		}
 	}
 
-	Objects[obj_index].flags |= OF_NOT_IN_COLL;	
+	Objects[obj_index].flags.set(Object::Object_Flags::Not_in_coll);
 }
 
 void obj_reset_colliders()
@@ -1385,8 +1385,8 @@ void obj_collide_pair(object *A, object *B)
 
 	if ( A==B ) return;		// Don't check collisions with yourself
 
-	if ( !(A->flags&OF_COLLIDES) ) return;		// This object doesn't collide with anything
-	if ( !(B->flags&OF_COLLIDES) ) return;		// This object doesn't collide with anything
+	if ( !(A->flags[Object::Object_Flags::Collides]) ) return;		// This object doesn't collide with anything
+	if ( !(B->flags[Object::Object_Flags::Collides]) ) return;		// This object doesn't collide with anything
 	
 	if ((A->flags[Object::Object_Flags::Immobile]) && (B->flags[Object::Object_Flags::Immobile])) return;	// Two immobile objects will never collide with each other
 

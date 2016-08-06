@@ -471,14 +471,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if (!(objp->flags[Object::Object_Flags::Protected]) )
 				set_modified();
 
-			objp->flags |= OF_PROTECTED;
+			objp->flags.set(Object::Object_Flags::Protected);
 			break;
 
 		case 0:
 			if ( objp->flags[Object::Object_Flags::Protected] )
 				set_modified();
 
-			objp->flags &= ~OF_PROTECTED;
+			objp->flags.remove(Object::Object_Flags::Protected);
 			break;
 	}
 
@@ -487,14 +487,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if (!(objp->flags[Object::Object_Flags::Beam_protected]) )
 				set_modified();
 
-			objp->flags |= OF_BEAM_PROTECTED;
+			objp->flags.set(Object::Object_Flags::Beam_protected);
 			break;
 
 		case 0:
 			if ( objp->flags[Object::Object_Flags::Beam_protected] )
 				set_modified();
 
-			objp->flags &= ~OF_BEAM_PROTECTED;
+			objp->flags.remove(Object::Object_Flags::Beam_protected);
 			break;
 	}
 
@@ -503,14 +503,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if (!(objp->flags[Object::Object_Flags::Flak_protected]) )
 				set_modified();
 
-			objp->flags |= OF_FLAK_PROTECTED;
+			objp->flags.set(Object::Object_Flags::Flak_protected);
 			break;
 
 		case 0:
 			if ( objp->flags[Object::Object_Flags::Flak_protected] )
 				set_modified();
 
-			objp->flags &= ~OF_FLAK_PROTECTED;
+			objp->flags.remove(Object::Object_Flags::Flak_protected);
 			break;
 	}
 
@@ -519,14 +519,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if (!(objp->flags[Object::Object_Flags::Laser_protected]) )
 				set_modified();
 
-			objp->flags |= OF_LASER_PROTECTED;
+			objp->flags.set(Object::Object_Flags::Laser_protected);
 			break;
 
 		case 0:
 			if ( objp->flags[Object::Object_Flags::Laser_protected] )
 				set_modified();
 
-			objp->flags &= ~OF_LASER_PROTECTED;
+			objp->flags.remove(Object::Object_Flags::Laser_protected);
 			break;
 	}
 
@@ -535,14 +535,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if (!(objp->flags[Object::Object_Flags::Missile_protected]) )
 				set_modified();
 
-			objp->flags |= OF_MISSILE_PROTECTED;
+			objp->flags.set(Object::Object_Flags::Missile_protected);
 			break;
 
 		case 0:
 			if ( objp->flags[Object::Object_Flags::Missile_protected] )
 				set_modified();
 
-			objp->flags &= ~OF_MISSILE_PROTECTED;
+			objp->flags.remove(Object::Object_Flags::Missile_protected);
 			break;
 	}
 
@@ -551,14 +551,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(objp->flags[Object::Object_Flags::Invulnerable]) )
 				set_modified();
 
-			objp->flags |= OF_INVULNERABLE;
+			objp->flags.set(Object::Object_Flags::Invulnerable);
 			break;
 
 		case 0:
 			if ( objp->flags[Object::Object_Flags::Invulnerable] )
 				set_modified();
 
-			objp->flags &= ~OF_INVULNERABLE;
+			objp->flags.remove(Object::Object_Flags::Invulnerable);
 			break;
 	}
 
@@ -567,14 +567,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(objp->flags[Object::Object_Flags::Targetable_as_bomb]) )
 				set_modified();
 
-			objp->flags |= OF_TARGETABLE_AS_BOMB;
+			objp->flags.set(Object::Object_Flags::Targetable_as_bomb);
 			break;
 
 		case 0:
 			if ( objp->flags[Object::Object_Flags::Targetable_as_bomb] )
 				set_modified();
 
-			objp->flags &= ~OF_TARGETABLE_AS_BOMB;
+			objp->flags.remove(Object::Object_Flags::Targetable_as_bomb);
 			break;
 	}
 
@@ -583,14 +583,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(objp->flags[Object::Object_Flags::Immobile]) )
 				set_modified();
 
-			objp->flags |= OF_IMMOBILE;
+			objp->flags.set(Object::Object_Flags::Immobile);
 			break;
 
 		case 0:
 			if ( objp->flags[Object::Object_Flags::Immobile] )
 				set_modified();
 
-			objp->flags &= ~OF_IMMOBILE;
+			objp->flags.remove(Object::Object_Flags::Immobile);
 			break;
 	}
 
@@ -778,14 +778,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(objp->flags[Object::Object_Flags::Special_warpin]) )
 				set_modified();
 
-			objp->flags |= OF_SPECIAL_WARPIN;
+			objp->flags.set(Object::Object_Flags::Special_warpin);
 			break;
 
 		case 0:
 			if ( (objp->flags[Object::Object_Flags::Special_warpin]) )
 				set_modified();
 
-			objp->flags &= (~OF_SPECIAL_WARPIN);
+            objp->flags.remove(Object::Object_Flags::Special_warpin);
 			break;
 	}
 
@@ -1056,14 +1056,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if (objp->flags[Object::Object_Flags::Collides])
 				set_modified();
 
-			objp->flags &= ~OF_COLLIDES;
+            objp->flags.remove(Object::Object_Flags::Collides);
 			break;
 
 		case 0:
 			if (!(objp->flags[Object::Object_Flags::Collides]))
 				set_modified();
 
-			objp->flags |= OF_COLLIDES;
+			objp->flags.set(Object::Object_Flags::Collides);
 			break;
 	}
 

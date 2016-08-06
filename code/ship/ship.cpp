@@ -5950,11 +5950,14 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->flags2 |= SF2_STEALTH;
 	if (sip->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
 		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
-
-	if (sip->flags & SIF_NO_COLLIDE)
-		obj_set_flags(objp, objp->flags & ~OF_COLLIDES);
+    
+    auto obj_flags = objp->flags;
+    if (sip->flags & SIF_NO_COLLIDE)
+        obj_flags.remove(Object::Object_Flags::Collides);
 	else
-		obj_set_flags(objp, objp->flags | OF_COLLIDES);
+        obj_flags.set(Object::Object_Flags::Collides);
+
+    obj_set_flags(objp, obj_flags);
 
 	if (sip->flags2 & SIF2_NO_ETS)
 		shipp->flags2 |= SF2_NO_ETS;
@@ -7200,7 +7203,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 {
 	// do standard departure stuff first
-	objp->flags |= OF_SHOULD_BE_DEAD;	
+    objp->flags.set(Object::Object_Flags::Should_be_dead);
 	if (objp->type == OBJ_SHIP)
 		ship_cleanup(objp->instance, infop->parameter_variables.bool_value ? SHIP_VANISHED : SHIP_DEPARTED);
 
@@ -7242,7 +7245,7 @@ void ship_destroy_instantly(object *ship_objp, int shipnum)
 	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_objp);
 	Script_system.RemHookVar("Self");
 
-	ship_objp->flags |= OF_SHOULD_BE_DEAD;
+	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
 	ship_cleanup(shipnum,SHIP_DESTROYED);
 }
 
@@ -7603,7 +7606,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				}
 
 				// mark object as dead
-				objp->flags |= OF_SHOULD_BE_DEAD;
+				objp->flags.set(Object::Object_Flags::Should_be_dead);
 
 				// Don't blow up model.  Only use debris shards.
 				// call ship function to clean up after the ship is destroyed.
@@ -7895,7 +7898,7 @@ void ship_dying_frame(object *objp, int ship_num)
 						gameseq_post_event(GS_EVENT_DEATH_BLEW_UP);
 					}
 
-					objp->flags |= OF_SHOULD_BE_DEAD;									
+					objp->flags.set(Object::Object_Flags::Should_be_dead);
 					
 					ship_cleanup(ship_num, SHIP_DESTROYED);		// call ship function to clean up after the ship is destroyed.
 				}
@@ -7909,7 +7912,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				gameseq_post_event(GS_EVENT_DEATH_BLEW_UP);
 			}
 
-			objp->flags |= OF_SHOULD_BE_DEAD;
+			objp->flags.set(Object::Object_Flags::Should_be_dead);
 								
 			ship_cleanup(ship_num, SHIP_DESTROYED);		// call ship function to clean up after the ship is destroyed.
 			shipp->really_final_death_time = timestamp( -1 );	// Never time out again!
@@ -9697,14 +9700,14 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
 	if (!Fred_running) {
 		if ((p_objp->flags2 & P2_OF_FORCE_SHIELDS_ON) && (sp->ship_max_shield_strength > 0.0f)) {
-			objp->flags &= ~OF_NO_SHIELDS;
+            objp->flags.remove(Object::Object_Flags::No_shields);
 		} else if ((p_objp->flags & P_OF_NO_SHIELDS) || (sp->ship_max_shield_strength == 0.0f)) {
-			objp->flags |= OF_NO_SHIELDS;
+			objp->flags.set(Object::Object_Flags::No_shields);
 		// Since there's not a mission flag set to be adjusting this, see if there was a change from a ship that normally has shields to one that doesn't, and vice versa
 		} else if (!(sip_orig->flags2 & SIF2_INTRINSIC_NO_SHIELDS) && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS)) {
-			objp->flags |= OF_NO_SHIELDS;
+			objp->flags.set(Object::Object_Flags::No_shields);
 		} else if ((sip_orig->flags2 & SIF2_INTRINSIC_NO_SHIELDS) && !(sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS) && (sp->ship_max_shield_strength > 0.0f)) {
-			objp->flags &= ~OF_NO_SHIELDS;
+			objp->flags.remove(Object::Object_Flags::No_shields);
 		}
 	}
 
@@ -9944,10 +9947,13 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	else if (sip_orig->flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)	// changing FROM a don't-collide-invisible ship class
 		sp->flags2 &= ~SF2_DONT_COLLIDE_INVIS;
 
-	if (sip->flags & SIF_NO_COLLIDE)								// changing TO a no-collision ship class
-		obj_set_flags(objp, objp->flags & ~OF_COLLIDES);
-	else if (sip_orig->flags & SIF_NO_COLLIDE)						// changing FROM a no-collision ship class
-		obj_set_flags(objp, objp->flags | OF_COLLIDES);
+    auto obj_flags = objp->flags;
+    if (sip->flags & SIF_NO_COLLIDE)								// changing TO a no-collision ship class
+        obj_flags.remove(Object::Object_Flags::Collides);
+    else if (sip_orig->flags & SIF_NO_COLLIDE)						// changing FROM a no-collision ship class
+        obj_flags.set(Object::Object_Flags::Collides);
+
+	obj_set_flags(objp, obj_flags);
 
 	if (sip->flags2 & SIF2_NO_ETS)
 		sp->flags2 |= SF2_NO_ETS;

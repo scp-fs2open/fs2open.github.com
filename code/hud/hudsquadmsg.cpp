@@ -1118,7 +1118,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 				// Orders to override protect
 				if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
-					Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+					Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
 				}
 
 				ai_mode = AI_GOAL_CHASE;
@@ -1137,7 +1137,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			// Orders to override protect
 			if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
-				Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+				Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
 			}
 
 			ai_mode = AI_GOAL_DISABLE_SHIP;
@@ -1151,7 +1151,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			// Orders to override protect
 			if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
-				Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+				Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
 			}
 
 			ai_mode = AI_GOAL_DISARM_SHIP;
@@ -1167,7 +1167,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			// Orders to override protect
 			if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
-				Objects[ainfo->target_objnum].flags &= ~OF_PROTECTED;
+				Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
 			}
 
 			ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
@@ -1182,9 +1182,9 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			Assert(ainfo->target_objnum > -1);
 
-			Objects[ainfo->target_objnum].flags |= OF_PROTECTED;
-
-			ai_mode = AI_GOAL_DOCK;
+			Objects[ainfo->target_objnum].flags.set(Object::Object_Flags::Protected);
+            
+            ai_mode = AI_GOAL_DOCK;
 			ai_submode = AIS_DOCK_0;
 			message = MESSAGE_DOCK_YES;
 			break;

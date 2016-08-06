@@ -893,7 +893,7 @@ void process_debug_keys(int k)
 		//	Select next object to be viewed by AI.
 		case KEY_DEBUGGED + KEY_I:
 		case KEY_DEBUGGED1 + KEY_I:
-			Player_obj->flags ^= OF_INVULNERABLE;
+            Player_obj->flags.toggle(Object::Object_Flags::Invulnerable);
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You are %s", 10), Player_obj->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
 			break;
 
@@ -902,7 +902,7 @@ void process_debug_keys(int k)
 			if (Player_ai->target_objnum != -1) {
 				object	*objp = &Objects[Player_ai->target_objnum];
 
-				objp->flags ^= OF_INVULNERABLE;
+				objp->flags.toggle(Object::Object_Flags::Invulnerable);
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].ship_name, objp->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
 			}
 			break;

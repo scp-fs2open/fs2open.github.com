@@ -418,7 +418,7 @@ void dock_move_docked_children_tree(object *objp, object *parent_objp)
 		return;
 
 	// mark as handled
-	objp->flags |= OF_DOCKED_ALREADY_HANDLED;
+    objp->flags.set(Object::Object_Flags::Docked_already_handled);
 
 	// if parent_objp exists
 	if (parent_objp != NULL)

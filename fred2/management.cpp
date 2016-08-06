@@ -518,8 +518,8 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	shipp->special_shield = -1;
 	z1 = Shield_sys_teams[shipp->team];
 	z2 = Shield_sys_types[ship_type];
-	if (((z1 == 1) && z2) || (z2 == 1))
-		Objects[obj].flags |= OF_NO_SHIELDS;
+    if (((z1 == 1) && z2) || (z2 == 1))
+        Objects[obj].flags.set(Object::Object_Flags::No_shields);
 
 	// set orders according to whether the ship is on the player ship's team
 	{
@@ -669,7 +669,7 @@ int dup_object(object *objp)
 
 	Objects[obj].pos = objp->pos;
 	Objects[obj].orient = objp->orient;
-	Objects[obj].flags |= OF_TEMP_MARKED;
+    Objects[obj].flags.set(Object::Object_Flags::Temp_marked);
 	return obj;
 }
 
@@ -1473,7 +1473,7 @@ void mark_object(int obj)
 {
 	Assert(query_valid_object(obj));
 	if (!(Objects[obj].flags[Object::Object_Flags::Marked])) {
-		Objects[obj].flags |= OF_MARKED;  // set as marked
+        Objects[obj].flags.set(Object::Object_Flags::Marked);  // set as marked
 		Marked++;
 		Update_window = 1;
 		if (cur_object_index == -1){
@@ -1488,7 +1488,7 @@ void unmark_object(int obj)
 {
 	Assert(query_valid_object(obj));
 	if (Objects[obj].flags[Object::Object_Flags::Marked]) {
-		Objects[obj].flags &= ~OF_MARKED;
+        Objects[obj].flags.remove(Object::Object_Flags::Marked);
 		Marked--;
 		Update_window = 1;
 		if (obj == cur_object_index) {  // need to find a new index
@@ -1518,7 +1518,7 @@ void unmark_all()
 
 	if (Marked) {
 		for (i=0; i<MAX_OBJECTS; i++){
-			Objects[i].flags &= ~OF_MARKED;
+            Objects[i].flags.remove(Object::Object_Flags::Marked);
 		}
 
 		Marked = 0;
@@ -2316,8 +2316,8 @@ void object_moved(object *objp)
 	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) // do we have a ship?
 	{
 		// reset the already-handled flag (inefficient, but it's FRED, so who cares)
-		for (int i = 0; i < MAX_OBJECTS; i++)
-			Objects[i].flags &= ~OF_DOCKED_ALREADY_HANDLED;
+        for (int i = 0; i < MAX_OBJECTS; i++)
+            Objects[i].flags.remove(Object::Object_Flags::Docked_already_handled);
 
 		// move all docked objects docked to me
 		dock_move_docked_objects(objp);

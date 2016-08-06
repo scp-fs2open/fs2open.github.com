@@ -597,7 +597,7 @@ int drag_objects()
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list))	{
 			if (objp->flags [Object::Object_Flags::Temp_marked]) {
-				objp->flags &= ~OF_TEMP_MARKED;
+                objp->flags.remove(Object::Object_Flags::Temp_marked);
 				mark_object(OBJ_INDEX(objp));
 			}
 
@@ -3952,7 +3952,7 @@ void CFREDView::OnHideObjects()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (ptr->flags[Object::Object_Flags::Marked]) {
-			ptr->flags |= OF_HIDDEN;
+            ptr->flags.set(Object::Object_Flags::Hidden);
 			unmark_object(OBJ_INDEX(ptr));
 		}
 
@@ -3966,7 +3966,7 @@ void CFREDView::OnShowHiddenObjects()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		ptr->flags &= ~OF_HIDDEN;
+		ptr->flags.remove(Object::Object_Flags::Hidden);
 		ptr = GET_NEXT(ptr);
 	}
 

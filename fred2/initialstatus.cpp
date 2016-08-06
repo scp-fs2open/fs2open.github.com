@@ -438,10 +438,10 @@ void initial_status::OnOK()
 				if (hflag)
 					MODIFY(objp->hull_strength, (float) m_hull);
 
-				if (m_has_shields == 1)
-					objp->flags &= ~OF_NO_SHIELDS;
+                if (m_has_shields == 1)
+                    objp->flags.remove(Object::Object_Flags::No_shields);
 				else if (!m_has_shields)
-					objp->flags |= OF_NO_SHIELDS;
+					objp->flags.set(Object::Object_Flags::No_shields);
 				
 				if (m_force_shields == 1) {
 					Ships[get_ship_from_obj(objp)].flags2 |= SF2_FORCE_SHIELDS_ON;
@@ -497,9 +497,9 @@ void initial_status::OnOK()
 		MODIFY(Objects[cur_object_index].shield_quadrant[0], (float) m_shields);
 		MODIFY(Objects[cur_object_index].hull_strength, (float) m_hull);
 		if (m_has_shields)
-			Objects[cur_object_index].flags &= ~OF_NO_SHIELDS;
+			Objects[cur_object_index].flags.remove(Object::Object_Flags::No_shields);
 		else
-			Objects[cur_object_index].flags |= OF_NO_SHIELDS;
+			Objects[cur_object_index].flags.set(Object::Object_Flags::No_shields);
 
 		if (m_force_shields == 1)
 			Ships[m_ship].flags2 |= SF2_FORCE_SHIELDS_ON;
@@ -1149,7 +1149,7 @@ void initial_status_mark_dock_leader_helper(object *objp, dock_function_info *in
 // self-explanatory, really
 void initial_status_unmark_dock_handled_flag(object *objp, dock_function_info *infop)
 {
-	objp->flags &= ~OF_DOCKED_ALREADY_HANDLED;
+    objp->flags.remove(Object::Object_Flags::Docked_already_handled);
 }
 
 void initial_status::OnPrimariesLocked() 

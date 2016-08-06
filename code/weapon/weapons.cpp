@@ -5453,8 +5453,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// if this is a flak weapon shell, make it so
 	// NOTE : this function will change some fundamental things about the weapon object
-	if ( (wip->wi_flags & WIF_FLAK) && !(wip->wi_flags2 & WIF2_RENDER_FLAK) ) {
-		obj_set_flags(&Objects[wp->objnum], Objects[wp->objnum].flags & ~(OF_RENDERS));
+    if ( (wip->wi_flags & WIF_FLAK) && !(wip->wi_flags2 & WIF2_RENDER_FLAK) ) {
+        auto obj_flags = Objects[wp->objnum].flags;
+		obj_set_flags(&Objects[wp->objnum], obj_flags.remove(Object::Object_Flags::Renders));
 	}
 
 	wp->missile_list_index = -1;

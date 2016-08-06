@@ -2199,11 +2199,11 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 			if (aip->target_objnum != -1) {
 				//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
 				if (Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].ai_bools & STI_AI_PROTECTED_ON_CRIPPLE)
-					Objects[aip->target_objnum].flags |= OF_PROTECTED;
+					Objects[aip->target_objnum].flags.set(Object::Object_Flags::Protected);
 			}
 		} else	//	Just in case this ship had been protected, unprotect it.
 			if (aip->target_objnum != -1)
-				Objects[aip->target_objnum].flags &= ~OF_PROTECTED;
+				Objects[aip->target_objnum].flags.remove(Object::Object_Flags::Protected);
 
 		break;
 	}

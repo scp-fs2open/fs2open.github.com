@@ -2312,7 +2312,7 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp)
 	if (ssp == NULL) {
 		set_targeted_subsys(aip, NULL, -1);
 		if (aip->target_objnum != -1) {
-			Objects[aip->target_objnum].flags &= ~OF_PROTECTED;	//	If ship had been protected, unprotect it.
+			Objects[aip->target_objnum].flags.remove(Object::Object_Flags::Protected);	//	If ship had been protected, unprotect it.
 		}
 	} else {
 		Int3();	//	Not supported yet!
@@ -2475,7 +2475,7 @@ void ai_ignore_object(object *ignorer, object *ignored, int ignore_new)
 		aip->ignore_objnum = OBJ_INDEX(ignored);
 		aip->ignore_signature = ignored->signature;
 		aip->ai_flags &= ~AIF_TEMPORARY_IGNORE;
-		ignored->flags |= OF_PROTECTED;					// set protected bit of ignored ship.
+		ignored->flags.set(Object::Object_Flags::Protected);					// set protected bit of ignored ship.
 	}
 }
 
@@ -7400,7 +7400,7 @@ int ai_set_attack_subsystem(object *objp, int subnum)
 		aip->ignore_objnum = UNUSED_OBJNUM;
 	}
 
-	// -- Done at caller in ai_process_mission_orders -- attacked_objp->flags |= OF_PROTECTED;
+	// -- Done at caller in ai_process_mission_orders -- attacked_objp->flags .add(Object::Object_Flags::Protected);
 
 	ai_set_goal_maybe_abort_dock(objp, aip);
 	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);
