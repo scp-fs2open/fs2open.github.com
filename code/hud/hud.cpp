@@ -1476,7 +1476,7 @@ void hud_update_frame(float frametime)
 	int stop_targetting_this_thing = 0;
 
 	// check to see if the target is still alive
-	if ( targetp->flags&OF_SHOULD_BE_DEAD ) {
+	if ( targetp->flags[Object::Object_Flags::Should_be_dead] ) {
 		stop_targetting_this_thing = 1;
 	}
 

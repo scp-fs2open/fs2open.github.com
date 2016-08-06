@@ -564,7 +564,7 @@ void fireball_process_post(object * obj, float frame_time)
 
 	fb->time_elapsed += frame_time;
 	if ( fb->time_elapsed > fb->total_time ) {
-		obj->flags |= OF_SHOULD_BE_DEAD;
+        obj->flags.set(Object::Object_Flags::Should_be_dead);
 	}
 
 	fireball_maybe_play_warp_close_sound(fb);
@@ -767,7 +767,9 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 		}
 	}
 	
-	objnum = obj_create(OBJ_FIREBALL, parent_obj, n, &orient, pos, size, OF_RENDERS);
+    flagset<Object::Object_Flags> default_flags;
+    default_flags.set(Object::Object_Flags::Renders);
+	objnum = obj_create(OBJ_FIREBALL, parent_obj, n, &orient, pos, size, default_flags);
 
 	if (objnum < 0) {
 		Int3();				// Get John, we ran out of objects for fireballs
@@ -825,7 +827,7 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 
 	if ( velocity )	{
 		// Make the explosion move at a constant velocity.
-		obj->flags |= OF_PHYSICS;
+        obj->flags.set(Object::Object_Flags::Physics);
 		obj->phys_info.mass = 1.0f;
 		obj->phys_info.side_slip_time_const = 0.0f;
 		obj->phys_info.rotdamp = 0.0f;

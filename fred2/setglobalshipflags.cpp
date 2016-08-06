@@ -52,7 +52,7 @@ void SetGlobalShipFlags::OnNoShields()
 	{
 		if (Ships[i].objnum >= 0)
 		{
-			Objects[Ships[i].objnum].flags |= OF_NO_SHIELDS;
+            Objects[Ships[i].objnum].flags.set(Object::Object_Flags::No_shields); 
 		}
 	}
 }

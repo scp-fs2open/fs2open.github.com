@@ -168,14 +168,17 @@ typedef struct object_orient_pos {
 } object_orient_pos;
 
 #ifdef OBJECT_CHECK
-typedef struct checkobject
+class checkobject
 {
+public:
 	int	type;
 	int	signature;
 	flagset<Object::Object_Flags>	flags;
 	int	parent_sig;
 	int	parent_type;
-} checkobject;
+
+    checkobject();
+};
 #endif
 
 /*
@@ -220,7 +223,7 @@ void obj_init();
 //object.  Returns 0 if failed, otherwise object index.
 //You can pass 0 for parent if you don't care about that.
 //You can pass null for orient and/or pos if you don't care.
-int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, flagset<Object::Object_Flags> flags );
+int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, flagset<Object::Object_Flags> &flags );
 
 void obj_render(object* obj);
 

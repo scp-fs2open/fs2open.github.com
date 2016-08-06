@@ -4679,7 +4679,7 @@ void weapon_process_post(object * obj, float frame_time)
 				Homing_misses++;
 			}
 		} else {
-			obj->flags |= OF_SHOULD_BE_DEAD;
+            obj->flags.set(Object::Object_Flags::Should_be_dead);
 		}
 
 		return;
@@ -6278,7 +6278,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
         }
 	}
 
-	weapon_obj->flags |= OF_SHOULD_BE_DEAD;
+    weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);
 
 	//Set shockwaves flag
 	int sw_flag = SW_WEAPON;

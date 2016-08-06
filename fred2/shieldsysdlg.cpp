@@ -116,9 +116,9 @@ void shield_sys_dlg::OnOK()
 				z = 1;
 
 			if (!z)
-				Objects[Ships[i].objnum].flags &= ~OF_NO_SHIELDS;
+                Objects[Ships[i].objnum].flags.remove(Object::Object_Flags::No_shields);
 			else if (z == 1)
-				Objects[Ships[i].objnum].flags |= OF_NO_SHIELDS;
+                Objects[Ships[i].objnum].flags.set(Object::Object_Flags::No_shields);
 		}
 
 	CDialog::OnOK();

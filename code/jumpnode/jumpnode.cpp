@@ -53,7 +53,9 @@ CJumpNode::CJumpNode(vec3d *position) : m_radius(0.0f), m_modelnum(-1), m_objnum
     m_pos.xyz.z = position->xyz.z;
     
 	// Create the object
-    m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, &m_pos, m_radius, OF_RENDERS);
+    flagset<Object::Object_Flags> default_flags;
+    default_flags.set(Object::Object_Flags::Renders);
+    m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, &m_pos, m_radius, default_flags);
 }
 
 CJumpNode::CJumpNode(CJumpNode&& other)

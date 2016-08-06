@@ -181,8 +181,8 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	objp = Objects;
 
 	for (i=0;i<=Highest_object_index;i++,objp++) {
-		if ( (objp->type != OBJ_NONE) && (objp->flags&OF_RENDERS) )	{
-			objp->flags &= ~OF_WAS_RENDERED;
+		if ( (objp->type != OBJ_NONE) && (objp->flags[Object::Object_Flags::Renders]) )	{
+            objp->flags.remove(Object::Object_Flags::Was_rendered);
 
 			if ( obj_in_view_cone(objp) )	{
 				sorted_obj osp;
@@ -249,7 +249,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	for (os = Sorted_objects.begin(); os != Sorted_objects.end(); ++os) {
 		object *obj = os->obj;
 
-		obj->flags |= OF_WAS_RENDERED;
+		obj->flags.set(Object::Object_Flags::Was_rendered);
 
 		//This is for ship cockpits. Bobb, feel free to optimize this any way you see fit
 		if ( (obj == Viewer_obj)
@@ -301,7 +301,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	for (os = Sorted_objects.begin(); os != Sorted_objects.end(); ++os) {
 		object *obj = os->obj;
 
-		obj->flags |= OF_WAS_RENDERED;
+		obj->flags.set(Object::Object_Flags::Was_rendered);
 
 		if ( obj_render_is_model(obj) )
 			continue;
@@ -354,7 +354,7 @@ void obj_render_queue_all()
 
 	for ( i = 0; i <= Highest_object_index; i++,objp++ ) {
 		if ( (objp->type != OBJ_NONE) && ( objp->flags [Object::Object_Flags::Renders] ) )	{
-			objp->flags &= ~OF_WAS_RENDERED;
+            objp->flags.remove(Object::Object_Flags::Was_rendered);
 
 			if ( !obj_in_view_cone(objp) ) {
 				continue;
@@ -376,7 +376,7 @@ void obj_render_queue_all()
 				}
 			}
 
-			objp->flags |= OF_WAS_RENDERED;
+            objp->flags.set(Object::Object_Flags::Was_rendered);
 			profile_begin("Queue Render");
 			obj_queue_render(objp, &scene);
 			profile_end("Queue Render");

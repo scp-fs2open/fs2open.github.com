@@ -177,7 +177,7 @@ void shockwave_delete_all()
 	while ( sw != &Shockwave_list ) {
 		next = sw->next;
 		Assert(sw->objnum != -1);
-		Objects[sw->objnum].flags |= OF_SHOULD_BE_DEAD;
+        Objects[sw->objnum].flags.set(Object::Object_Flags::Should_be_dead);
 		sw = next;
 	}
 }
@@ -256,7 +256,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	sw->radius += (frametime * sw->speed);
 	if ( sw->radius > sw->outer_radius ) {
 		sw->radius = sw->outer_radius;
-		shockwave_objp->flags |= OF_SHOULD_BE_DEAD;
+        shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
 		return;
 	}
 

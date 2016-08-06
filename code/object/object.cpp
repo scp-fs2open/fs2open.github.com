@@ -107,6 +107,12 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Collides,				"collides",					1,  },
 };
 
+checkobject::checkobject() 
+    : type(0), signature(0), parent_sig(0), parent_type(0) 
+{
+    flags.reset();
+}
+
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
 object::object()
 	: next(NULL), prev(NULL), type(OBJ_NONE), parent(-1), instance(-1), n_quadrants(0), hull_strength(0.0),
@@ -465,7 +471,7 @@ void obj_free(int objnum)
  * @return the object number 
  */
 int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
-               vec3d * pos, float radius, flagset<Object::Object_Flags> flags )
+               vec3d * pos, float radius, flagset<Object::Object_Flags> &flags )
 {
 	int objnum;
 	object *obj;
@@ -1922,7 +1928,9 @@ void obj_reset_all_collisions()
 {
 	// clear checkobjects
 #ifndef NDEBUG
-	memset(CheckObjects, 0, sizeof(checkobject) * MAX_OBJECTS);
+    for (int i = 0; i < MAX_OBJECTS; ++i) {
+        CheckObjects[i] = checkobject();
+    }
 #endif
 
 	// clear object pairs

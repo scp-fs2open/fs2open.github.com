@@ -46,7 +46,8 @@ int observer_create(matrix *orient, vec3d *pos)
 	}
 	
 	// attempt to create the object
-	objnum = obj_create(OBJ_OBSERVER,-1,idx,orient,pos,1.0f, flagset<Object::Object_Flags>());
+    flagset<Object::Object_Flags> default_flagset;
+	objnum = obj_create(OBJ_OBSERVER,-1,idx,orient,pos,1.0f, default_flagset);
 
 	// fail situation
 	if(objnum == -1)
