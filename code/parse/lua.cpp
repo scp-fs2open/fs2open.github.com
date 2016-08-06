@@ -16606,7 +16606,10 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 					*va_arg(vl, bool*) = lua_toboolean(L, nargs) > 0 ? true : false;
 				} else {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; boolean expected", funcname, nargs, ade_get_type_string(L, nargs));
-					if(!optional_args) return 0;
+					if(!optional_args) {
+						va_end(vl);
+						return 0;
+					}
 				}
 				break;
 			case 'd':
@@ -16614,7 +16617,10 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 					*va_arg(vl, double*) = (double)lua_tonumber(L, nargs);
 				} else {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, ade_get_type_string(L, nargs));
-					if(!optional_args) return 0;
+					if(!optional_args) {
+						va_end(vl);
+						return 0;
+					}
 				}
 				break;
 			case 'f':
@@ -16622,7 +16628,10 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 					*va_arg(vl, float*) = (float)lua_tonumber(L, nargs);
 				} else {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, ade_get_type_string(L, nargs));
-					if(!optional_args) return 0;
+					if(!optional_args) {
+						va_end(vl);
+						return 0;
+					}
 				}
 				break;
 			case 'i':
@@ -16630,7 +16639,10 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 					*va_arg(vl, int*) = (int)lua_tonumber(L, nargs);
 				} else {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, ade_get_type_string(L, nargs));
-					if(!optional_args) return 0;
+					if(!optional_args) {
+						va_end(vl);
+						return 0;
+					}
 				}
 				break;
 			case 's':
@@ -16638,7 +16650,10 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 					*va_arg(vl, const char **) = lua_tostring(L, nargs);
 				} else {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; string expected", funcname, nargs, ade_get_type_string(L, nargs));
-					if(!optional_args) return 0;
+					if(!optional_args) {
+						va_end(vl);
+						return 0;
+					}
 				}
 				break;
 			case 'x':
@@ -16646,7 +16661,10 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 					*va_arg(vl, fix*) = fl2f((float)lua_tonumber(L, nargs));
 				} else {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; number expected", funcname, nargs, ade_get_type_string(L, nargs));
-					if(!optional_args) return 0;
+					if(!optional_args) {
+						va_end(vl);
+						return 0;
+					}
 				}
 				break;
 			case 'o':
@@ -16670,7 +16688,10 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 							if((uint)lua_tonumber(L, -1) != od.idx)
 							{
 								LuaError(L, "%s: Argument %d is the wrong type of userdata; '%s' given, but '%s' expected", funcname, nargs, Ade_table_entries[(uint)lua_tonumber(L, -2)].Name, Ade_table_entries[od.idx].GetName());
-								if(!optional_args) return 0;
+								if(!optional_args) {
+									va_end(vl);
+									return 0;
+								}
 							}
 							lua_pop(L, 1);
 						}
@@ -16696,7 +16717,10 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 					else
 					{
 						LuaError(L, "%s: Argument %d is an invalid type '%s'; type '%s' expected", funcname, nargs, ade_get_type_string(L, nargs), Ade_table_entries[od.idx].GetName());
-						if(!optional_args) return 0;
+						if(!optional_args) {
+							va_end(vl);
+							return 0;
+						}
 					}
 				}
 				break;
