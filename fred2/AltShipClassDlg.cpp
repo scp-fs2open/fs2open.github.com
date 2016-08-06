@@ -4,9 +4,6 @@
  * create based on the source.
  */
 
-// AltShipClassDlg.cpp : implementation file
-//
-
 #include "stdafx.h"
 #include "fred.h"
 #include "AltShipClassDlg.h"
@@ -18,9 +15,19 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-/////////////////////////////////////////////////////////////////////////////
-// AltShipClassDlg dialog
-
+BEGIN_MESSAGE_MAP(AltShipClassDlg, CDialog)
+	//{{AFX_MSG_MAP(AltShipClassDlg)
+	ON_BN_CLICKED(IDC_ALT_CLASS_ADD, OnAltClassAdd)
+	ON_BN_CLICKED(IDC_ALT_CLASS_INSERT, OnAltClassInsert)
+	ON_BN_CLICKED(IDC_ALT_CLASS_DELETE, OnAltClassDelete)
+	ON_BN_CLICKED(IDC_ALT_CLASS_UP, OnMoveUp)
+	ON_BN_CLICKED(IDC_ALT_CLASS_DOWN, OnMoveDown)
+	ON_CBN_SELENDOK(IDC_SET_FROM_SHIP_CLASS, OnSelendokSetFromShipClass)
+	ON_CBN_SELENDOK(IDC_SET_FROM_VARIABLES, OnSelendokSetFromVariables)
+	ON_LBN_SELCHANGE(IDC_ALT_CLASS_LIST, OnSelchangeAltClassList)
+	ON_BN_CLICKED(IDC_DEFAULT_TO_CLASS, OnDefaultToClass)
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
 
 AltShipClassDlg::AltShipClassDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(AltShipClassDlg::IDD, pParent)
@@ -38,6 +45,121 @@ AltShipClassDlg::AltShipClassDlg(CWnd* pParent /*=NULL*/)
 	memset(ship_class_indices, -1, sizeof (int)*MAX_SHIP_CLASSES);
 }
 
+void AltShipClassDlg::alt_class_list_rebuild() {
+	int i, j;
+	char buff[TOKEN_LENGTH + TOKEN_LENGTH + 2];  // VariableName[VariableValue]
+
+	j = m_alt_class_list.GetCount();
+	for (i = 0; i < j; i++) {
+		m_alt_class_list.DeleteString(0);
+	}
+
+	for (i = 0; i < (int) alt_class_pool.size(); i++) {
+		// Default classes should be at the end of the list
+		if (alt_class_pool[i].default_to_this_class && (i < (int) alt_class_pool.size() - 1)) {
+			// Int3();
+			// @TODO : we should fix this.
+		}
+
+		if (alt_class_pool[i].variable_index != -1) {
+			Assert(alt_class_pool[i].variable_index > -1 && alt_class_pool[i].variable_index < MAX_SEXP_VARIABLES);
+			Assert(Sexp_variables[alt_class_pool[i].variable_index].type & SEXP_VARIABLE_STRING);
+
+			sprintf(buff, "%s[%s]", Sexp_variables[alt_class_pool[i].variable_index].variable_name, Sexp_variables[alt_class_pool[i].variable_index].text);
+
+			// add it to the list
+			m_alt_class_list.AddString(buff);
+		} else {
+			if (alt_class_pool[i].ship_class >= 0 && alt_class_pool[i].ship_class < MAX_SHIP_CLASSES) {
+				m_alt_class_list.AddString(Ship_info[alt_class_pool[i].ship_class].name);
+			} else {
+				m_alt_class_list.AddString("Invalid Ship Class");
+				Int3();
+			}
+		}
+	}
+}
+
+void AltShipClassDlg::alt_class_update_entry(alt_class &list_item) {
+	int index;
+
+	// Add a string variable to the list
+	if (num_string_variables && m_set_from_variables.GetCurSel() > 0) {
+		index = string_variable_indices[m_set_from_variables.GetCurSel() - 1];
+
+		Assert(index >= 0);
+		list_item.variable_index = index;
+		list_item.ship_class = ship_info_lookup(Sexp_variables[index].text);
+	}
+	// Add a ship class to the list
+	else {
+		index = m_set_from_ship_class.GetCurSel();
+
+		// Correct the index if the first entry isn't actually a ship class
+		if (num_string_variables) {
+			Assert(index > 0);
+			index--;
+		}
+
+		list_item.variable_index = -1;
+		list_item.ship_class = ship_class_indices[index];
+	}
+
+	// check the default tickbox
+	list_item.default_to_this_class = m_default_to_class.GetCheck() ? true : false;
+}
+
+void AltShipClassDlg::OnAltClassAdd() {
+	alt_class new_list_item;
+
+	alt_class_update_entry(new_list_item);
+
+	alt_class_pool.push_back(new_list_item);
+	alt_class_list_rebuild();
+}
+
+void AltShipClassDlg::OnAltClassDelete() {
+	int index = m_alt_class_list.GetCurSel();
+
+	// Nothing selected
+	if (index == -1) {
+		return;
+	}
+
+	Assert(index < (int) alt_class_pool.size());
+	alt_class_pool.erase(alt_class_pool.begin() + index);
+	alt_class_list_rebuild();
+}
+
+void AltShipClassDlg::OnAltClassInsert() {
+	int index;
+	alt_class new_list_item;
+	alt_class_update_entry(new_list_item);
+
+	index = m_alt_class_list.GetCurSel();
+
+	// If nothing is selected just add it
+	if (index == -1) {
+		alt_class_pool.push_back(new_list_item);
+	}
+	// Stick it in front of the current selection
+	else {
+		alt_class_pool.insert(alt_class_pool.begin() + index, new_list_item);
+	}
+
+	alt_class_list_rebuild();
+
+	// If we inserted the user will probably want to edit the selection
+	if (index > -1) {
+		m_alt_class_list.SetCurSel(index);
+	}
+}
+
+void AltShipClassDlg::OnCancel() {
+	// TODO: Add extra cleanup here
+
+	CDialog::OnCancel();
+}
 
 void AltShipClassDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -52,24 +174,16 @@ void AltShipClassDlg::DoDataExchange(CDataExchange* pDX)
 	//}}AFX_DATA_MAP
 }
 
+void AltShipClassDlg::OnDefaultToClass() {
+	int index = m_alt_class_list.GetCurSel();
 
-BEGIN_MESSAGE_MAP(AltShipClassDlg, CDialog)
-	//{{AFX_MSG_MAP(AltShipClassDlg)
-	ON_BN_CLICKED(IDC_ALT_CLASS_ADD, OnAltClassAdd)
-	ON_BN_CLICKED(IDC_ALT_CLASS_INSERT, OnAltClassInsert)
-	ON_BN_CLICKED(IDC_ALT_CLASS_DELETE, OnAltClassDelete)
-	ON_BN_CLICKED(IDC_ALT_CLASS_UP, OnMoveUp)
-	ON_BN_CLICKED(IDC_ALT_CLASS_DOWN, OnMoveDown)
-	ON_CBN_SELENDOK(IDC_SET_FROM_SHIP_CLASS, OnSelendokSetFromShipClass)
-	ON_CBN_SELENDOK(IDC_SET_FROM_VARIABLES, OnSelendokSetFromVariables)
-	ON_LBN_SELCHANGE(IDC_ALT_CLASS_LIST, OnSelchangeAltClassList)
-	ON_BN_CLICKED(IDC_DEFAULT_TO_CLASS, OnDefaultToClass)
-	//}}AFX_MSG_MAP
-END_MESSAGE_MAP()
+	// Nothing selected
+	if (index == -1) {
+		return;
+	}
 
-/////////////////////////////////////////////////////////////////////////////
-// AltShipClassDlg message handlers
-
+	alt_class_pool[index].default_to_this_class = m_default_to_class.GetCheck() ? true : false;
+}
 
 BOOL AltShipClassDlg::OnInitDialog() 
 {
@@ -144,143 +258,6 @@ BOOL AltShipClassDlg::OnInitDialog()
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }
 
-
-void AltShipClassDlg::alt_class_list_rebuild()
-{	
-	int i, j;
-	char buff[TOKEN_LENGTH + TOKEN_LENGTH + 2];  // VariableName[VariableValue]
-
-	j = m_alt_class_list.GetCount();
-	for ( i=0; i < j ; i++) {
-		m_alt_class_list.DeleteString(0); 
-	}
-
-	for (i = 0; i < (int)alt_class_pool.size() ; i++) {
-		// Default classes should be at the end of the list
-		if(alt_class_pool[i].default_to_this_class && (i < (int)alt_class_pool.size() - 1) ) {
-			// Int3();
-			// TO DO : we should fix this.
-		}
-
-		if (alt_class_pool[i].variable_index != -1) {
-			Assert (alt_class_pool[i].variable_index > -1 && alt_class_pool[i].variable_index < MAX_SEXP_VARIABLES);
-			Assert (Sexp_variables[alt_class_pool[i].variable_index].type & SEXP_VARIABLE_STRING); 
-			
-			sprintf(buff, "%s[%s]", Sexp_variables[alt_class_pool[i].variable_index].variable_name, Sexp_variables[alt_class_pool[i].variable_index].text);			
-
-			// add it to the list
-			m_alt_class_list.AddString(buff); 
-		}
-		else {
-			if (alt_class_pool[i].ship_class >= 0 && alt_class_pool[i].ship_class < MAX_SHIP_CLASSES) {
-				m_alt_class_list.AddString(Ship_info[alt_class_pool[i].ship_class].name);
-			}
-			else {
-				m_alt_class_list.AddString("Invalid Ship Class");
-				Int3();
-			}
-		}		
-	}
-}
-
-void AltShipClassDlg::OnCancel() 
-{
-	// TODO: Add extra cleanup here
-	
-	CDialog::OnCancel();
-}
-
-void AltShipClassDlg::OnOK() 
-{
-	// TODO: Add extra validation here
-
-	for (int i=0; i < num_selected_ships; i++) {
-		Ships[m_selected_ships[i]].s_alt_classes = alt_class_pool;
-	}
-	
-	CDialog::OnOK();
-}
-
-void AltShipClassDlg::OnAltClassAdd() 
-{
-	alt_class new_list_item; 
-
-	alt_class_update_entry(new_list_item); 
-
-	alt_class_pool.push_back(new_list_item); 
-	alt_class_list_rebuild(); 
-}
-
-void AltShipClassDlg::OnAltClassInsert() 
-{
-	int index; 
-	alt_class new_list_item; 
-	alt_class_update_entry(new_list_item); 
-
-	index = m_alt_class_list.GetCurSel(); 
-
-	// If nothing is selected just add it
-	if ( index == -1) {
-		alt_class_pool.push_back(new_list_item); 
-	}
-	// Stick it in front of the current selection
-	else {
-		alt_class_pool.insert(alt_class_pool.begin() + index, new_list_item );
-	}
-
-	alt_class_list_rebuild(); 
-	
-	// If we inserted the user will probably want to edit the selection
-	if (index > -1) {
-		m_alt_class_list.SetCurSel(index); 
-	}
-}
-
-// Updates the currently selected list entry
-void AltShipClassDlg::alt_class_update_entry(alt_class &list_item)
-{
-	int index; 
-	
-	// Add a string variable to the list
-	if (num_string_variables && m_set_from_variables.GetCurSel() > 0) {
-		index = string_variable_indices[m_set_from_variables.GetCurSel() -1]; 
-
-		Assert (index >= 0); 
-		list_item.variable_index = index; 
-		list_item.ship_class = ship_info_lookup(Sexp_variables[index].text); 
-	}
-	// Add a ship class to the list
-	else {
-		index = m_set_from_ship_class.GetCurSel(); 
-
-		// Correct the index if the first entry isn't actually a ship class
-		if (num_string_variables) {
-			Assert (index > 0);
-			index--;
-		}
-		
-		list_item.variable_index = -1;
-		list_item.ship_class = ship_class_indices[index];		
-	}
-	
-	// check the default tickbox
-	list_item.default_to_this_class = m_default_to_class.GetCheck() ? true:false;
-}
-
-void AltShipClassDlg::OnAltClassDelete() 
-{
-	int index = m_alt_class_list.GetCurSel();
-	
-	// Nothing selected
-	if (index == -1) {
-		return;
-	}
-
-	Assert (index < (int) alt_class_pool.size());
-	alt_class_pool.erase(alt_class_pool.begin()+index);  
-	alt_class_list_rebuild(); 
-}
-
 void AltShipClassDlg::OnMoveUp() 
 {
 	int index = m_alt_class_list.GetCurSel();
@@ -308,6 +285,56 @@ void AltShipClassDlg::OnMoveDown()
 	std::swap(alt_class_pool[index], alt_class_pool[inext]);
 	alt_class_list_rebuild(); 
 	m_alt_class_list.SetCurSel(index); 
+}
+
+void AltShipClassDlg::OnOK() {
+	// TODO: Add extra validation here
+
+	for (int i = 0; i < num_selected_ships; i++) {
+		Ships[m_selected_ships[i]].s_alt_classes = alt_class_pool;
+	}
+
+	CDialog::OnOK();
+}
+
+void AltShipClassDlg::OnSelchangeAltClassList() {
+	int i;
+	int variable_selection = 0;
+	int ship_selection = 0;
+	int index = m_alt_class_list.GetCurSel();
+
+	// Selected nothing
+	if (index == -1) {
+		return;
+	}
+
+	// If we have a variable selected
+	if (alt_class_pool[index].variable_index != -1) {
+		for (i = 0; i < MAX_SEXP_VARIABLES; i++) {
+			if (string_variable_indices[i] == alt_class_pool[index].variable_index) {
+				variable_selection = i + 1;
+				break;
+			}
+		}
+	}
+	// Ship selected
+	else {
+		for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+			if (ship_class_indices[i] == alt_class_pool[index].ship_class) {
+				ship_selection = i;
+				break;
+			}
+		}
+
+		// if we have string variables in the mission the first entry on the list won't be a ship
+		if (num_string_variables) {
+			ship_selection++;
+		}
+	}
+
+	m_set_from_variables.SetCurSel(variable_selection);
+	m_set_from_ship_class.SetCurSel(ship_selection);
+	m_default_to_class.SetCheck(alt_class_pool[index].default_to_this_class ? 1 : 0);
 }
 
 void AltShipClassDlg::OnSelendokSetFromShipClass() 
@@ -347,60 +374,3 @@ void AltShipClassDlg::OnSelendokSetFromVariables()
 		alt_class_list_rebuild(); 
 	}
 }
-
-void AltShipClassDlg::OnSelchangeAltClassList() 
-{
-	int i;
-	int variable_selection = 0;
-	int ship_selection = 0; 
-	int index = m_alt_class_list.GetCurSel();
-	
-	// Selected nothing
-	if (index == -1) {
-		return;
-	}
-
-	// If we have a variable selected
-	if (alt_class_pool[index].variable_index != -1) {
-		for (i=0; i < MAX_SEXP_VARIABLES; i++) 
-		{
-			if (string_variable_indices[i] == alt_class_pool[index].variable_index) {
-				variable_selection = i+1; 
-				break;
-			}
-		}
-	}
-	// Ship selected
-	else {
-		for (i=0; i < MAX_SHIP_CLASSES; i++) {
-			if (ship_class_indices[i] == alt_class_pool[index].ship_class) {
-				ship_selection = i; 
-				break;
-			}
-		}
-
-		// if we have string variables in the mission the first entry on the list won't be a ship
-		if (num_string_variables) {
-			ship_selection++; 
-		}
-	}
-	
-	m_set_from_variables.SetCurSel(variable_selection); 
-	m_set_from_ship_class.SetCurSel(ship_selection);
-	m_default_to_class.SetCheck(alt_class_pool[index].default_to_this_class ? 1:0);
-}
-
-void AltShipClassDlg::OnDefaultToClass() 
-{
-	int index = m_alt_class_list.GetCurSel();
-	
-	// Nothing selected
-	if (index == -1) {
-		return;
-	}
-
-	alt_class_pool[index].default_to_this_class = m_default_to_class.GetCheck() ? true:false; 
-}
-
-
-

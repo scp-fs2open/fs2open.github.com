@@ -1810,10 +1810,11 @@ bool SetCmdlineParams()
 	if( enable_shadows_arg.found() )
 	{
 		Cmdline_shadow_quality = 2;
-		if( shadow_quality_arg.found() )
-		{
-			Cmdline_shadow_quality = shadow_quality_arg.get_int();
-		}
+	}
+
+	if( shadow_quality_arg.found() )
+	{
+		Cmdline_shadow_quality = shadow_quality_arg.get_int();
 	}
 
 	if( no_deferred_lighting_arg.found() )

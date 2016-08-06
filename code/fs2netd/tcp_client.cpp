@@ -571,7 +571,9 @@ void FS2NetD_SendServerStart()
 
 	DONE_PACKET();
 
-	FS2NetD_SendData(buffer, buffer_size);
+	if (FS2NetD_SendData(buffer, buffer_size) < 0) {
+		ml_printf("FS2NetD WARNING: Failed to send server start packet!");
+	}
 }
 
 void FS2NetD_SendServerUpdate()
@@ -596,7 +598,9 @@ void FS2NetD_SendServerUpdate()
 
 	DONE_PACKET();
 
-	FS2NetD_SendData(buffer, buffer_size);
+	if (FS2NetD_SendData(buffer, buffer_size) < 0) {
+		ml_printf("FS2NetD WARNING: Failed to send server update packet!");
+	}
 }
 
 void FS2NetD_SendServerDisconnect()
@@ -608,7 +612,9 @@ void FS2NetD_SendServerDisconnect()
 
 	DONE_PACKET();
 
-	FS2NetD_SendData(buffer, buffer_size);
+	if (FS2NetD_SendData(buffer, buffer_size) < 0) {
+		ml_printf("FS2NetD WARNING: Failed to send server disconnect packet!");
+	}
 }
 
 void FS2NetD_RequestServerList()
@@ -649,7 +655,9 @@ void FS2NetD_Ping()
 
 	DONE_PACKET();
 
-	FS2NetD_SendData(buffer, buffer_size);
+	if (FS2NetD_SendData(buffer, buffer_size) < 0) {
+		ml_printf("Failed to send PING packet!");
+	}
 }
 
 void FS2NetD_Pong(int tstamp)
@@ -832,7 +840,9 @@ void FS2NetD_CheckDuplicateLogin()
 
 	DONE_PACKET();
 
-	FS2NetD_SendData(buffer, buffer_size);
+	if (FS2NetD_SendData(buffer, buffer_size) < 0) {
+		ml_printf("FS2NetD WARNING: Failed to send data packet to server!");
+	}
 
 	delete [] ids;
 }

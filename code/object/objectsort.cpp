@@ -166,7 +166,6 @@ inline bool obj_render_is_model(object *obj)
 }
 
 // Sorts all the objects by Z and renders them
-extern int Fred_active;
 extern int Interp_no_flush;
 void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_last )
 {

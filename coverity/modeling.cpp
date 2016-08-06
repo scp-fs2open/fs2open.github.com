@@ -2,48 +2,23 @@
  * Coverity Scan modeling file.  Help reduce false positives
  */
 
-// Assert & Assertion are "killpaths" in DEBUG, but not release
-// This should get them treated as killpaths in release as well
-// (just a copy of the DEBUG version of the macros)
-
-void WinAssert(char * text, char *filename, int line)
+/*
+ * In theory these fatal errors can allow execution to continue, because we give an option to open the debugger when they occur
+ * However, Coverity should treat these as killpaths, since users should never pick the debug option
+ * These two should cover Error, Assert & Assertion (and maybe others, I haven't done an exhaustive check)
+ */
+namespace os
 {
-	__coverity_panic__();
+	namespace dialogs
+	{
+		void Error(const char* text)
+		{
+			__coverity_panic__();
+		}
+
+		void AssertMessage(const char * text, const char * filename, int linenum, const char * format, ...)
+		{
+			__coverity_panic__();
+		}
+	}
 }
-
-void WinAssert(char * text, char *filename, int line, const char * format, ... )
-{
-	__coverity_panic__();
-}
-
-#	define Assert(expr) do {\
-		if (!(expr)) {\
-			WinAssert(#expr,__FILE__,__LINE__);\
-		}\
-		ASSUME( expr );\
-	} while (0)
-
-#	ifndef _MSC_VER   // non MS compilers
-#		define Assertion(expr, msg, ...) do {\
-			if (!(expr)) {\
-				WinAssert(#expr,__FILE__,__LINE__, msg , ##__VA_ARGS__ );\
-			}\
-		} while (0)
-#	else
-#		if _MSC_VER >= 1400	// VC 2005 or greater
-#			define Assertion(expr, msg, ...) do {\
-				if (!(expr)) {\
-					WinAssert(#expr,__FILE__,__LINE__, msg, __VA_ARGS__ );\
-				}\
-				ASSUME(expr);\
-			} while (0)
-#		else // older MSVC compilers
-#			define Assertion(expr, msg) do {\
-				if (!(expr)) {\
-					WinAssert(#expr,__FILE__,__LINE__);\
-				}\
-			} while (0)
-#		endif
-#	endif
-
-

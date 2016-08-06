@@ -2264,7 +2264,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		if (optional_string("+Beam Piercing Particle Effect:")) {
-			wip->flash_impact_weapon_expl_effect = particle::util::parseEffect(wip->name);
+			wip->piercing_impact_effect = particle::util::parseEffect(wip->name);
 		} else {
 			// This is for compatibility with old tables
 			// Do not add features here!

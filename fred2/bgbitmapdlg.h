@@ -1,3 +1,5 @@
+#ifndef _BG_BITMAP_DLG_H
+#define _BG_BITMAP_DLG_H
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
@@ -7,10 +9,7 @@
  *
 */
 
-
-
-#ifndef _BG_BITMAP_DLG_H
-#define _BG_BITMAP_DLG_H
+#include "resource.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // bg_bitmap_dlg dialog

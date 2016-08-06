@@ -11,211 +11,106 @@
 
 #include "stdafx.h"
 #include "FRED.h"
+
+#include "CreateWingDlg.h"
 #include "FREDDoc.h"
 #include "FREDView.h"
-#include "render/3d.h"
-#include "physics/physics.h"
-#include "object/object.h"
-#include "editor.h"
-#include "ship/ship.h"
-#include "math/vecmat.h"
-#include "Management.h"
-#include "globalincs/linklist.h"
 #include "MainFrm.h"
-#include "wing.h"
-#include "CreateWingDlg.h"
 #include "Management.h"
+#include "Management.h"
+#include "wing.h"
 
-#define MULTI_WING	999999
+#include "globalincs/linklist.h"
+#include "math/vecmat.h"
+#include "object/object.h"
+#include "physics/physics.h"
+#include "render/3d.h"
+#include "ship/ship.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+#define MULTI_WING	999999
+
+/**
+ * @brief 8 Vectors per formation. Possible to have more than 8 ships.
+ *
+ * @details  A vector is where a ship is located relative to the leader.  Other ships can be located at the same
+ * vector relative to another member.  So wing formation size is not limited by this constant.
+ */
+#define MAX_WING_VECTORS    8
+
+/**
+ * @brief 8 different kinds of wing formations
+ */
+#define MAX_WING_FORMATIONS 8
+
+typedef struct formation
+{
+	int		num_vectors;
+	vec3d	offsets[MAX_WING_VECTORS];
+} formation;
+
+formation Wing_formations[MAX_WING_FORMATIONS];
 
 int already_deleting_wing = 0;
+int Wings_initialized = 0;
 
+// Declared here
+/**
+ * @brief Takes a player out of a wing, deleting wing if that was the only ship in it.
+ */
 void remove_player_from_wing(int player, int min = 1);
 
-// Finds a free wing slot (i.e. unused)
-int find_free_wing()
-{
-	int i;
+/**
+ * @brief Checks wing dependencies
+ *
+ * @TODO verify
+ */
+int check_wing_dependencies(int wing_num);
 
-	for (i=0; i<MAX_WINGS; i++)
-		if (!Wings[i].wave_count)
-			return i;
+/**
+ * @brief Initializes the wings and formations
+ *
+ * @note Looks incomplete. Only init's the first formation
+ * @TODO verify
+ */
+void initialize_wings(void);
 
-	return -1;
-}
+/**
+ * @brief Doesn't seem to do anything useful
+ *
+ * @TODO verify
+ */
+void create_wings_from_objects(void);
 
-int check_wing_dependencies(int wing_num)
-{
+/**
+ * @brief Gets the index of the first available object slot
+ *
+ *
+ * @returns The objindex of the first available slot, or
+ * @returns -1 if no slots available
+ *
+ * @note Unused
+ * @TODO verify and maybe remove
+ */
+int get_free_objnum(void);
+
+/**
+ * @brief Finds a free wing slot (i.e. unused)
+ */
+int find_free_wing();
+
+
+int check_wing_dependencies(int wing_num) {
 	char *name;
 
 	name = Wings[wing_num].name;
 	return reference_handler(name, REF_TYPE_WING, -1);
 }
 
-void mark_wing(int wing)
-{
-	int i;
-
-	unmark_all();
-	Assert(Wings[wing].special_ship >= 0 && Wings[wing].special_ship < Wings[wing].wave_count);
-	set_cur_object_index(wing_objects[wing][Wings[wing].special_ship]);
-	for (i=0; i<Wings[wing].wave_count; i++)
-		mark_object(wing_objects[wing][i]);
-}
-
-// delete a whole wing, also deleting its ships if necessary.
-int delete_wing(int wing_num, int bypass)
-{
-	int i, r, total;
-
-	if (already_deleting_wing)
-		return 0;
-
-	r = check_wing_dependencies(wing_num);
-	if (r)
-		return r;
-
-	already_deleting_wing = 1;
-	for (i=0; i<Num_reinforcements; i++)
-		if (!stricmp(Wings[wing_num].name, Reinforcements[i].name)) {
-			delete_reinforcement(i);
-			break;
-		}
-
-	invalidate_references(Wings[wing_num].name, REF_TYPE_WING);
-	if (!bypass) {
-		total = Wings[wing_num].wave_count;
-		for (i=0; i<total; i++)
-			delete_object(wing_objects[wing_num][i]);
-	}
-
-	Wings[wing_num].wave_count = 0;
-	Wings[wing_num].wing_squad_filename[0] = '\0';
-	Wings[wing_num].wing_insignia_texture = -1;
-
-	if (cur_wing == wing_num)
-		set_cur_wing(cur_wing = -1);  // yes, one '=' is correct.
-
-	free_sexp2(Wings[wing_num].arrival_cue);
-	free_sexp2(Wings[wing_num].departure_cue);
-
-	Num_wings--;
-	set_modified();
-
-	update_custom_wing_indexes();
-
-	already_deleting_wing = 0;
-	return 0;
-}
-
-// delete a whole wing, leaving ships intact but wingless.
-void remove_wing(int wing_num)
-{
-	int i, total;
-	object *ptr;
-
-	if (check_wing_dependencies(wing_num))
-		return;
-
-	Ship_editor_dialog.bypass_errors = Wing_editor_dialog.bypass_errors = 1;
-	Ship_editor_dialog.update_data(0);
-	total = Wings[wing_num].wave_count;
-	for (i=0; i<total; i++) {
-		ptr = &Objects[wing_objects[wing_num][i]];
-		if (ptr->type == OBJ_SHIP)
-			remove_ship_from_wing(ptr->instance, 0);
-		else if (ptr->type == OBJ_START)
-			remove_player_from_wing(ptr->instance, 0);
-	}
-
-	Assert(!Wings[wing_num].wave_count);
-
-	Wings[wing_num].wave_count = 0;
-	Wings[wing_num].wing_squad_filename[0] = '\0';
-	Wings[wing_num].wing_insignia_texture = -1;
-
-	Ship_editor_dialog.initialize_data(1);
-	Ship_editor_dialog.bypass_errors = Wing_editor_dialog.bypass_errors = 0;
-
-	if (cur_wing == wing_num) {
-		set_cur_wing(cur_wing = -1);  // yes, one '=' is correct.
-	}
-
-	free_sexp2(Wings[wing_num].arrival_cue);
-	free_sexp2(Wings[wing_num].departure_cue);
-
-	Num_wings--;
-
-	update_custom_wing_indexes();
-
-	set_modified();
-}
-
-// Takes a ship out of a wing, deleting wing if that was the only ship in it.
-void remove_ship_from_wing(int ship, int min)
-{
-	char buf[256];
-	int i, wing, end, obj;
-
-	wing = Ships[ship].wingnum;
-	if (wing != -1) {
-		if (Wings[wing].wave_count == min)
-		{
-			Wings[wing].wave_count = 0;
-			Wings[wing].wing_squad_filename[0] = '\0';
-			Wings[wing].wing_insignia_texture = -1;
-			delete_wing(wing);
-		}
-		else
-		{
-			i = Wings[wing].wave_count;
-			end = i - 1;
-			while (i--)
-				if (wing_objects[wing][i] == Ships[ship].objnum)
-					break;
-
-			Assert(i != -1);  // Error, object should be in wing.
-			if (Wings[wing].special_ship == i)
-				Wings[wing].special_ship = 0;
-
-			// if not last element, move last element to position to fill gap
-			if (i != end) {
-				obj = wing_objects[wing][i] = wing_objects[wing][end];
-				Wings[wing].ship_index[i] = Wings[wing].ship_index[end];
-				if (Objects[obj].type == OBJ_SHIP) {
-					wing_bash_ship_name(buf, Wings[wing].name, i + 1);
-					rename_ship(Wings[wing].ship_index[i], buf);
-				}
-			}
-
-			Wings[wing].wave_count--;
-			if (Wings[wing].wave_count && (Wings[wing].threshold >= Wings[wing].wave_count))
-				Wings[wing].threshold = Wings[wing].wave_count - 1;
-		}
-
-		Ships[ship].wingnum = -1;
-	}
-
-	set_modified();
-	// reset ship name to non-wing default ship name
-	sprintf(buf, "%s %d", Ship_info[Ships[ship].ship_info_index].name, ship);
-	rename_ship(ship, buf);
-}
-
-// Takes a player out of a wing, deleting wing if that was the only ship in it.
-void remove_player_from_wing(int player, int min)
-{
-	remove_ship_from_wing(player, min);
-}
-
-// Forms a wing from marked objects
-int create_wing()
-{
+int create_wing() {
 	char msg[1024];
 	int i, ship, wing = -1, waypoints = 0, count = 0, illegal_ships = 0;
 	int leader, leader_team;
@@ -232,10 +127,10 @@ int create_wing()
 			count++;
 			i = -1;
 			switch (ptr->type) {
-				case OBJ_SHIP:
-				case OBJ_START:
-					i = Ships[ptr->instance].wingnum;
-					break;
+			case OBJ_SHIP:
+			case OBJ_START:
+				i = Ships[ptr->instance].wingnum;
+				break;
 			}
 
 			if (i >= 0) {
@@ -251,7 +146,7 @@ int create_wing()
 
 	if (count > MAX_SHIPS_PER_WING) {
 		sprintf(msg, "You have too many ships marked!\n"
-			"A wing is limited to %d ships total", MAX_SHIPS_PER_WING);
+				"A wing is limited to %d ships total", MAX_SHIPS_PER_WING);
 
 		Fred_main_wnd->MessageBox(msg, "Error", MB_ICONEXCLAMATION);
 		return -1;
@@ -267,19 +162,19 @@ int create_wing()
 			wing = -1;
 
 		else {  // must be IDYES
-			for (i=Wings[wing].wave_count-1; i>=0; i--) {
+			for (i = Wings[wing].wave_count - 1; i >= 0; i--) {
 				ptr = &Objects[wing_objects[wing][i]];
 				switch (ptr->type) {
-					case OBJ_SHIP:
-						remove_ship_from_wing(ptr->instance, 0);
-						break;
+				case OBJ_SHIP:
+					remove_ship_from_wing(ptr->instance, 0);
+					break;
 
-					case OBJ_START:
-						remove_player_from_wing(ptr->instance, 0);
-						break;
+				case OBJ_START:
+					remove_player_from_wing(ptr->instance, 0);
+					break;
 
-					default:
-						Int3();  // shouldn't be in a wing!
+				default:
+					Int3();  // shouldn't be in a wing!
 				}
 			}
 
@@ -295,7 +190,7 @@ int create_wing()
 
 		if (wing < 0) {
 			Fred_main_wnd->MessageBox("Too many wings, can't create more!",
-				"Error", MB_ICONEXCLAMATION);
+									  "Error", MB_ICONEXCLAMATION);
 
 			return -1;
 		}
@@ -314,7 +209,7 @@ int create_wing()
 		Wings[wing].wave_delay_min = 0;
 		Wings[wing].wave_delay_max = 0;
 
-		for (i=0; i<MAX_AI_GOALS; i++) {
+		for (i = 0; i<MAX_AI_GOALS; i++) {
 			Wings[wing].ai_goals[i].ai_mode = AI_GOAL_NONE;
 			Wings[wing].ai_goals[i].priority = -1;				// this sets up the priority field to be like ships
 		}
@@ -335,15 +230,14 @@ int create_wing()
 //				starts++;
 //				unmark_object(OBJ_INDEX(ptr));
 
-//			} else if (ptr->type == OBJ_WAYPOINT) {
+			//			} else if (ptr->type == OBJ_WAYPOINT) {
 			if (ptr->type == OBJ_WAYPOINT) {
 				waypoints++;
 				unmark_object(OBJ_INDEX(ptr));
 
 			} else if (ptr->type == OBJ_SHIP) {
 				int ship_type = ship_query_general_type(ptr->instance);
-				if(ship_type < 0 || !(Ship_types[ship_type].ai_bools & STI_AI_CAN_FORM_WING))
-				{
+				if (ship_type < 0 || !(Ship_types[ship_type].ai_bools & STI_AI_CAN_FORM_WING)) {
 					illegal_ships++;
 					unmark_object(OBJ_INDEX(ptr));
 				}
@@ -354,8 +248,8 @@ int create_wing()
 	}
 
 	// if this wing is a player starting wing, automatically set the hotkey for this wing
-	for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
-		if ( !stricmp(Wings[wing].name, Starting_wing_names[i]) ) {
+	for (i = 0; i < MAX_STARTING_WINGS; i++) {
+		if (!stricmp(Wings[wing].name, Starting_wing_names[i])) {
 			Wings[wing].hotkey = i;
 			break;
 		}
@@ -410,27 +304,25 @@ int create_wing()
 	Wings[wing].wave_count = count;
 	Num_wings++;
 
-//	if (starts)
-//		Fred_main_wnd->MessageBox("Multi-player starting points can't be part of a wing!\n"
-//			"All marked multi-player starting points were ignored",
-//			"Error", MB_ICONEXCLAMATION);
+	//	if (starts)
+	//		Fred_main_wnd->MessageBox("Multi-player starting points can't be part of a wing!\n"
+	//			"All marked multi-player starting points were ignored",
+	//			"Error", MB_ICONEXCLAMATION);
 
 	if (waypoints)
 		Fred_main_wnd->MessageBox("Waypoints can't be part of a wing!\n"
-			"All marked waypoints were ignored",
-			"Error", MB_ICONEXCLAMATION);
+		"All marked waypoints were ignored",
+		"Error", MB_ICONEXCLAMATION);
 
 	if (illegal_ships)
 		Fred_main_wnd->MessageBox("Some ship types aren't allowed to be in a wing.\n"
-			"All marked ships of these types were ignored",
-			"Error", MB_ICONEXCLAMATION);
+		"All marked ships of these types were ignored",
+		"Error", MB_ICONEXCLAMATION);
 
 
 	leader_team = Ships[Wings[wing].ship_index[Wings[wing].special_ship]].team;
-	for (i = 0; i < Wings[wing].wave_count; i++)
-	{
-		if (Ships[Wings[wing].ship_index[i]].team != leader_team)
-		{
+	for (i = 0; i < Wings[wing].wave_count; i++) {
+		if (Ships[Wings[wing].ship_index[i]].team != leader_team) {
 			Fred_main_wnd->MessageBox("Wing contains ships on different teams", "Warning");
 			break;
 		}
@@ -443,36 +335,96 @@ int create_wing()
 	return 0;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
-// Old stuff down there..
+void create_wings_from_objects(void) {
+	int	i;
 
-#define	MAX_WING_VECTORS	8	//	8 vectors per wing formation.  Possible to have more
-								//	than 8 ships.  A vector is where a ship is located relative
-								//	to the leader.  Other ships can be located at the same
-								//	vector relative to another member.  So wing formation
-								//	size is not limited by this constant.
-#define	MAX_WING_FORMATIONS	8	//	8 different kinds of wing formations
+	for (i = 0; i<MAX_WINGS; i++)
+		Wings[i].wave_count = 0;
 
-typedef struct formation {
-	int		num_vectors;
-	vec3d	offsets[MAX_WING_VECTORS];
-} formation;
+	for (i = 0; i<MAX_OBJECTS; i++)
+		if (Objects[i].type != OBJ_NONE)
+			if (get_wingnum(i) != -1) {
+				int	wingnum = get_wingnum(i);
 
-formation Wing_formations[MAX_WING_FORMATIONS];
+				Assert((wingnum >= 0) && (wingnum < MAX_WINGS));
+				Assert(Wings[wingnum].wave_count < MAX_SHIPS_PER_WING);
+				// JEH			strcpy_s(Wings[wingnum].ship_names[Wings[wingnum].count++], i;
+			}
 
-//wing	Wings[MAX_WINGS];
+}
 
-int	Wings_initialized = 0;
+int delete_wing(int wing_num, int bypass) {
+	int i, r, total;
 
-void initialize_wings(void)
+	if (already_deleting_wing)
+		return 0;
+
+	r = check_wing_dependencies(wing_num);
+	if (r)
+		return r;
+
+	already_deleting_wing = 1;
+	for (i = 0; i<Num_reinforcements; i++)
+		if (!stricmp(Wings[wing_num].name, Reinforcements[i].name)) {
+			delete_reinforcement(i);
+			break;
+		}
+
+	invalidate_references(Wings[wing_num].name, REF_TYPE_WING);
+	if (!bypass) {
+		total = Wings[wing_num].wave_count;
+		for (i = 0; i<total; i++)
+			delete_object(wing_objects[wing_num][i]);
+	}
+
+	Wings[wing_num].wave_count = 0;
+	Wings[wing_num].wing_squad_filename[0] = '\0';
+	Wings[wing_num].wing_insignia_texture = -1;
+
+	if (cur_wing == wing_num)
+		set_cur_wing(cur_wing = -1);  // yes, one '=' is correct.
+
+	free_sexp2(Wings[wing_num].arrival_cue);
+	free_sexp2(Wings[wing_num].departure_cue);
+
+	Num_wings--;
+	set_modified();
+
+	update_custom_wing_indexes();
+
+	already_deleting_wing = 0;
+	return 0;
+}
+
+int find_free_wing()
 {
+	int i;
+
+	for (i=0; i<MAX_WINGS; i++)
+		if (!Wings[i].wave_count)
+			return i;
+
+	return -1;
+}
+
+int get_free_objnum(void) {
+	int	i;
+
+	for (i = 1; i<MAX_OBJECTS; i++)
+		if (Objects[i].type == OBJ_NONE)
+			return i;
+
+	return -1;
+}
+
+void initialize_wings(void) {
 	if (Wings_initialized)
 		return;
 
 	Wings_initialized = 1;
 
 	Wing_formations[0].num_vectors = 2;
-	
+
 	Wing_formations[0].offsets[0].xyz.x = -5.0f;
 	Wing_formations[0].offsets[0].xyz.y = +1.0f;
 	Wing_formations[0].offsets[0].xyz.z = -5.0f;
@@ -482,32 +434,105 @@ void initialize_wings(void)
 	Wing_formations[0].offsets[1].xyz.z = -5.0f;
 }
 
-void create_wings_from_objects(void)
+void mark_wing(int wing)
 {
-	int	i;
+	int i;
 
-	for (i=0; i<MAX_WINGS; i++)
-		Wings[i].wave_count= 0;
-
-	for (i=0; i<MAX_OBJECTS; i++)
-		if (Objects[i].type != OBJ_NONE)
-			if (get_wingnum(i) != -1) {
-				int	wingnum = get_wingnum(i);
-				
-				Assert((wingnum >= 0) && (wingnum < MAX_WINGS));
-				Assert(Wings[wingnum].wave_count < MAX_SHIPS_PER_WING);
-// JEH			strcpy_s(Wings[wingnum].ship_names[Wings[wingnum].count++], i;
-			}
-
+	unmark_all();
+	Assert(Wings[wing].special_ship >= 0 && Wings[wing].special_ship < Wings[wing].wave_count);
+	set_cur_object_index(wing_objects[wing][Wings[wing].special_ship]);
+	for (i=0; i<Wings[wing].wave_count; i++)
+		mark_object(wing_objects[wing][i]);
 }
 
-int get_free_objnum(void)
+void remove_player_from_wing(int player, int min) {
+	remove_ship_from_wing(player, min);
+}
+
+void remove_ship_from_wing(int ship, int min) {
+	char buf[256];
+	int i, wing, end, obj;
+
+	wing = Ships[ship].wingnum;
+	if (wing != -1) {
+		if (Wings[wing].wave_count == min) {
+			Wings[wing].wave_count = 0;
+			Wings[wing].wing_squad_filename[0] = '\0';
+			Wings[wing].wing_insignia_texture = -1;
+			delete_wing(wing);
+		} else {
+			i = Wings[wing].wave_count;
+			end = i - 1;
+			while (i--)
+				if (wing_objects[wing][i] == Ships[ship].objnum)
+					break;
+
+			Assert(i != -1);  // Error, object should be in wing.
+			if (Wings[wing].special_ship == i)
+				Wings[wing].special_ship = 0;
+
+			// if not last element, move last element to position to fill gap
+			if (i != end) {
+				obj = wing_objects[wing][i] = wing_objects[wing][end];
+				Wings[wing].ship_index[i] = Wings[wing].ship_index[end];
+				if (Objects[obj].type == OBJ_SHIP) {
+					wing_bash_ship_name(buf, Wings[wing].name, i + 1);
+					rename_ship(Wings[wing].ship_index[i], buf);
+				}
+			}
+
+			Wings[wing].wave_count--;
+			if (Wings[wing].wave_count && (Wings[wing].threshold >= Wings[wing].wave_count))
+				Wings[wing].threshold = Wings[wing].wave_count - 1;
+		}
+
+		Ships[ship].wingnum = -1;
+	}
+
+	set_modified();
+	// reset ship name to non-wing default ship name
+	sprintf(buf, "%s %d", Ship_info[Ships[ship].ship_info_index].name, ship);
+	rename_ship(ship, buf);
+}
+
+void remove_wing(int wing_num)
 {
-	int	i;
+	int i, total;
+	object *ptr;
 
-	for (i=1; i<MAX_OBJECTS; i++)
-		if (Objects[i].type == OBJ_NONE)
-			return i;
+	if (check_wing_dependencies(wing_num))
+		return;
 
-	return -1;
+	Ship_editor_dialog.bypass_errors = Wing_editor_dialog.bypass_errors = 1;
+	Ship_editor_dialog.update_data(0);
+	total = Wings[wing_num].wave_count;
+	for (i=0; i<total; i++) {
+		ptr = &Objects[wing_objects[wing_num][i]];
+		if (ptr->type == OBJ_SHIP)
+			remove_ship_from_wing(ptr->instance, 0);
+		else if (ptr->type == OBJ_START)
+			remove_player_from_wing(ptr->instance, 0);
+	}
+
+	Assert(!Wings[wing_num].wave_count);
+
+	Wings[wing_num].wave_count = 0;
+	Wings[wing_num].wing_squad_filename[0] = '\0';
+	Wings[wing_num].wing_insignia_texture = -1;
+
+	Ship_editor_dialog.initialize_data(1);
+	Ship_editor_dialog.bypass_errors = Wing_editor_dialog.bypass_errors = 0;
+
+	if (cur_wing == wing_num) {
+		set_cur_wing(cur_wing = -1);  // yes, one '=' is correct.
+	}
+
+	free_sexp2(Wings[wing_num].arrival_cue);
+	free_sexp2(Wings[wing_num].departure_cue);
+
+	Num_wings--;
+
+	update_custom_wing_indexes();
+
+	set_modified();
 }

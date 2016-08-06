@@ -8,6 +8,9 @@ set_target_properties(cfileextractor
 	PROPERTIES
 		FOLDER "FSOTools"
 )
+TARGET_LINK_LIBRARIES(cfileextractor PUBLIC ${SDL_LIBS})
+TARGET_INCLUDE_DIRECTORIES(cfileextractor PUBLIC ${GENERATED_SOURCE_DIR})
+TARGET_INCLUDE_DIRECTORIES(cfileextractor PUBLIC ${GENERATED_SOURCE_DIR}/code)
 
 IF(MSVC)
 	set_target_properties(cfileextractor PROPERTIES

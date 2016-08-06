@@ -1654,10 +1654,11 @@ void options_multi_load_vox_controls()
 	// sliders
 	for ( idx = 0; idx < NUM_OM_VOX_SLIDERS; idx++ ) {
 		 Om_vox_sliders[gr_screen.res][idx].slider.create(Om_window, Om_vox_sliders[gr_screen.res][idx].x, Om_vox_sliders[gr_screen.res][idx].y,
-																		Om_vox_sliders[gr_screen.res][idx].dots, Om_vox_sliders[gr_screen.res][idx].filename,
-																		Om_vox_sliders[gr_screen.res][idx].hotspot, Om_vox_sliders[gr_screen.res][idx].right_filename, Om_vox_sliders[gr_screen.res][idx].right_mask, Om_vox_sliders[gr_screen.res][idx].right_x, Om_vox_sliders[gr_screen.res][idx].right_y,
-																		Om_vox_sliders[gr_screen.res][idx].left_filename, Om_vox_sliders[gr_screen.res][idx].left_mask, Om_vox_sliders[gr_screen.res][idx].left_x, Om_vox_sliders[gr_screen.res][idx].left_y,
-																		Om_vox_sliders[gr_screen.res][idx].dot_w);
+																Om_vox_sliders[gr_screen.res][idx].dots, Om_vox_sliders[gr_screen.res][idx].filename,
+																Om_vox_sliders[gr_screen.res][idx].hotspot,
+																Om_vox_sliders[gr_screen.res][idx].left_filename, Om_vox_sliders[gr_screen.res][idx].left_mask, Om_vox_sliders[gr_screen.res][idx].left_x, Om_vox_sliders[gr_screen.res][idx].left_y,
+																Om_vox_sliders[gr_screen.res][idx].right_filename, Om_vox_sliders[gr_screen.res][idx].right_mask, Om_vox_sliders[gr_screen.res][idx].right_x, Om_vox_sliders[gr_screen.res][idx].right_y,
+																Om_vox_sliders[gr_screen.res][idx].dot_w);
 	}	
 
 	// create the player list select button

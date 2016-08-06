@@ -3386,13 +3386,7 @@ bool multi_create_sort_func(const multi_create_info &m1, const multi_create_info
 		test = stricmp(m1.name, m2.name);
 	}
 
-	if (test < 0) {
-		return true;
-	} else if (test > 0) {
-		return false;
-	} else {
-		return true;
-	}
+	return test < 0;
 }
 
 void multi_create_list_sort(int mode)
