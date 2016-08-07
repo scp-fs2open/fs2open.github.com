@@ -996,17 +996,17 @@ void briefing_editor_dlg::OnMakeIcon()
 				team = Ships[ship].team;
 
 				z = ship_query_general_type(ship);
-				if (Ship_info[Ships[ship].ship_info_index].flags & SIF_CARGO)
+				if (Ship_info[Ships[ship].ship_info_index].flags[Ship::Info_Flags::Cargo])
 					cargo_count++;
 
-				if (Ship_info[Ships[ship].ship_info_index].flags & SIF_FREIGHTER)
+				if (Ship_info[Ships[ship].ship_info_index].flags[Ship::Info_Flags::Freighter])
 				{
 					// direct docked with any marked cargo?
 					for (dock_instance *dock_ptr = ptr->dock_list; dock_ptr != NULL; dock_ptr = dock_ptr->next)
 					{
 						if (dock_ptr->docked_objp->flags[Object::Object_Flags::Marked])
 						{
-							if (Ship_info[Ships[dock_ptr->docked_objp->instance].ship_info_index].flags & SIF_CARGO)
+							if (Ship_info[Ships[dock_ptr->docked_objp->instance].ship_info_index].flags[Ship::Info_Flags::Cargo])
 								freighter_count++;
 						}
 					}
@@ -1050,90 +1050,56 @@ void briefing_editor_dlg::OnMakeIcon()
 	iconp->id = Cur_brief_id++;
 	if (ship >= 0) {
 		iconp->ship_class = Ships[ship].ship_info_index;
-		switch (Ship_info[Ships[ship].ship_info_index].flags & SIF_ALL_SHIP_TYPES) {
-			case SIF_KNOSSOS_DEVICE:
-				iconp->type = ICON_KNOSSOS_DEVICE;
-				break;
+        ship_info* sip = &Ship_info[Ships[ship].ship_info_index];
 
-			case SIF_CORVETTE:
-				iconp->type = ICON_CORVETTE;
-				break;
-
-			case SIF_GAS_MINER:
-				iconp->type = ICON_GAS_MINER;
-				break;
-
-			case SIF_SUPERCAP:
-				iconp->type = ICON_SUPERCAP;
-				break;
-
-			case SIF_SENTRYGUN:
-				iconp->type = ICON_SENTRYGUN;
-				break;
-
-			case SIF_AWACS:
-				iconp->type = ICON_AWACS;
-				break;
-
-			case SIF_CARGO:
-				if (cargo)
-					iconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
-				else
-					iconp->type = count ? ICON_CARGO_WING : ICON_CARGO;
-
-				break;
-
-			case SIF_SUPPORT:
-				iconp->type = ICON_SUPPORT_SHIP;
-				break;
-
-			case SIF_FIGHTER:
-				iconp->type = count ? ICON_FIGHTER_WING : ICON_FIGHTER;
-				break;
-
-			case SIF_BOMBER:
-				iconp->type = count ? ICON_BOMBER_WING : ICON_BOMBER;
-				break;
-
-			case SIF_FREIGHTER:
-				if (cargo)
-					iconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
-				else
-					iconp->type = count ? ICON_FREIGHTER_WING_NO_CARGO : ICON_FREIGHTER_NO_CARGO;
-
-				break;
-
-			case SIF_CRUISER:
-				iconp->type = count ? ICON_CRUISER_WING : ICON_CRUISER;
-				break;
-
-			case SIF_TRANSPORT:
-				iconp->type = count ? ICON_TRANSPORT_WING : ICON_TRANSPORT;
-				break;
-
-			case SIF_CAPITAL:			
-			case SIF_DRYDOCK:
-				iconp->type = ICON_CAPITAL;
-				break;			
-
-			case SIF_NAVBUOY:
-				iconp->type = ICON_WAYPOINT;
-				break;
-
-			default:
-				iconp->type = ICON_ASTEROID_FIELD;
-				break;
-		}
+        if (sip->flags[Ship::Info_Flags::Knossos_device])
+            iconp->type = ICON_KNOSSOS_DEVICE;
+        else if (sip->flags[Ship::Info_Flags::Corvette])
+            iconp->type = ICON_CORVETTE;
+        else if (sip->flags[Ship::Info_Flags::Gas_miner])
+            iconp->type = ICON_GAS_MINER;
+        else if (sip->flags[Ship::Info_Flags::Supercap])
+            iconp->type = ICON_SUPERCAP;
+        else if (sip->flags[Ship::Info_Flags::Sentrygun])
+            iconp->type = ICON_SENTRYGUN;
+        else if (sip->flags[Ship::Info_Flags::Awacs])
+            iconp->type = ICON_AWACS;
+        else if (sip->flags[Ship::Info_Flags::Cargo])
+            if (cargo)
+                iconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
+            else
+                iconp->type = count ? ICON_CARGO_WING : ICON_CARGO;
+        else if (sip->flags[Ship::Info_Flags::Support])
+            iconp->type = ICON_SUPPORT_SHIP;
+        else if (sip->flags[Ship::Info_Flags::Fighter])
+            iconp->type = count ? ICON_FIGHTER_WING : ICON_FIGHTER;
+        else if (sip->flags[Ship::Info_Flags::Bomber])
+            iconp->type = count ? ICON_BOMBER_WING : ICON_BOMBER;
+        else if (sip->flags[Ship::Info_Flags::Freighter])
+            if (cargo)
+                iconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
+            else
+                iconp->type = count ? ICON_FREIGHTER_WING_NO_CARGO : ICON_FREIGHTER_NO_CARGO;
+        else if (sip->flags[Ship::Info_Flags::Cruiser])
+            iconp->type = count ? ICON_CRUISER_WING : ICON_CRUISER;
+        else if (sip->flags[Ship::Info_Flags::Transport])
+            iconp->type = count ? ICON_TRANSPORT_WING : ICON_TRANSPORT;
+        else if (sip->flags[Ship::Info_Flags::Capital] || sip->flags[Ship::Info_Flags::Drydock])
+            iconp->type = ICON_CAPITAL;
+        else if (sip->flags[Ship::Info_Flags::Navbuoy])
+            iconp->type = ICON_WAYPOINT;
+        else
+            iconp->type = ICON_ASTEROID_FIELD;
 	}
 	// jumpnodes
 	else if(jnp != Jump_nodes.end()){
 		// find the first navbuoy
 		iconp->ship_class = -1;
-		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+        for (int i = 0; i < Ship_info.size(); ++i)
 		{
-			if (it->flags & SIF_NAVBUOY)
+			if (Ship_info[i].flags[Ship::Info_Flags::Navbuoy])
 			{
-				iconp->ship_class = std::distance(Ship_info.cbegin(), it);
+				iconp->ship_class = i;
 				break;
 			}
 		}
@@ -1143,11 +1109,11 @@ void briefing_editor_dlg::OnMakeIcon()
 	else {
 		// find the first navbuoy
 		iconp->ship_class = -1;
-		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+        for (int i = 0; i < Ship_info.size(); ++i)
 		{
-			if (it->flags & SIF_NAVBUOY)
+			if (Ship_info[i].flags[Ship::Info_Flags::Navbuoy])
 			{
-				iconp->ship_class = std::distance(Ship_info.cbegin(), it);
+				iconp->ship_class = i;
 				break;
 			}
 		}

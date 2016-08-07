@@ -976,7 +976,7 @@ int ship_is_shield_up( object *obj, int quadrant )
 //	Note: This is in the object's local reference frame.  Do _not_ pass a vector in the world frame.
 int get_quadrant(vec3d *hit_pnt, object *shipobjp)
 {
-	if (shipobjp != NULL && Ship_info[Ships[shipobjp->instance].ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS) {
+	if (shipobjp != NULL && Ship_info[Ships[shipobjp->instance].ship_info_index].flags[Ship::Info_Flags::Model_point_shields]) {
 		int closest = -1;
 		float closest_dist = FLT_MAX;
 

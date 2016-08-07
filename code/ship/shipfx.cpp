@@ -160,7 +160,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 			vm_vec_sub(&delta_x, &end_world_pos, &world_axis_pt);
 			vm_vec_cross(&radial_vel, &rotvel, &delta_x);
 
-			if (Ship_info[ship_p->ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+			if (Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 				// set velocity to cross center of knossos device
 				vec3d rand_vec, vec_to_center;
 
@@ -194,7 +194,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 						scale = exp_mag;
 					}
 
-					if (Ship_info[ship_p->ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+					if (Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 						scale = 1.0f;
 					}
 
@@ -202,7 +202,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 				}
 
 				// scale up speed of debris if ship_obj > 125, but not for knossos
-				if (ship_objp->radius > 250 && !(Ship_info[ship_p->ship_info_index].flags & SIF_KNOSSOS_DEVICE)) {
+				if (ship_objp->radius > 250 && !(Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::Knossos_device])) {
 					vm_vec_scale(&live_debris_obj->phys_info.vel, ship_objp->radius/250.0f);
 				}
 			}
@@ -548,7 +548,7 @@ int shipfx_special_warp_objnum_valid(int objnum)
 		return 0;
 
 	// must be a knossos
-	if (!(Ship_info[Ships[special_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE))
+	if (!(Ship_info[Ships[special_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device]))
 		return 0;
 
 	return 1;
@@ -645,7 +645,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 	if ((ref_objnum >= 0) && (ref_objnum < MAX_OBJECTS)) {
 		sp_objp = &Objects[ref_objnum];
 		if (sp_objp->type == OBJ_SHIP) {
-			if (Ship_info[Ships[sp_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+			if (Ship_info[Ships[sp_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 				valid_reference_ship = TRUE;
 			}
 		}
@@ -683,7 +683,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 
 	// validate angle
 	float max_warpout_angle = 0.707f;	// 45 degree half-angle cone for small ships
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+	if (is_big_huge(&Ship_info[Ships[objp->instance].ship_info_index])) {
 		max_warpout_angle = 0.866f;	// 30 degree half-angle cone for BIG or HUGE
 	}
 
@@ -748,7 +748,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 
 
 	// If this is a huge ship, set the distance to the length of the ship
-	if (sip->flags & SIF_HUGE_SHIP)
+	if (is_huge_ship(sip))
 	{
 		ship_move_dist = 0.5f * ship_class_get_length(sip);
 	}
@@ -778,7 +778,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 	warp_dist = ship_move_dist;
 
 	// allow for off center
-	if (sip->flags & SIF_HUGE_SHIP) {
+	if (is_huge_ship(sip)) {
 		polymodel *pm = model_get(sip->model_num);
 		warp_dist -= pm->mins.xyz.z;
 	}
@@ -820,7 +820,7 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	// if we're HUGE, keep alive - set guardian
-	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP) {
+	if (is_huge_ship(&Ship_info[shipp->ship_info_index])) {
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 	}
 
@@ -1105,7 +1105,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 				}
 			}
 
-			if ( sip->flags2 & SIF2_SHOW_SHIP_MODEL ) {
+			if ( sip->flags[Ship::Info_Flags::Show_ship_model] ) {
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
 
 				mc.model_instance_num = -1;
@@ -1559,7 +1559,7 @@ void shipfx_emit_spark( int n, int sn )
 		// first time through - set up end time and make heavier initially
 		if ( sn > -1 )	{
 			// Sparks for first time at this spot
-			if (sip->flags & SIF_FIGHTER) {
+			if (sip->flags[Ship::Info_Flags::Fighter]) {
 				if (hull_percent > 0.6f) {
 					// sparks only once when hull > 60%
 					float spark_duration = (float)pow(2.0f, -5.0f*(hull_percent-1.3f)) * (1.0f + 0.6f*(frand()-0.5f));	// +- 30%
@@ -2253,7 +2253,7 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 					intensity = 1.0f;
 				}
 
-				if (intensity > 0.1f && Ship_info[shipp->ship_info_index].flags2 & SIF2_FLASH) {
+				if (intensity > 0.1f && Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Flash]) {
 					big_explosion_flash(intensity);
 				}
 			}
@@ -2569,18 +2569,18 @@ void shipfx_do_lightning_frame( ship *shipp )
 	}
 	
 	// if this not a cruiser or big ship
-	if(!((sip->flags & SIF_CRUISER) || (sip->flags & SIF_BIG_SHIP) || (sip->flags & SIF_HUGE_SHIP))){
+	if(!((sip->flags[Ship::Info_Flags::Cruiser]) || (is_big_ship(sip)) || (is_huge_ship(sip)))){
 		shipp->lightning_stamp = -1;
 		return;
 	}
 
 	// determine stamp and count values
-	if(sip->flags & SIF_CRUISER){
+	if(sip->flags[Ship::Info_Flags::Cruiser]){
 		stamp = (int)((float)(Nebl_cruiser_min + ((Nebl_cruiser_max - Nebl_cruiser_min) * Nebl_intensity)) * frand_range(0.8f, 1.1f));
 		count = l_cruiser_count;
 	} 
 	else {
-		if(sip->flags & SIF_HUGE_SHIP){
+		if(is_huge_ship(sip)){
 			stamp = (int)((float)(Nebl_supercap_min + ((Nebl_supercap_max - Nebl_supercap_min) * Nebl_intensity)) * frand_range(0.8f, 1.1f));
 			count = l_huge_count;
 		} else {
@@ -2730,7 +2730,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 		vm_vec_add(&shockwave_pos, &tail, &temp);
 
 		// if knossos device, make shockwave in center
-		if (Ship_info[shipp->ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+		if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 			shockwave_pos = Objects[shipp->objnum].pos;
 		}
 
@@ -2781,7 +2781,7 @@ void engine_wash_ship_process(ship *shipp)
 	float max_wash_dist, half_angle, radius_mult;
 
 	// if this is not a fighter or bomber, we don't care
-	if ((objp->type != OBJ_SHIP) || !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ) {
+	if ((objp->type != OBJ_SHIP) || !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) ) {
 		return;
 	}
 
@@ -2823,9 +2823,9 @@ void engine_wash_ship_process(ship *shipp)
 		ship_info *wash_sip = &Ship_info[wash_shipp->ship_info_index];
 
 		// don't do small ships
-		if ( (wash_sip->flags & SIF_SMALL_SHIP) ) {
-			continue;
-		}
+        if (is_small_ship(wash_sip)) {
+            continue;
+        }
 
 		pm = model_get(wash_sip->model_num);
 		float ship_intensity = 0;
@@ -2854,7 +2854,7 @@ void engine_wash_ship_process(ship *shipp)
 			// check if thruster bank has engine wash
 			if (bank->wash_info_pointer == NULL) {
 				// if huge, give default engine wash
-				if ((wash_sip->flags & SIF_HUGE_SHIP) && !Engine_wash_info.empty()) {
+				if ((is_huge_ship(wash_sip)) && !Engine_wash_info.empty()) {
 					bank->wash_info_pointer = &Engine_wash_info[0];
 					nprintf(("wash", "Adding default engine wash to ship %s", wash_sip->name));
 				} else {
@@ -3599,7 +3599,7 @@ int WE_Default::warpFrame(float frametime)
 			this->warpEnd();
 
 			// notify physics to slow down
-			if (sip->flags & SIF_SUPERCAP) {
+			if (sip->flags[Ship::Info_Flags::Supercap]) {
 				// let physics know this is a special warp in
 				objp->phys_info.flags |= PF_SPECIAL_WARP_IN;
 			}

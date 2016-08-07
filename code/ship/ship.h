@@ -746,8 +746,7 @@ struct ai_target_priority {
 	SCP_vector <int> weapon_class;
 
 	flagset<Object::Object_Flags> obj_flags;
-	int sif_flags;
-	int sif2_flags;
+    flagset<Ship::Info_Flags> sif_flags;
 	int wif_flags;
 	int wif2_flags;
 };
@@ -787,90 +786,6 @@ extern SCP_vector<exited_ship> Ships_exited;
 extern void ship_add_exited_ship( ship *shipp, int reason );
 extern int ship_find_exited_ship_by_name( char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
-
-#define	SIF_NO_COLLIDE				(1 << 0)
-#define	SIF_PLAYER_SHIP				(1 << 1)
-#define	SIF_DEFAULT_PLAYER_SHIP		(1 << 2)
-#define	SIF_PATH_FIXUP				(1 << 3)		// when set, path verts have been set for this ship's model
-#define	SIF_SUPPORT					(1 << 4)		// this ship can perform repair/rearm functions
-#define	SIF_AFTERBURNER				(1 << 5)		// this ship has afterburners
-#define SIF_BALLISTIC_PRIMARIES		(1 << 6)		// this ship can equip ballistic primaries - Goober5000
-
-// If you add a new ship type, then please add the appropriate type in the ship_count
-// structure later in this file!!! and let MWA know!!
-#define	SIF_CARGO					(1 << 7)		// is this ship a cargo type ship -- used for docking purposes
-#define	SIF_FIGHTER					(1 << 8)		// this ship is a fighter
-#define	SIF_BOMBER					(1 << 9)		// this ship is a bomber
-#define	SIF_CRUISER					(1 << 10)		// this ship is a cruiser
-#define	SIF_FREIGHTER				(1 << 11)	// this ship is a freighter
-#define	SIF_CAPITAL					(1 << 12)	// this ship is a capital/installation ship
-#define	SIF_TRANSPORT				(1 << 13)	// this ship is a transport
-#define	SIF_NAVBUOY					(1 << 14)	// AL 11-24-97: this is a navbuoy
-#define	SIF_SENTRYGUN				(1 << 15)	// AL 11-24-97: this is a navbuoy with turrets
-#define	SIF_ESCAPEPOD				(1 << 16)	// AL 12-09-97: escape pods that fire from big ships
-#define	SIF_NO_SHIP_TYPE			(1 << 17)	// made distinct to help trap errors
-
-#define	SIF_SHIP_COPY				(1 << 18)	// this ship is a copy of another ship in the table -- meaningful for scoring and possible other things
-#define	SIF_IN_TECH_DATABASE		(1 << 19)	// is ship type to be listed in the tech database?
-#define	SIF_IN_TECH_DATABASE_M		(1 << 20)	// is ship type to be listed in the tech database for multiplayer?
-
-#define	SIF_STEALTH					(1 << 21)	// the ship has stealth capabilities
-#define	SIF_SUPERCAP				(1 << 22)	// the ship is a supercap
-#define	SIF_DRYDOCK					(1 << 23)	// the ship is a drydock
-#define	SIF_SHIP_CLASS_DONT_COLLIDE_INVIS	(1 << 24)	// Don't collide with this ship's invisible polygons
-
-#define	SIF_BIG_DAMAGE				(1 << 25)	// this ship is classified as a big damage ship
-#define	SIF_HAS_AWACS				(1 << 26)	// ship has an awacs subsystem
-
-#define	SIF_CORVETTE				(1 << 27)	// corvette class (currently this only means anything for briefing icons)
-#define	SIF_GAS_MINER				(1 << 28)	// also just for briefing icons
-#define	SIF_AWACS					(1 << 29)	// ditto
-
-#define	SIF_KNOSSOS_DEVICE			(1 << 30)	// this is the knossos device
-
-#define	SIF_NO_FRED					(1 << 31)	// not available in fred
-
-
-// flags2 list.
-#define SIF2_DEFAULT_IN_TECH_DATABASE		(1 << 0)	// default in tech database - Goober5000
-#define SIF2_DEFAULT_IN_TECH_DATABASE_M		(1 << 1)	// ditto - Goober5000
-#define SIF2_FLASH							(1 << 2)	// makes a flash when it explodes
-#define SIF2_SHOW_SHIP_MODEL				(1 << 3)	// Show ship model even in first person view
-#define SIF2_SURFACE_SHIELDS                (1 << 4)    // _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
-#define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
-#define SIF2_DISABLE_WEAPON_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
-#define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
-#define SIF2_NO_THRUSTER_GEO_NOISE			(1 << 8)	// Echelon9 - No thruster geometry noise.
-#define SIF2_INTRINSIC_NO_SHIELDS			(1 << 9)	// Chief - disables shields for this ship even without No Shields in mission.
-#define SIF2_NO_PRIMARY_LINKING				(1 << 10)	// Chief - slated for 3.7 originally, but this looks pretty simple to implement.
-#define SIF2_NO_PAIN_FLASH					(1 << 11)	// The E - disable red pain flash
-#define SIF2_ALLOW_LANDINGS					(1 << 12)	// SUSHI: Automatically set if any subsystems allow landings (as a shortcut)
-#define SIF2_NO_ETS							(1 << 13)	// The E - No ETS on this ship class
-#define SIF2_NO_LIGHTING					(1 << 14)	// Valathil - No lighting for this ship
-#define SIF2_DYN_PRIMARY_LINKING			(1 << 15)	// RSAXVC - Dynamically generate weapon linking options
-#define SIF2_AUTO_SPREAD_SHIELDS			(1 << 16)	// zookeeper - auto spread shields
-#define SIF2_DRAW_WEAPON_MODELS				(1 << 17)	// the ship draws weapon models of any sort (used to be a boolean)
-#define SIF2_MODEL_POINT_SHIELDS			(1 << 18)	// zookeeper - uses model-defined shield points instead of quadrants
-#define SIF2_SUBSYS_REPAIR_WHEN_DISABLED	(1 << 19)	// MageKing17 - Subsystems auto-repair themselves even when disabled.
-
-#define	SIF_DEFAULT_VALUE		0
-#define SIF2_DEFAULT_VALUE		0
-
-#define	SIF_ALL_SHIP_TYPES		(SIF_CARGO | SIF_FIGHTER | SIF_BOMBER | SIF_CRUISER | SIF_FREIGHTER | SIF_CAPITAL | SIF_TRANSPORT | SIF_SUPPORT | SIF_NO_SHIP_TYPE | SIF_NAVBUOY | SIF_SENTRYGUN | SIF_ESCAPEPOD | SIF_SUPERCAP | SIF_CORVETTE | SIF_GAS_MINER | SIF_AWACS | SIF_KNOSSOS_DEVICE)
-#define	SIF_SMALL_SHIP				(SIF_FIGHTER | SIF_BOMBER | SIF_SUPPORT | SIF_ESCAPEPOD )
-#define	SIF_BIG_SHIP				(SIF_CRUISER | SIF_FREIGHTER | SIF_TRANSPORT | SIF_CORVETTE | SIF_GAS_MINER | SIF_AWACS)
-#define	SIF_HUGE_SHIP				(SIF_CAPITAL | SIF_SUPERCAP | SIF_DRYDOCK | SIF_KNOSSOS_DEVICE)
-#define	SIF_NOT_FLYABLE			(SIF_CARGO | SIF_NAVBUOY | SIF_SENTRYGUN)		// AL 11-24-97: this useful to know for targeting reasons
-#define	SIF_HARMLESS				(SIF_CARGO | SIF_NAVBUOY | SIF_ESCAPEPOD)		// AL 12-3-97: ships that are not a threat
-// for ships of this type, we make beam weapons miss a little bit otherwise they'd be way too powerful
-#define	SIF_BEAM_JITTER			(SIF_CARGO | SIF_FIGHTER | SIF_BOMBER | SIF_FREIGHTER | SIF_TRANSPORT | SIF_SENTRYGUN | SIF_NAVBUOY | SIF_ESCAPEPOD)
-// these ships avoid shockwaves
-// (the weird thing is that freighters and transports used to be explicitly allowed in one part of the code but then explicitly disallowed in another)
-#define SIF_AVOID_SHOCKWAVE		SIF_SMALL_SHIP
-
-// masks for preventing only non flag entry SIF flags from being cleared
-#define SIF_MASK				SIF_AFTERBURNER
-#define SIF2_MASK				SIF2_DRAW_WEAPON_MODELS
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
@@ -1142,8 +1057,7 @@ public:
 
 	float		warpout_player_speed;
 
-	int		flags;							//	See SIF_xxxx - changed to uint by Goober5000, changed back by Zacam
-	int		flags2;							//	See SIF2_xxxx - added by Goober5000, changed by Zacam
+	flagset<Ship::Info_Flags> flags;							//	See SIF_xxxx - changed to uint by Goober5000, changed back by Zacam, and changed to something entirely different by The E!
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
 	float		max_speed, min_speed, max_accel;
 
@@ -1746,8 +1660,8 @@ void ship_primary_changed(ship *sp);
 void ship_secondary_changed(ship *sp);
 
 // get the Ship_info flags for a given ship
-int ship_get_SIF(ship *shipp);
-int ship_get_SIF(int sh);
+flagset<Ship::Info_Flags> ship_get_SIF(ship *shipp);
+flagset<Ship::Info_Flags> ship_get_SIF(int sh);
 
 // get the ship type info (objecttypes.tbl)
 ship_type_info *ship_get_type_info(object *objp);
@@ -1967,8 +1881,16 @@ int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt);
 //Helper functions
 inline bool is_ship_arriving(ship* shipp) { return shipp->flags[Ship::Ship_Flags::Arriving_stage_1] || shipp->flags[Ship::Ship_Flags::Arriving_stage_2]; }
 inline bool is_ship_departing(ship* shipp) { return shipp->flags[Ship::Ship_Flags::Depart_warp] || shipp->flags[Ship::Ship_Flags::Depart_dockbay]; }
+inline bool is_small_ship(ship_info* sip) { return sip->flags[Ship::Info_Flags::Fighter] || sip->flags[Ship::Info_Flags::Bomber] || sip->flags[Ship::Info_Flags::Support] || sip->flags[Ship::Info_Flags::Escapepod]; }
+inline bool is_big_ship(ship_info* sip) { return sip->flags[Ship::Info_Flags::Cruiser] || sip->flags[Ship::Info_Flags::Freighter] || sip->flags[Ship::Info_Flags::Transport] || sip->flags[Ship::Info_Flags::Corvette] || sip->flags[Ship::Info_Flags::Gas_miner] || sip->flags[Ship::Info_Flags::Awacs]; }
+inline bool is_huge_ship(ship_info* sip) { return sip->flags[Ship::Info_Flags::Capital] || sip->flags[Ship::Info_Flags::Supercap] || sip->flags[Ship::Info_Flags::Drydock] || sip->flags[Ship::Info_Flags::Knossos_device]; }
+inline bool is_flyable(ship_info* sip) { return !(sip->flags[Ship::Info_Flags::Cargo] || sip->flags[Ship::Info_Flags::Navbuoy] || sip->flags[Ship::Info_Flags::Escapepod]); }
+inline bool is_harmless(ship_info* sip) { return !is_flyable(sip); }
+inline bool is_fighter_bomber(ship_info* sip) { return sip->flags[Ship::Info_Flags::Fighter] || sip->flags[Ship::Info_Flags::Bomber]; }
+inline bool is_big_huge(ship_info* sip) { return is_big_ship(sip) || is_huge_ship(sip); }
 inline bool ship_cannot_warp(ship* shipp) { return shipp->flags[Ship::Ship_Flags::Warp_broken] || shipp->flags[Ship::Ship_Flags::Warp_never] || shipp->flags[Ship::Ship_Flags::Disabled]; }
 inline bool is_dying_departing(ship* shipp) { return is_ship_departing(shipp) || shipp->flags[Ship::Ship_Flags::Dying]; }
+inline bool avoids_shockwaves(ship_info* sip) { return is_small_ship(sip); }
 
 extern flagset<Ship::Ship_Flags> Ignore_List;
 inline bool should_be_ignored(ship* shipp) {

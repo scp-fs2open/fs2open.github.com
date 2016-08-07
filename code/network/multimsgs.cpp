@@ -7949,7 +7949,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	ship *shipp = &Ships[fire_info.shooter->instance];
 
 	// this check is a little convoluted but should cover all bases until we decide to just break the protocol
-	if ( Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) ) {
+	if ( is_fighter_bomber(&Ship_info[shipp->ship_info_index]) ) {
 		// make sure the beam is a primary weapon and not attached to a turret or something
 		for (i = 0; i < shipp->weapons.num_primary_banks; i++) {
 			if ( shipp->weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {

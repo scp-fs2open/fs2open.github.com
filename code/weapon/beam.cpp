@@ -2180,7 +2180,7 @@ void beam_aim(beam *b)
 		}
 
 		// if we're shooting at a big ship - shoot directly at the model
-		if((b->target != nullptr) && (b->target->type == OBJ_SHIP) && (Ship_info[Ships[b->target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))){
+		if((b->target != nullptr) && (b->target->type == OBJ_SHIP) && (is_big_huge(&Ship_info[Ships[b->target->instance].ship_info_index]))){
 			if ((b->subsys != nullptr) && (b->subsys->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION)) {
 				vec3d pnt;
 				vm_vec_unrotate(&pnt, &b->binfo.dir_a, &b->target->orient);
@@ -2492,7 +2492,7 @@ int beam_collide_ship(obj_pair *pair)
 		// pick out the shield quadrant
 		if (shield_collision)
 			quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
-		else if (hull_enter_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS))
+		else if (hull_enter_collision && (sip->flags[Ship::Info_Flags::Surface_shields]))
 			quadrant_num = get_quadrant(&mc_hull_enter.hit_point, ship_objp);
 
 		// make sure that the shield is active in that quadrant
@@ -3304,7 +3304,7 @@ void beam_get_cull_vals(object *objp, beam *b, float *cull_dot, float *cull_dist
 
 	case OBJ_SHIP:
 		// for large ships, cull at some multiple of the radius
-		if(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)){
+		if(is_big_huge(&Ship_info[Ships[objp->instance].ship_info_index])){
 			*cull_dot = 1.0f - ((1.0f - beam_get_cone_dot(b)) * 1.25f);
 			
 			*cull_dist = (objp->radius * 1.3f) * (objp->radius * 1.3f);

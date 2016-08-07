@@ -401,7 +401,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 			&& (Objects[B->parent].signature == B->parent_sig)
 			&& !(Objects[B->parent].flags[Object::Object_Flags::Player_ship])
 			&& (Ships[Objects[B->parent].instance].team == Ships[A->instance].team) 
-			&& (Ship_info[Ships[A->instance].ship_info_index].flags & SIF_SMALL_SHIP) 
+			&& (is_small_ship(&Ship_info[Ships[A->instance].ship_info_index])) 
 			&& (Weapon_info[Weapons[B->instance].weapon_info_index].subtype == WP_LASER) ) {
 			pairs_not_created++;
 			return;
@@ -978,14 +978,14 @@ int collide_predict_large_ship(object *objp, float distance)
 
 	for ( objp2 = GET_FIRST(&obj_used_list); objp2 != END_OF_LIST(&obj_used_list); objp2 = GET_NEXT(objp2) ) {
 		if ((objp != objp2) && (objp2->type == OBJ_SHIP)) {
-			if (Ship_info[Ships[objp2->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+			if (is_big_huge(&Ship_info[Ships[objp2->instance].ship_info_index])) {
 				if (dock_check_find_docked_object(objp, objp2))
 					continue;
 
 				if (cpls_aux(&goal_pos, objp2, objp))
 					return 1;
 			}
-		} else if (!(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) && (objp2->type == OBJ_ASTEROID)) {
+		} else if (!(is_big_huge(sip)) && (objp2->type == OBJ_ASTEROID)) {
 			if (vm_vec_dist_quick(&objp2->pos, &objp->pos) < (distance + objp2->radius)*2.5f) {
 				vec3d	pos, delvec;
 				int		count;
@@ -1635,7 +1635,7 @@ void obj_collide_pair(object *A, object *B)
 				&& (Objects[B->parent].signature == B->parent_sig)
 				&& !(Objects[B->parent].flags[Object::Object_Flags::Player_ship])
 				&& (Ships[Objects[B->parent].instance].team == Ships[A->instance].team) 
-				&& (Ship_info[Ships[A->instance].ship_info_index].flags & SIF_SMALL_SHIP) 
+				&& (is_small_ship(&Ship_info[Ships[A->instance].ship_info_index])) 
 				&& (Weapon_info[Weapons[B->instance].weapon_info_index].subtype == WP_LASER) ) {
 				collision_info->next_check_time = -1;
 				return;

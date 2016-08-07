@@ -483,10 +483,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		// check to see if the wing has a ship which is not a fighter/bomber type.  If so, then disable
 		// the wing_waves and wing_threshold  stuff
 		for (i = 0; i < Wings[cur_wing].wave_count; i++ ) {
-			int sflag;
-
-			sflag = Ship_info[Ships[Wings[cur_wing].ship_index[i]].ship_info_index].flags;
-			if ( !(sflag & SIF_FIGHTER) && !(sflag & SIF_BOMBER) )
+			if ( !(is_fighter_bomber(&Ship_info[Ships[Wings[cur_wing].ship_index[i]].ship_info_index]) ))
 				enable = FALSE;
 		}
 

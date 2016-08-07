@@ -110,7 +110,7 @@ void afterburners_start(object *objp)
 	if (objp->phys_info.flags & PF_BOOSTER_ON)
 		return;	
 	    
-	if ( !(sip->flags & SIF_AFTERBURNER) )	{
+	if ( !(sip->flags[Ship::Info_Flags::Afterburner]) )	{
 		return;
 	}
 
@@ -184,7 +184,7 @@ void afterburners_update(object *objp, float fl_frametime)
 		return;
 	}
 
-	if ( !(sip->flags & SIF_AFTERBURNER) )	{
+	if ( !(sip->flags[Ship::Info_Flags::Afterburner]) )	{
 		return;		// nothing to update, afterburners are not even on the ship
 	}
 
@@ -293,7 +293,7 @@ void afterburners_stop(object *objp, int key_released)
 		objp->phys_info.flags &= ~PF_AFTERBURNER_WAIT;
 	}
 
-	if ( !(sip->flags & SIF_AFTERBURNER) )	{
+	if ( !(sip->flags[Ship::Info_Flags::Afterburner]) )	{
 		nprintf(("Warning","Ship type %s does not have afterburner capability\n", sip->name));
 		return;
 	}

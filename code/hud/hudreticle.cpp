@@ -313,7 +313,7 @@ void HudGaugeReticle::getFirepointStatus() {
 					for (int j = 0; j < num_slots; j++) {
 						int fpactive = bankactive;
 
-						if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
+						if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
 							// If this firepoint is not among the next shot(s) to be fired, dim it one step
 							if ( !( (j >= (shipp->last_fired_point[i]+1) % num_slots) && (j <= (shipp->last_fired_point[i]+swp->primary_bank_slot_count[i]) % num_slots) ) ) {
 								fpactive--;

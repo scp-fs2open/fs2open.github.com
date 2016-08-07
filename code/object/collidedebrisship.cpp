@@ -98,7 +98,7 @@ int collide_debris_ship( obj_pair * pair )
 				ship_damage *= Debris[pdebris->instance].damage_mult;
 
 				// supercaps cap damage at 10-20% max hull ship damage
-				if (Ship_info[Ships[pship->instance].ship_info_index].flags & SIF_SUPERCAP) {
+				if (Ship_info[Ships[pship->instance].ship_info_index].flags[Ship::Info_Flags::Supercap]) {
 					float cap_percent_damage = frand_range(0.1f, 0.2f);
 					ship_damage = MIN(ship_damage, cap_percent_damage * Ships[pship->instance].ship_max_hull_strength);
 				}

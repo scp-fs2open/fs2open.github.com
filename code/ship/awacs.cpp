@@ -122,7 +122,7 @@ void awacs_update_all_levels()
 			continue;
 
 		// only look at ships that have awacs subsystems
-		if (!(Ship_info[shipp->ship_info_index].flags & SIF_HAS_AWACS))
+		if (!(Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Has_awacs]))
 			continue;
 
 		// traverse all subsystems
@@ -210,7 +210,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		stealth_ship = (shipp->flags[Ship::Ship_Flags::Stealth]);
 		friendly_stealth_invisible = (shipp->flags[Ship::Ship_Flags::Friendly_stealth_invis]);
 
-		check_huge_ship = (sip->flags & SIF_HUGE_SHIP);
+		check_huge_ship = (is_huge_ship(sip));
 	}
 	
 	int nebula_enabled = (The_mission.flags[Mission::Mission_Flags::Fullneb]);
@@ -419,7 +419,7 @@ void team_visibility_update()
 				for (idx = 0; idx < cur_count; idx++)
 				{
 					// ignore nav buoys and cargo containers
-					if (Ship_info[Ships[cur_team_ships[idx]].ship_info_index].flags & (SIF_CARGO | SIF_NAVBUOY))
+                    if (Ship_info[Ships[cur_team_ships[idx]].ship_info_index].flags[Ship::Info_Flags::Cargo] || Ship_info[Ships[cur_team_ships[idx]].ship_info_index].flags[Ship::Info_Flags::Navbuoy])
 					{
 						continue;
 					}

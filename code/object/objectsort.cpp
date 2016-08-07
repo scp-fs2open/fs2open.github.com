@@ -254,7 +254,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		if ( (obj == Viewer_obj)
 			&& (obj->type == OBJ_SHIP)
 			&& c_viewer
-			&& (Ship_info[Ships[obj->instance].ship_info_index].flags2 & SIF2_SHOW_SHIP_MODEL) )
+			&& (Ship_info[Ships[obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model]) )
 		{
 			(*draw_viewer_last) = true;
 			continue;

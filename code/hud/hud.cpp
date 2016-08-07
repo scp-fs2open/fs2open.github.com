@@ -1396,7 +1396,7 @@ void hud_update_frame(float frametime)
 	if ((!retarget) && (Player_ai->target_objnum != -1)) {
 		if (Objects[Player_ai->target_objnum].type == OBJ_SHIP) {
 			if ( !(Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Dying]) ) {
-				if ( Ship_info[Ships[Objects[Player_ai->target_objnum].instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) ) {
+				if ( is_big_huge(&Ship_info[Ships[Objects[Player_ai->target_objnum].instance].ship_info_index]) ) {
 					ship_subsys *ss = Player_ai->targeted_subsys;
 					if (ss != NULL) {
 						if ((ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits == 0)) {
@@ -2663,7 +2663,7 @@ int hud_support_find_closest( int objnum )
 
 	sop = GET_FIRST(&Ship_obj_list);
 	while(sop != END_OF_LIST(&Ship_obj_list)){
-		if ( Ship_info[Ships[Objects[sop->objnum].instance].ship_info_index].flags & SIF_SUPPORT ) {
+		if ( Ship_info[Ships[Objects[sop->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Support] ) {
 			int pship_index, sindex;
 
 			// make sure support ship is not dying

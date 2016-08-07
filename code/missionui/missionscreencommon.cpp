@@ -11,6 +11,7 @@
 
 
 #include <limits.h>		// this is need even when not building debug!!
+#include <type_traits>
 
 #include "anim/animplay.h"
 #include "cmdline/cmdline.h"
@@ -1527,7 +1528,7 @@ int restore_wss_data(ubyte *block)
 	return offset;
 }
 
-void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, const ship_info *sip, int resize_mode, const vec3d *closeup_pos)
+void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, int resize_mode, const vec3d *closeup_pos)
 {
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = {0.0f,0.0f,0.0f};
@@ -1543,11 +1544,11 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		// If non-zero model_icon_angles exists, always use that
 		rot_angles = sip->model_icon_angles;
 	}
-	else if(sip->flags & SIF_SMALL_SHIP)
+	else if(is_small_ship(sip))
 	{
 		rot_angles.p = -(PI_2);
 	}
-	else if((sip->max_speed <= 0.0f) && !(sip->flags & SIF_CARGO))
+	else if((sip->max_speed <= 0.0f) && !(sip->flags[Ship::Info_Flags::Cargo]))
 	{
 		//Probably an installation or Knossos
 		rot_angles.h = PI;

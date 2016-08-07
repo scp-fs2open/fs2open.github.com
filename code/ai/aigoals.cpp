@@ -584,10 +584,10 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 
 	// look for docking points of the appriopriate type.  Use cargo docks for cargo ships.
 	/*
-	if (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_CARGO) {
+	if (Ship_info[Ships[shipnum].ship_info_index].flags[Ship::Info_Flags::Cargo]) {
 		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_CARGO);
 		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_CARGO);
-	} else if (Ship_info[Ships[aip->shipnum].ship_info_index].flags & SIF_SUPPORT) {
+	} else if (Ship_info[Ships[aip->shipnum].ship_info_index].flags[Ship::Info_Flags::Support]) {
 		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_REARM);
 		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_REARM);
 	}

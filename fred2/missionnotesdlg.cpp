@@ -421,7 +421,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	box->AddString(DEFAULT_COMMAND);
 	for (i=0; i<MAX_SHIPS; i++){
 		if (Ships[i].objnum >= 0)
-			if (Ship_info[Ships[i].ship_info_index].flags & SIF_HUGE_SHIP)
+			if (is_huge_ship(&Ship_info[Ships[i].ship_info_index]))
 				box->AddString(Ships[i].ship_name);
 	}
 

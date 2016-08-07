@@ -318,12 +318,10 @@ void DumpStats::get_object_stats(CString &buffer)
 
 		// inc big ship or small ship count
 		if ( (objp->type == OBJ_SHIP) || (objp->type == OBJ_START) ) {
-			if ( Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_SMALL_SHIP ) {
+			if ( is_small_ship(&Ship_info[Ships[objp->instance].ship_info_index]) ) {
 				num_small_ships++;
-			} else if ( Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_BIG_SHIP ) {
+			} else if ( is_big_huge(&Ship_info[Ships[objp->instance].ship_info_index]) ) {
 				num_big_ships++;
-			} else if ( Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_HUGE_SHIP ) {
-				num_huge_ships++;
 			}
 		}
 
@@ -589,7 +587,7 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 			if (Wings[i].wave_count > 0) {
 				int wing_leader_shipnum = Wings[i].ship_index[Wings[i].special_ship];
 				if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].species == species) {
-					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags & SIF_FIGHTER) {
+					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags[Ship::Info_Flags::Fighter]) {
 						temp.Format("\t\tWing: %s, count: %d, waves: %d, type: %s\r\n", Wings[i].name, Wings[i].wave_count, Wings[i].num_waves, Ship_info[Ships[wing_leader_shipnum].ship_info_index].name);
 						buffer += temp;
 					}
@@ -603,7 +601,7 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 			if (Wings[i].wave_count > 0) {
 				int wing_leader_shipnum = Wings[i].ship_index[Wings[i].special_ship];
 				if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].species == species) {
-					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags & SIF_BOMBER) {
+					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags[Ship::Info_Flags::Bomber]) {
 						temp.Format("\t\tWing: %s, count: %d, waves: %d, type: %s\r\n", Wings[i].name, Wings[i].wave_count, Wings[i].num_waves, Ship_info[Ships[wing_leader_shipnum].ship_info_index].name);
 						buffer += temp;
 					}
@@ -620,7 +618,7 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 				if (Ship_info[shipp->ship_info_index].species == species) {
 					//if (shipp->wingnum == -1)
 					//if (shipp->cargo1 > 0)
-					if (Ship_info[shipp->ship_info_index].flags & (SIF_FREIGHTER | SIF_TRANSPORT | SIF_CARGO)) {
+                    if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Freighter] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Transport] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Cargo]) {
 						temp.Format("\t\tName: %s Type: %s, Cargo: %s\r\n", shipp->ship_name, Ship_info[shipp->ship_info_index].name, Cargo_names[shipp->cargo1]);
 						buffer += temp;
 					}
@@ -636,7 +634,7 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 				if (Ship_info[shipp->ship_info_index].species == species) {
 					//if (shipp->wingnum == -1)
 					//if (shipp->cargo1 > 0)
-					if (Ship_info[shipp->ship_info_index].flags & (SIF_NAVBUOY | SIF_ESCAPEPOD | SIF_SENTRYGUN)) {
+                    if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Navbuoy] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Escapepod] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Sentrygun]) {
 						temp.Format("\t\tName: %s, Type: %s Cargo: %s\r\n", shipp->ship_name, Ship_info[shipp->ship_info_index].name, Cargo_names[shipp->cargo1]);
 						buffer += temp;
 					}
@@ -654,7 +652,7 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 				if (Ship_info[shipp->ship_info_index].species == species) {
 					//if (shipp->wingnum == -1)
 					//if (shipp->cargo1 > 0)
-					if (Ship_info[shipp->ship_info_index].flags & (SIF_CRUISER)) {
+					if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Cruiser]) {
 						temp.Format("\t\tName: %s, Type: %s, Cargo: %s\r\n", shipp->ship_name, Ship_info[shipp->ship_info_index].name, Cargo_names[shipp->cargo1]);
 						buffer += temp;
 					}
@@ -671,7 +669,7 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 				if (Ship_info[shipp->ship_info_index].species == species) {
 					//if (shipp->wingnum == -1)
 					//if (shipp->cargo1 > 0)
-					if (Ship_info[shipp->ship_info_index].flags & (SIF_DRYDOCK|SIF_CAPITAL|SIF_SUPERCAP)) {
+                    if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Drydock] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Supercap]) {
 						temp.Format("\t\tName: %s, Type: %s, Cargo: %s\r\n", shipp->ship_name, Ship_info[shipp->ship_info_index].name, Cargo_names[shipp->cargo1]);
 						buffer += temp;
 					}
@@ -770,7 +768,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 			if (Wings[i].wave_count > 0) {
 				int wing_leader_shipnum = Wings[i].ship_index[Wings[i].special_ship];
 				if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].species == species) {
-					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags & SIF_FIGHTER) {
+					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags[Ship::Info_Flags::Fighter]) {
 						temp.Format("\t\tWing: %s\r\n", Wings[i].name);
 						buffer += temp;
 						dump_loadout(&Ships[wing_leader_shipnum], loadout);
@@ -786,7 +784,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 			if (Wings[i].wave_count > 0) {
 				int wing_leader_shipnum = Wings[i].ship_index[Wings[i].special_ship];
 				if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].species == species) {
-					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags & SIF_BOMBER) {
+					if (Ship_info[Ships[wing_leader_shipnum].ship_info_index].flags[Ship::Info_Flags::Bomber]) {
 						temp.Format("\t\tWing: %s\r\n", Wings[i].name);
 						buffer += temp;
 						dump_loadout(&Ships[wing_leader_shipnum], loadout);
@@ -805,7 +803,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 				if (Ship_info[shipp->ship_info_index].species == species) {
 					//if (shipp->wingnum == -1)
 					//if (shipp->cargo1 > 0)
-					if (Ship_info[shipp->ship_info_index].flags & (SIF_FREIGHTER | SIF_TRANSPORT)) {
+                    if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Freighter] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Transport]) {
 						temp.Format("\t\tName: %s\r\n", shipp->ship_name);
 						buffer += temp;
 						dump_loadout(shipp, loadout);
@@ -823,7 +821,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 				if (Ship_info[shipp->ship_info_index].species == species) {
 					//if (shipp->wingnum == -1)
 					//if (shipp->cargo1 > 0)
-					if (Ship_info[shipp->ship_info_index].flags & (SIF_ESCAPEPOD | SIF_SENTRYGUN)) {
+                    if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Escapepod] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Sentrygun]) {
 						temp.Format("\t\tName: %s\r\n", shipp->ship_name);
 						buffer += temp;
 						dump_loadout(shipp, loadout);
@@ -843,7 +841,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 				if (Ship_info[shipp->ship_info_index].species == species) {
 					//if (shipp->wingnum == -1)
 					//if (shipp->cargo1 > 0)
-					if (Ship_info[shipp->ship_info_index].flags & (SIF_CRUISER)) {
+                    if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Cruiser]) {
 						temp.Format("\t\tName: %s\r\n", shipp->ship_name);
 						buffer += temp;
 						dump_loadout(shipp, loadout);
@@ -862,7 +860,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 				if (Ship_info[shipp->ship_info_index].species == species) {
 					//if (shipp->wingnum == -1)
 					//if (shipp->cargo1 > 0)
-					if (Ship_info[shipp->ship_info_index].flags & (SIF_CAPITAL|SIF_SUPERCAP)) {
+                    if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Supercap]) {
 						temp.Format("\t\tName: %s\r\n", shipp->ship_name);
 						buffer += temp;
 						dump_loadout(shipp, loadout);

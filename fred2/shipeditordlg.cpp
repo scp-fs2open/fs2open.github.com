@@ -444,7 +444,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 			}
 
 			if (i >= 0){
-				if (Ship_info[Ships[i].ship_info_index].flags & SIF_PLAYER_SHIP){
+				if (Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Player_ship]){
 					pvalid_count++;
 				}
 			}
@@ -914,7 +914,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	GetDlgItem(IDC_AI_CLASS)->EnableWindow(enable);
 	GetDlgItem(IDC_SHIP_CARGO1)->EnableWindow(enable);
 	GetDlgItem(IDC_HOTKEY)->EnableWindow(enable);
-	if ((m_ship_class >= 0) && !(Ship_info[m_ship_class].flags & SIF_CARGO) && !(Ship_info[m_ship_class].flags & SIF_NO_SHIP_TYPE))
+    if ((m_ship_class >= 0) && !(Ship_info[m_ship_class].flags[Ship::Info_Flags::Cargo]) && !(Ship_info[m_ship_class].flags[Ship::Info_Flags::No_ship_type]))
 		GetDlgItem(IDC_GOALS)->EnableWindow(enable);
 	else if (multi_edit)
 		GetDlgItem(IDC_GOALS)->EnableWindow(enable);

@@ -495,7 +495,7 @@ void hud_maybe_set_sorted_turret_subsys(ship *shipp)
 		return;
 	}
 
-	if (Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) {
+	if (is_big_huge(&Ship_info[shipp->ship_info_index])) {
 		if (shipp->last_targeted_subobject[Player_num] == NULL) {
 			hud_target_live_turret(1, 1);
 		}
@@ -1290,123 +1290,133 @@ ship_obj *advance_ship(ship_obj *so, int next_flag)
 ///                                        
 /// \returns         The next object to target if targeting was successful. 
 ///                  Returns NULL if targeting was unsuccessful.
-static object* select_next_target_by_distance( const bool targeting_from_closest_to_farthest, const int valid_team_mask, const int attacked_object_number = -1, const int target_filters = (SIF_CARGO | SIF_NAVBUOY)) {
-	object *minimum_object_ptr, *maximum_object_ptr, *nearest_object_ptr;
-	minimum_object_ptr = maximum_object_ptr = nearest_object_ptr = NULL;
-	float current_distance = hud_find_target_distance(&Objects[Player_ai->target_objnum], Player_obj);
-	float minimum_distance = 1e20f;
-	float maximum_distance = 0.0f;
-	int player_object_index = OBJ_INDEX(Player_obj);
-	
-	float nearest_distance;
-	if ( targeting_from_closest_to_farthest ) {
-		nearest_distance = 1e20f;
-	} else {
-		nearest_distance = 0.0f;
-	}
-	
-	ship_obj *ship_object_ptr;
-	object   *prospective_victim_ptr;
-	ship     *prospective_victim_ship_ptr;
-	for ( ship_object_ptr = GET_FIRST(&Ship_obj_list);   ship_object_ptr != END_OF_LIST(&Ship_obj_list);   ship_object_ptr = GET_NEXT(  ship_object_ptr) ) {
-		prospective_victim_ptr = &Objects[  ship_object_ptr->objnum];
-		  // get a pointer to the ship information
-		prospective_victim_ship_ptr = &Ships[prospective_victim_ptr->instance];
-	
-		float new_distance;
-			if ( (prospective_victim_ptr == Player_obj) || (should_be_ignored(prospective_victim_ship_ptr)) ) {
-				continue;
-			}
-	
-			// choose from the correct team
-			if ( !iff_matches_mask(prospective_victim_ship_ptr->team, valid_team_mask) ) {
-				continue;
-			}
-				
-			// don't use object if it is already a target
-			if ( OBJ_INDEX(prospective_victim_ptr) == Player_ai->target_objnum ) {
-				continue;
-			}
-				
-	
-		if( attacked_object_number == -1 ) {
-			// always ignore navbuoys and cargo
-			if ( Ship_info[prospective_victim_ship_ptr->ship_info_index].flags & target_filters ) {
-				continue;
-			}
-				
-			if(hud_target_invalid_awacs(prospective_victim_ptr)){
-				continue;
-			}
-	
-			new_distance = hud_find_target_distance(prospective_victim_ptr,Player_obj);
-		} else {
-				// Filter out any target that is not targeting the player  --Mastadon
-			if ( (attacked_object_number == player_object_index) && (Ai_info[prospective_victim_ship_ptr->ai_index].target_objnum != player_object_index) ) {
-				continue;
-			}
-			esct eval_ship_as_closest_target_args;
-			eval_ship_as_closest_target_args.attacked_objnum = attacked_object_number;
-			eval_ship_as_closest_target_args.check_all_turrets = (attacked_object_number == player_object_index);
-			eval_ship_as_closest_target_args.check_nearest_turret = FALSE;
-				// We don't ever filter our target selection to just bombers or fighters
-				// because the select next attacker logic doesn't.  --Mastadon
-			eval_ship_as_closest_target_args.filter = 0;
-			eval_ship_as_closest_target_args.team_mask = valid_team_mask;
-				// We always get the turret attacking, since that's how the select next 
-				// attacker logic does it.  --Mastadon
-			eval_ship_as_closest_target_args.turret_attacking_target = 1;
-			eval_ship_as_closest_target_args.shipp = prospective_victim_ship_ptr;
-			evaluate_ship_as_closest_target( &eval_ship_as_closest_target_args );
-	
-			new_distance = eval_ship_as_closest_target_args.min_distance;
-		}
-	
-	
-		if (new_distance <= minimum_distance) {
-			minimum_distance = new_distance;
-			minimum_object_ptr = prospective_victim_ptr;
-		}
-	
-		if (new_distance >= maximum_distance) {
-			maximum_distance = new_distance;
-			maximum_object_ptr = prospective_victim_ptr;
-		}
-			
-		float diff = 0.0f;
-		if ( targeting_from_closest_to_farthest ) {
-			diff = new_distance - current_distance;
-			if ( diff > 0.0f ) {
-				if ( diff < ( nearest_distance - current_distance ) ) {
-					nearest_distance = new_distance;
-					nearest_object_ptr = prospective_victim_ptr;
-				}
-			}
-		} else {
-			diff = current_distance - new_distance;
-			if ( diff > 0.0f ) {
-				if ( diff < ( current_distance - nearest_distance ) ) {
-					nearest_distance = new_distance;
-					nearest_object_ptr = prospective_victim_ptr;
-				}
-			}
-		}
-	}
+static object* select_next_target_by_distance(const bool targeting_from_closest_to_farthest, const int valid_team_mask, const int attacked_object_number = -1, flagset<Ship::Info_Flags>* target_filters = NULL) {
+    object *minimum_object_ptr, *maximum_object_ptr, *nearest_object_ptr;
+    minimum_object_ptr = maximum_object_ptr = nearest_object_ptr = NULL;
+    float current_distance = hud_find_target_distance(&Objects[Player_ai->target_objnum], Player_obj);
+    float minimum_distance = 1e20f;
+    float maximum_distance = 0.0f;
+    int player_object_index = OBJ_INDEX(Player_obj);
 
-	if ( nearest_object_ptr == NULL ) {
+    if (target_filters == NULL) {
+        target_filters = new flagset<Ship::Info_Flags>();
+        target_filters->set(Ship::Info_Flags::Cargo);
+        target_filters->set(Ship::Info_Flags::Navbuoy);
+    }
 
-		if ( targeting_from_closest_to_farthest ) {
-			if ( minimum_object_ptr != NULL ) {
-				nearest_object_ptr = minimum_object_ptr;
-			}
-		} else {
-			if ( maximum_object_ptr != NULL ) {
-				nearest_object_ptr = maximum_object_ptr;
-			}
-		}
-	}
+    float nearest_distance;
+    if (targeting_from_closest_to_farthest) {
+        nearest_distance = 1e20f;
+    }
+    else {
+        nearest_distance = 0.0f;
+    }
 
-	return nearest_object_ptr;
+    ship_obj *ship_object_ptr;
+    object   *prospective_victim_ptr;
+    ship     *prospective_victim_ship_ptr;
+    for (ship_object_ptr = GET_FIRST(&Ship_obj_list); ship_object_ptr != END_OF_LIST(&Ship_obj_list); ship_object_ptr = GET_NEXT(ship_object_ptr)) {
+        prospective_victim_ptr = &Objects[ship_object_ptr->objnum];
+        // get a pointer to the ship information
+        prospective_victim_ship_ptr = &Ships[prospective_victim_ptr->instance];
+
+        float new_distance;
+        if ((prospective_victim_ptr == Player_obj) || (should_be_ignored(prospective_victim_ship_ptr))) {
+            continue;
+        }
+
+        // choose from the correct team
+        if (!iff_matches_mask(prospective_victim_ship_ptr->team, valid_team_mask)) {
+            continue;
+        }
+
+        // don't use object if it is already a target
+        if (OBJ_INDEX(prospective_victim_ptr) == Player_ai->target_objnum) {
+            continue;
+        }
+
+
+        if (attacked_object_number == -1) {
+            // always ignore navbuoys and cargo
+            if ((Ship_info[prospective_victim_ship_ptr->ship_info_index].flags & *target_filters).any_set()) {
+                continue;
+            }
+
+            if (hud_target_invalid_awacs(prospective_victim_ptr)) {
+                continue;
+            }
+
+            new_distance = hud_find_target_distance(prospective_victim_ptr, Player_obj);
+        }
+        else {
+            // Filter out any target that is not targeting the player  --Mastadon
+            if ((attacked_object_number == player_object_index) && (Ai_info[prospective_victim_ship_ptr->ai_index].target_objnum != player_object_index)) {
+                continue;
+            }
+            esct eval_ship_as_closest_target_args;
+            eval_ship_as_closest_target_args.attacked_objnum = attacked_object_number;
+            eval_ship_as_closest_target_args.check_all_turrets = (attacked_object_number == player_object_index);
+            eval_ship_as_closest_target_args.check_nearest_turret = FALSE;
+            // We don't ever filter our target selection to just bombers or fighters
+            // because the select next attacker logic doesn't.  --Mastadon
+            eval_ship_as_closest_target_args.filter = 0;
+            eval_ship_as_closest_target_args.team_mask = valid_team_mask;
+            // We always get the turret attacking, since that's how the select next 
+            // attacker logic does it.  --Mastadon
+            eval_ship_as_closest_target_args.turret_attacking_target = 1;
+            eval_ship_as_closest_target_args.shipp = prospective_victim_ship_ptr;
+            evaluate_ship_as_closest_target(&eval_ship_as_closest_target_args);
+
+            new_distance = eval_ship_as_closest_target_args.min_distance;
+        }
+
+
+        if (new_distance <= minimum_distance) {
+            minimum_distance = new_distance;
+            minimum_object_ptr = prospective_victim_ptr;
+        }
+
+        if (new_distance >= maximum_distance) {
+            maximum_distance = new_distance;
+            maximum_object_ptr = prospective_victim_ptr;
+        }
+
+        float diff = 0.0f;
+        if (targeting_from_closest_to_farthest) {
+            diff = new_distance - current_distance;
+            if (diff > 0.0f) {
+                if (diff < (nearest_distance - current_distance)) {
+                    nearest_distance = new_distance;
+                    nearest_object_ptr = prospective_victim_ptr;
+                }
+            }
+        }
+        else {
+            diff = current_distance - new_distance;
+            if (diff > 0.0f) {
+                if (diff < (current_distance - nearest_distance)) {
+                    nearest_distance = new_distance;
+                    nearest_object_ptr = const_cast<object *>(prospective_victim_ptr);
+                }
+            }
+        }
+    }
+
+    if (nearest_object_ptr == NULL) {
+
+        if (targeting_from_closest_to_farthest) {
+            if (minimum_object_ptr != NULL) {
+                nearest_object_ptr = minimum_object_ptr;
+            }
+        }
+        else {
+            if (maximum_object_ptr != NULL) {
+                nearest_object_ptr = maximum_object_ptr;
+            }
+        }
+    }
+
+    return nearest_object_ptr;
 }
 
 ship_obj *get_ship_obj_ptr_from_index(int index);
@@ -1490,7 +1500,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 
 		if ( (aip->target_objnum != -1)
 			&& (Objects[aip->target_objnum].type == OBJ_SHIP)
-			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & SIF_BOMBER)
+			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags[Ship::Info_Flags::Bomber])
 				|| (Objects[aip->target_objnum].flags[Object::Object_Flags::Targetable_as_bomb]))) {
 			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
 			startShip = get_ship_obj_ptr_from_index(index);
@@ -1516,7 +1526,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			}
 
 			// check if ship type is bomber
-			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags & SIF_BOMBER) && !(A->flags[Object::Object_Flags::Targetable_as_bomb]) ) {
+			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags[Ship::Info_Flags::Bomber]) && !(A->flags[Object::Object_Flags::Targetable_as_bomb]) ) {
 				continue;
 			}
 
@@ -1645,7 +1655,7 @@ void hud_target_newest_ship()
 			continue;
 
 		// ignore navbuoys
-		if ( Ship_info[shipp->ship_info_index].flags & SIF_NAVBUOY ) {
+		if ( Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Navbuoy] ) {
 			continue;
 		}
 
@@ -2106,13 +2116,13 @@ bool evaluate_ship_as_closest_target(esct *esct_p)
 
 	// If filter is set, only target fighters and bombers
 	if ( esct_p->filter ) {
-		if ( !(Ship_info[esct_p->shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) ) {
+		if ( !(is_fighter_bomber(&Ship_info[esct_p->shipp->ship_info_index])) ) {
 			return false;
 		}
 	}
 
 	// find closest turret to player if BIG or HUGE ship
-	if (Ship_info[esct_p->shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) {
+	if (is_big_huge(&Ship_info[esct_p->shipp->ship_info_index])) {
 		for (ss=GET_FIRST(&esct_p->shipp->subsys_list); ss!=END_OF_LIST(&esct_p->shipp->subsys_list); ss=GET_NEXT(ss)) {
 
 			if (ss->flags & SSF_UNTARGETABLE)
@@ -3596,7 +3606,7 @@ void hud_show_hostile_triangle()
 		turret_is_attacking = 0;
 
 		// check if any turrets on ship are firing at the player (only on non fighter-bombers)
-		if ( !(Ship_info[sp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ) {
+		if ( !(is_fighter_bomber(&Ship_info[sp->ship_info_index])) ) {
 			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
 				if (ss->flags & SSF_UNTARGETABLE)
 					continue;
@@ -4867,7 +4877,7 @@ int hud_target_closest_repair_ship(int goal_objnum)
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		// ignore all ships that aren't repair ships 
-		if ( !(Ship_info[shipp->ship_info_index].flags & SIF_SUPPORT) ) {
+		if ( !(Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Support]) ) {
 			continue;
 		}
 
@@ -5434,7 +5444,7 @@ void HudGaugeAfterburner::render(float frametime)
 	}
 
 	Assert(Player_ship);
-	if ( !(Ship_info[Player_ship->ship_info_index].flags & SIF_AFTERBURNER) ) {
+	if ( !(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Afterburner]) ) {
 		// Goober5000 - instead of drawing an empty burner gauge, don't draw the gauge at all
 		return;
 	} else {
@@ -5529,7 +5539,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 	bool use_new_gauge = false;
 
 	// Goober5000 - only check for the new gauge in case of command line + a ballistic-capable ship
-	if (Cmdline_ballistic_gauge && Ship_info[Player_ship->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES)
+	if (Cmdline_ballistic_gauge && Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries])
 	{
 		for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
 		{
@@ -5639,7 +5649,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 		sw = &Player_ship->weapons;
 
 		// show ballistic ammunition in energy gauge if need be
-		if ( Show_ballistic && Ship_info[Player_ship->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES ) {
+		if ( Show_ballistic && Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries] ) {
 			if ( Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {
 
 				// go through all ballistic primaries and add up their ammunition totals and max capacities

@@ -55,21 +55,18 @@ END_MESSAGE_MAP()
 
 BOOL InitialShips::OnInitDialog() 
 {
-	int i;
-
 	CDialog::OnInitDialog();
 
 	m_list_count = 0;
 	// change the window text, get the index into the array, and check the box for either the ships
 	// or weapons
 	if ( m_initial_items == INITIAL_SHIPS ) {
-		for ( auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
-			if ( it->flags & SIF_PLAYER_SHIP ) {
-				i = std::distance(Ship_info.cbegin(), it);
-				m_initial_list.AddString( it->name );
+        for (int i = 0; i < Ship_info.size(); ++i) {
+			if (Ship_info[i].flags[Ship::Info_Flags::Player_ship] ) {
+				m_initial_list.AddString(Ship_info[i].name );
 				if ( Campaign.ships_allowed[i] ) {
 					m_initial_list.SetCheck(m_list_count, 1);
-				} else if ( (strlen(Campaign.filename) == 0) && strstr(it->name, "Myrmidon") ) { //-V805
+				} else if ( (strlen(Campaign.filename) == 0) && strstr(Ship_info[i].name, "Myrmidon") ) { //-V805
 					m_initial_list.SetCheck(m_list_count, 1);
 				} else {
 					m_initial_list.SetCheck(m_list_count, 0);
@@ -87,17 +84,17 @@ BOOL InitialShips::OnInitDialog()
 		int allowed_weapons[MAX_WEAPON_TYPES];
 
 		memset( allowed_weapons, 0, sizeof(allowed_weapons) );
-		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-			if ( it->flags & SIF_PLAYER_SHIP ) {
+        for (int i = 0; i < Ship_info.size(); ++i) {
+			if (Ship_info[i].flags[Ship::Info_Flags::Player_ship] ) {
 				for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-					if ( it->allowed_weapons[i] )
+					if (Ship_info[i].allowed_weapons[i] )
 						allowed_weapons[i] = 1;
 				}
 			}
 		}
 
 		// now add the weapons to the list
-		for (i = 0; i < MAX_WEAPON_TYPES; i++ ) {
+		for (int i = 0; i < MAX_WEAPON_TYPES; i++ ) {
 			if ( allowed_weapons[i] ) {
 				m_initial_list.AddString( Weapon_info[i].name );
 				int add_weapon = 0;

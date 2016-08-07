@@ -178,7 +178,7 @@ bool CanAutopilot(vec3d targetPos, bool send_msg)
 			object *other_objp = &Objects[so->objnum];
 			// attacks player?
 			if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)) 
-				&& !(Ship_info[Ships[other_objp->instance].ship_info_index].flags & SIF_CARGO)) // ignore cargo
+				&& !(Ship_info[Ships[other_objp->instance].ship_info_index].flags[Ship::Info_Flags::Cargo])) // ignore cargo
 			{
 				// Cannot autopilot if enemy within AutopilotMinEnemyDistance meters
 				if (vm_vec_dist_quick(&targetPos, &other_objp->pos) < AutopilotMinEnemyDistance) {
@@ -248,7 +248,7 @@ bool StartAutopilot()
 				shipp->ship_name, shipp->ship_info_index, static_cast<int>(Ship_info.size()));
 			ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-			if ( !(sip->flags & SIF_SUPPORT) )
+			if ( !(sip->flags[Ship::Info_Flags::Support]) )
 				continue;
 
 			// don't deal with dying or departing support ships
@@ -373,22 +373,21 @@ bool StartAutopilot()
 			)
 		{
 			// do we have capital ships in the area?
-			if (Ship_info[Ships[i].ship_info_index].flags 
-				& ( SIF_CRUISER | SIF_CAPITAL | SIF_SUPERCAP | SIF_CORVETTE | SIF_AWACS | SIF_GAS_MINER | SIF_FREIGHTER | SIF_TRANSPORT))
+            if (is_big_ship(&Ship_info[Ships[i].ship_info_index]) || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Supercap])
 			{
 				capshipPresent = true;
 
 				capIndexes.push_back(i);
 				// ok.. what size class
 
-				if (Ship_info[Ships[i].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
-				{
-					capship_counts[0]++;
-					if (capship_spreads[0] < Objects[Ships[i].objnum].radius)
-						capship_spreads[0] = Objects[Ships[i].objnum].radius;
-				}
-				else if (Ship_info[Ships[i].ship_info_index].flags & (SIF_CORVETTE))
-				{
+                if (Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Supercap])
+                {
+                    capship_counts[0]++;
+                    if (capship_spreads[0] < Objects[Ships[i].objnum].radius)
+                        capship_spreads[0] = Objects[Ships[i].objnum].radius;
+                }
+                else if (Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Corvette])
+                {
 					capship_counts[1]++;
 					if (capship_spreads[1] < Objects[Ships[i].objnum].radius)
 						capship_spreads[1] = Objects[Ships[i].objnum].radius;
@@ -572,7 +571,7 @@ bool StartAutopilot()
 				vm_vec_add(&front, &Autopilot_flight_leader->orient.vec.fvec, &zero);
 				vm_vec_add(&up, &Autopilot_flight_leader->orient.vec.uvec, &zero);
 				vm_vec_add(&offset, &zero, &zero);
-				if (Ship_info[Ships[*idx].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
+                if (Ship_info[Ships[*idx].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[*idx].ship_info_index].flags[Ship::Info_Flags::Supercap])
 				{
 					//0 - below - three lines of position
 
@@ -606,7 +605,7 @@ bool StartAutopilot()
 
 					capship_placed[0]++;
 				}
-				else if (Ship_info[Ships[*idx].ship_info_index].flags & SIF_CORVETTE)
+                else if (Ship_info[Ships[*idx].ship_info_index].flags[Ship::Info_Flags::Corvette])
 				{
 					//1 above - 3 lines of position
 					// front/back to zero

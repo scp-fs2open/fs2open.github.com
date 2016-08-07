@@ -280,7 +280,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	
 		if ( objp->type == OBJ_SHIP ) {
 			// don't blast navbuoys
-			if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY ) {
+			if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy] ) {
 				continue;
 			}
 		}

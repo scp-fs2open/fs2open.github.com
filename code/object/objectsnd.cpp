@@ -426,7 +426,7 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 				ship_info *sip = &Ship_info[Ships[closest_objp->instance].ship_info_index];
 				game_snd *snd;
 
-				if (sip->flags & SIF_BOMBER)
+				if (sip->flags[Ship::Info_Flags::Bomber])
 					snd = &Species_info[sip->species].snd_flyby_bomber;
 				else
 					snd = &Species_info[sip->species].snd_flyby_fighter;
@@ -514,7 +514,7 @@ void obj_snd_do_frame()
 
 		// save closest distance (used for flyby sound) if this is a small ship (and not the observer)
 		if ( (objp->type == OBJ_SHIP) && (distance < closest_dist) && (objp != observer_obj) ) {
-			if ( Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_SMALL_SHIP ) {
+			if ( is_small_ship(&Ship_info[Ships[objp->instance].ship_info_index]) ) {
 				closest_dist = distance;
 				closest_objp = objp;
 			}
@@ -527,7 +527,7 @@ void obj_snd_do_frame()
 		alive_vol_mult = 1.0f;
 		if ( objp->type == OBJ_SHIP ) {
 			ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
-			if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+			if ( !(is_big_huge(sip)) ) {
 				if ( objp->phys_info.max_vel.xyz.z <= 0.0f ) {
 					percent_max = 0.0f;
 				}
@@ -676,7 +676,7 @@ void obj_snd_do_frame()
 
 		// Don't play doppler effect for cruisers or capitals
 		if ( sp ) {
-			if ( ship_get_SIF(sp) & (SIF_BIG_SHIP | SIF_HUGE_SHIP) ) {
+			if ( is_big_huge(&Ship_info[sp->ship_info_index]) ) {
 				vel = vmd_zero_vector;
 			}
 		}

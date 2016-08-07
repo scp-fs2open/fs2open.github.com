@@ -497,7 +497,7 @@ void debug_cycle_player_ship(int delta)
 			si_index = static_cast<int>(Ship_info.size() - 1);
 		}
 		sip = &Ship_info[si_index];
-		if ( sip->flags & SIF_PLAYER_SHIP ){
+		if ( sip->flags[Ship::Info_Flags::Player_ship] ){
 			break;
 		}
 
@@ -552,7 +552,7 @@ void debug_cycle_targeted_ship(int delta)
 		if ( strstr(name,NOX("test")) != NULL )
 			continue;
 
-		if ( sip->species == species && (sip->flags & (SIF_FIGHTER | SIF_BOMBER | SIF_TRANSPORT) ) )
+        if (sip->species == species && (is_fighter_bomber(sip) || sip->flags[Ship::Info_Flags::Transport]))
 			break;
 
 		// just in case
@@ -588,7 +588,7 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 	ship_weapon *swp = &shipp->weapons;
 	weapon_info *wip;
 
-	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+	if (sip->flags[Ship::Info_Flags::Ballistic_primaries])
 	{
 		for ( index = 0; index < MAX_SHIP_PRIMARY_BANKS; index++ )
 		{
@@ -1771,7 +1771,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				ship * shipp = &Ships[objp->instance];
 				ship_weapon *swp = &shipp->weapons;
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
-				if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
+				if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
 					polymodel *pm = model_get( sip->model_num );
 					count = ftables.getNext( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
 					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;

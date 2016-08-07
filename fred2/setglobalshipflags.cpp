@@ -66,7 +66,7 @@ void SetGlobalShipFlags::OnNoSubspaceDrive()
 		if (Ships[i].objnum >= 0)
 		{
 			// only for fighters and bombers
-            Ships[i].flags.set(Ship::Ship_Flags::No_subspace_drive, Ship_info[Ships[i].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) != 0);
+            Ships[i].flags.set(Ship::Ship_Flags::No_subspace_drive, is_fighter_bomber(&Ship_info[Ships[i].ship_info_index]));
 		}
 	}
 }
@@ -80,7 +80,7 @@ void SetGlobalShipFlags::OnPrimitiveSensors()
 		if (Ships[i].objnum >= 0)
 		{
 			// only for fighters and bombers
-            Ships[i].flags.set(Ship::Ship_Flags::Primitive_sensors, Ship_info[Ships[i].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) != 0);
+            Ships[i].flags.set(Ship::Ship_Flags::Primitive_sensors, is_fighter_bomber(&Ship_info[Ships[i].ship_info_index]));
 		}
 	}
 }
@@ -94,7 +94,7 @@ void SetGlobalShipFlags::OnAffectedByGravity()
 		if (Ships[i].objnum >= 0)
 		{
 			// only for fighters and bombers
-            Ships[i].flags.set(Ship::Ship_Flags::Affected_by_gravity, Ship_info[Ships[i].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) != 0);
+            Ships[i].flags.set(Ship::Ship_Flags::Affected_by_gravity, is_fighter_bomber(&Ship_info[Ships[i].ship_info_index]));
 		}
 	}
 }

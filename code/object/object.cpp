@@ -1754,25 +1754,6 @@ void obj_get_average_ship_pos( vec3d *pos )
 		vm_vec_scale( pos, 1.0f/(float)count );
 }
 
-
-int obj_get_SIF(object *objp)
-{
-	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))
-		return Ship_info[Ships[objp->instance].ship_info_index].flags;
-
-	Int3();
-	return 0;
-}
-
-int obj_get_SIF(int obj)
-{
-	if ((Objects[obj].type == OBJ_SHIP) || (Objects[obj].type == OBJ_START))
-		return Ship_info[Ships[Objects[obj].instance].ship_info_index].flags;
-
-	Int3();
-	return 0;
-}
-
 /**
  * Return the team for the object passed as a parameter
  *

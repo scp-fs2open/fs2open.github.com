@@ -286,10 +286,6 @@ void obj_player_fire_stuff( object *objp, control_info ci );
 // do, then put code in here to correctly handle the case.
 void obj_set_flags(object *obj, flagset<Object::Object_Flags> new_flags);
 
-// get the Ship_info flags for a given ship (if you have the object)
-int obj_get_SIF(object *objp);
-int obj_get_SIF(int obj);
-
 // get the team for any object
 int obj_team(object *objp);
 

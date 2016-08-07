@@ -2345,19 +2345,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (!stricmp(CTEXT(node), "<any support ship class>"))
 					break;
 
-				i = -1;
-				for ( auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
-					if ( !stricmp(CTEXT(node), it->name) )
+                for (i = 0; i < Ship_info.size(); ++i) {
+					if ( !stricmp(CTEXT(node), Ship_info[i].name) )
 					{
-						if (it->flags & SIF_SUPPORT)
+						if (Ship_info[i].flags[Ship::Info_Flags::Support])
 						{
-							i = std::distance(Ship_info.cbegin(), it);
 							break;
 						}
 					}
 				}
 
-				if ( i == -1 )
+				if ( i == Ship_info.size())
 					return SEXP_CHECK_INVALID_SUPPORT_SHIP_CLASS;
 
 				break;
@@ -5622,7 +5620,7 @@ int sexp_special_warp_dist( int n)
 	object *ship_objp = &Objects[Ships[shipnum].objnum];
 	object *warp_objp = &Objects[Ships[shipnum].special_warpout_objnum];
 	if (warp_objp->type == OBJ_SHIP) {
-		if (Ship_info[Ships[warp_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+		if (Ship_info[Ships[warp_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 			valid = TRUE;
 		}
 	}
@@ -10792,7 +10790,7 @@ void sexp_explosion_effect(int n)
 				// don't blast navbuoys
 				if ( objp->type == OBJ_SHIP )
 				{
-					if ( ship_get_SIF(objp->instance) & SIF_NAVBUOY )
+					if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy] )
 					{
 						continue;
 					}
@@ -11825,7 +11823,7 @@ void sexp_transfer_cargo(int n)
 	// transfer cargo from ship1 to ship2
 #ifndef NDEBUG
 	// Don't give warning for large ships (cruiser on up) 
-	if (! (Ship_info[Ships[shipnum2].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+	if (! (is_big_huge(&Ship_info[Ships[shipnum2].ship_info_index])) ) {
 		if ( stricmp(Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK], "nothing") ) {
 			Warning(LOCATION, "Transferring cargo to %s which already\nhas cargo %s.\nCargo will be replaced", Ships[shipnum2].ship_name, Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK] );
 		}
@@ -12010,7 +12008,7 @@ void sexp_cargo_no_deplete(int n)
 		return;
 	}
 
-	if ( !(Ship_info[Ships[ship_index].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+	if ( !(is_big_huge(&Ship_info[Ships[ship_index].ship_info_index])) ) {
 		Warning(LOCATION, "Trying to make non BIG or HUGE ship %s with non-depletable cargo.\n", Ships[ship_index].ship_name);
 		return;
 	}
@@ -12508,8 +12506,8 @@ void sexp_tech_add_ship(int node)
 	while (node >= 0) {
 		name = CTEXT(node);
 		i = ship_info_lookup(name);
-		if (i >= 0)
-			Ship_info[i].flags |= SIF_IN_TECH_DATABASE;
+        if (i >= 0)
+            Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
 		else
 			Warning(LOCATION, "In tech-add-ship, ship class \"%s\" invalid", name);
 
@@ -15084,7 +15082,7 @@ int sexp_primaries_depleted(int node)
 	}
 
 	// see if ship has ballistic primary weapons   
-	if (!(Ship_info[shipp->ship_info_index].flags & SIF_BALLISTIC_PRIMARIES))   
+	if (!(Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries]))   
 		return SEXP_FALSE; 
 
 	// get num primary banks
@@ -15560,7 +15558,7 @@ int sexp_shield_quad_low(int node)
 	}
 	objp = &Objects[Ships[sindex].objnum];
 	sip = &Ship_info[Ships[sindex].ship_info_index];
-	if(!(sip->flags & SIF_SMALL_SHIP)){
+	if(!(is_small_ship(sip))){
 		return SEXP_FALSE;
 	}
 	max_quad = get_max_shield_quad(objp);	
@@ -18556,7 +18554,7 @@ void sexp_set_support_ship(int n)
 		Warning(LOCATION, "Support ship class '%s' not found.\n", CTEXT(n));
 		return;
 	}
-	if ((temp_val >= 0) && !(Ship_info[temp_val].flags & SIF_SUPPORT))
+	if ((temp_val >= 0) && !(Ship_info[temp_val].flags[Ship::Info_Flags::Support]))
 	{
 		Warning(LOCATION, "Ship %s is not a support ship!", Ship_info[temp_val].name);
 		return;
@@ -19961,7 +19959,7 @@ int process_special_sexps(int index)
 		return SEXP_FALSE;
 
 	case 3:	//	Player ship suffering shield damage on front.
-		if (!(Ship_info[Player_ship->ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
 			apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
 			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 			return SEXP_TRUE;
@@ -19972,7 +19970,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 4:	//	Player ship suffering much damage.
-		if (!(Ship_info[Player_ship->ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
 			nprintf(("AI", "Frame %i\n", Framecount));
 			apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
 			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
@@ -19987,7 +19985,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 5:	//	Player's shield is quick repaired
-		if (!(Ship_info[Player_ship->ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
 			nprintf(("AI", "Frame %i, recharged to %7.3f\n", Framecount, Player_obj->shield_quadrant[FRONT_QUAD]));
 
 			apply_damage_to_shield(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
@@ -20006,7 +20004,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 6:	//	3 of player's shield quadrants are reduced to 0.
-		if (!(Ship_info[Player_ship->ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
 			Player_obj->shield_quadrant[1] = 1.0f;
 			Player_obj->shield_quadrant[2] = 1.0f;
 			Player_obj->shield_quadrant[3] = 1.0f;
@@ -20018,7 +20016,7 @@ int process_special_sexps(int index)
 		return SEXP_TRUE;
 
 	case 7:	//	Make sure front quadrant has been maximized, or close to it.
-		if (!(Ship_info[Player_ship->ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
 			if (shield_quad_near_max(FRONT_QUAD)) return SEXP_TRUE; else return SEXP_FALSE;
 		} else {
 			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
@@ -20027,7 +20025,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 8:	//	Make sure rear quadrant has been maximized, or close to it.
-		if (!(Ship_info[Player_ship->ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
 			if (shield_quad_near_max(REAR_QUAD)) return SEXP_TRUE; else return SEXP_FALSE;
 		} else {
 			nprintf(("Warning", "Shield-related Special-check SEXPs do not work on ship %s because it uses model point shields.\n", Player_ship->ship_name));
@@ -20036,7 +20034,7 @@ int process_special_sexps(int index)
 		break;
 	
 	case 9:	//	Zero left and right quadrants in preparation for maximizing rear quadrant.
-		if (!(Ship_info[Player_ship->ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
 			Player_obj->shield_quadrant[LEFT_QUAD] = 0.0f;
 			Player_obj->shield_quadrant[RIGHT_QUAD] = 0.0f;
 			hud_shield_quadrant_hit(Player_obj, LEFT_QUAD);
@@ -20069,7 +20067,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 13:	// Zero front shield quadrant.  Added for Jim Boone on August 26, 1999 by MK.
-		if (!(Ship_info[Player_ship->ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS)) {
+		if (!(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Model_point_shields])) {
 			Player_obj->shield_quadrant[FRONT_QUAD] = 0.0f;
 			hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 			return SEXP_TRUE;

@@ -729,7 +729,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (check_control(AFTERBURNER) && !Player_use_ai) {
 			if (!afterburner_last) {
 				Assert(Player_ship);
-				if ( !(Ship_info[Player_ship->ship_info_index].flags & SIF_AFTERBURNER) ) {
+				if ( !(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Afterburner]) ) {
 					gamesnd_play_error_beep();
 				} else {
 					ci->afterburner_start = 1;
@@ -1174,7 +1174,7 @@ void player_restore_target_and_weapon_link_prefs()
 		Player->flags |= Player->save_flags;
 	}
 
-	if ( Player->flags & PLAYER_FLAGS_LINK_PRIMARY && !(player_sip->flags2 & SIF2_NO_PRIMARY_LINKING) ) {
+	if ( Player->flags & PLAYER_FLAGS_LINK_PRIMARY && !(player_sip->flags[Ship::Info_Flags::No_primary_linking]) ) {
 		if ( Player_ship->weapons.num_primary_banks > 1 ) {
 			Player_ship->flags.set(Ship::Ship_Flags::Primary_linked);
 		}
@@ -1419,8 +1419,8 @@ int player_inspect_cargo(float frametime, char *outstr)
 	cargo_sip = &Ship_info[cargo_sp->ship_info_index];
 
 	// Goober5000 - possibly swap cargo scan behavior
-	scan_subsys = (cargo_sip->flags & SIF_HUGE_SHIP);
-	if (cargo_sp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
+    scan_subsys = (is_huge_ship(cargo_sip));
+    if (cargo_sp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
 		scan_subsys = !scan_subsys;
 	if (scan_subsys)
 		return player_inspect_cap_subsys_cargo(frametime, outstr);
@@ -1434,7 +1434,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 	// scannable cargo behaves differently.  Scannable cargo is either "scanned" or "not scanned".  This flag
 	// can be set on any ship.  Any ship with this set won't have "normal" cargo behavior
 	if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
-		if ( !(cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT)) ) {
+        if (!(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport])) {
 			return 0;
 		}
 	}
@@ -1443,7 +1443,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 	if ( cargo_sp->flags[Ship::Ship_Flags::Cargo_revealed] ) {
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
 			char *cargo_name = Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
-			Assert( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) );
+            Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
 
 			if ( cargo_name[0] == '#' ) {
 				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
@@ -1568,7 +1568,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	subsys_rad = subsys->system_info->radius;
 
 	// Goober5000
-	if (cargo_sip->flags & SIF_HUGE_SHIP) {
+    if (is_huge_ship(cargo_sip)) {
 		scan_dist = MAX(CAP_CARGO_REVEAL_MIN_DIST, (subsys_rad + CAPITAL_CARGO_RADIUS_DELTA));
 	} else {
 		scan_dist = MAX(CARGO_REVEAL_MIN_DIST, (subsys_rad + CARGO_RADIUS_DELTA));

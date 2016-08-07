@@ -543,7 +543,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 		{
 			// if this ship is not a small ship, then make the orders be the default orders without
 			// the depart item
-			if (!(sip->flags & SIF_SMALL_SHIP))
+			if (!(is_small_ship(sip)))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
 				shipp->orders_accepted &= ~DEPART_ITEM;
@@ -705,7 +705,7 @@ int create_object(vec3d *pos, int waypoint_instance)
 		CJumpNode jnp(pos);
 		obj = jnp.GetSCPObjectNumber();
 		Jump_nodes.push_back(std::move(jnp));
-	} else if(Ship_info[cur_model_index].flags & SIF_NO_FRED){		
+	} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){		
 		obj = -1;
 	} else {  // creating a ship
 		obj = create_ship(NULL, pos, cur_model_index);
@@ -870,7 +870,7 @@ void clear_mission()
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
 		count = 0;
 		for ( j = 0; j < static_cast<int>(Ship_info.size()); j++ ) {
-			if (Ship_info[j].flags & SIF_DEFAULT_PLAYER_SHIP) {
+			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
 				Team_data[i].ship_list[count] = j;
 				strcpy_s(Team_data[i].ship_list_variables[count], "");
 				Team_data[i].ship_count[count] = 5;
@@ -1585,7 +1585,7 @@ void generate_ship_popup_menu(CMenu *mptr, int first_id, int state, int filter)
 		if ((ptr->type == OBJ_SHIP) || ((ptr->type == OBJ_START) && (filter & SHIP_FILTER_PLAYERS))) {
 			z = 1;
 			if (filter & SHIP_FILTER_FLYABLE) {
-				if (Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index].flags & SIF_NOT_FLYABLE){
+				if (!is_flyable(&Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index])){
 					z = 0;
 				}
 			}

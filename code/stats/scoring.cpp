@@ -300,9 +300,8 @@ void scoring_eval_badges(scoring_struct *sc)
 	// to determine badges, we count kills based on fighter/bomber types.  We must count kills in
 	// all time stats + current mission stats.  And, only for enemy fighters/bombers
 	total_kills = 0;
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
-		if ( (it->flags & SIF_FIGHTER) || (it->flags & SIF_BOMBER) ) {
-			auto i = std::distance(Ship_info.cbegin(), it);
+    for (int i = 0; i < Ship_info.size(); ++i) {
+		if ( (Ship_info[i].flags[Ship::Info_Flags::Fighter]) || (Ship_info[i].flags[Ship::Info_Flags::Bomber]) ) {
 			total_kills += sc->m_okKills[i];
 			total_kills += sc->kills[i];
 		}
@@ -708,7 +707,7 @@ int scoring_eval_kill(object *ship_objp)
 			// get the ship info index of the ship type of this kill.  we need to take ship
 			// copies into account here.
 			si_index = dead_ship->ship_info_index;
-			if (Ship_info[si_index].flags & SIF_SHIP_COPY)
+			if (Ship_info[si_index].flags[Ship::Info_Flags::Ship_copy])
 			{
 				char temp[NAME_LENGTH];
 				strcpy_s(temp, Ship_info[si_index].name);
@@ -768,7 +767,7 @@ int scoring_eval_kill(object *ship_objp)
 						// award teammates % of score value for big ship kills
 						// not in dogfight tho
 						// and not if there is no assist threshold (as otherwise assists could get higher scores than kills)
-						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[dead_ship->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
+						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (is_big_huge(&Ship_info[dead_ship->ship_info_index]))) {
 							for (idx=0; idx<MAX_PLAYERS; idx++) {
 								if (MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.team == net_plr->p_info.team) && (&Net_players[idx] != net_plr)) {
 									assist_score = (int)(dead_ship->score * The_mission.ai_profile->assist_award_percentage_scale[Game_skill_level]);

@@ -1547,7 +1547,7 @@ void message_queue_process()
 		if (Message_shipnum < 0) {
 			goto all_done;
 		}
-		if (!((Ship_info[Ships[Message_shipnum].ship_info_index].flags & SIF_SMALL_SHIP) || (Ships[Message_shipnum].flags[Ship::Ship_Flags::Always_death_scream])) ) {
+		if (!(is_small_ship(&Ship_info[Ships[Message_shipnum].ship_info_index]) || (Ships[Message_shipnum].flags[Ship::Ship_Flags::Always_death_scream])) ) {
 			goto all_done;
 		}
 	}
@@ -1714,7 +1714,8 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 // type personas.  ship is the ship we should assign a persona to
 int message_get_persona( ship *shipp )
 {
-	int i = 0, ship_type, count;
+	int i = 0, count;
+    ship_info* sip;
 	int *slist = new int[Num_personas];
 	memset( slist, 0, sizeof(int) * Num_personas );
 
@@ -1727,15 +1728,15 @@ int message_get_persona( ship *shipp )
 		}
 
 		// get the type of ship (i.e. support, fighter/bomber, etc)
-		ship_type = Ship_info[shipp->ship_info_index].flags;
+		sip = &Ship_info[shipp->ship_info_index];
 
 		int persona_needed;
 		count = 0;
 
-		if ( ship_type & (SIF_FIGHTER|SIF_BOMBER) )
+		if ( is_fighter_bomber(sip) )
 		{
 			persona_needed = PERSONA_FLAG_WINGMAN;
-		} else if ( ship_type & SIF_SUPPORT ) 
+		} else if ( sip->flags[Ship::Info_Flags::Support] ) 
 		{
 			persona_needed = PERSONA_FLAG_SUPPORT;
 		}
@@ -1975,7 +1976,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			nprintf(("messaging", "Couldn't find persona for %s\n", shipp->ship_name ));	
 
 		// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
-		Assert( !(Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE) );		// get allender or alan
+		Assert( !is_flyable(&Ship_info[shipp->ship_info_index]) );		// get allender or alan
 	} else {
 		persona_index = The_mission.command_persona;				// use the terran command persona
 	}

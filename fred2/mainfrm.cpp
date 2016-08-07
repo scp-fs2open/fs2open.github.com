@@ -115,14 +115,14 @@ void CMainFrame::init_tools() {
 		return;
 	}
 
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+    for(int i = 0; i < Ship_info.size(); ++i) {
 		// don't add the pirate ship
-		if (it->flags & SIF_NO_FRED) {
+		if (Ship_info[i].flags[Ship::Info_Flags::No_fred]) {
 			m_new_ship_type_combo_box.AddString("");
 			continue;
 		}
 
-		m_new_ship_type_combo_box.AddString(it->name);
+		m_new_ship_type_combo_box.AddString(Ship_info[i].name);
 	}
 
 	//	m_new_ship_type_combo_box.AddString("Player Start");		

@@ -284,7 +284,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	float	max_quadrant_val;
 	int	i;
 
-	if (sip->flags2 & SIF2_MODEL_POINT_SHIELDS) {
+	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
 		direction = sip->shield_point_augment_ctrls[direction];
 
 		// The re-mapped direction can be -1 if this direction cannot be augmented
@@ -565,7 +565,7 @@ void hud_shield_quadrant_hit(object *objp, int quadrant)
 	Assertion(shi->hull_hit_index < (int) shi->shield_hit_timers.size(), "Shield hit info object for object '%s' has a hull_hit_index of %d (should be between 0 and " SIZE_T_ARG "); get a coder!\n", Ships[objp->instance].ship_name, shi->hull_hit_index, shi->shield_hit_timers.size() - 1);
 
 	if ( quadrant >= 0 ) {
-		if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS) )
+		if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Model_point_shields]) )
 			num = Quadrant_xlate[quadrant];
 		else
 			num = quadrant;
@@ -613,7 +613,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	sip = &Ship_info[sp->ship_info_index];
 
 //	bool digitus_improbus = (fod_model != -2 && strstr(sp->ship_name, "Sathanas") != NULL);
-	if ( sip->shield_icon_index == 255 && !(sip->flags2 & SIF2_GENERATE_HUD_ICON) /*&& !digitus_improbus*/) {
+	if ( sip->shield_icon_index == 255 && !(sip->flags[Ship::Info_Flags::Generate_hud_icon]) /*&& !digitus_improbus*/) {
 		return;
 	}
 
@@ -728,7 +728,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			break;
 		}
 
-		if ( !(sip->flags2 & SIF2_MODEL_POINT_SHIELDS) ) {
+		if ( !(sip->flags[Ship::Info_Flags::Model_point_shields]) ) {
 			if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f )
 				continue;
 		} else {
@@ -738,7 +738,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + objp->n_quadrants);
 
-		if ( !(sip->flags2 & SIF2_MODEL_POINT_SHIELDS) )
+		if ( !(sip->flags[Ship::Info_Flags::Model_point_shields]) )
 			hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
 		else
 			hud_color_index = fl2i( (objp->shield_quadrant[i] / max_shield) * range);

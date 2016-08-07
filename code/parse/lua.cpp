@@ -6411,9 +6411,9 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 		return ade_set_error(L, "b", false);
 
 	bool b = false;
-	if(Player != NULL && (Player->flags & PLAYER_FLAGS_IS_MULTI) && (Ship_info[idx].flags & SIF_IN_TECH_DATABASE_M)) {
+	if(Player != NULL && (Player->flags & PLAYER_FLAGS_IS_MULTI) && (Ship_info[idx].flags[Ship::Info_Flags::In_tech_database_m])) {
 		b = true;
-	} else if(Ship_info[idx].flags & SIF_IN_TECH_DATABASE) {
+	} else if(Ship_info[idx].flags[Ship::Info_Flags::In_tech_database]) {
 		b = true;
 	}
 
@@ -6485,7 +6485,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %=0, Pitch %=0
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
+	if(sip->flags[Ship::Info_Flags::No_lighting])
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);
@@ -6558,7 +6558,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, [orientation Orientatio
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
+	if(sip->flags[Ship::Info_Flags::No_lighting])
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);

@@ -205,7 +205,7 @@ BOOL WeaponEditorDlg::OnInitDialog()
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 				inst = ptr->instance;
-				if (!(ship_get_SIF(inst) & (SIF_BIG_SHIP | SIF_HUGE_SHIP)))
+                if (!(is_big_huge(&Ship_info[Ships[inst].ship_info_index])))
 					big = 0;
 
 				if (!flag) {
@@ -235,7 +235,7 @@ BOOL WeaponEditorDlg::OnInitDialog()
 		}
 
 	} else {
-		if (!(ship_get_SIF(m_ship) & (SIF_BIG_SHIP | SIF_HUGE_SHIP)))
+        if (!(is_big_huge(&Ship_info[Ships[m_ship].ship_info_index])))
 			big = 0;
 
 		m_ship_class = Ships[m_ship].ship_info_index;

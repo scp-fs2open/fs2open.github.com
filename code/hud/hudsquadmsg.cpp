@@ -320,7 +320,7 @@ bool hud_squadmsg_exist_fighters( )
 			continue;
 			
 		// ship must be a fighter/bomber
-		if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+		if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
 			continue;
 
 		// this ship satisfies everything
@@ -863,7 +863,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	shipp = &Ships[objp->instance];
 
 	// if target is a navbouy, return 0
-	if ( Ship_info[shipp->ship_info_index].flags & SIF_NAVBUOY ){
+	if ( Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Navbuoy] ){
 		return 0;
 	}
 
@@ -962,7 +962,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// can't message if ship not fighter/bomber if the command isn't to everyone.
-		if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+		if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
 			continue;
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
@@ -995,7 +995,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// don't send message to non fighter wings
-		if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+		if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
 			continue;
 
 		// skip departing/dying ships
@@ -1043,7 +1043,9 @@ int hud_squadmsg_enemies_present()
 	return 0;
 }
 
-#define OVERRIDE_PROTECT_SHIP_TYPE	(SIF_FIGHTER|SIF_BOMBER|SIF_FREIGHTER|SIF_TRANSPORT)
+inline bool override_protect_ship_type(ship_info* sip) {
+    return is_fighter_bomber(sip) || sip->flags[Ship::Info_Flags::Freighter] || sip->flags[Ship::Info_Flags::Transport];
+}
 // function which sends a message to a specific ship.  This routine can be called from one of two
 // places.  Either after selecting a ship when using a hotkey, or after selecting a command when
 // using the entire messaging menu system
@@ -1117,9 +1119,10 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 				Assert( ship_team != target_team );
 
 				// Orders to override protect
-				if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
-					Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
-				}
+                if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
+                    Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
+                }
+
 
 				ai_mode = AI_GOAL_CHASE;
 				ai_submode = SM_ATTACK;
@@ -1136,7 +1139,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			Assert( ship_team != target_team );
 
 			// Orders to override protect
-			if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
+            if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
 				Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
 			}
 
@@ -1150,7 +1153,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			Assert( ship_team != target_team );
 
 			// Orders to override protect
-			if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
+            if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
 				Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
 			}
 
@@ -1166,7 +1169,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			Assert( ainfo->targeted_subsys->current_hits > 0.0f);
 
 			// Orders to override protect
-			if (Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index].flags & OVERRIDE_PROTECT_SHIP_TYPE) {
+            if (override_protect_ship_type(&Ship_info[Ships[Objects[ainfo->target_objnum].instance].ship_info_index])) {
 				Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
 			}
 
@@ -2014,7 +2017,7 @@ void hud_squadmsg_ship_command()
 						continue;
 
 					// don't send message to non fighter wings
-					if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) )
+					if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
 						continue;
 
 					all_accept &= shipp->orders_accepted;		// 'and'ing will either keep this bit set or zero it properly

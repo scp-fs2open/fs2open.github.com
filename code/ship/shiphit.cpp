@@ -252,7 +252,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if ( psub->type == SUBSYSTEM_TURRET ) {
 		if ( ship_p->subsys_info[type].aggregate_current_hits <= 0.0f ) {
 			//	Don't create "disarmed" event for small ships.
-			if (!(Ship_info[ship_p->ship_info_index].flags & SIF_SMALL_SHIP)) {
+			if (!(is_small_ship(&Ship_info[ship_p->ship_info_index]))) {
 				mission_log_add_entry(LOG_SHIP_DISARMED, ship_p->ship_name, NULL );
 				// ship_p->flags |= SF_DISARMED;
 			}
@@ -279,9 +279,9 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if (notify && !no_explosion) {
 		// play sound effect when subsys gets blown up
 		int sound_index=-1;
-		if ( Ship_info[ship_p->ship_info_index].flags & SIF_HUGE_SHIP ) {
+		if ( is_huge_ship(&Ship_info[ship_p->ship_info_index]) ) {
 			sound_index=SND_CAPSHIP_SUBSYS_EXPLODE;
-		} else if ( Ship_info[ship_p->ship_info_index].flags & SIF_BIG_SHIP ) {
+		} else if ( is_big_ship(&Ship_info[ship_p->ship_info_index]) ) {
 			sound_index=SND_SUBSYS_EXPLODE;
 		}
 		if ( sound_index >= 0 ) {
@@ -478,7 +478,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		// Goober5000 - added back in via flag
-		if ((Ship_info[ship_p->ship_info_index].flags & (SIF_SMALL_SHIP)) && !(The_mission.ai_profile->flags & AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS))
+		if ((is_small_ship(&Ship_info[ship_p->ship_info_index])) && !(The_mission.ai_profile->flags & AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS))
 			return damage;
 		else {
 			damage_left = shockwave_get_damage(other_obj->instance) / 4.0f;
@@ -1064,7 +1064,7 @@ int get_max_sparks(object* ship_objp)
 
 	ship *ship_p = &Ships[ship_objp->instance];
 	ship_info* si = &Ship_info[ship_p->ship_info_index];
-	if (si->flags & SIF_FIGHTER) {
+	if (si->flags[Ship::Info_Flags::Fighter]) {
 		float hull_percent = ship_objp->hull_strength / ship_p->ship_max_hull_strength;
 
 		if (hull_percent > 0.8f) {
@@ -1203,7 +1203,7 @@ void ship_hit_create_sparks(object *ship_objp, vec3d *hitpos, int submodel_num)
 	max_sparks = get_max_sparks(ship_objp);
 
 	if (n >= max_sparks)	{
-		if (sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+		if (is_big_huge(sip)) {
 			// large ship, choose intelligently
 			n = choose_next_spark(ship_objp, hitpos);
 		} else {
@@ -1395,7 +1395,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		delta_time -=  (int) (1.01f - 4*percent_killed);
 
 	//	Cut down cargo death rolls.  Looks a little silly. -- MK, 3/30/98.
-	if (sip->flags & SIF_CARGO) {
+	if (sip->flags[Ship::Info_Flags::Cargo]) {
 		delta_time /= 4;
 	}
 	
@@ -1423,7 +1423,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		delta_time = 2;
 
 	// Knossos gets 7-10 sec to die, time for "little" explosions
-	if (Ship_info[sp->ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+	if (Ship_info[sp->ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 		delta_time = 7000 + (int)(frand() * 3000.0f);
 		Ship_info[sp->ship_info_index].explosion_propagates = 0;
 	}
@@ -1757,7 +1757,7 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 		// correct torque.
 		// Addendum: this block is now not executed for docked fighters or bombers because the whack
 		// looks like the fighter is doing evasive maneuvers
-		if ((objp->type != OBJ_SHIP) || !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)))
+		if ((objp->type != OBJ_SHIP) || !(is_fighter_bomber(&Ship_info[Ships[objp->instance].ship_info_index])))
 		{
 			vec3d world_hit_pos, world_center_pos;
 
@@ -1858,7 +1858,7 @@ int maybe_shockwave_damage_adjust(object *ship_objp, object *other_obj, float *d
 		return 0;
 	}
 
-	if (!(Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_HUGE_SHIP)) {
+	if (!(is_huge_ship(&Ship_info[Ships[ship_objp->instance].ship_info_index]))) {
 		return 0;
 	}
 
@@ -1993,7 +1993,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	// apply pain to me
 
 	// Goober5000: make sure other_obj doesn't cause a read violation!
-	if (other_obj && !(Ship_info[Ships[Player_obj->instance].ship_info_index].flags2 & SIF2_NO_PAIN_FLASH))
+	if (other_obj && !(Ship_info[Ships[Player_obj->instance].ship_info_index].flags[Ship::Info_Flags::No_pain_flash]))
 	{
 		// For the record, ship_hit_pain seems to simply be the red flash that appears
 		// on the screen when you're hit.
@@ -2231,7 +2231,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 						if (bobjn >= 0)
 						{
 							if ( !(The_mission.ai_profile->flags & AIPF_INCLUDE_BEAMS_IN_STAT_CALCS) && 
-								 !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER)) && 
+								 !(is_fighter_bomber(&Ship_info[Ships[Objects[bobjn].instance].ship_info_index])) && 
 								 !(Objects[bobjn].flags[Object::Object_Flags::Player_ship]) ) {
 								bobjn = -1;
 							}
@@ -2260,7 +2260,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				if(!MULTIPLAYER_CLIENT) {
 					if ( !(shipp->flags[Ship::Ship_Flags::Vaporize]) ) {
 						// Only small ships can be vaporized
-						if (sip->flags & (SIF_SMALL_SHIP)) {
+						if (is_small_ship(sip)) {
 							if (other_obj) {	// Goober5000 check for NULL
 								if (other_obj->type == OBJ_BEAM)
 								{

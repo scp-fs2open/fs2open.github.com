@@ -2969,7 +2969,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		}
 
 		// similarly, complain if this is a valid ship or weapon class that the player can't use
-		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[index].flags & SIF_PLAYER_SHIP)) ) {
+		if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[index].flags[Ship::Info_Flags::Player_ship])) ) {
 			clean_loadout_list_entry();
 			Warning(LOCATION, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
 			continue;

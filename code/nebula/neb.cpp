@@ -562,17 +562,17 @@ int neb2_skip_render(object *objp, float z_depth)
 			}
 
 			// small ships over the fog limit by a small factor
-			if ( (sip->flags & SIF_SMALL_SHIP) && (z_depth >= (fog_far * 1.5f)) ) {
+			if ( (is_small_ship(sip)) && (z_depth >= (fog_far * 1.5f)) ) {
 				return 1;
 			}
 
 			// big ships
-			if ( (sip->flags & SIF_BIG_SHIP) && (z_depth >= (fog_far * 2.0f)) ) {
+			if ( (is_big_ship(sip)) && (z_depth >= (fog_far * 2.0f)) ) {
 				return 1;
 			}
 
 			// huge ships
-			if ( (sip->flags & SIF_HUGE_SHIP) && (z_depth >= (fog_far * 3.0f)) ) {
+			if ( (is_huge_ship(sip)) && (z_depth >= (fog_far * 3.0f)) ) {
 				return 1;
 			}
 			break;
@@ -620,9 +620,9 @@ float neb2_get_lod_scale(int objnum)
 	sip = &Ship_info[shipp->ship_info_index];
 
 	// small ship?
-	if (sip->flags & SIF_SMALL_SHIP) {
+	if (is_small_ship(sip)) {
 		return 1.8f;
-	} else if (sip->flags & SIF_BIG_SHIP) {
+	} else if (is_big_ship(sip)) {
 		return 1.4f;
 	}
 

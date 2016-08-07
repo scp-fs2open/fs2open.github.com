@@ -238,7 +238,7 @@ void multi_oo_build_ship_list(net_player *pl)
 		}		
 
 		// never update the knossos device
-		if ((Ships[Objects[moveup->objnum].instance].ship_info_index >= 0) && (Ships[Objects[moveup->objnum].instance].ship_info_index < static_cast<int>(Ship_info.size())) && (Ship_info[Ships[Objects[moveup->objnum].instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE)){
+		if ((Ships[Objects[moveup->objnum].instance].ship_info_index >= 0) && (Ships[Objects[moveup->objnum].instance].ship_info_index < static_cast<int>(Ship_info.size())) && (Ship_info[Ships[Objects[moveup->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device])){
 			continue;
 		}
 				
@@ -518,7 +518,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 	// if this ship is a support ship, send some extra info
 	ubyte support_extra = 0;
-	if(MULTIPLAYER_MASTER && (sip->flags & SIF_SUPPORT) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
+	if(MULTIPLAYER_MASTER && (sip->flags[Ship::Info_Flags::Support]) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
 		ushort dock_sig;
 
 		// flag
@@ -1149,7 +1149,7 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	oo_flags = OO_POS_NEW | OO_ORIENT_NEW;
 
 	// if its a small ship, add weapon link info
-	if((sip != NULL) && (sip->flags & (SIF_FIGHTER | SIF_BOMBER))){
+	if((sip != NULL) && (is_fighter_bomber(sip))){
 		// primary bank 0 or 1
 		if(shipp->weapons.current_primary_bank > 0){
 			oo_flags |= OO_PRIMARY_BANK;

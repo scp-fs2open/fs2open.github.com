@@ -76,10 +76,10 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 	if(fb->warp_open_sound_index > -1) {
 		sound_index = fb->warp_open_sound_index;
 	} else if ((ship_class >= 0) && (ship_class < static_cast<int>(Ship_info.size()))) {
-		if ( Ship_info[ship_class].flags & SIF_HUGE_SHIP ) {
+		if ( is_huge_ship(&Ship_info[ship_class]) ) {
 			sound_index = SND_CAPITAL_WARP_IN;
 			fb->flags |= FBF_WARP_CAPITAL_SIZE;
-		} else if ( Ship_info[ship_class].flags & SIF_BIG_SHIP ) {
+		} else if ( is_big_ship(&Ship_info[ship_class]) ) {
 			range_multiplier = 6.0f;
 			fb->flags |= FBF_WARP_CRUISER_SIZE;
 		}

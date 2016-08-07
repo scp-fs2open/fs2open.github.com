@@ -593,9 +593,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// for each species, store whether support is available
 	for (int species = 0; species < (int)Species_info.size(); species++)
 	{
-		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+        for(int i = 0; i < Ship_info.size(); ++i)
 		{
-			if ((it->flags & SIF_SUPPORT) && (it->species == species))
+			if ((Ship_info[i].flags[Ship::Info_Flags::Support]) && (Ship_info[i].species == species))
 			{
 				pm->support_ships.support_available_for_species |= (1 << species);
 				break;
@@ -1634,7 +1634,7 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 	{
 		object *ship_objp = &Objects[so->objnum];
 
-		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE)
+		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device])
 		{
 			// be close to the right device (allow multiple knossoses)
 			if ( vm_vec_dist_quick(&ship_objp->pos, &p_objp->pos) < 2.0f*(ship_objp->radius + objp->radius) )
@@ -1660,7 +1660,7 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 	vm_vec_scale_add2(&objp->pos, &objp->orient.vec.fvec, (dist - desired_dist));
 	
 	// if ship is BIG or HUGE, make it go through the center of the knossos
-	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP)
+	if (is_huge_ship(&Ship_info[shipp->ship_info_index]))
 	{
 		vec3d offset;
 		vm_vec_sub(&offset, &knossos_objp->pos, &new_point);
@@ -2012,7 +2012,7 @@ int parse_create_object_sub(p_object *p_objp)
     else if (p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on])
         Objects[objnum].flags.remove(Object::Object_Flags::No_shields);
     // intrinsic no-shields means we have them off in-game
-    else if (!Fred_running && (sip->flags2 & SIF2_INTRINSIC_NO_SHIELDS))
+    else if (!Fred_running && (sip->flags[Ship::Info_Flags::Intrinsic_no_shields]))
         Objects[objnum].flags.set(Object::Object_Flags::No_shields);
 
 	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
@@ -2799,7 +2799,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// if this is a multiplayer dogfight mission, skip support ships
-	if(MULTI_DOGFIGHT && (Ship_info[p_objp->ship_class].flags & SIF_SUPPORT))
+	if(MULTI_DOGFIGHT && (Ship_info[p_objp->ship_class].flags[Ship::Info_Flags::Support]))
 		return 0;
 
 	// optional alternate name type
@@ -7583,9 +7583,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 		i = -1;
 		// get index of correct species support ship
-		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-			if ( (it->species == requester_species) && (it->flags & SIF_SUPPORT) ) {
-				i = std::distance(Ship_info.cbegin(), it);
+        for(int j = 0; j < Ship_info.size(); ++j) {
+			if ( (Ship_info[j].species == requester_species) && (Ship_info[j].flags[Ship::Info_Flags::Support]) ) {
+				i = j;
 				break;
 			}
 		}

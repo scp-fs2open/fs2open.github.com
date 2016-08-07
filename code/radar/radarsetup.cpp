@@ -104,7 +104,7 @@ void radar_stuff_blip_info(object *objp, int is_bright, color **blip_color, int 
 				*blip_color = &Radar_colors[RCOL_TAGGED][is_bright];
 				*blip_type = BLIP_TYPE_TAGGED_SHIP;
 			}
-			else if (Ship_info[shipp->ship_info_index].flags & (SIF_NAVBUOY|SIF_CARGO))
+            else if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Navbuoy] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Cargo])
 			{
 				*blip_color = &Radar_colors[RCOL_NAVBUOY_CARGO][is_bright];
 				*blip_type = BLIP_TYPE_NAVBUOY_CARGO;

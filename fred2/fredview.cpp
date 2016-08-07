@@ -2459,7 +2459,7 @@ int CFREDView::global_error_check()
 
 			if (ptr->type == OBJ_START) {
 				t++;
-				if (!(Ship_info[z].flags & SIF_PLAYER_SHIP)) {
+				if (!(Ship_info[z].flags[Ship::Info_Flags::Player_ship])) {
 					ptr->type = OBJ_SHIP;
 					Player_starts--;
 					t--;

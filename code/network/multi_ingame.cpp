@@ -1441,7 +1441,7 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 
 		// add the ballistic primary flag - Goober5000
 		val = 0;
-		if(sip->flags & SIF_BALLISTIC_PRIMARIES){
+		if(sip->flags[Ship::Info_Flags::Ballistic_primaries]){
 			val |= (1<<0);
 		}
 		ADD_DATA(val);
@@ -1688,7 +1688,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// handle the ballistic primary flag - Goober5000
 		GET_DATA(val);
 		if(val & (1<<0)){
-			Ship_info[Player_ship->ship_info_index].flags |= SIF_BALLISTIC_PRIMARIES;
+			Ship_info[Player_ship->ship_info_index].flags.set(Ship::Info_Flags::Ballistic_primaries);
 		}
 
 		// get current primary and secondary banks, and add link status

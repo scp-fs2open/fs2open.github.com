@@ -3534,7 +3534,7 @@ int CFred_mission_save::save_reinforcements() {
 		type = TYPE_ATTACK_PROTECT;
 		for (j = 0; j < MAX_SHIPS; j++)
 			if ((Ships[j].objnum != -1) && !stricmp(Ships[j].ship_name, Reinforcements[i].name)) {
-				if (Ship_info[Ships[j].ship_info_index].flags & SIF_SUPPORT)
+				if (Ship_info[Ships[j].ship_info_index].flags[Ship::Info_Flags::Support])
 					type = TYPE_REPAIR_REARM;
 				break;
 			}
