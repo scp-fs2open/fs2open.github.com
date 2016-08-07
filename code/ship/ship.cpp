@@ -266,61 +266,56 @@ flag_def_list Subsystem_flags[] = {
 const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
 
 
-// NOTE: a var of:
-//         "0"    means that it's a SIF_* flag
-//         "1"    means that it's a SIF2_* flag
-//         "255"  means that the option is obsolete and a warning should be generated
-flag_def_list Ship_flags[] = {
-	{ "no_collide",					SIF_NO_COLLIDE,				0 },
-	{ "player_ship",				SIF_PLAYER_SHIP,			0 },
-	{ "default_player_ship",		SIF_DEFAULT_PLAYER_SHIP,	0 },
-	{ "repair_rearm",				SIF_SUPPORT,				0 },
-	{ "cargo",						SIF_CARGO,					0 },
-	{ "fighter",					SIF_FIGHTER,				0 },
-	{ "bomber",						SIF_BOMBER,					0 },
-	{ "transport",					SIF_TRANSPORT,				0 },
-	{ "freighter",					SIF_FREIGHTER,				0 },
-	{ "capital",					SIF_CAPITAL,				0 },
-	{ "supercap",					SIF_SUPERCAP,				0 },
-	{ "drydock",					SIF_DRYDOCK,				0 },
-	{ "cruiser",					SIF_CRUISER,				0 },
-	{ "navbuoy",					SIF_NAVBUOY,				0 },
-	{ "sentrygun",					SIF_SENTRYGUN,				0 },
-	{ "escapepod",					SIF_ESCAPEPOD,				0 },
-	{ "stealth",					SIF_STEALTH,				0 },
-	{ "no type",					SIF_NO_SHIP_TYPE,			0 },
-	{ "ship copy",					SIF_SHIP_COPY,				0 },
-	{ "in tech database",			SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M,	0 },
-	{ "in tech database multi",		SIF_IN_TECH_DATABASE_M,		0 },
-	{ "dont collide invisible",		SIF_SHIP_CLASS_DONT_COLLIDE_INVIS,	0 },
-	{ "big damage",					SIF_BIG_DAMAGE,				0 },
-	{ "corvette",					SIF_CORVETTE,				0 },
-	{ "gas miner",					SIF_GAS_MINER,				0 },
-	{ "awacs",						SIF_AWACS,					0 },
-	{ "knossos",					SIF_KNOSSOS_DEVICE,			0 },
-	{ "no_fred",					SIF_NO_FRED,				0 },
-	{ "flash",						SIF2_FLASH,					1 },
-	{ "surface shields",			SIF2_SURFACE_SHIELDS,		1 },
-	{ "show ship",					SIF2_SHOW_SHIP_MODEL,		1 },
-	{ "generate icon",				SIF2_GENERATE_HUD_ICON,		1 },
-	{ "no weapon damage scaling",	SIF2_DISABLE_WEAPON_DAMAGE_SCALING,	1 },
-	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
-	{ "no thruster geometry noise", SIF2_NO_THRUSTER_GEO_NOISE,	1 },
-	{ "intrinsic no shields",		SIF2_INTRINSIC_NO_SHIELDS,	1 },
-	{ "dynamic primary linking",    SIF2_DYN_PRIMARY_LINKING,	1 },
-	{ "no primary linking",			SIF2_NO_PRIMARY_LINKING,	1 },
-	{ "no pain flash",				SIF2_NO_PAIN_FLASH,			1 },
-	{ "no ets",						SIF2_NO_ETS,				1 },
-	{ "no lighting",				SIF2_NO_LIGHTING,			1 },
-	{ "auto spread shields",		SIF2_AUTO_SPREAD_SHIELDS,	1 },
-	{ "model point shields",		SIF2_MODEL_POINT_SHIELDS,	1 },
-	{ "repair disabled subsystems", SIF2_SUBSYS_REPAIR_WHEN_DISABLED, 1},
+flag_def_list_new<Info_Flags> Ship_flags[] = {
+    { "no_collide",					Info_Flags::No_collide,				true, false },
+    { "player_ship",				Info_Flags::Player_ship,			true, false },
+    { "default_player_ship",		Info_Flags::Default_player_ship,	true, false },
+    { "repair_rearm",				Info_Flags::Support,				true, false },
+    { "cargo",						Info_Flags::Cargo,					true, false },
+    { "fighter",					Info_Flags::Fighter,				true, false },
+    { "bomber",						Info_Flags::Bomber,					true, false },
+    { "transport",					Info_Flags::Transport,				true, false },
+    { "freighter",					Info_Flags::Freighter,				true, false },
+    { "capital",					Info_Flags::Capital,				true, false },
+    { "supercap",					Info_Flags::Supercap,				true, false },
+    { "drydock",					Info_Flags::Drydock,				true, false },
+    { "cruiser",					Info_Flags::Cruiser,				true, false },
+    { "navbuoy",					Info_Flags::Navbuoy,				true, false },
+    { "sentrygun",					Info_Flags::Sentrygun,				true, false },
+    { "escapepod",					Info_Flags::Escapepod,				true, false },
+    { "stealth",					Info_Flags::Stealth,				true, false },
+    { "no type",					Info_Flags::No_ship_type,			true, false },
+    { "ship copy",					Info_Flags::Ship_copy,				true, false },
+    { "in tech database",			Info_Flags::In_tech_database,		true, false },
+    { "in tech database multi",		Info_Flags::In_tech_database_m,		true, false },
+    { "dont collide invisible",		Info_Flags::Ship_class_dont_collide_invis, true, false },
+    { "big damage",					Info_Flags::Big_damage,				true, false },
+    { "corvette",					Info_Flags::Corvette,				true, false },
+    { "gas miner",					Info_Flags::Gas_miner,				true, false },
+    { "awacs",						Info_Flags::Awacs,					true, false },
+    { "knossos",					Info_Flags::Knossos_device,			true, false },
+    { "no_fred",					Info_Flags::No_fred,				true, false },
+    { "flash",						Info_Flags::Flash,					true, false },
+    { "surface shields",			Info_Flags::Surface_shields,		true, false },
+    { "show ship",					Info_Flags::Show_ship_model,		true, false },
+    { "generate icon",				Info_Flags::Generate_hud_icon,		true, false },
+    { "no weapon damage scaling",	Info_Flags::Disable_weapon_damage_scaling, true, false },
+    { "gun convergence",			Info_Flags::Gun_convergence,		true, false },
+    { "no thruster geometry noise", Info_Flags::No_thruster_geo_noise,	true, false },
+    { "intrinsic no shields",		Info_Flags::Intrinsic_no_shields,	true, false },
+    { "dynamic primary linking",	Info_Flags::Dyn_primary_linking,	true, false },
+    { "no primary linking",			Info_Flags::No_primary_linking,		true, false },
+    { "no pain flash",				Info_Flags::No_pain_flash,			true, false },
+    { "no ets",						Info_Flags::No_ets,					true, false },
+    { "no lighting",				Info_Flags::No_lighting,			true, false },
+    { "auto spread shields",		Info_Flags::Auto_spread_shields,	true, false },
+    { "model point shields",		Info_Flags::Model_point_shields,	true, false },
 
-	// to keep things clean, obsolete options go last
-	{ "ballistic primaries",		-1,		255 }
+    // to keep things clean, obsolete options go last
+    { "ballistic primaries",		Info_Flags::Ballistic_primaries,	false, false }
 };
 
-const int Num_ship_flags = sizeof(Ship_flags) / sizeof(flag_def_list);
+const size_t Num_ship_flags = sizeof(Ship_flags) / sizeof(flag_def_list_new<Info_Flags>);
 
 /*
 ++Here be dragons.. err.. begins the section for the ai targeting revision
@@ -3286,12 +3281,10 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				if ( !stricmp(Ship_flags[idx].name, ship_strings[i]) ) {
 					flag_found = true;
 
-					if (Ship_flags[idx].var == 255)
+					if (!Ship_flags[idx].in_use)
 						Warning(LOCATION, "Use of '%s' flag for %s '%s' - this flag is no longer needed.", Ship_flags[idx].name, info_type_name, sip->name);
-					else if (Ship_flags[idx].var == 0)
-						sip->flags |= Ship_flags[idx].def;
-					else if (Ship_flags[idx].var == 1)
-						sip->flags2 |= Ship_flags[idx].def;
+					else 
+						sip->flags.set(Ship_flags[idx].def);
 				}
 			}
 

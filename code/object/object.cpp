@@ -752,7 +752,7 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 		} else {
 			// unflag the ship as having the trigger down
 			if(shipp != NULL){
-				shipp->flags &= ~(SF_TRIGGER_DOWN);
+                shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
 				ship_stop_fire_primary(objp);	//if it hasn't fired do the "has just stoped fireing" stuff
 			}
 		}

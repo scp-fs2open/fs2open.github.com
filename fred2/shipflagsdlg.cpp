@@ -454,14 +454,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(shipp->flags[Ship::Ship_Flags::Cargo_revealed]) )
 				set_modified();
 
-			shipp->flags |= SF_CARGO_REVEALED;
+            shipp->flags.set(Ship::Ship_Flags::Cargo_revealed);
 			break;
 
 		case 0:
 			if ( shipp->flags[Ship::Ship_Flags::Cargo_revealed] )
 				set_modified();
 
-			shipp->flags &= ~SF_CARGO_REVEALED;
+            shipp->flags.remove(Ship::Ship_Flags::Cargo_revealed);
 			break;
 	}
 
@@ -599,14 +599,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(shipp->flags[Ship::Ship_Flags::Hidden_from_sensors]) )
 				set_modified();
 
-			shipp->flags |= SF_HIDDEN_FROM_SENSORS;
+            shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors);
 			break;
 
 		case 0:
 			if ( shipp->flags[Ship::Ship_Flags::Hidden_from_sensors] )
 				set_modified();
 
-			shipp->flags &= ~SF_HIDDEN_FROM_SENSORS;
+            shipp->flags.remove(Ship::Ship_Flags::Hidden_from_sensors);
 			break;
 	}
 
@@ -615,14 +615,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(shipp->flags[Ship::Ship_Flags::Primitive_sensors]) )
 				set_modified();
 
-			shipp->flags2 |= SF2_PRIMITIVE_SENSORS;
+            shipp->flags.set(Ship::Ship_Flags::Primitive_sensors);
 			break;
 
 		case 0:
 			if ( shipp->flags[Ship::Ship_Flags::Primitive_sensors] )
 				set_modified();
 
-			shipp->flags2 &= ~SF2_PRIMITIVE_SENSORS;
+            shipp->flags.remove(Ship::Ship_Flags::Primitive_sensors);
 			break;
 	}
 
@@ -631,14 +631,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(shipp->flags[Ship::Ship_Flags::No_subspace_drive]) )
 				set_modified();
 
-			shipp->flags2 |= SF2_NO_SUBSPACE_DRIVE;
+            shipp->flags.set(Ship::Ship_Flags::No_subspace_drive);
 			break;
 
 		case 0:
 			if ( shipp->flags[Ship::Ship_Flags::No_subspace_drive] )
 				set_modified();
 
-			shipp->flags2 &= ~SF2_NO_SUBSPACE_DRIVE;
+            shipp->flags.remove(Ship::Ship_Flags::No_subspace_drive);
 			break;
 	}
 
@@ -654,7 +654,7 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( shipp->flags[Ship::Ship_Flags::Affected_by_gravity] )
 				set_modified();
 
-			shipp->flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
+            shipp->flags.remove(Ship::Ship_Flags::Affected_by_gravity);
 			break;
 	}
 
@@ -663,14 +663,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(shipp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) )
 				set_modified();
 
-			shipp->flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
+            shipp->flags.set(Ship::Ship_Flags::Toggle_subsystem_scanning);
 			break;
 
 		case 0:
 			if ( shipp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning] )
 				set_modified();
 
-			shipp->flags2 &= ~SF2_TOGGLE_SUBSYSTEM_SCANNING;
+            shipp->flags.remove(Ship::Ship_Flags::Toggle_subsystem_scanning);
 			break;
 	}
 
@@ -679,14 +679,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(shipp->flags[Ship::Ship_Flags::Ignore_count]) )
 				set_modified();
 
-			shipp->flags |= SF_IGNORE_COUNT;
+            shipp->flags.set(Ship::Ship_Flags::Ignore_count);
 			break;
 
 		case 0:
 			if (shipp->flags[Ship::Ship_Flags::Ignore_count])
 				set_modified();
 
-			shipp->flags &= ~SF_IGNORE_COUNT;
+            shipp->flags.remove(Ship::Ship_Flags::Ignore_count);
 			break;
 	}
 
@@ -703,7 +703,7 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if (shipp->flags[Ship::Ship_Flags::Escort])
 				set_modified();
 
-			shipp->flags &= ~SF_ESCORT;
+            shipp->flags.remove(Ship::Ship_Flags::Escort);
 			break;
 	}
 
@@ -713,14 +713,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( shipp->flags[Ship::Ship_Flags::Kill_before_mission] )
 				set_modified();
 
-			shipp->flags &= ~SF_KILL_BEFORE_MISSION;
+            shipp->flags.remove(Ship::Ship_Flags::Kill_before_mission);
 			break;
 
 		case 1:  // this means checkbox is checked
 			if ( !(shipp->flags[Ship::Ship_Flags::Kill_before_mission]) )
 				set_modified();
 
-			shipp->flags |= SF_KILL_BEFORE_MISSION;
+            shipp->flags.set(Ship::Ship_Flags::Kill_before_mission);
 			m_destroy_value.save(&shipp->final_death_time);
 			break;
 	}  // a mixed state is 2, and since it's not handled, it doesn't change
@@ -730,14 +730,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if (shipp->flags[Ship::Ship_Flags::No_arrival_music])
 				set_modified();
 
-			shipp->flags &= ~SF_NO_ARRIVAL_MUSIC;
+            shipp->flags.remove(Ship::Ship_Flags::No_arrival_music);
 			break;
 
 		case 1:
 			if (!(shipp->flags[Ship::Ship_Flags::No_arrival_music]))
 				set_modified();
 
-			shipp->flags |= SF_NO_ARRIVAL_MUSIC;
+            shipp->flags.set(Ship::Ship_Flags::No_arrival_music);
 			break;
 	}
 
@@ -746,14 +746,14 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( !(shipp->flags[Ship::Ship_Flags::Scannable]) )
 				set_modified();
 
-			shipp->flags |= SF_SCANNABLE;
+            shipp->flags.set(Ship::Ship_Flags::Scannable);
 			break;
 
 		case 0:
 			if ( shipp->flags[Ship::Ship_Flags::Scannable] )
 				set_modified();
 
-			shipp->flags &= ~SF_SCANNABLE;
+            shipp->flags.remove(Ship::Ship_Flags::Scannable);
 			break;
 	}
 
@@ -769,7 +769,7 @@ void ship_flags_dlg::update_ship(int shipnum)
 			if ( shipp->flags[Ship::Ship_Flags::Red_alert_store_status] )
 				set_modified();
 
-			shipp->flags &= ~SF_RED_ALERT_STORE_STATUS;
+            shipp->flags.remove(Ship::Ship_Flags::Red_alert_store_status);
 			break;
 	}
 
@@ -827,262 +827,245 @@ void ship_flags_dlg::update_ship(int shipnum)
 			break;
 	}
 
-	switch (m_disable_messages.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::No_builtin_messages]) )
-				set_modified();
+    switch (m_disable_messages.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::No_builtin_messages]))
+            set_modified();
 
-			shipp->flags2 |= SF2_NO_BUILTIN_MESSAGES;
-			break;
-
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::No_builtin_messages] )
-				set_modified();
-
-			shipp->flags2 &= ~SF2_NO_BUILTIN_MESSAGES;
-			break;
-	}
-
-	switch (m_set_class_dynamically.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::Set_class_dynamically]) )
-				set_modified();
+        shipp->flags.set(Ship::Ship_Flags::No_builtin_messages);
+        break;
+
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::No_builtin_messages])
+            set_modified();
+
+        shipp->flags.set(Ship::Ship_Flags::No_builtin_messages, false);
+        break;
+    }
+
+    switch (m_set_class_dynamically.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::Set_class_dynamically]))
+            set_modified();
 
-			shipp->flags2 |= SF2_SET_CLASS_DYNAMICALLY;
-			break;
-
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::Set_class_dynamically] )
-				set_modified();
-
-			shipp->flags2 &= ~SF2_SET_CLASS_DYNAMICALLY;
-			break;
-	}
-
-	switch (m_no_death_scream.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::No_death_scream]) )
-				set_modified();
+        shipp->flags.set(Ship::Ship_Flags::Set_class_dynamically);
+        break;
+
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::Set_class_dynamically])
+            set_modified();
+
+        shipp->flags.remove(Ship::Ship_Flags::Set_class_dynamically);
+        break;
+    }
+
+    switch (m_no_death_scream.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::No_death_scream]))
+            set_modified();
 
-			shipp->flags2 |= SF2_NO_DEATH_SCREAM;
-			break;
-
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::No_death_scream] )
-				set_modified();
-
-			shipp->flags2 &= ~SF2_NO_DEATH_SCREAM;
-			break;
-	}
-
-	switch (m_always_death_scream.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::Always_death_scream]) )
-				set_modified();
+        shipp->flags.set(Ship::Ship_Flags::No_death_scream);
+        break;
+
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::No_death_scream])
+            set_modified();
+
+        shipp->flags.remove(Ship::Ship_Flags::No_death_scream);
+        break;
+    }
+
+    switch (m_always_death_scream.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::Always_death_scream]))
+            set_modified();
 
-			shipp->flags2 |= SF2_ALWAYS_DEATH_SCREAM;
-			break;
-
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::Always_death_scream] )
-				set_modified();
-
-			shipp->flags2 &= ~SF2_ALWAYS_DEATH_SCREAM;
-			break;
-	}
-
-	switch (m_nav_carry.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::Navpoint_carry]) )
-				set_modified();
+        shipp->flags.set(Ship::Ship_Flags::Always_death_scream);
+        break;
+
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::Always_death_scream])
+            set_modified();
+
+        shipp->flags.remove(Ship::Ship_Flags::Always_death_scream);
+        break;
+    }
+
+    switch (m_nav_carry.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::Navpoint_carry]))
+            set_modified();
 
-			shipp->flags2 |= SF2_NAVPOINT_CARRY;
-			break;
-
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::Navpoint_carry] )
-				set_modified();
-
-			shipp->flags2 &= ~SF2_NAVPOINT_CARRY;
-			break;
-	}
-
-	switch (m_nav_needslink.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::Navpoint_needslink]) )
-				set_modified();
+        shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
+        break;
+
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::Navpoint_carry])
+            set_modified();
+
+        shipp->flags.remove(Ship::Ship_Flags::Navpoint_carry);
+        break;
+    }
+
+    switch (m_nav_needslink.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::Navpoint_needslink]))
+            set_modified();
 
-			shipp->flags2 |= SF2_NAVPOINT_NEEDSLINK;
-			break;
-
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::Navpoint_needslink] )
-				set_modified();
-
-			shipp->flags2 &= ~SF2_NAVPOINT_NEEDSLINK;
-			break;
-	}
-
-	switch (m_hide_ship_name.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::Hide_ship_name]) )
-				set_modified();
+        shipp->flags.set(Ship::Ship_Flags::Navpoint_needslink);
+        break;
+
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::Navpoint_needslink])
+            set_modified();
+
+        shipp->flags.remove(Ship::Ship_Flags::Navpoint_needslink);
+        break;
+    }
+
+    switch (m_hide_ship_name.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::Hide_ship_name]))
+            set_modified();
 
-			shipp->flags2 |= SF2_HIDE_SHIP_NAME;
-			break;
+        shipp->flags.set(Ship::Ship_Flags::Hide_ship_name);
+        break;
 
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::Hide_ship_name] )
-				set_modified();
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::Hide_ship_name])
+            set_modified();
 
-			shipp->flags2 &= ~SF2_HIDE_SHIP_NAME;
-			break;
-	}
+        shipp->flags.remove(Ship::Ship_Flags::Hide_ship_name);
+        break;
+    }
 
-	switch (m_disable_ets.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::No_ets]) )
-				set_modified();
+    switch (m_disable_ets.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::No_ets]))
+            set_modified();
 
-			shipp->flags2 |= SF2_NO_ETS;
-			break;
+        shipp->flags.set(Ship::Ship_Flags::No_ets);
+        break;
 
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::No_ets] )
-				set_modified();
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::No_ets])
+            set_modified();
 
-			shipp->flags2 &= ~SF2_NO_ETS;
-			break;
-	}
+        shipp->flags.remove(Ship::Ship_Flags::No_ets);
+        break;
+    }
 
-	switch (m_cloaked.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::Cloaked]) )
-				set_modified();
+    switch (m_cloaked.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::Cloaked]))
+            set_modified();
 
-			shipp->flags2 |= SF2_CLOAKED;
-			break;
+        shipp->flags.set(Ship::Ship_Flags::Cloaked);
+        break;
 
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::Cloaked] )
-				set_modified();
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::Cloaked])
+            set_modified();
 
-			shipp->flags2 &= ~SF2_CLOAKED;
-			break;
-	}
+        shipp->flags.remove(Ship::Ship_Flags::Cloaked);
+        break;
+    }
 
-	switch (m_guardian.GetCheck()) {
-		case 1:
-			if ( !(shipp->ship_guardian_threshold) )
-				set_modified();
+    switch (m_no_collide.GetCheck()) {
+    case 1:
+        if (objp->flags[Object::Object_Flags::Collides])
+            set_modified();
 
-			shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
-			break;
+        objp->flags.remove(Object::Object_Flags::Collides);
+        break;
 
-		case 0:
-			if ( shipp->ship_guardian_threshold )
-				set_modified();
+    case 0:
+        if (!(objp->flags[Object::Object_Flags::Collides]))
+            set_modified();
 
-			shipp->ship_guardian_threshold = 0;
-			break;
-	}
+        objp->flags.set(Object::Object_Flags::Collides);
+        break;
+    }
 
-	switch (m_vaporize.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::Vaporize]) )
-				set_modified();
+    switch (m_guardian.GetCheck()) {
+    case 1:
+        if (!(shipp->ship_guardian_threshold))
+            set_modified();
 
-			shipp->flags.set(Ship::Ship_Flags::Vaporize);
-			break;
+        shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
+        break;
 
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::Vaporize] )
-				set_modified();
+    case 0:
+        if (shipp->ship_guardian_threshold)
+            set_modified();
 
-			shipp->flags &= ~SF_VAPORIZE;
-			break;
-	}
+        shipp->ship_guardian_threshold = 0;
+        break;
+    }
 
-	switch (m_stealth.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::Stealth]) )
-				set_modified();
+    switch (m_vaporize.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::Vaporize]))
+            set_modified();
 
-			shipp->flags2 |= SF2_STEALTH;
-			break;
+        shipp->flags.set(Ship::Ship_Flags::Vaporize);
+        break;
 
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::Stealth] )
-				set_modified();
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::Vaporize])
+            set_modified();
 
-			shipp->flags2 &= ~SF2_STEALTH;
-			break;
-	}
+        shipp->flags.remove(Ship::Ship_Flags::Vaporize);
+        break;
+    }
 
-	switch (m_friendly_stealth_invisible.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::Friendly_stealth_invis]) )
-				set_modified();
+    switch (m_stealth.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::Stealth]))
+            set_modified();
 
-			shipp->flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
-			break;
+        shipp->flags.set(Ship::Ship_Flags::Stealth);
+        break;
 
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::Friendly_stealth_invis] )
-				set_modified();
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::Stealth])
+            set_modified();
 
-			shipp->flags2 &= ~SF2_FRIENDLY_STEALTH_INVIS;
-			break;
-	}
+        shipp->flags.remove(Ship::Ship_Flags::Stealth);
+        break;
+    }
 
-	switch (m_scramble_messages.GetCheck()) {
-		case 1:
-			if ( !(shipp->flags[Ship::Ship_Flags::Scramble_messages]) )
-				set_modified();
+    switch (m_friendly_stealth_invisible.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::Friendly_stealth_invis]))
+            set_modified();
 
-			shipp->flags2 |= SF2_SCRAMBLE_MESSAGES;
-			break;
+        shipp->flags.set(Ship::Ship_Flags::Friendly_stealth_invis);
+        break;
 
-		case 0:
-			if ( shipp->flags[Ship::Ship_Flags::Scramble_messages] )
-				set_modified();
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::Friendly_stealth_invis])
+            set_modified();
 
-			shipp->flags2 &= ~SF2_SCRAMBLE_MESSAGES;
-			break;
-	}
+        shipp->flags.remove(Ship::Ship_Flags::Friendly_stealth_invis);
+        break;
+    }
 
-	switch (m_no_collide.GetCheck()) {
-		case 1:
-			if (objp->flags[Object::Object_Flags::Collides])
-				set_modified();
+    switch (m_scramble_messages.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::Scramble_messages]))
+            set_modified();
 
-            objp->flags.remove(Object::Object_Flags::Collides);
-			break;
+        shipp->flags.set(Ship::Ship_Flags::Scramble_messages);
+        break;
 
-		case 0:
-			if (!(objp->flags[Object::Object_Flags::Collides]))
-				set_modified();
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::Scramble_messages])
+            set_modified();
 
-			objp->flags.set(Object::Object_Flags::Collides);
-			break;
-	}
-
-	switch (m_no_disabled_self_destruct.GetCheck()) {
-		case 1:
-			if (!(shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct]))
-				set_modified();
-
-			shipp->flags2 |= SF2_NO_DISABLED_SELF_DESTRUCT;
-			break;
-
-		case 0:
-			if (shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])
-				set_modified();
-
-			shipp->flags2 &= ~SF2_NO_DISABLED_SELF_DESTRUCT;
-			break;
-	}
-
+        shipp->flags.remove(Ship::Ship_Flags::Scramble_messages);
+        break;
+    }
 
 	shipp->respawn_priority = 0;
 	if(The_mission.game_type & MISSION_TYPE_MULTI) {

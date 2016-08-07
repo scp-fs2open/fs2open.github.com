@@ -900,7 +900,7 @@ void multi_ingame_join_display_avail()
 
 	moveup = GET_FIRST(&Ship_obj_list);	
 	while(moveup != END_OF_LIST(&Ship_obj_list)){
-		if( !(Ships[Objects[moveup->objnum].instance].flags & (SF_DYING|SF_DEPARTING)) && (Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]) ) {
+		if( !(is_dying_departing(&Ships[Objects[moveup->objnum].instance])) && (Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]) ) {
 			// display the ship
 			multi_ingame_join_display_ship(&Objects[moveup->objnum],Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_num_avail * Mi_spacing[gr_screen.res]));
 
@@ -971,8 +971,8 @@ void multi_ingame_handle_timeout()
 
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
-	int offset, sflags, sflags2, team, j;
-    uint64_t oflags;
+	int offset, team, j;
+    uint64_t oflags, sflags;
 	ubyte p_type;
 	ushort net_signature;	
 	short wing_data;	
@@ -1009,8 +1009,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		GET_STRING( ship_name );
 		GET_USHORT( net_signature );
-		GET_INT( sflags );
-		GET_INT( sflags2 );
+		GET_ULONG( sflags );
 		GET_ULONG( oflags );
 		GET_INT( team );		
 		GET_SHORT( wing_data );
@@ -1045,8 +1044,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		// assign any common data
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
-		Ships[ship_num].flags = sflags;
-		Ships[ship_num].flags2 = sflags2;
+		Ships[ship_num].flags.from_long(sflags);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
 
@@ -1134,8 +1132,7 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
-		ADD_INT( shipp->flags );
-		ADD_INT( shipp->flags2 );
+		ADD_ULONG( shipp->flags.to_long() );
 		ADD_ULONG( Objects[so->objnum].flags.to_long() );
 		ADD_INT( shipp->team );
 		wing_data = (short)shipp->wingnum;
@@ -1691,7 +1688,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// handle the ballistic primary flag - Goober5000
 		GET_DATA(val);
 		if(val & (1<<0)){
-			Player_ship->flags |= SIF_BALLISTIC_PRIMARIES;
+			Ship_info[Player_ship->ship_info_index].flags |= SIF_BALLISTIC_PRIMARIES;
 		}
 
 		// get current primary and secondary banks, and add link status

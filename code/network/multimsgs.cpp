@@ -2476,7 +2476,7 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 	Assert ( Net_player->flags & NETINFO_FLAG_AM_MASTER );
 
 	// special deaths
-	vaporized = ( (Ships[objp->instance].flags[Ship::Ship_Flags::Vaporize]) > 0 );
+	vaporized = Ships[objp->instance].flags[Ship::Ship_Flags::Vaporize];
 
 	extra_death_info = 0; 
 	if ( vaporized ) {
@@ -3102,7 +3102,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 	}
 
 	// set the dual fire properties of the ship
-    shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire, sinfo & SFPF_DUAL_FIRE != 0);
+    shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire, (sinfo & SFPF_DUAL_FIRE) != 0);
 
 	// determine whether current target is locked
 	Assert( shipp->ai_index != -1 );
@@ -4144,10 +4144,10 @@ void process_ship_weapon_change( ubyte *data, header *hinfo )
 	shipp = &Ships[objp->instance];
 	if ( what == MULTI_PRIMARY_CHANGED ) {
 		shipp->weapons.current_primary_bank = new_bank;
-		shipp->flags.set(Ship::Ship_Flags::Primary_linked, link_status);
+		shipp->flags.set(Ship::Ship_Flags::Primary_linked, link_status != 0);
 	} else {
 		shipp->weapons.current_secondary_bank = new_bank;
-		shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire, link_status);
+		shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire, link_status != 0);
 	}
 }
 	

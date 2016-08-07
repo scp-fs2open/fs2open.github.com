@@ -430,13 +430,14 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	if(cur_link_status & (1<<0)){
 		shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 	} else {
-		shipp->flags &= ~(SF_PRIMARY_LINKED);
+        shipp->flags.remove(Ship::Ship_Flags::Primary_linked);
 	}			
 	if(cur_link_status & (1<<1)){
 		shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
-	} else {
-		shipp->flags &= ~(SF_SECONDARY_DUAL_FIRE);
-	}
+    }
+    else {
+        shipp->flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
+    }
 
 	Assert( ship_ets != 0 );		// find dave or allender
 

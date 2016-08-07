@@ -525,8 +525,8 @@ float shipfx_calculate_warp_dist(object *objp)
 // fx don't work for some reason.
 void shipfx_actually_warpin(ship *shipp, object *objp)
 {
-	shipp->flags &= (~SF_ARRIVING_STAGE_1);
-	shipp->flags &= (~SF_ARRIVING_STAGE_2);
+	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
+	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
 
 	// let physics in on it too.
 	objp->phys_info.flags &= (~PF_WARP_IN);
@@ -566,7 +566,7 @@ void shipfx_warpin_start( object *objp )
 {
 	ship *shipp = &Ships[objp->instance];
 
-	if (shipp->flags & SF_ARRIVING)
+	if (is_ship_arriving(shipp))
 	{
 		mprintf(( "Ship '%s' is already arriving!\n", shipp->ship_name ));
 		Int3();
@@ -833,7 +833,7 @@ void shipfx_warpout_start( object *objp )
 	if ( shipp->flags[Ship::Ship_Flags::No_departure_warp] ) {
 		// DKA 5/25/99 If he's going to warpout, set it.  
 		// Next line fixes assert in wing cleanup code when no warp effect.
-		shipp->flags |= SF_DEPART_WARP;
+        shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
 		shipfx_actually_warpout(objp->instance);
 		return;
@@ -855,7 +855,8 @@ void shipfx_warpout_frame( object *objp, float frametime )
 	//disabled ships should stay on the battlefield if they were disabled during warpout
 	//phreak 5/22/03
 	if (shipp->flags[Ship::Ship_Flags::Disabled]){
-		shipp->flags &= ~(SF_DEPARTING);
+        shipp->flags.remove(Ship::Ship_Flags::Depart_dockbay);
+        shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
 		return;
 	}
 
@@ -1488,7 +1489,7 @@ void shipfx_emit_spark( int n, int sn )
     //
     // phreak: Mantis 1676 - Re-enable warpout clipping.
 	
-	if ((shipp->flags & (SF_ARRIVING|SF_DEPART_WARP)) && (shipp->warpout_effect))
+	if ((is_ship_arriving(shipp) || shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect))
     {
         vec3d warp_pnt, tmp;
         matrix warp_orient;
@@ -1500,7 +1501,7 @@ void shipfx_emit_spark( int n, int sn )
         
         if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f )
         {
-			if (shipp->flags & SF_ARRIVING)// if in front of warp plane, don't create.
+            if (is_ship_arriving(shipp))// if in front of warp plane, don't create.
 				create_spark = 0;
 		} else {
 			if (shipp->flags[Ship::Ship_Flags::Depart_warp])
@@ -1515,7 +1516,7 @@ void shipfx_emit_spark( int n, int sn )
 
 		pe.pos = outpnt;				// Where the particles emit from
 
-		if ( shipp->flags & (SF_ARRIVING|SF_DEPART_WARP) ) {
+        if (is_ship_arriving(shipp) || shipp->flags[Ship::Ship_Flags::Depart_warp]) {
 			// No velocity if going through warp.
 			pe.vel = vmd_zero_vector;
 		} else {
@@ -3397,9 +3398,9 @@ int WarpEffect::warpEnd()
 	if(!this->isValid())
 		return 0;
 
-	shipp->flags &= (~SF_ARRIVING_STAGE_1);
-	shipp->flags &= (~SF_ARRIVING_STAGE_2);
-	shipp->flags &= (~SF_DEPART_WARP);
+    shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
+    shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
+    shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
 
 	// let physics in on it too.
 	objp->phys_info.flags &= (~PF_WARP_IN);
@@ -3527,11 +3528,11 @@ int WE_Default::warpStart()
 		stage_duration[2] = fl2i(shipfx_calculate_warp_time(objp, WD_WARP_IN)*1000.0f);
 		stage_time_end = timestamp(stage_duration[1]);
 		total_time_end = stage_duration[1] + stage_duration[2];
-		shipp->flags |= SF_ARRIVING_STAGE_1;
+        shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 	}
 	else if(direction == WD_WARP_OUT)
 	{
-		shipp->flags |= SF_DEPART_WARP;
+        shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
 		// Make the warp effect stage 1 last SHIP_WARP_TIME1 seconds.
 		if ( objp == Player_obj )	{
@@ -3573,8 +3574,8 @@ int WE_Default::warpFrame(float frametime)
 			objp->phys_info.flags |= PF_WARP_IN;
 
 			// done doing stage 1 of warp, so go on to stage 2
-			shipp->flags &= (~SF_ARRIVING_STAGE_1);
-			shipp->flags |= SF_ARRIVING_STAGE_2;
+            shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
+            shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
 
 			float warp_time = shipfx_calculate_warp_time(objp, WD_WARP_IN);
 			float speed = shipfx_calculate_warp_dist(objp) / warp_time;		// How long it takes to move through warp effect
@@ -3592,7 +3593,7 @@ int WE_Default::warpFrame(float frametime)
 
 			stage_time_end = timestamp(fl2i(warp_time*1000.0f));
 		}
-		else if ( (shipp->flags & SF_ARRIVING_STAGE_2) && timestamp_elapsed(stage_time_end) )
+		else if ( (shipp->flags[Ship::Ship_Flags::Arriving_stage_2]) && timestamp_elapsed(stage_time_end) )
 		{
 			// done doing stage 2 of warp, so turn off arriving flag
 			this->warpEnd();
@@ -3848,23 +3849,21 @@ int WE_BSG::warpStart()
 		vm_vec_sub(&autocenter, &dock_center, &objp->pos);
 	}
 
-	if(direction == WD_WARP_IN)
-		shipp->flags |= SF_ARRIVING_STAGE_1;
+    if (direction == WD_WARP_IN)
+        shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 	else
-		shipp->flags |= SF_DEPART_WARP;
+        shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
 	//*****Sound
 	int gs_start_index = -1;
 	int gs_end_index = -1;
 	if(direction == WD_WARP_IN)
 	{
-		shipp->flags |= SF_ARRIVING_STAGE_1;
 		gs_start_index = sip->warpin_snd_start;
 		gs_end_index = sip->warpin_snd_end;
 	}
 	else if(direction == WD_WARP_OUT)
 	{
-		shipp->flags |= SF_DEPART_WARP;
 		gs_start_index = sip->warpout_snd_start;
 		gs_end_index = sip->warpout_snd_end;
 	}
@@ -3917,8 +3916,8 @@ int WE_BSG::warpFrame(float frametime)
 			case 1:
 				if(direction == WD_WARP_IN)
 				{
-					shipp->flags &= (~SF_ARRIVING_STAGE_1);
-					shipp->flags |= SF_ARRIVING_STAGE_2;
+                    shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
+                    shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
 				}
 				break;
 			default:
@@ -4180,12 +4179,12 @@ int WE_Homeworld::warpStart()
 	int gs_index = -1;
 	if(direction == WD_WARP_IN)
 	{
-		shipp->flags |= SF_ARRIVING_STAGE_1;
+        shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		gs_index = sip->warpin_snd_start;
 	}
 	else if(direction == WD_WARP_OUT)
 	{
-		shipp->flags |= SF_DEPART_WARP;
+        shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 		gs_index = sip->warpout_snd_start;
 	}
 	else
@@ -4225,8 +4224,8 @@ int WE_Homeworld::warpFrame(float frametime)
 				if(direction == WD_WARP_IN)
 				{
 					objp->phys_info.flags |= PF_WARP_IN;
-					shipp->flags &= (~SF_ARRIVING_STAGE_1);
-					shipp->flags |= SF_ARRIVING_STAGE_2;
+                    shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
+                    shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
 				}
 
 				break;
@@ -4369,14 +4368,14 @@ int WE_Hyperspace::warpStart()
 
 	if(direction == WD_WARP_IN)
 	{
-		shipp->flags |= SF_ARRIVING_STAGE_1;
+        shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		objp->phys_info.flags |= PF_WARP_IN;
 		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
         objp->flags.remove(Object::Object_Flags::Physics);
 	}
 	else if(direction == WD_WARP_OUT)
 	{
-		shipp->flags |= SF_DEPART_WARP;
+        shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 	}
 	else
 	{
@@ -4405,7 +4404,7 @@ int WE_Hyperspace::warpFrame(float frametime)
 			vm_vec_scale( &vel, initial_velocity );
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
-			shipp->flags |= SF_ARRIVING_STAGE_2;
+            shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
 		}
         objp->flags.set(Object::Object_Flags::Physics);
 		this->warpEnd();

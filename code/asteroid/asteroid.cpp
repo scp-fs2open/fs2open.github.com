@@ -322,7 +322,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 
 	vm_angles_2_matrix(&orient, &angs);
     flagset<Object::Object_Flags> asteroid_default_flagset;
-    asteroid_default_flagset.add_multiple(Asteroid_default_obj_flags, sizeof(Asteroid_default_obj_flags)/sizeof(Object::Object_Flags));
+    asteroid_default_flagset.set_multiple(Asteroid_default_obj_flags, sizeof(Asteroid_default_obj_flags)/sizeof(Object::Object_Flags));
     
     objnum = obj_create(OBJ_ASTEROID, -1, n, &orient, &pos, radius, asteroid_default_flagset);
 	

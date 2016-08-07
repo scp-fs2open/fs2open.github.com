@@ -660,25 +660,31 @@ public:
     bool operator!=(flagset<T> other) { return this->values != other.values; }
 
     void reset() { values.reset(); }
+    
     flagset<T>  set(T idx, bool value = true) {
+        if (idx >= T::NUM_VALUES) {
+            Error("Invalid flag value, trace back and get a coder!");
+            return *this;
+        }
+
         values.set(static_cast < size_t >(idx), value);
         return *this;
     }
-    flagset<T>  add_multiple(T idx[], size_t arg_length) {
+
+    flagset<T>  set_multiple(T idx[], size_t arg_length) {
         for (size_t i = 0; i < arg_length; ++i) {
-            values.set(static_cast < size_t >(idx[i]));
+            set(idx[i], true);
         }
 
         return *this;
     }
 
     flagset<T>  remove(T idx) {
-        values.set(static_cast < size_t >(idx), false);
-        return *this;
+        return set(idx, false);
     }
     flagset<T>  remove_multiple(T idx[], size_t arg_length) {
         for (size_t i = 0; i < arg_length; ++i) {
-            values.set(static_cast < size_t >(idx[i]), false);
+            set(idx[i], false);
         }
         return *this;
     }

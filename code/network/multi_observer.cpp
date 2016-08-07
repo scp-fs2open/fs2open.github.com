@@ -141,7 +141,7 @@ void multi_obs_create_observer_client()
 
 	// make ship hidden from sensors so that this observer cannot target it.  Observers really have two ships
 	// one observer, and one "Player_ship".  Observer needs to ignore the Player_ship.
-	Player_ship->flags |= SF_HIDDEN_FROM_SENSORS;
+    Player_ship->flags.set(Ship::Ship_Flags::Hidden_from_sensors);
 	strcpy_s(Player_ship->ship_name, XSTR("Observer Ship",688));
 	Player_ai = &Ai_info[Ships[Objects[pobj_num].instance].ai_index];		
 

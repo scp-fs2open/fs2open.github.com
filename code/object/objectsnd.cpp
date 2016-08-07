@@ -664,7 +664,7 @@ void obj_snd_do_frame()
 		channel = ds_get_channel(osp->instance);
 		// for DirectSound3D sounds, re-establish the maximum speed based on the
 		//	speed_vol_multiplier
-		if ( sp == NULL || ( (sp != NULL) && (sp->flags & SF_ENGINES_ON) ) ) {
+		if ( sp == NULL || ( (sp != NULL) && (sp->flags[Ship::Ship_Flags::Engines_on]) ) ) {
 			snd_set_volume( osp->instance, gs->default_volume*speed_vol_multiplier*rot_vol_mult*alive_vol_mult );
 		}
 		else {

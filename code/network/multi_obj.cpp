@@ -629,7 +629,7 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 			}
 
 			// linked or not								
-			shipp->flags &= ~SF_PRIMARY_LINKED;
+            shipp->flags.remove(Ship::Ship_Flags::Primary_linked);
 			if(in_flags & OOC_PRIMARY_LINKED){				
 				shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 			}
@@ -988,7 +988,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		}
 
 		// linked or not
-		shipp->flags &= ~SF_PRIMARY_LINKED;
+        shipp->flags.remove(Ship::Ship_Flags::Primary_linked);
 		if(oo_flags & OO_PRIMARY_LINKED){
 			shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 		}

@@ -1368,14 +1368,14 @@ int CShipEditorDlg::update_ship(int ship)
 			if (Ships[ship].flags[Ship::Ship_Flags::No_arrival_warp])
 				set_modified();
 
-			Ships[ship].flags &= ~SF_NO_ARRIVAL_WARP;
+            Ships[ship].flags.remove(Ship::Ship_Flags::No_arrival_warp);
 			break;
 
 		case 1:
 			if (!(Ships[ship].flags[Ship::Ship_Flags::No_arrival_warp]))
 				set_modified();
 
-			Ships[ship].flags |= SF_NO_ARRIVAL_WARP;
+            Ships[ship].flags.set(Ship::Ship_Flags::No_arrival_warp);
 			break;
 	}
 
@@ -1384,14 +1384,14 @@ int CShipEditorDlg::update_ship(int ship)
 			if (Ships[ship].flags[Ship::Ship_Flags::No_departure_warp])
 				set_modified();
 
-			Ships[ship].flags &= ~SF_NO_DEPARTURE_WARP;
+            Ships[ship].flags.remove(Ship::Ship_Flags::No_departure_warp);
 			break;
 
 		case 1:
 			if (!(Ships[ship].flags[Ship::Ship_Flags::No_departure_warp]))
 				set_modified();
 
-			Ships[ship].flags |= SF_NO_DEPARTURE_WARP;
+            Ships[ship].flags.set(Ship::Ship_Flags::No_departure_warp);
 			break;
 	}
 

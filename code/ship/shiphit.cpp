@@ -840,7 +840,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 		p->killer_weapon_index=-1;
 		p->killer_species = Ship_info[Ships[killer_objp->instance].ship_info_index].species;
 
-		if ( Ships[killer_objp->instance].flags & SF_EXPLODED ) {
+		if ( Ships[killer_objp->instance].flags[Ship::Ship_Flags::Exploded] ) {
 			p->flags |= PLAYER_FLAGS_KILLED_BY_EXPLOSION;
 		}
 
@@ -1386,8 +1386,8 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 
 	ship_stop_fire_primary(objp);	//mostly for stopping fighter beam looping sounds -Bobboau
 
-	sp->flags |= SF_DYING;
-	objp->phys_info.flags |= (PF_DEAD_DAMP | PF_REDUCED_DAMP);
+    sp->flags.set(Ship::Ship_Flags::Dying);
+    objp->phys_info.flags |= (PF_DEAD_DAMP | PF_REDUCED_DAMP);
 	delta_time = (int) (sip->death_roll_base_time);
 
 	//	For smaller ships, subtract off time proportional to excess damage delivered.
