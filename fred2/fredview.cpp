@@ -396,7 +396,7 @@ CFREDView::~CFREDView()
 	delete m_pGDlg;
 }
 
-void CALLBACK expire_game_proc( HWND wnd, UINT uMsg, UINT idEvent, DWORD dwTime)
+void CALLBACK expire_game_proc( HWND wnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	KillTimer(wnd, 1);
 	if ( expire_game == EXPIRE_BAD_CHECKSUM )
@@ -1125,7 +1125,7 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 //	This function never gets called because nothing causes
 //	the WM_GOODBYE event to occur.
 // False! When you close the Ship Dialog, this function is called! --MK, 8/30/96
-LONG CFREDView::OnGoodbye(UINT wParam, LONG lParam)
+LRESULT CFREDView::OnGoodbye(WPARAM wParam, LPARAM lParam)
 {
 	Ship_editor_dialog.DestroyWindow();
 	Wing_editor_dialog.DestroyWindow();
@@ -1341,7 +1341,7 @@ void select_objects()
 	Update_ship = Update_wing = 1;
 }
 
-LONG CFREDView::OnMenuPopupShips(UINT wParam, LONG lParam)
+LRESULT CFREDView::OnMenuPopupShips(WPARAM wParam, LPARAM lParam)
 {
 	CMenu	menu;
 	CPoint	point;
@@ -1357,7 +1357,7 @@ LONG CFREDView::OnMenuPopupShips(UINT wParam, LONG lParam)
 	return 0L;
 }
 
-LONG CFREDView::OnMenuPopupEdit(UINT wParam, LONG lParam)
+LRESULT CFREDView::OnMenuPopupEdit(WPARAM wParam, LPARAM lParam)
 {
 	CMenu	menu;
 	CPoint	point;
