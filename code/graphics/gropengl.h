@@ -34,4 +34,6 @@ extern int GLSL_version;
 extern int Use_VBOs;
 extern int Use_PBOs;
 
+extern float GL_line_width;
+
 #endif
