@@ -64,6 +64,8 @@ static ushort *GL_original_gamma_ramp = NULL;
 int Use_VBOs = 0;
 int Use_PBOs = 0;
 
+float GL_line_width = 1.0f;
+
 static ubyte *GL_saved_screen = NULL;
 static int GL_saved_screen_id = -1;
 static GLuint GL_screen_pbo = 0;
@@ -973,6 +975,7 @@ void gr_opengl_translate_texture_matrix(int unit, const vec3d *shift)
 
 void gr_opengl_set_line_width(float width)
 {
+	GL_line_width = width;
 	glLineWidth(width);
 }
 
