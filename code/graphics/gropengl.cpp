@@ -1668,22 +1668,14 @@ bool gr_opengl_init()
 	}
 
 	// version check
-	opengl_check_for_errors("before glGetString(GL_VERSION) call");
-	auto ver = (const char *)glGetString(GL_VERSION);
-	opengl_check_for_errors("after glGetString(GL_VERSION) call");
-	Assertion(ver, "Failed to get glGetString(GL_VERSION)\n");
-	
-	int major, minor;
-	sscanf(ver, "%d.%d", &major, &minor);
-
-	GL_version = (major * 10) + minor;
+	GL_version = (GLVersion.major * 10) + GLVersion.minor;
 
 	if (GL_version < MIN_REQUIRED_GL_VERSION) {
 		Error(LOCATION, "Current GL Version of %d.%d is less than the "
 			"required version of %d.%d.\n"
 			"Switch video modes or update your drivers.",
-			major,
-			minor,
+			GLVersion.major,
+			GLVersion.minor,
 			(MIN_REQUIRED_GL_VERSION / 10),
 			(MIN_REQUIRED_GL_VERSION % 10));
 	}
