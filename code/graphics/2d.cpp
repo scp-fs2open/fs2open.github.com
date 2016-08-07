@@ -631,7 +631,7 @@ bool gr_unsize_screen_posf(float *x, float *y, float *w, float *h, int resize_mo
 	return true;
 }
 
-void gr_close()
+void gr_close(os::GraphicsOperations* graphicsOps)
 {
 	if ( !Gr_inited ) {
 		return;
@@ -639,9 +639,11 @@ void gr_close()
 
 	palette_flush();
 
+	font::close();
+
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
-			gr_opengl_cleanup(true);
+			gr_opengl_cleanup(graphicsOps, true);
 			break;
 	
 		case GR_STUB:
@@ -650,8 +652,6 @@ void gr_close()
 		default:
 			Int3();		// Invalid graphics mode
 	}
-
-	font::close();
 
 	Gr_inited = 0;
 }
@@ -772,7 +772,7 @@ int gr_get_resolution_class(int width, int height)
 	}
 }
 
-static bool gr_init_sub(int mode, int width, int height, int depth, float center_aspect_ratio)
+static bool gr_init_sub(os::GraphicsOperations* graphicsOps, int mode, int width, int height, int depth, float center_aspect_ratio)
 {
 	int res = GR_1024;
 	bool rc = false;
@@ -874,7 +874,7 @@ static bool gr_init_sub(int mode, int width, int height, int depth, float center
 	
 	switch (mode) {
 		case GR_OPENGL:
-			rc = gr_opengl_init();
+			rc = gr_opengl_init(graphicsOps);
 			break;
 		case GR_STUB: 
 			rc = gr_stub_init();
@@ -890,21 +890,16 @@ static bool gr_init_sub(int mode, int width, int height, int depth, float center
 	return true;
 }
 
-bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
+bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
 	float center_aspect_ratio = -1.0f;
 	const char *ptr = NULL;
-
-	if ( !Gr_inited ) {
-		atexit(gr_close);
-	}
-
 	// If already inited, shutdown the previous graphics
 	if (Gr_inited) {
 		switch (gr_screen.mode) {
 			case GR_OPENGL:
-				gr_opengl_cleanup(false);
+				gr_opengl_cleanup(graphicsOps, false);
 				break;
 			
 			case GR_STUB:
@@ -1068,7 +1063,7 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 	}
 
 	// now try to actually init everything...
-	if ( gr_init_sub(mode, width, height, depth, center_aspect_ratio) == false ) {
+	if ( gr_init_sub(graphicsOps, mode, width, height, depth, center_aspect_ratio) == false ) {
 		return false;
 	}
 

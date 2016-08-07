@@ -3,7 +3,9 @@
 SET(FREESPACE_SRC freespace.cpp
 				levelpaging.cpp
 				freespace.h
-				levelpaging.h)
+				levelpaging.h
+				SDLGraphicsOperations.cpp
+				SDLGraphicsOperations.h)
 
 IF(FSO_BUILD_PACKAGE)
 	IF(FSO_INSTRUCTION_SET STREQUAL "SSE2" OR FSO_INSTRUCTION_SET STREQUAL "AVX")
