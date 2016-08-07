@@ -207,7 +207,12 @@ namespace memory
 	// Memory tracking functions
 	void register_malloc(size_t size, const char *filename, int)
 	{
+		// MSVC <= 2013 somehow allocates memory when locking a mutex
+		// MSVC >= 2015 should be fine, for earlier version this probably means 
+		// that the values will be corrupted but at least they will be able to run...
+#if !SCP_COMPILER_IS_MSVC || SCP_COMPILER_VERSION_MAJOR >= 19
 		std::lock_guard<std::mutex> guard(reportLock);
+#endif
 
 		usedMemory += size;
 
@@ -235,7 +240,12 @@ namespace memory
 
 	void unregister_malloc(size_t size, const char *filename, int)
 	{
+		// MSVC <= 2013 somehow allocates memory when locking a mutex
+		// MSVC >= 2015 should be fine, for earlier version this probably means 
+		// that the values will be corrupted but at least they will be able to run...
+#if !SCP_COMPILER_IS_MSVC || SCP_COMPILER_VERSION_MAJOR >= 19
 		std::lock_guard<std::mutex> guard(reportLock);
+#endif
 
 		usedMemory -= size;
 
