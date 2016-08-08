@@ -1,5 +1,6 @@
 
 include(EnableExtraCompilerWarnings)
+include(CheckCCompilerFlag)
 include(util)
 
 MESSAGE(STATUS "Doing configuration specific to gcc...")
@@ -20,7 +21,11 @@ set(COMPILER_FLAGS "${COMPILER_FLAGS} -funroll-loops -fsigned-char -Wno-unknown-
 
 if ("${CMAKE_GENERATOR}" STREQUAL "Ninja")
 	# Force color diagnostics for Ninja generator
-	set(COMPILER_FLAGS "${COMPILER_FLAGS} -fdiagnostics-color")
+	CHECK_C_COMPILER_FLAG(-fdiagnostics-color SUPPORTS_DIAGNOSTIC_COLOR)
+
+	if(SUPPORTS_DIAGNOSTIC_COLOR)
+		set(COMPILER_FLAGS "${COMPILER_FLAGS} -fdiagnostics-color")
+	endif()
 endif()
 
 # Omit "deprecated conversion from string constant to 'char*'" warnings.
