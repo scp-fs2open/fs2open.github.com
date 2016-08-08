@@ -114,14 +114,6 @@ namespace
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-static HWND window_override;
-
-// For FRED
-void os_set_window_from_hwnd(HWND handle)
-{
-	window_override = handle;
-}
-
 // go through all windows and try and find the one that matches the search string
 BOOL __stdcall os_enum_windows( HWND hwnd, LPARAM param )
 {
@@ -208,8 +200,6 @@ static char			szWinTitle[128];
 static char			szWinClass[128];
 static int			Os_inited = 0;
 
-static SDL_mutex* Os_lock;
-
 static SCP_vector<SDL_Event> buffered_events;
 
 int Os_debugger_running = 0;
@@ -217,8 +207,6 @@ int Os_debugger_running = 0;
 // ----------------------------------------------------------------------------------------------------
 // OSAPI FORWARD DECLARATIONS
 //
-
-// called at shutdown. Makes sure all thread processing terminates.
 void os_deinit();
 
 // ----------------------------------------------------------------------------------------------------
@@ -235,8 +223,6 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 
 	strcpy_s( szWinTitle, title );
 	strcpy_s( szWinClass, wclass );
-
-	Os_lock = SDL_CreateMutex();
 
 	mprintf(("  Initializing SDL...\n"));
 
@@ -269,8 +255,6 @@ void os_init(const char * wclass, const char * title, const char *app_name, cons
 
 	os::events::addEventListener(SDL_WINDOWEVENT, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
 	os::events::addEventListener(SDL_QUIT, os::events::DEFAULT_LISTENER_WEIGHT, quit_handler);
-
-	atexit(os_deinit);
 }
 
 // set the main window title
@@ -281,15 +265,14 @@ void os_set_title( const char * title )
 	SDL_SetWindowTitle(main_window, szWinTitle);
 }
 
-extern void gr_opengl_shutdown();
 // call at program end
 void os_cleanup()
 {
-	gr_opengl_shutdown();
-
 #ifndef NDEBUG
 	outwnd_close();
 #endif
+
+	os_deinit();
 }
 
 // window management -----------------------------------------------------------------
@@ -313,13 +296,8 @@ void os_set_window(SDL_Window* new_handle)
 	fAppActive = true;
 }
 
-void* os_get_window_override()
-{
-#ifdef WIN32
-	return window_override;
-#else
-	return nullptr;
-#endif
+void os_set_window_state(WindowState state) {
+
 }
 
 // process management -----------------------------------------------------------------
@@ -337,18 +315,6 @@ void os_sleep(uint ms)
 #else
 	SDL_Delay(ms);
 #endif
-}
-
-// Used to stop message processing
-void os_suspend()
-{
-	SDL_LockMutex( Os_lock );
-}
-
-// resume message processing
-void os_resume()
-{
-	SDL_UnlockMutex( Os_lock );
 }
 
 bool os_is_legacy_mode()
@@ -403,8 +369,6 @@ void os_deinit()
 		SDL_free(preferencesPath);
 		preferencesPath = nullptr;
 	}
-
-	SDL_DestroyMutex(Os_lock);
 
 	SDL_Quit();
 }

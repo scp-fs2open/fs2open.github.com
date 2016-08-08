@@ -1252,7 +1252,7 @@ T* gauge_load_common(gauge_settings* settings, T* preAllocated = NULL)
 		}
 	}
 
-	if (optional_string("$Font:")) {
+	if (optional_string("Font:")) {
 		settings->font_num = font::parse_font();
 	} else {
 		if ( settings->font_num < 0 ) {
@@ -3032,7 +3032,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 		settings->use_coords = true;
 	}
 
-	if (optional_string("$Font:")) {
+	if (optional_string("Font:")) {
 		settings->font_num = font::parse_font();
 	} else {
 		if ( settings->font_num < 0 ) {

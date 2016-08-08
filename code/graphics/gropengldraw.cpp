@@ -77,6 +77,8 @@ namespace
 
         path->beginPath();
 
+		path->setStrokeWidth(GL_line_width);
+
         return path;
     }
 
@@ -888,7 +890,6 @@ void gr_opengl_line(float x1, float y1, float x2, float y2, int resize_mode)
         path->lineTo(x2, y2);
 
         path->setStrokeColor(&gr_screen.current_color);
-        path->setStrokeWidth(1.0f);
         path->stroke();
     }
 
@@ -965,7 +966,6 @@ void gr_opengl_gradient(int x1, int y1, int x2, int y2, int resize_mode)
     path->lineTo(i2fl(x2), i2fl(y2));
 
     path->setStrokePaint(gradientPaint);
-    path->setStrokeWidth(1.0f);
     path->stroke();
 
     endDrawing(path);
