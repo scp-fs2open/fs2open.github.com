@@ -41,16 +41,10 @@ static SCP_string Fred_base_dir;
 
 // ==classes, structs, unions==
 // a.k.a. z64's stupid exception placeholder
-class Fred_exception : std::exception
+class Fred_exception : public std::runtime_error
 {
 public:
-	Fred_exception(const char* msg) : msg(msg) {};
-	const char* what() const {
-		return msg;
-	};
-
-private:
-	const char* msg;
+	Fred_exception(const char* msg) : std::runtime_error(msg) {};
 };
 
 class wxFRED2 : public wxApp

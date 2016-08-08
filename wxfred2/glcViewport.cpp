@@ -6,7 +6,7 @@
  * create based on the source.
  */
 
-#include "glcviewport.h"
+#include "glcViewport.h"
 
 #include <wx/wx.h>
 
@@ -26,7 +26,6 @@ glcViewport::glcViewport( wxWindow *parent, wxWindowID id )
 
 glcViewport::~glcViewport( void )
 {
-	delete grFrame;
 }
 
 
@@ -34,8 +33,6 @@ glcViewport::~glcViewport( void )
 void glcViewport::OnPaint( wxPaintEvent& event )
 {
 	wxPaintDC dc(this);	// Required. Even if we don't directly use it.
-
-	SetCurrent(*grFrame);
 
 	// Render the scene
 

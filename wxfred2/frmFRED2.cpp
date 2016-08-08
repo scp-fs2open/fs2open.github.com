@@ -64,11 +64,12 @@ frmFRED2::frmFRED2( const wxChar *title, int xpos, int ypos, int width, int heig
 	// Title bar setup
 	// z64: somewhat roundabout way to include the FS2 Open version number in the form title.
 	
-	wxSprintf( version, "v%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
+	wxSprintf( version, "v%s", FS_VERSION_FULL );
 	this->SetFredTitle();
 
 	// New Object Selection ListBox
-	cbNewObject = new wxChoice( tbrFRED, ID_TOOL_NEWOBJECTLIST, wxDefaultPosition, wxSize(193,-1), 1, &wxString("GTF Ulysses"), wxCB_SORT );
+	auto choice = wxString("GTF Ulysses");
+	cbNewObject = new wxChoice( tbrFRED, ID_TOOL_NEWOBJECTLIST, wxDefaultPosition, wxSize(193,-1), 1, &choice, wxCB_SORT );
 	// TODO: Auto-size the choice box to the longest string in the list.
 	// TODO: Grab the actual list of object classes
 	cbNewObject->SetSelection(0);
