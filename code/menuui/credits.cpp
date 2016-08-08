@@ -795,7 +795,7 @@ void credits_do_frame(float frametime)
 			auto length = lineEnd - currentPos;
 			if (lineEnd == SCP_string::npos)
 			{
-				length = -1;
+				length = std::numeric_limits<size_t>::max();
 			}
 
 			gr_get_string_size(&width, &height, iter->c_str() + currentPos, length);
