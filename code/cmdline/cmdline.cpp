@@ -238,6 +238,7 @@ Flag exe_params[] =
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 	{ "-benchmark_mode",	"Puts the game into benchmark mode",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-benchmark_mode", },
+	{ "-noninteractive",	"Disables interactive dialogs",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noninteractive", },
 };
 
 // forward declaration
@@ -466,9 +467,6 @@ cmdline_parm start_mission_arg("-start_mission", "Skip mainhall and run this mis
 cmdline_parm dis_collisions("-dis_collisions", NULL, AT_NONE);	// Cmdline_dis_collisions
 cmdline_parm dis_weapons("-dis_weapons", NULL, AT_NONE);		// Cmdline_dis_weapons
 cmdline_parm noparseerrors_arg("-noparseerrors", NULL, AT_NONE);	// Cmdline_noparseerrors  -- turns off parsing errors -C
-#ifdef Allow_NoWarn
-cmdline_parm nowarn_arg("-no_warn", "Disable warnings (not recommended)", AT_NONE);			// Cmdline_nowarn
-#endif
 cmdline_parm extra_warn_arg("-extra_warn", "Enable 'extra' warnings", AT_NONE);	// Cmdline_extra_warn
 cmdline_parm fps_arg("-fps", NULL, AT_NONE);					// Cmdline_show_fps
 cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL, AT_NONE);	// Cmdline_show_mem_usage
@@ -486,6 +484,7 @@ cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
+cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
 
 
 char *Cmdline_start_mission = NULL;
@@ -511,6 +510,7 @@ bool Cmdline_frame_profile = false;
 bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
 bool Cmdline_benchmark_mode = false;
+bool Cmdline_noninteractive = false;
 
 // Other
 cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_NONE);
@@ -1841,6 +1841,11 @@ bool SetCmdlineParams()
 	if (benchmark_mode_arg.found())
 	{
 		Cmdline_benchmark_mode = true;
+	}
+
+	if (noninteractive_arg.found())
+	{
+		Cmdline_noninteractive = true;
 	}
 
 	//Deprecated flags - CommanderDJ

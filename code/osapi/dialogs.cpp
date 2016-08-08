@@ -126,12 +126,6 @@ namespace os
 				mprintf(("ASSERTION: \"%s\" at %s:%d\n", text, filename, linenum));
 			}
 
-#ifdef Allow_NoWarn
-			if (Cmdline_nowarn) {
-				return;
-			}
-#endif
-
 			msgStream << "\n";
 			msgStream << dump_stacktrace();
 
@@ -211,6 +205,13 @@ namespace os
 			msgStream << "\n";
 			msgStream << Separator;
 
+			mprintf(("Lua Error: %s\n", msgStream.str().c_str()));
+
+			if (Cmdline_noninteractive) {
+				exit(1);
+				return;
+			}
+
 			set_clipboard_text(msgStream.str().c_str());
 
 			// truncate text
@@ -279,13 +280,23 @@ namespace os
 			messageStream << "File: " << filename << "\n";
 			messageStream << "Line: " << line << "\n";
 
-			SCP_string fullText = messageStream.str();
-			mprintf(("%s\n", fullText.c_str()));
+			Error(messageStream.str().c_str());
+		}
 
-			messageStream << "\n";
+		void Error(const char* text)
+		{
+			mprintf(("\n%s\n", text));
+
+			if (Cmdline_noninteractive) {
+				exit(1);
+				return;
+			}
+
+			SCP_stringstream messageStream;
+			messageStream << text << "\n";
 			messageStream << dump_stacktrace();
-			
-			fullText = messageStream.str();
+
+			SCP_string fullText = messageStream.str();
 			set_clipboard_text(fullText.c_str());
 
 			fullText = truncateLines(messageStream, Messagebox_lines);
@@ -293,11 +304,6 @@ namespace os
 			fullText += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
 			fullText += "\n\nUse Debug to break into Debugger, Exit will close the application.\n";
 
-			Error(fullText.c_str());
-		}
-
-		void Error(const char* text)
-		{
 			const SDL_MessageBoxButtonData buttons[] = {
 				{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Exit" },
 				{ /* .flags, .buttonid, .text */        0, 0, "Debug" },
@@ -356,11 +362,9 @@ namespace os
 			mprintf(("WARNING: \"%s\" at %s:%d\n", printfString.c_str(), filename, line));
 
 			// now go for the additional popup window, if we want it ...
-#ifdef Allow_NoWarn
-			if (Cmdline_nowarn) {
+			if (Cmdline_noninteractive) {
 				return;
 			}
-#endif
 
 			SCP_stringstream boxMsgStream;
 			boxMsgStream << "Warning: " << formatMessage << "\n";
