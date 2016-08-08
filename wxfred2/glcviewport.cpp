@@ -7,7 +7,6 @@
  */
 
 #include "glcviewport.h"
-#include "glrcmissionframe.h"
 
 #include <wx/wx.h>
 
@@ -23,9 +22,6 @@ glcViewport::glcViewport( wxWindow *parent, wxWindowID id )
 {
 	// Initialize camera position and angles
 	// Initialize grid
-	// Initialize grFrame, if it isn't already
-		// Start off with a new context per frame. Later on we'll look into linking existing content
-	grFrame = new glrcMissionFrame(this);
 }
 
 glcViewport::~glcViewport( void )
@@ -41,13 +37,14 @@ void glcViewport::OnPaint( wxPaintEvent& event )
 
 	SetCurrent(*grFrame);
 
-	grFrame->render( settings );	// Render the scene
+	// Render the scene
 
-	if( settings.show_compass )
+	if( show_compass )
 	{
 		render_compass();
 	}
 
+	SwapBuffers();
 }
 
 void glcViewport::OnSize( wxSizeEvent& event )

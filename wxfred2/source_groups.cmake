@@ -4,8 +4,6 @@ set (file_root
 	docfred.h
 	frmFRED2.cpp
 	frmFRED2.h
-	glrcMissionFrame.h
-	glrcMissionFrame.cpp
 	glcViewport.cpp
 	glcViewport.h
 	wxfred2.cpp

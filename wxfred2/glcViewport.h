@@ -7,8 +7,6 @@
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
  */
-#include "glrcmissionframe.h"
-
 #include "base/wxFRED_base.h"
 
 #include <globalincs/pstypes.h>
@@ -43,12 +41,36 @@ protected:
 
 	// Overlays
 	void render_compass( void );
+
 private:
 	// Member data
-	ViewSettings	settings;	// View/render settings
 	cmode	Control_mode;		// Control behavior setting
 
-	glrcMissionFrame	*grFrame;
+	// Camera Data
+	vec3d	c_pos;	// Camera Position
+	angles	c_rot;	// Camera Rotation/Orientation
+
+	// View|Display Filter...Commands
+	bool show_playerStarts;
+	bool show_ships;
+	bool show_waypoints;
+
+	// View...Commands
+	bool show_background;
+	bool show_compass;
+	bool show_coordinates;
+	bool show_distances;
+	bool show_grid;
+	bool show_grid_aa;
+	bool show_grid_doubleFine;
+	bool show_grid_positions;
+	bool show_horizon;
+	bool show_lightingFromSuns;
+	bool show_models;
+	bool show_model_paths;
+	bool show_model_dockpoints;
+	bool show_outlines;
+	bool show_shipInfo;
 
 	// Event handling
 	DECLARE_EVENT_TABLE()
