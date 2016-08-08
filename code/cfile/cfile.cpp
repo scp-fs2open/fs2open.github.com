@@ -1423,7 +1423,8 @@ int cfilelength( CFILE * cfile )
 	// cb->size gets set at cfopen
 	
 	// The rest of the code still uses ints, do an overflow check to detect cases where this fails
-	Assertion(cb->size <= std::numeric_limits<size_t>::max(), "Integer overflow in cfilelength! A file is too large (but I don't know which...).");
+	Assertion(cb->size <= static_cast<size_t>(std::numeric_limits<int>::max()),
+		"Integer overflow in cfilelength! A file is too large (but I don't know which...).");
 	return (int) cb->size;
 }
 
