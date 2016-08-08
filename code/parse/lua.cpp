@@ -7205,7 +7205,7 @@ ADE_VIRTVAR(DualFire, l_WeaponBankType, "boolean", "Whether bank is in dual fire
                 Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire, newfire);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire]) > 0);
+			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire]));
 
 		case SWH_PRIMARY:
 		case SWH_TERTIARY:

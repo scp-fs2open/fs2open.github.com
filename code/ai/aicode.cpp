@@ -14598,7 +14598,7 @@ void ai_do_default_behavior(object *obj)
         {
             aip->mode = AIM_SAFETY;
             aip->submode = AISS_1;
-            aip->ai_flags.remove(AI::AI_Flags::Repairing);
+            aip->ai_flags &= ~AIF_REPAIRING;
         }
         // sentry guns... do their thing
         else if (sip->flags[Ship::Info_Flags::Sentrygun])

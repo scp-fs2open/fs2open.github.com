@@ -4878,7 +4878,7 @@ void ship_set_default_player_ship()
 		return;
 
 	// find the first with the default flag
-    for(int i = 0; i < Ship_info.size(); ++i)
+    for(size_t i = 0; i < Ship_info.size(); ++i)
 	{
 		if(Ship_info[i].flags[Ship::Info_Flags::Default_player_ship])
 		{
@@ -4888,7 +4888,7 @@ void ship_set_default_player_ship()
 	}
 
 	// find the first player ship
-    for (int i = 0; i < Ship_info.size(); ++i)
+    for (size_t i = 0; i < Ship_info.size(); ++i)
 	{
 		if(Ship_info[i].flags[Ship::Info_Flags::Player_ship])
 		{
@@ -11959,7 +11959,6 @@ int ship_select_next_primary(object *objp, int direction)
 	ship_weapon *swp;
 	int new_bank;
 	int original_bank;
-	unsigned int original_link_flag;
 	int i;
 
 	Assert(objp != NULL);
@@ -11973,7 +11972,7 @@ int ship_select_next_primary(object *objp, int direction)
 	Assert(direction == CYCLE_PRIMARY_NEXT || direction == CYCLE_PRIMARY_PREV);
 
 	original_bank = swp->current_primary_bank;
-	original_link_flag = shipp->flags[Ship_Flags::Primary_linked];
+	auto original_link_flag = shipp->flags[Ship_Flags::Primary_linked];
 
 	// redid case structure to possibly add more primaries in the future - Goober5000
 	if ( swp->num_primary_banks == 0 )

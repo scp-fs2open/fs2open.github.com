@@ -283,7 +283,7 @@ void player_start_editor::reset_controls()
 	// create a checklistbox for each "player" ship type	
 	m_ship_list.ResetContent();
 	ct = 0;
-    for(int j = 0; j < Ship_info.size(); ++j) {
+    for(size_t j = 0; j < Ship_info.size(); ++j) {
 		if (Ship_info[i].flags[Ship::Info_Flags::Player_ship]) {
             i = j;
 			m_ship_list.AddString(Ship_info[i].name);

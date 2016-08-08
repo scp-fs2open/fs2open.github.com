@@ -1418,8 +1418,6 @@ void labviewer_populate_flags_window()
 
 void labviewer_update_flags_window()
 {
-	size_t i;
-
 	if ( (Lab_selected_index < 0) || (Lab_mode == LAB_MODE_NONE) ) {
 		return;
 	}

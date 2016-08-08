@@ -431,7 +431,6 @@ void parse_custom_bitmap(const char *expected_string_640, const char *expected_s
 
 void parse_mission_info(mission *pm, bool basic = false)
 {
-	int i;
 	char game_string[NAME_LENGTH];
 
 	// Goober5000
@@ -470,7 +469,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		// old style missions may have carriage returns, deal with it here.
 		ignore_white_space();
 		stuff_string(game_string, F_NAME, NAME_LENGTH);
-		for ( i = 0; i < OLD_MAX_GAME_TYPES; i++ ) {
+		for ( int i = 0; i < OLD_MAX_GAME_TYPES; i++ ) {
 			if ( !stricmp(game_string, Old_game_types[i]) ) {
 
 				// this block of code is now old mission compatibility code.  We specify game
@@ -593,7 +592,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// for each species, store whether support is available
 	for (int species = 0; species < (int)Species_info.size(); species++)
 	{
-        for(int i = 0; i < Ship_info.size(); ++i)
+        for(size_t i = 0; i < Ship_info.size(); ++i)
 		{
 			if ((Ship_info[i].flags[Ship::Info_Flags::Support]) && (Ship_info[i].species == species))
 			{
@@ -2083,14 +2082,14 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::No_arrival_warp]))
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NO_ARRIVAL_WARP))
         shipp->flags.set(Ship::Ship_Flags::No_arrival_warp);
 
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::No_departure_warp]))
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NO_DEPARTURE_WARP))
         shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
 
     // ditto for Kazan
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry]))
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY))
         shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
@@ -3015,7 +3014,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
         SCP_vector<SCP_string> unparsed;
         parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
         if (unparsed.size() > 0) {
-            for (int i = 0; i < unparsed.size(); ++i) {
+            for (size_t i = 0; i < unparsed.size(); ++i) {
                 WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[i].c_str());
             }
         }
@@ -3027,7 +3026,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
         SCP_vector<SCP_string> unparsed;
         parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
         if (unparsed.size() > 0) {
-            for (int i = 0; i < unparsed.size(); ++i) {
+            for (size_t i = 0; i < unparsed.size(); ++i) {
                 WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[i].c_str());
             }
         }
@@ -7583,7 +7582,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 		i = -1;
 		// get index of correct species support ship
-        for(int j = 0; j < Ship_info.size(); ++j) {
+        for(size_t j = 0; j < Ship_info.size(); ++j) {
 			if ( (Ship_info[j].species == requester_species) && (Ship_info[j].flags[Ship::Info_Flags::Support]) ) {
 				i = j;
 				break;

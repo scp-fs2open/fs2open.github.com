@@ -1095,7 +1095,7 @@ void briefing_editor_dlg::OnMakeIcon()
 	else if(jnp != Jump_nodes.end()){
 		// find the first navbuoy
 		iconp->ship_class = -1;
-        for (int i = 0; i < Ship_info.size(); ++i)
+        for (size_t i = 0; i < Ship_info.size(); ++i)
 		{
 			if (Ship_info[i].flags[Ship::Info_Flags::Navbuoy])
 			{
@@ -1109,7 +1109,7 @@ void briefing_editor_dlg::OnMakeIcon()
 	else {
 		// find the first navbuoy
 		iconp->ship_class = -1;
-        for (int i = 0; i < Ship_info.size(); ++i)
+        for (size_t i = 0; i < Ship_info.size(); ++i)
 		{
 			if (Ship_info[i].flags[Ship::Info_Flags::Navbuoy])
 			{

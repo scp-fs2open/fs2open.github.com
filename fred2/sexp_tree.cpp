@@ -5044,7 +5044,7 @@ sexp_list_item *sexp_tree::get_listing_opf_support_ship_class()
 
 	head.add_data("<species support ship class>");
 
-    for(int i = 0; i < Ship_info.size(); ++i)
+    for(size_t i = 0; i < Ship_info.size(); ++i)
 	{
 		if (Ship_info[i].flags[Ship::Info_Flags::Support])
 		{

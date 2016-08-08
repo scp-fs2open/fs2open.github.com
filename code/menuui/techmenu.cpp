@@ -736,7 +736,7 @@ void techroom_anim_render(float frametime)
 
 void techroom_change_tab(int num)
 {
-	int i, multi = 0, wi_mask, wi_mask2, font_height, max_num_entries_viewable;
+	int multi = 0, wi_mask, wi_mask2, font_height, max_num_entries_viewable;
     Ship::Info_Flags si_mask, si_mask2;
 
 	//unload the current animation, we load another one for the new current entry
@@ -748,7 +748,7 @@ void techroom_change_tab(int num)
 	Cur_entry = 0;
 	multi = Player->flags & PLAYER_FLAGS_IS_MULTI;
 
-	for (i=0; i<LIST_BUTTONS_MAX; i++){
+	for (int i=0; i<LIST_BUTTONS_MAX; i++){
 		List_buttons[i].disable();
 	}
 
@@ -774,7 +774,7 @@ void techroom_change_tab(int num)
 
 				Ship_list_size = 0;
 
-                for (i = 0; i<Ship_info.size(); i++)
+                for (size_t i = 0; i<Ship_info.size(); i++)
                 {
                     if (Techroom_show_all || (Ship_info[i].flags[si_mask]) || (Ship_info[i].flags[si_mask2]))
                     {
@@ -832,7 +832,7 @@ void techroom_change_tab(int num)
 				wi_mask = multi ? WIF_PLAYER_ALLOWED : WIF_IN_TECH_DATABASE;
 				wi_mask2 = WIF2_DEFAULT_IN_TECH_DATABASE;
 
-				for (i=0; i<Num_weapon_types; i++)
+				for (int i=0; i<Num_weapon_types; i++)
 				{
 					if (Techroom_show_all || (Weapon_info[i].wi_flags & wi_mask) || (Weapon_info[i].wi_flags2 & wi_mask2))
 					{ 
@@ -883,7 +883,7 @@ void techroom_change_tab(int num)
 				// now populate the entry structs
 				Intel_list_size = 0;
 
-				for (i=0; i<Intel_info_size; i++) {
+				for (int i=0; i<Intel_info_size; i++) {
 					if (Techroom_show_all || (Intel_info[i].flags & IIF_IN_TECH_DATABASE) || (Intel_info[i].flags & IIF_DEFAULT_IN_TECH_DATABASE)) {
 						// leave option for no animation if string == "none"
 						if (!strcmp(Intel_info[i].anim_filename, "none")) {
@@ -1429,10 +1429,8 @@ int intel_info_lookup(char *name)
 // Goober5000
 void tech_reset_to_default()
 {
-	int i;
-
 	// ships
-    for (i = 0; i<Ship_info.size(); i++)
+    for (size_t i = 0; i<Ship_info.size(); i++)
     {
         if (Ship_info[i].flags[Ship::Info_Flags::Default_in_tech_database])
             Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
@@ -1447,7 +1445,7 @@ void tech_reset_to_default()
 
 
 	// weapons
-	for (i=0; i<Num_weapon_types; i++)
+	for (int i=0; i<Num_weapon_types; i++)
 	{
 		if (Weapon_info[i].wi_flags2 & WIF2_DEFAULT_IN_TECH_DATABASE)
 			Weapon_info[i].wi_flags |= WIF_IN_TECH_DATABASE;
@@ -1456,7 +1454,7 @@ void tech_reset_to_default()
 	}
 
 	// intelligence
-	for (i=0; i<Intel_info_size; i++)
+	for (int i=0; i<Intel_info_size; i++)
 	{
 		if (Intel_info[i].flags & IIF_DEFAULT_IN_TECH_DATABASE)
 			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;

@@ -238,7 +238,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 		m_set_from_ship_class.AddString("Set From Variable");
 	}
 	count = 0; 
-    for (int i = 0; i < Ship_info.size(); ++i)
+    for (size_t i = 0; i < Ship_info.size(); ++i)
 	{
 
 		if (player_ships_only && !(Ship_info[i].flags[Ship::Info_Flags::Player_ship])) {

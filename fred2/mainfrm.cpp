@@ -115,7 +115,7 @@ void CMainFrame::init_tools() {
 		return;
 	}
 
-    for(int i = 0; i < Ship_info.size(); ++i) {
+    for(size_t i = 0; i < Ship_info.size(); ++i) {
 		// don't add the pirate ship
 		if (Ship_info[i].flags[Ship::Info_Flags::No_fred]) {
 			m_new_ship_type_combo_box.AddString("");
