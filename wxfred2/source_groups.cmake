@@ -79,25 +79,25 @@ set (file_root_misc
 )
 
 set(file_root_res_pngs
-	${CMAKE_CURRENT_SOURCE_DIR}/res/constx.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/constxy.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/constxz.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/consty.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/constyz.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/constz.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/fredknows.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/orbitsel.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/rotlocal.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/select.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/selectlist.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/selectlock.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/selectmove.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/selectrot.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/showdist.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/wingdisband.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/wingform.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/zoomext.png
-	${CMAKE_CURRENT_SOURCE_DIR}/res/zoomsel.png
+	res/constx.png
+	res/constxy.png
+	res/constxz.png
+	res/consty.png
+	res/constyz.png
+	res/constz.png
+	res/fredknows.png
+	res/orbitsel.png
+	res/rotlocal.png
+	res/select.png
+	res/selectlist.png
+	res/selectlock.png
+	res/selectmove.png
+	res/selectrot.png
+	res/showdist.png
+	res/wingdisband.png
+	res/wingform.png
+	res/zoomext.png
+	res/zoomsel.png
 )
 
 set(file_root_res

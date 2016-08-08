@@ -44,6 +44,7 @@
 #include <wx/wx.h>
 
 #include <stdlib.h>
+#include <algorithm>
 
 // Referenced variables and functions from code.lib
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
@@ -435,7 +436,7 @@ void wxFRED2::Copy_objects(SCP_vector<OIN_t> &selq) {
 			try {
 				new_oin = Copy_object(*it);
 
-			} catch (Fred_exception e) {
+			} catch (const Fred_exception& e) {
 				// Couldn't copy this one, so skip it
 				has_errors = true;
 

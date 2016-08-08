@@ -236,6 +236,12 @@ protected:
 private:
 //	void InitMods();
 	// Widgets
+
+	// member variables
+	wxChar version[32];
+	wxString currentFilename;
+	const wxString fredName;
+
 	wxChoice* cbNewObject;
 	wxStatusBar* sbFRED;
 
@@ -266,10 +272,5 @@ private:
 	// Viewports and Rendering
 //	wxGLContext mission_state;
 //	wxGLCanvas viewport;
-
-	// member variables
-	wxChar version[32];
-	wxString currentFilename;
-	const wxString fredName;
 };
 #endif
