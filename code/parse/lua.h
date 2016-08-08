@@ -27,7 +27,7 @@ extern bool Ade_get_args_lfunction;
 //*************************Lua types*************************
 
 //WMC - Define to say that this is to store just a pointer.
-#define ODATA_PTR_SIZE		-1
+#define ODATA_PTR_SIZE		(size_t)-1
 #define ODATA_SIG_TYPE		uint						//WMC - Please don't touch.
 #define ODATA_SIG_DEFAULT	0
 /** Used for internal object->lua_set and lua_get->object communication.

@@ -282,15 +282,26 @@ void parse_stringstbl_common(const char *filename, const bool external)
 			}
 
 			// trim unnecessary end of string
-			if (i >= 0) {
-				// Assert(buf[i] == '"');
+			// Assert(buf[i] == '"');
+			if (buf[i] != '"') {
+				// probably an offset on this entry
+
+				// drop down a null terminator (prolly unnecessary)
+				buf[i+1] = 0;
+
+				// back up over the potential offset
+				while ( !is_white_space(buf[i]) )
+					i--;
+
+				// now back up over intervening spaces
+				while ( is_white_space(buf[i]) )
+					i--;
+
+				num_offsets_on_this_line = 1;
+
 				if (buf[i] != '"') {
-					// probably an offset on this entry
-
-					// drop down a null terminator (prolly unnecessary)
-					buf[i+1] = 0;
-
-					// back up over the potential offset
+					// could have a 2nd offset value (one for 640, one for 1024)
+					// so back up again
 					while ( !is_white_space(buf[i]) )
 						i--;
 
@@ -298,29 +309,16 @@ void parse_stringstbl_common(const char *filename, const bool external)
 					while ( is_white_space(buf[i]) )
 						i--;
 
-					num_offsets_on_this_line = 1;
-
-					if (buf[i] != '"') {
-						// could have a 2nd offset value (one for 640, one for 1024)
-						// so back up again
-						while ( !is_white_space(buf[i]) )
-							i--;
-
-						// now back up over intervening spaces
-						while ( is_white_space(buf[i]) )
-							i--;
-
-						num_offsets_on_this_line = 2;
-					}
-
-					p_offset = &buf[i+1];			// get ptr to string section with offset in it
-
-					if (buf[i] != '"')
-						Error(LOCATION, "%s is corrupt", filename);		// now its an error
+					num_offsets_on_this_line = 2;
 				}
 
-				buf[i] = 0;
+				p_offset = &buf[i+1];			// get ptr to string section with offset in it
+
+				if (buf[i] != '"')
+					Error(LOCATION, "%s is corrupt", filename);		// now its an error
 			}
+
+			buf[i] = 0;
 
 			// copy string into buf
 			z = 0;

@@ -452,7 +452,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 				if (!(shipp->flags2 & SF2_DONT_COLLIDE_INVIS)) {
 					wp->lifeleft = 0.001f;
 					if (ship_objp == Player_obj)
-						nprintf(("Jim", "Frame %i: Weapon " PTRDIFF_T_ARG " set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_objp), dist));
+						nprintf(("Jim", "Frame %i: Weapon %d set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_objp), dist));
 					valid_hit_occurred = 1;
 				}
 			}

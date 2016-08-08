@@ -12830,8 +12830,8 @@ int l_cf_get_path_id(char* n_path)
 	strcpy(buf, n_path);
 
 	//Remove trailing slashes; avoid buffer overflow on 1-char strings
-	i = path_len -1;
-	while(i >= 0 && (buf[i] == '\\' || buf[i] == '/'))
+	i = path_len - 1;
+	while(i < std::numeric_limits<size_t>::max() && (buf[i] == '\\' || buf[i] == '/'))
 		buf[i--] = '\0';
 
 	//Remove leading slashes

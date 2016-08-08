@@ -2274,7 +2274,6 @@ void hud_num_make_mono(char *num_str, int font_num)
 		return;
 	}
 
-	int i;
 	ubyte sc;
 
 	sc = lcl_get_font_index(font_num);
