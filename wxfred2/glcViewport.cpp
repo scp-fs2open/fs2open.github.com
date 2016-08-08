@@ -20,12 +20,14 @@ END_EVENT_TABLE()
 glcViewport::glcViewport( wxWindow *parent, wxWindowID id )
 	: wxGLCanvas( parent, id, NULL, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE )
 {
+	// Create context if we're the first instance of a viewport. Maybe have the wxFredRender code keep a counter.
 	// Initialize camera position and angles
 	// Initialize grid
 }
 
 glcViewport::~glcViewport( void )
 {
+	// Delete context if we're the last instance of a viewport.
 }
 
 
@@ -35,11 +37,9 @@ void glcViewport::OnPaint( wxPaintEvent& event )
 	wxPaintDC dc(this);	// Required. Even if we don't directly use it.
 
 	// Render the scene
+	SetCurrent();
 
-	if( show_compass )
-	{
-		render_compass();
-	}
+	// Lots of calls to wxFredRender code
 
 	SwapBuffers();
 }

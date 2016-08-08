@@ -8,6 +8,8 @@ set (file_root
 	glcViewport.h
 	wxfred2.cpp
 	wxfred2.h
+	wxFredRender.cpp
+	wxFredRender.h
 	wxfredstubs.cpp
 )
 

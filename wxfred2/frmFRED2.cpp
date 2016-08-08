@@ -40,14 +40,15 @@
 #include "help/dlgSexpHelp.h"
 
 #include "base/wxFRED_base.h"
+#include "glcViewport.h"
 #include "wxfred2.h"
 
 #include <globalincs/version.h>
 #include <globalincs/pstypes.h>
 
+#include <wx/glcanvas.h>
 #include <wx/msgdlg.h>
 #include <wx/wx.h>
-#include <wx/glcanvas.h>
 
 // Public:
 frmFRED2::frmFRED2( const wxChar *title, int xpos, int ypos, int width, int height )
@@ -82,8 +83,8 @@ frmFRED2::frmFRED2( const wxChar *title, int xpos, int ypos, int width, int heig
 
 	// The Viewport
 	wxBoxSizer* bSizerView = new wxBoxSizer( wxVERTICAL );
-	wxGLCanvas *TheViewport = new wxGLCanvas(this, wxID_ANY, NULL, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE);
-	bSizerView->Add( TheViewport );
+	viewport_p = new glcViewport(this, wxID_ANY);
+	bSizerView->Add(static_cast<wxGLCanvas*> (viewport_p));
 	this->SetSizer( bSizerView );
 	this->Layout();
 

@@ -270,7 +270,6 @@ private:
 	dlgSexpHelp* dlgSexpHelp_p;
 
 	// Viewports and Rendering
-//	wxGLContext mission_state;
-//	wxGLCanvas viewport;
+	glcViewport* viewport_p;
 };
 #endif
