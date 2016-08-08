@@ -1125,7 +1125,8 @@ void briefing_editor_dlg::OnMakeIcon()
 	}
 
     flagset<Object::Object_Flags> default_flags;
-	icon_obj[m_cur_icon] = obj_create(OBJ_POINT, -1, m_cur_icon, NULL, &pos, 0.0f, default_flags.set(Object::Object_Flags::Renders));
+    default_flags.set(Object::Object_Flags::Renders);
+	icon_obj[m_cur_icon] = obj_create(OBJ_POINT, -1, m_cur_icon, NULL, &pos, 0.0f, default_flags);
 	Assert(icon_obj[m_cur_icon] >= 0);
 	obj_merge_created_list();
 	unmark_all();

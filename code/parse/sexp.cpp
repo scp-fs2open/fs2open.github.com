@@ -4362,7 +4362,7 @@ int rand_sexp(int n, bool multiple)
 // need to keep.
 int sexp_or(int n)
 {
-	int all_false, result;
+    int all_false, result;
 
 	all_false = 1;
 	result = 0;
@@ -10082,7 +10082,7 @@ void sexp_allow_treason (int n)
 {
 	n = CDR(n);
 	if (n != -1) {
-        The_mission.flags.set(Mission::Mission_Flags::No_traitor, is_sexp_true(n));
+        The_mission.flags.set(Mission::Mission_Flags::No_traitor, is_sexp_true(n) != 0);
 	}
 }
 
@@ -12071,7 +12071,7 @@ void sexp_mission_set_subspace(int n)
 		game_stop_subspace_ambient_sound();
 	}
     
-    The_mission.flags.set(Mission::Mission_Flags::Subspace, Game_subspace_effect);
+    The_mission.flags.set(Mission::Mission_Flags::Subspace, Game_subspace_effect != 0);
 }
 
 void sexp_add_background_bitmap(int n)
@@ -12333,7 +12333,7 @@ void sexp_end_mission(int n)
 	}
 
 	// ending via debrief and then going to mainhall could maybe work with multiplayer?
-    The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall, from_debrief_to_main_hall);
+    The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall, from_debrief_to_main_hall != 0);
 	
 	// if we go straight to the main hall we have to clean up the mission without entering the debriefing
 	if (boot_to_main_hall && !(Game_mode & GM_MULTIPLAYER)) {
@@ -12353,7 +12353,7 @@ void sexp_end_mission(int n)
 // Goober5000
 void sexp_set_debriefing_toggled(int node)
 {
-    The_mission.flags.set(Mission::Mission_Flags::Toggle_debriefing, is_sexp_true(node));
+    The_mission.flags.set(Mission::Mission_Flags::Toggle_debriefing, is_sexp_true(node) != 0);
 }
 
 /**
@@ -12645,6 +12645,7 @@ void sexp_allow_weapon(int n)
 
 /**
  * generic function for all those sexps that set flags
+ * For all flag type parameters: If a particular flag should not be set, use the ::NUM_VALUES member of that enum
  *
  * @note this function has a similar purpose to sexp_alter_ship_flag_helper; make sure you check/update both
  */
@@ -13364,7 +13365,7 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		// If it isn't command then assume that we're dealing with a ship 
 		else 
 		{
-			sexp_deal_with_ship_flag(node, false, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::No_builtin_messages, (int)Mission::Parse_Object_Flags::SF_No_builtin_messages, !enable_messages);
+			sexp_deal_with_ship_flag(node, false, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::No_builtin_messages, Mission::Parse_Object_Flags::SF_No_builtin_messages, !enable_messages);
 		}
 
 		node = CDR(node);
@@ -13935,7 +13936,7 @@ int sexp_goal_incomplete(int n)
  */
 void sexp_protect_ships(int n, bool flag)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Protected, 0, (int)Mission::Parse_Object_Flags::OF_Protected, 0, flag);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Protected, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Protected, 0, flag);
 }
 
 /**
@@ -13946,7 +13947,7 @@ void sexp_protect_ships(int n, bool flag)
  */
 void sexp_beam_protect_ships(int n, bool flag)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Beam_protected, 0, (int)Mission::Parse_Object_Flags::OF_Beam_protected, 0, flag);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Beam_protected, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Beam_protected, 0, flag);
 }
 
 /**
@@ -13961,13 +13962,13 @@ void sexp_turret_protect_ships(int n, bool flag)
 	n = CDR(n);
 
 	if (!stricmp(turret_type, "beam"))
-		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Beam_protected, 0, (int)Mission::Parse_Object_Flags::OF_Beam_protected, 0, flag);
+		sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Beam_protected, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Beam_protected, 0, flag);
 	else if (!stricmp(turret_type, "flak"))
-		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Flak_protected, 0, (int)Mission::Parse_Object_Flags::OF_Flak_protected, 0, flag);
+		sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Flak_protected, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Flak_protected, 0, flag);
 	else if (!stricmp(turret_type, "laser"))
-		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Laser_protected, 0, (int)Mission::Parse_Object_Flags::OF_Laser_protected, 0, flag);
+		sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Laser_protected, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Laser_protected, 0, flag);
 	else if (!stricmp(turret_type, "missile"))
-		sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Missile_protected, 0, (int)Mission::Parse_Object_Flags::OF_Missile_protected, 0, flag);
+		sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Missile_protected, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Missile_protected, 0, flag);
 	else
 		Warning(LOCATION, "Invalid turret type '%s'!", turret_type);
 }
@@ -13975,25 +13976,25 @@ void sexp_turret_protect_ships(int n, bool flag)
 // Goober5000 - sets the "don't collide invisible" flag on a list of ships
 void sexp_dont_collide_invisible(int n, bool dont_collide)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::Dont_collide_invis, (int)Mission::Parse_Object_Flags::SF_Dont_collide_invis, dont_collide);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Dont_collide_invis, Mission::Parse_Object_Flags::SF_Dont_collide_invis, dont_collide);
 }
 
 // Goober5000 - sets the "immobile" flag on a list of ships
 void sexp_set_immobile(int n, bool immobile)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Immobile, (int)Ship::Ship_Flags::NUM_VALUES, (int)Mission::Parse_Object_Flags::OF_Immobile, immobile);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Immobile, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Immobile, immobile);
 }
 
 // Goober5000 - sets the "no-ets" flag on a list of ships
 void sexp_disable_ets(int n, bool disable)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::No_ets, (int)Mission::Parse_Object_Flags::SF_No_ets, disable);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::No_ets, Mission::Parse_Object_Flags::SF_No_ets, disable);
 }
 
 // Goober5000 - sets the vaporize flag on a list of ships
 void sexp_ships_vaporize(int n, bool vaporize)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::Vaporize, (int)Mission::Parse_Object_Flags::SF_Vaporize, vaporize);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Vaporize, Mission::Parse_Object_Flags::SF_Vaporize, vaporize);
 }
 
 /**
@@ -14004,7 +14005,7 @@ void sexp_ships_vaporize(int n, bool vaporize)
  */
 void sexp_ships_visible(int n, bool visible)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::Hidden_from_sensors, (int)Mission::Parse_Object_Flags::SF_Hidden_from_sensors, !visible, true);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Hidden_from_sensors, Mission::Parse_Object_Flags::SF_Hidden_from_sensors, !visible, true);
 
 	// we also have to add any escort ships that were made visible
 	for (; n >= 0; n = CDR(n))
@@ -14025,7 +14026,7 @@ void sexp_ships_visible(int n, bool visible)
 // Goober5000
 void sexp_ships_stealthy(int n, bool stealthy)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::Stealth, (int)Mission::Parse_Object_Flags::SF_Stealth, stealthy, true);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Stealth, Mission::Parse_Object_Flags::SF_Stealth, stealthy, true);
 
 	// we also have to add any escort ships that were made visible
 	if (!stealthy)
@@ -14045,7 +14046,7 @@ void sexp_ships_stealthy(int n, bool stealthy)
 // Goober5000
 void sexp_friendly_stealth_invisible(int n, bool invisible)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::Stealth, (int)Mission::Parse_Object_Flags::SF_Friendly_stealth_invis, invisible, true);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Stealth, Mission::Parse_Object_Flags::SF_Friendly_stealth_invis, invisible, true);
 
 	// we also have to add any escort ships that were made visible
 	if (!invisible)
@@ -14252,12 +14253,12 @@ void sexp_ship_tag( int n, int tag )
 // sexpression to toggle invulnerability flag of ships.
 void sexp_ships_invulnerable( int n, bool invulnerable )
 {
-    sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Invulnerable, 0, 0, (int)Mission::Parse_Object_Flags::OF_Invulnerable, invulnerable);
+    sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Invulnerable, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Invulnerable, invulnerable);
 }
 
 void sexp_ships_bomb_targetable(int n, bool targetable)
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::Targetable_as_bomb, 0, 0, (int)Mission::Parse_Object_Flags::OF_Targetable_as_bomb, targetable, true);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::Targetable_as_bomb, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_Targetable_as_bomb, targetable, true);
 }
 
 // Goober5000
@@ -14597,7 +14598,7 @@ void sexp_destroy_instantly(int n)
 
 void sexp_shields_off(int n, bool shields_off ) //-Sesquipedalian
 {
-	sexp_deal_with_ship_flag(n, true, (int)Object::Object_Flags::No_shields, 0, 0, (int)Mission::Parse_Object_Flags::OF_No_shields, shields_off, true);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::No_shields, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_No_shields, shields_off, true);
 }
 
 // Goober5000
@@ -16149,21 +16150,21 @@ void multi_sexp_set_countermeasures()
 void sexp_deal_with_afterburner_lock (int node, bool lock)
 {
 	Assert (node != -1);
-	sexp_deal_with_ship_flag(node, true, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::Afterburner_locked, (int)Mission::Parse_Object_Flags::NUM_VALUES, (lock ? 1:0), true);
+	sexp_deal_with_ship_flag(node, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Afterburner_locked, Mission::Parse_Object_Flags::NUM_VALUES, (lock ? 1:0), true);
 }
 
 // Karajorma - locks or unlocks primary weapons on the requested ship
 void sexp_deal_with_primary_lock (int node, bool lock)
 {
 	Assert (node != -1);	
-	sexp_deal_with_ship_flag(node, true, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::Primaries_locked, (int)Mission::Parse_Object_Flags::SF_Primaries_locked, (lock ? 1:0), true);
+	sexp_deal_with_ship_flag(node, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Primaries_locked, Mission::Parse_Object_Flags::SF_Primaries_locked, (lock ? 1:0), true);
 
 }
 
 void sexp_deal_with_secondary_lock (int node, bool lock)
 {
 	Assert (node != -1);	
-	sexp_deal_with_ship_flag(node, true, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::Secondaries_locked, (int)Mission::Parse_Object_Flags::SF_Secondaries_locked, (lock ? 1:0), true);
+	sexp_deal_with_ship_flag(node, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Secondaries_locked, Mission::Parse_Object_Flags::SF_Secondaries_locked, (lock ? 1:0), true);
 
 }
 
@@ -19214,14 +19215,14 @@ void multi_del_nav()
 //args: 1, boolean enable/disable
 void set_use_ap_cinematics(int node)
 {
-    The_mission.flags.set(Mission::Mission_Flags::Use_ap_cinematics, is_sexp_true(node));
+    The_mission.flags.set(Mission::Mission_Flags::Use_ap_cinematics, is_sexp_true(node) != 0);
 }
 
 //text: use-autopilot
 //args: 1, boolean enable/disable
 void set_use_ap(int node)
 {
-    The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, !is_sexp_true(node));
+    The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, !is_sexp_true(node) != 0);
 }
 
 //text: hide-nav
@@ -20445,7 +20446,7 @@ void sexp_scramble_messages(int node, bool scramble)
 		return;
 	}
 
-	sexp_deal_with_ship_flag(node, true, (int)Object::Object_Flags::NUM_VALUES, (int)Ship::Ship_Flags::Scramble_messages, (int)Mission::Parse_Object_Flags::SF_Scramble_messages, scramble, false, true);
+	sexp_deal_with_ship_flag(node, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Scramble_messages, Mission::Parse_Object_Flags::SF_Scramble_messages, scramble, false, true);
 }
 
 void toggle_cutscene_bars(float delta_speed, int set) 

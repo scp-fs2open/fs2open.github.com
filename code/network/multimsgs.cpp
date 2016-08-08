@@ -5544,8 +5544,8 @@ void process_firing_info_packet( ubyte *data, header *hinfo )
 
 	// get the ship pointer for this player and set the flags accordingly.
 	shipp = &(Ships[Objects[Net_players[player_num].m_player->objnum].instance]);
-	shipp->flags.set(Ship::Ship_Flags::Primary_linked, plinked);
-	shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire, sdual);
+	shipp->flags.set(Ship::Ship_Flags::Primary_linked, plinked != 0);
+	shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire, sdual != 0);
 
 }
 

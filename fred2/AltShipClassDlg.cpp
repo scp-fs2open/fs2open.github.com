@@ -238,15 +238,15 @@ BOOL AltShipClassDlg::OnInitDialog()
 		m_set_from_ship_class.AddString("Set From Variable");
 	}
 	count = 0; 
-    for (size_t i = 0; i < Ship_info.size(); ++i)
+    for (size_t j = 0; j < Ship_info.size(); ++j)
 	{
 
-		if (player_ships_only && !(Ship_info[i].flags[Ship::Info_Flags::Player_ship])) {
+		if (player_ships_only && !(Ship_info[j].flags[Ship::Info_Flags::Player_ship])) {
 			continue;
 		}
 
-		ship_class_indices[count++] = i;
-		m_set_from_ship_class.AddString(Ship_info[i].name);
+		ship_class_indices[count++] = j;
+		m_set_from_ship_class.AddString(Ship_info[j].name);
 	}
 	m_set_from_ship_class.SetCurSel(num_string_variables?1:0); // Set to the first ship class
 

@@ -3014,8 +3014,8 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
         SCP_vector<SCP_string> unparsed;
         parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
         if (unparsed.size() > 0) {
-            for (size_t i = 0; i < unparsed.size(); ++i) {
-                WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[i].c_str());
+            for (size_t k = 0; k < unparsed.size(); ++k) {
+                WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
             }
         }
     }
@@ -3026,8 +3026,8 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
         SCP_vector<SCP_string> unparsed;
         parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
         if (unparsed.size() > 0) {
-            for (size_t i = 0; i < unparsed.size(); ++i) {
-                WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[i].c_str());
+            for (size_t k = 0; k < unparsed.size(); ++k) {
+                WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
             }
         }
     }
@@ -7582,9 +7582,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 		i = -1;
 		// get index of correct species support ship
-        for(size_t j = 0; j < Ship_info.size(); ++j) {
-			if ( (Ship_info[j].species == requester_species) && (Ship_info[j].flags[Ship::Info_Flags::Support]) ) {
-				i = j;
+        for(size_t k = 0; k < Ship_info.size(); ++k) {
+			if ( (Ship_info[k].species == requester_species) && (Ship_info[k].flags[Ship::Info_Flags::Support]) ) {
+				i = k;
 				break;
 			}
 		}
