@@ -132,25 +132,85 @@ void view_universe(int just_marked = 0);
 void select_objects();
 void drag_rotate_save_backup();
 
+class MFCViewport : public os::Viewport
+{
+	HWND _windowHandle = nullptr;
+	HDC _device_context = nullptr;
+public:
+	explicit MFCViewport(HWND hwnd, HDC dc) : _windowHandle(hwnd), _device_context(dc)
+	{
+		Assertion(hwnd != nullptr, "Invalid window handle!");
+		Assertion(dc != nullptr, "Invalid device context handle!");
+	}
+
+	~MFCViewport() override
+	{
+		ReleaseDC(_windowHandle, _device_context);
+
+		_windowHandle = nullptr;
+		_device_context = nullptr;
+	}
+
+	SDL_Window* toSDLWindow() override
+	{
+		return nullptr;
+	}
+
+	std::pair<uint32_t, uint32_t> getSize() override
+	{
+		RECT size;
+		if (!GetWindowRect(_windowHandle, &size))
+		{
+			return std::make_pair(0, 0);
+		}
+
+		return std::make_pair(size.right - size.left, size.bottom - size.top);
+	}
+
+	void swapBuffers() override
+	{
+		SwapBuffers(_device_context);
+	}
+
+	void setState(os::ViewportState state) override
+	{
+		// Not implemented
+	}
+
+	void minimize() override
+	{
+		// Not implemented
+	}
+
+	void restore() override
+	{
+		// Not implemented
+	}
+
+	HDC getHDC()
+	{
+		return _device_context;
+	}
+};
+
 class MFCOpenGLContext : public os::OpenGLContext
 {
 	// HACK: Since OpenGL apparently likes global state we also have to make this global...
 	static void* _oglDllHandle;
 	static size_t _oglDllReferenceCount;
 
-	HWND _windowHandle = nullptr;
-	HDC _device_context = nullptr;
 	HGLRC _render_context = nullptr;
 
 	BOOL(WINAPI * wglSwapIntervalEXT)(int interval) = nullptr;
 public:
-
-	MFCOpenGLContext(HWND hwnd, HDC hdc, HGLRC hglrc)
-		: _windowHandle(hwnd),
-		  _device_context(hdc),
-		  _render_context(hglrc)
+	explicit MFCOpenGLContext(HGLRC hglrc)
+		: _render_context(hglrc)
 	{
-		_oglDllHandle = SDL_LoadObject("OPENGL32.DLL");
+		if (_oglDllHandle == nullptr)
+		{
+			_oglDllHandle = SDL_LoadObject("OPENGL32.DLL");
+		}
+		++_oglDllReferenceCount;
 	}
 
 	~MFCOpenGLContext() override
@@ -159,7 +219,12 @@ public:
 			mprintf(("Failed to delete render context!"));
 		}
 
-		ReleaseDC(_windowHandle, _device_context);
+		--_oglDllReferenceCount;
+		if (_oglDllReferenceCount == 0)
+		{
+			SDL_UnloadObject(_oglDllHandle);
+			_oglDllHandle = nullptr;
+		}
 	}
 
 	static void* wglLoader(const char* name)
@@ -177,26 +242,18 @@ public:
 	{
 		return wglLoader;
 	}
-
-	void makeCurrent()
-	{
-		if (!wglMakeCurrent(_device_context, _render_context))
-		{
-			mprintf(("Failed to make OpenGL context current!\n"));
-		}
-	}
-
-	void swapBuffers() override
-	{
-		SwapBuffers(_device_context);
-	}
-
+	
 	void setSwapInterval(int status) override
 	{
 		if (wglSwapIntervalEXT != nullptr)
 		{
 			wglSwapIntervalEXT(status);
 		}
+	}
+
+	HGLRC getHandle()
+	{
+		return _render_context;
 	}
 };
 
@@ -212,7 +269,7 @@ public:
 	~MFCGraphicsOperations() override
 	{}
 
-	std::unique_ptr<os::OpenGLContext> createOpenGLContext(const os::OpenGLContextAttributes& attrs, uint32_t, uint32_t) override
+	std::unique_ptr<os::Viewport> createViewport(const os::ViewPortProperties& props) override
 	{
 		int PixelFormat;
 		PIXELFORMATDESCRIPTOR pfd_test;
@@ -225,29 +282,34 @@ public:
 
 		GL_pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 		GL_pfd.nVersion = 1;
-		GL_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+		GL_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
+		if (props.enable_opengl)
+		{
+			GL_pfd.dwFlags |= PFD_SUPPORT_OPENGL;
+		}
+
 		GL_pfd.iPixelType = PFD_TYPE_RGBA;
-		GL_pfd.cColorBits = attrs.red_size + attrs.green_size + attrs.blue_size + attrs.alpha_size;
-		GL_pfd.cRedBits = attrs.red_size;
-		GL_pfd.cGreenBits = attrs.green_size;
-		GL_pfd.cBlueBits = attrs.blue_size;
-		GL_pfd.cAlphaBits = attrs.alpha_size;
-		GL_pfd.cDepthBits = attrs.depth_size;
-		GL_pfd.cStencilBits = attrs.stencil_size;
+		GL_pfd.cColorBits = props.pixel_format.red_size + props.pixel_format.green_size + props.pixel_format.blue_size + props.pixel_format.alpha_size;
+		GL_pfd.cRedBits = props.pixel_format.red_size;
+		GL_pfd.cGreenBits = props.pixel_format.green_size;
+		GL_pfd.cBlueBits = props.pixel_format.blue_size;
+		GL_pfd.cAlphaBits = props.pixel_format.alpha_size;
+		GL_pfd.cDepthBits = props.pixel_format.depth_size;
+		GL_pfd.cStencilBits = props.pixel_format.stencil_size;
 
 		Assert(_windowHandle != NULL);
 
 		auto device_context = GetDC(_windowHandle);
 
 		if (!device_context) {
-			Error(LOCATION, "Unable to get device context for OpenGL W32!");
+			mprintf(("Unable to get device context for OpenGL W32!\n"));
 			return nullptr;
 		}
 
 		PixelFormat = ChoosePixelFormat(device_context, &GL_pfd);
 
 		if (!PixelFormat) {
-			Error(LOCATION, "Unable to choose pixel format for OpenGL W32!");
+			mprintf(("Unable to choose pixel format for OpenGL W32!\n"));
 			ReleaseDC(_windowHandle, device_context);
 			return nullptr;
 		}
@@ -256,63 +318,68 @@ public:
 		}
 
 		if (!SetPixelFormat(device_context, PixelFormat, &GL_pfd)) {
-			Error(LOCATION, "Unable to set pixel format for OpenGL W32!");
-			ReleaseDC(_windowHandle, device_context);
-			return nullptr;
-		}
-
-		auto render_context = wglCreateContext(device_context);
-		if (!render_context) {
-			Error(LOCATION, "Unable to create rendering context for OpenGL W32!");
-			ReleaseDC(_windowHandle, device_context);
-			return nullptr;
-		}
-
-		if (!wglMakeCurrent(device_context, render_context)) {
-			Error(LOCATION, "Unable to make current thread for OpenGL W32!");
-			
-			if (!wglDeleteContext(render_context)) {
-				mprintf(("Failed to delete render context!"));
-			}
-
+			mprintf(("Unable to set pixel format for OpenGL W32!\n"));
 			ReleaseDC(_windowHandle, device_context);
 			return nullptr;
 		}
 
 		mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d\n",
-			attrs.red_size, attrs.green_size, attrs.blue_size, attrs.depth_size, attrs.stencil_size));
+			props.pixel_format.red_size, props.pixel_format.green_size, props.pixel_format.blue_size,
+			props.pixel_format.depth_size, props.pixel_format.stencil_size));
 
-		// now report back as to what we ended up getting
+		return std::unique_ptr<os::Viewport>(new MFCViewport(_windowHandle, device_context));
+	}
 
-		DescribePixelFormat(device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &GL_pfd);
+	std::unique_ptr<os::OpenGLContext> createOpenGLContext(os::Viewport* port, const os::OpenGLContextAttributes& ctx) override
+	{
+		if (ctx.profile != os::OpenGLProfile::Compatibility) {
+			mprintf(("ERROR: FRED code can only create compatibility profiles!\n"));
+			return nullptr;
+		}
 
-		int r = GL_pfd.cRedBits;
-		int g = GL_pfd.cGreenBits;
-		int b = GL_pfd.cBlueBits;
-		int depth = GL_pfd.cDepthBits;
-		int stencil = GL_pfd.cStencilBits;
-		int db = ((GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0);
+		auto mfcView = reinterpret_cast<MFCViewport*>(port);
 
-		mprintf(("  Actual WGL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d\n", r, g, b, depth, stencil, db));
-		
+		auto render_context = wglCreateContext(mfcView->getHDC());
+		if (!render_context) {
+			mprintf(("Unable to create rendering context for OpenGL W32!\n"));
+			return nullptr;
+		}
+
+		if (!wglMakeCurrent(mfcView->getHDC(), render_context)) {
+			mprintf(("Unable to make current thread for OpenGL W32!\n"));
+			
+			if (!wglDeleteContext(render_context)) {
+				mprintf(("Failed to delete render context!"));
+			}
+
+			return nullptr;
+		}
+
 		// Load the OpenGL DLL so we can use it to look up function pointers
 		// The name is from the SDL sources so it should be the right one
 		
-		return std::unique_ptr<os::OpenGLContext>(new MFCOpenGLContext(_windowHandle, device_context, render_context));
+		return std::unique_ptr<os::OpenGLContext>(new MFCOpenGLContext(render_context));
 	}
 
-	void makeOpenGLContextCurrent(os::OpenGLContext* ctx) override
+	void makeOpenGLContextCurrent(os::Viewport* view, os::OpenGLContext* ctx) override
 	{
-		if (ctx == nullptr)
-		{
+		if (view == nullptr && ctx == nullptr) {
 			if (!wglMakeCurrent(nullptr, nullptr))
 			{
 				mprintf(("Failed to make OpenGL context current!\n"));
 			}
+			return;
 		}
-		else
+
+		Assertion(view != nullptr, "Both viewport of context must be valid at this point!");
+		Assertion(ctx != nullptr, "Both viewport of context must be valid at this point!");
+
+		auto mfcCtx = reinterpret_cast<MFCOpenGLContext*>(ctx);
+		auto mfcView = reinterpret_cast<MFCViewport*>(view);
+
+		if (!wglMakeCurrent(mfcView->getHDC(), mfcCtx->getHandle()))
 		{
-			reinterpret_cast<MFCOpenGLContext*>(ctx)->makeCurrent();
+			mprintf(("Failed to make OpenGL context current!\n"));
 		}
 	}
 };

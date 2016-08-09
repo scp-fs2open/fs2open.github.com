@@ -246,7 +246,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_ERROR;
 			boxData.message = boxText.c_str();
 			boxData.title = "Error!";
-			boxData.window = os_get_window();
+			boxData.window = os::getSDLMainWindow();
 
 			gr_activate(0);
 
@@ -330,7 +330,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_ERROR;
 			boxData.message = text;
 			boxData.title = "Error!";
-			boxData.window = os_get_window();
+			boxData.window = os::getSDLMainWindow();
 
 			gr_activate(0);
 
@@ -411,7 +411,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_WARNING;
 			boxData.message = boxMessage.c_str();
 			boxData.title = "Warning!";
-			boxData.window = os_get_window();
+			boxData.window = os::getSDLMainWindow();
 
 			gr_activate(0);
 
@@ -499,7 +499,7 @@ namespace os
 					break;
 			}
 
-			SDL_ShowSimpleMessageBox(flags, title, message, os_get_window());
+			SDL_ShowSimpleMessageBox(flags, title, message, os::getSDLMainWindow());
 		}
 	}
 }

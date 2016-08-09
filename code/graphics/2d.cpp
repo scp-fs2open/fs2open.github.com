@@ -1095,8 +1095,6 @@ bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d
 
 	gr_set_shader(NULL);
 
-	os_set_title(Osreg_title);
-
 	Gr_inited = 1;
 
 	return true;
@@ -1133,6 +1131,16 @@ void gr_activate(int active)
 
 	if ( !Gr_inited ) { 
 		return;
+	}
+
+	if (active) {
+		if (Cmdline_fullscreen_window||Cmdline_window) {
+			os::getMainViewport()->restore();
+		} else {
+			os::getMainViewport()->setState(os::ViewportState::Fullscreen);
+		}
+	} else {
+		os::getMainViewport()->minimize();
 	}
 
 	switch( gr_screen.mode ) {
