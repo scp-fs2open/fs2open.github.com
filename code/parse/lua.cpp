@@ -1391,7 +1391,7 @@ ADE_FUNC(__tostring, l_Font, NULL, "Name of font", "string", "Font filename, or 
 	if(!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
 		return ade_set_error(L, "s", "");
 
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", fh->Get()->getName().c_str());
@@ -1404,7 +1404,7 @@ ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><
 	if(!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
 
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR)
@@ -1422,7 +1422,7 @@ ADE_VIRTVAR(Name, l_Font, "string", "Name of font (including extension)", "strin
 	if(!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
 
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR)
@@ -1440,7 +1440,7 @@ ADE_VIRTVAR(Height, l_Font, "number", "Height of font (in pixels)", "number", "F
 	if(!ade_get_args(L, "o|i", l_Font.GetPtr(&fh), &newheight))
 		return ade_set_error(L, "i", 0);
 	
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR && newheight > 0)
@@ -1458,7 +1458,7 @@ ADE_VIRTVAR(TopOffset, l_Font, "number", "The offset this font has from the base
 	if(!ade_get_args(L, "o|f", l_Font.GetPtr(&fh), &newOffset))
 		return ade_set_error(L, "f", 0.0f);
 	
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && newOffset > 0)
@@ -1476,7 +1476,7 @@ ADE_VIRTVAR(BottomOffset, l_Font, "number", "The space (in pixels) this font ski
 	if(!ade_get_args(L, "o|f", l_Font.GetPtr(&fh), &newOffset))
 		return ade_set_error(L, "f", 0.0f);
 	
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && newOffset > 0)
@@ -1489,11 +1489,11 @@ ADE_VIRTVAR(BottomOffset, l_Font, "number", "The space (in pixels) this font ski
 
 ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
 {
-	font_h *fh;
+	font_h *fh = nullptr;
 	if(!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", fh->isValid());
+	return ade_set_args(L, "b", fh != nullptr && fh->isValid());
 }
 
 //**********HANDLE: gameevent
