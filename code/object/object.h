@@ -245,7 +245,7 @@ void obj_delete(int objnum);
 void obj_merge_created_list(void);
 
 // recalculate object pairs for an object
-#define OBJ_RECALC_PAIRS(obj_to_reset)		do {	auto tmp_flags = obj_to_reset->flags; obj_set_flags(obj_to_reset, tmp_flags.remove(Object::Object_Flags::Collides)); obj_set_flags(obj_to_reset, tmp_flags.set(Object::Object_Flags::Collides)); } while(0);
+#define OBJ_RECALC_PAIRS(obj_to_reset)		do {	obj_set_flags(obj_to_reset, obj_to_reset->flags - Object::Object_Flags::Collides); obj_set_flags(obj_to_reset, obj_to_reset->flags + Object::Object_Flags::Collides); } while(0);
 
 // Removes any occurances of object 'a' from the pairs list.
 void obj_remove_pairs( object * a );

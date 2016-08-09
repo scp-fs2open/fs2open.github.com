@@ -144,7 +144,7 @@ BOOL ship_select::OnInitDialog()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list))
 	{
-        flags = ptr->flags.remove(Object::Object_Flags::Temp_marked);
+        flags = ptr->flags - Object::Object_Flags::Temp_marked;
         if (flags[Object::Object_Flags::Marked])
             flags.set(Object::Object_Flags::Temp_marked);
         else

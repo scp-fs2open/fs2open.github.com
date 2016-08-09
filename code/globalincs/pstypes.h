@@ -223,7 +223,7 @@ typedef struct flag_def_list {
 
 template<class T>
 struct flag_def_list_new {
-    char* name;			// The parseable representation of this flag
+    const char* name;			// The parseable representation of this flag
     T def;				// The flag definition for this flag
     bool in_use;		// Whether or not this flag is currently in use or obsolete
     bool is_special;	// Whether this flag requires special processing. See parse_string_flag_list<T, T> for details
@@ -623,76 +623,98 @@ using std::memset_if_trivial_else_error;
 /*Flagset*/
 #include <bitset>
 
-template <class T, size_t size = static_cast < size_t >(T::NUM_VALUES)>
+template <class T, size_t SIZE = static_cast < size_t >(T::NUM_VALUES)>
 class flagset {
 protected:
-    std::bitset<size> values;
+    std::bitset<SIZE> values;
 public:
 
-    bool operator[](T idx) { return values[(static_cast < size_t >(idx))]; };
-    flagset<T> operator&(flagset<T>& other) {
+    bool operator[](T idx) const { return values[(static_cast < size_t >(idx))]; };
+    
+    flagset<T> operator&(flagset<T>& other) const {
         flagset<T> result;
         result.values = this->values & other.values;
         return result;
     }
 
-    flagset<T> operator|(T flag) {
+    flagset<T> operator+(T flag) {
         flagset<T> result = *this;
         result.set(flag);
         return result;
     }
 
-    flagset<T> operator |(flagset<T>& other) {
+    flagset<T>* operator+=(T flag) {
+        this->set(flag);
+        return this;
+    }
+
+    flagset<T> operator-(T flag) {
+        flagset<T> result = *this;
+        result.remove(flag);
+        return result;
+    }
+
+    flagset<T>* operator-=(T flag) {
+        this->remove(flag);
+        return this;
+    }
+
+    flagset<T> operator |(flagset<T>& other) const {
         flagset<T> result;
         result.values = this->values | other.values;
         return result;
     }
 
-    void operator |=(const flagset<T>& other) {
+
+    flagset<T>* operator |=(const flagset<T>& other) {
         this->values |= other.values;
+
+        return this;
     }
 
     void operator |=(const T flag) {
         set(flag);
     }
 
-    bool operator==(flagset<T> other) { return this->values == other.values; }
-    bool operator!=(flagset<T> other) { return this->values != other.values; }
+    bool operator==(const flagset<T> other) const { return this->values == other.values; }
+    bool operator!=(const flagset<T> other) const { return this->values != other.values; }
 
     void reset() { values.reset(); }
     
-    flagset<T>  set(T idx, bool value = true) {
-        if (idx >= T::NUM_VALUES) {
-            Error("Invalid flag value, trace back and get a coder!");
-            return *this;
-        }
+    flagset<T>* set(T idx, bool value = true) {
+        Assertion(idx >= T::NUM_VALUES, "Invalid flag value, trace back and get a coder!");
 
         values.set(static_cast < size_t >(idx), value);
-        return *this;
+        return this;
     }
 
-    flagset<T>  set_multiple(T idx[], size_t arg_length) {
-        for (size_t i = 0; i < arg_length; ++i) {
-            set(idx[i], true);
+    template<typename TIter>
+    flagset<T>& set_multiple(TIter begin, TIter end) {
+        auto current = begin;
+        while (current != end)
+        {
+            set(*current, true);
+
+            current = std::next(current);
         }
 
         return *this;
     }
 
-    flagset<T>  remove(T idx) {
+    flagset<T>*  remove(T idx) {
         return set(idx, false);
     }
-    flagset<T>  remove_multiple(T idx[], size_t arg_length) {
+    flagset<T>*  remove_multiple(T idx[], size_t arg_length) {
         for (size_t i = 0; i < arg_length; ++i) {
             set(idx[i], false);
         }
-        return *this;
+        return this;
     }
 
-    flagset<T>  toggle(T idx) {
+    flagset<T>*  toggle(T idx) {
         values[static_cast < size_t >(idx)] = !values[static_cast < size_t >(idx)];
 
-        return *this;
+        return this;
     }
 
     bool any_set() { return values.any(); }

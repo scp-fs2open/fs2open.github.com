@@ -1996,7 +1996,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 
 				num_attacking = num_enemies_attacking(OBJ_INDEX(eno->trial_objp));
                 
-                if (!(is_big_huge(sip))) {
+                if (!is_big_huge(sip) && num_attacking) {
                     dist *= (float)(num_attacking + 2) / 2.0f;				//	prevents lots of ships from attacking same target
                 }
 				
@@ -8474,7 +8474,7 @@ void ai_chase()
 		} else if ((dot_to_enemy > 0.2f) && (dot_from_enemy > -0.2f) && (dot_from_enemy < 0.1f)) {
 			aip->submode = SM_GET_BEHIND;
 			aip->submode_start_time = Missiontime;
-        } else if ((is_small_ship(enemy_sip)) && (dist_to_enemy < 150.0f) && (dot_from_enemy > dot_to_enemy + 0.5f + aip->ai_courage*.002)) {
+        } else if ( enemy_sip != NULL && (is_small_ship(enemy_sip)) && (dist_to_enemy < 150.0f) && (dot_from_enemy > dot_to_enemy + 0.5f + aip->ai_courage*.002)) {
 			float get_away_chance = (aip->ai_get_away_chance == FLT_MIN)
 				? (float)(aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)
 				: aip->ai_get_away_chance;
@@ -8486,7 +8486,7 @@ void ai_chase()
 				aip->submode = SM_EVADE_SQUIGGLE;
 				aip->submode_start_time = Missiontime;
 			}
-        } else if ((is_small_ship(enemy_sip)) && (Missiontime - aip->submode_start_time > F1_0 * 2)) {
+        } else if ( enemy_sip != NULL && (is_small_ship(enemy_sip)) && (Missiontime - aip->submode_start_time > F1_0 * 2)) {
 			if ((dot_to_enemy < 0.8f) && (dot_from_enemy > dot_to_enemy)) {
 				if (frand() > 0.5f) {
 					aip->submode = SM_CONTINUOUS_TURN;

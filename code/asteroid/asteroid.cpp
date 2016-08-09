@@ -225,7 +225,6 @@ void inner_bound_pos_fixup(asteroid_field *asfieldp, vec3d *pos)
 	}
 }
 
-Object::Object_Flags Asteroid_default_obj_flags[] = { Object::Object_Flags::Renders, Object::Object_Flags::Physics, Object::Object_Flags::Collides };
 /**
  * Create a single asteroid 
  */
@@ -322,7 +321,9 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 
 	vm_angles_2_matrix(&orient, &angs);
     flagset<Object::Object_Flags> asteroid_default_flagset;
-    asteroid_default_flagset.set_multiple(Asteroid_default_obj_flags, sizeof(Asteroid_default_obj_flags)/sizeof(Object::Object_Flags));
+    asteroid_default_flagset += Object::Object_Flags::Renders;
+    asteroid_default_flagset += Object::Object_Flags::Physics;
+    asteroid_default_flagset += Object::Object_Flags::Collides;
     
     objnum = obj_create(OBJ_ASTEROID, -1, n, &orient, &pos, radius, asteroid_default_flagset);
 	

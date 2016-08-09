@@ -774,17 +774,17 @@ void techroom_change_tab(int num)
 
 				Ship_list_size = 0;
 
-                for (size_t i = 0; i<Ship_info.size(); i++)
+                for (auto ship_it = Ship_info.begin(); ship_it != Ship_info.end(); ++ship_it)
                 {
-                    if (Techroom_show_all || (Ship_info[i].flags[si_mask]) || (Ship_info[i].flags[si_mask2]))
+                    if (Techroom_show_all || (ship_it->flags[si_mask]) || (ship_it->flags[si_mask2]))
                     {
                         // this ship should be displayed, fill out the entry struct
                         Ship_list[Ship_list_size].bitmap = -1;
-                        Ship_list[Ship_list_size].index = i;
+                        Ship_list[Ship_list_size].index = std::distance(Ship_info.begin(), ship_it);
                         Ship_list[Ship_list_size].animation.num_frames = 0;			// no anim for ships
                         Ship_list[Ship_list_size].has_anim = 0;				// no anim for ships
-                        Ship_list[Ship_list_size].name = *Ship_info[i].tech_title ? Ship_info[i].tech_title : (*Ship_info[i].alt_name ? Ship_info[i].alt_name : Ship_info[i].name);
-                        Ship_list[Ship_list_size].desc = Ship_info[i].tech_desc;
+                        Ship_list[Ship_list_size].name = ship_it->tech_title ? ship_it->tech_title : (ship_it->alt_name ? ship_it->alt_name : ship_it->name);
+                        Ship_list[Ship_list_size].desc = ship_it->tech_desc;
                         Ship_list[Ship_list_size].model_num = -1;
                         Ship_list[Ship_list_size].textures_loaded = 0;
 

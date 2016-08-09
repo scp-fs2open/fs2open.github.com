@@ -669,7 +669,7 @@ void process_debug_keys(int k)
 		Cheats_enabled = 0;
 		return;
 	}
-    auto tmp_flags = Player_obj->flags;
+
 	switch (k) {
 		case KEY_DEBUGGED + KEY_Q:
 		case KEY_DEBUGGED1 + KEY_Q:
@@ -711,12 +711,10 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED1 + KEY_C:
             
 			if(Player_obj->flags[Object::Object_Flags::Collides]){
-                tmp_flags.remove(Object::Object_Flags::Collides);
-				obj_set_flags(Player_obj, tmp_flags);
+				obj_set_flags(Player_obj, Player_obj->flags - Object::Object_Flags::Collides);
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Player no longer collides");
-			} else {
-                tmp_flags.set(Object::Object_Flags::Collides);
-				obj_set_flags(Player_obj, tmp_flags);
+			} else {                
+				obj_set_flags(Player_obj, Player_obj->flags + Object::Object_Flags::Collides);
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Player collides");
 			}
 			break;

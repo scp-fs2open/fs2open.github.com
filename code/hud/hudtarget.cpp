@@ -1299,7 +1299,7 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
     int player_object_index = OBJ_INDEX(Player_obj);
 
     if (target_filters == NULL) {
-        target_filters = new flagset<Ship::Info_Flags>();
+        *target_filters = flagset<Ship::Info_Flags>();
         target_filters->set(Ship::Info_Flags::Cargo);
         target_filters->set(Ship::Info_Flags::Navbuoy);
     }
@@ -1396,7 +1396,7 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
             if (diff > 0.0f) {
                 if (diff < (current_distance - nearest_distance)) {
                     nearest_distance = new_distance;
-                    nearest_object_ptr = const_cast<object *>(prospective_victim_ptr);
+                    nearest_object_ptr = prospective_victim_ptr;
                 }
             }
         }

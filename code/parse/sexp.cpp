@@ -2345,18 +2345,20 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (!stricmp(CTEXT(node), "<any support ship class>"))
 					break;
 
-                for (i = 0; i < Ship_info.size(); ++i) {
-					if ( !stricmp(CTEXT(node), Ship_info[i].name) )
-					{
-						if (Ship_info[i].flags[Ship::Info_Flags::Support])
-						{
-							break;
-						}
-					}
-				}
+                i = -1;
+                for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+                    if (!stricmp(CTEXT(node), it->name))
+                    {
+                        if (it->flags[Ship::Info_Flags::Support])
+                        {
+                            i = std::distance(Ship_info.cbegin(), it);
+                            break;
+                        }
+                    }
+                }
 
-				if ( i == Ship_info.size())
-					return SEXP_CHECK_INVALID_SUPPORT_SHIP_CLASS;
+                if (i == -1)
+                    return SEXP_CHECK_INVALID_SUPPORT_SHIP_CLASS;
 
 				break;
 

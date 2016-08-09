@@ -1883,7 +1883,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			return 0;
 		}
 		// should not get this far. check if ship is protected from missile and weapon is type missile
-		else if ( (wip->subtype == WP_MISSILE) && (tobjp->flags[Object::Object_Flags::Laser_protected]) ) {
+		else if ( (wip->subtype == WP_MISSILE) && (tobjp->flags[Object::Object_Flags::Missile_protected]) ) {
 			Int3();
 			return 0;
 		}

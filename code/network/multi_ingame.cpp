@@ -1076,7 +1076,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 				wl_bash_ship_weapons(&Ships[idx].weapons, &Wss_slots_teams[team_val][slot_index]);
 	
 				// Be sure to mark this ship as as a could_be_player
-				obj_set_flags( objp, objp->flags | Object::Object_Flags::Could_be_player );
+				obj_set_flags( objp, objp->flags + Object::Object_Flags::Could_be_player );
 				objp->flags.remove(Object::Object_Flags::Player_ship);
 
                 // if this is a player ship, make sure we find out who's it is and set their objnum accordingly

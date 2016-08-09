@@ -2669,7 +2669,7 @@ int hud_support_find_closest( int objnum )
 			// make sure support ship is not dying
             auto shipp = &Ships[Objects[sop->objnum].instance];
             
-			if ( !(shipp->flags[Ship::Ship_Flags::Depart_warp] || shipp->flags[Ship::Ship_Flags::Exploded]) ) {
+			if ( !(shipp->flags[Ship::Ship_Flags::Dying] || shipp->flags[Ship::Ship_Flags::Exploded]) ) {
 
 				Assert( objp->type == OBJ_SHIP );
 				aip = &Ai_info[Ships[Objects[sop->objnum].instance].ai_index];
