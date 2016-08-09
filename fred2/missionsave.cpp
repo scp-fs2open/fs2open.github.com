@@ -1595,6 +1595,118 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp) {
 	return err;
 }
 
+
+
+int CFred_mission_save::save_containers()
+{
+	if (Format_fs2_open == FSO_FORMAT_RETAIL) {
+		return 0;
+	}
+
+	if (Sexp_containers.empty()) {
+		fso_comment_pop(true);
+		return 0;
+	}
+
+	// sexp_container_sort();
+	required_string_fred("#Sexp_collections");
+	parse_comments(2);
+
+	int i = 0;
+	bool list_found = false;
+	bool map_found = false;
+
+	// What types of container do we have?
+	while (!(list_found && map_found) && i < (int)Sexp_containers.size()) {
+		if (Sexp_containers[i].type & SEXP_CONTAINER_LIST) {
+			list_found = true;
+		}
+		else if (Sexp_containers[i].type & SEXP_CONTAINER_MAP) {
+			map_found = true;
+		}
+
+		i++;
+	}
+
+	if (list_found) {
+		required_string_fred("$Lists");
+		parse_comments(2);
+
+		for (i = 0; i < (int)Sexp_containers.size(); i++) {
+			if (Sexp_containers[i].type & SEXP_CONTAINER_LIST) {
+				fout("\n$Name: %s", Sexp_containers[i].container_name.c_str());
+				if (Sexp_containers[i].type & SEXP_CONTAINER_STRING_DATA) {
+					fout("\n$Data Type: String");
+				}
+				else if (Sexp_containers[i].type & SEXP_CONTAINER_NUMBER_DATA) {
+					fout("\n$Data Type: Number");
+				}
+
+				if (Sexp_containers[i].type & SEXP_CONTAINER_STRONGLY_TYPED_DATA) {
+					fout("\n+Strongly Typed Data");
+				}
+
+				fout("\n$Data: ( ");
+				for (int list_idx = 0; list_idx < (int)Sexp_containers[i].list_data.size(); list_idx++) {
+					fout("\"%s\" ", Sexp_containers[i].list_data[list_idx].c_str());
+				}
+
+				fout(")\n");
+			}
+		}
+
+		required_string_fred("$End Lists");
+		parse_comments(1);
+	}
+
+	if (map_found) {
+		required_string_fred("$Maps");
+		parse_comments(2);
+
+		for (i = 0; i < (int)Sexp_containers.size(); i++) {
+			if (Sexp_containers[i].type & SEXP_CONTAINER_MAP) {
+
+				Assertion((Sexp_containers[i].list_data.size() % 2 == 0), "Sexp Map Container %s has a key with no corresponding data entry. Can not save. Skipping this collection", Sexp_containers[i].container_name.c_str());
+
+				fout("\n$Name: %s", Sexp_containers[i].container_name.c_str());
+				if (Sexp_containers[i].type & SEXP_CONTAINER_STRING_DATA) {
+					fout("\n$Data Type: String");
+				}
+				else if (Sexp_containers[i].type & SEXP_CONTAINER_NUMBER_DATA) {
+					fout("\n$Data Type: Number");
+				}
+
+				if (Sexp_containers[i].type & SEXP_CONTAINER_NUMBER_KEYS) {
+					fout("\n$Key Type: Number");
+				}
+				else {
+					fout("\n$Key Type: String");
+				}
+
+				if (Sexp_containers[i].type & SEXP_CONTAINER_STRONGLY_TYPED_KEYS) {
+					fout("\n+Strongly Typed Keys");
+				}
+
+				if (Sexp_containers[i].type & SEXP_CONTAINER_STRONGLY_TYPED_DATA) {
+					fout("\n+Strongly Typed Data");
+				}
+
+				fout("\n$Data: ( ");
+				for (SCP_unordered_map<SCP_string, SCP_string>::iterator map_iter = Sexp_containers[i].map_data.begin(); map_iter != Sexp_containers[i].map_data.end(); map_iter++) {
+					fout("\"%s\" \"%s\" ", map_iter->first.c_str(), map_iter->second.c_str());
+				}
+
+				fout(")\n");
+			}
+		}
+
+		required_string_fred("$End Maps");
+		parse_comments(1);
+	}
+
+	return err;
+}
+
 void CFred_mission_save::save_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, const char *string_field_640, const char *string_field_1024, int blank_lines) {
 	if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 		if ((*string_field_640 != '\0') || (*string_field_1024 != '\0')) {
@@ -1875,125 +1987,10 @@ int CFred_mission_save::save_fiction() {
 				parse_comments(2);
 			else
 				fout("\n\n#Fiction Viewer");
-int CFred_mission_save::save_containers()
-{
-	if (Format_fs2_open == FSO_FORMAT_RETAIL) {
-		return 0; 
-	}
 
 			// we have multiple stages now, so save them all
 			for (SCP_vector<fiction_viewer_stage>::iterator stage = Fiction_viewer_stages.begin(); stage != Fiction_viewer_stages.end(); ++stage) {
 				fout("\n");
-	if (Sexp_containers.empty()) {
-		fso_comment_pop(true);
-		return 0;
-	}
-
-	// sexp_container_sort();
-	required_string_fred("#Sexp_collections");
-	parse_comments(2);
-
-	int i = 0; 
-	bool list_found = false; 
-	bool map_found = false; 
-
-	// What types of container do we have?
-	while (!(list_found && map_found) && i < (int)Sexp_containers.size()) {
-		if (Sexp_containers[i].type & SEXP_CONTAINER_LIST) {
-			list_found = true; 
-		}
-		else if (Sexp_containers[i].type & SEXP_CONTAINER_MAP) {
-			map_found = true; 
-		}
-		
-		i++;
-	}
-
-	if (list_found) {
-		required_string_fred("$Lists");
-		parse_comments(2);
-
-		for (i = 0; i < (int)Sexp_containers.size(); i++) {
-			if (Sexp_containers[i].type & SEXP_CONTAINER_LIST) {
-				fout("\n$Name: %s", Sexp_containers[i].container_name.c_str());
-				if (Sexp_containers[i].type & SEXP_CONTAINER_STRING_DATA) {
-					fout("\n$Data Type: String");
-				}
-				else if (Sexp_containers[i].type & SEXP_CONTAINER_NUMBER_DATA) {
-					fout("\n$Data Type: Number");
-				}
-
-				if (Sexp_containers[i].type & SEXP_CONTAINER_STRONGLY_TYPED_DATA) {
-					fout("\n+Strongly Typed Data");
-				}
-
-				fout("\n$Data: ( "); 
-				for (int list_idx = 0; list_idx < (int)Sexp_containers[i].list_data.size(); list_idx++) {
-					fout("\"%s\" ", Sexp_containers[i].list_data[list_idx].c_str()); 
-				}
-
-				fout(")\n");
-			}
-		}
-
-		required_string_fred("$End Lists");
-		parse_comments(1);
-	}
-
-	if (map_found) {
-		required_string_fred("$Maps");
-		parse_comments(2);
-
-		for (i = 0; i < (int)Sexp_containers.size(); i++) {
-			if (Sexp_containers[i].type & SEXP_CONTAINER_MAP) {
-
-				Assertion((Sexp_containers[i].list_data.size() %2 == 0 ), "Sexp Map Container %s has a key with no corresponding data entry. Can not save. Skipping this collection", Sexp_containers[i].container_name.c_str()); 
-
-				fout("\n$Name: %s", Sexp_containers[i].container_name.c_str());
-				if (Sexp_containers[i].type & SEXP_CONTAINER_STRING_DATA) {
-					fout("\n$Data Type: String");
-				}
-				else if (Sexp_containers[i].type & SEXP_CONTAINER_NUMBER_DATA) {
-					fout("\n$Data Type: Number");
-				}
-
-				if (Sexp_containers[i].type & SEXP_CONTAINER_NUMBER_KEYS) {
-					fout("\n$Key Type: Number");
-				}
-				else {
-					fout("\n$Key Type: String");
-				}
-				
-				if (Sexp_containers[i].type & SEXP_CONTAINER_STRONGLY_TYPED_KEYS) {
-					fout("\n+Strongly Typed Keys");
-				}
-
-				if (Sexp_containers[i].type & SEXP_CONTAINER_STRONGLY_TYPED_DATA) {
-					fout("\n+Strongly Typed Data");
-				}
-
-				fout("\n$Data: ( "); 
-				for (SCP_unordered_map<SCP_string, SCP_string>::iterator map_iter = Sexp_containers[i].map_data.begin(); map_iter != Sexp_containers[i].map_data.end(); map_iter++) {
-					fout("\"%s\" \"%s\" ", map_iter->first.c_str(),  map_iter->second.c_str()); 
-				}
-
-				fout(")\n");
-			}
-		}
-
-		required_string_fred("$End Maps");
-		parse_comments(1);
-	}
-
-	return err;
-}
-
-
-int CFred_mission_save::save_players()
-{
-	int i, j;
-	int var_idx;
-	int used_pool[MAX_WEAPON_TYPES];
 
 				// save file
 				required_string_fred("$File:");
@@ -2008,7 +2005,8 @@ int CFred_mission_save::save_players()
 					else
 						fout("\n$Font:");
 					fout(" %s", stage->font_filename);
-				} else
+				}
+				else
 					optional_string_fred("$Font:");
 
 				// save voice
@@ -2019,7 +2017,8 @@ int CFred_mission_save::save_players()
 					else
 						fout("\n$Voice:");
 					fout(" %s", stage->voice_filename);
-				} else
+				}
+				else
 					optional_string_fred("$Voice:");
 
 				// save UI
@@ -2029,7 +2028,8 @@ int CFred_mission_save::save_players()
 					else
 						fout("\n$UI:");
 					fout(" %s", stage->ui_name);
-				} else
+				}
+				else
 					optional_string_fred("$UI:");
 
 				// save background
@@ -2045,10 +2045,12 @@ int CFred_mission_save::save_players()
 					else
 						fout("\n$Formula:");
 					fout(" %s", sexp_out.c_str());
-				} else
+				}
+				else
 					optional_string_fred("$Formula:");
 			}
-		} else {
+		}
+		else {
 			MessageBox(NULL, "Warning: This mission contains fiction viewer data, but you are saving in the retail mission format.", "Incompatibility with retail mission format", MB_OK);
 		}
 	}
@@ -2611,6 +2613,8 @@ void CFred_mission_save::save_mission_internal(const char *pathname) {
 	else if (save_plot_info())
 		err = -3;
 	else if (save_variables())
+		err = -3;
+	else if (save_containers())
 		err = -3;
 	//	else if (save_briefing_info())
 	//		err = -4;
