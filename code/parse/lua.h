@@ -224,7 +224,7 @@ public:
 		od.idx = LibIdx;
 		od.sig = NULL;
 		od.buf = (void**)ptr;
-		od.size = 0;
+		od.size = ODATA_PTR_SIZE;
 		return od;
 	}
 };
