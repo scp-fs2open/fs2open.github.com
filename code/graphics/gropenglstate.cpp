@@ -1313,8 +1313,8 @@ void opengl_uniform_state::setUniformi(const SCP_string &name, const int val)
 	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index == (size_t)-1) {
-		Assert( (size_t)uniform_index < uniforms.size() );
+	if ( uniform_index != (size_t)-1) {
+		Assert( uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
 
@@ -1352,7 +1352,7 @@ void opengl_uniform_state::setUniformf(const SCP_string &name, const float val)
 	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index == (size_t) -1) {
+	if ( uniform_index != (size_t) -1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
@@ -1401,7 +1401,7 @@ void opengl_uniform_state::setUniform2f(const SCP_string &name, const vec2d &val
 	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if (uniform_index == (size_t)-1) {
+	if (uniform_index != (size_t)-1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
@@ -1451,7 +1451,7 @@ void opengl_uniform_state::setUniform3f(const SCP_string &name, const vec3d &val
 	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if (uniform_index == (size_t)-1) {
+	if (uniform_index != (size_t)-1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
@@ -1502,7 +1502,7 @@ void opengl_uniform_state::setUniform4f(const SCP_string &name, const vec4 &val)
 	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if (uniform_index == (size_t)-1) {
+	if (uniform_index != (size_t)-1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
@@ -1542,7 +1542,7 @@ void opengl_uniform_state::setUniformMatrix4f(const SCP_string &name, const matr
 	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index == (size_t)-1) {
+	if ( uniform_index != (size_t)-1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
@@ -1584,7 +1584,7 @@ void opengl_uniform_state::setUniformMatrix4fv(const SCP_string &name, const int
 	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index == (size_t)-1) {
+	if ( uniform_index != (size_t)-1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
