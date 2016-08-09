@@ -33,6 +33,7 @@ int Failed_key_index;
 // Joystick configuration
 int Joy_dead_zone_size = 10;
 int Joy_sensitivity = 9;
+int JOY_TOTAL_BUTTONS = 32;
 
 // assume control keys are used as modifiers until we find out 
 int Shift_is_modifier;
@@ -611,6 +612,12 @@ void control_config_common_init()
 	} else {
 		Scan_code_text = Scan_code_text_english;
 		Joy_button_text = Joy_button_text_english;
+	}
+
+	auto current = io::joystick::getCurrentJoystick();
+	if (current != nullptr)
+	{
+		JOY_TOTAL_BUTTONS = current->numButtons() + (int(io::joystick::HAT_NUM_POS) * current->numHats());
 	}
 }
 

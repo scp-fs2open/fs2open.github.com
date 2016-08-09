@@ -291,6 +291,8 @@ extern int Invert_axis_defaults[];
 extern int Joy_dead_zone_size;
 extern int Joy_sensitivity;
 
+extern int JOY_TOTAL_BUTTONS;	// z64: HAX!! We're still limited to one joystick for the time being, but at least we're no longer confined to 32 buttons...
+
 extern int Control_config_overlay_id;
 
 extern config_item Control_config[];		//!< Stores the keyboard configuration
