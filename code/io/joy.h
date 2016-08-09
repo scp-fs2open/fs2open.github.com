@@ -246,16 +246,11 @@ namespace io
 
 			SCP_vector<button_info> _button;
 
-			class hat_info
+			struct hat_info
 			{
-			public:
-				hat_info() : Value(HAT_CENTERED), DownTimestamp(-1), DownCount() {
-					DownCount.resize(HAT_NUM_POS, 0);
-				}
-
-				HatPosition     Value;          //!< The current hat value.
-				int             DownTimestamp;  //!< The timestamp when the hat activated, -1 if centered.
-				SCP_vector<int> DownCount;      //!< The number of times each hat position has been hit. [hatpos]
+				HatPosition Value;                  //!< The current hat value.
+				int         DownTimestamp;          //!< The timestamp when the hat activated, -1 if centered.
+				int         DownCount[HAT_NUM_POS]; //!< The number of times each hat position has been hit.
 			};
 
 			SCP_vector<hat_info> _hat;
