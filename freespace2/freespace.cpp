@@ -162,6 +162,8 @@
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 
+#include "SDLGraphicsOperations.h"
+
 #include <stdexcept>
 #include <SDL.h>
 #include <SDL_main.h>
@@ -524,6 +526,7 @@ sound_env Game_sound_env;
 sound_env Game_default_sound_env = { EAX_ENVIRONMENT_BATHROOM, 0.2f, 0.2f, 1.0f };
 int Game_sound_env_update_timestamp;
 
+static std::unique_ptr<SDLGraphicsOperations> sdlGraphicsOperations;
 
 fs_builtin_mission *game_find_builtin_mission(char *filename)
 {
@@ -1865,7 +1868,8 @@ void game_init()
 // SOUND INIT END
 /////////////////////////////
 
-	if ( gr_init() == false ) {
+	sdlGraphicsOperations.reset(new SDLGraphicsOperations());
+	if ( gr_init(sdlGraphicsOperations.get()) == false ) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
 		exit(1);
 		return;
@@ -2283,7 +2287,7 @@ void game_show_framerate()
 		gr_set_color_fast(&HUD_color_debug);
 
 		{
-			gr_printf_no_resize( sx, sy, NOX("DYN: %d KB\n"), memory::get_used_memory()/1024 );
+			gr_printf_no_resize( sx, sy, NOX("DYN: " SIZE_T_ARG " KB\n"), memory::get_used_memory()/1024 );
 			sy += line_height;
 		}	
 
@@ -2301,8 +2305,8 @@ void game_show_framerate()
 
 		{
 			extern int GL_textures_in;
-			extern int GL_vertex_data_in;
-			gr_printf_no_resize( sx, sy, NOX("VRAM: %d KB\n"), (GL_textures_in + GL_vertex_data_in)/1024 );
+			extern size_t GL_vertex_data_in;
+			gr_printf_no_resize( sx, sy, NOX("VRAM: " SIZE_T_ARG " KB\n"), (GL_textures_in + GL_vertex_data_in)/1024 );
 			sy += line_height;
 		}
 	}
@@ -6919,9 +6923,12 @@ DCF(pofspew, "Spews POF info without shutting down the game")
 	game_spew_pof_info();
 }
 
-// returns:
-// 0 on an error
-// 1 on a clean exit
+/**
+* Does some preliminary checks and then enters main event loop.
+*
+* @returns 0 on a clean exit, or
+* @returns 1 on an error
+*/
 int game_main(int argc, char *argv[])
 {
 	int state;
@@ -7143,7 +7150,6 @@ void game_shutdown(void)
 	// the menu close functions will unload the bitmaps if they were displayed during the game
 	main_hall_close();
 	training_menu_close();
-	gr_close();
 
 	// free left over memory from table parsing
 	player_tips_close();
@@ -7160,6 +7166,8 @@ void game_shutdown(void)
 	model_free_all();
 	bm_unload_all();			// unload/free bitmaps, has to be called *after* model_free_all()!
 
+	gr_close(sdlGraphicsOperations.get());
+	sdlGraphicsOperations.reset();
 	os_cleanup();
 
 	// although the comment in cmdline.cpp said this isn't needed,
@@ -8605,7 +8613,7 @@ int actual_main(int argc, char *argv[])
 #else
 	try {
 #endif
-		result = !game_main(argc, argv);
+		result = game_main(argc, argv);
 #if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
 	}
 	__except (RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread")) {

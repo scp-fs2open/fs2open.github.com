@@ -427,7 +427,7 @@ int beam_fire(beam_fire_info *fire_info)
 	}	
 
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
+	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
 	if(objnum < 0){
 		beam_delete(new_item);
 		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
@@ -553,7 +553,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	// type c is a very special weapon type - binfo has no meaning
 
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
+	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
 
 	if(objnum < 0){
 		beam_delete(new_item);

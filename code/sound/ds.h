@@ -171,7 +171,7 @@ extern SCP_vector<EFXREVERBPROPERTIES> EFX_presets;
 
 typedef struct
 {
-	unsigned int environment;	// 0 to EAX_ENVIRONMENT_COUNT-1
+	size_t environment;	// 0 to EAX_ENVIRONMENT_COUNT-1
 	float fVolume;				// 0 to 1
 	float fDecayTime_sec;		// seconds, 0.1 to 100
 	float fDamping;				// 0 to 1

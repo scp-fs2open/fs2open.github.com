@@ -423,7 +423,6 @@ void model_init()
 		Polygon_models[i] = NULL;
 	}
 
-	atexit( model_free_all );
 	model_initted = 1;
 }
 

@@ -12,6 +12,7 @@
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
+#include <osapi/osapi.h>
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
@@ -554,12 +555,12 @@ typedef struct screen {
 	void (*gf_set_buffer)(int);
 	void (*gf_render_buffer)(int, const vertex_buffer*, int, int);
 
-	void (*gf_update_buffer_object)(int handle, uint size, void* data);
+	void (*gf_update_buffer_object)(int handle, size_t size, void* data);
 	void (*gf_update_transform_buffer)(void* data, uint size);
 	void (*gf_set_transform_buffer_offset)(int offset);
 
 	int (*gf_create_stream_buffer)();
-	void (*gf_render_stream_buffer)(int buffer_handle, int offset, int n_verts, int flags);
+	void (*gf_render_stream_buffer)(int buffer_handle, size_t offset, size_t n_verts, int flags);
 	
 	//the projection matrix; fov, aspect ratio, near, far
  	void (*gf_set_proj_matrix)(float, float, float, float);
@@ -655,12 +656,14 @@ typedef struct screen {
 
 extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 
-extern bool gr_init(int d_mode = GR_DEFAULT, int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
+extern bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode = GR_DEFAULT,
+					int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
+
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);
 
 // Call this when your app ends.
-extern void gr_close();
+extern void gr_close(os::GraphicsOperations* graphicsOps);
 
 extern screen gr_screen;
 
@@ -1038,9 +1041,9 @@ class vertex_layout
 public:
 	vertex_layout(): Vertex_mask(0) {}
 
-	uint get_num_vertex_components() { return Vertex_components.size(); }
+	size_t get_num_vertex_components() { return Vertex_components.size(); }
 
-	vertex_format_data* get_vertex_component(uint index) { return &Vertex_components[index]; }
+	vertex_format_data* get_vertex_component(size_t index) { return &Vertex_components[index]; }
 
 	bool resident_vertex_format(vertex_format_data::vertex_format format_type) { return Vertex_mask & (1 << format_type) ? true : false; } 
 

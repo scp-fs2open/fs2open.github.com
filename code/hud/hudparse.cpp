@@ -441,10 +441,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			// let's start parsing for gauges.
 			required_string("$Gauges:");
 
-			while (!check_for_string("$Gauges:") && !check_for_string("$End Gauges")) {
-				// find out what type of gauge we're parsing.
-				gauge_type = parse_gauge_type();
-
+			while ((gauge_type = parse_gauge_type()) >= 0) {
 				// change some of the default gauge settings to the appropriate values.
 				gauge_settings settings;
 				settings.font_num = use_font;
@@ -467,10 +464,15 @@ void parse_hud_gauges_tbl(const char *filename)
 					Mp++;
 				}
 
-				skip_to_start_of_string_either("$", "+");
+				// HACK: The previous code simply skipped invalid entries but now we try to generate a warning for that.
+				// If we don't see either $ or + then it means that there was an invalid token somewhere in between
+				if (!check_for_string("$") && !check_for_string("+")) {
+					error_display(0, "Detected invalid tokens while parsing HUD gauges: [%.32s]", next_tokens());
+					skip_to_start_of_string_either("$", "+");
+				}
+
 				// stolened from AI_profiles
 				// if we've been through once already and are at the same place, force a move
-
 				saved_Mp = Mp;
 			}
 
@@ -621,7 +623,8 @@ void load_missing_retail_gauges()
 
 // Called once after mission load is complete. Sets initial gauge activity states.
 void init_hud() {
-	int i, num_gauges, config_type;
+	int config_type;
+	size_t i, num_gauges;
 
 	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
 		num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
@@ -668,7 +671,8 @@ extern void hud_init_ballistic_index();
 
 void set_current_hud()
 {
-	int i, num_gauges, config_type;
+	int config_type;
+	size_t i, num_gauges;
 
 	// before we load any hud gauges, see whether we're carring a ballistic weapon (Mantis #2962)
 	hud_init_ballistic_index();
@@ -894,8 +898,6 @@ int parse_gauge_type()
 
 	if ( optional_string("+Secondary Weapons:") )
 		return HUD_OBJECT_SECONDARY_WEAPONS;
-
-	error_display(1, "Invalid gauge type [%.32s]", next_tokens());
 	
 	return -1;
 }
@@ -1252,7 +1254,7 @@ T* gauge_load_common(gauge_settings* settings, T* preAllocated = NULL)
 		}
 	}
 
-	if (optional_string("$Font:")) {
+	if (optional_string("Font:")) {
 		settings->font_num = font::parse_font();
 	} else {
 		if ( settings->font_num < 0 ) {
@@ -3032,7 +3034,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 		settings->use_coords = true;
 	}
 
-	if (optional_string("$Font:")) {
+	if (optional_string("Font:")) {
 		settings->font_num = font::parse_font();
 	} else {
 		if ( settings->font_num < 0 ) {

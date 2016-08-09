@@ -69,7 +69,7 @@ void	convert_multiline_string(CString &dest, const char *src);
 void	deconvert_multiline_string(char *dest, const CString &str, int max_len);
 void	deconvert_multiline_string(SCP_string &dest, const CString &str);
 
-bool	fred_init(HWND windowHandle);
+bool	fred_init(os::GraphicsOperations* graphicsOps);
 void	set_physics_controls();
 int	dup_object(object *objp);
 int	create_object_on_grid(int waypoint_instance = -1);

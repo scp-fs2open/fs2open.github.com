@@ -390,7 +390,7 @@ Chat_command *GetChatCommand()
 // (Spaces aren't allowed as part of a nickname)
 char *GetChatUserList()
 {
-	int iuser_list_length = 0;;
+	size_t iuser_list_length = 0;;
 	if(User_list)
 	{
 		vm_free(User_list);
@@ -654,7 +654,7 @@ char * ParseIRCMessage(char *Line, int iMode)
 
 	static char szResponse[MAXLOCALSTRING] = "";
 
-	int iPrefixLen = 0;	// JAS: Get rid of optimized warning
+	ptrdiff_t iPrefixLen = 0;	// JAS: Get rid of optimized warning
 
 	szRemLine[MAXLOCALSTRING-1] = '\0';
 	szPrefix[MAXLOCALSTRING-1] = '\0';
@@ -1127,7 +1127,7 @@ char * ParseIRCMessage(char *Line, int iMode)
 }
 
 
-void AddChatCommandToQueue(int command,void *data,int len)
+void AddChatCommandToQueue(int command,void *data,size_t len)
 {
 	Currcommand = Firstcommand;
 	if(Firstcommand==NULL)
@@ -1198,7 +1198,7 @@ void FlushChannelList(void)
 }
 char *GetChannelList(void)
 {
-	int ichan_list_length = 0;
+	size_t ichan_list_length = 0;
 	char sznumusers[10];
 	
 	if(GettingChannelList != 2) return NULL;

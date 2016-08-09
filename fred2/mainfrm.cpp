@@ -294,7 +294,7 @@ void CMainFrame::OnLButtonUp(UINT nFlags, CPoint point) {
 	CFrameWnd::OnLButtonUp(nFlags, point);
 }
 
-LONG CMainFrame::OnMenuPopupTest(UINT wParam, LONG lParam) {
+LRESULT CMainFrame::OnMenuPopupTest(WPARAM wParam, LPARAM lParam) {
 	CMenu	menu;
 	CPoint	point;
 

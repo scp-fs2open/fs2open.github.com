@@ -50,7 +50,6 @@ set(FRED2_SOURCES
 	folderdlg.h
 	fred.cpp
 	fred.h
-	fred.rc
 	freddoc.cpp
 	freddoc.h
 	fredrender.cpp
@@ -135,6 +134,8 @@ set(FRED2_SOURCES
 	wing.h
 	wing_editor.cpp
 	wing_editor.h
+	fred.rc
+	version.rc2
 )
 
 set_source_files_properties(fred.rc PROPERTIES

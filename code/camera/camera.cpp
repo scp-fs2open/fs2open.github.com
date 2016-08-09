@@ -825,7 +825,7 @@ camid::camid()
 	sig = -1;
 }
 
-camid::camid(int n_idx, int n_sig)
+camid::camid(size_t n_idx, int n_sig)
 {
 	idx = n_idx;
 	sig = n_sig;
@@ -839,7 +839,7 @@ camera* camid::getCamera()
 	return Cameras[idx];
 }
 
-uint camid::getIndex()
+size_t camid::getIndex()
 {
 	return idx;
 }
@@ -955,7 +955,7 @@ camid cam_get_current()
 	return Current_camera;
 }
 
-uint cam_get_num()
+size_t cam_get_num()
 {
 	return Cameras.size();
 }

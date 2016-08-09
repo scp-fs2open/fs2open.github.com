@@ -47,7 +47,9 @@ static const size_t INPUT_BUFFER_SIZE = 1024;
 typedef unsigned char ubyte;
 
 void write_byte(std::ostream& stream, ubyte byte, size_t i) {
+	auto flags = stream.flags();
 	stream << "0x" << std::hex << std::setw(2) << std::setfill('0') << std::uppercase << int(byte);
+	stream.flags(flags);
 
 	if ((i % 16) == 0) {
 		// End of 16-byte row

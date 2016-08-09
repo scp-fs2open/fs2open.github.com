@@ -534,7 +534,7 @@ RadarVisibility radar_is_visible( object *objp )
 	switch (objp->type)
 	{
 		case OBJ_SHIP:
-			if (Ships[objp->instance].flags & SIF_STEALTH)
+			if (Ships[objp->instance].flags2 & SF2_STEALTH)
 				return NOT_VISIBLE;
 
 			// Ships that are warp in in are not visible on the radar

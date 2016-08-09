@@ -24,6 +24,7 @@
 #include "osapi/dialogs.h"
 
 #include <functional>
+#include <memory>
 
 #include <SDL_events.h>
 
@@ -52,8 +53,13 @@ void os_cleanup();
 
 // window management ---------------------------------------------------------------
 
-// toggle window size between full screen and windowed
-void os_toggle_fullscreen();
+enum class WindowState {
+	Windowed,
+	Borderless,
+	Fullscreen
+};
+
+void os_set_window_state(WindowState state);
 
 // Returns 1 if app is not the foreground app.
 int os_foreground();
@@ -61,7 +67,7 @@ int os_foreground();
 // Returns the handle to the main window
 SDL_Window* os_get_window();
 
-void os_set_window(SDL_Window* new_handle);	 
+void os_set_window(SDL_Window* new_handle);
 
 // process management --------------------------------------------------------------
 
@@ -75,12 +81,6 @@ void os_poll();
 
 // Sleeps for n milliseconds or until app becomes active.
 void os_sleep(uint ms);
-
-// Used to stop message processing
-void os_suspend();
-
-// resume message processing
-void os_resume(); 
 
 /**
  * @brief Determines if FSO is running in legacy config mode
@@ -96,14 +96,116 @@ bool os_is_legacy_mode();
  */
 SCP_string os_get_config_path(const SCP_string& subpath = "");
 
-/**
- * @defgroup eventhandling API for consuming OS events
- * @ingroup osapi
- * See \ref eventhandling_page for more information.
- *  @{
- */
 namespace os
 {
+	/**
+	 * @brief Flags for OpenGL context creation
+	 */
+	enum OpenGLContextFlags
+	{
+		OGL_NONE = 0,
+		OGL_DEBUG = 1 << 0,
+		OGL_FORWARD_COMPATIBLE = 1 << 1
+	};
+
+	/**
+	 * @brief The required context profile
+	 */
+	enum class OpenGLProfile
+	{
+		Core,
+		Compatibility
+	};
+
+	/**
+	 * @brief Attributes for OpenGL context creation
+	 */
+	struct OpenGLContextAttributes
+	{
+		uint32_t red_size;
+		uint32_t green_size;
+		uint32_t blue_size;
+		uint32_t alpha_size;
+
+		uint32_t depth_size;
+		uint32_t stencil_size;
+
+		uint32_t multi_samples;
+
+		uint32_t major_version;
+		uint32_t minor_version;
+
+		uint32_t flags;
+		OpenGLProfile profile;
+	};
+
+	/**
+	 * @brief A function pointer for loading an OpenGL function
+	 */
+	typedef void* (*OpenGLLoadProc)(const char *name);
+
+	/**
+	 * @brief An OpenGL context
+	 * Can be deleted which will properly free the resources of the underlying OpenGL context
+	 */
+	class OpenGLContext
+	{
+	public:
+		virtual ~OpenGLContext() {}
+
+		/**
+		 * @brief Gets an OpenGL loader function
+		 */
+		virtual OpenGLLoadProc getLoaderFunction() = 0;
+
+		/**
+		 * @brief Swaps the buffers of this context
+		 */
+		virtual void swapBuffers() = 0;
+
+		/**
+		 * @brief Sets the swap interval
+		 */
+		virtual void setSwapInterval(int status) = 0;
+	};
+
+	/**
+	 * @brief Abstraction for various graphics operations
+	 * 
+	 * This is used for providing platform specific functionality for various graphics operations.
+	 */
+	class GraphicsOperations {
+	public:
+		virtual ~GraphicsOperations() {}
+
+		/**
+		 * @brief Creates an OpenGL contex
+		 *
+		 * Uses the specified attributes and creates an OpenGL context. The width and height
+		 * values may be used for creating the main window.
+		 *
+		 * @param attrs The desired Context attributes
+		 * @param width The width of the main window
+		 * @param height The height of the main window
+		 *
+		 * @return A pointer to the OpenGL context or @c nullptr if the creation has failed
+		 */
+		virtual std::unique_ptr<OpenGLContext> createOpenGLContext(const OpenGLContextAttributes& attrs,
+												  uint32_t width, uint32_t height) = 0;
+
+		/**
+		 * @brief Makes an OpenGL context current
+		 * @param ctx The OpenGL context to make current, may be @c nullptr
+		 */
+		virtual void makeOpenGLContextCurrent(OpenGLContext* ctx) = 0;
+	};
+
+	/**
+	 * @defgroup eventhandling API for consuming OS events
+	 * @ingroup osapi
+	 * See \ref eventhandling_page for more information.
+	 *  @{
+	 */
 	namespace events
 	{
 		/**
@@ -151,9 +253,8 @@ namespace os
 		*/
 		bool isWindowEvent(const SDL_Event& e, SDL_Window* window);
 	}
+	/** @} */ // end of OsAPI
 }
-
-/** @} */ // end of OsAPI
 
 // Documentation pages
 /**

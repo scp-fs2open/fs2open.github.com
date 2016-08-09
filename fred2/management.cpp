@@ -69,6 +69,9 @@
 #include <direct.h>
 #include "cmdline/cmdline.h"
 
+#define SDL_MAIN_HANDLED
+#include <SDL_main.h>
+
 #define MAX_DOCKS 1000
 
 #define UNKNOWN_USER		"Unknown"
@@ -270,20 +273,18 @@ void fred_preload_all_briefing_icons()
 	}
 }
 
-extern void os_set_window_from_hwnd(HWND handle);
-bool fred_init(HWND windowHandle)
+bool fred_init(os::GraphicsOperations* graphicsOps)
 {
 	int i;
 	char palette_filename[1024];
 
+	SDL_SetMainReady();
 	memory::init();
 
 	srand( (unsigned) time(NULL) );
 	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
-
-	os_set_window_from_hwnd(windowHandle);
 
 	timer_init();
 
@@ -339,7 +340,7 @@ bool fred_init(HWND windowHandle)
  // 	Cmdline_noglow = 1;
  	Cmdline_window = 1;
 
-	gr_init(GR_OPENGL, 640, 480, 32);
+	gr_init(graphicsOps, GR_OPENGL, 640, 480, 32);
 
 	io::mouse::CursorManager::get()->showCursor(false);
 

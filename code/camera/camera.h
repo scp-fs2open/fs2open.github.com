@@ -166,7 +166,7 @@ void cam_reset_camera();
 camid cam_lookup(char *name);
 camid cam_get_camera(uint index);
 camid cam_get_current();
-uint cam_get_num();
+size_t cam_get_num();
 
 void get_turret_cam_pos(camera *cam, vec3d *pos);
 void get_turret_cam_orient(camera *cam, matrix *ori);

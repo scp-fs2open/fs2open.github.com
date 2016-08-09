@@ -77,6 +77,8 @@ namespace
 
         path->beginPath();
 
+		path->setStrokeWidth(GL_line_width);
+
         return path;
     }
 
@@ -244,9 +246,9 @@ void opengl_bind_vertex_layout(vertex_layout &layout)
 {
 	GL_state.Array.BindPointersBegin();
 
-	uint num_vertex_bindings = layout.get_num_vertex_components();
+	size_t num_vertex_bindings = layout.get_num_vertex_components();
 
-	for ( uint i = 0; i < num_vertex_bindings; ++i ) {
+	for (size_t i = 0; i < num_vertex_bindings; ++i ) {
 		opengl_bind_vertex_component(*layout.get_vertex_component(i));
 	}
 
@@ -888,7 +890,6 @@ void gr_opengl_line(float x1, float y1, float x2, float y2, int resize_mode)
         path->lineTo(x2, y2);
 
         path->setStrokeColor(&gr_screen.current_color);
-        path->setStrokeWidth(1.0f);
         path->stroke();
     }
 
@@ -965,7 +966,6 @@ void gr_opengl_gradient(int x1, int y1, int x2, int y2, int resize_mode)
     path->lineTo(i2fl(x2), i2fl(y2));
 
     path->setStrokePaint(gradientPaint);
-    path->setStrokeWidth(1.0f);
     path->stroke();
 
     endDrawing(path);

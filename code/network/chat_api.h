@@ -69,7 +69,7 @@ char *ParseIRCMessage(char *Line, int iMode);
 int AddChatUser(char *nickname);
 int RemoveChatUser(char *nickname);
 void RemoveAllChatUsers(void);
-void AddChatCommandToQueue(int command, void *data, int len);
+void AddChatCommandToQueue(int command, void *data, size_t len);
 Chat_command *GetChatCommandFromQueue(void);
 void FlushChatCommandQueue(void);
 void AddChannel(char *channel, ushort numusers, char *topic);

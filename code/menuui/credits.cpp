@@ -595,7 +595,7 @@ void credits_init()
 
 	for (iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
 	{
-		gr_get_string_size(NULL, &temp_h, iter->c_str(), iter->length());
+		gr_get_string_size(NULL, &temp_h, iter->c_str(), (int)iter->length());
 
 		h = h + temp_h;
 	}
@@ -792,10 +792,10 @@ void credits_do_frame(float frametime)
 			int width;
 			lineEnd = iter->find('\n', currentPos);
 
-			int length = lineEnd - currentPos;
+			auto length = lineEnd - currentPos;
 			if (lineEnd == SCP_string::npos)
 			{
-				length = -1;
+				length = std::numeric_limits<size_t>::max();
 			}
 
 			gr_get_string_size(&width, &height, iter->c_str() + currentPos, length);

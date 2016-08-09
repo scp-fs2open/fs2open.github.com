@@ -398,10 +398,10 @@ int chatbox_get_msg_target_type(char *msg )
 	return MULTI_MSG_EXPR;
 }
 
-int chatbox_get_msg_target_length(char *msg)
+size_t chatbox_get_msg_target_length(char *msg)
 {
 	if ((msg[0] != '/') && (strchr(msg, ':') != NULL) ) {
-		return -1;
+		return 0;
 	}
 
 	// find the first space
@@ -415,7 +415,8 @@ void chatbox_autosplit_line()
 	char *remainder,msg[150];
 	char temp[150];
 	int msg_pixel_width;
-	int target, target_length = -1; 
+	int target;
+	size_t target_length = 0;
 	
 	// if the chat line is getting too long, fire off the message, putting the last
 	// word on the next input line.
@@ -467,7 +468,7 @@ void chatbox_autosplit_line()
 		}
 	} else if((Chat_inputbox.pressed() && (msg[0] != '\0')) || (strlen(msg) >= CHATBOX_MAX_LEN)) { 
 		// tack on the null terminator in the boundary case
-		int x = strlen(msg);
+		size_t x = strlen(msg);
 		if(x >= CHATBOX_MAX_LEN){
 			msg[CHATBOX_MAX_LEN-1] = '\0';
 		}

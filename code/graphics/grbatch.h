@@ -78,7 +78,7 @@ class geometry_shader_batcher
 {
 	SCP_vector<particle_pnt> vertices;
 
-	int buffer_offset;
+	ptrdiff_t buffer_offset;
 public:
 	// draw a bitmap into the geometry batcher
 	void draw_bitmap(vertex *position, int orient, float rad, float depth = 0);
@@ -86,11 +86,11 @@ public:
 	// draw a rotated bitmap
 //	void draw_bitmap(vertex *position, float rad, float angle, float depth);
 
-	void load_buffer(particle_pnt* buffer, int *n_verts);
+	void load_buffer(particle_pnt* buffer, size_t *n_verts);
 
 	void render_buffer(int buffer_handle, int flags);
 
-	int need_to_render() { return vertices.size(); };
+	bool need_to_render() { return vertices.size() > 0; }
 };
 
 

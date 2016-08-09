@@ -138,7 +138,7 @@ CFILE *_cfopen(const char* source_file, int line, const char *filename, const ch
 // like cfopen(), but it accepts a fully qualified path only (ie, the result of a cf_find_file_location() call)
 // NOTE: only supports reading files!!
 CFILE *_cfopen_special(const char* source_file, int line, const char *file_path, const char *mode,
-	const int size, const int offset, int dir_type = CF_TYPE_ANY);
+	const size_t size, const size_t offset, int dir_type = CF_TYPE_ANY);
 #define cfopen_special(...) _cfopen_special(LOCATION, __VA_ARGS__) // Pass source location to the function
 
 // Flush the open file buffer
@@ -238,7 +238,7 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full = false);
 ushort cf_add_chksum_short(ushort seed, ubyte *buffer, int size);
 
 // update cur_chksum with the chksum of the new_data of size new_data_size
-uint cf_add_chksum_long(uint seed, ubyte *buffer, int size);
+uint cf_add_chksum_long(uint seed, ubyte *buffer, size_t size);
 
 // convenient for misc checksumming purposes ------------------------------------------
 
@@ -324,7 +324,7 @@ void cf_sort_filenames( SCP_vector<SCP_string> &list, int sort, SCP_vector<file_
 //         size        - File size
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns 0.
-int cf_find_file_location( const char *filespec, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize = false);
+int cf_find_file_location( const char *filespec, int pathtype, int max_out, char *pack_filename, size_t *size, size_t *offset, bool localize = false);
 
 // Searches for a file.   Follows all rules and precedence and searches
 // CD's and pack files.  Searches all locations in order for first filename using ext filter list.
@@ -338,7 +338,7 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns -1, else returns offset into ext_list.
 // (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
-int cf_find_file_location_ext(const char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out = 0, char *pack_filename = NULL, int *size = NULL, int *offset = NULL, bool localize = false);
+int cf_find_file_location_ext(const char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out = 0, char *pack_filename = NULL, size_t *size = NULL, size_t *offset = NULL, bool localize = false);
 
 // Functions to change directories
 int cfile_chdir(const char *dir);

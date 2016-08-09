@@ -56,7 +56,10 @@ BEGIN
     "#include ""res\\FRED.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
     "#include ""afxres.rc""         // Standard components\r\n"
     "#include ""afxprint.rc""       // printing/print preview resources\r\n"
-    "#endif\0"
+    "#endif\r\n"
+    "\n"
+    "\r\n"
+    "#include ""version.rc2""\0"
 END
 
 #endif    // APSTUDIO_INVOKED
@@ -70,7 +73,9 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDR_MAINFRAME           ICON                    "res\\FRED.ico"
+
 IDR_FREDTYPE            ICON                    "res\\FREDDoc.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -78,37 +83,68 @@ IDR_FREDTYPE            ICON                    "res\\FREDDoc.ico"
 //
 
 IDR_MAINFRAME           BITMAP                  "res\\Toolbar.bmp"
+
 IDB_OPERATOR            BITMAP                  "res\\bitmap1.bmp"
+
 IDB_DATA                BITMAP                  "res\\data.bmp"
+
 IDB_ROOT                BITMAP                  "res\\root.bmp"
+
 IDB_CHAINED             BITMAP                  "res\\chained.bmp"
+
 IDB_PLAY                BITMAP                  "res\\bmp00001.bmp"
+
 IDB_ROOT_DIRECTIVE      BITMAP                  "res\\root_directive.bmp"
+
 IDB_CHAINED_DIRECTIVE   BITMAP                  "res\\chained_directive.bmp"
+
 IDB_GREEN_DOT           BITMAP                  "res\\green_do.bmp"
+
 IDB_BLACK_DOT           BITMAP                  "res\\black_do.bmp"
+
 IDB_VARIABLE            BITMAP                  "res\\variable.bmp"
+
 IDB_DATA_05             BITMAP                  "res\\data05.bmp"
+
 IDB_DATA_00             BITMAP                  "res\\data00.bmp"
+
 IDB_DATA_10             BITMAP                  "res\\data10.bmp"
+
 IDB_DATA_15             BITMAP                  "res\\data15.bmp"
+
 IDB_DATA_20             BITMAP                  "res\\data20.bmp"
+
 IDB_DATA_25             BITMAP                  "res\\data25.bmp"
+
 IDB_DATA_30             BITMAP                  "res\\data30.bmp"
+
 IDB_DATA_35             BITMAP                  "res\\data35.bmp"
+
 IDB_DATA_40             BITMAP                  "res\\data40.bmp"
+
 IDB_DATA_45             BITMAP                  "res\\data45.bmp"
+
 IDB_DATA_50             BITMAP                  "res\\data50.bmp"
+
 IDB_DATA_55             BITMAP                  "res\\data55.bmp"
+
 IDB_DATA_60             BITMAP                  "res\\data60.bmp"
+
 IDB_DATA_65             BITMAP                  "res\\data65.bmp"
+
 IDB_DATA_70             BITMAP                  "res\\data70.bmp"
+
 IDB_DATA_75             BITMAP                  "res\\data75.bmp"
+
 IDB_DATA_80             BITMAP                  "res\\data80.bmp"
+
 IDB_DATA_85             BITMAP                  "res\\data85.bmp"
+
 IDB_DATA_90             BITMAP                  "res\\data90.bmp"
+
 IDB_DATA_95             BITMAP                  "res\\data95.bmp"
 IDB_CONTAINER           BITMAP                  "res\\container.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2106,45 +2142,6 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Version
-//
-
-VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,7,1,0
- PRODUCTVERSION 3,7,1,0
- FILEFLAGSMASK 0x3fL
-#ifdef _DEBUG
- FILEFLAGS 0x1L
-#else
- FILEFLAGS 0x0L
-#endif
- FILEOS 0x4L
- FILETYPE 0x1L
- FILESUBTYPE 0x0L
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "040904b0"
-        BEGIN
-            VALUE "CompanyName", "Volition Inc."
-            VALUE "FileDescription", "Fred 2 Open"
-            VALUE "FileVersion", "3.7.5.000000"
-            VALUE "InternalName", "Fred 2 Open"
-            VALUE "LegalCopyright", "Copyright ? 1998"
-            VALUE "OriginalFilename", "fred2.exe"
-            VALUE "ProductName", "Fred 2 Open"
-            VALUE "ProductVersion", "3.7.5"
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x409, 1200
-    END
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
 // DESIGNINFO
 //
 
@@ -2696,7 +2693,9 @@ END
 //
 
 IDC_CURSOR1             CURSOR                  "res\\cursor1.cur"
+
 IDC_CURSOR2             CURSOR                  "res\\cursor2.cur"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3129,5 +3128,9 @@ LANGUAGE 9, 1
 #include "afxres.rc"         // Standard components
 #include "afxprint.rc"       // printing/print preview resources
 #endif
+
+
+#include "version.rc2"
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+
