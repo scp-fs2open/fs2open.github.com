@@ -67,7 +67,7 @@ SCP_vector<ade_table_entry> Ade_table_entries;
 //This is what you define a variable of to make new libraries
 class ade_lib : public ade_lib_handle {
 public:
-	ade_lib(char *in_name, ade_lib_handle *parent=NULL, char *in_shortname=NULL, char *in_desc=NULL) {
+	ade_lib(char *in_name, ade_lib_handle *parent=NULL, const char *in_shortname=NULL, const char *in_desc=NULL) {
 		ade_table_entry ate;
 
 		ate.Name = in_name;
@@ -94,10 +94,10 @@ public:
 		LibIdx = Ade_table_entries.size()-1;
 	}
 
-	char *GetName();
+	const char *GetName();
 };
 
-char *ade_lib::GetName()
+const char *ade_lib::GetName()
 {
 	if(GetIdx() == UINT_MAX)
 		return "<Invalid>";
@@ -109,7 +109,8 @@ char *ade_lib::GetName()
 //Lets us add functions via its constructor
 class ade_func : public ade_lib_handle {
 public:
-	ade_func(char *name, lua_CFunction func, ade_lib_handle &parent, char *args=NULL, char *desc=NULL, char *ret_type=NULL, char*ret_desc=NULL) {
+	ade_func(const char *name, lua_CFunction func, ade_lib_handle &parent, const char *args=NULL, const char *desc=NULL,
+			 const char *ret_type=NULL, const char*ret_desc=NULL) {
 		ade_table_entry ate;
 
 		ate.Name = name;
@@ -128,7 +129,8 @@ public:
 
 class ade_virtvar : public ade_lib_handle {
 public:
-	ade_virtvar(char *name, lua_CFunction func, ade_lib_handle &parent, char *args=NULL, char *desc=NULL, char *ret_type=NULL, char*ret_desc=NULL) {
+	ade_virtvar(const char *name, lua_CFunction func, ade_lib_handle &parent, const char *args=NULL, const char *desc=NULL,
+				const char *ret_type=NULL, const char*ret_desc=NULL) {
 		ade_table_entry ate;
 
 		ate.Name = name;
@@ -147,7 +149,8 @@ public:
 
 class ade_indexer : public ade_lib_handle {
 public:
-	ade_indexer(lua_CFunction func, ade_lib_handle &parent, char *args=NULL, char *desc=NULL, char *ret_type=NULL, char*ret_desc=NULL) {
+	ade_indexer(lua_CFunction func, ade_lib_handle &parent, const char *args=NULL, const char *desc=NULL,
+				const char *ret_type=NULL, const char*ret_desc=NULL) {
 		//Add function for meta
 		ade_table_entry ate;
 
@@ -202,7 +205,7 @@ string_conv ade_Operators[] = {
 
 int ade_Num_operators = sizeof(ade_Operators)/sizeof(string_conv);
 
-int ade_get_operator(char *tablename)
+int ade_get_operator(const char *tablename)
 {
 	for(int i = 0; i < ade_Num_operators; i++)
 	{
@@ -3424,6 +3427,16 @@ ADE_FUNC(isValid, l_Team, NULL, "Detects whether handle is valid", "boolean", "t
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(attacks, l_Team, "team", "Checks the IFF status of another team", "boolean", "True if this team attacks the specified team")
+{
+	int x, y;
+	ade_get_args(L, "oo", l_Team.Get(&x), l_Team.Get(&y));
+	if (iff_x_attacks_y(x, y) > 0)
+		return ADE_RETURN_TRUE;
+	
+	return ADE_RETURN_FALSE;
 }
 
 //**********HANDLE: streamingAnimation
@@ -12092,32 +12105,26 @@ ADE_FUNC(pollAllButtons, l_Control_Info, NULL, "Access the four bitfields contai
 class particle_h
 {
 protected:
-	particle *part;
-	uint sig;
+	particle::WeakParticlePtr part;
 public:
 	particle_h()
 	{
-		part = NULL;
+        part = particle::WeakParticlePtr();
 	}
 
-	particle_h(particle *part_p)
+    particle_h(particle::WeakParticlePtr part_p)
 	{
 		this->part = part_p;
-		if (part_p != NULL)
-			this->sig = part_p->signature;
 	}
 
-	particle* Get()
+	particle::WeakParticlePtr Get()
 	{
 		return this->part;
 	}
 
 	bool isValid()
 	{
-		if (part != NULL && part->signature != 0 && part->signature == this->sig)
-			return true;
-		else
-			return false;
+		return !part.expired();
 	}
 
 	~particle_h()
@@ -12143,10 +12150,10 @@ ADE_VIRTVAR(Position, l_Particle, "vector", "The current position of the particl
 
 	if (ADE_SETTING_VAR)
 	{
-		ph->Get()->pos = newVec;
+		ph->Get().lock()->pos = newVec;
 	}
 
-	return ade_set_args(L, "o", l_Vector.Set(ph->Get()->pos));
+	return ade_set_args(L, "o", l_Vector.Set(ph->Get().lock()->pos));
 }
 
 ADE_VIRTVAR(Velocity, l_Particle, "vector", "The current velocity of the particle (world vector)", "vector", "The current velocity")
@@ -12164,10 +12171,10 @@ ADE_VIRTVAR(Velocity, l_Particle, "vector", "The current velocity of the particl
 
 	if (ADE_SETTING_VAR)
 	{
-		ph->Get()->velocity = newVec;
+		ph->Get().lock()->velocity = newVec;
 	}
 
-	return ade_set_args(L, "o", l_Vector.Set(ph->Get()->velocity));
+	return ade_set_args(L, "o", l_Vector.Set(ph->Get().lock()->velocity));
 }
 
 ADE_VIRTVAR(Age, l_Particle, "number", "The time this particle already lives", "number", "The current age or -1 on error")
@@ -12186,10 +12193,10 @@ ADE_VIRTVAR(Age, l_Particle, "number", "The time this particle already lives", "
 	if (ADE_SETTING_VAR)
 	{
 		if (newAge >= 0)
-			ph->Get()->age = newAge;
+			ph->Get().lock()->age = newAge;
 	}
 
-	return ade_set_args(L, "f", ph->Get()->age);
+	return ade_set_args(L, "f", ph->Get().lock()->age);
 }
 
 ADE_VIRTVAR(MaximumLife, l_Particle, "number", "The time this particle can live", "number", "The maximal life or -1 on error")
@@ -12208,10 +12215,10 @@ ADE_VIRTVAR(MaximumLife, l_Particle, "number", "The time this particle can live"
 	if (ADE_SETTING_VAR)
 	{
 		if (newLife >= 0)
-			ph->Get()->max_life = newLife;
+			ph->Get().lock()->max_life = newLife;
 	}
 
-	return ade_set_args(L, "f", ph->Get()->max_life);
+	return ade_set_args(L, "f", ph->Get().lock()->max_life);
 }
 
 ADE_VIRTVAR(Radius, l_Particle, "number", "The radius of the particle", "number", "The radius or -1 on error")
@@ -12230,10 +12237,10 @@ ADE_VIRTVAR(Radius, l_Particle, "number", "The radius of the particle", "number"
 	if (ADE_SETTING_VAR)
 	{
 		if (newRadius >= 0)
-			ph->Get()->radius = newRadius;
+			ph->Get().lock()->radius = newRadius;
 	}
 
-	return ade_set_args(L, "f", ph->Get()->radius);
+	return ade_set_args(L, "f", ph->Get().lock()->radius);
 }
 
 ADE_VIRTVAR(TracerLength, l_Particle, "number", "The tracer legth of the particle", "number", "The radius or -1 on error")
@@ -12249,13 +12256,8 @@ ADE_VIRTVAR(TracerLength, l_Particle, "number", "The tracer legth of the particl
 	if (!ph->isValid())
 		return ade_set_error(L, "f", -1.0f);
 
-	if (ADE_SETTING_VAR)
-	{
-		if (newTracer >= 0) 
-			ph->Get()->tracer_length = newTracer;
-	}
-
-	return ade_set_args(L, "f", ph->Get()->tracer_length);
+	// tracer_length has been deprecated
+	return ade_set_args(L, "f", -1.0f);
 }
 
 ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is attached to. If valid the position will be relativ to this object and the velocity will be ignored.", "object", "Attached object or invalid object handle on error")
@@ -12273,11 +12275,11 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 
 	if (ADE_SETTING_VAR)
 	{
-		if (newObj && newObj->IsValid())
-			ph->Get()->attached_objnum = newObj->objp->signature;
+		if (newObj->IsValid())
+			ph->Get().lock()->attached_objnum = newObj->objp->signature;
 	}
 
-	return ade_set_args(L, "o", l_Object.Set(object_h(&Objects[ph->Get()->attached_objnum])));
+	return ade_set_args(L, "o", l_Object.Set(object_h(&Objects[ph->Get().lock()->attached_objnum])));
 }
 
 ADE_FUNC(isValid, l_Particle, NULL, "Detects whether this handle is valid", "boolean", "true if valid false if not")
@@ -13310,6 +13312,13 @@ ADE_INDEXER(l_Graphics_Fonts, "number Index/string Filename", "Array of loaded f
 
 		if (!ade_get_args(L, "*i", &index))
 			return ade_set_error(L, "o", l_Font.Set(font_h()));
+
+		auto realIdx = index - 1;
+
+		if (realIdx < 0 || realIdx >= font::FontManager::numberOfFonts())
+		{
+			LuaError(L, "Invalid font index %d specified, must be between 1 and %d!", index, font::FontManager::numberOfFonts());
+		}
 
 		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(index - 1))));
 	}
@@ -16058,18 +16067,20 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 		 "particle",
 		 "Handle to the created particle")
 {
-	particle_info pi;
-	pi.type = PARTICLE_DEBUG;
+	particle::particle_info pi;
+	pi.type = particle::PARTICLE_DEBUG;
 	pi.optional_data = -1;
-	pi.tracer_length = 1.0f;
 	pi.attached_objnum = -1;
 	pi.attached_sig = -1;
 	pi.reverse = 0;
 
+	// Need to consume tracer_length parameter but it isn't used anymore
+	float temp;
+
 	enum_h *type = NULL;
 	bool rev=false;
 	object_h *objh=NULL;
-	if(!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad, l_Enum.GetPtr(&type), &pi.tracer_length, &rev, l_Texture.Get((int*)&pi.optional_data), l_Object.GetPtr(&objh)))
+	if(!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad, l_Enum.GetPtr(&type), &temp, &rev, l_Texture.Get((int*)&pi.optional_data), l_Object.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
 	if(type != NULL)
@@ -16077,16 +16088,16 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 		switch(type->index)
 		{
 			case LE_PARTICLE_DEBUG:
-				pi.type = PARTICLE_DEBUG;
+				pi.type = particle::PARTICLE_DEBUG;
 				break;
 			case LE_PARTICLE_FIRE:
-				pi.type = PARTICLE_FIRE;
+				pi.type = particle::PARTICLE_FIRE;
 				break;
 			case LE_PARTICLE_SMOKE:
-				pi.type = PARTICLE_SMOKE;
+				pi.type = particle::PARTICLE_SMOKE;
 				break;
 			case LE_PARTICLE_SMOKE2:
-				pi.type = PARTICLE_SMOKE2;
+				pi.type = particle::PARTICLE_SMOKE2;
 				break;
 			case LE_PARTICLE_BITMAP:
 				if (pi.optional_data < 0)
@@ -16094,7 +16105,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 					LuaError(L, "Invalid texture specified for createParticle()!");
 				}
 
-				pi.type = PARTICLE_BITMAP;
+				pi.type = particle::PARTICLE_BITMAP;
 				break;
 		}
 	}
@@ -16108,9 +16119,9 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 		pi.attached_sig = objh->objp->signature;
 	}
 
-	particle *p = particle_create(&pi);
+    particle::WeakParticlePtr p = particle::create(&pi);
 
-	if (p != NULL)
+	if (!p.expired())
 		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
 	else
 		return ADE_RETURN_NIL;
@@ -16867,7 +16878,7 @@ static int ade_index_handler(lua_State *L)
 	const int key_ldx = 2;
 	const int arg_ldx = 3;
 	int last_arg_ldx = lua_gettop(L);
-	char *type_name = NULL;
+	const char *type_name = NULL;
 	uint ade_id = UINT_MAX;
 	int mtb_ldx = INT_MAX;
 	ade_table_entry* entry = 0;
@@ -17267,7 +17278,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 	return 1;
 }
 
-void ade_output_type_link(FILE *fp, char *typestr)
+void ade_output_type_link(FILE *fp, const char *typestr)
 {
 	for(int i = 0; i < Lua_type_names_num; i++)
 	{

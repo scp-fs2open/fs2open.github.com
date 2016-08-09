@@ -528,6 +528,9 @@ SCP_string dump_stacktrace();
 	const auto ptr_memset = std::memset;
 	#define memset memset_if_trivial_else_error
 
+// Put into std to be compatible with code that uses std::mem*
+namespace std
+{
 	template<typename T>
 	void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
 	{
@@ -598,6 +601,12 @@ SCP_string dump_stacktrace();
 		static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
 		return ptr_memmove(memmove_dest, memmove_src, count);
 	}
+}
+// Put into global namespace
+using std::memcpy_if_trivial_else_error;
+using std::memmove_if_trivial_else_error;
+using std::memset_if_trivial_else_error;
+
 	#endif // HAVE_CXX11
 #endif // NDEBUG
 

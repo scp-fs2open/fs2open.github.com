@@ -1454,6 +1454,7 @@ int Num_info_lines, Info_text_line_size[MAX_INFO_LINES];
 
 void campaign_room_build_listing()
 {
+	font::set_font(font::FONT1);
 	int font_height = gr_get_font_height();
 	int i, y;
 
@@ -1726,7 +1727,6 @@ void campaign_room_do_frame(float frametime)
 	char buf[256];
 	char line_text[MAX_INFO_LINE_LEN];
 	int i, k, y, line;
-	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 
 	if ( help_overlay_active(Campaign_room_overlay_id) ) {
@@ -1805,6 +1805,7 @@ void campaign_room_do_frame(float frametime)
 	Ui_window.draw();
 
 	font::set_font(font::FONT1);
+	int font_height = gr_get_font_height();
 	line = Scroll_offset;
 	while (sim_room_line_query_visible(line)) {
 		y = Cr_list_coords[gr_screen.res][1] + sim_room_lines[line].y - sim_room_lines[Scroll_offset].y;

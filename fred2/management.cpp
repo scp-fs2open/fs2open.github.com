@@ -20,6 +20,7 @@
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
 #include "globalincs/alphacolors.h"
+#include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
@@ -352,6 +353,8 @@ bool fred_init(HWND windowHandle)
 
 	key_init();
 	mouse_init();
+
+	particle::ParticleManager::init();
 
 	iff_init();			// Goober5000
 	species_init();		// Kazan

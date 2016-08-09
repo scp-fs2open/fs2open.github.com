@@ -1,4 +1,3 @@
 #!/bin/bash
 
-glad --api "gl=2.0" --generator c --extensions extensions.txt --spec gl --out-path release
-glad --api "gl=2.0" --generator c-debug --extensions extensions.txt --spec gl --out-path debug
+glad --api "gl=2.0" --generator c --extensions extensions.txt --spec gl --out-path glad

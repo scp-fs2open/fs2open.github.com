@@ -11,12 +11,15 @@
 //
 
 #include "stdafx.h"
+
 #include "FRED.h"
-#include "freespace.h"
 #include "CampaignFilelistBox.h"
 #include "CampaignTreeWnd.h"
+
 #include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
+
+#include <freespace.h>
 
 #ifdef _DEBUG
 #undef THIS_FILE

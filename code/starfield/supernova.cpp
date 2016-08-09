@@ -140,7 +140,7 @@ void supernova_do_particles()
 		vm_vec_sub(&norm, &Player_obj->pos, &sun_temp);
 		vm_vec_normalize(&norm);
 
-		particle_emitter whee;
+		particle::particle_emitter whee;
 		whee.max_life = 1.0f;
 		whee.min_life = 0.6f;
 		whee.max_vel = 50.0f;
@@ -167,12 +167,12 @@ void supernova_do_particles()
 			vm_vec_scale(&whee.vel, 30.0f);
 			vm_vec_add2(&whee.vel, &Player_obj->phys_info.vel);
 			whee.normal = norm;
-			particle_emit(&whee, PARTICLE_FIRE, 0);
+			particle::emit(&whee, particle::PARTICLE_FIRE, 0);
 
 			vm_vec_unrotate(&b, &tb, &Player_obj->orient);
 			vm_vec_add2(&b, &Player_obj->pos);
 			whee.pos = b;
-			particle_emit(&whee, PARTICLE_FIRE, 0);
+			particle::emit(&whee, particle::PARTICLE_FIRE, 0);
 		}
 	}
 }
@@ -203,7 +203,7 @@ void supernova_process()
 		// if we've crossed from stage 1 to stage 2 kill all particles and stick a bunch on the player ship
 		if((sn_stage == 1) && (supernova_active() == 2)) {
 			// first kill all active particles so we have a bunch of free ones
-			particle_kill_all();
+			particle::kill_all();
 		}
 
 		// if we're in stage 2, emit particles

@@ -20,3 +20,4 @@ GL_ARB_texture_buffer_object
 GL_NV_fog_distance
 GL_EXT_packed_depth_stencil
 GL_ARB_seamless_cube_map
+GL_ARB_debug_output

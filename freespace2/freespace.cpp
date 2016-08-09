@@ -131,6 +131,7 @@
 #include "parse/scripting.h"
 #include "parse/sexp.h"
 #include "particle/particle.h"
+#include "particle/ParticleManager.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
@@ -905,7 +906,8 @@ void game_level_close()
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
 		cam_close();
 		subtitles_close();
-		particle_close();
+		particle::ParticleManager::get()->clearSources();
+		particle::close();
 		trail_level_close();
 		ship_clear_cockpit_displays();
 		hud_level_close();
@@ -1000,7 +1002,7 @@ void game_level_init()
 	player_level_init();
 	shipfx_flash_init();			// Init the ship gun flash system.
 	game_flash_reset();			// Reset the flash effect
-	particle_init();				// Reset the particle system
+	particle::init();				// Reset the particle system
 	fireball_init();
 	debris_init();
 	shield_hit_init();				//	Initialize system for showing shield hits
@@ -1960,6 +1962,8 @@ void game_init()
 
 	// load non-darkening pixel defs
 	palman_load_pixels();
+
+	particle::ParticleManager::init();
 
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
@@ -3734,7 +3738,7 @@ void game_render_frame( camid cid )
 	render_shields();
 
 	PROFILE("Trails", trail_render_all());						// render missilie trails after everything else.
-	PROFILE("Particles", particle_render_all());					// render particles after everything else.	
+	PROFILE("Particles", particle::render_all());					// render particles after everything else.	
 	
 #ifdef DYN_CLIP_DIST
 	gr_end_proj_matrix();
@@ -4030,7 +4034,8 @@ void game_simulation_frame()
 
 		if (!physics_paused)	{
 			// Move particle system
-			PROFILE("Move Particles", particle_move_all(flFrametime));	
+			PROFILE("Move Particles", particle::move_all(flFrametime));
+			PROFILE("Process Particle Effects", particle::ParticleManager::get()->doFrame(flFrametime));
 
 			// Move missile trails
 			PROFILE("Move Trails", trail_move_all(flFrametime));		
@@ -7104,11 +7109,13 @@ void game_shutdown(void)
 		Pilot.save_savefile();
 	}
 
+	particle::ParticleManager::shutdown();
+
 	// load up common multiplayer icons
 	multi_unload_common_icons();
 	hud_close();	
 	fireball_close();				// free fireball system
-	particle_close();			// close out the particle system
+	particle::close();			// close out the particle system
 	weapon_close();					// free any memory that was allocated for the weapons
 	ship_close();					// free any memory that was allocated for the ships
 	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback

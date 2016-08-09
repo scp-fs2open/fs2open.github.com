@@ -43,7 +43,7 @@
 #include <glad/glad.h>
 
 // minimum GL version we can reliably support is 2.0
-static const int MIN_REQUIRED_GL_VERSION = 12;
+static const int MIN_REQUIRED_GL_VERSION = 20;
 
 // minimum GLSL version we can reliably support is 110
 static const int MIN_REQUIRED_GLSL_VERSION = 110;
@@ -1429,23 +1429,112 @@ void opengl_setup_function_pointers()
 }
 
 #ifndef NDEBUG
-static void post_gl_call(const char *name, void *funcptr, int len_args, ...) {
-	GLenum error_code;
-	error_code = glad_glGetError();
+static void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
+						   GLsizei length, const GLchar *message, const void *userParam) {
+	const char* sourceStr;
+	const char* typeStr;
+	const char* severityStr;
 
-	if (error_code != GL_NO_ERROR) {
-		const char *error_str = NULL;
-
-		error_str = (const char *)gluErrorString(error_code);
-
-		if (error_str) {
-			nprintf(("OpenGL", "OpenGL Error in function %s: %s\n", name, error_str));
-			fprintf(stderr, "OpenGL ERROR %s in %s\n", error_str, name);
-		} else {
-			nprintf(("OpenGL", "OpenGL Error in function %s: %d\n", name, error_code));
-			fprintf(stderr, "OpenGL ERROR %d in %s\n", error_code, name);
-		}
+	switch(source) {
+		case GL_DEBUG_SOURCE_API_ARB:
+			sourceStr = "OpenGL";
+			break;
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:
+			sourceStr = "WindowSys";
+			break;
+		case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB:
+			sourceStr = "Shader Compiler";
+			break;
+		case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:
+			sourceStr = "Third Party";
+			break;
+		case GL_DEBUG_SOURCE_APPLICATION_ARB:
+			sourceStr = "Application";
+			break;
+		case GL_DEBUG_SOURCE_OTHER_ARB:
+			sourceStr = "Other";
+			break;
+		default:
+			sourceStr = "Unknown";
+			break;
 	}
+
+	switch(type) {
+		case GL_DEBUG_TYPE_ERROR_ARB:
+			typeStr = "Error";
+			break;
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB:
+			typeStr = "Deprecated behavior";
+			break;
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:
+			typeStr = "Undefined behavior";
+			break;
+		case GL_DEBUG_TYPE_PORTABILITY_ARB:
+			typeStr = "Portability";
+			break;
+		case GL_DEBUG_TYPE_PERFORMANCE_ARB:
+			typeStr = "Performance";
+			break;
+		case GL_DEBUG_TYPE_OTHER_ARB:
+			typeStr = "Other";
+			break;
+		default:
+			typeStr = "Unknown";
+			break;
+	}
+
+	switch(severity) {
+		case GL_DEBUG_SEVERITY_HIGH_ARB:
+			severityStr = "High";
+			break;
+		case GL_DEBUG_SEVERITY_MEDIUM_ARB:
+			severityStr = "Medium";
+			break;
+		case GL_DEBUG_SEVERITY_LOW_ARB:
+			severityStr = "Low";
+			break;
+		default:
+			severityStr = "Unknown";
+			break;
+	}
+
+	nprintf(("OpenGL Debug", "OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
+		sourceStr, typeStr, id, severityStr, message));
+}
+
+static bool hasPendingDebugMessage() {
+	GLint numMsgs = 0;
+	glGetIntegerv(GL_DEBUG_LOGGED_MESSAGES_ARB, &numMsgs);
+
+	return numMsgs > 0;
+}
+
+static bool printNextDebugMessage() {
+	if (!hasPendingDebugMessage()) {
+		return false;
+	}
+
+	GLint msgLen = 0;
+	glGetIntegerv(GL_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH_ARB, &msgLen);
+
+	SCP_vector<GLchar> msg;
+	msg.resize(msgLen + 1); // Includes null character, needs to be removed later
+
+	GLenum source;
+	GLenum type;
+	GLenum severity;
+	GLuint id;
+	GLsizei length;
+
+	GLuint numFound = glGetDebugMessageLogARB(1, msg.size(), &source, &type, &id, &severity, &length, &msg[0]);
+
+	if (numFound < 1) {
+		return false;
+	}
+
+	debug_callback(source, type, id, severity, length, msg.data(), nullptr);
+
+	return true;
 }
 #endif
 
@@ -1558,10 +1647,6 @@ bool gr_opengl_init()
 		Error(LOCATION, "Failed to load OpenGL!");
 	}
 
-#ifndef NDEBUG
-	glad_set_post_callback(post_gl_call);
-#endif
-
 	// version check
 	opengl_check_for_errors("before glGetString(GL_VERSION) call");
 	auto ver = (const char *)glGetString(GL_VERSION);
@@ -1584,6 +1669,24 @@ bool gr_opengl_init()
 	}
 
 	GL_initted = true;
+
+#ifndef NDEBUG
+	// Set up the debug extension if present
+	if (GLAD_GL_ARB_debug_output) {
+		nprintf(("OpenGL Debug", "Using OpenGL debug extension\n"));
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+		GLuint unusedIds = 0;
+		glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, &unusedIds, true);
+
+		glDebugMessageCallbackARB((GLDEBUGPROCARB)debug_callback, nullptr);
+
+		// Now print all pending log messages
+		while (hasPendingDebugMessage()) {
+			printNextDebugMessage();
+		}
+	}
+#endif
+
 
 	// this MUST be done before any other gr_opengl_* or
 	// opengl_* function calls!!

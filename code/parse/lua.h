@@ -76,8 +76,8 @@ extern SCP_vector<class ade_table_entry> Ade_table_entries;
 class ade_table_entry
 {
 public:
-	char *Name;
-	char *ShortName;
+	const char *Name;
+	const char *ShortName;
 
 	//Important stuff
 	uint ParentIdx;
@@ -105,10 +105,10 @@ public:
 	size_t Size;
 
 	//Metadata
-	char *Arguments;
-	char *Description;
-	char *ReturnType;
-	char *ReturnDescription;
+	const char *Arguments;
+	const char *Description;
+	const char *ReturnType;
+	const char *ReturnDescription;
 
 	//Subentries, of course
 	//WMC - I have HAD it with these motherfriendly vectors
@@ -152,7 +152,7 @@ public:
 	void OutputMeta(FILE *fp);
 
 	//*****Get
-	char *GetName(){if(Name!=NULL)return Name;else return ShortName;}
+	const char *GetName(){if(Name!=NULL)return Name;else return ShortName;}
 };
 
 class ade_lib_handle
@@ -177,7 +177,7 @@ public:
 template <class StoreType> class ade_obj : public ade_lib_handle
 {
 public:
-	ade_obj(char*in_name, char*in_desc, ade_lib_handle* in_deriv=NULL)
+	ade_obj(const char*in_name, const char*in_desc, ade_lib_handle* in_deriv=NULL)
 	{
 		ade_table_entry ate;
 
