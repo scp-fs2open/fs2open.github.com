@@ -1341,7 +1341,7 @@ ADE_FUNC(write, l_File, "string or number, ...",
 		if(type == LUA_TSTRING)
 		{
 			char *s = (char*)lua_tostring(L, l_pos);
-			if(cfwrite(s, sizeof(char), strlen(s), cfp))
+			if(cfwrite(s, (int)sizeof(char), strlen(s), cfp))
 				num_successful++;
 		}
 		else if(type == LUA_TNUMBER)
@@ -1349,7 +1349,7 @@ ADE_FUNC(write, l_File, "string or number, ...",
 			double d = lua_tonumber(L, l_pos);
 			char buf[32]= {0};
 			sprintf(buf, LUA_NUMBER_FMT, d);
-			if(cfwrite(buf, sizeof(char), strlen(buf), cfp))
+			if(cfwrite(buf, (int)sizeof(char), strlen(buf), cfp))
 				num_successful++;
 		}
 
@@ -5085,7 +5085,7 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp->instance].weapon_info_index].name);
 			break;
 		default:
-			sprintf(buf, "Object %td [%d]", OBJ_INDEX(objh->objp), objh->sig);
+			sprintf(buf, "Object %d [%d]", OBJ_INDEX(objh->objp), objh->sig);
 	}
 
 	return ade_set_args(L, "s", buf);
@@ -12819,8 +12819,8 @@ ade_lib l_CFile("CFile", NULL, "cf", "CFile FS2 filesystem access");
 
 int l_cf_get_path_id(char* n_path)
 {
-	int i;
-	int path_len = strlen(n_path);
+	size_t i;
+	size_t path_len = strlen(n_path);
 
 	char *buf = (char*) vm_malloc((path_len+1) * sizeof(char));
 	
@@ -12830,8 +12830,8 @@ int l_cf_get_path_id(char* n_path)
 	strcpy(buf, n_path);
 
 	//Remove trailing slashes; avoid buffer overflow on 1-char strings
-	i = path_len -1;
-	while(i >= 0 && (buf[i] == '\\' || buf[i] == '/'))
+	i = path_len - 1;
+	while(i < std::numeric_limits<size_t>::max() && (buf[i] == '\\' || buf[i] == '/'))
 		buf[i--] = '\0';
 
 	//Remove leading slashes
@@ -14843,12 +14843,12 @@ ADE_FUNC(__len, l_HookVar_Globals, NULL, "Number of HookVariables", "number", "N
 		total_len++;
 		lua_pop(L, 1);	//value
 	}
-	int num_sub = Ade_table_entries[l_HookVar.GetIdx()].Num_subentries;
+	size_t num_sub = Ade_table_entries[l_HookVar.GetIdx()].Num_subentries;
 
 	lua_pop(L, 3);
 
 	//WMC - Return length, minus the 'Globals' library
-	return ade_set_args(L, "i", total_len - num_sub);
+	return ade_set_args(L, "i", (int)(total_len - num_sub));
 }
 
 //**********LIBRARY: Mission
@@ -16533,7 +16533,7 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 {
 	//Check that we have all the arguments that we need
 	//If we don't, return 0
-	int needed_args = strlen(fmt);
+	int needed_args = (int)strlen(fmt);
 	int total_args = lua_gettop(L) - Ade_get_args_skip;
 
 	if(strchr(fmt, '|') != NULL) {
@@ -17254,7 +17254,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 		lua_rawset(L, mtb_ldx);
 
 		//***Create ade members table
-		lua_createtable(L, 0, Num_subentries);
+		lua_createtable(L, 0, (int)Num_subentries);
 		if(lua_istable(L, -1)) {
 			//WMC - was lua_gettop(L) - 1 for soem
 			amt_ldx = lua_gettop(L);
@@ -17274,7 +17274,7 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 		if(DerivatorIdx != UINT_MAX)
 		{
 			lua_pushstring(L, "__adederivid");
-			lua_pushnumber(L, DerivatorIdx);
+			lua_pushinteger(L, DerivatorIdx);
 			lua_rawset(L, mtb_ldx);
 		}
 	}

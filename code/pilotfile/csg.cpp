@@ -22,7 +22,7 @@
 
 #include <iostream>
 #include <sstream>
-
+#include <limits>
 
 
 void pilotfile::csg_read_flags()
@@ -521,7 +521,7 @@ void pilotfile::csg_write_techroom()
 void pilotfile::csg_read_loadout()
 {
 	int j, count, ship_idx = -1, wep_idx = -1;
-	uint idx, list_size = 0;
+	size_t idx, list_size = 0;
 
 	if ( !m_have_info ) {
 		throw "Loadout before Info!";
@@ -596,10 +596,10 @@ void pilotfile::csg_read_loadout()
 				}
 			}
 
-			idx = cfread_int(cfp);
+			int read_idx = cfread_int(cfp);
 
 			if ( slot && (j < MAX_SHIP_PRIMARY_BANKS) ) {
-				slot->wep_count[j] = idx;
+				slot->wep_count[j] = read_idx;
 			}
 		}
 
@@ -622,10 +622,10 @@ void pilotfile::csg_read_loadout()
 				}
 			}
 
-			idx = cfread_int(cfp);
+			int read_idx = cfread_int(cfp);
 
 			if ( slot && (j < MAX_SHIP_SECONDARY_BANKS) ) {
-				slot->wep_count[j+MAX_SHIP_PRIMARY_BANKS] = idx;
+				slot->wep_count[j+MAX_SHIP_PRIMARY_BANKS] = read_idx;
 			}
 		}
 	}	
@@ -1207,7 +1207,11 @@ void pilotfile::csg_write_cutscenes() {
 		if(cut->viewable)
 			viewableScenes ++;
 	}
-	cfwrite_uint(viewableScenes, cfp);
+
+	// Check for possible overflow because we can only write 32 bit integers
+	Assertion(viewableScenes <= std::numeric_limits<uint>::max(), "Too many viewable cutscenes! Maximum is %ud!", std::numeric_limits<uint>::max());
+
+	cfwrite_uint((uint)viewableScenes, cfp);
 
 	for(cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
 		if(cut->viewable)
@@ -1503,7 +1507,7 @@ bool pilotfile::load_savefile(const char *campaign)
 
 		if (offset_pos) {
 			mprintf(("CSG => Warning: (0x%04x) Short read, information may have been lost!\n", section_id));
-			cfseek(cfp, offset_pos, CF_SEEK_CUR);
+			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
 		}
 	}
 
@@ -1681,7 +1685,7 @@ bool pilotfile::get_csg_rank(int *rank)
 
 		if (offset_pos) {
 			mprintf(("CSG => Warning: (0x%04x) Short read, information may have been lost!\n", section_id));
-			cfseek(cfp, offset_pos, CF_SEEK_CUR);
+			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
 		}
 	}
 

@@ -65,7 +65,7 @@ int HEIGHTMAP = -1;
 int MISCMAP = -1;
 int AMBIENTMAP = -1;
 
-int bm_texture_ram = 0;
+size_t bm_texture_ram = 0;
 int Bm_paging = 0;
 
 // Extension type lists
@@ -158,8 +158,8 @@ float bitmap_lookup::get_channel_red(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
 
-	CLAMP(u, 0.0, 1.0f);
-	CLAMP(v, 0.0, 1.0f);
+	CLAMP(u, 0.0f, 1.0f);
+	CLAMP(v, 0.0f, 1.0f);
 
 	int x = fl2i(map_texture_address(u) * (Width-1));
 	int y = fl2i(map_texture_address(v) * (Height-1));
@@ -1864,7 +1864,7 @@ int bm_load_sub_fast(const char *real_filename, int *handle, int dir_type, bool 
 
 int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **ext_list, CFILE **img_cfp, int dir_type) {
 	char full_path[MAX_PATH];
-	int size = 0, offset = 0;
+	size_t size = 0, offset = 0;
 	int rval = -1;
 
 	rval = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type, sizeof(full_path) - 1, full_path, &size, &offset, 0);
@@ -2520,10 +2520,10 @@ int bm_make_render_target(int width, int height, int flags) {
 	return bm_bitmaps[n].handle;
 }
 
-void *bm_malloc(int n, int size) {
+void *bm_malloc(int n, size_t size) {
 	Assert((n >= 0) && (n < MAX_BITMAPS));
 
-	if (size <= 0)
+	if (size == 0)
 		return NULL;
 
 #ifdef BMPMAN_NDEBUG
@@ -3209,10 +3209,9 @@ void bm_unlock(int handle) {
 	Assert(be->ref_count >= 0);		// Trying to unlock data more times than lock was called!!!
 }
 
-void bm_update_memory_used(int n, int size)
+void bm_update_memory_used(int n, size_t size)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
-	Assert( size >= 0 );
 
 #ifdef BMPMAN_NDEBUG
 	Assert( bm_bitmaps[n].data_size == 0 );

@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
+#include <algorithm>
 #include "globalincs/toolchain.h"
 
 #if defined( __x86_64__ ) || defined( _WIN64 )
@@ -495,13 +496,13 @@ class camid
 {
 private:
 	int sig;
-	uint idx;
+	size_t idx;
 public:
 	camid();
-	camid(int n_idx, int n_sig);
+	camid(size_t n_idx, int n_sig);
 
 	class camera *getCamera();
-	uint getIndex();
+	size_t getIndex();
 	int getSignature();
 	bool isValid();
 };

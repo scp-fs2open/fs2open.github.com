@@ -69,7 +69,7 @@ vec3d shadow_ref_point;
 
 static bool use_last_view = false;
 
-int GL_vertex_data_in = 0;
+size_t GL_vertex_data_in = 0;
 
 GLint GL_max_elements_vertices = 4096;
 GLint GL_max_elements_indices = 4096;
@@ -93,7 +93,7 @@ struct opengl_buffer_object {
 	GLuint buffer_id;
 	GLenum type;
 	GLenum usage;
-	uint size;
+	size_t size;
 
 	GLuint texture;	// for texture buffer objects
 };
@@ -153,7 +153,7 @@ int opengl_create_buffer_object(GLenum type, GLenum usage)
 
 	GL_buffer_objects.push_back(buffer_obj);
 
-	return GL_buffer_objects.size() - 1;
+	return (int)(GL_buffer_objects.size() - 1);
 }
 
 void opengl_bind_buffer_object(int handle)
@@ -183,7 +183,7 @@ void opengl_bind_buffer_object(int handle)
 	}
 }
 
-void gr_opengl_update_buffer_object(int handle, uint size, void* data)
+void gr_opengl_update_buffer_object(int handle, size_t size, void* data)
 {
 	Assert(handle >= 0);
 	Assert((size_t)handle < GL_buffer_objects.size());
@@ -517,7 +517,7 @@ bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb)
 	for (j = 0; j < vb->tex_buf.size(); j++) {
 		buffer_data* tex_buf = &vb->tex_buf[j];
 		n_verts = tex_buf->n_verts;
-		uint offset = tex_buf->index_offset;
+		size_t offset = tex_buf->index_offset;
 		const uint *index = tex_buf->get_index();
 
 		// bump to our spot in the buffer
@@ -1336,7 +1336,7 @@ extern GLuint Scene_depth_texture;
 extern GLuint Scene_position_texture;
 extern GLuint Distortion_texture[2];
 extern int Distortion_switch;
-void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, int flags)
+void gr_opengl_render_stream_buffer(int buffer_handle, size_t offset, size_t n_verts, int flags)
 {
 	int alpha, tmap_type, r, g, b;
 	float u_scale = 1.0f, v_scale = 1.0f;
@@ -1454,7 +1454,7 @@ void gr_opengl_render_stream_buffer(int buffer_handle, int offset, int n_verts, 
 
 	opengl_bind_vertex_layout(vert_def);
 
-	glDrawArrays(gl_mode, offset, n_verts);
+	glDrawArrays(gl_mode, (GLint)offset, n_verts);
 
 	if( (flags & TMAP_FLAG_DISTORTION) || (flags & TMAP_FLAG_DISTORTION_THRUSTER) ) {
 		GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };

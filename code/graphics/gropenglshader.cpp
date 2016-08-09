@@ -250,7 +250,7 @@ int gr_opengl_maybe_create_shader(shader_type shader_t, unsigned int flags)
 
 	for (idx = 0; idx < max; idx++) {
 		if (GL_shader[idx].shader == shader_t && GL_shader[idx].flags == flags) {
-			return idx;
+			return (int)idx;
 		}
 	}
 
@@ -488,7 +488,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		GL_shader[empty_idx] = new_shader;
 		sdr_index = empty_idx;
 	} else {
-		sdr_index = GL_shader.size();
+		sdr_index = (int)GL_shader.size();
 		GL_shader.push_back(new_shader);
 	}
 

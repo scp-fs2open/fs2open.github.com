@@ -267,7 +267,7 @@ UI_XSTR Barracks_text[GR_NUM_RESOLUTIONS][BARRACKS_NUM_TEXT] = {
 };
 
 
-static int Num_stat_lines;
+static size_t Num_stat_lines;
 static char (*Stat_labels)[STAT_COLUMN1_W];
 static char (*Stats)[STAT_COLUMN2_W];
 
@@ -307,8 +307,8 @@ void barracks_squad_change_popup();
 
 void barracks_init_stats(scoring_struct *stats)
 {
-	int Max_stat_lines = Ship_info.size() + 23;
-	int i;
+	size_t Max_stat_lines = Ship_info.size() + 23;
+	size_t i;
 	float f;
 	int score_from_kills = 0;
 
@@ -457,7 +457,7 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	// Goober5000 - make sure we have room for all ships
-	Assert((Num_stat_lines + static_cast<int>(Ship_info.size())) < Max_stat_lines);
+	Assert((Num_stat_lines + Ship_info.size()) < Max_stat_lines);
 
 	i = 0;
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); i++, ++it) {
@@ -511,10 +511,11 @@ void barracks_set_hotkeys(bool pilot_text_enter_mode)
 // strip the possible .pcx extension off a filename
 void barracks_strip_pcx(char *str)
 {
-	int flen = strlen(str);
-	int elen = 4;		
-	if ((flen > 4) && !stricmp(str + flen - elen, ".pcx")) {
-		str[flen - elen] = '\0';
+	const size_t EXT_LEN = 4;
+	size_t flen = strlen(str);
+
+	if ((flen > 4) && !stricmp(str + flen - EXT_LEN, ".pcx")) {
+		str[flen - EXT_LEN] = '\0';
 	}
 }
 
@@ -714,7 +715,7 @@ void barracks_scroll_stats_down()
 {
 	int font_height = gr_get_font_height();
 
-	if (Stats_scroll_offset + Barracks_stats_coords[gr_screen.res][BARRACKS_H_COORD] / font_height < Num_stat_lines) {
+	if (Stats_scroll_offset + Barracks_stats_coords[gr_screen.res][BARRACKS_H_COORD] / font_height < static_cast<int>(Num_stat_lines)) {
 		Stats_scroll_offset++;
 		gamesnd_play_iface(SND_SCROLL);
 	} else {
@@ -1176,7 +1177,7 @@ void barracks_display_pilot_stats()
 	char *str;
 	int i, w, h;
 	while (y + font_height <= Barracks_stats_coords[gr_screen.res][BARRACKS_H_COORD]) {
-		if (z >= Num_stat_lines) {
+		if (z >= (int)Num_stat_lines) {
 			break;
 		}
 

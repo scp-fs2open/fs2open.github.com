@@ -613,17 +613,20 @@ int is_extra_space(char ch)
 // eliminates all leading and trailing extra chars from a string.  Returns pointer passed in.
 char *drop_extra_chars(char *str)
 {
-	int s, e;
+	size_t s;
+	size_t e;
 
 	s = 0;
 	while (str[s] && is_extra_space(str[s]))
 		s++;
 
-	e = strlen(str) - 1;	// we already account for NULL later on, so the -1 is here to make
-							// sure we do our math without taking it into consideration
+	e = strlen(str);
 
-	if (e < 0)
-		e = 0;
+	if (e > 0) {
+		// we already account for NULL later on, so the -1 is here to make
+		// sure we do our math without taking it into consideration
+		e -= 1;
+	}
 
 	while (e > s) {
 		if (!is_extra_space(str[e])){
@@ -678,8 +681,8 @@ bool parm_stuff_args(cmdline_parm *parm, int argc, char *argv[], int index)
 				parm->args = NULL;
 			}
 
-			int argsize = strlen(argv[index + 1]);
-			int buffersize = argsize;
+			size_t argsize = strlen(argv[index + 1]);
+			size_t buffersize = argsize;
 
 			if (saved_args != NULL)
 			{
@@ -790,16 +793,17 @@ void os_validate_parms(int argc, char *argv[])
 					// not the prettiest thing but the job gets done
 					static const int STR_SIZE = 25;  // max len of exe_params.name + 5 spaces
 					const int AT_SIZE = 8;  // max len of cmdline_arg_types[] + 2 spaces
-					int sp=0, atp=0;
+					size_t atp = 0;
+					size_t sp = 0;
 					for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
 						// don't output deprecated flags
 						if (stricmp("deprecated", parmp->help)) {
 							sp = strlen(parmp->name);
 							if (parmp->arg_type != AT_NONE) {
 								atp = strlen(cmdline_arg_types[parmp->arg_type]);
-								printf("    [ %s ]%*s[ %s ]%*s- %s\n", parmp->name, (STR_SIZE - sp -1), NOX(" "), cmdline_arg_types[parmp->arg_type], AT_SIZE-atp, NOX(" "), parmp->help);
+								printf("    [ %s ]%*s[ %s ]%*s- %s\n", parmp->name, (int)(STR_SIZE - sp -1), NOX(" "), cmdline_arg_types[parmp->arg_type], (int)(AT_SIZE-atp), NOX(" "), parmp->help);
 							} else {
-								printf("    [ %s ]%*s- %s\n", parmp->name, (STR_SIZE - sp -1 +AT_SIZE+4), NOX(" "), parmp->help);
+								printf("    [ %s ]%*s- %s\n", parmp->name, (int)(STR_SIZE - sp -1 +AT_SIZE+4), NOX(" "), parmp->help);
 							}
 						}
 					}
@@ -820,14 +824,14 @@ void os_validate_parms(int argc, char *argv[])
 
 int parse_cmdline_string(char* cmdline, char** argv)
 {
-	int length = strlen(cmdline);
+	size_t length = strlen(cmdline);
 
 	bool start_found = false;
 	bool quoted = false;
 
-	int argc = 0;
+	size_t argc = 0;
 	char* current_argv = NULL;
-	for (int i = 0; i < length; i++)
+	for (size_t i = 0; i < length; i++)
 	{
 		if (!start_found && !isspace(cmdline[i]))
 		{
@@ -888,7 +892,7 @@ int parse_cmdline_string(char* cmdline, char** argv)
 		argc++;
 	}
 
-	return argc;
+	return (int)argc;
 }
 
 void os_process_cmdline(char* cmdline)
@@ -1071,7 +1075,7 @@ int cmdline_parm::get_int()
 	Assertion(arg_type == AT_INT, "Coding error! Cmdline arg (%s) called cmdline_parm::get_int() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
-	int offset = 0;
+	size_t offset = 0;
 
 	if (stacks) {
 		// first off, DON'T STACK NON-STRINGS!!
@@ -1096,7 +1100,7 @@ float cmdline_parm::get_float()
 	Assertion(arg_type == AT_FLOAT, "Coding error! Cmdline arg (%s) called cmdline_parm::get_float() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
-	int offset = 0;
+	size_t offset = 0;
 
 	if (stacks) {
 		// first off, DON'T STACK NON-STRINGS!!
@@ -1183,7 +1187,7 @@ static SCP_vector<SCP_string> unix_get_dir_names(SCP_string parent, SCP_string d
 }
 
 // For case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches.
-static void handle_unix_modlist(char **modlist, int *len)
+static void handle_unix_modlist(char **modlist, size_t *len)
 {
 	// search filesystem for given paths
 	SCP_vector<SCP_string> mod_paths;
@@ -1493,7 +1497,7 @@ bool SetCmdlineParams()
 		}
 
 		// Ok - mod stacking support
-		int len = strlen(Cmdline_mod);
+		size_t len = strlen(Cmdline_mod);
 		char *modlist = new char[len+2];
 		memset( modlist, 0, len + 2 );
 		strcpy_s(modlist, len+2, Cmdline_mod);
@@ -1504,7 +1508,7 @@ bool SetCmdlineParams()
 #endif
 
 		// null terminate each individual
-		for (int i = 0; i < len; i++)
+		for (size_t i = 0; i < len; i++)
 		{
 			if (modlist[i] == ',')
 				modlist[i] = '\0';

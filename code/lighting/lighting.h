@@ -52,22 +52,22 @@ extern SCP_vector<light*> Static_light;
 
 struct light_indexing_info
 {
-	int index_start;
-	int num_lights;
+	size_t index_start;
+	size_t num_lights;
 };
 
 class scene_lights
 {
 	SCP_vector<light> AllLights;
 	
-	SCP_vector<int> StaticLightIndices;
+	SCP_vector<size_t> StaticLightIndices;
 
-	SCP_vector<int> FilteredLights;
+	SCP_vector<size_t> FilteredLights;
 
-	SCP_vector<int> BufferedLights;
+	SCP_vector<size_t> BufferedLights;
 
-	int current_light_index;
-	int current_num_lights;
+	size_t current_light_index;
+	size_t current_num_lights;
 public:
 	scene_lights()
 	{
@@ -77,7 +77,7 @@ public:
 	void setLightFilter(int objnum, const vec3d *pos, float rad);
 	bool setLights(const light_indexing_info *info);
 	void resetLightState();
-	int getNumStaticLights();
+	size_t getNumStaticLights();
 	light_indexing_info bufferLights();
 };
 

@@ -44,7 +44,7 @@ int movie_find(char *filename, char *out_name)
 {
 	char full_path[MAX_PATH];
 	char tmp_name[MAX_PATH];
-	int size, offset = 0;
+	size_t size, offset = 0;
 
 	if (out_name == NULL)
 		return MOVIE_NONE;

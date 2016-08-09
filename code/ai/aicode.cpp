@@ -2687,7 +2687,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 		}
 
 		if (pp_index != -1)
-			pp_index = pnp-Path_points + offset;
+			pp_index = (int)(pnp-Path_points) + offset;
 
 		add_path_point(&v1, path_num, i, pp_index);
 		offset++;
@@ -2725,7 +2725,7 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 		ppfp_start = Ppfp;
 	}
 
-	aip->path_start = Ppfp - Path_points;
+	aip->path_start = (int)(Ppfp - Path_points);
 	Assert(path_num < pm->n_paths);
 	
 	mp = &pm->paths[path_num];
@@ -2770,7 +2770,7 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 	aip->path_dir = PD_FORWARD;
 	aip->path_objnum = OBJ_INDEX(mobjp);
 	aip->mp_index = path_num;
-	aip->path_length = Ppfp - ppfp_start;
+	aip->path_length = (int)(Ppfp - ppfp_start);
 	aip->path_next_check_time = timestamp(1);
 
 	aip->path_goal_obj_hash = create_object_hash(&Objects[aip->path_objnum]);
@@ -2817,7 +2817,7 @@ void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int co
 		ppfp_start = Ppfp;
 	}
 
-	aip->path_start = Ppfp - Path_points;
+	aip->path_start = (int)(Ppfp - Path_points);
 	Assert(path_num < pm->n_paths);
 	
 	mp = &pm->paths[path_num];
@@ -2831,7 +2831,7 @@ void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int co
 	aip->path_dir = PD_FORWARD;
 	aip->path_objnum = OBJ_INDEX(mobjp);
 	aip->mp_index = path_num;
-	aip->path_length = Ppfp - ppfp_start;
+	aip->path_length = (int)(Ppfp - ppfp_start);
 	aip->path_next_check_time = timestamp(1);
 
 	aip->ai_flags |= AIF_USE_EXIT_PATH;		// mark as exit path, referenced in maybe
@@ -14101,7 +14101,7 @@ void ai_frame(int objnum)
 	}
 
 	if ((En_objp != NULL) && (En_objp->pos.xyz.x == Pl_objp->pos.xyz.x) && (En_objp->pos.xyz.y == Pl_objp->pos.xyz.y) && (En_objp->pos.xyz.z == Pl_objp->pos.xyz.z)) {
-		mprintf(("Warning: Object and its enemy have same position.  Object #" PTRDIFF_T_ARG "\n", OBJ_INDEX(Pl_objp)));
+		mprintf(("Warning: Object and its enemy have same position.  Object #%d\n", OBJ_INDEX(Pl_objp)));
 		En_objp = NULL;
 	}
 

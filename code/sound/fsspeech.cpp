@@ -25,7 +25,7 @@
 
 extern int Cmdline_freespace_no_sound;
 
-const int MAX_SPEECH_BUFFER_LEN = 4096;
+const size_t MAX_SPEECH_BUFFER_LEN = 4096;
 
 static int speech_inited = 0;
 
@@ -39,7 +39,7 @@ char *FSSpeech_play_id[FSSPEECH_FROM_MAX] =
 };
 
 char Speech_buffer[MAX_SPEECH_BUFFER_LEN] = "";
-int  Speech_buffer_len;
+size_t  Speech_buffer_len;
 
 bool fsspeech_init()
 {
@@ -135,7 +135,7 @@ void fsspeech_stuff_buffer(const char *text)
 	if (!speech_inited)
 		return;
 
-	int len = strlen(text);
+	size_t len = strlen(text);
 
 	if(Speech_buffer_len + len < MAX_SPEECH_BUFFER_LEN) {
 		strcat_s(Speech_buffer, text);

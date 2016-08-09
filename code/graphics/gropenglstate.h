@@ -300,7 +300,7 @@ struct uniform_bind
 	};
 
 	uniform_bind::data_type type;
-	int index;
+	size_t index;
 
 	int count;
 	int tranpose;
@@ -317,9 +317,9 @@ class opengl_uniform_state
 	SCP_vector<vec4> uniform_data_vec4;
 	SCP_vector<matrix4> uniform_data_matrix4;
 
-	SCP_map<SCP_string, int> uniform_lookup;
+	SCP_map<SCP_string, size_t> uniform_lookup;
 
-	int findUniform(const SCP_string &name);
+	size_t findUniform(const SCP_string &name);
 public:
 	opengl_uniform_state();
 
