@@ -9,14 +9,57 @@
 using namespace io::joystick;
 using namespace os::events;
 
-namespace
-{
+namespace {
 typedef std::unique_ptr<Joystick> JoystickPtr;
 
 SCP_vector<JoystickPtr> joysticks;
 Joystick *currentJoystick = nullptr;
 
 bool initialized = false;
+
+/**
+ * @brief Compatibility conversion from HatPosition to array index
+ */
+inline
+int hatEnumToIdx(HatPosition in) {
+	return static_cast<int>(in - JOY_NUM_BUTTONS);
+}
+
+/**
+* @brief Compatibility conversion from array index to HatPosition
+*/
+inline
+HatPosition hatIdxToEnum(int in) {
+	switch (in) {
+	case 0:
+		return HAT_DOWN;
+
+	case 1:
+		return HAT_UP;
+
+	case 2:
+		return HAT_LEFT;
+
+	case 3:
+		return HAT_RIGHT;
+
+	case 4:
+		return HAT_LEFTDOWN;
+
+	case 5:
+		return HAT_LEFTUP;
+
+	case 6:
+		return HAT_RIGHTDOWN;
+
+	case 7:
+		return HAT_RIGHTUP;
+
+	default:
+		// Invalid index
+		return HAT_CENTERED;
+	}
+};
 
 SCP_string getJoystickGUID(SDL_Joystick *stick)
 {
@@ -351,7 +394,11 @@ namespace joystick
 			// Hat is inactive
 			return 0.0f;
 
-		} // Hat is active
+		} else if (_hat[index].Value != hatIdxToEnum(pos)) {
+			// Hat is active, but not in this position
+			return 0.0f;
+
+		} // Else Hat is active in this position
 
 		auto diff = timer_get_milliseconds() - _hat[index].DownTimestamp;
 
@@ -512,7 +559,7 @@ namespace joystick
 
 		if (hatpos != HAT_CENTERED)
 		{
-			++_hat[hat].DownCount[hatpos];
+			++_hat[hat].DownCount[hatEnumToIdx(hatpos)];
 		}
 	}
 
