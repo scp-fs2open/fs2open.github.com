@@ -76,6 +76,8 @@ model_render_params::model_render_params():
 	if ( !Model_polys )	{
 		Model_flags |= MR_NO_POLYS;
 	}
+
+	gr_init_color(&Color, 0, 0, 0);
 }
 
 uint model_render_params::get_model_flags()

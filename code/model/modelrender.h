@@ -263,6 +263,8 @@ struct queued_buffer_draw
 		texture_maps[TM_SPECULAR_TYPE]		= -1;
 		texture_maps[TM_SPEC_GLOSS_TYPE]	= -1;
 		texture_maps[TM_AMBIENT_TYPE]		= -1;
+
+		thrust_scale = 0.0f;
 	}
 };
 
