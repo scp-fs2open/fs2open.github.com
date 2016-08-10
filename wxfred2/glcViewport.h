@@ -14,12 +14,9 @@
 #include <globalincs/pstypes.h>
 #include <physics/physics.h>
 
-#include <wx/glcanvas.h>
-
-
-#if !wxUSE_GLCANVAS
-    #error "OpenGL required: set wxUSE_GLCANVAS to 1 and rebuild the library"
-#endif
+#include <wx/event.h>
+#include <wx/window.h>
+#include <wx/windowid.h>
 
 enum cmode
 {
@@ -36,7 +33,7 @@ enum cmode
  * @details Where the bulk of the wxFRED GUI is the frontend to the mission file, this is the frontend to the graphics
  *   system. It provides handlers for the GUI events and calls the appropriate rendering functions provided by wxFredRender
  */
-class glcViewport : public wxGLCanvas
+class glcViewport : public wxWindow
 {
 public:
 	glcViewport( wxWindow *parent, wxWindowID id = wxID_ANY );
@@ -48,9 +45,6 @@ protected:
 	void OnSize( wxSizeEvent& event);
 	void OnEraseBackground( wxEraseEvent& event);
 	void OnMouse( wxMouseEvent& event );
-
-	// Overlays
-	void render_compass( void );
 
 private:
 	// Member data

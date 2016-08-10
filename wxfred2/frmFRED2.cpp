@@ -84,7 +84,7 @@ frmFRED2::frmFRED2( const wxChar *title, int xpos, int ypos, int width, int heig
 	// The Viewport
 	wxBoxSizer* bSizerView = new wxBoxSizer( wxVERTICAL );
 	viewport_p = new glcViewport(this, wxID_ANY);
-	bSizerView->Add(static_cast<wxGLCanvas*> (viewport_p));
+	bSizerView->Add(viewport_p);
 	this->SetSizer( bSizerView );
 	this->Layout();
 

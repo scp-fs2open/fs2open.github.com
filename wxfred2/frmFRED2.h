@@ -27,6 +27,8 @@
  */
 
 // Child windows and dialogs:
+#include "glcViewport.h"
+
 #include "editors/frmShipsEditor.h"
 #include "editors/frmWingEditor.h"
 #include "editors/dlgObjectEditor.h"
