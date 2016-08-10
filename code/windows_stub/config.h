@@ -25,13 +25,6 @@
 
 #if defined _WIN32
 
-#if defined _MSC_VER
-
-#elif defined(__MINGW32__) || defined(__GNUC__)
-// We're using mingw or we're crosscompiling
-#define _cdecl __cdecl
-#endif
-
 #ifndef snprintf
 #define snprintf _snprintf
 #endif
@@ -52,7 +45,6 @@
 #define DEBUGME(d1) nprintf(( "Warning", "DEBUGME: %s in " __FILE__ " at line %d, msg \"%s\", thread %d\n", __FUNCTION__, __LINE__, d1, getpid() ))
 
 
-#define _cdecl
 #define __cdecl
 #define __stdcall
 #define PASCAL

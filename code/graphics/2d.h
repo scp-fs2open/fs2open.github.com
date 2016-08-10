@@ -696,13 +696,13 @@ bool gr_resize_screen_posf(float *x, float *y, float *w = NULL, float *h = NULL,
 // Does formatted printing.  This calls gr_string after formatting,
 // so if you don't need to format the string, then call gr_string
 // directly.
-extern void _cdecl gr_printf( int x, int y, const char * format, ... );
+extern void gr_printf( int x, int y, const char * format, ... );
 // same as gr_printf but positions text correctly in menus
-extern void _cdecl gr_printf_menu( int x, int y, const char * format, ... );
+extern void gr_printf_menu( int x, int y, const char * format, ... );
 // same as gr_printf_menu but accounts for menu zooming
-extern void _cdecl gr_printf_menu_zoomed( int x, int y, const char * format, ... );
+extern void gr_printf_menu_zoomed( int x, int y, const char * format, ... );
 // same as gr_printf but doesn't resize for non-standard resolutions
-extern void _cdecl gr_printf_no_resize( int x, int y, const char * format, ... );
+extern void gr_printf_no_resize( int x, int y, const char * format, ... );
 
 // Returns the size of the string in pixels in w and h
 extern void gr_get_string_size( int *w, int *h, const char * text, int len = 9999 );
