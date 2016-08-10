@@ -90,7 +90,7 @@ public:
 
 	void render_buffer(int buffer_handle, int flags);
 
-	bool need_to_render() { return vertices.size() > 0; }
+	size_t need_to_render() { return vertices.size(); }
 };
 
 
