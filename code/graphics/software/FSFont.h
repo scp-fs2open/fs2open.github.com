@@ -33,10 +33,6 @@ namespace font
 	private:
 		SCP_string name;	//!< The name of this font
 
-#ifndef NDEBUG
-		bool heightChecked;
-#endif
-
 	protected:
 		float offsetTop;		//!< The offset at the top of a line of text
 		float offsetBottom;	//!< The offset at the bottom of a line of text
@@ -158,5 +154,7 @@ namespace font
 		* @param	newOffset The new bottom offset for this font
 		*/
 		void setBottomOffset(float newOffset);
+
+		void checkHeight();
 	};
 }
