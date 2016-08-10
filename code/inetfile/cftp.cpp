@@ -458,7 +458,7 @@ uint CFtpGet::SendFTPCommand(char *command)
 
 	FlushControlChannel();
 	// Send the FTP command
-	if (SOCKET_ERROR ==(send(m_ControlSock,command,strlen(command), 0)))
+	if (SOCKET_ERROR ==(send(m_ControlSock,command,static_cast<int>(strlen(command)), 0)))
 		{
 		  // Return 999 to indicate an error has occurred
 			return(999);

@@ -1462,8 +1462,8 @@ int brief_text_colorize(char *src, int instance, char default_color_stack[], int
 
 	active_color_index = default_color_stack[color_stack_index];
 
-	int src_len = strlen(src);
-	for (int i = 0; i < src_len; i++)
+	auto src_len = strlen(src);
+	for (size_t i = 0; i < src_len; i++)
 	{
 		// Is the character a color markup?
 		// text markup consists of a '$' plus a character plus an optional space
@@ -1527,7 +1527,7 @@ int brief_text_colorize(char *src, int instance, char default_color_stack[], int
 	} 
 
 	Colored_stream[instance].push_back(dest_line); 	
-	return dest_line.size();
+	return (int)dest_line.size();
 }
 
 /**

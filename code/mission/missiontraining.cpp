@@ -846,7 +846,7 @@ void message_training_setup(int m, int length, char *special_message)
 		if (length > 0)
 			Training_message_timestamp = timestamp(length * 1000);
 		else
-			Training_message_timestamp = timestamp(TRAINING_TIMING_BASE + strlen(Messages[m].message) * TRAINING_TIMING);  // no voice file playing
+			Training_message_timestamp = timestamp(TRAINING_TIMING_BASE + (int)strlen(Messages[m].message) * TRAINING_TIMING);  // no voice file playing
 
 	} else
 		Training_message_timestamp = 0;

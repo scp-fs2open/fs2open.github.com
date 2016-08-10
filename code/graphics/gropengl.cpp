@@ -1467,7 +1467,7 @@ static bool printNextDebugMessage() {
 	GLuint id;
 	GLsizei length;
 
-	GLuint numFound = glGetDebugMessageLogARB(1, msg.size(), &source, &type, &id, &severity, &length, &msg[0]);
+	GLuint numFound = glGetDebugMessageLogARB(1, static_cast<GLsizei>(msg.size()), &source, &type, &id, &severity, &length, &msg[0]);
 
 	if (numFound < 1) {
 		return false;

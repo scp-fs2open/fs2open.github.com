@@ -1454,7 +1454,7 @@ void gr_opengl_render_stream_buffer(int buffer_handle, size_t offset, size_t n_v
 
 	opengl_bind_vertex_layout(vert_def);
 
-	glDrawArrays(gl_mode, (GLint)offset, n_verts);
+	glDrawArrays(gl_mode, (GLint)offset, (GLsizei)n_verts);
 
 	if( (flags & TMAP_FLAG_DISTORTION) || (flags & TMAP_FLAG_DISTORTION_THRUSTER) ) {
 		GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };
