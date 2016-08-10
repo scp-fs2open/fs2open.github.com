@@ -687,22 +687,18 @@ float joy_down_time(int btn)
 		return 0.0f;
 	}
 
-	if (btn >= (current->numButtons() + (HAT_NUM_POS * current->numHats())))
+	if (btn >= JOY_TOTAL_BUTTONS)
 	{
 		// Not a valid button
 		return 0.f;
 
 	}
-	else if (btn >= (current->numButtons()))
+	else if (btn >= JOY_NUM_BUTTONS)
 	{
-		// Is a hat
-		int hat_id;
+		// Is hat
+		btn -= JOY_NUM_BUTTONS;
 
-		btn -= current->numButtons();
-		hat_id = btn / HAT_NUM_POS;     // Which hat
-		btn %= HAT_NUM_POS;             // Hat position
-
-		return current->getHatDownTime(hat_id, btn);
+		return current->getHatDownTime(0, btn);
 
 	} // Else, Is a button
 
@@ -720,22 +716,18 @@ int joy_down_count(int btn, int reset_count)
 		return 0;
 	}
 
-	if (btn >= (current->numButtons() + (HAT_NUM_POS * current->numHats())))
+	if (btn >= JOY_TOTAL_BUTTONS)
 	{
 		// Not a valid button
 		return 0;
 
 	}
-	else if (btn >= (current->numButtons()))
+	else if (btn >= JOY_NUM_BUTTONS)
 	{
-		// Is a hat
-		int hat_id;
+		// Is hat
+		btn -= JOY_NUM_BUTTONS;
 
-		btn -= current->numButtons();
-		hat_id = btn / HAT_NUM_POS;     // Which hat
-		btn %= HAT_NUM_POS;             // Hat position
-
-		return current->getHatDownCount(hat_id, btn, reset_count != 0);
+		return current->getHatDownCount(0, btn, reset_count != 0);
 
 	} // Else, is a button
 
@@ -753,22 +745,18 @@ int joy_down(int btn)
 		return 0;
 	}
 
-	if (btn >= (current->numButtons() + (HAT_NUM_POS * current->numHats())))
+	if (btn >= JOY_TOTAL_BUTTONS)
 	{
 		// Not a valid button
 		return 0;
 
 	}
-	else if (btn >= (current->numButtons()))
+	else if (btn >= JOY_NUM_BUTTONS)
 	{
-		// Is a hat
-		int hat_id;
+		// Is hat
+		btn -= JOY_NUM_BUTTONS;
 
-		btn -= current->numButtons();
-		hat_id = btn / HAT_NUM_POS;     // Which hat
-		btn %= HAT_NUM_POS;             // Hat position
-
-		return (current->getHatPosition(hat_id) == btn) ? 1 : 0;
+		return (current->getHatPosition(0) == btn) ? 1 : 0;
 	} // Else, is a button
 
 

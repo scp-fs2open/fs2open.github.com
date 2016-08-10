@@ -14,6 +14,11 @@
 
 #include "SDL_joystick.h"
 
+// z64: Moved up here for compatibility. Bye bye, organization!
+const int JOY_NUM_BUTTONS = 32;
+const int JOY_NUM_HAT_POS = 4;	// z64: This stays at 4 until we have translation text for the corners
+const int JOY_TOTAL_BUTTONS = (JOY_NUM_BUTTONS + JOY_NUM_HAT_POS);
+
 namespace io
 {
 	/**
@@ -23,20 +28,21 @@ namespace io
 	{
 		/**
 		 * @brief A hat position
+		 * @note Order here is how the old code used it (except for the corner positions)
 		 */
 		enum HatPosition
 		{
-			HAT_CENTERED = 0,
+			HAT_CENTERED = -1,
+			HAT_DOWN = JOY_NUM_BUTTONS,
 			HAT_UP,
-			HAT_RIGHT,
-			HAT_DOWN,
 			HAT_LEFT,
-			HAT_RIGHTUP,
-			HAT_RIGHTDOWN,
-			HAT_LEFTUP,
+			HAT_RIGHT,
 			HAT_LEFTDOWN,
+			HAT_LEFTUP,
+			HAT_RIGHTDOWN,
+			HAT_RIGHTUP,
 
-			HAT_NUM_POS     // This one is always last
+			HAT_NUM_POS = 8     // This one is always last. Currently set to 8 for compatibility reasons
 		};
 
 		/**
@@ -249,8 +255,8 @@ namespace io
 			struct hat_info
 			{
 				HatPosition Value;                  //!< The current hat value.
-				int         DownTimestamp;          //!< The timestamp when the hat activated, -1 if centered.
-				int         DownCount[HAT_NUM_POS]; //!< The number of times each hat position has been hit.
+				int         DownTimestamp;          //!< The timestamp when the hat last activated, -1 if centered.
+				int         DownCount[HAT_NUM_POS]; //!< The number of times each hat position has been hit since we last checked.
 			};
 
 			SCP_vector<hat_info> _hat;
