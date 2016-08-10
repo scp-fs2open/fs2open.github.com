@@ -149,9 +149,9 @@ extern int stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern int stuff_bool_list(bool *blp, int max_bools);
 extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
-extern int string_lookup(char *str1, char *strlist[], int max, char *description = NULL, int say_errors = 0);
-extern void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, char *description);
-extern void find_and_stuff_optional(char *id, int *addr, int f_type, char *strlist[], int max, char *description);
+extern int string_lookup(const char *str1, char *strlist[], size_t max, const char *description = NULL, int say_errors = 0);
+extern void find_and_stuff(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description);
+extern void find_and_stuff_optional(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description);
 extern int match_and_stuff(int f_type, char *strlist[], int max, char *description);
 extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
 	int max, char *description);
@@ -199,12 +199,12 @@ extern int required_string_either_fred(char *str1, char *str2);
 extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL);
 
 // Goober5000 - returns position of replacement or -1 for exceeded length (SCP_string variants return the result)
-extern int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
+extern ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
 extern SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to);
 extern SCP_string& replace_one(SCP_string& context, const char* from, const char* to);
 
 // Goober5000 - returns number of replacements or -1 for exceeded length (SCP_string variants return the result)
-extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
+extern ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
 extern SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to);
 extern SCP_string& replace_all(SCP_string& context, const char* from, const char* to);
 

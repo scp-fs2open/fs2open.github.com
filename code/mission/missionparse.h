@@ -520,7 +520,7 @@ public:
 
 // Goober5000 - this is now dynamic
 extern SCP_vector<p_object> Parse_objects;
-#define POBJ_INDEX(pobjp) (pobjp - &Parse_objects[0])	// yes, this arithmetic is valid :D
+#define POBJ_INDEX(pobjp) (int)(pobjp - &Parse_objects[0])	// yes, this arithmetic is valid :D
 
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;

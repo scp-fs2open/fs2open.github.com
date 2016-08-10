@@ -2487,7 +2487,7 @@ int create_default_player_ship(int use_last_flown)
 	else {
 		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 			if ( !stricmp(it->name, default_player_ship) ) {
-				player_ship_class = std::distance(Ship_info.cbegin(), it);
+				player_ship_class = (int)std::distance(Ship_info.cbegin(), it);
 				Players[Player_num].last_ship_flown_si_index = player_ship_class;
 				break;
 			}

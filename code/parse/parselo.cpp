@@ -3190,15 +3190,13 @@ void stuff_matrix(matrix *mp)
 //	*str1 is the string to be found.
 //	*strlist is the list of strings to search.
 //	max is the number of entries in *strlist to scan.
-int string_lookup(char *str1, char *strlist[], int max, char *description, int say_errors)
+int string_lookup(const char *str1, char *strlist[], size_t max, const char *description, int say_errors)
 {
-	int	i;
-
-	for (i=0; i<max; i++) {
+	for (size_t i=0; i<max; i++) {
 		Assert(strlen(strlist[i]) != 0); //-V805
 
 		if (!stricmp(str1, strlist[i]))
-			return i;
+			return (int)i;
 	}
 
 	if (say_errors)
@@ -3210,7 +3208,7 @@ int string_lookup(char *str1, char *strlist[], int max, char *description, int s
 //	Find a required string (*id), then stuff the text of type f_type that
 // follows it at *addr.  *strlist[] contains the strings it should try to
 // match.
-void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, char *description)
+void find_and_stuff(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description)
 {
 	char	token[128];
 	int checking_ship_classes = (stricmp(id, "$class:") == 0);
@@ -3232,7 +3230,7 @@ void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, c
 	}
 }
 
-void find_and_stuff_optional(char *id, int *addr, int f_type, char *strlist[], int max, char *description)
+void find_and_stuff_optional(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description)
 {
 	char token[128];
 
@@ -3892,7 +3890,7 @@ int get_index_of_first_hash_symbol(SCP_string &src)
 }
 
 // Goober5000
-int replace_one(char *str, char *oldstr, char *newstr, uint max_len, int range)
+ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
 	Assert(str && oldstr && newstr);
 
@@ -3944,9 +3942,9 @@ int replace_one(char *str, char *oldstr, char *newstr, uint max_len, int range)
 }
 
 // Goober5000
-int replace_all(char *str, char *oldstr, char *newstr, uint max_len, int range)
+ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range)
 {
-	int val, tally = 0;
+	ptrdiff_t val, tally = 0;
 
 	while ((val = replace_one(str, oldstr, newstr, max_len, range)) > 0)
 	{
