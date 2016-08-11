@@ -801,8 +801,6 @@ int joy_down(int btn)
 	else if (btn >= JOY_NUM_BUTTONS)
 	{
 		// Is hat
-		btn -= JOY_NUM_BUTTONS;
-
 		return (current->getHatPosition(0) == btn) ? 1 : 0;
 	} // Else, is a button
 
