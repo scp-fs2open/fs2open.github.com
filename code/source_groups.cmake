@@ -183,8 +183,6 @@ set (file_root_exceptionhandler
 # ExternalDLL files
 set (file_root_externaldll
 	external_dll/externalcode.h
-	external_dll/trackirglobal.cpp
-	external_dll/trackirpublic.h
 )
 
 # Fireball files
@@ -387,6 +385,26 @@ set (file_root_graphics_softwaregr_font
 	graphics/software/VFNTFont.h
 	graphics/software/VFNTFont.cpp
 )
+
+# HeadTracking files
+set (file_root_headtracking
+	headtracking/headtracking_internal.h
+	headtracking/headtracking.h
+	headtracking/headtracking.cpp
+)
+if(WIN32)
+	set(file_root_headtracking
+		${file_root_headtracking}
+		
+		headtracking/freetrack.h
+		headtracking/freetrack.cpp
+		
+		headtracking/trackir.h
+		headtracking/trackir.cpp
+		headtracking/trackirpublic.h
+		headtracking/trackirpublic.cpp
+	)
+endif()
 
 # Hud files
 set (file_root_hud
@@ -1046,6 +1064,7 @@ source_group("Graphics\\Paths"                    FILES ${file_root_graphics_pat
 source_group("Graphics\\Paths\\nanovg"            FILES ${file_root_graphics_paths_nanovg})
 source_group("Graphics\\SoftwareGr"               FILES ${file_root_graphics_softwaregr})
 source_group("Graphics\\SoftwareGr\\Font"         FILES ${file_root_graphics_softwaregr_font})
+source_group("HeadTracking"                       FILES ${file_root_headtracking})
 source_group("Hud"                                FILES ${file_root_hud})
 source_group("iff_defs"                           FILES ${file_root_iff_defs})
 source_group("InetFile"                           FILES ${file_root_inetfile})
@@ -1129,6 +1148,7 @@ set (file_root
 	${file_root_graphics_paths_nanovg}
 	${file_root_graphics_softwaregr}
 	${file_root_graphics_softwaregr_font}
+	${file_root_headtracking}
 	${file_root_hud}
 	${file_root_iff_defs}
 	${file_root_inetfile}

@@ -6884,7 +6884,7 @@ void ship_render_cockpit(object *objp)
 
 	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f*pm->rad);
-	gr_set_view_matrix(&vmd_zero_vector, &Eye_matrix);
+	gr_set_view_matrix(&leaning_position, &Eye_matrix);
 
 	//Deal with the model
 	model_clear_instance(sip->cockpit_model_num);

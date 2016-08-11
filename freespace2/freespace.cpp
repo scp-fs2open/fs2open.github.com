@@ -35,7 +35,6 @@
 #include "debris/debris.h"
 #include "debugconsole/console.h"
 #include "exceptionhandler/exceptionhandler.h"
-#include "external_dll/trackirpublic.h" // header file for the TrackIR routines (Swifty)
 #include "fireball/fireballs.h"
 #include "freespace.h"
 #include "freespaceresource.h"
@@ -51,6 +50,7 @@
 #include "globalincs/version.h"
 #include "graphics/font.h"
 #include "graphics/shadows.h"
+#include "headtracking/headtracking.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudescort.h"
@@ -6974,12 +6974,12 @@ int game_main(int argc, char *argv[])
 	init_cdrom();
 
 	game_init();
-	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
-	int trackIrInitResult = gTirDll_TrackIR.Init(os_get_window());
-	if ( trackIrInitResult != SCP_INITRESULT_SUCCESS )
+
+	if (!headtracking::init())
 	{
-		mprintf( ("TrackIR Init Failed - %d\n", trackIrInitResult) );
+		mprintf(("Headtracking is not enabled...\n"));
 	}
+
 	game_stop_time();
 
 	if (Cmdline_spew_mission_crcs) {
@@ -7083,7 +7083,8 @@ void game_launch_launcher_on_exit()
 //
 void game_shutdown(void)
 {
-	gTirDll_TrackIR.Close( );
+	headtracking::shutdown();
+
 	profile_deinit();
 
 	fsspeech_deinit();
