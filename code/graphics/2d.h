@@ -216,7 +216,7 @@ public:
 		}
 	}
 
-	void assign(int i, uint j)
+	void assign(size_t i, uint j)
 	{
 		const_cast<uint *>(index)[i] = j;
 		if (i_first > i_last)
@@ -553,11 +553,11 @@ typedef struct screen {
 	bool (*gf_config_buffer)(const int buffer_id, vertex_buffer *vb, bool update_ibuffer_only);
 	void (*gf_destroy_buffer)(int);
 	void (*gf_set_buffer)(int);
-	void (*gf_render_buffer)(int, const vertex_buffer*, int, int);
+	void (*gf_render_buffer)(int, const vertex_buffer*, size_t, int);
 
 	void (*gf_update_buffer_object)(int handle, size_t size, void* data);
-	void (*gf_update_transform_buffer)(void* data, uint size);
-	void (*gf_set_transform_buffer_offset)(int offset);
+	void (*gf_update_transform_buffer)(void* data, size_t size);
+	void (*gf_set_transform_buffer_offset)(size_t offset);
 
 	int (*gf_create_stream_buffer)();
 	void (*gf_render_stream_buffer)(int buffer_handle, size_t offset, size_t n_verts, int flags);
@@ -869,7 +869,7 @@ __inline int gr_bm_set_render_target(int n, int face = -1)
 #define gr_pack_buffer					GR_CALL(*gr_screen.gf_pack_buffer)
 #define gr_config_buffer				GR_CALL(*gr_screen.gf_config_buffer)
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)
-__inline void gr_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags = TMAP_FLAG_TEXTURED)
+__inline void gr_render_buffer(int start, const vertex_buffer *bufferp, size_t texi, int flags = TMAP_FLAG_TEXTURED)
 {
 	(*gr_screen.gf_render_buffer)(start, bufferp, texi, flags);
 }

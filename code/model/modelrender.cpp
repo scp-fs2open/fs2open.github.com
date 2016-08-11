@@ -314,14 +314,14 @@ void model_batch_buffer::add_matrix(matrix4 &mat)
 	Submodel_matrices.push_back(mat);
 }
 
-int model_batch_buffer::get_buffer_offset()
+size_t model_batch_buffer::get_buffer_offset()
 {
 	return Current_offset;
 }
 
 void model_batch_buffer::allocate_memory()
 {
-	uint size = Submodel_matrices.size() * sizeof(matrix4);
+	auto size = Submodel_matrices.size() * sizeof(matrix4);
 
 	if ( Mem_alloc == NULL || Mem_alloc_size < size ) {
 		if ( Mem_alloc != NULL ) {
@@ -467,7 +467,7 @@ void draw_list::set_clip_plane(const vec3d &position, const vec3d &normal)
 
 	Clip_planes.push_back(clip_normal);
 
-	Current_render_state.clip_plane_handle = Clip_planes.size() - 1;
+	Current_render_state.clip_plane_handle = (int)(Clip_planes.size() - 1);
 }
 
 void draw_list::set_clip_plane()
@@ -480,7 +480,7 @@ void draw_list::set_thrust_scale(float scale)
 	Current_render_state.thrust_scale = scale;
 }
 
-void draw_list::add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags, model_render_params *interp)
+void draw_list::add_buffer_draw(vertex_buffer *buffer, size_t texi, uint tmap_flags, model_render_params *interp)
 {
 	// need to do a check to see if the top render state matches the current.
 	//if ( dirty_render_state ) {
@@ -491,7 +491,7 @@ void draw_list::add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags
 
 	queued_buffer_draw draw_data;
 
-	draw_data.render_state_handle = Render_states.size() - 1;
+	draw_data.render_state_handle = (int)(Render_states.size() - 1);
 	draw_data.buffer = buffer;
 	draw_data.texi = texi;
 	draw_data.flags = tmap_flags;
@@ -512,7 +512,7 @@ void draw_list::add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags
 	} else {
 		draw_data.transformation = Current_transform;
 		draw_data.scale = Current_scale;
-		draw_data.transform_buffer_offset = -1;
+		draw_data.transform_buffer_offset = INVALID_SIZE;
 	}
 	
 	draw_data.texture_maps[TM_BASE_TYPE] = Current_textures[TM_BASE_TYPE];
@@ -529,7 +529,7 @@ void draw_list::add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags
 
 	Render_elements.push_back(draw_data);
 
-	Render_keys.push_back(Render_elements.size() - 1);
+	Render_keys.push_back((int)(Render_elements.size() - 1));
 }
 
 uint draw_list::determine_shader_flags(render_state *state, queued_buffer_draw *draw_info, vertex_buffer *buffer, int tmap_flags)
@@ -552,7 +552,7 @@ uint draw_list::determine_shader_flags(render_state *state, queued_buffer_draw *
 		texture, 
 		Rendering_to_shadow_map, 
 		use_thrust_scale,
-		tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && draw_info->transform_buffer_offset >= 0 && buffer->flags & VB_FLAG_MODEL_ID,
+		tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && draw_info->transform_buffer_offset != INVALID_SIZE && buffer->flags & VB_FLAG_MODEL_ID,
 		state->using_team_color,
 		tmap_flags, 
 		(draw_info->texture_maps[TM_SPEC_GLOSS_TYPE] > 0) ? draw_info->texture_maps[TM_SPEC_GLOSS_TYPE] : draw_info->texture_maps[TM_SPECULAR_TYPE],

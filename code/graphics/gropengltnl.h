@@ -53,14 +53,14 @@ bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb);
 bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb, bool update_ibuffer_only);
 void gr_opengl_destroy_buffer(int idx);
 void gr_opengl_set_buffer(int idx);
-void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags);
+void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, size_t texi, int flags);
 void gr_opengl_render_to_env(int FACE);
 
 void gr_opengl_update_buffer_object(int handle, size_t size, void* data);
 void opengl_delete_buffer_object(int handle);
 
-void gr_opengl_update_transform_buffer(void* data, uint size);
-void gr_opengl_set_transform_buffer_offset(int offset);
+void gr_opengl_update_transform_buffer(void* data, size_t size);
+void gr_opengl_set_transform_buffer_offset(size_t offset);
 
 int gr_opengl_create_stream_buffer_object();
 void gr_opengl_render_stream_buffer(int buffer_handle, size_t offset, size_t n_verts, int flags);
