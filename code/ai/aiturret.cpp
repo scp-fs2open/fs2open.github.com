@@ -532,7 +532,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		}
 
 		// don't shoot at arriving ships
-		if (is_ship_arriving(shipp)) {
+		if (shipp->is_arriving()) {
 			return 0;
 		}
 
@@ -638,14 +638,14 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 		// don't shoot at small ships if we shouldn't
 		if (eeo->eeo_flags & EEOF_BIG_ONLY) {
-			if (!(is_big_huge(&Ship_info[shipp->ship_info_index]))) {
+			if (!(Ship_info[shipp->ship_info_index].is_big_or_huge())) {
 				return;
 			}
 		}
 
 		// don't shoot at big ships if we shouldn't
 		if (eeo->eeo_flags & EEOF_SMALL_ONLY) {
-			if ((is_big_huge(&Ship_info[shipp->ship_info_index]))) {
+			if ((Ship_info[shipp->ship_info_index].is_big_or_huge())) {
 				return;
 			}
 		}
@@ -753,7 +753,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	} // end weapon section
 
 	// maybe recalculate dist for big or huge ship
-//	if (shipp && (is_big_huge(&Ship_info[shipp->ship_info_index]))) {
+//	if (shipp && (Ship_info[shipp->ship_info_index].is_big_or_huge())) {
 //		fvi_ray_boundingbox(min, max, start, direction, hit);
 //		dist = vm_vec_dist_quick(hit, tvec);
 //	}
@@ -774,7 +774,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			max_turrets = The_mission.ai_profile->max_turret_ownage_player[Game_skill_level];
 		}
 		// Apply the per-turret limit for small targets, if there is one and this is a small target
-		if (ss->turret_max_target_ownage != -1 && (is_small_ship(&Ship_info[shipp->ship_info_index]))) {
+		if (ss->turret_max_target_ownage != -1 && (Ship_info[shipp->ship_info_index].is_small_ship())) {
 			max_turrets = MIN(max_turrets, ss->system_info->turret_max_target_ownage);
 		}
 		if (num_att_turrets > max_turrets) {
@@ -848,7 +848,7 @@ int is_target_beam_valid(ship_weapon *swp, object *objp)
 		}
 
 		if (all_turret_weapons_have_flags(swp, WIF_HUGE)) {
-			if (objp->type == OBJ_SHIP && !(is_big_huge(&Ship_info[Ships[objp->instance].ship_info_index])) ) {
+			if (objp->type == OBJ_SHIP && !(Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge()) ) {
 				return 0;
 			}
 		}
@@ -1242,7 +1242,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 			if (!skip) {
 				if ( Objects[aip->target_objnum].type == OBJ_SHIP ) {
 					// check for huge weapon and huge ship
-					if ( !big_only_flag || (is_big_huge(&Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index])) ) {
+					if ( !big_only_flag || (Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].is_big_or_huge()) ) {
 						// check for tagged only and tagged ship
 						if ( tagged_only_flag && ship_is_tagged(&Objects[aip->target_objnum]) ) {
 							// select new target if aip->target_objnum is out of field of view
@@ -1364,7 +1364,7 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 				vm_vec_unrotate(&enemy_point, &ssp->targeted_subsys->system_info->pnt, &Objects[ssp->turret_enemy_objnum].orient);
 				vm_vec_add2(&enemy_point, &ssp->last_aim_enemy_pos);
 			} else {
-				if ((lep->type == OBJ_SHIP) && (is_big_huge(&Ship_info[Ships[lep->instance].ship_info_index]))) {
+				if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge())) {
                     vm_vec_unrotate(&turret_norm, &tp->turret_norm, &objp->orient);
 					ai_big_pick_attack_point_turret(lep, ssp, &tmp_pos, &turret_norm, &enemy_point, MIN(wip->max_speed * wip->lifetime, wip->weapon_range), tp->turret_fov);
 				}
@@ -1462,7 +1462,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 				vm_vec_add2(&enemy_point, &ss->last_aim_enemy_pos);
 			}
 		} else {
-			if ((lep->type == OBJ_SHIP) && (is_big_huge(&Ship_info[Ships[lep->instance].ship_info_index]))) {
+			if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge())) {
 				ai_big_pick_attack_point_turret(lep, ss, &gun_pos, &gun_vec, &enemy_point, tp->turret_fov, MIN(wip->max_speed * wip->lifetime, wip->weapon_range));
 			} else {
 				enemy_point = ss->last_aim_enemy_pos;
@@ -1616,7 +1616,7 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 	vm_vec_add2(&abs_gun_pos, &objp->pos);
 
 	//	Only pick a turret to attack on large ships.
-	if (!(is_big_huge(esip)))
+	if (!esip->is_big_or_huge())
 		return best_subsysp;
 
 	// Make sure big or huge ship *actually* has subsystems  (ie, knossos)
@@ -2442,13 +2442,13 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					if ( lep->type != OBJ_SHIP ) {
 						continue;
 					}
-					if ( !(is_big_huge(&Ship_info[Ships[lep->instance].ship_info_index])) ) {
+					if ( !(Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge()) ) {
 						continue;
 					}
 				}
 
 				if ( wip->wi_flags2 & WIF2_SMALL_ONLY ) {
-					if ( (lep->type == OBJ_SHIP) && (is_big_huge(&Ship_info[Ships[lep->instance].ship_info_index])) ) {
+					if ( (lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge()) ) {
 						continue;
 					}
 				}

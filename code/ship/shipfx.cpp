@@ -566,7 +566,7 @@ void shipfx_warpin_start( object *objp )
 {
 	ship *shipp = &Ships[objp->instance];
 
-	if (is_ship_arriving(shipp))
+	if (shipp->is_arriving())
 	{
 		mprintf(( "Ship '%s' is already arriving!\n", shipp->ship_name ));
 		Int3();
@@ -683,7 +683,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 
 	// validate angle
 	float max_warpout_angle = 0.707f;	// 45 degree half-angle cone for small ships
-	if (is_big_huge(&Ship_info[Ships[objp->instance].ship_info_index])) {
+	if (Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge()) {
 		max_warpout_angle = 0.866f;	// 30 degree half-angle cone for BIG or HUGE
 	}
 
@@ -748,7 +748,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 
 
 	// If this is a huge ship, set the distance to the length of the ship
-	if (is_huge_ship(sip))
+	if (sip->is_huge_ship())
 	{
 		ship_move_dist = 0.5f * ship_class_get_length(sip);
 	}
@@ -778,7 +778,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 	warp_dist = ship_move_dist;
 
 	// allow for off center
-	if (is_huge_ship(sip)) {
+	if (sip->is_huge_ship()) {
 		polymodel *pm = model_get(sip->model_num);
 		warp_dist -= pm->mins.xyz.z;
 	}
@@ -820,7 +820,7 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	// if we're HUGE, keep alive - set guardian
-	if (is_huge_ship(&Ship_info[shipp->ship_info_index])) {
+	if (Ship_info[shipp->ship_info_index].is_huge_ship()) {
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 	}
 
@@ -1489,7 +1489,7 @@ void shipfx_emit_spark( int n, int sn )
     //
     // phreak: Mantis 1676 - Re-enable warpout clipping.
 	
-	if ((is_ship_arriving(shipp) || shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect))
+	if ((shipp->is_arriving() || shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect))
     {
         vec3d warp_pnt, tmp;
         matrix warp_orient;
@@ -1501,7 +1501,7 @@ void shipfx_emit_spark( int n, int sn )
         
         if ( vm_vec_dot( &tmp, &warp_orient.vec.fvec ) < 0.0f )
         {
-            if (is_ship_arriving(shipp))// if in front of warp plane, don't create.
+            if (shipp->is_arriving())// if in front of warp plane, don't create.
 				create_spark = 0;
 		} else {
 			if (shipp->flags[Ship::Ship_Flags::Depart_warp])
@@ -1516,7 +1516,7 @@ void shipfx_emit_spark( int n, int sn )
 
 		pe.pos = outpnt;				// Where the particles emit from
 
-        if (is_ship_arriving(shipp) || shipp->flags[Ship::Ship_Flags::Depart_warp]) {
+        if (shipp->is_arriving() || shipp->flags[Ship::Ship_Flags::Depart_warp]) {
 			// No velocity if going through warp.
 			pe.vel = vmd_zero_vector;
 		} else {
@@ -2569,7 +2569,7 @@ void shipfx_do_lightning_frame( ship *shipp )
 	}
 	
 	// if this not a cruiser or big ship
-	if(!((sip->flags[Ship::Info_Flags::Cruiser]) || (is_big_ship(sip)) || (is_huge_ship(sip)))){
+	if(!((sip->flags[Ship::Info_Flags::Cruiser]) || (sip->is_big_ship()) || (sip->is_huge_ship()))){
 		shipp->lightning_stamp = -1;
 		return;
 	}
@@ -2580,7 +2580,7 @@ void shipfx_do_lightning_frame( ship *shipp )
 		count = l_cruiser_count;
 	} 
 	else {
-		if(is_huge_ship(sip)){
+		if(sip->is_huge_ship()){
 			stamp = (int)((float)(Nebl_supercap_min + ((Nebl_supercap_max - Nebl_supercap_min) * Nebl_intensity)) * frand_range(0.8f, 1.1f));
 			count = l_huge_count;
 		} else {
@@ -2781,7 +2781,7 @@ void engine_wash_ship_process(ship *shipp)
 	float max_wash_dist, half_angle, radius_mult;
 
 	// if this is not a fighter or bomber, we don't care
-	if ((objp->type != OBJ_SHIP) || !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) ) {
+	if ((objp->type != OBJ_SHIP) || !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) ) {
 		return;
 	}
 
@@ -2823,7 +2823,7 @@ void engine_wash_ship_process(ship *shipp)
 		ship_info *wash_sip = &Ship_info[wash_shipp->ship_info_index];
 
 		// don't do small ships
-        if (is_small_ship(wash_sip)) {
+        if (wash_sip->is_small_ship()) {
             continue;
         }
 
@@ -2854,7 +2854,7 @@ void engine_wash_ship_process(ship *shipp)
 			// check if thruster bank has engine wash
 			if (bank->wash_info_pointer == NULL) {
 				// if huge, give default engine wash
-				if ((is_huge_ship(wash_sip)) && !Engine_wash_info.empty()) {
+				if ((wash_sip->is_huge_ship()) && !Engine_wash_info.empty()) {
 					bank->wash_info_pointer = &Engine_wash_info[0];
 					nprintf(("wash", "Adding default engine wash to ship %s", wash_sip->name));
 				} else {

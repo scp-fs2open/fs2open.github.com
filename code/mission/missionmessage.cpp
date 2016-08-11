@@ -1547,7 +1547,7 @@ void message_queue_process()
 		if (Message_shipnum < 0) {
 			goto all_done;
 		}
-		if (!(is_small_ship(&Ship_info[Ships[Message_shipnum].ship_info_index]) || (Ships[Message_shipnum].flags[Ship::Ship_Flags::Always_death_scream])) ) {
+		if (!(Ship_info[Ships[Message_shipnum].ship_info_index].is_small_ship() || (Ships[Message_shipnum].flags[Ship::Ship_Flags::Always_death_scream])) ) {
 			goto all_done;
 		}
 	}
@@ -1733,7 +1733,7 @@ int message_get_persona( ship *shipp )
 		int persona_needed;
 		count = 0;
 
-		if ( is_fighter_bomber(sip) )
+		if ( sip->is_fighter_bomber() )
 		{
 			persona_needed = PERSONA_FLAG_WINGMAN;
 		} else if ( sip->flags[Ship::Info_Flags::Support] ) 
@@ -1976,7 +1976,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			nprintf(("messaging", "Couldn't find persona for %s\n", shipp->ship_name ));	
 
 		// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
-		Assert( !is_flyable(&Ship_info[shipp->ship_info_index]) );		// get allender or alan
+		Assert( !Ship_info[shipp->ship_info_index].is_flyable() );		// get allender or alan
 	} else {
 		persona_index = The_mission.command_persona;				// use the terran command persona
 	}

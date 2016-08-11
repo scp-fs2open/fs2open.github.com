@@ -514,7 +514,7 @@ void obj_snd_do_frame()
 
 		// save closest distance (used for flyby sound) if this is a small ship (and not the observer)
 		if ( (objp->type == OBJ_SHIP) && (distance < closest_dist) && (objp != observer_obj) ) {
-			if ( is_small_ship(&Ship_info[Ships[objp->instance].ship_info_index]) ) {
+			if ( Ship_info[Ships[objp->instance].ship_info_index].is_small_ship() ) {
 				closest_dist = distance;
 				closest_objp = objp;
 			}
@@ -527,7 +527,7 @@ void obj_snd_do_frame()
 		alive_vol_mult = 1.0f;
 		if ( objp->type == OBJ_SHIP ) {
 			ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
-			if ( !(is_big_huge(sip)) ) {
+			if ( !(sip->is_big_or_huge()) ) {
 				if ( objp->phys_info.max_vel.xyz.z <= 0.0f ) {
 					percent_max = 0.0f;
 				}
@@ -676,7 +676,7 @@ void obj_snd_do_frame()
 
 		// Don't play doppler effect for cruisers or capitals
 		if ( sp ) {
-			if ( is_big_huge(&Ship_info[sp->ship_info_index]) ) {
+			if ( Ship_info[sp->ship_info_index].is_big_or_huge() ) {
 				vel = vmd_zero_vector;
 			}
 		}

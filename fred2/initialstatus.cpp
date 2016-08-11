@@ -629,7 +629,7 @@ void initial_status::change_subsys()
 	ship_subsys *ptr;
 
 	// Goober5000
-	ship_has_scannable_subsystems = is_huge_ship(&Ship_info[Ships[m_ship].ship_info_index]);
+	ship_has_scannable_subsystems = Ship_info[Ships[m_ship].ship_info_index].is_huge_ship();
 	if (Ships[m_ship].flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
 		ship_has_scannable_subsystems = !ship_has_scannable_subsystems;
 

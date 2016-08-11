@@ -900,7 +900,7 @@ void multi_ingame_join_display_avail()
 
 	moveup = GET_FIRST(&Ship_obj_list);	
 	while(moveup != END_OF_LIST(&Ship_obj_list)){
-		if( !(is_dying_departing(&Ships[Objects[moveup->objnum].instance])) && (Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]) ) {
+		if( !(Ships[Objects[moveup->objnum].instance].is_dying_or_departing()) && (Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]) ) {
 			// display the ship
 			multi_ingame_join_display_ship(&Objects[moveup->objnum],Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_num_avail * Mi_spacing[gr_screen.res]));
 

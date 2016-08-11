@@ -1419,7 +1419,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 	cargo_sip = &Ship_info[cargo_sp->ship_info_index];
 
 	// Goober5000 - possibly swap cargo scan behavior
-    scan_subsys = (is_huge_ship(cargo_sip));
+    scan_subsys = cargo_sip->is_huge_ship();
     if (cargo_sp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
 		scan_subsys = !scan_subsys;
 	if (scan_subsys)
@@ -1568,7 +1568,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	subsys_rad = subsys->system_info->radius;
 
 	// Goober5000
-    if (is_huge_ship(cargo_sip)) {
+    if (cargo_sip->is_huge_ship()) {
 		scan_dist = MAX(CAP_CARGO_REVEAL_MIN_DIST, (subsys_rad + CAPITAL_CARGO_RADIUS_DELTA));
 	} else {
 		scan_dist = MAX(CARGO_REVEAL_MIN_DIST, (subsys_rad + CARGO_RADIUS_DELTA));

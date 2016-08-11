@@ -4944,7 +4944,7 @@ void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	// do an out here
-	if ( is_dying_departing(&Ships[objp->instance]) )
+	if ( Ships[objp->instance].is_dying_or_departing())
 		return;
 
 	switch( what ) {
@@ -7949,7 +7949,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	ship *shipp = &Ships[fire_info.shooter->instance];
 
 	// this check is a little convoluted but should cover all bases until we decide to just break the protocol
-	if ( is_fighter_bomber(&Ship_info[shipp->ship_info_index]) ) {
+	if ( Ship_info[shipp->ship_info_index].is_fighter_bomber() ) {
 		// make sure the beam is a primary weapon and not attached to a turret or something
 		for (i = 0; i < shipp->weapons.num_primary_banks; i++) {
 			if ( shipp->weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {

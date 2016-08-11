@@ -552,7 +552,7 @@ void debug_cycle_targeted_ship(int delta)
 		if ( strstr(name,NOX("test")) != NULL )
 			continue;
 
-        if (sip->species == species && (is_fighter_bomber(sip) || sip->flags[Ship::Info_Flags::Transport]))
+        if (sip->species == species && (sip->is_fighter_bomber() || sip->flags[Ship::Info_Flags::Transport]))
 			break;
 
 		// just in case

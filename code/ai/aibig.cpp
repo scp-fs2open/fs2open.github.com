@@ -510,7 +510,7 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 {
 	// if moving slowly (or stopped), and SIF_SMALL_SHIP, then enter STRAFE mode if enemy fighter/bombers
 	// are near
-	if ( is_small_ship(sip) ) {
+	if ( sip->is_small_ship() ) {
 		if ( timestamp_elapsed(aip->scan_for_enemy_timestamp) ) {
 			ship_obj	*so;
 			object	*test_objp;
@@ -525,7 +525,7 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 				test_sp = &Ships[test_objp->instance];
 
 				if ( iff_x_attacks_y(Ships[Pl_objp->instance].team, test_sp->team) ) {
-					if ( is_small_ship(&Ship_info[test_sp->ship_info_index]) ) {
+					if ( Ship_info[test_sp->ship_info_index].is_small_ship() ) {
 						dist_squared = vm_vec_dist_squared(&Pl_objp->pos, &test_objp->pos);
 						if ( dist_squared < ENTER_STRAFE_THREAT_DIST_SQUARED ) {
 							return 1;
@@ -1174,7 +1174,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 	Assert(aip->mode == AIM_STRAFE);
 
 	// ensure that Pl_objp is still targeting a big ship
-	if ( !(is_big_huge(esip)) ) {
+	if ( !(esip->is_big_or_huge()) ) {
 		ai_big_switch_to_chase_mode(aip);
 		return;
 	}
@@ -1651,7 +1651,7 @@ void ai_big_strafe()
 	}
 */
 	// check if target is still a big ship... if not enter chase mode
-	if ( !(is_big_huge(&Ship_info[Ships[En_objp->instance].ship_info_index])) ) {
+	if ( !(Ship_info[Ships[En_objp->instance].ship_info_index].is_big_or_huge()) ) {
 		ai_big_switch_to_chase_mode(aip);
 		return;
 	}
@@ -1724,12 +1724,12 @@ int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consi
 
 	// if Pl_objp's target is not a big/capital ship, then cannot enter strafe mode
 	// AL 12-31-97: Even though transports are considered big ships, don't enter strafe mode on them
-	if ( !(is_big_huge(sip)) || (sip->flags[Ship::Info_Flags::Transport]) ) {
+	if ( !(sip->is_big_or_huge()) || (sip->flags[Ship::Info_Flags::Transport]) ) {
 		return 0;
 	}
 
 	//	If Pl_objp not a fighter or bomber, don't enter strafe mode. -- MK, 11/11/97.
-	if ( !(is_fighter_bomber(&Ship_info[Ships[pl_objp->instance].ship_info_index])) ) {
+	if ( !(Ship_info[Ships[pl_objp->instance].ship_info_index].is_fighter_bomber()) ) {
 		return 0;
 	}
 
@@ -1751,7 +1751,7 @@ int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consi
 //JAS IMPOSSIBLE		} else {
 			// switch targets
 			sip = &Ship_info[Ships[parent_objp->instance].ship_info_index];
-			if ( !(is_big_huge(sip)) || (sip->flags[Ship::Info_Flags::Transport]) ) {
+			if ( !(sip->is_big_or_huge()) || (sip->flags[Ship::Info_Flags::Transport]) ) {
 				return 0;
 			}
 			set_target_objnum(aip, OBJ_INDEX(parent_objp));

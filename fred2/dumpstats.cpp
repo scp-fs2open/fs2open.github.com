@@ -318,9 +318,9 @@ void DumpStats::get_object_stats(CString &buffer)
 
 		// inc big ship or small ship count
 		if ( (objp->type == OBJ_SHIP) || (objp->type == OBJ_START) ) {
-			if ( is_small_ship(&Ship_info[Ships[objp->instance].ship_info_index]) ) {
+			if ( Ship_info[Ships[objp->instance].ship_info_index].is_small_ship() ) {
 				num_small_ships++;
-			} else if ( is_big_huge(&Ship_info[Ships[objp->instance].ship_info_index]) ) {
+			} else if ( Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge() ) {
 				num_big_ships++;
 			}
 		}

@@ -1451,10 +1451,10 @@ void ship_select_do(float frametime)
 		{
 			ship_info *sip = &Ship_info[Selected_ss_class];
 			float rev_rate = REVOLUTION_RATE;
-			if (is_big_ship(sip)) {
+			if (sip->is_big_ship()) {
 				rev_rate *= 1.7f;
 			}
-			if (is_huge_ship(sip)) {
+			if (sip->is_huge_ship()) {
 				rev_rate *= 3.0f;
 			}
 

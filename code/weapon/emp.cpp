@@ -166,7 +166,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 		}
 
 		// if the ship is a cruiser or cap ship, only apply the EMP effect to turrets
-		if(is_big_huge(&Ship_info[Ships[target->instance].ship_info_index])) {
+		if(Ship_info[Ships[target->instance].ship_info_index].is_big_or_huge()) {
 			float capship_emp_time = use_emp_time_for_capship_turrets ? emp_time : MAX_TURRET_DISRUPT_TIME;
 			
 			moveup = &Ships[target->instance].subsys_list;
@@ -349,7 +349,7 @@ void emp_process_ship(ship *shipp)
 	aip->nearest_locked_object = -1;				// nothing near me, so I won't launch countermeasures
 
 	// if he's not a fighter or bomber, bail now
-	if(!(is_fighter_bomber(&Ship_info[shipp->ship_info_index]))){
+	if(!(Ship_info[shipp->ship_info_index].is_fighter_bomber())){
 		return;
 	}
 

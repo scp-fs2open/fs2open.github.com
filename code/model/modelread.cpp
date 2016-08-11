@@ -3045,7 +3045,7 @@ void model_set_bay_path_nums(polymodel *pm)
 
 	/*
 	// currently only capital ships have fighter bays
-	if ( !(is_big_huge(sip)) ) {
+	if ( !(sip->is_big_or_huge()) ) {
 		return;
 	}
 	*/

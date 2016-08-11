@@ -735,6 +735,12 @@ public:
 
 	// reset to a completely blank ship
 	void clear();
+
+    //Helper functions
+    inline bool is_arriving() { return flags[Ship::Ship_Flags::Arriving_stage_1] || flags[Ship::Ship_Flags::Arriving_stage_2]; }
+    inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp] || flags[Ship::Ship_Flags::Depart_dockbay]; }
+    inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken] || flags[Ship::Ship_Flags::Warp_never] || flags[Ship::Ship_Flags::Disabled]; }
+    inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 };
 
 struct ai_target_priority {
@@ -1295,6 +1301,17 @@ public:
 	ship_info &operator=(ship_info&& other) NOEXCEPT;
 
 	void free_strings();
+
+    //Helper functions
+    
+    inline bool is_small_ship() { return flags[Ship::Info_Flags::Fighter] || flags[Ship::Info_Flags::Bomber] || flags[Ship::Info_Flags::Support] || flags[Ship::Info_Flags::Escapepod]; }
+    inline bool is_big_ship() { return flags[Ship::Info_Flags::Cruiser] || flags[Ship::Info_Flags::Freighter] || flags[Ship::Info_Flags::Transport] || flags[Ship::Info_Flags::Corvette] || flags[Ship::Info_Flags::Gas_miner] || flags[Ship::Info_Flags::Awacs]; }
+    inline bool is_huge_ship() { return flags[Ship::Info_Flags::Capital] || flags[Ship::Info_Flags::Supercap] || flags[Ship::Info_Flags::Drydock] || flags[Ship::Info_Flags::Knossos_device]; }
+    inline bool is_flyable() { return !(flags[Ship::Info_Flags::Cargo] || flags[Ship::Info_Flags::Navbuoy] || flags[Ship::Info_Flags::Escapepod]); }
+    inline bool is_harmless() { return !is_flyable(); }
+    inline bool is_fighter_bomber() { return flags[Ship::Info_Flags::Fighter] || flags[Ship::Info_Flags::Bomber]; }
+    inline bool is_big_or_huge() { return is_big_ship() || is_huge_ship(); }
+    inline bool avoids_shockwaves() { return is_small_ship(); }
 
 private:
 	void move(ship_info&& other);
@@ -1876,21 +1893,6 @@ int get_default_player_ship_index();
  * @return point is outside bbox, FALSE/0
  */
 int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt);
-
-
-//Helper functions
-inline bool is_ship_arriving(ship* shipp) { return shipp->flags[Ship::Ship_Flags::Arriving_stage_1] || shipp->flags[Ship::Ship_Flags::Arriving_stage_2]; }
-inline bool is_ship_departing(ship* shipp) { return shipp->flags[Ship::Ship_Flags::Depart_warp] || shipp->flags[Ship::Ship_Flags::Depart_dockbay]; }
-inline bool is_small_ship(ship_info* sip) { return sip->flags[Ship::Info_Flags::Fighter] || sip->flags[Ship::Info_Flags::Bomber] || sip->flags[Ship::Info_Flags::Support] || sip->flags[Ship::Info_Flags::Escapepod]; }
-inline bool is_big_ship(ship_info* sip) { return sip->flags[Ship::Info_Flags::Cruiser] || sip->flags[Ship::Info_Flags::Freighter] || sip->flags[Ship::Info_Flags::Transport] || sip->flags[Ship::Info_Flags::Corvette] || sip->flags[Ship::Info_Flags::Gas_miner] || sip->flags[Ship::Info_Flags::Awacs]; }
-inline bool is_huge_ship(ship_info* sip) { return sip->flags[Ship::Info_Flags::Capital] || sip->flags[Ship::Info_Flags::Supercap] || sip->flags[Ship::Info_Flags::Drydock] || sip->flags[Ship::Info_Flags::Knossos_device]; }
-inline bool is_flyable(ship_info* sip) { return !(sip->flags[Ship::Info_Flags::Cargo] || sip->flags[Ship::Info_Flags::Navbuoy] || sip->flags[Ship::Info_Flags::Escapepod]); }
-inline bool is_harmless(ship_info* sip) { return !is_flyable(sip); }
-inline bool is_fighter_bomber(ship_info* sip) { return sip->flags[Ship::Info_Flags::Fighter] || sip->flags[Ship::Info_Flags::Bomber]; }
-inline bool is_big_huge(ship_info* sip) { return is_big_ship(sip) || is_huge_ship(sip); }
-inline bool ship_cannot_warp(ship* shipp) { return shipp->flags[Ship::Ship_Flags::Warp_broken] || shipp->flags[Ship::Ship_Flags::Warp_never] || shipp->flags[Ship::Ship_Flags::Disabled]; }
-inline bool is_dying_departing(ship* shipp) { return is_ship_departing(shipp) || shipp->flags[Ship::Ship_Flags::Dying]; }
-inline bool avoids_shockwaves(ship_info* sip) { return is_small_ship(sip); }
 
 extern flagset<Ship::Ship_Flags> Ignore_List;
 inline bool should_be_ignored(ship* shipp) {

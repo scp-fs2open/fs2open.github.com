@@ -768,7 +768,7 @@ int scoring_eval_kill(object *ship_objp)
 						// award teammates % of score value for big ship kills
 						// not in dogfight tho
 						// and not if there is no assist threshold (as otherwise assists could get higher scores than kills)
-						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (is_big_huge(&Ship_info[dead_ship->ship_info_index]))) {
+						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[dead_ship->ship_info_index].is_big_or_huge())) {
 							for (idx=0; idx<MAX_PLAYERS; idx++) {
 								if (MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.team == net_plr->p_info.team) && (&Net_players[idx] != net_plr)) {
 									assist_score = (int)(dead_ship->score * The_mission.ai_profile->assist_award_percentage_scale[Game_skill_level]);

@@ -360,7 +360,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		} else if (light_obj == Player_obj) {
 			collide_obj = heavy_obj;
 		}
-		if ((collide_obj != NULL) && (is_fighter_bomber(&Ship_info[Ships[collide_obj->instance].ship_info_index]))) {
+		if ((collide_obj != NULL) && (Ship_info[Ships[collide_obj->instance].ship_info_index].is_fighter_bomber())) {
 			char	*submode_string = "";
 			ai_info	*aip;
 
@@ -407,7 +407,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		if (heavy_shipp->team == light_shipp->team) {
 			//	If a couple of small ships, just move them apart.
 
-			if ((is_small_ship(heavy_sip) && (is_small_ship(light_sip)))) {
+			if ((heavy_sip->is_small_ship()) && (light_sip->is_small_ship())) {
 				if ((heavy_obj->flags[Object::Object_Flags::Player_ship]) || (light_obj->flags[Object::Object_Flags::Player_ship])) {
 					vec3d h_to_l_vec;
 					vec3d rel_vel_h;
@@ -463,7 +463,7 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *lighter, flo
 
 	if (heavy->type == OBJ_ASTEROID) {
 		Assert(lighter->type == OBJ_SHIP);
-		if (is_big_huge(&Ship_info[Ships[lighter->instance].ship_info_index])) {
+		if (Ship_info[Ships[lighter->instance].ship_info_index].is_big_or_huge()) {
 
 			asteroid_type = Asteroids[heavy->instance].asteroid_type;
 			if (asteroid_type == 0) {
@@ -481,7 +481,7 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *lighter, flo
 		}
 	} else if (lighter->type == OBJ_ASTEROID) {
 		Assert(heavy->type == OBJ_SHIP);
-		if (is_big_huge(&Ship_info[Ships[heavy->instance].ship_info_index])) {
+		if (Ship_info[Ships[heavy->instance].ship_info_index].is_big_or_huge()) {
 
 			asteroid_type = Asteroids[lighter->instance].asteroid_type;
 			if (asteroid_type == 0) {
@@ -1008,12 +1008,12 @@ void do_kamikaze_crash(object *obj1, object *obj2)
 
 	if (ship1->team != ship2->team) {
 		if (aip1->ai_flags & AIF_KAMIKAZE) {
-			if (is_big_huge(&Ship_info[ship2->ship_info_index])) {
+			if (Ship_info[ship2->ship_info_index].is_big_or_huge()) {
 				obj1->hull_strength = KAMIKAZE_HULL_ON_DEATH;
 				shield_set_strength(obj1, 0.0f);
 			}
 		} if (aip2->ai_flags & AIF_KAMIKAZE) {
-            if (is_big_huge(&Ship_info[ship1->ship_info_index])) {
+            if (Ship_info[ship1->ship_info_index].is_big_or_huge()) {
 				obj2->hull_strength = KAMIKAZE_HULL_ON_DEATH;
 				shield_set_strength(obj2, 0.0f);
 			}
@@ -1268,8 +1268,8 @@ int collide_ship_ship( obj_pair * pair )
         auto sif_b_flags = Ship_info[Ships[B->instance].ship_info_index].flags;
 
         // if ship is huge and warping in or out
-        if (((Ships[A->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (is_huge_ship(&Ship_info[Ships[A->instance].ship_info_index]))
-			|| ((Ships[B->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (is_huge_ship(&Ship_info[Ships[B->instance].ship_info_index])))) ) {
+        if (((Ships[A->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (Ship_info[Ships[A->instance].ship_info_index].is_huge_ship())
+			|| ((Ships[B->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (Ship_info[Ships[B->instance].ship_info_index].is_huge_ship()))) ) {
 			pair->next_check_time = timestamp(0);	// check next time
 			return 0;
 		}

@@ -1149,7 +1149,7 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	oo_flags = OO_POS_NEW | OO_ORIENT_NEW;
 
 	// if its a small ship, add weapon link info
-	if((sip != NULL) && (is_fighter_bomber(sip))){
+	if((sip != NULL) && (sip->is_fighter_bomber())){
 		// primary bank 0 or 1
 		if(shipp->weapons.current_primary_bank > 0){
 			oo_flags |= OO_PRIMARY_BANK;

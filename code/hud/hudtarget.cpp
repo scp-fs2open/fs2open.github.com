@@ -495,7 +495,7 @@ void hud_maybe_set_sorted_turret_subsys(ship *shipp)
 		return;
 	}
 
-	if (is_big_huge(&Ship_info[shipp->ship_info_index])) {
+	if (Ship_info[shipp->ship_info_index].is_big_or_huge()) {
 		if (shipp->last_targeted_subobject[Player_num] == NULL) {
 			hud_target_live_turret(1, 1);
 		}
@@ -789,7 +789,7 @@ void hud_target_hotkey_add_remove( int k, object *ctarget, int how_to_add )
 		return;
 
 	// don't put dying or departing
-	if ( is_dying_departing(&Ships[ctarget->instance]) )
+	if ( Ships[ctarget->instance].is_dying_or_departing() )
 		return;
 
 	// don't add mission file added hotkey assignments if there are player added assignments 
@@ -2116,13 +2116,13 @@ bool evaluate_ship_as_closest_target(esct *esct_p)
 
 	// If filter is set, only target fighters and bombers
 	if ( esct_p->filter ) {
-		if ( !(is_fighter_bomber(&Ship_info[esct_p->shipp->ship_info_index])) ) {
+		if ( !(Ship_info[esct_p->shipp->ship_info_index].is_fighter_bomber()) ) {
 			return false;
 		}
 	}
 
 	// find closest turret to player if BIG or HUGE ship
-	if (is_big_huge(&Ship_info[esct_p->shipp->ship_info_index])) {
+	if (Ship_info[esct_p->shipp->ship_info_index].is_big_or_huge()) {
 		for (ss=GET_FIRST(&esct_p->shipp->subsys_list); ss!=END_OF_LIST(&esct_p->shipp->subsys_list); ss=GET_NEXT(ss)) {
 
 			if (ss->flags & SSF_UNTARGETABLE)
@@ -3365,7 +3365,7 @@ void hud_prune_hotkeys()
 
 			// check to see if the object is dying -- if so, remove it from the list
 			// check to see if the ship is departing -- if so, remove it from the list
-			if ( remove_item || (objp->flags[Object::Object_Flags::Should_be_dead]) || (is_dying_departing(sp)) ) {
+			if ( remove_item || (objp->flags[Object::Object_Flags::Should_be_dead]) || (sp->is_dying_or_departing()) ) {
 				if ( sp != NULL ) {
 					nprintf(("Network", "Hotkey: Pruning %s\n", sp->ship_name));
 				}
@@ -3606,7 +3606,7 @@ void hud_show_hostile_triangle()
 		turret_is_attacking = 0;
 
 		// check if any turrets on ship are firing at the player (only on non fighter-bombers)
-		if ( !(is_fighter_bomber(&Ship_info[sp->ship_info_index])) ) {
+		if ( !(Ship_info[sp->ship_info_index].is_fighter_bomber()) ) {
 			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
 				if (ss->flags & SSF_UNTARGETABLE)
 					continue;

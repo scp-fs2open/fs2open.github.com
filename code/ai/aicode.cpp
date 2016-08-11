@@ -1692,7 +1692,7 @@ int num_enemies_attacking(int objnum)
 			count++;
 
 		// consider turrets that may be attacking objnum (but only turrets on SIF_BIG_SHIP ships)
-		if ( is_big_ship(&Ship_info[sp->ship_info_index]) ) {
+		if ( Ship_info[sp->ship_info_index].is_big_ship() ) {
 
 			// loop through all the subsystems, check if turret has objnum as a target
 			ssp = GET_FIRST(&sp->subsys_list);
@@ -1950,7 +1950,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 			if (eno->trial_objp->flags[Object::Object_Flags::Protected])
 				return;
 
-			if (is_ship_arriving(shipp))
+			if (shipp->is_arriving())
 				return;
 
 			ship_info *sip = &Ship_info[shipp->ship_info_index];
@@ -1975,7 +1975,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 				}
 
 				// if objnum is BIG or HUGE, find distance to bbox
-                if (is_big_huge(sip)) {
+                if (sip->is_big_or_huge()) {
 					vec3d box_pt;
 					// check if inside bbox
 					int inside = get_nearest_bbox_point(eno->trial_objp, &Objects[eno->objnum].pos, &box_pt);
@@ -1990,17 +1990,17 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 				}
 				
 				//	Make it more likely that fighters (or bombers) will be picked as an enemy by scaling up distance for other types.
-                if ((is_fighter_bomber(&Ship_info[shipp->ship_info_index]))) {
+                if (Ship_info[shipp->ship_info_index].is_fighter_bomber()) {
 					dist = dist * 0.5f;
 				}
 
 				num_attacking = num_enemies_attacking(OBJ_INDEX(eno->trial_objp));
                 
-                if (!is_big_huge(sip) && num_attacking) {
+                if (!sip->is_big_or_huge() && num_attacking) {
                     dist *= (float)(num_attacking + 2) / 2.0f;				//	prevents lots of ships from attacking same target
                 }
 				
-                if ((is_big_huge(sip)) || (num_attacking < eno->max_attackers)) {	
+                if ((sip->is_big_or_huge()) || (num_attacking < eno->max_attackers)) {	
 
 					if (eno->trial_objp->flags[Object::Object_Flags::Player_ship]){
 						dist *= 1.0f + (NUM_SKILL_LEVELS - Game_skill_level - 1)/NUM_SKILL_LEVELS;	//	Favor attacking non-players based on skill level.
@@ -2276,7 +2276,7 @@ void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp)
 	}
 
 	//	Only set to chase if a fighter or bomber, otherwise just return.
-	if (!(is_small_ship(&Ship_info[Ships[attacker->instance].ship_info_index])) && (attacked != NULL)) {
+	if (!(Ship_info[Ships[attacker->instance].ship_info_index].is_small_ship()) && (attacked != NULL)) {
 		nprintf(("AI", "AI ship %s is large ship ordered to attack %s\n", Ships[attacker->instance].ship_name, Ships[attacked->instance].ship_name));
 	}
 
@@ -2849,7 +2849,7 @@ int pp_collide_any(vec3d *curpos, vec3d *goalpos, float radius, object *ignore_o
 		object *objp = &Objects[so->objnum];
 
 		if (big_only_flag) {
-			if (!(is_big_huge(&Ship_info[Ships[objp->instance].ship_info_index])))
+			if (!Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge())
 				continue;
 		}
 
@@ -3309,7 +3309,7 @@ void ai_form_on_wing(object *objp, object *goal_objp)
 	sip = &Ship_info[shipp->ship_info_index];
 
 	//	Only fighters or bombers allowed to form on wing.
-	if (!(is_fighter_bomber(sip))) {
+	if (!(sip->is_fighter_bomber())) {
 		nprintf(("AI", "Warning: Ship %s tried to form on player's wing, but not fighter or bomber.\n", shipp->ship_name));
 		return;
 	}
@@ -4124,7 +4124,7 @@ int get_enemy_team_range(object *my_objp, float range, int enemy_team_mask, vec3
         objp = &Objects[so->objnum];
         if (iff_matches_mask(Ships[objp->instance].team, enemy_team_mask)) {
             ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
-            if (is_fighter_bomber(sip) || sip->flags[Ship::Info_Flags::Cruiser] || sip->flags[Ship::Info_Flags::Capital] || sip->flags[Ship::Info_Flags::Supercap] || sip->flags[Ship::Info_Flags::Drydock] || sip->flags[Ship::Info_Flags::Corvette] || sip->flags[Ship::Info_Flags::Awacs] || sip->flags[Ship::Info_Flags::Gas_miner])
+            if (sip->is_fighter_bomber() || sip->flags[Ship::Info_Flags::Cruiser] || sip->flags[Ship::Info_Flags::Capital] || sip->flags[Ship::Info_Flags::Supercap] || sip->flags[Ship::Info_Flags::Drydock] || sip->flags[Ship::Info_Flags::Corvette] || sip->flags[Ship::Info_Flags::Awacs] || sip->flags[Ship::Info_Flags::Gas_miner])
                 if (vm_vec_dist_quick(&my_objp->pos, &objp->pos) < range) {
                     if (count == 0) {
                         *min_vec = objp->pos;
@@ -4421,7 +4421,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 			}
 		}
 
-		if (is_small_ship(sip)) {
+		if (sip->is_small_ship()) {
 			set_accel_for_target_speed(Pl_objp, dot1 * dist_to_goal/5.0f);
 		} else {
 			set_accel_for_target_speed(Pl_objp, dot1 * dist_to_goal/10.0f);
@@ -5351,7 +5351,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		}
 	}
 
-	if ( (other_objp->type == OBJ_SHIP) && (is_big_huge(&Ship_info[Ships[other_objp->instance].ship_info_index]) ) ) 
+	if ( (other_objp->type == OBJ_SHIP) && (Ship_info[Ships[other_objp->instance].ship_info_index].is_big_or_huge() ) ) 
 	{
 		//Check if we have a capital+ weapon on board
 		for (int i = 0; i < swp->num_primary_banks; i++)
@@ -5520,7 +5520,7 @@ void set_primary_weapon_linkage(object *objp)
 	// AL: ensure target is a ship!
 	if ( (aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP) ) {
 		// If trying to destroy a big ship (i.e., not disable/disarm), always unleash all weapons
-		if ( is_big_ship(&Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index] )) {
+		if ( Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].is_big_ship() ) {
 			if ( aip->targeted_subsys == NULL ) {
                 shipp->flags.set(Ship::Ship_Flags::Primary_linked);
                 shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
@@ -5687,7 +5687,7 @@ int ai_fire_primary_weapon(object *objp)
 	if (The_mission.ai_profile->primary_ammo_burst_mult[Game_skill_level] > 0 &&						//Make sure we are using burst fire
 		enemy_objp != NULL && enemy_sip != NULL	&& 														//We need a target, obviously
 		(enemy_objp->phys_info.speed >= 1.0f) &&														//Only burst for moving ships
-		(is_small_ship(enemy_sip) || enemy_sip->flags[Ship::Info_Flags::Transport]) && 										//Only burst for small ships (transports count)
+		(enemy_sip->is_small_ship() || enemy_sip->flags[Ship::Info_Flags::Transport]) &&				//Only burst for small ships (transports count)
 		swp->primary_bank_start_ammo[swp->current_primary_bank] > 0 &&									//Prevent div by 0
 		Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags2 & WIF2_BALLISTIC)	//Current weapon must be ballistic
 	{
@@ -5777,7 +5777,7 @@ int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold)
 		ship_objp = &Objects[so->objnum];
 
 		if (iff_matches_mask(Ships[ship_objp->instance].team, enemy_team_mask)) {
-			if (is_fighter_bomber(&Ship_info[Ships[ship_objp->instance].ship_info_index])) {
+			if (Ship_info[Ships[ship_objp->instance].ship_info_index].is_fighter_bomber()) {
 				if (vm_vec_dist_quick(pos, &ship_objp->pos) < threshold)
 					count++;
 			}
@@ -6003,7 +6003,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 
 		// AL 3-4-98: Ensure objp target is a ship first 
 		if ( tobjp->type == OBJ_SHIP ) {
-			if (is_small_ship(&Ship_info[Ships[tobjp->instance].ship_info_index])) {
+			if (Ship_info[Ships[tobjp->instance].ship_info_index].is_small_ship()) {
 				num_homers = compute_num_homing_objects(&Objects[target_objnum]);
 			}
 		}
@@ -6860,7 +6860,7 @@ int will_collide_with_big_ship_all(object *objp, object *ignore_objp, vec3d *goa
 		if (big_objp == ignore_objp)
 			continue;
 
-		if (is_big_huge(&Ship_info[Ships[big_objp->instance].ship_info_index])) {
+		if (Ship_info[Ships[big_objp->instance].ship_info_index].is_big_or_huge()) {
 			vec3d	cur_collision_point;
 			float		cur_dist;
 
@@ -7738,7 +7738,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		}
 
 		if ( esip ) {
-			is_big_ship = is_big_huge(esip);
+            is_big_ship = esip->is_big_or_huge();
 		} else {
 			is_big_ship=0;
 		}
@@ -8219,7 +8219,7 @@ void ai_chase()
 	}
 
 	if ( enemy_sip_flags.any_set() ) {
-		if (is_big_huge(&Ship_info[Ships[En_objp->instance].ship_info_index])) {
+		if (Ship_info[Ships[En_objp->instance].ship_info_index].is_big_or_huge()) {
 			ai_big_chase();
 			return;
 		}
@@ -8462,7 +8462,7 @@ void ai_chase()
 			aip->submode = SM_GET_AWAY;
 			aip->submode_start_time = Missiontime;
 			aip->last_hit_target_time = Missiontime;
-        } else if (enemy_sip != NULL && (is_small_ship(enemy_sip))
+        } else if (enemy_sip != NULL && (enemy_sip->is_small_ship())
 			&& (dot_to_enemy < dot_from_enemy)
 			&& (En_objp->phys_info.speed > 15.0f) 
 			&& (dist_to_enemy < 200.0f) 
@@ -8474,7 +8474,7 @@ void ai_chase()
 		} else if ((dot_to_enemy > 0.2f) && (dot_from_enemy > -0.2f) && (dot_from_enemy < 0.1f)) {
 			aip->submode = SM_GET_BEHIND;
 			aip->submode_start_time = Missiontime;
-        } else if ( enemy_sip != NULL && (is_small_ship(enemy_sip)) && (dist_to_enemy < 150.0f) && (dot_from_enemy > dot_to_enemy + 0.5f + aip->ai_courage*.002)) {
+        } else if ( enemy_sip != NULL && (enemy_sip->is_small_ship()) && (dist_to_enemy < 150.0f) && (dot_from_enemy > dot_to_enemy + 0.5f + aip->ai_courage*.002)) {
 			float get_away_chance = (aip->ai_get_away_chance == FLT_MIN)
 				? (float)(aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)
 				: aip->ai_get_away_chance;
@@ -8486,7 +8486,7 @@ void ai_chase()
 				aip->submode = SM_EVADE_SQUIGGLE;
 				aip->submode_start_time = Missiontime;
 			}
-        } else if ( enemy_sip != NULL && (is_small_ship(enemy_sip)) && (Missiontime - aip->submode_start_time > F1_0 * 2)) {
+        } else if ( enemy_sip != NULL && (enemy_sip->is_small_ship()) && (Missiontime - aip->submode_start_time > F1_0 * 2)) {
 			if ((dot_to_enemy < 0.8f) && (dot_from_enemy > dot_to_enemy)) {
 				if (frand() > 0.5f) {
 					aip->submode = SM_CONTINUOUS_TURN;
@@ -8567,7 +8567,7 @@ void ai_chase()
 			aip->submode = AIS_CHASE_CIRCLESTRAFE;
 			aip->submode_start_time = Missiontime;
 			aip->last_attack_time = Missiontime;		
-		} else if ((dist_to_enemy < 100.0f) && (dot_to_enemy < 0.8f) && (is_small_ship(enemy_sip)) && (Missiontime - aip->submode_start_time > i2f(5) )) {
+		} else if ((dist_to_enemy < 100.0f) && (dot_to_enemy < 0.8f) && (enemy_sip->is_small_ship()) && (Missiontime - aip->submode_start_time > i2f(5) )) {
 			aip->ai_flags &= ~AIF_ATTACK_SLOWLY;	//	Just in case, clear here.
 
 			float get_away_chance = (aip->ai_get_away_chance == FLT_MIN)
@@ -9528,7 +9528,7 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 	if ((aip->submode == AIS_GUARD_PATROL) || (aip->submode == AIS_GUARD_STATIC)) {
 
 		if ( hitter_objp->type == OBJ_SHIP ) {
-			if (!(is_small_ship(&Ship_info[Ships[guard_objp->instance].ship_info_index]))) {
+			if (!(Ship_info[Ships[guard_objp->instance].ship_info_index].is_small_ship())) {
 				return;
 			}
 
@@ -11213,7 +11213,7 @@ void process_subobjects(int objnum)
 	if (ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) == 0.0f) {
 		// Karajorma - if Player_use_ai is ever fixed to work on multiplayer it should be checked that any player ships 
 		// aren't under AI control here
-		if ( (!(objp->flags[Object::Object_Flags::Player_ship]) ) && (is_fighter_bomber(sip)) && !(shipp->flags[Ship::Ship_Flags::Dying]) ) {
+		if ( (!(objp->flags[Object::Object_Flags::Player_ship]) ) && (sip->is_fighter_bomber()) && !(shipp->flags[Ship::Ship_Flags::Dying]) ) {
 			// Goober5000 - don't do anything if docked
 			if (!object_is_docked(objp)) {
 				// AL: Only attack forever if not trying to depart to a docking bay.  Need to have this in, since
@@ -12099,7 +12099,7 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 	shipp = &Ships[objp->instance];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	if (!(is_small_ship(sip) || sip->flags[Ship::Info_Flags::Transport]))
+	if (!(sip->is_small_ship() || sip->flags[Ship::Info_Flags::Transport]))
 		return;
 
 	if (object_is_docked(objp))
@@ -12343,7 +12343,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		// set timestamp
 		aip->shield_manage_timestamp = timestamp((int) (delay * 1000.0f));
 
-		if (is_small_ship(sip) || (aip->ai_profile_flags2 & AIPF2_ALL_SHIPS_MANAGE_SHIELDS)) {
+		if (sip->is_small_ship() || (aip->ai_profile_flags2 & AIPF2_ALL_SHIPS_MANAGE_SHIELDS)) {
 			if (Missiontime - aip->last_hit_time < F1_0*10)
 				ai_transfer_shield(objp, aip->last_hit_quadrant);
 			else
@@ -12360,7 +12360,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 	shipp = &Ships[objp->instance];
 
 	//	Only small ships evade an incoming missile.  Why would a capital ship try to swerve?
-	if (!is_small_ship(&Ship_info[Ships[objp->instance].ship_info_index])) {
+	if (!Ship_info[Ships[objp->instance].ship_info_index].is_small_ship()) {
 		return;
 	}
 
@@ -12463,7 +12463,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 void maybe_evade_dumbfire_weapon(ai_info *aip)
 {
 	//	Only small ships evade an incoming missile.  Why would a capital ship try to swerve?
-	if (!is_small_ship(&Ship_info[Ships[Pl_objp->instance].ship_info_index])) {
+	if (!Ship_info[Ships[Pl_objp->instance].ship_info_index].is_small_ship()) {
 		return;
 	}
 
@@ -12556,7 +12556,7 @@ void maybe_evade_dumbfire_weapon(ai_info *aip)
 		case AIM_WAYPOINTS:	
 		case AIM_FLY_TO_SHIP:
 		case AIM_SAFETY:
-			if (!(aip->ai_flags & (AIF_NO_DYNAMIC | AIF_KAMIKAZE)) && is_small_ship(&Ship_info[Ships[aip->shipnum].ship_info_index])) {
+			if (!(aip->ai_flags & (AIF_NO_DYNAMIC | AIF_KAMIKAZE)) && Ship_info[Ships[aip->shipnum].ship_info_index].is_small_ship()) {
 				aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
 				aip->previous_mode = aip->mode;
 				aip->previous_submode = aip->submode;
@@ -13053,7 +13053,7 @@ void ai_execute_behavior(ai_info *aip)
 			ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
 			if (strnicmp(shipp->ship_name, INSTRUCTOR_SHIP_NAME, strlen(INSTRUCTOR_SHIP_NAME))) {
-				if (is_big_huge(sip)) {
+				if (sip->is_big_or_huge()) {
 					aip->mode = AIM_NONE;
 				} else {
 					ai_chase_circle(Pl_objp);
@@ -13135,7 +13135,7 @@ void ai_execute_behavior(ai_info *aip)
 		break;
 	}
 
-	if ( is_flyable(&Ship_info[Ships[aip->shipnum].ship_info_index]) ) {
+	if ( Ship_info[Ships[aip->shipnum].ship_info_index].is_flyable() ) {
 		maybe_evade_dumbfire_weapon(aip);
 	}
 }
@@ -13202,7 +13202,7 @@ int maybe_request_support(object *objp)
 	sip = &Ship_info[shipp->ship_info_index];
 
 	//	Only fighters and bombers request support.
-	if (!(is_fighter_bomber(sip)))
+	if (!(sip->is_fighter_bomber()))
 		return 0;
 
 	//	A ship that is currently awaiting does not need support!
@@ -13341,7 +13341,7 @@ void ai_maybe_depart(object *objp)
 		if ( timestamp_elapsed(aip->warp_out_timestamp) ) {
 			ai_process_mission_orders( OBJ_INDEX(objp), aip );
 			if ( (aip->support_ship_objnum == -1) && (get_hull_pct(objp) < 0.25f) ) {
-				if (!(is_ship_departing(shipp))) {
+				if (!shipp->is_departing()) {
 					if (!mission_do_departure(objp)) {
 						// if departure failed, try again at a later point
 						// (timestamp taken from ai_do_objects_repairing_stuff)
@@ -13356,8 +13356,8 @@ void ai_maybe_depart(object *objp)
 	if (Iff_info[shipp->team].flags & IFFF_SUPPORT_ALLOWED)
 		return;
 
-	if (!(is_ship_departing(shipp))) {
-		if (is_fighter_bomber(sip)) {
+	if (!shipp->is_departing()) {
+		if (sip->is_fighter_bomber()) {
 			if (aip->warp_out_timestamp == 0) {
 				//if (ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS) == 0.0f) {
 				//	aip->warp_out_timestamp = timestamp(((myrand() % 10) + 10) * 1000);
@@ -13437,7 +13437,7 @@ void ai_warp_out(object *objp)
 		goal_speed = ship_get_warpout_speed(objp);
 
 		// HUGE ships go immediately to AIS_WARP_4
-		if (is_huge_ship(&Ship_info[shipp->ship_info_index])) {
+		if (Ship_info[shipp->ship_info_index].is_huge_ship()) {
 			aip->submode = AIS_WARP_4;
 			aip->submode_start_time = Missiontime;
 			break;
@@ -13721,7 +13721,7 @@ int ai_avoid_shockwave(object *objp, ai_info *aip)
 
 	// BIG|HUGE do not respond to shockwaves
 	// Goober5000 - let's treat shockwave response the same way whether from weapon or ship
-    if (!(avoids_shockwaves(&Ship_info[Ships[objp->instance].ship_info_index]))) {
+    if (!Ship_info[Ships[objp->instance].ship_info_index].avoids_shockwaves()) {
 		// don't come here again
 		aip->ai_flags &= ~AIF_AVOID_SHOCKWAVE;
 		return 0;
@@ -13832,7 +13832,7 @@ void ai_maybe_self_destruct(object *objp, ai_info *aip)
 	//	Note: Don't blow up if not in a wing for two reasons: One, won't affect re-emergence of waves and (1) disable the Dragon
 	//	mission would be broken.
 	//	Also, don't blow up the ship if it has a ship flag preventing this - Goober5000
-	if ((is_small_ship(&Ship_info[shipp->ship_info_index])) && (shipp->wingnum >= 0) && !(shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])) {
+	if ((Ship_info[shipp->ship_info_index].is_small_ship()) && (shipp->wingnum >= 0) && !(shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])) {
 		if ((ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) <= 0.0f) ||
 			(ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS) <= 0.0f)) {
 			if (aip->self_destruct_timestamp < 0)
@@ -14242,7 +14242,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 		return;
 
 	// return if ship is dead, unless it's a big ship...then its turrets still fire, like I was quoted in a magazine.  -- MK, 5/15/98.
-	if ((Ships[obj->instance].flags[Ship::Ship_Flags::Dying] ) && !(is_big_huge(&Ship_info[Ships[obj->instance].ship_info_index]))){
+	if ((Ships[obj->instance].flags[Ship::Ship_Flags::Dying] ) && !(Ship_info[Ships[obj->instance].ship_info_index].is_big_or_huge())) {
 		return;
 	}
 
@@ -14586,7 +14586,7 @@ void ai_do_default_behavior(object *obj)
     if (!object_is_docked(obj))
     {
         // fighters automatically chase things
-        if (!is_instructor(obj) && (is_fighter_bomber(sip)))
+        if (!is_instructor(obj) && (sip->is_fighter_bomber()))
         {
             int enemy_objnum = find_enemy(OBJ_INDEX(obj), 1000.0f, The_mission.ai_profile->max_attackers[Game_skill_level]);
             set_target_objnum(aip, enemy_objnum);
@@ -14628,7 +14628,7 @@ void process_friendly_hit_message( int message, object *objp )
 
 	// check if objp is a fighter/bomber -- if not, then find a new ship to send the message
 	index = objp->instance;
-	if ( !(is_fighter_bomber(&Ship_info[Ships[objp->instance].ship_info_index])) ){
+	if ( !Ship_info[Ships[objp->instance].ship_info_index].is_fighter_bomber() ){
 		index = -1;
 	}
 
@@ -14788,7 +14788,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
  */
 void maybe_set_dynamic_chase(ai_info *aip, int hitter_objnum)
 {
-	Assert(is_fighter_bomber(&Ship_info[Ships[aip->shipnum].ship_info_index]));
+	Assert(Ship_info[Ships[aip->shipnum].ship_info_index].is_fighter_bomber());
 
 	// limit the number of ships attacking hitter_objnum (for now, only if hitter_objnum is player)
 	if ( ai_maybe_limit_attackers(hitter_objnum) == 1 ) {
@@ -14912,7 +14912,7 @@ void ai_update_lethality(object *pship_obj, object *other_obj, float damage)
 					weapon_info *wif = &Weapon_info[wp->weapon_info_index];
 
 					// if parent is BIG|HUGE, don't count beam
-					if (is_big_huge(&Ship_info[Ships[Objects[parent].instance].ship_info_index])) {
+					if ( Ship_info[Ships[Objects[parent].instance].ship_info_index].is_big_or_huge() ) {
 						if (wif->wi_flags & WIF_BEAM) {
 							dont_count = TRUE;
 						}
@@ -14976,9 +14976,9 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 
 	if (hit_objp->type == OBJ_SHIP) {
 		//	If the object that this ship collided with is a big ship
-		if (is_big_huge(&Ship_info[Ships[hit_objp->instance].ship_info_index])) {
+		if (Ship_info[Ships[hit_objp->instance].ship_info_index].is_big_or_huge()) {
 			//	And the current object is _not_ a big ship
-			if (!(is_big_huge(&Ship_info[Ships[objp_ship->instance].ship_info_index]))) {
+			if (!Ship_info[Ships[objp_ship->instance].ship_info_index].is_big_or_huge()) {
 				//	Recover from hitting a big ship.  Note, if two big ships collide, they just pound away at each other.  Oh well.  Recovery looks dumb and it's very late.
 				big_ship_collide_recover_start(objp_ship, hit_objp, hitpos, hit_normal);
 			}
@@ -15005,7 +15005,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		//	Hit by a protected ship, don't attack it.
 		if (objp_hitter->flags[Object::Object_Flags::Protected]) {
 			if (!object_is_docked(objp_ship)) {
-				if ((is_fighter_bomber(&Ship_info[shipp->ship_info_index])) && (aip->target_objnum == -1)) {
+				if ((Ship_info[shipp->ship_info_index].is_fighter_bomber()) && (aip->target_objnum == -1)) {
 					if (aip->mode == AIM_CHASE) {
 						if (aip->submode != SM_EVADE_WEAPON) {
 							aip->mode = AIM_CHASE;
@@ -15094,12 +15094,12 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 	maybe_update_guard_object(objp_ship, objp_hitter);
 
 	//	Big ships don't go any further.
-	if (!(is_small_ship(&Ship_info[shipp->ship_info_index])))
+	if (!(Ship_info[shipp->ship_info_index].is_small_ship()))
 		return;
 
 	//	If the hitter object is the ignore object, don't attack it.
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
-	if ((is_ignore_object(aip, OBJ_INDEX(objp_hitter))) && (is_fighter_bomber(sip))) {
+	if (is_ignore_object(aip, OBJ_INDEX(objp_hitter)) && (sip->is_fighter_bomber())) {
 		if (!object_is_docked(objp_ship)) {
 			if (aip->mode == AIM_NONE) {
 				aip->mode = AIM_CHASE;	//	This will cause the ship to move, if not attack.
@@ -15151,7 +15151,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 		}
 		break;
 	case AIM_WAYPOINTS:
-		if (is_fighter_bomber(sip))
+		if (sip->is_fighter_bomber())
 			break;
 		else
 			return;
@@ -15179,7 +15179,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 	//	If the hitter is not on the same team as the hittee, do some stuff.
 	if (iff_x_attacks_y(shipp->team, Ships[objp_hitter->instance].team)) {
 
-		if ((hitter_objnum != aip->target_objnum) && (is_fighter_bomber(sip))) {
+		if ((hitter_objnum != aip->target_objnum) && (sip->is_fighter_bomber())) {
 			maybe_set_dynamic_chase(aip, hitter_objnum);
 			maybe_afterburner_after_ship_hit(objp_ship, aip, &Objects[hitter_objnum]);
 		} else {
@@ -15190,7 +15190,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 				case SM_GET_AWAY:
 					break;
 				default:
-					if (is_fighter_bomber(sip)) {
+					if (sip->is_fighter_bomber()) {
 						maybe_set_dynamic_chase(aip, hitter_objnum);
 					}
 					maybe_afterburner_after_ship_hit(objp_ship, aip, &Objects[hitter_objnum]);
@@ -15215,7 +15215,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 					aip->submode_start_time = Missiontime;
 					break;
 				default:
-					if (is_fighter_bomber(sip)) {
+					if (sip->is_fighter_bomber()) {
 						maybe_set_dynamic_chase(aip, hitter_objnum);
 						maybe_afterburner_after_ship_hit(objp_ship, aip, &Objects[hitter_objnum]);
 					}
@@ -15224,7 +15224,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 				}
 			} else {
 				// AL 3-15-98: Prevent escape pods from entering chase mode
-				if (is_fighter_bomber(sip)) {
+				if (sip->is_fighter_bomber()) {
 					maybe_set_dynamic_chase(aip, hitter_objnum);
 				}
 				maybe_afterburner_after_ship_hit(objp_ship, aip, &Objects[hitter_objnum]);

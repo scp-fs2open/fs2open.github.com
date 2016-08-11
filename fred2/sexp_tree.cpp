@@ -4732,16 +4732,16 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 
 			}
 			else if (op == OP_CAP_SUBSYS_CARGO_KNOWN_DELAY) {
-				if ( ((is_huge_ship(&Ship_info[Ships[ptr->instance].ship_info_index])) &&	// big ship
+				if ( ((Ship_info[Ships[ptr->instance].ship_info_index].is_huge_ship()) &&	// big ship
 					!(Ships[ptr->instance].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) )||				// which is not flagged OR
-					((!(is_huge_ship(&Ship_info[Ships[ptr->instance].ship_info_index]))) &&  // small ship
+					((!(Ship_info[Ships[ptr->instance].ship_info_index].is_huge_ship())) &&  // small ship
 					(Ships[ptr->instance].flags[Ship::Ship_Flags::Toggle_subsystem_scanning]) ) ) {				// which is flagged
 
 						head.add_data(Ships[ptr->instance].ship_name);
 				}
 			}
 			else {
-				if ( !require_cap_ship || is_huge_ship(&Ship_info[Ships[ptr->instance].ship_info_index]) ) {
+				if ( !require_cap_ship || Ship_info[Ships[ptr->instance].ship_info_index].is_huge_ship() ) {
 					head.add_data(Ships[ptr->instance].ship_name);
 				}
 			}
@@ -5328,7 +5328,7 @@ sexp_list_item *sexp_tree::get_listing_opf_who_from()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START))
-			if (!(is_flyable(&Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index])))
+			if (!(Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index].is_flyable()))
 				head.add_data(Ships[ptr->instance].ship_name);
 
 		ptr = GET_NEXT(ptr);

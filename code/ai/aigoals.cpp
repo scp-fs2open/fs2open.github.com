@@ -1807,7 +1807,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 			// if the destination ship is dying or departing (but not completed yet), the mark goal as
 			// not achievable.
-			if ( is_dying_departing(&Ships[sindex]) )
+			if ( Ships[sindex].is_dying_or_departing())
 				return AI_GOAL_NOT_ACHIEVABLE;
 
 			// if the destination object is no longer awaiting repair, then remove the item

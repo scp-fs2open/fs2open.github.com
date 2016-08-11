@@ -320,7 +320,7 @@ bool hud_squadmsg_exist_fighters( )
 			continue;
 			
 		// ship must be a fighter/bomber
-		if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
+		if ( !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) )
 			continue;
 
 		// this ship satisfies everything
@@ -351,7 +351,7 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
 #endif
 
 	// departing or dying ships cannot be on list
-	if ( is_dying_departing(shipp) )
+	if ( shipp->is_dying_or_departing() )
 		return false;
 
 	// cannot be my ship or an instructor
@@ -962,7 +962,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// can't message if ship not fighter/bomber if the command isn't to everyone.
-		if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
+		if ( !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) )
 			continue;
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
@@ -995,11 +995,11 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// don't send message to non fighter wings
-		if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
+		if ( !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) )
 			continue;
 
 		// skip departing/dying ships
-		if ( is_dying_departing(shipp) )
+		if ( shipp->is_dying_or_departing() )
 			continue;
 
 		// don't send command if ship won't accept if
@@ -1044,7 +1044,7 @@ int hud_squadmsg_enemies_present()
 }
 
 inline bool override_protect_ship_type(ship_info* sip) {
-    return is_fighter_bomber(sip) || sip->flags[Ship::Info_Flags::Freighter] || sip->flags[Ship::Info_Flags::Transport];
+    return sip->is_fighter_bomber() || sip->flags[Ship::Info_Flags::Freighter] || sip->flags[Ship::Info_Flags::Transport];
 }
 // function which sends a message to a specific ship.  This routine can be called from one of two
 // places.  Either after selecting a ship when using a hotkey, or after selecting a command when
@@ -2017,7 +2017,7 @@ void hud_squadmsg_ship_command()
 						continue;
 
 					// don't send message to non fighter wings
-					if ( !(is_fighter_bomber(&Ship_info[shipp->ship_info_index])) )
+					if ( !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) )
 						continue;
 
 					all_accept &= shipp->orders_accepted;		// 'and'ing will either keep this bit set or zero it properly

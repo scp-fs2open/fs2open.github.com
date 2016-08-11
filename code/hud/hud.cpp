@@ -1396,7 +1396,7 @@ void hud_update_frame(float frametime)
 	if ((!retarget) && (Player_ai->target_objnum != -1)) {
 		if (Objects[Player_ai->target_objnum].type == OBJ_SHIP) {
 			if ( !(Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Dying]) ) {
-				if ( is_big_huge(&Ship_info[Ships[Objects[Player_ai->target_objnum].instance].ship_info_index]) ) {
+				if ( Ship_info[Ships[Objects[Player_ai->target_objnum].instance].ship_info_index].is_big_or_huge() ) {
 					ship_subsys *ss = Player_ai->targeted_subsys;
 					if (ss != NULL) {
 						if ((ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits == 0)) {

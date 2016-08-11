@@ -11825,7 +11825,7 @@ void sexp_transfer_cargo(int n)
 	// transfer cargo from ship1 to ship2
 #ifndef NDEBUG
 	// Don't give warning for large ships (cruiser on up) 
-	if (! (is_big_huge(&Ship_info[Ships[shipnum2].ship_info_index])) ) {
+	if (! (Ship_info[Ships[shipnum2].ship_info_index].is_big_or_huge()) ) {
 		if ( stricmp(Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK], "nothing") ) {
 			Warning(LOCATION, "Transferring cargo to %s which already\nhas cargo %s.\nCargo will be replaced", Ships[shipnum2].ship_name, Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK] );
 		}
@@ -12010,7 +12010,7 @@ void sexp_cargo_no_deplete(int n)
 		return;
 	}
 
-	if ( !(is_big_huge(&Ship_info[Ships[ship_index].ship_info_index])) ) {
+	if ( !(Ship_info[Ships[ship_index].ship_info_index].is_big_or_huge()) ) {
 		Warning(LOCATION, "Trying to make non BIG or HUGE ship %s with non-depletable cargo.\n", Ships[ship_index].ship_name);
 		return;
 	}
@@ -15561,7 +15561,7 @@ int sexp_shield_quad_low(int node)
 	}
 	objp = &Objects[Ships[sindex].objnum];
 	sip = &Ship_info[Ships[sindex].ship_info_index];
-	if(!(is_small_ship(sip))){
+	if(!(sip->is_small_ship())){
 		return SEXP_FALSE;
 	}
 	max_quad = get_max_shield_quad(objp);	
@@ -16291,7 +16291,7 @@ void sexp_change_ship_class(int n)
 		else 
 		{
 			// don't mess with a ship that's occupied
-			if (!(is_ship_arriving(&Ships[ship_num]) || is_dying_departing(&Ships[ship_num])))
+			if (!(Ships[ship_num].is_arriving() || Ships[ship_num].is_dying_or_departing()))
 			{
 				change_ship_type(ship_num, class_num, 1);
 				if (&Ships[ship_num] == Player_ship) {

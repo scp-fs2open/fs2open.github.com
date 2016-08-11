@@ -118,7 +118,7 @@ void awacs_update_all_levels()
 		shipp = &Ships[Objects[moveup->objnum].instance];
 
 		// ignore dying, departing, or arriving ships
-		if ((is_dying_departing(shipp) || is_ship_arriving(shipp)))
+		if ((shipp->is_dying_or_departing() || shipp->is_arriving()))
 			continue;
 
 		// only look at ships that have awacs subsystems
@@ -210,7 +210,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		stealth_ship = (shipp->flags[Ship::Ship_Flags::Stealth]);
 		friendly_stealth_invisible = (shipp->flags[Ship::Ship_Flags::Friendly_stealth_invis]);
 
-		check_huge_ship = (is_huge_ship(sip));
+		check_huge_ship = (sip->is_huge_ship());
 	}
 	
 	int nebula_enabled = (The_mission.flags[Mission::Mission_Flags::Fullneb]);
@@ -370,7 +370,7 @@ void team_visibility_update()
 		shipp = &Ships[ship_num];
 
 		// ignore dying, departing, or arriving ships
-		if (is_dying_departing(shipp) || is_ship_arriving(shipp))
+		if (shipp->is_dying_or_departing() || shipp->is_arriving())
 			continue;
 
 		// check if ship is flagged as invisible

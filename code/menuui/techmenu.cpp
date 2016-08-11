@@ -473,10 +473,10 @@ void techroom_ships_render(float frametime)
 	}
 
 	// get correct revolution rate
-	if (is_big_ship(sip)) {
+	if (sip->is_big_ship()) {
 		rev_rate *= 1.7f;
 	}
-	if (is_huge_ship(sip)) {
+	if (sip->is_huge_ship()) {
 		rev_rate *= 3.0f;
 	}
 

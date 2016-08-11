@@ -607,7 +607,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 			continue;
 
 		// don't process ships invisible to sensors, dying or departing
-		if ( Ships[shipnum].flags[Ship::Ship_Flags::Hidden_from_sensors] || is_dying_departing(&Ships[shipnum]) )
+		if ( Ships[shipnum].flags[Ship::Ship_Flags::Hidden_from_sensors] || Ships[shipnum].is_dying_or_departing() )
 			continue;
 
 		// if a ship's hotkey is the last hotkey on the list, then maybe make the hotkey -1 if

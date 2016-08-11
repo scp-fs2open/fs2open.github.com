@@ -1146,7 +1146,7 @@ void multi_do_client_warp(float frame_time)
    moveup = GET_FIRST(&Ship_obj_list);
 	while(moveup!=END_OF_LIST(&Ship_obj_list)){
 		// do all _necessary_ ship warp in (arrival) processing
-		if ( is_ship_arriving(&Ships[Objects[moveup->objnum].instance]) )	
+		if ( Ships[Objects[moveup->objnum].instance].is_arriving() )	
 			shipfx_warpin_frame( &Objects[moveup->objnum], frame_time );
 		moveup = GET_NEXT(moveup);
 	}	
@@ -2181,7 +2181,7 @@ void multi_warpout_all_players()
 	
 	// if we're an observer, or we're respawning, or we can't warp out. so just jump into the debrief state
 	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Net_player->flags & NETINFO_FLAG_RESPAWNING) ||
-		((Player_obj->type == OBJ_SHIP) && ( ship_cannot_warp(Player_ship))) ){		
+		((Player_obj->type == OBJ_SHIP) && ( Player_ship->cannot_warp())) ){		
 
 		multi_handle_sudden_mission_end(); 
 

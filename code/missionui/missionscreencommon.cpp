@@ -1544,7 +1544,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		// If non-zero model_icon_angles exists, always use that
 		rot_angles = sip->model_icon_angles;
 	}
-	else if(is_small_ship(sip))
+	else if(sip->is_small_ship())
 	{
 		rot_angles.p = -(PI_2);
 	}

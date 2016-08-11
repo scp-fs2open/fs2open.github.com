@@ -543,7 +543,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 		{
 			// if this ship is not a small ship, then make the orders be the default orders without
 			// the depart item
-			if (!(is_small_ship(sip)))
+			if (!(sip->is_small_ship()))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
 				shipp->orders_accepted &= ~DEPART_ITEM;
@@ -1585,7 +1585,7 @@ void generate_ship_popup_menu(CMenu *mptr, int first_id, int state, int filter)
 		if ((ptr->type == OBJ_SHIP) || ((ptr->type == OBJ_START) && (filter & SHIP_FILTER_PLAYERS))) {
 			z = 1;
 			if (filter & SHIP_FILTER_FLYABLE) {
-				if (!is_flyable(&Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index])){
+				if (!Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index].is_flyable()){
 					z = 0;
 				}
 			}

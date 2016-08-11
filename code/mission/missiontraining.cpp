@@ -932,7 +932,7 @@ void message_training_queue_check()
 
 	// if the instructor is dying or departing, do nothing
 	if ( iship_num != -1 )	// added by Goober5000
-		if (is_dying_departing(&Ships[iship_num]))
+		if (Ships[iship_num].is_dying_or_departing())
 			return;
 
 	if (Training_failure)

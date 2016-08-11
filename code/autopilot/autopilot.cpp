@@ -252,7 +252,7 @@ bool StartAutopilot()
 				continue;
 
 			// don't deal with dying or departing support ships
-			if ( is_dying_departing(shipp) )
+			if ( shipp->is_dying_or_departing() )
 				continue;
 
 			Assert(shipp->ai_index != -1);
@@ -373,7 +373,7 @@ bool StartAutopilot()
 			)
 		{
 			// do we have capital ships in the area?
-            if (is_big_ship(&Ship_info[Ships[i].ship_info_index]) || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Supercap])
+            if (Ship_info[Ships[i].ship_info_index].is_big_ship() || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Supercap])
 			{
 				capshipPresent = true;
 

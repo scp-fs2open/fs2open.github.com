@@ -6641,7 +6641,7 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 		return;
 
 	// am I arriving or departing by warp?
-    if (is_ship_arriving(&Ships[objp->instance]) || Ships[objp->instance].flags[Ship_Flags::Depart_warp])
+    if (Ships[objp->instance].is_arriving() || Ships[objp->instance].flags[Ship_Flags::Depart_warp])
 	{
 #ifndef NDEBUG
 		// in debug builds, make sure only one of the docked objects has these flags set
@@ -7174,7 +7174,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 					if ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN))
 						continue;
 	
-					if ((Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(is_dying_departing(&Ships[Objects[so->objnum].instance])))
+					if ((Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(Ships[Objects[so->objnum].instance].is_dying_or_departing()))
 					{
 						// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
 						// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
@@ -7911,7 +7911,7 @@ void ship_dying_frame(object *objp, int ship_num)
 
 		// If a ship is dying (and not a capital or big ship) then stutter the engine sound
 		if ( timestamp_elapsed(shipp->next_engine_stutter) ) {
-			if ( !(is_big_huge(sip)) ) {
+			if ( !(sip->is_big_or_huge()) ) {
 				shipp->flags.toggle(Ship_Flags::Engines_on);			// toggle state of engines
 				shipp->next_engine_stutter = timestamp_rand(50, 250);
 			}
@@ -8211,7 +8211,7 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 
 	// only allow for the auto-repair of subsystems on small ships
 	//...NOT. Check if var has been changed from def -C
-	if ( !(is_small_ship(sip)) && sip->subsys_repair_rate == -2.0f)
+	if ( !(sip->is_small_ship()) && sip->subsys_repair_rate == -2.0f)
 		return;
 	
 	if(sip->subsys_repair_rate == -2.0f)
@@ -8722,7 +8722,7 @@ void ship_process_post(object * obj, float frametime)
 		}
 	}
 	
-	if ( is_ship_arriving(shipp) && Ai_info[shipp->ai_index].mode != AIM_BAY_EMERGE )	{
+	if ( shipp->is_arriving() && Ai_info[shipp->ai_index].mode != AIM_BAY_EMERGE )	{
 		// JAS -- if the ship is warping in, just move it forward at a speed
 		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpin_frame( obj, frametime );
@@ -8735,7 +8735,7 @@ void ship_process_post(object * obj, float frametime)
 	// update radar status of the ship
 	ship_radar_process(obj, shipp, sip);
 
-	if ( (!(is_ship_arriving(shipp)) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
+	if ( (!(shipp->is_arriving()) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
 		|| ((sip->warpin_type == WT_IN_PLACE_ANIM) && (shipp->flags[Ship_Flags::Arriving_stage_2])) )
 		&&	!(shipp->flags[Ship_Flags::Depart_warp]))
 	{
@@ -13689,7 +13689,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 			num_support_ships++;
 
 			// don't deal with dying or departing support ships
-			if ( is_dying_departing(shipp) ) {
+			if ( shipp->is_dying_or_departing() ) {
 				continue;
 			}
 
@@ -14333,7 +14333,7 @@ int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 		// don't process player ships if flags are set
 		if (!iff_matches_mask(Ships[objp->instance].team, team_mask))
 			continue;
-		else if ( !is_flyable(&Ship_info[Ships[objp->instance].ship_info_index]) )
+		else if ( !Ship_info[Ships[objp->instance].ship_info_index].is_flyable() )
 			continue;
 		else if ( (flags == SHIP_GET_NO_PLAYERS) && (objp->flags[Object::Object_Flags::Player_ship]) )
 			continue;
@@ -15119,7 +15119,7 @@ void ship_maybe_warn_player(ship *enemy_sp, float dist)
 	}
 
 	// only warn if a fighter or bomber is attacking the player
-	if ( !(is_small_ship(&Ship_info[enemy_sp->ship_info_index])) ) {
+	if ( !(Ship_info[enemy_sp->ship_info_index].is_small_ship()) ) {
 		return;
 	}
 
@@ -15353,7 +15353,7 @@ void ship_maybe_ask_for_help(ship *sp)
 
 play_ask_help:
 
-	if (!(is_fighter_bomber(&Ship_info[sp->ship_info_index]))) //If we're still here, only continue if we're a fighter or bomber.
+	if (!(Ship_info[sp->ship_info_index].is_fighter_bomber())) //If we're still here, only continue if we're a fighter or bomber.
 		return;
 
 	if (!(sp->flags[Ship_Flags::No_builtin_messages])) // Karajorma - Only unsilenced ships should ask for help
@@ -16440,7 +16440,7 @@ int is_support_allowed(object *objp, bool do_simple_check)
 			}
 
 			// make sure it's not leaving or blowing up
-			if (is_dying_departing(&Ships[temp]))
+			if (Ships[temp].is_dying_or_departing())
 			{
 				return 0;
 			}
@@ -17087,7 +17087,7 @@ bool ship_useful_for_departure(int shipnum, int path_mask)
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
 
 	// not valid if dying or departing
-	if (is_dying_departing(&Ships[shipnum]))
+	if (Ships[shipnum].is_dying_or_departing())
 		return false;
 
 	// no dockbay, can't depart to it
@@ -18667,7 +18667,7 @@ void ship_render(object* obj, draw_list* scene)
 		//WMC - based on Bobb's secondary thruster stuff
 		//which was in turn based on the beam code.
 		//I'm gonna need some serious acid to neutralize this base.
-		if(is_ship_arriving(shipp)) {
+		if(shipp->is_arriving()) {
 			shipp->warpin_effect->warpShipRender();
 		} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 			shipp->warpout_effect->warpShipRender();
@@ -18703,7 +18703,7 @@ void ship_render(object* obj, draw_list* scene)
 		//WMC - based on Bobb's secondary thruster stuff
 		//which was in turn based on the beam code.
 		//I'm gonna need some serious acid to neutralize this base.
-		if(is_ship_arriving(shipp)) {
+		if(shipp->is_arriving()) {
 			shipp->warpin_effect->warpShipRender();
 		} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 			shipp->warpout_effect->warpShipRender();
@@ -18729,7 +18729,7 @@ void ship_render(object* obj, draw_list* scene)
 	// Warp_shipp points to the ship that is going through a
 	// warp... either this ship or the ship it is docked with.
 	if ( warp_shipp != NULL ) {
-		if ( is_ship_arriving(warp_shipp) ) {
+		if ( warp_shipp->is_arriving() ) {
 			warp_shipp->warpin_effect->warpShipClip(&render_info);
 		} else if ( warp_shipp->flags[Ship_Flags::Depart_warp] ) {
 			warp_shipp->warpout_effect->warpShipClip(&render_info);
@@ -18774,7 +18774,7 @@ void ship_render(object* obj, draw_list* scene)
 
 	// small ships
 	if ( !( shipp->flags[Ship_Flags::Cloaked] ) ) {
-		if ( ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) && ( is_small_ship(sip) ) ) {			
+		if ( ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) && ( sip->is_small_ship() ) ) {			
 			// force detail levels
 			float fog_val = neb2_get_fog_intensity(obj);
 			if ( fog_val >= 0.6f ) {
@@ -18794,7 +18794,7 @@ void ship_render(object* obj, draw_list* scene)
 	//WMC - based on Bobb's secondary thruster stuff
 	//which was in turn based on the beam code.
 	//I'm gonna need some serious acid to neutralize this base.
-	if(is_ship_arriving(shipp)) {
+	if(shipp->is_arriving()) {
 		shipp->warpin_effect->warpShipRender();
 	} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 		shipp->warpout_effect->warpShipRender();

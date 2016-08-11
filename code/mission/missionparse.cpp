@@ -1658,8 +1658,8 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 	float desired_dist = -pm->mins.xyz.z;
 	vm_vec_scale_add2(&objp->pos, &objp->orient.vec.fvec, (dist - desired_dist));
 	
-	// if ship is BIG or HUGE, make it go through the center of the knossos
-	if (is_huge_ship(&Ship_info[shipp->ship_info_index]))
+	// if ship is HUGE, make it go through the center of the knossos
+	if (Ship_info[shipp->ship_info_index].is_huge_ship())
 	{
 		vec3d offset;
 		vm_vec_sub(&offset, &knossos_objp->pos, &new_point);
@@ -7134,7 +7134,7 @@ void mission_eval_departures()
 			// don't process a ship that is already departing or dying or disabled
 			// AL 12-30-97: Added SF_CANNOT_WARP to check
 			// Goober5000 - fixed so that it WILL eval when SF_CANNOT_WARP if departing to dockbay
-			if ( (is_dying_departing(shipp)) || (ship_cannot_warp(shipp) && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+			if ( shipp->is_dying_or_departing() || (shipp->cannot_warp() && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
 				continue;
 			}
 
@@ -7184,7 +7184,7 @@ void mission_eval_departures()
 				ship *shipp;
 
 				shipp = &Ships[wingp->ship_index[j]];
-				if ( (is_ship_departing(shipp)) || (shipp->flags[Ship::Ship_Flags::Dying]) )
+				if ( (shipp->is_departing()) || (shipp->flags[Ship::Ship_Flags::Dying]) )
 					continue;
 
 				Assert ( shipp->objnum != -1 );

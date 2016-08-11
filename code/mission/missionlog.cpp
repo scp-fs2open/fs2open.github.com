@@ -294,7 +294,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
  			} else {
 				nprintf(("missionlog", "No secondary name for ship destroyed log entry!\n"));
 			}
-		} else if ( (type == LOG_SHIP_SUBSYS_DESTROYED) && (is_small_ship(&Ship_info[Ships[index].ship_info_index])) ) {
+		} else if ( (type == LOG_SHIP_SUBSYS_DESTROYED) && (Ship_info[Ships[index].ship_info_index].is_small_ship()) ) {
 			// make subsystem destroyed entries for small ships hidden
 			entry->flags |= MLF_HIDDEN;
 		} else if ( (type == LOG_SHIP_ARRIVED) && (Ships[index].wingnum != -1 ) ) {
