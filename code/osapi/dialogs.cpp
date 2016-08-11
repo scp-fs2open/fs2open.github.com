@@ -126,6 +126,10 @@ namespace os
 				mprintf(("ASSERTION: \"%s\" at %s:%d\n", text, filename, linenum));
 			}
 
+			if (running_unittests) {
+				throw AssertException(msgStream.str());
+			}
+
 			msgStream << "\n";
 			msgStream << dump_stacktrace();
 
@@ -212,6 +216,10 @@ namespace os
 				return;
 			}
 
+			if (running_unittests) {
+				throw LuaErrorException(msgStream.str());
+			}
+
 			set_clipboard_text(msgStream.str().c_str());
 
 			// truncate text
@@ -292,6 +300,10 @@ namespace os
 				return;
 			}
 
+			if (running_unittests) {
+				throw AssertException(text);
+			}
+
 			SCP_stringstream messageStream;
 			messageStream << text << "\n";
 			messageStream << dump_stacktrace();
@@ -364,6 +376,10 @@ namespace os
 			// now go for the additional popup window, if we want it ...
 			if (Cmdline_noninteractive) {
 				return;
+			}
+
+			if (running_unittests) {
+				throw AssertException(printfString);
 			}
 
 			SCP_stringstream boxMsgStream;
@@ -454,6 +470,10 @@ namespace os
 
 		void Message(MessageType type, const char* message, const char* title)
 		{
+			if (running_unittests) {
+				throw WarningException(message);
+			}
+
 			int flags = 1;
 
 			switch (type) 

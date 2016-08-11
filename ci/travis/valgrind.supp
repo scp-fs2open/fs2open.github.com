@@ -1,0 +1,28 @@
+{
+   liblsan Invalid read
+   Memcheck:Addr8
+   obj:/usr/lib64/liblsan.so.0.0.0
+   obj:/usr/lib64/liblsan.so.0.0.0
+   obj:/usr/lib64/liblsan.so.0.0.0
+   obj:*
+   obj:*
+   obj:*
+}
+{
+    Travis memleak
+    Memcheck:Leak
+    match-leak-kinds: definite
+    fun:malloc
+    fun:_dl_signal_error
+    fun:_dl_open
+    fun:dlopen_doit
+    fun:_dl_catch_error
+    fun:_dlerror_run
+    fun:dlopen@@GLIBC_2.2.5
+    obj:/usr/lib/x86_64-linux-gnu/libmirclient.so.7
+    fun:call_init.part.0
+    fun:call_init
+    fun:_dl_init
+    fun:dl_open_worker
+    fun:_dl_catch_error
+}

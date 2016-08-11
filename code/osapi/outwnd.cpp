@@ -170,6 +170,11 @@ void outwnd_print(const char *id, const char *tmp)
 {
 	uint i;
 
+	if ( running_unittests ) {
+		// Ignore all messages when running unit tests
+		return;
+	}
+
 	if ( (id == NULL) || (tmp == NULL) )
 		return;
 
@@ -224,7 +229,7 @@ void outwnd_init()
 	if (outwnd_inited)
 		return;
 
-	if (Log_fp == NULL) {
+	if (!running_unittests && Log_fp == NULL) {
 		char pathname[MAX_PATH_LEN];
 
 		/* Set where the log file is going to go */
@@ -260,7 +265,7 @@ void outwnd_init()
 
 void outwnd_close()
 {
-	if ( Log_fp != NULL ) {
+	if ( !running_unittests && Log_fp != NULL ) {
 		time_t timedate = time(NULL);
 		char datestr[50];
 

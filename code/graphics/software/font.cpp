@@ -32,6 +32,8 @@ namespace
 	namespace fo = font;
 	using namespace font;
 
+	bool font_initialized = false;
+
 	bool parse_type(FontType &type, SCP_string &fileName)
 	{
 		int num = optional_string_either("$TrueType:", "$Font:");
@@ -370,16 +372,29 @@ namespace font
 {
 	void init()
 	{
+		if (font_initialized) {
+			// Already initialized
+			return;
+		}
+
 		FontManager::init();
 
 		parse_fonts_tbl();
 
 		set_font(0);
+
+		font_initialized = true;
 	}
 
 	void close()
 	{
+		if (!font_initialized) {
+			return;
+		}
+
 		FontManager::close();
+
+		font_initialized = false;
 	}
 
 	int force_fit_string(char *str, int max_str, int max_width)

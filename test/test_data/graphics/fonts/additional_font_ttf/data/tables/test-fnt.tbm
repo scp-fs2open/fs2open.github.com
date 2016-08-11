@@ -1,0 +1,7 @@
+#Fonts
+
+$TrueType: arial.ttf
+    +Name: Test Font
+    +Size: 12
+
+#End

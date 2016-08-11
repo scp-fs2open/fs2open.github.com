@@ -128,12 +128,14 @@ static void dump_opened_files()
 	}
 }
 
-static void cfile_close()
+void cfile_close()
 {
 	mprintf(("Still opened files:\n"));
 	dump_opened_files();
 
 	cf_free_secondary_filelist();
+
+	cfile_inited = 0;
 }
 
 #ifdef SCP_UNIX
@@ -238,8 +240,6 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 
 	Cfile_cdrom_dir = cdrom_dir;
 	cf_build_secondary_filelist(Cfile_cdrom_dir);
-
-	atexit(cfile_close);
 
 	return 0;
 }

@@ -19,8 +19,12 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
             cd ..
         done
     else
-        eval $CMAKE -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
+        eval $CMAKE -DCMAKE_BUILD_TYPE=$CONFIGURATION -DFSO_BUILD_TESTS=ON ..
     fi
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
-    cmake -G "Xcode" -DFSO_FATAL_WARNINGS=ON -DFSO_INSTALL_DEBUG_FILES=ON -DCMAKE_INSTALL_PREFIX="/tmp/release" ..
+    if [ "$BUILD_DEPLOYMENT" = true ]; then
+        cmake -G "Xcode" -DFSO_FATAL_WARNINGS=ON -DFSO_INSTALL_DEBUG_FILES=ON -DCMAKE_INSTALL_PREFIX="/tmp/release" ..
+    else
+        cmake -G "Xcode" ..
+    fi
 fi
