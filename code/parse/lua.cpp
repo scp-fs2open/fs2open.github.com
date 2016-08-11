@@ -1341,7 +1341,7 @@ ADE_FUNC(write, l_File, "string or number, ...",
 		if(type == LUA_TSTRING)
 		{
 			char *s = (char*)lua_tostring(L, l_pos);
-			if(cfwrite(s, (int)sizeof(char), strlen(s), cfp))
+			if(cfwrite(s, (int)sizeof(char), (int)strlen(s), cfp))
 				num_successful++;
 		}
 		else if(type == LUA_TNUMBER)
@@ -1349,7 +1349,7 @@ ADE_FUNC(write, l_File, "string or number, ...",
 			double d = lua_tonumber(L, l_pos);
 			char buf[32]= {0};
 			sprintf(buf, LUA_NUMBER_FMT, d);
-			if(cfwrite(buf, (int)sizeof(char), strlen(buf), cfp))
+			if(cfwrite(buf, (int)sizeof(char), (int)strlen(buf), cfp))
 				num_successful++;
 		}
 
@@ -16537,7 +16537,7 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 	int total_args = lua_gettop(L) - Ade_get_args_skip;
 
 	if(strchr(fmt, '|') != NULL) {
-		needed_args = strchr(fmt, '|') - fmt;
+		needed_args = (int)(strchr(fmt, '|') - fmt);
 	}
 
 	char funcname[128] = "\0";

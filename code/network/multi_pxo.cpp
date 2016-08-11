@@ -3478,7 +3478,7 @@ void multi_pxo_chat_process()
 		}
 	} else if((Multi_pxo_chat_input.pressed() && (msg[0] != '\0')) || (strlen(msg) >= MAX_CHAT_LINE_LEN)) { 
 		// tack on the null terminator in the boundary case
-		int x = strlen(msg);
+		size_t x = strlen(msg);
 		if(x >= MAX_CHAT_LINE_LEN){
 			msg[MAX_CHAT_LINE_LEN-1] = '\0';
 		}		
@@ -3647,8 +3647,8 @@ void multi_pxo_motd_init()
  */
 void multi_pxo_motd_add_text(const char *text)
 {
-	int cur_len = strlen(Pxo_motd);
-	int new_len;
+	size_t cur_len = strlen(Pxo_motd);
+	size_t new_len;
 
 	// sanity
 	if(text == NULL){

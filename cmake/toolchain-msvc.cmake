@@ -27,6 +27,9 @@ set(WARNING_FLAGS
 	/wd"4711" # tells us an inline function was expanded (who cares?)
 	/wd"4786" # is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000"
 	/wd"4996" # deprecated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
+	/wd"4311" # Disables warnings about casting pointer types to ints. The funny thing is these warnings can't be resolved, just disabled... - m!m
+	/wd"4302" # Same as above - m!m
+	/wd"4366" # The result of the unary '&' operator may be unaligned - m!m
 	$<$<CONFIG:Release>:/wd"4101"> # In release mode there are unreferenced variables because debug needs them
 )
 
