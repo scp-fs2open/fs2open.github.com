@@ -300,12 +300,13 @@ void scoring_eval_badges(scoring_struct *sc)
 	// to determine badges, we count kills based on fighter/bomber types.  We must count kills in
 	// all time stats + current mission stats.  And, only for enemy fighters/bombers
 	total_kills = 0;
-    for (size_t i = 0; i < Ship_info.size(); ++i) {
-		if ( (Ship_info[i].flags[Ship::Info_Flags::Fighter]) || (Ship_info[i].flags[Ship::Info_Flags::Bomber]) ) {
-			total_kills += sc->m_okKills[i];
-			total_kills += sc->kills[i];
-		}
-	}
+    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+        if ((it->flags[Ship::Info_Flags::Fighter]) || (it->flags[Ship::Info_Flags::Bomber])) {
+            auto i = std::distance(Ship_info.cbegin(), it);
+            total_kills += sc->m_okKills[i];
+            total_kills += sc->kills[i];
+        }
+    }
 
 	// total_kills should now reflect the number of kills on hostile fighters/bombers.  Check this number
 	// against badge kill numbers, and award the appropriate badges as neccessary.

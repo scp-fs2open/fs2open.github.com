@@ -1430,17 +1430,17 @@ int intel_info_lookup(char *name)
 void tech_reset_to_default()
 {
 	// ships
-    for (size_t i = 0; i<Ship_info.size(); i++)
+    for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it)
     {
-        if (Ship_info[i].flags[Ship::Info_Flags::Default_in_tech_database])
-            Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database);
+        if (it->flags[Ship::Info_Flags::Default_in_tech_database])
+            it->flags.set(Ship::Info_Flags::In_tech_database);
         else
-            Ship_info[i].flags.remove(Ship::Info_Flags::Default_in_tech_database);
+            it->flags.remove(Ship::Info_Flags::Default_in_tech_database);
 
-        if (Ship_info[i].flags[Ship::Info_Flags::Default_in_tech_database_m])
-            Ship_info[i].flags.set(Ship::Info_Flags::In_tech_database_m);
+        if (it->flags[Ship::Info_Flags::Default_in_tech_database_m])
+            it->flags.set(Ship::Info_Flags::In_tech_database_m);
         else
-            Ship_info[i].flags.remove(Ship::Info_Flags::Default_in_tech_database_m);
+            it->flags.remove(Ship::Info_Flags::Default_in_tech_database_m);
     }
 
 

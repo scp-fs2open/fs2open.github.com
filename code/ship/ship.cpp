@@ -4878,21 +4878,21 @@ void ship_set_default_player_ship()
 		return;
 
 	// find the first with the default flag
-    for(size_t i = 0; i < Ship_info.size(); ++i)
+    for (auto it = Ship_info.cbegin(); it != Ship_info.end(); ++it)
 	{
-		if(Ship_info[i].flags[Ship::Info_Flags::Default_player_ship])
+		if(it->flags[Ship::Info_Flags::Default_player_ship])
 		{
-			strcpy_s(default_player_ship, Ship_info[i].name);
+			strcpy_s(default_player_ship, it->name);
 			return;
 		}
 	}
 
 	// find the first player ship
-    for (size_t i = 0; i < Ship_info.size(); ++i)
+    for (auto it = Ship_info.cbegin(); it != Ship_info.end(); ++it)
 	{
-		if(Ship_info[i].flags[Ship::Info_Flags::Player_ship])
+		if(it->flags[Ship::Info_Flags::Player_ship])
 		{
-			strcpy_s(default_player_ship, Ship_info[i].name);
+			strcpy_s(default_player_ship, it->name);
 			return;
 		}
 	}

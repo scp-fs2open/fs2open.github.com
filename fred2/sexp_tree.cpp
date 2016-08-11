@@ -5044,11 +5044,11 @@ sexp_list_item *sexp_tree::get_listing_opf_support_ship_class()
 
 	head.add_data("<species support ship class>");
 
-    for(size_t i = 0; i < Ship_info.size(); ++i)
+    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 	{
-		if (Ship_info[i].flags[Ship::Info_Flags::Support])
+		if (it->flags[Ship::Info_Flags::Support])
 		{
-			head.add_data(Ship_info[i].name);
+			head.add_data(it->name);
 		}
 	}
 

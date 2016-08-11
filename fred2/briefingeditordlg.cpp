@@ -1095,28 +1095,28 @@ void briefing_editor_dlg::OnMakeIcon()
 	else if(jnp != Jump_nodes.end()){
 		// find the first navbuoy
 		iconp->ship_class = -1;
-        for (size_t i = 0; i < Ship_info.size(); ++i)
-		{
-			if (Ship_info[i].flags[Ship::Info_Flags::Navbuoy])
-			{
-				iconp->ship_class = i;
-				break;
-			}
-		}
+        for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+        {
+            if (it->flags[Ship::Info_Flags::Navbuoy])
+            {
+                iconp->ship_class = std::distance(Ship_info.cbegin(), it);
+                break;
+            }
+        }
 		iconp->type = ICON_JUMP_NODE;
 	} 
 	// everything else
 	else {
 		// find the first navbuoy
 		iconp->ship_class = -1;
-        for (size_t i = 0; i < Ship_info.size(); ++i)
-		{
-			if (Ship_info[i].flags[Ship::Info_Flags::Navbuoy])
-			{
-				iconp->ship_class = i;
-				break;
-			}
-		}
+        for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+        {
+            if (it->flags[Ship::Info_Flags::Navbuoy])
+            {
+                iconp->ship_class = std::distance(Ship_info.cbegin(), it);
+                break;
+            }
+        }
 		iconp->type = ICON_WAYPOINT;
 	}
 

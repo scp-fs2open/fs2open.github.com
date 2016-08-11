@@ -592,9 +592,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// for each species, store whether support is available
 	for (int species = 0; species < (int)Species_info.size(); species++)
 	{
-        for(size_t i = 0; i < Ship_info.size(); ++i)
+        for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 		{
-			if ((Ship_info[i].flags[Ship::Info_Flags::Support]) && (Ship_info[i].species == species))
+			if ((it->flags[Ship::Info_Flags::Support]) && (it->species == species))
 			{
 				pm->support_ships.support_available_for_species |= (1 << species);
 				break;
@@ -7582,12 +7582,12 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 		i = -1;
 		// get index of correct species support ship
-        for(size_t k = 0; k < Ship_info.size(); ++k) {
-			if ( (Ship_info[k].species == requester_species) && (Ship_info[k].flags[Ship::Info_Flags::Support]) ) {
-				i = k;
-				break;
-			}
-		}
+        for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+            if ((it->species == requester_species) && (it->flags[Ship::Info_Flags::Support])) {
+                i = std::distance(Ship_info.cbegin(), it);
+                break;
+            }
+        }
 
 		if ( i != -1 )
 			pobj->ship_class = i;

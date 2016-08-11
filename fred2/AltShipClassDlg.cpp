@@ -238,16 +238,15 @@ BOOL AltShipClassDlg::OnInitDialog()
 		m_set_from_ship_class.AddString("Set From Variable");
 	}
 	count = 0; 
-    for (size_t j = 0; j < Ship_info.size(); ++j)
-	{
+    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+    {
+        if (player_ships_only && !(it->flags[Ship::Info_Flags::Player_ship])) {
+            continue;
+        }
 
-		if (player_ships_only && !(Ship_info[j].flags[Ship::Info_Flags::Player_ship])) {
-			continue;
-		}
-
-		ship_class_indices[count++] = j;
-		m_set_from_ship_class.AddString(Ship_info[j].name);
-	}
+        ship_class_indices[count++] = std::distance(Ship_info.cbegin(), it);
+        m_set_from_ship_class.AddString(it->name);
+    }
 	m_set_from_ship_class.SetCurSel(num_string_variables?1:0); // Set to the first ship class
 
 	// Set up the actual list of alt classes
