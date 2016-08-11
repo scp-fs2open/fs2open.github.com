@@ -1,13 +1,16 @@
 
 MESSAGE(STATUS "Configuring Windows specific things and stuff...")
 
-target_link_libraries(platform INTERFACE comctl32.lib
+target_link_libraries(platform INTERFACE
+	comctl32.lib
 	msacm32.lib
 	odbc32.lib
 	odbccp32.lib
 	vfw32.lib
 	winmm.lib
-	wsock32.lib)
+	wsock32.lib
+	Psapi.lib
+)
 
 target_compile_definitions(platform INTERFACE WIN32 USE_OPENAL _WINDOWS)
 
