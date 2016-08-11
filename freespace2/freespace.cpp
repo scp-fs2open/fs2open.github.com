@@ -8589,11 +8589,6 @@ int actual_main(int argc, char *argv[])
 
 	::CoInitialize(NULL);
 
-#ifdef _DEBUG
-	void memblockinfo_output_memleak();
-	atexit(memblockinfo_output_memleak);
-#endif
-
 	SCP_mspdbcs_Initialise();
 #else
 #ifdef APPLE_APP
