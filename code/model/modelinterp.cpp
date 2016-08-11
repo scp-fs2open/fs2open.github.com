@@ -2457,7 +2457,7 @@ void interp_copy_index_buffer(vertex_buffer *src, vertex_buffer *dest, int *inde
 	size_t src_buff_size;
 	buffer_data *src_buffer;
 	buffer_data *dest_buffer;
-	uint vert_offset = src->vertex_offset / src->stride; // assuming all submodels crunched into this index buffer have the same stride
+	auto vert_offset = src->vertex_offset / src->stride; // assuming all submodels crunched into this index buffer have the same stride
 	//int vert_offset = 0;
 
 	for ( i = 0; i < dest->tex_buf.size(); ++i ) {
@@ -2475,7 +2475,7 @@ void interp_copy_index_buffer(vertex_buffer *src, vertex_buffer *dest, int *inde
 				dest_buffer->assign(dest_buffer->n_verts, src_buffer->get_index()[k] + vert_offset); // take into account the vertex offset.
 				dest_buffer->n_verts++;
 
-				Assert(dest_buffer->n_verts <= index_counts[dest_buffer->texture]);
+				Assert(dest_buffer->n_verts <= (size_t)index_counts[dest_buffer->texture]);
 			}
 		}
 	}
@@ -2634,7 +2634,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 		transparent_tri = false;
 		num_tris = 0;
 
-		for ( int j = 0; j < tex_buf->n_verts; ++j ) {
+		for ( size_t j = 0; j < tex_buf->n_verts; ++j ) {
 			uint index = indices[j];
 
 			// need the uv coords of the vert at this index

@@ -197,7 +197,7 @@ public:
 	int flags;
 
 	int texture;		// this is the texture the vertex buffer will use
-	int n_verts;
+	size_t n_verts;
 
 	size_t index_offset;
 
@@ -235,7 +235,7 @@ public:
 	{
 	}
 
-	buffer_data(int n_vrts) :
+	explicit buffer_data(size_t n_vrts) :
 		flags(0), texture(-1), n_verts(n_vrts), index_offset(0),
 		i_first(1), i_last(0), index(NULL)
 	{
@@ -251,7 +251,7 @@ public:
 	{
 		if ( other.index ) {
 			index = new(std::nothrow) uint[other.n_verts];
-			for (size_t i=0; i < (size_t) other.n_verts; i++)
+			for (size_t i=0; i < other.n_verts; i++)
 			{
 				index[i] = other.index[i];
 			}
@@ -280,7 +280,7 @@ public:
 
 			if ( rhs.index && rhs.n_verts > 0 ) {
 				index = new(std::nothrow) uint[rhs.n_verts];
-				for (size_t i=0; i < (size_t) rhs.n_verts; i++)
+				for (size_t i=0; i < rhs.n_verts; i++)
 				{
 					index[i] = rhs.index[i];
 				}
@@ -313,7 +313,7 @@ class vertex_buffer
 public:
 	int flags;
 
-	uint stride;
+	size_t stride;
 	size_t vertex_offset;
 
 	poly_list *model_list;
@@ -1026,10 +1026,10 @@ struct vertex_format_data
 	};
 
 	vertex_format format_type;
-	uint stride;
+	size_t stride;
 	void *data_src;
 
-	vertex_format_data(vertex_format i_format_type, uint i_stride, void *i_data_src) : 
+	vertex_format_data(vertex_format i_format_type, size_t i_stride, void *i_data_src) :
 	format_type(i_format_type), stride(i_stride), data_src(i_data_src) {}
 };
 
@@ -1047,7 +1047,7 @@ public:
 
 	bool resident_vertex_format(vertex_format_data::vertex_format format_type) { return Vertex_mask & (1 << format_type) ? true : false; } 
 
-	void add_vertex_component(vertex_format_data::vertex_format format_type, uint stride, void* src) 
+	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, void* src) 
 	{
 		if ( resident_vertex_format(format_type) ) {
 			// we already have a vertex component of this format type
