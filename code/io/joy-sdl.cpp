@@ -734,7 +734,7 @@ float joy_down_time(int btn)
 		return 0.0f;
 	}
 
-	if (btn >= JOY_TOTAL_BUTTONS)
+	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
 	{
 		// Not a valid button
 		return 0.f;
@@ -763,7 +763,7 @@ int joy_down_count(int btn, int reset_count)
 		return 0;
 	}
 
-	if (btn >= JOY_TOTAL_BUTTONS)
+	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
 	{
 		// Not a valid button
 		return 0;
@@ -792,7 +792,7 @@ int joy_down(int btn)
 		return 0;
 	}
 
-	if (btn >= JOY_TOTAL_BUTTONS)
+	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
 	{
 		// Not a valid button
 		return 0;
@@ -801,8 +801,6 @@ int joy_down(int btn)
 	else if (btn >= JOY_NUM_BUTTONS)
 	{
 		// Is hat
-		btn -= JOY_NUM_BUTTONS;
-
 		return (current->getHatPosition(0) == btn) ? 1 : 0;
 	} // Else, is a button
 
