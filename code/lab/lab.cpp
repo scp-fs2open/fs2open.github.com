@@ -1401,9 +1401,7 @@ void labviewer_populate_flags_window()
 
 	// clear out anything that already exists
 	labviewer_flags_clear();
-
-	y = 0;
-
+    
     // ship flags ...
     if (Lab_mode == LAB_MODE_SHIP) {
         //Needs reimplementation
