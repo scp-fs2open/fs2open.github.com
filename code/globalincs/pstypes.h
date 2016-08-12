@@ -632,43 +632,43 @@ protected:
     std::bitset<SIZE> values;
 public:
 
-    bool operator [] (T idx) const { return values[(static_cast < size_t >(idx))]; };
+    bool operator [] (const T idx) const { return values[(static_cast < size_t >(idx))]; };
     
-    flagset<T> operator & (flagset<T>& other) const {
+    flagset<T> operator & (const flagset<T>& other) const {
         flagset<T> result;
         result.values = this->values & other.values;
         return result;
     }
 
-    flagset<T> operator + (T flag) const {
+    flagset<T> operator + (const T flag) const {
         flagset<T> result = *this;
         result.set(flag);
         return result;
     }
 
-    flagset<T>* operator += (T flag) {
+    flagset<T>& operator += (const T flag) {
         this->set(flag);
         return this;
     }
 
-    flagset<T> operator - (T flag) const {
+    flagset<T> operator - (const T flag) const {
         flagset<T> result = *this;
         result.remove(flag);
         return result;
     }
 
-    flagset<T>* operator -= (T flag) {
+    flagset<T>& operator -= (const T flag) {
         this->remove(flag);
         return this;
     }
 
-    flagset<T> operator | (flagset<T>& other) const {
+    flagset<T> operator | (const flagset<T>& other) const {
         flagset<T> result;
         result.values = this->values | other.values;
         return result;
     }
 
-    flagset<T>* operator |= (const flagset<T>& other) {
+    flagset<T>& operator |= (const flagset<T>& other) {
         this->values |= other.values;
 
         return this;
@@ -678,12 +678,12 @@ public:
         set(flag);
     }
 
-    bool operator == (const flagset<T> other) const { return this->values == other.values; }
-    bool operator != (const flagset<T> other) const { return this->values != other.values; }
+    bool operator == (const flagset<T>& other) const { return this->values == other.values; }
+    bool operator != (const flagset<T>& other) const { return this->values != other.values; }
 
     void reset() { values.reset(); }
     
-    flagset<T>* set(T idx, bool value = true) {
+    flagset<T>& set(T idx, bool value = true) {
         Assertion(idx >= T::NUM_VALUES, "Invalid flag value, trace back and get a coder!");
 
         values.set(static_cast < size_t >(idx), value);
@@ -700,10 +700,10 @@ public:
             current = std::next(current);
         }
 
-        return *this;
+        return this;
     }
 
-    flagset<T>*  remove(T idx) {
+    flagset<T>&  remove(T idx) {
         return set(idx, false);
     }
     
@@ -717,10 +717,10 @@ public:
             current = std::next(current);
         }
 
-        return *this;
+        return this;
     }
 
-    flagset<T>*  toggle(T idx) {
+    flagset<T>&  toggle(T idx) {
         values[static_cast < size_t >(idx)] = !values[static_cast < size_t >(idx)];
 
         return this;
