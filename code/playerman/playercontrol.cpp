@@ -10,6 +10,7 @@
 
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
+#include "controlconfig/controlsconfig.h"
 #include "debugconsole/console.h"
 #include "external_dll/trackirpublic.h"
 #include "freespace.h"
@@ -59,6 +60,7 @@ physics_info Descent_physics;			// used when we want to control the player like 
 
 angles chase_slew_angles;
 int view_centering = 0;
+bool slew_active = false;   // Used to determine if slew mode (a.k.a FreeLook mode) is active
 
 int toggle_glide = 0;
 int press_glide = 0;
@@ -83,6 +85,10 @@ void player_set_padlock_state();
 
 /**
  * @brief Slew angles chase towards a value like they're on a spring.
+ *
+ * @param[in,out] ap The current view angles. Is modified towards target angles.
+ * @param[in]     bp The target view angles
+ *
  * @details When furthest away, move fastest. Minimum speed set so that doesn't take too long. When gets close, clamps to the value.
  */
 void chase_angles_to_value(angles *ap, angles *bp, int scale)
@@ -101,88 +107,132 @@ void chase_angles_to_value(angles *ap, angles *bp, int scale)
 	delta.p = ap->p - bp->p;
 	delta.h = ap->h - bp->h;
 
-	ap->p = ap->p - delta.p * (1.0f - sk);
-	ap->h = ap->h - delta.h * (1.0f - sk);
-
 	//	If we're very close, put ourselves at goal.
 	if ((fl_abs(delta.p) < 0.005f) && (fl_abs(delta.h) < 0.005f)) {
 		ap->p = bp->p;
 		ap->h = bp->h;
+	} else {
+		// Else, apply the changes
+		ap->p -= (delta.p * (1.0f - sk));
+		ap->h -= (delta.h * (1.0f - sk));
 	}
 }
 
 angles	Viewer_slew_angles_delta;
 angles	Viewer_external_angles_delta;
 
+/**
+ * @brief Modifies the camera veiw angles according to its current view mode. (External, External Locked,
+ *   TrackIR, Freelook, Normal, and Centering)
+ *
+ * @param[in,out]   ma      The camera veiw angles to modify (magnitude is saturated to be within max_p and max_h).
+ * @param[out]  da      The delta angles applied to ma (magnitude is saturated to 1 radian).
+ * @param[in]   max_p   The maximum pitch magnitude ma may have (radians).
+ * @param[in]   max_h   The maximum heading magnitude ma may have (radians).
+ * @param[in]   frame_time  The frame time at which this function is called.
+ */
 void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_time)
 {
-	int axis[NUM_JOY_AXIS_ACTIONS];
+	// Digital inputs
 	float	t = 0;
 	float   u = 0;
+
+	// Analog inputs
+	int axis[NUM_JOY_AXIS_ACTIONS];
+	float h = 0.0f;
+	float p = 0.0f;
 	vec3d trans = ZERO_VECTOR;
+
+	if (view_centering) {
+		// View is centering, any and all slew commands are ignored until it has cenetered.
+		return;
+	}
 
 	if ( Viewer_mode & VM_EXTERNAL) {
 		if (! (Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
+			// Slew the external camera
+			// May have to look at this again later once slew control keys get put in
+			// YAW_LEFT -> SLEW_LEFT      YAW_RIGHT -> SLEW_RIGHT
+			// PITCH_BACK -> SLEW_UP      PITCH_FORWARD -> SLEW_DOWN
 			t = t + (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
 			u = u + (check_control_timef(PITCH_BACK) - check_control_timef(PITCH_FORWARD));
+
+			playercontrol_read_stick(axis,frame_time);
+
+			h = -f2fl(axis[JOY_HEADING_AXIS]);
+			p = -f2fl(axis[JOY_PITCH_AXIS]);
+
 		} else {
+			// External camera is locked in place, nothing to do here
 			return;
 		}
-	} else if ( gTirDll_TrackIR.Enabled( ) ) {
-		gTirDll_TrackIR.Query();
-		ma->h = -PI2*(gTirDll_TrackIR.GetYaw());
-		ma->p = PI2*(gTirDll_TrackIR.GetPitch());
 
-		trans.xyz.x = -0.4f*gTirDll_TrackIR.GetX();
-		trans.xyz.y = 0.4f*gTirDll_TrackIR.GetY();
-		trans.xyz.z = -gTirDll_TrackIR.GetZ();
-
-		if(trans.xyz.z < 0)
-			trans.xyz.z = 0.0f;
-
-		vm_vec_unrotate(&leaning_position,&trans,&Eye_matrix);
 	} else {
-		// View slewing commands commented out until we can safely add more commands in the pilot code.
+		// We're in the cockpit
+		if (gTirDll_TrackIR.Enabled()) {
+			// TrackIR enabled
+			gTirDll_TrackIR.Query();
+			ma->h = -PI2*(gTirDll_TrackIR.GetYaw());
+			ma->p = PI2*(gTirDll_TrackIR.GetPitch());
+
+			trans.xyz.x = -0.4f*gTirDll_TrackIR.GetX();
+			trans.xyz.y = 0.4f*gTirDll_TrackIR.GetY();
+			trans.xyz.z = -gTirDll_TrackIR.GetZ();
+
+			if (trans.xyz.z < 0) {
+				trans.xyz.z = 0.0f;
+			}
+
+			vm_vec_unrotate(&leaning_position,&trans,&Eye_matrix);
+
+		} else if (slew_active) {
+			// Freelook mode enabled - Pitch and Yaw axes control X and Y slew axes
+			t = (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
+			u = (check_control_timef(PITCH_BACK) - check_control_timef(PITCH_FORWARD));
+
+			playercontrol_read_stick(axis, frame_time);
+
+			h = -f2fl(axis[JOY_HEADING_AXIS]);
+			p = -f2fl(axis[JOY_PITCH_AXIS]);
+
+		} else {
+			// TrackIR and Freelook are disabled, only use slew commands
+			/* These have been commented out until the controls are added into Controls_config[]
+			t = (check_control_timef(SLEW_LEFT) - check_control_timef(SLEW_RIGHT));
+			u = (check_control_timef(SLEW_UP) - check_control_timef(SLEW_DOWN);
+			*/
+		}	// Else, don't do any slewing
 	}
 
-	if (t != 0.0f)
-		da->h += t;
-	else
-		da->h = 0.0f;
-
-	if (u != 0.0f)
-		da->p += u;
-	else
-		da->p = 0.0f;
-			
+	// Combine Analog and Digital slew commands
+	da->h = 0.0f;
+	da->p = 0.0f;
 	da->b = 0.0f;
 
-	playercontrol_read_stick(axis, frame_time);
+	if (t != 0.0f) {
+		da->h += t;
+	}
+	if (h != 0.0f) {
+		da->h += h;
+	}
 
-	if (( Viewer_mode & VM_EXTERNAL ) && !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED)) {
-		// check the heading on the x and y axes
-		da->h -= f2fl( axis[0] );
-		da->p -= f2fl( axis[1] );
+	if (u != 0.0f) {
+		da->p += u;
 	} 
+	if (p != 0.0f) {
+		da->p += p;
+	}
 
-	if (da->h > 1.0f)
-		da->h = 1.0f;
-	else if (da->h < -1.0f)
-		da->h = -1.0f;
+	CLAMP(da->h, -1.0f, 1.0f);
+	CLAMP(da->p, -1.0f, 1.0f);
 
-	if (da->p > 1.0f)
-		da->p = 1.0f;
-	else if (da->p < -1.0f)
-		da->p = -1.0f;
-
-	if ( (Game_time_compression >= F1_0) && !(Viewer_mode & VM_EXTERNAL) )
-	{
+	// Apply view modifications to camera
+	if ((Game_time_compression >= F1_0) && !(Viewer_mode & VM_EXTERNAL)) {
 		ma->p += 2*da->p * flFrametime;
 		ma->b += 2*da->b * flFrametime;
 		ma->h += 2*da->h * flFrametime;
-	}
-	else
-	{
+
+	} else {
 		//If time compression is less than normal, still move camera at same speed
 		//This gives a cool matrix effect
 		ma->p += da->p * flRealframetime;
@@ -190,15 +240,9 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 		ma->h += da->h * flRealframetime;
 	}
 
-	if (ma->p > max_p)
-		ma->p = max_p;
-	else if (ma->p < -max_p)
-		ma->p = -max_p;
-
-	if (ma->h > max_h)
-		ma->h = max_h;
-	else if (ma->h < -max_h)
-		ma->h = -max_h;
+	// Clamp resulting angles to their maximums
+	CLAMP(ma->p, -max_p, max_p);
+	CLAMP(ma->h, -max_h, max_h);
 }
 
 void do_view_track_target(float frame_time)
@@ -265,9 +309,14 @@ void do_view_track_target(float frame_time)
 		chase_slew_angles.h = -PI2/3;
 }
 
-
 /**
- * When PAD0 is pressed, keypad controls viewer direction slewing.
+ * @brief When VIEW_SLEW is pressed, pitch and heading axes controls viewer direction slewing.
+ *
+ * @param[in] frame_time The frame time at which this function is called
+ *
+ * @details Prevents the player's "head" from swiveling unrealistacally far with a max_p of Pi/2 and a max_h of2/3 Pi.
+ *
+ * @note Some mods may prefer to set their own limits, so, maybe make this as a table option in the future
  */
 void do_view_slew(float frame_time)
 {
@@ -361,6 +410,14 @@ void player_control_reset_ci( control_info *ci )
 	ci->forward_cruise_percent = oldspeed;
 }
 
+/**
+ * @brief Reads the joystick Pitch, Bank, and Heading axes.
+ *
+ * @param[out] axis       The axis array to store the scaled joystick position. (Must have a size of NUM_JOY_AXIS_ACTIONS)
+ * @param[in]  frame_time The frame time at which this function is called.
+ *
+ * @details This is its own function because we only want to read it at a certain rate, since it takes time.
+ */
 void playercontrol_read_stick(int *axis, float frame_time)
 {
 	int i;
@@ -420,7 +477,7 @@ void playercontrol_read_stick(int *axis, float frame_time)
 void read_keyboard_controls( control_info * ci, float frame_time, physics_info *pi )
 {
 	float kh=0.0f, scaled, newspeed, delta, oldspeed;
-	int axis[NUM_JOY_AXIS_ACTIONS], slew_active=1;
+	int axis[NUM_JOY_AXIS_ACTIONS];
 	static int afterburner_last = 0;
 	static float analog_throttle_last = 9e9f;
 	static int override_analog_throttle = 0; 
@@ -454,18 +511,23 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		} else if ( Viewer_mode & VM_TRACK ) { // Player's vision will track current target.
 			do_view_track_target(frame_time);
 		} else {
-			// The Center View command check is here because 
-			// we don't want the player centering the view in target padlock mode
-			if (check_control_timef(VIEW_CENTER) && !view_centering) { 
+			if (check_control_timef(VIEW_SLEW)) {
+				// Enable slew/freelook mode
+				slew_active = 1;
+				ok_to_read_ci_pitch_yaw = 0;
+			} else if (check_control_timef(VIEW_CENTER) || slew_active) { 
+				// Start centering the view if:
+				//  VIEW_CENTER was pressed, or
+				//  The player let go of VIEW_SLEW
 				view_centering = 1; 
 				slew_active = 0;
 			}
-			do_view_slew(frame_time);
-
-			// Orthogonal padlock views moved here in order to get the springy chase effect when transitioning.
-			player_set_padlock_state();
-
 		}
+
+		do_view_slew(frame_time);
+
+		// Orthogonal padlock views moved here in order to get the springy chase effect when transitioning.
+		player_set_padlock_state();
 	}
 	
 	if ( ok_to_read_ci_pitch_yaw ) {
@@ -648,6 +710,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			axis[0] = axis[1] = axis[2] = axis[3] = axis[4] = 0;
 		}
 
+		if (ok_to_read_ci_pitch_yaw) {
 		if (Axis_map_to[JOY_HEADING_AXIS] >= 0) {
 			// check the heading on the x axis
 			if ( check_control(BANK_WHEN_PRESSED) ) {
@@ -659,10 +722,14 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
 			}
 		}
-
 		// check the pitch on the y axis
 		if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
 			ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
+		}
+		} else {
+			// We're in slew mode, so stop rotating the player craft
+			ci->pitch = 0.0f;
+			ci->heading = 0.0f;
 		}
 
 		if (Axis_map_to[JOY_BANK_AXIS] >= 0) {
@@ -687,10 +754,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (Axis_map_to[JOY_REL_THROTTLE_AXIS] >= 0)
 			ci->forward_cruise_percent += f2fl(axis[JOY_REL_THROTTLE_AXIS]) * 100.0f * frame_time;
 
-		if ( ci->forward_cruise_percent > 100.0f )
-			ci->forward_cruise_percent = 100.0f;
-		if ( ci->forward_cruise_percent < 0.0f )
-			ci->forward_cruise_percent = 0.0f;
+		CLAMP(ci->forward_cruise_percent, 0, 100);
 
 		// set up the firing stuff.  Read into control info ala Descent so that weapons will be
 		// created during the object simulation phase, and not immediately as was happening before.
