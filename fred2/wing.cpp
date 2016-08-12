@@ -123,7 +123,7 @@ int create_wing() {
 	leader = cur_object_index;
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED)) {
+		if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags[Object::Object_Flags::Marked])) {
 			count++;
 			i = -1;
 			switch (ptr->type) {
@@ -225,10 +225,10 @@ int create_wing() {
 	set_cur_indices(-1);
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED) {
-			//			if ((ptr->type == OBJ_START) && (ptr->instance)) {
-			//				starts++;
-			//				unmark_object(OBJ_INDEX(ptr));
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+//			if ((ptr->type == OBJ_START) && (ptr->instance)) {
+//				starts++;
+//				unmark_object(OBJ_INDEX(ptr));
 
 			//			} else if (ptr->type == OBJ_WAYPOINT) {
 			if (ptr->type == OBJ_WAYPOINT) {
@@ -256,12 +256,12 @@ int create_wing() {
 	}
 
 	count = 0;
-	if (Objects[Ships[Player_start_shipnum].objnum].flags & OF_MARKED)
+	if (Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked])
 		count = 1;
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
 			if ((ptr->type == OBJ_START) && (ptr->instance == Player_start_shipnum))
 				i = 0;  // player 1 start always goes to front of the wing
 			else

@@ -431,7 +431,7 @@ void pilotfile::csg_read_techroom()
 
 		if (visible) {
 			if (ship_list[idx].index >= 0) {
-				Ship_info[ship_list[idx].index].flags |= SIF_IN_TECH_DATABASE;
+				Ship_info[ship_list[idx].index].flags.set(Ship::Info_Flags::In_tech_database);
 			} else {
 				m_data_invalid = true;
 			}
@@ -480,16 +480,16 @@ void pilotfile::csg_write_techroom()
 	startSection(Section::Techroom);
 
 	// visible ships
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-		// only visible if not in techroom by default
-		if ( (it->flags & SIF_IN_TECH_DATABASE) && !(it->flags2 & SIF2_DEFAULT_IN_TECH_DATABASE) ) {
-			visible = 1;
-		} else {
-			visible = 0;
-		}
+    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+        if ((it->flags[Ship::Info_Flags::In_tech_database]) && !(it->flags[Ship::Info_Flags::Default_in_tech_database])) {
+            visible = 1;
+        }
+        else {
+            visible = 0;
+        }
 
-		cfwrite_ubyte(visible, cfp);
-	}
+        cfwrite_ubyte(visible, cfp);
+    }
 
 	// visible weapons
 	for (idx = 0; idx < Num_weapon_types; idx++) {

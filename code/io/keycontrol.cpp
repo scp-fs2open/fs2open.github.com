@@ -497,7 +497,7 @@ void debug_cycle_player_ship(int delta)
 			si_index = static_cast<int>(Ship_info.size() - 1);
 		}
 		sip = &Ship_info[si_index];
-		if ( sip->flags & SIF_PLAYER_SHIP ){
+		if ( sip->flags[Ship::Info_Flags::Player_ship] ){
 			break;
 		}
 
@@ -552,7 +552,7 @@ void debug_cycle_targeted_ship(int delta)
 		if ( strstr(name,NOX("test")) != NULL )
 			continue;
 
-		if ( sip->species == species && (sip->flags & (SIF_FIGHTER | SIF_BOMBER | SIF_TRANSPORT) ) )
+        if (sip->species == species && (sip->is_fighter_bomber() || sip->flags[Ship::Info_Flags::Transport]))
 			break;
 
 		// just in case
@@ -588,7 +588,7 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 	ship_weapon *swp = &shipp->weapons;
 	weapon_info *wip;
 
-	if (sip->flags & SIF_BALLISTIC_PRIMARIES)
+	if (sip->flags[Ship::Info_Flags::Ballistic_primaries])
 	{
 		for ( index = 0; index < MAX_SHIP_PRIMARY_BANKS; index++ )
 		{
@@ -709,11 +709,12 @@ void process_debug_keys(int k)
 
 		case KEY_DEBUGGED + KEY_C:
 		case KEY_DEBUGGED1 + KEY_C:
-			if(Player_obj->flags & OF_COLLIDES){
-				obj_set_flags(Player_obj, Player_obj->flags & ~(OF_COLLIDES));
+            
+			if(Player_obj->flags[Object::Object_Flags::Collides]){
+				obj_set_flags(Player_obj, Player_obj->flags - Object::Object_Flags::Collides);
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Player no longer collides");
-			} else {
-				obj_set_flags(Player_obj, Player_obj->flags | OF_COLLIDES);
+			} else {                
+				obj_set_flags(Player_obj, Player_obj->flags + Object::Object_Flags::Collides);
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Player collides");
 			}
 			break;
@@ -862,7 +863,7 @@ void process_debug_keys(int k)
 
 					if ( sp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
-						sp->flags |= SF_DISABLED;				// add the disabled flag
+						sp->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
 					}
 
 					if ( sp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
@@ -890,8 +891,8 @@ void process_debug_keys(int k)
 		//	Select next object to be viewed by AI.
 		case KEY_DEBUGGED + KEY_I:
 		case KEY_DEBUGGED1 + KEY_I:
-			Player_obj->flags ^= OF_INVULNERABLE;
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You are %s", 10), Player_obj->flags & OF_INVULNERABLE ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
+            Player_obj->flags.toggle(Object::Object_Flags::Invulnerable);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "You are %s", 10), Player_obj->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
 			break;
 
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_I:
@@ -899,8 +900,8 @@ void process_debug_keys(int k)
 			if (Player_ai->target_objnum != -1) {
 				object	*objp = &Objects[Player_ai->target_objnum];
 
-				objp->flags ^= OF_INVULNERABLE;
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].ship_name, objp->flags & OF_INVULNERABLE ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
+				objp->flags.toggle(Object::Object_Flags::Invulnerable);
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].ship_name, objp->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
 			}
 			break;
 
@@ -1587,7 +1588,7 @@ void game_process_cheats(int k)
 			ship_idx++;
 		} while(1);
 
-		shipp->flags |= SF_ESCORT;
+		shipp->flags.set(Ship::Ship_Flags::Escort);
 		shipp->escort_priority = 1000 - ship_idx;
 
 		// now make sure we're not colliding with anyone
@@ -1646,7 +1647,7 @@ void game_process_keys()
 					}
 
 					//If topdown view in non-2D mission, go back to cockpit view.
-					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags & MISSION_FLAG_2D_MISSION) && !(Perspective_locked) ) {
+					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags[Mission::Mission_Flags::Mission_2d]) && !(Perspective_locked) ) {
 						Viewer_mode &= ~VM_TOPDOWN;
 						break;
 					}
@@ -1756,7 +1757,7 @@ int button_function_critical(int n, net_player *p = NULL)
 		npl = p;
 		at_self = 0;
 
-		if ( NETPLAYER_IS_DEAD(npl) || (Ships[Objects[pl->objnum].instance].flags & SF_DYING) )
+		if ( NETPLAYER_IS_DEAD(npl) || (Ships[Objects[pl->objnum].instance].flags[Ship::Ship_Flags::Dying]) )
 			return 0;
 	}
 	
@@ -1768,7 +1769,7 @@ int button_function_critical(int n, net_player *p = NULL)
 				ship * shipp = &Ships[objp->instance];
 				ship_weapon *swp = &shipp->weapons;
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
-				if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
+				if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
 					polymodel *pm = model_get( sip->model_num );
 					count = (int)ftables.getNext( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
 					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
@@ -1858,15 +1859,15 @@ int button_function_critical(int n, net_player *p = NULL)
 
 			int firepoints = pm->missile_banks[Ships[objp->instance].weapons.current_secondary_bank].num_slots;
 
-			if ( Ships[objp->instance].flags & SF_SECONDARY_DUAL_FIRE || firepoints < 2) {		
-				Ships[objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
+            if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] || firepoints < 2) {
+                Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to normal fire mode", 34));
 					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			} else {
-				Ships[objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
+                Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to dual fire mode", 35));
 					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
@@ -2231,7 +2232,7 @@ int button_function(int n)
 	}
 
 	// Goober5000 - if the ship doesn't have subspace drive, jump key doesn't work: so test and exit early
-	if (Player_ship->flags2 & SF2_NO_SUBSPACE_DRIVE)
+	if (Player_ship->flags[Ship::Ship_Flags::No_subspace_drive])
 	{
 		switch(n)
 		{
@@ -2242,7 +2243,7 @@ int button_function(int n)
 	}
 
 	// Goober5000 - if we have primitive sensors, some keys don't work: so test and exit early
-	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
+	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 	{
 		switch (n)
 		{
@@ -2323,7 +2324,7 @@ int button_function(int n)
 		case INCREASE_ENGINE:		// increase energy to engines
 		case DECREASE_ENGINE:		// decrease energy to engines
 		case ETS_EQUALIZE:
-			if ((Player_ship->flags2 & SF2_NO_ETS) == 0) {
+			if ((Player_ship->flags[Ship::Ship_Flags::No_ets]) == 0) {
 				hud_gauge_popup_start(HUD_ETS_GAUGE);
 				return button_function_critical(n);
 			}
@@ -2501,7 +2502,7 @@ int button_function(int n)
 
 		// Autopilot key control
 		case AUTO_PILOT_TOGGLE:
-			if (!(The_mission.flags & MISSION_FLAG_DEACTIVATE_AP)) {
+			if (!(The_mission.flags[Mission::Mission_Flags::Deactivate_ap])) {
 				if (AutoPilotEngaged) {
 					if (Cmdline_autopilot_interruptable == 1) //allow WCS to disable autopilot interrupt via commandline
 						EndAutoPilot();

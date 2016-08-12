@@ -390,12 +390,12 @@ void render_shield(int shield_num)
 
 	objp = &Objects[Shield_hits[shield_num].objnum];
 
-	if (objp->flags & OF_NO_SHIELDS)	{
+	if (objp->flags[Object::Object_Flags::No_shields])	{
 		return;
 	}
 
 	//	If this object didn't get rendered, don't render its shields.  In fact, make the shield hit go away.
-	if (!(objp->flags & OF_WAS_RENDERED)) {
+	if (!(objp->flags[Object::Object_Flags::Was_rendered])) {
 		Shield_hits[shield_num].type = SH_UNUSED;
 		return;
 	}
@@ -412,7 +412,7 @@ void render_shield(int shield_num)
 	// objp, shipp, and si are now setup correctly
 
 	//	If this ship is in its deathroll, make the shield hit effects go away faster.
-	if (shipp->flags & SF_DYING)	{
+	if (shipp->flags[Ship::Ship_Flags::Dying])	{
 		Shield_hits[shield_num].start_time -= fl2f(2*flFrametime);
 	}
 
@@ -446,7 +446,7 @@ void render_shield(int shield_num)
 		bitmap_id = sa->first_frame + frame_num;
 
 		float alpha = 0.9999f;
-		if(The_mission.flags & MISSION_FLAG_FULLNEB){
+		if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 			alpha *= 0.85f;
 		}
 
@@ -724,7 +724,7 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	polymodel	*pm;
 	int		i;
 
-	if (Objects[objnum].flags & OF_NO_SHIELDS)
+	if (Objects[objnum].flags[Object::Object_Flags::No_shields])
 		return;
 
 	pm = model_get(model_num);
@@ -872,7 +872,7 @@ void ship_draw_shield( object *objp)
 	vec3d	pnt;
 	polymodel * pm; 
 
-	if (objp->flags & OF_NO_SHIELDS)
+	if (objp->flags[Object::Object_Flags::No_shields])
 		return;
 
 	Assert(objp->instance >= 0);
@@ -976,7 +976,7 @@ int ship_is_shield_up( object *obj, int quadrant )
 //	Note: This is in the object's local reference frame.  Do _not_ pass a vector in the world frame.
 int get_quadrant(vec3d *hit_pnt, object *shipobjp)
 {
-	if (shipobjp != NULL && Ship_info[Ships[shipobjp->instance].ship_info_index].flags2 & SIF2_MODEL_POINT_SHIELDS) {
+	if (shipobjp != NULL && Ship_info[Ships[shipobjp->instance].ship_info_index].flags[Ship::Info_Flags::Model_point_shields]) {
 		int closest = -1;
 		float closest_dist = FLT_MAX;
 

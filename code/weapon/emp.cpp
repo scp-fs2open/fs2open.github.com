@@ -166,7 +166,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 		}
 
 		// if the ship is a cruiser or cap ship, only apply the EMP effect to turrets
-		if(Ship_info[Ships[target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+		if(Ship_info[Ships[target->instance].ship_info_index].is_big_or_huge()) {
 			float capship_emp_time = use_emp_time_for_capship_turrets ? emp_time : MAX_TURRET_DISRUPT_TIME;
 			
 			moveup = &Ships[target->instance].subsys_list;
@@ -336,7 +336,7 @@ void emp_process_ship(ship *shipp)
 	}
 
 	// if this is a player ship, don't do anything wacky
-	if(objp->flags & OF_PLAYER_SHIP){
+	if(objp->flags[Object::Object_Flags::Player_ship]){
 		return;
 	}
 
@@ -349,7 +349,7 @@ void emp_process_ship(ship *shipp)
 	aip->nearest_locked_object = -1;				// nothing near me, so I won't launch countermeasures
 
 	// if he's not a fighter or bomber, bail now
-	if(!(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))){
+	if(!(Ship_info[shipp->ship_info_index].is_fighter_bomber())){
 		return;
 	}
 
@@ -363,7 +363,7 @@ void emp_process_ship(ship *shipp)
 		int ship_lookup = ship_get_random_team_ship(iff_get_attackee_mask(shipp->team));
 
 		// if we got a valid ship object to target
-		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags & OF_PROTECTED)){
+		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags[Object::Object_Flags::Protected])){
 			// attack the object
 			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum], NULL);
 		}

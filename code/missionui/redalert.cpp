@@ -390,7 +390,7 @@ void red_alert_do_frame(float frametime)
 
 	// commit if skipping briefing, but not in multi - Goober5000
 	if (!(Game_mode & GM_MULTIPLAYER)) {
-		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
+		if (The_mission.flags[Mission::Mission_Flags::No_briefing])
 		{
 			red_alert_button_pressed(RA_CONTINUE);
 			return;
@@ -725,11 +725,11 @@ void red_alert_store_wingman_status()
 		Assert(ship_objp->type == OBJ_SHIP);
 		shipp = &Ships[ship_objp->instance];
 
-		if ( shipp->flags & SF_DYING ) {
+		if ( shipp->flags[Ship::Ship_Flags::Dying] ) {
 			continue;
 		}
 
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags[Ship::Ship_Flags::Red_alert_store_status]) ) {
 			continue;
 		}
 
@@ -800,10 +800,10 @@ void red_alert_delete_ship(p_object *pobjp, int ship_state)
 {
 	if (ship_state == RED_ALERT_DESTROYED_SHIP_CLASS || ship_state == RED_ALERT_PLAYER_DEL_SHIP_CLASS)
 	{
-		pobjp->flags2 |= P2_RED_ALERT_DELETED;
+		pobjp->flags[Mission::Parse_Object_Flags::Red_alert_deleted];
 
-		if (pobjp->wingnum < 0)
-			pobjp->flags |= P_SF_CANNOT_ARRIVE;
+        if (pobjp->wingnum < 0)
+            pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
 	}
 	else
 		Error(LOCATION, "Red Alert: asked to delete ship (%s) with invalid ship state (%d)", pobjp->name, ship_state);
@@ -842,7 +842,7 @@ void red_alert_bash_wingman_status()
 		Assert(ship_objp->type == OBJ_SHIP);
 		ship *shipp = &Ships[ship_objp->instance];
 
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags[Ship::Ship_Flags::Red_alert_store_status]) ) {
 			so = GET_NEXT(so);
 			continue;
 		}
@@ -932,7 +932,7 @@ void red_alert_bash_wingman_status()
 		}
 
 		// same condition as in ship_obj loop
-		if ( !from_player_wing && !(pobjp->flags & P_SF_RED_ALERT_STORE_STATUS) ) {
+		if ( !from_player_wing && !(pobjp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) ) {
 			continue;
 		}
 
@@ -1016,11 +1016,11 @@ void red_alert_bash_wingman_status()
 				if (pobjp->wingnum == ii->first)
 				{
 					// no waves left to arrive, so mark ships accordingly
-					if (wingp->num_waves == 0)
-						pobjp->flags |= P_SF_CANNOT_ARRIVE;
-					// we skipped one complete wave, so clear the flag so the next wave creates all ships
-					else
-						pobjp->flags2 &= ~P2_RED_ALERT_DELETED;
+                    if (wingp->num_waves == 0)
+                        pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
+                    // we skipped one complete wave, so clear the flag so the next wave creates all ships
+                    else
+                        pobjp->flags.remove(Mission::Parse_Object_Flags::Red_alert_deleted);
 				}
 			}
 		}
@@ -1030,7 +1030,7 @@ void red_alert_bash_wingman_status()
 // return !0 if this is a red alert mission, otherwise return 0
 int red_alert_mission()
 {
-	return (The_mission.flags & MISSION_FLAG_RED_ALERT);
+	return (The_mission.flags[Mission::Mission_Flags::Red_alert]);
 }
 
 // called from sexpression code to start a red alert mission

@@ -178,7 +178,7 @@ bool CanAutopilot(vec3d targetPos, bool send_msg)
 			object *other_objp = &Objects[so->objnum];
 			// attacks player?
 			if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)) 
-				&& !(Ship_info[Ships[other_objp->instance].ship_info_index].flags & SIF_CARGO)) // ignore cargo
+				&& !(Ship_info[Ships[other_objp->instance].ship_info_index].flags[Ship::Info_Flags::Cargo])) // ignore cargo
 			{
 				// Cannot autopilot if enemy within AutopilotMinEnemyDistance meters
 				if (vm_vec_dist_quick(&targetPos, &other_objp->pos) < AutopilotMinEnemyDistance) {
@@ -233,7 +233,7 @@ bool StartAutopilot()
 	// If the support ship is doing something then tell the user such.
 	for ( object *objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 	{
-		if ((objp->type == OBJ_SHIP) && !(objp->flags & OF_SHOULD_BE_DEAD))
+		if ((objp->type == OBJ_SHIP) && !(objp->flags[Object::Object_Flags::Should_be_dead]))
 		{
 			Assertion((objp->instance >= 0) && (objp->instance < MAX_SHIPS),
 				"objp does not have a valid pointer to a ship. Pointer is %d, which is smaller than 0 or bigger than %d",
@@ -248,11 +248,11 @@ bool StartAutopilot()
 				shipp->ship_name, shipp->ship_info_index, static_cast<int>(Ship_info.size()));
 			ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-			if ( !(sip->flags & SIF_SUPPORT) )
+			if ( !(sip->flags[Ship::Info_Flags::Support]) )
 				continue;
 
 			// don't deal with dying or departing support ships
-			if ( shipp->flags & (SF_DYING | SF_DEPARTING) )
+			if ( shipp->is_dying_or_departing() )
 				continue;
 
 			Assert(shipp->ai_index != -1);
@@ -286,7 +286,7 @@ bool StartAutopilot()
 		Autopilot_flight_leader = Player_obj;
 	}
 
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 		LockAPConv = timestamp(); // lock convergence instantly
 	else
 		LockAPConv = timestamp(3000); // 3 seconds before we lock convergence
@@ -325,7 +325,7 @@ bool StartAutopilot()
 
 
 	// instantly turn player toward tpos
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 	{
 		vm_vec_sub(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
 		vm_vector_2_matrix(&Player_obj->orient, &norm1, NULL, NULL);
@@ -334,7 +334,7 @@ bool StartAutopilot()
 	for (i = 0; i < MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum != -1 && 
-				(Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+				(Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
 					(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)
 				)
 			)
@@ -345,7 +345,7 @@ bool StartAutopilot()
 	}
 
 	// damp speed_cap to 90% of actual -- to make sure ships stay in formation
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 		speed_cap = 0.90f * speed_cap;
 
 	if ( speed_cap < 1.0f ) {
@@ -367,28 +367,27 @@ bool StartAutopilot()
 	for (i = 0; i < MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum != -1 && 
-				(Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+				(Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
 					(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)
 				)
 			)
 		{
 			// do we have capital ships in the area?
-			if (Ship_info[Ships[i].ship_info_index].flags 
-				& ( SIF_CRUISER | SIF_CAPITAL | SIF_SUPERCAP | SIF_CORVETTE | SIF_AWACS | SIF_GAS_MINER | SIF_FREIGHTER | SIF_TRANSPORT))
+            if (Ship_info[Ships[i].ship_info_index].is_big_ship() || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Supercap])
 			{
 				capshipPresent = true;
 
 				capIndexes.push_back(i);
 				// ok.. what size class
 
-				if (Ship_info[Ships[i].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
-				{
-					capship_counts[0]++;
-					if (capship_spreads[0] < Objects[Ships[i].objnum].radius)
-						capship_spreads[0] = Objects[Ships[i].objnum].radius;
-				}
-				else if (Ship_info[Ships[i].ship_info_index].flags & (SIF_CORVETTE))
-				{
+                if (Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Supercap])
+                {
+                    capship_counts[0]++;
+                    if (capship_spreads[0] < Objects[Ships[i].objnum].radius)
+                        capship_spreads[0] = Objects[Ships[i].objnum].radius;
+                }
+                else if (Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Corvette])
+                {
 					capship_counts[1]++;
 					if (capship_spreads[1] < Objects[Ships[i].objnum].radius)
 						capship_spreads[1] = Objects[Ships[i].objnum].radius;
@@ -416,14 +415,14 @@ bool StartAutopilot()
 				radius = Objects[Ships[i].objnum].radius;
 			}
 
-			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+			if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 			{// instantly turn the ship to match the direction player is looking
 				//vm_vec_sub(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
 				vm_vector_2_matrix(&Objects[Ships[i].objnum].orient, &norm1, NULL, NULL);
 			}
 
 			// snap wings into formation
-			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS &&  // only if using cinematics 
+			if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics] &&  // only if using cinematics 
 				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY) // only if in a wing
 				&& Autopilot_flight_leader != &Objects[Ships[i].objnum]) //only if not flight leader's object
 			{	
@@ -470,8 +469,10 @@ bool StartAutopilot()
 				}
 			}
 			// lock primary and secondary weapons
-			if ( LockWeaponsDuringAutopilot )
-				Ships[i].flags2 |= (SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
+            if (LockWeaponsDuringAutopilot) { 
+                Ships[i].flags.set(Ship::Ship_Flags::Primaries_locked);
+                Ships[i].flags.set(Ship::Ship_Flags::Secondaries_locked);
+            }
 
 			// clear the ship goals and cap the waypoint speed
 			ai_clear_ship_goals(&Ai_info[Ships[i].ai_index]);
@@ -479,7 +480,7 @@ bool StartAutopilot()
 
 			
 			// if they're not part of a wing set their goal
-			if (Ships[i].wingnum == -1 || The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+			if (Ships[i].wingnum == -1 || The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 			{ 
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
@@ -496,7 +497,7 @@ bool StartAutopilot()
 	}
 
 	// assign wing goals
-	if (!(The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS))
+	if (!(The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]))
 	{
 		for (i = 0; i < MAX_WINGS; i++)
 		{
@@ -538,7 +539,7 @@ bool StartAutopilot()
 	{
 		if (Ships[i].objnum != -1)
 		{
-			if (Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+			if (Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
 				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY))
 				for (j = 0; j < MAX_AI_GOALS; j++)
 				{
@@ -557,7 +558,7 @@ bool StartAutopilot()
 	start_dist = DistanceTo(CurrentNav);
 
 	// ----------------------------- setup cinematic -----------------------------
-	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 	{	
 		if (capshipPresent)
 		{
@@ -570,7 +571,7 @@ bool StartAutopilot()
 				vm_vec_add(&front, &Autopilot_flight_leader->orient.vec.fvec, &zero);
 				vm_vec_add(&up, &Autopilot_flight_leader->orient.vec.uvec, &zero);
 				vm_vec_add(&offset, &zero, &zero);
-				if (Ship_info[Ships[*idx].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
+                if (Ship_info[Ships[*idx].ship_info_index].flags[Ship::Info_Flags::Capital] || Ship_info[Ships[*idx].ship_info_index].flags[Ship::Info_Flags::Supercap])
 				{
 					//0 - below - three lines of position
 
@@ -604,7 +605,7 @@ bool StartAutopilot()
 
 					capship_placed[0]++;
 				}
-				else if (Ship_info[Ships[*idx].ship_info_index].flags & SIF_CORVETTE)
+                else if (Ship_info[Ships[*idx].ship_info_index].flags[Ship::Info_Flags::Corvette])
 				{
 					//1 above - 3 lines of position
 					// front/back to zero
@@ -913,14 +914,16 @@ void EndAutoPilot()
 	{
 		if (Ships[i].objnum != -1 && 
 			(
-				Ships[i].flags2 & SF2_NAVPOINT_CARRY || 
+				Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
 				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY )
 			 )
 		   )
 		{
 			//unlock their weaponry
-			if ( LockWeaponsDuringAutopilot )
-				Ships[i].flags2 &= ~(SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
+            if (LockWeaponsDuringAutopilot) {
+                Ships[i].flags.remove(Ship::Ship_Flags::Primaries_locked);
+                Ships[i].flags.remove(Ship::Ship_Flags::Secondaries_locked);
+            }
 			Ai_info[Ships[i].ai_index].waypoint_speed_cap = -1; // uncap their speed
 			Ai_info[Ships[i].ai_index].mode = AIM_NONE; // make AI re-evaluate current ship mode
 
@@ -955,7 +958,7 @@ void EndAutoPilot()
 	}
 
 	// un-assign wing goals
-	if ( !(The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) )
+	if ( !(The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) )
 	{
 		for (i = 0; i < MAX_WINGS; i++)
 		{
@@ -1041,7 +1044,7 @@ void nav_warp(bool prewarp=false)
 	for (int i = 0; i < MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum != -1
-			&& (Ships[i].flags2 & SF2_NAVPOINT_CARRY 
+			&& (Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] 
 				|| (Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)))
 		{
 				vm_vec_add(&Objects[Ships[i].objnum].pos, &Objects[Ships[i].objnum].pos, &targetPos);
@@ -1069,7 +1072,7 @@ void NavSystem_Do()
 	{
 		if (AutoPilotEngaged)
 		{
-			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
+			if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 			{
 				camera *cam = nav_get_set_camera();
 				if (CinematicStarted)
@@ -1148,7 +1151,7 @@ void NavSystem_Do()
 	}
 
 	// ramp time compression - only if not using cinematics
-	if (AutoPilotEngaged && !(The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS))
+	if (AutoPilotEngaged && !(The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]))
 	{
 		int dstfrm_start = start_dist - DistanceTo(CurrentNav);
 
@@ -1193,14 +1196,14 @@ void NavSystem_Do()
 	*/
 	for (int i = 0; i < MAX_SHIPS; i++)
 	{
-		if (Ships[i].objnum != -1 && Ships[i].flags2 & SF2_NAVPOINT_NEEDSLINK)
+		if (Ships[i].objnum != -1 && Ships[i].flags[Ship::Ship_Flags::Navpoint_needslink])
 		{
 			object *other_objp = &Objects[Ships[i].objnum];
 
 			if (vm_vec_dist_quick(&Player_obj->pos, &other_objp->pos) < (NavLinkDistance + other_objp->radius))
 			{
-				Ships[i].flags2 &= ~SF2_NAVPOINT_NEEDSLINK;
-				Ships[i].flags2 |= SF2_NAVPOINT_CARRY;
+                Ships[i].flags.remove(Ship::Ship_Flags::Navpoint_needslink);
+                Ships[i].flags.set(Ship::Ship_Flags::Navpoint_carry);
 				
 				send_autopilot_msgID(NP_MSG_MISC_LINKED);
 			}

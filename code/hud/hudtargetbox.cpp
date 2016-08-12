@@ -621,7 +621,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 
 		// set glowmap flag here since model_render (etc) require an objnum to handle glowmaps
 		// if we did pass the objnum, we'd also have thrusters drawn in the targetbox
-		if (target_shipp->flags2 & SF2_GLOWMAPS_DISABLED) {
+		if (target_shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 			flags |= MR_NO_GLOWMAPS;
 		}
 
@@ -967,7 +967,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 
 			// set glowmap flag here since model_render (etc) require an objnum to handle glowmaps
 			// if we did pass the objnum, we'd also have thrusters drawn in the targetbox
-			if (homing_shipp->flags2 & SF2_GLOWMAPS_DISABLED) {
+			if (homing_shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 				flags |= MR_NO_GLOWMAPS;
 			}
 		}
@@ -1435,7 +1435,7 @@ void HudGaugeExtraTargetData::render(float frametime)
 		// Print out current orders if the targeted ship is friendly
 		// AL 12-26-97: only show orders and time to target for friendly ships
 		// Backslash: actually let's consult the IFF table.  Maybe we want to show orders for certain teams, or hide orders for friendlies
-		if ( ((Player_ship->team == target_shipp->team) || ((Iff_info[target_shipp->team].flags & IFFF_ORDERS_SHOWN) && !(Iff_info[target_shipp->team].flags & IFFF_ORDERS_HIDDEN)) ) && !(ship_get_SIF(target_shipp) & SIF_NOT_FLYABLE) ) {
+		if ( ((Player_ship->team == target_shipp->team) || ((Iff_info[target_shipp->team].flags & IFFF_ORDERS_SHOWN) && !(Iff_info[target_shipp->team].flags & IFFF_ORDERS_HIDDEN)) ) && !(Ship_info[target_shipp->ship_info_index].is_flyable() ) ) {
 			extra_data_shown=1;
 			if ( ship_return_orders(outstr, target_shipp) ) {
 				font::force_fit_string(outstr, 255, order_max_w);
@@ -1762,8 +1762,8 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 	}
 
 	// print out 'disabled' on the monitor if the target is disabled
-	if ( (target_shipp->flags & SF_DISABLED) || (ship_subsys_disrupted(target_shipp, SUBSYSTEM_ENGINE)) ) {
-		if ( target_shipp->flags & SF_DISABLED ) {
+	if ( (target_shipp->flags[Ship::Ship_Flags::Disabled]) || (ship_subsys_disrupted(target_shipp, SUBSYSTEM_ENGINE)) ) {
+		if ( target_shipp->flags[Ship::Ship_Flags::Disabled] ) {
 			strcpy_s(outstr, XSTR( "DISABLED", 342));
 		} else {
 			strcpy_s(outstr, XSTR( "DISRUPTED", 343));
@@ -2248,7 +2248,7 @@ void hud_update_ship_status(object *targetp)
     
     if ( (targetp->instance >= 0) && (targetp->instance < MAX_SHIPS) ) {
     	// print out status of ship for the targetbox
-		if ( (Ships[targetp->instance].flags & SF_DISABLED) || (ship_subsys_disrupted(&Ships[targetp->instance], SUBSYSTEM_ENGINE)) ) {
+		if ( (Ships[targetp->instance].flags[Ship::Ship_Flags::Disabled]) || (ship_subsys_disrupted(&Ships[targetp->instance], SUBSYSTEM_ENGINE)) ) {
 			Current_ts = TS_DIS;
 		} else {
 			if ( Pl_target_integrity > 0.9 ) {

@@ -320,8 +320,12 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	}
 
 	vm_angles_2_matrix(&orient, &angs);
-
-	objnum = obj_create( OBJ_ASTEROID, -1, n, &orient, &pos, radius, OF_RENDERS | OF_PHYSICS | OF_COLLIDES);
+    flagset<Object::Object_Flags> asteroid_default_flagset;
+    asteroid_default_flagset += Object::Object_Flags::Renders;
+    asteroid_default_flagset += Object::Object_Flags::Physics;
+    asteroid_default_flagset += Object::Object_Flags::Collides;
+    
+    objnum = obj_create(OBJ_ASTEROID, -1, n, &orient, &pos, radius, asteroid_default_flagset);
 	
 	if ( (objnum == -1) || (objnum >= MAX_OBJECTS) ) {
 		mprintf(("Couldn't create asteroid -- out of object slots\n"));
@@ -804,7 +808,7 @@ void maybe_throw_asteroid(int count)
 
 				// if asteroid is inside inner bound, kill it
 				if (asteroid_in_inner_bound(&Asteroid_field, &objp->pos, 0.0f)) {
-					objp->flags |= OF_SHOULD_BE_DEAD;
+					objp->flags.set(Object::Object_Flags::Should_be_dead);
 				} else {
 					Asteroids[objp->instance].target_objnum = so->objnum;
 
@@ -870,7 +874,7 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 			
 			if ( (dot < 0.7f) || (dist > asfieldp->bound_rad) ) {
 				if (Num_asteroids > MAX_ASTEROIDS-10) {
-					objp->flags |= OF_SHOULD_BE_DEAD;
+					objp->flags.set(Object::Object_Flags::Should_be_dead);
 				} else {
 					// check to ensure player won't see asteroid appear either
 					asteroid_wrap_pos(objp, asfieldp);
@@ -1336,7 +1340,7 @@ void asteroid_do_area_effect(object *asteroid_objp)
 		ship_objp = &Objects[so->objnum];
 	
 		// don't blast navbuoys
-		if ( ship_get_SIF(ship_objp->instance) & SIF_NAVBUOY ) {
+		if ( ship_get_SIF(ship_objp->instance)[Ship::Info_Flags::Navbuoy] ) {
 			continue;
 		}
 
@@ -1363,7 +1367,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 
 	asp = &Asteroids[pasteroid_obj->instance];
 
-	if (pasteroid_obj->flags & OF_SHOULD_BE_DEAD){
+	if (pasteroid_obj->flags[Object::Object_Flags::Should_be_dead]){
 		return;
 	}
 
@@ -1419,7 +1423,7 @@ void asteroid_level_close()
 		if (Asteroids[i].flags & AF_USED) {
 			Asteroids[i].flags &= ~AF_USED;
 			Assert(Asteroids[i].objnum >=0 && Asteroids[i].objnum < MAX_OBJECTS);
-			Objects[Asteroids[i].objnum].flags |= OF_SHOULD_BE_DEAD;
+			Objects[Asteroids[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
 		}
 	}
 
@@ -1484,7 +1488,7 @@ void asteroid_maybe_break_up(object *pasteroid_obj)
 		Script_system.SetHookObject("Self", pasteroid_obj);
 		if(!Script_system.IsConditionOverride(CHA_DEATH, pasteroid_obj))
 		{
-			pasteroid_obj->flags |= OF_SHOULD_BE_DEAD;
+			pasteroid_obj->flags.set(Object::Object_Flags::Should_be_dead);
 
 			// multiplayer clients won't go through the following code.  asteroid_sub_create will send
 			// a create packet to the client in the above named function
@@ -1669,11 +1673,11 @@ int asteroid_will_collide(object *pasteroid_obj, object *escort_objp)
  */
 int asteroid_valid_ship_to_warn_collide(ship *shipp)
 {
-	if ( !(Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+	if ( !(Ship_info[shipp->ship_info_index].is_big_or_huge()) ) {
 		return 0;
 	}
 
-	if ( shipp->flags & (SF_DYING|SF_DEPART_WARP) ) {
+	if ( shipp->flags[Ship::Ship_Flags::Dying] || shipp->flags[Ship::Ship_Flags::Depart_warp] ) {
 		return 0;
 	}
 
@@ -2095,7 +2099,7 @@ int set_asteroid_throw_objnum()
 		ship_objp = &Objects[so->objnum];
 		float		radius = ship_objp->radius*2.0f;
 
-		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags & (SIF_HUGE_SHIP | SIF_BIG_SHIP)) {
+		if (Ship_info[Ships[ship_objp->instance].ship_info_index].is_big_or_huge()) {
 			if (ship_objp->pos.xyz.x + radius > Asteroid_field.min_bound.xyz.x)
 				if (ship_objp->pos.xyz.y + radius > Asteroid_field.min_bound.xyz.y)
 				if (ship_objp->pos.xyz.z + radius > Asteroid_field.min_bound.xyz.z)

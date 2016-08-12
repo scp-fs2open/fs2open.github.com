@@ -207,7 +207,7 @@ bool HudGaugeDirectives::canRender()
 	}
 
 	if (gauge_config == HUD_ETS_GAUGE) {
-		if (Ships[Player_obj->instance].flags2 & SF2_NO_ETS) {
+		if (Ships[Player_obj->instance].flags[Ship::Ship_Flags::No_ets]) {
 			return false;
 		}
 	}
@@ -932,7 +932,7 @@ void message_training_queue_check()
 
 	// if the instructor is dying or departing, do nothing
 	if ( iship_num != -1 )	// added by Goober5000
-		if (Ships[iship_num].flags & (SF_DYING | SF_DEPARTING))
+		if (Ships[iship_num].is_dying_or_departing())
 			return;
 
 	if (Training_failure)

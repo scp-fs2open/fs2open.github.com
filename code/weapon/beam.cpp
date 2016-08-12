@@ -426,8 +426,10 @@ int beam_fire(beam_fire_info *fire_info)
 		beam_get_binfo(new_item, fire_info->accuracy, wip->b_info.beam_shots);			// to fill in b_info	- the set of directional aim vectors
 	}	
 
+    flagset<Object::Object_Flags> default_flags;
+    default_flags.set(Object::Object_Flags::Collides);
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
+	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, default_flags);
 	if(objnum < 0){
 		beam_delete(new_item);
 		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
@@ -553,7 +555,9 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	// type c is a very special weapon type - binfo has no meaning
 
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, OF_COLLIDES);
+    flagset<Object::Object_Flags> default_flags;
+    default_flags.set(Object::Object_Flags::Collides);
+	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, default_flags);
 
 	if(objnum < 0){
 		beam_delete(new_item);
@@ -2176,7 +2180,7 @@ void beam_aim(beam *b)
 		}
 
 		// if we're shooting at a big ship - shoot directly at the model
-		if((b->target != nullptr) && (b->target->type == OBJ_SHIP) && (Ship_info[Ships[b->target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))){
+		if((b->target != nullptr) && (b->target->type == OBJ_SHIP) && (Ship_info[Ships[b->target->instance].ship_info_index].is_big_or_huge())){
 			if ((b->subsys != nullptr) && (b->subsys->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION)) {
 				vec3d pnt;
 				vm_vec_unrotate(&pnt, &b->binfo.dir_a, &b->target->orient);
@@ -2483,16 +2487,16 @@ int beam_collide_ship(obj_pair *pair)
 	// check shields for impact
 	// (tooled ships are probably not going to be maintaining a shield over their exit hole,
 	// therefore we need only check the entrance, just as with conventional weapons)
-	if (!(ship_objp->flags & OF_NO_SHIELDS))
+	if (!(ship_objp->flags[Object::Object_Flags::No_shields]))
 	{
 		// pick out the shield quadrant
 		if (shield_collision)
 			quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
-		else if (hull_enter_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS))
+		else if (hull_enter_collision && (sip->flags[Ship::Info_Flags::Surface_shields]))
 			quadrant_num = get_quadrant(&mc_hull_enter.hit_point, ship_objp);
 
 		// make sure that the shield is active in that quadrant
-		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !ship_is_shield_up(ship_objp, quadrant_num)))
+		if ((quadrant_num >= 0) && ((shipp->flags[Ship::Ship_Flags::Dying]) || !ship_is_shield_up(ship_objp, quadrant_num)))
 			quadrant_num = -1;
 
 		// see if we hit the shield
@@ -3300,7 +3304,7 @@ void beam_get_cull_vals(object *objp, beam *b, float *cull_dot, float *cull_dist
 
 	case OBJ_SHIP:
 		// for large ships, cull at some multiple of the radius
-		if(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)){
+		if(Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge()){
 			*cull_dot = 1.0f - ((1.0f - beam_get_cone_dot(b)) * 1.25f);
 			
 			*cull_dist = (objp->radius * 1.3f) * (objp->radius * 1.3f);

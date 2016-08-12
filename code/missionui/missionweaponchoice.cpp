@@ -848,10 +848,10 @@ void wl_render_overhead_view(float frametime)
 			{
 				float rev_rate;
 				rev_rate = REVOLUTION_RATE;
-				if (sip->flags & SIF_BIG_SHIP) {
+				if (sip->is_big_ship()) {
 					rev_rate *= 1.7f;
 				}
-				if (sip->flags & SIF_HUGE_SHIP) {
+				if (sip->is_huge_ship()) {
 					rev_rate *= 3.0f;
 				}
 
@@ -1124,7 +1124,7 @@ void wl_set_disabled_weapons(int ship_class)
 		if (Weapon_info[i].wi_flags2 & WIF2_BALLISTIC)
 		{
 			// not allowed if this ship is not ballistic
-			if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
+			if (!(sip->flags[Ship::Info_Flags::Ballistic_primaries]))
 			{
 				Wl_icons[i].can_use = 0;
 			}
@@ -4044,7 +4044,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 
 			// make sure this ship can accept this weapon
 			if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_type_to_add])
-				|| ((wip->wi_flags2 & WIF2_BALLISTIC) && !(sip->flags & SIF_BALLISTIC_PRIMARIES)))
+				|| ((wip->wi_flags2 & WIF2_BALLISTIC) && !(sip->flags[Ship::Info_Flags::Ballistic_primaries])))
 			{
 				SCP_string temp;
 				sprintf(temp, XSTR("%s is unable to carry %s weaponry", 1629), ship_name, wep_display_name);

@@ -12,6 +12,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
+#include "mission/mission_flags.h"
 
 class object;
 
@@ -43,8 +44,7 @@ typedef struct iff_info {
 
 	// flags
 	int flags;
-	int default_parse_flags;
-	int default_parse_flags2;
+	flagset<Mission::Parse_Object_Flags> default_parse_flags;
 
 	// used internally, not parsed
 	int ai_rearm_timestamp;
