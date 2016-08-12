@@ -2172,7 +2172,7 @@ void send_netgame_descript_packet(net_addr *addr, int code)
 
 	if(code == 1){
 		// add as much of the description as we dare
-		desc_len = strlen(The_mission.mission_desc);
+		desc_len = (int)strlen(The_mission.mission_desc);
 		if(desc_len > MAX_PACKET_SIZE - 10){
 			desc_len = MAX_PACKET_SIZE - 10;
 			ADD_INT(desc_len);

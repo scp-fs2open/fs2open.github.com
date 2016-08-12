@@ -413,7 +413,7 @@ int multi_ship_class_lookup(const char* ship_name)
 	int player_ship_class = -1;
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 		if ( !stricmp(it->name, ship_name) ) {
-			player_ship_class = std::distance(Ship_info.cbegin(), it);
+			player_ship_class = (int)std::distance(Ship_info.cbegin(), it);
 			break;
 		}
 	} // end for
@@ -748,7 +748,7 @@ int multi_create_player( int net_player_num, player *pl, const char* name, net_a
 
 		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 			if ( !stricmp(it->name, default_player_ship) ) {
-				player_ship_class = std::distance(Ship_info.cbegin(), it);
+				player_ship_class = (int)std::distance(Ship_info.cbegin(), it);
 				break;
 			}
 		}
@@ -2327,7 +2327,7 @@ void multi_handle_state_special()
 void multi_file_xfer_notify(int handle)
 {
 	char *filename;
-	int len,idx;
+	size_t len,idx;
 	int cf_type;
 	int is_mission = 0;	
 
@@ -3498,12 +3498,12 @@ int bitbuffer_write_flush( bitbuffer *bitbuf )
 	if ( bitbuf->mask != 0x80 )	{
    	*bitbuf->data++ = (ubyte)bitbuf->rack;
 	}
-	return bitbuf->data-bitbuf->org_data;
+	return (int)(bitbuf->data-bitbuf->org_data);
 }
 
 int bitbuffer_read_flush( bitbuffer *bitbuf )
 {
-	return bitbuf->data-bitbuf->org_data;
+	return (int)(bitbuf->data-bitbuf->org_data);
 }
 
 void bitbuffer_put( bitbuffer *bitbuf, uint data, int bit_count ) 

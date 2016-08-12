@@ -49,7 +49,7 @@ int op_num = -1;
 bool packet_flagged_invalid = false;
 
 //forward declarations
-void multi_sexp_ensure_space_remains(int data_size); 
+void multi_sexp_ensure_space_remains(size_t data_size); 
 
 
 /**************************
@@ -151,7 +151,7 @@ void multi_do_callback()
 * If there is not enough space, it will send everything in the packet apart from any data from the SEXP currently being processed 
 * and then create a new packet containing the data for this SEXP only.
 */
-void multi_sexp_ensure_space_remains(int data_size) 
+void multi_sexp_ensure_space_remains(size_t data_size) 
 {
 	if (!MULTIPLAYER_MASTER) {
 		return;

@@ -836,7 +836,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 			oo_interp_points[shipp - Ships][0] = oo_interp_points[shipp - Ships][1];
 			oo_interp_points[shipp - Ships][1] = new_pos;			
 
-			multi_oo_calc_interp_splines(shipp - Ships, &pobjp->pos, &pobjp->orient, &pobjp->phys_info, &new_pos, &new_orient, &new_phys_info);
+			multi_oo_calc_interp_splines(SHIP_INDEX(shipp), &pobjp->pos, &pobjp->orient, &pobjp->phys_info, &new_pos, &new_orient, &new_phys_info);
 		}
 		
 		pobjp->phys_info.vel = new_phys_info.vel;		

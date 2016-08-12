@@ -565,7 +565,7 @@ void multi_ingame_load_icons()
 		// if there is a valid icon for this ship
 		if((it->icon_filename[0] != '\0') && (Multi_ingame_num_ship_icons < MULTI_INGAME_MAX_SHIP_ICONS)) {
 			// set the ship class
-			Multi_ingame_ship_icon[Multi_ingame_num_ship_icons].ship_class = std::distance(Ship_info.cbegin(), it);
+			Multi_ingame_ship_icon[Multi_ingame_num_ship_icons].ship_class = (int)std::distance(Ship_info.cbegin(), it);
 
 			// load in the animation frames for the icon
 			first_frame = bm_load_animation(it->icon_filename, &num_frames);

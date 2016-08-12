@@ -644,7 +644,7 @@ void nebl_bolt(size_t type, vec3d *start, vec3d *strike)
 
 	// if i'm a multiplayer master, send a bolt packet
 	if(MULTIPLAYER_MASTER){
-		send_lightning_packet(type, start, strike);
+		send_lightning_packet((int)type, start, strike);
 	}
 }
 
