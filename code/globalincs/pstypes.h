@@ -18,6 +18,7 @@
 #include <memory.h>
 #include <string.h>
 #include <algorithm>
+#include <cstdint>
 #include "globalincs/toolchain.h"
 
 #if defined( __x86_64__ ) || defined( _WIN64 )
