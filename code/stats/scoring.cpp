@@ -301,7 +301,7 @@ void scoring_eval_badges(scoring_struct *sc)
 	// all time stats + current mission stats.  And, only for enemy fighters/bombers
 	total_kills = 0;
     for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-        if ((it->flags[Ship::Info_Flags::Fighter]) || (it->flags[Ship::Info_Flags::Bomber])) {
+        if (it->is_fighter_bomber()) {
             auto i = std::distance(Ship_info.cbegin(), it);
             total_kills += sc->m_okKills[i];
             total_kills += sc->kills[i];

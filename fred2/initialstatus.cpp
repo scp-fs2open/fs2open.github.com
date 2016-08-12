@@ -438,55 +438,17 @@ void initial_status::OnOK()
 				if (hflag)
 					MODIFY(objp->hull_strength, (float) m_hull);
 
-                if (m_has_shields == 1)
-                    objp->flags.remove(Object::Object_Flags::No_shields);
-				else if (!m_has_shields)
-					objp->flags.set(Object::Object_Flags::No_shields);
+				objp->flags.set(Object::Object_Flags::No_shields, m_has_shields == 0);
+
+                auto shipp = &Ships[get_ship_from_obj(objp)];
 				
-                if (m_force_shields == 1) {
-                    Ships[get_ship_from_obj(objp)].flags.set(Ship::Ship_Flags::Force_shields_on);
-                }
-                else if (!m_force_shields) {
-                    Ships[get_ship_from_obj(objp)].flags.remove(Ship::Ship_Flags::Force_shields_on);
-                }
-
-                if (m_ship_locked == 1)
-                    Ships[get_ship_from_obj(objp)].flags.set(Ship::Ship_Flags::Ship_locked);
-                else if (!m_ship_locked)
-                    Ships[get_ship_from_obj(objp)].flags.remove(Ship::Ship_Flags::Ship_locked);
-
-                if (m_weapons_locked == 1)
-                    Ships[get_ship_from_obj(objp)].flags.set(Ship::Ship_Flags::Weapons_locked);
-                else if (!m_weapons_locked)
-                    Ships[get_ship_from_obj(objp)].flags.remove(Ship::Ship_Flags::Weapons_locked);
-
-                if (m_primaries_locked == 1) {
-                    Ships[get_ship_from_obj(objp)].flags.set(Ship::Ship_Flags::Primaries_locked);
-                }
-                else if (!m_primaries_locked) {
-                    Ships[get_ship_from_obj(objp)].flags.remove(Ship::Ship_Flags::Primaries_locked);
-                }
-
-                if (m_secondaries_locked == 1) {
-                    Ships[get_ship_from_obj(objp)].flags.set(Ship::Ship_Flags::Secondaries_locked);
-                }
-                else if (!m_secondaries_locked) {
-                    Ships[get_ship_from_obj(objp)].flags.remove(Ship::Ship_Flags::Secondaries_locked);
-                }
-
-                if (m_turrets_locked == 1) {
-                    Ships[get_ship_from_obj(objp)].flags.set(Ship::Ship_Flags::Lock_all_turrets_initially);
-                }
-                else if (!m_turrets_locked) {
-                    Ships[get_ship_from_obj(objp)].flags.remove(Ship::Ship_Flags::Lock_all_turrets_initially);
-                }
-
-                if (m_afterburner_locked == 1) {
-                    Ships[get_ship_from_obj(objp)].flags.set(Ship::Ship_Flags::Afterburner_locked);
-                }
-                else if (!m_afterburner_locked) {
-                    Ships[get_ship_from_obj(objp)].flags.remove(Ship::Ship_Flags::Afterburner_locked);
-                }
+                shipp->flags.set(Ship::Ship_Flags::Force_shields_on, m_force_shields == 1);
+                shipp->flags.set(Ship::Ship_Flags::Ship_locked, m_ship_locked == 1);
+                shipp->flags.set(Ship::Ship_Flags::Weapons_locked, m_weapons_locked == 1);
+                shipp->flags.set(Ship::Ship_Flags::Primaries_locked, m_primaries_locked == 1);
+                shipp->flags.set(Ship::Ship_Flags::Secondaries_locked, m_secondaries_locked == 1);
+                shipp->flags.set(Ship::Ship_Flags::Lock_all_turrets_initially, m_turrets_locked == 1);
+                shipp->flags.set(Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked == 1);
 			}
 
 			objp = GET_NEXT(objp);
@@ -496,45 +458,16 @@ void initial_status::OnOK()
 		MODIFY(Objects[cur_object_index].phys_info.speed, (float) m_velocity);
 		MODIFY(Objects[cur_object_index].shield_quadrant[0], (float) m_shields);
 		MODIFY(Objects[cur_object_index].hull_strength, (float) m_hull);
-		if (m_has_shields)
-			Objects[cur_object_index].flags.remove(Object::Object_Flags::No_shields);
-		else
-			Objects[cur_object_index].flags.set(Object::Object_Flags::No_shields);
 
-        if (m_force_shields == 1)
-            Ships[m_ship].flags.set(Ship::Ship_Flags::Force_shields_on);
-        else if (!m_force_shields)
-            Ships[m_ship].flags.remove(Ship::Ship_Flags::Force_shields_on);
+		Objects[cur_object_index].flags.set(Object::Object_Flags::No_shields, m_has_shields != 0);
 
-        if (m_ship_locked == 1)
-            Ships[m_ship].flags.set(Ship::Ship_Flags::Ship_locked);
-        else if (!m_ship_locked)
-            Ships[m_ship].flags.remove(Ship::Ship_Flags::Ship_locked);
-
-        if (m_weapons_locked == 1)
-            Ships[m_ship].flags.set(Ship::Ship_Flags::Weapons_locked);
-        else if (!m_weapons_locked)
-            Ships[m_ship].flags.remove(Ship::Ship_Flags::Weapons_locked);
-
-        if (m_primaries_locked == 1)
-            Ships[m_ship].flags.set(Ship::Ship_Flags::Primaries_locked);
-        else if (!m_primaries_locked)
-            Ships[m_ship].flags.remove(Ship::Ship_Flags::Primaries_locked);
-
-        if (m_secondaries_locked == 1)
-            Ships[m_ship].flags.set(Ship::Ship_Flags::Secondaries_locked);
-        else if (!m_secondaries_locked)
-            Ships[m_ship].flags.remove(Ship::Ship_Flags::Secondaries_locked);
-
-        if (m_turrets_locked == 1)
-            Ships[m_ship].flags.set(Ship::Ship_Flags::Lock_all_turrets_initially);
-        else if (!m_turrets_locked)
-            Ships[m_ship].flags.remove(Ship::Ship_Flags::Lock_all_turrets_initially);
-
-        if (m_afterburner_locked == 1)
-            Ships[m_ship].flags.set(Ship::Ship_Flags::Afterburner_locked);
-        else if (!m_afterburner_locked)
-            Ships[m_ship].flags.remove(Ship::Ship_Flags::Afterburner_locked);
+        Ships[m_ship].flags.set(Ship::Ship_Flags::Force_shields_on, m_force_shields == 1);
+        Ships[m_ship].flags.set(Ship::Ship_Flags::Ship_locked, m_ship_locked == 1);
+        Ships[m_ship].flags.set(Ship::Ship_Flags::Weapons_locked, m_weapons_locked == 1);
+        Ships[m_ship].flags.set(Ship::Ship_Flags::Primaries_locked, m_primaries_locked == 1);
+        Ships[m_ship].flags.set(Ship::Ship_Flags::Secondaries_locked, m_secondaries_locked == 1);
+        Ships[m_ship].flags.set(Ship::Ship_Flags::Lock_all_turrets_initially, m_turrets_locked == 1);
+        Ships[m_ship].flags.set(Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked == 1);
 	}
 
 	if (m_team_color_setting.IsWindowEnabled() && m_team_color_setting.GetCurSel() > 0)

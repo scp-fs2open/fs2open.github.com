@@ -1304,14 +1304,14 @@ public:
 
     //Helper functions
     
-    inline bool is_small_ship() { return flags[Ship::Info_Flags::Fighter] || flags[Ship::Info_Flags::Bomber] || flags[Ship::Info_Flags::Support] || flags[Ship::Info_Flags::Escapepod]; }
-    inline bool is_big_ship() { return flags[Ship::Info_Flags::Cruiser] || flags[Ship::Info_Flags::Freighter] || flags[Ship::Info_Flags::Transport] || flags[Ship::Info_Flags::Corvette] || flags[Ship::Info_Flags::Gas_miner] || flags[Ship::Info_Flags::Awacs]; }
-    inline bool is_huge_ship() { return flags[Ship::Info_Flags::Capital] || flags[Ship::Info_Flags::Supercap] || flags[Ship::Info_Flags::Drydock] || flags[Ship::Info_Flags::Knossos_device]; }
-    inline bool is_flyable() { return !(flags[Ship::Info_Flags::Cargo] || flags[Ship::Info_Flags::Navbuoy] || flags[Ship::Info_Flags::Escapepod]); }
-    inline bool is_harmless() { return !is_flyable(); }
-    inline bool is_fighter_bomber() { return flags[Ship::Info_Flags::Fighter] || flags[Ship::Info_Flags::Bomber]; }
-    inline bool is_big_or_huge() { return is_big_ship() || is_huge_ship(); }
-    inline bool avoids_shockwaves() { return is_small_ship(); }
+    inline bool is_small_ship() const { return flags[Ship::Info_Flags::Fighter] || flags[Ship::Info_Flags::Bomber] || flags[Ship::Info_Flags::Support] || flags[Ship::Info_Flags::Escapepod]; }
+    inline bool is_big_ship() const { return flags[Ship::Info_Flags::Cruiser] || flags[Ship::Info_Flags::Freighter] || flags[Ship::Info_Flags::Transport] || flags[Ship::Info_Flags::Corvette] || flags[Ship::Info_Flags::Gas_miner] || flags[Ship::Info_Flags::Awacs]; }
+    inline bool is_huge_ship() const  { return flags[Ship::Info_Flags::Capital] || flags[Ship::Info_Flags::Supercap] || flags[Ship::Info_Flags::Drydock] || flags[Ship::Info_Flags::Knossos_device]; }
+    inline bool is_flyable() const { return !(flags[Ship::Info_Flags::Cargo] || flags[Ship::Info_Flags::Navbuoy] || flags[Ship::Info_Flags::Escapepod]); }
+    inline bool is_harmless() const { return !is_flyable(); }
+    inline bool is_fighter_bomber() const { return flags[Ship::Info_Flags::Fighter] || flags[Ship::Info_Flags::Bomber]; }
+    inline bool is_big_or_huge() const { return is_big_ship() || is_huge_ship(); }
+    inline bool avoids_shockwaves() const { return is_small_ship(); }
 
 private:
 	void move(ship_info&& other);

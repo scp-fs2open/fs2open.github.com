@@ -971,22 +971,6 @@ void ship_flags_dlg::update_ship(int shipnum)
         break;
     }
 
-    switch (m_no_collide.GetCheck()) {
-    case 1:
-        if (objp->flags[Object::Object_Flags::Collides])
-            set_modified();
-
-        objp->flags.remove(Object::Object_Flags::Collides);
-        break;
-
-    case 0:
-        if (!(objp->flags[Object::Object_Flags::Collides]))
-            set_modified();
-
-        objp->flags.set(Object::Object_Flags::Collides);
-        break;
-    }
-
     switch (m_guardian.GetCheck()) {
     case 1:
         if (!(shipp->ship_guardian_threshold))
@@ -1064,6 +1048,38 @@ void ship_flags_dlg::update_ship(int shipnum)
             set_modified();
 
         shipp->flags.remove(Ship::Ship_Flags::Scramble_messages);
+        break;
+    }
+
+    switch (m_no_collide.GetCheck()) {
+    case 1:
+        if (objp->flags[Object::Object_Flags::Collides])
+            set_modified();
+
+        objp->flags.remove(Object::Object_Flags::Collides);
+        break;
+
+    case 0:
+        if (!(objp->flags[Object::Object_Flags::Collides]))
+            set_modified();
+
+        objp->flags.set(Object::Object_Flags::Collides);
+        break;
+    }
+
+    switch (m_no_disabled_self_destruct.GetCheck()) {
+    case 1:
+        if (!(shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct]))
+            set_modified();
+
+        shipp->flags.set(Ship::Ship_Flags::No_disabled_self_destruct);
+        break;
+
+    case 0:
+        if (shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])
+            set_modified();
+
+        shipp->flags.set(Ship::Ship_Flags::No_disabled_self_destruct);
         break;
     }
 

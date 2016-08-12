@@ -5328,7 +5328,7 @@ sexp_list_item *sexp_tree::get_listing_opf_who_from()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START))
-			if (!(Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index].is_flyable()))
+			if (Ship_info[Ships[get_ship_from_obj(ptr)].ship_info_index].is_flyable())
 				head.add_data(Ships[ptr->instance].ship_name);
 
 		ptr = GET_NEXT(ptr);
