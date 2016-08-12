@@ -317,6 +317,7 @@ const float RAND_MAX_1f	= (1.0f / RAND_MAX);
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
 
+const size_t INVALID_SIZE = static_cast<size_t>(-1);
 
 //======================================================================================
 //======================================================================================

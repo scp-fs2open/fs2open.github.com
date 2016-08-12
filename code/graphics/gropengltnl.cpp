@@ -79,7 +79,7 @@ team_color* Current_team_color;
 team_color Current_temp_color;
 bool Using_Team_Color = false;
 
-int GL_transform_buffer_offset = -1;
+size_t GL_transform_buffer_offset = INVALID_SIZE;
 
 GLuint Shadow_map_texture = 0;
 GLuint Shadow_map_depth_texture = 0;
@@ -252,7 +252,7 @@ int opengl_create_texture_buffer_object()
 	return buffer_object_handle;
 }
 
-void gr_opengl_update_transform_buffer(void* data, uint size)
+void gr_opengl_update_transform_buffer(void* data, size_t size)
 {
 	if ( Transform_buffer_handle < 0 || size <= 0 ) {
 		return;
@@ -270,7 +270,7 @@ GLuint opengl_get_transform_buffer_texture()
 	return GL_buffer_objects[Transform_buffer_handle].texture;
 }
 
-void gr_opengl_set_transform_buffer_offset(int offset)
+void gr_opengl_set_transform_buffer_offset(size_t offset)
 {
 	GL_transform_buffer_offset = offset;
 }
@@ -801,7 +801,7 @@ static void opengl_render_pipeline_program(int start, const vertex_buffer *buffe
 		textured ? true : false, 
 		Rendering_to_shadow_map,
 		GL_thrust_scale > 0.0f,
-		(flags & TMAP_FLAG_BATCH_TRANSFORMS) && (GL_transform_buffer_offset >= 0) && (bufferp->flags & VB_FLAG_MODEL_ID),
+		(flags & TMAP_FLAG_BATCH_TRANSFORMS) && (GL_transform_buffer_offset != INVALID_SIZE) && (bufferp->flags & VB_FLAG_MODEL_ID),
 		Using_Team_Color, 
 		flags, 
 		(SPECGLOSSMAP > 0) ? SPECGLOSSMAP : SPECMAP, 
@@ -1306,7 +1306,7 @@ static void opengl_render_pipeline_fixed(int start, const vertex_buffer *bufferp
 }
 
 // start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
-void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags)
+void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, size_t texi, int flags)
 {
 	Assert( GL_htl_projection_matrix_set );
 	Assert( GL_htl_view_matrix_set );
@@ -1318,8 +1318,6 @@ void gr_opengl_render_buffer(int start, const vertex_buffer *bufferp, int texi, 
 	if ( GL_state.CullFace() ) {
 		GL_state.FrontFaceValue(GL_CW);
 	}
-
-	Assert( texi >= 0 );
 
 	const buffer_data *datap = &bufferp->tex_buf[texi];
 
@@ -2118,7 +2116,7 @@ void opengl_tnl_set_material(int flags, uint shader_flags, int tmap_type)
 
 	if ( shader_flags & SDR_FLAG_MODEL_TRANSFORM ) {
 		GL_state.Uniform.setUniformi("transform_tex", render_pass);
-		GL_state.Uniform.setUniformi("buffer_matrix_offset", GL_transform_buffer_offset);
+		GL_state.Uniform.setUniformi("buffer_matrix_offset", (int)GL_transform_buffer_offset);
 		
 		GL_state.Texture.SetActiveUnit(render_pass);
 		GL_state.Texture.SetTarget(GL_TEXTURE_BUFFER_ARB);
