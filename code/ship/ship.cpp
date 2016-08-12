@@ -310,7 +310,7 @@ flag_def_list_new<Info_Flags> Ship_flags[] = {
     { "no lighting",				Info_Flags::No_lighting,			true, false },
     { "auto spread shields",		Info_Flags::Auto_spread_shields,	true, false },
     { "model point shields",		Info_Flags::Model_point_shields,	true, false },
-
+    { "repair disabled subsystems", Info_Flags::Subsys_repair_when_disabled, true, false},
     // to keep things clean, obsolete options go last
     { "ballistic primaries",		Info_Flags::Ballistic_primaries,	false, false }
 };
@@ -383,6 +383,8 @@ ship_flag_name Ship_flag_names[] = {
     { Ship_Flags::Dont_collide_invis,			"don't-collide-invisible" },
     { Ship_Flags::No_ets,						"no-ets" },
     { Ship_Flags::Toggle_subsystem_scanning,	"toggle-subsystem-scanning" },
+    { Ship_Flags::No_secondary_lockon,          "no-secondary-lock-on"},
+    { Ship_Flags::No_disabled_self_destruct,    "no-disabled-self-destruct"},
 };
 
 const int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
@@ -9187,12 +9189,10 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
     flagset<Object::Object_Flags> default_ship_object_flags;
     default_ship_object_flags.set(Object::Object_Flags::Renders);
     default_ship_object_flags.set(Object::Object_Flags::Physics);
-    default_ship_object_flags.set(Object::Object_Flags::Collides);
 	// JAS: Nav buoys don't need to do collisions!
 	// G5K: Corrected to apply specifically for ships with the no-collide flag.  (In retail, navbuoys already have this flag, so this doesn't break anything.)
-	if ( sip->flags[Ship::Info_Flags::No_collide] )	{
-        default_ship_object_flags.remove(Object::Object_Flags::Collides);
-	} 
+    default_ship_object_flags.set(Object::Object_Flags::Collides, !sip->flags[Ship::Info_Flags::No_collide]);
+
     objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), default_ship_object_flags);
 	Assert( objnum >= 0 );
 
@@ -9941,13 +9941,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	else if (sip_orig->flags[Ship::Info_Flags::Ship_class_dont_collide_invis])	// changing FROM a don't-collide-invisible ship class
 		sp->flags.remove(Ship_Flags::Dont_collide_invis);
 
-    auto obj_flags = objp->flags;
     if (sip->flags[Ship::Info_Flags::No_collide])								// changing TO a no-collision ship class
-        obj_flags.remove(Object::Object_Flags::Collides);
+        obj_set_flags(objp, objp->flags - Object::Object_Flags::Collides);
     else if (sip_orig->flags[Ship::Info_Flags::No_collide])						// changing FROM a no-collision ship class
-        obj_flags.set(Object::Object_Flags::Collides);
-
-	obj_set_flags(objp, obj_flags);
+        obj_set_flags(objp, objp->flags + Object::Object_Flags::Collides);
 
 	if (sip->flags[Ship::Info_Flags::No_ets])
 		sp->flags.set(Ship_Flags::No_ets);
@@ -16930,7 +16927,7 @@ float ship_get_max_speed(ship *shipp)
 	max_speed = MAX(max_speed, sip->max_vel.xyz.z);
 
 	// afterburn if not locked
-	if (!(shipp->flags[Ship_Flags::Always_death_scream])) {
+	if (!(shipp->flags[Ship_Flags::Afterburner_locked])) {
 		max_speed = MAX(max_speed, sip->afterburner_max_vel.xyz.z);
 	}
 
