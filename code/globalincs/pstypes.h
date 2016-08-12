@@ -648,7 +648,7 @@ public:
 
     flagset<T>& operator += (const T flag) {
         this->set(flag);
-        return this;
+        return *this;
     }
 
     flagset<T> operator - (const T flag) const {
@@ -659,7 +659,7 @@ public:
 
     flagset<T>& operator -= (const T flag) {
         this->remove(flag);
-        return this;
+        return *this;
     }
 
     flagset<T> operator | (const flagset<T>& other) const {
@@ -671,7 +671,7 @@ public:
     flagset<T>& operator |= (const flagset<T>& other) {
         this->values |= other.values;
 
-        return this;
+        return *this;
     }
 
     void operator |= (const T flag) {
@@ -687,7 +687,7 @@ public:
         Assertion(idx >= T::NUM_VALUES, "Invalid flag value, trace back and get a coder!");
 
         values.set(static_cast < size_t >(idx), value);
-        return this;
+        return *this;
     }
 
     template<typename TIter>
@@ -700,7 +700,7 @@ public:
             current = std::next(current);
         }
 
-        return this;
+        return *this;
     }
 
     flagset<T>&  remove(T idx) {
@@ -717,13 +717,13 @@ public:
             current = std::next(current);
         }
 
-        return this;
+        return *this;
     }
 
     flagset<T>&  toggle(T idx) {
         values[static_cast < size_t >(idx)] = !values[static_cast < size_t >(idx)];
 
-        return this;
+        return *this;
     }
 
     bool any_set() const { return values.any(); }
