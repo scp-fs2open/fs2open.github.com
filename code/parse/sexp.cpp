@@ -20,7 +20,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <limits.h>
-#include <stdint.h>
+#include <cstdint>
 
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"

@@ -107,11 +107,13 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Collides,				"collides",					1,  },
 };
 
+#ifdef OBJECT_CHECK
 checkobject::checkobject() 
     : type(0), signature(0), parent_sig(0), parent_type(0) 
 {
     flags.reset();
 }
+#endif
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
 object::object()
