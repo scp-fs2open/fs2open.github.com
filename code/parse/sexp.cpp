@@ -20,11 +20,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <limits.h>
-#if defined _MSC_VER && _MSC_VER < 1600
-	#include "globalincs/msvc/stdint.h"
-#else
-	#include <stdint.h>
-#endif
+#include <stdint.h>
 
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"
