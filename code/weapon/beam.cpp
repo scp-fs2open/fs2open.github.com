@@ -429,7 +429,7 @@ int beam_fire(beam_fire_info *fire_info)
     flagset<Object::Object_Flags> default_flags;
     default_flags.set(Object::Object_Flags::Collides);
 	// create the associated object
-	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, default_flags);
+	objnum = obj_create(OBJ_BEAM, ((fire_info->shooter != NULL) ? OBJ_INDEX(fire_info->shooter) : -1), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, default_flags);
 	if(objnum < 0){
 		beam_delete(new_item);
 		nprintf(("General", "obj_create() failed for beam weapon! bah!\n"));
@@ -557,7 +557,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	// create the associated object
     flagset<Object::Object_Flags> default_flags;
     default_flags.set(Object::Object_Flags::Collides);
-	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), new_item - Beams, &vmd_identity_matrix, &vmd_zero_vector, 1.0f, default_flags);
+	objnum = obj_create(OBJ_BEAM, OBJ_INDEX(fire_info->shooter), BEAM_INDEX(new_item), &vmd_identity_matrix, &vmd_zero_vector, 1.0f, default_flags);
 
 	if(objnum < 0){
 		beam_delete(new_item);

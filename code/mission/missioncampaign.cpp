@@ -107,7 +107,7 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 	Assert( type != NULL );
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
-	int fname_len = strlen(fname);
+	auto fname_len = strlen(fname);
 	if ((fname_len < 4) || stricmp(fname + fname_len - 4, FS_CAMPAIGN_FILE_EXT)){
 		strcat_s(fname, FS_CAMPAIGN_FILE_EXT);
 		fname_len += 4;
@@ -416,7 +416,7 @@ void mission_campaign_get_sw_info()
  */
 int mission_campaign_load( char *filename, player *pl, int load_savefile, bool reset_stats )
 {
-	int len, i;
+	int i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
 
 	if (campaign_is_ignored(filename)) {
@@ -455,7 +455,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 		reset_parse();
 
 		// copy filename to campaign structure minus the extension
-		len = strlen(filename) - 4;
+		auto len = strlen(filename) - 4;
 		Assert(len < MAX_FILENAME_LEN);
 		strncpy(Campaign.filename, filename, len);
 		Campaign.filename[len] = 0;

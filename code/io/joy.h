@@ -14,6 +14,11 @@
 
 #include "SDL_joystick.h"
 
+// z64: Moved up here for compatibility. Bye bye, organization!
+const int JOY_NUM_BUTTONS = 32;
+const int JOY_NUM_HAT_POS = 4;	// z64: This stays at 4 until we have translation text for the corners
+const int JOY_TOTAL_BUTTONS = (JOY_NUM_BUTTONS + JOY_NUM_HAT_POS);
+
 namespace io
 {
 	/**
@@ -23,18 +28,21 @@ namespace io
 	{
 		/**
 		 * @brief A hat position
+		 * @note Order here is how the old code used it (except for the corner positions)
 		 */
 		enum HatPosition
 		{
-			HAT_CENTERED,
+			HAT_CENTERED = -1,
+			HAT_DOWN = JOY_NUM_BUTTONS,
 			HAT_UP,
-			HAT_RIGHT,
-			HAT_DOWN,
 			HAT_LEFT,
-			HAT_RIGHTUP,
-			HAT_RIGHTDOWN,
-			HAT_LEFTUP,
+			HAT_RIGHT,
 			HAT_LEFTDOWN,
+			HAT_LEFTUP,
+			HAT_RIGHTDOWN,
+			HAT_RIGHTUP,
+
+			HAT_NUM_POS = 8     // This one is always last. Currently set to 8 for compatibility reasons
 		};
 
 		/**
@@ -134,6 +142,28 @@ namespace io
 			HatPosition getHatPosition(int index) const;
 
 			/**
+			 * @brief Gets the down time of the given hat and position
+			 * @param[in] index The index of the hat to query, must be in [0, numHats())
+			 * @param[in] pos The position to query, must be in [0, int(HAT_NUM_POS))
+			 *
+			 * @returns 0.0f If the queried hat positions is not active, or
+			 * @returns The time, in seconds, that the hat has been active in that position
+			 */
+			float getHatDownTime(int index, int pos) const;
+
+			/**
+			* @brief Times the specified button has been pressed since the last reset
+			* @param index The index of the button, must be in [0, numHats())
+			* @param[in] pos The position to query, must be in [0, int(HAT_NUM_POS))
+			* @param reset @c true to reset the count
+			* @return The number of times the button has been pressed
+			*
+			* @warning This function may be removed in the future, it's only here for compatibility with the
+			* current code base.
+			*/
+			int getHatDownCount(int index, int pos, bool reset);
+
+			/**
 			 * @brief Gets the number of axes on this joystick
 			 * @return The number of axes
 			 */
@@ -212,10 +242,24 @@ namespace io
 
 			SCP_vector<Sint16> _axisValues; //!< The current axes values
 			SCP_vector<coord2d> _ballValues; //!< The ball values
-			SCP_vector<HatPosition> _hatValues; //!< The current hat values
+			
 
-			SCP_vector<int> _buttonDownTimestamp; //!< The timestamp since when the button is pressed, -1 if not pressed
-			SCP_vector<int> _buttonDownCount; //!< The number of times the button was pressed
+			struct button_info
+			{
+				int DownTimestamp;  //!< The timestamp since when the button is pressed, -1 if not pressed
+				int DownCount;      //!< The number of times the button was pressed
+			};
+
+			SCP_vector<button_info> _button;
+
+			struct hat_info
+			{
+				HatPosition Value;                  //!< The current hat value.
+				int         DownTimestamp;          //!< The timestamp when the hat last activated, -1 if centered.
+				int         DownCount[HAT_NUM_POS]; //!< The number of times each hat position has been hit since we last checked.
+			};
+
+			SCP_vector<hat_info> _hat;
 		};
 
 		/**
@@ -255,9 +299,6 @@ namespace io
 }
 
 // For now this is a constant for the rest of the engine
-const int JOY_NUM_BUTTONS = 32;
-const int JOY_NUM_HAT_POS = 4;
-const int JOY_TOTAL_BUTTONS = (JOY_NUM_BUTTONS + JOY_NUM_HAT_POS);
 const int JOY_NUM_AXES = 6;
 
 const int JOY_AXIS_MIN = 0;

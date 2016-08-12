@@ -23,10 +23,9 @@ IF(WIN32)
 	)
 	
 	SET(SDL_LIBS sdl CACHE INTERNAL "")
-
-	add_library(sdlmain STATIC src/SDL_windows.h src/SDL_windows_main.c)
-	set_target_properties(sdlmain PROPERTIES FOLDER "3rdparty")
-	target_link_libraries(sdlmain PRIVATE sdl)
+	
+	ADD_LIBRARY(sdlmain INTERFACE)
+	target_link_libraries(sdlmain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2main.lib")
 ELSE(WIN32)
 	# CMake can't check for SDL2 so we'll just use PkgConfig
 	find_package(PkgConfig)

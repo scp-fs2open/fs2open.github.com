@@ -138,7 +138,7 @@ typedef struct _DDSURFACEDESC2
 //reads a dds header
 //returns one of the error values
 //'compression_type' comes back as one of the DDS_DXTC* defines
-int dds_read_header(const char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, int *size = 0, ubyte *palette = NULL);
+int dds_read_header(const char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, size_t *size = 0, ubyte *palette = NULL);
 
 //reads bitmap
 //size of the data it stored in size

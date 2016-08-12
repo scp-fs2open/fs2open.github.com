@@ -94,10 +94,10 @@ void parse_mod_table(const char *filename)
 			}
 
 			// check length
-			int maxlen = (MAX_FILENAME_LEN - 4);
-			int len = strlen(temp);
+			size_t maxlen = (MAX_FILENAME_LEN - 4);
+			auto len = strlen(temp);
 			if (len > maxlen) {
-				Warning(LOCATION, "Token too long: [%s].  Length = %i.  Max is %i.\n", temp, len, maxlen);
+				Warning(LOCATION, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", temp, len, maxlen);
 				temp[maxlen] = 0;
 			}
 

@@ -326,7 +326,7 @@ void brief_parse_icon_tbl()
 		for (icon = 0; icon < MIN_BRIEF_ICONS; icon++)
 		{
 			for (species = 0; species < num_species_covered; species++)
-				Species_info[species].bii_index[icon] = bii_index++;
+				Species_info[species].bii_index[icon] = (int)(bii_index++);
 		}
 
 		// error check
@@ -1171,19 +1171,19 @@ void brief_render_line(int line_num, int x, int y, int instance)
 	SCP_vector<colored_char> *src = &Colored_stream[instance].at(line_num);
 
 	// empty strings do not have to be drawn
-	int src_len = src->size();
+	size_t src_len = src->size();
 	if (src_len == 0){
 		return;
 	}
 	// truncate_len is the number of characters currently displayed including the bright white characters
-	int truncate_len = fl2i(Brief_text_wipe_time_elapsed / BRIEF_TEXT_WIPE_TIME * Max_briefing_line_len);
+	size_t truncate_len = fl2i(Brief_text_wipe_time_elapsed / BRIEF_TEXT_WIPE_TIME * Max_briefing_line_len);
 	if (truncate_len > src_len){
 		truncate_len = src_len;
 	}
 	// truncate_len is going to be the number of characters displayed with normal intensity
 	// bright_len is the additional characters displayed with high intensity
 	// bright_len+truncate_len<len chars are displayed
-	int bright_len = 0;
+	size_t bright_len = 0;
 	if (truncate_len < src_len) {
 		if (truncate_len <= BRIGHTEN_LEAD) {
 			bright_len = truncate_len;
@@ -1193,7 +1193,7 @@ void brief_render_line(int line_num, int x, int y, int instance)
 			truncate_len -= BRIGHTEN_LEAD; 
 		}
 	}
-	int char_seq_pos=0; //Cursor position into the following character sequence
+	size_t char_seq_pos=0; //Cursor position into the following character sequence
 	char char_seq[MAX_BRIEF_LINE_LEN];	
 	int offset = 0; //offset is the horizontal position of the screen where strings are drawn
 	gr_set_color_fast(&Color_white);
@@ -1203,12 +1203,12 @@ void brief_render_line(int line_num, int x, int y, int instance)
 	// When the color changes, the buffer is drawn and reset.
 	{
 		char last_color = src->at(0).color;
-		for (int current_pos=0; current_pos<truncate_len; current_pos++) {
+		for (size_t current_pos=0; current_pos<truncate_len; current_pos++) {
 			colored_char &current_char=src->at(current_pos);		
 			//when the current color changes, the accumulated character sequence is drawn.
 			if (current_char.color != last_color){
 				//add a 0 terminal character to make line a valid C string
-				Assert(char_seq_pos < (int)sizeof(char_seq));
+				Assert(char_seq_pos < sizeof(char_seq));
 				char_seq[char_seq_pos] = 0;         
 				{	// Draw coloured text, and increment cariage position
 					int w=0,h=0;
@@ -1221,12 +1221,12 @@ void brief_render_line(int line_num, int x, int y, int instance)
 				char_seq_pos = 0;
 				last_color = current_char.color;
 			}
-			Assert(char_seq_pos < (int)sizeof(char_seq));
+			Assert(char_seq_pos < sizeof(char_seq));
 			char_seq[char_seq_pos++] = current_char.letter;		
 		}
 		// Draw the final chunk of acumulated characters
 		// Add a 0 terminal character to make line a valid C string
-		Assert(char_seq_pos < (int)sizeof(char_seq));
+		Assert(char_seq_pos < sizeof(char_seq));
 		char_seq[char_seq_pos] = 0;
         {	// Draw coloured text, and increment cariage position
 			int w=0,h=0;
@@ -1239,8 +1239,8 @@ void brief_render_line(int line_num, int x, int y, int instance)
 
 	{	// PART2: Draw leading bright white characters
 		char_seq_pos = 0;
-		for( int current_pos = truncate_len; current_pos<truncate_len + bright_len; current_pos++){		
-			Assert(char_seq_pos < (int)sizeof(char_seq));
+		for( size_t current_pos = truncate_len; current_pos<truncate_len + bright_len; current_pos++){		
+			Assert(char_seq_pos < sizeof(char_seq));
 			char_seq[char_seq_pos++] = src->at(current_pos).letter;
 		}
 		Assert(char_seq_pos < (int)sizeof(char_seq));
@@ -1462,8 +1462,8 @@ int brief_text_colorize(char *src, int instance, char default_color_stack[], int
 
 	active_color_index = default_color_stack[color_stack_index];
 
-	int src_len = strlen(src);
-	for (int i = 0; i < src_len; i++)
+	auto src_len = strlen(src);
+	for (size_t i = 0; i < src_len; i++)
 	{
 		// Is the character a color markup?
 		// text markup consists of a '$' plus a character plus an optional space
@@ -1527,7 +1527,7 @@ int brief_text_colorize(char *src, int instance, char default_color_stack[], int
 	} 
 
 	Colored_stream[instance].push_back(dest_line); 	
-	return dest_line.size();
+	return (int)dest_line.size();
 }
 
 /**

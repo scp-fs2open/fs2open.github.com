@@ -54,7 +54,7 @@ int keypad_to_ascii(int c)
 void strcins(char *s, int p, char c)
 {
 	int n;
-	for (n=strlen(s)-p; n>=0; n-- )
+	for (n=(int)strlen(s)-p; n>=0; n-- )
 		*(s+p+n+1) = *(s+p+n);   // Move everything over	
 	*(s+p) = c;         // then insert the character
 }
@@ -117,7 +117,7 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 		strncpy( text, _text, _text_len );
 	}
 	text[_text_len] = 0;
-	position = strlen(_text);
+	position = (int)strlen(_text);
 	oldposition = position;
 	length = _text_len;
 	pressed_down = 0;
@@ -464,7 +464,7 @@ void UI_INPUTBOX::set_text(const char *in)
 {
 	int in_length;
 	
-	in_length = strlen(in);
+	in_length = (int)strlen(in);
 	if (in_length > length)
 		Assert(0);	// tried to force text into an input box that won't fit into allocated memory
 

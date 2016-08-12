@@ -391,7 +391,7 @@ void techroom_render_desc(int xo, int yo, int ho)
 		int more_txt_x = Tech_desc_coords[gr_screen.res][0] + (Tech_desc_coords[gr_screen.res][2]/2) - 10;	// FIXME should move these to constants since they don't move
 		int more_txt_y = Tech_desc_coords[gr_screen.res][1] + Tech_desc_coords[gr_screen.res][3];				// located below brief text, centered
 		int w, h;
-		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
+		gr_get_string_size(&w, &h, XSTR("more", 1469), static_cast<int>(strlen(XSTR("more", 1469))));
 		gr_set_color_fast(&Color_black);
 		gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
 		gr_set_color_fast(&Color_more_indicator);
@@ -774,19 +774,19 @@ void techroom_change_tab(int num)
 
 				Ship_list_size = 0;
 
-                for (auto ship_it = Ship_info.begin(); ship_it != Ship_info.end(); ++ship_it)
-                {
+				for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it)
+				{
                     if (Techroom_show_all || (ship_it->flags[si_mask]) || (ship_it->flags[si_mask2]))
-                    {
-                        // this ship should be displayed, fill out the entry struct
-                        Ship_list[Ship_list_size].bitmap = -1;
-                        Ship_list[Ship_list_size].index = std::distance(Ship_info.begin(), ship_it);
-                        Ship_list[Ship_list_size].animation.num_frames = 0;			// no anim for ships
-                        Ship_list[Ship_list_size].has_anim = 0;				// no anim for ships
-                        Ship_list[Ship_list_size].name = ship_it->tech_title ? ship_it->tech_title : (ship_it->alt_name ? ship_it->alt_name : ship_it->name);
-                        Ship_list[Ship_list_size].desc = ship_it->tech_desc;
-                        Ship_list[Ship_list_size].model_num = -1;
-                        Ship_list[Ship_list_size].textures_loaded = 0;
+					{
+						// this ship should be displayed, fill out the entry struct
+						Ship_list[Ship_list_size].bitmap = -1;
+						Ship_list[Ship_list_size].index = (int)std::distance(Ship_info.begin(), it);
+						Ship_list[Ship_list_size].animation.num_frames = 0;			// no anim for ships
+						Ship_list[Ship_list_size].has_anim = 0;				// no anim for ships
+						Ship_list[Ship_list_size].name = *it->tech_title ? it->tech_title : (*it->alt_name ? it->alt_name : it->name);
+						Ship_list[Ship_list_size].desc = it->tech_desc;
+						Ship_list[Ship_list_size].model_num = -1;
+						Ship_list[Ship_list_size].textures_loaded = 0;
 
                         Ship_list_size++;
                     }
@@ -1172,7 +1172,7 @@ void techroom_init()
 	help_overlay_set_state(Techroom_overlay_id, gr_screen.res, 0);
 
 	// setup slider
-	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], Ship_info.size(), Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
+	Tech_slider.create(&Ui_window, Tech_slider_coords[gr_screen.res][SHIP_X_COORD], Tech_slider_coords[gr_screen.res][SHIP_Y_COORD], Tech_slider_coords[gr_screen.res][SHIP_W_COORD], Tech_slider_coords[gr_screen.res][SHIP_H_COORD], (int)Ship_info.size(), Tech_slider_filename[gr_screen.res], &tech_scroll_list_up, &tech_scroll_list_down, &tech_ship_scroll_capture);
 
 	// zero intel anim/bitmap stuff
 	for(idx=0; idx<MAX_INTEL_ENTRIES; idx++){

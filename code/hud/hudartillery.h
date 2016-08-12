@@ -49,7 +49,7 @@ typedef struct ssm_firing_info {
 	SCP_vector<vec3d>	start_pos;		// start positions
 
 	int					count;			// The ssm_info count may be variable; this stores the actual number of projectiles for this strike.
-	int					ssm_index;		// index info ssm_info array
+	size_t				ssm_index;		// index info ssm_info array
 	class object*		target;			// target for the strike
 	int					ssm_team;		// team that fired the ssm.
 	float				duration;		// how far into the warp effect to fire

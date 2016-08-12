@@ -2293,7 +2293,7 @@ void wl_render_weapon_desc(float frametime)
 		
 		// draw weapon title (above weapon anim)
 		for (i=0; i<2; i++) {
-			curr_len = strlen(Weapon_desc_lines[i]);
+			curr_len = (int)strlen(Weapon_desc_lines[i]);
 
 			if (bright_char_index < curr_len) {
 				// save bright char and plunk in some nulls to shorten string
@@ -2321,7 +2321,7 @@ void wl_render_weapon_desc(float frametime)
 
 		// draw weapon desc (below weapon anim)
 		for (i=2; i<WEAPON_DESC_MAX_LINES; i++) {
-			curr_len = strlen(Weapon_desc_lines[i]);
+			curr_len = (int)strlen(Weapon_desc_lines[i]);
 
 			if (bright_char_index < curr_len) {
 				// save bright char and plunk in some nulls to shorten string
@@ -2377,7 +2377,7 @@ void wl_weapon_desc_start_wipe()
 {
 	int currchar_src = 0, currline_dest = 2, currchar_dest = 0, i;
 	int w, h;
-	int title_len = strlen(Weapon_info[Selected_wl_class].title);
+	int title_len = (int)strlen(Weapon_info[Selected_wl_class].title);
 
 	// init wipe vars
 	Weapon_desc_wipe_time_elapsed = 0.0f;
@@ -2899,7 +2899,7 @@ void wl_render_icon_count(int num, int x, int y)
 	Assert(number_to_draw >= 0);
 
 	sprintf(buf, "%d", number_to_draw);
-	gr_get_string_size(&num_w, &num_h, buf, strlen(buf));
+	gr_get_string_size(&num_w, &num_h, buf, (int)strlen(buf));
 
 	// render
 	gr_set_color_fast(&Color_white);

@@ -174,7 +174,8 @@ ALCcontext *ds_sound_context = NULL;
 ALuint AL_EFX_aux_id = 0;
 
 static ALuint AL_EFX_effect_id = 0;
-static int Ds_active_env = -1;
+static bool Ds_active_env = false;
+static size_t Ds_active_env_idx = 0;
 
 
 static void *al_load_function(const char *func_name)
@@ -222,7 +223,8 @@ static void al_efx_load_preset(size_t presetid)
 	OpenAL_ErrorPrint( v_alEffectf(AL_EFX_effect_id, AL_EAXREVERB_ROOM_ROLLOFF_FACTOR, prop->flRoomRolloffFactor) );
 	OpenAL_ErrorPrint( v_alEffecti(AL_EFX_effect_id, AL_EAXREVERB_DECAY_HFLIMIT, prop->iDecayHFLimit) );
 
-	Ds_active_env = presetid;
+	Ds_active_env_idx = presetid;
+	Ds_active_env = true;
 }
 
 
@@ -460,7 +462,8 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 	uint			tag, size, next_chunk;
 	bool			got_fmt = false, got_data = false;
 	OggVorbis_File	ovf;
-	int				rc, FileSize, FileOffset;
+	int				rc;
+	size_t			FileSize, FileOffset;
 	char			fullpath[MAX_PATH];
 	char			filename[MAX_FILENAME_LEN];
 	int				rval = -1;
@@ -1332,7 +1335,7 @@ void ds_close_buffers()
 	size_t i;
 
 	for (i = 0; i < sound_buffers.size(); i++) {
-		ds_unload_buffer(i);
+		ds_unload_buffer((int)i);
 	}
 
 	sound_buffers.clear();
@@ -2354,7 +2357,8 @@ int ds_eax_set_all(unsigned long id, float vol, float damping, float decay)
 	// special disabled case
 	if ( (id == EAX_ENVIRONMENT_GENERIC) && (vol == 0.0f) && (damping == 0.0f) && (decay == 0.0f) ) {
 		v_alAuxiliaryEffectSloti(AL_EFX_aux_id, AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
-		Ds_active_env = -1;
+		Ds_active_env_idx = 0;
+		Ds_active_env = false;
 		return 0;
 	}
 
@@ -2383,7 +2387,7 @@ int ds_eax_get_preset_id(const char *name)
 
 	for (size_t i = 0; i < count; i++) {
 		if ( !stricmp(name, EFX_presets[i].name.c_str()) ) {
-			return i;
+			return (int)i;
 		}
 	}
 
@@ -2403,7 +2407,7 @@ int ds_eax_get_prop(EFXREVERBPROPERTIES **props, const char *name, const char *t
 	if (id >= 0) {
 		*props = &EFX_presets[id];
 	} else {
-		id = EFX_presets.size();
+		id = (int)EFX_presets.size();
 
 		EFXREVERBPROPERTIES n_prop;
 
@@ -2472,17 +2476,17 @@ int ds_eax_get_all(EAX_REVERBPROPERTIES *er, int id)
 	}
 
 	if (id < 0) {
-		if (Ds_active_env < 0) {
+		if (!Ds_active_env) {
 			return -1;
 		}
 
-		er->environment = Ds_active_env;
+		er->environment = Ds_active_env_idx;
 
 		OpenAL_ErrorPrint( v_alGetEffectf(AL_EFX_effect_id, AL_EAXREVERB_GAIN, &er->fVolume) );
 		OpenAL_ErrorPrint( v_alGetEffectf(AL_EFX_effect_id, AL_EAXREVERB_DECAY_TIME, &er->fDecayTime_sec) );
 		OpenAL_ErrorPrint( v_alGetEffectf(AL_EFX_effect_id, AL_EAXREVERB_DECAY_HFRATIO, &er->fDamping) );
 	} else if (id < (int)EFX_presets.size()) {
-		er->environment = (unsigned int)id;
+		er->environment = (size_t)id;
 
 		er->fVolume = EFX_presets[id].flGain;
 		er->fDecayTime_sec = EFX_presets[id].flDecayTime;

@@ -791,7 +791,7 @@ void red_alert_delete_ship(ship *shipp, int ship_state)
 	ship_add_exited_ship( shipp, SEF_PLAYER_DELETED );
 	obj_delete(shipp->objnum);
 	if ( shipp->wingnum >= 0 ) {
-		ship_wing_cleanup( shipp-Ships, &Wings[shipp->wingnum] );
+		ship_wing_cleanup( SHIP_INDEX(shipp), &Wings[shipp->wingnum] );
 	}
 }
 

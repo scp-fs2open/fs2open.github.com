@@ -1447,8 +1447,8 @@ extern SCP_vector<ship_counts> Ship_type_counts;
 
 // Use the below macros when you want to find the index of an array element in the
 // Wings[] or Ships[] arrays.
-#define WING_INDEX(wingp) (wingp-Wings)
-#define SHIP_INDEX(shipp) (shipp-Ships)
+#define WING_INDEX(wingp) ((int)(wingp-Wings))
+#define SHIP_INDEX(shipp) ((int)(shipp-Ships))
 
 
 extern void ship_init();				// called once	at game start
@@ -1822,8 +1822,8 @@ void ship_init_cockpit_displays(ship *shipp);
 void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num);
 void ship_set_hud_cockpit_targets();
 void ship_clear_cockpit_displays();
-int ship_start_render_cockpit_display(int cockpit_display_num);
-void ship_end_render_cockpit_display(int cockpit_display_num);
+int ship_start_render_cockpit_display(size_t cockpit_display_num);
+void ship_end_render_cockpit_display(size_t cockpit_display_num);
 
 //WMC - Warptype stuff
 int warptype_match(char *p);

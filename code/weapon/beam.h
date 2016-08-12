@@ -176,6 +176,8 @@ typedef struct beam {
 extern beam Beams[MAX_BEAMS];				// all beams
 extern int Beam_count;
 
+#define BEAM_INDEX(beam)			(int)((beam) - Beams)
+
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON FUNCTIONS
 //

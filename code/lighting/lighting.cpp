@@ -1214,15 +1214,15 @@ light_indexing_info scene_lights::bufferLights()
 	return light_info;
 }
 
-int scene_lights::getNumStaticLights()
+size_t scene_lights::getNumStaticLights()
 {
 	return StaticLightIndices.size();
 }
 
 void scene_lights::resetLightState()
 {
-	current_light_index = -1;
-	current_num_lights = -1;
+	current_light_index = static_cast<size_t>(-1);
+	current_num_lights = static_cast<size_t>(-1);
 }
 
 bool scene_lights::setLights(const light_indexing_info *info)
@@ -1240,7 +1240,7 @@ bool scene_lights::setLights(const light_indexing_info *info)
 	gr_set_lighting(true, true);
 
 	for ( size_t i = 0; i < StaticLightIndices.size(); ++i) {
-		int light_index = StaticLightIndices[i];
+		auto light_index = StaticLightIndices[i];
 		
 		gr_set_light( &AllLights[light_index] );
 	}
@@ -1251,21 +1251,21 @@ bool scene_lights::setLights(const light_indexing_info *info)
 		return false;
 	}
 
-	int index_start = info->index_start;
-	int num_lights = info->num_lights;
+	auto index_start = info->index_start;
+	auto num_lights = info->num_lights;
 
 	// check if there are any lights to actually set
-	if ( num_lights <= 0 || index_start < 0 ) {
+	if ( num_lights <= 0 ) {
 		opengl_change_active_lights(0);
 		return false;
 	}
 
 	// we definitely shouldn't be exceeding the number of buffered lights
-	Assert(index_start + num_lights <= (int)BufferedLights.size());
+	Assert(index_start + num_lights <= BufferedLights.size());
 
-	for ( int i = 0; i < num_lights; ++i ) {
-		int buffered_light_index = index_start + i;
-		int light_index = BufferedLights[buffered_light_index];
+	for ( size_t i = 0; i < num_lights; ++i ) {
+		auto buffered_light_index = index_start + i;
+		auto light_index = BufferedLights[buffered_light_index];
 
 		gr_set_light(&AllLights[light_index]);
 	}

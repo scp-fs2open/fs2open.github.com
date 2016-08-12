@@ -917,7 +917,7 @@ void ai_big_chase()
 	} else if (En_objp->flags[Object::Object_Flags::Protected]) {	//	If protected and we're not attacking a subsystem, stop attacking!
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy - En_objp->radius, En_objp->radius);
 		aip->target_objnum = -1;
-		if (find_enemy(Pl_objp-Objects, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]) == -1) {
+		if (find_enemy(OBJ_INDEX(Pl_objp), MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]) == -1) {
 			ai_do_default_behavior(Pl_objp);
 			return;
 		}
@@ -1350,27 +1350,30 @@ void ai_big_strafe_attack()
 	ai_big_maybe_fire_weapons(target_dist, target_dot, &Pl_objp->pos, &En_objp->pos, &En_objp->phys_info.vel);
 	turn_towards_point(Pl_objp, &target_pos, NULL, 0.0f);
 
-	// Slow down if we've not been hit for a while
 	fix last_hit = Missiontime - aip->last_hit_time;
-	if ( target_dist > 1200 || last_hit < F1_0*6) {
-		accel = 1.0f;
-	} else {
-		float attack_time;
-		attack_time = f2fl(Missiontime - aip->submode_start_time);
-		if ( attack_time > 15 ) {
-			accel = 0.2f;
-		} else if ( attack_time > 10 ) {
-			accel = 0.4f;
-		} else if ( attack_time > 8 ) {
-			accel = 0.6f;
-		} else if ( attack_time > 5 ) {
-			accel = 0.8f;
-		} else {
+	if ( aip->ai_profile_flags2 & AIPF2_AI_CAN_SLOW_DOWN_ATTACKING_BIG_SHIPS ) {
+		// Slow down if we've not been hit for a while
+		if ( target_dist > 1200 || last_hit < F1_0*6) {
 			accel = 1.0f;
+		} else {
+			float attack_time;
+			attack_time = f2fl(Missiontime - aip->submode_start_time);
+			if ( attack_time > 15 ) {
+				accel = 0.2f;
+			} else if ( attack_time > 10 ) {
+				accel = 0.4f;
+			} else if ( attack_time > 8 ) {
+				accel = 0.6f;
+			} else if ( attack_time > 5 ) {
+				accel = 0.8f;
+			} else {
+				accel = 1.0f;
+			}
 		}
+	} else {
+		accel = 1.0f;
 	}
 
-	accel = 1.0f;
 	accelerate_ship(aip, accel);
 
 	// if haven't been hit in quite a while, leave strafe mode

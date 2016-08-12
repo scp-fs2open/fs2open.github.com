@@ -795,7 +795,7 @@ void main_hall_do(float frametime)
 		case SNAZZY_OVER:
 			for (it = Main_hall->regions.begin(); Main_hall->regions.end() != it; ++it) {
 				if (it->mask == code) {
-					main_hall_handle_mouse_location(it - Main_hall->regions.begin());
+					main_hall_handle_mouse_location((int)std::distance(Main_hall->regions.begin(), it));
 					break;
 				}
 			}
@@ -932,7 +932,7 @@ void main_hall_do(float frametime)
 
 			// if the escape key wasn't pressed handle any mouse position related events
 			if (code != ESC_PRESSED) {
-				main_hall_handle_mouse_location((region_action == -1 ? -1 : it - Main_hall->regions.begin()));
+				main_hall_handle_mouse_location((region_action == -1 ? -1 : (int)std::distance(Main_hall->regions.begin(), it)));
 			}
 			break;
 
@@ -1828,13 +1828,13 @@ int main_hall_get_index(const SCP_string &name_to_find)
 
 int main_hall_get_resolution_index(int main_hall_num)
 {
-	unsigned int i;
+	size_t i;
 	float aspect_ratio = (float)gr_screen.center_w / (float)gr_screen.center_h;
 
 	for (i = Main_hall_defines.at(main_hall_num).size() - 1; i >= 1; i--) {
 		main_hall_defines* m = &Main_hall_defines.at(main_hall_num).at(i);
 		if (gr_screen.center_w >= m->min_width && gr_screen.center_h >= m->min_height && aspect_ratio >= m->min_aspect_ratio) {
-			return i;
+			return (int)i;
 		}
 	}
 	return 0;
@@ -2071,7 +2071,7 @@ void parse_main_hall_table(const char* filename)
 	main_hall_defines *m, temp;
 	int idx, s_idx, m_idx;
 	int num_resolutions = 2;
-	unsigned int count;
+	size_t count;
 	char temp_string[MAX_FILENAME_LEN];
 	SCP_string temp_scp_string;
 
@@ -2115,7 +2115,7 @@ void parse_main_hall_table(const char* filename)
 						}
 					}
 					else {
-						snprintf(temp_string, MAX_FILENAME_LEN, "%u", count);
+						snprintf(temp_string, MAX_FILENAME_LEN, SIZE_T_ARG, count);
 						m->name = temp_string;
 					}
 				}

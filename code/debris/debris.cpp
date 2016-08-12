@@ -49,7 +49,7 @@ int Debris_num_submodels = 0;
 
 #define	MAX_DEBRIS_DIST					10000.0f			//	Debris goes away if it's this far away.
 #define	DEBRIS_DISTANCE_CHECK_TIME		(10*1000)		//	Check every 10 seconds.
-#define	DEBRIS_INDEX(dp) (dp-Debris)
+#define	DEBRIS_INDEX(dp) (int)(dp-Debris)
 
 #define	MAX_SPEED_SMALL_DEBRIS		200					// maximum velocity of small debris piece
 #define	MAX_SPEED_BIG_DEBRIS			150					// maximum velocity of big debris piece

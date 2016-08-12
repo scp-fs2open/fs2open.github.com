@@ -1292,7 +1292,7 @@ void parse_fiction(mission *pm)
 				// see if this is the stage we want to display, then display it
 				if (!Fred_running && !fiction_viewer_loaded && is_sexp_true(stage.formula))
 				{
-					fiction_viewer_load(Fiction_viewer_stages.size() - 1);
+					fiction_viewer_load((int)(Fiction_viewer_stages.size() - 1));
 					fiction_viewer_loaded = true;
 				}
 			}
@@ -7582,12 +7582,12 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 		i = -1;
 		// get index of correct species support ship
-        for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
             if ((it->species == requester_species) && (it->flags[Ship::Info_Flags::Support])) {
-                i = std::distance(Ship_info.cbegin(), it);
-                break;
-            }
-        }
+				i = (int)std::distance(Ship_info.cbegin(), it);
+				break;
+			}
+		}
 
 		if ( i != -1 )
 			pobj->ship_class = i;

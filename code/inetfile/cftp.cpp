@@ -143,7 +143,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	//when you found it, you have the host and dir
 	char *filestart = NULL;
 	char *dirstart = NULL;
-	for(int i = strlen(pURL);i>=0;i--)
+	for(size_t i = strlen(pURL);;i--)
 	{
 		if(pURL[i]== '/')
 		{
@@ -157,6 +157,10 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 			{
 				dirstart = pURL+i+1;
 			}
+		}
+
+		if (i == 0) {
+			break;
 		}
 	}
 	if((dirstart==NULL) || (filestart==NULL))
@@ -454,7 +458,7 @@ uint CFtpGet::SendFTPCommand(char *command)
 
 	FlushControlChannel();
 	// Send the FTP command
-	if (SOCKET_ERROR ==(send(m_ControlSock,command,strlen(command), 0)))
+	if (SOCKET_ERROR ==(send(m_ControlSock,command,static_cast<int>(strlen(command)), 0)))
 		{
 		  // Return 999 to indicate an error has occurred
 			return(999);

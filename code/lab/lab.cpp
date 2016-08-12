@@ -1667,8 +1667,8 @@ void labviewer_update_variables_window()
 		ship_info *sip = &Ship_info[Lab_selected_index];
 
 		VAR_SET_VALUE(sip->name);
-		VAR_SET_VALUE_SAVE(sip->species, Species_info.size()-1);
-		VAR_SET_VALUE_SAVE(sip->class_type, Ship_types.size()-1);
+		VAR_SET_VALUE_SAVE(sip->species, (int)(Species_info.size()-1));
+		VAR_SET_VALUE_SAVE(sip->class_type, (int)(Ship_types.size()-1));
 		VAR_SET_VALUE(sip->default_team_name);
 
 		VAR_SET_VALUE_SAVE(sip->density, 0);
@@ -1685,7 +1685,7 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE_SAVE(sip->subsys_repair_rate, 0);
 		VAR_SET_VALUE_SAVE(sip->hull_repair_rate, 0);
 		VAR_SET_VALUE_SAVE(sip->cmeasure_max, 0);
-		VAR_SET_VALUE_SAVE(sip->shield_icon_index, Hud_shield_filenames.size()-1);
+		VAR_SET_VALUE_SAVE(sip->shield_icon_index, (int)(Hud_shield_filenames.size()-1));
 
 		VAR_SET_VALUE_SAVE(sip->power_output, 0);
 		VAR_SET_VALUE_SAVE(sip->max_overclocked_speed, 0);
@@ -2133,7 +2133,7 @@ void labviewer_make_ship_window(Button *caller)
 			stip = Lab_species_nodes[Species_info.size()];
 		}
 
-		ctip = cmp->AddItem(stip, it->name, std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
+		ctip = cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
 
 		if ( !Lab_in_mission ) {
 			for (int j = 0; j < it->num_detail_levels; j++) {
