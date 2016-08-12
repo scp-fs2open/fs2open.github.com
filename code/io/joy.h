@@ -255,8 +255,7 @@ namespace io
 			struct hat_info
 			{
 				HatPosition Value;      //!< The current hat position
-				int Value_SDL;          //!< The current hat position (SDL format)
-				
+
 				int DownTimestamp4[4];  //!< The timestamp when each 4-hat position was last hit, -1 if inactive.
 				int DownTimestamp8[8];  //!< The timestamp when each 8-hat posision was last hit, -1 if inactive.
 

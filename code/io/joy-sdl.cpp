@@ -609,24 +609,8 @@ namespace joystick
 		std::bitset<4> hatset = evt.value;
 		auto hatpos = convertSDLHat(evt.value);
 
-		if ((hatpos == HAT_DOWN) || (hatpos == HAT_UP) || (hatpos == HAT_LEFT) || (hatpos == HAT_RIGHT)) {
-			// Hat was reported to be in a cardinal position
-			std::bitset<4> lastset = _hat[hat].Value_SDL;
-
-			// Using bitfield here because it is bodasciously cleaner and faster than trying to do the same with enum's
-			if ((lastset.count() == 1) && (((hatset >> 1) == lastset) || ((hatset << 1) == lastset) || ((hatset | lastset) == 0x09))) {
-				// Hat is in a corner position
-				// Combine the bitfields and translate it to the hatpos
-				hatset |= lastset;
-
-				hatpos = convertSDLHat(hatset.to_ulong());
-			} // Else, hat is in a cardinal value. Don't need to change hatpos.
-
-		}
-
 		// Set current values
 		_hat[hat].Value = hatpos;
-		_hat[hat].Value_SDL = hatset.to_ulong();
 
 		// Reset inactive hat positions
 		for (auto i = 0; i < 4; ++i) {
