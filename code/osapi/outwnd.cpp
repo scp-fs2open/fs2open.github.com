@@ -49,7 +49,6 @@ void load_filter_info(void)
 	char pathname[MAX_PATH_LEN];
 	char inbuf[NAME_LENGTH+4];
 	outwnd_filter_struct new_filter;
-	int z;
 
 	outwnd_filter_loaded = 1;
 
@@ -87,7 +86,7 @@ void load_filter_info(void)
 		else
 			continue;	// skip everything else
 
-		z = strlen(inbuf) - 1;
+		auto z = strlen(inbuf) - 1;
 		if (inbuf[z] == '\n')
 			inbuf[z] = 0;
 
@@ -129,7 +128,7 @@ void save_filter_info(void)
 	fp = fopen(os_get_config_path(pathname).c_str(), "wt");
 
 	if (fp) {
-		for (uint i = 0; i < OutwndFilter.size(); i++)
+		for (size_t i = 0; i < OutwndFilter.size(); i++)
 			fprintf(fp, "%c%s\n", OutwndFilter[i].enabled ? '+' : '-', OutwndFilter[i].name);
 
 		fclose(fp);
@@ -168,7 +167,7 @@ void outwnd_printf(const char *id, const char *format, ...)
 
 void outwnd_print(const char *id, const char *tmp)
 {
-	uint i;
+	size_t i;
 
 	if ( running_unittests ) {
 		// Ignore all messages when running unit tests
@@ -190,7 +189,7 @@ void outwnd_print(const char *id, const char *tmp)
 		outwnd_print( "general", "==========================================================================\n" );
 	}
 
-	uint outwnd_size = OutwndFilter.size();
+	auto outwnd_size = OutwndFilter.size();
 
 	for (i = 0; i < OutwndFilter.size(); i++) {
 		if ( !stricmp(id, OutwndFilter[i].name) )

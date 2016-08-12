@@ -151,13 +151,12 @@ template<class T, class Flagset>
 int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs[], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
 {
     char(*slp)[NAME_LENGTH] = (char(*)[32])new char[n_defs*NAME_LENGTH];
-    size_t num_strings = stuff_string_list(slp, n_defs);
-    size_t i, j;
+    int num_strings = stuff_string_list(slp, (int)n_defs);
 
-    for (i = 0; i < num_strings; i++)
+    for (auto i = 0; i < num_strings; i++)
     {
         bool string_parsed = false;
-        for (j = 0; j < n_defs; j++)
+        for (size_t j = 0; j < n_defs; j++)
         {
             if (!stricmp(slp[i], defs[j].name)) {
                 dest.set(defs[j].def);

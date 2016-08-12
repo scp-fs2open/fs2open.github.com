@@ -1260,12 +1260,12 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		strcpy_s(buf, "return ");
 
 		//Stuff it
-		stuff_string(buf+strlen(buf), F_RAW, sizeof(buf) - strlen(buf));
+		stuff_string(buf+strlen(buf), F_RAW, (int)(sizeof(buf) - strlen(buf)));
 
 		//Add ending
 		strcat_s(buf, "\n");
 
-		int len = strlen(buf);
+		auto len = strlen(buf);
 
 		//Load it into a buffer & parse it
 		if(!luaL_loadbuffer(GetLuaSession(), buf, len, debug_str))
