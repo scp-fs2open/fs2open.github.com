@@ -1264,12 +1264,10 @@ int collide_ship_ship( obj_pair * pair )
 
         // cap ships warping in/out can exceed ship's expected velocity
         // if ship is warping in, in stage 1, its velocity is 0, so make ship try to collide next frame
-        auto sif_a_flags = Ship_info[Ships[A->instance].ship_info_index].flags;
-        auto sif_b_flags = Ship_info[Ships[B->instance].ship_info_index].flags;
 
         // if ship is huge and warping in or out
-        if (((Ships[A->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (Ship_info[Ships[A->instance].ship_info_index].is_huge_ship())
-			|| ((Ships[B->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (Ship_info[Ships[B->instance].ship_info_index].is_huge_ship()))) ) {
+        if (((Ships[A->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (Ship_info[Ships[A->instance].ship_info_index].is_huge_ship()))
+			|| ((Ships[B->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (Ship_info[Ships[B->instance].ship_info_index].is_huge_ship())) ) {
 			pair->next_check_time = timestamp(0);	// check next time
 			return 0;
 		}
