@@ -651,7 +651,7 @@ bool multi_get_flag(T &value)
     int tmp = 0;
     GET_INT(tmp);
 
-    value = static_cast<T>tmp;
+    value = static_cast<T>(tmp);
 
     multi_reduce_counts(sizeof(int));
 
