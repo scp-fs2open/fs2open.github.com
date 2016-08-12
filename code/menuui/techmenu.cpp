@@ -776,7 +776,7 @@ void techroom_change_tab(int num)
 
 				for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it)
 				{
-                    if (Techroom_show_all || (ship_it->flags[si_mask]) || (ship_it->flags[si_mask2]))
+                    if (Techroom_show_all || (it->flags[si_mask]) || (it->flags[si_mask2]))
 					{
 						// this ship should be displayed, fill out the entry struct
 						Ship_list[Ship_list_size].bitmap = -1;
