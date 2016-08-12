@@ -1,7 +1,7 @@
 #ifndef OBJECT_FLAGS_H
 #define OBJECT_FLAGS_H
 
-#include "globalincs/pstypes.h"
+#include "globalincs/flagset.h"
 
 namespace Object {
 	FLAG_LIST(Object_Flags) {

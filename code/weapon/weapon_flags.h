@@ -1,7 +1,7 @@
 #ifndef WEAPON_FLAGS_H
 #define WEAPON_FLAGS_H
 
-#include "globalincs/pstypes.h"
+#include "globalincs/flagset.h"
 
 namespace Weapon {
 

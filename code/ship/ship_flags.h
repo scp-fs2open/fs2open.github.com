@@ -1,7 +1,7 @@
 #ifndef SHIP_FLAGS_H
 #define SHIP_FLAGS_H
 
-#include "globalincs/pstypes.h"
+#include "globalincs/flagset.h"
 
 namespace Ship {
 

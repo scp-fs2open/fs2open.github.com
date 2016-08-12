@@ -252,6 +252,7 @@ set (file_root_globalincs
 	globalincs/version.h
 	globalincs/vmallocator.h
 	globalincs/scp_defines.h
+	globalincs/flagset.h
 )
 
 IF (WIN32)

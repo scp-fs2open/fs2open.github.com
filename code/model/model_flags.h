@@ -1,7 +1,7 @@
 #ifndef MODEL_FLAGS_H
 #define MODEL_FLAGS_H
 
-#include "globalincs/pstypes.h"
+#include "globalincs/flagset.h"
 
 namespace Model {
 
