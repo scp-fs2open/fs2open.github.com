@@ -1299,7 +1299,7 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
     int player_object_index = OBJ_INDEX(Player_obj);
 
     if (target_filters == NULL) {
-        *target_filters = flagset<Ship::Info_Flags>();
+        target_filters = new flagset<Ship::Info_Flags>();
         target_filters->set(Ship::Info_Flags::Cargo);
         target_filters->set(Ship::Info_Flags::Navbuoy);
     }

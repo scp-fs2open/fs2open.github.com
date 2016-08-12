@@ -261,9 +261,7 @@ void multi_respawn_handle_invul_players()
 			if( ((Net_players[idx].s_info.invul_timestamp != -1) && (timestamp_elapsed(Net_players[idx].s_info.invul_timestamp))) ||
 				 ((Net_players[idx].m_player->ci.fire_primary_count > 0) || (Net_players[idx].m_player->ci.fire_secondary_count > 0)) ) {
 				objp = &Objects[Net_players[idx].m_player->objnum];
-                auto tmp_flags = objp->flags;
-                tmp_flags.remove(Object::Object_Flags::Invulnerable);
-				obj_set_flags(objp, tmp_flags);
+				obj_set_flags(objp, objp->flags - Object::Object_Flags::Invulnerable);
 			}
 		}
 	}
@@ -497,9 +495,7 @@ void multi_respawn_ai( p_object *pobjp )
 	objp = &Objects[objnum];
 
 	// be sure the the OF_PLAYER_SHIP flag is unset, and the could be player flag is set
-    auto tmp_flags = objp->flags;
-    tmp_flags.set(Object::Object_Flags::Could_be_player);
-	obj_set_flags( objp, tmp_flags );
+	obj_set_flags(objp, objp->flags + Object::Object_Flags::Could_be_player);
     objp->flags.remove(Object::Object_Flags::Player_ship);
 }
 

@@ -2648,6 +2648,9 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
     if (parse_flags[Mission::Parse_Object_Flags::OF_No_collide])
         objp->flags.remove(Object::Object_Flags::Collides);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_No_disabled_self_destruct])
+        shipp->flags.set(Ship::Ship_Flags::No_disabled_self_destruct);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 

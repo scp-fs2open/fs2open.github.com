@@ -551,10 +551,9 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
     flagset<Object::Object_Flags> default_flags;
     default_flags.set(Object::Object_Flags::Renders);
     default_flags.set(Object::Object_Flags::Physics);
+    default_flags.set(Object::Object_Flags::Collides, hull_flag != 0);
 
-    if (hull_flag)
-        default_flags.set(Object::Object_Flags::Collides);
-	objnum = obj_create( OBJ_DEBRIS, parent_objnum, n, &source_obj->orient, pos, radius, default_flags);
+    objnum = obj_create( OBJ_DEBRIS, parent_objnum, n, &source_obj->orient, pos, radius, default_flags);
 	if ( objnum == -1 ) {
 		mprintf(("Couldn't create debris object -- out of object slots\n"));
 		return NULL;

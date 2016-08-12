@@ -6101,9 +6101,7 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		if(val & (1<<2)){
             Objects[shipp->objnum].flags.set(Object::Object_Flags::Player_ship);
 		} else {
-            auto tmp_flags = Objects[shipp->objnum].flags;
-            tmp_flags.set(Object::Object_Flags::Could_be_player);
-			obj_set_flags( &Objects[shipp->objnum], tmp_flags );
+			obj_set_flags( &Objects[shipp->objnum], Objects[shipp->objnum].flags + Object::Object_Flags::Could_be_player);
 		}
 
 		// get ship ets

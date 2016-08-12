@@ -277,7 +277,7 @@ void multi_send_flag(T value)
         return;
     }
 
-    multi_sexp_ensure_space_remains(sizeof(value));
+    multi_sexp_ensure_space_remains(sizeof(int));
 
     //Write INT into the Type buffer.
     type[packet_size] = TYPE_INT;

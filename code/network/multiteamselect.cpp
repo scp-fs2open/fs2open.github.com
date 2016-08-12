@@ -910,9 +910,7 @@ void multi_ts_assign_players_all()
 				player_count--;
 			} else {
                 objp->flags.remove(Object::Object_Flags::Player_ship);
-                auto tmp_flags = objp->flags;
-                tmp_flags.set(Object::Object_Flags::Could_be_player);
-				obj_set_flags( objp, tmp_flags );
+				obj_set_flags( objp, objp->flags + Object::Object_Flags::Could_be_player);
 			}
 
 			// if we've assigned all players, we're done
@@ -930,9 +928,7 @@ void multi_ts_assign_players_all()
 		for ( objp = GET_NEXT(objp); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 			if ( objp->flags[Object::Object_Flags::Player_ship] ){
                 objp->flags.remove(Object::Object_Flags::Player_ship);
-                auto tmp_flags = objp->flags;
-                tmp_flags.set(Object::Object_Flags::Could_be_player);
-				obj_set_flags( objp, tmp_flags );
+				obj_set_flags( objp, objp->flags + Object::Object_Flags::Could_be_player);
 			}
 		}
 	}	
@@ -1015,9 +1011,7 @@ void multi_ts_handle_player_drop()
 				Assert(Multi_ts_team[idx].multi_ts_objnum[s_idx] != -1);
 				Multi_ts_team[idx].multi_ts_player[s_idx] = NULL;
                 Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]].flags.remove(Object::Object_Flags::Player_ship);
-                auto tmp_flags = Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]].flags;
-                tmp_flags.set(Object::Object_Flags::Could_be_player);
-				obj_set_flags( &Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]], tmp_flags);
+				obj_set_flags( &Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]], Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]].flags + Object::Object_Flags::Could_be_player);
 			}
 		}
 	}
@@ -3011,9 +3005,7 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
                 Objects[objnum].flags.set(Object::Object_Flags::Player_ship);
 				break;
 			case 2 :
-                auto tmp_flags = Objects[objnum].flags;
-                tmp_flags.set(Object::Object_Flags::Could_be_player);
-				obj_set_flags( &Objects[objnum], tmp_flags );
+				obj_set_flags( &Objects[objnum], Objects[objnum].flags + Object::Object_Flags::Could_be_player);
 				break;
 			}
 

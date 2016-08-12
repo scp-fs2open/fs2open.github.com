@@ -1998,7 +1998,7 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 
 				num_attacking = num_enemies_attacking(OBJ_INDEX(eno->trial_objp));
                 
-                if (!sip->is_big_or_huge() && num_attacking) {
+                if (!sip->is_big_or_huge() && num_attacking < eno->max_attackers) {
                     dist *= (float)(num_attacking + 2) / 2.0f;				//	prevents lots of ships from attacking same target
                 }
 				

@@ -1596,8 +1596,7 @@ void multi_create_standalone_object()
 	pobj_num = parse_create_object(Player_start_pobject);
 	Assert(pobj_num != -1);
     flagset<Object::Object_Flags> tmp_flags;
-    tmp_flags.set(Object::Object_Flags::Player_ship);
-	obj_set_flags(&Objects[pobj_num], tmp_flags);
+	obj_set_flags(&Objects[pobj_num], tmp_flags + Object::Object_Flags::Player_ship);
 	Objects[pobj_num].net_signature = STANDALONE_SHIP_SIG;
 	Player_ship = &Ships[Objects[pobj_num].instance];
 

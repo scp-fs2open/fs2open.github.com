@@ -135,7 +135,7 @@ void multi_obs_create_observer_client()
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
 	pobj_num = parse_create_object(Player_start_pobject);
 	Assert(pobj_num != -1);
-    auto flags = Objects[pobj_num].flags;
+
 	obj_set_flags(&Objects[pobj_num], Objects[pobj_num].flags + Object::Object_Flags::Player_ship);
 	Player_ship = &Ships[Objects[pobj_num].instance];
 

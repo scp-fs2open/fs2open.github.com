@@ -707,10 +707,9 @@ void briefing_editor_dlg::update_data(int update)
 
 		if (m_cur_stage >= 0) {
             flagset<Object::Object_Flags> default_flags;
-            default_flags.set(Object::Object_Flags::Renders);
 			for (i=0; i<ptr->num_icons; i++) {
 				// create an object for each icon for display/manipulation purposes
-				icon_obj[i] = obj_create(OBJ_POINT, -1, i, NULL, &ptr->icons[i].pos, 0.0f, default_flags);
+				icon_obj[i] = obj_create(OBJ_POINT, -1, i, NULL, &ptr->icons[i].pos, 0.0f, default_flags + Object::Object_Flags::Renders);
 			}
 
 			obj_merge_created_list();
