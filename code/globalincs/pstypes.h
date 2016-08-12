@@ -629,55 +629,54 @@ protected:
     std::bitset<SIZE> values;
 public:
 
-    bool operator[](T idx) const { return values[(static_cast < size_t >(idx))]; };
+    bool operator [] (T idx) const { return values[(static_cast < size_t >(idx))]; };
     
-    flagset<T> operator&(flagset<T>& other) const {
+    flagset<T> operator & (flagset<T>& other) const {
         flagset<T> result;
         result.values = this->values & other.values;
         return result;
     }
 
-    flagset<T> operator+(T flag) {
+    flagset<T> operator + (T flag) const {
         flagset<T> result = *this;
         result.set(flag);
         return result;
     }
 
-    flagset<T>* operator+=(T flag) {
+    flagset<T>* operator += (T flag) {
         this->set(flag);
         return this;
     }
 
-    flagset<T> operator-(T flag) {
+    flagset<T> operator - (T flag) const {
         flagset<T> result = *this;
         result.remove(flag);
         return result;
     }
 
-    flagset<T>* operator-=(T flag) {
+    flagset<T>* operator -= (T flag) {
         this->remove(flag);
         return this;
     }
 
-    flagset<T> operator |(flagset<T>& other) const {
+    flagset<T> operator | (flagset<T>& other) const {
         flagset<T> result;
         result.values = this->values | other.values;
         return result;
     }
 
-
-    flagset<T>* operator |=(const flagset<T>& other) {
+    flagset<T>* operator |= (const flagset<T>& other) {
         this->values |= other.values;
 
         return this;
     }
 
-    void operator |=(const T flag) {
+    void operator |= (const T flag) {
         set(flag);
     }
 
-    bool operator==(const flagset<T> other) const { return this->values == other.values; }
-    bool operator!=(const flagset<T> other) const { return this->values != other.values; }
+    bool operator == (const flagset<T> other) const { return this->values == other.values; }
+    bool operator != (const flagset<T> other) const { return this->values != other.values; }
 
     void reset() { values.reset(); }
     
@@ -704,11 +703,18 @@ public:
     flagset<T>*  remove(T idx) {
         return set(idx, false);
     }
-    flagset<T>*  remove_multiple(T idx[], size_t arg_length) {
-        for (size_t i = 0; i < arg_length; ++i) {
-            set(idx[i], false);
+    
+    template<typename TIter>
+    flagset<T>& remove_multiple(TIter begin, TIter end) {
+        auto current = begin;
+        while (current != end)
+        {
+            set(*current, false);
+
+            current = std::next(current);
         }
-        return this;
+
+        return *this;
     }
 
     flagset<T>*  toggle(T idx) {
@@ -717,11 +723,11 @@ public:
         return this;
     }
 
-    bool any_set() { return values.any(); }
-    bool none_set() { return values.none(); }
+    bool any_set() const { return values.any(); }
+    bool none_set() const { return values.none(); }
 
     void from_long(std::uint64_t num) { values = num; }
-    std::uint64_t to_long() { return values.to_ulong(); }
+    std::uint64_t to_long() const { return values.to_ulong(); }
 };
 
 #define FLAG_LIST(Type) enum class Type : size_t
