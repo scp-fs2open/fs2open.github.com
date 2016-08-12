@@ -3277,7 +3277,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				sip->class_type = ship_type_index;
 
 			// check various ship flags
-			for (int idx = 0; idx < Num_ship_flags; idx++) {
+			for (size_t idx = 0; idx < Num_ship_flags; idx++) {
 				if ( !stricmp(Ship_flags[idx].name, ship_strings[i]) ) {
 					flag_found = true;
 

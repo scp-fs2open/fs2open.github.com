@@ -19220,7 +19220,7 @@ void set_use_ap_cinematics(int node)
 //args: 1, boolean enable/disable
 void set_use_ap(int node)
 {
-    The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, !is_sexp_true(node) != 0);
+    The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, is_sexp_true(node) == 0);
 }
 
 //text: hide-nav
