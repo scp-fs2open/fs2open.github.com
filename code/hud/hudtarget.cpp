@@ -1297,11 +1297,13 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
     float minimum_distance = 1e20f;
     float maximum_distance = 0.0f;
     int player_object_index = OBJ_INDEX(Player_obj);
+    flagset<Ship::Info_Flags> filter;
 
-    if (target_filters == NULL) {
-        target_filters = new flagset<Ship::Info_Flags>();
-        target_filters->set(Ship::Info_Flags::Cargo);
-        target_filters->set(Ship::Info_Flags::Navbuoy);
+    if (target_filters != NULL) {
+        filter = *target_filters;
+    } else {
+        filter.set(Ship::Info_Flags::Cargo);
+        filter.set(Ship::Info_Flags::Navbuoy);
     }
 
     float nearest_distance;
@@ -1338,7 +1340,7 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
 
         if (attacked_object_number == -1) {
             // always ignore navbuoys and cargo
-            if ((Ship_info[prospective_victim_ship_ptr->ship_info_index].flags & *target_filters).any_set()) {
+            if ((Ship_info[prospective_victim_ship_ptr->ship_info_index].flags & filter).any_set()) {
                 continue;
             }
 
