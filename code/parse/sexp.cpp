@@ -14044,7 +14044,7 @@ void sexp_ships_stealthy(int n, bool stealthy)
 // Goober5000
 void sexp_friendly_stealth_invisible(int n, bool invisible)
 {
-	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Stealth, Mission::Parse_Object_Flags::SF_Friendly_stealth_invis, invisible, true);
+	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::NUM_VALUES, Ship::Ship_Flags::Friendly_stealth_invis, Mission::Parse_Object_Flags::SF_Friendly_stealth_invis, invisible, true);
 
 	// we also have to add any escort ships that were made visible
 	if (!invisible)

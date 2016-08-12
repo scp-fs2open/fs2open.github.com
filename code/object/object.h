@@ -223,7 +223,7 @@ void obj_init();
 //object.  Returns 0 if failed, otherwise object index.
 //You can pass 0 for parent if you don't care about that.
 //You can pass null for orient and/or pos if you don't care.
-int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, flagset<Object::Object_Flags> &flags );
+int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags );
 
 void obj_render(object* obj);
 
@@ -284,7 +284,7 @@ void obj_player_fire_stuff( object *objp, control_info ci );
 // actually turn the object collision detection off.  By calling
 // this you shouldn't get Int3's in the checkobject code.  If you
 // do, then put code in here to correctly handle the case.
-void obj_set_flags(object *obj, flagset<Object::Object_Flags> new_flags);
+void obj_set_flags(object *obj, const flagset<Object::Object_Flags>& new_flags);
 
 // get the team for any object
 int obj_team(object *objp);

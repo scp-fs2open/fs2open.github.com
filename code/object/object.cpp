@@ -473,7 +473,7 @@ void obj_free(int objnum)
  * @return the object number 
  */
 int obj_create(ubyte type,int parent_obj,int instance, matrix * orient, 
-               vec3d * pos, float radius, flagset<Object::Object_Flags> &flags )
+               vec3d * pos, float radius, const flagset<Object::Object_Flags> &flags )
 {
 	int objnum;
 	object *obj;
@@ -1006,7 +1006,7 @@ void obj_check_object( object *obj )
  * this you shouldn't get Int3's in the checkobject code.  If you
  * do, then put code in here to correctly handle the case.
  */
-void obj_set_flags( object *obj, flagset<Object::Object_Flags> new_flags )
+void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags )
 {
 	int objnum = OBJ_INDEX(obj);	
 

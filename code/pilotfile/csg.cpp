@@ -480,8 +480,8 @@ void pilotfile::csg_write_techroom()
 	startSection(Section::Techroom);
 
 	// visible ships
-    for (size_t i = 0; i < Ship_info.size(); ++i) {
-        if ((Ship_info[i].flags[Ship::Info_Flags::In_tech_database]) && !(Ship_info[i].flags[Ship::Info_Flags::Default_in_tech_database])) {
+    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+        if ((it->flags[Ship::Info_Flags::In_tech_database]) && !(it->flags[Ship::Info_Flags::Default_in_tech_database])) {
             visible = 1;
         }
         else {

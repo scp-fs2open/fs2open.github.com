@@ -171,8 +171,8 @@ int parse_string_flag_list(Flagset *dest, flag_def_list_new<Flags> defs[], size_
             }
         }
         if (!string_parsed && unparsed_or_special_strings != NULL) {
-            SCP_string* s = new SCP_string(slp[i]);
-            unparsed_or_special_strings->push_back(*s);
+            SCP_string s = SCP_string(slp[i]);
+            unparsed_or_special_strings->push_back(s);
         }
     }
 

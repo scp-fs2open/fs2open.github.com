@@ -848,10 +848,8 @@ void multi_make_player_ai( object *pobj )
 		return;
 
     pobj->flags.remove(Object::Object_Flags::Player_ship);
-    auto flags = pobj->flags;
-    flags.set(Object::Object_Flags::Could_be_player);
-    flags.remove(Object::Object_Flags::Invulnerable);// Newly respawned players will still be invulnerable
-	obj_set_flags( pobj, flags );
+    pobj->flags.set(Object::Object_Flags::Could_be_player);
+	obj_set_flags( pobj, pobj->flags - Object::Object_Flags::Invulnerable);
 
 	// target_objnum must be -1 or else new AI ship will fire on whatever this player
 	// had targeted.
@@ -1411,9 +1409,7 @@ void multi_untag_player_ships()
 	while(moveup != END_OF_LIST(&Ship_obj_list)){
 		if(Objects[moveup->objnum].flags[Object::Object_Flags::Player_ship]){
             Objects[moveup->objnum].flags.remove(Object::Object_Flags::Player_ship);
-            auto flags = Objects[moveup->objnum].flags;
-            flags.set(Object::Object_Flags::Could_be_player);
-			obj_set_flags( &Objects[moveup->objnum], flags );
+			obj_set_flags( &Objects[moveup->objnum], Objects[moveup->objnum].flags + Object::Object_Flags::Could_be_player);
 		}
 		moveup = GET_NEXT(moveup);
 	}
@@ -1586,10 +1582,8 @@ void multi_create_standalone_object()
 	}
 
 	Player_obj = &Objects[objnum];
-    auto flags = Player_obj->flags;
-    flags.remove(Object::Object_Flags::Collides);
-    flags.remove(Object::Object_Flags::Player_ship);
-	obj_set_flags(Player_obj, flags );
+    Player_obj->flags.remove(Object::Object_Flags::Player_ship);
+	obj_set_flags(Player_obj, Player_obj->flags - Object::Object_Flags::Collides);
 	Net_player->m_player->objnum = objnum;
 
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
@@ -2168,9 +2162,7 @@ void multi_warpout_all_players()
 		if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && (Objects[Net_players[idx].m_player->objnum].type == OBJ_SHIP)){
 
 			objp = &Objects[Net_players[idx].m_player->objnum];
-            auto flags = objp->flags;
-            flags.remove(Object::Object_Flags::Collides);
-			obj_set_flags( objp, flags );
+			obj_set_flags( objp, objp->flags - Object::Object_Flags::Collides);
 			shipfx_warpout_start( objp );
 		}
 	}
@@ -2193,9 +2185,7 @@ void multi_warpout_all_players()
 	// if we're a ship, then begin the warpout process
 	else {
 		// turn off collision detection for my ship
-        auto flags = Player_obj->flags;
-        flags.remove(Object::Object_Flags::Collides);
-		obj_set_flags(Player_obj, flags );
+		obj_set_flags(Player_obj, Player_obj->flags - Object::Object_Flags::Collides);
 
 		// turn off gliding too or ships can't get upt to speed
 		if(object_get_gliding(Player_obj)) {
