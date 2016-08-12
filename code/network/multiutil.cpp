@@ -848,8 +848,7 @@ void multi_make_player_ai( object *pobj )
 		return;
 
     pobj->flags.remove(Object::Object_Flags::Player_ship);
-    pobj->flags.set(Object::Object_Flags::Could_be_player);
-	obj_set_flags( pobj, pobj->flags - Object::Object_Flags::Invulnerable);
+    obj_set_flags(pobj, pobj->flags + Object::Object_Flags::Could_be_player - Object::Object_Flags::Invulnerable);
 
 	// target_objnum must be -1 or else new AI ship will fire on whatever this player
 	// had targeted.

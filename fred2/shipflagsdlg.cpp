@@ -1072,7 +1072,7 @@ void ship_flags_dlg::update_ship(int shipnum)
         if (!(shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct]))
             set_modified();
 
-        shipp->flags.set(Ship::Ship_Flags::No_disabled_self_destruct);
+        shipp->flags.remove(Ship::Ship_Flags::No_disabled_self_destruct);
         break;
 
     case 0:
