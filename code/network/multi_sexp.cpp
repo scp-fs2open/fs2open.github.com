@@ -282,7 +282,7 @@ void multi_send_flag(T value)
     //Write INT into the Type buffer.
     type[packet_size] = TYPE_INT;
     //Write the int into the data buffer
-    ADD_INT(static_cast<int>value);
+    ADD_INT(static_cast<int>(value));
     //Increment the COUNT by 4 (i.e the size of an int).
     current_argument_count += sizeof(int);
 }
