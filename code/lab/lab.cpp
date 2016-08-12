@@ -1391,8 +1391,6 @@ void labviewer_flags_add(int *X, int *Y, char *flag_name, int flag, bool flags2 
 
 void labviewer_populate_flags_window()
 {
-	int y;
-
 	if (Lab_mode == LAB_MODE_NONE) {
 		return;
 	}
