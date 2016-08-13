@@ -16,7 +16,7 @@
 
 // z64: Moved up here for compatibility. Bye bye, organization!
 const int JOY_NUM_BUTTONS = 32;
-const int JOY_NUM_HAT_POS = 4;	// z64: This stays at 4 until we have translation text for the corners
+const int JOY_NUM_HAT_POS = 4;
 const int JOY_TOTAL_BUTTONS = (JOY_NUM_BUTTONS + JOY_NUM_HAT_POS);
 
 namespace io
@@ -28,21 +28,19 @@ namespace io
 	{
 		/**
 		 * @brief A hat position
-		 * @note Order here is how the old code used it (except for the corner positions)
+		 * @note Order here is based on SDL bit positions
 		 */
 		enum HatPosition
 		{
 			HAT_CENTERED = -1,
-			HAT_DOWN = JOY_NUM_BUTTONS,
-			HAT_UP,
-			HAT_LEFT,
+			HAT_UP = 0,
 			HAT_RIGHT,
-			HAT_LEFTDOWN,
-			HAT_LEFTUP,
-			HAT_RIGHTDOWN,
+			HAT_DOWN,
+			HAT_LEFT,
 			HAT_RIGHTUP,
-
-			HAT_NUM_POS = 8     // This one is always last. Currently set to 8 for compatibility reasons
+			HAT_RIGHTDOWN,
+			HAT_LEFTUP,
+			HAT_LEFTDOWN
 		};
 
 		/**
@@ -144,24 +142,26 @@ namespace io
 			/**
 			 * @brief Gets the down time of the given hat and position
 			 * @param[in] index The index of the hat to query, must be in [0, numHats())
-			 * @param[in] pos The position to query, must be in [0, int(HAT_NUM_POS))
+			 * @param[in] pos The position to query, must be in [0, JOY_NUM_HAT_POS)
+			 * @param[in] ext If @c false, uses the four-position hat values. If @c ture, uses the eight-position hat values
 			 *
 			 * @returns 0.0f If the queried hat positions is not active, or
 			 * @returns The time, in seconds, that the hat has been active in that position
 			 */
-			float getHatDownTime(int index, int pos) const;
+			float getHatDownTime(int index, HatPosition pos, bool ext) const;
 
 			/**
 			* @brief Times the specified button has been pressed since the last reset
-			* @param index The index of the button, must be in [0, numHats())
-			* @param[in] pos The position to query, must be in [0, int(HAT_NUM_POS))
+			* @param[in] index The index of the button, must be in [0, numHats())
+			* @param[in] pos The position to query, must be in [0, JOY_NUM_HAT_POS)
+			* @param[in] ext If @c false, uses the four-position hat values. If @c true, uses the eight-position hat values
 			* @param reset @c true to reset the count
 			* @return The number of times the button has been pressed
 			*
 			* @warning This function may be removed in the future, it's only here for compatibility with the
 			* current code base.
 			*/
-			int getHatDownCount(int index, int pos, bool reset);
+			int getHatDownCount(int index, HatPosition pos, bool ext, bool reset);
 
 			/**
 			 * @brief Gets the number of axes on this joystick
@@ -254,9 +254,13 @@ namespace io
 
 			struct hat_info
 			{
-				HatPosition Value;                  //!< The current hat value.
-				int         DownTimestamp;          //!< The timestamp when the hat last activated, -1 if centered.
-				int         DownCount[HAT_NUM_POS]; //!< The number of times each hat position has been hit since we last checked.
+				HatPosition Value;      //!< The current hat position
+
+				int DownTimestamp4[4];  //!< The timestamp when each 4-hat position was last hit, -1 if inactive.
+				int DownTimestamp8[8];  //!< The timestamp when each 8-hat posision was last hit, -1 if inactive.
+
+				int DownCount4[4];      //!< The number of times each 4-hat position has been hit since we last checked.
+				int DownCount8[8];      //!< The number of times each 8-hat position has been hit since we last checked.
 			};
 
 			SCP_vector<hat_info> _hat;
