@@ -62,7 +62,7 @@ public:
     void reset() { values.reset(); }
 
     flagset<T>& set(T idx, bool value = true) {
-        Assert(idx >= T::NUM_VALUES);
+        Assertion(static_cast<size_t>(idx) < values.size(), "Invalid value passed to flagset::set(), get a stacktrace, a coder, an old priest and a young priest.");
 
         values.set(static_cast < size_t >(idx), value);
         return *this;
