@@ -1604,7 +1604,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	}
 
 	// if cargo is already revealed
-	if (subsys->flags & SSF_CARGO_REVEALED) {
+	if (subsys->flags[Ship::Subsystem_Flags::Cargo_revealed]) {
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
 			char *cargo_name = Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
 

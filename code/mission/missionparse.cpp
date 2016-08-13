@@ -2225,7 +2225,7 @@ int parse_create_object_sub(p_object *p_objp)
 					ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
 
 					float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
-					if (!(ptr->flags & SSF_NO_AGGREGATE)) {
+					if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
 						shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
 					}
 

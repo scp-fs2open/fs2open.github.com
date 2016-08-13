@@ -123,7 +123,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	// create fireballs when subsys destroy for large ships.
 	object* objp = &Objects[ship_p->objnum];
 
-	if (!(subsys->flags & SSF_VANISHED) && !no_explosion) {
+	if (!(subsys->flags[Ship::Subsystem_Flags::Vanished]) && !no_explosion) {
 		if (objp->radius > 100.0f) {
 			// number of fireballs determined by radius of subsys
 			int num_fireballs;
@@ -195,7 +195,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		hits = 0.0f;
 		for ( ssp=GET_FIRST(&ship_p->subsys_list); ssp != END_OF_LIST(&ship_p->subsys_list); ssp = GET_NEXT(ssp) ) {
 			// type matches?
-			if ( (ssp->system_info->type == type) && !(ssp->flags & SSF_NO_AGGREGATE) ) {
+			if ( (ssp->system_info->type == type) && !(ssp->flags[Ship::Subsystem_Flags::No_aggregate]) ) {
 				hits += ssp->current_hits;
 			}
 		}
@@ -225,7 +225,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 	// Don't log, display info, or play sounds about the activation subsytem
 	// FUBAR/Goober5000 - or about vanishing subsystems, per precedent with ship-vanish
-	int notify = (psub->type != SUBSYSTEM_ACTIVATION) && !(subsys->flags & SSF_VANISHED);
+	int notify = (psub->type != SUBSYSTEM_ACTIVATION) && !(subsys->flags[Ship::Subsystem_Flags::Vanished]);
 
 	if (notify) 
 	{
@@ -529,7 +529,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			Assert(Player_ai->targeted_subsys != NULL);
 			if ( (subsys == Player_ai->targeted_subsys) && (subsys->current_hits > 0.0f) ) {
 				Assert(mss->type == (int) -damage);
-				if (!(subsys->flags & SSF_NO_AGGREGATE)) {
+				if (!(subsys->flags[Ship::Subsystem_Flags::No_aggregate])) {
 					ship_p->subsys_info[mss->type].aggregate_current_hits -= subsys->current_hits;
 					if (ship_p->subsys_info[mss->type].aggregate_current_hits < 0.0f) {
 						ship_p->subsys_info[mss->type].aggregate_current_hits = 0.0f;
@@ -673,12 +673,12 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		}
 
 		if ( dist < range/2.0f ) {
-			if (subsystem->flags & SSF_DAMAGE_AS_HULL)
+			if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull])
 				damage_to_apply = damage_if_hull;
 			else
 				damage_to_apply = damage_left;
 		} else if ( dist < range ) {
-			if (subsystem->flags & SSF_DAMAGE_AS_HULL)
+			if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull])
 				damage_to_apply = damage_if_hull * (1.0f - dist/range);
 			else
 				damage_to_apply = damage_left * (1.0f - dist/range);
@@ -714,7 +714,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsystem->system_info->flags & MSS_FLAG_CARRY_SHOCKWAVE))) {
 					float subsystem_factor = 0.0f;
 					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
-						if (subsystem->flags & SSF_DAMAGE_AS_HULL) {
+						if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull]) {
 							subsystem_factor = Weapon_info[weapon_info_index].armor_factor;
 						} else {
 							subsystem_factor = Weapon_info[weapon_info_index].subsystem_factor;
@@ -737,13 +737,13 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			}
 
 			subsystem->current_hits -= damage_to_apply;
-			if (!(subsystem->flags & SSF_NO_AGGREGATE)) {
+			if (!(subsystem->flags[Ship::Subsystem_Flags::No_aggregate])) {
 				ship_p->subsys_info[subsystem->system_info->type].aggregate_current_hits -= damage_to_apply;
 			}
 
 			if (subsystem->current_hits < 0.0f) {
 				damage_left -= subsystem->current_hits;
-				if (!(subsystem->flags & SSF_NO_AGGREGATE)) {
+				if (!(subsystem->flags[Ship::Subsystem_Flags::No_aggregate])) {
 					ship_p->subsys_info[subsystem->system_info->type].aggregate_current_hits -= subsystem->current_hits;
 				}
 				subsystem->current_hits = 0.0f;					// set to 0 so repair on subsystem takes immediate effect

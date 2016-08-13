@@ -93,7 +93,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 
 	// get number of live debris objects to create
 	num_live_debris = pm->submodel[submodel_num].num_live_debris;
-	if ((num_live_debris <= 0) || (subsys->flags & SSF_NO_LIVE_DEBRIS)) {
+	if ((num_live_debris <= 0) || (subsys->flags[Ship::Subsystem_Flags::No_live_debris])) {
 		return;
 	}
 
@@ -305,7 +305,7 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p,ship_subsys *subs
 	shipfx_remove_submodel_ship_sparks(ship_p, psub->subobj_num);
 
 	// create debris shards
-	if (!(subsys->flags & SSF_VANISHED) && !no_explosion) {
+    if (!(subsys->flags[Ship::Subsystem_Flags::Vanished]) && !no_explosion) {
 		shipfx_blow_up_model(ship_objp, model_num, psub->subobj_num, 50, &subobj_pos );
 
 		// create live debris objects, if any
