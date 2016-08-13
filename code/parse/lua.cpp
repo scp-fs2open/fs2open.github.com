@@ -7689,14 +7689,10 @@ ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked.
 
 	if(ADE_SETTING_VAR)
 	{
-		if (newVal) {
-			sso->ss->weapons.flags |= SW_FLAG_TURRET_LOCK;
-		} else {
-			sso->ss->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
-		}
+		sso->ss->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock, newVal);
 	}
 
-	return ade_set_args(L, "b", (sso->ss->weapons.flags & SW_FLAG_TURRET_LOCK));
+	return ade_set_args(L, "b", (sso->ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]));
 }
 
 ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret may attempt to fire", "number", "Mission time (seconds) or -1 on error")

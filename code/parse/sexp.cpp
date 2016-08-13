@@ -16906,9 +16906,9 @@ void sexp_beam_free(int node)
 		}
 
 		// flag it as beam free :)
-		if (!(turret->weapons.flags & SW_FLAG_BEAM_FREE))
+		if (!(turret->weapons.flags[Ship::Weapon_Flags::Beam_Free]))
 		{
-			turret->weapons.flags |= SW_FLAG_BEAM_FREE;
+			turret->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
 			turret->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 		}
 	}
@@ -16956,9 +16956,9 @@ void sexp_beam_free_all(int node)
 
 		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
 			// just mark all turrets as beam free
-			if ((subsys->system_info->type == SUBSYSTEM_TURRET) && (!(subsys->weapons.flags & SW_FLAG_BEAM_FREE)))
+			if ((subsys->system_info->type == SUBSYSTEM_TURRET) && (!(subsys->weapons.flags[Ship::Weapon_Flags::Beam_Free])))
 			{
-				subsys->weapons.flags |= SW_FLAG_BEAM_FREE;
+				subsys->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
 				subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 			}
 
@@ -16991,7 +16991,7 @@ void sexp_beam_lock(int node)
 		}
 
 		// flag it as not beam free
-		turret->weapons.flags &= ~(SW_FLAG_BEAM_FREE);
+		turret->weapons.flags.remove(Ship::Weapon_Flags::Beam_Free);
 	}
 }
 
@@ -17018,7 +17018,7 @@ void sexp_beam_lock_all(int node)
 		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
 			// just mark all turrets as not beam free
 			if (subsys->system_info->type == SUBSYSTEM_TURRET) {
-				subsys->weapons.flags &= ~(SW_FLAG_BEAM_FREE);
+				subsys->weapons.flags.remove(Ship::Weapon_Flags::Beam_Free);
 			}
 
 			// next item
@@ -17050,9 +17050,9 @@ void sexp_turret_free(int node)
 		}
 
 		// flag turret as no longer locked :)
-		if (turret->weapons.flags & SW_FLAG_TURRET_LOCK) 
+		if (turret->weapons.flags[Ship::Weapon_Flags::Turret_Lock]) 
 		{
-			turret->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
+			turret->weapons.flags.remove(Ship::Weapon_Flags::Turret_Lock);
 			turret->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 		}
 	}
@@ -17080,8 +17080,8 @@ void sexp_turret_free_all(int node)
 
 		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
 			// just mark all turrets as free
-			if ((subsys->system_info->type == SUBSYSTEM_TURRET) && (subsys->weapons.flags & SW_FLAG_TURRET_LOCK)) {
-				subsys->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
+			if ((subsys->system_info->type == SUBSYSTEM_TURRET) && (subsys->weapons.flags[Ship::Weapon_Flags::Turret_Lock])) {
+				subsys->weapons.flags.remove(Ship::Weapon_Flags::Turret_Lock);
 				subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 			}
 
@@ -17114,7 +17114,7 @@ void sexp_turret_lock(int node)
 		}
 
 		// flag turret as locked
-		turret->weapons.flags |= SW_FLAG_TURRET_LOCK;
+		turret->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
 	}
 }
 
@@ -17141,7 +17141,7 @@ void sexp_turret_lock_all(int node)
 		while ( subsys != END_OF_LIST(&Ships[sindex].subsys_list) ) {
 			// just mark all turrets as locked
 			if (subsys->system_info->type == SUBSYSTEM_TURRET) {
-				subsys->weapons.flags |= SW_FLAG_TURRET_LOCK;
+				subsys->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
 			}
 
 			// next item
@@ -17169,7 +17169,7 @@ void sexp_turret_tagged_only_all(int node)
 	while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
 		// just mark all turrets as locked
 		if(subsys->system_info->type == SUBSYSTEM_TURRET){
-			subsys->weapons.flags |= SW_FLAG_TAGGED_ONLY;
+			subsys->weapons.flags.set(Ship::Weapon_Flags::Tagged_Only);
 		}
 
 		// next item
@@ -17196,7 +17196,7 @@ void sexp_turret_tagged_clear_all(int node)
 	while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
 		// just mark all turrets as locked
 		if(subsys->system_info->type == SUBSYSTEM_TURRET){
-			subsys->weapons.flags &= (~SW_FLAG_TAGGED_ONLY);
+			subsys->weapons.flags.remove(Ship::Weapon_Flags::Tagged_Only);
 		}
 
 		// next item
@@ -18316,7 +18316,7 @@ void sexp_turret_tagged_specific(int node)
 		}
 
 		// flag turret as slaved to tag
-		subsys->weapons.flags |= SW_FLAG_TAGGED_ONLY;
+		subsys->weapons.flags.set(Ship::Weapon_Flags::Tagged_Only);
 	}
 }
 
@@ -18343,7 +18343,7 @@ void sexp_turret_tagged_clear_specific(int node)
 		}
 
 		// flag turret as slaved to tag
-		subsys->weapons.flags &= (~SW_FLAG_TAGGED_ONLY);
+		subsys->weapons.flags.remove(Ship::Weapon_Flags::Tagged_Only);
 	}
 }
 

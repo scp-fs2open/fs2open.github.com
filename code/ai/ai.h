@@ -19,7 +19,7 @@
 #include "object/waypoint.h"
 #include "physics/physics.h"
 
-struct ship_weapon;
+class ship_weapon;
 class ship_subsys;
 class object;
 class ship_info;

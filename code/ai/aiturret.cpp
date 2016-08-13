@@ -1193,7 +1193,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 
 	bool big_only_flag = all_turret_weapons_have_flags(&turret_subsys->weapons, WIF_HUGE);
 	bool small_only_flag = all_turret_weapons_have_flags2(&turret_subsys->weapons, WIF2_SMALL_ONLY);
-	bool tagged_only_flag = all_turret_weapons_have_flags2(&turret_subsys->weapons, WIF2_TAGGED_ONLY) || (turret_subsys->weapons.flags & SW_FLAG_TAGGED_ONLY);
+	bool tagged_only_flag = all_turret_weapons_have_flags2(&turret_subsys->weapons, WIF2_TAGGED_ONLY) || (turret_subsys->weapons.flags[Ship::Weapon_Flags::Tagged_Only]);
 
 	bool beam_flag = turret_weapon_has_flags(&turret_subsys->weapons, WIF_BEAM);
 	bool flak_flag = turret_weapon_has_flags(&turret_subsys->weapons, WIF_FLAK);
@@ -1901,7 +1901,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		// if this weapon is a beam weapon, handle it specially
 		if (wip->wi_flags & WIF_BEAM) {
 			// if this beam isn't free to fire
-			if (!(turret->weapons.flags & SW_FLAG_BEAM_FREE)) {
+			if (!(turret->weapons.flags[Ship::Weapon_Flags::Beam_Free])) {
 				return false;
 			}
 			beam_fire_info fire_info;
@@ -2249,7 +2249,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	}
 
 	// Check turret free
-	if (ss->weapons.flags & SW_FLAG_TURRET_LOCK) {
+	if (ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]) {
 		return;
 	}
 
@@ -2272,7 +2272,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	}
 
 	// If beam weapon, check beam free
-	if ( all_turret_weapons_have_flags(swp, WIF_BEAM) && !(swp->flags & SW_FLAG_BEAM_FREE) ) {
+	if ( all_turret_weapons_have_flags(swp, WIF_BEAM) && !(swp->flags[Ship::Weapon_Flags::Beam_Free]) ) {
 		return;
 	}
 
@@ -2453,7 +2453,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					}
 				}
 
-				bool tagged_only = ((wip->wi_flags2 & WIF2_TAGGED_ONLY) || (ss->weapons.flags & SW_FLAG_TAGGED_ONLY));
+				bool tagged_only = ((wip->wi_flags2 & WIF2_TAGGED_ONLY) || (ss->weapons.flags[Ship::Weapon_Flags::Tagged_Only]));
 
 				if (lep->type == OBJ_SHIP) {
 					// Check if we're targeting a protected ship
