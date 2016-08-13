@@ -1008,9 +1008,10 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 					}
 				}
 
-				if( ( (tt->wif2_flags != 0) || (tt->wif_flags != 0) ) && (ptr->type == OBJ_WEAPON) ) {
+				if( ( (tt->wif_flags != 0) || (tt->wif2_flags != 0) || (tt->wif3_flags != 0) ) && (ptr->type == OBJ_WEAPON) ) {
 					if( ( (Weapon_info[Weapons[ptr->instance].weapon_info_index].wi_flags & tt->wif_flags ) == tt->wif_flags)
-						&& ( (Weapon_info[Weapons[ptr->instance].weapon_info_index].wi_flags2 & tt->wif2_flags ) == tt->wif2_flags) ) {
+						&& ( (Weapon_info[Weapons[ptr->instance].weapon_info_index].wi_flags2 & tt->wif2_flags ) == tt->wif2_flags)
+						&& ( (Weapon_info[Weapons[ptr->instance].weapon_info_index].wi_flags3 & tt->wif3_flags ) == tt->wif3_flags) ) {
 							found_something = true;
 					}
 				}

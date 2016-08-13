@@ -327,69 +327,189 @@ const size_t Num_ship_flags = sizeof(Ship_flags) / sizeof(flag_def_list_new<Info
 flag_def_list ai_tgt_objects[] = {
 	{ "ship",		OBJ_SHIP,		0 },
 	{ "asteroid",	OBJ_ASTEROID,	0 },
-	{ "weapon",		OBJ_WEAPON,		0 }
+	{ "weapon",		OBJ_WEAPON,		0 },
+	{ "debris",		OBJ_DEBRIS,		0 },
 };
 
 const int num_ai_tgt_objects = sizeof(ai_tgt_objects) / sizeof(flag_def_list);
 
 flag_def_list_new<Object::Object_Flags> ai_tgt_obj_flags[] = {
-    { "no shields",         Object::Object_Flags::No_shields,         true, false },
-    { "targetable as bomb",	Object::Object_Flags::Targetable_as_bomb, true, false }
+	{ "no shields",			Object::Object_Flags::No_shields,			true, false },
+	{ "targetable as bomb",	Object::Object_Flags::Targetable_as_bomb,	true, false },
+	{ "renders",			Object::Object_Flags::Renders,				true, false },
+	{ "collides",			Object::Object_Flags::Collides,				true, false },
+	{ "physics",			Object::Object_Flags::Physics,				true, false },
+	{ "invulnerable",		Object::Object_Flags::Invulnerable,			true, false },
+	{ "player ship",		Object::Object_Flags::Player_ship,			true, false },
+	{ "special warpin",		Object::Object_Flags::Special_warpin,		true, false },
+	{ "immobile",			Object::Object_Flags::Immobile,				true, false },
 };
 
 const int num_ai_tgt_obj_flags = sizeof(ai_tgt_obj_flags) / sizeof(flag_def_list_new<Object::Object_Flags>);
 
 
 flag_def_list_new<Ship::Info_Flags> ai_tgt_ship_flags[] = {
-    { "afterburners",	Ship::Info_Flags::Afterburner, true, false },
-    { "big damage",		Ship::Info_Flags::Big_damage,  true, false },
-    { "has awacs",		Ship::Info_Flags::Has_awacs,   true, false }
+	{ "afterburners",					Info_Flags::Afterburner,					true, false },
+	{ "big damage",						Info_Flags::Big_damage,						true, false },
+	{ "has awacs",						Info_Flags::Has_awacs,						true, false },
+	{ "no collide",						Info_Flags::No_collide,						true, false },
+	{ "player ship",					Info_Flags::Player_ship,					true, false },
+	{ "default player ship", 			Info_Flags::Default_player_ship,			true, false },
+	{ "path fixup",						Info_Flags::Path_fixup,						true, false },
+	{ "support",						Info_Flags::Support,						true, false },
+	{ "cargo",							Info_Flags::Cargo,							true, false },
+	{ "fighter",						Info_Flags::Fighter,						true, false },
+	{ "bomber",							Info_Flags::Bomber,							true, false },
+	{ "cruiser",						Info_Flags::Cruiser,						true, false },
+	{ "freighter",						Info_Flags::Freighter,						true, false },
+	{ "capital",						Info_Flags::Capital,						true, false },
+	{ "transport",						Info_Flags::Transport,						true, false },
+	{ "navbuoy",						Info_Flags::Navbuoy,						true, false },
+	{ "sentrygun",						Info_Flags::Sentrygun,						true, false },
+	{ "escapepod",						Info_Flags::Escapepod,						true, false },
+	{ "no type",						Info_Flags::No_ship_type,					true, false },
+	{ "ship copy",						Info_Flags::Ship_copy,						true, false },
+	{ "in tech database", 				Info_Flags::In_tech_database,				true, false },
+	{ "in tech database multi",			Info_Flags::In_tech_database_m,				true, false },
+	{ "stealth",						Info_Flags::Stealth,						true, false },
+	{ "supercap",						Info_Flags::Supercap,						true, false },
+	{ "drydock",						Info_Flags::Drydock,						true, false },
+	{ "dont collide invisible",			Info_Flags::Ship_class_dont_collide_invis,	true, false },
+	{ "corvette",						Info_Flags::Corvette,						true, false },
+	{ "gas miner",						Info_Flags::Gas_miner,						true, false },
+	{ "awacs",							Info_Flags::Awacs,							true, false },
+	{ "knossos",						Info_Flags::Knossos_device,					true, false },
+	{ "no fred",						Info_Flags::No_fred,						true, false },
+	{ "default in tech database",		Info_Flags::Default_in_tech_database,		true, false },
+	{ "default in tech database multi",	Info_Flags::Default_in_tech_database_m,		true, false },
+	{ "flash",							Info_Flags::Flash,							true, false },
+	{ "show ship",						Info_Flags::Show_ship_model,				true, false },
+	{ "surface shields",				Info_Flags::Surface_shields,				true, false },
+	{ "generate icon",					Info_Flags::Generate_hud_icon,				true, false },
+	{ "no weapon damage scaling",		Info_Flags::Disable_weapon_damage_scaling,	true, false },
+	{ "gun convergence",				Info_Flags::Gun_convergence,				true, false },
+	{ "no thruster geometry noise",		Info_Flags::No_thruster_geo_noise,			true, false },
+	{ "intrinsic no shields",			Info_Flags::Intrinsic_no_shields,			true, false },
+	{ "no primary linking",				Info_Flags::No_primary_linking,				true, false },
+	{ "no pain flash",					Info_Flags::No_pain_flash,					true, false },
+	{ "allow landings",					Info_Flags::Allow_landings,					true, false },
+	{ "no ets",							Info_Flags::No_ets,							true, false },
+	{ "no lighting",					Info_Flags::No_lighting,					true, false },
+	{ "dyn primary linking",			Info_Flags::Dyn_primary_linking,			true, false },
+	{ "auto spread shields",			Info_Flags::Auto_spread_shields,			true, false },
+	{ "draw weapon models",				Info_Flags::Draw_weapon_models,				true, false },
+	{ "model point shields",			Info_Flags::Model_point_shields,			true, false },
+	{ "repair disabled subsystems",		Info_Flags::Subsys_repair_when_disabled,	true, false },
 };
 
 const int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list_new<Ship::Info_Flags>);
 
 flag_def_list ai_tgt_weapon_flags[] = {
-	{ "bomb",				WIF_BOMB,				0 },
-	{ "huge damage",		WIF_HUGE,				0 },
-	{ "supercap damage",	WIF_SUPERCAP,			0 },
-	{ "bomber+",			WIF_BOMBER_PLUS,		0 },
-	{ "electronics",		WIF_ELECTRONICS,		0 },
-	{ "puncture",			WIF_PUNCTURE,			0 },
-	{ "emp",				WIF_EMP,				0 },
-	{ "heat seeking",		WIF_HOMING_HEAT,		0 },
-	{ "aspect seeking",		WIF_HOMING_ASPECT,		0 },
-	{ "engine seeking",		WIF_HOMING_JAVELIN,		0 },
-	{ "pierce shields",		WIF2_PIERCE_SHIELDS,	1 },
-	{ "local ssm",			WIF2_LOCAL_SSM,			1 },
-	{ "capital+",			WIF2_CAPITAL_PLUS,		1 }
-};
-
-//	Constant for flag,				Name of flag,				In flags or flags2
-//  When adding new flags remember to bump MAX_SHIP_FLAG_NAMES in ship.h
-ship_flag_name Ship_flag_names[] = {
-    { Ship_Flags::Vaporize,						"vaporize" },
-    { Ship_Flags::Warp_broken,					"break-warp" },
-    { Ship_Flags::Warp_never,					"never-warp" },
-    { Ship_Flags::Scannable,					"scannable" },
-    { Ship_Flags::Cargo_revealed,				"cargo-known" },
-    { Ship_Flags::Hidden_from_sensors,			"hidden-from-sensors" },
-    { Ship_Flags::Stealth,						"stealth" },
-    { Ship_Flags::Friendly_stealth_invis,		"friendly-stealth-invisible" },
-    { Ship_Flags::Hide_ship_name,				"hide-ship-name" },
-    { Ship_Flags::Afterburner_locked,			"afterburners-locked" },
-    { Ship_Flags::Primaries_locked,				"primaries-locked" },
-    { Ship_Flags::Secondaries_locked,			"secondaries-locked" },
-    { Ship_Flags::No_subspace_drive,			"no-subspace-drive" },
-    { Ship_Flags::Dont_collide_invis,			"don't-collide-invisible" },
-    { Ship_Flags::No_ets,						"no-ets" },
-    { Ship_Flags::Toggle_subsystem_scanning,	"toggle-subsystem-scanning" },
-    { Ship_Flags::No_secondary_lockon,          "no-secondary-lock-on"},
-    { Ship_Flags::No_disabled_self_destruct,    "no-disabled-self-destruct"},
+	{ "bomb",						WIF_BOMB,								0 },
+	{ "huge damage",				WIF_HUGE,								0 },
+	{ "supercap damage",			WIF_SUPERCAP,							0 },
+	{ "bomber+",					WIF_BOMBER_PLUS,						0 },
+	{ "electronics",				WIF_ELECTRONICS,						0 },
+	{ "puncture",					WIF_PUNCTURE,							0 },
+	{ "emp",						WIF_EMP,								0 },
+	{ "heat seeking",				WIF_HOMING_HEAT,						0 },
+	{ "aspect seeking",				WIF_HOMING_ASPECT,						0 },
+	{ "engine seeking",				WIF_HOMING_JAVELIN,						0 },
+	{ "pierce shields",				WIF2_PIERCE_SHIELDS,					1 },
+	{ "local ssm",					WIF2_LOCAL_SSM,							1 },
+	{ "capital+",					WIF2_CAPITAL_PLUS,						1 },
+	{ "heat-seeking",				WIF_HOMING_HEAT,						0 },
+	{ "aspect-seeking",				WIF_HOMING_ASPECT,						0 },
+	{ "javelin",					WIF_HOMING_JAVELIN,						0 },
+	{ "spawn",						WIF_SPAWN,								0 },
+	{ "remote detonate",			WIF_REMOTE,								0 },
+	{ "countermeasure",				WIF_CMEASURE,							0 },
+	{ "turns",						WIF_TURNS,								0 },
+	{ "swarm",						WIF_SWARM,								0 },
+	{ "trail",						WIF_TRAIL,								0 },
+	{ "big ship",					WIF_BIG_ONLY,							0 },
+	{ "child",						WIF_CHILD,								0 },
+	{ "no dumbfire",				WIF_NO_DUMBFIRE,						0 },
+	{ "thruster",					WIF_THRUSTER,							0 },
+	{ "in tech database",			WIF_IN_TECH_DATABASE,					0 },
+	{ "player allowed",				WIF_PLAYER_ALLOWED,						0 },
+	{ "corkscrew",					WIF_CORKSCREW,							0 },
+	{ "particle spew",				WIF_PARTICLE_SPEW,						0 },
+	{ "esuck",						WIF_ENERGY_SUCK,						0 },
+	{ "flak",						WIF_FLAK,								0 },
+	//{ "beam",						WIF_BEAM,								0 },	// Okay, this one probably doesn't make sense.
+	{ "tag",						WIF_TAG,								0 },
+	{ "shudder",					WIF_SHUDDER,							0 },
+	{ "lockarm",					WIF_LOCKARM,							0 },
+	{ "stream",						WIF_STREAM,								0 },
+	{ "ballistic",					WIF2_BALLISTIC,							0 },
+	{ "default in tech database",	WIF2_DEFAULT_IN_TECH_DATABASE,			1 },
+	{ "tagged only",				WIF2_TAGGED_ONLY,						1 },
+	{ "cycle",						WIF2_CYCLE,								1 },
+	{ "small only",					WIF2_SMALL_ONLY,						1 },
+	{ "same turret cooldown",		WIF2_SAME_TURRET_COOLDOWN,				1 },
+	{ "apply no light",				WIF2_MR_NO_LIGHTING,					1 },
+	{ "transparent",				WIF2_TRANSPARENT,						1 },
+	{ "training",					WIF2_TRAINING,							1 },
+	{ "smart spawn",				WIF2_SMART_SPAWN,						1 },
+	{ "inherit parent target",		WIF2_INHERIT_PARENT_TARGET,				1 },
+	{ "no emp kill",				WIF2_NO_EMP_KILL,						1 },
+	{ "variable lead homing",		WIF2_VARIABLE_LEAD_HOMING,				1 },
+	{ "untargeted heat seeker",		WIF2_UNTARGETED_HEAT_SEEKER,			1 },
+	{ "no radius doubling",			WIF2_HARD_TARGET_BOMB,					1 },
+	{ "no subsystem homing",		WIF2_NON_SUBSYS_HOMING,					1 },
+	{ "no lifeleft penalty",		WIF2_NO_LIFE_LOST_IF_MISSED,			1 },
+	{ "custom seeker str",			WIF2_CUSTOM_SEEKER_STR,					1 },
+	{ "can be targeted",			WIF2_CAN_BE_TARGETED,					1 },
+	{ "show on radar",				WIF2_SHOWN_ON_RADAR,					1 },
+	{ "show friendly on radar",		WIF2_SHOW_FRIENDLY,						1 },
+	{ "chain external model fps",	WIF2_EXTERNAL_WEAPON_FP,				1 },
+	{ "external model launcher",	WIF2_EXTERNAL_WEAPON_LNCH,				1 },
+	{ "takes blast damage",			WIF2_TAKES_BLAST_DAMAGE,				1 },
+	{ "takes shockwave damage",		WIF2_TAKES_SHOCKWAVE_DAMAGE,			1 },
+	{ "hide from radar",			WIF2_DONT_SHOW_ON_RADAR,				1 },
+	{ "render flak",				WIF2_RENDER_FLAK,						1 },
+	{ "ciws",						WIF2_CIWS,								1 },
+	{ "anti-subsystem beam",		WIF2_ANTISUBSYSBEAM,					1 },
+	{ "no primary linking",			WIF3_NOLINK,							2 },
+	{ "same emp time for capships",	WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS,	2 },
+	{ "no primary linked penalty",	WIF3_NO_LINKED_PENALTY,					2 },
+	{ "no homing speed ramp",		WIF3_NO_HOMING_SPEED_RAMP,				2 },
+	{ "pulls aspect seekers",		WIF3_CMEASURE_ASPECT_HOME_ON,			2 },
+	{ "turret interceptable",		WIF3_TURRET_INTERCEPTABLE,				2 },
+	{ "fighter interceptable",		WIF3_FIGHTER_INTERCEPTABLE,				2 },
+	{ "aoe electronics",			WIF3_AOE_ELECTRONICS,					2 },
+	{ "apply recoil",				WIF3_APPLY_RECOIL,						2 },
+	{ "don't spawn if shot",		WIF3_DONT_SPAWN_IF_SHOT,				2 },
+	{ "die on lost lock",			WIF3_DIE_ON_LOST_LOCK,					2 },
 };
 
 const int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
 
 SCP_vector <ai_target_priority> Ai_tp_list;
+
+//	Constant for flag,				Name of flag,				In flags or flags2
+//  When adding new flags remember to bump MAX_SHIP_FLAG_NAMES in ship.h
+ship_flag_name Ship_flag_names[] = {
+	{ Ship_Flags::Vaporize,						"vaporize" },
+	{ Ship_Flags::Warp_broken,					"break-warp" },
+	{ Ship_Flags::Warp_never,					"never-warp" },
+	{ Ship_Flags::Scannable,					"scannable" },
+	{ Ship_Flags::Cargo_revealed,				"cargo-known" },
+	{ Ship_Flags::Hidden_from_sensors,			"hidden-from-sensors" },
+	{ Ship_Flags::Stealth,						"stealth" },
+	{ Ship_Flags::Friendly_stealth_invis,		"friendly-stealth-invisible" },
+	{ Ship_Flags::Hide_ship_name,				"hide-ship-name" },
+	{ Ship_Flags::Afterburner_locked,			"afterburners-locked" },
+	{ Ship_Flags::Primaries_locked,				"primaries-locked" },
+	{ Ship_Flags::Secondaries_locked,			"secondaries-locked" },
+	{ Ship_Flags::No_subspace_drive,			"no-subspace-drive" },
+	{ Ship_Flags::Dont_collide_invis,			"don't-collide-invisible" },
+	{ Ship_Flags::No_ets,						"no-ets" },
+	{ Ship_Flags::Toggle_subsystem_scanning,	"toggle-subsystem-scanning" },
+	{ Ship_Flags::No_secondary_lockon,			"no-secondary-lock-on"},
+	{ Ship_Flags::No_disabled_self_destruct,	"no-disabled-self-destruct"},
+};
 
 static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound effect periodically
 static int Missile_out_snd_timer;	// timer so we play out of laser sound effect periodically
@@ -1363,7 +1483,7 @@ ship_info::ship_info()
 
 	warpout_player_speed = 0.0f;
 
-    flags.reset();
+	flags.reset();
 	ai_class = 0;
 	max_speed = 0.0f;
 	min_speed = 0.0f;
@@ -3048,7 +3168,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 
 	// Get secondary bank weapons
 	parse_weapon_bank(sip, false, &sip->num_secondary_banks, sip->secondary_bank_weapons, sip->secondary_bank_ammo_capacity);
-    
+	
 	if(optional_string("$Show Secondary Models:"))
 	{
 		sip->flags.set(Ship::Info_Flags::Draw_weapon_models);
@@ -3244,11 +3364,11 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if (!optional_string("+noreplace")) {
 			// clear flags since we might have a modular table
 			// clear only those which are actually set in the flags
-            bool has_afterburner = sip->flags[Ship::Info_Flags::Afterburner];
-            bool draw_weapon_models = sip->flags[Ship::Info_Flags::Draw_weapon_models];
-            sip->flags.reset();
-            sip->flags.set(Ship::Info_Flags::Afterburner, has_afterburner);
-            sip->flags.set(Ship::Info_Flags::Draw_weapon_models, draw_weapon_models);
+			bool has_afterburner = sip->flags[Ship::Info_Flags::Afterburner];
+			bool draw_weapon_models = sip->flags[Ship::Info_Flags::Draw_weapon_models];
+			sip->flags.reset();
+			sip->flags.set(Ship::Info_Flags::Afterburner, has_afterburner);
+			sip->flags.set(Ship::Info_Flags::Draw_weapon_models, draw_weapon_models);
 		}
 
 		for (i = 0; i < num_strings; i++)
@@ -3295,10 +3415,10 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		}
 
 		// set original status of tech database flags - Goober5000
-        if (sip->flags[Info_Flags::In_tech_database])
-            sip->flags.set(Info_Flags::Default_in_tech_database);
-        if (sip->flags[Info_Flags::In_tech_database_m])
-            sip->flags.set(Info_Flags::Default_in_tech_database_m);
+		if (sip->flags[Info_Flags::In_tech_database])
+			sip->flags.set(Info_Flags::Default_in_tech_database);
+		if (sip->flags[Info_Flags::In_tech_database_m])
+			sip->flags.set(Info_Flags::Default_in_tech_database_m);
 	}
 
 	// Goober5000 - ensure number of banks checks out
@@ -3322,7 +3442,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		}
 	}
 
-    sip->flags.remove(Ship::Info_Flags::Ballistic_primaries);
+	sip->flags.remove(Ship::Info_Flags::Ballistic_primaries);
 
 	//Set ship ballistic flag if necessary
 	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
@@ -4880,7 +5000,7 @@ void ship_set_default_player_ship()
 		return;
 
 	// find the first with the default flag
-    for (auto it = Ship_info.cbegin(); it != Ship_info.end(); ++it)
+	for (auto it = Ship_info.cbegin(); it != Ship_info.end(); ++it)
 	{
 		if(it->flags[Ship::Info_Flags::Default_player_ship])
 		{
@@ -4890,7 +5010,7 @@ void ship_set_default_player_ship()
 	}
 
 	// find the first player ship
-    for (auto it = Ship_info.cbegin(); it != Ship_info.end(); ++it)
+	for (auto it = Ship_info.cbegin(); it != Ship_info.end(); ++it)
 	{
 		if(it->flags[Ship::Info_Flags::Player_ship])
 		{
@@ -5081,7 +5201,7 @@ void ship_parse_post_cleanup()
 
 	if (n_tgt_groups > 0) {
 		for(i = 0; i < n_tgt_groups; i++) {
-			if (!(Ai_tp_list[i].obj_flags.any_set() || Ai_tp_list[i].sif_flags.any_set() || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif_flags)) {
+			if (!(Ai_tp_list[i].obj_flags.any_set() || Ai_tp_list[i].sif_flags.any_set() || Ai_tp_list[i].wif_flags || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif3_flags)) {
 				//had none of these, check next
 				if (Ai_tp_list[i].obj_type == -1) {
 					//didn't have this one
@@ -5660,7 +5780,7 @@ void ship::clear()
 	current_max_speed = 0.0f;
 	next_manage_ets = timestamp(0);
 
-    flags.reset();
+	flags.reset();
 	reinforcement_index = -1;
 	
 	afterburner_fuel = 0.0f;
@@ -5936,21 +6056,21 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->current_max_speed = Ship_info[ship_type].max_speed;
 
-    shipp->flags.set(Ship_Flags::Engines_on);
+	shipp->flags.set(Ship_Flags::Engines_on);
 
 	// set certain flags that used to be in ship_info - Goober5000
 	if (sip->flags[Ship::Info_Flags::Stealth])
 		shipp->flags.set(Ship_Flags::Stealth);
 	if (sip->flags[Ship::Info_Flags::Ship_class_dont_collide_invis])
 		shipp->flags.set(Ship_Flags::Dont_collide_invis);
-    
-    auto obj_flags = objp->flags;
-    if (sip->flags[Ship::Info_Flags::No_collide])
-        obj_flags.remove(Object::Object_Flags::Collides);
+	
+	auto obj_flags = objp->flags;
+	if (sip->flags[Ship::Info_Flags::No_collide])
+		obj_flags.remove(Object::Object_Flags::Collides);
 	else
-        obj_flags.set(Object::Object_Flags::Collides);
+		obj_flags.set(Object::Object_Flags::Collides);
 
-    obj_set_flags(objp, obj_flags);
+	obj_set_flags(objp, obj_flags);
 
 	if (sip->flags[Ship::Info_Flags::No_ets])
 		shipp->flags.set(Ship_Flags::No_ets);
@@ -6115,8 +6235,8 @@ void ship_recalc_subsys_strength( ship *shipp )
 	// through sexpressions.
 	if ( (shipp->subsys_info[SUBSYSTEM_ENGINE].type_count > 0) && (shipp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f) ) {
 		shipp->flags.set(Ship_Flags::Disabled);
-    } else {
-        shipp->flags.remove(Ship_Flags::Disabled);
+	} else {
+		shipp->flags.remove(Ship_Flags::Disabled);
 		ship_reset_disabled_physics( &Objects[shipp->objnum], shipp->ship_info_index );
 	}
 }
@@ -6467,11 +6587,11 @@ int subsys_set(int objnum, int ignore_subsys_info)
 			Warning (LOCATION, "\"fixed firingpoint\" flag used with turret which has less weapons defined for it than it has firingpoints\nsubsystem '%s' on ship type '%s'.\nsome of the firingpoints will be left unused\n", model_system->subobj_name, sinfo->name );
 		}
 
-        if ((ship_system->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION) && (!(ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) || !(ship_system->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS)))
-        {
-            Warning(LOCATION, "\"share fire direction\" flag used with turret which does not have the \"salvo mode\" or \"use multiple guns\" flag set\nsubsystem '%s' on ship type '%s'.\n\"share fire direction\" flag is ignored\n", model_system->subobj_name, sinfo->name);
+		if ((ship_system->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION) && (!(ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) || !(ship_system->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS)))
+		{
+			Warning(LOCATION, "\"share fire direction\" flag used with turret which does not have the \"salvo mode\" or \"use multiple guns\" flag set\nsubsystem '%s' on ship type '%s'.\n\"share fire direction\" flag is ignored\n", model_system->subobj_name, sinfo->name);
 			ship_system->system_info->flags &= (~MSS_FLAG2_SHARE_FIRE_DIRECTION);
-        }
+		}
 
 		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
 			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
@@ -6643,7 +6763,7 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 		return;
 
 	// am I arriving or departing by warp?
-    if (Ships[objp->instance].is_arriving() || Ships[objp->instance].flags[Ship_Flags::Depart_warp])
+	if (Ships[objp->instance].is_arriving() || Ships[objp->instance].flags[Ship_Flags::Depart_warp])
 	{
 #ifndef NDEBUG
 		// in debug builds, make sure only one of the docked objects has these flags set
@@ -7163,7 +7283,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 
 #ifndef NDEBUG
 			//WMC - Ships can depart too, besides being destroyed :P
-            if ((wingp->total_destroyed + wingp->total_departed + wingp->total_vanished) != wingp->total_arrived_count)
+			if ((wingp->total_destroyed + wingp->total_departed + wingp->total_vanished) != wingp->total_arrived_count)
 			{
 				// apparently, there have been reports of ships still present in the mission when this log
 				// entry if written.  Do a sanity check here to find out for sure.
@@ -7196,7 +7316,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 {
 	// do standard departure stuff first
-    objp->flags.set(Object::Object_Flags::Should_be_dead);
+	objp->flags.set(Object::Object_Flags::Should_be_dead);
 	if (objp->type == OBJ_SHIP)
 		ship_cleanup(objp->instance, infop->parameter_variables.bool_value ? SHIP_VANISHED : SHIP_DEPARTED);
 
@@ -7768,7 +7888,7 @@ void ship_dying_frame(object *objp, int ship_num)
 			}
 			else
 			{
-                if (sip->flags[Info_Flags::Capital] || sip->flags[Info_Flags::Knossos_device]) {
+				if (sip->flags[Info_Flags::Capital] || sip->flags[Info_Flags::Knossos_device]) {
 					sound_index=SND_CAPSHIP_EXPLODE;
 				} else {
 					 if ( OBJ_INDEX(objp) & 1 ) {
@@ -8264,7 +8384,7 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 			// check to see if this subsystem was totally non functional before -- if so, then
 			// reset the flags
 			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (sp->flags[Ship_Flags::Disabled]) ) {
-                sp->flags.remove(Ship_Flags::Disabled);
+				sp->flags.remove(Ship_Flags::Disabled);
 				ship_reset_disabled_physics(objp, sp->ship_info_index);
 			}
 		}
@@ -8499,11 +8619,11 @@ int ship_subsys_disrupted(ship *sp, int type)
 {
 	Assert ( sp != NULL );
 	Assert ( type >= 0 && type < SUBSYSTEM_MAX );
-    
+	
 	// Bogus pointer to ship to check for disrupted subsystem
 	if (sp == NULL)
 		return 0;
-    
+	
 	if ( sp->subsys_disrupted_flags & (1<<type) ) {
 		return 1;
 	} else {
@@ -9186,14 +9306,14 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	for ( i=0; i<pm->n_detail_levels; i++ )
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
-    flagset<Object::Object_Flags> default_ship_object_flags;
-    default_ship_object_flags.set(Object::Object_Flags::Renders);
-    default_ship_object_flags.set(Object::Object_Flags::Physics);
+	flagset<Object::Object_Flags> default_ship_object_flags;
+	default_ship_object_flags.set(Object::Object_Flags::Renders);
+	default_ship_object_flags.set(Object::Object_Flags::Physics);
 	// JAS: Nav buoys don't need to do collisions!
 	// G5K: Corrected to apply specifically for ships with the no-collide flag.  (In retail, navbuoys already have this flag, so this doesn't break anything.)
-    default_ship_object_flags.set(Object::Object_Flags::Collides, !sip->flags[Ship::Info_Flags::No_collide]);
+	default_ship_object_flags.set(Object::Object_Flags::Collides, !sip->flags[Ship::Info_Flags::No_collide]);
 
-    objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), default_ship_object_flags);
+	objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), default_ship_object_flags);
 	Assert( objnum >= 0 );
 
 	shipp->ai_index = ai_get_slot(n);
@@ -9633,7 +9753,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 		// extra check
 		Assert(subsys_pcts[num_saved_subsystems] >= 0.0f && subsys_pcts[num_saved_subsystems] <= 1.0f);
-        CLAMP(subsys_pcts[num_saved_subsystems], 0.0f, 1.0f);
+		CLAMP(subsys_pcts[num_saved_subsystems], 0.0f, 1.0f);
 
 		num_saved_subsystems++;
 		ss = GET_NEXT(ss);
@@ -9689,21 +9809,21 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// Mantis 2763: moved down to have access to the right ship_max_shield_strength value
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
-    if (!Fred_running) {
-        if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on]) && (sp->ship_max_shield_strength > 0.0f)) {
-            objp->flags.remove(Object::Object_Flags::No_shields);
-        }
-        else if ((p_objp->flags[Mission::Parse_Object_Flags::OF_No_shields]) || (sp->ship_max_shield_strength == 0.0f)) {
-            objp->flags.set(Object::Object_Flags::No_shields);
-            // Since there's not a mission flag set to be adjusting this, see if there was a change from a ship that normally has shields to one that doesn't, and vice versa
-        }
-        else if (!(sip_orig->flags[Info_Flags::Intrinsic_no_shields]) && (sip->flags[Info_Flags::Intrinsic_no_shields])) {
-            objp->flags.set(Object::Object_Flags::No_shields);
-        }
-        else if ((sip_orig->flags[Info_Flags::Intrinsic_no_shields]) && !(sip->flags[Info_Flags::Intrinsic_no_shields]) && (sp->ship_max_shield_strength > 0.0f)) {
-            objp->flags.remove(Object::Object_Flags::No_shields);
-        }
-    }
+	if (!Fred_running) {
+		if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on]) && (sp->ship_max_shield_strength > 0.0f)) {
+			objp->flags.remove(Object::Object_Flags::No_shields);
+		}
+		else if ((p_objp->flags[Mission::Parse_Object_Flags::OF_No_shields]) || (sp->ship_max_shield_strength == 0.0f)) {
+			objp->flags.set(Object::Object_Flags::No_shields);
+			// Since there's not a mission flag set to be adjusting this, see if there was a change from a ship that normally has shields to one that doesn't, and vice versa
+		}
+		else if (!(sip_orig->flags[Info_Flags::Intrinsic_no_shields]) && (sip->flags[Info_Flags::Intrinsic_no_shields])) {
+			objp->flags.set(Object::Object_Flags::No_shields);
+		}
+		else if ((sip_orig->flags[Info_Flags::Intrinsic_no_shields]) && !(sip->flags[Info_Flags::Intrinsic_no_shields]) && (sp->ship_max_shield_strength > 0.0f)) {
+			objp->flags.remove(Object::Object_Flags::No_shields);
+		}
+	}
 
 	// niffiwan: set new armor types
 	sp->armor_type_idx = sip->armor_type_idx;
@@ -9931,8 +10051,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// Goober5000 - check other class-specific flags too
 
-    if (sip->flags[Ship::Info_Flags::Stealth])			// changing TO a stealthy ship class
-        sp->flags.set(Ship_Flags::Stealth);
+	if (sip->flags[Ship::Info_Flags::Stealth])			// changing TO a stealthy ship class
+		sp->flags.set(Ship_Flags::Stealth);
 	else if (sip_orig->flags[Ship::Info_Flags::Stealth])	// changing FROM a stealthy ship class
 		sp->flags.remove(Ship_Flags::Stealth);
 
@@ -9941,10 +10061,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	else if (sip_orig->flags[Ship::Info_Flags::Ship_class_dont_collide_invis])	// changing FROM a don't-collide-invisible ship class
 		sp->flags.remove(Ship_Flags::Dont_collide_invis);
 
-    if (sip->flags[Ship::Info_Flags::No_collide])								// changing TO a no-collision ship class
-        obj_set_flags(objp, objp->flags - Object::Object_Flags::Collides);
-    else if (sip_orig->flags[Ship::Info_Flags::No_collide])						// changing FROM a no-collision ship class
-        obj_set_flags(objp, objp->flags + Object::Object_Flags::Collides);
+	if (sip->flags[Ship::Info_Flags::No_collide])								// changing TO a no-collision ship class
+		obj_set_flags(objp, objp->flags - Object::Object_Flags::Collides);
+	else if (sip_orig->flags[Ship::Info_Flags::No_collide])						// changing FROM a no-collision ship class
+		obj_set_flags(objp, objp->flags + Object::Object_Flags::Collides);
 
 	if (sip->flags[Ship::Info_Flags::No_ets])
 		sp->flags.set(Ship_Flags::No_ets);
@@ -11321,7 +11441,7 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
 	if ((objnum < 0) || (objnum >= MAX_OBJECTS)) {
 		return 0;
 	}
-    
+	
 	objp = &Objects[objnum];
 
 	if (objp->type != OBJ_WEAPON){
@@ -11711,7 +11831,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		} else {
 			// de-set the flag just in case dual-fire was set but couldn't be used
 			// because there's less than two firepoints
-            shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
+			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
 			start_slot = swp->secondary_next_slot[bank];
 			end_slot = start_slot;
 		}
@@ -12007,8 +12127,8 @@ int ship_select_next_primary(object *objp, int direction)
 
 		if ( shipp->flags[Ship_Flags::Primary_linked] )
 		{
-            shipp->flags.remove(Ship_Flags::Primary_linked);
-            if ( direction == CYCLE_PRIMARY_NEXT )
+			shipp->flags.remove(Ship_Flags::Primary_linked);
+			if ( direction == CYCLE_PRIMARY_NEXT )
 			{
 				swp->current_primary_bank = 0;
 			}
@@ -12032,7 +12152,7 @@ int ship_select_next_primary(object *objp, int direction)
 				}
 				else
 				{
-                    shipp->flags.set(Ship_Flags::Primary_linked);
+					shipp->flags.set(Ship_Flags::Primary_linked);
 				}
 			}
 			else
@@ -12047,7 +12167,7 @@ int ship_select_next_primary(object *objp, int direction)
 				}
 				else
 				{
-                    shipp->flags.set(Ship_Flags::Primary_linked);
+					shipp->flags.set(Ship_Flags::Primary_linked);
 				}
 			}
 		}
@@ -12063,7 +12183,7 @@ int ship_select_next_primary(object *objp, int direction)
 			{
 				if (primary_out_of_ammo(swp, i))
 				{
-                    shipp->flags.remove(Ship_Flags::Primary_linked);
+					shipp->flags.remove(Ship_Flags::Primary_linked);
 					
 					if (direction == CYCLE_PRIMARY_NEXT)
 					{
@@ -13324,7 +13444,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		// TODO: maybe do something here like informing player warp is fixed?
 		// like this? -- Goober5000
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Subspace drive repaired.", 1635));
-        shipp->flags.remove(Ship_Flags::Warp_broken);
+		shipp->flags.remove(Ship_Flags::Warp_broken);
 	}
 
 	// AL 1-16-97: Replenish countermeasures
@@ -13423,7 +13543,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			// check to see if this subsystem was totally non functional before -- if so, then
 			// reset the flags
 			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (shipp->flags[Ship_Flags::Disabled]) ) {
-                shipp->flags.remove(Ship_Flags::Disabled);
+				shipp->flags.remove(Ship_Flags::Disabled);
 				ship_reset_disabled_physics(objp, shipp->ship_info_index);
 			}
 			break;
@@ -14043,7 +14163,7 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 		
 		if (subsystem == SUBSYSTEM_ENGINE) {
 			// If subsystem is an engine, set/clear the disabled flag
-            Player_ship->flags.set(Ship_Flags::Disabled, (val_f < ENGINE_MIN_STR));
+			Player_ship->flags.set(Ship_Flags::Disabled, (val_f < ENGINE_MIN_STR));
 		}
 	}
 }
@@ -15410,7 +15530,7 @@ void ship_scream(ship *sp)
 	Player->allow_scream_timestamp = timestamp(Builtin_messages[MESSAGE_WINGMAN_SCREAM].min_delay);
 	Player->scream_count++;
 
-    sp->flags.set(Ship_Flags::Ship_has_screamed);
+	sp->flags.set(Ship_Flags::Ship_has_screamed);
 
 	// prevent overlap with help messages
 	if (timestamp_until(Player->allow_ask_help_timestamp) < 15000)
@@ -15783,7 +15903,7 @@ void ship_do_cargo_revealed( ship *shipp, int from_network )
 		send_cargo_revealed_packet( shipp );		
 	}
 
-    shipp->flags.set(Ship_Flags::Cargo_revealed);
+	shipp->flags.set(Ship_Flags::Cargo_revealed);
 	shipp->time_cargo_revealed = Missiontime;	
 
 	// if the cargo is something other than "nothing", then make a log entry
@@ -15836,7 +15956,7 @@ void ship_do_cargo_hidden( ship *shipp, int from_network )
 		send_cargo_hidden_packet( shipp );		
 	}
 
-    shipp->flags.remove(Ship_Flags::Cargo_revealed);
+	shipp->flags.remove(Ship_Flags::Cargo_revealed);
 
 	// don't log that the cargo was hidden and don't reset the time cargo revealed
 }
@@ -16519,7 +16639,7 @@ int ship_get_random_targetable_ship()
 			continue;
 
 		// skip if we aren't supposed to target it
-        if (should_be_ignored(&Ships[Objects[so->objnum].instance]))
+		if (should_be_ignored(&Ships[Objects[so->objnum].instance]))
 			continue;
 
 		if (idx >= MAX_SHIPS) {
@@ -17308,38 +17428,38 @@ int ship_class_get_priority(int ship_class)
 	ship_info *sip = &Ship_info[ship_class];
 
 	// biggest to smallest
-    if (sip->flags[Info_Flags::Knossos_device])
-        return 1;
-    else if (sip->flags[Info_Flags::Supercap])
-        return 2;
-    else if (sip->flags[Info_Flags::Drydock])
-        return 3;
-    else if (sip->flags[Info_Flags::Capital])
-        return 4;
-    else if (sip->flags[Info_Flags::Corvette])
-        return 5;
-    else if (sip->flags[Info_Flags::Cruiser])
-        return 6;
-    else if (sip->flags[Info_Flags::Gas_miner])
-        return 7;
-    else if (sip->flags[Info_Flags::Awacs])
-        return 8;
-    else if (sip->flags[Info_Flags::Freighter])
-        return 9;
-    else if (sip->flags[Info_Flags::Transport])
-        return 10;
-    else if (sip->flags[Info_Flags::Bomber])
-        return 11;
-    else if (sip->flags[Info_Flags::Fighter] || sip->flags[Info_Flags::Stealth])
-        return 12;
-    else if (sip->flags[Info_Flags::Escapepod])
-        return 13;
-    else if (sip->flags[Info_Flags::Sentrygun])
-        return 14;
-    else if (sip->flags[Info_Flags::Cargo])
-        return 15;
-    else if (sip->flags[Info_Flags::Navbuoy])
-        return 16;
+	if (sip->flags[Info_Flags::Knossos_device])
+		return 1;
+	else if (sip->flags[Info_Flags::Supercap])
+		return 2;
+	else if (sip->flags[Info_Flags::Drydock])
+		return 3;
+	else if (sip->flags[Info_Flags::Capital])
+		return 4;
+	else if (sip->flags[Info_Flags::Corvette])
+		return 5;
+	else if (sip->flags[Info_Flags::Cruiser])
+		return 6;
+	else if (sip->flags[Info_Flags::Gas_miner])
+		return 7;
+	else if (sip->flags[Info_Flags::Awacs])
+		return 8;
+	else if (sip->flags[Info_Flags::Freighter])
+		return 9;
+	else if (sip->flags[Info_Flags::Transport])
+		return 10;
+	else if (sip->flags[Info_Flags::Bomber])
+		return 11;
+	else if (sip->flags[Info_Flags::Fighter] || sip->flags[Info_Flags::Stealth])
+		return 12;
+	else if (sip->flags[Info_Flags::Escapepod])
+		return 13;
+	else if (sip->flags[Info_Flags::Sentrygun])
+		return 14;
+	else if (sip->flags[Info_Flags::Cargo])
+		return 15;
+	else if (sip->flags[Info_Flags::Navbuoy])
+		return 16;
 
 	Warning(LOCATION, "Unknown priority for ship class '%s'!", sip->name);
 	return 17 + ship_class;
@@ -18108,22 +18228,22 @@ void parse_ai_target_priorities()
 		}
 	}
 
-    if (optional_string("+Ship Class Flags:")) {
-        temp_strings.clear();
-        num_strings = stuff_string_list(temp_strings);
+	if (optional_string("+Ship Class Flags:")) {
+		temp_strings.clear();
+		num_strings = stuff_string_list(temp_strings);
 
-        for (i = 0; i < num_strings; i++) {
-            for (j = 0; j < num_ai_tgt_ship_flags; j++) {
-                if (!stricmp(ai_tgt_ship_flags[j].name, temp_strings[i].c_str())) {
-                    temp_priority.sif_flags.set(ai_tgt_ship_flags[j].def);
-                    break;
-                }
-            }
-            if (j == num_ai_tgt_ship_flags) {
-                Warning(LOCATION, "Unidentified ship class flag '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
-            }
-        }
-    }
+		for (i = 0; i < num_strings; i++) {
+			for (j = 0; j < num_ai_tgt_ship_flags; j++) {
+				if (!stricmp(ai_tgt_ship_flags[j].name, temp_strings[i].c_str())) {
+					temp_priority.sif_flags.set(ai_tgt_ship_flags[j].def);
+					break;
+				}
+			}
+			if (j == num_ai_tgt_ship_flags) {
+				Warning(LOCATION, "Unidentified ship class flag '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
+			}
+		}
+	}
 
 	if (optional_string("+Weapon Class Flags:") ) {
 		temp_strings.clear();
@@ -18134,8 +18254,10 @@ void parse_ai_target_priorities()
 				if ( !stricmp(ai_tgt_weapon_flags[j].name, temp_strings[i].c_str()) ) {
 					if (ai_tgt_weapon_flags[j].var == 0) {
 						temp_priority.wif_flags |= ai_tgt_weapon_flags[j].def;
-					} else {
+					} else if (ai_tgt_weapon_flags[j].var == 1) {
 						temp_priority.wif2_flags |= ai_tgt_weapon_flags[j].def;
+					} else {
+						temp_priority.wif3_flags |= ai_tgt_weapon_flags[j].def;
 					}
 					break;
 				}
@@ -18160,14 +18282,15 @@ ai_target_priority init_ai_target_priorities()
 	ai_target_priority temp_priority;
 
 	//initialize the entries
-    temp_priority.obj_flags.reset();
+	temp_priority.obj_flags.reset();
 	temp_priority.obj_type = -1;
 	temp_priority.ship_class.clear();
 	temp_priority.ship_type.clear();
-    temp_priority.sif_flags.reset();
+	temp_priority.sif_flags.reset();
 	temp_priority.weapon_class.clear();
-	temp_priority.wif2_flags = 0;
 	temp_priority.wif_flags = 0;
+	temp_priority.wif2_flags = 0;
+	temp_priority.wif3_flags = 0;
 	temp_priority.name[0] = '\0';
 
 	//return the initialized
@@ -18619,11 +18742,11 @@ void ship_render_set_animated_effect(model_render_params *render_info, ship *shi
 	render_info->set_animated_effect(sep->shader_effect, timer);
 
 	if ( sep->disables_rendering && (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) ) {
-        shipp->flags.set(Ship_Flags::Cloaked);
+		shipp->flags.set(Ship_Flags::Cloaked);
 		shipp->shader_effect_active = false;
 	} else {
-        shipp->flags.remove(Ship_Flags::Cloaked);
-        if (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) {
+		shipp->flags.remove(Ship_Flags::Cloaked);
+		if (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) {
 			shipp->shader_effect_active = false;
 		}
 	}
@@ -18800,17 +18923,17 @@ void ship_render(object* obj, draw_list* scene)
 
 flagset<Ship::Ship_Flags> Ignore_List;
 void set_default_ignore_list() {
-    Ignore_List.reset();
-    Ignore_List.set(Ship::Ship_Flags::Exploded);
-    Ignore_List.set(Ship::Ship_Flags::Depart_warp);
-    Ignore_List.set(Ship::Ship_Flags::Dying);
-    Ignore_List.set(Ship::Ship_Flags::Arriving_stage_1);
-    Ignore_List.set(Ship::Ship_Flags::Hidden_from_sensors);
+	Ignore_List.reset();
+	Ignore_List.set(Ship::Ship_Flags::Exploded);
+	Ignore_List.set(Ship::Ship_Flags::Depart_warp);
+	Ignore_List.set(Ship::Ship_Flags::Dying);
+	Ignore_List.set(Ship::Ship_Flags::Arriving_stage_1);
+	Ignore_List.set(Ship::Ship_Flags::Hidden_from_sensors);
 }
 
 void toggle_ignore_list_flag(Ship::Ship_Flags flag) {
-    if (Ignore_List[flag])
-        Ignore_List.remove(flag);
-    else
-        Ignore_List.set(flag);
+	if (Ignore_List[flag])
+		Ignore_List.remove(flag);
+	else
+		Ignore_List.set(flag);
 }
