@@ -508,7 +508,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				view_centering = 0; // if the view has been centered, allow the player to freelook again.
 			}
 			slew_active = 0;
-		} else if ( Viewer_mode & VM_TRACK ) { // Player's vision will track current target.
+		} else if ( Viewer_mode & VM_TRACK ) {
+			// Player's vision will track current target.
 			do_view_track_target(frame_time);
 		} else {
 			if (check_control_timef(VIEW_SLEW)) {
@@ -570,8 +571,9 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		ci->pitch += kh;
 	}
 
-	if ( !slew_active ) {
-		// If we're not in a view that slews (ie, not a cockpit view), make the viewer slew angles spring to the center.
+	if (!(slew_active || (Viewer_mode & VM_TRACK))) {
+		// If we're not in a view that slews (ie, not a cockpit view) and we are not tracking a target,
+		//   make the viewer spring to the center.
 		chase_slew_angles.h = 0.0f;
 		chase_slew_angles.p = 0.0f;
 	}
