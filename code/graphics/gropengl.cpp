@@ -1625,6 +1625,7 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	mprintf(( "  OpenGL Vendor    : %s\n", glGetString(GL_VENDOR) ));
 	mprintf(( "  OpenGL Renderer  : %s\n", glGetString(GL_RENDERER) ));
 	mprintf(( "  OpenGL Version   : %s\n", glGetString(GL_VERSION) ));
+	mprintf(( "  GLSL Version     : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
 	mprintf(( "\n" ));
 
 	if (Cmdline_fullscreen_window || Cmdline_window) {
