@@ -755,6 +755,7 @@ struct ai_target_priority {
     flagset<Ship::Info_Flags> sif_flags;
 	int wif_flags;
 	int wif2_flags;
+	int wif3_flags;
 };
 
 extern SCP_vector <ai_target_priority> Ai_tp_list;
