@@ -15142,30 +15142,25 @@ int sexp_primaries_depleted(int node)
 		return SEXP_FALSE;
 	}
 
-	// see if ship has ballistic primary weapons   
-	if (!(Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries]))   
-		return SEXP_FALSE; 
-
 	// get num primary banks
 	num_banks = shipp->weapons.num_primary_banks;
 	num_depleted_banks = 0;
 
 	// get number of depleted banks
-	for (int idx=0; idx<num_banks; idx++)
-	{
+	for (int idx=0; idx<num_banks; idx++) {
 		// is this a ballistic bank?
-		if (Weapon_info[shipp->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Ballistic])
-		{
-			// is this bank out of ammo?
-			if (shipp->weapons.primary_bank_ammo[idx] == 0)
-			{
-				num_depleted_banks++;
-			}
+		if (!(Weapon_info[shipp->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Ballistic])) {
+			continue;
+		}
+
+		// is this bank out of ammo?
+		if (shipp->weapons.primary_bank_ammo[idx] == 0)	{
+			num_depleted_banks++;
 		}
 	}
 
 	// are they all depleted?
-	return (num_depleted_banks == num_banks);
+	return (num_depleted_banks == num_banks) ? SEXP_TRUE : SEXP_FALSE;
 }
 
 int sexp_secondaries_depleted(int node)
@@ -15190,13 +15185,14 @@ int sexp_secondaries_depleted(int node)
 
 	// get number of depleted banks
 	for (int idx=0; idx<num_banks; idx++) {
+		// is this bank out of ammo?
 		if (shipp->weapons.secondary_bank_ammo[idx] == 0) {
 			num_depleted_banks++;
 		}
 	}
 
 	// are they all depleted?
-	return (num_depleted_banks == num_banks);
+	return (num_depleted_banks == num_banks) ? SEXP_TRUE : SEXP_FALSE;
 }
 
 int sexp_facing(int node)

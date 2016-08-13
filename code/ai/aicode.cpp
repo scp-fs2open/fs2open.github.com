@@ -5506,11 +5506,6 @@ void set_primary_weapon_linkage(object *objp)
 	ai_info	*aip;
 	ship_weapon	*swp;
 	weapon_info *wip;
-	
-	int total_ammo;
-	int current_ammo;
-	float ammo_pct;
-	int i;
 
 	shipp = &Ships[objp->instance];
 	sip = &Ship_info[shipp->ship_info_index];
@@ -5585,29 +5580,31 @@ void set_primary_weapon_linkage(object *objp)
 	}
 
 	// also check ballistics - Goober5000
-	if (sip->flags[Ship::Info_Flags::Ballistic_primaries])
+	int total_ammo = 0;
+	int current_ammo = 0;
+	bool all_ballistic = true;
+
+	// count ammo, and do not continue unless all weapons are ballistic
+	for (int i = 0; i < swp->num_primary_banks; i++)
 	{
-		total_ammo = 0;
-		current_ammo = 0;
+		wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-		// count ammo, and do not continue unless all weapons are ballistic
-		for (i = 0; i < swp->num_primary_banks; i++)
+		if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 		{
-			wip = &Weapon_info[swp->primary_bank_weapons[i]];
-
-			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
-			{
-				total_ammo += swp->primary_bank_start_ammo[i];
-				current_ammo += swp->primary_bank_ammo[i];
-			}
-			else
-			{
-				return;
-			}
+			total_ammo += swp->primary_bank_start_ammo[i];
+			current_ammo += swp->primary_bank_ammo[i];
 		}
+		else
+		{
+			all_ballistic = false;
+			break;
+		}
+	}
 
+	if (all_ballistic)
+	{
 		Assert(total_ammo);	// Goober5000: div-0 check
-		ammo_pct = float (current_ammo) / float (total_ammo) * 100.0f;
+		float ammo_pct = float (current_ammo) / float (total_ammo) * 100.0f;
 
 		// link according to defined levels
 		if (ammo_pct > aip->ai_link_ammo_levels_always)
@@ -5616,7 +5613,7 @@ void set_primary_weapon_linkage(object *objp)
 		}
 		else if (ammo_pct > aip->ai_link_ammo_levels_maybe)
 		{
-			if (objp->hull_strength < shipp->ship_max_hull_strength/3.0f)
+			if (objp->hull_strength < shipp->ship_max_hull_strength / 3.0f)
 			{
 				shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 			}
@@ -13234,30 +13231,29 @@ int maybe_request_support(object *objp)
 	desire += mrs_subsystem(shipp, SUBSYSTEM_SENSORS);
 
 
-	//	Set desire based on percentage of secondary weapons.
 	ship_weapon *swp = &shipp->weapons;
 
-	for ( i = 0; i < swp->num_secondary_banks; i++ ) {
-		if (swp->secondary_bank_start_ammo[i] > 0) {
-			r = (float) swp->secondary_bank_ammo[i]/swp->secondary_bank_start_ammo[i];
-			desire += (int) ((1.0f - r) * 3.0f);
+	//	Set desire based on percentage of secondary weapons.
+	for (i = 0; i < swp->num_secondary_banks; ++i)
+	{
+		if (swp->secondary_bank_start_ammo[i] > 0)
+		{
+			r = (float)swp->secondary_bank_ammo[i] / swp->secondary_bank_start_ammo[i];
+			desire += (int)((1.0f - r) * 3.0f);
 		}
 	}
 
 	// Set desire based on ballistic weapons - Goober5000
-	if (sip->flags[Ship::Info_Flags::Ballistic_primaries])
+	for (i = 0; i < swp->num_primary_banks; ++i)
 	{
-		for (i = 0; i < swp->num_primary_banks; i++)
+		wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+		if (wip->wi_flags[Weapon::Info_Flags::Ballistic] && swp->primary_bank_start_ammo[i] > 0)
 		{
-			wip = &Weapon_info[swp->primary_bank_weapons[i]];
+			r = (float) swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i];
 
-			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
-			{
-				r = (float) swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i];
-
-				// cube ammo level for better behavior, and adjust for number of banks
-				desire += (int) ((1.0f - r)*(1.0f - r)*(1.0f - r) * (5.0f / swp->num_primary_banks));
-			}
+			// cube ammo level for better behavior, and adjust for number of banks
+			desire += (int) ((1.0f - r)*(1.0f - r)*(1.0f - r) * (5.0f / swp->num_primary_banks));
 		}
 	}
 
