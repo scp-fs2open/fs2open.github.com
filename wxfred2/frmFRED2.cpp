@@ -63,8 +63,6 @@ frmFRED2::frmFRED2( const wxChar *title, int xpos, int ypos, int width, int heig
 		frmCampaignEditor_p(NULL), dlgMissionStats_p(NULL), dlgAboutBox_p(NULL), dlgSexpHelp_p(NULL)
 {
 	// Title bar setup
-	// z64: somewhat roundabout way to include the FS2 Open version number in the form title.
-	
 	wxSprintf( version, "v%s", FS_VERSION_FULL );
 	this->SetFredTitle();
 

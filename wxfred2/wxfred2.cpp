@@ -22,6 +22,7 @@
 #include <hud/hudsquadmsg.h>
 #include <iff_defs/iff_defs.h>
 #include <jumpnode/jumpnode.h>
+#include <localization/localize.h>
 #include <math/vecmat.h>
 #include <mission/missionbriefcommon.h>
 #include <mission/missiongoals.h>
@@ -38,6 +39,7 @@
 #include <starfield/starfield.h>
 #include <weapon/weapon.h>
 
+#include <wx/dir.h>
 #include <wx/image.h>
 #include <wx/string.h>
 //#include <wx/xrc/xmlres.h>
@@ -65,6 +67,15 @@ bool wxFRED2::OnInit() {
 	//wxXmlResource::Get()->InitAllHandlers();
 	//InitXmlResource();
 	//wxFREDMission* the_Mission = new wxFREDMission();
+
+	// Filepaths
+	Fred_base_dir = wxGetCwd().ToStdString();
+	Fred_exe_dir = Fred_base_dir + DIR_SEPARATOR_STR + "wxfred2.exe";
+
+	// Init FSO codebase
+	Init_FSO();
+
+	// Init GUI
 	wxChar* title = NULL;
 	// Init image handlers before frmFRED2 (wxFormBuilder workaround)
 	wxImage::AddHandler(new wxPNGHandler);
@@ -667,6 +678,63 @@ OIN_t wxFRED2::Create_waypoint(vec3d *pos, OIN_t oin) {
 	}
 
 	return obj;
+}
+
+void wxFRED2::Init_FSO(void)
+{
+	SDL_SetMainReady();
+	memory::init();
+
+	srand((unsigned) time(NULL));
+	//	init_pending_messages();
+
+	os_init(Osreg_class_name, Osreg_app_name);
+
+	timer_init();
+
+	Assert(Fred_base_dir.size() > 0); //-V805
+
+	// sigh... this should enable proper reading of cmdline_fso.cfg - Goober5000
+	cfile_chdir(Fred_base_dir.c_str());
+
+	// this should enable mods - Kazan
+//	parse_cmdline(__argc, __argv);
+
+	// TODO: Print cmdline if DEBUG
+
+	// d'oh
+	if (cfile_init(Fred_exe_dir.c_str())) {
+		wxMessageBox("Failed to init cfile!");	// TODO: Make this aware of cmdline instances. If it's cmdline, output message to console instead of making a messagebox
+		wxExit();
+	}
+
+	// Load game_settings.tbl
+	// mod_table_init();
+
+	// initialize localization module. Make sure this is done AFTER initialzing OS.
+	// NOTE : Fred should ALWAYS run in English. Otherwise it might swap in another language
+	// when saving - which would cause inconsistencies when externalizing to tstrings.tbl via Exstr
+	// trust me on this :)
+	lcl_init(FS2_OPEN_DEFAULT_LANGUAGE);
+
+	// Goober5000 - force init XSTRs (so they work, but only work in English, based on above comment)
+	extern int Xstr_inited;
+	Xstr_inited = 1;
+
+#ifndef NDEBUG
+	load_filter_info();
+#endif
+
+	//CFREDView *window = CFREDView::GetView();
+	//HWND hwndApp = window->GetSafeHwnd();
+	//os_set_window((uint) hwndApp);
+
+	snd_init();
+
+	// Not ready for this yet
+	//	Cmdline_nospec = 1;
+	// 	Cmdline_noglow = 1;
+	Cmdline_window = 1;
 }
 
 bool wxFRED2::Has_warnings() {

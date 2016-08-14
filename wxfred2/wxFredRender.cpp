@@ -53,7 +53,9 @@ public:
 	 * @brief The OpenGL loader function. Loads the OPENGL32.DLL
 	 */
 	static void* wglLoader(const char* name) {
-		return SDL_LoadFunction(_oglDllHandle, name);
+		auto wglAddr = reinterpret_cast<void*>(wglGetProcAddress(name));
+
+		return wglAddr;
 	}
 
 	/**

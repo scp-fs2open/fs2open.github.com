@@ -37,7 +37,8 @@ static MTIN_t MTIN_player_start;    // MTIN of player starts, equal to Num_ship_
 static MTIN_t MTIN_waypoint;        // MTIN of waypoints, equal to Num_ship_classes
 
 // Directories and File Handling stuff
-static SCP_string Fred_base_dir;
+static SCP_string Fred_base_dir;	// The directory containing the executable
+static SCP_string Fred_exe_dir;		// The full filepath of the executable. Currently only used by cfile
 
 // ==classes, structs, unions==
 // a.k.a. z64's stupid exception placeholder
@@ -170,6 +171,9 @@ public:
 	int Shield_sys_types[MAX_SHIP_CLASSES];
 
 protected:
+	// FreeSpace codebase interactions
+	void Init_FSO(void);		// Init's the FSO codebase/backend, excluding the graphics init (that's done by the viewport)
+
 	// Mission management
 	void Mission_reset(void);	// Init's/ Resets the mission to initial conditions
 	void Mission_clear(void);	// Wipes out everything, leaving a clean slate to start with
