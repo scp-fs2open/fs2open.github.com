@@ -7651,13 +7651,10 @@ ADE_VIRTVAR(Targetable, l_Subsystem, "boolean", "Targetability of this subsystem
 
 	if(ADE_SETTING_VAR)
 	{
-		if (!newVal)
-			sso->ss->flags &= ~SSF_UNTARGETABLE;
-		else
-			sso->ss->flags |= SSF_UNTARGETABLE;
+        sso->ss->flags.set(Ship::Subsystem_Flags::Untargetable, newVal);
 	}
 
-	return ade_set_args(L, "b", !(sso->ss->flags & SSF_UNTARGETABLE));
+	return ade_set_args(L, "b", !(sso->ss->flags[Ship::Subsystem_Flags::Untargetable]));
 }
 
 ADE_VIRTVAR(Radius, l_Subsystem, "number", "The radius of this subsystem", "number", "The radius or 0 on error")
@@ -7742,9 +7739,10 @@ ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boo
 	if(!sso->IsValid())
 		return ADE_RETURN_NIL;
 
-	if(sso->ss->flags & SSF_HAS_FIRED){
-		sso->ss->flags &= ~SSF_HAS_FIRED;
-		return ADE_RETURN_TRUE;}
+	if(sso->ss->flags[Ship::Subsystem_Flags::Has_fired]){
+        sso->ss->flags.remove(Ship::Subsystem_Flags::Has_fired);
+        return ADE_RETURN_TRUE;
+    }
 	else
 		return ADE_RETURN_FALSE;
 }

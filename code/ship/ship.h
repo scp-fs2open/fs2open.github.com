@@ -320,7 +320,7 @@ public:
 	float		current_hits;							// current number of hits this subsystem has left.
 	float		max_hits;
 
-	int flags;						// Goober5000
+	flagset<Ship::Subsystem_Flags> flags;						// Goober5000
 
 	int subsys_guardian_threshold;	// Goober5000
 	int armor_type_idx;				// FUBAR

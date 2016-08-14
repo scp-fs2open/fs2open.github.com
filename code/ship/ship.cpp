@@ -6162,7 +6162,7 @@ void ship_recalc_subsys_strength( ship *shipp )
 	// total count of hits.  (i.e. for 3 engines, we store the sum of the max_hits for each engine)
 	for ( ship_system = GET_FIRST(&shipp->subsys_list); ship_system != END_OF_LIST(&shipp->subsys_list); ship_system = GET_NEXT(ship_system) ) {
 
-		if (!(ship_system->flags & SSF_NO_AGGREGATE)) {
+		if (!(ship_system->flags[Ship::Subsystem_Flags::No_aggregate])) {
 			int type = ship_system->system_info->type;
 			Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
 
@@ -6199,7 +6199,7 @@ void ship_recalc_subsys_strength( ship *shipp )
 					ship_system->subsys_snd_flags |= SSSF_TURRET_ROTATION;
 				}
 			}
-			if((ship_system->flags & SSF_ROTATES) && (ship_system->system_info->rotation_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_ROTATE))
+			if((ship_system->flags[Ship::Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_ROTATE))
 			{
 				obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ROTATION, ship_system);
 				ship_system->subsys_snd_flags |= SSSF_ROTATE;
@@ -6299,7 +6299,7 @@ void ship_subsys::clear()
 	sub_name[0] = 0;
 	current_hits = max_hits = 0.0f;
 
-	flags = 0;
+    flags.reset();
 
 	subsys_guardian_threshold = 0;
 	armor_type_idx = -1;
@@ -6430,43 +6430,43 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->rof_scaler = ship_system->system_info->turret_rof_scaler;
 
 		// zero flags
-		ship_system->flags = 0;
+        ship_system->flags.reset();
 		ship_system->weapons.flags = 0;
 		ship_system->subsys_snd_flags = 0;
 
 		// Goober5000
 		if (model_system->flags & MSS_FLAG_UNTARGETABLE)
-			ship_system->flags |= SSF_UNTARGETABLE;
+			ship_system->flags.set(Ship::Subsystem_Flags::Untargetable);
 		// Wanderer
 		if (model_system->flags & MSS_FLAG_NO_SS_TARGETING)
-			ship_system->flags |= SSF_NO_SS_TARGETING;
+			ship_system->flags.set(Ship::Subsystem_Flags::No_SS_targeting);
 		if ((The_mission.ai_profile->flags2 & AIPF2_ADVANCED_TURRET_FOV_EDGE_CHECKS) || (model_system->flags & MSS_FLAG_FOV_EDGE_CHECK))
-			ship_system->flags |= SSF_FOV_EDGE_CHECK;
+			ship_system->flags.set(Ship::Subsystem_Flags::FOV_edge_check);
 		if ((The_mission.ai_profile->flags2 & AIPF2_REQUIRE_TURRET_TO_HAVE_TARGET_IN_FOV) || (model_system->flags & MSS_FLAG_FOV_REQUIRED))
-			ship_system->flags |= SSF_FOV_REQUIRED;
+			ship_system->flags.set(Ship::Subsystem_Flags::FOV_Required);
 
 		if (model_system->flags & MSS_FLAG_NO_REPLACE)
-			ship_system->flags |= SSF_NO_REPLACE;
+			ship_system->flags.set(Ship::Subsystem_Flags::No_replace);
 		if (model_system->flags & MSS_FLAG_NO_LIVE_DEBRIS)
-			ship_system->flags |= SSF_NO_LIVE_DEBRIS;
+			ship_system->flags.set(Ship::Subsystem_Flags::No_live_debris);
 		if (model_system->flags & MSS_FLAG_IGNORE_IF_DEAD)
-			ship_system->flags |= SSF_MISSILES_IGNORE_IF_DEAD;
+			ship_system->flags.set(Ship::Subsystem_Flags::Missiles_ignore_if_dead);
 		if (model_system->flags & MSS_FLAG_ALLOW_VANISHING)
-			ship_system->flags |= SSF_VANISHED;
-		if (model_system->flags & MSS_FLAG_DAMAGE_AS_HULL)
-			ship_system->flags |= SSF_DAMAGE_AS_HULL;
+			ship_system->flags.set(Ship::Subsystem_Flags::Vanished);
+        if (model_system->flags & MSS_FLAG_DAMAGE_AS_HULL)
+			ship_system->flags.set(Ship::Subsystem_Flags::Damage_as_hull);
 		if (model_system->flags & MSS_FLAG_NO_AGGREGATE)
-			ship_system->flags |= SSF_NO_AGGREGATE;
+			ship_system->flags.set(Ship::Subsystem_Flags::No_aggregate);
 		if (model_system->flags & MSS_FLAG_ROTATES)
-			ship_system->flags |= SSF_ROTATES;
+			ship_system->flags.set(Ship::Subsystem_Flags::Rotates);
 		if (model_system->flags2 & MSS_FLAG2_PLAYER_TURRET_SOUND)
-			ship_system->flags |= SSF_PLAY_SOUND_FOR_PLAYER;
+			ship_system->flags.set(Ship::Subsystem_Flags::Play_sound_for_player);
 		if (model_system->flags2 & MSS_FLAG2_NO_DISAPPEAR)
-			ship_system->flags |= SSF_NO_DISAPPEAR;
+			ship_system->flags.set(Ship::Subsystem_Flags::No_disappear);
 		if (model_system->flags2 & MSS_FLAG2_AUTOREPAIR_IF_DISABLED)
-			ship_system->flags |= SSF_AUTOREPAIR_IF_DISABLED;
+			ship_system->flags.set(Ship::Subsystem_Flags::Autorepair_if_disabled);
 		if (model_system->flags2 & MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED)
-			ship_system->flags |= SSF_NO_AUTOREPAIR_IF_DISABLED;
+			ship_system->flags.set(Ship::Subsystem_Flags::No_autorepair_if_disabled);
 
 		ship_system->turn_rate = model_system->turn_rate;
 
@@ -8358,10 +8358,10 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 
 			if ( ssp->current_hits <= 0 ) {
 				if (sip->flags[Ship::Info_Flags::Subsys_repair_when_disabled]) {
-					if (ssp->flags & SSF_NO_AUTOREPAIR_IF_DISABLED) {
+					if (ssp->flags[Ship::Subsystem_Flags::No_autorepair_if_disabled]) {
 						continue;
 					}
-				} else if (!(ssp->flags & SSF_AUTOREPAIR_IF_DISABLED)) {
+				} else if (!(ssp->flags[Ship::Subsystem_Flags::Autorepair_if_disabled])) {
 					continue;
 				}
 			}
@@ -8374,7 +8374,7 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 			}
 
 			// aggregate repair
-			if (!(ssp->flags & SSF_NO_AGGREGATE)) {
+			if (!(ssp->flags[Ship::Subsystem_Flags::No_aggregate])) {
 				ssip->aggregate_current_hits += ssip->aggregate_max_hits * real_repair_rate * frametime;
 				if ( ssip->aggregate_current_hits > ssip->aggregate_max_hits ) {
 					ssip->aggregate_current_hits = ssip->aggregate_max_hits;
@@ -12798,11 +12798,11 @@ void ship_model_start(object *objp)
 		}
 
 		if ( psub->subobj_num >= 0 )	{
-			model_set_instance(model_num, psub->subobj_num, &pss->submodel_info_1, pss->flags );
+			model_set_instance(model_num, psub->subobj_num, &pss->submodel_info_1, &pss->flags );
 		}
 
 		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
-			model_set_instance(model_num, psub->turret_gun_sobj, &pss->submodel_info_2, pss->flags );
+			model_set_instance(model_num, psub->turret_gun_sobj, &pss->submodel_info_2, &pss->flags );
 		}
 	}
 }
@@ -13264,7 +13264,7 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 	ssp = GET_FIRST(&shipp->subsys_list);
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 
-		if ( (ssp->system_info->type == type) && !(ssp->flags & SSF_NO_AGGREGATE) ) {
+		if ( (ssp->system_info->type == type) && !(ssp->flags[Ship::Subsystem_Flags::No_aggregate]) ) {
 			ssp->current_hits = strength * ssp->max_hits;
 			total_current_hits += ssp->current_hits;
 		}
@@ -13534,7 +13534,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			}
 
 			// add repair to aggregate strength of subsystems of that type
-			if (!(ssp->flags & SSF_NO_AGGREGATE)) {
+			if (!(ssp->flags[Ship::Subsystem_Flags::No_aggregate])) {
 				shipp->subsys_info[subsys_type].aggregate_current_hits += repair_delta;
 				if ( shipp->subsys_info[subsys_type].aggregate_current_hits > shipp->subsys_info[subsys_type].aggregate_max_hits )
 					shipp->subsys_info[subsys_type].aggregate_current_hits = shipp->subsys_info[subsys_type].aggregate_max_hits;
@@ -13991,7 +13991,7 @@ void ship_assign_sound(ship *sp)
 				obj_snd_assign(sp->objnum, moveup->system_info->turret_gun_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, moveup);
 				moveup->subsys_snd_flags |= SSSF_TURRET_ROTATION;
 			}
-			if((moveup->system_info->rotation_snd != -1) && (moveup->flags & SSF_ROTATES))
+			if((moveup->system_info->rotation_snd != -1) && (moveup->flags[Ship::Subsystem_Flags::Rotates]))
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->rotation_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ROTATION, moveup);
 				moveup->subsys_snd_flags |= SSSF_ROTATE;
@@ -15915,7 +15915,7 @@ void ship_do_cargo_revealed( ship *shipp, int from_network )
 void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int from_network )
 {
 	// don't do anything if we already know the cargo
-	if (subsys->flags & SSF_CARGO_REVEALED) {
+	if (subsys->flags[Ship::Subsystem_Flags::Cargo_revealed]) {
 		return;
 	}
 
@@ -15927,7 +15927,7 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 		send_subsystem_cargo_revealed_packet( shipp, subsystem_index );		
 	}
 
-	subsys->flags |= SSF_CARGO_REVEALED;
+    subsys->flags.set(Ship::Subsystem_Flags::Cargo_revealed);
 	subsys->time_subsys_cargo_revealed = Missiontime;
 
 	// if the cargo is something other than "nothing", then make a log entry
@@ -15964,7 +15964,7 @@ void ship_do_cargo_hidden( ship *shipp, int from_network )
 void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from_network )
 {
 	// don't do anything if the cargo is already hidden
-	if (!(subsys->flags & SSF_CARGO_REVEALED))
+	if (!(subsys->flags[Ship::Subsystem_Flags::Cargo_revealed]))
 	{
 		return;
 	}
@@ -15977,7 +15977,7 @@ void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from
 		send_subsystem_cargo_hidden_packet( shipp, subsystem_index );		
 	}
 
-	subsys->flags &= ~SSF_CARGO_REVEALED;
+    subsys->flags.remove(Ship::Subsystem_Flags::Cargo_revealed);
 
 	// don't log that the cargo was hidden and don't reset the time cargo revealed
 }
@@ -17311,7 +17311,7 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 	Assert(pss);
 
 	// check if we actually can rotate
-	if ( !(pss->flags & SSF_ROTATES) ){
+	if ( !(pss->flags[Ship::Subsystem_Flags::Rotates]) ){
 		return;
 	}
 

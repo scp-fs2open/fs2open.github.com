@@ -4141,7 +4141,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 	// If target subsys is dead make missile pick random spot on target as attack point.
 	if (wp->homing_subsys != NULL) {
-		if (wp->homing_subsys->flags & SSF_MISSILES_IGNORE_IF_DEAD) {
+		if (wp->homing_subsys->flags[Ship::Subsystem_Flags::Missiles_ignore_if_dead]) {
 			if ((wp->homing_subsys->max_hits > 0) && (wp->homing_subsys->current_hits <= 0)) {
 				wp->homing_object = &obj_used_list;
 				return;

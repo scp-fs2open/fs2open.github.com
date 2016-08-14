@@ -4755,10 +4755,16 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 }
 
 // Sets the submodel instance data in a submodel (for all detail levels)
-void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, int flags)
+void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>* flags)
 {
 	int i;
 	polymodel * pm;
+
+    flagset<Ship::Subsystem_Flags> instance_flags;
+
+    if (flags != NULL)
+        instance_flags = *flags;
+
 
 	pm = model_get(model_num);
 
@@ -4769,14 +4775,14 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	if ( sub_model_num >= pm->n_models ) return;
 	bsp_info *sm = &pm->submodel[sub_model_num];
 
-	if (flags & SSF_NO_DISAPPEAR) {
+	if (instance_flags[Ship::Subsystem_Flags::No_disappear]) {
 		sm->blown_off = 0;
 	} else {
 		// Set the "blown out" flags
 		sm->blown_off = sii->blown_off;
 	}
 
-	if ( (sm->blown_off) && (!(flags & SSF_NO_REPLACE)) )	{
+	if ( (sm->blown_off) && (!(instance_flags[Ship::Subsystem_Flags::No_replace])) )	{
 		if ( sm->my_replacement > -1 )	{
 			pm->submodel[sm->my_replacement].blown_off = 0;
 			pm->submodel[sm->my_replacement].angs = sii->angs;
@@ -4794,7 +4800,7 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{
-		model_set_instance(model_num, sm->details[i], sii, flags );
+		model_set_instance(model_num, sm->details[i], sii, &instance_flags);
 	}
 }
 
@@ -4825,7 +4831,7 @@ void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1
 	sm->angs.h = angle_2;
 }
 
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, int flags)
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags)
 {
 	int i;
 	polymodel *pm;
@@ -4845,13 +4851,13 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	bsp_info *sm = &pm->submodel[sub_model_num];
 	
 	// Set the "blown out" flags
-	if ( flags & SSF_NO_DISAPPEAR ) {
+	if ( flags[Ship::Subsystem_Flags::No_disappear] ) {
 		smi->blown_off = false;
 	} else {
 		smi->blown_off = sii->blown_off ? true : false;
 	}
 
-	if ( smi->blown_off && !(flags & SSF_NO_REPLACE) )	{
+	if ( smi->blown_off && !(flags[Ship::Subsystem_Flags::No_replace]) )	{
 		if ( sm->my_replacement > -1 )	{
 			pmi->submodel[sm->my_replacement].blown_off = false;
 			pmi->submodel[sm->my_replacement].angs = sii->angs;
@@ -4893,7 +4899,8 @@ void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
 
 		// Now actually rotate the submodel instance
 		// (Since this is an intrinsic rotation, we have no associated subsystem, so pass 0 for subsystem flags.)
-		model_update_instance(ir->model_instance_num, submodel_it->submodel_num, &submodel_it->submodel_info_1, 0);
+        flagset<Ship::Subsystem_Flags> empty;
+		model_update_instance(ir->model_instance_num, submodel_it->submodel_num, &submodel_it->submodel_info_1, empty);
 	}
 }
 

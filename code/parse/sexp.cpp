@@ -7867,7 +7867,7 @@ void get_cap_subsys_cargo_flags(int shipnum, char *subsys_name, int *known, fix 
 	if (ss != NULL)
 	{
 		// set the flags
-		*known = (ss->flags & SSF_CARGO_REVEALED);
+		*known = (ss->flags[Ship::Subsystem_Flags::Cargo_revealed]);
 		*time_revealed = ss->time_subsys_cargo_revealed;
 	}
 	// if we didn't find the subsystem, the ship hasn't arrived yet
@@ -14067,7 +14067,7 @@ void sexp_friendly_stealth_invisible(int n, bool invisible)
 //FUBAR
 //generic function to deal with subsystem flag sexps.
 //setit only passed for backward compatibility with older sexps.
-void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = false, bool setit = false)
+void sexp_ship_deal_with_subsystem_flag(int node, Ship::Subsystem_Flags ss_flag, bool sendit = false, bool setit = false)
 {	
 	ship *shipp = NULL;
 	ship_subsys *ss = NULL;	
@@ -14082,7 +14082,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 	// OP_SHIP_SUBSYS_TARGETABLE/UNTARGETABLE, OP_SHIP_SUBSYS_TARGETABLE and OP_TURRET_SUBSYS_TARGET_ENABLE/DISABLE 
 	// will have already passed us this data we don't need to set it for them. 
 	// backward compatibility hack for older sexps
-	if (!((ss_flag == SSF_UNTARGETABLE) || (ss_flag == SSF_NO_SS_TARGETING)))
+	if (!((ss_flag == Ship::Subsystem_Flags::Untargetable) || (ss_flag == Ship::Subsystem_Flags::No_SS_targeting)))
 	{
 		node = CDR(node);
 		setit = (is_sexp_true(node) ? true : false);
@@ -14104,10 +14104,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 		if (generic_type) {
 			for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
 				if (generic_type == ss->system_info->type) {
-					if (setit)
-						ss->flags |= ss_flag;
-					else
-						ss->flags &= ~ss_flag;
+                    ss->flags.set(ss_flag, setit);
 				}
 			}
 		}
@@ -14122,10 +14119,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 			}
  
 			// set the flag
-			if(setit)
-				ss->flags |= ss_flag;
-			else
-				ss->flags &= ~ss_flag;
+            ss->flags.set(ss_flag, setit);
 		}
 
 		// multiplayer send subsystem name
@@ -14140,7 +14134,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, int ss_flag, bool sendit = fal
 	if (sendit)
 		multi_end_callback();
 }
-void multi_sexp_deal_with_subsys_flag(int ss_flag)
+void multi_sexp_deal_with_subsys_flag(Ship::Subsystem_Flags ss_flag)
 {
 	bool setit = false;
 	ship_subsys *ss = NULL;
@@ -14157,10 +14151,7 @@ void multi_sexp_deal_with_subsys_flag(int ss_flag)
 		if (generic_type) {
 			for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
 				if (generic_type == ss->system_info->type) {
-					if (setit)
-						ss->flags |= ss_flag;
-					else
-						ss->flags &= ~ss_flag;
+                    ss->flags.set(ss_flag, setit);
 				}
 			}
 		}
@@ -14170,10 +14161,7 @@ void multi_sexp_deal_with_subsys_flag(int ss_flag)
 			if(ss != NULL)
 			{	
 				// set the flag
-				if(setit)
-					ss->flags |= ss_flag;
-				else
-					ss->flags &= ~ss_flag;
+                ss->flags.set(ss_flag, setit);
 			}
 		}
 	}
@@ -18144,10 +18132,10 @@ void sexp_set_subsys_rotation_lock_free(int node, int locked)
 			continue;
 
 		// set rotate or not, depending on flag
+        rotate->flags.set(Ship::Subsystem_Flags::Rotates, locked != 0);
 		if (locked)
-		{
-			rotate->flags &= ~SSF_ROTATES;
-			if (rotate->subsys_snd_flags & SSSF_ROTATE)
+		{   
+            if (rotate->subsys_snd_flags & SSSF_ROTATE)
 			{
 				obj_snd_delete_type(Ships[ship_num].objnum, rotate->system_info->rotation_snd, rotate);
 				rotate->subsys_snd_flags &= ~SSSF_ROTATE;
@@ -18155,7 +18143,6 @@ void sexp_set_subsys_rotation_lock_free(int node, int locked)
 		}
 		else
 		{
-			rotate->flags |= SSF_ROTATES;
 			if (rotate->system_info->rotation_snd >= 0)
 			{
 				obj_snd_assign(Ships[ship_num].objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, 0, OS_SUBSYS_ROTATION, rotate);
@@ -23368,42 +23355,42 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SHIP_SUBSYS_TARGETABLE:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_UNTARGETABLE, true, false);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::Untargetable, true, false);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_SUBSYS_UNTARGETABLE:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_UNTARGETABLE, true, true);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::Untargetable, true, true);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_TURRET_SUBSYS_TARGET_DISABLE:
 				sexp_val = SEXP_TRUE;
-				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_SS_TARGETING, false, true);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::No_SS_targeting, false, true);
 				break;
 
 			case OP_TURRET_SUBSYS_TARGET_ENABLE:
 				sexp_val = SEXP_TRUE;
-				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_SS_TARGETING, false, false);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::No_SS_targeting, false, false);
 				break;
 
 			case OP_SHIP_SUBSYS_NO_REPLACE:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_REPLACE, true);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::No_replace, true);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_NO_LIVE_DEBRIS, true);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::No_live_debris, true);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_SUBSYS_VANISHED:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_VANISHED, true);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::Vanished, true);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
-				sexp_ship_deal_with_subsystem_flag(node, SSF_MISSILES_IGNORE_IF_DEAD, false);
+				sexp_ship_deal_with_subsystem_flag(node, Ship::Subsystem_Flags::Missiles_ignore_if_dead, false);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -24991,20 +24978,20 @@ void multi_sexp_eval()
 				break;
 
 			case OP_SHIP_SUBSYS_NO_REPLACE:
-				multi_sexp_deal_with_subsys_flag(SSF_NO_REPLACE);
+				multi_sexp_deal_with_subsys_flag(Ship::Subsystem_Flags::No_replace);
 				break;
 			case OP_SHIP_SUBSYS_NO_LIVE_DEBRIS:
-				multi_sexp_deal_with_subsys_flag(SSF_NO_LIVE_DEBRIS);
+				multi_sexp_deal_with_subsys_flag(Ship::Subsystem_Flags::No_live_debris);
 				break;
 			case OP_SHIP_SUBSYS_VANISHED:
-				multi_sexp_deal_with_subsys_flag(SSF_VANISHED);
+                multi_sexp_deal_with_subsys_flag(Ship::Subsystem_Flags::Vanished);
 				break;
 			case OP_SHIP_SUBSYS_IGNORE_IF_DEAD:
-				multi_sexp_deal_with_subsys_flag(SSF_MISSILES_IGNORE_IF_DEAD);
+				multi_sexp_deal_with_subsys_flag(Ship::Subsystem_Flags::Missiles_ignore_if_dead);
 				break;
 			case OP_SHIP_SUBSYS_TARGETABLE:
 			case OP_SHIP_SUBSYS_UNTARGETABLE:
-				multi_sexp_deal_with_subsys_flag(SSF_UNTARGETABLE);
+				multi_sexp_deal_with_subsys_flag(Ship::Subsystem_Flags::Untargetable);
 				break;
 
 			case OP_SHIP_CHANGE_CALLSIGN:
