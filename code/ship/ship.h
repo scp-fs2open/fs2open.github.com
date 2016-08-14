@@ -1271,7 +1271,7 @@ public:
 
 	int ship_iff_info[MAX_IFFS][MAX_IFFS];
 
-	int aiming_flags;
+	flagset<Ship::Aiming_Flags> aiming_flags;
 	float minimum_convergence_distance;
 	float convergence_distance;
 	vec3d convergence_offset;

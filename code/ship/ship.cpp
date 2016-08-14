@@ -1758,7 +1758,7 @@ ship_info::ship_info()
 			ship_iff_info[i][j] = -1;
 	}
 
-	aiming_flags = 0;
+	aiming_flags.reset();
 	minimum_convergence_distance = 0.0f;
 	convergence_distance = 100.0f;
 	vm_vec_zero(&convergence_offset);
@@ -2867,11 +2867,11 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		if (fov_temp > 180.0f)
 			fov_temp = 180.0f;
 
-		sip->aiming_flags |= AIM_FLAG_AUTOAIM;
+		sip->aiming_flags.set(Ship::Aiming_Flags::Autoaim); 
 		sip->autoaim_fov = fov_temp * PI / 180.0f;
 
 		if(optional_string("+Converging Autoaim"))
-			sip->aiming_flags |= AIM_FLAG_AUTOAIM_CONVERGENCE;
+			sip->aiming_flags.set(Ship::Aiming_Flags::Autoaim_convergence);
 
 		if(optional_string("+Minimum Distance:"))
 			stuff_float(&sip->minimum_convergence_distance);
@@ -2881,23 +2881,20 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	{
 		if(optional_string("+Automatic"))
 		{
-			sip->aiming_flags |= AIM_FLAG_AUTO_CONVERGENCE;
+			sip->aiming_flags.set(Ship::Aiming_Flags::Auto_convergence);
 			if(optional_string("+Minimum Distance:"))
 				stuff_float(&sip->minimum_convergence_distance);
 		}
 		if(optional_string("+Standard"))
 		{
-			sip->aiming_flags |= AIM_FLAG_STD_CONVERGENCE;
+            sip->aiming_flags.set(Ship::Aiming_Flags::Std_convergence);
 			if(required_string("+Distance:"))
 				stuff_float(&sip->convergence_distance);
 		}
 		if(optional_string("+Offset:")) {
 			stuff_vec3d(&sip->convergence_offset);
 
-			if (IS_VEC_NULL(&sip->convergence_offset))
-				sip->aiming_flags &= ~AIM_FLAG_CONVERGENCE_OFFSET;
-			else
-				sip->aiming_flags |= AIM_FLAG_CONVERGENCE_OFFSET;				
+            sip->aiming_flags.set(Ship::Aiming_Flags::Convergence_offset, !IS_VEC_NULL(&sip->convergence_offset));				
 		}
 	}
 
@@ -10618,9 +10615,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}
 
 	// lets start gun convergence / autoaim code from here - Wanderer
-	has_converging_autoaim = ((sip->aiming_flags & AIM_FLAG_AUTOAIM_CONVERGENCE || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags & AIM_FLAG_AUTOAIM)) && aip->target_objnum != -1);
-	needs_target_pos = ((has_autoaim || (sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE)) && aip->target_objnum != -1);
+	has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
+	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim])) && aip->target_objnum != -1);
+	needs_target_pos = ((has_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence])) && aip->target_objnum != -1);
 	
 	if (needs_target_pos) {
 		if (has_autoaim) {
@@ -11091,13 +11088,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								}
 
 								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-							} else if ((sip->aiming_flags & AIM_FLAG_STD_CONVERGENCE) || ((sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE) && (aip->target_objnum != -1))) {
+							} else if ((sip->aiming_flags[Ship::Aiming_Flags::Std_convergence]) || ((sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence]) && (aip->target_objnum != -1))) {
 								// std & auto convergence
 								vec3d target_vec, firing_vec, convergence_offset;
 								
 								// make sure vector is of the set length
 								vm_vec_copy_normalize(&target_vec, &player_forward_vec);
-								if ((sip->aiming_flags & AIM_FLAG_AUTO_CONVERGENCE) && (aip->target_objnum != -1)) {
+								if ((sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence]) && (aip->target_objnum != -1)) {
 									// auto convergence
 									vm_vec_scale(&target_vec, dist_to_aim);
 								} else {
@@ -11106,7 +11103,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								}
 								
 								// if there is convergence offset then make use of it)
-								if (sip->aiming_flags & AIM_FLAG_CONVERGENCE_OFFSET) {
+								if (sip->aiming_flags[Ship::Aiming_Flags::Convergence_offset]) {
 									vm_vec_unrotate(&convergence_offset, &sip->convergence_offset, &obj->orient);
 									vm_vec_add2(&target_vec, &convergence_offset);
 								}
