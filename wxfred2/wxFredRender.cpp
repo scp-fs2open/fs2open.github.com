@@ -38,6 +38,7 @@ public:
 	explicit wxOpenGLContext(wxGLCanvas* win) {
 		Assertion(win != nullptr, "Could not create wxOpenGLContext! Must have a valid wxGLCanvas class (or derivative)\n");
 
+		canvas_p = win;
 		context_p = new wxGLContext(win);
 
 		Assertion(context_p != nullptr, "Failed to create wxGLContext!");
