@@ -13,32 +13,24 @@
 #define _PSTYPES_H
 
 
+
+#include "windows_stub/config.h"
+#include "globalincs/scp_defines.h"
+#include "globalincs/toolchain.h"
+
+#include "SDL.h"
+
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
 #include <algorithm>
 #include <cstdint>
-#include "globalincs/toolchain.h"
-
-#if defined( __x86_64__ ) || defined( _WIN64 )
-#define IAM_64BIT 1
-#endif
-
-
-#include "windows_stub/config.h"
-
-#include "globalincs/scp_defines.h"
-
-#include "SDL.h"
 
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
 
 #define MAX_PLAYERS	12
-
-#define USE_INLINE_ASM 1		// Define this to use inline assembly
-#define STRUCT_CMP(a, b) memcmp((void *)&a, (void *)&b, sizeof(a))
 
 #ifdef LOCAL
 #undef LOCAL
@@ -54,13 +46,8 @@
 #define DIR_SEPARATOR_STR  "/"
 #endif
 
-#ifdef IAM_64BIT
 typedef std::int32_t _fs_time_t;  // time_t here is 64-bit and we need 32-bit
 typedef std::int32_t fix;
-#else
-typedef long fix;
-typedef	long _fs_time_t;
-#endif // 64-bit
 
 // PTR compatible sizes
 typedef ptrdiff_t ptr_s;
