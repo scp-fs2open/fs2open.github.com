@@ -440,34 +440,6 @@ template <class T> void CAP( T& v, T mn, T mx )
 // faster version of CAP()
 #define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(0)
 
-// ========================================================
-// stamp checksum stuff
-// ========================================================
-
-// here is the define for the stamp for this set of code
-#define STAMP_STRING "\001\001\001\001\002\002\002\002Read the Foundation Novels from Asimov.  I liked them."
-#define STAMP_STRING_LENGTH			80
-#define DEFAULT_CHECKSUM_STRING		"\001\001\001\001"
-#define DEFAULT_TIME_STRING			"\002\002\002\002"
-
-// macro to calculate the checksum for the stamp.  Put here so that we can use different methods
-// for different applications.  Requires the local variable 'checksum' to be defined!!!
-#define CALCULATE_STAMP_CHECKSUM() do {	\
-		int i, found;	\
-							\
-		checksum = 0;	\
-		for ( i = 0; i < (int)strlen(ptr); i++ ) {	\
-			found = 0;	\
-			checksum += ptr[i];	\
-			if ( checksum & 0x01 )	\
-				found = 1;	\
-			checksum = checksum >> 1;	\
-			if (found)	\
-				checksum |= 0x80000000;	\
-		}	\
-		checksum |= 0x80000000;	\
-	} while (0) ;
-
 //=========================================================
 // Memory management functions
 //=========================================================
