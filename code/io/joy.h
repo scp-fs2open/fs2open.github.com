@@ -207,6 +207,12 @@ namespace io
 			SDL_JoystickID getID() const;
 
 			/**
+			 * @brief Gets the device index of this joystick
+			 * @return The device index
+			 */
+			int getDeviceId() const;
+
+			/**
 			 * @brief The SDL joystick handle
 			 * @return The handle
 			 */
