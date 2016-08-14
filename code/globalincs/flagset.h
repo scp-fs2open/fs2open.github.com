@@ -9,6 +9,13 @@ class flagset {
 protected:
     std::bitset<SIZE> values;
 public:
+	flagset() {}
+
+	flagset(const std::initializer_list<T>& init_list) {
+		for (auto& val : init_list) {
+			set(val);
+		}
+	}
 
     bool operator [] (const T idx) const { return values[(static_cast < size_t >(idx))]; };
 
