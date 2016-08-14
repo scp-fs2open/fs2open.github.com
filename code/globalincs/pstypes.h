@@ -366,7 +366,9 @@ typedef struct lod_checker {
 //  - has >0 length
 //  - is not "none"
 //  - is not "<none>"
-#define VALID_FNAME(x) ( strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>") )
+inline bool VALID_FNAME(const char* x) {
+	return strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>");
+}
 
 
 // Callback Loading function.
