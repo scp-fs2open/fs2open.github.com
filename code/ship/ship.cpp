@@ -5420,7 +5420,7 @@ void ship_level_init()
  *
  * The reason parameter tells us why the ship left the mission (i.e. departed or destroyed)
  */
-void ship_add_exited_ship( ship *sp, int reason )
+void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 {
 	exited_ship entry; 
 
@@ -5428,10 +5428,10 @@ void ship_add_exited_ship( ship *sp, int reason )
 	entry.obj_signature = Objects[sp->objnum].signature;
 	entry.ship_class = sp->ship_info_index;
 	entry.team = sp->team;
-	entry.flags = reason;
+	entry.flags += reason;
 	// if ship is red alert, flag as such
 	if (sp->flags[Ship_Flags::Red_alert_store_status]) {
-		entry.flags |= SEF_RED_ALERT_CARRY;
+        entry.flags.set(Ship::Exit_Flags::Red_alert_carry);
 	}
 	entry.time = Missiontime;
 	entry.hull_strength = int(Objects[sp->objnum].hull_strength);
@@ -5441,12 +5441,12 @@ void ship_add_exited_ship( ship *sp, int reason )
 	entry.time_cargo_revealed = (fix)0;
 	if ( sp->flags[Ship_Flags::Cargo_revealed] )
 	{
-		entry.flags |= SEF_CARGO_KNOWN;
+        entry.flags.set(Ship::Exit_Flags::Cargo_known);
 		entry.time_cargo_revealed = sp->time_cargo_revealed;
 	}
 
-	if ( sp->time_first_tagged > 0 )
-		entry.flags |= SEF_BEEN_TAGGED;
+    if (sp->time_first_tagged > 0)
+        entry.flags.set(Ship::Exit_Flags::Been_tagged);
 	
 	//copy across the damage_ship arrays
 	for (int i = 0; i < MAX_DAMAGE_SLOTS ; i++) {
@@ -7378,9 +7378,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 
 	// add the information to the exited ship list
 	if (cleanup_mode == SHIP_DESTROYED) {
-		ship_add_exited_ship(shipp, SEF_DESTROYED);
+		ship_add_exited_ship(shipp, Ship::Exit_Flags::Destroyed);
 	} else {
-		ship_add_exited_ship(shipp, SEF_DEPARTED);
+		ship_add_exited_ship(shipp, Ship::Exit_Flags::Departed);
 	}
 
 	// record kill?
@@ -7448,9 +7448,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	// Note, this call to ai_ship_destroy must come after ship_wing_cleanup for guarded wings to
 	// properly note the destruction of a ship in their wing.
 	if (cleanup_mode == SHIP_DESTROYED) {
-		ai_ship_destroy(shipnum, SEF_DESTROYED);	// Do AI stuff for destruction of ship.
+		ai_ship_destroy(shipnum, Ship::Exit_Flags::Destroyed);	// Do AI stuff for destruction of ship.
 	} else {
-		ai_ship_destroy(shipnum, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
+		ai_ship_destroy(shipnum, Ship::Exit_Flags::Departed);		// should still do AI cleanup after ship has departed
 	}
 
 	// Goober5000 - lastly, clear out the dead-docked list, per Mantis #2294

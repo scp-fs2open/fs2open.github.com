@@ -1248,7 +1248,7 @@ void wss_direct_restore_loadout()
 
 					if ( slot->ship_class == -1 ) {
 						cleanup_ship_index[j] = wp->ship_index[j];
-						ship_add_exited_ship( shipp, SEF_PLAYER_DELETED );
+						ship_add_exited_ship( shipp, Ship::Exit_Flags::Player_deleted );
 						obj_delete(shipp->objnum);
 						hud_set_wingman_status_none( shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
 						continue;
