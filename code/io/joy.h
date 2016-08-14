@@ -58,9 +58,9 @@ namespace io
 			 * This object will take ownership of the passed SDL handle and it will be freed when this
 			 * object is deleted.
 			 *
-			 * @param joystick The Joystick handle
+			 * @param device_id The SDL device index
 			 */
-			explicit Joystick(SDL_Joystick *joystick);
+			explicit Joystick(int device_id);
 
 			/**
 			 * @brief Moves the resources of the other object into @c this
@@ -219,6 +219,8 @@ namespace io
 			 * @note Only for internal use, don't call externally
 			 */
 			void handleJoyEvent(const SDL_Event &evt);
+
+			void printInfo();
 		private:
 			Joystick(const Joystick &);
 			Joystick &operator=(const Joystick &);
@@ -233,6 +235,7 @@ namespace io
 			void handleButtonEvent(const SDL_JoyButtonEvent& evt);
 			void handleHatEvent(const SDL_JoyHatEvent& evt);
 
+			int _device_id; //!< The SDL device index
 			SDL_Joystick *_joystick; //!< The SDL joystick handle
 
 			SCP_string _guidStr; //!< The GUID string

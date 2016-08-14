@@ -101,9 +101,12 @@ void enumerateJoysticks(SCP_vector<JoystickPtr>& outVec)
 	outVec.clear();
 	outVec.reserve(static_cast<size_t>(num));
 
+	mprintf(("Printing joystick info:\n"));
+
 	for (auto i = 0; i < num; ++i)
 	{
-		auto ptr = JoystickPtr(new Joystick(SDL_JoystickOpen(i)));
+		auto ptr = JoystickPtr(new Joystick(i));
+		ptr->printInfo();
 
 		outVec.push_back(std::move(ptr));
 	}
@@ -236,7 +239,7 @@ bool device_event_handler(const SDL_Event &evt)
 			}
 
 			// Add the new device to our list
-			auto added = JoystickPtr(new Joystick(device));
+			auto added = JoystickPtr(new Joystick(joyDeviceEvent.which));
 
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
@@ -284,10 +287,12 @@ namespace io
 {
 namespace joystick
 {
-	Joystick::Joystick(SDL_Joystick *joystick) :
-			_joystick(joystick)
+	Joystick::Joystick(int device_id) :
+		_device_id(device_id)
 	{
-		Assertion(joystick != nullptr, "Invalid joystick pointer passed!");
+		_joystick = SDL_JoystickOpen(device_id);
+
+		Assertion(_joystick != nullptr, "Failed to open a joystick, get a coder!");
 
 		fillValues();
 	}
@@ -309,6 +314,7 @@ namespace joystick
 
 	Joystick &Joystick::operator=(Joystick &&other)
 	{
+		std::swap(_device_id, other._device_id);
 		std::swap(_joystick, other._joystick);
 
 		fillValues();
@@ -660,6 +666,13 @@ namespace joystick
 		newVal.y = evt.yrel;
 
 		_ballValues[ball] = newVal;
+	}
+
+	void Joystick::printInfo() {
+		mprintf(("  Joystick name: %s\n", getName().c_str()));
+		mprintf(("  Joystick GUID: %s\n", getGUID().c_str()));
+		mprintf(("  Joystick ID: %d\n", getID()));
+		mprintf(("  Joystick device ID: %d\n", _device_id));
 	}
 
 	bool init()
