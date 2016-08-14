@@ -231,9 +231,6 @@ void multi_pxo_strip_space(char *string1,char *string2);
 // fire up the given URL
 void multi_pxo_url(char *url);
 
-// load/set the palette
-void multi_pxo_load_palette();
-
 // unload the palette
 void multi_pxo_unload_palette();
 
@@ -1099,9 +1096,6 @@ void multi_pxo_init(int use_last_channel)
 	Multi_pxo_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Multi_pxo_window.set_mask_bmap(Multi_pxo_mask_fname[gr_screen.res]);
 
-	// multiplayer screen common palettes
-	multi_pxo_load_palette();	
-
 	// create the interface buttons
 	for(idx=0;idx<MULTI_PXO_NUM_BUTTONS;idx++){
 		// create the object
@@ -1583,15 +1577,6 @@ void multi_pxo_url(char *url)
 				break;
 		}					
 	}
-#endif
-}
-
-// load/set the palette
-void multi_pxo_load_palette()
-{
-	// use the palette
-#ifndef HARDWARE_ONLY
-	palette_use_bm_palette(Multi_pxo_palette);
 #endif
 }
 
@@ -4757,9 +4742,6 @@ void multi_pxo_run_medals()
 
 	// close the medals screen down
 	medal_main_close();
-	
-	// reset the palette
-	multi_pxo_load_palette();
 }
 
 

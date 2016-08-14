@@ -60,8 +60,6 @@ typedef std::uint16_t ushort;
 typedef std::uint32_t uint;
 typedef unsigned long ulong;
 
-#define HARDWARE_ONLY
-
 //Stucture to store clipping codes in a word
 typedef struct ccodes {
 	ubyte cc_or, cc_and;		//or is low byte, and is high byte
