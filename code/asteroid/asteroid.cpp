@@ -14,7 +14,6 @@
 #include "fireball/fireballs.h"
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
-#include "globalincs/compatibility.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
 #include "hud/hud.h"
