@@ -766,19 +766,13 @@ ai_target_priority init_ai_target_priorities();
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
 // information.
-#define SEF_DESTROYED			(1<<0)
-#define SEF_DEPARTED				(1<<1)
-#define SEF_CARGO_KNOWN			(1<<2)
-#define SEF_PLAYER_DELETED		(1<<3)			// ship deleted by a player in ship select
-#define SEF_BEEN_TAGGED			(1<<4)
-#define SEF_RED_ALERT_CARRY	(1<<5)
 
 typedef struct exited_ship {
 	char	ship_name[NAME_LENGTH];
 	int		obj_signature;
 	int		ship_class;
 	int		team;
-	int		flags;
+	flagset<Ship::Exit_Flags> flags;
 	fix		time;
 	int		hull_strength;
 	fix		time_cargo_revealed;
@@ -790,7 +784,7 @@ typedef struct exited_ship {
 extern SCP_vector<exited_ship> Ships_exited;
 
 // a couple of functions to get at the data
-extern void ship_add_exited_ship( ship *shipp, int reason );
+extern void ship_add_exited_ship( ship *shipp, Ship::Exit_Flags reason );
 extern int ship_find_exited_ship_by_name( char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
 

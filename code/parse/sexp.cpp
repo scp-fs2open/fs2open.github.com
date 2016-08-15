@@ -7812,7 +7812,7 @@ int sexp_is_cargo_known( int n, int check_delay )
 			if (exited_index != -1)
 			{
 				// if not known, the whole thing is known false
-				if ( !(Ships_exited[exited_index].flags & SEF_CARGO_KNOWN) )
+				if ( !(Ships_exited[exited_index].flags[Ship::Exit_Flags::Cargo_known]) )
 					return SEXP_KNOWN_FALSE;
 
 				// check the delay of when we found out
@@ -8089,7 +8089,7 @@ int sexp_has_been_tagged_delay(int n)
 			// grab the status of whether the cargo is known from this list
 			exited_index = ship_find_exited_ship_by_name( name );
 			if (exited_index != -1 ) {
-				if ( !(Ships_exited[exited_index].flags & SEF_BEEN_TAGGED) )
+				if ( !(Ships_exited[exited_index].flags[Ship::Exit_Flags::Been_tagged]) )
 					return SEXP_KNOWN_FALSE;
 
 				// check the delay of when we found out.  We use the ship died time which isn't entirely accurate

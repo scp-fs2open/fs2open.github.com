@@ -746,15 +746,15 @@ void red_alert_store_wingman_status()
 
 	// store exited ships that did not die
 	for (int idx=0; idx<(int)Ships_exited.size(); idx++) {
-		if (Ships_exited[idx].flags & SEF_RED_ALERT_CARRY) {
+		if (Ships_exited[idx].flags[Ship::Exit_Flags::Red_alert_carry]) {
 			ras.name = Ships_exited[idx].ship_name;
 			ras.hull = float(Ships_exited[idx].hull_strength);
 
 			// if a ship has been destroyed or removed manually by the player, then mark it as such ...
-			if ( Ships_exited[idx].flags & SEF_DESTROYED ) {
+			if ( Ships_exited[idx].flags[Ship::Exit_Flags::Destroyed]) {
 				ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
 			}
-			else if (Ships_exited[idx].flags & SEF_PLAYER_DELETED) {
+			else if (Ships_exited[idx].flags[Ship::Exit_Flags::Player_deleted]) {
 				ras.ship_class = RED_ALERT_PLAYER_DEL_SHIP_CLASS;
 			}
 			// ... otherwise we want to make sure and carry over the ship class
@@ -788,7 +788,7 @@ void red_alert_delete_ship(ship *shipp, int ship_state)
 		}
 	}
 
-	ship_add_exited_ship( shipp, SEF_PLAYER_DELETED );
+	ship_add_exited_ship( shipp, Ship::Exit_Flags::Player_deleted );
 	obj_delete(shipp->objnum);
 	if ( shipp->wingnum >= 0 ) {
 		ship_wing_cleanup( SHIP_INDEX(shipp), &Wings[shipp->wingnum] );

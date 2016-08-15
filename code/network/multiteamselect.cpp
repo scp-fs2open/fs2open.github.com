@@ -987,7 +987,7 @@ void multi_ts_create_wings()
 				Multi_ts_deleted_objnums[Multi_ts_num_deleted] = Multi_ts_team[idx].multi_ts_objnum[s_idx];
 
 				// delete the ship
-				ship_add_exited_ship( &Ships[Objects[Multi_ts_deleted_objnums[Multi_ts_num_deleted]].instance], SEF_PLAYER_DELETED );
+				ship_add_exited_ship( &Ships[Objects[Multi_ts_deleted_objnums[Multi_ts_num_deleted]].instance], Ship::Exit_Flags::Player_deleted);
 				obj_delete(Multi_ts_deleted_objnums[Multi_ts_num_deleted]);			
 				ship_wing_cleanup(Objects[Multi_ts_deleted_objnums[Multi_ts_num_deleted]].instance,&Wings[Ships[Objects[Multi_ts_team[idx].multi_ts_objnum[s_idx]].instance].wingnum]);
 

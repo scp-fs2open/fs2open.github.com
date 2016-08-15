@@ -5991,7 +5991,7 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 			Multi_ts_deleted_objnums[idx] = OBJ_INDEX(objp);
 
 			// delete the ship
-			ship_add_exited_ship(&Ships[objp->instance], SEF_PLAYER_DELETED);
+			ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Player_deleted);
 			obj_delete(Multi_ts_deleted_objnums[idx]);			
 			ship_wing_cleanup(objp->instance,&Wings[Ships[objp->instance].wingnum]);
 		} else {
