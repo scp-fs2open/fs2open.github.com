@@ -308,6 +308,7 @@ int Show_net_stats;
 int Pre_player_entry;
 
 int	Fred_running = 0;
+bool running_unittests = false;
 
 // required for hudtarget... kinda dumb, but meh
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
@@ -7162,12 +7163,16 @@ void game_shutdown(void)
 	sdlGraphicsOperations.reset();
 	os_cleanup();
 
+	cfile_close();
+
 	// although the comment in cmdline.cpp said this isn't needed,
 	// Valgrind disagrees (quite possibly incorrectly), but this is just cleaner
 	if (Cmdline_mod != NULL) {
 		delete[] Cmdline_mod;
 		Cmdline_mod = NULL;
 	}
+
+	lcl_xstr_close();
 
 #if 0  // don't have an updater for fs2_open
 	// HACKITY HACK HACK

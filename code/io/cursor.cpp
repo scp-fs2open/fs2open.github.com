@@ -11,6 +11,7 @@
 #include "popup/popupdead.h"
 
 #include <utility>
+#include <globalincs/systemvars.h>
 
 namespace
 {
@@ -171,6 +172,8 @@ namespace io
 
 		Cursor* CursorManager::loadCursor(const char* fileName, bool animated)
 		{
+			Assertion(!Is_standalone, "Cursors can't be loaded in standalone mode!");
+
 			int handle;
 
 			if (animated)

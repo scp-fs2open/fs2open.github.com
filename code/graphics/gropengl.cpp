@@ -1729,9 +1729,6 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	if (is_minimum_GLSL_version()) {
 		mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
 	}
-
-	mprintf(("Initializing path renderer...\n"));
-	graphics::paths::PathRenderer::init();
 	
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
