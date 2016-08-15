@@ -115,15 +115,15 @@ void CMainFrame::init_tools() {
 		return;
 	}
 
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-		// don't add the pirate ship
-		if (it->flags & SIF_NO_FRED) {
-			m_new_ship_type_combo_box.AddString("");
-			continue;
-		}
+    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+        // don't add the pirate ship
+        if (it->flags[Ship::Info_Flags::No_fred]) {
+            m_new_ship_type_combo_box.AddString("");
+            continue;
+        }
 
-		m_new_ship_type_combo_box.AddString(it->name);
-	}
+        m_new_ship_type_combo_box.AddString(it->name);
+    }
 
 	//	m_new_ship_type_combo_box.AddString("Player Start");		
 	m_new_ship_type_combo_box.AddString("Jump Node");
@@ -294,7 +294,7 @@ void CMainFrame::OnLButtonUp(UINT nFlags, CPoint point) {
 	CFrameWnd::OnLButtonUp(nFlags, point);
 }
 
-LONG CMainFrame::OnMenuPopupTest(UINT wParam, LONG lParam) {
+LRESULT CMainFrame::OnMenuPopupTest(WPARAM wParam, LPARAM lParam) {
 	CMenu	menu;
 	CPoint	point;
 

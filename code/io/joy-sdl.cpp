@@ -2,21 +2,69 @@
 #include "io/timer.h"
 #include "osapi/osapi.h"
 
+#include <algorithm>
+#include <bitset>
 #include <memory>
 #include <utility>
-#include <algorithm>
 
 using namespace io::joystick;
 using namespace os::events;
 
-namespace
-{
+namespace {
 typedef std::unique_ptr<Joystick> JoystickPtr;
 
 SCP_vector<JoystickPtr> joysticks;
 Joystick *currentJoystick = nullptr;
 
 bool initialized = false;
+
+/**
+ * @brief Compatibility conversion from HatPosition to array index
+ */
+inline
+int hatEnumToIdx(HatPosition in) {
+	return static_cast<int>(in - JOY_NUM_BUTTONS);
+}
+
+/**
+* @brief Compatibility conversion from Button index to HatPosition
+*/
+inline
+HatPosition hatBtnToEnum(int in) {
+	Assertion(in >= JOY_NUM_BUTTONS, "Invalid button value passed to hatBtnToEnum: %i", in);
+
+	in -= JOY_NUM_BUTTONS;
+
+	switch (in) {
+	case 0:
+		return HAT_DOWN;
+
+	case 1:
+		return HAT_UP;
+
+	case 2:
+		return HAT_LEFT;
+
+	case 3:
+		return HAT_RIGHT;
+
+	case 4:
+		return HAT_LEFTDOWN;
+
+	case 5:
+		return HAT_LEFTUP;
+
+	case 6:
+		return HAT_RIGHTDOWN;
+
+	case 7:
+		return HAT_RIGHTUP;
+
+	default:
+		// Invalid index
+		return HAT_CENTERED;
+	}
+};
 
 SCP_string getJoystickGUID(SDL_Joystick *stick)
 {
@@ -192,7 +240,7 @@ bool device_event_handler(const SDL_Event &evt)
 
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
-				if ((*iter)->getGUID() == added->getGUID())
+				if ((*iter)->getID() == added->getID())
 				{
 					// Already have this stick
 					*(*iter) = std::move(*added);
@@ -284,16 +332,16 @@ namespace joystick
 	{
 		Assertion(index >= 0 && index < numButtons(), "Invalid index %d!", index);
 
-		return _buttonDownTimestamp[index] >= 0;
+		return _button[index].DownTimestamp >= 0;
 	}
 
 	float Joystick::getButtonDownTime(int index) const
 	{
 		Assertion(index >= 0 && index < numButtons(), "Invalid index %d!", index);
 
-		if (_buttonDownTimestamp[index] >= 0)
+		if (_button[index].DownTimestamp >= 0)
 		{
-			auto diff = timer_get_milliseconds() - _buttonDownTimestamp[index];
+			auto diff = timer_get_milliseconds() - _button[index].DownTimestamp;
 
 			return static_cast<float>(diff) / 1000.f;
 		}
@@ -305,11 +353,11 @@ namespace joystick
 	{
 		Assertion(index >= 0 && index < numButtons(), "Invalid index %d!", index);
 
-		auto val = _buttonDownCount[index];
+		auto val = _button[index].DownCount;
 
 		if (reset)
 		{
-			_buttonDownCount[index] = 0;
+			_button[index].DownCount = 0;
 		}
 
 		return val;
@@ -326,7 +374,63 @@ namespace joystick
 	{
 		Assertion(index >= 0 && index < numHats(), "Invalid index %d!", index);
 
-		return _hatValues[index];
+		return _hat[index].Value;
+	}
+
+	int Joystick::getHatDownCount(int index, HatPosition pos, bool ext, bool reset) {
+		Assertion(index >= 0 && index < numHats(), "Invalid index %d!", index);
+
+		int val;
+
+		if (pos == HAT_CENTERED) {
+			return 0;
+		}
+
+		if (ext) {
+			// Use 8-position
+			val = _hat[index].DownCount8[pos];
+
+			if (reset) {
+				_hat[index].DownCount8[pos] = 0;
+			}
+		} else {
+			// Use 4-position
+			val = _hat[index].DownCount4[pos];
+
+			if (reset) {
+				_hat[index].DownCount4[pos] = 0;
+			}
+		}
+
+		return val;
+	}
+
+	float Joystick::getHatDownTime(int index, HatPosition pos, bool ext) const
+	{
+		Assertion(index >= 0 && index < numHats(), "Invalid index %d!", index);
+
+		if (pos == HAT_CENTERED) {
+			return 0.0f;
+		}
+
+		int val;
+
+		if (ext) {
+			// Use 8-position
+			val = _hat[index].DownTimestamp8[pos];
+
+		} else {
+			// Use 4-position
+			val = _hat[index].DownTimestamp4[pos];
+		}
+
+		if (val < 0) {
+			return 0.0f;
+		}
+
+		auto diff = timer_get_milliseconds() - val;
+
+		return static_cast<float>(diff) / 1000.f;
 	}
 
 	int Joystick::numAxes() const
@@ -341,12 +445,12 @@ namespace joystick
 
 	int Joystick::numButtons() const
 	{
-		return static_cast<int>(_buttonDownTimestamp.size());
+		return static_cast<int>(_button.size());
 	}
 
 	int Joystick::numHats() const
 	{
-		return static_cast<int>(_hatValues.size());
+		return static_cast<int>(_hat.size());
 	}
 
 	SCP_string Joystick::getGUID() const
@@ -392,26 +496,55 @@ namespace joystick
 
 		// Initialize buttons
 		auto buttonNum = SDL_JoystickNumButtons(_joystick);
-		_buttonDownTimestamp.resize(static_cast<size_t>(buttonNum));
-		_buttonDownCount.resize(static_cast<size_t>(buttonNum));
+		_button.resize(static_cast<size_t>(buttonNum));
 		for (auto i = 0; i < buttonNum; ++i)
 		{
 			if (SDL_JoystickGetButton(_joystick, i) == 1)
 			{
-				_buttonDownTimestamp[i] = timer_get_milliseconds();
+				_button[i].DownTimestamp = timer_get_milliseconds();
 			}
 			else
 			{
-				_buttonDownTimestamp[i] = -1;
+				_button[i].DownTimestamp = -1;
 			}
 		}
 
 		// Initialize hats
 		auto hatNum = SDL_JoystickNumHats(_joystick);
-		_hatValues.resize(static_cast<size_t>(hatNum));
+		_hat.resize(static_cast<size_t>(hatNum));
 		for (auto i = 0; i < hatNum; ++i)
 		{
-			_hatValues[i] = convertSDLHat(SDL_JoystickGetHat(_joystick, i));
+			std::bitset<4> hatset = SDL_JoystickGetHat(_joystick, i);
+			auto hatval = convertSDLHat(SDL_JoystickGetHat(_joystick, i));
+			_hat[i].Value = hatval;
+
+			// Reset timestampts
+			for (auto j = 0; j < 4; ++j) {
+				_hat[i].DownTimestamp4[j] = -1;
+			}
+			for (auto j = 0; j < 8; ++j) {
+				_hat[i].DownTimestamp8[j] = -1;
+			}
+
+			if (_hat[i].Value != HAT_CENTERED)
+			{
+				// Set the 4-pos timestamp(s)
+				if ((hatset[HAT_DOWN])) {
+					_hat[i].DownTimestamp4[HAT_DOWN] = timer_get_milliseconds();
+				}
+				if ((hatset[HAT_UP])) {
+					_hat[i].DownTimestamp4[HAT_UP] = timer_get_milliseconds();
+				}
+				if ((hatset[HAT_LEFT])) {
+					_hat[i].DownTimestamp4[HAT_LEFT] = timer_get_milliseconds();
+				}
+				if ((hatset[HAT_RIGHT])) {
+					_hat[i].DownTimestamp4[HAT_RIGHT] = timer_get_milliseconds();
+				}
+
+				// Set the 8-pos timestamp
+				_hat[i].DownTimestamp8[hatval] = timer_get_milliseconds();
+			}
 		}
 	}
 
@@ -459,11 +592,11 @@ namespace joystick
 
 		auto down = evt.state == SDL_PRESSED;
 
-		_buttonDownTimestamp[button] = down ? timer_get_milliseconds() : -1;
+		_button[button].DownTimestamp = down ? timer_get_milliseconds() : -1;
 
 		if (down)
 		{
-			++_buttonDownCount[button];
+			++_button[button].DownCount;
 		}
 	}
 
@@ -473,7 +606,47 @@ namespace joystick
 
 		Assertion(hat < numHats(), "SDL event contained invalid hat index!");
 
-		_hatValues[hat] = convertSDLHat(evt.value);
+		std::bitset<4> hatset = evt.value;
+		auto hatpos = convertSDLHat(evt.value);
+
+		// Set current values
+		_hat[hat].Value = hatpos;
+
+		// Reset inactive hat positions
+		for (auto i = 0; i < 4; ++i) {
+			if (!hatset[i]) {
+				_hat[hat].DownTimestamp4[i] = -1;
+			}
+		}
+		for (auto i = 0; i < 8; ++i) {
+			if (i != hatpos) {
+				_hat[hat].DownTimestamp8[i] = -1;
+			}
+		}
+
+		if (hatpos != HAT_CENTERED) {
+			// Set the 4-pos timestamps and down counts if the timestamp is not set
+			if ((hatset[HAT_DOWN]) && (_hat[hat].DownTimestamp4[HAT_DOWN] == -1)) {
+				_hat[hat].DownTimestamp4[HAT_DOWN] = timer_get_milliseconds();
+				++_hat[hat].DownCount4[HAT_DOWN];
+			}
+			if ((hatset[HAT_UP]) && (_hat[hat].DownTimestamp4[HAT_UP] == -1)) {
+				_hat[hat].DownTimestamp4[HAT_UP] = timer_get_milliseconds();
+				++_hat[hat].DownCount4[HAT_UP];
+			}
+			if ((hatset[HAT_LEFT]) && (_hat[hat].DownTimestamp4[HAT_LEFT] == -1)) {
+				_hat[hat].DownTimestamp4[HAT_LEFT] = timer_get_milliseconds();
+				++_hat[hat].DownCount4[HAT_LEFT];
+			}
+			if ((hatset[HAT_RIGHT]) && (_hat[hat].DownTimestamp4[HAT_RIGHT] == -1)) {
+				_hat[hat].DownTimestamp4[HAT_RIGHT] = timer_get_milliseconds();
+				++_hat[hat].DownCount4[HAT_RIGHT];
+			}
+
+			// Set the 8-pos timestamp and down count
+			_hat[hat].DownTimestamp8[hatpos] = timer_get_milliseconds();
+			++_hat[hat].DownCount8[hatpos];
+		}
 	}
 
 	void Joystick::handleBallEvent(const SDL_JoyBallEvent &evt)
@@ -647,7 +820,18 @@ float joy_down_time(int btn)
 		return 0.0f;
 	}
 
-	if (btn >= current->numButtons()) return 0.f;
+	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
+	{
+		// Not a valid button
+		return 0.f;
+
+	}
+	else if (btn >= JOY_NUM_BUTTONS)
+	{
+		// Is hat
+		return current->getHatDownTime(0, hatBtnToEnum(btn), false);
+
+	} // Else, Is a button
 
 	return current->getButtonDownTime(btn);
 }
@@ -663,7 +847,18 @@ int joy_down_count(int btn, int reset_count)
 		return 0;
 	}
 
-	if (btn >= current->numButtons()) return 0;
+	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
+	{
+		// Not a valid button
+		return 0;
+
+	}
+	else if (btn >= JOY_NUM_BUTTONS)
+	{
+		// Is hat
+		return current->getHatDownCount(0, hatBtnToEnum(btn), false, reset_count != 0);
+
+	} // Else, is a button
 
 	return current->getButtonDownCount(btn, reset_count != 0);
 }
@@ -679,7 +874,18 @@ int joy_down(int btn)
 		return 0;
 	}
 
-	if (btn >= current->numButtons()) return 0;
+	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
+	{
+		// Not a valid button
+		return 0;
+
+	}
+	else if (btn >= JOY_NUM_BUTTONS)
+	{
+		// Is hat
+		return current->getHatDownTime(0, hatBtnToEnum(btn), false) > 0;
+	} // Else, is a button
+
 
 	return current->isButtonDown(btn) ? 1 : 0;
 }

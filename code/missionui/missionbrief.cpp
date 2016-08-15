@@ -348,7 +348,7 @@ void brief_skip_training_pressed()
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	
 
-	if ( The_mission.flags & MISSION_FLAG_END_TO_MAINHALL ) {
+	if ( The_mission.flags[Mission::Mission_Flags::End_to_mainhall] ) {
 		gameseq_post_event( GS_EVENT_MAIN_MENU );
 	} else {
 		gameseq_post_event( GS_EVENT_START_GAME );
@@ -880,7 +880,7 @@ void brief_init()
 		return;
 	}
 
-	if (The_mission.flags & MISSION_FLAG_ALWAYS_SHOW_GOALS || !(The_mission.game_type & MISSION_TYPE_TRAINING))
+	if (The_mission.flags[Mission::Mission_Flags::Always_show_goals] || !(The_mission.game_type & MISSION_TYPE_TRAINING))
 		Num_brief_stages = Briefing->num_stages + 1;
 	else
 		Num_brief_stages = Briefing->num_stages;
@@ -1058,12 +1058,10 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	model_clear_instance( Closeup_icon->modelnum );
 
-	int is_neb = The_mission.flags & MISSION_FLAG_FULLNEB;
 
 	// maybe switch off nebula rendering
-	if(is_neb){
-		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
-	}
+    auto neb_restore = The_mission.flags[Mission::Mission_Flags::Fullneb];
+    The_mission.flags.remove(Mission::Mission_Flags::Fullneb);
 
 	model_render_params render_info;
 	render_info.set_detail_level_lock(0);
@@ -1077,9 +1075,7 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	model_render_immediate( &render_info, Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos );
 
-	if (is_neb) {
-		The_mission.flags |= MISSION_FLAG_FULLNEB;
-	}
+    The_mission.flags.set(Mission::Mission_Flags::Fullneb, neb_restore);
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
@@ -1152,7 +1148,7 @@ void brief_render(float frametime)
 			int more_txt_x = Brief_text_coords[gr_screen.res][0] + (Brief_max_line_width[gr_screen.res]/2) - 10;
 			int more_txt_y = Brief_text_coords[gr_screen.res][1] + Brief_text_coords[gr_screen.res][3] - 2;				// located below brief text, centered
 
-			gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
+			gr_get_string_size(&w, &h, XSTR("more", 1469), (int)strlen(XSTR("more", 1469)));
 			gr_set_color_fast(&Color_black);
 			gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
 			gr_set_color_fast(&Color_more_indicator);
@@ -1472,7 +1468,7 @@ void brief_do_frame(float frametime)
 	// commit if skipping briefing, but not in multi - Goober5000
 	if (!(Game_mode & GM_MULTIPLAYER))
 	{
-		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
+		if (The_mission.flags[Mission::Mission_Flags::No_briefing])
 		{
 			commit_pressed();
 			return;
@@ -1987,7 +1983,7 @@ int brief_only_allow_briefing()
 		return 1;
 	}
 
-	if ( The_mission.flags & (MISSION_FLAG_SCRAMBLE | MISSION_FLAG_RED_ALERT) ) {
+	if ( The_mission.flags[Mission::Mission_Flags::Scramble] || The_mission.flags[Mission::Mission_Flags::Red_alert] ) {
 		return 1;
 	}
 

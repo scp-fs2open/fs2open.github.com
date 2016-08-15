@@ -337,7 +337,7 @@ void multi_data_send_my_junk()
 // is the give file xfer handle for a "multi data" file (pcx, wav, etc)
 int multi_data_is_data(char *filename)
 {		
-	int len,idx;
+	size_t len,idx;
 
 	Assert(filename != NULL);
 

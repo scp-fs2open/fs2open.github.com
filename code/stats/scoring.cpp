@@ -300,13 +300,13 @@ void scoring_eval_badges(scoring_struct *sc)
 	// to determine badges, we count kills based on fighter/bomber types.  We must count kills in
 	// all time stats + current mission stats.  And, only for enemy fighters/bombers
 	total_kills = 0;
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
-		if ( (it->flags & SIF_FIGHTER) || (it->flags & SIF_BOMBER) ) {
-			auto i = std::distance(Ship_info.cbegin(), it);
-			total_kills += sc->m_okKills[i];
-			total_kills += sc->kills[i];
-		}
-	}
+    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+        if (it->is_fighter_bomber()) {
+            auto i = std::distance(Ship_info.cbegin(), it);
+            total_kills += sc->m_okKills[i];
+            total_kills += sc->kills[i];
+        }
+    }
 
 	// total_kills should now reflect the number of kills on hostile fighters/bombers.  Check this number
 	// against badge kill numbers, and award the appropriate badges as neccessary.
@@ -467,7 +467,7 @@ void scoring_level_close(int accepted)
 		// If this mission doesn't allow promotion or badges
 		// then be sure that these don't get done.  Don't allow promotions or badges when
 		// playing normally and not in a campaign.
-		if ( (The_mission.flags & MISSION_FLAG_NO_PROMOTION) || ((Game_mode & GM_NORMAL) && !(Game_mode & GM_CAMPAIGN_MODE)) ) {
+		if ( (The_mission.flags[Mission::Mission_Flags::No_promotion]) || ((Game_mode & GM_NORMAL) && !(Game_mode & GM_CAMPAIGN_MODE)) ) {
 			if ( Player->stats.m_promotion_earned != -1) {
 				Player->stats.rank--;
 				Player->stats.m_promotion_earned = -1;
@@ -708,7 +708,7 @@ int scoring_eval_kill(object *ship_objp)
 			// get the ship info index of the ship type of this kill.  we need to take ship
 			// copies into account here.
 			si_index = dead_ship->ship_info_index;
-			if (Ship_info[si_index].flags & SIF_SHIP_COPY)
+			if (Ship_info[si_index].flags[Ship::Info_Flags::Ship_copy])
 			{
 				char temp[NAME_LENGTH];
 				strcpy_s(temp, Ship_info[si_index].name);
@@ -720,7 +720,7 @@ int scoring_eval_kill(object *ship_objp)
 
 			// if he killed a guy on his own team increment his bonehead kills
 			if((Ships[Objects[plr->objnum].instance].team == dead_ship->team) && !MULTI_DOGFIGHT ){
-				if (!(The_mission.flags & MISSION_FLAG_NO_TRAITOR)) {
+				if (!(The_mission.flags[Mission::Mission_Flags::No_traitor])) {
 					plr->stats.m_bonehead_kills++;
 					kill_score = -(int)(dead_ship->score * scoring_get_scale_factor());
 					plr->stats.m_score += kill_score;
@@ -768,7 +768,7 @@ int scoring_eval_kill(object *ship_objp)
 						// award teammates % of score value for big ship kills
 						// not in dogfight tho
 						// and not if there is no assist threshold (as otherwise assists could get higher scores than kills)
-						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[dead_ship->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
+						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[dead_ship->ship_info_index].is_big_or_huge())) {
 							for (idx=0; idx<MAX_PLAYERS; idx++) {
 								if (MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.team == net_plr->p_info.team) && (&Net_players[idx] != net_plr)) {
 									assist_score = (int)(dead_ship->score * The_mission.ai_profile->assist_award_percentage_scale[Game_skill_level]);
@@ -916,7 +916,7 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 
 			// if he killed a bomb on his own team increment his bonehead kills
 			if((Ships[Objects[plr->objnum].instance].team == dead_wp->team) && !MULTI_DOGFIGHT ){
-				if (!(The_mission.flags & MISSION_FLAG_NO_TRAITOR)) {
+				if (!(The_mission.flags[Mission::Mission_Flags::No_traitor])) {
 					plr->stats.m_bonehead_kills++;
 					kill_score = -(int)(dead_wip->score * scoring_get_scale_factor());
 					plr->stats.m_score += kill_score;

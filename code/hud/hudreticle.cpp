@@ -306,14 +306,14 @@ void HudGaugeReticle::getFirepointStatus() {
 						bankactive = 1;
 					else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
 						bankactive = 1;
-					else if (i == shipp->weapons.current_primary_bank || shipp->flags & SF_PRIMARY_LINKED)
+					else if (i == shipp->weapons.current_primary_bank || shipp->flags[Ship::Ship_Flags::Primary_linked])
 						bankactive = 2;
 
 					int num_slots = pm->gun_banks[i].num_slots;
 					for (int j = 0; j < num_slots; j++) {
 						int fpactive = bankactive;
 
-						if (sip->flags2 & SIF2_DYN_PRIMARY_LINKING) {
+						if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
 							// If this firepoint is not among the next shot(s) to be fired, dim it one step
 							if ( !( (j >= (shipp->last_fired_point[i]+1) % num_slots) && (j <= (shipp->last_fired_point[i]+swp->primary_bank_slot_count[i]) % num_slots) ) ) {
 								fpactive--;
@@ -919,7 +919,7 @@ void HudGaugeWeaponLinking::render(float frametime)
 			if ( swp->current_primary_bank == -1 ) {
 				frame_offset = 0;	
 			} else {
-				if ( Player_ship->flags & SF_PRIMARY_LINKED ) {
+				if ( Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {
 					frame_offset = 3;
 				} else {
 					if ( swp->current_primary_bank == 0 ) {

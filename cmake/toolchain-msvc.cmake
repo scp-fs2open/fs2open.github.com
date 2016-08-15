@@ -10,6 +10,31 @@ set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS Debug)
 option(MSVC_USE_RUNTIME_DLL "Use the dynamically linked version of the runtime" OFF)
 MARK_AS_ADVANCED(FORCE MSVC_USE_RUNTIME_DLL)
 
+# These are the warnings we disable
+set(WARNING_FLAGS
+	/wd"4100" # unreferenced formal parameters
+	/wd"4127" # constant conditional (assert)
+	/wd"4201" # nonstandard extension used: nameless struct/union (happens a lot in Windows include headers)
+	/wd"4290" # C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
+	/wd"4390" # empty control statement (triggered by nprintf and mprintf's inside of one-line if's, etc)
+	/wd"4410" # illegal size for operand... ie... 	fxch st(1)
+	/wd"4511" # copy constructor could not be generated (happens a lot in Windows include headers)
+	/wd"4512" # assignment operator could not be generated (happens a lot in Windows include headers)
+	/wd"4514" # unreferenced inline function removed
+	/wd"4611" # _setjmp warning.  Since we use setjmp alot, and we don't really use constructors or destructors, this warning doesn't really apply to us.
+	/wd"4663" # C++ language change (template specification)
+	/wd"4710" # is inline function not expanded (who cares?)
+	/wd"4711" # tells us an inline function was expanded (who cares?)
+	/wd"4786" # is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000"
+	/wd"4996" # deprecated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
+	/wd"4311" # Disables warnings about casting pointer types to ints. The funny thing is these warnings can't be resolved, just disabled... - m!m
+	/wd"4302" # Same as above - m!m
+	/wd"4366" # The result of the unary '&' operator may be unaligned - m!m
+	$<$<CONFIG:Release>:/wd"4101"> # In release mode there are unreferenced variables because debug needs them
+)
+
+target_compile_options(compiler INTERFACE ${WARNING_FLAGS})
+
 # Base
 set(CMAKE_C_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /WX- /Zc:forScope /Gd /EHsc /nologo")
 set(CMAKE_CXX_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /WX- /Zc:forScope /Gd /EHsc /nologo")

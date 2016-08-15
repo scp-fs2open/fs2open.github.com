@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
+#include <algorithm>
+#include <cstdint>
 #include "globalincs/toolchain.h"
 
 #if defined( __x86_64__ ) || defined( _WIN64 )
@@ -221,6 +223,14 @@ typedef struct flag_def_list {
 	ubyte var;
 } def_list;
 
+template<class T>
+struct flag_def_list_new {
+    const char* name;			// The parseable representation of this flag
+    T def;				// The flag definition for this flag
+    bool in_use;		// Whether or not this flag is currently in use or obsolete
+    bool is_special;	// Whether this flag requires special processing. See parse_string_flag_list<T, T> for details
+};
+
 // weapon count list (mainly for pilot files)
 typedef struct wep_t {
 	int index;
@@ -316,6 +326,7 @@ const float RAND_MAX_1f	= (1.0f / RAND_MAX);
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
 
+const size_t INVALID_SIZE = static_cast<size_t>(-1);
 
 //======================================================================================
 //======================================================================================
@@ -340,11 +351,13 @@ extern int Fred_running;  // Is Fred running, or FreeSpace?
 #undef USE_INLINE_ASM
 
 #define INTEL_INT(x)	SDL_Swap32(x)
+#define INTEL_LONG(x)   SDL_Swap64(x)
 #define INTEL_SHORT(x)	SDL_Swap16(x)
 #define INTEL_FLOAT(x)	SDL_SwapFloat((*x))
 
 #else // Little Endian -
 #define INTEL_INT(x)	x
+#define INTEL_LONG(x)   x
 #define INTEL_SHORT(x)	x
 #define INTEL_FLOAT(x)	(*x)
 #endif // BYTE_ORDER
@@ -495,13 +508,13 @@ class camid
 {
 private:
 	int sig;
-	uint idx;
+	size_t idx;
 public:
 	camid();
-	camid(int n_idx, int n_sig);
+	camid(size_t n_idx, int n_sig);
 
 	class camera *getCamera();
-	uint getIndex();
+	size_t getIndex();
 	int getSignature();
 	bool isValid();
 };

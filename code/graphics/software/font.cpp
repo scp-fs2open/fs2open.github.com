@@ -189,6 +189,9 @@ namespace
 		}
 
 		nvgFont->setName(fontStr);
+
+		// Make sure that the height is not invalid
+		nvgFont->checkHeight();
 	}
 
 	void parse_vfnt_font(const SCP_string& fontFilename)
@@ -284,6 +287,8 @@ namespace
 
 			font->setBottomOffset(temp);
 		}
+		// Make sure that the height is not invalid
+		font->checkHeight();
 	}
 
 	void font_parse_setup(const char *fileName)
@@ -587,7 +592,7 @@ void gr_string_win(int x, int y, char *s)
 
 char grx_printf_text[2048];
 
-void _cdecl gr_printf(int x, int y, const char * format, ...)
+void gr_printf(int x, int y, const char * format, ...)
 {
 	va_list args;
 
@@ -601,7 +606,7 @@ void _cdecl gr_printf(int x, int y, const char * format, ...)
 	gr_string(x, y, grx_printf_text);
 }
 
-void _cdecl gr_printf_menu(int x, int y, const char * format, ...)
+void gr_printf_menu(int x, int y, const char * format, ...)
 {
 	va_list args;
 
@@ -615,7 +620,7 @@ void _cdecl gr_printf_menu(int x, int y, const char * format, ...)
 	gr_string(x, y, grx_printf_text, GR_RESIZE_MENU);
 }
 
-void _cdecl gr_printf_menu_zoomed(int x, int y, const char * format, ...)
+void gr_printf_menu_zoomed(int x, int y, const char * format, ...)
 {
 	va_list args;
 
@@ -629,7 +634,7 @@ void _cdecl gr_printf_menu_zoomed(int x, int y, const char * format, ...)
 	gr_string(x, y, grx_printf_text, GR_RESIZE_MENU_ZOOMED);
 }
 
-void _cdecl gr_printf_no_resize(int x, int y, const char * format, ...)
+void gr_printf_no_resize(int x, int y, const char * format, ...)
 {
 	va_list args;
 

@@ -44,7 +44,7 @@ int collide_debris_ship( obj_pair * pair )
 	Assert( pship->type == OBJ_SHIP );
 
 	// don't check collision if it's our own debris and we are dying
-	if ( (pdebris->parent == OBJ_INDEX(pship)) && (Ships[pship->instance].flags & SF_DYING) )
+	if ( (pdebris->parent == OBJ_INDEX(pship)) && (Ships[pship->instance].flags[Ship::Ship_Flags::Dying]) )
 		return 0;
 
 	dist = vm_vec_dist( &pdebris->pos, &pship->pos );
@@ -98,7 +98,7 @@ int collide_debris_ship( obj_pair * pair )
 				ship_damage *= Debris[pdebris->instance].damage_mult;
 
 				// supercaps cap damage at 10-20% max hull ship damage
-				if (Ship_info[Ships[pship->instance].ship_info_index].flags & SIF_SUPERCAP) {
+				if (Ship_info[Ships[pship->instance].ship_info_index].flags[Ship::Info_Flags::Supercap]) {
 					float cap_percent_damage = frand_range(0.1f, 0.2f);
 					ship_damage = MIN(ship_damage, cap_percent_damage * Ships[pship->instance].ship_max_hull_strength);
 				}
@@ -112,7 +112,7 @@ int collide_debris_ship( obj_pair * pair )
 
 				if ( debris_hit_info.heavy == pship ) {
 					quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);
-					if ((pship->flags & OF_NO_SHIELDS) || !ship_is_shield_up(pship, quadrant_num) ) {
+					if ((pship->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(pship, quadrant_num) ) {
 						quadrant_num = -1;
 					}
 					if (apply_ship_damage) {
@@ -277,7 +277,7 @@ int collide_asteroid_ship( obj_pair * pair )
 				int quadrant_num;
 				if ( asteroid_hit_info.heavy == pship ) {
 					quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);
-					if ((pship->flags & OF_NO_SHIELDS) || !ship_is_shield_up(pship, quadrant_num) ) {
+					if ((pship->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(pship, quadrant_num) ) {
 						quadrant_num = -1;
 					}
 					ship_apply_local_damage(asteroid_hit_info.heavy, asteroid_hit_info.light, &hitpos, ship_damage, quadrant_num, CREATE_SPARKS, asteroid_hit_info.submodel_num);

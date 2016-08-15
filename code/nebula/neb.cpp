@@ -345,7 +345,7 @@ void neb2_post_level_init()
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) ) {
+	if ( !((The_mission.flags[Mission::Mission_Flags::Fullneb]) || Nebula_sexp_used) ) {
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		Neb2_awacs = -1.0f;
 		return;
@@ -414,7 +414,7 @@ void neb2_post_level_init()
 	neb2_eye_changed();
 
 	// if we are going to use fullneb, but aren't fullneb yet, then be sure to reset our mode
-	if ( !(The_mission.flags & MISSION_FLAG_FULLNEB) ) {
+	if ( !(The_mission.flags[Mission::Mission_Flags::Fullneb]) ) {
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		Neb2_awacs = -1.0f;
 	}
@@ -431,7 +431,7 @@ void neb2_level_close()
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) ) {
+	if ( !((The_mission.flags[Mission::Mission_Flags::Fullneb]) || Nebula_sexp_used) ) {
 		return;
 	}
 
@@ -444,7 +444,7 @@ void neb2_level_close()
 	}
 
 	// unflag the mission as being fullneb so stuff doesn't fog in the techdata room :D
-	The_mission.flags &= ~MISSION_FLAG_FULLNEB;
+    The_mission.flags.remove(Mission::Mission_Flags::Fullneb);
 
 	if (Neb2_htl_fog_data) {
 		delete[] Neb2_htl_fog_data;
@@ -461,7 +461,7 @@ void neb2_render_setup(camid cid)
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if ( !(The_mission.flags & MISSION_FLAG_FULLNEB) ) {
+	if ( !(The_mission.flags[Mission::Mission_Flags::Fullneb]) ) {
 		return;
 	}
 
@@ -496,7 +496,7 @@ void neb2_page_in()
 	int idx;
 
 	// load in all nebula bitmaps
-	if ( (The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used ) {
+	if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) || Nebula_sexp_used ) {
 		for (idx = 0; idx < Neb2_poof_count; idx++) {
 			if ( (Neb2_poofs[idx] >= 0) && (Neb2_poof_flags & (1<<idx)) ) {
 				bm_page_in_texture(Neb2_poofs[idx]);
@@ -562,17 +562,17 @@ int neb2_skip_render(object *objp, float z_depth)
 			}
 
 			// small ships over the fog limit by a small factor
-			if ( (sip->flags & SIF_SMALL_SHIP) && (z_depth >= (fog_far * 1.5f)) ) {
+			if ( (sip->is_small_ship()) && (z_depth >= (fog_far * 1.5f)) ) {
 				return 1;
 			}
 
 			// big ships
-			if ( (sip->flags & SIF_BIG_SHIP) && (z_depth >= (fog_far * 2.0f)) ) {
+			if ( (sip->is_big_ship()) && (z_depth >= (fog_far * 2.0f)) ) {
 				return 1;
 			}
 
 			// huge ships
-			if ( (sip->flags & SIF_HUGE_SHIP) && (z_depth >= (fog_far * 3.0f)) ) {
+			if ( (sip->is_huge_ship()) && (z_depth >= (fog_far * 3.0f)) ) {
 				return 1;
 			}
 			break;
@@ -620,9 +620,9 @@ float neb2_get_lod_scale(int objnum)
 	sip = &Ship_info[shipp->ship_info_index];
 
 	// small ship?
-	if (sip->flags & SIF_SMALL_SHIP) {
+	if (sip->is_small_ship()) {
 		return 1.8f;
-	} else if (sip->flags & SIF_BIG_SHIP) {
+	} else if (sip->is_big_ship()) {
 		return 1.4f;
 	}
 
@@ -929,7 +929,7 @@ void neb2_render_player()
 	}
 
 	// if the mission is not a fullneb mission, skip
-	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) {
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) {
 		return;
 	}
 
@@ -1221,7 +1221,7 @@ int tbmap = -1;
 void neb2_pre_render(camid cid)
 {
 	// if the mission is not a fullneb mission, skip
-	if (!(The_mission.flags & MISSION_FLAG_FULLNEB)) {
+	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb])) {
 		return;
 	}
 

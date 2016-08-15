@@ -790,7 +790,7 @@ void stars_post_level_init()
 	stars_set_background_model(The_mission.skybox_model, NULL, The_mission.skybox_flags);
 	stars_set_background_orientation(&The_mission.skybox_orientation);
 
-	stars_load_debris( ((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) );
+	stars_load_debris( ((The_mission.flags[Mission::Mission_Flags::Fullneb]) || Nebula_sexp_used) );
 
 // following code randomly distributes star points within a sphere volume, which
 // avoids there being denser areas along the edges and in corners that we had in the
@@ -1229,7 +1229,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 		return;
 
 	// if we're in the nebula, don't render any backgrounds
-	if (The_mission.flags & MISSION_FLAG_FULLNEB)
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb])
 		return;
 
 	// detail settings
@@ -1477,165 +1477,6 @@ void subspace_render()
 	gr_zbuffer_set(saved_gr_zbuffering);
 }
 
-
-#ifdef NEW_STARS
-//each star is actualy a line
-//so each star point is actualy two points
-struct star_point {
-	star_point() {
-		memset(p1.color,INT_MAX,4);
-		p2.color[0]=64;
-		p2.color[1]=64;
-		p2.color[2]=64;
-		p2.color[3]=64;
-	}
-	colored_vector p1,p2;
-	void set(vertex* P1,vertex* P2, color*Col) {
-		p1.vec.set_screen_vert(*P1);
-		p2.vec.set_screen_vert(*P2);
-		if(gr_screen.mode == GR_OPENGL)
-			memcpy(p1.color, &Col->red,3);
-		else {
-			memcpy(&p1.color[1], &Col->red,3);
-		}
-	};
-};
-
-class star_point_list {
-	int n_points;
-	star_point *point_list;
-public:
-	star_point_list():n_points(0),point_list(NULL){};
-	~star_point_list(){if(point_list)delete[]point_list;};
-
-	void allocate(int size){
-		if(size<=n_points)return;
-		if(point_list)delete[]point_list;
-		point_list = new star_point[size];
-		n_points = size;
-	}
-	star_point* operator[] (int idx) {
-		return &point_list[idx];
-	}
-	colored_vector* get_buffer(){return &point_list->p1;};
-};
-
-star_point_list star_list;
-
-void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interface figured out-Bobboau
-{
-	star_list.allocate(Num_stars);
-
-	//Num_stars = 1;
-	int i;
-	star *sp;
-	float dist = 0.0f;
-	float ratio;
-	int color;
-	float colorf;
-	vertex p1, p2;
-	int can_draw = 1;
-
-	if ( !last_stars_filled ) {
-		for (sp=Stars,i=0; i<Num_stars; i++, sp++ ) {
-			vertex p2;
-			g3_rotate_faraway_vertex(&p2, &sp->pos);
-			sp->last_star_pos.xyz.x = p2.x;
-			sp->last_star_pos.xyz.y = p2.y;
-			sp->last_star_pos.xyz.z = p2.z;
-		}
-	}
-
-	int tmp_num_stars;
-
-	tmp_num_stars = (Detail.num_stars*Num_stars)/MAX_DETAIL_LEVEL;
-	if (tmp_num_stars < 0 ) {
-		tmp_num_stars = 0;
-	} else if ( tmp_num_stars > Num_stars ) {
-		tmp_num_stars = Num_stars;
-	}
-	
-	int stars_to_draw = 0;
-	for (sp=Stars,i=0; i<tmp_num_stars; i++, sp++ ) {
-		can_draw=1;
-		memset(&p1, 0, sizeof(vertex));
-		memset(&p2, 0, sizeof(vertex));
-
-		// This makes a star look "proper" by not translating the
-		// point around the viewer's eye before rotation.  In other
-		// words, when the ship translates, the stars do not change.
-
-		g3_rotate_faraway_vertex(&p2, &sp->pos);
-		if ( p2.codes ) {
-			can_draw = 0;
-		} else {
-			g3_project_vertex(&p2);
-			if ( p2.flags & PF_OVERFLOW ) {
-				can_draw = 0;
-			}
-		}
-
-		
-
-		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) ) {
-
-			dist = vm_vec_dist_quick( &sp->last_star_pos, (vec3d *)&p2.x );
-
-			if ( dist > Star_max_length ) {
- 				ratio = Star_max_length / dist;
-				dist = Star_max_length;
-			} else {
-				ratio = 1.0f;
-			}
-			
-			ratio *= Star_amount;
-
-			p1.x = p2.x + (sp->last_star_pos.xyz.x-p2.x)*ratio;
-			p1.y = p2.y + (sp->last_star_pos.xyz.y-p2.y)*ratio;
-			p1.z = p2.z + (sp->last_star_pos.xyz.z-p2.z)*ratio;
-
-			p1.flags = 0;	// not projected
-			g3_code_vertex( &p1 );
-
-			if ( p1.codes ) {
-				can_draw = 0;
-			} else {
-				g3_project_vertex(&p1);
-				if ( p1.flags & PF_OVERFLOW ) {
-					can_draw = 0;
-				}
-			}
-		}
-
-		sp->last_star_pos.xyz.x = p2.x;
-		sp->last_star_pos.xyz.y = p2.y;
-		sp->last_star_pos.xyz.z = p2.z;
-
-		if ( !can_draw )	continue;
-
-		if ( Star_flags & STAR_FLAG_DIM )	{
-			colorf = 255.0f - dist*Star_dim;
-			if ( colorf < Star_cap )
-				colorf = Star_cap;
-			color = (fl2i(colorf)*(i&7))/256;
-		} else {
-			color = i & 7;
-		}
-
-		p1.sx-=1.5f;
-		p1.sy-=1.5f;
-		p2.sx+=1.5f;
-		p2.sy+=1.5f;
-		star_list[stars_to_draw++]->set(&p2,&p1,&sp->col);
-	}
-	gr_set_color_fast( &Stars->col );
-	gr_zbuffer_set(GR_ZBUFF_NONE);
-	gr_draw_line_list(star_list.get_buffer(), stars_to_draw);
-	
-}
-#endif	// NEW_STARS
-
-
 void stars_draw_stars()
 {
 	int i;
@@ -1743,7 +1584,7 @@ void stars_draw_debris()
 	gr_set_color( 0, 0, 0 );
 
 	// turn off fogging
-	if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
@@ -1763,7 +1604,7 @@ void stars_draw_debris()
 			d->vclip = i % MAX_DEBRIS_VCLIPS;	//rand()
 
 			// if we're in full neb mode
-			if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)) {
+			if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)) {
 				d->size = i2fl(myrand() % 4)*BASE_SIZE_NEB;
 			} else {
 				d->size = i2fl(myrand() % 4)*BASE_SIZE;
@@ -1782,7 +1623,7 @@ void stars_draw_debris()
 			int frame = Missiontime / (DEBRIS_ROT_MIN + (i % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
 			frame %= Debris_vclips[d->vclip].nframes;
 
-			if ( (The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) ) {
+			if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) ) {
 				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.3f);
 			} else {
 				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
@@ -1838,7 +1679,7 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 		stars_draw_background();
 	}
 
-	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags & MISSION_FLAG_FULLNEB) && (supernova_active() < 3) ) {
+	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) && (supernova_active() < 3) ) {
 		stars_draw_stars();
 	}
 
@@ -2506,9 +2347,10 @@ const char *stars_get_name_from_instance(int index, bool is_a_sun)
 // WMC/Goober5000
 void stars_set_nebula(bool activate)
 {
-	if (activate)
+    The_mission.flags.set(Mission::Mission_Flags::Fullneb, activate);
+	
+    if (activate)
 	{
-		The_mission.flags |= MISSION_FLAG_FULLNEB;
 		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
 		HUD_contrast = 1;
 		if(Fred_running) {
@@ -2523,7 +2365,6 @@ void stars_set_nebula(bool activate)
 	}
 	else
 	{
-		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
 		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		Debris_vclips = Debris_vclips_normal;

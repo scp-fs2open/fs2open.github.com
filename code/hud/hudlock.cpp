@@ -332,7 +332,7 @@ int hud_lock_world_pos_in_range(vec3d *target_world_pos, vec3d *vec_to_target)
 	
 
 	// reduce firing range in nebula
-	if ((The_mission.flags & MISSION_FLAG_FULLNEB) && Nebula_sec_range) {
+	if ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && Nebula_sec_range) {
 		weapon_range *= 0.8f;
 	}
 
@@ -391,7 +391,7 @@ int hud_abort_lock()
 		return 1;
 	}
 
-	if ( Player_ship->flags2 & SF2_NO_SECONDARY_LOCKON ) {
+	if ( Player_ship->flags[Ship::Ship_Flags::No_secondary_lockon] ) {
 		return 1;
 	}
 
@@ -1021,7 +1021,7 @@ void hud_lock_get_new_lock_pos(object *target_objp)
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
 	// if a large ship, lock to pos closest to center and within range
-	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) &&
+	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].is_big_or_huge()) &&
 		 !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
 		// check all the subsystems and the center of the ship
 		

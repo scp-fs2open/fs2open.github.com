@@ -1295,14 +1295,14 @@ opengl_uniform_state::opengl_uniform_state()
 {
 }
 
-int opengl_uniform_state::findUniform(const SCP_string &name)
+size_t opengl_uniform_state::findUniform(const SCP_string &name)
 {
-	SCP_map<SCP_string, int>::iterator iter;
+	SCP_map<SCP_string, size_t>::iterator iter;
 
 	iter = uniform_lookup.find(name);
 
 	if ( iter == uniform_lookup.end() ) {
-		return -1;
+		return (size_t)-1;
 	} else {
 		return iter->second;
 	}
@@ -1310,11 +1310,11 @@ int opengl_uniform_state::findUniform(const SCP_string &name)
 
 void opengl_uniform_state::setUniformi(const SCP_string &name, const int val)
 {
-	int uniform_index = findUniform(name);
+	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index >= 0) {
-		Assert( (size_t)uniform_index < uniforms.size() );
+	if ( uniform_index != (size_t)-1) {
+		Assert( uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
 
@@ -1349,10 +1349,10 @@ void opengl_uniform_state::setUniformi(const SCP_string &name, const int val)
 
 void opengl_uniform_state::setUniformf(const SCP_string &name, const float val)
 {
-	int uniform_index = findUniform(name);
+	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index >= 0) {
+	if ( uniform_index != (size_t) -1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
@@ -1398,10 +1398,10 @@ void opengl_uniform_state::setUniform2f(const SCP_string &name, const float x, c
 
 void opengl_uniform_state::setUniform2f(const SCP_string &name, const vec2d &val)
 {
-	int uniform_index = findUniform(name);
+	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index >= 0 ) {
+	if (uniform_index != (size_t)-1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
@@ -1448,10 +1448,10 @@ void opengl_uniform_state::setUniform3f(const SCP_string &name, const float x, c
 
 void opengl_uniform_state::setUniform3f(const SCP_string &name, const vec3d &val)
 {
-	int uniform_index = findUniform(name);
+	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index >= 0 ) {
+	if (uniform_index != (size_t)-1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
@@ -1499,10 +1499,10 @@ void opengl_uniform_state::setUniform4f(const SCP_string &name, const float x, c
 
 void opengl_uniform_state::setUniform4f(const SCP_string &name, const vec4 &val)
 {
-	int uniform_index = findUniform(name);
+	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index >= 0 ) {
+	if (uniform_index != (size_t)-1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
@@ -1539,10 +1539,10 @@ void opengl_uniform_state::setUniform4f(const SCP_string &name, const vec4 &val)
 
 void opengl_uniform_state::setUniformMatrix4f(const SCP_string &name, const matrix4 &val)
 {
-	int uniform_index = findUniform(name);
+	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index >= 0) {
+	if ( uniform_index != (size_t)-1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];
@@ -1581,10 +1581,10 @@ void opengl_uniform_state::setUniformMatrix4f(const SCP_string &name, const matr
 
 void opengl_uniform_state::setUniformMatrix4fv(const SCP_string &name, const int count, const matrix4 *val)
 {
-	int uniform_index = findUniform(name);
+	size_t uniform_index = findUniform(name);
 	bool resident = false;
 
-	if ( uniform_index >= 0) {
+	if ( uniform_index != (size_t)-1) {
 		Assert( (size_t)uniform_index < uniforms.size() );
 
 		uniform_bind *bind_info = &uniforms[uniform_index];

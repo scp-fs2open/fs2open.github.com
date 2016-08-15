@@ -269,8 +269,7 @@ void std_connect_add_ip_string(char *string)
 // remove an ip string from the connect page listbox
 void std_connect_remove_ip_string(char *string)
 {
-	HWND ctrl;	
-	int loc;
+	HWND ctrl;
 	
 	// get the control handle
 	ctrl = GetDlgItem(Page_handles[CONNECT_PAGE], (int)MAKEINTRESOURCE(IDC_CONPING));
@@ -278,7 +277,7 @@ void std_connect_remove_ip_string(char *string)
 	// NOTE the use of FINDSTRING and _not_ FINDSTRINGEXACT !!
 	// since we've appended the ping to the end of the string, we can only check the 
 	// "prefix" which is the net_players name
-	loc = SendMessage(ctrl, LB_FINDSTRING, (WPARAM)-1, (LPARAM)(LPCTSTR)string);
+	auto loc = SendMessage(ctrl, LB_FINDSTRING, (WPARAM)-1, (LPARAM)(LPCTSTR)string);
 
 	if(loc!=LB_ERR){
 		SendMessage(ctrl, LB_DELETESTRING, (WPARAM)loc, (LPARAM)0);
@@ -289,7 +288,6 @@ void std_connect_remove_ip_string(char *string)
 void std_connect_set_ip_string(char *lookup,char *string)
 {
 	HWND ctrl;
-	int loc;
 
 	// get the control handle
 	ctrl = GetDlgItem(Page_handles[CONNECT_PAGE],(int)MAKEINTRESOURCE(IDC_CONPING));
@@ -297,7 +295,7 @@ void std_connect_set_ip_string(char *lookup,char *string)
 	// NOTE the use of FINDSTRING and _not_ FINDSTRINGEXACT !!
 	// since we've appended the ping to the end of the string, we can only check the 
 	// "prefix" which is the net_players name
-	loc = SendMessage(ctrl,LB_FINDSTRING,(WPARAM)-1,(LPARAM)(LPCTSTR)lookup);
+	auto loc = SendMessage(ctrl,LB_FINDSTRING,(WPARAM)-1,(LPARAM)(LPCTSTR)lookup);
 
 	if(loc!=LB_ERR){
 		SendMessage(ctrl,LB_DELETESTRING,(WPARAM)loc,(LPARAM)0);
@@ -307,16 +305,16 @@ void std_connect_set_ip_string(char *lookup,char *string)
 
 void std_connect_kick_player()
 {		
-	int player_num,sel;
+	int player_num;
 	HWND ctrl;	
 
 	// get the control handle
 	ctrl = GetDlgItem(Page_handles[CONNECT_PAGE],(int)MAKEINTRESOURCE(IDC_CONPING));
 
-	sel = SendMessage(ctrl,LB_GETCURSEL,(WPARAM)0,(LPARAM)0);
+	auto sel = SendMessage(ctrl,LB_GETCURSEL,(WPARAM)0,(LPARAM)0);
 	// attempt to get the player index
 	if(sel != CB_ERR){
-		player_num = std_connect_lindex_to_npindex(sel);
+		player_num = std_connect_lindex_to_npindex((int)sel);
 
 		// if we found him, then kick the bastard
 		if(player_num != -1){
@@ -886,11 +884,11 @@ void std_multi_update_netgame_info_controls()
 // handle the user sliding the framerate cap scrollbar around
 void std_multi_handle_framecap_scroll(HWND ctrl)
 {
-   int pos;
+	int pos;
 	char pos_text[10];
    
 	// determine where the slider now is
-	pos = SendMessage(ctrl,TBM_GETPOS,(WPARAM)0,(LPARAM)0);
+	pos = (int)SendMessage(ctrl,TBM_GETPOS,(WPARAM)0,(LPARAM)0);
 
 	// update the text display 
 	sprintf(pos_text,"%d",pos);
@@ -1160,11 +1158,9 @@ void std_pinfo_add_player_list_item(net_player *p)
 
 // remove a player from the list on the player info page
 void std_pinfo_remove_player_list_item(net_player *p)
-{
-	int loc;
-	
+{	
 	// lookup thie player
-	loc = SendMessage(Player_name_list,CB_FINDSTRINGEXACT,(WPARAM)-1,(LPARAM)(LPCTSTR)p->m_player->callsign);
+	auto loc = SendMessage(Player_name_list,CB_FINDSTRINGEXACT,(WPARAM)-1,(LPARAM)(LPCTSTR)p->m_player->callsign);
 
 	// if we found the entry, then delete it
 	if(loc!=CB_ERR){
@@ -1257,11 +1253,10 @@ void std_pinfo_init_player_info_controls(HWND hwndDlg)
 // returns true or false depending on whether the passed netplayer is the currently selected guy
 int std_pinfo_player_is_active(net_player *p)
 {
-	int sel;
 	char player[40];
 
 	// get the index of the currently selected item
-	sel = SendMessage(Player_name_list,CB_GETCURSEL,(WPARAM)0,(LPARAM)0);
+	auto sel = SendMessage(Player_name_list,CB_GETCURSEL,(WPARAM)0,(LPARAM)0);
 
 	// if we didn't find the item, return a 0 length string
 	if(sel == LB_ERR){
@@ -1278,7 +1273,7 @@ int std_pinfo_player_is_active(net_player *p)
 // message handler for the player info tab
 BOOL CALLBACK player_info_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
-	int val,player_num;	
+	int player_num;	
 	char callsign[40];
 
 	switch(uMsg){
@@ -1297,21 +1292,23 @@ BOOL CALLBACK player_info_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lPara
 		switch(HIWORD(wParam)){
 		// a listbox selection change message
 		case CBN_SELCHANGE :
+		{
 			// get the newly selected item
-			val = SendMessage(Player_name_list,CB_GETCURSEL,(WPARAM)0,(LPARAM)0);
-			if(val!=CB_ERR){		
+			auto val = SendMessage(Player_name_list, CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
+			if (val != CB_ERR) {
 				// get the callsign
-				if(SendMessage(Player_name_list,CB_GETLBTEXT,(WPARAM)val,(LPARAM)callsign) != CB_ERR){				
+				if (SendMessage(Player_name_list, CB_GETLBTEXT, (WPARAM)val, (LPARAM)callsign) != CB_ERR) {
 					// lookup the player
 					player_num = multi_find_player_by_callsign(callsign);
-					
+
 					// if we found him then display his info
-					if(player_num != -1){
+					if (player_num != -1) {
 						std_pinfo_display_player_info(&Net_players[player_num]);
 					}
 				}
 			}
 			break;
+		}
 		}
       break;
 	
@@ -1368,10 +1365,8 @@ void std_gs_add_god_player(net_player *p)
 // remove a player from the listbox on the godstuff page
 void std_gs_remove_god_player(net_player *p)
 {
-	int loc;
-	
 	// lookup the player
-	loc = SendMessage(God_player_list,CB_FINDSTRINGEXACT,(WPARAM)-1,(LPARAM)(LPCTSTR)p->m_player->callsign);
+	auto loc = SendMessage(God_player_list,CB_FINDSTRINGEXACT,(WPARAM)-1,(LPARAM)(LPCTSTR)p->m_player->callsign);
 
 	// if we found him, them delete the item
 	if(loc!=CB_ERR){
@@ -1566,16 +1561,16 @@ void std_debug_multilog_add_line(const char *str)
 		SendMessage(Standalone_multilog_string, LB_ADDSTRING, 0, (LPARAM)log_str.c_str());
 
 		// reset our width, using best guess, so that we have a working hscroll
-		uint h_size = SendMessage(Standalone_multilog_string, LB_GETHORIZONTALEXTENT, 0, 0);
+		uint h_size = (uint)SendMessage(Standalone_multilog_string, LB_GETHORIZONTALEXTENT, 0, 0);
 
 		if ( (h_size / 6) < log_str.size() ) {
 			SendMessage(Standalone_multilog_string, LB_SETHORIZONTALEXTENT, log_str.size() * 6, 0);
 		}
 
 		// remove excess lines, if needed
-		int l_count = SendMessage(Standalone_multilog_string, LB_GETCOUNT, 0, 0);
+		auto l_count = SendMessage(Standalone_multilog_string, LB_GETCOUNT, 0, 0);
 
-		if ( (l_count > 0) && (l_count >= 100) ) {
+		if ( (l_count >= 100) ) {
 			SendMessage(Standalone_multilog_string, LB_DELETESTRING, 0, 0);
 		}
 
@@ -1809,7 +1804,6 @@ void std_reset_timestamps()
 // add a line of text chat to the standalone
 void std_add_chat_text(const char *text,int player_index,int add_id)
 {
-	int num_items,ret_val;
 	char format[512];
 	SIZE text_size = { 0, 0 };
 
@@ -1830,7 +1824,7 @@ void std_add_chat_text(const char *text,int player_index,int add_id)
 
 	// this thing isn't all that accurate, it typically produces a longer line, but I don't really care :p
 	if (Godstuff_player_messages_HDC)
-		GetTextExtentPoint32(Godstuff_player_messages_HDC, format, strlen(format), &text_size);
+		GetTextExtentPoint32(Godstuff_player_messages_HDC, format, (int)strlen(format), &text_size);
 
 	if (Godstuff_longest_message < text_size.cx)
 		Godstuff_longest_message = (int)text_size.cx;
@@ -1839,7 +1833,7 @@ void std_add_chat_text(const char *text,int player_index,int add_id)
 
 	// this thing isn't all that accurate, it typically produces a longer line, but I don't really care :p
 	if (Godstuff_player_messages_HDC)
-		GetTextExtentPoint32(Godstuff_player_messages_HDC, format, strlen(format), &text_size);
+		GetTextExtentPoint32(Godstuff_player_messages_HDC, format, (int)strlen(format), &text_size);
 
 	if (Godstuff_longest_message < text_size.cx)
 		Godstuff_longest_message = (int)text_size.cx;
@@ -1849,10 +1843,10 @@ void std_add_chat_text(const char *text,int player_index,int add_id)
 	// insert the text string into the godstuff chat box and scroll it down to the bottom
 	SendMessage(Godstuff_player_messages, LB_INSERTSTRING, (WPARAM)-1, (LPARAM)format);
 
-	num_items = SendMessage(Godstuff_player_messages, LB_GETCOUNT, (WPARAM)0, (LPARAM)0);
+	auto num_items = SendMessage(Godstuff_player_messages, LB_GETCOUNT, (WPARAM)0, (LPARAM)0);
 
 	if (num_items > 19) {
-		ret_val = SendMessage(Godstuff_player_messages, LB_SETTOPINDEX, (WPARAM)num_items - GODSTUFF_MAX_ITEMS, (LPARAM)0);		
+		SendMessage(Godstuff_player_messages, LB_SETTOPINDEX, (WPARAM)num_items - GODSTUFF_MAX_ITEMS, (LPARAM)0);		
 	}
 }
 
@@ -2160,7 +2154,7 @@ static HMENU std_create_systray_menu()
 	return stdPopup;
 }
 
-BOOL CALLBACK std_message_handler_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK std_message_handler_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg) {
 		case WM_SYSCOMMAND: {
@@ -2239,7 +2233,7 @@ BOOL std_create_standalone_window()
 
 	wclass.hInstance 		= hInst;
 	wclass.lpszClassName	= "FS2StandaloneClass";
-	wclass.lpfnWndProc		= (WNDPROC)std_message_handler_proc;	  
+	wclass.lpfnWndProc		= std_message_handler_proc;	  
 	wclass.style			= CS_OWNDC;
 	wclass.cbSize			= sizeof(WNDCLASSEX);
 	wclass.hIcon			= LoadIcon(hInst, MAKEINTRESOURCE(IDI_APP_ICON) );

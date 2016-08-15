@@ -50,7 +50,6 @@ set(FRED2_SOURCES
 	folderdlg.h
 	fred.cpp
 	fred.h
-	fred.rc
 	freddoc.cpp
 	freddoc.h
 	fredrender.cpp
@@ -135,6 +134,8 @@ set(FRED2_SOURCES
 	wing.h
 	wing_editor.cpp
 	wing_editor.h
+	fred.rc
+	version.rc2
 )
 
 set_source_files_properties(fred.rc PROPERTIES
@@ -155,15 +156,7 @@ add_executable(FRED2 WIN32 ${FRED2_SOURCES})
 
 SET_TARGET_PROPERTIES(FRED2 PROPERTIES OUTPUT_NAME "fred2_open_${FSO_BINARY_SUFFIX}")
 
-add_definitions(
-	-DFRED
-	-DWINVER=0x0501
-	-D_WIN32_WINNT=0x0501
-	-D_WINDOWS
-	-DWIN32
-	-D_CRT_SECURE_NO_DEPRECATE
-	-D_SECURE_SCL=0
-)
+target_compile_definitions(FRED2 PUBLIC FRED NO_WARN_MBCS_MFC_DEPRECATION)
 
 if (MSVC)
 	set_target_properties(FRED2 PROPERTIES LINK_FLAGS "/FORCE:MULTIPLE")
@@ -176,11 +169,9 @@ IF(USE_STLPORT)
 	INCLUDE_DIRECTORIES(BEFORE SYSTEM ${STLPORT_INCLUDE_DIRS})
 ENDIF(USE_STLPORT)
 
-TARGET_LINK_LIBRARIES(FRED2 code) # This will also link all dependencies of code
-TARGET_LINK_LIBRARIES(FRED2 platform)
-TARGET_LINK_LIBRARIES(FRED2 compiler)
-TARGET_LINK_LIBRARIES(FRED2 debug "nafxcwd.lib")
-TARGET_LINK_LIBRARIES(FRED2 optimized "nafxcw.lib")
+TARGET_LINK_LIBRARIES(FRED2 PUBLIC code) # This will also link all dependencies of code
+TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<NOT:$<CONFIG:Release>>:nafxcwd.lib>")
+TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Release>:nafxcw.lib>")
 
 INSTALL(
 	TARGETS FRED2

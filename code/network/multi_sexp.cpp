@@ -49,7 +49,7 @@ int op_num = -1;
 bool packet_flagged_invalid = false;
 
 //forward declarations
-void multi_sexp_ensure_space_remains(int data_size); 
+void multi_sexp_ensure_space_remains(size_t data_size); 
 
 
 /**************************
@@ -151,7 +151,7 @@ void multi_do_callback()
 * If there is not enough space, it will send everything in the packet apart from any data from the SEXP currently being processed 
 * and then create a new packet containing the data for this SEXP only.
 */
-void multi_sexp_ensure_space_remains(int data_size) 
+void multi_sexp_ensure_space_remains(size_t data_size) 
 {
 	if (!MULTIPLAYER_MASTER) {
 		return;
@@ -268,6 +268,23 @@ void multi_send_int(int value)
 	ADD_INT(value); 
 	//Increment the COUNT by 4 (i.e the size of an int).
 	current_argument_count += sizeof(int); 
+}
+
+template<typename T>
+void multi_send_flag(T value)
+{
+    if (cannot_send_data()) {
+        return;
+    }
+
+    multi_sexp_ensure_space_remains(sizeof(int));
+
+    //Write INT into the Type buffer.
+    type[packet_size] = TYPE_INT;
+    //Write the int into the data buffer
+    ADD_INT(static_cast<int>(value));
+    //Increment the COUNT by 4 (i.e the size of an int).
+    current_argument_count += sizeof(int);
 }
 
 /**
@@ -623,6 +640,22 @@ bool multi_get_int(int &value)
 	multi_reduce_counts(sizeof(int)); 
 
 	return true; 
+}
+
+template <typename T>
+bool multi_get_flag(T &value) 
+{
+    if (!Multi_sexp_bytes_left || !current_argument_count) {
+        return false;
+    }
+    int tmp = 0;
+    GET_INT(tmp);
+
+    value = static_cast<T>(tmp);
+
+    multi_reduce_counts(sizeof(int));
+
+    return true;
 }
 
 /**

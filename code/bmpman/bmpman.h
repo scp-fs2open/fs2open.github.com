@@ -112,7 +112,7 @@ struct bitmap
 	                     */
 };
 
-extern int bm_texture_ram;  //!< how many bytes of textures are used.
+extern size_t bm_texture_ram;  //!< how many bytes of textures are used.
 
 extern int Bm_paging;   //!< Bool type that indicates if BMPMAN is currently paging.
 
@@ -170,14 +170,14 @@ int bm_get_next_handle();
  * @note z64 - This function looks fishy. Not only is handle not used in release builds, but bm_bitmaps[handle].size
  *   and bm_texture_size aren't modified unless this is a debug build
  */
-void *bm_malloc(int handle, int size);
+void *bm_malloc(int handle, size_t size);
 
 /**
  * @brief (DEBUG) Similar to bm_malloc, but only updates how much memory is used
  *
  * @note z64 - Also fishy (see bm_malloc)
  */
-void bm_update_memory_used(int n, int size);
+void bm_update_memory_used(int n, size_t size);
 
 class bitmap_lookup {
 	ubyte *Bitmap_data;

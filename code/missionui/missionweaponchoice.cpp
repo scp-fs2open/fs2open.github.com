@@ -848,10 +848,10 @@ void wl_render_overhead_view(float frametime)
 			{
 				float rev_rate;
 				rev_rate = REVOLUTION_RATE;
-				if (sip->flags & SIF_BIG_SHIP) {
+				if (sip->is_big_ship()) {
 					rev_rate *= 1.7f;
 				}
-				if (sip->flags & SIF_HUGE_SHIP) {
+				if (sip->is_huge_ship()) {
 					rev_rate *= 3.0f;
 				}
 
@@ -1124,7 +1124,7 @@ void wl_set_disabled_weapons(int ship_class)
 		if (Weapon_info[i].wi_flags2 & WIF2_BALLISTIC)
 		{
 			// not allowed if this ship is not ballistic
-			if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
+			if (!(sip->flags[Ship::Info_Flags::Ballistic_primaries]))
 			{
 				Wl_icons[i].can_use = 0;
 			}
@@ -2293,7 +2293,7 @@ void wl_render_weapon_desc(float frametime)
 		
 		// draw weapon title (above weapon anim)
 		for (i=0; i<2; i++) {
-			curr_len = strlen(Weapon_desc_lines[i]);
+			curr_len = (int)strlen(Weapon_desc_lines[i]);
 
 			if (bright_char_index < curr_len) {
 				// save bright char and plunk in some nulls to shorten string
@@ -2321,7 +2321,7 @@ void wl_render_weapon_desc(float frametime)
 
 		// draw weapon desc (below weapon anim)
 		for (i=2; i<WEAPON_DESC_MAX_LINES; i++) {
-			curr_len = strlen(Weapon_desc_lines[i]);
+			curr_len = (int)strlen(Weapon_desc_lines[i]);
 
 			if (bright_char_index < curr_len) {
 				// save bright char and plunk in some nulls to shorten string
@@ -2377,7 +2377,7 @@ void wl_weapon_desc_start_wipe()
 {
 	int currchar_src = 0, currline_dest = 2, currchar_dest = 0, i;
 	int w, h;
-	int title_len = strlen(Weapon_info[Selected_wl_class].title);
+	int title_len = (int)strlen(Weapon_info[Selected_wl_class].title);
 
 	// init wipe vars
 	Weapon_desc_wipe_time_elapsed = 0.0f;
@@ -2899,7 +2899,7 @@ void wl_render_icon_count(int num, int x, int y)
 	Assert(number_to_draw >= 0);
 
 	sprintf(buf, "%d", number_to_draw);
-	gr_get_string_size(&num_w, &num_h, buf, strlen(buf));
+	gr_get_string_size(&num_w, &num_h, buf, (int)strlen(buf));
 
 	// render
 	gr_set_color_fast(&Color_white);
@@ -4044,7 +4044,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 
 			// make sure this ship can accept this weapon
 			if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_type_to_add])
-				|| ((wip->wi_flags2 & WIF2_BALLISTIC) && !(sip->flags & SIF_BALLISTIC_PRIMARIES)))
+				|| ((wip->wi_flags2 & WIF2_BALLISTIC) && !(sip->flags[Ship::Info_Flags::Ballistic_primaries])))
 			{
 				SCP_string temp;
 				sprintf(temp, XSTR("%s is unable to carry %s weaponry", 1629), ship_name, wep_display_name);

@@ -209,7 +209,7 @@ protected:
 	/**
 	 * @brief Related to the popup menu
 	 */
-	LONG OnMenuPopupTest(UINT wParam, LONG lParam);
+	LRESULT OnMenuPopupTest(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()
 };

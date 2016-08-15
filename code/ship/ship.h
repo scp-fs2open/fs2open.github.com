@@ -30,6 +30,7 @@
 #include "species_defs/species_defs.h"
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
+#include "ship/ship_flags.h"
 
 #include <string>
 
@@ -319,7 +320,7 @@ public:
 	float		current_hits;							// current number of hits this subsystem has left.
 	float		max_hits;
 
-	int flags;						// Goober5000
+	flagset<Ship::Subsystem_Flags> flags;						// Goober5000
 
 	int subsys_guardian_threshold;	// Goober5000
 	int armor_type_idx;				// FUBAR
@@ -421,97 +422,14 @@ typedef struct ship_subsys_info {
 
 // Karajorma - Used by the alter-ship-flag SEXP as an alternative to having lots of ship flag SEXPs
 typedef struct ship_flag_name {
-	int flag;							// the actual ship flag constant as given by the define below
+	Ship::Ship_Flags flag;							// the actual ship flag constant as given by the define below
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
-	int flag_list;						// is this flag in the 1st or 2nd ship flags list?
 } ship_flag_name;
 
 #define MAX_SHIP_FLAG_NAMES					19
 extern ship_flag_name Ship_flag_names[];
 
-// states for the flags variable within the ship structure
-// low bits are for mission file savable flags..
-// FRED needs these to be the low-order bits with no holes,
-// because it indexes into an array, Hoffoss says.
-#define	SF_IGNORE_COUNT			(1 << 0)		// ignore this ship when counting ship types for goals
-#define	SF_REINFORCEMENT			(1 << 1)		// this ship is a reinforcement ship
-#define	SF_ESCORT					(1 << 2)		// this ship is an escort ship
-#define	SF_NO_ARRIVAL_MUSIC		(1 << 3)		// don't play arrival music when ship arrives
-#define	SF_NO_ARRIVAL_WARP		(1 << 4)		// no arrival warp in effect
-#define	SF_NO_DEPARTURE_WARP		(1 << 5)		// no departure warp in effect
-//#define	SF_LOCKED					(1 << 6)		// can't manipulate ship in loadout screens
-
-// high bits are for internal flags not saved to mission files
-// Go from bit 31 down to bit 6
-#define	SF_KILL_BEFORE_MISSION	(1 << 31)
-#define	SF_DYING						(1 << 30)
-#define	SF_DISABLED					(1 << 29)
-#define	SF_DEPART_WARP				(1 << 28)	// ship is departing via warp-out
-#define	SF_DEPART_DOCKBAY			(1 << 27)	// ship is departing via docking bay
-#define	SF_ARRIVING_STAGE_1		(1 << 26)	// ship is arriving. In other words, doing warp in effect, stage 1
-#define	SF_ARRIVING_STAGE_2		(1 << 25)	// ship is arriving. In other words, doing warp in effect, stage 2
-#define  SF_ARRIVING             (SF_ARRIVING_STAGE_1|SF_ARRIVING_STAGE_2)
-#define	SF_ENGINES_ON				(1 << 24)	// engines sound should play if set
-#define	SF_DOCK_LEADER			(1 << 23)	// Goober5000 - this guy is in charge of everybody he's docked to
-#define	SF_CARGO_REVEALED			(1 << 22)	// ship's cargo is revealed to all friendly ships
-#define	SF_FROM_PLAYER_WING		(1	<< 21)	// set for ships that are members of any player starting wing
-#define	SF_PRIMARY_LINKED			(1 << 20)	// ships primary weapons are linked together
-#define	SF_SECONDARY_DUAL_FIRE	(1 << 19)	// ship is firing two missiles from the current secondary bank
-#define	SF_WARP_BROKEN				(1	<< 18)	// set when warp drive is not working, but is repairable
-#define	SF_WARP_NEVER				(1	<< 17)	// set when ship can never warp
-#define	SF_TRIGGER_DOWN			(1 << 16)	// ship has its "trigger" held down
-#define	SF_AMMO_COUNT_RECORDED	(1	<<	15)	// we've recorded the initial secondary weapon count (which is used to limit support ship rearming)
-#define	SF_HIDDEN_FROM_SENSORS	(1	<< 14)	// ship doesn't show up on sensors, blinks in/out on radar
-#define	SF_SCANNABLE				(1	<< 13)	// ship is "scannable".  Play scan effect and report as "Scanned" or "not scanned".
-#define	SF_WARPED_SUPPORT			(1 << 12)	// set when this is a support ship which was warped in automatically
-#define	SF_EXPLODED					(1 << 11)	// ship has exploded (needed for kill messages)
-#define	SF_SHIP_HAS_SCREAMED		(1 << 10)	// ship has let out a death scream
-#define	SF_RED_ALERT_STORE_STATUS (1 << 9)	// ship status should be stored/restored if red alert mission
-#define	SF_VAPORIZE					(1<<8)		// ship is vaporized by beam - alternative death sequence
-#define SF_DEPARTURE_ORDERED		(1<<7)		// departure of this ship was ordered by player - Goober5000, similar to WF_DEPARTURE_ORDERED
-
-// MWA -- don't go below whatever bitfield is used for Fred above (currently 6)!!!!
-
-#define	SF_DEPARTING				(SF_DEPART_WARP | SF_DEPART_DOCKBAY)				// ship is departing
-#define	SF_CANNOT_WARP				(SF_WARP_BROKEN | SF_WARP_NEVER | SF_DISABLED)	// ship cannot warp out
-
-
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
-
-
-// Bits for ship.flags2
-#define SF2_PRIMITIVE_SENSORS				(1<<0)		// Goober5000 - primitive sensor display
-#define SF2_FRIENDLY_STEALTH_INVIS			(1<<1)		// Goober5000 - when stealth, don't appear on radar even if friendly
-#define SF2_STEALTH							(1<<2)		// Goober5000 - is this particular ship stealth
-#define SF2_DONT_COLLIDE_INVIS				(1<<3)		// Goober5000 - is this particular ship don't-collide-invisible
-#define SF2_NO_SUBSPACE_DRIVE				(1<<4)		// Goober5000 - this ship has no subspace drive
-#define SF2_NAVPOINT_CARRY					(1<<5)		// Kazan      - This ship autopilots with the player
-#define SF2_AFFECTED_BY_GRAVITY				(1<<6)		// Goober5000 - ship affected by gravity points
-#define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<7)		// Goober5000 - switch whether subsystems are scanned
-#define SF2_NO_BUILTIN_MESSAGES				(1<<8)		// Karajorma - ship should not send built-in messages
-#define SF2_PRIMARIES_LOCKED				(1<<9)		// Karajorma - This ship can't fire primary weapons
-#define SF2_SECONDARIES_LOCKED				(1<<10)		// Karajorma - This ship can't fire secondary weapons
-#define SF2_GLOWMAPS_DISABLED				(1<<11)		// taylor - to disable glow maps
-#define SF2_NO_DEATH_SCREAM					(1<<12)		// Goober5000 - for WCS
-#define SF2_ALWAYS_DEATH_SCREAM				(1<<13)		// Goober5000 - for WCS
-#define SF2_NAVPOINT_NEEDSLINK				(1<<14)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
-#define SF2_HIDE_SHIP_NAME					(1<<15)		// Karajorma - Hides the ships name (like the -wcsaga command line used to but for any selected ship)
-#define SF2_AFTERBURNER_LOCKED				(1<<16)		// KeldorKatarn - This ship can't use its afterburners
-#define SF2_SET_CLASS_DYNAMICALLY			(1<<18)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
-#define SF2_LOCK_ALL_TURRETS_INITIALLY		(1<<19)		// Karajorma - Lock all turrets on this ship at mission start or on arrival
-#define SF2_FORCE_SHIELDS_ON				(1<<20)
-#define SF2_NO_ETS							(1<<21)		// The E - This ship does not have an ETS
-#define SF2_CLOAKED							(1<<22)		// The E - This ship will not be rendered
-#define SF2_NO_THRUSTERS					(1<<23)		// The E - Thrusters on this ship are not rendered.
-#define SF2_SHIP_LOCKED						(1<<24)		// Karajorma - Prevents the player from changing the ship class on loadout screen
-#define SF2_WEAPONS_LOCKED					(1<<25)		// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
-#define SF2_SHIP_SELECTIVE_LINKING			(1<<26)		// RSAXVC - Allow pilot to pick firing configuration
-#define SF2_SCRAMBLE_MESSAGES				(1<<27)		// Goober5000 - all messages sent from this ship appear scrambled
-#define SF2_NO_SECONDARY_LOCKON				(1<<28)		// zookeeper - secondary lock-on disabled
-#define SF2_NO_DISABLED_SELF_DESTRUCT		(1<<29)		// Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
-
-// If any of these bits in the ship->flags are set, ignore this ship when targeting
-extern int TARGET_SHIP_IGNORE_FLAGS;
 
 #define MAX_DAMAGE_SLOTS	32
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
@@ -641,8 +559,7 @@ public:
 	float	current_max_speed;				// Max ship speed (based on energy diverted to engines)
 	int	next_manage_ets;					// timestamp for when ai can next modify ets ( -1 means never )
 
-	uint	flags;								// flag variable to contain ship state (see SF_ #defines)
-	uint	flags2;								// another flag variable (see SF2_ #defines)
+	flagset<Ship::Ship_Flags>	flags;		// flag variable to contain ship state
 	int	reinforcement_index;				// index into reinforcement struct or -1
 	
 	float	afterburner_fuel;					// amount of afterburner fuel remaining (capacity is stored
@@ -818,6 +735,12 @@ public:
 
 	// reset to a completely blank ship
 	void clear();
+
+    //Helper functions
+    inline bool is_arriving() { return flags[Ship::Ship_Flags::Arriving_stage_1] || flags[Ship::Ship_Flags::Arriving_stage_2]; }
+    inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp] || flags[Ship::Ship_Flags::Depart_dockbay]; }
+    inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken] || flags[Ship::Ship_Flags::Warp_never] || flags[Ship::Ship_Flags::Disabled]; }
+    inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 };
 
 struct ai_target_priority {
@@ -828,11 +751,11 @@ struct ai_target_priority {
 	SCP_vector <int> ship_class;
 	SCP_vector <int> weapon_class;
 
-	unsigned int obj_flags;
-	int sif_flags;
-	int sif2_flags;
+	flagset<Object::Object_Flags> obj_flags;
+    flagset<Ship::Info_Flags> sif_flags;
 	int wif_flags;
 	int wif2_flags;
+	int wif3_flags;
 };
 
 extern SCP_vector <ai_target_priority> Ai_tp_list;
@@ -870,90 +793,6 @@ extern SCP_vector<exited_ship> Ships_exited;
 extern void ship_add_exited_ship( ship *shipp, int reason );
 extern int ship_find_exited_ship_by_name( char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
-
-#define	SIF_NO_COLLIDE				(1 << 0)
-#define	SIF_PLAYER_SHIP				(1 << 1)
-#define	SIF_DEFAULT_PLAYER_SHIP		(1 << 2)
-#define	SIF_PATH_FIXUP				(1 << 3)		// when set, path verts have been set for this ship's model
-#define	SIF_SUPPORT					(1 << 4)		// this ship can perform repair/rearm functions
-#define	SIF_AFTERBURNER				(1 << 5)		// this ship has afterburners
-#define SIF_BALLISTIC_PRIMARIES		(1 << 6)		// this ship can equip ballistic primaries - Goober5000
-
-// If you add a new ship type, then please add the appropriate type in the ship_count
-// structure later in this file!!! and let MWA know!!
-#define	SIF_CARGO					(1 << 7)		// is this ship a cargo type ship -- used for docking purposes
-#define	SIF_FIGHTER					(1 << 8)		// this ship is a fighter
-#define	SIF_BOMBER					(1 << 9)		// this ship is a bomber
-#define	SIF_CRUISER					(1 << 10)		// this ship is a cruiser
-#define	SIF_FREIGHTER				(1 << 11)	// this ship is a freighter
-#define	SIF_CAPITAL					(1 << 12)	// this ship is a capital/installation ship
-#define	SIF_TRANSPORT				(1 << 13)	// this ship is a transport
-#define	SIF_NAVBUOY					(1 << 14)	// AL 11-24-97: this is a navbuoy
-#define	SIF_SENTRYGUN				(1 << 15)	// AL 11-24-97: this is a navbuoy with turrets
-#define	SIF_ESCAPEPOD				(1 << 16)	// AL 12-09-97: escape pods that fire from big ships
-#define	SIF_NO_SHIP_TYPE			(1 << 17)	// made distinct to help trap errors
-
-#define	SIF_SHIP_COPY				(1 << 18)	// this ship is a copy of another ship in the table -- meaningful for scoring and possible other things
-#define	SIF_IN_TECH_DATABASE		(1 << 19)	// is ship type to be listed in the tech database?
-#define	SIF_IN_TECH_DATABASE_M		(1 << 20)	// is ship type to be listed in the tech database for multiplayer?
-
-#define	SIF_STEALTH					(1 << 21)	// the ship has stealth capabilities
-#define	SIF_SUPERCAP				(1 << 22)	// the ship is a supercap
-#define	SIF_DRYDOCK					(1 << 23)	// the ship is a drydock
-#define	SIF_SHIP_CLASS_DONT_COLLIDE_INVIS	(1 << 24)	// Don't collide with this ship's invisible polygons
-
-#define	SIF_BIG_DAMAGE				(1 << 25)	// this ship is classified as a big damage ship
-#define	SIF_HAS_AWACS				(1 << 26)	// ship has an awacs subsystem
-
-#define	SIF_CORVETTE				(1 << 27)	// corvette class (currently this only means anything for briefing icons)
-#define	SIF_GAS_MINER				(1 << 28)	// also just for briefing icons
-#define	SIF_AWACS					(1 << 29)	// ditto
-
-#define	SIF_KNOSSOS_DEVICE			(1 << 30)	// this is the knossos device
-
-#define	SIF_NO_FRED					(1 << 31)	// not available in fred
-
-
-// flags2 list.
-#define SIF2_DEFAULT_IN_TECH_DATABASE		(1 << 0)	// default in tech database - Goober5000
-#define SIF2_DEFAULT_IN_TECH_DATABASE_M		(1 << 1)	// ditto - Goober5000
-#define SIF2_FLASH							(1 << 2)	// makes a flash when it explodes
-#define SIF2_SHOW_SHIP_MODEL				(1 << 3)	// Show ship model even in first person view
-#define SIF2_SURFACE_SHIELDS                (1 << 4)    // _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
-#define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
-#define SIF2_DISABLE_WEAPON_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
-#define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
-#define SIF2_NO_THRUSTER_GEO_NOISE			(1 << 8)	// Echelon9 - No thruster geometry noise.
-#define SIF2_INTRINSIC_NO_SHIELDS			(1 << 9)	// Chief - disables shields for this ship even without No Shields in mission.
-#define SIF2_NO_PRIMARY_LINKING				(1 << 10)	// Chief - slated for 3.7 originally, but this looks pretty simple to implement.
-#define SIF2_NO_PAIN_FLASH					(1 << 11)	// The E - disable red pain flash
-#define SIF2_ALLOW_LANDINGS					(1 << 12)	// SUSHI: Automatically set if any subsystems allow landings (as a shortcut)
-#define SIF2_NO_ETS							(1 << 13)	// The E - No ETS on this ship class
-#define SIF2_NO_LIGHTING					(1 << 14)	// Valathil - No lighting for this ship
-#define SIF2_DYN_PRIMARY_LINKING			(1 << 15)	// RSAXVC - Dynamically generate weapon linking options
-#define SIF2_AUTO_SPREAD_SHIELDS			(1 << 16)	// zookeeper - auto spread shields
-#define SIF2_DRAW_WEAPON_MODELS				(1 << 17)	// the ship draws weapon models of any sort (used to be a boolean)
-#define SIF2_MODEL_POINT_SHIELDS			(1 << 18)	// zookeeper - uses model-defined shield points instead of quadrants
-#define SIF2_SUBSYS_REPAIR_WHEN_DISABLED	(1 << 19)	// MageKing17 - Subsystems auto-repair themselves even when disabled.
-
-#define	SIF_DEFAULT_VALUE		0
-#define SIF2_DEFAULT_VALUE		0
-
-#define	SIF_ALL_SHIP_TYPES		(SIF_CARGO | SIF_FIGHTER | SIF_BOMBER | SIF_CRUISER | SIF_FREIGHTER | SIF_CAPITAL | SIF_TRANSPORT | SIF_SUPPORT | SIF_NO_SHIP_TYPE | SIF_NAVBUOY | SIF_SENTRYGUN | SIF_ESCAPEPOD | SIF_SUPERCAP | SIF_CORVETTE | SIF_GAS_MINER | SIF_AWACS | SIF_KNOSSOS_DEVICE)
-#define	SIF_SMALL_SHIP				(SIF_FIGHTER | SIF_BOMBER | SIF_SUPPORT | SIF_ESCAPEPOD )
-#define	SIF_BIG_SHIP				(SIF_CRUISER | SIF_FREIGHTER | SIF_TRANSPORT | SIF_CORVETTE | SIF_GAS_MINER | SIF_AWACS)
-#define	SIF_HUGE_SHIP				(SIF_CAPITAL | SIF_SUPERCAP | SIF_DRYDOCK | SIF_KNOSSOS_DEVICE)
-#define	SIF_NOT_FLYABLE			(SIF_CARGO | SIF_NAVBUOY | SIF_SENTRYGUN)		// AL 11-24-97: this useful to know for targeting reasons
-#define	SIF_HARMLESS				(SIF_CARGO | SIF_NAVBUOY | SIF_ESCAPEPOD)		// AL 12-3-97: ships that are not a threat
-// for ships of this type, we make beam weapons miss a little bit otherwise they'd be way too powerful
-#define	SIF_BEAM_JITTER			(SIF_CARGO | SIF_FIGHTER | SIF_BOMBER | SIF_FREIGHTER | SIF_TRANSPORT | SIF_SENTRYGUN | SIF_NAVBUOY | SIF_ESCAPEPOD)
-// these ships avoid shockwaves
-// (the weird thing is that freighters and transports used to be explicitly allowed in one part of the code but then explicitly disallowed in another)
-#define SIF_AVOID_SHOCKWAVE		SIF_SMALL_SHIP
-
-// masks for preventing only non flag entry SIF flags from being cleared
-#define SIF_MASK				SIF_AFTERBURNER
-#define SIF2_MASK				SIF2_DRAW_WEAPON_MODELS
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
@@ -1225,8 +1064,7 @@ public:
 
 	float		warpout_player_speed;
 
-	int		flags;							//	See SIF_xxxx - changed to uint by Goober5000, changed back by Zacam
-	int		flags2;							//	See SIF2_xxxx - added by Goober5000, changed by Zacam
+	flagset<Ship::Info_Flags> flags;							//	See SIF_xxxx - changed to uint by Goober5000, changed back by Zacam, and changed to something entirely different by The E!
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
 	float		max_speed, min_speed, max_accel;
 
@@ -1465,6 +1303,17 @@ public:
 
 	void free_strings();
 
+    //Helper functions
+    
+    inline bool is_small_ship() const { return flags[Ship::Info_Flags::Fighter] || flags[Ship::Info_Flags::Bomber] || flags[Ship::Info_Flags::Support] || flags[Ship::Info_Flags::Escapepod]; }
+    inline bool is_big_ship() const { return flags[Ship::Info_Flags::Cruiser] || flags[Ship::Info_Flags::Freighter] || flags[Ship::Info_Flags::Transport] || flags[Ship::Info_Flags::Corvette] || flags[Ship::Info_Flags::Gas_miner] || flags[Ship::Info_Flags::Awacs]; }
+    inline bool is_huge_ship() const  { return flags[Ship::Info_Flags::Capital] || flags[Ship::Info_Flags::Supercap] || flags[Ship::Info_Flags::Drydock] || flags[Ship::Info_Flags::Knossos_device]; }
+    inline bool is_flyable() const { return !(flags[Ship::Info_Flags::Cargo] || flags[Ship::Info_Flags::Navbuoy] || flags[Ship::Info_Flags::Escapepod]); }
+    inline bool is_harmless() const { return !is_flyable(); }
+    inline bool is_fighter_bomber() const { return flags[Ship::Info_Flags::Fighter] || flags[Ship::Info_Flags::Bomber]; }
+    inline bool is_big_or_huge() const { return is_big_ship() || is_huge_ship(); }
+    inline bool avoids_shockwaves() const { return is_small_ship(); }
+
 private:
 	void move(ship_info&& other);
 
@@ -1599,8 +1448,8 @@ extern SCP_vector<ship_counts> Ship_type_counts;
 
 // Use the below macros when you want to find the index of an array element in the
 // Wings[] or Ships[] arrays.
-#define WING_INDEX(wingp) (wingp-Wings)
-#define SHIP_INDEX(shipp) (shipp-Ships)
+#define WING_INDEX(wingp) ((int)(wingp-Wings))
+#define SHIP_INDEX(shipp) ((int)(shipp-Ships))
 
 
 extern void ship_init();				// called once	at game start
@@ -1829,8 +1678,8 @@ void ship_primary_changed(ship *sp);
 void ship_secondary_changed(ship *sp);
 
 // get the Ship_info flags for a given ship
-int ship_get_SIF(ship *shipp);
-int ship_get_SIF(int sh);
+flagset<Ship::Info_Flags> ship_get_SIF(ship *shipp);
+flagset<Ship::Info_Flags> ship_get_SIF(int sh);
 
 // get the ship type info (objecttypes.tbl)
 ship_type_info *ship_get_type_info(object *objp);
@@ -1974,8 +1823,8 @@ void ship_init_cockpit_displays(ship *shipp);
 void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num);
 void ship_set_hud_cockpit_targets();
 void ship_clear_cockpit_displays();
-int ship_start_render_cockpit_display(int cockpit_display_num);
-void ship_end_render_cockpit_display(int cockpit_display_num);
+int ship_start_render_cockpit_display(size_t cockpit_display_num);
+void ship_end_render_cockpit_display(size_t cockpit_display_num);
 
 //WMC - Warptype stuff
 int warptype_match(char *p);
@@ -2045,5 +1894,14 @@ int get_default_player_ship_index();
  * @return point is outside bbox, FALSE/0
  */
 int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt);
+
+extern flagset<Ship::Ship_Flags> Ignore_List;
+inline bool should_be_ignored(ship* shipp) {
+    return (shipp->flags & Ignore_List).any_set();
+}
+
+extern void set_default_ignore_list();
+
+extern void toggle_ignore_list_flag(Ship::Ship_Flags flag);
 
 #endif

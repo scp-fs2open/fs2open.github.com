@@ -131,7 +131,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	//when you found it, you have the host and dir
 	char *filestart = NULL;
 	char *dirstart = NULL;
-	for(int i = strlen(pURL);i>=0;i--)
+	for(size_t i = strlen(pURL);;i--)
 	{
 		if(pURL[i]== '/')
 		{
@@ -145,6 +145,9 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 			{
 				dirstart = pURL+i+1;
 			}
+		}
+		if (i == 0) {
+			break;
 		}
 	}
 	if((dirstart==NULL) || (filestart==NULL))
@@ -214,7 +217,7 @@ void ChttpGet::WorkerThread()
 		return;
 	}
 	sprintf(szCommand,"GET %s%s HTTP/1.1\nAccept: */*\nAccept-Encoding: deflate\nHost: %s\n\n\n",m_ProxyEnabled?"":"/",m_ProxyEnabled?m_URL:m_szDir,m_szHost);
-	send(m_DataSock,szCommand,strlen(szCommand),0);
+	send(m_DataSock,szCommand,static_cast<int>(strlen(szCommand)),0);
 	p = GetHTTPLine();
 	if (!p) return;
 	if(strnicmp("HTTP/",p,5)==0)

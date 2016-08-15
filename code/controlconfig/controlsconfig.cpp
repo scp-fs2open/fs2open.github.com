@@ -902,7 +902,7 @@ int control_config_axis_default(int axis)
 		}
 
 		auto joystick = io::joystick::getCurrentJoystick();
-		if (Axis_map_to_defaults[axis] >= 0 && Axis_map_to_defaults[axis] < joystick->numAxes()) {
+		if (joystick == nullptr || Axis_map_to_defaults[axis] >= joystick->numAxes()) {
 			return -1;
 		}
 	}

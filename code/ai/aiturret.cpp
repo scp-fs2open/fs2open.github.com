@@ -522,17 +522,17 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		sip = &Ship_info[shipp->ship_info_index];
 
 		// don't fire at ships with protected bit set!!!
-		if ( objp->flags & OF_PROTECTED ) {
+		if ( objp->flags[Object::Object_Flags::Protected] ) {
 			return 0;
 		}
 
 		// don't shoot at ships without collision check
-		if (!(objp->flags & OF_COLLIDES)) {
+		if (!(objp->flags[Object::Object_Flags::Collides])) {
 			return 0;
 		}
 
 		// don't shoot at arriving ships
-		if (shipp->flags & SF_ARRIVING) {
+		if (shipp->is_arriving()) {
 			return 0;
 		}
 
@@ -604,48 +604,48 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		}
 
 		// check if protected
-		if (objp->flags & OF_PROTECTED) {
+		if (objp->flags[Object::Object_Flags::Protected]) {
 			return;
 		}
 
 		// check if beam protected
 		if (eeo->eeo_flags & EEOF_BEAM) {
-			if (objp->flags & OF_BEAM_PROTECTED) {
+			if (objp->flags[Object::Object_Flags::Beam_protected]) {
 				return;
 			}
 		}
 
 		// check if flak protected
 		if (eeo->eeo_flags & EEOF_FLAK) {
-			if (objp->flags & OF_FLAK_PROTECTED) {
+			if (objp->flags[Object::Object_Flags::Flak_protected]) {
 				return;
 			}
 		}
 
 		// check if laser protected
 		if (eeo->eeo_flags & EEOF_LASER) {
-			if (objp->flags & OF_LASER_PROTECTED) {
+			if (objp->flags[Object::Object_Flags::Laser_protected]) {
 				return;
 			}
 		}
 
 		// check if missile protected
 		if (eeo->eeo_flags & EEOF_MISSILE) {
-			if (objp->flags & OF_MISSILE_PROTECTED) {
+			if (objp->flags[Object::Object_Flags::Missile_protected]) {
 				return;
 			}
 		}
 
 		// don't shoot at small ships if we shouldn't
 		if (eeo->eeo_flags & EEOF_BIG_ONLY) {
-			if (!(Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
+			if (!(Ship_info[shipp->ship_info_index].is_big_or_huge())) {
 				return;
 			}
 		}
 
 		// don't shoot at big ships if we shouldn't
 		if (eeo->eeo_flags & EEOF_SMALL_ONLY) {
-			if ((Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
+			if ((Ship_info[shipp->ship_info_index].is_big_or_huge())) {
 				return;
 			}
 		}
@@ -730,7 +730,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 		if ( Weapons[objp->instance].homing_object == &Objects[eeo->turret_parent_objnum] ) {
 			if ( dist_comp < eeo->nearest_homing_bomb_dist ) {
-				if (!(ss->flags & SSF_FOV_REQUIRED) && (eeo->current_enemy == -1)) {
+				if (!(ss->flags[Ship::Subsystem_Flags::FOV_Required]) && (eeo->current_enemy == -1)) {
 					turret_has_no_target = true;
 				}
 				if ( (turret_has_no_target) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
@@ -741,7 +741,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		// if not homing, check if bomb is flying towards ship
 		} else if ( bomb_headed_towards_ship(objp, &Objects[eeo->turret_parent_objnum]) ) {
 			if ( dist_comp < eeo->nearest_bomb_dist ) {
-				if (!(ss->flags & SSF_FOV_REQUIRED) && (eeo->current_enemy == -1)) {
+				if (!(ss->flags[Ship::Subsystem_Flags::FOV_Required]) && (eeo->current_enemy == -1)) {
 					turret_has_no_target = true;
 				}
 				if ( (turret_has_no_target) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
@@ -753,7 +753,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 	} // end weapon section
 
 	// maybe recalculate dist for big or huge ship
-//	if (shipp && (Ship_info[shipp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
+//	if (shipp && (Ship_info[shipp->ship_info_index].is_big_or_huge())) {
 //		fvi_ray_boundingbox(min, max, start, direction, hit);
 //		dist = vm_vec_dist_quick(hit, tvec);
 //	}
@@ -770,11 +770,11 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		// return if we're over the cap
 //		int max_turrets = 3 + Game_skill_level * Game_skill_level;
 		int max_turrets = The_mission.ai_profile->max_turret_ownage_target[Game_skill_level];
-		if (objp->flags & OF_PLAYER_SHIP) {
+		if (objp->flags[Object::Object_Flags::Player_ship]) {
 			max_turrets = The_mission.ai_profile->max_turret_ownage_player[Game_skill_level];
 		}
 		// Apply the per-turret limit for small targets, if there is one and this is a small target
-		if (ss->turret_max_target_ownage != -1 && (Ship_info[shipp->ship_info_index].flags & (SIF_SMALL_SHIP))) {
+		if (ss->turret_max_target_ownage != -1 && (Ship_info[shipp->ship_info_index].is_small_ship())) {
 			max_turrets = MIN(max_turrets, ss->system_info->turret_max_target_ownage);
 		}
 		if (num_att_turrets > max_turrets) {
@@ -783,7 +783,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 		// modify distance based on lethality of objp to my ship
 		float active_lethality = aip->lethality;
-		if (objp->flags & OF_PLAYER_SHIP) {
+		if (objp->flags[Object::Object_Flags::Player_ship]) {
 			active_lethality += Player_lethality_bump[Game_skill_level];
 		}
 
@@ -804,7 +804,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 		// maybe update nearest attacker
 		if ( dist_comp < eeo->nearest_attacker_dist ) {
-			if (!(ss->flags & SSF_FOV_REQUIRED) && (eeo->current_enemy == -1)) {
+			if (!(ss->flags[Ship::Subsystem_Flags::FOV_Required]) && (eeo->current_enemy == -1)) {
 				turret_has_no_target = true;
 			}
 			if ( (turret_has_no_target) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
@@ -822,7 +822,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 			dist_comp *= 0.9f + (0.01f * asteroid_time_to_impact(objp));
 
 			if (dist_comp < eeo->nearest_dist ) {
-				if (!(ss->flags & SSF_FOV_REQUIRED) && (eeo->current_enemy == -1)) {
+				if (!(ss->flags[Ship::Subsystem_Flags::FOV_Required]) && (eeo->current_enemy == -1)) {
 					turret_has_no_target = true;
 				}
 				if ( (turret_has_no_target) || object_in_turret_fov(objp, ss, eeo->tvec, eeo->tpos, dist + objp->radius) ) {
@@ -843,12 +843,12 @@ int is_target_beam_valid(ship_weapon *swp, object *objp)
 {
 	// check if turret has beam weapon
 	if (all_turret_weapons_have_flags(swp, WIF_BEAM)) {
-		if (objp->flags & OF_BEAM_PROTECTED) {
+		if (objp->flags[Object::Object_Flags::Beam_protected]) {
 			return 0;
 		}
 
 		if (all_turret_weapons_have_flags(swp, WIF_HUGE)) {
-			if (objp->type == OBJ_SHIP && !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) ) {
+			if (objp->type == OBJ_SHIP && !(Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge()) ) {
 				return 0;
 			}
 		}
@@ -1008,21 +1008,22 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 					}
 				}
 
-				if( ( (tt->wif2_flags != 0) || (tt->wif_flags != 0) ) && (ptr->type == OBJ_WEAPON) ) {
+				if( ( (tt->wif_flags != 0) || (tt->wif2_flags != 0) || (tt->wif3_flags != 0) ) && (ptr->type == OBJ_WEAPON) ) {
 					if( ( (Weapon_info[Weapons[ptr->instance].weapon_info_index].wi_flags & tt->wif_flags ) == tt->wif_flags)
-						&& ( (Weapon_info[Weapons[ptr->instance].weapon_info_index].wi_flags2 & tt->wif2_flags ) == tt->wif2_flags) ) {
+						&& ( (Weapon_info[Weapons[ptr->instance].weapon_info_index].wi_flags2 & tt->wif2_flags ) == tt->wif2_flags)
+						&& ( (Weapon_info[Weapons[ptr->instance].weapon_info_index].wi_flags3 & tt->wif3_flags ) == tt->wif3_flags) ) {
 							found_something = true;
 					}
 				}
 
-				if( ( ( tt->sif_flags != 0 ) || ( tt->sif2_flags != 0 ) ) && (ptr->type == OBJ_SHIP) ) {
-					if( ( (Ship_info[Ships[ptr->instance].ship_info_index].flags & tt->sif_flags) == tt->sif_flags)
-						&& ( (Ship_info[Ships[ptr->instance].ship_info_index].flags2 & tt->sif2_flags) == tt->sif2_flags) ) {
-							found_something = true;
+				if( ( tt->sif_flags.any_set() && (ptr->type == OBJ_SHIP) ) ) {
+					if( (Ship_info[Ships[ptr->instance].ship_info_index].flags & tt->sif_flags) == tt->sif_flags)
+	                {
+    					found_something = true;
 					}
 				}
 
-				if((tt->obj_flags != 0) && !((ptr->flags & tt->obj_flags) == tt->obj_flags)) {
+                if ((tt->obj_flags.any_set()) && !((ptr->flags & tt->obj_flags) == tt->obj_flags)) {
 					found_something = true;
 				}
 
@@ -1209,7 +1210,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 
 		if (Objects[target_objnum].signature == aip->target_signature) {
 			if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
-				if ( !(Objects[target_objnum].flags & OF_PROTECTED) ) {		// check this flag as well
+				if ( !(Objects[target_objnum].flags[Object::Object_Flags::Protected]) ) {		// check this flag as well
 					// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum, target_objnum));
 					return target_objnum;
 				}
@@ -1224,8 +1225,8 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 		if ((frand() < 0.8f) && (aip->target_objnum != -1) && Use_parent_target) {
 
 			//check if aip->target_objnum is valid target
-			int target_flags = Objects[aip->target_objnum].flags;
-			if ( target_flags & OF_PROTECTED ) {
+			auto target_flags = Objects[aip->target_objnum].flags;
+			if ( target_flags[Object::Object_Flags::Protected] ) {
 				// AL 2-27-98: why is a protected ship being targeted?
 				set_target_objnum(aip, -1);
 				return -1;
@@ -1234,15 +1235,15 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 			// maybe use ship target_objnum if valid for turret
 			// check for beam weapon and beam protected, etc.
 			bool skip = false;
-			     if ( (target_flags & OF_BEAM_PROTECTED) && beam_flag ) skip = true;
-			else if ( (target_flags & OF_FLAK_PROTECTED) && flak_flag ) skip = true;
-			else if ( (target_flags & OF_LASER_PROTECTED) && laser_flag ) skip = true;
-			else if ( (target_flags & OF_MISSILE_PROTECTED) && missile_flag ) skip = true;
+			     if ( target_flags[Object::Object_Flags::Beam_protected] && beam_flag ) skip = true;
+			else if ( target_flags[Object::Object_Flags::Flak_protected] && flak_flag ) skip = true;
+			else if ( target_flags[Object::Object_Flags::Laser_protected] && laser_flag ) skip = true;
+            else if ( target_flags[Object::Object_Flags::Missile_protected] && missile_flag) skip = true;
 
 			if (!skip) {
 				if ( Objects[aip->target_objnum].type == OBJ_SHIP ) {
 					// check for huge weapon and huge ship
-					if ( !big_only_flag || (Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) ) {
+					if ( !big_only_flag || (Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].is_big_or_huge()) ) {
 						// check for tagged only and tagged ship
 						if ( tagged_only_flag && ship_is_tagged(&Objects[aip->target_objnum]) ) {
 							// select new target if aip->target_objnum is out of field of view
@@ -1253,7 +1254,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 
 							in_fov = turret_fov_test(turret_subsys, tvec, &v2e);
 
-							if (turret_subsys->flags & SSF_FOV_EDGE_CHECK) {
+							if (turret_subsys->flags[Ship::Subsystem_Flags::FOV_edge_check]) {
 								if (in_fov == false)
 									if (object_in_turret_fov(&Objects[aip->target_objnum], turret_subsys, tvec, tpos, dist + Objects[aip->target_objnum].radius))
 										in_fov = true;
@@ -1272,12 +1273,12 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 
 	enemy_objnum = get_nearest_turret_objnum(objnum, turret_subsys, enemy_team_mask, tpos, tvec, current_enemy, big_only_flag, small_only_flag, tagged_only_flag, beam_flag, flak_flag, laser_flag, missile_flag);
 	if ( enemy_objnum >= 0 ) {
-		Assert( !((Objects[enemy_objnum].flags & OF_BEAM_PROTECTED) && beam_flag) );
-		Assert( !((Objects[enemy_objnum].flags & OF_FLAK_PROTECTED) && flak_flag) );
-		Assert( !((Objects[enemy_objnum].flags & OF_LASER_PROTECTED) && laser_flag) );
-		Assert( !((Objects[enemy_objnum].flags & OF_MISSILE_PROTECTED) && missile_flag) );
+		Assert( !((Objects[enemy_objnum].flags[Object::Object_Flags::Beam_protected]) && beam_flag) );
+		Assert( !((Objects[enemy_objnum].flags[Object::Object_Flags::Flak_protected]) && flak_flag) );
+		Assert( !((Objects[enemy_objnum].flags[Object::Object_Flags::Laser_protected]) && laser_flag) );
+		Assert( !((Objects[enemy_objnum].flags[Object::Object_Flags::Missile_protected]) && missile_flag) );
 
-		if ( Objects[enemy_objnum].flags & OF_PROTECTED ) {
+		if ( Objects[enemy_objnum].flags[Object::Object_Flags::Protected] ) {
 			Int3();
 			enemy_objnum = aip->target_objnum;
 		}
@@ -1360,11 +1361,11 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
             turret_ai_update_aim(&Ai_info[Ships[ssp->parent_objnum].ai_index], &Objects[ssp->turret_enemy_objnum], ssp);
 
-			if ((ssp->targeted_subsys != nullptr) && !(ssp->flags & SSF_NO_SS_TARGETING)) {
+			if ((ssp->targeted_subsys != nullptr) && !(ssp->flags[Ship::Subsystem_Flags::No_SS_targeting])) {
 				vm_vec_unrotate(&enemy_point, &ssp->targeted_subsys->system_info->pnt, &Objects[ssp->turret_enemy_objnum].orient);
 				vm_vec_add2(&enemy_point, &ssp->last_aim_enemy_pos);
 			} else {
-				if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
+				if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge())) {
                     vm_vec_unrotate(&turret_norm, &tp->turret_norm, &objp->orient);
 					ai_big_pick_attack_point_turret(lep, ssp, &tmp_pos, &turret_norm, &enemy_point, MIN(wip->max_speed * wip->lifetime, wip->weapon_range), tp->turret_fov);
 				}
@@ -1456,13 +1457,13 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 		//Figure out what point on the ship we want to point the gun at, and store the global location
 		//in enemy_point.
 		vec3d	enemy_point;
-		if ((ss->targeted_subsys != NULL) && !(ss->flags & SSF_NO_SS_TARGETING)) {
+		if ((ss->targeted_subsys != NULL) && !(ss->flags[Ship::Subsystem_Flags::No_SS_targeting])) {
 			if (ss->turret_enemy_objnum != -1) {
 				vm_vec_unrotate(&enemy_point, &ss->targeted_subsys->system_info->pnt, &Objects[ss->turret_enemy_objnum].orient);
 				vm_vec_add2(&enemy_point, &ss->last_aim_enemy_pos);
 			}
 		} else {
-			if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP))) {
+			if ((lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge())) {
 				ai_big_pick_attack_point_turret(lep, ss, &gun_pos, &gun_vec, &enemy_point, tp->turret_fov, MIN(wip->max_speed * wip->lifetime, wip->weapon_range));
 			} else {
 				enemy_point = ss->last_aim_enemy_pos;
@@ -1496,7 +1497,7 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 		in_fov = turret_fov_test(ss, gvec, &v2e);
 
-		if (ss->flags & SSF_FOV_EDGE_CHECK) {
+		if (ss->flags[Ship::Subsystem_Flags::FOV_edge_check]) {
 			if (in_fov == false)
 				in_fov = is_object_radius_in_turret_fov(&Objects[ss->turret_enemy_objnum], ss, gvec, &gun_pos, &v2e, predicted_enemy_pos, 0.0f);
 		}
@@ -1616,7 +1617,7 @@ ship_subsys *aifft_find_turret_subsys(object *objp, ship_subsys *ssp, object *en
 	vm_vec_add2(&abs_gun_pos, &objp->pos);
 
 	//	Only pick a turret to attack on large ships.
-	if (!(esip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)))
+	if (!esip->is_big_or_huge())
 		return best_subsysp;
 
 	// Make sure big or huge ship *actually* has subsystems  (ie, knossos)
@@ -1868,22 +1869,22 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		object	*tobjp = &Objects[turret->turret_enemy_objnum];
 
 		// should not get this far. check if ship is protected from beam and weapon is type beam
-		if ( (wip->wi_flags & WIF_BEAM) && (tobjp->flags & OF_BEAM_PROTECTED) ) {
+		if ( (wip->wi_flags & WIF_BEAM) && (tobjp->flags[Object::Object_Flags::Beam_protected]) ) {
 			Int3();
 			return 0;
 		}
 		// should not get this far. check if ship is protected from flak and weapon is type flak
-		else if ( (wip->wi_flags & WIF_FLAK) && (tobjp->flags & OF_FLAK_PROTECTED) ) {
+		else if ( (wip->wi_flags & WIF_FLAK) && (tobjp->flags[Object::Object_Flags::Flak_protected]) ) {
 			Int3();
 			return 0;
 		}
 		// should not get this far. check if ship is protected from laser and weapon is type laser
-		else if ( (wip->subtype == WP_LASER) && (tobjp->flags & OF_LASER_PROTECTED) ) {
+		else if ( (wip->subtype == WP_LASER) && (tobjp->flags[Object::Object_Flags::Laser_protected]) ) {
 			Int3();
 			return 0;
 		}
 		// should not get this far. check if ship is protected from missile and weapon is type missile
-		else if ( (wip->subtype == WP_MISSILE) && (tobjp->flags & OF_MISSILE_PROTECTED) ) {
+		else if ( (wip->subtype == WP_MISSILE) && (tobjp->flags[Object::Object_Flags::Missile_protected]) ) {
 			Int3();
 			return 0;
 		}
@@ -1933,7 +1934,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				Script_system.RemHookVars(4, "Ship", "Weapon", "Beam", "Target");
 			}
 
-			turret->flags |= SSF_HAS_FIRED; //set fired flag for scripting -nike
+			turret->flags.set(Ship::Subsystem_Flags::Has_fired); //set fired flag for scripting -nike
 			return true;
 		}
 		// don't fire swam, but set up swarm info instead
@@ -1956,7 +1957,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			} else {
 				turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos);
 
-				turret->flags |= SSF_HAS_FIRED;	//set fired flag for scripting -nike
+				turret->flags.set(Ship::Subsystem_Flags::Has_fired);	//set fired flag for scripting -nike
 				return true;
 			}
 		}
@@ -2105,7 +2106,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 					if ( wip->launch_snd != -1 ) {
 						// Don't play turret firing sound if turret sits on player ship... it gets annoying.
-						if ( parent_objnum != OBJ_INDEX(Player_obj) || (turret->flags & SSF_PLAY_SOUND_FOR_PLAYER) ) {						
+						if ( parent_objnum != OBJ_INDEX(Player_obj) || (turret->flags[Ship::Subsystem_Flags::Play_sound_for_player]) ) {						
 							snd_play_3d( &Snds[wip->launch_snd], turret_pos, &View_position );						
 						}
 					}
@@ -2126,7 +2127,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		turret->turret_next_fire_stamp = timestamp((int) wait);
 	}
 
-	turret->flags |= SSF_HAS_FIRED; //set has fired flag for scriptng - nuke
+	turret->flags.set(Ship::Subsystem_Flags::Has_fired); //set has fired flag for scriptng - nuke
 
 	//Fire animation stuff
 	model_anim_start_type(turret, TRIGGER_TYPE_TURRET_FIRED, ANIMATION_SUBTYPE_ALL, 1);
@@ -2442,13 +2443,13 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					if ( lep->type != OBJ_SHIP ) {
 						continue;
 					}
-					if ( !(Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+					if ( !(Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge()) ) {
 						continue;
 					}
 				}
 
 				if ( wip->wi_flags2 & WIF2_SMALL_ONLY ) {
-					if ( (lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+					if ( (lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge()) ) {
 						continue;
 					}
 				}
@@ -2457,32 +2458,32 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 				if (lep->type == OBJ_SHIP) {
 					// Check if we're targeting a protected ship
-					if (lep->flags & OF_PROTECTED) {
+					if (lep->flags[Object::Object_Flags::Protected]) {
 						ss->turret_enemy_objnum = -1;
 						ss->turret_time_enemy_in_range = 0.0f;
 						continue;
 					}
 
 					// Check if we're targeting a beam protected ship with a beam weapon
-					if ( (lep->flags & OF_BEAM_PROTECTED) && (wip->wi_flags & WIF_BEAM) ) {
+					if ( (lep->flags[Object::Object_Flags::Beam_protected]) && (wip->wi_flags & WIF_BEAM) ) {
 						ss->turret_enemy_objnum = -1;
 						ss->turret_time_enemy_in_range = 0.0f;
 						continue;
 					}
 					// Check if we're targeting a flak protected ship with a flak weapon
-					else if ( (lep->flags & OF_FLAK_PROTECTED) && (wip->wi_flags & WIF_FLAK) ) {
+					else if ( (lep->flags[Object::Object_Flags::Flak_protected]) && (wip->wi_flags & WIF_FLAK) ) {
 						ss->turret_enemy_objnum = -1;
 						ss->turret_time_enemy_in_range = 0.0f;
 						continue;
 					}
 					// Check if we're targeting a laser protected ship with a laser weapon
-					else if ( (lep->flags & OF_LASER_PROTECTED) && (wip->subtype == WP_LASER) ) {
+					else if ( (lep->flags[Object::Object_Flags::Laser_protected]) && (wip->subtype == WP_LASER) ) {
 						ss->turret_enemy_objnum = -1;
 						ss->turret_time_enemy_in_range = 0.0f;
 						continue;
 					}
 					// Check if we're targeting a missile protected ship with a missile weapon
-					else if ( (lep->flags & OF_MISSILE_PROTECTED) && (wip->subtype == WP_MISSILE) ) {
+					else if ( (lep->flags[Object::Object_Flags::Missile_protected]) && (wip->subtype == WP_MISSILE) ) {
 						ss->turret_enemy_objnum = -1;
 						ss->turret_time_enemy_in_range = 0.0f;
 						continue;
@@ -2536,7 +2537,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		if (ss->turret_enemy_objnum != -1) {
 			float	dot = 1.0f;
 			lep = &Objects[ss->turret_enemy_objnum];
-			if (( lep->type == OBJ_SHIP ) && !(ss->flags & SSF_NO_SS_TARGETING)) {
+			if (( lep->type == OBJ_SHIP ) && !(ss->flags[Ship::Subsystem_Flags::No_SS_targeting])) {
 				ss->targeted_subsys = aifft_find_turret_subsys(objp, ss, lep, &dot);				
 			}
 			ss->turret_next_enemy_check_stamp = timestamp((int) (MAX(dot, 0.5f)*2000.0f) + 1000);
@@ -2563,7 +2564,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			return;
 		}
 
-		if (Objects[ss->turret_enemy_objnum].flags & OF_PROTECTED) {
+		if (Objects[ss->turret_enemy_objnum].flags[Object::Object_Flags::Protected]) {
 			//	This can happen if the enemy was selected before it became protected.
 			ss->turret_enemy_objnum = -1;
 			return;

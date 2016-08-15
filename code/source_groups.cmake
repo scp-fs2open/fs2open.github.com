@@ -252,6 +252,7 @@ set (file_root_globalincs
 	globalincs/version.h
 	globalincs/vmallocator.h
 	globalincs/scp_defines.h
+	globalincs/flagset.h
 )
 
 IF (WIN32)
@@ -561,6 +562,7 @@ set (file_root_mission
 	mission/missionparse.h
 	mission/missiontraining.cpp
 	mission/missiontraining.h
+	mission/mission_flags.h
 )
 
 # MissionUI files
@@ -607,6 +609,7 @@ set (file_root_model
 	model/modelrender.h
 	model/modelrender.cpp
 	model/modelsinc.h
+	model/model_flags.h
 )
 
 # Nebula files
@@ -719,6 +722,7 @@ set (file_root_object
 	object/parseobjectdock.h
 	object/waypoint.cpp
 	object/waypoint.h
+	object/object_flags.h
 )
 
 # Observer files
@@ -880,6 +884,7 @@ set (file_root_ship
 	ship/shiphit.cpp
 	ship/shiphit.h
 	ship/subsysdamage.h
+	ship/ship_flags.h
 )
 
 # Sound files
@@ -988,6 +993,7 @@ set (file_root_weapon
 	weapon/trails.h
 	weapon/weapon.h
 	weapon/weapons.cpp
+	weapon/weapon_flags.h
 )
 
 # Windows stubs files

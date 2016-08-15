@@ -420,7 +420,7 @@ int cfread_compressed(void *buf, int elsize, int nelem, CFILE *cfile)
 		}
 	}
 
-	return (out - (char *)buf)/elsize;
+	return (int)((out - (char *)buf)/elsize);
 }
 
 int cfwrite_compressed(void *param_buf, int param_elsize, int param_nelem, CFILE *cfile)

@@ -114,7 +114,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 
 			g3_transfer_vertex( &verts[4], &vecs[4] );
 
-			float alpha = (The_mission.flags & MISSION_FLAG_FULLNEB) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
+			float alpha = (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
 			gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
 
 			g3_draw_bitmap( &verts[4], 0, r, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
@@ -252,7 +252,7 @@ void warpin_queue_render(draw_list *scene, object *obj, matrix *orient, vec3d *p
 
 			g3_transfer_vertex( &verts[4], &vecs[4] );
 
-			float alpha = (The_mission.flags & MISSION_FLAG_FULLNEB) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
+			float alpha = (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
 
 			batch_add_bitmap(Warp_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE , &verts[4], 0, r, alpha);
 		}

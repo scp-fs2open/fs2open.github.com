@@ -94,7 +94,7 @@ void radar_stuff_blip_info(object *objp, int is_bright, color **blip_color, int 
 		case OBJ_SHIP:
 			shipp = &Ships[objp->instance];
 
-			if (shipp->flags & SF_ARRIVING_STAGE_1)
+			if (shipp->flags[Ship::Ship_Flags::Arriving_stage_1])
 			{
 				*blip_color = &Radar_colors[RCOL_WARPING_SHIP][is_bright];
 				*blip_type = BLIP_TYPE_WARPING_SHIP;
@@ -104,7 +104,7 @@ void radar_stuff_blip_info(object *objp, int is_bright, color **blip_color, int 
 				*blip_color = &Radar_colors[RCOL_TAGGED][is_bright];
 				*blip_type = BLIP_TYPE_TAGGED_SHIP;
 			}
-			else if (Ship_info[shipp->ship_info_index].flags & (SIF_NAVBUOY|SIF_CARGO))
+            else if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Navbuoy] || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Cargo])
 			{
 				*blip_color = &Radar_colors[RCOL_NAVBUOY_CARGO][is_bright];
 				*blip_type = BLIP_TYPE_NAVBUOY_CARGO;
@@ -306,7 +306,7 @@ void radar_plot_object( object *objp )
 	if (objp->type == OBJ_SHIP)
 	{
 		// ships specifically hidden from sensors
-		if (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS)
+		if (Ships[objp->instance].flags[Ship::Ship_Flags::Hidden_from_sensors])
 			b->flags |= BLIP_DRAW_DISTORTED;
 
 		// determine if its AWACS distorted
@@ -326,9 +326,9 @@ void radar_plot_object( object *objp )
 
 	// don't distort the sensor blips if the player has primitive sensors and the nebula effect
 	// is not active
-	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
+	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 	{
-		if (!(The_mission.flags & MISSION_FLAG_FULLNEB))
+		if (!(The_mission.flags[Mission::Mission_Flags::Fullneb]))
 			b->flags &= ~BLIP_DRAW_DISTORTED;
 	}
 
@@ -499,7 +499,7 @@ RadarVisibility radar_is_visible( object *objp )
 {
 	Assert( objp != NULL );
 
-	if (objp->flags & OF_SHOULD_BE_DEAD)
+	if (objp->flags[Object::Object_Flags::Should_be_dead])
 	{
 		return NOT_VISIBLE;
 	}
@@ -534,11 +534,11 @@ RadarVisibility radar_is_visible( object *objp )
 	switch (objp->type)
 	{
 		case OBJ_SHIP:
-			if (Ships[objp->instance].flags2 & SF2_STEALTH)
+			if (Ships[objp->instance].flags[Ship::Ship_Flags::Stealth])
 				return NOT_VISIBLE;
 
 			// Ships that are warp in in are not visible on the radar
-			if (Ships[objp->instance].flags & SF_ARRIVING_STAGE_1)
+			if (Ships[objp->instance].flags[Ship::Ship_Flags::Arriving_stage_1])
 				return NOT_VISIBLE;
 
 			break;
@@ -598,7 +598,7 @@ RadarVisibility radar_is_visible( object *objp )
 	if (objp->type == OBJ_SHIP)
 	{
 		// ships specifically hidden from sensors
-		if (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS)
+		if (Ships[objp->instance].flags[Ship::Ship_Flags::Hidden_from_sensors])
 			return DISTORTED;
 
 		// determine if its AWACS distorted

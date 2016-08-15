@@ -173,7 +173,7 @@ int fhash_string_exists(const char *str)
 int fhash_get_hash_index(const char *str)
 {
 	int accum = 0;
-	int idx, str_len;
+	size_t idx, str_len;
 	int ret;
 
 	// add up the string
