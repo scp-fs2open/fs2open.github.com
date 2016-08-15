@@ -436,8 +436,8 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		obj_pair *old_pairs_ptr = Obj_pairs;
 
 		// determine where we need to update the "previous" ptrs to
-		int prev_free_mark = (pair_free_list.next - old_pairs_ptr);
-		int prev_used_mark = (pair_used_list.next - old_pairs_ptr);
+		int prev_free_mark = (int)(pair_free_list.next - old_pairs_ptr);
+		int prev_used_mark = (int)(pair_used_list.next - old_pairs_ptr);
 
 		Obj_pairs = (obj_pair*) vm_realloc( Obj_pairs, sizeof(obj_pair) * (Num_pairs_allocated + PAIRS_BUMP) );
 
@@ -460,7 +460,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 					if (Obj_pairs[i].next != NULL) {
 						// the "next" ptr will end up going backwards for used pairs so we have
 						// to allow for that with this craziness...
-						int next_mark = (Obj_pairs[i].next - old_pairs_ptr);
+						int next_mark = (int)(Obj_pairs[i].next - old_pairs_ptr);
 						Obj_pairs[i].next = &Obj_pairs[next_mark];
 					}
 
@@ -1227,15 +1227,15 @@ void obj_sort_and_collide()
 	SCP_vector<int> sort_list_z;
 
 	sort_list_y.clear();
-	obj_quicksort_colliders(&Collision_sort_list, 0, Collision_sort_list.size() - 1, 0);
+	obj_quicksort_colliders(&Collision_sort_list, 0, (int)(Collision_sort_list.size() - 1), 0);
 	obj_find_overlap_colliders(&sort_list_y, &Collision_sort_list, 0, false);
 
 	sort_list_z.clear();
-	obj_quicksort_colliders(&sort_list_y, 0, sort_list_y.size() - 1, 1);
+	obj_quicksort_colliders(&sort_list_y, 0, (int)(sort_list_y.size() - 1), 1);
 	obj_find_overlap_colliders(&sort_list_z, &sort_list_y, 1, false);
 
 	sort_list_y.clear();
-	obj_quicksort_colliders(&sort_list_z, 0, sort_list_z.size() - 1, 2);
+	obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	obj_find_overlap_colliders(&sort_list_y, &sort_list_z, 2, true);
 }
 
