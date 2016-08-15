@@ -66,6 +66,22 @@ ENDIF(EXISTS \"${CMAKE_CURRENT_BINARY_DIR}/${TARGET}/${FILE}\")
 	SET(${OUTVAR} "${CMAKE_COMMAND}" -P ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}/${NAME} PARENT_SCOPE)
 ENDFUNCTION(EP_CHECK_FILE_EXISTS)
 
+MACRO(COPY_FILE_TO_TARGET _target _file)
+	if(UNIX)
+		ADD_CUSTOM_COMMAND(
+			TARGET ${_target} POST_BUILD
+			COMMAND cp -a "${_file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+			COMMENT "copying '${_file}'..."
+		)
+	else()
+		ADD_CUSTOM_COMMAND(
+			TARGET ${_target} POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+			COMMENT "copying '${_file}'..."
+		)
+	endif()
+endmacro(COPY_FILE_TO_TARGET)
+
 MACRO(COPY_FILES_TO_TARGET _target)
 	if(UNIX)
 		ADD_CUSTOM_COMMAND(
@@ -76,19 +92,7 @@ MACRO(COPY_FILES_TO_TARGET _target)
 	endif()
 	
 	FOREACH(file IN LISTS TARGET_COPY_FILES)
-		if(UNIX)
-			ADD_CUSTOM_COMMAND(
-				TARGET ${_target} POST_BUILD
-				COMMAND cp -a "${file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
-				COMMENT "copying '${file}'..."
-			)
-		else()
-			ADD_CUSTOM_COMMAND(
-				TARGET ${_target} POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_if_different "${file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
-				COMMENT "copying '${file}'..."
-			)
-		endif()
+		COPY_FILE_TO_TARGET("${_target}" "${file}")
 	ENDFOREACH(file)
 ENDMACRO(COPY_FILES_TO_TARGET)
 
