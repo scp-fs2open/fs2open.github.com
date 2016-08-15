@@ -12,6 +12,10 @@ add_file_folder(root ""
     test_stubs.cpp
 )
 
+add_file_folder(graphics "Globalincs"
+    globalincs/test_flagset.cpp
+)
+
 add_file_folder(graphics "Graphics"
     graphics/test_font.cpp
 )
