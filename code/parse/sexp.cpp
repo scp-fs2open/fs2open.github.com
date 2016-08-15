@@ -9330,8 +9330,8 @@ void sexp_change_iff(int n)
 	new_team = iff_lookup(CTEXT(n));
 	n = CDR(n);
 
-	multi_start_callback();
-	multi_send_int(new_team);
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_int(new_team);
 
 	for ( ; n != -1; n = CDR(n) )
 	{
@@ -9339,12 +9339,12 @@ void sexp_change_iff(int n)
 		object_ship_wing_point_team oswpt;
 		sexp_get_object_ship_wing_point_team(&oswpt, name);
 
-		multi_send_string(name);
+		Current_sexp_network_packet.send_string(name);
 
 		sexp_change_iff_helper(oswpt, new_team);
 	}
 
-	multi_end_callback();
+	Current_sexp_network_packet.end_callback();
 }
 
 void multi_sexp_change_iff()
@@ -9352,8 +9352,8 @@ void multi_sexp_change_iff()
 	int new_team;
 	char *name = nullptr;
 
-	multi_get_int(new_team);
-	while (multi_get_string(name)) {
+	Current_sexp_network_packet.get_int(new_team);
+	while (Current_sexp_network_packet.get_string(name)) {
 
 		object_ship_wing_point_team oswpt;
 		sexp_get_object_ship_wing_point_team(&oswpt, name);
@@ -9457,10 +9457,10 @@ void sexp_change_iff_color(int n)
 	}
 	alternate_iff_color = iff_init_color(rgb[0], rgb[1], rgb[2]);
 
-	multi_start_callback();
-	multi_send_int(observer_team);
-	multi_send_int(observed_team);
-	multi_send_int(alternate_iff_color);
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_int(observer_team);
+	Current_sexp_network_packet.send_int(observed_team);
+	Current_sexp_network_packet.send_int(alternate_iff_color);
 
 	// Rest of the nodes
 	n = CDR(n);
@@ -9470,12 +9470,12 @@ void sexp_change_iff_color(int n)
 		object_ship_wing_point_team oswpt;
 		sexp_get_object_ship_wing_point_team(&oswpt, name);
 
-		multi_send_string(name);
+		Current_sexp_network_packet.send_string(name);
 
 		sexp_change_iff_color_helper(oswpt, observer_team, observed_team, alternate_iff_color);
 	}
 
-	multi_end_callback(); 
+	Current_sexp_network_packet.end_callback(); 
 }
 
 void multi_sexp_change_iff_color()
@@ -9483,11 +9483,11 @@ void multi_sexp_change_iff_color()
 	int observer_team, observed_team, alternate_iff_color;
 	char *name = nullptr;
 
-	multi_get_int(observer_team);
-	multi_get_int(observed_team);
-	multi_get_int(alternate_iff_color);
+	Current_sexp_network_packet.get_int(observer_team);
+	Current_sexp_network_packet.get_int(observed_team);
+	Current_sexp_network_packet.get_int(alternate_iff_color);
 
-	while (multi_get_string(name))
+	while (Current_sexp_network_packet.get_string(name))
 	{ 
 		object_ship_wing_point_team oswpt;
 		sexp_get_object_ship_wing_point_team(&oswpt, name);
@@ -9653,9 +9653,9 @@ void sexp_change_ai_class(int n)
 	if (ship_num < 0)
 		return;
 
-	multi_start_callback();
-	multi_send_ship(ship_num);
-	multi_send_int(new_ai_class);
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_ship(ship_num);
+	Current_sexp_network_packet.send_int(new_ai_class);
 
 	// subsys?
 	if (n != -1)
@@ -9666,7 +9666,7 @@ void sexp_change_ai_class(int n)
 			subsystem = CTEXT(n);
 			ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
 
-			multi_send_string(subsystem);
+			Current_sexp_network_packet.send_string(subsystem);
 		}
 	}
 	// just the one ship
@@ -9675,7 +9675,7 @@ void sexp_change_ai_class(int n)
 		ship_set_new_ai_class(ship_num, new_ai_class);
 	}
 
-	multi_end_callback();
+	Current_sexp_network_packet.end_callback();
 }
 
 void multi_sexp_change_ai_class()
@@ -9683,15 +9683,15 @@ void multi_sexp_change_ai_class()
 	int ship_num, new_ai_class;
 	char *subsystem = NULL;
 
-	multi_get_ship(ship_num); 
-	multi_get_int(new_ai_class);
+	Current_sexp_network_packet.get_ship(ship_num); 
+	Current_sexp_network_packet.get_int(new_ai_class);
 
 	// subsystem?
-	if (multi_get_string(subsystem)) {
+	if (Current_sexp_network_packet.get_string(subsystem)) {
 		ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
 
 		// deal with any other subsystems
-		while (multi_get_string(subsystem)) {
+		while (Current_sexp_network_packet.get_string(subsystem)) {
 			ship_subsystem_set_new_ai_class(ship_num, subsystem, new_ai_class);
 		}		 
 	}
@@ -15849,12 +15849,12 @@ void sexp_set_primary_ammo (int node)
 	}
 
 	// do the multiplayer callback here
-	multi_start_callback();
-	multi_send_ship(sindex);
-	multi_send_int(requested_bank);
-	multi_send_int(requested_weapons);
-	multi_send_int(rearm_limit);
-	multi_end_callback(); 
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_ship(sindex);
+	Current_sexp_network_packet.send_int(requested_bank);
+	Current_sexp_network_packet.send_int(requested_weapons);
+	Current_sexp_network_packet.send_int(rearm_limit);
+	Current_sexp_network_packet.end_callback(); 
 }
 
 void multi_sexp_set_primary_ammo()
@@ -15864,10 +15864,10 @@ void multi_sexp_set_primary_ammo()
 	int requested_weapons;
 	int rearm_limit;
 
-	multi_get_ship(sindex);
-	multi_get_int(requested_bank);
-	multi_get_int(requested_weapons);
-	multi_get_int(rearm_limit);
+	Current_sexp_network_packet.get_ship(sindex);
+	Current_sexp_network_packet.get_int(requested_bank);
+	Current_sexp_network_packet.get_int(requested_weapons);
+	Current_sexp_network_packet.get_int(rearm_limit);
 
 	set_primary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
 }
@@ -16012,12 +16012,12 @@ void sexp_set_secondary_ammo (int node)
 	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
 
 	// do the multiplayer callback here
-	multi_start_callback();
-	multi_send_ship(sindex);
-	multi_send_int(requested_bank);
-	multi_send_int(requested_weapons);
-	multi_send_int(rearm_limit);
-	multi_end_callback();
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_ship(sindex);
+	Current_sexp_network_packet.send_int(requested_bank);
+	Current_sexp_network_packet.send_int(requested_weapons);
+	Current_sexp_network_packet.send_int(rearm_limit);
+	Current_sexp_network_packet.end_callback();
 }
 
 void multi_sexp_set_secondary_ammo()
@@ -16027,10 +16027,10 @@ void multi_sexp_set_secondary_ammo()
 	int requested_weapons;
 	int rearm_limit;
 
-	multi_get_ship(sindex);
-	multi_get_int(requested_bank);
-	multi_get_int(requested_weapons);
-	multi_get_int(rearm_limit);
+	Current_sexp_network_packet.get_ship(sindex);
+	Current_sexp_network_packet.get_int(requested_bank);
+	Current_sexp_network_packet.get_int(requested_weapons);
+	Current_sexp_network_packet.get_int(rearm_limit);
 
 	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
 }
@@ -16127,11 +16127,11 @@ void sexp_set_weapon(int node, bool primary)
 		shipp->weapons.secondary_bank_weapons[requested_bank] = windex;
 	}
 
-	multi_start_callback();
-	multi_send_ship(sindex);
-	multi_send_bool(primary);
-	multi_send_int(requested_bank);
-	multi_send_int(windex);
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_ship(sindex);
+	Current_sexp_network_packet.send_bool(primary);
+	Current_sexp_network_packet.send_int(requested_bank);
+	Current_sexp_network_packet.send_int(windex);
 
 	// Check to see if the optional ammo and rearm_limit settings were supplied
 	node = CDR(node);
@@ -16169,9 +16169,9 @@ void sexp_set_weapon(int node, bool primary)
 	}
 
 	// Now pass this info on to clients.
-	multi_send_int(requested_ammo);
-	multi_send_int(rearm_limit);
-	multi_end_callback();
+	Current_sexp_network_packet.send_int(requested_ammo);
+	Current_sexp_network_packet.send_int(rearm_limit);
+	Current_sexp_network_packet.end_callback();
 }
 
 void multi_sexp_set_weapon()
@@ -16184,12 +16184,12 @@ void multi_sexp_set_weapon()
 	int rearm_limit;
 	bool primary;
 
-	multi_get_ship(sindex);
-	multi_get_bool(primary);
-	multi_get_int(requested_bank);
-	multi_get_int(windex);
-	multi_get_int(requested_ammo);
-	multi_get_int(rearm_limit);
+	Current_sexp_network_packet.get_ship(sindex);
+	Current_sexp_network_packet.get_bool(primary);
+	Current_sexp_network_packet.get_int(requested_bank);
+	Current_sexp_network_packet.get_int(windex);
+	Current_sexp_network_packet.get_int(requested_ammo);
+	Current_sexp_network_packet.get_int(rearm_limit);
 
 	shipp = &Ships[sindex];
 

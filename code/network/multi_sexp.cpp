@@ -460,7 +460,7 @@ bool sexp_network_packet::get_ship(int & value)
         return true;
     }
 
-    Warning(LOCATION, "multi_get_ship called for object %d even though it is not a ship", objp->instance);
+    Warning(LOCATION, "Current_sexp_network_packet.get_ship called for object %d even though it is not a ship", objp->instance);
     return false;
 }
 
