@@ -89,8 +89,6 @@ void opengl_post_pass_tonemap()
 	GL_state.Texture.Enable(Scene_color_texture);
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
-
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
 }
 
 bool opengl_post_pass_bloom()
@@ -299,6 +297,67 @@ extern GLuint Scene_normal_texture;
 extern GLuint Scene_specular_texture;
 extern bool stars_sun_has_glare(int index);
 extern float Sun_spot;
+void opengl_post_lightshafts()
+{
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, 0));
+
+	float x, y;
+
+	// should we even be here?
+	if ( !Game_subspace_effect && ls_on && !ls_force_off ) {
+		int n_lights = light_get_global_count();
+
+		for ( int idx = 0; idx<n_lights; idx++ ) {
+			vec3d light_dir;
+			vec3d local_light_dir;
+			light_get_global_dir(&light_dir, idx);
+			vm_vec_rotate(&local_light_dir, &light_dir, &Eye_matrix);
+
+			if ( !stars_sun_has_glare(idx) ) {
+				continue;
+			}
+
+			float dot;
+			if ( (dot = vm_vec_dot(&light_dir, &Eye_matrix.vec.fvec)) > 0.7f ) {
+
+				x = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI*1.5f + 0.5f; //cant get the coordinates right but this works for the limited glare fov
+				y = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI*1.5f*gr_screen.clip_aspect + 0.5f;
+				GL_state.Uniform.setUniform2f("sun_pos", x, y);
+				GL_state.Uniform.setUniformi("scene", 0);
+				GL_state.Uniform.setUniformi("cockpit", 1);
+				GL_state.Uniform.setUniformf("density", ls_density);
+				GL_state.Uniform.setUniformf("falloff", ls_falloff);
+				GL_state.Uniform.setUniformf("weight", ls_weight);
+				GL_state.Uniform.setUniformf("intensity", Sun_spot * ls_intensity);
+				GL_state.Uniform.setUniformf("cp_intensity", Sun_spot * ls_cpintensity);
+
+				GL_state.Texture.SetActiveUnit(0);
+				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+				GL_state.Texture.Enable(Scene_depth_texture);
+				GL_state.Texture.SetActiveUnit(1);
+				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+				GL_state.Texture.Enable(Cockpit_depth_texture);
+				GL_state.Color(255, 255, 255, 255);
+				GL_state.Blend(GL_TRUE);
+				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
+
+				opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+
+				GL_state.Blend(GL_FALSE);
+				break;
+			}
+		}
+	}
+
+	if ( zbuffer_saved ) {
+		zbuffer_saved = false;
+		gr_zbuffer_set(GR_ZBUFF_FULL);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		gr_zbuffer_set(GR_ZBUFF_NONE);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+	}
+}
+
 void gr_opengl_post_process_end()
 {
 	// state switch just the once (for bloom pass and final render-to-screen)
@@ -310,65 +369,9 @@ void gr_opengl_post_process_end()
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 	
-	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, 0) );
-	float x,y;
-	// should we even be here?
-	if (!Game_subspace_effect && ls_on && !ls_force_off)
-	{	
-		int n_lights = light_get_global_count();
-		
-		for(int idx=0; idx<n_lights; idx++)
-		{
-			vec3d light_dir;
-			vec3d local_light_dir;
-			light_get_global_dir(&light_dir, idx);
-			vm_vec_rotate(&local_light_dir, &light_dir, &Eye_matrix);
-			if (!stars_sun_has_glare(idx))
-				continue;
-			float dot;
-			if((dot=vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )) > 0.7f)
-			{
-				
-				x = asinf(vm_vec_dot( &light_dir, &Eye_matrix.vec.rvec ))/PI*1.5f+0.5f; //cant get the coordinates right but this works for the limited glare fov
-				y = asinf(vm_vec_dot( &light_dir, &Eye_matrix.vec.uvec ))/PI*1.5f*gr_screen.clip_aspect+0.5f;
-				GL_state.Uniform.setUniform2f( "sun_pos", x, y);
-				GL_state.Uniform.setUniformi( "scene", 0);
-				GL_state.Uniform.setUniformi( "cockpit", 1);
-				GL_state.Uniform.setUniformf( "density", ls_density);
-				GL_state.Uniform.setUniformf( "falloff", ls_falloff);
-				GL_state.Uniform.setUniformf( "weight", ls_weight);
-				GL_state.Uniform.setUniformf( "intensity", Sun_spot * ls_intensity);
-				GL_state.Uniform.setUniformf( "cp_intensity", Sun_spot * ls_cpintensity);
-
-				GL_state.Texture.SetActiveUnit(0);
-				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-				GL_state.Texture.Enable(Scene_depth_texture);
-				GL_state.Texture.SetActiveUnit(1);
-				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-				GL_state.Texture.Enable(Cockpit_depth_texture);
-				GL_state.Color(255, 255, 255, 255);
-				GL_state.Blend(GL_TRUE);
-				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
-				
-				opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
-
-				GL_state.Blend(GL_FALSE);
-				break;
-			}
-		}
-	}
-	if(zbuffer_saved)
-	{
-		zbuffer_saved = false;
-		gr_zbuffer_set(GR_ZBUFF_FULL);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		gr_zbuffer_set(GR_ZBUFF_NONE);
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
-	}
-
 	// do bloom, hopefully ;)
 	bool bloomed = opengl_post_pass_bloom();
-	
+
 	// do tone mapping
 	opengl_post_pass_tonemap();
 
@@ -376,6 +379,9 @@ void gr_opengl_post_process_end()
     if (Cmdline_fxaa && !fxaa_unavailable && !GL_rendering_to_texture) {
         opengl_post_pass_fxaa();
     }
+
+	// render lightshafts
+	opengl_post_lightshafts();
 
 	// now write to the on-screen buffer
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());
