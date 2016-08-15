@@ -43,7 +43,7 @@ struct ViewSettings
 	bool show_compass;
 	bool show_coordinates;
 	bool show_distances;
-	bool show_grid;
+	bool show_grid = true;
 	bool show_grid_aa;
 	bool show_grid_doubleFine;
 	bool show_grid_positions;
@@ -56,6 +56,7 @@ struct ViewSettings
 	bool show_shipInfo;
 
 	bool show_asteroids;
+	bool show_stars = true;
 };
 
 /**

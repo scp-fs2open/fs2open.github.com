@@ -58,7 +58,14 @@ void glcViewport::OnPaint(wxPaintEvent& event) {
 	wxfred::render_frame(this);
 }
 
-void glcViewport::OnSize(wxSizeEvent& event) {}
+void glcViewport::OnSize(wxSizeEvent& event) {
+	int w, h;
+
+	GetClientSize(&w, &h);
+	wxfred::render_resize(this, w, h);
+
+	Refresh();
+}
 
 void glcViewport::OnEraseBackground(wxEraseEvent& event) {}
 

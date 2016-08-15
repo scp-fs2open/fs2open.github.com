@@ -82,7 +82,7 @@ frmFRED2::frmFRED2( const wxChar *title, int xpos, int ypos, int width, int heig
 	// The Viewport
 	wxBoxSizer* bSizerView = new wxBoxSizer( wxVERTICAL );
 	viewport_p = new glcViewport(this, wxID_ANY);
-	bSizerView->Add(viewport_p);
+	bSizerView->Add(viewport_p, 1, wxEXPAND);
 	this->SetSizer( bSizerView );
 	this->Layout();
 
@@ -128,6 +128,7 @@ void frmFRED2::OnClose( wxCloseEvent &event )
 void frmFRED2::OnSize( wxSizeEvent &event )
 {
 // TODO: Implement OnSize
+	Layout();
 }
 
 void frmFRED2::OnFileNew( wxCommandEvent &event )

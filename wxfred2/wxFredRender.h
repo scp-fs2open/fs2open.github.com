@@ -26,6 +26,12 @@ void render_init(glcViewport *win);
  */
 void render_frame(glcViewport *win);
 
+
+/**
+ * @brief Resizes the draw area/canvas
+ */
+void render_resize(glcViewport *win, int w, int h);
+
 };	// namespace wxfred
 
 #endif // _WXFREDRENDER_H
