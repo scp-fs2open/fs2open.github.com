@@ -27,6 +27,8 @@ void multi_send_bool(bool value);
 void multi_send_float(float value);
 void multi_send_short(short value);
 void multi_send_ushort(ushort value);
+template<typename T>
+void multi_send_flag(T value);
 
 void sexp_packet_received(ubyte *received_packet, int num_ubytes);
 int multi_sexp_get_next_operator(); 
@@ -48,3 +50,5 @@ bool multi_get_bool(bool &value);
 bool multi_get_float(float &value);
 bool multi_get_short(short &value);
 bool multi_get_ushort(ushort &value);
+template <typename T>
+bool multi_get_flag(T &value);

@@ -12831,7 +12831,7 @@ void multi_sexp_deal_with_ship_flag()
  *
  * @note this function has a similar purpose to sexp_deal_with_ship_flag; make sure you check/update both
  */
-void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, int object_flag, int ship_flag, int parse_obj_flag, int ai_flag, int ai_flag2, bool set_flag)
+void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, int ai_flag, int ai_flag2, bool set_flag)
 {
     int i;
     flagset<Object::Object_Flags> object_flag_orig;
@@ -12899,17 +12899,17 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			object_flag_orig = oswpt.objp->flags;
 
 			// see if we have an object flag to set
-			if (object_flag != (int)Object::Object_Flags::NUM_VALUES)
+			if (object_flag != Object::Object_Flags::NUM_VALUES)
 			{
                 auto tmp_flagset = oswpt.objp->flags;
 				// set or clear?
-                tmp_flagset.set((Object::Object_Flags)object_flag, set_flag);
+                tmp_flagset.set(object_flag, set_flag);
 					
                 obj_set_flags(oswpt.objp, tmp_flagset);
 			}
 
 			// handle ETS when modifying shields
-			if (object_flag == (int)Object::Object_Flags::No_shields) {
+			if (object_flag == Object::Object_Flags::No_shields) {
 				if (set_flag) {
 					zero_one_ets(&oswpt.shipp->shield_recharge_index, &oswpt.shipp->weapon_recharge_index, &oswpt.shipp->engine_recharge_index);
 				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
@@ -12918,14 +12918,14 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			}
 
 			// see if we have a ship flag to set
-			if (ship_flag != (int)Ship::Ship_Flags::NUM_VALUES)
+			if (ship_flag != Ship::Ship_Flags::NUM_VALUES)
 			{
 				// set or clear?
-                    oswpt.shipp->flags.set((Ship::Ship_Flags)ship_flag, set_flag);
+                    oswpt.shipp->flags.set(ship_flag, set_flag);
 			}
             
 			// the lock afterburner SEXP also needs to set a physics flag
-			if (ship_flag == (int)Ship::Ship_Flags::Afterburner_locked) {
+			if (ship_flag == Ship::Ship_Flags::Afterburner_locked) {
 				if (set_flag) {
 					afterburners_stop(oswpt.objp, 1);
 				}
@@ -12955,16 +12955,16 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			}
 
 			// see if we have a p_object flag to set
-			if (parse_obj_flag && oswpt.p_objp != NULL)
+			if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES && oswpt.p_objp != NULL)
 			{
-                oswpt.p_objp->flags.set((Mission::Parse_Object_Flags)parse_obj_flag, set_flag);
+                oswpt.p_objp->flags.set(parse_obj_flag, set_flag);
 			}
 			break;
 	}
 
 }
 
-void alter_flag_for_all_ships(bool future_ships, int object_flag, int ship_flag, int parse_obj_flag, int ai_flag, int ai_flag2, bool set_flag)
+void alter_flag_for_all_ships(bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, int ai_flag, int ai_flag2, bool set_flag)
 {
 	ship_obj	*so;
 	p_object	*p_objp;
@@ -13116,9 +13116,9 @@ void sexp_alter_ship_flag(int node)
 
 	// start the multiplayer packet
 	multi_start_callback();
-	multi_send_int((int)object_flag);
-	multi_send_int((int)ship_flags);
-	multi_send_int((int)parse_obj_flag);
+	multi_send_flag(object_flag);
+	multi_send_flag(ship_flags);
+	multi_send_flag(parse_obj_flag);
 	multi_send_int(ai_flag);
 	multi_send_bool(set_flag);
 	multi_send_bool(future_ships);
@@ -13130,7 +13130,7 @@ void sexp_alter_ship_flag(int node)
 		// send a message to the clients saying there were no more arguments
 		multi_send_bool(false);
 
-		alter_flag_for_all_ships(future_ships, (int)object_flag, (int)ship_flags, (int)parse_obj_flag, ai_flag, ai_flag2, set_flag);
+		alter_flag_for_all_ships(future_ships, object_flag, ship_flags, parse_obj_flag, ai_flag, ai_flag2, set_flag);
 	}
 
 
@@ -13147,7 +13147,7 @@ void sexp_alter_ship_flag(int node)
 				continue; 
 			}
 
-			sexp_alter_ship_flag_helper(oswpt, future_ships, (int)object_flag, (int)ship_flags, (int)parse_obj_flag, ai_flag, ai_flag2, set_flag);
+			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flags, parse_obj_flag, ai_flag, ai_flag2, set_flag);
 			node = CDR(node);
 
 			multi_send_int(oswpt.type);
@@ -13180,9 +13180,9 @@ void sexp_alter_ship_flag(int node)
 void multi_sexp_alter_ship_flag() 
 {
 	int i;
-	int object_flag = 0;
-	int ship_flag = 0; 
-	int parse_obj_flag = 0;
+	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
+	Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES; 
+	Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
 	bool set_flag = false;
 	bool future_ships = true; 
 	bool process_data = false;
@@ -13192,9 +13192,9 @@ void multi_sexp_alter_ship_flag()
 	object_ship_wing_point_team oswpt;
 	ushort wing_sig;
 
-	multi_get_int(object_flag); 
-	multi_get_int(ship_flag); 
-	multi_get_int(parse_obj_flag); 
+	multi_get_flag(object_flag); 
+    multi_get_flag(ship_flag);
+    multi_get_flag(parse_obj_flag);
 	multi_get_int(ai_flag); 
 	multi_get_bool(set_flag);
 	multi_get_bool(future_ships);
