@@ -23,7 +23,7 @@ EVT_MOUSE_EVENTS(glcViewport::OnMouse)
 END_EVENT_TABLE()
 
 glcViewport::glcViewport(wxWindow *parent, wxWindowID id)
-: wxWindow(parent, id, wxDefaultPosition, wxDefaultSize, wxFULL_REPAINT_ON_RESIZE) {
+: wxWindow(parent, id, wxDefaultPosition, wxDefaultSize) {
 	vec3d f, u, r;
 
 	// Init position
