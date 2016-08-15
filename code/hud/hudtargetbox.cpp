@@ -569,10 +569,6 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		render_info.set_object_number(OBJ_INDEX(target_objp));
 
 		switch (Targetbox_wire) {
-			case 0:
-				flags |= MR_NO_LIGHTING;
-
-				break;
 			case 1:
 				if (ship_is_tagged(target_objp))
 					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
@@ -726,10 +722,6 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		model_render_params render_info;
 
 		switch (Targetbox_wire) {
-			case 0:
-				flags |= MR_NO_LIGHTING;
-
-				break;
 			case 1:
 				render_info.set_color(255, 255, 255);
 
@@ -890,10 +882,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		//                 renderTargetShip(). To keep the codes similar please update both if and when needed
 		if (missile_view == FALSE) {
 			switch (Targetbox_wire) {
-				case 0:
-					flags |= MR_NO_LIGHTING;
-
-					break;
 				case 1:
 					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 
@@ -913,10 +901,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			render_info.set_object_number(OBJ_INDEX(viewed_obj));
 
 			switch (Targetbox_wire) {
-				case 0:
-					flags |= MR_NO_LIGHTING;
-
-					break;
 				case 1:
 					if (ship_is_tagged(viewed_obj))
 						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
@@ -1091,10 +1075,6 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		model_render_params render_info;
 
 		switch (Targetbox_wire) {
-			case 0:
-				flags |= MR_NO_LIGHTING;
-
-				break;
 			case 1:
 				if (time_to_impact>=0)
 					render_info.set_color(255,255,255);
