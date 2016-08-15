@@ -270,23 +270,6 @@ void multi_send_int(int value)
 	current_argument_count += sizeof(int); 
 }
 
-template<typename T>
-void multi_send_flag(T value)
-{
-    if (cannot_send_data()) {
-        return;
-    }
-
-    multi_sexp_ensure_space_remains(sizeof(int));
-
-    //Write INT into the Type buffer.
-    type[packet_size] = TYPE_INT;
-    //Write the int into the data buffer
-    ADD_INT(static_cast<int>(value));
-    //Increment the COUNT by 4 (i.e the size of an int).
-    current_argument_count += sizeof(int);
-}
-
 /**
 * Adds a ship's net sig to the SEXP packet.
 */
@@ -642,21 +625,6 @@ bool multi_get_int(int &value)
 	return true; 
 }
 
-template <typename T>
-bool multi_get_flag(T &value) 
-{
-    if (!Multi_sexp_bytes_left || !current_argument_count) {
-        return false;
-    }
-    int tmp = 0;
-    GET_INT(tmp);
-
-    value = static_cast<T>(tmp);
-
-    multi_reduce_counts(sizeof(int));
-
-    return true;
-}
 
 /**
 * Attempts to get an index for the Ships array based on the net sig it removes from the SEXP packet. Returns it as the value 

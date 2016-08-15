@@ -28,7 +28,21 @@ void multi_send_float(float value);
 void multi_send_short(short value);
 void multi_send_ushort(ushort value);
 template<typename T>
-void multi_send_flag(T value);
+void multi_send_flag(T value)
+{
+    if (cannot_send_data()) {
+        return;
+    }
+
+    multi_sexp_ensure_space_remains(sizeof(int));
+
+    //Write INT into the Type buffer.
+    type[packet_size] = TYPE_INT;
+    //Write the int into the data buffer
+    ADD_INT(static_cast<int>(value));
+    //Increment the COUNT by 4 (i.e the size of an int).
+    current_argument_count += sizeof(int);
+}
 
 void sexp_packet_received(ubyte *received_packet, int num_ubytes);
 int multi_sexp_get_next_operator(); 
@@ -51,4 +65,18 @@ bool multi_get_float(float &value);
 bool multi_get_short(short &value);
 bool multi_get_ushort(ushort &value);
 template <typename T>
-bool multi_get_flag(T &value);
+bool multi_get_flag(T &value)
+{
+    if (!Multi_sexp_bytes_left || !current_argument_count) {
+        return false;
+    }
+    int tmp = 0;
+    GET_INT(tmp);
+
+    value = static_cast<T>(tmp);
+
+    multi_reduce_counts(sizeof(int));
+
+    return true;
+}
+
