@@ -2347,7 +2347,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
                     {
                         if (it->flags[Ship::Info_Flags::Support])
                         {
-                            i = std::distance(Ship_info.cbegin(), it);
+                            i = (int)std::distance(Ship_info.cbegin(), it);
                             break;
                         }
                     }
@@ -3187,7 +3187,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 // Goober5000
 void get_unformatted_sexp_variable_name(char *unformatted, char *formatted_pre)
 {
-	int end_index;
 	char *formatted;
 
 	// Goober5000 - trim @ if needed
@@ -3197,7 +3196,7 @@ void get_unformatted_sexp_variable_name(char *unformatted, char *formatted_pre)
 		formatted = formatted_pre;
 
 	// get variable name (up to '['
-	end_index = strcspn(formatted, "[");
+	auto end_index = strcspn(formatted, "[");
 	Assert( (end_index != 0) && (end_index < TOKEN_LENGTH-1) );
 	strncpy(unformatted, formatted, end_index);
 	unformatted[end_index] = '\0';
@@ -3319,7 +3318,7 @@ int get_sexp()
 
 		// Sexp string
 		else if (*Mp == '\"') {
-			int len = strcspn(Mp + 1, "\"");
+			auto len = strcspn(Mp + 1, "\"");
 			// was closing quote not found?
 			if (*(Mp + 1 + len) != '\"') {
 				Error(LOCATION, "Unexpected end of quoted string embedded in sexp!");
@@ -3331,7 +3330,7 @@ int get_sexp()
 				char variable_token[2*TOKEN_LENGTH+2];	// variable_token[contents_token]
 
 				// reduce length by 1 for end \"
-				int length = len - 1;
+				auto length = len - 1;
 				if (length >= 2*TOKEN_LENGTH+2) {
 					Error(LOCATION, "Variable token %s is too long. Needs to be %d characters or shorter.", Mp, 2*TOKEN_LENGTH+2 - 1);
 					return -1;
@@ -3833,7 +3832,8 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode)
 {
 	SCP_string buf;
-	int node, old_length = accumulator.length();
+	int node;
+	auto old_length = accumulator.length();
 
 	accumulator += "( ";
 	node = cur_node;
@@ -6270,7 +6270,6 @@ int sexp_directive_value(int n)
 
 int sexp_determine_team(char *subj)
 {
-	int len;
 	char team_name[NAME_LENGTH];
 
 	// quick check
@@ -6278,7 +6277,7 @@ int sexp_determine_team(char *subj)
 		return -1;
 
 	// grab IFF (rest of string except for closing angle bracket)
-	len = strlen(subj + 5) - 1;
+	auto len = strlen(subj + 5) - 1;
 	strncpy(team_name, subj + 5, len);
 	team_name[len] = '\0';
 
@@ -13445,7 +13444,7 @@ void sexp_set_mission_mood (int node)
 	mood = CTEXT(node);
 	for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
 		if (!strcmp(iter->c_str(), mood)) {
-			Current_mission_mood = iter - Builtin_moods.begin();
+			Current_mission_mood = (int)std::distance(Builtin_moods.begin(), iter);
 			return;
 		}
 	}
@@ -13796,15 +13795,9 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 		return SEXP_FALSE;
 	}
 
-	uint64_t tempDelay = eval_num(CDR(n));
-
+	delay = i2f(eval_num(CDR(n)));
 	if (use_msecs) {
-		tempDelay = tempDelay << 16;
-		tempDelay = tempDelay / 1000;
-
-		delay = (fix) tempDelay;
-	} else {
-		delay = i2f(tempDelay);
+		delay = delay / 1000;
 	}
 
 	for (i = 0; i < Num_mission_events; i++ ) {
@@ -17742,7 +17735,7 @@ void sexp_turret_set_target_priorities(int node)
 		for (i = 0; i < 32; i++) {
 			turret->target_priority[i] = -1;
 		}
-		int num_groups = Ai_tp_list.size();
+		int num_groups = (int)Ai_tp_list.size();
 		// set the target priorities
 		while(node != -1){
 			if(turret->num_target_priorities < 32){
@@ -20188,7 +20181,7 @@ void sexp_string_concatenate(int n)
 // Goober5000
 int sexp_string_get_length(int node)
 {
-	return strlen(CTEXT(node));
+	return (int)strlen(CTEXT(node));
 }
 
 // Goober5000
@@ -20223,7 +20216,7 @@ void sexp_string_get_substring(int node)
 		return;
 	}
 
-	int parent_len = strlen(parent);
+	int parent_len = (int)strlen(parent);
 
 	// sanity
 	if (pos >= parent_len)
@@ -20278,8 +20271,8 @@ void sexp_string_set_substring(int node)
 		return;
 	}
 
-	int parent_len = strlen(parent);
-	int new_len = strlen(new_substring);
+	int parent_len = (int)strlen(parent);
+	int new_len = (int)strlen(new_substring);
 
 	// sanity
 	if (pos >= parent_len)
@@ -22309,7 +22302,7 @@ void sexp_change_team_color(int n) {
 	multi_start_callback();
 	multi_send_string(new_color);
 	multi_send_int(fade_time);
-	multi_send_int(shippointers.size());
+	multi_send_int((int)shippointers.size());
 
 	for (SCP_vector<ship*>::iterator shipp = shippointers.begin(); shipp != shippointers.end(); ++shipp) {
 		ship* shp = *shipp;
@@ -28208,12 +28201,11 @@ int query_referenced_in_sexp(int mode, char *name, int *node)
 int verify_vector(char *text)
 {
 	char *str;
-	int len = 0;
 
 	if (text == NULL)
 		return -1;
 
-	len = strlen(text);
+	auto len = strlen(text);
 	if (text[0] != '(' || text[len - 1] != ')'){
 		return -1;
 	}
@@ -28735,7 +28727,7 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 		sexp_replace_variable_names_with_values(temp_text);
 
 		// copy to original buffer
-		int len = temp_text.copy(Sexp_variables[index].text, TOKEN_LENGTH);
+		auto len = temp_text.copy(Sexp_variables[index].text, TOKEN_LENGTH);
 		text[len] = 0;
 	}
 	else

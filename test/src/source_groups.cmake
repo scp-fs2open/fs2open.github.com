@@ -20,6 +20,10 @@ add_file_folder(graphics "Graphics"
     graphics/test_font.cpp
 )
 
+add_file_folder(graphics "Parse"
+    parse/test_parselo.cpp
+)
+
 add_file_folder(util "Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h

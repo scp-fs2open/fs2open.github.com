@@ -206,7 +206,7 @@ namespace
 			NULL,					// DWORD reserved
 			REG_SZ,					// null terminated string
 			(CONST BYTE *)value,	// value to set
-			strlen(value) + 1);	// How many bytes to set
+			(DWORD)(strlen(value) + 1));	// How many bytes to set
 
 		if (lResult != ERROR_SUCCESS) {
 			goto Cleanup;
@@ -424,7 +424,7 @@ static char tmp_string_data[1024];
 static char *read_line_from_file(FILE *fp)
 {
 	char *buf, *buf_start;
-	int buflen, len, eol;
+	int buflen, eol;
 
 	buflen = 80;
 	buf = (char *)vm_malloc(buflen);
@@ -447,7 +447,7 @@ static char *read_line_from_file(FILE *fp)
 			}
 		}
 
-		len = strlen(buf_start);
+		auto len = strlen(buf_start);
 
 		if (buf_start[len - 1] == '\n') {
 			buf_start[len - 1] = 0;
@@ -469,7 +469,6 @@ static char *read_line_from_file(FILE *fp)
 static char *trim_string(char *str)
 {
 	char *ptr;
-	int len;
 
 	if (str == NULL)
 		return NULL;
@@ -483,7 +482,7 @@ static char *trim_string(char *str)
 		*ptr = 0;
 
 	ptr = str;
-	len = strlen(str);
+	auto len = strlen(str);
 	if (len > 0) {
 		ptr += len - 1;
 	}
