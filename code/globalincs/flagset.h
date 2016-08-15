@@ -141,7 +141,7 @@ struct flag_combinator {
 	}
 
 	bool check_flagset(const flagset<TEnum>& flagset) const {
-		return flagset[_value] && _otherValues.check_flagset(flagset);
+		return flagset[_value] || _otherValues.check_flagset(flagset);
 	}
  protected:
 	flag_combinator<TEnum, SIZE - 1> _otherValues;
@@ -159,7 +159,7 @@ struct flag_combinator<TEnum, 2> {
 	}
 
 	bool check_flagset(const flagset <TEnum>& flagset) const {
-		return flagset[left] && flagset[right];
+		return flagset[left] || flagset[right];
 	}
 };
 
