@@ -1031,6 +1031,7 @@ void mission_maybe_play_directive_success_sound()
 	}
 }
 
+
 void mission_eval_goals()
 {
 	int i, result;
@@ -1085,7 +1086,7 @@ void mission_eval_goals()
 
 	// send and remaining sexp data to the clients
 	if (MULTIPLAYER_MASTER) {
-		multi_sexp_flush_packet();
+		Current_sexp_network_packet.sexp_flush_packet();
 	}
 
 	if (The_mission.game_type & MISSION_TYPE_TRAINING){
