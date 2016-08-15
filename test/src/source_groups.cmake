@@ -3,7 +3,7 @@ set(source_files)
 
 macro(add_file_folder VAR_NAME FOLDER_NAME)
     set(file_${VAR_NAME} ${ARGN})
-    source_group("${FOLDER_NAME}" FILES file_${VAR_NAME})
+    source_group("${FOLDER_NAME}" FILES ${file_${VAR_NAME}})
     set(source_files ${source_files} ${file_${VAR_NAME}})
 endmacro(add_file_folder)
 
