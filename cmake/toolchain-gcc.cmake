@@ -5,7 +5,8 @@ include(util)
 
 MESSAGE(STATUS "Doing configuration specific to gcc...")
 
-option(GCC_ENABLE_LEAK_CHECK "Enable the -fsanitize=leak" OFF)
+option(GCC_ENABLE_LEAK_CHECK "Enable -fsanitize=leak" OFF)
+option(GCC_ENABLE_ADDRESS_SANITIZER "Enable -fsanitize=address" OFF)
 
 unset(COMPILER_FLAGS)
 if(DEFINED ENV{CXXFLAGS})
@@ -25,6 +26,15 @@ if ("${CMAKE_GENERATOR}" STREQUAL "Ninja")
 
 	if(SUPPORTS_DIAGNOSTIC_COLOR)
 		set(COMPILER_FLAGS "${COMPILER_FLAGS} -fdiagnostics-color")
+	endif()
+endif()
+
+if(GCC_ENABLE_ADDRESS_SANITIZER)
+	set(CMAKE_REQUIRED_FLAGS "-fsanitize=address")
+	CHECK_C_COMPILER_FLAG("-fsanitize=address" SUPPORTS_SANITIZE_ADDRESS)
+
+	if (SUPPORTS_SANITIZE_ADDRESS)
+		set(COMPILER_FLAGS "${COMPILER_FLAGS} -fsanitize=address")
 	endif()
 endif()
 
@@ -63,6 +73,10 @@ if (GCC_ENABLE_LEAK_CHECK)
 	if (SUPPORTS_FSANITIZE_LEAK)
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=leak")
 	endif()
+endif()
+
+if (SUPPORTS_SANITIZE_ADDRESS)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 endif()
 
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
