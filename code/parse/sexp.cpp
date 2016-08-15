@@ -12955,7 +12955,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			}
 
 			// see if we have a p_object flag to set
-			if (parse_obj_flag && oswpt.p_objp != NULL)
+			if ((parse_obj_flag != (int)Mission::Parse_Object_Flags::NUM_VALUES) && (oswpt.p_objp != nullptr))
 			{
                 oswpt.p_objp->flags.set((Mission::Parse_Object_Flags)parse_obj_flag, set_flag);
 			}
