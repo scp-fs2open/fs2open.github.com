@@ -59,10 +59,17 @@ void glcViewport::OnPaint(wxPaintEvent& event) {
 }
 
 void glcViewport::OnSize(wxSizeEvent& event) {
-	int w, h;
+	auto canvas = FindWindowByName("GLCanvas", this);
+	// Should never happen, but just in case...
+	Assertion(canvas != nullptr, "glcViewport could not find its child canvas!");
 
-	GetClientSize(&w, &h);
-	wxfred::render_resize(this, w, h);
+	auto oldSize = canvas->GetSize();
+	auto newSize = event.GetSize();
+
+	if (oldSize != newSize) {
+		wxfred::render_resize(this, newSize.GetWidth(), newSize.GetHeight());
+		// Size is updated by wxWidgets
+	}
 
 	Refresh();
 }
