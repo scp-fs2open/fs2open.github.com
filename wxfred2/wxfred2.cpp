@@ -17,6 +17,7 @@
 #include <gamesnd/eventmusic.h>
 #include <globalincs/globals.h>
 #include <globalincs/linklist.h>
+#include <globalincs/mspdb_callstack.h>
 #include <globalincs/pstypes.h>
 #include <globalincs/safe_strings.h>
 #include <hud/hudsquadmsg.h>
@@ -32,6 +33,7 @@
 #include <nebula/neb.h>
 #include <object/object.h>
 #include <object/waypoint.h>
+#include <osapi/outwnd.h>
 #include <parse/parselo.h>
 #include <ship/ship.h>
 #include <ship/ship_flags.h>
@@ -63,6 +65,10 @@ extern matrix Nmodel_orient;
 extern int Nmodel_bitmap;
 
 IMPLEMENT_APP(wxFRED2)
+
+wxFRED2::~wxFRED2() {
+	SCP_mspdbcs_Cleanup();
+}
 
 bool wxFRED2::OnInit() {
 	//wxXmlResource::Get()->InitAllHandlers();
@@ -682,6 +688,13 @@ OIN_t wxFRED2::Create_waypoint(vec3d *pos, OIN_t oin) {
 }
 
 void wxFRED2::Init_FSO(void) {
+	SCP_mspdbcs_Initialise();
+
+#ifndef NDEBUG
+	// TODO Maybe use wxWidget's windows instead
+	outwnd_init();
+#endif
+
 	SDL_SetMainReady();
 	memory::init();
 
