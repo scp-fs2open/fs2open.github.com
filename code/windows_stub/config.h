@@ -29,6 +29,10 @@
 #define snprintf _snprintf
 #endif
 
+#ifndef filelength
+#define filelength _filelength
+#endif
+
 #define STUB_FUNCTION nprintf(( "Warning", "STUB: %s in "__FILE__" at line %d\n", __FUNCTION__, __LINE__))
 
 #else  // ! Win32
