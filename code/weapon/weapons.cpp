@@ -591,7 +591,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
                         Spawn_names = (char **)vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
                     }
 
-                    int	skip_length, name_length;
+                    size_t	skip_length, name_length;
 					std::unique_ptr<char[]> temp_string(new char[flag_text.size() + 1]);
 
                     strcpy(temp_string.get(), flag_text.c_str());
@@ -2413,7 +2413,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				//find a free slot in the pspew info array
 				for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {
 					if (wip->particle_spewers[s].particle_spew_type == PSPEW_NONE) {
-						spew_index = s;
+						spew_index = (int)s;
 						break;
 					}
 				}
@@ -4170,7 +4170,7 @@ void weapon_home(object *obj, int num, float frame_time)
 			aip = &Ai_info[Ships[hobjp->instance].ai_index];
 
 			if ((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance)) {
-				aip->nearest_locked_object = obj-Objects;
+				aip->nearest_locked_object = OBJ_INDEX(obj);
 				aip->nearest_locked_distance = dist;
 			}
 		}

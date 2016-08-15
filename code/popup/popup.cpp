@@ -953,7 +953,7 @@ void popup_maybe_assign_keypress(popup_info *pi, int n, char *str)
 	pi->keypress[n]=-1;
 	pi->shortcut_index[n]=-1;
 
-	len=strlen(str)+1;
+	len=(int)strlen(str)+1;
 
 	pi->button_text[n] = (char*)vm_malloc(len);
 	memset(pi->button_text[n], 0, len);

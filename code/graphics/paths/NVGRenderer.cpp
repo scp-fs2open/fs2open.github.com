@@ -1,7 +1,12 @@
 
+#include "globalincs/pstypes.h"
+
+#if SCP_COMPILER_IS_GNU
 // Disable warnings inside the NanoVG implementation
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
+#endif
+
 #include "graphics/paths/NVGRenderer.h"
 
 #include "graphics/gropengl.h"
@@ -14,7 +19,10 @@
 #define NANOVG_GL2_IMPLEMENTATION
 
 #include "nanovg/nanovg_gl.h"
+
+#if SCP_COMPILER_IS_GNU
 #pragma GCC diagnostic pop
+#endif
 
 namespace
 {

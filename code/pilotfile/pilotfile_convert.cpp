@@ -57,11 +57,11 @@ void pilotfile_convert::endSection()
 
 	if (section_size) {
 		// go back to section size in file and write proper value
-		cfseek(cfp, cur - section_size - sizeof(int), CF_SEEK_SET);
+		cfseek(cfp, (int)(cur - section_size - sizeof(int)), CF_SEEK_SET);
 		cfwrite_int((int)section_size, cfp);
 
 		// go back to previous location for next section
-		cfseek(cfp, cur, CF_SEEK_SET);
+		cfseek(cfp, (int)cur, CF_SEEK_SET);
 	}
 }
 
@@ -104,7 +104,7 @@ void convert_pilot_files()
 	}
 
 	// don't convert enough pilots to exceed the pilot limit
-	max_convert = MAX_PILOTS - existing.size();
+	max_convert = MAX_PILOTS - (int)existing.size();
 
 	// if everything is already converted then bail
 	// also bail if MAX_PILOTS (or more!) already exist
