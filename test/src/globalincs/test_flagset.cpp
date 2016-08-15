@@ -9,6 +9,8 @@ FLAG_LIST(TestFlags)
 	Second,
 	Another,
 	AndAnother,
+	One,
+	Two,
 
 	NUM_VALUES
 };
@@ -37,7 +39,7 @@ TEST(FlagsetTests, two_flags) {
 		flagset<TestFlags> flags{ TestFlags::First, TestFlags::Second };
 
 		ASSERT_TRUE((flags[TestFlags::First, TestFlags::Second]));
-		ASSERT_FALSE((flags[TestFlags::First, TestFlags::Another]));
+		ASSERT_TRUE((flags[TestFlags::First, TestFlags::Another]));
 		ASSERT_FALSE((flags[TestFlags::AndAnother, TestFlags::Another]));
 	}
 }
@@ -47,7 +49,7 @@ TEST(FlagsetTests, three_flags) {
 		flagset<TestFlags> flags{ TestFlags::First, TestFlags::Second, TestFlags::Another };
 
 		ASSERT_TRUE((flags[TestFlags::First, TestFlags::Second, TestFlags::Another]));
-		ASSERT_FALSE((flags[TestFlags::First, TestFlags::Second, TestFlags::AndAnother]));
+		ASSERT_FALSE((flags[TestFlags::One, TestFlags::Two, TestFlags::AndAnother]));
 	}
 }
 
