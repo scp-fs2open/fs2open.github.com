@@ -68,10 +68,11 @@ void glcViewport::OnSize(wxSizeEvent& event) {
 
 	if (oldSize != newSize) {
 		wxfred::render_resize(this, newSize.GetWidth(), newSize.GetHeight());
-		// Size is updated by wxWidgets
+		
+		// z64: Blah. Force a wxPaintEvent becuase Refresh and Update arn't working as expected
+		wxPaintEvent event_paint(GetId());
+		GetEventHandler()->ProcessEvent(event_paint);
 	}
-
-	Refresh();
 }
 
 void glcViewport::OnEraseBackground(wxEraseEvent& event) {}
