@@ -34,6 +34,7 @@
 #include <object/waypoint.h>
 #include <parse/parselo.h>
 #include <ship/ship.h>
+#include <ship/ship_flags.h>
 #include <species_defs/species_defs.h>
 #include <starfield/nebula.h>
 #include <starfield/starfield.h>
@@ -189,7 +190,7 @@ void wxFRED2::Mission_clear() {
 	for (i = 0; i < MAX_TVT_TEAMS; i++) {
 		count = 0;
 		for (j = 0; j < MAX_SHIP_CLASSES; j++) {
-			if (Ship_info[j].flags & SIF_DEFAULT_PLAYER_SHIP) {
+			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
 				Team_data[i].ship_list[count] = j;
 				strcpy_s(Team_data[i].ship_list_variables[count], "");
 				Team_data[i].ship_count[count] = 5;
@@ -242,9 +243,9 @@ void wxFRED2::Mission_clear() {
 	stars_pre_level_init();
 	Nebula_index = 0;
 	Mission_palette = 1;
-	Nebula_pitch = (int)((float)(rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_bank = (int)((float)(rand() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_heading = (int)((float)(rand() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_pitch = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_bank = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_heading = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
 	Neb2_awacs = -1.0f;
 	Neb2_poof_flags = 0;
 	strcpy_s(Neb2_texture_name, "");
@@ -264,7 +265,7 @@ void wxFRED2::Mission_clear() {
 	strcpy_s(The_mission.command_sender, DEFAULT_COMMAND);
 
 	// Goober5000: reset ALL mission flags, not just nebula!
-	The_mission.flags = 0;
+	The_mission.flags.reset();
 	The_mission.support_ships.max_support_ships = -1;	// negative means infinite
 	The_mission.support_ships.max_hull_repair_val = 0.0f;
 	The_mission.support_ships.max_subsys_repair_val = 100.0f;
@@ -458,7 +459,7 @@ void wxFRED2::Copy_objects(SCP_vector<OIN_t> &selq) {
 	}
 
 	if (!wp_queue.empty()) {
-		int wp_inst  = -1;   // Waypoint instance to append a new waypoint to. Value of -1 makes a new list
+		int wp_inst = -1;   // Waypoint instance to append a new waypoint to. Value of -1 makes a new list
 		int wpl_idx1 = -1;   // Previous WPL
 		int wpl_idx2;        // Current WPL
 
@@ -569,10 +570,10 @@ OIN_t wxFRED2::Create_ship(vec3d *pos, matrix *orient, MTIN_t type) {
 	float temp_max_hull_strength;
 	ship_info *sip;
 
-	if (Ship_info[type].flags & SIF_NO_FRED) {
+	if (Ship_info[type].flags[Ship::Info_Flags::No_fred]) {
 		// Is a Non-FRED-able object
-throw Fred_exception("Error: Unable to create Non-FRED-able object");
-return -1;
+		throw Fred_exception("Error: Unable to create Non-FRED-able object");
+		return -1;
 	}
 
 	// ship::ship_create() tries to look in the cwd for the .pof's when loading in new models.
@@ -602,14 +603,14 @@ return -1;
 
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
-	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags, Iff_info[shipp->team].default_parse_flags2);
+	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags);
 
 	// default shield setting
 	shipp->special_shield = -1;
 	z1 = Shield_sys_teams[shipp->team];
 	z2 = Shield_sys_types[type];
 	if (((z1 == 1) && (z2 != 0)) || (z2 == 1)) {
-		Objects[obj].flags |= OF_NO_SHIELDS;
+		Objects[obj].flags.set(Object::Object_Flags::No_shields);
 	}
 
 	object *temp_objp;
@@ -627,7 +628,7 @@ return -1;
 	if (temp_shipp == NULL || shipp->team == temp_shipp->team) {
 		// if this ship is not a small ship, then make the orders be the default orders without
 		// the depart item
-		if (!(sip->flags & SIF_SMALL_SHIP)) {
+		if (!(sip->is_small_ship())) {
 			shipp->orders_accepted = ship_get_default_orders_accepted(sip);
 			shipp->orders_accepted &= ~DEPART_ITEM;
 		}
@@ -639,12 +640,12 @@ return -1;
 
 	// calc kamikaze stuff
 	if (shipp->use_special_explosion) {
-		temp_max_hull_strength = (float)shipp->special_exp_blast;
+		temp_max_hull_strength = (float) shipp->special_exp_blast;
 	} else {
 		temp_max_hull_strength = sip->max_hull_strength;
 	}
 
-	Ai_info[shipp->ai_index].kamikaze_damage = (int)std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
+	Ai_info[shipp->ai_index].kamikaze_damage = (int) std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
 
 	int n;
 	n = Objects[obj].instance;
@@ -680,8 +681,7 @@ OIN_t wxFRED2::Create_waypoint(vec3d *pos, OIN_t oin) {
 	return obj;
 }
 
-void wxFRED2::Init_FSO(void)
-{
+void wxFRED2::Init_FSO(void) {
 	SDL_SetMainReady();
 	memory::init();
 
@@ -698,7 +698,7 @@ void wxFRED2::Init_FSO(void)
 	cfile_chdir(Fred_base_dir.c_str());
 
 	// this should enable mods - Kazan
-//	parse_cmdline(__argc, __argv);
+	// parse_cmdline(__argc, __argv);
 
 	// TODO: Print cmdline if DEBUG
 
