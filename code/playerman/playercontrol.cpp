@@ -170,23 +170,23 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 	} else {
 		// We're in the cockpit
 		if ( headtracking::isEnabled() ) {
-			headtracking::query();
+			if (headtracking::query())
+			{
+				auto status = headtracking::getStatus();
 
-			headtracking::HeadTrackingStatus* status = headtracking::getStatus();
+				ma->h = -PI2*(status->yaw);
+				ma->p = PI2*(status->pitch);
 
-			ma->h = -PI2*(status->yaw);
-			ma->p = PI2*(status->pitch);
+				trans.xyz.x = -0.4f*status->x;
+				trans.xyz.y = 0.4f*status->y;
+				trans.xyz.z = -status->z;
 
-			trans.xyz.x = -0.4f*status->x;
-			trans.xyz.y = 0.4f*status->y;
-			trans.xyz.z = -status->z;
+				if (trans.xyz.z < 0) {
+					trans.xyz.z = 0.0f;
+				}
 
-			if (trans.xyz.z < 0) {
-				trans.xyz.z = 0.0f;
+				vm_vec_unrotate(&leaning_position, &trans, &Eye_matrix);
 			}
-
-			vm_vec_unrotate(&leaning_position,&trans,&Eye_matrix);
-
 		} else if (slew_active) {
 			// Freelook mode enabled - Pitch and Yaw axes control X and Y slew axes
 			t = (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
@@ -487,6 +487,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	int ok_to_read_ci_pitch_yaw=1;
 	int centering_speed = 7; // the scale speed in which the camera will smoothly center when the player presses Center View
 
+	slew_active = true;
+
 	oldspeed = ci->forward_cruise_percent;
 	player_control_reset_ci( ci );
 
@@ -513,7 +515,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		} else if ( Viewer_mode & VM_TRACK ) {
 			// Player's vision will track current target.
 			do_view_track_target(frame_time);
-		} else {
+		} else if (!headtracking::isEnabled()) {
+			// If headtracking is not active then view slewing can be done
 			if (check_control_timef(VIEW_SLEW)) {
 				// Enable slew/freelook mode
 				slew_active = 1;
@@ -573,7 +576,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		ci->pitch += kh;
 	}
 
-	if (!(slew_active || (Viewer_mode & VM_TRACK) || (Viewer_mode & VM_PADLOCK_ANY))) {
+	if (!slew_active) {
 		// If we're not in a view that slews (ie, not a cockpit view), and we are not tracking a target,
 		//   AND we're not in padlock view, make the viewer spring to the center.
 		chase_slew_angles.h = 0.0f;
