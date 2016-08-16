@@ -38,23 +38,18 @@
 #else  // ! Win32
 
 
-#include <unistd.h>
 #include "SDL.h"
 #include "SDL_thread.h"
+
+#include <unistd.h>
 #include <cmath>
+#include <cstdint>
 
 
 // don't verbose stub funtions unless we're debugging
 #define STUB_FUNCTION nprintf(( "Warning", "STUB: %s in " __FILE__ " at line %d, thread %d\n", __FUNCTION__, __LINE__, getpid() ))
 #define DEBUGME(d1) nprintf(( "Warning", "DEBUGME: %s in " __FILE__ " at line %d, msg \"%s\", thread %d\n", __FUNCTION__, __LINE__, d1, getpid() ))
 
-
-#define __cdecl
-#define __stdcall
-#define PASCAL
-#define CALLBACK
-#define WINAPI
-#define FAR
 
 // Standard data types
 typedef int BOOL;
@@ -69,31 +64,9 @@ typedef unsigned int *PDWORD, *LPDWORD;
 typedef unsigned long FOURCC;
 typedef unsigned long DWORD, *PDWORD, *LPDWORD;
 #endif
-typedef void *HACMSTREAM;
-typedef long LONG;
-typedef long HRESULT;
-typedef long HTASK;
-typedef unsigned long SEGPTR;
-typedef long LONG_PTR, *PLONG_PTR;
-typedef long LRESULT;
-typedef long LPARAM;
-typedef long (CALLBACK *FARPROC16)();
-typedef	unsigned int MMRESULT;
-typedef void *HWND;
-typedef void *HINSTANCE;
-typedef void *HANDLE;
-typedef char *LPSTR;
-typedef char *HPSTR;
-typedef void *LPMMIOPROC;
-#if __WORDSIZE == 64
-#define __int64 long int
-#else
-#define __int64 long long int	// TODO: really need a compile-time assert on all of this
-#endif
-#define __int32 int
 
 typedef struct _LARGE_INTEGER {
-	__int64 QuadPart;
+	std::int64_t QuadPart;
 } LARGE_INTEGER;
 
 // networking/socket stuff
@@ -150,18 +123,10 @@ typedef struct {
 } WAVEFORMATEX;
 #pragma pack()
 
-// thread/process related stuff
-#define _beginthread(x, y, z)
-#define _endthread()
-
-typedef SDL_mutex* CRITICAL_SECTION;
-
 // file related items
 #define _MAX_FNAME					255
 #define _MAX_PATH					255
 #define MAX_PATH					255
-#define SetCurrentDirectory(s)		_chdir(s)
-#define GetCurrentDirectory(i, s)	_getcwd((s), (i))
 #define _unlink(s)					unlink(s)
 
 int filelength(int fd);

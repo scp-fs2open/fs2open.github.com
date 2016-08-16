@@ -1787,7 +1787,7 @@ void game_init()
 
 	memset(whee, 0, sizeof(whee));
 
-	GetCurrentDirectory(MAX_PATH_LEN-1, whee);
+	_getcwd(whee, MAX_PATH_LEN-1);
 
 	strcat_s(whee, DIR_SEPARATOR_STR);
 	strcat_s(whee, EXE_FNAME);
