@@ -1,4 +1,5 @@
 #include "io/joy.h"
+#include "io/joy_ff.h"
 #include "io/timer.h"
 #include "osapi/osapi.h"
 
@@ -89,7 +90,7 @@ bool isCurrentJoystick(Joystick* testStick) {
 	auto currentGUID = os_config_read_string(nullptr, "CurrentJoystickGUID", nullptr);
 	auto currentId = os_config_read_uint(nullptr, "CurrentJoystick", 0);
 
-	if (currentGUID == nullptr) {
+	if ((currentGUID == nullptr) || !strcmp(currentGUID, "")) {
 		// Only use the id
 		return currentId == testStick->getDeviceId();
 	}
@@ -766,6 +767,8 @@ namespace joystick
 
 		initialized = true;
 
+		joy_ff_init();
+
 		return true;
 	}
 
@@ -788,6 +791,8 @@ namespace joystick
 
 	void shutdown()
 	{
+		joy_ff_shutdown();
+
 		initialized = false;
 		currentJoystick = nullptr;
 		// Automatically frees joystick resources
