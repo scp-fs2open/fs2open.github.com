@@ -2594,7 +2594,7 @@ void opengl_setup_scene_textures()
 	}
 
 	//Setup thruster distortion framebuffer
-    if (Cmdline_fb_thrusters) 
+    if (Cmdline_fb_thrusters || Cmdline_fb_explosions) 
     {
         glGenFramebuffersEXT(1, &Distortion_framebuffer);
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Distortion_framebuffer);
