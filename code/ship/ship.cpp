@@ -5790,22 +5790,9 @@ void ship::clear()
 	target_shields_delta = 0.0f;
 	target_weapon_energy_delta = 0.0f;
 
-	memset(&weapons, 0, sizeof(ship_weapon));
-
 	// ---------- special weapons init that isn't setting things to 0
 	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
-		weapons.primary_bank_weapons[i] = -1;
-
-		weapons.next_primary_fire_stamp[i] = timestamp(0);
-		weapons.last_primary_fire_stamp[i] = timestamp(-1);
-		weapons.last_primary_fire_sound_stamp[i] = timestamp(0);
-
-		weapons.primary_bank_slot_count[i] = 1;
-
-		weapons.primary_bank_rearm_time[i] = timestamp(0);
-		weapons.primary_animation_done_time[i] = timestamp(0);
-
 		// not part of weapons!
 		primary_rotate_rate[i] = 0.0f;
 		primary_rotate_ang[i] = 0.0f;
@@ -5816,22 +5803,9 @@ void ship::clear()
 
 	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
 	{
-		weapons.secondary_bank_weapons[i] = -1;
-
-		weapons.next_secondary_fire_stamp[i] = timestamp(0);
-		weapons.last_secondary_fire_stamp[i] = timestamp(-1);
-
-		weapons.secondary_bank_rearm_time[i] = timestamp(0);
-		weapons.secondary_animation_done_time[i] = timestamp(0);
-
 		for (j = 0; j < MAX_SLOTS; j++)
 			secondary_point_reload_pct[i][j] = 1.0f;
 	}
-
-	weapons.next_tertiary_fire_stamp = timestamp(0);
-
-	weapons.last_fired_weapon_index = -1;
-	weapons.last_fired_weapon_signature = -1;
 	// ---------- done with weapons init
 
 	shield_hits = 0;
@@ -5984,6 +5958,87 @@ void ship::clear()
 	team_change_time = 0;
 
 	autoaim_fov = 0.0f;
+}
+
+ship_weapon::ship_weapon() 
+{
+    flags.reset();
+
+    num_primary_banks = 0;
+    num_secondary_banks = 0;
+    num_tertiary_banks = 0;
+
+    current_primary_bank = 0;
+    current_secondary_bank = 0;
+    current_tertiary_bank = 0;
+
+    previous_primary_bank = 0;
+    previous_secondary_bank = 0;
+
+    next_tertiary_fire_stamp = timestamp(0);
+
+    for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
+    {
+        primary_bank_weapons[i] = -1;
+
+        next_primary_fire_stamp[i] = timestamp(0);
+        last_primary_fire_stamp[i] = timestamp(-1);
+        last_primary_fire_sound_stamp[i] = timestamp(0);
+
+        primary_bank_slot_count[i] = 1;
+
+        primary_bank_rearm_time[i] = timestamp(0);
+        primary_animation_done_time[i] = timestamp(0);
+        primary_bank_ammo[i] = 0;
+        primary_bank_start_ammo[i] = 0;
+        primary_bank_capacity[i] = 0;
+        primary_next_slot[i] = 0;
+        primary_bank_rearm_time[i] = timestamp(0);
+        primary_bank_fof_cooldown[i] = 0;
+
+        primary_animation_position[i] = EModelAnimationPosition::MA_POS_NOT_SET;
+        primary_animation_done_time[i] = 0;
+
+        primary_bank_pattern_index[i] = 0;
+
+        burst_counter[i] = 0;
+        external_model_fp_counter[i] = 0;
+    }
+
+    for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++)
+    {
+        secondary_bank_weapons[i] = -1;
+
+        next_secondary_fire_stamp[i] = timestamp(0);
+        last_secondary_fire_stamp[i] = timestamp(-1);
+
+        secondary_bank_rearm_time[i] = timestamp(0);
+        secondary_animation_done_time[i] = timestamp(0);
+
+        secondary_bank_ammo[i] = 0;
+        secondary_bank_start_ammo[i] = 0;
+        secondary_bank_capacity[i] = 0;
+        secondary_next_slot[i] = 0;
+        secondary_bank_rearm_time[i] = timestamp(0);
+
+        burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
+        external_model_fp_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
+    }
+
+    tertiary_bank_ammo = 0;
+    tertiary_bank_start_ammo = 0;
+    tertiary_bank_capacity = 0;
+    tertiary_bank_rearm_time = timestamp(0);
+
+    last_fired_weapon_index = 0;
+    last_fired_weapon_signature = 0;
+    detonate_weapon_time = 0;
+    ai_class = 0;
+
+    next_tertiary_fire_stamp = timestamp(0);
+
+    last_fired_weapon_index = -1;
+    last_fired_weapon_signature = -1;
 }
 
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
@@ -6331,7 +6386,7 @@ void ship_subsys::clear()
 	awacs_intensity = 0.0f;
 	awacs_radius = 0.0f;
 
-	memset(&weapons, 0, sizeof(ship_weapon));
+    weapons = ship_weapon();
 
 	memset(&submodel_info_1, 0, sizeof(submodel_instance_info));
 	memset(&submodel_info_2, 0, sizeof(submodel_instance_info));
@@ -6428,7 +6483,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 		// zero flags
         ship_system->flags.reset();
-		ship_system->weapons.flags = 0;
+		ship_system->weapons.flags.reset();
 		ship_system->subsys_snd_flags = 0;
 
 		// Goober5000
@@ -7995,7 +8050,7 @@ void ship_dying_frame(object *objp, int ship_num)
 			{
 			// just mark all turrets as locked
 				if (subsys->system_info->type == SUBSYSTEM_TURRET) {
-					subsys->weapons.flags |= SW_FLAG_TURRET_LOCK;
+					subsys->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
 				}
 				subsys = GET_NEXT(subsys);
 			}

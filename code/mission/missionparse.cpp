@@ -2199,7 +2199,7 @@ int parse_create_object_sub(p_object *p_objp)
 				// mark all turrets as beam free
 				if(ptr->system_info->type == SUBSYSTEM_TURRET)
 				{
-					ptr->weapons.flags |= SW_FLAG_BEAM_FREE;
+					ptr->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
 					ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 				}
 			}
@@ -2209,7 +2209,7 @@ int parse_create_object_sub(p_object *p_objp)
 				// mark all turrets as locked
 				if(ptr->system_info->type == SUBSYSTEM_TURRET)
 				{
-					ptr->weapons.flags |= SW_FLAG_TURRET_LOCK;
+					ptr->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
 				}
 			}
 

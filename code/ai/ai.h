@@ -20,7 +20,7 @@
 #include "physics/physics.h"
 #include "ship/ship_flags.h"
 
-struct ship_weapon;
+class ship_weapon;
 class ship_subsys;
 class object;
 class ship_info;

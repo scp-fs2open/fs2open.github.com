@@ -91,12 +91,8 @@ typedef struct {
 	char	yes_messages[MAX_REINFORCEMENT_MESSAGES][NAME_LENGTH];	// list of messages to acknowledge reinforcement on the way
 } reinforcements;
 
-// ship weapon flags
-#define SW_FLAG_BEAM_FREE					(1<<0)							// if this is a beam weapon, its free to fire
-#define SW_FLAG_TURRET_LOCK				(1<<1)							//	is this turret is free to fire or locked
-#define SW_FLAG_TAGGED_ONLY				(1<<2)							// only fire if target is tagged
-
-typedef struct ship_weapon {
+class ship_weapon {
+public:
 	int num_primary_banks;					// Number of primary banks (same as model)
 	int num_secondary_banks;				// Number of secondary banks (same as model)
 	int num_tertiary_banks;
@@ -148,7 +144,7 @@ typedef struct ship_weapon {
 	int detonate_weapon_time;			//	time at which last fired weapon can be detonated
 	int ai_class;
 
-	int flags;								// see SW_FLAG_* defines above
+	flagset<Ship::Weapon_Flags> flags;
 	EModelAnimationPosition primary_animation_position[MAX_SHIP_PRIMARY_BANKS];
 	EModelAnimationPosition secondary_animation_position[MAX_SHIP_SECONDARY_BANKS];
 	int primary_animation_done_time[MAX_SHIP_PRIMARY_BANKS];
@@ -159,7 +155,9 @@ typedef struct ship_weapon {
 
 	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
 	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
-} ship_weapon;
+
+    ship_weapon();
+};
 
 //**************************************************************
 //WMC - Damage type handling code

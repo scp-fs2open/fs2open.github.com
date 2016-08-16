@@ -2159,7 +2159,7 @@ int num_turrets_attacking(object *turret_parent, int target_objnum)
 		}
 
 		// if the turret is locked
-		if(ss->weapons.flags & SW_FLAG_TURRET_LOCK){
+		if(ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]){
 			continue;
 		}		
 

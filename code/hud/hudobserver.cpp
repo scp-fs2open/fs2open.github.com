@@ -41,7 +41,7 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	memcpy(&Hud_obs_ship.np_updates, shipp->np_updates, MAX_PLAYERS * sizeof(np_update));
 	Hud_obs_ship.ship_max_hull_strength = shipp->ship_max_hull_strength;
 	Hud_obs_ship.ship_max_shield_strength = shipp->ship_max_shield_strength;
-	memcpy(&Hud_obs_ship.weapons, &shipp->weapons, sizeof(ship_weapon));
+	Hud_obs_ship.weapons = shipp->weapons;
 
 	HUD_config.is_observer = 1;
 	HUD_config.show_flags = HUD_observer_default_flags;
