@@ -378,7 +378,7 @@ void team_visibility_update()
 			continue;
 
 		// check if ship is stealthed and friendly-invisible
-		if ((shipp->flags[Ship::Ship_Flags::Stealth, Ship::Ship_Flags::Friendly_stealth_invis]))
+		if ((shipp->flags[Ship::Ship_Flags::Stealth] && shipp->flags[Ship::Ship_Flags::Friendly_stealth_invis]))
 			continue;
 
 		Ship_visibility_by_team[shipp->team][ship_num] = 1;
