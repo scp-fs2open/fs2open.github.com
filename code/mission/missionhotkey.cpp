@@ -603,7 +603,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		shipnum = Objects[so->objnum].instance;
 
 		// filter out cargo containers, navbouys, etc, and non-ships
-		if ( Ship_info[Ships[shipnum].ship_info_index].class_type < 0 || !(Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].hud_bools & STI_HUD_HOTKEY_ON_LIST ))
+		if ( Ship_info[Ships[shipnum].ship_info_index].class_type < 0 || !(Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].flags[Ship::Type_Info_Flags::Hotkey_on_list] ))
 			continue;
 
 		// don't process ships invisible to sensors, dying or departing
@@ -649,7 +649,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 				continue;
 
 			z = hotkey_line_add_sorted(Wings[i].name, HOTKEY_LINE_WING, i, start);
-			if (Wings[i].flags & WF_EXPANDED) {
+			if (Wings[i].flags[Ship::Wing_Flags::Expanded]) {
 				for (j=0; j<Wings[i].current_count; j++) {
 					s = Wings[i].ship_index[j];
 					z = hotkey_line_insert(z + 1, Ships[s].ship_name, HOTKEY_LINE_SUBSHIP, s);
@@ -765,7 +765,7 @@ void expand_wing()
 
 	if (Hotkey_lines[Selected_line].type == HOTKEY_LINE_WING) {
 		i = Hotkey_lines[Selected_line].index;
-		Wings[i].flags ^= WF_EXPANDED;
+        Wings[i].flags.toggle(Ship::Wing_Flags::Expanded);
 		hotkey_build_listing();
 		for (z=0; z<Num_lines; z++)
 			if ((Hotkey_lines[z].type == HOTKEY_LINE_WING) && (Hotkey_lines[z].index == i)) {

@@ -1029,8 +1029,8 @@ void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_ob
 	// Move player out of the way of a BIG|HUGE ship warping in or out
 	int big_class = Ship_info[Ships[big_obj->instance].ship_info_index].class_type;
 	int small_class = Ship_info[Ships[small_obj->instance].ship_info_index].class_type;
-	if (big_class > -1 && Ship_types[big_class].ship_bools & STI_SHIP_WARP_PUSHES) {
-		if (small_class > -1 && Ship_types[small_class].ship_bools & STI_SHIP_WARP_PUSHABLE) {
+	if (big_class > -1 && Ship_types[big_class].flags[Ship::Type_Info_Flags::Warp_pushes]) {
+		if (small_class > -1 && Ship_types[small_class].flags[Ship::Type_Info_Flags::Warp_pushable]) {
 			float big_speed = vm_vec_mag_quick(&big_obj->phys_info.vel);
 			if (big_speed > 3*big_obj->phys_info.max_vel.xyz.z) {
 				// push player away in direction perp to forward of big ship

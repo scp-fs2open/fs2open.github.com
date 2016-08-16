@@ -177,22 +177,23 @@ flag_def_list Armor_flags[] = {
 
 const int Num_armor_flags = sizeof(Armor_flags)/sizeof(flag_def_list);
 
-flag_def_list Man_types[] = {
-	{ "Bank right",		MT_BANK_RIGHT,	0 },
-	{ "Bank left",		MT_BANK_LEFT,	0 },
-	{ "Pitch up",		MT_PITCH_UP,	0 },
-	{ "Pitch down",		MT_PITCH_DOWN,	0 },
-	{ "Roll right",		MT_ROLL_RIGHT,	0 },
-	{ "Roll left",		MT_ROLL_LEFT,	0 },
-	{ "Slide right",	MT_SLIDE_RIGHT,	0 },
-	{ "Slide left",		MT_SLIDE_LEFT,	0 },
-	{ "Slide up",		MT_SLIDE_UP,	0 },
-	{ "Slide down",		MT_SLIDE_DOWN,	0 },
-	{ "Forward",		MT_FORWARD,		0 },
-	{ "Reverse",		MT_REVERSE,		0 }
+
+flag_def_list_new<Thruster_Flags> Man_types[] = {
+    { "Bank right", Thruster_Flags::Bank_right, true, false },
+    { "Bank left",	Thruster_Flags::Bank_left,	true, false },
+    { "Pitch up",	Thruster_Flags::Pitch_up,	true, false },
+    { "Pitch down", Thruster_Flags::Pitch_down, true, false },
+    { "Roll right", Thruster_Flags::Roll_right, true, false },
+    { "Roll left",	Thruster_Flags::Roll_left,	true, false },
+    { "Slide right",Thruster_Flags::Slide_right,true, false },
+    { "Slide left", Thruster_Flags::Slide_left, true, false },
+    { "Slide up",	Thruster_Flags::Slide_up,	true, false },
+    { "Slide down", Thruster_Flags::Slide_down, true, false },
+    { "Forward",	Thruster_Flags::Forward,	true, false },
+    { "Reverse",	Thruster_Flags::Reverse,	true, false }
 };
 
-const int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
+const size_t Num_man_types = sizeof(Man_types) / sizeof(flag_def_list_new<Thruster_Flags>);
 
 // Goober5000 - I figured we should keep this separate
 // from Comm_orders, considering how I redid it :p
@@ -1058,7 +1059,11 @@ void ship_info::clone(const ship_info& other)
 	ship_sounds = other.ship_sounds;
 
 	num_maneuvering = other.num_maneuvering;
-	memcpy(maneuvering, other.maneuvering, sizeof(man_thruster) * MAX_MAN_THRUSTERS);
+
+    for (int i = 0; i < MAX_MAN_THRUSTERS; ++i) 
+    {
+        maneuvering[i] = other.maneuvering[i];
+    }
 
 	radar_image_2d_idx = other.radar_image_2d_idx;
 	radar_color_image_2d_idx = other.radar_color_image_2d_idx;
@@ -1738,13 +1743,10 @@ ship_info::ship_info()
 	ship_sounds.clear();
 
 	num_maneuvering = 0;
-	memset(maneuvering, 0, MAX_MAN_THRUSTERS * sizeof(man_thruster));
+
 	for (i = 0; i < MAX_MAN_THRUSTERS; i++)
 	{
-		maneuvering[i].start_snd = -1;
-		maneuvering[i].loop_snd = -1;
-		maneuvering[i].stop_snd = -1;
-		maneuvering[i].tex_id = -1;
+        maneuvering[i].reset();
 	}
 
 	radar_image_2d_idx = -1;
@@ -3918,7 +3920,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		}
 
 		if(optional_string("+Used for:")) {
-			parse_string_flag_list(&mtp->use_flags, Man_types, Num_man_types);
+			parse_string_flag_list(mtp->use_flags, Man_types, Num_man_types, NULL);
 		}
 
 		if(optional_string("+Position:")) {
@@ -4782,39 +4784,39 @@ void parse_ship_type()
 	}
 
 	if(optional_string("$Counts for Alone:")) {
-		stuff_boolean_flag(&stp->message_bools, STI_MSG_COUNTS_FOR_ALONE);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Counts_for_alone);
 	}
 
 	if(optional_string("$Praise Destruction:")) {
-		stuff_boolean_flag(&stp->message_bools, STI_MSG_PRAISE_DESTRUCTION);
+        stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Praise_destruction);
 	}
 
 	if(optional_string("$On Hotkey list:")) {
-		stuff_boolean_flag(&stp->hud_bools, STI_HUD_HOTKEY_ON_LIST);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Hotkey_on_list);
 	}
 
 	if(optional_string("$Target as Threat:")) {
-		stuff_boolean_flag(&stp->hud_bools, STI_HUD_TARGET_AS_THREAT);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Target_as_threat);
 	}
 
 	if(optional_string("$Show Attack Direction:")) {
-		stuff_boolean_flag(&stp->hud_bools, STI_HUD_SHOW_ATTACK_DIRECTION);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Show_attack_direction);
 	}
 
 	if(optional_string("$Scannable:")) {
-		stuff_boolean_flag(&stp->ship_bools, STI_SHIP_SCANNABLE);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Scannable);
 	}
 
 	if(optional_string("$Warp Pushes:")) {
-		stuff_boolean_flag(&stp->ship_bools, STI_SHIP_WARP_PUSHES);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Warp_pushes);
 	}
 
 	if(optional_string("$Warp Pushable:")) {
-		stuff_boolean_flag(&stp->ship_bools, STI_SHIP_WARP_PUSHABLE);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Warp_pushable);
 	}
 
 	if(optional_string("$Turrets prioritize ship target:")) {
-		stuff_boolean_flag(&stp->ship_bools, STI_TURRET_TGT_SHIP_TGT);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Turret_tgt_ship_tgt);
 	}
 
 	if(optional_string("$Max Debris Speed:")) {
@@ -4830,19 +4832,19 @@ void parse_ship_type()
 	}
 
 	if(optional_string("$Beams Easily Hit:")) {
-		stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_BEAMS_EASILY_HIT);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Beams_easily_hit);
 	}
 
 	if(optional_string("$Protected on cripple:")) {
-		stuff_boolean_flag(&stp->ai_bools, STI_AI_PROTECTED_ON_CRIPPLE);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::AI_protected_on_cripple);
 	}
 
 	if(optional_string("$No Huge Beam Impact Effects:")) {
-		stuff_boolean_flag(&stp->weapon_bools, STI_WEAP_NO_HUGE_IMPACT_EFF);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::No_huge_impact_eff);
 	}
 
 	if(optional_string("$Don't display class in briefing:")) {
-		stuff_boolean_flag(&stp->hud_bools, STI_HUD_NO_CLASS_DISPLAY);
+		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::No_class_display);
 	}
 
 	if(optional_string("$Fog:"))
@@ -4863,7 +4865,7 @@ void parse_ship_type()
 		}
 
 		if(optional_string("+Accept Player Orders:")) {
-			stuff_boolean_flag(&stp->ai_bools, STI_AI_ACCEPT_PLAYER_ORDERS);
+			stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::AI_accept_player_orders);
 		}
 
 		if(optional_string("+Player Orders:")) {
@@ -4871,11 +4873,11 @@ void parse_ship_type()
 		}
 
 		if(optional_string("+Auto attacks:")) {
-			stuff_boolean_flag(&stp->ai_bools, STI_AI_AUTO_ATTACKS);
+            stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::AI_auto_attacks);
 		}
 
 		if(optional_string("+Attempt broadside:")) {
-			stuff_boolean_flag(&stp->ai_bools, STI_AI_ATTEMPT_BROADSIDE);
+            stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::AI_attempt_broadside);
 		}
 
 		if(optional_string("+Actively Pursues:")) {
@@ -4883,15 +4885,15 @@ void parse_ship_type()
 		}
 
 		if(optional_string("+Guards attack this:")) {
-			stuff_boolean_flag(&stp->ai_bools, STI_AI_GUARDS_ATTACK);
+            stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::AI_guards_attack);
 		}
 
 		if(optional_string("+Turrets attack this:")) {
-			stuff_boolean_flag(&stp->ai_bools, STI_AI_TURRETS_ATTACK);
+            stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::AI_turrets_attack);
 		}
 
 		if(optional_string("+Can form wing:")) {
-			stuff_boolean_flag(&stp->ai_bools, STI_AI_CAN_FORM_WING);
+            stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::AI_can_form_wing);
 		}
 
 		if(optional_string("+Active docks:")) {
@@ -5887,7 +5889,7 @@ void ship::clear()
 	lightning_stamp = timestamp(-1);
 
 	// set awacs warning flags so awacs ship only asks for help once at each level
-	awacs_warning_flag = AWACS_WARN_NONE;
+    awacs_warning_flag.reset();
 
 	special_warpin_objnum = -1;
 	special_warpout_objnum = -1;
@@ -6228,58 +6230,58 @@ void ship_recalc_subsys_strength( ship *shipp )
 		//if a subsystem is brought back from the dead, other than this
 		if(ship_system->current_hits > 0.0f)
 		{
-			if(ship_system->subsys_snd_flags & SSSF_DEAD)
-			{
-				obj_snd_delete_type(shipp->objnum, ship_system->system_info->dead_snd, ship_system);
-				ship_system->subsys_snd_flags &= ~SSSF_DEAD;
-			}
-			if((ship_system->system_info->alive_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_ALIVE))
-			{
-				obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ALIVE, ship_system);
-				ship_system->subsys_snd_flags |= SSSF_ALIVE;
-			}
-			if(!(ship_system->subsys_snd_flags & SSSF_TURRET_ROTATION))
-			{
-				if(ship_system->system_info->turret_base_rotation_snd != -1)
-				{
-					obj_snd_assign(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, ship_system);
-					ship_system->subsys_snd_flags |= SSSF_TURRET_ROTATION;
-				}
-				if(ship_system->system_info->turret_gun_rotation_snd != -1)
-				{
-					obj_snd_assign(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, ship_system);
-					ship_system->subsys_snd_flags |= SSSF_TURRET_ROTATION;
-				}
-			}
-			if((ship_system->flags[Ship::Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_ROTATE))
-			{
-				obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ROTATION, ship_system);
-				ship_system->subsys_snd_flags |= SSSF_ROTATE;
-			}
+            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead])
+            {
+                obj_snd_delete_type(shipp->objnum, ship_system->system_info->dead_snd, ship_system);
+                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
+            }
+            if ((ship_system->system_info->alive_snd != -1) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive]))
+            {
+                obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ALIVE, ship_system);
+                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
+            }
+            if (!(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation]))
+            {
+                if (ship_system->system_info->turret_base_rotation_snd != -1)
+                {
+                    obj_snd_assign(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, ship_system);
+                    ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
+                }
+                if (ship_system->system_info->turret_gun_rotation_snd != -1)
+                {
+                    obj_snd_assign(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, ship_system);
+                    ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
+                }
+            }
+            if ((ship_system->flags[Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd != -1) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
+            {
+                obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ROTATION, ship_system);
+                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
+            }
 		}
 		else
 		{
-			if(ship_system->subsys_snd_flags & SSSF_ALIVE)
-			{
-				obj_snd_delete_type(shipp->objnum, ship_system->system_info->alive_snd, ship_system);
-				ship_system->subsys_snd_flags &= ~SSSF_ALIVE;
-			}
-			if(ship_system->subsys_snd_flags & SSSF_TURRET_ROTATION)
-			{
-				obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, ship_system);
-				obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, ship_system);
-				ship_system->subsys_snd_flags &= ~SSSF_TURRET_ROTATION;
-			}
-			if(ship_system->subsys_snd_flags & SSSF_ROTATE)
-			{
-				obj_snd_delete_type(shipp->objnum, ship_system->system_info->rotation_snd, ship_system);
-				ship_system->subsys_snd_flags &= ~SSSF_ROTATE;
-			}
-			if((ship_system->system_info->dead_snd != -1) && !(ship_system->subsys_snd_flags & SSSF_DEAD))
-			{
-				obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_DEAD, ship_system);
-				ship_system->subsys_snd_flags |= SSSF_DEAD;
-			}
+            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive])
+            {
+                obj_snd_delete_type(shipp->objnum, ship_system->system_info->alive_snd, ship_system);
+                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive, false);;
+            }
+            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation])
+            {
+                obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, ship_system);
+                obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, ship_system);
+                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation, false);
+            }
+            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
+            {
+                obj_snd_delete_type(shipp->objnum, ship_system->system_info->rotation_snd, ship_system);
+                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate, false);
+            }
+            if ((ship_system->system_info->dead_snd != -1) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
+            {
+                obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_DEAD, ship_system);
+                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
+            }
 		}
 	}
 
@@ -6402,7 +6404,7 @@ void ship_subsys::clear()
 	base_rotation_rate_pct = 0.0f;
 	gun_rotation_rate_pct = 0.0f;
 
-	subsys_snd_flags = 0;
+    subsys_snd_flags.reset();
 
 	rotation_timestamp = timestamp(0);
 
@@ -6484,7 +6486,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		// zero flags
         ship_system->flags.reset();
 		ship_system->weapons.flags.reset();
-		ship_system->subsys_snd_flags = 0;
+        ship_system->subsys_snd_flags.reset();
 
 		// Goober5000
 		if (model_system->flags & MSS_FLAG_UNTARGETABLE)
@@ -7305,7 +7307,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 		// waves so we can mark the wing as gone and no other ships arrive
 		// Goober5000 - also if it's departing... this is sort of, but not exactly, what :V: did;
 		// but it seems to be consistent with how it should behave
-		if (wingp->flags & (WF_WING_DEPARTING | WF_DEPARTURE_ORDERED))
+		if (wingp->flags[Ship::Wing_Flags::Departing, Ship::Wing_Flags::Departure_ordered])
 			wingp->current_wave = wingp->num_waves;
 
 		// Goober5000 - some changes for clarity and closing holes
@@ -7313,7 +7315,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 		if ((wingp->current_wave == wingp->num_waves) && (wingp->total_destroyed + wingp->total_departed + wingp->total_vanished == wingp->total_arrived_count))
 		{
 			// mark the wing as gone
-			wingp->flags |= WF_WING_GONE;
+			wingp->flags.set(Ship::Wing_Flags::Gone);
 			wingp->time_gone = Missiontime;
 
 			// if all ships were destroyed, log it as destroyed
@@ -7440,7 +7442,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		// determine if we need to count this ship as a kill in counting number of kills per ship type
 		// look at the ignore flag for the ship (if not in a wing), or the ignore flag for the wing
 		// (if the ship is in a wing), and add to the kill count if the flags are not set
-		if ( !(shipp->flags[Ship_Flags::Ignore_count]) || ((shipp->wingnum != -1) && !(Wings[shipp->wingnum].flags & WF_IGNORE_COUNT)) )
+		if ( !(shipp->flags[Ship_Flags::Ignore_count]) || ((shipp->wingnum != -1) && !(Wings[shipp->wingnum].flags[Ship::Wing_Flags::Ignore_count])) )
 			ship_add_ship_type_kill_count( shipp->ship_info_index );
 
 		// let the event music system know an enemy was destroyed (important for deciding when to transition from battle to normal music)
@@ -14031,22 +14033,22 @@ void ship_assign_sound(ship *sp)
 			if(moveup->system_info->alive_snd != -1)
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->alive_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ALIVE, moveup);
-				moveup->subsys_snd_flags |= SSSF_ALIVE;
+                moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
 			}
 			if(moveup->system_info->turret_base_rotation_snd != -1)
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->turret_base_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, moveup);
-				moveup->subsys_snd_flags |= SSSF_TURRET_ROTATION;
+				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
 			}
 			if(moveup->system_info->turret_gun_rotation_snd != -1)
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->turret_gun_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, moveup);
-				moveup->subsys_snd_flags |= SSSF_TURRET_ROTATION;
+				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
 			}
 			if((moveup->system_info->rotation_snd != -1) && (moveup->flags[Ship::Subsystem_Flags::Rotates]))
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->rotation_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ROTATION, moveup);
-				moveup->subsys_snd_flags |= SSSF_ROTATE;
+				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
 			}
 		} 
 		else 
@@ -14054,7 +14056,7 @@ void ship_assign_sound(ship *sp)
 			if(moveup->system_info->dead_snd != -1)
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->dead_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_DEAD, moveup);
-				moveup->subsys_snd_flags |= SSSF_DEAD;
+				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead);
 			}
 		}
 
@@ -15362,7 +15364,7 @@ void ship_maybe_praise_player(ship *deader_sp)
 	}
 
 	// don't praise the destruction of navbuoys, cargo or other non-flyable ship types
-	if ( (Ship_info[deader_sp->ship_info_index].class_type > 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].message_bools & STI_MSG_PRAISE_DESTRUCTION) ) {
+    if ((Ship_info[deader_sp->ship_info_index].class_type > 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Praise_destruction])) {
 		return;
 	}
 
@@ -15418,7 +15420,7 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	}
 
 	// don't praise the destruction of navbuoys, cargo or other non-flyable ship types
-	if ( (Ship_info[deader_sp->ship_info_index].class_type > 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].message_bools & STI_MSG_PRAISE_DESTRUCTION) ) {
+	if ( (Ship_info[deader_sp->ship_info_index].class_type > 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Praise_destruction]) ) {
 		return;
 	}
 
@@ -15451,15 +15453,15 @@ void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 
 	if ( objp->hull_strength < ( (AWACS_HELP_HULL_LOW + 0.01f *(static_rand(objp-Objects) & 5)) * sp->ship_max_hull_strength) ) {
 		// awacs ship below 25 + (0-4) %
-		if (!(sp->awacs_warning_flag & AWACS_WARN_25)) {
+		if (!(sp->awacs_warning_flag[Ship::Awacs_Warning_Flags::Warn_25])) {
 			message = MESSAGE_AWACS_25;
-			sp->awacs_warning_flag |=  AWACS_WARN_25;
+            sp->awacs_warning_flag.set(Ship::Awacs_Warning_Flags::Warn_25);
 		}
 	} else if ( objp->hull_strength < ( (AWACS_HELP_HULL_HI + 0.01f*(static_rand(objp-Objects) & 5)) * sp->ship_max_hull_strength) ) {
 		// awacs ship below 75 + (0-4) %
-		if (!(sp->awacs_warning_flag & AWACS_WARN_75)) {
+		if (!(sp->awacs_warning_flag[Ship::Awacs_Warning_Flags::Warn_75])) {
 			message = MESSAGE_AWACS_75;
-			sp->awacs_warning_flag |=  AWACS_WARN_75;
+            sp->awacs_warning_flag.set(Ship::Awacs_Warning_Flags::Warn_75);
 		}
 	}
 
@@ -18543,32 +18545,32 @@ void ship_render_batch_thrusters(object *obj)
 		vec3d des_vel;
 		vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
 
-		if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags & MT_PITCH_UP)) {
+		if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
 			render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
-		} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags & MT_PITCH_DOWN)) {
+		} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
 			render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
-		} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags & MT_ROLL_RIGHT)) {
+		} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
 			render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
-		} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags & MT_ROLL_LEFT)) {
+		} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
 			render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
-		} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags & MT_BANK_RIGHT)) {
+		} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
 			render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
-		} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags & MT_BANK_LEFT)) {
+		} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
 			render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
 		}
 
 		//Backslash - show thrusters according to thrust amount, not speed
-		if(pi->side_thrust > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
+		if(pi->side_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
 			render_amount = pi->side_thrust;
-		} else if(pi->side_thrust < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
+		} else if(pi->side_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
 			render_amount = -pi->side_thrust;
-		} else if(pi->vert_thrust > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
+		} else if(pi->vert_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
 			render_amount = pi->vert_thrust;
-		} else if(pi->vert_thrust < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
+		} else if(pi->vert_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
 			render_amount = -pi->vert_thrust;
-		} else if(pi->forward_thrust > 0 && (mtp->use_flags & MT_FORWARD)) {
+		} else if(pi->forward_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
 			render_amount = pi->forward_thrust;
-		} else if(pi->forward_thrust < 0 && (mtp->use_flags & MT_REVERSE)) {
+		} else if(pi->forward_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
 			render_amount = -pi->forward_thrust;
 		}
 

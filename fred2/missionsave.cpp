@@ -4059,19 +4059,19 @@ int CFred_mission_save::save_wings() {
 		} else
 			fout("\n+Flags: (");
 
-		if (Wings[i].flags & WF_IGNORE_COUNT)
+		if (Wings[i].flags[Ship::Wing_Flags::Ignore_count])
 			fout(" \"ignore-count\"");
-		if (Wings[i].flags & WF_REINFORCEMENT)
+		if (Wings[i].flags[Ship::Wing_Flags::Reinforcement])
 			fout(" \"reinforcement\"");
-		if (Wings[i].flags & WF_NO_ARRIVAL_MUSIC)
+		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_music])
 			fout(" \"no-arrival-music\"");
-		if (Wings[i].flags & WF_NO_ARRIVAL_MESSAGE)
+		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_message])
 			fout(" \"no-arrival-message\"");
-		if (Wings[i].flags & WF_NO_ARRIVAL_WARP)
+		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_warp])
 			fout(" \"no-arrival-warp\"");
-		if (Wings[i].flags & WF_NO_DEPARTURE_WARP)
+		if (Wings[i].flags[Ship::Wing_Flags::No_departure_warp])
 			fout(" \"no-departure-warp\"");
-		if (Wings[i].flags & WF_NO_DYNAMIC)
+		if (Wings[i].flags[Ship::Wing_Flags::No_dynamic])
 			fout(" \"no-dynamic\"");
 
 		fout(" )");

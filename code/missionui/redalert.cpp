@@ -1006,8 +1006,8 @@ void red_alert_bash_wingman_status()
 			wingp->current_wave++;
 			wingp->red_alert_skipped_ships += wingp->wave_count;
 
-			if (wingp->num_waves == 0)
-				wingp->flags |= WF_WING_GONE;
+            if (wingp->num_waves == 0)
+                wingp->flags.set(Ship::Wing_Flags::Gone);
 
 			// look through all ships yet to arrive...
 			for (p_object *pobjp = GET_FIRST(&Ship_arrival_list); pobjp != END_OF_LIST(&Ship_arrival_list); pobjp = GET_NEXT(pobjp))

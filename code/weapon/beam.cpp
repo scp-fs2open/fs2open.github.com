@@ -410,7 +410,7 @@ int beam_fire(beam_fire_info *fire_info)
 			ship *target_ship = &Ships[fire_info->target->instance];
 			
 			// maybe force to be a type A
-			if(Ship_info[target_ship->ship_info_index].class_type > -1 && (Ship_types[Ship_info[target_ship->ship_info_index].class_type].weapon_bools & STI_WEAP_BEAMS_EASILY_HIT)){
+			if(Ship_info[target_ship->ship_info_index].class_type > -1 && (Ship_types[Ship_info[target_ship->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Beams_easily_hit])){
 				new_item->type = BEAM_TYPE_A;
 			}
 		}
@@ -3037,7 +3037,7 @@ void beam_handle_collisions(beam *b)
 			if (Objects[target].type == OBJ_SHIP) {
 				ship_type_info *sti;
 				sti = ship_get_type_info(&Objects[target]);
-				if (sti->weapon_bools & STI_WEAP_NO_HUGE_IMPACT_EFF)
+				if (sti->flags[Ship::Type_Info_Flags::No_huge_impact_eff])
 					draw_effects = 0;
 			}
 		}

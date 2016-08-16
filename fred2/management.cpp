@@ -1709,7 +1709,7 @@ int set_reinforcement(char *name, int state)
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
-				Wings[index].flags &= ~WF_REINFORCEMENT;
+                Wings[index].flags.remove(Ship::Wing_Flags::Reinforcement);
 			}
 		}
 		if (index == -1 ){
@@ -1736,7 +1736,7 @@ int set_reinforcement(char *name, int state)
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
-				Wings[index].flags |= WF_REINFORCEMENT;
+                Wings[index].flags.set(Ship::Wing_Flags::Reinforcement);
 			}
 		}
 		if ( index == -1 ){
@@ -1756,7 +1756,7 @@ int set_reinforcement(char *name, int state)
 		} else {
 			index = wing_name_lookup(name);
 			if ( index != -1 ){
-				Wings[index].flags |= WF_REINFORCEMENT;
+                Wings[index].flags.set(Ship::Wing_Flags::Reinforcement);
 			}
 		}
 		if ( index == -1 ){

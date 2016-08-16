@@ -1276,7 +1276,7 @@ int brief_setup_closeup(brief_icon *bi)
 		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
 
 		// Goober5000 - wcsaga doesn't want this
-		if (Ship_types[sip->class_type].hud_bools & STI_HUD_NO_CLASS_DISPLAY ) {
+		if (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::No_class_display] ) {
 			strcat_s(Closeup_icon->closeup_label, XSTR( " class", 434));
 		}
 
