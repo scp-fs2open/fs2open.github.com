@@ -57,13 +57,10 @@ namespace
 		// Windows appends a \0 character at the end
 		value.resize(value.length() - 1);
 
-		if (!value.empty())
+		// Fix paths without slash at the end
+		if (value[value.length() - 1] != '\\' && value[value.length() - 1] != '/')
 		{
-			// Fix paths without slash at the end
-			if (value[value.length() - 1] != '\\' && value[value.length() - 1] != '/')
-			{
-				value.append("/");
-			}
+			value.append("/");
 		}
 
 		// now append the name of the library and return
@@ -90,7 +87,7 @@ namespace headtracking
 			mFTGetDllVersion = LoadFunction<FTGetDllVersion_PTR>("FTGetDllVersion");
 			mFTReportID = LoadFunction<FTReportID_PTR>("FTReportName");
 			mFTProvider = LoadFunction<FTProvider_PTR>("FTProvider");
-			
+
 			mEnabled = true;
 		}
 
@@ -129,25 +126,6 @@ namespace headtracking
 			if (!library.Enabled())
 			{
 				throw internal::HeadTrackingException("Library could not be loaded!");
-			}
-
-			// Try to get initial test data
-			FreeTrackData data;
-			data.dataID = std::numeric_limits<unsigned int>::max();
-			data.camHeight = std::numeric_limits<int>::min();
-			data.camWidth = std::numeric_limits<int>::min();
-
-			if (!library.GetData(&data))
-			{
-				throw internal::HeadTrackingException("Failed to get test data set!");
-			}
-
-			if (data.dataID == std::numeric_limits<unsigned int>::max() ||
-				data.camHeight == std::numeric_limits<int>::min() ||
-				data.camWidth == std::numeric_limits<int>::min())
-			{
-				// Check if all the values have been changed
-				throw internal::HeadTrackingException("The test values reported by FreeTrack were invalid!");
 			}
 
 			// I have no idea what a correct value for this function is so I used this random value
