@@ -81,7 +81,14 @@ static int Player_all_alone_msg_inited=0;	// flag used for initializing a player
  * @param[in]  frame_time The frame time when this was called
  */
 void playercontrol_read_stick(int *axis, float frame_time);
-void player_set_padlock_state();
+
+/**
+ * @brief Checks the padlock controls, and sets the appropriate Viewermode state and chase angles
+ *
+ * @param[out] Viewer_mode Is modified if a padlock action is taken
+ * @param[out] chase_slew_angles Is modified if a padlock action is taken
+ */
+void player_set_padlock_state(int &Viewer_mode, angles &chase_slew_angles);
 
 /**
  * @brief Slew angles chase towards a value like they're on a spring.
@@ -323,7 +330,7 @@ void do_view_track_target(float frame_time)
 void do_view_slew(float frame_time)
 {
 	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3, frame_time);
-}
+		}
 
 void do_view_chase(float frame_time)
 {
@@ -530,7 +537,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		do_view_slew(frame_time);
 
 		// Orthogonal padlock views moved here in order to get the springy chase effect when transitioning.
-		player_set_padlock_state();
+		player_set_padlock_state(Viewer_mode, chase_slew_angles);
 	}
 	
 	if ( ok_to_read_ci_pitch_yaw ) {
@@ -1927,42 +1934,36 @@ void player_maybe_play_all_alone_msg()
 } 
 
 
-void player_set_padlock_state()
+void player_set_padlock_state(int &Viewer_mode, angles &chase_slew_angles)
 {
 	if ( check_control(PADLOCK_UP) ) {
 		chase_slew_angles.h = 0.0f;
 		chase_slew_angles.p = -PI_2;
 		Viewer_mode |= VM_PADLOCK_UP;
-		return;
-	}
-	if ( check_control(PADLOCK_DOWN) ) {
+
+	} else if ( check_control(PADLOCK_DOWN) ) {
 		chase_slew_angles.h = -PI;
 		chase_slew_angles.p = 0.0f;
 		Viewer_mode |= VM_PADLOCK_REAR;
-		return;
-	}
 
-	if ( check_control(PADLOCK_RIGHT) ) {
+	} else if ( check_control(PADLOCK_RIGHT) ) {
 		chase_slew_angles.h = PI_2;
 		chase_slew_angles.p = 0.0f;
 		Viewer_mode |= VM_PADLOCK_RIGHT;
-		return;
-	}
 
-	if ( check_control(PADLOCK_LEFT) ) {
+	} else if ( check_control(PADLOCK_LEFT) ) {
 		chase_slew_angles.h = -PI_2;
 		chase_slew_angles.p = 0.0f;
 		Viewer_mode |= VM_PADLOCK_LEFT;
-		return;
-	}
 
-	if ( Viewer_mode & VM_PADLOCK_ANY ) {
+	} else if ( Viewer_mode & VM_PADLOCK_ANY ) {
 		// clear padlock views and center the view once 
 		// the player lets go of an orthogonal padlock command
 		Viewer_mode &= ~(VM_PADLOCK_ANY);
 		chase_slew_angles.h = 0.0f;
 		chase_slew_angles.p = 0.0f;
-	}
+
+	} // Else, do nothing
 }
 
 void player_get_padlock_orient(matrix *eye_orient)
