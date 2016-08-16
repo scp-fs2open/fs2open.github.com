@@ -6,7 +6,6 @@
 #include "cmdline/cmdline.h"
 #include "cutscene/movie.h"
 #include "debris/debris.h"
-#include "external_dll/trackirpublic.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/linklist.h"
@@ -14,6 +13,7 @@
 #include "graphics/font.h"
 #include "graphics/generic.h"
 #include "graphics/gropenglpostprocessing.h"
+#include "headtracking/headtracking.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudconfig.h"
 #include "hud/hudescort.h"
@@ -13089,61 +13089,61 @@ ADE_FUNC(getJoyDeadzone, l_Mouse, NULL, "Gets joystick deadzone setting", "numbe
 //trackir funcs
 ADE_FUNC(updateTrackIR, l_Mouse, NULL, "Updates Tracking Data. Call before using get functions", "boolean", "Checks if trackir is available and updates variables, returns true if successful, otherwise false")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if( !headtracking::isEnabled() )
 		return ADE_RETURN_FALSE;
 
-	if (gTirDll_TrackIR.Query( ) == 0)
+	if (!headtracking::query())
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", true);
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(getTrackIRPitch, l_Mouse, NULL, "Gets pitch axis from last update", "number", "Pitch value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args( L, "f", gTirDll_TrackIR.GetPitch( ) );
+	return ade_set_args( L, "f", headtracking::getStatus()->pitch);
 }
 
 ADE_FUNC(getTrackIRYaw, l_Mouse, NULL, "Gets yaw axis from last update", "number", "Yaw value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", gTirDll_TrackIR.GetYaw());
+	return ade_set_args(L, "f", headtracking::getStatus()->yaw);
 }
 
 ADE_FUNC(getTrackIRRoll, l_Mouse, NULL, "Gets roll axis from last update", "number", "Roll value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", gTirDll_TrackIR.GetRoll());
+	return ade_set_args(L, "f", headtracking::getStatus()->roll);
 }
 
 ADE_FUNC(getTrackIRX, l_Mouse, NULL, "Gets x position from last update", "number", "X value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", gTirDll_TrackIR.GetX());
+	return ade_set_args(L, "f", headtracking::getStatus()->x);
 }
 
 ADE_FUNC(getTrackIRY, l_Mouse, NULL, "Gets y position from last update", "number", "Y value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", gTirDll_TrackIR.GetY());
+	return ade_set_args(L, "f", headtracking::getStatus()->y);
 }
 
 ADE_FUNC(getTrackIRZ, l_Mouse, NULL, "Gets z position from last update", "number", "Z value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled() )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", gTirDll_TrackIR.GetZ());
+	return ade_set_args(L, "f", headtracking::getStatus()->z);
 }
 
 //**********LIBRARY: HUD library

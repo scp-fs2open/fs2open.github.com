@@ -3,7 +3,7 @@
 
 #include "globalincs/pstypes.h"
 
-#include "SDL_loadso.h"
+#include <SDL_loadso.h>
 
 /* This class loads external libraries for FSO use.
 * Uses SDL to do the actual loading so this should be supported on most platforms
@@ -11,39 +11,62 @@
 class SCP_ExternalCode
 {
 public:
-	SCP_ExternalCode() : m_dll(NULL)
+	SCP_ExternalCode( )
+		: m_library(NULL)
 	{
 	}
 
 	virtual ~SCP_ExternalCode()
 	{
-		if (m_dll)
-			SDL_UnloadObject(m_dll);
+		if (m_library)
+			SDL_UnloadObject(m_library);
 	}
 
 protected:
-	bool LoadExternal(const char* externlib)
+	bool LoadExternal( const char* externlib )
 	{
-		if (!externlib)
-			return false;
+		if ( !externlib )
+			return FALSE;
+		
+		m_library = SDL_LoadObject(externlib);
 
-		m_dll = SDL_LoadObject(externlib);
+#ifndef NDEBUG
+		if (m_library == NULL)
+		{
+			mprintf(("Failed to load library '%s': '%s'\n", externlib, SDL_GetError()));
+		}
+#endif
 
-		if (m_dll)
-			return true;
-
-		return false;
+		return m_library != NULL;
 	}
 
 	void* LoadFunction(const char* functionname)
 	{
-		if (m_dll != NULL && functionname != NULL)
-			return SDL_LoadFunction(m_dll, functionname);
+		if (m_library != NULL && functionname != NULL)
+		{
+			void* func = SDL_LoadFunction(m_library, functionname);
+
+#ifndef NDEBUG
+			if (func == NULL)
+			{
+				mprintf(("Failed to load function '%s': '%s'\n", functionname, SDL_GetError()));
+			}
+#endif
+
+			return func;
+		}
 
 		return NULL;
 	}
+
+	template<class FuncType>
+	FuncType LoadFunction(const char* functionname)
+	{
+		return reinterpret_cast<FuncType>(LoadFunction(functionname));
+	}
+
 private:
-	void* m_dll;
+	void* m_library;
 };
 
 /* These are available if you're compiling an external DLL
