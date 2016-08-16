@@ -1,4 +1,5 @@
 #include "io/joy.h"
+#include "io/joy_ff.h"
 #include "io/timer.h"
 #include "osapi/osapi.h"
 
@@ -766,6 +767,8 @@ namespace joystick
 
 		initialized = true;
 
+		joy_ff_init();
+
 		return true;
 	}
 
@@ -788,6 +791,8 @@ namespace joystick
 
 	void shutdown()
 	{
+		joy_ff_shutdown();
+
 		initialized = false;
 		currentJoystick = nullptr;
 		// Automatically frees joystick resources
