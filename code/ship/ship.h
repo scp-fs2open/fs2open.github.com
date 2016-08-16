@@ -318,7 +318,7 @@ public:
 	float		current_hits;							// current number of hits this subsystem has left.
 	float		max_hits;
 
-	int flags;						// Goober5000
+	flagset<Ship::Subsystem_Flags> flags;						// Goober5000
 
 	int subsys_guardian_threshold;	// Goober5000
 	int armor_type_idx;				// FUBAR
@@ -753,6 +753,7 @@ struct ai_target_priority {
     flagset<Ship::Info_Flags> sif_flags;
 	int wif_flags;
 	int wif2_flags;
+	int wif3_flags;
 };
 
 extern SCP_vector <ai_target_priority> Ai_tp_list;
@@ -763,19 +764,13 @@ ai_target_priority init_ai_target_priorities();
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
 // information.
-#define SEF_DESTROYED			(1<<0)
-#define SEF_DEPARTED				(1<<1)
-#define SEF_CARGO_KNOWN			(1<<2)
-#define SEF_PLAYER_DELETED		(1<<3)			// ship deleted by a player in ship select
-#define SEF_BEEN_TAGGED			(1<<4)
-#define SEF_RED_ALERT_CARRY	(1<<5)
 
 typedef struct exited_ship {
 	char	ship_name[NAME_LENGTH];
 	int		obj_signature;
 	int		ship_class;
 	int		team;
-	int		flags;
+	flagset<Ship::Exit_Flags> flags;
 	fix		time;
 	int		hull_strength;
 	fix		time_cargo_revealed;
@@ -787,7 +782,7 @@ typedef struct exited_ship {
 extern SCP_vector<exited_ship> Ships_exited;
 
 // a couple of functions to get at the data
-extern void ship_add_exited_ship( ship *shipp, int reason );
+extern void ship_add_exited_ship( ship *shipp, Ship::Exit_Flags reason );
 extern int ship_find_exited_ship_by_name( char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
 
@@ -1268,7 +1263,7 @@ public:
 
 	int ship_iff_info[MAX_IFFS][MAX_IFFS];
 
-	int aiming_flags;
+	flagset<Ship::Aiming_Flags> aiming_flags;
 	float minimum_convergence_distance;
 	float convergence_distance;
 	vec3d convergence_offset;

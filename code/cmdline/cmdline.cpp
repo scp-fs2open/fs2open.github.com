@@ -1194,7 +1194,8 @@ static void handle_unix_modlist(char **modlist, size_t *len)
 	for (char *cur_mod = strtok(*modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ","))
 	{
 		SCP_vector<SCP_string> this_mod_paths = unix_get_dir_names(".", cur_mod);
-		if (this_mod_paths.empty()) {
+		// Ignore non-existing mods for unit tests
+		if (!running_unittests && this_mod_paths.empty()) {
 			ReleaseWarning(LOCATION, "Can't find mod '%s'. Ignoring.", cur_mod);
 		}
 		mod_paths.insert(mod_paths.end(), this_mod_paths.begin(), this_mod_paths.end());

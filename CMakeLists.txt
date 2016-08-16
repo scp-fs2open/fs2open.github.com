@@ -81,6 +81,8 @@ ENDIF(WIN32)
 
 OPTION(FSO_BUILD_TOOLS "Build tools related to FSO" OFF)
 
+OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
+
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
 
 OPTION(FSO_BUILD_WXFRED2 "Build wxFRED2 binary" OFF)
@@ -153,6 +155,10 @@ ENDIF(FSO_BUILD_FRED2)
 IF(FSO_BUILD_WXFRED2)
 	ADD_SUBDIRECTORY(wxfred2)
 ENDIF(FSO_BUILD_WXFRED2)
+
+if(FSO_BUILD_TESTS)
+	add_subdirectory(test)
+endif()
 
 if ("${CMAKE_VERSION}" VERSION_GREATER "3.5")
 	# Default to using Freespace2 as startup project if CMake supports it.

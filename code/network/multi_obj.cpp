@@ -893,7 +893,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 			// add the value just generated (it was zero'ed above) into the array of generic system types
 			subsys_type = subsysp->system_info->type;					// this is the generic type of subsystem
 			Assert ( subsys_type < SUBSYSTEM_MAX );
-			if (!(subsysp->flags & SSF_NO_AGGREGATE)) {
+			if (!(subsysp->flags[Ship::Subsystem_Flags::No_aggregate])) {
 				shipp->subsys_info[subsys_type].aggregate_current_hits += val;
 			}
 			subsys_count++;

@@ -564,7 +564,7 @@ void obj_snd_do_frame()
 				}
 				if (osp->flags & OS_SUBSYS_ROTATION )
 				{
-					if (osp->ss->flags & SSF_ROTATES) {
+					if (osp->ss->flags[Ship::Subsystem_Flags::Rotates]) {
 						rot_vol_mult = 1.0f;
 					} else {
 						rot_vol_mult = 0.0f;
@@ -819,7 +819,7 @@ void	obj_snd_delete_type(int objnum, int sndnum, ship_subsys *ss)
 
 	objp = &Objects[objnum];
 
-	size_t idx = 0;
+	int idx = 0;
 	//Go through the list and get sounds that match criteria
 	for(SCP_vector<int>::iterator iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx){
 		// no sound

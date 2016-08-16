@@ -2418,7 +2418,7 @@ int create_wings()
 						shipnum = wp->ship_index[j];
 						Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
 						cleanup_ship_index[j] = shipnum;
-						ship_add_exited_ship( &Ships[shipnum], SEF_PLAYER_DELETED );
+						ship_add_exited_ship( &Ships[shipnum], Ship::Exit_Flags::Player_deleted );
 						obj_delete(Ships[shipnum].objnum);
 						hud_set_wingman_status_none( Ships[shipnum].wing_status_wing_index, Ships[shipnum].wing_status_wing_pos);
 					}

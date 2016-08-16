@@ -476,18 +476,6 @@ void process_emp_effect(ubyte *data, header *hinfo);
 void send_reinforcement_avail( int rnum );
 void process_reinforcement_avail( ubyte *data, header *hinfo );
 
-// change iff stuff
-void send_change_iff_packet(ushort net_signature, int new_team);
-void process_change_iff_packet( ubyte *data, header *hinfo );
-
-// change iff color stuff
-void send_change_iff_color_packet(ushort net_signature, int observer_team, int observed_team, int alternate_iff_color);
-void process_change_iff_color_packet( ubyte *data, header *hinfo );
-
-// change ai class stuff
-void send_change_ai_class_packet(ushort net_signature, char *subsystem, int new_ai_class);
-void process_change_ai_class_packet( ubyte *data, header *hinfo );
-
 // new primary fired info
 void send_NEW_primary_fired_packet(ship *shipp, int banks_fired);
 void process_NEW_primary_fired_packet(ubyte *data, header *hinfo);
@@ -511,10 +499,6 @@ void process_event_update_packet(ubyte *data, header *hinfo);
 // variable update packet
 void send_variable_update_packet(int variable_index, char *value);
 void process_variable_update_packet( ubyte *data, header *hinfo);
-
-// weapons or ammo changed packet
-void send_weapon_or_ammo_changed_packet (int ship_index, int bank_type, int bank_number, int ammo_left, int rearm_limit, int new_weapon_index);
-void process_weapon_or_ammo_changed_packet( ubyte *data, header *hinfo);
 
 // weapon detonate packet
 void send_weapon_detonate_packet(object *objp);

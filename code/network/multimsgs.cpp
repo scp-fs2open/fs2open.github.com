@@ -5991,7 +5991,7 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 			Multi_ts_deleted_objnums[idx] = OBJ_INDEX(objp);
 
 			// delete the ship
-			ship_add_exited_ship(&Ships[objp->instance], SEF_PLAYER_DELETED);
+			ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Player_deleted);
 			obj_delete(Multi_ts_deleted_objnums[idx]);			
 			ship_wing_cleanup(objp->instance,&Wings[Ships[objp->instance].wingnum]);
 		} else {
@@ -7152,7 +7152,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 					// add the value just generated (it was zero'ed above) into the array of generic system types
 					subsys_type = subsysp->system_info->type;					// this is the generic type of subsystem
 					Assert ( subsys_type < SUBSYSTEM_MAX );
-					if (!(subsysp->flags & SSF_NO_AGGREGATE)) {
+					if (!(subsysp->flags[Ship::Subsystem_Flags::No_aggregate])) {
 						shipp->subsys_info[subsys_type].aggregate_current_hits += fl_val;
 					}
 					n_subsystems++;
@@ -7460,147 +7460,6 @@ void process_reinforcement_avail( ubyte *data, header *hinfo )
 	if ( (rnum >= 0) && (rnum < Num_reinforcements) ) {
 		Reinforcements[rnum].flags |= RF_IS_AVAILABLE;
 	}
-}
-
-void send_change_iff_packet(ushort net_signature, int new_team)
-{
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size = 0;
-
-	if(Net_player == NULL){
-		return;
-	}
-	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		return;
-	}
-
-	// build the packet and add the data
-	BUILD_HEADER(CHANGE_IFF);
-	ADD_USHORT(net_signature);
-	ADD_INT(new_team);
-
-	// send to all players	
-	multi_io_send_to_all_reliable(data, packet_size);
-}
-
-void process_change_iff_packet( ubyte *data, header *hinfo)
-{
-	int offset = HEADER_LENGTH;
-	ushort net_signature;
-	int new_team;	
-	object *objp;
-
-	// get the data
-	GET_USHORT(net_signature);
-	GET_INT(new_team);
-	PACKET_SET_SIZE();
-
-	// lookup the object
-	objp = multi_get_network_object(net_signature);
-	if((objp != NULL) && (objp->type == OBJ_SHIP) && (objp->instance >=0)){
-		Ships[objp->instance].team = new_team;
-	}	
-}
-
-void send_change_iff_color_packet(ushort net_signature, int observer_team, int observed_team, int alternate_iff_color)
-{
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size = 0;
-
-	if(Net_player == NULL){
-		return;
-	}
-	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		return;
-	}
-
-	// build the packet and add the data
-	BUILD_HEADER(CHANGE_IFF_COLOR);
-	ADD_USHORT(net_signature);
-	ADD_INT(observer_team);
-	ADD_INT(observed_team);
-	ADD_INT(alternate_iff_color);
-
-	// send to all players	
-	multi_io_send_to_all_reliable(data, packet_size);
-}
-
-void process_change_iff_color_packet( ubyte *data, header *hinfo)
-{
-	int offset = HEADER_LENGTH;
-	ushort net_signature;
-	int observer_team, observed_team, alternate_iff_color;	
-	object *objp;
-
-	// get the data
-	GET_USHORT(net_signature);
-	GET_INT(observer_team);
-	GET_INT(observed_team);
-	GET_INT(alternate_iff_color);
-	PACKET_SET_SIZE();
-
-	// lookup the object
-	objp = multi_get_network_object(net_signature);
-	if((objp != NULL) && (objp->type == OBJ_SHIP) && (objp->instance >=0))
-	{
-		Ships[objp->instance].ship_iff_color[observer_team][observed_team] = alternate_iff_color;
-	}	
-}
-
-void send_change_ai_class_packet(ushort net_signature, char *subsystem, int new_ai_class)
-{
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size = 0;
-
-	if(Net_player == NULL){
-		return;
-	}
-	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		return;
-	}
-
-	// build the packet and add the data
-	BUILD_HEADER(CHANGE_AI_CLASS);
-	ADD_USHORT(net_signature);
-	if (subsystem)
-		ADD_STRING(subsystem);
-	else
-		ADD_STRING(NO_SUBSYS_STRING);
-	ADD_INT(new_ai_class);
-
-	// send to all players	
-	multi_io_send_to_all_reliable(data, packet_size);
-}
-
-void process_change_ai_class_packet(ubyte *data, header *hinfo)
-{
-	int offset = HEADER_LENGTH;
-	ushort net_signature;
-	int new_ai_class;
-	char subsys_buf[255];
-	object *objp;
-
-	// get the data
-	GET_USHORT(net_signature);
-	GET_STRING(subsys_buf);
-	GET_INT(new_ai_class);
-	PACKET_SET_SIZE();
-
-	// lookup the object
-	objp = multi_get_network_object(net_signature);
-	if((objp != NULL) && (objp->type == OBJ_SHIP) && (objp->instance >=0))
-	{
-		// no subsystem?
-		if (!strcmp(subsys_buf, NO_SUBSYS_STRING))
-		{
-			ship_set_new_ai_class(objp->instance, new_ai_class);
-		}
-		// subsystem
-		else
-		{
-			ship_subsystem_set_new_ai_class(objp->instance, subsys_buf, new_ai_class);
-		}
-	}	
 }
 
 void send_NEW_primary_fired_packet(ship *shipp, int banks_fired)
@@ -8074,87 +7933,6 @@ void process_event_update_packet(ubyte *data, header *hinfo)
 	else if((store_flags & MEF_DIRECTIVE_SPECIAL) && !(Mission_events[u_event].flags & MEF_DIRECTIVE_SPECIAL)){
 		mission_event_unset_directive_special(u_event);
 	}	
-}
-
-void send_weapon_or_ammo_changed_packet (int ship_index, int bank_type, int bank_number, int ammo_left, int rearm_limit, int new_weapon_index)
-{
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size = 0;
-
-	if(Net_player == NULL){
-		return;
-	}
-	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		return;
-	}
-
-	// build the packet and add the data
-	BUILD_HEADER(WEAPON_OR_AMMO_CHANGED);
-	ADD_INT(ship_index);
-	ADD_INT(bank_type);
-	ADD_INT(bank_number);
-	ADD_INT(ammo_left);
-	ADD_INT(rearm_limit);
-	ADD_INT(new_weapon_index);
-
-	//Send it to the player whose weapons have changes
-	multi_io_send_to_all_reliable(data, packet_size);
-}
-
-void process_weapon_or_ammo_changed_packet(ubyte *data, header *hinfo)
-{
-	int offset = HEADER_LENGTH;
-	int ship_index, bank_type, bank_number, ammo_left, rearm_limit, new_weapon_index;
-	ship *shipp;
-
-	// get the data
-	GET_INT(ship_index);
-	GET_INT(bank_type);
-	GET_INT(bank_number);
-	GET_INT(ammo_left);
-	GET_INT(rearm_limit);
-	GET_INT(new_weapon_index);
-	PACKET_SET_SIZE();
-
-	// Now set the ships values up. 
-	
-	//Primary weapons
-	if (bank_type == 0) 
-	{
-		// don't swap weapons
-		if (new_weapon_index < 0)
-		{
-			set_primary_ammo(ship_index, bank_number, ammo_left, rearm_limit);
-		}
-		else 
-		{
-			Assert (new_weapon_index < MAX_WEAPON_TYPES);
-			shipp = &Ships[ship_index];
-			shipp->weapons.primary_bank_weapons[bank_number] = new_weapon_index;
-			set_primary_ammo(Player_obj->instance, bank_number, ammo_left, rearm_limit);
-		}
-	}
-	// Secondary weapons
-	else if (bank_type == 1)
-	{
-		// don't swap weapons
-		if (new_weapon_index < 0)
-		{
-			set_secondary_ammo(ship_index, bank_number, ammo_left, rearm_limit);
-		}
-		else 
-		{
-			Assert (new_weapon_index < MAX_WEAPON_TYPES);
-			shipp = &Ships[ship_index];
-			shipp->weapons.secondary_bank_weapons[bank_number] = new_weapon_index;
-			set_secondary_ammo(Player_obj->instance, bank_number, ammo_left, rearm_limit);
-		}
-	}
-	else
-	{
-		nprintf(("network", "weapon_or_ammo_changed_packet recived for tertiary or other unsupported type\n"));
-		return;
-	}
 }
 
 // Karajorma - Sends a packet to all clients telling them that a SEXP variable has changed its value

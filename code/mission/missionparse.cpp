@@ -2225,7 +2225,7 @@ int parse_create_object_sub(p_object *p_objp)
 					ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
 
 					float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
-					if (!(ptr->flags & SSF_NO_AGGREGATE)) {
+					if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
 						shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
 					}
 
@@ -3015,7 +3015,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
     if (optional_string("+Flags:"))
     {
         SCP_vector<SCP_string> unparsed;
-        parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
+        parse_string_flag_list(p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
         if (unparsed.size() > 0) {
             for (size_t k = 0; k < unparsed.size(); ++k) {
                 WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
@@ -3027,7 +3027,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
     if (optional_string("+Flags2:"))
     {
         SCP_vector<SCP_string> unparsed;
-        parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
+        parse_string_flag_list(p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
         if (unparsed.size() > 0) {
             for (size_t k = 0; k < unparsed.size(); ++k) {
                 WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());

@@ -28,6 +28,7 @@
 #include "graphics/gropengl.h" // Includes for different rendering systems
 #include "graphics/gropengldraw.h"
 #include "graphics/grstub.h"
+#include "graphics/paths/PathRenderer.h"
 #include "io/keycontrol.h" // m!m
 #include "io/timer.h"
 #include "osapi/osapi.h"
@@ -1067,13 +1068,16 @@ bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d
 		return false;
 	}
 
+	mprintf(("Initializing path renderer...\n"));
+	graphics::paths::PathRenderer::init();
+
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 
 	bm_init();
 	io::mouse::CursorManager::init();
 
 	// load the web pointer cursor bitmap
-	if (Web_cursor == NULL) {
+	if (!running_unittests && Web_cursor == NULL) {
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
 		if ( (Web_cursor = io::mouse::CursorManager::get()->loadCursor("cursorweb", true)) == NULL ) {
 			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"

@@ -391,13 +391,13 @@ void iff_init()
             iff->default_parse_flags.reset();
             if (optional_string("$Default Ship Flags:"))
             {
-                parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&iff->default_parse_flags, Parse_object_flags, num_parse_object_flags, NULL);
+                parse_string_flag_list(iff->default_parse_flags, Parse_object_flags, num_parse_object_flags, NULL);
             }
 
             // again, for compatibility reasons
             if (optional_string("$Default Ship Flags2:"))
             {
-                parse_string_flag_list<Mission::Parse_Object_Flags, flagset<Mission::Parse_Object_Flags>>(&iff->default_parse_flags, Parse_object_flags, num_parse_object_flags, NULL);
+                parse_string_flag_list(iff->default_parse_flags, Parse_object_flags, num_parse_object_flags, NULL);
             }
 
 			// this is cleared between each level but let's just set it here for thoroughness

@@ -31,6 +31,8 @@ int Multi_ping_timestamp = -1;
 int Sun_drew = 0;
 int Networking_disabled = 0;
 
+bool running_unittests = false;
+
 void init_ets(class object*){}
 
 control_info PlayerControls;

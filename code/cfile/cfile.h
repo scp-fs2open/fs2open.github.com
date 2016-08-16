@@ -116,6 +116,7 @@ extern char Cfile_user_dir_legacy[CFILE_ROOT_DIRECTORY_LEN];
 
 //================= LOW-LEVEL FUNCTIONS ==================
 int cfile_init(const char *exe_dir, const char *cdrom_dir=NULL);
+void cfile_close();
 
 // Call this if pack files got added or removed or the
 // cdrom changed.  This will refresh the list of filenames 

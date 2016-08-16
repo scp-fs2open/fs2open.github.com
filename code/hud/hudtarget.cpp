@@ -1108,7 +1108,7 @@ void hud_target_subobject_common(int next_flag)
 			continue;
 		}
 
-		if ( A->flags & SSF_UNTARGETABLE ) {
+		if ( A->flags[Ship::Subsystem_Flags::Untargetable] ) {
 			continue;
 		}
 
@@ -1784,7 +1784,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 		// get a turret
 		if (A->system_info->type == SUBSYSTEM_TURRET) {
 			// niffiwan: ignore untargetable turrets 
-			if ( A->flags & SSF_UNTARGETABLE ) {
+			if ( A->flags[Ship::Subsystem_Flags::Untargetable] ) {
 				continue;
 			}
 			// check turret has hit points and has a weapon
@@ -2127,7 +2127,7 @@ bool evaluate_ship_as_closest_target(esct *esct_p)
 	if (Ship_info[esct_p->shipp->ship_info_index].is_big_or_huge()) {
 		for (ss=GET_FIRST(&esct_p->shipp->subsys_list); ss!=END_OF_LIST(&esct_p->shipp->subsys_list); ss=GET_NEXT(ss)) {
 
-			if (ss->flags & SSF_UNTARGETABLE)
+			if (ss->flags[Ship::Subsystem_Flags::Untargetable])
 				continue;
 
 			if ( (ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits > 0) ) {
@@ -2716,7 +2716,7 @@ void hud_target_subsystem_in_reticle()
 	for (subsys = GET_FIRST(&Ships[shipnum].subsys_list); subsys != END_OF_LIST(&Ships[shipnum].subsys_list)  ; subsys = GET_NEXT( subsys ) ) {
 		
 		//if the subsystem isn't targetable, skip it
-		if (subsys->flags & SSF_UNTARGETABLE)
+		if (subsys->flags[Ship::Subsystem_Flags::Untargetable])
 			continue;
 
 		get_subsystem_world_pos(targetp, subsys, &subobj_pos);
@@ -3610,7 +3610,7 @@ void hud_show_hostile_triangle()
 		// check if any turrets on ship are firing at the player (only on non fighter-bombers)
 		if ( !(Ship_info[sp->ship_info_index].is_fighter_bomber()) ) {
 			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
-				if (ss->flags & SSF_UNTARGETABLE)
+				if (ss->flags[Ship::Subsystem_Flags::Untargetable])
 					continue;
 
 				if ( (ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits > 0) ) {
