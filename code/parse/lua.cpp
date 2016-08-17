@@ -4670,7 +4670,7 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 	}
 		
 
-	if (info->wi_flags & WIF_BOMB)
+	if (info->wi_flags[Weapon::Info_Flags::Bomb])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -4796,7 +4796,7 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 	if(idx < 0 || idx >= Num_weapon_types)
 		return ADE_RETURN_FALSE;
 
-	if (Weapon_info[idx].wi_flags & WIF_BEAM || Weapon_info[idx].subtype == WP_BEAM)
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;

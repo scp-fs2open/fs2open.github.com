@@ -2160,7 +2160,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		if (damage > 0.0f) {
 			weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 			if ( weapon_info_index >= 0 ) {
-				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) {
+				if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Puncture]) {
 					damage /= 4;
 				}
 
@@ -2401,7 +2401,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 
 		Assert(wip != NULL);
 
-		if (wip->wi_flags & WIF_TAG) {
+		if (wip->wi_flags[Weapon::Info_Flags::Tag]) {
 			// ssm stuff
 			vec3d *start = hitpos;
 			int ssm_index = wip->SSM_index;
@@ -2413,7 +2413,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 #ifndef NDEBUG
 	if (other_obj->type == OBJ_WEAPON) {
 		weapon_info	*wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
-		if (wip->wi_flags & WIF_HOMING) {
+		if (wip->is_homing()) {
 			Homing_hits++;
 			// nprintf(("AI", " Hit!  Hits = %i/%i\n", Homing_hits, (Homing_hits + Homing_misses)));
 		}

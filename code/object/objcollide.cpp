@@ -296,11 +296,11 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 
 		if (awip->subtype != WP_LASER || bwip->subtype != WP_LASER) {
 			if (awip->subtype == WP_LASER) {
-				if ( bwip->wi_flags & WIF_BOMB ) {
+				if ( bwip->wi_flags[Weapon::Info_Flags::Bomb] ) {
 					check_collision = collide_weapon_weapon;
 				}
 			} else if (bwip->subtype == WP_LASER) {
-				if ( awip->wi_flags & WIF_BOMB ) {
+				if ( awip->wi_flags[Weapon::Info_Flags::Bomb] ) {
 					check_collision = collide_weapon_weapon;
 					swapped=1;			
 				}

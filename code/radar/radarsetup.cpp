@@ -207,12 +207,12 @@ void radar_plot_object( object *objp )
 		case OBJ_WEAPON:
 		{
 			// if not a bomb, return
-			if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags2 & WIF2_SHOWN_ON_RADAR) )
-				if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
+			if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Shown_on_radar]) )
+				if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) )
 					return;
 
 			// if explicitly hidden, return
-			if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags2 & WIF2_DONT_SHOW_ON_RADAR)
+			if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Dont_show_on_radar])
 				return;
 
 			// if we don't attack the bomb, return
@@ -224,7 +224,7 @@ void radar_plot_object( object *objp )
 				return;
 
 			// if corkscrew missile use last frame pos for pos
-			if ( (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_CORKSCREW) )
+			if ( (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Corkscrew]) )
 				world_pos = objp->last_pos;
 
 			break;
@@ -561,12 +561,12 @@ RadarVisibility radar_is_visible( object *objp )
 		case OBJ_WEAPON:
 		{
 			// if not a bomb, return
-			if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags2 & WIF2_SHOWN_ON_RADAR) )
-				if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
+			if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Shown_on_radar]) )
+				if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) )
 					return NOT_VISIBLE;
 
 			// if explicitly hidden, return
-			if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags2 & WIF2_DONT_SHOW_ON_RADAR)
+			if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Dont_show_on_radar])
 				return NOT_VISIBLE;
 
 			// if we don't attack the bomb, return

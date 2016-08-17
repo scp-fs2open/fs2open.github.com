@@ -2270,7 +2270,7 @@ void labviewer_change_weapon(Tree *caller)
 	int weap_index = (int)(caller->GetSelectedItem()->GetData());
 	Assert( weap_index >= 0 );
 
-	if ( !(Weapon_info[weap_index].wi_flags & WIF_BEAM) ) {
+	if ( !(Weapon_info[weap_index].wi_flags[Weapon::Info_Flags::Beam]) ) {
 		switch (Weapon_info[weap_index].render_type) {
 			case WRT_POF:
 				labviewer_change_bitmap();
@@ -2352,7 +2352,7 @@ void labviewer_make_weap_window(Button* caller)
 			continue;
 		}
 		
-		if (Weapon_info[i].wi_flags & WIF_BEAM) {
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Beam]) {
 			stip = type_nodes[WP_BEAM];
 		} else {
 			stip = type_nodes[Weapon_info[i].subtype];

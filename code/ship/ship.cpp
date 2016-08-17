@@ -3448,7 +3448,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	{
 		for (j = 0; j < Num_weapon_types; j++)
 		{
-			if(sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags2 & WIF2_BALLISTIC))
+			if(sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
 			{
 				sip->flags.set(Ship::Info_Flags::Ballistic_primaries);
 				break;
@@ -3541,7 +3541,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		int res = weapon_info_lookup(buf);
 		if (res < 0) {
 			Warning(LOCATION, "Could not find weapon type '%s' to use as countermeasure on %s '%s'", buf, info_type_name, sip->name);
-		} else if (Weapon_info[res].wi_flags & WIF_BEAM) {
+		} else if (Weapon_info[res].wi_flags[Weapon::Info_Flags::Beam]) {
 			Warning(LOCATION, "Attempt made to set a beam weapon as a countermeasure on %s '%s'", info_type_name, sip->name);
 		} else {
 			sip->cmeasure_type = res;
@@ -9058,7 +9058,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 	{
 		wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-		if ( wip->wi_flags2 & WIF2_BALLISTIC )
+		if ( wip->wi_flags[Weapon::Info_Flags::Ballistic] )
 		{
 			if (Fred_running){
 				swp->primary_bank_ammo[i] = 100;
@@ -10374,7 +10374,7 @@ void ship_maybe_play_primary_fail_sound()
 	if ( timestamp_elapsed(Laser_energy_out_snd_timer) )
 	{
 		// check timestamp according to ballistics
-		if (Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags2 & WIF2_BALLISTIC)
+		if (Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			stampval = 500;
 		}
@@ -10396,7 +10396,7 @@ int ship_maybe_play_secondary_fail_sound(weapon_info *wip)
 
 	if ( timestamp_elapsed(Missile_out_snd_timer) ) {
 		
-		if ( wip->wi_flags & WIF_SWARM ) {
+		if ( wip->wi_flags[Weapon::Info_Flags::Swarm] ) {
 			Missile_out_snd_timer = timestamp(500);
 		} else {
 			Missile_out_snd_timer = timestamp(50);
@@ -10737,7 +10737,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				continue;
 		}
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
-		if((winfo_p->wi_flags & WIF_BEAM) && (winfo_p->tag_level == 3) && (shipp->flags[Ship_Flags::Trigger_down]) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
+		if((winfo_p->wi_flags[Weapon::Info_Flags::Beam]) && (winfo_p->tag_level == 3) && (shipp->flags[Ship_Flags::Trigger_down]) && (winfo_p->b_info.beam_type == BEAM_TYPE_C) ){
 			ship_start_targeting_laser(shipp);
 			continue;
 		}
@@ -10898,7 +10898,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				}
 			}
 			
-			if(winfo_p->wi_flags & WIF_BEAM){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
+			if(winfo_p->wi_flags[Weapon::Info_Flags::Beam]){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
 				float t;
 				if (winfo_p->burst_shots > swp->burst_counter[bank_to_fire]) {
 					t = winfo_p->burst_delay;
@@ -11016,7 +11016,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				// moved the above to here to use points instead of num_slots for energy consumption check
 
 				// ballistics support for primaries - Goober5000
-				if ( winfo_p->wi_flags2 & WIF2_BALLISTIC )
+				if ( winfo_p->wi_flags[Weapon::Info_Flags::Ballistic] )
 				{
 					// Make sure this ship is set up for ballistics.
 					// If you get this error, add the ballistic primaries tags to ships.tbl.
@@ -11080,7 +11080,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				vec3d *firepoint_list;
 				size_t current_firepoint = 0;
 
-				if (winfo_p->wi_flags3 & WIF3_APPLY_RECOIL){
+				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_recoil]){
 					firepoint_list = new vec3d[numtimes * points];
 					vm_vec_zero(&total_impulse);
 				} else {
@@ -11180,7 +11180,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								firing_orient = obj->orient;
 							}
 							
-							if (winfo_p->wi_flags3 & WIF3_APPLY_RECOIL){	// Function to add recoil functionality - DahBlount
+							if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_recoil]){	// Function to add recoil functionality - DahBlount
 								vec3d local_impulse = firing_orient.vec.fvec;
 								
 								float recoil_force = (winfo_p->mass * winfo_p->max_speed * winfo_p->recoil_modifier * sip->ship_recoil_modifier);
@@ -11200,7 +11200,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 							weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
 
-							if (winfo_p->wi_flags & WIF_FLAK)
+							if (winfo_p->wi_flags[Weapon::Info_Flags::Flak])
 							{
 								object *target;
 								vec3d predicted_pos;
@@ -11254,7 +11254,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					}
 					swp->external_model_fp_counter[bank_to_fire]++;
 				}
-				if (winfo_p->wi_flags3 & WIF3_APPLY_RECOIL){
+				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_recoil]){
 					vec3d avg_firepoint;
 
 					vm_vec_avg_n(&avg_firepoint, current_firepoint, firepoint_list);
@@ -11274,7 +11274,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		// avoid playing the same sound multiple times when banks are linked with the
 		// same weapon.
 
-		if (!(winfo_p->wi_flags & WIF_BEAM)){	// not a beam weapon?
+		if (!(winfo_p->wi_flags[Weapon::Info_Flags::Beam])){	// not a beam weapon?
 			if ( sound_played != winfo_p->launch_snd ) {
 				sound_played = winfo_p->launch_snd;
 				if ( obj == Player_obj ) {
@@ -11309,7 +11309,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
 
 							// modify force feedback for ballistics: make it stronger
-							if (wip->wi_flags2 & WIF2_BALLISTIC)
+							if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 								joy_ff_play_primary_shoot(force_level * 2);
 							// no ballistics
 							else
@@ -11380,10 +11380,10 @@ void ship_start_targeting_laser(ship *shipp)
 	int bank1_laser = 0;
 
 	// determine if either of our banks have a targeting laser
-	if((shipp->weapons.primary_bank_weapons[0] >= 0) && (Weapon_info[shipp->weapons.primary_bank_weapons[0]].wi_flags & WIF_BEAM) && (Weapon_info[shipp->weapons.primary_bank_weapons[0]].b_info.beam_type == BEAM_TYPE_C)){
+	if((shipp->weapons.primary_bank_weapons[0] >= 0) && (Weapon_info[shipp->weapons.primary_bank_weapons[0]].wi_flags[Weapon::Info_Flags::Beam]) && (Weapon_info[shipp->weapons.primary_bank_weapons[0]].b_info.beam_type == BEAM_TYPE_C)){
 		bank0_laser = 1;
 	}
-	if((shipp->weapons.primary_bank_weapons[1] >= 0) && (Weapon_info[shipp->weapons.primary_bank_weapons[1]].wi_flags & WIF_BEAM) && (Weapon_info[shipp->weapons.primary_bank_weapons[1]].b_info.beam_type == BEAM_TYPE_C)){
+	if((shipp->weapons.primary_bank_weapons[1] >= 0) && (Weapon_info[shipp->weapons.primary_bank_weapons[1]].wi_flags[Weapon::Info_Flags::Beam]) && (Weapon_info[shipp->weapons.primary_bank_weapons[1]].b_info.beam_type == BEAM_TYPE_C)){
 		bank1_laser = 1;
 	}
 
@@ -11514,7 +11514,7 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
 	Assert(Weapons[objp->instance].weapon_info_index != -1);
 	wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 
-	if (wip->wi_flags & WIF_REMOTE) {
+	if (wip->wi_flags[Weapon::Info_Flags::Remote]) {
 
 		int	weapon_sig;
 
@@ -11550,7 +11550,7 @@ int ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 					Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 					mobjp = &Objects[mo->objnum];
 					if ((mobjp != first_objp) && (mobjp->parent_sig == obj->parent_sig)) {
-						if (Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags & WIF_REMOTE) {
+						if (Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Remote]) {
 							weapon_detonate(mobjp);
 						}
 					}
@@ -11738,7 +11738,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 					float max_dist;
 
 					max_dist = wip->lifetime * wip->max_speed;
-					if (wip->wi_flags2 & WIF2_LOCAL_SSM){
+					if (wip->wi_flags[Weapon::Info_Flags::Local_ssm]){
 						max_dist= wip->lssm_lock_range;
 					}
 
@@ -11765,7 +11765,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		}
 	}
 
-	if (wip->wi_flags2 & WIF2_TAGGED_ONLY)
+	if (wip->wi_flags[Weapon::Info_Flags::Tagged_only])
 	{
 		if (!ship_is_tagged(&Objects[aip->target_objnum]))
 		{
@@ -11792,7 +11792,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 
 	// if trying to fire a swarm missile, make sure being called from right place
-	if ( (wip->wi_flags & WIF_SWARM) && !allow_swarm ) {
+	if ( (wip->wi_flags[Weapon::Info_Flags::Swarm]) && !allow_swarm ) {
 		Assert(wip->swarm_count > 0);
 		if(wip->swarm_count <= 0){
 			shipp->num_swarm_missiles_to_fire = SWARM_DEFAULT_NUM_MISSILES_FIRED;
@@ -11804,7 +11804,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	// if trying to fire a corkscrew missile, make sure being called from right place	
-	if ( (wip->wi_flags & WIF_CORKSCREW) && !allow_swarm ) {
+	if ( (wip->wi_flags[Weapon::Info_Flags::Corkscrew]) && !allow_swarm ) {
 		//phreak 11-9-02 
 		//changed this from 4 to custom number defined in tables
 		shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);
@@ -12102,7 +12102,7 @@ int primary_out_of_ammo(ship_weapon *swp, int bank)
 	// true if both ballistic and ammo <= 0,
 	// false if not ballistic or if ballistic and ammo > 0
 			
-	if ( Weapon_info[swp->primary_bank_weapons[bank]].wi_flags2 & WIF2_BALLISTIC )
+	if ( Weapon_info[swp->primary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::Ballistic] )
 	{
 		if (swp->primary_bank_ammo[bank] <= 0)
 		{
@@ -13400,7 +13400,7 @@ float ship_calculate_rearm_duration( object *objp )
 		for (i = 0; i < swp->num_primary_banks; i++)
 		{
 			wip = &Weapon_info[swp->primary_bank_weapons[i]];
-			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				//check how many full reloads we need
 				num_reloads = (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i])/REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
@@ -13667,14 +13667,14 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			{
 				for (i = 1; i < swp->num_primary_banks; i++ )
 				{
-					if ( Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC )
+					if ( Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic] )
 						last_ballistic_idx = i;
 				}
 			}
 
 			for (i = 0; i < swp->num_primary_banks; i++ )
 			{
-				if ( Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC )
+				if ( Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic] )
 				{
 					// Actual loading of bullets is preceded by a sound effect which is the bullet
 					// loading equipment moving into place
@@ -14922,7 +14922,7 @@ int ship_has_homing_missile_locked(ship *shipp)
 		if ( wip->subtype != WP_MISSILE )
 			continue;
 
-		if ( !(wip->wi_flags & WIF_HOMING ) )
+		if ( !(wip->is_homing() ) )
 			continue;
 
 		if (wp->homing_object == locked_objp) {
@@ -15686,7 +15686,7 @@ void ship_maybe_tell_about_low_ammo(ship *sp)
 		{
 			wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				if (swp->primary_bank_start_ammo[i] > 0)
 				{
@@ -15767,7 +15767,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 			{
 				wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-				if (wip->wi_flags2 & WIF2_BALLISTIC)
+				if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 				{
 					if (swp->primary_bank_start_ammo[i] > 0)
 					{
@@ -16993,8 +16993,8 @@ void ship_update_artillery_lock()
 		if(shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank] < 0){
 			continue;
 		}
-		Assert((Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags & WIF_BEAM) && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].b_info.beam_type == BEAM_TYPE_C));
-		if(!(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags & WIF_BEAM) || (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].b_info.beam_type != BEAM_TYPE_C)){
+		Assert((Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Beam]) && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].b_info.beam_type == BEAM_TYPE_C));
+		if(!(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Beam]) || (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].b_info.beam_type != BEAM_TYPE_C)){
 			continue;
 		}	
 

@@ -20,6 +20,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
 #include "particle/ParticleManager.h"
+#include "weapon/weapon_flags.h"
 
 class object;
 class ship_subsys;
@@ -398,9 +399,7 @@ typedef struct weapon_info {
 	float max_lifetime ;						// How long this weapon will actually live for
 	float	lifetime;						// How long the AI thinks this thing lives (used for distance calculations etc)
 	float energy_consumed;					// Energy used up when weapon is fired
-	int	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
-	int wi_flags2;							// stupid int wi_flags, only 32 bits... argh - Goober5000
-	int wi_flags3;							// stupid int wi_flags2, only 32 bits... argh - The E
+	flagset<Weapon::Info_Flags>	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
 	float turn_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
@@ -569,6 +568,11 @@ typedef struct weapon_info {
 
 public:
 	weapon_info();
+
+    inline bool is_homing()        { return wi_flags[Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
+    inline bool is_locked_homing() { return wi_flags[Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
+    inline bool hurts_big_ships()  { return wi_flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Beam, Weapon::Info_Flags::Huge, Weapon::Info_Flags::Big_only]; }
+    inline bool is_interceptable() { return wi_flags[Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Turret_Interceptable]; }
 
 	void reset();
 } weapon_info;

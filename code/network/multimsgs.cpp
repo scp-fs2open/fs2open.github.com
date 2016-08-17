@@ -2997,7 +2997,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 		}
 
 		if ( Objects[aip->target_objnum].type == OBJ_WEAPON ) {
-			Assert(Weapon_info[Weapons[Objects[aip->target_objnum].instance].weapon_info_index].wi_flags & WIF_BOMB);
+			Assert(Weapon_info[Weapons[Objects[aip->target_objnum].instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]);
 		}
 
 	}
@@ -7303,7 +7303,7 @@ void send_homing_weapon_info( int weapon_num )
 	wp = &Weapons[weapon_num];
 
 	// be sure that this weapon object is a homing object.
-	if ( !(Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING) )
+	if ( !(Weapon_info[wp->weapon_info_index].is_homing()) )
 		return;
 
 	// default the subsystem
@@ -8123,7 +8123,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		wid = ssp->weapons.secondary_bank_weapons[0];
 	}
 
-	if((wid < 0) || !(Weapon_info[wid].wi_flags & WIF_FLAK)){
+	if((wid < 0) || !(Weapon_info[wid].wi_flags[Weapon::Info_Flags::Flak])){
 		return;
 	}
 
