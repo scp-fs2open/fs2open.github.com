@@ -338,7 +338,7 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
 		objp = &Objects[shipp->objnum];
 
 	// ships must be able to receive a message
-	if ( Ship_info[shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools & STI_AI_ACCEPT_PLAYER_ORDERS) )
+	if ( Ship_info[shipp->ship_info_index].class_type < 0 || !(Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_accept_player_orders]) )
 		return false;
 
 	// be sure ship is on correct team
@@ -426,7 +426,7 @@ int hud_squadmsg_wing_valid(wing *wingp)
 
 	// a couple of special cases to account for before adding to count (or to menu).  Don't count
 	// wings that are leaving or left.
-	if ( wingp->flags & (WF_WING_GONE|WF_WING_DEPARTING) )
+	if ( wingp->flags[Ship::Wing_Flags::Gone, Ship::Wing_Flags::Departing] )
 		return 0;
 
 	// Goober5000 - instead of checking wing leader, let's check all ships in wing;
@@ -942,10 +942,10 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	for ( i = 0; i < Num_wings; i++ ) {
 		int shipnum;
 
-		if ( (Wings[i].flags & WF_WING_GONE) || (Wings[i].current_count == 0) )
+		if ( (Wings[i].flags[Ship::Wing_Flags::Gone]) || (Wings[i].current_count == 0) )
 			continue;
 
-		if ( Wings[i].flags & WF_WING_DEPARTING )
+		if ( Wings[i].flags[Ship::Wing_Flags::Departing] )
 			continue;
 
 		// get the first ship on the wing list and look at its team and then its type
@@ -1500,7 +1500,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 			ai_mode = AI_GOAL_WARP;
 			ai_submode = -1;
 			message = MESSAGE_WARP_OUT;
-			Wings[wingnum].flags |= WF_DEPARTURE_ORDERED;
+            Wings[wingnum].flags.set(Ship::Wing_Flags::Departure_ordered);
 			break;
 
 		case REARM_REPAIR_ME_ITEM:
@@ -1817,8 +1817,8 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num)
 		if ( !stricmp(rp->name, Wings[i].name) ) {
 			// found a wingname.  Call the parse function to create all the ships in this wing
 			// we must set the arrival cue of the wing to true, otherwise, this won't work!!
-			Wings[i].flags &= ~WF_REINFORCEMENT;
-			Wings[i].flags |= WF_RESET_REINFORCEMENT;
+            Wings[i].flags.remove(Ship::Wing_Flags::Reinforcement);
+            Wings[i].flags.set(Ship::Wing_Flags::Reset_reinforcement);
 
 			// set up the arrival delay.  If it is 0, then make is some random number of seconds
 			delay = rp->arrival_delay;

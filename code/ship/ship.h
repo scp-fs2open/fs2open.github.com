@@ -274,35 +274,6 @@ typedef struct cockpit_display_info {
 	int size[2];
 } cockpit_display_info;
 
-// Goober5000
-#define SSF_CARGO_REVEALED		(1 << 0)
-#define SSF_UNTARGETABLE		(1 << 1)
-#define SSF_NO_SS_TARGETING     (1 << 2)
-
-//nuke
-#define SSF_HAS_FIRED		    (1 << 3)		//used by scripting to flag a turret as having been fired
-#define SSF_FOV_REQUIRED		(1 << 4)
-#define SSF_FOV_EDGE_CHECK		(1 << 5)
-
-#define SSF_NO_REPLACE			(1 << 6)		// prevents 'destroyed' submodel from being rendered if subsys is destroyed.
-#define SSF_NO_LIVE_DEBRIS		(1 << 7)		// prevents subsystem from generating live debris
-#define SSF_VANISHED			(1 << 8)		// allows subsystem to be made to disappear without a trace (for swapping it for a true model for example.
-#define SSF_MISSILES_IGNORE_IF_DEAD	(1 << 9)	// forces homing missiles to target hull if subsystem is dead before missile hits it.
-#define SSF_ROTATES				(1 << 10)
-#define SSF_DAMAGE_AS_HULL		(1 << 11)		// Applies armor damage instead of subsystem damge. - FUBAR
-#define SSF_NO_AGGREGATE		(1 << 12)		// exclude this subsystem from the aggregate subsystem-info tracking - Goober5000
-#define SSF_PLAY_SOUND_FOR_PLAYER	( 1 << 13)	// If this subsystem is a turret on a player ship, play firing sounds - The E 
-#define SSF_NO_DISAPPEAR		( 1 << 14)		// prevents submodel from disappearing when subsys destroyed
-#define SSF_AUTOREPAIR_IF_DISABLED	(1 << 15)	// Allows the subsystem to repair itself even when disabled - MageKing17
-#define SSF_NO_AUTOREPAIR_IF_DISABLED (1 << 16) // Inversion of the above; allow a specific subsystem not to repair itself after being disabled if the ship has the "repair disabled subsystems" flag - MageKing17
-
-
-// Wanderer 
-#define SSSF_ALIVE					(1 << 0)		// subsystem has active alive sound
-#define SSSF_DEAD					(1 << 1)		// subsystem has active dead sound
-#define SSSF_ROTATE					(1 << 2)		// subsystem has active rotation sound
-#define SSSF_TURRET_ROTATION		(1 << 3)		// rotation sound to be scaled like turrets do
-
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
@@ -379,7 +350,7 @@ public:
 	float gun_rotation_rate_pct;
 
 	// still going through these...
-	int subsys_snd_flags;
+	flagset<Ship::Subsys_Sound_Flags> subsys_snd_flags;
 
 	int      rotation_timestamp;
 	matrix   world_to_turret_matrix;
@@ -441,10 +412,6 @@ typedef struct ship_spark {
 	int submodel_num;	// which submodel is making the spark
 	int end_time;
 } ship_spark;
-
-#define AWACS_WARN_NONE		(1 << 0)
-#define AWACS_WARN_25		(1 << 1)
-#define AWACS_WARN_75		(1 << 2)
 
 // NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
 class ship
@@ -649,7 +616,7 @@ public:
 	int lightning_stamp;
 
 	// AWACS warning flag
-	ubyte	awacs_warning_flag;
+	flagset<Ship::Awacs_Warning_Flags>	awacs_warning_flag;
 
 	// Special warp objnum (warping at knossos)
 	int special_warpin_objnum;
@@ -735,9 +702,9 @@ public:
 	void clear();
 
     //Helper functions
-    inline bool is_arriving() { return flags[Ship::Ship_Flags::Arriving_stage_1] || flags[Ship::Ship_Flags::Arriving_stage_2]; }
-    inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp] || flags[Ship::Ship_Flags::Depart_dockbay]; }
-    inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken] || flags[Ship::Ship_Flags::Warp_never] || flags[Ship::Ship_Flags::Disabled]; }
+    inline bool is_arriving() { return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2]; }
+    inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
+    inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled]; }
     inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 };
 
@@ -789,12 +756,6 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
 
-#define AIM_FLAG_AUTOAIM				(1 << 0)	// has autoaim
-#define AIM_FLAG_AUTO_CONVERGENCE		(1 << 1)	// has automatic convergence
-#define AIM_FLAG_STD_CONVERGENCE		(1 << 2)	// has standard - ie. non-automatic - convergence
-#define AIM_FLAG_AUTOAIM_CONVERGENCE	(1 << 3)	// has autoaim with convergence
-#define AIM_FLAG_CONVERGENCE_OFFSET		(1 << 4)	// marks that convergence has offset value
-
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
 	float		min_rad;
@@ -816,45 +777,13 @@ typedef struct particle_effect {
 	float			variance;
 } particle_effect;
 
-#define STI_MSG_COUNTS_FOR_ALONE		(1<<0)
-#define STI_MSG_PRAISE_DESTRUCTION		(1<<1)
-
-#define STI_HUD_HOTKEY_ON_LIST			(1<<0)
-#define STI_HUD_TARGET_AS_THREAT		(1<<1)
-#define STI_HUD_SHOW_ATTACK_DIRECTION	(1<<2)
-#define STI_HUD_NO_CLASS_DISPLAY		(1<<3)
-
-#define STI_SHIP_SCANNABLE				(1<<0)
-#define STI_SHIP_WARP_PUSHES			(1<<1)
-#define STI_SHIP_WARP_PUSHABLE			(1<<2)
-#define STI_TURRET_TGT_SHIP_TGT			(1<<3)
-
-#define STI_WEAP_BEAMS_EASILY_HIT		(1<<0)
-#define STI_WEAP_NO_HUGE_IMPACT_EFF		(1<<1)
-
-#define STI_AI_ACCEPT_PLAYER_ORDERS		(1<<0)
-#define STI_AI_AUTO_ATTACKS				(1<<1)
-#define STI_AI_ATTEMPT_BROADSIDE		(1<<2)
-#define STI_AI_GUARDS_ATTACK			(1<<3)
-#define STI_AI_TURRETS_ATTACK			(1<<4)
-#define STI_AI_CAN_FORM_WING			(1<<5)
-#define STI_AI_PROTECTED_ON_CRIPPLE		(1<<6)
-
 typedef struct ship_type_info {
 	char name[NAME_LENGTH];
 
-	//Messaging?
-	int message_bools;
+    flagset<Ship::Type_Info_Flags> flags;
 
-	//HUD
-	int hud_bools;
-
-	//Ship
-	int ship_bools;	//For lack of better term
 	float debris_max_speed;
 
-	//Weapons
-	int weapon_bools;
 	float ff_multiplier;
 	float emp_multiplier;
 
@@ -865,7 +794,6 @@ typedef struct ship_type_info {
 	//AI
 	int	ai_valid_goals;
 	int ai_player_orders;
-	int ai_bools;
 	int ai_active_dock;
 	int ai_passive_dock;
 	SCP_vector<int> ai_actively_pursues;
@@ -882,13 +810,14 @@ typedef struct ship_type_info {
 	SCP_vector<SCP_string> ai_cripple_ignores_temp;
 
 	ship_type_info( )
-		: message_bools( 0 ), hud_bools( 0 ), ship_bools( 0 ), debris_max_speed( 0.f ),
-		  weapon_bools( 0 ), ff_multiplier( 0.f ), emp_multiplier( 0.f ),
+		: debris_max_speed( 0.f ),
+		  ff_multiplier( 0.f ), emp_multiplier( 0.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
-		  ai_valid_goals( 0 ), ai_player_orders( 0 ), ai_bools( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
+		  ai_valid_goals( 0 ), ai_player_orders( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
 		  vaporize_chance( 0.f )
 
 	{
+        flags.reset();
 		name[ 0 ] = '\0';
 	}
 } ship_type_info;
@@ -904,21 +833,9 @@ struct man_thruster_renderer {
 
 extern SCP_vector<man_thruster_renderer> Man_thrusters;
 
-#define MT_BANK_RIGHT		(1<<0)
-#define MT_BANK_LEFT		(1<<1)
-#define MT_PITCH_UP			(1<<2)
-#define MT_PITCH_DOWN		(1<<3)
-#define MT_ROLL_RIGHT		(1<<4)
-#define MT_ROLL_LEFT		(1<<5)
-#define MT_SLIDE_RIGHT		(1<<6)
-#define MT_SLIDE_LEFT		(1<<7)
-#define MT_SLIDE_UP			(1<<8)
-#define MT_SLIDE_DOWN		(1<<9)
-#define MT_FORWARD			(1<<10)
-#define MT_REVERSE			(1<<11)
-
-typedef struct man_thruster {
-	int use_flags;
+class man_thruster {
+    public:
+	flagset<Ship::Thruster_Flags> use_flags;
 
 	int start_snd;
 	int loop_snd;
@@ -931,7 +848,22 @@ typedef struct man_thruster {
 	float radius;
 
 	vec3d pos, norm;
-} man_thruster;
+
+    void reset() {
+        length = 0;
+        norm.xyz.x = norm.xyz.y = norm.xyz.z = 0.0f; // I wanted to do norm = ZERO_VECTOR here, but apparently that breaks the MSVC 2015 compiler....
+        pos.xyz.x = pos.xyz.y = pos.xyz.z = 0.0f;
+        radius = 0.0f;
+        tex_fps = 0;
+        tex_nframes = 0;
+        use_flags.reset();
+
+        start_snd = -1;
+        loop_snd = -1;
+        stop_snd = -1;
+        tex_id = -1;
+    }
+};
 
 //Warp type defines
 #define WT_DEFAULT					0
@@ -1297,12 +1229,12 @@ public:
 
     //Helper functions
     
-    inline bool is_small_ship() const { return flags[Ship::Info_Flags::Fighter] || flags[Ship::Info_Flags::Bomber] || flags[Ship::Info_Flags::Support] || flags[Ship::Info_Flags::Escapepod]; }
-    inline bool is_big_ship() const { return flags[Ship::Info_Flags::Cruiser] || flags[Ship::Info_Flags::Freighter] || flags[Ship::Info_Flags::Transport] || flags[Ship::Info_Flags::Corvette] || flags[Ship::Info_Flags::Gas_miner] || flags[Ship::Info_Flags::Awacs]; }
-    inline bool is_huge_ship() const  { return flags[Ship::Info_Flags::Capital] || flags[Ship::Info_Flags::Supercap] || flags[Ship::Info_Flags::Drydock] || flags[Ship::Info_Flags::Knossos_device]; }
-    inline bool is_flyable() const { return !(flags[Ship::Info_Flags::Cargo] || flags[Ship::Info_Flags::Navbuoy] || flags[Ship::Info_Flags::Escapepod]); }
+    inline bool is_small_ship() const { return flags[Ship::Info_Flags::Fighter, Ship::Info_Flags::Bomber, Ship::Info_Flags::Support, Ship::Info_Flags::Escapepod]; }
+    inline bool is_big_ship() const { return flags[Ship::Info_Flags::Cruiser, Ship::Info_Flags::Freighter, Ship::Info_Flags::Transport, Ship::Info_Flags::Corvette, Ship::Info_Flags::Gas_miner, Ship::Info_Flags::Awacs]; }
+    inline bool is_huge_ship() const  { return flags[Ship::Info_Flags::Capital, Ship::Info_Flags::Supercap, Ship::Info_Flags::Drydock, Ship::Info_Flags::Knossos_device]; }
+    inline bool is_flyable() const { return !(flags[Ship::Info_Flags::Cargo, Ship::Info_Flags::Navbuoy, Ship::Info_Flags::Escapepod]); }
     inline bool is_harmless() const { return !is_flyable(); }
-    inline bool is_fighter_bomber() const { return flags[Ship::Info_Flags::Fighter] || flags[Ship::Info_Flags::Bomber]; }
+    inline bool is_fighter_bomber() const { return flags[Ship::Info_Flags::Fighter, Ship::Info_Flags::Bomber]; }
     inline bool is_big_or_huge() const { return is_big_ship() || is_huge_ship(); }
     inline bool avoids_shockwaves() const { return is_small_ship(); }
 
@@ -1338,21 +1270,6 @@ typedef struct engine_wash_info
 
 extern SCP_vector<engine_wash_info> Engine_wash_info;
 
-// flags defined for wings
-#define MAX_WING_FLAGS				8				// total number of flags in the wing structure -- used for parsing wing flags
-#define WF_WING_GONE					(1<<0)		// all ships were either destroyed or departed
-#define WF_WING_DEPARTING			(1<<1)		// wing's departure cue turned true
-#define WF_IGNORE_COUNT				(1<<2)		// ignore all ships in this wing for goal counting purposes.
-#define WF_REINFORCEMENT			(1<<3)		// is this wing a reinforcement wing
-#define WF_RESET_REINFORCEMENT	(1<<4)		// needed when we need to reset the wing's reinforcement flag (after calling it in)
-#define WF_NO_ARRIVAL_MUSIC		(1<<5)		// don't play arrival music when wing arrives
-#define WF_EXPANDED					(1<<6)		// wing expanded in hotkey select screen
-#define WF_NO_ARRIVAL_MESSAGE		(1<<7)		// don't play any arrival message
-#define WF_NO_ARRIVAL_WARP			(1<<8)		// don't play warp effect for any arriving ships in this wing.
-#define WF_NO_DEPARTURE_WARP		(1<<9)		// don't play warp effect for any departing ships in this wing.
-#define WF_NO_DYNAMIC				(1<<10)		// members of this wing relentlessly pursue their ai goals
-#define WF_DEPARTURE_ORDERED		(1<<11)		// departure of this wing was ordered by player
-#define WF_NAV_CARRY				(1<<12)		// Kazan - Wing has nav-carry-status
 
 //	Defines a wing of ships.
 typedef struct wing {
@@ -1395,7 +1312,7 @@ typedef struct wing {
 	int	wave_delay_max;						// maximum number of seconds before new wave can arrive
 	int	wave_delay_timestamp;				// timestamp used for delaying arrival of next wave
 
-	int flags;
+	flagset<Ship::Wing_Flags> flags;
 
 	ai_goal	ai_goals[MAX_AI_GOALS];			// goals for the wing -- converted to ai_goal struct
 

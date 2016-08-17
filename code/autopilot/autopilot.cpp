@@ -335,7 +335,7 @@ bool StartAutopilot()
 	{
 		if (Ships[i].objnum != -1 && 
 				(Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
-					(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)
+					(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags[Ship::Wing_Flags::Nav_carry])
 				)
 			)
 		{
@@ -368,7 +368,7 @@ bool StartAutopilot()
 	{
 		if (Ships[i].objnum != -1 && 
 				(Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
-					(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)
+					(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags[Ship::Wing_Flags::Nav_carry])
 				)
 			)
 		{
@@ -423,7 +423,7 @@ bool StartAutopilot()
 
 			// snap wings into formation
 			if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics] &&  // only if using cinematics 
-				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY) // only if in a wing
+				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags[Ship::Wing_Flags::Nav_carry]) // only if in a wing
 				&& Autopilot_flight_leader != &Objects[Ships[i].objnum]) //only if not flight leader's object
 			{	
 				ai_info	*aip = &Ai_info[Ships[i].ai_index];
@@ -501,7 +501,7 @@ bool StartAutopilot()
 	{
 		for (i = 0; i < MAX_WINGS; i++)
 		{
-			if (Wings[i].flags & WF_NAV_CARRY )
+			if (Wings[i].flags[Ship::Wing_Flags::Nav_carry] )
 			{	
 				//ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip );
 
@@ -540,7 +540,7 @@ bool StartAutopilot()
 		if (Ships[i].objnum != -1)
 		{
 			if (Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
-				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY))
+				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags[Ship::Wing_Flags::Nav_carry]))
 				for (j = 0; j < MAX_AI_GOALS; j++)
 				{
 					if (Ai_info[Ships[i].ai_index].goals[j].ai_mode == AI_GOAL_WAYPOINTS_ONCE ||
@@ -915,7 +915,7 @@ void EndAutoPilot()
 		if (Ships[i].objnum != -1 && 
 			(
 				Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] || 
-				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY )
+				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags[Ship::Wing_Flags::Nav_carry] )
 			 )
 		   )
 		{
@@ -962,7 +962,7 @@ void EndAutoPilot()
 	{
 		for (i = 0; i < MAX_WINGS; i++)
 		{
-			if (Wings[i].flags & WF_NAV_CARRY )
+			if (Wings[i].flags[Ship::Wing_Flags::Nav_carry] )
 			{
 				for (j = 0; j < MAX_AI_GOALS; j++)
 				{
@@ -1045,7 +1045,7 @@ void nav_warp(bool prewarp=false)
 	{
 		if (Ships[i].objnum != -1
 			&& (Ships[i].flags[Ship::Ship_Flags::Navpoint_carry] 
-				|| (Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY)))
+				|| (Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags[Ship::Wing_Flags::Nav_carry])))
 		{
 				vm_vec_add(&Objects[Ships[i].objnum].pos, &Objects[Ships[i].objnum].pos, &targetPos);
 				Objects[Ships[i].objnum].phys_info.vel = velocity;

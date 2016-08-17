@@ -1566,7 +1566,7 @@ int hud_target_ship_can_be_scanned(ship *shipp)
 		return 1;
 
 	// ignore ships that don't carry cargo
-	if ((sip->class_type < 0) || !(Ship_types[sip->class_type].ship_bools & STI_SHIP_SCANNABLE))
+	if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Scannable]))
 		return 0;
 
 	return 1;
@@ -2107,7 +2107,7 @@ bool evaluate_ship_as_closest_target(esct *esct_p)
 	}
 
 	// bail if harmless
-	if ( Ship_info[esct_p->shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[esct_p->shipp->ship_info_index].class_type].hud_bools & STI_HUD_TARGET_AS_THREAT)) {
+	if ( Ship_info[esct_p->shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[esct_p->shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Target_as_threat])) {
 		return false;
 	}
 
@@ -3596,7 +3596,7 @@ void hud_show_hostile_triangle()
 		}
 
 		// always ignore cargo containers and navbuoys
-		if ( Ship_info[sp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[sp->ship_info_index].class_type].hud_bools & STI_HUD_SHOW_ATTACK_DIRECTION) ) {
+		if ( Ship_info[sp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[sp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::Show_attack_direction]) ) {
 			continue;
 		}
 

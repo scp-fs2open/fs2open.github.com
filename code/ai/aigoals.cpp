@@ -1573,7 +1573,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		wing *wingp = &Wings[sindex];
 
-		if ( wingp->flags & WF_WING_GONE )
+		if ( wingp->flags[Ship::Wing_Flags::Gone] )
 			return AI_GOAL_NOT_ACHIEVABLE;
 		else if ( wingp->total_arrived_count == 0 )
 			return AI_GOAL_NOT_KNOWN;
@@ -2198,7 +2198,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM) {
 			if (aip->target_objnum != -1) {
 				//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
-				if (Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].ai_bools & STI_AI_PROTECTED_ON_CRIPPLE)
+				if (Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_protected_on_cripple])
 					Objects[aip->target_objnum].flags.set(Object::Object_Flags::Protected);
 			}
 		} else	//	Just in case this ship had been protected, unprotect it.

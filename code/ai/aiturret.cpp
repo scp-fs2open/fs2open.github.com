@@ -537,7 +537,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		}
 
 		// Goober5000 - don't fire at cargo containers (now specified in ship_types)
-		if ( (sip->class_type >= 0) && !(Ship_types[sip->class_type].ai_bools & STI_AI_TURRETS_ATTACK) ) {
+		if ( (sip->class_type >= 0) && !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::AI_turrets_attack]) ) {
 			return 0;
 		}
 
@@ -1205,7 +1205,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 	ai_info	*aip = &Ai_info[Ships[Objects[objnum].instance].ai_index];
 	sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 
-	if ((Ship_types[sip->class_type].ship_bools & STI_TURRET_TGT_SHIP_TGT) && (aip->target_objnum != -1)) {
+	if ((Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Turret_tgt_ship_tgt]) && (aip->target_objnum != -1)) {
 		int target_objnum = aip->target_objnum;
 
 		if (Objects[target_objnum].signature == aip->target_signature) {

@@ -188,49 +188,29 @@ namespace Ship {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Type_Info_Msg) {
-		Counts_for_alone,
-		Praise_destruction,
+    FLAG_LIST(Type_Info_Flags) {
+        Counts_for_alone,
+        Praise_destruction,
+        Hotkey_on_list,
+        Target_as_threat,
+        Show_attack_direction,
+        No_class_display,
+        Scannable,
+        Warp_pushes,
+        Warp_pushable,
+        Turret_tgt_ship_tgt,
+        Beams_easily_hit,
+        No_huge_impact_eff,
+        AI_accept_player_orders,
+        AI_auto_attacks,
+        AI_attempt_broadside,
+        AI_guards_attack,
+        AI_turrets_attack,
+        AI_can_form_wing,
+        AI_protected_on_cripple,
 
-		NUM_VALUES
-	};
-
-	FLAG_LIST(Type_Info_Hud) {
-		Hotkey_on_list,
-		Target_as_threat,
-		Show_attack_direction,
-		No_class_display,
-
-		NUM_VALUES
-	};
-
-	FLAG_LIST(Type_Info_Ship) {
-		Scannable,
-		Warp_pushes,
-		Warp_pushable,
-		Turret_tgt_ship_tgt,
-
-		NUM_VALUES
-	};
-
-	FLAG_LIST(Type_Info_Weapon) {
-		Beams_easily_hit,
-		No_huge_impact_eff,
-
-		NUM_VALUES
-	};
-
-	FLAG_LIST(Type_Info_AI) {
-		Accept_player_orders,
-		Auto_attacks,
-		Attempt_broadside,
-		Guards_attack,
-		Turrets_attack,
-		Can_form_wing,
-		Protected_on_cripple,
-
-		NUM_VALUES
-	};
+        NUM_VALUES
+    };
 
 	FLAG_LIST(Thruster_Flags) {
 		Bank_right,
@@ -249,7 +229,13 @@ namespace Ship {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Wing_Flags) {
+
+    // Not all wing flags are parseable or saveable in mission files. Right now, the only ones which can be set by mission designers are:
+    // ignore_count, reinforcement, no_arrival_music, no_arrival_message, no_arrival_warp, no_departure_warp, no_dynamic and nav_carry_status
+    // Should that change, bump this variable and make sure to make the necessary changes to parse_wing (in missionparse)
+#define PARSEABLE_WING_FLAGS 8
+	
+    FLAG_LIST(Wing_Flags) {
 		Gone,					// all ships were either destroyed or departed
 		Departing,				// wing's departure cue turned true
 		Ignore_count,			// ignore all ships in this wing for goal counting purposes.
@@ -272,13 +258,12 @@ namespace Ship {
 		Alive,
 		Dead,
 		Rotate,
-		Turret_Rotation,
+		Turret_rotation,
 
 		NUM_VALUES
 	};
 
 	FLAG_LIST(Awacs_Warning_Flags) {
-		None = 0,
 		Warn_25,
 		Warn_75,
 

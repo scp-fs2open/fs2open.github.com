@@ -4326,7 +4326,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 
 	vec3d perp, goal_point;
 
-	bool carry_flag = ((shipp->flags[Ship::Ship_Flags::Navpoint_carry]) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY)));
+	bool carry_flag = ((shipp->flags[Ship::Ship_Flags::Navpoint_carry]) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry])));
 
 	if (AutoPilotEngaged)
 		ab_allowed = false;
@@ -8204,7 +8204,7 @@ void ai_chase()
 		return;
 	}
 
-	if (sip->class_type > -1 && (Ship_types[sip->class_type].ai_bools & STI_AI_ATTEMPT_BROADSIDE)) {
+	if (sip->class_type > -1 && (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::AI_attempt_broadside])) {
 		ai_cruiser_chase();
 		return;
 	}
@@ -9691,7 +9691,7 @@ void ai_guard_find_nearby_ship(object *guarding_objp, object *guarded_objp)
 		if (iff_x_attacks_y(guarding_shipp->team, eshipp->team))
 		{
 			//	Don't attack a cargo container or other harmless ships
-			if (Ship_info[eshipp->ship_info_index].class_type >= 0 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].ai_bools & STI_AI_GUARDS_ATTACK))
+			if (Ship_info[eshipp->ship_info_index].class_type >= 0 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_guards_attack]))
 			{
 				dist = vm_vec_dist_quick(&enemy_objp->pos, &guarded_objp->pos);
 				if (dist < (MAX_GUARD_DIST + guarded_objp->radius)*3)
@@ -14058,7 +14058,7 @@ void ai_frame(int objnum)
 			aip->active_goal = AI_GOAL_NONE;
 		} else if (aip->resume_goal_time == -1) {
 			// AL 12-9-97: Don't allow cargo and navbuoys to set their aip->target_objnum
-			if ( Ship_info[shipp->ship_info_index].class_type > -1 && (Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools & STI_AI_AUTO_ATTACKS) ) {
+			if ( Ship_info[shipp->ship_info_index].class_type > -1 && (Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_auto_attacks]) ) {
 				target_objnum = find_enemy(objnum, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]);		//	Attack up to 25K units away.
 				if (target_objnum != -1) {
 					if (aip->target_objnum != target_objnum)
@@ -14103,7 +14103,7 @@ void ai_frame(int objnum)
 	}
 
 	// AL 12-10-97: ensure that cargo and navbuoys aip->target_objnum is always -1.
-	if ( Ship_info[shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[shipp->ship_info_index].class_type].ai_bools & STI_AI_AUTO_ATTACKS)) {
+	if ( Ship_info[shipp->ship_info_index].class_type > -1 && !(Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_auto_attacks])) {
 		aip->target_objnum = -1;
 	}
 

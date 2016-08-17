@@ -7700,7 +7700,7 @@ int sexp_destroyed_departed_delay(int n)
 		// for wings, check the WF_GONE flag to see if there are no more ships in this wing to arrive.
 		wingnum = wing_name_lookup(name, 1);
 		if ( wingnum != -1 ) {
-			if ( Wings[wingnum].flags & WF_WING_GONE ) {
+			if ( Wings[wingnum].flags[Ship::Wing_Flags::Gone] ) {
 				// be sure to get the latest time of one of these 
 				if ( Wings[wingnum].time_gone > latest_time ){
 					time_gone = Wings[wingnum].time_gone;
@@ -18266,10 +18266,10 @@ void sexp_set_subsys_rotation_lock_free(int node, int locked)
         rotate->flags.set(Ship::Subsystem_Flags::Rotates, locked != 0);
 		if (locked)
 		{   
-            if (rotate->subsys_snd_flags & SSSF_ROTATE)
+            if (rotate->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
 			{
 				obj_snd_delete_type(Ships[ship_num].objnum, rotate->system_info->rotation_snd, rotate);
-				rotate->subsys_snd_flags &= ~SSSF_ROTATE;
+                rotate->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Rotate);
 			}
 		}
 		else
@@ -18277,8 +18277,8 @@ void sexp_set_subsys_rotation_lock_free(int node, int locked)
 			if (rotate->system_info->rotation_snd >= 0)
 			{
 				obj_snd_assign(Ships[ship_num].objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, 0, OS_SUBSYS_ROTATION, rotate);
-				rotate->subsys_snd_flags |= SSSF_ROTATE;
-			}
+                rotate->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
+            }
 		}
 	}
 }
@@ -18773,7 +18773,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.shipp->arrival_path_mask = arrival_mask;
 		oswpt.shipp->arrival_distance = arrival_distance;
 		oswpt.shipp->arrival_delay = arrival_delay;
-        oswpt.shipp->flags.set(Ship::Ship_Flags::No_arrival_warp, show_warp);
+        oswpt.shipp->flags.set(Ship::Ship_Flags::No_arrival_warp, !show_warp);
 	}
 	else if (oswpt.type == OSWPT_TYPE_WING || oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT)
 	{
@@ -18783,10 +18783,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.wingp->arrival_distance = arrival_distance;
 		oswpt.wingp->arrival_delay = arrival_delay;
 
-		if (show_warp)
-			oswpt.wingp->flags &= ~WF_NO_ARRIVAL_WARP;
-		else
-			oswpt.wingp->flags |= WF_NO_ARRIVAL_WARP;
+        oswpt.wingp->flags.set(Ship::Wing_Flags::No_arrival_warp, !show_warp);
 	}
 	else if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT)
 	{
@@ -18796,7 +18793,7 @@ void sexp_set_arrival_info(int node)
 		oswpt.p_objp->arrival_distance = arrival_distance;
 		oswpt.p_objp->arrival_delay = arrival_delay;
 
-        oswpt.p_objp->flags.set(Mission::Parse_Object_Flags::SF_No_arrival_warp, show_warp);
+        oswpt.p_objp->flags.set(Mission::Parse_Object_Flags::SF_No_arrival_warp, !show_warp);
 	}
 }
 
@@ -18874,7 +18871,7 @@ void sexp_set_departure_info(int node)
 		oswpt.shipp->departure_anchor = departure_anchor;
 		oswpt.shipp->departure_path_mask = departure_mask;
 		oswpt.shipp->departure_delay = departure_delay;
-        oswpt.shipp->flags.set(Ship::Ship_Flags::No_departure_warp, show_warp);
+        oswpt.shipp->flags.set(Ship::Ship_Flags::No_departure_warp, !show_warp);
 	}
 	else if (oswpt.type == OSWPT_TYPE_WING || oswpt.type == OSWPT_TYPE_WING_NOT_PRESENT)
 	{
@@ -18883,10 +18880,7 @@ void sexp_set_departure_info(int node)
 		oswpt.wingp->departure_path_mask = departure_mask;
 		oswpt.wingp->departure_delay = departure_delay;
 
-		if (show_warp)
-			oswpt.wingp->flags &= ~WF_NO_DEPARTURE_WARP;
-		else
-			oswpt.wingp->flags |= WF_NO_DEPARTURE_WARP;
+        oswpt.wingp->flags.set(Ship::Wing_Flags::No_departure_warp, !show_warp);
 	}
 	else if (oswpt.type == OSWPT_TYPE_PARSE_OBJECT)
 	{
@@ -18894,7 +18888,7 @@ void sexp_set_departure_info(int node)
 		oswpt.p_objp->departure_anchor = departure_anchor;
 		oswpt.p_objp->departure_path_mask = departure_mask;
 		oswpt.p_objp->departure_delay = departure_delay;
-        oswpt.shipp->flags.set(Ship::Ship_Flags::No_departure_warp, show_warp);
+        oswpt.shipp->flags.set(Ship::Ship_Flags::No_departure_warp, !show_warp);
 	}
 }
 
@@ -19050,7 +19044,7 @@ void set_nav_carry_status(int node)
 		{
 			if (!stricmp(Wings[i].name, name))
 			{
-				Wings[i].flags |= WF_NAV_CARRY;
+                Wings[i].flags.set(Ship::Wing_Flags::Nav_carry);
 				skip = true;
 				break;
 			}
@@ -19091,7 +19085,7 @@ void unset_nav_carry_status(int node)
 		{
 			if (!stricmp(Wings[i].name, name))
 			{
-				Wings[i].flags &= ~WF_NAV_CARRY;
+                Wings[i].flags.remove(Ship::Wing_Flags::Nav_carry);
 				skip = true;
 				break;
 
