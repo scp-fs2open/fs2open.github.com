@@ -69,6 +69,14 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(co
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (attrs.multi_samples == 0) ? 0 : 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, attrs.multi_samples);
 
+	const int gl_versions[] = { 41, 40, 33, 32, 31, 30, 21, 20 };
+	const int num_gl_versions = sizeof(gl_versions) / sizeof(int);
+	int version_index = 0;
+
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_versions[version_index] / 10);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_versions[version_index] % 10);
+	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+
 	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n",
 		attrs.red_size, attrs.green_size, attrs.blue_size, attrs.depth_size, attrs.stencil_size, 1, attrs.multi_samples));
 
@@ -88,9 +96,21 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(co
 
 	os_set_window(window);
 
-	auto ctx = SDL_GL_CreateContext(os_get_window());
+	SDL_GLContext ctx;
 
-	if (ctx == nullptr) {
+	// find the latest and greatest OpenGL context
+	while ( (ctx = SDL_GL_CreateContext(os_get_window())) == NULL ) {
+		++version_index;
+
+		if ( version_index >= num_gl_versions ) {
+			return nullptr;
+		}
+
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_versions[version_index] / 10);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_versions[version_index] % 10);
+	}
+
+	if ( ctx == nullptr) {
 		Error(LOCATION, "Could not create OpenGL Context: %s\n", SDL_GetError());
 		return nullptr;
 	}

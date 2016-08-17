@@ -1,35 +1,39 @@
-attribute float radius;
+vertIn vec4 vertPosition;
+vertIn vec4 vertTexCoord;
+vertIn vec4 vertColor;
+vertIn float vertRadius;
 #ifdef FLAG_EFFECT_GEOMETRY
- attribute vec3 uvec;
- varying vec3 up_g;
- varying float radius_g;
+ vertIn vec3 vertUvec;
+ vertOut vec3 geoUvec;
+ vertOut float geoRadius;
+ vertOut vec4 geoColor;
 #else
- varying float radius_p;
- varying vec4 position_p;
+ vertOut float fragRadius;
+ vertOut vec4 fragPosition;
+ vertOut vec4 fragTexCoord;
+ vertOut vec4 fragColor;
 #endif
 #ifdef FLAG_EFFECT_DISTORTION
-varying float offset_out;
+vertOut float fragOffset;
 uniform float use_offset;
 #endif
+uniform mat4 modelViewMatrix;
+uniform mat4 projMatrix;
 void main()
 {
 	#ifdef FLAG_EFFECT_GEOMETRY
-	 radius_g = radius;
-	 up_g = uvec;
-	 gl_Position = gl_ModelViewMatrix * gl_Vertex;
+	 geoRadius = vertRadius;
+	 geoUvec = vertUvec;
+	 gl_Position = modelViewMatrix * vertPosition;
+	 geoColor = vertColor;
 	#else
-	 radius_p = radius;
-	 gl_Position = ftransform();
-	 position_p = gl_ModelViewMatrix * gl_Vertex;
+	 fragRadius = vertRadius;
+	 gl_Position = projMatrix * modelViewMatrix * vertPosition;
+	 fragPosition = modelViewMatrix * vertPosition;
+	 fragTexCoord = vertTexCoord;
+	 fragColor = vertColor;
 	#endif
 	#ifdef FLAG_EFFECT_DISTORTION
-	offset_out = radius * use_offset;
+	fragOffset = vertRadius * use_offset;
 	#endif
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_FrontColor = gl_Color;
-	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);
- #ifdef  __GLSL_CG_DATA_TYPES
-	// Check necessary for ATI specific behavior
-	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);
- #endif
-}
+};

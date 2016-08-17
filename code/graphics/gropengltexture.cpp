@@ -25,6 +25,8 @@
 static tcache_slot_opengl *Textures = NULL;
 static int *Tex_used_this_frame = NULL;
 
+matrix4 GL_texture_matrix;
+
 int GL_texture_ram = 0;
 int GL_min_texture_width = 0;
 GLint GL_max_texture_width = 0;
@@ -186,13 +188,18 @@ void opengl_tcache_init()
 
 	GL_xlat[15] = GL_xlat[1];
 
-	glGetIntegerv(GL_MAX_TEXTURE_UNITS, &GL_supported_texture_units);
+	if ( !is_minimum_GLSL_version() ) {
+		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &GL_supported_texture_units);
+	}
+
 	Assert( GL_supported_texture_units >= 2 );
 
 	GL_last_detail = Detail.hardware_textures;
 
 	GL_textures_in = 0;
 	GL_textures_in_frame = 0;
+
+	vm_matrix4_set_identity(&GL_texture_matrix);
 }
 
 void opengl_free_texture_with_handle(int handle)
@@ -555,10 +562,12 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				}
 			}
 
+			GLenum aa_format = is_minimum_GLSL_version() ? GL_RED : GL_ALPHA;
+
 			if ( !reload ) {
-				glTexImage2D (t->texture_target, 0, GL_ALPHA, tex_w, tex_h, 0, GL_ALPHA, GL_UNSIGNED_BYTE, texmem);
+				glTexImage2D (t->texture_target, 0, aa_format, tex_w, tex_h, 0, aa_format, GL_UNSIGNED_BYTE, texmem);
 			} else { // faster anis
-				glTexSubImage2D (t->texture_target, 0, 0, 0, tex_w, tex_h, GL_ALPHA, GL_UNSIGNED_BYTE, texmem);
+				glTexSubImage2D (t->texture_target, 0, 0, 0, tex_w, tex_h, aa_format, GL_UNSIGNED_BYTE, texmem);
 			}
 
 			if (texmem != NULL) {
@@ -1096,6 +1105,10 @@ void gr_opengl_set_texture_panning(float u, float v, bool enable)
 	GLint current_matrix;
 
 	if (enable) {
+		vm_matrix4_set_identity(&GL_texture_matrix);
+		GL_texture_matrix.vec.pos.xyzw.x = u;
+		GL_texture_matrix.vec.pos.xyzw.y = v;
+
 		glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
 		glMatrixMode( GL_TEXTURE );
 		glPushMatrix();
@@ -1104,6 +1117,8 @@ void gr_opengl_set_texture_panning(float u, float v, bool enable)
 
 		GL_texture_panning_enabled = 1;
 	} else if (GL_texture_panning_enabled) {
+		vm_matrix4_set_identity(&GL_texture_matrix);
+
 		glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
 		glMatrixMode( GL_TEXTURE );
 		glPopMatrix();
@@ -1295,6 +1310,15 @@ int opengl_get_texture( GLenum target, GLenum pixel_format, GLenum data_format, 
 	return m_offset;
 }
 
+void gr_opengl_get_texture_scale(int bitmap_handle, float *u_scale, float *v_scale)
+{
+	int n = bm_get_cache_slot (bitmap_handle, 1);
+	tcache_slot_opengl *t = &Textures[n];
+
+	*u_scale = t->u_scale;
+	*v_scale = t->v_scale;
+}
+
 /**
  * Sends a texture object out to "image_data"
  *
@@ -1393,7 +1417,7 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int
 	}
 	if (byte_mult == 1) {
 		texFormat = GL_UNSIGNED_BYTE;
-		glFormat = GL_ALPHA;
+		glFormat = is_minimum_GLSL_version() ? GL_RED : GL_ALPHA;
 		texmem = (ubyte *) vm_malloc (width*height*byte_mult);
 		ubyte* texmemp = texmem;
 

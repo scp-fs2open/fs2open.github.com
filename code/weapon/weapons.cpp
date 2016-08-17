@@ -40,6 +40,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
 #include "stats/scoring.h"
@@ -4500,7 +4501,7 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 		return;
 	}
 
-	if ( !(wp->weapon_flags & WF_PLAYED_FLYBY_SOUND) && (wp->weapon_flags & WF_CONSIDER_FOR_FLYBY_SOUND) ) {
+	if ( !(wp->weapon_flags & WF_PLAYED_FLYBY_SOUND) ) {
 		float		dist, dot, radius;
 
 		if ( (Weapon_info[wp->weapon_info_index].wi_flags & WIF_CORKSCREW) ) {
@@ -7190,11 +7191,8 @@ void weapon_render(object* obj, draw_list *scene)
 				vec3d headp;
 
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
-				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
 
-				if ( batch_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha) ) {
-					wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
-				}
+				batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha);
 			}			
 
 			// maybe draw laser glow bitmap
@@ -7238,7 +7236,7 @@ void weapon_render(object* obj, draw_list *scene)
 					alpha = weapon_glow_alpha;
 				}
 
-				batch_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
+				batching_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
 			}
 
 			break;
@@ -7299,7 +7297,6 @@ void weapon_render(object* obj, draw_list *scene)
 			render_info.set_flags(render_flags);
 
 			model_render_queue(&render_info, scene, wip->model_num, &obj->orient, &obj->pos);
-			wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
 
 			break;
 		}

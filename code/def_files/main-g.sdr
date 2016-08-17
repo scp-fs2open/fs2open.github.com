@@ -1,33 +1,40 @@
-#extension GL_EXT_geometry_shader4 : enable
+#extension GL_ARB_geometry_shader4 : enable
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 3) out;
 uniform mat4 shadow_proj_matrix[4];
-varying in float Instance[3];
-varying out vec4 position;
+in float geoInstance[];
+in vec3 geoNormal[];
+in vec4 geoTexCoord[];
+out vec4 fragPosition;
+out vec3 fragNormal;
+out vec4 fragTexCoord;
 #ifdef FLAG_TRANSFORM
-varying in float not_visible_g[];
-varying out float not_visible;
+in float geoNotVisible[];
+out float fragNotVisible;
 #endif
 #ifdef FLAG_CLIP
-varying in float clip_distance_g[];
-varying out float clip_distance;
+in float geoClipDistance[];
+out float fragClipDistance;
 #endif
 void main(void)
 {
-	int instanceID = int(Instance[0]);
-   for(int vert = 0; vert < gl_VerticesIn; vert++)
+	int instanceID = int(geoInstance[0]);
+   for(int vert = 0; vert < gl_in.length(); vert++)
 	{
-		gl_Position = shadow_proj_matrix[instanceID] * gl_PositionIn[vert];
+		gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
 		if(gl_Position.z < -1.0)
 			gl_Position.z = -1.0;
-       position = gl_PositionIn[vert];
-		gl_ClipVertex = gl_ClipVertexIn[vert];
+       fragPosition = gl_in[vert].gl_Position;
+		fragNormal = geoNormal[vert];
+		fragTexCoord = geoTexCoord[vert];
 		gl_Layer = instanceID;
 #ifdef FLAG_TRANSFORM
-		not_visible = not_visible_g[0];
+		fragNotVisible = geoNotVisible[0];
 #endif
 #ifdef FLAG_CLIP
-		clip_distance = clip_distance_g[0];
+		fragClipDistance = geoClipDistance[0];
 #endif
 		EmitVertex();
 	}
 	EndPrimitive();
-}
+};

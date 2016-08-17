@@ -10,6 +10,7 @@
 
 
 #ifndef _STATIC_RAND_H
+#define _STATIC_RAND_H
 
 #include "globalincs/pstypes.h"
 

@@ -304,6 +304,8 @@ set (file_root_graphics
 	graphics/tmapper.h
 	graphics/shadows.cpp
 	graphics/shadows.h
+	graphics/material.cpp
+	graphics/material.h
 )
 
 # Graphics -> OpenGLGr files
@@ -884,6 +886,8 @@ set (file_root_render
 	render/3dlaser.cpp
 	render/3dmath.cpp
 	render/3dsetup.cpp
+	render/batching.cpp
+	render/batching.h
 )
 
 # Ship files

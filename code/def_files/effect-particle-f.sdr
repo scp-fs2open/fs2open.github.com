@@ -5,38 +5,41 @@ uniform float window_height;
 uniform float nearZ;
 uniform float farZ;
 uniform int linear_depth;
-uniform int srgb;uniform int blend_alpha;
-varying float radius_p;
-varying vec4 position_p;
+uniform int srgb;
+uniform int blend_alpha;
+fragIn float fragRadius;
+fragIn vec4 fragPosition;
+fragIn vec4 fragTexCoord;
+fragIn vec4 fragColor;
 #define SRGB_GAMMA 2.2
 void main()
 {
-	vec4 fragmentColor = texture2D(baseMap, gl_TexCoord[0].xy);
+	vec4 fragmentColor = tex2D(baseMap, fragTexCoord.xy);
 	fragmentColor.rgb = mix(fragmentColor.rgb, pow(fragmentColor.rgb, vec3(SRGB_GAMMA)), float(srgb));
-	fragmentColor *= mix(gl_Color, vec4(pow(gl_Color.rgb, vec3(SRGB_GAMMA)), gl_Color.a), float(srgb));
-	vec2 offset = vec2(radius_p * abs(0.5 - gl_TexCoord[0].x) * 2.0, radius_p * abs(0.5 - gl_TexCoord[0].y) * 2.0);
+	fragmentColor *= mix(fragColor, vec4(pow(fragColor.rgb, vec3(SRGB_GAMMA)), fragColor.a), float(srgb));
+	vec2 offset = vec2(fragRadius * abs(0.5 - fragTexCoord.x) * 2.0, fragRadius * abs(0.5 - fragTexCoord.y) * 2.0);
 	float offset_len = length(offset);
-	if ( offset_len > radius_p ) {
-		gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+	if ( offset_len > fragRadius ) {
+		fragOut0 = vec4(0.0, 0.0, 0.0, 0.0);
 		return;
 	}
 	vec2 depthCoord = vec2(gl_FragCoord.x / window_width, gl_FragCoord.y / window_height );
-	vec4 sceneDepth = texture2D(depthMap, depthCoord);
+	vec4 sceneDepth = tex2D(depthMap, depthCoord);
 	float sceneDepthLinear;
 	float fragDepthLinear;
 	if ( linear_depth == 1 ) {
 		sceneDepthLinear = -sceneDepth.z;
-		fragDepthLinear = -position_p.z;
+		fragDepthLinear = -fragPosition.z;
 	} else {
 		sceneDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - sceneDepth.x * (farZ-nearZ) );
 		fragDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - gl_FragCoord.z * (farZ-nearZ) );
 	}
 	// assume UV of 0.5, 0.5 is the centroid of this sphere volume
-	float depthOffset = sqrt(pow(radius_p, 2.0) - pow(offset_len, 2.0));
+	float depthOffset = sqrt(pow(fragRadius, 2.0) - pow(offset_len, 2.0));
 	float frontDepth = fragDepthLinear - depthOffset;
 	float backDepth = fragDepthLinear + depthOffset;
 	float intensity = smoothstep(max(nearZ, frontDepth), backDepth, sceneDepthLinear);
 	fragmentColor.rgb *= (srgb == 1) ? 1.5 : 1.0;
 	fragmentColor = (blend_alpha == 1) ? vec4(fragmentColor.rgb, fragmentColor.a * intensity) : vec4(fragmentColor.rgb * intensity, fragmentColor.a);
-	gl_FragColor = max(fragmentColor, vec4(0.0));
-}
+	fragOut0 = max(fragmentColor, vec4(0.0));
+};

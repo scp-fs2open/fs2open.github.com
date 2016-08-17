@@ -9,6 +9,7 @@
 #include "graphics/grinternal.h"
 #include "jpgutils/jpgutils.h"
 #include "model/model.h"
+#include "graphics/material.h"
 #include "pcxutils/pcxutils.h"
 #include "pngutils/pngutils.h"
 #include "tgautils/tgautils.h"
@@ -20,6 +21,21 @@
 uint gr_stub_lock()
 {
 	return 1;
+}
+
+int gr_stub_create_vertex_buffer(bool static_buffer)
+{
+	return -1;
+}
+
+int gr_stub_create_index_buffer(bool static_buffer)
+{
+	return -1;
+}
+
+void gr_stub_delete_buffer(int handle)
+{
+
 }
 
 // NOTE: should return a failure
@@ -222,7 +238,7 @@ void gr_stub_rect(int x, int y, int w, int h, int resize_mode)
 {
 }
 
-void gr_stub_render_buffer(int start, const vertex_buffer *bufferp, size_t texi, int flags)
+void gr_stub_render_buffer(int start, vertex_buffer *bufferp, size_t texi, int flags)
 {
 }
 
@@ -254,7 +270,7 @@ void gr_stub_set_buffer(int idx)
 {
 }
 
-void gr_stub_update_buffer_object(int handle, size_t size, void* data)
+void gr_stub_update_buffer_data(int handle, size_t size, void* data)
 {
 
 }
@@ -462,6 +478,10 @@ void gr_stub_draw_htl_sphere(float rad)
 {
 }
 
+void gr_stub_draw_sphere(material *material_def, float rad)
+{
+}
+
 void gr_stub_draw_line_list(const colored_vector *lines, int num)
 {
 }
@@ -522,12 +542,52 @@ void gr_stub_set_animated_effect(int effect, float timer)
 void gr_stub_set_team_color(const team_color *colors) {
 }
 
-void gr_stub_shadow_map_start(const matrix4 *shadow_view_matrix, const matrix* light_matrix)
+void gr_stub_shadow_map_start(matrix4 *shadow_view_matrix, const matrix* light_matrix)
 {
 }
 
 void gr_stub_shadow_map_end()
 {
+}
+
+void gr_stub_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, int texi)
+{
+
+}
+
+void gr_stub_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+{
+
+}
+
+void gr_stub_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
+{
+
+}
+
+void gr_stub_render_primitives_2d(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+{
+
+}
+
+void gr_stub_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
+{
+
+}
+
+void gr_stub_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+{
+
+}
+
+void gr_stub_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+{
+
+}
+
+bool gr_stub_is_capable(gr_capability capability)
+{
+	return false;
 }
 
 bool gr_stub_init() 
@@ -638,6 +698,9 @@ bool gr_stub_init()
 	gr_screen.gf_set_fill_mode			= gr_set_fill_mode_stub;
 	gr_screen.gf_set_texture_panning	= gr_stub_set_texture_panning;
 
+	gr_screen.gf_create_vertex_buffer	= gr_stub_create_vertex_buffer;
+	gr_screen.gf_create_index_buffer	= gr_stub_create_index_buffer;
+	gr_screen.gf_delete_buffer		= gr_stub_delete_buffer;
 	gr_screen.gf_create_buffer		= gr_stub_create_buffer;
 	gr_screen.gf_config_buffer		= gr_stub_config_buffer;
 	gr_screen.gf_pack_buffer		= gr_stub_pack_buffer;
@@ -646,7 +709,7 @@ bool gr_stub_init()
 	gr_screen.gf_set_buffer			= gr_stub_set_buffer;
 
 	gr_screen.gf_update_transform_buffer	= gr_stub_update_transform_buffer;
-	gr_screen.gf_update_buffer_object		= gr_stub_update_buffer_object;
+	gr_screen.gf_update_buffer_data		= gr_stub_update_buffer_data;
 	gr_screen.gf_set_transform_buffer_offset	= gr_stub_set_transform_buffer_offset;
 
 	gr_screen.gf_create_stream_buffer		= gr_stub_create_stream_buffer;
@@ -701,6 +764,7 @@ bool gr_stub_init()
 
 	gr_screen.gf_line_htl			= gr_stub_draw_htl_line;
 	gr_screen.gf_sphere_htl			= gr_stub_draw_htl_sphere;
+	gr_screen.gf_sphere				= gr_stub_draw_sphere;
 
 	gr_screen.gf_shadow_map_start	= gr_stub_shadow_map_start;
 	gr_screen.gf_shadow_map_end		= gr_stub_shadow_map_end;
@@ -715,5 +779,16 @@ bool gr_stub_init()
 
 	gr_screen.gf_update_texture = gr_stub_update_texture;
 	gr_screen.gf_get_bitmap_from_texture = gr_stub_get_bitmap_from_texture;
+
+	gr_screen.gf_render_model = gr_stub_render_model;
+	gr_screen.gf_render_primitives	= gr_stub_render_primitives;
+	gr_screen.gf_render_primitives_immediate = gr_stub_render_primitives_immediate;
+	gr_screen.gf_render_primitives_2d	= gr_stub_render_primitives_2d;
+	gr_screen.gf_render_primitives_2d_immediate = gr_stub_render_primitives_2d_immediate;
+	gr_screen.gf_render_primitives_particle	= gr_stub_render_primitives_particle;
+	gr_screen.gf_render_primitives_distortion = gr_stub_render_primitives_distortion;
+
+	gr_screen.gf_is_capable = gr_stub_is_capable;
+
 	return true;
 }
