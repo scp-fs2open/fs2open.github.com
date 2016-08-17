@@ -148,8 +148,8 @@ extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size
 // A templated version of parse_string_flag_list, to go along with the templated flag_def_list_new.
 // If the "is_special" flag is set, or a string was not found in the def list, it will be added to the unparsed_or_special_strings Vector
 // so that you can process it properly later 
-template<class T>
-int parse_string_flag_list(flagset<T>& dest, flag_def_list_new<T> defs[], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
+template<class T, class Flagset>
+int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
 {
     char(*slp)[NAME_LENGTH] = (char(*)[32])new char[n_defs*NAME_LENGTH];
     int num_strings = stuff_string_list(slp, (int)n_defs);
