@@ -181,7 +181,7 @@ int parse_string_flag_list(flagset<T>& dest, flag_def_list_new<T> defs[], size_t
 extern long atol2();
 extern int my_errno;
 template<class T>
-void stuff_flagset(flagset<T> *dest) {
+void stuff_flagset(T *dest) {
     dest->from_long(atol2());
 
     if (my_errno)
@@ -215,8 +215,8 @@ extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 
-template<class Flags>
-void stuff_boolean_flag(flagset<Flags>& destination, Flags flag, bool a_to_eol = true)
+template<class Flags, class Flagset>
+void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
 {
     bool temp;
     stuff_boolean(&temp, a_to_eol);
