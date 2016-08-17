@@ -26,4 +26,6 @@ void nebula_init( const char *filename, angles *pbh = /*NULL*/ 0 );
 void nebula_close();
 void nebula_render();
 
+#define NEBULA_INDEXED_COLORS 20
+
 #endif	//_NEBULA_H

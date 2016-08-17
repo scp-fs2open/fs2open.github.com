@@ -1,7 +1,9 @@
+fragIn vec4 fragTexCoord;
+fragIn vec4 fragColor;
 uniform sampler2D baseMap;
 uniform int textured;
 void main()
 {
-	vec4 fragmentColor = mix(gl_Color, texture2D(baseMap, gl_TexCoord[0].xy)*gl_Color.a, (float)textured);
-	gl_FragColor = fragmentColor;
-}
+	vec4 fragmentColor = mix(fragColor, texture2D(baseMap, fragTexCoord.xy)*fragColor.a, (float)textured);
+	fragOut0 = fragmentColor;
+};

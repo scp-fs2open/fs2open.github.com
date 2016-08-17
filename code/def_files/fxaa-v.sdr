@@ -1,10 +1,11 @@
 #extension GL_EXT_gpu_shader4 : enable
+vertIn vec4 vertPosition;
 uniform float rt_w;
 uniform float rt_h;
-varying vec2 v_rcpFrame;
-noperspective varying vec2 v_pos;
+vertOut vec2 v_rcpFrame;
+noperspective vertOut vec2 v_pos;
 void main() {
-	gl_Position = gl_Vertex;
+	gl_Position = vertPosition;
 	v_rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);
-	v_pos = gl_Vertex.xy*0.5 + 0.5;
-}
+	v_pos = vertPosition.xy*0.5 + 0.5;
+};

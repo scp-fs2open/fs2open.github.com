@@ -27,6 +27,7 @@
 #include "object/objectsnd.h"
 #include "playerman/managepilot.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "species_defs/species_defs.h"
 #include "weapon/beam.h"
@@ -1045,9 +1046,9 @@ void labviewer_render_model(float frametime)
 		Glowpoint_override = gpo_save;
 	}
 
-	batch_render_all();
+	batching_render_all();
 	gr_copy_effect_texture();
-	batch_render_distortion_map_bitmaps();
+	batching_render_distortions_all();
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 
@@ -1138,7 +1139,7 @@ void labviewer_render_bitmap(float frametime)
 
 
 	// draw the primary laser bitmap
-	gr_set_color_fast(&wip->laser_color_1);
+	//gr_set_color_fast(&wip->laser_color_1);
 
 	if (wip->laser_bitmap.num_frames > 1) {
 		current_frame += frametime;
@@ -1149,10 +1150,13 @@ void labviewer_render_bitmap(float frametime)
 	vec3d headp;
 	vm_vec_scale_add(&headp, &vmd_zero_vector, &Lab_viewer_orient.vec.fvec, wip->laser_length);
 
-	gr_set_bitmap(wip->laser_bitmap.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
-	if(wip->laser_length > 0.0001f)
-		g3_draw_laser(&headp, wip->laser_head_radius, &vmd_zero_vector, wip->laser_tail_radius, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT);
-
+	//gr_set_bitmap(wip->laser_bitmap.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
+	if(wip->laser_length > 0.0001f) {
+		//g3_draw_laser(&headp, wip->laser_head_radius, &vmd_zero_vector, wip->laser_tail_radius, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT);
+		material mat_params;
+		material_set_unlit_color(&mat_params, wip->laser_bitmap.first_frame + framenum, &wip->laser_color_1, true, true);
+		g3_render_laser(&mat_params, &headp, wip->laser_head_radius, &vmd_zero_vector, wip->laser_tail_radius);
+	}
 
 	// now draw the laser glow bitmap, if there is one, and if we are supposed to
 	if ( !(Lab_model_flags & MR_NO_GLOWMAPS) && (wip->laser_glow_bitmap.first_frame >= 0) ) {
@@ -1201,9 +1205,13 @@ void labviewer_render_bitmap(float frametime)
 			CLAMP(framenum, 0, wip->laser_glow_bitmap.num_frames-1);
 		}
 
-		gr_set_bitmap(wip->laser_glow_bitmap.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
-		if(wip->laser_length > 0.0001f)
-			g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
+		//gr_set_bitmap(wip->laser_glow_bitmap.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
+		if(wip->laser_length > 0.0001f) {
+			//g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
+			material mat_params;
+			material_set_unlit_color(&mat_params, wip->laser_glow_bitmap.first_frame + framenum, &c, weapon_glow_alpha, true, false);
+			g3_render_laser(&mat_params, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r);
+		}
 	}
 
 	// clean up and move on ...
@@ -1813,7 +1821,6 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Show Damage Lightning", Lab_viewer_flags, LAB_FLAG_LIGHTNING_ARCS);
 	ADD_RENDER_FLAG("Rotate Subsystems", Lab_viewer_flags, LAB_FLAG_SUBMODEL_ROTATE);
 	if (is_minimum_GLSL_version()) {
-		ADD_RENDER_BOOL("Fixed Render Pipeline", GLSL_override);
 		if (Cmdline_postprocess) {
 			ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
 			ADD_RENDER_BOOL("Use FXAA", Cmdline_fxaa);

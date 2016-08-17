@@ -75,9 +75,6 @@ int gr_global_zbuffering = 0;
 // stencil buffer stuff
 int gr_stencil_mode = 0;
 
-// alpha mask stuff
-int gr_alpha_test = 0;
-
 // Default clipping distances
 const float Default_min_draw_distance = 1.0f;
 const float Default_max_draw_distance = 1e10;
@@ -1279,22 +1276,26 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 	verts[3].texture_position.v = 1.0f;
 
 	// turn off zbuffering
-	int saved_zbuffer_mode = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);
+	//int saved_zbuffer_mode = gr_zbuffer_get();
+	//gr_zbuffer_set(GR_ZBUFF_NONE);
 
-	gr_render(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_INTERFACE);
+	material mat_params;
+	material_set_interface(
+		&mat_params, 
+		gr_screen.current_bitmap, 
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false, 
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+	);
 
-	gr_zbuffer_set(saved_zbuffer_mode);
+	g3_render_primitives_textured(&mat_params, verts, 4, PRIM_TYPE_TRIFAN, true);
+
+	//gr_zbuffer_set(saved_zbuffer_mode);
 }
 
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode)
 {
 	float x, y, w, h;
 	vertex verts[4];
-
-	if (gr_screen.mode == GR_STUB) {
-		return;
-	}
 
 	x = i2fl(_x);
 	y = i2fl(_y);
@@ -1328,36 +1329,35 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 	verts[3].texture_position.u = _u0;
 	verts[3].texture_position.v = _v1;
 
-	// turn off zbuffering
-	int saved_zbuffer_mode = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);
+	material material_params;
 
-	gr_render(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_INTERFACE);
-
-	gr_zbuffer_set(saved_zbuffer_mode);
+	material_set_interface(&material_params, gr_screen.current_bitmap, false, 1.0f);
+	g3_render_primitives_textured(&material_params, verts, 4, PRIM_TYPE_TRIFAN, true);
 }
 
 // NEW new bitmap functions -Bobboau
-void gr_bitmap_list(bitmap_2d_list* list, int n_bm, int resize_mode)
-{
-	for (int i = 0; i < n_bm; i++) {
-		bitmap_2d_list *l = &list[i];
-
-		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
-
-		if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-			gr_resize_screen_pos(&l->x, &l->y, &l->w, &l->h, resize_mode);
-		}
-	}
-
-	g3_draw_2d_poly_bitmap_list(list, n_bm, TMAP_FLAG_INTERFACE);
-}
+// void gr_bitmap_list(bitmap_2d_list* list, int n_bm, int resize_mode)
+// {
+// 	for (int i = 0; i < n_bm; i++) {
+// 		bitmap_2d_list *l = &list[i];
+// 
+// 		bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, NULL, NULL, NULL);
+// 
+// 		if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
+// 			gr_resize_screen_pos(&l->x, &l->y, &l->w, &l->h, resize_mode);
+// 		}
+// 	}
+// 
+// 	g3_draw_2d_poly_bitmap_list(list, n_bm, TMAP_FLAG_INTERFACE);
+// }
 
 // _->NEW<-_ NEW new bitmap functions -Bobboau
 //takes a list of rectangles that have assosiated rectangles in a texture
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 {
-	for(int i = 0; i < n_bm; i++) {
+	// adapted from g3_draw_2d_poly_bitmap_list
+
+	for ( int i = 0; i < n_bm; i++ ) {
 		bitmap_2d_list *l = &list[i].screen_rect;
 
 		// if no valid hight or width values were given get some from the bitmap
@@ -1370,19 +1370,91 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 		}
 	}
 
-	g3_draw_2d_poly_bitmap_rect_list(list, n_bm, TMAP_FLAG_INTERFACE);
+	vertex* vert_list = new vertex[6 * n_bm];
+	float sw = 0.1f;
+
+	for ( int i = 0; i < n_bm; i++ ) {
+		// stuff coords	
+
+		bitmap_2d_list* b = &list[i].screen_rect;
+		texture_rect_list* t = &list[i].texture_rect;
+		//tri one
+		vertex *V = &vert_list[i * 6];
+		V->screen.xyw.x = (float)b->x;
+		V->screen.xyw.y = (float)b->y;
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u0;
+		V->texture_position.v = (float)t->v0;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		V->screen.xyw.x = (float)(b->x + b->w);
+		V->screen.xyw.y = (float)b->y;
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u1;
+		V->texture_position.v = (float)t->v0;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		V->screen.xyw.x = (float)(b->x + b->w);
+		V->screen.xyw.y = (float)(b->y + b->h);
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u1;
+		V->texture_position.v = (float)t->v1;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		//tri two
+		V++;
+		V->screen.xyw.x = (float)b->x;
+		V->screen.xyw.y = (float)b->y;
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u0;
+		V->texture_position.v = (float)t->v0;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		V->screen.xyw.x = (float)(b->x + b->w);
+		V->screen.xyw.y = (float)(b->y + b->h);
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u1;
+		V->texture_position.v = (float)t->v1;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+
+		V++;
+		V->screen.xyw.x = (float)b->x;
+		V->screen.xyw.y = (float)(b->y + b->h);
+		V->screen.xyw.w = sw;
+		V->texture_position.u = (float)t->u0;
+		V->texture_position.v = (float)t->v1;
+		V->flags = PF_PROJECTED;
+		V->codes = 0;
+	}
+
+	material material_params;
+
+	material_set_unlit(&material_params, gr_screen.current_bitmap, 1.0f, true, false);
+	g3_render_primitives_textured(&material_params, vert_list, 6 * n_bm, PRIM_TYPE_TRIS, true);
+
+	delete[] vert_list;
 }
 
 
+
 /**
- * Given endpoints, and thickness, calculate coords of the endpoint
- */
+* Given endpoints, and thickness, calculate coords of the endpoint
+* Adapted from gr_pline_helper()
+*/
 void gr_pline_helper(vec3d *out, vec3d *in1, vec3d *in2, int thickness)
 {
 	vec3d slope;
 
 	// slope of the line
-	if(vm_vec_same(in1, in2)) {
+	if ( vm_vec_same(in1, in2) ) {
 		slope = vmd_zero_vector;
 	} else {
 		vm_vec_sub(&slope, in2, in1);
@@ -1395,14 +1467,16 @@ void gr_pline_helper(vec3d *out, vec3d *in1, vec3d *in2, int thickness)
 	vm_vec_scale_add(out, in1, &slope, (float)thickness);
 }
 
+
 /**
- * Special function for drawing polylines.
- *
- * This function is specifically intended for polylines where each section 
- * is no more than 90 degrees away from a previous section.
- * Moreover, it is _really_ intended for use with 45 degree angles. 
- */
-void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode)
+* Special function for drawing polylines.
+*
+* This function is specifically intended for polylines where each section
+* is no more than 90 degrees away from a previous section.
+* Moreover, it is _really_ intended for use with 45 degree angles.
+* Adapted from gr_pline_special()
+*/
+void gr_pline_special(SCP_vector<vec3d> *pts, int thickness, int resize_mode)
 {
 	vec3d s1, s2, e1, e2, dir;
 	vec3d last_e1, last_e2;
@@ -1414,22 +1488,25 @@ void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode)
 	size_t num_pts = pts->size();
 
 	// if we have less than 2 pts, bail
-	if(num_pts < 2) {
+	if ( num_pts < 2 ) {
 		return;
 	}
 
 	extern int G3_count;
-	if(G3_count == 0) {
+	if ( G3_count == 0 ) {
 		g3_start_frame(1);
 		started_frame = 1;
 	}
 
-	// turn off zbuffering
-	saved_zbuffer_mode = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);
+	float sw = 0.1f;
 
-	// turn off culling
-	int cull = gr_set_cull(0);
+	color clr = gr_screen.current_color;
+
+	material material_def;
+
+	material_def.set_depth_mode(ZBUFFER_TYPE_NONE);
+	material_def.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+	material_def.set_cull_mode(false);
 
 	// draw each section
 	last_e1 = vmd_zero_vector;
@@ -1438,111 +1515,118 @@ void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode)
 	for(size_t idx=0; idx<num_pts-1; idx++) {
 		// get the start and endpoints
 		s1 = pts->at(idx);													// start 1 (on the line)
-		e1 = pts->at(idx+1);												// end 1 (on the line)
+		e1 = pts->at(idx + 1);												// end 1 (on the line)
 		gr_pline_helper(&s2, &s1, &e1, thickness);	// start 2
 		vm_vec_sub(&dir, &e1, &s1);
 		vm_vec_add(&e2, &s2, &dir);											// end 2
-		
-		// stuff coords
+
+																			// stuff coords
 		v[0].screen.xyw.x = (float)ceil(s1.xyz.x);
 		v[0].screen.xyw.y = (float)ceil(s1.xyz.y);
-		v[0].screen.xyw.w = 0.0f;
+		v[0].screen.xyw.w = sw;
 		v[0].texture_position.u = 0.5f;
 		v[0].texture_position.v = 0.5f;
 		v[0].flags = PF_PROJECTED;
 		v[0].codes = 0;
-		v[0].r = gr_screen.current_color.red;
-		v[0].g = gr_screen.current_color.green;
-		v[0].b = gr_screen.current_color.blue;
+		v[0].r = clr.red;
+		v[0].g = clr.green;
+		v[0].b = clr.blue;
+		v[0].a = clr.alpha;
 
 		v[1].screen.xyw.x = (float)ceil(s2.xyz.x);
 		v[1].screen.xyw.y = (float)ceil(s2.xyz.y);
-		v[1].screen.xyw.w = 0.0f;
+		v[1].screen.xyw.w = sw;
 		v[1].texture_position.u = 0.5f;
 		v[1].texture_position.v = 0.5f;
 		v[1].flags = PF_PROJECTED;
 		v[1].codes = 0;
-		v[1].r = gr_screen.current_color.red;
-		v[1].g = gr_screen.current_color.green;
-		v[1].b = gr_screen.current_color.blue;
+		v[1].r = clr.red;
+		v[1].g = clr.green;
+		v[1].b = clr.blue;
+		v[1].a = clr.alpha;
 
 		v[2].screen.xyw.x = (float)ceil(e2.xyz.x);
 		v[2].screen.xyw.y = (float)ceil(e2.xyz.y);
-		v[2].screen.xyw.w = 0.0f;
+		v[2].screen.xyw.w = sw;
 		v[2].texture_position.u = 0.5f;
 		v[2].texture_position.v = 0.5f;
 		v[2].flags = PF_PROJECTED;
 		v[2].codes = 0;
-		v[2].r = gr_screen.current_color.red;
-		v[2].g = gr_screen.current_color.green;
-		v[2].b = gr_screen.current_color.blue;
+		v[2].r = clr.red;
+		v[2].g = clr.green;
+		v[2].b = clr.blue;
+		v[2].a = clr.alpha;
 
 		v[3].screen.xyw.x = (float)ceil(e1.xyz.x);
 		v[3].screen.xyw.y = (float)ceil(e1.xyz.y);
-		v[3].screen.xyw.w = 0.0f;
+		v[3].screen.xyw.w = sw;
 		v[3].texture_position.u = 0.5f;
 		v[3].texture_position.v = 0.5f;
 		v[3].flags = PF_PROJECTED;
 		v[3].codes = 0;
-		v[3].r = gr_screen.current_color.red;
-		v[3].g = gr_screen.current_color.green;
-		v[3].b = gr_screen.current_color.blue;
+		v[3].r = clr.red;
+		v[3].g = clr.green;
+		v[3].b = clr.blue;
+		v[3].a = clr.alpha;
 
 		//We could really do this better...but oh well. _WMC
-		if(resize_mode != GR_RESIZE_NONE) {
-			for(j=0;j<4;j++) {
-				gr_resize_screen_posf(&v[j].screen.xyw.x,&v[j].screen.xyw.y,NULL,NULL,resize_mode);
+		if ( resize_mode != GR_RESIZE_NONE ) {
+			for ( j = 0; j<4; j++ ) {
+				gr_resize_screen_posf(&v[j].screen.xyw.x, &v[j].screen.xyw.y, NULL, NULL, resize_mode);
 			}
 		}
 
 		// draw the polys
-		g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB, 0.1f);
+		//g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB, 0.1f);
+		g3_render_primitives_colored(&material_def, v, 4, PRIM_TYPE_TRIFAN, true);
 
 		// if we're past the first section, draw a "patch" triangle to fill any gaps
-		if(idx > 0) {
+		if ( idx > 0 ) {
 			// stuff coords
 			v[0].screen.xyw.x = (float)ceil(s1.xyz.x);
 			v[0].screen.xyw.y = (float)ceil(s1.xyz.y);
-			v[0].screen.xyw.w = 0.0f;
+			v[0].screen.xyw.w = sw;
 			v[0].texture_position.u = 0.5f;
 			v[0].texture_position.v = 0.5f;
 			v[0].flags = PF_PROJECTED;
 			v[0].codes = 0;
-			v[0].r = gr_screen.current_color.red;
-			v[0].g = gr_screen.current_color.green;
-			v[0].b = gr_screen.current_color.blue;
+			v[0].r = clr.red;
+			v[0].g = clr.green;
+			v[0].b = clr.blue;
+			v[0].a = clr.alpha;
 
 			v[1].screen.xyw.x = (float)ceil(s2.xyz.x);
 			v[1].screen.xyw.y = (float)ceil(s2.xyz.y);
-			v[1].screen.xyw.w = 0.0f;
+			v[1].screen.xyw.w = sw;
 			v[1].texture_position.u = 0.5f;
 			v[1].texture_position.v = 0.5f;
 			v[1].flags = PF_PROJECTED;
 			v[1].codes = 0;
-			v[1].r = gr_screen.current_color.red;
-			v[1].g = gr_screen.current_color.green;
-			v[1].b = gr_screen.current_color.blue;
-
+			v[1].r = clr.red;
+			v[1].g = clr.green;
+			v[1].b = clr.blue;
+			v[1].a = clr.alpha;
 
 			v[2].screen.xyw.x = (float)ceil(last_e2.xyz.x);
 			v[2].screen.xyw.y = (float)ceil(last_e2.xyz.y);
-			v[2].screen.xyw.w = 0.0f;
+			v[2].screen.xyw.w = sw;
 			v[2].texture_position.u = 0.5f;
 			v[2].texture_position.v = 0.5f;
 			v[2].flags = PF_PROJECTED;
 			v[2].codes = 0;
-			v[2].r = gr_screen.current_color.red;
-			v[2].g = gr_screen.current_color.green;
-			v[2].b = gr_screen.current_color.blue;
+			v[2].r = clr.red;
+			v[2].g = clr.green;
+			v[2].b = clr.blue;
+			v[2].a = clr.alpha;
 
 			//Inefficiency or flexibility? you be the judge -WMC
-			if(resize_mode != GR_RESIZE_NONE) {
-				for(j=0;j<3;j++) {
-					gr_resize_screen_posf(&v[j].screen.xyw.x,&v[j].screen.xyw.y,NULL,NULL,resize_mode);
+			if ( resize_mode != GR_RESIZE_NONE ) {
+				for ( j = 0; j<3; j++ ) {
+					gr_resize_screen_posf(&v[j].screen.xyw.x, &v[j].screen.xyw.y, NULL, NULL, resize_mode);
 				}
 			}
 
-			g3_draw_poly_constant_sw(3, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB, 0.1f);
+			g3_render_primitives_colored(&material_def, v, 3, PRIM_TYPE_TRIFAN, true);
 		}
 
 		// store our endpoints
@@ -1550,15 +1634,9 @@ void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode)
 		last_e2 = e2;
 	}
 
-	if(started_frame) {
+	if ( started_frame ) {
 		g3_end_frame();
 	}
-
-	// restore zbuffer mode
-	gr_zbuffer_set(saved_zbuffer_mode);
-
-	// restore culling
-	gr_set_cull(cull);
 }
 
 int poly_list::find_first_vertex(int idx)
@@ -1673,7 +1751,7 @@ void poly_list::allocate(int _verts)
 			tsb = (tsb_t*)vm_malloc(sizeof(tsb_t) * _verts);
 		}
 
-		if ( GLSL_version >= 130 ) {
+		if ( GLSL_version >= 150 ) {
 			submodels = (int*)vm_malloc(sizeof(int) * _verts);
 		}
 
@@ -1855,7 +1933,7 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 			buffer_list_internal.tsb[z] = tsb[j];
 		}
 
-		if ( GLSL_version >= 130 ) {
+		if ( GLSL_version >= 150 ) {
 			buffer_list_internal.submodels[z] = submodels[j];
 		}
 
@@ -1885,7 +1963,7 @@ poly_list& poly_list::operator = (poly_list &other_list)
 		memcpy(tsb, other_list.tsb, sizeof(tsb_t) * other_list.n_verts);
 	}
 
-	if ( GLSL_version >= 130 ) {
+	if ( GLSL_version >= 150 ) {
 		memcpy(submodels, other_list.submodels, sizeof(int) * other_list.n_verts);
 	}
 
@@ -1982,21 +2060,8 @@ void gr_shield_icon(coord2d coords[6], int resize_mode)
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
-
-	if (resize_mode != GR_RESIZE_NONE) {
-		gr_resize_screen_pos(&coords[0].x, &coords[0].y, NULL, NULL, resize_mode);
-		gr_resize_screen_pos(&coords[1].x, &coords[1].y, NULL, NULL, resize_mode);
-		gr_resize_screen_pos(&coords[2].x, &coords[2].y, NULL, NULL, resize_mode);
-		gr_resize_screen_pos(&coords[3].x, &coords[3].y, NULL, NULL, resize_mode);
-		gr_resize_screen_pos(&coords[4].x, &coords[4].y, NULL, NULL, resize_mode);
-		gr_resize_screen_pos(&coords[5].x, &coords[5].y, NULL, NULL, resize_mode);
-	}
-
-	g3_draw_2d_shield_icon(coords,
-		gr_screen.current_color.red,
-		gr_screen.current_color.green,
-		gr_screen.current_color.blue,
-		gr_screen.current_color.alpha);
+	
+	g3_render_shield_icon(&gr_screen.current_color, coords, resize_mode);
 }
 
 void gr_rect(int x, int y, int w, int h, int resize_mode)
@@ -2005,15 +2070,7 @@ void gr_rect(int x, int y, int w, int h, int resize_mode)
 		return;
 	}
 
-	if (resize_mode != GR_RESIZE_NONE) {
-		gr_resize_screen_pos(&x, &y, &w, &h, resize_mode);
-	}
-
-	g3_draw_2d_rect(x, y, w, h,
-		gr_screen.current_color.red,
-		gr_screen.current_color.green,
-		gr_screen.current_color.blue,
-		gr_screen.current_color.alpha);
+	g3_render_colored_rect(&gr_screen.current_color, x, y, w, h, resize_mode);
 }
 
 void gr_shade(int x, int y, int w, int h, int resize_mode)
@@ -2023,17 +2080,16 @@ void gr_shade(int x, int y, int w, int h, int resize_mode)
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
-
-	if (resize_mode != GR_RESIZE_NONE) {
-		gr_resize_screen_pos(&x, &y, &w, &h, resize_mode);
-	}
-
+	
 	r = (int)gr_screen.current_shader.r;
 	g = (int)gr_screen.current_shader.g;
 	b = (int)gr_screen.current_shader.b;
 	a = (int)gr_screen.current_shader.c;
+	
+	color clr;
+	gr_init_alphacolor(&clr, r, g, b, a);
 
-	g3_draw_2d_rect(x, y, w, h, r, g, b, a);
+	g3_render_colored_rect(&clr, x, y, w, h, resize_mode);
 }
 
 void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha)

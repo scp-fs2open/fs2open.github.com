@@ -157,14 +157,15 @@ void HudGaugeRadarOrb::drawContactHtl(vec3d *pnt, int rad)
 			if (Missiontime & 8192)
 				return;
 		}
-		g3_draw_htl_sphere(pnt,size/100.0f);
+		g3_render_sphere(pnt,size/100.0f);
 	}
 	else
 	{
-		g3_draw_htl_sphere(pnt,size/300.0f);
+		g3_render_sphere(pnt,size/300.0f);
 	}
 
-	g3_draw_htl_line(&p,pnt);
+	//g3_draw_htl_line(&p,pnt);
+	g3_render_line_3d(false, &p, pnt);
 }
 
 // radar is damaged, so make blips dance around
@@ -373,6 +374,7 @@ void HudGaugeRadarOrb::drawOutlines()
 		g3_draw_line(&proj_orb_lines_xz[i-1],&proj_orb_lines_xz[i]);
 
 		gr_set_color(112,16,192);
+
 		g3_draw_sphere(&proj_orb_lines_yz[i-1], .01f);
 		g3_draw_line(&proj_orb_lines_yz[i-1],&proj_orb_lines_yz[i]);
 	}
@@ -406,7 +408,7 @@ void HudGaugeRadarOrb::drawOutlinesHtl()
 	g3_start_instance_matrix(&vmd_zero_vector, &Player_obj->orient, true);
 
 	gr_set_color(255, 255, 255);
-	g3_draw_htl_sphere(&vmd_zero_vector, .05f);
+	g3_render_sphere(&vmd_zero_vector, .05f);
 
     gr_set_line_width(2.0f);
 
@@ -414,15 +416,18 @@ void HudGaugeRadarOrb::drawOutlinesHtl()
 	{
         gr_init_alphacolor(&Orb_color_orange, 192, 96, 32, calcAlpha(&orb_ring_xy[last]));
 		gr_set_color_fast(&Orb_color_orange);
-		g3_draw_htl_line(&orb_ring_xy[last],&orb_ring_xy[i]);
+		//g3_draw_htl_line(&orb_ring_xy[last],&orb_ring_xy[i]);
+		g3_render_line_3d(false, &orb_ring_xy[last],&orb_ring_xy[i]);
 
         gr_init_alphacolor(&Orb_color_teal, 48, 160, 96, calcAlpha(&orb_ring_xz[last]));
         gr_set_color_fast(&Orb_color_teal);
-		g3_draw_htl_line(&orb_ring_xz[last],&orb_ring_xz[i]);
+		//g3_draw_htl_line(&orb_ring_xz[last],&orb_ring_xz[i]);
+		g3_render_line_3d(false, &orb_ring_xz[last],&orb_ring_xz[i]);
 
         gr_init_alphacolor(&Orb_color_purple, 112, 16, 192, calcAlpha(&orb_ring_yz[last]));
 		gr_set_color_fast(&Orb_color_purple);
-		g3_draw_htl_line(&orb_ring_yz[last],&orb_ring_yz[i]);
+		//g3_draw_htl_line(&orb_ring_yz[last],&orb_ring_yz[i]);
+		g3_render_line_3d(false, &orb_ring_yz[last],&orb_ring_yz[i]);
 
         last = i;
 	}
@@ -547,7 +552,7 @@ void HudGaugeRadarOrb::drawContactImage(vec3d *pnt, int rad, int idx, int clr_id
         aspect_mp = (((float) h) / ((float) w));
     }
 
-    gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
+    //gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
 
     float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
 
@@ -581,11 +586,17 @@ void HudGaugeRadarOrb::drawContactImage(vec3d *pnt, int rad, int idx, int clr_id
     tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT;
 
 	if ( idx >= 0 ) {
-		g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
+		//g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
+		material mat_params;
+		material_set_unlit_color(&mat_params, idx, &gr_screen.current_color, true, false);
+		g3_render_rect_oriented(&mat_params, pnt, &vmd_identity_matrix, sizef / 35.0f, aspect_mp * sizef / 35.0f);
 	}
 
 	if ( clr_idx >= 0 ) {
-		g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		//g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		material mat_params;
+		material_set_unlit(&mat_params, clr_idx, 1.0f, true, false);
+		g3_render_rect_oriented(&mat_params, pnt, &vmd_identity_matrix, sizef / 35.0f, aspect_mp * sizef / 35.0f);
 	}
 }
 
@@ -601,14 +612,16 @@ void HudGaugeRadarOrb::drawCrosshairs( vec3d pnt )
 		pnt_end = pnt_start = pnt;
 		pnt_start.xyz.x += (float) m*0.05f;
 		pnt_end.xyz.x += (float) m*0.15f;
-		g3_draw_htl_line(&pnt_start, &pnt_end);
+		//g3_draw_htl_line(&pnt_start, &pnt_end);
+		g3_render_line_3d(false, &pnt_start, &pnt_end);
 	}
 	for(j = 0; j < 2; j++) {
 		m = (j * 2) - 1;
 		pnt_end = pnt_start = pnt;
 		pnt_start.xyz.y += (float) m*0.05f;
 		pnt_end.xyz.y += (float) m*0.15f;
-		g3_draw_htl_line(&pnt_start, &pnt_end);
+		//g3_draw_htl_line(&pnt_start, &pnt_end);
+		g3_render_line_3d(false, &pnt_start, &pnt_end);
 	}
 }
 

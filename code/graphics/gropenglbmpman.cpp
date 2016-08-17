@@ -132,7 +132,7 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, int *bpp, in
 	if ( (flags & BMP_FLAG_CUBEMAP) && (*width != *height) ) {
 		MIN(*width, *height) = MAX(*width, *height);
 	}
-	
+
 	if ( opengl_make_render_target(bm_bitmaps[n].handle, n, width, height, bpp, mm_lvl, flags) ) {
 		return 1;
 	}

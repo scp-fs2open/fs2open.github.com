@@ -1,17 +1,19 @@
+fragIn vec4 fragTexCoord;
+fragIn vec4 fragColor;
+fragIn float fragOffset;
 uniform sampler2D baseMap;
 uniform sampler2D depthMap;
 uniform float window_width;
 uniform float window_height;
 uniform sampler2D distMap;
 uniform sampler2D frameBuffer;
-varying float offset_out;
 void main()
 {
 	vec2 depthCoord = vec2(gl_FragCoord.x / window_width, gl_FragCoord.y / window_height);
-	vec4 fragmentColor = texture2D(baseMap, gl_TexCoord[0].xy)*gl_Color.a;
-	vec2 distortion = texture2D(distMap, gl_TexCoord[0].xy+vec2(0.0, offset_out)).rg;
+	vec4 fragmentColor = tex2D(baseMap, fragTexCoord.xy) * fragColor.a;
+	vec2 distortion = tex2D(distMap, fragTexCoord.xy+vec2(0.0, fragOffset)).rg;
 	float alpha = clamp(dot(fragmentColor.rgb,vec3(0.3333))*10.0,0.0,1.0);
 	distortion = ((distortion - 0.5) * 0.01) * alpha;
-	gl_FragColor = texture2D(frameBuffer,depthCoord+distortion);
-	gl_FragColor.a = alpha;
-}
+	fragOut0 = tex2D(frameBuffer,depthCoord+distortion);
+	fragOut0.a = alpha;
+};

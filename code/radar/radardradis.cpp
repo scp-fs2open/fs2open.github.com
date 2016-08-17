@@ -161,8 +161,11 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float di
             aspect_mp = (((float) h) / ((float) w));
         }
         
-        gr_set_bitmap(clr_idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
-        g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+        //gr_set_bitmap(clr_idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
+        //g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		material mat_params;
+		material_set_unlit_color(&mat_params, clr_idx, &gr_screen.current_color, true, false);
+		g3_render_rect_oriented(&mat_params, &p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f);
     }
     
     if ( idx >= 0 ) {
@@ -174,8 +177,11 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float di
             aspect_mp = (((float) h) / ((float) w));
         }
         
-        gr_set_bitmap(idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
-        g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT);
+        //gr_set_bitmap(idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
+        //g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT);
+		material mat_params;
+		material_set_unlit_color(&mat_params, idx, &gr_screen.current_color, true, false);
+		g3_render_rect_oriented(&mat_params, &p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f);
     }
 }
 
@@ -343,13 +349,20 @@ void HudGaugeRadarDradis::drawOutlinesHtl()
 		vm_angle_2_matrix(&base_tilt, PI/6, 0);
 		vm_vec_rotate(&base_tilt_norm, &vmd_y_vector, &base_tilt);
 		
-		gr_set_bitmap(xy_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f); // base
-		g3_draw_polygon(&vmd_zero_vector, &base_tilt_norm, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		//gr_set_bitmap(xy_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f); // base
+		//g3_draw_polygon(&vmd_zero_vector, &base_tilt_norm, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		material mat_params;
+		material_set_unlit(&mat_params, xy_plane, 1.0f, true, false);
+		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &base_tilt_norm, scale, scale);
 		
-		gr_set_bitmap(xz_yz_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
+		//gr_set_bitmap(xz_yz_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
 		
-		g3_draw_polygon(&vmd_zero_vector, &vmd_x_vector, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // forward facing ring
-		g3_draw_polygon(&vmd_zero_vector, &vmd_z_vector, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // side facing ring
+		//g3_draw_polygon(&vmd_zero_vector, &vmd_x_vector, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // forward facing ring
+		//g3_draw_polygon(&vmd_zero_vector, &vmd_z_vector, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // side facing ring
+
+		material_set_unlit(&mat_params, xz_yz_plane, 1.0f, true, false);
+		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &vmd_x_vector, scale, scale); // forward facing ring
+		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &vmd_z_vector, scale, scale); // side facing ring
 	g3_done_instance(true);
 }
 
@@ -373,11 +386,17 @@ void HudGaugeRadarDradis::drawSweeps()
 	vm_vec_copy_scale(&sweep_normal_y, &sweep_b, 1.0f);
 	
 	g3_start_instance_matrix(&vmd_zero_vector, /*&Player_obj->orient*/&vmd_identity_matrix, true);
-		gr_set_bitmap(sweep_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
+//		gr_set_bitmap(sweep_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
 		
-		g3_draw_polygon(&vmd_zero_vector, &sweep_a, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-		g3_draw_polygon(&vmd_zero_vector, &sweep_b, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-		g3_draw_polygon(&vmd_zero_vector, &sweep_c, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+// 		g3_draw_polygon(&vmd_zero_vector, &sweep_a, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+// 		g3_draw_polygon(&vmd_zero_vector, &sweep_b, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+// 		g3_draw_polygon(&vmd_zero_vector, &sweep_c, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+
+		material mat_params;
+		material_set_unlit(&mat_params, sweep_plane, 1.0f, true, false);
+		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_a, scale, scale);
+		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_b, scale, scale);
+		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_c, scale, scale);
 
 		float rotation = sweep_percent;
 
@@ -385,11 +404,15 @@ void HudGaugeRadarDradis::drawSweeps()
 		vm_rot_point_around_line(&sweep_b, &vmd_y_vector, rotation, &vmd_zero_vector, &vmd_x_vector); // Sweep line: YZ
 		vm_rot_point_around_line(&sweep_c, &vmd_x_vector,sweep_perc_z, &vmd_zero_vector, &vmd_y_vector); // Sweep line: YZ
 		
-		gr_set_bitmap(sweep_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL);
+		//gr_set_bitmap(sweep_plane, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL);
 
-		g3_draw_polygon(&vmd_zero_vector, &sweep_a, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // Sweep line: XZ
-		g3_draw_polygon(&vmd_zero_vector, &sweep_b, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // Sweep line: YZ
-		g3_draw_polygon(&vmd_zero_vector, &sweep_c, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+// 		g3_draw_polygon(&vmd_zero_vector, &sweep_a, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // Sweep line: XZ
+// 		g3_draw_polygon(&vmd_zero_vector, &sweep_b, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT); // Sweep line: YZ
+// 		g3_draw_polygon(&vmd_zero_vector, &sweep_c, scale, scale, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+
+		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_a, scale, scale); // Sweep line: XZ
+		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_b, scale, scale); // Sweep line: YZ
+		g3_render_rect_oriented(&mat_params, &vmd_zero_vector, &sweep_c, scale, scale);
 
 		/*int dist = 90;
 

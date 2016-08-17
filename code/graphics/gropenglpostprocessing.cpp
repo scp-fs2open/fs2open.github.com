@@ -337,7 +337,6 @@ void opengl_post_lightshafts()
 				GL_state.Texture.SetActiveUnit(1);
 				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 				GL_state.Texture.Enable(Cockpit_depth_texture);
-				GL_state.Color(255, 255, 255, 255);
 				GL_state.Blend(GL_TRUE);
 				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 
@@ -388,8 +387,6 @@ void gr_opengl_post_process_end()
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
-
-	GL_state.Color(255, 255, 255, 255);
 
 	// set and configure post shader ...
 	int flags = 0;
@@ -1030,7 +1027,7 @@ void opengl_post_process_init()
 		Cmdline_postprocess = 0;
 		return;
 	}
-	
+
 	if ( !opengl_post_init_shaders() ) {
 		mprintf(("  Unable to initialize post-processing shaders! Disabling post-processing...\n\n"));
 		Cmdline_postprocess = 0;
