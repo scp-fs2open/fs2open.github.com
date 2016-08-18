@@ -148,10 +148,9 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 	int axis[NUM_JOY_AXIS_ACTIONS];
 	float h = 0.0f;
 	float p = 0.0f;
-	vec3d trans = ZERO_VECTOR;
 
 	if (Viewer_mode & VM_CENTERING) {
-		// View is centering
+		// Center view then bail
 		ma->p = 0.0f;
 		ma->h = 0.0f;
 		ma->b = 0.0f;
@@ -163,9 +162,31 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 			return;
 		}
 
-		// We're in the cockpit
-		if (headtracking::isEnabled() && !(Viewer_mode & VM_PADLOCK_ANY)) {
-			// Only do TrackIR stuff if it is enabled, Padlock is disabled (none of the padlock bits are set)
+		if (Viewer_mode & VM_PADLOCK_ANY) {
+			// Do Padlock view then bail
+			if (Viewer_mode & VM_PADLOCK_UP) {
+				ma->h = 0.0f;
+				ma->p = -max_p;
+
+			} else if (Viewer_mode & VM_PADLOCK_REAR) {
+				ma->h = -PI;
+				ma->p = 0.0f;
+
+			} else if (Viewer_mode & VM_PADLOCK_RIGHT) {
+				ma->h = max_h;
+				ma->p = 0.0f;
+
+			} else if (Viewer_mode & VM_PADLOCK_LEFT) {
+				ma->h = -max_h;
+				ma->p = 0.0f;
+			} // Else, don't do any ajustments. player_set_padlock_state will reset the states
+
+			return;
+
+		} else if (headtracking::isEnabled()) {
+			// Do TrackIR
+			vec3d trans = ZERO_VECTOR;
+
 			headtracking::query();
 
 			headtracking::HeadTrackingStatus* status = headtracking::getStatus();
@@ -184,7 +205,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 			vm_vec_unrotate(&leaning_position,&trans,&Eye_matrix);
 
 		} else {
-			// Slew commands here
+			// Do slew
 			/* These have been commented out until the controls are added into Controls_config[]
 			t = (check_control_timef(SLEW_LEFT) - check_control_timef(SLEW_RIGHT));
 			u = (check_control_timef(SLEW_UP) - check_control_timef(SLEW_DOWN);
@@ -538,7 +559,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, centering_speed);
 
 	// Ship controls
-	if (!(Viewer_mode & VM_CAMERA_LOCKED)) {
+	if (Viewer_mode & VM_CAMERA_LOCKED) {
 		// From keyboard...
 		do_thrust_keys(ci);
 		if ( check_control(BANK_WHEN_PRESSED) ) {
@@ -1929,26 +1950,18 @@ bool player_set_padlock_state(int &Viewer_mode, angles &chase_slew_angles)
 	bool retval = false;
 
 	if ( check_control(PADLOCK_UP) ) {
-		chase_slew_angles.h = 0.0f;
-		chase_slew_angles.p = -PI_2;
 		Viewer_mode |= (VM_PADLOCK_UP | VM_CAMERA_LOCKED);
 		retval = true;
 
 	} else if ( check_control(PADLOCK_DOWN) ) {
-		chase_slew_angles.h = -PI;
-		chase_slew_angles.p = 0.0f;
 		Viewer_mode |= (VM_PADLOCK_REAR | VM_CAMERA_LOCKED);
 		retval = true;
 
 	} else if ( check_control(PADLOCK_RIGHT) ) {
-		chase_slew_angles.h = PI_2;
-		chase_slew_angles.p = 0.0f;
 		Viewer_mode |= (VM_PADLOCK_RIGHT | VM_CAMERA_LOCKED);
 		retval = true;
 
 	} else if ( check_control(PADLOCK_LEFT) ) {
-		chase_slew_angles.h = -PI_2;
-		chase_slew_angles.p = 0.0f;
 		Viewer_mode |= (VM_PADLOCK_LEFT | VM_CAMERA_LOCKED);
 		retval = true;
 
@@ -1957,8 +1970,6 @@ bool player_set_padlock_state(int &Viewer_mode, angles &chase_slew_angles)
 		// the player lets go of an orthogonal padlock command
 		Viewer_mode &= ~(VM_PADLOCK_ANY);
 		Viewer_mode |= (VM_CENTERING | VM_CAMERA_LOCKED);
-		chase_slew_angles.h = 0.0f;
-		chase_slew_angles.p = 0.0f;
 
 	} // Else, do nothing
 
