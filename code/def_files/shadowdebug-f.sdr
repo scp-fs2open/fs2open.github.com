@@ -8,4 +8,4 @@ void main()
 	vec3 texcoord = vec3(fragTexCoord.xy, float(index));
 	fragOut0 = vec4(tex2DArray(shadow_map, texcoord).rgb,1.0);
 	//fragOut0 = vec4(tex2D(shadow_map, fragTexCoord.xy).rgb,1.0);
-}; 
+}

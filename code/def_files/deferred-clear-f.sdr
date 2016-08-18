@@ -4,4 +4,4 @@ void main()
 	fragOut1 = vec4(0.0, 0.0, -1000000.0, 1.0); // position
 	fragOut2 = vec4(0.0, 0.0, 0.0, 1.0); // normal
 	fragOut3 = vec4(0.0, 0.0, 0.0, 0.0); // specular
-};
+}

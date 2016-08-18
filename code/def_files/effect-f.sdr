@@ -6,4 +6,4 @@ void main()
 {
 	vec4 fragmentColor = mix(fragColor, texture2D(baseMap, fragTexCoord.xy)*fragColor.a, (float)textured);
 	fragOut0 = fragmentColor;
-};
+}

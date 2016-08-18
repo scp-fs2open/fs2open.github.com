@@ -20,4 +20,4 @@ void main()
 	color.rgb = Uncharted2Tonemapping(color.rgb * exposure) / Uncharted2Tonemapping(vec3(whitepoint));
 	color.rgb = pow(color.rgb, vec3(1.0/SRGB_GAMMA)); // return from linear color space to SRGB color space
 	fragOut0 = vec4(color.rgb, 1.0);
-};
+}

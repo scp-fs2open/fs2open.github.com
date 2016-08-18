@@ -9,4 +9,4 @@ void main()
 	fragOut0.g = dot(val, vec3(1.1640625, -0.390625, -0.8125));
 	fragOut0.b = dot(val, vec3(1.1640625, 2.015625, 0.0));
 	fragOut0.a = 1.0;
-};
+}

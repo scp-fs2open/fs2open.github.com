@@ -173,4 +173,4 @@ void main()
 	geoNormal = normal;
 	geoTexCoord = texCoord;
  #endif
-};
+}

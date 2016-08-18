@@ -36,4 +36,4 @@ void main()
 	#ifdef FLAG_EFFECT_DISTORTION
 	fragOffset = vertRadius * use_offset;
 	#endif
-};
+}
