@@ -5439,7 +5439,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		// to enable thrusters for previously non-loaded weapons (ie, weapons_page_in_cheats())
 		// when using cheat-keys, so we need to make sure and enable thrusters here if needed
 		if (pm->n_thrusters > 0) {
-			wip->wi_flags |= WIF_THRUSTER;
+            wip->wi_flags.set(Weapon::Info_Flags::Thruster);
 		}
 #endif
 	}

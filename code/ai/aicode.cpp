@@ -1283,7 +1283,7 @@ int set_target_objnum(ai_info *aip, int objnum)
 	return aip->target_objnum;
 }
 
-int ai_select_primary_weapon(object *objp, object *other_objp, int flags);
+int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flags flags);
 
 /**
  * Make new_subsys the targeted subsystem of ship *aip.
@@ -1301,7 +1301,7 @@ ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int pare
 		if (new_subsys->system_info->type == SUBSYSTEM_ENGINE) {
 			if ( aip != Player_ai ) {
 				Assert( aip->shipnum >= 0 );
-				ai_select_primary_weapon(&Objects[Ships[aip->shipnum].objnum], &Objects[parent_objnum], WIF_PUNCTURE);
+				ai_select_primary_weapon(&Objects[Ships[aip->shipnum].objnum], &Objects[parent_objnum], Weapon::Info_Flags::Puncture);
 				ship_primary_changed(&Ships[aip->shipnum]);	// AL: maybe send multiplayer information when AI ship changes primaries
 			}
 		}
@@ -5221,19 +5221,19 @@ vec3d	G_predicted_pos, G_fire_pos;
 //old version of this fuction, this will be useful for playing old missions and not having the new primary
 //selection code throw off the balance of the mission.
 //	If:
-//		flags & WIF_PUNCTURE
+//		flags & Weapon::Info_Flags::Puncture
 //	Then Select a Puncture weapon.
 //	Else
 //		Select Any ol' weapon.
 //	Returns primary_bank index.
-int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
+int ai_select_primary_weapon_OLD(object *objp, object *other_objp, Weapon::Info_Flags flags)
 {
 	ship	*shipp = &Ships[objp->instance];
 	ship_weapon *swp = &shipp->weapons;
 
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()));
 
-	if (flags & WIF_PUNCTURE) {
+	if (flags == Weapon::Info_Flags::Puncture) {
 		if (swp->current_primary_bank >= 0) {
 			int	bank_index;
 
@@ -5287,7 +5287,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
 }
 
 //	If:
-//		flags & WIF_PUNCTURE
+//		flags == Weapon::Info_Flags::Puncture
 //	Then Select a Puncture weapon.
 //	Else
 //		Select Any ol' weapon.
@@ -5299,7 +5299,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
  * The AI will now intelligently choose the best weapon to use based on the overall shield
  * status of the target.
  */
-int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
+int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flags flags)
 {
 	// Pointer Set Up
 	ship	*shipp = &Ships[objp->instance];
@@ -5323,7 +5323,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()));
 	
 	//made it so it only selects puncture weapons if the active goal is to disable something -Bobboau
-	if ((flags & WIF_PUNCTURE) && (Ai_info[shipp->ai_index].goals[0].ai_mode & (AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP))) 
+	if ((flags == Weapon::Info_Flags::Puncture) && (Ai_info[shipp->ai_index].goals[0].ai_mode & (AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP))) 
 	{
 		if (swp->current_primary_bank >= 0) 
 		{
@@ -5662,9 +5662,9 @@ int ai_fire_primary_weapon(object *objp)
 	}
 
 	if ( (swp->current_primary_bank < 0) || (swp->current_primary_bank >= swp->num_primary_banks) || timestamp_elapsed(aip->primary_select_timestamp)) {
-		int	flags = 0;
+		Weapon::Info_Flags flags = Weapon::Info_Flags::NUM_VALUES;
 		if ( aip->targeted_subsys != NULL ) {
-			flags = WIF_PUNCTURE;
+			flags = Weapon::Info_Flags::Puncture;
 		}
 		ai_select_primary_weapon(objp, enemy_objp, flags);
 		ship_primary_changed(shipp);	// AL: maybe send multiplayer information when AI ship changes primaries
