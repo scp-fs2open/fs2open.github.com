@@ -38,5 +38,4 @@ class SCP_deque : public std::deque< T, std::allocator< T > > { };
 template< typename Key, typename T, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key> >
 class SCP_unordered_map : public std::unordered_map< Key, T, Hash, KeyEqual, std::allocator< std::pair<const Key, T> > > { };
 
-
 #endif // _VMALLOCATOR_H_INCLUDED_

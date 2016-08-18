@@ -12601,8 +12601,8 @@ void sexp_tech_add_weapon(int node)
 	while (node >= 0) {
 		name = CTEXT(node);
 		i = weapon_info_lookup(name);
-		if (i >= 0)
-			Weapon_info[i].wi_flags |= WIF_IN_TECH_DATABASE;
+        if (i >= 0)
+            Weapon_info[i].wi_flags.set(Weapon::Info_Flags::In_tech_database);
 		else
 			Warning(LOCATION, "In tech-add-weapon, weapon class \"%s\" invalid", name);
 

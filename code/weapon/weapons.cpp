@@ -5723,7 +5723,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 	}
 }
 
-extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
+extern bool turret_weapon_has_flags(ship_weapon *swp, Weapon::Info_Flags flags);
 
 /**
  * Distrupt any subsystems that fall into damage sphere of this Electronics missile
@@ -5775,7 +5775,7 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
 					//I figure, the big fancy electronics on beams will be used for the other
 					//weapons as well. No reason having two targeting computers on a turret.
 					//Plus, it's easy and fast to code. :)
-					if ((psub->type==SUBSYSTEM_TURRET) && turret_weapon_has_flags(&ss->weapons, WIF_BEAM))
+					if ((psub->type==SUBSYSTEM_TURRET) && turret_weapon_has_flags(&ss->weapons, Weapon::Info_Flags::Beam))
 					{
 						disrupt_time*=wip->elec_beam_mult;
 					}

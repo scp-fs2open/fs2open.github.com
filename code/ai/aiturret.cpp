@@ -257,21 +257,38 @@ int turret_select_best_weapon(ship_subsys *turret, object *target)
 /**
  * Returns true if all weapons in swp have the specified flag
  */
-bool all_turret_weapons_have_flags(ship_weapon *swp, Weapon::Info_Flags flags)
+bool all_turret_weapons_have_flags(ship_weapon *swp, flagset<Weapon::Info_Flags> flags)
 {
 	int i;
 	for(i = 0; i < swp->num_primary_banks; i++)
 	{
-		if(!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[flags]))
+		if(!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & flags).any_set())
 			return false;
 	}
 	for(i = 0; i < swp->num_secondary_banks; i++)
 	{
-		if(!(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[flags]))
+		if(!(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags & flags).any_set())
 			return false;
 	}
 
 	return true;
+}
+
+bool all_turret_weapons_have_flags(ship_weapon *swp, Weapon::Info_Flags flags)
+{
+    int i;
+    for (i = 0; i < swp->num_primary_banks; i++)
+    {
+        if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[flags]))
+            return false;
+    }
+    for (i = 0; i < swp->num_secondary_banks; i++)
+    {
+        if (!(Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[flags]))
+            return false;
+    }
+
+    return true;
 }
 
 /**
@@ -884,8 +901,8 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 			n_tgt_priorities = Weapon_info[priority_weapon_idx].num_targeting_priorities;
 	}
 
-	if (n_tgt_priorities > 0) {
-
+	if (n_tgt_priorities > 0) 
+    {
 		for(int i = 0; i < n_tgt_priorities; i++) {
 			// courtesy of WMC...
 			ai_target_priority *tt;
@@ -1009,7 +1026,11 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 				return return_objnum;
 			}
 		}
-	} else {
+	} else 
+    {
+        flagset<Weapon::Info_Flags> tmp_flagset;
+        Weapon::Info_Flags weapon_flags[] = { Weapon::Info_Flags::Huge, Weapon::Info_Flags::Flak, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_javelin, Weapon::Info_Flags::Spawn };
+        tmp_flagset.set_multiple(std::begin(weapon_flags), std::end(weapon_flags));
 
 		for(int i = 0; i < NUM_TURRET_ORDER_TYPES; i++)
 		{
@@ -1073,7 +1094,8 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 					// - lasers
 					// - dumbfire type missiles
 					// - AAA beams
-					if ( !all_turret_weapons_have_flags(swp, WIF_HUGE | WIF_FLAK | WIF_HOMING | WIF_SPAWN) ) {
+                    
+					if ( !all_turret_weapons_have_flags(swp, tmp_flagset) ) {
 						// Asteroid_obj_list
 						for ( ao = GET_FIRST(&Asteroid_obj_list); ao != END_OF_LIST(&Asteroid_obj_list); ao = GET_NEXT(ao) ) {
 							objp = &Objects[ao->objnum];
@@ -1114,12 +1136,12 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 
 	enemy_team_mask = iff_get_attackee_mask(obj_team(&Objects[objnum]));
 
-	bool big_only_flag = all_turret_weapons_have_flags(&turret_subsys->weapons, WIF_HUGE);
-	bool small_only_flag = all_turret_weapons_have_flags2(&turret_subsys->weapons, WIF2_SMALL_ONLY);
-	bool tagged_only_flag = all_turret_weapons_have_flags2(&turret_subsys->weapons, WIF2_TAGGED_ONLY) || (turret_subsys->weapons.flags[Ship::Weapon_Flags::Tagged_Only]);
+	bool big_only_flag = all_turret_weapons_have_flags(&turret_subsys->weapons, Weapon::Info_Flags::Huge);
+	bool small_only_flag = all_turret_weapons_have_flags(&turret_subsys->weapons, Weapon::Info_Flags::Small_only);
+    bool tagged_only_flag = all_turret_weapons_have_flags(&turret_subsys->weapons, Weapon::Info_Flags::Tagged_only) || (turret_subsys->weapons.flags[Ship::Weapon_Flags::Tagged_Only]);
 
-	bool beam_flag = turret_weapon_has_flags(&turret_subsys->weapons, WIF_BEAM);
-	bool flak_flag = turret_weapon_has_flags(&turret_subsys->weapons, WIF_FLAK);
+	bool beam_flag = turret_weapon_has_flags(&turret_subsys->weapons, Weapon::Info_Flags::Beam);
+	bool flak_flag = turret_weapon_has_flags(&turret_subsys->weapons, Weapon::Info_Flags::Flak);
 	bool laser_flag = turret_weapon_has_subtype(&turret_subsys->weapons, WP_LASER);
 	bool missile_flag = turret_weapon_has_subtype(&turret_subsys->weapons, WP_MISSILE);
 
@@ -1669,7 +1691,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		fs_dest = &turret->weapons.next_secondary_fire_stamp[weapon_num - MAX_SHIP_PRIMARY_BANKS];
 
 	//Check for the new cooldown flag
-	if(!((wip->wi_flags2 & WIF2_SAME_TURRET_COOLDOWN) || ((wip->burst_shots > 0) && (wip->burst_flags & WBF_FAST_FIRING))))
+	if(!((wip->wi_flags[Weapon::Info_Flags::Same_turret_cooldown]) || ((wip->burst_shots > 0) && (wip->burst_flags & WBF_FAST_FIRING))))
 	{
 
 		// make side even for team vs. team
@@ -1836,7 +1858,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			fire_info.beam_info_override = NULL;
 			fire_info.shooter = &Objects[parent_objnum];
 			fire_info.target = &Objects[turret->turret_enemy_objnum];
-			if (wip->wi_flags2 & WIF2_ANTISUBSYSBEAM)
+			if (wip->wi_flags[Weapon::Info_Flags::Antisubsysbeam])
 				fire_info.target_subsys = turret->targeted_subsys;
 			else
 				fire_info.target_subsys = NULL;
@@ -2195,7 +2217,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	}
 
 	// If beam weapon, check beam free
-	if ( all_turret_weapons_have_flags(swp, WIF_BEAM) && !(swp->flags[Ship::Weapon_Flags::Beam_Free]) ) {
+	if ( all_turret_weapons_have_flags(swp, Weapon::Info_Flags::Beam) && !(swp->flags[Ship::Weapon_Flags::Beam_Free]) ) {
 		return;
 	}
 
@@ -2318,7 +2340,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 		//If this is a spawning type weapon, shoot it!
 		//If 'smart spawn' just use it like normal weapons
-		if ( (wip->wi_flags[Weapon::Info_Flags::Spawn]) && !(wip->wi_flags2 & WIF2_SMART_SPAWN) )
+		if ( (wip->wi_flags[Weapon::Info_Flags::Spawn]) && !(wip->wi_flags[Weapon::Info_Flags::Smart_spawn]) )
 		{
 			if (( num_ships_nearby >= 3 ) || ((num_ships_nearby >= 2) && (frand() < 0.1f))) {
 				turret_fire_weapon(i, ss, parent_objnum, &gpos, &ss->turret_last_fire_direction);
@@ -2370,7 +2392,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					}
 				}
 
-				if ( wip->wi_flags2 & WIF2_SMALL_ONLY ) {
+				if ( wip->wi_flags[Weapon::Info_Flags::Small_only] ) {
 					if ( (lep->type == OBJ_SHIP) && (Ship_info[Ships[lep->instance].ship_info_index].is_big_or_huge()) ) {
 						continue;
 					}

@@ -55,7 +55,7 @@ int collide_weapon_weapon( obj_pair * pair )
 	B_radius = B->radius;
 
 	if (wipA->weapon_hitpoints > 0) {
-		if (!(wipA->wi_flags2 & WIF2_HARD_TARGET_BOMB)) {
+		if (!(wipA->wi_flags[Weapon::Info_Flags::Hard_target_bomb])) {
 			A_radius *= 2;		// Makes bombs easier to hit
 		}
 		
@@ -68,7 +68,7 @@ int collide_weapon_weapon( obj_pair * pair )
 	}
 
 	if (wipB->weapon_hitpoints > 0) {
-		if (!(wipB->wi_flags2 & WIF2_HARD_TARGET_BOMB)) {
+		if (!(wipB->wi_flags[Weapon::Info_Flags::Hard_target_bomb])) {
 			B_radius *= 2;		// Makes bombs easier to hit
 		}
 		if ((The_mission.ai_profile->flags2 & AIPF2_ASPECT_INVULNERABILITY_FIX) && (wipB->is_locked_homing()) && (wpB->homing_object != &obj_used_list)) {

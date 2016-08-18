@@ -216,7 +216,7 @@ void radar_plot_object( object *objp )
 				return;
 
 			// if we don't attack the bomb, return
-			if ( (!(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags2 & WIF2_SHOW_FRIENDLY)) && (!iff_x_attacks_y(Player_ship->team, obj_team(objp))))
+			if ( (!(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Show_friendly])) && (!iff_x_attacks_y(Player_ship->team, obj_team(objp))))
 				return;
 
 			// if a local ssm is in subspace, return
@@ -570,7 +570,7 @@ RadarVisibility radar_is_visible( object *objp )
 				return NOT_VISIBLE;
 
 			// if we don't attack the bomb, return
-			if ( (!(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags2 & WIF2_SHOW_FRIENDLY)) && (!iff_x_attacks_y(Player_ship->team, obj_team(objp))))
+			if ( (!(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Show_friendly])) && (!iff_x_attacks_y(Player_ship->team, obj_team(objp))))
 				return NOT_VISIBLE;
 
 			// if a local ssm is in subspace, return

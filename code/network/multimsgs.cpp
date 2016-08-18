@@ -7369,11 +7369,11 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	}
 
 	if ( homing_object->type == OBJ_WEAPON ) {
-		int flags = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
+		auto flags = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
 
 	//	Assert( (flags & WIF_BOMB) || (flags & WIF_CMEASURE) );
 
-		if ( !((flags & WIF_BOMB) || (flags & WIF_CMEASURE)) ) {
+		if ( !((flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Cmeasure])) ) {
 			nprintf(("Network", "Homing object is invalid for homing update\n"));
 			return;
 		}

@@ -4659,14 +4659,7 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newVal)
-		{
-			info->wi_flags |= WIF_BOMB;
-		}
-		else
-		{
-			info->wi_flags &= ~WIF_BOMB;
-		}
+        info->wi_flags.set(Weapon::Info_Flags::Bomb, newVal);
 	}
 		
 

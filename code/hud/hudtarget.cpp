@@ -1179,7 +1179,7 @@ void hud_target_common(int team_mask, int next_flag)
 			continue;
 
 		if (A->type == OBJ_WEAPON) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) )
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) )
 				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) )
 					continue;
 
@@ -1470,7 +1470,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 		wip = &Weapon_info[wp->weapon_info_index];
 
 		// only allow targeting of bombs
-		if ( !(wip->wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+		if ( !(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
 			if ( !(wip->wi_flags[Weapon::Info_Flags::Bomb]) ) {
 				continue;
 			}
@@ -1726,7 +1726,7 @@ int turret_compare_func(const void *e1, const void *e2)
 	}
 }
 
-extern bool turret_weapon_has_flags(ship_weapon *swp, int flags);
+extern bool turret_weapon_has_flags(ship_weapon *swp, Weapon::Info_Flags flags);
 extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
 // target the next/prev live turret on the current target
 // auto_advance from hud_update_closest_turret
@@ -1809,9 +1809,9 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 					}
 
 					// set weapon_type to allow sort of ent on type
-					if (turret_weapon_has_flags(&A->weapons, WIF_BEAM)) {
+					if (turret_weapon_has_flags(&A->weapons, Weapon::Info_Flags::Beam)) {
 						ent[num_live_turrets].type = TYPE_FACING_BEAM;
-					} else  if (turret_weapon_has_flags(&A->weapons, WIF_FLAK)) {
+					} else  if (turret_weapon_has_flags(&A->weapons, Weapon::Info_Flags::Flak)) {
 						ent[num_live_turrets].type = TYPE_FACING_FLAK;
 					} else {
 						if (turret_weapon_has_subtype(&A->weapons, WP_MISSILE)) {
@@ -2512,7 +2512,7 @@ void hud_target_in_reticle_new()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
 				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ){
 					continue;
 				}
@@ -2620,7 +2620,7 @@ void hud_target_in_reticle_old()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ){
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ){
 				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ){
 					continue;
 				}
@@ -3959,7 +3959,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
 			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ) {
 				return;
 			}
@@ -4085,7 +4085,7 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags2 & WIF2_CAN_BE_TARGETED) ) {
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
 			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ) {
 				return;
 			}
@@ -6041,7 +6041,7 @@ void HudGaugeWeapons::render(float frametime)
 		}
 
 		// indicate if this is linked or currently armed
-		if ( ((sw->current_primary_bank == i) && !(Player_ship->flags[Ship::Ship_Flags::Primary_linked])) || ((Player_ship->flags[Ship::Ship_Flags::Primary_linked]) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags3 & WIF3_NOLINK))) {
+		if ( ((sw->current_primary_bank == i) && !(Player_ship->flags[Ship::Ship_Flags::Primary_linked])) || ((Player_ship->flags[Ship::Ship_Flags::Primary_linked]) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Nolink]))) {
 			renderPrintf(position[0] + Weapon_plink_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
 		}
 		
@@ -7201,7 +7201,7 @@ void HudGaugeHardpoints::render(float frametime)
 
 			bank = &(model_get(sip->model_num))->missile_banks[i];
 
-			if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+			if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 				for(k = 0; k < bank->num_slots; k++) {
 					model_render_params weapon_render_info;
 

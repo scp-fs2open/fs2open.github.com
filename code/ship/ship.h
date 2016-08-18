@@ -31,6 +31,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
 #include "ship/ship_flags.h"
+#include "weapon/weapon_flags.h"
 
 #include <string>
 

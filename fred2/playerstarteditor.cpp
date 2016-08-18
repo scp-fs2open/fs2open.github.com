@@ -305,7 +305,7 @@ void player_start_editor::reset_controls()
 	m_weapon_list.ResetContent();
 	ct = 0;
 	for (i=0; i<Num_weapon_types; i++) {
-		if (Weapon_info[i].wi_flags & WIF_PLAYER_ALLOWED) {
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
 			m_weapon_list.AddString(Weapon_info[i].name);
 			
 			// if the ship currently has pool entries or was set by a variable, check it

@@ -405,87 +405,87 @@ flag_def_list_new<Ship::Info_Flags> ai_tgt_ship_flags[] = {
 
 const int num_ai_tgt_ship_flags = sizeof(ai_tgt_ship_flags) / sizeof(flag_def_list_new<Ship::Info_Flags>);
 
-flag_def_list ai_tgt_weapon_flags[] = {
-	{ "bomb",						WIF_BOMB,								0 },
-	{ "huge damage",				WIF_HUGE,								0 },
-	{ "supercap damage",			WIF_SUPERCAP,							0 },
-	{ "bomber+",					WIF_BOMBER_PLUS,						0 },
-	{ "electronics",				WIF_ELECTRONICS,						0 },
-	{ "puncture",					WIF_PUNCTURE,							0 },
-	{ "emp",						WIF_EMP,								0 },
-	{ "heat seeking",				WIF_HOMING_HEAT,						0 },
-	{ "aspect seeking",				WIF_HOMING_ASPECT,						0 },
-	{ "engine seeking",				WIF_HOMING_JAVELIN,						0 },
-	{ "pierce shields",				WIF2_PIERCE_SHIELDS,					1 },
-	{ "local ssm",					WIF2_LOCAL_SSM,							1 },
-	{ "capital+",					WIF2_CAPITAL_PLUS,						1 },
-	{ "heat-seeking",				WIF_HOMING_HEAT,						0 },
-	{ "aspect-seeking",				WIF_HOMING_ASPECT,						0 },
-	{ "javelin",					WIF_HOMING_JAVELIN,						0 },
-	{ "spawn",						WIF_SPAWN,								0 },
-	{ "remote detonate",			WIF_REMOTE,								0 },
-	{ "countermeasure",				WIF_CMEASURE,							0 },
-	{ "turns",						WIF_TURNS,								0 },
-	{ "swarm",						WIF_SWARM,								0 },
-	{ "trail",						WIF_TRAIL,								0 },
-	{ "big ship",					WIF_BIG_ONLY,							0 },
-	{ "child",						WIF_CHILD,								0 },
-	{ "no dumbfire",				WIF_NO_DUMBFIRE,						0 },
-	{ "thruster",					WIF_THRUSTER,							0 },
-	{ "in tech database",			WIF_IN_TECH_DATABASE,					0 },
-	{ "player allowed",				WIF_PLAYER_ALLOWED,						0 },
-	{ "corkscrew",					WIF_CORKSCREW,							0 },
-	{ "particle spew",				WIF_PARTICLE_SPEW,						0 },
-	{ "esuck",						WIF_ENERGY_SUCK,						0 },
-	{ "flak",						WIF_FLAK,								0 },
-	//{ "beam",						WIF_BEAM,								0 },	// Okay, this one probably doesn't make sense.
-	{ "tag",						WIF_TAG,								0 },
-	{ "shudder",					WIF_SHUDDER,							0 },
-	{ "lockarm",					WIF_LOCKARM,							0 },
-	{ "stream",						WIF_STREAM,								0 },
-	{ "ballistic",					WIF2_BALLISTIC,							0 },
-	{ "default in tech database",	WIF2_DEFAULT_IN_TECH_DATABASE,			1 },
-	{ "tagged only",				WIF2_TAGGED_ONLY,						1 },
-	{ "cycle",						WIF2_CYCLE,								1 },
-	{ "small only",					WIF2_SMALL_ONLY,						1 },
-	{ "same turret cooldown",		WIF2_SAME_TURRET_COOLDOWN,				1 },
-	{ "apply no light",				WIF2_MR_NO_LIGHTING,					1 },
-	{ "transparent",				WIF2_TRANSPARENT,						1 },
-	{ "training",					WIF2_TRAINING,							1 },
-	{ "smart spawn",				WIF2_SMART_SPAWN,						1 },
-	{ "inherit parent target",		WIF2_INHERIT_PARENT_TARGET,				1 },
-	{ "no emp kill",				WIF2_NO_EMP_KILL,						1 },
-	{ "variable lead homing",		WIF2_VARIABLE_LEAD_HOMING,				1 },
-	{ "untargeted heat seeker",		WIF2_UNTARGETED_HEAT_SEEKER,			1 },
-	{ "no radius doubling",			WIF2_HARD_TARGET_BOMB,					1 },
-	{ "no subsystem homing",		WIF2_NON_SUBSYS_HOMING,					1 },
-	{ "no lifeleft penalty",		WIF2_NO_LIFE_LOST_IF_MISSED,			1 },
-	{ "custom seeker str",			WIF2_CUSTOM_SEEKER_STR,					1 },
-	{ "can be targeted",			WIF2_CAN_BE_TARGETED,					1 },
-	{ "show on radar",				WIF2_SHOWN_ON_RADAR,					1 },
-	{ "show friendly on radar",		WIF2_SHOW_FRIENDLY,						1 },
-	{ "chain external model fps",	WIF2_EXTERNAL_WEAPON_FP,				1 },
-	{ "external model launcher",	WIF2_EXTERNAL_WEAPON_LNCH,				1 },
-	{ "takes blast damage",			WIF2_TAKES_BLAST_DAMAGE,				1 },
-	{ "takes shockwave damage",		WIF2_TAKES_SHOCKWAVE_DAMAGE,			1 },
-	{ "hide from radar",			WIF2_DONT_SHOW_ON_RADAR,				1 },
-	{ "render flak",				WIF2_RENDER_FLAK,						1 },
-	{ "ciws",						WIF2_CIWS,								1 },
-	{ "anti-subsystem beam",		WIF2_ANTISUBSYSBEAM,					1 },
-	{ "no primary linking",			WIF3_NOLINK,							2 },
-	{ "same emp time for capships",	WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS,	2 },
-	{ "no primary linked penalty",	WIF3_NO_LINKED_PENALTY,					2 },
-	{ "no homing speed ramp",		WIF3_NO_HOMING_SPEED_RAMP,				2 },
-	{ "pulls aspect seekers",		WIF3_CMEASURE_ASPECT_HOME_ON,			2 },
-	{ "turret interceptable",		WIF3_TURRET_INTERCEPTABLE,				2 },
-	{ "fighter interceptable",		WIF3_FIGHTER_INTERCEPTABLE,				2 },
-	{ "aoe electronics",			WIF3_AOE_ELECTRONICS,					2 },
-	{ "apply recoil",				WIF3_APPLY_RECOIL,						2 },
-	{ "don't spawn if shot",		WIF3_DONT_SPAWN_IF_SHOT,				2 },
-	{ "die on lost lock",			WIF3_DIE_ON_LOST_LOCK,					2 },
+flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
+    { "bomb",				        Weapon::Info_Flags::Bomb,			                    true, false },
+    { "huge damage",		        Weapon::Info_Flags::Huge,			                    true, false },
+    { "supercap damage",	        Weapon::Info_Flags::Supercap,		                    true, false },
+    { "bomber+",			        Weapon::Info_Flags::Bomber_plus,	                    true, false },
+    { "electronics",		        Weapon::Info_Flags::Electronics,	                    true, false },
+    { "puncture",			        Weapon::Info_Flags::Puncture,		                    true, false },
+    { "emp",				        Weapon::Info_Flags::Emp,			                    true, false },
+    { "heat seeking",		        Weapon::Info_Flags::Homing_heat,	                    true, false },
+    { "aspect seeking",		        Weapon::Info_Flags::Homing_aspect,	                    true, false },
+    { "engine seeking",		        Weapon::Info_Flags::Homing_javelin,                     true, false },
+    { "pierce shields",		        Weapon::Info_Flags::Pierce_shields,                     true, false },
+    { "local ssm",			        Weapon::Info_Flags::Local_ssm,		                    true, false },
+    { "capital+",			        Weapon::Info_Flags::Capital_plus,	                    true, false },
+    { "heat-seeking",				Weapon::Info_Flags::Homing_heat,						true, false },
+    { "aspect-seeking",				Weapon::Info_Flags::Homing_aspect,						true, false },
+    { "javelin",					Weapon::Info_Flags::Homing_javelin,						true, false },
+    { "spawn",						Weapon::Info_Flags::Spawn,								true, false },
+    { "remote detonate",			Weapon::Info_Flags::Remote,								true, false },
+    { "countermeasure",				Weapon::Info_Flags::Cmeasure,							true, false },
+    { "turns",						Weapon::Info_Flags::Turns,								true, false },
+    { "swarm",						Weapon::Info_Flags::Swarm,								true, false },
+    { "trail",						Weapon::Info_Flags::Trail,								true, false },
+    { "big ship",					Weapon::Info_Flags::Big_only,							true, false },
+    { "child",						Weapon::Info_Flags::Child,								true, false },
+    { "no dumbfire",				Weapon::Info_Flags::No_dumbfire,						true, false },
+    { "thruster",					Weapon::Info_Flags::Thruster,							true, false },
+    { "in tech database",			Weapon::Info_Flags::In_tech_database,					true, false },
+    { "player allowed",				Weapon::Info_Flags::Player_allowed,						true, false },
+    { "corkscrew",					Weapon::Info_Flags::Corkscrew,							true, false },
+    { "particle spew",				Weapon::Info_Flags::Particle_spew,						true, false },
+    { "esuck",						Weapon::Info_Flags::Energy_suck,						true, false },
+    { "flak",						Weapon::Info_Flags::Flak,								true, false },
+    //{ "beam",						Weapon::Info_Flags::Beam,								true, false },	// Okay, this one probably doesn't make sense.
+    { "tag",						Weapon::Info_Flags::Tag,								true, false },
+    { "shudder",					Weapon::Info_Flags::Shudder,							true, false },
+    { "lockarm",					Weapon::Info_Flags::Lockarm,							true, false },
+    { "stream",						Weapon::Info_Flags::Stream,								true, false },
+    { "ballistic",					Weapon::Info_Flags::Ballistic,							true, false },
+    { "default in tech database",	Weapon::Info_Flags::Default_in_tech_database,			true, false },
+    { "tagged only",				Weapon::Info_Flags::Tagged_only,						true, false },
+    { "cycle",						Weapon::Info_Flags::Cycle,								true, false },
+    { "small only",					Weapon::Info_Flags::Small_only,					    	true, false },
+    { "same turret cooldown",		Weapon::Info_Flags::Same_turret_cooldown,				true, false },
+    { "apply no light",				Weapon::Info_Flags::Mr_no_lighting,				    	true, false },
+    { "transparent",				Weapon::Info_Flags::Transparent,						true, false },
+    { "training",					Weapon::Info_Flags::Training,							true, false },
+    { "smart spawn",				Weapon::Info_Flags::Smart_spawn,						true, false },
+    { "inherit parent target",		Weapon::Info_Flags::Inherit_parent_target,				true, false },
+    { "no emp kill",				Weapon::Info_Flags::No_emp_kill,						true, false },
+    { "variable lead homing",		Weapon::Info_Flags::Variable_lead_homing,				true, false },
+    { "untargeted heat seeker",		Weapon::Info_Flags::Untargeted_heat_seeker,			    true, false },
+    { "no radius doubling",			Weapon::Info_Flags::Hard_target_bomb,					true, false },
+    { "no subsystem homing",		Weapon::Info_Flags::Non_subsys_homing,					true, false },
+    { "no lifeleft penalty",		Weapon::Info_Flags::No_life_lost_if_missed,			    true, false },
+    { "custom seeker str",			Weapon::Info_Flags::Custom_seeker_str,					true, false },
+    { "can be targeted",			Weapon::Info_Flags::Can_be_targeted,					true, false },
+    { "show on radar",				Weapon::Info_Flags::Shown_on_radar,					    true, false },
+    { "show friendly on radar",		Weapon::Info_Flags::Show_friendly,						true, false },
+    { "chain external model fps",	Weapon::Info_Flags::External_weapon_fp,				    true, false },
+    { "external model launcher",	Weapon::Info_Flags::External_weapon_lnch,				true, false },
+    { "takes blast damage",			Weapon::Info_Flags::Takes_blast_damage,				    true, false },
+    { "takes shockwave damage",		Weapon::Info_Flags::Takes_shockwave_damage,			    true, false },
+    { "hide from radar",			Weapon::Info_Flags::Dont_show_on_radar,				    true, false },
+    { "render flak",				Weapon::Info_Flags::Render_flak,						true, false },
+    { "ciws",						Weapon::Info_Flags::Ciws,								true, false },
+    { "anti-subsystem beam",		Weapon::Info_Flags::Antisubsysbeam,					    true, false },
+    { "no primary linking",			Weapon::Info_Flags::Nolink,							    true, false },
+    { "same emp time for capships",	Weapon::Info_Flags::Use_emp_time_for_capship_turrets,	true, false },
+    { "no primary linked penalty",	Weapon::Info_Flags::No_linked_penalty,					true, false },
+    { "no homing speed ramp",		Weapon::Info_Flags::No_homing_speed_ramp,				true, false },
+    { "pulls aspect seekers",		Weapon::Info_Flags::Cmeasure_aspect_home_on,			true, false },
+    { "turret interceptable",		Weapon::Info_Flags::Turret_Interceptable,				true, false },
+    { "fighter interceptable",		Weapon::Info_Flags::Fighter_Interceptable,				true, false },
+    { "aoe electronics",			Weapon::Info_Flags::Aoe_Electronics,					true, false },
+    { "apply recoil",				Weapon::Info_Flags::Apply_recoil,						true, false },
+    { "don't spawn if shot",		Weapon::Info_Flags::Dont_spawn_if_shot,				    true, false },
+    { "die on lost lock",			Weapon::Info_Flags::Die_on_lost_lock,					true, false },
 };
 
-const int num_ai_tgt_weapon_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list);
+const int num_ai_tgt_weapon_info_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
 
 SCP_vector <ai_target_priority> Ai_tp_list;
 
@@ -5200,7 +5200,7 @@ void ship_parse_post_cleanup()
 
 	if (n_tgt_groups > 0) {
 		for(i = 0; i < n_tgt_groups; i++) {
-			if (!(Ai_tp_list[i].obj_flags.any_set() || Ai_tp_list[i].sif_flags.any_set() || Ai_tp_list[i].wif_flags || Ai_tp_list[i].wif2_flags || Ai_tp_list[i].wif3_flags)) {
+			if (!(Ai_tp_list[i].obj_flags.any_set() || Ai_tp_list[i].sif_flags.any_set() || Ai_tp_list[i].wif_flags.any_set())) {
 				//had none of these, check next
 				if (Ai_tp_list[i].obj_type == -1) {
 					//didn't have this one
@@ -10743,11 +10743,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}
 
 		// if we're firing stream weapons and this is a non stream weapon, skip it
-		if(stream_weapons && !(winfo_p->wi_flags & WIF_STREAM)){
+		if(stream_weapons && !(winfo_p->wi_flags[Weapon::Info_Flags::Stream])){
 			continue;
 		}
 		// if we're firing non stream weapons and this is a stream weapon, skip it
-		if(!stream_weapons && (winfo_p->wi_flags & WIF_STREAM)){
+		if(!stream_weapons && (winfo_p->wi_flags[Weapon::Info_Flags::Stream])){
 			continue;
 		}
 
@@ -10757,7 +10757,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}
 
 		// if weapons are linked and this is a nolink weapon, skip it
-		if (shipp->flags[Ship_Flags::Primary_linked] && winfo_p->wi_flags3 & WIF3_NOLINK) {
+		if (shipp->flags[Ship_Flags::Primary_linked] && winfo_p->wi_flags[Weapon::Info_Flags::Nolink]) {
 			continue;
 		}
 
@@ -10786,12 +10786,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		polymodel *pm = model_get( sip->model_num );
 		
 		// Goober5000 (thanks to _argv[-1] for the original idea)
-		if ( (num_primary_banks > 1) &&  !(winfo_p->wi_flags3 & WIF3_NO_LINKED_PENALTY) && !(The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY) )
+		if ( (num_primary_banks > 1) &&  !(winfo_p->wi_flags[Weapon::Info_Flags::No_linked_penalty]) && !(The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY) )
 		{
 			int effective_primary_banks = 0;
 			for (int it = 0; it < num_primary_banks; it++)
 			{
-				if ((it == bank_to_fire) || !(Weapon_info[swp->primary_bank_weapons[it]].wi_flags3 & (WIF3_NOLINK | WIF3_NO_LINKED_PENALTY)))
+				if ((it == bank_to_fire) || !(Weapon_info[swp->primary_bank_weapons[it]].wi_flags[Weapon::Info_Flags::Nolink, Weapon::Info_Flags::No_linked_penalty]))
 					effective_primary_banks++;
 			}
 			Assert(effective_primary_banks >= 1);
@@ -10837,7 +10837,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			Assert(pm->gun_banks[bank_to_fire].num_slots != 0);
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay * ( swp->primary_bank_slot_count[ bank_to_fire ] ) / pm->gun_banks[bank_to_fire].num_slots ) );
 			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
-		} else if (winfo_p->wi_flags2 & WIF2_CYCLE) {
+		} else if (winfo_p->wi_flags[Weapon::Info_Flags::Cycle]) {
 			Assert(pm->gun_banks[bank_to_fire].num_slots != 0);
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay / pm->gun_banks[bank_to_fire].num_slots));
 			swp->last_primary_fire_stamp[bank_to_fire] = timestamp();
@@ -10988,7 +10988,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				if ( sip->flags[Ship::Info_Flags::Dyn_primary_linking] ) {
 					numtimes = 1;
 					points = MIN( num_slots, swp->primary_bank_slot_count[ bank_to_fire ] );
-				} else if ( winfo_p->wi_flags2 & WIF2_CYCLE ) {
+				} else if ( winfo_p->wi_flags[Weapon::Info_Flags::Cycle] ) {
 					numtimes = 1;
 					points = MIN(num_slots, winfo_p->shots);
 				} else {
@@ -11098,7 +11098,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 					for ( j = 0; j < points; j++ ) {
 						int pt; //point
-						if ( (winfo_p->wi_flags2 & WIF2_CYCLE) || (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) ){
+						if ( (winfo_p->wi_flags[Weapon::Info_Flags::Cycle]) || (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) ){
 							pt = (shipp->last_fired_point[bank_to_fire]+1)%num_slots;
 						}else{
 							pt = j;
@@ -11107,14 +11107,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						int sub_shots = 1;
 						// Use 0 instead of bank_to_fire as index when checking the number of external weapon model firingpoints
 						if (weapon_model && weapon_model->n_guns)
-							if (!(winfo_p->wi_flags2 & WIF2_EXTERNAL_WEAPON_FP))
+							if (!(winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]))
 								sub_shots = weapon_model->gun_banks[0].num_slots;
 
 						for(int s = 0; s<sub_shots; s++){
 							pnt = pm->gun_banks[bank_to_fire].pnt[pt];
 							// Use 0 instead of bank_to_fire as index to external weapon model firingpoints 
 							if (weapon_model && weapon_model->n_guns) {
-								if (winfo_p->wi_flags2 & WIF2_EXTERNAL_WEAPON_FP) {
+								if (winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]) {
 									vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[swp->external_model_fp_counter[bank_to_fire]]);
 								} else {
 									vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
@@ -11242,7 +11242,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							}
 
 							// maybe shudder the ship - if its me
-							if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+							if((winfo_p->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 								// calculate some arbitrary value between 100
 								// (mass * velocity) / 10
 								game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) * 0.1f);
@@ -11731,7 +11731,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	// Ensure if this is a "require-lock" missile, that a lock actually exists
-	if ( wip->wi_flags & WIF_NO_DUMBFIRE ) {
+	if ( wip->wi_flags[Weapon::Info_Flags::No_dumbfire] ) {
 		if ( aip->current_target_is_locked <= 0 ) {
 			if ( obj == Player_obj ) {			
 				if ( !Weapon_energy_cheat ) {
@@ -11913,7 +11913,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 			if (weapon_model && weapon_model->n_guns) {
 				int external_bank = bank + MAX_SHIP_PRIMARY_BANKS;
-				if (wip->wi_flags2 & WIF2_EXTERNAL_WEAPON_FP) {
+				if (wip->wi_flags[Weapon::Info_Flags::External_weapon_fp]) {
 					if ((weapon_model->n_guns <= swp->external_model_fp_counter[external_bank]) || (swp->external_model_fp_counter[external_bank] < 0))
 						swp->external_model_fp_counter[external_bank] = 0;
 					vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[swp->external_model_fp_counter[external_bank]]);
@@ -11957,7 +11957,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 					shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon_idx);
 				}
 
-				if((wip->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+				if((wip->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 					// calculate some arbitrary value between 100
 					// (mass * velocity) / 10
 					game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f);
@@ -18304,19 +18304,13 @@ void parse_ai_target_priorities()
 		num_strings = stuff_string_list(temp_strings);
 
 		for (i = 0; i < num_strings; i++) {
-			for (j = 0; j < num_ai_tgt_weapon_flags; j++) {
+			for (j = 0; j < num_ai_tgt_weapon_info_flags; j++) {
 				if ( !stricmp(ai_tgt_weapon_flags[j].name, temp_strings[i].c_str()) ) {
-					if (ai_tgt_weapon_flags[j].var == 0) {
-						temp_priority.wif_flags |= ai_tgt_weapon_flags[j].def;
-					} else if (ai_tgt_weapon_flags[j].var == 1) {
-						temp_priority.wif2_flags |= ai_tgt_weapon_flags[j].def;
-					} else {
-						temp_priority.wif3_flags |= ai_tgt_weapon_flags[j].def;
-					}
+					temp_priority.wif_flags |= ai_tgt_weapon_flags[j].def;
 					break;
 				}
 			}
-			if (j == num_ai_tgt_weapon_flags) {
+			if (j == num_ai_tgt_weapon_info_flags) {
 				Warning(LOCATION, "Unidentified weapon class flag '%s' set for target priority group '%s'\n", temp_strings[i].c_str(), temp_priority.name);
 			}
 		}
@@ -18342,9 +18336,7 @@ ai_target_priority init_ai_target_priorities()
 	temp_priority.ship_type.clear();
 	temp_priority.sif_flags.reset();
 	temp_priority.weapon_class.clear();
-	temp_priority.wif_flags = 0;
-	temp_priority.wif2_flags = 0;
-	temp_priority.wif3_flags = 0;
+	temp_priority.wif_flags.reset();
 	temp_priority.name[0] = '\0';
 
 	//return the initialized
@@ -18706,7 +18698,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, draw_list 
 
 		bank = &(model_get(sip->model_num))->missile_banks[i];
 
-		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 			for(k = 0; k < bank->num_slots; k++) {
 				render_info.set_flags(render_flags);
 

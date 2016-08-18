@@ -272,7 +272,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if (wip->weapon_hitpoints <= 0)
 				continue;
 
-			if (!(wip->wi_flags2 & WIF2_TAKES_SHOCKWAVE_DAMAGE || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
+			if (!(wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage] || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
 				continue;
 		}
 

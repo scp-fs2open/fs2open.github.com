@@ -82,7 +82,8 @@ namespace Weapon {
         Dont_spawn_if_shot,                 // Prevent shot down parent weapons from spawning children (DahBlount)
         Die_on_lost_lock,                   // WIF_LOCKED_HOMING missiles will die if they lose their lock
         Apply_recoil,                       // Apply recoil using weapon and ship info
-		NUM_VALUES
+		
+        NUM_VALUES
 	};
 
 	FLAG_LIST(Weapon_Flags) {
