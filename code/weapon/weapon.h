@@ -41,19 +41,6 @@ extern int Num_weapon_subtypes;
 
 #define	WEAPON_EXHAUST_DELTA_TIME	75		//	Delay in milliseconds between exhaust blobs
 
-#define WF_LOCK_WARNING_PLAYED		(1<<0)		// set when a lock warning sound is played for the player
-																//	(needed since we don't want to play multiple lock sounds)
-#define WF_ALREADY_APPLIED_STATS		(1<<1)		// for use in ship_apply_local and ship_apply_global damage functions
-																// so that we don't record multiple hits (stats) for one impact
-#define WF_PLAYED_FLYBY_SOUND			(1<<2)		// flyby sound has been played for this weapon
-#define WF_CONSIDER_FOR_FLYBY_SOUND	(1<<3)		// consider for flyby
-#define WF_DEAD_IN_WATER				(1<<4)		// a missiles engines have died
-#define WF_LOCKED_WHEN_FIRED			(1<<5)		// fired with a lock
-#define WF_DESTROYED_BY_WEAPON		(1<<6)		// destroyed by damage from other weapon
-#define WF_SPAWNED					(1<<7)		//Spawned from a spawning type weapon
-#define WF_HOMING_UPDATE_NEEDED		(1<<8)		// this is a newly spawned homing weapon which needs to update client machines
-#define WF_NO_HOMING				(1<<9)		// this weapon should ignore any homing behavior it'd usually have
-
 // flags for setting burst fire 
 #define WBF_FAST_FIRING				(1<<0)		// burst is to use only the firewait to determine firing delays
 #define WBF_RANDOM_LENGTH			(1<<1)		// burst is to fire random length bursts
@@ -101,7 +88,7 @@ typedef struct weapon {
 	int		target_sig;						//	So we know if the target is the same one we've been tracking
 	float		nearest_dist;					//	nearest distance yet attained to target
 	fix		creation_time;					//	time at which created, stuffed Missiontime
-	int		weapon_flags;					//	bit flags defining behavior, see WF_xxxx
+	flagset<Weapon::Weapon_Flags> weapon_flags;					//	bit flags defining behavior, see WF_xxxx
 	object*	homing_object;					//	object this weapon is homing on.
 	ship_subsys*	homing_subsys;			// subsystem this weapon is homing on
 	vec3d	homing_pos;						// world position missile is homing on
@@ -450,7 +437,7 @@ typedef struct weapon_info {
 
 	int	burst_shots;
 	float burst_delay;
-	int burst_flags;
+	flagset<Weapon::Burst_Flags> burst_flags;
 
 	// Thruster effects
 	generic_anim	thruster_flame;
