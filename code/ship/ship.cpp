@@ -4413,7 +4413,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
                 }
 
                 if (errors.size() > 0) {
-                    for (size_t i = 0; i < errors.size(); ++i) {
+                    for (i = 0; i < errors.size(); ++i) {
                         Warning(LOCATION, "Bogus string in subsystem flags: %s\n", errors[i].c_str());
                     }
                 }
