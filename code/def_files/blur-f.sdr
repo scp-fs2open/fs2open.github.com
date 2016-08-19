@@ -30,4 +30,4 @@ void main()
 	}
 #endif
 	fragOut0 = sum;
-};
+}

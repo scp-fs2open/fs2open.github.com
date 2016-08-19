@@ -7,4 +7,4 @@ void main()
 {
 	fragTexCoord = vertTexCoord;
 	gl_Position = vertPosition;
-};
+}

@@ -11,4 +11,4 @@ void main()
 	fragTexCoord = vertTexCoord;
 	fragColor = vertColor * color;
 	gl_Position = projMatrix * modelViewMatrix * vertPosition;
-};
+}

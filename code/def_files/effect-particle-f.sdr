@@ -42,4 +42,4 @@ void main()
 	fragmentColor.rgb *= (srgb == 1) ? 1.5 : 1.0;
 	fragmentColor = (blend_alpha == 1) ? vec4(fragmentColor.rgb, fragmentColor.a * intensity) : vec4(fragmentColor.rgb * intensity, fragmentColor.a);
 	fragOut0 = max(fragmentColor, vec4(0.0));
-};
+}

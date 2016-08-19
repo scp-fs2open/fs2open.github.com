@@ -82,7 +82,7 @@ void opengl_post_pass_tonemap()
 	GL_state.Uniform.setUniformi("tex", 0);
 	GL_state.Uniform.setUniformf("exposure", 4.0f);
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_ldr_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -102,8 +102,8 @@ bool opengl_post_pass_bloom()
 
 	// ------  begin bright pass ------
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Bloom_framebuffer);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Bloom_textures[0], 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, Bloom_framebuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_textures[0], 0);
 
 	// width and height are 1/2 for the bright pass
 	int width = Post_texture_width >> 1;
@@ -134,7 +134,7 @@ bool opengl_post_pass_bloom()
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Bloom_textures[0]);
 
-	glGenerateMipmapEXT(GL_TEXTURE_2D);
+	glGenerateMipmap(GL_TEXTURE_2D);
 
 	GL_state.Texture.Disable();
 
@@ -163,7 +163,7 @@ bool opengl_post_pass_bloom()
 				GL_state.Uniform.setUniformi("level", mipmap);
 				GL_state.Uniform.setUniformf("tapSize", 1.0f);
 
-				glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, dest_tex, mipmap);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dest_tex, mipmap);
 
 				glViewport(0, 0, bloom_width, bloom_height);
 
@@ -176,7 +176,7 @@ bool opengl_post_pass_bloom()
 
 	// composite blur to the color texture
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLOOM_COMP, 0));
 
@@ -218,9 +218,9 @@ void gr_opengl_post_process_begin()
 		return;
 	}
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Post_framebuffer_id[0]);
+	glBindFramebuffer(GL_FRAMEBUFFER, Post_framebuffer_id[0]);
 
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -249,7 +249,7 @@ void opengl_post_pass_fxaa() {
 	}
 
 	// We only want to draw to ATTACHMENT0
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 	// Do a prepass to convert the main shaders' RGBA output into RGBL
@@ -258,7 +258,7 @@ void opengl_post_pass_fxaa() {
 	// basic/default uniforms
 	GL_state.Uniform.setUniformi( "tex", 0 );
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_luminance_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_luminance_texture, 0);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -271,7 +271,7 @@ void opengl_post_pass_fxaa() {
 	// set and configure post shader ..
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) );
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_ldr_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
 	// basic/default uniforms
 	GL_state.Uniform.setUniformi( "tex0", 0 );
@@ -353,7 +353,7 @@ void opengl_post_lightshafts()
 		gr_zbuffer_set(GR_ZBUFF_FULL);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		gr_zbuffer_set(GR_ZBUFF_NONE);
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 	}
 }
 
@@ -383,7 +383,7 @@ void gr_opengl_post_process_end()
 	opengl_post_lightshafts();
 
 	// now write to the on-screen buffer
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());
+	glBindFramebuffer(GL_FRAMEBUFFER, opengl_get_rtt_framebuffer());
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -442,7 +442,7 @@ void gr_opengl_post_process_end()
 		GL_state.Uniform.setUniformf( "bloom_intensity", 0.0f );
 
 	// now render it to the screen ...
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,0);
+	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	//GL_state.Texture.Enable(Scene_color_texture);
@@ -604,7 +604,7 @@ void gr_opengl_post_process_save_zbuffer()
 {
 	if (Post_initialized)
 	{
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
 		gr_zbuffer_clear(TRUE);
 		zbuffer_saved = true;
 	}
@@ -868,7 +868,7 @@ void opengl_setup_bloom_textures()
 	}
 
 	// two more framebuffers, one each for the two different sized bloom textures
-	glGenFramebuffersEXT(1, &Bloom_framebuffer);
+	glGenFramebuffers(1, &Bloom_framebuffer);
 
 	// need to generate textures for bloom too
 	glGenTextures(2, Bloom_textures);
@@ -884,7 +884,7 @@ void opengl_setup_bloom_textures()
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_ARB, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-		glGenerateMipmapEXT(GL_TEXTURE_2D);
+		glGenerateMipmap(GL_TEXTURE_2D);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -894,7 +894,7 @@ void opengl_setup_bloom_textures()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, MAX_MIP_BLUR_LEVELS-1);
 	}
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 // generate and test the framebuffer and textures that we are going to use
@@ -919,8 +919,8 @@ static bool opengl_post_init_framebuffer()
 	if ( Cmdline_shadow_quality ) {
 		int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
 
-		glGenFramebuffersEXT(1, &Post_shadow_framebuffer_id);
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Post_shadow_framebuffer_id);
+		glGenFramebuffers(1, &Post_shadow_framebuffer_id);
+		glBindFramebuffer(GL_FRAMEBUFFER, Post_shadow_framebuffer_id);
 
 		glGenTextures(1, &Post_shadow_texture_id);
 		
@@ -943,8 +943,8 @@ static bool opengl_post_init_framebuffer()
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 // 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, size, size, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-//		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Post_shadow_texture_id, 0);
-		glFramebufferTextureARB(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, Post_shadow_texture_id, 0);
+//		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Post_shadow_texture_id, 0);
+		glFramebufferTextureARB(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Post_shadow_texture_id, 0);
 
 		glGenTextures(1, &Post_shadow_depth_texture_id);
 
@@ -967,11 +967,11 @@ static bool opengl_post_init_framebuffer()
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 // 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, size, size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
-//		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Post_shadow_depth_texture_id, 0);
-		glFramebufferTextureARB(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, Post_shadow_depth_texture_id, 0);
+//		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Post_shadow_depth_texture_id, 0);
+		glFramebufferTextureARB(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Post_shadow_depth_texture_id, 0);
 	}
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	GL_state.Texture.Disable();
 
@@ -999,7 +999,7 @@ void opengl_post_process_shutdown_bloom()
 	}
 
 	if ( Bloom_framebuffer > 0 ) {
-		glDeleteFramebuffersEXT(1, &Bloom_framebuffer);
+		glDeleteFramebuffers(1, &Bloom_framebuffer);
 		Bloom_framebuffer = 0;
 	}
 }
@@ -1023,7 +1023,7 @@ void opengl_post_process_init()
 		return;
 	}
 
-	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo || !GLAD_GL_EXT_framebuffer_object ) {
+	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo || !GLAD_GL_ARB_framebuffer_object ) {
 		Cmdline_postprocess = 0;
 		return;
 	}
@@ -1050,11 +1050,11 @@ void opengl_post_process_shutdown()
 	}
 
 	if (Post_framebuffer_id[0]) {
-		glDeleteFramebuffersEXT(1, &Post_framebuffer_id[0]);
+		glDeleteFramebuffers(1, &Post_framebuffer_id[0]);
 		Post_framebuffer_id[0] = 0;
 
 		if (Post_framebuffer_id[1]) {
-			glDeleteFramebuffersEXT(1, &Post_framebuffer_id[1]);
+			glDeleteFramebuffers(1, &Post_framebuffer_id[1]);
 			Post_framebuffer_id[1] = 0;
 		}
 	}

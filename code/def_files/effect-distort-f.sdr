@@ -16,4 +16,4 @@ void main()
 	distortion = ((distortion - 0.5) * 0.01) * alpha;
 	fragOut0 = tex2D(frameBuffer,depthCoord+distortion);
 	fragOut0.a = alpha;
-};
+}

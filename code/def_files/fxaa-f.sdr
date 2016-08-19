@@ -507,4 +507,4 @@ fragIn vec2 v_rcpFrame;
 noperspective fragIn vec2 v_pos;
 void main() {
 	fragOut0 = FxaaPixelShader(v_pos, tex0, v_rcpFrame, FXAA_QUALITY_SUBPIX, FXAA_QUALITY_EDGE_THRESHOLD, FXAA_QUALITY_EDGE_THRESHOLD_MIN);
-};
+}

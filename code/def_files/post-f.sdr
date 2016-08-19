@@ -115,4 +115,4 @@ void main()
  #endif
 	color_out.a = 1.0;
 	fragOut0 = color_out;
-};
+}

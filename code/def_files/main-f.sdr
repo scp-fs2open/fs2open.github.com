@@ -483,4 +483,4 @@ void main()
 	fragOut2 = normData;
 	fragOut3 = specData;
 #endif
-};
+}

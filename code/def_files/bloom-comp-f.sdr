@@ -18,4 +18,4 @@ void main() {
 		color_out.rgb += bloom * bloom_intensity;
 	}
 	fragOut0 = color_out;
-};
+}

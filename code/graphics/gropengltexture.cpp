@@ -66,8 +66,6 @@ void opengl_set_additive_tex_env()
 {
 	GL_CHECK_FOR_ERRORS("start of set_additive_tex_env()");
 
-	GL_state.Texture.SetEnvCombineMode(GL_COMBINE_RGB, GL_ADD);
-	GL_state.Texture.SetRGBScale(1.0f);
 
 	GL_CHECK_FOR_ERRORS("end of set_additive_tex_env()");
 }
@@ -76,8 +74,6 @@ void opengl_set_modulate_tex_env()
 {
 	GL_CHECK_FOR_ERRORS("start of set_modulate_tex_env()");
 
-	GL_state.Texture.SetEnvCombineMode(GL_COMBINE_RGB, GL_MODULATE);
-	GL_state.Texture.SetRGBScale(4.0f);
 
 	GL_CHECK_FOR_ERRORS("end of set_modulate_tex_env()");
 }
@@ -151,13 +147,13 @@ void opengl_tcache_init()
 	}
 
 	// max size (width and/or height) that we can use for framebuffer/renderbuffer
-	if ( GLAD_GL_EXT_framebuffer_object ) {
-		glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE_EXT, &GL_max_renderbuffer_size);
+	if ( GLAD_GL_ARB_framebuffer_object ) {
+		glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &GL_max_renderbuffer_size);
 
 		// if we can't do at least 128x128 then just disable FBOs
 		if (GL_max_renderbuffer_size < 128) {
 			mprintf(("WARNING: Max dimensions of FBO, %ix%i, is less the required minimum!!  Extension will be disabled!\n", GL_max_renderbuffer_size, GL_max_renderbuffer_size));
-			GLAD_GL_EXT_framebuffer_object = 0;
+			GLAD_GL_ARB_framebuffer_object = 0;
 		}
 	}
 
@@ -173,11 +169,6 @@ void opengl_tcache_init()
 		CLAMP(GL_anisotropy, 1.0f, GL_max_anisotropy);
 	}
 
-	if (GL_anisotropy > 1.0f) {
-		glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, 0.0f);
-	} else {
-		glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, -0.75f);
-	}
 
 	// set the alpha gamma settings (for fonts)
 	memset( GL_xlat, 0, sizeof(GL_xlat) );
@@ -187,11 +178,7 @@ void opengl_tcache_init()
 	}
 
 	GL_xlat[15] = GL_xlat[1];
-
-	if ( !is_minimum_GLSL_version() ) {
-		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &GL_supported_texture_units);
-	}
-
+	
 	Assert( GL_supported_texture_units >= 2 );
 
 	GL_last_detail = Detail.hardware_textures;
@@ -802,15 +789,15 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	t->w = (ushort)tex_w;
 	t->h = (ushort)tex_h;
 
-	if ( t->mipmap_levels == 1 && bitmap_type == TCACHE_TYPE_CUBEMAP && GLAD_GL_EXT_framebuffer_object ) {
+	if ( t->mipmap_levels == 1 && bitmap_type == TCACHE_TYPE_CUBEMAP && GLAD_GL_ARB_framebuffer_object ) {
 		// generate mip maps for cube maps so we can get glossy reflections; necessary for gloss maps and physically-based lighting
-		// OGL_EXT_FRAMEBUFFER_OBJECT required to use glGenerateMipmapEXT()
+		// OGL_EXT_FRAMEBUFFER_OBJECT required to use glGenerateMipmap()
 		t->mipmap_levels = get_num_mipmap_levels(t->w, t->h);
 
 		glTexParameteri(t->texture_target, GL_TEXTURE_MAX_LEVEL, t->mipmap_levels - 1);
 		glTexParameteri(t->texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-		glGenerateMipmapEXT(t->texture_target);
+		glGenerateMipmap(t->texture_target);
 	}
 
 	GL_textures_in_frame += t->size;
@@ -1109,20 +1096,11 @@ void gr_opengl_set_texture_panning(float u, float v, bool enable)
 		GL_texture_matrix.vec.pos.xyzw.x = u;
 		GL_texture_matrix.vec.pos.xyzw.y = v;
 
-		glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
-		glMatrixMode( GL_TEXTURE );
-		glPushMatrix();
-		glTranslatef( u, v, 0.0f );
-		glMatrixMode(current_matrix);
 
 		GL_texture_panning_enabled = 1;
 	} else if (GL_texture_panning_enabled) {
 		vm_matrix4_set_identity(&GL_texture_matrix);
 
-		glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
-		glMatrixMode( GL_TEXTURE );
-		glPopMatrix();
-		glMatrixMode(current_matrix);
 	
 		GL_texture_panning_enabled = 0;
 	}
@@ -1489,37 +1467,29 @@ int opengl_check_framebuffer()
 {
 	GLenum status;
 
-	status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+	status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
-	if (status != GL_FRAMEBUFFER_COMPLETE_EXT) {
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
 		char err_txt[100] = { 0 };
 
 		switch (status) {
-			case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
+			case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
 				strcpy_s(err_txt, "Incomplete attachments!");
 				break;
 
-			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
+			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
 				strcpy_s(err_txt, "Missing one or more image attachments!");
 				break;
-
-			case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
-				strcpy_s(err_txt, "Attached images do not have the same width and height!");
-				break;
-
-			case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
-				strcpy_s(err_txt, "Attached images do not have the same internal format!");
-				break;
-
-			case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
+				
+			case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
 				strcpy_s(err_txt, "Draw buffer attachment point is NONE!");
 				break;
 
-			case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
+			case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
 				strcpy_s(err_txt, "Read buffer attachment point is NONE!");
 				break;
 
-			case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
+			case GL_FRAMEBUFFER_UNSUPPORTED:
 				strcpy_s(err_txt, "Attached images violate current FBO restrictions!");
 				break;
 
@@ -1581,12 +1551,12 @@ void opengl_kill_render_target(int slot)
 		mprintf(("OpenGL: Killing off unused %ix%i render target...\n", ts->w, ts->h));
 
 		if (RenderTarget[idx].framebuffer_id) {
-			glDeleteFramebuffersEXT(1, &RenderTarget[idx].framebuffer_id);
+			glDeleteFramebuffers(1, &RenderTarget[idx].framebuffer_id);
 			RenderTarget[idx].framebuffer_id = 0;
 		}
 
 		if (RenderTarget[idx].renderbuffer_id) {
-			glDeleteRenderbuffersEXT(1, &RenderTarget[idx].renderbuffer_id);
+			glDeleteRenderbuffers(1, &RenderTarget[idx].renderbuffer_id);
 			RenderTarget[idx].renderbuffer_id = 0;
 		}
 
@@ -1602,12 +1572,12 @@ void opengl_kill_all_render_targets()
 		fbo_t *fbo = &RenderTarget[i];
 
 		if (fbo->framebuffer_id) {
-			glDeleteFramebuffersEXT(1, &fbo->framebuffer_id);
+			glDeleteFramebuffers(1, &fbo->framebuffer_id);
 			fbo->framebuffer_id = 0;
 		}
 
 		if (fbo->renderbuffer_id) {
-			glDeleteRenderbuffersEXT(1, &fbo->renderbuffer_id);
+			glDeleteRenderbuffers(1, &fbo->renderbuffer_id);
 			fbo->renderbuffer_id = 0;
 		}
 	}
@@ -1634,10 +1604,10 @@ int opengl_set_render_target( int slot, int face, int is_static )
 			}
 		}
 
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, 0, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
 
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-		glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 		if (render_target != NULL) {
 			render_target->working_slot = -1;
@@ -1669,23 +1639,23 @@ int opengl_set_render_target( int slot, int face, int is_static )
 		return 0;
 	}
 
-	if ( !glIsFramebufferEXT(fbo->framebuffer_id) /*|| !glIsRenderbufferEXT(fbo->renderbuffer_id)*/ ) {
+	if ( !glIsFramebuffer(fbo->framebuffer_id) /*|| !glIsRenderbufferEXT(fbo->renderbuffer_id)*/ ) {
 		Int3();
 		return 0;
 	}
 
-//	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, fbo->renderbuffer_id);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo->framebuffer_id);
+//	glBindRenderbuffer(GL_RENDERBUFFER, fbo->renderbuffer_id);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo->framebuffer_id);
 
 	if (ts->texture_target == GL_TEXTURE_CUBE_MAP_ARB) {
 		Assert( (face >= 0) && (face < 6) );
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + face, ts->texture_id, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + face, ts->texture_id, 0);
 	} else {
 		Assert( face <= 0 );
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, ts->texture_target, ts->texture_id, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ts->texture_target, ts->texture_id, 0);
 	}
 
-//	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, fbo->renderbuffer_id);
+//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo->renderbuffer_id);
 
 	if ( opengl_check_framebuffer() ) {
 		Int3();
@@ -1777,7 +1747,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 		}
 
 		if (flags & BMP_FLAG_RENDER_TARGET_MIPMAP) {
-			glGenerateMipmapEXT(GL_state.Texture.GetTarget());
+			glGenerateMipmap(GL_state.Texture.GetTarget());
 
 			extern int get_num_mipmap_levels(int w, int h);
 			ts->mipmap_levels = get_num_mipmap_levels(*w, *h);
@@ -1854,7 +1824,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 	}
 
 	if (flags & BMP_FLAG_RENDER_TARGET_MIPMAP) {
-		glGenerateMipmapEXT(GL_state.Texture.GetTarget());
+		glGenerateMipmap(GL_state.Texture.GetTarget());
 
 		extern int get_num_mipmap_levels(int w, int h);
 		ts->mipmap_levels = get_num_mipmap_levels(*w, *h);
@@ -1867,35 +1837,35 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 	GL_state.Texture.Disable();
 
 	// render buffer
-//	glGenRenderbuffersEXT(1, &new_fbo.renderbuffer_id);
-//	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, new_fbo.renderbuffer_id);
-//	glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT24, *w, *h);
-	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+//	glGenRenderbuffers(1, &new_fbo.renderbuffer_id);
+//	glBindRenderbuffer(GL_RENDERBUFFER, new_fbo.renderbuffer_id);
+//	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, *w, *h);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	// frame buffer
-	glGenFramebuffersEXT(1, &new_fbo.framebuffer_id);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, new_fbo.framebuffer_id);
+	glGenFramebuffers(1, &new_fbo.framebuffer_id);
+	glBindFramebuffer(GL_FRAMEBUFFER, new_fbo.framebuffer_id);
 
 	if (flags & BMP_FLAG_CUBEMAP) {
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, ts->texture_id, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, ts->texture_id, 0);
 	} else {
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_state.Texture.GetTarget(), ts->texture_id, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_state.Texture.GetTarget(), ts->texture_id, 0);
 	}
 
-//	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, new_fbo.renderbuffer_id);
+//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, new_fbo.renderbuffer_id);
 
 	if ( opengl_check_framebuffer() ) {
 		// Oops!!  reset everything and then bail
 		mprintf(("OpenGL: Unable to create FBO!\n"));
 
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		GL_state.Texture.Disable();
 		GL_state.Texture.Delete(ts->texture_id);
 		glDeleteTextures(1, &ts->texture_id);
 		ts->texture_id = 0;
 
-		glDeleteFramebuffersEXT(1, &new_fbo.framebuffer_id);
+		glDeleteFramebuffers(1, &new_fbo.framebuffer_id);
 
 	//	glDeleteRenderbuffersEXT(1, &new_fbo.renderbuffer_id);
 
@@ -1928,7 +1898,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 	glClearColor(0.0f,0.0f,0.0f,1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	new_fbo.ref_count++;
 
@@ -1970,7 +1940,7 @@ GLuint opengl_get_rtt_framebuffer()
 
 void gr_opengl_bm_generate_mip_maps(int slot)
 {
-	if ( !GLAD_GL_EXT_framebuffer_object ) {
+	if ( !GLAD_GL_ARB_framebuffer_object ) {
 		return;
 	}
 
@@ -1987,7 +1957,7 @@ void gr_opengl_bm_generate_mip_maps(int slot)
 	GL_state.Texture.SetTarget(ts->texture_target);
 	GL_state.Texture.Enable(ts->texture_id);
 
-	glGenerateMipmapEXT(ts->texture_target);
+	glGenerateMipmap(ts->texture_target);
 
 	GL_state.Texture.Disable();
 }

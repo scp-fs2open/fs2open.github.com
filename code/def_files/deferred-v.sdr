@@ -11,4 +11,4 @@ void main()
 	lightPosition = modelViewMatrix[3].xyz;
 	if(lightType == 1)
 		beamVec = vec3(modelViewMatrix * vec4(0.0, 0.0, -scale.z, 0.0));
-};
+}

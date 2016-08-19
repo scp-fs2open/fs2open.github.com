@@ -14,4 +14,4 @@ void main()
 	baseColor.rgb = (srgb == 1) ? pow(baseColor.rgb, vec3(SRGB_GAMMA)) : baseColor.rgb;
 	vec4 blendColor = (srgb == 1) ? vec4(pow(fragColor.rgb, vec3(SRGB_GAMMA)), fragColor.a) : fragColor;
 	fragOut0 = mix(mix(baseColor * blendColor, vec4(blendColor.rgb, baseColor.r * blendColor.a), float(alphaTexture)), blendColor, float(noTexturing)) * intensity;
-};
+}

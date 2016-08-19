@@ -48,4 +48,4 @@ void main(void)
 	fragColor = geoColor[0];
 	EmitVertex();
 	EndPrimitive();
-};
+}

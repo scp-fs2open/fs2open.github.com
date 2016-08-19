@@ -8,4 +8,4 @@ void main() {
 	gl_Position = vertPosition;
 	v_rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);
 	v_pos = vertPosition.xy*0.5 + 0.5;
-};
+}

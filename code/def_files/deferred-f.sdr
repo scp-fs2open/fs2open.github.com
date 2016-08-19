@@ -89,4 +89,4 @@ void main()
 	vec4 fragmentColor = vec4(color * (diffuseLightColor * NdotL * attenuation), 1.0);
 	fragmentColor.rgb += SpecularBlinnPhong(specLightColor, lightDir, normal.xyz, halfVec, exp2(10.0 * gloss + 1.0), NdotL).rgb * specColor.rgb * attenuation;
 	fragOut0 = max(fragmentColor, vec4(0.0));
-};
+}
