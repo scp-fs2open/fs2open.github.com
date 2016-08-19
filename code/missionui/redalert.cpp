@@ -663,7 +663,7 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, p_object *pobjp)
 			Assert(new_idx == pobjp->subsys_index + j);
 			sssp = &Subsys_status[new_idx];
 
-			strcpy_s(sssp->name, psub->subobj_name.c_str());
+			strcpy_s(sssp->name, psub->subobj_name);
 		}
 
 		float max_hits = psub->max_subsys_strength * (pobjp->ship_max_hull_strength / sip->max_hull_strength);

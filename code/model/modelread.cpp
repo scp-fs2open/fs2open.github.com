@@ -527,7 +527,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 		source = &s_sp[i];
 		for ( j = 0; j < n_subsystems; j++ ) {
 			dest = &d_sp[j];
-			if ( !subsystem_stricmp( source->subobj_name.c_str(), dest->subobj_name.c_str()) ) {
+			if ( !subsystem_stricmp( source->subobj_name, dest->subobj_name) ) {
                 for (auto it = std::begin(carry_flags); it != std::end(carry_flags); ++it) {
                     if (source->flags[*it])
                         dest->flags.set(*it);
@@ -540,7 +540,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				dest->turn_rate = source->turn_rate;
 				dest->turret_gun_sobj = source->turret_gun_sobj;
 
-                dest->name = source->name;
+                strcpy_s(dest->name, source->name);
 
 				if ( dest->type == SUBSYSTEM_TURRET ) {
 					int nfp;
@@ -576,7 +576,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	if ( (p = strstr(props, "$name")) != NULL)
 		get_user_prop_value(p+5, subsystemp->name);
 	else
-		subsystemp->name = dname;
+		strcpy_s(subsystemp->name, dname);
 
 	strcpy_s(lcdname, dname);
 	strlwr(lcdname);
@@ -761,7 +761,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 #ifndef NDEBUG
 		// Goober5000 - notify if there's a mismatch
-		if ( stricmp(subobj_name, subsystemp->subobj_name.c_str()) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name.c_str()) )
+		if ( stricmp(subobj_name, subsystemp->subobj_name) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
 		{
 			nprintf(("Model", "NOTE: Subsystem \"%s\" in model \"%s\" is represented as \"%s\" in ships.tbl.  This works fine in FSO v3.6 and up, "
 				"but is not compatible with FS2 retail.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name));
@@ -769,7 +769,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		}
 #endif
 
-		if (!subsystem_stricmp(subobj_name, subsystemp->subobj_name.c_str()))
+		if (!subsystem_stricmp(subobj_name, subsystemp->subobj_name))
 		{
 			//commented by Goober5000 because this is also set when the table is parsed
 			//subsystemp->flags = 0;
@@ -780,7 +780,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 			subsystemp->pnt = *pnt;				// use the offset to get the center point of the subsystem
 			subsystemp->radius = rad;
 			set_subsystem_info(model_num, subsystemp, props, subobj_name);
-			subsystemp->subobj_name = subobj_name;						// copy the object name
+			strcpy_s(subsystemp->subobj_name, subobj_name);						// copy the object name
 			return;
 		}
 	}
@@ -2044,7 +2044,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 								int table_error = 1;
 								bank->wash_info_pointer = NULL;
 								for (int k=0; k<n_subsystems; k++) {
-									if ( !subsystem_stricmp(subsystems[k].subobj_name.c_str(), engine_subsys_name) ) {
+									if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
 										bank->submodel_num = subsystems[k].subobj_num;
 
 										bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
@@ -3032,7 +3032,7 @@ void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem
 		for (j = 0; j < pm->n_paths; j++)
 		{
 			if ( ((subsystems[i].subobj_num != -1) && (subsystems[i].subobj_num == pm->paths[j].parent_submodel)) ||
-				(!subsystem_stricmp(subsystems[i].subobj_name.c_str(), pm->paths[j].parent_name)) )
+				(!subsystem_stricmp(subsystems[i].subobj_name, pm->paths[j].parent_name)) )
 			{
 				if (pm->n_paths > j)
 				{
@@ -3957,7 +3957,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	polymodel * pm;
 	object *objp = &Objects[obj_idx];
 	ship *shipp = &Ships[objp->instance];
-	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name.c_str());
+	ship_subsys *ss = ship_get_subsys(shipp, turret->subobj_name);
 
 	pm = model_get(model_num);
 	bsp_info * gun = &pm->submodel[turret->turret_gun_sobj];
@@ -5844,10 +5844,10 @@ void glowpoint_init()
 void model_subsystem::reset()
 {
     flags.reset();
-    name = "";
-    subobj_name = "";
-    alt_sub_name = "";
-    alt_dmg_sub_name = "";
+    memset(name, 0, sizeof(alt_sub_name));
+    memset(subobj_name, 0, sizeof(alt_dmg_sub_name));
+    memset(alt_sub_name, 0, sizeof(alt_sub_name));
+    memset(alt_dmg_sub_name, 0, sizeof(alt_dmg_sub_name));
     subobj_num = 0;
     model_num = 0;
     type = 0;

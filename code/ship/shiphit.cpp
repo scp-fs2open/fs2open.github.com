@@ -229,14 +229,14 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 	if (notify) 
 	{
-		mission_log_add_entry(LOG_SHIP_SUBSYS_DESTROYED, ship_p->ship_name, psub->subobj_name.c_str(), log_index );
+		mission_log_add_entry(LOG_SHIP_SUBSYS_DESTROYED, ship_p->ship_name, psub->subobj_name, log_index );
 		if ( ship_objp == Player_obj )
 		{
 			if (!no_explosion) {
 				snd_play( &Snds[SND_SUBSYS_DIE_1], 0.0f );
 			}
-			if (psub->alt_dmg_sub_name.length())
-				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->alt_dmg_sub_name.c_str());
+			if (strlen(psub->alt_dmg_sub_name))
+				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->alt_dmg_sub_name);
 			else {
 				char r_name[NAME_LENGTH];
 				strcpy_s(r_name, ship_subsys_get_name(subsys));

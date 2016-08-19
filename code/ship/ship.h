@@ -1030,7 +1030,7 @@ public:
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
-	model_subsystem *subsystems;				// see model.h for structure definition
+	SCP_vector<model_subsystem> subsystems;				// see model.h for structure definition
 
 	// Energy Transfer System fields
 	float		power_output;					// power output of ships reactor (EU/s)

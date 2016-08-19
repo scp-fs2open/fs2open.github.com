@@ -2061,7 +2061,7 @@ void HudGaugeDamage::render(float frametime)
 				}
 			}
 
-			if (psub->alt_dmg_sub_name.length())
+			if (strlen(psub->alt_dmg_sub_name))
 				hud_subsys_list[num].name = psub->alt_dmg_sub_name;
 			else {
 				hud_subsys_list[num].name = ship_subsys_get_name(pss);

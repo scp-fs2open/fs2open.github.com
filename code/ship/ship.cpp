@@ -897,7 +897,7 @@ void ship_info::clone(const ship_info& other)
 
 	if ( other.n_subsystems > 0 ) {
 		if( n_subsystems < 1 ) {
-			subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * other.n_subsystems );
+			subsystems.reserve(other.n_subsystems);
 		} else {
 			for ( int i = 0; i < n_subsystems; i++ ) {
 				for ( int j = 0; j < subsystems[i].n_triggers; j++ ) {
@@ -908,9 +908,10 @@ void ship_info::clone(const ship_info& other)
 					}
 				}
 			}
-			subsystems = (model_subsystem *)vm_realloc(subsystems, sizeof(model_subsystem) * other.n_subsystems);
+			subsystems.resize(other.n_subsystems);
 		}
-		Assert( subsystems != NULL );
+
+		Assert( subsystems.size() > 0 );
 		for ( int i = n_subsystems; i < other.n_subsystems; i++ ) {
 			subsystems[i].triggers = (queued_animation*) vm_malloc(sizeof(queued_animation) * (other.subsystems[i].n_triggers));
 		}
@@ -1415,7 +1416,6 @@ ship_info::ship_info(ship_info&& other) NOEXCEPT
 	ship_length = NULL;
 	gun_mounts = NULL;
 	missile_banks = NULL;
-	subsystems = NULL;
 	n_subsystems = 0;
 
 	// Then we swap everything (well, everything that matters to the deconstructor).
@@ -1582,7 +1582,7 @@ ship_info::ship_info()
 	debris_arc_percent = 0.5f;
 
 	n_subsystems = 0;
-	subsystems = NULL;
+	subsystems.clear();
 
 	power_output = 0.0f;
 	max_overclocked_speed = 0.0f;
@@ -1785,7 +1785,7 @@ ship_info::ship_info()
 
 ship_info::~ship_info()
 {
-	if ( subsystems != NULL ) {
+	if ( subsystems.size() > 0 ) {
 		for(int n = 0; n < n_subsystems; n++) {
 			if (subsystems[n].triggers != NULL) {
 				vm_free(subsystems[n].triggers);
@@ -1793,8 +1793,7 @@ ship_info::~ship_info()
 			}
 		}
 
-		vm_free(subsystems);
-		subsystems = NULL;
+        subsystems.clear();
 	}
 
 	free_strings();
@@ -4167,7 +4166,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 			Mp++;
 			for(i = 0;i < sip->n_subsystems; i++)
 			{
-				if(!subsystem_stricmp(sip->subsystems[i].subobj_name.c_str(), name_tmp))
+				if(!subsystem_stricmp(sip->subsystems[i].subobj_name, name_tmp))
 					sp = &sip->subsystems[i];
 			}
 
@@ -4179,15 +4178,15 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 					break;
 				}
 				sp = &subsystems[n_subsystems++];			// subsystems a local -- when done, we will malloc and copy
-				sp->subobj_name = name_tmp;
+				strcpy_s(sp->subobj_name, name_tmp);
 				
 				//Init blank values
 				sp->max_subsys_strength = 0.0f;
 				sp->turret_turning_rate = 0.0f;
 				sp->weapon_rotation_pbank = -1;
 
-                sp->alt_sub_name = "";
-                sp->alt_dmg_sub_name = "";
+                memset(sp->alt_sub_name, 0, sizeof(sp->alt_sub_name));
+                memset(sp->alt_dmg_sub_name, 0, sizeof(sp->alt_dmg_sub_name));
 
 				for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++) {
 					sp->primary_banks[i] = -1;
@@ -4261,12 +4260,12 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 
 			if(optional_string("$Alt Subsystem Name:")) {
 				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-				sp->alt_sub_name = buf;
+				strcpy_s(sp->alt_sub_name,  buf);
 			}
 
 			if(optional_string("$Alt Damage Popup Subsystem Name:")) {
 				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-			    sp->alt_dmg_sub_name = buf;
+                strcpy_s(sp->alt_dmg_sub_name, buf);
 			}
 
 			if(optional_string("$Armor Type:")) {
@@ -4293,11 +4292,11 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 					WarningEx(LOCATION,"Invalid engine wash name %s specified for subsystem %s in %s '%s'", name_tmp, sp->subobj_name, info_type_name, sip->name);
 			}
 
-			parse_sound("$AliveSnd:", &sp->alive_snd, sp->subobj_name.c_str());
-			parse_sound("$DeadSnd:", &sp->dead_snd, sp->subobj_name.c_str());
-			parse_sound("$RotationSnd:", &sp->rotation_snd, sp->subobj_name.c_str());
-			parse_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd, sp->subobj_name.c_str());
-			parse_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd, sp->subobj_name.c_str());
+			parse_sound("$AliveSnd:", &sp->alive_snd, sp->subobj_name);
+			parse_sound("$DeadSnd:", &sp->dead_snd, sp->subobj_name);
+			parse_sound("$RotationSnd:", &sp->rotation_snd, sp->subobj_name);
+			parse_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd, sp->subobj_name);
+			parse_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd, sp->subobj_name);
 
 			if (optional_string("$Turret BaseSnd Volume:"))
 				stuff_float(&sp->turret_base_rotation_snd_mult);
@@ -4402,14 +4401,16 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 			}
 
 			if (optional_string("$Flags:")) {
-				if (!optional_string("+noreplace")) {
-					// clear flags since we might have a modular table
-					// clear only those which are actually set in the flags
-                    sp->flags.reset();
-				}
-
                 SCP_vector<SCP_string> errors;
-                parse_string_flag_list(sp->flags, Subsystem_flags, Num_subsystem_flags, &errors);
+                flagset<Model::Subsystem_Flags> tmp_flags;
+                parse_string_flag_list(tmp_flags, Subsystem_flags, Num_subsystem_flags, &errors);
+                
+                if (optional_string("+noreplace")) {
+                    sp->flags |= tmp_flags;
+                }
+                else {
+                    sp->flags = tmp_flags;
+                }
 
                 if (errors.size() > 0) {
                     for (size_t i = 0; i < errors.size(); ++i) {
@@ -4659,12 +4660,14 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	if ( n_subsystems > 0 ) {
 		if(sip->n_subsystems < 1) {
 			sip->n_subsystems = n_subsystems;
-			sip->subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * sip->n_subsystems );
+
 		} else {
 			sip->n_subsystems += n_subsystems;
-			sip->subsystems = (model_subsystem *)vm_realloc(sip->subsystems, sizeof(model_subsystem) * sip->n_subsystems);
 		} 
-		Assert( sip->subsystems != NULL );
+
+        sip->subsystems.resize(sip->n_subsystems);
+
+		Assert( sip->subsystems.size() > 0 );
 		
 		for ( i = 0; i < n_subsystems; i++ ){
 			sip->subsystems[orig_n_subsystems+i] = subsystems[i];
@@ -6309,7 +6312,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 		// subsystem since previous error checking would have trapped its loading as an error.
 		Assert( it->n_subsystems == sip->n_subsystems );
 
-		source_msp = &it->subsystems[0];
+		source_msp = const_cast<model_subsystem*>(&(it->subsystems[0]));
 		dest_msp = &(sip->subsystems[0]);
 		if (source_msp->model_num != -1) {
 			model_copy_subsystems( sip->n_subsystems, dest_msp, source_msp );
@@ -6453,7 +6456,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 		// if the table has set an name copy it
 		if (ship_system->system_info->alt_sub_name[0] != '\0') {
-			strcpy_s(ship_system->sub_name, ship_system->system_info->alt_sub_name.c_str());
+			strcpy_s(ship_system->sub_name, ship_system->system_info->alt_sub_name);
 		}
 		else {
 			memset(ship_system->sub_name, '\0', sizeof(ship_system->sub_name));
@@ -9782,7 +9785,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 		// save subsys information
 		subsys_names[num_saved_subsystems] = new char[NAME_LENGTH];
-		strcpy(subsys_names[num_saved_subsystems], ss->system_info->subobj_name.c_str());
+		strcpy(subsys_names[num_saved_subsystems], ss->system_info->subobj_name);
 
 		if (ss->max_hits > 0.0f)
 			subsys_pcts[num_saved_subsystems] = ss->current_hits / ss->max_hits;
@@ -9883,7 +9886,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	{
 		for (i = 0; i < num_saved_subsystems; i++)
 		{
-			if (!subsystem_stricmp(ss->system_info->subobj_name.c_str(), subsys_names[i]))
+			if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_names[i]))
 			{
 				ss->current_hits = ss->max_hits * subsys_pcts[i];
 
@@ -13218,7 +13221,7 @@ int ship_get_subsys_index(ship *sp, SCP_string ss_name, int error_bypass)
 	count = 0;
 	ss = GET_FIRST(&sp->subsys_list);
 	while ( ss != END_OF_LIST( &sp->subsys_list ) ) {
-		if ( !subsystem_stricmp(ss->system_info->subobj_name.c_str(), ss_name.c_str()) )
+		if ( !subsystem_stricmp(ss->system_info->subobj_name, ss_name.c_str()) )
 			return count;
 		count++;
 		ss = GET_NEXT( ss );
@@ -14005,9 +14008,9 @@ void ship_assign_sound(ship *sp)
 	moveup = GET_FIRST(&sp->subsys_list);
 	while(moveup != END_OF_LIST(&sp->subsys_list)){
 		// Check for any engine sounds		
-		if(strstr(moveup->system_info->name.c_str(), "enginelarge")){
+		if(strstr(moveup->system_info->name, "enginelarge")){
 			obj_snd_assign(sp->objnum, SND_ENGINE_LOOP_LARGE, &moveup->system_info->pnt, 0);
-		} else if(strstr(moveup->system_info->name.c_str(), "enginehuge")){
+		} else if(strstr(moveup->system_info->name, "enginehuge")){
 			obj_snd_assign(sp->objnum, SND_ENGINE_LOOP_HUGE, &moveup->system_info->pnt, 0);
 		}
 
@@ -14795,7 +14798,7 @@ const char *ship_subsys_get_name(ship_subsys *ss)
 	if( ss->sub_name[0] != '\0' )
 		return ss->sub_name;
 	else
-		return ss->system_info->name.c_str();
+		return ss->system_info->name;
 }
 
 bool ship_subsys_has_instance_name(ship_subsys *ss)
@@ -15047,7 +15050,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_DESTROY_SUBSYSTEM: {
 			if ( aip->targeted_subsys != NULL ) {
 				char subsys_name[NAME_LENGTH];
-				strcpy_s(subsys_name, aip->targeted_subsys->system_info->subobj_name.c_str());
+				strcpy_s(subsys_name, aip->targeted_subsys->system_info->subobj_name);
 				hud_targetbox_truncate_subsys_name(subsys_name);
 				sprintf(outbuf, XSTR( "atk %s %s", 496), ship_name, subsys_name);
 			} else {
@@ -15970,7 +15973,7 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 
 	// if the cargo is something other than "nothing", then make a log entry
 	if ( stricmp(Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK], NOX("nothing")) ){
-		mission_log_add_entry(LOG_CAP_SUBSYS_CARGO_REVEALED, shipp->ship_name, subsys->system_info->subobj_name.c_str(), (subsys->subsys_cargo_name & CARGO_INDEX_MASK) );
+		mission_log_add_entry(LOG_CAP_SUBSYS_CARGO_REVEALED, shipp->ship_name, subsys->system_info->subobj_name, (subsys->subsys_cargo_name & CARGO_INDEX_MASK) );
 	}	
 }
 
@@ -16804,7 +16807,7 @@ ship_subsys *ship_get_subsys(ship *shipp, const char *subsys_name)
 	ship_subsys *ss = GET_FIRST(&shipp->subsys_list);
 	while (ss != END_OF_LIST(&shipp->subsys_list)) {
 		// check subsystem name
-		if (!subsystem_stricmp(ss->system_info->subobj_name.c_str(), subsys_name)) {
+		if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_name)) {
 			return ss;
 		}
 
@@ -17163,7 +17166,7 @@ void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_c
 	while ( ss != END_OF_LIST( &Ships[ship_num].subsys_list ) )
 	{
 		// if we found the subsystem
-		if ( !subsystem_stricmp(ss->system_info->subobj_name.c_str(), subsystem))
+		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsystem))
 		{
 			// set ai class
 			ss->weapons.ai_class = new_ai_class;
@@ -17307,7 +17310,7 @@ bool ship_subsys_is_fighterbay(ship_subsys *ss)
 {
 	Assert(ss);
 
-	if ( !strnicmp(NOX("fighter"), ss->system_info->name.c_str(), 7) ) {
+	if ( !strnicmp(NOX("fighter"), ss->system_info->name, 7) ) {
 		return true;
 	}
 
@@ -18360,7 +18363,7 @@ void parse_weapon_targeting_priorities()
 int ship_get_subobj_model_num(ship_info* sip, char* subobj_name) 
 {
 	for (int i = 0; i < sip->n_subsystems; i++) {
-		if (!subsystem_stricmp(sip->subsystems[i].subobj_name.c_str(), subobj_name))
+		if (!subsystem_stricmp(sip->subsystems[i].subobj_name, subobj_name))
 			return sip->subsystems[i].subobj_num;
 	}
 

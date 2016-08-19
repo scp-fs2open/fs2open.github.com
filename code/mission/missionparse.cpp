@@ -2213,7 +2213,7 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 			}
 
-			if (!subsystem_stricmp(ptr->system_info->subobj_name.c_str(), sssp->name))
+			if (!subsystem_stricmp(ptr->system_info->subobj_name, sssp->name))
 			{
 				if (Fred_running)
 				{
@@ -3531,7 +3531,7 @@ void parse_common_object_data(p_object	*objp)
 		{
 			int j;
 			for (j=0; j < sip->n_subsystems; ++j)
-				if (!subsystem_stricmp(sip->subsystems[j].subobj_name.c_str(), Subsys_status[i].name))
+				if (!subsystem_stricmp(sip->subsystems[j].subobj_name, Subsys_status[i].name))
 					break;
 			//if (j == sip->n_subsystems)
 				//Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);

@@ -2057,7 +2057,7 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 				sy += dy;
 
 				if ( aip->targeted_subsys != NULL ) {
-					sprintf(outstr, "Subsys: %s", aip->targeted_subsys->system_info->subobj_name.c_str());
+					sprintf(outstr, "Subsys: %s", aip->targeted_subsys->system_info->subobj_name);
 					gr_printf_no_resize(sx, sy, outstr);
 				}
 				sy += dy;

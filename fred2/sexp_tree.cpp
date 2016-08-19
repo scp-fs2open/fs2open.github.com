@@ -4902,31 +4902,31 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			switch(special_subsys){
 			// subsystem cargo
 			case OPS_CAP_CARGO:					
-				head.add_data(subsys->system_info->subobj_name.c_str());	
+				head.add_data(subsys->system_info->subobj_name);	
 				break;
 
 			// beam fire
 			case OPS_BEAM_TURRET:
-				head.add_data(subsys->system_info->subobj_name.c_str());
+				head.add_data(subsys->system_info->subobj_name);
 				break;
 
 			// awacs level
 			case OPS_AWACS:
 				if (subsys->system_info->flags[Model::Subsystem_Flags::Awacs]) {
-					head.add_data(subsys->system_info->subobj_name.c_str());
+					head.add_data(subsys->system_info->subobj_name);
 				}
 				break;
 
 			// rotating
 			case OPS_ROTATE:
 				if (subsys->system_info->flags[Model::Subsystem_Flags::Rotates]) {
-					head.add_data(subsys->system_info->subobj_name.c_str());
+					head.add_data(subsys->system_info->subobj_name);
 				}
 				break;
 
 			// everything else
 			default:
-				head.add_data(subsys->system_info->subobj_name.c_str());
+				head.add_data(subsys->system_info->subobj_name);
 				break;
 			}
 

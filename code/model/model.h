@@ -121,10 +121,10 @@ struct queued_animation;
 class model_subsystem {					/* contains rotation rate info */
 public:
 	flagset<Model::Subsystem_Flags>	flags;	    // See model_flags.h
-	SCP_string	name;					// name of the subsystem.  Probably displayed on HUD
-	SCP_string	subobj_name;			// Temporary (hopefully) parameter used to match stuff in ships.tbl
-	SCP_string	alt_sub_name;			// Karajorma - Name that overrides name of original
-	SCP_string	alt_dmg_sub_name;		// Name for the damage popup subsystems, allows for translation
+    char	name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
+    char	subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
+    char	alt_sub_name[NAME_LENGTH];			// Karajorma - Name that overrides name of original
+    char	alt_dmg_sub_name[NAME_LENGTH];		// Name for the damage popup subsystems, allows for translation
 	int		subobj_num;							// subobject number (from bspgen) -- used to match subobjects of subsystems to these entries; index to polymodel->submodel
 	int		model_num;							// Which model this is attached to (i.e. the polymodel[] index); same as polymodel->id
 	int		type;								// type. see SUBSYSTEM_* types above.  A generic type thing
@@ -193,6 +193,10 @@ public:
 	int turret_max_target_ownage; 
 
     void reset();
+
+    model_subsystem() {
+        reset();
+    }
 };
 
 typedef struct model_special {

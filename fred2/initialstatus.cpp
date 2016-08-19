@@ -358,7 +358,7 @@ BOOL initial_status::OnInitDialog()
 
 		for (ptr = GET_FIRST(&Ships[m_ship].subsys_list); ptr != END_OF_LIST(&Ships[m_ship].subsys_list); ptr = GET_NEXT(ptr))
 		{
-			((CListBox *) GetDlgItem(IDC_SUBSYS))->AddString(ptr->system_info->subobj_name.c_str());
+			((CListBox *) GetDlgItem(IDC_SUBSYS))->AddString(ptr->system_info->subobj_name);
 		}
 	}
 	else

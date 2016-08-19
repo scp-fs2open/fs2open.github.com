@@ -561,10 +561,8 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
     if (!optional_string("$Flags:"))
         return;
 
-    char	weapon_strings[MAX_WEAPON_FLAGS][NAME_LENGTH];
-    int	num_strings;
-
-    num_strings = stuff_string_list(weapon_strings, MAX_WEAPON_FLAGS);
+    SCP_vector<SCP_string> unparsed_or_special;
+    parse_string_flag_list(weaponp->wi_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed_or_special);
 
     if (optional_string("+override")) {
         // reseting the flag values if set to override the existing flags
@@ -573,9 +571,6 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 
     bool set_pierce = false;
     bool set_nopierce = false;
-
-    SCP_vector<SCP_string> unparsed_or_special;
-    parse_string_flag_list(weaponp->wi_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed_or_special);
 
     if (unparsed_or_special.size() > 0) {
 
