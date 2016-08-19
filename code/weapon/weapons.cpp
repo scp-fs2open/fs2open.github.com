@@ -2035,6 +2035,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (optional_string("+Single Missile Kill:"))
 			stuff_boolean(&wip->cm_kill_single);
+
+		if (optional_string("+Pulse Interval:")) {
+			stuff_int(&wip->cmeasure_timer_interval);
+		}
 	}
 
 	// beam weapon optional stuff
@@ -3822,124 +3826,88 @@ void find_homing_object(object *weapon_objp, int num)
 }
 
 /**
- * Scan all countermeasures.  Maybe make weapon_objp home on it.
+ * For all homing weapons, see if they should be decoyed by a countermeasure.
  */
-void find_homing_object_cmeasures_1(object *weapon_objp)
+void find_homing_object_cmeasures(const SCP_vector<object*> &cmeasure_list)
 {
-	object	*objp;
-	weapon	*wp, *cm_wp;
-	weapon_info	*wip, *cm_wip;
-	float		best_dot, dist, dot;
+	for (object *weapon_objp = GET_FIRST(&obj_used_list); weapon_objp != END_OF_LIST(&obj_used_list); weapon_objp = GET_NEXT(weapon_objp) ) {
+		if (weapon_objp->type == OBJ_WEAPON) {
+			weapon *wp = &Weapons[weapon_objp->instance];
+			weapon_info	*wip = &Weapon_info[wp->weapon_info_index];
 
-	wp = &Weapons[weapon_objp->instance];
-	wip = &Weapon_info[wp->weapon_info_index];
+			if (wip->is_homing()) {
+				float best_dot = wip->fov;
+				for (auto cit = cmeasure_list.cbegin(); cit != cmeasure_list.cend(); ++cit) {
+					//don't have a weapon try to home in on itself
+					if (*cit == weapon_objp)
+						continue;
 
-	best_dot = wip->fov;			//	Note, setting to this avoids comparison below.
+					weapon *cm_wp = &Weapons[(*cit)->instance];
+					weapon_info *cm_wip = &Weapon_info[cm_wp->weapon_info_index];
 
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
-	{
-		//first check if its a weapon, then setup the pointers
-		if (objp->type == OBJ_WEAPON)
-		{
-			cm_wp = &Weapons[objp->instance];
-			cm_wip = &Weapon_info[cm_wp->weapon_info_index];
+					//don't have a weapon try to home in on missiles fired by the same team, unless its the traitor team.
+					if ((wp->team == cm_wp->team) && (wp->team != Iff_traitor))
+						continue;
 
-			if (cm_wip->wi_flags[Weapon::Info_Flags::Cmeasure])
-			{
-				//don't have a weapon try to home in on itself
-				if (objp==weapon_objp)
-					continue;
+					vec3d	vec_to_object;
+					float dist = vm_vec_normalized_dir(&vec_to_object, &(*cit)->pos, &weapon_objp->pos);
 
-				//don't have a weapon try to home in on missiles fired by the same team, unless its the traitor team.
-				if ((wp->team == cm_wp->team) && (wp->team != Iff_traitor))
-					continue;
+					if (dist < cm_wip->cm_effective_rad)
+					{
+						float chance;
 
-				vec3d	vec_to_object;
-				dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
-
-				if (dist < cm_wip->cm_effective_rad)
-				{
-					float chance;
-
-					if (wp->cmeasure_ignore_list == nullptr) {
-						wp->cmeasure_ignore_list = new SCP_vector<int>;
-					}
-					else {
-						bool found = false;
-						for (auto ii = wp->cmeasure_ignore_list->cbegin(); ii != wp->cmeasure_ignore_list->cend(); ++ii) {
-							if (objp->signature == *ii) {
-								nprintf(("CounterMeasures", "Weapon (%s-%04i) already seen CounterMeasure (%s-%04i) Frame: %i\n",
-											wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
-								found = true;
-								break;
+						if (wp->cmeasure_ignore_list == nullptr) {
+							wp->cmeasure_ignore_list = new SCP_vector<int>;
+						}
+						else {
+							bool found = false;
+							for (auto ii = wp->cmeasure_ignore_list->cbegin(); ii != wp->cmeasure_ignore_list->cend(); ++ii) {
+								if ((*cit)->signature == *ii) {
+									nprintf(("CounterMeasures", "Weapon (%s-%04i) already seen CounterMeasure (%s-%04i) Frame: %i\n",
+												wip->name, weapon_objp->instance, cm_wip->name, (*cit)->signature, Framecount));
+									found = true;
+									break;
+								}
+							}
+							if (found) {
+								continue;
 							}
 						}
-						if (found) {
-							continue;
+
+						if (wip->wi_flags[Weapon::Info_Flags::Homing_aspect]) {
+							// aspect seeker this likely to chase a countermeasure
+							chance = cm_wip->cm_aspect_effectiveness/wip->seeker_strength;
+						} else {
+							// heat seeker and javelin HS this likely to chase a countermeasure
+							chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;
 						}
-					}
 
-					if (wip->wi_flags[Weapon::Info_Flags::Homing_aspect]) {
-						// aspect seeker this likely to chase a countermeasure
-						chance = cm_wip->cm_aspect_effectiveness/wip->seeker_strength;
-					} else {
-						// heat seeker and javelin HS this likely to chase a countermeasure
-						chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;
-					}
+						// remember this cmeasure so it can be ignored in future
+						wp->cmeasure_ignore_list->push_back((*cit)->signature);
 
-					// remember this cmeasure so it can be ignored in future
-					wp->cmeasure_ignore_list->push_back(objp->signature);
+						if (frand() >= chance) {
+							// failed to decoy
+							nprintf(("CounterMeasures", "Weapon (%s-%04i) ignoring CounterMeasure (%s-%04i) Frame: %i\n",
+										wip->name, weapon_objp->instance, cm_wip->name, (*cit)->signature, Framecount));
+						}
+						else {
+							// successful decoy, maybe chase the new cm
+							float dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
 
-					if (frand() >= chance) {
-						// failed to decoy
-						nprintf(("CounterMeasures", "Weapon (%s-%04i) ignoring CounterMeasure (%s-%04i) Frame: %i\n",
-									wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
-					}
-					else {
-						// successful decoy, maybe chase the new cm
-						dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
-
-						if (dot > best_dot)
-						{
-							best_dot = dot;
-							wp->homing_object = objp;
-							cmeasure_maybe_alert_success(objp);
-							nprintf(("CounterMeasures", "Weapon (%s-%04i) chasing CounterMeasure (%s-%04i) Frame: %i\n",
-										wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
+							if (dot > best_dot)
+							{
+								best_dot = dot;
+								wp->homing_object = (*cit);
+								cmeasure_maybe_alert_success((*cit));
+								nprintf(("CounterMeasures", "Weapon (%s-%04i) chasing CounterMeasure (%s-%04i) Frame: %i\n",
+											wip->name, weapon_objp->instance, cm_wip->name, (*cit)->signature, Framecount));
+							}
 						}
 					}
 				}
 			}
 		}
 	}
-}
-
-
-/**
- * Someone launched countermeasures.
- * For all heat-seeking homing objects, see if should favor tracking a countermeasure instead.
- */
-void find_homing_object_cmeasures()
-{
-	object	*weapon_objp;
-
-	if (Cmeasures_homing_check == 0)
-		return;
-
-	if (Cmeasures_homing_check <= 0)
-		Cmeasures_homing_check = 1;
-
-	Cmeasures_homing_check--;
-
-	for (weapon_objp = GET_FIRST(&obj_used_list); weapon_objp != END_OF_LIST(&obj_used_list); weapon_objp = GET_NEXT(weapon_objp) ) {
-		if (weapon_objp->type == OBJ_WEAPON) {
-			weapon_info	*wip = &Weapon_info[Weapons[weapon_objp->instance].weapon_info_index];
-
-			if (wip->is_homing())
-				find_homing_object_cmeasures_1(weapon_objp);
-		}
-	}
-
 }
 
 /**
@@ -5323,8 +5291,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	if(wip->wi_flags[Weapon::Info_Flags::Cmeasure]) {
-		//2-frame homing check, to fend off sync errors
+		// For the next two frames, any non-timer-based countermeasures will pulse each frame.
 		Cmeasures_homing_check = 2;
+		if (wip->cmeasure_timer_interval > 0) {
+			// Timer-based countermeasures spawn pulsing as well.
+			wp->cmeasure_timer = timestamp();	// Could also use timestamp(0), but it doesn't really matter either way.
+		}
 	}
 
 	//	Make remote detonate missiles look like they're getting detonated by firer simply by giving them variable lifetimes.
