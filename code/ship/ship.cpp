@@ -897,7 +897,7 @@ void ship_info::clone(const ship_info& other)
 
 	if ( other.n_subsystems > 0 ) {
 		if( n_subsystems < 1 ) {
-			subsystems.reserve(other.n_subsystems);
+            subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * other.n_subsystems);
 		} else {
 			for ( int i = 0; i < n_subsystems; i++ ) {
 				for ( int j = 0; j < subsystems[i].n_triggers; j++ ) {
@@ -908,10 +908,10 @@ void ship_info::clone(const ship_info& other)
 					}
 				}
 			}
-			subsystems.resize(other.n_subsystems);
+            subsystems = (model_subsystem *)vm_realloc(subsystems, sizeof(model_subsystem) * other.n_subsystems);
 		}
 
-		Assert( subsystems.size() > 0 );
+        Assert(subsystems != NULL);
 		for ( int i = n_subsystems; i < other.n_subsystems; i++ ) {
 			subsystems[i].triggers = (queued_animation*) vm_malloc(sizeof(queued_animation) * (other.subsystems[i].n_triggers));
 		}
@@ -1582,7 +1582,7 @@ ship_info::ship_info()
 	debris_arc_percent = 0.5f;
 
 	n_subsystems = 0;
-	subsystems.clear();
+	subsystems = NULL;
 
 	power_output = 0.0f;
 	max_overclocked_speed = 0.0f;
@@ -1785,7 +1785,7 @@ ship_info::ship_info()
 
 ship_info::~ship_info()
 {
-	if ( subsystems.size() > 0 ) {
+	if ( subsystems != NULL ) {
 		for(int n = 0; n < n_subsystems; n++) {
 			if (subsystems[n].triggers != NULL) {
 				vm_free(subsystems[n].triggers);
@@ -1793,7 +1793,7 @@ ship_info::~ship_info()
 			}
 		}
 
-        subsystems.clear();
+        subsystems = NULL;
 	}
 
 	free_strings();
@@ -4665,13 +4665,12 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 			sip->n_subsystems += n_subsystems;
 		} 
 
-        sip->subsystems.resize(sip->n_subsystems);
-
-		Assert( sip->subsystems.size() > 0 );
+        sip->subsystems = (model_subsystem *)vm_realloc(sip->subsystems, sizeof(model_subsystem) * sip->n_subsystems);
+    }
+    Assert(sip->subsystems != NULL);
 		
-		for ( i = 0; i < n_subsystems; i++ ){
-			sip->subsystems[orig_n_subsystems+i] = subsystems[i];
-		}
+	for ( i = 0; i < n_subsystems; i++ ){
+		sip->subsystems[orig_n_subsystems+i] = subsystems[i];
 	}
 
 	model_anim_fix_reverse_times(sip);
