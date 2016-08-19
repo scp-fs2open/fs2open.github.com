@@ -1707,7 +1707,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 	// since we only deal with one frame/render buffer, see if we need to modify what we have or use it as is
 	if ( (fbo != NULL) && (fbo->width == *w) && (fbo->height == *h) ) {
 		// both should be valid, but we check to catch the off-chance that something is fubar
-		Assert( glIsFramebufferEXT(fbo->framebuffer_id) /*&& glIsRenderbufferEXT(fbo->renderbuffer_id)*/ );
+		Assert( glIsFramebuffer(fbo->framebuffer_id) /*&& glIsRenderbufferEXT(fbo->renderbuffer_id)*/ );
 
 		// we can use the existing FBO without modification so just setup the texture slot and move on
 		if (flags & BMP_FLAG_CUBEMAP) {
