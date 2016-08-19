@@ -5809,7 +5809,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	int	num_weapon_types;
 	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
 	int	i;
-	flagset<Weapon::Info_Flags>	ignore_mask, ignore_mask_without_huge, prio1, prio2;
+	flagset<Weapon::Info_Flags>	ignore_mask, prio1, prio2;
 	int	initial_bank;
 	ai_info	*aip = &Ai_info[Ships[objp->instance].ai_index];
 
@@ -5823,7 +5823,6 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 
 	// set up ignore masks
     ignore_mask.reset();
-    ignore_mask_without_huge.reset();
 
 	// Ignore bombs unless one of the priorities asks for them to be selected.
 	if (!(prio1[Weapon::Info_Flags::Huge] || prio2[Weapon::Info_Flags::Huge])) {
@@ -5838,7 +5837,6 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	// Ignore bomber+ unless one of the priorities asks for them to be selected
     if (!(prio1[Weapon::Info_Flags::Bomber_plus] || prio2[Weapon::Info_Flags::Bomber_plus])) {
         ignore_mask.set(Weapon::Info_Flags::Bomber_plus);
-        ignore_mask_without_huge.set(Weapon::Info_Flags::Bomber_plus);
 	}
 
 #ifndef NDEBUG
@@ -5853,15 +5851,14 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 
 	// Ignore homing weapons if we didn't specify a flag - for priority 1
 	if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (prio1.none_set())) {
-		ignore_mask = ignore_mask + Weapon::Info_Flags::Homing_aspect + Weapon::Info_Flags::Homing_heat + Weapon::Info_Flags::Homing_javelin;
-		ignore_mask_without_huge  = ignore_mask_without_huge + Weapon::Info_Flags::Homing_aspect + Weapon::Info_Flags::Homing_heat + Weapon::Info_Flags::Homing_javelin;
+		ignore_mask.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
 	}
 
 	int	priority2_index = -1;
 
 	for (i=0; i<num_weapon_types; i++) {
 		auto wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-		auto ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? ignore_mask_without_huge : ignore_mask;
+		auto ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? (ignore_mask - Weapon::Info_Flags::Huge) : ignore_mask;
 
 		if (!(wi_flags & ignore_mask_to_use).any_set()) {					//	Maybe bombs are illegal.
 			if ((wi_flags & prio1).any_set()) {
@@ -5874,8 +5871,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 
 	// Ignore homing weapons if we didn't specify a flag - for priority 2
 	if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (prio2.none_set())) {
-        ignore_mask = ignore_mask + Weapon::Info_Flags::Homing_aspect + Weapon::Info_Flags::Homing_heat + Weapon::Info_Flags::Homing_javelin;
-        ignore_mask_without_huge = ignore_mask_without_huge + Weapon::Info_Flags::Homing_aspect + Weapon::Info_Flags::Homing_heat + Weapon::Info_Flags::Homing_javelin;
+        ignore_mask.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
 	}
 
 	//	If didn't find anything above, then pick any secondary weapon.
@@ -5884,7 +5880,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 		if (priority2_index == -1) {
 			for (i=0; i<num_weapon_types; i++) {
 				auto wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-				auto ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? ignore_mask_without_huge : ignore_mask;
+				auto ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? (ignore_mask - Weapon::Info_Flags::Huge) : ignore_mask;
 
 				if (!(wi_flags & ignore_mask_to_use).any_set()) {					//	Maybe bombs are illegal.
 					if (swp->secondary_bank_ammo[weapon_bank_list[i]] > 0) {
@@ -7746,23 +7742,23 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 
 		if (is_big_ship)
 		{
-            wif_priority1 += Weapon::Info_Flags::Huge;
+            wif_priority1.set(Weapon::Info_Flags::Huge);
             if (aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) {
-                wif_priority2 += Weapon::Info_Flags::Bomber_plus;
+                wif_priority2.set(Weapon::Info_Flags::Bomber_plus);
             }
             else {
-                wif_priority2 = wif_priority2 + Weapon::Info_Flags::Homing_aspect + Weapon::Info_Flags::Homing_heat + Weapon::Info_Flags::Homing_javelin;
+                wif_priority2.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
             }
 		} 
 		else if ( (esip != NULL) && (esip->flags[Ship::Info_Flags::Bomber]) )
 		{
             wif_priority1.set(Weapon::Info_Flags::Bomber_plus);
-			wif_priority2 = wif_priority2 + Weapon::Info_Flags::Homing_aspect + Weapon::Info_Flags::Homing_heat + Weapon::Info_Flags::Homing_javelin;
+			wif_priority2.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
 		} 
 		else if (subsystem_strength > 100.0f)
 		{
             wif_priority1.set(Weapon::Info_Flags::Puncture);
-			wif_priority2 = wif_priority2 + Weapon::Info_Flags::Homing_aspect + Weapon::Info_Flags::Homing_heat + Weapon::Info_Flags::Homing_javelin;
+			wif_priority2.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
 		}
 		else if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
 		{	
@@ -7771,7 +7767,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 		} 
 		else
 		{
-			wif_priority1 = wif_priority1 + Weapon::Info_Flags::Homing_aspect + Weapon::Info_Flags::Homing_heat + Weapon::Info_Flags::Homing_javelin;
+			wif_priority1.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
 			wif_priority2.reset();
 		}
 		

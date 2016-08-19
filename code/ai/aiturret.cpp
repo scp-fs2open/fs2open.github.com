@@ -1029,7 +1029,7 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	} else 
     {
         flagset<Weapon::Info_Flags> tmp_flagset;
-        Weapon::Info_Flags weapon_flags[] = { Weapon::Info_Flags::Huge, Weapon::Info_Flags::Flak, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_javelin, Weapon::Info_Flags::Spawn };
+        const Weapon::Info_Flags weapon_flags[] = { Weapon::Info_Flags::Huge, Weapon::Info_Flags::Flak, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_javelin, Weapon::Info_Flags::Spawn };
         tmp_flagset.set_multiple(std::begin(weapon_flags), std::end(weapon_flags));
 
 		for(int i = 0; i < NUM_TURRET_ORDER_TYPES; i++)
