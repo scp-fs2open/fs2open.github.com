@@ -41,44 +41,6 @@ void opengl_texture_state::init(GLuint n_units)
 		default_values(unit);
 
 		glActiveTexture(GL_TEXTURE0 + unit);
-		if (unit < (GLuint)GL_supported_texture_units && !is_minimum_GLSL_version()) {
-			glDisable(GL_TEXTURE_GEN_S);
-			glDisable(GL_TEXTURE_GEN_T);
-			glDisable(GL_TEXTURE_GEN_R);
-			glDisable(GL_TEXTURE_GEN_Q);
-		}
-
-		units[unit].texgen_S = GL_FALSE;
-		units[unit].texgen_T = GL_FALSE;
-		units[unit].texgen_R = GL_FALSE;
-		units[unit].texgen_Q = GL_FALSE;
-
-		if (unit < (GLuint)GL_supported_texture_units && !is_minimum_GLSL_version()) {
-			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-			glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-			glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		}
-
-		units[unit].texgen_mode_S = GL_EYE_LINEAR;
-		units[unit].texgen_mode_T = GL_EYE_LINEAR;
-		units[unit].texgen_mode_R = GL_EYE_LINEAR;
-		units[unit].texgen_mode_Q = GL_EYE_LINEAR;
-
-		if (unit < (GLuint)GL_supported_texture_units && !is_minimum_GLSL_version()) {
-			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
-			glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE);
-		}
-
-		units[unit].env_mode = GL_MODULATE;
-		units[unit].env_combine_rgb = GL_MODULATE;
-		units[unit].env_combine_alpha = GL_MODULATE;
-
-		if (unit < (GLuint)GL_supported_texture_units && !is_minimum_GLSL_version()) {
-			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
-			glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1.0f);
-		}
 
 		units[unit].rgb_scale = 1.0f;
 		units[unit].alpha_scale = 1.0f;
@@ -92,10 +54,6 @@ void opengl_texture_state::default_values(GLint unit, GLenum target)
 	glActiveTexture(GL_TEXTURE0 + unit);
 
 	if (target == GL_INVALID_ENUM) {
-		if (unit < GL_supported_texture_units && !is_minimum_GLSL_version()) {
-			glDisable(GL_TEXTURE_2D);
-			glDisable(GL_TEXTURE_CUBE_MAP_ARB);
-		}
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, 0);
@@ -112,10 +70,8 @@ GLboolean opengl_texture_state::TexgenS(GLint state)
 	if ( !((state == -1) || (state == units[active_texture_unit].texgen_S)) ) {
 		if (state) {
 			Assert( state == GL_TRUE );
-			glEnable(GL_TEXTURE_GEN_S);
 			units[active_texture_unit].texgen_S = GL_TRUE;
 		} else {
-			glDisable(GL_TEXTURE_GEN_S);
 			units[active_texture_unit].texgen_S = GL_FALSE;
 		}
 	}
@@ -130,10 +86,8 @@ GLboolean opengl_texture_state::TexgenT(GLint state)
 	if ( !((state == -1) || (state == units[active_texture_unit].texgen_T)) ) {
 		if (state) {
 			Assert( state == GL_TRUE );
-			glEnable(GL_TEXTURE_GEN_T);
 			units[active_texture_unit].texgen_T = GL_TRUE;
 		} else {
-			glDisable(GL_TEXTURE_GEN_T);
 			units[active_texture_unit].texgen_T = GL_FALSE;
 		}
 	}
@@ -148,10 +102,8 @@ GLboolean opengl_texture_state::TexgenR(GLint state)
 	if ( !((state == -1) || (state == units[active_texture_unit].texgen_R)) ) {
 		if (state) {
 			Assert( state == GL_TRUE );
-			glEnable(GL_TEXTURE_GEN_R);
 			units[active_texture_unit].texgen_R = GL_TRUE;
 		} else {
-			glDisable(GL_TEXTURE_GEN_R);
 			units[active_texture_unit].texgen_R = GL_FALSE;
 		}
 	}
@@ -166,10 +118,8 @@ GLboolean opengl_texture_state::TexgenQ(GLint state)
 	if ( !((state == -1) || (state == units[active_texture_unit].texgen_Q)) ) {
 		if (state) {
 			Assert( state == GL_TRUE );
-			glEnable(GL_TEXTURE_GEN_Q);
 			units[active_texture_unit].texgen_Q = GL_TRUE;
 		} else {
-			glDisable(GL_TEXTURE_GEN_Q);
 			units[active_texture_unit].texgen_Q = GL_FALSE;
 		}
 	}
@@ -213,12 +163,6 @@ void opengl_texture_state::Enable(GLuint tex_id)
 		return;
 	}
 
-	if ( !shader_mode && (active_texture_unit < (uint)GL_supported_texture_units) ) {
-		if( units[active_texture_unit].texture_target != GL_TEXTURE_2D_ARRAY_EXT && !is_minimum_GLSL_version() )
-			glEnable( units[active_texture_unit].texture_target );
-		units[active_texture_unit].enabled = GL_TRUE;
-	}
-
 	if (units[active_texture_unit].texture_id != tex_id) {
 		glBindTexture(units[active_texture_unit].texture_target, tex_id);
 		units[active_texture_unit].texture_id = tex_id;
@@ -231,12 +175,6 @@ void opengl_texture_state::Disable()
 {
 	if ( !units[active_texture_unit].active ) {
 		return;
-	}
-
-	if ( units[active_texture_unit].enabled ) {
-		if( units[active_texture_unit].texture_target != GL_TEXTURE_2D_ARRAY_EXT && !is_minimum_GLSL_version() )
-			glDisable( units[active_texture_unit].texture_target );
-		units[active_texture_unit].enabled = GL_FALSE;
 	}
 
 	units[active_texture_unit].active = GL_FALSE;
@@ -341,18 +279,12 @@ void opengl_state::init()
 {
 	int i;
 
-	if ( !is_minimum_GLSL_version() ) {
-		glDisable(GL_FOG);
-	}
 	
 	fog_Status = GL_FALSE;
 
 	glDisable(GL_BLEND);
 	blend_Status = GL_FALSE;
 
-	if ( !is_minimum_GLSL_version() ) {
-		glDisable(GL_ALPHA_TEST);
-	}
 
 	alphatest_Status = GL_FALSE;
 
@@ -371,9 +303,6 @@ void opengl_state::init()
 	polygon_offset_Factor = 0.0f;
 	polygon_offset_Unit = 0.0f;
 
-	if ( !is_minimum_GLSL_version() ) {
-		glDisable(GL_NORMALIZE);
-	}
 	normalize_Status = GL_FALSE;
 
 	for (i = 0; i < (int)(sizeof(clipplane_Status) / sizeof(GLboolean)); i++) {
@@ -392,18 +321,12 @@ void opengl_state::init()
 	light_Status = (GLboolean*) vm_malloc(GL_max_lights * sizeof(GLboolean));
 
 	for (i = 0; i < GL_max_lights; i++) {
-		if ( !is_minimum_GLSL_version() ) {
-			glDisable(GL_LIGHT0 + i);
-		}
 		light_Status[i] = GL_FALSE;
 	}
 
 	glDepthMask(GL_FALSE);
 	depthmask_Status = GL_FALSE;
 
-	if ( !is_minimum_GLSL_version() ) {
-		glDisable(GL_LIGHTING);
-	}
 	lighting_Status = GL_FALSE;
 
 	glFrontFace(GL_CCW);
@@ -438,10 +361,8 @@ GLboolean opengl_state::Lighting(GLint state)
 	if ( !((state == -1) || (state == lighting_Status)) ) {
 		if (state) {
 			Assert( state == GL_TRUE );
-			glEnable(GL_LIGHTING);
 			lighting_Status = GL_TRUE;
 		} else {
-			glDisable(GL_LIGHTING);
 			lighting_Status = GL_FALSE;
 		}
 	}
@@ -456,10 +377,8 @@ GLboolean opengl_state::Fog(GLint state)
 	if ( !((state == -1) || (state == fog_Status)) ) {
 		if (state) {
 			Assert( state == GL_TRUE );
-			glEnable(GL_FOG);
 			fog_Status = GL_TRUE;
 		} else {
-			glDisable(GL_FOG);
 			fog_Status = GL_FALSE;
 		}
 	}
@@ -494,10 +413,8 @@ GLboolean opengl_state::AlphaTest(GLint state)
 	if ( !((state == -1) || (state == alphatest_Status)) ) {
 		if (state) {
 			Assert( state == GL_TRUE );
-			glEnable(GL_ALPHA_TEST);
 			alphatest_Status = GL_TRUE;
 		} else {
-			glDisable(GL_ALPHA_TEST);
 			alphatest_Status = GL_FALSE;
 		}
 	}
@@ -622,10 +539,8 @@ GLboolean opengl_state::Normalize(GLint state)
 	if ( !((state == -1) || (state == normalize_Status)) ) {
 		if (state) {
 			Assert( state == GL_TRUE );
-			glEnable(GL_NORMALIZE);
 			normalize_Status = GL_TRUE;
 		} else {
-			glDisable(GL_NORMALIZE);
 			normalize_Status = GL_FALSE;
 		}
 	}
@@ -642,10 +557,8 @@ GLboolean opengl_state::Light(GLint num, GLint state)
 	if ( !((state == -1) || (state == light_Status[num])) ) {
 		if (state) {
 			Assert( state == GL_TRUE );
-			glEnable(GL_LIGHT0+num);
 			light_Status[num] = GL_TRUE;
 		} else {
-			glDisable(GL_LIGHT0+num);
 			light_Status[num] = GL_FALSE;
 		}
 	}
@@ -662,10 +575,8 @@ GLboolean opengl_state::ClipPlane(GLint num, GLint state)
 	if ( !((state == -1) || (state == clipplane_Status[num])) ) {
 		if (state) {
 			Assert( state == GL_TRUE );
-			glEnable(GL_CLIP_PLANE0+num);
 			clipplane_Status[num] = GL_TRUE;
 		} else {
-			glDisable(GL_CLIP_PLANE0+num);
 			clipplane_Status[num] = GL_FALSE;
 		}
 	}
@@ -733,31 +644,7 @@ GLboolean opengl_state::ColorMask(GLint state)
 
 void opengl_state::SetTextureSource(gr_texture_source ts)
 {
-	if (ts == Texture.Current_texture_source) {
-		return;
-	}
 
-	switch (ts) {
-		case TEXTURE_SOURCE_DECAL:
-			GL_state.Texture.SetActiveUnit();
-			GL_state.Texture.SetEnvMode(GL_MODULATE);
-			break;
-
-		case TEXTURE_SOURCE_NO_FILTERING:
-			GL_state.Texture.SetActiveUnit();
-			GL_state.Texture.SetEnvMode(GL_MODULATE);
-			break;
-
-		case TEXTURE_SOURCE_NONE:
-			GL_state.Texture.DisableAll();
-			break;
-
-		default:
-			Int3();
-			break;
-	}
-
-	Texture.Current_texture_source = ts;
 }
 
 void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
@@ -950,7 +837,6 @@ void opengl_array_state::SetActiveClientUnit(GLuint id)
 		return;
 	}
 
-	glClientActiveTexture(GL_TEXTURE0 + id);
 
 	active_client_texture_unit = id;
 }
@@ -963,7 +849,6 @@ void opengl_array_state::EnableClientTexture()
 		return;
 	}
 
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	client_texture_units[active_client_texture_unit].status = GL_TRUE;
 }
@@ -974,7 +859,6 @@ void opengl_array_state::DisableClientTexture()
 		return;
 	}
 
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	client_texture_units[active_client_texture_unit].status = GL_FALSE;
 }
@@ -994,7 +878,6 @@ void opengl_array_state::TexPointer(GLint size, GLenum type, GLsizei stride, GLv
 		return;
 	}
 
-	glTexCoordPointer(size, type, stride, pointer);
 
 	ct_unit->size = size;
 	ct_unit->type = type;
@@ -1012,7 +895,6 @@ void opengl_array_state::EnableClientColor()
 		return;
 	}
 
-	glEnableClientState(GL_COLOR_ARRAY);
 
 	color_array_Status = GL_TRUE;
 }
@@ -1023,7 +905,6 @@ void opengl_array_state::DisableClientColor()
 		return;
 	}
 
-	glDisableClientState(GL_COLOR_ARRAY);
 
 	color_array_Status = GL_FALSE;
 }
@@ -1041,7 +922,6 @@ void opengl_array_state::ColorPointer(GLint size, GLenum type, GLsizei stride, G
 		return;
 	}
 
-	glColorPointer(size, type, stride, pointer);
 
 	color_array_size = size;
 	color_array_type = type;
@@ -1059,7 +939,6 @@ void opengl_array_state::EnableClientNormal()
 		return;
 	}
 
-	glEnableClientState(GL_NORMAL_ARRAY);
 
 	normal_array_Status = GL_TRUE;
 }
@@ -1069,8 +948,6 @@ void opengl_array_state::DisableClientNormal()
 	if ( normal_array_Status == GL_FALSE ) {
 		return;
 	}
-
-	glDisableClientState(GL_NORMAL_ARRAY);
 
 	normal_array_Status = GL_FALSE;
 }
@@ -1087,8 +964,6 @@ void opengl_array_state::NormalPointer(GLenum type, GLsizei stride, GLvoid *poin
 		return;
 	}
 
-	glNormalPointer(type, stride, pointer);
-
 	normal_array_Type = type;
 	normal_array_Stride = stride;
 	normal_array_Pointer = pointer;
@@ -1104,8 +979,6 @@ void opengl_array_state::EnableClientVertex()
 		return;
 	}
 
-	glEnableClientState(GL_VERTEX_ARRAY);
-
 	vertex_array_Status = GL_TRUE;
 }
 
@@ -1114,8 +987,6 @@ void opengl_array_state::DisableClientVertex()
 	if ( vertex_array_Status == GL_FALSE ) {
 		return;
 	}
-
-	glDisableClientState(GL_VERTEX_ARRAY);
 
 	vertex_array_Status = GL_FALSE;
 }
@@ -1132,8 +1003,6 @@ void opengl_array_state::VertexPointer(GLint size, GLenum type, GLsizei stride, 
 	) {
 		return;
 	}
-
-	glVertexPointer(size, type, stride, pointer);
 
 	vertex_array_Size = size;
 	vertex_array_Type = type;
@@ -1312,7 +1181,7 @@ void opengl_array_state::BindUniformBufferBindingIndex(GLuint id, GLuint index)
 		return;
 	}
 
-	glBindBufferBaseEXT(GL_UNIFORM_BUFFER, index, id);
+	glBindBufferBase(GL_UNIFORM_BUFFER, index, id);
 
 	uniform_buffer_index_bindings[index] = id;
 }
@@ -1912,7 +1781,6 @@ void opengl_light_state::Enable()
 		return;
 	}
 
-	glEnable(GL_LIGHT0 + Light_num);
 	Enabled = true;
 }
 
@@ -1924,7 +1792,6 @@ void opengl_light_state::Disable()
 		return;
 	}
 
-	glDisable(GL_LIGHT0 + Light_num);
 	Enabled = false;
 }
 
@@ -1950,7 +1817,6 @@ void opengl_light_state::SetPosition(GLfloat *val)
 	Position[2] = val[2];
 	Position[3] = val[3];
 
-	glLightfv(GL_LIGHT0 + Light_num, GL_POSITION, val);
 	InvalidPosition = false;
 }
 
@@ -1969,8 +1835,6 @@ void opengl_light_state::SetAmbient(GLfloat *val)
 	Ambient[1] = val[1];
 	Ambient[2] = val[2];
 	Ambient[3] = val[3];
-
-	glLightfv(GL_LIGHT0 + Light_num, GL_AMBIENT, val);
 }
 
 void opengl_light_state::SetDiffuse(GLfloat *val)
@@ -1989,7 +1853,6 @@ void opengl_light_state::SetDiffuse(GLfloat *val)
 	Diffuse[2] = val[2];
 	Diffuse[3] = val[3];
 
-	glLightfv(GL_LIGHT0 + Light_num, GL_DIFFUSE, val);
 }
 
 void opengl_light_state::SetSpecular(GLfloat *val)
@@ -2008,7 +1871,6 @@ void opengl_light_state::SetSpecular(GLfloat *val)
 	Specular[2] = val[2];
 	Specular[3] = val[3];
 
-	glLightfv(GL_LIGHT0 + Light_num, GL_SPECULAR, val);
 }
 
 void opengl_light_state::SetConstantAttenuation(GLfloat val)
@@ -2021,7 +1883,6 @@ void opengl_light_state::SetConstantAttenuation(GLfloat val)
 
 	ConstantAttenuation = val;
 
-	glLightf(GL_LIGHT0 + Light_num, GL_CONSTANT_ATTENUATION, val);
 }
 
 void opengl_light_state::SetLinearAttenuation(GLfloat val)
@@ -2034,7 +1895,6 @@ void opengl_light_state::SetLinearAttenuation(GLfloat val)
 
 	LinearAttenuation = val;
 
-	glLightf(GL_LIGHT0 + Light_num, GL_LINEAR_ATTENUATION, val);
 }
 
 void opengl_light_state::SetQuadraticAttenuation(GLfloat val)
@@ -2047,7 +1907,6 @@ void opengl_light_state::SetQuadraticAttenuation(GLfloat val)
 
 	QuadraticAttenuation = val;
 
-	glLightf(GL_LIGHT0 + Light_num, GL_QUADRATIC_ATTENUATION, val);
 }
 
 void opengl_light_state::SetSpotExponent(GLfloat val)
@@ -2060,7 +1919,6 @@ void opengl_light_state::SetSpotExponent(GLfloat val)
 
 	SpotExponent = val;
 
-	glLightf(GL_LIGHT0 + Light_num, GL_SPOT_EXPONENT, val);
 }
 
 void opengl_light_state::SetSpotCutoff(GLfloat val)
@@ -2073,7 +1931,6 @@ void opengl_light_state::SetSpotCutoff(GLfloat val)
 
 	SpotCutoff = val;
 
-	glLightf(GL_LIGHT0 + Light_num, GL_SPOT_CUTOFF, val);
 }
 
 void gr_opengl_clear_states()

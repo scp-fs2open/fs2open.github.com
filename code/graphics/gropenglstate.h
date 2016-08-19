@@ -100,33 +100,22 @@ class opengl_texture_state
 
 inline void opengl_texture_state::SetRGBScale(GLfloat scale)
 {
-	Assert( ((scale == 1.0f) || (scale == 2.0f) || (scale == 4.0f)) );
-	glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, scale);
+
 }
 
 inline void opengl_texture_state::SetAlphaScale(GLfloat scale)
 {
-	Assert( ((scale == 1.0f) || (scale == 2.0f) || (scale == 4.0f)) );
-	glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, scale);
+
 }
 
 inline void opengl_texture_state::SetEnvMode(GLenum mode)
 {
-	if (mode != units[active_texture_unit].env_mode) {
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, mode);
-		units[active_texture_unit].env_mode = mode;
-	}
+
 }
 
 inline void opengl_texture_state::SetEnvCombineMode(GLenum cmode, GLenum cfunc)
 {
-	SetEnvMode(GL_COMBINE);
 
-	if (cmode == GL_COMBINE_RGB) {
-		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, cfunc);
-	} else if (cmode == GL_COMBINE_ALPHA) {
-		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, cfunc);
-	}
 }
 
 inline void opengl_texture_state::SetWrapS(GLenum mode)
@@ -146,22 +135,18 @@ inline void opengl_texture_state::SetWrapR(GLenum mode)
 
 inline void opengl_texture_state::SetTexgenModeS(GLenum mode)
 {
-	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, mode);
 }
 
 inline void opengl_texture_state::SetTexgenModeT(GLenum mode)
 {
-	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, mode);
 }
 
 inline void opengl_texture_state::SetTexgenModeR(GLenum mode)
 {
-	glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, mode);
 }
 
 inline void opengl_texture_state::SetTexgenModeQ(GLenum mode)
 {
-	glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, mode);
 }
 
 inline GLenum opengl_texture_state::GetTarget()
@@ -533,13 +518,12 @@ inline GLenum opengl_state::DepthFunc(GLenum new_val)
 
 inline void opengl_state::AlphaFunc(GLenum f_val, GLclampf r_val)
 {
-	glAlphaFunc(f_val, r_val);
 }
 
 inline void opengl_state::Color(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
 {
 	if ( color_invalid || (red != red_Status) || (green != green_Status) || (blue != blue_Status) || (alpha != alpha_Status) ) {
-		glColor4ub(red, green, blue, alpha);
+
 		red_Status = red;
 		green_Status = green;
 		blue_Status = blue;

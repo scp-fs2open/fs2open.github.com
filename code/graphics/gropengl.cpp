@@ -519,32 +519,6 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	if ( is_minimum_GLSL_version() && Current_shader != NULL && Current_shader->shader == SDR_TYPE_MODEL ) {
 		return;
 	}
-
-	glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FRAGMENT_DEPTH_EXT);
-
-	GL_state.Fog(GL_TRUE);
-	glFogf(GL_FOG_MODE, GL_LINEAR);
-	glFogf(GL_FOG_START, fog_near);
-	glFogf(GL_FOG_END, fog_far);
-
-	gr_screen.current_fog_mode = fog_mode;
-
-	if ( (gr_screen.current_fog_color.red != r) ||
-			(gr_screen.current_fog_color.green != g) ||
-			(gr_screen.current_fog_color.blue != b) )
-	{
-		GLfloat fc[4];
-
-		gr_init_color( &gr_screen.current_fog_color, r, g, b );
-
-		fc[0] = (float)r/255.0f;
-		fc[1] = (float)g/255.0f;
-		fc[2] = (float)b/255.0f;
-		fc[3] = 1.0f;
-
-		glFogfv(GL_FOG_COLOR, fc);
-	}
-
 }
 
 int gr_opengl_set_cull(int cull)
@@ -954,54 +928,17 @@ void gr_opengl_zbias(int bias)
 
 void gr_opengl_push_texture_matrix(int unit)
 {
-	GLint current_matrix;
 
-	if (unit > GL_supported_texture_units)
-		return;
-
-	glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
-	glActiveTexture(GL_TEXTURE0+unit);
-
-	glMatrixMode(GL_TEXTURE);
-	glPushMatrix();
-
-	glMatrixMode(current_matrix);
 }
 
 void gr_opengl_pop_texture_matrix(int unit)
 {
-	GLint current_matrix;
 
-	if (unit > GL_supported_texture_units)
-		return;
-
-	glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
-	glActiveTexture(GL_TEXTURE0+unit);
-
-	glMatrixMode(GL_TEXTURE);
-	glPopMatrix();
-
-	glMatrixMode(current_matrix);
 }
 
 void gr_opengl_translate_texture_matrix(int unit, const vec3d *shift)
 {
-	GLint current_matrix;
 
-	if (unit > GL_supported_texture_units) {
-		/*tex_shift=*shift;*/
-		return;
-	}
-
-	glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
-	glActiveTexture(GL_TEXTURE0+unit);
-
-	glMatrixMode(GL_TEXTURE);
-	glTranslated(shift->xyz.x, shift->xyz.y, shift->xyz.z);
-
-	glMatrixMode(current_matrix);
-
-//	tex_shift=vmd_zero_vector;
 }
 
 void gr_opengl_set_line_width(float width)
@@ -1061,20 +998,7 @@ void opengl_set_vsync(int status)
 
 void opengl_setup_viewport_fixed_pipeline()
 {
-	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-
-	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
-	if ( GL_rendering_to_texture ) {
-		glOrtho(0, gr_screen.max_w, 0, gr_screen.max_h, -1.0, 1.0);
-	} else {
-		glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
-	}
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 }
 
 void opengl_setup_viewport()
@@ -1546,15 +1470,6 @@ static void init_extensions() {
 		Use_PBOs = 1;
 	}
 
-	// setup the best fog function found
-	if ( !Fred_running ) {
-		if ( GLAD_GL_EXT_fog_coord ) {
-			OGL_fogmode = 2;
-		} else {
-			OGL_fogmode = 1;
-		}
-	}
-
 	// if we can't do cubemaps then turn off Cmdline_env
 	if ( !GLAD_GL_ARB_texture_cube_map ) {
 		Cmdline_env = 0;
@@ -1589,7 +1504,7 @@ static void init_extensions() {
 		Cmdline_no_deferred_lighting = 1;
 	}
 
-	if ( GLSL_version < 120 || !GLAD_GL_EXT_framebuffer_object || !GLAD_GL_ARB_texture_float ) {
+	if ( GLSL_version < 120 || !GLAD_GL_ARB_framebuffer_object || !GLAD_GL_ARB_texture_float ) {
 		mprintf(("  No hardware support for deferred lighting. Deferred lighting will be disabled. \n"));
 		Cmdline_no_deferred_lighting = 1;
 		Cmdline_no_batching = true;
@@ -1695,12 +1610,8 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	GLint max_texture_units = GL_supported_texture_units;
 	GLint max_texture_coords = GL_supported_texture_units;
 
-	if (is_minimum_GLSL_version()) {
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
-		max_texture_coords = 1;
-	} else {
-		glGetIntegerv(GL_MAX_TEXTURE_COORDS, &max_texture_coords);
-	}
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
+	max_texture_coords = 1;
 
 	// create vertex array object to make OpenGL Core happy if we can
 	if ( GL_version >= 30 ) {
@@ -1738,12 +1649,6 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_STENCIL_BUFFER_BIT);
 
-	if ( !is_minimum_GLSL_version() ) {
-		glShadeModel(GL_SMOOTH);
-		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-		glHint(GL_FOG_HINT, GL_NICEST);
-	}
-
 	if ( GLAD_GL_ARB_seamless_cube_map ) {
 		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	}
@@ -1776,7 +1681,7 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	mprintf(( "  Max elements indices: %i\n", GL_max_elements_indices ));
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
 
-	if ( GLAD_GL_EXT_framebuffer_object ) {
+	if ( GLAD_GL_ARB_framebuffer_object ) {
 		mprintf(( "  Max render buffer size: %ix%i\n",
 			  GL_max_renderbuffer_size,
 			  GL_max_renderbuffer_size ));
@@ -1854,12 +1759,6 @@ uint opengl_data_type_size(GLenum data_type)
 		return sizeof(GLuint);
 	case GL_FLOAT:
 		return sizeof(GLfloat);
-	case GL_2_BYTES:
-		return sizeof(GLbyte) * 2;
-	case GL_3_BYTES:
-		return sizeof(GLbyte) * 3;
-	case GL_4_BYTES:
-		return sizeof(GLbyte) * 4;
 	case GL_DOUBLE:
 		return sizeof(GLdouble);
 	}

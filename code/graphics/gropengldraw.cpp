@@ -154,10 +154,6 @@ inline GLenum opengl_primitive_type(primitive_type prim_type)
 		return GL_TRIANGLE_STRIP;
 	case PRIM_TYPE_TRIFAN:
 		return GL_TRIANGLE_FAN;
-	case PRIM_TYPE_QUADS:
-		return GL_QUADS;
-	case PRIM_TYPE_QUADSTRIP:
-		return GL_QUAD_STRIP;
 	case PRIM_TYPE_LINES:
 		return GL_LINES;
 	case PRIM_TYPE_LINESTRIP:
@@ -1111,8 +1107,6 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 		gl_mode = GL_TRIANGLE_STRIP;
 	} else if (flags & TMAP_FLAG_TRILIST) {
 		gl_mode = GL_TRIANGLES;
-	} else if (flags & TMAP_FLAG_QUADLIST) {
-		gl_mode = GL_QUADS;
 	} else if (flags & TMAP_FLAG_QUADSTRIP) {
 		gl_mode = GL_TRIANGLE_STRIP;
 		Assert((nv % 2) == 0);
@@ -1319,11 +1313,7 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 		gl_mode = GL_TRIANGLES;
 	} else if (flags & TMAP_FLAG_TRISTRIP) {
 		gl_mode = GL_TRIANGLE_STRIP;
-	} else if (flags & TMAP_FLAG_QUADLIST) {
-		gl_mode = GL_QUADS;
-	} else if (flags & TMAP_FLAG_QUADSTRIP) {
-		gl_mode = GL_QUAD_STRIP;
-	}
+	} 
 
 	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
 		isRGB = true;
@@ -1412,11 +1402,7 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 		gl_mode = GL_TRIANGLES;
 	} else if (flags & TMAP_FLAG_TRISTRIP) {
 		gl_mode = GL_TRIANGLE_STRIP;
-	} else if (flags & TMAP_FLAG_QUADLIST) {
-		gl_mode = GL_QUADS;
-	} else if (flags & TMAP_FLAG_QUADSTRIP) {
-		gl_mode = GL_QUAD_STRIP;
-	}
+	} 
 
 	GL_state.Array.BindArrayBuffer(0);
 
@@ -1431,18 +1417,6 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 		textured = true;
 
 		vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(vertex), &verts[0].texture_position.u);
-
-		// adjust texture coords if needed
-		if ( (u_scale != 1.0f) || (v_scale != 1.0f) ) {
-			glMatrixMode(GL_TEXTURE);
-			glPushMatrix();
-			glScalef(u_scale, v_scale, 1.0f);
-
-			// switch back to the default modelview mode
-			glMatrixMode(GL_MODELVIEW);
-
-			texture_matrix_set = true;
-		}
 	}
 
 	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
@@ -1460,9 +1434,6 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 
 	float offset_z = -0.99f;
 
-	glPushMatrix();
-	glTranslatef((float)gr_screen.offset_x, (float)gr_screen.offset_y, offset_z);
-
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(vertex), &verts[0].screen.xyw.x);
 
 	opengl_bind_vertex_layout(vert_def);
@@ -1477,13 +1448,6 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 
 	GL_state.Texture.DisableAll();
 
-	if (texture_matrix_set) {
-		glMatrixMode(GL_TEXTURE);
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);
-	}
-
-	glPopMatrix();
 
 	GL_CHECK_FOR_ERRORS("end of render()");
 }
@@ -1520,10 +1484,6 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 		gl_mode = GL_TRIANGLES;
 	} else if (flags & TMAP_FLAG_TRISTRIP) {
 		gl_mode = GL_TRIANGLE_STRIP;
-	} else if (flags & TMAP_FLAG_QUADLIST) {
-		gl_mode = GL_QUADS;
-	} else if (flags & TMAP_FLAG_QUADSTRIP) {
-		gl_mode = GL_QUAD_STRIP;
 	} else if (flags & TMAP_FLAG_LINES) {
 		gl_mode = GL_LINES;
 	}
@@ -1596,11 +1556,7 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 		gl_mode = GL_TRIANGLES;
 	} else if (flags & TMAP_FLAG_TRISTRIP) {
 		gl_mode = GL_TRIANGLE_STRIP;
-	} else if (flags & TMAP_FLAG_QUADLIST) {
-		gl_mode = GL_QUADS;
-	} else if (flags & TMAP_FLAG_QUADSTRIP) {
-		gl_mode = GL_QUAD_STRIP;
-	}
+	} 
 
 	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
 		vert_def.add_vertex_component(vertex_format_data::COLOR4, sizeof(vertex), &verts[0].r);
@@ -2345,7 +2301,7 @@ void opengl_setup_scene_textures()
 {
 	Scene_texture_initialized = 0;
 
-	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo || !GLAD_GL_EXT_framebuffer_object ) {
+	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo || !GLAD_GL_ARB_framebuffer_object ) {
 		Cmdline_postprocess = 0;
 		Cmdline_softparticles = 0;
 		Cmdline_fb_explosions = 0;
@@ -2370,8 +2326,8 @@ void opengl_setup_scene_textures()
 	}
 
 	// create framebuffer
-	glGenFramebuffersEXT(1, &Scene_framebuffer);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
+	glGenFramebuffers(1, &Scene_framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, Scene_framebuffer);
 
 	// setup main render texture
 
@@ -2390,7 +2346,7 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_ARB, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
 
 	// setup low dynamic range color texture
 	glGenTextures(1, &Scene_ldr_texture);
@@ -2422,7 +2378,7 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_ARB, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_2D, Scene_position_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, Scene_position_texture, 0);
 
 	// setup normal render texture
 	glGenTextures(1, &Scene_normal_texture);
@@ -2439,7 +2395,7 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_ARB, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_TEXTURE_2D, Scene_normal_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, Scene_normal_texture, 0);
 
 	// setup specular render texture
 	glGenTextures(1, &Scene_specular_texture);
@@ -2456,7 +2412,7 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT3_EXT, GL_TEXTURE_2D, Scene_specular_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, Scene_specular_texture, 0);
 
 	//Set up luminance texture (used as input for FXAA)
 	// also used as a light accumulation buffer during the deferred pass
@@ -2490,7 +2446,7 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_ARB, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT4_EXT, GL_TEXTURE_2D, Scene_effect_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, Scene_effect_texture, 0);
 
 	// setup cockpit depth texture
 	glGenTextures(1, &Cockpit_depth_texture);
@@ -2507,7 +2463,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, Scene_texture_width, Scene_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
 	gr_zbuffer_set(GR_ZBUFF_FULL);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -2526,19 +2482,19 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, Scene_texture_width, Scene_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
 	//setup main stencil buffer
-	glGenRenderbuffersEXT(1, &Scene_stencil_buffer);
-    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, Scene_stencil_buffer);
-    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH24_STENCIL8_EXT, Scene_texture_width, Scene_texture_height);
-	//glFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
+	glGenRenderbuffers(1, &Scene_stencil_buffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, Scene_stencil_buffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_EXT, Scene_texture_width, Scene_texture_height);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
 
-	glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
 
 	if ( opengl_check_framebuffer() ) {
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-		glDeleteFramebuffersEXT(1, &Scene_framebuffer);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, &Scene_framebuffer);
 		Scene_framebuffer = 0;
 
 		GL_state.Texture.Disable();
@@ -2575,8 +2531,8 @@ void opengl_setup_scene_textures()
 	//Setup thruster distortion framebuffer
     if (Cmdline_fb_thrusters) 
     {
-        glGenFramebuffersEXT(1, &Distortion_framebuffer);
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Distortion_framebuffer);
+        glGenFramebuffers(1, &Distortion_framebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, Distortion_framebuffer);
 
         glGenTextures(2, Distortion_texture);
 
@@ -2602,13 +2558,13 @@ void opengl_setup_scene_textures()
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 32, 32, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Distortion_texture[0], 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Distortion_texture[0], 0);
     }
 
 
 	if ( opengl_check_framebuffer() ) {
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-		glDeleteFramebuffersEXT(1, &Distortion_framebuffer);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, &Distortion_framebuffer);
 		Distortion_framebuffer = 0;
 
 		GL_state.Texture.Disable();
@@ -2628,7 +2584,7 @@ void opengl_setup_scene_textures()
 		return;
 	}
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	Scene_texture_initialized = 1;
 	Scene_framebuffer_in_frame = false;
@@ -2672,7 +2628,7 @@ void opengl_scene_texture_shutdown()
 	}
 
 	if ( Scene_framebuffer ) {
-		glDeleteFramebuffersEXT(1, &Scene_framebuffer);
+		glDeleteFramebuffers(1, &Scene_framebuffer);
 		Scene_framebuffer = 0;
 	}
 
@@ -2681,7 +2637,7 @@ void opengl_scene_texture_shutdown()
 	Distortion_texture[1] = 0;
 
 	if ( Distortion_framebuffer ) {
-		glDeleteFramebuffersEXT(1, &Distortion_framebuffer);
+		glDeleteFramebuffers(1, &Distortion_framebuffer);
 		Distortion_framebuffer = 0;
 	}
 
@@ -2699,7 +2655,7 @@ void gr_opengl_scene_texture_begin()
 		return;
 	}
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, Scene_framebuffer);
 
 	if (GL_rendering_to_texture)
 	{
@@ -2719,7 +2675,7 @@ void gr_opengl_scene_texture_begin()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	} else {
-		GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_COLOR_ATTACHMENT3_EXT };
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 		glDrawBuffers(4, buffers);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -2727,7 +2683,7 @@ void gr_opengl_scene_texture_begin()
 
 		opengl_clear_deferred_buffers();
 
-		glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}
 
 	Scene_framebuffer_in_frame = true;
@@ -2760,7 +2716,7 @@ void gr_opengl_scene_texture_end()
 		GLboolean blend = GL_state.Blend(GL_FALSE);
 		GLboolean cull = GL_state.CullFace(GL_FALSE);
 
-		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, opengl_get_rtt_framebuffer());
+		glBindFramebuffer(GL_FRAMEBUFFER, opengl_get_rtt_framebuffer());
 
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -2812,9 +2768,9 @@ void gr_opengl_copy_effect_texture()
 		return;
 	}
 
-	glDrawBuffer(GL_COLOR_ATTACHMENT4_EXT);
+	glDrawBuffer(GL_COLOR_ATTACHMENT4);
 	glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 }
 
 void opengl_clear_deferred_buffers()
@@ -2850,7 +2806,7 @@ void gr_opengl_deferred_lighting_begin()
 	Deferred_lighting = true;
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_COLOR_ATTACHMENT3_EXT };
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 	glDrawBuffers(4, buffers);
 }
 
@@ -2859,7 +2815,7 @@ void gr_opengl_deferred_lighting_end()
 	if(!Deferred_lighting)
 		return;
 	Deferred_lighting = false;
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
 }
@@ -2884,9 +2840,9 @@ void gr_opengl_deferred_lighting_finish()
 
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0) );
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_luminance_texture, 0);
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, Scene_stencil_buffer);
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, Scene_stencil_buffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_luminance_texture, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
@@ -2983,9 +2939,9 @@ void gr_opengl_deferred_lighting_finish()
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Scene_color_texture, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, Scene_depth_texture, 0);
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
@@ -3039,9 +2995,9 @@ void gr_opengl_update_distortion()
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
 	opengl_shader_set_passthrough(true, false);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Distortion_framebuffer);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, Distortion_texture[!Distortion_switch], 0);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glBindFramebuffer(GL_FRAMEBUFFER, Distortion_framebuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Distortion_texture[!Distortion_switch], 0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glViewport(0,0,32,32);
 	GL_state.Texture.SetActiveUnit(0);
@@ -3110,7 +3066,7 @@ void gr_opengl_update_distortion()
 	Distortion_switch = !Distortion_switch;
 
 	// reset state
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Scene_framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, Scene_framebuffer);
 
 	glViewport(0,0,gr_screen.max_w,gr_screen.max_h);
 
@@ -3212,11 +3168,11 @@ void gr_opengl_render_primitives_distortion(distortion_material* material_info, 
 
 	opengl_tnl_set_material_distortion(material_info);
 	
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 	glDrawBuffers(2, buffers);
 
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_distortion()");

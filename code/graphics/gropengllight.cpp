@@ -201,23 +201,6 @@ void opengl_set_light_fixed_pipeline(int light_num, opengl_light *ltp)
 	light_dir_world.xyz.z = ltp->SpotDir[2];
 	
 	vm_vec_rotate(&light_dir_eye, &light_dir_world, &Object_matrix);
-
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-	
-	glLightfv(GL_LIGHT0 + light_num, GL_POSITION, light_pos_eye_4d.a1d);
-	glLightfv(GL_LIGHT0 + light_num, GL_AMBIENT, ltp->Ambient);
-	glLightfv(GL_LIGHT0 + light_num, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0 + light_num, GL_SPECULAR, ltp->Specular);
-	glLightfv(GL_LIGHT0 + light_num, GL_SPOT_DIRECTION, light_dir_eye.a1d);
-	//glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, ltp->ConstantAtten); Default is 1.0 and we only use 1.0 - Valathil
-	glLightf(GL_LIGHT0 + light_num, GL_LINEAR_ATTENUATION, ltp->LinearAtten);
-	//glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, ltp->QuadraticAtten); Default is 0.0 and we only use 0.0 - Valathil
-	glLightf(GL_LIGHT0 + light_num, GL_SPOT_EXPONENT, ltp->SpotExp);
-	glLightf(GL_LIGHT0 + light_num, GL_SPOT_CUTOFF, ltp->SpotCutOff);
-
-	glPopMatrix();
 }
 
 void opengl_set_light(int light_num, opengl_light *ltp)
@@ -307,109 +290,6 @@ static bool use_last_view = false;
 
 void opengl_change_active_lights(int pos, int d_offset)
 {
-	int i, offset;
-
-	if ( !lighting_is_enabled ) {
-		return;
-	}
-
-	Assert( d_offset < GL_max_lights );
-
-	offset = (pos * GL_max_lights) + d_offset;
-
-	glPushMatrix();
-
-	if ( !memcmp(&Eye_position, &last_view_pos, sizeof(vec3d)) && !memcmp(&Eye_matrix, &last_view_orient, sizeof(matrix)) ) {
-		use_last_view = true;
-	} else {
-		memcpy(&last_view_pos, &Eye_position, sizeof(vec3d));
-		memcpy(&last_view_orient, &Eye_matrix, sizeof(matrix));
-
-		use_last_view = false;
-	}
-
-	if ( !use_last_view ) {
-		// should already be normalized
-		eyex =  (GLdouble)Eye_position.xyz.x;
-		eyey =  (GLdouble)Eye_position.xyz.y;
-		eyez = -(GLdouble)Eye_position.xyz.z;
-
-		// should already be normalized
-		GLdouble fwdx =  (GLdouble)Eye_matrix.vec.fvec.xyz.x;
-		GLdouble fwdy =  (GLdouble)Eye_matrix.vec.fvec.xyz.y;
-		GLdouble fwdz = -(GLdouble)Eye_matrix.vec.fvec.xyz.z;
-
-		// should already be normalized
-		GLdouble upx =  (GLdouble)Eye_matrix.vec.uvec.xyz.x;
-		GLdouble upy =  (GLdouble)Eye_matrix.vec.uvec.xyz.y;
-		GLdouble upz = -(GLdouble)Eye_matrix.vec.uvec.xyz.z;
-
-		GLdouble mag;
-
-		// setup Side vector (crossprod of forward and up vectors)
-		GLdouble Sx = (fwdy * upz) - (fwdz * upy);
-		GLdouble Sy = (fwdz * upx) - (fwdx * upz);
-		GLdouble Sz = (fwdx * upy) - (fwdy * upx);
-
-		// normalize Side
-		mag = 1.0 / sqrt( (Sx*Sx) + (Sy*Sy) + (Sz*Sz) );
-
-		Sx *= mag;
-		Sy *= mag;
-		Sz *= mag;
-
-		// setup Up vector (crossprod of s and forward vectors)
-		GLdouble Ux = (Sy * fwdz) - (Sz * fwdy);
-		GLdouble Uy = (Sz * fwdx) - (Sx * fwdz);
-		GLdouble Uz = (Sx * fwdy) - (Sy * fwdx);
-
-		// normalize Up
-		mag = 1.0 / sqrt( (Ux*Ux) + (Uy*Uy) + (Uz*Uz) );
-
-		Ux *= mag;
-		Uy *= mag;
-		Uz *= mag;
-
-		// store the result in our matrix
-		memset( vmatrix, 0, sizeof(GLdouble) * 16 );
-		vmatrix[0]  = Sx;   vmatrix[1]  = Ux;   vmatrix[2]  = -fwdx;
-		vmatrix[4]  = Sy;   vmatrix[5]  = Uy;   vmatrix[6]  = -fwdy;
-		vmatrix[8]  = Sz;   vmatrix[9]  = Uz;   vmatrix[10] = -fwdz;
-		vmatrix[15] = 1.0;
-	}
-
-	glLoadMatrixd(vmatrix);
-
-	glTranslated(-eyex, -eyey, -eyez);
-	glScalef(1.0f, 1.0f, -1.0f);
-	
-	//Valathil: Sort lights by priority
-	extern bool Deferred_lighting;
-	if(!Deferred_lighting)
-		opengl_pre_render_init_lights();
-
-	for (i = 0; i < GL_max_lights; i++) {
-		if ( (offset + i) >= Num_active_gl_lights ) {
-			break;
-		}
-
-		if (opengl_lights[offset+i].occupied) {
-			opengl_set_light(i, &opengl_lights[offset+i]);
-
-			GL_state.Light(i, GL_TRUE);
-		}
-	}
-	opengl_light zero;
-	memset(&zero,0,sizeof(opengl_light));
-	zero.Position[0] = 1.0f;
-
-	// make sure that we turn off any lights that we aren't using right now
-	for ( ; i < GL_max_lights; i++) {
-		GL_state.Light(i, GL_FALSE);
-		opengl_set_light(i, &zero);
-	}
-
-	glPopMatrix();
 }
 
 int gr_opengl_make_light(light *fs_light, int idx, int priority)
@@ -602,20 +482,7 @@ void opengl_light_init()
 {
 	opengl_calculate_ambient_factor();
 
-	if ( !is_minimum_GLSL_version() ) {
-		glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 0);
-
-		glMaterialf(GL_FRONT, GL_SHININESS, Cmdline_ogl_spec /*80.0f*/);
-
-		// more realistic lighting model
-		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
-
-		glGetIntegerv(GL_MAX_LIGHTS, &GL_max_lights); // Get the max number of lights supported
-
-		Verify(GL_max_lights > 0);
-	} else {
-		GL_max_lights = 8;
-	}
+	GL_max_lights = 8;
 	
 	// allocate memory for enabled lights
 	if ( opengl_lights == NULL )
@@ -639,49 +506,7 @@ bool emission_state = false;
 bool specular_state = false;
 void opengl_default_light_settings(int ambient, int emission, int specular)
 {
-	if (!lighting_is_enabled)
-		return;
 
-	if (ambient) {
-		if (!ambient_state) {
-			glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_color);
-			ambient_state = true;
-		}
-	} else {
-		if (ambient_state) {
-			if (GL_center_alpha) {
-				glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_true_zero );
-			} else {
-				glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
-			}
-			ambient_state = false;
-		}
-	}
-
-	if (emission && !Cmdline_no_emissive) {
-		// emissive light is just a general glow but without it things are *terribly* dark if there is no light on them
-		if (!emission_state) {
-			glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_emission );
-			emission_state = true;
-		}
-	} else {
-		if (emission_state) {
-			glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_zero );
-			emission_state = false;
-		}
-	}
-
-	if (specular) {
-		if (!specular_state) {
-			glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_spec );
-			specular_state = true;
-		}
-	} else {
-		if (specular_state) {
-			glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_zero );
-			specular_state = false;
-		}
-	}
 }
 
 void opengl_set_lighting_fixed_pipeline(bool set, bool state)
@@ -689,13 +514,6 @@ void opengl_set_lighting_fixed_pipeline(bool set, bool state)
 	lighting_is_enabled = set;
 
 	opengl_default_light_settings();
-
-	if ( (gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set ) {
-		float amb[4] = { gr_screen.current_alpha, gr_screen.current_alpha, gr_screen.current_alpha, gr_screen.current_alpha };
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb);
-	} else {
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, GL_light_ambient);
-	}
 
 	GL_state.Lighting((state) ? GL_TRUE : GL_FALSE);
 

@@ -1183,7 +1183,7 @@ int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, floa
 		return 1;
 	}
 
-	if ( GLSL_version < 120 || !GLAD_GL_EXT_framebuffer_object ) {
+	if ( GLSL_version < 120 || !GLAD_GL_ARB_framebuffer_object ) {
 		// don't render distortions if we can't support them.
 		return 0;
 	}
@@ -1218,7 +1218,7 @@ int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, f
 		return 1;
 	}
 
-	if ( GLSL_version < 120 || !GLAD_GL_EXT_framebuffer_object ) {
+	if ( GLSL_version < 120 || !GLAD_GL_ARB_framebuffer_object ) {
 		// don't render distortions if we can't support them.
 		return 0;
 	}
