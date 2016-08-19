@@ -306,7 +306,7 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	// make sure the beam_info_index is valid
-	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= Num_weapon_types) || !(Weapon_info[fire_info->beam_info_index].wi_flags & WIF_BEAM)) {
+	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= Num_weapon_types) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
 		Assertion(false, "beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, Num_weapon_types);
 		return -1;
 	}
@@ -493,8 +493,8 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	}
 	
 	// make sure the beam_info_index is valid
-	Assert((fire_info->beam_info_index >= 0) && (fire_info->beam_info_index < MAX_WEAPON_TYPES) && (Weapon_info[fire_info->beam_info_index].wi_flags & WIF_BEAM));
-	if((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= MAX_WEAPON_TYPES) || !(Weapon_info[fire_info->beam_info_index].wi_flags & WIF_BEAM)){
+	Assert((fire_info->beam_info_index >= 0) && (fire_info->beam_info_index < MAX_WEAPON_TYPES) && (Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam]));
+	if((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= MAX_WEAPON_TYPES) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])){
 		return -1;
 	}
 	wip = &Weapon_info[fire_info->beam_info_index];	
@@ -2511,7 +2511,7 @@ int beam_collide_ship(obj_pair *pair)
 
 			// if this weapon pierces the shield, then do the hit effect, but act like a shield collision never occurred;
 			// otherwise, we have a valid hit on this shield
-			if (bwi->wi_flags2 & WIF2_PIERCE_SHIELDS)
+			if (bwi->wi_flags[Weapon::Info_Flags::Pierce_shields])
 				quadrant_num = -1;
 			else
 				valid_hit_occurred = 1;
@@ -3033,7 +3033,7 @@ void beam_handle_collisions(beam *b)
 			continue;
 		}
 
-		if (wi->wi_flags & WIF_HUGE) {
+		if (wi->wi_flags[Weapon::Info_Flags::Huge]) {
 			if (Objects[target].type == OBJ_SHIP) {
 				ship_type_info *sti;
 				sti = ship_get_type_info(&Objects[target]);
@@ -3587,7 +3587,7 @@ int beam_will_tool_target(beam *b, object *objp)
 	}
 
 	// calculate total strength, factoring in shield
-	if (!(wip->wi_flags2 & WIF2_PIERCE_SHIELDS))
+	if (!(wip->wi_flags[Weapon::Info_Flags::Pierce_shields]))
 		total_strength += shield_get_strength(objp);
 
 	// if the beam is going to apply more damage in about 1 and a half than the ship can take
@@ -3606,7 +3606,7 @@ DCF(beam_list, "Lists all beams")
 	int b_count = 0;
 
 	for(idx=0; idx<Num_weapon_types; idx++){
-		if(Weapon_info[idx].wi_flags & WIF_BEAM){			
+		if(Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam]){			
 			b_count++;
 			dc_printf("Beam %d : %s\n", b_count, Weapon_info[idx].name);
 		}

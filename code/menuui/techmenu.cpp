@@ -736,8 +736,9 @@ void techroom_anim_render(float frametime)
 
 void techroom_change_tab(int num)
 {
-	int multi = 0, wi_mask, wi_mask2, font_height, max_num_entries_viewable;
-    Ship::Info_Flags si_mask, si_mask2;
+	int multi = 0, font_height, max_num_entries_viewable;
+    flagset<Weapon::Info_Flags> wi_mask;
+    flagset<Ship::Info_Flags> si_mask;
 
 	//unload the current animation, we load another one for the new current entry
 	if(Tab != SHIPS_DATA_TAB)
@@ -760,8 +761,8 @@ void techroom_change_tab(int num)
 
 	switch (Tab) {
 		case SHIPS_DATA_TAB:
-            si_mask = multi ? Ship::Info_Flags::In_tech_database_m : Ship::Info_Flags::In_tech_database;
-            si_mask2 = multi ? Ship::Info_Flags::Default_in_tech_database_m : Ship::Info_Flags::Default_in_tech_database;
+            si_mask.set(multi ? Ship::Info_Flags::In_tech_database_m : Ship::Info_Flags::In_tech_database);
+            si_mask.set(multi ? Ship::Info_Flags::Default_in_tech_database_m : Ship::Info_Flags::Default_in_tech_database);
 			
 			// load ship info if necessary
 			if ( Ships_loaded == 0 ) {
@@ -776,7 +777,7 @@ void techroom_change_tab(int num)
 
 				for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it)
 				{
-                    if (Techroom_show_all || (it->flags[si_mask]) || (it->flags[si_mask2]))
+                    if (Techroom_show_all || (it->flags & si_mask).any_set())
 					{
 						// this ship should be displayed, fill out the entry struct
 						Ship_list[Ship_list_size].bitmap = -1;
@@ -829,12 +830,12 @@ void techroom_change_tab(int num)
 				}
 
 				Weapon_list_size = 0;
-				wi_mask = multi ? WIF_PLAYER_ALLOWED : WIF_IN_TECH_DATABASE;
-				wi_mask2 = WIF2_DEFAULT_IN_TECH_DATABASE;
+				wi_mask.set(multi ? Weapon::Info_Flags::Player_allowed : Weapon::Info_Flags::In_tech_database);
+                wi_mask.set(Weapon::Info_Flags::Default_in_tech_database);
 
 				for (int i=0; i<Num_weapon_types; i++)
 				{
-					if (Techroom_show_all || (Weapon_info[i].wi_flags & wi_mask) || (Weapon_info[i].wi_flags2 & wi_mask2))
+					if (Techroom_show_all || (Weapon_info[i].wi_flags & wi_mask).any_set())
 					{ 
 						// we have a weapon that should be in the tech db, so fill out the entry struct
 						Weapon_list[Weapon_list_size].index = i;
@@ -1447,10 +1448,7 @@ void tech_reset_to_default()
 	// weapons
 	for (int i=0; i<Num_weapon_types; i++)
 	{
-		if (Weapon_info[i].wi_flags2 & WIF2_DEFAULT_IN_TECH_DATABASE)
-			Weapon_info[i].wi_flags |= WIF_IN_TECH_DATABASE;
-		else
-			Weapon_info[i].wi_flags &= ~WIF_IN_TECH_DATABASE;
+        Weapon_info[i].wi_flags.set(Weapon::Info_Flags::In_tech_database, Weapon_info[i].wi_flags[Weapon::Info_Flags::Default_in_tech_database]);
 	}
 
 	// intelligence

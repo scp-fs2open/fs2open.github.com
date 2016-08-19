@@ -943,7 +943,7 @@ void labviewer_render_model(float frametime)
 						continue;
 					if (Lab_weaponmodel_num[l] >= 0) {
 						bank = &(model_get(Lab_model_num))->missile_banks[j];
-						if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+						if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 							for(k = 0; k < bank->num_slots; k++) {
 								render_info.set_flags(render_flags);
 								model_render_immediate(&render_info, Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k]);
@@ -1013,7 +1013,7 @@ void labviewer_render_model(float frametime)
 					continue;
 				if (Lab_weaponmodel_num[l] >= 0) {
 					bank = &(model_get(Lab_model_num))->missile_banks[j];
-					if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+					if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 						for(k = 0; k < bank->num_slots; k++) {
 							render_info.set_flags(render_flags);
 							model_render_immediate(&render_info, Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k]);
@@ -2270,7 +2270,7 @@ void labviewer_change_weapon(Tree *caller)
 	int weap_index = (int)(caller->GetSelectedItem()->GetData());
 	Assert( weap_index >= 0 );
 
-	if ( !(Weapon_info[weap_index].wi_flags & WIF_BEAM) ) {
+	if ( !(Weapon_info[weap_index].wi_flags[Weapon::Info_Flags::Beam]) ) {
 		switch (Weapon_info[weap_index].render_type) {
 			case WRT_POF:
 				labviewer_change_bitmap();
@@ -2352,7 +2352,7 @@ void labviewer_make_weap_window(Button* caller)
 			continue;
 		}
 		
-		if (Weapon_info[i].wi_flags & WIF_BEAM) {
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Beam]) {
 			stip = type_nodes[WP_BEAM];
 		} else {
 			stip = type_nodes[Weapon_info[i].subtype];

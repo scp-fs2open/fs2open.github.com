@@ -364,7 +364,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 			// if this weapon pierces the shield, then do the hit effect, but act like a shield collision never occurred;
 			// otherwise, we have a valid hit on this shield
-			if (wip->wi_flags2 & WIF2_PIERCE_SHIELDS)
+			if (wip->wi_flags[Weapon::Info_Flags::Pierce_shields])
 				quadrant_num = -1;
 			else
 				valid_hit_occurred = 1;
@@ -441,7 +441,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 		Script_system.RemHookVars(4, "Ship", "Weapon", "Self","Object");
 	}
-	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->wi_flags & WIF_HOMING) && (wp->homing_object == ship_objp)) {
+	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->is_homing()) && (wp->homing_object == ship_objp)) {
 		if (dist < wip->shockwave.inner_rad) {
 			vec3d	vec_to_ship;
 

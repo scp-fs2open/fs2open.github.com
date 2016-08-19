@@ -1283,7 +1283,7 @@ int set_target_objnum(ai_info *aip, int objnum)
 	return aip->target_objnum;
 }
 
-int ai_select_primary_weapon(object *objp, object *other_objp, int flags);
+int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flags flags);
 
 /**
  * Make new_subsys the targeted subsystem of ship *aip.
@@ -1301,7 +1301,7 @@ ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int pare
 		if (new_subsys->system_info->type == SUBSYSTEM_ENGINE) {
 			if ( aip != Player_ai ) {
 				Assert( aip->shipnum >= 0 );
-				ai_select_primary_weapon(&Objects[Ships[aip->shipnum].objnum], &Objects[parent_objnum], WIF_PUNCTURE);
+				ai_select_primary_weapon(&Objects[Ships[aip->shipnum].objnum], &Objects[parent_objnum], Weapon::Info_Flags::Puncture);
 				ship_primary_changed(&Ships[aip->shipnum]);	// AL: maybe send multiplayer information when AI ship changes primaries
 			}
 		}
@@ -5221,25 +5221,25 @@ vec3d	G_predicted_pos, G_fire_pos;
 //old version of this fuction, this will be useful for playing old missions and not having the new primary
 //selection code throw off the balance of the mission.
 //	If:
-//		flags & WIF_PUNCTURE
+//		flags & Weapon::Info_Flags::Puncture
 //	Then Select a Puncture weapon.
 //	Else
 //		Select Any ol' weapon.
 //	Returns primary_bank index.
-int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
+int ai_select_primary_weapon_OLD(object *objp, object *other_objp, Weapon::Info_Flags flags)
 {
 	ship	*shipp = &Ships[objp->instance];
 	ship_weapon *swp = &shipp->weapons;
 
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()));
 
-	if (flags & WIF_PUNCTURE) {
+	if (flags == Weapon::Info_Flags::Puncture) {
 		if (swp->current_primary_bank >= 0) {
 			int	bank_index;
 
 			bank_index = swp->current_primary_bank;
 
-			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags & WIF_PUNCTURE) {
+			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Puncture]) {
 				return swp->current_primary_bank;
 			}
 		}
@@ -5249,7 +5249,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
 			weapon_info_index = swp->primary_bank_weapons[i];
 
 			if (weapon_info_index > -1){
-				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) {
+				if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Puncture]) {
 					swp->current_primary_bank = i;
 					return i;
 				}
@@ -5265,13 +5265,13 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
 
 	} else {		//	Don't need to be using a puncture weapon.
 		if (swp->current_primary_bank >= 0) {
-			if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags & WIF_PUNCTURE)){
+			if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags[Weapon::Info_Flags::Puncture])){
 				return swp->current_primary_bank;
 			}
 		}
 		for (int i=0; i<swp->num_primary_banks; i++) {
 			if (swp->primary_bank_weapons[i] > -1) {
-				if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags & WIF_PUNCTURE)) {
+				if (!(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Puncture])) {
 					swp->current_primary_bank = i;
 					nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
 					return i;
@@ -5287,7 +5287,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
 }
 
 //	If:
-//		flags & WIF_PUNCTURE
+//		flags == Weapon::Info_Flags::Puncture
 //	Then Select a Puncture weapon.
 //	Else
 //		Select Any ol' weapon.
@@ -5299,7 +5299,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
  * The AI will now intelligently choose the best weapon to use based on the overall shield
  * status of the target.
  */
-int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
+int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flags flags)
 {
 	// Pointer Set Up
 	ship	*shipp = &Ships[objp->instance];
@@ -5323,7 +5323,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()));
 	
 	//made it so it only selects puncture weapons if the active goal is to disable something -Bobboau
-	if ((flags & WIF_PUNCTURE) && (Ai_info[shipp->ai_index].goals[0].ai_mode & (AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP))) 
+	if ((flags == Weapon::Info_Flags::Puncture) && (Ai_info[shipp->ai_index].goals[0].ai_mode & (AI_GOAL_DISARM_SHIP | AI_GOAL_DISABLE_SHIP))) 
 	{
 		if (swp->current_primary_bank >= 0) 
 		{
@@ -5331,7 +5331,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 
 			bank_index = swp->current_primary_bank;
 
-			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags & WIF_PUNCTURE) 
+			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Puncture]) 
 			{
 				return swp->current_primary_bank;
 			}
@@ -5344,7 +5344,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 
 			if (weapon_info_index > -1)
 			{
-				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) 
+				if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Puncture]) 
 				{
 					swp->current_primary_bank = i;
 					return i;
@@ -5360,7 +5360,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		{
 			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
 			{
-				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CAPITAL_PLUS)
+				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus])
 				{
 					swp->current_primary_bank = i;
 					nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
@@ -5387,7 +5387,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 			{
 				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
 				{
-					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CAPITAL_PLUS) )
+					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus]) )
 					{
 						// This weapon is the new candidate
 						i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
@@ -5413,7 +5413,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 
 			bank_index = swp->current_primary_bank;
 
-			if ((Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags2 & WIF2_PIERCE_SHIELDS) && !(Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags2 & WIF2_CAPITAL_PLUS))
+			if ((Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Capital_plus]))
 			{
 				return swp->current_primary_bank;
 			}
@@ -5426,7 +5426,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 
 			if (weapon_info_index > -1)
 			{
-				if ((Weapon_info[weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS) && !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CAPITAL_PLUS)) 
+				if ((Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus])) 
 				{
 					swp->current_primary_bank = i;
 					return i;
@@ -5449,7 +5449,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 			{
 				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
 				{
-					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CAPITAL_PLUS) )
+					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus]) )
 					{
 						// This weapon is the new candidate
 						i_hullfactor_prev = ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait));
@@ -5478,7 +5478,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 			{
 				if ((((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
 				{
-					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CAPITAL_PLUS) )
+					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus]) )
 					{
 						// This weapon is the new candidate
 						i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
@@ -5546,9 +5546,9 @@ void set_primary_weapon_linkage(object *objp)
 		{
 			// only continue if both primaries are puncture weapons
 			if ( swp->num_primary_banks == 2 ) {
-				if ( !(Weapon_info[swp->primary_bank_weapons[0]].wi_flags & WIF_PUNCTURE) ) 
+				if ( !(Weapon_info[swp->primary_bank_weapons[0]].wi_flags[Weapon::Info_Flags::Puncture]) ) 
 					return;
-				if ( !(Weapon_info[swp->primary_bank_weapons[1]].wi_flags & WIF_PUNCTURE) ) 
+				if ( !(Weapon_info[swp->primary_bank_weapons[1]].wi_flags[Weapon::Info_Flags::Puncture]) ) 
 					return;
 			}
 		}
@@ -5595,7 +5595,7 @@ void set_primary_weapon_linkage(object *objp)
 		{
 			wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				total_ammo += swp->primary_bank_start_ammo[i];
 				current_ammo += swp->primary_bank_ammo[i];
@@ -5662,9 +5662,9 @@ int ai_fire_primary_weapon(object *objp)
 	}
 
 	if ( (swp->current_primary_bank < 0) || (swp->current_primary_bank >= swp->num_primary_banks) || timestamp_elapsed(aip->primary_select_timestamp)) {
-		int	flags = 0;
+		Weapon::Info_Flags flags = Weapon::Info_Flags::NUM_VALUES;
 		if ( aip->targeted_subsys != NULL ) {
-			flags = WIF_PUNCTURE;
+			flags = Weapon::Info_Flags::Puncture;
 		}
 		ai_select_primary_weapon(objp, enemy_objp, flags);
 		ship_primary_changed(shipp);	// AL: maybe send multiplayer information when AI ship changes primaries
@@ -5691,7 +5691,7 @@ int ai_fire_primary_weapon(object *objp)
 		(enemy_objp->phys_info.speed >= 1.0f) &&														//Only burst for moving ships
 		(enemy_sip->is_small_ship() || enemy_sip->flags[Ship::Info_Flags::Transport]) &&				//Only burst for small ships (transports count)
 		swp->primary_bank_start_ammo[swp->current_primary_bank] > 0 &&									//Prevent div by 0
-		Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags2 & WIF2_BALLISTIC)	//Current weapon must be ballistic
+		Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags[Weapon::Info_Flags::Ballistic])	//Current weapon must be ballistic
 	{
 		float percentAmmoLeft = ((float)swp->primary_bank_ammo[swp->current_primary_bank] / (float)swp->primary_bank_start_ammo[swp->current_primary_bank]);
 		float distToTarget = vm_vec_dist(&enemy_objp->pos, &objp->pos);
@@ -5739,7 +5739,7 @@ int ai_fire_primary_weapon(object *objp)
 		if ((enemy_objp->hull_strength < 750.0f) && 
 			((aip->targeted_subsys == NULL) || (enemy_objp->hull_strength < aip->targeted_subsys->current_hits + 50.0f)) &&
 			(swp->current_primary_bank >= 0) ) {
-			if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags & WIF_PUNCTURE)) {
+			if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags[Weapon::Info_Flags::Puncture])) {
 				swp->next_primary_fire_stamp[swp->current_primary_bank] = timestamp(1000);
 				return 0;
 			}
@@ -5804,35 +5804,39 @@ int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold)
 //		Favor aspect seekers when attacking small ships faraway.
 //		Favor rapid fire dumbfire when attacking a large ship.
 //		Ignore heat seekers because we're not sure how they'll work.
-void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1, int wif2_priority1 = -1, int wif2_priority2 = -1)
+void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::Info_Flags>* priority1 = NULL, flagset<Weapon::Info_Flags>* priority2 = NULL)
 {
 	int	num_weapon_types;
 	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
 	int	i;
-	int	ignore_mask, ignore_mask_without_huge;
+	flagset<Weapon::Info_Flags>	ignore_mask, prio1, prio2;
 	int	initial_bank;
 	ai_info	*aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	initial_bank = swp->current_secondary_bank;
 
+    if (priority1 != NULL)
+        prio1 = *priority1;
+    if (priority2 != NULL)
+        prio2 = *priority2;
+    
+
 	// set up ignore masks
-	ignore_mask = 0;
-	ignore_mask_without_huge = 0;
+    ignore_mask.reset();
 
 	// Ignore bombs unless one of the priorities asks for them to be selected.
-	if (!(WIF_HUGE & (priority1 | priority2))) {
-		ignore_mask |= WIF_HUGE;
+	if (!(prio1[Weapon::Info_Flags::Huge] || prio2[Weapon::Info_Flags::Huge])) {
+        ignore_mask.set(Weapon::Info_Flags::Huge);
 	}
 
 	// Ignore capital+ unless one of the priorities asks for it.
-	if (!(WIF2_CAPITAL_PLUS & (wif2_priority1 | wif2_priority2))) {
-		ignore_mask |= WIF2_CAPITAL_PLUS;
+    if (!(prio1[Weapon::Info_Flags::Capital_plus] || prio2[Weapon::Info_Flags::Capital_plus])) {
+        ignore_mask.set(Weapon::Info_Flags::Capital_plus);
 	}
 
 	// Ignore bomber+ unless one of the priorities asks for them to be selected
-	if (!(WIF_BOMBER_PLUS & (priority1 | priority2))) {
-		ignore_mask |= WIF_BOMBER_PLUS;
-		ignore_mask_without_huge |= WIF_BOMBER_PLUS;
+    if (!(prio1[Weapon::Info_Flags::Bomber_plus] || prio2[Weapon::Info_Flags::Bomber_plus])) {
+        ignore_mask.set(Weapon::Info_Flags::Bomber_plus);
 	}
 
 #ifndef NDEBUG
@@ -5846,38 +5850,28 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 	num_weapon_types = get_available_secondary_weapons(objp, weapon_id_list, weapon_bank_list);
 
 	// Ignore homing weapons if we didn't specify a flag - for priority 1
-	if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority1 == 0)) {
-		ignore_mask |= WIF_HOMING;
-		ignore_mask_without_huge |= WIF_HOMING;
+	if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (prio1.none_set())) {
+		ignore_mask.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
 	}
 
 	int	priority2_index = -1;
 
 	for (i=0; i<num_weapon_types; i++) {
-		int wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-		int wi_flags2 = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags2;
-		int ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
+		auto wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
+		auto ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? (ignore_mask - Weapon::Info_Flags::Huge) : ignore_mask;
 
-		if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
-			if (wi_flags & priority1) {
+		if (!(wi_flags & ignore_mask_to_use).any_set()) {					//	Maybe bombs are illegal.
+			if ((wi_flags & prio1).any_set()) {
 				swp->current_secondary_bank = weapon_bank_list[i];				//	Found first priority, return it.
 				break;
-			} else if (wi_flags & priority2)
-				priority2_index = weapon_bank_list[i];	//	Found second priority, but might still find first priority.
-		}
-		if (!(wi_flags2 & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
-			if (wi_flags2 & wif2_priority1) {
-				swp->current_secondary_bank = weapon_bank_list[i];				//	Found first priority, return it.
-				break;
-			} else if (wi_flags2 & wif2_priority2)
+			} else if ((wi_flags & prio2).any_set())
 				priority2_index = weapon_bank_list[i];	//	Found second priority, but might still find first priority.
 		}
 	}
 
 	// Ignore homing weapons if we didn't specify a flag - for priority 2
-	if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (priority2 == 0)) {
-		ignore_mask |= WIF_HOMING;
-		ignore_mask_without_huge |= WIF_HOMING;
+	if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (prio2.none_set())) {
+        ignore_mask.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
 	}
 
 	//	If didn't find anything above, then pick any secondary weapon.
@@ -5885,10 +5879,10 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		swp->current_secondary_bank = priority2_index;	//	Assume we won't find anything.
 		if (priority2_index == -1) {
 			for (i=0; i<num_weapon_types; i++) {
-				int wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
-				int ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags & WIF_BOMBER_PLUS)) ? ignore_mask_without_huge : ignore_mask;
+				auto wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
+				auto ignore_mask_to_use = ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (wi_flags[Weapon::Info_Flags::Bomber_plus])) ? (ignore_mask - Weapon::Info_Flags::Huge) : ignore_mask;
 
-				if (!(wi_flags & ignore_mask_to_use)) {					//	Maybe bombs are illegal.
+				if (!(wi_flags & ignore_mask_to_use).any_set()) {					//	Maybe bombs are illegal.
 					if (swp->secondary_bank_ammo[weapon_bank_list[i]] > 0) {
 						swp->current_secondary_bank = weapon_bank_list[i];
 						break;
@@ -5910,7 +5904,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = 
 		weapon_info *wip=&Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 	
 		// phreak -- rapid dumbfire? let it rip!
-		if ((aip->ai_profile_flags & AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE) && !(wip->wi_flags & WIF_HOMING) && (wip->fire_wait < .5f))
+		if ((aip->ai_profile_flags & AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE) && !(wip->is_homing()) && (wip->fire_wait < .5f))
 		{	
 			aip->ai_flags |= AIF_UNLOAD_SECONDARIES;
 		}
@@ -5929,7 +5923,7 @@ int compute_num_homing_objects(object *target_objp)
 
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if (objp->type == OBJ_WEAPON) {
-			if (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_HOMING) {
+			if (Weapon_info[Weapons[objp->instance].weapon_info_index].is_homing()) {
 				if (Weapons[objp->instance].homing_object == target_objp) {
 					count++;
 				}
@@ -6012,7 +6006,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 
 		//	If player, maybe fire based on Skill_level and number of incoming weapons.
 		//	If non-player, maybe fire based on payload of incoming weapons.
-		if (wip->wi_flags & WIF_HOMING) {
+		if (wip->is_homing()) {
 			if ((target_objnum > -1) && (tobjp->flags[Object::Object_Flags::Player_ship])) {
 				if (Ai_info[Ships[tobjp->instance].ai_index].target_objnum != objnum) {
 					//	Don't allow AI ships to fire at player for fixed periods of time based on skill level.
@@ -6024,7 +6018,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 					}
 				}
 				int	swarmers = 0;
-				if (wip->wi_flags & WIF_SWARM)
+				if (wip->wi_flags[Weapon::Info_Flags::Swarm])
 					swarmers = 2;	//	Note, always want to be able to fire swarmers if no currently incident homers.
 				if (The_mission.ai_profile->max_allowed_player_homers[Game_skill_level] < num_homers + swarmers) {
 					return 0;
@@ -6083,9 +6077,9 @@ int ai_fire_secondary_weapon(object *objp, int priority1, int priority2)
 
 	weapon_info	*wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[current_bank]];
 
-	if ((wip->wi_flags & WIF_LOCKED_HOMING) && (!Ai_info[shipp->ai_index].current_target_is_locked)) {
+	if ((wip->is_locked_homing()) && (!Ai_info[shipp->ai_index].current_target_is_locked)) {
 		swp->next_secondary_fire_stamp[current_bank] = timestamp(250);
-	} else if ((wip->wi_flags & WIF_BOMB) || (vm_vec_dist_quick(&objp->pos, &En_objp->pos) > 50.0f)) {
+	} else if ((wip->wi_flags[Weapon::Info_Flags::Bomb]) || (vm_vec_dist_quick(&objp->pos, &En_objp->pos) > 50.0f)) {
 		//	This might look dumb, firing a bomb even if closer than 50 meters, but the reason is, if you're carrying
 		//	bombs, delivering them is probably more important than surviving.
 		ai_info	*aip;
@@ -7609,7 +7603,7 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
-	if (num_weapon_types && (wip->wi_flags & WIF_LOCKED_HOMING) && !(shipp->flags[Ship::Ship_Flags::No_secondary_lockon])) {
+	if (num_weapon_types && (wip->is_locked_homing()) && !(shipp->flags[Ship::Ship_Flags::No_secondary_lockon])) {
 		if (dist_to_enemy > 300.0f - MIN(enemy_radius, 100.0f))
 			aip->ai_flags |= AIF_SEEK_LOCK;
 		else
@@ -7621,8 +7615,8 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 
 		float	needed_dot = 0.9f - 0.5f * enemy_radius/(dist_to_enemy + enemy_radius);	//	Replaced MIN_TRACKABLE_DOT with 0.9f
 		if (dot_to_enemy > needed_dot &&
-			(wip->wi_flags & WIF_HOMING_ASPECT ||
-			(wip->wi_flags & WIF_HOMING_JAVELIN &&
+			(wip->wi_flags[Weapon::Info_Flags::Homing_aspect] ||
+			(wip->wi_flags[Weapon::Info_Flags::Homing_javelin] &&
 			(tshpp == NULL ||
 			ship_get_closest_subsys_in_sight(tshpp, SUBSYSTEM_ENGINE, &aiobjp->pos))))) {
 				aip->aspect_locked_time += flFrametime;
@@ -7706,7 +7700,8 @@ int has_preferred_secondary(object *objp, object *en_objp, ship_weapon *swp)
 void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 {
 	float			subsystem_strength = 0.0f;
-	int			is_big_ship, wif_priority1, wif_priority2, wif2_priority1, wif2_priority2;
+	int			is_big_ship;
+    flagset<Weapon::Info_Flags> wif_priority1, wif_priority2;
 	ship_weapon	*swp;
 	ship_info	*esip;
 
@@ -7747,41 +7742,36 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 
 		if (is_big_ship)
 		{
-			wif_priority1 = WIF_HUGE;
-			wif_priority2 = (aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) ? WIF_BOMBER_PLUS : WIF_HOMING;
-			wif2_priority1 = WIF2_CAPITAL_PLUS;
-			wif2_priority2 = 0;
+            wif_priority1.set(Weapon::Info_Flags::Huge);
+            if (aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) {
+                wif_priority2.set(Weapon::Info_Flags::Bomber_plus);
+            }
+            else {
+                wif_priority2.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
+            }
 		} 
 		else if ( (esip != NULL) && (esip->flags[Ship::Info_Flags::Bomber]) )
 		{
-			wif_priority1 = WIF_BOMBER_PLUS;
-			wif_priority2 = WIF_HOMING;
-			wif2_priority1 = 0;
-			wif2_priority2 = 0;
+            wif_priority1.set(Weapon::Info_Flags::Bomber_plus);
+			wif_priority2.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
 		} 
 		else if (subsystem_strength > 100.0f)
 		{
-			wif_priority1 = WIF_PUNCTURE;
-			wif_priority2 = WIF_HOMING;
-			wif2_priority1 = 0;
-			wif2_priority2 = 0;
+            wif_priority1.set(Weapon::Info_Flags::Puncture);
+			wif_priority2.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
 		}
 		else if ((aip->ai_profile_flags & AIPF_SMART_SECONDARY_WEAPON_SELECTION) && (en_objp->type == OBJ_ASTEROID))	//prefer dumbfires if its an asteroid	
 		{	
-			wif_priority1 = 0;								
-			wif_priority2 = 0;
-			wif2_priority1 = 0;
-			wif2_priority2 = 0;
+			wif_priority1.reset();								
+			wif_priority2.reset();
 		} 
 		else
 		{
-			wif_priority1 = WIF_HOMING;
-			wif_priority2 = 0;
-			wif2_priority1 = 0;
-			wif2_priority2 = 0;
+			wif_priority1.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
+			wif_priority2.reset();
 		}
 		
-		ai_select_secondary_weapon(objp, swp, wif_priority1, wif_priority2, wif2_priority1, wif2_priority2);
+		ai_select_secondary_weapon(objp, swp, &wif_priority1, &wif_priority2);
 	}
 }
 
@@ -8805,9 +8795,9 @@ void ai_chase()
 								if (current_bank >= 0) {
 									float firing_range;
 									
-									if (swip->wi_flags2 & WIF2_LOCAL_SSM)
+									if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
 										firing_range=swip->lssm_lock_range;		//that should be enough
-									else if (swip->wi_flags & WIF_BOMB)
+									else if (swip->wi_flags[Weapon::Info_Flags::Bomb])
 										firing_range = MIN((swip->max_speed * swip->lifetime * 0.75f), swip->weapon_range);
 									else
 									{
@@ -8828,7 +8818,7 @@ void ai_chase()
 									//	If firing a spawn weapon, distance doesn't matter.
 									int	spawn_fire = 0;
 
-									if (swip->wi_flags & WIF_SPAWN) {
+									if (swip->wi_flags[Weapon::Info_Flags::Spawn]) {
 										int	count;
 
 										count = num_nearby_fighters(iff_get_attackee_mask(obj_team(Pl_objp)), &Pl_objp->pos, 1000.0f);
@@ -9635,7 +9625,7 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 		wp = &Weapons[bomb_objp->instance];
 		wip = &Weapon_info[wp->weapon_info_index];
 
-		if ( !((wip->wi_flags & WIF_BOMB) || (wip->wi_flags3 & WIF3_FIGHTER_INTERCEPTABLE)) ) {
+		if ( !((wip->wi_flags[Weapon::Info_Flags::Bomb]) || (wip->wi_flags[Weapon::Info_Flags::Fighter_Interceptable])) ) {
 			continue;
 		}
 
@@ -12385,7 +12375,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 			return;
 		}
 
-		if ((missile_objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[missile_objp->instance].weapon_info_index].wi_flags & WIF_HOMING)) {
+		if ((missile_objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[missile_objp->instance].weapon_info_index].is_homing())) {
 			float dist = vm_vec_dist_quick(&missile_objp->pos, &objp->pos);
 			float dist2 = 4.0f  * vm_vec_mag_quick(&missile_objp->phys_info.vel);			
 			if (dist < dist2) {
@@ -13261,7 +13251,7 @@ int maybe_request_support(object *objp)
 		{
 			wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				r = (float) swp->primary_bank_ammo[i] / swp->primary_bank_start_ammo[i];
 
@@ -13618,7 +13608,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		//	If an aspect locked missile, assume it will detonate at the homing position.
 		//	If not, which is not possible in a default FreeSpace weapon, then predict it will detonate at some
 		//	time in the future, this time based on max lifetime and life left.
-		if (wip->wi_flags & WIF_LOCKED_HOMING) {
+		if (wip->is_locked_homing()) {
 			expected_pos = weaponp->homing_pos;
 			if (weaponp->homing_object && weaponp->homing_object->type == OBJ_SHIP) {
 				target_ship_obj = weaponp->homing_object;
@@ -14834,8 +14824,8 @@ int firing_aspect_seeking_bomb(object *objp)
 	if (bank_index != -1) {
 		if (swp->secondary_bank_weapons[bank_index] > 0) {
 			if (swp->secondary_bank_ammo[bank_index] > 0) {
-				if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags & WIF_BOMB) {
-					if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags & WIF_HOMING_ASPECT) {
+				if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Bomb]) {
+					if (Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Homing_aspect]) {
 						return 1;
 					}
 				}
@@ -14915,7 +14905,7 @@ void ai_update_lethality(object *pship_obj, object *other_obj, float damage)
 
 					// if parent is BIG|HUGE, don't count beam
 					if ( Ship_info[Ships[Objects[parent].instance].ship_info_index].is_big_or_huge() ) {
-						if (wif->wi_flags & WIF_BEAM) {
+						if (wif->wi_flags[Weapon::Info_Flags::Beam]) {
 							dont_count = TRUE;
 						}
 					}
@@ -15565,8 +15555,9 @@ void cheat_fire_synaptic(object *objp, ship *shipp, ai_info *aip)
 	ship_weapon	*swp;
 	swp = &shipp->weapons;
 	int	current_bank = swp->current_secondary_bank;
-
-	ai_select_secondary_weapon(objp, swp, WIF_SPAWN, 0);
+    flagset<Weapon::Info_Flags> flags;
+    flags += Weapon::Info_Flags::Spawn;
+	ai_select_secondary_weapon(objp, swp, &flags, NULL);
 	if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
 		if (ship_fire_secondary(objp)) {
 			nprintf(("AI", "ship %s cheat fired synaptic!\n", shipp->ship_name));

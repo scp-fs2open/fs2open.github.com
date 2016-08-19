@@ -593,7 +593,7 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 		for ( index = 0; index < MAX_SHIP_PRIMARY_BANKS; index++ )
 		{
 			wip = &Weapon_info[swp->primary_bank_weapons[index]];
-			if (wip->wi_flags2 & WIF2_BALLISTIC)
+			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				float capacity, size;
 				capacity = (float) sip->primary_bank_ammo_capacity[index];

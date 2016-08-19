@@ -470,7 +470,7 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 
 		wip = &Weapon_info[weapons.index];
 
-		if (wip->wi_flags2 & WIF2_BALLISTIC) {
+		if (wip->wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// to avoid triggering the below condition: this way, minimum ammo will be 2...
 			// since the red-alert representation of a conventional primary is 0 -> not used,
 			// 1 -> used, I added the representation 2 and above -> ballistic primary
@@ -514,7 +514,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 		swp->primary_bank_weapons[i] = ras->primary_weapons[i].index;
 		swp->primary_bank_ammo[i] = ras->primary_weapons[i].count;
 
-		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC) {
+		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 			// adjust to correct ammo count, per red_alert_store_weapons()
 			swp->primary_bank_ammo[i] -= 2;
 		}
@@ -568,7 +568,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, p_object *pobjp)
 		Assert( ras->primary_weapons[i].index >= 0 );
 		sssp->primary_banks[i] = ras->primary_weapons[i].index;
 
-		if (Weapon_info[sssp->primary_banks[i]].wi_flags2 & WIF2_BALLISTIC)
+		if (Weapon_info[sssp->primary_banks[i]].wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			float max_count = sip->primary_bank_ammo_capacity[i] / Weapon_info[sssp->primary_banks[i]].cargo_size;
 			sssp->primary_ammo[i] = fl2i(100.0f * (ras->primary_weapons[i].count - 2) / max_count + 0.5f);
