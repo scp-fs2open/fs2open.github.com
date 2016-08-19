@@ -229,14 +229,14 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 	if (notify) 
 	{
-		mission_log_add_entry(LOG_SHIP_SUBSYS_DESTROYED, ship_p->ship_name, psub->subobj_name, log_index );
+		mission_log_add_entry(LOG_SHIP_SUBSYS_DESTROYED, ship_p->ship_name, psub->subobj_name.c_str(), log_index );
 		if ( ship_objp == Player_obj )
 		{
 			if (!no_explosion) {
 				snd_play( &Snds[SND_SUBSYS_DIE_1], 0.0f );
 			}
-			if (strlen(psub->alt_dmg_sub_name))
-				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->alt_dmg_sub_name);
+			if (psub->alt_dmg_sub_name.length())
+				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->alt_dmg_sub_name.c_str());
 			else {
 				char r_name[NAME_LENGTH];
 				strcpy_s(r_name, ship_subsys_get_name(subsys));
@@ -572,7 +572,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 					subsys_hit_first = count;
 				}
 
-				if (mss->flags2 & MSS_FLAG2_COLLIDE_SUBMODEL) {
+				if (mss->flags[Model::Subsystem_Flags::Collide_submodel]) {
 					if (submodel_num != -1 && submodel_num != mss->subobj_num && submodel_num != mss->turret_gun_sobj) {
 						// If this subsystem only wants to take damage when its submodel receives
 						// a direct hit and the current hit did not do so, skip it.
@@ -710,8 +710,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			damage_left -= (damage_to_apply * ss_dif_scale);
 
 			// if this subsystem doesn't carry damage then subtract it off of our total return
-			if (subsystem->system_info->flags & MSS_FLAG_CARRY_NO_DAMAGE) {
-				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsystem->system_info->flags & MSS_FLAG_CARRY_SHOCKWAVE))) {
+			if (subsystem->system_info->flags[Model::Subsystem_Flags::Carry_no_damage]) {
+				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsystem->system_info->flags[Model::Subsystem_Flags::Carry_shockwave]))) {
 					float subsystem_factor = 0.0f;
 					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
 						if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull]) {

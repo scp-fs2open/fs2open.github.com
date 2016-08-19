@@ -420,7 +420,7 @@ void display_active_ship_subsystem() {
 			if (Render_subsys.do_render) {
 
 				// get subsys name
-				strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
+				strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name.c_str());
 
 				fredhtl_render_subsystem_bounding_box(&Render_subsys);
 			} else {
@@ -787,7 +787,7 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render * s2r) {
 	fred_disable_htl();
 
 	//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
-	strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
+	strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name.c_str());
 	vec3d center_pt;
 	vm_vec_unrotate(&center_pt, &bsp->offset, &s2r->ship_obj->orient);
 	vm_vec_add2(&center_pt, &s2r->ship_obj->pos);

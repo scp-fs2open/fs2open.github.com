@@ -244,7 +244,7 @@ BOOL WeaponEditorDlg::OnInitDialog()
 		for (pss = GET_FIRST(ssl); pss != END_OF_LIST(ssl); pss = GET_NEXT(pss)) {
 			psub = pss->system_info;
 			if (psub->type == SUBSYSTEM_TURRET) {
-				z = list->AddString(psub->subobj_name);
+				z = list->AddString(psub->subobj_name.c_str());
 				list->SetItemDataPtr(z, &pss->weapons);
 			}
 		}

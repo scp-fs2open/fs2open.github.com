@@ -2204,7 +2204,7 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 			}
 
-			if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags & MSS_FLAG_TURRET_LOCKED)
+			if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags[Model::Subsystem_Flags::Turret_locked])
 			{
 				// mark all turrets as locked
 				if(ptr->system_info->type == SUBSYSTEM_TURRET)
@@ -2213,7 +2213,7 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 			}
 
-			if (!subsystem_stricmp(ptr->system_info->subobj_name, sssp->name))
+			if (!subsystem_stricmp(ptr->system_info->subobj_name.c_str(), sssp->name))
 			{
 				if (Fred_running)
 				{
@@ -3531,7 +3531,7 @@ void parse_common_object_data(p_object	*objp)
 		{
 			int j;
 			for (j=0; j < sip->n_subsystems; ++j)
-				if (!subsystem_stricmp(sip->subsystems[j].subobj_name, Subsys_status[i].name))
+				if (!subsystem_stricmp(sip->subsystems[j].subobj_name.c_str(), Subsys_status[i].name))
 					break;
 			//if (j == sip->n_subsystems)
 				//Warning(LOCATION, "Ship \"%s\", class \"%s\"\nUnknown subsystem \"%s\" found in mission!", objp->name, sip->name, Subsys_status[i].name);
@@ -7304,7 +7304,7 @@ int insert_subsys_status(p_object *pobjp)
 }
 
 // Goober5000
-subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name)
+subsys_status *parse_get_subsys_status(p_object *pobjp, const char *subsys_name)
 {
 	int i;
 	subsys_status *sssp;

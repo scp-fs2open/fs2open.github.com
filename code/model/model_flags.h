@@ -43,8 +43,12 @@ namespace Model {
 		No_disappear,		// Submodel won't disappear when subsystem destroyed
 		Collide_submodel,	// subsystem takes damage only from hits which impact the associated submodel
 		Destroyed_rotation, // allows subobjects to continue to rotate even if they have been destroyed
-
-		NUM_VALUES
+        Turret_use_ammo,			// enables ammo consumption for turrets (DahBlount)
+        Autorepair_if_disabled,		// Allows the subsystem to repair itself even if disabled (MageKing17)
+        No_autorepair_if_disabled,	// Inversion of the previous; disallows this particular subsystem if the ship-wide flag is set (MageKing17)
+        Share_fire_direction,		// (DahBlount) Whenever the turret fires, make all firing points fire in the same direction.
+		
+        NUM_VALUES
 	};
 
 	FLAG_LIST(Render_Flags) {

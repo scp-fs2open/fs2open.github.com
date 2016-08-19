@@ -2103,7 +2103,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				for (i=0; i<Ship_info[ship_class].n_subsystems; i++)
 				{
-					if (!subsystem_stricmp(Ship_info[ship_class].subsystems[i].subobj_name, CTEXT(node)))
+					if (!subsystem_stricmp(Ship_info[ship_class].subsystems[i].subobj_name.c_str(), CTEXT(node)))
 					{
 						break;
 					}
@@ -2117,13 +2117,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if(Fred_running)
 				{
 					// if we're checking for an AWACS subsystem and this is not an awacs subsystem
-					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_AWACS))
+					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Awacs]))
 					{
 						return SEXP_CHECK_INVALID_SUBSYS;
 					}
 
 					// rotating subsystem, like above - Goober5000
-					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_ROTATES))
+					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Rotates]))
 					{
 						return SEXP_CHECK_INVALID_SUBSYS;
 					}
@@ -15050,7 +15050,7 @@ int sexp_targeted(int node)
 
 		if (CDR(CDR(node)) >= 0) {
 			ptr = Player_ai->targeted_subsys;
-			if (!ptr || subsystem_stricmp(ptr->system_info->subobj_name, CTEXT(CDR(CDR(node))))){
+			if (!ptr || subsystem_stricmp(ptr->system_info->subobj_name.c_str(), CTEXT(CDR(CDR(node))))){
 				return SEXP_FALSE;
 			}
 		}
@@ -16488,7 +16488,7 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	for (source_ss = GET_FIRST(&source_shipp->subsys_list); source_ss != GET_LAST(&source_shipp->subsys_list); source_ss = GET_NEXT(source_ss))
 	{
 		// find subsystem to configure
-		target_ss = ship_get_subsys(target_shipp, source_ss->system_info->subobj_name);
+		target_ss = ship_get_subsys(target_shipp, source_ss->system_info->subobj_name.c_str());
 		if (target_ss == NULL)
 			continue;
 
@@ -16529,7 +16529,7 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 	for (source_ss = GET_FIRST(&source_shipp->subsys_list); source_ss != GET_LAST(&source_shipp->subsys_list); source_ss = GET_NEXT(source_ss))
 	{
 		// find subsystem to configure
-		target_sssp = parse_get_subsys_status(target_pobjp, source_ss->system_info->subobj_name);
+		target_sssp = parse_get_subsys_status(target_pobjp, source_ss->system_info->subobj_name.c_str());
 
 		// gak... none allocated; we need to allocate one!
 		if (target_sssp == NULL)
@@ -16538,7 +16538,7 @@ void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
 			int new_idx = insert_subsys_status(target_pobjp);
 			target_sssp = &Subsys_status[new_idx];
 
-			strcpy_s(target_sssp->name, source_ss->system_info->subobj_name);
+			strcpy_s(target_sssp->name, source_ss->system_info->subobj_name.c_str());
 		}
 
 		// copy
@@ -17967,7 +17967,7 @@ int sexp_get_turret_primary_ammo(int node)
 	if (turret == NULL) {
 		return 0;
 	}
-	if (!(turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO)) {
+	if (!(turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo])) {
 		return 0;
 	}
 
@@ -18122,7 +18122,7 @@ int sexp_get_turret_secondary_ammo(int node)
 	if (turret == NULL) {
 		return 0;
 	}
-	if (!(turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO)) {
+	if (!(turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo])) {
 		return 0;
 	}
 
@@ -18999,7 +18999,7 @@ void sexp_awacs_set_radius(int node)
 		return;
 	}
 
-	if (!(awacs->system_info->flags & MSS_FLAG_AWACS))
+	if (!(awacs->system_info->flags[Model::Subsystem_Flags::Awacs]))
 		return;
 
 	// set the new awacs radius
@@ -19493,7 +19493,7 @@ int sexp_missile_locked(int node)
 				return SEXP_FALSE;
 
 			// if we're not targeting the specific subsystem, it's false
-			if (subsystem_stricmp(Player_ai->targeted_subsys->system_info->subobj_name, CTEXT(CDR(CDR(node)))))
+			if (subsystem_stricmp(Player_ai->targeted_subsys->system_info->subobj_name.c_str(), CTEXT(CDR(CDR(node)))))
 				return SEXP_FALSE;
 		}
 	}
@@ -20065,7 +20065,7 @@ int process_special_sexps(int index)
 	case 2:	//	Ship "Freighter 1", subsystem "Weapons" is aspect locked by player.
 		if (Player_ai->target_objnum != -1) {
 			if (!(stricmp(Ships[Objects[Player_ai->target_objnum].instance].ship_name, "Freighter 1"))) {
-				if (!(subsystem_stricmp(Player_ai->targeted_subsys->system_info->name, "Weapons"))) {
+				if (!(subsystem_stricmp(Player_ai->targeted_subsys->system_info->name.c_str(), "Weapons"))) {
 					if (Player_ai->current_target_is_locked){
 						return SEXP_TRUE;
 					}

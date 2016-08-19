@@ -540,7 +540,7 @@ void swap_parse_object(p_object *p_obj, int ship_class);
 void clear_texture_replacements();
 
 // Goober5000
-subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name);
+subsys_status *parse_get_subsys_status(p_object *pobjp, const char *subsys_name);
 
 
 #endif

@@ -749,7 +749,7 @@ extern SCP_vector<exited_ship> Ships_exited;
 
 // a couple of functions to get at the data
 extern void ship_add_exited_ship( ship *shipp, Ship::Exit_Flags reason );
-extern int ship_find_exited_ship_by_name( char *name );
+extern int ship_find_exited_ship_by_name( const char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
 
 #define REGULAR_WEAPON	(1<<0)
@@ -1485,14 +1485,14 @@ extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool 
 //extern camid ship_get_followtarget_eye(object *obj);
 extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos = NULL );	// returns index'th subsystem of this ship
 extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_bypass = 0);
-extern int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass = 0);		// returns numerical index in linked list of subsystems
+extern int ship_get_subsys_index(ship *sp, SCP_string ss_name, int error_bypass = 0);		// returns numerical index in linked list of subsystems
 extern float ship_get_subsystem_strength( ship *shipp, int type );
-extern ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name);
+extern ship_subsys *ship_get_subsys(ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
 
 //WMC
-char *ship_subsys_get_name(ship_subsys *ss);
+const char *ship_subsys_get_name(ship_subsys *ss);
 bool ship_subsys_has_instance_name(ship_subsys *ss);
 void ship_subsys_set_name(ship_subsys *ss, char *n_name);
 
@@ -1649,9 +1649,6 @@ float ship_get_exp_outer_rad(object *ship_objp);
 
 // externed by Goober5000
 extern int ship_explode_area_calc_damage( vec3d *pos1, vec3d *pos2, float inner_rad, float outer_rad, float max_damage, float max_blast, float *damage, float *blast );
-
-// returns whether subsys is allowed to have cargo
-int valid_cap_subsys_cargo_list(char *subsys_name);
 
 // determine turret status of a given subsystem, returns 0 for no turret, 1 for "fixed turret", 2 for "rotating" turret
 int ship_get_turret_type(ship_subsys *subsys);

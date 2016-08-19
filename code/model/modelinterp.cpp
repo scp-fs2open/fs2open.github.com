@@ -2702,11 +2702,11 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
-		strcpy_s(subname, sip->subsystems[bank_obj].subobj_name);
+		strcpy_s(subname, sip->subsystems[bank_obj].subobj_name.c_str());
 
 		ssp = GET_FIRST(&shipp->subsys_list);
 		while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
-			if ( !strcmp(subname, ssp->system_info->subobj_name) ) {
+			if ( !strcmp(subname, ssp->system_info->subobj_name.c_str()) ) {
 				// this subsystem has 0 or less hits, ie. it's destroyed
 				if ( ssp->current_hits <= 0 )
 					return 0;

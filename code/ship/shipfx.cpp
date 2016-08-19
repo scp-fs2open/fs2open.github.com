@@ -212,14 +212,14 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 	}
 }
 
-void set_ship_submodel_as_blown_off(ship *shipp, char *name)
+void set_ship_submodel_as_blown_off(ship *shipp, const char *name)
 {
 	int found =	FALSE;
 
 	// go through list of ship subsystems and find name
 	ship_subsys	*pss = NULL;
 	for (pss=GET_FIRST(&shipp->subsys_list); pss!=END_OF_LIST(&shipp->subsys_list); pss=GET_NEXT(pss)) {
-		if ( subsystem_stricmp(pss->system_info->subobj_name, name) == 0) {
+		if ( subsystem_stricmp(pss->system_info->subobj_name.c_str(), name) == 0) {
 			found = TRUE;
 			break;
 		}
@@ -284,7 +284,7 @@ void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 
 						// now set subsystem as blown off, so we only get one copy
 						pm->submodel[parent].blown_off = 1;
-						set_ship_submodel_as_blown_off(&Ships[ship_objp->instance], pss->system_info->subobj_name);
+						set_ship_submodel_as_blown_off(&Ships[ship_objp->instance], pss->system_info->subobj_name.c_str());
 					}
 				}
 			}
