@@ -1,7 +1,7 @@
 #ifndef AI_FLAGS_H
 #define AI_FLAGS_H
 
-#include "globalincs/pstypes.h"
+#include "globalincs/flagset.h"
 
 namespace AI {
 	FLAG_LIST(AI_Flags) {
@@ -36,7 +36,7 @@ namespace AI {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Goal_flags) {
+	FLAG_LIST(Goal_Flags) {
 		Docker_index_valid,	// when set, index field for docker is valid
 		Dockee_index_valid,	// when set, index field for dockee is valid
 		Goal_on_hold,		// when set, this goal cannot currently be satisfied, although it could be in the future
@@ -50,7 +50,7 @@ namespace AI {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Override_flags) {
+	FLAG_LIST(Override_Flags) {
 		Full,		//	Full sexp control
 		Roll,		//	Sexp forced roll maneuver
 		Pitch,		//	Sexp forced pitch change
@@ -63,54 +63,56 @@ namespace AI {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Profile_flags) {
-		Smart_shield_management,
-		Big_ships_can_attack_beam_turrets_on_untargeted_ships,
-		Smart_primary_weapon_selection,
-		Smart_secondary_weapon_selection,
-		Allow_rapid_secondary_dumbfire,
-		Huge_turret_weapons_ignore_bombs,
-		Dont_insert_random_turret_fire_delay,
-		Hack_improve_non_homing_swarm_turret_fire_accuracy,
-		Shockwaves_damage_small_ship_subsystems,
-		Navigation_subsys_governs_warp,
-		No_min_dock_speed_cap,
-		Disable_linked_fire_penalty,
-		Disable_weapon_damage_scaling,
-		Use_additive_weapon_velocity,
-		Use_newtonian_dampening,
-		Include_beams_in_stat_calcs,
-		Kill_scoring_scales_with_damage,
-		Assist_scoring_scales_with_damage,
-		Allow_multi_event_scoring,
-		Smart_afterburner_management,
-		Fix_linked_primary_bug,
-		Prevent_targeting_bombs_beyond_range,
-		Smart_subsystem_targeting_for_turrets,
-		Fix_heat_seeker_stealth_bug,
-		Multi_allow_empty_primaries,
-		Multi_allow_empty_secondaries,
-		Allow_turrets_target_weapons_freely,
-		Use_only_single_fov_for_turrets,
-		Allow_vertical_dodge,
-		Force_beam_turret_fov,
-		Fix_ai_class_bug,
-		Turrets_ignore_target_radius,
-		No_special_player_avoid,
-		Perform_fewer_scream_checks,
-		All_ships_manage_shields,
-		Advanced_turret_fov_edge_checks,
-		Require_turret_to_have_target_in_fov,
-		Ai_aims_from_ship_center,
-		Allow_primary_link_at_start,
-		Beams_damage_weapons,
-		Player_weapon_scale_fix,
-		No_warp_camera,
-		Aspect_lock_countermeasure,
-		Ai_guards_specific_ship_in_wing,
-		Fix_ai_path_order_bug,
-		Strict_turred_tagged_only_targeting,
-		Aspect_invulnerability_fix,
+	FLAG_LIST(Profile_Flags) {
+        Advanced_turret_fov_edge_checks,
+        Ai_aims_from_ship_center,
+        Ai_can_slow_down_attacking_big_ships,
+        Ai_guards_specific_ship_in_wing,
+        All_ships_manage_shields,
+        Allow_multi_event_scoring,
+        Allow_primary_link_at_start,
+        Allow_rapid_secondary_dumbfire,
+        Allow_turrets_target_weapons_freely,
+        Allow_vertical_dodge,
+        Aspect_invulnerability_fix,
+        Aspect_lock_countermeasure,
+        Assist_scoring_scales_with_damage,
+        Beams_damage_weapons,
+        Big_ships_can_attack_beam_turrets_on_untargeted_ships,
+        Disable_linked_fire_penalty,
+        Disable_weapon_damage_scaling,
+        Dont_insert_random_turret_fire_delay,
+        Fix_ai_class_bug,
+        Fix_ai_path_order_bug,
+        Fix_heat_seeker_stealth_bug,
+        Fix_linked_primary_bug,
+        Force_beam_turret_fov,
+        Glide_decay_requires_thrust,
+        Hack_improve_non_homing_swarm_turret_fire_accuracy,
+        Huge_turret_weapons_ignore_bombs,
+        Include_beams_in_stat_calcs,
+        Kill_scoring_scales_with_damage,
+        Multi_allow_empty_primaries,
+        Multi_allow_empty_secondaries,
+        Navigation_subsys_governs_warp,
+        No_min_dock_speed_cap,
+        No_special_player_avoid,
+        No_warp_camera,
+        Perform_fewer_scream_checks,
+        Player_weapon_scale_fix,
+        Prevent_targeting_bombs_beyond_range,
+        Require_turret_to_have_target_in_fov,
+        Shockwaves_damage_small_ship_subsystems,
+        Smart_afterburner_management,
+        Smart_primary_weapon_selection,
+        Smart_secondary_weapon_selection,
+        Smart_shield_management,
+        Smart_subsystem_targeting_for_turrets,
+        Strict_turred_tagged_only_targeting,
+        Turrets_ignore_target_radius,
+        Use_additive_weapon_velocity,
+        Use_newtonian_dampening,
+        Use_only_single_fov_for_turrets,
 
 		NUM_VALUES
 	};

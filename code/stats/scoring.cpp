@@ -673,7 +673,7 @@ int scoring_eval_kill(object *ship_objp)
 		killer_sig = dead_ship->damage_ship_id[max_damage_index];
 
 		// set the scale value if we only award 100% score for 100% damage
-		if (The_mission.ai_profile->flags & AIPF_KILL_SCORING_SCALES_WITH_DAMAGE) {
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Kill_scoring_scales_with_damage]) {
 			scoring_scale_by_damage = max_damage_pct;
 		}
 
@@ -998,7 +998,7 @@ void scoring_eval_assists(ship *sp,int killer_sig, bool is_enemy_player)
 	// evaluate each damage slot to see if it did enough to give the assis
 	for(idx=0;idx<MAX_DAMAGE_SLOTS;idx++){
 		// if this slot did enough damage to get an assist
-		if(((sp->damage_ship[idx]/sp->total_damage_received) >= Assist_percentage) || (The_mission.ai_profile->flags & AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE)){
+		if(((sp->damage_ship[idx]/sp->total_damage_received) >= Assist_percentage) || (The_mission.ai_profile->flags[AI::Profile_Flags::Assist_scoring_scales_with_damage])){
 			// get the player which did this damage (if any)
 			plr = NULL;
 			
@@ -1036,7 +1036,7 @@ void scoring_eval_assists(ship *sp,int killer_sig, bool is_enemy_player)
 
 
 				// maybe award assist points based on damage
-				if (The_mission.ai_profile->flags & AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE) {
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Assist_scoring_scales_with_damage]) {
 					scoring_scale_by_damage = (sp->damage_ship[idx]/sp->total_damage_received);
 					assist_score = (int)(sp->score * scoring_scale_factor * scoring_scale_by_damage);
 					plr->stats.m_score += assist_score;

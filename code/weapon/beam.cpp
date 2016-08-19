@@ -2913,7 +2913,7 @@ int beam_collide_early_out(object *a, object *b)
 /*		if(bwi->b_info.beam_type == BEAM_TYPE_C){
 			return 1;
 		}*/
-		if(The_mission.ai_profile->flags2 & AIPF2_BEAMS_DAMAGE_WEAPONS) {
+		if(The_mission.ai_profile->flags[AI::Profile_Flags::Beams_damage_weapons]) {
 			if((Weapon_info[Weapons[b->instance].weapon_info_index].weapon_hitpoints <= 0) && (Weapon_info[Weapons[b->instance].weapon_info_index].subtype == WP_LASER)) {
 				return 1;
 			}
@@ -3199,7 +3199,7 @@ void beam_handle_collisions(beam *b)
 				break;
 
 			case OBJ_WEAPON:
-				if (The_mission.ai_profile->flags2 & AIPF2_BEAMS_DAMAGE_WEAPONS) {
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Beams_damage_weapons]) {
 					if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 						object *trgt = &Objects[target];
 
@@ -3401,7 +3401,7 @@ int beam_ok_to_fire(beam *b)
 		vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 		vm_vec_normalize(&aim_dir);
 
-		if (The_mission.ai_profile->flags & AIPF_FORCE_BEAM_TURRET_FOV) {
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
 			vec3d turret_normal;
 
 			if (b->flags & BF_IS_FIGHTER_BEAM) {

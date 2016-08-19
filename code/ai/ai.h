@@ -228,10 +228,8 @@ typedef struct ai_class {
 	int		ai_chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
 	float	ai_max_aim_update_delay[NUM_SKILL_LEVELS];
 	float	ai_turret_max_aim_update_delay[NUM_SKILL_LEVELS];
-	int		ai_profile_flags;		//Holds the state of flags that are set
-	int		ai_profile_flags_set;	//Holds which flags are set and which are just left alone
-	int		ai_profile_flags2;		
-	int		ai_profile_flags2_set;	
+	flagset<AI::Profile_Flags>		ai_profile_flags;		//Holds the state of flags that are set
+	flagset<AI::Profile_Flags>		ai_profile_flags_set;	//Holds which flags are set and which are just left alone
 
 	//SUSHI: These are optional overrides to an AI class to prevent the automatic scaling based on AI class index
 	int		ai_aburn_use_factor[NUM_SKILL_LEVELS];		
@@ -461,8 +459,7 @@ typedef struct ai_info {
 	int		ai_chance_to_use_missiles_on_plr;
 	float	ai_max_aim_update_delay;
 	float	ai_turret_max_aim_update_delay;
-	int		ai_profile_flags;	//Holds AI_Profiles flags (possibly overriden by AI class) that actually apply to AI
-	int		ai_profile_flags2;	
+	flagset<AI::Profile_Flags> ai_profile_flags;	//Holds AI_Profiles flags (possibly overriden by AI class) that actually apply to AI
 
 
 	union {
