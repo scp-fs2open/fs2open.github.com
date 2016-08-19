@@ -443,22 +443,6 @@ void get_user_prop_value(char *buf, char *value)
 	*p1 = c;
 }
 
-void get_user_prop_value(char *buf, SCP_string& value)
-{
-    char *p, *p1, c;
-
-    p = buf;
-    while (isspace(*p) || (*p == '='))		// skip white space and equal sign
-        p++;
-    p1 = p;
-    while (!iscntrl(*p1))
-        p1++;
-    c = *p1;
-    *p1 = '\0';
-    value = p;
-    *p1 = c;
-}
-
 // routine to look for one of the specified user properties
 // if p is not null, sets p to the next character AFTER the string and a space/equals/colon (not the beginning of the string, as strstr would)
 // returns the index of the property found, or -1 if not found
@@ -554,7 +538,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 						dest->turret_firing_point[nfp] = source->turret_firing_point[nfp];
 
 					if ( dest->flags[Model::Subsystem_Flags::Crewpoint] )
-						dest->crewspot = source->crewspot;
+						strcpy_s(dest->crewspot, source->crewspot);
 				}
 				break;
 			}
@@ -5844,7 +5828,7 @@ void glowpoint_init()
 void model_subsystem::reset()
 {
     flags.reset();
-    memset(name, 0, sizeof(alt_sub_name));
+    memset(name, 0, sizeof(name));
     memset(subobj_name, 0, sizeof(alt_dmg_sub_name));
     memset(alt_sub_name, 0, sizeof(alt_sub_name));
     memset(alt_dmg_sub_name, 0, sizeof(alt_dmg_sub_name));
@@ -5857,7 +5841,7 @@ void model_subsystem::reset()
     max_subsys_strength = 0;
     armor_type_idx = 0;
 
-    crewspot = "";
+    memset(crewspot, 0, sizeof(crewspot));
     turret_norm.xyz.x = turret_norm.xyz.y = turret_norm.xyz.z = 0.0f;
     
     for (auto it = std::begin(turret_matrix.a1d); it != std::end(turret_matrix.a1d); ++it)

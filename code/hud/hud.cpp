@@ -2135,14 +2135,14 @@ void HudGaugeDamage::render(float frametime)
 		}		
 
 		const char *n_firstline;
-		n_firstline = strrchr(hud_subsys_list[best_index].name.c_str(), '|');
+		n_firstline = strrchr(hud_subsys_list[best_index].name, '|');
 		if (n_firstline) {
 			// Print only the last line
 			n_firstline++;
 			renderString(sx, sy, n_firstline);
 		} else {
 			char temp_name[NAME_LENGTH];
-			strcpy_s(temp_name, hud_subsys_list[best_index].name.c_str());
+			strcpy_s(temp_name, hud_subsys_list[best_index].name);
 			hud_targetbox_truncate_subsys_name(temp_name);
 			renderString(sx, sy, temp_name);
 		}

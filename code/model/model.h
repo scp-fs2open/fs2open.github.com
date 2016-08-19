@@ -135,7 +135,7 @@ public:
 
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
-    SCP_string	crewspot;				// unique identifying name for this turret -- used to assign AI class and multiplayer people
+    char	crewspot[MAX_NAME_LEN];	    		// unique identifying name for this turret -- used to assign AI class and multiplayer people
 	vec3d	turret_norm;						//	direction this turret faces
 	matrix	turret_matrix;						// turret_norm converted to a matrix.
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see

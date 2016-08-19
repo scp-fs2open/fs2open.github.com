@@ -57,7 +57,7 @@ typedef struct hud_subsys_damage
 {
 	int	str;
 	int	type;
-	SCP_string name;
+	char* name;
 } hud_subsys_damage;
 
 extern int HUD_draw;

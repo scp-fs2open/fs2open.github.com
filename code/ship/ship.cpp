@@ -14793,7 +14793,7 @@ ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *
 	return closest_in_sight_subsys;
 }
 
-const char *ship_subsys_get_name(ship_subsys *ss)
+char *ship_subsys_get_name(ship_subsys *ss)
 {
 	if( ss->sub_name[0] != '\0' )
 		return ss->sub_name;

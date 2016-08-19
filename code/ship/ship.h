@@ -1492,7 +1492,7 @@ extern int ship_get_num_subsys(ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
 
 //WMC
-const char *ship_subsys_get_name(ship_subsys *ss);
+char *ship_subsys_get_name(ship_subsys *ss);
 bool ship_subsys_has_instance_name(ship_subsys *ss);
 void ship_subsys_set_name(ship_subsys *ss, char *n_name);
 
