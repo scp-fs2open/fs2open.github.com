@@ -128,12 +128,7 @@ macro(configure_cotire target)
 		# add ignored paths for the precompiled header here
 		set_target_properties(code PROPERTIES COTIRE_PREFIX_HEADER_IGNORE_PATH
 			"${CMAKE_SOURCE_DIR};${CMAKE_BINARY_DIR}")
-
-		IF(DEFINED CMAKE_CONFIGURATION_TYPES)
-			cotire(${target} CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
-		ELSE(DEFINED CMAKE_CONFIGURATION_TYPES)
-			cotire(${target})
-		ENDIF(DEFINED CMAKE_CONFIGURATION_TYPES)
+		cotire(${target})
 	ENDIF(COTIRE_ENABLE)
 endmacro(configure_cotire)
 
