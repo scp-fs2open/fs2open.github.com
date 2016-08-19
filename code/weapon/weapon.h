@@ -41,10 +41,6 @@ extern int Num_weapon_subtypes;
 
 #define	WEAPON_EXHAUST_DELTA_TIME	75		//	Delay in milliseconds between exhaust blobs
 
-// flags for setting burst fire 
-#define WBF_FAST_FIRING				(1<<0)		// burst is to use only the firewait to determine firing delays
-#define WBF_RANDOM_LENGTH			(1<<1)		// burst is to fire random length bursts
-
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
 #define PSPEW_DEFAULT	0			//std fs2 pspew
