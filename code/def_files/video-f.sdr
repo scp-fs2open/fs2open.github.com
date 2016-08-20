@@ -1,10 +1,12 @@
-fragIn vec4 fragTexCoord;
+in vec4 fragTexCoord;
 uniform sampler2D ytex;
 uniform sampler2D utex;
 uniform sampler2D vtex;
+
+out vec4 fragOut0;
 void main()
 {
-	vec3 val = vec3(tex2D(ytex, fragTexCoord.st).r - 0.0625, tex2D(utex, fragTexCoord.st).r - 0.5, tex2D(vtex, fragTexCoord.st).r - 0.5);
+	vec3 val = vec3(texture(ytex, fragTexCoord.st).r - 0.0625, texture(utex, fragTexCoord.st).r - 0.5, texture(vtex, fragTexCoord.st).r - 0.5);
 	fragOut0.r = dot(val, vec3(1.1640625, 0.0, 1.59765625));
 	fragOut0.g = dot(val, vec3(1.1640625, -0.390625, -0.8125));
 	fragOut0.b = dot(val, vec3(1.1640625, 2.015625, 0.0));

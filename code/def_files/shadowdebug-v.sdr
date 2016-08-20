@@ -1,6 +1,6 @@
-vertIn vec4 vertPosition;
-vertIn vec4 vertTexCoord;
-vertOut vec4 fragTexCoord;
+in vec4 vertPosition;
+in vec4 vertTexCoord;
+out vec4 fragTexCoord;
 void main()
 {
 	fragTexCoord = vertTexCoord;

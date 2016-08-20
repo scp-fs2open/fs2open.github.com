@@ -1,6 +1,9 @@
-fragIn vec4 fragTexCoord;
+in vec4 fragTexCoord;
 uniform sampler2D tex;
 uniform float exposure;
+
+out vec4 fragOut0;
+
 vec3 Uncharted2Tonemapping(vec3 hdr_color)
 {
 	float A = 0.15;
@@ -14,7 +17,7 @@ vec3 Uncharted2Tonemapping(vec3 hdr_color)
 #define SRGB_GAMMA 2.2
 void main()
 {
-	vec4 color = tex2D(tex, fragTexCoord.xy);
+	vec4 color = texture(tex, fragTexCoord.xy);
 	// Tone mapping using John Hable's Uncharted 2 tonemapping algorithm.
 	float whitepoint = 11.2f; // hardcoded whitepoint value from Hable's algo
 	color.rgb = Uncharted2Tonemapping(color.rgb * exposure) / Uncharted2Tonemapping(vec3(whitepoint));

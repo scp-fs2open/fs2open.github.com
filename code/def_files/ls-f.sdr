@@ -6,25 +6,29 @@ uniform float weight;
 uniform float falloff;
 uniform float intensity;
 uniform float cp_intensity;
+
+in vec4 fragTexCoord;
+
+out vec4 fragOut0;
 void main()
 {
-	vec2 step = vec2( gl_TexCoord[0].st - sun_pos.xy );
-	vec2 pos = gl_TexCoord[0].st;
+	vec2 step = vec2( fragTexCoord.st - sun_pos.xy );
+	vec2 pos = fragTexCoord.st;
 	step *= 1.0 / float(SAMPLE_NUM) * density;
 	float decay = 1.0;
 	vec4 sum = vec4(0.0);
-	vec4 mask = texture2D(cockpit, gl_TexCoord[0].st);
+	vec4 mask = texture(cockpit, fragTexCoord.st);
 	if (mask.r < 1.0) {
-		gl_FragColor = vec4(cp_intensity);
+		fragOut0 = vec4(cp_intensity);
 		return;
 	}
 	for(int i=0; i < SAMPLE_NUM ; i++) {
 		pos.st -= step;
-		vec4 tex_sample = texture2D(scene, pos);
+		vec4 tex_sample = texture(scene, pos);
 		if (tex_sample.r == 1.0)
 			sum += decay * weight;
 		decay *= falloff;
 	}
-	gl_FragColor = sum * intensity;
-	gl_FragColor.a = 1.0;
+	fragOut0 = sum * intensity;
+	fragOut0.a = 1.0;
 }

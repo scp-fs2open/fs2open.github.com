@@ -3,6 +3,12 @@
 #else
   #define MAX_LIGHTS 8
 #endif
+#ifdef FLAG_TRANSFORM
+#extension GL_ARB_texture_buffer_object : enable
+#endif
+#ifdef FLAG_SHADOWS
+#extension GL_EXT_texture_array : enable
+#endif
 #define LT_DIRECTIONAL		0
 #define LT_POINT			1
 #define LT_TUBE			2
@@ -45,18 +51,18 @@ uniform samplerCube sEnvmap;
 uniform bool envGloss;
 uniform bool alpha_spec;
 varying vec3 envReflect;
-fragIn vec3 fragEnvReflect;
+in vec3 fragEnvReflect;
 #endif
 #ifdef FLAG_NORMAL_MAP
 uniform sampler2D sNormalmap;
-fragIn mat3 fragTangentMatrix;
+in mat3 fragTangentMatrix;
 #endif
 #ifdef FLAG_AMBIENT_MAP
 uniform sampler2D sAmbientmap;
 #endif
 #ifdef FLAG_FOG
 uniform vec4 fogColor;
-fragIn float fragFogDist;
+in float fragFogDist;
 #endif
 #ifdef FLAG_ANIMATED
 uniform sampler2D sFramebuffer;
@@ -66,8 +72,7 @@ uniform float vpwidth;
 uniform float vpheight;
 #endif
 #ifdef FLAG_TRANSFORM
-#extension GL_ARB_texture_buffer_object : enable
-fragIn float fragNotVisible;
+in float fragNotVisible;
 #endif
 #ifdef FLAG_TEAMCOLOR
 uniform vec3 base_color;
@@ -79,9 +84,8 @@ vec2 teamMask = vec2(0.0, 0.0);
 uniform sampler2D sMiscmap;
 #endif
 #ifdef FLAG_SHADOWS
-#extension GL_EXT_texture_array : enable
-fragIn vec4 fragShadowUV[4];
-fragIn vec4 fragShadowPos;
+in vec4 fragShadowUV[4];
+in vec4 fragShadowPos;
 //uniform sampler2DArrayShadow shadow_map;
 uniform sampler2DArray shadow_map;
 //uniform sampler2D shadow_map;
@@ -94,7 +98,7 @@ uniform float fardist;
 #endif
 #ifdef FLAG_CLIP
 uniform int use_clip_plane;
-fragIn float fragClipDistance;
+in float fragClipDistance;
 #endif
 #ifdef FLAG_NORMAL_ALPHA
 uniform vec2 normalAlphaMinMax;
@@ -109,15 +113,19 @@ uniform vec2 normalAlphaMinMax;
 #define VARIANCE_SHADOW_SCALE		1000000.0
 #define VARIANCE_SHADOW_SCALE_INV	1.0/VARIANCE_SHADOW_SCALE
 #define SRGB_GAMMA 2.2
-fragIn vec4 fragPosition;
-fragIn vec3 fragNormal;
-fragIn vec4 fragTexCoord;
+in vec4 fragPosition;
+in vec3 fragNormal;
+in vec4 fragTexCoord;
 
+out vec4 fragOut0;
+out vec4 fragOut1;
+out vec4 fragOut2;
+out vec4 fragOut3;
 
 #ifdef FLAG_SHADOWS
 vec2 sampleShadowMap(vec2 uv, vec2 offset_uv, int cascade, float shadowMapSizeInv)
 {
-	return tex2DArray(shadow_map, vec3(uv + offset_uv * shadowMapSizeInv, float(cascade))).xy;
+	return texture(shadow_map, vec3(uv + offset_uv * shadowMapSizeInv, float(cascade))).xy;
 }
 
 float computeShadowFactor(vec2 moments, float bias)
@@ -327,7 +335,7 @@ void main()
 #ifdef FLAG_NORMAL_MAP
    // Normal map - convert from DXT5nm
    vec2 normalSample;
-   normal.rg = normalSample = (tex2D(sNormalmap, texCoord).ag * 2.0) - 1.0;
+   normal.rg = normalSample = (texture(sNormalmap, texCoord).ag * 2.0) - 1.0;
    normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));
    normal = fragTangentMatrix * normal;
    float norm = length(normal);
@@ -350,7 +358,7 @@ void main()
       diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
    }
  #endif
-	baseColor = tex2D(sBasemap, diffuseTexCoord);
+	baseColor = texture(sBasemap, diffuseTexCoord);
 	if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
 	// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
 	// if blend_alpha is 2, assume blend func is additive and don't modify color
@@ -378,7 +386,7 @@ void main()
 #ifdef FLAG_MISC_MAP
  #ifdef FLAG_TEAMCOLOR
 	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
-	teamMask = tex2D(sMiscmap, texCoord);
+	teamMask = texture(sMiscmap, texCoord);
 	vec3 base = base_color - vec3(0.5);
 	vec3 stripe = stripe_color - vec3(0.5);
 	baseColor.rgb += (base * teamMask.x) + (stripe * teamMask.y);
@@ -463,9 +471,9 @@ void main()
       baseColor.a = baseColor.a;
       float cloak_interp = (sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005)*0.5)-0.5;
  #ifdef FLAG_LIGHT
-      baseColor.rgb = mix(tex2D(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
+      baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
  #else
-      baseColor.rgb = mix(tex2D(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*fragNormal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
+      baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*fragNormal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
  #endif
    }
 #endif

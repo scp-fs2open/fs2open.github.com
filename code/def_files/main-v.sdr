@@ -7,11 +7,14 @@
   #extension GL_ARB_draw_instanced : enable
  #endif
 #endif
-vertIn vec4 vertPosition;
-vertIn vec4 vertTexCoord;
-vertIn vec3 vertNormal;
-vertIn vec4 vertTangent;
-vertIn float vertModelID;
+#ifdef FLAG_TRANSFORM
+#extension GL_ARB_texture_buffer_object : enable
+#endif
+in vec4 vertPosition;
+in vec4 vertTexCoord;
+in vec3 vertNormal;
+in vec4 vertTangent;
+in float vertModelID;
 uniform mat4 modelViewMatrix;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
@@ -23,41 +26,40 @@ uniform float extrudeWidth;
 #endif
 #ifdef FLAG_ENV_MAP
 uniform mat4 envMatrix;
-vertOut vec3 fragEnvReflect;
+out vec3 fragEnvReflect;
 #endif
 #ifdef FLAG_NORMAL_MAP
-vertOut mat3 fragTangentMatrix;
+out mat3 fragTangentMatrix;
 #endif
 #ifdef FLAG_FOG
 uniform float fogStart;
 uniform float fogScale;
-vertOut float fragFogDist;
+out float fragFogDist;
 #endif
 #ifdef FLAG_TRANSFORM
-#extension GL_ARB_texture_buffer_object : enable
 uniform samplerBuffer transform_tex;
 uniform int buffer_matrix_offset;
 #ifdef FLAG_SHADOW_MAP
-vertOut float geoNotVisible;
+out float geoNotVisible;
 #else
-vertOut float fragNotVisible;
+out float fragNotVisible;
 #endif
 #endif
 #ifdef FLAG_SHADOW_MAP
-vertOut float geoInstance;
+out float geoInstance;
 uniform mat4 shadow_proj_matrix[4];
-vertOut vec3 geoNormal;
-vertOut vec4 geoTexCoord;
+out vec3 geoNormal;
+out vec4 geoTexCoord;
 #else
-vertOut vec4 fragPosition;
-vertOut vec3 fragNormal;
-vertOut vec4 fragTexCoord;
+out vec4 fragPosition;
+out vec3 fragNormal;
+out vec4 fragTexCoord;
 #endif
 #ifdef FLAG_SHADOWS
 uniform mat4 shadow_mv_matrix;
 uniform mat4 shadow_proj_matrix[4];
-vertOut vec4 fragShadowUV[4];
-vertOut vec4 fragShadowPos;
+out vec4 fragShadowUV[4];
+out vec4 fragShadowPos;
 #endif
 #ifdef FLAG_THRUSTER
 uniform float thruster_scale;
@@ -67,9 +69,9 @@ uniform int use_clip_plane;
 uniform vec3 clip_normal;
 uniform vec3 clip_position;
 #ifdef FLAG_SHADOW_MAP
-vertOut float geoClipDistance;
+out float geoClipDistance;
 #else
-vertOut float fragClipDistance;
+out float fragClipDistance;
 #endif
 #endif
 #ifdef FLAG_TRANSFORM
@@ -104,7 +106,7 @@ void main()
 	mat4 orient = mat4(1.0);
 	mat4 scale = mat4(1.0);
  #ifdef FLAG_TRANSFORM
-	float invisible;
+	float invisible = 0.0;
 	getModelTransform(orient, invisible, int(vertModelID), buffer_matrix_offset);
   #ifdef FLAG_SHADOW_MAP
 	geoNotVisible = invisible;

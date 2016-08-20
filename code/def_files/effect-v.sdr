@@ -1,20 +1,20 @@
-vertIn vec4 vertPosition;
-vertIn vec4 vertTexCoord;
-vertIn vec4 vertColor;
-vertIn float vertRadius;
+in vec4 vertPosition;
+in vec4 vertTexCoord;
+in vec4 vertColor;
+in float vertRadius;
 #ifdef FLAG_EFFECT_GEOMETRY
- vertIn vec3 vertUvec;
- vertOut vec3 geoUvec;
- vertOut float geoRadius;
- vertOut vec4 geoColor;
+ in vec3 vertUvec;
+ out vec3 geoUvec;
+ out float geoRadius;
+ out vec4 geoColor;
 #else
- vertOut float fragRadius;
- vertOut vec4 fragPosition;
- vertOut vec4 fragTexCoord;
- vertOut vec4 fragColor;
+ out float fragRadius;
+ out vec4 fragPosition;
+ out vec4 fragTexCoord;
+ out vec4 fragColor;
 #endif
 #ifdef FLAG_EFFECT_DISTORTION
-vertOut float fragOffset;
+out float fragOffset;
 uniform float use_offset;
 #endif
 uniform mat4 modelViewMatrix;

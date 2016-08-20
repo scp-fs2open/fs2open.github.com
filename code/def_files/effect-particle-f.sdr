@@ -7,14 +7,17 @@ uniform float farZ;
 uniform int linear_depth;
 uniform int srgb;
 uniform int blend_alpha;
-fragIn float fragRadius;
-fragIn vec4 fragPosition;
-fragIn vec4 fragTexCoord;
-fragIn vec4 fragColor;
+
+in float fragRadius;
+in vec4 fragPosition;
+in vec4 fragTexCoord;
+in vec4 fragColor;
+
+out vec4 fragOut0;
 #define SRGB_GAMMA 2.2
 void main()
 {
-	vec4 fragmentColor = tex2D(baseMap, fragTexCoord.xy);
+	vec4 fragmentColor = texture(baseMap, fragTexCoord.xy);
 	fragmentColor.rgb = mix(fragmentColor.rgb, pow(fragmentColor.rgb, vec3(SRGB_GAMMA)), float(srgb));
 	fragmentColor *= mix(fragColor, vec4(pow(fragColor.rgb, vec3(SRGB_GAMMA)), fragColor.a), float(srgb));
 	vec2 offset = vec2(fragRadius * abs(0.5 - fragTexCoord.x) * 2.0, fragRadius * abs(0.5 - fragTexCoord.y) * 2.0);
@@ -24,7 +27,7 @@ void main()
 		return;
 	}
 	vec2 depthCoord = vec2(gl_FragCoord.x / window_width, gl_FragCoord.y / window_height );
-	vec4 sceneDepth = tex2D(depthMap, depthCoord);
+	vec4 sceneDepth = texture(depthMap, depthCoord);
 	float sceneDepthLinear;
 	float fragDepthLinear;
 	if ( linear_depth == 1 ) {

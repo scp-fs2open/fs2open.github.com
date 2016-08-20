@@ -1,11 +1,13 @@
 #extension GL_EXT_texture_array : enable
-fragIn vec4 fragTexCoord;
+in vec4 fragTexCoord;
 uniform sampler2DArray shadow_map;
 //uniform sampler2D shadow_map;
 uniform int index;
+
+out vec4 fragOut0;
 void main()
 {
 	vec3 texcoord = vec3(fragTexCoord.xy, float(index));
-	fragOut0 = vec4(tex2DArray(shadow_map, texcoord).rgb,1.0);
-	//fragOut0 = vec4(tex2D(shadow_map, fragTexCoord.xy).rgb,1.0);
+	fragOut0 = vec4(texture(shadow_map, texcoord).rgb,1.0);
+	//fragOut0 = vec4(texture(shadow_map, fragTexCoord.xy).rgb,1.0);
 }
