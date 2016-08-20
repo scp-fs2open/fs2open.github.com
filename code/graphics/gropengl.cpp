@@ -943,7 +943,9 @@ void gr_opengl_translate_texture_matrix(int unit, const vec3d *shift)
 
 void gr_opengl_set_line_width(float width)
 {
-	GL_state.SetLineWidth(width);
+	if (width <= 1.0f) {
+		GL_state.SetLineWidth(width);
+	}
 	GL_line_width = width;
 }
 
