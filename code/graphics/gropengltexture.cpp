@@ -389,8 +389,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	} else if (byte_mult == 1) {
 		Assertion( bitmap_type == TCACHE_TYPE_AABITMAP, "Invalid type for bitmap: %s BMPMAN handle: %d. Type expected was 0, we got %d instead.\nThis can be caused by using texture compression on a non-power-of-2 texture.\n", bm_get_filename(bitmap_handle), bitmap_handle, bitmap_type );
 		texFormat = GL_UNSIGNED_BYTE;
-		intFormat = GL_ALPHA;
-		glFormat = GL_ALPHA;
+		intFormat = GL_RED;
+		glFormat = GL_RED;
 	} else {
 		texFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
 		intFormat = GL_RGBA;
