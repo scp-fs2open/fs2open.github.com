@@ -99,7 +99,7 @@ flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 	{ "random length",		Weapon::Burst_Flags::Random_length,		true, false }
 };
 
-const int Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list_new<Weapon::Burst_Flags>);
+const size_t Num_burst_fire_flags = sizeof(Burst_fire_flags)/sizeof(flag_def_list_new<Weapon::Burst_Flags>);
 
 weapon_explosions Weapon_explosions;
 
