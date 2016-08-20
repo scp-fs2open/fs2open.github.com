@@ -28,7 +28,7 @@ static char Default_profile_name[NAME_LENGTH];
 
 
 // utility
-void set_flag(ai_profile_t *profile, char *name, AI::Profile_Flags flag)
+void set_flag(ai_profile_t *profile, const char *name, AI::Profile_Flags flag)
 {
 	if (optional_string(name))
 	{
@@ -482,7 +482,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					mprintf(("Warning: \"$allow primary link delay\" flag is deprecated in favor of \"$allow primary link at mission start\"\n"));
 					bool temp;
 					stuff_boolean(&temp);
-                    profile->flags.set(AI::Profile_Flags::Allow_primary_link_at_start, temp);
+                    profile->flags.set(AI::Profile_Flags::Allow_primary_link_at_start, !temp);
 				}
 
 
