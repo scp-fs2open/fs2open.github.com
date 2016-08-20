@@ -754,7 +754,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 					if (current_bank > -1) {
 						weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 
-						if(!(En_objp->flags[Object::Object_Flags::Protected]) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags & WIF_PUNCTURE )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
+						if(!(En_objp->flags[Object::Object_Flags::Protected]) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags[Weapon::Info_Flags::Puncture] )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil
 							//	If ship is protected and very low on hits, don't fire missiles.
 							if (!(En_objp->flags[Object::Object_Flags::Protected]) || (En_objp->hull_strength > 10*swip->damage)) {
 								if (aip->ai_flags & AIF_UNLOAD_SECONDARIES) {
@@ -765,7 +765,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 
 								if (timestamp_elapsed(swp->next_secondary_fire_stamp[current_bank])) {
 									float firing_range;
-									if (swip->wi_flags2 & WIF2_LOCAL_SSM)
+									if (swip->wi_flags[Weapon::Info_Flags::Local_ssm])
 										firing_range=swip->lssm_lock_range;
 									else
 										firing_range = MIN((swip->max_speed * swip->lifetime), swip->weapon_range);
@@ -1810,7 +1810,7 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// Approx 1/4 chance we'll go after the other ship's beam.
 
 	bool attack_turret_on_different_ship = (aip->ai_profile_flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
-		&& (Weapon_info[Weapons[weapon_objp->instance].weapon_info_index].wi_flags & WIF_BEAM) && (frand()*100 < 25.0f);
+		&& (Weapon_info[Weapons[weapon_objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Beam]) && (frand()*100 < 25.0f);
 
 	// unless we're making an exception, we should only attack a turret if it sits on the current target
 	if ( !attack_turret_on_different_ship )

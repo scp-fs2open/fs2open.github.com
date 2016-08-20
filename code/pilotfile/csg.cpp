@@ -445,7 +445,7 @@ void pilotfile::csg_read_techroom()
 
 		if (visible) {
 			if (weapon_list[idx].index >= 0) {
-				Weapon_info[weapon_list[idx].index].wi_flags |= WIF_IN_TECH_DATABASE;
+                Weapon_info[weapon_list[idx].index].wi_flags.set(Weapon::Info_Flags::In_tech_database);
 			} else {
 				m_data_invalid = true;
 			}
@@ -494,7 +494,7 @@ void pilotfile::csg_write_techroom()
 	// visible weapons
 	for (idx = 0; idx < Num_weapon_types; idx++) {
 		// only visible if not in techroom by default
-		if ( (Weapon_info[idx].wi_flags & WIF_IN_TECH_DATABASE) && !(Weapon_info[idx].wi_flags2 & WIF2_DEFAULT_IN_TECH_DATABASE) ) {
+		if ( (Weapon_info[idx].wi_flags[Weapon::Info_Flags::In_tech_database]) && !(Weapon_info[idx].wi_flags[Weapon::Info_Flags::Default_in_tech_database]) ) {
 			visible = 1;
 		} else {
 			visible = 0;
@@ -1408,7 +1408,7 @@ bool pilotfile::load_savefile(const char *campaign)
 
 	// the point of all this: read in the CSG contents
 	while ( !cfeof(cfp) ) {
-		ushort section_id = cfread_ushort(cfp);
+		Section section_id = static_cast<Section>(cfread_ushort(cfp));
 		uint section_size = cfread_uint(cfp);
 
 		size_t start_pos = cftell(cfp);
@@ -1647,7 +1647,7 @@ bool pilotfile::get_csg_rank(int *rank)
 
 	// the point of all this: read in the CSG contents
 	while ( !m_have_flags && !cfeof(cfp) ) {
-		ushort section_id = cfread_ushort(cfp);
+		Section section_id = static_cast<Section>(cfread_ushort(cfp));
 		uint section_size = cfread_uint(cfp);
 
 		size_t start_pos = cftell(cfp);

@@ -273,7 +273,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if (wip->weapon_hitpoints <= 0)
 				continue;
 
-			if (!(wip->wi_flags2 & WIF2_TAKES_SHOCKWAVE_DAMAGE || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags2 & WIF2_CIWS)))
+			if (!(wip->wi_flags[Weapon::Info_Flags::Takes_shockwave_damage] || (sw->weapon_info_index >= 0 && Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Ciws])))
 				continue;
 		}
 
@@ -312,7 +312,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		case OBJ_SHIP:
 			sw->obj_sig_hitlist[sw->num_objs_hit++] = objp->signature;
 			// If we're doing an AoE Electronics shockwave, do the electronics stuff. -MageKing17
-			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags3 & WIF3_AOE_ELECTRONICS) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
+			if ( (sw->weapon_info_index >= 0) && (Weapon_info[sw->weapon_info_index].wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !(objp->flags[Object::Object_Flags::Invulnerable]) ) {
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
 			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage );

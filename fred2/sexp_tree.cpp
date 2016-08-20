@@ -5721,7 +5721,7 @@ sexp_list_item *sexp_tree::get_listing_opf_huge_weapon()
 	sexp_list_item head;
 
 	for (i=0; i<Num_weapon_types; i++) {
-		if (Weapon_info[i].wi_flags & WIF_HUGE)
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Huge])
 			head.add_data(Weapon_info[i].name);
 	}
 

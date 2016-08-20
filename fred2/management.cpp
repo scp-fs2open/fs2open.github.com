@@ -882,7 +882,7 @@ void clear_mission()
 
 		count = 0;
 		for (j=0; j<MAX_WEAPON_TYPES; j++){
-			if (Weapon_info[j].wi_flags & WIF_PLAYER_ALLOWED){
+			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]){
 				if(Weapon_info[j].subtype == WP_LASER){
 					Team_data[i].weaponry_count[count] = 16;
 				} else {

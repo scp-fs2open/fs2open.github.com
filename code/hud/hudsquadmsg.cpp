@@ -850,7 +850,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 		}
 		
 		if ( (Comm_orders[order].item == ATTACK_TARGET_ITEM )
-			&& ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags3 & WIF3_FIGHTER_INTERCEPTABLE))
+			&& ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Fighter_Interceptable]))
 			&& (Weapons[objp->instance].team != ordering_shipp->team) )
 
 			return 1;

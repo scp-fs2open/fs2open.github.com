@@ -814,7 +814,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		return;
 
 	is_homing = FALSE;
-	if ( target_wip->wi_flags & WIF_HOMING && wp->homing_object != &obj_used_list )
+	if ( target_wip->is_homing() && wp->homing_object != &obj_used_list )
 		is_homing = TRUE;
 
 	is_player_missile = FALSE;
@@ -1541,8 +1541,7 @@ void HudGaugeExtraTargetData::endFlashDock()
 }
 
 //from aicode.cpp. Less include...problems...this way.
-extern int turret_weapon_aggregate_flags(ship_weapon *swp);
-extern int turret_weapon_aggregate_flags2(ship_weapon *swp);
+extern flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(ship_weapon *swp);
 extern bool turret_weapon_has_subtype(ship_weapon *swp, int subtype);
 void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 {
@@ -1550,25 +1549,24 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 
 	//WMC - find the first weapon, if there is one
 	if (swp->num_primary_banks || swp->num_secondary_banks) {
-		int flags = turret_weapon_aggregate_flags(swp);
-		int flags2 = turret_weapon_aggregate_flags2(swp);
+		auto flags = turret_weapon_aggregate_flags(swp);
 
 		// check if beam or flak using weapon flags
-		if (flags & WIF_BEAM) {
+		if (flags[Weapon::Info_Flags::Beam]) {
 			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
-		} else if (flags & WIF_FLAK) {
+		} else if (flags[Weapon::Info_Flags::Flak]) {
 			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
 		} else {
 			if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
 				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
 				// ballistic too! - Goober5000
-				if (flags2 & WIF2_BALLISTIC)
+				if (flags[Weapon::Info_Flags::Ballistic])
 				{
 					sprintf(outstr, "%s", XSTR("Turret", 1487));
 				}
 				// the TVWP has some primaries flagged as bombs
-				else if (flags & WIF_BOMB)
+				else if (flags[Weapon::Info_Flags::Bomb])
 				{
 					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
 				}
@@ -1578,7 +1576,7 @@ void get_turret_subsys_name(ship_weapon *swp, char *outstr)
 				}
 			} else {
 				// Mantis #2226: find out if there are any weapons here at all
-				if (flags == 0 && flags2 == 0) {
+				if (flags.none_set()) {
 					sprintf(outstr, "%s", NOX("Unused"));
 				} else {
 					// Illegal subtype

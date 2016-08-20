@@ -31,6 +31,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
 #include "ship/ship_flags.h"
+#include "weapon/weapon_flags.h"
 
 #include <string>
 
@@ -718,9 +719,7 @@ struct ai_target_priority {
 
 	flagset<Object::Object_Flags> obj_flags;
     flagset<Ship::Info_Flags> sif_flags;
-	int wif_flags;
-	int wif2_flags;
-	int wif3_flags;
+	flagset<Weapon::Info_Flags> wif_flags;
 };
 
 extern SCP_vector <ai_target_priority> Ai_tp_list;
