@@ -3,12 +3,6 @@
 #else
   #define MAX_LIGHTS 8
 #endif
-#ifdef FLAG_TRANSFORM
-#extension GL_ARB_texture_buffer_object : enable
-#endif
-#ifdef FLAG_SHADOWS
-#extension GL_EXT_texture_array : enable
-#endif
 #define LT_DIRECTIONAL		0
 #define LT_POINT			1
 #define LT_TUBE			2

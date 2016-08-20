@@ -7,9 +7,6 @@
   #extension GL_ARB_draw_instanced : enable
  #endif
 #endif
-#ifdef FLAG_TRANSFORM
-#extension GL_ARB_texture_buffer_object : enable
-#endif
 in vec4 vertPosition;
 in vec4 vertTexCoord;
 in vec3 vertNormal;

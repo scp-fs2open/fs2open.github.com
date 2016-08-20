@@ -1,10 +1,7 @@
-#extension GL_EXT_gpu_shader4 : enable
 #define FXAA_EARLY_EXIT 1
 #define FXAA_DISCARD 1
 #ifndef FXAA_FAST_PIXEL_OFFSET
-	#ifdef GL_EXT_gpu_shader4
-		#define FXAA_FAST_PIXEL_OFFSET 1
-	#endif
+    #define FXAA_FAST_PIXEL_OFFSET 1
 	#ifdef GL_NV_gpu_shader5
 		#extension GL_NV_gpu_shader5 : enable
 		#define FXAA_FAST_PIXEL_OFFSET 1

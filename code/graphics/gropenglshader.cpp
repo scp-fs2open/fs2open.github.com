@@ -461,10 +461,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	SCP_vector<SCP_string> geom_content;
 
 	if ( use_geo_sdr ) {
-		if (!GLAD_GL_ARB_geometry_shader4) {
-			return -1;
-		}
-
 		// read geometry shader
 		geom_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->geo, flags, SDR_STAGE_GEOMETRY);
 
@@ -657,7 +653,7 @@ GLuint opengl_shader_compile_object(const SCP_vector<SCP_string>& shader_source,
 	// we failed, bail out now...
 	if (status == 0) {
 		// basic error check
-		mprintf(("%s shader failed to compile:\n%s\n", (shader_type == GL_VERTEX_SHADER) ? "Vertex" : ((shader_type == GL_GEOMETRY_SHADER_ARB) ? "Geometry" : "Fragment"), GLshader_info_log));
+		mprintf(("%s shader failed to compile:\n%s\n", (shader_type == GL_VERTEX_SHADER) ? "Vertex" : ((shader_type == GL_GEOMETRY_SHADER) ? "Geometry" : "Fragment"), GLshader_info_log));
 
 		// this really shouldn't exist, but just in case
 		if (shader_object) {
@@ -669,7 +665,7 @@ GLuint opengl_shader_compile_object(const SCP_vector<SCP_string>& shader_source,
 
 	// we succeeded, maybe output warnings too
 	if (strlen(GLshader_info_log) > 5) {
-		nprintf(("SHADER-DEBUG", "%s shader compiled with warnings:\n%s\n", (shader_type == GL_VERTEX_SHADER) ? "Vertex" : ((shader_type == GL_GEOMETRY_SHADER_ARB) ? "Geometry" : "Fragment"), GLshader_info_log));
+		nprintf(("SHADER-DEBUG", "%s shader compiled with warnings:\n%s\n", (shader_type == GL_VERTEX_SHADER) ? "Vertex" : ((shader_type == GL_GEOMETRY_SHADER) ? "Geometry" : "Fragment"), GLshader_info_log));
 	}
 
 	return shader_object;
@@ -770,7 +766,7 @@ GLuint opengl_shader_create(const SCP_vector<SCP_string>& vs, const SCP_vector<S
 	}
 
 	if (!gs.empty()) {
-		gs_o = opengl_shader_compile_object( gs, GL_GEOMETRY_SHADER_ARB );
+		gs_o = opengl_shader_compile_object( gs, GL_GEOMETRY_SHADER );
 
 		if ( !gs_o ) {
 			mprintf(("ERROR! Unable to create fragment shader!\n"));

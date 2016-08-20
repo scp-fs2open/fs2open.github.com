@@ -147,14 +147,12 @@ void opengl_tcache_init()
 	}
 
 	// max size (width and/or height) that we can use for framebuffer/renderbuffer
-	if ( GLAD_GL_ARB_framebuffer_object ) {
-		glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &GL_max_renderbuffer_size);
+	glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &GL_max_renderbuffer_size);
 
-		// if we can't do at least 128x128 then just disable FBOs
-		if (GL_max_renderbuffer_size < 128) {
-			mprintf(("WARNING: Max dimensions of FBO, %ix%i, is less the required minimum!!  Extension will be disabled!\n", GL_max_renderbuffer_size, GL_max_renderbuffer_size));
-			GLAD_GL_ARB_framebuffer_object = 0;
-		}
+	// if we can't do at least 128x128 then just disable FBOs
+	if (GL_max_renderbuffer_size < 128) {
+		mprintf(("WARNING: Max dimensions of FBO, %ix%i, is less the required minimum!!  Extension will be disabled!\n", GL_max_renderbuffer_size, GL_max_renderbuffer_size));
+		Cmdline_no_fbo = 1;
 	}
 
 	// anisotropy
@@ -420,7 +418,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 
 
 	if ( bitmap_type == TCACHE_TYPE_CUBEMAP ) {
-		t->texture_target = GL_TEXTURE_CUBE_MAP_ARB;
+		t->texture_target = GL_TEXTURE_CUBE_MAP;
 	}
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -603,7 +601,6 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 		case TCACHE_TYPE_CUBEMAP: {
 			Assert( !resize );
 			Assert( texmem == NULL );
-			Assert( GLAD_GL_ARB_texture_cube_map );
 
 			// we have to load in all 6 faces...
 			for (i = 0; i < 6; i++) {
@@ -615,9 +612,9 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 					dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
 
 					if ( !reload ) {
-						glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB+i, 0, intFormat, mipmap_w, mipmap_h, 0, dsize, bmp_data + doffset);
+						glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, intFormat, mipmap_w, mipmap_h, 0, dsize, bmp_data + doffset);
 					} else {
-						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB+i, 0, 0, 0, mipmap_w, mipmap_h, intFormat, dsize, bmp_data + doffset);
+						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, 0, 0, mipmap_w, mipmap_h, intFormat, dsize, bmp_data + doffset);
 					}
 
 					// now that the base image is done handle any mipmap levels
@@ -641,9 +638,9 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 						dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
 
 						if ( !reload ) {
-							glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB+i, j, intFormat, mipmap_w, mipmap_h, 0, dsize, bmp_data + doffset);
+							glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, j, intFormat, mipmap_w, mipmap_h, 0, dsize, bmp_data + doffset);
 						} else {
-							glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB+i, j, 0, 0, mipmap_w, mipmap_h, intFormat, dsize, bmp_data + doffset);
+							glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, j, 0, 0, mipmap_w, mipmap_h, intFormat, dsize, bmp_data + doffset);
 						}
 					}
 				}
@@ -652,9 +649,9 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 					dsize = mipmap_h * mipmap_w * byte_mult;
 
 					if ( !reload ) {
-						glTexImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB+i, 0, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, bmp_data + doffset);
+						glTexImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, bmp_data + doffset);
 					} else { // faster anis
-						glTexSubImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB+i, 0, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, bmp_data + doffset);
+						glTexSubImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, bmp_data + doffset);
 					}
 
 					// base image is done so now take care of any mipmap levels
@@ -674,9 +671,9 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 						dsize = mipmap_h * mipmap_w * byte_mult;
 
 						if ( !reload ) {
-							glTexImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB+i, j, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, bmp_data + doffset);
+							glTexImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, j, intFormat, mipmap_w, mipmap_h, 0, glFormat, texFormat, bmp_data + doffset);
 						} else {
-							glTexSubImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB+i, j, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, bmp_data + doffset);
+							glTexSubImage2D (GL_TEXTURE_CUBE_MAP_POSITIVE_X+i, j, 0, 0, mipmap_w, mipmap_h, glFormat, texFormat, bmp_data + doffset);
 						}
 					}
 				}
@@ -789,7 +786,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	t->w = (ushort)tex_w;
 	t->h = (ushort)tex_h;
 
-	if ( t->mipmap_levels == 1 && bitmap_type == TCACHE_TYPE_CUBEMAP && GLAD_GL_ARB_framebuffer_object ) {
+	if ( t->mipmap_levels == 1 && bitmap_type == TCACHE_TYPE_CUBEMAP ) {
 		// generate mip maps for cube maps so we can get glossy reflections; necessary for gloss maps and physically-based lighting
 		// OGL_EXT_FRAMEBUFFER_OBJECT required to use glGenerateMipmap()
 		t->mipmap_levels = get_num_mipmap_levels(t->w, t->h);
@@ -1181,12 +1178,6 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 		return 0;
 	}
 
-	// if mipmaps are requested then make them with the nicest possible settings
-	if (num_mipmaps > 1) {
-		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
-		glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
-	}
-
 	// use best compression quality
 	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
 
@@ -1219,12 +1210,6 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, i, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &testing);
 		glGetCompressedTexImage(GL_TEXTURE_2D, i, out_data + compressed_size);
 		compressed_size += testing;
-	}
-
-	// done with everything so reset hints to default values
-	if (num_mipmaps > 1) {
-		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
-		glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_DONT_CARE);
 	}
 
 	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_DONT_CARE);
@@ -1327,7 +1312,7 @@ size_t opengl_export_render_target( int slot, int width, int height, int alpha, 
 		return 0;
 	}
 
-	if ( (ts->texture_target != GL_TEXTURE_2D) && (ts->texture_target != GL_TEXTURE_CUBE_MAP_ARB) ) {
+	if ( (ts->texture_target != GL_TEXTURE_2D) && (ts->texture_target != GL_TEXTURE_CUBE_MAP) ) {
 		mprintf(("OpenGL ERROR: Only 2D textures and cube maps can be exported!\n"));
 		return 0;
 	}
@@ -1342,9 +1327,9 @@ size_t opengl_export_render_target( int slot, int width, int height, int alpha, 
 	int m_height = height;
 	int m_bpp = (alpha) ? 4 : 3;
 	int m_offset = 0;
-	GLenum target = (ts->texture_target == GL_TEXTURE_CUBE_MAP_ARB) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB : GL_TEXTURE_2D;
+	GLenum target = (ts->texture_target == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X : GL_TEXTURE_2D;
 
-	if (ts->texture_target == GL_TEXTURE_CUBE_MAP_ARB)
+	if (ts->texture_target == GL_TEXTURE_CUBE_MAP)
 		faces = 6;
 
 	GL_state.Texture.SetActiveUnit(0);
@@ -1647,9 +1632,9 @@ int opengl_set_render_target( int slot, int face, int is_static )
 //	glBindRenderbuffer(GL_RENDERBUFFER, fbo->renderbuffer_id);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo->framebuffer_id);
 
-	if (ts->texture_target == GL_TEXTURE_CUBE_MAP_ARB) {
+	if (ts->texture_target == GL_TEXTURE_CUBE_MAP) {
 		Assert( (face >= 0) && (face < 6) );
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + face, ts->texture_id, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, ts->texture_id, 0);
 	} else {
 		Assert( face <= 0 );
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ts->texture_target, ts->texture_id, 0);
@@ -1711,7 +1696,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 
 		// we can use the existing FBO without modification so just setup the texture slot and move on
 		if (flags & BMP_FLAG_CUBEMAP) {
-			opengl_set_texture_target( GL_TEXTURE_CUBE_MAP_ARB );
+			opengl_set_texture_target( GL_TEXTURE_CUBE_MAP );
 		} else {
 			opengl_set_texture_target();
 		}
@@ -1736,10 +1721,10 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 		if (flags & BMP_FLAG_CUBEMAP) {
 			// if a cubemap then we have to initalize each face
 			for (int i = 0; i < 6; i++) {
-				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i, 0, GL_RGBA, *w, *h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, *w, *h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 			}
 
-			ts->texture_target = GL_TEXTURE_CUBE_MAP_ARB;
+			ts->texture_target = GL_TEXTURE_CUBE_MAP;
 		} else {
 			// non-cubemap so just do the normal thing
 			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGBA, *w, *h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
@@ -1790,7 +1775,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 	fbo_t new_fbo;
 
 	if (flags & BMP_FLAG_CUBEMAP) {
-		opengl_set_texture_target( GL_TEXTURE_CUBE_MAP_ARB );
+		opengl_set_texture_target( GL_TEXTURE_CUBE_MAP );
 	} else {
 		opengl_set_texture_target();
 	}
@@ -1816,7 +1801,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 	if (flags & BMP_FLAG_CUBEMAP) {
 		// if a cubemap then we have to initalize each face
 		for (int i = 0; i < 6; i++) {
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + i, 0, GL_RGBA, *w, *h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, *w, *h, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 		}
 	} else {
 		// non-cubemap so just do the normal thing
@@ -1847,7 +1832,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 	glBindFramebuffer(GL_FRAMEBUFFER, new_fbo.framebuffer_id);
 
 	if (flags & BMP_FLAG_CUBEMAP) {
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, ts->texture_id, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, ts->texture_id, 0);
 	} else {
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_state.Texture.GetTarget(), ts->texture_id, 0);
 	}
@@ -1940,10 +1925,6 @@ GLuint opengl_get_rtt_framebuffer()
 
 void gr_opengl_bm_generate_mip_maps(int slot)
 {
-	if ( !GLAD_GL_ARB_framebuffer_object ) {
-		return;
-	}
-
 	if ( slot < 0 ) {
 		Int3();
 		return;

@@ -66,7 +66,7 @@ namespace
 		{
 			if (grab)
 			{
-				SDL_SetRelativeMouseMode(SDL_TRUE);
+				SDL_SetRelativeMouseMode(SDL_FALSE);
 			}
 			else
 			{
