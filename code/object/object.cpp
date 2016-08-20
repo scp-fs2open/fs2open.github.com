@@ -853,7 +853,7 @@ void obj_move_call_physics(object *objp, float frametime)
 		}
 
 		// if a weapon is flagged as dead, kill its engines just like a ship
-		if((objp->type == OBJ_WEAPON) && (Weapons[objp->instance].weapon_flags & WF_DEAD_IN_WATER)){
+		if((objp->type == OBJ_WEAPON) && (Weapons[objp->instance].weapon_flags[Weapon::Weapon_Flags::Dead_in_water])){
 			vm_vec_zero(&objp->phys_info.desired_vel);
 			vm_vec_zero(&objp->phys_info.desired_rotvel);
 			objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);

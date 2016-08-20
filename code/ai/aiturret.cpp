@@ -1677,7 +1677,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		turret->weapons.burst_counter[weapon_num]++;
 	} else {
 		wait *= wip->fire_wait;
-		if ((wip->burst_shots > 0) && (wip->burst_flags & WBF_RANDOM_LENGTH)) {
+		if ((wip->burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 			turret->weapons.burst_counter[weapon_num] = (myrand() % wip->burst_shots);
 		} else {
 			turret->weapons.burst_counter[weapon_num] = 0;
@@ -1691,7 +1691,7 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 		fs_dest = &turret->weapons.next_secondary_fire_stamp[weapon_num - MAX_SHIP_PRIMARY_BANKS];
 
 	//Check for the new cooldown flag
-	if(!((wip->wi_flags[Weapon::Info_Flags::Same_turret_cooldown]) || ((wip->burst_shots > 0) && (wip->burst_flags & WBF_FAST_FIRING))))
+	if(!((wip->wi_flags[Weapon::Info_Flags::Same_turret_cooldown]) || ((wip->burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Fast_firing]))))
 	{
 
 		// make side even for team vs. team

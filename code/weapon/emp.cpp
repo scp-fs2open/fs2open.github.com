@@ -138,7 +138,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 			// if the bomb was within 1/4 of the outer radius, castrate it
 			if(dist_mag <= (outer_radius * 0.25f)){
 				// memset(&target->phys_info, 0, sizeof(physics_info));
-				Weapons[target->instance].weapon_flags |= WF_DEAD_IN_WATER;
+                Weapons[target->instance].weapon_flags.set(Weapon::Weapon_Flags::Dead_in_water);
 				mprintf(("EMP killing weapon\n"));
 			}
 		}	
