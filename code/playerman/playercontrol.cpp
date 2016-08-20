@@ -81,16 +81,6 @@ static int Player_all_alone_msg_inited=0;	// flag used for initializing a player
 void playercontrol_read_stick(int *axis, float frame_time);
 
 /**
- * @brief Checks the padlock controls, and sets the appropriate Viewermode state and chase angles
- *
- * @param[out] Viewer_mode Is modified if a padlock action is taken
- * @param[out] chase_slew_angles Is modified if a padlock action is taken
- *
- * @returns True if padlock mode is active
- */
-bool player_set_padlock_state(int &Viewer_mode, angles &chase_slew_angles);
-
-/**
  * @brief Slew angles chase towards a value like they're on a spring.
  *
  * @param[in,out] ap The current view angles. Is modified towards target angles.
@@ -123,6 +113,17 @@ void chase_angles_to_value(angles *ap, angles *bp, int scale)
 		ap->p -= (delta.p * (1.0f - sk));
 		ap->h -= (delta.h * (1.0f - sk));
 	}
+}
+
+/**
+ * @brief Resets the given angles to 0.0f without delay
+ *
+ * @param[in,out] Angles to reset
+ */
+void reset_angles(angles *ap) {
+	ap->p = 0.0f;
+	ap->h = 0.0f;
+	ap->b = 0.0f;
 }
 
 angles	Viewer_slew_angles_delta;
@@ -342,12 +343,43 @@ void do_view_slew(float frame_time)
 {
 	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3, frame_time);
 
+	// Check Track target
 	if (Viewer_mode & VM_TRACK) {
 		// Player's vision will track current target.
 		do_view_track_target(frame_time);
 		Viewer_mode |= VM_CAMERA_LOCKED;
+		return;
+	}
 
-	} else if (Viewer_mode & VM_CENTERING) {
+	// Check Padlock controls
+	if (check_control(PADLOCK_UP)) {
+		Viewer_mode |= (VM_PADLOCK_UP | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (check_control(PADLOCK_DOWN)) {
+		Viewer_mode |= (VM_PADLOCK_REAR | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (check_control(PADLOCK_RIGHT)) {
+		Viewer_mode |= (VM_PADLOCK_RIGHT | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (check_control(PADLOCK_LEFT)) {
+		Viewer_mode |= (VM_PADLOCK_LEFT | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (Viewer_mode & VM_PADLOCK_ANY) {
+		// clear padlock views and center the view once 
+		// the player lets go of a padlock control
+		Viewer_mode &= ~(VM_PADLOCK_ANY);
+		Viewer_mode |= (VM_CENTERING | VM_CAMERA_LOCKED);
+	}
+
+	if (Viewer_mode & VM_CENTERING) {
 		// If we're centering the view, check to see if we're actually centered and bypass any view modifications
 		// until the view has finally been centered.
 		if ((Viewer_slew_angles.h == 0.0f) && (Viewer_slew_angles.p == 0.0f)) {
@@ -355,15 +387,15 @@ void do_view_slew(float frame_time)
 			Viewer_mode &= ~VM_CENTERING;
 		}
 		Viewer_mode |= VM_CAMERA_LOCKED;
+	}
 
-	} else if (!player_set_padlock_state(Viewer_mode, chase_slew_angles)) {
-		// Padlock is not enabled
-
+	if (!(Viewer_mode & VM_PADLOCK_ANY)) {
 		if (headtracking::isEnabled()) {
 			// Can't do slewing if TrackIR is enabled
 			return;
-
-		} else if (check_control_timef(VIEW_SLEW)) {
+		}
+		
+		if (check_control_timef(VIEW_SLEW)) {
 			// Enable freelook mode
 			Viewer_mode &= ~VM_CAMERA_LOCKED;
 
@@ -380,15 +412,25 @@ void do_view_chase(float frame_time)
 {
 	float t;
 
-	//	Process centering key.
+	if (Viewer_mode & VM_TRACK) {
+		// Snap back to zero and disable target tracking
+		reset_angles(&Viewer_slew_angles);
+		reset_angles(&chase_slew_angles);
+		Viewer_mode &= ~VM_TRACK;
+	}
+
+	// Process centering key.
 	if (check_control_timef(VIEW_CENTER)) {
 		Viewer_chase_info.distance = 0.0f;
 	}
 	
+	// Process distance +/- keys
 	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE);
 	Viewer_chase_info.distance += t*4;
 	if (Viewer_chase_info.distance < 0.0f)
 		Viewer_chase_info.distance = 0.0f;
+
+	Viewer_mode |= VM_CAMERA_LOCKED;
 }
 
 float camera_zoom_scale = 1.0f;
@@ -408,6 +450,13 @@ DCF(camera_speed, "Sets the camera zoom scale")
 void do_view_external(float frame_time)
 {
 	float	t;
+
+	if (Viewer_mode & VM_TRACK) {
+		// Snap back to zero and disable target tracking
+		reset_angles(&Viewer_slew_angles);
+		reset_angles(&chase_slew_angles);
+		Viewer_mode &= ~VM_TRACK;
+	}
 
 	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, PI2, PI2, frame_time);
 
@@ -549,7 +598,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	} else if ( Viewer_mode & VM_CHASE ) {
 		do_view_chase(frame_time);
-		Viewer_mode |= VM_CAMERA_LOCKED;
 
 	} else {
 		// We're in the cockpit. 
@@ -1943,38 +1991,6 @@ void player_maybe_play_all_alone_msg()
 	}
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 } 
-
-
-bool player_set_padlock_state(int &Viewer_mode, angles &chase_slew_angles)
-{
-	bool retval = false;
-
-	if ( check_control(PADLOCK_UP) ) {
-		Viewer_mode |= (VM_PADLOCK_UP | VM_CAMERA_LOCKED);
-		retval = true;
-
-	} else if ( check_control(PADLOCK_DOWN) ) {
-		Viewer_mode |= (VM_PADLOCK_REAR | VM_CAMERA_LOCKED);
-		retval = true;
-
-	} else if ( check_control(PADLOCK_RIGHT) ) {
-		Viewer_mode |= (VM_PADLOCK_RIGHT | VM_CAMERA_LOCKED);
-		retval = true;
-
-	} else if ( check_control(PADLOCK_LEFT) ) {
-		Viewer_mode |= (VM_PADLOCK_LEFT | VM_CAMERA_LOCKED);
-		retval = true;
-
-	} else if ( Viewer_mode & VM_PADLOCK_ANY ) {
-		// clear padlock views and center the view once 
-		// the player lets go of an orthogonal padlock command
-		Viewer_mode &= ~(VM_PADLOCK_ANY);
-		Viewer_mode |= (VM_CENTERING | VM_CAMERA_LOCKED);
-
-	} // Else, do nothing
-
-	return retval;
-}
 
 void player_get_padlock_orient(matrix *eye_orient)
 {
