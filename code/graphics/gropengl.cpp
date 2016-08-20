@@ -1147,7 +1147,7 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 	attrs.flags |= os::OGL_DEBUG;
 #endif
 
-	attrs.profile = os::OpenGLProfile::Compatibility;
+	attrs.profile = os::OpenGLProfile::Core;
 
 	GL_context = graphicsOps->createOpenGLContext(attrs, (uint32_t) gr_screen.max_w, (uint32_t) gr_screen.max_h);
 
@@ -1416,6 +1416,8 @@ static void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severit
 
 	nprintf(("OpenGL Debug", "OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
 		sourceStr, typeStr, id, severityStr, message));
+	printf("OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
+		   sourceStr, typeStr, id, severityStr, message);
 }
 
 static bool hasPendingDebugMessage() {
