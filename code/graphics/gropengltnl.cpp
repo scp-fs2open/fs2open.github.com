@@ -1851,7 +1851,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
 	GL_state.Uniform.setUniformMatrix4f("textureMatrix", GL_texture_matrix);
 
-	color &clr = material_info->get_color();
+	color clr = material_info->get_color();
 	GL_state.Uniform.setUniform4f("color", clr.red / 255.0f, clr.green / 255.0f, clr.blue / 255.0f, clr.alpha / 255.0f);
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
@@ -1915,7 +1915,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		GL_state.Uniform.setUniformi("sBasemap", render_pass);
 
 		if ( material_info->is_desaturated() ) {
-			color &clr = material_info->get_color();
 			GL_state.Uniform.setUniform3f("desaturate_clr", clr.red / 255.0f, clr.green / 255.0f, clr.blue / 255.0f);
 
 			GL_state.Uniform.setUniformi("desaturate", 1);
