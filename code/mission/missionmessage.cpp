@@ -1976,7 +1976,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			nprintf(("messaging", "Couldn't find persona for %s\n", shipp->ship_name ));	
 
 		// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
-		Assert( !Ship_info[shipp->ship_info_index].is_flyable() );		// get allender or alan
+		Assert( Ship_info[shipp->ship_info_index].is_flyable() );		// get allender or alan
 	} else {
 		persona_index = The_mission.command_persona;				// use the terran command persona
 	}

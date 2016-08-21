@@ -31,7 +31,7 @@ vec3 FresnelSchlick(vec3 specColor, vec3 light, vec3 halfVec)
 }
 vec3 SpecularBlinnPhong(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, float specPower, float dotNL)
 {
-	return FresnelSchlick(max(specColor, vec3(0.04)), light, halfVec) * ((specPower + 2) / 8 ) * pow(clamp(dot(normal, halfVec), 0.0, 1.0), specPower) * dotNL;
+	return FresnelSchlick(max(specColor, vec3(0.04)), light, halfVec) * ((specPower + 2.0) / 8.0 ) * pow(clamp(dot(normal, halfVec), 0.0, 1.0), specPower) * dotNL;
 }
 vec4 SpecularLegacy(vec4 specColor, vec3 normal, vec3 halfVec, float specPower)
 {

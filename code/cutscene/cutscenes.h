@@ -21,7 +21,15 @@ typedef struct cutscene_info {
 	bool	viewable;
 } cutscene_info;
 
+#if SCP_COMPILER_IS_GNU
+#pragma GCC diagnostic push
+// This suppresses a GCC bug where it thinks that the Cutscenes from the enum class below shadows a global variable
+#pragma GCC diagnostic ignored "-Wshadow"
+#endif
 extern SCP_vector<cutscene_info> Cutscenes;
+#if SCP_COMPILER_IS_GNU
+#pragma GCC diagnostic pop
+#endif
 
 // initializa table data
 void cutscene_init();

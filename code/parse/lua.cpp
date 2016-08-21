@@ -4659,18 +4659,11 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newVal)
-		{
-			info->wi_flags |= WIF_BOMB;
-		}
-		else
-		{
-			info->wi_flags &= ~WIF_BOMB;
-		}
+        info->wi_flags.set(Weapon::Info_Flags::Bomb, newVal);
 	}
 		
 
-	if (info->wi_flags & WIF_BOMB)
+	if (info->wi_flags[Weapon::Info_Flags::Bomb])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -4796,7 +4789,7 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 	if(idx < 0 || idx >= Num_weapon_types)
 		return ADE_RETURN_FALSE;
 
-	if (Weapon_info[idx].wi_flags & WIF_BEAM || Weapon_info[idx].subtype == WP_BEAM)
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -10752,13 +10745,10 @@ ADE_VIRTVAR(DestroyedByWeapon, l_Weapon, "boolean", "Whether weapon was destroye
 	weapon *wp = &Weapons[oh->objp->instance];
 
 	if(ADE_SETTING_VAR && numargs > 1) {
-		if(b)
-			wp->weapon_flags |= WF_DESTROYED_BY_WEAPON;
-		else
-			wp->weapon_flags &= ~WF_DESTROYED_BY_WEAPON;
+		wp->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon, b);
 	}
 
-	return ade_set_args(L, "b", (wp->weapon_flags & WF_DESTROYED_BY_WEAPON) > 0);
+	return ade_set_args(L, "b", (wp->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]) > 0);
 }
 
 ADE_VIRTVAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)", "number", "Life left (seconds) or 0 if weapon handle is invalid")

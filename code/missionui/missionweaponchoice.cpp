@@ -1122,7 +1122,7 @@ void wl_set_disabled_weapons(int ship_class)
 		Wl_icons[i].can_use = eval_weapon_flag_for_game_type(sip->allowed_weapons[i]);
 
 		// Goober5000: ballistic primaries
-		if (Weapon_info[i].wi_flags2 & WIF2_BALLISTIC)
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			// not allowed if this ship is not ballistic
 			if (!(sip->flags[Ship::Info_Flags::Ballistic_primaries]))
@@ -1503,7 +1503,7 @@ int wl_calc_ballistic_fit(int wi_index, int capacity)
 
 	Assert(Weapon_info[wi_index].subtype == WP_LASER);
 
-	Assert(Weapon_info[wi_index].wi_flags2 & WIF2_BALLISTIC);
+	Assert(Weapon_info[wi_index].wi_flags[Weapon::Info_Flags::Ballistic]);
 
 	return fl2i( capacity / Weapon_info[wi_index].cargo_size + 0.5f );
 }
@@ -3281,7 +3281,7 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 			ss->primary_banks[j] = slot->wep[i];
 
 			// ballistic primaries - Goober5000
-			if (Weapon_info[slot->wep[i]].wi_flags2 & WIF2_BALLISTIC)
+			if (Weapon_info[slot->wep[i]].wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				// Important: the primary_ammo[] value is a percentage of max capacity!
 				// which means that it's always 100%, since ballistic primaries are completely
@@ -3404,7 +3404,7 @@ void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 			swp->primary_bank_weapons[j] = slot->wep[i];
 
 			// ballistic primaries - Goober5000
-			if (Weapon_info[swp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC) {
+			if (Weapon_info[swp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 				// this is a bit tricky: we must recalculate ammo for full capacity
 				// since wep_count for primaries does not store the ammo; ballistic
 				// primaries always come with a full magazine
@@ -4045,7 +4045,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 
 			// make sure this ship can accept this weapon
 			if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_type_to_add])
-				|| ((wip->wi_flags2 & WIF2_BALLISTIC) && !(sip->flags[Ship::Info_Flags::Ballistic_primaries])))
+				|| ((wip->wi_flags[Weapon::Info_Flags::Ballistic]) && !(sip->flags[Ship::Info_Flags::Ballistic_primaries])))
 			{
 				SCP_string temp;
 				sprintf(temp, XSTR("%s is unable to carry %s weaponry", 1629), ship_name, wep_display_name);

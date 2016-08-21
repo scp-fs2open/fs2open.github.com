@@ -879,7 +879,7 @@ int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj) {
 	weapon_info *dead_wip = &Weapon_info[dead_wp->weapon_info_index];	// info on the weapon that was killed
 
 	// we don't evaluate kills on anything except bombs, currently. -Halleck
-	if(!(dead_wip->wi_flags & WIF_BOMB))  {
+	if(!(dead_wip->wi_flags[Weapon::Info_Flags::Bomb]))  {
 		return -1;
 	}
 
@@ -1086,7 +1086,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 		return;
 	}
 	
-	if((other_obj->type == OBJ_WEAPON) && !(Weapons[other_obj->instance].weapon_flags & WF_ALREADY_APPLIED_STATS)){		
+	if((other_obj->type == OBJ_WEAPON) && !(Weapons[other_obj->instance].weapon_flags[Weapon::Weapon_Flags::Already_applied_stats])){		
 		// bogus weapon
 		if(other_obj->instance >= MAX_WEAPONS){
 			return;
@@ -1116,7 +1116,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 				return;
 			}	
 
-			hit_obj_is_bomb = (Weapon_info[Weapons[hit_obj->instance].weapon_info_index].wi_flags & WIF_BOMB) ? true : false;
+			hit_obj_is_bomb = (Weapon_info[Weapons[hit_obj->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ? true : false;
 
 			//If it's not a bomb but just a regular weapon, we don't care about it (for now, at least.) -Halleck
 			if (!hit_obj_is_bomb) {
@@ -1170,7 +1170,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 						// hostile hit
 						else {
 							// if its a bomb, count every bit of damage it does
-							if(Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags & WIF_BOMB){
+							if(Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]){
 								// once we get impact damage, stop keeping track of it
 								Net_players[player_num].m_player->stats.ms_shots_hit++;
 							}
@@ -1206,7 +1206,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 				// hostile hit
 				else {
 					// if its a bomb, count every bit of damage it does
-					if(Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags & WIF_BOMB){
+					if(Weapon_info[Weapons[other_obj->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]){
 						// once we get impact damage, stop keeping track of it
 						Player->stats.ms_shots_hit++;
 					}

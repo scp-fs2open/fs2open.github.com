@@ -130,7 +130,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 		
 		// if we have a bomb weapon
 		wip_target = &Weapon_info[Weapons[target->instance].weapon_info_index];
-		if((wip_target->weapon_hitpoints > 0) && !(wip_target->wi_flags2 & WIF2_NO_EMP_KILL)) {
+		if((wip_target->weapon_hitpoints > 0) && !(wip_target->wi_flags[Weapon::Info_Flags::No_emp_kill])) {
 			// get the distance between the detonation and the target object
 			vm_vec_sub(&dist, &target->pos, pos);
 			dist_mag = vm_vec_mag(&dist);
@@ -138,7 +138,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 			// if the bomb was within 1/4 of the outer radius, castrate it
 			if(dist_mag <= (outer_radius * 0.25f)){
 				// memset(&target->phys_info, 0, sizeof(physics_info));
-				Weapons[target->instance].weapon_flags |= WF_DEAD_IN_WATER;
+                Weapons[target->instance].weapon_flags.set(Weapon::Weapon_Flags::Dead_in_water);
 				mprintf(("EMP killing weapon\n"));
 			}
 		}	

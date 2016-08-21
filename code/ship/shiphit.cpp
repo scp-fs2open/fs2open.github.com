@@ -290,26 +290,26 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 
 	// make the shipsounds work as they should...
-	if(subsys->subsys_snd_flags & SSSF_ALIVE)
+	if(subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive])
 	{
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->alive_snd, subsys);
-		subsys->subsys_snd_flags &= ~SSSF_ALIVE;
+        subsys->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Alive);
 	}
-	if(subsys->subsys_snd_flags & SSSF_TURRET_ROTATION)
+	if(subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation])
 	{
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->turret_base_rotation_snd, subsys);
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->turret_gun_rotation_snd, subsys);
-		subsys->subsys_snd_flags &= ~SSSF_TURRET_ROTATION;
+		subsys->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Turret_rotation);
 	}
-	if(subsys->subsys_snd_flags & SSSF_ROTATE)
+	if(subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
 	{
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->rotation_snd, subsys);
-		subsys->subsys_snd_flags &= ~SSSF_ROTATE;
+		subsys->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Rotate);
 	}
-	if((subsys->system_info->dead_snd != -1) && !(subsys->subsys_snd_flags & SSSF_DEAD))
+	if((subsys->system_info->dead_snd != -1) && !(subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
 	{
 		obj_snd_assign(ship_p->objnum, subsys->system_info->dead_snd, &subsys->system_info->pnt, 0, OS_SUBSYS_DEAD, subsys);
-		subsys->subsys_snd_flags |= SSSF_DEAD;
+		subsys->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Dead);
 	}
 }
 
@@ -495,7 +495,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 	if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) ||
 				(Beams_use_damage_factors && (other_obj->type == OBJ_BEAM)))) {
-		if ( Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING ) {
+		if ( Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training] ) {
 			return damage_left;
 		}
 		damage_left *= Weapon_info[weapon_info_index].subsystem_factor;
@@ -2160,7 +2160,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		if (damage > 0.0f) {
 			weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 			if ( weapon_info_index >= 0 ) {
-				if (Weapon_info[weapon_info_index].wi_flags & WIF_PUNCTURE) {
+				if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Puncture]) {
 					damage /= 4;
 				}
 
@@ -2185,7 +2185,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				// Check if this is simulated damage.
 				weapon_info_index = shiphit_get_damage_weapon(other_obj);
 				if ( weapon_info_index >= 0 ) {
-					if (Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING) {
+					if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training]) {
 //						diag_printf2("Simulated Hull for Ship %s hit, dropping from %.32f to %d.\n", shipp->ship_name, (int) ( ship_objp->sim_hull_strength * 100 ), (int) ( ( ship_objp->sim_hull_strength - damage ) * 100 ) );
 						ship_objp->sim_hull_strength -= damage;
 						ship_objp->sim_hull_strength = MAX( 0, ship_objp->sim_hull_strength );
@@ -2265,7 +2265,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 								if (other_obj->type == OBJ_BEAM)
 								{
 									int beam_weapon_info_index = beam_get_weapon_info_index(other_obj);
-									if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags & (WIF_HUGE)) ) {
+									if ( (beam_weapon_info_index > -1) && (Weapon_info[beam_weapon_info_index].wi_flags[Weapon::Info_Flags::Huge]) ) {
 										// Flag as vaporized
 										shipp->flags.set(Ship::Ship_Flags::Vaporize);
 									}
@@ -2307,7 +2307,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 
 		// if its a leech weapon - NOTE - unknownplayer: Perhaps we should do something interesting like direct the leeched energy into the attacker ?
-		if (wip->wi_flags & WIF_ENERGY_SUCK) {
+		if (wip->wi_flags[Weapon::Info_Flags::Energy_suck]) {
 			// reduce afterburner fuel
 			shipp->afterburner_fuel -= wip->afterburner_reduce;
 			shipp->afterburner_fuel = (shipp->afterburner_fuel < 0.0f) ? 0.0f : shipp->afterburner_fuel;
@@ -2401,7 +2401,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 
 		Assert(wip != NULL);
 
-		if (wip->wi_flags & WIF_TAG) {
+		if (wip->wi_flags[Weapon::Info_Flags::Tag]) {
 			// ssm stuff
 			vec3d *start = hitpos;
 			int ssm_index = wip->SSM_index;
@@ -2413,7 +2413,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 #ifndef NDEBUG
 	if (other_obj->type == OBJ_WEAPON) {
 		weapon_info	*wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
-		if (wip->wi_flags & WIF_HOMING) {
+		if (wip->is_homing()) {
 			Homing_hits++;
 			// nprintf(("AI", " Hit!  Hits = %i/%i\n", Homing_hits, (Homing_hits + Homing_misses)));
 		}
@@ -2451,7 +2451,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 
 				Assert(wip != NULL);
 
-				if (wip->wi_flags2 & WIF2_TRAINING) {
+				if (wip->wi_flags[Weapon::Info_Flags::Training]) {
 					create_sparks = false;
 				}
 			}

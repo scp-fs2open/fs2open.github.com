@@ -13,6 +13,7 @@
 #include "cfile/cfile.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "globalincs/flagset.h"
 #include "def_files/def_files.h"
 
 #include <exception>
@@ -148,7 +149,7 @@ extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size
 // If the "is_special" flag is set, or a string was not found in the def list, it will be added to the unparsed_or_special_strings Vector
 // so that you can process it properly later 
 template<class T, class Flagset>
-int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs[], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
+int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
 {
     char(*slp)[NAME_LENGTH] = (char(*)[32])new char[n_defs*NAME_LENGTH];
     int num_strings = stuff_string_list(slp, (int)n_defs);
@@ -179,8 +180,8 @@ int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs[], size_t n_
 
 extern long atol2();
 extern int my_errno;
-template<class Flagset>
-void stuff_flagset(Flagset *dest) {
+template<class T>
+void stuff_flagset(T *dest) {
     dest->from_long(atol2());
 
     if (my_errno)
@@ -213,6 +214,15 @@ extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
+
+template<class Flags, class Flagset>
+void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
+{
+    bool temp;
+    stuff_boolean(&temp, a_to_eol);
+    destination.set(flag, temp);
+}
+
 extern int check_for_string(const char *pstr);
 extern int check_for_string_raw(const char *pstr);
 extern int check_for_eof();

@@ -58,7 +58,7 @@ namespace
 		value.resize(value.length() - 1);
 
 		// Fix paths without slash at the end
-		if (value[value.length() - 1] != '\\' && value[value.length() - 1] != '/')
+		if (!value.empty() && value[value.length() - 1] != '\\' && value[value.length() - 1] != '/')
 		{
 			value.append("/");
 		}

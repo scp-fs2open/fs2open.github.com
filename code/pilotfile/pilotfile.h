@@ -5,7 +5,9 @@
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
 #include "stats/scoring.h"
+#include "pilotfile/FileHandler.h"
 
+#include <memory>
 
 class player;
 
@@ -60,6 +62,7 @@ class pilotfile {
 		// info shared between PLR and CSG ...
 		// --------------------------------------------------------------------
 		CFILE *cfp;
+		std::unique_ptr<pilot::FileHandler> handler;
 		SCP_string filename;
 		player *p;
 
@@ -129,29 +132,8 @@ class pilotfile {
 		scoring_special_t all_time_stats;
 		scoring_special_t multi_stats;
 
-		// sections of a pilot file. includes both plr and csg sections
-		struct Section {
-			enum id {
-				Flags			= 0x0001,
-				Info			= 0x0002,
-				Loadout			= 0x0003,
-				Controls		= 0x0004,
-				Multiplayer		= 0x0005,
-				Scoring			= 0x0006,
-				ScoringMulti	= 0x0007,
-				Techroom		= 0x0008,
-				HUD				= 0x0009,
-				Settings		= 0x0010,
-				RedAlert		= 0x0011,
-				Variables		= 0x0012,
-				Missions		= 0x0013,
-				Cutscenes		= 0x0014,
-				LastMissions	= 0x0015
-			};
-		};
-
 		// for writing files, sets/updates section info
-		void startSection(Section::id section_id);
+		void startSection(Section section_id);
 		void endSection();
 		// file offset of the size value for the current section (set with startSection())
 		size_t m_size_offset;

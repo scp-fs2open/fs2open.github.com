@@ -120,8 +120,8 @@ class flagset {
 		return *this;
 	}
 
-	bool any_set() const { return values.any(); }
-	bool none_set() const { return values.none(); }
+	bool any_set() { return values.any(); }
+	bool none_set() { return values.none(); }
 
 	void from_long(std::uint64_t num) { values = num; }
 	std::uint64_t to_long() const { return values.to_ulong(); }

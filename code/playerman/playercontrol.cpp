@@ -1172,7 +1172,7 @@ void player_init_all_alone_msg()
 
 		if ( Ships[objp->instance].team == Player_ship->team ) {
 			int ship_type = Ship_info[Ships[objp->instance].ship_info_index].class_type;
-			if ( ship_type != -1 && (Ship_types[ship_type].message_bools & STI_MSG_COUNTS_FOR_ALONE) ) {
+			if ( ship_type != -1 && (Ship_types[ship_type].flags[Ship::Type_Info_Flags::Counts_for_alone]) ) {
 				return;
 			}
 		}
@@ -1913,7 +1913,7 @@ void player_maybe_play_all_alone_msg()
 
 		if ( Ships[objp->instance].team == Player_ship->team ) {
 			int ship_type = Ship_info[Ships[objp->instance].ship_info_index].class_type;
-			if ( ship_type != -1 && (Ship_types[ship_type].message_bools & STI_MSG_COUNTS_FOR_ALONE) ) {
+			if ( ship_type != -1 && (Ship_types[ship_type].flags[Ship::Type_Info_Flags::Counts_for_alone]) ) {
 				return;
 			}
 		}

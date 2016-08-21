@@ -27,7 +27,7 @@ pilotfile::~pilotfile()
 	}
 }
 
-void pilotfile::startSection(Section::id section_id)
+void pilotfile::startSection(Section section_id)
 {
 	Assert( cfp );
 

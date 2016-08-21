@@ -2926,7 +2926,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 			Warning(LOCATION, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str);
 			continue;
 		}
-		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[index].wi_flags & WIF_PLAYER_ALLOWED)) ) {
+		else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[index].wi_flags[Weapon::Info_Flags::Player_allowed])) ) {
 			clean_loadout_list_entry();
 			nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str));
 			if ( !Is_standalone )

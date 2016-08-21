@@ -318,7 +318,7 @@ void HudGaugeReticle::getFirepointStatus() {
 							if ( !( (j >= (shipp->last_fired_point[i]+1) % num_slots) && (j <= (shipp->last_fired_point[i]+swp->primary_bank_slot_count[i]) % num_slots) ) ) {
 								fpactive--;
 							}
-						} else if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_CYCLE) {
+						} else if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Cycle]) {
 							// If this firepoint is not the next one to be fired, dim it one step
 							if (j != (shipp->last_fired_point[i]+1) % num_slots) {
 								fpactive--;

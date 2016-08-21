@@ -2428,7 +2428,7 @@ void CFREDView::OnUpdateFormWing(CCmdUI* pCmdUI)
 				if (ptr->type == OBJ_SHIP)
 				{
 					int ship_type = ship_query_general_type(ptr->instance);
-					if(ship_type > -1 && (Ship_types[ship_type].ai_bools & STI_AI_CAN_FORM_WING))
+					if(ship_type > -1 && (Ship_types[ship_type].flags[Ship::Type_Info_Flags::AI_can_form_wing]))
 					{
 						count++;
 					}
@@ -2955,7 +2955,7 @@ int CFREDView::global_error_check()
 					}
 
 					int ship_type = ship_query_general_type(ship);
-					if(ship_type < 0 || !(Ship_types[ship_type].ai_bools & STI_AI_CAN_FORM_WING))
+					if(ship_type < 0 || !(Ship_types[ship_type].flags[Ship::Type_Info_Flags::AI_can_form_wing]))
 					{
 							if (error("Ship \"%s\" is an illegal type to be in a wing", Ships[ship].ship_name)){
 								return 1;
@@ -3178,7 +3178,7 @@ int CFREDView::global_error_check()
 		starting_wing = (ship_starting_wing_lookup(Wings[i].name) != -1);
 
 		// first, be sure this isn't a reinforcement wing.
-		if ( starting_wing && (Wings[i].flags & WF_REINFORCEMENT) ) {
+		if ( starting_wing && (Wings[i].flags[Ship::Wing_Flags::Reinforcement]) ) {
 			if ( error("Starting Wing %s marked as reinforcement.  This wing\nshould either be renamed, or unmarked as reinforcement.", Wings[i].name) ){
 // Goober5000				return 1;
 			}

@@ -499,7 +499,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 
     pm->flags.reset();
 	if (optional_string("+Flags:")){
-        stuff_flagset<flagset<Mission::Mission_Flags>>(&pm->flags);
+        stuff_flagset(&pm->flags);
 	}
 
 	// nebula mission stuff
@@ -921,7 +921,7 @@ void parse_player_info2(mission *pm)
 			if ( (list2[i] >= 0) && (list2[i] < MAX_WEAPON_TYPES) ) {
 				// always allow the pool to be added in FRED, it is a verbal warning
 				// to let the mission dev know about the problem
-				if ( (Weapon_info[list2[i]].wi_flags & WIF_PLAYER_ALLOWED) || Fred_running ) {
+				if ( (Weapon_info[list2[i]].wi_flags[Weapon::Info_Flags::Player_allowed]) || Fred_running ) {
 					ptr->weaponry_pool[num_choices] = list2[i]; 
 					ptr->weaponry_count[num_choices] = list2[i+2];
 
@@ -2082,14 +2082,14 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NO_ARRIVAL_WARP))
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::No_arrival_warp]))
         shipp->flags.set(Ship::Ship_Flags::No_arrival_warp);
 
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NO_DEPARTURE_WARP))
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::No_departure_warp]))
         shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
 
     // ditto for Kazan
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY))
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry]))
         shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
@@ -2159,7 +2159,7 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
 				}
-				else if (wp->primary_bank_weapons[j] >= 0 && Weapon_info[wp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC)
+				else if (wp->primary_bank_weapons[j] >= 0 && Weapon_info[wp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic])
 				{
 					Assertion(Weapon_info[wp->primary_bank_weapons[j]].cargo_size > 0.0f,
 							"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
@@ -2253,7 +2253,7 @@ int parse_create_object_sub(p_object *p_objp)
 				{
 					if (Fred_running) {
 						ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
-					} else if (ptr->weapons.primary_bank_weapons[j] >= 0 && Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC) {
+					} else if (ptr->weapons.primary_bank_weapons[j] >= 0 && Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 						Assertion(Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size > 0.0f,
 								"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
 								shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.primary_bank_weapons[j]].name);
@@ -2474,7 +2474,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	ai_info *aip = &Ai_info[Ships[shipnum].ai_index];
 	aip->wing = wingnum;
 
-	if (wingp->flags & WF_NO_DYNAMIC)
+	if (wingp->flags[Ship::Wing_Flags::No_dynamic])
 		aip->ai_flags |= AIF_NO_DYNAMIC;
 
 	// copy any goals from the wing to the newly created ship
@@ -3966,7 +3966,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 				// set the wing variables appropriately.  Good for directives.
 
 				// set the gone flag
-				wingp->flags |= WF_WING_GONE;
+                wingp->flags.set(Ship::Wing_Flags::Gone);
 
 				// mark the number of waves and number of ships destroyed equal to the last wave and the number
 				// of ships yet to arrive
@@ -4130,7 +4130,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 		Ai_info[Ships[Objects[objnum].instance].ai_index].wing = wingnum;
 
-		if (wingp->flags & WF_NO_DYNAMIC)
+		if (wingp->flags[Ship::Wing_Flags::No_dynamic])
 			aip->ai_flags |= AIF_NO_DYNAMIC;
 
 		// update housekeeping variables
@@ -4244,7 +4244,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		mission_log_add_entry( LOG_WING_ARRIVED, wingp->name, NULL, wingp->current_wave );
 		ship_num = wingp->ship_index[0];
 
-		if ( !(Ships[ship_num].flags[Ship::Ship_Flags::No_arrival_music]) && !(wingp->flags & WF_NO_ARRIVAL_MUSIC) ) {
+		if ( !(Ships[ship_num].flags[Ship::Ship_Flags::No_arrival_music]) && !(wingp->flags[Ship::Wing_Flags::No_arrival_music]) ) {
 			if ( timestamp_elapsed(Allow_arrival_music_timestamp) ) {
 				Allow_arrival_music_timestamp = timestamp(ARRIVAL_MUSIC_MIN_SEPARATION);
 				event_music_arrival(Ships[ship_num].team);	
@@ -4288,7 +4288,7 @@ void parse_wing(mission *pm)
 {
 	int wingnum, i, wing_goals, delay, saved_arrival_delay;
 	char name[NAME_LENGTH], ship_names[MAX_SHIPS_PER_WING][NAME_LENGTH];
-	char wing_flag_strings[MAX_WING_FLAGS][NAME_LENGTH];
+    char wing_flag_strings[PARSEABLE_WING_FLAGS][NAME_LENGTH];
 	wing *wingp;
 
 	Assert(pm != NULL);
@@ -4306,7 +4306,7 @@ void parse_wing(mission *pm)
 	wingp->total_destroyed = 0;
 	wingp->total_departed = 0;	// Goober5000
 	wingp->total_vanished = 0;	// Goober5000
-	wingp->flags = 0;
+    wingp->flags.reset();
 
 	// squad logo - Goober5000
 	if (optional_string("+Squad Logo:"))
@@ -4462,26 +4462,26 @@ void parse_wing(mission *pm)
 	if (optional_string("+Flags:")) {
 		int count;
 
-		count = stuff_string_list( wing_flag_strings, MAX_WING_FLAGS );
-		for (i = 0; i < count; i++ ) {
-			if ( !stricmp( wing_flag_strings[i], NOX("ignore-count")) )
-				wingp->flags |= WF_IGNORE_COUNT;
-			else if ( !stricmp( wing_flag_strings[i], NOX("reinforcement")) )
-				wingp->flags |= WF_REINFORCEMENT;
-			else if ( !stricmp( wing_flag_strings[i], NOX("no-arrival-music")) )
-				wingp->flags |= WF_NO_ARRIVAL_MUSIC;
-			else if ( !stricmp( wing_flag_strings[i], NOX("no-arrival-message")) )
-				wingp->flags |= WF_NO_ARRIVAL_MESSAGE;
-			else if ( !stricmp( wing_flag_strings[i], NOX("no-arrival-warp")) )
-				wingp->flags |= WF_NO_ARRIVAL_WARP;
-			else if ( !stricmp( wing_flag_strings[i], NOX("no-departure-warp")) )
-				wingp->flags |= WF_NO_DEPARTURE_WARP;
-			else if ( !stricmp( wing_flag_strings[i], NOX("no-dynamic")) )
-				wingp->flags |= WF_NO_DYNAMIC;
-			else if ( !stricmp( wing_flag_strings[i], NOX("nav-carry-status")) )
-				wingp->flags |= WF_NAV_CARRY;
-			else
-				Warning(LOCATION, "unknown wing flag\n%s\n\nSkipping.", wing_flag_strings[i]);
+		count = stuff_string_list( wing_flag_strings, PARSEABLE_WING_FLAGS);
+        for (i = 0; i < count; i++) {
+            if (!stricmp(wing_flag_strings[i], NOX("ignore-count")))
+                wingp->flags.set(Ship::Wing_Flags::Ignore_count);
+            else if (!stricmp(wing_flag_strings[i], NOX("reinforcement")))
+                wingp->flags.set(Ship::Wing_Flags::Reinforcement);
+            else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-music")))
+                wingp->flags.set(Ship::Wing_Flags::No_arrival_music);
+            else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-message")))
+                wingp->flags.set(Ship::Wing_Flags::No_arrival_message);
+            else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-warp")))
+                wingp->flags.set(Ship::Wing_Flags::No_arrival_warp);
+            else if (!stricmp(wing_flag_strings[i], NOX("no-departure-warp")))
+                wingp->flags.set(Ship::Wing_Flags::No_departure_warp);
+            else if (!stricmp(wing_flag_strings[i], NOX("no-dynamic")))
+                wingp->flags.set(Ship::Wing_Flags::No_dynamic);
+            else if (!stricmp(wing_flag_strings[i], NOX("nav-carry-status")))
+                wingp->flags.set(Ship::Wing_Flags::Nav_carry);
+            else
+                Warning(LOCATION, "unknown wing flag\n%s\n\nSkipping.", wing_flag_strings[i]);
 		}
 	}
 
@@ -4758,7 +4758,7 @@ void post_process_ships_wings()
 			wing *wingp = &Wings[i];
 
 			// create the wing if is isn't a reinforcement.
-			if (!(wingp->flags & WF_REINFORCEMENT))
+			if (!(wingp->flags[Ship::Wing_Flags::Reinforcement]))
 				parse_wing_create_ships(wingp, wingp->wave_count);
 		}
 	}
@@ -5779,7 +5779,7 @@ void post_process_mission()
 			continue;
 		if ( Ships[shipnum].flags[Ship::Ship_Flags::Ignore_count] )
 			continue;
-		if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_IGNORE_COUNT) )
+		if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags[Ship::Wing_Flags::Ignore_count]) )
 			continue;
 
 		num = 1;
@@ -5795,7 +5795,7 @@ void post_process_mission()
 		// go through similar motions as above
 		if ( p_objp->flags[Mission::Parse_Object_Flags::SF_Ignore_count] )
 			continue;
-		if ( (p_objp->wingnum != -1) && (Wings[p_objp->wingnum].flags & WF_IGNORE_COUNT) )
+		if ( (p_objp->wingnum != -1) && (Wings[p_objp->wingnum].flags[Ship::Wing_Flags::Ignore_count]) )
 			continue;
 
 		if ( p_objp->wingnum == -1 )
@@ -6858,11 +6858,11 @@ void mission_eval_arrivals()
 		wingp = &Wings[i];
 
 		// should we process this wing anymore
-		if (wingp->flags & WF_WING_GONE)
+		if (wingp->flags[Ship::Wing_Flags::Gone])
 			continue;
 
 		// if we have a reinforcement wing, then don't try to create new ships automatically.
-		if (wingp->flags & WF_REINFORCEMENT)
+		if (wingp->flags[Ship::Wing_Flags::Reinforcement])
 		{
 			// check to see in the wings arrival cue is true, and if so, then mark the reinforcement
 			// as available
@@ -6874,7 +6874,7 @@ void mission_eval_arrivals()
 		}
 		
 		// don't do evaluations for departing wings
-		if (wingp->flags & WF_WING_DEPARTING)
+		if (wingp->flags[Ship::Wing_Flags::Departing])
 			continue;
 
 		// must check to see if we are at the last wave.  Code above to determine when a wing is gone only
@@ -6896,15 +6896,15 @@ void mission_eval_arrivals()
 
 			// If this wing was a reinforcement wing, then we need to reset the reinforcement flag for the wing
 			// so the user can call in another set if need be.
-			if (wingp->flags & WF_RESET_REINFORCEMENT)
+			if (wingp->flags[Ship::Wing_Flags::Reset_reinforcement])
 			{
-				wingp->flags &= ~WF_RESET_REINFORCEMENT;
-				wingp->flags |= WF_REINFORCEMENT;
+                wingp->flags.remove(Ship::Wing_Flags::Reset_reinforcement);
+                wingp->flags.set(Ship::Wing_Flags::Reinforcement);
 			}
 
 			// probably send a message to the player when this wing arrives.
 			// if no message, nothing more to do for this wing
-			if (wingp->flags & WF_NO_ARRIVAL_MESSAGE)
+			if (wingp->flags[Ship::Wing_Flags::No_arrival_message])
 				continue;
 
 			// multiplayer team vs. team
@@ -7009,7 +7009,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	if (goal_is_to_warp)
 	{
 		// aha, but not if we were ORDERED to depart, because the comms menu ALSO uses the goal code, and yet the comms menu means any departure method!
-		if ((shipp->flags[Ship::Ship_Flags::Departure_ordered]) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_DEPARTURE_ORDERED)))
+		if ((shipp->flags[Ship::Ship_Flags::Departure_ordered]) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Departure_ordered])))
 		{
 			mprintf(("Looks like we were ordered to depart; initiating the standard departure logic\n"));
 		}
@@ -7165,7 +7165,7 @@ void mission_eval_departures()
 		wingp = &Wings[i];
 
 		// should we process this wing anymore
-		if ( wingp->flags & WF_WING_DEPARTING )
+		if ( wingp->flags[Ship::Wing_Flags::Departing] )
 			continue;
 
 		// evaluate the sexpression.  If true, mark all the ships in this wing as departing and increment
@@ -7182,7 +7182,7 @@ void mission_eval_departures()
 			if ( !timestamp_elapsed(wingp->departure_delay) )
 				continue;
 
-			wingp->flags |= WF_WING_DEPARTING;
+            wingp->flags.set(Ship::Wing_Flags::Departing);
 			for ( j = 0; j < wingp->current_count; j++ ) {
 				ship *shipp;
 
