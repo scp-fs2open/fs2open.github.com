@@ -792,7 +792,6 @@ typedef struct screen {
 	void (*gf_update_transform_buffer)(void* data, size_t size);
 	void (*gf_set_transform_buffer_offset)(size_t offset);
 
-	int (*gf_create_stream_buffer)();
 	void (*gf_render_stream_buffer)(int buffer_handle, size_t offset, size_t n_verts, int flags);
 	
 	//the projection matrix; fov, aspect ratio, near, far
@@ -1134,7 +1133,6 @@ __inline void gr_render_buffer(int start, vertex_buffer *bufferp, size_t texi, i
 #define gr_update_transform_buffer		GR_CALL(*gr_screen.gf_update_transform_buffer)
 #define gr_set_transform_buffer_offset	GR_CALL(*gr_screen.gf_set_transform_buffer_offset)
 
-#define gr_create_stream_buffer			GR_CALL(*gr_screen.gf_create_stream_buffer)
 #define gr_render_stream_buffer			GR_CALL(*gr_screen.gf_render_stream_buffer)
 #define gr_render_stream_buffer_start	GR_CALL(*gr_screen.gf_render_stream_buffer_start)
 #define gr_render_stream_buffer_end		GR_CALL(*gr_screen.gf_render_stream_buffer_end)

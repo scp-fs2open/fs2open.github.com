@@ -195,11 +195,9 @@ Flag exe_params[] =
 	{ "-nomovies",			"Disable video playback",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomovies", },
 	{ "-noparseerrors",		"Disable parsing errors",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noparseerrors", },
 	{ "-query_speech",		"Check if this build has speech",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-query_speech", },
-	{ "-novbo",				"Disable OpenGL VBO",						true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-novbo", },
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
 	{ "-disable_fbo",		"Disable OpenGL RenderTargets",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_fbo", },
 	{ "-disable_pbo",		"Disable OpenGL Pixel Buffer Objects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-disable_pbo", },
-	{ "-no_glsl",			"Disable GLSL (shader) support",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_glsl", },
 	{ "-ati_swap",			"Fix colour issues on some ATI cards",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ati_swap", },
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_3d_sound", },
 	{ "-mipmap",			"Enable mipmapping",						true,	0,					EASY_DEFAULT_MEM,	"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
@@ -427,10 +425,8 @@ bool Cmdline_portable_mode = false;
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
 cmdline_parm nomovies_arg("-nomovies", NULL, AT_NONE);		// Cmdline_nomovies  -- Allows video streaming
 cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL, AT_NONE);	// Cmdline_no_set_gamma
-cmdline_parm no_vbo_arg("-novbo", NULL, AT_NONE);			// Cmdline_novbo
 cmdline_parm no_fbo_arg("-disable_fbo", NULL, AT_NONE);		// Cmdline_no_fbo
 cmdline_parm no_pbo_arg("-disable_pbo", NULL, AT_NONE);		// Cmdline_no_pbo
-cmdline_parm noglsl_arg("-no_glsl", NULL, AT_NONE);			// Cmdline_noglsl  -- disable GLSL support in OpenGL
 cmdline_parm mipmap_arg("-mipmap", NULL, AT_NONE);			// Cmdline_mipmap
 cmdline_parm atiswap_arg("-ati_swap", NULL, AT_NONE);        // Cmdline_atiswap - Fix ATI color swap issue for screenshots.
 cmdline_parm no3dsound_arg("-no_3d_sound", NULL, AT_NONE);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
@@ -447,10 +443,8 @@ cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
-int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_no_fbo = 0;
 int Cmdline_no_pbo = 0;
-int Cmdline_noglsl = 0;
 int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
 int Cmdline_drawelements = 0;
@@ -1614,11 +1608,7 @@ bool SetCmdlineParams()
 	if ( height_arg.found() ) {
 		Cmdline_height = 0;
 	}
-
-	if ( noglsl_arg.found() ) {
-		Cmdline_noglsl = 1;
-	}
-
+	
 	if (fxaa_arg.found() ) {
 		Cmdline_fxaa = true;
 
@@ -1659,11 +1649,6 @@ bool SetCmdlineParams()
 
 	if (output_sexp_arg.found() ) {
 		output_sexps("sexps.html");
-	}
-
-	if ( no_vbo_arg.found() )
-	{
-		Cmdline_novbo = 1;
 	}
 
 	if ( no_pbo_arg.found() )

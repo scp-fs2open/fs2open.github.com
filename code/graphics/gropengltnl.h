@@ -79,7 +79,6 @@ void gr_opengl_set_transform_buffer_offset(size_t offset);
 uint opengl_add_to_immediate_buffer(uint size, void *data);
 void opengl_reset_immediate_buffer();
 
-int gr_opengl_create_stream_buffer_object();
 void gr_opengl_render_stream_buffer(int buffer_handle, size_t offset, size_t n_verts, int flags);
 
 void gr_opengl_set_thrust_scale(float scale = -1.0f);

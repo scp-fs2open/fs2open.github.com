@@ -61,7 +61,6 @@ int OGL_fogmode = 0;
 
 static ushort *GL_original_gamma_ramp = NULL;
 
-int Use_VBOs = 0;
 int Use_PBOs = 0;
 
 float GL_line_width = 1.0f;
@@ -1263,7 +1262,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
 	gr_screen.gf_set_transform_buffer_offset	= gr_opengl_set_transform_buffer_offset;
 
-	gr_screen.gf_create_stream_buffer		= gr_opengl_create_stream_buffer_object;
 	gr_screen.gf_render_stream_buffer		= gr_opengl_render_stream_buffer;
 
 	gr_screen.gf_start_instance_matrix			= gr_opengl_start_instance_matrix;
@@ -1460,12 +1458,7 @@ static void init_extensions() {
 	Texture_compression_available = true;
 	// Swifty put this in, but it's not doing anything. Once he uses it, he can uncomment it.
 	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
-
-	//allow VBOs to be used
-	if ( !Cmdline_novbo ) {
-		Use_VBOs = 1;
-	}
-
+	
 	if ( !Cmdline_no_pbo && GLAD_GL_ARB_pixel_buffer_object ) {
 		Use_PBOs = 1;
 	}
@@ -1480,19 +1473,17 @@ static void init_extensions() {
 		mprintf(("  No hardware support for shadow mapping. Shadows will be disabled. \n"));
 	}
 
-	if ( !Cmdline_noglsl ) {
-		int ver = 0, major = 0, minor = 0;
-		const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
+	int ver = 0, major = 0, minor = 0;
+	const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-		sscanf(glsl_ver, "%d.%d", &major, &minor);
-		ver = (major * 100) + minor;
+	sscanf(glsl_ver, "%d.%d", &major, &minor);
+	ver = (major * 100) + minor;
 
-		GLSL_version = ver;
+	GLSL_version = ver;
 
-		// we require a minimum GLSL version
-		if (!is_minimum_GLSL_version()) {
-			mprintf(("  OpenGL Shading Language version %s is not sufficient to use GLSL mode in FSO. Defaulting to fixed-function renderer.\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
-		}
+	// we require a minimum GLSL version
+	if (!is_minimum_GLSL_version()) {
+		Error(LOCATION,  "Current GL Shading Langauge Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
 	}
 
 	// can't have this stuff without GLSL support
