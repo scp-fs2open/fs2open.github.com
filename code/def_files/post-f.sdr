@@ -1,4 +1,5 @@
 in vec4 fragTexCoord;
+out vec4 fragOut0;
 uniform sampler2D tex;
 uniform float timer;
 uniform sampler2D bloomed;
@@ -30,8 +31,6 @@ uniform float dither;
 #endif
 uniform sampler2D blurred_tex;
 uniform sampler2D depth_tex;
-
-out vec4 fragOut0;
 void main()
 {
  #ifdef FLAG_DISTORT_NOISE

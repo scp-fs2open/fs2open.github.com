@@ -121,61 +121,6 @@ void material_set_distortion(distortion_material *mat_info, int texture, bool th
 	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
-template <> SCP_vector<int>& uniform_data::get_array<int>() { return int_data; }
-template <> SCP_vector<float>& uniform_data::get_array<float>() { return float_data; }
-template <> SCP_vector<vec2d>& uniform_data::get_array<vec2d>() { return vec2_data; }
-template <> SCP_vector<vec3d>& uniform_data::get_array<vec3d>() { return vec3_data; }
-template <> SCP_vector<vec4>& uniform_data::get_array<vec4>() { return vec4_data; }
-template <> SCP_vector<matrix4>& uniform_data::get_array<matrix4>() { return matrix4_data; }
-
-template <> bool uniform_data::compare<int>(int index, const int& val)
-{
-    return int_data[index] == val;
-}
-
-template <> bool uniform_data::compare<float>(int index, const float& val)
-{
-    return fl_equal(float_data[index], val);
-}
-
-template <> bool uniform_data::compare<vec2d>(int index, const vec2d& val)
-{
-    return vm_vec_equal(vec2_data[index], val);
-}
-
-template <> bool uniform_data::compare<vec3d>(int index, const vec3d& val)
-{
-    return vm_vec_equal(vec3_data[index], val);
-}
-
-template <> bool uniform_data::compare<vec4>(int index, const vec4& val)
-{
-    return vm_vec_equal(vec4_data[index], val);
-}
-
-template <> bool uniform_data::compare<matrix4>(int index, const matrix4& val)
-{
-    return vm_matrix_equal(matrix4_data[index], val);
-}
-
-template <> bool uniform_data::compare<matrix4>(int index, matrix4* val, int count)
-{
-    for (int i = 0; i < count; ++i) {
-        if (!vm_matrix_equal(matrix4_data[index + i], val[i])) {
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-template <> uniform::data_type uniform::determine_type<int>() { return INT; }
-template <> uniform::data_type uniform::determine_type<float>() { return FLOAT; }
-template <> uniform::data_type uniform::determine_type<vec2d>() { return VEC2; }
-template <> uniform::data_type uniform::determine_type<vec3d>() { return VEC3; }
-template <> uniform::data_type uniform::determine_type<vec4>() { return VEC4; }
-template <> uniform::data_type uniform::determine_type<matrix4>() { return MATRIX4; }
-
 material::material():
 Sdr_handle(-1), 
 Sdr_type(SDR_TYPE_NONE),
@@ -225,18 +170,18 @@ int material::get_shader_handle()
 	return Sdr_handle;
 }
 
-void material::set_texture_map(int texture_type, int texture_num)
+void material::set_texture_map(int tex_type, int texture_num)
 {
-	Assert(texture_type > -1 && texture_type < TM_NUM_TYPES);
+	Assert(tex_type > -1 && tex_type < TM_NUM_TYPES);
 
-	Texture_maps[texture_type] = texture_num;
+	Texture_maps[tex_type] = texture_num;
 }
 
-int material::get_texture_map(int texture_type)
+int material::get_texture_map(int tex_type)
 {
-	Assert(texture_type > -1 && texture_type < TM_NUM_TYPES);
+	Assert(tex_type > -1 && tex_type < TM_NUM_TYPES);
 
-	return Texture_maps[texture_type];
+	return Texture_maps[tex_type];
 }
 
 bool material::is_textured()
@@ -507,10 +452,10 @@ float model_material::get_thrust_scale()
 	return Thrust_scale;
 }
 
-void model_material::set_team_color(const team_color &color)
+void model_material::set_team_color(const team_color &team_clr)
 {
 	Team_color_set = true;
-	Tm_color = color;
+	Tm_color = team_clr;
 }
 
 void model_material::set_team_color()

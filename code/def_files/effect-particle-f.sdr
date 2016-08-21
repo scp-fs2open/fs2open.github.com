@@ -7,12 +7,10 @@ uniform float farZ;
 uniform int linear_depth;
 uniform int srgb;
 uniform int blend_alpha;
-
 in float fragRadius;
 in vec4 fragPosition;
 in vec4 fragTexCoord;
 in vec4 fragColor;
-
 out vec4 fragOut0;
 #define SRGB_GAMMA 2.2
 void main()

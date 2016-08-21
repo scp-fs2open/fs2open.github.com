@@ -285,11 +285,6 @@ void gr_stub_set_transform_buffer_offset(size_t offset)
 
 }
 
-int gr_stub_create_stream_buffer()
-{
-	return -1;
-}
-
 void gr_stub_render_stream_buffer(int buffer_handle, size_t offset, size_t n_verts, int flags)
 {
 }
@@ -712,7 +707,6 @@ bool gr_stub_init()
 	gr_screen.gf_update_buffer_data		= gr_stub_update_buffer_data;
 	gr_screen.gf_set_transform_buffer_offset	= gr_stub_set_transform_buffer_offset;
 
-	gr_screen.gf_create_stream_buffer		= gr_stub_create_stream_buffer;
 	gr_screen.gf_render_stream_buffer		= gr_stub_render_stream_buffer;
 
 	gr_screen.gf_start_instance_matrix			= gr_stub_start_instance_matrix;

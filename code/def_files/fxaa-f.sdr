@@ -1,7 +1,10 @@
+#extension GL_EXT_gpu_shader4 : enable
 #define FXAA_EARLY_EXIT 1
 #define FXAA_DISCARD 1
 #ifndef FXAA_FAST_PIXEL_OFFSET
-    #define FXAA_FAST_PIXEL_OFFSET 1
+	#ifdef GL_EXT_gpu_shader4
+		#define FXAA_FAST_PIXEL_OFFSET 1
+	#endif
 	#ifdef GL_NV_gpu_shader5
 		#extension GL_NV_gpu_shader5 : enable
 		#define FXAA_FAST_PIXEL_OFFSET 1
@@ -502,9 +505,7 @@ FxaaFloat4 FxaaPixelShader(
 uniform sampler2D tex0;
 in vec2 v_rcpFrame;
 noperspective in vec2 v_pos;
-
 out vec4 fragOut0;
-
 void main() {
 	fragOut0 = FxaaPixelShader(v_pos, tex0, v_rcpFrame, FXAA_QUALITY_SUBPIX, FXAA_QUALITY_EDGE_THRESHOLD, FXAA_QUALITY_EDGE_THRESHOLD_MIN);
 }

@@ -329,7 +329,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
 				Weapons[objp->instance].lifeleft = 0.01f;
-				Weapons[objp->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 			}
 			break;
 		default:

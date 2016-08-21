@@ -104,8 +104,8 @@ int collide_weapon_weapon( obj_pair * pair )
 					if ((wipA->wi_flags[Weapon::Info_Flags::Bomb]) && (wipB->wi_flags[Weapon::Info_Flags::Bomb])) {
 						wpA->lifeleft = 0.01f;
 						wpB->lifeleft = 0.01f;
-						wpA->weapon_flags |= WF_DESTROYED_BY_WEAPON;
-						wpB->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+						wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					} else {
 						A->hull_strength -= bDamage;
 						B->hull_strength -= aDamage;
@@ -121,29 +121,29 @@ int collide_weapon_weapon( obj_pair * pair )
 						
 						if (A->hull_strength < 0.0f) {
 							wpA->lifeleft = 0.01f;
-							wpA->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+							wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						}
 						if (B->hull_strength < 0.0f) {
 							wpB->lifeleft = 0.01f;
-							wpB->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+							wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						}
 					}
 				} else {
 					A->hull_strength -= bDamage;
 					wpB->lifeleft = 0.01f;
-					wpB->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					if (A->hull_strength < 0.0f) {
 						wpA->lifeleft = 0.01f;
-						wpA->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					}
 				}
 			} else if (wipB->weapon_hitpoints > 0) {
 				B->hull_strength -= aDamage;
 				wpA->lifeleft = 0.01f;
-				wpA->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+				wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 				if (B->hull_strength < 0.0f) {
 					wpB->lifeleft = 0.01f;
-					wpB->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 				}
 			}
 
@@ -154,14 +154,14 @@ int collide_weapon_weapon( obj_pair * pair )
 				if (wipA->wi_flags[Weapon::Info_Flags::Bomb]) {
 					//Update stats. -Halleck
 					scoring_eval_hit(A, B, 0);
-					if (wpA->weapon_flags & WF_DESTROYED_BY_WEAPON) {
+					if (wpA->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]) {
 						scoring_eval_kill_on_weapon(A, B);
 					}
 				}
 				if (wipB->wi_flags[Weapon::Info_Flags::Bomb]) {
 					//Update stats. -Halleck
 					scoring_eval_hit(B, A, 0);
-					if (wpB->weapon_flags & WF_DESTROYED_BY_WEAPON) {
+					if (wpB->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]) {
 						scoring_eval_kill_on_weapon(B, A);
 					}
 				}

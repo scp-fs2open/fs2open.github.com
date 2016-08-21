@@ -1,12 +1,3 @@
-#ifdef APPLE
- #extension GL_ARB_draw_instanced : enable
-#else
- #ifdef __GLSL_CG_DATA_TYPES
-  #extension GL_EXT_draw_instanced : enable
- #else
-  #extension GL_ARB_draw_instanced : enable
- #endif
-#endif
 in vec4 vertPosition;
 in vec4 vertTexCoord;
 in vec3 vertNormal;
@@ -103,7 +94,7 @@ void main()
 	mat4 orient = mat4(1.0);
 	mat4 scale = mat4(1.0);
  #ifdef FLAG_TRANSFORM
-	float invisible = 0.0;
+	float invisible;
 	getModelTransform(orient, invisible, int(vertModelID), buffer_matrix_offset);
   #ifdef FLAG_SHADOW_MAP
 	geoNotVisible = invisible;

@@ -1,9 +1,8 @@
 in vec4 fragTexCoord;
+out vec4 fragOut0;
 uniform sampler2D ytex;
 uniform sampler2D utex;
 uniform sampler2D vtex;
-
-out vec4 fragOut0;
 void main()
 {
 	vec3 val = vec3(texture(ytex, fragTexCoord.st).r - 0.0625, texture(utex, fragTexCoord.st).r - 0.5, texture(vtex, fragTexCoord.st).r - 0.5);

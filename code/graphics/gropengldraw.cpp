@@ -170,7 +170,7 @@ void opengl_bind_vertex_component(vertex_format_data &vert_component, uint base_
 
 	Assert(bind_info.attribute_id == attrib_info.attribute_id);
 
-	uint byte_offset = 0;
+	size_t byte_offset = 0;
 
 	// determine if we need to offset into this vertex buffer by # of base_vertex vertices
 	if ( base_vertex > 0 ) {
@@ -198,44 +198,6 @@ void opengl_bind_vertex_component(vertex_format_data &vert_component, uint base_
 		if ( index >= 0 ) {
 			GL_state.Array.EnableVertexAttrib(index);
 			GL_state.Array.VertexAttribPointer(index, bind_info.size, bind_info.data_type, bind_info.normalized, (GLsizei)vert_component.stride, data_src);
-		}
-
-		return;
-	}
-
-	switch ( attrib_info.attribute_id ) {
-		case opengl_vert_attrib::POSITION:
-		{
-			GL_state.Array.EnableClientVertex();
-			GL_state.Array.VertexPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, data_src);
-			break;
-		}
-		case opengl_vert_attrib::TEXCOORD:
-		{
-			GL_state.Array.SetActiveClientUnit(0);
-			GL_state.Array.EnableClientTexture();
-			GL_state.Array.TexPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, data_src);
-			break;
-		}
-		case opengl_vert_attrib::TANGENT:
-		{
-			GL_state.Array.SetActiveClientUnit(1);
-			GL_state.Array.EnableClientTexture();
-			GL_state.Array.TexPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, data_src);
-			break;
-		}
-		case opengl_vert_attrib::COLOR:
-		{
-			GL_state.Array.EnableClientColor();
-			GL_state.Array.ColorPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, data_src);
-			GL_state.InvalidateColor();
-			break;
-		}
-		case opengl_vert_attrib::NORMAL:
-		{
-			GL_state.Array.EnableClientNormal();
-			GL_state.Array.NormalPointer(bind_info.data_type, (GLsizei)vert_component.stride, data_src);
-			break;
 		}
 	}
 }
@@ -1454,7 +1416,6 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 
 void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 {
-	return;
 	int alpha, tmap_type, r, g, b;
 	float u_scale = 1.0f, v_scale = 1.0f;
 	GLenum gl_mode = GL_TRIANGLE_FAN;
@@ -3077,7 +3038,7 @@ void gr_opengl_update_distortion()
 	GL_state.CullFace(cull);
 }
 
-void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, uint vert_offset, uint byte_offset)
+void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, size_t vert_offset, size_t byte_offset)
 {
 	if ( buffer_handle >= 0 ) {
 		opengl_bind_buffer_object(buffer_handle);
@@ -3087,7 +3048,7 @@ void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, i
 
 	opengl_bind_vertex_layout(*layout, 0, (ubyte*)byte_offset);
 
-	glDrawArrays(opengl_primitive_type(prim_type), vert_offset, n_verts);
+	glDrawArrays(opengl_primitive_type(prim_type), (GLint)vert_offset, n_verts);
 }
 
 void opengl_render_primitives_immediate(primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)

@@ -1,8 +1,4 @@
-#if __VERSION__ == 120
-  #define MAX_LIGHTS 2
-#else
-  #define MAX_LIGHTS 8
-#endif
+#define MAX_LIGHTS 8
 #define LT_DIRECTIONAL		0
 #define LT_POINT			1
 #define LT_TUBE			2
@@ -80,9 +76,7 @@ uniform sampler2D sMiscmap;
 #ifdef FLAG_SHADOWS
 in vec4 fragShadowUV[4];
 in vec4 fragShadowPos;
-//uniform sampler2DArrayShadow shadow_map;
 uniform sampler2DArray shadow_map;
-//uniform sampler2D shadow_map;
 uniform float znear;
 uniform float zfar;
 uniform float veryneardist;
@@ -110,7 +104,6 @@ uniform vec2 normalAlphaMinMax;
 in vec4 fragPosition;
 in vec3 fragNormal;
 in vec4 fragTexCoord;
-
 out vec4 fragOut0;
 out vec4 fragOut1;
 out vec4 fragOut2;
@@ -404,7 +397,7 @@ void main()
 	envReflectNM = normalize(envReflectNM);
  #endif
 	float mip = (envGloss) ? (1.0 - glossData) * 7.0 : 0.0;
-   vec4 envColour = textureCubeLod(sEnvmap, envReflectNM, mip);
+   vec4 envColour = textureLod(sEnvmap, envReflectNM, mip);
  #ifdef FLAG_HDR
 	envColour.rgb = pow(envColour.rgb, vec3(SRGB_GAMMA));
  #endif

@@ -199,10 +199,6 @@ void opengl_bind_buffer_object(int handle)
 
 void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
 {
-	if ( !Use_VBOs ) {
-		return;
-	}
-
 	Assert(handle >= 0);
 	Assert((size_t)handle < GL_buffer_objects.size());
 
@@ -267,29 +263,12 @@ void gr_opengl_delete_buffer(int handle)
 
 int gr_opengl_create_vertex_buffer(bool static_buffer)
 {
-	if ( !Use_VBOs ) {
-		return -1;
-	}
-
 	return opengl_create_buffer_object(GL_ARRAY_BUFFER, static_buffer ? GL_STATIC_DRAW : GL_STREAM_DRAW);
 }
 
 int gr_opengl_create_index_buffer(bool static_buffer)
 {
-	if ( !Use_VBOs ) {
-		return -1;
-	}
-
 	return opengl_create_buffer_object(GL_ELEMENT_ARRAY_BUFFER, static_buffer ? GL_STATIC_DRAW : GL_STREAM_DRAW);
-}
-
-int gr_opengl_create_stream_buffer_object()
-{
-	if (!Use_VBOs) {
-		return -1;
-	}
-
-	return opengl_create_buffer_object(GL_ARRAY_BUFFER, GL_STREAM_DRAW);
 }
 
 uint opengl_add_to_immediate_buffer(uint size, void *data)
@@ -390,10 +369,6 @@ void gr_opengl_set_transform_buffer_offset(size_t offset)
 
 static void opengl_gen_buffer(opengl_vertex_buffer *vbp)
 {
-	if ( !Use_VBOs ) {
-		return;
-	}
-
 	if ( !vbp ) {
 		return;
 	}
@@ -655,10 +630,8 @@ void gr_opengl_set_buffer(int idx)
 	g_vbp = NULL;
 
 	if (idx < 0) {
-		if (Use_VBOs) {
-			GL_state.Array.BindArrayBuffer(0);
-			GL_state.Array.BindElementBuffer(0);
-		}
+		GL_state.Array.BindArrayBuffer(0);
+		GL_state.Array.BindElementBuffer(0);
 
 		if ( is_minimum_GLSL_version() ) {
 			opengl_shader_set_current();
@@ -1862,7 +1835,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
 	GL_state.Uniform.setUniformMatrix4f("textureMatrix", GL_texture_matrix);
 
-	color &clr = material_info->get_color();
+	color clr = material_info->get_color();
 	GL_state.Uniform.setUniform4f("color", clr.red / 255.0f, clr.green / 255.0f, clr.blue / 255.0f, clr.alpha / 255.0f);
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
@@ -1926,7 +1899,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		GL_state.Uniform.setUniformi("sBasemap", render_pass);
 
 		if ( material_info->is_desaturated() ) {
-			color &clr = material_info->get_color();
 			GL_state.Uniform.setUniform3f("desaturate_clr", clr.red / 255.0f, clr.green / 255.0f, clr.blue / 255.0f);
 
 			GL_state.Uniform.setUniformi("desaturate", 1);

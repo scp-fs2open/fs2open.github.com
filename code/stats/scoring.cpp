@@ -1086,7 +1086,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 		return;
 	}
 	
-	if((other_obj->type == OBJ_WEAPON) && !(Weapons[other_obj->instance].weapon_flags & WF_ALREADY_APPLIED_STATS)){		
+	if((other_obj->type == OBJ_WEAPON) && !(Weapons[other_obj->instance].weapon_flags[Weapon::Weapon_Flags::Already_applied_stats])){		
 		// bogus weapon
 		if(other_obj->instance >= MAX_WEAPONS){
 			return;

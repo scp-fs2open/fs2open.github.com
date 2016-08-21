@@ -1,14 +1,13 @@
 in vec4 fragTexCoord;
 in vec4 fragColor;
 in float fragOffset;
+out vec4 fragOut0;
 uniform sampler2D baseMap;
 uniform sampler2D depthMap;
 uniform float window_width;
 uniform float window_height;
 uniform sampler2D distMap;
 uniform sampler2D frameBuffer;
-
-out vec4 fragOut0;
 void main()
 {
 	vec2 depthCoord = vec2(gl_FragCoord.x / window_width, gl_FragCoord.y / window_height);

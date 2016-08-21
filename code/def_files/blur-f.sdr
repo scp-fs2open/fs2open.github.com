@@ -1,9 +1,9 @@
+out vec4 fragOut0;
 uniform float texSize;
 uniform float tapSize;
 uniform int level;
 in vec4 fragTexCoord;
 uniform sampler2D tex;
-out vec4 fragOut0;
 // Gaussian Blur
 // 2 passes required
 void main()

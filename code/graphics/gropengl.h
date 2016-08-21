@@ -34,7 +34,6 @@ bool is_minimum_GLSL_version();
 extern int GL_version;
 extern int GLSL_version;
 
-extern int Use_VBOs;
 extern int Use_PBOs;
 
 extern GLuint GL_vao;

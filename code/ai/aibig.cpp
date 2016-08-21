@@ -786,13 +786,13 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 
 												int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
 
-												if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
+												if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags[Weapon::Burst_Flags::Fast_firing])) {
 													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
 														t = swip->burst_delay;
 														swp->burst_counter[current_bank_adjusted]++;
 													} else {
 														t = swip->fire_wait;
-														if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 														} else {
 															swp->burst_counter[current_bank_adjusted] = 0;
@@ -804,7 +804,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 														swp->burst_counter[current_bank_adjusted]++;
 													} else {
 														t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
-														if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 														} else {
 															swp->burst_counter[current_bank_adjusted] = 0;
