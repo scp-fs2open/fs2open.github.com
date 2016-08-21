@@ -141,6 +141,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
 #include "ship/ship.h"
@@ -3766,7 +3767,8 @@ void game_render_frame( camid cid )
 	}
 	effect_ships.clear();
 
-	batch_render_distortion_map_bitmaps();
+	batching_render_all(false);
+	batching_render_all(true);
 
 	Shadow_override = true;
 	//Draw the viewer 'cause we didn't before.
