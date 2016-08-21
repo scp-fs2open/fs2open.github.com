@@ -108,7 +108,7 @@ inline void opengl_draw_textured_quad_instanced(
 	opengl_bind_vertex_layout(vert_def);
 
 	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glDrawArraysInstancedARB(GL_TRIANGLE_STRIP, 0, 4, count);
+	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
 }
 
 inline void opengl_draw_textured_quad(

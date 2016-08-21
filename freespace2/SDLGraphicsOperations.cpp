@@ -69,6 +69,29 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(co
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (attrs.multi_samples == 0) ? 0 : 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, attrs.multi_samples);
 
+	int flags = 0;
+	if (attrs.flags & os::OGL_DEBUG) {
+		flags |= SDL_GL_CONTEXT_DEBUG_FLAG;
+	}
+	if (attrs.flags & os::OGL_FORWARD_COMPATIBLE) {
+		flags |= SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;
+	}
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, flags);
+
+	int context;
+	switch(attrs.profile) {
+		case os::OpenGLProfile::Core:
+			context = SDL_GL_CONTEXT_PROFILE_CORE;
+			break;
+		case os::OpenGLProfile::Compatibility:
+			context = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
+			break;
+		default:
+			Assertion(false, "Invalid context profile value!");
+			return nullptr;
+	}
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, context);
+
 	const int gl_versions[] = { 41, 40, 33, 32, 31, 30, 21, 20 };
 	const int num_gl_versions = sizeof(gl_versions) / sizeof(int);
 	int version_index = 0;

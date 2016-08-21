@@ -98,7 +98,7 @@ void gr_opengl_bm_save_render_target(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-	if ( !GLAD_GL_ARB_framebuffer_object || Cmdline_no_fbo ) {
+	if ( Cmdline_no_fbo ) {
 		return;
 	}
 
@@ -121,11 +121,11 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, int *bpp, in
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-	if ( !GLAD_GL_ARB_framebuffer_object || Cmdline_no_fbo ) {
+	if ( Cmdline_no_fbo ) {
 		return 0;
 	}
 
-	if ( (flags & BMP_FLAG_CUBEMAP) && !GLAD_GL_ARB_texture_cube_map ) {
+	if ( (flags & BMP_FLAG_CUBEMAP) ) {
 		return 0;
 	}
 
@@ -142,7 +142,7 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, int *bpp, in
 
 int gr_opengl_bm_set_render_target(int n, int face)
 {
-	if ( !GLAD_GL_ARB_framebuffer_object || Cmdline_no_fbo ) {
+	if ( Cmdline_no_fbo ) {
 		return 0;
 	}
 

@@ -313,12 +313,12 @@ void opengl_reset_immediate_buffer()
 
 int opengl_create_texture_buffer_object()
 {
-	if ( GLSL_version < 130 || !GLAD_GL_ARB_texture_buffer_object || !GLAD_GL_ARB_texture_float ) {
+	if ( GLSL_version < 130 ) {
 		return -1;
 	}
 
 	// create the buffer
-	int buffer_object_handle = opengl_create_buffer_object(GL_TEXTURE_BUFFER_ARB, GL_DYNAMIC_DRAW);
+	int buffer_object_handle = opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW);
 
 	opengl_check_for_errors();
 
@@ -326,11 +326,11 @@ int opengl_create_texture_buffer_object()
 
 	// create the texture
 	glGenTextures(1, &buffer_obj.texture);
-	glBindTexture(GL_TEXTURE_BUFFER_ARB, buffer_obj.texture);
+	glBindTexture(GL_TEXTURE_BUFFER, buffer_obj.texture);
 
 	gr_opengl_update_buffer_data(buffer_object_handle, 100, NULL);
 
-	glTexBufferARB(GL_TEXTURE_BUFFER_ARB, GL_RGBA32F_ARB, buffer_obj.buffer_id);
+	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, buffer_obj.buffer_id);
 
 	opengl_check_for_errors();
 
@@ -350,7 +350,7 @@ void gr_opengl_update_transform_buffer(void* data, size_t size)
 	// need to rebind the buffer object to the texture buffer after it's been updated.
 	// didn't have to do this on AMD and Nvidia drivers but Intel drivers seem to want it.
 	glBindTexture(GL_TEXTURE_BUFFER, buffer_obj.texture);
-	glTexBufferARB(GL_TEXTURE_BUFFER, GL_RGBA32F_ARB, buffer_obj.buffer_id);
+	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, buffer_obj.buffer_id);
 }
 
 GLuint opengl_get_transform_buffer_texture()
@@ -703,15 +703,15 @@ void opengl_tnl_init()
 		glGenTextures(1, &Shadow_map_depth_texture);
 
 		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY_EXT);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 //		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 		GL_state.Texture.Enable(Shadow_map_depth_texture);
 		
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -722,33 +722,33 @@ void opengl_tnl_init()
 		//glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL);
 		//glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
 		int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
-		glTexImage3D(GL_TEXTURE_2D_ARRAY_EXT, 0, GL_DEPTH_COMPONENT32, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 		//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, size, size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
-		glFramebufferTextureARB(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Shadow_map_depth_texture, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Shadow_map_depth_texture, 0);
 		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Shadow_map_depth_texture, 0);
 
 		glGenTextures(1, &Shadow_map_texture);
 
 		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY_EXT);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 		//GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 		GL_state.Texture.Enable(Shadow_map_texture);
 
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-		glTexImage3D(GL_TEXTURE_2D_ARRAY_EXT, 0, GL_RGB32F_ARB, size, size, 4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB32F, size, size, 4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, size, size, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-		glFramebufferTextureARB(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Shadow_map_texture, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Shadow_map_texture, 0);
 		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Shadow_map_texture, 0);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -803,7 +803,7 @@ static void opengl_init_arrays(opengl_vertex_buffer *vert_src, vertex_buffer *bu
 	GLint vert_offset = (GLint)bufferp->vertex_num_offset;
 	GLubyte *ptr = NULL;
 
-	if ( is_minimum_GLSL_version() && GLAD_GL_ARB_draw_elements_base_vertex ) {
+	if ( is_minimum_GLSL_version() ) {
 		vert_offset = 0;
 	}
 
@@ -821,7 +821,7 @@ static void opengl_init_arrays(indexed_vertex_source *vert_src, vertex_buffer *b
 	GLint vert_offset = (GLint)bufferp->vertex_num_offset;
 	GLubyte *ptr = NULL;
 
-	if ( is_minimum_GLSL_version() && GLAD_GL_ARB_draw_elements_base_vertex ) {
+	if ( is_minimum_GLSL_version() ) {
 		vert_offset = 0;
 	}
 
@@ -862,18 +862,10 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 	if ( Rendering_to_shadow_map ) {
 		glDrawElementsInstancedBaseVertex(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start), 4, (GLint)bufferp->vertex_num_offset);
 	} else {
-		if ( GLAD_GL_ARB_draw_elements_base_vertex ) {
-			if ( Cmdline_drawelements ) {
-				glDrawElementsBaseVertex(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
-			} else {
-				glDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
-			}
+		if ( Cmdline_drawelements ) {
+			glDrawElementsBaseVertex(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
 		} else {
-			if ( Cmdline_drawelements ) {
-				glDrawElements(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start));
-			} else {
-				glDrawRangeElements(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start));
-			}
+			glDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
 		}
 	}
 
@@ -999,18 +991,10 @@ static void opengl_render_pipeline_program(int start, vertex_buffer *bufferp, bu
 	if(Rendering_to_shadow_map) {
 		glDrawElementsInstancedBaseVertex(GL_TRIANGLES, (GLsizei)count, element_type, ibuffer + (datap->index_offset + start), 4, (GLint)bufferp->vertex_num_offset);
 	} else {
-		if ( GLAD_GL_ARB_draw_elements_base_vertex ) {
-			if (Cmdline_drawelements) {
-				glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
-			} else {
-				glDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, (GLsizei)count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
-			}
+		if (Cmdline_drawelements) {
+			glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
 		} else {
-			if (Cmdline_drawelements) {
-				glDrawElements(GL_TRIANGLES, (GLsizei)count, element_type, ibuffer + (datap->index_offset + start));
-			} else {
-				glDrawRangeElements(GL_TRIANGLES, datap->i_first, datap->i_last, (GLsizei)count, element_type, ibuffer + (datap->index_offset + start));
-			}
+			glDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, (GLsizei)count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
 		}
 	}
 /*
@@ -2050,7 +2034,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		GL_state.Uniform.setUniformi("shadow_map", render_pass);
 
 		GL_state.Texture.SetActiveUnit(render_pass);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY_EXT);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 		GL_state.Texture.Enable(Shadow_map_texture);
 
 		++render_pass; // bump!

@@ -882,7 +882,7 @@ void opengl_setup_bloom_textures()
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 		GL_state.Texture.Enable(Bloom_textures[tex]);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F_ARB, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 		glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -925,16 +925,16 @@ static bool opengl_post_init_framebuffer()
 		glGenTextures(1, &Post_shadow_texture_id);
 		
 		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY_EXT);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 //		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 		GL_state.Texture.Enable(Post_shadow_texture_id);
 
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-		glTexImage3D(GL_TEXTURE_2D_ARRAY_EXT, 0, GL_RGBA32F_ARB, size, size, 4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA32F, size, size, 4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -944,21 +944,21 @@ static bool opengl_post_init_framebuffer()
 // 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F_ARB, size, size, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 //		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Post_shadow_texture_id, 0);
-		glFramebufferTextureARB(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Post_shadow_texture_id, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Post_shadow_texture_id, 0);
 
 		glGenTextures(1, &Post_shadow_depth_texture_id);
 
 		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY_EXT);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 //		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 		GL_state.Texture.Enable(Post_shadow_depth_texture_id);
 
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-		glTexImage3D(GL_TEXTURE_2D_ARRAY_EXT, 0, GL_DEPTH_COMPONENT32, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 // 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -968,7 +968,7 @@ static bool opengl_post_init_framebuffer()
 // 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, size, size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
 //		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Post_shadow_depth_texture_id, 0);
-		glFramebufferTextureARB(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Post_shadow_depth_texture_id, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Post_shadow_depth_texture_id, 0);
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1023,7 +1023,7 @@ void opengl_post_process_init()
 		return;
 	}
 
-	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo || !GLAD_GL_ARB_framebuffer_object ) {
+	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo ) {
 		Cmdline_postprocess = 0;
 		return;
 	}

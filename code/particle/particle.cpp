@@ -22,8 +22,6 @@
 #include "render/3d.h"
 #include "render/batching.h"
 
-#include <glad/glad.h>
-
 using namespace particle;
 
 namespace
@@ -107,7 +105,7 @@ namespace particle
 			Particle_buffer_object = gr_create_vertex_buffer();
 		}
 
-		if ( Geometry_shader_buffer_object < 0 && !Cmdline_no_geo_sdr_effects && GLAD_GL_ARB_geometry_shader4 ) {
+		if ( Geometry_shader_buffer_object < 0 && !Cmdline_no_geo_sdr_effects ) {
 			Geometry_shader_buffer_object = gr_create_vertex_buffer();
 		}
 	}

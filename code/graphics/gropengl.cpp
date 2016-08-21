@@ -377,14 +377,14 @@ void gr_opengl_print_screen(const char *filename)
 			return;
 		}
 
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, pbo);
-		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+		glBufferData(GL_PIXEL_PACK_BUFFER, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
 
 		glReadBuffer(GL_FRONT);
 		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 		// map the image data so that we can save it to file
-		pixels = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+		pixels = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 	} else {
 		pixels = (GLubyte*) vm_malloc(gr_screen.max_w * gr_screen.max_h * 4, memory::quiet_alloc);
 
@@ -428,9 +428,9 @@ void gr_opengl_print_screen(const char *filename)
 	}
 
 	if (pbo) {
-		glUnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 		pixels = NULL;
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 		glDeleteBuffers(1, &pbo);
 	}
 
@@ -796,12 +796,12 @@ int gr_opengl_save_screen()
 			return -1;
 		}
 
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_screen_pbo);
-		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, gr_screen.max_w * gr_screen.max_h * 4, NULL, GL_STATIC_READ);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, GL_screen_pbo);
+		glBufferData(GL_PIXEL_PACK_BUFFER, gr_screen.max_w * gr_screen.max_h * 4, NULL, GL_STATIC_READ);
 
 		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-		pixels = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+		pixels = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 
 		width_times_pixel = (gr_screen.max_w * 4);
 
@@ -814,8 +814,8 @@ int gr_opengl_save_screen()
 			sptr += width_times_pixel;
 		}
 
-		glUnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
 		glDeleteBuffers(1, &GL_screen_pbo);
 		GL_screen_pbo = 0;
@@ -942,7 +942,9 @@ void gr_opengl_translate_texture_matrix(int unit, const vec3d *shift)
 
 void gr_opengl_set_line_width(float width)
 {
-	GL_state.SetLineWidth(width);
+	if (width <= 1.0f) {
+		GL_state.SetLineWidth(width);
+	}
 	GL_line_width = width;
 }
 
@@ -1146,7 +1148,7 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 	attrs.flags |= os::OGL_DEBUG;
 #endif
 
-	attrs.profile = os::OpenGLProfile::Compatibility;
+	attrs.profile = os::OpenGLProfile::Core;
 
 	GL_context = graphicsOps->createOpenGLContext(attrs, (uint32_t) gr_screen.max_w, (uint32_t) gr_screen.max_h);
 
@@ -1414,6 +1416,8 @@ static void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severit
 
 	nprintf(("OpenGL Debug", "OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
 		sourceStr, typeStr, id, severityStr, message));
+	printf("OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
+		   sourceStr, typeStr, id, severityStr, message);
 }
 
 static bool hasPendingDebugMessage() {
@@ -1459,20 +1463,10 @@ static void init_extensions() {
 	// Swifty put this in, but it's not doing anything. Once he uses it, he can uncomment it.
 	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
 	
-	if ( !Cmdline_no_pbo && GLAD_GL_ARB_pixel_buffer_object ) {
+	if ( !Cmdline_no_pbo ) {
 		Use_PBOs = 1;
 	}
-
-	// if we can't do cubemaps then turn off Cmdline_env
-	if ( !GLAD_GL_ARB_texture_cube_map ) {
-		Cmdline_env = 0;
-	}
-
-	if ( !(GLAD_GL_ARB_geometry_shader4 && GLAD_GL_EXT_texture_array && GLAD_GL_ARB_draw_elements_base_vertex) ) {
-		Cmdline_shadow_quality = 0;
-		mprintf(("  No hardware support for shadow mapping. Shadows will be disabled. \n"));
-	}
-
+	
 	int ver = 0, major = 0, minor = 0;
 	const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
@@ -1495,7 +1489,7 @@ static void init_extensions() {
 		Cmdline_no_deferred_lighting = 1;
 	}
 
-	if ( GLSL_version < 120 || !GLAD_GL_ARB_framebuffer_object || !GLAD_GL_ARB_texture_float ) {
+	if ( GLSL_version < 120 ) {
 		mprintf(("  No hardware support for deferred lighting. Deferred lighting will be disabled. \n"));
 		Cmdline_no_deferred_lighting = 1;
 		Cmdline_no_batching = true;
@@ -1640,9 +1634,7 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_STENCIL_BUFFER_BIT);
 
-	if ( GLAD_GL_ARB_seamless_cube_map ) {
-		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-	}
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 	glDepthRange(0.0, 1.0);
 
@@ -1672,11 +1664,9 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	mprintf(( "  Max elements indices: %i\n", GL_max_elements_indices ));
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
 
-	if ( GLAD_GL_ARB_framebuffer_object ) {
-		mprintf(( "  Max render buffer size: %ix%i\n",
-			  GL_max_renderbuffer_size,
-			  GL_max_renderbuffer_size ));
-	}
+	mprintf(( "  Max render buffer size: %ix%i\n",
+		  GL_max_renderbuffer_size,
+		  GL_max_renderbuffer_size ));
 
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
@@ -1710,7 +1700,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 
 	switch ( capability ) {
 	case CAPABILITY_ENVIRONMENT_MAP:
-		return GLAD_GL_ARB_texture_cube_map ? true : false;
+		return true;
 	case CAPABILITY_NORMAL_MAP:
 		return Cmdline_normal ? true : false;
 	case CAPABILITY_HEIGHT_MAP:
@@ -1723,9 +1713,9 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case CAPABILITY_DEFERRED_LIGHTING:
 		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting && (GLSL_version >= 120);
 	case CAPABILITY_SHADOWS:
-		return GLAD_GL_ARB_draw_elements_base_vertex && GL_version >= 32;
+		return GL_version >= 32;
 	case CAPABILITY_BATCHED_SUBMODELS:
-		return (GLSL_version >= 150) && GLAD_GL_ARB_texture_buffer_object && GLAD_GL_ARB_texture_float;
+		return (GLSL_version >= 150);
 	case CAPABILITY_POINT_PARTICLES:
 		return GL_version >= 32 && !Cmdline_no_geo_sdr_effects;
 	}

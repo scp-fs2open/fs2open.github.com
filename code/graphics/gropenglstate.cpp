@@ -56,7 +56,7 @@ void opengl_texture_state::default_values(GLint unit, GLenum target)
 	if (target == GL_INVALID_ENUM) {
 
 		glBindTexture(GL_TEXTURE_2D, 0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP_ARB, 0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
 		units[unit].texture_target = GL_TEXTURE_2D;
 		units[unit].texture_id = 0;
@@ -1158,25 +1158,17 @@ void opengl_array_state::BindElementBuffer(GLuint id)
 
 void opengl_array_state::BindTextureBuffer(GLuint id)
 {
-	if ( !GLAD_GL_ARB_texture_buffer_object ) {
-		return;
-	}
-
 	if ( texture_array_buffer == id ) {
 		return;
 	}
 
-	glBindBuffer(GL_TEXTURE_BUFFER_ARB, id);
+	glBindBuffer(GL_TEXTURE_BUFFER, id);
 
 	texture_array_buffer = id;
 }
 
 void opengl_array_state::BindUniformBufferBindingIndex(GLuint id, GLuint index)
 {
-	if ( !GLAD_GL_ARB_uniform_buffer_object ) {
-		return;
-	}
-
 	if ( uniform_buffer_index_bindings[index] == id ) {
 		return;
 	}
@@ -1188,10 +1180,6 @@ void opengl_array_state::BindUniformBufferBindingIndex(GLuint id, GLuint index)
 
 void opengl_array_state::BindUniformBuffer(GLuint id)
 {
-	if ( !GLAD_GL_ARB_uniform_buffer_object ) {
-		return;
-	}
-
 	if ( uniform_buffer == id ) {
 		return;
 	}
