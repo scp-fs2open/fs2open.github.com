@@ -225,18 +225,18 @@ int material::get_shader_handle()
 	return Sdr_handle;
 }
 
-void material::set_texture_map(int texture_type, int texture_num)
+void material::set_texture_map(int tex_type, int texture_num)
 {
-	Assert(texture_type > -1 && texture_type < TM_NUM_TYPES);
+	Assert(tex_type > -1 && tex_type < TM_NUM_TYPES);
 
-	Texture_maps[texture_type] = texture_num;
+	Texture_maps[tex_type] = texture_num;
 }
 
-int material::get_texture_map(int texture_type)
+int material::get_texture_map(int tex_type)
 {
-	Assert(texture_type > -1 && texture_type < TM_NUM_TYPES);
+	Assert(tex_type > -1 && tex_type < TM_NUM_TYPES);
 
-	return Texture_maps[texture_type];
+	return Texture_maps[tex_type];
 }
 
 bool material::is_textured()
@@ -507,10 +507,10 @@ float model_material::get_thrust_scale()
 	return Thrust_scale;
 }
 
-void model_material::set_team_color(const team_color &color)
+void model_material::set_team_color(const team_color &team_clr)
 {
 	Team_color_set = true;
-	Tm_color = color;
+	Tm_color = team_clr;
 }
 
 void model_material::set_team_color()

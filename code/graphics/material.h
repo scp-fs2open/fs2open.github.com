@@ -389,8 +389,8 @@ public:
 	void set_shader_handle(int handle);
 	virtual int get_shader_handle();
 
-	void set_texture_map(int texture_type, int texture_num);
-	int get_texture_map(int texture_type);
+	void set_texture_map(int tex_type, int texture_num);
+	int get_texture_map(int tex_type);
 	bool is_textured();
 
 	void set_texture_type(texture_type t_type);
@@ -489,7 +489,7 @@ public:
 	void set_thrust_scale(float scale = -1.0f);
 	float get_thrust_scale();
 
-	void set_team_color(const team_color &color);
+	void set_team_color(const team_color &Team_clr);
 	void set_team_color();
 	team_color& get_team_color();
 

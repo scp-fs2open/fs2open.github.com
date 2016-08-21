@@ -74,7 +74,7 @@ void gr_opengl_deferred_lighting_begin();
 void gr_opengl_deferred_lighting_end();
 void gr_opengl_deferred_lighting_finish();
 
-void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, uint vert_offset, uint byte_offset);
+void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, size_t vert_offset, size_t byte_offset);
 void opengl_render_primitives_immediate(primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 
 void gr_opengl_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);

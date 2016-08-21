@@ -199,44 +199,6 @@ void opengl_bind_vertex_component(vertex_format_data &vert_component, uint base_
 			GL_state.Array.EnableVertexAttrib(index);
 			GL_state.Array.VertexAttribPointer(index, bind_info.size, bind_info.data_type, bind_info.normalized, (GLsizei)vert_component.stride, data_src);
 		}
-
-		return;
-	}
-
-	switch ( attrib_info.attribute_id ) {
-		case opengl_vert_attrib::POSITION:
-		{
-			GL_state.Array.EnableClientVertex();
-			GL_state.Array.VertexPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, data_src);
-			break;
-		}
-		case opengl_vert_attrib::TEXCOORD:
-		{
-			GL_state.Array.SetActiveClientUnit(0);
-			GL_state.Array.EnableClientTexture();
-			GL_state.Array.TexPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, data_src);
-			break;
-		}
-		case opengl_vert_attrib::TANGENT:
-		{
-			GL_state.Array.SetActiveClientUnit(1);
-			GL_state.Array.EnableClientTexture();
-			GL_state.Array.TexPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, data_src);
-			break;
-		}
-		case opengl_vert_attrib::COLOR:
-		{
-			GL_state.Array.EnableClientColor();
-			GL_state.Array.ColorPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, data_src);
-			GL_state.InvalidateColor();
-			break;
-		}
-		case opengl_vert_attrib::NORMAL:
-		{
-			GL_state.Array.EnableClientNormal();
-			GL_state.Array.NormalPointer(bind_info.data_type, (GLsizei)vert_component.stride, data_src);
-			break;
-		}
 	}
 }
 
