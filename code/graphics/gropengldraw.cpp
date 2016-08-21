@@ -170,7 +170,7 @@ void opengl_bind_vertex_component(vertex_format_data &vert_component, uint base_
 
 	Assert(bind_info.attribute_id == attrib_info.attribute_id);
 
-	uint byte_offset = 0;
+	size_t byte_offset = 0;
 
 	// determine if we need to offset into this vertex buffer by # of base_vertex vertices
 	if ( base_vertex > 0 ) {
@@ -1416,7 +1416,6 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 
 void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 {
-	return;
 	int alpha, tmap_type, r, g, b;
 	float u_scale = 1.0f, v_scale = 1.0f;
 	GLenum gl_mode = GL_TRIANGLE_FAN;
@@ -3039,7 +3038,7 @@ void gr_opengl_update_distortion()
 	GL_state.CullFace(cull);
 }
 
-void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, uint vert_offset, uint byte_offset)
+void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, size_t vert_offset, size_t byte_offset)
 {
 	if ( buffer_handle >= 0 ) {
 		opengl_bind_buffer_object(buffer_handle);
@@ -3049,7 +3048,7 @@ void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, i
 
 	opengl_bind_vertex_layout(*layout, 0, (ubyte*)byte_offset);
 
-	glDrawArrays(opengl_primitive_type(prim_type), vert_offset, n_verts);
+	glDrawArrays(opengl_primitive_type(prim_type), (GLint)vert_offset, n_verts);
 }
 
 void opengl_render_primitives_immediate(primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
