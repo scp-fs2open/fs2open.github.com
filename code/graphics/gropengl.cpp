@@ -1143,7 +1143,7 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 	attrs.major_version = 2;
 	attrs.minor_version = 0;
 
-	attrs.flags = os::OGL_FORWARD_COMPATIBLE;
+	attrs.flags = os::OGL_NONE;
 #ifndef NDEBUG
 	attrs.flags |= os::OGL_DEBUG;
 #endif
