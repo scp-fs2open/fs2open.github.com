@@ -2310,11 +2310,11 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 	}
 }
 
-void model_render_insignias(insignia_draw_data *insignia)
+void model_render_insignias(insignia_draw_data *insignia_data)
 {
-	polymodel *pm = insignia->pm;
-	int detail_level = insignia->detail_level;
-	int bitmap_num = insignia->bitmap_num;
+	polymodel *pm = insignia_data->pm;
+	int detail_level = insignia_data->detail_level;
+	int bitmap_num = insignia_data->bitmap_num;
 
 	// if the model has no insignias, or we don't have a texture, then bail
 	if ( (pm->num_ins <= 0) || (bitmap_num < 0) )
@@ -2333,8 +2333,8 @@ void model_render_insignias(insignia_draw_data *insignia)
 	// set the proper texture
 	material_set_unlit(&insignia_material, bitmap_num, 0.65f, true, true);
 
-	if ( insignia->clip ) {
-		insignia_material.set_clip_plane(insignia->clip_normal, insignia->clip_position);
+	if ( insignia_data->clip ) {
+		insignia_material.set_clip_plane(insignia_data->clip_normal, insignia_data->clip_position);
 	}
 
 	// otherwise render them	
