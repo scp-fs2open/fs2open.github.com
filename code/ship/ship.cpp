@@ -5086,7 +5086,7 @@ bool ballistic_possible_for_this_ship(const ship_info *sip)
 	{
 		for (int j = 0; j < Num_weapon_types; ++j)
 		{
-			if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags2 & WIF2_BALLISTIC))
+			if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
 				return true;
 		}
 	}
@@ -12112,7 +12112,7 @@ bool ship_has_a_ballistic_primary(const ship *shipp)
 
 	for (int i = 0; i < swp->num_primary_banks; i++)
 	{
-		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC)
+		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic])
 			return true;
 	}
 
@@ -16055,7 +16055,6 @@ float ship_get_secondary_weapon_range(ship *shipp)
 	return srange;
 }
 
-// Goober5000 - added for ballistic primaries
 /**
  * Determine the number of primary ammo units allowed max for a ship
  */
@@ -16063,10 +16062,8 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
 	
-	if (!(Weapon_info[ammo_type].wi_flags2 & WIF2_BALLISTIC))
-	{
+	if (!(Weapon_info[ammo_type].wi_flags[Weapon::Info_Flags::Ballistic]))
 		return 0;
-	}
 
 	capacity = (float) Ship_info[ship_class].primary_bank_ammo_capacity[bank];
 	size = (float) Weapon_info[ammo_type].cargo_size;
