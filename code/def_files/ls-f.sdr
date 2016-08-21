@@ -1,3 +1,4 @@
+in vec4 fragTexCoord;
 out vec4 fragOut0;
 uniform sampler2D scene;
 uniform sampler2D cockpit;
@@ -9,12 +10,12 @@ uniform float intensity;
 uniform float cp_intensity;
 void main()
 {
-	vec2 step = vec2( gl_TexCoord[0].st - sun_pos.xy );
-	vec2 pos = gl_TexCoord[0].st;
+	vec2 step = vec2( fragTexCoord.st - sun_pos.xy );
+	vec2 pos = fragTexCoord.st;
 	step *= 1.0 / float(SAMPLE_NUM) * density;
 	float decay = 1.0;
 	vec4 sum = vec4(0.0);
-	vec4 mask = texture2D(cockpit, gl_TexCoord[0].st);
+	vec4 mask = texture2D(cockpit, fragTexCoord.st);
 	if (mask.r < 1.0) {
 		fragOut0 = vec4(cp_intensity);
 		return;
