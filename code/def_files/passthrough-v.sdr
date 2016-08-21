@@ -1,8 +1,8 @@
-vertIn vec4 vertPosition;
-vertIn vec4 vertTexCoord;
-vertIn vec4 vertColor;
-vertOut vec4 fragTexCoord;
-vertOut vec4 fragColor;
+in vec4 vertPosition;
+in vec4 vertTexCoord;
+in vec4 vertColor;
+out vec4 fragTexCoord;
+out vec4 fragColor;
 uniform mat4 modelViewMatrix;
 uniform mat4 projMatrix;
 uniform vec4 color;

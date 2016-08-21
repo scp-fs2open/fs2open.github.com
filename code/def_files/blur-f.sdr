@@ -1,7 +1,8 @@
+out vec4 fragOut0;
 uniform float texSize;
 uniform float tapSize;
 uniform int level;
-fragIn vec4 fragTexCoord;
+in vec4 fragTexCoord;
 uniform sampler2D tex;
 // Gaussian Blur
 // 2 passes required
@@ -16,17 +17,17 @@ void main()
 	BlurWeights[2] = 0.1120;
 	BlurWeights[1] = 0.1297;
 	BlurWeights[0] = 0.1362;
-	vec4 sum = tex2DLod(tex, fragTexCoord.xy, float(level)) * BlurWeights[0];
+	vec4 sum = textureLod(tex, fragTexCoord.xy, float(level)) * BlurWeights[0];
 #ifdef PASS_0
 	for (int i = 1; i < 6; i++) {
-		sum += tex2DLod(tex, vec2(clamp(fragTexCoord.x - float(i) * (texSize) * tapSize, 0.0, 1.0), fragTexCoord.y), float(level)) * BlurWeights[i];
-		sum += tex2DLod(tex, vec2(clamp(fragTexCoord.x + float(i) * (texSize) * tapSize, 0.0, 1.0), fragTexCoord.y), float(level)) * BlurWeights[i];
+		sum += textureLod(tex, vec2(clamp(fragTexCoord.x - float(i) * (texSize) * tapSize, 0.0, 1.0), fragTexCoord.y), float(level)) * BlurWeights[i];
+		sum += textureLod(tex, vec2(clamp(fragTexCoord.x + float(i) * (texSize) * tapSize, 0.0, 1.0), fragTexCoord.y), float(level)) * BlurWeights[i];
 	}
 #endif
 #ifdef PASS_1
 	for (int i = 1; i < 6; i++) {
-		sum += tex2DLod(tex, vec2(fragTexCoord.x, clamp(fragTexCoord.y - float(i) * (texSize) * tapSize, 0.0, 1.0)), float(level)) * BlurWeights[i];
-		sum += tex2DLod(tex, vec2(fragTexCoord.x, clamp(fragTexCoord.y + float(i) * (texSize) * tapSize, 0.0, 1.0)), float(level)) * BlurWeights[i];
+		sum += textureLod(tex, vec2(fragTexCoord.x, clamp(fragTexCoord.y - float(i) * (texSize) * tapSize, 0.0, 1.0)), float(level)) * BlurWeights[i];
+		sum += textureLod(tex, vec2(fragTexCoord.x, clamp(fragTexCoord.y + float(i) * (texSize) * tapSize, 0.0, 1.0)), float(level)) * BlurWeights[i];
 	}
 #endif
 	fragOut0 = sum;

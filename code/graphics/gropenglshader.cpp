@@ -351,56 +351,8 @@ void opengl_shader_shutdown()
 static SCP_string opengl_shader_get_header(shader_type type_id, int flags, shader_stage stage) {
 	SCP_stringstream sflags;
 
-#ifdef __APPLE__
-	sflags << "#version 120\n";
-    sflags << "#extension GL_ARB_shader_texture_lod : enable\n";
-	sflags << "#define APPLE\n";
-#endif
-
-	// apply different macros for differing GLSL versions
-	if ( GL_version >= 32 && GLSL_version >= 150 ) {
-		sflags << "#version " << GLSL_version << "\n";
-		if ( stage == SDR_STAGE_VERTEX ) {
-			sflags << "#define vertIn in\n";
-			sflags << "#define vertOut out\n";
-			sflags << "#define tex2D texture\n";
-			sflags << "#define tex2DLod textureLod\n";
-			sflags << "#define texCube texture\n";
-			sflags << "#define tex2DArray texture\n";
-		} else if ( stage == SDR_STAGE_FRAGMENT ) {
-			sflags << "#define fragIn in\n";
-			sflags << "#define tex2D texture\n";
-			sflags << "#define tex2DLod textureLod\n";
-			sflags << "#define texCube texture\n";
-			sflags << "#define tex2DArray texture\n";
-			sflags << "out vec4 fragOut0;\n";
-			sflags << "out vec4 fragOut1;\n";
-			sflags << "out vec4 fragOut2;\n";
-			sflags << "out vec4 fragOut3;\n";
-			sflags << "out vec4 fragOut4;\n";
-		}
-	} else {
-		if ( stage == SDR_STAGE_VERTEX ) {
-			sflags << "#define vertIn attribute\n";
-			sflags << "#define vertOut varying\n";
-			sflags << "#define tex2D texture2D\n";
-			sflags << "#define tex2DLod texture2DLod\n";
-			sflags << "#define texCube textureCube\n";
-			sflags << "#define tex2DArray texture2DArray\n";
-		} else {
-			sflags << "#define fragIn varying\n";
-			sflags << "#define tex2D texture2D\n";
-			sflags << "#define tex2DLod texture2DLod\n";
-			sflags << "#define texCube textureCube\n";
-			sflags << "#define tex2DArray texture2DArray\n";
-			sflags << "#define fragOut0 gl_FragData[0]\n";
-			sflags << "#define fragOut1 gl_FragData[1]\n";
-			sflags << "#define fragOut2 gl_FragData[2]\n";
-			sflags << "#define fragOut3 gl_FragData[3]\n";
-			sflags << "#define fragOut4 gl_FragData[4]\n";
-		}
-	}
-
+	sflags << "#version " << GLSL_version << " core\n";
+	
 	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
 		// ignore looking for variants. main post process, lightshafts, and FXAA shaders need special headers to be hacked in
 		opengl_post_shader_header(sflags, type_id, flags);

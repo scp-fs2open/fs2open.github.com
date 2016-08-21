@@ -1,10 +1,10 @@
-vertIn vec4 vertPosition;
+in vec4 vertPosition;
 uniform mat4 modelViewMatrix;
 uniform mat4 projMatrix;
 uniform vec3 scale;
 uniform int lightType;
-vertOut vec3 lightPosition;
-vertOut vec3 beamVec;
+out vec3 lightPosition;
+out vec3 beamVec;
 void main()
 {
 	gl_Position = projMatrix * modelViewMatrix * vec4(vertPosition.xyz * scale, 1.0);

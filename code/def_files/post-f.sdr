@@ -1,4 +1,5 @@
-fragIn vec4 fragTexCoord;
+in vec4 fragTexCoord;
+out vec4 fragOut0;
 uniform sampler2D tex;
 uniform float timer;
 uniform sampler2D bloomed;
@@ -42,7 +43,7 @@ void main()
 	vec2 distort = vec2(0, 0);
  #endif
  // Global constant
-	vec4 color_in = tex2D(tex, fragTexCoord.xy + distort);
+	vec4 color_in = texture(tex, fragTexCoord.xy + distort);
 	vec4 color_out;
  // Bloom
 	if (bloom_intensity > 0.0) {
@@ -51,7 +52,7 @@ void main()
 		for (int mipmap = 0; mipmap < levels; ++mipmap) {
 			float scale = 1.0/exp2(float(mipmap));
 			factor += scale;
-			bloom += tex2DLod(bloomed, fragTexCoord.xy + distort, float(mipmap)).rgb * scale;
+			bloom += textureLod(bloomed, fragTexCoord.xy + distort, float(mipmap)).rgb * scale;
 		}
 		bloom /= factor;
 		color_in.rgb += bloom;

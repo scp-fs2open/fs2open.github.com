@@ -1,10 +1,10 @@
-vertIn vec4 vertPosition;
-vertIn vec4 vertTexCoord;
-vertIn vec4 vertColor;
-vertIn float vertRadius;
-vertOut vec4 fragTexCoord;
-vertOut vec4 fragColor;
-vertOut float fragOffset;
+in vec4 vertPosition;
+in vec4 vertTexCoord;
+in vec4 vertColor;
+in float vertRadius;
+out vec4 fragTexCoord;
+out vec4 fragColor;
+out float fragOffset;
 uniform mat4 modelViewMatrix;
 uniform mat4 projMatrix;
 uniform float use_offset;

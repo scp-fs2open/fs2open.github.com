@@ -1,3 +1,4 @@
+out vec4 fragOut0;
 uniform sampler2D scene;
 uniform sampler2D cockpit;
 uniform vec2 sun_pos;
@@ -15,7 +16,7 @@ void main()
 	vec4 sum = vec4(0.0);
 	vec4 mask = texture2D(cockpit, gl_TexCoord[0].st);
 	if (mask.r < 1.0) {
-		gl_FragColor = vec4(cp_intensity);
+		fragOut0 = vec4(cp_intensity);
 		return;
 	}
 	for(int i=0; i < SAMPLE_NUM ; i++) {
@@ -25,6 +26,6 @@ void main()
 			sum += decay * weight;
 		decay *= falloff;
 	}
-	gl_FragColor = sum * intensity;
-	gl_FragColor.a = 1.0;
+	fragOut0 = sum * intensity;
+	fragOut0.a = 1.0;
 }

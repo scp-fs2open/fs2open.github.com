@@ -1,5 +1,6 @@
-fragIn vec4 fragTexCoord;
-fragIn vec4 fragColor;
+in vec4 fragTexCoord;
+in vec4 fragColor;
+out vec4 fragOut0;
 uniform sampler2D baseMap;
 uniform int textured;
 void main()
