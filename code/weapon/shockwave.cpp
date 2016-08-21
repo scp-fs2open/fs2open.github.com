@@ -399,7 +399,7 @@ void shockwave_render(object *objp, draw_list *scene)
 			g3_transfer_vertex(&p, &sw->pos);
 
 			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time))*10.0f : 1.0f;
-			batching_add_distortion_bitmap_rotated(Shockwave_info[1].bitmap_id + shockwave_get_framenum(objp->instance, 94), &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
+			batching_add_distortion_bitmap_rotated(Shockwave_info[1].bitmap_id + shockwave_get_framenum(objp->instance, Shockwave_info[1].bitmap_id), &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
 		}
 	} else {
 		g3_transfer_vertex(&p, &sw->pos);
