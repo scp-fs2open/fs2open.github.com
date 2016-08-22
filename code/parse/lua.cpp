@@ -14621,7 +14621,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 		break;
 
 	case LE_VM_EXTERNAL_CAMERA_LOCKED:
-		bit = VM_EXTERNAL_CAMERA_LOCKED;
+		bit = VM_CAMERA_LOCKED;
 		break;
 
 	case LE_VM_FREECAMERA:

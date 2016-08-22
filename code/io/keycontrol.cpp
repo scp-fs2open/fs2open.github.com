@@ -2098,7 +2098,7 @@ int button_function_demo_valid(int n)
 		if(!Perspective_locked)
 		{
 			Viewer_mode ^= VM_EXTERNAL;
-			Viewer_mode &= ~VM_EXTERNAL_CAMERA_LOCKED;	// reset camera lock when leaving/entering external view
+			Viewer_mode &= ~VM_CAMERA_LOCKED;	// reset camera lock when leaving/entering external view
 		}
 		else
 		{
@@ -2123,8 +2123,8 @@ int button_function_demo_valid(int n)
 	case VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK:
 		control_used(VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK);
 		if ( Viewer_mode & VM_EXTERNAL ) {
-		Viewer_mode ^= VM_EXTERNAL_CAMERA_LOCKED;
-		if ( Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED ) {
+		Viewer_mode ^= VM_CAMERA_LOCKED;
+		if ( Viewer_mode & VM_CAMERA_LOCKED ) {
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "External camera is locked, controls will move ship", 36));
 			} else {
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "External camera is free, controls will move the camera, not the ship", 37));

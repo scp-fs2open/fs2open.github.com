@@ -59,8 +59,6 @@ int		lua_game_control = 0;
 physics_info Descent_physics;			// used when we want to control the player like the descent ship
 
 angles chase_slew_angles;
-int view_centering = 0;
-bool slew_active = false;   // Used to determine if slew mode (a.k.a FreeLook mode) is active
 
 int toggle_glide = 0;
 int press_glide = 0;
@@ -81,7 +79,6 @@ static int Player_all_alone_msg_inited=0;	// flag used for initializing a player
  * @param[in]  frame_time The frame time when this was called
  */
 void playercontrol_read_stick(int *axis, float frame_time);
-void player_set_padlock_state();
 
 /**
  * @brief Slew angles chase towards a value like they're on a spring.
@@ -118,12 +115,23 @@ void chase_angles_to_value(angles *ap, angles *bp, int scale)
 	}
 }
 
+/**
+ * @brief Resets the given angles to 0.0f without delay
+ *
+ * @param[in,out] Angles to reset
+ */
+void reset_angles(angles *ap) {
+	ap->p = 0.0f;
+	ap->h = 0.0f;
+	ap->b = 0.0f;
+}
+
 angles	Viewer_slew_angles_delta;
 angles	Viewer_external_angles_delta;
 
 /**
- * @brief Modifies the camera veiw angles according to its current view mode. (External, External Locked,
- *   TrackIR, Freelook, Normal, and Centering)
+ * @brief Modifies the camera veiw angles according to its current view mode: External, External Locked,
+ *   TrackIR, Freelook (Unlocked), Normal (Locked), and Centering
  *
  * @param[in,out]   ma      The camera veiw angles to modify (magnitude is saturated to be within max_p and max_h).
  * @param[out]  da      The delta angles applied to ma (magnitude is saturated to 1 radian).
@@ -141,35 +149,45 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 	int axis[NUM_JOY_AXIS_ACTIONS];
 	float h = 0.0f;
 	float p = 0.0f;
-	vec3d trans = ZERO_VECTOR;
 
-	if (view_centering) {
-		// View is centering, any and all slew commands are ignored until it has cenetered.
+	if (Viewer_mode & VM_CENTERING) {
+		// Center view then bail
+		ma->p = 0.0f;
+		ma->h = 0.0f;
+		ma->b = 0.0f;
 		return;
-	}
 
-	if ( Viewer_mode & VM_EXTERNAL) {
-		if (! (Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
-			// Slew the external camera
-			// May have to look at this again later once slew control keys get put in
-			// YAW_LEFT -> SLEW_LEFT      YAW_RIGHT -> SLEW_RIGHT
-			// PITCH_BACK -> SLEW_UP      PITCH_FORWARD -> SLEW_DOWN
-			t = t + (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
-			u = u + (check_control_timef(PITCH_BACK) - check_control_timef(PITCH_FORWARD));
-
-			playercontrol_read_stick(axis,frame_time);
-
-			h = -f2fl(axis[JOY_HEADING_AXIS]);
-			p = -f2fl(axis[JOY_PITCH_AXIS]);
-
-		} else {
+	} else if (Viewer_mode & VM_CAMERA_LOCKED) {
+		if (Viewer_mode & VM_EXTERNAL) {
 			// External camera is locked in place, nothing to do here
 			return;
 		}
 
-	} else {
-		// We're in the cockpit
-		if ( headtracking::isEnabled() ) {
+		if (Viewer_mode & VM_PADLOCK_ANY) {
+			// Do Padlock view then bail
+			if (Viewer_mode & VM_PADLOCK_UP) {
+				ma->h = 0.0f;
+				ma->p = -max_p;
+
+			} else if (Viewer_mode & VM_PADLOCK_REAR) {
+				ma->h = -PI;
+				ma->p = 0.0f;
+
+			} else if (Viewer_mode & VM_PADLOCK_RIGHT) {
+				ma->h = max_h;
+				ma->p = 0.0f;
+
+			} else if (Viewer_mode & VM_PADLOCK_LEFT) {
+				ma->h = -max_h;
+				ma->p = 0.0f;
+			} // Else, don't do any ajustments. player_set_padlock_state will reset the states
+
+			return;
+
+		} else if (headtracking::isEnabled()) {
+			// Do TrackIR
+			vec3d trans = ZERO_VECTOR;
+
 			headtracking::query();
 
 			headtracking::HeadTrackingStatus* status = headtracking::getStatus();
@@ -187,23 +205,23 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 
 			vm_vec_unrotate(&leaning_position,&trans,&Eye_matrix);
 
-		} else if (slew_active) {
-			// Freelook mode enabled - Pitch and Yaw axes control X and Y slew axes
-			t = (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
-			u = (check_control_timef(PITCH_BACK) - check_control_timef(PITCH_FORWARD));
-
-			playercontrol_read_stick(axis, frame_time);
-
-			h = -f2fl(axis[JOY_HEADING_AXIS]);
-			p = -f2fl(axis[JOY_PITCH_AXIS]);
-
 		} else {
-			// TrackIR and Freelook are disabled, only use slew commands
+			// Do slew
 			/* These have been commented out until the controls are added into Controls_config[]
 			t = (check_control_timef(SLEW_LEFT) - check_control_timef(SLEW_RIGHT));
 			u = (check_control_timef(SLEW_UP) - check_control_timef(SLEW_DOWN);
 			*/
 		}	// Else, don't do any slewing
+
+	} else {
+		// Camera is unlocked - Pitch and Yaw axes control X and Y slew axes
+		t = (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
+		u = (check_control_timef(PITCH_BACK) - check_control_timef(PITCH_FORWARD));
+
+		playercontrol_read_stick(axis, frame_time);
+
+		h = -f2fl(axis[JOY_HEADING_AXIS]);
+		p = -f2fl(axis[JOY_PITCH_AXIS]);
 	}
 
 	// Combine Analog and Digital slew commands
@@ -225,6 +243,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 		da->p += p;
 	}
 
+	// Clamp deltas to be within 1 radian
 	CLAMP(da->h, -1.0f, 1.0f);
 	CLAMP(da->p, -1.0f, 1.0f);
 
@@ -323,21 +342,95 @@ void do_view_track_target(float frame_time)
 void do_view_slew(float frame_time)
 {
 	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3, frame_time);
+
+	// Check Track target
+	if (Viewer_mode & VM_TRACK) {
+		// Player's vision will track current target.
+		do_view_track_target(frame_time);
+		Viewer_mode |= VM_CAMERA_LOCKED;
+		return;
+	}
+
+	// Check Padlock controls
+	if (check_control(PADLOCK_UP)) {
+		Viewer_mode |= (VM_PADLOCK_UP | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (check_control(PADLOCK_DOWN)) {
+		Viewer_mode |= (VM_PADLOCK_REAR | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (check_control(PADLOCK_RIGHT)) {
+		Viewer_mode |= (VM_PADLOCK_RIGHT | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (check_control(PADLOCK_LEFT)) {
+		Viewer_mode |= (VM_PADLOCK_LEFT | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (Viewer_mode & VM_PADLOCK_ANY) {
+		// clear padlock views and center the view once 
+		// the player lets go of a padlock control
+		Viewer_mode &= ~(VM_PADLOCK_ANY);
+		Viewer_mode |= (VM_CENTERING | VM_CAMERA_LOCKED);
+	}
+
+	if (Viewer_mode & VM_CENTERING) {
+		// If we're centering the view, check to see if we're actually centered and bypass any view modifications
+		// until the view has finally been centered.
+		if ((Viewer_slew_angles.h == 0.0f) && (Viewer_slew_angles.p == 0.0f)) {
+			// View has been centered, allow the player to freelook again.
+			Viewer_mode &= ~VM_CENTERING;
+		}
+		Viewer_mode |= VM_CAMERA_LOCKED;
+	}
+
+	if (!(Viewer_mode & VM_PADLOCK_ANY)) {
+		if (headtracking::isEnabled()) {
+			// Can't do slewing if TrackIR is enabled
+			return;
+		}
+		
+		if (check_control_timef(VIEW_SLEW)) {
+			// Enable freelook mode
+			Viewer_mode &= ~VM_CAMERA_LOCKED;
+
+		} else if (check_control_timef(VIEW_CENTER) || !(Viewer_mode & VM_CAMERA_LOCKED)) {
+			// Start centering the view if:
+			//  VIEW_CENTER was pressed, or
+			//  The player let go of VIEW_SLEW
+			Viewer_mode |= (VM_CENTERING | VM_CAMERA_LOCKED);
+		}
+	}
 }
 
 void do_view_chase(float frame_time)
 {
 	float t;
 
-	//	Process centering key.
+	if (Viewer_mode & VM_TRACK) {
+		// Snap back to zero and disable target tracking
+		reset_angles(&Viewer_slew_angles);
+		reset_angles(&chase_slew_angles);
+		Viewer_mode &= ~VM_TRACK;
+	}
+
+	// Process centering key.
 	if (check_control_timef(VIEW_CENTER)) {
 		Viewer_chase_info.distance = 0.0f;
 	}
 	
+	// Process distance +/- keys
 	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE);
 	Viewer_chase_info.distance += t*4;
 	if (Viewer_chase_info.distance < 0.0f)
 		Viewer_chase_info.distance = 0.0f;
+
+	Viewer_mode |= VM_CAMERA_LOCKED;
 }
 
 float camera_zoom_scale = 1.0f;
@@ -357,6 +450,13 @@ DCF(camera_speed, "Sets the camera zoom scale")
 void do_view_external(float frame_time)
 {
 	float	t;
+
+	if (Viewer_mode & VM_TRACK) {
+		// Snap back to zero and disable target tracking
+		reset_angles(&Viewer_slew_angles);
+		reset_angles(&chase_slew_angles);
+		Viewer_mode &= ~VM_TRACK;
+	}
 
 	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, PI2, PI2, frame_time);
 
@@ -484,56 +584,30 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	static float analog_throttle_last = 9e9f;
 	static int override_analog_throttle = 0; 
 	static float savedspeed = ci->forward_cruise_percent;	//Backslash
-	int ok_to_read_ci_pitch_yaw=1;
 	int centering_speed = 7; // the scale speed in which the camera will smoothly center when the player presses Center View
 
 	oldspeed = ci->forward_cruise_percent;
 	player_control_reset_ci( ci );
 
+	// Camera & View controls
 	if ( Viewer_mode & VM_EXTERNAL ) {
 		control_used(VIEW_EXTERNAL);
-		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
-			ok_to_read_ci_pitch_yaw=0;
-		}
 
 		do_view_external(frame_time);
 		do_thrust_keys(ci);
-		slew_active=0;
+
 	} else if ( Viewer_mode & VM_CHASE ) {
 		do_view_chase(frame_time);
-		slew_active=0;
-	} else { // We're in the cockpit. 
-		if (view_centering) { 
-			// If we're centering the view, check to see if we're actually centered and bypass any view modifications
-			// until the view has finally been centered.
-			if ((Viewer_slew_angles.h == 0.0f) && (Viewer_slew_angles.p == 0.0f)) {
-				view_centering = 0; // if the view has been centered, allow the player to freelook again.
-			}
-			slew_active = 0;
-		} else if ( Viewer_mode & VM_TRACK ) {
-			// Player's vision will track current target.
-			do_view_track_target(frame_time);
-		} else {
-			if (check_control_timef(VIEW_SLEW)) {
-				// Enable slew/freelook mode
-				slew_active = 1;
-				ok_to_read_ci_pitch_yaw = 0;
-			} else if (check_control_timef(VIEW_CENTER) || slew_active) { 
-				// Start centering the view if:
-				//  VIEW_CENTER was pressed, or
-				//  The player let go of VIEW_SLEW
-				view_centering = 1; 
-				slew_active = 0;
-			}
-		}
 
+	} else {
+		// We're in the cockpit. 
 		do_view_slew(frame_time);
-
-		// Orthogonal padlock views moved here in order to get the springy chase effect when transitioning.
-		player_set_padlock_state();
 	}
-	
-	if ( ok_to_read_ci_pitch_yaw ) {
+
+	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, centering_speed);
+
+	// Ship controls
+	if (Viewer_mode & VM_CAMERA_LOCKED) {
 		// From keyboard...
 		do_thrust_keys(ci);
 		if ( check_control(BANK_WHEN_PRESSED) ) {
@@ -572,15 +646,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 		ci->pitch += kh;
 	}
-
-	if (!(slew_active || (Viewer_mode & VM_TRACK) || (Viewer_mode & VM_PADLOCK_ANY))) {
-		// If we're not in a view that slews (ie, not a cockpit view), and we are not tracking a target,
-		//   AND we're not in padlock view, make the viewer spring to the center.
-		chase_slew_angles.h = 0.0f;
-		chase_slew_angles.p = 0.0f;
-	}
-
-	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, centering_speed);
 
 	if (!(Game_mode & GM_DEAD)) {
 		if ( button_info_query(&Player->bi, ONE_THIRD_THROTTLE) ) {
@@ -714,24 +779,25 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			axis[0] = axis[1] = axis[2] = axis[3] = axis[4] = 0;
 		}
 
-		if (ok_to_read_ci_pitch_yaw) {
-		if (Axis_map_to[JOY_HEADING_AXIS] >= 0) {
-			// check the heading on the x axis
-			if ( check_control(BANK_WHEN_PRESSED) ) {
-				delta = f2fl( axis[JOY_HEADING_AXIS] );
-				if ( (delta > 0.05f) || (delta < -0.05f) ) {
-					ci->bank -= delta;
+		if (Viewer_mode & VM_CAMERA_LOCKED) {
+			// Player has control of the ship
+			if (Axis_map_to[JOY_HEADING_AXIS] >= 0) {
+				// check the heading on the x axis
+				if ( check_control(BANK_WHEN_PRESSED) ) {
+					delta = f2fl( axis[JOY_HEADING_AXIS] );
+					if ( (delta > 0.05f) || (delta < -0.05f) ) {
+						ci->bank -= delta;
+					}
+				} else {
+					ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
 				}
-			} else {
-				ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
 			}
-		}
-		// check the pitch on the y axis
-		if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
-			ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
-		}
+			// check the pitch on the y axis
+			if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
+				ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
+			}
 		} else {
-			// We're in slew mode, so stop rotating the player craft
+			// Player has control of the camera
 			ci->pitch = 0.0f;
 			ci->heading = 0.0f;
 		}
@@ -887,7 +953,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	}
 
 	if ( (Viewer_mode & VM_EXTERNAL) ) {
-		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
+		if (!(Viewer_mode & VM_CAMERA_LOCKED)) {
 			ci->heading=0.0f;
 			ci->pitch=0.0f;
 			ci->bank=0.0f;
@@ -1920,45 +1986,6 @@ void player_maybe_play_all_alone_msg()
 	}
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 } 
-
-
-void player_set_padlock_state()
-{
-	if ( check_control(PADLOCK_UP) ) {
-		chase_slew_angles.h = 0.0f;
-		chase_slew_angles.p = -PI_2;
-		Viewer_mode |= VM_PADLOCK_UP;
-		return;
-	}
-	if ( check_control(PADLOCK_DOWN) ) {
-		chase_slew_angles.h = -PI;
-		chase_slew_angles.p = 0.0f;
-		Viewer_mode |= VM_PADLOCK_REAR;
-		return;
-	}
-
-	if ( check_control(PADLOCK_RIGHT) ) {
-		chase_slew_angles.h = PI_2;
-		chase_slew_angles.p = 0.0f;
-		Viewer_mode |= VM_PADLOCK_RIGHT;
-		return;
-	}
-
-	if ( check_control(PADLOCK_LEFT) ) {
-		chase_slew_angles.h = -PI_2;
-		chase_slew_angles.p = 0.0f;
-		Viewer_mode |= VM_PADLOCK_LEFT;
-		return;
-	}
-
-	if ( Viewer_mode & VM_PADLOCK_ANY ) {
-		// clear padlock views and center the view once 
-		// the player lets go of an orthogonal padlock command
-		Viewer_mode &= ~(VM_PADLOCK_ANY);
-		chase_slew_angles.h = 0.0f;
-		chase_slew_angles.p = 0.0f;
-	}
-}
 
 void player_get_padlock_orient(matrix *eye_orient)
 {
