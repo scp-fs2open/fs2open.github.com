@@ -588,9 +588,9 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
                     }
 
                     int	skip_length, name_length;
-                    char	*temp_string = new char[flag_text.size() + 1];
+					std::unique_ptr<char[]> temp_string(new char[flag_text.size() + 1]);
 
-                    strcpy(temp_string, flag_text.c_str());
+                    strcpy(temp_string.get(), flag_text.c_str());
 
                     weaponp->wi_flags.set(Weapon::Info_Flags::Spawn);
                     weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
@@ -602,7 +602,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
                     }
                     else {
                         weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = (short)atoi(num_start + 1);
-                        name_length = num_start - temp_string - skip_length;
+                        name_length = num_start - temp_string.get() - skip_length;
                     }
 
                     weaponp->total_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
