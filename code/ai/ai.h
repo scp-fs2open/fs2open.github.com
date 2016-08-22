@@ -545,7 +545,7 @@ typedef struct ai_info {
 	int		ai_override_flags;			// flags for marking ai overrides from sexp or lua systems
 	control_info	ai_override_ci;		// ai override control info
 	int		ai_override_timestamp;		// mark for when to end the current override
-} ai_info;
+};
 
 // Goober5000
 typedef struct {
