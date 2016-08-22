@@ -5541,11 +5541,11 @@ void HudGaugeWeaponEnergy::render(float frametime)
 	bool use_new_gauge = false;
 
 	// Goober5000 - only check for the new gauge in case of command line + a ballistic-capable ship
-	if (Cmdline_ballistic_gauge && Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries])
+	if (Cmdline_ballistic_gauge)
 	{
-		for(x = 0; x < Player_ship->weapons.num_primary_banks; x++)
+		for (x = 0; x < Player_ship->weapons.num_primary_banks; ++x)
 		{
-			if(Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags[Weapon::Info_Flags::Ballistic])
+			if (Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				use_new_gauge = true;
 				break;
@@ -5651,7 +5651,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 		sw = &Player_ship->weapons;
 
 		// show ballistic ammunition in energy gauge if need be
-		if ( Show_ballistic && Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries] ) {
+		if ( Show_ballistic ) {
 			if ( Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {
 
 				// go through all ballistic primaries and add up their ammunition totals and max capacities
@@ -5670,7 +5670,11 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				max_ballistic_ammo = sw->primary_bank_start_ammo[sw->current_primary_bank];
 			}
 
-			percent_left = i2fl(ballistic_ammo) / i2fl(max_ballistic_ammo);
+			if (max_ballistic_ammo > 0) {
+				percent_left = i2fl(ballistic_ammo) / i2fl(max_ballistic_ammo);
+			} else {
+				percent_left = 1.0f;
+			}
 		} else {
 			// also leave if no energy can be stored for weapons - Goober5000
 			if (!ship_has_energy_weapons(Player_ship))
