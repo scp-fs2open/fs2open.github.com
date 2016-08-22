@@ -528,16 +528,16 @@ namespace font
 
 				letter2 = c2 - fnt->first_ascii;
 
-				if ((letter2 >= 0) && (letter2 < fnt->num_chars))
+				if ((letter2 >= 0) && (letter2 < fnt->num_chars) && (i < fnt->num_kern_pairs))
 				{
 					font_kernpair *k = &fnt->kern_data[i];
-					while ((k->c1 == (char)letter) && (k->c2 < (char)letter2) && (i < fnt->num_kern_pairs))
+					while ((i < fnt->num_kern_pairs) && (k->c1 == (char)letter) && (k->c2 < (char)letter2))
 					{
 						i++;
 						k++;
 					}
 
-					if (k->c2 == (char)letter2)
+					if ((i < fnt->num_kern_pairs) && (k->c2 == (char)letter2))
 					{
 						*spacing += k->offset;
 					}
