@@ -6642,7 +6642,7 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 			}
 		}
 		else
-			aip->ai_flags.set(AI::AI_Flags::Attack_slowly);
+			aip->ai_flags.remove(AI::AI_Flags::Attack_slowly);
 	}
 
 	//Glide attack: we turn on glide to maintain current vector while aiming at the enemy
@@ -13987,7 +13987,7 @@ void ai_frame(int objnum)
 	if (aip->ai_flags[AI::AI_Flags::Avoid_shockwave_ship, AI::AI_Flags::Avoid_shockwave_weapon]) {
 		if (ai_avoid_shockwave(Pl_objp, aip)) {
 			aip->ai_flags.remove(AI::AI_Flags::Big_ship_collide_recover_1);
-			aip->ai_flags.set(AI::AI_Flags::Big_ship_collide_recover_2);
+			aip->ai_flags.remove(AI::AI_Flags::Big_ship_collide_recover_2);
 			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
 				ai_abort_rearm_request(Pl_objp);
 			return;

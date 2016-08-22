@@ -14645,7 +14645,8 @@ void sexp_shields_off(int n, bool shields_off ) //-Sesquipedalian
 // Goober5000
 void sexp_ingame_ship_kamikaze(ship *shipp, int kdamage)
 {
-	Assert(shipp);
+	Assertion(shipp, "Invalid ship pointer passed to sexp_ingame_ship_kamikaze.\n");
+	Assertion(kdamage >= 0, "Invalid value passed to sexp_ingame_ship_kamikaze. Kamikaze damage must be >= 0, is %i.\n", kdamage);
 
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
