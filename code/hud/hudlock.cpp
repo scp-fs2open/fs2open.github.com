@@ -503,7 +503,7 @@ void hud_do_lock_indicator(float frametime)
 
 	// be sure to unset this flag, then possibly set later in this function so that
 	// threat indicators work properly.
-	Player_ai->ai_flags &= ~AIF_SEEK_LOCK;
+	Player_ai->ai_flags.remove(AI::AI_Flags::Seek_lock);
 
 	if ( hud_abort_lock() ) {
 		hud_lock_reset();
@@ -621,7 +621,7 @@ void hud_do_lock_indicator(float frametime)
 		}
 	}
 	else {
-		Player_ai->ai_flags |= AIF_SEEK_LOCK;		// set this flag so multiplayer's properly track lock on other ships
+		Player_ai->ai_flags.set(AI::AI_Flags::Seek_lock);		// set this flag so multiplayer's properly track lock on other ships
 		if ( Missile_lock_loop != -1 && snd_is_playing(Missile_lock_loop) ) {
 			snd_stop(Missile_lock_loop);
 			Missile_lock_loop = -1;

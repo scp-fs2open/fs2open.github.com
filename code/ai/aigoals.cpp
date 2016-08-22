@@ -1802,7 +1802,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			}
 
 			// if desitnation currently being repaired, then goal is stil active
-			if ( Ai_info[Ships[sindex].ai_index].ai_flags & AIF_BEING_REPAIRED )
+			if ( Ai_info[Ships[sindex].ai_index].ai_flags[AI::AI_Flags::Being_repaired] )
 				return AI_GOAL_ACHIEVABLE;
 
 			// if the destination ship is dying or departing (but not completed yet), the mark goal as
@@ -1811,11 +1811,11 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				return AI_GOAL_NOT_ACHIEVABLE;
 
 			// if the destination object is no longer awaiting repair, then remove the item
-			if ( !(Ai_info[Ships[sindex].ai_index].ai_flags & AIF_AWAITING_REPAIR) )
+			if ( !(Ai_info[Ships[sindex].ai_index].ai_flags[AI::AI_Flags::Awaiting_repair]) )
 				return AI_GOAL_NOT_ACHIEVABLE;
 
 			// not repairing anything means that he can do this goal!!!
-			if ( !(aip->ai_flags  & AIF_REPAIRING) )
+			if ( !(aip->ai_flags[AI::AI_Flags::Repairing]) )
 				return AI_GOAL_ACHIEVABLE;
 
 			// test code!!!
@@ -2038,7 +2038,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	// if this object was flying in formation off of another object, remove the flag that tells him
 	// to do this.  The form-on-my-wing command is removed from the goal list as soon as it is called, so
 	// we are safe removing this bit here.
-	aip->ai_flags &= ~AIF_FORMATION_OBJECT;
+	aip->ai_flags.remove(AI::AI_Flags::Formation_object);
 
 	// Goober5000 - we may want to use AI for the player
 	// AL 3-7-98: If this is a player ship, and the goal is not a formation goal, then do a quick out

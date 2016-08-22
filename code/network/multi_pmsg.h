@@ -18,7 +18,7 @@
 //
 
 struct net_player;
-struct ai_info;
+class ai_info;
 struct header;
 
 // messaging modes

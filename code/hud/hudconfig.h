@@ -16,7 +16,7 @@
 
 class player;
 class ship;
-struct ai_info;
+class ai_info;
 
 #define HUD_COLOR_GREEN		0
 #define HUD_COLOR_BLUE		1

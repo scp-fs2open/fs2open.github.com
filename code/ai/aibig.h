@@ -13,7 +13,7 @@
 #define __AIBIG_H__
 
 class object;
-struct ai_info;
+class ai_info;
 struct vec3d;
 class ship_subsys;
 

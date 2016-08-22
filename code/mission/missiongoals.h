@@ -16,7 +16,7 @@
 #include "globalincs/pstypes.h"
 
 struct ai_goal;
-struct ai_info;
+class ai_info;
 
 // defines for types of primary and secondary missions
 
