@@ -569,10 +569,6 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		render_info.set_object_number(OBJ_INDEX(target_objp));
 
 		switch (Targetbox_wire) {
-			case 0:
-				flags |= MR_NO_LIGHTING;
-
-				break;
 			case 1:
 				if (ship_is_tagged(target_objp))
 					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
@@ -626,7 +622,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		}
 
 		render_info.set_flags(flags | MR_AUTOCENTER | MR_NO_FOGGING);
-
+		Shadow_override = true;
 		// maybe render a special hud-target-only model
 		if(target_sip->model_num_hud >= 0){
 			model_render_immediate( &render_info, target_sip->model_num_hud, &target_objp->orient, &obj_pos);
@@ -635,7 +631,7 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 
 			model_render_immediate( &render_info, target_sip->model_num, &target_objp->orient, &obj_pos);
 		}
-
+		Shadow_override = false;
 		Interp_desaturate = false;
 		Glowpoint_override = false;
 
@@ -726,10 +722,6 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		model_render_params render_info;
 
 		switch (Targetbox_wire) {
-			case 0:
-				flags |= MR_NO_LIGHTING;
-
-				break;
 			case 1:
 				render_info.set_color(255, 255, 255);
 
@@ -760,10 +752,10 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		}
 
 		render_info.set_flags(flags | MR_NO_FOGGING);
-
+		Shadow_override = true;
 		// This calls the colour that doesn't get reset
 		submodel_render_immediate( &render_info, debrisp->model_num, debrisp->submodel_num, &target_objp->orient, &obj_pos);
-
+		Shadow_override = false;
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
 		}
@@ -890,10 +882,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		//                 renderTargetShip(). To keep the codes similar please update both if and when needed
 		if (missile_view == FALSE) {
 			switch (Targetbox_wire) {
-				case 0:
-					flags |= MR_NO_LIGHTING;
-
-					break;
 				case 1:
 					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 
@@ -913,10 +901,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			render_info.set_object_number(OBJ_INDEX(viewed_obj));
 
 			switch (Targetbox_wire) {
-				case 0:
-					flags |= MR_NO_LIGHTING;
-
-					break;
 				case 1:
 					if (ship_is_tagged(viewed_obj))
 						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
@@ -972,6 +956,8 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			}
 		}
 		
+		Shadow_override = true;
+
 		if (missile_view == FALSE ) {
 			render_info.set_flags(flags | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING);
 			render_info.set_replacement_textures(replacement_textures);
@@ -991,6 +977,8 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 				model_render_immediate( &render_info, homing_sip->model_num, &viewed_obj->orient, &obj_pos );
 			}
 		}
+
+		Shadow_override = false;
 
 		if (missile_view == TRUE) {
 			Glowpoint_override = false;
@@ -1091,10 +1079,6 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		model_render_params render_info;
 
 		switch (Targetbox_wire) {
-			case 0:
-				flags |= MR_NO_LIGHTING;
-
-				break;
 			case 1:
 				if (time_to_impact>=0)
 					render_info.set_color(255,255,255);
@@ -1131,9 +1115,9 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		}
 
 		render_info.set_flags(flags | MR_NO_FOGGING);
-
+		Shadow_override = true;
 		model_render_immediate( &render_info, Asteroid_info[asteroidp->asteroid_type].model_num[pof], &target_objp->orient, &obj_pos );
-
+		Shadow_override = false;
 		if ( Monitor_mask >= 0 ) {
 			gr_stencil_set(GR_STENCIL_NONE);
 		}
