@@ -36,6 +36,7 @@
 #include "render/3dinternal.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include <algorithm>
 
 flag_def_list model_render_flags[] =
 {
@@ -512,10 +513,11 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 		for ( j = 0; j < n_subsystems; j++ ) {
 			dest = &d_sp[j];
 			if ( !subsystem_stricmp( source->subobj_name, dest->subobj_name) ) {
-                for (auto it = std::begin(carry_flags); it != std::end(carry_flags); ++it) {
-                    if (source->flags[*it])
-                        dest->flags.set(*it);
-                }
+				for (auto const &flag : carry_flags) {
+					if (source->flags[flag])
+						dest->flags.set(flag);
+				}
+
 				dest->subobj_num = source->subobj_num;
 				dest->model_num = source->model_num;
 				dest->pnt = source->pnt;

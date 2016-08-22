@@ -1793,6 +1793,7 @@ ship_info::~ship_info()
 			}
 		}
 
+		vm_free(subsystems);
         subsystems = NULL;
 	}
 
@@ -4398,8 +4399,8 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
                 }
 
                 if (errors.size() > 0) {
-                    for (i = 0; i < errors.size(); ++i) {
-                        Warning(LOCATION, "Bogus string in subsystem flags: %s\n", errors[i].c_str());
+                    for (auto const &error : errors) {
+                        Warning(LOCATION, "Bogus string in subsystem flags: %s\n", error.c_str());
                     }
                 }
 
@@ -6310,7 +6311,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 		// subsystem since previous error checking would have trapped its loading as an error.
 		Assert( it->n_subsystems == sip->n_subsystems );
 
-		source_msp = const_cast<model_subsystem*>(&(it->subsystems[0]));
+		source_msp = &(it->subsystems[0]);
 		dest_msp = &(sip->subsystems[0]);
 		if (source_msp->model_num != -1) {
 			model_copy_subsystems( sip->n_subsystems, dest_msp, source_msp );
@@ -13217,7 +13218,7 @@ int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_bypass)
 /**
  * Returns the index number of the ship_subsys parameter
  */
-int ship_get_subsys_index(ship *sp, SCP_string ss_name, int error_bypass)
+int ship_get_subsys_index(ship *sp, const char* ss_name, int error_bypass)
 {
 	int count;
 	ship_subsys *ss;
@@ -13225,7 +13226,7 @@ int ship_get_subsys_index(ship *sp, SCP_string ss_name, int error_bypass)
 	count = 0;
 	ss = GET_FIRST(&sp->subsys_list);
 	while ( ss != END_OF_LIST( &sp->subsys_list ) ) {
-		if ( !subsystem_stricmp(ss->system_info->subobj_name, ss_name.c_str()) )
+		if ( !subsystem_stricmp(ss->system_info->subobj_name, ss_name) )
 			return count;
 		count++;
 		ss = GET_NEXT( ss );

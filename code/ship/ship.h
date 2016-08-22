@@ -1485,7 +1485,7 @@ extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool 
 //extern camid ship_get_followtarget_eye(object *obj);
 extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos = NULL );	// returns index'th subsystem of this ship
 extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_bypass = 0);
-extern int ship_get_subsys_index(ship *sp, SCP_string ss_name, int error_bypass = 0);		// returns numerical index in linked list of subsystems
+extern int ship_get_subsys_index(ship *sp, const char* ss_name, int error_bypass = 0);		// returns numerical index in linked list of subsystems
 extern float ship_get_subsystem_strength( ship *shipp, int type );
 extern ship_subsys *ship_get_subsys(ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
