@@ -3704,7 +3704,7 @@ void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *t
 
 	target_moving_direction = targetp->phys_info.vel;
 
-	if(The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+	if(The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
 		vm_vec_scale_sub2(&target_moving_direction, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
 	
 	// test if the target is moving at all
@@ -3797,7 +3797,7 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 	// additive velocity stuff
 	// not just the player's main target
 	vec3d enemy_vel = targetp->phys_info.vel;
-	if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
 		vm_vec_scale_sub2( &enemy_vel, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
 	}
 	
