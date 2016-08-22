@@ -626,10 +626,10 @@ int dup_object(object *objp)
 		for (i=0; i<MAX_AI_GOALS; i++)
 			aip1->goals[i] = aip2->goals[i];
 
-		if ( aip2->ai_flags & AIF_KAMIKAZE )
-			aip1->ai_flags |= AIF_KAMIKAZE;
-		if ( aip2->ai_flags & AIF_NO_DYNAMIC )
-			aip2->ai_flags |= AIF_NO_DYNAMIC;
+		if (aip2->ai_flags[AI::AI_Flags::Kamikaze])
+			aip1->ai_flags.set(AI::AI_Flags::Kamikaze);
+		if (aip2->ai_flags[AI::AI_Flags::No_dynamic])
+			aip2->ai_flags.set(AI::AI_Flags::No_dynamic);
 
 		aip1->kamikaze_damage = aip2->kamikaze_damage;
 

@@ -14,7 +14,7 @@
 
 // prototypes
 class ship;
-class ai_info;
+struct ai_info;
 
 // use these to redirect Player_ship and Player_ai when switching into ai mode
 extern ship Hud_obs_ship;

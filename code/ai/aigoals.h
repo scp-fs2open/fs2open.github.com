@@ -16,7 +16,7 @@
 #include "globalincs/pstypes.h"
 
 struct wing;
-class ai_info;
+struct ai_info;
 struct ai_goal;
 
 // macros for goals which get set via sexpressions in the mission code
