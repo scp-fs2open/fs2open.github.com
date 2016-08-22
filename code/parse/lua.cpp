@@ -10738,13 +10738,10 @@ ADE_VIRTVAR(DestroyedByWeapon, l_Weapon, "boolean", "Whether weapon was destroye
 	weapon *wp = &Weapons[oh->objp->instance];
 
 	if(ADE_SETTING_VAR && numargs > 1) {
-		if(b)
-			wp->weapon_flags |= WF_DESTROYED_BY_WEAPON;
-		else
-			wp->weapon_flags &= ~WF_DESTROYED_BY_WEAPON;
+		wp->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon, b);
 	}
 
-	return ade_set_args(L, "b", (wp->weapon_flags & WF_DESTROYED_BY_WEAPON) > 0);
+	return ade_set_args(L, "b", (wp->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]) > 0);
 }
 
 ADE_VIRTVAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)", "number", "Life left (seconds) or 0 if weapon handle is invalid")

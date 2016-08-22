@@ -13,34 +13,33 @@
 
 #include <SDL.h>
 
-// we aren't including all of mmreg.h on Windows so this picks up the slack
 #ifndef WAVE_FORMAT_ADPCM
 #define WAVE_FORMAT_ADPCM	2
 #endif
 
 
-typedef struct adpcmcoef_tag {
+typedef struct fs_adpcmcoef_tag {
 	short iCoef1;
 	short iCoef2;
-} ADPCMCOEFSET;
+} FS_ADPCMCOEFSET;
 
-typedef struct adpcmblockheader_tag {
+typedef struct fs_adpcmblockheader_tag {
 	ubyte bPredictor;
 	ushort iDelta;
 	short iSamp1;
 	short iSamp2;
-} ADPCMBLOCKHEADER;
+} FS_ADPCMBLOCKHEADER;
 
-typedef struct adpcmwaveformat_tag {
+typedef struct fs_adpcmwaveformat_tag {
 	WAVEFORMATEX wav;
 	WORD wSamplesPerBlock;
 	WORD wNumCoef;
-	ADPCMCOEFSET *aCoef;
-} ADPCMWAVEFORMAT;
+	FS_ADPCMCOEFSET *aCoef;
+} FS_ADPCMWAVEFORMAT;
 
-typedef struct ADPCM_FMT_T {
-	ADPCMWAVEFORMAT adpcm;
-	ADPCMBLOCKHEADER *header;
+typedef struct FS_ADPCM_FMT_T {
+	FS_ADPCMWAVEFORMAT adpcm;
+	FS_ADPCMBLOCKHEADER *header;
 
 	int bytes_remaining;
 	uint bytes_processed;
@@ -51,14 +50,13 @@ typedef struct ADPCM_FMT_T {
 	ubyte nibble;
 
 	ushort dest_bps;
-} adpcm_fmt_t;
+} fs_adpcm_fmt_t;
 
-typedef struct acm_stream_t {
-	adpcm_fmt_t *fmt;
+typedef struct fs_acm_stream_t {
+	fs_adpcm_fmt_t *fmt;
 	ushort dest_bps;
 	ushort src_bps;
-} acm_stream_t;
-
+} fs_acm_stream_t;
 
 // similar to BIAL_IF_MACRO in SDL_sound
 #define IF_ERR(a, b) if (a) { mprintf(("ACM ERROR, line %d...\n", __LINE__)); return b; }
@@ -126,7 +124,7 @@ static int read_ubyte(SDL_RWops* rw, ubyte *i)
 }
 
 // decoding functions
-static int read_adpcm_block_headers(SDL_RWops* rw, adpcm_fmt_t *fmt)
+static int read_adpcm_block_headers(SDL_RWops* rw, fs_adpcm_fmt_t *fmt)
 {
 	int i;
 	int max = fmt->adpcm.wav.nChannels;
@@ -160,7 +158,7 @@ static int read_adpcm_block_headers(SDL_RWops* rw, adpcm_fmt_t *fmt)
 	return 1;
 }
 
-static void do_adpcm_nibble(ubyte nib, ADPCMBLOCKHEADER *header, int lPredSamp)
+static void do_adpcm_nibble(ubyte nib, FS_ADPCMBLOCKHEADER *header, int lPredSamp)
 {
 	static const short max_audioval = ((1<<(16-1))-1);
 	static const short min_audioval = -(1<<(16-1));
@@ -196,7 +194,7 @@ static void do_adpcm_nibble(ubyte nib, ADPCMBLOCKHEADER *header, int lPredSamp)
 	header->iSamp1 = (short)lNewSamp;
 }
 
-static int decode_adpcm_sample_frame(SDL_RWops* rw, adpcm_fmt_t *fmt)
+static int decode_adpcm_sample_frame(SDL_RWops* rw, fs_adpcm_fmt_t *fmt)
 {
 	int i;
 	int max = fmt->adpcm.wav.nChannels;
@@ -224,7 +222,7 @@ static int decode_adpcm_sample_frame(SDL_RWops* rw, adpcm_fmt_t *fmt)
 	return 1;
 }
 
-static void put_adpcm_sample_frame1(ubyte *_buf, adpcm_fmt_t *fmt)
+static void put_adpcm_sample_frame1(ubyte *_buf, fs_adpcm_fmt_t *fmt)
 {
 	int i;
 
@@ -246,7 +244,7 @@ static void put_adpcm_sample_frame1(ubyte *_buf, adpcm_fmt_t *fmt)
 	}
 }
 
-static void put_adpcm_sample_frame2(ubyte *_buf, adpcm_fmt_t *fmt)
+static void put_adpcm_sample_frame2(ubyte *_buf, fs_adpcm_fmt_t *fmt)
 {
 	int i;
 
@@ -268,7 +266,7 @@ static void put_adpcm_sample_frame2(ubyte *_buf, adpcm_fmt_t *fmt)
 	}
 }
 
-static uint read_sample_fmt_adpcm(ubyte *data, SDL_RWops* rw, adpcm_fmt_t *fmt)
+static uint read_sample_fmt_adpcm(ubyte *data, SDL_RWops* rw, fs_adpcm_fmt_t *fmt)
 {
 	uint bw = 0;
 
@@ -310,7 +308,7 @@ static uint read_sample_fmt_adpcm(ubyte *data, SDL_RWops* rw, adpcm_fmt_t *fmt)
 /* End ADPCM Compression Handler                                              *
  *****************************************************************************/
 
-static void adpcm_memory_free(adpcm_fmt_t *fmt)
+static void adpcm_memory_free(fs_adpcm_fmt_t *fmt)
 {
 	if (fmt->adpcm.aCoef != NULL) {
 		vm_free(fmt->adpcm.aCoef);
@@ -371,9 +369,9 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	int left_over = 0;
 	int i;
 
-	adpcm_fmt_t *fmt = (adpcm_fmt_t *)vm_malloc(sizeof(adpcm_fmt_t));
+	fs_adpcm_fmt_t *fmt = (fs_adpcm_fmt_t *)vm_malloc(sizeof(fs_adpcm_fmt_t));
 	IF_ERR(fmt == NULL, -1);
-	memset(fmt, '\0', sizeof(adpcm_fmt_t));
+	memset(fmt, '\0', sizeof(fs_adpcm_fmt_t));
 
 	// wav header info (WAVEFORMATEX)
 	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.wFormatTag), goto Error);
@@ -388,7 +386,7 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	IF_ERR2(!read_word_s(hdr, &fmt->adpcm.wNumCoef), goto Error);
 
 	// allocate memory for COEF struct and fill it
-	fmt->adpcm.aCoef = (ADPCMCOEFSET *)vm_malloc(sizeof(ADPCMCOEFSET) * fmt->adpcm.wNumCoef);
+	fmt->adpcm.aCoef = (FS_ADPCMCOEFSET *)vm_malloc(sizeof(FS_ADPCMCOEFSET) * fmt->adpcm.wNumCoef);
 	IF_ERR2(fmt->adpcm.aCoef == NULL, goto Error);
 
 	for (i = 0; i < fmt->adpcm.wNumCoef; i++) {
@@ -397,7 +395,7 @@ int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, uby
 	}
 
 	// allocate memory for the ADPCM block header that's to be filled later
-	fmt->header = (ADPCMBLOCKHEADER *)vm_malloc(sizeof(ADPCMBLOCKHEADER) * fmt->adpcm.wav.nChannels);
+	fmt->header = (FS_ADPCMBLOCKHEADER *)vm_malloc(sizeof(FS_ADPCMBLOCKHEADER) * fmt->adpcm.wav.nChannels);
 	IF_ERR2(fmt->header == NULL, goto Error);
 
 	// estimate size of uncompressed data
@@ -498,13 +496,13 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	Assert( pwfxSrc->wFormatTag == WAVE_FORMAT_ADPCM );
 
 	int i;
-	acm_stream_t *str = NULL;
+	fs_acm_stream_t *str = NULL;
 	
 	auto hdr = SDL_RWFromConstMem((void*)pwfxSrc, sizeof(WAVEFORMATEX) + pwfxSrc->cbSize);
 
-	adpcm_fmt_t *fmt = (adpcm_fmt_t *)vm_malloc(sizeof(adpcm_fmt_t));
+	fs_adpcm_fmt_t *fmt = (fs_adpcm_fmt_t *)vm_malloc(sizeof(fs_adpcm_fmt_t));
 	IF_ERR2(fmt == NULL, goto Error);
-	memset(fmt, '\0', sizeof(adpcm_fmt_t));
+	memset(fmt, '\0', sizeof(fs_adpcm_fmt_t));
 
 	// wav header info (WAVEFORMATEX)
 	IF_ERR2(!read_word(hdr, &fmt->adpcm.wav.wFormatTag), goto Error);
@@ -519,7 +517,7 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	IF_ERR2(!read_word_s(hdr, &fmt->adpcm.wNumCoef), goto Error);
 
 	// allocate memory for COEF struct and fill it
-	fmt->adpcm.aCoef = (ADPCMCOEFSET *)vm_malloc(sizeof(ADPCMCOEFSET) * fmt->adpcm.wNumCoef);
+	fmt->adpcm.aCoef = (FS_ADPCMCOEFSET *)vm_malloc(sizeof(FS_ADPCMCOEFSET) * fmt->adpcm.wNumCoef);
 	IF_ERR2(fmt->adpcm.aCoef == NULL, goto Error);
 
 	for (i = 0; i < fmt->adpcm.wNumCoef; i++) {
@@ -528,7 +526,7 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	}
 
 	// allocate memory for the ADPCM block header that's to be filled later
-	fmt->header = (ADPCMBLOCKHEADER *)vm_malloc(sizeof(ADPCMBLOCKHEADER) * fmt->adpcm.wav.nChannels);
+	fmt->header = (FS_ADPCMBLOCKHEADER *)vm_malloc(sizeof(FS_ADPCMBLOCKHEADER) * fmt->adpcm.wav.nChannels);
 	IF_ERR2(fmt->header == NULL, goto Error);
 
 	// sanity check, should always be 4
@@ -542,7 +540,7 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	fmt->sample_frame_size = dest_bps/8*pwfxSrc->nChannels;
 	fmt->dest_bps = (ushort)dest_bps;
 
-	str = (acm_stream_t *)vm_malloc(sizeof(acm_stream_t));
+	str = (fs_acm_stream_t *)vm_malloc(sizeof(fs_acm_stream_t));
 	IF_ERR2(str == NULL, goto Error);
 	str->fmt = fmt;
 	str->dest_bps = (ushort)dest_bps;
@@ -578,7 +576,7 @@ int ACM_stream_close(void *stream)
 		return 0;
 	}
 
-	acm_stream_t *str = (acm_stream_t *)stream;
+	fs_acm_stream_t *str = (fs_acm_stream_t *)stream;
 	adpcm_memory_free(str->fmt);
 	vm_free(str);
 
@@ -592,7 +590,7 @@ int ACM_query_source_size(void *stream, int dest_len)
 		return 0;
 	}
 
-	acm_stream_t *str = (acm_stream_t *)stream;
+	fs_acm_stream_t *str = (fs_acm_stream_t *)stream;
 
 	// estimate size of compressed data
 	// uncompressed data has: channels=pfwxScr->nChannels, bitPerSample=destbits
@@ -607,7 +605,7 @@ int ACM_query_dest_size(void *stream, int src_len)
 		return 0;
 	}
 
-	acm_stream_t *str = (acm_stream_t *)stream;
+	fs_acm_stream_t *str = (fs_acm_stream_t *)stream;
 
 	// estimate size of uncompressed data
 	// uncompressed data has: channels=pfwxScr->nChannels, bitPerSample=destbits
@@ -626,7 +624,7 @@ int ACM_convert(void *stream, ubyte *src, int src_len, ubyte *dest, int max_dest
 		return 0;
 	}
 
-	acm_stream_t *str = (acm_stream_t *)stream;
+	fs_acm_stream_t *str = (fs_acm_stream_t *)stream;
 	uint rc;
 	
 	auto rw = SDL_RWFromConstMem((void*) src, src_len);

@@ -1119,16 +1119,6 @@ void wl_set_disabled_weapons(int ship_class)
 		//	Determine whether weapon #i is allowed on this ship class in the current type of mission.
 		//	As of 9/6/99, the only difference is dogfight missions have a different list of legal weapons.
 		Wl_icons[i].can_use = eval_weapon_flag_for_game_type(sip->allowed_weapons[i]);
-
-		// Goober5000: ballistic primaries
-		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Ballistic])
-		{
-			// not allowed if this ship is not ballistic
-			if (!(sip->flags[Ship::Info_Flags::Ballistic_primaries]))
-			{
-				Wl_icons[i].can_use = 0;
-			}
-		}
 	}
 }
 
@@ -4043,8 +4033,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			}
 
 			// make sure this ship can accept this weapon
-			if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_type_to_add])
-				|| ((wip->wi_flags[Weapon::Info_Flags::Ballistic]) && !(sip->flags[Ship::Info_Flags::Ballistic_primaries])))
+			if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_type_to_add]))
 			{
 				SCP_string temp;
 				sprintf(temp, XSTR("%s is unable to carry %s weaponry", 1629), ship_name, wep_display_name);

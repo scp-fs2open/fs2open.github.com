@@ -1408,7 +1408,7 @@ bool pilotfile::load_savefile(const char *campaign)
 
 	// the point of all this: read in the CSG contents
 	while ( !cfeof(cfp) ) {
-		ushort section_id = cfread_ushort(cfp);
+		Section section_id = static_cast<Section>(cfread_ushort(cfp));
 		uint section_size = cfread_uint(cfp);
 
 		size_t start_pos = cftell(cfp);
@@ -1647,7 +1647,7 @@ bool pilotfile::get_csg_rank(int *rank)
 
 	// the point of all this: read in the CSG contents
 	while ( !m_have_flags && !cfeof(cfp) ) {
-		ushort section_id = cfread_ushort(cfp);
+		Section section_id = static_cast<Section>(cfread_ushort(cfp));
 		uint section_size = cfread_uint(cfp);
 
 		size_t start_pos = cftell(cfp);

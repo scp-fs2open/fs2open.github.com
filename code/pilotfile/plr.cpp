@@ -10,6 +10,8 @@
 #include "network/multi.h"
 #include "osapi/osregistry.h"
 #include "pilotfile/pilotfile.h"
+#include "pilotfile/BinaryFileHandler.h"
+#include "pilotfile/JSONFileHandler.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
@@ -56,31 +58,31 @@ void pilotfile::plr_read_flags()
 
 void pilotfile::plr_write_flags()
 {
-	startSection(Section::Flags);
+	handler->startSectionWrite(Section::Flags);
 
 	// tips
-	cfwrite_ubyte((unsigned char)p->tips, cfp);
+	handler->writeUByte("tips", (unsigned char)p->tips);
 
 	// saved flags
-	cfwrite_int(p->save_flags, cfp);
+	handler->writeInt("save_flags", p->save_flags);
 
 	// listing mode (single or campaign missions)
-	cfwrite_int(p->readyroom_listing_mode, cfp);
+	handler->writeInt("readyroom_listing_mode", p->readyroom_listing_mode);
 
 	// briefing auto-play
-	cfwrite_int(p->auto_advance, cfp);
+	handler->writeInt("auto_advance", p->auto_advance);
 
 	// special rank setting (to avoid having to read all stats on verify)
 	// should be multi only from now on
-	cfwrite_int(multi_stats.rank, cfp);
+	handler->writeInt("multi_rank", multi_stats.rank);
 
 	// What game mode we were in last on this pilot
-	cfwrite_int(p->player_was_multi, cfp);
+	handler->writeInt("was_multi", p->player_was_multi);
 
 	// which language was this pilot created with
-	cfwrite_string_len(p->language, cfp);
+	handler->writeString("language", p->language);
 
-	endSection();
+	handler->endSectionWrite();
 }
 
 void pilotfile::plr_read_info()
@@ -104,21 +106,21 @@ void pilotfile::plr_read_info()
 
 void pilotfile::plr_write_info()
 {
-	startSection(Section::Info);
+	handler->startSectionWrite(Section::Info);
 
 	// pilot image
-	cfwrite_string_len(p->image_filename, cfp);
+	handler->writeString("image_filename", p->image_filename);
 
 	// multi squad name
-	cfwrite_string_len(p->m_squad_name, cfp);
+	handler->writeString("squad_name", p->m_squad_name);
 
 	// squad image
-	cfwrite_string_len(p->m_squad_filename, cfp);
+	handler->writeString("squad_filename", p->m_squad_filename);
 
 	// active campaign
-	cfwrite_string_len(p->current_campaign, cfp);
+	handler->writeString("current_campaign", p->current_campaign);
 
-	endSection();
+	handler->endSectionWrite();
 }
 
 void pilotfile::plr_read_hud()
@@ -172,36 +174,40 @@ void pilotfile::plr_write_hud()
 {
 	int idx;
 
-	startSection(Section::HUD);
+	handler->startSectionWrite(Section::HUD);
 
 	// flags
-	cfwrite_int(HUD_config.show_flags, cfp);
-	cfwrite_int(HUD_config.show_flags2, cfp);
+	handler->writeInt("show_flags", HUD_config.show_flags);
+	handler->writeInt("show_flags2", HUD_config.show_flags2);
 
-	cfwrite_int(HUD_config.popup_flags, cfp);
-	cfwrite_int(HUD_config.popup_flags2, cfp);
+	handler->writeInt("popup_flags", HUD_config.popup_flags);
+	handler->writeInt("popup_flags2", HUD_config.popup_flags2);
 
 	// settings
-	cfwrite_ubyte(HUD_config.num_msg_window_lines, cfp);
+	handler->writeUByte("num_msg_window_lines", HUD_config.num_msg_window_lines);
 
-	cfwrite_int(HUD_config.rp_flags, cfp);
-	cfwrite_int(HUD_config.rp_dist, cfp);
+	handler->writeInt("rp_flags", HUD_config.rp_flags);
+	handler->writeInt("rp_dist", HUD_config.rp_dist);
 
 	// basic colors
-	cfwrite_int(HUD_config.main_color, cfp);
-	cfwrite_int(HUD_color_alpha, cfp);
+	handler->writeInt("main_color", HUD_config.main_color);
+	handler->writeInt("color_alpha", HUD_color_alpha);
 
 	// gauge-specific colors
-	cfwrite_int(NUM_HUD_GAUGES, cfp);
-
+	handler->startArrayWrite("hud_gauges", NUM_HUD_GAUGES);
 	for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
-		cfwrite_ubyte(HUD_config.clr[idx].red, cfp);
-		cfwrite_ubyte(HUD_config.clr[idx].green, cfp);
-		cfwrite_ubyte(HUD_config.clr[idx].blue, cfp);
-		cfwrite_ubyte(HUD_config.clr[idx].alpha, cfp);
-	}
+		handler->startSectionWrite(Section::Unnamed);
 
-	endSection();
+		handler->writeUByte("red", HUD_config.clr[idx].red);
+		handler->writeUByte("green", HUD_config.clr[idx].green);
+		handler->writeUByte("blue", HUD_config.clr[idx].blue);
+		handler->writeUByte("alpha", HUD_config.clr[idx].alpha);
+
+		handler->endSectionWrite();
+	}
+	handler->endArrayWrite();
+
+	handler->endSectionWrite();
 }
 
 void pilotfile::plr_read_variables()
@@ -229,22 +235,21 @@ void pilotfile::plr_read_variables()
 
 void pilotfile::plr_write_variables()
 {
-	int list_size = 0;
-	int idx;
+	handler->startSectionWrite(Section::Variables);
 
-	startSection(Section::Variables);
+	handler->startArrayWrite("variables", p->variables.size());
+	for (auto& var : p->variables) {
+		handler->startSectionWrite(Section::Unnamed);
 
-	list_size = (int)p->variables.size();
+		handler->writeInt("type", var.type);
+		handler->writeString("text", var.text);
+		handler->writeString("variable_name", var.variable_name);
 
-	cfwrite_int(list_size, cfp);
-
-	for (idx = 0; idx < list_size; idx++) {
-		cfwrite_int(p->variables[idx].type, cfp);
-		cfwrite_string_len(p->variables[idx].text, cfp);
-		cfwrite_string_len(p->variables[idx].variable_name, cfp);
+		handler->endSectionWrite();
 	}
+	handler->endArrayWrite();
 
-	endSection();
+	handler->endSectionWrite();
 }
 
 void pilotfile::plr_read_multiplayer()
@@ -276,29 +281,29 @@ void pilotfile::plr_read_multiplayer()
 
 void pilotfile::plr_write_multiplayer()
 {
-	startSection(Section::Multiplayer);
+	handler->startSectionWrite(Section::Multiplayer);
 
 	// netgame options
-	cfwrite_ubyte(p->m_server_options.squad_set, cfp);
-	cfwrite_ubyte(p->m_server_options.endgame_set, cfp);
-	cfwrite_int(p->m_server_options.flags, cfp);
-	cfwrite_uint(p->m_server_options.respawn, cfp);
-	cfwrite_ubyte(p->m_server_options.max_observers, cfp);
-	cfwrite_ubyte(p->m_server_options.skill_level, cfp);
-	cfwrite_ubyte(p->m_server_options.voice_qos, cfp);
-	cfwrite_int(p->m_server_options.voice_token_wait, cfp);
-	cfwrite_int(p->m_server_options.voice_record_time, cfp);
-	cfwrite_int((int)p->m_server_options.mission_time_limit, cfp);
-	cfwrite_int(p->m_server_options.kill_limit, cfp);
+	handler->writeUByte("squad_set", p->m_server_options.squad_set);
+	handler->writeUByte("endgame_set", p->m_server_options.endgame_set);
+	handler->writeInt("server_flags", p->m_server_options.flags);
+	handler->writeUInt("respawn", p->m_server_options.respawn);
+	handler->writeUByte("max_observers", p->m_server_options.max_observers);
+	handler->writeUByte("skill_level", p->m_server_options.skill_level);
+	handler->writeUByte("voice_qos", p->m_server_options.voice_qos);
+	handler->writeInt("voice_token_wait", p->m_server_options.voice_token_wait);
+	handler->writeInt("voice_record_time", p->m_server_options.voice_record_time);
+	handler->writeInt("mission_time_limit", (int)p->m_server_options.mission_time_limit);
+	handler->writeInt("kill_limit", p->m_server_options.kill_limit);
 
 	// local options
-	cfwrite_int(p->m_local_options.flags, cfp);
-	cfwrite_int(p->m_local_options.obj_update_level, cfp);
+	handler->writeInt("local_flags", p->m_local_options.flags);
+	handler->writeInt("obj_update_level", p->m_local_options.obj_update_level);
 
 	// netgame protocol
-	cfwrite_int(Multi_options_g.protocol, cfp);
+	handler->writeInt("protocol", Multi_options_g.protocol);
 
-	endSection();
+	handler->endSectionWrite();
 }
 
 void pilotfile::plr_read_stats()
@@ -402,50 +407,50 @@ void pilotfile::plr_read_stats()
 
 void pilotfile::plr_write_stats()
 {
-	int idx, list_size = 0;
-
-	startSection(Section::Scoring);
+	handler->startSectionWrite(Section::Scoring);
 
 	// global, all-time stats
-	cfwrite_int(all_time_stats.score, cfp);
-	cfwrite_int(all_time_stats.rank, cfp);
-	cfwrite_int(all_time_stats.assists, cfp);
-	cfwrite_int(all_time_stats.kill_count, cfp);
-	cfwrite_int(all_time_stats.kill_count_ok, cfp);
-	cfwrite_int(all_time_stats.bonehead_kills, cfp);
+	handler->writeInt("score", all_time_stats.score);
+	handler->writeInt("rank", all_time_stats.rank);
+	handler->writeInt("assists", all_time_stats.assists);
+	handler->writeInt("kill_count", all_time_stats.kill_count);
+	handler->writeInt("kill_count_ok", all_time_stats.kill_count_ok);
+	handler->writeInt("bonehead_kills", all_time_stats.bonehead_kills);
 
-	cfwrite_uint(all_time_stats.p_shots_fired, cfp);
-	cfwrite_uint(all_time_stats.p_shots_hit, cfp);
-	cfwrite_uint(all_time_stats.p_bonehead_hits, cfp);
+	handler->writeUInt("p_shots_fired", all_time_stats.p_shots_fired);
+	handler->writeUInt("p_shots_hit", all_time_stats.p_shots_hit);
+	handler->writeUInt("p_bonehead_hits", all_time_stats.p_bonehead_hits);
 
-	cfwrite_uint(all_time_stats.s_shots_fired, cfp);
-	cfwrite_uint(all_time_stats.s_shots_hit, cfp);
-	cfwrite_uint(all_time_stats.s_bonehead_hits, cfp);
+	handler->writeUInt("s_shots_fired", all_time_stats.s_shots_fired);
+	handler->writeUInt("s_shots_hit", all_time_stats.s_shots_hit);
+	handler->writeUInt("s_bonehead_hits", all_time_stats.s_bonehead_hits);
 
-	cfwrite_uint(all_time_stats.flight_time, cfp);
-	cfwrite_uint(all_time_stats.missions_flown, cfp);
-	cfwrite_int((int)all_time_stats.last_flown, cfp);
-	cfwrite_int((int)all_time_stats.last_backup, cfp);
+	handler->writeUInt("flight_time", all_time_stats.flight_time);
+	handler->writeUInt("missions_flown", all_time_stats.missions_flown);
+	handler->writeInt("last_flown", (int)all_time_stats.last_flown);
+	handler->writeInt("last_backup", (int)all_time_stats.last_backup);
 
 	// ship kills (contains ships across all mods, not just current)
-	list_size = (int)all_time_stats.ship_kills.size();
-	cfwrite_int(list_size, cfp);
-
-	for (idx = 0; idx < list_size; idx++) {
-		cfwrite_string_len(all_time_stats.ship_kills[idx].name.c_str(), cfp);
-		cfwrite_int(all_time_stats.ship_kills[idx].val, cfp);
+	handler->startArrayWrite("kills", all_time_stats.ship_kills.size());
+	for (auto& kill : all_time_stats.ship_kills) {
+		handler->startSectionWrite(Section::Unnamed);
+		handler->writeString("name", kill.name.c_str());
+		handler->writeInt("val", kill.val);
+		handler->endSectionWrite();
 	}
+	handler->endArrayWrite();
 
 	// medals earned (contains medals across all mods, not just current)
-	list_size = (int)all_time_stats.medals_earned.size();
-	cfwrite_int(list_size, cfp);
-
-	for (idx = 0; idx < list_size; idx++) {
-		cfwrite_string_len(all_time_stats.medals_earned[idx].name.c_str(), cfp);
-		cfwrite_int(all_time_stats.medals_earned[idx].val, cfp);
+	handler->startArrayWrite("medals", all_time_stats.medals_earned.size());
+	for (auto& medal : all_time_stats.medals_earned) {
+		handler->startSectionWrite(Section::Unnamed);
+		handler->writeString("name", medal.name.c_str());
+		handler->writeInt("val", medal.val);
+		handler->endSectionWrite();
 	}
+	handler->endArrayWrite();
 
-	endSection();
+	handler->endSectionWrite();
 }
 
 void pilotfile::plr_read_stats_multi()
@@ -549,50 +554,48 @@ void pilotfile::plr_read_stats_multi()
 
 void pilotfile::plr_write_stats_multi()
 {
-	int idx, list_size = 0;
-
-	startSection(Section::ScoringMulti);
+	handler->startSectionWrite(Section::ScoringMulti);
 
 	// global, all-time stats
-	cfwrite_int(multi_stats.score, cfp);
-	cfwrite_int(multi_stats.rank, cfp);
-	cfwrite_int(multi_stats.assists, cfp);
-	cfwrite_int(multi_stats.kill_count, cfp);
-	cfwrite_int(multi_stats.kill_count_ok, cfp);
-	cfwrite_int(multi_stats.bonehead_kills, cfp);
+	handler->writeInt("score", multi_stats.score);
+	handler->writeInt("rank", multi_stats.rank);
+	handler->writeInt("assists", multi_stats.assists);
+	handler->writeInt("kill_count", multi_stats.kill_count);
+	handler->writeInt("kill_count_ok", multi_stats.kill_count_ok);
+	handler->writeInt("bonehead_kills", multi_stats.bonehead_kills);
 
-	cfwrite_uint(multi_stats.p_shots_fired, cfp);
-	cfwrite_uint(multi_stats.p_shots_hit, cfp);
-	cfwrite_uint(multi_stats.p_bonehead_hits, cfp);
+	handler->writeUInt("p_shots_fired", multi_stats.p_shots_fired);
+	handler->writeUInt("p_shots_hit", multi_stats.p_shots_hit);
+	handler->writeUInt("p_bonehead_hits", multi_stats.p_bonehead_hits);
 
-	cfwrite_uint(multi_stats.s_shots_fired, cfp);
-	cfwrite_uint(multi_stats.s_shots_hit, cfp);
-	cfwrite_uint(multi_stats.s_bonehead_hits, cfp);
+	handler->writeUInt("s_shots_fired", multi_stats.s_shots_fired);
+	handler->writeUInt("s_shots_hit", multi_stats.s_shots_hit);
+	handler->writeUInt("s_bonehead_hits", multi_stats.s_bonehead_hits);
 
-	cfwrite_uint(multi_stats.flight_time, cfp);
-	cfwrite_uint(multi_stats.missions_flown, cfp);
-	cfwrite_int((int)multi_stats.last_flown, cfp);
-	cfwrite_int((int)multi_stats.last_backup, cfp);
+	handler->writeUInt("flight_time", multi_stats.flight_time);
+	handler->writeUInt("missions_flown", multi_stats.missions_flown);
+	handler->writeInt("last_flown", (int)multi_stats.last_flown);
+	handler->writeInt("last_backup", (int)multi_stats.last_backup);
 
 	// ship kills (contains medals across all mods, not just current)
-	list_size = (int)multi_stats.ship_kills.size();
-	cfwrite_int(list_size, cfp);
-
-	for (idx = 0; idx < list_size; idx++) {
-		cfwrite_string_len(multi_stats.ship_kills[idx].name.c_str(), cfp);
-		cfwrite_int(multi_stats.ship_kills[idx].val, cfp);
+	handler->startArrayWrite("kills", multi_stats.ship_kills.size());
+	for (auto& kill : multi_stats.ship_kills) {
+		handler->startSectionWrite(Section::Unnamed);
+		handler->writeString("name", kill.name.c_str());
+		handler->writeInt("val", kill.val);
+		handler->endSectionWrite();
 	}
+	handler->endArrayWrite();
 
 	// medals earned (contains medals across all mods, not just current)
-	list_size = (int)multi_stats.medals_earned.size();
-	cfwrite_int(list_size, cfp);
-
-	for (idx = 0; idx < list_size; idx++) {
-		cfwrite_string_len(multi_stats.medals_earned[idx].name.c_str(), cfp);
-		cfwrite_int(multi_stats.medals_earned[idx].val, cfp);
+	handler->startArrayWrite("medals", multi_stats.medals_earned.size());
+	for (auto& medal : multi_stats.medals_earned) {
+		handler->writeString("name", medal.name.c_str());
+		handler->writeInt("val", medal.val);
 	}
+	handler->endArrayWrite();
 
-	endSection();
+	handler->endSectionWrite();
 }
 
 void pilotfile::plr_read_controls()
@@ -627,27 +630,34 @@ void pilotfile::plr_read_controls()
 
 void pilotfile::plr_write_controls()
 {
-	int idx;
+	handler->startSectionWrite(Section::Controls);
 
-	startSection(Section::Controls);
+	// For some unknown reason, the old code used a short for the array length here...
+	handler->startArrayWrite("controls", CCFG_MAX, true);
+	for (size_t idx = 0; idx < CCFG_MAX; idx++) {
+		handler->startSectionWrite(Section::Unnamed);
 
-	cfwrite_ushort(CCFG_MAX, cfp);
-
-	for (idx = 0; idx < CCFG_MAX; idx++) {
-		cfwrite_short(Control_config[idx].key_id, cfp);
-		cfwrite_short(Control_config[idx].joy_id, cfp);
+		handler->writeShort("key", Control_config[idx].key_id);
+		handler->writeShort("joystick", Control_config[idx].joy_id);
 		// placeholder? for future mouse_id?
-		cfwrite_short(-1, cfp);
+		handler->writeShort("mouse", -1);
+
+		handler->endSectionWrite();
 	}
+	handler->endArrayWrite();
 
-	cfwrite_int(NUM_JOY_AXIS_ACTIONS, cfp);
+	handler->startArrayWrite("axes", NUM_JOY_AXIS_ACTIONS);
+	for (size_t idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
+		handler->startSectionWrite(Section::Unnamed);
 
-	for (idx = 0; idx < NUM_JOY_AXIS_ACTIONS; idx++) {
-		cfwrite_int(Axis_map_to[idx], cfp);
-		cfwrite_int(Invert_axis[idx], cfp);
+		handler->writeInt("axis_map", Axis_map_to[idx]);
+		handler->writeInt("invert_axis", Invert_axis[idx]);
+
+		handler->endSectionWrite();
 	}
+	handler->endArrayWrite();
 
-	endSection();
+	handler->endSectionWrite();
 }
 
 void pilotfile::plr_read_settings()
@@ -694,39 +704,39 @@ void pilotfile::plr_read_settings()
 
 void pilotfile::plr_write_settings()
 {
-	startSection(Section::Settings);
+	handler->startSectionWrite(Section::Settings);
 
 	// sound/voice/music
-	cfwrite_float(Master_sound_volume, cfp);
-	cfwrite_float(Master_event_music_volume, cfp);
-	cfwrite_float(Master_voice_volume, cfp);
+	handler->writeFloat("master_sound_volume", Master_sound_volume);
+	handler->writeFloat("master_event_music_volume", Master_event_music_volume);
+	handler->writeFloat("aster_voice_volume", Master_voice_volume);
 
-	cfwrite_int(Briefing_voice_enabled, cfp);
+	handler->writeInt("briefing_voice_enabled", Briefing_voice_enabled);
 
 	// skill level
-	cfwrite_int(Game_skill_level, cfp);
+	handler->writeInt("game_skill_level", Game_skill_level);
 
 	// input options
-	cfwrite_int(Use_mouse_to_fly, cfp);
-	cfwrite_int(Mouse_sensitivity, cfp);
-	cfwrite_int(Joy_sensitivity, cfp);
-	cfwrite_int(Joy_dead_zone_size, cfp);
+	handler->writeInt("use_mouse_to_fly", Use_mouse_to_fly);
+	handler->writeInt("mouse_sensitivity", Mouse_sensitivity);
+	handler->writeInt("joy_sensitivity", Joy_sensitivity);
+	handler->writeInt("joy_dead_zone_size", Joy_dead_zone_size);
 
 	// detail
-	cfwrite_int(Detail.setting, cfp);
-	cfwrite_int(Detail.nebula_detail, cfp);
-	cfwrite_int(Detail.detail_distance, cfp);
-	cfwrite_int(Detail.hardware_textures, cfp);
-	cfwrite_int(Detail.num_small_debris, cfp);
-	cfwrite_int(Detail.num_particles, cfp);
-	cfwrite_int(Detail.num_stars, cfp);
-	cfwrite_int(Detail.shield_effects, cfp);
-	cfwrite_int(Detail.lighting, cfp);
-	cfwrite_int(Detail.targetview_model, cfp);
-	cfwrite_int(Detail.planets_suns, cfp);
-	cfwrite_int(Detail.weapon_extras, cfp);
+	handler->writeInt("setting", Detail.setting);
+	handler->writeInt("nebula_detail", Detail.nebula_detail);
+	handler->writeInt("detail_distance", Detail.detail_distance);
+	handler->writeInt("hardware_textures", Detail.hardware_textures);
+	handler->writeInt("num_small_debris", Detail.num_small_debris);
+	handler->writeInt("num_particles", Detail.num_particles);
+	handler->writeInt("num_stars", Detail.num_stars);
+	handler->writeInt("shield_effects", Detail.shield_effects);
+	handler->writeInt("lighting", Detail.lighting);
+	handler->writeInt("targetview_model", Detail.targetview_model);
+	handler->writeInt("planets_suns", Detail.planets_suns);
+	handler->writeInt("weapon_extras", Detail.weapon_extras);
 
-	endSection();
+	handler->endSectionWrite();
 }
 
 void pilotfile::plr_reset_data()
@@ -762,6 +772,9 @@ void pilotfile::plr_close()
 	if (cfp) {
 		cfclose(cfp);
 		cfp = NULL;
+	}
+	if (handler) {
+		handler.reset();
 	}
 
 	p = NULL;
@@ -828,7 +841,7 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 
 	// the point of all this: read in the PLR contents
 	while ( !cfeof(cfp) ) {
-		ushort section_id = cfread_ushort(cfp);
+		Section section_id = static_cast<Section>(cfread_ushort(cfp));
 		uint section_size = cfread_uint(cfp);
 
 		size_t start_pos = cftell(cfp);
@@ -952,24 +965,34 @@ bool pilotfile::save_player(player *_p)
 	}
 
 	filename = p->callsign;
-	filename += ".plr";
-
-	if ( filename.size() == 4 ) {
+	if ( filename.empty() ) {
 		mprintf(("PLR => Invalid filename '%s'!\n", filename.c_str()));
 		return false;
 	}
 
-	// open it, hopefully...
-	cfp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	if (Cmdline_json_pilot) {
+		filename += ".json";
+	} else {
+		filename += ".plr";
+	}
 
-	if ( !cfp ) {
+	// open it, hopefully...
+	auto fp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+
+	if ( !fp ) {
 		mprintf(("PLR => Unable to open '%s' for saving!\n", filename.c_str()));
 		return false;
 	}
 
+	if (Cmdline_json_pilot) {
+		handler.reset(new pilot::JSONFileHandler(fp));
+	} else {
+		handler.reset(new pilot::BinaryFileHandler(fp));
+	}
+
 	// header and version
-	cfwrite_int(PLR_FILE_ID, cfp);
-	cfwrite_ubyte(PLR_VERSION, cfp);
+	handler->writeInt("signature", PLR_FILE_ID);
+	handler->writeUByte("version", PLR_VERSION);
 
 	mprintf(("PLR => Saving '%s' with version %d...\n", filename.c_str(), (int)PLR_VERSION));
 
@@ -994,6 +1017,8 @@ bool pilotfile::save_player(player *_p)
 	plr_write_controls();
 	mprintf(("PLR => Saving:  Settings...\n"));
 	plr_write_settings();
+
+	handler->flush();
 
 	// Done!
 	mprintf(("PLR => Saving complete!\n"));
@@ -1039,7 +1064,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 
 	// the point of all this: read in the PLR contents
 	while ( !(m_have_flags && m_have_info) && !cfeof(cfp) ) {
-		ushort section_id = cfread_ushort(cfp);
+		Section section_id = static_cast<Section>(cfread_ushort(cfp));
 		uint section_size = cfread_uint(cfp);
 
 		size_t start_pos = cftell(cfp);

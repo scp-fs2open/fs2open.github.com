@@ -1439,11 +1439,8 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		val = (ubyte)shipp->engine_recharge_index;
 		ADD_DATA(val);
 
-		// add the ballistic primary flag - Goober5000
+		// dummy field to replace ballistic primary flag
 		val = 0;
-		if(sip->flags[Ship::Info_Flags::Ballistic_primaries]){
-			val |= (1<<0);
-		}
 		ADD_DATA(val);
 
 		// add current primary and secondary banks, and add link status
@@ -1685,11 +1682,8 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		GET_DATA(val);
 		Player_ship->engine_recharge_index = val;		
 
-		// handle the ballistic primary flag - Goober5000
+		// handle the dummy value that used to be the ballistic primary flag
 		GET_DATA(val);
-		if(val & (1<<0)){
-			Ship_info[Player_ship->ship_info_index].flags.set(Ship::Info_Flags::Ballistic_primaries);
-		}
 
 		// get current primary and secondary banks, and add link status
 		GET_DATA(val);

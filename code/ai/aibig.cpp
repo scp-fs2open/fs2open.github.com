@@ -786,13 +786,13 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 
 												int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
 
-												if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags & WBF_FAST_FIRING)) {
+												if ((aip->ai_flags & AIF_UNLOAD_SECONDARIES) || (swip->burst_flags[Weapon::Burst_Flags::Fast_firing])) {
 													if (swip->burst_shots > swp->burst_counter[current_bank_adjusted]) {
 														t = swip->burst_delay;
 														swp->burst_counter[current_bank_adjusted]++;
 													} else {
 														t = swip->fire_wait;
-														if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 														} else {
 															swp->burst_counter[current_bank_adjusted] = 0;
@@ -804,7 +804,7 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *f
 														swp->burst_counter[current_bank_adjusted]++;
 													} else {
 														t = set_secondary_fire_delay(aip, temp_shipp, swip, false);
-														if ((swip->burst_shots > 0) && (swip->burst_flags & WBF_RANDOM_LENGTH)) {
+														if ((swip->burst_shots > 0) && (swip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 															swp->burst_counter[current_bank_adjusted] = myrand() % swip->burst_shots;
 														} else {
 															swp->burst_counter[current_bank_adjusted] = 0;
@@ -1206,7 +1206,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 		float		weapon_speed;
 
 		//	Compute position of gun in absolute space and use that as fire position.
-		if (po->n_guns > 0 && !(The_mission.ai_profile->flags2 & AIPF2_AI_AIMS_FROM_SHIP_CENTER)) {
+		if (po->n_guns > 0 && !(The_mission.ai_profile->flags[AI::Profile_Flags::Ai_aims_from_ship_center])) {
 			pnt = po->gun_banks[0].pnt[0];
 			vm_vec_unrotate(&gun_pos, &pnt, &Pl_objp->orient);
 			vm_vec_add2(&gun_pos, &Pl_objp->pos);
@@ -1351,7 +1351,7 @@ void ai_big_strafe_attack()
 	turn_towards_point(Pl_objp, &target_pos, NULL, 0.0f);
 
 	fix last_hit = Missiontime - aip->last_hit_time;
-	if ( aip->ai_profile_flags2 & AIPF2_AI_CAN_SLOW_DOWN_ATTACKING_BIG_SHIPS ) {
+	if ( aip->ai_profile_flags[AI::Profile_Flags::Ai_can_slow_down_attacking_big_ships] ) {
 		// Slow down if we've not been hit for a while
 		if ( target_dist > 1200 || last_hit < F1_0*6) {
 			accel = 1.0f;
@@ -1809,7 +1809,7 @@ void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
 	// the ai will not always go after different ships firing beams at them.
 	// Approx 1/4 chance we'll go after the other ship's beam.
 
-	bool attack_turret_on_different_ship = (aip->ai_profile_flags & AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS)
+	bool attack_turret_on_different_ship = (aip->ai_profile_flags[AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships])
 		&& (Weapon_info[Weapons[weapon_objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Beam]) && (frand()*100 < 25.0f);
 
 	// unless we're making an exception, we should only attack a turret if it sits on the current target

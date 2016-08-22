@@ -6,6 +6,7 @@ set (file_root
 set (file_root_ai
 	ai/ai.cpp
 	ai/ai.h
+	ai/ai_flags.h
 	ai/ai_profiles.cpp
 	ai/ai_profiles.h
 	ai/aibig.cpp
@@ -831,7 +832,12 @@ set (file_root_physics
 
 # PilotFile files
 set (file_root_pilotfile
+	pilotfile/BinaryFileHandler.cpp
+	pilotfile/BinaryFileHandler.h
 	pilotfile/csg.cpp
+	pilotfile/FileHandler.h
+	pilotfile/JSONFileHandler.cpp
+	pilotfile/JSONFileHandler.h
 	pilotfile/csg_convert.cpp
 	pilotfile/pilotfile.cpp
 	pilotfile/pilotfile.h
