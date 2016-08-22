@@ -1416,6 +1416,7 @@ ship_info::ship_info(ship_info&& other) NOEXCEPT
 	ship_length = NULL;
 	gun_mounts = NULL;
 	missile_banks = NULL;
+	subsystems = NULL;
 	n_subsystems = 0;
 
 	// Then we swap everything (well, everything that matters to the deconstructor).
@@ -1806,7 +1807,7 @@ ship_info::~ship_info()
 int parse_ship(const char *filename, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
-	ship_info *sip;
+	ship_info *sip = nullptr;
 	bool create_if_not_found  = true;
 	int rtn = 0;
 
@@ -4646,14 +4647,15 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	if ( n_subsystems > 0 ) {
 		if(sip->n_subsystems < 1) {
 			sip->n_subsystems = n_subsystems;
+			sip->subsystems = (model_subsystem*)vm_malloc(sizeof(model_subsystem) * sip->n_subsystems);
 
 		} else {
 			sip->n_subsystems += n_subsystems;
+			sip->subsystems = (model_subsystem *)vm_realloc(sip->subsystems, sizeof(model_subsystem) * sip->n_subsystems);
 		} 
 
-        sip->subsystems = (model_subsystem *)vm_realloc(sip->subsystems, sizeof(model_subsystem) * sip->n_subsystems);
+	    Assert(sip->subsystems != NULL);
     }
-    Assert(sip->subsystems != NULL);
 		
 	for ( i = 0; i < n_subsystems; i++ ){
 		sip->subsystems[orig_n_subsystems+i] = subsystems[i];
