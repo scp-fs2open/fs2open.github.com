@@ -68,18 +68,18 @@ extern void mission_log_init();
 
 // adds an entry to the mission log.  The name is a string identifier that is the object
 // of the event.  The multiplayer version of this takes the actual entry number to modify.
-extern void mission_log_add_entry(int type, char *pname, char *sname, int index = -1);
-extern void mission_log_add_entry_multi( int type, char *pname, char *sname, int index, fix timestamp, int flags);
+extern void mission_log_add_entry(int type, const char *pname, const char *sname, int index = -1);
+extern void mission_log_add_entry_multi( int type, const char *pname, const char *sname, int index, fix timestamp, int flags);
 
 // function to determine if event happened and what time it happened
-extern int mission_log_get_time( int type, char *name, char *sname, fix *time);
+extern int mission_log_get_time( int type, const char *name, const char *sname, fix *time);
 
 // function to determine if event happend count times and return time that the count event
 // happened
-extern int mission_log_get_time_indexed( int type, char *name, char *sname, int count, fix *time);
+extern int mission_log_get_time_indexed( int type, const char *name, const char *sname, int count, fix *time);
 
 // get the number of times an event happened
-extern int mission_log_get_count( int type, char *pname, char *sname ); 
+extern int mission_log_get_count( int type, const char *pname, const char *sname ); 
 
 // function to show all message log entries during or after mission
 // (code stolen liberally from Alan!)

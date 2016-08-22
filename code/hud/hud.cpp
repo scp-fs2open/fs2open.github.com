@@ -2134,7 +2134,7 @@ void HudGaugeDamage::render(float frametime)
 			setGaugeColor();
 		}		
 
-		char *n_firstline;
+		const char *n_firstline;
 		n_firstline = strrchr(hud_subsys_list[best_index].name, '|');
 		if (n_firstline) {
 			// Print only the last line

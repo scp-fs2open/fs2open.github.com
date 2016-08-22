@@ -2117,13 +2117,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if(Fred_running)
 				{
 					// if we're checking for an AWACS subsystem and this is not an awacs subsystem
-					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_AWACS))
+					if((type == OPF_AWACS_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Awacs]))
 					{
 						return SEXP_CHECK_INVALID_SUBSYS;
 					}
 
 					// rotating subsystem, like above - Goober5000
-					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags & MSS_FLAG_ROTATES))
+					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Rotates]))
 					{
 						return SEXP_CHECK_INVALID_SUBSYS;
 					}
@@ -17963,7 +17963,7 @@ int sexp_get_turret_primary_ammo(int node)
 	if (turret == NULL) {
 		return 0;
 	}
-	if (!(turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO)) {
+	if (!(turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo])) {
 		return 0;
 	}
 
@@ -18118,7 +18118,7 @@ int sexp_get_turret_secondary_ammo(int node)
 	if (turret == NULL) {
 		return 0;
 	}
-	if (!(turret->system_info->flags2 & MSS_FLAG2_TURRET_USE_AMMO)) {
+	if (!(turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo])) {
 		return 0;
 	}
 
@@ -18995,7 +18995,7 @@ void sexp_awacs_set_radius(int node)
 		return;
 	}
 
-	if (!(awacs->system_info->flags & MSS_FLAG_AWACS))
+	if (!(awacs->system_info->flags[Model::Subsystem_Flags::Awacs]))
 		return;
 
 	// set the new awacs radius

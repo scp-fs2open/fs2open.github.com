@@ -11124,7 +11124,7 @@ void process_subobjects(int objnum)
 		psub = pss->system_info;
 
 		// Don't process destroyed objects (but allow subobjects with hitpoints disabled -nuke) (but also process subobjects that are allowed to rotate)
-		if (pss->max_hits > 0 && pss->current_hits <= 0.0f && !(psub->flags2 & MSS_FLAG2_DESTROYED_ROTATION))
+		if (pss->max_hits > 0 && pss->current_hits <= 0.0f && !(psub->flags[Model::Subsystem_Flags::Destroyed_rotation]))
 			continue;
 
 		switch (psub->type) {

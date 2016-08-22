@@ -5782,7 +5782,7 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
 				}
 				
 				//disrupt sensor and awacs systems.
-				if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags & MSS_FLAG_AWACS))
+				if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags[Model::Subsystem_Flags::Awacs]))
 				{
 					disrupt_time*=wip->elec_sensors_mult;
 				}

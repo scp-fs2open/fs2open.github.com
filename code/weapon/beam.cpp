@@ -2148,7 +2148,7 @@ void beam_aim(beam *b)
 		if (!(b->flags & BF_IS_FIGHTER_BEAM))
 			b->subsys->turret_next_fire_pos = b->firingpoint;
 
-		if (b->subsys->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION) {
+		if (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction]) {
 			beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 		} else {
 			// where the shot is originating from (b->last_start gets filled in)
@@ -2166,7 +2166,7 @@ void beam_aim(beam *b)
 			vm_vec_unrotate(&b->last_shot, &b->target_subsys->system_info->pnt, &b->target->orient);
 			vm_vec_add2(&b->last_shot, &b->target->pos);
 
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION)) {
+			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
 				float dist = vm_vec_dist(&b->last_shot,&b->last_start);
 				vm_vec_scale(&temp, dist);
 			} else {
@@ -2179,7 +2179,7 @@ void beam_aim(beam *b)
 
 		// if we're shooting at a big ship - shoot directly at the model
 		if((b->target != nullptr) && (b->target->type == OBJ_SHIP) && (Ship_info[Ships[b->target->instance].ship_info_index].is_big_or_huge())){
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION)) {
+			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
 				vec3d pnt;
 				vm_vec_unrotate(&pnt, &b->binfo.dir_a, &b->target->orient);
 				vm_vec_add2(&pnt, &b->target->pos);
@@ -2201,7 +2201,7 @@ void beam_aim(beam *b)
 
 		// point at the center of the target...
 		if (b->flags & BF_TARGETING_COORDS) {
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION)) {
+			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
 				beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->target_pos1, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 				float dist = vm_vec_dist(&b->target_pos1, &b->last_start);
 				vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, dist);
@@ -2209,7 +2209,7 @@ void beam_aim(beam *b)
 				b->last_shot = b->target_pos1;
 			}
 		} else {
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION)) {
+			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
 				beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->target->pos, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 				float dist = vm_vec_dist(&b->target->pos, &b->last_start);
 				vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, dist);
@@ -2222,7 +2222,7 @@ void beam_aim(beam *b)
 		break;
 
 	case BEAM_TYPE_B:
-		if ((b->subsys != nullptr) && (b->subsys->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION)) {
+		if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
 			vm_vec_scale(&b->binfo.dir_a, b->range);
 			beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->binfo.dir_a, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 			vm_vec_add(&b->last_shot, &b->last_start, &temp);
@@ -2244,7 +2244,7 @@ void beam_aim(beam *b)
 	case BEAM_TYPE_D:
 		// point at the center of the target...
 		if (b->flags & BF_TARGETING_COORDS) {
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION)) {
+			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
 				beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->target_pos1, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 				float dist = vm_vec_dist(&b->target_pos1, &b->last_start);
 				vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, dist);
@@ -2252,7 +2252,7 @@ void beam_aim(beam *b)
 				b->last_shot = b->target_pos1;
 			}
 		} else {
-			if ((b->subsys != nullptr) && (b->subsys->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION)) {
+			if ((b->subsys != nullptr) && (b->subsys->system_info->flags[Model::Subsystem_Flags::Share_fire_direction])) {
 				beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, &temp, 0, &b->target->pos, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 				float dist = vm_vec_dist(&b->target->pos, &b->last_start);
 				vm_vec_scale_add(&b->last_shot, &b->last_start, &temp, dist);
@@ -3406,7 +3406,7 @@ int beam_ok_to_fire(beam *b)
 
 			if (b->flags & BF_IS_FIGHTER_BEAM) {
 				turret_normal = b->objp->orient.vec.fvec;
-				b->subsys->system_info->flags &= ~MSS_FLAG_TURRET_ALT_MATH;
+                b->subsys->system_info->flags.remove(Model::Subsystem_Flags::Turret_alt_math);
 			} else {
 				vm_vec_unrotate(&turret_normal, &b->subsys->system_info->turret_norm, &b->objp->orient);
 			}

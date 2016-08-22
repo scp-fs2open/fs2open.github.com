@@ -1600,11 +1600,6 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		return 0;
 	}
 
-	// don't scan cargo on turrets, radar, etc.  only the majors: fighterbay, sensor, engines, weapons, nav, comm
-	if (!valid_cap_subsys_cargo_list(subsys->system_info->subobj_name)) {
-		return 0;
-	}
-
 	// if cargo is already revealed
 	if (subsys->flags[Ship::Subsystem_Flags::Cargo_revealed]) {
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
