@@ -345,7 +345,7 @@ void emp_process_ship(ship *shipp)
 	aip = &Ai_info[shipp->ai_index];	
 	aip->aspect_locked_time = 0.0f;				// hasn't gotten aspect lock at all
 	aip->current_target_is_locked = 0;			// isn't locked on his current target
-	aip->ai_flags &= ~AIF_SEEK_LOCK;
+	aip->ai_flags.remove(AI::AI_Flags::Seek_lock);
 	aip->nearest_locked_object = -1;				// nothing near me, so I won't launch countermeasures
 
 	// if he's not a fighter or bomber, bail now

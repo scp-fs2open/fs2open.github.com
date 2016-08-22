@@ -1674,7 +1674,7 @@ void hud_squadmsg_type_select( )
 
 	// check to see if the player is awaiting repair or being repaired.  Active the abort and inactive the repair items
 	// check to see if the player is scheduled to be repaired by incoming ship
-	if ( Ai_info[Ships[Player_obj->instance].ai_index].ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED) ) {
+	if ( Ai_info[Ships[Player_obj->instance].ai_index].ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair] ) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
 	}

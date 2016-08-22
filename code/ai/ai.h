@@ -28,9 +28,8 @@ class ship_info;
 #define	AI_DEFAULT_CLASS 3  // default AI class for new ships (Fred)
 
 typedef struct ai_flag_name {
-	int flag;
+	AI::AI_Flags flag;
 	char flag_name[TOKEN_LENGTH];
-	int flag_list;
 } ai_flag_name;
 
 #define MAX_AI_FLAG_NAMES			2
@@ -326,7 +325,7 @@ extern pnode	*Ppfp;			//	Free pointer in path points.
 #define MAX_IGNORE_NEW_OBJECTS	7
 
 typedef struct ai_info {
-	int		ai_flags;				//	Special flags for AI behavior.
+	flagset<AI::AI_Flags> ai_flags;				//	Special flags for AI behavior.
 	int		shipnum;					// Ship using this slot, -1 means none.
 	int		type;						//	
 	int		wing;						//	Member of what wing? -1 means none. 
