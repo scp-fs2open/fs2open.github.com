@@ -561,13 +561,17 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
     if (!optional_string("$Flags:"))
         return;
 
+	// To make sure +override doesn't overwrite previously parsed values we parse the flags into a separate flagset
     SCP_vector<SCP_string> unparsed_or_special;
-    parse_string_flag_list(weaponp->wi_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed_or_special);
+	flagset<Weapon::Info_Flags> parsed_flags;
+    parse_string_flag_list(parsed_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed_or_special);
 
     if (optional_string("+override")) {
         // reseting the flag values if set to override the existing flags
         weaponp->wi_flags = wi_flags;
     }
+	// Now add the parsed flags to the weapon flags
+	weaponp->wi_flags |= parsed_flags;
 
     bool set_pierce = false;
     bool set_nopierce = false;
