@@ -7113,6 +7113,7 @@ void game_shutdown(void)
 	}
 
 	particle::ParticleManager::shutdown();
+	batching_shutdown();
 
 	// load up common multiplayer icons
 	multi_unload_common_icons();

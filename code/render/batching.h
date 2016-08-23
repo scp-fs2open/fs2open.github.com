@@ -91,8 +91,8 @@ public:
 
 struct primitive_batch_item {
 	batch_info batch_item_info;
-	int offset;
-	int n_verts;
+	size_t offset;
+	size_t n_verts;
 
 	primitive_batch *batch;
 };
@@ -102,9 +102,9 @@ struct primitive_batch_buffer {
 	int buffer_num;
 
 	void* buffer_ptr;
-	int buffer_size;
+	size_t buffer_size;
 
-	int desired_buffer_size;
+	size_t desired_buffer_size;
 
 	primitive_type prim_type;
 
@@ -127,3 +127,5 @@ void batching_add_tri(int texture, vertex *verts);
 
 void batching_render_all(bool render_distortions = false);
 void batching_render_distortions_all();
+
+void batching_shutdown();

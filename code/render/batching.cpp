@@ -990,3 +990,15 @@ void batching_render_distortions_all()
 {
 	batching_render_all(true);
 }
+
+void batching_shutdown()
+{
+	for ( auto buffer_iter = Batching_buffers.begin(); buffer_iter != Batching_buffers.end(); ++buffer_iter ) {
+		primitive_batch_buffer *batch_buffer = &buffer_iter->second;
+
+		if ( batch_buffer->buffer_ptr != NULL ) {
+			vm_free(batch_buffer->buffer_ptr);
+			batch_buffer->buffer_ptr = nullptr;
+		}
+	}
+}
