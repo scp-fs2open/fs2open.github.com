@@ -501,6 +501,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Stealth,						"stealth" },
 	{ Ship_Flags::Friendly_stealth_invis,		"friendly-stealth-invisible" },
 	{ Ship_Flags::Hide_ship_name,				"hide-ship-name" },
+	{ Ship_Flags::Primitive_sensors,			"primitive-sensors" },
 	{ Ship_Flags::Afterburner_locked,			"afterburners-locked" },
 	{ Ship_Flags::Primaries_locked,				"primaries-locked" },
 	{ Ship_Flags::Secondaries_locked,			"secondaries-locked" },
