@@ -32,7 +32,11 @@
 #include "render/3d.h"
 #include "popup/popup.h"
 
+#ifdef HAVE_GLU_H
+#include <glu.h>
+#else
 #include "gl/glu.h"
+#endif
 
 #if defined(_WIN32)
 #include <windows.h>
