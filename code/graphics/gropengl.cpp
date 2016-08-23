@@ -97,29 +97,6 @@ void opengl_go_fullscreen()
 	if (Cmdline_fullscreen_window || Cmdline_window || GL_fullscreen || Fred_running)
 		return;
 
-	if ( (os_config_read_uint(NULL, NOX("Fullscreen"), 1) == 1) && (!os_get_window() || !(SDL_GetWindowFlags(os_get_window()) & SDL_WINDOW_FULLSCREEN)) ) {
-		if(os_get_window())
-		{
-			SDL_SetWindowFullscreen(os_get_window(), SDL_WINDOW_FULLSCREEN);
-		}
-		else
-		{
-			uint display = os_config_read_uint("Video", "Display", 0);
-			SDL_Window* window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
-				gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL);
-			if (window == NULL) {
-				mprintf(("Couldn't go fullscreen!\n"));
-				if ((window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
-					gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_OPENGL)) == NULL) {
-					mprintf(("Couldn't drop back to windowed mode either!\n"));
-					exit(1);
-				}
-			}
-
-			os_set_window(window);
-		}
-	}
-
 	gr_opengl_set_gamma(FreeSpace_gamma);
 
 	GL_fullscreen = 1;
@@ -132,23 +109,6 @@ void opengl_go_windowed()
 	if ( ( !Cmdline_fullscreen_window && !Cmdline_window ) /*|| GL_windowed*/ || Fred_running )
 		return;
 
-	if (!os_get_window() || SDL_GetWindowFlags(os_get_window()) & SDL_WINDOW_FULLSCREEN) {
-		if(os_get_window())
-		{
-			SDL_SetWindowFullscreen(os_get_window(), Cmdline_fullscreen_window ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0 );
-		}
-		else
-		{
-			uint display = os_config_read_uint("Video", "Display", 0);
-			SDL_Window* new_window = SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
-				gr_screen.max_w, gr_screen.max_h, SDL_WINDOW_OPENGL);
-			if (new_window == NULL) {
-				Warning( LOCATION, "Unable to enter windowed mode: %s!", SDL_GetError() );
-			}
-			os_set_window(new_window);
-		}
-	}
-
 	GL_windowed = 1;
 	GL_minimized = 0;
 	GL_fullscreen = 0;
@@ -156,20 +116,6 @@ void opengl_go_windowed()
 
 void opengl_minimize()
 {
-	// don't attempt to minimize if we are already in a window, or already minimized, or when playing a movie
-	if (GL_minimized /*|| GL_windowed || Cmdline_window*/ || Fred_running)
-		return;
-
-	// lets not minimize if we are in windowed mode
-	if ( !(SDL_GetWindowFlags(os_get_window()) & SDL_WINDOW_FULLSCREEN) )
-		return;
-
-	if (GL_original_gamma_ramp != NULL) {
-		SDL_SetWindowGammaRamp( os_get_window(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
-	}
-
-	SDL_MinimizeWindow(os_get_window());
-
 	GL_minimized = 1;
 	GL_windowed = 0;
 	GL_fullscreen = 0;
@@ -219,7 +165,7 @@ void gr_opengl_flip()
 	if (Cmdline_gl_finish)
 		glFinish();
 
-	GL_context->swapBuffers();
+	os::getMainViewport()->swapBuffers();
 
 	opengl_tcache_frame();
 
@@ -455,8 +401,8 @@ void gr_opengl_shutdown(os::GraphicsOperations* graphicsOps)
 
 	GL_initted = false;
 
-	if (GL_original_gamma_ramp != NULL) {
-		SDL_SetWindowGammaRamp( os_get_window(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
+	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
+		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
 	}
 
 	if (GL_original_gamma_ramp != NULL) {
@@ -464,7 +410,7 @@ void gr_opengl_shutdown(os::GraphicsOperations* graphicsOps)
 		GL_original_gamma_ramp = NULL;
 	}
 
-	graphicsOps->makeOpenGLContextCurrent(nullptr);
+	graphicsOps->makeOpenGLContextCurrent(nullptr, nullptr);
 	GL_context = nullptr;
 }
 
@@ -733,7 +679,7 @@ void gr_opengl_set_gamma(float gamma)
 	Gr_gamma_int = int (Gr_gamma*10);
 
 	// new way - but not while running FRED
-	if (!Fred_running && !Cmdline_no_set_gamma) {
+	if (!Fred_running && !Cmdline_no_set_gamma && os::getSDLMainWindow() != nullptr) {
 		gamma_ramp = (ushort*) vm_malloc( 3 * 256 * sizeof(ushort), memory::quiet_alloc);
 
 		if (gamma_ramp == NULL) {
@@ -746,7 +692,7 @@ void gr_opengl_set_gamma(float gamma)
 		// Create the Gamma lookup table
 		opengl_make_gamma_ramp(gamma, gamma_ramp);
 
-		SDL_SetWindowGammaRamp( os_get_window(), gamma_ramp, (gamma_ramp+256), (gamma_ramp+512) );
+		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), gamma_ramp, (gamma_ramp+256), (gamma_ramp+512) );
 
 		vm_free(gamma_ramp);
 	}
@@ -1175,36 +1121,56 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 		}
 	}
 
-	os::OpenGLContextAttributes attrs;
-	attrs.red_size = Gr_red.bits;
-	attrs.green_size = Gr_green.bits;
-	attrs.blue_size = Gr_blue.bits;
-	attrs.alpha_size = (bpp == 32) ? Gr_alpha.bits : 0;
-	attrs.depth_size = (bpp == 32) ? 24 : 16;
-	attrs.stencil_size = (bpp == 32) ? 8 : 1;
+	os::ViewPortProperties attrs;
+	attrs.pixel_format.red_size = Gr_red.bits;
+	attrs.pixel_format.green_size = Gr_green.bits;
+	attrs.pixel_format.blue_size = Gr_blue.bits;
+	attrs.pixel_format.alpha_size = (bpp == 32) ? Gr_alpha.bits : 0;
+	attrs.pixel_format.depth_size = (bpp == 32) ? 24 : 16;
+	attrs.pixel_format.stencil_size = (bpp == 32) ? 8 : 1;
 
-	attrs.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
+	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
 
-	attrs.major_version = 2;
-	attrs.minor_version = 0;
+	attrs.enable_opengl = true;
+	attrs.gl_attributes.major_version = 2;
+	attrs.gl_attributes.minor_version = 0;
 
-	attrs.flags = os::OGL_NONE;
 #ifndef NDEBUG
-	attrs.flags |= os::OGL_DEBUG;
+	attrs.gl_attributes.flags.set(os::OpenGLContextFlags::Debug);
 #endif
 
-	attrs.profile = os::OpenGLProfile::Compatibility;
+	attrs.gl_attributes.profile = os::OpenGLProfile::Compatibility;
 
-	GL_context = graphicsOps->createOpenGLContext(attrs, (uint32_t) gr_screen.max_w, (uint32_t) gr_screen.max_h);
+	attrs.display = os_config_read_uint("Video", "Display", 0);
+	attrs.width = (uint32_t) gr_screen.max_w;
+	attrs.height = (uint32_t) gr_screen.max_h;
+
+	attrs.title = Osreg_title;
+
+	if (!Cmdline_window && ! Cmdline_fullscreen_window) {
+		attrs.flags.set(os::ViewPortFlags::Fullscreen);
+	} else if (Cmdline_fullscreen_window) {
+		attrs.flags.set(os::ViewPortFlags::Borderless);
+	}
+
+	auto viewport = graphicsOps->createViewport(attrs);
+	if (!viewport) {
+		return 1;
+	}
+	GL_context = graphicsOps->createOpenGLContext(viewport.get(), attrs.gl_attributes);
 
 	if (GL_context == nullptr) {
 		return 1;
 	}
 
-	graphicsOps->makeOpenGLContextCurrent(GL_context.get());
+	graphicsOps->makeOpenGLContextCurrent(viewport.get(), GL_context.get());
 
-	if (GL_original_gamma_ramp != NULL) {
-		SDL_GetWindowGammaRamp( os_get_window(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
+	auto port = os::addViewport(std::move(viewport));
+	os::setMainViewPort(port);
+
+	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
+		SDL_GetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256),
+								(GL_original_gamma_ramp+512) );
 	}
 
 	return 0;

@@ -1265,7 +1265,7 @@ int CFred_mission_save::save_campaign_file(char *pathname) {
 			if (mission_loop && num_mission_special > 1) {
 				char buffer[1024];
 				sprintf(buffer, "Multiple branching loop error from mission %s\nEdit campaign for *at most* 1 loop from each mission.", Campaign.missions[m].name);
-				MessageBox((HWND) os_get_window(), buffer, "Error", MB_OK);
+				Message(os::dialogs::MESSAGEBOX_ERROR, buffer);
 			}
 		}
 

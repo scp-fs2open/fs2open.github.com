@@ -91,7 +91,7 @@ namespace
 {
 	bool key_down_event_handler(const SDL_Event& e)
 	{
-		if (!os::events::isWindowEvent(e, os_get_window())) {
+		if (!os::events::isWindowEvent(e, os::getSDLMainWindow())) {
 			return false;
 		}
 
@@ -106,7 +106,7 @@ namespace
 
 	bool key_up_event_handler(const SDL_Event& e)
 	{
-		if (!os::events::isWindowEvent(e, os_get_window())) {
+		if (!os::events::isWindowEvent(e, os::getSDLMainWindow())) {
 			return false;
 		}
 
