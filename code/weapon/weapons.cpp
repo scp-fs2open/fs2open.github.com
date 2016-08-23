@@ -573,7 +573,6 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 	// Now add the parsed flags to the weapon flags
 	weaponp->wi_flags |= parsed_flags;
 
-    bool set_pierce = false;
     bool set_nopierce = false;
 
     if (unparsed_or_special.size() > 0) {
@@ -619,9 +618,6 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
                     Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
                 }
             }
-            else if (!stricmp(NOX("pierce shields"), flag_text.c_str())) {
-                set_pierce = true;
-            }
             else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
                 set_nopierce = true;
             }
@@ -645,7 +641,13 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
         }
 
         //Do cleanup and sanity checks
-        if (set_nopierce)
+
+		//Beams pierce shields by default
+		if (weaponp->wi_flags[Weapon::Info_Flags::Beam])
+			weaponp->wi_flags.set(Weapon::Info_Flags::Pierce_shields);
+        
+		//...except when they don't
+		if (set_nopierce)
             weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
 
         if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
