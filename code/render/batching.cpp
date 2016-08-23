@@ -986,11 +986,6 @@ void batching_render_all(bool render_distortions)
 	gr_clear_states();
 }
 
-void batching_render_distortions_all()
-{
-	batching_render_all(true);
-}
-
 void batching_shutdown()
 {
 	for ( auto buffer_iter = Batching_buffers.begin(); buffer_iter != Batching_buffers.end(); ++buffer_iter ) {

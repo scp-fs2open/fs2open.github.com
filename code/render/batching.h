@@ -126,6 +126,5 @@ void batching_add_quad(int texture, vertex *verts);
 void batching_add_tri(int texture, vertex *verts);
 
 void batching_render_all(bool render_distortions = false);
-void batching_render_distortions_all();
 
 void batching_shutdown();

@@ -3757,6 +3757,8 @@ void game_render_frame( camid cid )
 	// render local player nebula
 	neb2_render_player();
 
+	batching_render_all(false);
+
 	gr_copy_effect_texture();
 
 	// render all ships with shader effects on them
@@ -3767,7 +3769,7 @@ void game_render_frame( camid cid )
 	}
 	effect_ships.clear();
 
-	batching_render_all(false);
+	// render distortions after the effect framebuffer is copied.
 	batching_render_all(true);
 
 	Shadow_override = true;

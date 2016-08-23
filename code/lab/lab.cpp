@@ -1048,7 +1048,7 @@ void labviewer_render_model(float frametime)
 
 	batching_render_all();
 	gr_copy_effect_texture();
-	batching_render_distortions_all();
+	batching_render_all(true);
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 
