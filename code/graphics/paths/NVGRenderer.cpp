@@ -11,7 +11,8 @@
 
 #include "nanovg/nanovg.h"
 // NanoVG supports OpenGL 2 and 3, we currently use OpenGL 2
-#define NANOVG_GL2_IMPLEMENTATION
+//#define NANOVG_GL2_IMPLEMENTATION
+#define NANOVG_GL3_IMPLEMENTATION
 
 #include "nanovg/nanovg_gl.h"
 #pragma GCC diagnostic pop
@@ -42,14 +43,15 @@ namespace
 		GL_state.Texture.SetTarget(0);
 		GL_state.Texture.DisableAll();
 
+		if ( GL_version >= 30 ) {
+			glBindVertexArray(GL_vao);
+		}
+
 		GL_state.Array.BindArrayBuffer(0);
 		GL_state.Array.BindUniformBuffer(0);
 		opengl_shader_set_current(nullptr);
 
 		GL_state.Uniform.reset();
-
-		// State that is not currently tracked by FSO:
-		//   glBindVertexArray(arr);
 
 		// Now reset the values to what we need
 		GL_state.SetStencilType(STENCIL_TYPE_NONE);
@@ -68,14 +70,14 @@ namespace graphics
 	{
 		NVGRenderer::NVGRenderer() : m_inFrame(false)
 		{
-			m_context = nvgCreateGL2(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+			m_context = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 		}
 
 		NVGRenderer::~NVGRenderer()
 		{
 			if (m_context)
 			{
-				nvgDeleteGL2(m_context);
+				nvgDeleteGL3(m_context);
 				m_context = nullptr;
 			}
 		}
@@ -96,6 +98,10 @@ namespace graphics
 
 		void NVGRenderer::endFrame()
 		{
+			if ( GL_version >= 30 ) {
+				glBindVertexArray(0);
+			}
+
 			gr_opengl_set_2d_matrix();
 
 			nvgEndFrame(m_context);

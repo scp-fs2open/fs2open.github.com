@@ -1,15 +1,17 @@
-attribute float radius;
-varying float offset_out;
+in vec4 vertPosition;
+in vec4 vertTexCoord;
+in vec4 vertColor;
+in float vertRadius;
+out vec4 fragTexCoord;
+out vec4 fragColor;
+out float fragOffset;
+uniform mat4 modelViewMatrix;
+uniform mat4 projMatrix;
 uniform float use_offset;
 void main()
 {
-   gl_Position = ftransform();
-	offset_out = radius * use_offset;
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_FrontColor = gl_Color;
-	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);
- #ifdef  __GLSL_CG_DATA_TYPES
-	// Check necessary for ATI specific behavior
-	gl_ClipVertex = (gl_ModelViewMatrix * gl_Vertex);
- #endif
+	gl_Position = projMatrix * modelViewMatrix * vertPosition;
+	fragOffset = vertRadius * use_offset;
+	fragTexCoord = vertTexCoord;
+	fragColor = vertColor;
 }

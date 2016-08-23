@@ -43,6 +43,7 @@
 #include "parse/sexp.h"
 #include "popup/popup.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "ui/uidefs.h"
 #include "weapon/weapon.h"
@@ -1728,7 +1729,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			stop.xyz.x = -size*start_scale;
 			stop.xyz.y = 0.0f;
 			stop.xyz.z = -clip;
-			g3_draw_htl_line(&start,&stop);
+			//g3_draw_htl_line(&start,&stop);
+			g3_render_line_3d(true, &start, &stop);
 		}
 		g3_done_instance(true);
 
@@ -1749,7 +1751,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 			for (i = -3; i < 4; i++) {
 				start.xyz.x = stop.xyz.x = size*0.333f*i;
-				g3_draw_htl_line(&start,&stop);
+				//g3_draw_htl_line(&start,&stop);
+				g3_render_line_3d(false, &start, &stop);
 			}
 
 			start.xyz.x = size;
@@ -1759,7 +1762,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 				start.xyz.z = stop.xyz.z = size*0.333f*i+offset*0.5f;
 				if ((time < 1.5f) && (start.xyz.z <= -clip))
 					break;
-				g3_draw_htl_line(&start,&stop);
+				//g3_draw_htl_line(&start,&stop);
+				g3_render_line_3d(false, &start, &stop);
 			}
 
 			g3_done_instance(true);
@@ -1835,14 +1839,15 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 				stop.xyz.y = 0.0f;
 				stop.xyz.z = -clip;
 				g3_start_instance_angles(&vmd_zero_vector,&view_angles);
-				g3_draw_htl_line(&start,&stop);
+				//g3_draw_htl_line(&start,&stop);
+				g3_render_line_3d(false, &start, &stop);
 				g3_done_instance(true);
 			}
 		}
 
 		gr_zbuffer_set(GR_ZBUFF_FULL); // Turn off depthbuffer again
 
-		batch_render_all();
+		batching_render_all();
 		Glowpoint_use_depth_buffer = true; // Back to normal
 
 		gr_end_view_matrix();
@@ -1924,7 +1929,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 		model_render_immediate(render_info, model_id, &model_orient, &vmd_zero_vector);
 
-		batch_render_all();
+		batching_render_all();
 
 		gr_end_view_matrix();
 		gr_end_proj_matrix();

@@ -37,6 +37,7 @@
 #include "parse/parselo.h"
 #include "popup/popup.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
@@ -914,7 +915,7 @@ void wl_render_overhead_view(float frametime)
 
             Glowpoint_use_depth_buffer = true;
             
-			batch_render_all();
+			batching_render_all();
 
 			//NOW render the lines for weapons
 			gr_reset_clip();

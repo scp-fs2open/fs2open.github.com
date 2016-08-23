@@ -69,6 +69,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/afterburner.h"
 #include "ship/ship.h"
 #include "ship/shipcontrails.h"
@@ -6898,7 +6899,6 @@ man_thruster_renderer *man_thruster_get_slot(int bmap_frame)
 }
 
 //WMC - used for FTL and maneuvering thrusters
-geometry_batcher fx_batcher;
 extern bool Rendering_to_shadow_map;
 
 void ship_render_cockpit(object *objp)
@@ -18488,7 +18488,6 @@ void ship_render_batch_thrusters(object *obj)
 
 	physics_info *pi = &Objects[shipp->objnum].phys_info;
 	float render_amount;
-	fx_batcher.allocate(sip->num_maneuvering);	//Act as if all thrusters are going.
 
 	for ( int i = 0; i < sip->num_maneuvering; i++ ) {
 		man_thruster *mtp = &sip->maneuvering[i];
@@ -18576,16 +18575,14 @@ void ship_render_batch_thrusters(object *obj)
 				vm_vec_unrotate(&end, &tmpend, &obj->orient);
 				vm_vec_add2(&end, &obj->pos);
 
-				//Draw
-				fx_batcher.draw_beam(&start, &end, rad, 1.0f);
-
 				int bmap_frame = mtp->tex_id;
 				if(mtp->tex_nframes > 0)
 					bmap_frame += bm_get_anim_frame(mtp->tex_id, i2fl(timestamp() - shipp->thrusters_start[i]) / 1000.0f, 0.0f, true);
 
-				man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
-				mtr->man_batcher.add_allocate(1);
-				mtr->man_batcher.draw_beam(&start, &end, rad, 1.0f);
+				//man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
+				//mtr->man_batcher.add_allocate(1);
+				//mtr->man_batcher.draw_beam(&start, &end, rad, 1.0f);
+				batching_add_beam(bmap_frame, &start, &end, rad, 1.0f);
 			}
 		} else if ( shipp->thrusters_start[i] > 0 ) { 
 			// We've stopped firing a thruster

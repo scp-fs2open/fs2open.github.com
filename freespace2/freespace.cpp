@@ -141,6 +141,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
 #include "ship/ship.h"
@@ -3756,6 +3757,8 @@ void game_render_frame( camid cid )
 	// render local player nebula
 	neb2_render_player();
 
+	batching_render_all(false);
+
 	gr_copy_effect_texture();
 
 	// render all ships with shader effects on them
@@ -3766,7 +3769,8 @@ void game_render_frame( camid cid )
 	}
 	effect_ships.clear();
 
-	batch_render_distortion_map_bitmaps();
+	// render distortions after the effect framebuffer is copied.
+	batching_render_all(true);
 
 	Shadow_override = true;
 	//Draw the viewer 'cause we didn't before.
@@ -7111,6 +7115,7 @@ void game_shutdown(void)
 	}
 
 	particle::ParticleManager::shutdown();
+	batching_shutdown();
 
 	// load up common multiplayer icons
 	multi_unload_common_icons();

@@ -17,10 +17,10 @@
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "graphics/grbatch.h"
-
-#include "render/3d.h" 
-
-#include <glad/glad.h>
+#include "object/object.h"
+#include "particle/particle.h"
+#include "render/3d.h"
+#include "render/batching.h"
 
 using namespace particle;
 
@@ -101,15 +101,12 @@ namespace particle
 		}
 
 		// grab a vertex buffer object
-		if (Particle_buffer_object < 0)
-		{
-			Particle_buffer_object = gr_create_stream_buffer();
+		if ( Particle_buffer_object < 0 ) {
+			Particle_buffer_object = gr_create_vertex_buffer();
 		}
 
-		if (Geometry_shader_buffer_object < 0 && !Cmdline_no_geo_sdr_effects &&
-			GLAD_GL_ARB_geometry_shader4)
-		{
-			Geometry_shader_buffer_object = gr_create_stream_buffer();
+		if ( Geometry_shader_buffer_object < 0 && !Cmdline_no_geo_sdr_effects ) {
+			Geometry_shader_buffer_object = gr_create_vertex_buffer();
 		}
 	}
 
@@ -426,8 +423,7 @@ namespace particle
 
 				Assert( cur_frame < part->nframes );
 
-				batch_add_bitmap( framenum + cur_frame, tmap_flags | TMAP_FLAG_VERTEX_GEN, &pos,
-								  part->particle_index % 8, part->radius, alpha );
+				batching_add_volume_bitmap(framenum + cur_frame, &pos, part->particle_index % 8, part->radius, alpha);
 
 				render_batch = true;
 			}
@@ -436,8 +432,7 @@ namespace particle
 		profile_begin("Batch Render");
 		if (render_batch)
 		{
-			geometry_batch_render(Geometry_shader_buffer_object);
-			batch_render_all(Particle_buffer_object);
+			batching_render_all();
 		}
 		profile_end("Batch Render");
 	}

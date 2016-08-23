@@ -14,12 +14,8 @@
 #define _GROPENGLLIGHT_H
 
 #include "graphics/gropengl.h"
-
+#include "lighting/lighting.h"
 #include <glad/glad.h>
-
-struct ogl_light_color {
-	float r,g,b,a;
-};
 
 // Structures
 struct opengl_light
@@ -39,7 +35,16 @@ struct opengl_light
 	int type;
 };
 
-struct light_data;
+struct opengl_light_uniform_data {
+	vec4 *Position;
+	vec3d *Diffuse_color;
+	vec3d *Spec_color;
+	vec3d *Direction;
+	int *Light_type;
+	float *Attenuation;
+};
+
+extern opengl_light_uniform_data opengl_light_uniforms;
 
 //Variables
 extern bool lighting_is_enabled;
@@ -47,6 +52,13 @@ extern GLint GL_max_lights;
 extern int Num_active_gl_lights;
 extern int GL_center_alpha;
 extern float GL_light_factor;
+
+extern const float GL_light_color[4];
+extern const float GL_light_spec[4];
+extern const float GL_light_zero[4];
+extern const float GL_light_emission[4];
+extern const float GL_light_true_zero[4];
+extern float GL_light_ambient[4];
 
 //Functions
 int	gr_opengl_make_light(light *fs_light, int idx, int priority);		//unused -- stub function

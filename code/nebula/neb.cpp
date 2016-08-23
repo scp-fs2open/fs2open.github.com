@@ -944,6 +944,7 @@ void neb2_render_player()
 	}
     
     memset(&p, 0, sizeof(p));
+	memset(&ptemp, 0, sizeof(ptemp));
 
 	// get eye position and orientation
 	neb2_get_eye_pos(&eye_pos);
@@ -1036,10 +1037,10 @@ void neb2_render_player()
 					continue;
 				}
 
-				// rotate and project the vertex into viewspace
-				g3_rotate_vertex(&p, &Neb2_cubes[idx1][idx2][idx3].pt);
+				g3_transfer_vertex(&p, &Neb2_cubes[idx1][idx2][idx3].pt);
 
-				ptemp = p;
+				// rotate and project the vertex into viewspace
+				g3_rotate_vertex(&ptemp, &Neb2_cubes[idx1][idx2][idx3].pt);
 				g3_project_vertex(&ptemp);
 
 				// get the proper alpha value
@@ -1073,12 +1074,15 @@ void neb2_render_player()
 				}
 
 				// set the bitmap and render
-				gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
+				//gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
 
 				gr_set_lighting(false, false);
-				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-				g3_draw_rotated_bitmap(&p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
-			} 
+				//gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+				//g3_draw_rotated_bitmap(&p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
+				material mat_params;
+				material_set_unlit(&mat_params, Neb2_cubes[idx1][idx2][idx3].bmap, alpha + Neb2_cubes[idx1][idx2][idx3].flash, true, true);
+				g3_render_rect_screen_aligned_rotated(&mat_params, &p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad);
+			}
 		}
 	}
 

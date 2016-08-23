@@ -303,32 +303,11 @@ float g3_draw_laser(const vec3d *headp, float head_width, const vec3d *tailp, fl
  */
 float g3_draw_laser_rgb(const vec3d *headp, float head_width, const vec3d *tailp, float tail_width, int r, int g, int b, uint tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB, float max_len = 0.0f );
 
-/**
- * Draw a bitmap that is always facing, but rotates.
- *
- * If bitmap is not square, rad will be the 3d size of the smallest dimension.
- */
-int g3_draw_rotated_bitmap(vertex *pnt, float angle, float radius, uint tmap_flags, float depth = 0.0f);
-
-/**
- * Draw a perspective bitmap based on angles and radius
- */
-int g3_draw_perspective_bitmap(const angles *a, float scale_x, float scale_y, int div_x, int div_y, uint tmap_flags);
 
 /**
  * Draw a 2D shield icon w/ 6 points
  */
 void g3_draw_2d_shield_icon(const coord2d coords[6], const int r, const int g, const int b, const int a);
-
-/**
- * Draw a 2D rectangle
- */
-void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a);
-
-/**
- * Draw a 2d bitmap on a poly
- */
-int g3_draw_2d_poly_bitmap(float x, float y, float w, float h, uint additional_tmap_flags = 0);
 
 /**
  * Enables clipping with an arbritary plane.   
@@ -356,9 +335,6 @@ void g3_stop_user_clip_plane();
 
 ubyte g3_transfer_vertex(vertex *dest, const vec3d *src);
 
-int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additional_tmap_flags);
-int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint additional_tmap_flags);
-
 /**
  * Draw a line in HTL mode without having to go through the rotate/project stuff
  */
@@ -367,7 +343,41 @@ void g3_draw_htl_line(const vec3d *start, const vec3d *end);
 /**
  * Draw a sphere mode without having to go through the rotate/project stuff
  */
-void g3_draw_htl_sphere(const vec3d *position, float radius);
+void g3_draw_htl_sphere(color *clr, const vec3d *position, float radius);
+void g3_draw_htl_sphere(const vec3d* position, float radius);
+
+void g3_render_primitives_textured(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);
+void g3_render_primitives_colored(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);
+void g3_render_primitives_colored_textured(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);
+
+void g3_render_rod(color *clr, int num_points, vec3d *pvecs, float width);
+
+void g3_render_laser(material *mat_params, vec3d *headp, float head_width, vec3d *tailp, float tail_width);
+void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, vec3d *tailp, float tail_width, float max_len);
+
+void g3_render_rect_screen_aligned_rotated(material *mat_params, vertex *pnt, float angle, float rad);
+
+void g3_render_rect_screen_aligned(material *mat_params, vertex *pnt, int orient, float rad, float depth = 0.0f);
+void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int orient, float rad);
+
+void g3_render_rect_oriented(material* mat_info, vec3d *pos, matrix *ori, float width, float height);
+void g3_render_rect_oriented(material* mat_info, vec3d *pos, vec3d *norm, float width, float height);
+
+void g3_render_line_3d(color *clr, bool depth_testing, const vec3d *start, const vec3d *end);
+void g3_render_line_3d(bool depth_testing, const vec3d *start, const vec3d *end);
+
+void g3_render_sphere(color *clr, vec3d* position, float radius);
+void g3_render_sphere(vec3d* position, float radius);
+
+void g3_render_shield_icon(color *clr, coord2d coords[6], int resize_mode = GR_RESIZE_FULL);
+void g3_render_shield_icon(coord2d coords[6], int resize_mode = GR_RESIZE_FULL);
+
+void g3_render_colored_rect(color *clr, int x, int y, int w, int h, int resize_mode);
+
+typedef struct horz_pt {
+	float x, y;
+	int edge;
+} horz_pt;
 
 /**
  * Flash ball

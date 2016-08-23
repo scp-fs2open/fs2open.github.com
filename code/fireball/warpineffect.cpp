@@ -18,6 +18,7 @@
 #include "model/model.h"
 #include "nebula/neb.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 
 extern int Warp_model;
@@ -61,7 +62,8 @@ void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 		vertlist[2] = *v3;
 	}
 
-	batch_add_tri(texture, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, vertlist, 1.0f);
+	// batch_add_tri(texture, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, vertlist, 1.0f);
+	batching_add_tri(texture, vertlist); // TODO render as emissive
 }
 
 void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
@@ -214,6 +216,12 @@ void warpin_queue_render(draw_list *scene, object *obj, matrix *orient, vec3d *p
 
 	vm_vec_scale_add( &center, pos, &orient->vec.fvec, -(max_radius/2.5f)/3.0f );
 
+	verts[0].r = 255;
+	verts[0].g = 255;
+	verts[0].b = 255;
+	verts[0].a = 255;
+
+	verts[1] = verts[2] = verts[3] = verts[4] = verts[0];
 
 	if (Warp_glow_bitmap >= 0) {
 		float r = radius;
@@ -254,7 +262,8 @@ void warpin_queue_render(draw_list *scene, object *obj, matrix *orient, vec3d *p
 
 			float alpha = (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
 
-			batch_add_bitmap(Warp_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE , &verts[4], 0, r, alpha);
+			//batch_add_bitmap(Warp_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, &verts[4], 0, r, alpha);
+			batching_add_bitmap(Warp_glow_bitmap, &verts[4], 0, r, alpha);
 		}
 	}
 
@@ -311,7 +320,7 @@ void warpin_queue_render(draw_list *scene, object *obj, matrix *orient, vec3d *p
 		verts[3].texture_position.v = 0.99f;
 
 		verts[4].texture_position.u = 0.5f;
-		verts[4].texture_position.v = 0.5f; 
+		verts[4].texture_position.v = 0.5f;
 
 		g3_transfer_vertex( &verts[0], &vecs[0] );
 		g3_transfer_vertex( &verts[1], &vecs[1] );
@@ -326,7 +335,6 @@ void warpin_queue_render(draw_list *scene, object *obj, matrix *orient, vec3d *p
 	}
 
 	if (Warp_ball_bitmap > -1 && Cmdline_warp_flash == 1) {
-		//flash_ball warp_ball(20, .1f,.25f, &vmd_z_vector, &vmd_zero_vector, 4.0f, 0.5f);
 		flash_ball warp_ball(20, .1f,.25f, &orient->vec.fvec, pos, 4.0f, 0.5f);
 
 		float adg = (2.0f * life_percent) - 1.0f;

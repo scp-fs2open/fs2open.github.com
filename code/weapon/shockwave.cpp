@@ -16,6 +16,7 @@
 #include "model/modelrender.h"
 #include "object/object.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
 #include "weapon/shockwave.h"
@@ -397,36 +398,18 @@ void shockwave_render(object *objp, draw_list *scene)
 		if ( Cmdline_fb_explosions ) {
 			g3_transfer_vertex(&p, &sw->pos);
 
-			distortion_add_bitmap_rotated(
-				Shockwave_info[1].bitmap_id+shockwave_get_framenum(objp->instance, Shockwave_info[1].bitmap_id),
-				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_DISTORTION, 
-				&p, 
-				fl_radians(sw->rot_angles.p), 
-				sw->radius,
-				((sw->time_elapsed/sw->total_time)>0.9f)?(1.0f-(sw->time_elapsed/sw->total_time))*10.0f:1.0f
-				);
+			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time))*10.0f : 1.0f;
+			batching_add_distortion_bitmap_rotated(Shockwave_info[1].bitmap_id + shockwave_get_framenum(objp->instance, Shockwave_info[1].bitmap_id), &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
 		}
 	} else {
 		g3_transfer_vertex(&p, &sw->pos);
 
 		if ( Cmdline_fb_explosions ) {
-			distortion_add_bitmap_rotated(
-				sw->current_bitmap, 
-				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_DISTORTION, 
-				&p, 
-				fl_radians(sw->rot_angles.p), 
-				sw->radius,
-				((sw->time_elapsed/sw->total_time)>0.9f)?(1.0f-(sw->time_elapsed/sw->total_time))*10.0f:1.0f
-			);
+			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time)) * 10.0f : 1.0f;
+			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
 		}
 
-		batch_add_bitmap_rotated(
-			sw->current_bitmap, 
-			TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE,
-			&p, 
-			fl_radians(sw->rot_angles.p), 
-			sw->radius
-		);
+		batching_add_volume_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius);
 	}
 }
 

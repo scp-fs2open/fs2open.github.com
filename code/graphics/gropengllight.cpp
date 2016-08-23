@@ -22,6 +22,7 @@
 #include "graphics/2d.h"
 #include "graphics/gropengllight.h"
 #include "graphics/gropenglstate.h"
+#include "graphics/gropengltnl.h"
 #include "lighting/lighting.h"
 #include "render/3d.h"
 
@@ -29,6 +30,8 @@
 
 // Variables
 opengl_light *opengl_lights = NULL;
+opengl_light_uniform_data opengl_light_uniforms;
+
 bool lighting_is_enabled = true;
 int Num_active_gl_lights = 0;
 int GL_center_alpha = 0;
@@ -44,12 +47,12 @@ extern float Cmdline_ogl_spec;
 GLint GL_max_lights = 0;
 
 // OGL defaults
-static const float GL_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
-static const float GL_light_spec[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-static const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-static const float GL_light_emission[4] = { 0.09f, 0.09f, 0.09f, 1.0f };
-static const float GL_light_true_zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-static float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
+const float GL_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+const float GL_light_spec[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+const float GL_light_emission[4] = { 0.09f, 0.09f, 0.09f, 1.0f };
+const float GL_light_true_zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+float GL_light_ambient[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
 
 void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 {
@@ -156,30 +159,84 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 	}
 }
 
-void opengl_set_light(int light_num, opengl_light *ltp)
+void opengl_set_light_fixed_pipeline(int light_num, opengl_light *ltp)
 {
 	Assert(light_num < GL_max_lights);
 
 	GLfloat diffuse[4];
 	memcpy(diffuse, ltp->Diffuse, sizeof(GLfloat) * 4);
 
-	if ( !is_minimum_GLSL_version() && (ltp->type == LT_DIRECTIONAL) && (GL_light_factor < 1.0f) ) {
-		// if we're not using shaders, manually adjust the diffuse light factor.
+	if ( (ltp->type == LT_DIRECTIONAL) && (GL_light_factor < 1.0f) ) {
 		diffuse[0] *= GL_light_factor;
 		diffuse[1] *= GL_light_factor;
 		diffuse[2] *= GL_light_factor;
 	}
 
-	glLightfv(GL_LIGHT0+light_num, GL_POSITION, ltp->Position);
-	glLightfv(GL_LIGHT0+light_num, GL_AMBIENT, ltp->Ambient);
-	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, ltp->Specular);
-	glLightfv(GL_LIGHT0+light_num, GL_SPOT_DIRECTION, ltp->SpotDir);
-	//glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, ltp->ConstantAtten); Default is 1.0 and we only use 1.0 - Valathil
-	glLightf(GL_LIGHT0+light_num, GL_LINEAR_ATTENUATION, ltp->LinearAtten);
-	//glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, ltp->QuadraticAtten); Default is 0.0 and we only use 0.0 - Valathil
-	glLightf(GL_LIGHT0+light_num, GL_SPOT_EXPONENT, ltp->SpotExp);
-	glLightf(GL_LIGHT0+light_num, GL_SPOT_CUTOFF, ltp->SpotCutOff);
+	// transform lights into eyespace
+
+	vec3d light_pos_world;
+	vec3d light_pos_eye;
+	vec4 light_pos_eye_4d;
+
+	light_pos_world.xyz.x = ltp->Position[0];
+	light_pos_world.xyz.y = ltp->Position[1];
+	light_pos_world.xyz.z = ltp->Position[2];
+
+	if ( ltp->type == LT_POINT ) {
+		vm_vec_sub2(&light_pos_world, &Object_position);
+	}
+
+	vm_vec_rotate(&light_pos_eye, &light_pos_world, &Object_matrix);
+
+	light_pos_eye_4d.a1d[0] = light_pos_eye.a1d[0];
+	light_pos_eye_4d.a1d[1] = light_pos_eye.a1d[1];
+	light_pos_eye_4d.a1d[2] = light_pos_eye.a1d[2];
+	light_pos_eye_4d.a1d[3] = 1.0f;
+
+	vec3d light_dir_world;
+	vec3d light_dir_eye;
+
+	light_dir_world.xyz.x = ltp->SpotDir[0];
+	light_dir_world.xyz.y = ltp->SpotDir[1];
+	light_dir_world.xyz.z = ltp->SpotDir[2];
+	
+	vm_vec_rotate(&light_dir_eye, &light_dir_world, &Object_matrix);
+}
+
+void opengl_set_light(int light_num, opengl_light *ltp)
+{
+	if ( !is_minimum_GLSL_version() ) {
+		opengl_set_light_fixed_pipeline(light_num, ltp);
+		return;
+	}
+
+	Assert(light_num < GL_max_lights);
+		
+	vec4 light_pos_world;
+	light_pos_world.xyzw.x = ltp->Position[0];
+	light_pos_world.xyzw.y = ltp->Position[1];
+	light_pos_world.xyzw.z = ltp->Position[2];
+	light_pos_world.xyzw.w = ltp->Position[3];
+
+	vec3d light_dir_world;
+	light_dir_world.xyz.x = ltp->SpotDir[0];
+	light_dir_world.xyz.y = ltp->SpotDir[1];
+	light_dir_world.xyz.z = ltp->SpotDir[2];
+
+	vm_vec_transform(&opengl_light_uniforms.Position[light_num], &light_pos_world, &GL_view_matrix);
+	vm_vec_transform(&opengl_light_uniforms.Direction[light_num], &light_dir_world, &GL_view_matrix, false);
+
+	opengl_light_uniforms.Diffuse_color[light_num].xyz.x = ltp->Diffuse[0];
+	opengl_light_uniforms.Diffuse_color[light_num].xyz.y = ltp->Diffuse[1];
+	opengl_light_uniforms.Diffuse_color[light_num].xyz.z = ltp->Diffuse[2];
+
+	opengl_light_uniforms.Spec_color[light_num].xyz.x = ltp->Specular[0];
+	opengl_light_uniforms.Spec_color[light_num].xyz.y = ltp->Specular[1];
+	opengl_light_uniforms.Spec_color[light_num].xyz.z = ltp->Specular[2];
+
+	opengl_light_uniforms.Light_type[light_num] = ltp->type;
+
+	opengl_light_uniforms.Attenuation[light_num] = ltp->LinearAtten;
 }
 
 bool opengl_sort_active_lights(const opengl_light &la, const opengl_light &lb)
@@ -233,109 +290,6 @@ static bool use_last_view = false;
 
 void opengl_change_active_lights(int pos, int d_offset)
 {
-	int i, offset;
-
-	if ( !lighting_is_enabled ) {
-		return;
-	}
-
-	Assert( d_offset < GL_max_lights );
-
-	offset = (pos * GL_max_lights) + d_offset;
-
-	glPushMatrix();
-
-	if ( !memcmp(&Eye_position, &last_view_pos, sizeof(vec3d)) && !memcmp(&Eye_matrix, &last_view_orient, sizeof(matrix)) ) {
-		use_last_view = true;
-	} else {
-		memcpy(&last_view_pos, &Eye_position, sizeof(vec3d));
-		memcpy(&last_view_orient, &Eye_matrix, sizeof(matrix));
-
-		use_last_view = false;
-	}
-
-	if ( !use_last_view ) {
-		// should already be normalized
-		eyex =  (GLdouble)Eye_position.xyz.x;
-		eyey =  (GLdouble)Eye_position.xyz.y;
-		eyez = -(GLdouble)Eye_position.xyz.z;
-
-		// should already be normalized
-		GLdouble fwdx =  (GLdouble)Eye_matrix.vec.fvec.xyz.x;
-		GLdouble fwdy =  (GLdouble)Eye_matrix.vec.fvec.xyz.y;
-		GLdouble fwdz = -(GLdouble)Eye_matrix.vec.fvec.xyz.z;
-
-		// should already be normalized
-		GLdouble upx =  (GLdouble)Eye_matrix.vec.uvec.xyz.x;
-		GLdouble upy =  (GLdouble)Eye_matrix.vec.uvec.xyz.y;
-		GLdouble upz = -(GLdouble)Eye_matrix.vec.uvec.xyz.z;
-
-		GLdouble mag;
-
-		// setup Side vector (crossprod of forward and up vectors)
-		GLdouble Sx = (fwdy * upz) - (fwdz * upy);
-		GLdouble Sy = (fwdz * upx) - (fwdx * upz);
-		GLdouble Sz = (fwdx * upy) - (fwdy * upx);
-
-		// normalize Side
-		mag = 1.0 / sqrt( (Sx*Sx) + (Sy*Sy) + (Sz*Sz) );
-
-		Sx *= mag;
-		Sy *= mag;
-		Sz *= mag;
-
-		// setup Up vector (crossprod of s and forward vectors)
-		GLdouble Ux = (Sy * fwdz) - (Sz * fwdy);
-		GLdouble Uy = (Sz * fwdx) - (Sx * fwdz);
-		GLdouble Uz = (Sx * fwdy) - (Sy * fwdx);
-
-		// normalize Up
-		mag = 1.0 / sqrt( (Ux*Ux) + (Uy*Uy) + (Uz*Uz) );
-
-		Ux *= mag;
-		Uy *= mag;
-		Uz *= mag;
-
-		// store the result in our matrix
-		memset( vmatrix, 0, sizeof(GLdouble) * 16 );
-		vmatrix[0]  = Sx;   vmatrix[1]  = Ux;   vmatrix[2]  = -fwdx;
-		vmatrix[4]  = Sy;   vmatrix[5]  = Uy;   vmatrix[6]  = -fwdy;
-		vmatrix[8]  = Sz;   vmatrix[9]  = Uz;   vmatrix[10] = -fwdz;
-		vmatrix[15] = 1.0;
-	}
-
-	glLoadMatrixd(vmatrix);
-
-	glTranslated(-eyex, -eyey, -eyez);
-	glScalef(1.0f, 1.0f, -1.0f);
-	
-	//Valathil: Sort lights by priority
-	extern bool Deferred_lighting;
-	if(!Deferred_lighting)
-		opengl_pre_render_init_lights();
-
-	for (i = 0; i < GL_max_lights; i++) {
-		if ( (offset + i) >= Num_active_gl_lights ) {
-			break;
-		}
-
-		if (opengl_lights[offset+i].occupied) {
-			opengl_set_light(i, &opengl_lights[offset+i]);
-
-			GL_state.Light(i, GL_TRUE);
-		}
-	}
-	opengl_light zero;
-	memset(&zero,0,sizeof(opengl_light));
-	zero.Position[0] = 1.0f;
-
-	// make sure that we turn off any lights that we aren't using right now
-	for ( ; i < GL_max_lights; i++) {
-		GL_state.Light(i, GL_FALSE);
-		opengl_set_light(i, &zero);
-	}
-
-	glPopMatrix();
 }
 
 int gr_opengl_make_light(light *fs_light, int idx, int priority)
@@ -459,7 +413,10 @@ void gr_opengl_reset_lighting()
 //	memset( opengl_lights, 0, sizeof(opengl_light) * MAX_LIGHTS );
 
 	for (i = 0; i < GL_max_lights; i++) {
-		GL_state.Light(i, GL_FALSE);
+		if ( is_minimum_GLSL_version() ) {
+			GL_state.Light(i, GL_FALSE);
+		}
+
 		opengl_lights[i].occupied = false;
 	}
 
@@ -469,18 +426,12 @@ void gr_opengl_reset_lighting()
 
 void opengl_calculate_ambient_factor()
 {
-	float amb_user = 0.0f;
-
-	// assuming that the default is "128", just skip this if not a user setting
-	if (Cmdline_ambient_factor == 128)
-		return;
-
-	amb_user = (float)((Cmdline_ambient_factor * 2) - 255) / 255.0f;
+	float amb_user = i2fl(Cmdline_ambient_factor) / 128.0f;
 
 	// set the ambient light
-	GL_light_ambient[0] += amb_user;
-	GL_light_ambient[1] += amb_user;
-	GL_light_ambient[2] += amb_user;
+	GL_light_ambient[0] *= amb_user;
+	GL_light_ambient[1] *= amb_user;
+	GL_light_ambient[2] *= amb_user;
 
 	CLAMP( GL_light_ambient[0], 0.02f, 1.0f );
 	CLAMP( GL_light_ambient[1], 0.02f, 1.0f );
@@ -495,24 +446,45 @@ void opengl_light_shutdown()
 		vm_free(opengl_lights);
 		opengl_lights = NULL;
 	}
+
+	if ( opengl_light_uniforms.Position != NULL ) {
+		vm_free(opengl_light_uniforms.Position);
+		opengl_light_uniforms.Position = NULL;
+	}
+
+	if ( opengl_light_uniforms.Diffuse_color != NULL ) {
+		vm_free(opengl_light_uniforms.Diffuse_color);
+		opengl_light_uniforms.Diffuse_color = NULL;
+	}
+
+	if ( opengl_light_uniforms.Spec_color != NULL ) {
+		vm_free(opengl_light_uniforms.Spec_color);
+		opengl_light_uniforms.Spec_color = NULL;
+	}
+
+	if ( opengl_light_uniforms.Direction != NULL ) {
+		vm_free(opengl_light_uniforms.Direction);
+		opengl_light_uniforms.Direction = NULL;
+	}
+
+	if ( opengl_light_uniforms.Light_type != NULL ) {
+		vm_free(opengl_light_uniforms.Light_type);
+		opengl_light_uniforms.Light_type = NULL;
+	}
+
+	if ( opengl_light_uniforms.Attenuation != NULL ) {
+		vm_free(opengl_light_uniforms.Attenuation);
+		opengl_light_uniforms.Attenuation = NULL;
+	}
 }
 
 void opengl_light_init()
 {
 	opengl_calculate_ambient_factor();
 
-	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 0);
-
-	glMaterialf(GL_FRONT, GL_SHININESS, Cmdline_ogl_spec /*80.0f*/ );
-
-	// more realistic lighting model
-	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
-
-	glGetIntegerv(GL_MAX_LIGHTS, &GL_max_lights); // Get the max number of lights supported
-
+	GL_max_lights = 8;
+	
 	// allocate memory for enabled lights
-	Verify(GL_max_lights > 0);
-
 	if ( opengl_lights == NULL )
 		opengl_lights = (opengl_light *) vm_malloc(MAX_LIGHTS * sizeof(opengl_light), memory::quiet_alloc);
 
@@ -520,78 +492,107 @@ void opengl_light_init()
 		Error( LOCATION, "Unable to allocate memory for lights!\n");
 
 	memset( opengl_lights, 0, MAX_LIGHTS * sizeof(opengl_light) );
+
+	opengl_light_uniforms.Position = (vec4 *)vm_malloc(GL_max_lights * sizeof(vec4));
+	opengl_light_uniforms.Diffuse_color = (vec3d *)vm_malloc(GL_max_lights * sizeof(vec3d));
+	opengl_light_uniforms.Spec_color = (vec3d *)vm_malloc(GL_max_lights * sizeof(vec3d));
+	opengl_light_uniforms.Direction = (vec3d *)vm_malloc(GL_max_lights * sizeof(vec3d));
+	opengl_light_uniforms.Light_type = (int *)vm_malloc(GL_max_lights * sizeof(int));
+	opengl_light_uniforms.Attenuation = (float *)vm_malloc(GL_max_lights * sizeof(float));
 }
 
-extern int Cmdline_no_emissive;
 bool ambient_state = false;
 bool emission_state = false;
 bool specular_state = false;
 void opengl_default_light_settings(int ambient, int emission, int specular)
 {
-	if (!lighting_is_enabled)
-		return;
 
-	if (ambient) {
-		if (!ambient_state) {
-			glMaterialfv( GL_FRONT, GL_DIFFUSE, GL_light_color );
-			glMaterialfv( GL_FRONT, GL_AMBIENT, GL_light_ambient );
-			ambient_state = true;
-		}
-	} else {
-		if (ambient_state) {
-			if (GL_center_alpha) {
-				glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_true_zero );
-			} else {
-				glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
-			}
-			ambient_state = false;
-		}
-	}
-
-	if (emission && !Cmdline_no_emissive) {
-		// emissive light is just a general glow but without it things are *terribly* dark if there is no light on them
-		if (!emission_state) {
-			glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_emission );
-			emission_state = true;
-		}
-	} else {
-		if (emission_state) {
-			glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_zero );
-			emission_state = false;
-		}
-	}
-
-	if (specular) {
-		if (!specular_state) {
-			glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_spec );
-			specular_state = true;
-		}
-	} else {
-		if (specular_state) {
-			glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_zero );
-			specular_state = false;
-		}
-	}
 }
 
-void gr_opengl_set_lighting(bool set, bool state)
+void opengl_set_lighting_fixed_pipeline(bool set, bool state)
 {
 	lighting_is_enabled = set;
 
 	opengl_default_light_settings();
 
-	if ( (gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) && !set ) {
-		float amb[4] = { gr_screen.current_alpha, gr_screen.current_alpha, gr_screen.current_alpha, gr_screen.current_alpha };
-		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, amb );
-	} else {
-		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, GL_light_ambient );
+	GL_state.Lighting((state) ? GL_TRUE : GL_FALSE);
+
+	if ( !state ) {
+		for ( int i = 0; i < GL_max_lights; i++ ) {
+			GL_state.Light(i, GL_FALSE);
+		}
+
+		return;
 	}
 
-	for (int i = 0; i < GL_max_lights; i++) {
+	//Valathil: Sort lights by priority
+	extern bool Deferred_lighting;
+	if ( !Deferred_lighting )
+		opengl_pre_render_init_lights();
+
+	int i = 0;
+
+	for ( i = 0; i < GL_max_lights; i++ ) {
+		if ( i >= Num_active_gl_lights ) {
+			break;
+		}
+
+		if ( opengl_lights[i].occupied ) {
+			opengl_set_light(i, &opengl_lights[i]);
+
+			GL_state.Light(i, GL_TRUE);
+		}
+	}
+
+	opengl_light zero;
+	memset(&zero, 0, sizeof(opengl_light));
+	zero.Position[0] = 1.0f;
+
+	// make sure that we turn off any lights that we aren't using right now
+	for ( ; i < GL_max_lights; i++ ) {
 		GL_state.Light(i, GL_FALSE);
+		opengl_set_light(i, &zero);
+	}
+}
+
+void gr_opengl_set_lighting(bool set, bool state)
+{
+	if ( !is_minimum_GLSL_version() ) {
+		opengl_set_lighting_fixed_pipeline(set, state);
+		return;
 	}
 
-	GL_state.Lighting( (state) ? GL_TRUE : GL_FALSE );
+	lighting_is_enabled = set;
+
+	if ( !state ) {
+		return;
+	}
+
+	//Valathil: Sort lights by priority
+	extern bool Deferred_lighting;
+	if ( !Deferred_lighting )
+		opengl_pre_render_init_lights();
+	
+	int i = 0;
+
+	for ( i = 0; i < GL_max_lights; i++ ) {
+		if ( i >= Num_active_gl_lights ) {
+			break;
+		}
+
+		if ( opengl_lights[i].occupied ) {
+			opengl_set_light(i, &opengl_lights[i]);
+		}
+	}
+
+	opengl_light zero;
+	memset(&zero, 0, sizeof(opengl_light));
+	zero.Position[0] = 1.0f;
+
+	// make sure that we turn off any lights that we aren't using right now
+	for ( ; i < GL_max_lights; i++ ) {
+		opengl_set_light(i, &zero);
+	}
 }
 
 void gr_opengl_set_ambient_light(int red, int green, int blue)

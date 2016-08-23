@@ -46,11 +46,11 @@
 
 #include <glad/glad.h>
 
-// minimum GL version we can reliably support is 2.0
-static const int MIN_REQUIRED_GL_VERSION = 20;
+// minimum GL version we can reliably support is 3.2
+static const int MIN_REQUIRED_GL_VERSION = 32;
 
 // minimum GLSL version we can reliably support is 110
-static const int MIN_REQUIRED_GLSL_VERSION = 110;
+static const int MIN_REQUIRED_GLSL_VERSION = 150;
 
 int GL_version = 0;
 int GLSL_version = 0;
@@ -65,7 +65,6 @@ int OGL_fogmode = 0;
 
 static ushort *GL_original_gamma_ramp = NULL;
 
-int Use_VBOs = 0;
 int Use_PBOs = 0;
 
 float GL_line_width = 1.0f;
@@ -73,6 +72,8 @@ float GL_line_width = 1.0f;
 static ubyte *GL_saved_screen = NULL;
 static int GL_saved_screen_id = -1;
 static GLuint GL_screen_pbo = 0;
+
+float GL_alpha_threshold = 0.0f;
 
 extern const char *Osreg_title;
 
@@ -89,6 +90,8 @@ static int GL_windowed = 0;
 static int GL_minimized = 0;
 
 static GLenum GL_read_format = GL_BGRA;
+
+GLuint GL_vao = 0;
 
 static std::unique_ptr<os::OpenGLContext> GL_context = nullptr;
 
@@ -168,6 +171,7 @@ void gr_opengl_flip()
 	os::getMainViewport()->swapBuffers();
 
 	opengl_tcache_frame();
+	opengl_reset_immediate_buffer();
 
 #ifndef NDEBUG
 	int ic = opengl_check_for_errors();
@@ -323,14 +327,14 @@ void gr_opengl_print_screen(const char *filename)
 			return;
 		}
 
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, pbo);
-		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+		glBufferData(GL_PIXEL_PACK_BUFFER, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
 
 		glReadBuffer(GL_FRONT);
 		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 		// map the image data so that we can save it to file
-		pixels = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+		pixels = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 	} else {
 		pixels = (GLubyte*) vm_malloc(gr_screen.max_w * gr_screen.max_h * 4, memory::quiet_alloc);
 
@@ -374,9 +378,9 @@ void gr_opengl_print_screen(const char *filename)
 	}
 
 	if (pbo) {
-		glUnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 		pixels = NULL;
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 		glDeleteBuffers(1, &pbo);
 	}
 
@@ -401,6 +405,11 @@ void gr_opengl_shutdown(os::GraphicsOperations* graphicsOps)
 
 	GL_initted = false;
 
+	if ( GL_version >= 30 ) {
+		glDeleteVertexArrays(1, &GL_vao);
+		GL_vao = 0;
+	}
+	
 	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
 		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
 	}
@@ -456,36 +465,9 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 		return;
 	}
 
-  	if (OGL_fogmode == 3) {
-		glFogf(GL_FOG_DISTANCE_MODE_NV, GL_EYE_RADIAL_NV);
-		glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FRAGMENT_DEPTH_EXT);
-	} else {
-		glFogf(GL_FOG_COORDINATE_SOURCE_EXT, GL_FRAGMENT_DEPTH_EXT);
+	if ( is_minimum_GLSL_version() && Current_shader != NULL && Current_shader->shader == SDR_TYPE_MODEL ) {
+		return;
 	}
-
-	GL_state.Fog(GL_TRUE);
-	glFogf(GL_FOG_MODE, GL_LINEAR);
-	glFogf(GL_FOG_START, fog_near);
-	glFogf(GL_FOG_END, fog_far);
-
-	gr_screen.current_fog_mode = fog_mode;
-
-	if ( (gr_screen.current_fog_color.red != r) ||
-			(gr_screen.current_fog_color.green != g) ||
-			(gr_screen.current_fog_color.blue != b) )
-	{
-		GLfloat fc[4];
-
-		gr_init_color( &gr_screen.current_fog_color, r, g, b );
-
-		fc[0] = (float)r/255.0f;
-		fc[1] = (float)g/255.0f;
-		fc[2] = (float)b/255.0f;
-		fc[3] = 1.0f;
-
-		glFogfv(GL_FOG_COLOR, fc);
-	}
-
 }
 
 int gr_opengl_set_cull(int cull)
@@ -600,9 +582,15 @@ void gr_opengl_stencil_clear()
 
 int gr_opengl_alpha_mask_set(int mode, float alpha)
 {
-	int tmp = gr_alpha_test;
+	if ( mode ) {
+		GL_alpha_threshold = alpha;
+	} else {
+		GL_alpha_threshold = 0.0f;
+	}
 
-	gr_alpha_test = mode;
+	if ( is_minimum_GLSL_version() ) { // alpha masking is deprecated
+		return mode;
+	}
 
 	if ( mode ) {
 		GL_state.AlphaTest(GL_TRUE);
@@ -612,7 +600,7 @@ int gr_opengl_alpha_mask_set(int mode, float alpha)
 		GL_state.AlphaFunc(GL_ALWAYS, 1.0f);
 	}
 
-	return tmp;
+	return mode;
 }
 
 // I feel dirty...
@@ -758,12 +746,12 @@ int gr_opengl_save_screen()
 			return -1;
 		}
 
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_screen_pbo);
-		glBufferData(GL_PIXEL_PACK_BUFFER_ARB, gr_screen.max_w * gr_screen.max_h * 4, NULL, GL_STATIC_READ);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, GL_screen_pbo);
+		glBufferData(GL_PIXEL_PACK_BUFFER, gr_screen.max_w * gr_screen.max_h * 4, NULL, GL_STATIC_READ);
 
 		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
-		pixels = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY);
+		pixels = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 
 		width_times_pixel = (gr_screen.max_w * 4);
 
@@ -776,8 +764,8 @@ int gr_opengl_save_screen()
 			sptr += width_times_pixel;
 		}
 
-		glUnmapBuffer(GL_PIXEL_PACK_BUFFER_ARB);
-		glBindBuffer(GL_PIXEL_PACK_BUFFER_ARB, 0);
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
 		glDeleteBuffers(1, &GL_screen_pbo);
 		GL_screen_pbo = 0;
@@ -889,60 +877,25 @@ void gr_opengl_zbias(int bias)
 
 void gr_opengl_push_texture_matrix(int unit)
 {
-	GLint current_matrix;
 
-	if (unit > GL_supported_texture_units)
-		return;
-
-	glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
-	glActiveTexture(GL_TEXTURE0+unit);
-
-	glMatrixMode(GL_TEXTURE);
-	glPushMatrix();
-
-	glMatrixMode(current_matrix);
 }
 
 void gr_opengl_pop_texture_matrix(int unit)
 {
-	GLint current_matrix;
 
-	if (unit > GL_supported_texture_units)
-		return;
-
-	glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
-	glActiveTexture(GL_TEXTURE0+unit);
-
-	glMatrixMode(GL_TEXTURE);
-	glPopMatrix();
-
-	glMatrixMode(current_matrix);
 }
 
 void gr_opengl_translate_texture_matrix(int unit, const vec3d *shift)
 {
-	GLint current_matrix;
 
-	if (unit > GL_supported_texture_units) {
-		/*tex_shift=*shift;*/
-		return;
-	}
-
-	glGetIntegerv(GL_MATRIX_MODE, &current_matrix);
-	glActiveTexture(GL_TEXTURE0+unit);
-
-	glMatrixMode(GL_TEXTURE);
-	glTranslated(shift->xyz.x, shift->xyz.y, shift->xyz.z);
-
-	glMatrixMode(current_matrix);
-
-//	tex_shift=vmd_zero_vector;
 }
 
 void gr_opengl_set_line_width(float width)
 {
+	if (width <= 1.0f) {
+		GL_state.SetLineWidth(width);
+	}
 	GL_line_width = width;
-	glLineWidth(width);
 }
 
 // Returns the human readable error string if there is an error or NULL if not
@@ -994,22 +947,28 @@ void opengl_set_vsync(int status)
 	GL_CHECK_FOR_ERRORS("end of set_vsync()");
 }
 
+void opengl_setup_viewport_fixed_pipeline()
+{
+
+}
+
 void opengl_setup_viewport()
 {
+	if ( !is_minimum_GLSL_version() ) {
+		opengl_setup_viewport_fixed_pipeline();
+		return;
+	}
+
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
+	GL_last_projection_matrix = GL_projection_matrix;
 
 	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
 	if (GL_rendering_to_texture) {
-		glOrtho(0, gr_screen.max_w, 0, gr_screen.max_h, -1.0, 1.0);
+		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, gr_screen.max_w, 0, gr_screen.max_h, -1.0, 1.0);
 	} else {
-		glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
+		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
 	}
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 }
 
 int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
@@ -1132,14 +1091,15 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
 
 	attrs.enable_opengl = true;
-	attrs.gl_attributes.major_version = 2;
-	attrs.gl_attributes.minor_version = 0;
+
+	attrs.gl_attributes.major_version = MIN_REQUIRED_GL_VERSION / 10;
+	attrs.gl_attributes.minor_version = MIN_REQUIRED_GL_VERSION % 10;
 
 #ifndef NDEBUG
 	attrs.gl_attributes.flags.set(os::OpenGLContextFlags::Debug);
 #endif
 
-	attrs.gl_attributes.profile = os::OpenGLProfile::Compatibility;
+	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
 
 	attrs.display = os_config_read_uint("Video", "Display", 0);
 	attrs.width = (uint32_t) gr_screen.max_w;
@@ -1157,7 +1117,23 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 	if (!viewport) {
 		return 1;
 	}
-	GL_context = graphicsOps->createOpenGLContext(viewport.get(), attrs.gl_attributes);
+
+	const int gl_versions[] = { 41, 40, 33, 32, 31, 30, 21, 20 };
+
+	// find the latest and greatest OpenGL context
+	for (auto ver : gl_versions)
+	{
+		auto gl_attrs = attrs.gl_attributes;
+		gl_attrs.major_version = ver / 10;
+		gl_attrs.minor_version = ver % 10;
+
+		GL_context = graphicsOps->createOpenGLContext(viewport.get(), gl_attrs);
+
+		if (GL_context != nullptr)
+		{
+			break;
+		}
+	}
 
 	if (GL_context == nullptr) {
 		return 1;
@@ -1261,18 +1237,20 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_fill_mode			= gr_opengl_set_fill_mode;
 	gr_screen.gf_set_texture_panning	= gr_opengl_set_texture_panning;
 
+	gr_screen.gf_create_vertex_buffer	= gr_opengl_create_vertex_buffer;
+	gr_screen.gf_create_index_buffer	= gr_opengl_create_index_buffer;
+	gr_screen.gf_delete_buffer		= gr_opengl_delete_buffer;
 	gr_screen.gf_create_buffer		= gr_opengl_create_buffer;
 	gr_screen.gf_config_buffer		= gr_opengl_config_buffer;
 	gr_screen.gf_pack_buffer		= gr_opengl_pack_buffer;
 	gr_screen.gf_destroy_buffer		= gr_opengl_destroy_buffer;
 	gr_screen.gf_render_buffer		= gr_opengl_render_buffer;
 	gr_screen.gf_set_buffer			= gr_opengl_set_buffer;
-	gr_screen.gf_update_buffer_object		= gr_opengl_update_buffer_object;
+	gr_screen.gf_update_buffer_data		= gr_opengl_update_buffer_data;
 
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
 	gr_screen.gf_set_transform_buffer_offset	= gr_opengl_set_transform_buffer_offset;
 
-	gr_screen.gf_create_stream_buffer		= gr_opengl_create_stream_buffer_object;
 	gr_screen.gf_render_stream_buffer		= gr_opengl_render_stream_buffer;
 
 	gr_screen.gf_start_instance_matrix			= gr_opengl_start_instance_matrix;
@@ -1323,7 +1301,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_line_width		= gr_opengl_set_line_width;
 
 	gr_screen.gf_line_htl			= gr_opengl_line_htl;
-	gr_screen.gf_sphere_htl			= gr_opengl_sphere_htl;
+	gr_screen.gf_sphere				= gr_opengl_sphere;
 
 	gr_screen.gf_set_animated_effect = gr_opengl_shader_set_animated_effect;
 
@@ -1337,6 +1315,20 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_clear_states	= gr_opengl_clear_states;
 
 	gr_screen.gf_set_team_color		= gr_opengl_set_team_color;
+
+	gr_screen.gf_render_model = gr_opengl_render_model;
+	gr_screen.gf_render_primitives= gr_opengl_render_primitives;
+	gr_screen.gf_render_primitives_immediate = gr_opengl_render_primitives_immediate;
+	gr_screen.gf_render_primitives_2d = gr_opengl_render_primitives_2d;
+	gr_screen.gf_render_primitives_2d_immediate = gr_opengl_render_primitives_2d_immediate;
+	gr_screen.gf_render_primitives_particle	= gr_opengl_render_primitives_particle;
+	gr_screen.gf_render_primitives_distortion = gr_opengl_render_primitives_distortion;
+
+	gr_screen.gf_is_capable = gr_opengl_is_capable;
+
+	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
+	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
+	// *****************************************************************************
 }
 
 #ifndef NDEBUG
@@ -1411,6 +1403,8 @@ static void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severit
 
 	nprintf(("OpenGL Debug", "OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
 		sourceStr, typeStr, id, severityStr, message));
+	printf("OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
+		   sourceStr, typeStr, id, severityStr, message);
 }
 
 static bool hasPendingDebugMessage() {
@@ -1455,48 +1449,22 @@ static void init_extensions() {
 	Texture_compression_available = true;
 	// Swifty put this in, but it's not doing anything. Once he uses it, he can uncomment it.
 	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
-
-	//allow VBOs to be used
-	if ( !Cmdline_novbo ) {
-		Use_VBOs = 1;
-	}
-
-	if ( !Cmdline_no_pbo && GLAD_GL_ARB_pixel_buffer_object ) {
+	
+	if ( !Cmdline_no_pbo ) {
 		Use_PBOs = 1;
 	}
+	
+	int ver = 0, major = 0, minor = 0;
+	const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-	// setup the best fog function found
-	if ( !Fred_running ) {
-		if ( GLAD_GL_EXT_fog_coord ) {
-			OGL_fogmode = 2;
-		} else {
-			OGL_fogmode = 1;
-		}
-	}
+	sscanf(glsl_ver, "%d.%d", &major, &minor);
+	ver = (major * 100) + minor;
 
-	// if we can't do cubemaps then turn off Cmdline_env
-	if ( !GLAD_GL_ARB_texture_cube_map ) {
-		Cmdline_env = 0;
-	}
+	GLSL_version = ver;
 
-	if ( !(GLAD_GL_ARB_geometry_shader4 && GLAD_GL_EXT_texture_array && GLAD_GL_ARB_draw_elements_base_vertex) ) {
-		Cmdline_shadow_quality = 0;
-		mprintf(("  No hardware support for shadow mapping. Shadows will be disabled. \n"));
-	}
-
-	if ( !Cmdline_noglsl ) {
-		int ver = 0, major = 0, minor = 0;
-		const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-
-		sscanf(glsl_ver, "%d.%d", &major, &minor);
-		ver = (major * 100) + minor;
-
-		GLSL_version = ver;
-
-		// we require a minimum GLSL version
-		if (!is_minimum_GLSL_version()) {
-			mprintf(("  OpenGL Shading Language version %s is not sufficient to use GLSL mode in FSO. Defaulting to fixed-function renderer.\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
-		}
+	// we require a minimum GLSL version
+	if (!is_minimum_GLSL_version()) {
+		Error(LOCATION,  "Current GL Shading Langauge Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
 	}
 
 	// can't have this stuff without GLSL support
@@ -1508,7 +1476,7 @@ static void init_extensions() {
 		Cmdline_no_deferred_lighting = 1;
 	}
 
-	if ( GLSL_version < 120 || !GLAD_GL_EXT_framebuffer_object || !GLAD_GL_ARB_texture_float ) {
+	if ( GLSL_version < 120 ) {
 		mprintf(("  No hardware support for deferred lighting. Deferred lighting will be disabled. \n"));
 		Cmdline_no_deferred_lighting = 1;
 		Cmdline_no_batching = true;
@@ -1614,11 +1582,14 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	GLint max_texture_units = GL_supported_texture_units;
 	GLint max_texture_coords = GL_supported_texture_units;
 
-	if (is_minimum_GLSL_version()) {
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
-	}
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
+	max_texture_coords = 1;
 
-	glGetIntegerv(GL_MAX_TEXTURE_COORDS, &max_texture_coords);
+	// create vertex array object to make OpenGL Core happy if we can
+	if ( GL_version >= 30 ) {
+		glGenVertexArrays(1, &GL_vao);
+		glBindVertexArray(GL_vao);
+	}
 
 	GL_state.Texture.init(max_texture_units);
 	GL_state.Array.init(max_texture_coords);
@@ -1644,18 +1615,13 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	opengl_set_vsync( !Cmdline_no_vsync );
 
 	opengl_setup_viewport();
+	vm_matrix4_set_identity(&GL_view_matrix);
+	vm_matrix4_set_identity(&GL_model_view_matrix);
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_STENCIL_BUFFER_BIT);
 
-	glShadeModel(GL_SMOOTH);
-
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	glHint(GL_FOG_HINT, GL_NICEST);
-
-	if ( GLAD_GL_ARB_seamless_cube_map ) {
-		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-	}
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 	glDepthRange(0.0, 1.0);
 
@@ -1685,11 +1651,9 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	mprintf(( "  Max elements indices: %i\n", GL_max_elements_indices ));
 	mprintf(( "  Max texture size: %ix%i\n", GL_max_texture_width, GL_max_texture_height ));
 
-	if ( GLAD_GL_EXT_framebuffer_object ) {
-		mprintf(( "  Max render buffer size: %ix%i\n",
-			  GL_max_renderbuffer_size,
-			  GL_max_renderbuffer_size ));
-	}
+	mprintf(( "  Max render buffer size: %ix%i\n",
+		  GL_max_renderbuffer_size,
+		  GL_max_renderbuffer_size ));
 
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
@@ -1709,6 +1673,65 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 		GL_read_format = GL_RGBA;
 
 	return true;
+}
+
+bool gr_opengl_is_capable(gr_capability capability)
+{
+	if ( !is_minimum_GLSL_version() ) {
+		return false;
+	}
+
+	if ( GL_version < 20 ) {
+		return false;
+	}
+
+	switch ( capability ) {
+	case CAPABILITY_ENVIRONMENT_MAP:
+		return true;
+	case CAPABILITY_NORMAL_MAP:
+		return Cmdline_normal ? true : false;
+	case CAPABILITY_HEIGHT_MAP:
+		return Cmdline_height ? true : false;
+	case CAPABILITY_SOFT_PARTICLES:
+	case CAPABILITY_DISTORTION:
+		return Cmdline_softparticles && (GLSL_version >= 120) && !Cmdline_no_fbo;
+	case CAPABILITY_POST_PROCESSING:
+		return Cmdline_postprocess && (GLSL_version >= 120) && !Cmdline_no_fbo;
+	case CAPABILITY_DEFERRED_LIGHTING:
+		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting && (GLSL_version >= 120);
+	case CAPABILITY_SHADOWS:
+		return GL_version >= 32;
+	case CAPABILITY_BATCHED_SUBMODELS:
+		return (GLSL_version >= 150);
+	case CAPABILITY_POINT_PARTICLES:
+		return GL_version >= 32 && !Cmdline_no_geo_sdr_effects;
+	}
+
+	return false;
+}
+
+uint opengl_data_type_size(GLenum data_type)
+{
+	switch ( data_type ) {
+	case GL_BYTE:
+		return sizeof(GLbyte);
+	case GL_UNSIGNED_BYTE:
+		return sizeof(GLubyte);
+	case GL_SHORT:
+		return sizeof(GLshort);
+	case GL_UNSIGNED_SHORT:
+		return sizeof(GLushort);
+	case GL_INT:
+		return sizeof(GLint);
+	case GL_UNSIGNED_INT:
+		return sizeof(GLuint);
+	case GL_FLOAT:
+		return sizeof(GLfloat);
+	case GL_DOUBLE:
+		return sizeof(GLdouble);
+	}
+
+	return 0;
 }
 
 DCF(ogl_minimize, "Minimizes opengl")
