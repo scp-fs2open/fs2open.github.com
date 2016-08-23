@@ -637,7 +637,13 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
         }
 
         //Do cleanup and sanity checks
-        if (set_nopierce)
+
+		//Beams pierce shields by default
+		if (weaponp->wi_flags[Weapon::Info_Flags::Beam])
+			weaponp->wi_flags.set(Weapon::Info_Flags::Pierce_shields);
+        
+		//...except when they don't
+		if (set_nopierce)
             weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
 
         if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
