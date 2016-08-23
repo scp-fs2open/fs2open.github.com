@@ -569,7 +569,6 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
         weaponp->wi_flags = wi_flags;
     }
 
-    bool set_pierce = false;
     bool set_nopierce = false;
 
     if (unparsed_or_special.size() > 0) {
@@ -614,9 +613,6 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
                 else {
                     Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
                 }
-            }
-            else if (!stricmp(NOX("pierce shields"), flag_text.c_str())) {
-                set_pierce = true;
             }
             else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
                 set_nopierce = true;

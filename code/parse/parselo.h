@@ -160,7 +160,8 @@ int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n
         for (size_t j = 0; j < n_defs; j++)
         {
             if (!stricmp(slp[i], defs[j].name)) {
-                dest.set(defs[j].def);
+				if (defs[j].def != T::NUM_VALUES) //Needed due to a few special cases amongst the weapon info flagset
+	                dest.set(defs[j].def);
 
                 if (!defs[j].is_special)
                     string_parsed = true;
