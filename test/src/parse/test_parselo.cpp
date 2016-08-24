@@ -17,6 +17,10 @@ TEST(ParseloTest, drop_trailing_whitespace_cstr) {
 	strcpy_s(test_str, "       ");
 	drop_trailing_white_space(test_str);
 	ASSERT_STREQ(test_str, "");
+
+	strcpy_s(test_str, "");
+	drop_trailing_white_space(test_str);
+	ASSERT_STREQ(test_str, "");
 }
 
 TEST(ParseloTest, drop_trailing_whitespace) {
@@ -31,6 +35,10 @@ TEST(ParseloTest, drop_trailing_whitespace) {
 	ASSERT_EQ(test_str, "Test string");
 
 	test_str = "       ";
+	drop_trailing_white_space(test_str);
+	ASSERT_EQ(test_str, "");
+
+	test_str = "";
 	drop_trailing_white_space(test_str);
 	ASSERT_EQ(test_str, "");
 }
@@ -49,6 +57,10 @@ TEST(ParseloTest, drop_leading_whitespace_cstr) {
 	strcpy_s(test_str, "       ");
 	drop_leading_white_space(test_str);
 	ASSERT_STREQ(test_str, "");
+
+	strcpy_s(test_str, "");
+	drop_leading_white_space(test_str);
+	ASSERT_STREQ(test_str, "");
 }
 
 TEST(ParseloTest, drop_leading_whitespace) {
@@ -63,6 +75,10 @@ TEST(ParseloTest, drop_leading_whitespace) {
 	ASSERT_EQ(test_str, "Test string");
 
 	test_str = "       ";
+	drop_leading_white_space(test_str);
+	ASSERT_EQ(test_str, "");
+
+	test_str = "";
 	drop_leading_white_space(test_str);
 	ASSERT_EQ(test_str, "");
 }
@@ -89,6 +105,10 @@ TEST(ParseloTest, drop_whitespace_cstr) {
 	strcpy_s(test_str, "       ");
 	drop_white_space(test_str);
 	ASSERT_STREQ(test_str, "");
+
+	strcpy_s(test_str, "");
+	drop_white_space(test_str);
+	ASSERT_STREQ(test_str, "");
 }
 
 TEST(ParseloTest, drop_whitespace) {
@@ -111,6 +131,10 @@ TEST(ParseloTest, drop_whitespace) {
 	ASSERT_EQ(test_str, "Test string");
 
 	test_str = "       ";
+	drop_white_space(test_str);
+	ASSERT_EQ(test_str, "");
+
+	test_str = "";
 	drop_white_space(test_str);
 	ASSERT_EQ(test_str, "");
 }
