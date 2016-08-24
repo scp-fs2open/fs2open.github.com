@@ -22,7 +22,7 @@ void png_scp_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
 	/* fread() returns 0 on error, so it is OK to store this in a png_size_t
 	* instead of an int, which is what fread() actually returns.
 	*/
-	check = (png_size_t)cfread(data, (png_size_t)1, length, png_file);
+	check = (png_size_t)cfread(data, (png_size_t)1, (int)length, png_file);
 	if (check != length)
 		png_error(png_ptr, "Read Error");
 }
@@ -140,7 +140,7 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	png_infop info_ptr;
 	png_structp png_ptr;
 	png_bytepp row_pointers;
-	unsigned int i, len;
+	unsigned int i;
 
 	png_file = NULL;
 
@@ -192,7 +192,7 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	png_set_read_fn(png_ptr, &png_file, png_scp_read_data);
 
 	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_EXPAND | PNG_TRANSFORM_STRIP_16, NULL);
-	len = png_get_rowbytes(png_ptr, info_ptr);
+	auto len = png_get_rowbytes(png_ptr, info_ptr);
 
 	row_pointers = png_get_rows(png_ptr, info_ptr);
 
@@ -485,7 +485,7 @@ void apng_ani::_process_chunk()
 
 		if (_reading) {
 			anim_time+= frame_delay;
-			_frame_offsets.push_back(_offset);
+			_frame_offsets.push_back((int)_offset);
 		}
 		else {
 			if (_got_IDAT && _processing_start()) {

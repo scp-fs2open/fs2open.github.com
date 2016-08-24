@@ -55,11 +55,11 @@ void pilotfile::endSection()
 
 	if (section_size) {
 		// go back to section size in file and write proper value
-		cfseek(cfp, cur - section_size - sizeof(int), CF_SEEK_SET);
+		cfseek(cfp, (int)(cur - section_size - sizeof(int)), CF_SEEK_SET);
 		cfwrite_int((int)section_size, cfp);
 
 		// go back to previous location for next section
-		cfseek(cfp, cur, CF_SEEK_SET);
+		cfseek(cfp, (int)cur, CF_SEEK_SET);
 	}
 }
 

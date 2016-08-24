@@ -88,7 +88,7 @@ SCP_string getJoystickGUID(SDL_Joystick *stick)
 
 bool isCurrentJoystick(Joystick* testStick) {
 	auto currentGUID = os_config_read_string(nullptr, "CurrentJoystickGUID", nullptr);
-	auto currentId = os_config_read_uint(nullptr, "CurrentJoystick", 0);
+	auto currentId = (int)os_config_read_uint(nullptr, "CurrentJoystick", 0);
 
 	if ((currentGUID == nullptr) || !strcmp(currentGUID, "")) {
 		// Only use the id

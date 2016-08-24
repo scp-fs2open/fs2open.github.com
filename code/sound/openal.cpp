@@ -134,7 +134,7 @@ static void find_playback_device()
 		}
 
 		const char *str_list = all_devices;
-		int ext_length = 0;
+		size_t ext_length = 0;
 
 		if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
 			while (ext_length) {
@@ -259,7 +259,7 @@ static void find_capture_device()
 		const char *all_devices = (const char*) alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
 
 		const char *str_list = all_devices;
-		int ext_length = 0;
+		size_t ext_length = 0;
 
 		if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
 			while (ext_length) {

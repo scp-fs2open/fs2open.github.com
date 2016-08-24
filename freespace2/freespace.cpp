@@ -1219,10 +1219,10 @@ void game_loading_callback(int count)
 				short_name++;
 
 			sprintf(mem_buffer,"%s:\t" SIZE_T_ARG " K", short_name, size);
-			gr_string( 20, 220 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
+			gr_string( 20, 220 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
 		}
 		sprintf(mem_buffer,"Total RAM:\t" SIZE_T_ARG " K", memory::get_used_memory() / 1024);
-		gr_string( 20, 230 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
+		gr_string( 20, 230 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
 	}
 #endif	// !NDEBUG
 
@@ -2344,10 +2344,10 @@ void game_show_framerate()
 				short_name++;
 
 			sprintf(mem_buffer,"%s:\t" SIZE_T_ARG " K", short_name, size);
-			gr_string( 20, 220 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
+			gr_string( 20, 220 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
 		}
 		sprintf(mem_buffer,"Total RAM:\t" SIZE_T_ARG " K", memory::get_used_memory() / 1024);
-		gr_string( 20, 230 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
+		gr_string( 20, 230 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
 	}
 
 	MONITOR_INC(NumPolys, modelstats_num_polys);
@@ -7436,7 +7436,7 @@ void Time_model( int modelnum )
 
 	polymodel *pm = model_get( modelnum );
 
-	int l = strlen(pm->filename);
+	size_t l = strlen(pm->filename);
 	while( (l>0) )	{
 		if ( (l == '/') || (l=='\\') || (l==':'))	{
 			l++;
@@ -7800,7 +7800,6 @@ int find_freespace_cd(char *volume_name)
 	int cdrom_drive=-1;
 	int volume_match = 0;
 	_finddata_t find;
-	int find_handle;
 
 	GetCurrentDirectory(MAX_PATH-1, oldpath);
 
@@ -7826,7 +7825,7 @@ int find_freespace_cd(char *volume_name)
 				// look for setup.exe
 				strcpy_s(full_check, path);
 				strcat_s(full_check, "setup.exe");				
-				find_handle = _findfirst(full_check, &find);
+				auto find_handle = _findfirst(full_check, &find);
 				if(find_handle != -1){
 					volume1_present = 1;				
 					_findclose(find_handle);				

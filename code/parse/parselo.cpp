@@ -1115,7 +1115,7 @@ int get_string(char *str, int max)
 {
 	auto len = strcspn(Mp + 1, "\"");
 
-	if (max >= 0 && len >= max)
+	if (max >= 0 && len >= (size_t)max)
 		error_display(0, "String too long.  Length = " SIZE_T_ARG ".  Max is %i.\n", len, max);
 
 	strncpy(str, Mp + 1, len);

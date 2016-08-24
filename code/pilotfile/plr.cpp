@@ -919,7 +919,7 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 		size_t offset_pos = (start_pos + section_size) - cftell(cfp);
 
 		if (offset_pos) {
-			cfseek(cfp, offset_pos, CF_SEEK_CUR);
+			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
 			mprintf(("PLR => WARNING: Advancing to the next section. " SIZE_T_ARG " bytes were skipped!\n", offset_pos));
 		}
 	}
@@ -1109,7 +1109,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 
 		if (offset_pos) {
 			mprintf(("PLR => Warning: (0x%04x) Short read, information may have been lost!\n", section_id));
-			cfseek(cfp, offset_pos, CF_SEEK_CUR);
+			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
 		}
 	}
 

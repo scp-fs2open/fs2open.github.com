@@ -1681,7 +1681,7 @@ static int get_split_ship()
 
 	Split_ships.push_back(addition);
 
-	return (Split_ships.size() - 1);
+	return (int)(Split_ships.size() - 1);
 }
 
 static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle);

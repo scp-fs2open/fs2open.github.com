@@ -2270,7 +2270,6 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	char buf[SHIP_MULTITEXT_LENGTH];
 	char* info_type_name;
 	char* type_name;
-	int i, j;
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
 
@@ -2584,7 +2583,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	if(optional_string("$Damage Lightning Type:"))
 	{
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-		j = lightningtype_match(buf);
+		auto j = lightningtype_match(buf);
 		if(j >= 0) {
 			sip->damage_lightning_type = j;
 		} else {
@@ -2905,7 +2904,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	if(optional_string("$Warpin type:"))
 	{
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-		j = warptype_match(buf);
+		auto j = warptype_match(buf);
 		if(j >= 0) {
 			sip->warpin_type = j;
 		} else {
@@ -2957,7 +2956,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	if(optional_string("$Warpout type:"))
 	{
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-		j = warptype_match(buf);
+		auto j = warptype_match(buf);
 		if(j >= 0) {
 			sip->warpout_type = j;
 		} else {
@@ -3213,7 +3212,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		sip->shield_point_augment_ctrls[LEFT_QUAD] = -1;
 		sip->shield_point_augment_ctrls[RIGHT_QUAD] = -1;
 
-		for (i = 0; i < num_strings; i++) {
+		for (auto i = 0; i < num_strings; i++) {
 			const char *str = ctrl_strings[i].c_str();
 
 			if (!stricmp(str, "front"))
@@ -3372,7 +3371,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 			sip->flags.set(Ship::Info_Flags::Draw_weapon_models, draw_weapon_models);
 		}
 
-		for (i = 0; i < num_strings; i++)
+		for (auto i = 0; i < num_strings; i++)
 		{
 			// get ship type from ship flags
 			char *ship_type = ship_strings[i];
@@ -3431,9 +3430,9 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	memset(sip->allowed_weapons, 0, sizeof(int) * MAX_WEAPON_TYPES);
 
 	// copy to regular allowed_weapons array
-	for (i = 0; i < MAX_SHIP_WEAPONS; i++)
+	for (auto i = 0; i < MAX_SHIP_WEAPONS; i++)
 	{
-		for (j = 0; j < Num_weapon_types; j++)
+		for (auto j = 0; j < Num_weapon_types; j++)
 		{
 			if (sip->allowed_bank_restricted_weapons[i][j] & REGULAR_WEAPON)
 				sip->allowed_weapons[j] |= REGULAR_WEAPON;
@@ -3974,12 +3973,12 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				continue;
 			}
 			SCP_string banktoken;
-			int start = -1;
-			int end = -1;
+			size_t start = 0;
+			size_t end;
 			do {
-				end = banks.find_first_of(',', ++start);
+				end = banks.find_first_of(',', start);
 				banktoken = banks.substr(start, end);
-				start = end;
+				start = end + 1;
 				
 				size_t fromtopos;
 				fromtopos = banktoken.find_first_of('-');
@@ -3997,7 +3996,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 					int bank = atoi(banktoken.data()) - 1;
 					sip->glowpoint_bank_override_map[bank] = (void*)(&(*gpo));
 				}
-			} while(start!=-1);
+			} while(end !=SCP_string::npos);
 		}
 	}
 
@@ -4050,14 +4049,15 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	if (optional_string("$Target Priority Groups:") ) {
 		SCP_vector<SCP_string> target_group_strings;
 		int num_strings = stuff_string_list(target_group_strings);
-		int num_groups = Ai_tp_list.size();
+		size_t num_groups = Ai_tp_list.size();
 		bool override_strings = false;
 
 		if (optional_string("+Override")) {
 			override_strings = true;
 		}
 
-		for(j = 0; j < num_strings; j++) {
+		for(auto j = 0; j < num_strings; j++) {
+			size_t i;
 			for(i = 0; i < num_groups; i++) {
 				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
 					//so now the string from the list above as well as the ai priority group name match
@@ -4069,7 +4069,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 					for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 						//find the index number of the current ship info type
 						if (it->name == sip->name) {
-							Ai_tp_list[i].ship_class.push_back(std::distance(Ship_info.cbegin(), it));
+							Ai_tp_list[i].ship_class.push_back((int)std::distance(Ship_info.cbegin(), it));
 							break;
 						}
 					}
@@ -4124,14 +4124,14 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	int n_subsystems = 0;
 	int cont_flag = 1;
 	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS];		// see model.h for max_model_subsystems
-	for (i=0; i<MAX_MODEL_SUBSYSTEMS; i++) {
+	for (auto i=0; i<MAX_MODEL_SUBSYSTEMS; i++) {
 		subsystems[i].stepped_rotation = NULL;
 	}
 	
 	float	hull_percentage_of_hits = 100.0f;
 	//If the ship already has subsystem entries (ie this is a modular table)
 	//make sure hull_percentage_of_hits is set properly
-	for(i=0; i < sip->n_subsystems; i++) {
+	for(auto i=0; i < sip->n_subsystems; i++) {
 		hull_percentage_of_hits -= sip->subsystems[i].max_subsys_strength / sip->max_hull_strength;
 	}
 
@@ -4152,7 +4152,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 			required_string("$Subsystem:");
 			stuff_string(name_tmp, F_NAME, sizeof(name_tmp), ",");
 			Mp++;
-			for(i = 0;i < sip->n_subsystems; i++)
+			for(auto i = 0;i < sip->n_subsystems; i++)
 			{
 				if(!subsystem_stricmp(sip->subsystems[i].subobj_name, name_tmp))
 					sp = &sip->subsystems[i];
@@ -4176,12 +4176,12 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
                 memset(sp->alt_sub_name, 0, sizeof(sp->alt_sub_name));
                 memset(sp->alt_dmg_sub_name, 0, sizeof(sp->alt_dmg_sub_name));
 
-				for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++) {
+				for (auto i=0; i<MAX_SHIP_PRIMARY_BANKS; i++) {
 					sp->primary_banks[i] = -1;
 					sp->primary_bank_capacity[i] = 0;
 				}
 
-				for (i=0; i<MAX_SHIP_SECONDARY_BANKS; i++) {
+				for (auto i=0; i<MAX_SHIP_SECONDARY_BANKS; i++) {
 					sp->secondary_banks[i] = -1;
 					sp->secondary_bank_capacity[i] = 0;
 				}
@@ -4209,7 +4209,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				sp->turret_reset_delay = 2000;
 
 				sp->num_target_priorities = 0;
-				for (i = 0; i < 32; i++) {
+				for (auto i = 0; i < 32; i++) {
 					sp->target_priority[i] = -1;
 				}
 				sp->optimum_range = 0.0f;
@@ -4343,9 +4343,10 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				if (num_strings > 32)
 					num_strings = 32;
 
-				int num_groups = Ai_tp_list.size();
+				int num_groups = (int)Ai_tp_list.size();
 
-				for(i = 0; i < num_strings; i++) {
+				for(auto i = 0; i < num_strings; i++) {
+					int j;
 					for(j = 0; j < num_groups; j++) {
 						if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
 							sp->target_priority[i] = j;
@@ -4658,7 +4659,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	    Assert(sip->subsystems != NULL);
     }
 		
-	for ( i = 0; i < n_subsystems; i++ ){
+	for ( int i = 0; i < n_subsystems; i++ ){
 		sip->subsystems[orig_n_subsystems+i] = subsystems[i];
 	}
 
@@ -4730,15 +4731,15 @@ void parse_ship_type()
 	if (optional_string("$Target Priority Groups:") ) {
 		SCP_vector <SCP_string> target_group_strings;
 		int num_strings = stuff_string_list(target_group_strings);
-		int num_groups = Ai_tp_list.size();
-		int i, j;
+		auto num_groups = Ai_tp_list.size();
 		bool override_strings = false;
 
 		if (optional_string("+Override")) {
 			override_strings = true;
 		}
 
-		for(j = 0; j < num_strings; j++) {
+		for(auto j = 0; j < num_strings; j++) {
+			size_t i;
 			for(i = 0; i < num_groups; i++) {
 				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
 					//so now the string from the list above as well as the ai priority group name match
@@ -4959,7 +4960,7 @@ int get_default_player_ship_index()
 		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) 
 		{
 			if (stricmp(default_player_ship, it->name) == 0)
-				return std::distance(Ship_info.cbegin(), it);
+				return (int)std::distance(Ship_info.cbegin(), it);
 		}
 		return 0;
 	} else
@@ -5089,7 +5090,7 @@ bool ballistic_possible_for_this_ship(const ship_info *sip)
  */
 void ship_parse_post_cleanup()
 {
-	int i, j;
+	int j;
 	char name_tmp[NAME_LENGTH];
 
 	for (auto sip = Ship_info.begin(); sip != Ship_info.end(); ++sip)
@@ -5185,10 +5186,10 @@ void ship_parse_post_cleanup()
 	}
 
 	// check also target groups here
-	int n_tgt_groups = Ai_tp_list.size();
+	size_t n_tgt_groups = Ai_tp_list.size();
 
 	if (n_tgt_groups > 0) {
-		for(i = 0; i < n_tgt_groups; i++) {
+		for(size_t i = 0; i < n_tgt_groups; i++) {
 			if (!(Ai_tp_list[i].obj_flags.any_set() || Ai_tp_list[i].sif_flags.any_set() || Ai_tp_list[i].wif_flags.any_set())) {
 				//had none of these, check next
 				if (Ai_tp_list[i].obj_type == -1) {
@@ -6077,7 +6078,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	}
 
 	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
-		objp->n_quadrants = pm->shield_points.size();
+		objp->n_quadrants = (int)pm->shield_points.size();
 		shipp->shield_points = pm->shield_points;
 		objp->shield_quadrant.resize(objp->n_quadrants);
 	}
@@ -6683,7 +6684,7 @@ int subsys_set(int objnum, int ignore_subsys_info)
 
 		// Allocate a triggered rotation instance if we need it
 		if (model_system->flags[Model::Subsystem_Flags::Triggered]) {
-			ship_system->triggered_rotation_index = Triggered_rotations.size();
+			ship_system->triggered_rotation_index = (int)Triggered_rotations.size();
 			triggered_rotation tr;
 			Triggered_rotations.push_back(tr);
 		}
@@ -9366,7 +9367,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		sprintf(suffix, NOX(" %d"), n);
 
 		// ensure complete ship name doesn't overflow the buffer
-		int name_len = MIN(NAME_LENGTH - strlen(suffix) - 1, strlen(Ship_info[ship_type].name));
+		auto name_len = std::min(NAME_LENGTH - strlen(suffix) - 1, strlen(Ship_info[ship_type].name));
 		Assert(name_len > 0);
 
 		strncpy(shipp->ship_name, Ship_info[ship_type].name, name_len);
@@ -9527,7 +9528,7 @@ void ship_model_change(int n, int ship_type)
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
 	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
-		objp->n_quadrants = pm->shield_points.size();
+		objp->n_quadrants = (int)pm->shield_points.size();
 		sp->shield_points = pm->shield_points;
 	} else {
 		objp->n_quadrants = DEFAULT_SHIELD_SECTIONS;
@@ -11239,7 +11240,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_recoil]){
 					vec3d avg_firepoint;
 
-					vm_vec_avg_n(&avg_firepoint, current_firepoint, firepoint_list);
+					vm_vec_avg_n(&avg_firepoint, (int)current_firepoint, firepoint_list);
 
 					ship_apply_whack(&total_impulse, &avg_firepoint, obj);
 					delete[] firepoint_list;
@@ -12553,7 +12554,7 @@ int ship_info_lookup_sub(const char *token)
 {
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 		if (!stricmp(token, it->name))
-			return std::distance(Ship_info.cbegin(), it);
+			return (int)std::distance(Ship_info.cbegin(), it);
 
 	return -1;
 }
@@ -12565,7 +12566,7 @@ int ship_template_lookup(const char *token)
 {
 	for ( auto it = Ship_templates.cbegin(); it != Ship_templates.cend(); ++it ) {
 		if ( !stricmp(token, it->name) ) {
-			return std::distance(Ship_templates.cbegin(), it);
+			return (int)std::distance(Ship_templates.cbegin(), it);
 		}
 	}
 	return -1;
@@ -12731,10 +12732,10 @@ int ship_type_name_lookup(const char *name)
 	}
 
 	//Look through Ship_types array
-	uint max_size = Ship_types.size();
-	for(uint idx=0; idx < max_size; idx++){
+	size_t max_size = Ship_types.size();
+	for(size_t idx=0; idx < max_size; idx++){
 		if(!stricmp(name, Ship_types[idx].name)){
-			return idx;
+			return (int)idx;
 		}
 	}
 	// couldn't find it
@@ -15439,13 +15440,13 @@ void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 	int message = -1;
 	objp = &Objects[sp->objnum];
 
-	if ( objp->hull_strength < ( (AWACS_HELP_HULL_LOW + 0.01f *(static_rand(objp-Objects) & 5)) * sp->ship_max_hull_strength) ) {
+	if ( objp->hull_strength < ( (AWACS_HELP_HULL_LOW + 0.01f *(static_rand(OBJ_INDEX(objp)) & 5)) * sp->ship_max_hull_strength) ) {
 		// awacs ship below 25 + (0-4) %
 		if (!(sp->awacs_warning_flag[Ship::Awacs_Warning_Flags::Warn_25])) {
 			message = MESSAGE_AWACS_25;
             sp->awacs_warning_flag.set(Ship::Awacs_Warning_Flags::Warn_25);
 		}
-	} else if ( objp->hull_strength < ( (AWACS_HELP_HULL_HI + 0.01f*(static_rand(objp-Objects) & 5)) * sp->ship_max_hull_strength) ) {
+	} else if ( objp->hull_strength < ( (AWACS_HELP_HULL_HI + 0.01f*(static_rand(OBJ_INDEX(objp)) & 5)) * sp->ship_max_hull_strength) ) {
 		// awacs ship below 75 + (0-4) %
 		if (!(sp->awacs_warning_flag[Ship::Awacs_Warning_Flags::Warn_75])) {
 			message = MESSAGE_AWACS_75;
@@ -16122,7 +16123,7 @@ void ship_page_in()
 	for (auto sip = Ship_info.begin(); sip != Ship_info.end(); ++sip) {
 		if (sip->flags[Ship::Info_Flags::Support]) {
 			nprintf(( "Paging", "Found support ship '%s'\n", sip->name ));
-			i = std::distance(Ship_info.begin(), sip);
+			i = (int)std::distance(Ship_info.begin(), sip);
 			ship_class_used[i]++;
 
 			num_subsystems_needed += sip->n_subsystems;
@@ -16248,7 +16249,7 @@ void ship_page_in()
 				model_previously_loaded = it->model_num;
 
 				if ((sip->n_subsystems > 0) && (sip->subsystems[0].model_num > -1)) {
-					ship_previously_loaded = std::distance(Ship_info.begin(), it);
+					ship_previously_loaded = (int)std::distance(Ship_info.begin(), it);
 
 					// It is possible in some cases for sip->model_num to change, and for subsystems->model_num
 					// to still point to the old model index; this makes sure it doesn't happen. -zookeeper
@@ -16341,12 +16342,12 @@ void ship_page_in()
 		// Page in the shockwave stuff. -C
 		shockwave_create_info_load(&sip->shockwave);
 		if(sip->explosion_bitmap_anims.size() > 0) {
-			int num_fireballs = sip->explosion_bitmap_anims.size();
+			int num_fireballs = (int)sip->explosion_bitmap_anims.size();
 			for(j = 0; j < num_fireballs; j++){
 				fireball_used[sip->explosion_bitmap_anims[j]] = 1;
 			}
 		} else if(sip->class_type >= 0 && Ship_types[sip->class_type].explosion_bitmap_anims.size() > 0) { 
-			int num_fireballs = Ship_types[sip->class_type].explosion_bitmap_anims.size();
+			int num_fireballs = (int)Ship_types[sip->class_type].explosion_bitmap_anims.size();
 			for(j = 0; j < num_fireballs; j++){
 				fireball_used[Ship_types[sip->class_type].explosion_bitmap_anims[j]] = 1;
 			}
@@ -16897,7 +16898,7 @@ int ship_get_texture(int bitmap)
 	// check all ship types
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 		if ((it->model_num >= 0) && model_find_texture(it->model_num, bitmap) == 1) {
-			return std::distance(Ship_info.cbegin(), it);
+			return (int)std::distance(Ship_info.cbegin(), it);
 		}
 	}
 
@@ -17532,7 +17533,7 @@ int damage_type_add(char *name)
 	}
 
 	Damage_types.push_back(dts);
-	return Damage_types.size()-1;
+	return (int)(Damage_types.size() - 1);
 }
 
 void ArmorDamageType::clear()
@@ -17699,12 +17700,11 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 	}
 
 	//Initialize vars
-	uint i,num;
 	ArmorDamageType *adtp = NULL;
 
 	//Find the entry in the weapon that corresponds to the given weapon damage type
-	num = DamageTypes.size();
-	for(i = 0; i < num; i++)
+	size_t num = DamageTypes.size();
+	for(size_t i = 0; i < num; i++)
 	{
 		if(DamageTypes[i].DamageTypeIndex == in_damage_type_idx)
 		{
@@ -17734,7 +17734,7 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 		bool using_constant = false;
 
 		// set storage locations to zero
-		for (i = 0; i < AT_NUM_STORAGE_LOCATIONS; i++) {
+		for (size_t i = 0; i < AT_NUM_STORAGE_LOCATIONS; i++) {
 			storage[i]=0.0f;
 		}
 
@@ -17746,7 +17746,7 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 		// user may want to use base damage as a constant
 		base_damage = damage_applied;
 		// LOOP!
-		for (i = 0; i < num; i++) {
+		for (size_t i = 0; i < num; i++) {
 			storage_idx = adtp->altArguments[i];
 			//Set curr_arg
 			// use storage index at +Stored Value:
@@ -17884,12 +17884,11 @@ float ArmorType::GetShieldPiercePCT(int damage_type_idx)
 		return 0.0f;
 
 	//Initialize vars
-	uint i,num;
 	ArmorDamageType *adtp = NULL;
 
 	//Find the entry in the weapon that corresponds to the given weapon damage type
-	num = DamageTypes.size();
-	for(i = 0; i < num; i++)
+	size_t num = DamageTypes.size();
+	for(size_t i = 0; i < num; i++)
 	{
 		if(DamageTypes[i].DamageTypeIndex == damage_type_idx)
 		{
@@ -17910,12 +17909,11 @@ int ArmorType::GetPiercingType(int damage_type_idx)
 		return 0;
 
 	//Initialize vars
-	uint i,num;
 	ArmorDamageType *adtp = NULL;
 
 	//Find the entry in the weapon that corresponds to the given weapon damage type
-	num = DamageTypes.size();
-	for(i = 0; i < num; i++)
+	size_t num = DamageTypes.size();
+	for(size_t i = 0; i < num; i++)
 	{
 		if(DamageTypes[i].DamageTypeIndex == damage_type_idx)
 		{
@@ -17936,12 +17934,11 @@ float ArmorType::GetPiercingLimit(int damage_type_idx)
 		return 0.0f;
 
 	//Initialize vars
-	uint i,num;
 	ArmorDamageType *adtp = NULL;
 
 	//Find the entry in the weapon that corresponds to the given weapon damage type
-	num = DamageTypes.size();
-	for(i = 0; i < num; i++)
+	size_t num = DamageTypes.size();
+	for(size_t i = 0; i < num; i++)
 	{
 		if(DamageTypes[i].DamageTypeIndex == damage_type_idx)
 		{
@@ -17960,9 +17957,9 @@ float ArmorType::GetPiercingLimit(int damage_type_idx)
 
 ArmorType::ArmorType(char* in_name)
 {
-	uint len = strlen(in_name);
+	auto len = strlen(in_name);
 	if(len >= NAME_LENGTH) {
-		Warning(LOCATION, "Armor name %s is %d characters too long, and will be truncated", in_name, len - NAME_LENGTH);
+		Warning(LOCATION, "Armor name %s is " SIZE_T_ARG " characters too long, and will be truncated", in_name, len - NAME_LENGTH);
 	}
 	
 	strncpy(Name, in_name, NAME_LENGTH-1);
@@ -18101,12 +18098,11 @@ void ArmorType::ParseData()
 
 int armor_type_get_idx(char* name)
 {
-	int i, num;
-	num = Armor_types.size();
-	for(i = 0; i < num; i++)
+	auto num = Armor_types.size();
+	for(size_t i = 0; i < num; i++)
 	{
 		if(Armor_types[i].IsName(name))
-			return i;
+			return (int)i;
 	}
 	
 	//Didn't find anything.
@@ -18178,7 +18174,7 @@ void armor_init()
 void parse_ai_target_priorities()
 {
 	int i, j, num_strings;
-	int n_entries = Ai_tp_list.size();
+	int n_entries = (int)Ai_tp_list.size();
 	SCP_vector <SCP_string> temp_strings;
 
 	bool first_time = false;
@@ -18331,7 +18327,7 @@ void parse_weapon_targeting_priorities()
 					if (num_strings > 32)
 						num_strings = 32;
 
-					int num_groups = Ai_tp_list.size();
+					int num_groups = (int)Ai_tp_list.size();
 
 					for(i = 0; i < num_strings; i++) {
 						for(j = 0; j < num_groups; j++) {

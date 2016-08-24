@@ -454,7 +454,6 @@ int pcx_encode_line(ubyte *inBuff, int inLen, FILE * fp)
 
 int pcx_write_bitmap( const char * real_filename, int w, int h, ubyte ** row_ptrs, ubyte * palette )
 {
-	int retval;
 	int i;
 	ubyte data;
 	PCXHeader header;
@@ -506,7 +505,7 @@ int pcx_write_bitmap( const char * real_filename, int w, int h, ubyte ** row_ptr
 //	for (i=0; i<768; i++ )
 //		palette[i] <<= 2;
 
-	retval = fwrite( palette, 768, 1, PCXfile );
+	auto retval = fwrite( palette, 768, 1, PCXfile );
 
 //	for (i=0; i<768; i++ )
 //		palette[i] >>= 2;
