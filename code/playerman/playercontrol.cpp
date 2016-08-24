@@ -392,6 +392,7 @@ void do_view_slew(float frame_time)
 	if (!(Viewer_mode & VM_PADLOCK_ANY)) {
 		if (headtracking::isEnabled()) {
 			// Can't do slewing if TrackIR is enabled
+			Viewer_mode |= VM_CAMERA_LOCKED;
 			return;
 		}
 		
