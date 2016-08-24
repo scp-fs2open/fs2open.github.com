@@ -1788,7 +1788,7 @@ void game_init()
 
 	memset(whee, 0, sizeof(whee));
 
-	GetCurrentDirectory(MAX_PATH_LEN-1, whee);
+	_getcwd(whee, MAX_PATH_LEN-1);
 
 	strcat_s(whee, DIR_SEPARATOR_STR);
 	strcat_s(whee, EXE_FNAME);
@@ -1888,7 +1888,7 @@ void game_init()
 		SDL_VERSION(&info.version); // initialize info structure with SDL version info
 
 		bool voiceRectOn = false;
-		if(SDL_GetWindowWMInfo(os_get_window(), &info)) { // the call returns true on success
+		if(SDL_GetWindowWMInfo(os::getSDLMainWindow(), &info)) { // the call returns true on success
 			// success
 			voiceRectOn = VOICEREC_init(info.info.win.window, WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
 		} else {
@@ -5364,7 +5364,7 @@ void game_process_event( int current_state, int event )
 				shipfx_warpout_start( Player_obj );
 				Player->control_mode = PCM_WARPOUT_STAGE2;
 
-				if (!(The_mission.ai_profile->flags2 & AIPF2_NO_WARP_CAMERA)) {
+				if (!(The_mission.ai_profile->flags[AI::Profile_Flags::No_warp_camera])) {
 					Player->saved_viewer_mode = Viewer_mode;
 					Viewer_mode |= VM_WARP_CHASE;
 					Warp_camera = warp_camera(Player_obj);

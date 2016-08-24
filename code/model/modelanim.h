@@ -139,7 +139,7 @@ extern SCP_vector<triggered_rotation> Triggered_rotations;
 
 // functions...
 
-struct model_subsystem;
+class model_subsystem;
 class ship_subsys;
 class ship;
 class ship_info;

@@ -6,6 +6,7 @@ set (file_root
 set (file_root_ai
 	ai/ai.cpp
 	ai/ai.h
+	ai/ai_flags.h
 	ai/ai_profiles.cpp
 	ai/ai_profiles.h
 	ai/aibig.cpp

@@ -61,7 +61,7 @@ namespace
 {
 	bool mouse_key_event_handler(const SDL_Event& e)
 	{
-		if (!os::events::isWindowEvent(e, os_get_window())) {
+		if (!os::events::isWindowEvent(e, os::getSDLMainWindow())) {
 			return false;
 		}
 
@@ -77,7 +77,7 @@ namespace
 
 	bool mouse_motion_event_handler(const SDL_Event& e)
 	{
-		if (!os::events::isWindowEvent(e, os_get_window())) {
+		if (!os::events::isWindowEvent(e, os::getSDLMainWindow())) {
 			return false;
 		}
 
@@ -88,7 +88,7 @@ namespace
 
 	bool mouse_wheel_event_handler(const SDL_Event& e)
 	{
-		if (!os::events::isWindowEvent(e, os_get_window())) {
+		if (!os::events::isWindowEvent(e, os::getSDLMainWindow())) {
 			return false;
 		}
 
@@ -459,7 +459,7 @@ void mouse_get_delta(int *dx, int *dy, int *dz)
 void mouse_force_pos(int x, int y)
 {
 	if (os_foreground()) {  // only mess with windows's mouse if we are in control of it
-		SDL_WarpMouseInWindow(os_get_window(), x, y);
+		SDL_WarpMouseInWindow(os::getSDLMainWindow(), x, y);
 	}
 }
 

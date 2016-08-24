@@ -680,12 +680,20 @@ void script_state::SetHookVar(char *name, char format, void *data)
 			}
 			else
 			{
-				if(format == 's')
-					ade_set_args(LuaState, fmt, data);
-				else if (format == 'i')
-					ade_set_args(LuaState, fmt, *(int*)data);
-				else
-					ade_set_args(LuaState, fmt, *(ade_odata*)data);
+				switch (format) {
+					case 's':
+						ade_set_args(LuaState, fmt, data);
+						break;
+					case 'i':
+						ade_set_args(LuaState, fmt, *(int*)data);
+						break;
+					case 'b':
+						ade_set_args(LuaState, fmt, *(bool*)data);
+						break;
+					default:
+						ade_set_args(LuaState, fmt, *(ade_odata*)data);
+						break;
+				}
 			}
 			//--------------------
 			//WMC - This was a separate function

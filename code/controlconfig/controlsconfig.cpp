@@ -369,7 +369,7 @@ static int joy_get_unscaled_reading(int raw, int axn)
 	if (raw > rng)
 		raw = rng;
 
-	return (int) ((uint) raw * (uint) F1_0 / (uint) rng);  // convert to 0 - F1_0 range.
+	return (int) ((std::uint64_t) raw * (std::uint64_t) F1_0 / (std::uint64_t) rng);  // convert to 0 - F1_0 range, 64bit ints used to avoid uint overflow
 }
 
 int joy_get_scaled_reading(int raw)

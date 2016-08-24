@@ -588,18 +588,15 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 	ship_weapon *swp = &shipp->weapons;
 	weapon_info *wip;
 
-	if (sip->flags[Ship::Info_Flags::Ballistic_primaries])
+	for ( index = 0; index < MAX_SHIP_PRIMARY_BANKS; index++ )
 	{
-		for ( index = 0; index < MAX_SHIP_PRIMARY_BANKS; index++ )
+		wip = &Weapon_info[swp->primary_bank_weapons[index]];
+		if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 		{
-			wip = &Weapon_info[swp->primary_bank_weapons[index]];
-			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
-			{
-				float capacity, size;
-				capacity = (float) sip->primary_bank_ammo_capacity[index];
-				size = (float) wip->cargo_size;
-				swp->primary_bank_ammo[index] = fl2i((capacity / size)+0.5f);
-			}
+			float capacity, size;
+			capacity = (float) sip->primary_bank_ammo_capacity[index];
+			size = (float) wip->cargo_size;
+			swp->primary_bank_ammo[index] = fl2i((capacity / size)+0.5f);
 		}
 	}
 }
@@ -2101,7 +2098,7 @@ int button_function_demo_valid(int n)
 		if(!Perspective_locked)
 		{
 			Viewer_mode ^= VM_EXTERNAL;
-			Viewer_mode &= ~VM_EXTERNAL_CAMERA_LOCKED;	// reset camera lock when leaving/entering external view
+			Viewer_mode &= ~VM_CAMERA_LOCKED;	// reset camera lock when leaving/entering external view
 		}
 		else
 		{
@@ -2126,8 +2123,8 @@ int button_function_demo_valid(int n)
 	case VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK:
 		control_used(VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK);
 		if ( Viewer_mode & VM_EXTERNAL ) {
-		Viewer_mode ^= VM_EXTERNAL_CAMERA_LOCKED;
-		if ( Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED ) {
+		Viewer_mode ^= VM_CAMERA_LOCKED;
+		if ( Viewer_mode & VM_CAMERA_LOCKED ) {
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "External camera is locked, controls will move ship", 36));
 			} else {
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "External camera is free, controls will move the camera, not the ship", 37));

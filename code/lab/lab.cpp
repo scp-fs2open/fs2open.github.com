@@ -888,14 +888,14 @@ void labviewer_render_model(float frametime)
 		// rotate submodels if wanted
 		if ( (sip != NULL) && (Lab_viewer_flags & LAB_FLAG_SUBMODEL_ROTATE) ) {
 			for (i = 0; i < sip->n_subsystems; i++) {
-				if ( !(Lab_ship_model_subsys[i].flags & MSS_FLAG_ROTATES) ) {
+				if ( !(Lab_ship_model_subsys[i].flags[Model::Subsystem_Flags::Rotates]) ) {
 					continue;
 				}
 				
 				model_set_instance(Lab_model_num, Lab_ship_model_subsys[i].subobj_num, &Lab_ship_subsys[i].submodel_info_1 );
 
 				// if we got this far, we can rotate - so choose which method to use
-				if (Lab_ship_model_subsys[i].flags & MSS_FLAG_STEPPED_ROTATE) {
+				if (Lab_ship_model_subsys[i].flags[Model::Subsystem_Flags::Stepped_rotate]) {
 					submodel_stepped_rotate(&Lab_ship_model_subsys[i], &Lab_ship_subsys[i].submodel_info_1);
 				} else {
 					submodel_rotate(&Lab_ship_model_subsys[i], &Lab_ship_subsys[i].submodel_info_1 );

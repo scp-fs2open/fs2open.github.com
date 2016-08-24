@@ -1929,7 +1929,7 @@ int parse_create_object_sub(p_object *p_objp)
 	aip->ai_class = p_objp->ai_class;
 	shipp->weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
 	//Fixes a bug where the AI class attributes were not copied if the AI class was set in the mission.
-	if (The_mission.ai_profile->flags & AIPF_FIX_AI_CLASS_BUG)
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_class_bug])
 		ship_set_new_ai_class(shipnum, p_objp->ai_class);
 
 	// must reset the number of ai goals when the object is created
@@ -2204,7 +2204,7 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 			}
 
-			if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags & MSS_FLAG_TURRET_LOCKED)
+			if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] || ptr->system_info->flags[Model::Subsystem_Flags::Turret_locked])
 			{
 				// mark all turrets as locked
 				if(ptr->system_info->type == SUBSYSTEM_TURRET)
@@ -7304,7 +7304,7 @@ int insert_subsys_status(p_object *pobjp)
 }
 
 // Goober5000
-subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name)
+subsys_status *parse_get_subsys_status(p_object *pobjp, const char *subsys_name)
 {
 	int i;
 	subsys_status *sssp;

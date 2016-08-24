@@ -53,24 +53,33 @@ namespace
 
 		return cursorHandle;
 	}
+
+	void setRelativeMouseMode(bool grab) {
+		if (Cmdline_nograb) {
+			// Never grab the mouse if this is enabled
+			SDL_SetRelativeMouseMode(SDL_FALSE);
+		} else {
+			SDL_SetRelativeMouseMode(grab ? SDL_TRUE : SDL_FALSE);
+		}
+	}
 	
 	void changeMouseStatus(bool show, bool grab)
 	{
 		if (show)
 		{
 			// If shown don't grab the mouse
-			SDL_SetRelativeMouseMode(SDL_FALSE);
+			setRelativeMouseMode(false);
 			SDL_ShowCursor(1);
 		}
 		else
 		{
 			if (grab)
 			{
-				SDL_SetRelativeMouseMode(SDL_FALSE);
+				setRelativeMouseMode(true);
 			}
 			else
 			{
-				SDL_SetRelativeMouseMode(SDL_FALSE);
+				setRelativeMouseMode(false);
 			}
 
 			SDL_ShowCursor(0);
