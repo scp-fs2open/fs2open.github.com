@@ -2,13 +2,13 @@
 IF(WIN32)
 	add_library(sdl SHARED IMPORTED GLOBAL)
 
-	IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	IF(IS_64BIT)
 		# 64-bit
 		set(ARCH "x64")
-	ELSE(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	ELSE()
 		# 32-bit
 		set(ARCH "x86")
-	ENDIF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	ENDIF()
 
 	set_target_properties(sdl
 		PROPERTIES

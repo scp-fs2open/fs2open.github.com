@@ -93,7 +93,7 @@ namespace
 
 	bool needsWOW64()
 	{
-#ifdef _WIN64
+#if IS_64BIT
 		// 64-bit application always use the Wow6432Node
 		return true;
 #else

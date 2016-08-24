@@ -69,14 +69,6 @@ static char THIS_FILE[] = __FILE__;
 
 subsys_to_render Render_subsys;
 
-// the next variable is used for executable stamping -- please leave it alone!!!
-#define FRED_EXPIRE_TIME	(7 * 1000)
-char stamp[STAMP_STRING_LENGTH] = { STAMP_STRING };
-int expire_game;
-
-#define EXPIRE_BAD_CHECKSUM			1
-#define EXPIRE_BAD_TIME					2
-
 #define SHIP_TYPES			8000
 #define REDUCER				100.0f
 #define DUP_DRAG_OF_WING	2
@@ -650,16 +642,6 @@ CFREDView::CFREDView()
 CFREDView::~CFREDView()
 {
 	delete m_pGDlg;
-}
-
-void CALLBACK expire_game_proc( HWND wnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	KillTimer(wnd, 1);
-	if ( expire_game == EXPIRE_BAD_CHECKSUM )
-		MessageBox (wnd, "Fred can no longer run due to internal overlay error", NULL, MB_OK | MB_ICONERROR |MB_TASKMODAL|MB_SETFOREGROUND);
-	else
-		MessageBox (wnd, "Error: cannot enter DOS mode for 80x40 color text mode display.", NULL, MB_OK | MB_ICONERROR|MB_TASKMODAL|MB_SETFOREGROUND);
-	exit(1);
 }
 
 BOOL CFREDView::PreCreateWindow(CREATESTRUCT& cs)
@@ -4376,54 +4358,6 @@ void CFREDView::OnSetGroup(UINT nID)
 			"These illegal objects you marked were not placed in the group");
 
 	Update_window = 1;
-}
-
-void CFREDView::OnInitialUpdate() 
-{
-	char *ptr, text[512];
-
-	CView::OnInitialUpdate();
-	
-	// check the time/checksum strings.
-	expire_game = 0;
-	ptr = &stamp[0];
-	if ( memcmp(ptr, DEFAULT_CHECKSUM_STRING, strlen(DEFAULT_CHECKSUM_STRING)) ) {
-		int stamped_checksum, checksum;
-
-		// the checksum is not the default checksum.  Calculate the checksum of the string
-		// and compare it.
-		memcpy(&stamped_checksum, ptr, sizeof(stamped_checksum) );
-		ptr = &stamp[0];
-		ptr += 8;			// get us to the actual string to calculate the checksum
-		CALCULATE_STAMP_CHECKSUM();
-
-		if ( checksum != stamped_checksum ){
-			expire_game = EXPIRE_BAD_CHECKSUM;
-		}
-
-		// now check the time
-		ptr = &stamp[0];
-		ptr += 4;
-		if ( memcmp( ptr, DEFAULT_TIME_STRING, strlen(DEFAULT_TIME_STRING)) ) {
-			int expire_time, current_time;
-
-			// not the default time -- check against the current time
-			memcpy( &expire_time, ptr, sizeof(expire_time) );
-			time( (time_t*)&current_time );
-			if ( current_time > expire_time )
-				expire_game = EXPIRE_BAD_TIME;
-		}
-
-		// since the default checksum has changed -- put up a message which shows who the program
-		// is stamped for
-		ptr = &stamp[0];
-		ptr += 8;
-		sprintf(text, "This version of Fred has been compiled for %s", ptr);
-		MessageBox(text, NULL, MB_OK);
-
-		if ( expire_game )
-			SetTimer(1, FRED_EXPIRE_TIME, expire_game_proc);
-	}
 }
 
 void CFREDView::OnEditorsAdjustGrid() 

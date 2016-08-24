@@ -433,12 +433,6 @@ void multi_common_set_palette()
 	if(Multi_common_interface_palette == -1){
 		multi_common_load_palette();
 	}
-	
-	if(Multi_common_interface_palette != -1){
-#ifndef HARDWARE_ONLY
-		palette_use_bm_palette(Multi_common_interface_palette);
-#endif
-	}
 }
 
 // unload the bitmap palette

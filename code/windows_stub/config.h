@@ -5,6 +5,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include <stdio.h>
 
 #ifndef BYTE_ORDER
 #include "SDL_endian.h"
@@ -55,7 +56,7 @@
 typedef int BOOL;
 typedef unsigned short WORD;
 typedef unsigned int UINT;
-#ifdef IAM_64BIT
+#if IS_64BIT
 // force 32-bit version of DWORD
 typedef unsigned int DWORD;
 typedef unsigned int FOURCC;
