@@ -55,7 +55,6 @@ END_MESSAGE_MAP()
 
 BOOL InitialShips::OnInitDialog() 
 {
-    int i;
 	CDialog::OnInitDialog();
 
 	m_list_count = 0;
@@ -64,7 +63,7 @@ BOOL InitialShips::OnInitDialog()
 	if ( m_initial_items == INITIAL_SHIPS ) {
         for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
             if (it->flags[Ship::Info_Flags::Player_ship]) {
-                i = std::distance(Ship_info.cbegin(), it);
+                auto i = std::distance(Ship_info.cbegin(), it);
                 m_initial_list.AddString(it->name);
                 if (Campaign.ships_allowed[i]) {
                     m_initial_list.SetCheck(m_list_count, 1);
@@ -90,7 +89,7 @@ BOOL InitialShips::OnInitDialog()
 		memset( allowed_weapons, 0, sizeof(allowed_weapons) );
         for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
             if (it->flags[Ship::Info_Flags::Player_ship]) {
-                for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+                for (auto i = 0; i < MAX_WEAPON_TYPES; i++) {
                     if (it->allowed_weapons[i])
                         allowed_weapons[i] = 1;
                 }
