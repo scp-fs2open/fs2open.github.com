@@ -248,7 +248,7 @@ int sexp_tree::save_tree(int node)
 // get variable name from sexp_tree node .text
 void var_name_from_sexp_tree_text(char *var_name, const char *text)
 {
-	int var_name_length = strcspn(text, "(");
+	auto var_name_length = strcspn(text, "(");
 	Assert(var_name_length < TOKEN_LENGTH - 1);
 
 	strncpy(var_name, text, var_name_length);
@@ -329,7 +329,7 @@ int sexp_tree::allocate_node()
 	// need more tree nodes?
 	if (node < 0)
 	{
-		int old_size = tree_nodes.size();
+		int old_size = (int)tree_nodes.size();
 
 		Assert(TREE_NODE_INCREMENT > 0);
 
@@ -1413,7 +1413,7 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 {
 	HTREEITEM h = item.hItem; 
 	char *str = item.pszText;
-	int len, r = 1;	
+	int r = 1;	
 	bool update_node = true; 
 	uint node;
 
@@ -1430,7 +1430,7 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 
 	if (node == tree_nodes.size()) {
 		if (m_mode == MODE_EVENTS) {
-			item_index = GetItemData(h);
+			item_index = (int)GetItemData(h);
 			Assert(Event_editor_dlg);
 			node = Event_editor_dlg->handler(ROOT_RENAMED, item_index, str);
 			return 1;
@@ -1468,7 +1468,7 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 	}
 
 	// Error checking would not hurt here
-	len = strlen(str);
+	auto len = strlen(str);
 	if (len >= TOKEN_LENGTH)
 		len = TOKEN_LENGTH - 1;
 
@@ -1984,7 +1984,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			HTREEITEM h_parent;
 
 			if ((m_mode & ST_ROOT_DELETABLE) && (item_index == -1)) {
-				item_index = GetItemData(item_handle);
+				item_index = (int)GetItemData(item_handle);
 				if (m_mode == MODE_GOALS) {
 					Assert(Goal_editor_dlg);
 					theNode = Goal_editor_dlg->handler(ROOT_DELETED, item_index);
@@ -3160,7 +3160,6 @@ void sexp_tree::link_modified(int *ptr)
 
 void get_variable_default_text_from_variable_text(char *text, char *default_text)
 {
-	int len;
 	char *start;
 
 	// find '('
@@ -3169,7 +3168,7 @@ void get_variable_default_text_from_variable_text(char *text, char *default_text
 	start++;
 
 	// get length and copy all but last char ")"
-	len = strlen(start);
+	auto len = strlen(start);
 	strncpy(default_text, start, len-1);
 
 	// add null termination
@@ -3178,8 +3177,7 @@ void get_variable_default_text_from_variable_text(char *text, char *default_text
 
 void get_variable_name_from_sexp_tree_node_text(const char *text, char *var_name)
 {
-	int length;
-	length = strcspn(text, "(");
+	auto length = strcspn(text, "(");
 
 	strncpy(var_name, text, length);
 	var_name[length] = '\0';
@@ -3700,8 +3698,8 @@ void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point)
 
 		if (m_h_drop && m_h_drag != m_h_drop) {
 			Assert(m_h_drag);
-			index1 = GetItemData(m_h_drag);
-			index2 = GetItemData(m_h_drop);
+			index1 = (int)GetItemData(m_h_drag);
+			index2 = (int)GetItemData(m_h_drop);
 			swap_roots(m_h_drag, m_h_drop);
 			if (m_mode == MODE_GOALS) {
 				Assert(Goal_editor_dlg);
@@ -6127,7 +6125,7 @@ int sexp_tree::get_tree_name_to_sexp_variable_index(const char *tree_name)
 {
 	char var_name[TOKEN_LENGTH];
 
-	int chars_to_copy = strcspn(tree_name, "(");
+	auto chars_to_copy = strcspn(tree_name, "(");
 	Assert(chars_to_copy < TOKEN_LENGTH - 1);
 
 	// Copy up to '(' and add null termination

@@ -53,9 +53,9 @@
 
 int CFred_mission_save::autosave_mission_file(char *pathname) {
 	char backup_name[256], name2[256];
-	int i, len;
+	int i;
 
-	len = strlen(pathname);
+	auto len = strlen(pathname);
 	strcpy_s(backup_name, pathname);
 	strcpy_s(name2, pathname);
 	sprintf(backup_name + len, ".%.3d", BACKUP_DEPTH);
@@ -1569,7 +1569,7 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp) {
 		}
 
 		if (ptr->system_info->type == SUBSYSTEM_TURRET)
-			save_turret_info(ptr, shipp - Ships);
+			save_turret_info(ptr, SHIP_INDEX(shipp));
 
 		ptr = GET_NEXT(ptr);
 
@@ -2434,7 +2434,7 @@ int CFred_mission_save::save_mission_info() {
 	}
 
 	// Goober5000's AI profile stuff
-	int profile_index = (The_mission.ai_profile - Ai_profiles);
+	int profile_index = AI_PROFILES_INDEX(The_mission.ai_profile);
 	Assert(profile_index >= 0 && profile_index < MAX_AI_PROFILES);
 
 	fso_comment_push(";;FSO 3.6.9;;");

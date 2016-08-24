@@ -565,7 +565,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 void ShipGoalsDlg::set_item(int item, int init)
 {
 	SCP_list<waypoint_list>::iterator ii;
-	int i, t, z, num, inst, mode;
+	int i, t, z, num, inst;
 	object *ptr;
 
 	if (init)
@@ -586,7 +586,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 		return;
 	}
 
-	mode = m_behavior_box[item] -> GetItemData(m_behavior[item]);
+	auto mode = m_behavior_box[item] -> GetItemData(m_behavior[item]);
 	m_priority_box[item] -> EnableWindow(TRUE);
 	if ((mode == AI_GOAL_CHASE_ANY) || (mode == AI_GOAL_UNDOCK) || (mode == AI_GOAL_KEEP_SAFE_DISTANCE) || (mode == AI_GOAL_PLAY_DEAD) || (mode == AI_GOAL_WARP) ) {
 		m_object_box[item] -> EnableWindow(FALSE);
@@ -889,7 +889,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 			m_behavior[item] = 0;
 	}
 
-	mode = m_behavior_box[item] -> GetItemData(m_behavior[item]);
+	mode = (int)m_behavior_box[item] -> GetItemData(m_behavior[item]);
 	switch (mode) {
 		case AI_GOAL_NONE:
 		case AI_GOAL_CHASE_ANY:
@@ -955,9 +955,9 @@ void ShipGoalsDlg::update_item(int item, int multi)
 			if (!multi || (m_data[item] && (m_dock2[item] >= 0)))
 				dockee = (char *) m_dock2_box[item] -> GetItemDataPtr(m_dock2[item]);
 
-			if (docker == (char *) 0xffffffff)
+			if (docker == (char *) SIZE_T_MAX)
 				docker = NULL;
-			if (dockee == (char *) 0xffffffff)
+			if (dockee == (char *) SIZE_T_MAX)
 				dockee = NULL;
 
 			if (!docker || !dockee) {
@@ -1052,17 +1052,17 @@ void ShipGoalsDlg::update_item(int item, int multi)
 
 void ShipGoalsDlg::OnOK()
 {
-	int i, mode;
+	int i;
 
 	UpdateData(TRUE);
 
 	for (i=0; i<ED_MAX_GOALS; i++) {
-		mode = m_behavior_box[i] -> GetItemData(m_behavior[i]);
+		auto mode = m_behavior_box[i] -> GetItemData(m_behavior[i]);
 		if ((mode != AI_GOAL_NONE) && (mode != AI_GOAL_CHASE_ANY) && (mode != AI_GOAL_UNDOCK) && (mode != AI_GOAL_KEEP_SAFE_DISTANCE) && (mode != AI_GOAL_PLAY_DEAD) && (mode != AI_GOAL_WARP) ) {
 			if (!m_object_box[i] -> GetCount())  // no valid objects?
 				m_behavior[i] = 0;
 			else
-				m_data[i] = m_object_box[i] -> GetItemData(m_object[i]);
+				m_data[i] = (int)m_object_box[i] -> GetItemData(m_object[i]);
 		}
 	}
 
@@ -1153,15 +1153,15 @@ void ShipGoalsDlg::OnSelchangeObject10()
 void ShipGoalsDlg::set_object(int item)
 {
 	char *str;
-	int i = 0, z, num, not_used, mode;
+	int i = 0, z, num, not_used;
 	ship_subsys *subsys;
 
 	if (m_behavior[item] > 0) {
-		mode = m_behavior_box[item] -> GetItemData(m_behavior[item]);
+		auto mode = m_behavior_box[item] -> GetItemData(m_behavior[item]);
 		if (!m_object_box[item] -> GetCount())
 			m_behavior[item] = m_data[item] = 0;
 		else
-			m_data[item] = m_object_box[item] -> GetItemData(m_object[item]);
+			m_data[item] = (int)m_object_box[item] -> GetItemData(m_object[item]);
 
 		if ((mode == AI_GOAL_DOCK) && (m_data[item] >= 0)) {
 			num = get_docking_list(Ship_info[Ships[m_data[item] & DATA_MASK].ship_info_index].model_num);

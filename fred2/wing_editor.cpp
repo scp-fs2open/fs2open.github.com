@@ -786,7 +786,7 @@ void wing_editor::update_data_safe()
 	MODIFY(Wings[cur_wing].wave_delay_max, m_arrival_delay_max);
 	MODIFY(Wings[cur_wing].arrival_distance, m_arrival_dist);
 	if (m_arrival_target >= 0) {
-		i = ((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
+		i = (int)((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
 		MODIFY(Wings[cur_wing].arrival_anchor, i);
 
 		// when arriving near or in front of a ship, be sure that we are far enough away from it!!!
@@ -811,7 +811,7 @@ void wing_editor::update_data_safe()
 		}
 	}
 	if (m_departure_target >= 0) {
-		i = ((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
+		i = (int)((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
 		MODIFY(Wings[cur_wing].departure_anchor,  i);
 	}
 
@@ -1306,7 +1306,7 @@ void wing_editor::OnRestrictArrival()
 	if (box->GetCount() == 0)
 		return;
 
-	arrive_from_ship = box->GetItemData(m_arrival_target);
+	arrive_from_ship = (int)box->GetItemData(m_arrival_target);
 
 	if (!ship_has_dock_bay(arrive_from_ship))
 	{
@@ -1341,7 +1341,7 @@ void wing_editor::OnRestrictDeparture()
 	if (box->GetCount() == 0)
 		return;
 
-	depart_to_ship = box->GetItemData(m_departure_target);
+	depart_to_ship = (int)box->GetItemData(m_departure_target);
 
 	if (!ship_has_dock_bay(depart_to_ship))
 	{

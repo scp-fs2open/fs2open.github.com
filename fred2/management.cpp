@@ -143,15 +143,13 @@ extern int Nmodel_instance_num;
 extern matrix Nmodel_orient;
 extern int Nmodel_bitmap;
 
-void string_copy(char *dest, const CString &src, int max_len, int modify)
+void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 {
-	int len;
-
 	if (modify)
 		if (strcmp(src, dest))
 			set_modified();
 
-	len = strlen(src);
+	auto len = strlen(src);
 	if (len >= max_len)
 		len = max_len - 1;
 
@@ -427,9 +425,9 @@ bool fred_init(os::GraphicsOperations* graphicsOps)
 	// Get the default player ship
 	Default_player_model = cur_model_index = get_default_player_ship_index();
 
-	Id_select_type_start = Ship_info.size() + 2;
-	Id_select_type_jump_node = Ship_info.size() + 1;
-	Id_select_type_waypoint = Ship_info.size();
+	Id_select_type_start = (int)(Ship_info.size() + 2);
+	Id_select_type_jump_node = (int)(Ship_info.size() + 1);
+	Id_select_type_waypoint = (int)(Ship_info.size());
 	Fred_main_wnd -> init_tools();	
 	return true;
 }

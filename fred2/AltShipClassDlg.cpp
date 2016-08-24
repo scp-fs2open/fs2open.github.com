@@ -244,7 +244,7 @@ BOOL AltShipClassDlg::OnInitDialog()
             continue;
         }
 
-        ship_class_indices[count++] = std::distance(Ship_info.cbegin(), it);
+        ship_class_indices[count++] = (int)std::distance(Ship_info.cbegin(), it);
         m_set_from_ship_class.AddString(it->name);
     }
 	m_set_from_ship_class.SetCurSel(num_string_variables?1:0); // Set to the first ship class

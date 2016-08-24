@@ -435,7 +435,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	}
 
 	m_type = The_mission.game_type;
-	m_ai_profile = (The_mission.ai_profile - Ai_profiles);
+	m_ai_profile = AI_PROFILES_INDEX(The_mission.ai_profile);
 
 	m_event_music = Current_soundtrack_num + 1;
 	m_substitute_event_music = The_mission.substitute_event_music_name;
