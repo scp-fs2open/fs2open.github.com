@@ -1340,7 +1340,7 @@ void opengl_setup_function_pointers()
 }
 
 #ifndef NDEBUG
-static void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
+static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
 						   GLsizei length, const GLchar *message, const void *userParam) {
 	const char* sourceStr;
 	const char* typeStr;
@@ -1578,7 +1578,7 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 		GLuint unusedIds = 0;
 		glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, &unusedIds, true);
 
-		glDebugMessageCallbackARB((GLDEBUGPROCARB)debug_callback, nullptr);
+		glDebugMessageCallbackARB(debug_callback, nullptr);
 
 		// Now print all pending log messages
 		while (hasPendingDebugMessage()) {
