@@ -77,7 +77,6 @@ static int audiofd_fragsize = 0;
 static longlong videobuf_granulepos = -1;
 static double videobuf_time = 0;
 
-static bool use_shaders = true;
 // -----------------------------------------------------------------------------
 //  Utility items
 //
@@ -342,96 +341,65 @@ static void OGG_video_init(theora_info *tinfo)
 
 		buffer_handle = gr_create_vertex_buffer(true);
 
-		if(!is_minimum_GLSL_version())
-			use_shaders = false;
+		glGenTextures(1, &ytex);
+		glGenTextures(1, &utex);
+		glGenTextures(1, &vtex);
 
-		if(use_shaders) {
-			glGenTextures(1, &ytex);
-			glGenTextures(1, &utex);
-			glGenTextures(1, &vtex);
-
-			Assert( ytex != 0 );
-			Assert( utex != 0 );
-			Assert( vtex != 0 );
+		Assert( ytex != 0 );
+		Assert( utex != 0 );
+		Assert( vtex != 0 );
 
 
-			if ( ytex + utex + vtex == 0 ) {
-				nprintf(("MOVIE", "ERROR: Can't create a GL texture"));
-				video_inited = 1;
-				return;
-			}
-
-			int sdr_handle = gr_maybe_create_shader(SDR_TYPE_VIDEO_PROCESS, 0);
-
-			if ( sdr_handle >= 0)
-				opengl_shader_set_current(sdr_handle);
-			else
-				use_shaders = false;
-		} 
-
-		if(!use_shaders) {
-			glGenTextures(1, &GLtex);
-
-			Assert( GLtex != 0 );
-
-			if ( GLtex == 0 ) {
-				nprintf(("MOVIE", "ERROR: Can't create a GL texture"));
-				video_inited = 1;
-				return;
-			}
+		if ( ytex + utex + vtex == 0 ) {
+			nprintf(("MOVIE", "ERROR: Can't create a GL texture"));
+			video_inited = 1;
+			return;
 		}
+
+		int sdr_handle = gr_maybe_create_shader(SDR_TYPE_VIDEO_PROCESS, 0);
+
+		opengl_shader_set_current(sdr_handle);
 
 		gr_set_lighting(false, false);
 		GL_state.Texture.DisableAll();
 
-		if(!use_shaders) {
-			GL_state.Texture.SetActiveUnit(0);
-			GL_state.Texture.SetTarget(GL_texture_target);
-			GL_state.Texture.Enable(GLtex);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB8, g_screenWidth, g_screenHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
-		}
 		GL_state.SetTextureSource(TEXTURE_SOURCE_DECAL);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-		
-		if(use_shaders) {
-			GL_state.Texture.SetActiveUnit(0);
-			GL_state.Texture.SetTarget(GL_texture_target);
-			GL_state.Texture.Enable(ytex);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RED, 2048, 2048, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_texture_target);
+		GL_state.Texture.Enable(ytex);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-			GL_state.Texture.SetActiveUnit(1);
-			GL_state.Texture.SetTarget(GL_texture_target);
-			GL_state.Texture.Enable(utex);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
+		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RED, 2048, 2048, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
 
-			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RED, 1024, 1024, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+		GL_state.Texture.SetActiveUnit(1);
+		GL_state.Texture.SetTarget(GL_texture_target);
+		GL_state.Texture.Enable(utex);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-			GL_state.Texture.SetActiveUnit(2);
-			GL_state.Texture.SetTarget(GL_texture_target);
-			GL_state.Texture.Enable(vtex);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
+		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RED, 1024, 1024, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
 
-			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RED, 1024, 1024, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
-		}
+		GL_state.Texture.SetActiveUnit(2);
+		GL_state.Texture.SetTarget(GL_texture_target);
+		GL_state.Texture.Enable(vtex);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
+		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RED, 1024, 1024, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+
 		float screen_ratio = (float)gr_screen.center_w / (float)gr_screen.center_h;
 		float movie_ratio = (float)g_screenWidth / (float)g_screenHeight;
 
@@ -451,24 +419,7 @@ static void OGG_video_init(theora_info *tinfo)
 			gr_push_scale_matrix(&scale);
 			scale_video = 1;
 		}
-
-		// set our color so that we can make sure that it's correct
-		if ( !is_minimum_GLSL_version() ) {
-			GL_state.Color(255, 255, 255, 255);
-		}
 	}
-
-	if(!use_shaders) {
-		pixelbuf = (ubyte *) vm_malloc(g_screenWidth * g_screenHeight * 3, memory::quiet_alloc);
-
-		if (pixelbuf == NULL) {
-			nprintf(("MOVIE", "ERROR: Can't allocate memory for pixelbuf"));
-			video_inited = 1;
-			return;
-		}
-		memset( pixelbuf, 0, g_screenWidth * g_screenHeight * 3 );
-	}
-	
 
 	if (scale_video) {
 		g_screenX = ((fl2i(gr_screen.center_w / scale_by + 0.5f) - g_screenWidth) / 2) + fl2i(gr_screen.center_offset_x / scale_by + 0.5f);
@@ -487,17 +438,15 @@ static void OGG_video_init(theora_info *tinfo)
 		gl_screenU = 1.f;
 		gl_screenV = 1.f;
 
-		if(use_shaders) {
-			gl_screenU = i2fl(tinfo->frame_width-1) / i2fl(2048) ;
-			gl_screenV = i2fl(tinfo->frame_height-1) / i2fl(2048);
-			GL_state.Texture.SetShaderMode(GL_TRUE);
-			GL_state.Uniform.setUniformi("ytex", 0);
-			GL_state.Uniform.setUniformi("utex", 1);
-			GL_state.Uniform.setUniformi("vtex", 2);
+		gl_screenU = i2fl(tinfo->frame_width-1) / i2fl(2048) ;
+		gl_screenV = i2fl(tinfo->frame_height-1) / i2fl(2048);
+		GL_state.Texture.SetShaderMode(GL_TRUE);
+		GL_state.Uniform.setUniformi("ytex", 0);
+		GL_state.Uniform.setUniformi("utex", 1);
+		GL_state.Uniform.setUniformi("vtex", 2);
 
-			GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
-			GL_state.Uniform.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-		}
+		GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+		GL_state.Uniform.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
 
 		glVertices[0][0] = (GLfloat)g_screenX;
 		glVertices[0][1] = (GLfloat)g_screenY;
@@ -529,9 +478,6 @@ static void OGG_video_init(theora_info *tinfo)
 		opengl_bind_buffer_object(buffer_handle);
 		opengl_bind_vertex_layout(vert_def);
 	}
-	if(!use_shaders && tinfo->frame_height > 450) {
-		mprintf(("VIDEO: No shader support and hd video is beeing played this can get choppy."));
-	}
 	video_inited = 1;
 }
 
@@ -550,17 +496,14 @@ static void OGG_video_close()
 		buffer_handle = -1;
 
 		GL_state.Texture.Disable();
-		if(use_shaders) {
-			GL_state.Texture.Delete(ytex);
-			GL_state.Texture.Delete(utex);
-			GL_state.Texture.Delete(vtex);
-			glDeleteTextures(1, &ytex);
-			glDeleteTextures(1, &utex);
-			glDeleteTextures(1, &vtex);
-		} else {
-			GL_state.Texture.Delete(GLtex);
-			glDeleteTextures(1, &GLtex);
-		}
+
+		GL_state.Texture.Delete(ytex);
+		GL_state.Texture.Delete(utex);
+		GL_state.Texture.Delete(vtex);
+		glDeleteTextures(1, &ytex);
+		glDeleteTextures(1, &utex);
+		glDeleteTextures(1, &vtex);
+
 		opengl_set_texture_target();
 
 		ytex = utex = vtex = 0;
@@ -588,93 +531,21 @@ static void OGG_video_close()
 	gl_screenV = 0;
 }
 
-static void convert_YUV_to_RGB(yuv_buffer *yuv)
-{
-	int Y1, Y2, U, V;
-	int R = 0, G = 0, B = 0;
-	int C, D, E;
-	uint x, y;
-	uint width_2 = g_screenWidth/2;
-
-	ubyte *pix = &pixelbuf[0];
-
-	ubyte *y_ptr = (ubyte *)yuv->y;
-	ubyte *u_ptr = (ubyte *)yuv->u;
-	ubyte *v_ptr = (ubyte *)yuv->v;
-
-	for (y = 0; y < g_screenHeight; y++) {
-		for (x = 0; x < width_2; x++) {
-			// we need two pixels of Y
-			Y1 = *y_ptr; y_ptr++;
-			Y2 = *y_ptr; y_ptr++;
-
-			// only one pixel of U and V (half the size of Y)
-			U = u_ptr[x];
-			V = v_ptr[x];
-
-			D = (U - 128);
-			E = (V - 128);
-
-			// first pixel
-			C = (Y1 - 16) * 298;
-	
-			R = ((C           + 409 * E + 128) >> 8);
-			G = ((C - 100 * D - 208 * E + 128) >> 8);
-			B = ((C + 516 * D           + 128) >> 8);
-
-			CLAMP(R, 0, 255);
-			CLAMP(G, 0, 255);
-			CLAMP(B, 0, 255);
-
-			*pix++ = (ubyte)B;
-			*pix++ = (ubyte)G;
-			*pix++ = (ubyte)R;
-
-			// second pixel (U and V values are resused)
-			C = (Y2 - 16) * 298;
-
-			R = ((C           + 409 * E + 128) >> 8);
-			G = ((C - 100 * D - 208 * E + 128) >> 8);
-			B = ((C + 516 * D           + 128) >> 8);
-
-			CLAMP(R, 0, 255);
-			CLAMP(G, 0, 255);
-			CLAMP(B, 0, 255);
-
-			*pix++ = (ubyte)B;
-			*pix++ = (ubyte)G;
-			*pix++ = (ubyte)R;
-		}
-
-		y_ptr += (yuv->y_stride - yuv->y_width);
-
-		// u and v have to be done every other row (it's a 2x2 block)
-		if (y % 2) {
-			u_ptr += yuv->uv_stride;
-			v_ptr += yuv->uv_stride;
-		}
-	}
-}
-
 static void OGG_video_draw(theora_state *tstate)
 {
 	yuv_buffer yuv;
 
 	theora_decode_YUVout(tstate, &yuv);
-	if(!use_shaders)
-		convert_YUV_to_RGB(&yuv);
+
 	if (gr_screen.mode == GR_OPENGL) {
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		if(use_shaders) {
-			GL_state.Texture.SetActiveUnit(0);
-			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.y_stride, yuv.y_height, GL_RED, GL_UNSIGNED_BYTE, yuv.y);
-			GL_state.Texture.SetActiveUnit(1);
-			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_RED, GL_UNSIGNED_BYTE, yuv.u);
-			GL_state.Texture.SetActiveUnit(2);
-			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_RED, GL_UNSIGNED_BYTE, yuv.v);
-		} else {
-			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, g_screenWidth, g_screenHeight, GL_BGR, GL_UNSIGNED_BYTE, pixelbuf);
-		}
+
+		GL_state.Texture.SetActiveUnit(0);
+		glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.y_stride, yuv.y_height, GL_RED, GL_UNSIGNED_BYTE, yuv.y);
+		GL_state.Texture.SetActiveUnit(1);
+		glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_RED, GL_UNSIGNED_BYTE, yuv.u);
+		GL_state.Texture.SetActiveUnit(2);
+		glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_RED, GL_UNSIGNED_BYTE, yuv.v);
 
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}

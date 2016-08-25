@@ -1820,12 +1820,12 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Show Insignia", Lab_viewer_flags, LAB_FLAG_SHOW_INSIGNIA);
 	ADD_RENDER_FLAG("Show Damage Lightning", Lab_viewer_flags, LAB_FLAG_LIGHTNING_ARCS);
 	ADD_RENDER_FLAG("Rotate Subsystems", Lab_viewer_flags, LAB_FLAG_SUBMODEL_ROTATE);
-	if (is_minimum_GLSL_version()) {
-		if (Cmdline_postprocess) {
-			ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
-			ADD_RENDER_BOOL("Use FXAA", Cmdline_fxaa);
-		}
+
+	if (Cmdline_postprocess) {
+		ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
+		ADD_RENDER_BOOL("Use FXAA", Cmdline_fxaa);
 	}
+
 	// map related flags
 	ADD_RENDER_BOOL("No Diffuse Map", Basemap_override);
 	if (Cmdline_glow) {

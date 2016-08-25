@@ -283,9 +283,6 @@ void opengl_shader_set_current(int handle)
  */
 int gr_opengl_maybe_create_shader(shader_type shader_t, unsigned int flags)
 {
-	if (!is_minimum_GLSL_version())
-		return -1;
-
 	size_t idx;
 	size_t max = GL_shader.size();
 
@@ -324,10 +321,6 @@ void opengl_delete_shader(int sdr_handle)
 void opengl_shader_shutdown()
 {
 	size_t i;
-
-	if ( !is_minimum_GLSL_version() ) {
-		return;
-	}
 
 	for (i = 0; i < GL_shader.size(); i++) {
 		if (GL_shader[i].program_id) {
@@ -544,10 +537,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
  */
 void opengl_shader_init()
 {
-	if ( !is_minimum_GLSL_version() ) {
-		return;
-	}
-
 	glGenTextures(1,&Framebuffer_fallback_texture_id);
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -1047,11 +1036,6 @@ void opengl_shader_compile_passthrough_shader()
 
 void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr, float color_scale)
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_shader_set_current();
-		return;
-	}
-
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0));
 
 	if ( textured ) {

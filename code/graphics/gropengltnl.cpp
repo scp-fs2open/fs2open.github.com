@@ -633,9 +633,7 @@ void gr_opengl_set_buffer(int idx)
 		GL_state.Array.BindArrayBuffer(0);
 		GL_state.Array.BindElementBuffer(0);
 
-		if ( is_minimum_GLSL_version() ) {
-			opengl_shader_set_current();
-		}
+		opengl_shader_set_current();
 
 		return;
 	}
@@ -800,12 +798,7 @@ void gr_opengl_set_thrust_scale(float scale)
 
 static void opengl_init_arrays(opengl_vertex_buffer *vert_src, vertex_buffer *bufferp)
 {
-	GLint vert_offset = (GLint)bufferp->vertex_num_offset;
 	GLubyte *ptr = NULL;
-
-	if ( is_minimum_GLSL_version() ) {
-		vert_offset = 0;
-	}
 
 	if ( vert_src->vb_handle >= 0 ) {
 		opengl_bind_buffer_object(vert_src->vb_handle);
@@ -813,17 +806,12 @@ static void opengl_init_arrays(opengl_vertex_buffer *vert_src, vertex_buffer *bu
 		ptr = (GLubyte*)vert_src->array_list;
 	}
 
-	opengl_bind_vertex_layout(bufferp->layout, vert_offset, ptr);
+	opengl_bind_vertex_layout(bufferp->layout, 0, ptr);
 }
 
 static void opengl_init_arrays(indexed_vertex_source *vert_src, vertex_buffer *bufferp)
 {
-	GLint vert_offset = (GLint)bufferp->vertex_num_offset;
 	GLubyte *ptr = NULL;
-
-	if ( is_minimum_GLSL_version() ) {
-		vert_offset = 0;
-	}
 
 	if ( vert_src->Vbuffer_handle >= 0 ) {
 		opengl_bind_buffer_object(vert_src->Vbuffer_handle);
@@ -831,7 +819,7 @@ static void opengl_init_arrays(indexed_vertex_source *vert_src, vertex_buffer *b
 		ptr = (GLubyte*)vert_src->Vertex_list;
 	}
 	
-	opengl_bind_vertex_layout(bufferp->layout, vert_offset, ptr);
+	opengl_bind_vertex_layout(bufferp->layout, 0, ptr);
 }
 
 void opengl_render_model_program(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, buffer_data *datap)
@@ -891,11 +879,7 @@ void gr_opengl_render_model(model_material* material_info, indexed_vertex_source
 
 	buffer_data *datap = &bufferp->tex_buf[texi];
 
-	if ( is_minimum_GLSL_version() ) {
-		opengl_render_model_program(material_info, vert_source, bufferp, datap);
-	} else {
-		opengl_render_model_fixed(material_info, vert_source, bufferp, datap);
-	}
+	opengl_render_model_program(material_info, vert_source, bufferp, datap);
 
 	GL_CHECK_FOR_ERRORS("end of render_buffer()");
 }
@@ -1086,11 +1070,7 @@ void gr_opengl_render_buffer(int start, vertex_buffer *bufferp, size_t texi, int
 
 	buffer_data *datap = &bufferp->tex_buf[texi];
 
-	if ( is_minimum_GLSL_version() ) {
-		opengl_render_pipeline_program(start, bufferp, datap, flags);
-	} else {
-		opengl_render_pipeline_fixed(start, bufferp, datap, flags);
-	}
+	opengl_render_pipeline_program(start, bufferp, datap, flags);
 
 	GL_CHECK_FOR_ERRORS("end of render_buffer()");
 }
@@ -1243,11 +1223,6 @@ void opengl_start_instance_matrix_fixed_pipeline(const vec3d *offset, const matr
 
 void gr_opengl_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_start_instance_matrix_fixed_pipeline(offset, rotation);
-		return;
-	}
-
 	Assert( GL_htl_projection_matrix_set );
 	Assert( GL_htl_view_matrix_set );
 
@@ -1293,11 +1268,6 @@ void opengl_end_instance_matrix_fixed_pipeline()
 
 void gr_opengl_end_instance_matrix()
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_end_instance_matrix_fixed_pipeline();
-		return;
-	}
-
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
 
@@ -1318,10 +1288,6 @@ void opengl_set_projection_matrix_fixed_pipeline(float fov, float aspect, float 
 // the projection matrix; fov, aspect ratio, near, far
 void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, float z_far)
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_set_projection_matrix_fixed_pipeline(fov, aspect, z_near, z_far);
-	}
-	
 	GL_CHECK_FOR_ERRORS("start of set_projection_matrix()()");
 	
 	if (GL_rendering_to_texture) {
@@ -1355,11 +1321,6 @@ void opengl_end_projection_matrix_fixed_pipeline()
 
 void gr_opengl_end_projection_matrix()
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_end_projection_matrix_fixed_pipeline();
-		return;
-	}
-
 	GL_CHECK_FOR_ERRORS("start of end_projection_matrix()");
 
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
@@ -1385,11 +1346,6 @@ void opengl_set_view_matrix_fixed_pipeline(const vec3d *pos, const matrix *orien
 
 void gr_opengl_set_view_matrix(const vec3d *pos, const matrix *orient)
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_set_view_matrix_fixed_pipeline(pos, orient);
-		return;
-	}
-
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_modelview_matrix_depth == 1);
 
@@ -1435,11 +1391,6 @@ void opengl_end_view_matrix_fixed_pipeline()
 
 void gr_opengl_end_view_matrix()
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_end_view_matrix_fixed_pipeline();
-		return;
-	}
-
 	Assert(GL_modelview_matrix_depth == 2);
 
 	GL_model_matrix_stack.clear();
@@ -1460,11 +1411,6 @@ void opengl_set_2d_matrix_fixed_pipeline()
 // TODO: this probably needs to accept values
 void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_set_2d_matrix_fixed_pipeline();
-		return;
-	}
-
 	// don't bother with this if we aren't even going to need it
 	if ( !GL_htl_projection_matrix_set ) {
 		return;
@@ -1507,11 +1453,6 @@ void opengl_end_2d_matrix_fixed_pipeline()
 // ends a previously set 2d view and projection matrix
 void gr_opengl_end_2d_matrix()
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_end_2d_matrix_fixed_pipeline();
-		return;
-	}
-
 	if (!GL_htl_2d_matrix_set)
 		return;
 
@@ -1542,11 +1483,6 @@ void opengl_push_scale_matrix_fixed_pipeline(const vec3d *scale_factor)
 
 void gr_opengl_push_scale_matrix(const vec3d *scale_factor)
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_push_scale_matrix_fixed_pipeline(scale_factor);
-		return;
-	}
-
 	if ( (scale_factor->xyz.x == 1) && (scale_factor->xyz.y == 1) && (scale_factor->xyz.z == 1) )
 		return;
 
@@ -1567,11 +1503,6 @@ void opengl_pop_scale_matrix_fixed_pipeline()
 
 void gr_opengl_pop_scale_matrix()
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_pop_scale_matrix_fixed_pipeline();
-		return;
-	}
-
 	if (!GL_scale_matrix_set) 
 		return;
 
@@ -1586,38 +1517,17 @@ void gr_opengl_pop_scale_matrix()
 
 void gr_opengl_end_clip_plane()
 {
-	if ( is_minimum_GLSL_version() ) {
-		return;
-	}
-
-	GL_state.ClipPlane(0, GL_FALSE);
+	// The shaders handle this now
 }
 
 void gr_opengl_start_clip_plane()
 {
-	if ( is_minimum_GLSL_version() ) {
-		// bail since we're gonna clip in the shader
-		return;
-	}
-
-	GLdouble clip_equation[4];
-
-	clip_equation[0] = (GLdouble)G3_user_clip_normal.xyz.x;
-	clip_equation[1] = (GLdouble)G3_user_clip_normal.xyz.y;
-	clip_equation[2] = (GLdouble)G3_user_clip_normal.xyz.z;
-
-	clip_equation[3] = (GLdouble)(G3_user_clip_normal.xyz.x * G3_user_clip_point.xyz.x)
-						+ (GLdouble)(G3_user_clip_normal.xyz.y * G3_user_clip_point.xyz.y)
-						+ (GLdouble)(G3_user_clip_normal.xyz.z * G3_user_clip_point.xyz.z);
-	clip_equation[3] *= -1.0;
-
-
-	GL_state.ClipPlane(0, GL_TRUE);
+	// The shaders handle this now
 }
 
 void gr_opengl_set_clip_plane(vec3d *clip_normal, vec3d *clip_point)
 {
-	if ( is_minimum_GLSL_version() && Current_shader != NULL && Current_shader->shader == SDR_TYPE_MODEL) {
+	if ( Current_shader != NULL && Current_shader->shader == SDR_TYPE_MODEL) {
 		return;
 	}
 
@@ -1775,10 +1685,6 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 	GL_state.SetTextureSource(material_info->get_texture_source());
 	GL_state.SetAlphaBlendMode(material_info->get_blend_mode());
 	GL_state.SetZbufferType(material_info->get_depth_mode());
-
-	if ( !is_minimum_GLSL_version() ) {
-		GL_state.Color(clr.red, clr.green, clr.blue, clr.alpha);
-	}
 
 	gr_set_cull(material_info->get_cull_mode() ? 1 : 0);
 

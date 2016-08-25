@@ -18725,7 +18725,7 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 
 void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint *render_flags)
 {
-	if ( !shipp->shader_effect_active || !is_minimum_GLSL_version() || Rendering_to_shadow_map ) {
+	if ( !shipp->shader_effect_active || Rendering_to_shadow_map ) {
 		return;
 	}
 

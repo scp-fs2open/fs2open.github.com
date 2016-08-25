@@ -120,20 +120,13 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 			GLLight->Position[2] = FSLight->vec2.xyz.z;
 			GLLight->Position[3] = 1.0f;
 
-			if ( is_minimum_GLSL_version() ) {
-				// Valathil: When using shaders pass the beam direction (not normalized IMPORTANT for calculation of tube)
-				vec3d a;
-				vm_vec_sub(&a, &FSLight->vec2, &FSLight->vec);
-				GLLight->SpotDir[0] = a.xyz.x; 
-				GLLight->SpotDir[1] = a.xyz.y;
-				GLLight->SpotDir[2] = a.xyz.z;
-				GLLight->SpotCutOff = 90.0f; // Valathil: So shader dectects tube light
-			} else {
-				GLLight->SpotDir[0] = 1.0f; // Valathil: When not using shaders pass a fake spotdir
-				GLLight->SpotDir[1] = 0.0f;
-				GLLight->SpotDir[2] = 0.0f;
-				GLLight->SpotCutOff = 180.0f; // Valathil: Should be a point light not a spot; using tube only for the light sorting
-			}
+			// Valathil: When using shaders pass the beam direction (not normalized IMPORTANT for calculation of tube)
+			vec3d a;
+			vm_vec_sub(&a, &FSLight->vec2, &FSLight->vec);
+			GLLight->SpotDir[0] = a.xyz.x;
+			GLLight->SpotDir[1] = a.xyz.y;
+			GLLight->SpotDir[2] = a.xyz.z;
+			GLLight->SpotCutOff = 90.0f; // Valathil: So shader dectects tube light
 			break;
 		}
 
@@ -205,11 +198,6 @@ void opengl_set_light_fixed_pipeline(int light_num, opengl_light *ltp)
 
 void opengl_set_light(int light_num, opengl_light *ltp)
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_set_light_fixed_pipeline(light_num, ltp);
-		return;
-	}
-
 	Assert(light_num < GL_max_lights);
 		
 	vec4 light_pos_world;
@@ -413,9 +401,7 @@ void gr_opengl_reset_lighting()
 //	memset( opengl_lights, 0, sizeof(opengl_light) * MAX_LIGHTS );
 
 	for (i = 0; i < GL_max_lights; i++) {
-		if ( is_minimum_GLSL_version() ) {
-			GL_state.Light(i, GL_FALSE);
-		}
+		GL_state.Light(i, GL_FALSE);
 
 		opengl_lights[i].occupied = false;
 	}
@@ -557,11 +543,6 @@ void opengl_set_lighting_fixed_pipeline(bool set, bool state)
 
 void gr_opengl_set_lighting(bool set, bool state)
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_set_lighting_fixed_pipeline(set, state);
-		return;
-	}
-
 	lighting_is_enabled = set;
 
 	if ( !state ) {
