@@ -1292,7 +1292,7 @@ void bg_bitmap_dlg::OnImportBackground()
 
 		// see if we have more than one background in this mission
 		count = 0;
-		while (skip_to_string("$Bitmap List:"))
+		while (skip_to_string(Mp, "$Bitmap List:"))
 			count++;
 
 		Mp = saved_mp;
@@ -1312,7 +1312,7 @@ void bg_bitmap_dlg::OnImportBackground()
 			}
 
 			for (i = 0; i < which + 1; i++)
-				skip_to_string("$Bitmap List:");
+				skip_to_string(Mp, "$Bitmap List:");
 		}
 
 		// now parse the background we've selected

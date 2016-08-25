@@ -153,7 +153,7 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 
 			// if this is a multiplayer campaign, get the max players
 			if ((*type) != CAMPAIGN_TYPE_SINGLE) {
-				skip_to_string("+Num Players:");
+				skip_to_string(Mp, "+Num Players:");
 				stuff_int(max_players);
 			}
 
@@ -191,7 +191,7 @@ int mission_campaign_get_mission_list(const char *filename, char **list, int max
 		read_file_text(filename);
 		reset_parse();
 
-		while (skip_to_string("$Mission:") > 0) {
+		while (skip_to_string(Mp, "$Mission:") > 0) {
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 			if (num < max)
 				list[num++] = vm_strdup(name);
@@ -1422,7 +1422,7 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 
 		// parse the mission file and actually read in the mission stuff
 		*num = 0;
-		while ( skip_to_string("$Mission:") == 1 ) {
+		while ( skip_to_string(Mp, "$Mission:") == 1 ) {
 			stuff_string(dest[*num], F_NAME, NAME_LENGTH);
 			(*num)++;
 		}
@@ -1455,8 +1455,8 @@ void read_mission_goal_list(int num)
 		init_sexp();
 
 		// first, read the mission notes for this mission.  Used in campaign editor
-		if (skip_to_string("#Mission Info")) {
-			if (skip_to_string("$Notes:")) {
+		if (skip_to_string(Mp, "#Mission Info")) {
+			if (skip_to_string(Mp, "$Notes:")) {
 				stuff_string(notes, F_NOTES, NOTES_LENGTH);
 				if (Campaign.missions[num].notes){
 					vm_free(Campaign.missions[num].notes);
@@ -1469,13 +1469,13 @@ void read_mission_goal_list(int num)
 
 		event_count = 0;
 		// skip to events section in the mission file.  Events come before goals, so we process them first
-		if (skip_to_string("#Events")) {
+		if (skip_to_string(Mp, "#Events")) {
 			while (1) {
-				if (skip_to_string("$Formula:", "#Goals") != 1){
+				if (skip_to_string(Mp, "$Formula:", "#Goals") != 1){
 					break;
 				}
 
-				z = skip_to_string("+Name:", "$Formula:");
+				z = skip_to_string(Mp, "+Name:", "$Formula:");
 				if (!z){
 					break;
 				}
@@ -1497,13 +1497,13 @@ void read_mission_goal_list(int num)
 		}
 
 		count = 0;
-		if (skip_to_string("#Goals")) {
+		if (skip_to_string(Mp, "#Goals")) {
 			while (1) {
-				if (skip_to_string("$Type:", "#End") != 1){
+				if (skip_to_string(Mp, "$Type:", "#End") != 1){
 					break;
 				}
 
-				z = skip_to_string("+Name:", "$Type:");
+				z = skip_to_string(Mp, "+Name:", "$Type:");
 				if (!z){
 					break;
 				}

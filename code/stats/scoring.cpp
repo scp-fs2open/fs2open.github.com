@@ -68,7 +68,7 @@ void parse_rank_tbl()
 
 		// parse in all the rank names
 		idx = 0;
-		skip_to_string("[RANK NAMES]");
+		skip_to_string(Mp, "[RANK NAMES]");
 		ignore_white_space(Mp);
 		while (required_string_either("#End", "$Name:")) {
 			Assert(idx < NUM_RANKS);

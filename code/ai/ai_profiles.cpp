@@ -126,7 +126,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					if (Num_ai_profiles >= MAX_AI_PROFILES)
 					{
 						Warning(LOCATION, "Too many profiles in ai_profiles.tbl!  Max is %d.\n", MAX_AI_PROFILES - 1);	// -1 because one is built-in
-						skip_to_string("#End", NULL);
+						skip_to_string(Mp, "#End");
 						break;
 					}
 

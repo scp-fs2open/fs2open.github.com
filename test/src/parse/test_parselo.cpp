@@ -417,3 +417,75 @@ TEST(ParseloTest, advance_to_terminator) {
 	advance_to_terminator(str, "& .");
 	ASSERT_STREQ(str, ".& Text");
 }
+
+TEST(ParseloTest, skip_to_string) {
+	ASSERT_EQ(EOF_CHAR, '\x80'); // for easier string building
+	ASSERT_EQ(EOLN, '\x0A');
+
+	char test_str[256];
+	char *str = test_str;
+	int rc;
+
+	strcpy_s(test_str, "\x80");
+	str = test_str;
+	rc = skip_to_string(str, "A");
+	EXPECT_EQ(str, test_str);
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "\x80");
+	str = test_str;
+	rc = skip_to_string(str, "A", "B");
+	EXPECT_EQ(str, test_str);
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "Test \x0A Test\x80");
+	str = test_str;
+	rc = skip_to_string(str, "A");
+	EXPECT_STREQ(str, "\x80");
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "Test \x0AX Test\x80");
+	str = test_str;
+	rc = skip_to_string(str, "X");
+	EXPECT_STREQ(str, " Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	// do not find search string if not at beginning of line (excluding whitespace)
+	strcpy_s(test_str, "Test X\x0AX Test\x80");
+	str = test_str;
+	rc = skip_to_string(str, "X");
+	EXPECT_STREQ(str, " Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test XYZ \x0AX \x0AY \x0A XYZ \x0AXYZ Test\x80");
+	str = test_str;
+	rc = skip_to_string(str, "XYZ");
+	EXPECT_STREQ(str, " \x0AXYZ Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	// stop and return 0 if line begins with # but does not match to
+	strcpy_s(test_str, "Test \x0A#X Y\x80");
+	str = test_str;
+	rc = skip_to_string(str, "#Z", "Y");
+	EXPECT_STREQ(str, "#X Y\x80");
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "Test \x0A#X Y\x80");
+	str = test_str;
+	rc = skip_to_string(str, "#X", "Y");
+	EXPECT_STREQ(str, " Y\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test \x0A Y \x0AX Test\x80");
+	str = test_str;
+	rc = skip_to_string(str, "X", "Y");
+	EXPECT_STREQ(str, "Y \x0AX Test\x80");
+	EXPECT_EQ(rc, -1);
+
+	// end is recongized only at start of string (excluding whitespace)
+	strcpy_s(test_str, "Test \x0A Test Y \x0AX Test\x80");
+	str = test_str;
+	rc = skip_to_string(str, "X", "Y");
+	EXPECT_STREQ(str, " Test\x80");
+	EXPECT_EQ(rc, 1);
+}

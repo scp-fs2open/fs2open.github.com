@@ -105,7 +105,24 @@ extern void diag_printf(char *format, ...);
 extern void error_display(int error_level, const char *format, ...);
 
 // skip
-extern int skip_to_string(char *pstr, char *end = NULL);
+/**
+ * Search for string `to` in `str`, skipping everything up to that point.
+ * Advance `str` past `to` if found.
+ *
+ * `to` and `end` are only recongnized if they are at the beginning of a
+ * line, excluding white space.
+ *
+ * If a line begins with `#` but does not match `to`, it is treated as the
+ * end of the file.
+ *
+ * @return 1 if found, 0 if `to` wasn't found (and hit end of file),
+ * or -1 if not found, but end of checking block was reached.
+ *
+ * @param str String to search in
+ * @param to String to skip to
+ * @param end String that ends the checking block
+ */
+extern int skip_to_string(char*& str, char *to, char *end = NULL);
 extern int skip_to_start_of_string(char *pstr, char *end = NULL);
 extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = NULL);
 

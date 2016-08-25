@@ -6355,13 +6355,13 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 			read_file_text(filename, CF_TYPE_MISSIONS);
 			reset_parse();
 
-			if (skip_to_string("$Name:") != 1) {
+			if (skip_to_string(Mp, "$Name:") != 1) {
 				nprintf(("Network", "Unable to process %s because we couldn't find $Name:", filename));
 				break;
 			}
 			stuff_string(mission_name, F_NAME, NAME_LENGTH);
 
-			if (skip_to_string("+Game Type Flags:") != 1) {
+			if (skip_to_string(Mp, "+Game Type Flags:") != 1) {
 				nprintf(("Network", "Unable to process %s because we couldn't find +Game Type Flags:\n", filename));
 				break;
 			}

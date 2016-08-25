@@ -327,33 +327,31 @@ static void advance_to_next_white(char*& str)
 	}
 }
 
-// Search for specified string, skipping everything up to that point.  Returns 1 if found,
-// 0 if string wasn't found (and hit end of file), or -1 if not found, but end of checking
-// block was reached.
-int skip_to_string(char *pstr, char *end)
+int skip_to_string(char*& str, char *to, char *end)
 {
-	ignore_white_space(Mp);
-	auto len = strlen(pstr);
-	size_t len2 = 0;
+	ignore_white_space(str);
+	auto to_len = strlen(to);
+	Assert(to_len > 0);
 
-	if (end)
-		len2 = strlen(end);
+	size_t end_len = 0;
+	if (end != NULL)
+		end_len = strlen(end);
 
-	while ((*Mp != EOF_CHAR) && strnicmp(pstr, Mp, len)) {
-		if (end && *Mp == '#')
+	while ((*str != EOF_CHAR) && strnicmp(to, str, to_len)) {
+		if (end && *str == '#')
 			return 0;
 
-		if (end && !strnicmp(end, Mp, len2))
+		if (end && !strnicmp(end, str, end_len))
 			return -1;
 
-		advance_to_eoln(Mp);
-		ignore_white_space(Mp);
+		advance_to_eoln(str);
+		ignore_white_space(str);
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR))
+	if ((*str == '\0') || (*str == EOF_CHAR))
 		return 0;
 
-	Mp += strlen(pstr);
+	str += to_len;
 	return 1;
 }
 
