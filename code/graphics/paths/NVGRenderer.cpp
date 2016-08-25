@@ -106,6 +106,8 @@ namespace graphics
 
 		void NVGRenderer::endFrame()
 		{
+			GR_DEBUG_SCOPE(nvg_scope, "NanoVG flush");
+
 			if ( GL_version >= 30 ) {
 				glBindVertexArray(0);
 			}

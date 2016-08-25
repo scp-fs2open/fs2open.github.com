@@ -876,6 +876,9 @@ typedef struct screen {
 	void (*gf_render_primitives_2d_immediate)(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 
 	bool (*gf_is_capable)(gr_capability capability);
+
+	void (*gf_push_debug_group)(const char* name);
+	void (*gf_pop_debug_group)();
 } screen;
 
 // handy macro
@@ -1243,6 +1246,16 @@ __inline bool gr_is_capable(gr_capability capability)
 	return (*gr_screen.gf_is_capable)(capability);
 }
 
+inline void gr_push_debug_group(const char* name)
+{
+	(*gr_screen.gf_push_debug_group)(name);
+}
+
+inline void gr_pop_debug_group()
+{
+	(*gr_screen.gf_pop_debug_group)();
+}
+
 // color functions
 void gr_get_color( int *r, int *g, int  b );
 void gr_init_color(color *c, int r, int g, int b);
@@ -1312,5 +1325,23 @@ void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode=GR_R
 * @param resize_mode The resize mode to use
 */
 void gr_print_timestamp(int x, int y, int timestamp, int resize_mode);
+
+namespace graphics {
+class DebugScope {
+ public:
+	explicit DebugScope(const char* name) {
+		gr_push_debug_group(name);
+	}
+	~DebugScope() {
+		gr_pop_debug_group();
+	}
+};
+}
+
+#ifndef NDEBUG
+#define GR_DEBUG_SCOPE(var, name) ::graphics::DebugScope var(name)
+#else
+#define GR_DEBUG_SCOPE(var, name) do {} while(0)
+#endif
 
 #endif

@@ -585,6 +585,12 @@ bool gr_stub_is_capable(gr_capability capability)
 	return false;
 }
 
+void gr_stub_push_debug_group(const char*){
+}
+
+void gr_stub_pop_debug_group(){
+}
+
 bool gr_stub_init() 
 {
 	if (gr_screen.res != GR_640) {
@@ -783,6 +789,9 @@ bool gr_stub_init()
 	gr_screen.gf_render_primitives_distortion = gr_stub_render_primitives_distortion;
 
 	gr_screen.gf_is_capable = gr_stub_is_capable;
+
+	gr_screen.gf_push_debug_group = gr_stub_push_debug_group;
+	gr_screen.gf_pop_debug_group = gr_stub_pop_debug_group;
 
 	return true;
 }

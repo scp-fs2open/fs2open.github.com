@@ -342,6 +342,8 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 void obj_render_queue_all()
 {
+	GR_DEBUG_SCOPE(scene_scope, "Render all objects");
+
 	object *objp;
 	int i;
 	draw_list scene;
