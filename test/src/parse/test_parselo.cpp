@@ -272,3 +272,42 @@ TEST(ParseloTest, ignore_gray_space) {
 	ASSERT_EQ(*str, EOLN);
 	ASSERT_STREQ(test_str, test_str_reference);
 }
+
+TEST(ParseloTest, skip_token) {
+	ASSERT_EQ(EOF_CHAR, '\x80'); // for easier string building
+	ASSERT_EQ(EOLN, '\x0A');
+
+	char test_str[256];
+	memset(test_str, '\0', sizeof(test_str));
+	char *str = test_str;
+
+	strcpy_s(test_str, " A$C\x80");
+	str = test_str;
+	skip_token(str);
+	ASSERT_STREQ(str, "\x80");
+
+	strcpy_s(test_str, " A(B$C\t \x80");
+	str = test_str;
+	skip_token(str);
+	ASSERT_STREQ(str, "\t \x80");
+
+	strcpy_s(test_str, " \t  #ABC D\x80");
+	str = test_str;
+	skip_token(str);
+	ASSERT_STREQ(str, " D\x80");
+
+	strcpy_s(test_str, "\n\t A\"BC\x80 D");
+	str = test_str;
+	skip_token(str);
+	ASSERT_STREQ(str, "\x80 D");
+
+	strcpy_s(test_str, " \t \x0A \x80");
+	str = test_str;
+	skip_token(str);
+	ASSERT_STREQ(str, "\x80");
+
+	strcpy_s(test_str, "\x80");
+	str = test_str;
+	skip_token(str);
+	ASSERT_STREQ(str, "\x80");
+}

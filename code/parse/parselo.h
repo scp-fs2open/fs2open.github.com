@@ -74,6 +74,7 @@ extern int get_index_of_first_hash_symbol(SCP_string &src);
 
 // white space
 extern int is_white_space(char ch);
+
 /**
  * Advances str to the first non-white space character.
  * Stops at EOF_CHAR.
@@ -90,6 +91,7 @@ extern void drop_white_space(SCP_string &str);
 
 // gray space
 extern int is_gray_space(char ch);
+
 /**
  * Advances str to the first non-gray space character.
  * Stops at EOF_CHAR.
@@ -107,7 +109,11 @@ extern int skip_to_string(char *pstr, char *end = NULL);
 extern int skip_to_start_of_string(char *pstr, char *end = NULL);
 extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = NULL);
 extern void advance_to_eoln(char *terminators);
-extern void skip_token();
+
+/**
+ * Advances str past the current token.
+ */
+extern void skip_token(char*& str);
 
 // optional
 extern int optional_string(const char *pstr);
@@ -196,7 +202,7 @@ void stuff_flagset(T *dest) {
     dest->from_long(atol2());
 
     if (my_errno)
-        skip_token();
+        skip_token(Mp);
     else
         Mp += strspn(Mp, "+-0123456789");
 

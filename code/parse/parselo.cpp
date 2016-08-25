@@ -172,13 +172,12 @@ void drop_white_space(SCP_string &str)
 	drop_leading_white_space(str);
 }
 
-//	Advances Mp past current token.
-void skip_token()
+void skip_token(char*& str)
 {
-	ignore_white_space(Mp);
+	ignore_white_space(str);
 
-	while ((*Mp != EOF_CHAR) && !is_white_space(*Mp))
-		Mp++;
+	while ((*str != EOF_CHAR) && !is_white_space(*str))
+		str++;
 }
 
 //	Display a diagnostic message if Verbose is set.
@@ -2307,7 +2306,7 @@ void stuff_float(float *f)
 	*f = atof2();
 
 	if (my_errno)
-		skip_token();
+		skip_token(Mp);
 	else
 		Mp += strspn(Mp, "+-0123456789.");
 
@@ -2350,7 +2349,7 @@ void stuff_int(int *i)
 	*i = atoi2();
 
 	if (my_errno)
-		skip_token();
+		skip_token(Mp);
 	else
 		Mp += strspn(Mp, "+-0123456789");
 
@@ -2627,7 +2626,7 @@ void stuff_ubyte(ubyte *i)
 	*i = (ubyte)temp;
 
 	if (my_errno)
-		skip_token();
+		skip_token(Mp);
 	else
 		Mp += strspn(Mp, "+-0123456789");
 
