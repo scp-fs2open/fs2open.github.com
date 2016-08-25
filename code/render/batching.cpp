@@ -32,7 +32,7 @@ int primitive_batch::load_buffer(batch_vertex* buffer, int n_verts)
 {
 	size_t verts_to_render = Vertices.size();
 
-	for ( int i = 0; i < verts_to_render; ++i) {
+	for ( size_t i = 0; i < verts_to_render; ++i) {
 		buffer[n_verts+i] = Vertices[i];
 	}
 
