@@ -941,13 +941,13 @@ void briefing_editor_dlg::OnMakeIcon()
 	int cargo = 0, cargo_count = 0, freighter_count = 0;
 	object *ptr;
 	vec3d min, max, pos;
-	brief_icon *iconp;
+	brief_icon *biconp;
 
 	if (Briefing->stages[m_cur_stage].num_icons >= MAX_STAGE_ICONS)
 		return;
 
 	m_cur_icon = Briefing->stages[m_cur_stage].num_icons++;
-	iconp = &Briefing->stages[m_cur_stage].icons[m_cur_icon];
+	biconp = &Briefing->stages[m_cur_stage].icons[m_cur_icon];
 	ship = waypoint = -1;
 	team = 0;
 	SCP_list<CJumpNode>::iterator jnp;
@@ -1039,84 +1039,84 @@ void briefing_editor_dlg::OnMakeIcon()
 	if (len >= MAX_LABEL_LEN - 1)
 		len = MAX_LABEL_LEN - 1;
 
-	strncpy(iconp->label, name, len);
-	iconp->label[len] = 0;
+	strncpy(biconp->label, name, len);
+	biconp->label[len] = 0;
 //	iconp->text[0] = 0;
-	iconp->type = 0;
-	iconp->team = team;
-	iconp->pos = pos;
-	iconp->flags = 0;
-	iconp->id = Cur_brief_id++;
+	biconp->type = 0;
+	biconp->team = team;
+	biconp->pos = pos;
+	biconp->flags = 0;
+	biconp->id = Cur_brief_id++;
 	if (ship >= 0) {
-		iconp->ship_class = Ships[ship].ship_info_index;
+		biconp->ship_class = Ships[ship].ship_info_index;
         ship_info* sip = &Ship_info[Ships[ship].ship_info_index];
 
         if (sip->flags[Ship::Info_Flags::Knossos_device])
-            iconp->type = ICON_KNOSSOS_DEVICE;
+            biconp->type = ICON_KNOSSOS_DEVICE;
         else if (sip->flags[Ship::Info_Flags::Corvette])
-            iconp->type = ICON_CORVETTE;
+            biconp->type = ICON_CORVETTE;
         else if (sip->flags[Ship::Info_Flags::Gas_miner])
-            iconp->type = ICON_GAS_MINER;
+            biconp->type = ICON_GAS_MINER;
         else if (sip->flags[Ship::Info_Flags::Supercap])
-            iconp->type = ICON_SUPERCAP;
+            biconp->type = ICON_SUPERCAP;
         else if (sip->flags[Ship::Info_Flags::Sentrygun])
-            iconp->type = ICON_SENTRYGUN;
+            biconp->type = ICON_SENTRYGUN;
         else if (sip->flags[Ship::Info_Flags::Awacs])
-            iconp->type = ICON_AWACS;
+            biconp->type = ICON_AWACS;
         else if (sip->flags[Ship::Info_Flags::Cargo])
             if (cargo)
-                iconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
+                biconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
             else
-                iconp->type = count ? ICON_CARGO_WING : ICON_CARGO;
+                biconp->type = count ? ICON_CARGO_WING : ICON_CARGO;
         else if (sip->flags[Ship::Info_Flags::Support])
-            iconp->type = ICON_SUPPORT_SHIP;
+            biconp->type = ICON_SUPPORT_SHIP;
         else if (sip->flags[Ship::Info_Flags::Fighter])
-            iconp->type = count ? ICON_FIGHTER_WING : ICON_FIGHTER;
+            biconp->type = count ? ICON_FIGHTER_WING : ICON_FIGHTER;
         else if (sip->flags[Ship::Info_Flags::Bomber])
-            iconp->type = count ? ICON_BOMBER_WING : ICON_BOMBER;
+            biconp->type = count ? ICON_BOMBER_WING : ICON_BOMBER;
         else if (sip->flags[Ship::Info_Flags::Freighter])
             if (cargo)
-                iconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
+                biconp->type = (count == 1) ? ICON_FREIGHTER_WITH_CARGO : ICON_FREIGHTER_WING_WITH_CARGO;
             else
-                iconp->type = count ? ICON_FREIGHTER_WING_NO_CARGO : ICON_FREIGHTER_NO_CARGO;
+                biconp->type = count ? ICON_FREIGHTER_WING_NO_CARGO : ICON_FREIGHTER_NO_CARGO;
         else if (sip->flags[Ship::Info_Flags::Cruiser])
-            iconp->type = count ? ICON_CRUISER_WING : ICON_CRUISER;
+            biconp->type = count ? ICON_CRUISER_WING : ICON_CRUISER;
         else if (sip->flags[Ship::Info_Flags::Transport])
-            iconp->type = count ? ICON_TRANSPORT_WING : ICON_TRANSPORT;
+            biconp->type = count ? ICON_TRANSPORT_WING : ICON_TRANSPORT;
         else if (sip->flags[Ship::Info_Flags::Capital] || sip->flags[Ship::Info_Flags::Drydock])
-            iconp->type = ICON_CAPITAL;
+            biconp->type = ICON_CAPITAL;
         else if (sip->flags[Ship::Info_Flags::Navbuoy])
-            iconp->type = ICON_WAYPOINT;
+            biconp->type = ICON_WAYPOINT;
         else
-            iconp->type = ICON_ASTEROID_FIELD;
+            biconp->type = ICON_ASTEROID_FIELD;
 	}
 	// jumpnodes
 	else if(jnp != Jump_nodes.end()){
 		// find the first navbuoy
-		iconp->ship_class = -1;
+		biconp->ship_class = -1;
         for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
         {
             if (it->flags[Ship::Info_Flags::Navbuoy])
             {
-                iconp->ship_class = std::distance(Ship_info.cbegin(), it);
+                biconp->ship_class = std::distance(Ship_info.cbegin(), it);
                 break;
             }
         }
-		iconp->type = ICON_JUMP_NODE;
+		biconp->type = ICON_JUMP_NODE;
 	} 
 	// everything else
 	else {
 		// find the first navbuoy
-		iconp->ship_class = -1;
+		biconp->ship_class = -1;
         for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
         {
             if (it->flags[Ship::Info_Flags::Navbuoy])
             {
-                iconp->ship_class = std::distance(Ship_info.cbegin(), it);
+                biconp->ship_class = std::distance(Ship_info.cbegin(), it);
                 break;
             }
         }
-		iconp->type = ICON_WAYPOINT;
+		biconp->type = ICON_WAYPOINT;
 	}
 
 	if (!m_change_local){

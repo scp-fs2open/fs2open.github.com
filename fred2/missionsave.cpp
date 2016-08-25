@@ -648,7 +648,7 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship) {
 }
 
 int CFred_mission_save::save_asteroid_fields() {
-	int i, idx;
+	int i;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Asteroid Fields");
@@ -692,7 +692,7 @@ int CFred_mission_save::save_asteroid_fields() {
 			}
 		} else {
 			// asteroid subtypes stored in field_debris_type as -1 or 1
-			for (idx = 0; idx < 3; idx++) {
+			for (auto idx = 0; idx < 3; idx++) {
 				if (Asteroid_field.field_debris_type[idx] != -1) {
 					if (optional_string_fred("+Field Debris Type:")) {
 						parse_comments();
@@ -2640,7 +2640,7 @@ int CFred_mission_save::save_music() {
 
 int CFred_mission_save::save_objects() {
 	SCP_string sexp_out;
-	int i, j, z;
+	int i, z;
 	ai_info *aip;
 	object *objp;
 	ship *shipp;
@@ -2655,7 +2655,7 @@ int CFred_mission_save::save_objects() {
 			continue;
 		}
 
-		j = Objects[Ships[i].objnum].type;
+		auto j = Objects[Ships[i].objnum].type;
 		if ((j != OBJ_SHIP) && (j != OBJ_START)) {
 			continue;
 		}
@@ -2788,7 +2788,7 @@ int CFred_mission_save::save_objects() {
 		// Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if ((shipp->arrival_location == ARRIVE_FROM_DOCK_BAY) && (shipp->arrival_path_mask > 0)) {
-				int j, anchor_shipnum;
+				int anchor_shipnum;
 				polymodel *pm;
 
 				anchor_shipnum = shipp->arrival_anchor;
@@ -2797,9 +2797,9 @@ int CFred_mission_save::save_objects() {
 				fout("\n+Arrival Paths: ( ");
 
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
-				for (j = 0; j < pm->ship_bay->num_paths; j++) {
-					if (shipp->arrival_path_mask & (1 << j)) {
-						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
+					if (shipp->arrival_path_mask & (1 << n)) {
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
 					}
 				}
 
@@ -2838,7 +2838,7 @@ int CFred_mission_save::save_objects() {
 		// Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if ((shipp->departure_location == DEPART_AT_DOCK_BAY) && (shipp->departure_path_mask > 0)) {
-				int j, anchor_shipnum;
+				int anchor_shipnum;
 				polymodel *pm;
 
 				anchor_shipnum = shipp->departure_anchor;
@@ -2847,9 +2847,9 @@ int CFred_mission_save::save_objects() {
 				fout("\n+Departure Paths: ( ");
 
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
-				for (j = 0; j < pm->ship_bay->num_paths; j++) {
-					if (shipp->departure_path_mask & (1 << j)) {
-						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
+					if (shipp->departure_path_mask & (1 << n)) {
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
 					}
 				}
 
@@ -3945,7 +3945,7 @@ int CFred_mission_save::save_wings() {
 		// Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if ((Wings[i].arrival_location == ARRIVE_FROM_DOCK_BAY) && (Wings[i].arrival_path_mask > 0)) {
-				int j, anchor_shipnum;
+				int anchor_shipnum;
 				polymodel *pm;
 
 				anchor_shipnum = Wings[i].arrival_anchor;
@@ -3954,9 +3954,9 @@ int CFred_mission_save::save_wings() {
 				fout("\n+Arrival Paths: ( ");
 
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
-				for (j = 0; j < pm->ship_bay->num_paths; j++) {
-					if (Wings[i].arrival_path_mask & (1 << j)) {
-						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
+					if (Wings[i].arrival_path_mask & (1 << n)) {
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
 					}
 				}
 
@@ -3995,7 +3995,7 @@ int CFred_mission_save::save_wings() {
 		// Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if ((Wings[i].departure_location == DEPART_AT_DOCK_BAY) && (Wings[i].departure_path_mask > 0)) {
-				int j, anchor_shipnum;
+				int anchor_shipnum;
 				polymodel *pm;
 
 				anchor_shipnum = Wings[i].departure_anchor;
@@ -4004,9 +4004,9 @@ int CFred_mission_save::save_wings() {
 				fout("\n+Departure Paths: ( ");
 
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
-				for (j = 0; j < pm->ship_bay->num_paths; j++) {
-					if (Wings[i].departure_path_mask & (1 << j)) {
-						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
+					if (Wings[i].departure_path_mask & (1 << n)) {
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
 					}
 				}
 
