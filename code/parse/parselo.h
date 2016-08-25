@@ -112,7 +112,13 @@ extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = 
 /**
  * Advance str to the next EOLN or EOF_CHAR.
  */
-extern void advance_to_eoln(char*& str, char *terminators);
+extern void advance_to_eoln(char*& str);
+
+/**
+ * Advance str to the next character in terminators or EOLN or EOF_CHAR.
+ * terminators may be NULL.
+ */
+extern void advance_to_terminator(char*& str, char *terminators);
 
 /**
  * Advances str past the current token.

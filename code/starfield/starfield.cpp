@@ -582,7 +582,7 @@ void parse_startbl(const char *filename)
 			// extra "#end" line in it.
 			if (optional_string("#end") || (run_count++ > 5)) {
 				run_count = 0;
-				advance_to_eoln(Mp, NULL);
+				advance_to_eoln(Mp);
 			}
 		}
 	}

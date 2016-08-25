@@ -597,7 +597,7 @@ void parse_gamesnd_old(game_snd* gs)
 	if (!stricmp(gs->filename, NOX("empty")))
 	{
 		gs->filename[0] = 0;
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 		return;
 	}
 	Mp++;
@@ -653,7 +653,7 @@ void parse_gamesnd_old(game_snd* gs)
 		Warning(LOCATION, "Unexpected extra value %d found for sound '%s' (filename '%s')!  Check the format of the sounds.tbl (or .tbm) entry.", temp, gs->name.c_str(), gs->filename);
 	}
 
-	advance_to_eoln(Mp, NULL);
+	advance_to_eoln(Mp);
 }
 
 EnhancedSoundPriority convert_to_enhanced_priority(const char * priority_str)

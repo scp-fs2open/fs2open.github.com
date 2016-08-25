@@ -287,7 +287,12 @@ void error_display(int error_level, const char *format, ...)
 		Error(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
 }
 
-void advance_to_eoln(char*& str, char *more_terminators)
+void advance_to_eoln(char*& str)
+{
+	advance_to_terminator(str, NULL);
+}
+
+void advance_to_terminator(char*& str, char *more_terminators)
 {
 	char terminators[128];
 
@@ -296,7 +301,6 @@ void advance_to_eoln(char*& str, char *more_terminators)
 	terminators[0] = EOLN;
 	terminators[1] = EOF_CHAR;
 	terminators[2] = 0;
-
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
 
@@ -342,7 +346,7 @@ int skip_to_string(char *pstr, char *end)
 		if (end && !strnicmp(end, Mp, len2))
 			return -1;
 
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 		ignore_white_space(Mp);
 	}
 
@@ -372,7 +376,7 @@ int skip_to_start_of_string(char *pstr, char *end)
 		if (end && !strnicmp(end, Mp, endlen))
 			return 0;
 
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 		ignore_white_space(Mp);
 	}
 
@@ -402,7 +406,7 @@ int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end)
 		if (end && !strnicmp(end, Mp, endlen))
 			return 0;
 
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 		ignore_white_space(Mp);
 	}
 
@@ -426,7 +430,7 @@ int required_string(const char *pstr)
 
 	while (strnicmp(pstr, Mp, strlen(pstr)) && (count < RS_MAX_TRIES)) {
 		error_display(1, "Missing required token: [%s]. Found [%.32s] instead.\n", pstr, next_tokens());
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 		ignore_white_space(Mp);
 		count++;
 	}
@@ -558,7 +562,7 @@ int required_string_fred(char *pstr, char *end)
 			break;
 		}
 
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 		ignore_white_space(Mp);
 	}
 
@@ -596,7 +600,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 			break;
 		}
 
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 		ignore_white_space(Mp);
 	}
 
@@ -640,7 +644,7 @@ int required_string_either(char *str1, char *str2)
 
 		error_display(1, "Required token = [%s] or [%s], found [%.32s].\n", str1, str2, next_tokens());
 
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 		ignore_white_space(Mp);
 	}
 
@@ -699,7 +703,7 @@ int required_string_one_of(int arg_count, ...)
 		}
 
 		error_display(1, "%s, found [%.32s]\n", message.c_str(), next_tokens());
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 		ignore_white_space(Mp);
 		count++;
 	}
@@ -723,7 +727,7 @@ int required_string_either_fred(char *str1, char *str2)
 			return fred_parse_flag = 1;
 		}
 
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 		ignore_white_space(Mp);
 	}
 
@@ -1158,7 +1162,7 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 			ignore_gray_space(Mp);
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
-			advance_to_eoln(Mp, terminators);
+			advance_to_terminator(Mp, terminators);
 			break;
 
 		case F_NOTES:
@@ -1240,7 +1244,7 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 			ignore_gray_space(Mp);
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
-			advance_to_eoln(Mp, terminators);
+			advance_to_terminator(Mp, terminators);
 			break;
 
 		case F_NOTES:
@@ -1311,7 +1315,7 @@ void stuff_string_line(char *outstr, int len)
 	// read in a line
 	copy_to_eoln(read_str, "\n", Mp, read_len);
 	drop_trailing_white_space(read_str);
-	advance_to_eoln(Mp, "");
+	advance_to_eoln(Mp);
 	Mp++;
 
 	// now we want to do any final localization
@@ -1334,7 +1338,7 @@ void stuff_string_line(SCP_string &outstr)
 	// read in a line
 	copy_to_eoln(read_str, "\n", Mp);
 	drop_trailing_white_space(read_str);
-	advance_to_eoln(Mp, "");
+	advance_to_eoln(Mp);
 	Mp++;
 
 	// now we want to do any final localization
@@ -2517,7 +2521,7 @@ void stuff_boolean(bool *b, bool a_to_eol)
 	char token[32];
 	stuff_string_white(token, sizeof(token)/sizeof(char));
 	if(a_to_eol)
-		advance_to_eoln(Mp, NULL);
+		advance_to_eoln(Mp);
 
 	if( isdigit(token[0]))
 	{
