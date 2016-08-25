@@ -434,7 +434,7 @@ bool StartAutopilot()
 				if (leader_objp != &Objects[Ships[i].objnum])
 				{
 					// not leader.. get our position relative to leader
-					get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+					get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags[AI::AI_Flags::Formation_object]);
 				}
 				else
 				{

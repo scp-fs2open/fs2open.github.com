@@ -199,7 +199,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					ignore_count = (shipp->flags[Ship::Ship_Flags::Ignore_count]) ? 1 : 0;
 					no_arrival_music = (shipp->flags[Ship::Ship_Flags::No_arrival_music]) ? 1 : 0;
 					cargo_known = (shipp->flags[Ship::Ship_Flags::Cargo_revealed]) ? 1 : 0;
-					no_dynamic = (Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC) ? 1 : 0;
+					no_dynamic = (Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::No_dynamic]) ? 1 : 0;
 					disable_messages = (shipp->flags[Ship::Ship_Flags::No_builtin_messages]) ? 1 : 0;
 					set_class_dynamically = (shipp->flags[Ship::Ship_Flags::Set_class_dynamically]) ? 1 : 0;
 					no_death_scream = (shipp->flags[Ship::Ship_Flags::No_death_scream]) ? 1 : 0;
@@ -220,7 +220,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					destroy_before_mission = (shipp->flags[Ship::Ship_Flags::Kill_before_mission]) ? 1 : 0;
 					m_destroy_value.init(shipp->final_death_time);
 
-					kamikaze = (Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) ? 1 : 0;
+					kamikaze = (Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze]) ? 1 : 0;
 					m_kdamage.init( Ai_info[shipp->ai_index].kamikaze_damage );
 
 					escort = (shipp->flags[Ship::Ship_Flags::Escort]) ? 1 : 0;
@@ -261,7 +261,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					ignore_count = tristate_set(shipp->flags[Ship::Ship_Flags::Ignore_count], ignore_count);
 					no_arrival_music = tristate_set(shipp->flags[Ship::Ship_Flags::No_arrival_music], no_arrival_music);
 					cargo_known = tristate_set(shipp->flags[Ship::Ship_Flags::Cargo_revealed], cargo_known);
-					no_dynamic = tristate_set( Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC, no_dynamic );
+					no_dynamic = tristate_set( Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::No_dynamic], no_dynamic );
 					disable_messages = tristate_set(shipp->flags[Ship::Ship_Flags::No_builtin_messages], disable_messages);
 					set_class_dynamically = tristate_set(shipp->flags[Ship::Ship_Flags::Set_class_dynamically], set_class_dynamically);
 					no_death_scream = tristate_set(shipp->flags[Ship::Ship_Flags::No_death_scream], no_death_scream);
@@ -285,7 +285,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					destroy_before_mission = tristate_set(shipp->flags[Ship::Ship_Flags::Kill_before_mission], destroy_before_mission);
 					m_destroy_value.set(shipp->final_death_time);
 
-					kamikaze = tristate_set( Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE, kamikaze );
+					kamikaze = tristate_set( Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze], kamikaze );
 					m_kdamage.set( Ai_info[shipp->ai_index].kamikaze_damage );
 
 					escort = tristate_set(shipp->flags[Ship::Ship_Flags::Escort], escort);
@@ -791,17 +791,17 @@ void ship_flags_dlg::update_ship(int shipnum)
 
 	switch (m_no_dynamic.GetCheck()) {
 		case 1:
-			if ( !(Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC) )
+			if ( !(Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::No_dynamic]) )
 				set_modified();
 
-			Ai_info[shipp->ai_index].ai_flags |= AIF_NO_DYNAMIC;
+			Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::No_dynamic);
 			break;
 
 		case 0:
-			if ( Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC )
+			if ( Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::No_dynamic] )
 				set_modified();
 
-			Ai_info[shipp->ai_index].ai_flags &= ~AIF_NO_DYNAMIC;
+			Ai_info[shipp->ai_index].ai_flags.remove(AI::AI_Flags::No_dynamic);
 			break;
 	}
 
@@ -809,20 +809,20 @@ void ship_flags_dlg::update_ship(int shipnum)
 		case 1: {
 			int damage;
 
-			if ( !(Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) )
+			if ( !(Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze]) )
 				set_modified();
 
-			Ai_info[shipp->ai_index].ai_flags |= AIF_KAMIKAZE;
+			Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Kamikaze);
 			m_kdamage.save(&damage);
 			Ai_info[shipp->ai_index].kamikaze_damage = damage;
 			break;
 		}
 
 		case 0:
-			if ( Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE )
+			if ( Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze] )
 				set_modified();
 
-			Ai_info[shipp->ai_index].ai_flags &= ~AIF_KAMIKAZE;
+			Ai_info[shipp->ai_index].ai_flags.remove(AI::AI_Flags::Kamikaze);
 			Ai_info[shipp->ai_index].kamikaze_damage = 0;
 			break;
 	}

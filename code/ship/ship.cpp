@@ -7570,7 +7570,7 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 
 	Assert( (shipp != NULL) && (sip != NULL) );
 
-	if ((exp_objp->hull_strength <= KAMIKAZE_HULL_ON_DEATH) && (Ai_info[Ships[exp_objp->instance].ai_index].ai_flags & AIF_KAMIKAZE) && (shipp->special_exp_damage == -1)) {
+	if ((exp_objp->hull_strength <= KAMIKAZE_HULL_ON_DEATH) && (Ai_info[Ships[exp_objp->instance].ai_index].ai_flags[AI::AI_Flags::Kamikaze]) && (shipp->special_exp_damage == -1)) {
 		int override = Ai_info[shipp->ai_index].kamikaze_damage;
 
 		inner_rad = exp_objp->radius*2.0f;
@@ -7778,7 +7778,7 @@ void ship_dying_frame(object *objp, int ship_num)
 		objp->phys_info.desired_rotvel = shipp->deathroll_rotvel;
 
 		// Do fireballs for Big ship with propagating explostion, but not Kamikaze
-		if (!(Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) && ship_get_exp_propagates(shipp) && (sip->death_roll_r_mult > 0.0f)) {
+		if (!(Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze]) && ship_get_exp_propagates(shipp) && (sip->death_roll_r_mult > 0.0f)) {
 			if ( timestamp_elapsed(shipp->next_fireball))	{
 				vec3d outpnt, pnt1, pnt2;
 				polymodel *pm = model_get(sip->model_num);
@@ -7980,7 +7980,7 @@ void ship_dying_frame(object *objp, int ship_num)
 
 			// If this is a large ship with a propagating explosion, set it to blow up.
 			if ( ship_get_exp_propagates(shipp) )	{
-				if (Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) {
+				if (Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze]) {
 					ship_blow_up_area_apply_blast( objp );
 				}
 				shipfx_large_blowup_init(shipp);
@@ -8928,7 +8928,7 @@ void ship_process_post(object * obj, float frametime)
 		if ( (obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai )
 		{
 			ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
-			if (aip->ai_flags & (AIF_AWAITING_REPAIR | AIF_BEING_REPAIRED))
+			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
 			{
 				if (aip->support_ship_objnum >= 0)
 				{
@@ -11006,7 +11006,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				if ( winfo_p->wi_flags[Weapon::Info_Flags::Ballistic] )
 				{
 					// If ship is being repaired/rearmed, it cannot fire ballistics
-					if ( aip->ai_flags & AIF_BEING_REPAIRED )
+					if ( aip->ai_flags[AI::AI_Flags::Being_repaired] )
 					{
 						continue;
 					}
@@ -11644,7 +11644,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	// If ship is being repaired/rearmed, it cannot fire missiles
-	if ( aip->ai_flags & AIF_BEING_REPAIRED ) {
+	if ( aip->ai_flags[AI::AI_Flags::Being_repaired] ) {
 		return 0;
 	}
 
@@ -13864,7 +13864,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 
 			dist = vm_vec_dist_quick(&objp->pos, &requester_obj->pos);
 
-			if (((aip->ai_flags & (AIF_REPAIRING|AIF_AWAITING_REPAIR|AIF_BEING_REPAIRED)) > 0))
+			if (aip->ai_flags[AI::AI_Flags::Repairing, AI::AI_Flags::Awaiting_repair, AI::AI_Flags::Being_repaired])
 			{
 				// support ship is already busy, track the one that will be
 				// done soonest by estimating how many seconds it will take for the support ship

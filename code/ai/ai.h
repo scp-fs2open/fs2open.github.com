@@ -28,47 +28,12 @@ class ship_info;
 #define	AI_DEFAULT_CLASS 3  // default AI class for new ships (Fred)
 
 typedef struct ai_flag_name {
-	int flag;
+	AI::AI_Flags flag;
 	char flag_name[TOKEN_LENGTH];
-	int flag_list;
 } ai_flag_name;
 
 #define MAX_AI_FLAG_NAMES			2
 extern ai_flag_name Ai_flag_names[];
-
-#define	AIF_FORMATION_WING					(1 << 0)	//	Fly in formation as part of wing.
-#define	AIF_AWAITING_REPAIR					(1 << 1)	//	Awaiting a repair ship.
-#define	AIF_BEING_REPAIRED					(1 << 2)	//	Currently docked with repair ship.
-#define	AIF_REPAIRING						(1 << 3)	//	Repairing a ship (or going to repair a ship)
-#define	AIF_SEEK_LOCK						(1 << 4)	//	set if should focus on gaining aspect lock, not hitting with lasers
-#define	AIF_FORMATION_OBJECT				(1 << 5)	//	Fly in formation off a specific object.
-#define	AIF_TEMPORARY_IGNORE				(1 << 6)	//	Means current ignore_objnum is only temporary, not an order from the player.
-#define	AIF_USE_EXIT_PATH					(1 << 7)	//  Used by path code, to flag path as an exit path
-#define	AIF_USE_STATIC_PATH					(1 << 8)	//  Used by path code, use fixed path, don't try to recreate
-#define	AIF_TARGET_COLLISION				(1 << 9)	//	Collided with aip->target_objnum last frame.  Avoid that ship for half a second or so.
-#define	AIF_UNLOAD_SECONDARIES				(1 << 10)	//	Fire secondaries as fast as possible!
-#define	AIF_ON_SUBSYS_PATH					(1 << 11)	//  Current path leads to a subsystem
-#define	AIF_AVOID_SHOCKWAVE_SHIP			(1 << 12)	//	Avoid an existing shockwave from a ship.
-#define	AIF_AVOID_SHOCKWAVE_WEAPON			(1 << 13)	//	Avoid an expected shockwave from a weapon.  shockwave_object field contains object index.
-#define	AIF_AVOID_SHOCKWAVE_STARTED			(1 << 14)	//	Already started avoiding shockwave, don't keep deciding whether to avoid.
-#define	AIF_ATTACK_SLOWLY					(1 << 15)	//	Move slowly while attacking.
-#define	AIF_REPAIR_OBSTRUCTED				(1 << 16)	//	Ship wants to be repaired, but path is obstructed.
-#define	AIF_KAMIKAZE						(1 << 17)	//	Crash into target
-#define	AIF_NO_DYNAMIC						(1 << 18)	//	Not allowed to get dynamic goals
-#define	AIF_AVOIDING_SMALL_SHIP				(1 << 19)	//	Avoiding a player ship.
-#define	AIF_AVOIDING_BIG_SHIP				(1 << 20)	//	Avoiding a large ship.
-#define	AIF_BIG_SHIP_COLLIDE_RECOVER_1		(1 << 21)	//	Collided into a big ship.  Recovering by flying away.
-#define	AIF_BIG_SHIP_COLLIDE_RECOVER_2		(1 << 22)	//	Collided into a big ship.  Fly towards big ship sphere perimeter.
-#define	AIF_STEALTH_PURSUIT					(1 << 23)	//  AI is trying to fight stealth ship
-
-// Goober5000
-#define	AIF_UNLOAD_PRIMARIES				(1 << 24)	//	Fire primaries as fast as possible!
-#define AIF_TRYING_UNSUCCESSFULLY_TO_WARP	(1 << 25)	// Trying to warp, but can't warp at the moment
-
-#define AIF_FREE_AFTERBURNER_USE			(1 << 26)	// Use afterburners while following waypoints or flying towards objects
-
-#define	AIF_AVOID_SHOCKWAVE		(AIF_AVOID_SHOCKWAVE_SHIP | AIF_AVOID_SHOCKWAVE_WEAPON)
-#define	AIF_FORMATION			(AIF_FORMATION_WING | AIF_FORMATION_OBJECT)
 
 //	dock_orient_and_approach() modes.
 #define	DOA_APPROACH	1		//	Approach the current point on the path (aip->path_cur)
@@ -326,7 +291,7 @@ extern pnode	*Ppfp;			//	Free pointer in path points.
 #define MAX_IGNORE_NEW_OBJECTS	7
 
 typedef struct ai_info {
-	int		ai_flags;				//	Special flags for AI behavior.
+	flagset<AI::AI_Flags> ai_flags;				//	Special flags for AI behavior.
 	int		shipnum;					// Ship using this slot, -1 means none.
 	int		type;						//	
 	int		wing;						//	Member of what wing? -1 means none. 

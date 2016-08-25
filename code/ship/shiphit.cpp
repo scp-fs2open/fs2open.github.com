@@ -1405,7 +1405,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	
 	if (objp->flags[Object::Object_Flags::Player_ship]) {
 		//	Note: Kamikaze ships have no minimum death time.
-		if (!(Ai_info[Ships[objp->instance].ai_index].ai_flags & AIF_KAMIKAZE) && (delta_time < MIN_PLAYER_DEATHROLL_TIME))
+		if (!(Ai_info[Ships[objp->instance].ai_index].ai_flags[AI::AI_Flags::Kamikaze]) && (delta_time < MIN_PLAYER_DEATHROLL_TIME))
 			delta_time = MIN_PLAYER_DEATHROLL_TIME;
 	}
 
@@ -1419,7 +1419,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	if (damage >= 250.0f)
 		delta_time += 3000 + (int)(damage*4.0f + 4.0f*objp->radius);
 
-	if (Ai_info[sp->ai_index].ai_flags & AIF_KAMIKAZE)
+	if (Ai_info[sp->ai_index].ai_flags[AI::AI_Flags::Kamikaze])
 		delta_time = 2;
 
 	// Knossos gets 7-10 sec to die, time for "little" explosions
