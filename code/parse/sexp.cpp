@@ -3609,15 +3609,15 @@ int stuff_sexp_variable_list()
 
 		// get index - for debug
 		stuff_int(&index);
-		ignore_gray_space();
+		ignore_gray_space(Mp);
 
 		// get var_name
 		get_string(var_name);
-		ignore_gray_space();
+		ignore_gray_space(Mp);
 
 		// get default_value;
 		get_string(default_value);
-		ignore_gray_space();
+		ignore_gray_space(Mp);
 
 		// get type
 		get_string(str_type);

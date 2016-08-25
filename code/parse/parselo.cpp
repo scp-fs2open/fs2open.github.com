@@ -78,10 +78,10 @@ void ignore_white_space(char*& str)
 		str++;
 }
 
-void ignore_gray_space()
+void ignore_gray_space(char *& str)
 {
-	while ((*Mp != EOF_CHAR) && is_gray_space(*Mp))
-		Mp++;
+	while ((*str != EOF_CHAR) && is_gray_space(*str))
+		str++;
 }
 
 //	Truncate *str, eliminating all trailing white space.
@@ -460,7 +460,7 @@ Returns 1 if it finds a newline character precded by any amount of grayspace.
 */
 int check_for_eoln()
 {
-	ignore_gray_space();
+	ignore_gray_space(Mp);
 
 	if(*Mp == EOLN)
 		return 1;
@@ -945,7 +945,7 @@ void stuff_string_until(char *outstr, char *endstr, int len)
 	if(!len)
 		len = NAME_LENGTH-1;
 
-	ignore_gray_space();
+	ignore_gray_space(Mp);
 	copy_text_until(outstr, Mp, endstr, len);
 	Mp += strlen(outstr);
 	drop_trailing_white_space(outstr);
@@ -954,7 +954,7 @@ void stuff_string_until(char *outstr, char *endstr, int len)
 // Goober5000
 void stuff_string_until(SCP_string &outstr, char *endstr)
 {
-	ignore_gray_space();
+	ignore_gray_space(Mp);
 	copy_text_until(outstr, Mp, endstr);
 	Mp += outstr.length();
 	drop_trailing_white_space(outstr);
@@ -1158,7 +1158,7 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 		case F_FILESPEC:
 		case F_PATHNAME:
 		case F_MESSAGE:
-			ignore_gray_space();
+			ignore_gray_space(Mp);
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
@@ -1240,7 +1240,7 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 		case F_FILESPEC:
 		case F_PATHNAME:
 		case F_MESSAGE:
-			ignore_gray_space();
+			ignore_gray_space(Mp);
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);

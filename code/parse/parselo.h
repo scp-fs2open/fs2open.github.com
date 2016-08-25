@@ -90,7 +90,11 @@ extern void drop_white_space(SCP_string &str);
 
 // gray space
 extern int is_gray_space(char ch);
-extern void ignore_gray_space();
+/**
+ * Advances str to the first non-gray space character.
+ * Stops at EOF_CHAR.
+ */
+extern void ignore_gray_space(char *& str);
 
 // error
 extern int get_line_num();

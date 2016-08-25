@@ -200,3 +200,75 @@ TEST(ParseloTest, ignore_white_space) {
 	ASSERT_EQ(*str, 'G');
 	ASSERT_STREQ(test_str, test_str_reference);
 }
+
+TEST(ParseloTest, ignore_gray_space) {
+	ASSERT_EQ(EOF_CHAR, '\x80'); // for easier string building
+	ASSERT_EQ(EOLN, '\x0A');
+
+	const char test_str_reference[] = "A B  C  \x80\tD \tE\x0A F\x0D\x0A\x0A";
+
+	char test_str[256];
+	strcpy_s(test_str, test_str_reference);
+
+	char * str = test_str;
+
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, 'A');
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	str++;
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, 'B');
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	str++;
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, 'C');
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	// EOF_CHAR is not gray space
+	str++;
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, EOF_CHAR);
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	str++;
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, 'D');
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	str++;
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, 'E');
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	str++;
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, EOLN);
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, EOLN);
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	str++;
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, 'F');
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	// \r = \x0D is not gray space
+	str++;
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, '\x0D');
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	str++;
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, EOLN);
+	ASSERT_STREQ(test_str, test_str_reference);
+
+	str++;
+	ignore_gray_space(str);
+	ASSERT_EQ(*str, EOLN);
+	ASSERT_STREQ(test_str, test_str_reference);
+}
