@@ -30,7 +30,7 @@ void primitive_batch::add_point_sprite(batch_vertex *p)
 
 int primitive_batch::load_buffer(batch_vertex* buffer, int n_verts)
 {
-	int verts_to_render = Vertices.size();
+	size_t verts_to_render = Vertices.size();
 
 	for ( int i = 0; i < verts_to_render; ++i) {
 		buffer[n_verts+i] = Vertices[i];
@@ -46,7 +46,6 @@ void primitive_batch::clear()
 
 void batching_setup_vertex_layout(vertex_layout *layout, uint vert_mask)
 {
-	int offset = 0;
 	int stride = sizeof(batch_vertex);
 
 	if ( vert_mask & vertex_format_data::mask(vertex_format_data::POSITION3) ) {
@@ -261,7 +260,7 @@ void batching_add_point_bitmap(primitive_batch *batch, vertex *position, int ori
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_POINTS);
 
 	float radius = rad;
-	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
+	radius *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
 
 	vec3d PNT(position->world);
 	vec3d fvec;
@@ -275,10 +274,10 @@ void batching_add_point_bitmap(primitive_batch *batch, vertex *position, int ori
 		vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
 
 	batch_vertex new_particle;
-	vec3d up;
+	vec3d up = { 0.0f, 1.0f, 0.0f };
 
 	new_particle.position = position->world;
-	new_particle.radius = rad;
+	new_particle.radius = radius;
 
 	int direction = orient % 4;
 
@@ -388,7 +387,7 @@ void batching_add_point_bitmap(primitive_batch *batch, vertex *position, float r
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_POINTS);
 
 	float radius = rad;
-	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
+	radius *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
 
 	vec3d PNT(position->world);
 	vec3d fvec;
@@ -407,7 +406,7 @@ void batching_add_point_bitmap(primitive_batch *batch, vertex *position, float r
 	vm_rot_point_around_line(&up, &vmd_y_vector, angle, &vmd_zero_vector, &vmd_z_vector);
 
 	new_particle.position = position->world;
-	new_particle.radius = rad;
+	new_particle.radius = radius;
 	new_particle.uvec = up;
 
 	batch->add_point_sprite(&new_particle);
@@ -863,17 +862,17 @@ void batching_render_batch_item(primitive_batch_item *item, vertex_layout *layou
 		particle_material material_def;
 
 		material_set_unlit_volume(&material_def, item->batch_item_info.texture, prim_type == PRIM_TYPE_POINTS);
-		gr_render_primitives_particle(&material_def, prim_type, layout, item->offset, item->n_verts, buffer_num);
+		gr_render_primitives_particle(&material_def, prim_type, layout, (int)item->offset, (int)item->n_verts, buffer_num);
 	} else if ( item->batch_item_info.mat_type == batch_info::DISTORTION ) {
 		distortion_material material_def;
 
 		material_set_distortion(&material_def, item->batch_item_info.texture, item->batch_item_info.thruster);
-		gr_render_primitives_distortion(&material_def, PRIM_TYPE_TRIS, layout, item->offset, item->n_verts, buffer_num);
+		gr_render_primitives_distortion(&material_def, PRIM_TYPE_TRIS, layout, (int)item->offset, (int)item->n_verts, buffer_num);
 	} else {
 		material material_def;
 
 		material_set_unlit_emissive(&material_def, item->batch_item_info.texture, 1.0f, 2.0f);
-		gr_render_primitives(&material_def, PRIM_TYPE_TRIS, layout, item->offset, item->n_verts, buffer_num);
+		gr_render_primitives(&material_def, PRIM_TYPE_TRIS, layout, (int)item->offset, (int)item->n_verts, buffer_num);
 	}
 }
 
@@ -892,7 +891,7 @@ void batching_allocate_and_load_buffer(primitive_batch_buffer *draw_queue)
 
 	draw_queue->desired_buffer_size = 0;
 	
-	int offset = 0;
+	size_t offset = 0;
 	size_t num_items = draw_queue->items.size();
 
 	for ( size_t i = 0; i < num_items; ++i ) {
@@ -932,7 +931,7 @@ void batching_load_buffers(bool distortion)
 			}
 		}
 
-		int num_verts = bi->second.num_verts();
+		size_t num_verts = bi->second.num_verts();
 
 		if ( num_verts > 0 ) {
 			batch_info render_info = bi->second.get_render_info();
@@ -942,7 +941,7 @@ void batching_load_buffers(bool distortion)
 			primitive_batch_item draw_item;
 
 			draw_item.batch_item_info = render_info;
-			draw_item.offset = -1;
+			draw_item.offset = 0;
 			draw_item.n_verts = num_verts;
 			draw_item.batch = &bi->second;
 

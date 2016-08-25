@@ -1086,8 +1086,6 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 static int GL_texture_panning_enabled = 0;
 void gr_opengl_set_texture_panning(float u, float v, bool enable)
 {
-	GLint current_matrix;
-
 	if (enable) {
 		vm_matrix4_set_identity(&GL_texture_matrix);
 		GL_texture_matrix.vec.pos.xyzw.x = u;

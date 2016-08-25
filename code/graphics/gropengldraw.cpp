@@ -1354,7 +1354,6 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 	int alpha, tmap_type, r, g, b;
 	float u_scale = 1.0f, v_scale = 1.0f;
 	GLenum gl_mode = GL_TRIANGLE_FAN;
-	bool texture_matrix_set = false;
 
 	GL_CHECK_FOR_ERRORS("start of render()");
 
@@ -1393,9 +1392,7 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 	else {
 		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
-
-	float offset_z = -0.99f;
-
+		
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(vertex), &verts[0].screen.xyw.x);
 
 	opengl_bind_vertex_layout(vert_def);
@@ -1839,7 +1836,7 @@ void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int r
 	GL_state.Color(255, 255, 255, (GLubyte)(gr_screen.current_alpha * 255));
 
 	color clr;
-	gr_init_alphacolor(&clr, 255, 255, 255, gr_screen.current_alpha * 255);
+	gr_init_alphacolor(&clr, 255, 255, 255, fl2i(gr_screen.current_alpha * 255.0f));
 	opengl_shader_set_passthrough(true, false, &clr);
 
 	opengl_draw_textured_quad(x1, y1, u0, v0, x2, y2, u1, v1);

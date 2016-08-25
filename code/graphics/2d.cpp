@@ -1482,7 +1482,6 @@ void gr_pline_special(SCP_vector<vec3d> *pts, int thickness, int resize_mode)
 	vec3d last_e1, last_e2;
 	vertex v[4];
 	vertex *verts[4] = {&v[0], &v[1], &v[2], &v[3]};
-	int saved_zbuffer_mode;
 	int started_frame = 0;
 
 	size_t num_pts = pts->size();

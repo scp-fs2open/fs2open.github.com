@@ -1197,8 +1197,8 @@ void opengl_create_perspective_projection_matrix(matrix4 *out, float left, float
 {
 	memset(out, 0, sizeof(matrix4));
 
-	out->a1d[0] = 2.0 * near_dist / (right - left);
-	out->a1d[5] = 2.0 * near_dist / (top - bottom);
+	out->a1d[0] = 2.0f * near_dist / (right - left);
+	out->a1d[5] = 2.0f * near_dist / (top - bottom);
 	out->a1d[8] = (right + left) / (right - left);
 	out->a1d[9] = (top + bottom) / (top - bottom);
 	out->a1d[10] = -(far_dist + near_dist) / (far_dist - near_dist);
@@ -1331,7 +1331,7 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 	
 	float clip_width, clip_height;
 
-	clip_height = tan( fov * 0.5 ) * z_near;
+	clip_height = tan( fov * 0.5f ) * z_near;
 	clip_width = clip_height * aspect;
 
 	GL_last_projection_matrix = GL_projection_matrix;
@@ -1367,9 +1367,9 @@ void gr_opengl_end_projection_matrix()
 
 	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
 	if (GL_rendering_to_texture) {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, gr_screen.max_w, 0, gr_screen.max_h, -1.0, 1.0);
+		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), 0, i2fl(gr_screen.max_h), -1.0, 1.0);
 	} else {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
+		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0, -1.0, 1.0);
 	}
 
 	GL_CHECK_FOR_ERRORS("end of end_projection_matrix()");
@@ -1479,9 +1479,9 @@ void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 
 	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
 	if (GL_rendering_to_texture) {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, gr_screen.max_w, 0, gr_screen.max_h, -1, 1);
+		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), 0, i2fl(gr_screen.max_h), -1, 1);
 	} else {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, gr_screen.max_w, gr_screen.max_h, 0, -1, 1);
+		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0, -1, 1);
 	}
 
 	matrix4 identity_mat;
@@ -2123,8 +2123,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 void opengl_tnl_set_material_particle(particle_material * material_info)
 {
 	opengl_tnl_set_material(material_info, true);
-
-	color &clr = material_info->get_color();
 
 	GL_state.Uniform.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
 	GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);

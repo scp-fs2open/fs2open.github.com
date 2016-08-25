@@ -204,7 +204,6 @@ void nebula_render()
 	nebula_material.set_texture_source(TEXTURE_SOURCE_NONE);
 
 	for ( i = 0 ; i < num_tris; i++ ) {
-		ubyte r, g, b;
 		vertex verts[3];
 		
 		verts[0] = nebula_verts[tri[i][0]];

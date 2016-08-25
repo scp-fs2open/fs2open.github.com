@@ -353,7 +353,6 @@ namespace particle
 		vertex pos;
 		int framenum, cur_frame;
 		bool render_batch = false;
-		int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD;
 
 		if (!Particles_enabled)
 			return;

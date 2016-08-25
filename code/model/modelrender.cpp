@@ -1023,7 +1023,6 @@ void model_render_buffers(draw_list* scene, model_material *rendering_material, 
 		texture_map *tmap = &pm->maps[tmap_num];
 		int rt_begin_index = tmap_num*TM_NUM_TYPES;
 		float alpha = 1.0f;
-		int blend_filter = GR_ALPHABLEND_NONE;
 
 		texture_maps[TM_BASE_TYPE] = -1;
 		texture_maps[TM_GLOW_TYPE] = -1;
@@ -1414,7 +1413,7 @@ bool model_render_determine_autocenter(vec3d *auto_back, polymodel *pm, int deta
 
 void model_render_determine_color(color *clr, float alpha, gr_alpha_blend blend_mode, bool no_texturing, bool desaturate)
 {
-	clr->alpha = fl2i(alpha * 255.0f);
+	clr->alpha = static_cast<ubyte>((alpha * 255.0f));
 
 	if ( no_texturing || desaturate ) {
 		// don't override the given color if we're not texturing or we're desaturating
@@ -2325,7 +2324,6 @@ void model_render_insignias(insignia_draw_data *insignia_data)
 	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
 	vec3d t1, t2, t3;
 	int i1, i2, i3;
-	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT;
 
 	material insignia_material;
 	insignia_material.set_depth_bias(1);

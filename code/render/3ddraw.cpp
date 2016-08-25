@@ -1992,7 +1992,6 @@ void g3_render_primitives_textured(material* mat, vertex* verts, int n_verts, pr
 void g3_render_primitives_colored(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic)
 {
 	vertex_layout layout;
-	uint mask = 0;
 
 	if ( orthographic ) {
 		layout.add_vertex_component(vertex_format_data::POSITION2, sizeof(vertex), (int)offsetof(vertex, screen));
