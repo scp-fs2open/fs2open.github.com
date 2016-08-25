@@ -55,23 +55,22 @@
 #endif
 
 #ifdef IAM_64BIT
-typedef __int32 _fs_time_t;  // time_t here is 64-bit and we need 32-bit
-typedef __int32 fix;
-// PTR compatible sizes
-typedef __int64 ptr_s;
-typedef unsigned __int64 ptr_u;
+typedef std::int32_t _fs_time_t;  // time_t here is 64-bit and we need 32-bit
+typedef std::int32_t fix;
 #else
 typedef long fix;
 typedef	long _fs_time_t;
-typedef int ptr_s;
-typedef unsigned int ptr_u;
 #endif // 64-bit
 
-typedef __int64 longlong;
-typedef unsigned __int64 ulonglong;
-typedef unsigned char ubyte;
-typedef unsigned short ushort;
-typedef unsigned int uint;
+// PTR compatible sizes
+typedef ptrdiff_t ptr_s;
+typedef size_t ptr_u;
+
+typedef std::int64_t longlong;
+typedef std::uint64_t ulonglong;
+typedef std::uint8_t ubyte;
+typedef std::uint16_t ushort;
+typedef std::uint32_t uint;
 typedef unsigned long ulong;
 
 #define HARDWARE_ONLY

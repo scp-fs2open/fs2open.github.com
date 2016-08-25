@@ -478,7 +478,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		// Goober5000 - added back in via flag
-		if ((Ship_info[ship_p->ship_info_index].is_small_ship()) && !(The_mission.ai_profile->flags & AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS))
+		if ((Ship_info[ship_p->ship_info_index].is_small_ship()) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Shockwaves_damage_small_ship_subsystems]))
 			return damage;
 		else {
 			damage_left = shockwave_get_damage(other_obj->instance) / 4.0f;
@@ -572,7 +572,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 					subsys_hit_first = count;
 				}
 
-				if (mss->flags2 & MSS_FLAG2_COLLIDE_SUBMODEL) {
+				if (mss->flags[Model::Subsystem_Flags::Collide_submodel]) {
 					if (submodel_num != -1 && submodel_num != mss->subobj_num && submodel_num != mss->turret_gun_sobj) {
 						// If this subsystem only wants to take damage when its submodel receives
 						// a direct hit and the current hit did not do so, skip it.
@@ -710,8 +710,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			damage_left -= (damage_to_apply * ss_dif_scale);
 
 			// if this subsystem doesn't carry damage then subtract it off of our total return
-			if (subsystem->system_info->flags & MSS_FLAG_CARRY_NO_DAMAGE) {
-				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsystem->system_info->flags & MSS_FLAG_CARRY_SHOCKWAVE))) {
+			if (subsystem->system_info->flags[Model::Subsystem_Flags::Carry_no_damage]) {
+				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsystem->system_info->flags[Model::Subsystem_Flags::Carry_shockwave]))) {
 					float subsystem_factor = 0.0f;
 					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
 						if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull]) {
@@ -2230,7 +2230,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 						// Goober5000 - only count beams fired by fighters or bombers unless the ai profile says different
 						if (bobjn >= 0)
 						{
-							if ( !(The_mission.ai_profile->flags & AIPF_INCLUDE_BEAMS_IN_STAT_CALCS) && 
+							if ( !(The_mission.ai_profile->flags[AI::Profile_Flags::Include_beams_in_stat_calcs]) && 
 								 !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].is_fighter_bomber()) &&
 								 !(Objects[bobjn].flags[Object::Object_Flags::Player_ship]) ) {
 								bobjn = -1;

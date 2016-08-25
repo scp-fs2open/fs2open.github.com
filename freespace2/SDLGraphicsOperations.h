@@ -7,12 +7,15 @@
 
 class SDLGraphicsOperations: public os::GraphicsOperations {
  public:
+	SDLGraphicsOperations();
 	~SDLGraphicsOperations() override;
 
-	std::unique_ptr<os::OpenGLContext> createOpenGLContext(const os::OpenGLContextAttributes& attrs,
-												  uint32_t width, uint32_t height) override;
+	std::unique_ptr<os::OpenGLContext> createOpenGLContext(os::Viewport* viewport,
+														   const os::OpenGLContextAttributes& gl_attrs) override;
 
-	void makeOpenGLContextCurrent(os::OpenGLContext* ctx) override;
+	void makeOpenGLContextCurrent(os::Viewport* view, os::OpenGLContext* ctx) override;
+
+	std::unique_ptr<os::Viewport> createViewport(const os::ViewPortProperties& props) override;
 };
 
 #endif // _SDL_GRAPHICS_OPERATIONS

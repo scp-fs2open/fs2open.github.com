@@ -231,41 +231,41 @@ flag_def_list Player_orders[] = {
 const int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
 
 // Use the last parameter here to tell the parser whether to stuff the flag into flags or flags2
-flag_def_list Subsystem_flags[] = {
-	{ "untargetable",			MSS_FLAG_UNTARGETABLE,		0 },
-	{ "carry no damage",		MSS_FLAG_CARRY_NO_DAMAGE,	0 },
-	{ "use multiple guns",		MSS_FLAG_USE_MULTIPLE_GUNS,	0 },
-	{ "fire down normals",		MSS_FLAG_FIRE_ON_NORMAL,	0 },
-	{ "check hull",				MSS_FLAG_TURRET_HULL_CHECK,	0 },
-	{ "fixed firingpoints",		MSS_FLAG_TURRET_FIXED_FP,	0 },
-	{ "salvo mode",				MSS_FLAG_TURRET_SALVO,		0 },
-	{ "no subsystem targeting",	MSS_FLAG_NO_SS_TARGETING,	0 },
-	{ "fire on target",			MSS_FLAG_FIRE_ON_TARGET,	0 },
-	{ "reset when idle",		MSS_FLAG_TURRET_RESET_IDLE,	0 },
-	{ "carry shockwave",		MSS_FLAG_CARRY_SHOCKWAVE,	0 },
-	{ "allow landing",			MSS_FLAG_ALLOW_LANDING,		0 },
-	{ "target requires fov",	MSS_FLAG_FOV_REQUIRED,		0 },
-	{ "fov edge checks",		MSS_FLAG_FOV_EDGE_CHECK,	0 },
-	{ "no replace",				MSS_FLAG_NO_REPLACE,		0 },
-	{ "no live debris",			MSS_FLAG_NO_LIVE_DEBRIS,	0 },
-	{ "ignore if dead",			MSS_FLAG_IGNORE_IF_DEAD,	0 },
-	{ "allow vanishing",		MSS_FLAG_ALLOW_VANISHING,	0 },
-	{ "damage as hull",			MSS_FLAG_DAMAGE_AS_HULL,	0 },
-	{ "starts locked",          MSS_FLAG_TURRET_LOCKED,     0 },
-	{ "no aggregate",			MSS_FLAG_NO_AGGREGATE,		0 },
-	{ "wait for animation",     MSS_FLAG_TURRET_ANIM_WAIT,  0 },
-	{ "play fire sound for player", MSS_FLAG2_PLAYER_TURRET_SOUND, 1},
-	{ "only target if can fire",    MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE, 1},
-	{ "no disappear",			MSS_FLAG2_NO_DISAPPEAR, 1},
-	{ "collide submodel",		MSS_FLAG2_COLLIDE_SUBMODEL, 1},
-	{ "allow destroyed rotation",	MSS_FLAG2_DESTROYED_ROTATION, 1},
-	{ "turret use ammo",		MSS_FLAG2_TURRET_USE_AMMO, 1},
-	{ "autorepair if disabled",	MSS_FLAG2_AUTOREPAIR_IF_DISABLED, 1},
-	{ "don't autorepair if disabled", MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED, 1},
-	{ "share fire direction", MSS_FLAG2_SHARE_FIRE_DIRECTION, 1 }
+flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
+	{ "untargetable",			    Model::Subsystem_Flags::Untargetable,		                true, false },
+	{ "carry no damage",		    Model::Subsystem_Flags::Carry_no_damage,	                true, false },
+	{ "use multiple guns",		    Model::Subsystem_Flags::Use_multiple_guns,	                true, false },
+	{ "fire down normals",		    Model::Subsystem_Flags::Fire_on_normal,	                    true, false },
+	{ "check hull",				    Model::Subsystem_Flags::Turret_hull_check,	                true, false },
+	{ "fixed firingpoints",		    Model::Subsystem_Flags::Turret_fixed_fp,	                true, false },
+	{ "salvo mode",				    Model::Subsystem_Flags::Turret_salvo,		                true, false },
+	{ "no subsystem targeting",	    Model::Subsystem_Flags::No_ss_targeting,	                true, false },
+	{ "fire on target",			    Model::Subsystem_Flags::Fire_on_target,	                    true, false },
+    { "reset when idle",		    Model::Subsystem_Flags::Turret_reset_idle,	                true, false },
+	{ "carry shockwave",		    Model::Subsystem_Flags::Carry_shockwave,	                true, false },
+	{ "allow landing",			    Model::Subsystem_Flags::Allow_landing,		                true, false },
+	{ "target requires fov",	    Model::Subsystem_Flags::Fov_required,		                true, false },
+	{ "fov edge checks",		    Model::Subsystem_Flags::Fov_edge_check,	                    true, false },
+	{ "no replace",				    Model::Subsystem_Flags::No_replace,		                    true, false },
+	{ "no live debris",			    Model::Subsystem_Flags::No_live_debris,	                    true, false },
+	{ "ignore if dead",			    Model::Subsystem_Flags::Ignore_if_dead,	                    true, false },
+	{ "allow vanishing",		    Model::Subsystem_Flags::Allow_vanishing,	                true, false },
+	{ "damage as hull",			    Model::Subsystem_Flags::Damage_as_hull,	                    true, false },
+	{ "starts locked",              Model::Subsystem_Flags::Turret_locked,                      true, false },
+	{ "no aggregate",			    Model::Subsystem_Flags::No_aggregate,		                true, false },
+	{ "wait for animation",         Model::Subsystem_Flags::Turret_anim_wait,                   true, false },
+	{ "play fire sound for player", Model::Subsystem_Flags::Player_turret_sound,                true, false },
+	{ "only target if can fire",    Model::Subsystem_Flags::Turret_only_target_if_can_fire,     true, false },
+	{ "no disappear",			    Model::Subsystem_Flags::No_disappear,                       true, false },
+	{ "collide submodel",		    Model::Subsystem_Flags::Collide_submodel,                   true, false },
+	{ "allow destroyed rotation",	Model::Subsystem_Flags::Destroyed_rotation,                 true, false },
+	{ "turret use ammo",		    Model::Subsystem_Flags::Turret_use_ammo,                    true, false },
+	{ "autorepair if disabled",	    Model::Subsystem_Flags::Autorepair_if_disabled,             true, false },
+	{ "don't autorepair if disabled", Model::Subsystem_Flags::No_autorepair_if_disabled,        true, false },
+	{ "share fire direction",       Model::Subsystem_Flags::Share_fire_direction,               true, false }
 };
 
-const int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
+const size_t Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list_new<Model::Subsystem_Flags>);
 
 
 flag_def_list_new<Info_Flags> Ship_flags[] = {
@@ -502,6 +502,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Stealth,						"stealth" },
 	{ Ship_Flags::Friendly_stealth_invis,		"friendly-stealth-invisible" },
 	{ Ship_Flags::Hide_ship_name,				"hide-ship-name" },
+	{ Ship_Flags::Primitive_sensors,			"primitive-sensors" },
 	{ Ship_Flags::Afterburner_locked,			"afterburners-locked" },
 	{ Ship_Flags::Primaries_locked,				"primaries-locked" },
 	{ Ship_Flags::Secondaries_locked,			"secondaries-locked" },
@@ -898,7 +899,7 @@ void ship_info::clone(const ship_info& other)
 
 	if ( other.n_subsystems > 0 ) {
 		if( n_subsystems < 1 ) {
-			subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * other.n_subsystems );
+            subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * other.n_subsystems);
 		} else {
 			for ( int i = 0; i < n_subsystems; i++ ) {
 				for ( int j = 0; j < subsystems[i].n_triggers; j++ ) {
@@ -909,9 +910,10 @@ void ship_info::clone(const ship_info& other)
 					}
 				}
 			}
-			subsystems = (model_subsystem *)vm_realloc(subsystems, sizeof(model_subsystem) * other.n_subsystems);
+            subsystems = (model_subsystem *)vm_realloc(subsystems, sizeof(model_subsystem) * other.n_subsystems);
 		}
-		Assert( subsystems != NULL );
+
+        Assert(subsystems != NULL);
 		for ( int i = n_subsystems; i < other.n_subsystems; i++ ) {
 			subsystems[i].triggers = (queued_animation*) vm_malloc(sizeof(queued_animation) * (other.subsystems[i].n_triggers));
 		}
@@ -1795,7 +1797,7 @@ ship_info::~ship_info()
 		}
 
 		vm_free(subsystems);
-		subsystems = NULL;
+        subsystems = NULL;
 	}
 
 	free_strings();
@@ -1807,7 +1809,7 @@ ship_info::~ship_info()
 int parse_ship(const char *filename, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
-	ship_info *sip;
+	ship_info *sip = nullptr;
 	bool create_if_not_found  = true;
 	int rtn = 0;
 
@@ -3442,21 +3444,6 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		}
 	}
 
-	sip->flags.remove(Ship::Info_Flags::Ballistic_primaries);
-
-	//Set ship ballistic flag if necessary
-	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
-	{
-		for (j = 0; j < Num_weapon_types; j++)
-		{
-			if(sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
-			{
-				sip->flags.set(Ship::Info_Flags::Ballistic_primaries);
-				break;
-			}
-		}
-	}
-
 	find_and_stuff_optional("$AI Class:", &sip->ai_class, F_NAME, Ai_class_names, Num_ai_classes, "AI class names");
 
 	// Get Afterburner information
@@ -4187,8 +4174,8 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				sp->turret_turning_rate = 0.0f;
 				sp->weapon_rotation_pbank = -1;
 
-				memset(sp->alt_sub_name, 0, sizeof(sp->alt_sub_name) );
-				memset(sp->alt_dmg_sub_name, 0, sizeof(sp->alt_dmg_sub_name) );
+                memset(sp->alt_sub_name, 0, sizeof(sp->alt_sub_name));
+                memset(sp->alt_dmg_sub_name, 0, sizeof(sp->alt_dmg_sub_name));
 
 				for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++) {
 					sp->primary_banks[i] = -1;
@@ -4210,8 +4197,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 				sp->turret_base_rotation_snd = -1;
 				sp->turret_base_rotation_snd_mult = 1.0f;
 				
-				sp->flags = 0;
-				sp->flags2 = 0;
+                sp->flags.reset();
 				
 				sp->n_triggers = 0;
 				sp->triggers = NULL;
@@ -4263,12 +4249,12 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 
 			if(optional_string("$Alt Subsystem Name:")) {
 				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-				strcpy_s(sp->alt_sub_name, buf);
+				strcpy_s(sp->alt_sub_name,  buf);
 			}
 
 			if(optional_string("$Alt Damage Popup Subsystem Name:")) {
 				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-				strcpy_s(sp->alt_dmg_sub_name, buf);
+                strcpy_s(sp->alt_dmg_sub_name, buf);
 			}
 
 			if(optional_string("$Armor Type:")) {
@@ -4404,81 +4390,68 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 			}
 
 			if (optional_string("$Flags:")) {
-				char flag_strings[Num_subsystem_flags][NAME_LENGTH];
-				int num_strings = stuff_string_list(flag_strings, NUM_SUBSYSTEM_FLAGS);
+                SCP_vector<SCP_string> errors;
+                flagset<Model::Subsystem_Flags> tmp_flags;
+                parse_string_flag_list(tmp_flags, Subsystem_flags, Num_subsystem_flags, &errors);
+                
+                if (optional_string("+noreplace")) {
+                    sp->flags |= tmp_flags;
+                }
+                else {
+                    sp->flags = tmp_flags;
+                }
 
-				if (!optional_string("+noreplace")) {
-					// clear flags since we might have a modular table
-					// clear only those which are actually set in the flags
-					sp->flags = 0;
-					sp->flags2 = 0;
-				}
-
-				for (i = 0; i < num_strings; i++)
-				{
-
-					bool flag_found = false;
-					// check various subsystem flags
-					for (int idx = 0; idx < Num_subsystem_flags; idx++) {
-						if ( !stricmp(Subsystem_flags[idx].name, flag_strings[i]) ) {
-							flag_found = true;
-							
-							if (Subsystem_flags[idx].var == 0)
-								sp->flags |= Subsystem_flags[idx].def;
-							else if (Subsystem_flags[idx].var == 1)
-								sp->flags2 |= Subsystem_flags[idx].def;
-						}
-					}
-
-					if ( !flag_found )
-						Warning(LOCATION, "Bogus string in subsystem flags: %s\n", flag_strings[i]);
-				}
+                if (errors.size() > 0) {
+                    for (auto const &error : errors) {
+                        Warning(LOCATION, "Bogus string in subsystem flags: %s\n", error.c_str());
+                    }
+                }
 
 				//If we've set any subsystem as landable, set a ship-info flag as a shortcut for later
-				if (sp->flags & MSS_FLAG_ALLOW_LANDING)
+				if (sp->flags[Model::Subsystem_Flags::Allow_landing])
 					sip->flags.set(Ship::Info_Flags::Allow_landings);
 			}
 
-			if (turret_has_base_fov)
-				sp->flags |= MSS_FLAG_TURRET_ALT_MATH;
+            if (turret_has_base_fov)
+                sp->flags.set(Model::Subsystem_Flags::Turret_alt_math);
 
 			if (optional_string("+non-targetable")) {
 				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
-				sp->flags |= MSS_FLAG_UNTARGETABLE;
+				sp->flags.set(Model::Subsystem_Flags::Untargetable);
 			}
 
 			bool old_flags = false;
 			if (optional_string("+untargetable")) {
-				sp->flags |= MSS_FLAG_UNTARGETABLE;
+				sp->flags.set(Model::Subsystem_Flags::Untargetable);
 				old_flags = true;
 			}
 
 			if (optional_string("+carry-no-damage")) {
-				sp->flags |= MSS_FLAG_CARRY_NO_DAMAGE;
+				sp->flags.set(Model::Subsystem_Flags::Carry_no_damage); 
 				old_flags = true;
 			}
 
 			if (optional_string("+use-multiple-guns")) {
-				sp->flags |= MSS_FLAG_USE_MULTIPLE_GUNS;
+				sp->flags.set(Model::Subsystem_Flags::Use_multiple_guns);
 				old_flags = true;
 			}
 
 			if (optional_string("+fire-down-normals")) {
-				sp->flags |= MSS_FLAG_FIRE_ON_NORMAL;
+				sp->flags.set(Model::Subsystem_Flags::Fire_on_normal);
 				old_flags = true;
 			}
 
-			if ((sp->flags & MSS_FLAG_TURRET_FIXED_FP) && !(sp->flags & MSS_FLAG_USE_MULTIPLE_GUNS)) {
+			if ((sp->flags[Model::Subsystem_Flags::Turret_fixed_fp]) && !(sp->flags[Model::Subsystem_Flags::Use_multiple_guns])) {
 				Warning(LOCATION, "\"fixed firingpoints\" flag used without \"use multiple guns\" flag on a subsystem on %s '%s'.\n\"use multiple guns\" flags added by default\n", info_type_name, sip->name);
-				sp->flags |= MSS_FLAG_USE_MULTIPLE_GUNS;
+				sp->flags.set(Model::Subsystem_Flags::Use_multiple_guns);
 			}
 
-			if ((sp->flags2 & MSS_FLAG2_AUTOREPAIR_IF_DISABLED) && (sp->flags2 & MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED)) {
+			if ((sp->flags[Model::Subsystem_Flags::Autorepair_if_disabled]) && (sp->flags[Model::Subsystem_Flags::No_autorepair_if_disabled])) {
 				Warning(LOCATION, "\"autorepair if disabled\" flag used with \"don't autorepair if disabled\" flag on a subsystem on %s '%s'.\nWhichever flag would be default behavior anyway for this ship has been removed.\n", info_type_name, sip->name);
 				if (sip->flags[Ship::Info_Flags::Subsys_repair_when_disabled]){
-					sp->flags2 &= ~MSS_FLAG2_AUTOREPAIR_IF_DISABLED;
+                    sp->flags.remove(Model::Subsystem_Flags::Autorepair_if_disabled);
 				} else {
-					sp->flags2 &= ~MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED;
+                    sp->flags.remove(Model::Subsystem_Flags::No_autorepair_if_disabled);
 				}
 			}
 
@@ -4676,16 +4649,18 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	if ( n_subsystems > 0 ) {
 		if(sip->n_subsystems < 1) {
 			sip->n_subsystems = n_subsystems;
-			sip->subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * sip->n_subsystems );
+			sip->subsystems = (model_subsystem*)vm_malloc(sizeof(model_subsystem) * sip->n_subsystems);
+
 		} else {
 			sip->n_subsystems += n_subsystems;
 			sip->subsystems = (model_subsystem *)vm_realloc(sip->subsystems, sizeof(model_subsystem) * sip->n_subsystems);
 		} 
-		Assert( sip->subsystems != NULL );
+
+	    Assert(sip->subsystems != NULL);
+    }
 		
-		for ( i = 0; i < n_subsystems; i++ ){
-			sip->subsystems[orig_n_subsystems+i] = subsystems[i];
-		}
+	for ( i = 0; i < n_subsystems; i++ ){
+		sip->subsystems[orig_n_subsystems+i] = subsystems[i];
 	}
 
 	model_anim_fix_reverse_times(sip);
@@ -5096,6 +5071,20 @@ int ship_show_velocity_dot = 0;
 
 DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 
+bool ballistic_possible_for_this_ship(const ship_info *sip)
+{
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
+	{
+		for (int j = 0; j < Num_weapon_types; ++j)
+		{
+			if (sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags[Weapon::Info_Flags::Ballistic]))
+				return true;
+		}
+	}
+
+	return false;
+}
+
 /**
  * Clean up ship entries, making sure various flags and settings are correct
  */
@@ -5120,7 +5109,7 @@ void ship_parse_post_cleanup()
 
 			// be friendly; ensure ballistic flags check out
 			if (pbank_capacity_specified) {
-				if ( !(sip->flags[Ship::Info_Flags::Ballistic_primaries]) ) {
+				if ( !ballistic_possible_for_this_ship(&(*sip)) ) {
 					Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\nTo fix this, add a ballistic primary to the list of allowed primaries.\n", sip->name);
 
 					for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
@@ -5128,7 +5117,7 @@ void ship_parse_post_cleanup()
 					}
 				}
 			} else {
-				if (sip->flags[Ship::Info_Flags::Ballistic_primaries]) {
+				if ( ballistic_possible_for_this_ship(&(*sip)) ) {
 					Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
 
 					for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
@@ -5460,7 +5449,7 @@ void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 /**
  * Attempt to find information about an exited ship based on shipname
  */
-int ship_find_exited_ship_by_name( char *name )
+int ship_find_exited_ship_by_name( const char *name )
 {
 	int i;
 
@@ -5568,7 +5557,7 @@ void physics_ship_init(object *objp)
 	pi->glide_accel_mult = sinfo->glide_accel_mult;
 
 	//SUSHI: This defaults to the AI_Profile value, and is only optionally overridden
-	pi->use_newtonian_damp = ((The_mission.ai_profile->flags & AIPF_USE_NEWTONIAN_DAMPENING) != 0);
+	pi->use_newtonian_damp = The_mission.ai_profile->flags[AI::Profile_Flags::Use_newtonian_dampening];
 	if (sinfo->newtonian_damp_override)
 		pi->use_newtonian_damp = sinfo->use_newtonian_damp;
 
@@ -5896,7 +5885,7 @@ void ship::clear()
 	special_warpout_objnum = -1;
 
 	fighter_beam_turret_data.clear();
-	memset(&beam_sys_info, 0, sizeof(model_subsystem));
+	beam_sys_info.reset();
 
 	primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
 
@@ -6326,7 +6315,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 		// subsystem since previous error checking would have trapped its loading as an error.
 		Assert( it->n_subsystems == sip->n_subsystems );
 
-		source_msp = &it->subsystems[0];
+		source_msp = &(it->subsystems[0]);
 		dest_msp = &(sip->subsystems[0]);
 		if (source_msp->model_num != -1) {
 			model_copy_subsystems( sip->n_subsystems, dest_msp, source_msp );
@@ -6490,37 +6479,37 @@ int subsys_set(int objnum, int ignore_subsys_info)
         ship_system->subsys_snd_flags.reset();
 
 		// Goober5000
-		if (model_system->flags & MSS_FLAG_UNTARGETABLE)
+		if (model_system->flags[Model::Subsystem_Flags::Untargetable])
 			ship_system->flags.set(Ship::Subsystem_Flags::Untargetable);
 		// Wanderer
-		if (model_system->flags & MSS_FLAG_NO_SS_TARGETING)
+		if (model_system->flags[Model::Subsystem_Flags::No_ss_targeting])
 			ship_system->flags.set(Ship::Subsystem_Flags::No_SS_targeting);
-		if ((The_mission.ai_profile->flags2 & AIPF2_ADVANCED_TURRET_FOV_EDGE_CHECKS) || (model_system->flags & MSS_FLAG_FOV_EDGE_CHECK))
+		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Advanced_turret_fov_edge_checks]) || (model_system->flags[Model::Subsystem_Flags::Fov_edge_check]))
 			ship_system->flags.set(Ship::Subsystem_Flags::FOV_edge_check);
-		if ((The_mission.ai_profile->flags2 & AIPF2_REQUIRE_TURRET_TO_HAVE_TARGET_IN_FOV) || (model_system->flags & MSS_FLAG_FOV_REQUIRED))
+		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Require_turret_to_have_target_in_fov]) || (model_system->flags[Model::Subsystem_Flags::Fov_required]))
 			ship_system->flags.set(Ship::Subsystem_Flags::FOV_Required);
 
-		if (model_system->flags & MSS_FLAG_NO_REPLACE)
+		if (model_system->flags[Model::Subsystem_Flags::No_replace])
 			ship_system->flags.set(Ship::Subsystem_Flags::No_replace);
-		if (model_system->flags & MSS_FLAG_NO_LIVE_DEBRIS)
+		if (model_system->flags[Model::Subsystem_Flags::No_live_debris])
 			ship_system->flags.set(Ship::Subsystem_Flags::No_live_debris);
-		if (model_system->flags & MSS_FLAG_IGNORE_IF_DEAD)
+		if (model_system->flags[Model::Subsystem_Flags::Ignore_if_dead])
 			ship_system->flags.set(Ship::Subsystem_Flags::Missiles_ignore_if_dead);
-		if (model_system->flags & MSS_FLAG_ALLOW_VANISHING)
+		if (model_system->flags[Model::Subsystem_Flags::Allow_vanishing])
 			ship_system->flags.set(Ship::Subsystem_Flags::Vanished);
-        if (model_system->flags & MSS_FLAG_DAMAGE_AS_HULL)
+        if (model_system->flags[Model::Subsystem_Flags::Damage_as_hull])
 			ship_system->flags.set(Ship::Subsystem_Flags::Damage_as_hull);
-		if (model_system->flags & MSS_FLAG_NO_AGGREGATE)
+		if (model_system->flags[Model::Subsystem_Flags::No_aggregate])
 			ship_system->flags.set(Ship::Subsystem_Flags::No_aggregate);
-		if (model_system->flags & MSS_FLAG_ROTATES)
+		if (model_system->flags[Model::Subsystem_Flags::Rotates])
 			ship_system->flags.set(Ship::Subsystem_Flags::Rotates);
-		if (model_system->flags2 & MSS_FLAG2_PLAYER_TURRET_SOUND)
+		if (model_system->flags[Model::Subsystem_Flags::Player_turret_sound])
 			ship_system->flags.set(Ship::Subsystem_Flags::Play_sound_for_player);
-		if (model_system->flags2 & MSS_FLAG2_NO_DISAPPEAR)
+		if (model_system->flags[Model::Subsystem_Flags::No_disappear])
 			ship_system->flags.set(Ship::Subsystem_Flags::No_disappear);
-		if (model_system->flags2 & MSS_FLAG2_AUTOREPAIR_IF_DISABLED)
+		if (model_system->flags[Model::Subsystem_Flags::Autorepair_if_disabled])
 			ship_system->flags.set(Ship::Subsystem_Flags::Autorepair_if_disabled);
-		if (model_system->flags2 & MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED)
+		if (model_system->flags[Model::Subsystem_Flags::No_autorepair_if_disabled])
 			ship_system->flags.set(Ship::Subsystem_Flags::No_autorepair_if_disabled);
 
 		ship_system->turn_rate = model_system->turn_rate;
@@ -6597,55 +6586,55 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->turret_max_target_ownage = model_system->turret_max_target_ownage;
 
 		// Make turret flag checks and warnings
-		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) && (ship_system->system_info->flags & MSS_FLAG_TURRET_FIXED_FP))
+		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) && (ship_system->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp]))
 		{
 			Warning (LOCATION, "\"salvo mode\" flag used with \"fixed firingpoints\" flag\nsubsystem '%s' on ship type '%s'.\n\"salvo mode\" flag is ignored\n", model_system->subobj_name, sinfo->name );
-			ship_system->system_info->flags &= (~MSS_FLAG_TURRET_SALVO);
+            ship_system->system_info->flags.remove(Model::Subsystem_Flags::Turret_salvo);
 		}
 
-		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) && (model_system->turret_num_firing_points < 2))
+		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) && (model_system->turret_num_firing_points < 2))
 		{
 			Warning (LOCATION, "\"salvo mode\" flag used with turret which has less than two firingpoints\nsubsystem '%s' on ship type '%s'.\n\"salvo mode\" flag is ignored\n", model_system->subobj_name, sinfo->name );
-			ship_system->system_info->flags &= (~MSS_FLAG_TURRET_SALVO);
+			ship_system->system_info->flags.remove(Model::Subsystem_Flags::Turret_salvo);
 		}
 
-		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_FIXED_FP) && (model_system->turret_num_firing_points < 2))
+		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp]) && (model_system->turret_num_firing_points < 2))
 		{
 			Warning (LOCATION, "\"fixed firingpoints\" flag used with turret which has less than two firingpoints\nsubsystem '%s' on ship type '%s'.\n\"fixed firingpoints\" flag is ignored\n", model_system->subobj_name, sinfo->name );
-			ship_system->system_info->flags &= (~MSS_FLAG_TURRET_FIXED_FP);
+			ship_system->system_info->flags.remove(Model::Subsystem_Flags::Turret_fixed_fp);
 		}
 
-		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) && (ship_system->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS))
+		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) && (ship_system->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns]))
 		{
 			Warning (LOCATION, "\"salvo mode\" flag used with \"use multiple guns\" flag\nsubsystem '%s' on ship type '%s'.\n\"use multiple guns\" flag is ignored\n", model_system->subobj_name, sinfo->name );
-			ship_system->system_info->flags &= (~MSS_FLAG_USE_MULTIPLE_GUNS);
+			ship_system->system_info->flags.remove(Model::Subsystem_Flags::Use_multiple_guns);
 		}
 
-		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_FIXED_FP) && !(ship_system->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS))
+		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp]) && !(ship_system->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns]))
 		{
 			Warning (LOCATION, "\"fixed firingpoints\" flag used without \"use multiple guns\" flag\nsubsystem '%s' on ship type '%s'.\n\"use multiple guns\" guns added by default\n", model_system->subobj_name, sinfo->name );
-			ship_system->system_info->flags |= MSS_FLAG_USE_MULTIPLE_GUNS;
+            ship_system->system_info->flags.set(Model::Subsystem_Flags::Use_multiple_guns);
 		}
 
-		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) && (number_of_weapons > 1))
+		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) && (number_of_weapons > 1))
 		{
 			Warning (LOCATION, "\"salvo mode\" flag used with turret which has more than one weapon defined for it\nsubsystem '%s' on ship type '%s'.\nonly single weapon will be used\n", model_system->subobj_name, sinfo->name );
 		}
 
-		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_FIXED_FP) && (number_of_weapons > model_system->turret_num_firing_points))
+		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp]) && (number_of_weapons > model_system->turret_num_firing_points))
 		{
 			Warning (LOCATION, "\"fixed firingpoint\" flag used with turret which has more weapons defined for it than it has firingpoints\nsubsystem '%s' on ship type '%s'.\nweapons will share firingpoints\n", model_system->subobj_name, sinfo->name );
 		}
 
-		if ((ship_system->system_info->flags & MSS_FLAG_TURRET_FIXED_FP) && (number_of_weapons < model_system->turret_num_firing_points))
+		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp]) && (number_of_weapons < model_system->turret_num_firing_points))
 		{
 			Warning (LOCATION, "\"fixed firingpoint\" flag used with turret which has less weapons defined for it than it has firingpoints\nsubsystem '%s' on ship type '%s'.\nsome of the firingpoints will be left unused\n", model_system->subobj_name, sinfo->name );
 		}
 
-		if ((ship_system->system_info->flags2 & MSS_FLAG2_SHARE_FIRE_DIRECTION) && (!(ship_system->system_info->flags & MSS_FLAG_TURRET_SALVO) || !(ship_system->system_info->flags & MSS_FLAG_USE_MULTIPLE_GUNS)))
+		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Share_fire_direction]) && (!(ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) || !(ship_system->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns])))
 		{
 			Warning(LOCATION, "\"share fire direction\" flag used with turret which does not have the \"salvo mode\" or \"use multiple guns\" flag set\nsubsystem '%s' on ship type '%s'.\n\"share fire direction\" flag is ignored\n", model_system->subobj_name, sinfo->name);
-			ship_system->system_info->flags &= (~MSS_FLAG2_SHARE_FIRE_DIRECTION);
+			ship_system->system_info->flags.remove(Model::Subsystem_Flags::Share_fire_direction);
 		}
 
 		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
@@ -6681,8 +6670,8 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->awacs_intensity = model_system->awacs_intensity;
 		ship_system->awacs_radius = model_system->awacs_radius;
 		if (ship_system->awacs_intensity > 0) {
-			ship_system->system_info->flags |= MSS_FLAG_AWACS;
-		}
+            ship_system->system_info->flags.set(Model::Subsystem_Flags::Awacs);
+        }
 
 		// turn_rate, turn_accel
 		float turn_accel = 0.5f;
@@ -6691,10 +6680,10 @@ int subsys_set(int objnum, int ignore_subsys_info)
 		model_clear_instance_info( &ship_system->submodel_info_2 );
 
 		// Clear this flag here so we correctly rebuild the turret matrix on mission load
-		model_system->flags &= ~MSS_FLAG_TURRET_MATRIX;
+        model_system->flags.remove(Model::Subsystem_Flags::Turret_matrix);
 
 		// Allocate a triggered rotation instance if we need it
-		if (model_system->flags & MSS_FLAG_TRIGGERED) {
+		if (model_system->flags[Model::Subsystem_Flags::Triggered]) {
 			ship_system->triggered_rotation_index = Triggered_rotations.size();
 			triggered_rotation tr;
 			Triggered_rotations.push_back(tr);
@@ -8823,19 +8812,16 @@ void ship_process_post(object * obj, float frametime)
 			}
 		}
 
-		if ( sip->flags[Ship::Info_Flags::Ballistic_primaries] )
+		for ( int i=0; i<MAX_SHIP_PRIMARY_BANKS; i++ )
 		{
-			for ( int i=0; i<MAX_SHIP_PRIMARY_BANKS; i++ )
+			if ( red_alert_mission() )
 			{
-				if ( red_alert_mission() )
-				{
-					max_missiles = get_max_ammo_count_for_primary_bank(shipp->ship_info_index, i, shipp->weapons.primary_bank_weapons[i]);
-					shipp->weapons.primary_bank_start_ammo[i] = max_missiles;
-				}
-				else
-				{
-					shipp->weapons.primary_bank_start_ammo[i] = shipp->weapons.primary_bank_ammo[i];
-				}
+				max_missiles = get_max_ammo_count_for_primary_bank(shipp->ship_info_index, i, shipp->weapons.primary_bank_weapons[i]);
+				shipp->weapons.primary_bank_start_ammo[i] = max_missiles;
+			}
+			else
+			{
+				shipp->weapons.primary_bank_start_ammo[i] = shipp->weapons.primary_bank_ammo[i];
 			}
 		}
 		
@@ -10717,7 +10703,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		if (needs_target_pos) {
 			target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
-			if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+			if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
 		}
 
@@ -10786,7 +10772,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		polymodel *pm = model_get( sip->model_num );
 		
 		// Goober5000 (thanks to _argv[-1] for the original idea)
-		if ( (num_primary_banks > 1) &&  !(winfo_p->wi_flags[Weapon::Info_Flags::No_linked_penalty]) && !(The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY) )
+		if ( (num_primary_banks > 1) &&  !(winfo_p->wi_flags[Weapon::Info_Flags::No_linked_penalty]) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Disable_linked_fire_penalty]) )
 		{
 			int effective_primary_banks = 0;
 			for (int it = 0; it < num_primary_banks; it++)
@@ -11018,10 +11004,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				// ballistics support for primaries - Goober5000
 				if ( winfo_p->wi_flags[Weapon::Info_Flags::Ballistic] )
 				{
-					// Make sure this ship is set up for ballistics.
-					// If you get this error, add the ballistic primaries tags to ships.tbl.
-					Assert ( sip->flags[Ship::Info_Flags::Ballistic_primaries] );
-
 					// If ship is being repaired/rearmed, it cannot fire ballistics
 					if ( aip->ai_flags & AIF_BEING_REPAIRED )
 					{
@@ -12114,6 +12096,19 @@ int primary_out_of_ammo(ship_weapon *swp, int bank)
 	return 0;
 }
 
+bool ship_has_a_ballistic_primary(const ship *shipp)
+{
+	const ship_weapon *swp = &shipp->weapons;
+
+	for (int i = 0; i < swp->num_primary_banks; i++)
+	{
+		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic])
+			return true;
+	}
+
+	return false;
+}
+
 /**
  * Return true if a new index gets selected.
  * 
@@ -12228,7 +12223,7 @@ int ship_select_next_primary(object *objp, int direction)
 	}
 
 	// test for ballistics - Goober5000
-	if ( sip->flags[Ship::Info_Flags::Ballistic_primaries] )
+	if (ship_has_a_ballistic_primary(shipp))
 	{
 		// if we can't link, disengage primary linking and change to next available bank
 		if (shipp->flags[Ship_Flags::Primary_linked])
@@ -12948,7 +12943,7 @@ int ship_find_num_crewpoints(object *objp)
 		psub = pss->system_info;
 		switch (psub->type) {
 		case SUBSYSTEM_TURRET:
-			if ( psub->flags & MSS_FLAG_CREWPOINT )
+			if ( psub->flags[Model::Subsystem_Flags::Crewpoint] )
 				n++; // fall through
 
 		case SUBSYSTEM_RADAR:
@@ -13226,7 +13221,7 @@ int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_bypass)
 /**
  * Returns the index number of the ship_subsys parameter
  */
-int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass)
+int ship_get_subsys_index(ship *sp, const char* ss_name, int error_bypass)
 {
 	int count;
 	ship_subsys *ss;
@@ -13395,35 +13390,32 @@ float ship_calculate_rearm_duration( object *objp )
 
 	//now do the primary rearm time
 	found_first_empty = false;
-	if (sip->flags[Ship::Info_Flags::Ballistic_primaries])
+	for (i = 0; i < swp->num_primary_banks; i++)
 	{
-		for (i = 0; i < swp->num_primary_banks; i++)
+		wip = &Weapon_info[swp->primary_bank_weapons[i]];
+		if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 		{
-			wip = &Weapon_info[swp->primary_bank_weapons[i]];
-			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+			//check how many full reloads we need
+			num_reloads = (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i])/REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
+
+			//take into account a fractional reload
+			if ((swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]) % REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH != 0)
 			{
-				//check how many full reloads we need
-				num_reloads = (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i])/REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
-
-				//take into account a fractional reload
-				if ((swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]) % REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH != 0)
-				{
-					num_reloads++;
-				}
-
-				//don't factor in the time it takes for the first reload, since that is loaded instantly
-				num_reloads--;
-
-				if (num_reloads < 0) continue;
-
-				if (!found_first_empty && (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]))
-				{
-					found_first_empty = true;
-					prim_rearm_time += (float)snd_get_duration(Snds[SND_MISSILE_START_LOAD].id) / 1000.0f;
-				}
-
-				prim_rearm_time += num_reloads * wip->rearm_rate;
+				num_reloads++;
 			}
+
+			//don't factor in the time it takes for the first reload, since that is loaded instantly
+			num_reloads--;
+
+			if (num_reloads < 0) continue;
+
+			if (!found_first_empty && (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]))
+			{
+				found_first_empty = true;
+				prim_rearm_time += (float)snd_get_duration(Snds[SND_MISSILE_START_LOAD].id) / 1000.0f;
+			}
+
+			prim_rearm_time += num_reloads * wip->rearm_rate;
 		}
 	}
 
@@ -13471,7 +13463,7 @@ float ship_calculate_rearm_duration( object *objp )
 //
 int ship_do_rearm_frame( object *objp, float frametime )
 {
-	int			i, banks_full, primary_banks_full, subsys_type, subsys_all_ok, last_ballistic_idx = 0;
+	int			i, banks_full, primary_banks_full, subsys_type, subsys_all_ok, last_ballistic_idx = -1;
 	float			shield_str, repair_delta, repair_allocated, max_hull_repair, max_subsys_repair;
 	ship			*shipp;
 	ship_weapon	*swp;
@@ -13661,80 +13653,22 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		}	// end for
 
 		// rearm ballistic primaries - Goober5000
-		if (sip->flags[Ship::Info_Flags::Ballistic_primaries])
+		if ( aip->rearm_first_ballistic_primary == TRUE)
 		{
-			if ( aip->rearm_first_ballistic_primary == TRUE)
-			{
-				for (i = 1; i < swp->num_primary_banks; i++ )
-				{
-					if ( Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic] )
-						last_ballistic_idx = i;
-				}
-			}
-
 			for (i = 0; i < swp->num_primary_banks; i++ )
 			{
 				if ( Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic] )
-				{
-					// Actual loading of bullets is preceded by a sound effect which is the bullet
-					// loading equipment moving into place
-					if ( aip->rearm_first_ballistic_primary == TRUE )
-					{
-						// Goober5000
-						int sound_index;
-						if (Snds[SND_BALLISTIC_START_LOAD].id >= 0)
-							sound_index = SND_BALLISTIC_START_LOAD;
-						else
-							sound_index = SND_MISSILE_START_LOAD;
+					last_ballistic_idx = i;
+			}
+		}
 
-						swp->primary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[sound_index].id));			
-
-						if (i == last_ballistic_idx) 
-							aip->rearm_first_ballistic_primary = FALSE;
-					}
-
-					if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
-					{
-						float rearm_time;
-	
-						if ( objp == Player_obj )
-						{
-							hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-						}
-
-						if ( timestamp_elapsed(swp->primary_bank_rearm_time[i]) )
-						{
-							rearm_time = Weapon_info[swp->primary_bank_weapons[i]].rearm_rate;
-							swp->primary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
-	
-							// Goober5000
-							int sound_index;
-							if (Snds[SND_BALLISTIC_LOAD].id >= 0)
-								sound_index = SND_BALLISTIC_LOAD;
-							else
-								sound_index = SND_MISSILE_LOAD;
-
-							snd_play_3d( &Snds[sound_index], &objp->pos, &View_position );
-	
-							swp->primary_bank_ammo[i] += REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
-							if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
-							{
-								swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i]; 
-							}
-						}
-					}
-					else
-					{
-						primary_banks_full++;
-					}
-				}
-				// if the bank is not a ballistic
-				else
-				{
-					primary_banks_full++;
-				}
-
-				if ((aip->rearm_first_ballistic_primary == TRUE) && (i == swp->num_primary_banks - 1) && (primary_banks_full != swp->num_primary_banks))
+		for (i = 0; i < swp->num_primary_banks; i++ )
+		{
+			if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic])
+			{
+				// Actual loading of bullets is preceded by a sound effect which is the bullet
+				// loading equipment moving into place
+				if ( aip->rearm_first_ballistic_primary == TRUE )
 				{
 					// Goober5000
 					int sound_index;
@@ -13743,10 +13677,65 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					else
 						sound_index = SND_MISSILE_START_LOAD;
 
-					snd_play_3d( &Snds[sound_index], &objp->pos, &View_position );
+					swp->primary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[sound_index].id));			
+
+					if (i == last_ballistic_idx) 
+						aip->rearm_first_ballistic_primary = FALSE;
 				}
-			}	// end for
-		}	// end if - rearm ballistic primaries
+
+				if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
+				{
+					float rearm_time;
+	
+					if ( objp == Player_obj )
+					{
+						hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
+					}
+
+					if ( timestamp_elapsed(swp->primary_bank_rearm_time[i]) )
+					{
+						rearm_time = Weapon_info[swp->primary_bank_weapons[i]].rearm_rate;
+						swp->primary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
+	
+						// Goober5000
+						int sound_index;
+						if (Snds[SND_BALLISTIC_LOAD].id >= 0)
+							sound_index = SND_BALLISTIC_LOAD;
+						else
+							sound_index = SND_MISSILE_LOAD;
+
+						snd_play_3d( &Snds[sound_index], &objp->pos, &View_position );
+	
+						swp->primary_bank_ammo[i] += REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
+						if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
+						{
+							swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i]; 
+						}
+					}
+				}
+				else
+				{
+					primary_banks_full++;
+				}
+			}
+			// if the bank is not a ballistic
+			else
+			{
+				primary_banks_full++;
+			}
+
+			if ((aip->rearm_first_ballistic_primary == TRUE) && (i == last_ballistic_idx) && (primary_banks_full != swp->num_primary_banks))
+			{
+				// Goober5000
+				int sound_index;
+				if (Snds[SND_BALLISTIC_START_LOAD].id >= 0)
+					sound_index = SND_BALLISTIC_START_LOAD;
+				else
+					sound_index = SND_MISSILE_START_LOAD;
+
+				snd_play_3d( &Snds[sound_index], &objp->pos, &View_position );
+			}
+		}	// end for
 	} // end if (subsys_all_ok)
 
 	if ( banks_full == swp->num_secondary_banks )
@@ -13789,8 +13778,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			aip->rearm_release_delay = timestamp(1200);
 
 		// check both primary and secondary banks are full
-		if ( (banks_full == swp->num_secondary_banks) &&
-			( !(sip->flags[Ship::Info_Flags::Ballistic_primaries]) || ((sip->flags[Ship::Info_Flags::Ballistic_primaries]) && (primary_banks_full == swp->num_primary_banks)) )	)
+		if ( (banks_full == swp->num_secondary_banks) && (primary_banks_full == swp->num_primary_banks) )
 		{
 			if ( timestamp_elapsed(aip->rearm_release_delay) )
 				return 1;
@@ -14617,7 +14605,7 @@ int ship_engine_ok_to_warp(ship *sp)
 int ship_navigation_ok_to_warp(ship *sp)
 {
 	// if not using the special flag, warp is always allowed
-	if (!(The_mission.ai_profile->flags & AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP))
+	if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Navigation_subsys_governs_warp]))
 		return 1;
 
 	float navigation_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_NAVIGATION);
@@ -15613,7 +15601,7 @@ void ship_maybe_scream(ship *sp)
 			return;
 
 		// for WCSaga, only do a subset of the checks
-		if (!(The_mission.ai_profile->flags2 & AIPF2_PERFORM_FEWER_SCREAM_CHECKS))
+		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Perform_fewer_scream_checks]))
 		{
 			// bail if this ship isn't from the player wing
 			if (!(sp->flags[Ship_Flags::From_player_wing]))
@@ -15680,34 +15668,31 @@ void ship_maybe_tell_about_low_ammo(ship *sp)
 	swp = &sp->weapons;
 	
 	// stole the code for this from ship_maybe_tell_about_rearm()
-	if (Ship_info[sp->ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries])
+	for (i = 0; i < swp->num_primary_banks; i++)
 	{
-		for (i = 0; i < swp->num_primary_banks; i++)
+		wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+		if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 		{
-			wip = &Weapon_info[swp->primary_bank_weapons[i]];
-
-			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+			if (swp->primary_bank_start_ammo[i] > 0)
 			{
-				if (swp->primary_bank_start_ammo[i] > 0)
+				if ((float)swp->primary_bank_ammo[i] / (float)swp->primary_bank_start_ammo[i] < 0.3f)
 				{
-					if ((float)swp->primary_bank_ammo[i] / (float)swp->primary_bank_start_ammo[i] < 0.3f)
-					{
-						// multiplayer tvt
-						if(MULTI_TEAM) {
-							multi_team_filter = sp->team;
-						}
-
-						message_send_builtin_to_player(MESSAGE_PRIMARIES_LOW, sp, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter);
-
-						Player->allow_ammo_timestamp = timestamp(PLAYER_LOW_AMMO_MSG_INTERVAL);
-
-						// better reset this one too
-						Player->request_repair_timestamp = timestamp(PLAYER_REQUEST_REPAIR_MSG_INTERVAL);
-
-						Player->low_ammo_complaint_count++;
-						sp->ammo_low_complaint_count++;
-						break;
+					// multiplayer tvt
+					if(MULTI_TEAM) {
+						multi_team_filter = sp->team;
 					}
+
+					message_send_builtin_to_player(MESSAGE_PRIMARIES_LOW, sp, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter);
+
+					Player->allow_ammo_timestamp = timestamp(PLAYER_LOW_AMMO_MSG_INTERVAL);
+
+					// better reset this one too
+					Player->request_repair_timestamp = timestamp(PLAYER_REQUEST_REPAIR_MSG_INTERVAL);
+
+					Player->low_ammo_complaint_count++;
+					sp->ammo_low_complaint_count++;
+					break;
 				}
 			}
 		}
@@ -15761,21 +15746,18 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		}
 
 		// also check ballistic primaries - Goober5000
-		if (Ship_info[sp->ship_info_index].flags[Ship::Info_Flags::Ballistic_primaries])
+		for (i = 0; i < swp->num_primary_banks; i++)
 		{
-			for (i = 0; i < swp->num_primary_banks; i++)
-			{
-				wip = &Weapon_info[swp->primary_bank_weapons[i]];
+			wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-				if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+			if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+			{
+				if (swp->primary_bank_start_ammo[i] > 0)
 				{
-					if (swp->primary_bank_start_ammo[i] > 0)
+					if ((float)swp->primary_bank_ammo[i] / (float)swp->primary_bank_start_ammo[i] < 0.3f)
 					{
-						if ((float)swp->primary_bank_ammo[i] / (float)swp->primary_bank_start_ammo[i] < 0.3f)
-						{
-							message_type = MESSAGE_REARM_PRIMARIES;
-							break;
-						}
+						message_type = MESSAGE_REARM_PRIMARIES;
+						break;
 					}
 				}
 			}
@@ -16063,7 +16045,6 @@ float ship_get_secondary_weapon_range(ship *shipp)
 	return srange;
 }
 
-// Goober5000 - added for ballistic primaries
 /**
  * Determine the number of primary ammo units allowed max for a ship
  */
@@ -16071,13 +16052,12 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 {
 	float capacity, size;
 	
-	if (!(Ship_info[ship_class].flags[Ship::Info_Flags::Ballistic_primaries]))
-	{
+	if (!(Weapon_info[ammo_type].wi_flags[Weapon::Info_Flags::Ballistic]))
 		return 0;
-	}
 
 	capacity = (float) Ship_info[ship_class].primary_bank_ammo_capacity[bank];
 	size = (float) Weapon_info[ammo_type].cargo_size;
+	Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
 	return  fl2i((capacity / size)+0.5f);
 }
 
@@ -16097,6 +16077,7 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 	} else {
 		capacity = (float) Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
 		size = (float) Weapon_info[ammo_type].cargo_size;
+		Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
 		return (int) (capacity / size);
 	}
 }
@@ -16789,25 +16770,6 @@ float ship_get_exp_outer_rad(object *ship_objp)
 	return outer_rad;
 }
 
-int valid_cap_subsys_cargo_list(char *subsys)
-{
-	// Return 1 for all subsystems now, due to Mantis #2524.
-	return 1;
-	/*
-	if (stristr(subsys, "nav")
-		|| stristr(subsys, "comm")
-		|| stristr(subsys, "engine")
-		|| stristr(subsys, "fighter")	// fighter bays
-		|| stristr(subsys, "sensors")
-		|| stristr(subsys, "weapons")) {
-
-		return 1;
-	}
-
-	return 0;
-	*/
-}
-
 /**
  * Determine turret status of a given subsystem
  *
@@ -16829,7 +16791,7 @@ int ship_get_turret_type(ship_subsys *subsys)
 	return 1;
 }
 
-ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name)
+ship_subsys *ship_get_subsys(ship *shipp, const char *subsys_name)
 {
 	// sanity checks
 	if ((shipp == NULL) || (subsys_name == NULL)) {
@@ -17369,7 +17331,7 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 		return;
 	}
 
-	if (psub->flags & MSS_FLAG_TRIGGERED && pss->triggered_rotation_index >= 0) {
+	if (psub->flags[Model::Subsystem_Flags::Triggered] && pss->triggered_rotation_index >= 0) {
 		Triggered_rotations[pss->triggered_rotation_index].process_queue();
 		model_anim_submodel_trigger_rotate(psub, pss );
 		return;
@@ -17377,7 +17339,7 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 	}
 
 	// check for rotating artillery
-	if ( psub->flags & MSS_FLAG_ARTILLERY )
+	if ( psub->flags[Model::Subsystem_Flags::Artillery] )
 	{
 		ship_weapon *swp = &shipp->weapons;
 
@@ -17408,7 +17370,7 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 	}
 
 	// if we got this far, we can rotate - so choose which method to use
-	if (psub->flags & MSS_FLAG_STEPPED_ROTATE	) {
+	if (psub->flags[Model::Subsystem_Flags::Stepped_rotate]	) {
 		submodel_stepped_rotate(psub, &pss->submodel_info_1);
 	} else {
 		submodel_rotate(psub, &pss->submodel_info_1 );

@@ -562,13 +562,17 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
     if (!optional_string("$Flags:"))
         return;
 
+	// To make sure +override doesn't overwrite previously parsed values we parse the flags into a separate flagset
     SCP_vector<SCP_string> unparsed_or_special;
-    parse_string_flag_list(weaponp->wi_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed_or_special);
+	flagset<Weapon::Info_Flags> parsed_flags;
+    parse_string_flag_list(parsed_flags, Weapon_Info_Flags, num_weapon_info_flags, &unparsed_or_special);
 
     if (optional_string("+override")) {
         // reseting the flag values if set to override the existing flags
         weaponp->wi_flags = wi_flags;
     }
+	// Now add the parsed flags to the weapon flags
+	weaponp->wi_flags |= parsed_flags;
 
     bool set_pierce = false;
     bool set_nopierce = false;
@@ -589,9 +593,9 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
                     }
 
                     int	skip_length, name_length;
-                    char	*temp_string = new char[flag_text.size() + 1];
+					std::unique_ptr<char[]> temp_string(new char[flag_text.size() + 1]);
 
-                    strcpy(temp_string, flag_text.c_str());
+                    strcpy(temp_string.get(), flag_text.c_str());
 
                     weaponp->wi_flags.set(Weapon::Info_Flags::Spawn);
                     weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
@@ -603,7 +607,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
                     }
                     else {
                         weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = (short)atoi(num_start + 1);
-                        name_length = num_start - temp_string - skip_length;
+                        name_length = num_start - temp_string.get() - skip_length;
                     }
 
                     weaponp->total_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
@@ -3715,7 +3719,7 @@ void find_homing_object(object *weapon_objp, int num)
 
 					// Goober5000: if missiles can't home on sensor-ghosted ships,
 					// they definitely shouldn't home on stealth ships
-					if ( sp->flags[Ship::Ship_Flags::Stealth] && (The_mission.ai_profile->flags & AIPF_FIX_HEAT_SEEKER_STEALTH_BUG) ) {
+					if ( sp->flags[Ship::Ship_Flags::Stealth] && (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_heat_seeker_stealth_bug]) ) {
 						continue;
 					}
 
@@ -3946,7 +3950,7 @@ bool aspect_should_lose_target(weapon* wp)
 			if (target_info->wi_flags[Weapon::Info_Flags::Cmeasure])
 			{
 				// Check if we can home on this countermeasure
-				bool home_on_cmeasure = The_mission.ai_profile->flags2 & AIPF2_ASPECT_LOCK_COUNTERMEASURE
+				bool home_on_cmeasure = The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_lock_countermeasure]
 					|| target_info->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
 
 				if (!home_on_cmeasure)
@@ -4129,7 +4133,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		break;
 	case OBJ_WEAPON:
 	{
-		bool home_on_cmeasure = The_mission.ai_profile->flags2 & AIPF2_ASPECT_LOCK_COUNTERMEASURE
+		bool home_on_cmeasure = The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_lock_countermeasure]
 			|| hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
 
 		// don't home on countermeasures or non-bombs, that's handled elsewhere
@@ -5351,7 +5355,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
-	if ((parent_objp != NULL) && (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)) {
+	if ((parent_objp != NULL) && (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])) {
 		float pspeed = vm_vec_mag( &parent_objp->phys_info.vel );
 		vm_vec_scale_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel, wip->vel_inherit_amount );
 		wp->weapon_max_vel += pspeed * wip->vel_inherit_amount;
@@ -5783,7 +5787,7 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
 				}
 				
 				//disrupt sensor and awacs systems.
-				if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags & MSS_FLAG_AWACS))
+				if ((psub->type==SUBSYSTEM_SENSORS) || (psub->flags[Model::Subsystem_Flags::Awacs]))
 				{
 					disrupt_time*=wip->elec_sensors_mult;
 				}
@@ -6964,7 +6968,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	
 	// if the hit object was a ship and we're doing damage scaling
 	if ( (target->type == OBJ_SHIP) &&
-		!(The_mission.ai_profile->flags & AIPF_DISABLE_WEAPON_DAMAGE_SCALING) &&
+		!(The_mission.ai_profile->flags[AI::Profile_Flags::Disable_weapon_damage_scaling]) &&
 		!(Ship_info[Ships[target->instance].ship_info_index].flags[Ship::Info_Flags::Disable_weapon_damage_scaling])
 	) {
 		ship_info *sip;
@@ -7001,7 +7005,7 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		if( is_big_damage_ship && !(wip->hurts_big_ships()) ){
 
 			// if the player is firing it
-			if ( from_player && !(The_mission.ai_profile->flags2 & AIPF2_PLAYER_WEAPON_SCALE_FIX)) {
+			if ( from_player && !(The_mission.ai_profile->flags[AI::Profile_Flags::Player_weapon_scale_fix])) {
 				// if it's a laser weapon
 				if(wip->subtype == WP_LASER){
 					total_scale *= 0.01f;

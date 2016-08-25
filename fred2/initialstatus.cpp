@@ -604,7 +604,7 @@ void initial_status::change_subsys()
 		}
 
 		m_damage = 100 - (int) ptr -> current_hits;
-		if ( ship_has_scannable_subsystems && valid_cap_subsys_cargo_list(ptr->system_info->subobj_name) ) {
+		if ( ship_has_scannable_subsystems ) {
 			enable_cargo_name = TRUE;
 			if (ptr->subsys_cargo_name > 0) {
 				m_cargo_name = Cargo_names[ptr->subsys_cargo_name];

@@ -108,7 +108,13 @@ SET(FSO_RUN_ARGUMENTS "" CACHE STRING "Additional arguments passed to a generate
 
 option(FSO_INSTALL_DEBUG_FILES "Install some debug files (currently only PDB files on windows)" OFF)
 
-OPTION(COTIRE_ENABLE "Enable cotire, this speeds up builds but may cause issues while developing (default = OFF)" OFF)
+set(DEFAULT_VAL OFF)
+if(MSVC)
+	# MSVC has been tested
+	set(DEFAULT_VAL ON)
+endif()
+
+OPTION(COTIRE_ENABLE "Enable cotire, this speeds up builds but may cause issues while developing (default = OFF)" ${DEFAULT_VAL})
 
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)

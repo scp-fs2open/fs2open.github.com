@@ -509,7 +509,7 @@ bool check_subsystem_landing_allowed(ship_info *heavy_sip, collision_info_struct
 		return false;
 
 	for (int i = 0; i < heavy_sip->n_subsystems; i++) {
-		if (heavy_sip->subsystems[i].flags & MSS_FLAG_ALLOW_LANDING &&
+		if (heavy_sip->subsystems[i].flags[Model::Subsystem_Flags::Allow_landing] &&
 			heavy_sip->subsystems[i].subobj_num == ship_ship_hit_info->submodel_num) 
 		{
 			return true;

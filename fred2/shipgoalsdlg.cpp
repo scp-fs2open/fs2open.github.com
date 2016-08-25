@@ -1186,7 +1186,7 @@ void ShipGoalsDlg::set_object(int item)
 			z = 0;
 			while (subsys != END_OF_LIST(&Ships[i].subsys_list)) {
 				m_subsys_box[item]->AddString(subsys->system_info->subobj_name);
-				m_subsys_box[item]->SetItemDataPtr(z, subsys->system_info->subobj_name);
+				m_subsys_box[item]->SetItemDataPtr(z, &subsys->system_info->subobj_name);
 				z++;
 				subsys = GET_NEXT(subsys);
 			}

@@ -13,8 +13,14 @@ namespace headtracking
 	{
 		TrackIRProvider::TrackIRProvider()
 		{
+			auto window = os::getSDLMainWindow();
+			if (window == nullptr)
+			{
+				throw internal::HeadTrackingException("TrackIR is only available with a valid window!");
+			}
+
 			// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
-			int trackIrInitResult = _trackIRDll.Init(os_get_window());
+			int trackIrInitResult = _trackIRDll.Init(window);
 			if (trackIrInitResult != SCP_INITRESULT_SUCCESS)
 			{
 				mprintf(("TrackIR Init Failed - %d\n", trackIrInitResult));

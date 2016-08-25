@@ -257,14 +257,14 @@ int material::get_texture_addressing()
 	return Texture_addressing;
 }
 
-void material::set_fog(int r, int g, int b, float near, float far)
+void material::set_fog(int r, int g, int b, float _near, float _far)
 {
 	Fog_params.enabled = true;
 	Fog_params.r = r;
 	Fog_params.g = g;
 	Fog_params.b = b;
-	Fog_params.dist_near = near;
-	Fog_params.dist_far = far;
+	Fog_params.dist_near = _near;
+	Fog_params.dist_far = _far;
 }
 
 void material::set_fog()

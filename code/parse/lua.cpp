@@ -7576,17 +7576,10 @@ ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies wether this turrets
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newVal)
-		{
-			sso->ss->system_info->flags |= MSS_FLAG_TURRET_RESET_IDLE;
-		}
-		else
-		{
-			sso->ss->system_info->flags &= ~MSS_FLAG_TURRET_RESET_IDLE;
-		}
+        sso->ss->system_info->flags.set(Model::Subsystem_Flags::Turret_reset_idle, newVal);
 	}
 
-	if (sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE)
+	if (sso->ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -7602,12 +7595,12 @@ ADE_VIRTVAR(TurretResetDelay, l_Subsystem, "number", "The time (in milliseconds)
 	if (!sso->IsValid())
 		return ade_set_error(L, "i", -1);
 
-	if (!(sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE))
+	if (!(sso->ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]))
 		return ade_set_error(L, "i", -1);
 
 	if(ADE_SETTING_VAR)
 	{
-		if ((sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE))
+		if ((sso->ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]))
 			sso->ss->system_info->turret_reset_delay = newVal;
 	}
 
@@ -14631,7 +14624,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 		break;
 
 	case LE_VM_EXTERNAL_CAMERA_LOCKED:
-		bit = VM_EXTERNAL_CAMERA_LOCKED;
+		bit = VM_CAMERA_LOCKED;
 		break;
 
 	case LE_VM_FREECAMERA:
