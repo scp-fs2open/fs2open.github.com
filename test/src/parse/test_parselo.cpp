@@ -278,7 +278,6 @@ TEST(ParseloTest, skip_token) {
 	ASSERT_EQ(EOLN, '\x0A');
 
 	char test_str[256];
-	memset(test_str, '\0', sizeof(test_str));
 	char *str = test_str;
 
 	strcpy_s(test_str, " A$C\x80");
@@ -310,4 +309,77 @@ TEST(ParseloTest, skip_token) {
 	str = test_str;
 	skip_token(str);
 	ASSERT_STREQ(str, "\x80");
+}
+
+TEST(ParseloTest, advance_to_eoln) {
+	ASSERT_EQ(EOF_CHAR, '\x80'); // for easier string building
+	ASSERT_EQ(EOLN, '\x0A');
+
+	char test_str[256];
+	char *str = test_str;
+
+	strcpy_s(test_str, "  \x0A");
+	str = test_str;
+	advance_to_eoln(str, NULL);
+	ASSERT_STREQ(str, "\x0A");
+
+	strcpy_s(test_str, "  \x0A");
+	str = test_str;
+	advance_to_eoln(str, "");
+	ASSERT_STREQ(str, "\x0A");
+
+	strcpy_s(test_str, "  \x80");
+	str = test_str;
+	advance_to_eoln(str, NULL);
+	ASSERT_STREQ(str, "\x80");
+
+	strcpy_s(test_str, " \x0A \x0A\x80");
+	str = test_str;
+	advance_to_eoln(str, NULL);
+	ASSERT_STREQ(str, "\x0A \x0A\x80");
+
+	strcpy_s(test_str, " $Text\x0A");
+	str = test_str;
+	advance_to_eoln(str, NULL);
+	ASSERT_STREQ(str, "\x0A");
+
+	strcpy_s(test_str, " $Text\x80");
+	str = test_str;
+	advance_to_eoln(str, NULL);
+	ASSERT_STREQ(str, "\x80");
+
+	strcpy_s(test_str, "  \x0A");
+	str = test_str;
+	advance_to_eoln(str, "$");
+	ASSERT_STREQ(str, "\x0A");
+
+	strcpy_s(test_str, "  \x0A#");
+	str = test_str;
+	advance_to_eoln(str, "#");
+	ASSERT_STREQ(str, "\x0A#");
+
+	strcpy_s(test_str, ",  \x0A");
+	str = test_str;
+	advance_to_eoln(str, ",");
+	ASSERT_STREQ(str, ",  \x0A");
+
+	strcpy_s(test_str, "Text,  \x0A");
+	str = test_str;
+	advance_to_eoln(str, ",");
+	ASSERT_STREQ(str, ",  \x0A");
+
+	strcpy_s(test_str, "Text& .Text");
+	str = test_str;
+	advance_to_eoln(str, "& .");
+	ASSERT_STREQ(str, "& .Text");
+
+	strcpy_s(test_str, "Text .&Text");
+	str = test_str;
+	advance_to_eoln(str, "& .");
+	ASSERT_STREQ(str, " .&Text");
+
+	strcpy_s(test_str, "Text.& Text");
+	str = test_str;
+	advance_to_eoln(str, "& .");
+	ASSERT_STREQ(str, ".& Text");
 }

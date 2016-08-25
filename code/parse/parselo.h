@@ -108,7 +108,11 @@ extern void error_display(int error_level, const char *format, ...);
 extern int skip_to_string(char *pstr, char *end = NULL);
 extern int skip_to_start_of_string(char *pstr, char *end = NULL);
 extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = NULL);
-extern void advance_to_eoln(char *terminators);
+
+/**
+ * Advance str to the next EOLN or EOF_CHAR.
+ */
+extern void advance_to_eoln(char*& str, char *terminators);
 
 /**
  * Advances str past the current token.

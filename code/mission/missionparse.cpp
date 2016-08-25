@@ -3075,7 +3075,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (*Mp == '.') {
 				period_detected = true;
-				advance_to_eoln(NULL);
+				advance_to_eoln(Mp, NULL);
 			}
 		}
 
@@ -3084,7 +3084,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (*Mp == '.') {
 				period_detected = true;
-				advance_to_eoln(NULL);
+				advance_to_eoln(Mp, NULL);
 			}
 		}
 
@@ -3093,7 +3093,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (*Mp == '.') {
 				period_detected = true;
-				advance_to_eoln(NULL);
+				advance_to_eoln(Mp, NULL);
 			}
 		}
 
@@ -3102,7 +3102,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (*Mp == '.') {
 				period_detected = true;
-				advance_to_eoln(NULL);
+				advance_to_eoln(Mp, NULL);
 			}
 		}
 
@@ -3112,7 +3112,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (*Mp == '.') {
 				period_detected = true;
-				advance_to_eoln(NULL);
+				advance_to_eoln(Mp, NULL);
 			}
 		}
 

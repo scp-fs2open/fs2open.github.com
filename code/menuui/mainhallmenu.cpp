@@ -2314,14 +2314,14 @@ void parse_main_hall_table(const char* filename)
 				for (idx = 0; idx < m->num_misc_animations; idx++) {
 					// anim sound handles - deprecated, but deal with it just in case
 					if (optional_string("+Misc anim handles:")) {
-						advance_to_eoln(NULL);
+						advance_to_eoln(Mp, NULL);
 					}
 				}
 
 				for (idx = 0; idx < m->num_misc_animations; idx++) {
 					// anim sound flags - table flag deprecated, so ignore user input
 					if (optional_string("+Misc anim flags:")) {
-						advance_to_eoln(NULL);
+						advance_to_eoln(Mp, NULL);
 					}
 
 					// we need one flag for each sound

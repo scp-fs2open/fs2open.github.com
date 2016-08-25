@@ -1415,10 +1415,10 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 		reset_parse();
 
 		required_string("$Name:");
-		advance_to_eoln(NULL);
+		advance_to_eoln(Mp, NULL);
 
 		required_string( "$Type:" );
-		advance_to_eoln(NULL);
+		advance_to_eoln(Mp, NULL);
 
 		// parse the mission file and actually read in the mission stuff
 		*num = 0;
