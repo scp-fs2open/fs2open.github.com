@@ -382,31 +382,30 @@ int skip_to_start_of_string(char*& str, char *to, char *end)
 	return 1;
 }
 
-// Advance to start of either pstr1 or pstr2.  Return 0 is successful, otherwise return !0
-int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end)
+int skip_to_start_of_string_either(char*& str, char *to1, char *to2, char *end)
 {
-	size_t len1, len2, endlen;
+	ignore_white_space(str);
+	size_t len1 = strlen(to1);
+	size_t len2 = strlen(to2);
+	Assert(len1 > 0);
+	Assert(len2 > 0);
 
-	ignore_white_space(Mp);
-	len1 = strlen(pstr1);
-	len2 = strlen(pstr2);
+	size_t end_len = 0;
 	if(end)
-		endlen = strlen(end);
-	else
-		endlen = 0;
+		end_len = strlen(end);
 
-	while ( (*Mp != EOF_CHAR) && strnicmp(pstr1, Mp, len1) && strnicmp(pstr2, Mp, len2) ) {
-		if (end && *Mp == '#')
+	while ( (*str != EOF_CHAR) && strnicmp(to1, str, len1) && strnicmp(to2, str, len2) ) {
+		if (end && *str == '#')
 			return 0;
 
-		if (end && !strnicmp(end, Mp, endlen))
+		if (end && !strnicmp(end, str, end_len))
 			return 0;
 
-		advance_to_eoln(Mp);
-		ignore_white_space(Mp);
+		advance_to_eoln(str);
+		ignore_white_space(str);
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR))
+	if ((*str == '\0') || (*str == EOF_CHAR))
 		return 0;
 
 	return 1;

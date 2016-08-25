@@ -561,3 +561,135 @@ TEST(ParseloTest, skip_to_start_of_string) {
 	EXPECT_STREQ(str, "X Test\x80");
 	EXPECT_EQ(rc, 1);
 }
+
+TEST(ParseloTest, skip_to_start_of_string_either) {
+	ASSERT_EQ(EOF_CHAR, '\x80'); // for easier string building
+	ASSERT_EQ(EOLN, '\x0A');
+
+	char test_str[256];
+	char *str = test_str;
+	int rc;
+
+	strcpy_s(test_str, "\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "A", "B");
+	EXPECT_EQ(str, test_str);
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "A", "B", "C");
+	EXPECT_EQ(str, test_str);
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "Test \x0A Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "A", "B");
+	EXPECT_STREQ(str, "\x80");
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "Test \x0AX Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "X", "Y");
+	EXPECT_STREQ(str, "X Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test \x0AY Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "X", "Y");
+	EXPECT_STREQ(str, "Y Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test \x0AX \x0AY Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "X", "Y");
+	EXPECT_STREQ(str, "X \x0AY Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test \x0AY \x0AX Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "X", "Y");
+	EXPECT_STREQ(str, "Y \x0AX Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	// do not find search string if not at beginning of line (excluding whitespace)
+	strcpy_s(test_str, "Test X\x0AX Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "X", "Y", "Z");
+	EXPECT_STREQ(str, "X Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test Y\x0AX Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "X", "Y");
+	EXPECT_STREQ(str, "X Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test XYZ \x0AX \x0A A \x0A B \x0A AB \x0AY \x0A XYZ \x0AXYZ Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "XYZ", "ABC");
+	EXPECT_STREQ(str, "XYZ \x0AXYZ Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test ABC \x0AX \x0A A \x0A B \x0A AB \x0AY \x0A ABC \x0AXYZ Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "XYZ", "ABC");
+	EXPECT_STREQ(str, "ABC \x0AXYZ Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	// stop and return 0 if line begins with # but does not match either string and end exists
+	strcpy_s(test_str, "Test \x0A#X Y\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "#Z", "Y", "FOO");
+	EXPECT_STREQ(str, "#X Y\x80");
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "Test \x0A#X Y\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "Z", "#Y", "FOO");
+	EXPECT_STREQ(str, "#X Y\x80");
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "Test \x0A#X #Y\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "#Z", "#Y", "FOO");
+	EXPECT_STREQ(str, "#X #Y\x80");
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "Test \x0A#X \x0A#Y\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "#X", "#Y", "FOO");
+	EXPECT_STREQ(str, "#X \x0A#Y\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test \x0A#Y \x0A#X\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "#X", "#Y", "FOO");
+	EXPECT_STREQ(str, "#Y \x0A#X\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test \x0A#Y \x0A#Y\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "#X", "#Y", "FOO");
+	EXPECT_STREQ(str, "#Y \x0A#Y\x80");
+	EXPECT_EQ(rc, 1);
+
+	strcpy_s(test_str, "Test \x0A FOO\x0A#X #Y\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "#Z", "#Y", "FOO");
+	EXPECT_STREQ(str, "FOO\x0A#X #Y\x80");
+	EXPECT_EQ(rc, 0);
+
+	strcpy_s(test_str, "Test \x0A Y FOO\x0AX Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "X", "Y", "FOO");
+	EXPECT_STREQ(str, "Y FOO\x0AX Test\x80");
+	EXPECT_EQ(rc, 1);
+
+	// end is recongized only at start of string (excluding whitespace)
+	strcpy_s(test_str, "Test \x0A Test FOO \x0AX Test\x80");
+	str = test_str;
+	rc = skip_to_start_of_string_either(str, "X", "Y", "FOO");
+	EXPECT_STREQ(str, "X Test\x80");
+	EXPECT_EQ(rc, 1);
+}

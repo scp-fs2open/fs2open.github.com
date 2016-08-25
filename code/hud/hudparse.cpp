@@ -314,7 +314,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					// can't find ship class. move on.
 					ship_classes.push_back(-1);
 					skip_to_start_of_string(Mp, "#Gauge Config");
-					//skip_to_start_of_string_either("#Gauge Config", "#End");
+					//skip_to_start_of_string_either(Mp, "#Gauge Config", "#End");
 					continue;
 				}
 				break;
@@ -391,14 +391,14 @@ void parse_hud_gauges_tbl(const char *filename)
 				if (optional_string("Full Screen")) {
 					if( (float)gr_screen.center_w / (float)gr_screen.center_h > 1.5) {
 						skip_to_start_of_string(Mp, "#Gauge Config");
-						//skip_to_start_of_string_either("#Gauge Config", "#End");
+						//skip_to_start_of_string_either(Mp, "#Gauge Config", "#End");
 						continue;
 					}
 				}
 				else if (optional_string("Wide Screen")) {
 					if( (float)gr_screen.center_w / (float)gr_screen.center_h <= 1.5) {
 						skip_to_start_of_string(Mp, "#Gauge Config");
-						//skip_to_start_of_string_either("#Gauge Config", "#End");
+						//skip_to_start_of_string_either(Mp, "#Gauge Config", "#End");
 						continue;
 					}
 				}
@@ -468,7 +468,7 @@ void parse_hud_gauges_tbl(const char *filename)
 				// If we don't see either $ or + then it means that there was an invalid token somewhere in between
 				if (!check_for_string("$") && !check_for_string("+")) {
 					error_display(0, "Detected invalid tokens while parsing HUD gauges: [%.32s]", next_tokens());
-					skip_to_start_of_string_either("$", "+");
+					skip_to_start_of_string_either(Mp, "$", "+");
 				}
 
 				// stolened from AI_profiles

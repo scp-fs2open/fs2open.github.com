@@ -1196,7 +1196,7 @@ void parse_soundtrack()
 		}
 
 		//Track doesn't exist and has nocreate, so don't create it
-		Assertion(skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") || skip_to_string(Mp, "#SoundTrack End"), "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End. Music.tbl or -mus.tbm is invalid.\n");
+		Assertion(skip_to_start_of_string_either(Mp, "#SoundTrack Start", "#Menu Music Start") || skip_to_string(Mp, "#SoundTrack End"), "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End. Music.tbl or -mus.tbm is invalid.\n");
 
 		return;
 	}
@@ -1332,7 +1332,7 @@ void parse_menumusic()
 			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files - 1].name, MAX_SPOOLED_MUSIC);
 		}
 
-		if (!skip_to_start_of_string_either("$Name:", "#Menu Music End")) {
+		if (!skip_to_start_of_string_either(Mp, "$Name:", "#Menu Music End")) {
 			Error(LOCATION, "Couldn't find $Name or #Menu Music End. Music.tbl or -mus.tbm is invalid.\n");
 		}
 
@@ -1380,7 +1380,7 @@ void event_music_parse_musictbl(const char *filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
-		while ( skip_to_start_of_string_either("#Soundtrack Start", "#Menu Music Start", NULL ) )
+		while ( skip_to_start_of_string_either(Mp, "#Soundtrack Start", "#Menu Music Start") )
 		{
 			if ( optional_string("#Soundtrack Start") )
 			{

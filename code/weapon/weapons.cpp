@@ -819,7 +819,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if(!replace)
 		{
 			Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", wip->name);
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+			if ( !skip_to_start_of_string_either(Mp, "$Name:", "#End")) {
 				Int3();
 			}
 			return -1;
@@ -830,7 +830,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		//Don't create weapon if it has +nocreate and is in a modular table.
 		if(!create_if_not_found && replace)
 		{
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+			if ( !skip_to_start_of_string_either(Mp, "$Name:", "#End")) {
 				Int3();
 			}
 

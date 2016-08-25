@@ -129,7 +129,11 @@ extern int skip_to_string(char*& str, char *to, char *end = NULL);
  * returns 0 instead of -1 when `end` is found.
  */
 extern int skip_to_start_of_string(char*& str, char *to, char *end = NULL);
-extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = NULL);
+
+/**
+ * Like `skip_to_start_of_string` except accepts both `to1` and `to2`.
+ */
+extern int skip_to_start_of_string_either(char*& str, char *to1, char *to2, char *end = NULL);
 
 /**
  * Advance str to the next EOLN or EOF_CHAR.
