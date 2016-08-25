@@ -308,22 +308,22 @@ void advance_to_terminator(char*& str, char *more_terminators)
 		str++;
 }
 
-// Advance Mp to the next white space (ignoring white space inside of " marks)
-void advance_to_next_white()
+// Advance str to the next white space (ignoring white space inside of " marks)
+static void advance_to_next_white(char*& str)
 {
-	int in_quotes = 0;
+	bool in_quotes = false;
 
-	while ((*Mp != EOLN) && (*Mp != EOF_CHAR)) {
-		if (*Mp == '\"')
+	while ((*str != EOLN) && (*str != EOF_CHAR)) {
+		if (*str == '\"')
 			in_quotes = !in_quotes;
 
-		if (!in_quotes && is_white_space(*Mp))
+		if (!in_quotes && is_white_space(*str))
 			break;
 
-		if (!in_quotes && is_parenthesis(*Mp))
+		if (!in_quotes && is_parenthesis(*str))
 			break;
 
-		Mp++;
+		str++;
 	}
 }
 
@@ -929,7 +929,7 @@ void stuff_string_white(char *outstr, int len)
 
 	ignore_white_space(Mp);
 	copy_to_next_white(outstr, Mp, len);
-	advance_to_next_white();
+	advance_to_next_white(Mp);
 }
 
 // ditto for SCP_string
@@ -937,7 +937,7 @@ void stuff_string_white(SCP_string &outstr)
 {
 	ignore_white_space(Mp);
 	copy_to_next_white(outstr, Mp);
-	advance_to_next_white();
+	advance_to_next_white(Mp);
 }
 
 // Goober5000
