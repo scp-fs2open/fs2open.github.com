@@ -261,7 +261,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 
 		stuff_int(&index);
 		if (external) {
-			ignore_white_space();
+			ignore_white_space(Mp);
 			get_string(buf, sizeof(buf));
 			drop_trailing_white_space(buf);
 		} else {

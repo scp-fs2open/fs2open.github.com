@@ -74,7 +74,11 @@ extern int get_index_of_first_hash_symbol(SCP_string &src);
 
 // white space
 extern int is_white_space(char ch);
-extern void ignore_white_space();
+/**
+ * Advances str to the first non-white space character.
+ * Stops at EOF_CHAR.
+ */
+extern void ignore_white_space(char*& str);
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
 extern char *drop_white_space(char *str);

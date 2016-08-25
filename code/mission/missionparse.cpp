@@ -467,7 +467,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if ( optional_string("+Game Type:")) {
 		// HACK HACK HACK -- stuff_string was changed to *not* ignore carriage returns.  Since the
 		// old style missions may have carriage returns, deal with it here.
-		ignore_white_space();
+		ignore_white_space(Mp);
 		stuff_string(game_string, F_NAME, NAME_LENGTH);
 		for ( int i = 0; i < OLD_MAX_GAME_TYPES; i++ ) {
 			if ( !stricmp(game_string, Old_game_types[i]) ) {

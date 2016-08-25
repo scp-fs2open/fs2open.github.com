@@ -3302,7 +3302,7 @@ int get_sexp()
 	start = last = -1;
 	count = 0;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 	while (*Mp != ')') {
 		// end of string or end of file
 		if (*Mp == '\0' || *Mp == EOF_CHAR) {
@@ -3436,7 +3436,7 @@ int get_sexp()
 
 		Assert(node != -1);  // ran out of nodes.  Time to raise the MAX!
 		last = node;
-		ignore_white_space();
+		ignore_white_space(Mp);
 	}
 
 	Mp++;  // skip past the ')'
@@ -3593,7 +3593,7 @@ int stuff_sexp_variable_list()
 
 	count = 0;
 	required_string("$Variables:");
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	// check for start of list
 	if (*Mp != '(') {
@@ -3602,7 +3602,7 @@ int stuff_sexp_variable_list()
 	}
 
 	Mp++;
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while (*Mp != ')') {
 		Assert(count < MAX_SEXP_VARIABLES);
@@ -3621,7 +3621,7 @@ int stuff_sexp_variable_list()
 
 		// get type
 		get_string(str_type);
-		ignore_white_space();
+		ignore_white_space(Mp);
 
 		// determine type
 		if (!stricmp(str_type, "number")) {
@@ -3642,7 +3642,7 @@ int stuff_sexp_variable_list()
 		if (check_for_string("\"network-variable\"")) {
 			// eat it
 			get_string(network);
-			ignore_white_space();
+			ignore_white_space(Mp);
 
 			// set type
 			type |= SEXP_VARIABLE_NETWORK;
@@ -3652,7 +3652,7 @@ int stuff_sexp_variable_list()
 		if (check_for_string("\"player-persistent\"")) {
 			// eat it
 			get_string(persistent);
-			ignore_white_space();
+			ignore_white_space(Mp);
 
 			// set type
 			type |= SEXP_VARIABLE_PLAYER_PERSISTENT;
@@ -3660,7 +3660,7 @@ int stuff_sexp_variable_list()
 		} else if (check_for_string("\"campaign-persistent\"")) {
 			// eat it
 			get_string(persistent);
-			ignore_white_space();
+			ignore_white_space(Mp);
 
 			// set type
 			type |= SEXP_VARIABLE_CAMPAIGN_PERSISTENT;
@@ -3668,7 +3668,7 @@ int stuff_sexp_variable_list()
 		} else if (check_for_string("\"")) {
 			// eat garbage
 			get_string(persistent);
-			ignore_white_space();
+			ignore_white_space(Mp);
 
 			// notify of error
 			Error(LOCATION, "Error parsing sexp variables - unknown persistence type encountered.  You can continue from here without trouble.");
@@ -25374,7 +25374,7 @@ int get_sexp_main()
 {
 	int	start_node, op;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (*Mp != '(')
 	{
