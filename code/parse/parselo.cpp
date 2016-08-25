@@ -355,30 +355,28 @@ int skip_to_string(char*& str, char *to, char *end)
 	return 1;
 }
 
-// Goober5000
-// Advance to start of pstr.  Return 0 is successful, otherwise return !0
-int skip_to_start_of_string(char *pstr, char *end)
+int skip_to_start_of_string(char*& str, char *to, char *end)
 {
-	ignore_white_space(Mp);
-	auto len = strlen(pstr);
-	size_t endlen;
+	ignore_white_space(str);
+	auto to_len = strlen(to);
+	Assert(to_len > 0);
+
+	size_t end_len = 0;
 	if(end)
-		endlen = strlen(end);
-	else
-		endlen = 0;
+		end_len = strlen(end);
 
-	while ( (*Mp != EOF_CHAR) && strnicmp(pstr, Mp, len) ) {
-		if (end && *Mp == '#')
+	while ((*str != EOF_CHAR) && strnicmp(to, str, to_len)) {
+		if (end && *str == '#')
 			return 0;
 
-		if (end && !strnicmp(end, Mp, endlen))
+		if (end && !strnicmp(end, str, end_len))
 			return 0;
 
-		advance_to_eoln(Mp);
-		ignore_white_space(Mp);
+		advance_to_eoln(str);
+		ignore_white_space(str);
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR))
+	if ((*str == '\0') || (*str == EOF_CHAR))
 		return 0;
 
 	return 1;

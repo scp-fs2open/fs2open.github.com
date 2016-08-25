@@ -434,7 +434,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	char game_string[NAME_LENGTH];
 
 	// Goober5000
-	skip_to_start_of_string("#Mission Info");
+	skip_to_start_of_string(Mp, "#Mission Info");
 
 	required_string("#Mission Info");
 	
@@ -5333,7 +5333,7 @@ void parse_bitmaps(mission *pm)
 	}
 
 	// bypass spurious stuff from e.g. FS1 missions
-	skip_to_start_of_string("#");
+	skip_to_start_of_string(Mp, "#");
 }
 
 void parse_asteroid_fields(mission *pm)

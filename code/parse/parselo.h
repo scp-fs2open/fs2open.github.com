@@ -123,7 +123,12 @@ extern void error_display(int error_level, const char *format, ...);
  * @param end String that ends the checking block
  */
 extern int skip_to_string(char*& str, char *to, char *end = NULL);
-extern int skip_to_start_of_string(char *pstr, char *end = NULL);
+
+/**
+ * Like `skip_to_string` except does not advance `str` past `to` and
+ * returns 0 instead of -1 when `end` is found.
+ */
+extern int skip_to_start_of_string(char*& str, char *to, char *end = NULL);
 extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = NULL);
 
 /**

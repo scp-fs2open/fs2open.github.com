@@ -255,7 +255,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			int temp = required_string_either("FS1", "FS2");
 
 			// using require_string_either won't advance the Mp pointer to the next token so force it instead
-			skip_to_start_of_string("#Gauge Config");
+			skip_to_start_of_string(Mp, "#Gauge Config");
 
 			if (temp < 0)
 				Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
@@ -282,7 +282,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				if (!ships_inited) {
 					// just in case ship info has not been initialized.
-					skip_to_start_of_string("#Gauge Config");
+					skip_to_start_of_string(Mp, "#Gauge Config");
 					continue;
 				}
 
@@ -313,7 +313,7 @@ void parse_hud_gauges_tbl(const char *filename)
 				else {
 					// can't find ship class. move on.
 					ship_classes.push_back(-1);
-					skip_to_start_of_string("#Gauge Config");
+					skip_to_start_of_string(Mp, "#Gauge Config");
 					//skip_to_start_of_string_either("#Gauge Config", "#End");
 					continue;
 				}
@@ -390,14 +390,14 @@ void parse_hud_gauges_tbl(const char *filename)
 				// filter aspect ratio.
 				if (optional_string("Full Screen")) {
 					if( (float)gr_screen.center_w / (float)gr_screen.center_h > 1.5) {
-						skip_to_start_of_string("#Gauge Config");
+						skip_to_start_of_string(Mp, "#Gauge Config");
 						//skip_to_start_of_string_either("#Gauge Config", "#End");
 						continue;
 					}
 				}
 				else if (optional_string("Wide Screen")) {
 					if( (float)gr_screen.center_w / (float)gr_screen.center_h <= 1.5) {
-						skip_to_start_of_string("#Gauge Config");
+						skip_to_start_of_string(Mp, "#Gauge Config");
 						//skip_to_start_of_string_either("#Gauge Config", "#End");
 						continue;
 					}
@@ -410,12 +410,12 @@ void parse_hud_gauges_tbl(const char *filename)
 				stuff_int_list(min_res, 2, RAW_INTEGER_TYPE);
 
 				if (min_res[0] > gr_screen.max_w) {
-					skip_to_start_of_string("#Gauge Config");
+					skip_to_start_of_string(Mp, "#Gauge Config");
 					continue;
 				}
 				else if (min_res[0] == gr_screen.center_w) {
 					if (min_res[1] > gr_screen.center_h) {
-						skip_to_start_of_string("#Gauge Config");
+						skip_to_start_of_string(Mp, "#Gauge Config");
 						continue;
 					}
 				}
@@ -427,12 +427,12 @@ void parse_hud_gauges_tbl(const char *filename)
 				stuff_int_list(max_res, 2, RAW_INTEGER_TYPE);
 
 				if (max_res[0] < gr_screen.max_w) {
-					skip_to_start_of_string("#Gauge Config");
+					skip_to_start_of_string(Mp, "#Gauge Config");
 					continue;
 				}
 				else if (max_res[0] == gr_screen.center_w) {
 					if (max_res[1] < gr_screen.center_h) {
-						skip_to_start_of_string("#Gauge Config");
+						skip_to_start_of_string(Mp, "#Gauge Config");
 						continue;
 					}
 				}

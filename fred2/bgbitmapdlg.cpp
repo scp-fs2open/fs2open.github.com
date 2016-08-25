@@ -1278,7 +1278,7 @@ void bg_bitmap_dlg::OnImportBackground()
 		read_file_text(filename);
 		reset_parse();
 
-		if (!skip_to_start_of_string("#Background bitmaps"))
+		if (!skip_to_start_of_string(Mp, "#Background bitmaps"))
 			return;
 
 		// skip beginning stuff
