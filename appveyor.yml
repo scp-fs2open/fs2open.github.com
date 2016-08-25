@@ -9,7 +9,7 @@ environment:
       CMAKE_GENERATOR: Visual Studio 12 2013
       PlatformToolset: v120_xp
     - VS_VERSION: 14
-      CMAKE_GENERATOR: Visual Studio 14 2015
+      CMAKE_GENERATOR: Visual Studio 14 2015 Win64
       PlatformToolset: v140_xp
 before_build:
   - git submodule update --init --recursive

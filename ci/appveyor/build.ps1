@@ -1,7 +1,4 @@
 
-write "$env:DeployBuild"
-write "$env:DeployConfig"
-
 if ([System.Convert]::ToBoolean($env:DeployBuild)) {
 	# Release build
 	if (![System.Convert]::ToBoolean($env:DeployConfig)) {
