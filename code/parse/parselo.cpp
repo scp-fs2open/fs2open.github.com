@@ -327,17 +327,18 @@ static void advance_to_next_white(char*& str)
 	}
 }
 
-int skip_to_string(char*& str, char *to, char *end)
+static int skip_to_string_helper(char*& str, char *to1, char *to2, char *end)
 {
 	ignore_white_space(str);
-	auto to_len = strlen(to);
-	Assert(to_len > 0);
+	size_t len1 = strlen(to1);
+	size_t len2 = strlen(to2);
+	Assert(len1 > 0);
 
 	size_t end_len = 0;
-	if (end != NULL)
+	if(end)
 		end_len = strlen(end);
 
-	while ((*str != EOF_CHAR) && strnicmp(to, str, to_len)) {
+	while ( (*str != EOF_CHAR) && strnicmp(to1, str, len1) && ((len2 == 0) || strnicmp(to2, str, len2)) ) {
 		if (end && *str == '#')
 			return 0;
 
@@ -351,64 +352,37 @@ int skip_to_string(char*& str, char *to, char *end)
 	if ((*str == '\0') || (*str == EOF_CHAR))
 		return 0;
 
-	str += to_len;
 	return 1;
+}
+
+int skip_to_string(char*& str, char *to, char *end)
+{
+	int rc = skip_to_string_helper(str, to, "", end);
+
+	if (rc == 1)
+		str += strlen(to);
+
+	return rc;
 }
 
 int skip_to_start_of_string(char*& str, char *to, char *end)
 {
-	ignore_white_space(str);
-	auto to_len = strlen(to);
-	Assert(to_len > 0);
+	int rc = skip_to_string_helper(str, to, "", end);
 
-	size_t end_len = 0;
-	if(end)
-		end_len = strlen(end);
+	if (rc == -1)
+		rc = 0;
 
-	while ((*str != EOF_CHAR) && strnicmp(to, str, to_len)) {
-		if (end && *str == '#')
-			return 0;
-
-		if (end && !strnicmp(end, str, end_len))
-			return 0;
-
-		advance_to_eoln(str);
-		ignore_white_space(str);
-	}
-
-	if ((*str == '\0') || (*str == EOF_CHAR))
-		return 0;
-
-	return 1;
+	return rc;
 }
 
 int skip_to_start_of_string_either(char*& str, char *to1, char *to2, char *end)
 {
-	ignore_white_space(str);
-	size_t len1 = strlen(to1);
-	size_t len2 = strlen(to2);
-	Assert(len1 > 0);
-	Assert(len2 > 0);
+	int rc = skip_to_string_helper(str, to1, to2, end);
 
-	size_t end_len = 0;
-	if(end)
-		end_len = strlen(end);
+	if (rc == -1)
+		rc = 0;
 
-	while ( (*str != EOF_CHAR) && strnicmp(to1, str, len1) && strnicmp(to2, str, len2) ) {
-		if (end && *str == '#')
-			return 0;
-
-		if (end && !strnicmp(end, str, end_len))
-			return 0;
-
-		advance_to_eoln(str);
-		ignore_white_space(str);
-	}
-
-	if ((*str == '\0') || (*str == EOF_CHAR))
-		return 0;
-
-	return 1;
+	return rc;
 }
 
 // Find a required string.
