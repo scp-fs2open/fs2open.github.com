@@ -899,7 +899,7 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 		if (tex->type == NVG_TEXTURE_RGBA)
 			frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0.f : 1.f;
 		else
-			frag->texType = 2;
+			frag->texType = 2.0f;
 //		printf("frag->texType = %d\n", frag->texType);
 	} else {
 		frag->type = NSVG_SHADER_FILLGRAD;

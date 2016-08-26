@@ -479,7 +479,6 @@ void batching_add_quad_internal(primitive_batch *batch, int texture, vertex *ver
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
 
 	const int NUM_VERTICES = 4;
-	vec3d p[NUM_VERTICES] = { ZERO_VECTOR };
 	batch_vertex v[NUM_VERTICES];
 
 	for ( int i = 0; i < NUM_VERTICES; i++ ) {
@@ -503,7 +502,6 @@ void batching_add_tri_internal(primitive_batch *batch, int texture, vertex *vert
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
 
 	const int NUM_VERTICES = 3;
-	vec3d p[NUM_VERTICES] = { ZERO_VECTOR };
 	batch_vertex v[NUM_VERTICES];
 
 	for ( int i = 0; i < NUM_VERTICES; i++ ) {

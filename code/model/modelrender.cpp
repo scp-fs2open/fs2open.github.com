@@ -2321,7 +2321,6 @@ void model_render_insignias(insignia_draw_data *insignia_data)
 
 	int idx, s_idx;
 	vertex vecs[3];
-	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
 	vec3d t1, t2, t3;
 	int i1, i2, i3;
 

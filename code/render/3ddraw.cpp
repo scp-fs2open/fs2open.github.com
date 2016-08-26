@@ -2578,7 +2578,6 @@ void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, ve
 	ca = (float)cos(a);
 
 	vertex v[4];
-	vertex *vertlist[4] = { &v[3], &v[2], &v[1], &v[0] };
 	memset(v, 0, sizeof(vertex) * 4);
 
 	if ( depth < 0.0f ) depth = 0.0f;
@@ -2692,7 +2691,6 @@ void g3_render_rod(color *clr, int num_points, vec3d *pvecs, float width)
 void g3_render_shield_icon(color *clr, coord2d coords[6], int resize_mode)
 {
 	vertex v[6];
-	vertex *verts[6] = { &v[0], &v[1], &v[2], &v[3], &v[4], &v[5] };
 
 	memset(v, 0, sizeof(vertex) * 6);
 
