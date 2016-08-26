@@ -698,23 +698,17 @@ void sexp_tree::right_clicked(int mode)
 			}
 		}
 		
-		// Do SEXP_VARIABLE stuff here.
-		if (m_mode != MODE_EVENTS)
-		{
-			// only allow variables in event mode
-			menu.EnableMenuItem(ID_SEXP_TREE_ADD_VARIABLE, MF_GRAYED);
-			menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_GRAYED);
-		}
-		else
+		/*
+		Goober5000 - allow variables in all modes;
+		the restriction seems unnecessary IMHO
 		*/
-		{
-			menu.EnableMenuItem(ID_SEXP_TREE_ADD_VARIABLE, MF_ENABLED);
-			menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_ENABLED);
-			
-			// check not root (-1)
-			if (item_index >= 0) {
-				// get type of sexp_tree item clicked on
-				type = get_type(h);
+		menu.EnableMenuItem(ID_SEXP_TREE_ADD_VARIABLE, MF_ENABLED);
+		menu.EnableMenuItem(ID_SEXP_TREE_MODIFY_VARIABLE, MF_ENABLED);
+		
+		// check not root (-1)
+		if (item_index >= 0) {
+			// get type of sexp_tree item clicked on
+			int type = get_type(h);
 
 			int parent = tree_nodes[item_index].parent;
 			if (parent >= 0) {
@@ -802,57 +796,43 @@ void sexp_tree::right_clicked(int mode)
 								Modify_variable = 0;
 							}
 
-									UINT flags = MF_STRING | MF_GRAYED;
-									// maybe gray flag MF_GRAYED
+							// enable navsystem always
+							if (op_type == OPF_NAV_POINT)
+								flag &= ~MF_GRAYED;
 
-									// get type -- gray "string" or number accordingly
-									if ( type & SEXPT_STRING ) {
-										if ( Sexp_variables[idx].type & SEXP_VARIABLE_STRING ) {
-											flags &= ~MF_GRAYED;
-										}
-									}
-									if ( type & SEXPT_NUMBER ) {
-										if ( Sexp_variables[idx].type & SEXP_VARIABLE_NUMBER ) {
-											flags &= ~MF_GRAYED;
-										}
-									}
+							if (!( (idx + 3) % 30)) {
+								flag |= MF_MENUBARBREAK;
+							}
 
-									// if modify-variable and changing variable, enable all variables
-									if (op_type == OPF_VARIABLE_NAME) {
-										Modify_variable = 1;
-										flags &= ~MF_GRAYED;
-									} else {
-										Modify_variable = 0;
-									}
+							char buf[128];
+							// append list of variable names and values
+							// set id as ID_VARIABLE_MENU + idx
+							sprintf(buf, "%s (%s)", Sexp_variables[idx].variable_name, Sexp_variables[idx].text);
 
-									// enable navsystem always
-									if (op_type == OPF_NAV_POINT)
-										flags &= ~MF_GRAYED;
+							replace_variable_menu->AppendMenu(flag, (ID_VARIABLE_MENU + idx), buf);
+						}
+					}
+					
 
-									if (!( (idx + 3) % 30)) {
-										flags |= MF_MENUBARBREAK;
-									}
 					// now deal with SEXP containers
 
-					for ( int idx = 0; idx < (int)Sexp_containers.size(); idx++ ) {
+					for ( int index = 0; index < (int)Sexp_containers.size(); index++ ) {
 
-									replace_variable_menu->AppendMenu(flags, (ID_VARIABLE_MENU + idx), buf);
-								}
 						UINT flag = MF_STRING | MF_GRAYED;
 
 						if (type & SEXPT_STRING ) {
-							if (Sexp_containers[idx].type & SEXP_CONTAINER_STRING_DATA ) {
+							if (Sexp_containers[index].type & SEXP_CONTAINER_STRING_DATA ) {
 								flag &= ~MF_GRAYED;
 							}
 						}
 
 						if ( type & SEXPT_NUMBER ) {
-							if (Sexp_containers[idx].type & SEXP_CONTAINER_NUMBER_DATA ) {
+							if (Sexp_containers[index].type & SEXP_CONTAINER_NUMBER_DATA ) {
 								flag &= ~MF_GRAYED;
 							}
 						}
 
-						replace_container_menu->AppendMenu(flag, (ID_CONTAINER_MENU + idx), Sexp_containers[idx].container_name.c_str()); 
+						replace_container_menu->AppendMenu(flag, (ID_CONTAINER_MENU + index), Sexp_containers[index].container_name.c_str());
 					}
 				}
 			}
@@ -1928,7 +1908,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 
 	if ((id >= ID_ADD_MENU) && (id < ID_ADD_MENU + 511)) {
-		Assert(item_index >= 0);		
+		Assert(item_index >= 0);
 
 		auto type = query_operator_argument_type(op, Add_count);
 		list = get_listing_opf(type, item_index, Add_count);
@@ -1939,7 +1919,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			op = get_operator_index(tree_nodes[item_index].text);
 			Assert(op >= 0);
 
-			type = query_operator_argument_type(op, Add_count);
+			auto type = query_operator_argument_type(op, Add_count);
 			list = get_listing_opf(type, item_index, Add_count);
 		}
 		Assert(list);
@@ -1972,7 +1952,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
 			Assert(op >= 0);
 
-			type = query_operator_argument_type(op, Replace_count); // check argument type at this position
+			auto type = query_operator_argument_type(op, Replace_count); // check argument type at this position
 			list = get_listing_opf(type, tree_nodes[item_index].parent, Replace_count);
 		}
 		Assert(list);
@@ -1986,7 +1966,6 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 
 		Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
-
 		expand_operator(item_index);
 		replace_data(ptr->text, ptr->type);
 		list->destroy();
