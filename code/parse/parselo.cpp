@@ -37,7 +37,6 @@ char		Current_filename[MAX_PATH_LEN];
 char		Current_filename_save[MAX_PATH_LEN];
 char		Current_filename_sub[MAX_PATH_LEN];	//Last attempted file to load, don't know if ex or not.
 char		Error_str[ERROR_LENGTH];
-int		my_errno;
 int		Warning_count, Error_count;
 int		Warning_count_save = 0, Error_count_save = 0;
 int		fred_parse_flag = 0;
@@ -2276,23 +2275,19 @@ static bool atoi2(int *out)
 	return true;
 }
 
-long atol2()
+bool atol2(long *out)
 {
-    char	ch;
-
-    my_errno = 0;
-
     ignore_white_space();
-
-    ch = *Mp;
+    char ch = *Mp;
 
     if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
         error_display(1, "Expecting long, found [%.32s].\n", next_tokens());
-        my_errno = 1;
-        return 0;
+        *out = 0;
+        return false;
     }
-    else
-        return atol(Mp);
+
+    *out = atol(Mp);
+    return true;
 }
 
 //	Stuff a floating point value pointed at by Mp.

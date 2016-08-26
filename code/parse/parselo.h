@@ -181,13 +181,14 @@ int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n
     return num_strings;
 }
 
-extern long atol2();
-extern int my_errno;
+extern bool atol2(long *out);
 template<class T>
 void stuff_flagset(T *dest) {
-    dest->from_long(atol2());
+    long l;
+    bool success = atol2(&l);
+    dest->from_long(l);
 
-    if (my_errno)
+    if (!success)
         skip_token();
     else
         Mp += strspn(Mp, "+-0123456789");
