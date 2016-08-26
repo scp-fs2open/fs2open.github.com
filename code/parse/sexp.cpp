@@ -29523,9 +29523,33 @@ int extract_sexp_variable_index(int node)
 	{ "Remove_Random",		SNF_CONTAINER_REMOVE_RANDOM,	},
 	{ "At",					SNF_CONTAINER_AT_INDEX,			},
 };
+// Remember to update MAX_CONTAINER_MODIFIERS if adding to the above array
 
-// update MAX_CONTAINER_MODIFIERS if adding to the above array
+ // Containers should not be modified if the game is simply checking the syntax. 
+ bool allow_container_modifications()
+ {
+	 int cur_state;
 
+	 cur_state = gameseq_get_state();
+
+	 // can always modify containers during the mission itself
+	 if (Game_mode & GM_IN_MISSION) {
+		 return true;
+	 }
+
+	 // can also modify if we are calling the sexp from a script or if we are briefing / debriefing, etc.
+	 switch (cur_state) {
+		case GS_STATE_BRIEFING:
+		case GS_STATE_DEBRIEF:
+		case GS_STATE_CMD_BRIEF:
+		case GS_STATE_FICTION_VIEWER:
+		case GS_STATE_SCRIPTING:
+			return true;
+
+		default:
+			return false;
+	 }
+}
 
 bool deal_with_container_sub(int &node, int container_index, SCP_string &result) 
 { 	
@@ -29585,14 +29609,14 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 	
 			case SNF_CONTAINER_REMOVE_FIRST:
 				result.assign(Sexp_containers[container_index].list_data.front());
-				if (Game_mode & GM_IN_MISSION) {
+				if (allow_container_modifications()) {
 					Sexp_containers[container_index].list_data.pop_front();
 				}
 				return true;
 	
 			case SNF_CONTAINER_REMOVE_LAST:
 				result.assign(Sexp_containers[container_index].list_data.back());				
-				if (Game_mode & GM_IN_MISSION) {
+				if (allow_container_modifications()) {
 					Sexp_containers[container_index].list_data.pop_back();
 				}
 				return true;
@@ -29607,7 +29631,7 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 				number_of_elements = (int)Sexp_containers[container_index].list_data.size();
 				data_index = rand_internal(0, number_of_elements); 
 				result.assign(Sexp_containers[container_index].list_data.at(data_index));				
-				if (Game_mode & GM_IN_MISSION) {
+				if (allow_container_modifications()) {
 					Sexp_containers[container_index].list_data.erase(Sexp_containers[container_index].list_data.begin() + data_index);
 				}
 				return true;
