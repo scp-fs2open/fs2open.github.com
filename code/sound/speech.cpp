@@ -106,15 +106,15 @@ bool speech_play(const char *text)
 	}
 
 #ifdef _WIN32
-	int len = strlen(text);
+	size_t len = strlen(text);
 	wchar_t Conversion_buffer[MAX_SPEECH_CHAR_LEN];
 
 	if(len > (MAX_SPEECH_CHAR_LEN - 1)) {
 		len = MAX_SPEECH_CHAR_LEN - 1;
 	}
 
-	int count = 0;
-	for(int i = 0; i < len; i++) {
+	size_t count = 0;
+	for(size_t i = 0; i < len; i++) {
 		if(text[i] == '$') {
 			i++;
 			continue;

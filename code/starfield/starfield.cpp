@@ -2202,7 +2202,7 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 	// ... or add a new one 
 	Suns.push_back(sbi);
 
-	return Suns.size() - 1;
+	return (int)(Suns.size() - 1);
 }
 
 // add an instance for a starfield bitmap (something actually used in a mission)
@@ -2259,9 +2259,9 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 
 	// ... or add a new one
 	Starfield_bitmap_instances.push_back(sbi);
-	starfield_create_bitmap_buffer(Starfield_bitmap_instances.size() - 1);
+	starfield_create_bitmap_buffer((int)(Starfield_bitmap_instances.size() - 1));
 
-	return Starfield_bitmap_instances.size() - 1;
+	return (int)(Starfield_bitmap_instances.size() - 1);
 }
 
 // get the number of entries that each vector contains

@@ -16,7 +16,7 @@ ov_callbacks cfile_callbacks;
 //Encapsulation funcs to please the almighty ov_callbacks struct
 size_t ogg_cfread(void *buf, size_t elsize, size_t elnem, void* cfile)
 {
-	return cfread(buf, elsize, elnem, (CFILE*)cfile);
+	return (size_t)cfread(buf, (int)elsize, (int)elnem, (CFILE*)cfile);
 }
 
 int ogg_cfseek(void* cfile, ogg_int64_t offset, int where)

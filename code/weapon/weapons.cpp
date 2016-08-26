@@ -574,7 +574,6 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 	// Now add the parsed flags to the weapon flags
 	weaponp->wi_flags |= parsed_flags;
 
-    bool set_pierce = false;
     bool set_nopierce = false;
 
     if (unparsed_or_special.size() > 0) {
@@ -592,7 +591,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
                         Spawn_names = (char **)vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
                     }
 
-                    int	skip_length, name_length;
+                    size_t	skip_length, name_length;
 					std::unique_ptr<char[]> temp_string(new char[flag_text.size() + 1]);
 
                     strcpy(temp_string.get(), flag_text.c_str());
@@ -620,9 +619,6 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
                     Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
                 }
             }
-            else if (!stricmp(NOX("pierce shields"), flag_text.c_str())) {
-                set_pierce = true;
-            }
             else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
                 set_nopierce = true;
             }
@@ -646,7 +642,13 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
         }
 
         //Do cleanup and sanity checks
-        if (set_nopierce)
+
+		//Beams pierce shields by default
+		if (weaponp->wi_flags[Weapon::Info_Flags::Beam])
+			weaponp->wi_flags.set(Weapon::Info_Flags::Pierce_shields);
+        
+		//...except when they don't
+		if (set_nopierce)
             weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
 
         if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
@@ -2414,7 +2416,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				//find a free slot in the pspew info array
 				for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {
 					if (wip->particle_spewers[s].particle_spew_type == PSPEW_NONE) {
-						spew_index = s;
+						spew_index = (int)s;
 						break;
 					}
 				}
@@ -4171,7 +4173,7 @@ void weapon_home(object *obj, int num, float frame_time)
 			aip = &Ai_info[Ships[hobjp->instance].ai_index];
 
 			if ((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance)) {
-				aip->nearest_locked_object = obj-Objects;
+				aip->nearest_locked_object = OBJ_INDEX(obj);
 				aip->nearest_locked_distance = dist;
 			}
 		}

@@ -448,7 +448,7 @@ int snd_unload( int n )
 void snd_unload_all()
 {
 	while ( !Sounds.empty() ) {
-		snd_unload( Sounds.size()-1 );
+		snd_unload( (int)(Sounds.size()-1) );
 	}
 }
 

@@ -128,6 +128,25 @@ namespace headtracking
 				throw internal::HeadTrackingException("Library could not be loaded!");
 			}
 
+			// Try to get initial test data
+			FreeTrackData data;
+			data.dataID = std::numeric_limits<unsigned int>::max();
+			data.camHeight = std::numeric_limits<int>::min();
+			data.camWidth = std::numeric_limits<int>::min();
+
+			if (!library.GetData(&data))
+			{
+				throw internal::HeadTrackingException("Failed to get test data set!");
+			}
+
+			if (data.dataID == std::numeric_limits<unsigned int>::max() ||
+				data.camHeight == std::numeric_limits<int>::min() ||
+				data.camWidth == std::numeric_limits<int>::min())
+			{
+				// Check if all the values have been changed
+				throw internal::HeadTrackingException("The test values reported by FreeTrack were invalid!");
+			}
+
 			// I have no idea what a correct value for this function is so I used this random value
 			library.ReportID(7919);
 

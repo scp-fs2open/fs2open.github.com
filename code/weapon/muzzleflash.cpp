@@ -185,7 +185,7 @@ void mflash_page_in(bool load_all)
 			continue;
 
 		// blobs
-		int original_num_blobs = Mflash_info[i].blobs.size();
+		size_t original_num_blobs = Mflash_info[i].blobs.size();
 		int original_idx = 1;
 		for ( idx = 0; idx < Mflash_info[i].blobs.size(); ) {
 			mflash_blob_info* mfbip = &Mflash_info[i].blobs[idx];
@@ -195,7 +195,7 @@ void mflash_page_in(bool load_all)
 				++idx;
 			}
 			else {
-				Warning(LOCATION, "Muzleflash \"%s\", blob [%d/%d]\nMuzzleflash blob \"%s\" not found!  Deleting.", 
+				Warning(LOCATION, "Muzleflash \"%s\", blob [%d/" SIZE_T_ARG "]\nMuzzleflash blob \"%s\" not found!  Deleting.", 
 					Mflash_info[i].name, original_idx, original_num_blobs, Mflash_info[i].blobs[idx].name);
 				Mflash_info[i].blobs.erase( Mflash_info[i].blobs.begin() + idx );
 			}

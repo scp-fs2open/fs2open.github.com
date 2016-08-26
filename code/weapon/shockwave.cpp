@@ -430,7 +430,7 @@ int shockwave_load(char *s_name, bool shock_3D)
 
 	for (i = 0; i < Shockwave_info.size(); i++) {
 		if ( !stricmp(Shockwave_info[i].filename, s_name) ) {
-			s_index = i;
+			s_index = (int)i;
 			break;
 		}
 	}
