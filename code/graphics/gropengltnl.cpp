@@ -842,9 +842,9 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 
 	GLubyte *ibuffer = NULL;
 
-	int start = 0;
-	int end = (datap->n_verts - 1);
-	int count = (end - (start * 3) + 1);
+	size_t start = 0;
+	size_t end = (datap->n_verts - 1);
+	size_t count = (end - (start * 3) + 1);
 
 	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 
@@ -860,12 +860,15 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 	}
 
 	if ( Rendering_to_shadow_map ) {
-		glDrawElementsInstancedBaseVertex(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start), 4, (GLint)bufferp->vertex_num_offset);
+		glDrawElementsInstancedBaseVertex(GL_TRIANGLES, (GLsizei) count, element_type,
+										  ibuffer + (datap->index_offset + start), 4, (GLint)bufferp->vertex_num_offset);
 	} else {
 		if ( Cmdline_drawelements ) {
-			glDrawElementsBaseVertex(GL_TRIANGLES, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
+			glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei) count,
+									 element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
 		} else {
-			glDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, count, element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
+			glDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, (GLsizei) count,
+										  element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
 		}
 	}
 
@@ -877,7 +880,7 @@ void opengl_render_model_fixed(model_material* material_info, indexed_vertex_sou
 
 }
 
-void gr_opengl_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, int texi)
+void gr_opengl_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 	Assert(GL_htl_projection_matrix_set);
 	Assert(GL_htl_view_matrix_set);
@@ -885,8 +888,6 @@ void gr_opengl_render_model(model_material* material_info, indexed_vertex_source
 	Verify(bufferp != NULL);
 
 	GL_CHECK_FOR_ERRORS("start of render_buffer()");
-
-	Assert(texi >= 0);
 
 	buffer_data *datap = &bufferp->tex_buf[texi];
 

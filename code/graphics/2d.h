@@ -867,7 +867,7 @@ typedef struct screen {
 	void (*gf_shadow_map_end)();
 
 	// new drawing functions
-	void (*gf_render_model)(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, int texi);
+	void (*gf_render_model)(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi);
 	void (*gf_render_primitives)(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_primitives_immediate)(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 	void (*gf_render_primitives_particle)(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
@@ -1233,7 +1233,7 @@ __inline void gr_render_primitives_2d_immediate(material* material_info, primiti
 	(*gr_screen.gf_render_primitives_2d_immediate)(material_info, prim_type, layout, n_verts, data, size);
 }
 
-__inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, int texi)
+__inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 	(*gr_screen.gf_render_model)(material_info, vert_source, bufferp, texi);
 }

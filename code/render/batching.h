@@ -82,7 +82,7 @@ public:
 	void add_triangle(batch_vertex* v0, batch_vertex* v1, batch_vertex* v2);
 	void add_point_sprite(batch_vertex *p);
 
-	int load_buffer(batch_vertex* buffer, int n_verts);
+	size_t load_buffer(batch_vertex* buffer, size_t n_verts);
 
 	size_t num_verts() { return Vertices.size();  }
 

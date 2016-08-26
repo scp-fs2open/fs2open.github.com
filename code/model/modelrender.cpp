@@ -494,7 +494,7 @@ void draw_list::add_buffer_draw(model_material *render_material, indexed_vertex_
 	draw_data.lights = Current_lights_set;
 
 	Render_elements.push_back(draw_data);
-	Render_keys.push_back(Render_elements.size() - 1);
+	Render_keys.push_back((int) (Render_elements.size() - 1));
 }
 
 void draw_list::render_buffer(queued_buffer_draw &render_elements)
